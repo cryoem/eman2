@@ -4,6 +4,7 @@
 #include "util.h"
 #include "byteorder.h"
 #include "log.h"
+#include "exception.h"
 
 #include <string.h>
 #include <math.h>
@@ -26,7 +27,7 @@ using namespace EMAN;
 void Util::ap2ri(float *data, size_t n)
 {
 	if (!data) {
-		return;
+		throw NullPointerException("pixel data array");
 	}
 
 	for (size_t i = 0; i < n; i += 2) {
@@ -39,7 +40,7 @@ void Util::ap2ri(float *data, size_t n)
 void Util::flip_complex_phase(float *data, size_t n)
 {
 	if (!data) {
-		return;
+		throw NullPointerException("pixel data array");
 	}
 
 	for (size_t i = 0; i < n; i += 2) {
@@ -111,7 +112,7 @@ void Util::file_unlock(FILE *)
 bool Util::check_file_by_magic(const void *first_block, const char *magic)
 {
 	if (!first_block || !magic) {
-		return false;
+		throw NullPointerException("first_block/magic");
 	}
 
 	const char *buf = static_cast < const char *>(first_block);
@@ -134,9 +135,10 @@ bool Util::is_file_exist(string filename)
 void Util::flip_image(float *data, size_t nx, size_t ny)
 {
 	if (!data) {
-		return;
+		throw NullPointerException("image data array");
 	}
 
+	
 	float *buf = new float[nx];
 	size_t row_size = nx * sizeof(float);
 
@@ -152,9 +154,14 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 
 bool Util::sstrncmp(const char *s1, const char *s2)
 {
+	if (!s1 || !s2) {
+		throw NullPointerException("Null string");
+	}
+
 	if (strncmp(s1, s2, strlen(s2)) == 0) {
 		return true;
 	}
+	
 	return false;
 }
 
@@ -167,21 +174,24 @@ string Util::int2str(int n)
 
 string Util::get_line_from_string(char **slines)
 {
-	string result = "";
-	if (slines) {
-		char *str = *slines;
-		char buf[1024];
-		int i = 0;
-		while (*str != '\n' && i < 1024) {
-			buf[i] = *str;
-			i++;
-			str++;
-		}
-		buf[i] = '\0';
-		str++;
-		result = string(buf);
-		*slines = str;
+	if (!slines) {
+		throw NullPointerException("Null string");
 	}
+	string result = "";
+
+	char *str = *slines;
+	char buf[1024];
+	int i = 0;
+	while (*str != '\n' && i < 1024) {
+		buf[i] = *str;
+		i++;
+		str++;
+	}
+	buf[i] = '\0';
+	str++;
+	result = string(buf);
+	*slines = str;
+	
 	return result;
 }
 		
@@ -189,26 +199,39 @@ string Util::get_line_from_string(char **slines)
 
 bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
 {
+	if (!s || !float_var || !p_val) {
+		throw NullPointerException("string float");
+	}
 	size_t n = strlen(float_var);
 	if (strncmp(s, float_var, n) == 0) {
 		*p_val = (float) atof(&s[n]);
 		return true;
 	}
+	
 	return false;
 }
 
 bool Util::get_str_float(const char *s, const char *float_var, float *p_v1, float *p_v2)
 {
+	if (!s || !float_var || !p_v1 || !p_v2) {
+		throw NullPointerException("string float");
+	}
+
 	size_t n = strlen(float_var);
 	if (strncmp(s, float_var, n) == 0) {
 		sscanf(&s[n], "%f,%f", p_v1, p_v2);
 		return true;
 	}
+
 	return false;
 }
 
 bool Util::get_str_float(const char *s, const char *float_var, int *p_v0, float *p_v1, float *p_v2)
 {
+	if (!s || !float_var || !p_v0 || !p_v1 || !p_v2) {
+		throw NullPointerException("string float");
+	}
+	
 	size_t n = strlen(float_var);
 	*p_v0 = 0;
 	if (strncmp(s, float_var, n) == 0) {
@@ -226,6 +249,10 @@ bool Util::get_str_float(const char *s, const char *float_var, int *p_v0, float 
 
 bool Util::get_str_int(const char *s, const char *int_var, int *p_val)
 {
+	if (!s || !int_var || !p_val) {
+		throw NullPointerException("string int");
+	}
+	
 	size_t n = strlen(int_var);
 	if (strncmp(s, int_var, n) == 0) {
 		*p_val = atoi(&s[n]);
@@ -236,6 +263,10 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_val)
 
 bool Util::get_str_int(const char *s, const char *int_var, int *p_v1, int *p_v2)
 {
+	if (!s || !int_var || !p_v1 || !p_v2) {
+		throw NullPointerException("string int");
+	}
+	
 	size_t n = strlen(int_var);
 	if (strncmp(s, int_var, n) == 0) {
 		sscanf(&s[n], "%d,%d", p_v1, p_v2);
@@ -246,6 +277,10 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_v1, int *p_v2)
 
 bool Util::get_str_int(const char *s, const char *int_var, int *p_v0, int *p_v1, int *p_v2)
 {
+	if (!s || !int_var || !p_v0 || !p_v1 || !p_v2) {
+		throw NullPointerException("string int");
+	}
+	
 	size_t n = strlen(int_var);
 	*p_v0 = 0;
 	if (strncmp(s, int_var, n) == 0) {
@@ -266,7 +301,9 @@ string Util::get_filename_by_ext(string old_filename, string ext)
 	char buf[MAXPATHLEN];
 	strcpy(buf, old_filename.c_str());
 	char *old_ext = strrchr(buf, '.');
-	buf[strlen(buf) - strlen(old_ext)] = '\0';
+	if (old_ext) {
+		buf[strlen(buf) - strlen(old_ext)] = '\0';
+	}
 	strcat(buf, ext.c_str());
 	return string(buf);
 }
@@ -291,6 +328,9 @@ string Util::sbasename(const string & filename)
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 								 float *slope, float *intercept, bool ignore_zero)
 {
+	if (!data_x || !data_y || !slope || !intercept) {
+		throw NullPointerException("null float pointer");
+	}
 	double sum = 0;
 	double sum_x = 0;
 	double sum_y = 0;
@@ -327,14 +367,13 @@ void Util::save_data(const vector < float >&x_array, const vector < float >&y_ar
 {
 	if (x_array.size() != y_array.size()) {
 		LOGERR("array x and array y have different size: %d != %d\n",
-							 x_array.size(), y_array.size());
+			   x_array.size(), y_array.size());
 		return;
 	}
 
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		LOGERR("cannot open file to save data '%s'\n", filename.c_str());
-		return;
+		throw FileAccessException(filename);
 	}
 
 	for (size_t i = 0; i < x_array.size(); i++) {
@@ -347,8 +386,7 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array, string 
 {
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		LOGERR("cannot open file to save data '%s'\n", filename.c_str());
-		return;
+		throw FileAccessException(filename);
 	}
 
 	for (size_t i = 0; i < y_array.size(); i++) {
@@ -361,13 +399,12 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array, string 
 void Util::save_data(float x0, float dx, float *y_array, size_t array_size, string filename)
 {
 	if (!y_array) {
-		return;
+		throw NullPointerException("y array");
 	}
 
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		LOGERR("cannot open file to save data '%s'\n", filename.c_str());
-		return;
+		throw FileAccessException(filename);
 	}
 
 	for (size_t i = 0; i < array_size; i++) {
@@ -428,8 +465,8 @@ float Util::get_gauss_rand(float mean, float sigma)
 
 void Util::find_max(float *data, size_t nitems, float *max_val, int *max_index)
 {
-	if (!data) {
-		return;
+	if (!data || !max_val || !max_index) {
+		throw NullPointerException("data/max_val/max_index");
 	}
 	float max = -FLT_MAX;
 	int m = 0;
@@ -451,8 +488,8 @@ void Util::find_max(float *data, size_t nitems, float *max_val, int *max_index)
 void Util::find_min_and_max(float *data, size_t nitems, float *max_val, float *min_val,
 							int *max_index, int *min_index)
 {
-	if (!data) {
-		return;
+	if (!data || !max_val || !min_val || !max_index || !min_index) {
+		throw NullPointerException("data/max_val/min_val/max_index/min_index");
 	}
 	float max = -FLT_MAX;
 	float min = FLT_MAX;
@@ -538,6 +575,9 @@ string Util::get_time_label()
 
 const char* Util::get_debug_image(const char* imagename)
 {
+	if (!imagename) {
+		return "";
+	}
 	string fullpath = string(getenv("HOME")) + "/images/" + string(imagename);
 	return fullpath.c_str();
 }

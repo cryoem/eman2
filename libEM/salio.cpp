@@ -76,7 +76,7 @@ void SalIO::init()
 			}
 			else if (Util::sstrncmp(buf1, "AXSCAN")) {
 				char *t = strrchr(buf, '\'');
-				if (t[-1] == 'Y') {
+				if (t && t[-1] == 'Y') {
 					axis = Y_SCAN_AXIS;
 				}
 			}
