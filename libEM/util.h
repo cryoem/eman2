@@ -41,7 +41,10 @@ namespace EMAN {
 		(1.0-t)*u*v*p7+t*u*v*p8;
 	}
 	
-	
+	static void find_max(float* data, int nitems, float* max_val, int* max_index = 0);
+	static void find_min_and_max(float* data, int nitems, float* max_val, float* min_val,
+				     int* max_i = 0, int* min_i = 0);
+	static int calc_best_fft_size(int low);
     };
 }
 

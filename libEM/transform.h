@@ -8,26 +8,21 @@ namespace EMAN {
 
     class Size {
     public:
-	Size() : xsize(0), ysize(0), zsize(0), ndim(0) {}
-	Size(int x, int y) : xsize(x), ysize(y), zsize(0), ndim(2) {}
-	Size(int x, int y, int z) : xsize(x), ysize(y), zsize(z)
-	{
-	    if (z > 1) {
-		ndim = 3;
-	    }
-	    else {
-		ndim = 2;
-	    }
-	}
+	Size() : xsize(0), ysize(0), zsize(0) {}
+	Size(int x, int y) : xsize(x), ysize(y), zsize(0) {}
+	Size(int x, int y, int z) : xsize(x), ysize(y), zsize(z) {}
 
-	int get_ndim() const { return ndim; }
+	int get_ndim() const
+	{
+	    if (zsize > 1) {
+		return 3;
+	    }
+	    return 2;	    
+	}
 	
 	int xsize;
 	int ysize;
 	int zsize;
-	
-    private:
-	int ndim;
     };
     
     template <class T>
@@ -36,16 +31,7 @@ namespace EMAN {
 	Point() : x(0), y(0), z(0), ndim(0) {}
 	Point(T xx, T yy) : x(xx), y(yy), z(0), ndim(2) {}
 	Point(T xx, T yy, T zz) :  x(xx), y(yy), z(zz), ndim(3) {}
-#if 0
-	bool inside_box(const Size& box) const
-	{
-	    if (box.xsize >= 0 && box.ysize >= 0 && box.zsize >= 0 &&
-		x < box.xsize && y < box.ysize && z < box.zsize) {
-		return true;
-	    }
-	    return false;
-	}
-#endif
+
 	int get_ndim() const { return ndim; }
 
 	T x;
@@ -59,11 +45,21 @@ namespace EMAN {
     
     class Region {
     public:
-	Region(float x, float y, int xsize, int ysize);
-	Region(float x, float y, float z, int xsize, int ysize, int zsize);
-	Region(const Point<float>& origin, const Size& size);
+	Region(float x, float y, int xsize, int ysize)
+	{
+	    origin = Point<float>(x, y);
+	    size = Size(xsize, ysize);
+	}
+	
+	Region(float x, float y, float z, int xsize, int ysize, int zsize)
+	{
+	    origin = Point<float>(x, y, z);
+	    size = Size(xsize, ysize, zsize);
+	}
+	
+	Region(const Point<float>& o, const Size& s) : origin(o), size(s) {}
 
-	~Region();
+	~Region() {}
 
 	bool inside_region() const;
 	bool inside_region(const Size& size) const;
@@ -79,31 +75,31 @@ namespace EMAN {
     
     class Vec3f {
     public:
-	Vec3f();
-	Vec3f(float x, float y, float z);
-	Vec3f(float v[3]);
-	virtual ~Vec3f();
+	Vec3f() {}
+	Vec3f(float x, float y, float z) { vec[0] = x; vec[1] = y; vec[2] = z; }
+	Vec3f(const float v[3]) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
+	virtual ~Vec3f() {}
 	
-	void normalize();
-	float dot(const Vec3f& v);
-	// Vec3f rotate(const Euler& e);
-
-	float norm() const;
+	float normalize();
+	float dot(const Vec3f& v) { return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]); }	
 	
-	void get_value(float* v);
-	void get_value(float &x, float &y, float &z);
-
-	void set_value(float v[3]);
-	void set_value(float x, float y, float z);
-
-	float operator[](int i) const;
-	float& operator[](int i);
+	float length() const;
+	void negate() {  vec[0] = -vec[0]; vec[1] = -vec[1]; vec[2] = -vec[2]; }
 	
-	Vec3f& operator *= (float d);
-	Vec3f& operator /= (float d);
+	void get_value(float* v) { v[0] = vec[0]; v[1] = vec[1]; v[2] = vec[2]; }
+	void get_value(float &x, float &y, float &z) { x = vec[0]; y = vec[1]; z = vec[2]; }
 
-	Vec3f& operator += (const Vec3f& v);
-	Vec3f& operator -= (const Vec3f& v);
+	void set_value(const float v[3]) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
+	void set_value(float x, float y, float z) { vec[0] = x; vec[1] = y; vec[2] = z; }
+
+	float operator[](int i) const { return vec[i]; }
+	float& operator[](int i) { return vec[i]; }
+	
+	Vec3f& operator *= (float d) { vec[0] *= d; vec[1] *= d; vec[2] *= d; return *this; }
+	Vec3f& operator /= (float d) { if (d != 0) { vec[0] /= d; vec[1] /= d; vec[2] /= d; } return *this; }
+
+	Vec3f& operator += (const Vec3f& v) { vec[0] += v[0]; vec[1] += v[1]; vec[2] += v[2]; return *this; }
+	Vec3f& operator -= (const Vec3f& v) { vec[0] -= v[0]; vec[1] -= v[1]; vec[2] -= v[2]; return *this; }
 
 	friend Vec3f operator+(const Vec3f& v1, const Vec3f& v2);
 	friend Vec3f operator-(const Vec3f& v1, const Vec3f& v2);
@@ -112,7 +108,7 @@ namespace EMAN {
 	friend bool operator!=(const Vec3f& v1, const Vec3f& v2);
 	
     private:
-	float data[3];
+	float vec[3];
     };
 
     class gsl_matrix;

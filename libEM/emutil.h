@@ -76,6 +76,8 @@ namespace EMAN {
 
 	static bool is_same_size(EMData* em1, EMData* em2);
 	
+	
+	
     private:
 	static ImageType fast_get_image_type(string filename, const void* first_block);
     };

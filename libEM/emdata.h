@@ -52,12 +52,15 @@ namespace EMAN {
 	EMData* get_parent() const;
 	
 	EMData* do_fft();
-	EMData* do_ift() { return 0; }
-	void gimme_fft() {}
+	EMData* do_ift();
+	void gimme_fft();
 
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
+	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
+	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
+	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 	
-	void apply_radial_func(int, float, vector<float> array) {}
+	void apply_radial_func(int, float, vector<float> array);
 	    
 	void set_talign_params(float dx, float dy);
 	void set_talign_params(float dx, float dy, float dz);
@@ -99,6 +102,12 @@ namespace EMAN {
 	int get_x() const;
 	int get_y() const;
 	int get_z() const;
+
+	Vec3f get_translation() const;
+	void set_translation(const Vec3f& t);
+
+	
+
 	
 	void dump_data(string filename);
 
@@ -159,6 +168,7 @@ namespace EMAN {
 	int nx;
 	int ny;
 	int nz;
+	Vec3f translation;
     };
 
 
@@ -176,6 +186,11 @@ namespace EMAN {
     {
 	return nz;
     }
+
+    inline Vec3f EMData::get_translation() const { return translation; }
+    
+    inline void EMData::set_translation(const Vec3f& t) { translation = t; }
+    
     
     inline float EMData::get_value_at(int x, int y, int z) const
     {

@@ -1,7 +1,8 @@
 SET(LIB_EM_SOURCE byteorder.C
 		  emobject.C
 		  filter.C
-		  aligner.C	  
+		  aligner.C
+		  cmp.C	  
 		  log.C
 		  imageio.C
 		  util.C
