@@ -37,7 +37,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     cmp.cpp
     averager.cpp
     reconstructor.cpp
-    filter_template.cpp
     )
 
 ADD_LIBRARY(EM2 SHARED ${LIB_EM_SOURCE})
