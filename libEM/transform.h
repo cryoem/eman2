@@ -80,7 +80,7 @@ namespace EMAN {
 	
 	Matrix3f& inverse();
 	Matrix3f& transpose();
-	Matrix3f create_inverse();
+	Matrix3f create_inverse() const;
 	
 	double* operator[](int i);
 	const double* operator[](int i) const;
@@ -142,7 +142,7 @@ namespace EMAN {
 	
 	Matrix4f& inverse();
 	Matrix4f& transpose();
-	Matrix4f create_inverse();
+	Matrix4f create_inverse() const;
 
 	Matrix4f& operator+=(float f);
 	Matrix4f& operator-=(float f);
@@ -273,7 +273,7 @@ namespace EMAN {
 	~Rotation();
 
 	Rotation& inverse();
-	Rotation create_inverse();
+	Rotation create_inverse() const;
 	
 	float diff(const Rotation& r);
 	Rotation& rotate_from_left(const Rotation& left_rotate);
@@ -281,7 +281,7 @@ namespace EMAN {
 	void set_sym(string symname);
 	int get_max_nsym() const;
 	Rotation get_sym(int sym_index);
-
+	
 	void set_angle(float a1, float a2, float a3, Type type);
 	void set_angle(float e1, float e2, float e3, float e0, Type type);
 	void set_angle(const Matrix3f& m); 
@@ -326,9 +326,17 @@ namespace EMAN {
 	friend bool operator!=(const Rotation& e1, const Rotation& e2);
 
     private:
+	enum SymType { CSYM, DSYM, ICOS_SYM, OCT_SYM, ISYM, UNKNOWN_SYM };
+	SymType get_sym_type(string symname);
+	
+    private:
 	Matrix3f matrix;
 	Type type;
 	string symname;
+	int nsym;
+	int cur_sym;
+
+
     };
 
     // composite transform: = (-Translate) * Scale * Rotate * Translate

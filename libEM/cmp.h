@@ -8,6 +8,10 @@ namespace EMAN {
 
     class EMData;
     class Transform;
+
+    // todo: 
+    // define a function to return native value; another function to
+    // return normlized value from 0-1, where bigger means better.
     
     class Cmp {
     public:
@@ -16,7 +20,7 @@ namespace EMAN {
 	virtual Dict get_params() const { return params; }
 	virtual void set_params(const Dict& new_params) { params = new_params; }
 	virtual string get_name() const = 0;
-    
+	
     protected:
 	mutable Dict params;
     };

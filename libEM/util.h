@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <math.h>
 
 using std::string;
 using std::vector;
@@ -52,6 +53,7 @@ namespace EMAN {
 	static int calc_best_fft_size(int low);
 
 	static float square(float x) { return x*x; }
+	static double hypot3(double x, double y, double z) { return sqrt(x*x + y*y + z*z); }
 
 	static float calc_angle_sub(float angle1, float angle2);
     };

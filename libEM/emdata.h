@@ -44,6 +44,8 @@ namespace EMAN {
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
 	int filter(string filtername, const Dict& params);
+	float cmp(string cmpname, const Dict& params);
+	EMData* align(string aligner_name, const Dict& params, string comp_name = "");
 	
 	void normalize();
 
@@ -52,17 +54,40 @@ namespace EMAN {
 	void ap2ri();
 
 	EMData* get_parent() const;
+	void set_parent(EMData* new_parent) { parent = new_parent; }
 	
 	EMData* do_fft();
 	EMData* do_ift();
 	void gimme_fft();
 
+	void rotate_translate(float scale = 1.0, float dxc = 0,
+			      float dyc = 0, float dzc = 0, int r = 0);
+	double dot_rotate_translate(EMData* data, float dx, float dy, float da);
+
+	void fast_translate(bool inplace = true);
+	void rotate_180();
+	
+	void vertical_flip();
+	void horizontal_flip();
+	
+	void set_flipped(bool flipped)
+	{
+	    if (flipped) {
+		flags |= EMDATA_FLIP;
+	    }
+	    else {
+		flags&=~EMDATA_FLIP;
+	    }
+	}
+	
+	float dot(EMData* with, bool evenonly = false) { return 0; }
+	
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
 	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 
-	float* calc_fourier_shell_correlation(EMData *with);
+	vector<float> calc_fourier_shell_correlation(EMData *with);
 	
 	void apply_radial_func(int, float, vector<float> array);
 	    
@@ -72,6 +97,9 @@ namespace EMAN {
 	void set_ralign_params(float alt, float az, float phi);
 	void set_ralign_params(const Rotation& r);
 
+	void set_align_score(float score) { align_score = score; }
+	float get_align_score() const { return align_score; }
+	
 	int add(float f);
 	int add(const EMData& em);
 	int sub(const EMData& em);
@@ -110,8 +138,8 @@ namespace EMAN {
 	Vec3f get_translation() const;
 	void set_translation(const Vec3f& t);
 
-	
-
+	Rotation get_rotation() const { return rotation; }
+	Vec3f get_trans_align() const { return trans_align; }
 	
 	void dump_data(string filename);
 
@@ -158,21 +186,28 @@ namespace EMAN {
 	    EMDATA_NEEDHIST	= 1<<8,		// histogram needs update
 	    EMDATA_NEWRFP	= 1<<9,		// needs new rotational footprint
 	    EMDATA_NODATA	= 1<<10,	// no actual data
-	    EMDATA_COMPLEXX	= 1<<11		// 1D fft's in X
+	    EMDATA_COMPLEXX	= 1<<11,       	// 1D fft's in X
+	    EMDATA_FLIP         = 1<<12
 	};
 
 	int update_stat();
 
+	
     private:
 	mutable map<string, EMObject> attr_dict;
 	float* rdata;
 	SimpleCtf* ctf;
+	EMData* parent;
 	int flags;
-	int rocount;
+
 	int nx;
 	int ny;
 	int nz;
+	
 	Vec3f translation;
+	Rotation rotation;
+	Vec3f trans_align;
+	float align_score;
     };
 
 

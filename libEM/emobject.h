@@ -34,6 +34,7 @@ namespace EMAN {
 	    DOUBLE,
 	    STRING,
 	    EMDATA,
+	    FLOATARRAY,
 	    UNKNOWN
 	};
 
@@ -44,7 +45,8 @@ namespace EMAN {
 	EMObject(double dd) : d(dd), type(DOUBLE) {}
 	EMObject(string s) : str(s), type(STRING) {}
 	EMObject(EMData* em) : emdata(em), type(EMDATA) {}
-	
+	EMObject(const vector<float>& v) : farray(v), type(FLOATARRAY) {}
+
 	~EMObject() { }
 
 	int get_int() const
@@ -128,6 +130,17 @@ namespace EMAN {
 	    return emdata;
 	}
 
+	vector<float> get_farray() const
+	{
+	    if (type != FLOATARRAY) {
+		if (type != UNKNOWN) {
+		    Log::logger()->error("type error. Cannot call get_farray for data type '%s'", get_object_type_name(type));
+		}
+		return vector<float>();
+	    }
+	    return farray;
+	}
+	
 	bool is_null() const { return (type == UNKNOWN); }
 	
 	string to_str() const;
@@ -145,6 +158,8 @@ namespace EMAN {
 		return "STRING";
 	    case EMDATA:
 		return "EMDATA";
+	    case FLOATARRAY:
+		return "FLOATARRAY";
 	    case UNKNOWN:
 		return "UNKNOWN";
 	    }
@@ -161,6 +176,7 @@ namespace EMAN {
 	
 	EMData* emdata;
 	string str;
+	vector<float> farray;
 	ObjectType type;
     };
 

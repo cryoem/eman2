@@ -14,7 +14,7 @@ namespace EMAN {
     public:
 	virtual ~Aligner() {}
 
-	virtual int align(EMData* em, Vec3f& result, string comp_name = "") const = 0;
+	virtual EMData* align(EMData* this_img, string cmp_name = "") const = 0;
 	
 	virtual Dict get_params() const { return params; }
 	virtual void set_params(const Dict& new_params) { params = new_params; }
@@ -22,32 +22,35 @@ namespace EMAN {
 	virtual string get_name() const = 0;
     
     protected:
-	mutable Dict params;
+	mutable Dict params;	
     };
 
-    class TransAligner : public Aligner {
+    /*
+     * params: EMData* with, int intonly, int useparent, int maxshift
+     */
+    class TranslateAligner : public Aligner {
     public:
-	string get_name() const { return "(TransAligner"; }
-	static Aligner* NEW() { return new TransAligner(); }
+	string get_name() const { return "(TranslateAligner"; }
+	static Aligner* NEW() { return new TranslateAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
 
-    class RotAligner : public Aligner {
+    class RotateAligner : public Aligner {
     public:
-	string get_name() const { return "RotAligner"; }
-	static Aligner* NEW() { return new RotAligner(); }
+	string get_name() const { return "RotateAligner"; }
+	static Aligner* NEW() { return new RotateAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
     
-    class RotPreCenteredAligner : public Aligner {
+    class RotatePrecenterAligner : public Aligner {
     public:
-	string get_name() const { return "RotPreCenteredAligner"; }
-	static Aligner* NEW() { return new RotPreCenteredAligner(); }
+	string get_name() const { return "RotatePrecenterAligner"; }
+	static Aligner* NEW() { return new RotatePrecenterAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
 
     class RefineAligner : public Aligner {
@@ -55,32 +58,31 @@ namespace EMAN {
 	string get_name() const { return "RefineAligner"; }
 	static Aligner* NEW() { return new RefineAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-    class RTAligner : public Aligner {
+    class RotateTranslateAligner : public Aligner {
     public:
-	string get_name() const { return "RTAligner"; }
-	static Aligner* NEW() { return new RTAligner(); }
+	string get_name() const { return "RotateTranslateAligner"; }
+	static Aligner* NEW() { return new RotateTranslateAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-    class RFAligner : public Aligner {
+    class RotateFlipAligner : public Aligner {
     public:
-	string get_name() const { return "RFAligner"; }
-	static Aligner* NEW() { return new RFAligner(); }
+	string get_name() const { return "RotateFlipAligner"; }
+	static Aligner* NEW() { return new RotateFlipAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-        
-    class RTFAligner : public Aligner {
+    class RotateTranslateFlipAligner : public Aligner {
     public:
-	string get_name() const { return "RTFAligner"; }
-	static Aligner* NEW() { return new RTFAligner(); }
+	string get_name() const { return "RotateTranslateFlipAligner"; }
+	static Aligner* NEW() { return new RotateTranslateFlipAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
     class RTFSlowestAligner : public Aligner {
@@ -88,7 +90,7 @@ namespace EMAN {
 	string get_name() const { return "RTFSlowestAligner"; }
 	static Aligner* NEW() { return new RTFSlowestAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
     class RTFSlowAligner : public Aligner {
@@ -96,7 +98,7 @@ namespace EMAN {
 	string get_name() const { return "RTFSlowAligner"; }
 	static Aligner* NEW() { return new RTFSlowAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
     class RTFRadonAligner : public Aligner {
@@ -104,27 +106,24 @@ namespace EMAN {
 	string get_name() const { return "RTFRadonAligner"; }
 	static Aligner* NEW() { return new RTFRadonAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-    
-        
-    class Trans3DAligner : public Aligner {
+    class Translate3DAligner : public Aligner {
     public:
-	string get_name() const { return "Trans3DAligner"; }
-	static Aligner* NEW() { return new Trans3DAligner(); }
+	string get_name() const { return "Translate3DAligner"; }
+	static Aligner* NEW() { return new Translate3DAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-    class RotCHAligner : public Aligner {
+    class RotateCHAligner : public Aligner {
     public:
-	string get_name() const { return "RotCHAligner"; }
-	static Aligner* NEW() { return new RotCHAligner(); }
+	string get_name() const { return "RotateCHAligner"; }
+	static Aligner* NEW() { return new RotateCHAligner(); }
 	
-	int align(EMData* em, Vec3f& result, string comp_name = "") const;
+	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
-    
     
     
     typedef Aligner* (*AlignerType)();
