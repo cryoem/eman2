@@ -9,7 +9,7 @@ using std::map;
 
 void usage(const char *progname)
 {
-    printf("\n%s inputfile outputfile [-vN] [first=<n>] [last=<n>] [inplace] [edgenorm] [norm[=<mean>,<sigma>]] [invert] [flip] [rot=<angle>] [trans=<dx>,<dy>] [center] [acfcenter] [scale=<sca>] [clip=<x,y>] [shrink=<n>] [meanshrink=<n>] [apix=<A/pix>] [lp=<filt r>] [hp=<filt r>]  [blfilt=<sigma1,sigma2,iter,localwidth>] [mask=<radius>] [imask=<radius>] [noisemask]  [mrc]  [pif] [hdf] [png] [em] [spider] [spider-single] [pgm[=<low>,<hi>]] [sharphp=<pixels>] [norefs] [rotav] [average]  [split=n] [ctfsplit] [interlv=<file 2 interleave>] [sym=<Cn>] [plt[=<plt file>]] [setsfpairs] [addnoise=<level>] [randomize=<dr>,<da>,<flip>]  [selfcl[=<steps>][,<mode>]] [radon] [rfp] [mraprep] [phot] [rsub] rfilt=<filtername><:param1=value1><...>\n", progname);
+    printf("\n%s inputfile outputfile [-vN] [first=<n>] [last=<n>] [inplace] [edgenorm] [norm[=<mean>,<sigma>]] [invert] [flip] [rot=<angle>] [trans=<dx>,<dy>] [center] [acfcenter] [scale=<sca>] [clip=<x,y>] [shrink=<n>] [meanshrink=<n>] [apix=<A/pix>] [lp=<filt r>] [hp=<filt r>]  [blfilt=<sigma1,sigma2,iter,localwidth>] [mask=<radius>] [imask=<radius>] [noisemask]  [mrc]  [automask=x] [pif] [hdf] [png] [em] [spider] [spider-single] [pgm[=<low>,<hi>]] [sharphp=<pixels>] [norefs] [rotav] [average]  [split=n] [ctfsplit] [interlv=<file 2 interleave>] [sym=<Cn>] [plt[=<plt file>]] [setsfpairs] [addnoise=<level>] [randomize=<dr>,<da>,<flip>]  [selfcl[=<steps>][,<mode>]] [radon] [rfp] [mraprep] [phot] [rsub] rfilt=<filtername><:param1=value1><...>\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (imask > 0) {
-	    d->filter("SharpMask", Dict("inner_radius", EMObject(imask)));
+	    d->filter("SharpMask", Dict("inner_radius", EMObject(imask), "value", EMObject(0)));
 	}
 
 	if (automask) {
@@ -713,6 +713,22 @@ int main(int argc, char *argv[])
 #endif
     int n_outimg = EMUtil::get_image_count(argv[2]);
     printf("%d images\n", n_outimg);
+
+    if (d) {
+	delete d;
+	d = 0;
+    }
+
+    if (ld) {
+	delete ld;
+	ld = 0;
+    }
+
+    delete [] defocus_val;
+    defocus_val = 0;
+
+    delete [] bfactor_val;
+    bfactor_val = 0;
     
     return 0;
 }

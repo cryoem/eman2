@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include "log.h"
+#include <assert.h>
 
 using std::vector;
 using std::string;
@@ -53,6 +54,11 @@ namespace EMAN
     public:
 	EMObject() : type(UNKNOWN)
 	{
+	    n = 0;
+	    f = 0;
+	    d = 0;
+	    emdata = 0;
+	    xydata = 0;
 	}
 	EMObject(int num) : n(num), type(INT)
 	{
@@ -359,6 +365,38 @@ namespace EMAN
 	    dict[key] = val;
 	}
 
+	EMData * set_default(const string & key, EMData * val)
+	{
+	    if (!has_key(key)) {
+		dict[key] = EMObject(val);
+	    }
+	    return dict[key].get_emdata();
+	}
+
+	int set_default(const string & key, int val)
+	{
+	    if (!has_key(key)) {
+		dict[key] = EMObject(val);
+	    }
+	    return dict[key].get_int();
+	}
+
+	float set_default(const string & key, float val)
+	{
+	    if (!has_key(key)) {
+		dict[key] = EMObject(val);
+	    }
+	    return dict[key].get_float();
+	}
+
+	double set_default(const string & key, double val)
+	{
+	    if (!has_key(key)) {
+		dict[key] = EMObject(val);
+	    }
+	    return dict[key].get_double();
+	}
+	
 	map<string, EMObject> & get_dict() {
 	    return dict;
 	}
@@ -493,6 +531,7 @@ namespace EMAN
 	    return my_dict[instancename]();
 	}
 	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
+	assert(0);
 	return 0;
     }
 
@@ -506,6 +545,7 @@ namespace EMAN
 	    return i;
 	}
 	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
+	assert(0 && "hello");
 	return 0;
     }
 

@@ -198,7 +198,7 @@ namespace EMAN
     class RotateTranslateAligner: public Aligner
     {
     public:
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "FRC") const;
 	
 	string get_name() const
 	{
@@ -307,7 +307,7 @@ namespace EMAN
     class RotateTranslateFlipAligner: public Aligner
     {
     public:	
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
 
 	string get_name() const
 	{
@@ -335,7 +335,7 @@ namespace EMAN
     class RTFSlowAligner: public Aligner
     {
     public:	
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
 
 	string get_name() const
 	{
@@ -361,7 +361,7 @@ namespace EMAN
     class RTFSlowestAligner: public Aligner
     {
     public:	
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
 	
 	string get_name() const
 	{
@@ -389,7 +389,7 @@ namespace EMAN
     class RTFBestAligner: public Aligner
     {
     public:
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
 	
 	string get_name() const
 	{
@@ -417,7 +417,7 @@ namespace EMAN
     class RTFRadonAligner: public Aligner
     {
     public:	
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
 
 	string get_name() const
 	{
@@ -447,7 +447,7 @@ namespace EMAN
     class RefineAligner: public Aligner
     {
     public:	
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "FRC") const;
 	
 	string get_name() const
 	{

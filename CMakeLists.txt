@@ -26,8 +26,8 @@ OPTION(ENABLE_PYTHON "if enable boost python support" ON)
 
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-    SET(EMAN_CXX_FLAGS "-g -n32 -w2 -fullwarn  -LANG:ansi-for-init-scope=ON")
-    #SET(EMAN_CXX_FLAGS "-O2 -n32 -woffall -LANG:ansi-for-init-scope=ON")
+    #SET(EMAN_CXX_FLAGS "-g -n32 -w2 -fullwarn  -LANG:ansi-for-init-scope=ON")
+    SET(EMAN_CXX_FLAGS "-O2 -n32 -woffall -LANG:ansi-for-init-scope=ON")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 
@@ -41,8 +41,8 @@ IF(CMAKE_SYSTEM MATCHES "OSF1-V*")
 ENDIF(CMAKE_SYSTEM MATCHES "OSF1-V*")
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(EMAN_CXX_FLAGS " -g -Wall -Werror" CACHE INTERNAL "EMAN CXX FLAGS")
-    #SET(EMAN_CXX_FLAGS "-O2 -w" CACHE INTERNAL "EMAN CXX FLAGS")
+    #SET(EMAN_CXX_FLAGS " -g -Wall -Werror" CACHE INTERNAL "EMAN CXX FLAGS")
+    SET(EMAN_CXX_FLAGS "-O2 -w" CACHE INTERNAL "EMAN CXX FLAGS")
     SET(LIB64 "/usr/lib64" CACHE INTERNAL "lib64")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 

@@ -32,7 +32,6 @@ namespace EMAN
 	{
 	    return plan_nd;
 	}
-
 	
 	rfftw_plan get_plan_1d() const
 	{
@@ -51,8 +50,8 @@ namespace EMAN
 	int rank;
 	int dims[NDIMS];
 	FftwDirection direction;
-	rfftwnd_plan plan_nd;
-	rfftw_plan plan_1d;
+	static rfftwnd_plan plan_nd;
+	static rfftw_plan plan_1d;
     };
     
     bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);

@@ -95,10 +95,12 @@ namespace EMAN
 	~Region() {
 	}
 
+	/** to check whether a point is inside this region
+	 */
 	bool inside_region() const;
-	bool inside_region(const Size & size) const;
-	bool inside_region(float xsize, float ysize) const;
-	bool inside_region(float xsize, float ysize, float zsize) const;
+	bool inside_region(const Point<float> & p) const;
+	bool inside_region(float x, float y) const;
+	bool inside_region(float x, float y, float z) const;
 
 	int get_ndim() const
 	{
