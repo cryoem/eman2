@@ -106,8 +106,12 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 			if (err) {
 				delete ctf;
 				ctf = 0;
+				flags &= ~EMDATA_HASCTFF;
 			}
-
+			else {
+				flags |= EMDATA_HASCTFF;
+			}
+			
 			if (!nodata) {
 				set_size(nx, ny, nz);
 				int err = imageio->read_data(rdata, img_index, r, is_3d);
@@ -121,9 +125,6 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 		}
 	}
 
-	if (nodata) {
-		flags |= EMDATA_NODATA;
-	}
 	EXITFUNC;
 }
 
@@ -263,12 +264,11 @@ EMData *EMData::copy(bool with_parent)
 	}
 
 	ret->rfp = 0;
-	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
+	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
 
 	ret->all_translation = all_translation;
 	ret->all_rotation = all_rotation;
 
-	ret->name = name;
 	ret->path = path;
 	ret->pathnum = pathnum;
 
@@ -291,12 +291,11 @@ EMData *EMData::copy_head()
 	ret->parent = this;
 	ret->rfp = 0;
 
-	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
+	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
 
 	ret->all_translation = all_translation;
 	ret->all_rotation = all_rotation;
 
-	ret->name = name;
 	ret->path = path;
 	ret->pathnum = pathnum;
 
@@ -390,7 +389,7 @@ EMData *EMData::get_clip(const Region & area)
 
 	result->update();
 	result->set_parent(0);
-	result->set_name(name);
+
 	result->set_path(path);
 	result->set_pathnum(pathnum);
 
@@ -480,7 +479,7 @@ if (get_ndim()==3) {
 		for (int y=y0; y<y1; y++) {
 			for (int z=z0; z<z1; z++) {
 				rdata[x + y * nx + z * nx * ny] += 
-					block->get_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by,(z-center.z)/scale+bz);
+					block->sget_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by,(z-center.z)/scale+bz);
 			}
 		}
 	}
@@ -509,7 +508,7 @@ else if (get_ndim()==2) {
 	for (int x=x0; x<x1; x++) {
 		for (int y=y0; y<y1; y++) {
 			rdata[x + y * nx] += 
-				block->get_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by);
+				block->sget_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by);
 		}
 	}
 	update();
@@ -640,10 +639,6 @@ EMData *EMData::do_ift()
 	}
 
 	EMData *dat = copy_head();
-#if 0
-	if (strlen(name) > 74)
-		name[75] = 0;
-#endif
 
 	dat->set_size(nx, ny, nz);
 	get_data();
@@ -2089,11 +2084,13 @@ void EMData::set_size(int x, int y, int z)
 
 float *EMData::get_data() const
 {
+	//flags |= EMDATA_BUSY;
 	return rdata;
 }
 
 void EMData::done_data()
 {
+	flags &= (~EMDATA_BUSY);
 	flags |= EMDATA_NEEDUPD;
 }
 
@@ -3555,7 +3552,7 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		cf->set_size(nx, 1, 1);
 	}
 
-	cf->set_name("CCFx");
+	//cf->set_name("CCFx");
 	cf->set_path("/tmp/eman.ccf");
 
 	if (y1 <= y0) {
@@ -3838,7 +3835,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 		f1 = 0;
 	}
 
-	f2->set_name("CCF");
+	//f2->set_name("CCF");
 	f2->set_path("/tmp/eman.ccf");
 
 	EXITFUNC;
@@ -3851,7 +3848,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	
 	static EMData *filt = 0;
 
-	if (!(flags & EMDATA_NEWRFP) && rfp) {
+	if (rfp) {
 		return rfp;
 	}
 
@@ -3908,7 +3905,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	}
 	tmp2 = tmp->get_clip(r2);
 	rfp = tmp2;
-	flags &= ~EMDATA_NEWRFP;
+
 	delete tmp;
 	tmp = 0;
 
@@ -4028,7 +4025,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 		this_fft = 0;
 	}
 
-	f2->set_name("MCF");
+	//f2->set_name("MCF");
 	f2->set_path("/tmp/eman.mcf");
 
 	EXITFUNC;
@@ -5244,3 +5241,59 @@ void EMData::setup_insert_slice(int size)
 	EXITFUNC;
 }
 
+
+float EMData::sget_value_at(int x, int y, int z) const
+{
+	if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
+		throw InvalidValueException("(x,y,z) is out of range");
+	}
+	return rdata[x + y * nx + z * nx * ny];
+}
+
+float EMData::sget_value_at(int x, int y) const
+{
+	if (x < 0 || y < 0 || x >= nx || y >= ny) {
+		throw InvalidValueException("(x,y) is out of range");
+	}
+	return rdata[x + y * nx];
+}
+
+float EMData::sget_value_at(size_t i) const
+{
+	if ((int)i >= (nx*ny*nz)) {
+		throw InvalidValueException("index is out of range");
+	}
+	return rdata[i];
+}
+
+float EMData::sget_value_at_interp(float xx, float yy) const
+{
+	int x = static_cast < int >(floor(xx));
+	int y = static_cast < int >(floor(yy));
+
+	float p1 = sget_value_at(x, y);
+	float p2 = sget_value_at(x + 1, y);
+	float p3 = sget_value_at(x + 1, y + 1);
+	float p4 = sget_value_at(x, y + 1);
+
+	return Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
+}
+
+float EMData::sget_value_at_interp(float xx, float yy, float zz) const
+{
+	int x = (int) floor(xx);
+	int y = (int) floor(yy);
+	int z = (int) floor(zz);
+	float p1 = sget_value_at(x, y, z);
+	float p2 = sget_value_at(x + 1, y, z);
+	float p3 = sget_value_at(x, y + 1, z);
+	float p4 = sget_value_at(x + 1, y + 1, z);
+
+	float p5 = sget_value_at(x, y, z + 1);
+	float p6 = sget_value_at(x + 1, y, z + 1);
+	float p7 = sget_value_at(x, y + 1, z + 1);
+	float p8 = sget_value_at(x + 1, y + 1, z + 1);
+
+	return Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8,
+									   xx - x, yy - y, zz - z);
+}

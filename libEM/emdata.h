@@ -690,13 +690,12 @@ namespace EMAN
 		 */
 		EMData *convolute(EMData * with);
 
-		/** check whether 'this' image has the CTF information stored.
+		/** check whether the image physical file has the CTF info or not.
 		 * @return True if it has the CTF information. Otherwise, false.
 		*/
 		bool has_ctff() const;
 
 #if 0
-		void clear_ctf();
 		void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
 
@@ -958,46 +957,187 @@ namespace EMAN
 		 */
 		Dict get_attr_dict();
 
-		/* Set the attribute dictionary to a new dictioanary.
+		/** Set the attribute dictionary to a new dictioanary.
 		 *
 		 * @param new_dict The new attribute dictionary.
 		 */
 		void set_attr_dict(const Dict & new_dict);
-		
+
+		/** Get the image x-dimensional size.
+		 * @return Image x-dimensional size.
+		 */
 		int get_xsize() const;
+		
+		/** Get the image y-dimensional size.
+		 * @return Image y-dimensional size.
+		 */
 		int get_ysize() const;
+		
+		/** Get the image z-dimensional size.
+		 * @return Image z-dimensional size.
+		 */
 		int get_zsize() const;
+
+		/** Get image dimension.
+		 * @return image dimension.
+		 */
 		int get_ndim() const;
 
+		/** Get this image's parent image.
+		 * @return this image's parent image.
+		 */
 		EMData *get_parent() const;
+		
+		/** Set this image's parent image.
+		 * @param new_parent This image's parent image.
+		 */
 		void set_parent(EMData * new_parent);
 
-		string get_name() const;
-		void set_name(const string & name);
-
+		/** Get the pixel density value at coordinates (x,y,z).
+		 * The validity of x, y, and z is not checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param z The z cooridinate.
+		 * @return The pixel density value at coordinates (x,y,z).
+		 */
 		float get_value_at(int x, int y, int z) const;
+
+		
+		/** Get the pixel density value at coordinates (x,y). 2D only.
+		 * The validity of x, y is not checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @return The pixel density value at coordinates (x,y).
+		 */
 		float get_value_at(int x, int y) const;
+
+		/** Get the pixel density value given an index 'i' assuming
+		 * the pixles are stored in a 1D array. The validity of i
+		 * is not checked.
+		 * 
+		 * @param i  1D data array index.
+		 * @return The pixel density value
+		 */
 		float get_value_at(size_t i) const;
 
+		/** A safer, slower way to get the pixel density value at
+		 * coordinates (x,y,z).
+		 * The validity of x, y, and z is checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param z The z cooridinate.
+		 * @exception InvalidValueException (x,y,z) is out of range.
+		 * @return The pixel density value at coordinates (x,y,z).
+		 */
 		float sget_value_at(int x, int y, int z) const;
+
+		/** A safer, slower way to get the pixel density value at
+		 * coordinates (x,y). 2D only. The validity of x, y is checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @exception InvalidValueException (x,y) is out of range.
+		 * @return The pixel density value at coordinates (x,y).
+		 */
 		float sget_value_at(int x, int y) const;
 
-		float get_value_at_interp(float x, float y) const;
-		float get_value_at_interp(float x, float y, float z) const;
+		/** A safer, slower way to get the pixel density value
+		 * given an index 'i' assuming
+		 * the pixles are stored in a 1D array. The validity of i
+		 * is not checked.
+		 * 
+		 * @param i  1D data array index.
+		 * @exception InvalidValueException Index i is out of range.
+		 * @return The pixel density value
+		 */
+		float sget_value_at(size_t i) const;
 
+		/** Get pixel density value at interpolation of (x,y).
+		 * The validity of x, y is checked.2D image only. 
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @return The pixel density value at coordinates (x,y).
+		 */
+		float sget_value_at_interp(float x, float y) const;
+		
+		/** Get the pixel density value at interpolation of (x,y,z).
+		 * The validity of x, y, and z is checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param z The z cooridinate.
+		 * @return The pixel density value at coordinates (x,y,z).
+		 */
+		float sget_value_at_interp(float x, float y, float z) const;
+
+		/** Set the pixel density value at coordinates (x,y,z).
+		 * The validity of x, y, and z is not checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param z The z cooridinate.
+		 * @param v The pixel density value at coordinates (x,y,z).
+		 */
 		void set_value_at(int x, int y, int z, float v);
+		
+		
+		/** Set the pixel density value at coordinates (x,y).
+		 * 2D image only. The validity of x, y, and z is not checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param v The pixel density value at coordinates (x,y).
+		 */
 		void set_value_at(int x, int y, float v);
 
+		/** Is this a complex image?
+		 * @return Whether this is a complex image or not.
+		 */
 		bool is_complex() const;
+
+		/** Mark this image as a complex image.
+		 * @param is_complex If true, a complex image. If false, a real
+		 * image.
+		 */
 		void set_complex(bool is_complex);
 
+		/** Is this image a 1D FFT image in X direction?
+		 * @return Whether this image is a 1D FFT image in X
+		 * direction.
+		 */
 		bool is_complex_x() const;
+
+		/** Marks this image a 1D FFT image in X direction.
+		 * @param is_complex_x If true, a 1D FFT image in X direction;
+		 * If false, not such an image.
+		 */
 		void set_complex_x(bool is_complex_x);
 
+		/** Is this image flipped?
+		 * @return Whether this image is flipped or not.
+		 */
 		bool is_flipped() const;
+
+		/** Mark this image as flipped.
+		 * @param is_flipped If true, mark this image as flipped;
+		 * If false, mark this image as not flipped.
+		 */
 		void set_flipped(bool is_flipped);
 
+		/** Is this image a real/imaginary format complex image?
+		 * @return Whether this image is real/imaginary format complex
+		 * image.
+		 */
 		bool is_ri() const;
+
+		/** Mark this image as a real/imaginary format complex image.
+		 * @param is_ri If true, mark as real/imaginary format; If
+		 * false, mark as amp/phase format.
+		 */
 		void set_ri(bool is_ri);
 
 		EMData & operator+=(float n);
@@ -1010,10 +1150,32 @@ namespace EMAN
 		EMData & operator*=(const EMData & em);
 		EMData & operator/=(const EMData & em);
 
+		/** Read a set of images from file specified by 'filename'.
+		 * Which images are read is set by 'img_indices'.
+		 * @param filename The image file name.
+		 * @param img_indices Which images are read. If it is empty,
+		 *     all images are read. If it is not empty, only those 
+		 *     in this array are read.
+		 * @param header_only If true, only read image header. If
+		 *     false, read both data and header.
+		 * @return The set of images read from filename.
+		 */
 		static vector < EMData * >read_images(string filename,
 											  vector < int >img_indices = vector < int >(),
 											  bool header_only = false);
 
+		/** Read a set of images from file specified by 'filename'. If
+		 * the given 'ext' is not empty, replace 'filename's extension it.
+		 * Images with index from img_index_start to img_index_end are read.
+		 *
+		 * @param filename The image file name.
+		 * @param img_index_start Starting image index.
+		 * @param img_index_end Ending image index.
+		 * @param header_only If true, only read image header. If
+		 *     false, read both data and header.
+		 * @param ext The new image filename extension.
+		 * @return The set of images read from filename.
+		 */
 		static vector < EMData * >read_images_ext(string filename, int img_index_start,
 												  int img_index_end, bool header_only =
 												  false, string ext = "");
@@ -1024,16 +1186,10 @@ namespace EMAN
 			EMDATA_COMPLEX = 1 << 0,
 			EMDATA_RI = 1 << 1,	       // real/imaginary or amp/phase
 			EMDATA_BUSY = 1 << 2,	   // someone is modifying data
-			EMDATA_SHARED = 1 << 3,	   // Stored in shared memory
-			EMDATA_SWAPPED = 1 << 4,   // Data is swapped = may be offloaded if memory is tight,
-			EMDATA_HASCTF = 1 << 6,	   // has CTF info
-			EMDATA_NEEDUPD = 1 << 7,   // needs a realupdate= ,
-			EMDATA_NEEDHIST = 1 << 8,  // histogram needs update
-			EMDATA_NEWRFP = 1 << 9,	   // needs new rotational footprint
-			EMDATA_NODATA = 1 << 10,   // no actual data
-			EMDATA_COMPLEXX = 1 << 11, // 1D fft's in X
-			EMDATA_FLIP = 1 << 12,	   // a flag only
-			EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
+			EMDATA_HASCTFF = 1 << 3,   // has CTF info in the image file		  
+			EMDATA_NEEDUPD = 1 << 4,   // needs a real update			
+			EMDATA_COMPLEXX = 1 << 5,  // 1D fft's in X
+			EMDATA_FLIP = 1 << 6	   // is the image flipped
 		};
 
 		void update_stat();
@@ -1041,24 +1197,19 @@ namespace EMAN
 		void scale_pixel(float scale_factor) const;
 
 	private:
-		/** to store all image header information */
-		mutable Dict attr_dict;
-		float *rdata;	  /** image real data */
-		float *supp;
-		Ctf *ctf;		  /** CTF data */
-		EMData *parent;
+		
+		mutable Dict attr_dict; /** to store all image header info */
+		float *rdata;	        /** image real data */
+		float *supp;            /** supplementary data array */
+		Ctf *ctf;		        /** CTF data */
+		EMData *parent;         /** this image's parent */
+		EMData *rfp;            /** rotational foot print */
+		int flags;              /** flags */
+		int nx, ny, nz;	        /** image size */
 
-		EMData *rfp;
-		int flags;
+		Vec3 < float >all_translation; /** translation from the original location */
+		Vec3 < float >all_rotation;    /** rotation (alt, az, phi) from the original locaton*/
 
-		int nx, ny, nz;	  /** image size */
-
-		Vec3 < float >all_translation;
-		/** translation from the original location */
-		Vec3 < float >all_rotation;
-		/** rotation (alt, az, phi) from the original locaton*/
-
-		string name;
 		string path;
 		int pathnum;
 	};
@@ -1124,54 +1275,7 @@ namespace EMAN
 	{
 		return rdata[i];
 	}
-	
-	inline float EMData::sget_value_at(int x, int y, int z) const
-	{
-		if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
-			return 0;
-		}
-		return rdata[x + y * nx + z * nx * ny];
-	}
 
-	inline float EMData::sget_value_at(int x, int y) const
-	{
-		if (x < 0 || y < 0 || x >= nx || y >= ny) {
-			return 0;
-		}
-		return rdata[x + y * nx];
-	}
-
-
-	inline float EMData::get_value_at_interp(float xx, float yy) const
-	{
-		int x = static_cast < int >(floor(xx));
-		int y = static_cast < int >(floor(yy));
-
-		float p1 = sget_value_at(x, y);
-		float p2 = sget_value_at(x + 1, y);
-		float p3 = sget_value_at(x + 1, y + 1);
-		float p4 = sget_value_at(x, y + 1);
-
-		return Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
-	}
-
-	inline float EMData::get_value_at_interp(float xx, float yy, float zz) const
-	{
-		int x = (int) floor(xx);
-		int y = (int) floor(yy);
-		int z = (int) floor(zz);
-		float p1 = sget_value_at(x, y, z);
-		float p2 = sget_value_at(x + 1, y, z);
-		float p3 = sget_value_at(x, y + 1, z);
-		float p4 = sget_value_at(x + 1, y + 1, z);
-
-		float p5 = sget_value_at(x, y, z + 1);
-		float p6 = sget_value_at(x + 1, y, z + 1);
-		float p7 = sget_value_at(x, y + 1, z + 1);
-		float p8 = sget_value_at(x + 1, y + 1, z + 1);
-
-		return Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8, xx - x, yy - y, zz - z);
-	}
 
 	inline void EMData::set_value_at(int x, int y, int z, float v)
 	{
@@ -1188,7 +1292,7 @@ namespace EMAN
 
 	inline void EMData::update()
 	{
-		flags |= EMDATA_CHANGED;
+		flags |= EMDATA_NEEDUPD;
 	}
 
 
@@ -1263,24 +1367,13 @@ namespace EMAN
 		pathnum = n;
 	}
 
-	inline void EMData::set_name(const string & new_name)
-	{
-		name = new_name;
-	}
-
-	inline string EMData::get_name() const
-	{
-		return name;
-	}
-
 	inline bool EMData::has_ctff() const
 	{
-		if (name[0] == '!' && name[1] == '$') {
+		if ((flags & EMDATA_HASCTFF)) {
 			return true;
 		}
-		else {
-			return false;
-		}
+		
+		return false;
 	}
 
 	inline Ctf *EMData::get_ctf() const

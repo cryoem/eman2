@@ -27,6 +27,14 @@
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
 
+  033. in filter parameter passing from python to C++, is there a way to
+       pass EMData directly without creating EMObject object. i.e.,
+           {"with", EMObject(emdata)} => {"with", emdata}
+
+  034. in ImageIO classes, add a way to label images using EMAN1 'name'
+	   and set_name().
+
+	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
