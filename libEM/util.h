@@ -16,6 +16,20 @@ namespace EMAN {
 	static void flip_image(float* data, int nx, int ny);
 	static bool is_sub_string(const char* s1, const char* s2);
 	static string get_filename_by_ext(string old_filename, string ext);
+	
+	static inline float bilinear_interpolate(float p1, float p2, float p3, float p4, float t, float u) {
+	    return (1.0f-t)*(1.0f-u)*p1+t*(1.0f-u)*p2+t*u*p3+(1.0f-t)*u*p4;
+	}
+
+	static inline float trilinear_interpolate(float p1, float p2, float p3, float p4, float p5, float p6,
+						  float p7, float p8, float t, float u, float v) {
+	    return (1.0-t)*(1.0-u)*(1.0-v)*p1+t*(1.0-u)*(1.0-v)*p2+
+		(1.0-t)*u*(1.0-v)*p3+t*u*(1.0-v)*p4+
+		(1.0-t)*(1.0-u)*v*p5+t*(1.0-u)*v*p6+
+		(1.0-t)*u*v*p7+t*u*v*p8;
+	}
+	
+	
     };
 }
 

@@ -4,8 +4,11 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <math.h>
+
 #include "emobject.h"
 #include "emutil.h"
+#include "util.h"
 
 using std::string;
 using std::vector;
@@ -38,7 +41,6 @@ namespace EMAN {
 	float sget_value_at(int x, int y, int z);
 	float sget_value_at(int x, int y);
 
-	float get_value_at_interp(float x, float y, float z);
 	float get_value_at_interp(float x, float y);
 	
 	void set_value_at(int x, int y, int z, float v);
@@ -75,6 +77,84 @@ namespace EMAN {
 	SimpleCtf* ctf;
 	int flags;
     };
+
+    
+    inline float EMData::get_value_at(int x, int y, int z)
+    {
+	int nx = attr_dict["nx"].get_int();
+	int ny = attr_dict["ny"].get_int();
+	return rdata[x+y*nx+z*nx*ny]; 
+    }
+
+
+    inline float EMData::get_value_at(int x, int y)
+    {
+	int nx = attr_dict["nx"].get_int();
+	return rdata[x+y*nx];
+    }
+
+	
+    inline float EMData::sget_value_at(int x, int y, int z)
+    {
+	int nx = attr_dict["nx"].get_int();
+	int ny = attr_dict["ny"].get_int();
+	int nz = attr_dict["nz"].get_int();
+    
+	if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
+	    return 0;
+	}
+	return rdata[x+y*nx+z*nx*ny];
+    }
+
+    inline float EMData::sget_value_at(int x, int y)
+    {
+	int nx = attr_dict["nx"].get_int();
+	int ny = attr_dict["ny"].get_int();
+    
+	if (x < 0 || y < 0 || x >= nx || y >= ny) {
+	    return 0;
+	}
+	return rdata[x+y*nx];
+    }
+
+
+    inline float EMData::get_value_at_interp(float xx, float yy)
+    {
+	int x = static_cast<int>(floor(xx));
+	int y = static_cast<int>(floor(yy));
+
+	float v = Util::bilinear_interpolate(sget_value_at(x, y),
+					   sget_value_at(x+1, y),
+					   sget_value_at(x+1, y+1),
+					   sget_value_at(x, y+1),
+					   xx-x,
+					   yy-y);
+	return v;
+    }
+
+	
+    inline void EMData::set_value_at(int x, int y, int z, float v)
+    {
+	int nx = attr_dict["nx"].get_int();
+	int ny = attr_dict["ny"].get_int();
+	
+	rdata[x+y*nx+z*nx*ny] = v;
+	flags |= EMDATA_NEEDUPD;
+    }
+
+
+    inline void EMData::set_value_at(int x, int y, float v)
+    {
+	int nx = attr_dict["nx"].get_int();
+	
+	rdata[x+y*nx] = v;
+	flags |= EMDATA_NEEDUPD;
+    }
+
+
+
+
+    
 }
 
 #endif
