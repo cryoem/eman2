@@ -288,15 +288,24 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 			throw ImageWriteException(filename,
 									  "cannot write to single-image Spider files");
 		}
-		
-		if (nx1 != first_h->nx || ny1 != first_h->ny || nz1 != first_h->nslice) {
-			char desc[1024];
-			sprintf(desc, "new size %dx%dx%d != existing size %dx%dx%d",
-					nx1, ny1, nz1, (int)first_h->nx, 
-					(int)first_h->ny, (int)first_h->nslice);
-			throw ImageWriteException(filename, desc);
-		}
 
+        // if there is only 1 image in the file and image_index = 0,
+        // file overwriting is permitted for different-size image.
+        if ( ((int) first_h->maxim <= 1) && (image_index == 0)) {
+            first_h->nx = nx1;
+            first_h->ny = ny1;
+            first_h->nslice = nz1;
+        }
+        else {        
+            if (nx1 != first_h->nx || ny1 != first_h->ny || nz1 != first_h->nslice) {
+                char desc[256];
+                sprintf(desc, "new size %dx%dx%d != existing size %dx%dx%d",
+                        nx1, ny1, nz1, (int)first_h->nx, 
+                        (int)first_h->ny, (int)first_h->nslice);
+                throw ImageWriteException(filename, desc);
+            }
+        }
+        
 		int old_maxim = static_cast < int >(first_h->maxim);
 
 		if (image_index >= first_h->maxim) {
@@ -506,7 +515,7 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	}
 	else {
 		if(image_index != 0) {
-			char desc[1024];
+			char desc[256];
 			sprintf(desc, "image index must be 0. Your image index = %d.", image_index);
 			throw ImageReadException(filename, desc);
 		}
@@ -591,12 +600,15 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 	off_t cur_offset = (off_t) (hl + (data_size * sizeof(float) + hl) * image_index + hl);
 	portable_fseek(spider_file, cur_offset, SEEK_SET);
 
-#if 0
+#if 1
+    // with region I/O support
 	EMUtil::process_region_io(data, spider_file, WRITE_ONLY, image_index,
 							  sizeof(float), (int)cur_h->nx, (int)cur_h->ny,
 							  (int)cur_h->nslice, area);
 #endif
-#if 1
+#if 0
+    // no region I/O support. This part should be removed if the
+    // region I/O version works.
 	if (fwrite(data, sec_size, nz, spider_file) != (unsigned int) nz) {
 		throw ImageWriteException(filename, "spider writing failed");
 	}

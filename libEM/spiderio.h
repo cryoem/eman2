@@ -32,7 +32,10 @@ namespace EMAN
 	 *        of images in which each image has its own image header.
 	 *        EMAN currently only supports homogeneous image stack,
 	 *        which means all images have the same sizes. 
-	 *                 
+     *        
+     *        if there is only 1 image in the file, it can be overwritten
+     *        by a different-size image.
+     *
 	 * Record: In spider terminology, each row is called a record.
 	 *
 	 * Note: To read the overall image header in a stacked spider
@@ -166,8 +169,8 @@ namespace EMAN
 		IOMode rw_mode;
 
 		FILE *spider_file;
-		SpiderHeader *first_h;
-		SpiderHeader *cur_h;
+		SpiderHeader *first_h; // overall image header
+		SpiderHeader *cur_h;   // the current reading/writing image header
 		
 		bool is_big_endian;
 		bool initialized;
