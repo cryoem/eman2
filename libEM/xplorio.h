@@ -10,7 +10,8 @@
 
 namespace EMAN
 {
-	/** XPLOR image format
+	/** XPLOR image format is in ASCII:
+	 *
 	 * 1. header:  (note: each integer takes 8 Bytes space, each float
 	 *               is 12.5E format.)
 	 *    line 1: empty
@@ -27,6 +28,7 @@ namespace EMAN
 	 *      zindex
 	 *      nx*ny floats. each line has 6 floats. each float is in 12.5E format.
 	 *
+	 * A XPLOR file contains 1 2D or 3D image.
 	 */ 
 	
 	class XplorIO:public ImageIO

@@ -69,10 +69,15 @@ int AmiraIO::init()
 bool AmiraIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
+	bool result = false;
 	if (!first_block) {
-		return false;
+		result = false;
 	}
-	return Util::check_file_by_magic(first_block, MAGIC);
+	else {
+		result = Util::check_file_by_magic(first_block, MAGIC);
+	}
+	EXITFUNC;
+	return result;
 }
 
 int AmiraIO::read_header(Dict &, int, const Region *, bool)
@@ -84,38 +89,45 @@ int AmiraIO::read_header(Dict &, int, const Region *, bool)
 
 }
 
-int AmiraIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, bool)
 {
 	ENTERFUNC;
-	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
+	int err = 0;
+	
+	if (check_write_access(rw_mode, image_index, 1) != 0) {
+		err = 1;
 	}
-
-	nx = dict["nx"];
-	ny = dict["ny"];
-	nz = dict["nz"];
-
-	float xorigin = dict["origin_row"];
-	float yorigin = dict["origin_col"];
-	float zorigin = dict["origin_sec"];
-	float pixel = dict["pixel"];
-
-	if (fprintf(amira_file, "# AmiraMesh 3D BINARY 2.0\n\n") <= 0) {
-		LOGERR("cannot write to AmiraMesh file '%s'", filename.c_str());
-		return 1;
+	else {
+		nx = dict["nx"];
+		ny = dict["ny"];
+		nz = dict["nz"];
+			
+		float xorigin = dict["origin_row"];
+		float yorigin = dict["origin_col"];
+		float zorigin = dict["origin_sec"];
+		float pixel = dict["pixel"];
+			
+		rewind(amira_file);
+	
+		if (fprintf(amira_file, "# AmiraMesh 3D BINARY 2.0\n\n") <= 0) {
+			LOGERR("cannot write to AmiraMesh file '%s'", filename.c_str());
+			err = 1;
+		}
+		else {
+			fprintf(amira_file, "# Dimensions in x-, y-, and z-direction\n");
+			fprintf(amira_file, "define Lattice %d %d %d\n\n", nx, ny, nz);
+			fprintf(amira_file, "Parameters {\n\tCoordType \"uniform\",\n\t");
+			fprintf(amira_file, "# BoundingBox is xmin xmax ymin ymax zmin zmax\n\t");
+				
+			fprintf(amira_file, "BoundingBox %f %f %f %f %f %f\n}\n\n",
+					xorigin, xorigin + pixel * (nx - 1),
+					yorigin, yorigin + pixel * (ny - 1), zorigin, zorigin + pixel * (nz - 1));
+				
+			fprintf(amira_file, "Lattice { float ScalarField } = @1\n\n@1\n");
+		}
 	}
-
-	fprintf(amira_file, "# Dimensions in x-, y-, and z-direction\n");
-	fprintf(amira_file, "define Lattice %d %d %d\n\n", nx, ny, nz);
-	fprintf(amira_file, "Parameters {\n\tCoordType \"uniform\",\n\t");
-	fprintf(amira_file, "# BoundingBox is xmin xmax ymin ymax zmin zmax\n\t");
-
-	fprintf(amira_file, "BoundingBox %f %f %f %f %f %f\n}\n\n",
-			xorigin, xorigin + pixel * (nx - 1),
-			yorigin, yorigin + pixel * (ny - 1), zorigin, zorigin + pixel * (nz - 1));
-
-	fprintf(amira_file, "Lattice { float ScalarField } = @1\n\n@1\n");
-	return 0;
+	EXITFUNC;
+	return err;
 }
 
 int AmiraIO::read_data(float *, int, const Region *, bool)
@@ -126,22 +138,24 @@ int AmiraIO::read_data(float *, int, const Region *, bool)
 	return 1;
 }
 
-int AmiraIO::write_data(float *data, int image_index, const Region* area, bool)
+int AmiraIO::write_data(float *data, int image_index, const Region*, bool)
 {
 	ENTERFUNC;
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
-		return 1;
+	int err = 0;
+	
+	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+		err = 1;
 	}
+	else {
+		ByteOrder::become_big_endian(data, nx * ny * nz);
 
-	ByteOrder::become_big_endian(data, nx * ny * nz);
-
-	if (fwrite(data, nx * nz, ny * sizeof(float), amira_file) != ny * sizeof(float)) {
-		LOGERR("incomplete file write in AmiraMesh file");
-		return 1;
+		if (fwrite(data, nx * nz, ny * sizeof(float), amira_file) != ny * sizeof(float)) {
+			LOGERR("incomplete file write in AmiraMesh file");
+			err = 1;		
+		}
 	}
-
 	EXITFUNC;
-	return 0;
+	return err;
 }
 
 void AmiraIO::flush()

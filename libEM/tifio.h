@@ -12,7 +12,11 @@ typedef struct tiff TIFF;
 
 namespace EMAN
 {
-
+	/** TiffIO reads/writes a TIFF image. 8-bit and 16-bit TIFF images
+	 * are supported so far.
+	 *
+	 * A TIFF file contains 1 2D image.
+	*/
 	class TiffIO:public ImageIO
 	{
 	  public:

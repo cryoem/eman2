@@ -115,7 +115,7 @@ int PgmIO::init()
 		}
 		file_offset = portable_ftell(pgm_file);
 	}
-
+	EXITFUNC;
 	return 0;
 
 }
@@ -123,65 +123,72 @@ int PgmIO::init()
 bool PgmIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-	LOGDEBUG("PgmIO::is_valid()");
-	return Util::check_file_by_magic(first_block, MAGIC_BINARY);
+	bool result = Util::check_file_by_magic(first_block, MAGIC_BINARY);
+	EXITFUNC;
+	return result;
 }
 
 int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	int err = 0;
+	
 	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
-	}
-
-	int xlen = 0, ylen = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = 1;
-
-	if (datatype == PGM_UCHAR) {
-		dict["datatype"] = EMUtil::EM_UCHAR;
+	    err = 1;
 	}
 	else {
-		dict["datatype"] = EMUtil::EM_USHORT;
+		if (check_region(area, IntSize(nx, ny)) != 0) {
+			err = 1;
+		}
+		else {
+			int xlen = 0, ylen = 0;
+			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
+			
+			dict["nx"] = xlen;
+			dict["ny"] = ylen;
+			dict["nz"] = 1;
+			
+			if (datatype == PGM_UCHAR) {
+				dict["datatype"] = EMUtil::EM_UCHAR;
+			}
+			else {
+				dict["datatype"] = EMUtil::EM_USHORT;
+			}
+			
+			dict["max_gray"] = maxval;
+			dict["min_gray"] = minval;
+		}
 	}
-
-	dict["max_gray"] = maxval;
-	dict["min_gray"] = minval;
-
-	return 0;
+	EXITFUNC;
+	return err;
 }
 
-int PgmIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int PgmIO::write_header(const Dict & dict, int image_index, const Region*, bool)
 {
 	ENTERFUNC;
-
+	int err = 0;
+	
 	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
+		err = 1;
 	}
-
-	nx = dict["nx"];
-	ny = dict["ny"];
-
-	minval = dict["min_gray"];
-	maxval = dict["max_gray"];
-
-	int nz = dict["nz"];
-	if (nz != 1) {
-		LOGERR("Cannot write 3d image as PGM. Your image nz = %d", nz);
-		return 1;
+	else {
+		int nz = dict["nz"];
+		if (nz != 1) {
+			LOGERR("Cannot write 3D image as PGM. Your image nz = %d", nz);
+			err = 1;
+		}
+		else {
+			rewind(pgm_file);
+			
+			nx = dict["nx"];
+			ny = dict["ny"];
+			minval = dict["min_gray"];
+			maxval = dict["max_gray"];
+			fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
+		}
 	}
-
-	fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
-
-	return 0;
+	EXITFUNC;
+	return err;
 }
 
 int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
@@ -249,7 +256,7 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 			data[k] = static_cast < float >(sdata[k]);
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -257,7 +264,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
 		return 1;
 	}
 	portable_fseek(pgm_file, file_offset, SEEK_SET);
@@ -265,12 +272,13 @@ int PgmIO::write_data(float *data, int image_index, const Region* area, bool)
 	LOGERR("not working yet. need to normalize data before write");
 
 	//fwrite(data, nx, ny, pgm_file);
-
-	return 0;
+	EXITFUNC;
+	return 1;
 }
 
 void PgmIO::flush()
 {
+	fflush(pgm_file);
 }
 
 

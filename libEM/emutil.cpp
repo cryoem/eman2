@@ -10,7 +10,7 @@
 #include "emdata.h"
 #include "ctf.h"
 
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -582,8 +582,6 @@ int EMUtil::get_region_data(unsigned char *cdata, FILE * in, int image_index, si
 							int nx, int ny, int nz, const Region * area, bool need_flip,
 							int pre_row, int post_row)
 {
-	assert(mode_size <= sizeof(float));
-
 	int x0 = 0;
 	int y0 = 0;
 	int z0 = nz > 1 ? 0 : image_index;

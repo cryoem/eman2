@@ -94,7 +94,7 @@ EMObject::operator  const char *() const
 	return str.c_str();
 }
 
-EMObject::operator  EMData * () const
+EMObject::operator EMData * () const
 {
 	if (type != EMDATA) {
 		if (type != UNKNOWN) {

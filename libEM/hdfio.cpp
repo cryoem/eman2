@@ -10,6 +10,7 @@
 #include "emutil.h"
 #include "geometry.h"
 #include "ctf.h"
+#include "exception.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -101,7 +102,7 @@ int HdfIO::init()
 
 	H5Giterate(file, root_group_str.c_str(), NULL, file_info, &image_indices);
 	create_enum_types();
-
+	EXITFUNC;
 	return err;
 }
 
@@ -125,6 +126,7 @@ bool HdfIO::is_valid(const void *first_block)
 		delete[]signature;
 		signature = 0;
 	}
+	EXITFUNC;
 	return valid;
 }
 
@@ -176,7 +178,7 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["orientation_convention"] = (int) read_euler_attr(image_index, "orientation_convention");
 
 	dict["datatype"] = EMUtil::EM_FLOAT;
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -277,6 +279,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	}
 
 	H5Tclose(datatype);
+	EXITFUNC;
 	return 0;
 }
 
@@ -335,7 +338,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	if (dict.has_key("orientation_convention")) {
 		write_euler_attr(image_index, "orientation_convention", dict["orientation_convention"]);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -362,7 +365,7 @@ int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
 			err = 0;
 		}
 	}
-
+	EXITFUNC;
 	return err;
 }
 
@@ -694,8 +697,13 @@ int HdfIO::write_string_attr(int image_index, string attr_name, string value)
 int HdfIO::write_array_attr(int image_index, string attr_name,
 							int nitems, void *data, DataType type)
 {
-	assert(nitems > 0);
-	assert(data != 0);
+	if (nitems <= 0) {
+		return 1;
+	}
+	if (!data) {
+		throw NullPointerException("array data is NULL");
+	}
+
 	set_dataset(image_index);
 	delete_attr(attr_name);
 
@@ -886,6 +894,7 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 	}
 
 	cur_image_index = -1;
+	EXITFUNC;
 	return err;
 }
 
@@ -918,7 +927,7 @@ int HdfIO::write_ctf(const Ctf & ctf, int image_index)
 	}
 
 	cur_image_index = -1;
-
+	EXITFUNC;
 	return 0;
 }
 

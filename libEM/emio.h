@@ -12,8 +12,8 @@ namespace EMAN
 {
 	/** EmIO defines I/O operations on EM image format.
      * EM image = header + data with (data = nx * ny * nz).
-     * 3D image (nz > 1) is treated as if it has nz of 2D images, the
-     * returned header of each 2D image assumes nz=1.
+	 *
+	 * An EM image file stores 1 single 2D or 3D image.
      */
 	class EmIO:public ImageIO
 	{

@@ -4,7 +4,7 @@
 #include "imageio.h"
 #include "log.h"
 #include "geometry.h"
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -51,19 +51,21 @@ int ImageIO::check_read_access(int image_index, bool check_data, float *data)
 	}
 
 	if (check_data) {
-		assert(data != 0);
+		if (!data) {
+			throw NullPointerException("image data is NULL");
+		}
 	}
 
 	int nimg = get_nimg();
-	if (image_index < -1 || image_index >= nimg) {
-		LOGERR("Image index %d is out of valid range [-1,%d]", image_index, nimg - 1);
-		return 1;
+	if (image_index < 0 || image_index >= nimg) {
+		throw OutofRangeException(0, nimg-1, image_index, "image index");
 	}
 
 	return 0;
 }
 
-int ImageIO::check_write_access(IOMode iomode, int image_index, bool check_data, float *data)
+int ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg,
+								bool check_data, float *data)
 {
 	if (init() != 0) {
 		return 1;
@@ -74,13 +76,14 @@ int ImageIO::check_write_access(IOMode iomode, int image_index, bool check_data,
 		return 1;
 	}
 
-	if (image_index < -1) {
-		LOGERR("Invalid image index %d. it cannot be < -1.", image_index);
-		return 1;
+	if ((image_index < -1) || (max_nimg > 0 && image_index >= max_nimg)) {
+		throw OutofRangeException(-1, max_nimg - 1, image_index, "image index");
 	}
-
+	
 	if (check_data) {
-		assert(data != 0);
+		if (!data) {
+			throw NullPointerException("image data is NULL");
+		}
 	}
 
 	return 0;

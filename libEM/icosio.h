@@ -11,12 +11,16 @@
 namespace EMAN
 {
 
-	/** ICOS file format:
-	 *  1. header
-	 *  2. data: ny*nz of rows. Each row is: 
-	 *     int nx*sizeof(float), nx*float, int nx*sizeof(float)
+	/** ICOS file = header + data.
+	 *  1. header, defined in IcosHeader.
+	 *  2. data: ny*nz of rows. Each row = n1 + row-data + n2
+	 *     where n1: an integer. n1 = nx*sizeof(float).
+	 *           n2: an integer. n2 = nx*sizeof(float).
+	 *     row-data: nx number of float points.
+	 *
+	 * An Icos file stores 1 2D or 3D image.
+	 * 
 	 */
-
 	class IcosIO:public ImageIO
 	{
 	  public:

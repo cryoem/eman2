@@ -10,6 +10,8 @@
 
 namespace EMAN
 {
+	/** PIF (Purdue image format)
+	 */
 	class PifIO:public ImageIO
 	{
 	  public:
@@ -113,7 +115,7 @@ namespace EMAN
 		int to_pif_datatype(int em_datatype);
 
 	  private:
-		  string filename;
+	    string filename;
 		IOMode rw_mode;
 		PifFileHeader pfh;
 		FILE *pif_file;

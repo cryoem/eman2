@@ -6,7 +6,7 @@
 #include "geometry.h"
 #include "portable_fileio.h"
 #include "emutil.h"
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -84,7 +84,7 @@ int SpiderIO::init()
 		}
 	}
 
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -96,38 +96,42 @@ bool SpiderIO::is_valid_spider(const void *first_block)
 bool SpiderIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
+		 result = false;
+	}
+	else {
+		const float *data = static_cast < const float *>(first_block);
+		int nslice = static_cast < int >(data[0]);
+		int type = static_cast < int >(data[4]);
+		int ny = static_cast < int >(data[1]);
+		int istack = static_cast < int >(data[23]);
+
+		bool data_big_endian = ByteOrder::is_data_big_endian(&nslice);
+
+		if (data_big_endian != ByteOrder::is_host_big_endian()) {
+			ByteOrder::swap_bytes(&nslice);
+			ByteOrder::swap_bytes(&type);
+			ByteOrder::swap_bytes(&ny);
+			ByteOrder::swap_bytes(&istack);
+		}
+
+		if ((int (nslice)) !=nslice) {
+			 result = false;
+		}
+		else {
+			const int max_dim = 1 << 20;
+			int itype = static_cast < int >(type);
+			
+			if ((itype == IMAGE_2D || itype == IMAGE_3D) && (istack == STACK_OVERALL_HEADER) &&
+				(nslice > 0 && nslice < max_dim) && (ny > 0 && ny < max_dim)) {
+				 result = true;
+			}
+		}
 	}
 
-	const float *data = static_cast < const float *>(first_block);
-	int nslice = static_cast < int >(data[0]);
-	int type = static_cast < int >(data[4]);
-	int ny = static_cast < int >(data[1]);
-	int istack = static_cast < int >(data[23]);
-
-	bool data_big_endian = ByteOrder::is_data_big_endian(&nslice);
-
-	if (data_big_endian != ByteOrder::is_host_big_endian()) {
-		ByteOrder::swap_bytes(&nslice);
-		ByteOrder::swap_bytes(&type);
-		ByteOrder::swap_bytes(&ny);
-		ByteOrder::swap_bytes(&istack);
-	}
-
-	if ((int (nslice)) !=nslice) {
-		return false;
-	}
-
-	const int max_dim = 1 << 20;
-	int itype = static_cast < int >(type);
-
-	if ((itype == IMAGE_2D || itype == IMAGE_3D) && (istack == STACK_OVERALL_HEADER) &&
-		(nslice > 0 && nslice < max_dim) && (ny > 0 && ny < max_dim)) {
-		return true;
-	}
-
+	EXITFUNC;
 	return false;
 }
 
@@ -140,7 +144,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	}
 
 	if (!first_h) {
-		LOGDEBUG("empty header. nothing to read");
+		LOGERR("empty header. nothing to read");
 		return 1;
 	}
 
@@ -156,7 +160,10 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		overall_headlen = (int) first_h->headlen;
 	}
 	else {
-		assert(image_index == 0);
+		if(image_index != 0) {
+			LOGERR("image index must be 0. Your image index = %d.", image_index);
+			return 1;
+		}
 	}
 
 	int single_image_size = (int) (first_h->headlen + size * sizeof(float));
@@ -223,7 +230,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		free(cur_image_hed);
 		cur_image_hed = 0;
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -368,6 +375,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	cur_h->angvalid = 1.0;
 	cur_h->u1 = (float)irec;
 
+	EXITFUNC;
 	return 0;
 
 }
@@ -434,7 +442,8 @@ int SpiderIO::write_single_header(const Dict & dict)
 	char *pad = static_cast < char *>(calloc(pad_size, 1));
 	fwrite(pad, pad_size, 1, spider_file);
 	free(pad);
-
+	
+	EXITFUNC;
 	return 0;
 }
 
@@ -457,7 +466,10 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 		overall_headlen = (int) first_h->headlen;
 	}
 	else {
-		assert(image_index == 0);
+		if(image_index != 0) {
+			LOGERR("image index must be 0. Your image index = %d.", image_index);
+			return 1;
+		}
 	}
 
 	size_t size = static_cast < size_t > (first_h->nx * first_h->ny * first_h->nslice);
@@ -491,7 +503,7 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	int data_size = xlen * ylen * zlen;
 	become_host_endian(data, data_size);
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -516,8 +528,6 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 	int hl = static_cast < int >(cur_h->headlen);
 	int head_size = sizeof(SpiderHeader);
 	int pad_size = hl - head_size;
-
-	assert(pad_size >= 0);
 
 	char *pad = static_cast < char *>(calloc(pad_size, 1));
 	int img_size = static_cast < int >(cur_h->nx * cur_h->ny * cur_h->nslice);
@@ -555,7 +565,7 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 	swap_data(data, img_size);
 
 	free(pad);
-
+	EXITFUNC;
 	return err;
 }
 
@@ -571,9 +581,11 @@ int SpiderIO::write_single_data(float *data)
 	if (check_write_access(rw_mode, 0, true, data) != 0) {
 		return 1;
 	}
-
-	assert(first_h != 0);
-
+	if (!first_h) {
+		LOGERR("The header cannot be NULL");
+		return 1;
+	}
+	
 	if (first_h->istack != SINGLE_IMAGE_HEADER) {
 		LOGERR("cannot mix your single spider and stack spider.");
 		return 1;
@@ -588,6 +600,7 @@ int SpiderIO::write_single_data(float *data)
 		LOGERR("write data to single spider image failed");
 		return 1;
 	}
+	EXITFUNC;
 	return 0;
 }
 

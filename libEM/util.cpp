@@ -2,7 +2,6 @@
  * $Id$
  */
 #include "util.h"
-#include "assert.h"
 #include "byteorder.h"
 #include "log.h"
 

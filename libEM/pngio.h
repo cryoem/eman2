@@ -13,6 +13,9 @@
 
 namespace EMAN
 {
+	/** PngIO reads/writes a 2D PNG image. Currently 8-bit and 16-bit
+	 * PNG read/write are supported.
+	 */
 	class PngIO:public ImageIO
 	{
 	  public:

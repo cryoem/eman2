@@ -262,11 +262,13 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	EMAN::IntSize_from_python();
 	EMAN::FloatSize_from_python();
 
-	implicitly_convertible<int, EMAN::EMObject>();
-	implicitly_convertible<float, EMAN::EMObject>();
-	implicitly_convertible<double, EMAN::EMObject>();
+	//implicitly_convertible<int, EMAN::EMObject>();
+	//implicitly_convertible<float, EMAN::EMObject>();
+	//implicitly_convertible<double, EMAN::EMObject>();
 	implicitly_convertible<const char*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
+	implicitly_convertible<EMAN::EMData, EMAN::EMObject>();
+	
 	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
 }
 

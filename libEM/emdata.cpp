@@ -15,7 +15,6 @@
 
 #include <float.h>
 #include <math.h>
-#include <assert.h>
 #include <algorithm>
 
 using namespace EMAN;
@@ -2079,8 +2078,17 @@ EMObject EMData::get_attr(string key)
 void EMData::set_size(int x, int y, int z)
 {
 	ENTERFUNC;
+
+	if (x <= 0) {
+		throw InvalidValueException(x, "x size <= 0");
+	}
+	else if (y <= 0) {
+		throw InvalidValueException(y, "y size <= 0");
+	}
+	else if (z <= 0) {
+		throw InvalidValueException(z, "z size <= 0");
+	}
 	
-	assert(x > 0 && y > 0 && z > 0);
 	int old_nx = nx;
 	nx = x;
 	ny = y;
@@ -2189,7 +2197,9 @@ vector < EMData * >EMData::read_images(string filename, vector < int >img_indice
 	size_t num_img = img_indices.size();
 
 	for (size_t i = 0; i < num_img; i++) {
-		assert(img_indices[i] >= 0 && img_indices[i] < total_img);
+		if (img_indices[i] < 0 && img_indices[i] >= total_img) {
+			throw OutofRangeException(0, total_img, img_indices[i], "image index");
+		}
 	}
 
 	size_t n = num_img == 0 ? total_img : num_img;
@@ -2219,17 +2229,17 @@ vector < EMData * >EMData::read_images_ext(string filename, int img_index_start,
 										   string ext) 
 {
 	ENTERFUNC;
-	
-	assert(img_index_end >= img_index_start);
 
-	if (img_index_start < 0) {
-		img_index_start = 0;
+	if (img_index_end < img_index_start) {
+		throw InvalidValueException(img_index_end, "image index end < image index start");
 	}
-
+	
 	string new_filename = filename.insert(filename.rfind("."), ext);
 	int num_img = EMUtil::get_image_count(new_filename);
 
-	assert(img_index_start < num_img);
+	if (img_index_start < 0 || img_index_start >= num_img) {
+		throw OutofRangeException(0, num_img-1, img_index_start, "image index start");
+	}
 
 	if (img_index_end >= num_img) {
 		img_index_end = num_img - 1;
@@ -2667,10 +2677,18 @@ void EMData::rotate(const Rotation & r)
 
 void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy, float dz)
 {
-	rotate_translate(Rotation(alt, az, phi, Rotation::EMAN), Vec3 < float >(dx, dy, dz));
+	Transform t(Rotation(alt, az, phi, Rotation::EMAN), Vec3 < float >(dx, dy, dz));
+	rotate_translate(t);
 }
 
 void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&translation)
+{
+	Transform t(rotation, translation);
+	rotate_translate(t);
+}
+
+#if 0
+void EMData::rotate_translate_fast(const Rotation & rotation, const Vec3 < float >&translation)
 {
 	ENTERFUNC;
 	
@@ -2808,7 +2826,7 @@ void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&tr
 
 	EXITFUNC;
 }
-
+#endif
 
 
 void EMData::rotate_translate(const Transform & xform)
@@ -3127,13 +3145,13 @@ void EMData::mean_shrink(int shrink_factor)
 	ENTERFUNC;
 	
 	if (shrink_factor <= 1) {
-		throw ShrinkFactorException(shrink_factor, 
+		throw InvalidValueException(shrink_factor, 
 									"mean shrink: shrink factor must > 1");
 	}
 
 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
-		throw ShrinkFactorException(shrink_factor, 
+		throw InvalidValueException(shrink_factor, 
 									"Image size not divisible by shrink factor");
 	}
 
@@ -3195,14 +3213,14 @@ void EMData::median_shrink(int shrink_factor)
 	ENTERFUNC;
 	
 	if (shrink_factor <= 1) {
-		throw ShrinkFactorException(shrink_factor, 
-								 "median shrink: shrink factor must > 1");
+		throw InvalidValueException(shrink_factor, 
+									"median shrink: shrink factor must > 1");
 	}
 
 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
-		throw ShrinkFactorException(shrink_factor, 
-								 "Image size not divisible by shrink factor");
+		throw InvalidValueException(shrink_factor, 
+									"Image size not divisible by shrink factor");
 	}
 
 	int threed_shrink_factor = shrink_factor * shrink_factor;
@@ -4619,7 +4637,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 	}
 
 	if (mode < 0 || mode > 2) {
-		throw InvalidModeException(0, 2, mode,  "invalid mode");
+		throw OutofRangeException(0, 2, mode, "invalid mode");
 	}
 
 	if (!image1->is_complex()) {
@@ -5266,24 +5284,34 @@ void EMData::setup_insert_slice(int size)
 
 float EMData::sget_value_at(int x, int y, int z) const
 {
-	if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
-		throw InvalidValueException("(x,y,z) is out of range");
+	if (x < 0 || x >= nx) {
+		throw OutofRangeException(0, nx-1, x, "x");
+	}
+	else if (y < 0 || y >= ny) {
+		throw  OutofRangeException(0, ny-1, y, "y");
+	}
+	else if (z < 0 || z >= nz) {
+		throw  OutofRangeException(0, nz-1, z, "z");
 	}
 	return rdata[x + y * nx + z * nx * ny];
 }
 
 float EMData::sget_value_at(int x, int y) const
 {
-	if (x < 0 || y < 0 || x >= nx || y >= ny) {
-		throw InvalidValueException("(x,y) is out of range");
+	if (x < 0 || x >= nx) {
+		throw OutofRangeException(0, nx-1, x, "x");
+	}
+	else if (y < 0 || y >= ny) {
+		throw  OutofRangeException(0, ny-1, y, "y");
 	}
 	return rdata[x + y * nx];
 }
 
 float EMData::sget_value_at(size_t i) const
 {
-	if ((int)i >= (nx*ny*nz)) {
-		throw InvalidValueException("index is out of range");
+	size_t size = nx*ny*nz;
+	if (i >= size) {
+		throw OutofRangeException(0, (int)(size-1), int(i), "index");
 	}
 	return rdata[i];
 }

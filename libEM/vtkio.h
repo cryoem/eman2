@@ -10,6 +10,13 @@
 namespace EMAN
 {
 
+	/** VtkIO reads/writes VTK image file. VTK image file = header + data.
+	 * header is always in ASCII mode. It is in the first few lines of
+	 * the file. The data can be either ASCII or binary. When a VTK
+	 * image is written in EMAN, only binary VTK is written.
+	 *
+	 * A VTK file contains 1 2D or 3D image.
+	 */
 	class VtkIO:public ImageIO
 	{
 	  public:

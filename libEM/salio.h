@@ -10,7 +10,13 @@
 
 namespace EMAN
 {
-	// to read images from Perkin Elmer PDS Microdensitometer
+	/** A SAL image is an image from Perkin Elmer PDS Microdensitometer.
+	 * A SAL image consists of 2 files: 1 header file "X.hdr" and a
+	 * data file "X.img". Header file is in ASCII format. Data file is
+	 * in binary format.
+	 *
+	 * Each pair of hdr/img SAL files contains 1 2D image.
+	*/
 
 	class SalIO:public ImageIO
 	{
@@ -39,7 +45,7 @@ namespace EMAN
 		};
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *sal_file;
 		bool initialized;

@@ -9,6 +9,13 @@
 
 namespace EMAN
 {
+	/** A PGM file = header + data. Header is always in ASCII
+	 * format. Data can be in either ASCII or BINARY format. Only
+	 * Binary format is supported in EMAN so far.
+	 * 
+	 * A PGM file contains 1 2D image.
+	 *
+	 */
 	class PgmIO:public ImageIO
 	{
 	  public:

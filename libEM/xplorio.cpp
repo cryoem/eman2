@@ -255,7 +255,7 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
 		EXITFUNC;
 		return 1;
 	}

@@ -20,12 +20,35 @@ namespace EMAN
 	class IntSize;
 	class Ctf;
 
-	/** ImageIO is the  base class for any image io class.
+	/** ImageIO classes are designed for reading/writing various
+	 * electron micrography image formats, including MRC, IMAGIC,
+	 * SPIDER, PIF, etc. 
+	 * 
+	 * ImageIO class is the base class for all image io classes.
+	 * Each subclass defines the IO routines for reading/writing a
+	 * type of image format. For example, MrcIO is for reading/writing
+	 * MRC images.
+	 * 
      * A subclass should implement functions declared in
      * DEFINE_IMAGEIO_FUNC macro.
      *
      * Image header I/O is separated from image data I/O.
-     * valid image_index = [0, n].
+	 *
+	 * Some image formats (e.g., MRC, DM3, Gatan2, TIFF, PNG, EM, ICOS) only store a
+	 * single 2D or 3D images. For them, image_index should always be
+	 * 0. To read/write part of the image, use a region.
+	 *
+	 * Some image formats (e.g., Imagic) can store either a
+	 * stack of 2D images or a single 3D image. From the physical
+	 * image file itself, there is no difference between them. Only at
+	 * reading time, they may be treated as either a stack of 2D
+	 * images, or a single 3D image. A boolean hint should be given for these
+	 * formats at reading time.
+	 *
+	 * Some image formats (e.g. HDF) can store a stack of images. Each
+	 * image can be 2D or 3D.
+	 * 
+     * For image formats storing multiple images, valid image_index = [0, n].
 	 *
 	 * The typical way to use an ImageIO instance is:
 	 * a) To read:
@@ -141,10 +164,10 @@ namespace EMAN
 	protected:
 		virtual int init() = 0;
 		int check_read_access(int image_index, bool check_data = false, float *data = 0);
-		int check_write_access(IOMode rw_mode, int image_index, bool check_data = false,
-							   float *data = 0);
-
+		int check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0, 
+							   bool check_data = false, float *data = 0);
 		int check_region(const Region * area, const IntSize & max_size);
+		
 
 		FILE *sfopen(string filename, IOMode mode, bool * is_new = 0, bool overwrite = false);
 	};

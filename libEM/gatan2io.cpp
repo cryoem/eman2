@@ -6,7 +6,7 @@
 #include "emutil.h"
 #include "geometry.h"
 #include "portable_fileio.h"
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -59,60 +59,68 @@ int Gatan2IO::init()
 		is_big_endian = ByteOrder::is_data_big_endian(&gatanh.len);
 		become_host_endian((short *) &gatanh, sizeof(Gatan2Header) / sizeof(short));
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
 bool Gatan2IO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
+		result = false;
 	}
+	else {
+		const short *data = static_cast < const short *>(first_block);
+		short len = data[5];
+		short type = data[6];
 
-	const short *data = static_cast < const short *>(first_block);
-	short len = data[5];
-	short type = data[6];
+		bool data_big_endian = ByteOrder::is_data_big_endian(&len);
 
-	bool data_big_endian = ByteOrder::is_data_big_endian(&len);
+		if (data_big_endian != ByteOrder::is_host_big_endian()) {
+			ByteOrder::swap_bytes(&len);
+			ByteOrder::swap_bytes(&type);
+		}
 
-	if (data_big_endian != ByteOrder::is_host_big_endian()) {
-		ByteOrder::swap_bytes(&len);
-		ByteOrder::swap_bytes(&type);
+		int double_size = sizeof(double);
+		if (len > 0 && len <= double_size && type > 0 && type <= GATAN2_INVALID) {
+			result = true;
+		}
 	}
-
-	int double_size = sizeof(double);
-	if (len > 0 && len <= double_size && type > 0 && type <= GATAN2_INVALID) {
-		return true;
-	}
-	return false;
+	EXITFUNC;
+	return result;
 }
 
 int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	int err = 0;
 	if (check_read_access(image_index) != 0) {
-		return 1;
+		err = 1;
 	}
-
-	if (is_complex_mode()) {
-		LOGERR("Cannot read complex Gatan2 files");
-		return 1;
+	else {
+		if (is_complex_mode()) {
+			LOGERR("Cannot read complex Gatan2 files");
+			err = 1;
+		}
+		else {
+			if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
+				err = 1;
+			}
+			else {
+				int xlen = 0, ylen = 0;
+				EMUtil::get_region_dims(area, gatanh.nx, &xlen, gatanh.ny, &ylen);
+				
+				dict["nx"] = xlen;
+				dict["ny"] = ylen;
+				dict["nz"] = 1;
+				dict["datatype"] = to_em_datatype(gatanh.type);
+			}
+		}
 	}
-	if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
-		return 1;
-	}
-	int xlen = 0, ylen = 0;
-	EMUtil::get_region_dims(area, gatanh.nx, &xlen, gatanh.ny, &ylen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = 1;
-	dict["datatype"] = to_em_datatype(gatanh.type);
 	EXITFUNC;
-	return 0;
+	return err;
 }
 
 int Gatan2IO::write_header(const Dict &, int, const Region* area, bool)
@@ -123,7 +131,7 @@ int Gatan2IO::write_header(const Dict &, int, const Region* area, bool)
 	return 1;
 }
 
-int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
+int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
 	ENTERFUNC;
 	if (check_read_access(image_index, true, data) != 0) {
@@ -137,7 +145,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 	if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
 		return 1;
 	}
-
+	
 	portable_fseek(gatan2_file, sizeof(Gatan2Header), SEEK_SET);
 
 #if 0

@@ -6,8 +6,9 @@
 #include "log.h"
 #include "geometry.h"
 #include "emutil.h"
+#include "exception.h"
 
-#include <assert.h>
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -58,8 +59,12 @@ void TagTable::add(string name, string value)
 
 void TagTable::add_data(char *data)
 {
-	assert(data != 0);
-	data_list.push_back(data);
+	if (!data) {
+		throw NullPointerException("DM3 data is NULL");
+	}
+	else {
+		data_list.push_back(data);
+	}
 }
 
 string TagTable::get_string(string name)
@@ -113,12 +118,16 @@ char *TagTable::get_data() const
 
 void TagTable::set_thumb_index(int i)
 {
-	assert(i == 0 || i == 1);
-	if (i == 0) {
-		img_index = 1;
+	if (i != 0 && i != 1) {
+		throw OutofRangeException(0, 1, i, "image index");
 	}
 	else {
-		img_index = 0;
+		if (i == 0) {
+			img_index = 1;
+		}
+		else {
+			img_index = 0;
+		}
 	}
 }
 
@@ -258,8 +267,11 @@ string TagData::read_string(int size)
 
 int TagData::read_array_data(vector < int >item_types, bool nodata)
 {
-	LOGVAR("TagData::read_array_data()");
-	assert(item_types.size() > 0);
+	ENTERFUNC;
+	if (item_types.size() == 0) {
+		LOGERR("DM3 item types cannot be empty");
+		return 1;
+	}
 
 	int err = 0;
 	int array_size = 0;
@@ -298,7 +310,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 		}
 		else {
 			LOGERR("cannot handle this type of DM3 image data");
-			exit(1);
+			return 1;
 		}
 
 		tagtable->add_data(data);
@@ -306,7 +318,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	else {
 		portable_fseek(in, buf_size, SEEK_CUR);
 	}
-
+	EXITFUNC;
 	return err;
 }
 
@@ -402,7 +414,11 @@ int TagData::read(bool nodata)
 	fread(mark, mark_sz, 1, in);
 	mark[mark_sz] = '\0';
 
-	assert(strcmp(mark, DATA_TYPE_MARK) == 0);
+	if (strcmp(mark, DATA_TYPE_MARK) != 0) {
+		LOGERR("data type label has been changed from '%s' to '%s'",
+			   DATA_TYPE_MARK, mark);
+		return 1;
+	}
 
 	delete[]mark;
 	mark = 0;
@@ -689,52 +705,56 @@ bool DM3IO::is_image_big_endian()
 int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	int err = 0;
+	
 	if (check_read_access(image_index) != 0) {
-		return 1;
+		err = 1;
 	}
-	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
-	TagGroup root_group(dm3file, tagtable, "");
-	root_group.read(true);
-
-	int nx = tagtable->get_xsize();
-	int ny = tagtable->get_ysize();
-
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
+	else {
+		portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
+		TagGroup root_group(dm3file, tagtable, "");
+		root_group.read(true);
+		
+		int nx = tagtable->get_xsize();
+		int ny = tagtable->get_ysize();
+		
+		if (check_region(area, IntSize(nx, ny)) != 0) {
+			err = 1;
+		}
+		else {
+			int xlen = 0, ylen = 0;
+			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
+			
+			dict["nx"] = xlen;
+			dict["ny"] = ylen;
+			dict["nz"] = 1;
+			
+			dict["DM3.exposure_number"] = tagtable->get_int("Exposure Number");
+			dict["DM3.exposure_time"] = tagtable->get_double("Exposure (s)");
+			dict["DM3.zoom"] = tagtable->get_double("Zoom");
+			dict["DM3.antiblooming"] = tagtable->get_int("Antiblooming");
+			dict["DM3.magnification"] = tagtable->get_double("Indicated Magnification");
+			
+			dict["DM3.frame_type"] = tagtable->get_string("Processing");
+			dict["DM3.camera_x"] = tagtable->get_int("Active Size (pixels) #0");
+			dict["DM3.camera_y"] = tagtable->get_int("Active Size (pixels) #1");
+			dict["DM3.binning_x"] = tagtable->get_int("Binning #0");
+			dict["DM3.binning_y"] = tagtable->get_int("Binning #1");
+			dict["datatype"] = to_em_datatype(tagtable->get_datatype());
+		}
 	}
-
-	int xlen = 0, ylen = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = 1;
-
-	dict["dm3_exposure_number"] = tagtable->get_int("Exposure Number");
-	dict["dm3_exposure_time"] = tagtable->get_double("Exposure (s)");
-	dict["zoom"] = tagtable->get_double("Zoom");
-	dict["antiblooming"] = tagtable->get_int("Antiblooming");
-	dict["magnification"] = tagtable->get_double("Indicated Magnification");
-
-	dict["frame_type"] = tagtable->get_string("Processing");
-	dict["camera_x"] = tagtable->get_int("Active Size (pixels) #0");
-	dict["camera_y"] = tagtable->get_int("Active Size (pixels) #1");
-	dict["binning_x"] = tagtable->get_int("Binning #0");
-	dict["binning_y"] = tagtable->get_int("Binning #1");
-	dict["datatype"] = to_em_datatype(tagtable->get_datatype());
 	EXITFUNC;
-	return 0;
+	return err;
 }
 
-int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool is_3d)
+int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
 	if (check_read_access(image_index, true, rdata) != 0) {
 		return 1;
 	}
-	assert(is_3d == false);
+		
 	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
 
 	TagGroup root_group(dm3file, tagtable, "");

@@ -6,7 +6,7 @@
 #include "emutil.h"
 #include "portable_fileio.h"
 #include "geometry.h"
-#include <assert.h>
+
 #ifdef WIN32
 #include <time.h>
 #endif
@@ -136,34 +136,34 @@ int PifIO::init()
 			pfh.nx *= 2;
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
 bool PifIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
+	bool result = false;
+	
+	if (first_block) {
+		const int *data = static_cast < const int *>(first_block);
+		int m1 = data[0];
+		int m2 = data[1];
+		int endian = data[7];
+		bool data_big_endian = static_cast < bool > (endian);
 
-	if (!first_block) {
-		return false;
+		if (data_big_endian != ByteOrder::is_host_big_endian()) {
+			ByteOrder::swap_bytes(&m1);
+			ByteOrder::swap_bytes(&m2);
+		}
+
+		if (m1 == PIF_MAGIC_NUM && m2 == PIF_MAGIC_NUM) {
+			 result = true;
+		}
 	}
-
-	const int *data = static_cast < const int *>(first_block);
-	int m1 = data[0];
-	int m2 = data[1];
-	int endian = data[7];
-	bool data_big_endian = static_cast < bool > (endian);
-
-	if (data_big_endian != ByteOrder::is_host_big_endian()) {
-		ByteOrder::swap_bytes(&m1);
-		ByteOrder::swap_bytes(&m2);
-	}
-
-	if (m1 == PIF_MAGIC_NUM && m2 == PIF_MAGIC_NUM) {
-		return true;
-	}
-
-	return false;
+	
+	EXITFUNC;
+	return result;
 }
 
 void PifIO::fseek_to(int image_index)
@@ -175,7 +175,6 @@ void PifIO::fseek_to(int image_index)
 		image_size = pfh.nx * pfh.ny * pfh.nz;
 	}
 	else {
-		assert(pfh.nz == pfh.nimg);
 		image_size = pfh.nx * pfh.ny;
 	}
 
@@ -188,45 +187,52 @@ void PifIO::fseek_to(int image_index)
 int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	int err = 0;
+	
 	if (check_read_access(image_index) != 0) {
-		return 1;
+		err = 1;
 	}
+	else {
+		int pih_sz = sizeof(PifImageHeader);
+		fseek_to(image_index);
+	
+		PifImageHeader pih;
 
-	int pih_sz = sizeof(PifImageHeader);
-	fseek_to(image_index);
+		if (fread(&pih, pih_sz, 1, pif_file) != 1) {
+			LOGERR("read pif file '%s' failed", filename.c_str());
+			err = 1;
+		}
+		else {
+			if (check_region(area, IntSize(pih.nx, pih.ny, pih.nz)) != 0) {
+				err = 1;
+			}
+			else {
+				int xlen = 0, ylen = 0, zlen = 0;
+				EMUtil::get_region_dims(area, pih.nx, &xlen, pih.ny, &ylen, pih.nz, &zlen);
 
-	PifImageHeader pih;
+				dict["nx"] = xlen;
+				dict["ny"] = ylen;
+				dict["nz"] = zlen;
 
-	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
-		LOGERR("read pif file '%s' failed", filename.c_str());
-		return 1;
+				dict["datatype"] = to_em_datatype(pih.mode);
+
+				dict["apix_x"] = static_cast < float >(pih.xlen);
+				dict["apix_y"] = static_cast < float >(pih.ylen);
+				dict["apix_z"] = static_cast < float >(pih.zlen);
+
+				dict["minimum"] = static_cast < float >(pih.min);
+				dict["maximum"] = static_cast < float >(pih.max);
+				dict["mean"] = static_cast < float >(pih.mean);
+				dict["sigma"] = static_cast < float >(pih.sigma);
+
+				dict["origin_row"] = static_cast < float >(pih.xorigin);
+				dict["origin_col"] = static_cast < float >(pih.yorigin);
+			}
+		}
 	}
-	if (check_region(area, IntSize(pih.nx, pih.ny, pih.nz)) != 0) {
-		return 1;
-	}
-	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, pih.nx, &xlen, pih.ny, &ylen, pih.nz, &zlen);
+	EXITFUNC;
 
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = zlen;
-
-	dict["datatype"] = to_em_datatype(pih.mode);
-
-	dict["apix_x"] = static_cast < float >(pih.xlen);
-	dict["apix_y"] = static_cast < float >(pih.ylen);
-	dict["apix_z"] = static_cast < float >(pih.zlen);
-
-	dict["minimum"] = static_cast < float >(pih.min);
-	dict["maximum"] = static_cast < float >(pih.max);
-	dict["mean"] = static_cast < float >(pih.mean);
-	dict["sigma"] = static_cast < float >(pih.sigma);
-
-	dict["origin_row"] = static_cast < float >(pih.xorigin);
-	dict["origin_col"] = static_cast < float >(pih.yorigin);
-
-	return 0;
+	return err;
 }
 
 int PifIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
@@ -311,6 +317,7 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area, 
 			t->tm_mon, t->tm_mday, t->tm_year, t->tm_hour, t->tm_min);
 	fwrite(&pih, sizeof(PifImageHeader), 1, pif_file);
 
+	EXITFUNC;
 	return 0;
 }
 
@@ -372,6 +379,7 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 
 	delete[]buf;
 	buf = 0;
+	EXITFUNC;
 	return 0;
 }
 
@@ -380,7 +388,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 0, true, data) != 0) {
 		return 1;
 	}
 
@@ -402,7 +410,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area, bool)
 
 	delete[]buf;
 	buf = 0;
-
+	EXITFUNC;
 	return 0;
 }
 

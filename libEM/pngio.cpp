@@ -8,7 +8,7 @@
 #include "geometry.h"
 #include "emutil.h"
 #include "util.h"
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -145,57 +145,63 @@ int PngIO::init()
 
 		png_read_update_info(png_ptr, info_ptr);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
 bool PngIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
-	}
-
-	if (png_sig_cmp((png_byte *) first_block, (png_size_t) 0, PNG_BYTES_TO_CHECK) == 0) {
-		return true;
-	}
-	return false;
-}
-
-int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
-{
-	ENTERFUNC;
-
-
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-	assert(is_3d == false);
-	int nx1 = static_cast < int >(nx);
-	int ny1 = static_cast < int >(ny);
-	if (check_region(area, IntSize(nx1, ny1)) != 0) {
-		return 1;
-	}
-
-	int xlen = 0, ylen = 0;
-	EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = 1;
-
-	if (depth_type == PNG_CHAR_DEPTH) {
-		dict["datatype"] = EMUtil::EM_UCHAR;
-	}
-	else if (depth_type == PNG_SHORT_DEPTH) {
-		dict["datatype"] = EMUtil::EM_USHORT;
+		result = false;
 	}
 	else {
-		LOGERR("invalid PNG bit depth. don't know how to handle this png type");
+		if (png_sig_cmp((png_byte *) first_block, (png_size_t) 0, PNG_BYTES_TO_CHECK) == 0) {
+			result = true;
+		}
 	}
+	EXITFUNC;
+	return result;
+}
 
-	return 0;
+int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
+{
+	ENTERFUNC;
+	int err = 0;
+
+	if (check_read_access(image_index) != 0) {
+		err = 1;
+	}
+	else {
+		int nx1 = static_cast < int >(nx);
+		int ny1 = static_cast < int >(ny);
+		if (check_region(area, IntSize(nx1, ny1)) != 0) {
+			err = 1;
+		}
+		else {
+			int xlen = 0, ylen = 0;
+			EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
+			
+			dict["nx"] = xlen;
+			dict["ny"] = ylen;
+			dict["nz"] = 1;
+			
+			if (depth_type == PNG_CHAR_DEPTH) {
+				dict["datatype"] = EMUtil::EM_UCHAR;
+			}
+			else if (depth_type == PNG_SHORT_DEPTH) {
+				dict["datatype"] = EMUtil::EM_USHORT;
+			}
+			else {
+				LOGERR("invalid PNG bit depth. don't know how to handle this png type");
+				err = 1;
+			}
+		}
+	}
+	EXITFUNC;
+	return err;
 }
 
 int PngIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
@@ -209,8 +215,10 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	nx = (png_uint_32) (int) dict["nx"];
 	ny = (png_uint_32) (int) dict["ny"];
 	int nz = dict["nz"];
-
-	assert(nz == 1);
+	if (nz != 1) {
+		LOGERR("Only support 2D PNG file write");
+		return 1;
+	}
 
 	int bit_depth = 0;
 	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
@@ -237,18 +245,18 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	if (depth_type == PNG_SHORT_DEPTH) {
 		png_set_swap(png_ptr);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
-int PngIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
+int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
-	assert(!is_3d);
+
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
 
@@ -293,7 +301,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool is_
 	cdata = 0;
 
 	png_read_end(png_ptr, end_info);
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -301,7 +309,7 @@ int PngIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
 		return 1;
 	}
 
@@ -333,7 +341,7 @@ int PngIO::write_data(float *data, int image_index, const Region* area, bool)
 	}
 
 	png_write_end(png_ptr, info_ptr);
-
+	EXITFUNC;
 	return 0;
 }
 

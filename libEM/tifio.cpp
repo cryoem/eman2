@@ -10,7 +10,6 @@
 #include "geometry.h"
 #include <tiffio.h>
 #include <limits.h>
-#include <assert.h>
 
 using namespace EMAN;
 
@@ -90,24 +89,27 @@ int TiffIO::init()
 							 bitspersample, CHAR_BIT, (CHAR_BIT * sizeof(short)));
 		err = 1;
 	}
-
+	EXITFUNC;
 	return err;
 }
 
 bool TiffIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
+		result = false;
 	}
-
-	const char *data = static_cast < const char *>(first_block);
-
-	if ((data[0] == data[1]) && (data[0] == TIFF_LITTLE_ENDIAN || data[1] == TIFF_BIG_ENDIAN)) {
-		return true;
+	else {
+		const char *data = static_cast < const char *>(first_block);
+		
+		if ((data[0] == data[1]) && (data[0] == TIFF_LITTLE_ENDIAN || data[1] == TIFF_BIG_ENDIAN)) {
+			result = true;
+		}
 	}
-	return false;
+	EXITFUNC;
+	return result;
 }
 
 int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
@@ -164,14 +166,13 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	return 0;
 }
 
-int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_3d)
+int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
 	if (check_read_access(img_index, true, rdata) != 0) {
 		return 1;
 	}
-	assert(!is_3d);
 
 	int nx = 0;
 	int ny = 0;
@@ -205,7 +206,6 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_
 		}
 
 		int nitems = num_read / mode_size;
-		assert(nitems % nx == 0);
 		int nrows = nitems / nx;
 		total_rows += nrows;
 

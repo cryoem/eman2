@@ -10,7 +10,11 @@
 
 namespace EMAN
 {
-
+	/** EMIM image format = 1 EmimFileHeader + n x (EmimImageHeader + data).
+	 * EmimFileHeader defines the number of images 'n' in the
+	 * file. All following images have the same dimensions:nx x ny x nz.
+	 */
+	
 	class EmimIO:public ImageIO
 	{
 	  public:
@@ -37,7 +41,7 @@ namespace EMAN
 			int count;			// # images in the file (24 bits max)
 			int nx;
 			int ny;
-			int nz;				// image size (all images in 1 file same size)
+			int nz;				// image size (all images in 1 file have same size)
 			int flag;			// flags are the same as well
 			float pixel;		// pixel/voxel size in A
 			int misc[7];		// misc usage
@@ -62,7 +66,7 @@ namespace EMAN
 		};
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		EmimFileHeader efh;
 		FILE *emim_file;

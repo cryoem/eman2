@@ -11,7 +11,7 @@
 #include <sys/param.h>
 #endif
 #include <limits.h>
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -117,51 +117,55 @@ int SalIO::init()
 		err = 1;
 		return err;
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
 bool SalIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
+		result = false;
 	}
-
-	return Util::check_file_by_magic(first_block, MAGIC);
+	result = Util::check_file_by_magic(first_block, MAGIC);
+	EXITFUNC;
+	return result;
 }
 
-int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
+int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	int err = 0;
+	
 	if (check_read_access(image_index) != 0) {
-		return 1;
+		err = 1;
 	}
+	else {
+		if (check_region(area, IntSize(nx, ny)) != 0) {
+			err = 1;
+		}
+		else {
+			int xlen = 0, ylen = 0;
+			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-	assert(!is_3d);
-
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
+			dict["nx"] = xlen;
+			dict["ny"] = ylen;
+			dict["nz"] = 1;
+			dict["datatype"] = EMUtil::EM_SHORT;
+			dict["pixel"] = pixel;
+		}
 	}
-	int xlen = 0, ylen = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = 1;
-	dict["datatype"] = EMUtil::EM_SHORT;
-	dict["pixel"] = pixel;
-
-	return 0;
+	EXITFUNC;
+	return err;
 }
 
 int SalIO::write_header(const Dict &, int, const Region* area, bool)
 {
 	ENTERFUNC;
-
 	LOGWARN("SAL write is not supported.");
+	EXITFUNC;
 	return 1;
 }
 
@@ -176,8 +180,11 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 		return 1;
 	}
 
-	assert(scan_mode == NON_RASTER_SCAN);
-
+	if (scan_mode != NON_RASTER_SCAN) {
+		LOGERR("only NON_RASTER_SCAN scan mode is supported in a SAL image");
+		return 1;
+	}
+	
 	rewind(sal_file);
 
 	size_t mode_size = sizeof(short);
@@ -223,6 +230,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	for (int i = xlen * ylen - 1; i >= 0; i--) {
 		data[i] = static_cast < float >((cdata[i * 2 + 1] * UCHAR_MAX) + cdata[i * 2]);
 	}
+	EXITFUNC;
 	return 0;
 }
 
@@ -230,6 +238,7 @@ int SalIO::write_data(float *, int, const Region* area, bool)
 {
 	ENTERFUNC;
 	LOGWARN("SAL write is not supported.");
+	EXITFUNC;
 	return 1;
 }
 

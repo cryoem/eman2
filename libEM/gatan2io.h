@@ -9,6 +9,12 @@
 
 namespace EMAN
 {
+
+	/** Gatan2 Image file = header + data.
+	 * header is defined in Gatan2Header. data is nx by ny.
+	 * A Gatan2 file contains 1 2D image.
+	 */
+	   
 	class Gatan2IO:public ImageIO
 	{
 	  public:
@@ -43,7 +49,7 @@ namespace EMAN
 		int to_em_datatype(int gatan_type);
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *gatan2_file;
 		Gatan2Header gatanh;

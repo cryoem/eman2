@@ -476,14 +476,14 @@ namespace EMAN
 		/** Reduces the size of the image by a factor 
 		 * using the average value of the pixels in a block.
 		 * @param shrink_factor Image shrink factor.
-		 * @exception ShrinkFactorException If shrink factor is invalid.
+		 * @exception InvalidValueException If shrink factor is invalid.
 		 */
 		void mean_shrink(int shrink_factor);
 		
 		/* Reduces the size of the image by a factor using a local median filter.
 		 *
 		 * @param shrink_factor Image shrink factor.
-		 * @exception ShrinkFactorException If shrink factor is invalid.
+		 * @exception InvalidValueException If shrink factor is invalid.
 		 */
 		void median_shrink(int shrink_factor);
 
@@ -728,7 +728,7 @@ namespace EMAN
 		 * @param steps: 1/2 of the resolution of the map.
 		 * @param horizontal In horizontal way or not.
 		 * @exception NullPointerException If 'image1' or 'image2' is NULL.
-		 * @exception InvalidModeException If 'mode' is invalid.
+		 * @exception OutofRangeException If 'mode' is invalid.
 		 * @exception ImageFormatException If 'image1' 'image2' are
 		 * not same size.
 		 */
@@ -1029,7 +1029,7 @@ namespace EMAN
 		 * @param x The x cooridinate.
 		 * @param y The y cooridinate.
 		 * @param z The z cooridinate.
-		 * @exception InvalidValueException (x,y,z) is out of range.
+		 * @exception OutofRangeException (x,y,z) is out of range.
 		 * @return The pixel density value at coordinates (x,y,z).
 		 */
 		float sget_value_at(int x, int y, int z) const;
@@ -1039,7 +1039,7 @@ namespace EMAN
 		 *
 		 * @param x The x cooridinate.
 		 * @param y The y cooridinate.
-		 * @exception InvalidValueException (x,y) is out of range.
+		 * @exception OutofRangeException (x,y) is out of range.
 		 * @return The pixel density value at coordinates (x,y).
 		 */
 		float sget_value_at(int x, int y) const;
@@ -1050,7 +1050,7 @@ namespace EMAN
 		 * is not checked.
 		 * 
 		 * @param i  1D data array index.
-		 * @exception InvalidValueException Index i is out of range.
+		 * @exception OutofRangeException Index i is out of range.
 		 * @return The pixel density value
 		 */
 		float sget_value_at(size_t i) const;

@@ -12,7 +12,7 @@
 
 #include <math.h>
 #include <string.h>
-#include <assert.h>
+
 
 #if 0
 
@@ -48,11 +48,13 @@ MrcIO::~MrcIO()
 
 int MrcIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
-
+	
 	if (initialized) {
 		return err;
 	}
+	
 	initialized = true;
 
 	mrcfile = sfopen(filename, rw_mode, &is_new_file);
@@ -103,7 +105,7 @@ int MrcIO::init()
 			mrch.zlen = 1.0;
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -155,11 +157,11 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 			return true;
 		}
 	}
-
+	EXITFUNC;
 	return false;
 }
 
-int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
+int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
@@ -170,12 +172,6 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	if (check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz)) != 0) {
 		return 1;
 	}
-	if (area && area->get_ndim() > 2 && image_index > 0) {
-		LOGWARN("when reading 3D region in MRC, image index must be 0");
-		image_index = 0;
-	}
-
-	assert(is_3d == false);
 
 	dict["apix_x"] = mrch.xlen / (mrch.nx - 1);
 	dict["apix_y"] = mrch.ylen / (mrch.ny - 1);
@@ -252,7 +248,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 		sprintf(label, "MRC.label%d", i);
 		dict[string(label)] = mrch.labels[i];
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -260,7 +256,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, 
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index) != 0) {
+	if (check_write_access(rw_mode, image_index, 1) != 0) {
 		return 1;
 	}
 
@@ -372,10 +368,11 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, 
 
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
+	EXITFUNC;
 	return 0;
 }
 
-int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is_3d)
+int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
@@ -383,15 +380,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 		return 1;
 	}
 
-	assert(!is_3d);
-
 	if (area && is_complex_mode()) {
 		LOGERR("Error: cannot read a region of a complex image.");
 		return 1;
-	}
-	if (area && area->get_ndim() > 2 && image_index > 0) {
-		LOGWARN("when reading 3D region in MRC, image index must be 0");
-		image_index = 0;
 	}
 
 	if (check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz)) != 0) {
@@ -401,7 +392,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 	unsigned char *cdata = (unsigned char *) rdata;
 	short *sdata = (short *) rdata;
 
-	portable_fseek(mrcfile, sizeof(MrcHeader) + mrch.nsymbt, SEEK_SET);
+	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
 	int err = EMUtil::get_region_data(cdata, mrcfile, image_index, mode_size,
 									  mrch.nx, mrch.ny, mrch.nz, area);
@@ -439,7 +430,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 		Util::ap2ri(rdata, size);
 		Util::flip_complex_phase(rdata, size);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -447,7 +438,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
 		return 1;
 	}
 
@@ -468,8 +459,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	}
 
 	int nz1 = nz;
+	
+	portable_fseek(mrcfile, sizeof(MrcHeader) + nx * ny * image_index * mode_size, SEEK_SET);
 	if (image_index > 0) {
-		portable_fseek(mrcfile, nx * ny * image_index * mode_size, SEEK_CUR);
 		nz1 = 1;
 	}
 
@@ -555,8 +547,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	}
 #endif
 #endif
-	
-	//fflush(mrcfile);
+	EXITFUNC;
 	return 0;
 }
 
@@ -585,7 +576,7 @@ int MrcIO::read_ctf(Ctf & ctf, int)
 	if (strncmp(&mrch.labels[0][0], CTF_MAGIC, n) == 0) {
 		err = ctf.from_string(string(&mrch.labels[0][n]));
 	}
-
+	EXITFUNC;
 	return err;
 }
 
@@ -605,7 +596,7 @@ int MrcIO::write_ctf(const Ctf & ctf, int)
 		LOGERR("cannot write MRC header to file '%s'", filename.c_str());
 		return 1;
 	}
-
+	EXITFUNC;
 	return 0;
 }
 

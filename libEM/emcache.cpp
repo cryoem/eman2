@@ -3,7 +3,7 @@
  */
 #include "emcache.h"
 #include "imageio.h"
-#include <assert.h>
+
 
 #ifdef WIN32
 #define access _access

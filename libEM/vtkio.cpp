@@ -123,14 +123,17 @@ int VtkIO::init()
 	}
 
 	file_offset = portable_ftell(vtk_file);
-
+	EXITFUNC;
 	return 0;
 }
 
 
 bool VtkIO::is_valid(const void *first_block)
 {
-	return Util::check_file_by_magic(first_block, MAGIC);
+	ENTERFUNC;
+	bool result = Util::check_file_by_magic(first_block, MAGIC);
+	EXITFUNC;
+	return result;
 }
 
 int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
@@ -165,7 +168,7 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int VtkIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int VtkIO::write_header(const Dict & dict, int image_index, const Region*, bool)
 {
 	ENTERFUNC;
 
@@ -240,7 +243,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	delete[]buf;
 	buf = 0;
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -263,7 +266,7 @@ int VtkIO::write_data(float *data, int image_index, const Region* area, bool)
 	if (swapped) {
 		ByteOrder::swap_bytes(data, nx * ny * nz);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 

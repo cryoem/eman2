@@ -99,42 +99,31 @@ namespace EMAN {
 	class _InvalidValueException : public Exception
 	{
 	public:
-		_InvalidValueException(const string& file = "unknown",
+		_InvalidValueException(int val, const string& file = "unknown",
 							   int line = 0, const string& desc = "")
-			: Exception(file, line, desc) {}
-	};
-#define InvalidValueException(desc) _InvalidValueException(__FILE__, __LINE__, desc)
-	
-	
-	class ShrinkFactorException : public Exception
-	{
-	public:
-		ShrinkFactorException(int sf, const string& file = "unknown",
-							  int line = 0, const string& desc = "")
 			: Exception(file, line, desc)
 		{
 			char s[32];
-			sprintf(s, "%d", sf);
+			sprintf(s, "%d", val);
 			objname = string(s);
 		}
 	};
-
+#define InvalidValueException(val, desc) _InvalidValueException(val, __FILE__, __LINE__, desc)
 	
-	class InvalidModeException : public Exception
+	class _OutofRangeException : public Exception
 	{
 	public:
-		InvalidModeException(int low_mode, int high_mode, int wrong_mode,
+		_OutofRangeException(int low, int high, int input,
 							 const string& file = "unknown",
-							 int line = 0, const string& desc = "")
+							 int line = 0, const string& objname = "")
 			: Exception(file, line, desc)
 		{
 			char s[128];
-			sprintf(s, "mode %d out of range [%d,%d]",
-					wrong_mode, low_mode, high_mode);
-			objname = string(s);
+			sprintf(s, "%d out of range [%d,%d]", input, low, high);
+			desc = string(s);
 		}
 	};
-					
+#define OutofRangeException(low, high, input, objname) _OutofRangeException(low, high, input,  __FILE__, __LINE__, objname)
 
 }
     

@@ -15,6 +15,11 @@ using std::vector;
 
 namespace EMAN
 {
+	/** HDF5 (hiearchical data format version 5) is supported in
+	 * HdfIO.
+	 *
+	 * A HDF5 file may contains multiple 2D or 3D images.
+	 */
 	class HdfIO:public ImageIO
 	{
 	  public:

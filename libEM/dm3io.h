@@ -201,6 +201,18 @@ namespace EMAN
 		const char *to_str(Gatan::DataType::GatanDataType type);
 	}
 
+	/** Gatan DM3 file is a hierarchical binary image
+	 * format. Everything in the image is a <key, value> pair, where
+	 * key may be a container-type key which contains more key/value
+	 * pairs. To read its header information, the whole file has to be
+	 * parsed. During parsing, we check the keys that we are
+	 * interested in and get their values.
+	 *
+	 * The real binary data itself is also in this key/value
+	 * hierarchy.
+	 *
+	 * 1 Gatan DM3 file contains 1 2D image.
+	*/
 
 	class DM3IO:public ImageIO
 	{

@@ -20,14 +20,14 @@ namespace EMAN
 	 * pixels per row. The data is (nx * ny * nslice) of floating numbers,
 	 * where ny is number of rows per slice. nslice is number of slices.
 	 *
-	 * Spider image can be simple 2D/3D non-stack file, called single-spider.
-	 * Single-spider image = header + data.
+	 * There are 2 spider image formats:
 	 *
-	 * It can also be an image stack. In the image stack, there is one
-	 * overall stack header followed by a stack of images in
-	 * which each image has its own image header.
+	 *  - single-spider. It is simple 2D/3D non-stack file. image = header + data.
 	 *
-	 * In spider terminology, each row is called a record.
+	 *  - image stack. There is one overall stack header followed by a stack 
+	 *                 of images in which each image has its own image header.
+	 *
+	 * Record: In spider terminology, each row is called a record.
 	 *
 	 */
 		

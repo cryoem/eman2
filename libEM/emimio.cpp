@@ -143,8 +143,12 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 		err = 1;
 	}
 	else {
+		off_t imgsize = efh.nx * efh.ny * efh.nz * sizeof(float) + sizeof(EmimImageHeader);
+		off_t offset = sizeof(EmimFileHeader) + imgsize * (image_index+1);
+		portable_fseek(emim_file, offset, SEEK_SET);
+		
 		unsigned char *cdata = (unsigned char *) data;
-		err = EMUtil::get_region_data(cdata, emim_file, image_index, sizeof(float),
+		err = EMUtil::get_region_data(cdata, emim_file, 0, sizeof(float),
 									  efh.nx, efh.ny, efh.nz, area);
 		if (err) {
 			err = 1;

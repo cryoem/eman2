@@ -11,6 +11,14 @@
 namespace EMAN
 {
 
+	/** Amira file = ASCII header + binary data.
+	 * Its first line has some magic
+	 * name to label it as an Amira image. The first few lines of the
+	 * file is the ASCII header. Followed the header is the data in
+	 * binary format. The data has nx x ny x nz pixels.
+	 *
+	 * An Amira file has only 1 2D or 3D image.
+	 */
 	class AmiraIO:public ImageIO
 	{
 	  public:
@@ -21,7 +29,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *amira_file;
 

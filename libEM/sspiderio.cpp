@@ -5,7 +5,7 @@
 #include "log.h"
 #include "geometry.h"
 #include "portable_fileio.h"
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -21,23 +21,21 @@ SingleSpiderIO::~SingleSpiderIO()
 
 int SingleSpiderIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	ENTERFUNC;
-	assert(image_index == 0);
 	return write_single_header(dict);
 }
 
 int SingleSpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	ENTERFUNC;
-	assert(image_index == 0);
 	return write_single_data(data);
 }
 
 bool SingleSpiderIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
+		result = false;
 	}
 
 	const float *data = static_cast < const float *>(first_block);
@@ -56,7 +54,7 @@ bool SingleSpiderIO::is_valid(const void *first_block)
 	}
 
 	if ((int (nslice)) !=nslice) {
-		return false;
+		result = false;
 	}
 
 	const int max_dim = 1 << 20;
@@ -64,9 +62,10 @@ bool SingleSpiderIO::is_valid(const void *first_block)
 
 	if ((itype == IMAGE_2D || itype == IMAGE_3D) && (istack == SINGLE_IMAGE_HEADER) &&
 		(nslice > 0 && nslice < max_dim) && (ny > 0 && ny < max_dim)) {
-		return true;
+		result = true;
 	}
 
+	EXITFUNC;
 	return false;
 }
 

@@ -6,7 +6,6 @@
 
 #include <stdlib.h>
 #include <string>
-#include <assert.h>
 #include <map>
 
 using std::string;
@@ -53,7 +52,6 @@ namespace EMAN
 			for (int i = 0; i < nitems; i++)
 			{
 				if (name_cache[i] == itemname) {
-					assert(item_cache[i] != 0);
 					result = item_cache[i];
 					break;
 				}

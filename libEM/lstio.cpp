@@ -17,7 +17,6 @@
 #define MAXPATHLEN 1024
 #endif
 
-#include <assert.h>
 
 using namespace EMAN;
 
@@ -85,19 +84,24 @@ int LstIO::init()
 		}
 		rewind(lst_file);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
 bool LstIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-
+	bool result = false;
+	
 	if (!first_block) {
-		return false;
+		result = false;
 	}
-
-	return Util::check_file_by_magic(first_block, MAGIC);
+	else {
+		result = Util::check_file_by_magic(first_block, MAGIC);
+	}
+	
+	EXITFUNC;
+	return result;
 }
 
 int LstIO::calc_ref_image_index(int image_index)
@@ -183,13 +187,13 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	}
 
 	int ref_image_index = calc_ref_image_index(image_index);
-	assert(imageio != 0);
+	
 	int err = imageio->read_header(dict, ref_image_index, area, is_3d);
 	EXITFUNC;
 	return err;
 }
 
-int LstIO::write_header(const Dict &, int, const Region* area, bool)
+int LstIO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("LST write header is not supported.");
@@ -206,13 +210,13 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 	}
 
 	int ref_image_index = calc_ref_image_index(image_index);
-	assert(imageio != 0);
+	
 	int err = imageio->read_data(data, ref_image_index, area, is_3d);
 	EXITFUNC;
 	return err;
 }
 
-int LstIO::write_data(float *, int, const Region* area, bool)
+int LstIO::write_data(float *, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("LST write data is not supported.");
@@ -239,6 +243,6 @@ int LstIO::get_nimg()
 	if (init() != 0) {
 		return 0;
 	}
-	assert(nimg > 0);
+
 	return nimg;
 }

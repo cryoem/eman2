@@ -10,6 +10,11 @@
 
 namespace EMAN
 {
+	/** A LST file is an ASCII file that contains a list of image
+	 * file names. Each line of a LST file has an image file name.
+	*/
+		
+		
 	class LstIO:public ImageIO
 	{
 	  public:
@@ -20,7 +25,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *lst_file;
 

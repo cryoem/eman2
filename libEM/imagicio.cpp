@@ -8,7 +8,7 @@
 #include "emutil.h"
 #include "geometry.h"
 #include "ctf.h"
-#include <assert.h>
+
 #include <time.h>
 
 using namespace EMAN;
@@ -96,7 +96,7 @@ int ImagicIO::init()
 		make_header_host_endian(imagich);
 		rewind(hed_file);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -128,14 +128,17 @@ bool ImagicIO::is_valid(const void *first_block)
 	}
 
 	const int max_dim = 1 << 20;
-
+	bool result = false;
+	
 	if (headrec == 1 &&
 		count >= 0 && count < max_dim &&
 		nx > 0 && nx < max_dim &&
 		ny > 0 && ny < max_dim && month >= 0 && month <= 12 && hour >= 0 && hour <= 24) {
-		return true;
+		result = true;
 	}
-	return false;
+	
+	EXITFUNC;
+	return result;
 }
 
 int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
@@ -207,7 +210,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["IMAGIC.oldav"] = hed.oldav;
 	dict["IMAGIC.label"] = hed.label;
 	dict["IMAGIC.mrc2"] = hed.mrc2;
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -345,7 +348,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* are
 			swap_header(new_hed);
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -413,7 +416,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 		LOGERR("unknown imagic data type");
 		return 1;
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -462,7 +465,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 	if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
 		ByteOrder::swap_bytes(data, imagich.nx * imagich.ny);
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -484,7 +487,7 @@ int ImagicIO::read_ctf(Ctf & ctf, int)
 	if (strncmp(imagich.label, CTF_MAGIC, n) == 0) {
 		err = ctf.from_string(string(&imagich.label[n]));
 	}
-
+	EXITFUNC;
 	return err;
 }
 
@@ -505,7 +508,7 @@ int ImagicIO::write_ctf(const Ctf & ctf, int)
 		LOGERR("cannot write Imagic header to file '%s'", hed_filename.c_str());
 		return 1;
 	}
-
+	EXITFUNC;
 	return 0;
 }
 

@@ -6,7 +6,7 @@
 #include "portable_fileio.h"
 #include "emutil.h"
 #include "geometry.h"
-#include <assert.h>
+
 
 using namespace EMAN;
 
@@ -125,7 +125,7 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 	return false;
 }
 
-int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
+int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
@@ -136,17 +136,12 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is
 		return 1;
 	}
 
-	int nimg = 1;
-	if (is_3d) {
-		nimg = emh.nz;
-	}
-
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, nimg, &zlen);
+	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, emh.nz, &zlen);
 
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
-	dict["nz"] = 1;
+	dict["nz"] = zlen;
 	dict["datatype"] = to_em_datatype(emh.data_type);
 	EXITFUNC;
 	return 0;
@@ -157,26 +152,33 @@ int EmIO::write_header(const Dict & dict, int image_index, const Region* area, b
 	ENTERFUNC;
 	int err = 0;
 	
-	if (check_write_access(rw_mode, image_index) != 0) {
+	if (check_write_access(rw_mode, image_index, 1) != 0) {
 		err = 1;
 	}
 	else {
-		emh.machine = static_cast < char >(get_machine_type());
-		emh.nx = dict["nx"];
-		emh.ny = dict["ny"];
-		emh.nz = dict["nz"];
-		emh.data_type = EM_EM_FLOAT;
-
-		if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-			LOGERR("cannot write header to file '%s'", filename.c_str());
+		if (area) {
+			LOGERR("region write is not supported yet");
 			err = 1;
+		}
+		else {
+			emh.machine = static_cast < char >(get_machine_type());
+			emh.nx = dict["nx"];
+			emh.ny = dict["ny"];
+			emh.nz = dict["nz"];
+			emh.data_type = EM_EM_FLOAT;
+			
+			rewind(em_file);
+			if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
+				LOGERR("cannot write header to file '%s'", filename.c_str());
+				err = 1;
+			}
 		}
 	}
 	EXITFUNC;
 	return err;
 }
 
-int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
+int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
@@ -188,25 +190,17 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 		return 1;
 	}
 
-	int nimg = 1;
-	if (is_3d) {
-		image_index = 0;
-		nimg = emh.nz;
-	}
-
-	size_t header_sz = sizeof(EMHeader);
-	off_t file_offset = header_sz + emh.nx * emh.ny * mode_size * image_index;
-	portable_fseek(em_file, file_offset, SEEK_SET);
+	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
 
 	unsigned char *cdata = (unsigned char *) data;
 	int err = EMUtil::get_region_data(cdata, em_file, image_index, mode_size,
-									  emh.nx, emh.ny, nimg, area);
+									  emh.nx, emh.ny, emh.nz, area);
 	if (err) {
 		return 1;
 	}
 
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, nimg, &zlen);
+	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, emh.nz, &zlen);
 
 	int total_sz = xlen * ylen * zlen;
 
@@ -251,22 +245,32 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 int EmIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
-
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
-		return 1;
+	int err = 0;
+	
+	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+		err = 1;
 	}
-
-	int sec_size = emh.nx * emh.ny;
-	int row_size = sizeof(float) * emh.nx;
-
-	for (int i = 0; i < emh.nz; i++) {
-		int k = i * sec_size;
-		for (int j = 0; j < emh.ny; j++) {
-			fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
+	else {
+		if (area) {
+			LOGERR("region write is not supported yet");
+			err = 1;
+		}
+		else {
+			portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
+			
+			int sec_size = emh.nx * emh.ny;
+			int row_size = sizeof(float) * emh.nx;
+			
+			for (int i = 0; i < emh.nz; i++) {
+				int k = i * sec_size;
+				for (int j = 0; j < emh.ny; j++) {
+					fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
+				}
+			}
 		}
 	}
 	EXITFUNC;
-	return 0;
+	return err;
 }
 
 void EmIO::flush()
@@ -293,7 +297,7 @@ int EmIO::get_nimg()
 		return 0;
 	}
 
-	return emh.nz;
+	return 1;
 }
 
 int EmIO::to_em_datatype(char t)
