@@ -38,7 +38,7 @@ namespace EMAN {
 	    
 	    for (int i = 0; i < nitems; i++) {
 		if (name_cache[i] == itemname) {
-		    assert(item_cache[i]);
+		    assert(item_cache[i] != 0);
 		    result = item_cache[i];
 		    break;
 		}

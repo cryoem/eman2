@@ -140,7 +140,7 @@ namespace EMAN { namespace Gatan {
     
     class DataType {
     public:
-	enum Type {
+	enum GatanDataType {
 	    NULL_DATA,
 	    SIGNED_INT16_DATA,
 	    REAL4_DATA,
@@ -183,9 +183,9 @@ namespace EMAN { namespace Gatan {
     };
 
     int to_em_datatype(int gatan_datatype);
-    const char* to_str(TagData::Type type);
-    const char* to_str(TagEntry::EntryType type);
-    const char* to_str(DataType::Type type);
+    const char* to_str(Gatan::TagData::Type type);
+    const char* to_str(Gatan::TagEntry::EntryType type);
+    const char* to_str(Gatan::DataType::GatanDataType type);
 }
     
 
