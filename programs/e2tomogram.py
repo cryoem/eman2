@@ -9,26 +9,31 @@ from math import *
 import os
 import sys
 
-def matrixalign(im1,im2,box,padbox,debug=0) :
+def matrixalign(im1,im2,box,padbox,maxrange=64,debug=0) :
 	"""This will calculate a set of alignment vectors between two images
 box is the size of the area used to find the alignment vectors, padbox
 is the size of the expanded box to search for the smaller box in.
-returns a list of tuples :  (I,x,y,dx,dy)  where I is the alignment peak
-intensity."""
+returns a dict of tuples :  (I,x,y,dx,dy)  where I is the alignment peak
+intensity. The key is the box number centered on the origin, ie - (0,0)
+is the alignment of the center of the image (1,0) is one box to the right
+of the center. maxrange allows calculating a limited distance from the center"""
 	sx=im1.get_xsize()
 	sy=im1.get_ysize()
 	bigpad=(padbox-box)/2
-	nx=int((sx-2*bigpad)/box)*2
-	ny=int((sy-2*bigpad)/box)*2
-	
-	ret=[]
+	nx=int((sx-2*bigpad)/box)*2-1	# this insures that we have a box at the origin
+	ny=int((sy-2*bigpad)/box)*2-1
+	dx=(sx-padbox)/float(nx-1)
+	dy=(sy-padbox)/float(ny-1)
+	ret={}
 	for y in range(ny):
 		for x in range(nx):
-			clip2=im2.get_clip(Region(x*box/2,y*box/2,padbox,padbox))
+			if (abs(x-nx/2-1)>maxrange or abs(y-ny/2-1)>maxrange) : continue
+			
+			clip2=im2.get_clip(Region(int(x*dx),int(y*dy),padbox,padbox))
 			# if there are zeroes in the clipped area we don't want to do correlations here
 #			if float(clip2.get_attr("mean"))!=float(clip2.get_attr("mean_nonzero")) # continue
 			
-			clip1=im1.get_clip(Region(x*box/2,y*box/2,padbox,padbox))
+			clip1=im1.get_clip(Region(int(x*dx),int(y*dy),padbox,padbox))
 			
 			# mask out the center of im1 and find it within im2
 			
@@ -60,7 +65,7 @@ intensity."""
 				ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
 			
-			ret.append((float(ccf.get_attr("maximum")),x*box+bigpad/2-sx/2,y*box+bigpad/2-sy/2,maxloc[0]-padbox/2,maxloc[1]-padbox/2))
+			ret[(x-nx/2-1,y-ny/2-1)]=((float(ccf.get_attr("maximum")),x*box+bigpad/2-sx/2,y*box+bigpad/2-sy/2,maxloc[0]-padbox/2,maxloc[1]-padbox/2))
 
 	return ret
 	
@@ -98,12 +103,8 @@ Processes a tomographic tilt series"""
 	parser.add_option("--box","-B", type="int", help="Box size for alignment probe (pixels), default=96",default=96.0)
 	parser.add_option("--highpass",type="float",help="Highpass Gaussian filter radius (pixels), default none", default=-1.0)
 	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian filter radius (pixels), default none",default=-1.0)
-#	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-#	parser.add_option("--res", "-R", type="float", help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
-#	parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
+	parser.add_option("--mode",type="string",help="centering mode 'modeshift' or 'censym'",default="censym")
 #	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
-#	parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
-#	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -133,23 +134,61 @@ Processes a tomographic tilt series"""
 		if options.highpass>0 : im2.filter("HighpassGauss",{"highpass":options.highpass})
 		if (options.lowpass>0) : im2.filter("LowpassGauss",{"lowpass":options.lowpass})
 		
-		vec=matrixalign(im1,im2,options.box,options.box+options.maxshift*2,i[0]==63)
 		
-		vec.sort()			# sort in order of peak height
-		vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
-		
-		vec3=[(hypot(x[1],x[2]),x[0],x[1],x[2],x[3],x[4]) for x in vec2]
-		vec3.sort()					# sort in order of distance from center
-		vec4=vec3[:len(vec3)/2]		# take the 1/2 closest to the center
-#		vec4=vec3
-#		for x in vec4: print x
-		
-		dxs=[int(x[4]) for x in vec4]
-		dys=[int(x[5]) for x in vec4]
-		
-		best=(mode(dxs),mode(dys))
-	
-		print i,best
+		if options.mode=="modeshift" :
+			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift*2,debug=i[0]==63)
+			vec=dct.values()
+			vec.sort()			# sort in order of peak height
+			vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
+			
+			vec3=[(hypot(x[1],x[2]),x[0],x[1],x[2],x[3],x[4]) for x in vec2]
+			vec3.sort()					# sort in order of distance from center
+			vec4=vec3[:len(vec3)/2]		# take the 1/2 closest to the center
+	#		vec4=vec3
+	#		for x in vec4: print x
+			
+			dxs=[int(x[4]) for x in vec4]
+			dys=[int(x[5]) for x in vec4]
+			
+			best=(mode(dxs),mode(dys))
+		elif options.mode=="censym" :
+			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift*2,2)
+			pairs=[]
+			for x in range(3):
+				for y in range(-2,3):
+					if y<=0 and x==0 : continue
+					a=dct[(x,y)]
+					b=dct[(-x,-y)]
+					if hypot(a[3]-b[3],a[4]-b[4])>6.0 : continue
+					pairs.append((x,y,(a[3]+b[3])/2.0,(a[4]+b[4])/2.0,hypot(a[3]-b[3],a[4]-b[4])))
+#					print "%d,%d\t%5.2f %5.2f\t%5.2f"%(pairs[-1][0],pairs[-1][1],pairs[-1][2],pairs[-1][3],pairs[-1][4])
+			
+			if len(pairs)==0 : 
+				print "Alignment failed on image %d (%d)"%(i[1],i[0])
+				if (i[0]>0) : cmplist.append((i[0]-1,i[1]))
+				else : cmplist.append((i[0]+1,i[1]))
+				best=(0,0)
+			else :
+				# start by finding the average pair-matched shift
+				sum=[0,0]
+				norm=0
+				for p in pairs:
+					sum[0]+=p[2]*(1.0/(1.0+p[4]))
+					sum[1]+=p[3]*(1.0/(1.0+p[4]))
+					norm+=(1.0/(1.0+p[4]))
+				best=(sum[0]/norm,sum[1]/norm)
+
+				# now do it again, but exclude any outliers from the average
+				sum=[0,0]
+				norm=0
+				for p in pairs:
+					if hypot(p[2]-best[0],p[3]-best[1])>5.0 :continue
+					sum[0]+=p[2]*(1.0/(1.0+p[4]))
+					sum[1]+=p[3]*(1.0/(1.0+p[4]))
+					norm+=(1.0/(1.0+p[4]))
+					best=(sum[0]/norm,sum[1]/norm)
+					
+		print "%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1])
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
 		im2.write_image(args[1],i[1])
 			
