@@ -5,12 +5,33 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <assert.h>
 
 using std::vector;
 using std::string;
 using std::map;
 
 using namespace EMAN;
+
+int TestUtil::ti[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+float TestUtil::tf[] = {1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5};
+const char *TestUtil::ts[] = {"aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh", "ii", "jj"};
+
+
+int TestUtil::get_debug_int(int i)
+{
+	return ti[i];
+}
+
+float TestUtil::get_debug_float(int i)
+{
+	return tf[i];
+}
+
+const char* TestUtil::get_debug_string(int i)
+{
+	return ts[i];
+}
 
 const char* TestUtil::get_debug_image(const char* imagename)
 {
@@ -65,67 +86,59 @@ void TestUtil::to_emobject(const Dict& d)
 }
 
 
-void TestUtil::to_IntPoint(const IntPoint & p)
+IntPoint TestUtil::test_IntPoint(const IntPoint & p)
 {
+	assert(p[0] == ti[0]);
+	assert(p[1] == ti[1]);
+	assert(p[2] == ti[2]);
 	printf("IntPoint p = (%d, %d, %d)\n", p[0], p[1], p[2]);
+	return IntPoint(ti[0], ti[1], ti[2]);
 }
 
-
-IntPoint TestUtil::from_IntPoint()
+FloatPoint TestUtil::test_FloatPoint(const FloatPoint & p)
 {
-	return IntPoint(10, 20, 30);
-}
-
-
-void TestUtil::to_FloatPoint(const FloatPoint & p)
-{
+	assert(p[0] == tf[0]);
+	assert(p[1] == tf[1]);
+	assert(p[2] == tf[2]);
 	printf("FloatPoint p = (%f, %f, %f)\n", p[0], p[1], p[2]);
+	return FloatPoint(tf[0], tf[1], tf[2]);
 }
 
-FloatPoint TestUtil::from_FloatPoint()
-{
-	return FloatPoint(1.1, 2.2, 3.3);
-}
 	
-void TestUtil::to_IntSize(const IntSize & p)
+IntSize TestUtil::test_IntSize(const IntSize & p)
 {
+	assert(p[0] == ti[0]);
+	assert(p[1] == ti[1]);
+	assert(p[2] == ti[2]);
 	printf("IntSize p = (%d, %d, %d)\n", p[0], p[1], p[2]);
+	return IntSize(ti[0], ti[1], ti[2]);
 }
 
-IntSize TestUtil::from_IntSize()
-{
-	return IntSize(10, 20, 30);
-}
 
-void TestUtil::to_FloatSize(const FloatSize & p)
+FloatSize TestUtil::test_FloatSize(const FloatSize & p)
 {
+	assert(p[0] == tf[0]);
+	assert(p[1] == tf[1]);
+	assert(p[2] == tf[2]);
 	printf("FloatSize p = (%f, %f, %f)\n", p[0], p[1], p[2]);
+	return FloatSize(tf[0], tf[1], tf[2]);
 }
 
-FloatSize TestUtil::from_FloatSize()
-{
-	return FloatSize(1.1, 2.2, 3.3);
-}
 
-void TestUtil::to_Vec3f(const Vec3f & p)
+Vec3i TestUtil::test_Vec3i(const Vec3i & p)
 {
-	printf("Vec3f p = (%f, %f, %f)\n", p[0], p[1], p[2]);
-}
-
-Vec3f TestUtil::from_Vec3f()
-{
-	return Vec3f(1.1, 2.2, 3.3);
-}
-
-void TestUtil::to_Vec3i(const Vec3i & p)
-{
+	assert(p[0] == ti[0]);
+	assert(p[1] == ti[1]);
+	assert(p[2] == ti[2]);
 	printf("Vec3i p = (%d, %d, %d)\n", p[0], p[1], p[2]);
+	return Vec3i(ti[0], ti[1], ti[2]);
 }
 
-Vec3i TestUtil::from_Vec3i()
+Vec3f TestUtil::test_Vec3f(const Vec3f & p)
 {
-	return Vec3i(10, 20, 30);
+	assert(p[0] == tf[0]);
+	assert(p[1] == tf[1]);
+	assert(p[2] == tf[2]);
+	printf("Vec3f p = (%f, %f, %f)\n", p[0], p[1], p[2]);
+	return Vec3f(tf[0], tf[1], tf[2]);
 }
-
-
-
