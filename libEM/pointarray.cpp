@@ -1149,6 +1149,69 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 #endif
 }
 
+#ifdef OPTPP
+#include "NLF.h"
+#include "BoundConstraint.h
+#include "OptCG.h"
+#include "newmatap.h"
+
+vector<EMData*> optdata;
+PointArray *optobj;
+
+void init_opt_proj(int ndim, ColumnVector& x)
+{
+int i;
+double data=optobj->get_points_array();
+
+for (i=0; i<ndim; i++) x(i+1)=data[i];
+}
+
+void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
+{
+	int i;
+	PointArray pa;
+	
+	
+	pa.set_from(x.nric()+1,n,"c1",Transform());
+		
+	
+	result=NLPFunction;
+
+}
+
+void calc_opt_projd(int mode,int n, const ColumnVector& x, double& fx, ColumnVector& gx, int& result)
+{
+
+if (mode & NLPFunction) {
+
+}
+
+if (mode & NLPGradient) {
+
+}
+
+}
+#endif OPTPP
+
+void PointArray::opt_from_proj(const vector<EMData*> & proj) {
+#ifdef OPTPP
+	optdata=proj;
+	optobj=this;
+	
+	FDNLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_proj);
+//	NLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_projd);
+	nlf.initFcn();
+	
+	OptCG opt(&nlf);
+	
+
+#else OPTPP
+	LOGWARN("OPT++ support not enabled.\n");
+	return;
+#endif OPTPP
+
+}
+
 Vec3f PointArray::get_vector_at(int i)
 {
 return Vec3f(points[i*4],points[i*4+1],points[i*4+2]);

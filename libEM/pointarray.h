@@ -61,7 +61,15 @@ namespace EMAN
 		EMData *pdb2mrc_by_summation(int map_size, float apix, float res);	// return real space 3-D map
 		EMData *projection_by_nfft(int image_size, float apix, float res = 0);	// return 2-D Fourier Transform
 		EMData *projection_by_summation(int image_size, float apix, float res);	// return 2-D real space image
-		
+
+		/** Optimizes a pointarray based on a set of projection images (EMData objects)
+		 * This is effectively a 3D reconstruction algorithm.
+		 *
+		 * @author Steve Ludtke  11/27/2004
+		 * @param proj A vector of EMData objects conatining projections with orientations
+		 */
+		void opt_from_proj(const vector<EMData*> & proj);
+
 		private:
 		double *points;
 		unsigned int n;
