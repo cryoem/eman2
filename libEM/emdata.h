@@ -62,6 +62,7 @@ namespace EMAN
 	EMData *copy(bool withfft = false, bool withparent = true);
 	EMData *copy_head();
 
+	/** Inclusive clip. Pads 0 if larger than this image. */
 	EMData *get_clip(const Region & area);
 	void insert_clip(EMData * block, const Point<int> & originn);
 	EMData *get_top_half() const;

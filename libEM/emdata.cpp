@@ -328,11 +328,19 @@ EMData *EMData::get_clip(const Region & area)
 
     int y0 = (int) area.origin.y;
     int y1 = (int) (area.origin.y + area.size.ysize);
-
+    if (y1 > ny) {
+	y1 = ny;
+    }
+    
     int z0 = (int) area.origin.z;
     int z1 = (int) (area.origin.z + zsize);
 
-    int result_row_size = area.size.xsize * sizeof(float);
+    int result_nx = area.size.xsize;
+    if (result_nx > nx) {
+	result_nx = nx;
+    }
+    
+    int result_row_size = result_nx * sizeof(float);
     int sec_size = nx * ny;
     int result_sec_size = area.size.xsize * area.size.ysize;
 
