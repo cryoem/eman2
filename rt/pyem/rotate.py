@@ -1,11 +1,10 @@
 #!/bin/env python
 
 from EMAN2 import *
-import os
 import math
 
 def rotate_3d():
-	img = os.environ["HOME"] + "/images/3d.mrc"
+	img = Util.get_debug_image("3d.mrc")
 
 	a = EMData()
 	a.read_image(img)
@@ -17,7 +16,7 @@ def rotate_3d():
 	b.write_image("3d2.mrc")
 
 def rotate_2d():
-	img = os.environ["HOME"] + "/images/lattice.mrc"
+	img = Util.get_debug_image("lattice.mrc")
 	
 	a = EMData()
 	a.read_image(img)

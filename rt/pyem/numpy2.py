@@ -1,13 +1,10 @@
 #!/bin/env python
 
 from EMAN2 import *
-import os
 import numarray
 
 n = 100
-
 l = range(2*n*n)
-
 a = numarray.reshape(numarray.array(l, numarray.Float32), (2*n, n))
 
 print a.shape

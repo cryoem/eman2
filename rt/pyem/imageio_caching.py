@@ -1,10 +1,10 @@
 #!/bin/env python
 
-import os
+
 from EMAN2 import *
 
 def run():
-	imagename = os.environ['HOME'] + "/images/monomer.mrc"
+	imagename = Util.get_debug_image("monomer.mrc")
 	
 	a=EMData()
 	a.read_image(imagename)

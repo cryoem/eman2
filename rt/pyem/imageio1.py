@@ -1,13 +1,11 @@
 #!/bin/env python
 
 from EMAN2 import *
-import os
 
-imgpath = os.environ["HOME"] + "/images/"
 # 479x479x240
-img1 = imgpath + "3f-avg.mrc"
+img1 = Util.get_debug_image("3f-avg.mrc")
 # 100x100x100
-img2 = imgpath + "3d.mrc"
+img2 = Util.get_debug_image("3d.mrc")
 
 a=EMData()
 b=EMData()

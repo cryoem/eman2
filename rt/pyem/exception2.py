@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from EMAN2 import *
-import os
 from pyemtbx.exceptions import *
 
 e = EMData()
