@@ -25,17 +25,6 @@
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
 
-  033. in filter parameter passing from python to C++, is there a way to
-       pass EMData directly without creating EMObject object. i.e.,
-           {"with", EMObject(emdata)} => {"with", emdata}
-
-  034. in ImageIO classes, add a way to label images using EMAN1 'name'
-	   and set_name().
-
-  041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
-       produced a core dump. these exceptions are usually caused by invalid
-       memory usage.
-	   
   042. imageio caching caused problems in some imageio subclasses such that
        the header/data writing are not started from the proper locations. this
        need to be verified and tested on all image formats. one test is:
@@ -72,6 +61,13 @@
   039. make classes Vec3, Matrix3f, Matrix4f as python container classes.  
 	   refer indexing_suite in boost python.
 
+  033. in filter parameter passing from python to C++, is there a way to
+       pass EMData directly without creating EMObject object. i.e.,
+           {"with", EMObject(emdata)} => {"with", emdata}
+
+  041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
+       produced a core dump. 
+	   
   048. Add ASCII write and binary read to VtkIO.
 	   
 --- Items Done ----
@@ -174,5 +170,8 @@
 
   10/20/04 047. Replace assert() with error code or exception.
 
+
+  11/1/04 034. in ImageIO classes, add a way to label images using EMAN1 'name'
+			   and set_name().
 
 				

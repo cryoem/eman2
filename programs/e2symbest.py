@@ -9,7 +9,8 @@ from optparse import OptionParser
 import os.path
 
 
-def main():
+def main(args):
+	sys.argv = args
 	progname = os.path.basename(sys.argv[0])
 	
 	usage = progname + " options inputfile outputfile"
@@ -115,4 +116,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

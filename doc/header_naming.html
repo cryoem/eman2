@@ -274,7 +274,43 @@ used in averaging. Otherwise, avgnimg is 0.<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">dm3_exposure_number<br>
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">label<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">string<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">user-defined
+label for this image. It is like 'name' in EMAN1.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">image_filename<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">string<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">the
+physical image filename where this image comes from.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">image_index<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">image
+number in file pointed to by path.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.exposure_number<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
@@ -285,7 +321,7 @@ image only. exposure number.</td>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">dm3_exposure_time<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.exposure_time<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">double<br>
@@ -297,7 +333,7 @@ image only. exposure time in seconds.<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">zoom<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.zoom<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">double<br>
@@ -308,7 +344,7 @@ image only. exposure time in seconds.<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">antiblooming<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.antiblooming<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
@@ -318,7 +354,7 @@ image only. exposure time in seconds.<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">magnification<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.magnification<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">double<br>
@@ -329,7 +365,7 @@ magnification</td>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">frame_type<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.frame_type<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">string<br>
@@ -339,7 +375,7 @@ magnification</td>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">camera_x<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.camera_x<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">int</td>
@@ -350,7 +386,7 @@ image only. camera size&nbsp; along x direction in number of pixels.<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">camera_y<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.camera_y<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">int</td>
@@ -361,7 +397,7 @@ image only. camera size along y direction in number of pixels.<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">binning_x<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.binning_x<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">int</td>
@@ -372,7 +408,7 @@ image only. Binning #0<br>
     </tr>
     <tr>
       <td
- style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">binning_y<br>
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">DM3.binning_y<br>
       </td>
       <td
  style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
@@ -406,37 +442,53 @@ image only.&nbsp; Number of comment labels in a MRC image.<br>
 image only. The Nth label, where N is an integer from 1 to 10. </td>
     </tr>
     <tr>
-      <td style="vertical-align: top; font-weight: bold;">LST.filenum<br>
+      <td
+ style="vertical-align: top; font-weight: bold; background-color: rgb(204, 255, 255);">LST.filenum<br>
       </td>
-      <td style="vertical-align: top;">int<br>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
       </td>
-      <td style="vertical-align: top;">LIST image only, file number in
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">LIST
+image only, file number in
 FileSystem server<br>
       </td>
     </tr>
     <tr>
-      <td style="vertical-align: top; font-weight: bold;">LST.reffile<br>
+      <td
+ style="vertical-align: top; font-weight: bold; background-color: rgb(204, 255, 255);">LST.reffile<br>
       </td>
-      <td style="vertical-align: top;">string<br>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">string<br>
       </td>
-      <td style="vertical-align: top;">LIST image only, reference file<br>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">LIST
+image only, reference file<br>
       </td>
     </tr>
     <tr>
-      <td style="vertical-align: top; font-weight: bold;">LST.refn<br>
+      <td
+ style="vertical-align: top; font-weight: bold; background-color: rgb(204, 255, 255);">LST.refn<br>
       </td>
-      <td style="vertical-align: top;">int<br>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
       </td>
-      <td style="vertical-align: top;">LIST image only, reference image
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">LIST
+image only, reference image
 number<br>
       </td>
     </tr>
     <tr>
-      <td style="vertical-align: top; font-weight: bold;">LST.comment<br>
+      <td
+ style="vertical-align: top; font-weight: bold; background-color: rgb(204, 255, 255);">LST.comment<br>
       </td>
-      <td style="vertical-align: top;">string<br>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">string<br>
       </td>
-      <td style="vertical-align: top;">LIST image only,&nbsp; comment<br>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">LIST
+image only,&nbsp; comment<br>
       </td>
     </tr>
     <tr>

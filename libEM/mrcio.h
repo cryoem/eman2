@@ -10,7 +10,7 @@
 namespace EMAN
 {
 	/** MRC file = header + data (nx x ny x nz).
-	 * A MRC image file stores a single 2D or 3D image. The image's
+	 * A MRC image file stores 1 2D or 3D image. The image's
 	 * dimensions and pixel type are defined in the header.
 	 */
 	

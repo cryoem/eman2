@@ -9,6 +9,7 @@ from optparse import OptionParser
 import os.path
 import sys
 import pyemtbx.files
+import e2sysbest
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -56,10 +57,10 @@ def main():
 		os.remove("sym.hed")
 		os.remove("sym.img")
 
-		symbest_cmd = "--sym=" + options.sym + " --mirror=cls0001.lst --nkeep=" + string(options.nkeep)
-		system("e2symbest.py " + symbest_options + inputfile)
+		symbest_options = "--sym=" + options.sym + " --mirror=cls0001.lst --nkeep=" + string(options.nkeep)
+		e2sysbest.main("e2symbest.py " + symbest_options)
 		
-		
+		# next: classalignall
 
 if __name__ == "__main__":
     main()

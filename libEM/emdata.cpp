@@ -142,7 +142,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 	}
 
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
-	if (!header_only && img_index == 0) {
+	if (!header_only && img_index == 0 && region == 0) {
 		rwmode = ImageIO::WRITE_ONLY;
 	}
 	
@@ -3631,7 +3631,7 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		cf->set_size(nx, 1, 1);
 	}
 
-	//cf->set_name("CCFx");
+	cf->set_attr("label", "CCFx");
 	cf->set_path("/tmp/eman.ccf");
 
 	if (y1 <= y0) {
@@ -3914,7 +3914,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 		f1 = 0;
 	}
 
-	//f2->set_name("CCF");
+	f2->set_attr("label", "CCF");
 	f2->set_path("/tmp/eman.ccf");
 
 	EXITFUNC;
@@ -4104,7 +4104,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 		this_fft = 0;
 	}
 
-	//f2->set_name("MCF");
+	f2->set_attr("label", "MCF");
 	f2->set_path("/tmp/eman.mcf");
 
 	EXITFUNC;

@@ -252,7 +252,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	return 0;
 }
 
-int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int MrcIO::write_header(const Dict & dict, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
 
@@ -446,7 +446,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	int ny = mrch.ny;
 	int nz = mrch.nz;
 
-	Util::file_lock_wait(mrcfile);
+	//	Util::file_lock_wait(mrcfile);
 
 	if (is_complex_mode()) {
 		nx *= 2;
@@ -458,12 +458,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 		Util::flip_complex_phase(data, size);
 	}
 
-	int nz1 = nz;
-	
-	portable_fseek(mrcfile, sizeof(MrcHeader) + nx * ny * image_index * mode_size, SEEK_SET);
-	if (image_index > 0) {
-		nz1 = 1;
-	}
+	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
 	int row_size = nx * get_mode_size(mrch.mode);
 	int sec_size = nx * ny;
@@ -474,7 +469,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 
 	if (is_big_endian != ByteOrder::is_host_big_endian()) {
 		if (mrch.mode != MRC_UCHAR) {
-			size_t size = nz1 * nx * ny;
+			size_t size = nz * nx * ny;
 			if (mode_size == sizeof(short)) {
 				ByteOrder::swap_bytes((short*) data, size);
 			}
@@ -483,10 +478,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 			}
 		}
 	}
+
+
+
 	
-	for (int i = 0; i < nz1; i++) {
+	for (int i = 0; i < nz; i++) {
+		int i2 = i * sec_size;
 		for (int j = 0; j < ny; j++) {
-			int k = i * sec_size + j * nx;
+			int k = i2 + j * nx;
 			switch (mrch.mode) {
 			case MRC_UCHAR:
 				for (l = 0; l < nx; l++) {
@@ -515,7 +514,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	cbuf = 0;
 
 	if (is_complex_mode()) {
-		size_t size = nx * ny * nz1;
+		size_t size = nx * ny * nz;
 		if (!is_ri) {
 			Util::ap2ri(data, size);
 			is_ri = true;
@@ -523,30 +522,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 		Util::flip_complex_phase(data, size);
 	}
 
-#if 0
-	// truncate the file if necessary
-#ifndef WIN32
-	if (!is_new_file) {
-		size_t new_file_length = nx * ny * nz * get_mode_size(mrch.mode) +
-			sizeof(MrcHeader) + mrch.nsymbt;
 
-		long curpos = portable_ftell(mrcfile);
-		portable_fseek(mrcfile, 0, SEEK_END);
-		size_t old_file_length = portable_ftell(mrcfile);
-		portable_fseek(mrcfile, curpos, SEEK_SET);
-		
-		if (old_file_length > new_file_length) {
-			int fd = fileno(mrcfile);
-			int err = ftruncate(fd, new_file_length);
-			if (err) {
-				LOGERR("file truncation failed. old length = %ld, new length=%ld",
-					   old_file_length, new_file_length);
-				throw ImageWriteException(filename, "file truncation failed");
-			}
-		}
-	}
-#endif
-#endif
 	EXITFUNC;
 	return 0;
 }
