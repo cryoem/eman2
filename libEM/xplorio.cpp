@@ -282,8 +282,13 @@ int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
 
 	fprintf(xplor_file, "%8d\n", -9999);
 	EXITFUNC;
-	fflush(xplor_file);
+	
 	return 0;
+}
+
+void XplorIO::flush()
+{
+	fflush(xplor_file);
 }
 
 bool XplorIO::is_complex_mode()

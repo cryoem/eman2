@@ -809,6 +809,9 @@ int DM3IO::write_data(float *, int, const Region* area, bool)
 	return 1;
 }
 
+void DM3IO::flush()
+{
+}
 
 int Gatan::to_em_datatype(int gatan_datatype)
 {

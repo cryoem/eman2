@@ -402,10 +402,14 @@ int PifIO::write_data(float *data, int image_index, const Region* area, bool)
 
 	delete[]buf;
 	buf = 0;
-	fflush(pif_file);
+
 	return 0;
 }
 
+void PifIO::flush()
+{
+	fflush(pif_file);
+}
 
 bool PifIO::is_complex_mode()
 {

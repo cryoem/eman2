@@ -337,6 +337,11 @@ int PngIO::write_data(float *data, int image_index, const Region* area, bool)
 	return 0;
 }
 
+void PngIO::flush()
+{
+	png_write_flush(png_ptr);
+}
+
 bool PngIO::is_complex_mode()
 {
 	return false;

@@ -92,6 +92,12 @@ int XYZIO::write_data(float *data, int image_index, const Region *region, bool)
 	return 0;
 }
 
+void XYZIO::flush()
+{
+	if (xyz_file) {
+		fflush(xyz_file);
+	}
+}
 
 bool XYZIO::is_complex_mode()
 {

@@ -220,6 +220,10 @@ int LstIO::write_data(float *, int, const Region* area, bool)
 	return 1;
 }
 
+void LstIO::flush()
+{
+}
+
 bool LstIO::is_complex_mode()
 {
 	return false;

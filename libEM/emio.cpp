@@ -269,6 +269,11 @@ int EmIO::write_data(float *data, int image_index, const Region* area, bool)
 	return 0;
 }
 
+void EmIO::flush()
+{
+	fflush(em_file);
+}
+
 bool EmIO::is_complex_mode()
 {
 	if (emh.data_type == EM_EM_COMPLEX) {

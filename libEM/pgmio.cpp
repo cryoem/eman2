@@ -269,6 +269,10 @@ int PgmIO::write_data(float *data, int image_index, const Region* area, bool)
 	return 0;
 }
 
+void PgmIO::flush()
+{
+}
+
 
 bool PgmIO::is_complex_mode()
 {

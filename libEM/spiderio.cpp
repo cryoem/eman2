@@ -555,8 +555,13 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 	swap_data(data, img_size);
 
 	free(pad);
-	fflush(spider_file);
+
 	return err;
+}
+
+void SpiderIO::flush()
+{
+	fflush(spider_file);
 }
 
 int SpiderIO::write_single_data(float *data)

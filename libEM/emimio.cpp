@@ -165,6 +165,10 @@ int EmimIO::write_data(float *, int, const Region* area, bool)
 	return 1;
 }
 
+void EmimIO::flush()
+{
+}
+
 bool EmimIO::is_complex_mode()
 {
 	if (efh.flag & EMIM_COMPLEX) {

@@ -556,7 +556,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 #endif
 #endif
 	
-	fflush(mrcfile);
+	//fflush(mrcfile);
 	return 0;
 }
 
@@ -607,6 +607,11 @@ int MrcIO::write_ctf(const Ctf & ctf, int)
 	}
 
 	return 0;
+}
+
+void MrcIO::flush()
+{
+	fflush(mrcfile);
 }
 
 int MrcIO::get_nimg()

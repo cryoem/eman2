@@ -264,10 +264,13 @@ int VtkIO::write_data(float *data, int image_index, const Region* area, bool)
 		ByteOrder::swap_bytes(data, nx * ny * nz);
 	}
 
-	fflush(vtk_file);
 	return 0;
 }
 
+void VtkIO::flush()
+{	
+	fflush(vtk_file);
+}
 
 bool VtkIO::is_complex_mode()
 {

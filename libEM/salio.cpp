@@ -233,6 +233,10 @@ int SalIO::write_data(float *, int, const Region* area, bool)
 	return 1;
 }
 
+void SalIO::flush()
+{
+}
+
 
 bool SalIO::is_complex_mode()
 {

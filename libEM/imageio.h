@@ -114,6 +114,8 @@ namespace EMAN
 		 */
 		virtual int write_ctf(const Ctf & ctf, int image_index = 0);
 
+		virtual void flush() = 0;
+		
 		/** Return the number of images in this image file. */
 		virtual int get_nimg() = 0;
 
@@ -155,6 +157,7 @@ namespace EMAN
 		int write_header(const Dict & dict, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
 		int read_data(float* data, int image_index = 0, const Region* area = 0, bool is_3d = false); \
 		int write_data(float* data, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
+		void flush(); \
 		bool is_complex_mode(); \
 		bool is_image_big_endian(); \
 		int get_nimg(); \

@@ -197,6 +197,10 @@ int Gatan2IO::write_data(float *, int, const Region* area, bool)
 	return 1;
 }
 
+void Gatan2IO::flush()
+{
+}
+
 bool Gatan2IO::is_complex_mode()
 {
 	if (gatanh.type == GATAN2_COMPLEX || gatanh.type == GATAN2_PACKED_COMPLEX) {

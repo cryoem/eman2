@@ -144,6 +144,11 @@ int AmiraIO::write_data(float *data, int image_index, const Region* area, bool)
 	return 0;
 }
 
+void AmiraIO::flush()
+{
+	fflush(amira_file);
+}
+
 bool AmiraIO::is_complex_mode()
 {
 	return false;

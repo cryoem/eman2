@@ -261,7 +261,9 @@ int TiffIO::write_data(float *, int, const Region* area, bool)
 	return 0;
 }
 
-
+void TiffIO::flush()
+{
+}
 
 bool TiffIO::is_complex_mode()
 {

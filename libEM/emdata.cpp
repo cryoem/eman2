@@ -168,11 +168,13 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 			if (!header_only) {
 				err = imageio->write_data(rdata, img_index, region, use_host_endian);
 				if (err) {
+					imageio->flush();
 					throw ImageWriteException(filename, "imageio write data failed");
 				}
 			}
 		}
 	}
+	imageio->flush();
 	EXITFUNC;
 }
 

@@ -366,6 +366,10 @@ int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
 	return err;
 }
 
+void HdfIO::flush()
+{
+	H5Fflush(cur_dataset, H5F_SCOPE_LOCAL);
+}
 
 int *HdfIO::read_dims(int image_index, int *p_ndim)
 {

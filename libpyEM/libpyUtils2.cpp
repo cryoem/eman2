@@ -251,6 +251,10 @@ struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
         return EMAN::ImageIO::write_ctf(p0, p1);
     }
 
+    void flush() {
+        call_method< void >(self, "flush");
+    }
+
     int get_nimg() {
         return call_method< int >(self, "get_nimg");
     }
@@ -454,6 +458,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("read_ctf", &EMAN_ImageIO_Wrapper::default_read_ctf_1)
         .def("write_ctf", &EMAN::ImageIO::write_ctf, &EMAN_ImageIO_Wrapper::default_write_ctf_2)
         .def("write_ctf", &EMAN_ImageIO_Wrapper::default_write_ctf_1)
+        .def("flush", pure_virtual(&EMAN::ImageIO::flush))
         .def("get_nimg", pure_virtual(&EMAN::ImageIO::get_nimg))
         .def("is_complex_mode", pure_virtual(&EMAN::ImageIO::is_complex_mode))
         .def("is_image_big_endian", pure_virtual(&EMAN::ImageIO::is_image_big_endian))
