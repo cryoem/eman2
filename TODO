@@ -61,8 +61,6 @@
   068. Windows support. windows file system uses '\' as path separator while
 	   unix/linux uses '/'. Need a generic way to make the code portable.
 
-  069. rename Transform EMData::get_rotation() const;
-	   to get_transform().
 
   070. boost python documentation.
 	   - The combination dump_BASENAME, BASENAME.get("subclass name") 
@@ -271,10 +269,17 @@
   11/29/04 065.
        Find an efficent way to implement numeric array to EMData's data.
 	   Both data blocks share the same memory.
+		  
+  12/20/04 069. 
+      rename Transform EMData::get_rotation() const;
+	  to get_transform().
+
+
 
   12/14/04 072. 
       Transform::get_rotation() does not work in python.
 
   12/18/04 073.
       check convertible in type converter functions.
-		  
+
+	   

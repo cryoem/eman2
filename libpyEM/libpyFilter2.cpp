@@ -14,6 +14,65 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
+struct EMAN_Filter_Wrapper: EMAN::Filter
+{
+    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Filter& p0):
+        EMAN::Filter(p0), self(self_) {}
+
+    EMAN_Filter_Wrapper(PyObject* self_):
+        EMAN::Filter(), self(self_) {}
+
+    void process(EMAN::EMData* p0) {
+        call_method< void >(self, "process", p0);
+    }
+
+    void default_process(EMAN::EMData* p0) {
+        EMAN::Filter::process(p0);
+    }
+
+    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        call_method< void >(self, "process_list", p0);
+    }
+
+    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        EMAN::Filter::process_list(p0);
+    }
+
+    std::string get_name() const {
+        return call_method< std::string >(self, "get_name");
+    }
+
+    EMAN::Dict get_params() const {
+        return call_method< EMAN::Dict >(self, "get_params");
+    }
+
+    EMAN::Dict default_get_params() const {
+        return EMAN::Filter::get_params();
+    }
+
+    void set_params(const EMAN::Dict& p0) {
+        call_method< void >(self, "set_params", p0);
+    }
+
+    void default_set_params(const EMAN::Dict& p0) {
+        EMAN::Filter::set_params(p0);
+    }
+
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
+    }
+
+    EMAN::TypeDict default_get_param_types() const {
+        return EMAN::Filter::get_param_types();
+    }
+
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
+    PyObject* self;
+};
+
 struct EMAN_RealPixelFilter_Wrapper: EMAN::RealPixelFilter
 {
     EMAN_RealPixelFilter_Wrapper(PyObject* self_, const EMAN::RealPixelFilter& p0):
@@ -439,74 +498,86 @@ struct EMAN_NormalizeFilter_Wrapper: EMAN::NormalizeFilter
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyFilter2)
 {
-    class_< EMAN::RealPixelFilter, boost::noncopyable, EMAN_RealPixelFilter_Wrapper >("RealPixelFilter", init<  >())
+    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("__Filter", init<  >())
+        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_Filter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_Filter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
+        .def("get_group_desc", &EMAN::Filter::get_group_desc)
+        .staticmethod("get_group_desc")
+    ;
+
+    class_< EMAN::RealPixelFilter, bases< EMAN::Filter > , boost::noncopyable, EMAN_RealPixelFilter_Wrapper >("__RealPixelFilter", init<  >())
         .def("process", (void (EMAN::RealPixelFilter::*)(EMAN::EMData*) )&EMAN::RealPixelFilter::process, (void (EMAN_RealPixelFilter_Wrapper::*)(EMAN::EMData*))&EMAN_RealPixelFilter_Wrapper::default_process)
         .def("set_params", (void (EMAN::RealPixelFilter::*)(const EMAN::Dict&) )&EMAN::RealPixelFilter::set_params, (void (EMAN_RealPixelFilter_Wrapper::*)(const EMAN::Dict&))&EMAN_RealPixelFilter_Wrapper::default_set_params)
-        .def("process_list", (void (EMAN::Filter::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&) )&EMAN::Filter::process_list, (void (EMAN_RealPixelFilter_Wrapper::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&))&EMAN_RealPixelFilter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_name))
-        .def("get_params", (EMAN::Dict (EMAN::Filter::*)() const)&EMAN::Filter::get_params, (EMAN::Dict (EMAN_RealPixelFilter_Wrapper::*)() const)&EMAN_RealPixelFilter_Wrapper::default_get_params)
-        .def("get_param_types", (EMAN::TypeDict (EMAN::Filter::*)() const)&EMAN::Filter::get_param_types, (EMAN::TypeDict (EMAN_RealPixelFilter_Wrapper::*)() const)&EMAN_RealPixelFilter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_desc))
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_RealPixelFilter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_RealPixelFilter_Wrapper::default_get_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_RealPixelFilter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::RealPixelFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
 
-    class_< EMAN::BoxStatFilter, boost::noncopyable, EMAN_BoxStatFilter_Wrapper >("BoxStatFilter", init<  >())
+    class_< EMAN::BoxStatFilter, bases< EMAN::Filter > , boost::noncopyable, EMAN_BoxStatFilter_Wrapper >("__BoxStatFilter", init<  >())
         .def("process", (void (EMAN::BoxStatFilter::*)(EMAN::EMData*) )&EMAN::BoxStatFilter::process, (void (EMAN_BoxStatFilter_Wrapper::*)(EMAN::EMData*))&EMAN_BoxStatFilter_Wrapper::default_process)
-        .def("process_list", (void (EMAN::Filter::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&) )&EMAN::Filter::process_list, (void (EMAN_BoxStatFilter_Wrapper::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&))&EMAN_BoxStatFilter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_name))
-        .def("get_params", (EMAN::Dict (EMAN::Filter::*)() const)&EMAN::Filter::get_params, (EMAN::Dict (EMAN_BoxStatFilter_Wrapper::*)() const)&EMAN_BoxStatFilter_Wrapper::default_get_params)
-        .def("set_params", (void (EMAN::Filter::*)(const EMAN::Dict&) )&EMAN::Filter::set_params, (void (EMAN_BoxStatFilter_Wrapper::*)(const EMAN::Dict&))&EMAN_BoxStatFilter_Wrapper::default_set_params)
-        .def("get_param_types", (EMAN::TypeDict (EMAN::Filter::*)() const)&EMAN::Filter::get_param_types, (EMAN::TypeDict (EMAN_BoxStatFilter_Wrapper::*)() const)&EMAN_BoxStatFilter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_desc))
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_BoxStatFilter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_BoxStatFilter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_BoxStatFilter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_BoxStatFilter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::BoxStatFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
 
-    class_< EMAN::ComplexPixelFilter, boost::noncopyable, EMAN_ComplexPixelFilter_Wrapper >("ComplexPixelFilter", init<  >())
+    class_< EMAN::ComplexPixelFilter, bases< EMAN::Filter > , boost::noncopyable, EMAN_ComplexPixelFilter_Wrapper >("__ComplexPixelFilter", init<  >())
         .def("process", (void (EMAN::ComplexPixelFilter::*)(EMAN::EMData*) )&EMAN::ComplexPixelFilter::process, (void (EMAN_ComplexPixelFilter_Wrapper::*)(EMAN::EMData*))&EMAN_ComplexPixelFilter_Wrapper::default_process)
-        .def("process_list", (void (EMAN::Filter::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&) )&EMAN::Filter::process_list, (void (EMAN_ComplexPixelFilter_Wrapper::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&))&EMAN_ComplexPixelFilter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_name))
-        .def("get_params", (EMAN::Dict (EMAN::Filter::*)() const)&EMAN::Filter::get_params, (EMAN::Dict (EMAN_ComplexPixelFilter_Wrapper::*)() const)&EMAN_ComplexPixelFilter_Wrapper::default_get_params)
-        .def("set_params", (void (EMAN::Filter::*)(const EMAN::Dict&) )&EMAN::Filter::set_params, (void (EMAN_ComplexPixelFilter_Wrapper::*)(const EMAN::Dict&))&EMAN_ComplexPixelFilter_Wrapper::default_set_params)
-        .def("get_param_types", (EMAN::TypeDict (EMAN::Filter::*)() const)&EMAN::Filter::get_param_types, (EMAN::TypeDict (EMAN_ComplexPixelFilter_Wrapper::*)() const)&EMAN_ComplexPixelFilter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_desc))
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_ComplexPixelFilter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_ComplexPixelFilter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_ComplexPixelFilter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_ComplexPixelFilter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::ComplexPixelFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
 
-    class_< EMAN::CoordinateFilter, boost::noncopyable, EMAN_CoordinateFilter_Wrapper >("CoordinateFilter", init<  >())
+    class_< EMAN::CoordinateFilter, bases< EMAN::Filter > , boost::noncopyable, EMAN_CoordinateFilter_Wrapper >("__CoordinateFilter", init<  >())
         .def("process", (void (EMAN::CoordinateFilter::*)(EMAN::EMData*) )&EMAN::CoordinateFilter::process, (void (EMAN_CoordinateFilter_Wrapper::*)(EMAN::EMData*))&EMAN_CoordinateFilter_Wrapper::default_process)
-        .def("process_list", (void (EMAN::Filter::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&) )&EMAN::Filter::process_list, (void (EMAN_CoordinateFilter_Wrapper::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&))&EMAN_CoordinateFilter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_name))
-        .def("get_params", (EMAN::Dict (EMAN::Filter::*)() const)&EMAN::Filter::get_params, (EMAN::Dict (EMAN_CoordinateFilter_Wrapper::*)() const)&EMAN_CoordinateFilter_Wrapper::default_get_params)
-        .def("set_params", (void (EMAN::Filter::*)(const EMAN::Dict&) )&EMAN::Filter::set_params, (void (EMAN_CoordinateFilter_Wrapper::*)(const EMAN::Dict&))&EMAN_CoordinateFilter_Wrapper::default_set_params)
-        .def("get_param_types", (EMAN::TypeDict (EMAN::Filter::*)() const)&EMAN::Filter::get_param_types, (EMAN::TypeDict (EMAN_CoordinateFilter_Wrapper::*)() const)&EMAN_CoordinateFilter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_desc))
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_CoordinateFilter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_CoordinateFilter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_CoordinateFilter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_CoordinateFilter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::CoordinateFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
 
-    class_< EMAN::FourierFilter, boost::noncopyable, EMAN_FourierFilter_Wrapper >("FourierFilter", init<  >())
+    class_< EMAN::FourierFilter, bases< EMAN::Filter > , boost::noncopyable, EMAN_FourierFilter_Wrapper >("__FourierFilter", init<  >())
         .def("process", (void (EMAN::FourierFilter::*)(EMAN::EMData*) )&EMAN::FourierFilter::process, (void (EMAN_FourierFilter_Wrapper::*)(EMAN::EMData*))&EMAN_FourierFilter_Wrapper::default_process)
-        .def("process_list", (void (EMAN::Filter::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&) )&EMAN::Filter::process_list, (void (EMAN_FourierFilter_Wrapper::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&))&EMAN_FourierFilter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_name))
-        .def("get_params", (EMAN::Dict (EMAN::Filter::*)() const)&EMAN::Filter::get_params, (EMAN::Dict (EMAN_FourierFilter_Wrapper::*)() const)&EMAN_FourierFilter_Wrapper::default_get_params)
-        .def("set_params", (void (EMAN::Filter::*)(const EMAN::Dict&) )&EMAN::Filter::set_params, (void (EMAN_FourierFilter_Wrapper::*)(const EMAN::Dict&))&EMAN_FourierFilter_Wrapper::default_set_params)
-        .def("get_param_types", (EMAN::TypeDict (EMAN::Filter::*)() const)&EMAN::Filter::get_param_types, (EMAN::TypeDict (EMAN_FourierFilter_Wrapper::*)() const)&EMAN_FourierFilter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_desc))
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_FourierFilter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_FourierFilter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_FourierFilter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_FourierFilter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::FourierFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
 
-    class_< EMAN::NormalizeFilter, boost::noncopyable, EMAN_NormalizeFilter_Wrapper >("NormalizeFilter", init<  >())
+    class_< EMAN::NormalizeFilter, bases< EMAN::Filter > , boost::noncopyable, EMAN_NormalizeFilter_Wrapper >("__NormalizeFilter", init<  >())
         .def("process", (void (EMAN::NormalizeFilter::*)(EMAN::EMData*) )&EMAN::NormalizeFilter::process, (void (EMAN_NormalizeFilter_Wrapper::*)(EMAN::EMData*))&EMAN_NormalizeFilter_Wrapper::default_process)
-        .def("process_list", (void (EMAN::Filter::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&) )&EMAN::Filter::process_list, (void (EMAN_NormalizeFilter_Wrapper::*)(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >&))&EMAN_NormalizeFilter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_name))
-        .def("get_params", (EMAN::Dict (EMAN::Filter::*)() const)&EMAN::Filter::get_params, (EMAN::Dict (EMAN_NormalizeFilter_Wrapper::*)() const)&EMAN_NormalizeFilter_Wrapper::default_get_params)
-        .def("set_params", (void (EMAN::Filter::*)(const EMAN::Dict&) )&EMAN::Filter::set_params, (void (EMAN_NormalizeFilter_Wrapper::*)(const EMAN::Dict&))&EMAN_NormalizeFilter_Wrapper::default_set_params)
-        .def("get_param_types", (EMAN::TypeDict (EMAN::Filter::*)() const)&EMAN::Filter::get_param_types, (EMAN::TypeDict (EMAN_NormalizeFilter_Wrapper::*)() const)&EMAN_NormalizeFilter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual((std::string (EMAN::Filter::*)() const)&EMAN::Filter::get_desc))
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_NormalizeFilter_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_NormalizeFilter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_NormalizeFilter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_NormalizeFilter_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::NormalizeFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;

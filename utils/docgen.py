@@ -54,7 +54,7 @@ def write_filter(filtername, output, bgcolor):
 def write_group(groupname, output):
 	groupclass = None
 	if groupname == "Filter":
-		groupclass = Filter
+		groupclass = __Filter
 	if groupname == "RealPixelFilter":
 		groupclass = RealPixelFilter
 	elif groupname == "BoxStatFilter":
