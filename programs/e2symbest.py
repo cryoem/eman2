@@ -4,7 +4,7 @@
 
 
 from EMAN2 import *
-
+import sys
 from optparse import OptionParser
 import os.path
 
@@ -18,13 +18,20 @@ def main():
 	parser.add_option("--nkeep", metavar="N", type="int", help="Number of particles to keep")
 	parser.add_option("--sym", metavar="Cn", type="string", help="Symmetry to search for")
 
-	parser.add_option("--mirror", type="string", help="search for particles with mirror symmetry")
+	parser.add_option("--mirror", metavar="outputfile", type="string", help="search for particles with mirror symmetry and write them out to outputfile.")
 	parser.add_option("--rtp", action="store_true", help="make a rotational footprint")
 
 	parser.add_option("--mask", metavar="rad", type="int", help="Mask radius")
 	parser.add_option("--imask", metavar="rad", type="int", help="Inside mask radius")
 
 	(options, args) = parser.parse_args()
+
+	if len(args) != 2:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
+        sys.exit(1)
+		
+	
 	inputfile = args[0]
 	outputfile = args[1]
 
@@ -39,7 +46,6 @@ def main():
 		print "Error: Not enough images to sort"
 		sys.exit(1)
 
-	# sort
 
 	d1 = EMData()
 	e1.read_image(inputfile, 0)
@@ -97,12 +103,16 @@ def main():
 			print i, score/(csym-1)
 
 	if options.mirror:
-		imgsort.sort()
+		imgsortm.sort()
 		for i in range(options.nkeep):
-			s = "%1.1f" % imgsort.score
-			d1.write_image(options.mirror, -1, EMUtil::IMAGE_LST, inputfile, imgsort.get_index(i), s)
-			
-		
+			score1 = "%1.1f" % imgsortm.get_score(i)
+			d1.write_lst(options.mirror, -1, inputfile, imgsortm.get_index(i), score1)
+	
+	imgsort.sort()
+	for i in range(options.nkeep):
+		score1 = "%1.1f" % imgsort.get_score(i)
+		d1.write_lst(outputfile, -1, inputfile, imgsort.get_index(i), score1)
+
 
 if __name__ == "__main__":
     main()
