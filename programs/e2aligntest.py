@@ -8,6 +8,7 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
+#import pdb
 from bisect import insort
 
 
@@ -27,6 +28,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	axes=options.axes
 	
 	
+#	pdb.set_trace()
 	i1=EMData()
 	i2=EMData()
 	
