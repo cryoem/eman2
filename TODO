@@ -33,8 +33,24 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       e.g. Emio, IcosIO. etc.
+       This includes EM, ICOS, MRC, IMAGIC, HDF, AMRIRA, SPIDER,
+       SINGLE_SPIDER, PIF, VTK, XPLOR.
+	   
+  049. Use exception to replace ImageIO init() error code.
 
+  050. EMData::rotate(alt,az,phi) still doesn't work properly. For odd
+	   image sizes it produces bad results.  When phi is nonzero, it
+	   produces funny scaling operations.
+
+  051. Transform may has a confusion about post translation and
+       pre-translation. Need to verify it.
+
+  052. Write unit tests for basic Vec and Matrix operations. It should
+       cover all functions.
+	   
+  053. The overloaded binary operators for Vec3<> are not wrapped into
+	   boost python. While Matrix3f/Matrix4f's binary operators are wrapped.
+	   This may be related to the fact that Vec3<> is a template.
 	   
 --- Low Priority ---
 
@@ -69,7 +85,11 @@
        produced a core dump. 
 	   
   048. Add ASCII write and binary read to VtkIO.
-	   
+
+  049. EMAN2 source code is based on EMAN1 source code on 08/2004. The new
+	   changes in EMAN1 since then need to be integrated into EMAN2.
+
+
 --- Items Done ----
 
   8/9/04:  001: convert CCTBX flex array to EMData
