@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+# Purpose: to generate Filter manuals automatically
+#
+# Usage:
+#    1. ./docgen.py
+#    2. copy filters.html, filter_groups.html to ../doc
+#
+
 from EMAN2 import *
 import sys
 import time
