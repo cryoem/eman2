@@ -23,8 +23,8 @@ list < FftwPlan * >EMfft::fwplans = list < FftwPlan * >();
 FftwPlan EMfft::planf_1d = FftwPlan();
 FftwPlan EMfft::planr_1d = FftwPlan();
 
-rfftw_plan FftwPlan::plan_1d = 0;
-rfftwnd_plan FftwPlan::plan_nd = 0;
+//rfftw_plan FftwPlan::plan_1d = 0;
+//rfftwnd_plan FftwPlan::plan_nd = 0;
 
 FftwPlan::FftwPlan()
 :	rank(0), direction(UNKNOWN_DIRECTION)
@@ -87,10 +87,11 @@ bool EMAN::operator==(const FftwPlan & p1, const FftwPlan & p2)
 {
 	if (p1.rank == p2.rank && p1.direction == p2.direction) {
 		for (int i = 0; i < FftwPlan::NDIMS; i++) {
-			if (p1.dims[i] == p2.dims[i]) {
-				return true;
+			if (p1.dims[i] != p2.dims[i]) {
+				return false;
 			}
 		}
+		return true;
 	}
 	return false;
 }

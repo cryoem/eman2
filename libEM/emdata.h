@@ -415,9 +415,11 @@ namespace EMAN
 
 
 		EMObject get_attr(string key);
-		void set_attr(string key, EMObject val);		
+		void set_attr(string key, EMObject val);
+		
 		Dict get_attr_dict();
-
+		void set_attr_dict(const Dict & new_dict);
+		
 		int get_xsize() const;
 		int get_ysize() const;
 		int get_zsize() const;

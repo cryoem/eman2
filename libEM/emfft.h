@@ -62,8 +62,8 @@ namespace EMAN
 		int rank;
 		int dims[NDIMS];
 		FftwDirection direction;
-		static rfftwnd_plan plan_nd;
-		static rfftw_plan plan_1d;
+		rfftwnd_plan plan_nd;
+		rfftw_plan plan_1d;
 	};
 
 	bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);

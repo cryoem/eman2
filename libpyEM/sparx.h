@@ -11,11 +11,8 @@
 namespace python = boost::python;
 
 namespace EMAN {
-
-	/** return a cctbx flex array storing the raw image data */
-	scitbx::af::shared<float> em2flex(const EMData& image);
-	
-
+	void em2flex(EMData& image, Dict & header_dict, scitbx::af::shared<float> & flex_array);
+	void flex2em(const scitbx::af::shared<float> & flex_array, Dict & header_dict, EMData & image);
 }
 
 

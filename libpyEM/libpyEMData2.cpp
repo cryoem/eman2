@@ -180,6 +180,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_attr", &EMAN::EMData::get_attr)
         .def("set_attr", &EMAN::EMData::set_attr)
         .def("get_attr_dict", &EMAN::EMData::get_attr_dict)
+        .def("set_attr_dict", &EMAN::EMData::set_attr_dict)
         .def("get_xsize", &EMAN::EMData::get_xsize)
         .def("get_ysize", &EMAN::EMData::get_ysize)
         .def("get_zsize", &EMAN::EMData::get_zsize)
@@ -244,6 +245,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
     EMAN::map_to_python<EMAN::EMObject>();
     EMAN::map_from_python<EMAN::EMObject>();
+    EMAN::map_to_python<vector<string> >();
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();

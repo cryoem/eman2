@@ -2,8 +2,6 @@
 
 --- High Priority ---
 
-  001: convert CCTBX float array to EMData
-
   003: command-line program logger (.eman2.log)
        We need to adopt a standard history mechanism like in EMAN1. Any
        command-line program should make an entry in a .eman2logfile when it
@@ -26,18 +24,12 @@
 
   020: investigate EMAN2 GUI tools: QT PyQT Python etc
 
-  022. cannot call calc_ccf with 2 args. has to pass the 3rd one as None
-  
   023. calc_ccf isn't working properly. It's producing
 	   the wrong results, and even more troubling, it seems that it is modifying
 	   one of the input images.  a=b.calc_ccf(c,True,None)  modifies c in some
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
 
-  026. EMData: do_ift() has a strange problem. first run works. second run
-       fails. both runs are identical. possible reason: fftw cache.
-	   
- 
 --- Low Priority ---
 
   008: fix bug: EMUtil.dump_filters() in boty python and document.
@@ -89,4 +81,14 @@
 
   8/5/04:  027. Geometry: change class Size from only int to IntSize and FloatSize.
 				In Region, use float origins and float sizes.
+
+  8/7/04:  022. cannot call calc_ccf with 2 args. has to pass the 3rd one
+				as None
+  			   
+  8/9/04:  001: convert CCTBX flex array to EMData
+  
+  8/9/04:  026. EMData: do_ift() has a strange problem. first run works. second run
+				fails. both runs are identical. possible reason: fftw cache.
 	   
+ 
+  

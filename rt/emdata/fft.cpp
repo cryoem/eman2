@@ -59,9 +59,15 @@ int main(int argc, char* argv[])
 
 		EMData* fft1 = e1.do_fft();
 		fft1->write_image("lattice_fft.mrc", 0, EMUtil::IMAGE_MRC);
-	
+
+		EMData* fft1_copy = fft1->copy();
+		
 		EMData* ift1 = fft1->do_ift();	    
 		ift1->write_image("lattice_fft_ift.mrc", 0, EMUtil::IMAGE_MRC);
+
+		EMData* ift2 = fft1_copy->do_ift();	    
+		ift2->write_image("lattice_fft_ift2.mrc", 0, EMUtil::IMAGE_MRC);
+
 	}
 	catch(...) {
 		err = 1;

@@ -1908,6 +1908,10 @@ Dict EMData::get_attr_dict()
 	return Dict(attr_dict);
 }
 
+void EMData::set_attr_dict(const Dict & new_dict)
+{
+	attr_dict = new_dict;
+}
 
 void EMData::dump_data(string filename)
 {
