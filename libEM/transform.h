@@ -61,11 +61,8 @@ namespace EMAN
 	
 	T length() const
 	{
-#ifdef WIN32
-	    return (T) sqrt((float)vec[0] * (float)vec[0] + (float)vec[1] * (float)vec[1] +(float) vec[2] * (float)vec[2]);
-#else		
-		return (T) sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
-#endif
+	    T t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+	    return (T) sqrt((float)t);
 	}
 	
 	T dot(const Vec3<T> & v) const
