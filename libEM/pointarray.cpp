@@ -1149,3 +1149,28 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 #endif
 }
 
+Vec3f PointArray::get_vector_at(int i)
+{
+return Vec3f(points[i*4],points[i*4+1],points[i*4+2]);
+}
+
+double PointArray::get_value_at(int i)
+{
+return points[i*4+3];
+}
+
+void PointArray::set_vector_at(int i,Vec3f vec,double value)
+{
+points[i*4]=vec[0];
+points[i*4+1]=vec[1];
+points[i*4+2]=vec[2];
+points[i*4+3]=value;
+}
+
+void PointArray::set_vector_at(int i,vector<double> v)
+{
+points[i*4]  =v[0];
+points[i*4+1]=v[1];
+points[i*4+2]=v[2];
+if (v.size()>=4) points[i*4+3]=v[3];
+}

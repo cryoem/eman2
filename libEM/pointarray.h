@@ -45,6 +45,10 @@ namespace EMAN
 		void center_to_zero();	// shift center to zero
 		Region get_bounding_box();
 		double *get_points_array();
+		Vec3f get_vector_at(int i);	// get the ith vector in the list
+		double get_value_at(int i);  // get the amplitude of the ith vector
+		void set_vector_at(int i,Vec3f vec,double value);
+		void set_vector_at(int i,vector<double>); 
 		void set_points_array(double *p);
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(string sym);

@@ -320,6 +320,21 @@ namespace EMAN
 			return (*this);
 		}
 
+		inline float x() const
+		{
+			return vec[0];
+		}
+		
+		inline float y() const
+		{
+			return vec[1];
+		}
+		
+		inline float z() const
+		{
+			return vec[2];
+		}
+		
 		vector < float > get_as_list()const
 		{
 			vector < float > v(3);
