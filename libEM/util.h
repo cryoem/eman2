@@ -46,6 +46,10 @@ namespace EMAN
 		 */
 		static bool check_file_by_magic(const void *first_block, const char *magic);
 
+		/** check whether a file exists or not */
+		static bool is_file_exist(string filename);
+
+		
 		/** Vertically flip the data of a 2D real image.
 		 * @param data Data array of the 2D real image.
 		 * @param nx Image Width.
@@ -268,6 +272,8 @@ namespace EMAN
 
 		static string get_time_label();
 
+		static const char* get_debug_image(const char* imagename);
+		
 		static void set_log_level(int argc, char *argv[]);
 
 		static inline float eman_copysign(float a, float b)

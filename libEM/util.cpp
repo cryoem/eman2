@@ -118,6 +118,14 @@ bool Util::check_file_by_magic(const void *first_block, const char *magic)
 	return false;
 }
 
+bool Util::is_file_exist(string filename)
+{
+	if (access(filename.c_str(), F_OK) == 0) {
+		return true;
+	}
+	return false;
+}
+
 
 void Util::flip_image(float *data, size_t nx, size_t ny)
 {
@@ -505,6 +513,12 @@ string Util::get_time_label()
 	sprintf(label, "%d/%02d/%04d %d:%02d",
 			t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour, t->tm_min);
 	return string(label);
+}
+
+const char* Util::get_debug_image(const char* imagename)
+{
+	string fullpath = string(getenv("HOME")) + "/images/" + string(imagename);
+	return fullpath.c_str();
 }
 
 void Util::set_log_level(int argc, char *argv[])
