@@ -1,16 +1,18 @@
 
 // Includes ====================================================================
 #include <boost/python.hpp>
-#include <emobject.h>
-#include <ctf.h>
-#include <pyem.h>
 #include <filter.h>
-#include <pylist.h>
+#include <emobject.h>
 #include <log.h>
 #include <imageio.h>
 #include <emdata.h>
 #include <emutil.h>
+#include <aligner.h>
+#include <ctf.h>
+#include <pyem.h>
+#include <pylist.h>
 #include <transform.h>
+#include <projector.h>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -18,6 +20,45 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
+
+struct EMAN_Aligner_Wrapper: EMAN::Aligner
+{
+    EMAN_Aligner_Wrapper(PyObject* self_, const EMAN::Aligner & p0):
+        EMAN::Aligner(p0), self(self_) {}
+
+    EMAN_Aligner_Wrapper(PyObject* self_):
+        EMAN::Aligner(), self(self_) {}
+
+    EMAN::EMData * align(EMAN::EMData * p0, std::basic_string<char,std::char_traits<char>,std::allocator<char> > p1) const {
+        return call_method< EMAN::EMData * >(self, "align", p0, p1);
+    }
+
+    EMAN::Dict get_params() const {
+        return call_method< EMAN::Dict >(self, "get_params");
+    }
+
+    EMAN::Dict default_get_params() const {
+        return EMAN::Aligner::get_params();
+    }
+
+    void set_params(const EMAN::Dict & p0) {
+        call_method< void >(self, "set_params", p0);
+    }
+
+    void default_set_params(const EMAN::Dict & p0) {
+        EMAN::Aligner::set_params(p0);
+    }
+
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
+    }
+
+    std::basic_string<char,std::char_traits<char>,std::allocator<char> > get_name() const {
+        return call_method< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >(self, "get_name");
+    }
+
+    PyObject* self;
+};
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, get_imageio, 2, 3)
 
@@ -29,7 +70,11 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_image_overloads_1_4, wr
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_3, align, 2, 3)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_setup4slice_overloads_0_1, setup4slice, 0, 1)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rotate_translate_overloads_0_5, rotate_translate, 0, 5)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_fast_rotate_translate_overloads_0_1, fast_rotate_translate, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_fast_translate_overloads_0_1, fast_translate, 0, 1)
 
@@ -42,6 +87,37 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_ove
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccfx_overloads_1_4, calc_ccfx, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_6, unwrap, 0, 6)
+
+struct EMAN_Projector_Wrapper: EMAN::Projector
+{
+    EMAN_Projector_Wrapper(PyObject* self_, const EMAN::Projector & p0):
+        EMAN::Projector(p0), self(self_) {}
+
+    EMAN_Projector_Wrapper(PyObject* self_):
+        EMAN::Projector(), self(self_) {}
+
+    EMAN::Dict get_params() const {
+        return call_method< EMAN::Dict >(self, "get_params");
+    }
+
+    EMAN::Dict default_get_params() const {
+        return EMAN::Projector::get_params();
+    }
+
+    EMAN::EMData * project3d(EMAN::EMData * p0) const {
+        return call_method< EMAN::EMData * >(self, "project3d", p0);
+    }
+
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
+    }
+
+    std::basic_string<char,std::char_traits<char>,std::allocator<char> > get_name() const {
+        return call_method< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >(self, "get_name");
+    }
+
+    PyObject* self;
+};
 
 struct EMAN_Filter_Wrapper: EMAN::Filter
 {
@@ -83,6 +159,10 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
         EMAN::Filter::set_params(p0);
     }
 
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
+    }
+
     std::basic_string<char,std::char_traits<char>,std::allocator<char> > get_name() const {
         return call_method< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >(self, "get_name");
     }
@@ -110,7 +190,46 @@ BOOST_PYTHON_MODULE(libpyEM)
     EMAN::Dict_from_python();
 
 
+
     
+    class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("Aligner", init<  >())
+        .def("get_params", &EMAN::Aligner::get_params, &EMAN_Aligner_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Aligner::set_params, &EMAN_Aligner_Wrapper::default_set_params)
+    ;
+
+    scope* EMAN_EMObject_scope = new scope(
+    class_< EMAN::EMObject >("EMObject", init<  >())
+        .def(init< const EMAN::EMObject & >())
+        .def(init< int >())
+        .def(init< float >())
+        .def(init< double >())
+        .def(init< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >())
+        .def(init< EMAN::EMData * >())
+        .def(init< const std::vector<float,std::allocator<float> > & >())
+        .def("get_int", &EMAN::EMObject::get_int)
+        .def("get_float", &EMAN::EMObject::get_float)
+        .def("get_double", &EMAN::EMObject::get_double)
+        .def("get_string", &EMAN::EMObject::get_string)
+        .def("get_EMData", &EMAN::EMObject::get_EMData, return_internal_reference< 1 >())
+        .def("get_farray", &EMAN::EMObject::get_farray)
+        .def("is_null", &EMAN::EMObject::is_null)
+        .def("to_str", &EMAN::EMObject::to_str)
+        .def("get_object_type_name", &EMAN::EMObject::get_object_type_name)
+        .staticmethod("get_object_type_name")
+    );
+
+    enum_< EMAN::EMObject::ObjectType >("ObjectType")
+        .value("FLOATARRAY", EMAN::EMObject::FLOATARRAY)
+        .value("EMDATA", EMAN::EMObject::EMDATA)
+        .value("STRING", EMAN::EMObject::STRING)
+        .value("UNKNOWN", EMAN::EMObject::UNKNOWN)
+        .value("INT", EMAN::EMObject::INT)
+        .value("DOUBLE", EMAN::EMObject::DOUBLE)
+        .value("FLOAT", EMAN::EMObject::FLOAT)
+    ;
+
+    delete EMAN_EMObject_scope;
+
     scope* EMAN_EMUtil_scope = new scope(
     class_< EMAN::EMUtil >("EMUtil", init<  >())
         .def(init< const EMAN::EMUtil & >())
@@ -184,15 +303,20 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("align", &EMAN::EMData::align, return_value_policy< manage_new_object >(), EMAN_EMData_align_overloads_2_3())
         .def("normalize", &EMAN::EMData::normalize)
         .def("is_complex", &EMAN::EMData::is_complex)
+        .def("set_complex", &EMAN::EMData::set_complex)
+        .def("set_ri", &EMAN::EMData::set_ri)
         .def("ri2ap", &EMAN::EMData::ri2ap)
         .def("ap2ri", &EMAN::EMData::ap2ri)
         .def("get_parent", &EMAN::EMData::get_parent, return_value_policy< manage_new_object >())
         .def("set_parent", &EMAN::EMData::set_parent)
+        .def("setup4slice", &EMAN::EMData::setup4slice, EMAN_EMData_setup4slice_overloads_0_1())
+        .def("to_corner", &EMAN::EMData::to_corner)
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
         .def("gimme_fft", &EMAN::EMData::gimme_fft)
         .def("rotate_x", &EMAN::EMData::rotate_x)
         .def("rotate_translate", &EMAN::EMData::rotate_translate, EMAN_EMData_rotate_translate_overloads_0_5())
+        .def("fast_rotate_translate", &EMAN::EMData::fast_rotate_translate, EMAN_EMData_fast_rotate_translate_overloads_0_1())
         .def("dot_rotate_translate", &EMAN::EMData::dot_rotate_translate)
         .def("fast_translate", &EMAN::EMData::fast_translate, EMAN_EMData_fast_translate_overloads_0_1())
         .def("rotate_180", &EMAN::EMData::rotate_180)
@@ -224,6 +348,7 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("div", (int (EMAN::EMData::*)(float) )&EMAN::EMData::div)
         .def("div", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::div)
         .def("done_data", &EMAN::EMData::done_data)
+        .def("update", &EMAN::EMData::update)
         .def("get_ctf", &EMAN::EMData::get_ctf, return_internal_reference< 1 >())
         .def("set_ctf", &EMAN::EMData::set_ctf)
         .def("set_size", &EMAN::EMData::set_size)
@@ -272,38 +397,18 @@ BOOST_PYTHON_MODULE(libpyEM)
     EMAN_EMData_scope->attr("DATA_READ_WRITE") = EMAN::EMData::DATA_READ_WRITE;
     delete EMAN_EMData_scope;
 
-    scope* EMAN_EMObject_scope = new scope(
-    class_< EMAN::EMObject >("EMObject", init<  >())
-        .def(init< const EMAN::EMObject & >())
-        .def(init< int >())
-        .def(init< float >())
-        .def(init< double >())
-        .def(init< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >())
-        .def(init< EMAN::EMData * >())
-        .def(init< const std::vector<float,std::allocator<float> > & >())
-        .def("get_int", &EMAN::EMObject::get_int)
-        .def("get_float", &EMAN::EMObject::get_float)
-        .def("get_double", &EMAN::EMObject::get_double)
-        .def("get_string", &EMAN::EMObject::get_string)
-        .def("get_EMData", &EMAN::EMObject::get_EMData, return_internal_reference< 1 >())
-        .def("get_farray", &EMAN::EMObject::get_farray)
-        .def("is_null", &EMAN::EMObject::is_null)
-        .def("to_str", &EMAN::EMObject::to_str)
-        .def("get_object_type_name", &EMAN::EMObject::get_object_type_name)
-        .staticmethod("get_object_type_name")
-    );
-
-    enum_< EMAN::EMObject::ObjectType >("ObjectType")
-        .value("FLOATARRAY", EMAN::EMObject::FLOATARRAY)
-        .value("EMDATA", EMAN::EMObject::EMDATA)
-        .value("STRING", EMAN::EMObject::STRING)
-        .value("UNKNOWN", EMAN::EMObject::UNKNOWN)
-        .value("INT", EMAN::EMObject::INT)
-        .value("DOUBLE", EMAN::EMObject::DOUBLE)
-        .value("FLOAT", EMAN::EMObject::FLOAT)
+    class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("Projector", init<  >())
+        .def("set_params", &EMAN::Projector::set_params)
+        .def("get_params", &EMAN::Projector::get_params, &EMAN_Projector_Wrapper::default_get_params)
     ;
 
-    delete EMAN_EMObject_scope;
+    class_< EMAN::AlignerFactory, boost::noncopyable >("AlignerFactory", no_init)
+        .def("instance", &EMAN::AlignerFactory::instance, return_value_policy< reference_existing_object >())
+        .staticmethod("instance")
+        .def("get", (EMAN::Aligner * (EMAN::AlignerFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::AlignerFactory::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Aligner * (EMAN::AlignerFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict &) )&EMAN::AlignerFactory::get, return_value_policy< manage_new_object >())
+        .def("get_list", &EMAN::AlignerFactory::get_list)
+    ;
 
     class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
         .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
@@ -318,6 +423,14 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("get", (EMAN::Filter * (EMAN::FilterFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Filter * (EMAN::FilterFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict &) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::FilterFactory::get_list)
+    ;
+
+    class_< EMAN::ProjectorFactory, boost::noncopyable >("ProjectorFactory", no_init)
+        .def("instance", &EMAN::ProjectorFactory::instance, return_value_policy< reference_existing_object >())
+        .staticmethod("instance")
+        .def("get", (EMAN::Projector * (EMAN::ProjectorFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::ProjectorFactory::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Projector * (EMAN::ProjectorFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict &) )&EMAN::ProjectorFactory::get, return_value_policy< manage_new_object >())
+        .def("get_list", &EMAN::ProjectorFactory::get_list)
     ;
 
     scope* EMAN_Log_scope = new scope(

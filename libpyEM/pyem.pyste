@@ -34,6 +34,7 @@ set_policy(EMData.unwrap, return_value_policy(manage_new_object))
 exclude(EMData.get_data)
 exclude(EMData.read_images_by_index)
 exclude(EMData.read_images_by_ext)
+exclude(EMData.fft_slice)
 
 
 Include("pyem.h")
@@ -51,3 +52,18 @@ set_policy(FilterFactory.get, return_value_policy(manage_new_object))
 exclude(FilterFactory.add)
 
 Filter = Class("EMAN::Filter", "filter.h")
+
+AlignerFactory = Class("EMAN::AlignerFactory", "aligner.h")
+set_policy(AlignerFactory.instance, return_value_policy(reference_existing_object))
+set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
+exclude(AlignerFactory.add)
+
+Aligner = Class("EMAN::Aligner", "aligner.h")
+
+ProjectorFactory = Class("EMAN::ProjectorFactory", "projector.h")
+set_policy(ProjectorFactory.instance, return_value_policy(reference_existing_object))
+set_policy(ProjectorFactory.get, return_value_policy(manage_new_object))
+exclude(ProjectorFactory.add)
+
+Projector = Class("EMAN::Projector", "projector.h")
+

@@ -1,0 +1,11 @@
+    EMAN::vector_to_python<EMAN::EMData*>();
+    EMAN::vector_from_python<int>();
+    EMAN::vector_from_python<float>();
+    EMAN::vector_to_python<std::string>();
+    
+    EMAN::map_to_python<EMAN::EMObject>();
+    EMAN::map_from_python<EMAN::EMObject>();
+
+    EMAN::Dict_to_python();
+    EMAN::Dict_from_python();
+
