@@ -28,7 +28,7 @@ int main()
 	float * data = image->get_data();
 
 	int max_index = image->calc_max_index();
-	Point<int> max_location = image->calc_max_location();
+	IntPoint max_location = image->calc_max_location();
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
