@@ -791,6 +791,103 @@ EMData *EMData::do_ift()
 	return dat;
 }
 
+EMData* EMData::get_fft_amplitude()
+{
+	ENTERFUNC;
+	
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is a real image.");
+	}
+
+	ri2ap();
+	get_data();
+
+	int nx2 = nx - 2;
+	EMData *dat = copy_head();
+	dat->set_size(nx2, ny, nz);
+	dat->to_zero();
+
+	float *d = dat->get_data();
+
+	int ndim = get_ndim();
+	if (ndim == 3) {
+		for (int k = 1; k < nz; k++) {
+			for (int j = 1; j < ny; j++) {
+				for (int i = 0; i < nx2/2; i++) {
+					d[k*nx2*ny+j*nx2+nx2/2+i] = rdata[k*nx*ny+j*nx+2*i];
+					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = rdata[k*nx*ny+j*nx+2*i];
+				}
+			}
+		}
+	}
+	else if (ndim == 2) {
+		for (int j = 1; j < ny; j++) {
+			for (int i = 0; i < nx2/2; i++) {
+				d[j*nx2+nx2/2+i] = rdata[j*nx+2*i];
+				d[(ny-j)*nx2+nx2/2-i] = rdata[j*nx+2*i];
+			}
+		}
+	}
+	done_data();
+
+	dat->done_data();
+	dat->update();
+	dat->set_complex(false);
+	dat->set_ri(false);
+
+	EXITFUNC;
+	return dat;
+}
+
+EMData* EMData::get_fft_phase()
+{
+	ENTERFUNC;
+	
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is a real image.");
+	}
+
+	ri2ap();
+	get_data();
+
+	int nx2 = nx - 2;
+	EMData *dat = copy_head();
+	dat->set_size(nx2, ny, nz);
+	dat->to_zero();
+
+	float *d = dat->get_data();
+
+	int ndim = get_ndim();
+	if (ndim == 3) {
+		for (int k = 1; k < nz; k++) {
+			for (int j = 1; j < ny; j++) {
+				for (int i = 0; i < nx2/2; i++) {
+					d[k*nx2*ny+j*nx2+nx2/2+i] = rdata[k*nx*ny+j*nx+2*i+1];
+					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = -rdata[k*nx*ny+j*nx+2*i+1];
+				}
+			}
+		}
+	}
+	else if (ndim == 2) {
+		for (int j = 1; j < ny; j++) {
+			for (int i = 0; i < nx2/2; i++) {
+				d[j*nx2+nx2/2+i] = rdata[j*nx+2*i+1];
+				d[(ny-j)*nx2+nx2/2-i] = -rdata[j*nx+2*i+1];
+			}
+		}
+	}
+	done_data();
+
+	dat->done_data();
+	dat->update();
+	dat->set_complex(false);
+	dat->set_ri(false);
+
+	EXITFUNC;
+	return dat;
+}
 
 FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 {

@@ -213,6 +213,20 @@ namespace EMAN
 		 */
 		EMData *do_ift();
 
+		/** return the amplitudes of the FFT including the left half
+		 *
+		 * @exception ImageFormatException If the image is not a complex image.
+		 * @return The current FFT image's amplitude image.
+		 */
+		EMData *get_fft_amplitude();
+
+		/** return the phases of the FFT including the left half
+		 *
+		 * @exception ImageFormatException If the image is not a complex image.
+		 * @return The current FFT image's phase image.
+		 */
+		EMData *get_fft_phase();
+
 		/** Caclulates normalization and phase residual for a slice in
 		 * an already existing volume. phase residual is calculated
 		 * using only the inner 1/2 of the fourier sphere. Both the
