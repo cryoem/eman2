@@ -56,7 +56,7 @@ def main():
     parser.add_option("--apix", type="float", help="the Angstrom/pixel for S scaling")
     parser.add_option("--average", action="store_true", help="Averages all input images (without alignment) and writes a single (normalized) output image")
     parser.add_option("--calcsf", type="string", nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
-    parser.add_option("--clip", type="float", nargs=2, action="append", help="Define the output image size. CLIP=xsize ysize")
+    parser.add_option("--clip", metavar="xsize ysize", type="float", nargs=2, action="append", help="Define the output image size. CLIP=xsize ysize")
     parser.add_option("--ctfsplit", action="store_true", help="Splits the input file into output files with the same CTF parameters")
     parser.add_option("--exclude", type="string", help="Excludes image numbers in EXCLUDE file")
     parser.add_option("--fftavg", type="string", help="Incoherent Fourier average of all images and write a single power spectrum image")
@@ -78,7 +78,7 @@ def main():
     parser.add_option("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
     parser.add_option("--shrink", type="int", action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
     parser.add_option("--split", type="int", help="Splits the input file into a set of n output files")
-    parser.add_option("--verbose", type="int", help="verbose level [1-5]")
+    parser.add_option("--verbose", type="int", help="verbose level [1-4]")
 
     append_options = ["clip", "filter", "meanshrink", "shrink", "scale"]
 
@@ -119,7 +119,7 @@ def main():
         pltfp = open(options.plt, "wb")
     
     if options.verbose:
-        Log.set_log_level(options.verbose)
+        Log.logger().set_level(options.verbose)
     
     d = EMData()
     nimg = EMUtil.get_image_count(infile)
@@ -343,7 +343,7 @@ def main():
         ffgavg.mult(1.0 / sqrt(n1 - n0 + 1))
         fftavg.write_image(options.fftavg, 0, MRC)
     
-    n_outimg = EMUtil.get_image_count(args[1])
+    n_outimg = EMUtil.get_image_count(outfile)
     print str(n_outimg) + " images"
     
     
