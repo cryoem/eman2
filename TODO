@@ -15,8 +15,6 @@
        routine will handle the logfile thing, and we may use for other tasks
        later on...
 
-  005: fix place where assuming EMData is only 2D or 3D. 1D is also OK. 4D?
-
   009: build a regression test system to call all the unit tests.
 
   020: investigate EMAN2 GUI tools: QT PyQT WxPython etc
@@ -116,5 +114,7 @@
 	       1) new logging API;
 	       2) new filter name conventions.
 
+  9/27/04 005: fix place where assuming EMData is only 2D or 3D. 1D is also
+			   OK. 4D?
+  
 
-	   
