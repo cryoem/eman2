@@ -102,23 +102,26 @@ Processes a tomographic tilt series"""
 	for i in cmplist:
 		im1=EMData()
 		im1.read_image(args[1],i[0])
+		im1.filter("NormalizeEdgeMean")
 		im2=EMData()
 		im2.read_image(args[1],i[1])
+		im2.filter("NormalizeEdgeMean")
 		
 		vec=matrixalign(im1,im2,64,64+options.maxshift*2)
 		
-		vec.sort()
-		vec2=vec[-10:]
+		vec.sort()			# sort in order of peak height
+		vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
 		
 		vec3=[(hypot(x[1],x[2]),x[0],x[1],x[2],x[3],x[4]) for x in vec2]
-		vec3.sort()
-		for x in vec3: print x
-		best=(vec3[0][4],vec3[0][5])
+		vec3.sort()					# sort in order of distance from center
+#		vec4=vec3[:len(vec3)/2]		# take the 1/2 closest to the center
+		vec4=vec3
+		for x in vec4: print x
 		
-#		dxs=[int(x[3]) for x in vec2]
-#		dys=[int(x[4]) for x in vec2]
+		dxs=[int(x[4]) for x in vec4]
+		dys=[int(x[5]) for x in vec4]
 		
-#		best=(mode(dxs),mode(dys))
+		best=(mode(dxs),mode(dys))
 	
 		print i,best
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
