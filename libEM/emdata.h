@@ -38,7 +38,6 @@ namespace EMAN
 	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
 	typedef boost::multi_array_ref<int, 2> MIArray2D;
 	typedef boost::multi_array_ref<int, 3> MIArray3D;
-	enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
 
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -217,36 +216,14 @@ namespace EMAN
 
 		/** During image reconstruction the image may have been
 		 *  padded with zeros for fourier interpolation.  In that
-		 *  case the desired image lies in the center of a larger
-		 *  volume.  The total volume is lsdxnxn, and the
-		 *  desired volume is lxlxl.  This routine copies the
-		 *  lxlxl volume from src into the first lxlxl*sizeof(src[0])
-		 *  bytes of dst.
-		 */
-		static void windum(float* src, float* dst, int l, int lsd, int n);
-
-		/** During image reconstruction the image may have been
-		 *  padded with zeros for fourier interpolation.  In that
-		 *  case the desired image lies in the center of a larger
-		 *  volume.  The total volume is lsdxnxn, and the
-		 *  desired volume is lxlxl.  This routine creates a new
+		 *  case the desired lxlxl image lies in the center of a larger
+		 *  volume.  This routine creates a new
 		 *  object that contains only the desired lxlxl volume.
+		 *  (This routine is a thin wrapper around get_clip.)
 		 *
 		 * @return An image object that has been windowed.
 		 */
 		EMData* window_padded(int l);
-
-		/** During image reconstruction the image may have been
-		 *  padded with zeros for fourier interpolation.  In that
-		 *  case the desired image lies in the center of a larger
-		 *  volume.  The total volume is lsdxnxn, and the
-		 *  desired volume is lxlxl.  This routine moves the lxlxl
-		 *  data in the current object to occupy the first 
-		 *  lxlxl*sizeof(rdata[0]) bytes.
-		 *  
-		 * @return The current image object after windowing.
-		 */
-		EMData* window_padded_inplace(int l);
 
 
 		
@@ -1270,13 +1247,13 @@ namespace EMAN
 		/** Is this image already extended along x for ffts?
 		 * @return Whether this image is extended along x for ffts.
 		 */
-		bool is_padded() const;
+		bool is_fftpadded() const;
 
 		/** Mark this image as already extended along x for ffts.
 		 * @param is_pad If true, mark as padded along x; If
 		 * false, mark as not padded along x.
 		 */
-		void set_pad(bool is_padded);
+		void set_fftpad(bool is_padded);
 
 		/** Does this image correspond to a (real-space) odd nx?
 		 * @return Whether this image has a (real-space) odd nx.
@@ -1284,7 +1261,7 @@ namespace EMAN
 		bool is_fftodd() const;
 
 		/** Mark this image as having (real-space) odd nx.
-		 * @param is_pad If true, mark as nx odd; If
+		 * @param is_fftodd If true, mark as nx odd; If
 		 * false, mark as nx not odd.
 		 */
 		void set_fftodd(bool is_fftodd);
@@ -1509,7 +1486,7 @@ namespace EMAN
 			return false;
 		}
 	}
-	inline bool EMData::is_padded() const
+	inline bool EMData::is_fftpadded() const
 	{
 		if (flags & EMDATA_PAD) {
 			return true;	
@@ -1560,9 +1537,9 @@ namespace EMAN
 		}
 	}
 
-	inline void EMData::set_pad(bool is_padded)
+	inline void EMData::set_fftpad(bool is_fftpadded)
 	{
-		if (is_padded) {
+		if (is_fftpadded) {
 			flags |= EMDATA_PAD;
 		}
 		else {

@@ -742,27 +742,6 @@ EMData::symplane0(MIArray3D& w) {
 	EXITFUNC;
 }
 
-void
-EMData::windum(float* src, float* dst, int l, int lsd, int n) {
-	ENTERFUNC;
-	typedef MArray3D::index_range range;
-	MArray3D bi(src, 
-			    boost::extents[lsd][n][n],
-				boost::fortran_storage_order());
-	bi.reindex(1); // subscripts start from 1
-	MArray3D r(dst, 
-			   boost::extents[l][l][l],
-			   boost::fortran_storage_order());
-	r.reindex(1); // subscripts start from 1
-	// first element in our target volume is at [ip+1][ip+1][ip+1]
-	int ip = (n-l)/2 + l%2; 
-	for (int iz = 1; iz <= l; iz++)
-		for (int iy = 1; iy <= l; iy++)
-			for (int ix = 1; ix <= l; ix++)
-				r[ix][iy][iz] = bi[ip+ix][ip+iy][ip+iz];
-	EXITFUNC;
-}
-
 EMData* EMData::window_padded(int l) {
 	ENTERFUNC;
 	// sanity checks
@@ -781,34 +760,10 @@ EMData* EMData::window_padded(int l) {
 		throw ImageFormatException(
 			"Need cubic real-space image.");
 	}
-	EMData* ret = copy_head();
-	ret->set_size(l, l, l);
-	float* retdata = ret->get_data();
-	windum(rdata, retdata, l, nx, n);
+	int center = (n-l)/2 + l%2;
+	Region r(center, center, center, l, l, l);
+	EMData* ret = get_clip(r);
 	return ret;
-	EXITFUNC;
-}
-
-EMData* EMData::window_padded_inplace(int l) {
-	ENTERFUNC;
-	// sanity checks
-	int n = nx;
-	if (is_complex()) {
-		LOGERR("Need real-space data for windum");
-		throw ImageFormatException(
-			"Complex input image; real-space expected.");
-	}
-	if ( flags & EMDATA_PAD ) {
-		// image has been fft-padded, compute the real-space size
-		n = (flags & EMDATA_FFTODD) ? nx - 1 : nx - 2;
-	}
-	if ((n != ny) || (n != nz)) {
-		LOGERR("Need the real-space image to be cubic.");
-		throw ImageFormatException(
-			"Need cubic real-space image.");
-	}
-	windum(rdata, rdata, l, nx, n);
-	return this;
 	EXITFUNC;
 }
 
@@ -872,12 +827,12 @@ EMData* EMData::pad_fft() {
 	EMData* newimg = copy_head();
 	size_t bytes;
 	size_t offset;
-	if (is_padded() == false) {
+	if (is_fftpadded() == false) {
 		// Not currently padded, so we want to pad for ffts
 		offset = 2 - nx%2;
 		bytes = nx*sizeof(float);
 		newimg->set_size(nx+offset, ny, nz);
-		newimg->set_pad(true);
+		newimg->set_fftpad(true);
 		if (offset == 1)
 			newimg->set_fftodd(true);
 	} else {
@@ -891,7 +846,7 @@ EMData* EMData::pad_fft() {
 		}
 		bytes = (nx-offset)*sizeof(float);
 		newimg->set_size(nx-offset, ny, nz);
-		newimg->set_pad(false);
+		newimg->set_fftpad(false);
 	}
 	MArray3D dest = newimg->get_3dview();
 	MArray3D src = this->get_3dview();
