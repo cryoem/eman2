@@ -15,7 +15,7 @@ void XYZReconstructor::setup()
 	
 }
 
-int XYZReconstructor::insert_slice(EMData * slice, const Rotation & euler)
+int XYZReconstructor::insert_slice(EMData * , const Rotation & )
 {
 	return 0;
 }

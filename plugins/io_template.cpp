@@ -18,77 +18,78 @@ XYZIO::~XYZIO()
 	}
 }
 
-int XYZIO::init()
+void XYZIO::init()
 {
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return ;
 	}
-	LOGDEBUG("XYZIO::init()");
-	initialized = true;
 
+	ENTERFUNC;
+	
+	initialized = true;
 	bool is_new_file = false;
 	xyz_file = sfopen(filename, rw_mode, &is_new_file);
-
-	if (!xyz_file) {
-		err = 1;
-		return err;
-	}
 
 	if (!is_new_file) {
 
 	}
 
-	return 0;
+	EXITFUNC;
 }
 
 bool XYZIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("XYZIO::is_valid()");
+	ENTERFUNC;
+	bool result = false;
 	if (!first_block) {
-		return false;
+		result = false;
 	}
-	return false;
+
+	// check image format validality here
+	
+	EXITFUNC;
+	return result;
 }
 
-int XYZIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
+int XYZIO::read_header(Dict & , int image_index, const Region * , bool )
 {
-	LOGDEBUG("XYZIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
+	check_read_access(image_index);
 
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-
+	// read header info here
+	
+	EXITFUNC;
 	return 0;
 }
 
-int XYZIO::write_header(const Dict & dict, int image_index, const Region *region, bool)
+int XYZIO::write_header(const Dict & , int image_index, const Region *, bool)
 {
-	LOGDEBUG("XYZIO::write_header() to file '%s'", filename.c_str());
-	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
-	}
-
+	ENTERFUNC;
+	check_write_access(rw_mode, image_index);
+	// write header info here
+	EXITFUNC;
 	return 0;
 }
 
-int XYZIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
+int XYZIO::read_data(float *data, int image_index, const Region * , bool )
 {
-	LOGDEBUG("XYZIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
+	check_read_access(image_index, data);
 
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
+	// read image data here
 
+	EXITFUNC;
 	return 0;
 }
 
-int XYZIO::write_data(float *data, int image_index, const Region *region, bool)
+int XYZIO::write_data(float *data, int image_index, const Region *, bool)
 {
-	LOGDEBUG("XYZIO::write_data() to file '%s'", filename.c_str());
-	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
-		return 1;
-	}
+	ENTERFUNC;
+	check_write_access(rw_mode, image_index, 0, data);
+
+	// write image data here
+	
+	EXITFUNC;
 	return 0;
 }
 
@@ -111,9 +112,7 @@ bool XYZIO::is_image_big_endian()
 
 int XYZIO::get_nimg()
 {
-	if (init() != 0) {
-		return 0;
-	}
+	init();
 
 	return 1;
 }

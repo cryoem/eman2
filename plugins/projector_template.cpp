@@ -3,7 +3,7 @@
 
 using namespace EMAN;
 
-EMData *XYZProjector::project3d(EMData * image) const
+EMData *XYZProjector::project3d(EMData * ) const
 {
 	return 0;
 }

@@ -2,7 +2,7 @@
 
 using namespace EMAN;
 
-EMData *XYZAligner::align(EMData * this_img, string cmp_name) const
+EMData *XYZAligner::align(EMData * this_img, string ) const
 {
 	if (!this_img) {
 		return 0;

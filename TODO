@@ -33,7 +33,7 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes EM, ICOS, MRC, IMAGIC, HDF, AMRIRA, SPIDER,
+       This includes EM, ICOS, IMAGIC, HDF, AMRIRA, SPIDER,
        SINGLE_SPIDER, PIF, VTK, XPLOR.
 	   
   049. Use exception to replace ImageIO init() error code.
@@ -51,6 +51,10 @@
   053. The overloaded binary operators for Vec3<> are not wrapped into
 	   boost python. While Matrix3f/Matrix4f's binary operators are wrapped.
 	   This may be related to the fact that Vec3<> is a template.
+
+  054. In ImageIO classes, use Exception to replace the error code checking
+       for the following functions: check_read_access(),
+       check_write_access(), check_region().
 	   
 --- Low Priority ---
 
