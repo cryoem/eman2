@@ -14,12 +14,11 @@
 
 using namespace EMAN;
 
-EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first_block,
-					      off_t file_size)
+EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
 {
     static bool initialized = false;
     static map<string, ImageType> imagetypes;
-
+    
     if (!initialized) {
 	imagetypes["mrc"] = IMAGE_MRC;
 	imagetypes["tnf"] = IMAGE_MRC;
@@ -83,14 +82,22 @@ EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first
 	initialized = true;
     }
 
+    return imagetypes[file_ext];
+}
+
+
+EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first_block,
+					      off_t file_size)
+{
     char *ext = strrchr(filename.c_str(), '.');
     if (!ext) {
 	return IMAGE_UNKNOWN;
-    }
-    
+    }    
     ext++;
 
-    switch (imagetypes[ext]) {
+    ImageType image_type = get_image_ext_type(ext);
+    
+    switch (image_type) {
     case IMAGE_MRC:
 	if (MrcIO::is_valid(first_block), file_size) {
 	    return IMAGE_MRC;

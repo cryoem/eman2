@@ -298,7 +298,6 @@ int MrcIO::write_header(const Dict & dict, int image_index)
     }
     
     mrch.labels[mrch.nlabels][0] = '\0';
-    
     mrch.mode = new_mode;
  
     if (is_complex_mode()) {
@@ -656,6 +655,5 @@ int MrcIO::to_mrcmode(int e, bool is_complex)
 	m = MRC_UNKNOWN;
     }
 
-    
     return m;
 }

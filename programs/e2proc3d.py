@@ -22,7 +22,8 @@ def main():
     parser.add_option("--clip", type="float", nargs=6, action="append", help="")
     parser.add_option("--clipc", type="float", nargs=3, action="append", help="")
     parser.add_option("--fftclip", type="float", nargs=3, action="append", help="")
-    parser.add_option("--filter", type="string", action="append", help="apply a filter. FILTER=filtername:param1=val1:param2=val2")
+    parser.add_option("--filter", type="string", action="append",
+                      help="apply a filter. FILTER=filtername:param1=val1:param2=val2")
     
     parser.add_option("--apix", type="float", help="")
     parser.add_option("--origin", type="float", nargs=3, help="")
@@ -32,9 +33,11 @@ def main():
     parser.add_option("--calcsf", type="string", nargs=2, help="")
     parser.add_option("--tophalf", action="store_true", help="")
     parser.add_option("--icos5fhalfmap", action="store_true", help="")
-
+    parser.add_option("--outtype", type="string", help="output image format, mrc, imagic, hdf, etc")
+    
     append_options = ["clip", "filter", "clipc", "fftclip", "shrink", "scale"]
-        optionlist = []
+    optionlist = []
+    
     for arg1 in sys.argv[1:]:
         if arg1[0] == "-":
             optionlist.append(arg1.lstrip("-"))
@@ -116,8 +119,23 @@ def main():
     if options.add:
         data.add(options.add)
 
-    # next: automask, automask3
-    
+    if options.fftclip:
+        fnx = options.fftclip[0]
+        fny = options.fftclip[1]
+        fnz = options.fftclip[2]
+        
+        fft = data.do_fft()
+        padfft = fft.clip(0, 0, 0, fnx+2, fny, fnz)
+        data = padfft->do_ift()
+        
+    # next tophalf
+    if options.tophalf:
+        half = data.get_top_half()
+        data = half
+
+    if options.outtype:
+        data.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype))
+        
 
 
 if __name__ == "__main__":

@@ -424,6 +424,26 @@ void EMData::insert_clip(EMData * block, const Point<int> & origin)
     flags |= EMDATA_NEEDUPD;
 }
 
+EMData *EMData::get_top_half() const
+{
+    EMData * half = new EMData();
+    half->attr_dict = attr_dict;
+    half->set_size(nx, ny, nz/2);
+    
+    float *half_data = half->get_data();
+    memcpy(half_data, &rdata[nz/2*nx*ny], sizeof(float)*nx*ny*nz/2);
+    half->done_data();
+
+    float spacing_sec = attr_dict["spacing_sec"];
+    float origin_sec = attr_dict["origin_sec"];
+    origin_sec += spacing_sec  * nz / 2;
+    half->attr_dict["origin_sec"] = origin_sec;
+    half->update();
+
+    return half;
+}
+    
+
 
 EMData *EMData::do_fft()
 {

@@ -63,7 +63,8 @@ namespace EMAN
 
 	EMData *get_clip(const Region & area);
 	void insert_clip(EMData * block, const Point<int> & originn);
-
+	EMData *get_top_half() const;
+			     
 	EMData *do_fft();
 	EMData *do_ift();
 
