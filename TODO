@@ -27,7 +27,7 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes ICOS, IMAGIC, HDF, AMRIRA, SPIDER,
+       This includes IMAGIC, HDF, AMRIRA, SPIDER,
        SINGLE_SPIDER, PIF, VTK, XPLOR.
 	   
   051. Transform may has a confusion about post translation and
