@@ -7,6 +7,7 @@ ADD_EXECUTABLE(cmp cmp.cpp)
 ADD_EXECUTABLE(radial_dist radial_dist.cpp)
 ADD_EXECUTABLE(locations locations.cpp)
 ADD_EXECUTABLE(image_overwrite image_overwrite.cpp)
+ADD_EXECUTABLE(getclip getclip.cpp)
 
 FIND_LIBRARY(EMAN1_LIBRARY NAMES EM PATHS $ENV{EMANDIR}/lib $ENV{HOME}/EMAN/lib)
 IF(EMAN1_LIBRARY)

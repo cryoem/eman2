@@ -306,36 +306,44 @@ EMData *EMData::get_clip(const Region & area)
 	int y0 = (int) area.origin.y;
 	y0 = y0 < 0 ? 0 : y0;
 
+	int z0 = (int) area.origin.z;
+	z0 = z0 < 0 ? 0 : z0;
+								
+	int x1 = (int) (area.origin.x + area.size.x);
+	x1 = x1 > nx ? nx : x1;
+										
 	int y1 = (int) (area.origin.y + area.size.y);
 	y1 = y1 > ny ? ny : y1;
 
-	int yd0 = (int) (area.origin.y < 0 ? -area.origin.y : 0);
-	int xd0 = (int) (area.origin.x < 0 ? -area.origin.x : 0);
-
-	int z0 = (int) area.origin.z;
-	int z1 = (int) (area.origin.z + zsize);
-
-	int result_nx = area.size.x;
-	if (result_nx > nx) {
-		result_nx = nx;
+	int z1 = (int) (area.origin.z + area.size.z);
+	z1 = z1 > nz ? nz : z1;
+	if (z1 <= 0) {
+		z1 = 1;
 	}
+	
+	int xd0 = (int) (area.origin.x < 0 ? -area.origin.x : 0);
+	int yd0 = (int) (area.origin.y < 0 ? -area.origin.y : 0);
+	int zd0 = (int) (area.origin.z < 0 ? -area.origin.z : 0);
 
-	int result_row_size = result_nx * sizeof(float);
-	int sec_size = nx * ny;
-	int result_sec_size = area.size.x * area.size.y;
+	int clipped_row_size = x1 * sizeof(float);
+	int src_secsize = nx * ny;
+	int dst_secsize = area.size.x * area.size.y;
 
-	float *src = rdata + y0 * nx + x0;
+	float *src = rdata + z0 * src_secsize + y0 * nx + x0;
 	float *dst = result->get_data();
-	dst += yd0 * area.size.x + xd0;
+	dst += zd0 * dst_secsize + yd0 * area.size.x + xd0;
 
+	int src_gap = src_secsize - (y1-y0) * nx;
+	int dst_gap = dst_secsize - (y1-y0) * area.size.x;
+	
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
-			memcpy(dst, src, result_row_size);
+			memcpy(dst, src, clipped_row_size);
 			src += nx;
 			dst += area.size.x;
 		}
-		src += sec_size;
-		dst += result_sec_size;
+		src += src_gap;
+		dst += dst_gap;
 	}
 
 	done_data();

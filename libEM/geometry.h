@@ -17,7 +17,7 @@ namespace EMAN
 		Size():x(0), y(0), z(0)
 		{
 		}
-		Size(int xx, int yy):x(x), y(yy), z(0)
+		Size(int xx, int yy):x(xx), y(yy), z(0)
 		{
 		}
 		Size(int xx, int yy, int zz):x(xx), y(yy), z(zz)
