@@ -1,0 +1,352 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>EMAN2 Exception FAQ</title>
+</head>
+<body style="color: rgb(0, 0, 0);" alink="#ee0000" link="#0000ee"
+ vlink="#551a8b">
+<div style="text-align: center; color: rgb(51, 102, 255);"><big><big><span
+ style="font-weight: bold;">EMAN2 Exception FAQ</span></big></big><br>
+</div>
+<br>
+<big style="color: rgb(51, 51, 255);"><br style="font-weight: bold;">
+<span style="font-weight: bold;">1. How to use an exception in general?</span></big><br>
+<ul style="background-color: rgb(255, 255, 255);">
+  <li style="font-weight: bold;"> Here is an example on throwing an
+exception:</li>
+  <li style="font-weight: bold;"><br>
+  </li>
+  <li style="font-weight: bold;">
+    <table style="width: 80%; text-align: left;" border="0"
+ cellpadding="2" cellspacing="2">
+      <tbody>
+        <tr>
+          <td
+ style="background-color: rgb(255, 255, 204); vertical-align: top;"><span
+ style="font-family: monospace;">vector &lt; float
+&gt;EMData::calc_fourier_shell_correlation(EMData * with)</span><br
+ style="font-family: monospace;">
+          <span style="font-family: monospace;">{&nbsp;&nbsp; </span><br
+ style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; if
+(!with)
+{</span><br style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; throw <span style="font-weight: bold;">NullPointerException</span>("NULL
+input image");</span><br style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
+ style="font-family: monospace;">
+          <br style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; if
+(!EMUtil::is_same_size(this, with)) {</span><br
+ style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; LOGERR("images not same size");</span><br
+ style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; throw <span style="font-weight: bold;">ImageFormatException</span>(
+"images not same size");</span><br style="font-family: monospace;">
+          <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+}&nbsp; </span><br style="font-family: monospace;">
+          <span style="font-family: monospace;">//...</span><br
+ style="font-family: monospace;">
+          <span style="font-family: monospace;">}</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+  </li>
+  <span style="font-family: monospace;"></span>
+</ul>
+<ul style="background-color: rgb(255, 255, 255);">
+  <span style="font-family: monospace;"></span><span
+ style="font-family: monospace;"></span><br>
+  <li><span style="font-weight: bold;">Here is an example on catching
+all possible exception</span></li>
+  <li><span style="font-weight: bold;"><br>
+    </span></li>
+  <li>
+    <table style="width: 80%; text-align: left; font-family: monospace;"
+ border="0" cellpadding="2" cellspacing="2">
+      <tbody>
+        <tr>
+          <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">
+void foo()<br>
+{<br>
+&nbsp;&nbsp;&nbsp;
+EMData*
+e1 = new EMData();<br>
+&nbsp;&nbsp;&nbsp;
+EMData*
+e2 = new EMData();<br>
+&nbsp;&nbsp;&nbsp;
+try {<br>
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; e1-&gt;read_image("test1.mrc");<br>
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; e2-&gt;read_image("test2.mrc");<br>
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; vector&lt;float&gt; v =
+e1-&gt;calc_fourier_shell_correlation(e2);<br>
+&nbsp;&nbsp;&nbsp; }<br>
+&nbsp;&nbsp;&nbsp;
+catch <span style="font-weight: bold;">(E2Exception</span> &amp;
+exception) {<br>
+&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; printf("%s\n", exception.what());<br>
+&nbsp;&nbsp;&nbsp; }<br>
+} </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <span style="font-family: monospace;"></span></li>
+  <li style="background-color: rgb(255, 255, 255);"><span
+ style="font-family: monospace;"><span style="font-weight: bold;">Here
+is an example on catching a specific exception:</span><br>
+    <br>
+    </span>
+    <table style="width: 80%; text-align: left;" border="0"
+ cellpadding="2" cellspacing="2">
+      <tbody>
+        <tr>
+          <td
+ style="background-color: rgb(255, 255, 204); vertical-align: top;"><span
+ style="font-family: monospace;">void foo()<br>
+{<br>
+&nbsp;&nbsp;&nbsp; EMData* e1 = new EMData();<br>
+&nbsp;&nbsp;&nbsp; EMData* e2 = new EMData();<br>
+&nbsp;&nbsp;&nbsp; try {<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; e1-&gt;read_image("test1.mrc");<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; e2-&gt;read_image("test2.mrc");<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; vector&lt;float&gt; v =
+e1-&gt;calc_fourier_shell_correlation(e2);<br>
+&nbsp;&nbsp;&nbsp; }<br>
+&nbsp;&nbsp;&nbsp; catch (<span style="font-weight: bold;">_NullPointerException</span>
+&amp; exception) {<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; printf("%s\n", exception.what());<br>
+&nbsp;&nbsp;&nbsp; }<br>
+}</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <span style="font-family: monospace;"><br>
+    <br>
+    </span><br>
+    <span style="font-family: monospace; color: rgb(255, 0, 0);"><span
+ style="font-weight: bold;">Note the "_" before _NullPointerException.</span></span><br>
+    <span style="font-family: monospace;"><br>
+    <br>
+    </span></li>
+</ul>
+<br>
+<big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">2.
+What are the existing Exception types in EMAN2?</span></big><br>
+<br>
+<table style="width: 90%; text-align: left;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">Exception
+Name<br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">&nbsp;
+Parameters&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
+      </td>
+      <td
+ style="vertical-align: top; text-align: center; font-weight: bold;">Description<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">E2Exception<br>
+      </td>
+      <td style="vertical-align: top;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <br>
+      </td>
+      <td style="vertical-align: top;">E2Exception class is the parent
+class of all EMAN2 E2Exceptions. You may use it to catch any EMAN2
+exception. You shouldn't throw any E2Exception in your code.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">FileAccessException</td>
+      <td style="vertical-align: top;">string filename;<br>
+      </td>
+      <td style="vertical-align: top;">Used when a file access error
+occurs. For example, when you&nbsp; try to open a non-existing file or
+directory.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">ImageDimensionException</td>
+      <td style="vertical-align: top;">string desc;<br>
+      </td>
+      <td style="vertical-align: top;">Used when an image is not in the
+expected dimension. For example, a 2D image is given when a 3D image is
+expected.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">ImageFormatException</td>
+      <td style="vertical-align: top;">string desc;<br>
+      </td>
+      <td style="vertical-align: top;">Used when an image is not in the
+expected format.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">ImageReadException</td>
+      <td style="vertical-align: top;">string imagename;<br>
+string desc;<br>
+      </td>
+      <td style="vertical-align: top;">Used when an error occurs at
+image reading time.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">ImageWriteException</td>
+      <td style="vertical-align: top;">string imagename;<br>
+string desc;</td>
+      <td style="vertical-align: top;">Used when an error occurs at
+image writing time.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">InvalidValueException<br>
+      </td>
+      <td style="vertical-align: top;">int value;<br>
+int desc;<br>
+      </td>
+      <td style="vertical-align: top;">Used when an invalid integer
+value is given.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">NotExistingObjectException</td>
+      <td style="vertical-align: top;">string objectname;<br>
+string desc;<br>
+      </td>
+      <td style="vertical-align: top;">Used when an object type, like
+an EMObject type, doesn't exist.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">NullPointerException</td>
+      <td style="vertical-align: top;">string desc;<br>
+      </td>
+      <td style="vertical-align: top;">Used when a NULL is given to a
+pointer that should not be NULL.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">OutofRangeException</td>
+      <td style="vertical-align: top;">int low;<br>
+int high;<br>
+int input;<br>
+int objectname;<br>
+      </td>
+      <td style="vertical-align: top;">Used when the given value is out
+of range. <br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: left;">TypeException</td>
+      <td style="vertical-align: top;">string desc;<br>
+string type;<br>
+      </td>
+      <td style="vertical-align: top;">Used when a type cast error
+occurs. For example, when casting an EMData* type to a float type.<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<br style="color: rgb(51, 51, 255);">
+<br style="color: rgb(51, 51, 255);">
+<big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">3.
+How to define a new XYZ Exception class?</span></big><br>
+<br>
+<ul style="font-weight: bold;">
+  <li>A XYZ Exception class is defined in the following way:</li>
+</ul>
+<ul style="margin-left: 40px;">
+  <li>It will extend E2Exception class.</li>
+  <li>The class is named _XYZException.</li>
+  <li>The class has a function to return its name "XYZException".</li>
+  <li>A macro called "XYZException" is defined to simplify the usage of
+_XYZException class. </li>
+</ul>
+<ul>
+  <li><span style="font-weight: bold;">Here is the code for
+NullPointerException.</span></li>
+</ul>
+<span style="font-family: monospace;"><br>
+</span>
+<table style="text-align: left; width: 780px; height: 230px;" border="0"
+ cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);"><span
+ style="font-family: monospace;"><br>
+&nbsp; class _NullPointerException : public E2Exception</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp; {</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp; public:</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; _NullPointerException(const string&amp; file =
+"unknown",</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp; int
+line = 0, const string&amp; desc_str = "")</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; : E2Exception(file, line,
+desc_str) {}</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; const char *name() const { return
+"NullPointerException"; }</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; </span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp; };<br>
+      <br style="font-family: monospace;">
+&nbsp; </span><span style="font-family: monospace;">#define
+NullPointerException(desc) _NullPointerException(__FILE__,
+__LINE__,desc)</span><br style="font-family: monospace;">
+      <br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<span style="font-family: monospace;"></span><br>
+<br>
+<br>
+<br>
+<br>
+<hr style="width: 100%; height: 2px;">Last modified on <big><span
+ style="font-weight: bold;">12/07/2004</span></big> by <big><span
+ style="font-weight: bold;">Liwei Peng</span></big> (lpeng@bcm.tmc.edu)<br>
+<br>
+</body>
+</html>
