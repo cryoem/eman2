@@ -6,7 +6,7 @@
 #include "emdata.h"
 #include "interp.h"
 #ifdef WIN32
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #endif
 
 using namespace EMAN;
@@ -72,9 +72,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 				data[ii + 1] = 0;
 			}
 			else {
-				float xx = x * mx[0][0] + (y - f_ny / 2) * mx[0][1];
-				float yy = x * mx[1][0] + (y - f_ny / 2) * mx[1][1];
-				float zz = x * mx[2][0] + (y - f_ny / 2) * mx[2][1];
+				float xx = (float) (x * mx[0][0] + (y - f_ny / 2) * mx[0][1]);
+				float yy = (float) (x * mx[1][0] + (y - f_ny / 2) * mx[1][1]);
+				float zz = (float) (x * mx[2][0] + (y - f_ny / 2) * mx[2][1]);
 
 				int cc = 1;
 				if (xx < 0) {
@@ -187,7 +187,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 1; k <= z0 + 1; k++) {
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = x0 - 2; i <= x0 + 2; i += 2) {
-							float r = Util::hypot3(i / 2.0 - x - 2.0, j - y, k - z);
+							float r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
 							float g = exp(-r / gw);
 							n += g;
 							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
@@ -200,7 +200,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 1; k <= z0 + 1; k++) {
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = x0 - 2; i <= x0 + 2; i += 2) {
-							float r = Util::hypot3(i / 2.0 - x, j - y, k - z);
+							float r = Util::hypot3(i / 2.0f - x, j - y, k - z);
 							float g = exp(-r / gw);
 							n += g;
 							data[0] += rdata[i + j * nx + k * nx * ny] * g;
@@ -229,7 +229,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 1; k <= z0 + 2; k++) {
 					for (int j = y0 - 1; j <= y0 + 2; j++) {
 						for (int i = x0 - 2; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0 - x - 2.0, j - y, k - z);
+							float r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
 							float g = exp(-r / gw);
 							n += g;
 							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
@@ -242,7 +242,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 1; k <= z0 + 2; k++) {
 					for (int j = y0 - 1; j <= y0 + 2; j++) {
 						for (int i = x0 - 2; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0 - x, j - y, k - z);
+							float r = Util::hypot3(i / 2.0f - x, j - y, k - z);
 							float g = exp(-r / gw);
 							n += g;
 							data[0] += rdata[i + j * nx + k * nx * ny] * g;
@@ -321,7 +321,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0 - x - 2.0, j - y, k - z);
+							float r = Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z);
 							float g = exp(-r / gw);
 							n += g;
 							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
@@ -334,7 +334,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3(i / 2.0 - x, j - y, k - z);
+							float r = Util::hypot3(i / 2.0f - x, j - y, k - z);
 							float g = exp(-r / gw);
 							n += g;
 							data[0] += rdata[i + j * nx + k * nx * ny] * g;
@@ -363,7 +363,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = sqrt(Util::hypot3(i / 2.0 - x - 2.0, j - y, k - z));
+							float r = sqrt(Util::hypot3(i / 2.0f - x - 2.0f, j - y, k - z));
 							float g = Interp::hyperg(r);
 							n += g;
 							data[0] += supp[i + j * 12 + k * 12 * ny] * g;
@@ -376,7 +376,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				for (int k = z0 - 2; k <= z0 + 2; k++) {
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = x0 - 4; i <= x0 + 4; i += 2) {
-							float r = sqrt(Util::hypot3(i / 2.0 - x, j - y, k - z));
+							float r = sqrt(Util::hypot3(i / 2.0f - x, j - y, k - z));
 							float g = Interp::hyperg(r);
 							n += g;
 							data[0] += rdata[i + j * nx + k * nx * ny] * g;
@@ -392,7 +392,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 	}
 }
 
-#if 1
+
 EMData *PawelProjector::project3d(EMData * image) const
 {
 	if (!image) {
@@ -413,7 +413,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	Vec3 < int >origins(nx / 2, ny / 2, nz / 2);
+	Vec3i origins(nx / 2, ny / 2, nz / 2);
 
 	int radius = 0;
 	if (nz == 1) {
@@ -426,7 +426,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	if (new_radius > 0) {
 		radius = new_radius;
 	}
-	float radius_square = radius * radius;
+	float radius_square = (float)radius * radius;
 
 	int nsec = ny * nz;
 	Pointers *xmax = new Pointers[nsec];
@@ -440,16 +440,16 @@ EMData *PawelProjector::project3d(EMData * image) const
 	int nrows = 0;
 
 	for (int i = 0; i < nz; i++) {
-		float dm1 = i - origins[2];
+		float dm1 = (float) i - origins[2];
 		float sum_1 = dm1 * dm1;
 
 		for (int j = 0; j < ny; j++) {
-			float dm2 = j - origins[1];
+			float dm2 = (float)j - origins[1];
 			float sum_2 = sum_1 + dm2 * dm2;
 			bool first = true;
 
 			for (int k = 0; k < nx; k++) {
-				float dm3 = k - origins[0];
+				float dm3 = (float)k - origins[0];
 				float dist = sum_2 + dm3 * dm3;
 
 				if (first) {
@@ -490,10 +490,10 @@ EMData *PawelProjector::project3d(EMData * image) const
 		for (int i = 0; i < nrows; i++) {
 			Pointers row_data = xmax[i];
 			int kb = row_data.location[1] + origins[1];
-			Vec3 < float >vb = row_data.location * mat + origins;
+			Vec3f vb = row_data.location * mat + origins;
 
 			for (int k = row_data.start - 1; k < row_data.end; k++) {
-				Vec3 < int >iq((int) floor(vb[0]), (int) floor(vb[1]), (int) floor(vb[2]));
+				Vec3i iq((int) floor(vb[0]), (int) floor(vb[1]), (int) floor(vb[2]));
 
 				if (radius2 > nx || radius2 > ny) {
 					if (iq[0] > (nx - 1) || iq[1] > (ny - 1) || iq[2] > (nz - 1)) {
@@ -502,7 +502,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 					}
 				}
 
-				Vec3 < float >dip = vb - iq;
+				Vec3f dip = vb - iq;
 				int l = iq[0] + iq[1] * nx + iq[2] * nxy;
 				float a1 = rdata[l];
 				float a2 = rdata[l + 1] - a1;
@@ -530,7 +530,6 @@ EMData *PawelProjector::project3d(EMData * image) const
 	ret->update();
 	return ret;
 }
-#endif
 
 
 EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
@@ -588,16 +587,16 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 
 			if (fabs(slx) > 50 || fabs(sly) > 50 ||
 				dat[k + 1] == -1000 || j == ny - 1 || i == nx - 1) {
-				dat[k] = 2.0;
+				dat[k] = 2.0f;
 			}
 			else {
-				v0[0] = 1.0 / hypot(1, slx);
+				v0[0] = 1.0f / (float)hypot(1, slx);
 				v0[1] = 0;
-				v0[2] = slx / hypot(1, slx);
+				v0[2] = slx / (float)hypot(1, slx);
 
 				v1[0] = 0;
-				v1[1] = 1.0 / hypot(1, sly);
-				v1[2] = sly / hypot(1, sly);
+				v1[1] = 1.0f / (float)hypot(1, sly);
+				v1[2] = sly / (float)hypot(1, sly);
 
 				v2[0] = v0[1] * v1[2] - v0[2] * v1[1];
 				v2[1] = v0[2] * v1[0] - v0[0] * v1[2];
@@ -680,15 +679,15 @@ EMData *StandardBigProjector::project3d(EMData * image) const
 	for (int k = -nz / 2; k < nz - nz / 2; k++) {
 		for (int j = -ny / 2; j < ny - ny / 2; j++) {
 			for (int i = -nx / 2; i < nx - nx / 2; i++, l++) {
-				float x2 = mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2;
-				float y2 = mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2;
-				float z2 = mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + nz / 2;
+				float x2 = (float)(mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2);
+				float y2 = (float)(mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2);
+				float z2 = (float)(mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + nz / 2);
 
 				if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
 					&& z2 < (nz - 1)) {
-					float x = Util::fast_floor(x2);
-					float y = Util::fast_floor(y2);
-					float z = Util::fast_floor(z2);
+					float x = (float)Util::fast_floor(x2);
+					float y = (float)Util::fast_floor(y2);
+					float z = (float)Util::fast_floor(z2);
 
 					float t = x2 - x;
 					float u = y2 - y;

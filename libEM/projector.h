@@ -178,7 +178,7 @@ namespace EMAN
 
 		struct Pointers
 		{
-			Vec3 < int >location;
+			Vec3i location;
 			int start;
 			int end;
 		};

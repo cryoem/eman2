@@ -5,11 +5,11 @@
 
 using namespace EMAN;
 
-Transform & Transform::set_transform_instance(const Vec3 < float >&translation,
+Transform & Transform::set_transform_instance(const Vec3f &translation,
 											  const Rotation & rotation,
-											  const Vec3 < float >&scale_factor,
+											  const Vec3f &scale_factor,
 											  const Rotation & scale_orientation,
-											  const Vec3 < float >&center)
+											  const Vec3f &center)
 {
 	Rotation so = scale_orientation;
 
@@ -31,9 +31,9 @@ Transform & Transform::set_transform_instance(const Vec3 < float >&translation,
 
 
 
-Vec3 < float >Transform::transform(const Vec3 < float >&x)
+Vec3f Transform::transform(const Vec3f &x)
 {
-	Vec3 < float >x1 = x - pre_trans;
+	Vec3f x1 = x - pre_trans;
 	Matrix3f r = matrix.get_matrix3();
 	x1 = r * x1;
 	x1 += get_post_translate();
@@ -42,7 +42,7 @@ Vec3 < float >Transform::transform(const Vec3 < float >&x)
 }
 
 
-Vec3 < float >Transform::inverse_transform(const Vec3 < float >&v)
+Vec3f Transform::inverse_transform(const Vec3f &v)
 {
 	Transform t = create_inverse();
 	return t.transform(v);
@@ -50,22 +50,22 @@ Vec3 < float >Transform::inverse_transform(const Vec3 < float >&v)
 
 float Transform::get_scale(int i) const
 {
-	float s = matrix[i][0] *  matrix[i][0] + matrix[i][1]*matrix[i][1]
-		+ matrix[i][2] * matrix[i][2];
+	float s = (float)(matrix[i][0] *  matrix[i][0] + matrix[i][1]*matrix[i][1]
+		+ matrix[i][2] * matrix[i][2]);
 	return s;
 }
 
-Vec3 < float > Transform::get_scale() const
+Vec3f  Transform::get_scale() const
 {
-	float s1 = matrix[0][0] *  matrix[0][0] + matrix[0][1]*matrix[0][1]
-		+ matrix[0][2] * matrix[0][2];
-	float s2 = matrix[1][0] *  matrix[1][0] + matrix[1][1]*matrix[1][1]
-		+ matrix[1][2] * matrix[1][2];
+	float s1 = (float)(matrix[0][0] *  matrix[0][0] + matrix[0][1]*matrix[0][1]
+		+ matrix[0][2] * matrix[0][2]);
+	float s2 = (float)(matrix[1][0] *  matrix[1][0] + matrix[1][1]*matrix[1][1]
+		+ matrix[1][2] * matrix[1][2]);
 
-	float s3 = matrix[2][0] *  matrix[2][0] + matrix[2][1]*matrix[2][1]
-		+ matrix[2][2] * matrix[2][2];
+	float s3 = (float)(matrix[2][0] *  matrix[2][0] + matrix[2][1]*matrix[2][1]
+		+ matrix[2][2] * matrix[2][2]);
 	
-	return Vec3 < float >(s1, s2, s3);
+	return Vec3f(s1, s2, s3);
 }
 
 

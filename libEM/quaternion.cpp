@@ -11,9 +11,9 @@ Quaternion::Quaternion()
 {
 }
 
-Quaternion::Quaternion(float radians, const Vec3 < float >&axis)
+Quaternion::Quaternion(float radians, const Vec3f &axis)
 {
-	Vec3 < float >q = axis;
+	Vec3f q = axis;
 	//normalize();
 
 	q *= sin(radians / 2.0f);
@@ -24,9 +24,9 @@ Quaternion::Quaternion(float radians, const Vec3 < float >&axis)
 	e3 = q[2];
 }
 
-Quaternion::Quaternion(const Vec3 < float >&axis, float radians)
+Quaternion::Quaternion(const Vec3f &axis, float radians)
 {
-	Vec3 < float >q = axis;
+	Vec3f q = axis;
 	//normalize();
 
 	q *= sin(radians / 2.0f);
@@ -65,21 +65,21 @@ Quaternion::Quaternion(const Matrix3f & m)
 	}
 
 	if (m[0][0] + m[1][1] + m[2][2] > m[i][i]) {
-		e0 = sqrt(m[0][0] + m[1][1] + m[2][2] + 1) / 2.0f;
-		e1 = (m[1][2] - m[2][1]) / (4 * e0);
-		e2 = (m[2][0] - m[0][2]) / (4 * e0);
-		e3 = (m[0][1] - m[1][0]) / (4 * e0);
+		e0 = (float) (sqrt(m[0][0] + m[1][1] + m[2][2] + 1) / 2.0);
+		e1 = (float) ((m[1][2] - m[2][1]) / (4 * e0));
+		e2 = (float) ((m[2][0] - m[0][2]) / (4 * e0));
+		e3 = (float) ((m[0][1] - m[1][0]) / (4 * e0));
 	}
 	else {
 		float quat[3];
 		int j = (i + 1) % 3;
 		int k = (i + 2) % 3;
 
-		quat[i] = sqrt(m[i][i] - m[j][j] - m[k][k] + 1) / 2.0f;
-		quat[j] = (m[i][j] + m[j][i]) / (4 * quat[i]);
-		quat[k] = (m[i][k] + m[k][i]) / (4 * quat[i]);
+		quat[i] = (float) (sqrt(m[i][i] - m[j][j] - m[k][k] + 1) / 2.0);
+		quat[j] = (float) ((m[i][j] + m[j][i]) / (4 * quat[i]));
+		quat[k] = (float) ((m[i][k] + m[k][i]) / (4 * quat[i]));
 
-		e0 = (m[j][k] - m[k][j]) / (4 * quat[i]);
+		e0 = (float) ((m[j][k] - m[k][j]) / (4 * quat[i]));
 		e1 = quat[0];
 		e2 = quat[1];
 		e3 = quat[2];
@@ -111,21 +111,21 @@ Quaternion::Quaternion(const Matrix4f & m)
 	}
 
 	if (m[0][0] + m[1][1] + m[2][2] > m[i][i]) {
-		e0 = sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]) / 2.0f;
-		e1 = (m[1][2] - m[2][1]) / (4 * e0);
-		e2 = (m[2][0] - m[0][2]) / (4 * e0);
-		e3 = (m[0][1] - m[1][0]) / (4 * e0);
+		e0 = (float) (sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]) / 2.0f);
+		e1 = (float) ((m[1][2] - m[2][1]) / (4 * e0));
+		e2 = (float) ((m[2][0] - m[0][2]) / (4 * e0));
+		e3 = (float) ((m[0][1] - m[1][0]) / (4 * e0));
 	}
 	else {
 		float quat[3];
 		int j = (i + 1) % 3;
 		int k = (i + 2) % 3;
 
-		quat[i] = sqrt(m[i][i] - m[j][j] - m[k][k] + m[3][3]) / 2.0f;
-		quat[j] = (m[i][j] + m[j][i]) / (4 * quat[i]);
-		quat[k] = (m[i][k] + m[k][i]) / (4 * quat[i]);
+		quat[i] = (float) (sqrt(m[i][i] - m[j][j] - m[k][k] + m[3][3]) / 2.0f);
+		quat[j] = (float) ((m[i][j] + m[j][i]) / (4 * quat[i]));
+		quat[k] = (float) ((m[i][k] + m[k][i]) / (4 * quat[i]));
 
-		e0 = (m[j][k] - m[k][j]) / (4 * quat[i]);
+		e0 = (float) ((m[j][k] - m[k][j]) / (4 * quat[i]));
 		e1 = quat[0];
 		e2 = quat[1];
 		e3 = quat[2];
@@ -161,12 +161,12 @@ Quaternion Quaternion::create_inverse() const
 }
 
 
-Vec3 < float >Quaternion::rotate(const Vec3 < float >&v) const
+Vec3f Quaternion::rotate(const Vec3f &v) const
 {
-	Vec3 < float >i(e1, e2, e3);
-	Vec3 < float >v1 = i.cross(v) * (2 * e0);
-	Vec3 < float >v2 = v1.cross(i) * (float) 2;
-	Vec3 < float >rotated = v + v1 - v2;
+	Vec3f i(e1, e2, e3);
+	Vec3f v1 = i.cross(v) * (2 * e0);
+	Vec3f v2 = v1.cross(i) * (float) 2;
+	Vec3f rotated = v + v1 - v2;
 
 	return rotated;
 }
@@ -174,7 +174,7 @@ Vec3 < float >Quaternion::rotate(const Vec3 < float >&v) const
 
 float Quaternion::to_angle() const
 {
-	Vec3 < float >q(e1, e2, e3);
+	Vec3f q(e1, e2, e3);
 	float len = q.length();
 	float radians = 0;
 
@@ -187,11 +187,11 @@ float Quaternion::to_angle() const
 	return radians;
 }
 
-Vec3 < float >Quaternion::to_axis() const
+Vec3f Quaternion::to_axis() const
 {
-	Vec3 < float >q(e1, e2, e3);
+	Vec3f q(e1, e2, e3);
 	float len = q.length();
-	Vec3 < float >axis;
+	Vec3f axis;
 
 	if (len > 0.00001f) {
 		axis = q * ((float) (1.0f / len));
@@ -256,9 +256,9 @@ float Quaternion::real() const
 	return e0;
 }
 
-Vec3 < float >Quaternion::unreal() const
+Vec3f Quaternion::unreal() const
 {
-	return Vec3 < float >(e1, e2, e3);
+	return Vec3f(e1, e2, e3);
 }
 
 vector < float >Quaternion::get_as_list() const
@@ -394,11 +394,13 @@ Quaternion EMAN::operator/(const Quaternion & q1, const Quaternion & q2)
 bool EMAN::operator==(const Quaternion & q1, const Quaternion & q2)
 {
 	bool result = true;
+	const float err_limit = 0.00001f;
+	
 	vector < float >v1 = q1.get_as_list();
 	vector < float >v2 = q2.get_as_list();
 
 	for (size_t i = 0; i < v1.size(); i++) {
-		if (v1[i] != v2[i]) {
+		if (fabs(v1[i] - v2[i]) > err_limit) {
 			result = false;
 			break;
 		}
@@ -413,13 +415,14 @@ bool EMAN::operator!=(const Quaternion & q1, const Quaternion & q2)
 }
 
 
-Quaternion Quaternion::interpolate(const Quaternion & from, const Quaternion & to, float t)
+Quaternion Quaternion::interpolate(const Quaternion & from,
+								   const Quaternion & to, float t)
 {
-	const double epsilon = 0.00001f;
+	const double epsilon = 0.00001;
 	double cosom = from.e1 * to.e1 + from.e2 * to.e2 + from.e3 * to.e3 + from.e0 * to.e0;
 
 	Quaternion q;
-	if (cosom < 0.0f) {
+	if (cosom < 0) {
 		cosom = -cosom;
 		q = q - to;
 	}
@@ -437,5 +440,8 @@ Quaternion Quaternion::interpolate(const Quaternion & from, const Quaternion & t
 		scale1 = sin(t * omega) / sinom;
 	}
 
-	return (scale0 * from + scale1 * q);
+	float scale0f = (float) scale0;
+	float scale1f = (float) scale1;
+	
+	return (scale0f * from + scale1f * q);
 }

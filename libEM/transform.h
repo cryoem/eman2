@@ -50,7 +50,7 @@ namespace EMAN
 			matrix = m;
 		}
 
-		Transform(const Vec3 < float >&translation)
+		Transform(const Vec3f &translation)
 		{
 			for (int i = 0; i < 3; i++) {
 				matrix[i][3] = translation[i];
@@ -62,7 +62,7 @@ namespace EMAN
 			matrix = rotation.get_matrix4();
 		}
 
-		Transform(const Rotation & rotation, const Vec3 < float >&post_translation)
+		Transform(const Rotation & rotation, const Vec3f &post_translation)
 		{
 			Matrix3f rotate_m = rotation.get_matrix3();
 
@@ -91,12 +91,12 @@ namespace EMAN
 			return (*this);
 		}
 
-		Transform & set_translate_instance(const Vec3 < float >&s) {
+		Transform & set_translate_instance(const Vec3f &s) {
 			matrix.make_identity();
 			return set_post_translate(s);
 		}
 
-		Transform & set_scale_instance(const Vec3 < float >&s) {
+		Transform & set_scale_instance(const Vec3f &s) {
 			matrix.make_identity();
 			for (int i = 0; i < 3; i++) {
 				matrix[i][i] = s[i];
@@ -104,22 +104,22 @@ namespace EMAN
 			return (*this);
 		}
 
-		Transform & set_transform_instance(const Vec3 < float >&translation,
+		Transform & set_transform_instance(const Vec3f &translation,
 										   const Rotation & roration,
-										   const Vec3 < float >&scale_factor,
+										   const Vec3f &scale_factor,
 										   const Rotation & scale_orientation,
-										   const Vec3 < float >&center);
+										   const Vec3f &center);
 
-		Transform & set_transform_instance(const Vec3 < float >&translation,
+		Transform & set_transform_instance(const Vec3f &translation,
 										   const Rotation & rotation,
-										   const Vec3 < float >&scale_factor)
+										   const Vec3f &scale_factor)
 		{
 			return set_transform_instance(translation, rotation, scale_factor,
 										  Rotation(1, 0, 0, 0, Rotation::QUATERNION),
-										  Vec3 < float >(0, 0, 0));
+										  Vec3f (0, 0, 0));
 		}
 
-		Transform & set_center(const Vec3 < float >&c)
+		Transform & set_center(const Vec3f &c)
 		{
 			pre_trans = (float) -1.0 * c;
 
@@ -135,7 +135,7 @@ namespace EMAN
 			return (*this);
 		}
 
-		Transform & set_post_translate(const Vec3 < float >&s) {
+		Transform & set_post_translate(const Vec3f &s) {
 			for (int i = 0; i < 3; i++) {
 				matrix[i][3] = s[i];
 			}
@@ -175,8 +175,8 @@ namespace EMAN
 
 	/** Concatenates this transform with a translation transformation.
 	*/
-		Transform & translate(const Vec3 < float >&v) {
-			if (v != Vec3 < float >(0, 0, 0)) {
+		Transform & translate(const Vec3f &v) {
+			if (v != Vec3f (0, 0, 0)) {
 				Matrix4f m;
 				for (int i = 0; i < 3; i++) {
 					m[i][3] = v[i];
@@ -197,7 +197,7 @@ namespace EMAN
 			return (*this);
 		}
 
-		Transform & rotate_center(const Rotation & r, const Vec3 < float >center) {
+		Transform & rotate_center(const Rotation & r, const Vec3f center) {
 			translate((float) -1.0 * center);
 			rotate(r);
 			translate(center);
@@ -205,19 +205,19 @@ namespace EMAN
 		}
 
 		Transform & rotate_scale(const Rotation & rotation,
-								 const Vec3 < float >&scale_factor, const Vec3 < float >&center) {
+								 const Vec3f &scale_factor, const Vec3f &center) {
 			scale(scale_factor);
 			rotate_center(rotation, center);
 			return (*this);
 		}
 
-		Transform & pre_translate_rotate(const Vec3 < float >t, const Rotation & r) {
+		Transform & pre_translate_rotate(const Vec3f t, const Rotation & r) {
 			translate(t);
 			rotate(r);
 			return (*this);
 		}
 
-		Transform & post_translate_rotate(const Rotation & r, const Vec3 < float >t) {
+		Transform & post_translate_rotate(const Rotation & r, const Vec3f t) {
 			rotate(r);
 			translate(t);
 			return (*this);
@@ -225,8 +225,8 @@ namespace EMAN
 
 	/** Concatenates this transform with a scaling transformation.
 	 */
-		Transform & scale(const Vec3 < float >&scale_factor) {
-			if (scale_factor != Vec3 < float >(1, 1, 1)) {
+		Transform & scale(const Vec3f &scale_factor) {
+			if (scale_factor != Vec3f (1, 1, 1)) {
 				Matrix4f m;
 				m.make_identity();
 				for (int i = 0; i < 3; i++) {
@@ -238,8 +238,8 @@ namespace EMAN
 		}
 
 
-		Vec3 < float >transform(const Vec3 < float >&v);
-		Vec3 < float >inverse_transform(const Vec3 < float >&v);
+		Vec3f transform(const Vec3f &v);
+		Vec3f inverse_transform(const Vec3f &v);
 
 		Rotation get_rotation() const
 		{
@@ -247,9 +247,9 @@ namespace EMAN
 		}
 
 		float get_scale(int i) const;		
-		Vec3 < float >get_scale() const;
+		Vec3f get_scale() const;
 		
-		Vec3 < float >get_center() const
+		Vec3f get_center() const
 		{
 			return pre_trans;
 		}
@@ -259,14 +259,14 @@ namespace EMAN
 			return matrix;
 		}
 
-		Vec3 < float >get_pre_translate() const
+		Vec3f get_pre_translate() const
 		{
 			return pre_trans;
 		}
 
-		Vec3 < float >get_post_translate() const
+		Vec3f get_post_translate() const
 		{
-			return Vec3 < float >(matrix[0][3], matrix[1][3], matrix[2][3]);
+			return Vec3f (matrix[0][3], matrix[1][3], matrix[2][3]);
 		}
 
 		int get_type() const;
@@ -304,7 +304,7 @@ namespace EMAN
 
 	  private:
 		Matrix4f matrix;
-		Vec3 < float >pre_trans;
+		Vec3f pre_trans;
 	};
 
 	Transform operator+(const Transform & t1, const Transform & t2);

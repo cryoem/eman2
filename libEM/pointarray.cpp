@@ -74,7 +74,7 @@ bool PointArray::read_from_pdb(const char *file)
 {
 	struct stat filestat;
 	stat(file, &filestat);
-	set_number_points(filestat.st_size / 80 + 1);
+	set_number_points((unsigned int)(filestat.st_size / 80 + 1));
 #ifdef DEBUG
 	printf("PointArray::read_from_pdb(): try %4d atoms first\n", get_number_points());
 #endif
@@ -333,10 +333,10 @@ void PointArray::set_from(double *src, unsigned int num, string sym, Transform *
 
 	double *target = get_points_array();
 
-	Vec3 < float >pre_trans = transform->get_pre_translate();
+	Vec3f pre_trans = transform->get_pre_translate();
 	double tx0 = pre_trans[0], ty0 = pre_trans[1], tz0 = pre_trans[2];
 
-	Vec3 < float >post_trans = transform->get_post_translate();
+	Vec3f post_trans = transform->get_post_translate();
 	double tx1 = post_trans[0], ty1 = post_trans[1], tz1 = post_trans[2];
 
 	for (unsigned int s = 0; s < nsym; s++) {
@@ -447,9 +447,9 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 						int table_index_x = int (fabs(double (i - ix)) * inv_table_step_size);
 						double xval = table[table_index_x];
 						if (mode == PEAKS_SUB)
-							pd[pd_index] -= cmax * zval * yval * xval;
+							pd[pd_index] -= (float)(cmax * zval * yval * xval);
 						else
-							pd[pd_index] *= (1.0 - zval * yval * xval);	// mode == PEAKS_DIV 
+							pd[pd_index] *= (float)(1.0 - zval * yval * xval);	// mode == PEAKS_DIV 
 					}
 				}
 			}
@@ -599,7 +599,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		LOGERR("PointArray::set_from_density_map(): mode = %d is not implemented yet", mode);
 	}
 	//update to use apix and origin
-	unsigned int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
+	int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
 	float origx, origy, origz;
 	try {
 		origx = map->get_attr("origin_row");
@@ -751,7 +751,7 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 				for (int i = imin; i < imax; i++, pd_index++) {
 					int table_index_x = int (fabs(i - xc) * inv_table_step_size);
 					double xval = table[table_index_x];
-					pd[pd_index] += fval * zval * yval * xval;
+					pd[pd_index] += (float) (fval * zval * yval * xval);
 				}
 			}
 		}
@@ -830,7 +830,7 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 				//double xval2 = exp( - (i-xc)*(i-xc)*apix*apix/(gauss_real_width*gauss_real_width));
 				//if(fabs(xval2-xval)/xval2>1e-2) printf("\ts=%d\txc,yc=%g,%g\txval,xval2=%g,%g\tdiff=%g\n",s,xc,yc,xval,xval2,fabs(xval2-xval)/xval2);
 #endif
-				pd[pd_index] += fval * yval * xval;
+				pd[pd_index] += (float)(fval * yval * xval);
 			}
 		}
 	}
@@ -841,7 +841,7 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 }
 
 
-EMData *PointArray::pdb2mrc_by_nfft(int map_size, float apix, float res)
+EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 {
 #if defined NFFT
 	nfft_3D_plan my_plan;		// plan for the nfft
@@ -1003,7 +1003,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int map_size, float apix, float res)
 #endif
 }
 
-EMData *PointArray::projection_by_nfft(int image_size, float apix, float res)
+EMData *PointArray::projection_by_nfft(int , float , float )
 {
 #if defined NFFT
 	nfft_2D_plan my_plan;		// plan for the nfft 

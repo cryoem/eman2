@@ -38,8 +38,8 @@ namespace EMAN
 	  public:
 		Quaternion();
 		Quaternion(float e0, float e1, float e2, float e3);
-		Quaternion(float radians, const Vec3 < float >&axis);
-		Quaternion(const Vec3 < float >&axis, float radians);
+		Quaternion(float radians, const Vec3f &axis);
+		Quaternion(const Vec3f &axis, float radians);
 		Quaternion(const Matrix3f & m);
 		Quaternion(const Matrix4f & m);
 		 ~Quaternion()
@@ -65,16 +65,16 @@ namespace EMAN
 		Quaternion & inverse();
 		Quaternion create_inverse() const;
 
-		Vec3 < float >rotate(const Vec3 < float >&v) const;
+		Vec3f rotate(const Vec3f &v) const;
 
 		float to_angle() const;
-		Vec3 < float >to_axis() const;
+		Vec3f to_axis() const;
 
 		Matrix3f to_matrix3() const;
 		Matrix4f to_matrix4() const;
 
 		float real() const;
-		Vec3 < float >unreal() const;
+		Vec3f unreal() const;
 
 		vector < float >get_as_list() const;
 
