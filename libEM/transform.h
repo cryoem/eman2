@@ -18,6 +18,8 @@ namespace EMAN
     /** Template Vec3 defines a 3-element vector and various vector
      * operations. The vector may store any numeric data type
      * including int, float, double, etc.
+     *
+     * For example, to define a 3-element float vector: Vec3<float> v;
      */
     template <class T> class Vec3
     {
@@ -244,14 +246,24 @@ namespace EMAN
 	
 	void make_identity();
 
+	/** this = this * m
+	 */
 	Matrix3f & mult_right(const Matrix3f & m);
+	
+	/** this = m * this
+	 */
 	Matrix3f & mult_left(const Matrix3f & m);
 
 	void set_value(const vector<float> &m);
 	vector<float> get_value() const;
 
+	/** inverse this matrix and return it.
+	 */
 	Matrix3f & inverse();
 	Matrix3f & transpose();
+
+	/** return the inverse of this matrix without changing this matrix.
+	 */
 	Matrix3f create_inverse() const;
 
 	Vec3<float> get_vector(int i) const;
@@ -384,7 +396,12 @@ namespace EMAN
 	
 	Matrix4f& operator=(const Matrix4f & m);
 	
+	/** this = this * m
+	 */
 	Matrix4f & mult_right(const Matrix4f & m);
+		
+	/** this = m * this
+	 */
 	Matrix4f & mult_left(const Matrix4f & m);
 
 	void make_identity();
@@ -392,9 +409,14 @@ namespace EMAN
 	void set_value(const vector<float> &m);
 	vector<float> get_value() const;
 	Matrix3f get_matrix3() const;
-
+	
+	/** inverse this matrix and return it.
+	 */
 	Matrix4f & inverse();
 	Matrix4f & transpose();
+	
+	/** return the inverse of this matrix without changing this matrix.
+	 */
 	Matrix4f create_inverse() const;
 
 	Matrix4f & operator+=(float f);
@@ -475,10 +497,12 @@ namespace EMAN
 	{
 	    return (e0 * e0 + e1 * e1 + e2 * e2 + e3 * e3);
 	}
+	
 	Quaternion conj() const
 	{
 	    return (Quaternion(e0, -e1, -e2, -e3));
 	}
+
 	float abs() const
 	{
 	    return sqrt(norm());

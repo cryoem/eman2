@@ -134,7 +134,8 @@ int EMData::read_image(string filename, int img_index, bool nodata, const Region
 }
 
 
-int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype, bool header_only)
+int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
+			bool header_only, bool use_host_endian)
 {
     Log::logger()->log("\n\nEMData::write_image() on file '%s'", filename.c_str());
 
@@ -149,7 +150,7 @@ int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtyp
 	if (img_index < 0) {
 	    img_index = imageio->get_nimg();
 	}
-	err = imageio->write_header(attr_dict, img_index);
+	err = imageio->write_header(attr_dict, img_index, use_host_endian);
 	if (err) {
 	    Log::logger()->error("write image header failed on file '%s'", filename.c_str());
 	}
@@ -159,9 +160,10 @@ int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtyp
 	    }
 
 	    if (!header_only) {
-		err = imageio->write_data(rdata, img_index);
+		err = imageio->write_data(rdata, img_index, use_host_endian);
 		if (err) {
-		    Log::logger()->error("write image data failed on file '%s'", filename.c_str());
+		    Log::logger()->error("write image data failed on file '%s'",
+					 filename.c_str());
 		}
 	    }
 	}
@@ -308,15 +310,11 @@ EMData *EMData::copy_head()
 
 EMData *EMData::get_clip(const Region & area)
 {
-    if (nz > 1 && area.get_ndim() == 2) {
-	Log::logger()->error("cannot get 2D clip out of 3D image");
+    if (get_ndim() != area.get_ndim()) {
+	Log::logger()->error("cannot get %dD clip out of %dD image",
+			     get_ndim(), area.get_ndim());
 	return 0;
     }
-    else if (nz == 1 && area.get_ndim() > 2) {
-	Log::logger()->error("cannot get 3D clip out of 2D image");
-	return 0;
-    }
-
 
     EMData *result = new EMData();
     int zsize = area.size.zsize;
@@ -332,26 +330,23 @@ EMData *EMData::get_clip(const Region & area)
     int y1 = (int) (area.origin.y + area.size.ysize);
 
     int z0 = (int) area.origin.z;
-    int z1 = (int) (area.origin.z + area.size.zsize);
+    int z1 = (int) (area.origin.z + zsize);
 
-    size_t result_row_size = area.size.xsize * sizeof(float);
+    int result_row_size = area.size.xsize * sizeof(float);
     int sec_size = nx * ny;
     int result_sec_size = area.size.xsize * area.size.ysize;
 
-    float *result_data = result->get_data();
-
     float *src = rdata + y0 * nx + x0;
-    float *dst = result_data;
+    float *dst = result->get_data();
 
     for (int i = z0; i < z1; i++) {
-	src += sec_size;
-	dst += result_sec_size;
-
 	for (int j = y0; j < y1; j++) {
 	    memcpy(dst, src, result_row_size);
 	    src += nx;
 	    dst += area.size.xsize;
 	}
+	src += sec_size;
+	dst += result_sec_size;
     }
 
     done_data();

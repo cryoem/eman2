@@ -12,6 +12,14 @@ int main(int argc, char *argv[])
     EMData e;
     e.read_image(argv[1]);
     e.set_attr_dict("MRC.label1", "Liwei Peng");
-    e.write_image("a.mrc", 0, EMUtil::IMAGE_MRC);
+    int nx = e.get_xsize();
+    int ny = e.get_ysize();
+    EMData *c = e.get_clip(Region(0, 0, nx/2, ny/2));
+    
+    c->write_image("a.mrc", 0, EMUtil::IMAGE_MRC);
+
+    delete c;
+    c = 0;
+    
     return 0;
 }

@@ -47,16 +47,17 @@ namespace EMAN
 	int read_image(string filename, int img_index = 0, bool header_only = false,
 		       const Region * r = 0, bool is_3d = NOT_3D);
 
-	int write_image(string filename, int img_index = 0,
-			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
+	int write_image(string filename, int img_index = 0, 
+			EMUtil::ImageType imgtype  = EMUtil::IMAGE_UNKNOWN, bool header_only = false,
+			bool use_host_endian = true);
 
 	int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 			 bool header_only = false);
 
 	int filter(string filtername, const Dict & params = Dict());
-	float cmp(string cmpname, const Dict & params);
-	EMData *align(string aligner_name, const Dict & params, string comp_name = "");
-	EMData *project(string projector_name, const Dict & params);
+	float cmp(string cmpname, const Dict & params = Dict());
+	EMData *align(string aligner_name, const Dict & params = Dict(), string comp_name = "");
+	EMData *project(string projector_name, const Dict & params = Dict());
 	
 	EMData *copy(bool withfft = false, bool withparent = true);
 	EMData *copy_head();
@@ -324,23 +325,21 @@ namespace EMAN
 	void scale_pixel(float scale_factor) const;
 
     private:
-	mutable Dict attr_dict;
-	float *rdata;
+	/** to store all image header information */
+	mutable Dict attr_dict;  
+	float *rdata;         /** image real data */
 	float *supp;
-	Ctf *ctf;
+	Ctf *ctf;             /** CTF data */
 	EMData *parent;
 	
 	EMData *rfp;
 	int flags;
 
-	int nx;
-	int ny;
-	int nz;
-
-	int average_nimg;
+	int nx, ny, nz;       /** image size */
+	int average_nimg;     /** how many images are used in averaging to generate this image*/
 	
-	Vec3<float> all_translation;  // from the original location
-	Vec3<float> all_rotation;     // (alt, az, phi) from the original locaton
+	Vec3<float> all_translation;  /** translation from the original location */
+	Vec3<float> all_rotation;     /** rotation (alt, az, phi) from the original locaton*/
 	
 	float align_score;
 	string name;
