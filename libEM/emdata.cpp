@@ -95,13 +95,13 @@ int EMData::read_image(string filename, int img_index, bool nodata, const Region
 	    if (imageio->is_complex_mode()) {
 		set_complex(true);
 	    }
-	    if (attr_dict["is_ri"].get_int() == 1) {
+	    if ((int)attr_dict["is_ri"] == 1) {
 		set_ri(true);
 	    }
 	    
-	    nx = attr_dict["nx"].get_int();
-	    ny = attr_dict["ny"].get_int();
-	    nz = attr_dict["nz"].get_int();
+	    nx = attr_dict["nx"];
+	    ny = attr_dict["ny"];
+	    nz = attr_dict["nz"];
 
 	    if (!ctf) {
 		ctf = new SimpleCtf();
@@ -361,13 +361,13 @@ EMData *EMData::get_clip(const Region & area)
     result->attr_dict["spacing_col"] = attr_dict["spacing_col"];
     result->attr_dict["spacing_sec"] = attr_dict["spacing_sec"];
 
-    float xorigin = attr_dict["origin_row"].get_float();
-    float yorigin = attr_dict["origin_col"].get_float();
-    float zorigin = attr_dict["origin_sec"].get_float();
+    float xorigin = attr_dict["origin_row"];
+    float yorigin = attr_dict["origin_col"];
+    float zorigin = attr_dict["origin_sec"];
 
-    float spacing_row = attr_dict["spacing_row"].get_float();
-    float spacing_col = attr_dict["spacing_col"].get_float();
-    float spacing_sec = attr_dict["spacing_sec"].get_float();
+    float spacing_row = attr_dict["spacing_row"];
+    float spacing_col = attr_dict["spacing_col"];
+    float spacing_sec = attr_dict["spacing_sec"];
 
     result->set_xyz_origin(xorigin + spacing_row * x0, yorigin + spacing_col * y0,
 			   zorigin + spacing_sec * z0);
@@ -2465,9 +2465,9 @@ void EMData::rotate_translate(const Rotation& rotation, const Vec3<float> & tran
 
     done_data();
     
-    attr_dict["origin_row"] = attr_dict["origin_row"].get_float();
-    attr_dict["origin_col"] = attr_dict["origin_col"].get_float();
-    attr_dict["origin_sec"] = attr_dict["origin_sec"].get_float();
+    attr_dict["origin_row"] = attr_dict["origin_row"];
+    attr_dict["origin_col"] = attr_dict["origin_col"];
+    attr_dict["origin_sec"] = attr_dict["origin_sec"];
 
     update();
 
@@ -2681,9 +2681,9 @@ void EMData::rotate_translate(const Transform& xform)
 
 	scale_pixel(inv_scale);
     
-	attr_dict["origin_row"] = attr_dict["origin_row"].get_float() * inv_scale;
-	attr_dict["origin_col"] = attr_dict["origin_col"].get_float() * inv_scale;
-	attr_dict["origin_sec"] = attr_dict["origin_sec"].get_float() * inv_scale;
+	attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
+	attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
+	attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
 
 	done_data();
 	update();
@@ -3184,8 +3184,8 @@ void EMData::calc_rcf(EMData * with, vector<float> & sum_array)
 	sum_array[i] = 0;
     }
 
-    float sigma = attr_dict["sigma"].get_float();
-    float with_sigma = with->get_attr_dict().get("sigma").get_float();
+    float sigma = attr_dict["sigma"];
+    float with_sigma = with->get_attr_dict().get("sigma");
 
     for (int i = 8; i < nx2; i += 6) {
 	calc_az_dist(array_size, 0, da, dat, i, i + 6);

@@ -156,9 +156,9 @@ int EmIO::write_header(const Dict & dict, int image_index)
     }
 
     emh.machine = static_cast<char>(get_machine_type());
-    emh.nx = dict["nx"].get_int();
-    emh.ny = dict["ny"].get_int();
-    emh.nz = dict["nz"].get_int();
+    emh.nx = dict["nx"];
+    emh.ny = dict["ny"];
+    emh.nz = dict["nz"];
     emh.data_type = EM_EM_FLOAT;
 
     if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {

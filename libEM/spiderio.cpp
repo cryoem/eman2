@@ -232,9 +232,9 @@ int SpiderIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    int nx1 = dict["nx"].get_int();
-    int ny1 = dict["ny"].get_int();
-    int nz1 = dict["nz"].get_int();
+    int nx1 = dict["nx"];
+    int ny1 = dict["ny"];
+    int nz1 = dict["nz"];
 
     size_t header_size = sizeof(SpiderHeader);
     size_t record_size = nx1 * sizeof(float);
@@ -266,10 +266,10 @@ int SpiderIO::write_header(const Dict & dict, int image_index)
 	    first_h->maxim = image_index + 1;
 	}
 
-	first_h->max = dict["maximum"].get_float();
-	first_h->min = dict["minimum"].get_float();
-	first_h->mean = dict["mean"].get_float();
-	first_h->sigma = dict["sigma"].get_float();
+	first_h->max = dict["maximum"];
+	first_h->min = dict["minimum"];
+	first_h->mean = dict["mean"];
+	first_h->sigma = dict["sigma"];
 
 	if (need_swap()) {
 	    ByteOrder::swap_bytes((float *) first_h, NUM_FLOATS_IN_HEADER);
@@ -315,10 +315,10 @@ int SpiderIO::write_header(const Dict & dict, int image_index)
 	    first_h->maxim = 1;
 	    first_h->u1 = irec;
 
-	    first_h->max = dict["maximum"].get_float();
-	    first_h->min = dict["minimum"].get_float();
-	    first_h->mean = dict["mean"].get_float();
-	    first_h->sigma = dict["sigma"].get_float();
+	    first_h->max = dict["maximum"];
+	    first_h->min = dict["minimum"];
+	    first_h->mean = dict["mean"];
+	    first_h->sigma = dict["sigma"];
 	}
 	else {
 	    first_h->maxim++;
@@ -353,10 +353,10 @@ int SpiderIO::write_header(const Dict & dict, int image_index)
 
     cur_h->mmvalid = 1;
 
-    cur_h->max = dict["maximum"].get_float();
-    cur_h->min = dict["minimum"].get_float();
-    cur_h->mean = dict["mean"].get_float();
-    cur_h->sigma = dict["sigma"].get_float();
+    cur_h->max = dict["maximum"];
+    cur_h->min = dict["minimum"];
+    cur_h->mean = dict["mean"];
+    cur_h->sigma = dict["sigma"];
 
     cur_h->reclen = static_cast<int>(nx1 * sizeof(float));
     cur_h->inuse = 1.0;
@@ -378,9 +378,9 @@ int SpiderIO::write_single_header(const Dict & dict)
 	return 1;
     }
 
-    int nx = dict["nx"].get_int();
-    int ny = dict["ny"].get_int();
-    int nz = dict["nz"].get_int();
+    int nx = dict["nx"];
+    int ny = dict["ny"];
+    int nz = dict["nz"];
 
     size_t header_size = sizeof(SpiderHeader);
     size_t record_size = nx * sizeof(float);
@@ -405,10 +405,10 @@ int SpiderIO::write_single_header(const Dict & dict)
     first_h->nx = nx;
     first_h->ny = ny;
 
-    first_h->max = dict["maximum"].get_float();
-    first_h->min = dict["minimum"].get_float();
-    first_h->mean = dict["mean"].get_float();
-    first_h->sigma = dict["sigma"].get_float();
+    first_h->max = dict["maximum"];
+    first_h->min = dict["minimum"];
+    first_h->mean = dict["mean"];
+    first_h->sigma = dict["sigma"];
 
 
     if (nz == 1) {

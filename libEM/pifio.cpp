@@ -245,11 +245,11 @@ int PifIO::write_header(const Dict & dict, int image_index)
 	    return 1;
 	}
 
-	int nx1 = dict["nx"].get_int();
-	int ny1 = dict["ny"].get_int();
-	int nz1 = dict["nz"].get_int();
+	int nx1 = dict["nx"];
+	int ny1 = dict["ny"];
+	int nz1 = dict["nz"];
 
-	int mode1 = to_pif_datatype(dict["datatype"].get_int());
+	int mode1 = to_pif_datatype(dict["datatype"]);
 
 	if (nx1 != pfh.nx || ny1 != pfh.ny || nz1 != pfh.nz) {
 	    Log::logger()->error("cannot write to different size file %s (%dx%dx%d != %dx%dx%d)",
@@ -274,9 +274,9 @@ int PifIO::write_header(const Dict & dict, int image_index)
 	sprintf(pfh.program, "EMAN %d/%02d/%02d", t->tm_mon, t->tm_mday, t->tm_year);
 
 	pfh.htype = 1;
-	pfh.nx = dict["nx"].get_int();
-	pfh.ny = dict["ny"].get_int();
-	pfh.nz = dict["nz"].get_int();
+	pfh.nx = dict["nx"];
+	pfh.ny = dict["ny"];
+	pfh.nz = dict["nz"];
 	pfh.nimg += 1;
 	pfh.endian = (int) ByteOrder::is_machine_big_endian();
 	fwrite(&pfh, sizeof(PifFileHeader), 1, pif_file);
@@ -284,27 +284,27 @@ int PifIO::write_header(const Dict & dict, int image_index)
 
     PifImageHeader pih;
     memset(&pih, 0, sizeof(PifImageHeader));
-    pih.nx = dict["nx"].get_int();
-    pih.ny = dict["ny"].get_int();
-    pih.nz = dict["nz"].get_int();
+    pih.nx = dict["nx"];
+    pih.ny = dict["ny"];
+    pih.nz = dict["nz"];
 
     pih.mode = PIF_FLOAT;
-    pih.xlen = dict["spacing_row"].get_int();
-    pih.ylen = dict["spacing_col"].get_int();
-    pih.zlen = dict["spacing_sec"].get_int();
+    pih.xlen = dict["spacing_row"];
+    pih.ylen = dict["spacing_col"];
+    pih.zlen = dict["spacing_sec"];
     pih.alpha = 90;
     pih.beta = 90;
     pih.gamma = 90;
     pih.mapc = 1;
     pih.mapr = 2;
     pih.maps = 3;
-    pih.min = dict["minimum"].get_int();
-    pih.max = dict["maximum"].get_int();
-    pih.mean = dict["mean"].get_int();
-    pih.sigma = dict["sigma"].get_int();
+    pih.min = dict["minimum"];
+    pih.max = dict["maximum"];
+    pih.mean = dict["mean"];
+    pih.sigma = dict["sigma"];
 
-    pih.xorigin = dict["origin_row"].get_int();
-    pih.yorigin = dict["origin_col"].get_int();
+    pih.xorigin = dict["origin_row"];
+    pih.yorigin = dict["origin_col"];
 
     sprintf(pih.time, "%d/%02d/%02d %d:%02d",
 	    t->tm_mon, t->tm_mday, t->tm_year, t->tm_hour, t->tm_min);

@@ -216,15 +216,15 @@ int ImagicIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    nz = dict["nz"].get_int();
+    nz = dict["nz"];
     int n_new_img = nz;
     if (n_new_img > 1 && image_index != 0) {
 	Log::logger()->error("to write 3D IMAGIC image, image index must be 0");
 	return 1;
     }
 
-    int nx = dict["nx"].get_int();
-    int ny = dict["ny"].get_int();
+    int nx = dict["nx"];
+    int ny = dict["ny"];
 
     if (!is_new_hed) {
 	make_header_right_endian(imagich);
@@ -271,10 +271,10 @@ int ImagicIO::write_header(const Dict & dict, int image_index)
     new_hed.iyold = 0;
     new_hed.oldav = 0;
 
-    new_hed.min = dict["minimum"].get_float();
-    new_hed.max = dict["maximum"].get_float();
-    new_hed.avdens = dict["mean"].get_float();
-    new_hed.sigma = dict["sigma"].get_float();
+    new_hed.min = dict["minimum"];
+    new_hed.max = dict["maximum"];
+    new_hed.avdens = dict["mean"];
+    new_hed.sigma = dict["sigma"];
     /*
       new_hed.mrc1[0] = euler.phi();
       new_hed.mrc1[1] = euler.alt();

@@ -31,7 +31,7 @@ FourierReconstructor::~FourierReconstructor()
 
 int FourierReconstructor::setup()
 {
-    int size = params["size"].get_int();
+    int size = params["size"];
     image = new EMData();
     image->set_size(size + 2, size, size);
     image->set_complex(true);
@@ -69,8 +69,8 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 	return 1;
     }
 
-    int mode = params["mode"].get_int();
-    float weight = params["weight"].get_float();
+    int mode = params["mode"];
+    float weight = params["weight"];
 
     if (!slice->is_complex()) {
 	Log::logger()->error("Only complex slice can be inserted.");
@@ -442,7 +442,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 
 EMData *FourierReconstructor::finish()
 {
-    int dlog = params["dlog"].get_int();
+    int dlog = params["dlog"];
     float *norm = image->get_parent()->get_data();
     float *rdata = image->get_data();
 
@@ -494,7 +494,7 @@ WienerFourierReconstructor::~WienerFourierReconstructor()
 
 int WienerFourierReconstructor::setup()
 {
-    int size = params["size"].get_int();
+    int size = params["size"];
     image = new EMData();
     image->set_size(size + 2, size, size);
     image->set_complex(true);
@@ -555,8 +555,8 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 	return 1;
     }
 
-    int mode = params["mode"].get_int();
-    float padratio = params["padratio"].get_float();
+    int mode = params["mode"];
+    float padratio = params["padratio"];
     vector<float> snr = params["snr"].get_farray();
 
     if (!slice->is_complex()) {
@@ -951,7 +951,7 @@ BackProjectionReconstructor::~BackProjectionReconstructor()
 
 int BackProjectionReconstructor::setup()
 {
-    int size = params["size"].get_int();
+    int size = params["size"];
     image = new EMData();
     image->set_size(size, size, size);
     nx = size;
@@ -972,7 +972,7 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Rotation &)
 	return 1;
     }
 
-    float weight = params["weight"].get_float();
+    float weight = params["weight"];
 
     EMData *slice_copy = slice->copy();
     slice_copy->mult(weight);

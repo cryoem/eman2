@@ -51,7 +51,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 	return 0;
     }
 
-    int useparent = params["useparent"].get_int();
+    int useparent = params["useparent"];
     
     EMData *cf = 0;
     EMData *parent = this_img->get_parent();
@@ -65,7 +65,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 
     int nx = this_img->get_xsize();
     int ny = this_img->get_ysize();
-    int maxshift = params["maxshift"].get_int();
+    int maxshift = params["maxshift"];
 
     if (maxshift <= 0) {
 	maxshift = ny / 8;
@@ -125,7 +125,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 	cur_trans /= 2.0;
     }
 
-    int intonly = params["intonly"].get_int();
+    int intonly = params["intonly"];
 
     if (intonly) {
 	cur_trans[0] = floor(cur_trans[0] + 0.5);
@@ -1379,10 +1379,10 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 
     int ny = this_img->get_ysize();
     
-    float salt = params["alt"].get_float();
-    float sdx = params["dx"].get_float();
-    float sdy = params["dy"].get_float();
-    float sdz = params["dz"].get_float();
+    float salt = params["alt"];
+    float sdx = params["dx"];
+    float sdy = params["dy"];
+    float sdz = params["dz"];
     
     float dda = atan(2.0 / ny);
 

@@ -71,10 +71,10 @@ int XplorIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    nx = dict["nx"].get_int();
-    ny = dict["ny"].get_int();
-    nz = dict["nz"].get_int();
-    float pixel = dict["pixel"].get_float();
+    nx = dict["nx"];
+    ny = dict["ny"];
+    nz = dict["nz"];
+    float pixel = dict["pixel"];
 
     time_t t0 = time(0);
     struct tm *t = localtime(&t0);

@@ -89,14 +89,14 @@ int AmiraIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    nx = dict["nx"].get_int();
-    ny = dict["ny"].get_int();
-    nz = dict["nz"].get_int();
+    nx = dict["nx"];
+    ny = dict["ny"];
+    nz = dict["nz"];
 
-    float xorigin = dict["origin_row"].get_float();
-    float yorigin = dict["origin_col"].get_float();
-    float zorigin = dict["origin_sec"].get_float();
-    float pixel = dict["pixel"].get_float();
+    float xorigin = dict["origin_row"];
+    float yorigin = dict["origin_col"];
+    float zorigin = dict["origin_sec"];
+    float pixel = dict["pixel"];
 
     if (fprintf(amira_file, "# AmiraMesh 3D BINARY 2.0\n\n") <= 0) {
 	Log::logger()->error("cannot write to AmiraMesh file '%s'", filename.c_str());

@@ -72,7 +72,7 @@ namespace EMAN
 	int render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 			int bpl, float scale, int min_gray, int max_gray,
 			float min_render, float max_render);
-	int render_amp8_wrapper(int data, int x, int y, int xsize, int ysize,
+	int render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
 				int bpl, float scale, int min_gray, int max_gray,
 				float min_render, float max_render);
 	int render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
@@ -379,36 +379,36 @@ namespace EMAN
 
     inline float EMData::get_xorigin() const
     {
-	return attr_dict["origin_row"].get_float();
+	return attr_dict["origin_row"];
     }
 
     
     inline float EMData::get_yorigin() const
     {
-	return attr_dict["origin_col"].get_float();
+	return attr_dict["origin_col"];
     }
 
     inline float EMData::get_zorigin() const
     {
-	return attr_dict["origin_sec"].get_float();
+	return attr_dict["origin_sec"];
     }
 
     
     inline float EMData::get_xpixel() const
     {
-	return attr_dict["spacing_row"].get_float();
+	return attr_dict["spacing_row"];
     }
 
     
     inline float EMData::get_ypixel() const
     {
-	return attr_dict["spacing_col"].get_float();
+	return attr_dict["spacing_col"];
     }
 
     
     inline float EMData::get_zpixel() const
     {
-	return attr_dict["spacing_sec"].get_float();
+	return attr_dict["spacing_sec"];
     }
 
     
@@ -595,25 +595,25 @@ namespace EMAN
     inline float EMData::get_max()
     {
 	update_stat();
-	return attr_dict["maximum"].get_float();
+	return attr_dict["maximum"];
     }
 
     inline float EMData::get_min()
     {
 	update_stat();
-	return attr_dict["minimum"].get_float();
+	return attr_dict["minimum"];
     }
     
     inline float EMData::get_mean()
     {
 	update_stat();
-	return attr_dict["mean"].get_float();
+	return attr_dict["mean"];
     }
 
     inline float EMData::get_sigma()
     {
 	update_stat();
-	return attr_dict["sigma"].get_float();
+	return attr_dict["sigma"];
     }
 
     inline Ctf *EMData::get_ctf() const
@@ -664,24 +664,21 @@ namespace EMAN
     {
 	all_rotation = Vec3<float>(alt, az, phi);
     }
-
     
-    inline int EMData::render_amp8_wrapper(int data, int x, int y, int xsize, int ysize,
+    inline int EMData::render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
 					   int bpl, float scale, int min_gray, int max_gray,
 					   float min_render, float max_render)
     {
-#if 0
+	
 	return render_amp8((unsigned char*)data, x, y, xsize, ysize, bpl,
 			   scale, min_gray, max_gray, min_render, max_render);
-#endif
-	return 0;
     }
     
     inline void EMData::scale_pixel(float scale) const
     {	
-	attr_dict["spacing_row"] = EMObject(attr_dict["spacing_row"].get_float() * scale);
-	attr_dict["spacing_col"] = EMObject(attr_dict["spacing_col"].get_float() * scale);
-	attr_dict["spacing_sec"] = EMObject(attr_dict["spacing_sec"].get_float() * scale);
+	attr_dict["spacing_row"] = EMObject((float)attr_dict["spacing_row"] * scale);
+	attr_dict["spacing_col"] = EMObject((float)attr_dict["spacing_col"] * scale);
+	attr_dict["spacing_sec"] = EMObject((float)attr_dict["spacing_sec"] * scale);
     }
 
 }

@@ -163,13 +163,13 @@ int PgmIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    nx = dict["nx"].get_int();
-    ny = dict["ny"].get_int();
+    nx = dict["nx"];
+    ny = dict["ny"];
 
-    minval = dict["min_gray"].get_int();
-    maxval = dict["max_gray"].get_int();
+    minval = dict["min_gray"];
+    maxval = dict["max_gray"];
 
-    int nz = dict["nz"].get_int();
+    int nz = dict["nz"];
     if (nz != 1) {
 	Log::logger()->error("Cannot write 3d image as PGM. Your image nz = %d", nz);
 	return 1;

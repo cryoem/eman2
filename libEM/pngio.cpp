@@ -202,14 +202,14 @@ int PngIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    nx = (png_uint_32) dict["nx"].get_int();
-    ny = (png_uint_32) dict["ny"].get_int();
-    int nz = dict["nz"].get_int();
+    nx = (png_uint_32) (int) dict["nx"];
+    ny = (png_uint_32) (int) dict["ny"];
+    int nz = dict["nz"];
 
     assert(nz == 1);
 
     int bit_depth = 0;
-    EMUtil::EMDataType datatype = (EMUtil::EMDataType) dict["datatype"].get_int();
+    EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
 
     if (datatype == EMUtil::EM_UCHAR) {
 	depth_type = PNG_CHAR_DEPTH;

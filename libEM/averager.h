@@ -202,7 +202,7 @@ namespace EMAN
 	void set_params(const Dict & new_params)
 	{
 	    params = new_params;
-	    need_snr = (bool) params["need_snr"].get_int();
+	    need_snr = (bool) (int)params["need_snr"];
 	}
     };
 

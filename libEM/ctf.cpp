@@ -43,17 +43,17 @@ int SimpleCtf::from_string(string ctf)
 
 void SimpleCtf::from_dict(const Dict & dict)
 {
-    defocus = dict["defocus"].get_float();
-    bfactor = dict["bfactor"].get_float();
-    amplitude = dict["amplitude"].get_float();
-    ampcont = dict["ampcont"].get_float();
-    noise1 = dict["noise1"].get_float();
-    noise2 = dict["noise2"].get_float();
-    noise3 = dict["noise3"].get_float();
-    noise4 = dict["noise4"].get_float();
-    voltage = dict["voltage"].get_float();
-    cs = dict["cs"].get_float();
-    apix = dict["apix"].get_float();
+    defocus = dict["defocus"];
+    bfactor = dict["bfactor"];
+    amplitude = dict["amplitude"];
+    ampcont = dict["ampcont"];
+    noise1 = dict["noise1"];
+    noise2 = dict["noise2"];
+    noise3 = dict["noise3"];
+    noise4 = dict["noise4"];
+    voltage = dict["voltage"];
+    cs = dict["cs"];
+    apix = dict["apix"];
 }
 
 Dict SimpleCtf::to_dict() const

@@ -388,7 +388,7 @@ int test_performance()
     for (int i = 0; i < nimg; i++) {
 	d->read_image(imagefile, i, true);
 	Dict dict = d->get_attr_dict();
-	int nx = dict.get("nx").get_int();
+	int nx = dict.get("nx");
 	x_sum += nx;
     }
     printf("nimg = %d, nx sum = %f\n", nimg, x_sum);

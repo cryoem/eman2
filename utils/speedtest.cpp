@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     }
     pat.done_data();
     pat.filter("CircleMeanNormalize");
-    pat.filter("SharpMask", Dict("outer_radius", EMObject(pat.get_xsize()/2)));
+    pat.filter("SharpMask", Dict("outer_radius", pat.get_xsize()/2));
 
     EMData *data[5000];
     
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	}
 	data[i]->done_data();
 	data[i]->filter("CircleMeanNormalize");
-	data[i]->filter("SharpMask", Dict("outer_radius", EMObject(data[i]->get_xsize()/2)));
+	data[i]->filter("SharpMask", Dict("outer_radius", data[i]->get_xsize()/2));
 	
 	if (i < 5) {
 	    data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
@@ -108,8 +108,8 @@ int main(int argc, char *argv[])
 	for (int j = 0; j < 500; j++) {
 	    for (int i = 0; i < NTT / 2; i++) {
 		Dict d;
-		d["with"] = EMObject(data[i + NTT / 2]);
-		d["keepzero"] = EMObject(1);
+		d["with"] = data[i + NTT / 2];
+		d["keepzero"] = 1;
 		data[i]->cmp("Variance", d);
 	    }
 	}
@@ -121,9 +121,7 @@ int main(int argc, char *argv[])
 	t1 = clock();
 	for (int j = 0; j < 100; j++) {
 	    for (int i = 0; i < NTT / 2; i++) {
-		Dict d;
-		d["with"] = EMObject(data[i + NTT / 2]);
-		data[i]->cmp("Phase", d);
+		data[i]->cmp("Phase", Dict("with", data[i + NTT / 2]));
 	    }
 	}
 	t2 = clock();
@@ -134,7 +132,7 @@ int main(int argc, char *argv[])
 	t1 = clock();
 	for (int j = 0; j < 100; j++) {
 	    for (int i = 0; i < NTT / 2; i++)
-		data[i]->cmp("FRC", Dict("with", EMObject(data[i + NTT / 2])));
+		data[i]->cmp("FRC", Dict("with", data[i + NTT / 2]));
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -311,30 +309,30 @@ int main(int argc, char *argv[])
 	for (int j = 5; j < (slow == 2 ? NTT / 10 : NTT); j++) {
 	    if (slow == 2) {
 		Dict d;
-		d["with"] =  EMObject(data[j]);
-		d["flip"] = EMObject((EMData*)0);
-		d["maxshift"] = EMObject(SIZE/8);
+		d["with"] =  data[j];
+		d["flip"] = (EMData*)0;
+		d["maxshift"] = SIZE/8;
 		tmp = data[i]->align("RTFSlowest", d);
 	    }
 	    else if (slow == 3) {
-		tmp = data[i]->align("RTFBest", Dict("with", EMObject(data[j]),
-						     "flip", EMObject((EMData*)0),
-						     "maxshift", EMObject(SIZE/8)));
+		tmp = data[i]->align("RTFBest", Dict("with", data[j],
+						     "flip", (EMData*)0,
+						     "maxshift", SIZE/8));
 	    }
 	    else if (slow == 1) {
 		Dict d;
-		d["with"] =  EMObject(data[j]);
-		d["flip"] = EMObject((EMData*)0);
-		d["maxshift"] = EMObject(SIZE/8);
+		d["with"] =  data[j];
+		d["flip"] = (EMData*)0;
+		d["maxshift"] = SIZE/8;
 		tmp = data[i]->align("RTFSlow", d);
 	    }
 	    else if (newali == 1) {
-		tmp = data[i]->align("RotateTranslateFlip", Dict("with", EMObject(data[j])));
-		tmp->align("Refine", Dict("with", EMObject(data[j])));
+		tmp = data[i]->align("RotateTranslateFlip", Dict("with", data[j]));
+		tmp->align("Refine", Dict("with", data[j]));
 	    }
 	    else {
 		Dict d;
-		d["with"] = EMObject(data[j]);
+		d["with"] = data[j];
 		tmp = data[i]->align("RotateTranslateFlip", d);
 	    }
 	    

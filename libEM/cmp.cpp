@@ -44,8 +44,8 @@ float DotCmp::cmp(EMData * em, Transform * ) const
 	d2 += step;
     }
 #if 0
-    double square_sum1 = em->get_attr_dict().get("square_sum").get_double();
-    double square_sum2 = with->get_attr_dict().get("square_sum").get_double();
+    double square_sum1 = em->get_attr_dict().get("square_sum");
+    double square_sum2 = with->get_attr_dict().get("square_sum");
 
     result = 2 * result / (square_sum1 + square_sum2);
 #endif

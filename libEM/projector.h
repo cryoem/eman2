@@ -106,9 +106,9 @@ namespace EMAN
 	void set_params(const Dict & new_params)
 	{
 	    Projector::set_params(new_params);
-	    alt = params["alt"].get_float();
-	    az = params["az"].get_float();
-	    phi = params["phi"].get_float();
+	    alt = params["alt"];
+	    az = params["az"];
+	    phi = params["phi"];
 	}
 	
 	string get_name() const

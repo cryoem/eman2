@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 			val1 = s.substr(eqpos+1, cpos-eqpos-1);
 		    }
 		    
-		    params_dict[param1] = EMObject(atof(val1.c_str()));
+		    params_dict[param1] = atof(val1.c_str());
 		}
 	    }
 	    
@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[flip]) {
-	    d->filter("Flip", Dict("axis", EMObject("y")));
+	    d->filter("Flip", Dict("axis", "y"));
 	}
 
 	if (argdict[invert]) {
@@ -302,14 +302,14 @@ int main(int argc, char *argv[])
 	}
 
 	if (ramp) {
-	    d->filter("LinearRamp", Dict("intercept", EMObject(1), "slope", EMObject(ramp)));	    
+	    d->filter("LinearRamp", Dict("intercept", 1, "slope", ramp));	    
 	}
 
 	int y = d->get_ysize();
 
 	if (argdict[setsfpairs]) {
 	    if (mask) {
-		d->filter(argfilters[noisemask], Dict("outer_radius", EMObject(mask)));
+		d->filter(argfilters[noisemask], Dict("outer_radius", mask));
 	    }
 	    EMData *dataf = d->do_fft();
 
@@ -362,26 +362,26 @@ int main(int argc, char *argv[])
 	}
 
 	if (Xlp || Xhp) {
-	    d->filter("Guasslowpass", Dict("lowpass", EMObject(Xhp == 0 ? -10.0 : Xhp)));
-	    d->filter("TanhHighpass", Dict("highpass", EMObject(Xlp == 0 ? 100000.0 : Xlp)));
+	    d->filter("Guasslowpass", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
+	    d->filter("TanhHighpass", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
 	}
 
 	if (Xtlp) {
-	    d->filter("Tanhlowpass", Dict("lowpass", EMObject(-10.0)));
-	    d->filter("TanhHighpass", Dict("highpass", EMObject(Xtlp)));
+	    d->filter("Tanhlowpass", Dict("lowpass", -10.0));
+	    d->filter("TanhHighpass", Dict("highpass", Xtlp));
 	}
 
 	if (Xsharphp) {
-	    d->filter("SharpCutoffLowpass", Dict("lowpass", EMObject(Xsharphp)));
-	    d->filter("SharpCutoffHighpass", Dict("highpass", EMObject(100000.0)));
+	    d->filter("SharpCutoffLowpass", Dict("lowpass", Xsharphp));
+	    d->filter("SharpCutoffHighpass", Dict("highpass", 100000.0));
 	}
 
 	if (mask) {
-	    d->filter(argfilters[noisemask], Dict("outer_radius", EMObject(mask)));
+	    d->filter(argfilters[noisemask], Dict("outer_radius", mask));
 	}
 
 	if (imask > 0) {
-	    d->filter("SharpMask", Dict("inner_radius", EMObject(imask), "value", EMObject(0)));
+	    d->filter("SharpMask", Dict("inner_radius", imask, "value", 0));
 	}
 
 	if (automask) {
@@ -391,15 +391,15 @@ int main(int argc, char *argv[])
 	// uses correlation with 180 deg rot for centering
 	if (argdict[acfcenter]) {
 	    Dict params;
-	    params["useparent"] = EMObject(0);
-	    params["intonly"] = EMObject(1);
+	    params["useparent"] = 0;
+	    params["intonly"] = 1;
 	    params["maxshift"] = d->get_xsize() / 4;
 	    d->align("Translate", params);
 	    //d->rotate_translate();
 	}
 
 	if (argdict[center]) {
-	    d->filter("ToMassCenter", Dict("int_shift_only", EMObject(1)));
+	    d->filter("ToMassCenter", Dict("int_shift_only", 1));
 	}
 
 	if (argdict[phot]) {
@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
 	    }
 	    else {
 		if (rizef && rand() % 2) {
-		    d->filter("Flip", Dict("axis", EMObject("y")));
+		    d->filter("Flip", Dict("axis", "y"));
 		}
 
 		if (rizeda > 0) {
@@ -505,8 +505,7 @@ int main(int argc, char *argv[])
 
 		if (sclmd == 1) {
 		    sc->common_lines(e, e, sclmd, scl, true);
-		    sc->filter("LinearXform", Dict("shift", EMObject(-90.0),
-						   "scale", EMObject(-1.0)));
+		    sc->filter("LinearXform", Dict("shift", -90.0, "scale", -1.0));
 		}
 		else if (sclmd == 2) {
 		    sc->common_lines(e, e, sclmd, scl, true);
@@ -534,10 +533,10 @@ int main(int argc, char *argv[])
 
 	if (bliter > 0 && blwidth > 0) {
 	    Dict p;
-	    p["distance_sigma"] = EMObject(blsigma1);
-	    p["value_sigma"] = EMObject(blsigma2);
-	    p["niter"] = EMObject(bliter);
-	    p["half_width"] = EMObject(blwidth);
+	    p["distance_sigma"] = blsigma1;
+	    p["value_sigma"] = blsigma2;
+	    p["niter"] = bliter;
+	    p["half_width"] = blwidth;
 
 	    d->filter("Bilateral", p);
 	}
@@ -658,8 +657,8 @@ int main(int argc, char *argv[])
 		pgmhi = (int) d->get_max();
 	    }
 
-	    d->set_attr_dict("min_gray", EMObject(pgmlo));
-	    d->set_attr_dict("max_gray", EMObject(pgmhi));
+	    d->set_attr_dict("min_gray", pgmlo);
+	    d->set_attr_dict("max_gray", pgmhi);
 
 	    if (n1 != 0) {
 		sprintf(outfile, "%03d.%s", i + 100, outfile);

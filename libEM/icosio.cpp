@@ -137,12 +137,12 @@ int IcosIO::write_header(const Dict & dict, int image_index)
     icosh.stamp2 = STAMP2;
     icosh.stamp3 = STAMP3;
 
-    icosh.nx = dict["nx"].get_int();
-    icosh.ny = dict["ny"].get_int();
-    icosh.nz = dict["nz"].get_int();
+    icosh.nx = dict["nx"];
+    icosh.ny = dict["ny"];
+    icosh.nz = dict["nz"];
 
-    icosh.min = dict["minimum"].get_float();
-    icosh.max = dict["maximum"].get_float();
+    icosh.min = dict["minimum"];
+    icosh.max = dict["maximum"];
 
     if (fwrite(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
 	Log::logger()->error("cannot write header to file '%s'", filename.c_str());

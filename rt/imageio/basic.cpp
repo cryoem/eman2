@@ -8,11 +8,12 @@ int test_emobject()
 {
  
     EMObject e1 = EMObject();
-    e1.get_int();
-
+    int n = e1;
+    
     EMObject e2 = EMObject(12.43);
-    e2.get_int();
-    e2.get_float();
+    n = e2;
+    float f = e2;
+    f = 2;
     e2.get_string();
     
     return 0;
@@ -31,7 +32,7 @@ int test_Dict()
     assert(f1 == false);
     assert(f2 == true);
     
-    assert(d["a"].get_int() == d.get("a").get_int());
+    assert((int)d["a"] == (int)d.get("a"));
     
     EMUtil::dump_dict(d);
 

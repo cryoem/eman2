@@ -171,17 +171,17 @@ int VtkIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    nx = dict["nx"].get_int();
-    ny = dict["ny"].get_int();
-    nz = dict["nz"].get_int();
+    nx = dict["nx"];
+    ny = dict["ny"];
+    nz = dict["nz"];
 
-    originx = dict["origin_row"].get_float();
-    originy = dict["origin_col"].get_float();
-    originz = dict["origin_sec"].get_float();
+    originx = dict["origin_row"];
+    originy = dict["origin_col"];
+    originz = dict["origin_sec"];
 
-    spacingx = dict["spacing_row"].get_float();
-    spacingy = dict["spacing_col"].get_float();
-    spacingz = dict["spacing_sec"].get_float();
+    spacingx = dict["spacing_row"];
+    spacingy = dict["spacing_col"];
+    spacingz = dict["spacing_sec"];
 
     fprintf(vtk_file, "# vtk DataFile Version 2.0\n");
     fprintf(vtk_file, "EMAN\n");

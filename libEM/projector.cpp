@@ -46,7 +46,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
     Rotation r(alt, az, phi, Rotation::EMAN);
     Matrix3f mx = r.get_matrix3();
   
-    int mode = params["mode"].get_int();
+    int mode = params["mode"];
     float gauss_width = 0;
     if (mode == 2) {
 	gauss_width = 4.0 / (M_PI * M_PI);
@@ -394,15 +394,15 @@ EMData *PawelProjector::project3d(EMData * image) const
 	return 0;
     }
 
-    int new_origin_x = params["origin_x"].get_int();
-    int new_origin_y = params["origin_y"].get_int();
-    int new_origin_z = params["origin_z"].get_int();
+    int new_origin_x = params["origin_x"];
+    int new_origin_y = params["origin_y"];
+    int new_origin_z = params["origin_z"];
 
-    float alt = params["alt"].get_float();
-    float az = params["az"].get_float();
-    float phi = params["phi"].get_float();    
+    float alt = params["alt"];
+    float az = params["az"];
+    float phi = params["phi"];    
 
-    int new_radius = params["radius"].get_int();
+    int new_radius = params["radius"];
     
     int nx = image->get_xsize();
     int ny = image->get_ysize();
@@ -534,10 +534,10 @@ EMData *PawelProjector::project3d(EMData * image) const
 
 EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 {
-    float alt = params["alt"].get_float();
-    float az = params["az"].get_float();
-    float phi = params["phi"].get_float();
-    float threshold = params["threshold"].get_float();
+    float alt = params["alt"];
+    float az = params["az"];
+    float phi = params["phi"];
+    float threshold = params["threshold"];
 
     int nx = image->get_xsize();
     int ny = image->get_ysize();
@@ -617,9 +617,9 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 
 EMData *StandardProjector::project3d(EMData * image) const
 {
-    float alt = params["alt"].get_float();
-    float az = params["az"].get_float();
-    float phi = params["phi"].get_float();
+    float alt = params["alt"];
+    float az = params["az"];
+    float phi = params["phi"];
 
     int nx = image->get_xsize();
     int ny = image->get_ysize();
@@ -658,9 +658,9 @@ EMData *StandardProjector::project3d(EMData * image) const
 
 EMData *StandardBigProjector::project3d(EMData * image) const
 {
-    float alt = params["alt"].get_float();
-    float az = params["az"].get_float();
-    float phi = params["phi"].get_float();
+    float alt = params["alt"];
+    float az = params["az"];
+    float phi = params["phi"];
 
     int nx = image->get_xsize();
     int ny = image->get_ysize();

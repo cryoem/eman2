@@ -247,11 +247,11 @@ int MrcIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
     
-    int new_mode = to_mrcmode(dict["datatype"].get_int(), dict["is_complex"].get_int());
-    int nx = dict["nx"].get_int();
-    int ny = dict["ny"].get_int();
-    int nz = dict["nz"].get_int();
-    is_ri = (bool) dict["is_ri"].get_int();
+    int new_mode = to_mrcmode(dict["datatype"], dict["is_complex"]);
+    int nx = dict["nx"];
+    int ny = dict["ny"];
+    int nz = dict["nz"];
+    is_ri = (bool) dict["is_ri"];
     
     if (!is_new_file) {
 	if (is_big_endian != ByteOrder::is_machine_big_endian()) {
@@ -309,31 +309,30 @@ int MrcIO::write_header(const Dict & dict, int image_index)
  
     mrch.ispg = 0;
     mrch.nsymbt = 0;
-    mrch.amin = dict["minimum"].get_float();
-    mrch.amax = dict["maximum"].get_float();
-    mrch.amean = dict["mean"].get_float();
+    mrch.amin = dict["minimum"];
+    mrch.amax = dict["maximum"];
+    mrch.amean = dict["mean"];
 
     mrch.mx = nx - 1;
     mrch.my = ny - 1;
     mrch.mz = nz - 1;
 
-    mrch.xlen = (nx - 1) * dict["spacing_row"].get_float();
-    mrch.ylen = (ny - 1) * dict["spacing_col"].get_float();
-    mrch.zlen = (nz - 1) * dict["spacing_sec"].get_float();
+    mrch.xlen = (nx - 1) * (float) dict["spacing_row"];
+    mrch.ylen = (ny - 1) * (float) dict["spacing_col"];
+    mrch.zlen = (nz - 1) * (float) dict["spacing_sec"];
 
     mrch.nxstart = -nx / 2;
     mrch.nystart = -ny / 2;
     mrch.nzstart = -nz / 2;
     
-    mrch.xorigin = dict["origin_row"].get_float();
-    mrch.yorigin = dict["origin_col"].get_float();
+    mrch.xorigin = dict["origin_row"];
+    mrch.yorigin = dict["origin_col"];
 
     if (is_new_file) {
-	mrch.zorigin = dict["origin_sec"].get_float();
+	mrch.zorigin = dict["origin_sec"];
     }
     else {
-	mrch.zorigin = dict["origin_sec"].get_float() -
-	    dict["spacing_sec"].get_float() * image_index;
+	mrch.zorigin = (float)dict["origin_sec"] - (float)dict["spacing_sec"] * image_index;
     }
 
     sprintf(mrch.map, "MAP");

@@ -42,12 +42,13 @@ namespace EMAN
      *
      *    int a = 12;
      *    EMObject o(a);
-     *    int a1 = o.get_int();
+     *    int a1 = o;
      */     
     class EMObject
     {
     public:
 	enum ObjectType {
+	    BOOL,
 	    INT,
 	    FLOAT,
 	    DOUBLE,
@@ -67,7 +68,10 @@ namespace EMAN
 	    emdata = 0;
 	    xydata = 0;
 	}
-	
+
+	EMObject(bool bb) : b(bb), type(BOOL)
+	{
+	}
 	EMObject(int num) : n(num), type(INT)
 	{
 	}
@@ -96,7 +100,24 @@ namespace EMAN
 	~EMObject() {
 	}
 
-	int get_int() const
+	operator bool() const
+	{
+	    if (type == BOOL) {
+		return b;
+	    }
+	    else if (type == INT) {
+		return (bool)n;
+	    }
+	    else {
+		if (type != UNKNOWN) {
+		    Log::logger()->error("type error. Cannot convert to bool from data type '%s'",
+					 get_object_type_name(type));
+		}
+	    }
+	    return false;
+	}
+	
+	operator int() const
 	{
 	    if (type == INT) {
 		return n;
@@ -109,14 +130,14 @@ namespace EMAN
 	    }
 	    else {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_int() for data type '%s'",
+		    Log::logger()->error("type error. Cannot convert to int from data type '%s'",
 					 get_object_type_name(type));
 		}
 	    }
 	    return 0;
 	}
 
-	float get_float() const
+	operator float() const
 	{
 	    if (type == FLOAT) {
 		return f;
@@ -129,7 +150,7 @@ namespace EMAN
 	    }
 	    else {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_float() for data type '%s'",
+		    Log::logger()->error("type error. Cannot convert to float from data type '%s'",
 					 get_object_type_name(type));
 		}
 	    }
@@ -137,7 +158,7 @@ namespace EMAN
 	    return 0;
 	}
 
-	double get_double() const
+	operator double() const
 	{
 	    if (type == DOUBLE) {
 		return d;
@@ -150,7 +171,7 @@ namespace EMAN
 	    }
 	    else {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_double() for data type '%s'",
+		    Log::logger()->error("type error. Cannot convert to double from data type '%s'",
 					 get_object_type_name(type));
 		}
 	    }
@@ -219,7 +240,15 @@ namespace EMAN
 	    else {
 		char tmp_str[32];
 
-		if (type == INT) {
+		if (type == BOOL) {
+		    if (b == false) {
+			sprintf(tmp_str, "false");
+		    }
+		    else {
+			sprintf(tmp_str, "true");
+		    }
+		}
+		else if (type == INT) {
 		    sprintf(tmp_str, "%d", n);
 		}
 		else if (type == FLOAT) {
@@ -244,6 +273,8 @@ namespace EMAN
 	static const char *get_object_type_name(ObjectType t)
 	{
 	    switch (t) {
+	    case BOOL:
+		return "BOOLEAN";
 	    case INT:
 		return "INT";
 	    case FLOAT:
@@ -268,6 +299,7 @@ namespace EMAN
     private:
 	union
 	{
+	    bool b;
 	    int n;
 	    float f;
 	    double d;
@@ -286,7 +318,7 @@ namespace EMAN
      *
      *      Dict d;
      *      d["lowpass"] = EMObject(12.23);
-     *      float lowpass1 = d["lowpass"].get_float();
+     *      float lowpass1 = d["lowpass"];
      *
      *      Dict d2("lowpass", 12.23);
      */
@@ -396,25 +428,25 @@ namespace EMAN
 	int set_default(const string & key, int val)
 	{
 	    if (!has_key(key)) {
-		dict[key] = EMObject(val);
+		dict[key] = val;
 	    }
-	    return dict[key].get_int();
+	    return dict[key];
 	}
 
 	float set_default(const string & key, float val)
 	{
 	    if (!has_key(key)) {
-		dict[key] = EMObject(val);
+		dict[key] = val;
 	    }
-	    return dict[key].get_float();
+	    return dict[key];
 	}
 
 	double set_default(const string & key, double val)
 	{
 	    if (!has_key(key)) {
-		dict[key] = EMObject(val);
+		dict[key] = val;
 	    }
-	    return dict[key].get_double();
+	    return dict[key];
 	}
 	
 	map<string, EMObject> & get_dict() {

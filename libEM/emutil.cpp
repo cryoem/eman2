@@ -610,7 +610,7 @@ void EMUtil::dump_dict(const Dict & dict)
 	string val = obj.to_str();
 
 	if (keys[i] == "datatype") {
-	    val = get_datatype_string((EMDataType) obj.get_int());
+	    val = get_datatype_string((EMDataType) (int)obj);
 	}
 
 	fprintf(stdout, "%25s\t%s\n", keys[i].c_str(), val.c_str());

@@ -282,9 +282,9 @@ int HdfIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
 
-    int nx = dict["nx"].get_int();
-    int ny = dict["ny"].get_int();
-    int nz = dict["nz"].get_int();
+    int nx = dict["nx"];
+    int ny = dict["ny"];
+    int nz = dict["nz"];
 
     cur_dataset = create_dataset(image_index, nx, ny, nz);
     if (cur_dataset < 0) {
@@ -322,12 +322,12 @@ int HdfIO::write_header(const Dict & dict, int image_index)
     write_float_attr_from_dict(image_index, "score", dict);
 
     if (dict.has_key("good")) {
-	write_int_attr(image_index, "good", dict["good"].get_int());
+	write_int_attr(image_index, "good", dict["good"]);
     }
     
     if (dict.has_key("orientation_convention")) {
 	write_euler_attr(image_index, "orientation_convention",
-			 dict["orientation_convention"].get_int());
+			 dict["orientation_convention"]);
     }
     
     return 0;
@@ -620,7 +620,7 @@ int HdfIO::write_int_attr(string attr_name, int value)
 int HdfIO::write_float_attr_from_dict(int image_index, string attr_name, const Dict& dict)
 {
     if (dict.has_key(attr_name)) {
-	return write_float_attr(image_index, attr_name, dict[attr_name].get_float());
+	return write_float_attr(image_index, attr_name, dict[attr_name]);
     }
     return 0;
 }
@@ -899,7 +899,7 @@ int HdfIO::write_ctf(const Ctf & ctf, int image_index)
     Dict dict = ctf.to_dict();
     vector<string> keys = dict.keys();
     for (size_t i = 0; i < keys.size(); i++) {
-	float v = dict[keys[i]].get_float();
+	float v = dict[keys[i]];
 	write_float_attr(keys[i].c_str(), v);
     }
 

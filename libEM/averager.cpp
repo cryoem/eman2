@@ -25,7 +25,7 @@ template<> Factory<Averager>::Factory()
 EMData *ImageAverager::average(const vector<EMData*>& image_list) const
 {
     EMData *sigma_image = params["sigma"].get_emdata();
-    int ignore0 = params["ignore0"].get_int();
+    int ignore0 = params["ignore0"];
 
     if (image_list.size() == 0) {
 	return 0;
@@ -315,11 +315,11 @@ EMData *CtfAverager::average(const vector<EMData*>& image_list) const
 
     float filter = 0;
     if (alg_name == "CtfC") {
-	params["filter"].get_float();
+	params["filter"];
 	if (filter == 0) {
 	    filter = 22.0;
 	}
-	float spacing_col = image0->get_attr_dict().get("spacing_col").get_float();
+	float spacing_col = image0->get_attr_dict().get("spacing_col");
 	float ds = 1.0 / (spacing_col * ny * Ctf::CTFOS);
 	filter = 1.0 / (filter * ds);
     }
