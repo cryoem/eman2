@@ -360,8 +360,7 @@ EMData *EMData::copy_head()
 	return ret;
 }
 
-EMData *EMData::get_rotated_clip(const FloatPoint &center, const Rotation &orient,
-								 const IntSize &size, float scale)
+EMData *EMData::get_rotated_clip(const Transform &xform, const IntSize &size, float scale)
 {
 	EMData *result = new EMData();
 	result->set_size(size[0],size[1],size[2]);
@@ -372,13 +371,9 @@ EMData *EMData::get_rotated_clip(const FloatPoint &center, const Rotation &orien
 	for (z=-size[2]/2; z<size[2]/2; z++) {
 		for (y=-size[1]/2; y<size[1]/2; y++) {
 			for (x=-size[0]/2; x<size[0]/2; x++) {
-				float xx,yy,zz;
-				xx= (scale*(x*mx[0][0]+y*mx[0][1]+z*mx[0][2])+center[0]);
-				yy= (scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center[1]);
-				zz= (scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center[2]);
-				float v=0;
+				Vec3f xv=Vec3f(x,y,z)*xform;
 				if (xx<0||yy<0||zz<0||xx>nx-2||yy>ny-2||zz>nz-2) v=0.;
-				else v=sget_value_at_interp(xx,yy,zz);
+				else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
 				result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
 			}
 		}
@@ -896,7 +891,7 @@ EMData* EMData::get_fft_phase()
 	return dat;
 }
 
-FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
+FloatPoint EMData::normalize_slice(EMData * slice, const Transform &xform)
 {
 	ENTERFUNC;
 	
@@ -914,7 +909,6 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 
 	float *norm = parent->get_data();
 	float *dat = slice->get_data();
-	Matrix3f mx = rotation.get_matrix3();
 	
 	float r = 0;
 	float rn = 0;
@@ -927,9 +921,9 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 			float rad = (float)hypot(x, y - ny / 2);
 
 			if (rad < ny / 2 - 1) {
-				float xx =  x * mx[0][0] + (y - ny / 2) * mx[0][1];
-				float yy =  x * mx[1][0] + (y - ny / 2) * mx[1][1];
-				float zz =  x * mx[2][0] + (y - ny / 2) * mx[2][1];
+				float xx =  x * xform[0][0] + (y - ny / 2) * xform[1][0];
+				float yy =  x * xform[0][1] + (y - ny / 2) * xform[1][1];
+				float zz =  x * xform[0][2] + (y - ny / 2) * xform[1][2];
 				float cc = 1;
 				if (xx < 0) {
 					xx = -xx;
@@ -992,7 +986,7 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 
 FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
 {
-	return normalize_slice(slice, Rotation(alt, az, phi, Rotation::EMAN));
+	return normalize_slice(slice, Transform(Rotation::EMAN, alt, az, phi ));
 }
 
 

@@ -17,78 +17,61 @@ Transform::Transform()
 
 
 
-Transform::Transform(const vector<float>& rotation, EulerType euler_type)
+Transform::		Transform(EulerType euler_type, float a1,float a2,float a3, float a4)
 {
 	init();
-	set_rotation(rotation, euler_type);
+	set_rotation(euler_type,a1,a2,a3,a4);
 }
 
 
-Transform::Transform(const vector<float>& rotation, EulerType euler_type, 
-					 const Vec3f& posttrans)
+Transform::Transform(const Vec3f& posttrans, EulerType euler_type,float a1,float a2, float a3, float a4)
 {
 	init();
-	set_rotation(rotation, euler_type);
+	set_rotation(euler_type,a1,a2,a3,a4);
 	set_posttrans(posttrans);
 }
 
 		
-Transform::Transform(const vector<float>& rotation, EulerType euler_type, 
-					 const Vec3f & pretrans, const Vec3f& posttrans)
+Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType euler_type, 
+				  float a1,float a2, float a3, float a4)
 {
 	init();
-	set_rotation(rotation, euler_type);
+	set_rotation(euler_type,a1,a2,a3,a4);
 	set_pretrans(pretrans);
 	set_posttrans(posttrans);
 }
 
-Transform::Transform(map<string, float>& rotation, EulerType euler_type)
+Transform::Transform(EulerType euler_type, map<string, float>& rotation)
 {
 	init();
-	set_rotation(rotation, euler_type);
+	set_rotation(euler_type,rotation);
 }
 
 
-Transform::Transform(map<string, float>& rotation, EulerType euler_type, 
-					 const Vec3f& posttrans)
+Transform::Transform(const Vec3f& posttrans, EulerType euler_type, map<string, float>& rotation)
 {
 	init();
-	set_rotation(rotation, euler_type);
+	set_rotation(euler_type, rotation);
 	set_posttrans(posttrans);
 }
 
 		
-Transform::Transform(map<string, float>& rotation, EulerType euler_type, 
-					 const Vec3f & pretrans, const Vec3f& posttrans)
+Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans,   
+				  EulerType euler_type, map<string, float>& rotation)
 {
 	init();
-	set_rotation(rotation, euler_type);
+	set_rotation(euler_type,rotation);
 	set_pretrans(pretrans);
 	set_posttrans(posttrans);
 }
-
-		
-Transform::~Transform()
-{
-	const int n = 4;
-	for (int i = 0; i < n; i++) {
-		delete [] matrix[i];
-		matrix[i] = 0;
-	}
-	delete [] matrix;
-}
-
 
 void Transform::init()
 {
-	const int n = 4;
-	const int m = 3;
-	
-	matrix = new float*[4];
-	for (int i = 0; i < n; i++) {
-		matrix[i] = new float[m];
-		memset(matrix[i], 0, sizeof(float) * m);
+for (int i=0; i<4; i++) {
+	for (int j=0; j<3; j++) {
+		matrix[i][j]=0;
 	}
+}
 }
 
 
@@ -96,9 +79,22 @@ void Transform::to_identity()
 {
 	for (int i = 0; i < 3; i++) {
 		matrix[i][i] = 1;
-	}	
+	}
+	set_center(Vec3f(0,0,0));
+	
 }
 
+bool Transform::is_identity()
+{
+for (int i=0; i<4; i++) {
+	for (int j=0; j<3; j++) {
+		if (i==j && matrix[i][j]!=1.0) return 0; 
+		if (i!=j && matrix[i][j]!=0.0) return 0; 
+	}
+}
+if (pre_trans[0]!=0 || pre_trans[1]!=0 ||pre_trans[2]!=0) return 0;
+return 1;
+}
 
 void Transform::orthogonalize()	
 {
@@ -131,15 +127,8 @@ void Transform::set_center(const Vec3f & center)
 	}
 }
 
-void Transform::set_rotation(const vector<float> & rotation, EulerType euler_type)
+void Transform::set_rotation(EulerType euler_type,float a0, float a1, float a2, float a3)
 {
-	float a0 = rotation[0];
-	float a1 = rotation[1];
-	float a2 = rotation[2];
-	float a3 = 0;
-	if (rotation.size() > 3) {
-		a3 = rotation[3];
-	}
 	
 	bool is_quaternion = 0;
 
@@ -173,15 +162,7 @@ void Transform::set_rotation(const vector<float> & rotation, EulerType euler_typ
 			a0 = cos(a0 / 2.0f);
 		}
 		break;
-		
-	case MATRIX:
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++) {
-				matrix[i][j] = rotation[i*3+j];
-			}
-		}
-		break;
-		
+				
 	default:
 		throw InvalidValueException(euler_type, "unknown Euler Type");
 	}
@@ -189,21 +170,20 @@ void Transform::set_rotation(const vector<float> & rotation, EulerType euler_typ
 	if (is_quaternion) {
 		quaternion2matrix(a0, a1, a2, a3);
 	}
-	else if (euler_type != MATRIX) {
-		matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
-		matrix[0][1] = -(sin(a3)*cos(a2) + cos(a1)*sin(a2)*cos(a3));
-		matrix[0][2] = sin(a1)*sin(a2);
-		matrix[1][0] = cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
-		matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
-		matrix[1][2] = -sin(a1)*cos(a2);
-		matrix[2][0] = sin(a1)*sin(a3);
-		matrix[2][1] = sin(a1)*cos(a3);
-		matrix[2][2] = cos(a1);
-	}
+	
+	matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
+	matrix[0][1] = -(sin(a3)*cos(a2) + cos(a1)*sin(a2)*cos(a3));
+	matrix[0][2] = sin(a1)*sin(a2);
+	matrix[1][0] = cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
+	matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
+	matrix[1][2] = -sin(a1)*cos(a2);
+	matrix[2][0] = sin(a1)*sin(a3);
+	matrix[2][1] = sin(a1)*cos(a3);
+	matrix[2][2] = cos(a1);
 	
 }
 
-void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type)
+void Transform::set_rotation(EulerType euler_type, map<string, float> & rotation)
 {
 	float a0 = 0;
 	float a1 = 0;
@@ -261,16 +241,6 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 		}
 		break;
 		
-	case MATRIX:
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++) {
-				char str[32];
-				sprintf(str, "m%0d%0d", i, j);
-				matrix[i][j] = rotation[str];
-			}
-		}
-		break;
-		
 	default:
 		throw InvalidValueException(euler_type, "unknown Euler Type");
 	}
@@ -278,7 +248,7 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 	if (is_quaternion) {
 		quaternion2matrix(a0, a1, a2, a3);
 	}
-	else if (euler_type != MATRIX) {
+	else {
 		matrix[0][0] =  cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
 		matrix[0][1] = -sin(a3)*cos(a2) - cos(a1)*sin(a2)*cos(a3);
 		matrix[0][2] =  sin(a1)*sin(a2);
@@ -422,15 +392,6 @@ map<string,float> Transform::get_rotation(EulerType euler_type) const
 		}
 		break;
 		
-	case MATRIX:
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++) {
-				char str[32];
-				sprintf(str, "m%d%d", i, j);
-				result[string(str)] = matrix[i][j];
-			}
-		}
-		break;
 	default:
 		throw InvalidValueException(euler_type, "unknown Euler Type");
 	}
@@ -446,7 +407,18 @@ float Transform::get_scale() const
 	return sqrt(ksq);
 }
 
-		
+int get_nsym(string sym) 
+{
+printf("get_nsym NOT IMPLEMENTED");
+return 1;
+}
+
+Transform get_sym(string sym, int n)
+{
+printf("get_sym NOT IMPLEMENTED");
+return Transform();
+}
+
 float Transform::orthogonality() const
 {
 	return 0;

@@ -54,7 +54,6 @@ namespace EMAN
 			IMAGIC,
 			SPIN,
 			QUATERNION,
-			MATRIX,
 			SGIROT,
 			SPIDER,
 			MRC
@@ -63,25 +62,24 @@ namespace EMAN
 		Transform();
 
 		
-		Transform(const vector<float> & rotation, EulerType euler_type);
+		Transform(EulerType euler_type, float a1,float a2,float a3, float a4=0);
 		
-		Transform(const vector<float> & rotation, EulerType euler_type, 
-				  const Vec3f& posttrans);
+		Transform(const Vec3f& posttrans, EulerType euler_type,float a1,float a2, float a3, float a4=0);
 		
-		Transform(const vector<float> & rotation, EulerType euler_type, 
-				  const Vec3f & pretrans, const Vec3f& posttrans);
+		Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType euler_type, 
+				  float a1,float a2, float a3, float a4=0);
 		
-		Transform(map<string, float>& rotation, EulerType euler_type);
+		Transform(EulerType euler_type, map<string, float>& rotation);
 
-		Transform(map<string, float>& rotation, EulerType euler_type, 
-				  const Vec3f& posttrans);
+		Transform(const Vec3f& posttrans, EulerType euler_type, map<string, float>& rotation);
 		
-		Transform(map<string, float>& rotation, EulerType euler_type, 
-				  const Vec3f & pretrans, const Vec3f& posttrans);
+		Transform(const Vec3f & pretrans, const Vec3f& posttrans,   
+				  EulerType euler_type, map<string, float>& rotation);
 		
 		virtual ~ Transform();
 
 		void to_identity();
+		bool is_identity();
 
 		// reorthogonalize the matrix
 		void orthogonalize();	
@@ -90,8 +88,8 @@ namespace EMAN
 		void set_pretrans(const Vec3f & pretrans);
 		void set_posttrans(const Vec3f & posttrans);
 		void set_center(const Vec3f & center);
-		void set_rotation(map<string, float>& rotation, EulerType euler_type);
-		void set_rotation(const vector<float>& rotation, EulerType euler_type);
+		void set_rotation(EulerType euler_type, map<string, float>& rotation );
+		void set_rotation(EulerType euler_type, float a1,float a2, float a3, float a4=0 );
 		void set_scale(float scale);
 
 		Vec3f get_pretrans() const;
@@ -103,6 +101,9 @@ namespace EMAN
 		
 		// returns orthogonality coefficient 0-1 range;
 		float orthogonality() const;
+		
+		int get_nsym(string sym);
+		Transform get_sym(string sym, int n);
 		
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
@@ -121,7 +122,7 @@ namespace EMAN
 		vector<float> matrix2sgi() const;
 		void quaternion2matrix(float e0, float e1, float e2, float e3);
 		
-		float **matrix;
+		float matrix[4][3];
 		Vec3f pre_trans;
 	};
 #if 0

@@ -310,52 +310,32 @@ void PointArray::mask_asymmetric_unit(string sym)
 }
 
 
-void PointArray::set_from(PointArray * source, string sym, Transform * transform)
+void PointArray::set_from(PointArray * source, string sym, Transform &transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
 
 }
 
-void PointArray::set_from(double *src, unsigned int num, string sym, Transform * transform)
+void PointArray::set_from(double *src, unsigned int num, string sym, Transform &xform)
 {
-	bool transform_set_here = false;
-	if(!transform) {
-		transform = new Transform();	// identity transform
-		transform_set_here = true;
-	}
-		
-	Rotation rot = transform->get_rotation();
-	rot.set_sym(sym);
-	unsigned int nsym = rot.get_max_nsym();
+	unsigned int nsym = xform.get_nsym(sym);
 
 	if (get_number_points() != nsym * num)
 		set_number_points(nsym * num);
 
 	double *target = get_points_array();
 
-	Vec3f pre_trans = transform->get_pretrans();
-	double tx0 = pre_trans[0], ty0 = pre_trans[1], tz0 = pre_trans[2];
-
-	Vec3f post_trans = transform->get_posttrans();
-	double tx1 = post_trans[0], ty1 = post_trans[1], tz1 = post_trans[2];
-
 	for (unsigned int s = 0; s < nsym; s++) {
-		Rotation rot2 = rot.get_sym(s);
-		Matrix3f m = rot2.get_matrix3();
-		double m00 = m[0][0], m01 = m[0][1], m02 = m[0][2];
-		double m10 = m[1][0], m11 = m[1][1], m12 = m[1][2];
-		double m20 = m[2][0], m21 = m[2][1], m22 = m[2][2];
 		int index = s * 4 * num;
 		for (unsigned int i = 0; i < 4 * num; i += 4, index += 4) {
-			double x = src[i] + tx0, y = src[i + 1] + ty0, z = src[i + 2] + tz0;
-			target[index] = x * m00 + y * m01 + z * m02 + tx1;
-			target[index + 1] = x * m10 + y * m11 + z * m12 + ty1;
-			target[index + 2] = x * m20 + y * m21 + z * m22 + tz1;
-			target[index + 3] = src[i + 3];
-			//printf("s=%d\tx,y,z=%g,%g,%g => %g,%g,%g\n",s,src[i],src[i+1],src[i+2],target[index    ],target[index + 1],target[index + 2]);
+			Vec3f v(src[i],src[i+1],src[i+2]);
+			v=v*xform.get_sym(sym,s);
+			target[index]  =v[0];
+			target[index+1]=v[1];
+			target[index+2]=v[2];
+			target[index+3]=src[i+3];
 		}
 	}
-	if(transform_set_here) delete transform;
 }
 
 
