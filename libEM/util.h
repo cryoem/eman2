@@ -20,6 +20,7 @@ namespace EMAN
 	static void ap2ri(float *data, size_t n);
 	static void flip_complex_phase(float *data, size_t n);
 	static int file_lock_wait(FILE * file);
+	static void file_unlock(FILE * file);
 	static int generate_machine_stamp();
 	static bool check_file_by_magic(const void *first_block, const char *magic);
 	static void flip_image(float *data, size_t nx, size_t ny);
