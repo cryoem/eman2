@@ -109,7 +109,8 @@ Processes a tomographic tilt series"""
 	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 	parser.add_option("--localavg",type="int",help="Average several images for the alignment",default=1)
 	parser.add_option("--tiltaxis",type="float",help="Skip automatic tilt axis location, use fixed angle from x",default=400.0)
-	parser.add_option("--twopass",type="int",help="Skip automatic tilt axis location, use fixed angle from x",default=0)
+	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
+	parser.add_option("--nozero",action="store_true",default=False,help="Do not allow 0-translations between images")
 #	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	
 	(options, args) = parser.parse_args()
@@ -210,15 +211,15 @@ Processes a tomographic tilt series"""
 			ccfs.filter("ValueSqrt")
 			ccf/=ccfs
 #			ccf.filter("MaskSharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
-#			ccf.filter("PeakOnly",{"npeaks":0})
-			ccf.filter("MaskSharp",{"outer_radius":options.maxshift})
-			ccf.set_value_at(ccf.get_xsize()/2,ccf.get_ysize()/2,0,0)
-
 			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
-			if i[1]==53 : ccf.write_image("dbug.hed",-1)
+			ccf.filter("PeakOnly",{"npeaks":0})
+			ccf.filter("MaskSharp",{"outer_radius":options.maxshift})
+			if options.nozero : ccf.set_value_at(ccf.get_xsize()/2,ccf.get_ysize()/2,0,0)
+
+			if i[1] in range(72,77) : ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
 			maxloc=(maxloc[0]-im1.get_xsize()/2,maxloc[1]-im1.get_ysize()/2)
-#			print maxloc
+			print maxloc
 			
 			out=im2.get_clip(Region(cen[0]-maxloc[0]-rgnp[2]/2+im2.get_xsize()/2,cen[1]-maxloc[1]-rgnp[2]/2+im2.get_ysize()/2,rgnp[2],rgnp[2]))
 			cen=(cen[0]-maxloc[0],cen[1]-maxloc[1])

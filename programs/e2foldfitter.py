@@ -25,19 +25,19 @@ def compare(vec):
 	
 #	print vec,pdim
 #	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
-	a=cmp_target.get_rotated_clip((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),Rotation(*vec[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
+	a=cmp_target.get_rotated_clip(Transform((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),(0,0,0),EULER_EMAN,vec[0],vec[1],vec[2]),pdim,1.0)
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
 	ncmp+=1
-	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
+	return -cmp_probe.cmp("Dot",a,{})
 	
 def compares(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
 	of the probe to the map"""
 	global cmp_probe,cmp_target,sfac
 	
-	a=cmp_target.get_rotated_clip((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),Rotation(*vec[0:3]+[Rotation.EulerType.EMAN]),pdim2,1.0)
-	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
+	a=cmp_target.get_rotated_clip(Transform((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),(0,0,0),EULER_EMAN,vec[0],vec[1],vec[2]),pdim2,1.0)
+	return -cmp_probe.cmp("Dot",a,{})
 
 def main():
 	global tdim,pdim,tdim2,pdim2,sfac
@@ -209,7 +209,7 @@ both box sizes should be multiples of 8."""
 		b=j[1]
 		print "%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,j[0],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
 		out.write("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f\n"%(i,j[0],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5]))
-		a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
+		a=cmp_target.get_rotated_clip(Transform((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),(0,0,0),EULER_EMAN,b[0],b[1],b[2]),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%i)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 		pc.rotate(-b[0],-b[2],-b[1])
