@@ -314,6 +314,7 @@ namespace EMAN
 
 		float get_value_at(int x, int y, int z) const;
 		float get_value_at(int x, int y) const;
+		float get_value_at(size_t i) const;
 
 		float sget_value_at(int x, int y, int z) const;
 		float sget_value_at(int x, int y) const;
@@ -479,7 +480,11 @@ namespace EMAN
 		return rdata[x + y * nx];
 	}
 
-
+	inline float EMData::get_value_at(size_t i) const
+	{
+		return rdata[i];
+	}
+	
 	inline float EMData::sget_value_at(int x, int y, int z) const
 	{
 		if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz)

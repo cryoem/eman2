@@ -1,12 +1,22 @@
 #include "averager_template.h"
+#include "emdata.h"
 
 using namespace EMAN;
 
-EMData *XYZAverager::average(const vector < EMData * >&image_list) const
+XYZAverager::XYZAverager() : result(0)
 {
-	if (image_list.size() == 0) {
-		return 0;
-	}
+}
 
-	return 0;
+void XYZAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+	result = new EMData();
+}
+
+
+EMData *XYZAverager::finish()
+{
+	return result;
 }

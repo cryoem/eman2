@@ -33,14 +33,17 @@ namespace EMAN
      *    EMData *image2 = ...;
      *    images[0] = image1;
      *    images[1] = image2;
-     *    EMData *result = imgavg->average(images);
+	 *    imgavg->add_image(image1);
+	 *    imgavg->add_image(image2);
+     *    EMData *result = imgavg->finish();
      *
      * 3. How to define a new XYZAverager
      *
      *    XYZAverager should extend Averager and implement the
      *    following functions:
      *
-     *        EMData *average(const vector<EMData *> & image_list) const;
+     *        void add_image(EMData * image);
+	 *        EMData * finish();
      *        string get_name() const { return "XYZ"; }
      *        static Averager *NEW() { return new XYZAverager(); }
      */
@@ -50,7 +53,9 @@ namespace EMAN
 		virtual ~ Averager()
 		{
 		}
-		virtual EMData *average(const vector < EMData * >&image_list) const = 0;
+		
+		virtual void add_image(EMData * image) = 0;
+		virtual EMData * finish() = 0;
 
 		virtual string get_name() const = 0;
 
@@ -75,8 +80,11 @@ namespace EMAN
 	class ImageAverager:public Averager
 	{
 	  public:
-		EMData * average(const vector < EMData * >&image_list) const;
-
+		ImageAverager();
+		
+		void add_image( EMData * image);
+		EMData * finish();
+		
 		string get_name() const
 		{
 			return "Image";
@@ -94,6 +102,13 @@ namespace EMAN
 			d.put("ignore0", EMObject::INT);
 			return d;
 		}
+
+	private:
+		EMData *result;
+		EMData *sigma_image;
+		int *nimg_n0;
+		int ignore0;
+		int nimg;
 	};
 
 	/** IterationAverager averages images by doing the smoothing iteration.
@@ -101,8 +116,10 @@ namespace EMAN
 	class IterationAverager:public Averager
 	{
 	  public:
-		EMData * average(const vector < EMData * >&image_list) const;
-
+		IterationAverager();
+		void add_image( EMData * image);
+		EMData * finish();
+		
 		string get_name() const
 		{
 			return "Iteration";
@@ -112,6 +129,10 @@ namespace EMAN
 		{
 			return new IterationAverager();
 		}
+	private:
+		EMData * result;
+		EMData * sigma_image;
+		int nimg;
 	};
 
 	/** CtfAverager is the base Averager class for CTF correction or SNR weighting.
@@ -119,7 +140,9 @@ namespace EMAN
 	class CtfAverager:public Averager
 	{
 	  public:
-		EMData * average(const vector < EMData * >&image_list) const;
+		CtfAverager();
+		void add_image( EMData * image);
+		EMData * finish();
 
 		vector < float >get_snr() const
 		{
@@ -127,16 +150,30 @@ namespace EMAN
 		}
 
 	  protected:
-		CtfAverager():sf(0), curves(0), need_snr(false)
-		{
-		}
-
 		XYData *sf;
 		EMData *curves;
 		bool need_snr;
 		const char *outfile;
 	  private:
 		mutable vector < float >snr;
+		EMData * result;
+		EMData * image0_fft;
+		EMData * image0_copy;
+		
+		vector<vector<float> > ctf;
+		vector<vector<float> > ctfn;
+		
+		float *snri;
+		float *snrn;		
+		float *tdr;
+		float *tdi;
+		float *tn;
+		
+		float filter;
+		int nimg;
+		int nx;
+		int ny;
+		int nz;
 	};
 
 	/** WeightingAverager averages the images with SNR weighting, but no CTF correction.

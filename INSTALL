@@ -29,22 +29,22 @@
        1) install CMake (http://www.cmake.org)
 
        2) % mkdir -p EMAN/src
-	  % cd EMAN/src
-	  % gunzip eman2.tar.gz
-	  % tar xf eman2.tar
+          % cd EMAN/src
+          % gunzip eman2.tar.gz
+          % tar xf eman2.tar
 	  
        3) % mkdir build
-	  % cd build
+          % cd build
       
        4) If your fftw and gsl libraries are not installed at the default places,
           set up FFTWDIR and GSLDIR environment variables.
 
        4) % ccmake ../eman2
-            make changes if necessary
-	    Then type 'c', and type 'g'.
+          make changes if necessary
+          Then type 'c', and type 'g'.
 	    
        5) % make
-	  % make install
+          % make install
 
 	  
 Platform Dependent Optimization 

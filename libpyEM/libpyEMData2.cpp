@@ -198,6 +198,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("set_name", &EMAN::EMData::set_name)
         .def("get_value_at", (float (EMAN::EMData::*)(int, int, int) const)&EMAN::EMData::get_value_at)
         .def("get_value_at", (float (EMAN::EMData::*)(int, int) const)&EMAN::EMData::get_value_at)
+        .def("get_value_at", (float (EMAN::EMData::*)(size_t) const)&EMAN::EMData::get_value_at)
         .def("sget_value_at", (float (EMAN::EMData::*)(int, int, int) const)&EMAN::EMData::sget_value_at)
         .def("sget_value_at", (float (EMAN::EMData::*)(int, int) const)&EMAN::EMData::sget_value_at)
         .def("get_value_at_interp", (float (EMAN::EMData::*)(float, float) const)&EMAN::EMData::get_value_at_interp)
@@ -254,7 +255,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
-
     implicitly_convertible<int, EMAN::EMObject>();
     implicitly_convertible<float, EMAN::EMObject>();
     implicitly_convertible<double, EMAN::EMObject>();
