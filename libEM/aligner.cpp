@@ -2,7 +2,6 @@
  * $Id$
  */
 
-// fix default values
 
 #include "aligner.h"
 #include "log.h"
@@ -648,7 +647,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string ) const
 	maxshift = size / 8;
     }
 
-    EMData *t1 = radonthis->copy(0, 0);
+    EMData *t1 = radonthis->copy(false, false);
     radonthis->write_image("radon.hed", 0, EMUtil::IMAGE_IMAGIC);
 
     float si = 0;
@@ -788,7 +787,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, string ) const
     EMData *this_copy2 = this_img->copy();
 
     if (!flip) {
-	this_copy2->filter("filp", Dict("axis", EMObject("y")));
+	this_copy2->filter("Filp", Dict("axis", EMObject("y")));
     }
 
     this_copy2->align("Rotational", params);
@@ -918,33 +917,35 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 	cmp_name = "Variance";
     }
 
-    EMData *with_copy = with->copy(0, 0);
+    EMData *with_copy = with->copy(false, false);
     int ny = this_img->get_ysize();
 
     int xst = (int) floor(2 * M_PI * ny);
     xst = Util::calc_best_fft_size(xst);
 
     with_copy->median_shrink(2);
-    EMData *tmp = with->unwrap(4, with->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
+    
+    int with_copy_r2 = with_copy->get_ysize() / 2 - 2 - maxshift/2;
+    EMData *tmp = with_copy->unwrap(4, with_copy_r2, xst/2, 0, 0, true);
     delete with_copy;
     with_copy = 0;
     with_copy = tmp;
 
-    EMData *wsc = with_copy->copy(0, 0);
+    EMData *wsc = with_copy->copy(false, false);
     with = with->unwrap(4, with->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
-    EMData *with_copy2 = with->copy(0, 0);
+    EMData *with_copy2 = with->copy(false, false);
 
     EMData *df = 0;
     if (flip) {
 	df = flip->copy();
     }
     else {
-	df = this_img->copy(0, 0);
+	df = this_img->copy(false, false);
 	df->filter("Flip", Dict("axis", EMObject("x")));
     }
 
-    EMData *dns = this_img->copy(0, 0);
-    EMData *dfs = df->copy(0, 0);
+    EMData *dns = this_img->copy(false, false);
+    EMData *dfs = df->copy(false, false);
     dns->median_shrink(2);
     dfs->median_shrink(2);
 
@@ -1035,7 +1036,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 	    for (int dx = bestdx2 - 3; dx <= bestdx2 + 3; dx++) {
 		if (hypot(dx, dy) <= maxshift) {
 		    EMData *uw = u->unwrap(4, u->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
-		    EMData *uwc = uw->copy(0, 0);
+		    EMData *uwc = uw->copy(false, false);
 		    EMData *a = uw->calc_ccfx(with);
 
 		    uwc->rotate_x(a->get_max_index());
@@ -1084,7 +1085,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 	dn = this_img->copy();
     }
     else {
-	dn = this_img->copy(0, 0);
+	dn = this_img->copy(false, false);
     }
 
     dn->set_ralign_params(bestang, 0, 0);
@@ -1125,9 +1126,9 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 
     float astep = atan2(2.0, nx);
 
-    EMData *dns = dn->copy(0, 0);
-    EMData *dfs = df->copy(0, 0);
-    EMData *with_copy = with->copy(0, 0);
+    EMData *dns = dn->copy(false, false);
+    EMData *dfs = df->copy(false, false);
+    EMData *with_copy = with->copy(false, false);
 
     dns->median_shrink(2);
     dfs->median_shrink(2);
@@ -1279,15 +1280,17 @@ EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
 	cmp_name = "FRC";
     }
     
-    EMData *this_copy = this_img->align("RotateTranslate", params);
+    EMData *this_copy = this_img->align("RotateTranslateBest", params);
     EMData *flip_copy = 0;
 
     if (!flip) {
 	this_img->filter("Flip", Dict("axis", EMObject("x")));
+	flip_copy = this_img->align("RotateTranslateBest", params);
     }
-
-    flip_copy = flip->align("RotateTranslate", params);
-
+    else {
+	flip_copy = flip->align("RotateTranslateBest", params);
+    }
+    
     if (!this_copy) {
 	Log::logger()->error("%s align failed", get_name().c_str());
 	return flip_copy;

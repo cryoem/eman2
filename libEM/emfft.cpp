@@ -102,9 +102,6 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 	planf_1d = FftwPlan(n, REAL_TO_COMPLEX, FFTW_ESTIMATE);
     }
     rfftw_one(planf_1d.get_plan_1d(), (fftw_real *) real_data, (fftw_real *) complex_data);
-    // fix here
-    //static rfftw_plan plan1 = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
-    //rfftw_one(plan1, (fftw_real *) real_data, (fftw_real *) complex_data);
     return 0;
 }
 
@@ -115,8 +112,6 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
     }
 
     rfftw_one(planr_1d.get_plan_1d(), (fftw_real *) complex_data, (fftw_real *) real_data);
-    //static rfftw_plan plan1 = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);
-    //rfftw_one(plan1, (fftw_real *) complex_data, (fftw_real *) real_data);
     return 0;
 }
 

@@ -12,7 +12,7 @@ using namespace EMAN;
 int main(int argc, char *argv[])
 {
     int SIZE = 96;
-    int NTT = 50;
+    int NTT = 500;
  
     int slow = 0;
     int low = 0;
@@ -22,15 +22,15 @@ int main(int argc, char *argv[])
     if (argc > 1) {
 	if (Util::sstrncmp(argv[1], "slowest"))
 	    slow = 2;
-	else if (Util::sstrncmp(argv[1], "slow") == 0)
+	else if (Util::sstrncmp(argv[1], "slow"))
 	    slow = 1;
-	else if (Util::sstrncmp(argv[1], "best") == 0)
+	else if (Util::sstrncmp(argv[1], "best"))
 	    slow = 3;
-	else if (Util::sstrncmp(argv[1], "low") == 0)
+	else if (Util::sstrncmp(argv[1], "low"))
 	    low = 1;
-	else if (Util::sstrncmp(argv[1], "refine") == 0)
+	else if (Util::sstrncmp(argv[1], "refine"))
 	    newali = 1;
-	else if (Util::sstrncmp(argv[1], "big") == 0)
+	else if (Util::sstrncmp(argv[1], "big"))
 	    big = 1;
     }
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     pat.filter("CircleMeanNormalize");
     pat.filter("SharpMask", Dict("outer_radius", EMObject(pat.get_xsize()/2)));
 
-    EMData *data[500];
+    EMData *data[5000];
     
     for (int i = 0; i < NTT; i++) {
 	data[i] = pat.copy(false, false);
@@ -303,26 +303,27 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 3; i++) {
 	for (int j = 5; j < (slow == 2 ? NTT / 10 : NTT); j++) {
 	    if (slow == 2) {
-		tmp = data[i]->align("RTFSlowest", Dict("with", EMObject(data[j]),
-							"flip", EMObject((EMData*)0),
-							"maxshift", EMObject(SIZE/8)));
+		Dict d;
+		d["with"] =  EMObject(data[j]);
+		d["flip"] = EMObject((EMData*)0);
+		d["maxshift"] = EMObject(SIZE/8);
+		tmp = data[i]->align("RTFSlowest", d);
 	    }
 	    else if (slow == 3) {
 		tmp = data[i]->align("RTFBest", Dict("with", EMObject(data[j]),
 						     "flip", EMObject((EMData*)0),
 						     "maxshift", EMObject(SIZE/8)));
 	    }
-	    else if (slow == 1)
-		tmp = data[i]->align("RTFSlow", Dict("with", EMObject(data[j]),
-						     "flip", EMObject((EMData*)0),
-						     "maxshift", EMObject(SIZE/8)));
+	    else if (slow == 1) {
+		Dict d;
+		d["with"] =  EMObject(data[j]);
+		d["flip"] = EMObject((EMData*)0);
+		d["maxshift"] = EMObject(SIZE/8);
+		tmp = data[i]->align("RTFSlow", d);
+	    }
 	    else if (newali == 1) {
-		EMData *t1, *t2, *t3;
 		tmp = data[i]->align("RotateTranslateFlip", Dict("with", EMObject(data[j])));
 		tmp->align("Refine", Dict("with", EMObject(data[j])));
-		delete t1;
-		delete t2;
-		delete t3;
 	    }
 	    else {
 		Dict d;

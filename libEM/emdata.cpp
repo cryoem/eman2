@@ -3087,7 +3087,7 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
     }
 
     if (!EMUtil::is_same_size(this, with)) {
-	Log::logger()->error("calc_ccfx must have 2 images the same size");
+	Log::logger()->error("calc_ccfx must have 2 images of the same size");
 	return 0;
     }
     if (nz > 1) {

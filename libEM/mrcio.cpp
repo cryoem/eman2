@@ -76,7 +76,7 @@ int MrcIO::init()
 	}
 
 	if (is_complex_mode()) {
-	    mrch.nx *= 2; // fix here
+	    mrch.nx *= 2; 
 	}
 
 	if (mrch.xlen == 0) {

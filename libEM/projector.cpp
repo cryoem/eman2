@@ -100,7 +100,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
     Dict filter_d;
     filter_d["gauss_width"] = EMObject(gauss_width);
     filter_d["ring_width"] = EMObject(ret->get_xsize() / 2);
-    ret->filter("InvGaussMaskFilter", filter_d); // fix here
+    ret->filter("InvGaussMaskFilter", filter_d); 
 
     ret->set_ralign_params(alt, az, phi);
 
