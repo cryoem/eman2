@@ -5,6 +5,8 @@
 #ifndef eman__byteorder_h__
 #define eman__byteorder_h__ 1
 
+#include <stddef.h>
+
 namespace EMAN
 {
 
@@ -20,12 +22,12 @@ namespace EMAN
 	    }
 
 	    bool data_big_endian = false;
-	    int typesize = sizeof(T);
+	    size_t typesize = sizeof(T);
 	    char *d = (char *) small_num_addr;
 
 	    if (is_machine_big_endian()) {
 		data_big_endian = false;
-		for (int i = typesize / 2; i < typesize; i++) {
+		for (size_t i = typesize / 2; i < typesize; i++) {
 		    if (d[i] != 0) {
 			data_big_endian = true;
 			break;
@@ -34,7 +36,7 @@ namespace EMAN
 	    }
 	    else {
 		data_big_endian = true;
-		for (int j = 0; j < typesize / 2; j++) {
+		for (size_t j = 0; j < typesize / 2; j++) {
 		    if (d[j] != 0) {
 			data_big_endian = false;
 			break;
@@ -46,27 +48,27 @@ namespace EMAN
 	}
 
 
-	template <class T> static void become_big_endian(T * data, int n = 1) {
+	template <class T> static void become_big_endian(T * data, size_t n = 1) {
 	    if (!is_machine_big_endian()) {
 		swap_bytes<T>(data, n);
 	    }
 	}
 
-	template <class T> static void become_little_endian(T * data, int n = 1) {
+	template <class T> static void become_little_endian(T * data, size_t n = 1) {
 	    if (is_machine_big_endian()) {
 		swap_bytes<T>(data, n);
 	    }
 	}
 
 
-	template <class T> static void swap_bytes(T * data, int n = 1) {
+	template <class T> static void swap_bytes(T * data, size_t n = 1) {
 	    unsigned char s;
-	    int p = sizeof(T);
+	    size_t p = sizeof(T);
 	    char *d = (char *) data;
 
 	    if (p > 1) {
-		for (int i = 0; i < n; i++, d += p) {
-		    for (int j = 0; j < p / 2; j++) {
+		for (size_t i = 0; i < n; i++, d += p) {
+		    for (size_t j = 0; j < p / 2; j++) {
 			s = d[j];
 			d[j] = d[p - 1 - j];
 			d[p - 1 - j] = s;

@@ -42,17 +42,17 @@ namespace EMAN
 
 	float get_yatx(float x) const;
 
-	float get_x(int i) const
+	float get_x(size_t i) const
 	{
-	    if (i < 0 || i > (int) data.size()) {
+	    if (i < 0 || i > data.size()) {
 		return 0;
 	    }
 	    return data[i].x;
 	}
 
-	float get_y(int i) const
+	float get_y(size_t i) const
 	{
-	    if (i < 0 || i > (int) data.size()) {
+	    if (i < 0 || i > data.size()) {
 		return 0;
 	    }
 	    return data[i].y;
@@ -60,7 +60,7 @@ namespace EMAN
 
 	int get_size() const
 	{
-	    return data.size();
+	    return (int)data.size();
 	}
 
 	float get_miny() const

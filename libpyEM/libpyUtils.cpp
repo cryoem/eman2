@@ -59,6 +59,10 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
         call_method< void >(self, "compute_2d_complex", p0, p1, p2);
     }
 
+    void copy_from(EMAN::Ctf* p0) {
+        call_method< void >(self, "copy_from", p0);
+    }
+
     PyObject* self;
 };
 // Unique type for unnamed enums
@@ -152,6 +156,14 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
         return EMAN::SimpleCtf::to_dict();
     }
 
+    void copy_from(EMAN::Ctf* p0) {
+        call_method< void >(self, "copy_from", p0);
+    }
+
+    void default_copy_from(EMAN::Ctf* p0) {
+        EMAN::SimpleCtf::copy_from(p0);
+    }
+
     PyObject* self;
 };
 
@@ -231,7 +243,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_find_min_and_max_overloads_4_6, EMAN::
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpyUtils)
+BOOST_PYTHON_MODULE(libpyUtils2)
 {
     class_< EMAN::FloatStat >("FloatStat", init< const EMAN::FloatStat& >())
         .def(init< int >())
@@ -335,6 +347,7 @@ BOOST_PYTHON_MODULE(libpyUtils)
         .def("compute_1d", pure_virtual(&EMAN::Ctf::compute_1d))
         .def("compute_2d_real", pure_virtual(&EMAN::Ctf::compute_2d_real))
         .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
+        .def("copy_from", pure_virtual(&EMAN::Ctf::copy_from))
     );
 
     enum_< EMAN::Ctf::CtfType >("CtfType")
@@ -391,6 +404,7 @@ BOOST_PYTHON_MODULE(libpyUtils)
         .def("to_string", (std::string (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_string, (std::string (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_string)
         .def("from_dict", (void (EMAN::SimpleCtf::*)(const EMAN::Dict&) )&EMAN::SimpleCtf::from_dict, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Dict&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
         .def("to_dict", (EMAN::Dict (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_dict, (EMAN::Dict (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_dict)
+        .def("copy_from", (void (EMAN::SimpleCtf::*)(EMAN::Ctf*) )&EMAN::SimpleCtf::copy_from, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::Ctf*))&EMAN_SimpleCtf_Wrapper::default_copy_from)
     ;
 
     scope* EMAN_ImageIO_scope = new scope(

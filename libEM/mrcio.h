@@ -21,7 +21,7 @@ namespace EMAN
 	int read_ctf(Ctf & ctf, int image_index = 0);
 	int write_ctf(const Ctf & ctf, int image_index = 0);
 
-	static bool is_valid(const void *first_block, long file_size = -1);
+	static bool is_valid(const void *first_block, off_t file_size = 0);
 	static int get_mode_size(int mm);
 	static int to_em_datatype(int mrcmode);
 	static int to_mrcmode(int em_datatype);

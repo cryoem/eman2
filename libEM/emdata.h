@@ -19,7 +19,7 @@ using std::map;
 namespace EMAN
 {
     class ImageIO;
-    class SimpleCtf;
+    class Ctf;
     class XYData;
 
     class EMData
@@ -192,8 +192,8 @@ namespace EMAN
 	void setup_insert_slice(int size);
 
 
-	SimpleCtf *get_ctf() const;
-	void set_ctf(const SimpleCtf & ctf);
+	Ctf *get_ctf() const;
+	void set_ctf(Ctf * ctf);
 
 	Vec3f get_translation() const;
 	void set_translation(const Vec3f & t);
@@ -331,7 +331,7 @@ namespace EMAN
 	mutable Dict attr_dict;
 	float *rdata;
 	float *supp;
-	SimpleCtf *ctf;
+	Ctf *ctf;
 	EMData *parent;
 	EMData *fft;
 	EMData *rfp;
@@ -561,7 +561,7 @@ namespace EMAN
 	return attr_dict["std"].get_float();
     }
 
-    inline SimpleCtf *EMData::get_ctf() const
+    inline Ctf *EMData::get_ctf() const
     {
 	return ctf;
     }

@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-typedef off_t largefile_off_t;
 
 inline int portable_fseek(FILE * fp, off_t offset, int whence)
 {

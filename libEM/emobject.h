@@ -251,7 +251,7 @@ namespace EMAN
 	~Dict() {
 	}
 
-	vector<string> keys()const
+	vector<string> keys() const
 	{
 	    vector<string> result;
 
@@ -263,7 +263,7 @@ namespace EMAN
 	    return result;
 	}
 
-	vector<EMObject> values()const
+	vector<EMObject> values() const
 	{
 	    vector<EMObject> result;
 
@@ -284,7 +284,7 @@ namespace EMAN
 	    return false;
 	}
 
-	int size() const
+	size_t size() const
 	{
 	    return dict.size();
 	}
@@ -345,7 +345,7 @@ namespace EMAN
 	    return result;
 	}
 
-	int size() const
+	size_t size() const
 	{
 	    return dict.size();
 	}

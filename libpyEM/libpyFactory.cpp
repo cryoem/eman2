@@ -224,7 +224,7 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpyFactory)
+BOOST_PYTHON_MODULE(libpyFactory2)
 {
     scope* EMAN_EMObject_scope = new scope(
     class_< EMAN::EMObject >("EMObject", init<  >())

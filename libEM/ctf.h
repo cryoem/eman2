@@ -53,6 +53,8 @@ namespace EMAN
 	virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 	virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
+	virtual void copy_from(Ctf * new_ctf) = 0;
+	
     public:
 	enum { CTFOS = 5 };
 
@@ -87,7 +89,9 @@ namespace EMAN
 
 	void from_dict(const Dict & dict);
 	Dict to_dict() const;
-
+	
+	void copy_from(Ctf * new_ctf);
+	
     private:
 	inline float calc_amp1()
 	{

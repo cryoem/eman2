@@ -11,7 +11,7 @@
 using namespace boost::python;
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpyGeometry)
+BOOST_PYTHON_MODULE(libpyGeometry2)
 {
     class_< EMAN::Vec3f >("Vec3f", init<  >())
         .def(init< const EMAN::Vec3f& >())

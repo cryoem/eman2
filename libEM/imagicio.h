@@ -136,7 +136,7 @@ namespace EMAN
 	    int flags[50];	// eman flags
 	};
 
-	int get_datatype_size(DataType t);
+	size_t get_datatype_size(DataType t);
 	int to_em_datatype(DataType t);
 	void make_header_right_endian(ImagicHeader & hed);
 	void swap_header(ImagicHeader & hed);

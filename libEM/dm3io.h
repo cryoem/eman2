@@ -87,8 +87,8 @@ namespace EMAN
 	    int read(bool nodata = false);
 
 	private:
-	    int typesize() const;
-	    int typesize(int type) const;
+	    size_t typesize() const;
+	    size_t typesize(int type) const;
 	    int read_any(bool nodata = false);
 
 	    vector<int> read_array_types();

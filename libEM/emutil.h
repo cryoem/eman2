@@ -74,7 +74,7 @@ namespace EMAN
 				       int nz = 1, int image_index = 0);
 
 	static int get_region_data(unsigned char *cdata, FILE * in, int image_index,
-				   int mode_size, int nx, int ny, int nz = 1,
+				   size_t mode_size, int nx, int ny, int nz = 1,
 				   const Region * area = 0, bool need_flip = false,
 				   int pre_row = 0, int post_row = 0);
 
@@ -86,7 +86,7 @@ namespace EMAN
 
     private:
 	static ImageType fast_get_image_type(string filename, const void *first_block,
-					     long file_size);
+					     off_t file_size);
     };
 }
 

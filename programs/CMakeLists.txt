@@ -1,6 +1,4 @@
-LINK_LIBRARIES(EM)
-ADD_EXECUTABLE(iminfo2 iminfo.C)
-INSTALL_TARGETS(/bin
-		iminfo2
-		)
+LINK_LIBRARIES(EM2)
+ADD_EXECUTABLE(e2iminfo iminfo.C)
+INSTALL_TARGETS(/bin e2iminfo )
 

@@ -14,8 +14,8 @@ namespace EMAN
 	~EmIO();
 
 	DEFINE_IMAGEIO_FUNC;
-	static bool is_valid(const void *first_block, long file_size = -1);
-	static int get_mode_size(char data_type);
+	static bool is_valid(const void *first_block, off_t file_size = 0);
+	static size_t get_mode_size(char data_type);
 	static int get_machine_type();
 	static int to_em_datatype(char t);
 
@@ -62,7 +62,7 @@ namespace EMAN
 	FILE *em_file;
 	EMHeader emh;
 
-	int mode_size;
+	size_t mode_size;
 	DataType mode;
 	bool is_big_endian;
 	bool initialized;

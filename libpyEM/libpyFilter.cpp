@@ -72,7 +72,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpyFilter)
+BOOST_PYTHON_MODULE(libpyFilter2)
 {
     class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
         .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)

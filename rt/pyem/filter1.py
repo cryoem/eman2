@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from EMAN import *
+from e2EMAN import *
 import os
 
 filters = FilterFactory.instance()

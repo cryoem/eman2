@@ -86,7 +86,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_2_5, un
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpyEMData)
+BOOST_PYTHON_MODULE(libpyEMData2)
 {
     EMAN::vector_to_python<EMAN::EMData*>();
     EMAN::vector_from_python<int>();
