@@ -1,3 +1,5 @@
+INCLUDE_DIRECTORIES(filter)
+
 SET(LIB_EM_SOURCE byteorder.cpp
     emobject.cpp
     emfft.cpp
@@ -33,7 +35,9 @@ SET(LIB_EM_SOURCE byteorder.cpp
     emcache.cpp
     ctf.cpp
     xydata.cpp
-    filter.cpp
+    filter/filter.cpp
+    filter/FourierFilter.cpp
+    filter/LowpassSharpCutoffFilter.cpp
     aligner.cpp
     projector.cpp
     cmp.cpp

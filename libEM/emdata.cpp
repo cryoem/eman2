@@ -4280,7 +4280,7 @@ void EMData::to_one()
 
 
 
-EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
+EMData *EMData::broken_calc_ccf(EMData * with, int tocorner, EMData * filter)
 {
 	ENTERFUNC;
 #if 1
