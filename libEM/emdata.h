@@ -132,7 +132,6 @@ namespace EMAN
 	int add_incoherent(EMData * obj);
 	int add_mask_shell(int num_shells);
 	int add_random_noise(int n, float x0, float dx, float *y, bool interpolation = true);
-	void auto_mask(float thresh, float filter = 0.1);
 
 	vector<float> calc_fourier_shell_correlation(EMData * with);
 	void calc_hist(vector<float> & hist, float hist_min = 0, float hist_max = 0, bool add =
@@ -172,7 +171,6 @@ namespace EMAN
 	float get_edge_mean() const;
 	float get_circle_mean();
 
-	int sub_noise();
 	void setup_insert_slice(int size);
 
 	Ctf *get_ctf() const;

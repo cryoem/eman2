@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (automask) {
-	    d->auto_mask(automask, 0.1);
+	    d->filter("AutoMask", Dict("threshold", automask));
 	}
 
 	// uses correlation with 180 deg rot for centering

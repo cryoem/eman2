@@ -56,8 +56,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_apply_radial_func_overloads_3
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_random_noise_overloads_4_5, add_random_noise, 4, 5)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_auto_mask_overloads_1_2, auto_mask, 1, 2)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_1_4, calc_hist, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_dist_overloads_1_2, calc_dist, 1, 2)
@@ -141,7 +139,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("add_incoherent", &EMAN::EMData::add_incoherent)
         .def("add_mask_shell", &EMAN::EMData::add_mask_shell)
         .def("add_random_noise", &EMAN::EMData::add_random_noise, EMAN_EMData_add_random_noise_overloads_4_5())
-        .def("auto_mask", &EMAN::EMData::auto_mask, EMAN_EMData_auto_mask_overloads_1_2())
         .def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation)
         .def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_1_4())
         .def("calc_az_dist", &EMAN::EMData::calc_az_dist)
@@ -156,7 +153,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("uncut_slice", &EMAN::EMData::uncut_slice, EMAN_EMData_uncut_slice_overloads_2_5())
         .def("get_edge_mean", &EMAN::EMData::get_edge_mean)
         .def("get_circle_mean", &EMAN::EMData::get_circle_mean)
-        .def("sub_noise", &EMAN::EMData::sub_noise)
         .def("setup_insert_slice", &EMAN::EMData::setup_insert_slice)
         .def("get_ctf", &EMAN::EMData::get_ctf, return_internal_reference< 1 >())
         .def("set_ctf", &EMAN::EMData::set_ctf)
