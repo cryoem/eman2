@@ -13,7 +13,7 @@ using namespace EMAN;
 Gatan2IO::Gatan2IO(string file, IOMode rw)
     :  filename(file), rw_mode(rw), gatan2_file(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
 }
 
 Gatan2IO::~Gatan2IO()
@@ -55,7 +55,7 @@ int Gatan2IO::init()
 	}
 
 	is_big_endian = ByteOrder::is_data_big_endian(&gatanh.len);
-	become_platform_endian((short *) &gatanh, sizeof(Gatan2Header) / sizeof(short));
+	become_host_endian((short *) &gatanh, sizeof(Gatan2Header) / sizeof(short));
     }
 
     return 0;
@@ -74,7 +74,7 @@ bool Gatan2IO::is_valid(const void *first_block)
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&len);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&len);
 	ByteOrder::swap_bytes(&type);
     }
@@ -112,7 +112,7 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
     return 0;
 }
 
-int Gatan2IO::write_header(const Dict & , int )
+int Gatan2IO::write_header(const Dict & , int , bool )
 {
     Log::logger()->log("Gatan2IO::write_header() to file '%s'", filename.c_str());
     Log::logger()->warn("Gatan2 write is not supported.");
@@ -159,13 +159,13 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 
     switch (gatanh.type) {
     case GATAN2_SHORT:
-	become_platform_endian((short *) data, size);
+	become_host_endian((short *) data, size);
 	for (i = size - 1; i >= 0; i--) {
 	    data[i] = static_cast<float>(sdata[i]);
 	}
 	break;
     case GATAN2_FLOAT:
-	become_platform_endian(data, size);
+	become_host_endian(data, size);
 	break;
     case GATAN2_CHAR:
 	for (i = size - 1; i >= 0; i--) {
@@ -173,7 +173,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	}
 	break;
     case GATAN2_INT:
-	become_platform_endian((int *) data, size);
+	become_host_endian((int *) data, size);
 	for (i = size - 1; i >= 0; i--) {
 	    data[i] = static_cast<float>(ldata[i]);
 	}
@@ -185,7 +185,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
     return 0;
 }
 
-int Gatan2IO::write_data(float *, int )
+int Gatan2IO::write_data(float *, int , bool )
 {
     Log::logger()->log("Gatan2IO::write_data() to file '%s'", filename.c_str());
     Log::logger()->warn("Gatan2 write is not supported.");

@@ -142,19 +142,19 @@ string TagData::read_native(bool is_value_stored)
     if (tag_type == SHORT) {
 	short val = 0;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%d", val);
     }
     else if (tag_type == USHORT) {
 	unsigned short val = 0;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%d", val);
     }
     else if (tag_type == INT) {
 	int val = 0;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%d", val);
     }
     else if (tag_type == CHAR || tag_type == OCTET) {
@@ -165,25 +165,25 @@ string TagData::read_native(bool is_value_stored)
     else if (tag_type == BOOLEAN) {
 	bool val = false;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%d", val);
     }
     else if (tag_type == UINT) {
 	unsigned int val = 0;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%d", (int) val);
     }
     else if (tag_type == FLOAT) {
 	float val = 0;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%f", val);
     }
     else if (tag_type == DOUBLE) {
 	double val = 0;
 	fread(&val, sz, 1, in);
-	tagtable->become_platform_endian(&val);
+	tagtable->become_host_endian(&val);
 	sprintf(val_str, "%10e", val);
     }
     else {
@@ -240,7 +240,7 @@ string TagData::read_string(int size)
     char *str = new char[size + 1];
 
     fread(buf, size * sizeof(unsigned short), 1, in);
-    tagtable->become_platform_endian < unsigned short >(buf, size);
+    tagtable->become_host_endian < unsigned short >(buf, size);
 
     for (int i = 0; i < size; i++) {
 	str[i] = static_cast<char>(buf[i]);
@@ -290,13 +290,13 @@ int TagData::read_array_data(vector<int> item_types, bool nodata)
 	fread(data, buf_size, 1, in);
 
 	if (item_size == sizeof(short)) {
-	    tagtable->become_platform_endian((short *) data, array_size);
+	    tagtable->become_host_endian((short *) data, array_size);
 	}
 	else if (item_size == sizeof(int)) {
-	    tagtable->become_platform_endian((int *) data, array_size);
+	    tagtable->become_host_endian((int *) data, array_size);
 	}
 	else if (item_size == sizeof(double)) {
-	    tagtable->become_platform_endian((double *) data, array_size);
+	    tagtable->become_host_endian((double *) data, array_size);
 	}
 	else {
 	    Log::logger()->error("cannot handle this type of DM3 image data");
@@ -581,7 +581,7 @@ int TagEntry::read(bool nodata)
 DM3IO::DM3IO(string dm3_filename, IOMode rw)
     :  filename(dm3_filename), rw_mode(rw), dm3file(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     tagtable = new TagTable();
 }
 
@@ -794,14 +794,14 @@ bool DM3IO::is_complex_mode()
     return false;
 }
 
-int DM3IO::write_header(const Dict &, int)
+int DM3IO::write_header(const Dict &, int, bool )
 {
     Log::logger()->log("DM3IO::write_header()");
     Log::logger()->warn("DM3 write is not supported.");
     return 1;
 }
 
-int DM3IO::write_data(float *, int)
+int DM3IO::write_data(float *, int, bool )
 {
     Log::logger()->log("DM3IO::write_data()");
     Log::logger()->warn("DM3 write is not supported.");

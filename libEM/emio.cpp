@@ -15,7 +15,7 @@ EmIO::EmIO(string file, IOMode rw)
 {
     mode_size = 0;
     mode = EM_EM_UNKNOWN;
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
 }
 
 EmIO::~EmIO()
@@ -57,9 +57,9 @@ int EmIO::init()
 	}
 
 	is_big_endian = ByteOrder::is_data_big_endian(&emh.nz);
-	become_platform_endian(&emh.nx);
-	become_platform_endian(&emh.ny);
-	become_platform_endian(&emh.nz);
+	become_host_endian(&emh.nx);
+	become_host_endian(&emh.ny);
+	become_host_endian(&emh.nz);
 
 	mode = (DataType) emh.data_type;
 
@@ -96,7 +96,7 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
     int nz = data1[3];
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&nz);
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&nx);
 	ByteOrder::swap_bytes(&ny);
 	ByteOrder::swap_bytes(&nz);
@@ -148,7 +148,7 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is
     return 0;
 }
 
-int EmIO::write_header(const Dict & dict, int image_index)
+int EmIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("EmIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -203,10 +203,10 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
     int total_sz = xlen * ylen * zlen;
 
     if (mode_size == sizeof(short)) {
-	become_platform_endian((short *) cdata, total_sz);
+	become_host_endian((short *) cdata, total_sz);
     }
     else if (mode_size == sizeof(int)) {
-	become_platform_endian((int *) cdata, total_sz);
+	become_host_endian((int *) cdata, total_sz);
     }
     else if (mode_size == sizeof(double)) {
 	Log::logger()->error("double type image is not supported");
@@ -240,7 +240,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
     return 0;
 }
 
-int EmIO::write_data(float *data, int image_index)
+int EmIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("EmIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {

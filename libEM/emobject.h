@@ -37,14 +37,15 @@ namespace EMAN
 	ICOS_UNKNOWN
     };
 
-    /** EMObject is a wrapper class for types including int, float, EMData*, etc. 
-     * The types wrapped by EMObject is defined in ObjectType. Each
-     * type is typically used as follows ('int' is the example):
+    /** EMObject is a wrapper class for types including int, float,
+     * double, etc as defined in ObjectType. Each type is typically used 
+     * as follows ('int' is the example):
      *
      *    int a = 12;
      *    EMObject o(a);
-     *    int a1 = o;
-     */     
+     *    EMObject o2 = a; // implicit converter from int to EMObject. 
+     *    int a1 = o;      // implicit converter from EMObject to int.
+     */ 
     class EMObject
     {
     public:
@@ -129,7 +130,7 @@ namespace EMAN
      * Typical ways to construct a Dict:
      *
      *      Dict d;
-     *      d["lowpass"] = EMObject(12.23);
+     *      d["lowpass"] = 12.23;
      *      float lowpass1 = d["lowpass"];
      *
      *      Dict d2("lowpass", 12.23);

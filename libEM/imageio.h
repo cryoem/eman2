@@ -38,12 +38,14 @@ namespace EMAN
 	virtual int read_header(Dict & dict, int image_index = 0,
 				const Region * area = 0, bool is_3d = false) = 0;
 
-	virtual int write_header(const Dict & dict, int image_index = 0) = 0;
+	virtual int write_header(const Dict & dict, int image_index = 0,
+				 bool use_host_endian = true) = 0;
 
 	virtual int read_data(float *data, int image_index = 0,
 			      const Region * area = 0, bool is_3d = false) = 0;
 
-	virtual int write_data(float *data, int image_index = 0) = 0;
+	virtual int write_data(float *data, int image_index = 0,
+			       bool use_host_endian = true) = 0;
 
 	virtual int read_ctf(Ctf & ctf, int image_index = 0);
 	virtual int write_ctf(const Ctf & ctf, int image_index = 0);
@@ -52,9 +54,9 @@ namespace EMAN
 	virtual bool is_complex_mode() = 0;
 	virtual bool is_image_big_endian() = 0;
 
-	template <class T> void become_platform_endian(T * data, int n = 1)
+	template <class T> void become_host_endian(T * data, int n = 1)
 	{
-	    if (is_image_big_endian() != ByteOrder::is_machine_big_endian()) {
+	    if (is_image_big_endian() != ByteOrder::is_host_big_endian()) {
 		ByteOrder::swap_bytes(data, n);
 	    }
 	}
@@ -75,9 +77,9 @@ namespace EMAN
      */
 #define DEFINE_IMAGEIO_FUNC \
         int read_header(Dict & dict, int image_index = 0, const Region* area = 0, bool is_3d = false); \
-	int write_header(const Dict & dict, int image_index = 0); \
+	int write_header(const Dict & dict, int image_index = 0, bool use_host_endian = true); \
 	int read_data(float* data, int image_index = 0, const Region* area = 0, bool is_3d = false); \
-	int write_data(float* data, int image_index = 0); \
+	int write_data(float* data, int image_index = 0, bool use_host_endian = true); \
         bool is_complex_mode(); \
         bool is_image_big_endian(); \
         int get_nimg(); \

@@ -18,7 +18,7 @@ PifIO::PifIO(string pif_filename, IOMode rw)
 {
     pif_file = 0;
     mode_size = 0;
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     initialized = false;
     real_scale_factor = 1;
     is_new_file = false;
@@ -112,18 +112,18 @@ int PifIO::init()
 	}
 
 	is_big_endian = ByteOrder::is_data_big_endian(&pfh.nz);
-	become_platform_endian(&pfh.htype);
+	become_host_endian(&pfh.htype);
 
 	if (pfh.htype != 1) {
 	    Log::logger()->error("only handle PIF that all projects have the same dimensions");
 	    return 1;
 	}
 
-	become_platform_endian(&pfh.mode);
-	become_platform_endian(&pfh.nx);
-	become_platform_endian(&pfh.ny);
-	become_platform_endian(&pfh.nz);
-	become_platform_endian(&pfh.nimg);
+	become_host_endian(&pfh.mode);
+	become_host_endian(&pfh.nx);
+	become_host_endian(&pfh.ny);
+	become_host_endian(&pfh.nz);
+	become_host_endian(&pfh.nimg);
 
 	if (is_float(pfh.mode)) {
 	    real_scale_factor = atof(pfh.scalefactor);
@@ -152,7 +152,7 @@ bool PifIO::is_valid(const void *first_block)
     int endian = data[7];
     bool data_big_endian = static_cast<bool>(endian);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&m1);
 	ByteOrder::swap_bytes(&m2);
     }
@@ -226,7 +226,7 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     return 0;
 }
 
-int PifIO::write_header(const Dict & dict, int image_index)
+int PifIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("PifIO::write_header() to file '%s'", filename.c_str());
 
@@ -238,7 +238,7 @@ int PifIO::write_header(const Dict & dict, int image_index)
     struct tm *t = localtime(&t0);
 
     if (!is_new_file) {
-	if (is_big_endian != ByteOrder::is_machine_big_endian()) {
+	if (is_big_endian != ByteOrder::is_host_big_endian()) {
 	    Log::logger()->
 		error("cannot write to existing file '%s' which is in opposite byte order",
 		      filename.c_str());
@@ -278,7 +278,7 @@ int PifIO::write_header(const Dict & dict, int image_index)
 	pfh.ny = dict["ny"];
 	pfh.nz = dict["nz"];
 	pfh.nimg += 1;
-	pfh.endian = (int) ByteOrder::is_machine_big_endian();
+	pfh.endian = (int) ByteOrder::is_host_big_endian();
 	fwrite(&pfh, sizeof(PifFileHeader), 1, pif_file);
     }
 
@@ -344,10 +344,10 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 	    }
 
 	    if (mode_size == sizeof(short)) {
-		become_platform_endian((short *) buf, pfh.nx);
+		become_host_endian((short *) buf, pfh.nx);
 	    }
 	    else if (mode_size == sizeof(int)) {
-		become_platform_endian((int *) buf, pfh.nx);
+		become_host_endian((int *) buf, pfh.nx);
 	    }
 
 	    int offset2 = offset1 + j * pfh.nx;
@@ -375,7 +375,7 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 }
 
 
-int PifIO::write_data(float *data, int image_index)
+int PifIO::write_data(float *data, int image_index, bool )
 {
 
     Log::logger()->log("PifIO::write_data() to file '%s'", filename.c_str());

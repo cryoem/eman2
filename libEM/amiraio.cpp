@@ -82,7 +82,7 @@ int AmiraIO::read_header(Dict & , int , const Region * , bool )
 
 }
 
-int AmiraIO::write_header(const Dict & dict, int image_index)
+int AmiraIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("AmiraIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -124,7 +124,7 @@ int AmiraIO::read_data(float *, int , const Region * , bool )
     return 1;
 }
 
-int AmiraIO::write_data(float *data, int image_index)
+int AmiraIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("AmiraIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {

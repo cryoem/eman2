@@ -18,7 +18,7 @@ SpiderIO::SpiderIO(string spider_filename, IOMode rw)
     first_h = 0;
     cur_h = 0;
 
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     initialized = false;
     is_new_file = false;
 }
@@ -71,7 +71,7 @@ int SpiderIO::init()
 	}
 	int nslice = static_cast<int>(first_h->nslice);
 	is_big_endian = ByteOrder::is_data_big_endian(&nslice);
-	become_platform_endian((float *) first_h, NUM_FLOATS_IN_HEADER);
+	become_host_endian((float *) first_h, NUM_FLOATS_IN_HEADER);
 
 	if (first_h->istack == SINGLE_IMAGE_HEADER && rw_mode == READ_WRITE) {
 	    fclose(spider_file);
@@ -106,7 +106,7 @@ bool SpiderIO::is_valid(const void *first_block)
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&nslice);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&nslice);
 	ByteOrder::swap_bytes(&type);
 	ByteOrder::swap_bytes(&ny);
@@ -171,7 +171,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	    return 1;
 	}
 
-	become_platform_endian((float *) &cur_image_hed, NUM_FLOATS_IN_HEADER);
+	become_host_endian((float *) &cur_image_hed, NUM_FLOATS_IN_HEADER);
 
 	if (cur_image_hed->nx != first_h->nx || cur_image_hed->ny != first_h->ny
 	    || cur_image_hed->nslice != first_h->nslice) {
@@ -225,7 +225,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 }
 
 
-int SpiderIO::write_header(const Dict & dict, int image_index)
+int SpiderIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("SpiderIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -487,12 +487,12 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool 
 			    (int) first_h->nslice, &zlen);
 
     int data_size = xlen * ylen * zlen;
-    become_platform_endian(data, data_size);
+    become_host_endian(data, data_size);
 
     return 0;
 }
 
-int SpiderIO::write_data(float *data, int image_index)
+int SpiderIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("SpiderIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {
@@ -619,7 +619,7 @@ int SpiderIO::get_nimg()
 
 bool SpiderIO::need_swap() const
 {
-    if (!is_new_file && (is_big_endian != ByteOrder::is_machine_big_endian())) {
+    if (!is_new_file && (is_big_endian != ByteOrder::is_host_big_endian())) {
 	return true;
     }
     return false;

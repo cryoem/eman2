@@ -24,7 +24,7 @@ ImagicIO::ImagicIO(string file, IOMode rw)
     hed_filename = Util::get_filename_by_ext(filename, HED_EXT);
     img_filename = Util::get_filename_by_ext(filename, IMG_EXT);
 
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     is_new_hed = false;
     is_new_img = false;
     memset(&imagich, 0, sizeof(ImagicHeader));
@@ -116,7 +116,7 @@ bool ImagicIO::is_valid(const void *first_block)
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&headrec);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&count);
 	ByteOrder::swap_bytes(&headrec);
 	ByteOrder::swap_bytes(&month);
@@ -209,7 +209,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
     return 0;
 }
 
-int ImagicIO::write_header(const Dict & dict, int image_index)
+int ImagicIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("ImagicIO::write_header() to file '%s'", hed_filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -307,7 +307,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index)
     new_hed.icend = nx / 2;
 
     if (!is_new_hed) {
-	if (is_big_endian != ByteOrder::is_machine_big_endian()) {
+	if (is_big_endian != ByteOrder::is_host_big_endian()) {
 	    swap_header(new_hed);
 	}
     }
@@ -331,14 +331,14 @@ int ImagicIO::write_header(const Dict & dict, int image_index)
 
     imagich.count += (n_pad_heds + n_new_img);
 
-    if (is_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (is_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&imagich.count);
     }
     portable_fseek(hed_file, sizeof(int), SEEK_SET);
     fwrite(&imagich.count, sizeof(int), 1, hed_file);
 
     if (!is_new_hed) {
-	if (is_big_endian != ByteOrder::is_machine_big_endian()) {
+	if (is_big_endian != ByteOrder::is_host_big_endian()) {
 	    swap_header(new_hed);
 	}
     }
@@ -397,10 +397,10 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
     int img_size = imagich.nx * imagich.ny * nimg;
 
     if (datatype == IMAGIC_FLOAT) {
-	become_platform_endian(data, img_size);
+	become_host_endian(data, img_size);
     }
     else if (datatype == IMAGIC_USHORT) {
-	become_platform_endian((unsigned short *) cdata, img_size);
+	become_host_endian((unsigned short *) cdata, img_size);
 
 	for (int j = img_size - 1; j >= 0; j--) {
 	    data[j] = static_cast<float>(sdata[j]);
@@ -414,7 +414,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
     return 0;
 }
 
-int ImagicIO::write_data(float *data, int image_index)
+int ImagicIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("ImagicIO::write_data() to file '%s'", img_filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {
@@ -431,7 +431,7 @@ int ImagicIO::write_data(float *data, int image_index)
 	}
     }
 
-    if (!is_new_img && (is_big_endian != ByteOrder::is_machine_big_endian())) {
+    if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
 	ByteOrder::swap_bytes(data, imagich.nx * imagich.ny * nz);
     }
 
@@ -455,7 +455,7 @@ int ImagicIO::write_data(float *data, int image_index)
 	}
     }
 
-    if (!is_new_img && (is_big_endian != ByteOrder::is_machine_big_endian())) {
+    if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
 	ByteOrder::swap_bytes(data, imagich.nx * imagich.ny);
     }
 
@@ -583,9 +583,9 @@ int ImagicIO::to_em_datatype(DataType t)
 
 void ImagicIO::make_header_right_endian(ImagicHeader & hed)
 {
-    become_platform_endian((int *) &hed, NUM_4BYTES_PRE_IXOLD);
-    become_platform_endian(&hed.ixold, NUM_4BYTES_AFTER_IXOLD);
-    become_platform_endian((int *) &hed.space, NUM_4BYTES_AFTER_SPACE);
+    become_host_endian((int *) &hed, NUM_4BYTES_PRE_IXOLD);
+    become_host_endian(&hed.ixold, NUM_4BYTES_AFTER_IXOLD);
+    become_host_endian((int *) &hed.space, NUM_4BYTES_AFTER_SPACE);
 }
 
 

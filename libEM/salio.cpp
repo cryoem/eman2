@@ -155,7 +155,7 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area,
     return 0;
 }
 
-int SalIO::write_header(const Dict &, int)
+int SalIO::write_header(const Dict &, int, bool )
 {
     Log::logger()->log("SalIO::write_header() to file '%s'", filename.c_str());
     Log::logger()->warn("SAL write is not supported.");
@@ -206,7 +206,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool )
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
     if (scan_mode == NON_RASTER_SCAN) {
-	become_platform_endian(sdata, xlen * ylen);
+	become_host_endian(sdata, xlen * ylen);
 
 	for (int i = 0; i < ylen; i += 2) {
 	    for (int j = 0; j < xlen / 2; j++) {
@@ -223,7 +223,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool )
     return 0;
 }
 
-int SalIO::write_data(float *, int)
+int SalIO::write_data(float *, int, bool )
 {
     Log::logger()->log("SalIO::write_data() to file '%s'", filename.c_str());
     Log::logger()->warn("SAL write is not supported.");

@@ -18,7 +18,7 @@ const char *VtkIO::MAGIC = "# vtk DataFile Version";
 VtkIO::VtkIO(string vtk_filename, IOMode rw)
     :  filename(vtk_filename), rw_mode(rw), vtk_file(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
 
     datatype = DATA_UNKNOWN;
     filetype = VTK_UNKNOWN;
@@ -164,7 +164,7 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     return 0;
 }
 
-int VtkIO::write_header(const Dict & dict, int image_index)
+int VtkIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("VtkIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -240,7 +240,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool )
     return 0;
 }
 
-int VtkIO::write_data(float *data, int image_index)
+int VtkIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("VtkIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {
@@ -248,7 +248,7 @@ int VtkIO::write_data(float *data, int image_index)
     }
 
     bool swapped = false;
-    if (!ByteOrder::is_machine_big_endian()) {
+    if (!ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(data, nx * ny * nz);
 	swapped = true;
     }

@@ -19,14 +19,14 @@ SingleSpiderIO::~SingleSpiderIO()
 }
 
 
-int SingleSpiderIO::write_header(const Dict & dict, int image_index)
+int SingleSpiderIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("SingleSpiderIO::write_header()");
     assert(image_index == 0);
     return write_single_header(dict);
 }
 
-int SingleSpiderIO::write_data(float *data, int image_index)
+int SingleSpiderIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("SingleSpiderIO::write_data()");
     assert(image_index == 0);
@@ -48,7 +48,7 @@ bool SingleSpiderIO::is_valid(const void *first_block)
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&nslice);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&nslice);
 	ByteOrder::swap_bytes(&type);
 	ByteOrder::swap_bytes(&ny);

@@ -156,7 +156,7 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     return 0;
 }
 
-int PgmIO::write_header(const Dict & dict, int image_index)
+int PgmIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("PgmIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -234,7 +234,7 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
     if (datatype == PGM_USHORT) {
-	become_platform_endian(sdata, xlen * ylen);
+	become_host_endian(sdata, xlen * ylen);
     }
 
     for (int k = xlen * ylen - 1; k >= 0; k--) {
@@ -249,7 +249,7 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
     return 0;
 }
 
-int PgmIO::write_data(float *data, int image_index)
+int PgmIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("PgmIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {

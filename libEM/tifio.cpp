@@ -17,7 +17,7 @@ using namespace EMAN;
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
     :  filename(tiff_filename), rw_mode(rw), tiff_file(0), bitspersample(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
 }
 
 
@@ -245,14 +245,14 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_
 }
 
 
-int TiffIO::write_header(const Dict &, int)
+int TiffIO::write_header(const Dict &, int, bool )
 {
     Log::logger()->log("TiffIO::write_header()");
     Log::logger()->error("TIFF write is not supported");
     return 0;
 }
 
-int TiffIO::write_data(float *, int)
+int TiffIO::write_data(float *, int, bool )
 {
     Log::logger()->log("TiffIO::write_data()");
     Log::logger()->error("TIFF write is not supported");

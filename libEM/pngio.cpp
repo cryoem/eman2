@@ -195,7 +195,7 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool i
     return 0;
 }
 
-int PngIO::write_header(const Dict & dict, int image_index)
+int PngIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("PngIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -293,7 +293,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool is_
     return 0;
 }
 
-int PngIO::write_data(float *data, int image_index)
+int PngIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("PngIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {

@@ -37,8 +37,8 @@ namespace EMAN
 
 	    void dump() const;
 
-	    template <class T> void become_platform_endian(T * data, int n = 1) {
-		if (is_big_endian != ByteOrder::is_machine_big_endian()) {
+	    template <class T> void become_host_endian(T * data, int n = 1) {
+		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 		    ByteOrder::swap_bytes(data, n);
 		}
 	    }

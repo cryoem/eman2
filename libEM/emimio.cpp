@@ -13,7 +13,7 @@ const char *EmimIO::MAGIC = "EMIM";
 EmimIO::EmimIO(string file, IOMode rw)
     :  filename(file), rw_mode(rw), emim_file(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
 }
 
 EmimIO::~EmimIO()
@@ -53,7 +53,7 @@ int EmimIO::init()
 	    return err;
 	}
 
-	become_platform_endian((int *) &efh, NUM_INT_IN_FILE_HEADER);
+	become_host_endian((int *) &efh, NUM_INT_IN_FILE_HEADER);
 	is_big_endian = ByteOrder::is_data_big_endian(&efh.count);
     }
 
@@ -75,7 +75,7 @@ bool EmimIO::is_valid(const void *first_block)
     if (strncmp(data, MAGIC, sizeof(MAGIC)) == 0) {
 	bool data_big_endian = ByteOrder::is_data_big_endian(&count);
 
-	if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+	if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	    ByteOrder::swap_bytes(&count);
 	}
 
@@ -114,7 +114,7 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     fread(&eih, sizeof(EmimImageHeader), 1, emim_file);
 
     int n = eih.mgnum;
-    become_platform_endian(&n);
+    become_host_endian(&n);
 
     char mgnum[32];
     sprintf(mgnum, "%d", n);
@@ -125,7 +125,7 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 }
 
-int EmimIO::write_header(const Dict &, int)
+int EmimIO::write_header(const Dict &, int, bool )
 {
     Log::logger()->log("EmimIO::write_header() to file '%s'", filename.c_str());
     Log::logger()->warn("EMIM write header is not supported.");
@@ -147,12 +147,12 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool )
 	return 1;
     }
 
-    become_platform_endian(data, efh.nx * efh.ny * efh.nz);
+    become_host_endian(data, efh.nx * efh.ny * efh.nz);
 
     return 0;
 }
 
-int EmimIO::write_data(float *, int)
+int EmimIO::write_data(float *, int, bool )
 {
     Log::logger()->log("EmimIO::write_data() to file '%s'", filename.c_str());
     Log::logger()->warn("EMIM write data is not supported.");

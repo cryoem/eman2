@@ -108,7 +108,7 @@ int Util::generate_machine_stamp()
     int stamp = 0;
     char *p = (char *) (&stamp);
 
-    if (ByteOrder::is_machine_big_endian()) {
+    if (ByteOrder::is_host_big_endian()) {
 	p[0] = 0x44;
 	p[1] = 0x44;
 	p[2] = 0;

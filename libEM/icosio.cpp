@@ -13,7 +13,7 @@ using namespace EMAN;
 IcosIO::IcosIO(string file, IOMode rw)
     :  filename(file), rw_mode(rw), icos_file(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     is_new_file = false;
 }
 
@@ -53,7 +53,7 @@ int IcosIO::init()
 	    return err;
 	}
 
-	become_platform_endian((int *) &icosh, sizeof(IcosHeader) / sizeof(int));
+	become_host_endian((int *) &icosh, sizeof(IcosHeader) / sizeof(int));
 	is_big_endian = ByteOrder::is_data_big_endian(&icosh.stamp);
     }
 
@@ -75,7 +75,7 @@ bool IcosIO::is_valid(const void *first_block)
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&stamp);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&stamp);
 	ByteOrder::swap_bytes(&stamp1);
 	ByteOrder::swap_bytes(&stamp2);
@@ -119,7 +119,7 @@ int IcosIO::read_header(Dict & dict, int image_index,const Region * area, bool i
     return 0;
 }
 
-int IcosIO::write_header(const Dict & dict, int image_index)
+int IcosIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("IcosIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -207,12 +207,12 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool is
 
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, nimg, &zlen);
-    become_platform_endian(data, xlen * ylen * zlen);
+    become_host_endian(data, xlen * ylen * zlen);
 
     return 0;
 }
 
-int IcosIO::write_data(float *data, int image_index)
+int IcosIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("IcosIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {

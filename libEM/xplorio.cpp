@@ -13,7 +13,7 @@ using namespace EMAN;
 XplorIO::XplorIO(string file, IOMode rw)
     :  filename(file), rw_mode(rw), xplor_file(0), initialized(false)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     nx = 0;
     ny = 0;
     nz = 0;
@@ -64,7 +64,7 @@ int XplorIO::read_header(Dict & , int , const Region * , bool )
     return 1;
 }
 
-int XplorIO::write_header(const Dict & dict, int image_index)
+int XplorIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("XplorIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -104,7 +104,7 @@ int XplorIO::read_data(float *, int , const Region * , bool )
     return 1;
 }
 
-int XplorIO::write_data(float *data, int image_index)
+int XplorIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("XplorIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {

@@ -27,7 +27,7 @@ const char *LstIO::MAGIC = "#LST";
 LstIO::LstIO(string file, IOMode rw)
     :  filename(file), rw_mode(rw), lst_file(0)
 {
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     initialized = false;
     nimg = 0;
     imageio = 0;
@@ -177,7 +177,7 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
     return err;
 }
 
-int LstIO::write_header(const Dict & , int )
+int LstIO::write_header(const Dict & , int , bool )
 {
     Log::logger()->log("LstIO::write_header() to file '%s'", filename.c_str());
     Log::logger()->warn("LST write header is not supported.");
@@ -198,15 +198,12 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
     return err;
 }
 
-int LstIO::write_data(float *, int )
+int LstIO::write_data(float *, int , bool )
 {
     Log::logger()->log("LstIO::write_data() to file '%s'", filename.c_str());
     Log::logger()->warn("LST write data is not supported.");
     return 1;
-
 }
-
-
 
 bool LstIO::is_complex_mode()
 {

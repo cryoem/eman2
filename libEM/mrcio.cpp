@@ -24,7 +24,7 @@ MrcIO::MrcIO(string mrc_filename, IOMode rw)
 {
     memset(&mrch, 0, sizeof(MrcHeader));
     is_ri = false;
-    is_big_endian = ByteOrder::is_machine_big_endian();
+    is_big_endian = ByteOrder::is_host_big_endian();
     is_new_file = false;
     initialized = false;
 }
@@ -67,8 +67,8 @@ int MrcIO::init()
 	}
 
 	is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
-	become_platform_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
-	become_platform_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
+	become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
+	become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
 	mode_size = get_mode_size(mrch.mode);
 
 	if (mrch.nxstart != 0 || mrch.nystart != 0 || mrch.nzstart != 0) {
@@ -118,7 +118,7 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
     bool data_big_endian = ByteOrder::is_data_big_endian(&nz);
 
-    if (data_big_endian != ByteOrder::is_machine_big_endian()) {
+    if (data_big_endian != ByteOrder::is_host_big_endian()) {
 	ByteOrder::swap_bytes(&nx);
 	ByteOrder::swap_bytes(&ny);
 	ByteOrder::swap_bytes(&nz);
@@ -240,7 +240,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
     return 0;
 }
 
-int MrcIO::write_header(const Dict & dict, int image_index)
+int MrcIO::write_header(const Dict & dict, int image_index, bool )
 {
     Log::logger()->log("MrcIO::write_header() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index) != 0) {
@@ -254,7 +254,7 @@ int MrcIO::write_header(const Dict & dict, int image_index)
     is_ri = (int)dict["is_ri"];
     
     if (!is_new_file) {
-	if (is_big_endian != ByteOrder::is_machine_big_endian()) {
+	if (is_big_endian != ByteOrder::is_host_big_endian()) {
 	    Log::logger()->error("cannot write to existing file '%s' which is in opposite byte order",
 				 filename.c_str());
 	    return 1;
@@ -398,10 +398,10 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 
     if (mrch.mode != MRC_UCHAR) {
 	if (mode_size == sizeof(short)) {
-	    become_platform_endian<short>(sdata, size);
+	    become_host_endian<short>(sdata, size);
 	}
 	else if (mode_size == sizeof(float)) {
-	    become_platform_endian<float>(rdata, size);
+	    become_host_endian<float>(rdata, size);
 	}
     }
 
@@ -425,7 +425,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
     return 0;
 }
 
-int MrcIO::write_data(float *data, int image_index)
+int MrcIO::write_data(float *data, int image_index, bool )
 {
     Log::logger()->log("MrcIO::write_data() to file '%s'", filename.c_str());
     if (check_write_access(rw_mode, image_index, true, data) != 0) {
@@ -539,11 +539,9 @@ int MrcIO::write_ctf(const Ctf & ctf, int )
     }
 
     string ctf_str = ctf.to_string();
-
-    mrch.nlabels = static_cast<int>((ctf_str.size() + sizeof(CTF_MAGIC)) / MRC_LABEL_SIZE + 1);
     sprintf(&mrch.labels[0][0], "%s%s", CTF_MAGIC, ctf_str.c_str());
-
     rewind(mrcfile);
+    
     if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
 	Log::logger()->error("cannot write MRC header to file '%s'", filename.c_str());
 	return 1;

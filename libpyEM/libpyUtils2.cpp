@@ -215,16 +215,16 @@ struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
         return call_method< int >(self, "read_header", p0, p1, p2, p3);
     }
 
-    int write_header(const EMAN::Dict& p0, int p1) {
-        return call_method< int >(self, "write_header", p0, p1);
+    int write_header(const EMAN::Dict& p0, int p1, bool p2) {
+        return call_method< int >(self, "write_header", p0, p1, p2);
     }
 
     int read_data(float* p0, int p1, const EMAN::Region* p2, bool p3) {
         return call_method< int >(self, "read_data", p0, p1, p2, p3);
     }
 
-    int write_data(float* p0, int p1) {
-        return call_method< int >(self, "write_data", p0, p1);
+    int write_data(float* p0, int p1, bool p2) {
+        return call_method< int >(self, "write_data", p0, p1, p2);
     }
 
     int read_ctf(EMAN::Ctf& p0, int p1) {
