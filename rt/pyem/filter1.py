@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-from libpyEM import *
+from EMAN import *
+import os
 
 filters = FilterFactory.instance()
 filternames = filters.get_list()
-print filternames
+print "all filters: ", filternames
 
 e = EMData()
-e.read_image("/home/lpeng/images/search.dm3")
+e.read_image(os.environ['HOME'] + "/images/search.dm3")
 
 params = {'threshold': EMObject(int(1500))}
 f1 = filters.get("Threshold", params)

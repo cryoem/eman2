@@ -21,8 +21,8 @@ namespace EMAN
 	virtual int from_string(string ctf) = 0;
 	virtual string to_string() const = 0;
 
-	virtual int from_dict(map<string, EMObject> & dict) = 0;
-	virtual int to_dict(map<string, EMObject> & dict) const = 0;
+	virtual void from_dict(const Dict & dict) = 0;
+	virtual Dict to_dict() const = 0;
 
     public:
 	enum { CTFOS = 5 };
@@ -97,8 +97,8 @@ namespace EMAN
 	int from_string(string ctf);
 	string to_string() const;
 
-	int from_dict(map<string, EMObject> & dict);
-	int to_dict(map<string, EMObject> & dict) const;
+	void from_dict(const Dict & dict);
+	Dict to_dict() const;
 
 	static vector<float> compute_curve(EMData * image, CtfCurveType type, XYData * sf = 0);
 

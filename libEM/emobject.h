@@ -382,7 +382,7 @@ namespace EMAN
 	vector<string> get_list();
 
     private:
-	Factory() { }
+	Factory();
 	Factory(const Factory<T> &);
 	~Factory();
 	
