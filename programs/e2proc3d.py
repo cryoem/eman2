@@ -4,6 +4,8 @@
 
 # todo: verify the filters who have the same names in proc3d
 #       and proc2d have the same implementation
+#
+# todo: lp, hp, tlp vs apix
 
 from EMAN2 import *
 from optparse import OptionParser
@@ -68,11 +70,8 @@ def main():
     y = data.get_ysize()
     z = data.get_zsize()
     
-    print "Original image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g\n" % (x, y, z,
-                                                                                      data.get_mean(),
-                                                                                      data.get_sigma(),
-                                                                                      data.get_min(),
-                                                                                      data.get_max())
+    print "Original image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g\n" % \
+    (x, y, z, data.get_mean(), data.get_sigma(), data.get_min(), data.get_max())
     
     if options.calcsf:
         dataf = data.do_fft()
@@ -98,8 +97,10 @@ def main():
 
     if options.scale > 1:
         data = data.clip(xc-nx/2, yc-ny/2,zc-nz/2,nx,ny,nz)
+
     if options.scale != 1:
         data.scale(options.scale)
+        
     if options.scale < 1 || (scale == 1 && (x!=nx || y!=ny ||z!=nz)):
         data = data.clip(xc-nx/2,yc-ny/2,zc-nz/2,nx,ny,nz)
 
@@ -108,7 +109,16 @@ def main():
         nx = data.get_xsize()
         ny = data.get_ysize()
         nz = data.get_zsize()
-        
+
+    if options.mult:
+        data.mult(options.mult)
+
+    if options.add:
+        data.add(options.add)
+
+    # next: automask, automask3
+    
+
 
 if __name__ == "__main__":
     main()
