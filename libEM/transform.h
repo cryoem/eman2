@@ -102,7 +102,7 @@ namespace EMAN
 		float get_scale() const;
 		
 		// returns orthogonality coefficient 0-1 range;
-		float is_orthogonal() const;
+		float orthogonality() const;
 		
 		float * operator[] (int i);
 		const float * operator[] (int i) const;

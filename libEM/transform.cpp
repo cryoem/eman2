@@ -125,9 +125,9 @@ void Transform::set_posttrans(const Vec3f & posttrans)
 
 void Transform::set_center(const Vec3f & center)
 {
-	pre_trans -= center;
+	pre_trans= -center;
 	for (int i = 0; i < 3; i++) {
-		matrix[3][i] += center[i];
+		matrix[3][i]=center[i];
 	}
 }
 
@@ -213,33 +213,33 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 
 	switch(euler_type) {
 	case EMAN:
-		a0 = rotation["alt"];
-		a1 = rotation["az"];
-		a2 = rotation["phi"];
+		a1 = rotation["alt"];
+		a2 = rotation["az"];
+		a3 = rotation["phi"];
 		break;
 	case IMAGIC:
-		a0 = rotation["alpha"];
-		a1 = rotation["beta"];
-		a2 = rotation["gamma"];
+		a1 = rotation["alpha"];
+		a2 = rotation["beta"];
+		a3 = rotation["gamma"];
 		break;
 		
 	case SPIDER:
-		a0 = rotation["phi"];
-		a1 = rotation["theta"] - 1.5f * M_PI;
-		a2 = rotation["gamma"] - 0.5f * M_PI;
+		a1 = rotation["phi"];
+		a2 = rotation["theta"] - 1.5f * M_PI;
+		a3 = rotation["gamma"] - 0.5f * M_PI;
 		break;
 		
 	case MRC:
-		a0 = rotation["theta"];
-		a1 = fmod(-rotation["phi"] + 2.5f * M_PI, 2 * M_PI);
-		a2 = fmod(rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
+		a1 = rotation["theta"];
+		a2 = fmod(-rotation["phi"] + 2.5f * M_PI, 2.0 * M_PI);
+		a3 = fmod(rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
 		break;
 		
 	case QUATERNION:
 		a0 = rotation["e0"];
 		a1 = rotation["e1"];
 		a2 = rotation["e2"];
-		a2 = rotation["e3"];
+		a3 = rotation["e3"];
 		
 		is_quaternion = 1;
 		break;
@@ -250,7 +250,7 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 			a0 = rotation["q"];
 			a1 = rotation["n1"];
 			a2 = rotation["n2"];
-			a2 = rotation["n3"];
+			a3 = rotation["n3"];
 		
 			is_quaternion = 1;
 			float f = sin(a0 / 2.0f);
@@ -265,7 +265,7 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				char str[32];
-				sprintf(str, "m%d%d", i, j);
+				sprintf(str, "m%0d%0d", i, j);
 				matrix[i][j] = rotation[str];
 			}
 		}
@@ -279,22 +279,22 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 		quaternion2matrix(a0, a1, a2, a3);
 	}
 	else if (euler_type != MATRIX) {
-		matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
-		matrix[0][1] = -(sin(a3)*cos(a2) + cos(a1)*sin(a2)*cos(a3));
-		matrix[0][2] = sin(a1)*sin(a2);
-		matrix[1][0] = cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
+		matrix[0][0] =  cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
+		matrix[0][1] = -sin(a3)*cos(a2) - cos(a1)*sin(a2)*cos(a3);
+		matrix[0][2] =  sin(a1)*sin(a2);
+		matrix[1][0] =  cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
 		matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
 		matrix[1][2] = -sin(a1)*cos(a2);
-		matrix[2][0] = sin(a1)*sin(a3);
-		matrix[2][1] = sin(a1)*cos(a3);
-		matrix[2][2] = cos(a1);
+		matrix[2][0] =  sin(a1)*sin(a3);
+		matrix[2][1] =  sin(a1)*cos(a3);
+		matrix[2][2] =  cos(a1);
 	}
 	
 }
 
 void Transform::set_scale(float scale)
 {
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 3; j++) {
 			matrix[i][j] *= scale;
 		}
@@ -321,15 +321,17 @@ float Transform::eman_alt() const
 {
 	float alt = 0;
 	float max = 1 - ERR_LIMIT;
-
-	if (matrix[2][2] > max) {
+	float sca=get_scale();
+	float mx=matrix[2][2]/sca;
+	
+	if (mx > max) {
 		alt = 0;
 	}
-	else if (matrix[2][2] < -max) {
+	else if (mx < -max) {
 		alt = M_PI;
 	}
 	else {
-		alt = (float) acos(matrix[2][2]);
+		alt = (float) acos(mx);
 	}
 	return alt;
 }
@@ -338,14 +340,13 @@ float Transform::eman_az() const
 {
 	float az = 0;
 	float max = 1 - ERR_LIMIT;
-	if (matrix[2][2] > max) {
-		az = (float)atan2(matrix[0][1], matrix[1][1]);
-	}
-	else if (matrix[2][2] < -max) {
-		az = (float)atan2(matrix[0][1], -matrix[1][1]);
+	float sca=get_scale();
+	float mx=matrix[2][2]/sca;
+	if (fabs(mx) > max) {
+		az = (float)(atan2(matrix[1][0], matrix[0][0]);
 	}
 	else {
-		az = (float)atan2(matrix[2][0], -matrix[2][1]);
+		az = (float)atan2(matrix[0][2], -matrix[1][2]);
 	}
 	return az;
 }
@@ -353,12 +354,13 @@ float Transform::eman_az() const
 float Transform::eman_phi() const
 {
 	float phi = 0;
+	float sca=get_scale();
 
-	if (fabs(matrix[2][2]) > (1 - ERR_LIMIT)) {
+	if (fabs(matrix[2][2]/sca) > (1 - ERR_LIMIT)) {
 		phi = 0;
 	}
 	else {
-		phi = (float)atan2(matrix[0][2], matrix[1][2]);
+		phi = (float)atan2(matrix[2][0], matrix[2][1]);
 	}
 
 	return phi;
@@ -438,11 +440,14 @@ map<string,float> Transform::get_rotation(EulerType euler_type) const
 
 float Transform::get_scale() const
 {
-	return 0;
+	// Assumes uniform scaling, calculation uses Z only
+	float ksq=SQR(matrix[0][2])+SQR(matrix[1][2])+SQR(matrix[2][2]);	// should be 1.0 if no scaling
+
+	return sqrt(ksq);
 }
 
 		
-float Transform::is_orthogonal() const
+float Transform::orthogonality() const
 {
 	return 0;
 }
