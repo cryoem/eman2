@@ -9,7 +9,6 @@
 #include <emutil.h>
 #include <imageio.h>
 #include <log.h>
-#include <pyem.h>
 #include <pylist.h>
 #include <util.h>
 #include <xydata.h>

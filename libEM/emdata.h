@@ -292,7 +292,8 @@ namespace EMAN
 	EMData & operator*=(const EMData & em);
 	EMData & operator/=(const EMData & em);
 
-	static vector<EMData *> read_images_by_index(string filename, vector<int>img_indices,
+	static vector<EMData *> read_images_by_index(string filename,
+						     vector<int>img_indices = vector<int>(),
 						     bool header_only = false);
 
 	static vector<EMData *> read_images_by_ext(string filename, int img_index_start,

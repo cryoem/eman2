@@ -1,5 +1,4 @@
 Include("pylist.h")
-Include("pyem.h")
 Include("emdata.h")
 Include("log.h")
 
@@ -22,7 +21,6 @@ Ctf = Class("EMAN::Ctf", "ctf.h")
 SimpleCtf = Class("EMAN::SimpleCtf", "ctf.h")
 
 ImageIO = Class("EMAN::ImageIO", "imageio.h")
-
 
 XYData = Class("EMAN::XYData", "xydata.h")
 

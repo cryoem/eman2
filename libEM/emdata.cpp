@@ -1895,15 +1895,18 @@ vector<EMData *> EMData::read_images_by_index(string filename, vector<int> img_i
 {
     int total_img = EMUtil::get_image_count(filename);
     size_t num_img = img_indices.size();
-
+    
     for (size_t i = 0; i < num_img; i++) {
 	assert(img_indices[i] >= 0 && img_indices[i] < total_img);
     }
 
+    size_t n = num_img == 0? total_img : num_img;
+    
     vector<EMData *> v;
-    for (size_t j = 0; j < num_img; j++) {
+    for (size_t j = 0; j < n; j++) {
 	EMData *d = new EMData();
-	int err = d->read_image(filename, img_indices[j], header_only);
+	size_t k = num_img == 0? j : img_indices[j];
+	int err = d->read_image(filename, k, header_only);
 	if (err) {
 	    delete d;
 	    d = 0;
