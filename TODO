@@ -63,7 +63,26 @@
 
   069. rename Transform EMData::get_rotation() const;
 	   to get_transform().
-	   
+
+  070. boost python documentation.
+	   - The combination dump_BASENAME, BASENAME.get("subclass name") 
+		 could be documented in the EMAN2 module help, so that
+         >>> help(EMAN2)
+         gives a starting point.
+
+  071. rotation has some errors.
+	      rot = Rotation(azi, alt, phi, Rotation.EulerType.EMAN)
+		  print azi, rot.eman_az()
+		  print alt, rot.eman_alt()
+		  print phi, rot.eman_phi()
+
+		  got
+		  -0.60170830102 -0.0
+		  1.45232928554 0.601708292961
+		  0.0 -1.45232927799
+
+
+		 
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
