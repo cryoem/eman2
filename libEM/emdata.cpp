@@ -17,6 +17,10 @@
 #include <math.h>
 #include <algorithm>
 
+#ifdef WIN32
+#define M_PI 3.14159265358979323846f
+#endif
+
 using namespace EMAN;
 
 EMData::EMData()
@@ -288,12 +292,12 @@ EMData *EMData::copy(bool with_parent)
 {
 	ENTERFUNC;
 	EMData *ret = new EMData();
-	ret->attr_dict = attr_dict;
+	
 	ret->set_size(nx, ny, nz);
 	float *data = ret->get_data();
 	memcpy(data, rdata, nx * ny * nz * sizeof(float));
 	ret->done_data();
-	ret->update();
+	
 
 	if (ctf) {
 		ret->ctf = new SimpleCtf();
@@ -315,7 +319,9 @@ EMData *EMData::copy(bool with_parent)
 
 	ret->path = path;
 	ret->pathnum = pathnum;
-
+	ret->attr_dict = attr_dict;
+	ret->update();
+	
 	EXITFUNC;
 	return ret;
 }
@@ -362,10 +368,10 @@ EMData *EMData::get_rotated_clip(const FloatPoint &center, const Rotation &orien
 		for (y=-size[1]/2; y<size[1]/2; y++) {
 			for (x=-size[0]/2; x<size[0]/2; x++) {
 				float xx,yy,zz;
-				xx=scale*(x*mx[0][0]+y*mx[0][1]+z*mx[0][2])+center[0];
-				yy=scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center[1];
-				zz=scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center[2];
-				float v;
+				xx= (scale*(x*mx[0][0]+y*mx[0][1]+z*mx[0][2])+center[0]);
+				yy= (scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center[1]);
+				zz= (scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center[2]);
+				float v=0;
 				if (xx<0||yy<0||zz<0||xx>nx-2||yy>ny-2||zz>nz-2) v=0.;
 				else v=sget_value_at_interp(xx,yy,zz);
 				result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
@@ -418,7 +424,7 @@ EMData *EMData::get_clip(const Region & area)
 	int yd0 = (int) (area.origin[1] < 0 ? -area.origin[1] : 0);
 	int zd0 = (int) (area.origin[2] < 0 ? -area.origin[2] : 0);
 
-	int clipped_row_size = (x1-x0) * sizeof(float);
+	size_t clipped_row_size = (x1-x0) * sizeof(float);
 	int src_secsize = nx * ny;
 	int dst_secsize = (int)(area.size[0] * area.size[1]);
 
@@ -477,7 +483,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 
 	Region area(nx1, ny1, nz1, origin[0], origin[1], origin[2]);
 
-	if (area.inside_region(nx, ny, nz)) {
+	if (area.inside_region((float)nx, (float)ny, (float)nz)) {
 		throw ImageFormatException("outside of destination image not supported.");
 	}
 
@@ -511,7 +517,8 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	EXITFUNC;
 }
 
-void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center, float scale, float mult) 
+void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
+							   float scale, float) 
 {
 	ENTERFUNC;
 if (get_ndim()==3) {
@@ -536,9 +543,9 @@ if (get_ndim()==3) {
 	if (y1>get_ysize()) y1=get_ysize();
 	if (z1>get_zsize()) z1=get_zsize();
 	
-	float bx=block->get_xsize()/2.0;
-	float by=block->get_ysize()/2.0;
-	float bz=block->get_zsize()/2.0;
+	float bx=block->get_xsize()/2.0f;
+	float by=block->get_ysize()/2.0f;
+	float bz=block->get_zsize()/2.0f;
 	
 	for (int x=x0; x<x1; x++) {
 		for (int y=y0; y<y1; y++) {
@@ -567,8 +574,8 @@ else if (get_ndim()==2) {
 	if (x1>get_xsize()) x1=get_xsize();
 	if (y1>get_ysize()) y1=get_ysize();
 	
-	float bx=block->get_xsize()/2.0;
-	float by=block->get_ysize()/2.0;
+	float bx=block->get_xsize()/2.0f;
+	float by=block->get_ysize()/2.0f;
 	
 	for (int x=x0; x<x1; x++) {
 		for (int y=y0; y<y1; y++) {
@@ -813,13 +820,13 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
-			float rad = hypot(x, y - ny / 2);
+			float rad = (float)hypot(x, y - ny / 2);
 
 			if (rad < ny / 2 - 1) {
-				float xx = x * mx[0][0] + (y - ny / 2) * mx[0][1];
-				float yy = x * mx[1][0] + (y - ny / 2) * mx[1][1];
-				float zz = x * mx[2][0] + (y - ny / 2) * mx[2][1];
-				float cc = 1.0f;
+				float xx =  x * mx[0][0] + (y - ny / 2) * mx[0][1];
+				float yy =  x * mx[1][0] + (y - ny / 2) * mx[1][1];
+				float zz =  x * mx[2][0] + (y - ny / 2) * mx[2][1];
+				float cc = 1;
 				if (xx < 0) {
 					xx = -xx;
 					yy = -yy;
@@ -836,8 +843,8 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 				int i = x0 + y0 * nx + z0 * nxy;
 
 				if (rdata[i] != 0 && rdata[i + 1] != 0) {
-					float dt0 = hypot(rdata[i], rdata[i + 1]);
-					float dt1 = hypot(dat[x * 2 + y * nx], dat[x * 2 + 1 + y * nx]);
+					float dt0 = (float) hypot(rdata[i], rdata[i + 1]);
+					float dt1 = (float) hypot(dat[x * 2 + y * nx], dat[x * 2 + 1 + y * nx]);
 					r += norm[i] * dt1;
 					rn += dt0;
 
@@ -942,7 +949,7 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 		norm += size / (float) di;
 		float w = n / (histmax - histmin);
 
-		for (int i = size - di; i >= 0; i -= di) {
+		for (size_t i = size - di; i >= 0; i -= di) {
 			int j = Util::round((rdata[i] - histmin) * w);
 			if (j >= 0 && j < (int) n) {
 				hist[j] += 1;
@@ -951,7 +958,9 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 	}
 
 	for (size_t i = 0; i < hist.size(); i++) {
-		hist[i] = hist[i] / norm;
+		if (norm != 0) {	
+			hist[i] = hist[i] / norm;
+		}
 	}
 	EXITFUNC;
 }
@@ -1577,7 +1586,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 			for (int x = 0; x < nx; x += 2, c += 2) {
 				float x1 = x / 2.0f;
 				float y1 = y - ny / 2.0f;
-				float r = hypot(x1, y1);
+				float r = (float)hypot(x1, y1);
 
 				if (r >= rmin && r <= rmax) {
 					float a = 0;
@@ -1600,7 +1609,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 					else if (i > 0 && i < (n - 1)) {
 						float h = 0;
 						if (is_ri()) {
-							h = hypot(rdata[c], rdata[c + 1]);
+							h = (float)hypot(rdata[c], rdata[c + 1]);
 						}
 						else {
 							h = rdata[c];
@@ -1624,14 +1633,14 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 			for (int x = 0; x < nx; x++, c++) {
 				float y1 = y - half_ny;
 				float x1 = x - half_nx;
-				float r = hypot(x1, y1);
+				float r = (float)hypot(x1, y1);
 
 				if (r >= rmin && r <= rmax) {
 					float a = 0;
 					if (x1 != 0 || y1 != 0) {
 						a = atan2(y1, x1);
 						if (a < 0) {
-							a += M_PI * 2.0f;
+							a += M_PI * 2;
 						}
 					}
 
@@ -1680,7 +1689,7 @@ void EMData::ri2ap()
 
 	int size = nx * ny * nz;
 	for (int i = 0; i < size; i += 2) {
-		float f = hypot(rdata[i], rdata[i + 1]);
+		float f = (float)hypot(rdata[i], rdata[i + 1]);
 		if (rdata[i] == 0 && rdata[i + 1] == 0) {
 			rdata[i + 1] = 0;
 		}
@@ -1949,7 +1958,7 @@ void EMData::update_stat()
 	for (int j = 0; j < nz; j++) {
 		for (int k = 0; k < ny; k++) {
 			for (int l = 0; l < nx; l += step) {
-				double v = rdata[i];
+				float v = rdata[i];
 				if (v > max) {
 					max = v;
 				}
@@ -1969,21 +1978,21 @@ void EMData::update_stat()
 	}
 
 	size_t size = nx * ny * nz;
-	float mean = sum * step / size;
+	float mean = (float)(sum * step / size);
 
 	if (n_nonzero == 0) {
 		n_nonzero = 1;
 	}
 
-	float mean_nonzero = sum * step / n_nonzero;
-	float tmp1 = square_sum * step / size - mean * mean;
+	float mean_nonzero = (float)(sum * step / n_nonzero);
+	float tmp1 = (float)(square_sum * step / size - mean * mean);
 
 	if (tmp1 < 0) {
 		tmp1 = 0;
 	}
 
 	float sigma = sqrt(tmp1);
-	float sigma_nonzero = square_sum * step / n_nonzero - mean_nonzero * mean_nonzero;
+	float sigma_nonzero = (float)(square_sum * step / n_nonzero - mean_nonzero * mean_nonzero);
 
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
@@ -2253,7 +2262,7 @@ vector < EMData * >EMData::read_images(string filename, vector < int >img_indice
 		EMData *d = new EMData();
 		size_t k = num_img == 0 ? j : img_indices[j];
 		try {
-			d->read_image(filename, k, header_only);
+			d->read_image(filename, (int)k, header_only);
 		}
 		catch(Exception &e) {
 			delete d;
@@ -2968,7 +2977,7 @@ void EMData::rotate_translate(const Transform & xform)
 				for (int i = -nx / 2; i < nx - nx / 2; i++, l++) {
 					float x2 = mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2;
 					float y2 = mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2;
-					float z2 = mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + 0 / 2;	// 0/2?
+					float z2 = mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + 0 / 2;
 
 					if (x2 >= 0 && y2 >= 0 && z2 > -(nz - 1) && x2 < nx && y2 < ny && z2 < nz - 1) {
 						if (z2 < 0) {
@@ -3227,7 +3236,7 @@ void EMData::mean_shrink(int shrink_factor)
 
 	done_data();
 	set_size(shrinked_nx, shrinked_ny, shrinked_nz);
-	scale_pixel(shrink_factor);
+	scale_pixel((float)shrink_factor);
 	EXITFUNC;
 }
 
@@ -3269,7 +3278,7 @@ void EMData::median_shrink(int shrink_factor)
 
 	memcpy(data_copy, get_data(), size * sizeof(float));
 	set_size(shrinked_nx, shrinked_ny, shrinked_nz);
-	scale_pixel(shrink_factor);
+	scale_pixel((float)shrink_factor);
 
 	get_data();
 
@@ -3349,7 +3358,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 		int k = 0;
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
-				float r = hypot(i / 2.0f, (j - ny / 2.0f));
+				float r = (float)hypot(i / 2.0f, (j - ny / 2.0f));
 				r = (r - x0) / step;
 
 				int l = 0;
@@ -3451,7 +3460,7 @@ float EMData::calc_center_density()
 		if (!norm) {
 			break;
 		}
-		double mean = sum / norm;
+		float mean = (float)(sum / norm);
 		if (fabs(mean - center) < sigma2) {
 			ds *= 0.5f;
 		}
@@ -3488,8 +3497,8 @@ float EMData::calc_sigma_diff()
 		}
 	}
 
-	float sigup = sqrt(sum_up / nup);
-	float sigdown = sqrt(sum_down / ndown);
+	float sigup = sqrt((float)sum_up / nup);
+	float sigdown = sqrt((float)sum_down / ndown);
 	float sig_diff = fabs(sigup - sigdown) / sigma;
 	
 
@@ -3809,7 +3818,7 @@ void EMData::to_one()
 EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 {
 	ENTERFUNC;
-	
+#if 1
 	EMData *f1 = 0;
 
 	if (filter) {
@@ -3823,26 +3832,26 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 		LOGERR("FFT returns NULL image");
 		throw NullPointerException("FFT returns NULL image");
 	}
+	f1->ap2ri();
+#endif
+	
+	EMData *cf = 0;
 
-	EMData *with_fft = 0;
 	if (with) {
-		with_fft = with->do_fft();
+		EMData *with_fft = with->do_fft();
 		if (!with_fft) {
 			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");
 		}
-	}
-
-	f1->ap2ri();
-	EMData *cf = 0;
-
-	if (with) {
+		
+		
 		cf = with_fft->copy(false);
 		cf->ap2ri();
 	}
 	else {
 		cf = f1->copy(false);
 	}
+	
 
 	if (filter) {
 		if (!EMUtil::is_same_size(filter, cf)) {
@@ -3858,6 +3867,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
 	}
+	
 
 	float *rdata1 = f1->get_data();
 	float *rdata2 = cf->get_data();
@@ -3883,13 +3893,14 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 	}
 
 	f1->done_data();
-
+	cf->done_data();
+	return cf;
+#if 0
 	if (tocorner) {
 		cf->filter("Phase180");
 	}
 
 	EMData *f2 = cf->do_ift();
-
 	delete cf;
 	cf = 0;
 
@@ -3901,8 +3912,10 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 	f2->set_attr("label", "CCF");
 	f2->set_path("/tmp/eman.ccf");
 
+	
 	EXITFUNC;
 	return f2;
+#endif
 }
 
 EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
@@ -4175,7 +4188,7 @@ void EMData::add_incoherent(EMData * obj)
 	float *src = obj->get_data();
 	int size = nx * ny * nz;
 	for (int j = 0; j < size; j += 2) {
-		dest[j] = hypot(src[j], dest[j]);
+		dest[j] = (float) hypot(src[j], dest[j]);
 		dest[j + 1] = 0;
 	}
 
@@ -4321,10 +4334,10 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 			if (fabs(Util::angle_sub_pi(a, acen)) <= awid) {
 				float r = 0;
 				if (is_complex()) {
-					r = (hypot(x / 2.0f, y - ny / 2.0f) - x0) / dx;
+					r = ((float)hypot(x / 2.0f, y - ny / 2.0f) - x0) / dx;
 				}
 				else {
-					r = (hypot(x - (nx - 1) / 2.0f, y - (ny - 1) / 2.0f) - x0) / dx;
+					r = ((float)hypot(x - (nx - 1) / 2.0f, y - (ny - 1) / 2.0f) - x0) / dx;
 				}
 
 				int i = (int) floor(r);
@@ -4504,13 +4517,13 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 		sumsq += img2_data[i] * img2_data[i];
 	}
 
-	float sq = ((num * sumsq - lsum * lsum) / (num * num));
+	float sq = (float)((num * sumsq - lsum * lsum) / (num * num));
 	if (sq < 0) {
 		LOGERR("sigma < 0");
 		throw ImageFormatException("image sigma < 0");
 	}
 
-	float mean = lsum / num;
+	float mean = (float)lsum / num;
 	float sigma = sqrt(sq);
 	float th = 0.00001f;
 
@@ -4824,7 +4837,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 							i2 += k;
 							j2 += k;
 
-							float a1 = hypot(im1[i2], im1[i2 + 1]);
+							float a1 = (float) hypot(im1[i2], im1[i2 + 1]);
 							float p1 = atan2(im1[i2 + 1], im1[i2]);
 							float p2 = atan2(im2[j2 + 1], im2[j2]);
 
@@ -4855,7 +4868,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						for (int k = 0; k < jmax; k += 2) {
 							i2 += k;
 							j2 += k;
-							rdata[l] += hypot(im1[i2], im1[i2 + 1]) * hypot(im2[j2], im2[j2 + 1]);
+							rdata[l] += (float) (hypot(im1[i2], im1[i2 + 1]) * hypot(im2[j2], im2[j2 + 1]));
 						}
 					}
 				}
@@ -5187,7 +5200,7 @@ float EMData::get_edge_mean() const
 		for (int i = 0, j = nx - 1; i < nxy; i += nx, j += nx) {
 			edge_sum += rdata[i] + rdata[j];
 		}
-		edge_mean = edge_sum / (nx * 2 + ny * 2);
+		edge_mean = (float)edge_sum / (nx * 2 + ny * 2);
 	}
 	else {
 		if (nx == ny && nx == nz * 2 - 1) {
@@ -5217,7 +5230,7 @@ float EMData::get_edge_mean() const
 			}
 		}
 
-		edge_mean = edge_sum / (di * 2);
+		edge_mean = (float)edge_sum / (di * 2);
 	}
 	EXITFUNC;
 
@@ -5240,8 +5253,9 @@ float EMData::get_circle_mean()
 		}
 		mask->set_size(nx, ny, nz);
 
-		float radius = ny / 2 - 2;
-		mask->filter("MaskSharp", Dict("inner_radius", radius - 1, "outer_radius", radius + 1));
+		float radius = (float)(ny / 2 - 2);
+		mask->filter("MaskSharp", Dict("inner_radius", radius - 1,
+									   "outer_radius", radius + 1));
 
 		int n = 0;
 		float *d = mask->get_data();
@@ -5282,7 +5296,7 @@ void EMData::setup_insert_slice(int size)
 {
 	ENTERFUNC;
 	
-	const float scale = 1.0e-10;
+	const float scale = 1.0e-10f;
 	set_size(size + 2, size, size);
 	set_complex(true);
 	set_ri(true);
@@ -5290,7 +5304,7 @@ void EMData::setup_insert_slice(int size)
 
 	get_data();
 	for (int i = 0; i < nx * ny * nz; i += 2) {
-		float f = Util::get_frand(0, 2.0f * M_PI);
+		float f = Util::get_frand(0.0f, (float)(2 * M_PI));
 		rdata[i] = scale * sin(f);
 		rdata[i + 1] = scale * cos(f);
 	}
