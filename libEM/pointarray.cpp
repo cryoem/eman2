@@ -840,6 +840,84 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 	return proj;
 }
 
+void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float amp, float apix, float res)
+{
+	double gauss_real_width = res / (M_PI);	// in Angstrom, res is in Angstrom
+
+	double min_table_val = 1e-7;
+	double max_table_x = sqrt(-log(min_table_val));	// for exp(-x*x)
+
+	double table_step_size = 0.001;	// number of steps for each pixel
+	double inv_table_step_size = 1.0 / table_step_size;
+	int table_size = int (max_table_x * gauss_real_width / (apix * table_step_size) * 1.25);
+	double *table = (double *) malloc(sizeof(double) * table_size);
+	for (int i = 0; i < table_size; i++) {
+		double x = -i * table_step_size * apix / gauss_real_width;
+		table[i] = exp(-x * x)/pow(M_PI,.25);
+	}
+	int image_size=proj->get_xsize();
+
+	// subtract the old point
+	int gbox = int (max_table_x * gauss_real_width / apix);	// local box half size in pixels to consider for each point
+	if (gbox <= 0)
+		gbox = 1;
+	float *pd = proj->get_data();
+	unsigned int s = ind;
+	double xc = points[4 * s] / apix + image_size / 2;
+	double yc = points[4 * s + 1] / apix + image_size / 2;
+	double fval = points[4 * s + 3];
+	int imin = int (xc) - gbox, imax = int (xc) + gbox;
+	int jmin = int (yc) - gbox, jmax = int (yc) + gbox;
+	
+	if (imin < 0) imin = 0;
+	if (jmin < 0) jmin = 0;
+	if (imax > image_size) imax = image_size;
+	if (jmax > image_size) jmax = image_size;
+
+	for (int j = jmin; j < jmax; j++) {
+		int table_index_y = int (fabs(j - yc) * inv_table_step_size);
+		double yval = table[table_index_y];
+		int pd_index = j * image_size + imin;
+		for (int i = imin; i < imax; i++, pd_index++) {
+			int table_index_x = int (fabs(i - xc) * inv_table_step_size);
+			double xval = table[table_index_x];
+			pd[pd_index] -= (float)(fval * yval * xval);
+		}
+	}
+	
+	// add the new point
+	gbox = int (max_table_x * gauss_real_width / apix);	// local box half size in pixels to consider for each point
+	if (gbox <= 0)
+		gbox = 1;
+	pd = proj->get_data();
+	s = ind;
+	xc = vec[0] / apix + image_size / 2;
+	yc = vec[1] / apix + image_size / 2;
+	fval = amp;
+	imin = int (xc) - gbox, imax = int (xc) + gbox;
+	jmin = int (yc) - gbox, jmax = int (yc) + gbox;
+	
+	if (imin < 0) imin = 0;
+	if (jmin < 0) jmin = 0;
+	if (imax > image_size) imax = image_size;
+	if (jmax > image_size) jmax = image_size;
+
+	for (int j = jmin; j < jmax; j++) {
+		int table_index_y = int (fabs(j - yc) * inv_table_step_size);
+		double yval = table[table_index_y];
+		int pd_index = j * image_size + imin;
+		for (int i = imin; i < imax; i++, pd_index++) {
+			int table_index_x = int (fabs(i - xc) * inv_table_step_size);
+			double xval = table[table_index_x];
+			pd[pd_index] -= (float)(fval * yval * xval);
+		}
+	}
+	
+
+	proj->done_data();
+	return;
+}
+
 
 EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 {
@@ -1153,6 +1231,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 #include "NLF.h"
 #include "BoundConstraint.h"
 #include "OptCG.h"
+//#include "OptNewton.h"
 #include "newmatap.h"
 
 vector<EMData*> optdata;
@@ -1212,8 +1291,8 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
 //	NLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_projd);
 	nlf.initFcn();
 	
-//	OptCG opt(&nlf);
-	OptQNewton opt(&nlf);
+	OptCG opt(&nlf);
+//	OptQNewton opt(&nlf);
 	opt.setMaxFeval(2000);
 	opt.optimize();
 	opt.printStatus("Done");
