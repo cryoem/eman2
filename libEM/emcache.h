@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include <string>
+#include <assert.h>
+
 using std::string;
 
 namespace EMAN {
