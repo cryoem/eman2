@@ -305,6 +305,30 @@ EMData *EMData::copy_head()
 	return ret;
 }
 
+EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient,
+								 IntSize &size, float scale)
+{
+	EMData *result = new EMData();
+	result->set_size(size.x,size.y,size.z);
+
+	Matrix3f mx=orient.get_matrix3();
+	
+	int x,y,z;
+	for (z=-size.z/2; z<size.z/2; z++) {
+		for (y=-size.y/2; y<size.y/2; y++) {
+			for (x=-size.x/2; x<size.x/2; x++) {
+				float xx,yy,zz;
+				xx=scale*(x*mx[0][0]+y*mx[0][1]+z*mx[0][2])+center.x;
+				yy=scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center.y;
+				zz=scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center.z;
+				result->set_value_at(x+size.x/2,y+size.y/2,z+size.z/2,sget_value_at_interp(xx,yy,zz));
+			}
+		}
+	}
+	result->update();
+	
+	return result;
+}
 
 EMData *EMData::get_clip(const Region & area)
 {
@@ -438,12 +462,6 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 
 	flags |= EMDATA_NEEDUPD;
 	EXITFUNC;
-}
-
-EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient,
-								 IntSize &size, float scale)
-{
-	return NULL;
 }
 
 void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center, float scale, float mult) 
