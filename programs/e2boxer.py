@@ -1,5 +1,5 @@
 #!/bin/env python
-# e2boxer.py  07/27/3004  Steven Ludtke
+# e2boxer.py  07/27/2004  Steven Ludtke
 # This program is used to box out particles from micrographs/CCD frames
 
 from EMAN2 import *
@@ -59,8 +59,8 @@ for single particle analysis."""
 		outer.to_one()
 		inner=outer.copy(0)
 		
-		outer.filter("SharpMask",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
-		inner.filter("SharpMask",{"outer_radius":sbox*2/5})
+		outer.filter("MaskSharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
+		inner.filter("MaskSharp",{"outer_radius":sbox*2/5})
 		
 		outer.write_image("b_outer.mrc")
 		inner.write_image("b_inner.mrc")
