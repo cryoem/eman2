@@ -124,8 +124,8 @@ boost python wrapper. To use Pyste, <br>
  style="font-weight: bold;">Pyste</span> in boost library; b) <span
  style="font-weight: bold;">elementtree</span> c) <span
  style="font-weight: bold;">gccxml</span></li>
-      <li>Create or modify the pyste file. e.g.,
-        <span style="font-style: italic;">eman2/libpyEM/filter.pyste</span>.
+      <li>Create or modify the pyste file. e.g., <span
+ style="font-style: italic;">eman2/libpyEM/filter.pyste</span>.
 For a function that return a pointer, a return-policy
 must be defined in the pyste file. The typical cases
 are: <br>
@@ -291,21 +291,29 @@ scaling, and their combination.</li>
   <li style="color: rgb(51, 51, 255); font-weight: bold;" type="1"><big>How
 to print out
 error/warning/debugging information?</big></li>
-  <ul> 
+  <ul>
     <ul>
       <li><span style="font-weight: bold;">Log</span> class defines a
 generic way to do this. It can send information to either standard out,
 a file, or a pine.</li>
       <li>How to use <span style="font-weight: bold;">Log</span></li>
       <ul>
-        <li style="background-color: rgb(255, 255, 204);">Log::logger()-&gt;set_log_level(WARNING_LOG);<br>
-&nbsp; <br>
-Log::logger()-&gt;error("out of memory");<br>
-Log::logger()-&gt;warn("invalid image size");<br>
-Log::logger()-&gt;log("read an image");<br>
-Log::logger()-&gt;variable("image size = (%d, %d, %d)\n", nx, ny, nz);<br>
-          <br>
-        </li>
+        <>1) in your main() file, set log level:&nbsp;&nbsp;&nbsp; <span
+ style="color: rgb(51, 204, 0); font-weight: bold;">Log::logger()-&gt;set_log_level(WARNING_LOG);</span><br>
+2) log message in different levels: (log functions use the same
+argument format like <span style="font-weight: bold;">printf()</span>).<br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGERR</span>("out
+of memory");<br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGWARN</span>("invalid
+image size");<br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGDEBUG</span>("image
+mean density = %f\n", mean);<br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGVAR</span>("image
+size = (%d, %d, %d)\n", nx, ny, nz);<br>
+3) For best performance, you may remove all log messages by changing
+definition of the above log functions, which are MACROs in file
+eman2/libEM/log.h.<br>
+        </>
       </ul>
     </ul>
   </ul>

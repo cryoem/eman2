@@ -356,6 +356,27 @@ namespace EMAN
 						 float dx = 0, float dy = 0);
 
 
+		float calc_density_center();
+		float calc_sigma_diff();
+		
+		Point < int >calc_min_location() const;
+		Point < int >calc_max_location() const;
+
+		int calc_min_index() const;
+		int calc_max_index() const;
+
+		/** Calculate and return a sorted list of pixels whose values
+		 * are above a specified threshold. The pixels are sorted 
+		 * from high to low.
+		 *
+		 * @param threshold The specified pixel value. Returned pixels
+		 *        should have higher values than it.
+		 * @return A sorted list of pixels with their values, and
+		 *     locations. Their values are higher than threshold.
+		 */
+		vector<Pixel> calc_highest_locations(float threshold);
+		
+		
 		float get_edge_mean() const;
 		float get_circle_mean();
 
@@ -376,48 +397,20 @@ namespace EMAN
 		void set_pathnum(int n);
 
 		EMData *get_row(int row_index) const;
-		void set_row(const EMData * d, int row_index);
+		void set_row(const EMData * data, int row_index);
 
 		EMData *get_col(int col_index) const;
-		void set_col(const EMData * d, int n);
+		void set_col(const EMData * data, int n);
 
-		float get_align_score() const;
-		void set_align_score(float score);
 
-		float get_density_center();
-		float get_sigma_diff();
-
+		EMObject get_attr(string key);
+		void set_attr(string key, EMObject val);		
 		Dict get_attr_dict();
-		void set_attr_dict(string key, EMObject val);
-
-		int get_average_nimg() const;
-		void set_average_nimg(int n);
-
-		float get_max();
-		float get_min();
-		float get_mean();
-		float get_sigma();
-		float get_skewness();
-		float get_kurtosis();
-
-		Point < int >get_min_location() const;
-		Point < int >get_max_location() const;
-
-		int get_min_index() const;
-		int get_max_index() const;
 
 		int get_xsize() const;
 		int get_ysize() const;
 		int get_zsize() const;
 		int get_ndim() const;
-
-		float get_xorigin() const;
-		float get_yorigin() const;
-		float get_zorigin() const;
-
-		float get_xpixel() const;
-		float get_ypixel() const;
-		float get_zpixel() const;
 
 		EMData *get_parent() const;
 		void set_parent(EMData * new_parent);
@@ -502,14 +495,12 @@ namespace EMAN
 		int flags;
 
 		int nx, ny, nz;	  /** image size */
-		int average_nimg; /** how many images are used in averaging to generate this image*/
 
 		Vec3 < float >all_translation;
 		/** translation from the original location */
 		Vec3 < float >all_rotation;
 		/** rotation (alt, az, phi) from the original locaton*/
 
-		float align_score;
 		string name;
 		string path;
 		int pathnum;
@@ -544,40 +535,6 @@ namespace EMAN
 	inline int EMData::get_zsize() const
 	{
 		return nz;
-	}
-
-	inline float EMData::get_xorigin() const
-	{
-		return attr_dict["origin_row"];
-	}
-
-
-	inline float EMData::get_yorigin() const
-	{
-		return attr_dict["origin_col"];
-	}
-
-	inline float EMData::get_zorigin() const
-	{
-		return attr_dict["origin_sec"];
-	}
-
-
-	inline float EMData::get_xpixel() const
-	{
-		return attr_dict["spacing_row"];
-	}
-
-
-	inline float EMData::get_ypixel() const
-	{
-		return attr_dict["spacing_col"];
-	}
-
-
-	inline float EMData::get_zpixel() const
-	{
-		return attr_dict["spacing_sec"];
 	}
 
 
@@ -755,40 +712,6 @@ namespace EMAN
 		}
 	}
 
-	inline int EMData::get_average_nimg() const
-	{
-		return average_nimg;
-	}
-
-	inline void EMData::set_average_nimg(int n)
-	{
-		average_nimg = n;
-	}
-
-	inline float EMData::get_max()
-	{
-		update_stat();
-		return attr_dict["maximum"];
-	}
-
-	inline float EMData::get_min()
-	{
-		update_stat();
-		return attr_dict["minimum"];
-	}
-
-	inline float EMData::get_mean()
-	{
-		update_stat();
-		return attr_dict["mean"];
-	}
-
-	inline float EMData::get_sigma()
-	{
-		update_stat();
-		return attr_dict["sigma"];
-	}
-
 	inline Ctf *EMData::get_ctf() const
 	{
 		return ctf;
@@ -803,14 +726,6 @@ namespace EMAN
 		parent = new_parent;
 	}
 
-	inline void EMData::set_align_score(float score)
-	{
-		align_score = score;
-	}
-	inline float EMData::get_align_score() const
-	{
-		return align_score;
-	}
 
 	inline Vec3 < float >EMData::get_translation() const
 	{
@@ -853,6 +768,18 @@ namespace EMAN
 		attr_dict["spacing_sec"] = EMObject((float) attr_dict["spacing_sec"] * scale);
 	}
 
+	inline EMObject EMData::get_attr(string key)
+	{
+		update_stat();
+		return attr_dict[key];
+	}
+	
+	inline void EMData::set_attr(string key, EMObject val)
+	{
+		attr_dict[key] = val;
+	}
+	
+	
 }
 
 #endif

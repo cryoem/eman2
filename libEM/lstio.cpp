@@ -50,7 +50,7 @@ int LstIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("LstIO::init()");
+	LOGDEBUG("LstIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -66,13 +66,13 @@ int LstIO::init()
 		char buf[MAXPATHLEN];
 
 		if (!fgets(buf, MAXPATHLEN, lst_file)) {
-			Log::logger()->error("cannot open LST file '%s'", filename.c_str());
+			LOGERR("cannot open LST file '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid(&buf)) {
-			Log::logger()->error("%s is not a valid LST file", filename.c_str());
+			LOGERR("%s is not a valid LST file", filename.c_str());
 			err = 1;
 			return err;
 		}
@@ -90,7 +90,7 @@ int LstIO::init()
 
 bool LstIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("LstIO::is_valid()");
+	LOGDEBUG("LstIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -114,8 +114,8 @@ int LstIO::calc_ref_image_index(int image_index)
 
 		for (int i = 0; i < step; i++) {
 			if (!fgets(buf, MAXPATHLEN, lst_file)) {
-				Log::logger()->error("reach EOF in file '%s' before reading %dth image",
-									 filename.c_str(), image_index);
+				LOGERR("reach EOF in file '%s' before reading %dth image",
+					   filename.c_str(), image_index);
 				return 1;
 			}
 			if (buf[0] == '#') {
@@ -167,7 +167,7 @@ int LstIO::calc_ref_image_index(int image_index)
 
 int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("LstIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("LstIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -182,14 +182,14 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 int LstIO::write_header(const Dict &, int, bool)
 {
-	Log::logger()->log("LstIO::write_header() to file '%s'", filename.c_str());
-	Log::logger()->warn("LST write header is not supported.");
+	LOGDEBUG("LstIO::write_header() to file '%s'", filename.c_str());
+	LOGWARN("LST write header is not supported.");
 	return 1;
 }
 
 int LstIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("LstIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("LstIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -203,8 +203,8 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 
 int LstIO::write_data(float *, int, bool)
 {
-	Log::logger()->log("LstIO::write_data() to file '%s'", filename.c_str());
-	Log::logger()->warn("LST write data is not supported.");
+	LOGDEBUG("LstIO::write_data() to file '%s'", filename.c_str());
+	LOGWARN("LST write data is not supported.");
 	return 1;
 }
 

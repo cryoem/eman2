@@ -30,7 +30,7 @@ int EmimIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("EmimIO::init()");
+	LOGDEBUG("EmimIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -42,13 +42,13 @@ int EmimIO::init()
 
 	if (!is_new_file) {
 		if (fread(&efh, sizeof(EmimFileHeader), 1, emim_file) != 1) {
-			Log::logger()->error("cannot read EMIM file: '%s'", filename.c_str());
+			LOGERR("cannot read EMIM file: '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid(&efh)) {
-			Log::logger()->error("invalid EMIM file");
+			LOGERR("invalid EMIM file");
 			err = 1;
 			return err;
 		}
@@ -63,7 +63,7 @@ int EmimIO::init()
 
 bool EmimIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("EmimIO::is_valid()");
+	LOGDEBUG("EmimIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -89,7 +89,7 @@ bool EmimIO::is_valid(const void *first_block)
 
 int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("EmimIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("EmimIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -127,14 +127,14 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int EmimIO::write_header(const Dict &, int, bool)
 {
-	Log::logger()->log("EmimIO::write_header() to file '%s'", filename.c_str());
-	Log::logger()->warn("EMIM write header is not supported.");
+	LOGDEBUG("EmimIO::write_header() to file '%s'", filename.c_str());
+	LOGWARN("EMIM write header is not supported.");
 	return 1;
 }
 
 int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("EmimIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("EmimIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -154,8 +154,8 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 
 int EmimIO::write_data(float *, int, bool)
 {
-	Log::logger()->log("EmimIO::write_data() to file '%s'", filename.c_str());
-	Log::logger()->warn("EMIM write data is not supported.");
+	LOGDEBUG("EmimIO::write_data() to file '%s'", filename.c_str());
+	LOGWARN("EMIM write data is not supported.");
 	return 1;
 }
 

@@ -21,21 +21,21 @@ SingleSpiderIO::~SingleSpiderIO()
 
 int SingleSpiderIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("SingleSpiderIO::write_header()");
+	LOGDEBUG("SingleSpiderIO::write_header()");
 	assert(image_index == 0);
 	return write_single_header(dict);
 }
 
 int SingleSpiderIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("SingleSpiderIO::write_data()");
+	LOGDEBUG("SingleSpiderIO::write_data()");
 	assert(image_index == 0);
 	return write_single_data(data);
 }
 
 bool SingleSpiderIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("SingleSpiderIO::is_valid()");
+	LOGDEBUG("SingleSpiderIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}

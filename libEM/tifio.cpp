@@ -36,28 +36,28 @@ int TiffIO::init()
 	}
 	//initialized = true;
 
-	Log::logger()->log("TiffIO::init()");
+	LOGDEBUG("TiffIO::init()");
 
 	if (rw_mode != READ_ONLY) {
-		Log::logger()->error("wrong rw mode. Only reading is supported for TIFF.");
+		LOGERR("wrong rw mode. Only reading is supported for TIFF.");
 		err = 1;
 		return err;
 	}
 
 	FILE *tmp_in = fopen(filename.c_str(), "rb");
 	if (!tmp_in) {
-		Log::logger()->error("cannot open TIFF image '%s'", filename.c_str());
+		LOGERR("cannot open TIFF image '%s'", filename.c_str());
 		err = 1;
 		return err;
 	}
 	char buf[64];
 	if (fread(buf, sizeof(buf), 1, tmp_in) != 1) {
-		Log::logger()->error("cannot read TIFF image '%s'", filename.c_str());
+		LOGERR("cannot read TIFF image '%s'", filename.c_str());
 		err = 1;
 	}
 
 	if (!err && !is_valid(&buf)) {
-		Log::logger()->error("'%s' is an invalid TIFF image", filename.c_str());
+		LOGERR("'%s' is an invalid TIFF image", filename.c_str());
 		err = 1;
 	}
 
@@ -72,7 +72,7 @@ int TiffIO::init()
 
 	tiff_file = TIFFOpen(filename.c_str(), "r");
 	if (!tiff_file) {
-		Log::logger()->error("cannot open TIFF image '%s'", filename.c_str());
+		LOGERR("cannot open TIFF image '%s'", filename.c_str());
 		err = 1;
 		return err;
 	}
@@ -87,7 +87,7 @@ int TiffIO::init()
 	TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
 
 	if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
-		Log::logger()->error("invalid %d bits. only %d-bit and %d-bit TIFF are supported",
+		LOGERR("invalid %d bits. only %d-bit and %d-bit TIFF are supported",
 							 bitspersample, CHAR_BIT, (CHAR_BIT * sizeof(short)));
 		err = 1;
 	}
@@ -97,7 +97,7 @@ int TiffIO::init()
 
 bool TiffIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("TiffIO::is_valid()");
+	LOGDEBUG("TiffIO::is_valid()");
 
 	if (!first_block) {
 		return false;
@@ -113,7 +113,7 @@ bool TiffIO::is_valid(const void *first_block)
 
 int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 {
-	Log::logger()->log("TiffIO::read_header() on file '%s'", filename.c_str());
+	LOGDEBUG("TiffIO::read_header() on file '%s'", filename.c_str());
 	if (check_read_access(img_index) != 0) {
 		return 1;
 	}
@@ -166,7 +166,7 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 
 int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("TiffIO::read_data() on file '%s'", filename.c_str());
+	LOGDEBUG("TiffIO::read_data() on file '%s'", filename.c_str());
 
 	if (check_read_access(img_index, true, rdata) != 0) {
 		return 1;
@@ -199,7 +199,7 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_
 
 	for (uint32 i = 0; i < num_strips; i++) {
 		if ((num_read = TIFFReadEncodedStrip(tiff_file, i, cdata, strip_size)) == -1) {
-			Log::logger()->error("reading stripped TiFF image '%s' failed", filename.c_str());
+			LOGERR("reading stripped TiFF image '%s' failed", filename.c_str());
 			err = 1;
 			break;
 		}
@@ -247,15 +247,15 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_
 
 int TiffIO::write_header(const Dict &, int, bool)
 {
-	Log::logger()->log("TiffIO::write_header()");
-	Log::logger()->error("TIFF write is not supported");
+	LOGDEBUG("TiffIO::write_header()");
+	LOGERR("TIFF write is not supported");
 	return 0;
 }
 
 int TiffIO::write_data(float *, int, bool)
 {
-	Log::logger()->log("TiffIO::write_data()");
-	Log::logger()->error("TIFF write is not supported");
+	LOGDEBUG("TiffIO::write_data()");
+	LOGERR("TIFF write is not supported");
 	return 0;
 }
 

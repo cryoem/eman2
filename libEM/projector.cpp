@@ -34,7 +34,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	int f_nz = f->get_zsize();
 
 	if (!f->is_complex() || f_nz != f_ny || f_nx != f_ny + 2) {
-		Log::logger()->error("Cannot project this image");
+		LOGERR("Cannot project this image");
 		return 0;
 	}
 

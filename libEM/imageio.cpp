@@ -29,13 +29,13 @@ int ImageIO::check_region(const Region * area, const Size & max_size)
 		int area_ndim = area->get_ndim();
 
 		if (area_ndim > img_ndim) {
-			Log::logger()->error("Image is %dD. Cannot read %dD region", img_ndim, area_ndim);
+			LOGERR("Image is %dD. Cannot read %dD region", img_ndim, area_ndim);
 			return 1;
 		}
 #if 0
 		if (!area->inside_region(max_size)) {
-			Log::logger()->error("Region box %s is outside image area->",
-								 area->get_string().c_str());
+			LOGERR("Region box %s is outside image area->",
+				   area->get_string().c_str());
 			return 1;
 		}
 #endif
@@ -56,7 +56,7 @@ int ImageIO::check_read_access(int image_index, bool check_data, float *data)
 
 	int nimg = get_nimg();
 	if (image_index < -1 || image_index >= nimg) {
-		Log::logger()->error("Image index %d is out of valid range [-1,%d]", image_index, nimg - 1);
+		LOGERR("Image index %d is out of valid range [-1,%d]", image_index, nimg - 1);
 		return 1;
 	}
 
@@ -70,12 +70,12 @@ int ImageIO::check_write_access(IOMode iomode, int image_index, bool check_data,
 	}
 
 	if (iomode == READ_ONLY) {
-		Log::logger()->error("cannot write header. File is not openned to write");
+		LOGERR("cannot write header. File is not openned to write");
 		return 1;
 	}
 
 	if (image_index < -1) {
-		Log::logger()->error("Invalid image index %d. it cannot be < -1.", image_index);
+		LOGERR("Invalid image index %d. it cannot be < -1.", image_index);
 		return 1;
 	}
 
@@ -104,7 +104,7 @@ FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrit
 			if (!f) {
 				FILE *f1 = fopen(filename.c_str(), "wb");
 				if (!f1) {
-					Log::logger()->error("cannot create file '%s'", filename.c_str());
+					LOGERR("cannot create file '%s'", filename.c_str());
 				}
 				else {
 					if (is_new) {
@@ -119,7 +119,7 @@ FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrit
 	}
 
 	if (!f) {
-		Log::logger()->error("cannot access file '%s'", filename.c_str());
+		LOGERR("cannot access file '%s'", filename.c_str());
 	}
 	return f;
 }

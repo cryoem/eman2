@@ -33,7 +33,7 @@ int EmIO::init()
 		return err;
 	}
 
-	Log::logger()->log("EmIO::init()");
+	LOGDEBUG("EmIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -46,12 +46,12 @@ int EmIO::init()
 
 	if (!is_new_file) {
 		if (fread(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-			Log::logger()->error("cannot read EM image file '%s'", filename.c_str());
+			LOGERR("cannot read EM image file '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 		if (!is_valid(&emh)) {
-			Log::logger()->error("'%s' is not a valid EM image", filename.c_str());
+			LOGERR("'%s' is not a valid EM image", filename.c_str());
 			err = 1;
 			return err;
 		}
@@ -64,7 +64,7 @@ int EmIO::init()
 		mode = (DataType) emh.data_type;
 
 		if (mode == EM_EM_DOUBLE) {
-			Log::logger()->error("DOUBLE data type is not supported for EM image");
+			LOGERR("DOUBLE data type is not supported for EM image");
 			err = 1;
 			return err;
 		}
@@ -80,7 +80,7 @@ int EmIO::init()
 
 bool EmIO::is_valid(const void *first_block, off_t file_size)
 {
-	Log::logger()->log("EmIO::is_valid()");
+	LOGDEBUG("EmIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -124,7 +124,7 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 
 int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("EmIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("EmIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, area) != 0) {
 		return 1;
@@ -150,7 +150,7 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is
 
 int EmIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("EmIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("EmIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -162,7 +162,7 @@ int EmIO::write_header(const Dict & dict, int image_index, bool)
 	emh.data_type = EM_EM_FLOAT;
 
 	if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-		Log::logger()->error("cannot write header to file '%s'", filename.c_str());
+		LOGERR("cannot write header to file '%s'", filename.c_str());
 		return 1;
 	}
 	return 0;
@@ -170,7 +170,7 @@ int EmIO::write_header(const Dict & dict, int image_index, bool)
 
 int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("EmIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("EmIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -209,7 +209,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 		become_host_endian((int *) cdata, total_sz);
 	}
 	else if (mode_size == sizeof(double)) {
-		Log::logger()->error("double type image is not supported");
+		LOGERR("double type image is not supported");
 		return 1;
 	}
 
@@ -229,7 +229,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 			curr_data = ((float *) cdata)[k];
 		}
 		else if (mode_size == sizeof(double)) {
-			Log::logger()->error("double type image is not supported");
+			LOGERR("double type image is not supported");
 			return 1;
 		}
 
@@ -242,7 +242,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 
 int EmIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("EmIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("EmIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

@@ -102,7 +102,7 @@ void test_filters()
 	EMAN::EMData *em2 = new EMAN::EMData();
 	em2->read_image(image1);
 	
-	float mean = em2->get_mean();
+	float mean = em2->get_attr("mean");
 	
 	terr = test_rfilter(em1, 4, 0, 0, 0,
 						em2, "AbsoluateValue");

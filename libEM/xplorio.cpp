@@ -33,7 +33,7 @@ int XplorIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("XplorIO::init()");
+	LOGDEBUG("XplorIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -50,7 +50,7 @@ int XplorIO::init()
 
 bool XplorIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("XplorIO::is_valid()");
+	LOGDEBUG("XplorIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -59,14 +59,14 @@ bool XplorIO::is_valid(const void *first_block)
 
 int XplorIO::read_header(Dict &, int, const Region *, bool)
 {
-	Log::logger()->log("XplorIO::read_header() from file '%s'", filename.c_str());
-	Log::logger()->warn("XPLOR read is not supported.");
+	LOGDEBUG("XplorIO::read_header() from file '%s'", filename.c_str());
+	LOGWARN("XPLOR read is not supported.");
 	return 1;
 }
 
 int XplorIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("XplorIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("XplorIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -99,14 +99,14 @@ int XplorIO::write_header(const Dict & dict, int image_index, bool)
 
 int XplorIO::read_data(float *, int, const Region *, bool)
 {
-	Log::logger()->log("XplorIO::read_data() from file '%s'", filename.c_str());
-	Log::logger()->warn("XPLOR read is not supported.");
+	LOGDEBUG("XplorIO::read_data() from file '%s'", filename.c_str());
+	LOGWARN("XPLOR read is not supported.");
 	return 1;
 }
 
 int XplorIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("XplorIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("XplorIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

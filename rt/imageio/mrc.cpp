@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     
     EMData e;
     e.read_image(argv[1]);
-    e.set_attr_dict("MRC.label1", "Liwei Peng");
+    e.set_attr("MRC.label1", "Liwei Peng");
     int nx = e.get_xsize();
     int ny = e.get_ysize();
     EMData *c = e.get_clip(Region(0, 0, nx/2, ny/2));

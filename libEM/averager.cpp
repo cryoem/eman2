@@ -43,8 +43,8 @@ void ImageAverager::add_image(EMData * image)
 	}
 
 	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		Log::logger()->error("%sAverager can only process same-size Image",
-							 get_name().c_str());
+		LOGERR("%sAverager can only process same-size Image",
+			   get_name().c_str());
 		return;
 	}
 	
@@ -266,7 +266,7 @@ void IterationAverager::add_image( EMData * image)
 	}
 
 	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		Log::logger()->error("%sAverager can only process same-size Image",
+		LOGERR("%sAverager can only process same-size Image",
 							 get_name().c_str());
 		return;
 	}
@@ -326,7 +326,7 @@ EMData * IterationAverager::finish()
 	sigma_image->update();
 
 	result->append_image("iter.hed");
-	float sigma = sigma_image->get_sigma();
+	float sigma = sigma_image->get_attr("sigma");
 	float *sigma_image_data2 = sigma_image->get_data();
 	float *result_data2 = result->get_data();
 	float *d2 = new float[nx * ny];
@@ -436,7 +436,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 
 	result->append_image("iter.hed");
 
-	float sigma = sigma_image->get_sigma();
+	float sigma = sigma_image->get_attr("sigma");
 	float *sigma_image_data2 = sigma_image->get_data();
 	float *result_data2 = result->get_data();
 	float *d2 = new float[nx * ny];
@@ -493,13 +493,13 @@ void CtfAverager::add_image(EMData * image)
 	}
 
 	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
-		Log::logger()->error("%sAverager can only process same-size Image",
+		LOGERR("%sAverager can only process same-size Image",
 							 get_name().c_str());
 		return;
 	}
 
 	if (image->get_zsize() != 1) {
-		Log::logger()->error("%sAverager: Only 2D images are currently supported",
+		LOGERR("%sAverager: Only 2D images are currently supported",
 							 get_name().c_str());
 	}
 
@@ -507,13 +507,13 @@ void CtfAverager::add_image(EMData * image)
 
 	if (alg_name == "CtfCW" || alg_name == "CtfCWauto") {
 		if (image->get_ctf() != 0 && !image->has_ctff()) {
-			Log::logger()->error("%sAverager: Attempted CTF Correction with no ctf parameters",
+			LOGERR("%sAverager: Attempted CTF Correction with no ctf parameters",
 								 get_name().c_str());
 		}
 	}
 	else {
 		if (image->get_ctf() != 0) {
-			Log::logger()->error("%sAverager: Attempted CTF Correction with no ctf parameters",
+			LOGERR("%sAverager: Attempted CTF Correction with no ctf parameters",
 								 get_name().c_str());
 		}
 	}
@@ -534,7 +534,7 @@ void CtfAverager::add_image(EMData * image)
 	
 		if (alg_name == "Weighting" && curves) {
 			if (!sf) {
-				Log::logger()->warn("CTF curve in file will contain relative, not absolute SNR!");
+				LOGWARN("CTF curve in file will contain relative, not absolute SNR!");
 			}
 			curves->set_size(Ctf::CTFOS * ny / 2, 3, 1);
 			curves->to_zero();
@@ -590,7 +590,7 @@ void CtfAverager::add_image(EMData * image)
 	vector<float> ctf1 = image_ctf->compute_1d(ny2, curve_type);
 		
 	if (ctf1.size() == 0) {
-		Log::logger()->error("Unexpected CTF correction problem");
+		LOGERR("Unexpected CTF correction problem");
 	}
 
 	ctf.push_back(ctf1);
@@ -782,7 +782,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 
 	EMData *image0 = image_list[0];
 	if (image0->get_zsize() != 1) {
-		Log::logger()->error("Only 2D images are currently supported");
+		LOGERR("Only 2D images are currently supported");
 		return 0;
 	}
 
@@ -790,13 +790,13 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 
 	if (alg_name == "CtfCW" || alg_name == "CtfCWauto") {
 		if (image0->get_ctf() != 0 && !image0->has_ctff()) {
-			Log::logger()->error("Attempted CTF Correction with no ctf parameters");
+			LOGERR("Attempted CTF Correction with no ctf parameters");
 			return 0;
 		}
 	}
 	else {
 		if (image0->get_ctf() != 0) {
-			Log::logger()->error("Attempted CTF Correction with no ctf parameters");
+			LOGERR("Attempted CTF Correction with no ctf parameters");
 			return 0;
 		}
 	}
@@ -820,7 +820,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		ctf[i] = image_ctf->compute_1d(ny, curve_type);
 
 		if (ctf[i].size() == 0) {
-			Log::logger()->error("Unexpected CTF correction problem");
+			LOGERR("Unexpected CTF correction problem");
 			return 0;
 		}
 
@@ -844,7 +844,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 	float *cd = 0;
 	if (alg_name == "Weighting" && curves) {
 		if (!sf) {
-			Log::logger()->warn("CTF curve in file will contain relative, not absolute SNR!");
+			LOGWARN("CTF curve in file will contain relative, not absolute SNR!");
 		}
 		curves->set_size(Ctf::CTFOS * ny / 2, 3, 1);
 		curves->to_zero();

@@ -96,11 +96,11 @@ void Log::variable(const char *format, ...)
 	va_end(arg);
 }
 
-void Log::log(const char *format, ...)
+void Log::debug(const char *format, ...)
 {
 	va_list arg;
 	va_start(arg, format);
-	vlog(format, NORMAL_LOG, arg);
+	vlog(format, DEBUG_LOG, arg);
 	va_end(arg);
 }
 

@@ -3,48 +3,6 @@
 --- High Priority ---
 
   001: convert CCTBX float array to EMData
-  
-  002: EMData API: use a generic way to replace the trivial get/set() functions.
-       For example:
-
-                float get_align_score() const;
-                void set_align_score(float score);
-
-                float get_density_center();
-                float get_sigma_diff();
-
-                Dict get_attr_dict();
-                void set_attr_dict(string key, EMObject val);
-
-                int get_average_nimg() const;
-                void set_average_nimg(int n);
-
-                float get_max();
-                float get_min();
-                float get_mean();
-                float get_sigma();
-                float get_skewness();
-                float get_kurtosis();
-
-                Point < int >get_min_location() const;
-                Point < int >get_max_location() const;
-
-                int get_min_index() const;
-                int get_max_index() const;
-
-                int get_xsize() const;
-                int get_ysize() const;
-                int get_zsize() const;
-                int get_ndim() const;
-
-                float get_xorigin() const;
-                float get_yorigin() const;
-                float get_zorigin() const;
-
-                float get_xpixel() const;
-                float get_ypixel() const;
-                float get_zpixel() const;
-    
 
   003: command-line program logger (.eman2.log)
        We need to adopt a standard history mechanism like in EMAN1. Any
@@ -59,21 +17,12 @@
        routine will handle the logfile thing, and we may use for other tasks
        later on...
 
-  004: standardize the Size, Point class
-       Why are the members of Size xsize,ysize,zsize. but for points they are:
-       x,y,z? Use x,y,z for locations in all cases. Also,
-       provide overloaded access as point[0], point[1], etc.
+  004: standardize the Size, Point class using "x", "y", "z" as data
+	   members. defines index accessing like point[1], point[2], etc.
+
 
   005: fix place where assuming EMData is only 2D or 3D. 1D is also OK. 4D?
 
-  006: EMData: define a function that can return a sorted list of
-       all pixel values above a specified value. Right now we can return the
-       location of the maximum value in the image, but we also need to find
-       several of the highest value points (efficiently). This should return a
-       sorted list of value,(x,y,z) pairs. This needs to work in both python and
-       C.
-
-  007: add a tutorial on how to use boost python to add more EMData functions.        
     
 --- Low Priority ---
 
@@ -81,4 +30,10 @@
 
 --- Items Done ----
 
-
+  7/22/04: 007: add a tutorial on how to use boost python 
+  
+  7/25/04: 002: EMData API: define a generic way to replace the trivial
+				get/set() functions.
+       
+  7/27/04: 006: EMData: define a function that can return a sorted list of
+				all pixel values above a specified value. 

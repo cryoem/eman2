@@ -207,7 +207,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first
 
 EMUtil::ImageType EMUtil::get_image_type(string filename)
 {
-	Log::logger()->log("EMUtil::get_image_type() on file: '%s'", filename.c_str());
+	LOGDEBUG("EMUtil::get_image_type() on file: '%s'", filename.c_str());
 
 	size_t ext_pos = filename.find(".img");
 	if (ext_pos != string::npos) {
@@ -216,7 +216,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
-		Log::logger()->error("cannot open image file: '%s'", filename.c_str());
+		LOGERR("cannot open image file: '%s'", filename.c_str());
 		return IMAGE_UNKNOWN;
 	}
 
@@ -226,7 +226,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 	off_t file_size = portable_ftell(in);
 
 	if (n == 0) {
-		Log::logger()->error("file '%s' is an empty file", filename.c_str());
+		LOGERR("file '%s' is an empty file", filename.c_str());
 		fclose(in);
 		return IMAGE_UNKNOWN;
 	}
@@ -301,7 +301,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 		image_type = IMAGE_IMAGIC;
 	}
 	else {
-		Log::logger()->error("I don't know this image's type: '%s'", filename.c_str());
+		LOGERR("I don't know this image's type: '%s'", filename.c_str());
 		image_type = IMAGE_UNKNOWN;
 	}
 
@@ -311,7 +311,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 
 int EMUtil::get_image_count(string filename)
 {
-	Log::logger()->log("EMUtil::get_image_count()");
+	LOGDEBUG("EMUtil::get_image_count()");
 
 	int nimg = 0;
 	ImageIO *imageio = get_imageio(filename, ImageIO::READ_ONLY);
@@ -326,7 +326,7 @@ int EMUtil::get_image_count(string filename)
 
 ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 {
-	Log::logger()->log("EMUtil::get_imageio()");
+	LOGDEBUG("EMUtil::get_imageio()");
 	ImageIO *imageio = GlobalCache::instance()->get_imageio(filename, rw);
 	if (imageio) {
 		return imageio;
@@ -498,12 +498,12 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 		}
 	}
 	else {
-		*area_x = area->size.xsize;
-		*area_y = area->size.ysize;
+		*area_x = area->size.x;
+		*area_y = area->size.y;
 
 		if (area_z) {
 			if (area->get_ndim() > 2 && nz > 1) {
-				*area_z = area->size.zsize;
+				*area_z = area->size.z;
 			}
 			else {
 				*area_z = 1;
@@ -585,7 +585,7 @@ int EMUtil::get_region_data(unsigned char *cdata, FILE * in, int image_index, si
 			}
 
 			if (fread(&cdata[k * area_sec_size + jj * area_row_size], area_row_size, 1, in) != 1) {
-				Log::logger()->error("incomplete data read");
+				LOGERR("incomplete data read");
 				return 1;
 			}
 			if (area) {

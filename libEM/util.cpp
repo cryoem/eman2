@@ -51,7 +51,7 @@ int Util::file_lock_wait(FILE * file)
 #else
 
 	if (!file) {
-		Log::logger()->error("Tried to lock NULL file");
+		LOGERR("Tried to lock NULL file");
 		return 1;
 	}
 
@@ -73,7 +73,7 @@ int Util::file_lock_wait(FILE * file)
 #endif
 
 	if (fcntl(fdes, F_SETLKW, &fl) == -1) {
-		Log::logger()->error("file locking error! NFS problem?");
+		LOGERR("file locking error! NFS problem?");
 
 		int i = 0;
 		for (i = 0; i < 5; i++) {
@@ -90,7 +90,7 @@ int Util::file_lock_wait(FILE * file)
 			}
 		}
 		if (i == 5) {
-			Log::logger()->error("Fatal file locking error");
+			LOGERR("Fatal file locking error");
 			return 1;
 		}
 	}
@@ -269,14 +269,14 @@ void Util::save_data(const vector < float >&x_array, const vector < float >&y_ar
 					 string filename)
 {
 	if (x_array.size() != y_array.size()) {
-		Log::logger()->error("array x and array y have different size: %d != %d\n",
+		LOGERR("array x and array y have different size: %d != %d\n",
 							 x_array.size(), y_array.size());
 		return;
 	}
 
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		Log::logger()->error("cannot open file to save data '%s'\n", filename.c_str());
+		LOGERR("cannot open file to save data '%s'\n", filename.c_str());
 		return;
 	}
 
@@ -290,7 +290,7 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array, string 
 {
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		Log::logger()->error("cannot open file to save data '%s'\n", filename.c_str());
+		LOGERR("cannot open file to save data '%s'\n", filename.c_str());
 		return;
 	}
 
@@ -309,7 +309,7 @@ void Util::save_data(float x0, float dx, float *y_array, size_t array_size, stri
 
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		Log::logger()->error("cannot open file to save data '%s'\n", filename.c_str());
+		LOGERR("cannot open file to save data '%s'\n", filename.c_str());
 		return;
 	}
 
@@ -447,7 +447,7 @@ int Util::calc_best_fft_size(int low)
 		}
 	}
 
-	Log::logger()->error("Sorry, can only find good fft sizes up to 4096 right now.");
+	LOGERR("Sorry, can only find good fft sizes up to 4096 right now.");
 
 	return 1;
 }

@@ -65,7 +65,7 @@ int FourierReconstructor::setup()
 int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 {
 	if (!slice) {
-		Log::logger()->error("try to insert NULL slice");
+		LOGERR("try to insert NULL slice");
 		return 1;
 	}
 
@@ -73,7 +73,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 	float weight = params["weight"];
 
 	if (!slice->is_complex()) {
-		Log::logger()->error("Only complex slice can be inserted.");
+		LOGERR("Only complex slice can be inserted.");
 		return 1;
 	}
 
@@ -422,7 +422,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 					}
 				}
 			default:
-				Log::logger()->error("no such insert slice mode: '%d'", mode);
+				LOGERR("no such insert slice mode: '%d'", mode);
 				return 1;
 			}
 
@@ -548,7 +548,7 @@ EMData *WienerFourierReconstructor::finish()
 int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 {
 	if (!slice) {
-		Log::logger()->error("try to insert NULL slice");
+		LOGERR("try to insert NULL slice");
 		return 1;
 	}
 
@@ -557,7 +557,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 	vector < float >snr = params["snr"].get_farray();
 
 	if (!slice->is_complex()) {
-		Log::logger()->error("Only complex slice can be inserted.");
+		LOGERR("Only complex slice can be inserted.");
 		return 1;
 	}
 	float *gimx = 0;
@@ -957,12 +957,12 @@ int BackProjectionReconstructor::setup()
 int BackProjectionReconstructor::insert_slice(EMData * slice, const Rotation &)
 {
 	if (!slice) {
-		Log::logger()->error("try to insert NULL slice");
+		LOGERR("try to insert NULL slice");
 		return 1;
 	}
 
 	if (slice->get_xsize() != slice->get_ysize() || slice->get_xsize() != nx) {
-		Log::logger()->error("try to insert improve size slice");
+		LOGERR("try to insert improve size slice");
 		return 1;
 	}
 

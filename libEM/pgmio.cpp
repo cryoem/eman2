@@ -57,7 +57,7 @@ int PgmIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("PgmIO::init()");
+	LOGDEBUG("PgmIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -73,7 +73,7 @@ int PgmIO::init()
 		getc(pgm_file);
 
 		if (!is_valid(&buf)) {
-			Log::logger()->error("not a valid PGM file");
+			LOGERR("not a valid PGM file");
 			err = 1;
 			return 1;
 		}
@@ -90,12 +90,12 @@ int PgmIO::init()
 		maxval = read_int_and_space(pgm_file);
 
 		if (nx <= 0 || ny <= 0) {
-			Log::logger()->error("invalid file size: %dx%d", nx, ny);
+			LOGERR("invalid file size: %dx%d", nx, ny);
 			err = 1;
 			return 1;
 		}
 		if (maxval > USHRT_MAX) {
-			Log::logger()->error("not a valid PGM file: max gray value '%d' cannot > $d",
+			LOGERR("not a valid PGM file: max gray value '%d' cannot > $d",
 								 maxval, USHRT_MAX);
 			err = 1;
 			return 1;
@@ -107,7 +107,7 @@ int PgmIO::init()
 			datatype = PGM_UCHAR;
 		}
 		else {
-			Log::logger()->error("not a valid PGM file. max gray value '%d' cannot <= 0", maxval);
+			LOGERR("not a valid PGM file. max gray value '%d' cannot <= 0", maxval);
 			err = 1;
 			return 1;
 		}
@@ -120,13 +120,13 @@ int PgmIO::init()
 
 bool PgmIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("PgmIO::is_valid()");
+	LOGDEBUG("PgmIO::is_valid()");
 	return Util::check_file_by_magic(first_block, MAGIC_BINARY);
 }
 
 int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("PgmIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("PgmIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -158,7 +158,7 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int PgmIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("PgmIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("PgmIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -171,7 +171,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, bool)
 
 	int nz = dict["nz"];
 	if (nz != 1) {
-		Log::logger()->error("Cannot write 3d image as PGM. Your image nz = %d", nz);
+		LOGERR("Cannot write 3d image as PGM. Your image nz = %d", nz);
 		return 1;
 	}
 
@@ -182,7 +182,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, bool)
 
 int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("PgmIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("PgmIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -224,7 +224,7 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 
 		if (n != 1) {
-			Log::logger()->error("Incomplete data read in PGM file '%s'", filename.c_str());
+			LOGERR("Incomplete data read in PGM file '%s'", filename.c_str());
 			return 1;
 		}
 	}
@@ -251,13 +251,13 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 
 int PgmIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("PgmIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("PgmIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
 	portable_fseek(pgm_file, file_offset, SEEK_SET);
 
-	Log::logger()->error("not working yet. need to normalize data before write");
+	LOGERR("not working yet. need to normalize data before write");
 
 	//fwrite(data, nx, ny, pgm_file);
 

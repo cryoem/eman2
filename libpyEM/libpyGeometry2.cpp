@@ -304,9 +304,9 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
         .def(init< const EMAN::Size& >())
         .def(init< int, int >())
         .def(init< int, int, int >())
-        .def_readwrite("xsize", &EMAN::Size::xsize)
-        .def_readwrite("ysize", &EMAN::Size::ysize)
-        .def_readwrite("zsize", &EMAN::Size::zsize)
+        .def_readwrite("x", &EMAN::Size::x)
+        .def_readwrite("y", &EMAN::Size::y)
+        .def_readwrite("z", &EMAN::Size::z)
         .def("get_ndim", &EMAN::Size::get_ndim)
     ;
 

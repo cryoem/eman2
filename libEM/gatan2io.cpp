@@ -30,7 +30,7 @@ int Gatan2IO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("Gatan2IO::init()");
+	LOGDEBUG("Gatan2IO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -43,13 +43,13 @@ int Gatan2IO::init()
 
 	if (!is_new_file) {
 		if (fread(&gatanh, sizeof(Gatan2Header), 1, gatan2_file) != 1) {
-			Log::logger()->error("cannot read header from Gatan2 file '%s'", filename.c_str());
+			LOGERR("cannot read header from Gatan2 file '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid(&gatanh)) {
-			Log::logger()->error("'%s' is not a valid Gatan2 file", filename.c_str());
+			LOGERR("'%s' is not a valid Gatan2 file", filename.c_str());
 			err = 1;
 			return err;
 		}
@@ -63,7 +63,7 @@ int Gatan2IO::init()
 
 bool Gatan2IO::is_valid(const void *first_block)
 {
-	Log::logger()->log("Gatan2IO::is_valid()");
+	LOGDEBUG("Gatan2IO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -88,14 +88,14 @@ bool Gatan2IO::is_valid(const void *first_block)
 
 int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("Gatan2IO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("Gatan2IO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
 
 	if (is_complex_mode()) {
-		Log::logger()->error("Cannot read complex Gatan2 files");
+		LOGERR("Cannot read complex Gatan2 files");
 		return 1;
 	}
 	if (check_region(area, Size(gatanh.nx, gatanh.ny)) != 0) {
@@ -114,21 +114,21 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 int Gatan2IO::write_header(const Dict &, int, bool)
 {
-	Log::logger()->log("Gatan2IO::write_header() to file '%s'", filename.c_str());
-	Log::logger()->warn("Gatan2 write is not supported.");
+	LOGDEBUG("Gatan2IO::write_header() to file '%s'", filename.c_str());
+	LOGWARN("Gatan2 write is not supported.");
 	return 1;
 }
 
 int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("Gatan2IO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("Gatan2IO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
 
 	if (is_complex_mode()) {
-		Log::logger()->error("Cannot read complex Gatan2 files");
+		LOGERR("Cannot read complex Gatan2 files");
 		return 1;
 	}
 	if (check_region(area, Size(gatanh.nx, gatanh.ny)) != 0) {
@@ -139,7 +139,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 
 #if 0
 	if (fread(data, gatanh.nx * gatanh.len, gatanh.ny, gatan2_file) != (unsigned int) gatanh.ny) {
-		Log::logger()->log("Data read incomplete in Gatan file '%s'", filename.c_str());
+		LOGDEBUG("Data read incomplete in Gatan file '%s'", filename.c_str());
 		return 1;
 	}
 #endif
@@ -179,7 +179,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 		}
 		break;
 	default:
-		Log::logger()->error("don't know how to handle this type");
+		LOGERR("don't know how to handle this type");
 		return 1;
 	}
 	return 0;
@@ -187,8 +187,8 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 
 int Gatan2IO::write_data(float *, int, bool)
 {
-	Log::logger()->log("Gatan2IO::write_data() to file '%s'", filename.c_str());
-	Log::logger()->warn("Gatan2 write is not supported.");
+	LOGDEBUG("Gatan2IO::write_data() to file '%s'", filename.c_str());
+	LOGWARN("Gatan2 write is not supported.");
 	return 1;
 }
 

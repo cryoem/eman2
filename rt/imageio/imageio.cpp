@@ -73,7 +73,7 @@ int test_image(const char* base_filename, int r_image_index = 0,
 	}
 	catch(...) {
 		err = 1;
-		Log::logger()->error("image read/write error: %s\n", base_filename);
+		LOGERR("image read/write error: %s\n", base_filename);
 	}
 	
     total_ntests++;

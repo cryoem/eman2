@@ -152,7 +152,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 	case CTF_ABS_SNR:
 		if (!sf) {
-			Log::logger()->error("CTF computation error, no SF found\n");
+			LOGERR("CTF computation error, no SF found\n");
 			return r;
 		}
 
@@ -169,7 +169,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 	case CTF_SNR_WIENER:
 		if (!sf) {
-			Log::logger()->error("CTF computation error, no SF found\n");
+			LOGERR("CTF computation error, no SF found\n");
 			return r;
 		}
 
@@ -187,7 +187,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 	case CTF_WIENER_CTF_CORRECTION1:
 		if (!sf) {
-			Log::logger()->error("CTF computation error, no SF found\n");
+			LOGERR("CTF computation error, no SF found\n");
 			return r;
 		}
 
@@ -212,7 +212,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 	case CTF_WIENER_CTF_CORRECTION2:
 		if (!sf) {
-			Log::logger()->error("CTF computation error, no SF found\n");
+			LOGERR("CTF computation error, no SF found\n");
 			return r;
 		}
 
@@ -235,7 +235,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 
 	case CTF_TOTAL_CURVE:
 		if (!sf) {
-			Log::logger()->error("CTF computation error, no SF found\n");
+			LOGERR("CTF computation error, no SF found\n");
 			return r;
 		}
 
@@ -270,12 +270,12 @@ void SimpleCtf::compute_2d_real(EMData *, CtfType, XYData *)
 void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 {
 	if (!image) {
-		Log::logger()->error("image is null. cannot computer 2D complex CTF");
+		LOGERR("image is null. cannot computer 2D complex CTF");
 		return;
 	}
 
 	if (image->is_complex() == false) {
-		Log::logger()->error("compute_2d_complex can only work on complex images");
+		LOGERR("compute_2d_complex can only work on complex images");
 		return;
 	}
 
@@ -283,7 +283,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	int ny = image->get_ysize();
 
 	if (nx != ny + 2) {
-		Log::logger()->error("compute_2d_complex only works on (nx, nx-2) images");
+		LOGERR("compute_2d_complex only works on (nx, nx-2) images");
 		return;
 	}
 

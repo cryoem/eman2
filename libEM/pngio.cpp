@@ -45,7 +45,7 @@ int PngIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("PngIO::init()");
+	LOGDEBUG("PngIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -64,14 +64,14 @@ int PngIO::init()
 	}
 
 	if (!png_ptr) {
-		Log::logger()->error("cannot initialize libpng data structure");
+		LOGERR("cannot initialize libpng data structure");
 		err = 1;
 		return 1;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr) {
-		Log::logger()->error("cannot create png info data structure");
+		LOGERR("cannot create png info data structure");
 		err = 1;
 		return 1;
 	}
@@ -79,13 +79,13 @@ int PngIO::init()
 
 	end_info = png_create_info_struct(png_ptr);
 	if (!end_info) {
-		Log::logger()->error("cannot create png end info structure");
+		LOGERR("cannot create png end info structure");
 		err = 1;
 		return 1;
 	}
 
 	if (setjmp(png_ptr->jmpbuf)) {
-		Log::logger()->error("an error occurs within png");
+		LOGERR("an error occurs within png");
 		err = 1;
 		return 1;
 	}
@@ -96,7 +96,7 @@ int PngIO::init()
 		unsigned char header[PNG_BYTES_TO_CHECK];
 		fread(header, sizeof(unsigned char), PNG_BYTES_TO_CHECK, png_file);
 		if (!is_valid(header)) {
-			Log::logger()->error("Image '%s' not in png format.", filename.c_str());
+			LOGERR("Image '%s' not in png format.", filename.c_str());
 			err = 1;
 			return 1;
 		}
@@ -111,7 +111,7 @@ int PngIO::init()
 		int color_type = png_get_color_type(png_ptr, info_ptr);
 
 		if (nx == 0 || ny == 0) {
-			Log::logger()->error("not a valid PNG file. width = %d, height = %d", nx, ny);
+			LOGERR("not a valid PNG file. width = %d, height = %d", nx, ny);
 			err = 1;
 			return 1;
 		}
@@ -124,7 +124,7 @@ int PngIO::init()
 		}
 		else {
 			depth_type = PNG_INVALID_DEPTH;
-			Log::logger()->error("sorry, I don't know how to handle png with depth = %d bit",
+			LOGERR("sorry, I don't know how to handle png with depth = %d bit",
 								 bit_depth);
 			err = 1;
 			return 1;
@@ -150,7 +150,7 @@ int PngIO::init()
 
 bool PngIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("PngIO::is_valid()");
+	LOGDEBUG("PngIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -163,7 +163,7 @@ bool PngIO::is_valid(const void *first_block)
 
 int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("PngIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("PngIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -189,7 +189,7 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 		dict["datatype"] = EMUtil::EM_USHORT;
 	}
 	else {
-		Log::logger()->error("invalid PNG bit depth. don't know how to handle this png type");
+		LOGERR("invalid PNG bit depth. don't know how to handle this png type");
 	}
 
 	return 0;
@@ -197,7 +197,7 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 int PngIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("PngIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("PngIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -217,9 +217,9 @@ int PngIO::write_header(const Dict & dict, int image_index, bool)
 	}
 	else {
 		if (datatype != EMUtil::EM_USHORT) {
-			Log::logger()->warn("Don't support data type '%s' in PNG. Convert to '%s'.",
-								EMUtil::get_datatype_string(datatype),
-								EMUtil::get_datatype_string(EMUtil::EM_USHORT));
+			LOGWARN("Don't support data type '%s' in PNG. Convert to '%s'.",
+					EMUtil::get_datatype_string(datatype),
+					EMUtil::get_datatype_string(EMUtil::EM_USHORT));
 		}
 		depth_type = PNG_SHORT_DEPTH;
 		bit_depth = sizeof(unsigned short) * CHAR_BIT;
@@ -239,7 +239,7 @@ int PngIO::write_header(const Dict & dict, int image_index, bool)
 
 int PngIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("PngIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("PngIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -295,7 +295,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool is_
 
 int PngIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("PngIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("PngIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

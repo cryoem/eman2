@@ -55,13 +55,13 @@ int MrcIO::init()
 
 	if (!is_new_file) {
 		if (fread(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
-			Log::logger()->error("read header failed on file: '%s'", filename.c_str());
+			LOGERR("read header failed on file: '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid(&mrch)) {
-			Log::logger()->error("'%s' is not a valid MRC file", filename.c_str());
+			LOGERR("'%s' is not a valid MRC file", filename.c_str());
 			err = 1;
 			return err;
 		}
@@ -75,7 +75,7 @@ int MrcIO::init()
 		mode_size = get_mode_size(mrch.mode);
 
 		if (mrch.nxstart != 0 || mrch.nystart != 0 || mrch.nzstart != 0) {
-			Log::logger()->warn("nx/ny/nz start not zero");
+			LOGWARN("nx/ny/nz start not zero");
 		}
 
 		if (is_complex_mode()) {
@@ -107,7 +107,7 @@ bool MrcIO::is_image_big_endian()
 
 bool MrcIO::is_valid(const void *first_block, off_t file_size)
 {
-	Log::logger()->log("MrcIO::is_valid");
+	LOGDEBUG("MrcIO::is_valid");
 
 	if (!first_block) {
 		return false;
@@ -152,7 +152,7 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
 int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("MrcIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("MrcIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -162,7 +162,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 		return 1;
 	}
 	if (area && area->get_ndim() > 2 && image_index > 0) {
-		Log::logger()->warn("when reading 3D region in MRC, image index must be 0");
+		LOGWARN("when reading 3D region in MRC, image index must be 0");
 		image_index = 0;
 	}
 
@@ -249,7 +249,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 int MrcIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("MrcIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("MrcIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -268,7 +268,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 		}
 
 		if (new_mode != mrch.mode) {
-			Log::logger()->error("cannot write to different mode file %sn", filename.c_str());
+			LOGERR("cannot write to different mode file %sn", filename.c_str());
 			return 1;
 		}
 
@@ -356,7 +356,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 	}
 	
 	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
-		Log::logger()->error("cannot write mrc header to file '%s'", filename.c_str());
+		LOGERR("cannot write mrc header to file '%s'", filename.c_str());
 		return 1;
 	}
 
@@ -367,7 +367,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 
 int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("MrcIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("MrcIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, rdata) != 0) {
 		return 1;
@@ -376,11 +376,11 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 	assert(!is_3d);
 
 	if (area && is_complex_mode()) {
-		Log::logger()->error("Error: cannot read a region of a complex image.");
+		LOGERR("Error: cannot read a region of a complex image.");
 		return 1;
 	}
 	if (area && area->get_ndim() > 2 && image_index > 0) {
-		Log::logger()->warn("when reading 3D region in MRC, image index must be 0");
+		LOGWARN("when reading 3D region in MRC, image index must be 0");
 		image_index = 0;
 	}
 
@@ -435,7 +435,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 
 int MrcIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("MrcIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("MrcIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -536,7 +536,7 @@ bool MrcIO::is_complex_mode()
 
 int MrcIO::read_ctf(Ctf & ctf, int)
 {
-	Log::logger()->log("MrcIO::read_ctfit()");
+	LOGDEBUG("MrcIO::read_ctfit()");
 	if (init() != 0) {
 		return 1;
 	}
@@ -553,7 +553,7 @@ int MrcIO::read_ctf(Ctf & ctf, int)
 
 int MrcIO::write_ctf(const Ctf & ctf, int)
 {
-	Log::logger()->log("MrcIO::write_ctfit()");
+	LOGDEBUG("MrcIO::write_ctfit()");
 	if (init() != 0) {
 		return 1;
 	}
@@ -563,7 +563,7 @@ int MrcIO::write_ctf(const Ctf & ctf, int)
 	rewind(mrcfile);
 
 	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
-		Log::logger()->error("cannot write MRC header to file '%s'", filename.c_str());
+		LOGERR("cannot write MRC header to file '%s'", filename.c_str());
 		return 1;
 	}
 
@@ -632,7 +632,7 @@ int MrcIO::to_em_datatype(int m)
 
 int MrcIO::to_mrcmode(int e, bool is_complex)
 {
-	Log::logger()->log("MrcIO::to_mrcmode");
+	LOGDEBUG("MrcIO::to_mrcmode");
 
 	MrcMode m = MRC_UNKNOWN;
 	EMUtil::EMDataType em_type = static_cast < EMUtil::EMDataType > (e);
@@ -669,7 +669,7 @@ int MrcIO::to_mrcmode(int e, bool is_complex)
 		m = MRC_FLOAT_COMPLEX;
 		break;
 	default:
-		Log::logger()->error("unknown MRC mode: %s", EMUtil::get_datatype_string(em_type));
+		LOGERR("unknown MRC mode: %s", EMUtil::get_datatype_string(em_type));
 		m = MRC_UNKNOWN;
 	}
 

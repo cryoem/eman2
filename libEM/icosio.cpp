@@ -31,7 +31,7 @@ int IcosIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("IcosIO::init()");
+	LOGDEBUG("IcosIO::init()");
 	initialized = true;
 
 	icos_file = sfopen(filename, rw_mode, &is_new_file);
@@ -42,13 +42,13 @@ int IcosIO::init()
 
 	if (!is_new_file) {
 		if (fread(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
-			Log::logger()->error("cannot read ICOS file '%s'", filename.c_str());
+			LOGERR("cannot read ICOS file '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid(&icosh)) {
-			Log::logger()->error("invalid ICOS file");
+			LOGERR("invalid ICOS file");
 			err = 1;
 			return err;
 		}
@@ -62,7 +62,7 @@ int IcosIO::init()
 
 bool IcosIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("IcosIO::is_valid()");
+	LOGDEBUG("IcosIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -90,7 +90,7 @@ bool IcosIO::is_valid(const void *first_block)
 
 int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("IcosIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("IcosIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -121,13 +121,13 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 
 int IcosIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("IcosIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("IcosIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
 
 	if (image_index > 0) {
-		Log::logger()->error("image_index = %d. appending to ICOS file is not supported.",
+		LOGERR("image_index = %d. appending to ICOS file is not supported.",
 							 image_index);
 		return 1;
 	}
@@ -145,7 +145,7 @@ int IcosIO::write_header(const Dict & dict, int image_index, bool)
 	icosh.max = dict["maximum"];
 
 	if (fwrite(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
-		Log::logger()->error("cannot write header to file '%s'", filename.c_str());
+		LOGERR("cannot write header to file '%s'", filename.c_str());
 		return 1;
 	}
 
@@ -154,14 +154,14 @@ int IcosIO::write_header(const Dict & dict, int image_index, bool)
 
 int IcosIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("IcosIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("IcosIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
 
 	if (is_3d && image_index != 0) {
-		Log::logger()->warn("read whole 3D image. reset image index from %d to 0", image_index);
+		LOGWARN("read whole 3D image. reset image index from %d to 0", image_index);
 		image_index = 0;
 	}
 
@@ -197,7 +197,7 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool is
 	for (int j = 0; j < nrows; j++) {
 		portable_fseek(icos_file, int_size, SEEK_CUR);
 		if (fread(&data[j * icosh.nx], data_row_size, 1, icos_file) != 1) {
-			Log::logger()->error("incomplete data read %d/%d blocks on file '%s'", j, nrows,
+			LOGERR("incomplete data read %d/%d blocks on file '%s'", j, nrows,
 								 filename.c_str());
 		}
 		portable_fseek(icos_file, int_size, SEEK_CUR);
@@ -214,18 +214,18 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool is
 
 int IcosIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("IcosIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("IcosIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
 
 	if (icosh.nx <= 0) {
-		Log::logger()->error("Please write a valid ICOS header before you write the data");
+		LOGERR("Please write a valid ICOS header before you write the data");
 		return 1;
 	}
 
 	if (image_index > 0) {
-		Log::logger()->error("image_index = %d. appending to ICOS file is not supported.",
+		LOGERR("image_index = %d. appending to ICOS file is not supported.",
 							 image_index);
 		return 1;
 	}
@@ -243,7 +243,7 @@ int IcosIO::write_data(float *data, int image_index, bool)
 	for (int j = 0; j < nrows; j++) {
 		memcpy(&buf[1], &data[nx * j], nx * float_size);
 		if (fwrite(buf, row_size, 1, icos_file) != 1) {
-			Log::logger()->error("writing ICOS data out failed");
+			LOGERR("writing ICOS data out failed");
 			err = 1;
 			break;
 		}

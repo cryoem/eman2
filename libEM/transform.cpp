@@ -1332,7 +1332,7 @@ Rotation Rotation::get_sym(int n)
 	case ISYM:
 		ret.set_angle(0, 0, 0, Rotation::EMAN);
 	default:
-		Log::logger()->error("I don't know this symmetry: %s", symname.c_str());
+		LOGERR("I don't know this symmetry: %s", symname.c_str());
 	}
 
 	ret = (*this) * ret;
@@ -1377,7 +1377,7 @@ void Rotation::set_angle(float a1, float a2, float a3, Type t)
 		// nothing
 	}
 	else {
-		Log::logger()->error("unknown Euler angle convention: %d\n", type);
+		LOGERR("unknown Euler angle convention: %d\n", type);
 		return;
 	}
 	// for eman: a1: alt, a2: az, a3: phi.
@@ -1400,7 +1400,7 @@ void Rotation::set_angle(float e1, float e2, float e3, float e0, Type t)
 {
 	type = t;
 	if (type != SPIN && type != SGIROT && type != QUATERNION) {
-		Log::logger()->error("unknown Euler angle convention: %d\n", type);
+		LOGERR("unknown Euler angle convention: %d\n", type);
 		return;
 	}
 

@@ -55,7 +55,10 @@ int main(int argc, char* argv[])
 
     if (stat) {
 		printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
-			   d->get_mean(), d->get_sigma(), d->get_skewness(), d->get_kurtosis());
+			   (float) d->get_attr("mean"),
+			   (float) d->get_attr("sigma"),
+			   (float) d->get_attr("skewness"),
+			   (float) d->get_attr("kurtosis"));
     }
     
     Ctf* ctf = d->get_ctf();

@@ -16,6 +16,7 @@
 #include <float.h>
 #include <math.h>
 #include <assert.h>
+#include <algorithm>
 
 using namespace EMAN;
 
@@ -39,9 +40,6 @@ EMData::EMData()
 	nx = 0;
 	ny = 0;
 	nz = 0;
-
-	average_nimg = -1;
-	align_score = 0;
 }
 
 EMData::~EMData()
@@ -70,7 +68,7 @@ EMData::~EMData()
 void EMData::read_image(string filename, int img_index, bool nodata,
 						const Region * r, bool is_3d)
 {
-	Log::logger()->log("\n\nEMData::read_image() on file '%s'", filename.c_str());
+	LOGDEBUG("\n\nEMData::read_image() on file '%s'", filename.c_str());
 
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 	
@@ -127,7 +125,7 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
 						 bool header_only, bool use_host_endian) 
 {
-	Log::logger()->log("\n\nEMData::write_image() on file '%s'", filename.c_str());
+	LOGDEBUG("\n\nEMData::write_image() on file '%s'", filename.c_str());
 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		char *ext = strrchr(filename.c_str(), '.');
@@ -247,11 +245,10 @@ EMData *EMData::copy(bool with_parent)
 	ret->rfp = 0;
 
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
-	ret->average_nimg = average_nimg;
+
 	ret->all_translation = all_translation;
 	ret->all_rotation = all_rotation;
 
-	ret->align_score = align_score;
 	ret->name = name;
 	ret->path = path;
 	ret->pathnum = pathnum;
@@ -274,11 +271,10 @@ EMData *EMData::copy_head()
 	ret->rfp = 0;
 
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
-	ret->average_nimg = average_nimg;
+
 	ret->all_translation = all_translation;
 	ret->all_rotation = all_rotation;
 
-	ret->align_score = align_score;
 	ret->name = name;
 	ret->path = path;
 	ret->pathnum = pathnum;
@@ -292,17 +288,17 @@ EMData *EMData::copy_head()
 EMData *EMData::get_clip(const Region & area)
 {
 	if (get_ndim() != area.get_ndim()) {
-		Log::logger()->error("cannot get %dD clip out of %dD image", get_ndim(), area.get_ndim());
+		LOGERR("cannot get %dD clip out of %dD image", get_ndim(), area.get_ndim());
 		return 0;
 	}
 
 	EMData *result = new EMData();
-	int zsize = area.size.zsize;
+	int zsize = area.size.z;
 	if (zsize == 0 || nz <= 1) {
 		zsize = 1;
 	}
 
-	result->set_size(area.size.xsize, area.size.ysize, zsize);
+	result->set_size(area.size.x, area.size.y, zsize);
 
 	int x0 = (int) area.origin.x;
 	x0 = x0 < 0 ? 0 : x0;
@@ -310,7 +306,7 @@ EMData *EMData::get_clip(const Region & area)
 	int y0 = (int) area.origin.y;
 	y0 = y0 < 0 ? 0 : y0;
 
-	int y1 = (int) (area.origin.y + area.size.ysize);
+	int y1 = (int) (area.origin.y + area.size.y);
 	y1 = y1 > ny ? ny : y1;
 
 	int yd0 = (int) (area.origin.y < 0 ? -area.origin.y : 0);
@@ -319,24 +315,24 @@ EMData *EMData::get_clip(const Region & area)
 	int z0 = (int) area.origin.z;
 	int z1 = (int) (area.origin.z + zsize);
 
-	int result_nx = area.size.xsize;
+	int result_nx = area.size.x;
 	if (result_nx > nx) {
 		result_nx = nx;
 	}
 
 	int result_row_size = result_nx * sizeof(float);
 	int sec_size = nx * ny;
-	int result_sec_size = area.size.xsize * area.size.ysize;
+	int result_sec_size = area.size.x * area.size.y;
 
 	float *src = rdata + y0 * nx + x0;
 	float *dst = result->get_data();
-	dst += yd0 * area.size.xsize + xd0;
+	dst += yd0 * area.size.x + xd0;
 
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
 			memcpy(dst, src, result_row_size);
 			src += nx;
-			dst += area.size.xsize;
+			dst += area.size.x;
 		}
 		src += sec_size;
 		dst += result_sec_size;
@@ -366,7 +362,6 @@ EMData *EMData::get_clip(const Region & area)
 	result->set_name(name);
 	result->set_path(path);
 	result->set_pathnum(pathnum);
-	result->set_average_nimg(average_nimg);
 
 	return result;
 }
@@ -380,7 +375,7 @@ void EMData::insert_clip(EMData * block, const Point < int >&origin)
 	Region area(nx1, ny1, nz1, origin.x, origin.y, origin.z);
 #if 0
 	if (area.inside_region(Size(nx, ny, nz))) {
-		Log::logger()->error("outside of destination image not supported.");
+		LOGERR("outside of destination image not supported.");
 		return;
 	}
 #endif
@@ -450,7 +445,7 @@ if (get_ndim()==3) {
 	}
 	update();
 }
-else Log::logger()->error("insert_scaled_sum supports only 3D data");
+else LOGERR("insert_scaled_sum supports only 3D data");
 
 }
 
@@ -551,12 +546,12 @@ EMData *EMData::do_fft()
 EMData *EMData::do_ift()
 {
 	if (!is_complex()) {
-		Log::logger()->error("cannot run IFT on real-space image");
+		LOGERR("cannot run IFT on real-space image");
 		return 0;
 	}
 
 	if (!is_ri()) {
-		Log::logger()->warn("run IFT on AP data, only RI should be used. ");
+		LOGWARN("run IFT on AP data, only RI should be used. ");
 	}
 
 	EMData *dat = copy_head();
@@ -647,7 +642,7 @@ EMData *EMData::do_ift()
 Point < float >EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
 {
 	if (!is_complex() || !slice->is_complex() || !parent) {
-		Log::logger()->error("normalize slice only works on complex images");
+		LOGERR("normalize slice only works on complex images");
 		return Point < float >();
 	}
 
@@ -743,8 +738,8 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 	static int prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
 
 	if (histmin == histmax) {
-		histmin = get_min();
-		histmax = get_max();
+		histmin = get_attr("minimum");
+		histmax = get_attr("maximum");
 	}
 
 	if (!add) {
@@ -821,7 +816,8 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 	float *with_data = with->get_data();
 	float *ret_data = ret->get_data();
 
-	float sum2 = (Util::square(with->get_sigma()) + Util::square(with->get_mean()));
+	float sum2 = (Util::square((float)with->get_attr("sigma")) +
+				  Util::square((float)with->get_attr("mean")));
 
 	if (do_sigma) {
 		for (int j = ny2 / 2; j < ny - ny2 / 2; j++) {
@@ -841,7 +837,8 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 					}
 				}
 				float tmp_f1 = (sum1 / 2.0f - sum) / (nx2 * ny2);
-				float tmp_f2 = Util::square(with->get_mean() - summ / (nx2 * ny2));
+				float tmp_f2 = Util::square((float)with->get_attr("mean") -
+											summ / (nx2 * ny2));
 				ret_data[i + j * nx] = sum2 + tmp_f1 - tmp_f2;
 			}
 		}
@@ -878,7 +875,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 					ret_data[i + j * nx] = 0;
 				}
 				else {
-					ret_data[i + j * nx] = dot / (nx2 * ny2 * dot2 * with->get_sigma());
+					ret_data[i + j * nx] = dot / (nx2 * ny2 * dot2 * (float)with->get_attr("sigma"));
 				}
 			}
 		}
@@ -1533,7 +1530,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 	}
 
 	if (!EMUtil::is_same_size(this, with)) {
-		Log::logger()->error("size mismatch in calc_fourier_shell_correlation");
+		LOGERR("size mismatch in calc_fourier_shell_correlation");
 		return vector < float >();
 	}
 
@@ -1759,7 +1756,7 @@ void EMData::update_stat()
 		}
 	}
 
-	double size = 1.0f * nx * ny * nz;
+	size_t size = nx * ny * nz;
 	float mean = sum * step / size;
 
 	if (n_nonzero == 0) {
@@ -1776,10 +1773,25 @@ void EMData::update_stat()
 	float sigma = sqrt(tmp1);
 	float sigma_nonzero = square_sum * step / n_nonzero - mean_nonzero * mean_nonzero;
 
+	double kurtosis_sum = 0;
+	double skewness_sum = 0;
+	
+	for (size_t k = 0; k < size; k++) {
+		float t = (rdata[k] - mean) / sigma;
+		kurtosis_sum += pow(t, 4.0f);
+		skewness_sum +=  pow(t, 3.0f);
+	}
+
+	float kurtosis = (float)(kurtosis_sum / size - 3.0);
+	float skewness = (float)(skewness_sum / size);
+	
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
 	attr_dict["mean"] = mean;
 	attr_dict["sigma"] = sigma;
+	attr_dict["kurtosis"] = kurtosis;
+	attr_dict["skewness"] = skewness;
+	
 	attr_dict["square_sum"] = square_sum;
 	attr_dict["mean_nonzero"] = mean_nonzero;
 	attr_dict["sigma_nonzero"] = sigma_nonzero;
@@ -1831,36 +1843,6 @@ Dict EMData::get_attr_dict()
 	return Dict(attr_dict);
 }
 
-void EMData::set_attr_dict(string key, EMObject val)
-{
-	attr_dict[key] = val;
-}
-
-float EMData::get_skewness()
-{
-	float mean = get_mean();
-	float sigma = get_sigma();
-	double k = 0;
-	int size = nx * ny * nz;
-	for (int i = 0; i < size; i++) {
-		k += pow((rdata[i] - mean) / sigma, 3.0f);
-	}
-	return (k / size);
-}
-
-float EMData::get_kurtosis()
-{
-	float mean = get_mean();
-	float sigma = get_sigma();
-
-	double k = 0;
-	int size = nx * ny * nz;
-	for (int i = 0; i < size; i++) {
-		k += pow((rdata[i] - mean) / sigma, 4.0f);
-	}
-	return (k / size - 3.0f);
-}
-
 
 void EMData::dump_data(string filename)
 {
@@ -1869,7 +1851,7 @@ void EMData::dump_data(string filename)
 
 	FILE *hfile = fopen(headerfile.c_str(), "wb");
 	if (!hfile) {
-		Log::logger()->error("cannot open dump header file: %s", headerfile.c_str());
+		LOGERR("cannot open dump header file: %s", headerfile.c_str());
 		return;
 	}
 
@@ -1882,7 +1864,7 @@ void EMData::dump_data(string filename)
 
 	FILE *dfile = fopen(datafile.c_str(), "wb");
 	if (!dfile) {
-		Log::logger()->error("cannot open dump data file: %s", datafile.c_str());
+		LOGERR("cannot open dump data file: %s", datafile.c_str());
 		return;
 	}
 
@@ -1999,7 +1981,7 @@ EMData & EMData::operator*=(float n)
 EMData & EMData::operator/=(float n)
 {
 	if (n == 0) {
-		Log::logger()->error("divided by zero");
+		LOGERR("divided by zero");
 		return *this;
 	}
 	*this *= (1.0f / n);
@@ -2125,12 +2107,12 @@ EMData EMAN::operator/(const EMData & a, const EMData & b)
 double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 {
 	if (!EMUtil::is_same_size(this, with)) {
-		Log::logger()->error("dot_rotate_translate requires same size image");
+		LOGERR("dot_rotate_translate requires same size image");
 		return 0;
 	}
 
 	if (nz != 1) {
-		Log::logger()->error("dot_rotate_translate can only handle 2D images");
+		LOGERR("dot_rotate_translate can only handle 2D images");
 		return 0;
 	}
 
@@ -2301,7 +2283,7 @@ void EMData::translate(float dx, float dy, float dz)
 void EMData::translate(const Vec3 < float >&translation)
 {
 	if (nz != 1) {
-		Log::logger()->error("3D translation not supported yet");
+		LOGERR("3D translation not supported yet");
 		return;
 	}
 
@@ -2751,7 +2733,7 @@ void EMData::rotate_180()
 EMData *EMData::do_radon()
 {
 	if (nx != ny || nz != 1) {
-		Log::logger()->error("Radon transform only works on square 2D images");
+		LOGERR("Radon transform only works on square 2D images");
 		return 0;
 	}
 
@@ -2954,7 +2936,7 @@ void EMData::median_shrink(int shrink_factor)
 	mbuf = 0;
 }
 
-Point < int >EMData::get_min_location() const
+Point < int >EMData::calc_min_location() const
 {
 	int di = 1;
 	if (is_complex() && !is_ri()) {
@@ -2974,10 +2956,12 @@ Point < int >EMData::get_min_location() const
 			int cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
-				if (rdata[l + cur_y] < min) {
-					min_z = j;
-					min_y = k;
+				float t = rdata[l + cur_y];
+				if (t < min) {
 					min_x = l;
+					min_y = k;
+					min_z = j;
+					min = t;
 				}
 			}
 		}
@@ -2986,7 +2970,7 @@ Point < int >EMData::get_min_location() const
 	return Point < int >(min_x, min_y, min_z);
 }
 
-Point < int >EMData::get_max_location() const
+Point < int >EMData::calc_max_location() const
 {
 	int di = 1;
 	if (is_complex() && !is_ri()) {
@@ -3006,10 +2990,12 @@ Point < int >EMData::get_max_location() const
 			int cur_y = k * nx + cur_z;
 
 			for (int l = 0; l < nx; l += di) {
-				if (rdata[l + cur_y] > max) {
-					max_z = j;
-					max_y = k;
+				float t = rdata[l + cur_y];
+				if (t > max) {
 					max_x = l;
+					max_y = k;
+					max_z = j;
+					max = t;
 				}
 			}
 		}
@@ -3020,17 +3006,17 @@ Point < int >EMData::get_max_location() const
 
 
 
-int EMData::get_min_index() const
+int EMData::calc_min_index() const
 {
-	Point < int >min_location = get_min_location();
+	Point < int >min_location = calc_min_location();
 	int i = min_location.x + min_location.y * nx + min_location.z * nx * ny;
 	return i;
 }
 
 
-int EMData::get_max_index() const
+int EMData::calc_max_index() const
 {
-	Point < int >max_location = get_max_location();
+	Point < int >max_location = calc_max_location();
 	int i = max_location.x + max_location.y * nx + max_location.z * nx * ny;
 	return i;
 }
@@ -3038,16 +3024,16 @@ int EMData::get_max_index() const
 EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 {
 	if (!with) {
-		Log::logger()->error("Empty 'with' image. calc_ccfx requires 'with'.");
+		LOGERR("Empty 'with' image. calc_ccfx requires 'with'.");
 		return 0;
 	}
 
 	if (!EMUtil::is_same_size(this, with)) {
-		Log::logger()->error("calc_ccfx must have 2 images of the same size");
+		LOGERR("calc_ccfx must have 2 images of the same size");
 		return 0;
 	}
 	if (nz > 1) {
-		Log::logger()->error("calc_ccfx only works on 2D images");
+		LOGERR("calc_ccfx only works on 2D images");
 		return 0;
 	}
 
@@ -3279,7 +3265,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 
 	if (filter) {
 		if (!EMUtil::is_same_size(filter, cf)) {
-			Log::logger()->error("calc_ccf: cannot apply improperly sized filter!");
+			LOGERR("calc_ccf: cannot apply improperly sized filter!");
 			return 0;
 		}
 
@@ -3288,7 +3274,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 	}
 
 	if (with && !EMUtil::is_same_size(f1, cf)) {
-		Log::logger()->error("calc_ccf: Images must be the same size.");
+		LOGERR("calc_ccf: Images must be the same size.");
 		return 0;
 	}
 
@@ -3420,7 +3406,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * filter)
 {
 	if (with && !EMUtil::is_same_size(this, with)) {
-		Log::logger()->error("to calculate mutual correlation, Images must be the same size.");
+		LOGERR("to calculate mutual correlation, Images must be the same size.");
 		return 0;
 	}
 
@@ -3453,7 +3439,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 
 	if (filter) {
 		if (!EMUtil::is_same_size(filter, cf)) {
-			Log::logger()->error("cannot apply improperly sized filter");
+			LOGERR("cannot apply improperly sized filter");
 			return 0;
 		}
 
@@ -3571,7 +3557,7 @@ void EMData::add_incoherent(EMData * obj)
 	}
 
 	if (!obj->is_complex() || !is_complex()) {
-		Log::logger()->error("add incoherent can only work on complex images");
+		LOGERR("add incoherent can only work on complex images");
 		return;
 	}
 
@@ -3690,7 +3676,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, float awid)
 {
 	if (nz > 1) {
-		Log::logger()->error("calc radial dist: can only handle 2D images.");
+		LOGERR("calc radial dist: can only handle 2D images.");
 		return vector < float >();
 	}
 
@@ -3850,7 +3836,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 {
 	if (!with) {
-		Log::logger()->error("input image is NULL");
+		LOGERR("input image is NULL");
 		return 0;
 	}
 
@@ -3867,10 +3853,10 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 	int img1_nz = img1->get_zsize();
 	int img1_size = img1_nx * img1_ny * img1_nz;
 
-	float img1min = img1->get_min();
+	float img1min = img1->get_attr("minimum");
 	img1->add(-img1min);
 
-	float img2min = img2->get_min();
+	float img2min = img2->get_attr("minimum");
 	img2->add(-img2min);
 
 	filter_dict["outer_radius"] = radius;
@@ -3902,7 +3888,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 
 	float sq = ((num * sumsq - lsum * lsum) / (num * num));
 	if (sq < 0) {
-		Log::logger()->error("sigma < 0");
+		LOGERR("sigma < 0");
 		return 0;
 	}
 
@@ -4017,7 +4003,7 @@ EMData *EMData::convolute(EMData * with)
 	}
 
 	if (with && !EMUtil::is_same_size(f1, cf)) {
-		Log::logger()->error("Convolution: Images must be the same size.");
+		LOGERR("Convolution: Images must be the same size.");
 		return 0;
 	}
 
@@ -4102,7 +4088,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 			if (x < 0) {
 				x = -x;
 				y = -y;
-				Log::logger()->error("CCL ERROR %d, %f !\n", i, -x);
+				LOGERR("CCL ERROR %d, %f !\n", i, -x);
 			}
 
 			int k = (int) (floor(x) * 2 + floor(y + image2_ny / 2) * image2_nx);
@@ -4519,6 +4505,37 @@ void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float
 	map->done_data();
 }
 
+vector<Pixel> EMData::calc_highest_locations(float threshold)
+{
+	vector<Pixel> result;
+	
+	int di = 1;
+	if (is_complex() && !is_ri()) {
+		di = 2;
+	}
+
+	int nxy = nx * ny;
+
+	for (int j = 0; j < nz; j++) {
+		int cur_z = j * nxy;
+
+		for (int k = 0; k < ny; k++) {
+			int cur_y = k * nx + cur_z;
+
+			for (int l = 0; l < nx; l += di) {
+				float v = rdata[l + cur_y];
+				if (v > threshold) {
+					result.push_back(Pixel(l, k, j, v));
+				}
+			}
+		}
+	}
+
+	std::sort(result.begin(), result.end());
+	
+	return result;
+}
+
 
 float EMData::get_edge_mean() const
 {
@@ -4688,12 +4705,12 @@ void EMData::set_col(const EMData * d, int n)
 	done_data();
 }
 
-float EMData::get_density_center()
+float EMData::calc_density_center()
 {
-	float center = get_mean();
-	float sigma = get_sigma();
+	float center = get_attr("mean");
+	float sigma = get_attr("sigma");
 	float ds = sigma / 2;
-	int size = nx * ny * nz;
+	size_t size = nx * ny * nz;
 	float *d = get_data();
 	float sigma1 = sigma / 20;
 	float sigma2 = sigma / 1000;
@@ -4702,7 +4719,7 @@ float EMData::get_density_center()
 		double sum = 0;
 		int norm = 0;
 
-		for (int i = 0; i < size; i++) {
+		for (size_t i = 0; i < size; i++) {
 			if (fabs(d[i] - center) < ds) {
 				sum += d[i];
 				norm++;
@@ -4721,19 +4738,20 @@ float EMData::get_density_center()
 	return center;
 }
 
-float EMData::get_sigma_diff()
+float EMData::calc_sigma_diff()
 {
 	float *d = get_data();
-	float mean = get_mean();
-
+	float mean = get_attr("mean");
+	float sigma = get_attr("sigma");
+	
 	double sum_up = 0;
 	double sum_down = 0;
 	int nup = 0;
 	int ndown = 0;
 
-	int size = nx * ny * nz;
+	size_t size = nx * ny * nz;
 
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 		if (d[i] > mean) {
 			sum_up += Util::square(d[i] - mean);
 			nup++;
@@ -4746,7 +4764,7 @@ float EMData::get_sigma_diff()
 
 	float sigup = sqrt(sum_up / nup);
 	float sigdown = sqrt(sum_down / ndown);
-	float sig_diff = fabs(sigup - sigdown) / get_sigma();
+	float sig_diff = fabs(sigup - sigdown) / sigma;
 
 	return sig_diff;
 

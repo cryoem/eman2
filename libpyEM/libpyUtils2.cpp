@@ -293,9 +293,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 
     enum_< EMAN::Log::LogLevel >("LogLevel")
         .value("ERROR_LOG", EMAN::Log::ERROR_LOG)
-        .value("NORMAL_LOG", EMAN::Log::NORMAL_LOG)
-        .value("WARNING_LOG", EMAN::Log::WARNING_LOG)
         .value("VARIABLE_LOG", EMAN::Log::VARIABLE_LOG)
+        .value("WARNING_LOG", EMAN::Log::WARNING_LOG)
+        .value("DEBUG_LOG", EMAN::Log::DEBUG_LOG)
     ;
 
     delete EMAN_Log_scope;

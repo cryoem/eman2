@@ -48,7 +48,7 @@ int HdfIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("HdfIO::init()");
+	LOGDEBUG("HdfIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -61,12 +61,12 @@ int HdfIO::init()
 	if (!is_new_file) {
 		char buf[128];
 		if (fread(buf, sizeof(buf), 1, tmp_file) != 1) {
-			Log::logger()->error("cannot read file '%s'", filename.c_str());
+			LOGERR("cannot read file '%s'", filename.c_str());
 			err = 1;
 		}
 		else {
 			if (!is_valid(&buf)) {
-				Log::logger()->error("'%s' is not a valid HDF5 file", filename.c_str());
+				LOGERR("'%s' is not a valid HDF5 file", filename.c_str());
 				err = 1;
 			}
 		}
@@ -106,7 +106,7 @@ int HdfIO::init()
 
 bool HdfIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("HdfIO::is_valid()");
+	LOGDEBUG("HdfIO::is_valid()");
 	bool valid = false;
 
 	if (first_block) {
@@ -127,7 +127,7 @@ bool HdfIO::is_valid(const void *first_block)
 
 int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("HdfIO::read_header()");
+	LOGDEBUG("HdfIO::read_header()");
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -179,7 +179,7 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("HdfIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("HdfIO::read_data() from file '%s'", filename.c_str());
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
@@ -192,7 +192,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 		cur_dataset = H5Dopen(file, cur_dataset_name);
 
 		if (cur_dataset < 0) {
-			Log::logger()->error("hdf file has no image with id = %d", image_index);
+			LOGERR("hdf file has no image with id = %d", image_index);
 			return 1;
 		}
 	}
@@ -201,7 +201,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	H5T_class_t t_class = H5Tget_class(datatype);
 
 	if (t_class != H5T_FLOAT) {
-		Log::logger()->error("unknown data type '%d'. Can only read FLOAT data in HDF",
+		LOGERR("unknown data type '%d'. Can only read FLOAT data in HDF",
 							 (int) t_class);
 		H5Tclose(datatype);
 		return 1;
@@ -241,7 +241,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 
 		err = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, offset, NULL, count, NULL);
 		if (err < 0) {
-			Log::logger()->error("failed to create dataspace hyperslab when reading '%s'",
+			LOGERR("failed to create dataspace hyperslab when reading '%s'",
 								 filename.c_str());
 		}
 		else {
@@ -253,7 +253,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 
 			err = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, offset_out, NULL, count, NULL);
 			if (err < 0) {
-				Log::logger()->error("failed to create memspace hyperslab when reading '%s'",
+				LOGERR("failed to create memspace hyperslab when reading '%s'",
 									 filename.c_str());
 			}
 			else {
@@ -267,7 +267,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	}
 
 	if (err < 0) {
-		Log::logger()->error("reading %dth hdf image failed", image_index);
+		LOGERR("reading %dth hdf image failed", image_index);
 		return 1;
 	}
 
@@ -278,7 +278,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 
 int HdfIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("HdfIO::write_header()");
+	LOGDEBUG("HdfIO::write_header()");
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -289,7 +289,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, bool)
 
 	cur_dataset = create_dataset(image_index, nx, ny, nz);
 	if (cur_dataset < 0) {
-		Log::logger()->error("create dataset failed in hdf write header on file '%s'",
+		LOGERR("create dataset failed in hdf write header on file '%s'",
 							 filename.c_str());
 		return 1;
 	}
@@ -335,7 +335,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, bool)
 
 int HdfIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("HdfIO::write_data()");
+	LOGDEBUG("HdfIO::write_data()");
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -398,7 +398,7 @@ int HdfIO::read_global_int_attr(string attr_name)
 	int value = 0;
 	hid_t attr = H5Aopen_name(group, attr_name.c_str());
 	if (attr < 0) {
-		//Log::logger()->warn("no such hdf attribute '%s'", attr_name.c_str());
+		//LOGWARN("no such hdf attribute '%s'", attr_name.c_str());
 	}
 	else {
 		H5Aread(attr, H5T_NATIVE_INT, &value);
@@ -477,7 +477,7 @@ int HdfIO::read_int_attr(int image_index, string attr_name)
 		H5Aclose(attr);
 	}
 	else {
-		//Log::logger()->warn("no such hdf attribute '%s'", attr_name.c_str());
+		//LOGWARN("no such hdf attribute '%s'", attr_name.c_str());
 	}
 
 	return value;
@@ -500,7 +500,7 @@ float HdfIO::read_float_attr(string attr_name)
 		H5Aclose(attr);
 	}
 	else {
-		//Log::logger()->warn("no such hdf attribute '%s'", attr_name.c_str());
+		//LOGWARN("no such hdf attribute '%s'", attr_name.c_str());
 	}
 
 	return value;
@@ -515,7 +515,7 @@ string HdfIO::read_string_attr(int image_index, string attr_name)
 
 	string value = "";
 	if (attr < 0) {
-		//Log::logger()->warn("no such hdf attribute '%s'", attr_name.c_str());
+		//LOGWARN("no such hdf attribute '%s'", attr_name.c_str());
 	}
 	else {
 		char *tmp_value = new char[MAXPATHLEN];
@@ -542,7 +542,7 @@ int HdfIO::read_array_attr(int image_index, string attr_name, void *value)
 
 	hid_t attr = H5Aopen_name(cur_dataset, attr_name.c_str());
 	if (attr < 0) {
-		Log::logger()->error("no such hdf attribute '%s'", attr_name.c_str());
+		LOGERR("no such hdf attribute '%s'", attr_name.c_str());
 		err = 1;
 	}
 	else {
@@ -561,7 +561,7 @@ int HdfIO::read_euler_attr(int image_index, string)
 	   Euler::EulerType val;
 	   hid_t attr = H5Aopen_name(cur_dataset, attr_name.c_str());
 	   if (attr < 0) {
-	   Log::logger()->error(no such hdf attribute '%s'", attr_name.c_str());
+	   LOGERR(no such hdf attribute '%s'", attr_name.c_str());
 	   return attr;
 	   }
 	   H5Aread(attr, euler_type, &val);
@@ -580,7 +580,7 @@ int HdfIO::read_mapinfo_attr(int image_index, string attr_name)
 	MapInfoType val = ICOS_UNKNOWN;
 	hid_t attr = H5Aopen_name(cur_dataset, attr_name.c_str());
 	if (attr < 0) {
-		Log::logger()->error("no such hdf attribute '%s'", attr_name.c_str());
+		LOGERR("no such hdf attribute '%s'", attr_name.c_str());
 	}
 	else {
 		H5Aread(attr, mapinfo_type, &val);
@@ -835,7 +835,7 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 			(*dict)[name] = value;
 		}
 		else {
-			Log::logger()->error("can only handle float CTF parameters in HDF");
+			LOGERR("can only handle float CTF parameters in HDF");
 			exit(1);
 		}
 		H5Aclose(attr);
@@ -848,7 +848,7 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 // assume all ctf fields are floats.
 int HdfIO::read_ctf(Ctf & ctf, int image_index)
 {
-	Log::logger()->log("HdfIO::read_ctfit()");
+	LOGDEBUG("HdfIO::read_ctfit()");
 	if (init() != 0) {
 		return 1;
 	}
@@ -880,7 +880,7 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 // assume all ctf fields are floats.
 int HdfIO::write_ctf(const Ctf & ctf, int image_index)
 {
-	Log::logger()->log("HdfIO::write_ctfit()");
+	LOGDEBUG("HdfIO::write_ctfit()");
 	if (init() != 0) {
 		return 1;
 	}
@@ -1009,7 +1009,7 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 		int *dims = read_dims(image_index, &ndim);
 
 		if (ndim != 2 && ndim != 3) {
-			Log::logger()->error("only handle 2D/3D HDF5. Your file is %dD.", ndim);
+			LOGERR("only handle 2D/3D HDF5. Your file is %dD.", ndim);
 			return 1;
 		}
 		else {

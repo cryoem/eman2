@@ -5,7 +5,7 @@ Include("log.h")
 Log = Class("EMAN::Log", "log.h")
 set_policy(Log.logger, return_value_policy(reference_existing_object))
 exclude(Log.variable)
-exclude(Log.log)
+exclude(Log.debug)
 exclude(Log.warn)
 exclude(Log.error)		       
 

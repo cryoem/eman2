@@ -44,7 +44,7 @@ int SalIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("SalIO::init()");
+	LOGDEBUG("SalIO::init()");
 	initialized = true;
 
 	string hdr_filename = Util::get_filename_by_ext(filename, HDR_EXT);
@@ -66,7 +66,7 @@ int SalIO::init()
 		char buf[MAXPATHLEN];
 		if (fgets(buf, MAXPATHLEN, sal_file)) {
 			if (!is_valid(buf)) {
-				Log::logger()->error("'%s' is not a valid SAL file", filename.c_str());
+				LOGERR("'%s' is not a valid SAL file", filename.c_str());
 				err = 1;
 				return err;
 			}
@@ -121,7 +121,7 @@ int SalIO::init()
 
 bool SalIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("SalIO::is_valid()");
+	LOGDEBUG("SalIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -131,7 +131,7 @@ bool SalIO::is_valid(const void *first_block)
 
 int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("SalIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("SalIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -156,14 +156,14 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 int SalIO::write_header(const Dict &, int, bool)
 {
-	Log::logger()->log("SalIO::write_header() to file '%s'", filename.c_str());
-	Log::logger()->warn("SAL write is not supported.");
+	LOGDEBUG("SalIO::write_header() to file '%s'", filename.c_str());
+	LOGWARN("SAL write is not supported.");
 	return 1;
 }
 
 int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("SalIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("SalIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -195,7 +195,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	for (int j = 0; j < ny; j++) {
 		if (fread(&cdata[j * row_size], block_size, 1, sal_file) != 1) {
-			Log::logger()->error("Incomplete SAL data read %d/%d blocks", j, ny);
+			LOGERR("Incomplete SAL data read %d/%d blocks", j, ny);
 			return 1;
 		}
 	}
@@ -224,8 +224,8 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 
 int SalIO::write_data(float *, int, bool)
 {
-	Log::logger()->log("SalIO::write_data() to file '%s'", filename.c_str());
-	Log::logger()->warn("SAL write is not supported.");
+	LOGDEBUG("SalIO::write_data() to file '%s'", filename.c_str());
+	LOGWARN("SAL write is not supported.");
 	return 1;
 }
 

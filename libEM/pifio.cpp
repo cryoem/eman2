@@ -88,7 +88,7 @@ int PifIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("PifIO::init()");
+	LOGDEBUG("PifIO::init()");
 	initialized = true;
 
 	pif_file = sfopen(filename, rw_mode, &is_new_file);
@@ -100,13 +100,13 @@ int PifIO::init()
 
 	if (!is_new_file) {
 		if (fread(&pfh, sizeof(PifFileHeader), 1, pif_file) != 1) {
-			Log::logger()->error("read header failed on PIF file: '%s'", filename.c_str());
+			LOGERR("read header failed on PIF file: '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid(&pfh)) {
-			Log::logger()->error("'%s' is not a valid PIF file", filename.c_str());
+			LOGERR("'%s' is not a valid PIF file", filename.c_str());
 			err = 1;
 			return err;
 		}
@@ -115,7 +115,7 @@ int PifIO::init()
 		become_host_endian(&pfh.htype);
 
 		if (pfh.htype != 1) {
-			Log::logger()->error("only handle PIF that all projects have the same dimensions");
+			LOGERR("only handle PIF that all projects have the same dimensions");
 			return 1;
 		}
 
@@ -141,7 +141,7 @@ int PifIO::init()
 
 bool PifIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("PifIO::is_valid()");
+	LOGDEBUG("PifIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -185,7 +185,7 @@ void PifIO::fseek_to(int image_index)
 
 int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("PifIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("PifIO::read_header() from file '%s'", filename.c_str());
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -196,7 +196,7 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	PifImageHeader pih;
 
 	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
-		Log::logger()->error("read pif file '%s' failed", filename.c_str());
+		LOGERR("read pif file '%s' failed", filename.c_str());
 		return 1;
 	}
 	if (check_region(area, Size(pih.nx, pih.ny, pih.nz)) != 0) {
@@ -228,7 +228,7 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int PifIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("PifIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("PifIO::write_header() to file '%s'", filename.c_str());
 
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
@@ -239,9 +239,8 @@ int PifIO::write_header(const Dict & dict, int image_index, bool)
 
 	if (!is_new_file) {
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-			Log::logger()->
-				error("cannot write to existing file '%s' which is in opposite byte order",
-					  filename.c_str());
+			LOGERR("cannot write to existing file '%s' which is in opposite byte order",
+				   filename.c_str());
 			return 1;
 		}
 
@@ -252,13 +251,13 @@ int PifIO::write_header(const Dict & dict, int image_index, bool)
 		int mode1 = to_pif_datatype(dict["datatype"]);
 
 		if (nx1 != pfh.nx || ny1 != pfh.ny || nz1 != pfh.nz) {
-			Log::logger()->error("cannot write to different size file %s (%dx%dx%d != %dx%dx%d)",
-								 filename.c_str(), nx1, ny1, nz1, pfh.nx, pfh.ny, pfh.nz);
+			LOGERR("cannot write to different size file %s (%dx%dx%d != %dx%dx%d)",
+				   filename.c_str(), nx1, ny1, nz1, pfh.nx, pfh.ny, pfh.nz);
 			return 1;
 		}
 
 		if (mode1 != pfh.mode) {
-			Log::logger()->error("cannot write to different data type file %s", filename.c_str());
+			LOGERR("cannot write to different data type file %s", filename.c_str());
 			return 1;
 		}
 
@@ -314,7 +313,7 @@ int PifIO::write_header(const Dict & dict, int image_index, bool)
 
 int PifIO::read_data(float *data, int image_index, const Region *, bool)
 {
-	Log::logger()->log("PifIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("PifIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -336,7 +335,7 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 		int offset1 = l * pfh.nx * pfh.ny;
 		for (int j = 0; j < pfh.ny; j++) {
 			if (fread(buf, mode_size, pfh.nx, pif_file) != (unsigned int) pfh.nx) {
-				Log::logger()->error("read PIF image file '%s' failed", filename.c_str());
+				LOGERR("read PIF image file '%s' failed", filename.c_str());
 				delete[]buf;
 				buf = 0;
 				return 1;
@@ -377,7 +376,7 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 int PifIO::write_data(float *data, int image_index, bool)
 {
 
-	Log::logger()->log("PifIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("PifIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -488,7 +487,7 @@ int PifIO::to_pif_datatype(int e)
 		m = PIF_FLOAT_COMPLEX;
 		break;
 	default:
-		Log::logger()->error("unknown PIF mode: %d", e);
+		LOGERR("unknown PIF mode: %d", e);
 	}
 
 	return m;

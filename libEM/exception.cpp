@@ -10,7 +10,6 @@ void Exception::dump() const
 		err1 = "error with '" + objname + "': ";
 	}
 	
-	Log::logger()->error("%s:%d: %s%s\n",
-						 filename.c_str(), line, err1.c_str(), desc.c_str());
+	LOGERR("%s:%d: %s%s\n", filename.c_str(), line, err1.c_str(), desc.c_str());
 	
 }

@@ -46,7 +46,7 @@ int SpiderIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("SpiderIO::init()");
+	LOGDEBUG("SpiderIO::init()");
 	initialized = true;
 
 	spider_file = sfopen(filename, rw_mode, &is_new_file);
@@ -59,13 +59,13 @@ int SpiderIO::init()
 		first_h = static_cast < SpiderHeader * >(calloc(sizeof(SpiderHeader), 1));
 
 		if (fread(first_h, sizeof(SpiderHeader), 1, spider_file) != 1) {
-			Log::logger()->error("read header failed on file: '%s'", filename.c_str());
+			LOGERR("read header failed on file: '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 
 		if (!is_valid_spider(first_h)) {
-			Log::logger()->error("'%s' is not a valid Spider file", filename.c_str());
+			LOGERR("'%s' is not a valid Spider file", filename.c_str());
 			err = 1;
 			return err;
 		}
@@ -93,7 +93,7 @@ bool SpiderIO::is_valid_spider(const void *first_block)
 
 bool SpiderIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("SpiderIO::is_valid()");
+	LOGDEBUG("SpiderIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -130,14 +130,14 @@ bool SpiderIO::is_valid(const void *first_block)
 
 int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("SpiderIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("SpiderIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
 
 	if (!first_h) {
-		Log::logger()->log("empty header. nothing to read");
+		LOGDEBUG("empty header. nothing to read");
 		return 1;
 	}
 
@@ -167,7 +167,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		portable_fseek(spider_file, offset, SEEK_SET);
 
 		if (fread(cur_image_hed, sizeof(SpiderHeader), 1, spider_file) != 1) {
-			Log::logger()->error("read spider header with image_index = %d failed", image_index);
+			LOGERR("read spider header with image_index = %d failed", image_index);
 			return 1;
 		}
 
@@ -175,7 +175,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 		if (cur_image_hed->nx != first_h->nx || cur_image_hed->ny != first_h->ny
 			|| cur_image_hed->nslice != first_h->nslice) {
-			Log::logger()->error("%dth image size %dx%dx%d != overall size %dx%dx%d",
+			LOGERR("%dth image size %dx%dx%d != overall size %dx%dx%d",
 								 image_index, cur_image_hed->nx, cur_image_hed->ny,
 								 cur_image_hed->nslice, first_h->nx, first_h->ny, first_h->nslice);
 			return 1;
@@ -226,7 +226,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("SpiderIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("SpiderIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -248,12 +248,12 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 
 	if (!is_new_file) {
 		if (first_h->istack != STACK_OVERALL_HEADER) {
-			Log::logger()->error("cannot write to single-image Spider files");
+			LOGERR("cannot write to single-image Spider files");
 			return 1;
 		}
 
 		if (nx1 != first_h->nx || ny1 != first_h->ny || nz1 != first_h->nslice) {
-			Log::logger()->error("new size %dx%dx%d != existing %s size %dx%dx%d",
+			LOGERR("new size %dx%dx%d != existing %s size %dx%dx%d",
 								 filename.c_str(), nx1, ny1, nz1,
 								 first_h->nx, first_h->ny, first_h->nslice);
 			return 1;
@@ -277,7 +277,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 		rewind(spider_file);
 
 		if (fwrite(first_h, header_size, 1, spider_file) != 1) {
-			Log::logger()->error("cannot write to Spider file '%s'", filename.c_str());
+			LOGERR("cannot write to Spider file '%s'", filename.c_str());
 			return 1;
 		}
 
@@ -326,7 +326,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 		rewind(spider_file);
 
 		if (fwrite(first_h, header_length, 1, spider_file) != 1) {
-			Log::logger()->error("cannot write a new header to Spider file '%s'", filename.c_str());
+			LOGERR("cannot write a new header to Spider file '%s'", filename.c_str());
 			return 1;
 		}
 	}
@@ -369,7 +369,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 
 int SpiderIO::write_single_header(const Dict & dict)
 {
-	Log::logger()->log("SpiderIO::write_single_header");
+	LOGDEBUG("SpiderIO::write_single_header");
 	if (check_write_access(rw_mode, 0) != 0) {
 		return 1;
 	}
@@ -420,7 +420,7 @@ int SpiderIO::write_single_header(const Dict & dict)
 	first_h->inuse = 1;
 
 	if (fwrite(first_h, header_size, 1, spider_file) != 1) {
-		Log::logger()->error("write single spider header failed");
+		LOGERR("write single spider header failed");
 		return 1;
 	}
 
@@ -435,7 +435,7 @@ int SpiderIO::write_single_header(const Dict & dict)
 
 int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("SpiderIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("SpiderIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -473,7 +473,7 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	int sec_size = static_cast < int >(first_h->nx * first_h->ny * sizeof(float));
 
 	if (fread(data, sec_size, nz, spider_file) != nz) {
-		Log::logger()->error("Incomplete SPIDER data read");
+		LOGERR("Incomplete SPIDER data read");
 		return 1;
 	}
 #endif
@@ -490,18 +490,18 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 
 int SpiderIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("SpiderIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("SpiderIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
 
 	if (!cur_h) {
-		Log::logger()->error("please write header before write data");
+		LOGERR("please write header before write data");
 		return 1;
 	}
 
 	if (cur_h->istack == SINGLE_IMAGE_HEADER) {
-		Log::logger()->error("cannot mix your single spider and stack spider.");
+		LOGERR("cannot mix your single spider and stack spider.");
 		return 1;
 	}
 
@@ -539,7 +539,7 @@ int SpiderIO::write_data(float *data, int image_index, bool)
 
 	int err = 0;
 	if (fwrite(data, sec_size, nz, spider_file) != (unsigned int) nz) {
-		Log::logger()->error("cannot write to spider file '%s'", filename.c_str());
+		LOGERR("cannot write to spider file '%s'", filename.c_str());
 		err = 1;
 	}
 
@@ -552,7 +552,7 @@ int SpiderIO::write_data(float *data, int image_index, bool)
 
 int SpiderIO::write_single_data(float *data)
 {
-	Log::logger()->log("SpiderIO::write_single_data()");
+	LOGDEBUG("SpiderIO::write_single_data()");
 	if (check_write_access(rw_mode, 0, true, data) != 0) {
 		return 1;
 	}
@@ -560,7 +560,7 @@ int SpiderIO::write_single_data(float *data)
 	assert(first_h != 0);
 
 	if (first_h->istack != SINGLE_IMAGE_HEADER) {
-		Log::logger()->error("cannot mix your single spider and stack spider.");
+		LOGERR("cannot mix your single spider and stack spider.");
 		return 1;
 	}
 
@@ -570,7 +570,7 @@ int SpiderIO::write_single_data(float *data)
 	unsigned int nz = static_cast < unsigned int >(first_h->nslice);
 
 	if (fwrite(data, sec_size, nz, spider_file) != nz) {
-		Log::logger()->error("write data to single spider image failed");
+		LOGERR("write data to single spider image failed");
 		return 1;
 	}
 	return 0;

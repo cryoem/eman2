@@ -12,6 +12,12 @@ using std::string;
 
 namespace EMAN
 {
+
+#define LOGERR Log::logger()->error
+#define LOGWARN Log::logger()->warn
+#define LOGDEBUG Log::logger()->debug
+#define LOGVAR Log::logger()->variable
+	
 	/** todo:
      * redesign begin() and end() methods
      */
@@ -31,7 +37,7 @@ namespace EMAN
 		{
 			ERROR_LOG,        // error message
 			WARNING_LOG,      // warning message
-			NORMAL_LOG,       // high-level debug message
+			DEBUG_LOG,        // debug message, usually at function level.
 			VARIABLE_LOG      // very-detailed-level debug message
 		};
 
@@ -50,9 +56,9 @@ namespace EMAN
 		 * Its args are the same as printf().*/
 		void warn(const char *format, ...);
 
-		/** log a high-level debug message. log level = NORMAL_LOG.
+		/** log a debug message. log level = DEBUG_LOG.
 		 * Its args are the same as printf().*/
-		void log(const char *format, ...);
+		void debug(const char *format, ...);
 
 		/** log a very-detailed-level debug message. log level = VARIABLE_LOG.
 		 * Its args are the same as printf().*/

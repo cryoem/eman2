@@ -24,7 +24,7 @@ int XYZIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("XYZIO::init()");
+	LOGDEBUG("XYZIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -44,7 +44,7 @@ int XYZIO::init()
 
 bool XYZIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("XYZIO::is_valid()");
+	LOGDEBUG("XYZIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -53,7 +53,7 @@ bool XYZIO::is_valid(const void *first_block)
 
 int XYZIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("XYZIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("XYZIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -64,7 +64,7 @@ int XYZIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 int XYZIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("XYZIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("XYZIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -74,7 +74,7 @@ int XYZIO::write_header(const Dict & dict, int image_index, bool)
 
 int XYZIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("XYZIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("XYZIO::read_data() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -85,7 +85,7 @@ int XYZIO::read_data(float *data, int image_index, const Region * area, bool is_
 
 int XYZIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("XYZIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("XYZIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

@@ -54,7 +54,7 @@ int VtkIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("VtkIO::init()");
+	LOGDEBUG("VtkIO::init()");
 	initialized = true;
 
 	vtk_file = sfopen(filename, rw_mode);
@@ -66,12 +66,12 @@ int VtkIO::init()
 	char buf[1024];
 	int bufsz = sizeof(buf);
 	if (fgets(buf, bufsz, vtk_file) == 0) {
-		Log::logger()->error("read VTK file '%s' failed", filename.c_str());
+		LOGERR("read VTK file '%s' failed", filename.c_str());
 		return 1;
 	}
 
 	if (!is_valid(&buf)) {
-		Log::logger()->error("not a valid VTK file");
+		LOGERR("not a valid VTK file");
 		return 1;
 	}
 
@@ -94,7 +94,7 @@ int VtkIO::init()
 		else if (samestr(buf, "SPACING")) {
 			sscanf(buf, "SPACING %f %f %f", &spacingx, &spacingy, &spacingz);
 			if (spacingx != spacingy || spacingx != spacingz || spacingy != spacingz) {
-				Log::logger()->error("cannot handle non-uniform spacing VTK file\n");
+				LOGERR("cannot handle non-uniform spacing VTK file\n");
 				return 1;
 			}
 		}
@@ -110,14 +110,14 @@ int VtkIO::init()
 				datatype = FLOAT;
 			}
 			else {
-				Log::logger()->error("unknown data type: %s", datatypestr);
+				LOGERR("unknown data type: %s", datatypestr);
 				return 1;
 			}
 		}
 	}
 
 	if (filetype == VTK_BINARY) {
-		Log::logger()->error("binary VTK is not supported");
+		LOGERR("binary VTK is not supported");
 		return 1;
 	}
 
@@ -129,13 +129,13 @@ int VtkIO::init()
 
 bool VtkIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("VtkIO::is_valid()");
+	LOGDEBUG("VtkIO::is_valid()");
 	return Util::check_file_by_magic(first_block, MAGIC);
 }
 
 int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("VtkIO::read_header() from file '%s'", filename.c_str());
+	LOGDEBUG("VtkIO::read_header() from file '%s'", filename.c_str());
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -166,7 +166,7 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int VtkIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("VtkIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("VtkIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -198,13 +198,13 @@ int VtkIO::write_header(const Dict & dict, int image_index, bool)
 
 int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("VtkIO::read_data() from file '%s'", filename.c_str());
+	LOGDEBUG("VtkIO::read_data() from file '%s'", filename.c_str());
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
 
 	if (area) {
-		Log::logger()->warn("read VTK region is not supported yet. Read whole image instead.");
+		LOGWARN("read VTK region is not supported yet. Read whole image instead.");
 	}
 
 	portable_fseek(vtk_file, file_offset, SEEK_SET);
@@ -242,7 +242,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 
 int VtkIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("VtkIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("VtkIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

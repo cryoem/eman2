@@ -41,13 +41,13 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 
 	int nz = this_img->get_zsize();
 	if (nz > 1) {
-		Log::logger()->error("%s doesn't support 3D alignment", get_name().c_str());
+		LOGERR("%s doesn't support 3D alignment", get_name().c_str());
 		return 0;
 	}
 
 	EMData *to = params["to"];
 	if (to && !EMUtil::is_same_size(this_img, to)) {
-		Log::logger()->error("%s: images must be the same size", get_name().c_str());
+		LOGERR("%s: images must be the same size", get_name().c_str());
 		return 0;
 	}
 
@@ -81,8 +81,8 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 
 	float *cf_data = cf->get_data();
 
-	float neg = cf->get_mean() - cf->get_min();
-	float pos = cf->get_max() - cf->get_mean();
+	float neg = (float)cf->get_attr("mean") - (float)cf->get_attr("minimum");
+	float pos = (float)cf->get_attr("maximum") - (float)cf->get_attr("mean");
 
 	int flag = 1;
 	if (neg > pos) {
@@ -135,7 +135,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 	this_img->translate(cur_trans);
 
 	float score = hypot(result[0], result[1]);
-	cf->set_align_score(score);
+	cf->set_attr("align_score", score);
 	cf->done_data();
 
 	return cf;
@@ -154,12 +154,12 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 	params.set_default("intonly", 0);
 
 	if (to && !EMUtil::is_same_size(this_img, to)) {
-		Log::logger()->error("%s: images must be same size", get_name().c_str());
+		LOGERR("%s: images must be same size", get_name().c_str());
 		return 0;
 	}
 
 	if (!to) {
-		Log::logger()->warn("%s: ACF", get_name().c_str());
+		LOGWARN("%s: ACF", get_name().c_str());
 	}
 
 	EMData *cf = 0;
@@ -174,8 +174,8 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 
 	float *cf_data = cf->get_data();
 
-	float neg = cf->get_mean() - cf->get_min();
-	float pos = cf->get_max() - cf->get_mean();
+	float neg = (float)cf->get_attr("mean") - (float)cf->get_attr("minimum");
+	float pos = (float)cf->get_attr("maximum") - (float)cf->get_attr("mean");
 
 	int flag = 1;
 	if (neg > pos) {
@@ -224,7 +224,7 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 	else {
 		score = Util::hypot3(tx, ty, tz);
 	}
-	cf->set_align_score(score);
+	cf->set_attr("align_score", score);
 
 	if (!to) {
 		tx /= 2;
@@ -262,7 +262,7 @@ EMData *RotationalAligner::align(EMData * this_img, string) const
 
 	Util::find_max(data, this_img2_nx, &peak, &peak_index);
 	this_img->rotate(-peak_index * M_PI / this_img2_nx, 0, 0);
-	cf->set_align_score(peak);
+	cf->set_attr("align_score", peak);
 
 	cf->done_data();
 
@@ -291,7 +291,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, string) const
 	float a = (float) (1.0f - 1.0f * peak_index / size) * M_PI * 2;
 	this_img->rotate(a, 0, 0);
 
-	cf->set_align_score(peak);
+	cf->set_attr("align_score", peak);
 	cf->done_data();
 
 	delete e1;
@@ -446,7 +446,7 @@ EMData *RotateCHAligner::align(EMData * this_img, string) const
 
 	printf("%f\t%d\n", aa / ndot * 180.0 / M_PI, i + 5);
 	this_img->rotate(aa / ndot, 0, 0);
-	this_img->set_align_score(aa / ndot);
+	this_img->set_attr("align_score", aa / ndot);
 	return 0;
 }
 
@@ -490,13 +490,13 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
 
 	EMData *result = 0;
 	if (dot1 > dot2) {
-		this_copy->set_align_score(dot1);
+		this_copy->set_attr("align_score", dot1);
 		delete this_copy2;
 		this_copy2 = 0;
 		result = this_copy;
 	}
 	else {
-		this_copy2->set_align_score(dot2);
+		this_copy2->set_attr("align_score", dot2);
 		delete this_copy;
 		this_copy = 0;
 		result = this_copy2;
@@ -559,13 +559,13 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 
 	EMData *result = 0;
 	if (dot1 > dot2) {
-		this_copy->set_align_score(dot1);
+		this_copy->set_attr("align_score", dot1);
 		delete this_copy2;
 		this_copy2 = 0;
 		result = this_copy;
 	}
 	else {
-		this_copy2->set_align_score(dot2);
+		this_copy2->set_attr("align_score", dot2);
 		delete this_copy;
 		this_copy = 0;
 		result = this_copy2;
@@ -588,12 +588,12 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 	int size = nx;
 
 	if (nx != ny) {
-		Log::logger()->error("%s: images must be square", get_name().c_str());
+		LOGERR("%s: images must be square", get_name().c_str());
 		return 0;
 	}
 
 	if (to && EMUtil::is_same_size(this_img, to)) {
-		Log::logger()->error("%s: images must be same size", get_name().c_str());
+		LOGERR("%s: images must be same size", get_name().c_str());
 		return 0;
 	}
 
@@ -809,11 +809,11 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 	}
 
 	if (!this_copy) {
-		Log::logger()->error("%s failed", get_name().c_str());
+		LOGERR("%s failed", get_name().c_str());
 		return this_copy2;
 	}
 	if (!this_copy2) {
-		Log::logger()->error("%s flip failed", get_name().c_str());
+		LOGERR("%s flip failed", get_name().c_str());
 		return this_copy;
 	}
 
@@ -939,7 +939,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 					EMData *uwc = uw->copy(false);
 					EMData *a = uw->calc_ccfx(to_copy);
 
-					uwc->rotate_x(a->get_max_index());
+					uwc->rotate_x(a->calc_max_index());
 
 					Dict cmp_params;
 					cmp_params["to"] = wsc;
@@ -949,7 +949,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 					if (cm < bestval) {
 						bestval = cm;
-						bestang = (float) 2.0 * M_PI * a->get_max_index() / (float) a->get_xsize();
+						bestang = (float) (2.0 * M_PI * a->calc_max_index() / a->get_xsize());
 						bestdx = dx;
 						bestdy = dy;
 						bestflip = dflip;
@@ -1002,7 +1002,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 					EMData *uwc = uw->copy(false);
 					EMData *a = uw->calc_ccfx(to);
 
-					uwc->rotate_x(a->get_max_index());
+					uwc->rotate_x(a->calc_max_index());
 					Dict cmp_params;
 					cmp_params["to"] = to_copy2;
 					cmp_params["keepzero"] = 1;
@@ -1011,7 +1011,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 					if (cm < bestval) {
 						bestval = cm;
-						bestang = (float)2.0 * M_PI * a->get_max_index() / (float) a->get_xsize();
+						bestang = (float)(2.0 * M_PI * a->calc_max_index() / a->get_xsize());
 						bestdx = dx;
 						bestdy = dy;
 						bestflip = dflip;
@@ -1243,11 +1243,11 @@ EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
 	}
 
 	if (!this_copy) {
-		Log::logger()->error("%s align failed", get_name().c_str());
+		LOGERR("%s align failed", get_name().c_str());
 		return flip_copy;
 	}
 	else if (!flip_copy) {
-		Log::logger()->error("%s align failed", get_name().c_str());
+		LOGERR("%s align failed", get_name().c_str());
 		return this_copy;
 	}
 
@@ -1388,7 +1388,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	int mode = params.set_default("mode", 0);
 
 	if (this_img->get_parent() == 0) {
-		Log::logger()->warn("%s: no parent", get_name().c_str());
+		LOGWARN("%s: no parent", get_name().c_str());
 	}
 
 	if (mode == 1 || mode == 2) {
@@ -1501,7 +1501,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 		this_img->rotate_translate(salt, 0, 0, sdx, sdy, 0);
 
 		result = this_img->copy();
-		result->set_align_score(best);
+		result->set_attr("align_score", best);
 	}
 
 	return result;

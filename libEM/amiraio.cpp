@@ -37,7 +37,7 @@ int AmiraIO::init()
 	if (initialized) {
 		return err;
 	}
-	Log::logger()->log("AmiraIO::init()");
+	LOGDEBUG("AmiraIO::init()");
 	initialized = true;
 
 	bool is_new_file = false;
@@ -51,12 +51,12 @@ int AmiraIO::init()
 	if (!is_new_file) {
 		char buf[MAXPATHLEN];
 		if (!fgets(buf, MAXPATHLEN, amira_file)) {
-			Log::logger()->error("cannot read from file '%s'", filename.c_str());
+			LOGERR("cannot read from file '%s'", filename.c_str());
 			err = 1;
 			return err;
 		}
 		if (!is_valid(buf)) {
-			Log::logger()->error("'%s' is not a valid Amira Mesh file");
+			LOGERR("'%s' is not a valid Amira Mesh file");
 			err = 1;
 			return err;
 		}
@@ -67,7 +67,7 @@ int AmiraIO::init()
 
 bool AmiraIO::is_valid(const void *first_block)
 {
-	Log::logger()->log("AmiraIO::is_valid()");
+	LOGDEBUG("AmiraIO::is_valid()");
 	if (!first_block) {
 		return false;
 	}
@@ -76,15 +76,15 @@ bool AmiraIO::is_valid(const void *first_block)
 
 int AmiraIO::read_header(Dict &, int, const Region *, bool)
 {
-	Log::logger()->log("AmiraIO::read_header() from file '%s'", filename.c_str());
-	Log::logger()->warn("Amira read header is not supported.");
+	LOGDEBUG("AmiraIO::read_header() from file '%s'", filename.c_str());
+	LOGWARN("Amira read header is not supported.");
 	return 1;
 
 }
 
 int AmiraIO::write_header(const Dict & dict, int image_index, bool)
 {
-	Log::logger()->log("AmiraIO::write_header() to file '%s'", filename.c_str());
+	LOGDEBUG("AmiraIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -99,7 +99,7 @@ int AmiraIO::write_header(const Dict & dict, int image_index, bool)
 	float pixel = dict["pixel"];
 
 	if (fprintf(amira_file, "# AmiraMesh 3D BINARY 2.0\n\n") <= 0) {
-		Log::logger()->error("cannot write to AmiraMesh file '%s'", filename.c_str());
+		LOGERR("cannot write to AmiraMesh file '%s'", filename.c_str());
 		return 1;
 	}
 
@@ -118,14 +118,14 @@ int AmiraIO::write_header(const Dict & dict, int image_index, bool)
 
 int AmiraIO::read_data(float *, int, const Region *, bool)
 {
-	Log::logger()->log("AmiraIO::read_data() from file '%s'", filename.c_str());
-	Log::logger()->warn("Amira read data is not supported.");
+	LOGDEBUG("AmiraIO::read_data() from file '%s'", filename.c_str());
+	LOGWARN("Amira read data is not supported.");
 	return 1;
 }
 
 int AmiraIO::write_data(float *data, int image_index, bool)
 {
-	Log::logger()->log("AmiraIO::write_data() to file '%s'", filename.c_str());
+	LOGDEBUG("AmiraIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -133,7 +133,7 @@ int AmiraIO::write_data(float *data, int image_index, bool)
 	ByteOrder::become_big_endian(data, nx * ny * nz);
 
 	if (fwrite(data, nx * nz, ny * sizeof(float), amira_file) != ny * sizeof(float)) {
-		Log::logger()->error("incomplete file write in AmiraMesh file");
+		LOGERR("incomplete file write in AmiraMesh file");
 		return 1;
 	}
 

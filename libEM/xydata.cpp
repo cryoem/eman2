@@ -47,7 +47,7 @@ int XYData::read_file(string filename)
 {
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
-		Log::logger()->error("cannot open xydata file '%s'", filename.c_str());
+		LOGERR("cannot open xydata file '%s'", filename.c_str());
 		return 1;
 	}
 
@@ -78,7 +78,7 @@ int XYData::write_file(string filename) const
 {
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
-		Log::logger()->error("cannot open xydata file '%s' to write", filename.c_str());
+		LOGERR("cannot open xydata file '%s' to write", filename.c_str());
 		return 1;
 	}
 
@@ -101,8 +101,8 @@ float XYData::calc_correlation(XYData * xy, float minx, float maxx) const
 	float xn = data[n - 1].x;
 
 	if (maxx <= minx || minx >= xn || maxx <= x0) {
-		Log::logger()->error("incorrect minx, maxx=%f,%f for this XYData range [%f,%f]",
-							 minx, maxx, x0, xn);
+		LOGERR("incorrect minx, maxx=%f,%f for this XYData range [%f,%f]",
+			   minx, maxx, x0, xn);
 		return 0;
 	}
 

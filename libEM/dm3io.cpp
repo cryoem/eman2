@@ -20,7 +20,7 @@ const char *TagTable::IMAGE_DATATYPE_TAG = "DataType";
 const char *TagTable::IMAGE_THUMB_INDEX_TAG = "ImageIndex";
 
 TagTable::TagTable()
-:	img_index(0), is_big_endian(true)
+	:	img_index(0), is_big_endian(true)
 {
 }
 
@@ -58,7 +58,7 @@ void TagTable::add(string name, string value)
 
 void TagTable::add_data(char *data)
 {
-	Log::logger()->log("TagTable::add_data()");
+	LOGDEBUG("TagTable::add_data()");
 	assert(data != 0);
 	data_list.push_back(data);
 }
@@ -85,11 +85,11 @@ double TagTable::get_double(string name)
 
 void TagTable::dump() const
 {
-	Log::logger()->log("TagTable::dump()");
+	LOGDEBUG("TagTable::dump()");
 	map < string, string >::const_iterator p;
 
 	for (p = tags.begin(); p != tags.end(); p++) {
-		Log::logger()->log("  %s: %s", (*p).first.c_str(), (*p).second.c_str());
+		LOGDEBUG("  %s: %s", (*p).first.c_str(), (*p).second.c_str());
 	}
 }
 
@@ -126,7 +126,7 @@ void TagTable::set_thumb_index(int i)
 
 
 TagData::TagData(FILE * data_file, TagTable * table, string tagname)
-:	in(data_file), tagtable(table), name(tagname), tag_type(UNKNOWN)
+	:	in(data_file), tagtable(table), name(tagname), tag_type(UNKNOWN)
 {
 }
 
@@ -187,7 +187,7 @@ string TagData::read_native(bool is_value_stored)
 		sprintf(val_str, "%10e", val);
 	}
 	else {
-		Log::logger()->error("invalid tag type: '%d'", tag_type);
+		LOGERR("invalid tag type: '%d'", tag_type);
 		exit(1);
 	}
 
@@ -195,7 +195,7 @@ string TagData::read_native(bool is_value_stored)
 		tagtable->add(name, val_str);
 	}
 
-	Log::logger()->variable("value = '%s'", val_str);
+	LOGVAR("value = '%s'", val_str);
 
 	return string(val_str);
 }
@@ -203,14 +203,14 @@ string TagData::read_native(bool is_value_stored)
 
 vector < int >TagData::read_array_types()
 {
-	Log::logger()->variable("TagData::read_array_types()");
+	LOGVAR("TagData::read_array_types()");
 
 	int array_type = 0;
 	fread(&array_type, sizeof(array_type), 1, in);
 
 	ByteOrder::become_big_endian(&array_type);
 
-	Log::logger()->variable("array data type = '%s'", Gatan::to_str((Type) array_type));
+	LOGVAR("array data type = '%s'", Gatan::to_str((Type) array_type));
 
 	vector < int >item_types;
 
@@ -219,7 +219,7 @@ vector < int >TagData::read_array_types()
 	}
 	else if (array_type == ARRAY) {
 		item_types = read_array_types();
-		Log::logger()->error("DM3: don't know how to handle this array type");
+		LOGERR("DM3: don't know how to handle this array type");
 	}
 	else {
 		item_types.push_back(array_type);
@@ -260,7 +260,7 @@ string TagData::read_string(int size)
 
 int TagData::read_array_data(vector < int >item_types, bool nodata)
 {
-	Log::logger()->variable("TagData::read_array_data()");
+	LOGVAR("TagData::read_array_data()");
 	assert(item_types.size() > 0);
 
 	int err = 0;
@@ -269,21 +269,21 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	fread(&array_size, sizeof(array_size), 1, in);
 	ByteOrder::become_big_endian(&array_size);
 
-	Log::logger()->variable("array size = %d\n", array_size);
+	LOGVAR("array size = %d\n", array_size);
 
 	size_t item_size = 0;
 	for (size_t i = 0; i < item_types.size(); i++) {
 		item_size += typesize(item_types[i]);
 	}
 
-	Log::logger()->variable("%s array item size = %d\n", name.c_str(), item_size);
+	LOGVAR("%s array item size = %d\n", name.c_str(), item_size);
 
 	size_t buf_size = item_size * array_size;
 
 	if (item_types.size() == 1 && item_types[0] == USHORT) {
 		string val = read_string(array_size);
 		tagtable->add(name, val);
-		Log::logger()->variable("value: %s", val.c_str());
+		LOGVAR("value: %s", val.c_str());
 	}
 	else if (!nodata && name == "Data") {
 		char *data = new char[buf_size];
@@ -299,7 +299,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 			tagtable->become_host_endian((double *) data, array_size);
 		}
 		else {
-			Log::logger()->error("cannot handle this type of DM3 image data");
+			LOGERR("cannot handle this type of DM3 image data");
 			exit(1);
 		}
 
@@ -314,7 +314,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 
 vector < int >TagData::read_struct_types()
 {
-	Log::logger()->variable("TagData::read_struct_types()");
+	LOGVAR("TagData::read_struct_types()");
 
 	unsigned int namelength = 0;
 	unsigned int nfields = 0;
@@ -325,8 +325,8 @@ vector < int >TagData::read_struct_types()
 	fread(&nfields, sizeof(nfields), 1, in);
 	ByteOrder::become_big_endian(&nfields);
 
-	Log::logger()->variable("namelength = %d\n", namelength);
-	Log::logger()->variable("num fields = %d\n", nfields);
+	LOGVAR("namelength = %d\n", namelength);
+	LOGVAR("num fields = %d\n", nfields);
 
 	vector < int >field_types;
 
@@ -338,8 +338,8 @@ vector < int >TagData::read_struct_types()
 		fread(&field_type, sizeof(field_type), 1, in);
 		ByteOrder::become_big_endian(&field_type);
 
-		Log::logger()->variable("%dth namelength = %d, type = '%s'",
-								i, namelength, Gatan::to_str((Type) field_type));
+		LOGVAR("%dth namelength = %d, type = '%s'",
+			   i, namelength, Gatan::to_str((Type) field_type));
 		field_types.push_back(field_type);
 	}
 
@@ -354,7 +354,7 @@ int TagData::read_any(bool nodata)
 
 	fread(&tag_type, sizeof(tag_type), 1, in);
 	ByteOrder::become_big_endian(&tag_type);
-	Log::logger()->variable("tag type = '%s'\n", Gatan::to_str((Type) tag_type));
+	LOGVAR("tag type = '%s'\n", Gatan::to_str((Type) tag_type));
 
 	if (tag_type == ARRAY) {
 		vector < int >item_types = read_array_types();
@@ -395,7 +395,7 @@ int TagData::read_any(bool nodata)
 
 int TagData::read(bool nodata)
 {
-	Log::logger()->variable("TagData::read()");
+	LOGVAR("TagData::read()");
 	int err = 0;
 
 	const char *DATA_TYPE_MARK = "%%%%";
@@ -413,7 +413,7 @@ int TagData::read(bool nodata)
 	fread(&encoded_types_size, sizeof(int), 1, in);
 	ByteOrder::become_big_endian(&encoded_types_size);
 
-	Log::logger()->variable("encoded types size = %d\n", encoded_types_size);
+	LOGVAR("encoded types size = %d\n", encoded_types_size);
 
 	err = read_any(nodata);
 
@@ -458,7 +458,7 @@ size_t TagData::typesize(int t) const
 		size = sizeof(char);
 		break;
 	default:
-		Log::logger()->error("no such type: '%d'\n", type);
+		LOGERR("no such type: '%d'\n", type);
 		break;
 	}
 
@@ -468,7 +468,7 @@ size_t TagData::typesize(int t) const
 /////////////////////////////////////////////
 
 TagGroup::TagGroup(FILE * data_file, TagTable * table, string groupname)
-:	in(data_file), tagtable(table), name(groupname), entry_id(0)
+	:	in(data_file), tagtable(table), name(groupname), entry_id(0)
 {
 }
 
@@ -478,13 +478,13 @@ TagGroup::~TagGroup()
 
 int TagGroup::read(bool nodata)
 {
-	Log::logger()->variable("TagGroup::read()");
+	LOGVAR("TagGroup::read()");
 
 	int ntags = 0;
 	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
 	fread(&ntags, sizeof(ntags), 1, in);
 	ByteOrder::become_big_endian(&ntags);
-	Log::logger()->variable("DM3: ntags = %d\n", ntags);
+	LOGVAR("DM3: ntags = %d\n", ntags);
 
 	int err = 0;
 
@@ -517,7 +517,7 @@ int TagGroup::get_entry_id()
 /////////////////////////////////////////////
 
 TagEntry::TagEntry(FILE * data_file, TagTable * table, TagGroup * parent)
-:	in(data_file), tagtable(table), parent_group(parent), name("")
+	:	in(data_file), tagtable(table), parent_group(parent), name("")
 {
 }
 
@@ -528,7 +528,7 @@ TagEntry::~TagEntry()
 
 int TagEntry::read(bool nodata)
 {
-	Log::logger()->variable("TagEntry::read()");
+	LOGVAR("TagEntry::read()");
 	int err = 0;
 	char tag_type = 0;
 	char *tmp_name = 0;
@@ -536,7 +536,7 @@ int TagEntry::read(bool nodata)
 	fread(&tag_type, sizeof(char), 1, in);
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
-		Log::logger()->error("TagEntry::read() invalid tag type: %d", tag_type);
+		LOGERR("TagEntry::read() invalid tag type: %d", tag_type);
 		return 1;
 	}
 
@@ -560,8 +560,8 @@ int TagEntry::read(bool nodata)
 	delete[]tmp_name;
 	tmp_name = 0;
 
-	Log::logger()->variable("\ntag name: '%s', len: %d, type: '%s'",
-							name.c_str(), name_len, Gatan::to_str((EntryType) tag_type));
+	LOGVAR("\ntag name: '%s', len: %d, type: '%s'",
+		   name.c_str(), name_len, Gatan::to_str((EntryType) tag_type));
 
 	if (tag_type == DATA_TAG) {
 		TagData tag_data(in, tagtable, name);
@@ -579,7 +579,7 @@ int TagEntry::read(bool nodata)
 ////////////////////////////////////////////
 
 DM3IO::DM3IO(string dm3_filename, IOMode rw)
-:	filename(dm3_filename), rw_mode(rw), dm3file(0), initialized(false)
+	:	filename(dm3_filename), rw_mode(rw), dm3file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	tagtable = new TagTable();
@@ -587,7 +587,7 @@ DM3IO::DM3IO(string dm3_filename, IOMode rw)
 
 DM3IO::~DM3IO()
 {
-	Log::logger()->log("DM3IO::~DM3IO()");
+	LOGDEBUG("DM3IO::~DM3IO()");
 	if (dm3file) {
 		fclose(dm3file);
 		dm3file = 0;
@@ -605,11 +605,11 @@ int DM3IO::init()
 		return err;
 	}
 	initialized = true;
-	Log::logger()->log("DM3IO::init()");
+	LOGDEBUG("DM3IO::init()");
 
 
 	if (rw_mode != READ_ONLY) {
-		Log::logger()->error("wrong rw mode. Only reading is supported for DM3.");
+		LOGERR("wrong rw mode. Only reading is supported for DM3.");
 		err = 1;
 		return err;
 	}
@@ -622,13 +622,13 @@ int DM3IO::init()
 
 	int buf[NUM_ID_INT];
 	if (fread(buf, sizeof(buf), 1, dm3file) != 1) {
-		Log::logger()->error("cannot read first block of DM3 file: '%s'", filename.c_str());
+		LOGERR("cannot read first block of DM3 file: '%s'", filename.c_str());
 		err = 1;
 		return err;
 	}
 
 	if (!is_valid(&buf)) {
-		Log::logger()->error("'%s' is not a invalid DM3 file", filename.c_str());
+		LOGERR("'%s' is not a invalid DM3 file", filename.c_str());
 		err = 1;
 		return err;
 	}
@@ -645,8 +645,8 @@ int DM3IO::init()
 	tagtable->set_endian(is_big_endian);
 	ByteOrder::become_big_endian(buf, 3);
 
-	Log::logger()->log("dm3 ver = %d, image size = %d, is_big_endian = %d",
-					   buf[0], buf[1], (int) is_big_endian);
+	LOGDEBUG("dm3 ver = %d, image size = %d, is_big_endian = %d",
+			 buf[0], buf[1], (int) is_big_endian);
 
 	return 0;
 }
@@ -655,7 +655,7 @@ int DM3IO::init()
 
 bool DM3IO::is_valid(const void *first_block)
 {
-	Log::logger()->log("DM3IO::is_valid()");
+	LOGDEBUG("DM3IO::is_valid()");
 
 	if (!first_block) {
 		return false;
@@ -691,7 +691,7 @@ bool DM3IO::is_image_big_endian()
 
 int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	Log::logger()->log("DM3IO::read_header() on file '%s'", filename.c_str());
+	LOGDEBUG("DM3IO::read_header() on file '%s'", filename.c_str());
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -731,7 +731,7 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool is_3d)
 {
-	Log::logger()->log("DM3IO::read_data() on file '%s'", filename.c_str());
+	LOGDEBUG("DM3IO::read_data() on file '%s'", filename.c_str());
 	if (check_read_access(image_index, true, rdata) != 0) {
 		return 1;
 	}
@@ -777,8 +777,8 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool is
 				rdata[k] = (float) ((unsigned int *) data)[i * nx + j];
 				break;
 			default:
-				Log::logger()->error("DM3IO cannot handle data type '%s'\n",
-									 Gatan::to_str((Gatan::DataType::GatanDataType) data_type));
+				LOGERR("DM3IO cannot handle data type '%s'\n",
+					   Gatan::to_str((Gatan::DataType::GatanDataType) data_type));
 				return 1;
 			}
 			k++;
@@ -796,15 +796,15 @@ bool DM3IO::is_complex_mode()
 
 int DM3IO::write_header(const Dict &, int, bool)
 {
-	Log::logger()->log("DM3IO::write_header()");
-	Log::logger()->warn("DM3 write is not supported.");
+	LOGDEBUG("DM3IO::write_header()");
+	LOGWARN("DM3 write is not supported.");
 	return 1;
 }
 
 int DM3IO::write_data(float *, int, bool)
 {
-	Log::logger()->log("DM3IO::write_data()");
-	Log::logger()->warn("DM3 write is not supported.");
+	LOGDEBUG("DM3IO::write_data()");
+	LOGWARN("DM3 write is not supported.");
 	return 1;
 }
 
