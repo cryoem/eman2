@@ -11,7 +11,6 @@
 #include <emfft.h>
 #include <filter.h>
 #include <io.h>
-#include <log.h>
 #include <pylist.h>
 #include <transform.h>
 

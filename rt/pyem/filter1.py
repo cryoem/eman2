@@ -10,8 +10,8 @@ print "all filters: ", filternames
 e = EMData()
 e.read_image(os.environ['HOME'] + "/images/search.dm3")
 
-params = {'threshold': EMObject(int(1500))}
-f1 = filters.get("Threshold", params)
+params = {'value': EMObject(int(1000))}
+f1 = filters.get("Binarize", params)
 
 new_params = f1.get_params()
 print "Params in C++: ", new_params

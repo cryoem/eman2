@@ -1,4 +1,3 @@
-Include("log.h")
 Include("emdata.h")
 Include("filter.h")
 Include("util.h")

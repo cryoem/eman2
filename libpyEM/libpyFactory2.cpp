@@ -12,7 +12,6 @@
 #include <emobject.h>
 #include <filter.h>
 #include <interp.h>
-#include <log.h>
 #include <projector.h>
 #include <reconstructor.h>
 #include <util.h>
