@@ -5,10 +5,14 @@ Include("ctf.h")
 Include("xydata.h")
 Include("interp.h")
 
+Exception = Class("EMAN::Exception", "exception.h")
+
 EMObject = Class("EMAN::EMObject", "emobject.h")
 set_policy(EMObject.operator['EMAN::EMData*'], return_internal_reference())
 set_policy(EMObject.operator['EMAN::XYData*'], return_internal_reference())
 exclude(EMObject.operator['const char*'])
+
+NotExistingObjectError = Class("EMAN::NotExistingObjectError", "emobject.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 

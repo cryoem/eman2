@@ -10,6 +10,7 @@
 #include <ctf.h>
 #include <emdata.h>
 #include <emobject.h>
+#include <exception.h>
 #include <filter.h>
 #include <interp.h>
 #include <projector.h>
@@ -22,6 +23,66 @@ using namespace boost::python;
 
 // Declarations ================================================================
 namespace  {
+
+struct EMAN_Exception_Wrapper: EMAN::Exception
+{
+    EMAN_Exception_Wrapper(PyObject* self_, const EMAN::Exception& p0):
+        EMAN::Exception(p0), self(self_) {}
+
+    EMAN_Exception_Wrapper(PyObject* self_):
+        EMAN::Exception(), self(self_) {}
+
+    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0):
+        EMAN::Exception(p0), self(self_) {}
+
+    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1):
+        EMAN::Exception(p0, p1), self(self_) {}
+
+    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1, const std::string& p2):
+        EMAN::Exception(p0, p1, p2), self(self_) {}
+
+    void set_desc(const std::string& p0) {
+        call_method< void >(self, "set_desc", p0);
+    }
+
+    void default_set_desc(const std::string& p0) {
+        EMAN::Exception::set_desc(p0);
+    }
+
+    const char* get_file() const {
+        return call_method< const char* >(self, "get_file");
+    }
+
+    const char* default_get_file() const {
+        return EMAN::Exception::get_file();
+    }
+
+    const char* get_desc() const {
+        return call_method< const char* >(self, "get_desc");
+    }
+
+    const char* default_get_desc() const {
+        return EMAN::Exception::get_desc();
+    }
+
+    int get_line_num() const {
+        return call_method< int >(self, "get_line_num");
+    }
+
+    int default_get_line_num() const {
+        return EMAN::Exception::get_line_num();
+    }
+
+    const char* what() const throw() {
+        return call_method< const char* >(self, "what");
+    }
+
+    const char* default_what() const {
+        return std::exception::what();
+    }
+
+    PyObject* self;
+};
 
 struct EMAN_Aligner_Wrapper: EMAN::Aligner
 {
@@ -280,6 +341,15 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyFactory2)
 {
+    class_< EMAN::Exception, EMAN_Exception_Wrapper >("Exception", init< const EMAN::Exception& >())
+        .def(init< optional< const std::string&, int, const std::string& > >())
+        .def("set_desc", &EMAN::Exception::set_desc, &EMAN_Exception_Wrapper::default_set_desc)
+        .def("get_file", &EMAN::Exception::get_file, &EMAN_Exception_Wrapper::default_get_file)
+        .def("get_desc", &EMAN::Exception::get_desc, &EMAN_Exception_Wrapper::default_get_desc)
+        .def("get_line_num", &EMAN::Exception::get_line_num, &EMAN_Exception_Wrapper::default_get_line_num)
+        .def("what", (const char* (std::exception::*)() const throw())&std::exception::what, (const char* (EMAN_Exception_Wrapper::*)() const)&EMAN_Exception_Wrapper::default_what)
+    ;
+
     scope* EMAN_EMObject_scope = new scope(
     class_< EMAN::EMObject >("EMObject", init<  >())
         .def(init< const EMAN::EMObject& >())
@@ -315,6 +385,10 @@ BOOST_PYTHON_MODULE(libpyFactory2)
     ;
 
     delete EMAN_EMObject_scope;
+
+    class_< EMAN::NotExistingObjectError, bases< EMAN::Exception >  >("NotExistingObjectError", init< const EMAN::NotExistingObjectError& >())
+        .def(init< optional< const std::string&, int, const std::string& > >())
+    ;
 
     class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("Aligner", init<  >())
         .def("align", pure_virtual(&EMAN::Aligner::align), return_value_policy< manage_new_object >())

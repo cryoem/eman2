@@ -7,8 +7,9 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "log.h"
 #include <stdio.h>
+#include "log.h"
+#include "exception.h"
 
 using std::vector;
 using std::string;
@@ -344,6 +345,13 @@ namespace EMAN
 		map < string, string > dict;
 	};
 
+	class NotExistingObjectError : public Exception {
+	public:
+		NotExistingObjectError(const string& file = "unknown", int line = 0,
+							   const string& desc = "none")
+			: Exception(file, line, desc) {}
+	};
+	
 	/** Factory is used to store objects to create new instances.
      * It is a singleton template. Typical usages are as follows:
      *
@@ -367,8 +375,8 @@ namespace EMAN
 		typedef T *(*InstanceType) ();
 
 		static void add(InstanceType i);
-		static T *get(string instance_name);
-		static T *get(string instance_name, const Dict & params);
+		static T *get(string instance_name) throw (NotExistingObjectError);
+		static T *get(string instance_name, const Dict & params) throw (NotExistingObjectError);
 		static vector < string > get_list();
 
 	  private:
@@ -416,19 +424,22 @@ namespace EMAN
 		i = 0;
 	}
 
-	template < class T > T * Factory < T >::get(string instancename) {
+	template < class T > T * Factory < T >::get(string instancename) throw(NotExistingObjectError){
 		init();
 		typename map < string, InstanceType >::iterator fi =
 			my_instance->my_dict.find(instancename);
 		if (fi != my_instance->my_dict.end()) {
 			return my_instance->my_dict[instancename] ();
 		}
-		Log::logger()->error("No such an instance existing: %s", instancename.c_str());
+		
+		string desc = string("No such an instance existing: ") + instancename;
+		throw NotExistingObjectError(__FILE__, __LINE__, desc);
 
 		return 0;
 	}
 
-	template < class T > T * Factory < T >::get(string instancename, const Dict & params) {
+	template < class T > T * Factory < T >::get(string instancename, const Dict & params)
+		throw(NotExistingObjectError){
 		init();
 
 		typename map < string, InstanceType >::iterator fi =
@@ -438,8 +449,10 @@ namespace EMAN
 			T *i = my_instance->my_dict[instancename] ();
 			i->set_params(params);
 			return i;
-		}
-		Log::logger()->error("No such an instance existing: %s", instancename.c_str());
+		}		
+
+		string desc = string("No such an instance existing: ") + instancename;
+		throw NotExistingObjectError(__FILE__, __LINE__, desc);
 
 		return 0;
 	}
