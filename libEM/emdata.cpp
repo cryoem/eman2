@@ -3594,7 +3594,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	tmp2 = get_clip(r1);
 
 	if (!premasked) {
-		tmp2->filter("SharpMask", Dict("outer_radius", nx / 2, "value", 0));
+		tmp2->filter("MaskSharp", Dict("outer_radius", nx / 2, "value", 0));
 	}
 
 	if (filt->get_xsize() != tmp2->get_xsize() + 2 || filt->get_ysize() != tmp2->get_ysize() ||
@@ -3627,7 +3627,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	
 	if (nz == 1) {
 		if (!unwrap) {
-			tmp2->filter("SharpMask", Dict("outer_radius", -1, "value", 0));
+			tmp2->filter("MaskSharp", Dict("outer_radius", -1, "value", 0));
 			rfp = 0;
 			result = tmp2;
 		}
@@ -4103,7 +4103,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 	}
 
 	Dict filter_dict;
-	if (mask_filter == "SharpMask") {
+	if (mask_filter == "MaskSharp") {
 		filter_dict["value"] = 0;
 	}
 
@@ -4886,7 +4886,7 @@ float EMData::get_circle_mean()
 		mask->set_size(nx, ny, nz);
 
 		float radius = ny / 2 - 2;
-		mask->filter("SharpMask", Dict("inner_radius", radius - 1, "outer_radius", radius + 1));
+		mask->filter("MaskSharp", Dict("inner_radius", radius - 1, "outer_radius", radius + 1));
 
 		int n = 0;
 		float *d = mask->get_data();

@@ -319,7 +319,7 @@ namespace EMAN
 		void calc_rcf(EMData * with, vector < float >&sum_array);
 #endif
 		float calc_dist(EMData * second_img, int y_index = 0) const;
-		EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "SharpMask");
+		EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "MaskSharp");
 
 		EMData *convolute(EMData * with);
 

@@ -53,7 +53,8 @@ def write_filter(filtername, output, bgcolor):
 
 def write_group(groupname, output):
 	groupclass = None
-
+	if groupname == "Filter":
+		groupclass = Filter
 	if groupname == "RealPixelFilter":
 		groupclass = RealPixelFilter
 	elif groupname == "BoxStatFilter":
@@ -107,6 +108,8 @@ def write_group_filters():
 	bgcolor1 = 'f0f0fa'
 	bgcolor2 = 'fafaf0'
 	bgcolor = bgcolor1
+
+	write_group("Filter", gout)
 
 	sorted_groupnames = []
 	for groupname in groupnames:
