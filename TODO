@@ -86,9 +86,6 @@
   039. make classes Vec3, Matrix3f, Matrix4f as python container classes.  
 	   refer indexing_suite in boost python.
 
-  033. in filter parameter passing from python to C++, is there a way to
-       pass EMData directly without creating EMObject object. i.e.,
-           {"with", EMObject(emdata)} => {"with", emdata}
 
   041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
        produced a core dump. 
@@ -167,6 +164,11 @@
 			    1) new logging API;
 				2) new filter name conventions.
 
+  12/10/2004 033.
+       in filter parameter passing from python to C++, is there a way to
+       pass EMData directly without creating EMObject object. i.e.,
+           {"with", EMObject(emdata)} => {"with", emdata}
+		   
   10/15/04 035. Add the following to image header documentation:
 				CTF 1D and 2D versions
 				micrograph id

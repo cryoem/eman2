@@ -276,7 +276,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	EMAN::tuple3_from_python<EMAN::Vec3f, float>();
 
 	EMAN::emobject_farray_from_python();
-
+	EMAN::emobject_emdata_from_python();
+	
 	implicitly_convertible<int, EMAN::EMObject>();
 	implicitly_convertible<float, EMAN::EMObject>();
 	implicitly_convertible<double, EMAN::EMObject>();

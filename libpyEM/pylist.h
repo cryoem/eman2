@@ -6,6 +6,7 @@
 #include "emobject.h"
 #include "transform.h"
 #include "geometry.h"
+#include "emdata.h"
 
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
@@ -23,8 +24,6 @@ using std::map;
 
 
 namespace EMAN {
-	
-	class EMData;
 
 	class Wrapper {
 	public:
@@ -316,7 +315,7 @@ namespace EMAN {
 		emobject_farray_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<EMObject >());
+												   python::type_id<EMObject>());
 		}
     
 		static void* convertible(PyObject* obj_ptr)
@@ -360,7 +359,32 @@ namespace EMAN {
 			result = EMObject(farray);
 		}
     };
+	
+	struct emobject_emdata_from_python
+    {
+		emobject_emdata_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<EMObject>());
+		}
     
+		static void* convertible(PyObject* obj_ptr)
+		{
+			return obj_ptr;
+		}
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<EMObject>*) data)->storage.bytes;
+			new (storage) EMObject();
+
+			data->convertible = storage;
+			EMObject& result = *((EMObject*) storage);
+			EMData * emdata = python::extract<EMData*>(obj_ptr);	   
+			result = EMObject(emdata);
+		}
+    };
 }
 
 

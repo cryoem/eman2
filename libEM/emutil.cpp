@@ -831,6 +831,13 @@ void EMUtil::test_pyem_emobject(const Dict& d)
 	for (size_t i = 0; i < array.size(); i++) {
 		printf("farray[%d] = %f\n", i, array[i]);
 	}
+
+	EMData * img = d["emdata"];
+	if (img) {
+		printf("image size = (%d, %d, %d)\n",
+			   img->get_xsize(), img->get_ysize(), img->get_zsize());
+	}
+	
 }
 
 
