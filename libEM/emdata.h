@@ -38,6 +38,7 @@ namespace EMAN
 	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
 	typedef boost::multi_array_ref<int, 2> MIArray2D;
 	typedef boost::multi_array_ref<int, 3> MIArray3D;
+	
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
 	 *
@@ -83,7 +84,7 @@ namespace EMAN
 		 * If the given image file already exists, this image
 		 * format only stores 1 image, and no region is given, then
 		 * truncate the image file  to  zero length before writing
-		 * data out. For head writing only, no truncation happens.
+		 * data out. For header writing only, no truncation happens.
 		 *
 		 * If a region is given, then write a region only.
 		 *
@@ -115,7 +116,14 @@ namespace EMAN
 						  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						  bool header_only = false);
 
-		void write_lst(const string & filename, int filenum,
+		/** Append data to a LST image file.
+		 * @param filename The LST image file name.
+		 * @param reffile Reference file name.
+		 * @param refn The reference file number.
+		 * @param comment. The comment to the added reference file.
+		 * @see lstio.h
+		 */
+		void write_lst(const string & filename, 
 					   const string & reffile="", int refn=-1,
 					   const string & comment="");
 
@@ -191,9 +199,7 @@ namespace EMAN
 		/** This will extract an arbitrarily oriented and sized region from the
 		 *  image. 
 		 *
-		 *  @param center The location of the center of returned image in 'this'.
-		 *  @param orient The orientation. It is defined by rotating the 
-		 *  target image into the source image ('this'). 
+		 *  @param xform The transformation of the region.
 		 *  @param size Size of the clip.
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
@@ -252,22 +258,30 @@ namespace EMAN
 		 */
 		EMData *pad_fft();
 
-		/** return the fast fourier transform image of the current
+		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
 		 * real/imaginary format.
 		 *
 		 * @return The FFT of the current image in real/imaginary format.
 		 */
 		EMData *do_fft();
+
+		/** Do FFT inplace. And return the FFT image.
+		 * @return The FFT of the current image in real/imaginary format.
+		 */
 		EMData *do_fft_inplace();
 
-		/** return the inverse fourier transform image of the current
+		/** return the inverse fourier transform (IFT) image of the current
 		 * image. the current image is not changed.
 		 *
 		 * @exception ImageFormatException If the image is not a complex image.
 		 * @return The current image's inverse fourier transform image.
 		 */
 		EMData *do_ift();
+
+		/* Do IFT inplace. And return the IFT image.
+		 * @return The IFT image.
+		 */
 		EMData *do_ift_inplace();
 
 		/** return the amplitudes of the FFT including the left half
@@ -332,7 +346,6 @@ namespace EMAN
 						 float min_render, float max_render,int asrgb);
 		
 		/** Render the image into a 24-bit image. 2D image only.
-		 * @param data
 		 * @param x
 		 * @param y
 		 * @param xsize
@@ -392,19 +405,19 @@ namespace EMAN
 		void translate(const Vec3f &translation);
 
 		/** Rotate this image.
-		 * @param rotation Rotation angles
+		 * @param t Transformation rotation.
 		 */
 		void rotate(const Transform & t);
 
 		/** Rotate this image.
-		 * @param alt Rotation euler angle alt in EMAN convention.
 		 * @param az  Rotation euler angle az  in EMAN convention.
+		 * @param alt Rotation euler angle alt in EMAN convention.		 
 		 * @param phi Rotation euler angle phi in EMAN convention.
 		 */
 		void rotate(float az, float alt, float phi);
 
 		/** Rotate then translate the image.
-		 * @param xform The rotation and translation transformation to be done.
+		 * @param t The rotation and translation transformation to be done.
 		 */
 		void rotate_translate(const Transform & t);
 
@@ -920,7 +933,7 @@ namespace EMAN
 		 *     locations. Their values are higher than threshold.
 		 */
 		vector<Pixel> calc_highest_locations(float threshold);
-//
+
 		/** Calculates the mean pixel values around the (1 pixel) edge
 		 * of the image.
 		 *
@@ -973,7 +986,8 @@ namespace EMAN
 		 */
 		void set_translation(float dx, float dy, float dz);
 
-		/** Get the 3D orientation of 'this' image
+		/** Get the 3D orientation of 'this' image.
+		 * @return The 3D orientation of 'this' image.
 		 */
 		Transform get_transform() const; // rename this to get_transform().
 
@@ -995,20 +1009,107 @@ namespace EMAN
 		void set_size(int nx, int ny, int nz);
 
 		/** Set the path
+		 * @param path The new path.
 		 */
 		void set_path(const string & path);
 
-		/** Set the number of paths
+		/** Set the number of paths.
+		 * @param n The number of paths.
 		 */
 		void set_pathnum(int n);
 
+		/** Get image raw pixel data in a 2D multi-array format. The
+		 * array shares the memory space with the image data.
+		 *
+		 * It should be used on 2D image only.
+		 *
+		 * @return 2D multi-array format of the raw data.
+		 */
 		MArray2D get_2dview() const;
+		
+		/** Get image raw pixel data in a 3D multi-array format. The
+		 * array shares the memory space with the image data.
+		 *
+		 * It should be used on 3D image only.
+		 *
+		 * @return 3D multi-array format of the raw data.
+		 */
 		MArray3D get_3dview() const;
+		
+		/** Get complex image raw pixel data in a 2D multi-array format. 
+		 * The array shares the memory space with the image data.
+		 *
+		 * It should be used on 2D image only.
+		 *
+		 * @return 2D multi-array format of the raw data.
+		 */
 		MCArray2D get_2dcview() const;
+		
+		/** Get complex image raw pixel data in a 3D multi-array format. 
+		 * The array shares the memory space with the image data.
+		 *
+		 * It should be used on 3D image only.
+		 *
+		 * @return 3D multi-array format of the raw data.
+		 */
 		MCArray3D get_3dcview() const;
+		
+		/** Get image raw pixel data in a 2D multi-array format. The
+		 * data coordinates is translated by (x0,y0) such that
+		 * array[y0][x0] points to the pixel at the origin location.
+		 * the data coordiates translated by (x0,y0). The
+		 * array shares the memory space with the image data.
+		 *
+		 * It should be used on 2D image only.
+		 *
+		 * @param x0 X-axis translation amount.
+		 * @param y0 Y-axis translation amount.
+		 * @return 2D multi-array format of the raw data.
+		 */
 		MArray2D get_2dview(int x0, int y0) const;
+
+		/** Get image raw pixel data in a 3D multi-array format. The
+		 * data coordinates is translated by (x0,y0,z0) such that
+		 * array[z0][y0][x0] points to the pixel at the origin location.
+		 * the data coordiates translated by (x0,y0,z0). The
+		 * array shares the memory space with the image data.
+		 *
+		 * It should be used on 3D image only.
+		 *
+		 * @param x0 X-axis translation amount.
+		 * @param y0 Y-axis translation amount.
+		 * @param z0 Z-axis translation amount.
+		 * @return 3D multi-array format of the raw data.
+		 */
 		MArray3D get_3dview(int x0, int y0, int z0) const;
+
+		/** Get complex image raw pixel data in a 2D multi-array format. The
+		 * data coordinates is translated by (x0,y0) such that
+		 * array[y0][x0] points to the pixel at the origin location.
+		 * the data coordiates translated by (x0,y0). The
+		 * array shares the memory space with the image data.
+		 *
+		 * It should be used on 2D image only.
+		 *
+		 * @param x0 X-axis translation amount.
+		 * @param y0 Y-axis translation amount.
+		 * @return 2D multi-array format of the raw data.
+		 */
 		MCArray2D get_2dcview(int x0, int y0) const;
+
+		/** Get complex image raw pixel data in a 3D multi-array format. The
+		 * data coordinates is translated by (x0,y0,z0) such that
+		 * array[z0][y0][x0] points to the pixel at the origin location.
+		 * the data coordiates translated by (x0,y0,z0). The
+		 * array shares the memory space with the image data.
+		 *
+		 * It should be used on 3D image only.
+		 *
+		 * @param x0 X-axis translation amount.
+		 * @param y0 Y-axis translation amount.
+		 * @param z0 Z-axis translation amount.
+		 * @return 3D multi-array format of the raw data.
+		 */
 		MCArray3D get_3dcview(int x0, int y0, int z0) const;
 		
 		/** Get one row of a 1D/2D image.
@@ -1253,7 +1354,7 @@ namespace EMAN
 		bool is_fftpadded() const;
 
 		/** Mark this image as already extended along x for ffts.
-		 * @param is_pad If true, mark as padded along x; If
+		 * @param is_padded If true, mark as padded along x; If
 		 * false, mark as not padded along x.
 		 */
 		void set_fftpad(bool is_padded);

@@ -62,6 +62,7 @@ namespace EMAN
 		 * one is used.
 		 *
 		 * @param this_img The image to be compared.
+		 * @param to_img 'this_img" is aligned with 'to_img'.
 		 * @param cmp_name The comparison method to compare the two images.
 		 * @return The aligned image.
 		 */

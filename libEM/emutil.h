@@ -140,6 +140,7 @@ namespace EMAN
 		 * @param nz Image z size.
 		 * @param area The region to read/write.
 		 * @param need_flip Do we need flip the image?
+		 * @param imgtype The Image type of the processed file.
 		 * @param pre_row File size needed to be skipped before each row.
 		 * @param post_row File size needed to be skipped after each row.
 		 * @exception ImageReadException If the read has some error.

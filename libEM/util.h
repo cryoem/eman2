@@ -198,8 +198,8 @@ namespace EMAN
 		 * not changed. If the old filename has no extension, add the
 		 * new extension to it.
 		 *
-		 * @params old_filename [in] Old filename.
-		 * @params new_ext  [in] The new extension. It shouldn't have
+		 * @param old_filename [in] Old filename.
+		 * @param new_ext  [in] The new extension. It shouldn't have
 		 * ".". e.g., for MRC file, it will be "mrc", not ".mrc".
 		 * @return The new filename with the new extension.
 		 */
@@ -666,7 +666,7 @@ namespace EMAN
 		/** Check whether a number is a good float. A number is a good
 		 * float if it is not abnormal zero, and not inf, -inf or NaN
 		 *
-		 * @param [in] p_f Pointer to the given float number.
+		 * @param p_f [in] Pointer to the given float number.
 		 * @return 1 if it is a good float; 0 if it's not good float.
 		 */
 		static inline int goodf(const float *p_f)

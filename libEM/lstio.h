@@ -11,8 +11,9 @@
 namespace EMAN
 {
 	/** A LST file is an ASCII file that contains a list of image
-	 * file names. Each line of a LST file has an image file name.
-	*/
+	 * file names. Each line of a LST file has the following format:
+	 * reference_image_index  reference-image-filename comments
+	 */
 		
 		
 	class LstIO:public ImageIO

@@ -200,9 +200,7 @@ void EMData::write_image(const string & filename, int img_index,
 
 			if (!header_only) {
 				if (imgtype == EMUtil::IMAGE_LST) {
-#if 0
-					int filenum = attr_dict["LST.filenum"];
-#endif
+
 					const char *reffile = attr_dict["LST.reffile"];
 					if (strcmp(reffile, "") == 0) {
 						reffile = path.c_str();
@@ -256,11 +254,10 @@ void EMData::append_image(const string & filename,
 	EXITFUNC;
 }
 
-void EMData::write_lst(const string & filename, int filenum,
-					   const string & reffile, int refn, const string & comment)
+void EMData::write_lst(const string & filename, const string & reffile, 
+					   int refn, const string & comment)
 {
 	ENTERFUNC;
-	attr_dict["LST.filenum"] = filenum;
 	attr_dict["LST.reffile"] = reffile;
 	attr_dict["LST.refn"] = refn;
 	attr_dict["LST.comment"] = comment;
@@ -2447,6 +2444,9 @@ void EMData::update_stat()
 MArray2D EMData::get_2dview() const
 {
 	const int ndims = 2;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("2D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
 	MArray2D marray(rdata, dims, boost::fortran_storage_order());
 	return marray;	
@@ -2455,6 +2455,9 @@ MArray2D EMData::get_2dview() const
 MArray3D EMData::get_3dview() const
 {
 	const int ndims = 3;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("3D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
 	MArray3D marray(rdata, dims, boost::fortran_storage_order());
 	return marray;
@@ -2463,6 +2466,9 @@ MArray3D EMData::get_3dview() const
 MCArray2D EMData::get_2dcview() const
 {
 	const int ndims = 2;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("2D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
@@ -2472,6 +2478,9 @@ MCArray2D EMData::get_2dcview() const
 MCArray3D EMData::get_3dcview() const
 {
 	const int ndims = 3;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("3D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
@@ -2481,6 +2490,9 @@ MCArray3D EMData::get_3dcview() const
 MArray2D EMData::get_2dview(int x0, int y0) const
 {
 	const int ndims = 2;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("2D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
 	MArray2D marray(rdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
@@ -2491,6 +2503,9 @@ MArray2D EMData::get_2dview(int x0, int y0) const
 MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("3D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
 	MArray3D marray(rdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
@@ -2501,6 +2516,9 @@ MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 MCArray2D EMData::get_2dcview(int x0, int y0) const
 {
 	const int ndims = 2;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("2D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
@@ -2512,6 +2530,9 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
+	if (get_ndim() != ndims) {
+		throw ImageDimensionException("3D only");
+	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
