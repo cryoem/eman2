@@ -4,6 +4,12 @@ from EMAN2 import *
 import sys
 from testlib import *
 
+def test_Dict():
+	edict = get_dict("emobject")
+	edict2 = TestUtil.test_dict(edict)
+	assertdict(edict, edict2)
+	
+
 def test_point_size():
 	nlist = get_list("int")
 	flist = get_list("float")
@@ -89,6 +95,8 @@ def test_vector():
 	for i in range(len(plist)):
 		assert(plist[i] == plist2[i])
 
+
+test_Dict()
 test_map()
 test_vector()
 test_point_size()

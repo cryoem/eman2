@@ -3,6 +3,7 @@
 #include "emobject.h"
 #include "log.h"
 
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <map>
@@ -294,3 +295,22 @@ vector<Pixel> TestUtil::test_vector_pixel(const vector<Pixel> & v)
 	return r;
 }
 
+Dict TestUtil::test_dict(const Dict & d)
+{
+	Dict r;
+	
+	vector<string> keys = d.keys();
+	sort(keys.begin(), keys.end());
+
+	for (size_t i = 0; i < keys.size(); i++) {
+		LOGDEBUG("keys[%s] = %f\n", keys[i].c_str(), (float)d[keys[i]]);
+		assert(keys[i] == get_debug_string(i));
+		assert(((float)d[keys[i]]) == tf[i]);
+		r[keys[i]] = d[keys[i]];
+	}
+
+	return r;
+}
+
+
+	
