@@ -984,6 +984,9 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform &)
 	delete slice_copy;
 	slice_copy = 0;
 
+	delete tmp;
+	tmp = 0;
+	
 	return 0;
 }
 

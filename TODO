@@ -68,17 +68,6 @@
          >>> help(EMAN2)
          gives a starting point.
 
-  071. rotation has some errors.
-	      rot = Rotation(azi, alt, phi, Rotation.EulerType.EMAN)
-		  print azi, rot.eman_az()
-		  print alt, rot.eman_alt()
-		  print phi, rot.eman_phi()
-
-		  got
-		  -0.60170830102 -0.0
-		  1.45232928554 0.601708292961
-		  0.0 -1.45232927799
-
 		 
 --- Low Priority ---
 
@@ -282,4 +271,15 @@
   12/18/04 073.
       check convertible in type converter functions.
 
-	   
+  12/20/04	071.   
+     rotation has some errors.
+	      rot = Rotation(azi, alt, phi, Rotation.EulerType.EMAN)
+		  print azi, rot.eman_az()
+		  print alt, rot.eman_alt()
+		  print phi, rot.eman_phi()
+
+		  got
+		  -0.60170830102 -0.0
+		  1.45232928554 0.601708292961
+		  0.0 -1.45232927799
+

@@ -4,7 +4,7 @@ Factory = Template("EMAN::Factory", "emobject.h")
 Function("EMAN::dump_reconstructors", "reconstructor.h")
 
 Reconstructor = Class("EMAN::Reconstructor", "reconstructor.h")
-set_policy(Reconstructor.finish, return_value_policy(manage_new_object))
+set_policy(Reconstructor.finish, return_internal_reference())
 rename(Reconstructor, "__Reconstructor")
 
 ReconstructorFactory = Factory("EMAN::Reconstructor", "Reconstructors")
