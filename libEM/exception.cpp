@@ -11,6 +11,7 @@ const char* Exception::what() const throw()
 		err1 = "error with '" + objname + "': ";
 	}
 
-	string msg = filename + ":" + Util::int2str(line) + ": " + err1 + desc;
+	string msg = "Exception at " + filename + ":" + Util::int2str(linenum);
+	msg += ": " + err1 + "'" + desc + "' caught";
 	return msg.c_str();
 }

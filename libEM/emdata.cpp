@@ -812,20 +812,37 @@ EMData* EMData::get_fft_amplitude()
 
 	int ndim = get_ndim();
 	if (ndim == 3) {
+		int nxy = nx * ny;
+		int nx2y = nx2 * ny;
+		
 		for (int k = 1; k < nz; k++) {
+			int knx2y = k * nx2y;
+			int knxy = k * nxy;
+			int knx2y2 = (nz-k)*nx2y;
+				
 			for (int j = 1; j < ny; j++) {
+				int j2 = knx2y+j*nx2+nx2/2;
+				int j3 = knxy+j*nx;
+				int j4 = knx2y2 + (ny-j)*nx2+nx2/2;
+				
 				for (int i = 0; i < nx2/2; i++) {
-					d[k*nx2*ny+j*nx2+nx2/2+i] = rdata[k*nx*ny+j*nx+2*i];
-					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = rdata[k*nx*ny+j*nx+2*i];
+					int i2 = j3+2*i;
+					d[j2+i] = rdata[i2];
+					d[j4-i] = rdata[i2];
 				}
 			}
 		}
 	}
 	else if (ndim == 2) {
 		for (int j = 1; j < ny; j++) {
+			int j2 = j * nx;
+			int j3 = j*nx2+nx2/2;
+			int j4 = (ny-j)*nx2+nx2/2;
+			
 			for (int i = 0; i < nx2/2; i++) {
-				d[j*nx2+nx2/2+i] = rdata[j*nx+2*i];
-				d[(ny-j)*nx2+nx2/2-i] = rdata[j*nx+2*i];
+				int i2 = j2+2*i;
+				d[j3+i] = rdata[i2];
+				d[j4-i] = rdata[i2];
 			}
 		}
 	}
@@ -5391,7 +5408,9 @@ float EMData::get_circle_mean()
 float EMData::dot(EMData * with, bool evenonly)
 {
 	ENTERFUNC;
-	
+	if (!with) {
+		throw NullPointerException("Null EMData Image");
+	}
 	DotCmp dot_cmp;
 	Dict cmp_params;
 	cmp_params["with"] = with;
@@ -5431,34 +5450,26 @@ void EMData::setup_insert_slice(int size)
 
 float EMData::sget_value_at(int x, int y, int z) const
 {
-	if (x < 0 || x >= nx) {
-		throw OutofRangeException(0, nx-1, x, "x");
-	}
-	else if (y < 0 || y >= ny) {
-		throw  OutofRangeException(0, ny-1, y, "y");
-	}
-	else if (z < 0 || z >= nz) {
-		throw  OutofRangeException(0, nz-1, z, "z");
+	if (x < 0 || x >= nx || y < 0 || y >= ny || z < 0 || z >= nz) {
+		return 0;
 	}
 	return rdata[x + y * nx + z * nx * ny];
 }
 
 float EMData::sget_value_at(int x, int y) const
 {
-	if (x < 0 || x >= nx) {
-		throw OutofRangeException(0, nx-1, x, "x");
-	}
-	else if (y < 0 || y >= ny) {
-		throw  OutofRangeException(0, ny-1, y, "y");
+	if (x < 0 || x >= nx || y < 0 || y >= ny) {
+		return 0;
 	}
 	return rdata[x + y * nx];
 }
 
 float EMData::sget_value_at(size_t i) const
 {
-	size_t size = nx*ny*nz;
+	size_t size = nx*ny;
+	size *= nz;
 	if (i >= size) {
-		throw OutofRangeException(0, (int)(size-1), int(i), "index");
+		return 0;
 	}
 	return rdata[i];
 }
@@ -5467,13 +5478,14 @@ float EMData::sget_value_at_interp(float xx, float yy) const
 {
 	int x = static_cast < int >(floor(xx));
 	int y = static_cast < int >(floor(yy));
-
+	
 	float p1 = sget_value_at(x, y);
 	float p2 = sget_value_at(x + 1, y);
 	float p3 = sget_value_at(x + 1, y + 1);
 	float p4 = sget_value_at(x, y + 1);
 
-	return Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
+	float result = Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);	
+	return result;
 }
 
 float EMData::sget_value_at_interp(float xx, float yy, float zz) const
@@ -5481,6 +5493,7 @@ float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 	int x = (int) floor(xx);
 	int y = (int) floor(yy);
 	int z = (int) floor(zz);
+	
 	float p1 = sget_value_at(x, y, z);
 	float p2 = sget_value_at(x + 1, y, z);
 	float p3 = sget_value_at(x, y + 1, z);
@@ -5491,6 +5504,8 @@ float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 	float p7 = sget_value_at(x, y + 1, z + 1);
 	float p8 = sget_value_at(x + 1, y + 1, z + 1);
 
-	return Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8,
-									   xx - x, yy - y, zz - z);
+	float result = Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8,
+											   xx - x, yy - y, zz - z);
+	
+	return result;
 }

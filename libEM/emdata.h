@@ -1083,23 +1083,22 @@ namespace EMAN
 		float get_value_at(size_t i) const;
 
 		/** A safer, slower way to get the pixel density value at
-		 * coordinates (x,y,z).
-		 * The validity of x, y, and z is checked.
+		 * coordinates (x,y,z). The validity of x, y, and z is checked.
+		 * If the coordinates are out of range, return 0;
 		 *
 		 * @param x The x cooridinate.
 		 * @param y The y cooridinate.
 		 * @param z The z cooridinate.
-		 * @exception OutofRangeException (x,y,z) is out of range.
 		 * @return The pixel density value at coordinates (x,y,z).
 		 */
 		float sget_value_at(int x, int y, int z) const;
 
 		/** A safer, slower way to get the pixel density value at
 		 * coordinates (x,y). 2D only. The validity of x, y is checked.
+		 * If the coordinates are out of range, return 0;
 		 *
 		 * @param x The x cooridinate.
 		 * @param y The y cooridinate.
-		 * @exception OutofRangeException (x,y) is out of range.
 		 * @return The pixel density value at coordinates (x,y).
 		 */
 		float sget_value_at(int x, int y) const;
@@ -1107,10 +1106,9 @@ namespace EMAN
 		/** A safer, slower way to get the pixel density value
 		 * given an index 'i' assuming
 		 * the pixles are stored in a 1D array. The validity of i
-		 * is not checked.
+		 * is checked. If i is out of range, return 0;
 		 * 
 		 * @param i  1D data array index.
-		 * @exception OutofRangeException Index i is out of range.
 		 * @return The pixel density value
 		 */
 		float sget_value_at(size_t i) const;

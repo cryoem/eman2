@@ -23,7 +23,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Log_end_overloads_1_3, end, 1, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_process_region_io_overloads_7_12, EMAN::EMUtil::process_region_io, 7, 12)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_process_region_io_overloads_7_13, EMAN::EMUtil::process_region_io, 7, 13)
 
 struct EMAN_Ctf_Wrapper: EMAN::Ctf
 {
@@ -330,7 +330,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_imageio", &EMAN::EMUtil::get_imageio, EMAN_EMUtil_get_imageio_overloads_2_3()[ return_internal_reference< 1 >() ])
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
-        .def("process_region_io", &EMAN::EMUtil::process_region_io, EMAN_EMUtil_process_region_io_overloads_7_12())
+        .def("process_region_io", &EMAN::EMUtil::process_region_io, EMAN_EMUtil_process_region_io_overloads_7_13())
         .def("dump_dict", &EMAN::EMUtil::dump_dict)
         .def("is_same_size", &EMAN::EMUtil::is_same_size)
         .def("is_same_ctf", &EMAN::EMUtil::is_same_ctf)
