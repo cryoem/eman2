@@ -47,7 +47,7 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
         return call_method< EMAN::Dict >(self, "to_dict");
     }
 
-    std::vector<float,std::allocator<float> > compute_1d(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+    std::vector<float,std::allocator<float> > compute_1d(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         return call_method< std::vector<float,std::allocator<float> > >(self, "compute_1d", p0, p1, p2);
     }
 
@@ -100,15 +100,15 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     EMAN_SimpleCtf_Wrapper(PyObject* self_):
         EMAN::SimpleCtf(), self(self_) {}
 
-    std::vector<float,std::allocator<float> > compute_1d(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+    std::vector<float,std::allocator<float> > compute_1d(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         return call_method< std::vector<float,std::allocator<float> > >(self, "compute_1d", p0, p1, p2);
     }
 
-    std::vector<float,std::allocator<float> > default_compute_1d_2(EMAN::EMData* p0, EMAN::Ctf::CtfType p1) {
+    std::vector<float,std::allocator<float> > default_compute_1d_2(int p0, EMAN::Ctf::CtfType p1) {
         return EMAN::SimpleCtf::compute_1d(p0, p1);
     }
 
-    std::vector<float,std::allocator<float> > default_compute_1d_3(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+    std::vector<float,std::allocator<float> > default_compute_1d_3(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         return EMAN::SimpleCtf::compute_1d(p0, p1, p2);
     }
 
@@ -439,8 +439,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def_readwrite("voltage", &EMAN::SimpleCtf::voltage)
         .def_readwrite("cs", &EMAN::SimpleCtf::cs)
         .def_readwrite("apix", &EMAN::SimpleCtf::apix)
-        .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_1d_3)
-        .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_1d_2)
+        .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN::SimpleCtf::*)(int, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)(int, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_1d_3)
+        .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)(int, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_1d_2)
         .def("compute_2d_real", (void (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_2d_real, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_2d_real_3)
         .def("compute_2d_real", (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_2d_real_2)
         .def("compute_2d_complex", (void (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_2d_complex, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_2d_complex_3)

@@ -60,7 +60,7 @@ namespace EMAN
 	virtual void from_dict(const Dict & dict) = 0;
 	virtual Dict to_dict() const = 0;
 	
-	virtual vector<float> compute_1d(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
+	virtual vector<float> compute_1d(int size, CtfType t, XYData * struct_factor = 0) = 0;
 	virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 	virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
@@ -96,7 +96,7 @@ namespace EMAN
 	SimpleCtf();
 	~SimpleCtf();
 
-	vector<float> compute_1d(EMData * image, CtfType type, XYData * struct_factor = 0);
+	vector<float> compute_1d(int size, CtfType type, XYData * struct_factor = 0);
 	void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 	void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 	

@@ -69,7 +69,6 @@ namespace EMAN
 
 	static EMData *make_image_median(const vector<EMData *> & image_list);
 
-
 	static ImageType get_image_ext_type(string file_ext);
 	static ImageType get_image_type(string filename);
 	static int get_image_count(string filename);

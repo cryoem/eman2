@@ -279,7 +279,8 @@ EMData *CtfAverager::average(const vector<EMData*>& image_list) const
 	image->ap2ri();
 	src[i] = image->get_data();
 	Ctf* image_ctf = image->get_ctf();
-	ctf[i] = image_ctf->compute_1d(image, curve_type);
+	int ny = image->get_ysize();
+	ctf[i] = image_ctf->compute_1d(ny, curve_type);
 
 	if (ctf[i].size() == 0) {
 	    Log::logger()->error("Unexpected CTF correction problem");
@@ -287,10 +288,10 @@ EMData *CtfAverager::average(const vector<EMData*>& image_list) const
 	}
 
 	if (sf) {
-	    ctfn[i] = image_ctf->compute_1d(image, Ctf::CTF_ABS_SNR, sf);
+	    ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_ABS_SNR, sf);
 	}
 	else {
-	    ctfn[i] = image_ctf->compute_1d(image, Ctf::CTF_RELATIVE_SNR);
+	    ctfn[i] = image_ctf->compute_1d(ny, Ctf::CTF_RELATIVE_SNR);
 	}
     }
 
