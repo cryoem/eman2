@@ -82,7 +82,6 @@ namespace EMAN
 
 	float *setup4slice(bool redo = false);
 
-	void to_corner();
 	void to_mass_center(bool int_shift_only = true);
 
 	void rotate_x(int dx);
@@ -92,9 +91,6 @@ namespace EMAN
 			      float dyc = 0, float dzc = 0, int r = 0);
 	void fast_rotate_translate(float scale = 1.0);
 	double dot_rotate_translate(EMData * data, float dx, float dy, float da);
-
-	void vertical_flip();
-	void horizontal_flip();
 
 	EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
 	EMData *do_radon();
@@ -176,12 +172,8 @@ namespace EMAN
 	float get_edge_mean() const;
 	float get_circle_mean();
 
-	void radial_average();
-	void radial_subtract();
-
 	int sub_noise();
 	void setup_insert_slice(int size);
-
 
 	Ctf *get_ctf() const;
 	void set_ctf(Ctf * ctf);

@@ -291,7 +291,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[flip]) {
-	    d->vertical_flip();
+	    d->filter("flip", Dict("axis", EMObject("y")));
 	}
 
 	if (argdict[invert]) {
@@ -405,22 +405,17 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[phot]) {
-	    d->to_corner();
+	    d->filter("Phase180");
 	}
 
 	if (anoise) {
-	    float *dat = d->get_data();
-	    for (int j = 0; j < d->get_xsize() * d->get_ysize(); j++) {
-		dat[j] += Util::get_gauss_rand(anoise, anoise / 2);
-	    }
-	    d->done_data();
+	    d->filter("AddNoise");
 	}
 
 	if (argdict[rfp]) {
 	    EMData *e = d->make_rotational_footprint();
 	    e->append_image("rfp.hed");
 	}
-
 
 
 	if (rot || dx || dy || rize) {
@@ -441,7 +436,7 @@ int main(int argc, char *argv[])
 		    d->set_talign_params(Util::get_gauss_rand(0, rizedx),
 					 Util::get_gauss_rand(0, rizedx), 0);
 		if (rizef && rand() % 2) {
-		    d->vertical_flip();
+		    d->filter("flip", Dict("axis", EMObject("y")));
 		}
 	    }
 	    d->rotate_translate();
@@ -482,7 +477,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[rotav]) {
-	    d->radial_average();
+	    d->filter("RadialAverage");
 	}
 
 	if (csym > 1) {
@@ -505,7 +500,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[rsub]) {
-	    d->radial_subtract();
+	    d->filter("RadialSubstract");
 	}
 
 	if (scl) {
@@ -515,7 +510,7 @@ int main(int argc, char *argv[])
 	    }
 	    else {
 		EMData *e = d->copy();
-		e->to_corner();
+		e->filter("Phase180");
 
 		if (sclmd == 1) {
 		    sc->common_lines(e, e, sclmd, scl, true);
