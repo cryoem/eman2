@@ -14,23 +14,23 @@ namespace EMAN
     class Util
     {
     public:
-	static void ap2ri(float *data, int n);
-	static void flip_complex_phase(float *data, int n);
+	static void ap2ri(float *data, size_t n);
+	static void flip_complex_phase(float *data, size_t n);
 	static int file_lock_wait(FILE * file);
 	static int generate_machine_stamp();
 	static bool check_file_by_magic(const void *first_block, const char *magic);
-	static void flip_image(float *data, int nx, int ny);
+	static void flip_image(float *data, size_t nx, size_t ny);
 	static bool is_sub_string(const char *s1, const char *s2);
 	static string get_filename_by_ext(string old_filename, string ext);
 
-	static void calc_least_square_fit(int nitems, const float *data_x, const float *data_y,
+	static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 					  float *slope, float *intercept, bool ignore_zero);
 
 	static void save_data_to_file(const vector<float> & x_array,
 				      const vector<float> & y_array, string filename);
 	static void save_data_to_file(float x0, float dx, const vector<float> & y_array,
 				      string filename);
-	static void save_data_to_file(float x0, float dx, float *y_array, int array_size,
+	static void save_data_to_file(float x0, float dx, float *y_array, size_t array_size,
 				      string filename);
 
 	static float get_frand(float low, float high);
@@ -64,8 +64,8 @@ namespace EMAN
 	}
 
 
-	static void find_max(float *data, int nitems, float *max_val, int *max_index = 0);
-	static void find_min_and_max(float *data, int nitems, float *max_val, float *min_val,
+	static void find_max(float *data, size_t nitems, float *max_val, int *max_index = 0);
+	static void find_min_and_max(float *data, size_t nitems, float *max_val, float *min_val,
 				     int *max_i = 0, int *min_i = 0);
 	static int calc_best_fft_size(int low);
 
