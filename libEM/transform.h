@@ -84,6 +84,9 @@ namespace EMAN {
 	Matrix3f& transpose();
 	Matrix3f create_inverse();
 	
+	double* operator[] (int i);
+	const double* operator[] (int i) const;
+	
 	Matrix3f& operator+=(float f);
 	Matrix3f& operator-=(float f);
 	Matrix3f& operator*=(float f);
@@ -93,9 +96,6 @@ namespace EMAN {
 	Matrix3f& operator-=(const Matrix3f& m);
 	Matrix3f& operator*=(const Matrix3f& m);
 	Matrix3f& operator/=(const Matrix3f& m);
-
-	double* operator[] (int i);
-	const double* operator[] (int i) const;
 	
 	friend Matrix3f operator+(float f, const Matrix3f& m2);
 	friend Matrix3f operator-(float f, const Matrix3f& m2);
@@ -115,6 +115,9 @@ namespace EMAN {
 	friend bool operator==(const Matrix3f& m1, const Matrix3f& m2);
 	friend bool operator!=(const Matrix3f& m1, const Matrix3f& m2);
 	
+	friend Vec3f operator*(const Vec3f& v, const Matrix3f& m2);
+	friend Vec3f operator*(const Matrix3f& m1, const Vec3f& v);
+
     private:
 	Matrix3f(gsl_matrix* m);
 	gsl_matrix* get_gsl_matrix() const;
@@ -127,6 +130,7 @@ namespace EMAN {
     public:
 	Matrix4f();
 	Matrix4f(float m[]);
+	Matrix4f(const Matrix3f& m3);
 	virtual ~Matrix4f();
 	
 	Matrix4f& mult_right(const Matrix4f& m);
@@ -139,6 +143,7 @@ namespace EMAN {
 	
 	void get_value(float m[]) const;
 	float get_element(int i, int j) const;
+	Matrix3f get_matrix3() const;
 	
 	Matrix4f& inverse();
 	Matrix4f& transpose();
@@ -310,7 +315,8 @@ namespace EMAN {
 	void get_sgi(float* q, float* n1, float* n2, float* n3) const;
 
 	Quaternion get_quaternion() const;
-	Matrix3f get_matrix() const;
+	Matrix3f get_matrix3() const;
+	Matrix4f get_matrix4() const;
 	
 	Rotation& operator*=(const Rotation& e);
 	Rotation& operator/=(const Rotation& e);
@@ -326,8 +332,9 @@ namespace EMAN {
 	Type type;
 	string symname;
     };
-    
-    
+
+    // composite transform: = (-Translate) * Scale * Rotate * Translate
+    // Translate = center
     class Transform {
     public:
 	enum TransformType {
@@ -338,78 +345,187 @@ namespace EMAN {
 	    IDENTITY = 1 << 5,
 	    TRANSFORM = 1 << 6
 	};
-
 	
     public:
-	Transform(); // create an identity matrix
-	Transform(const Matrix4f& m);
-	Transform(float m[]);
+	Transform() { }
 
-	// Constructs and initializes a transform from the rotation
-	// matrix, translation, and scale values. The scale is applied
-	// only to the rotational component of the matrix (upper 3x3)
-	// and not to the translational component of the matrix.
-	Transform(const Matrix3f& m1, const Vec3f& t1, float s);
-	
-	virtual ~Transform();
+	Transform(const Matrix4f& m) {  matrix = m; }
 
-	void set(const Rotation& r);
-	void set(const Matrix3f& m);
-	void set(float sx, float sy, float sz);
-	void set(const Vec3f& s);
+	Transform(const Rotation& r) { matrix = r.get_matrix4(); }
 
-	void get_pre_translation() const;
-	void get_post_translation() const;
+	Transform(const Matrix3f& m) { matrix = Matrix4f(m); }
+
+	Transform(const Matrix3f& rotate_m, const Vec3f& t)
+	{
+	    for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+		    matrix[i][j] = rotate_m[i][j];
+		}
+	    }
+	    
+	    for (int i = 0; i < 3; i++) {
+		matrix[i][3] = t[i];
+	    }
+	}
 	
-	Transform& concatenate(const Transform& t);      // [this] = [this] x [t]
-	Transform& concatenate(const Matrix4f& m);
-	Transform& pre_concatenate(const Transform& t);  // [this] = [t] x [this]
+	virtual ~Transform() {}
 	
-	Transform& inverse();
-	Transform& transpose();
-	Transform& normalize();  
+	Transform& set_rotate_instance(const Rotation& r) { matrix = r.get_matrix4(); return (*this); }
+
+	Transform& set_rotate_instance(const Matrix3f& m) { matrix = Matrix4f(m); return (*this); }
+
+	Transform& set_translate_instance(const Vec3f& s)
+	{
+	    matrix.make_identity();
+	    return set_post_translate(s);
+	}
 	
-	void set_matrix(const Matrix4f& m);
-	Matrix4f get_matrix() const;
+	Transform& set_scale_instance(const Vec3f& s)
+	{
+	    matrix.make_identity();
+	    for (int i = 0; i < 3; i++) {
+		matrix[i][i] = s[i];
+	    }
+	    return (*this);
+	}
+
+	Transform& set_transform_instance(const Vec3f& translation, const Rotation& roration,
+					  const Vec3f& scale_factor, const Rotation& scale_orientation,
+					  const Vec3f& center);
+	
+	Transform& set_transform_instance(const Vec3f& translation,
+					  const Rotation& rotation,
+					  const Vec3f& scale_factor)
+	{
+	    return set_transform_instance(translation, rotation, scale_factor,
+					  Rotation(1, 0, 0, 0, Rotation::QUATERNION),
+					  Vec3f(0, 0, 0));
+	}
+	
+	Transform& set_center(const Vec3f& c)
+	{
+	    pre_trans = -1.0 * c;
+	    
+	    for (int i = 0; i < 3; i++) {
+		matrix[i][3] += c[i];
+	    }
+	    return (*this);
+	}
+	
+	
+	Transform& set_matrix(const Matrix4f& m) { matrix = m; return (*this); }
+
+	Transform& set_post_translate(const Vec3f& s)
+	{
+	    for (int i = 0; i < 3; i++) {
+		matrix[3][i] = s[i];
+	    }
+	    return (*this);
+	}
+	
+	Transform& inverse() { matrix.inverse(); return (*this); }
+
+	Transform create_inverse() { return Transform(matrix.create_inverse()); }
+
+	Transform& transpose() { matrix.transpose(); return (*this); }
+
+	// [this] = [this] x [t]
+	Transform& post_concatenate(const Transform& t) { (*this) = (*this) * t; return (*this); }
+
+	// [this] = [t] x [this]
+	Transform& pre_concatenate(const Transform& t) { (*this) = t * (*this); return (*this); }
 
 	// Concatenates this transform with a translation transformation.
-	Transform& translate(float x, float y, float z);
-	Transform& translate(const Vec3f& v);
+	Transform& translate(const Vec3f& v)
+	{
+	    if (v != Vec3f(0, 0, 0)) {
+		Matrix4f m;
+		for (int i = 0; i < 3; i++) {
+		    m[3][i] = v[i];
+		}
+		matrix *= m;
+	    }
+	    return (*this);
+	}
+	
 	
 	// Concatenates this transform with a rotation transformation.
-	Transform& rotate(const Rotation& r);
-	Transform& rotate(const Matrix3f& m);
+	Transform& rotate(const Rotation& r)
+	{
+	    if (r != Rotation(1, 0, 0, 0,  Rotation::QUATERNION)) {
+		Matrix4f m = r.get_matrix4();
+		(*this) = (*this) * m;
+	    }
+	    return (*this);
+	}
 
-	// pre-translate, rotate, post-translate
-	Transform& rotate(const Rotation& r, const Vec3f& t);
-	
-	// Concatenates this transform with a scaling transformation.
-	Transform& scale(float sx, float sy, float sz);
-	Transform& scale(const Vec3f& scales);
+	Transform& pre_translate_rotate(const Vec3f t, const Rotation& r)
+	{
+	    translate(t);
+	    rotate(r);
+	    return (*this);
+	}
+
+	Transform& post_translate_rotate(const Rotation& r, const Vec3f t)
+	{
+	    rotate(r);
+	    translate(t);
+	    return (*this);
+	}
+
+	Transform& translate_rotate_translate(const Rotation& r, const Vec3f t)
+	{
+	    translate(-1.0 * t);
+	    rotate(r);
+	    translate(t);
+	    return (*this);
+	}
 
 	// pre-translate, rotate, scale on post-translate
-	Transform& rotate_scale(const Rotation& r, const Vec3f& t, float s);
+	Transform& rotate_scale(const Rotation& r, const Vec3f& t,  const Vec3f& s)
+	{
+	    translate_rotate_translate(r, t);
+	    scale(s);
+	    return (*this);
+	}
 	
-	Point<float> transform(const Point<float>& point_in);
-	Vec3f transform(const Vec3f& vec_in);
-	
-	Point<float> back_transform(const Point<float>& point_out);
-	Vec3f back_transform(const Vec3f& vec_out);
+	// Concatenates this transform with a scaling transformation.
+	Transform& scale(const Vec3f& scales)
+	{
+	    if (scales != Vec3f(1, 1, 1)) {
+		Matrix4f m;
+		m.make_identity();
+		for (int i = 0; i < 3; i++) {
+		    m[i][i] = scales[i];
+		}
+		matrix *= m;
+	    }
+	    return (*this);    
+	}
+
+
+	Vec3f transform(const Vec3f& v);
+	Vec3f inverse_transform(const Vec3f& v);
 		
-	void set_center(float x, float y, float z);
-	void set_center(const Vec3f& new_center);
+	Rotation get_rotation(Rotation& r) const { return Rotation(matrix.get_matrix3()); }
 	
-	Rotation get_rotation(Rotation& r) const;
-	Vec3f get_translation() const;
-	Vec3f get_scale() const;
-	Vec3f get_center() const;
+	Vec3f get_scale() const { return Vec3f(matrix[0][0], matrix[1][1], matrix[2][2]); }
+	Vec3f get_center() const { return pre_trans; }
+	
+	Matrix4f get_matrix() const { return matrix; }
+
+	Vec3f get_pre_translate() const { return pre_trans; }
+	Vec3f get_post_translate() const { return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]); }
+	
 	int get_type() const;
 	
-	Transform& operator+=(const Transform& t);
-	Transform& operator-=(const Transform& t);
-	Transform& operator*=(const Transform& t);
-	Transform& operator*=(float scalar);
-	Transform& operator/=(const Transform& t);
+	Transform& operator+=(const Transform& t) { matrix += t.get_matrix(); return (*this); }
+	
+	Transform& operator-=(const Transform& t) { matrix -= t.get_matrix(); return (*this); }
+	Transform& operator*=(const Transform& t) { matrix *= t.get_matrix(); return (*this); }
+	Transform& operator*=(float scalar) { matrix *= scalar; return (*this); }
+	Transform& operator/=(const Transform& t) { matrix /= t.get_matrix(); return (*this); }
+	Transform& operator/=(float scalar) { matrix /= scalar; return (*this); }
 	
 	friend Transform operator+(const Transform& t1, const Transform& t2);
 	friend Transform operator-(const Transform& t1, const Transform& t2);
@@ -422,12 +538,14 @@ namespace EMAN {
 	friend Transform operator/(const Transform& t, float s);
 	friend Transform operator/(float s, const Transform& t);
 	
+	static Transform interpolate(const Transform& t1, const Transform& t2, float percent);
 	
     private:
 	Matrix4f matrix;
+	Vec3f pre_trans;
     };
 
-
+    
     
 
 }
