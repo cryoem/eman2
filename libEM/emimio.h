@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__emimio_h__
 #define eman__emimio_h__ 1
 

@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__emutil__h__
 #define eman__emutil__h__ 1
 

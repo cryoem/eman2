@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman_geometry_h_
 #define eman_geometry_h_
 

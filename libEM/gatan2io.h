@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__gatan2io_h__
 #define eman__gatan2io_h__ 1
 

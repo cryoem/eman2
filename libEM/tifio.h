@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__tiffio_h__
 #define eman__tiffio_h__ 1
 

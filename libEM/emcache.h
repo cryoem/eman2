@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__emcache__h__
 #define eman__emcache__h__ 1
 

@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__pngio_h__
 #define eman__pngio_h__ 1
 

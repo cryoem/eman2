@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__transform_h__
 #define eman__transform_h__ 1
 

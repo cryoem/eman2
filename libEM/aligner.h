@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__aligner_h__
 #define eman__aligner_h__ 1
 

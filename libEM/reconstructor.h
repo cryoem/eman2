@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 

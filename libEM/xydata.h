@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__xydata_h__
 #define eman__xydata_h__ 1
 

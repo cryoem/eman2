@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__interp_h__
 #define eman__interp_h__
 

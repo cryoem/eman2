@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__lstio_h__
 #define eman__lstio_h__ 1
 

@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__amiraio_h__
 #define eman__amiraio_h__ 1
 

@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman_cmp__h__
 #define eman_cmp__h__ 1
 

@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__imagicio_h__
 #define eman__imagicio_h__ 1
 

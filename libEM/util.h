@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
@@ -21,6 +24,8 @@ namespace EMAN
 	static bool check_file_by_magic(const void *first_block, const char *magic);
 	static void flip_image(float *data, size_t nx, size_t ny);
 	static bool sstrncmp(const char *s1, const char *s2);
+	static bool get_str_float(const char *s, const char *float_var, float *p_val);
+	static bool get_str_int(const char *s, const char *int_var, int *p_val);
 	static string get_filename_by_ext(string old_filename, string ext);
 
 	static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,

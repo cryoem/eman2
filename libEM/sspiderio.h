@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__single_spider_io_h__
 #define eman__single_spider_io_h__ 1
 

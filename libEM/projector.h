@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__projector_h__
 #define eman__projector_h__ 1
 

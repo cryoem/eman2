@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman_averager_h__
 #define eman_averager_h__ 1
 

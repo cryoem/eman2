@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__ctf__h__
 #define eman__ctf__h__ 1
 

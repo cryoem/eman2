@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__xplorio_h__
 #define eman__xplorio_h__ 1
 

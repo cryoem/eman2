@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman_emfft_h__
 #define eman_emfft_h__
 

@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__hdfio_h__
 #define eman__hdfio_h__ 1
 

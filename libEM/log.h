@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #ifndef eman__log__h__
 #define eman__log__h__ 1
 
