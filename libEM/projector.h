@@ -175,14 +175,17 @@ namespace EMAN
 		}
 
 	  private:
-
-		struct Pointers
+		// Same structure as the IPCUBE structure in Spider
+		struct IPCube
 		{
-			Vec3i location;
 			int start;
 			int end;
+			Vec3i loc;
 		};
-
+		// Process the number of valid x-lines (rows)
+		// within the radius
+		void prepcubes(int n, int ri, Vec3i origin, 
+				       int& nn, IPCube* ipcube=NULL) const;
 	};
 
 	/** fast real-space isosurface 3D proejection.
