@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from libpyEM import *
+from EMAN2 import *
 
 def print_dict(d):
     print "    max = ", d["maximum"].get_float()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from e2EMAN import *
+from EMAN2 import *
 import os
 
 filters = FilterFactory.instance()
@@ -18,4 +18,4 @@ print "Params in C++: ", new_params
 
 f1.process(e)
 
-e.write_image("search_f1.mrc", 0, EMUtil.ImageType.IMAGE_MRC)
+e.write_image("search_f1.mrc", 0, MRC)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from libpyEM import *
+from EMAN2 import *
 
 e = EMData()
 e.read_image("/home/lpeng/images/tablet.mrc")
