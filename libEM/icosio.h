@@ -11,12 +11,11 @@
 namespace EMAN
 {
 
-	/* file format:
-	   1. header
-	   2. data: ny*nz of rows. Each row is: 
-	   int nx*sizeof(float), nx*float, int nx*sizeof(float)
+	/** ICOS file format:
+	 *  1. header
+	 *  2. data: ny*nz of rows. Each row is: 
+	 *     int nx*sizeof(float), nx*float, int nx*sizeof(float)
 	 */
-
 
 	class IcosIO:public ImageIO
 	{
@@ -46,7 +45,7 @@ namespace EMAN
 		};
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		IcosHeader icosh;
 		FILE *icos_file;

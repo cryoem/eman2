@@ -16,7 +16,7 @@ namespace EMAN
 #define ENTERFUNC  LOGDEBUG("Enter ")
 #define EXITFUNC   LOGDEBUG("Exit ")
 	
-#define LOGERR Log::logger()->loc(Log::ERROR_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->error
+#define LOGERR Log::logger()->loc(Log::ERROR_LOG, __FILE__, __LINE__, __func__); Log::logger()->error
 
 #define LOGWARN Log::logger()->loc(Log::WARNING_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->warn
 
@@ -24,9 +24,6 @@ namespace EMAN
 
 #define LOGVAR Log::logger()->loc(Log::VARIABLE_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->variable
 	
-	/** todo:
-     * redesign begin() and end() methods
-     */
 
 	/** Log defines a way to output logging information.
      * 1) The logs can either go to standard output (default), or go to a

@@ -27,11 +27,12 @@ IcosIO::~IcosIO()
 
 int IcosIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("IcosIO::init()");
+	
 	initialized = true;
 
 	icos_file = sfopen(filename, rw_mode, &is_new_file);
@@ -52,9 +53,8 @@ int IcosIO::init()
 			err = 1;
 			return err;
 		}
-
-		become_host_endian((int *) &icosh, sizeof(IcosHeader) / sizeof(int));
 		is_big_endian = ByteOrder::is_data_big_endian(&icosh.stamp);
+		become_host_endian((int *) &icosh, sizeof(IcosHeader) / sizeof(int));
 	}
 
 	return 0;

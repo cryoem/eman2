@@ -149,8 +149,8 @@ bool Util::sstrncmp(const char *s1, const char *s2)
 
 string Util::int2str(int n)
 {
-	char s[32];
-	sprintf(s, "%s", n);
+	char s[32] = {'\0'};
+	sprintf(s, "%d", n);
 	return string(s);
 }
 

@@ -16,72 +16,92 @@ using namespace EMAN;
 
 EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
 {
+	ENTERFUNC;
 	static bool initialized = false;
 	static map < string, ImageType > imagetypes;
 
 	if (!initialized) {
 		imagetypes["mrc"] = IMAGE_MRC;
-		imagetypes["tnf"] = IMAGE_MRC;
-		imagetypes["dm3"] = IMAGE_DM3;
-		imagetypes["spi"] = IMAGE_SPIDER;
-
-		imagetypes["img"] = IMAGE_IMAGIC;
-		imagetypes["hed"] = IMAGE_IMAGIC;
-		imagetypes["pgm"] = IMAGE_PGM;
-
-		imagetypes["lst"] = IMAGE_LST;
-		imagetypes["pif"] = IMAGE_PIF;
-		imagetypes["png"] = IMAGE_PNG;
-
-		imagetypes["h5"] = IMAGE_HDF;
-		imagetypes["hd5"] = IMAGE_HDF;
-		imagetypes["hdf"] = IMAGE_HDF;
-		imagetypes["tif"] = IMAGE_TIFF;
-		imagetypes["tiff"] = IMAGE_TIFF;
-
-		imagetypes["vtk"] = IMAGE_VTK;
-		imagetypes["hdr"] = IMAGE_SAL;
-		imagetypes["map"] = IMAGE_ICOS;
-
-		imagetypes["am"] = IMAGE_AMIRA;
-		imagetypes["amira"] = IMAGE_AMIRA;
-		imagetypes["emim"] = IMAGE_EMIM;
-		imagetypes["xplor"] = IMAGE_XPLOR;
-		imagetypes["em"] = IMAGE_EM;
-
-		imagetypes["dm2"] = IMAGE_GATAN2;
-
 		imagetypes["MRC"] = IMAGE_MRC;
+		
+		imagetypes["tnf"] = IMAGE_MRC;
+		imagetypes["TNF"] = IMAGE_MRC;
+		
+		imagetypes["dm3"] = IMAGE_DM3;
 		imagetypes["DM3"] = IMAGE_DM3;
+		
+		imagetypes["spi"] = IMAGE_SPIDER;
 		imagetypes["SPI"] = IMAGE_SPIDER;
-
-		imagetypes["HED"] = IMAGE_IMAGIC;
+		
+		imagetypes["img"] = IMAGE_IMAGIC;
 		imagetypes["IMG"] = IMAGE_IMAGIC;
+		
+		imagetypes["hed"] = IMAGE_IMAGIC;
+		imagetypes["HED"] = IMAGE_IMAGIC;
+		
+		imagetypes["pgm"] = IMAGE_PGM;
 		imagetypes["PGM"] = IMAGE_PGM;
-
+		
+		imagetypes["lst"] = IMAGE_LST;
 		imagetypes["LST"] = IMAGE_LST;
+		
+		imagetypes["pif"] = IMAGE_PIF;
 		imagetypes["PIF"] = IMAGE_PIF;
+		
+		imagetypes["png"] = IMAGE_PNG;
 		imagetypes["PNG"] = IMAGE_PNG;
-
-		imagetypes["HDF"] = IMAGE_HDF;
-		imagetypes["HD5"] = IMAGE_HDF;
+		
+		imagetypes["h5"] = IMAGE_HDF;
 		imagetypes["H5"] = IMAGE_HDF;
+		
+		imagetypes["hd5"] = IMAGE_HDF;
+		imagetypes["HD5"] = IMAGE_HDF;
+		
+		imagetypes["hdf"] = IMAGE_HDF;
+		imagetypes["HDF"] = IMAGE_HDF;
+		
+		imagetypes["tif"] = IMAGE_TIFF;
 		imagetypes["TIF"] = IMAGE_TIFF;
+		
+		imagetypes["tiff"] = IMAGE_TIFF;
 		imagetypes["TIFF"] = IMAGE_TIFF;
-
+		
+		imagetypes["vtk"] = IMAGE_VTK;
 		imagetypes["VTK"] = IMAGE_VTK;
+		
+		imagetypes["hdr"] = IMAGE_SAL;
+		imagetypes["HDR"] = IMAGE_SAL;
+		
+		imagetypes["sal"] = IMAGE_SAL;
 		imagetypes["SAL"] = IMAGE_SAL;
+		
+		imagetypes["map"] = IMAGE_ICOS;
 		imagetypes["MAP"] = IMAGE_ICOS;
 
+		imagetypes["icos"] = IMAGE_ICOS;
+		imagetypes["ICOS"] = IMAGE_ICOS;
+		
+		imagetypes["am"] = IMAGE_AMIRA;
 		imagetypes["AM"] = IMAGE_AMIRA;
+		
+		imagetypes["amira"] = IMAGE_AMIRA;
 		imagetypes["AMIRA"] = IMAGE_AMIRA;
+		
+		imagetypes["emim"] = IMAGE_EMIM;
 		imagetypes["EMIM"] = IMAGE_EMIM;
+		
+		imagetypes["xplor"] = IMAGE_XPLOR;
 		imagetypes["XPLOR"] = IMAGE_XPLOR;
+		
+		imagetypes["em"] = IMAGE_EM;
 		imagetypes["EM"] = IMAGE_EM;
+		
+		imagetypes["dm2"] = IMAGE_GATAN2;
+		imagetypes["DM2"] = IMAGE_GATAN2;
 
 		initialized = true;
 	}
-
+	EXITFUNC;
 	return imagetypes[file_ext];
 }
 
@@ -89,6 +109,7 @@ EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
 EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first_block,
 											  off_t file_size)
 {
+	ENTERFUNC;
 	char *ext = strrchr(filename.c_str(), '.');
 	if (!ext) {
 		return IMAGE_UNKNOWN;
@@ -201,13 +222,14 @@ EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first
 	default:
 		return IMAGE_UNKNOWN;
 	}
+	EXITFUNC;
 	return IMAGE_UNKNOWN;
 }
 
 
 EMUtil::ImageType EMUtil::get_image_type(string filename)
 {
-	LOGDEBUG("EMUtil::get_image_type() on file: '%s'", filename.c_str());
+	ENTERFUNC;
 
 	size_t ext_pos = filename.find(".img");
 	if (ext_pos != string::npos) {
@@ -300,33 +322,33 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 	else if (ImagicIO::is_valid(&first_block)) {
 		image_type = IMAGE_IMAGIC;
 	}
-	else {
+	else {		
 		LOGERR("I don't know this image's type: '%s'", filename.c_str());
-		image_type = IMAGE_UNKNOWN;
+		throw ImageFormatException("invalid image type");
 	}
 
+	EXITFUNC;
 	return image_type;
 }
 
 
 int EMUtil::get_image_count(string filename)
 {
-	LOGDEBUG("EMUtil::get_image_count()");
-
+	ENTERFUNC;
 	int nimg = 0;
 	ImageIO *imageio = get_imageio(filename, ImageIO::READ_ONLY);
 
 	if (imageio) {
 		nimg = imageio->get_nimg();
 	}
-
+	EXITFUNC;
 	return nimg;
 }
 
 
 ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 {
-	LOGDEBUG("EMUtil::get_imageio()");
+	ENTERFUNC;
 	ImageIO *imageio = GlobalCache::instance()->get_imageio(filename, rw);
 	if (imageio) {
 		return imageio;
@@ -404,6 +426,7 @@ ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 	}
 
 	GlobalCache::instance()->add_imageio(filename, rw, imageio);
+	EXITFUNC;
 	return imageio;
 }
 

@@ -35,46 +35,59 @@ int main(int argc, char* argv[])
     }
     
     const char* imagefile = argv[argc-1];
-    
-    int nimg = EMUtil::get_image_count(imagefile);
-    const char* imgtype = EMUtil::get_imagetype_name(EMUtil::get_image_type(imagefile));
-    
-    printf("\n%20s: %d\n", "Number of Images", nimg);
-    printf("%20s: %s\n", "Image Format", imgtype);
+    EMData* d = 0;
+	try {
+		int nimg = EMUtil::get_image_count(imagefile);
+		const char* imgtype = EMUtil::get_imagetype_name(EMUtil::get_image_type(imagefile));
+		
+		printf("\n%20s: %d\n", "Number of Images", nimg);
+		printf("%20s: %s\n", "Image Format", imgtype);
+		
+		d = new EMData();
 
-    EMData* d = new EMData();
-    if (!stat) {
-		d->read_image(imagefile, 0, true);
-    }
-    else {
-		d->read_image(imagefile, 0, false);
-    }
-    
-    printf("%20s: %d x %d x %d\n", "Image Dimensions",
-		   d->get_xsize(), d->get_ysize(), d->get_zsize());
+		if (!stat) {
+			d->read_image(imagefile, 0, true);
+		}
+		else {
+			d->read_image(imagefile, 0, false);
+		}
 
-    if (stat) {
-		printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
-			   (float) d->get_attr("mean"),
-			   (float) d->get_attr("sigma"),
-			   (float) d->get_attr("skewness"),
-			   (float) d->get_attr("kurtosis"));
-    }
+		printf("%20s: %d x %d x %d\n", "Image Dimensions",
+			   d->get_xsize(), d->get_ysize(), d->get_zsize());
+
+		if (stat) {
+			printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
+				   (float) d->get_attr("mean"),
+				   (float) d->get_attr("sigma"),
+				   (float) d->get_attr("skewness"),
+				   (float) d->get_attr("kurtosis"));
+		}
     
-    Ctf* ctf = d->get_ctf();
-    if (ctf) {
-		printf("CTF: %s\n", ctf->to_string().c_str());
-    }
+		Ctf* ctf = d->get_ctf();
+		if (ctf) {
+			printf("CTF: %s\n", ctf->to_string().c_str());
+		}
     
-    if (show_all_header) {
-		Dict dict = d->get_attr_dict();
-		printf("\nDetailed Header Information:\n");
-		EMUtil::dump_dict(dict);
-    }
-    printf("\n");
+		if (show_all_header) {
+			Dict dict = d->get_attr_dict();
+			printf("\nDetailed Header Information:\n");
+			EMUtil::dump_dict(dict);
+		}
+		printf("\n");
     
-    delete d;
-    d = 0;
+		delete d;
+		d = 0;
+	}
+	catch(Exception  & e) {
+		if (d) {
+			delete d;
+			d = 0;
+		}
+		printf("%s\n", e.what());
+	}
+	
+
+	return 0;
 }
 
 
