@@ -51,6 +51,8 @@ namespace EMAN {
 
 	
 	bool is_complex() const;
+	void set_complex(int)  const { };
+	void set_ri(int ) const { };
 	void ri2ap();
 	void ap2ri();
 
@@ -58,7 +60,7 @@ namespace EMAN {
 	void set_parent(EMData* new_parent) { parent = new_parent; }
 
 	void setup4slice(bool redo = true);
-	EMData* fft_slice(float alt, float az, float phi, int mode = 5);
+	EMData* fft_slice(const Rotation& r, int mode = 5);
 	void to_corner();
 	
 	EMData* do_fft();
