@@ -309,7 +309,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
 		 */
-		FloatPoint normalize_slice(EMData * slice, float alt, float az, float phi);
+		FloatPoint normalize_slice(EMData * slice, float az, float alt, float phi);
 
 		/** Render the image into an 8-bit image. 2D image only.
 		 *
@@ -400,7 +400,7 @@ namespace EMAN
 		 * @param az  Rotation euler angle az  in EMAN convention.
 		 * @param phi Rotation euler angle phi in EMAN convention.
 		 */
-		void rotate(float alt, float az, float phi);
+		void rotate(float az, float alt, float phi);
 
 		/** Rotate then translate the image.
 		 * @param xform The rotation and translation transformation to be done.
@@ -415,7 +415,7 @@ namespace EMAN
 		 * @param dy Translation distance in y direction.
 		 * @param dz Translation distance in z direction.
 		 */
-		void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz);
+		void rotate_translate(float az, float alt, float phi, float dx, float dy, float dz);
 		
 		/** Rotate then translate the image.
 		 * @param alt Rotation euler angle alt in EMAN convention.
@@ -428,7 +428,7 @@ namespace EMAN
 		 * @param pdy Pretranslation distance in y direction.
 		 * @param pdz Pretranslation distance in z direction.
 		 */
-		void rotate_translate(float alt, float az, float phi, float dx, float dy,
+		void rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz);
 		
 		/** This performs a translation of each line along x with wraparound.
@@ -983,7 +983,7 @@ namespace EMAN
 		 * @param az  'az' Euler angle in EMAN convention.
 		 * @param phi 'phi' Euler angle in EMAN convention.
 		 */
-		void set_rotation(float alt, float az, float phi);
+		void set_rotation(float az, float alt, float phi);
 
 		/** Resize 'this' image.
 		 *
@@ -1377,7 +1377,7 @@ namespace EMAN
 		int nx, ny, nz;	        /** image size */
 
 		Vec3f all_translation; /** translation from the original location */
-//		Vec3f all_rotation;    /** rotation (alt, az, phi) from the original locaton*/
+//		Vec3f all_rotation;    /** rotation (az, alt, phi) from the original locaton*/
 
 		string path;
 		int pathnum;
@@ -1646,7 +1646,7 @@ namespace EMAN
 						 (float)attr_dict["rot_phi"]);
 	}
 
-	inline void EMData::set_rotation(float alt, float az, float phi)
+	inline void EMData::set_rotation(float az, float alt, float phi)
 	{
 		attr_dict["rot_alt"]=alt;
 		attr_dict["rot_az"]=az;

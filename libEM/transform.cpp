@@ -195,8 +195,12 @@ void Transform::set_rotation(EulerType euler_type, float a1, float a2, float a3,
 	
 	bool is_quaternion = 0;
 
+	float tm=a1;
 	switch(euler_type) {
 	case EMAN:
+		a1=a2;
+		a2=tm;	// This swap is a fix for the new az,alt,phi convention
+		break;
 	case IMAGIC:
 		break;
 		
@@ -256,7 +260,7 @@ void Transform::set_rotation(EulerType euler_type, Dict& rotation)
 
 	switch(euler_type) {
 	case EMAN:
-		a1 = (float)rotation["alt"];
+		a1 = (float)rotation["alt"];	// despite the new az,alt,phi convention, this assignment is correct
 		a2 = (float)rotation["az"];
 		a3 = (float)rotation["phi"];
 		break;
@@ -365,6 +369,14 @@ float Transform::eman_alt() const
 	}
 	else {
 		alt = (float) acos(mx);
+		float phi=eman_phi();
+		if (fabs(matrix[2][0])>fabs(matrix[2][1])) {
+			if (matrix[2][0]/sin(phi)<0) alt=-alt;
+		}
+		else {
+			if (matrix[2][1]/cos(phi)<0) alt=-alt;
+		} 
+		printf("%f %f %f\n",matrix[2][0],matrix[2][1],cos(phi));
 	}
 	return alt;
 }

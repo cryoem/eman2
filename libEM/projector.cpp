@@ -47,7 +47,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Transform r(Transform::EMAN, alt, az, phi);
+	Transform r(Transform::EMAN, az, alt, phi);
 
 	int mode = params["mode"];
 	float gauss_width = 0;
@@ -104,7 +104,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	filter_d["ring_width"] = ret->get_xsize() / 2;
 	ret->filter("MaskGaussInvFilter", filter_d);
 
-	ret->set_rotation(alt, az, phi);
+	ret->set_rotation(az, alt, phi);
 
 	delete tmp;
 	tmp = 0;
@@ -494,8 +494,8 @@ EMData *PawelProjector::project3d(EMData * image) const
 			float alt = params["alt"];
 			float az = params["az"];
 			float phi = params["phi"];
-			anglelist.push_back(alt);
 			anglelist.push_back(az);
+			anglelist.push_back(alt);
 			anglelist.push_back(phi);
 			nangles = 1;
 		}
@@ -618,7 +618,7 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 		image->set_parent(parent);
 	}
 
-	image->rotate(alt, az, phi);
+	image->rotate(az, alt, phi);
 
 	EMData *ret = new EMData();
 	ret->set_size(nx, ny, 1);
@@ -700,7 +700,7 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 		image->set_parent(parent);
 	}
 
-	image->rotate(alt, az, phi);
+	image->rotate(az, alt, phi);
 
 	EMData *ret = new EMData();
 	ret->set_size(nx, ny, 1);
@@ -734,7 +734,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	Transform r(Transform::EMAN, alt, az, phi);
+	Transform r(Transform::EMAN, az, alt, phi);
 	int xy = nx * ny;
 
 	EMData *proj = new EMData();

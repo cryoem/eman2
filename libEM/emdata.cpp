@@ -1312,9 +1312,9 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Transform &xform)
 	return FloatPoint(r, phaseres);
 }
 
-FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
+FloatPoint EMData::normalize_slice(EMData * slice, float az, float alt, float phi)
 {
-	return normalize_slice(slice, Transform(Transform::EMAN, alt, az, phi));
+	return normalize_slice(slice, Transform(Transform::EMAN, az, alt, phi));
 }
 
 
@@ -3219,9 +3219,9 @@ void EMData::translate(const Vec3f &translation)
 	EXITFUNC;
 }
 
-void EMData::rotate(float alt, float az, float phi)
+void EMData::rotate(float az, float alt, float phi)
 {
-	Transform t(Transform::EMAN, alt, az, phi);
+	Transform t(Transform::EMAN, az, alt, phi);
 	rotate_translate(t);
 }
 
@@ -3230,17 +3230,17 @@ void EMData::rotate(const Transform & t)
 	rotate_translate(t);
 }
 
-void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy, float dz)
+void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy, float dz)
 {
-	Transform t(Vec3f(dx, dy, dz), Transform::EMAN, alt, az, phi);
+	Transform t(Vec3f(dx, dy, dz), Transform::EMAN, az, alt, phi);
 	rotate_translate(t);
 }
 
 
-void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy,
+void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
-	Transform t(Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz), Transform::EMAN, alt, az, phi);
+	Transform t(Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz), Transform::EMAN, az, alt, phi);
 	rotate_translate(t);
 }
 
@@ -3278,8 +3278,8 @@ void EMData::rotate_translate(const Transform & xform)
 	}
 
 	if (nz == 1) {
-		float mx0 = inv_scale * cos((float)rotation["alt"]);
-		float mx1 = inv_scale * sin((float)rotation["alt"]);
+		float mx0 = inv_scale * cos((float)rotation["az"]);
+		float mx1 = inv_scale * sin((float)rotation["az"]);
 
 		float x2c = nx / 2.0f - dcenter[0] - translation[0];
 		float y2c = ny / 2.0f - dcenter[1] - translation[1];
