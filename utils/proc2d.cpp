@@ -437,7 +437,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		Dict rr = d->get_rotation().get_rotation(Transform::EMAN);
+		Dict rr = d->get_transform().get_rotation(Transform::EMAN);
 		//int nimg = d->get_nimg();
 
 		if (scale < 1.0) {

@@ -920,7 +920,7 @@ namespace EMAN
 
 		/** Get the 3D orientation of 'this' image
 		 */
-		Transform get_rotation() const; // rename this to get_transform().
+		Transform get_transform() const; // rename this to get_transform().
 
 		/** Define the 3D orientation of this particle, also
 		 * used to indicate relative rotations for reconstructions
@@ -1469,7 +1469,7 @@ namespace EMAN
 		all_translation = Vec3f(dx, dy, dz);
 	}
 
-	inline Transform EMData::get_rotation() const
+	inline Transform EMData::get_transform() const
 	{
 		return Transform(Transform::EMAN,
 						 (float)attr_dict["rot_alt"],
