@@ -5,10 +5,25 @@ from optparse import OptionParser
 from math import *
 import os
 import sys
+from Simplex import Simplex
 from bisect import insort
 
+cmp_probe=None
+cmp_target=None
+tdim=None
+pdim=None
 
+def compare(vec):
+	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
+	of the probe to the map"""
+	global cmp_probe
+	global cmp_target
+	
+	a=cmp_target.get_rotated_clip((x,y,z),(alt,az,phi),pdim,1.0)
+	return cmp_probe.cmp("Dot",{"with":EMObject(a)})
+	
 def main():
+	global tdim,pdim
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: %prog [options] target.mrc probe.mrc
 	
@@ -115,6 +130,11 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	print len(best2)
 	for i in best2: print i
 	
+	# reread the original images
+	target.read_image(args[0])
+	probe.read_image(args[1])
+	
+	print compare(best2[0][1:7])
 	
 #	print best2[0]
 #	print best2[-1]
