@@ -1,13 +1,37 @@
+Include("pylist.h")
+Include("pyem.h")
+
+FloatStat = Class("EMAN::FloatStat", "floatstat.h")
+EMObject = Class("EMAN::EMObject", "emobject.h")
+set_policy(EMObject.get_emdata, return_internal_reference())
+set_policy(EMObject.get_xydata, return_internal_reference())
+
+
+Aligner = Class("EMAN::Aligner", "aligner.h")
+set_policy(Aligner.align, return_value_policy(manage_new_object))
+
+Cmp = Class("EMAN::Cmp", "cmp.h")
+
+Averager = Class("EMAN::Averager", "averager.h")
+set_policy(Averager.average, return_value_policy(manage_new_object))
+
+Filter = Class("EMAN::Filter", "filter.h")
+
+Projector = Class("EMAN::Projector", "projector.h")
+set_policy(Projector.project3d, return_value_policy(manage_new_object))
+
+Reconstructor = Class("EMAN::Reconstructor", "reconstructor.h")
+set_policy(Reconstructor.finish, return_value_policy(manage_new_object))
+
+Factory = Template("EMAN::Factory", "emobject.h")
+
+
 Log = Class("EMAN::Log", "log.h")
 set_policy(Log.logger, return_value_policy(reference_existing_object))
 exclude(Log.variable)
 exclude(Log.log)
 exclude(Log.warn)
 exclude(Log.error)		       
-
-EMObject = Class("EMAN::EMObject", "emobject.h")
-set_policy(EMObject.get_emdata, return_internal_reference())
-set_policy(EMObject.get_xydata, return_internal_reference())
 
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
@@ -55,12 +79,64 @@ exclude(EMData.render_pha24)
 exclude(EMData.setup4slice)
 
 
-Include("pyem.h")
 set_wrapper(EMData.read_images_by_index, "py_read_images_by_index")
 set_wrapper(EMData.read_images_by_ext, "py_read_images_by_ext")
 
-Include("ctf.h")
-Include("imageio.h")
-Include("transform.h")
-Include("pylist.h")
-Include("xydata.h")
+Ctf = Class("EMAN::Ctf", "ctf.h")
+SimpleCtf = Class("EMAN::SimpleCtf", "ctf.h")
+
+ImageIO = Class("EMAN::ImageIO", "imageio.h")
+
+Vec3f = Class("EMAN::Vec3f", "transform.h")
+set_policy(Vec3f.negate, return_internal_reference())
+
+
+Matrix3f = Class("EMAN::Matrix3f", "transform.h")
+set_policy(Matrix3f.mult_right, return_internal_reference())
+set_policy(Matrix3f.mult_left, return_internal_reference())
+set_policy(Matrix3f.inverse, return_internal_reference())
+set_policy(Matrix3f.transpose, return_internal_reference())
+
+Matrix4f = Class("EMAN::Matrix4f", "transform.h")
+set_policy(Matrix4f.mult_right, return_internal_reference())
+set_policy(Matrix4f.mult_left, return_internal_reference())
+set_policy(Matrix4f.inverse, return_internal_reference())
+set_policy(Matrix4f.transpose, return_internal_reference())
+
+Quaternion = Class("EMAN::Quaternion", "transform.h")
+set_policy(Quaternion.inverse, return_internal_reference())
+
+Rotation = Class("EMAN::Rotation", "transform.h")
+set_policy(Rotation.inverse, return_internal_reference())
+set_policy(Rotation.rotate_from_left, return_internal_reference())
+
+Transform = Class("EMAN::Transform", "transform.h")
+set_policy(Transform.set_rotate_instance, return_internal_reference())
+set_policy(Transform.set_translate_instance, return_internal_reference())
+set_policy(Transform.set_scale_instance, return_internal_reference())
+set_policy(Transform.set_transform_instance, return_internal_reference())
+set_policy(Transform.set_center, return_internal_reference())
+set_policy(Transform.set_matrix, return_internal_reference())
+set_policy(Transform.set_post_translate, return_internal_reference())
+set_policy(Transform.inverse, return_internal_reference())
+set_policy(Transform.transpose, return_internal_reference())
+
+set_policy(Transform.post_concatenate, return_internal_reference())
+set_policy(Transform.pre_concatenate, return_internal_reference())
+set_policy(Transform.translate, return_internal_reference())
+set_policy(Transform.rotate, return_internal_reference())
+set_policy(Transform.rotate_center, return_internal_reference())
+set_policy(Transform.rotate_scale, return_internal_reference())
+set_policy(Transform.pre_translate_rotate, return_internal_reference())
+set_policy(Transform.post_translate_rotate, return_internal_reference())
+set_policy(Transform.scale, return_internal_reference())
+
+XYData = Class("EMAN::XYData", "xydata.h")
+
+Size = Class("EMAN::Size", "geometry.h")
+Point = Template("EMAN::Point", "geometry.h")
+Point("int")
+Point("float")
+Region = Class("EMAN::Region", "geometry.h")
+
+Util = Class("EMAN::Util", "util.h")

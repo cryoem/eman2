@@ -738,9 +738,6 @@ namespace EMAN
 	Vec3f pre_trans;
     };
 
-
-
-
 }
 
 
