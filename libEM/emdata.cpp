@@ -3971,7 +3971,6 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 	f1 = do_fft();
 
 	if (!f1) {
-		LOGERR("FFT returns NULL image");
 		throw NullPointerException("FFT returns NULL image");
 	}
 	f1->ap2ri();
@@ -3982,7 +3981,6 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 	if (with) {
 		cf = with->do_fft();
 		if (!cf) {
-			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");
 		}
 		
@@ -3995,7 +3993,6 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 
 	if (filter) {
 		if (!EMUtil::is_same_size(filter, cf)) {
-			LOGERR("improperly sized filter");
 			throw ImageFormatException("improperly sized filter");
 		}
 
@@ -4004,7 +4001,6 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 	}
 
 	if (with && !EMUtil::is_same_size(f1, cf)) {
-		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
 	}
 	
