@@ -77,6 +77,10 @@ class TestTypeConverter(unittest.TestCase):
         fl = get_list("float")
         TestUtil.to_emobject({"floatarray": fl})
 
+        str1 = TestUtil.get_debug_string(0)
+        TestUtil.to_emobject({"string": str1})
+
+
         e = EMData()
         nx = TestUtil.get_debug_int(0)
         ny = TestUtil.get_debug_int(1)
@@ -169,8 +173,11 @@ class TestTypeConverter(unittest.TestCase):
         slist2 = TestUtil.test_vector_string(slist)
         self.assertEqual(slist, slist2)
 
+
+        imgfile1 = "test_vector1.mrc"
+        TestUtil.make_image_file(imgfile1, MRC)
         e1 = EMData()
-        e1.read_image(TestUtil.get_debug_image("samesize1.mrc"))
+        e1.read_image(imgfile1)
         e2 = EMData()
         e2.set_size(10, 20, 5)
         e3 = EMData()
@@ -180,6 +187,8 @@ class TestTypeConverter(unittest.TestCase):
         testlib.check_emdata_list(elist, sys.argv[0])
         testlib.check_emdata_list(elist2, sys.argv[0])
 
+        os.unlink(imgfile1)
+        
         p1 = Pixel(1,2,3, 1.1)
         p2 = Pixel(4,5,6, 4.4)
         p3 = Pixel(7,8,9, 5.5)
@@ -191,8 +200,13 @@ class TestTypeConverter(unittest.TestCase):
 
 
     def test_em2numpy(self):
+        imgfile1 = "test_em2numpy_1.mrc"
+        nx0 = 100
+        ny0 = 200
+        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, nx0, ny0)
+        
         e = EMData()
-        e.read_image(TestUtil.get_debug_image("groel2d.mrc"))
+        e.read_image(imgfile1)
         nx = e.get_xsize()
         ny = e.get_ysize()
 
@@ -202,7 +216,7 @@ class TestTypeConverter(unittest.TestCase):
         for i in range(nx):
             self.assertEqual(e.get_value_at(i, n), a[n][i])
 
-        self.assertEqual(a.shape, (100,200))
+        self.assertEqual(a.shape, (ny0, nx0))
         self.assertEqual(a.typecode(), "f")
 
         for x in range(nx):
@@ -215,13 +229,14 @@ class TestTypeConverter(unittest.TestCase):
         EMNumPy.numpy2em(a, e2)
         testlib.check_emdata(e2, sys.argv[0])
 
+        os.unlink(imgfile1)
 
     def test_numpy2em(self):
         n = 100
         l = range(2*n*n)
         a = Numeric.reshape(Numeric.array(l, Numeric.Float32), (2*n, n))
 
-        self.assertEqual(a.shape, (200, 100))
+        self.assertEqual(a.shape, (2*n, n))
         self.assertEqual(a.typecode(), "f")
 
         e = EMData()
@@ -232,10 +247,12 @@ class TestTypeConverter(unittest.TestCase):
             self.assertEqual(e.get_value_at(i, 0), i)
 
 
-    def test_Point_and_Size_class(self):        
-        imagename = TestUtil.get_debug_image("monomer.mrc")
+    def test_Point_and_Size_class(self):
+        imgfile1 = "test_Point_and_Size_class_1.mrc"
+        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, 32,32,32)
+
         img1 = EMData()
-        img1.read_image(imagename)
+        img1.read_image(imgfile1)
 
         ptuple1 = (16,16,16)
         plist1 = list(ptuple1)
@@ -245,6 +262,8 @@ class TestTypeConverter(unittest.TestCase):
         
         testlib.check_emdata(img2, sys.argv[0])
         testlib.check_emdata(img3, sys.argv[0])
+
+        os.unlink(imgfile1)
 
 
 def test_main():

@@ -7,25 +7,25 @@ import math
 
 class TestTransform(unittest.TestCase):
 
-	def setUp(self):
-		self.delta =  0.0001
+    def setUp(self):
+        self.delta =  0.0001
 
-	def assertfloat(self, f1, f2):
+    def assertfloat(self, f1, f2):
         diff = f1 - f2
         if math.fabs(diff) > self.delta:
             self.assertEqual(f1, f2)
-		
-	def test_get_rotation(self):
-		az = -0.60170830102
-		alt = 1.45232928554
-		phi = 0
+        
+    def test_get_rotation(self):
+        alt = 1.45232928554
+        az = -0.60170830102
+        phi = 0
 
-		t = Transform(EULER_EMAN, alt, az, phi)
-		rot = t.get_rotation(EULER_EMAN)
+        t = Transform(EULER_EMAN, az, alt, phi)
+        rot = t.get_rotation(EULER_EMAN)
 
-		self.assertfloat(az, float(rot["az"]))
-		self.assertfloat(alt, float(rot["alt"]))
-		self.assertfloat(phi, float(rot["phi"]))
+        self.assertfloat(az, float(rot["az"]))
+        self.assertfloat(alt, float(rot["alt"]))
+        self.assertfloat(phi, float(rot["phi"]))
 
 
 def test_main():

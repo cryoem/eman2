@@ -9,14 +9,18 @@ import os
 class TestUtils(unittest.TestCase):
 
     def test_is_file_exist(self):
-        result1 = Util.is_file_exist(TestUtil.get_debug_image("search.dm3"))
+        imgfile1 = "test_is_file_exist.mrc"
+        TestUtil.make_image_file(imgfile1, MRC)
+        result1 = Util.is_file_exist(imgfile1)
         self.assertEqual(result1, True)
         
-        result2 = Util.is_file_exist(TestUtil.get_debug_image("__nosuchafile__.dm3"))
+        result2 = Util.is_file_exist("__nosuchafile__.dm3")
         self.assertEqual(result2, False)
         
         result3 = Util.is_file_exist("")
         self.assertEqual(result3, False)
+
+        os.unlink(imgfile1)
 
 
     def test_sstrcmp(self):

@@ -39,16 +39,22 @@ class TestBoost(unittest.TestCase):
         #e.make_rotational_footprint()
 
     def test_defaultargs(self):
+        imgfile1 = "test_defaultargs_1.mrc"
+        imgfile2 = "test_defaultargs_2.mrc"
+        TestUtil.make_image_file(imgfile1, MRC)
+        TestUtil.make_image_file(imgfile2, MRC)
+        
         image1 = EMData()
-        image1.read_image(TestUtil.get_debug_image("samesize1.mrc"))
+        image1.read_image(imgfile1)
 
         image2 = EMData()
-        image2.read_image(TestUtil.get_debug_image("samesize2.mrc"))
+        image2.read_image(imgfile2)
 
         #image3 = image1.calc_ccf(image2)
         #testlib.check_emdata(image3, sys.argv[0])
 
-
+        os.unlink(imgfile1)
+        os.unlink(imgfile2)
 
 
 class TestException(unittest.TestCase):
