@@ -9,6 +9,7 @@ import os.path
 import math
 import random
 
+# usage: e2proc2d.py --clip 200 200 --outtype mrc input.mrc output.mrc
 
 def read_listfile(listfile, excludefile, nimg):
     imagelist = None
@@ -50,12 +51,12 @@ def main():
     progname = os.path.basename(sys.argv[0])
     usage = progname + " options inputfile outputfile"
 
-    parser = OptionParser(usage)
+    parser = OptionParser(usage,version=EMANVERSION)
   
     parser.add_option("--apix", type="float", help="the Angstrom/pixel for S scaling")
     parser.add_option("--average", action="store_true", help="Averages all input images (without alignment) and writes a single (normalized) output image")
     parser.add_option("--calcsf", type="string", nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
-    parser.add_option("--clip", type="float", nargs=2, action="append", help="Define the output image size")
+    parser.add_option("--clip", type="float", nargs=2, action="append", help="Define the output image size. CLIP=xsize ysize")
     parser.add_option("--ctfsplit", action="store_true", help="Splits the input file into output files with the same CTF parameters")
     parser.add_option("--exclude", type="string", help="Excludes image numbers in EXCLUDE file")
     parser.add_option("--fftavg", type="string", help="Incoherent Fourier average of all images and write a single power spectrum image")
@@ -222,8 +223,9 @@ def main():
             elif option1 == "clip":
                 ci = index_d[option1]
                 (clipx, clipy) = options.clip[ci]
-                e = d.get_clip(Region(nx-clipx)/2, (ny-clipy)/2, clipx, clipy)
-                e.set_average_nimg(d.get_average_nimg())
+				
+                e = d.get_clip(Region((nx-clipx)/2, (ny-clipy)/2, clipx, clipy))
+                e.set_attr("avgnimg", d.get_attr("avgnimg"))
                 d = e
                 index_d[option1] += 1
             
