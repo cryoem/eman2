@@ -40,7 +40,39 @@ single particle reconstructions.\n\
 \n\
 The following classes are defined: \n\
   EMData - the primary class to process electronic microscopy images. \n\
-  Transform - defines a transformation. \n\
+ \n\
+  Quaternion - implements mathematical quaternion. \n\
+  Region - defines a rectangular 2D/3D region. \n\
+  Transform - defines a transformation including rotation, translation, and different Euler angles. \n\
+  Vec3i - a 3-element integer vector. \n\
+  Vec3f - a 3-element floating number vector. \n\
+\n\
+  EMObject - A wrapper class for int, float, double, string, EMData, XYData, list etc. \n\
+  Pixel - defines a pixel's 3D coordinates and its value. \n\
+  SimpleCtf - defines EMAN CTF parameter model. \n\
+  XYData - implements operations on a series of (x y) data pair. \n\
+\n\
+  Aligners - Aligner factory. Each Aligner alignes 2D/3D images. \n\
+  Averagers - Averager factory. Each Averager averages a set of images. \n\
+  Cmps  - Cmp factory. Each Cmp defines a way to do image comparison. \n\
+  Filters - Filter factory. Each filter implements an image-filtering algorithm. \n\
+  Projectors - Projector factory. Each Projector implements an algorithm for 3D image projection. \n\
+  Reconstructors - Reconstructor factory. Each Reconstructor implements an algorithm for image reconstruction. \n\
+\n\
+  EMUtil - Defines utility functions for EMData-related operations. \n\
+  TestUtil - Unit test utility functions. \n\
+  Util - Generic utility functions. \n\
+\n\
+  EMNumPy - Defines functions for conversions between EMData and Numeric python array. \n\
+  Log - Log output at different verbose level. \n\
+  PointArray - Point array. \n\
+\n\
+  dump_aligners() - Print out all Aligners and their parameters. \n\
+  dump_averagers() - Print out all Averagers and their parameters. \n\
+  dump_cmps() - Print out all Cmps and their parameters. \n\
+  dump_filters() - Print out all Filters and their parameters. \n\
+  dump_projectors() - Print out all Projectors and their parameters. \n\
+  dump_reconstructors() - Print out all Reconstructors and their parameters. \n\
 "
-
-
+  
+  
