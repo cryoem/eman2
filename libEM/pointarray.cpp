@@ -1157,6 +1157,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 
 vector<EMData*> optdata;
 PointArray *optobj;
+float optpixres;
 
 void init_opt_proj(int ndim, ColumnVector& x)
 {
@@ -1170,13 +1171,21 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 {
 	int i;
 	PointArray pa;
-	Transform T;
+	Transform xform;
+	int size=optdata[0]->get_xsize();
+	fx=0;
 	
-	pa.set_from((double *)x.nric()+1,n,std::string("c1"),&T);
-		
-	
+	for (i=0; i<optdata.size(); i++) {
+		xform.set_rotate_instance(optdata[i]->get_rotation());
+		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
+		EMData *p=pa.projection_by_summation(size,1.0,optpixres);
+		p->filter("NormalizeUnit");
+		fx-=sqrt(p->cmp("Dot",Dict("with",EMObject(optdata[i]))));
+	}
+			
 	result=NLPFunction;
 
+	printf("%g\t%1.1f %1.1f %1.1f %g\t%1.1f %1.1f %1.1f %g\t%1.1f %1.1f %1.1f %g\n",fx,x(1),x(2),x(3),x(4),x(5),x(6),x(7),x(8),x(9),x(10),x(11),x(12));
 }
 
 void calc_opt_projd(int mode,int n, const ColumnVector& x, double& fx, ColumnVector& gx, int& result)
@@ -1193,18 +1202,21 @@ if (mode & NLPGradient) {
 }
 #endif
 
-void PointArray::opt_from_proj(const vector<EMData*> & proj) {
+void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
 #ifdef OPTPP
 	optdata=proj;
 	optobj=this;
+	optpixres=pixres;
 	
 	FDNLF1 nlf(get_number_points()*4,calc_opt_proj,init_opt_proj);
 //	NLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_projd);
 	nlf.initFcn();
 	
-	OptCG opt(&nlf);
-	
-
+//	OptCG opt(&nlf);
+	OptQNewton opt(&nlf);
+	opt.setMaxFeval(2000);
+	opt.optimize();
+	opt.printStatus("Done");
 #else 
 	LOGWARN("OPT++ support not enabled.\n");
 	return;

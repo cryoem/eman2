@@ -53,7 +53,7 @@ namespace EMAN
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(string sym);
 		void set_from(PointArray * source, string sym = "", Transform * transform = 0);
-		void set_from(double *source, unsigned int num, string sym = "", Transform * transform = 0);
+		void set_from(double *source, unsigned int num, string sym = "", Transform *transform=0);
 		void set_from_density_map(EMData * map, int num, float thresh, float apix,
 								  Density2PointsArrayAlgorithm mode = PEAKS_DIV);
 		void sort_by_axis(int axis = 1);	// x,y,z axes = 0, 1, 2
@@ -67,8 +67,9 @@ namespace EMAN
 		 *
 		 * @author Steve Ludtke  11/27/2004
 		 * @param proj A vector of EMData objects conatining projections with orientations
+		 * @param pixres Size of each Gaussian in pixels
 		 */
-		void opt_from_proj(const vector<EMData*> & proj);
+		void opt_from_proj(const vector<EMData*> & proj,float pixres);
 
 		private:
 		double *points;
