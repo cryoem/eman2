@@ -1,0 +1,3 @@
+LINK_LIBRARIES(EM)
+
+ADD_EXECUTABLE(blankimg blankimg.C)
