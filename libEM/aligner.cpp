@@ -135,7 +135,10 @@ EMData *TranslationalAligner::align(EMData * this_img, const string&) const
 	this_img->translate(cur_trans);
 
 	float score = (float)hypot(result[0], result[1]);
-	cf->set_attr("align_score", score);
+	cf->set_attr("align_score", max_value);
+	cf->set_attr("translational.dx",result[0]); 
+	cf->set_attr("translational.dy",result[1]); 
+	cf->set_attr("translational.dz",result[2]); 
 	cf->done_data();
 
 	return cf;
@@ -263,6 +266,7 @@ EMData *RotationalAligner::align(EMData * this_img, const string&) const
 	Util::find_max(data, this_img2_nx, &peak, &peak_index);
 	this_img->rotate((float)(-peak_index * M_PI / this_img2_nx), 0, 0);
 	cf->set_attr("align_score", peak);
+	cf->set_attr("rotational",-peak_index * M_PI / this_img2_nx);
 
 	cf->done_data();
 
@@ -292,6 +296,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, const string&) const
 	this_img->rotate(a, 0, 0);
 
 	cf->set_attr("align_score", peak);
+	cf->set_attr("rotational",a);
 	cf->done_data();
 
 	delete e1;
@@ -841,7 +846,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img,
 	EMData *result = 0;
 
 	if (dot1 > dot2) {
-		this_copy->set_flipped(0);
+		this_copy2->set_attr("flipped",0);
 
 		if (!flip) {
 			this_img->filter("xform.flip", Dict("axis", "x"));
@@ -852,7 +857,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img,
 		result = this_copy;
 	}
 	else {
-		this_copy2->set_flipped(1);
+		this_copy2->set_attr("flipped",1);
 		delete this_copy;
 		this_copy = 0;
 		result = this_copy2;

@@ -21,6 +21,8 @@ for single particle analysis."""
 	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=-1)
 	parser.add_option("--refptcl","-R",type="string",help="A stack of reference images. Must have the same scale as the image being boxed.",default=None)
+	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
+	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
 			
 	(options, args) = parser.parse_args()
@@ -130,20 +132,26 @@ for single particle analysis."""
 			
 		pks.sort()		# an ordered list of the best particle locations
 		
-		# ok, you could do this with clever syntax, but this is more readable
 		# this will produce a new list excluding any lower valued boxes within
-		# 1/2 a box size of a higher one
+		# 1/2 a box size of a higher one. It also rescales the boxes.
+		# (ok, you could do this with clever syntax, but this is more readable)
 		goodpks=[]
 		bf=options.box/(shrinkfactor*2)
 		for n,i in enumerate(pks):
 			for nn,ii in enumerate(pks[:n]):
 				if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : break
 				if hypot(i[2]-ii[2],i[3]-ii[3])<bf : break
-			else: goodpks.append(i)
+			else: goodpks.append((i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2))
 		
+		# This will optimize the center location of each particle and improve
+		# the similarity calculation
+		for n,i in enumerate(goodpks):
+			b=EMData()
+			b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			
 		out=open(args[0][:-3]+"box","w")
 		for i in goodpks[:500]:
-			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2,options.box,options.box))
+			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[2],i[3],options.box,options.box))
 		
 		out.close()
 		
