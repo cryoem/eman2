@@ -48,10 +48,36 @@ namespace EMAN {
 
 	void dump_data(string filename);
 
-	static vector<EMData*> read_images_by_index(string filename, int img_indices[], int nimg, bool nodata = false);
+	static vector<EMData*> read_images_by_index(string filename, int img_indices[],
+						    int nimg, bool nodata = false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
 						  bool nodata = false, string ext = "");
-	
+
+	EMData& operator+=(float n);
+        EMData& operator-=(float n);
+        EMData& operator*=(float n);
+        EMData& operator/=(float n);
+
+        EMData& operator+=(const EMData& em);
+        EMData& operator-=(const EMData& em);
+        EMData& operator*=(const EMData& em);
+        EMData& operator/=(const EMData& em);
+
+        friend EMData& operator+(const EMData& em, float n);
+        friend EMData& operator-(const EMData& em, float n);
+        friend EMData& operator*(const EMData& em, float n);
+        friend EMData& operator/(const EMData& em, float n);
+
+        friend EMData& operator+(float n, const EMData& em);
+        friend EMData& operator-(float n, const EMData& em);
+        friend EMData& operator*(float n, const EMData& em);
+        friend EMData& operator/(float n, const EMData& em);
+
+        friend EMData& operator+(const EMData& a, const EMData& b);
+        friend EMData& operator-(const EMData& a, const EMData& b);
+        friend EMData& operator*(const EMData& a, const EMData& b);
+        friend EMData& operator/(const EMData& a, const EMData& b);
+
     private:
 	enum EMDataFlags {
 	    EMDATA_COMPLEX      = 1<<0, 

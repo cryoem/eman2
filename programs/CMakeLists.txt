@@ -1,2 +1,6 @@
 LINK_LIBRARIES(EM)
 ADD_EXECUTABLE(iminfo2 iminfo.C)
+INSTALL_TARGETS(/bin
+		iminfo2
+		)
+
