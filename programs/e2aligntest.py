@@ -46,6 +46,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	dz=0.
 	v=[0,0,0]
 	for v[2] in range(64):
+		print v[2],"/64"
 		for v[1] in range(64):
 			for v[0] in range(64):
 				if "x" in axes: x=(v[axes.find("x")]-32)/4.0
@@ -58,7 +59,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 				i2a=i2.copy(0)
 				i2a.rotate_translate(alt,az,phi,dx,dy,dz)
 				
-				dot=i1.cmp("Dot",{"with":i2a})
+				dot=i1.cmp("Dot",{"with":EMObject(i2a)})
 				result.set_value_at(v[0],v[1],v[2],dot)
 	
 	result.update()
