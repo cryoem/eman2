@@ -3597,7 +3597,9 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 	}
 
 	if (!EMUtil::is_same_size(this, with)) {
-		LOGERR("images not same size");
+		LOGERR("images not same size: (%d,%d,%d) != (%d,%d,%d)",
+			   nx, ny, nz,
+			   with->get_xsize(), with->get_ysize(), with->get_zsize());
 		throw ImageFormatException("images not same size");
 	}
 	if (get_ndim() > 2) {
@@ -3909,12 +3911,12 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		LOGERR("even image xsize only");
 		throw ImageFormatException("even image xsize only");
 	}
-
+	/*
 	if (rfp) {
 		delete rfp;
 		rfp = 0;
 	}
-
+	*/
 	if (!filt) {
 		filt = new EMData();
 		filt->set_complex(true);
@@ -3974,6 +3976,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 			rfp = tmp2->unwrap();
 			delete tmp2;
 			tmp2 = 0;
+			result = rfp;
 		}
 	}
 
