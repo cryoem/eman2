@@ -143,8 +143,9 @@ int LstIO::calc_ref_image_index(int image_index)
 
 	    char *p_basename = strrchr(fullpath, '/');
 	    if (p_basename) {
-		p_basename++;
-		*p_basename = '\0';
+		//p_basename++;
+		//*p_basename = '\0';
+		strcat(fullpath, "/");
 		strcat(fullpath, ref_image_path);
 	    }
 	}
