@@ -117,7 +117,8 @@ FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrit
 			}
 		}
 	}
-
+	
+	
 	if (!f) {
 		LOGERR("cannot access file '%s'", filename.c_str());
 	}

@@ -92,7 +92,8 @@ int HdfIO::init()
 			file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 		}
 	}
-
+	
+	
 	string root_group_str = get_item_name(ROOT_GROUP);
 	group = H5Gopen(file, root_group_str.c_str());
 	cur_dataset = -1;

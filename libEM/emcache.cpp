@@ -56,3 +56,4 @@ void GlobalCache::add_imageio(string filename, int rw_mode, ImageIO * io)
 		imageio_cache->add(filename, io);
 	}
 }
+

@@ -14,6 +14,11 @@
 #include <string.h>
 #include <assert.h>
 
+#ifndef WIN32
+#include <unistd.h>
+#include <sys/types.h>
+#endif
+
 using namespace EMAN;
 
 const char *MrcIO::CTF_MAGIC = "!-";
@@ -266,12 +271,12 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			opposite_endian = true;
 		}
-
+#if 0
 		if (new_mode != mrch.mode) {
-			LOGERR("cannot write to different mode file %sn", filename.c_str());
+			LOGERR("cannot write to different mode file %s", filename.c_str());
 			return 1;
 		}
-
+#endif
 		portable_fseek(mrcfile, 0, SEEK_SET);
 	}
 	else {
@@ -520,6 +525,30 @@ int MrcIO::write_data(float *data, int image_index, bool)
 		Util::flip_complex_phase(data, size);
 	}
 
+	// truncate the file if necessary
+#ifndef WIN32
+	if (!is_new_file) {
+		size_t new_file_length = nx * ny * nz * get_mode_size(mrch.mode) +
+			sizeof(MrcHeader) + mrch.nsymbt;
+
+		long curpos = portable_ftell(mrcfile);
+		portable_fseek(mrcfile, 0, SEEK_END);
+		size_t old_file_length = portable_ftell(mrcfile);
+		portable_fseek(mrcfile, curpos, SEEK_SET);
+		
+		if (old_file_length > new_file_length) {
+			int fd = fileno(mrcfile);
+			int err = ftruncate(fd, new_file_length);
+			if (err) {
+				LOGERR("file truncation failed. old length = %ld, new length=%ld",
+					   old_file_length, new_file_length);
+				throw ImageWriteException(filename, "file truncation failed");
+			}
+		}
+	}
+#endif
+	
+	
 	return 0;
 }
 
