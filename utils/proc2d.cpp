@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 		else if (strncmp(arg, "randomize=", 10) == 0) {
 			rize = 1;
 			sscanf(&argv[i][10], "%f,%f,%d", &rizedx, &rizeda, &rizef);
-			rizeda *= M_PI / 180.0;
+			rizeda *= M_PI / 180.0f;
 		}
 		else if (Util::get_str_float(arg, "norm", &norm, &nmean, &nsig)) {
 		}
@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
 			d->set_parent(0);
 
 			if (!rize) {
-				d->rotate_translate(rot * M_PI / 180.0, 0, 0, dx, dy, 0);
+				d->rotate_translate(rot * M_PI / 180.0f, 0, 0, dx, dy, 0);
 			}
 			else {
 				if (rizef && rand() % 2) {
@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
 				}
 
 				if (rizeda > 0) {
-					d->rotate(Util::get_frand(-rizeda / 2.0, rizeda / 2.0), 0, 0);
+					d->rotate(Util::get_frand(-rizeda / 2.0f, rizeda / 2.0f), 0, 0);
 				}
 		
 				if (rizedx > 0) {
@@ -441,7 +441,7 @@ int main(int argc, char *argv[])
 
 		if (scale < 1.0) {
 			Transform t;
-			t.set_scale_instance(Vec3<float>(scale, 1, 1));
+			t.set_scale_instance(Vec3f(scale, 1, 1));
 			d->rotate_translate(t);
 		}
 
@@ -455,7 +455,7 @@ int main(int argc, char *argv[])
 
 		if (scale > 1.0) {
 			Transform t;
-			t.set_scale_instance(Vec3<float>(scale, 1, 1));
+			t.set_scale_instance(Vec3f(scale, 1, 1));
 			d->rotate_translate(t);
 		}
 
@@ -476,11 +476,11 @@ int main(int argc, char *argv[])
 
 			EMData *e = f->copy();
 			for (int j = 1; j < csym; j++) {
-				e->rotate(j * M_PI * 2.0 / csym, 0, 0);
+				e->rotate(j * M_PI * 2.0f / csym, 0, 0);
 				(*d) += (*e);
 			}
 
-			*d *= (1.0 / csym);
+			*d *= (1.0f / csym);
 
 			delete e;
 			e = 0;

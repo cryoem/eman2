@@ -6,8 +6,9 @@
 #define eman__vec3_h__ 1
 
 #include <vector>
-#include <math.h>
 using std::vector;
+
+#include <math.h>
 
 namespace EMAN
 {
@@ -22,59 +23,42 @@ namespace EMAN
 	 *    Vec3<float> v3 = v1 + v2;
 	 *    double dot = v1 * v2;
      */
-	template < class T > class Vec3
+
+	
+	class Vec3i
 	{
-	  public:
-		Vec3() {
+	public:
+		Vec3i() {
 			vec[0] = 0;
 			vec[1] = 0;
 			vec[2] = 0;
 		}
 
-		template <class T1, class T2, class T3>
-		Vec3(T1 x, T2 y, T3 z)
+		Vec3i(int x, int y, int z)
 		{
-			vec[0] = (T)x;
-			vec[1] = (T)y;
-			vec[2] = (T)z;
-		}
-		
-		template <class T2>
-		Vec3(const vector < T2 > &v)
-		{
-			vec[0] = (T) v[0];
-			vec[1] = (T) v[1];
-			vec[2] = (T) v[2];
-		}
-		
-		template <class T2>
-		Vec3(const Vec3 < T2 > &v)
-		{
-			vec[0] = (T) v[0];
-			vec[1] = (T) v[1];
-			vec[2] = (T) v[2];
-		}
-		
-		template <class T2>
-		Vec3<T> & operator=(const Vec3 < T2 > &v)
-		{
-			if (this != &v) {
-				vec[0] = (T) v[0];
-				vec[1] = (T) v[1];
-				vec[2] = (T) v[2];
-			}
-			return *this;
+			vec[0] = x;
+			vec[1] = y;
+			vec[2] = z;
 		}
 
-
-		virtual ~ Vec3() {
+		Vec3i(const vector < int > &v)
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+			vec[2] = v[2];
+		}
+		
+		
+		virtual ~ Vec3i() {
 		}
 
-		double normalize()
+		float normalize()
 		{
-			double len = length();
+			float len = length();
 			if (len != 0) {
-				(*this) *= (1.0 / len);
+				vec[0] = (int) (vec[0] / len);
+				vec[1] = (int) (vec[1] / len);
+				vec[2] = (int) (vec[2] / len);
 			}
 			else {
 				set_value(0, 0, 0);
@@ -82,27 +66,26 @@ namespace EMAN
 			return len;
 		}
 
-		double length() const
+		float length() const
 		{
-			T t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
-			return sqrt((double) t);
+			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+			return (float)sqrt(t);
 		}
 
-		template <class T2>
-		double dot(const Vec3 < T2 > &v) const
+		int dot(const Vec3i & v) const
 		{
 			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
 		}
 
-		template <class T2>
-		Vec3 < T > cross(const Vec3 < T2 > &v) const
+
+		Vec3i cross(const Vec3i  & v) const
 		{
-			return Vec3((T) (vec[1] * v[2] - vec[2] * v[1]),
-						(T) (vec[2] * v[0] - vec[0] * v[2]),
-						(T) (vec[0] * v[1] - vec[1] * v[0]));
+			return Vec3i((vec[1] * v[2] - vec[2] * v[1]),
+						 (vec[2] * v[0] - vec[0] * v[2]),
+						 (vec[0] * v[1] - vec[1] * v[0]));
 		}
 
-		Vec3 < T > &negate()
+		Vec3i  &negate()
 		{
 			vec[0] = -vec[0];
 			vec[1] = -vec[1];
@@ -110,125 +93,119 @@ namespace EMAN
 			return (*this);
 		}
 
-		vector < T > get_as_list()const
+		vector < int > get_as_list()const
 		{
-			vector < T > v(3);
+			vector < int > v(3);
 			v[0] = vec[0];
 			v[1] = vec[1];
 			v[2] = vec[2];
 			return v;
 		}
 		
-		template <class T2>
-		void set_value(const vector < T2 > &v)
+		void set_value(const vector < int > &v)
 		{
-			vec[0] = (T) v[0];
-			vec[1] = (T) v[1];
-			vec[2] = (T) v[2];
+			vec[0] =  v[0];
+			vec[1] =  v[1];
+			vec[2] =  v[2];
 		}
 		
-		template <class T1, class T2, class T3>
-		void set_value(T1 x, T2 y, T3 z)
+		void set_value(int x, int y, int z)
 		{
-			vec[0] = (T) x;
-			vec[1] = (T) y;
-			vec[2] = (T) z;
+			vec[0] =  x;
+			vec[1] =  y;
+			vec[2] =  z;
 		}
 
-		T operator[] (int i) const
-		{
-			return vec[i];
-		}
-		T & operator[] (int i)
+		int operator[] (int i) const
 		{
 			return vec[i];
 		}
 		
-		template <class T2>
-		Vec3 < T > &operator +=(const Vec3 < T2 > &v) {
-			vec[0] +=  (T) v[0];
-			vec[1] +=  (T) v[1];
-			vec[2] +=  (T) v[2];
+		int & operator[] (int i)
+		{
+			return vec[i];
+		}
+		
+		Vec3i &operator +=(const Vec3i &v) {
+			vec[0] += v[0];
+			vec[1] += v[1];
+			vec[2] += v[2];
 			return *this;
 		}
 		
-		template <class T2>
-		Vec3 < T > &operator +=(T2 d) {
-			vec[0] +=  (T) d;
-			vec[1] +=  (T) d;
-			vec[2] +=  (T) d;
+		Vec3i  &operator +=(int d) {
+			vec[0] +=   d;
+			vec[1] +=   d;
+			vec[2] +=   d;
 			return *this;
 		}
 
-		template <class T2>
-		Vec3 < T > &operator -=(const Vec3 < T2 > &v) {
-			vec[0] -= (T) v[0];
-			vec[1] -= (T) v[1];
-			vec[2] -= (T) v[2];
+		Vec3i  &operator -=(const Vec3i &v) {
+			vec[0] -=  v[0];
+			vec[1] -=  v[1];
+			vec[2] -=  v[2];
 			return *this;
 		}
 		
-		template <class T2>
-		Vec3 < T > &operator -=(T2 d) {
-			vec[0] -= (T) d;
-			vec[1] -= (T) d;
-			vec[2] -= (T) d;
+		Vec3i  &operator -=(int d) {
+			vec[0] -=  d;
+			vec[1] -=  d;
+			vec[2] -=  d;
+			return *this;
+		}
+		
+		Vec3i  &operator *=(int d) {
+			vec[0] *=  d;
+			vec[1] *=  d;
+			vec[2] *=  d;
 			return *this;
 		}
 		
 		
-		template <class T2>
-		Vec3 < T > &operator *=(T2 d) {
-			vec[0] *= (T) d;
-			vec[1] *= (T) d;
-			vec[2] *= (T) d;
-			return *this;
-		}
-		
-		template <class T2>
-		Vec3 < T > &operator /=(T2 d) {
+		Vec3i &operator /=(int d) {
 			if (d != 0) {
-				vec[0] /= (T) d;
-				vec[1] /= (T) d;
-				vec[2] /= (T) d;
+				vec[0] /=  d;
+				vec[1] /=  d;
+				vec[2] /=  d;
 			}
 			return *this;
 		}
 
 	  private:
-		T vec[3];
+		int vec[3];
 	};
 
-
-	template < class T1, class T2 >
-	Vec3 < float >operator +(const Vec3 < T1 > &v1, const Vec3 < T2 > &v2)
-	{
-		return Vec3 < float >(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
-	}
-
-	template < class T1, class T2 >
-	Vec3 < float >operator -(const Vec3 < T1 > &v1, const Vec3 < T2 > &v2)
-	{
-		return Vec3 < float >(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
-	}
 	
-	template < class T1, class T2 >
-	double operator *(const Vec3 < T1 > &v1, const Vec3 < T2 > &v2)
+	inline Vec3i operator +(const Vec3i &v1, const Vec3i &v2)
+	{
+		return Vec3i(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+	}
+
+	inline Vec3i operator -(const Vec3i &v1, const Vec3i &v2)
+	{
+		return Vec3i(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+	}	
+	
+	inline int operator *(const Vec3i &v1, const Vec3i &v2)
 	{
 		return v1.dot(v2);
 	}
-
-	template < class T1, class T2 >
-	Vec3 < T1 > operator *(T2 d, const Vec3 < T1 >& v)
+	
+	inline Vec3i operator *(int d, const Vec3i & v)
 	{
-		Vec3 < T1 > v1 = v;
+		Vec3i v1 = v;
 		v1 *= d;
 		return v1;
 	}
-
-	template < class T1, class T2 >
-	Vec3 < T1 > operator /(T2 d, const Vec3 < T1 >& v) {
-		Vec3 < T1 > v1 = v;
+	
+	inline Vec3i operator *(const Vec3i & v, int d) {
+		Vec3i v1 = v;
+		v1 *= d;
+		return v1;
+	}
+	
+	inline Vec3i operator /(const Vec3i & v, int d) {
+		Vec3i v1 = v;
 		if (d != 0) {
 			v1 /= d;
 		}
@@ -236,37 +213,283 @@ namespace EMAN
 	}
 
 	
-	template < class T1, class T2 >
-	Vec3 < T1 > operator *(const Vec3 < T1 >& v, T2 d) {
-		Vec3 < T1 > v1 = v;
-		v1 *= d;
-		return v1;
-	}
-
-	template < class T1, class T2 >
-	Vec3 < T1 > operator /(const Vec3 < T1 >& v, T2 d) {
-		Vec3 < T1 > v1 = v;
-		if (d != 0) {
-			v1 /= d;
-		}
-		return v1;
-	}
-
-	template < class T1, class T2 >
-	bool operator ==(const Vec3 < T1 > &v1, const Vec3 < T2 > &v2) {
+	inline bool operator ==(const Vec3i &v1, const Vec3i &v2) {
 		if (v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2]) {
 			return true;
 		}
 		return false;
 	}
 
-	template < class T1, class T2 >
-	bool operator !=(const Vec3 < T1 > &v1, const Vec3 < T2 > &v2) {
+	
+	inline bool operator !=(const Vec3i &v1, const Vec3i &v2) {
 		if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2]) {
 			return true;
 		}
 		return false;
 	}
-}
 
+	
+	class Vec3f
+	{
+	public:
+		Vec3f() {
+			vec[0] = 0;
+			vec[1] = 0;
+			vec[2] = 0;
+		}
+
+		Vec3f(float x, float y, float z)
+		{
+			vec[0] = x;
+			vec[1] = y;
+			vec[2] = z;
+		}
+
+		Vec3f(const vector < float > &v)
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+			vec[2] = v[2];
+		}
+		
+		Vec3f(const Vec3i &v)
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+			vec[2] = v[2];
+		}
+
+		virtual ~ Vec3f() {
+		}
+
+		float normalize()
+		{
+			float len = length();
+			if (len != 0) {
+				(*this) *= (1.0f / len);
+			}
+			else {
+				set_value(0, 0, 0);
+			}
+			return len;
+		}
+
+		float length() const
+		{
+			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+			return (float)sqrt(t);
+		}
+
+		float dot(const Vec3f & v) const
+		{
+			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
+		}
+
+		float dot(const Vec3i & v) const
+		{
+			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
+		}
+
+		Vec3f cross(const Vec3f & v) const
+		{
+			return Vec3f((vec[1] * v[2] - vec[2] * v[1]),
+						(vec[2] * v[0] - vec[0] * v[2]),
+						(vec[0] * v[1] - vec[1] * v[0]));
+		}
+		
+		Vec3f cross(const Vec3i & v) const
+		{
+			return Vec3f((vec[1] * v[2] - vec[2] * v[1]),
+						(vec[2] * v[0] - vec[0] * v[2]),
+						(vec[0] * v[1] - vec[1] * v[0]));
+		}
+		
+		Vec3f  &negate()
+		{
+			vec[0] = -vec[0];
+			vec[1] = -vec[1];
+			vec[2] = -vec[2];
+			return (*this);
+		}
+
+		vector < float > get_as_list()const
+		{
+			vector < float > v(3);
+			v[0] = vec[0];
+			v[1] = vec[1];
+			v[2] = vec[2];
+			return v;
+		}
+		
+		void set_value(const vector < float > &v)
+		{
+			vec[0] =  v[0];
+			vec[1] =  v[1];
+			vec[2] =  v[2];
+		}
+		
+		void set_value(float x, float y, float z)
+		{
+			vec[0] =  x;
+			vec[1] =  y;
+			vec[2] =  z;
+		}
+
+		float operator[] (int i) const
+		{
+			return vec[i];
+		}
+		
+		float & operator[] (int i)
+		{
+			return vec[i];
+		}
+		
+		Vec3f &operator +=(const Vec3f &v) {
+			vec[0] += v[0];
+			vec[1] += v[1];
+			vec[2] += v[2];
+			return *this;
+		}
+		
+		Vec3f &operator +=(const Vec3i &v) {
+			vec[0] += v[0];
+			vec[1] += v[1];
+			vec[2] += v[2];
+			return *this;
+		}
+		
+		Vec3f &operator +=(float d) {
+			vec[0] +=   d;
+			vec[1] +=   d;
+			vec[2] +=   d;
+			return *this;
+		}
+
+		Vec3f &operator -=(const Vec3f &v) {
+			vec[0] -=  v[0];
+			vec[1] -=  v[1];
+			vec[2] -=  v[2];
+			return *this;
+		}
+		
+		Vec3f &operator -=(const Vec3i &v) {
+			vec[0] -=  v[0];
+			vec[1] -=  v[1];
+			vec[2] -=  v[2];
+			return *this;
+		}
+		
+		Vec3f &operator -=(float d) {
+			vec[0] -=  d;
+			vec[1] -=  d;
+			vec[2] -=  d;
+			return *this;
+		}
+		
+		Vec3f &operator *=(float d) {
+			vec[0] *=  d;
+			vec[1] *=  d;
+			vec[2] *=  d;
+			return *this;
+		}
+		
+		
+		Vec3f &operator /=(float d) {
+			if (d != 0) {
+				vec[0] /=  d;
+				vec[1] /=  d;
+				vec[2] /=  d;
+			}
+			return *this;
+		}
+
+	  private:
+		float vec[3];
+	};
+
+	
+	inline Vec3f operator +(const Vec3f &v1, const Vec3f &v2)
+	{
+		return Vec3f(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+	}
+
+	inline Vec3f operator -(const Vec3f &v1, const Vec3f &v2)
+	{
+		return Vec3f(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+	}	
+	
+	inline float operator *(const Vec3f &v1, const Vec3f &v2)
+	{
+		return v1.dot(v2);
+	}
+		
+	inline Vec3f operator +(const Vec3i &v1, const Vec3f &v2)
+	{
+		return Vec3f(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+	}
+
+	inline Vec3f operator +(const Vec3f &v1, const Vec3i &v2)
+	{
+		return Vec3f(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+	}
+
+	inline Vec3f operator -(const Vec3i &v1, const Vec3f &v2)
+	{
+		return Vec3f(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+	}	
+	
+	inline Vec3f operator -(const Vec3f &v1, const Vec3i &v2)
+	{
+		return Vec3f(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+	}
+	
+	inline float operator *(const Vec3f &v1, const Vec3i &v2)
+	{
+		return v1.dot(v2);
+	}
+		
+	inline float operator *(const Vec3i &v1, const Vec3f &v2)
+	{
+		return v2.dot(v1);
+	}
+	
+	inline Vec3f operator *(float d, const Vec3f & v)
+	{
+		Vec3f v1 = v;
+		v1 *= d;
+		return v1;
+	}
+	
+	inline Vec3f operator *(const Vec3f & v, float d) {
+		Vec3f v1 = v;
+		v1 *= d;
+		return v1;
+	}
+	
+	inline Vec3f operator /(const Vec3f & v, float d) {
+		Vec3f v1 = v;
+		if (d != 0) {
+			v1 /= d;
+		}
+		return v1;
+	}
+
+	
+	inline bool operator ==(const Vec3f &v1, const Vec3f &v2) {
+		if (v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2]) {
+			return true;
+		}
+		return false;
+	}
+
+	
+	inline bool operator !=(const Vec3f &v1, const Vec3f &v2) {
+		if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2]) {
+			return true;
+		}
+		return false;
+	}
+	
+}
 #endif

@@ -49,9 +49,9 @@ int main(int argc, char *argv[])
     for (int i = -SIZE / 2; i < SIZE / 2; i++) {
 		for (int j = -SIZE / 2; j < SIZE / 2; j++) {
 			d[(i + SIZE / 2) + (j + SIZE / 2) * SIZE] =
-				-3.0 * exp(-Util::square((fabs((float)i) + fabs((float)j))) / 10.0) +
-				exp(-Util::square((fabs((float)i) + fabs((float)j) / 2.0)) / 100.0) *
-				(abs(i) < 2 ? 2.0 : 1.0);
+				-3.0f * exp(-Util::square((fabs((float)i) + fabs((float)j))) / 10.0f) +
+				exp(-Util::square((fabs((float)i) + fabs((float)j) / 2.0f)) / 100.0f) *
+				(abs(i) < 2 ? 2.0f : 1.0f);
 		}
     }
     pat.done_data();
