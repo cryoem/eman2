@@ -360,6 +360,8 @@ namespace EMAN
 			vec[2] =  z;
 		}
 
+		inline float at(int i) { return vec[i]; }
+		
 		float operator[] (int i) const
 		{
 			return vec[i];

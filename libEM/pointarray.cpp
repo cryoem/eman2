@@ -1235,11 +1235,11 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 	fx=0;
 	
 	for (i=0; i<optdata.size(); i++) {
-		xform.set_rotate_instance(optdata[i]->get_rotation());
+		xform=(optdata[i]->get_rotation());
 		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
 		EMData *p=pa.projection_by_summation(size,1.0,optpixres);
 		p->filter("NormalizeUnit");
-		fx-=sqrt(p->cmp("Dot",Dict("with",EMObject(optdata[i]))));
+		fx-=sqrt(p->cmp("Dot",EMObject(optdata[i]),Dict()));
 	}
 			
 	result=NLPFunction;

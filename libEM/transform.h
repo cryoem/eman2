@@ -105,6 +105,7 @@ namespace EMAN
 		static int get_nsym(const string & sym);
 		Transform get_sym(const string & sym, int n);
 		
+		inline float at(int r,int c) { return matrix[r][c]; }
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
 
