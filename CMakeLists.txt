@@ -51,15 +51,15 @@ SUBDIRS(libEM rt programs)
 
 IF (ENABLE_FFTW2)
 
-  FIND_PATH(FFTW_INCLUDE_PATH fftw.h
+  FIND_PATH(FFTW_INCLUDE_PATH sfftw.h
           $ENV{FFTWDIR}/include ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include /usr/local/include /usr/include)
 
   FIND_LIBRARY(FFTW_LIBRARY
-             NAMES sfftw fftw
+             NAMES sfftw 
              PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
 
   FIND_LIBRARY(RFFTW_LIBRARY
-             NAMES srfftw rfftw
+             NAMES srfftw
              PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
 
   IF(FFTW_LIBRARY AND RFFTW_LIBRARY)

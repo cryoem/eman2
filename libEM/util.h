@@ -29,7 +29,8 @@ namespace EMAN {
 	static float get_frand(float low, float high);
 	static float get_gaussian_rand(float avg, float std);
 	
-	static inline int round(float x) {
+	static inline int round(float x)
+	{
 	    if (x<0) return (int)(x - 0.5);
 	    return (int)(x + 0.5);
 	}
@@ -161,6 +162,14 @@ namespace EMAN {
 	    return r;
 	}
 
+	static inline int goodf(float *f)
+	{
+	    // the first is abnormal zero the second is +-inf or NaN 
+	    if ((((int *)f)[0] & 0x7f800000)==0 || (((int *)f)[0] & 0x7f800000)==255) {
+		return 0;
+	    }
+	    return 1;
+	}
 	
     };
 }

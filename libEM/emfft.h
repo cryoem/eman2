@@ -8,7 +8,7 @@
 #include <list>
 using std::list;
 
-#include <rfftw.h>
+#include <srfftw.h>
 
 namespace EMAN {
 
