@@ -10,6 +10,7 @@
 #include <math.h>
 #include <float.h>
 #include <boost/multi_array.hpp>
+#include <complex>
 
 
 #include "emobject.h"
@@ -22,6 +23,7 @@
 using std::string;
 using std::vector;
 using std::map;
+using std::complex;
 
 namespace EMAN
 {
@@ -30,10 +32,11 @@ namespace EMAN
 	class XYData;
 	class Transform;
 	
-//#define MArray2D boost::multi_array_ref<float, 2>
-//#define MArray3D boost::multi_array_ref<float, 3>
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
+	typedef boost::multi_array_ref<complex<float>, 2> MCArray2D;
+	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
+	enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
 
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -209,13 +212,21 @@ namespace EMAN
 		void insert_scaled_sum(EMData *block, const FloatPoint & center,
 							   float scale=1.0, float mult_factor=1.0);
 
+
+		/** return an image object that has been fft-padded/unpadded.
+		 * The current image is not changed.
+		 *
+		 * @return An image object that has been fft-padded/unpadded.
+		 */
+		EMData *pad_fft();
+
 		/** return the fast fourier transform image of the current
 		 * image. the current image is not changed. The result is in
 		 * real/imaginary format.
 		 *
 		 * @return The FFT of the current image in real/imaginary format.
 		 */
-		EMData *do_fft();
+		EMData *do_fft(FFTPLACE fftplace = FFT_OUT_OF_PLACE);
 
 		/** return the inverse fourier transform image of the current
 		 * image. the current image is not changed.
@@ -223,7 +234,7 @@ namespace EMAN
 		 * @exception ImageFormatException If the image is not a complex image.
 		 * @return The current image's inverse fourier transform image.
 		 */
-		EMData *do_ift();
+		EMData *do_ift(FFTPLACE fftplace = FFT_OUT_OF_PLACE);
 
 		/** return the amplitudes of the FFT including the left half
 		 *
@@ -958,6 +969,8 @@ namespace EMAN
 
 		MArray2D get_2dview() const;
 		MArray3D get_3dview() const;
+		MCArray2D get_2dcview() const;
+		MCArray3D get_3dcview() const;
 		MArray2D get_2dview(int x0, int y0) const;
 		MArray3D get_3dview(int x0, int y0, int z0) const;
 		
@@ -1197,6 +1210,28 @@ namespace EMAN
 		 */
 		void set_ri(bool is_ri);
 
+		/** Is this image already extended along x for ffts?
+		 * @return Whether this image is extended along x for ffts.
+		 */
+		bool is_padded() const;
+
+		/** Mark this image as already extended along x for ffts.
+		 * @param is_pad If true, mark as padded along x; If
+		 * false, mark as not padded along x.
+		 */
+		void set_pad(bool is_padded);
+
+		/** Does this image correspond to a (real-space) odd nx?
+		 * @return Whether this image has a (real-space) odd nx.
+		 */
+		bool is_fftodd() const;
+
+		/** Mark this image as having (real-space) odd nx.
+		 * @param is_pad If true, mark as nx odd; If
+		 * false, mark as nx not odd.
+		 */
+		void set_fftodd(bool is_fftodd);
+
 		EMData & operator+=(float n);
 		EMData & operator-=(float n);
 		EMData & operator*=(float n);
@@ -1245,10 +1280,12 @@ namespace EMAN
 			EMDATA_COMPLEX = 1 << 1,
 			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
 			EMDATA_BUSY = 1 << 3,	   // someone is modifying data
-			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file		  
+			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file
 			EMDATA_NEEDUPD = 1 << 5,   // needs a real update			
 			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
-			EMDATA_FLIP = 1 << 7	   // is the image flipped
+			EMDATA_FLIP = 1 << 7,	   // is the image flipped
+			EMDATA_PAD = 1 << 8,       // is the image fft padded 
+			EMDATA_FFTODD = 1 << 9,	   // is the (real-space) nx odd
 		};
 
 		void update_stat();
@@ -1384,6 +1421,24 @@ namespace EMAN
 			return false;
 		}
 	}
+	inline bool EMData::is_padded() const
+	{
+		if (flags & EMDATA_PAD) {
+			return true;	
+		}
+		else {
+			return false;
+		}
+	}
+	inline bool EMData::is_fftodd() const
+	{
+		if (flags & EMDATA_FFTODD) {
+			return true;	
+		}
+		else {
+			return false;
+		}
+	}
 
 
 	inline void EMData::set_complex(bool is_complex)
@@ -1414,6 +1469,26 @@ namespace EMAN
 		}
 		else {
 			flags &= ~EMDATA_RI;
+		}
+	}
+
+	inline void EMData::set_pad(bool is_padded)
+	{
+		if (is_padded) {
+			flags |= EMDATA_PAD;
+		}
+		else {
+			flags &= ~EMDATA_PAD;
+		}
+	}
+
+	inline void EMData::set_fftodd(bool is_fftodd)
+	{
+		if (is_fftodd) {
+			flags |= EMDATA_FFTODD;
+		}
+		else {
+			flags &= ~EMDATA_FFTODD;
 		}
 	}
 

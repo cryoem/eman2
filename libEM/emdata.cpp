@@ -25,7 +25,7 @@
 
 using namespace EMAN;
 
-EMData::EMData()
+EMData::EMData() 
 {
 	ENTERFUNC;
 	
@@ -630,9 +630,43 @@ EMData *EMData::get_top_half() const
 	return half;
 }
 
+EMData* EMData::pad_fft() {
+	EMData* newimg = copy_head();
+	size_t bytes;
+	size_t offset;
+	if (is_padded() == false) {
+		// Not currently padded, so we want to pad for ffts
+		offset = 2 - nx%2;
+		bytes = nx*sizeof(float);
+		newimg->set_size(nx+offset, ny, nz);
+		newimg->set_pad(true);
+		if (offset == 1)
+			newimg->set_fftodd(true);
+	} else {
+		// Image already padded, so we want to remove the padding
+		if (is_fftodd() == false) {
+			// Already padded from an even number of real-space elements
+			offset = 2;
+		} else {
+			// Already padded from an odd number of real-space elements
+			offset = 1;
+		}
+		bytes = (nx-offset)*sizeof(float);
+		newimg->set_size(nx-offset, ny, nz);
+		newimg->set_pad(false);
+	}
+	MArray3D dest = newimg->get_3dview();
+	MArray3D src = this->get_3dview();
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = 0; iy < ny; iy++) {
+			memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+		}
+	}
+	newimg->done_data();
+	return newimg;
+}
 
-
-EMData *EMData::do_fft()
+EMData *EMData::do_fft(FFTPLACE fftplace)
 {
 	ENTERFUNC;
 	
@@ -640,56 +674,73 @@ EMData *EMData::do_fft()
 		return this;
 	}
 
-	int nx2 = nx + 2;
-
-	EMData *dat = copy_head();
-	dat->set_size(nx2, ny, nz);
+	EMData* dat = NULL;
+	int nxreal;
+	int nx2;
+	if (fftplace == FFT_OUT_OF_PLACE) {
+		nxreal = nx;
+		int offset = 2 - nx%2;
+		nx2 = nx + offset;
+		dat = copy_head();
+		dat->set_size(nx2, ny, nz);
+		if (offset == 1) 
+			dat->set_fftodd(true);
+	} else {
+		int offset = is_fftodd() ? 1 : 2;
+		nxreal = nx - offset;
+		nx2 = nx;
+		dat = this;
+	}
 
 	float *d = dat->get_data();
-	EMfft::real_to_complex_nd(rdata, d, nx, ny, nz);
+	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
-	if (nz == 1) {
-		int l = ny / 2 * nx2;
+	// if we do this in-place, we do _not_ want to shuffle the results
+	// to change the origin. -G2-
+	if (fftplace == FFT_OUT_OF_PLACE) {
+		if (nz == 1) {
+			int l = ny / 2 * nx2;
 
-		for (int i = 0; i < ny / 2; i++) {
-			int inx2 = i * nx2;
-			for (int j = 0; j < nx2; j++) {
-				int k = j + inx2;
-				float f = d[k];
-				d[k] = d[k + l];
-				d[k + l] = f;
+			for (int i = 0; i < ny / 2; i++) {
+				int inx2 = i * nx2;
+				for (int j = 0; j < nx2; j++) {
+					int k = j + inx2;
+					float f = d[k];
+					d[k] = d[k + l];
+					d[k + l] = f;
+				}
 			}
 		}
-	}
-	else if (ny != 1) {
-		char *t = new char[nx2 * sizeof(float)];
+		else if (ny != 1) {
+			char *t = new char[nx2 * sizeof(float)];
 
-		int k = nx2 * ny * (nz + 1) / 2;
-		int l = nx2 * ny * (nz - 1) / 2;
-		size_t jj = nx2 * sizeof(float);
-		int ii = 0;
+			int k = nx2 * ny * (nz + 1) / 2;
+			int l = nx2 * ny * (nz - 1) / 2;
+			size_t jj = nx2 * sizeof(float);
+			int ii = 0;
 
-		for (int j = 0; j < nz / 2; j++) {
-			for (int i = 0; i < ny; i++) {
-				memcpy(t, d + ii, jj);
+			for (int j = 0; j < nz / 2; j++) {
+				for (int i = 0; i < ny; i++) {
+					memcpy(t, d + ii, jj);
 
-				if (i < ny / 2) {
-					memcpy(d + ii, d + ii + k, jj);
-					memcpy(d + ii + k, t, jj);
+					if (i < ny / 2) {
+						memcpy(d + ii, d + ii + k, jj);
+						memcpy(d + ii + k, t, jj);
+					}
+					else {
+						memcpy(d + ii, d + ii + l, jj);
+						memcpy(d + ii + l, t, jj);
+					}
+					ii += nx2;
 				}
-				else {
-					memcpy(d + ii, d + ii + l, jj);
-					memcpy(d + ii + l, t, jj);
-				}
-				ii += nx2;
 			}
+			delete[]t;
+			t = 0;
 		}
-		delete[]t;
-		t = 0;
 	}
 
 
-	float scale = 1.0f / (nx * ny * nz);
+	float scale = 1.0f / (nxreal * ny * nz);
 	dat->mult(scale);
 
 	dat->done_data();
@@ -704,7 +755,7 @@ EMData *EMData::do_fft()
 	return dat;
 }
 
-EMData *EMData::do_ift()
+EMData *EMData::do_ift(FFTPLACE fftplace)
 {
 	ENTERFUNC;
 	
@@ -717,9 +768,13 @@ EMData *EMData::do_ift()
 		LOGWARN("run IFT on AP data, only RI should be used. ");
 	}
 
-	EMData *dat = copy_head();
-
-	dat->set_size(nx, ny, nz);
+	EMData* dat = NULL;
+	if (fftplace == FFT_OUT_OF_PLACE) {
+		dat = copy_head();
+		dat->set_size(nx, ny, nz);
+	} else {
+		dat = this;
+	}
 	ap2ri();
 
 	float *d = dat->get_data();
@@ -730,10 +785,11 @@ EMData *EMData::do_ift()
 	}
 
 
+	// turn off data shuffling if we're doing an in-place transform
 	if (ndim == 1) {
 		EMfft::complex_to_real_nd(rdata, d, nx - 2, ny, nz);
 	}
-	else if (ndim == 2) {
+	else if (ndim == 2 && (fftplace == FFT_OUT_OF_PLACE)) {
 		int l = ny / 2 * nx;
 		for (int i = 0; i < ny / 2; i++) {
 			for (int j = 0; j < nx; j++) {
@@ -744,7 +800,7 @@ EMData *EMData::do_ift()
 			}
 		}
 	}
-	else {
+	else if (fftplace == FFT_OUT_OF_PLACE) {
 		char *t = new char[(nx + 2) * sizeof(float)];
 		int k = nx * ny * (nz + 1) / 2;
 		int l = nx * ny * (nz - 1) / 2;
@@ -772,18 +828,22 @@ EMData *EMData::do_ift()
 		t = 0;
 	}
 
+	int offset = is_fftodd() ? 1 : 2;
 	if (ndim >= 2) {
-		EMfft::complex_to_real_nd(d, d, nx - 2, ny, nz);
+		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
-		size_t row_size = (nx - 2) * sizeof(float);
-		for (int i = 1; i < ny * nz; i++) {
-			memcpy((char *) &d[i * (nx - 2)], (char *) &d[i * nx], row_size);
+		if (fftplace == FFT_OUT_OF_PLACE) {
+			size_t row_size = (nx - offset) * sizeof(float);
+			for (int i = 1; i < ny * nz; i++) {
+				memcpy((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
+			}
 		}
 	}
 
 	dat->done_data();
 #if 1
-	dat->set_size(nx - 2, ny, nz);
+	if (fftplace == FFT_OUT_OF_PLACE)
+		dat->set_size(nx - offset, ny, nz);
 #endif
 	dat->update();
 	dat->set_complex(false);
@@ -2099,7 +2159,7 @@ MArray2D EMData::get_2dview() const
 {
 	const int ndims = 2;
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
-	MArray2D marray(rdata, dims);
+	MArray2D marray(rdata, dims, boost::fortran_storage_order());
 	return marray;	
 }
 
@@ -2107,7 +2167,25 @@ MArray3D EMData::get_3dview() const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
-	MArray3D marray(rdata, dims);
+	MArray3D marray(rdata, dims, boost::fortran_storage_order());
+	return marray;	
+}
+
+MCArray2D EMData::get_2dcview() const
+{
+	const int ndims = 2;
+	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
+	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
+	return marray;	
+}
+
+MCArray3D EMData::get_3dcview() const
+{
+	const int ndims = 3;
+	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
+	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;	
 }
 
@@ -2115,7 +2193,7 @@ MArray2D EMData::get_2dview(int x0, int y0) const
 {
 	const int ndims = 2;
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
-	MArray2D marray(rdata, dims);
+	MArray2D marray(rdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
 	marray.reindex(bases);
 	return marray;
@@ -2125,7 +2203,7 @@ MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
-	MArray3D marray(rdata, dims);
+	MArray3D marray(rdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
 	return marray;
