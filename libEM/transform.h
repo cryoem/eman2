@@ -264,6 +264,72 @@ namespace EMAN
 	gsl_matrix *matrix;
     };
 
+    inline Matrix3f::Matrix3f()
+    {
+	matrix = gsl_matrix_alloc(3, 3);
+	gsl_matrix_set_identity(matrix);
+    }
+    
+    inline Matrix3f & Matrix3f::operator+=(float f)
+    {
+	gsl_matrix_add_constant(matrix, f);
+	return *this;
+    }
+
+    inline Matrix3f & Matrix3f::operator-=(float f)
+    {
+	gsl_matrix_add_constant(matrix, -f);
+	return *this;
+    }
+
+    inline Matrix3f & Matrix3f::operator*=(float scale)
+    {
+	gsl_matrix_scale(matrix, scale);
+	return *this;
+    }
+
+    inline Matrix3f & Matrix3f::operator/=(float scale)
+    {
+	if (scale != 0) {
+	    gsl_matrix_scale(matrix, scale);
+	}
+	return *this;
+    }
+
+
+    inline Matrix3f & Matrix3f::operator+=(const Matrix3f & m)
+    {
+	gsl_matrix_add(matrix, m.get_gsl_matrix());
+	return *this;
+    }
+
+    inline Matrix3f & Matrix3f::operator-=(const Matrix3f & m)
+    {
+	gsl_matrix_sub(matrix, m.get_gsl_matrix());
+	return *this;
+    }
+
+    inline Matrix3f & Matrix3f::operator*=(const Matrix3f & m)
+    {
+	gsl_matrix_mul_elements(matrix, m.get_gsl_matrix());
+	return *this;
+    }
+
+    inline Matrix3f & Matrix3f::operator/=(const Matrix3f & m)
+    {
+	gsl_matrix_div_elements(matrix, m.get_gsl_matrix());
+	return *this;
+    }
+
+    inline double *Matrix3f::operator[] (int i)
+    {
+	return gsl_matrix_ptr(matrix, i, 0);
+    }
+
+    inline const double *Matrix3f::operator[] (int i) const
+    {
+	return gsl_matrix_const_ptr(matrix, i, 0);
+    }
 
     Matrix3f operator+(float f, const Matrix3f & m2);
     Matrix3f operator-(float f, const Matrix3f & m2);
@@ -288,6 +354,8 @@ namespace EMAN
     
     Vec3<float> operator*(const Vec3<float> & v, const Matrix3f & m2);
     Vec3<float> operator*(const Matrix3f & m1, const Vec3<float> & v);
+
+
     
     
     class Matrix4f
