@@ -1,5 +1,10 @@
-Vec3f = Class("EMAN::Vec3f", "transform.h")
+Vec3 = Template("EMAN::Vec3", "transform.h")
+
+Vec3f = Vec3("float", "Vec3f")
 set_policy(Vec3f.negate, return_internal_reference())
+
+Vec3i = Vec3("int", "Vec3i")
+set_policy(Vec3i.negate, return_internal_reference())
 
 
 Matrix3f = Class("EMAN::Matrix3f", "transform.h")

@@ -12,50 +12,64 @@ using std::string;
 
 namespace EMAN
 {
-    class Vec3f
+    template <class T> class Vec3
     {
     public:
-	Vec3f()
+	Vec3()
 	{
 	    vec[0] = 0;
 	    vec[1] = 0;
 	    vec[2] = 0;
 	}
 
-	Vec3f(float x, float y, float z)
+	Vec3(T x, T y, T z)
 	{
 	    vec[0] = x;
 	    vec[1] = y;
 	    vec[2] = z;
 	}
 
-	Vec3f(const vector<float> &v)
+	Vec3(const vector<T> &v)
 	{
 	    vec[0] = v[0];
 	    vec[1] = v[1];
 	    vec[2] = v[2];
 	}
 	
-	virtual ~Vec3f()
+	virtual ~Vec3()
 	{
 	}
 
-	float normalize();
-	float length() const;
+	T normalize()
+	{
+	    T len = length();
+	    if (len != 0) {
+		(*this) *= (1 / len);
+	    }
+	    else {
+		set_value(0, 0, 0);
+	    }
+	    return len;
+	}
 	
-	float dot(const Vec3f & v) const
+	T length() const
+	{
+	    return (T) sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+	}
+	
+	T dot(const Vec3<T> & v) const
 	{
 	    return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
 	}
 
-	Vec3f cross(const Vec3f & v) const
+	Vec3<T> cross(const Vec3<T> & v) const
 	{
-	    return Vec3f(vec[1] * v.vec[2] - vec[2] * v.vec[1],
-			 vec[2] * v.vec[0] - vec[0] * v.vec[2],
-			 vec[0] * v.vec[1] - vec[1] * v.vec[0]);
+	    return Vec3(vec[1] * v.vec[2] - vec[2] * v.vec[1],
+			vec[2] * v.vec[0] - vec[0] * v.vec[2],
+			vec[0] * v.vec[1] - vec[1] * v.vec[0]);
 	}
 
-	Vec3f & negate()
+	Vec3<T> & negate()
 	{
 	    vec[0] = -vec[0];
 	    vec[1] = -vec[1];
@@ -63,38 +77,39 @@ namespace EMAN
 	    return (*this);
 	}
 
-	vector<float> get_value() const
+	vector<T> get_value() const
 	{
-	    vector<float> v(3);
+	    vector<T> v(3);
 	    v[0] = vec[0];
 	    v[1] = vec[1];
 	    v[2] = vec[2];
 	    return v;
 	}
 
-	void set_value(const vector<float> &v)
+	void set_value(const vector<T> &v)
 	{
 	    vec[0] = v[0];
 	    vec[1] = v[1];
 	    vec[2] = v[2];
 	}
-	void set_value(float x, float y, float z)
+	
+	void set_value(T x, T y, T z)
 	{
 	    vec[0] = x;
 	    vec[1] = y;
 	    vec[2] = z;
 	}
 
-	float operator[] (int i) const
+	T operator[] (int i) const
 	{
 	    return vec[i];
 	}
-	float &operator[] (int i)
+	T &operator[] (int i)
 	{
 	    return vec[i];
 	}
 
-	Vec3f & operator +=(const Vec3f & v)
+	Vec3<T> & operator +=(const Vec3<T> & v)
 	{
 	    vec[0] += v[0];
 	    vec[1] += v[1];
@@ -102,7 +117,7 @@ namespace EMAN
 	    return *this;
 	}
 	
-	Vec3f & operator -=(const Vec3f & v)
+	Vec3<T> & operator -=(const Vec3<T> & v)
 	{
 	    vec[0] -= v[0];
 	    vec[1] -= v[1];
@@ -110,7 +125,7 @@ namespace EMAN
 	    return *this;
 	}
 
-	Vec3f & operator *=(float d)
+	Vec3<T> & operator *=(T d)
 	{
 	    vec[0] *= d;
 	    vec[1] *= d;
@@ -118,7 +133,7 @@ namespace EMAN
 	    return *this;
 	}
 	
-	Vec3f & operator /=(float d)
+	Vec3<T> & operator /=(T d)
 	{
 	    if (d != 0) {
 		vec[0] /= d;
@@ -129,22 +144,80 @@ namespace EMAN
 	}
 
     private:
-	float vec[3];
+	T vec[3];
     };
 
+    
+    template <class T1, class T2>
+    Vec3<float> operator +(const Vec3<T1> & v1, const Vec3<T2> & v2)
+    {
+	return Vec3<float>(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
+    }
+    
+    template <class T1, class T2>
+    Vec3<float> operator -(const Vec3<T1> & v1, const Vec3<T2> & v2)
+    {
+	return Vec3<float>(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+    }
 
-    Vec3f operator +(const Vec3f & v1, const Vec3f & v2);
-    Vec3f operator -(const Vec3f & v1, const Vec3f & v2);
 
-    Vec3f operator *(float d, const Vec3f v);
-    Vec3f operator /(float d, const Vec3f v);
+    template <class T>
+    Vec3<T> operator *(T d, const Vec3<T> v)
+    {
+	Vec3<T> v1 = v;
+	v1 *= d;
+	return v1;
+    }
 
-    Vec3f operator *(const Vec3f v, float d);
-    Vec3f operator /(const Vec3f v, float d);
+    template <class T>
+    Vec3<T> operator /(T d, const Vec3<T> v)
+    {
+	Vec3<T> v1 = v;
+	if (d != 0) {
+	    Vec3<T> v1 = v;
+	    v1 /= d;
+	}
+	return v1;
+    }
 
-    bool operator ==(const Vec3f & v1, const Vec3f & v2);
-    bool operator !=(const Vec3f & v1, const Vec3f & v2);
 
+    template <class T>
+    Vec3<T> operator *(const Vec3<T> v, T d)
+    {
+	Vec3<T> v1 = v;
+	v1 *= d;
+	return v1;
+    }
+
+    template <class T>
+    Vec3<T> operator /(const Vec3<T> v, T d)
+    {
+	Vec3<T> v1 = v;
+	if (d != 0) {
+	    Vec3<T> v1 = v;
+	    v1 /= d;
+	}
+	return v1;
+    }
+
+    template <class T>
+    bool operator ==(const Vec3<T> & v1, const Vec3<T> & v2)
+    {
+	if (v1[0] == v2[0] && v1[1] == v2[1] && v1[2] == v2[2]) {
+	    return true;
+	}
+	return false;
+    }
+
+    template <class T>
+    bool operator !=(const Vec3<T> & v1, const Vec3<T> & v2)
+    {
+	if (v1[0] != v2[0] || v1[1] != v2[1] || v1[2] != v2[2]) {
+	    return true;
+	}
+	return false;
+    }
+    
     class Matrix3f
     {
     public:
@@ -169,6 +242,8 @@ namespace EMAN
 	Matrix3f & transpose();
 	Matrix3f create_inverse() const;
 
+	Vec3<float> get_vector(int i) const;
+	
 	double *operator[] (int i);
 	const double *operator[] (int i) const;
 
@@ -208,9 +283,13 @@ namespace EMAN
     bool operator==(const Matrix3f & m1, const Matrix3f & m2);
     bool operator!=(const Matrix3f & m1, const Matrix3f & m2);
 
-    Vec3f operator*(const Vec3f & v, const Matrix3f & m2);
-    Vec3f operator*(const Matrix3f & m1, const Vec3f & v);
-
+    Vec3<float> operator*(const Vec3<int> & v, const Matrix3f & m2);
+    Vec3<float> operator*(const Matrix3f & m1, const Vec3<int> & v);
+    
+    Vec3<float> operator*(const Vec3<float> & v, const Matrix3f & m2);
+    Vec3<float> operator*(const Matrix3f & m1, const Vec3<float> & v);
+    
+    
     class Matrix4f
     {
     public:
@@ -297,8 +376,8 @@ namespace EMAN
     public:
 	Quaternion();
 	Quaternion(float e0, float e1, float e2, float e3);
-	Quaternion(float radians, const Vec3f & axis);
-	Quaternion(const Vec3f & axis, float radians);
+	Quaternion(float radians, const Vec3<float> & axis);
+	Quaternion(const Vec3<float> & axis, float radians);
 	Quaternion(const Matrix3f & m);
 	Quaternion(const Matrix4f & m);
 	~Quaternion()
@@ -322,16 +401,16 @@ namespace EMAN
 	Quaternion & inverse();
 	Quaternion create_inverse() const;
 
-	Vec3f rotate(const Vec3f & v) const;
+	Vec3<float> rotate(const Vec3<float> & v) const;
 
 	float to_angle() const;
-	Vec3f to_axis() const;
+	Vec3<float> to_axis() const;
 
 	Matrix3f to_matrix3() const;
 	Matrix4f to_matrix4() const;
 
 	float real() const;
-	Vec3f unreal() const;
+	Vec3<float> unreal() const;
 
 	vector<float> get_value() const;
 
@@ -475,7 +554,7 @@ namespace EMAN
 	    matrix = rotation.get_matrix4();
 	}
 
-	Transform(const Rotation & rotation, const Vec3f & post_translation)
+	Transform(const Rotation & rotation, const Vec3<float> & post_translation)
 	{
 	    Matrix3f rotate_m = rotation.get_matrix3();
 
@@ -505,13 +584,13 @@ namespace EMAN
 	    return (*this);
 	}
 
-	Transform & set_translate_instance(const Vec3f & s)
+	Transform & set_translate_instance(const Vec3<float> & s)
 	{
 	    matrix.make_identity();
 	    return set_post_translate(s);
 	}
 
-	Transform & set_scale_instance(const Vec3f & s)
+	Transform & set_scale_instance(const Vec3<float> & s)
 	{
 	    matrix.make_identity();
 	    for (int i = 0; i < 3; i++) {
@@ -520,22 +599,22 @@ namespace EMAN
 	    return (*this);
 	}
 
-	Transform & set_transform_instance(const Vec3f & translation, const Rotation & roration,
-					   const Vec3f & scale_factor,
+	Transform & set_transform_instance(const Vec3<float> & translation, const Rotation & roration,
+					   const Vec3<float> & scale_factor,
 					   const Rotation & scale_orientation,
-					   const Vec3f & center);
+					   const Vec3<float> & center);
 
-	Transform & set_transform_instance(const Vec3f & translation,
-					   const Rotation & rotation, const Vec3f & scale_factor)
+	Transform & set_transform_instance(const Vec3<float> & translation,
+					   const Rotation & rotation, const Vec3<float> & scale_factor)
 	{
 	    return set_transform_instance(translation, rotation, scale_factor,
 					  Rotation(1, 0, 0, 0, Rotation::QUATERNION),
-					  Vec3f(0, 0, 0));
+					  Vec3<float>(0, 0, 0));
 	}
 
-	Transform & set_center(const Vec3f & c)
+	Transform & set_center(const Vec3<float> & c)
 	{
-	    pre_trans = -1.0 * c;
+	    pre_trans = (float)-1.0 * c;
 
 	    for (int i = 0; i < 3; i++) {
 		matrix[i][3] += c[i];
@@ -550,7 +629,7 @@ namespace EMAN
 	    return (*this);
 	}
 
-	Transform & set_post_translate(const Vec3f & s)
+	Transform & set_post_translate(const Vec3<float> & s)
 	{
 	    for (int i = 0; i < 3; i++) {
 		matrix[3][i] = s[i];
@@ -590,9 +669,9 @@ namespace EMAN
 	}
 
 	// Concatenates this transform with a translation transformation.
-	Transform & translate(const Vec3f & v)
+	Transform & translate(const Vec3<float> & v)
 	{
-	    if (v != Vec3f(0, 0, 0)) {
+	    if (v != Vec3<float>(0, 0, 0)) {
 		Matrix4f m;
 		for (int i = 0; i < 3; i++) {
 		    m[3][i] = v[i];
@@ -614,30 +693,30 @@ namespace EMAN
 	    return (*this);
 	}
 
-	Transform & rotate_center(const Rotation & r, const Vec3f center)
+	Transform & rotate_center(const Rotation & r, const Vec3<float> center)
 	{
-	    translate(-1.0 * center);
+	    translate((float)-1.0 * center);
 	    rotate(r);
 	    translate(center);
 	    return (*this);
 	}
 
 	Transform & rotate_scale(const Rotation & rotation,
-				 const Vec3f & scale_factor, const Vec3f & center)
+				 const Vec3<float> & scale_factor, const Vec3<float> & center)
 	{
 	    scale(scale_factor);
 	    rotate_center(rotation, center);
 	    return (*this);
 	}
 
-	Transform & pre_translate_rotate(const Vec3f t, const Rotation & r)
+	Transform & pre_translate_rotate(const Vec3<float> t, const Rotation & r)
 	{
 	    translate(t);
 	    rotate(r);
 	    return (*this);
 	}
 
-	Transform & post_translate_rotate(const Rotation & r, const Vec3f t)
+	Transform & post_translate_rotate(const Rotation & r, const Vec3<float> t)
 	{
 	    rotate(r);
 	    translate(t);
@@ -645,9 +724,9 @@ namespace EMAN
 	}
 
 	// Concatenates this transform with a scaling transformation.
-	Transform & scale(const Vec3f & scale_factor)
+	Transform & scale(const Vec3<float> & scale_factor)
 	{
-	    if (scale_factor != Vec3f(1, 1, 1)) {
+	    if (scale_factor != Vec3<float>(1, 1, 1)) {
 		Matrix4f m;
 		m.make_identity();
 		for (int i = 0; i < 3; i++) {
@@ -659,20 +738,20 @@ namespace EMAN
 	}
 
 
-	Vec3f transform(const Vec3f & v);
-	Vec3f inverse_transform(const Vec3f & v);
+	Vec3<float> transform(const Vec3<float> & v);
+	Vec3<float> inverse_transform(const Vec3<float> & v);
 
 	Rotation get_rotation() const
 	{
 	    return Rotation(matrix.get_matrix3());
 	}
 
-	Vec3f get_scale() const
+	Vec3<float> get_scale() const
 	{
-	    return Vec3f(matrix[0][0], matrix[1][1], matrix[2][2]);
+	    return Vec3<float>(matrix[0][0], matrix[1][1], matrix[2][2]);
 	}
 	
-	Vec3f get_center() const
+	Vec3<float> get_center() const
 	{
 	    return pre_trans;
 	}
@@ -682,14 +761,14 @@ namespace EMAN
 	    return matrix;
 	}
 
-	Vec3f get_pre_translate() const
+	Vec3<float> get_pre_translate() const
 	{
 	    return pre_trans;
 	}
 	
-	Vec3f get_post_translate() const
+	Vec3<float> get_post_translate() const
 	{
-	    return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
+	    return Vec3<float>(matrix[3][0], matrix[3][1], matrix[3][2]);
 	}
 
 	int get_type() const;
@@ -732,7 +811,7 @@ namespace EMAN
 
     private:
 	Matrix4f matrix;
-	Vec3f pre_trans;
+	Vec3<float> pre_trans;
     };
 
     Transform operator+(const Transform & t1, const Transform & t2);

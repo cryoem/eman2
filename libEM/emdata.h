@@ -195,11 +195,11 @@ namespace EMAN
 	Ctf *get_ctf() const;
 	void set_ctf(Ctf * ctf);
 
-	Vec3f get_translation() const;
-	void set_translation(const Vec3f & t);
+	Vec3<float> get_translation() const;
+	void set_translation(const Vec3<float> & t);
 
 	Rotation get_rotation() const;
-	Vec3f get_trans_align() const;
+	Vec3<float> get_trans_align() const;
 
 	void set_size(int nx, int ny, int nz);
 	void set_path(const string & path);
@@ -326,9 +326,9 @@ namespace EMAN
 	int ny;
 	int nz;
 
-	Vec3f translation;
+	Vec3<float> translation;
 	Rotation rotation;
-	Vec3f trans_align;
+	Vec3<float> trans_align;
 	float align_score;
 	string name;
 	string path;
@@ -367,12 +367,12 @@ namespace EMAN
     }
 
 
-    inline Vec3f EMData::get_translation() const
+    inline Vec3<float> EMData::get_translation() const
     {
 	return translation;
     }
 
-    inline void EMData::set_translation(const Vec3f & t)
+    inline void EMData::set_translation(const Vec3<float> & t)
     {
 	translation = t;
     }
@@ -588,7 +588,7 @@ namespace EMAN
     {
 	return rotation;
     }
-    inline Vec3f EMData::get_trans_align() const
+    inline Vec3<float> EMData::get_trans_align() const
     {
 	return trans_align;
     }
