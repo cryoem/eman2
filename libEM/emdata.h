@@ -71,12 +71,12 @@ namespace EMAN {
 	void calc_az_dist(int n,float a0,float da,float *d,float rmin,float rmax);
 	
 	bool is_complex() const;
-	void set_complex(int)  const;
+	void set_complex(bool is_complex);
 
 	bool is_complex_x() const;
-	void set_complex_x(int)  const;	
+	void set_complex_x(bool is_complex_x);	
 	
-	void set_ri(int ) const;
+	void set_ri(bool is_ri );
 	void ri2ap();
 	void ap2ri();
 
@@ -376,6 +376,40 @@ namespace EMAN {
 
     inline void EMData::set_pixel_size(float new_pixel_size) { pixel_size = new_pixel_size; }
     inline float EMData::get_pixel_size() const { return pixel_size; }
+
+
+    inline bool EMData::is_complex() const { return (flags & EMDATA_COMPLEX); }
+    inline bool EMData::is_complex_x() const { return (flags & EMDATA_COMPLEXX); }
+    
+    inline void EMData::set_ri(bool is_ri) 
+    {
+	if (is_ri) {
+	    flags |= EMDATA_RI;
+	}
+	else {
+	    flags &= ~EMDATA_RI;
+	}
+    }
+
+    inline void EMData::set_complex(bool is_complex) 
+    {
+	if (is_complex) {
+	    flags |= EMDATA_COMPLEX;
+	}
+	else {
+	    flags &= ~EMDATA_COMPLEX;
+	}
+    }
+    
+    inline void EMData::set_complex_x(bool is_complex_x) 
+    {
+	if (is_complex_x) {
+	    flags |= EMDATA_COMPLEXX;
+	}
+	else {
+	    flags &= ~EMDATA_COMPLEXX;
+	}
+    }
 
     
 }
