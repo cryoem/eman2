@@ -171,40 +171,40 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["datatype"] = EMObject(to_em_datatype(datatype));
+    dict["datatype"] = to_em_datatype(datatype);
 
-    dict["minimum"] = EMObject(hed.min);
-    dict["maximum"] = EMObject(hed.max);
-    dict["mean"] = EMObject(hed.avdens);
-    dict["sigma"] = EMObject(hed.sigma);
+    dict["minimum"] = hed.min;
+    dict["maximum"] = hed.max;
+    dict["mean"] = hed.avdens;
+    dict["sigma"] = hed.sigma;
 
-    dict["IMAGIC.imgnum"] = EMObject(hed.imgnum);
-    dict["IMAGIC.count"] = EMObject(hed.count);
-    dict["IMAGIC.error"] = EMObject(hed.error);
+    dict["IMAGIC.imgnum"] = hed.imgnum;
+    dict["IMAGIC.count"] = hed.count;
+    dict["IMAGIC.error"] = hed.error;
 
-    dict["IMAGIC.headrec"] = EMObject(hed.headrec);
-    dict["IMAGIC.mday"] = EMObject(hed.mday);
-    dict["IMAGIC.month"] = EMObject(hed.month);
+    dict["IMAGIC.headrec"] = hed.headrec;
+    dict["IMAGIC.mday"] = hed.mday;
+    dict["IMAGIC.month"] = hed.month;
 
-    dict["IMAGIC.year"] = EMObject(hed.year);
-    dict["IMAGIC.hour"] = EMObject(hed.hour);
-    dict["IMAGIC.minute"] = EMObject(hed.minute);
+    dict["IMAGIC.year"] = hed.year;
+    dict["IMAGIC.hour"] = hed.hour;
+    dict["IMAGIC.minute"] = hed.minute;
 
-    dict["IMAGIC.sec"] = EMObject(hed.sec);
-    dict["IMAGIC.reals"] = EMObject(hed.reals);
-    dict["IMAGIC.pixels"] = EMObject(hed.pixels);
+    dict["IMAGIC.sec"] = hed.sec;
+    dict["IMAGIC.reals"] = hed.reals;
+    dict["IMAGIC.pixels"] = hed.pixels;
 
-    dict["IMAGIC.type"] = EMObject(hed.type);
-    dict["IMAGIC.ixold"] = EMObject(hed.ixold);
-    dict["IMAGIC.iyold"] = EMObject(hed.iyold);
+    dict["IMAGIC.type"] = hed.type;
+    dict["IMAGIC.ixold"] = hed.ixold;
+    dict["IMAGIC.iyold"] = hed.iyold;
 
-    dict["IMAGIC.oldav"] = EMObject(hed.oldav);
-    dict["IMAGIC.label"] = EMObject(hed.label);
-    dict["IMAGIC.mrc2"] = EMObject(hed.mrc2);
+    dict["IMAGIC.oldav"] = hed.oldav;
+    dict["IMAGIC.label"] = hed.label;
+    dict["IMAGIC.mrc2"] = hed.mrc2;
 
     return 0;
 }

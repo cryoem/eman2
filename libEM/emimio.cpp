@@ -98,12 +98,12 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, efh.nx, &xlen, efh.ny, &ylen, efh.nz, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["datatype"] = EMObject(EMUtil::EM_FLOAT);
-    dict["pixel"] = EMObject(efh.pixel);
+    dict["datatype"] = EMUtil::EM_FLOAT;
+    dict["pixel"] = efh.pixel;
 
     off_t imgsize = efh.nx * efh.ny * efh.nz * sizeof(float) + sizeof(EmimImageHeader);
     off_t offset = sizeof(EmimFileHeader) + imgsize * image_index;
@@ -119,7 +119,7 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     char mgnum[32];
     sprintf(mgnum, "%d", n);
 
-    dict["micrograph_id"] = EMObject(mgnum);
+    dict["micrograph_id"] = mgnum;
 
     return 0;
 

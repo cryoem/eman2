@@ -108,13 +108,13 @@ int IcosIO::read_header(Dict & dict, int image_index,const Region * area, bool i
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, nimg, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["datatype"] = EMObject(EMUtil::EM_FLOAT);
-    dict["minimum"] = EMObject(icosh.min);
-    dict["maximum"] = EMObject(icosh.max);
+    dict["datatype"] = EMUtil::EM_FLOAT;
+    dict["minimum"] = icosh.min;
+    dict["maximum"] = icosh.max;
 
     return 0;
 }

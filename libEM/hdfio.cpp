@@ -142,37 +142,37 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool )
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["spacing_row"] = EMObject(read_float_attr(image_index, "spacing_row"));
-    dict["spacing_col"] = EMObject(read_float_attr(image_index, "spacing_col"));
-    dict["spacing_sec"] = EMObject(read_float_attr(image_index, "spacing_sec"));
+    dict["spacing_row"] = read_float_attr(image_index, "spacing_row");
+    dict["spacing_col"] = read_float_attr(image_index, "spacing_col");
+    dict["spacing_sec"] = read_float_attr(image_index, "spacing_sec");
 
-    dict["origin_row"] = EMObject(read_float_attr(image_index, "origin_row"));
-    dict["origin_col"] = EMObject(read_float_attr(image_index, "origin_col"));
-    dict["origin_sec"] = EMObject(read_float_attr(image_index, "origin_sec"));
+    dict["origin_row"] = read_float_attr(image_index, "origin_row");
+    dict["origin_col"] = read_float_attr(image_index, "origin_col");
+    dict["origin_sec"] = read_float_attr(image_index, "origin_sec");
 
-    dict["minimum"] = EMObject(read_float_attr(image_index, "minimum"));
-    dict["maximum"] = EMObject(read_float_attr(image_index, "maximum"));
-    dict["mean"] = EMObject(read_float_attr(image_index, "mean"));
-    dict["sigma"] = EMObject(read_float_attr(image_index, "sigma"));
+    dict["minimum"] = read_float_attr(image_index, "minimum");
+    dict["maximum"] = read_float_attr(image_index, "maximum");
+    dict["mean"] = read_float_attr(image_index, "mean");
+    dict["sigma"] = read_float_attr(image_index, "sigma");
 
-    dict["micrograph_id"] = EMObject(read_string_attr(image_index, "micrograph_id"));
+    dict["micrograph_id"] = read_string_attr(image_index, "micrograph_id");
 
-    dict["particle_center_x"] = EMObject(read_float_attr(image_index, "particle_center_x"));
-    dict["particle_center_y"] = EMObject(read_float_attr(image_index, "particle_center_y"));
+    dict["particle_center_x"] = read_float_attr(image_index, "particle_center_x");
+    dict["particle_center_y"] = read_float_attr(image_index, "particle_center_y");
 
-    dict["center_x"] = EMObject(read_float_attr(image_index, "center_x"));
-    dict["center_y"] = EMObject(read_float_attr(image_index, "center_y"));
+    dict["center_x"] = read_float_attr(image_index, "center_x");
+    dict["center_y"] = read_float_attr(image_index, "center_y");
 
-    dict["score"] = EMObject(read_float_attr(image_index, "score"));
-    dict["good"] = EMObject(read_int_attr(image_index, "good"));
+    dict["score"] = read_float_attr(image_index, "score");
+    dict["good"] = read_int_attr(image_index, "good");
     dict["orientation_convention"] =
-	EMObject((int) read_euler_attr(image_index, "orientation_convention"));
+	(int) read_euler_attr(image_index, "orientation_convention");
 
-    dict["datatype"] = EMObject(EMUtil::EM_FLOAT);
+    dict["datatype"] = EMUtil::EM_FLOAT;
 
     return 0;
 }
@@ -832,7 +832,7 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 	hid_t atype = H5Aget_type(attr);
 	if (H5Tget_class(atype) == H5T_FLOAT) {
 	    H5Aread(attr, H5T_NATIVE_FLOAT, &value);
-	    (*dict)[name] = EMObject(value);
+	    (*dict)[name] = value;
 	}
 	else {
 	    Log::logger()->error("can only handle float CTF parameters in HDF");

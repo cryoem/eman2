@@ -178,15 +178,15 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool i
     int xlen = 0, ylen = 0;
     EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
 
     if (depth_type == PNG_CHAR_DEPTH) {
-	dict["datatype"] = EMObject(EMUtil::EM_UCHAR);
+	dict["datatype"] = EMUtil::EM_UCHAR;
     }
     else if (depth_type == PNG_SHORT_DEPTH) {
-	dict["datatype"] = EMObject(EMUtil::EM_USHORT);
+	dict["datatype"] = EMUtil::EM_USHORT;
     }
     else {
 	Log::logger()->error("invalid PNG bit depth. don't know how to handle this png type");

@@ -95,8 +95,8 @@ float VarianceCmp::cmp(EMData * em, Transform * ) const
     else {
 	result = result / size;
     }
-    params["scale"] = EMObject(m);
-    params["shift"] = EMObject(b);
+    params["scale"] = m;
+    params["shift"] = b;
 #if 0
     return (1-result);
 #endif

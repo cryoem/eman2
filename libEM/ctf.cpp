@@ -59,17 +59,17 @@ void SimpleCtf::from_dict(const Dict & dict)
 Dict SimpleCtf::to_dict() const
 {
     Dict dict;
-    dict["defocus"] = EMObject(defocus);
-    dict["bfactor"] = EMObject(bfactor);
-    dict["amplitude"] = EMObject(amplitude);
-    dict["ampcont"] = EMObject(ampcont);
-    dict["noise1"] = EMObject(noise1);
-    dict["noise2"] = EMObject(noise2);
-    dict["noise3"] = EMObject(noise3);
-    dict["noise4"] = EMObject(noise4);
-    dict["voltage"] = EMObject(voltage);
-    dict["cs"] = EMObject(cs);
-    dict["apix"] = EMObject(apix);
+    dict["defocus"] = defocus;
+    dict["bfactor"] = bfactor;
+    dict["amplitude"] = amplitude;
+    dict["ampcont"] = ampcont;
+    dict["noise1"] = noise1;
+    dict["noise2"] = noise2;
+    dict["noise3"] = noise3;
+    dict["noise4"] = noise4;
+    dict["voltage"] = voltage;
+    dict["cs"] = cs;
+    dict["apix"] = apix;
 
     return dict;
 }

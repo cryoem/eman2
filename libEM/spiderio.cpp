@@ -188,33 +188,33 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
     EMUtil::get_region_dims(area, (int) cur_image_hed->nx, &xlen, (int) cur_image_hed->ny,
 			    &ylen, (int) cur_image_hed->nslice, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["datatype"] = EMObject(EMUtil::EM_FLOAT);
+    dict["datatype"] = EMUtil::EM_FLOAT;
 
-    dict["minimum"] = EMObject(cur_image_hed->min);
-    dict["maximum"] = EMObject(cur_image_hed->max);
-    dict["mean"] = EMObject(cur_image_hed->mean);
-    dict["sigma"] = EMObject(cur_image_hed->sigma);
+    dict["minimum"] = cur_image_hed->min;
+    dict["maximum"] = cur_image_hed->max;
+    dict["mean"] = cur_image_hed->mean;
+    dict["sigma"] = cur_image_hed->sigma;
 
-    dict["SPIDER.nslice"] = EMObject(cur_image_hed->nslice);
-    dict["SPIDER.type"] = EMObject(cur_image_hed->type);
-    dict["SPIDER.headrec"] = EMObject(cur_image_hed->headrec);
-    dict["SPIDER.angvalid"] = EMObject(cur_image_hed->angvalid);
+    dict["SPIDER.nslice"] = cur_image_hed->nslice;
+    dict["SPIDER.type"] = cur_image_hed->type;
+    dict["SPIDER.headrec"] = cur_image_hed->headrec;
+    dict["SPIDER.angvalid"] = cur_image_hed->angvalid;
 
-    dict["SPIDER.headlen"] = EMObject(cur_image_hed->headlen);
-    dict["SPIDER.dx"] = EMObject(cur_image_hed->dx);
-    dict["SPIDER.dy"] = EMObject(cur_image_hed->dy);
-    dict["SPIDER.dz"] = EMObject(cur_image_hed->dz);
+    dict["SPIDER.headlen"] = cur_image_hed->headlen;
+    dict["SPIDER.dx"] = cur_image_hed->dx;
+    dict["SPIDER.dy"] = cur_image_hed->dy;
+    dict["SPIDER.dz"] = cur_image_hed->dz;
 
-    dict["SPIDER.reclen"] = EMObject(cur_image_hed->reclen);
-    dict["SPIDER.istack"] = EMObject(cur_image_hed->istack);
-    dict["SPIDER.date"] = EMObject(cur_image_hed->date);
-    dict["SPIDER.name"] = EMObject(cur_image_hed->name);
-    dict["SPIDER.maxim"] = EMObject(cur_image_hed->maxim);
-    dict["SPIDER.imgnum"] = EMObject(cur_image_hed->imgnum);
+    dict["SPIDER.reclen"] = cur_image_hed->reclen;
+    dict["SPIDER.istack"] = cur_image_hed->istack;
+    dict["SPIDER.date"] = cur_image_hed->date;
+    dict["SPIDER.name"] = cur_image_hed->name;
+    dict["SPIDER.maxim"] = cur_image_hed->maxim;
+    dict["SPIDER.imgnum"] = cur_image_hed->imgnum;
 
     if (offset != 0) {
 	free(cur_image_hed);

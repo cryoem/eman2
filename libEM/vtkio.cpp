@@ -147,19 +147,19 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["datatype"] = EMObject(to_em_datatype(datatype));
+    dict["datatype"] = to_em_datatype(datatype);
 
-    dict["spacing_row"] = EMObject(spacingx);
-    dict["spacing_col"] = EMObject(spacingy);
-    dict["spacing_sec"] = EMObject(spacingz);
+    dict["spacing_row"] = spacingx;
+    dict["spacing_col"] = spacingy;
+    dict["spacing_sec"] = spacingz;
 
-    dict["origin_row"] = EMObject(originx);
-    dict["origin_col"] = EMObject(originy);
-    dict["origin_sec"] = EMObject(originz);
+    dict["origin_row"] = originx;
+    dict["origin_col"] = originy;
+    dict["origin_sec"] = originz;
 
     return 0;
 }

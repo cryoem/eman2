@@ -97,8 +97,8 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
     EMData *ret = tmp->do_ift();
 
     Dict filter_d;
-    filter_d["gauss_width"] = EMObject(gauss_width);
-    filter_d["ring_width"] = EMObject(ret->get_xsize() / 2);
+    filter_d["gauss_width"] = gauss_width;
+    filter_d["ring_width"] = ret->get_xsize() / 2;
     ret->filter("InvGaussMaskFilter", filter_d); 
 
     ret->set_rotation(alt, az, phi);

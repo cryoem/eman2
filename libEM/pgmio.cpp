@@ -139,19 +139,19 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     int xlen = 0, ylen = 0;
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
 
     if (datatype == PGM_UCHAR) {
-	dict["datatype"] = EMObject(EMUtil::EM_UCHAR);
+	dict["datatype"] = EMUtil::EM_UCHAR;
     }
     else {
-	dict["datatype"] = EMObject(EMUtil::EM_USHORT);
+	dict["datatype"] = EMUtil::EM_USHORT;
     }
     
-    dict["max_gray"] = EMObject(maxval);
-    dict["min_gray"] = EMObject(minval);
+    dict["max_gray"] = maxval;
+    dict["min_gray"] = minval;
 
     return 0;
 }

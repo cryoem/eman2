@@ -67,6 +67,7 @@ namespace EMAN
 	    emdata = 0;
 	    xydata = 0;
 	}
+	
 	EMObject(int num) : n(num), type(INT)
 	{
 	}
@@ -74,6 +75,9 @@ namespace EMAN
 	{
 	}
 	EMObject(double dd) : d(dd), type(DOUBLE)
+	{
+	}
+	EMObject(const char *s) : str(string(s)), type(STRING)
 	{
 	}
 	EMObject(string s) : str(s), type(STRING)
@@ -284,7 +288,7 @@ namespace EMAN
      *      d["lowpass"] = EMObject(12.23);
      *      float lowpass1 = d["lowpass"].get_float();
      *
-     *      Dict d2("lowpass", EMObject(12.23));
+     *      Dict d2("lowpass", 12.23);
      */
     class Dict
     {

@@ -161,80 +161,80 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
     assert(is_3d == false);
 
-    dict["spacing_row"] = EMObject(mrch.xlen / (mrch.nx - 1));
-    dict["spacing_col"] = EMObject(mrch.ylen / (mrch.ny - 1));
+    dict["spacing_row"] = mrch.xlen / (mrch.nx - 1);
+    dict["spacing_col"] = mrch.ylen / (mrch.ny - 1);
 
     int nz2 = mrch.nz - 1;
     if (mrch.nz == 1) {
 	nz2 = 1;
     }
     
-    dict["spacing_sec"] = EMObject(mrch.zlen / nz2);
+    dict["spacing_sec"] = mrch.zlen / nz2;
 
-    dict["minimum"] = EMObject(mrch.amin);
-    dict["maximum"] = EMObject(mrch.amax);
-    dict["mean"] = EMObject(mrch.amean);
-    dict["datatype"] = EMObject(to_em_datatype(mrch.mode));
+    dict["minimum"] = mrch.amin;
+    dict["maximum"] = mrch.amax;
+    dict["mean"] = mrch.amean;
+    dict["datatype"] = to_em_datatype(mrch.mode);
 
     if (is_complex_mode()) {
-	dict["is_complex"] = EMObject(1);
-	dict["is_ri"] = EMObject(1);
+	dict["is_complex"] = 1;
+	dict["is_ri"] = 1;
     }
     
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
     if (area) {
-	dict["origin_row"] = EMObject(mrch.xorigin + mrch.xlen * area->origin.x);
-	dict["origin_col"] = EMObject(mrch.yorigin + mrch.xlen * area->origin.y);
+	dict["origin_row"] = mrch.xorigin + mrch.xlen * area->origin.x;
+	dict["origin_col"] = mrch.yorigin + mrch.xlen * area->origin.y;
 
 	if (area->get_ndim() == 3 && mrch.nz > 1) {
-	    dict["origin_sec"] = EMObject(mrch.zorigin + mrch.xlen * area->origin.z);
+	    dict["origin_sec"] = mrch.zorigin + mrch.xlen * area->origin.z;
 	}
 	else {
-	    dict["origin_sec"] = EMObject(mrch.zorigin);
+	    dict["origin_sec"] = mrch.zorigin;
 	}
     }
     else {
-	dict["origin_row"] = EMObject(mrch.xorigin);
-	dict["origin_col"] = EMObject(mrch.yorigin);
-	dict["origin_sec"] = EMObject(mrch.zorigin);
+	dict["origin_row"] = mrch.xorigin;
+	dict["origin_col"] = mrch.yorigin;
+	dict["origin_sec"] = mrch.zorigin;
     }
 
-    dict["MRC.nxstart"] = EMObject(mrch.nxstart);
-    dict["MRC.nystart"] = EMObject(mrch.nystart);
-    dict["MRC.nzstart"] = EMObject(mrch.nzstart);
+    dict["MRC.nxstart"] = mrch.nxstart;
+    dict["MRC.nystart"] = mrch.nystart;
+    dict["MRC.nzstart"] = mrch.nzstart;
 
-    dict["MRC.mx"] = EMObject(mrch.mx);
-    dict["MRC.my"] = EMObject(mrch.my);
-    dict["MRC.mz"] = EMObject(mrch.mz);
+    dict["MRC.mx"] = mrch.mx;
+    dict["MRC.my"] = mrch.my;
+    dict["MRC.mz"] = mrch.mz;
 
-    dict["MRC.nx"] = EMObject(mrch.nx);
-    dict["MRC.ny"] = EMObject(mrch.ny);
-    dict["MRC.nz"] = EMObject(mrch.nz);
+    dict["MRC.nx"] = mrch.nx;
+    dict["MRC.ny"] = mrch.ny;
+    dict["MRC.nz"] = mrch.nz;
 
-    dict["MRC.alpha"] = EMObject(mrch.alpha);
-    dict["MRC.beta"] = EMObject(mrch.beta);
-    dict["MRC.gamma"] = EMObject(mrch.gamma);
+    dict["MRC.alpha"] = mrch.alpha;
+    dict["MRC.beta"] = mrch.beta;
+    dict["MRC.gamma"] = mrch.gamma;
 
-    dict["MRC.mapc"] = EMObject(mrch.mapc);
-    dict["MRC.mapr"] = EMObject(mrch.mapr);
-    dict["MRC.maps"] = EMObject(mrch.maps);
+    dict["MRC.mapc"] = mrch.mapc;
+    dict["MRC.mapr"] = mrch.mapr;
+    dict["MRC.maps"] = mrch.maps;
 
-    dict["MRC.ispg"] = EMObject(mrch.ispg);
-    dict["MRC.nsymbt"] = EMObject(mrch.nsymbt);
-    dict["MRC.machinestamp"] = EMObject(mrch.machinestamp);
+    dict["MRC.ispg"] = mrch.ispg;
+    dict["MRC.nsymbt"] = mrch.nsymbt;
+    dict["MRC.machinestamp"] = mrch.machinestamp;
 
-    dict["MRC.rms"] = EMObject(mrch.rms);
-    dict["MRC.nlabels"] = EMObject(mrch.nlabels);
+    dict["MRC.rms"] = mrch.rms;
+    dict["MRC.nlabels"] = mrch.nlabels;
     for (int i = 0; i < mrch.nlabels; i++) {
 	char label[32];
 	sprintf(label, "MRC.label%d", i);
-	dict[string(label)] = EMObject(mrch.labels[0]);
+	dict[string(label)] = mrch.labels[0];
     }
     
     return 0;

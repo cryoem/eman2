@@ -38,12 +38,12 @@ EMData::EMData()
     rfp = 0;
     flags = 0;
     // used to replace cube 'pixel'
-    attr_dict["spacing_row"] = EMObject(1.0f);
-    attr_dict["spacing_col"] = EMObject(1.0f);
-    attr_dict["spacing_sec"] = EMObject(1.0f);
+    attr_dict["spacing_row"] = 1.0f;
+    attr_dict["spacing_col"] = 1.0f;
+    attr_dict["spacing_sec"] = 1.0f;
     
-    attr_dict["is_complex"] = EMObject(0);
-    attr_dict["is_ri"] = EMObject(0);
+    attr_dict["is_complex"] = 0;
+    attr_dict["is_ri"] = 0;
 
     nx = 0;
     ny = 0;
@@ -1755,15 +1755,15 @@ int EMData::update_stat()
     float sigma = sqrt(tmp1);
     float sigma_nonzero = square_sum * step / n_nonzero - mean_nonzero * mean_nonzero;
 
-    attr_dict["minimum"] = EMObject(min);
-    attr_dict["maximum"] = EMObject(max);
-    attr_dict["mean"] = EMObject(mean);
-    attr_dict["sigma"] = EMObject(sigma);
-    attr_dict["square_sum"] = EMObject(square_sum);
-    attr_dict["mean_nonzero"] = EMObject(mean_nonzero);
-    attr_dict["sigma_nonzero"] = EMObject(sigma_nonzero);
-    attr_dict["is_complex"] = EMObject((int)is_complex());
-    attr_dict["is_ri"] = EMObject((int)is_ri());
+    attr_dict["minimum"] = min;
+    attr_dict["maximum"] = max;
+    attr_dict["mean"] = mean;
+    attr_dict["sigma"] = sigma;
+    attr_dict["square_sum"] = square_sum;
+    attr_dict["mean_nonzero"] = mean_nonzero;
+    attr_dict["sigma_nonzero"] = sigma_nonzero;
+    attr_dict["is_complex"] = (int)is_complex();
+    attr_dict["is_ri"] = (int)is_ri();
     
     flags &= ~EMDATA_NEEDUPD;
 
@@ -1782,9 +1782,9 @@ void EMData::set_size(int x, int y, int z)
     rdata = static_cast<float *>(realloc(rdata, x * y * z * sizeof(float)));
     update();
     
-    attr_dict["nx"] = EMObject(x);
-    attr_dict["ny"] = EMObject(y);
-    attr_dict["nz"] = EMObject(z);
+    attr_dict["nx"] = x;
+    attr_dict["ny"] = y;
+    attr_dict["nz"] = z;
     
     if (old_nx == 0) {
 	memset(rdata, 0, x * y * z * sizeof(float));
@@ -2200,9 +2200,9 @@ void EMData::rotate_x(int dx)
 
 void EMData::set_xyz_origin(float origin_x, float origin_y, float origin_z)
 {
-    attr_dict["origin_row"] = EMObject(origin_x);
-    attr_dict["origin_col"] = EMObject(origin_y);
-    attr_dict["origin_sec"] = EMObject(origin_z);
+    attr_dict["origin_row"] = origin_x;
+    attr_dict["origin_col"] = origin_y;
+    attr_dict["origin_sec"] = origin_z;
 }
 
 float *EMData::setup4slice(bool redo)
@@ -3842,7 +3842,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
     float img2min = img2->get_min();
     img2->add(-img2min);
     
-    filter_dict["outer_radius"] = EMObject(radius);
+    filter_dict["outer_radius"] = radius;
 
     EMData *img1_copy = img1->copy(0, 0);
     img1_copy->to_one();
@@ -4560,8 +4560,7 @@ float EMData::get_circle_mean()
 	mask->set_size(nx, ny, nz);
 
 	float radius = ny / 2 - 2;
-	mask->filter("SharpMask", Dict("inner_radius", EMObject(radius-1),
-				       "outer_radius", EMObject(radius+1)));
+	mask->filter("SharpMask", Dict("inner_radius", radius-1, "outer_radius", radius+1));
 
 	int n = 0;
 	float *d = mask->get_data();

@@ -205,23 +205,23 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, pih.nx, &xlen, pih.ny, &ylen, pih.nz, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(zlen);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = zlen;
 
-    dict["datatype"] = EMObject(to_em_datatype(pih.mode));
+    dict["datatype"] = to_em_datatype(pih.mode);
 
-    dict["spacing_row"] = EMObject(static_cast<float>(pih.xlen));
-    dict["spacing_col"] = EMObject(static_cast<float>(pih.ylen));
-    dict["spacing_sec"] = EMObject(static_cast<float>(pih.zlen));
+    dict["spacing_row"] = static_cast<float>(pih.xlen);
+    dict["spacing_col"] = static_cast<float>(pih.ylen);
+    dict["spacing_sec"] = static_cast<float>(pih.zlen);
 
-    dict["minimum"] = EMObject(static_cast<float>(pih.min));
-    dict["maximum"] = EMObject(static_cast<float>(pih.max));
-    dict["mean"] = EMObject(static_cast<float>(pih.mean));
-    dict["sigma"] = EMObject(static_cast<float>(pih.sigma));
+    dict["minimum"] = static_cast<float>(pih.min);
+    dict["maximum"] = static_cast<float>(pih.max);
+    dict["mean"] = static_cast<float>(pih.mean);
+    dict["sigma"] = static_cast<float>(pih.sigma);
 
-    dict["origin_row"] = EMObject(static_cast<float>(pih.xorigin));
-    dict["origin_col"] = EMObject(static_cast<float>(pih.yorigin));
+    dict["origin_row"] = static_cast<float>(pih.xorigin);
+    dict["origin_col"] = static_cast<float>(pih.yorigin);
 
     return 0;
 }

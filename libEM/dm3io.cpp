@@ -709,22 +709,22 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
     int xlen = 0, ylen = 0;
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
 
-    dict["dm3_exposure_number"] = EMObject(tagtable->get_int("Exposure Number"));
-    dict["dm3_exposure_time"] = EMObject(tagtable->get_double("Exposure (s)"));
-    dict["zoom"] = EMObject(tagtable->get_double("Zoom"));
-    dict["antiblooming"] = EMObject(tagtable->get_int("Antiblooming"));
-    dict["magnification"] = EMObject(tagtable->get_double("Indicated Magnification"));
+    dict["dm3_exposure_number"] = tagtable->get_int("Exposure Number");
+    dict["dm3_exposure_time"] = tagtable->get_double("Exposure (s)");
+    dict["zoom"] = tagtable->get_double("Zoom");
+    dict["antiblooming"] = tagtable->get_int("Antiblooming");
+    dict["magnification"] = tagtable->get_double("Indicated Magnification");
 
-    dict["frame_type"] = EMObject(tagtable->get_string("Processing"));
-    dict["camera_x"] = EMObject(tagtable->get_int("Active Size (pixels) #0"));
-    dict["camera_y"] = EMObject(tagtable->get_int("Active Size (pixels) #1"));
-    dict["binning_x"] = EMObject(tagtable->get_int("Binning #0"));
-    dict["binning_y"] = EMObject(tagtable->get_int("Binning #1"));
-    dict["datatype"] = EMObject(to_em_datatype(tagtable->get_datatype()));
+    dict["frame_type"] = tagtable->get_string("Processing");
+    dict["camera_x"] = tagtable->get_int("Active Size (pixels) #0");
+    dict["camera_y"] = tagtable->get_int("Active Size (pixels) #1");
+    dict["binning_x"] = tagtable->get_int("Binning #0");
+    dict["binning_y"] = tagtable->get_int("Binning #1");
+    dict["datatype"] = to_em_datatype(tagtable->get_datatype());
 
     return 0;
 }

@@ -143,23 +143,23 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
     int xlen = 0, ylen = 0;
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
 
-    dict["minimum"] = EMObject(min);
-    dict["maximum"] = EMObject(max);
+    dict["minimum"] = min;
+    dict["maximum"] = max;
 
     if (bitspersample == CHAR_BIT) {
-	dict["datatype"] = EMObject(EMUtil::EM_UCHAR);
+	dict["datatype"] = EMUtil::EM_UCHAR;
     }
     else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
-	dict["datatype"] = EMObject(EMUtil::EM_USHORT);
+	dict["datatype"] = EMUtil::EM_USHORT;
     }
 
-    dict["bitspersample"] = EMObject(bitspersample);
-    dict["resolution_x"] = EMObject(resolution_x);
-    dict["resolution_y"] = EMObject(resolution_y);
+    dict["bitspersample"] = bitspersample;
+    dict["resolution_x"] = resolution_x;
+    dict["resolution_y"] = resolution_y;
 
     return 0;
 }

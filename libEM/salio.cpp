@@ -146,11 +146,11 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area,
     int xlen = 0, ylen = 0;
     EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
-    dict["datatype"] = EMObject(EMUtil::EM_SHORT);
-    dict["pixel"] = EMObject(pixel);
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
+    dict["datatype"] = EMUtil::EM_SHORT;
+    dict["pixel"] = pixel;
 
     return 0;
 }

@@ -104,10 +104,10 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
     int xlen = 0, ylen = 0;
     EMUtil::get_region_dims(area, gatanh.nx, &xlen, gatanh.ny, &ylen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
-    dict["datatype"] = EMObject(to_em_datatype(gatanh.type));
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
+    dict["datatype"] = to_em_datatype(gatanh.type);
 
     return 0;
 }

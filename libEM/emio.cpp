@@ -141,11 +141,10 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is
     int xlen = 0, ylen = 0, zlen = 0;
     EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, nimg, &zlen);
 
-    dict["nx"] = EMObject(xlen);
-    dict["ny"] = EMObject(ylen);
-    dict["nz"] = EMObject(1);
-
-    dict["datatype"] = EMObject(to_em_datatype(emh.data_type));
+    dict["nx"] = xlen;
+    dict["ny"] = ylen;
+    dict["nz"] = 1;
+    dict["datatype"] = to_em_datatype(emh.data_type);
     return 0;
 }
 
