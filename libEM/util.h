@@ -221,7 +221,7 @@ namespace EMAN
 		{
 			float r = fmod(fabs(x - y), (float) (2 * M_PI));
 			if (r > M_PI) {
-				r = 2.0 * M_PI - r;
+				r = (float) (2.0 * M_PI - r);
 			}
 
 			return r;
@@ -231,7 +231,7 @@ namespace EMAN
 		{
 			float r = fmod(fabs(x - y), (float) M_PI);
 			if (r > M_PI / 2.0) {
-				r = M_PI - r;
+				r = (float)(M_PI - r);
 			}
 			return r;
 		}

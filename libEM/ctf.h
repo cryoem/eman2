@@ -130,28 +130,28 @@ namespace EMAN
 
 		inline float calc_lambda()
 		{
-			float lambda = 12.2639 / sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage);
+			float lambda = 12.2639f / sqrt(voltage * 1000.0f + 0.97845f * voltage * voltage);
 			return lambda;
 		}
 
 		inline float calc_g1()
 		{
 			float lambda = calc_lambda();
-			float g1 = 2.5e6 * cs * lambda * lambda * lambda;
+			float g1 = 2.5e6f * cs * lambda * lambda * lambda;
 			return g1;
 		}
 
 		inline float calc_g2()
 		{
 			float lambda = calc_lambda();
-			float g2 = 5000.0 * defocus * lambda;
+			float g2 = 5000.0f * defocus * lambda;
 			return g2;
 		}
 
 		inline float calc_gamma(float g1, float g2, float s)
 		{
 			float s2 = s * s;
-			float gamma = -2 * M_PI * (g1 * s2 * s2 + g2 * s2);
+			float gamma = (float) (-2 * M_PI * (g1 * s2 * s2 + g2 * s2));
 			return gamma;
 		}
 
@@ -163,14 +163,14 @@ namespace EMAN
 
 		inline float calc_amplitude(float gamma)
 		{
-			float v =
-				amplitude * (sqrt(1.0 - ampcont * ampcont) * sin(gamma) + ampcont * cos(gamma));
+			float t1 = sqrt(1.0f - ampcont * ampcont) * sin(gamma);
+			float v = amplitude * (t1 + ampcont * cos(gamma));
 			return v;
 		}
 
 		inline float calc_noise(float s)
 		{
-			float ns = M_PI / 2 * noise4 * s;
+			float ns = (float) M_PI / 2 * noise4 * s;
 			float ns2 = ns * ns;
 			float n = noise3 * exp(-ns2 - s * noise2 - sqrt(fabs(s)) * noise1);
 			return n;

@@ -262,7 +262,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 		int old_maxim = static_cast < int >(first_h->maxim);
 
 		if (image_index >= first_h->maxim) {
-			first_h->maxim = image_index + 1;
+			first_h->maxim = (float) (image_index + 1);
 		}
 
 		first_h->max = dict["maximum"];
@@ -285,7 +285,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 			ByteOrder::swap_bytes((float *) first_h, NUM_FLOATS_IN_HEADER);
 		}
 
-		first_h->maxim = old_maxim;
+		first_h->maxim = (float) old_maxim;
 		portable_fseek(spider_file, 0, SEEK_END);
 	}
 	else {
@@ -295,9 +295,9 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 			first_h->sigma = -1.0;
 			first_h->angvalid = 0;
 			first_h->scale = 1.0;
-			first_h->nslice = nz1;
-			first_h->nx = nx1;
-			first_h->ny = ny1;
+			first_h->nslice = (float) nz1;
+			first_h->nx = (float) nx1;
+			first_h->ny = (float) ny1;
 
 			if (nz1 == 1) {
 				first_h->type = IMAGE_2D;
@@ -306,13 +306,13 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 				first_h->type = IMAGE_3D;
 			}
 
-			first_h->reclen = record_size;
-			first_h->headrec = num_records;
+			first_h->reclen = (float)record_size;
+			first_h->headrec = (float)num_records;
 			first_h->headlen = header_length;
 			first_h->inuse = -1;
 			first_h->istack = STACK_OVERALL_HEADER;
 			first_h->maxim = 1;
-			first_h->u1 = irec;
+			first_h->u1 = (float)irec;
 
 			first_h->max = dict["maximum"];
 			first_h->min = dict["minimum"];
@@ -336,9 +336,9 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 	}
 
 	cur_h->scale = 1.0;
-	cur_h->nslice = nz1;
-	cur_h->nx = nx1;
-	cur_h->ny = ny1;
+	cur_h->nslice = (float)nz1;
+	cur_h->nx = (float)nx1;
+	cur_h->ny = (float)ny1;
 
 	if (nz1 == 1) {
 		cur_h->type = IMAGE_2D;
@@ -354,14 +354,14 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 	cur_h->mean = dict["mean"];
 	cur_h->sigma = dict["sigma"];
 
-	cur_h->reclen = static_cast < int >(nx1 * sizeof(float));
+	cur_h->reclen = static_cast < float >(nx1 * sizeof(float));
 	cur_h->inuse = 1.0;
 	cur_h->istack = STACK_IMAGE_HEADER;
-	cur_h->imgnum = image_index + 1;
-	cur_h->headrec = num_records;
-	cur_h->headlen = header_length;
+	cur_h->imgnum = (float)(image_index + 1);
+	cur_h->headrec = (float)num_records;
+	cur_h->headlen = (float)header_length;
 	cur_h->angvalid = 1.0;
-	cur_h->u1 = irec;
+	cur_h->u1 = (float)irec;
 
 	return 0;
 
@@ -397,9 +397,9 @@ int SpiderIO::write_single_header(const Dict & dict)
 	first_h->angvalid = 0;
 	first_h->scale = 1.0;
 	first_h->istack = SINGLE_IMAGE_HEADER;
-	first_h->nslice = nz;
-	first_h->nx = nx;
-	first_h->ny = ny;
+	first_h->nslice = (float)nz;
+	first_h->nx = (float)nx;
+	first_h->ny = (float)ny;
 
 	first_h->max = dict["maximum"];
 	first_h->min = dict["minimum"];
@@ -414,9 +414,9 @@ int SpiderIO::write_single_header(const Dict & dict)
 		first_h->type = IMAGE_3D;
 	}
 
-	first_h->reclen = record_size;
-	first_h->headrec = num_records;
-	first_h->headlen = header_length;
+	first_h->reclen = (float)record_size;
+	first_h->headrec = (float)num_records;
+	first_h->headlen = (float)header_length;
 	first_h->inuse = 1;
 
 	if (fwrite(first_h, header_size, 1, spider_file) != 1) {

@@ -70,7 +70,13 @@ For Developers Only:
 	
     2. To generate new boost python wrapper, run
         % cd eman2/libpyEm
-	% ./create_boost_python
+		% ./create_boost_python
+
+	3. Windows Installer
+	   EMAN uses "Nullsoft Scriptable Install System" (http://nsis.sourceforge.net/)
+	   to generate the windows installer.
+	   It also uses "HM NIS Edit" (http://hmne.sourceforge.net/) as the editor.
+	
       
 =====================================================
 NOTE A: how to install boost python

@@ -151,7 +151,7 @@ bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
 {
 	size_t n = strlen(float_var);
 	if (strncmp(s, float_var, n) == 0) {
-		*p_val = atof(&s[n]);
+		*p_val = (float) atof(&s[n]);
 		return true;
 	}
 	return false;
@@ -261,8 +261,8 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 		div = 0.0000001;
 	}
 
-	*intercept = (sum_xx * sum_y - sum_x * sum_xy) / div;
-	*slope = (sum * sum_xy - sum_x * sum_y) / div;
+	*intercept = (float) (sum_xx * sum_y - sum_x * sum_xy) / div;
+	*slope = (float) (sum * sum_xy - sum_x * sum_y) / div;
 }
 
 void Util::save_data(const vector < float >&x_array, const vector < float >&y_array,
@@ -327,7 +327,7 @@ float Util::get_frand(float lo, float hi)
 		inited = true;
 	}
 
-	float r = (hi - lo) * rand() / (RAND_MAX + 1.0) + lo;
+	float r = (hi - lo) * rand() / (RAND_MAX + 1.0f) + lo;
 	return r;
 }
 
@@ -347,7 +347,7 @@ float Util::get_gauss_rand(float mean, float sigma)
 		}
 	}
 
-	float f = sqrt(-2.0 * log(r) / r);
+	float f = sqrt(-2.0f * log(r) / r);
 	float result = x * f * sigma + mean;
 	return result;
 }
@@ -367,7 +367,7 @@ void Util::find_max(float *data, size_t nitems, float *max_val, int *max_index)
 		}
 	}
 
-	*max_val = m;
+	*max_val = (float)m;
 
 	if (max_index) {
 		*max_index = m;

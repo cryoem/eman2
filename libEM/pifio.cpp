@@ -126,7 +126,7 @@ int PifIO::init()
 		become_host_endian(&pfh.nimg);
 
 		if (is_float(pfh.mode)) {
-			real_scale_factor = atof(pfh.scalefactor);
+			real_scale_factor = (float) atof(pfh.scalefactor);
 		}
 
 		mode_size = get_mode_size(static_cast < PifDataMode > (pfh.mode));

@@ -228,7 +228,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 			}
 			else {
 				numstr[k] = '\0';
-				data[i++] = atoi(numstr);
+				data[i++] = (float)atoi(numstr);
 				k = 0;
 			}
 		}

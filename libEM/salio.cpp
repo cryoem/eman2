@@ -27,7 +27,7 @@ SalIO::SalIO(string file, IOMode rw)
 	ny = 0;
 	record_length = 512;
 	scan_mode = NON_RASTER_SCAN;
-	pixel = 4.6667;
+	pixel = 4.6667f;
 }
 
 SalIO::~SalIO()
