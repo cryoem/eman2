@@ -233,7 +233,6 @@ namespace EMAN
 	string get_name() const;
 	void set_name(const string & name);
 
-
 	float get_value_at(int x, int y, int z) const;
 	float get_value_at(int x, int y) const;
 
@@ -245,8 +244,6 @@ namespace EMAN
 
 	void set_value_at(int x, int y, int z, float v);
 	void set_value_at(int x, int y, float v);
-
-
 
 	bool is_complex() const;
 	void set_complex(bool is_complex);

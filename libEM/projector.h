@@ -18,6 +18,32 @@ namespace EMAN
 {
     class EMData;
 
+    /** Projector class is the base class for all 3D projectors.
+     * Each specific projector has a unique name and should be called
+     * through the name.
+     *
+     * Projectors should be used as follows:
+     *
+     * 1. How to get all the Projector types
+     *
+     *    vector<string> all_projectors = Factory<Projector>.instance()->get_list();
+     *
+     * 2. How to use a Projector
+     *
+     *    EMData* img = ...;
+     *    Projector* proj = Factory<Projector>.instance()->get("FFT");
+     *    EMData* result = proj->project3d(img);
+     *
+     * 3. How to define a new Projector
+     *
+     *    a new projector type "XYZProjector" should implement at
+     *    least the following 3 functions:
+     *
+     *        EMData *project3d(EMData * em) const;
+     *        string get_name() const;
+     *        static Projector* NEW();
+     */
+    
     class Projector
     {
     public:
@@ -50,10 +76,18 @@ namespace EMAN
     };
 
    
-    class FFTProjector : public Projector
+    // 0
+    // 4.0 / (M_PI * M_PI);
+    // 6.4 / (M_PI * M_PI);
+    // 8.8 / (M_PI * M_PI);
+    // 0
+    // 10.4 / (M_PI * M_PI);
+    // 10.4 / (M_PI * M_PI);
+
+    class GaussFFTProjector : public Projector
     {
     public:
-	FFTProjector() : alt(0), az(0), phi(0)
+	GaussFFTProjector() : alt(0), az(0), phi(0)
 	{
 	}
 
@@ -66,182 +100,37 @@ namespace EMAN
 	    az = params["az"].get_float();
 	    phi = params["phi"].get_float();
 	}
-
+	
+	string get_name() const
+	{
+	    return "GaussFFT";
+	}
+	
+	static Projector *NEW()
+	{
+	    return new GaussFFTProjector();
+	}
+	
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("alt", EMObject::FLOAT);
 	    d.put("az", EMObject::FLOAT);
 	    d.put("phi", EMObject::FLOAT);
+	    d.put("mode", EMObject::INT);
 	    return d;
 	}
 	
-    protected:
+    private:
 	float alt, az, phi;
-	
-	virtual float get_gaussian_width() const = 0;
-	virtual void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const = 0;
+	void interp_ft_3d(int mode, EMData * image, float x, float y,
+			  float z, float *data, float gauss_width) const;
     };
+    
 
-    class Gaussian1FFTProjector : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian1FFT";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian1FFTProjector();
-	}
-	
-    protected:
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-	
-	float get_gaussian_width() const
-	{
-	    return 0;
-	}
-    };
-
-    class Gaussian2FFTProjectorr : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian2FFTProjectorr";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian2FFTProjectorr();
-	}
-	
-    protected:
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-	
-	float get_gaussian_width() const
-	{
-	    return 4.0 / (M_PI * M_PI);
-	}
-    };
-
-
-    class Gaussian3FFTProjectorr : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian3FFTProjectorr";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian3FFTProjectorr();
-	}
-	
-    protected:
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-	
-	float get_gaussian_width() const
-	{
-	    return 6.4 / (M_PI * M_PI);
-	}
-    };
-
-
-    class Gaussian4FFTProjectorr : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian4FFTProjectorr";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian4FFTProjectorr();
-	}
-	
-    protected:
-	float get_gaussian_width() const
-	{
-	    return 8.8 / (M_PI * M_PI);
-	}
-	
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-    };
-
-
-    class Gaussian5FFTProjectorr : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian5FFTProjectorr";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian5FFTProjectorr();
-	}
-	
-    protected:
-	float get_gaussian_width() const
-	{
-	    return 0;
-	}
-	
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-    };
-
-
-    class Gaussian6FFTProjectorr : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian6FFTProjectorr";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian6FFTProjectorr();
-	}
-    protected:
-	float get_gaussian_width() const
-	{
-	    return 10.4 / (M_PI * M_PI);
-	}
-	
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-    };
-
-
-    class Gaussian7FFTProjectorr : public FFTProjector
-    {
-    public:
-	string get_name() const
-	{
-	    return "Gaussian7FFTProjectorr";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new Gaussian7FFTProjectorr();
-	}
-	
-    protected:
-	float get_gaussian_width() const
-	{
-	    return 10.4 / (M_PI * M_PI);
-	}
-	
-	void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const;
-    };
-
-
+    /** Pawel Penczek's optimized projection routine.
+     * Subject to some small artifacts due to interpolation scheme used.
+     */
     class PawelProjector : public Projector
     {
     public:
@@ -258,6 +147,8 @@ namespace EMAN
 	}	
     };
 
+    /** fast real-space isosurface 3D proejection.
+     */
     class SimpleIsoSurfaceProjector : public Projector
     {
     public:
@@ -274,7 +165,8 @@ namespace EMAN
 	}	
     };
 
-
+    /** Fast real-space 3D projection.
+     */
     class StandardProjector : public Projector
     {
     public:
@@ -291,6 +183,12 @@ namespace EMAN
 	}	
     };
 
+    /** Real-space 3D projection with trilinear interpolation.
+     * It accumulates the results directly in the 2D image
+     * instead of storing in another rotated copy then accumulating
+     * (ie: less memory requirement). It does not modify the self
+     * data either.
+     */
     class StandardBigProjector : public Projector
     {
     public:
