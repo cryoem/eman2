@@ -2,11 +2,7 @@ Include("emdata.h")
 Include("transform.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
-
-Cmp = Class("EMAN::Cmp", "cmp.h")
-
 Function("EMAN::dump_cmps", "cmp.h")
-
 CmpFactory = Factory("EMAN::Cmp", "Cmps")
 set_policy(CmpFactory.get, return_value_policy(manage_new_object))
 exclude(CmpFactory.add)

@@ -3,6 +3,7 @@
  */
 #include "transform.h"
 #include "exception.h"
+#include <ctype.h>
 
 using namespace EMAN;
 

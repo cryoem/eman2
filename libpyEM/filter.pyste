@@ -1,6 +1,5 @@
 Include("emdata.h")
 
-Filter = Class("EMAN::Filter", "filter.h")
 RealPixelFilter = Class("EMAN::RealPixelFilter", "filter.h")
 BoxStatFilter = Class("EMAN::BoxStatFilter", "filter.h")
 ComplexPixelFilter = Class("EMAN::ComplexPixelFilter", "filter.h")

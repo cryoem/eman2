@@ -1,5 +1,5 @@
-#ifndef eman__pylist_h__
-#define eman__pylist_h__
+#ifndef eman__typeconverter_h__
+#define eman__typeconverter_h__ 1
 
 #define PY_ARRAY_UNIQUE_SYMBOL PyArrayHandle
 
@@ -36,10 +36,7 @@ namespace EMAN {
 		 * The image and the array share the same memory block.
 		 */
 		static void numpy2em(python::numeric::array& array, EMData* image);
-	};
 	
-	class PyList {
-	public:
 
 		template <class T>
 		static vector<T> list2vector(const python::list& l)

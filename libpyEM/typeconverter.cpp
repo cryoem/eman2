@@ -2,7 +2,7 @@
 
 #include <Python.h>
 
-#include "pylist.h"
+#include "typeconverter.h"
 #include "emdata.h"
 
 using namespace EMAN;

@@ -1,12 +1,7 @@
 Include("emdata.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
-
-Reconstructor = Class("EMAN::Reconstructor", "reconstructor.h")
-set_policy(Reconstructor.finish, return_value_policy(manage_new_object))
-
 Function("EMAN::dump_reconstructors", "reconstructor.h")
-
 ReconstructorFactory = Factory("EMAN::Reconstructor", "Reconstructors")
 set_policy(ReconstructorFactory.get, return_value_policy(manage_new_object))
 exclude(ReconstructorFactory.add)

@@ -42,7 +42,7 @@ ADD_PYSTE_LIB(pyEMData2)
 ADD_PYSTE_LIB(pyGeometry2)
 ADD_PYSTE_LIB(pyTransform2)
 ADD_PYSTE_LIB(pyPointArray2)
-ADD_PYSTE_LIB_WITH_SRC(pyUtils2 pylist.cpp)
+ADD_PYSTE_LIB_WITH_SRC(pyUtils2 typeconverter.cpp)
 
 
 INSTALL_FILES(/lib "^.+\\.py$")

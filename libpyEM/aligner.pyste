@@ -1,11 +1,7 @@
 Include("emdata.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
-
-Aligner = Class("EMAN::Aligner", "aligner.h")
-set_policy(Aligner.align, return_value_policy(manage_new_object))
 Function("EMAN::dump_aligners", "aligner.h")
-
 AlignerFactory = Factory("EMAN::Aligner", "Aligners")
 set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
 exclude(AlignerFactory.add)

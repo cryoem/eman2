@@ -5,7 +5,7 @@ Include("filter.h")
 Include("aligner.h")
 Include("cmp.h")
 Include("emfft.h")
-Include("pylist.h")
+Include("typeconverter.h")
 Include("xydata.h")
 
 EMData = Class("EMAN::EMData", "emdata.h")
