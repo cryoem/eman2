@@ -64,7 +64,6 @@ namespace EMAN
 		int ndim;
 	};
 
-
 	/** Region defines a 2D or 3D rectangular region specified by origins and sizes.
      */
 	class Region

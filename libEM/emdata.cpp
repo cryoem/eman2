@@ -413,6 +413,47 @@ void EMData::insert_clip(EMData * block, const Point < int >&origin)
 	flags |= EMDATA_NEEDUPD;
 }
 
+EMData *get_rotated_clip(Point <float>&center, Rotation &orient, Size &size, float scale=1.0) { }
+
+void insert_scaled_sum(EMData *block, const Point <float>&center, float scale, float mult) 
+{
+
+if (get_ndim()==3) {
+	int xs=(int)floor(block.get_xsize()*scale/2.0);
+	int ys=(int)floor(block.get_ysize()*scale/2.0);
+	int zs=(int)floor(block.get_zsize()*scale/2.0);
+	int x0=center.x-xs;
+	int x1=center.x+xs;
+	int y0=center.y-xs;
+	int y1=center.y+xs;
+	int z0=center.z-xs;
+	int z1=center.z+xs;
+	
+	if (x0<0) x0=0;
+	if (y0<0) y0=0;
+	if (z0<0) z0=0;
+	if (x1>get_xsize()) x1=get_xsize();
+	if (y1>get_ysize()) y1=get_ysize();
+	if (z1>get_zsize()) z1=get_zsize();
+	
+	float bx=block.get_xsize()/2.0;
+	float by=block.get_ysize()/2.0;
+	float bz=block.get_zsize()/2.0;
+	
+	for (int x=x0; x<x1; x++) {
+		for (int y=y0; y<y1; y++) {
+			for (int z=z0; z<z1; z++) {
+				rdata[x + y * nx + z * nx * ny] += 
+					block->get_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by,(z-center.z)/scale+bz);
+			}
+		}
+	}
+	update();
+}
+else Log::logger()->error("insert_scaled_sum supports only 3D data");
+
+}
+
 EMData *EMData::get_top_half() const
 {
 	EMData *half = new EMData();
