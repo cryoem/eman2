@@ -316,9 +316,6 @@ namespace EMAN
 
 	Vec3f rotate(const Vec3f & v) const;
 
-	void interpolate(const Quaternion & q1, float alpha);
-	void interpolate(const Quaternion & q1, const Quaternion & q2, float alpha);
-
 	float to_angle() const;
 	Vec3f to_axis() const;
 
@@ -348,6 +345,7 @@ namespace EMAN
 	friend bool operator==(const Quaternion & q1, const Quaternion & q2);
 	friend bool operator!=(const Quaternion & q1, const Quaternion & q2);
 
+	static Quaternion interpolate(const Quaternion & from, const Quaternion & to, float percent);
     private:
 	float e0;
 	float e1;
@@ -424,6 +422,8 @@ namespace EMAN
 	friend bool operator==(const Rotation & e1, const Rotation & e2);
 	friend bool operator!=(const Rotation & e1, const Rotation & e2);
 
+	static Rotation interpolate(const Rotation & from, const Rotation & to, float percent);
+	
     private:
 	enum SymType { CSYM, DSYM, ICOS_SYM, OCT_SYM, ISYM, UNKNOWN_SYM };
 	SymType get_sym_type(string symname);
@@ -434,8 +434,6 @@ namespace EMAN
 	string symname;
 	int nsym;
 	int cur_sym;
-
-
     };
 
     // composite transform: = (-Translate) * Scale * Rotate * Translate
@@ -652,7 +650,7 @@ namespace EMAN
 	Vec3f transform(const Vec3f & v);
 	Vec3f inverse_transform(const Vec3f & v);
 
-	Rotation get_rotation(Rotation & r) const
+	Rotation get_rotation() const
 	{
 	    return Rotation(matrix.get_matrix3());
 	}
@@ -730,8 +728,6 @@ namespace EMAN
 	friend Transform operator/(const Transform & t1, const Transform & t2);
 	friend Transform operator/(const Transform & t, float s);
 	friend Transform operator/(float s, const Transform & t);
-
-	static Transform interpolate(const Transform & t1, const Transform & t2, float percent);
 
     private:
 	Matrix4f matrix;
