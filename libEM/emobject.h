@@ -271,6 +271,35 @@ namespace EMAN
 	{
 	}
 
+	Dict(string key1, EMObject val1)
+	{
+	    dict[key1] = val1;
+	}
+
+	Dict(string key1, EMObject val1, string key2, EMObject val2)
+	{
+	    dict[key1] = val1;
+	    dict[key2] = val2;
+	}
+	
+	Dict(string key1, EMObject val1, string key2, EMObject val2,
+	     string key3, EMObject val3)
+	{
+	    dict[key1] = val1;
+	    dict[key2] = val2;
+	    dict[key3] = val3;
+	}
+	
+	Dict(string key1, EMObject val1, string key2, EMObject val2,
+	     string key3, EMObject val3, string key4, EMObject val4)
+	{
+	    dict[key1] = val1;
+	    dict[key2] = val2;
+	    dict[key3] = val3;
+	    dict[key4] = val4;
+	}
+	
+	
 	Dict(const map<string, EMObject> & d)
 	{
 	    map<string, EMObject>::const_iterator p;

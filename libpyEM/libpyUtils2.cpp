@@ -59,8 +59,20 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
         call_method< void >(self, "compute_2d_complex", p0, p1, p2);
     }
 
-    void copy_from(EMAN::Ctf* p0) {
+    void copy_from(const EMAN::Ctf* p0) {
         call_method< void >(self, "copy_from", p0);
+    }
+
+    bool equal(const EMAN::Ctf* p0) const {
+        return call_method< bool >(self, "equal", p0);
+    }
+
+    float get_defocus() const {
+        return call_method< float >(self, "get_defocus");
+    }
+
+    float get_bfactor() const {
+        return call_method< float >(self, "get_bfactor");
     }
 
     PyObject* self;
@@ -156,12 +168,36 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
         return EMAN::SimpleCtf::to_dict();
     }
 
-    void copy_from(EMAN::Ctf* p0) {
+    void copy_from(const EMAN::Ctf* p0) {
         call_method< void >(self, "copy_from", p0);
     }
 
-    void default_copy_from(EMAN::Ctf* p0) {
+    void default_copy_from(const EMAN::Ctf* p0) {
         EMAN::SimpleCtf::copy_from(p0);
+    }
+
+    bool equal(const EMAN::Ctf* p0) const {
+        return call_method< bool >(self, "equal", p0);
+    }
+
+    bool default_equal(const EMAN::Ctf* p0) const {
+        return EMAN::SimpleCtf::equal(p0);
+    }
+
+    float get_defocus() const {
+        return call_method< float >(self, "get_defocus");
+    }
+
+    float default_get_defocus() const {
+        return EMAN::SimpleCtf::get_defocus();
+    }
+
+    float get_bfactor() const {
+        return call_method< float >(self, "get_bfactor");
+    }
+
+    float default_get_bfactor() const {
+        return EMAN::SimpleCtf::get_bfactor();
     }
 
     PyObject* self;
@@ -286,6 +322,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
         .def("dump_dict", &EMAN::EMUtil::dump_dict)
         .def("is_same_size", &EMAN::EMUtil::is_same_size)
+        .def("is_same_ctf", &EMAN::EMUtil::is_same_ctf)
         .staticmethod("vertical_acf")
         .staticmethod("get_datatype_string")
         .staticmethod("dump_dict")
@@ -295,6 +332,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_image_type")
         .staticmethod("is_same_size")
         .staticmethod("make_image_median")
+        .staticmethod("is_same_ctf")
     );
 
     enum_< EMAN::EMUtil::EMDataType >("EMDataType")
@@ -348,6 +386,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("compute_2d_real", pure_virtual(&EMAN::Ctf::compute_2d_real))
         .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
         .def("copy_from", pure_virtual(&EMAN::Ctf::copy_from))
+        .def("equal", pure_virtual(&EMAN::Ctf::equal))
+        .def("get_defocus", pure_virtual(&EMAN::Ctf::get_defocus))
+        .def("get_bfactor", pure_virtual(&EMAN::Ctf::get_bfactor))
     );
 
     enum_< EMAN::Ctf::CtfType >("CtfType")
@@ -404,7 +445,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("to_string", (std::string (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_string, (std::string (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_string)
         .def("from_dict", (void (EMAN::SimpleCtf::*)(const EMAN::Dict&) )&EMAN::SimpleCtf::from_dict, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Dict&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
         .def("to_dict", (EMAN::Dict (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_dict, (EMAN::Dict (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_dict)
-        .def("copy_from", (void (EMAN::SimpleCtf::*)(EMAN::Ctf*) )&EMAN::SimpleCtf::copy_from, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::Ctf*))&EMAN_SimpleCtf_Wrapper::default_copy_from)
+        .def("copy_from", (void (EMAN::SimpleCtf::*)(const EMAN::Ctf*) )&EMAN::SimpleCtf::copy_from, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Ctf*))&EMAN_SimpleCtf_Wrapper::default_copy_from)
+        .def("equal", (bool (EMAN::SimpleCtf::*)(const EMAN::Ctf*) const)&EMAN::SimpleCtf::equal, (bool (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_SimpleCtf_Wrapper::default_equal)
+        .def("get_defocus", (float (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::get_defocus, (float (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_get_defocus)
+        .def("get_bfactor", (float (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::get_bfactor, (float (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_get_bfactor)
     ;
 
     scope* EMAN_ImageIO_scope = new scope(
@@ -462,6 +506,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("check_file_by_magic", &EMAN::Util::check_file_by_magic)
         .def("flip_image", &EMAN::Util::flip_image)
         .def("sstrncmp", &EMAN::Util::sstrncmp)
+        .def("get_str_float", &EMAN::Util::get_str_float)
+        .def("get_str_int", &EMAN::Util::get_str_int)
         .def("get_filename_by_ext", &EMAN::Util::get_filename_by_ext)
         .def("calc_least_square_fit", &EMAN::Util::calc_least_square_fit)
         .def("save_data_to_file", (void (*)(const std::vector<float,std::allocator<float> >&, const std::vector<float,std::allocator<float> >&, std::string))&EMAN::Util::save_data_to_file)
@@ -498,6 +544,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("flip_complex_phase")
         .staticmethod("square")
         .staticmethod("sstrncmp")
+        .staticmethod("get_str_int")
         .staticmethod("calc_best_fft_size")
         .staticmethod("square_sum")
         .staticmethod("angle_sub_pi")
@@ -506,6 +553,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("file_lock_wait")
         .staticmethod("min")
         .staticmethod("set_log_level")
+        .staticmethod("get_str_float")
         .staticmethod("angle_sub_2pi")
         .staticmethod("get_gaussian_rand")
         .staticmethod("find_max")

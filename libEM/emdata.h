@@ -145,7 +145,7 @@ namespace EMAN
 	void calc_rcf(EMData * with, vector<float> & sum_array);
 #endif
 	float calc_dist(EMData * second_img, int y_index = 0) const;
-	EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "ZeroMask");
+	EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "SharpMask");
 	void calc_radial_dist(int n, float x0, float dx, float *d);
 	void calc_radial_dist(int n, float x0, float dx, float *d, float acen, float amwid);
 

@@ -83,8 +83,8 @@ namespace EMAN
 
 	static void dump_dict(const Dict & dict);
 
-	static bool is_same_size(const EMData * em1, const EMData * em2);
-
+	static bool is_same_size(const EMData * image1, const EMData * image2);
+	static bool is_same_ctf(const EMData *image1, const EMData * image2);
 
 
     private:

@@ -56,8 +56,8 @@ namespace EMAN
 	virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 	virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
-	virtual void copy_from(Ctf * new_ctf) = 0;
-	virtual bool equal(Ctf * ctf1) const = 0;
+	virtual void copy_from(const Ctf * new_ctf) = 0;
+	virtual bool equal(const Ctf * ctf1) const = 0;
 
 	virtual float get_defocus() const = 0;
 	virtual float get_bfactor() const = 0;
@@ -97,9 +97,8 @@ namespace EMAN
 	void from_dict(const Dict & dict);
 	Dict to_dict() const;
 	
-	void copy_from(Ctf * new_ctf);
-
-	bool equal(const Ctf& ctf1) const;
+	void copy_from(const Ctf * new_ctf);
+	bool equal(const Ctf* ctf1) const;
 	
 	float get_defocus() const { return defocus; }
 	float get_bfactor() const { return bfactor; }
