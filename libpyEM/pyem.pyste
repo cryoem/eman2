@@ -64,26 +64,3 @@ Include("imageio.h")
 Include("transform.h")
 Include("pylist.h")
 Include("xydata.h")
-
-FilterFactory = Class("EMAN::FilterFactory", "filter.h")
-set_policy(FilterFactory.instance, return_value_policy(reference_existing_object))
-set_policy(FilterFactory.get, return_value_policy(manage_new_object))
-exclude(FilterFactory.add)
-
-Filter = Class("EMAN::Filter", "filter.h")
-
-AlignerFactory = Class("EMAN::AlignerFactory", "aligner.h")
-set_policy(AlignerFactory.instance, return_value_policy(reference_existing_object))
-set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
-exclude(AlignerFactory.add)
-
-Aligner = Class("EMAN::Aligner", "aligner.h")
-set_policy(Aligner.align, return_value_policy(manage_new_object))
-
-ProjectorFactory = Class("EMAN::ProjectorFactory", "projector.h")
-set_policy(ProjectorFactory.instance, return_value_policy(reference_existing_object))
-set_policy(ProjectorFactory.get, return_value_policy(manage_new_object))
-exclude(ProjectorFactory.add)
-
-Projector = Class("EMAN::Projector", "projector.h")
-set_policy(Projector.project3d, return_value_policy(manage_new_object))

@@ -4,15 +4,12 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include <aligner.h>
 #include <ctf.h>
 #include <emdata.h>
 #include <emobject.h>
 #include <emutil.h>
-#include <filter.h>
 #include <imageio.h>
 #include <log.h>
-#include <projector.h>
 #include <pyem.h>
 #include <pylist.h>
 #include <transform.h>
@@ -46,15 +43,15 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_normalize_to_overloads_1_5, n
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_least_square_normalize_to_overloads_1_3, least_square_normalize_to, 1, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_1_4, calc_hist, 1, 4)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_to_mass_center_overloads_0_1, to_mass_center, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_fast_translate_overloads_0_1, fast_translate, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rotate_translate_overloads_0_5, rotate_translate, 0, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_fast_rotate_translate_overloads_0_1, fast_rotate_translate, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccf_overloads_1_3, calc_ccf, 1, 3)
 
@@ -70,6 +67,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_random_noise_overloads_4_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_auto_mask_overloads_1_2, auto_mask, 1, 2)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_1_4, calc_hist, 1, 4)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_dist_overloads_1_2, calc_dist, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_flcf_overloads_1_3, calc_flcf, 1, 3)
@@ -83,129 +82,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_common_lines_real_overloads_2
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cut_slice_overloads_2_6, cut_slice, 2, 6)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_2_5, uncut_slice, 2, 5)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_to_mass_center_overloads_0_1, to_mass_center, 0, 1)
-
-struct EMAN_Filter_Wrapper: EMAN::Filter
-{
-    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Filter& p0):
-        EMAN::Filter(p0), self(self_) {}
-
-    EMAN_Filter_Wrapper(PyObject* self_):
-        EMAN::Filter(), self(self_) {}
-
-    void process(EMAN::EMData* p0) {
-        call_method< void >(self, "process", p0);
-    }
-
-    void default_process(EMAN::EMData* p0) {
-        EMAN::Filter::process(p0);
-    }
-
-    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        call_method< void >(self, "process_list", p0);
-    }
-
-    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        EMAN::Filter::process_list(p0);
-    }
-
-    EMAN::Dict get_params() const {
-        return call_method< EMAN::Dict >(self, "get_params");
-    }
-
-    EMAN::Dict default_get_params() const {
-        return EMAN::Filter::get_params();
-    }
-
-    void set_params(const EMAN::Dict& p0) {
-        call_method< void >(self, "set_params", p0);
-    }
-
-    void default_set_params(const EMAN::Dict& p0) {
-        EMAN::Filter::set_params(p0);
-    }
-
-    EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(self, "get_param_types");
-    }
-
-    std::string get_name() const {
-        return call_method< std::string >(self, "get_name");
-    }
-
-    PyObject* self;
-};
-
-struct EMAN_Aligner_Wrapper: EMAN::Aligner
-{
-    EMAN_Aligner_Wrapper(PyObject* self_, const EMAN::Aligner& p0):
-        EMAN::Aligner(p0), self(self_) {}
-
-    EMAN_Aligner_Wrapper(PyObject* self_):
-        EMAN::Aligner(), self(self_) {}
-
-    EMAN::EMData* align(EMAN::EMData* p0, std::string p1) const {
-        return call_method< EMAN::EMData* >(self, "align", p0, p1);
-    }
-
-    EMAN::Dict get_params() const {
-        return call_method< EMAN::Dict >(self, "get_params");
-    }
-
-    EMAN::Dict default_get_params() const {
-        return EMAN::Aligner::get_params();
-    }
-
-    void set_params(const EMAN::Dict& p0) {
-        call_method< void >(self, "set_params", p0);
-    }
-
-    void default_set_params(const EMAN::Dict& p0) {
-        EMAN::Aligner::set_params(p0);
-    }
-
-    EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(self, "get_param_types");
-    }
-
-    std::string get_name() const {
-        return call_method< std::string >(self, "get_name");
-    }
-
-    PyObject* self;
-};
-
-struct EMAN_Projector_Wrapper: EMAN::Projector
-{
-    EMAN_Projector_Wrapper(PyObject* self_, const EMAN::Projector& p0):
-        EMAN::Projector(p0), self(self_) {}
-
-    EMAN_Projector_Wrapper(PyObject* self_):
-        EMAN::Projector(), self(self_) {}
-
-    EMAN::Dict get_params() const {
-        return call_method< EMAN::Dict >(self, "get_params");
-    }
-
-    EMAN::Dict default_get_params() const {
-        return EMAN::Projector::get_params();
-    }
-
-    EMAN::EMData* project3d(EMAN::EMData* p0) const {
-        return call_method< EMAN::EMData* >(self, "project3d", p0);
-    }
-
-    EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(self, "get_param_types");
-    }
-
-    std::string get_name() const {
-        return call_method< std::string >(self, "get_name");
-    }
-
-    PyObject* self;
-};
 
 
 }// namespace 
@@ -363,6 +239,7 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("insert_clip", &EMAN::EMData::insert_clip)
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
+        .def("ift_slice", &EMAN::EMData::ift_slice, return_value_policy< manage_new_object >())
         .def("gimme_fft", &EMAN::EMData::gimme_fft)
         .def("normalize", &EMAN::EMData::normalize)
         .def("mask_normalize", &EMAN::EMData::mask_normalize, EMAN_EMData_mask_normalize_overloads_1_2())
@@ -372,27 +249,25 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("normalize_slice", &EMAN::EMData::normalize_slice)
         .def("normalize_to", &EMAN::EMData::normalize_to, EMAN_EMData_normalize_to_overloads_1_5())
         .def("least_square_normalize_to", &EMAN::EMData::least_square_normalize_to, EMAN_EMData_least_square_normalize_to_overloads_1_3())
-        .def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_1_4())
-        .def("little_big_dot", &EMAN::EMData::little_big_dot, return_value_policy< manage_new_object >(), EMAN_EMData_little_big_dot_overloads_1_2())
-        .def("calc_az_dist", &EMAN::EMData::calc_az_dist)
         .def("ri2ap", &EMAN::EMData::ri2ap)
         .def("ap2ri", &EMAN::EMData::ap2ri)
         .def("to_corner", &EMAN::EMData::to_corner)
+        .def("to_mass_center", &EMAN::EMData::to_mass_center, EMAN_EMData_to_mass_center_overloads_0_1())
         .def("rotate_x", &EMAN::EMData::rotate_x)
         .def("rotate_180", &EMAN::EMData::rotate_180)
         .def("fast_translate", &EMAN::EMData::fast_translate, EMAN_EMData_fast_translate_overloads_0_1())
         .def("rotate_translate", &EMAN::EMData::rotate_translate, EMAN_EMData_rotate_translate_overloads_0_5())
         .def("fast_rotate_translate", &EMAN::EMData::fast_rotate_translate, EMAN_EMData_fast_rotate_translate_overloads_0_1())
         .def("dot_rotate_translate", &EMAN::EMData::dot_rotate_translate)
-        .def("do_radon", &EMAN::EMData::do_radon, return_value_policy< manage_new_object >())
         .def("vertical_flip", &EMAN::EMData::vertical_flip)
         .def("horizontal_flip", &EMAN::EMData::horizontal_flip)
+        .def("little_big_dot", &EMAN::EMData::little_big_dot, return_value_policy< manage_new_object >(), EMAN_EMData_little_big_dot_overloads_1_2())
+        .def("do_radon", &EMAN::EMData::do_radon, return_value_policy< manage_new_object >())
         .def("calc_ccf", &EMAN::EMData::calc_ccf, return_value_policy< manage_new_object >(), EMAN_EMData_calc_ccf_overloads_1_3())
         .def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, return_value_policy< manage_new_object >(), EMAN_EMData_make_rotational_footprint_overloads_0_2())
         .def("calc_ccfx", &EMAN::EMData::calc_ccfx, return_value_policy< manage_new_object >(), EMAN_EMData_calc_ccfx_overloads_1_4())
         .def("calc_mutual_correlation", &EMAN::EMData::calc_mutual_correlation, return_value_policy< manage_new_object >(), EMAN_EMData_calc_mutual_correlation_overloads_1_3())
         .def("unwrap", &EMAN::EMData::unwrap, return_value_policy< manage_new_object >(), EMAN_EMData_unwrap_overloads_0_6())
-        .def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation)
         .def("mean_shrink", &EMAN::EMData::mean_shrink)
         .def("median_shrink", &EMAN::EMData::median_shrink)
         .def("apply_radial_func", &EMAN::EMData::apply_radial_func)
@@ -413,6 +288,9 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("add_mask_shell", &EMAN::EMData::add_mask_shell)
         .def("add_random_noise", &EMAN::EMData::add_random_noise, EMAN_EMData_add_random_noise_overloads_4_5())
         .def("auto_mask", &EMAN::EMData::auto_mask, EMAN_EMData_auto_mask_overloads_1_2())
+        .def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation)
+        .def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_1_4())
+        .def("calc_az_dist", &EMAN::EMData::calc_az_dist)
         .def("calc_dist", &EMAN::EMData::calc_dist, EMAN_EMData_calc_dist_overloads_1_2())
         .def("calc_flcf", &EMAN::EMData::calc_flcf, return_value_policy< manage_new_object >(), EMAN_EMData_calc_flcf_overloads_1_3())
         .def("calc_radial_dist", (void (EMAN::EMData::*)(int, float, float, float*) )&EMAN::EMData::calc_radial_dist)
@@ -424,14 +302,12 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("common_lines_real", &EMAN::EMData::common_lines_real, EMAN_EMData_common_lines_real_overloads_2_4())
         .def("cut_slice", &EMAN::EMData::cut_slice, EMAN_EMData_cut_slice_overloads_2_6())
         .def("uncut_slice", &EMAN::EMData::uncut_slice, EMAN_EMData_uncut_slice_overloads_2_5())
-        .def("ift_slice", &EMAN::EMData::ift_slice, return_value_policy< manage_new_object >())
         .def("get_edge_mean", &EMAN::EMData::get_edge_mean)
         .def("get_circle_mean", &EMAN::EMData::get_circle_mean)
         .def("radial_average", &EMAN::EMData::radial_average)
         .def("radial_subtract", &EMAN::EMData::radial_subtract)
         .def("sub_noise", &EMAN::EMData::sub_noise)
         .def("setup_insert_slice", &EMAN::EMData::setup_insert_slice)
-        .def("to_mass_center", &EMAN::EMData::to_mass_center, EMAN_EMData_to_mass_center_overloads_0_1())
         .def("get_ctf", &EMAN::EMData::get_ctf, return_internal_reference< 1 >())
         .def("set_ctf", &EMAN::EMData::set_ctf)
         .def("get_translation", &EMAN::EMData::get_translation)
@@ -506,55 +382,6 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def( self -= self )
         .def( self *= self )
         .def( self /= self )
-    ;
-
-    class_< EMAN::FilterFactory, boost::noncopyable >("FilterFactory", no_init)
-        .def("instance", &EMAN::FilterFactory::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Filter* (EMAN::FilterFactory::*)(std::string) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Filter* (EMAN::FilterFactory::*)(std::string, const EMAN::Dict&) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
-        .def("get_list", &EMAN::FilterFactory::get_list)
-        .staticmethod("instance")
-    ;
-
-    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
-        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
-        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
-        .def("get_params", &EMAN::Filter::get_params, &EMAN_Filter_Wrapper::default_get_params)
-        .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
-        .def("get_param_types", pure_virtual(&EMAN::Filter::get_param_types))
-        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
-    ;
-
-    class_< EMAN::AlignerFactory, boost::noncopyable >("AlignerFactory", no_init)
-        .def("instance", &EMAN::AlignerFactory::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Aligner* (EMAN::AlignerFactory::*)(std::string) )&EMAN::AlignerFactory::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Aligner* (EMAN::AlignerFactory::*)(std::string, const EMAN::Dict&) )&EMAN::AlignerFactory::get, return_value_policy< manage_new_object >())
-        .def("get_list", &EMAN::AlignerFactory::get_list)
-        .staticmethod("instance")
-    ;
-
-    class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("Aligner", init<  >())
-        .def("align", pure_virtual(&EMAN::Aligner::align), return_value_policy< manage_new_object >())
-        .def("get_params", &EMAN::Aligner::get_params, &EMAN_Aligner_Wrapper::default_get_params)
-        .def("set_params", &EMAN::Aligner::set_params, &EMAN_Aligner_Wrapper::default_set_params)
-        .def("get_param_types", pure_virtual(&EMAN::Aligner::get_param_types))
-        .def("get_name", pure_virtual(&EMAN::Aligner::get_name))
-    ;
-
-    class_< EMAN::ProjectorFactory, boost::noncopyable >("ProjectorFactory", no_init)
-        .def("instance", &EMAN::ProjectorFactory::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Projector* (EMAN::ProjectorFactory::*)(std::string) )&EMAN::ProjectorFactory::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Projector* (EMAN::ProjectorFactory::*)(std::string, const EMAN::Dict&) )&EMAN::ProjectorFactory::get, return_value_policy< manage_new_object >())
-        .def("get_list", &EMAN::ProjectorFactory::get_list)
-        .staticmethod("instance")
-    ;
-
-    class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("Projector", init<  >())
-        .def("get_params", &EMAN::Projector::get_params, &EMAN_Projector_Wrapper::default_get_params)
-        .def("project3d", pure_virtual(&EMAN::Projector::project3d), return_value_policy< manage_new_object >())
-        .def("get_param_types", pure_virtual(&EMAN::Projector::get_param_types))
-        .def("get_name", pure_virtual(&EMAN::Projector::get_name))
-        .def("set_params", &EMAN::Projector::set_params)
     ;
 
 }

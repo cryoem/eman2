@@ -415,31 +415,7 @@ namespace EMAN
 	    return d;
 	}
     };
-
-    typedef Aligner *(*AlignerType)();
-
-    class AlignerFactory
-    {
-    public:
-	static AlignerFactory *instance();
-
-	void add(AlignerType aligner);
-	Aligner *get(string align_name);
-	Aligner *get(string align_name, const Dict & params);
-	vector<string> get_list();
-
-    private:
-	AlignerFactory();
-	AlignerFactory(const AlignerFactory & a);
-	~AlignerFactory();
-
-	void force_add(AlignerType aligner);
-
-	static AlignerFactory *my_instance;
-	map<string, AlignerType> my_dict;
-    };
-
-
+    
 }
 
 #endif

@@ -1,12 +1,14 @@
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 
+#include "emobject.h"
 #include <vector>
+#include <map>
 #include <string>
 #include <math.h>
-#include "emobject.h"
 
 using std::vector;
+using std::map;
 using std::string;
 
 namespace EMAN
@@ -14,10 +16,10 @@ namespace EMAN
 
     // these magic numbers and macros need to be removed later
 
-#define I5G	(10.4/(M_PI*M_PI))	// used for 5x5x5 interpolation
-#define I4G	(8.8/(M_PI*M_PI))	// used for 4 interpolation
-#define I3G	(6.4/(M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
-#define I2G	(4.0/(M_PI*M_PI))	// 2 interpolation
+#define I5G	(10.4 / (M_PI*M_PI))	// used for 5x5x5 interpolation
+#define I4G	(8.8 / (M_PI*M_PI))	// used for 4 interpolation
+#define I3G	(6.4 / (M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
+#define I2G	(4.0 / (M_PI*M_PI))	// 2 interpolation
 
 
     class EMData;
@@ -155,21 +157,6 @@ namespace EMAN
 	int ny;
 	int nz;
     };
-
-
-
-    typedef Reconstructor *(ReconstructorType) ();
-
-    class ReconstructorFactory
-    {
-      public:
-	static ReconstructorFactory *instance();
-	void add(ReconstructorType reconstructor);
-	Reconstructor *get(string reconstructor_name);
-	vector<string> get_list();
-    };
-
-
-};
+}
 
 #endif

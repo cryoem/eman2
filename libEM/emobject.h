@@ -363,6 +363,98 @@ namespace EMAN
 	map<string, string> dict;
     };
 
+    template <class T> class Factory {
+    public:
+	typedef T *(*InstanceType)();
+	
+	static Factory<T> *instance();
+
+	void add(InstanceType i);
+	T *get(string instance_name);
+	T *get(string instance_name, const Dict & params);
+	
+	vector<string> get_list();
+
+    private:
+	Factory() { }
+	Factory(const Factory<T> &);
+	~Factory();
+	
+	void force_add(InstanceType i);
+
+	static Factory<T> *my_instance;
+	map<string, InstanceType> my_dict;
+    };
+    
+    template <class T> Factory<T> *Factory<T>::my_instance = 0;
+
+    template <class T> Factory<T> *Factory<T>::instance()
+    {
+	if (!my_instance) {
+	    my_instance = new Factory<T>();
+	}
+	return my_instance;
+    }
+
+    template <class T> void Factory<T>::force_add(InstanceType new_instance)
+    {
+	T *i = new_instance();
+	string name = i->get_name();
+	my_dict[name] = new_instance;
+	delete i;
+	i = 0;
+    }
+
+
+    template <class T> void Factory<T>::add(InstanceType new_instance)
+    {
+	T *i = new_instance();
+	string name = i->get_name();
+    
+	typename map<string, InstanceType>::iterator fi = my_dict.find(fname);
+
+	if (fi != my_dict.end()) {
+	    my_dict[fname] = new_instance;
+	}
+	delete i;
+	i = 0;
+    }
+
+    template <class T> T *Factory<T>::get(string instancename)
+    {
+	typename map<string, InstanceType>::iterator fi = my_dict.find(instancename);
+	if (fi != my_dict.end()) {
+	    return my_dict[instancename]();
+	}
+	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
+	return 0;
+    }
+
+    template <class T> T *Factory<T>::get(string instancename, const Dict & params)
+    {
+	typename map<string, InstanceType>::iterator fi = my_dict.find(instancename);
+    
+	if (fi != my_dict.end()) {
+	    T *i = my_dict[instancename]();
+	    i->set_params(params);
+	    return i;
+	}
+	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
+	return 0;
+    }
+
+    template <class T> vector<string> Factory<T>::get_list()
+    {
+	vector<string> result;
+	typename map<string, InstanceType>::const_iterator p;
+	for (p = my_dict.begin(); p != my_dict.end(); p++) {
+	    result.push_back(p->first);
+	}
+
+	return result;
+    }
+
+
 }
 
 #endif

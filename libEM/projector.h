@@ -347,30 +347,6 @@ namespace EMAN
 	}
     };
 
-
-    typedef Projector *(*ProjectorType) ();
-
-    class ProjectorFactory
-    {
-    public:
-	static ProjectorFactory *instance();
-
-	void add(ProjectorType projector);
-	Projector *get(string projector_name);
-	Projector *get(string projector_name, const Dict & params);
-	vector<string> get_list();
-
-    private:
-	ProjectorFactory();
-	ProjectorFactory(const ProjectorFactory & f);
-	~ProjectorFactory();
-
-	void force_add(ProjectorType projector);
-
-	static ProjectorFactory *my_instance;
-	map<string, ProjectorType> my_dict;
-    };
-
 }
 
 #endif

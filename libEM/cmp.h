@@ -134,31 +134,6 @@ namespace EMAN
 	}
     };
 
-
-    typedef Cmp *(*CmpType) ();
-
-    class CmpFactory
-    {
-    public:
-	static CmpFactory *instance();
-
-	void add(CmpType cmp);
-	Cmp *get(string comp_name);
-	Cmp *get(string comp_name, const Dict & params);
-
-	vector<string> get_list();
-
-    private:
-	CmpFactory();
-	CmpFactory(const CmpFactory &) { }
-	~CmpFactory();
-
-	void force_add(CmpType cmp);
-
-	static CmpFactory *my_instance;
-	map<string, CmpType> my_dict;
-    };
-
 }
 
 
