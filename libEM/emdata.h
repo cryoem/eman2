@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <math.h>
+#include <float.h>
 
 #include "emobject.h"
 #include "emutil.h"
@@ -180,6 +181,9 @@ namespace EMAN {
 	int get_max_index() const;
 	
 	Dict get_attr_dict();
+	float get_mean();
+	float get_std();
+
 	
 	float get_value_at(int x, int y, int z) const;
 	float get_value_at(int x, int y) const;
@@ -232,9 +236,7 @@ namespace EMAN {
 
 #if 0
 	void clear_ctf();
-	void calc_ctf_curve(XYData* result, CtfCurveType type = 0, XYData* sf = 0) const;
-	void create_ctf_map(CtfMapType type, XYData* sf = 0);
-	
+	void create_ctf_map(CtfMapType type, XYData* sf = 0);	
 #endif
 
 	float dot(EMData* with, bool evenonly = false);
@@ -258,10 +260,16 @@ namespace EMAN {
 	
 	void make_image_median(const vector<EMData*>& image_list);
 	
-#if 0
-	Point<float> least_square_normalize_to(EMData* to, float low_thresh, float high_thresh);
+
+	Point<float> least_square_normalize_to(EMData* to, float low_thresh = FLT_MIN,
+					       float high_thresh = FLT_MAX);
 	EMData* little_big_dot(EMData* little_img, bool do_sigma = false);
+
+	void mask_normalize(EMData* mask, bool sigmatoo = true);
+	void normalize_max();
+	void row_normalize();
 	
+#if 0
 	float get_ali_peak() const;	
 	EMData* get_row(int row_index) const;
 	EMData* get_col(int col_index) const;
@@ -270,10 +278,6 @@ namespace EMAN {
 	int get_dim() const;
 	bool is_flipped();
 	
-	EMData* make_rfp(bool premasked = false, bool unwrap = true);
-	void mask_normalize(EMData* mask, bool sigmatoo = true);
-	void normalize_max();
-	void row_normalize();
 	
 	Point<float> normalize_to(EMData* noisy, bool keepzero = false, bool invert = false);
 	Point<float> normalize_slice(EMData* slice, float alt, float az, float phi);
@@ -509,6 +513,18 @@ namespace EMAN {
 	else {
 	    return false;
 	}
+    }
+    
+    inline float EMData::get_mean()
+    {
+	Dict d = get_attr_dict();
+	return d["mean"].get_float();
+    }
+
+    inline float EMData::get_std()
+    {
+	Dict d = get_attr_dict();	
+	return d["std"].get_float();
     }
 }
 
