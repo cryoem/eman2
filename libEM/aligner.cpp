@@ -252,6 +252,7 @@ EMData *RotationalAligner::align(EMData * this_img, const string&) const
 	}
 
 	bool premasked = true;
+	// rfp's are cached by the image object, they should not be deleted here
 	EMData *this_img2 = this_img->make_rotational_footprint(premasked);
 	EMData *to2 = to->make_rotational_footprint(premasked);
 
@@ -264,13 +265,16 @@ EMData *RotationalAligner::align(EMData * this_img, const string&) const
 	int peak_index = 0;
 
 	Util::find_max(data, this_img2_nx, &peak, &peak_index);
-	this_img->rotate((float)(-peak_index * M_PI / this_img2_nx), 0, 0);
+	
+	cf->done_data();
+	delete cf;
+	cf=this_img->copy(0);
+	cf->rotate((float)(-peak_index * M_PI / this_img2_nx), 0, 0);
 	cf->set_attr("align_score", peak);
 	cf->set_attr("rotational",-peak_index * M_PI / this_img2_nx);
 
-	cf->done_data();
 
-	return cf;;
+	return cf;
 }
 
 
@@ -465,11 +469,10 @@ EMData *RotateTranslateAligner::align(EMData * this_img, const string & cmp_name
 		cmp_name = "Dot";
 	}
 #endif
-	EMData *this_copy = this_img->copy();
-	this_img->align("Rotational", params);
-
-	EMData *this_copy2 = this_copy->copy();
-	this_copy2->set_parent(this_copy->get_parent());
+	EMData *this_copy = this_img->align("Rotational", params);
+	
+	EMData *this_copy2 = this_copy->copy(0);
+	this_copy2->rotate_180();
 
 	Dict trans_params;
 	trans_params["to"] = params["to"];
@@ -477,18 +480,21 @@ EMData *RotateTranslateAligner::align(EMData * this_img, const string & cmp_name
 	trans_params["intonly"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
 
-	this_copy->align("Translational", trans_params);
-	this_copy2->rotate_180();
-
-	this_copy2->align("Translational", trans_params);
-
-	EMData *to = params["to"];
+	EMData *tmp = this_copy;
+	this_copy=tmp->align("Translational", trans_params);
+	delete tmp;
+	
+	tmp=this_copy2;
+	this_copy2=tmp->align("Translational", trans_params);
+	delete tmp;
+	
+	tmp = params["to"];
 
 	float dot1 = 0;
 	float dot2 = 0;
 	Dict cmp_params;
-	dot1 = this_copy->cmp(cmp_name, to, cmp_params);
-	dot2 = this_copy2->cmp(cmp_name, to, cmp_params);
+	dot1 = this_copy->cmp(cmp_name, tmp, cmp_params);
+	dot2 = this_copy2->cmp(cmp_name, tmp, cmp_params);
 
 	EMData *result = 0;
 	if (dot1 > dot2) {

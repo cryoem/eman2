@@ -15,6 +15,7 @@ from bisect import bisect_left
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
 from sys import exit
+import os
 
 EMANVERSION="EMAN2 v1.90"
 
@@ -30,8 +31,7 @@ def display(img):
 		for i in img: i.write_image("/tmp/img.spi",-1)
 	else:
 		img.write_image("/tmp/img.hdf")
-	from os import system
-	system("v2 /tmp/img.spi")
+	os.system("v2 /tmp/img.spi")
 
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function

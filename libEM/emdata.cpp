@@ -4315,8 +4315,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
 		filt->to_one();
 
-		filt->filter("LowpassGauss", Dict("lowpass", 3));
-		filt->filter("HighpassGauss", Dict("highpass", 9999));
+		filt->filter("filter.highpass.gaussian", Dict("highpass", 3));
 	}
 
 	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
