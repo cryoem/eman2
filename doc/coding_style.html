@@ -11,12 +11,22 @@
 EMAN2 Coding Style</big></big><br>
 </div>
 <ol>
+  <li style="font-weight: bold; color: rgb(51, 102, 255);"><big>Introduction</big></li>
+  <ul>
+    <li>This document summarizes the basic coding and naming style in
+EMAN2. The intended audiences are EMAN2 developers. <br>
+    </li>
+    <li>This document is not a programming tutorial. You may refer the
+references at the end of document for good books.<br>
+    </li>
+  </ul>
   <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Overview</big></li>
   <div style="margin-left: 40px;"><big><span style="font-weight: bold;">Coding:</span></big>
   <br>
   <ol>
     <li>EMAN2 follows the GNU coding style with minor changes. We use <a
- href="http://www.gnu.org/software/indent/indent.html">indent</a>
+ href="http://www.gnu.org/software/indent/indent.html">indent</a> at
+http://www.gnu.org/software/indent/indent.html
 for beautifying EMAN2 code. </li>
   </ol>
   <big><span style="font-weight: bold;">Naming:</span></big> <br>
@@ -52,31 +62,11 @@ C++ code. Read your new source and fix the following possible errors:</li>
       </ol>
     </ol>
   </ol>
-  <p>
-  </p>
+  <p> </p>
   <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
     <ul>
 Use JavaDoc style:
-<pre>
-/** Brief description which ends at this dot. Details follow
- *  here.
- */
-class Test
-{
-public:	
-    /** The constructor's brief description
-     * A more elaborate description of the constructor.
-     */
-    Test();
-
-    /** do some test.
-     * @param low the low threshold.
-     * @param high the high threshold.
-     */
-    int do_test(float low, float high);
-}
-</pre>
-	
+      <pre>/** Brief description which ends at this dot. Details follow<br> *  here.<br> */<br>class Test<br>{<br>public:	<br>    /** The constructor's brief description<br>     * A more elaborate description of the constructor.<br>     */<br>    Test();<br><br>    /** do some test.<br>     * @param low the low threshold.<br>     * @param high the high threshold.<br>     */<br>    int do_test(float low, float high);<br>}<br></pre>
     </ul>
   </li>
   <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Samples</big><br>
@@ -86,7 +76,18 @@ public:
     </ol>
   </li>
   <div style="margin-left: 40px;"><br>
+  <br>
   </div>
+  <li>References</li>
+</ol>
+<br>
+<br>
+<hr style="width: 100%; height: 2px;">Last modified on <big><span
+ style="font-weight: bold;">11/27/2004</span></big> by <big><span
+ style="font-weight: bold;">Liwei Peng</span></big> (lpeng@bcm.tmc.edu)<br>
+<br>
+<ol>
+  <div style="margin-left: 40px;"> </div>
 </ol>
 </body>
 </html>

@@ -15,15 +15,20 @@ System Setup HowTo</span></big></big><br style="font-weight: bold;">
  style="font-weight: bold;">0. Introduction</span></big></big><br>
 <br>
 This document gives the step-by-step guide on how to set up EMAN2
-development system on Linux, SGI IRIX, and Windows. The intended
-audiences are&nbsp; EMAN2 developers and EMAN2 users.&nbsp; For any
+development system on Linux, SGI IRIX, and Windows. It includes
+installation of the 3rd party libraries as well as development tools.
+The intended
+audiences are&nbsp; EMAN2 developers and EMAN2 users.&nbsp; <br>
+<br>
+<span style="font-weight: bold; color: rgb(102, 0, 204);">NOTE:</span>
+For any
 3rd-party package listed in the document, if you can get the proper
 binary version for your platform, you won't need to compile it from the
 source code.<br>
 <br>
 <br style="color: rgb(51, 51, 255);">
-<big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">1.
-How to install EMAN2 on Linux. </span></big><br>
+<big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">1.&nbsp;
+Linux. </span></big><br>
 &nbsp;&nbsp;&nbsp;&nbsp; Let's take Mandrake 10.0 as an example<br>
 <br>
 <span style="font-weight: bold;">&nbsp;&nbsp; 1) install the following
@@ -56,12 +61,22 @@ libpython2.3-devel-2.3.3-2mdk.i586.rpm</span><br
 <br style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
 libtiff3-devel-3.5.7-11mdk.i586.rpm</span><br>
+&nbsp;
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; To install a XYZ.rpm, do the
+following:<br>
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; a) login
+in as root</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; b) rpm
+-i XYZ.rpm</span><br>
 <br>
 &nbsp;<span style="font-weight: bold;">&nbsp; 2) install boost python</span><br>
 <span style="font-family: monospace;">&nbsp;&nbsp; </span><br
  style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.
-Download 'bjam' for linux.</span><br style="font-family: monospace;">
+Download <span style="font-weight: bold;">'bjam'</span> for linux </span><span
+ style="font-family: monospace;">from http://www.boost.org.</span><br
+ style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; </span><br
  style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1.
@@ -151,6 +166,10 @@ cmake-2.0.5</span><br style="font-family: monospace;">
 &nbsp;&nbsp;&nbsp; &nbsp;&nbsp; <br>
 <span style="font-weight: bold;">&nbsp;&nbsp; 4) install pyste and its
 depended libraries</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; This is only available
+for Linux system so far.<br>
 <br>
 <span style="font-family: monospace; color: rgb(51, 51, 255);">&nbsp;&nbsp;
 a) install pyste</span><br style="font-family: monospace;">
@@ -204,8 +223,7 @@ gccxml-0.6.0-x86-linux-files.tar /usr/local/</span><br
 xf gccxml-0.6.0-x86-linux-files.tar</span><br
  style="font-family: monospace;">
 <br>
-<big style="font-weight: bold; color: rgb(51, 51, 255);">2. How to
-install EMAN2 On SGI IRIX.</big><br>
+<big style="font-weight: bold; color: rgb(51, 51, 255);">2. SGI IRIX.</big><br>
 <br>
 <span style="font-weight: bold;">&nbsp;&nbsp; 1) install fftw from
 source</span><br>
@@ -307,7 +325,7 @@ installing boost_1_31_0</span><br style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><br
  style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
-Download 'bjam' for SGI IRIX. http://www.boost.org</span><br
+Download 'bjam' for SGI IRIX from http://www.boost.org</span><br
  style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
 Download boost source from http://www.boost.org.</span><br
@@ -395,7 +413,7 @@ cmake-2.0.5</span><br style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - make install</span><br>
 &nbsp;&nbsp;&nbsp; &nbsp;&nbsp; <br>
 <big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">3.
-How to install EMAN2 on Windows</span></big><br>
+Microsoft Windows</span></big><br>
 <br>
 &nbsp;&nbsp; Assume you want to install all libs under C:\lib; all
 headers under C:\include. EMAN2 under: C:\EMAN2\<br>
@@ -407,11 +425,11 @@ headers under C:\include. EMAN2 under: C:\EMAN2\<br>
 <span style="font-family: monospace;">&nbsp;&nbsp; - PATH:&nbsp; add
 C:\EMAN2\lib;C:\EMAN2\bin;C:\lib to your PATH</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <br>
-<span style="font-weight: bold;">1. Softwares to install</span><br>
-<span style="font-family: monospace;">&nbsp;&nbsp; - CMake</span><br
- style="font-family: monospace;">
-<span style="font-family: monospace;"><span
- style="font-family: monospace;">&nbsp;&nbsp; - Qt</span><br>
+<span style="font-weight: bold;">1. Software Installation<br>
+<br>
+1.1. A list of the softwares to install<br>
+</span><span style="font-family: monospace;">&nbsp;&nbsp; - CMake</span><span
+ style="font-family: monospace;"><span style="font-family: monospace;"></span><br>
 </span><span style="font-family: monospace;">&nbsp;&nbsp; - python</span><span
  style="font-family: monospace;"></span><br
  style="font-family: monospace;">
@@ -433,7 +451,7 @@ C:\EMAN2\lib;C:\EMAN2\bin;C:\lib to your PATH</span><br>
 <span style="font-family: monospace;">&nbsp;&nbsp; - visual studio .NET
 2003<br>
 <br>
-</span><span style="font-weight: bold;">&nbsp; 1.1 install CMake
+</span><span style="font-weight: bold;">&nbsp; 1.2 install CMake
 (http://www.cmake.org)</span><br>
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; Assume you are
 installing cmake version 2.0.5.</span><br
@@ -442,32 +460,8 @@ installing cmake version 2.0.5.</span><br
 download CMSetup205.exe from http://www.cmake.org</span><br
  style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -
-run CMSetup205.exe</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-weight: bold;"> </span><br
- style="font-weight: bold;">
-<span style="font-weight: bold;">&nbsp; 1.2 Qt Windows howto</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: you
-will need a license for this.<br>
-<br style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; 0. Qt ver
-3.3.2; Visual Studio .NET 2003.</span><br
- style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; 1. license
-file: read from file</span><br style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; 2. build
-options: not build tutorials, not build examples</span><br
- style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; 3. configure
-qt, advanced, gif -&gt; Direct.</span><br
- style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;
-enable all styles to be "Direct".</span><br
- style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; 4. check env
-variable. make sure the following is in the PATH:</span><br
- style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE</span><br
+run CMSetup205.exe</span><span style="font-weight: bold;"></span><span
+ style="font-weight: bold;"></span><span style="font-family: monospace;"></span><br
  style="font-family: monospace;">
 <br>
 &nbsp;<span style="font-weight: bold;"> 1.3 install Python</span><br>
@@ -614,31 +608,48 @@ Contact Liwei Peng (lpeng@bcm.tmc.edu) on where to get it.<br>
 <br>
 <br style="font-weight: bold;">
 <span style="font-weight: bold;">2. Use CMake to configure EMAN</span><br>
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - check Qt
-directories</span><br style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - eman2: build
-Release version only</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="font-family: monospace;">- run CMake program<br>
+&nbsp;&nbsp; - at "Where is the source code", select C:\EMAN2\src\eman2<br>
+&nbsp;&nbsp; - at "Where to build the binaries", select
+C:\EMAN2\src\build<br>
+&nbsp;&nbsp; - at "Build For", select "Visual Studio 7 .NET 2003<br>
+&nbsp;&nbsp; - at "Show Advanced Values": check this box<br>
+&nbsp;&nbsp; - click "Configure" button<br>
+&nbsp;&nbsp; - If you are asked to create "C:\EMAN2\src\build", click
+"Yes".<br>
+&nbsp;&nbsp; - If you see any errors in the configure process, fix them
+in the main panel.<br>
+&nbsp;&nbsp;&nbsp;&nbsp; That is usually where to find a library or
+header file.<br>
+&nbsp;&nbsp; - on the main panel, change "CMAKE_CONFIGURATION_TYPES" TO
+"Release".<br>
+&nbsp;&nbsp; - Click "Configure" button<br>
+&nbsp;&nbsp; - click "OK" button<br>
 <br>
-<span style="font-weight: bold;">3. Use Visual Studio .NET 2003&nbsp;
+<br>
+</span><span style="font-weight: bold;">3. Use Visual Studio .NET
+2003&nbsp;
 to compile</span><br>
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - load the
-project file generated by cmake</span><br
- style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - </span>load
+the
+project file generated by cmake<br style="font-family: monospace;">
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-File -&gt; Open -&gt; Project: E:\EMAN2\src\eman2\EMAN.sln</span><br
+File -&gt; Open -&gt; Project: E:\EMAN2\src\eman2\EMAN.sln</span><span
+ style="font-family: monospace;"></span><span
+ style="font-family: monospace;"></span><br
  style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp; </span><br
+<span style="font-family: monospace;">&nbsp; &nbsp; - View -&gt;
+Solution Explorer</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - In "Solution
+Explorer" window, right click "ALL_BUILD", then select "Rebuild".</span><br
  style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - configure to
-build 'RELEASE' mode</span><br style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Project-&gt;Properties</span><br style="font-family: monospace;">
-<br style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - view:
-Solution Browser, 'ALL_BUILD' -&gt;build</span><br
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - In "Solution
+Explorer" window, right click "INSTALL", then select "Rebuild".</span><br
  style="font-family: monospace;">
-<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - view:
-Solution Browser, 'INSTALL' -&gt; build</span><br>
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - Your EMAN2
+binary version is installed under C:\EMAN2\bin, C:\EmAN2\lib,
+C:\EMAN2\includ</span><br style="font-family: monospace;">
 <br>
 <br>
 &nbsp; <br>
