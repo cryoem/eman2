@@ -7,11 +7,15 @@
 #include "transform.h"
 #include "geometry.h"
 #include "emdata.h"
+
+#if defined NFFT || NFFT2
 extern "C"
 {
 #include "nfft.h"
 #include "utils.h"
 }
+#endif
+
 #include <sys/stat.h>
 
 namespace EMAN

@@ -3,8 +3,11 @@
  */
 #include "pointarray.h"
 #include <gsl/gsl_multimin.h>
+
+#if defined OPTPP
 #include "OptQNewton.h"
 #include "NLF.h"
+#endif
 
 using namespace EMAN;
 
@@ -758,6 +761,7 @@ EMData *PointArray::projection_by_nfft(int image_size, float apix, float res)
 
 double scoring_function_f(const gsl_vector *, void *)
 {
+	return 0.0;
 }
 
 void scoring_function_df(const gsl_vector *, void *, gsl_vector *)
@@ -902,6 +906,7 @@ bool PointArray::refine(vector < EMData * >images, string sym, OptimizedParamete
 	return true;
 }
 
+#if defined OPTPP
 
 /* Initializer for Rosenbrock */
 void init_rosen(int n, ColumnVector& x) {}
@@ -934,3 +939,5 @@ int foo()
   objfcn.printStatus("Solution from quasi-newton");
   objfcn.cleanup();	 
 }
+
+#endif
