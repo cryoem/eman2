@@ -196,9 +196,9 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 int LstIO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
-	LOGWARN("LST write header is not supported.");
+	fprintf(lst_file, "%s\n", MAGIC);
 	EXITFUNC;
-	return 1;
+	return 0;
 }
 
 int LstIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
@@ -216,16 +216,17 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 	return err;
 }
 
-int LstIO::write_data(float *, int, const Region* , bool)
+int LstIO::write_data(float *data, int, const Region* , bool)
 {
 	ENTERFUNC;
-	LOGWARN("LST write data is not supported.");
+	fprintf(lst_file, "%s\n", (char*)data);	
 	EXITFUNC;
-	return 1;
+	return 0;
 }
 
 void LstIO::flush()
 {
+	fflush(lst_file);
 }
 
 bool LstIO::is_complex_mode()

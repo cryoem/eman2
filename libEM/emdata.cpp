@@ -165,11 +165,39 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 			}
 
 			if (!header_only) {
-				err = imageio->write_data(rdata, img_index, region, use_host_endian);
+				if (imgtype == EMUtil::IMAGE_LST) {
+#if 0
+					int filenum = attr_dict["LST.filenum"];
+#endif
+					const char *reffile = attr_dict["LST.reffile"];
+					if (strcmp(reffile, "") == 0) {
+						reffile = path.c_str();
+					}
+					int refn = attr_dict["LST.refn"];
+					if (refn < 0) {
+						refn = pathnum;
+					}
+					
+					const char *comment = attr_dict["LST.comment"];
+					char *lstdata = new char[1024];
+					sprintf(lstdata, "%d\t%s", refn, reffile);
+					if (comment != "") {
+						sprintf(lstdata+strlen(lstdata), "\t%s\n", comment);
+					}
+					else {
+						strcat(lstdata, "\n");
+					}
+					err = imageio->write_data((float*)lstdata, img_index, region, use_host_endian);
+					delete [] lstdata;
+					lstdata = 0;
+				}
+				else {
+					err = imageio->write_data(rdata, img_index, region, use_host_endian);
+				}
 				if (err) {
 					imageio->flush();
 					throw ImageWriteException(filename, "imageio write data failed");
-				}
+				}			
 			}
 		}
 	}
@@ -181,6 +209,17 @@ void EMData::append_image(string filename, EMUtil::ImageType imgtype, bool heade
 {
 	ENTERFUNC;
 	write_image(filename, -1, imgtype, header_only, 0);
+	EXITFUNC;
+}
+
+void EMData::write_lst(string filename, int filenum, string reffile, int refn, string comment)
+{
+	ENTERFUNC;
+	attr_dict["LST.filenum"] = filenum;
+	attr_dict["LST.reffile"] = reffile;
+	attr_dict["LST.refn"] = refn;
+	attr_dict["LST.comment"] = comment;
+	write_image(filename, -1, EMUtil::IMAGE_LST, false);
 	EXITFUNC;
 }
 

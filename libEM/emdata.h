@@ -80,6 +80,10 @@ namespace EMAN
 		void append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						  bool header_only = false);
 
+		void write_lst(string filename, int filenum, string reffile="",
+					   int refn=-1, string comment="");
+
+		
 		/** Apply a filter with its parameters on this image.
 		 * @param filtername Filter Name.
 		 * @param params Filter parameters in a keyed dictionary.
