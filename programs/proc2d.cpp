@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
 	    params["intonly"] = EMObject(1);
 	    params["maxshift"] = d->get_xsize() / 4;
 	    d->align("Translate", params);
-	    d->rotate_translate();
+	    //d->rotate_translate();
 	}
 
 	if (argdict[center]) {
@@ -420,39 +420,33 @@ int main(int argc, char *argv[])
 
 	if (rot || dx || dy || rize) {
 	    Rotation oldang = d->get_rotation();
-
-	    Vec3 < float >t0 = d->get_translation();
-	    float dx0 = t0[0];
-	    float dy0 = t0[1];
-
 	    d->set_parent(0);
-	    d->set_ralign_params(rot * M_PI / 180.0, 0, 0);
-	    d->set_talign_params(dx, dy, 0);
 
-	    if (rize) {
-		if (rizeda > 0)
-		    d->set_ralign_params(Util::get_frand(-rizeda / 2.0, rizeda / 2.0), 0, 0);
-		if (rizedx > 0)
-		    d->set_talign_params(Util::get_gauss_rand(0, rizedx),
-					 Util::get_gauss_rand(0, rizedx), 0);
+	    if (!rize) {
+		d->rotate_translate(rot * M_PI / 180.0, 0, 0, dx, dy, 0);
+	    }
+	    else {
 		if (rizef && rand() % 2) {
 		    d->filter("Flip", Dict("axis", EMObject("y")));
 		}
-	    }
-	    d->rotate_translate();
-	    d->set_ralign_params(oldang.eman_alt(), oldang.eman_az(),
-				 oldang.eman_phi() + rot * M_PI / 180.0);
 
-	    d->set_talign_params(dx0 + dx, dy0 + dy, 0);
+		if (rizeda > 0) {
+		    d->rotate(Util::get_frand(-rizeda / 2.0, rizeda / 2.0), 0, 0);
+		}
+		
+		if (rizedx > 0) {
+		    d->translate(Util::get_gauss_rand(0, rizedx), Util::get_gauss_rand(0, rizedx), 0);
+		}
+	    }
 	}
 
 	Rotation rr = d->get_rotation();
 	//int nimg = d->get_nimg();
 
 	if (scale < 1.0) {
-	    d->set_ralign_params(0, 0, 0);
-	    d->set_talign_params(0, 0, 0);
-	    d->rotate_translate(scale);
+	    Transform t;
+	    t.set_scale_instance(Vec3<float>(scale, 1, 1));
+	    d->rotate_translate(t);
 	}
 
 	if (clipx > 0) {
@@ -464,12 +458,12 @@ int main(int argc, char *argv[])
 	}
 
 	if (scale > 1.0) {
-	    d->set_ralign_params(0, 0, 0);
-	    d->set_talign_params(0, 0, 0);
-	    d->rotate_translate(scale);
+	    Transform t;
+	    t.set_scale_instance(Vec3<float>(scale, 1, 1));
+	    d->rotate_translate(t);
 	}
 
-	d->set_ralign_params(rr);
+	d->set_rotation(rr.eman_alt(), rr.eman_az(), rr.eman_phi());
 	//d->setNImg(nimg);
 
 	if (fabs(shrink) > 1) {
@@ -486,8 +480,7 @@ int main(int argc, char *argv[])
 
 	    EMData *e = f->copy();
 	    for (int j = 1; j < csym; j++) {
-		e->set_ralign_params(j * M_PI * 2.0 / csym, 0, 0);
-		e->rotate_translate();
+		e->rotate(j * M_PI * 2.0 / csym, 0, 0);
 		(*d) += (*e);
 	    }
 

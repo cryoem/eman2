@@ -62,7 +62,9 @@ namespace EMAN
 	mutable Dict params;
     };
 
-    /** Translational 2D Alignment using cross correlation
+    /** Translational 2D Alignment using cross correlation.
+     * It calculates the shift for a translational alignment, then
+     * do the translation.
      */
     class TranslationalAligner: public Aligner
     {
@@ -91,6 +93,8 @@ namespace EMAN
     };
 
     /** Translational 3D Alignment using  cross correlation
+     * It calculates the shift for a translational alignment, then
+     * do the translation.
      */
     class Translational3DAligner: public Aligner
     {
@@ -454,6 +458,7 @@ namespace EMAN
 	{
 	    return "Refine";
 	}
+	
 	static Aligner *NEW()
 	{
 	    return new RefineAligner();
@@ -465,6 +470,14 @@ namespace EMAN
 	    d.put("with", EMObject::EMDATA);
 	    d.put("mode", EMObject::INT);
 	    d.put("snr", EMObject::FLOATARRAY);
+	    d.put("alot", EMObject::FLOAT);
+	    d.put("az", EMObject::FLOAT);
+	    d.put("phi", EMObject::FLOAT);
+	    d.put("dx", EMObject::FLOAT);
+	    d.put("dy", EMObject::FLOAT);
+	    d.put("dz", EMObject::FLOAT);
+
+	    
 	    return d;
 	}
     };

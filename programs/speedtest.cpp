@@ -294,8 +294,7 @@ int main(int argc, char *argv[])
 	t1 = clock();
 
 	for (int i = 0; i < NTT * 1000; i++) {
-	    d1a->set_talign_params(-1, -3, 0);
-	    d1a->rotate_translate();
+	    d1a->translate(-1, -3, 0);
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;

@@ -651,6 +651,13 @@ namespace EMAN
 	    matrix = m;
 	}
 
+	Transform(const Vec3<float> & translation)
+	{
+	    for (int i = 0; i < 3; i++) {
+		matrix[i][3] = translation[i];
+	    }
+	}
+	
 	Transform(const Rotation & rotation)
 	{
 	    matrix = rotation.get_matrix4();
@@ -701,13 +708,15 @@ namespace EMAN
 	    return (*this);
 	}
 
-	Transform & set_transform_instance(const Vec3<float> & translation, const Rotation & roration,
+	Transform & set_transform_instance(const Vec3<float> & translation,
+					   const Rotation & roration,
 					   const Vec3<float> & scale_factor,
 					   const Rotation & scale_orientation,
 					   const Vec3<float> & center);
 
 	Transform & set_transform_instance(const Vec3<float> & translation,
-					   const Rotation & rotation, const Vec3<float> & scale_factor)
+					   const Rotation & rotation,
+					   const Vec3<float> & scale_factor)
 	{
 	    return set_transform_instance(translation, rotation, scale_factor,
 					  Rotation(1, 0, 0, 0, Rotation::QUATERNION),
@@ -791,11 +800,10 @@ namespace EMAN
 	 */
 	Transform & rotate(const Rotation & r)
 	{
-	    if (r != Rotation(1, 0, 0, 0, Rotation::QUATERNION))
-		{
-		    Matrix4f m = r.get_matrix4();
-		    (*this) *= m;
-		}
+	    if (r != Rotation(1, 0, 0, 0, Rotation::QUATERNION)) {
+		Matrix4f m = r.get_matrix4();
+		(*this) *= m;
+	    }
 	    return (*this);
 	}
 

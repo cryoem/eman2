@@ -52,7 +52,6 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
     }
 
     int useparent = params["useparent"].get_int();
-   
     
     EMData *cf = 0;
     EMData *parent = this_img->get_parent();
@@ -79,7 +78,6 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 	maxshift = ny / 2 - 1;
     }
 
-    //cf->filter("Fabs");
 
     float *cf_data = cf->get_data();
 
@@ -123,8 +121,6 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 	result = cur_trans;
     }
 
-    this_img->set_ralign_params(0, 0, 0);
-
     if (!with) {
 	cur_trans /= 2.0;
     }
@@ -136,7 +132,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 	cur_trans[1] = floor(cur_trans[1] + 0.5);
     }
 
-    this_img->set_translation(cur_trans);
+    this_img->translate(cur_trans);
 
     float score = hypot(result[0], result[1]);
     cf->set_align_score(score);
@@ -236,7 +232,7 @@ EMData *Translational3DAligner::align(EMData * this_img, string ) const
 	tz /= 2;
     }
 
-    this_img->set_translation(Vec3<float>(tx, ty, tz));
+    this_img->translate(tx, ty, tz);
 
     cf->done_data();
 
@@ -265,7 +261,7 @@ EMData *RotationalAligner::align(EMData * this_img, string ) const
     int peak_index = 0;
 
     Util::find_max(data, this_img2_nx, &peak, &peak_index);
-    this_img->set_ralign_params(-peak_index * M_PI / this_img2_nx, 0, 0);
+    this_img->rotate(-peak_index * M_PI / this_img2_nx, 0, 0);
     cf->set_align_score(peak);
 
     cf->done_data();
@@ -293,7 +289,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, string ) const
     int peak_index = 0;
     Util::find_max(data, size, &peak, &peak_index);
     float a = (1.0 - 1.0 * peak_index / size) * M_PI * 2;
-    this_img->set_ralign_params(a, 0, 0);
+    this_img->rotate(a, 0, 0);
 
     cf->set_align_score(peak);
     cf->done_data();
@@ -449,7 +445,7 @@ EMData *RotateCHAligner::align(EMData * this_img, string ) const
     }
 
     printf("%f\t%d\n", aa / ndot * 180.0 / M_PI, i + 5);
-    this_img->set_ralign_params(aa / ndot, 0, 0);
+    this_img->rotate(aa / ndot, 0, 0);
     this_img->set_align_score(aa / ndot);
     return 0;
 }
@@ -470,13 +466,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
     EMData *this_copy = this_img->copy();
     this_img->align("Rotational", params);
 
-    float cda = this_img->get_rotation().eman_alt();
-    float cda2 = cda;
-
-    this_copy->set_ralign_params(cda, 0, 0);
-    this_copy->set_talign_params(0, 0, 0);
-    this_copy->rotate_translate();
-
     EMData *this_copy2 = this_copy->copy();
     this_copy2->set_parent(this_copy->get_parent());
 
@@ -487,28 +476,10 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
     trans_params["maxshift"] = params["maxshift"];
 
     this_copy->align("Translational", trans_params);
-    Vec3<float> trans = this_copy->get_translation();
-    float cdx = trans[0] * cos(cda) + trans[1] * sin(cda);
-    float cdy = -trans[0] * sin(cda) + trans[1] * cos(cda);
-
-    this_copy->fast_translate();
-    this_copy->set_ralign_params(cda, 0, 0);
-    this_copy->set_talign_params(cdx, cdy, 0);
-
-    cda2 += M_PI;
-    this_copy2->set_ralign_params(cda2, 0, 0);
-    this_copy2->set_talign_params(0, 0, 0);
     this_copy2->rotate_180();
 
     this_copy2->align("Translational", trans_params);
     Vec3<float> trans2 = this_copy2->get_translation();
-
-    cdx = trans2[0] * cos(cda2) + trans2[1] * sin(cda2);
-    cdy = -trans2[0] * sin(cda2) + trans2[1] * cos(cda2);
-    this_copy2->fast_translate();
-    this_copy2->set_ralign_params(cda2, 0, 0);
-    this_copy2->set_talign_params(cdx, cdy, 0);
-
     
     EMData *with = params["with"].get_emdata();
 
@@ -548,12 +519,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
     }
     
     float cda = this_img->get_rotation().eman_alt();
-    float cda2 = cda;
-
-    this_copy->set_ralign_params(cda, 0, 0);
-    this_copy->set_talign_params(0, 0, 0);
-    this_copy->rotate_translate();
-
+    
     EMData *this_copy2 = this_copy->copy();
     this_copy2->set_parent(this_copy->get_parent());
 
@@ -567,14 +533,14 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
     Vec3<float> trans_v = this_copy->get_translation();
     float cdx = trans_v[0] * cos(cda) + trans_v[1] * sin(cda);
     float cdy = trans_v[0] * sin(cda) + trans_v[1] * cos(cda);
-    this_copy->fast_translate();
-    this_copy->set_ralign_params(cda, 0, 0);
-    this_copy->set_talign_params(cdx, cdy, 0);
+
+    params["alt"] = EMObject(cda);
+    params["dx"] = EMObject(cdx);
+    params["dy"] = EMObject(cdy);
+
     this_copy->align("Refine", params);
 
-    cda2 += M_PI;
-    this_copy2->set_ralign_params(cda2, 0, 0);
-    this_copy2->set_talign_params(0, 0, 0);
+    float cda2 = cda + M_PI;
     this_copy2->rotate_180();
 
     this_copy2->align("Translational", trans_params);
@@ -582,10 +548,11 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 
     cdx = trans_v2[0] * cos(cda2) + trans_v2[1] * sin(cda2);
     cdy = -trans_v2[0] * sin(cda2) + trans_v2[1] * cos(cda2);
-
-    this_copy2->fast_translate();
-    this_copy2->set_ralign_params(cda2, 0, 0);
-    this_copy2->set_talign_params(cdx, cdy, 0);
+    
+    params["alt"] = EMObject(cda2);
+    params["dx"] = EMObject(cdx);
+    params["dy"] = EMObject(cdy);
+    
     this_copy2->align("Refine", params);
 
     float dot1 = this_copy->cmp(cmp_name, params);
@@ -749,9 +716,8 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string ) const
     t1 = 0;
 
     t1 = this_img->copy();
-    t1->set_ralign_params(-lda * M_PI * 2.0 / size, 0, 0);
-    t1->set_talign_params(-max * cos(ta), -max * sin(ta), 0);
-    t1->rotate_translate();
+
+    t1->rotate_translate(-lda * M_PI * 2.0 / size, 0, 0,  -max * cos(ta), -max * sin(ta), 0);
 
     if (drt) {
 	delete radonthis;
@@ -779,7 +745,6 @@ EMData *RotateFlipAligner::align(EMData * this_img, string ) const
     
     EMData *this_copy = this_img->copy();
     this_copy->align("Rotational", params);
-    this_copy->rotate_translate();
 
     float dot1 = this_copy->dot(with);
     float dot2 = 0;
@@ -791,7 +756,6 @@ EMData *RotateFlipAligner::align(EMData * this_img, string ) const
     }
 
     this_copy2->align("Rotational", params);
-    this_copy2->rotate_translate();
     dot2 = this_copy2->dot(with);
 
     EMData *result = 0;
@@ -1070,9 +1034,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
     with_copy = 0;
 
     if (bestflip) {
-	df->set_ralign_params(bestang, 0, 0);
-	df->set_talign_params(-bestdx, -bestdy, 0);
-	df->rotate_translate();
+	df->rotate_translate(bestang, 0, 0, -bestdx, -bestdy, 0);
 	df->set_flipped(1);
 	return df;
     }
@@ -1088,9 +1050,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 	dn = this_img->copy(false, false);
     }
 
-    dn->set_ralign_params(bestang, 0, 0);
-    dn->set_talign_params(-bestdx, -bestdy, 0);
-    dn->rotate_translate();
+    dn->rotate_translate(bestang, 0, 0, -bestdx, -bestdy, 0);
 
     return dn;
 }
@@ -1160,9 +1120,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 	    for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
 		if (hypot(dx, dy) <= maxshift) {
 		    for (float ang = -astep * 2.0; ang <= 2 * M_PI; ang += astep * 4.0) {
-			u->set_ralign_params(ang, 0, 0);
-			u->set_talign_params(dx, dy, 0);
-			u->rotate_translate();
+			u->rotate_translate(ang, 0, 0, dx, dy, 0);
 
 			Dict cmp_params;
 			cmp_params["with"] = with_copy;
@@ -1218,9 +1176,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 		if (hypot(dx, dy) <= maxshift) {
 		    for (float ang = bestang2 - astep * 6.0; ang <= bestang2 + astep * 6.0;
 			 ang += astep) {
-			u->set_ralign_params(ang, 0, 0);
-			u->set_talign_params(dx, dy, 0);
-			u->rotate_translate();
+			u->rotate_translate(ang, 0, 0, dx, dy, 0);
 
 			Dict cmp_params;
 			cmp_params["with"] = with_copy;
@@ -1245,9 +1201,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 	delete dn;
 	dn = 0;
 
-	df->set_ralign_params(bestang, 0, 0);
-	df->set_talign_params(bestdx, bestdy, 0);
-	df->rotate_translate();
+	df->rotate_translate(bestang, 0, 0, bestdx, bestdy, 0);
 
 	if (!dflip) {
 	    delete df->get_parent();
@@ -1257,9 +1211,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 	return df;
     }
 
-    dn->set_ralign_params(bestang, 0, 0);
-    dn->set_talign_params(bestdx, bestdy, 0);
-    dn->rotate_translate();
+    dn->rotate_translate(bestang, 0, 0, bestdx, bestdy, 0);
 
     if (!dflip) {
 	delete df->get_parent();
@@ -1390,10 +1342,7 @@ static double refalifn(const gsl_vector * v, void *params)
     double a = gsl_vector_get(v, 2);
 
     EMData *this_img = (*dict)["this"].get_emdata();
-
-    this_img->set_ralign_params(a, 0, 0);
-    this_img->set_talign_params(x, y, 0);
-    this_img->rotate_translate();
+    this_img->rotate_translate(a, 0, 0, x, y, 0);
 
     return this_img->cmp("FRC", *dict);
 }
@@ -1429,10 +1378,12 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
     EMData *result = 0;
 
     int ny = this_img->get_ysize();
-    float sda = this_img->get_rotation().eman_alt();
-    Vec3<float> trans_align = this_img->get_trans_align();
-    float sdx = trans_align[0];
-    float sdy = trans_align[1];
+    
+    float salt = params["alt"].get_float();
+    float sdx = params["dx"].get_float();
+    float sdy = params["dy"].get_float();
+    float sdz = params["dz"].get_float();
+    
     float dda = atan(2.0 / ny);
 
     int mode = params.set_default("mode", 0);
@@ -1458,7 +1409,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdx);
 	gsl_vector_set(x, 1, sdy);
-	gsl_vector_set(x, 2, sda);
+	gsl_vector_set(x, 2, salt);
 
 	gsl_multimin_function minex_func;
 
@@ -1489,10 +1440,8 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	    rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), 0.04);
 	}
 
-	this_img->set_ralign_params(gsl_vector_get(s->x, 2), 0, 0);
-	this_img->set_talign_params(gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1), 0);
-
-	this_img->rotate_translate();
+	this_img->rotate_translate(gsl_vector_get(s->x, 2), 0, 0,
+				   gsl_vector_get(s->x, 0), gsl_vector_get(s->x, 1), 0);
 	gsl_vector_free(x);
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
@@ -1506,7 +1455,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	    best = this_img->cmp(cmp_name, cmp_params);
 	}
 	else if (mode < 0) {
-	    printf("Start %f  %f,%f\n", sda * 180.0 / M_PI, sdx, sdy);
+	    printf("Start %f  %f,%f\n", salt * 180.0 / M_PI, sdx, sdy);
 	}
 
 	int j = 0;
@@ -1514,15 +1463,16 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 
 	for (int i = 0; i < 5 && j; i++) {
 	    j = 0;
-	    for (float daz = sda - dda; daz <= sda + dda; daz += dda / 2.0) {
-		if (daz != sda) {
-		    this_img->set_ralign_params(daz, 0, 0);
-		    this_img->rotate_translate();
+	    float last_alt = salt;
+	    for (float daz = salt - dda; daz <= salt + dda; daz += dda / 2.0) {
+		if (daz != salt) {
+		    last_alt = daz;
+		    this_img->rotate_translate(daz, 0, 0, sdx, sdy, sdz);
 		    f = this_img->cmp(cmp_name, cmp_params);
 
 		    if (f > best) {
 			best = f;
-			sda = daz;
+			salt = daz;
 			j = 1;
 			break;
 		    }
@@ -1531,7 +1481,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 
 	    for (float dx = sdx - 1.0; dx <= sdx + 1.0; dx += .25) {
 		for (float dy = sdy - 1.0; dy <= sdy + 1.0; dy += .25) {
-		    this_img->rotate_translate();
+		    this_img->rotate_translate(last_alt, 0, 0, dx, dy, 0);
 		    f = this_img->cmp(cmp_name, cmp_params);
 
 		    if (f > best) {
@@ -1545,13 +1495,11 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	    }
 
 	    if (mode < 0) {
-		printf("-- %f  %f,%f (%1.3g) \n", sda * 180.0 / M_PI, sdx, sdy, best);
+		printf("-- %f  %f,%f (%1.3g) \n", salt * 180.0 / M_PI, sdx, sdy, best);
 	    }
 	}
 
-	this_img->set_ralign_params(sda, 0, 0);
-	this_img->set_talign_params(sdx, sdy);
-	this_img->rotate_translate();
+	this_img->rotate_translate(salt, 0, 0, sdx, sdy, 0);
 
 	result = this_img->copy();
 	result->set_align_score(best);

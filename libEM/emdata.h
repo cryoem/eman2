@@ -88,12 +88,19 @@ namespace EMAN
 
 	float *setup4slice(bool redo = false);
 
+	void translate(float dx, float dy, float dz);
+	void translate(const Vec3<float> & translation);
+	
+	void rotate(float alt, float az, float phi);
+	void rotate(const Rotation & r);
+
+	void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz);
+	void rotate_translate(const Rotation& rotation, const Vec3<float>& translation);
+	void rotate_translate(const Transform & xform);
+	
 	void rotate_x(int dx);
 	int rotate_180();
-	int fast_translate(bool inplace = true);
-	void rotate_translate(float scale = 1.0, float dxc = 0,
-			      float dyc = 0, float dzc = 0, int r = 0);
-	void fast_rotate_translate(float scale = 1.0);
+	
 	double dot_rotate_translate(EMData * data, float dx, float dy, float da);
 
 	EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
@@ -190,11 +197,12 @@ namespace EMAN
 	void set_ctf(Ctf * ctf);
 
 	Vec3<float> get_translation() const;
-	void set_translation(const Vec3<float> & t);
-
+	void set_translation(const Vec3<float> & new_translation);
+	void set_translation(float dx, float dy, float dz);
+	
 	Rotation get_rotation() const;
-	Vec3<float> get_trans_align() const;
-
+	void set_rotation(float alt, float az, float phi);
+	
 	void set_size(int nx, int ny, int nz);
 	void set_path(const string & path);
 	void set_pathnum(int n);
@@ -204,12 +212,6 @@ namespace EMAN
 
 	EMData *get_col(int col_index) const;
 	void set_col(const EMData * d, int n);
-
-	void set_talign_params(float dx, float dy);
-	void set_talign_params(float dx, float dy, float dz);
-
-	void set_ralign_params(float alt, float az, float phi);
-	void set_ralign_params(const Rotation & r);
 
 	float get_align_score() const;
 	void set_align_score(float score);
@@ -310,7 +312,7 @@ namespace EMAN
 	int update_stat();
 	void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 	void scale_pixel(float scale_factor) const;
-	
+
     private:
 	mutable Dict attr_dict;
 	float *rdata;
@@ -327,9 +329,9 @@ namespace EMAN
 
 	int average_nimg;
 	
-	Vec3<float> translation;
-	Rotation rotation;
-	Vec3<float> trans_align;
+	Vec3<float> all_translation;  // from the original location
+	Vec3<float> all_rotation;     // (alt, az, phi) from the original locaton
+	
 	float align_score;
 	string name;
 	string path;
@@ -367,16 +369,6 @@ namespace EMAN
 	return nz;
     }
 
-
-    inline Vec3<float> EMData::get_translation() const
-    {
-	return translation;
-    }
-
-    inline void EMData::set_translation(const Vec3<float> & t)
-    {
-	translation = t;
-    }
 
     inline float EMData::get_value_at(int x, int y, int z) const
     {
@@ -605,15 +597,32 @@ namespace EMAN
 	return align_score;
     }
 
-    inline Rotation EMData::get_rotation() const
+    inline Vec3<float> EMData::get_translation() const
     {
-	return rotation;
+	return all_translation;
     }
 
-    inline Vec3<float> EMData::get_trans_align() const
+    inline void EMData::set_translation(const Vec3<float> & t)
     {
-	return trans_align;
+	all_translation = t;
     }
+    
+    inline void EMData::set_translation(float dx, float dy, float dz)
+    {
+	all_translation = Vec3<float>(dx, dy, dz);
+    }
+    
+    inline Rotation EMData::get_rotation() const
+    {
+	return Rotation(all_rotation[0], all_rotation[1], all_rotation[2],
+			Rotation::EMAN);
+    }
+    
+    inline void EMData::set_rotation(float alt, float az, float phi) 
+    {
+	all_rotation = Vec3<float>(alt, az, phi);
+    }
+
     
     inline int EMData::render_amp8_wrapper(int data, int x, int y, int xsize, int ysize,
 					   int bpl, float scale, int min_gray, int max_gray,

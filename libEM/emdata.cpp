@@ -273,9 +273,9 @@ EMData *EMData::copy(bool with_fft, bool with_parent)
 
     ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
     ret->average_nimg = average_nimg;
-    ret->translation = translation;
-    ret->rotation = rotation;
-    ret->trans_align = trans_align;
+    ret->all_translation = all_translation;
+    ret->all_rotation = all_rotation;
+    
     ret->align_score = align_score;
     ret->name = name;
     ret->path = path;
@@ -301,9 +301,9 @@ EMData *EMData::copy_head()
 
     ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
     ret->average_nimg = average_nimg;
-    ret->translation = translation;
-    ret->rotation = rotation;
-    ret->trans_align = trans_align;
+    ret->all_translation = all_translation;
+    ret->all_rotation = all_rotation;
+
     ret->align_score = align_score;
     ret->name = name;
     ret->path = path;
@@ -1598,31 +1598,6 @@ vector<float> EMData::calc_fourier_shell_correlation(EMData * with)
 }
 
 
-
-void EMData::set_talign_params(float dx, float dy)
-{
-    trans_align[0] = dx;
-    trans_align[1] = dy;
-}
-
-void EMData::set_talign_params(float dx, float dy, float dz)
-{
-    trans_align[0] = dx;
-    trans_align[1] = dy;
-    trans_align[2] = dz;
-}
-
-
-void EMData::set_ralign_params(float alt, float az, float phi)
-{
-    rotation = Rotation(alt, az, phi, Rotation::EMAN);
-}
-
-void EMData::set_ralign_params(const Rotation & r)
-{
-    rotation = r;
-}
-
 int EMData::add(float f)
 {
     if (f != 0) {
@@ -2332,223 +2307,81 @@ void EMData::to_zero()
     memset(rdata, 0, nx * ny * nz * sizeof(float));
 }
 
-
-void EMData::rotate_translate(float scale, float dxc, float dyc, float dzc, int radius)
+void EMData::translate(float dx, float dy, float dz)
 {
-    int nx2 = nx;
-    int ny2 = ny;
-    int r_square = radius * radius;
-    float inv_scale = 1.0;
-
-    if (scale != 0) {
-	inv_scale = 1.0 / scale;
-    }
-
-    float *src_data = 0;
-    float *des_data = 0;
-
-    if (parent) {
-	src_data = parent->get_data();
-	des_data = get_data();
-	nx2 = parent->get_xsize();
-	ny2 = parent->get_ysize();
-    }
-    else {
-	src_data = get_data();
-	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
-    }
-
-    if (nz == 1) {
-	float mx0 = inv_scale * cos(rotation.eman_alt());
-	float mx1 = inv_scale * sin(rotation.eman_alt());
-
-	float x2c = nx / 2.0 - dxc - translation[0];
-	float y2c = ny / 2.0 - dyc - translation[1];
-	float y = -ny / 2.0 + dxc;
-
-	for (int j = 0; j < ny; j++, y += 1.0) {
-	    float x = -nx / 2.0 + dyc;
-
-	    for (int i = 0; i < nx; i++, x += 1.0) {
-		if ((r_square != 0) && ((i - nx / 2) * (j - nx / 2) > r_square)) {
-		    des_data[i + j * nx] = 0;
-		}
-		else {
-		    float x2 = (mx0 * x + mx1 * y) + x2c;
-		    float y2 = (-mx1 * x + mx0 * y) + y2c;
-
-		    if (x2 < 0 || x2 > nx2 - 1 || y2 < 0 || y2 > ny2 - 1) {
-			des_data[i + j * nx] = 0;
-		    }
-		    else {
-			int ii = Util::fast_floor(x2);
-			int jj = Util::fast_floor(y2);
-			int k0 = ii + jj * nx;
-			int k1 = k0 + 1;
-			int k2 = k0 + nx + 1;
-			int k3 = k0 + nx;
-
-			if (ii == nx2 - 1) {
-			    k1--;
-			    k2--;
-			}
-			if (jj == ny2 - 1) {
-			    k2 -= nx2;
-			    k3 -= nx2;
-			}
-
-			float t = x2 - ii;
-			float u = y2 - jj;
-			float tt = 1 - t;
-			float uu = 1 - u;
-
-			float p0 = src_data[k0] * tt * uu;
-			float p1 = src_data[k1] * t * uu;
-			float p3 = src_data[k3] * tt * u;
-			float p2 = src_data[k2] * t * u;
-
-			des_data[i + j * nx] = p0 + p1 + p2 + p3;
-		    }
-		}
-	    }
-	}
-    }
-    else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) {
-	// make sure this is right
-	Matrix3f mx = rotation.get_matrix3();
-	mx *= inv_scale;
-	int nxy = nx * ny;
-	int l = 0;
-
-	for (int k = 0; k < nz; k++) {
-	    for (int j = -ny / 2; j < ny - ny / 2; j++) {
-		for (int i = -nx / 2; i < nx - nx / 2; i++, l++) {
-		    float x2 = mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2;
-		    float y2 = mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2;
-		    float z2 = mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + 0 / 2;	// 0/2?
-
-		    if (x2 >= 0 && y2 >= 0 && z2 > -(nz - 1) && x2 < nx && y2 < ny && z2 < nz - 1) {
-			if (z2 < 0) {
-			    x2 = nx - 1 - x2;
-			    z2 = -z2;
-			}
-
-			int x = Util::fast_floor(x2);
-			int y = Util::fast_floor(y2);
-			int z = Util::fast_floor(z2);
-
-			float t = x2 - x;
-			float u = y2 - y;
-			float v = z2 - z;
-
-			int ii = (int) (x + y * nx + z * nxy);
-
-			des_data[l] += Util::trilinear_interpolate(src_data[ii], src_data[ii + 1],
-								   src_data[ii + nx],
-								   src_data[ii + nx + 1],
-								   src_data[ii + nx * ny],
-								   src_data[ii + nxy + 1],
-								   src_data[ii + nxy + nx],
-								   src_data[ii + nxy + nx + 1], t,
-								   u, v);
-		    }
-		}
-	    }
-	}
-    }
-    else {
-	Matrix3f mx = rotation.get_matrix3();
-	mx *= inv_scale;
-
-	float x4 = (mx[0][0] * (-nx / 2.0 + dxc) + mx[0][1] * (-ny / 2.0 + dyc) +
-		    mx[0][2] * (-nz / 2.0 + dzc)) + nx / 2.0 - dxc - translation[0];
-	float y4 = (mx[1][3] * (-nx / 2.0 + dxc) + mx[1][4] * (-ny / 2.0 + dyc) +
-		    mx[1][5] * (-nz / 2.0 + dzc)) + ny / 2.0 - dyc - translation[1];
-	float z4 = (mx[2][6] * (-nx / 2.0 + dxc) + mx[2][7] * (-ny / 2.0 + dyc) +
-		    mx[2][8] * (-nz / 2.0 + dzc)) + nz / 2.0 - dzc - translation[2];
-
-	int nxy = nx * ny;
-	int l = 0;
-
-	for (int k = -nz / 2; k < nz / 2; k++) {
-	    float x3 = x4;
-	    float y3 = y4;
-	    float z3 = z4;
-
-	    for (int j = -ny / 2; j < ny / 2; j++) {
-		float x2 = x3;
-		float y2 = y3;
-		float z2 = z3;
-
-		for (int i = -nx / 2; i < nx / 2; i++, l++) {
-
-		    if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx - 1 || y2 >= ny - 1 || z2 >= nz - 1) {
-			des_data[l] = 0;
-		    }
-		    else {
-			int x = Util::fast_floor(x2);
-			int y = Util::fast_floor(y2);
-			int z = Util::fast_floor(z2);
-
-			float t = x2 - x;
-			float u = y2 - y;
-			float v = z2 - z;
-			int ii = (int) (x + y * nx + z * nxy);
-
-			des_data[l] = Util::trilinear_interpolate(src_data[ii], src_data[ii + 1],
-								  src_data[ii + nx],
-								  src_data[ii + nx + 1],
-								  src_data[ii + nx * ny],
-								  src_data[ii + nxy + 1],
-								  src_data[ii + nxy + nx],
-								  src_data[ii + nxy + nx + 1], t, u,
-								  v);
-		    }
-
-		    x2 += mx[0][0];
-		    y2 += mx[1][1];
-		    z2 += mx[2][0];
-		}
-
-		x3 += mx[0][1];
-		y3 += mx[1][1];
-		z3 += mx[2][1];
-	    }
-
-	    x4 += mx[0][2];
-	    y4 += mx[1][2];
-	    z4 += mx[2][2];
-	}
-    }
-
-    if (parent) {
-	parent->done_data();
-    }
-    else {
-	free(rdata);
-	rdata = des_data;
-	translation = Vec3<float>(0, 0, 0);
-	set_ralign_params(0, 0, 0);
-    }
-
-    scale_pixel(inv_scale);
-    
-    attr_dict["origin_row"] = attr_dict["origin_row"].get_float() * inv_scale;
-    attr_dict["origin_col"] = attr_dict["origin_col"].get_float() * inv_scale;
-    attr_dict["origin_sec"] = attr_dict["origin_sec"].get_float() * inv_scale;
-
-    done_data();
-    update();
+    translate(Vec3<float>(dx, dy, dz));
 }
 
 
-void EMData::fast_rotate_translate(float scale)
+void EMData::translate(const Vec3<float> & translation)
 {
-    float inv_scale = 1.0;
-    if (scale != 0) {
-	inv_scale = 1.0 / scale;
+    if (nz != 1) {
+	Log::logger()->error("3D translation not supported yet");
+	return;
     }
 
+    float *parent_data = get_data();
+    float *this_data = get_data();
+
+    int x0 = nx - 1;
+    int x1 = -1;
+    int x2 = -1;
+
+    if (translation[0] < 0) {
+	x0 = 0;
+	x1 = nx;
+	x2 = 1;
+    }
+
+    int y0 = ny - 1;
+    int y1 = -1;
+    int y2 = -1;
+
+    if (translation[1] < 0) {
+	y0 = 0;
+	y1 = ny;
+	y2 = 1;
+    }
+
+    for (int x = x0; x != x1; x += x2) {
+	for (int y = y0; y != y1; y += y2) {
+	    int xp = static_cast<int>(x - translation[0]);
+	    int yp = static_cast<int>(y - translation[1]);
+
+	    if (xp < 0 || yp < 0 || xp >= nx || yp >= ny) {
+		this_data[x + y * nx] = 0;
+	    }
+	    else {
+		this_data[x + y * nx] = parent_data[xp + yp * nx];
+	    }
+	}
+    }
+
+    done_data();
+    all_translation += translation;
+}
+
+/** slow; need to fix later
+ */
+void EMData::rotate(float alt, float az, float phi)
+{
+    Transform t(Rotation(alt, az, phi, Rotation::EMAN));
+    rotate_translate(t);
+}
+
+void EMData::rotate(const Rotation& r)
+{
+    Transform t(r);
+    rotate_translate(t);
+}
+
+void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy, float dz)
+{
+    rotate_translate(Rotation(alt, az, phi, Rotation::EMAN), Vec3<float>(dx, dy, dz));
+}
+
+void EMData::rotate_translate(const Rotation& rotation, const Vec3<float> & translation)
+{
     float *src_data = 0;
     float *des_data = 0;
 
@@ -2564,8 +2397,8 @@ void EMData::fast_rotate_translate(float scale)
     if (nz == 1) {
 	float mx[2];
 
-	mx[0] = inv_scale * cos(rotation.eman_alt());
-	mx[1] = inv_scale * sin(rotation.eman_alt());
+	mx[0] = cos(rotation.eman_alt());
+	mx[1] = sin(rotation.eman_alt());
 	float dxx = mx[0];
 	float dyx = -mx[1];
 	float dxy = mx[1];
@@ -2665,86 +2498,237 @@ void EMData::fast_rotate_translate(float scale)
     else {
 	free(rdata);
 	rdata = des_data;
-	translation = Vec3<float>(0, 0, 0);
-	set_ralign_params(0, 0, 0);
     }
 
     done_data();
-
-    scale_pixel(inv_scale);
     
-    attr_dict["origin_row"] = attr_dict["origin_row"].get_float() * inv_scale;
-    attr_dict["origin_col"] = attr_dict["origin_col"].get_float() * inv_scale;
-    attr_dict["origin_sec"] = attr_dict["origin_sec"].get_float() * inv_scale;
+    attr_dict["origin_row"] = attr_dict["origin_row"].get_float();
+    attr_dict["origin_col"] = attr_dict["origin_col"].get_float();
+    attr_dict["origin_sec"] = attr_dict["origin_sec"].get_float();
 
     update();
+
+    all_rotation += Vec3<float>(rotation.eman_alt(), rotation.eman_az(), rotation.eman_phi());
+    all_translation += translation;
 }
 
 
-int EMData::fast_translate(bool inplace)
+
+void EMData::rotate_translate(const Transform& xform)
 {
-    if (nz != 1) {
-	Log::logger()->error("3D fast translate not supported yet");
-	return 1;
+    float scale = xform.get_scale()[0];
+    Vec3<float> dcenter = xform.get_center();
+    float dxc = dcenter[0];
+    float dyc = dcenter[1];
+    float dzc = dcenter[2];
+
+    Vec3<float> translation = xform.get_post_translate();
+    Rotation rotation = xform.get_rotation();
+    
+    int nx2 = nx;
+    int ny2 = ny;
+    float inv_scale = 1.0;
+
+    if (scale != 0) {
+	inv_scale = 1.0 / scale;
     }
 
-    float *parent_data = 0;
-    float *this_data = 0;
+    float *src_data = 0;
+    float *des_data = 0;
 
-    if (parent && (!inplace)) {
-	parent_data = parent->get_data();
-	this_data = get_data();
+    if (parent) {
+	src_data = parent->get_data();
+	des_data = get_data();
+	nx2 = parent->get_xsize();
+	ny2 = parent->get_ysize();
     }
     else {
-	this_data = get_data();
-	parent_data = get_data();
+	src_data = get_data();
+	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
     }
 
-    int x0 = nx - 1;
-    int x1 = -1;
-    int x2 = -1;
+    if (nz == 1) {
+	float mx0 = inv_scale * cos(rotation.eman_alt());
+	float mx1 = inv_scale * sin(rotation.eman_alt());
 
-    if (translation[0] < 0) {
-	x0 = 0;
-	x1 = nx;
-	x2 = 1;
-    }
+	float x2c = nx / 2.0 - dxc - translation[0];
+	float y2c = ny / 2.0 - dyc - translation[1];
+	float y = -ny / 2.0 + dxc;
 
-    int y0 = ny - 1;
-    int y1 = -1;
-    int y2 = -1;
+	for (int j = 0; j < ny; j++, y += 1.0) {
+	    float x = -nx / 2.0 + dyc;
 
-    if (translation[1] < 0) {
-	y0 = 0;
-	y1 = ny;
-	y2 = 1;
-    }
+	    for (int i = 0; i < nx; i++, x += 1.0) {
+		float x2 = (mx0 * x + mx1 * y) + x2c;
+		float y2 = (-mx1 * x + mx0 * y) + y2c;
 
-    for (int x = x0; x != x1; x += x2) {
-	for (int y = y0; y != y1; y += y2) {
-	    int xp = static_cast<int>(x - translation[0]);
-	    int yp = static_cast<int>(y - translation[1]);
+		if (x2 < 0 || x2 > nx2 - 1 || y2 < 0 || y2 > ny2 - 1) {
+		    des_data[i + j * nx] = 0;
+		}
+		else {
+		    int ii = Util::fast_floor(x2);
+		    int jj = Util::fast_floor(y2);
+		    int k0 = ii + jj * nx;
+		    int k1 = k0 + 1;
+		    int k2 = k0 + nx + 1;
+		    int k3 = k0 + nx;
 
-	    if (xp < 0 || yp < 0 || xp >= nx || yp >= ny) {
-		this_data[x + y * nx] = 0;
-	    }
-	    else {
-		this_data[x + y * nx] = parent_data[xp + yp * nx];
+		    if (ii == nx2 - 1) {
+			k1--;
+			k2--;
+		    }
+		    if (jj == ny2 - 1) {
+			k2 -= nx2;
+			k3 -= nx2;
+		    }
+
+		    float t = x2 - ii;
+		    float u = y2 - jj;
+		    float tt = 1 - t;
+		    float uu = 1 - u;
+
+		    float p0 = src_data[k0] * tt * uu;
+		    float p1 = src_data[k1] * t * uu;
+		    float p3 = src_data[k3] * tt * u;
+		    float p2 = src_data[k2] * t * u;
+
+		    des_data[i + j * nx] = p0 + p1 + p2 + p3;
+		}
 	    }
 	}
     }
+    
+    else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) {
+	// make sure this is right
+	Matrix3f mx = rotation.get_matrix3();
+	mx *= inv_scale;
+	int nxy = nx * ny;
+	int l = 0;
 
-    done_data();
+	for (int k = 0; k < nz; k++) {
+	    for (int j = -ny / 2; j < ny - ny / 2; j++) {
+		for (int i = -nx / 2; i < nx - nx / 2; i++, l++) {
+		    float x2 = mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2;
+		    float y2 = mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2;
+		    float z2 = mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + 0 / 2;	// 0/2?
 
-    if (this_data == parent_data) {
-	translation[0] = 0;
-	translation[1] = 0;
+		    if (x2 >= 0 && y2 >= 0 && z2 > -(nz - 1) && x2 < nx && y2 < ny && z2 < nz - 1) {
+			if (z2 < 0) {
+			    x2 = nx - 1 - x2;
+			    z2 = -z2;
+			}
+
+			int x = Util::fast_floor(x2);
+			int y = Util::fast_floor(y2);
+			int z = Util::fast_floor(z2);
+
+			float t = x2 - x;
+			float u = y2 - y;
+			float v = z2 - z;
+
+			int ii = (int) (x + y * nx + z * nxy);
+
+			des_data[l] += Util::trilinear_interpolate(src_data[ii], src_data[ii + 1],
+								   src_data[ii + nx],
+								   src_data[ii + nx + 1],
+								   src_data[ii + nx * ny],
+								   src_data[ii + nxy + 1],
+								   src_data[ii + nxy + nx],
+								   src_data[ii + nxy + nx + 1], t,
+								   u, v);
+		    }
+		}
+	    }
+	}
     }
     else {
-	parent->done_data();
+	Matrix3f mx = rotation.get_matrix3();
+	mx *= inv_scale;
+
+	float x4 = (mx[0][0] * (-nx / 2.0 + dxc) + mx[0][1] * (-ny / 2.0 + dyc) +
+		    mx[0][2] * (-nz / 2.0 + dzc)) + nx / 2.0 - dxc - translation[0];
+	
+	float y4 = (mx[1][3] * (-nx / 2.0 + dxc) + mx[1][4] * (-ny / 2.0 + dyc) +
+		    mx[1][5] * (-nz / 2.0 + dzc)) + ny / 2.0 - dyc - translation[1];
+
+	float z4 = (mx[2][6] * (-nx / 2.0 + dxc) + mx[2][7] * (-ny / 2.0 + dyc) +
+		    mx[2][8] * (-nz / 2.0 + dzc)) + nz / 2.0 - dzc - translation[2];
+
+	int nxy = nx * ny;
+	int l = 0;
+
+	for (int k = -nz / 2; k < nz / 2; k++) {
+	    float x3 = x4;
+	    float y3 = y4;
+	    float z3 = z4;
+
+	    for (int j = -ny / 2; j < ny / 2; j++) {
+		float x2 = x3;
+		float y2 = y3;
+		float z2 = z3;
+
+		for (int i = -nx / 2; i < nx / 2; i++, l++) {
+
+		    if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx - 1 || y2 >= ny - 1 || z2 >= nz - 1) {
+			des_data[l] = 0;
+		    }
+		    else {
+			int x = Util::fast_floor(x2);
+			int y = Util::fast_floor(y2);
+			int z = Util::fast_floor(z2);
+
+			float t = x2 - x;
+			float u = y2 - y;
+			float v = z2 - z;
+			int ii = (int) (x + y * nx + z * nxy);
+
+			des_data[l] = Util::trilinear_interpolate(src_data[ii], src_data[ii + 1],
+								  src_data[ii + nx],
+								  src_data[ii + nx + 1],
+								  src_data[ii + nx * ny],
+								  src_data[ii + nxy + 1],
+								  src_data[ii + nxy + nx],
+								  src_data[ii + nxy + nx + 1], t, u,
+								  v);
+		    }
+
+		    x2 += mx[0][0];
+		    y2 += mx[1][1];
+		    z2 += mx[2][0];
+		}
+
+		x3 += mx[0][1];
+		y3 += mx[1][1];
+		z3 += mx[2][1];
+	    }
+
+	    x4 += mx[0][2];
+	    y4 += mx[1][2];
+	    z4 += mx[2][2];
+	}
+
+
+	if (parent) {
+	    parent->done_data();
+	}
+	else {
+	    free(rdata);
+	    rdata = des_data;
+	}
+
+	scale_pixel(inv_scale);
+    
+	attr_dict["origin_row"] = attr_dict["origin_row"].get_float() * inv_scale;
+	attr_dict["origin_col"] = attr_dict["origin_col"].get_float() * inv_scale;
+	attr_dict["origin_sec"] = attr_dict["origin_sec"].get_float() * inv_scale;
+
+	done_data();
+	update();
     }
 
-    return 0;
+    
+    all_rotation += Vec3<float>(rotation.eman_alt(), rotation.eman_az(), rotation.eman_phi());
+    all_translation += translation;
 }
 
 
@@ -2776,6 +2760,9 @@ int EMData::rotate_180()
     }
 
     done_data();
+
+    all_rotation[0] += M_PI;
+    
     return 0;
 }
 
@@ -2796,11 +2783,8 @@ EMData *EMData::do_radon()
 	this_copy = copy();
     }
 
-    this_copy->set_talign_params(0, 0, 0);
-
     for (int i = 0; i < nx; i++) {
-	this_copy->set_ralign_params(M_PI * 2.0 * i / nx, 0, 0);
-	this_copy->rotate_translate(1.0, 0, 0, 0, nx / 2 - 1);
+	this_copy->rotate(M_PI * 2.0 * i / nx, 0, 0);
 
 	float *copy_data = this_copy->get_data();
 
@@ -3450,7 +3434,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
     if (nz == 1) {
 	if (!unwrap) {
 	    tmp2->filter("SharpMask", Dict("outer_radius", EMObject(-1),
-					  "value", EMObject(0)));
+					   "value", EMObject(0)));
 	    rfp = 0;
 	    return tmp2;
 	}
@@ -4333,8 +4317,7 @@ int EMData::common_lines_real(EMData * image1, EMData * image2, int steps, bool 
 	float a = M_PI / steps2;
 
 	for (int i = 0; i < steps2; i++) {
-	    images[i]->set_ralign_params(-a, 0, 0);
-	    images[i]->rotate_translate();
+	    images[i]->rotate(-a, 0, 0);
 	    float *data = images[i]->get_data();
 
 	    for (int j = 0; j < image_ny; j++) {

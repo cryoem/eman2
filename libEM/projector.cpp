@@ -102,8 +102,8 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
     filter_d["ring_width"] = EMObject(ret->get_xsize() / 2);
     ret->filter("InvGaussMaskFilter", filter_d); 
 
-    ret->set_ralign_params(alt, az, phi);
-
+    ret->set_rotation(alt, az, phi);
+    
     delete tmp;
     tmp = 0;
 
@@ -551,9 +551,7 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 	image->set_parent(parent);
     }
 
-    image->set_ralign_params(alt, az, phi);
-    image->set_talign_params(0, 0, 0);
-    image->rotate_translate();
+    image->rotate(alt, az, phi);
 
     EMData *ret = new EMData();
     ret->set_size(nx, ny, 1);
@@ -635,9 +633,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	image->set_parent(parent);
     }
 
-    image->set_ralign_params(alt, az, phi);
-    image->set_talign_params(0, 0, 0);
-    image->rotate_translate();
+    image->rotate(alt, az, phi);
 
     EMData *ret = new EMData();
     ret->set_size(nx, ny, 1);

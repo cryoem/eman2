@@ -992,10 +992,8 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Rotation &)
     tmp->done_data();
 
     Rotation slice_euler = slice->get_rotation();
-    tmp->set_ralign_params(-slice_euler.eman_alt(), -slice_euler.eman_phi(),
-			   -slice_euler.eman_az());
-    tmp->set_talign_params(0, 0, 0);
-    tmp->rotate_translate();
+    tmp->rotate(-slice_euler.eman_alt(), -slice_euler.eman_az(),
+		-slice_euler.eman_phi());
 
     image->add(*tmp);
     delete slice_copy;
