@@ -742,31 +742,73 @@ EMData::symplane0(MIArray3D& w) {
 	EXITFUNC;
 }
 
-EMData* EMData::windum(int l, int lsd, int n, WINDOWPLACE windowplace) {
+void
+EMData::windum(float* src, float* dst, int l, int lsd, int n) {
 	ENTERFUNC;
 	typedef MArray3D::index_range range;
-	MArray3D bi(rdata, 
+	MArray3D bi(src, 
 			    boost::extents[lsd][n][n],
 				boost::fortran_storage_order());
-	bi.reindex(1);
-	EMData* ret;
-	if (windowplace == WINDOW_IN_PLACE) {
-		ret = this;
-	} else {
-		ret = new EMData;
-		ret->set_size(l, l, l);
-	}
-	float* retdata = ret->get_data();
-	MArray3D r(retdata, 
+	bi.reindex(1); // subscripts start from 1
+	MArray3D r(dst, 
 			   boost::extents[l][l][l],
 			   boost::fortran_storage_order());
-	r.reindex(1);
-	int ip = (n-l)/2 + l%2;
+	r.reindex(1); // subscripts start from 1
+	// first element in our target volume is at [ip+1][ip+1][ip+1]
+	int ip = (n-l)/2 + l%2; 
 	for (int iz = 1; iz <= l; iz++)
 		for (int iy = 1; iy <= l; iy++)
 			for (int ix = 1; ix <= l; ix++)
 				r[ix][iy][iz] = bi[ip+ix][ip+iy][ip+iz];
+	EXITFUNC;
+}
+
+EMData* EMData::window_padded(int l) {
+	ENTERFUNC;
+	// sanity checks
+	int n = nx;
+	if (is_complex()) {
+		LOGERR("Need real-space data for windum");
+		throw ImageFormatException(
+			"Complex input image; real-space expected.");
+	}
+	if ( flags & EMDATA_PAD ) {
+		// image has been fft-padded, compute the real-space size
+		n = (flags & EMDATA_FFTODD) ? nx - 1 : nx - 2;
+	}
+	if ((n != ny) || (n != nz)) {
+		LOGERR("Need the real-space image to be cubic.");
+		throw ImageFormatException(
+			"Need cubic real-space image.");
+	}
+	EMData* ret = new EMData;
+	ret->set_size(l, l, l);
+	float* retdata = ret->get_data();
+	windum(rdata, retdata, l, nx, n);
 	return ret;
+	EXITFUNC;
+}
+
+EMData* EMData::window_padded_inplace(int l) {
+	ENTERFUNC;
+	// sanity checks
+	int n = nx;
+	if (is_complex()) {
+		LOGERR("Need real-space data for windum");
+		throw ImageFormatException(
+			"Complex input image; real-space expected.");
+	}
+	if ( flags & EMDATA_PAD ) {
+		// image has been fft-padded, compute the real-space size
+		n = (flags & EMDATA_FFTODD) ? nx - 1 : nx - 2;
+	}
+	if ((n != ny) || (n != nz)) {
+		LOGERR("Need the real-space image to be cubic.");
+		throw ImageFormatException(
+			"Need cubic real-space image.");
+	}
+	windum(rdata, rdata, l, nx, n);
+	return this;
 	EXITFUNC;
 }
 

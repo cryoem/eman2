@@ -39,7 +39,6 @@ namespace EMAN
 	typedef boost::multi_array_ref<int, 2> MIArray2D;
 	typedef boost::multi_array_ref<int, 3> MIArray3D;
 	enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
-	enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
 
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -216,12 +215,38 @@ namespace EMAN
 							   float scale=1.0, float mult_factor=1.0);
 
 
-		/** return an image object that has been windowed.
+		/** During image reconstruction the image may have been
+		 *  padded with zeros for fourier interpolation.  In that
+		 *  case the desired image lies in the center of a larger
+		 *  volume.  The total volume is lsdxnxn, and the
+		 *  desired volume is lxlxl.  This routine copies the
+		 *  lxlxl volume from src into the first lxlxl*sizeof(src[0])
+		 *  bytes of dst.
+		 */
+		static void windum(float* src, float* dst, int l, int lsd, int n);
+
+		/** During image reconstruction the image may have been
+		 *  padded with zeros for fourier interpolation.  In that
+		 *  case the desired image lies in the center of a larger
+		 *  volume.  The total volume is lsdxnxn, and the
+		 *  desired volume is lxlxl.  This routine creates a new
+		 *  object that contains only the desired lxlxl volume.
 		 *
 		 * @return An image object that has been windowed.
 		 */
-		EMData* windum(int l, int lsd, int n, 
-				       WINDOWPLACE windowplace = WINDOW_IN_PLACE);
+		EMData* window_padded(int l);
+
+		/** During image reconstruction the image may have been
+		 *  padded with zeros for fourier interpolation.  In that
+		 *  case the desired image lies in the center of a larger
+		 *  volume.  The total volume is lsdxnxn, and the
+		 *  desired volume is lxlxl.  This routine moves the lxlxl
+		 *  data in the current object to occupy the first 
+		 *  lxlxl*sizeof(rdata[0]) bytes.
+		 *  
+		 * @return The current image object after windowing.
+		 */
+		EMData* window_padded_inplace(int l);
 
 
 		
