@@ -52,16 +52,18 @@ namespace EMAN {
 	}
     };
 
-
     class CtfAverager : public Averager {
     public:
 	EMData* average(const vector<EMData*>& image_list) const;
+	vector<float> get_snr() const { return snr; }
     protected:
-	CtfAverager() : sf(0), curves(0) {}
+	CtfAverager() : sf(0), curves(0), need_snr(false) {}
 	XYData* sf;
 	EMData* curves;
-	vector<float> snr;
+	bool need_snr;
 	string outfile;
+    private:
+	mutable vector<float> snr;
     };
 
     
@@ -102,7 +104,6 @@ namespace EMAN {
     };
     
 
-
     class CtfCWAverager : public CtfAverager {
     public:
 	string get_name() const { return "CtfCW"; }
@@ -111,7 +112,7 @@ namespace EMAN {
 	void set_params(const Dict& new_params)
 	{
 	    params = new_params;
-	    snr = params["snr"].get_farray();
+	    need_snr = (bool) params["need_snr"].get_int();
 	}
 	
 	TypeDict get_param_types() const

@@ -96,7 +96,7 @@ namespace EMAN {
 	void ri2ap();
 	void ap2ri();
 
-	void setup4slice(bool redo = true);
+	float* setup4slice(bool redo = false);
 	void to_corner();
 	
 	void rotate_x(int dx);
@@ -212,16 +212,12 @@ namespace EMAN {
 	void set_size(int nx, int ny, int nz);
 	void set_path(const string& path);
 	void set_pathnum(int n);
-
 	
-	float* get_supp() const { return 0; } // fix here
-
 	EMData* get_row(int row_index) const;
 	void set_row(const EMData *d, int row_index);
 	
 	EMData* get_col(int col_index) const;
 	void set_col(const EMData *d, int n);
-
 	
 	void set_talign_params(float dx, float dy);
 	void set_talign_params(float dx, float dy, float dz);
@@ -534,7 +530,8 @@ namespace EMAN {
 
     inline Rotation EMData::get_rotation() const { return rotation; }
     inline Vec3f EMData::get_trans_align() const { return trans_align; }
-    
+
+
 }
 
 #endif
