@@ -22,8 +22,8 @@ OPTION(ENABLE_PYTHON "if enable boost python support" ON)
 
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-    SET(EMAN_CXX_FLAGS "-g -n32 -w2 -fullwarn" CACHE INTERNAL "C++ compiler flags")
-#    SET(EMAN_CXX_FLAGS "-O2 -n32 -woffall" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "-g -n32 -w2 -fullwarn  -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
+#    SET(EMAN_CXX_FLAGS "-O2 -n32 -woffall -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ELSE(CMAKE_SYSTEM MATCHES "IRIX.*")
     SET(EMAN_CXX_FLAGS " -g -Wall -Werror" CACHE INTERNAL "C++ compiler flags")
 #    SET(EMAN_CXX_FLAGS "-O2 -w" CACHE INTERNAL "C++ compiler flags")
@@ -33,6 +33,7 @@ ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
 SET(CMAKE_ORIG_FLAGS ${CMAKE_CXX_FLAGS})
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMAN_CXX_FLAGS} ${OPT_FLAGS}")
+
 MARK_AS_ADVANCED(CMAKE_C_FLAGS)
 MARK_AS_ADVANCED(CMAKE_CXX_FLAGS)
 
