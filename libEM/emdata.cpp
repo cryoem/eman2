@@ -1160,7 +1160,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 	return ret;
 }
 
-void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iysize,
+std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
 						 float render_min, float render_max)
 {
@@ -1178,6 +1178,10 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 		render_max = render_min + 0.01f;
 	}
 
+	std::string ret=std::string();
+	ret.resize(iysize*bpl);
+	unsigned char *data=(unsigned char *)ret.data();
+	
 	float rm = render_min;
 	float inv_scale = 1.0f / scale;
 	int ysize = iysize;
@@ -1228,21 +1232,10 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 		y0 = 0;
 	}
 
-	if (xmin < 0) {
-		xmin = 0;
-	}
-
-	if (ymin < 0) {
-		ymin = 0;
-	}
-
-	if (xsize > ixsize) {
-		xsize = ixsize;
-	}
-
-	if (ymax > iysize) {
-		ymax = iysize;
-	}
+	if (xmin < 0) xmin = 0;
+	if (ymin < 0) ymin = 0;
+	if (xsize > ixsize) xsize = ixsize;
+	if (ymax > iysize) ymax = iysize;
 
 	int lmax = nx * ny - 1;
 
@@ -1252,28 +1245,17 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 			for (int j = ymax; j >= ymin; j--) {
 				int ll = x0;
 				for (int i = xmin; i < xsize; i++) {
-					if (l + ll > lmax || ll >= nx - 2) {
-						break;
-					}
+					if (l + ll > lmax || ll >= nx - 2) break;
+					
 					int k = 0;
 					if (ll >= nx / 2) {
-						if (l >= (ny - inv_scale) * nx) {
-							k = 2 * (ll - nx / 2) + 2;
-						}
-						else {
-							k = 2 * (ll - nx / 2) + l + 2 + nx;
-						}
+						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
+						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
-					else {
-						k = nx * ny - (l + 2 * ll) - 2;
-					}
+					else k = nx * ny - (l + 2 * ll) - 2;
 					float t = rdata[k];
-					if (t <= rm) {
-						k = mingray;
-					}
-					else if (t >= render_max) {
-						k = maxgray;
-					}
+					if (t <= rm)  k = mingray;
+					else if (t >= render_max) k = maxgray;
 					else {
 						k = (int) (gs * (t - render_min));
 						k += mingray;
@@ -1297,16 +1279,10 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 					}
 					int k = 0;
 					if (ll >= nx / 2) {
-						if (l >= (ny * nx - nx)) {
-							k = 2 * (ll - nx / 2) + 2;
-						}
-						else {
-							k = 2 * (ll - nx / 2) + l + 2 + nx;
-						}
+						if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
+						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
-					else {
-						k = nx * ny - (l + 2 * ll) - 2;
-					}
+					else k = nx * ny - (l + 2 * ll) - 2;
 
 					float t = rdata[k];
 					if (t <= rm)
@@ -1346,12 +1322,8 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 					}
 					int k = 0;
 					float t = rdata[l];
-					if (t <= rm) {
-						k = mingray;
-					}
-					else if (t >= render_max) {
-						k = maxgray;
-					}
+					if (t <= rm) k = mingray;
+					else if (t >= render_max) k = maxgray;
 					else {
 						k = (int) (gs * (t - render_min));
 						k += mingray;
@@ -1369,16 +1341,11 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 				int br = l;
 				remx = 10;
 				for (int i = xmin; i < xsize; i++) {
-					if (l > lmax)
-						break;
+					if (l > lmax) break;
 					int k = 0;
 					float t = rdata[l];
-					if (t <= rm) {
-						k = mingray;
-					}
-					else if (t >= render_max) {
-						k = maxgray;
-					}
+					if (t <= rm) k = mingray;
+					else if (t >= render_max) k = maxgray;
 					else {
 						k = (int) (gs * (t - render_min));
 						k += mingray;
@@ -1403,6 +1370,9 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 
 	done_data();
 	EXITFUNC;
+	
+//	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
+	return ret;
 }
 
 
@@ -1776,6 +1746,8 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 	done_data();
 	delete[]yc;
 	yc = 0;
+	
+	
 	EXITFUNC;
 }
 

@@ -21,7 +21,6 @@ using std::string;
 using std::vector;
 using std::map;
 
-
 namespace EMAN
 {
 	class ImageIO;
@@ -270,17 +269,10 @@ namespace EMAN
 		 * @param max_render
 		 * @exception ImageDimensionException If the image is not 2D.
 		 */
-		void render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
+		std::string render_amp8(int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
 						 float min_render, float max_render);
 		
-		/** wrapper to render_amp8. The data pointer is casted to a
-		 * long integer.
-		*/
-		void render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
-								 int bpl, float scale, int min_gray, int max_gray,
-								 float min_render, float max_render);
-
 		/** Render the image into a 24-bit image. 2D image only.
 		 * @param data
 		 * @param x
@@ -1491,15 +1483,6 @@ namespace EMAN
 		attr_dict["rot_alt"]=alt;
 		attr_dict["rot_az"]=az;
 		attr_dict["rot_phi"]=phi;
-	}
-
-	inline void EMData::render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
-											int bpl, float scale, int min_gray, int max_gray,
-											float min_render, float max_render)
-	{
-
-		render_amp8((unsigned char *) data, x, y, xsize, ysize, bpl,
-					scale, min_gray, max_gray, min_render, max_render);
 	}
 	
 	inline void EMData::scale_pixel(float scale) const

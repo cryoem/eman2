@@ -19,7 +19,8 @@ is the alignment of the center of the image (1,0) is one box to the right
 of the center. maxrange allows calculating a limited distance from the center"""
 	sx=im1.get_xsize()
 	sy=im1.get_ysize()
-	bigpad=(padbox-box)/2
+	bigpad=(padbox-box)/2			# ostensibly this is the max translation we should
+									# allow, but we actually allow 2x this
 	nx=int((sx-2*bigpad)/box)*2-1	# this insures that we have a box at the origin
 	ny=int((sy-2*bigpad)/box)*2-1
 	dx=(sx-padbox)/float(nx-1)
@@ -57,7 +58,8 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			ccf/=ccfs
 	
 			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
-			ccf.filter("MaskSharp",{"outer_radius":bigpad})		# max translation
+			if bigpad*2>padbox/2 : ccf.filter("MaskSharp",{"outer_radius":padbox/2-1})
+			else : ccf.filter("MaskSharp",{"outer_radius":bigpad*2})		# max translation
 			
 			if (debug):
 				clip1.write_image("dbug.hed",-1)
@@ -122,7 +124,10 @@ Processes a tomographic tilt series"""
 		
 	
 	cmplist=[(x,x+1) for x in range(nimg/2,nimg-1)]+[(x,x-1) for x in range(nimg/2,0,-1)]
-	for i in cmplist:
+	ii=-1
+	while ii< len(cmplist)-1:
+		ii+=1
+		i=cmplist[ii]
 		im1=EMData()
 		im1.read_image(args[1],i[0])
 		im1.filter("NormalizeEdgeMean")
@@ -136,7 +141,7 @@ Processes a tomographic tilt series"""
 		
 		
 		if options.mode=="modeshift" :
-			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift*2,debug=i[0]==63)
+			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,debug=i[0]==63)
 			vec=dct.values()
 			vec.sort()			# sort in order of peak height
 			vec2=vec[-len(vec)/4:]		# take the 25% strongest correlation peaks
@@ -152,7 +157,7 @@ Processes a tomographic tilt series"""
 			
 			best=(mode(dxs),mode(dys))
 		elif options.mode=="censym" :
-			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift*2,2)
+			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2)
 			pairs=[]
 			for x in range(3):
 				for y in range(-2,3):
@@ -165,9 +170,10 @@ Processes a tomographic tilt series"""
 			
 			if len(pairs)==0 : 
 				print "Alignment failed on image %d (%d)"%(i[1],i[0])
-				if (i[0]>0) : cmplist.append((i[0]-1,i[1]))
-				else : cmplist.append((i[0]+1,i[1]))
-				best=(0,0)
+				if (i[1]>nimg/2) : cmplist[ii]=(i[0]-1,i[1])
+				else : cmplist[ii]=(i[0]+1,i[1])
+				if abs(i[0]-i[1])<5 : ii-=1
+				continue
 			else :
 				# start by finding the average pair-matched shift
 				sum=[0,0]
@@ -226,6 +232,7 @@ Processes a tomographic tilt series"""
 		a=EMData()
 		a.read_image(args[1],i)
 		a.set_rotation(options.tilt*(i-nimg/2-1)*pi/180.0,0.0,-tiltaxis[1]*pi/180.0)
+		a.set_attr("ptcl_repr",1)
 		a.write_image(args[1],i)
 		
 #	sum=sum.do_ift()
