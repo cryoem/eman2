@@ -42,7 +42,11 @@ define a&nbsp; XYZFilter?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">&nbsp;
-      <br>
+Filter naming convention: more generic word goes first. e.g.
+LowpassGaussFilter, HighpassGaussFilter.<br>
+    </li>
+    <li
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
       <span style="color: rgb(0, 0, 0);">/* 1) Replace all 'XYZ' with
 your new filter name.</span><br style="color: rgb(0, 0, 0);">
       <span style="color: rgb(0, 0, 0);">&nbsp;* 2) Define the filter
@@ -205,7 +209,7 @@ Factory&lt;Filter&gt;::Factory()<br>
       <li style="background-color: rgb(255, 255, 204);"><br>
 Filter *abs_filter = Factory&lt;Filter&gt;::get("AbsoluateValue");<br>
 Filter *gauss_lowpass_filter =
-Factory&lt;Filter&gt;::get("GaussLowpass", Dict("lowpass", 12);<br>
+Factory&lt;Filter&gt;::get("LowpassGauss", Dict("lowpass", 12);<br>
         <br>
       </li>
     </ul>
@@ -279,7 +283,7 @@ float omega = r.mrc_omega();<br>
     </li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
-handle
+use
 Transformation?</big></li>
   <ul>
     <li><span style="font-weight: bold;">Transform</span> class is
@@ -292,13 +296,17 @@ scaling, and their combination.</li>
 to print out
 error/warning/debugging information?</big></li>
   <ul>
-    <ul>
-      <li><span style="font-weight: bold;">Log</span> class defines a
+    <li><span style="font-weight: bold;">Log</span> class defines a
 generic way to do this. It can send information to either standard out,
-a file, or a pine.</li>
-      <li>How to use <span style="font-weight: bold;">Log</span></li>
-      <ul>
-&lt;&gt;1) in your main() file, set log level:&nbsp;&nbsp;&nbsp; <span
+a file, or a pipe.</li>
+    <li>To log function enter point, use <span
+ style="color: rgb(51, 255, 51); font-weight: bold;">ENTERFUNC;</span><span
+ style="font-weight: bold;"> </span>to log function exit point, use <span
+ style="font-weight: bold; color: rgb(51, 255, 51);">EXITFUNC.</span><br>
+    </li>
+    <li>How to use <span style="font-weight: bold;">Log</span></li>
+    <ul>
+1) in your main() file, set log level:&nbsp;&nbsp;&nbsp; <span
  style="color: rgb(51, 204, 0); font-weight: bold;">Log::logger()-&gt;set_log_level(WARNING_LOG);</span><br>
 2) log message in different levels: (log functions use the same
 argument format like <span style="font-weight: bold;">printf()</span>).<br>
@@ -313,7 +321,6 @@ size = (%d, %d, %d)\n", nx, ny, nz);<br>
 3) For best performance, you may remove all log messages by changing
 definition of the above log functions, which are MACROs in file
 eman2/libEM/log.h.<br>
-      </ul>
     </ul>
   </ul>
 </ol>
