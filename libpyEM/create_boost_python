@@ -1,4 +1,4 @@
 #!/bin/sh -v
 
 touch *pyste
-make -f Makefile.pyste
+make -f Makefile.pyste $1

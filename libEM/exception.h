@@ -35,6 +35,11 @@ namespace EMAN {
 			return line;
 		}
 
+		virtual void set_objname(const string& objname1)
+		{
+			objname = objname1;
+		}
+		
 		virtual const char* get_objname() const
 		{
 			return objname.c_str();

@@ -36,16 +36,20 @@ namespace EMAN
 		virtual ~ EMData();
 
 		/** read an image file and stores its information.
+		 *
 		 * @param filename The image file name.
 		 * @param img_index The nth image you want to read.
 		 * @param header_only To read only the header or both header and data.
 		 * @param region To read only a region of the image.
-		 * @param is_3d  To read a stack of images as a 3D image or not.
+		 * @param is_3d  Whether to treat the image as a single 3D or a
+		 *   set of 2Ds. This is a hint for certain image formats which
+		 *   has no difference between 3D image and set of 2Ds.
 		 */
 		void read_image(string filename, int img_index = 0, bool header_only = false,
 						const Region * region = 0, bool is_3d = false);
 
-		/** write the data out to an image.
+		/** write the header and data out to an image.
+		 *
 		 * @param filename The image file name.
 		 * @param img_index The nth image to write as.
 		 * @param imgtype Write to the given image format type. if not
@@ -57,7 +61,8 @@ namespace EMAN
 						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false,
 						 bool use_host_endian = true);
 
-		/** append to image file. If the file doesn't exist, create one.
+		/** append to an image file; If the file doesn't exist, create one.
+		 *
 		 * @param filename The image file name.
 		 * @param imgtype Write to the given image format type. if not
 		 *        specified, use the 'filename' extension to decide.
@@ -73,7 +78,7 @@ namespace EMAN
 		 */
 		void filter(string filtername, const Dict & params = Dict());
 
-		/** Compare this image with other image.
+		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.
 		 * @param params Comparison parameters in a keyed dictionary.
 		 * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
@@ -81,7 +86,8 @@ namespace EMAN
 		 */
 		float cmp(string cmpname, const Dict & params = Dict());
 
-		/** Align this image with other image and return the result image.
+		/** Align this image with another image and return the result image.
+		 *
 		 * @param aligner_name Alignment algorithm name.
 		 * @param params  Alignment algorithm parameters in a keyed dictionary.
 		 * @param comp_name Comparison algorithm used in alighment.
@@ -178,10 +184,11 @@ namespace EMAN
 		 * CCF is often used to achieve alignment between two images,
 		 * since it displays a high value (a peak) at the place where
 		 * a motif contained in both images come into register.
+		 *
 		 * @param with The image used to calculate CCF. If 'with' is
-		 * NULL, does mirror ACF.
+		 *   NULL, does mirror ACF.
 		 * @param tocorner Set whether to translate the result image
-		 * to the corner.
+		 *   to the corner.
 		 * @param filter The filter image used in calculating CCF.
 		 * @return The result image containing the CCF.
 		 */
@@ -192,6 +199,11 @@ namespace EMAN
 		 * WARNING: this routine will modify the 'this' and 'with' to contain
 		 * 1D fft's without setting some flags. This is an optimization
 		 * for rotational alignment.
+		 *
+		 * @param with The image used to calculate CCF.
+		 * @param y0 Starting position in x-direction.
+		 * @param y1 Ending position in x-direction. '-1' means the
+		 *        end of the row.
 		 * @param nosum If true, returns an image y1-y0+1 pixels high.
 		 * @see #calc_ccf()
 		 */
@@ -200,14 +212,17 @@ namespace EMAN
 		/** Makes a 'rotational footprint', which is an 'unwound'
 		 * autocorrelation function. generally the image should be
 		 * edgenormalized and masked before using this.
+		 *
 		 * @param unwrap To cache the rfp or not. false means not cached.
 		 * @param premasked
 		 */
 		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
 
 		/** Calculate mutual correlation function (MCF) between 2 images.
+		 *
+		 * @param with The image used to calculate MCF.
 		 * @param tocorner Set whether to translate the result image
-		 * to the corner.
+		 *        to the corner.
 		 * @param filter The filter image used in calculating MCF.
 		 */
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
@@ -216,13 +231,21 @@ namespace EMAN
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 					   int dy = 0, bool do360 = false);
 
-		int mean_shrink(int shrink_factor);
-		int median_shrink(int shrink_factor);
+		/** Reduces the size of the image by a factor of 'shrink_factor'
+		 * using the average value of the pixels in a block.
+		 */
+		void mean_shrink(int shrink_factor);
+		
+		/* Reduces the size of the image by a factor of 'shrink_factor'
+		 * using a local median filter.
+		 */
+		void median_shrink(int shrink_factor);
 
 		/** multiplies by a radial function in fourier space */
 		void apply_radial_func(float x0, float dx, vector < float >array, bool interp = true);
 
 		/** calculates radial distribution. works for real and imaginary images. 
+		 * 
 		 * @param n number of points.
 		 * @param x0 starting x coordinate.
 		 * @param dx step of x.
@@ -236,7 +259,6 @@ namespace EMAN
 		 * @param dx step of x.
 		 * @param acen The direction.
 		 * @param arange The angular range around the direction in radians.
-		 * @param smooting Control if the returned curve in y is smoothed.
 		 * @return The radial distribution in an array.
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
@@ -262,18 +284,17 @@ namespace EMAN
 
 		void dump_data(string filename);
 
-		int add_incoherent(EMData * obj);
+		void add_incoherent(EMData * obj);
 
 		vector < float >calc_fourier_shell_correlation(EMData * with);
 		void calc_hist(vector < float >&hist, float hist_min = 0, float hist_max = 0,
 					   bool add = false);
-		int calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
+		void calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
 #if 0
 		void calc_rcf(EMData * with, vector < float >&sum_array);
 #endif
 		float calc_dist(EMData * second_img, int y_index = 0) const;
 		EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "SharpMask");
-
 
 		EMData *convolute(EMData * with);
 
@@ -286,17 +307,40 @@ namespace EMAN
 
 		float dot(EMData * with, bool evenonly = false);
 
-		int common_lines(EMData * image1, EMData * image2, int mode = 0,
-						 int steps = 180, bool horizontal = false);
+		/** Finds common lines between 2 complex images.
+		 * 
+		 * This function does not assume any symmetry, just blindly
+		 * compute the "sinogram" and the user has to take care how
+		 * to interpret the returned "sinogram". it only considers
+		 * inplane rotation and assumes prefect centering and identical
+		 * scale.
+		 *
+		 * @param image1 The first complex image.
+		 * @param image2 The second complex image.
+		 * @param mode Either 0 or 1 or 2. mode 0 is a summed
+		 *   dot-product, larger value means better match; mode 1 is
+		 *   weighted phase residual, lower value means better match.		 
+		 * @param steps: 1/2 of the resolution of the map.
+		 * @param horizontal In horizontal way or not.
+		 */
+		void common_lines(EMData * image1, EMData * image2, int mode = 0,
+						  int steps = 180, bool horizontal = false);
 
-		int common_lines_real(EMData * image1, EMData * image2,
-							  int steps = 180, bool horizontal = false);
+		/** Finds common lines between 2 real images.
+		 */
+		void common_lines_real(EMData * image1, EMData * image2,
+							   int steps = 180, bool horizontal = false);
 
-		int cut_slice(EMData * map, float dz, Rotation * orientation = 0,
-					  bool interpolate = true, float dx = 0, float dy = 0);
+		/** cut a slice out of a real 3D map */
+		void cut_slice(EMData * map, float dz, Rotation * orientation = 0,
+					   bool interpolate = true, float dx = 0, float dy = 0);
 
-		int uncut_slice(EMData * map, float dz, Rotation * orientation = 0,
-						float dx = 0, float dy = 0);
+		/** Opposite of the cut_slice(). It will take a slice and insert
+		 * the data into a real 3D map. It does not interpolate, it uses
+		 * the nearest neighbor.
+		 */
+		void uncut_slice(EMData * map, float dz, Rotation * orientation = 0,
+						 float dx = 0, float dy = 0);
 
 
 		float get_edge_mean() const;
@@ -429,7 +473,7 @@ namespace EMAN
 			EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
 		};
 
-		int update_stat();
+		void update_stat();
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void scale_pixel(float scale_factor) const;
 
@@ -542,19 +586,17 @@ namespace EMAN
 	
 	inline float EMData::sget_value_at(int x, int y, int z) const
 	{
-		if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz)
-			{
-				return 0;
-			}
+		if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
+			return 0;
+		}
 		return rdata[x + y * nx + z * nx * ny];
 	}
 
 	inline float EMData::sget_value_at(int x, int y) const
 	{
-		if (x < 0 || y < 0 || x >= nx || y >= ny)
-			{
-				return 0;
-			}
+		if (x < 0 || y < 0 || x >= nx || y >= ny) {
+			return 0;
+		}
 		return rdata[x + y * nx];
 	}
 
@@ -695,10 +737,9 @@ namespace EMAN
 		if (name[0] == '!' && name[1] == '$') {
 			return true;
 		}
-		else
-			{
-				return false;
-			}
+		else {
+			return false;
+		}
 	}
 
 	inline int EMData::get_average_nimg() const

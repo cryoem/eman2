@@ -1341,11 +1341,11 @@ void EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int i
 
 
 
-int EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax)
+void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax)
 {
 	if (nz > 1) {
-		Log::logger()->error("Can only calculate AZ distribution on 2D images");
-		return 1;
+		throw ImageDimError(__FILE__, __LINE__, 
+							"Can only calculate AZ distribution on 2D images");
 	}
 
 	get_data();
@@ -1448,8 +1448,6 @@ int EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float 
 	done_data();
 	delete[]yc;
 	yc = 0;
-
-	return 0;
 }
 
 
@@ -1678,10 +1676,10 @@ void EMData::div(const EMData & em)
 }
 
 
-int EMData::update_stat()
+void EMData::update_stat()
 {
 	if (!(flags & EMDATA_NEEDUPD)) {
-		return 0;
+		return;
 	}
 
 	float max = -FLT_MAX;
@@ -1748,8 +1746,6 @@ int EMData::update_stat()
 	attr_dict["is_ri"] = (int) is_ri();
 
 	flags &= ~EMDATA_NEEDUPD;
-
-	return 0;
 }
 
 
@@ -2756,21 +2752,17 @@ EMData *EMData::do_radon()
 }
 
 
-int EMData::mean_shrink(int shrink_factor)
+void EMData::mean_shrink(int shrink_factor)
 {
 	if (shrink_factor <= 1) {
-		Log::logger()->error("mean shrink: shrink factor must > 1. Yours is '%d'", shrink_factor);
-		return 1;
+		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+								 "mean shrink: shrink factor must > 1");
 	}
 
-	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0)) {
-		Log::logger()->error("Image size not divisible by shrink factor");
-		return 1;
-	}
-
-	if (nz > 1 && (nz % shrink_factor != 0)) {
-		Log::logger()->error("Image size not divisible by shrink factor");
-		return 1;
+	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
+		(nz > 1 && (nz % shrink_factor != 0))) {
+		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+								 "Image size not divisible by shrink factor");
 	}
 
 	int shrinked_nx = nx / shrink_factor;
@@ -2823,25 +2815,19 @@ int EMData::mean_shrink(int shrink_factor)
 	done_data();
 	set_size(shrinked_nx, shrinked_ny, shrinked_nz);
 	scale_pixel(shrink_factor);
-
-	return 0;
 }
 
-int EMData::median_shrink(int shrink_factor)
+void EMData::median_shrink(int shrink_factor)
 {
 	if (shrink_factor <= 1) {
-		Log::logger()->error("mean shrink: shrink factor must > 1. Yours is '%d'", shrink_factor);
-		return 1;
+		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+								 "median shrink: shrink factor must > 1");
 	}
 
-	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0)) {
-		Log::logger()->error("Image size not divisible by shrink factor");
-		return 1;
-	}
-
-	if (nz > 1 && (nz % shrink_factor != 0)) {
-		Log::logger()->error("Image size not divisible by shrink factor");
-		return 1;
+	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
+		(nz > 1 && (nz % shrink_factor != 0))) {
+		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+								 "Image size not divisible by shrink factor");
 	}
 
 	int threed_shrink_factor = shrink_factor * shrink_factor;
@@ -2925,8 +2911,6 @@ int EMData::median_shrink(int shrink_factor)
 
 	delete[]mbuf;
 	mbuf = 0;
-
-	return 0;
 }
 
 Point < int >EMData::get_min_location() const
@@ -3539,20 +3523,20 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 }
 
 
-int EMData::add_incoherent(EMData * obj)
+void EMData::add_incoherent(EMData * obj)
 {
 	if (!obj) {
-		return 1;
+		throw NullEMDataObjectError(__FILE__, __LINE__);
 	}
 
 	if (!obj->is_complex() || !is_complex()) {
 		Log::logger()->error("add incoherent can only work on complex images");
-		return 1;
+		return;
 	}
 
 	if (!EMUtil::is_same_size(this, obj)) {
-		Log::logger()->error("add incoherent can only add same size image");
-		return 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__,
+									"add incoherent can only add same size image");
 	}
 
 	ri2ap();
@@ -3569,8 +3553,6 @@ int EMData::add_incoherent(EMData * obj)
 	obj->done_data();
 	done_data();
 	update();
-
-	return 0;
 }
 
 
@@ -4018,16 +4000,16 @@ EMData *EMData::convolute(EMData * with)
 }
 
 
-int EMData::common_lines(EMData * image1, EMData * image2, int mode, int steps, bool horizontal)
+void EMData::common_lines(EMData * image1, EMData * image2,
+						  int mode, int steps, bool horizontal)
 {
 	if (!image1 || !image2) {
-		Log::logger()->error("common lines: cannot handle NULL image");
-		return 1;
+		throw NullEMDataObjectError(__FILE__, __LINE__, 
+									"common lines: cannot handle NULL image");
 	}
 
 	if (mode < 0 || mode > 2) {
-		Log::logger()->error("common lines: invalid mode '%d'\n", mode);
-		return 1;
+		throw InvalidModeError(0, 2, mode, __FILE__, __LINE__, "invalid mode");
 	}
 
 	if (!image1->is_complex()) {
@@ -4041,8 +4023,8 @@ int EMData::common_lines(EMData * image1, EMData * image2, int mode, int steps, 
 	image2->ap2ri();
 
 	if (!EMUtil::is_same_size(image1, image2)) {
-		Log::logger()->error("common lines: input images must be the same size");
-		return 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__, 
+									"common lines: input images must be the same size");
 	}
 
 	int image2_nx = image2->get_xsize();
@@ -4232,8 +4214,7 @@ int EMData::common_lines(EMData * image1, EMData * image2, int mode, int steps, 
 
 		break;
 	default:
-		Log::logger()->error("no such mode: %d", mode);
-		return 1;
+		break;
 	}
 
 	if (horizontal) {
@@ -4261,22 +4242,21 @@ int EMData::common_lines(EMData * image1, EMData * image2, int mode, int steps, 
 	image2->done_data();
 	done_data();
 	update();
-
-	return 0;
 }
 
 
 
-int EMData::common_lines_real(EMData * image1, EMData * image2, int steps, bool horiz)
+void EMData::common_lines_real(EMData * image1, EMData * image2,
+							   int steps, bool horiz)
 {
 	if (!image1 || !image2) {
-		Log::logger()->error("common lines: cannot handle NULL image");
-		return 1;
+		throw NullEMDataObjectError(__FILE__, __LINE__, 
+									"common lines real: cannot handle NULL image");
 	}
 
 	if (!EMUtil::is_same_size(image1, image2)) {
-		Log::logger()->error("common lines real: input images must be the same size");
-		return 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__, 
+									"common lines real: input images must be the same size");
 	}
 
 	int steps2 = steps * 2;
@@ -4370,18 +4350,14 @@ int EMData::common_lines_real(EMData * image1, EMData * image2, int steps, bool 
 
 	delete[]im2;
 	im2 = 0;
-
-	return 0;
 }
 
 
-
-
-int EMData::cut_slice(EMData * map, float dz, Rotation * ort, bool interpolate, float dx, float dy)
+void EMData::cut_slice(EMData * map, float dz, Rotation * ort,
+					   bool interpolate, float dx, float dy)
 {
 	if (!map) {
-		Log::logger()->error("input map is empty");
-		return 1;
+		throw NullEMDataObjectError(__FILE__, __LINE__, "input map is empty");
 	}
 
 	Rotation r(0, 0, 0, Rotation::EMAN);
@@ -4447,16 +4423,14 @@ int EMData::cut_slice(EMData * map, float dz, Rotation * ort, bool interpolate, 
 
 	done_data();
 	map->done_data();
-
-	return 0;
 }
 
 
-int EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float dy)
+void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float dy)
 {
 	if (!map) {
-		Log::logger()->error("input map is empty");
-		return 1;
+		throw NullEMDataObjectError(__FILE__, __LINE__,
+									"input map is empty");
 	}
 
 	Rotation r(0, 0, 0, Rotation::EMAN);
@@ -4502,8 +4476,6 @@ int EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float 
 
 	done_data();
 	map->done_data();
-
-	return 0;
 }
 
 

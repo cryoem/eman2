@@ -150,6 +150,52 @@ namespace EMAN
 							int line = 0, const string& desc = "")
 			: Exception(file, line, desc) {}
 	};
+
+	class ImageDimError : public Exception
+	{
+	public:
+		ImageDimError(const string& file = "unknown",
+					  int line = 0, const string& desc = "")
+			: Exception(file, line, desc) {}
+	};
+
+	class NullEMDataObjectError : public Exception
+	{
+	public:
+		NullEMDataObjectError(const string& file = "unknown",
+							  int line = 0, const string& desc = "")
+			: Exception(file, line, desc) {}
+	};
+	
+	class ShrinkFactorError : public Exception
+	{
+	public:
+		ShrinkFactorError(int sf, const string& file = "unknown",
+						  int line = 0, const string& desc = "")
+			: Exception(file, line, desc)
+		{
+			char s[32];
+			sprintf(s, "%d", sf);
+			set_objname(string(s));
+		}
+	};
+
+	class InvalidModeError : public Exception
+	{
+	public:
+		InvalidModeError(int low_mode, int high_mode, int wrong_mode,
+						 const string& file = "unknown",
+						 int line = 0, const string& desc = "")
+			: Exception(file, line, desc)
+		{
+			char s[128];
+			sprintf(s, "mode %d out of range [%d,%d]",
+					wrong_mode, low_mode, high_mode);
+			set_objname(string(s));
+		}
+	};
+					
+
 	
 }
 

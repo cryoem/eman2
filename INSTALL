@@ -58,6 +58,9 @@ Platform Dependent Optimization
     
 For Developers Only:
 --------------------
+    0. For Emacs users, please add the following line to your $HOME/.emacs:
+	   (setq default-tab-width 4)
+
     1. EMAN2 use Pyste (http://www.boost.org/libs/python/pyste/) to wrap C++
        into python. Here is the way to install Pyste:
 

@@ -11,7 +11,7 @@ if test ! $? = 0; then
     exit 1
 fi
 
-echo -n "Start to generate Doxygen documentation ... "
+echo -n "Start to generate Doxygen documentation. Be patient ... "
 doxygen  doc/Doxyfile
 echo "Done"
 echo "Documentation is at $PWD/doc/html/index.html"

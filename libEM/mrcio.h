@@ -7,10 +7,6 @@
 #include "imageio.h"
 #include <stdio.h>
 
-// todo: change normalization in read_data/write_data
-//       after EMData defins Min() and Max()
-// todo: define a function to return 'mode' in string
-
 namespace EMAN
 {
 	class MrcIO:public ImageIO
