@@ -117,7 +117,12 @@ FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrit
 			}
 		}
 	}
-	
+	else if (mode == WRITE_ONLY) {
+		f = fopen(filename.c_str(), "wb");
+		if (is_new) {
+			*is_new = true;
+		}
+	}
 	
 	if (!f) {
 		LOGERR("cannot access file '%s'", filename.c_str());

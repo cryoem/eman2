@@ -58,7 +58,8 @@ namespace EMAN
 		 * @param use_host_endian To write in the host computer byte order.
 		 */
 		void write_image(string filename, int img_index = 0,
-						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false,
+						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+						 bool header_only = false,
 						 bool use_host_endian = true);
 
 		/** append to an image file; If the file doesn't exist, create one.

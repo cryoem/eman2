@@ -41,7 +41,7 @@ namespace EMAN
 	{
 	  public:
 		enum IOMode
-		{ READ_ONLY = 1, READ_WRITE = 2 };
+		{ READ_ONLY = 1, READ_WRITE = 2, WRITE_ONLY = 3 };
 	  public:
 		virtual ~ ImageIO();
 
@@ -93,7 +93,8 @@ namespace EMAN
 		 *        endian opposite to the host machine's endian.
 		 * @return 0 if OK; 1 if error.
 		 */
-		virtual int write_data(float *data, int image_index = 0, bool use_host_endian = true) = 0;
+		virtual int write_data(float *data, int image_index = 0,
+							   bool use_host_endian = true) = 0;
 
 		/** Read CTF data from this image.
 		 *

@@ -73,7 +73,7 @@ int SpiderIO::init()
 		is_big_endian = ByteOrder::is_data_big_endian(&nslice);
 		become_host_endian((float *) first_h, NUM_FLOATS_IN_HEADER);
 
-		if (first_h->istack == SINGLE_IMAGE_HEADER && rw_mode == READ_WRITE) {
+		if (first_h->istack == SINGLE_IMAGE_HEADER && rw_mode != READ_ONLY) {
 			fclose(spider_file);
 			spider_file = 0;
 			free(first_h);

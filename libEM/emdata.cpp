@@ -142,7 +142,12 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 		}
 	}
 
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_WRITE, imgtype);
+	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
+	if (!header_only) {
+		rwmode = ImageIO::WRITE_ONLY;
+	}
+	
+	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
 	if (!imageio) {
 		throw ImageFormatException("cannot create an image io");
 	}

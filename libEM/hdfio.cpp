@@ -82,7 +82,7 @@ int HdfIO::init()
 	if (rw_mode == READ_ONLY) {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 	}
-	else if (rw_mode == READ_WRITE) {
+	else {
 		hdf_err_off();
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 		hdf_err_on();

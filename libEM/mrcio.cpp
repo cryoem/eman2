@@ -14,9 +14,13 @@
 #include <string.h>
 #include <assert.h>
 
+#if 0
+
 #ifndef WIN32
 #include <unistd.h>
 #include <sys/types.h>
+#endif
+
 #endif
 
 using namespace EMAN;
@@ -525,6 +529,7 @@ int MrcIO::write_data(float *data, int image_index, bool)
 		Util::flip_complex_phase(data, size);
 	}
 
+#if 0
 	// truncate the file if necessary
 #ifndef WIN32
 	if (!is_new_file) {
@@ -546,6 +551,7 @@ int MrcIO::write_data(float *data, int image_index, bool)
 			}
 		}
 	}
+#endif
 #endif
 	
 	
