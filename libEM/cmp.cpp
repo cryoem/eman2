@@ -17,13 +17,35 @@ template <> Factory < Cmp >::Factory()
 	force_add(&FRCCmp::NEW);
 }
 
-
-float DotCmp::cmp(EMData * image, Transform *) const
+void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 {
-	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(image, with)) {
-		return 0;
+	if (!image) {
+		throw NullPointerException("compared image");
 	}
+	if (!with) {
+		throw NullPointerException("compare-with image");
+	}
+	
+	if (!EMUtil::is_same_size(image, with)) {
+		throw ImageFormatException( "images not same size");
+	}
+
+	float *d1 = image->get_data();
+	if (!d1) {
+		throw NullPointerException("compared image data");
+	}
+	
+	float *d2 = with->get_data();
+	if (!d2) {
+		throw NullPointerException("compare-with image data");
+	}
+}
+
+
+float DotCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
 
 	float *d1 = image->get_data();
 	float *d2 = with->get_data();
@@ -49,16 +71,16 @@ float DotCmp::cmp(EMData * image, Transform *) const
 
 	result = 2 * result / (square_sum1 + square_sum2);
 #endif
+	
+	EXITFUNC;
 	return (float) result;
 }
 
 
-float VarianceCmp::cmp(EMData * image, Transform *) const
+float VarianceCmp::cmp(EMData * image, EMData *with) const
 {
-	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(image, with)) {
-		return 0;
-	}
+	ENTERFUNC;
+	validate_input_args(image, with);
 
 	float *x_data = with->get_data();
 	float *y_data = image->get_data();
@@ -97,20 +119,26 @@ float VarianceCmp::cmp(EMData * image, Transform *) const
 	}
 	scale = m;
 	shift = b;
+	
+	EXITFUNC;
+	
 #if 0
 	return (1 - result);
 #endif
+	
 	return result;
 }
 
-float PhaseCmp::cmp(EMData * image, Transform *) const
+float PhaseCmp::cmp(EMData * image, EMData *with) const
 {
+	ENTERFUNC;
+	validate_input_args(image, with);
+
 	static float *dfsnr = 0;
 	static int nsnr = 0;
 
-	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(image, with) || image->get_zsize() > 1) {
-		return 0;
+	if (image->get_zsize() > 1) {
+		throw ImageDimensionException("2D only");
 	}
 
 	int nx = image->get_xsize();
@@ -153,6 +181,7 @@ float PhaseCmp::cmp(EMData * image, Transform *) const
 			i += 2;
 		}
 	}
+	EXITFUNC;
 #if 0
 	return (1.0f - sum / norm);
 #endif
@@ -160,13 +189,15 @@ float PhaseCmp::cmp(EMData * image, Transform *) const
 }
 
 
-float FRCCmp::cmp(EMData * image, Transform *) const
+float FRCCmp::cmp(EMData * image, EMData * with) const
 {
+	ENTERFUNC;
+	validate_input_args(image, with);
+	
 	static vector < float >default_snr;
 
-	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(image, with) || image->get_zsize() > 1) {
-		return 0;
+	if (image->get_zsize() > 1) {
+		throw ImageDimensionException("2D only");
 	}
 
 	int nx = image->get_xsize();
@@ -200,6 +231,8 @@ float FRCCmp::cmp(EMData * image, Transform *) const
 		norm += i * default_snr[i * n + n / 2];
 	}
 
+	EXITFUNC;
+	
 	return (float)(sum / norm);
 }
 

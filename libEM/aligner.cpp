@@ -484,11 +484,9 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
 
 	float dot1 = 0;
 	float dot2 = 0;
-
-	Dict params("to", to);
-	
-	dot1 = this_copy->cmp(cmp_name, params);
-	dot2 = this_copy2->cmp(cmp_name, params);
+	Dict cmp_params;
+	dot1 = this_copy->cmp(cmp_name, to, cmp_params);
+	dot2 = this_copy2->cmp(cmp_name, to, cmp_params);
 
 	EMData *result = 0;
 	if (dot1 > dot2) {
@@ -555,9 +553,9 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 	params["dy"] = cdy;
 
 	this_copy2->align("Refine", params);
-
-	float dot1 = this_copy->cmp(cmp_name, params);
-	float dot2 = this_copy2->cmp(cmp_name, params);
+	EMData * with = params["to"];
+	float dot1 = this_copy->cmp(cmp_name, with, params);
+	float dot2 = this_copy2->cmp(cmp_name, with, params);
 
 	EMData *result = 0;
 	if (dot1 > dot2) {
@@ -787,7 +785,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, string) const
 
 EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) const
 {
-	EMData *to = params.set_default("to", (EMData *) 0);
+	EMData *with = params.set_default("to", (EMData *) 0);
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int usedot = params.set_default("usedot", 1);
 	params.set_default("maxshift", -1);
@@ -823,10 +821,9 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 	float dot2 = 0;
 
 	if (usedot) {
-		
-		Dict params("to", to);
-		dot1 = this_copy->cmp(cmp_name, params);
-		dot2 = this_copy2->cmp(cmp_name, params);
+		Dict cmp_params;
+		dot1 = this_copy->cmp(cmp_name, with, cmp_params);
+		dot2 = this_copy2->cmp(cmp_name, with, cmp_params);
 
 		if (usedot == 2) {
 			Vec3f trans = this_copy->get_translation();
@@ -842,11 +839,10 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 	}
 	else {
 		Dict cmp_params;
-		cmp_params["to"] = params["to"];
 		cmp_params["keepzero"] = 1;
 
-		dot1 = this_copy->cmp(cmp_name, cmp_params);
-		dot2 = this_copy2->cmp(cmp_name, cmp_params);
+		dot1 = this_copy->cmp(cmp_name, with, cmp_params);
+		dot2 = this_copy2->cmp(cmp_name, with, cmp_params);
 	}
 
 	EMData *result = 0;
@@ -935,7 +931,10 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 		}
 
 		int ur2 = u->get_ysize() / 2 - 2 - half_maxshift;
-
+		
+		Dict cmp_params;
+		cmp_params["keepzero"] = 1;
+		
 		for (int dy = -half_maxshift; dy <= half_maxshift; dy++) {
 			for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
 				if (hypot(dx, dy) <= half_maxshift) {
@@ -945,11 +944,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 					uwc->rotate_x(a->calc_max_index());
 
-					Dict cmp_params;
-					cmp_params["to"] = wsc;
-					cmp_params["keepzero"] = 1;
-
-					float cm = uwc->cmp(cmp_name, cmp_params);
+					float cm = uwc->cmp(cmp_name, wsc, cmp_params);
 
 					if (cm < bestval) {
 						bestval = cm;
@@ -1008,10 +1003,8 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 					uwc->rotate_x(a->calc_max_index());
 					Dict cmp_params;
-					cmp_params["to"] = to_copy2;
 					cmp_params["keepzero"] = 1;
-
-					float cm = uwc->cmp(cmp_name, cmp_params);
+					float cm = uwc->cmp(cmp_name, to_copy2, cmp_params);
 
 					if (cm < bestval) {
 						bestval = cm;
@@ -1126,10 +1119,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 						u->rotate_translate(ang, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
 						Dict cmp_params;
-						cmp_params["to"] = to_copy;
-						cmp_params["keepzero"] = 1;
-
-						float lc = u->cmp(cmp_name, cmp_params);
+						float lc = u->cmp(cmp_name, to_copy, cmp_params);
 
 						if (lc < bestval) {
 							bestval = lc;
@@ -1182,10 +1172,8 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 						u->rotate_translate(ang, 0.0f, 0.0f, (float)dx, (float)dy, 0.0f);
 
 						Dict cmp_params;
-						cmp_params["to"] = to_copy;
 						cmp_params["keepzero"] = 1;
-
-						float lc = u->cmp(cmp_name, cmp_params);
+						float lc = u->cmp(cmp_name, to_copy, cmp_params);
 
 						if (lc < bestval) {
 							bestval = lc;
@@ -1255,8 +1243,9 @@ EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
 		return this_copy;
 	}
 
-	float this_cmp = this_copy->cmp(cmp_name, params);
-	float flip_cmp = flip_copy->cmp(cmp_name, params);
+	EMData * with = params["to"];
+	float this_cmp = this_copy->cmp(cmp_name, with, params);
+	float flip_cmp = flip_copy->cmp(cmp_name, with, params);
 
 	EMData *result = 0;
 
@@ -1345,9 +1334,10 @@ static double refalifn(const gsl_vector * v, void *params)
 	double a = gsl_vector_get(v, 2);
 
 	EMData *this_img = (*dict)["this"];
+	EMData * with = (*dict)["with"];
 	this_img->rotate_translate((float)a, 0.0f, 0.0f, (float)x, (float)y, 0.0f);
 
-	return this_img->cmp("FRC", *dict);
+	return this_img->cmp("FRC", with, *dict);
 }
 
 static double refalifnfast(const gsl_vector * v, void *params)
@@ -1399,7 +1389,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 		int np = 3;
 		Dict gsl_params;
 		gsl_params["this"] = this_img;
-		gsl_params["to"] = to;
+		gsl_params["with"] = to;
 		gsl_params["snr"] = params["snr"];
 
 		const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
@@ -1452,10 +1442,9 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	else {
 		float best = 0;
 		Dict cmp_params;
-		cmp_params["to"] = to;
-
+		
 		if (mode == 0) {
-			best = this_img->cmp(cmp_name, cmp_params);
+			best = this_img->cmp(cmp_name, to, cmp_params);
 		}
 		else if (mode < 0) {
 			printf("Start %f  %f,%f\n", salt * 180.0 / M_PI, sdx, sdy);
@@ -1471,7 +1460,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 				if (daz != salt) {
 					last_alt = daz;
 					this_img->rotate_translate(daz, 0, 0, sdx, sdy, sdz);
-					f = this_img->cmp(cmp_name, cmp_params);
+					f = this_img->cmp(cmp_name, to, cmp_params);
 
 					if (f > best) {
 						best = f;
@@ -1485,7 +1474,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 			for (float dx = sdx - 1.0f; dx <= sdx + 1.0; dx += 0.25f) {
 				for (float dy = sdy - 1.0f; dy <= sdy + 1.0; dy += 0.25f) {
 					this_img->rotate_translate(last_alt, 0, 0, dx, dy, 0);
-					f = this_img->cmp(cmp_name, cmp_params);
+					f = this_img->cmp(cmp_name, to, cmp_params);
 
 					if (f > best) {
 						best = f;

@@ -23,7 +23,7 @@ struct EMAN_Cmp_Wrapper: EMAN::Cmp
     EMAN_Cmp_Wrapper(PyObject* self_):
         EMAN::Cmp(), self(self_) {}
 
-    float cmp(EMAN::EMData* p0, EMAN::Transform* p1) const {
+    float cmp(EMAN::EMData* p0, EMAN::EMData* p1) const {
         return call_method< float >(self, "cmp", p0, p1);
     }
 

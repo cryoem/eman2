@@ -107,9 +107,8 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < 500; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
 				Dict d;
-				d["with"] = data[i + NTT / 2];
 				d["keepzero"] = 1;
-				data[i]->cmp("Variance", d);
+				data[i]->cmp("Variance", data[i + NTT / 2], d);
 			}
 		}
 		t2 = (float) clock();
@@ -120,8 +119,8 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
-				Dict params("with", data[i + NTT / 2]);
-				data[i]->cmp("Phase", params);
+				Dict params;
+				data[i]->cmp("Phase", data[i + NTT / 2], params);
 			}
 		}
 		t2 = (float) clock();
@@ -132,8 +131,8 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
-				Dict params("with", data[i + NTT / 2]);
-				data[i]->cmp("FRC", params);
+				Dict params;
+				data[i]->cmp("FRC", data[i + NTT / 2], params);
 			}
 		}
 		t2 = (float) clock();

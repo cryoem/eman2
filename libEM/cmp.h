@@ -39,14 +39,15 @@ namespace EMAN
      @code
      *      EMData *image1 = ...;
      *      EMData *image2 = ...;
-     *      float result = image1->cmp("CMP_NAME", Dict("with", image2));
+	 *      Dict params = ...;
+     *      float result = image1->cmp("CMP_NAME", image2, params);
      @endcode
 	 *
      *  - How to define a new Cmp class \n
      *    A new XYZCmp class should implement the following functions:
 	 *    (Please replace 'XYZ' with your own class name).
 	 @code
-     *        float cmp(EMData * image, Transform * transform = 0) const;
+     *        float cmp(EMData * image, EMData * with) const;
      *        TypeDict get_param_types() const;
      *        string get_name() const { return "XYZ"; }
      *        static Cmp *NEW() { return XYZCmp(); }
@@ -64,11 +65,11 @@ namespace EMAN
 		 * its parameters. An optional transformation may be used
 		 * to transform the 2 images.
 		 *
-		 * @param image The image to be compared.
-		 * @param transform Defines the transformation.
+		 * @param image The first image to be compared.
+		 * @param with The second image to be comppared.
 		 * @return The comparison result. The bigger, the better.
 		 */			
-		virtual float cmp(EMData * image, Transform * transform = 0) const = 0;
+		virtual float cmp(EMData * image, EMData * with) const = 0;
 		
 		/** Get the Cmp's name. Each Cmp is identified by a unique name.
 		 * @return The Cmp's name.
@@ -99,8 +100,10 @@ namespace EMAN
 		 */	 
 		virtual TypeDict get_param_types() const = 0;
 		
-	  protected:
-		  mutable Dict params;
+	protected:
+		void validate_input_args(const EMData * image, const EMData *with) const;
+		
+		mutable Dict params;
 	};
 
 	/** Use dot product of 2 same-size images to do the comparison.
@@ -109,7 +112,7 @@ namespace EMAN
 	class DotCmp:public Cmp
 	{
 	  public:
-		float cmp(EMData * image, Transform * transform = 0) const;
+		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
 		{
@@ -124,7 +127,6 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("with", EMObject::EMDATA);
 			d.put("evenonly", EMObject::INT);
 			return d;
 		}
@@ -145,7 +147,7 @@ namespace EMAN
 	  public:
 		VarianceCmp() : scale(0), shift(0) {}
 		
-		float cmp(EMData * image, Transform * transform = 0) const;
+		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
 		{
@@ -160,9 +162,8 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
-			  d.put("keepzero", EMObject::INT);
-			  return d;
+			d.put("keepzero", EMObject::INT);
+			return d;
 		}
 
 		float get_scale() const
@@ -193,7 +194,7 @@ namespace EMAN
 	class PhaseCmp:public Cmp
 	{
 	  public:
-		float cmp(EMData * image, Transform * transform = 0) const;
+		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
 		{
@@ -208,7 +209,6 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("with", EMObject::EMDATA);
 			return d;
 		}
 	};
@@ -222,7 +222,7 @@ namespace EMAN
 	class FRCCmp:public Cmp
 	{
 	  public:
-		float cmp(EMData * image, Transform * transform = 0) const;
+		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
 		{
@@ -237,7 +237,6 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("with", EMObject::EMDATA);
 			d.put("snr", EMObject::FLOATARRAY);
 			return d;
 		}

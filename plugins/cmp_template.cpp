@@ -4,16 +4,14 @@
 
 using namespace EMAN;
 
-float XYZCmp::cmp(EMData * image, Transform * transform) const
+float XYZCmp::cmp(EMData * image, EMData * with) const
 {
-	if (!image) {
-		return 0;
-	}
+	validate_input_args(image, with);
 
 #if 0
-	EMData *with = params["with"];
 	int param1 = params["param1"];
 	float param2 = params["param2"];
+	// do something
 #endif
 
 	return 0;

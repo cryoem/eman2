@@ -250,13 +250,13 @@ void EMData::filter(string filtername, const Dict & params)
 	EXITFUNC;
 }
 
-float EMData::cmp(string cmpname, const Dict & params)
+float EMData::cmp(string cmpname, EMData * with, const Dict & params)
 {
 	ENTERFUNC;
 	float result = 0;
 	Cmp *c = Factory < Cmp >::get(cmpname, params);
 	if (c) {
-		result = c->cmp(this);
+		result = c->cmp(this, with);
 	}
 	
 	EXITFUNC;
@@ -1821,7 +1821,6 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 	}
 
 	if (!EMUtil::is_same_size(this, with)) {
-		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
 	}
 
@@ -5421,9 +5420,8 @@ float EMData::dot(EMData * with, bool evenonly)
 	}
 	DotCmp dot_cmp;
 	Dict cmp_params;
-	cmp_params["with"] = with;
 	cmp_params["evenonly"] = (int) evenonly;
-	float r = dot_cmp.cmp(this);
+	float r = dot_cmp.cmp(this, with);
 	EXITFUNC;
 	return r;
 }

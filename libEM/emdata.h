@@ -112,11 +112,12 @@ namespace EMAN
 
 		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.
+		 * @param with The image you want to compare to.
 		 * @param params Comparison parameters in a keyed dictionary.
 		 * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
 		 * @return comparison score. The bigger, the better.
 		 */
-		float cmp(string cmpname, const Dict & params);
+		float cmp(string cmpname, EMData * with, const Dict & params);
 
 		/** Align this image with another image and return the result image.
 		 *

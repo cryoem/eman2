@@ -16,7 +16,7 @@ namespace EMAN
 	class XYZCmp:public Cmp
 	{
 	  public:
-		float cmp(EMData * image, Transform * transform = 0) const;
+		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
 		{
@@ -28,19 +28,18 @@ namespace EMAN
 			return new XYZCmp();
 		}
 
-	/** Add your cmp parameter names and types in
-	 * get_param_types(). For available parameter types, please
-	 * refer class EMObject.
-	 * 
-	 * As an example, XYZCmp has 3 parameters:
-	 *    EMData *with;
-	 *    int param1;
-	 *    float param2;
-	 */
+		/** Add your cmp parameter names and types in
+		 * get_param_types(). For available parameter types, please
+		 * refer class EMObject.
+		 * 
+		 * As an example, XYZCmp has 3 parameters:
+		 *    EMData *with;
+		 *    int param1;
+		 *    float param2;
+		 */
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
 			  d.put("param1", EMObject::INT);
 			  d.put("param2", EMObject::FLOAT);
 			  return d;
