@@ -16,6 +16,7 @@ SET(EMAN_EXECUTABLE_PATH "${EXECUTABLE_OUTPUT_PATH}")
 SET(EMAN_LIBRARY_PATH "${LIBRARY_OUTPUT_PATH}")
 MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
 
+OPTION(ENABLE_FFTW2 "if enable fftw 2 support" OFF)
 OPTION(ENABLE_TIFF "if enable TIFF support" ON)
 OPTION(ENABLE_HDF "if enable HDF support" ON)
 OPTION(ENABLE_PNG "if enable PNG support" ON)
@@ -46,21 +47,39 @@ MARK_AS_ADVANCED(CMAKE_CXX_FLAGS)
 
 SUBDIRS(libEM rt programs)
 
-FIND_PATH(FFTW_INCLUDE_PATH fftw.h
+IF (ENABLE_FFTW2)
+
+  FIND_PATH(FFTW_INCLUDE_PATH fftw.h
           $ENV{FFTWDIR}/include ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include /usr/local/include /usr/include)
 
-FIND_LIBRARY(FFTW_LIBRARY
+  FIND_LIBRARY(FFTW_LIBRARY
              NAMES sfftw fftw
              PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
 
-FIND_LIBRARY(RFFTW_LIBRARY
+  FIND_LIBRARY(RFFTW_LIBRARY
              NAMES srfftw rfftw
              PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
 
-IF(FFTW_LIBRARY AND RFFTW_LIBRARY)
-ELSE(FFTW_LIBRARY AND RFFTW_LIBRARY)
+  IF(FFTW_LIBRARY AND RFFTW_LIBRARY)
+  ELSE(FFTW_LIBRARY AND RFFTW_LIBRARY)
 	MESSAGE(SEND_ERROR "ERROR: FFTW not found and EMAN cannot be build. please install FFTW first!")
-ENDIF(FFTW_LIBRARY AND RFFTW_LIBRARY)
+  ENDIF(FFTW_LIBRARY AND RFFTW_LIBRARY)
+ELSE (ENABLE_FFTW2)
+  FIND_PATH(FFTW_INCLUDE_PATH fftw3.h
+          $ENV{FFTWDIR}/include ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include /usr/local/include /usr/include)
+
+  FIND_LIBRARY(FFTW_LIBRARY
+             NAMES fftw3f
+             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+
+  IF(FFTW_LIBRARY)
+  ELSE(FFTW_LIBRARY)
+	MESSAGE(SEND_ERROR "ERROR: FFTW not found and EMAN cannot be build. please install FFTW first!")
+  ENDIF(FFTW_LIBRARY)
+ENDIF (ENABLE_FFTW2)
+
+
+
 
 
 FIND_PATH(GSL_INCLUDE_PATH gsl/gsl_linalg.h
