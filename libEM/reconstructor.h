@@ -30,9 +30,39 @@ namespace EMAN
     class EMData;
     class Rotation;
 
+
+    /** Reconstructor class is the base class for all Reconstructors.
+     * Each specific Reconstructor type has a unique name. This name
+     * is used to create a Reconstructor instance or do a reconstruction.
+     *
+     * Reconstructor should be used as follows:
+     *
+     * 1. How to get all the Reconstructor types:
+     *
+     *    vector<string> all_reconstructors = Factory<Reconstructor>.instance()->get_list();
+     *
+     * 2. How to use a Reconstructor
+     *
+     *    Reconstructor* r = Factory<Reconstructor>.instance()->get("Fourier");
+     *    r->setup;
+     *    r->insert->slice(slice1, euler1);
+     *    insert more
+     *    EMData* result = r->finish();
+     *
+     * 3. How to define a new Reconstructor type
+     *
+     *    A new XYZReconstructor class should implement the following functions:
+     * 
+     *        int setup();
+     *        int insert_slice(EMData * slice, const Rotation & euler);
+     *        EMData * finish();
+     *        string get_name() const { return "XYZ"; }
+     *        static Reconstructor *NEW() { return new XYZReconstructor(); }
+     *        TypeDict get_param_types() const;
+     */
     class Reconstructor
     {
-      public:
+    public:
 	virtual ~Reconstructor()
 	{
 	}
@@ -46,16 +76,20 @@ namespace EMAN
 	{
 	    return params;
 	}
+
 	virtual void set_params(const Dict & new_params)
 	{
 	    params = new_params;
 	}
+	
 	virtual TypeDict get_param_types() const = 0;
 
       protected:
 	mutable Dict params;
     };
 
+    /** Fourier space 3D reconstruction
+     */
     class FourierReconstructor : public Reconstructor
     {
       public:
@@ -92,7 +126,8 @@ namespace EMAN
 	int nz;
     };
 
-
+    /** Fourier space 3D reconstruction with slices already Wiener filtered.
+     */
     class WienerFourierReconstructor : public Reconstructor
     {
       public:
@@ -129,11 +164,13 @@ namespace EMAN
 	int nz;
     };
 
-    class BackprojectionReconstructor : public Reconstructor
+    /** Real space 3D reconstruction using back projection.
+     */
+    class BackProjectionReconstructor : public Reconstructor
     {
       public:
-	BackprojectionReconstructor();
-	~BackprojectionReconstructor();
+	BackProjectionReconstructor();
+	~BackProjectionReconstructor();
 
 	int setup();
 	int insert_slice(EMData * slice, const Rotation & euler);
@@ -141,11 +178,11 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "Backprojection";
+	    return "BackProjection";
 	}
 	static Reconstructor *NEW()
 	{
-	    return new BackprojectionReconstructor();
+	    return new BackProjectionReconstructor();
 	}
 
 	TypeDict get_param_types() const

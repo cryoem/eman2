@@ -36,12 +36,12 @@ namespace EMAN
      *
      * 3. How to define a new Projector
      *
-     *    a new projector type "XYZProjector" should implement at
+     *    A new projector type "XYZProjector" should implement at
      *    least the following 3 functions:
      *
      *        EMData *project3d(EMData * em) const;
-     *        string get_name() const;
-     *        static Projector* NEW();
+     *        string get_name() const { return "XYZ"; }
+     *        static Projector* NEW() { return new XYZProjector(); }
      */
     
     class Projector

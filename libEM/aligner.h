@@ -13,6 +13,30 @@ namespace EMAN
     class EMData;
     class Cmp;
 
+    /** Aligner class is the base class for all aligners. Each
+     * specific Aligner type has a unique name. This name is used to
+     * create a new Aligner instance or call an Aligner.
+     *
+     * Aligners should be used as follows:
+     *
+     * 1. How to get all the Aligner types
+     *
+     *    vector<string> all_aligners = Factory<Aligner>.instance()->get_list();
+     *
+     * 2. How to use an Aligner
+     *
+     *    EMData *img = ...;
+     *    img->align("ALIGNER_NAME", Dict("with", image1));
+     *
+     * 3. How to define a new Aligner class
+     *
+     *    A new aligner type "XYZAligner" should implement the
+     *    following 3 functions:
+     *
+     *        EMData *align(EMData * this_img, string cmp_name = "") const;
+     *        string get_name() const { return "XYZ"; }
+     *        static Aligner* NEW() { return new XYZAligner(); }
+     */
     class Aligner
     {
     public:
@@ -37,19 +61,21 @@ namespace EMAN
 	mutable Dict params;
     };
 
-    class TranslateAligner: public Aligner
+    /** Translational 2D Alignment using cross correlation
+     */
+    class TranslationalAligner: public Aligner
     {
     public:
 	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
 	string get_name() const
 	{
-	    return "Translate";
+	    return "Translational";
 	}
 	
 	static Aligner *NEW()
 	{
-	    return new TranslateAligner();
+	    return new TranslationalAligner();
 	}
 
 	TypeDict get_param_types() const
@@ -63,19 +89,21 @@ namespace EMAN
 	}
     };
 
-    class Translate3DAligner: public Aligner
+    /** Translational 3D Alignment using  cross correlation
+     */
+    class Translational3DAligner: public Aligner
     {
     public:
 	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
 	string get_name() const
 	{
-	    return "Translate3D";
+	    return "Translational3D";
 	}
 	
 	static Aligner *NEW()
 	{
-	    return new Translate3DAligner();
+	    return new Translational3DAligner();
 	}
 
 	TypeDict get_param_types() const
@@ -88,19 +116,21 @@ namespace EMAN
 
     };
 
-    class RotateAligner: public Aligner
+    /** rotational alignment using angular correlation
+     */
+    class RotationalAligner: public Aligner
     {
     public:
 	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
 	string get_name() const
 	{
-	    return "Rotate";
+	    return "Rotational";
 	}
 	
 	static Aligner *NEW()
 	{
-	    return new RotateAligner();
+	    return new RotationalAligner();
 	}
 
 	TypeDict get_param_types() const
@@ -111,7 +141,8 @@ namespace EMAN
 	}
     };
 
-
+    /** rotational alignment assuming centers are correct
+     */
     class RotatePrecenterAligner: public Aligner
     {
     public:
@@ -135,6 +166,8 @@ namespace EMAN
 	}
     };
 
+    /** rotational alignment via circular harmonic
+     */
     class RotateCHAligner: public Aligner
     {
     public:
@@ -160,6 +193,8 @@ namespace EMAN
 	}
     };
 
+    /** rotational, translational alignment
+     */
     class RotateTranslateAligner: public Aligner
     {
     public:
@@ -185,6 +220,8 @@ namespace EMAN
 	}
     };
 
+    /** rotational, translational alignment
+     */
     class RotateTranslateBestAligner: public Aligner
     {
     public:
@@ -210,7 +247,8 @@ namespace EMAN
 	}
     };
 
-
+    /** rotational, translational alignment with Radon transforms
+     */
     class RotateTranslateRadonAligner: public Aligner
     {
     public:
@@ -237,7 +275,8 @@ namespace EMAN
 	}
     };
 
-
+    /** rotational and flip alignment
+     */
     class RotateFlipAligner: public Aligner
     {
     public:
@@ -263,6 +302,8 @@ namespace EMAN
 	}
     };
 
+    /** rotational, translational and flip alignment
+     */
     class RotateTranslateFlipAligner: public Aligner
     {
     public:	
@@ -289,6 +330,8 @@ namespace EMAN
 	}
     };
 
+    /** rotational, translational and flip alignment using real-space methods. slow
+    */
     class RTFSlowAligner: public Aligner
     {
     public:	
@@ -313,7 +356,8 @@ namespace EMAN
 	    return d;
 	}
     };
-
+    /** rotational, translational and flip alignment using exhaustive search. VERY SLOW
+     */
     class RTFSlowestAligner: public Aligner
     {
     public:	
@@ -339,7 +383,9 @@ namespace EMAN
 	}
     };
 
-
+    /** rotational, translational and flip alignment using fscmp at multiple locations, slow
+     * but this routine probably produces the best results
+     */
     class RTFBestAligner: public Aligner
     {
     public:
@@ -366,7 +412,8 @@ namespace EMAN
 	}
     };
 
-
+    /** rotational, translational and flip alignment with Radon transforms
+     */
     class RTFRadonAligner: public Aligner
     {
     public:	
@@ -395,7 +442,8 @@ namespace EMAN
 	}
     };
 
-
+    /** refine alignment
+     */
     class RefineAligner: public Aligner
     {
     public:	
