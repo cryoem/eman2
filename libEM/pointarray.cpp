@@ -2,12 +2,7 @@
  * $Id$
  */
 #include "pointarray.h"
-#include <gsl/gsl_multimin.h>
-
-#if defined OPTPP
-#include "OptQNewton.h"
-#include "NLF.h"
-#endif
+#include "util.h"
 
 using namespace EMAN;
 
@@ -20,12 +15,36 @@ PointArray::PointArray()
 PointArray::PointArray(unsigned int nn)
 {
 	n = nn;
-	points = (double *) malloc(4 * n * sizeof(double));
+	points = (double *) calloc(4 * n, sizeof(double));
 }
 
 PointArray::~PointArray()
 {
 	free(points);
+}
+
+void PointArray::zero()
+{
+	memset((void *) points, 0, 4 * n * sizeof(double));
+}
+
+PointArray *PointArray::copy()
+{
+	PointArray *pa2 = new PointArray();
+	pa2->set_number_points(get_number_points());
+	double *pa2data = pa2->get_points_array();
+	memcpy(pa2data, get_points_array(), sizeof(double) * 4 * get_number_points());
+
+	return pa2;
+}
+
+PointArray & PointArray::operator=(PointArray & pa)
+{
+	if (this != &pa) {
+		set_number_points(pa.get_number_points());
+		memcpy(get_points_array(), pa.get_points_array(), sizeof(double) * 4 * get_number_points());
+	}
+	return *this;
 }
 
 unsigned int PointArray::get_number_points()
@@ -55,9 +74,16 @@ bool PointArray::read_from_pdb(const char *file)
 {
 	struct stat filestat;
 	stat(file, &filestat);
-	set_number_points(filestat.st_size / 80);
+	set_number_points(filestat.st_size / 80 + 1);
+#ifdef DEBUG
+	printf("PointArray::read_from_pdb(): try %4d atoms first\n", get_number_points());
+#endif
 
 	FILE *fp = fopen(file, "r");
+	if(!fp) {
+		fprintf(stderr,"ERROR in PointArray::read_from_pdb(): cannot open file %s\n",file);
+		throw;
+	}
 	char s[200];
 	unsigned int count = 0;
 	while ((fgets(s, 200, fp) != NULL)) {
@@ -124,6 +150,9 @@ bool PointArray::read_from_pdb(const char *file)
 
 		if (count + 1 > get_number_points())
 			set_number_points(2 * (count + 1));
+#ifdef DEBUG
+		printf("Atom %4d: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
+#endif
 		points[4 * count] = x;
 		points[4 * count + 1] = y;
 		points[4 * count + 2] = z;
@@ -134,6 +163,18 @@ bool PointArray::read_from_pdb(const char *file)
 	set_number_points(count);
 	return true;
 }
+
+
+void PointArray::save_to_pdb(const char *file)
+{
+	FILE *fp = fopen(file, "w");
+	for (unsigned int i = 0; i < get_number_points(); i++) {
+		fprintf(fp, "ATOM  %5d  CA  ALA A%4d    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
+				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
+	}
+	fclose(fp);
+}
+
 
 FloatPoint PointArray::get_center()
 {
@@ -188,14 +229,101 @@ Region PointArray::get_bounding_box()
 	return Region(xmin, ymin, zmin, xmax - xmin, ymax - ymin, zmax - zmin);
 }
 
-void PointArray::set_from(PointArray * source, Transform * transform, string sym)
+
+void PointArray::mask(double rmax, double rmin)
 {
-	set_from(source->get_points_array(), source->get_number_points(), transform, sym);
+	double rmax2 = rmax * rmax, rmin2 = rmin * rmin;
+	PointArray *tmp = this->copy();
+	double *tmp_points = tmp->get_points_array();
+	unsigned int count = 0;
+	for (unsigned int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
+		double x = tmp_points[i], y = tmp_points[i + 1], z = tmp_points[i + 2], v =
+			tmp_points[i + 3];
+		double r2 = x * x + y * y + z * z;
+		if (r2 >= rmin2 && r2 <= rmax2) {
+			points[count * 4] = x;
+			points[count * 4 + 1] = y;
+			points[count * 4 + 2] = z;
+			points[count * 4 + 3] = v;
+			count++;
+		}
+	}
+	set_number_points(count);
+	delete tmp;
+}
+
+
+void PointArray::mask_asymmetric_unit(string sym)
+{
+	if (sym == "c1" || sym == "C1")
+		return;					// do nothing for C1 symmetry
+	double alt0 = 0, alt1 = M_PI, alt2 = M_PI;
+	double az0 = 0, az1 = M_PI;
+	if (sym[0] == 'c' || sym[0] == 'C') {
+		int nsym = atoi(sym.c_str() + 1);
+		az1 = 2.0 * M_PI / nsym / 2.0;
+	}
+	else if (sym[0] == 'd' || sym[0] == 'D') {
+		int nsym = atoi(sym.c_str() + 1);
+		alt1 = M_PI / 2.0;
+		alt2 = alt1;
+		az1 = 2.0 * M_PI / nsym / 2.0;
+	}
+	else if (sym == "icos" || sym == "ICOS") {
+		alt1 = 0.652358139784368185995;	// 5fold to 3fold
+		alt2 = 0.55357435889704525151;	// half of edge ie. 5fold to 2fold along the edge
+		az1 = 2.0 * M_PI / 5 / 2.0;
+	}
+	else {
+		LOGERR("PointArray::set_to_asymmetric_unit(): sym = %s is not implemented yet",
+			   sym.c_str());
+		return;
+	}
+#ifdef DEBUG
+	printf("Sym %s: alt0 = %8g\talt1 = %8g\talt2 = %8g\taz0 = %8g\taz1 = %8g\n", sym.c_str(), alt0*180.0/M_PI, alt1*180.0/M_PI, alt2*180.0/M_PI, az0*180.0/M_PI, az1*180.0/M_PI);
+#endif
+
+	PointArray *tmp = this->copy();
+	double *tmp_points = tmp->get_points_array();
+	unsigned int count = 0;
+	for (unsigned int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
+		double x = tmp_points[i], y = tmp_points[i + 1], z = tmp_points[i + 2], v = tmp_points[i + 3];
+		double az = atan2(y, x);
+		double az_abs = fabs(az - az0);
+		if (az_abs < (az1 - az0)) {
+			double alt_max = alt1 + (alt2 - alt1) * az_abs / (az1 - az0);
+			double alt = acos(z / sqrt(x * x + y * y + z * z));
+			if (alt < alt_max && alt >= alt0) {
+#ifdef DEBUG
+				printf("Point %3d: x,y,z = %8g,%8g,%8g\taz = %8g\talt = %8g\n",i/4,x,y,z,az*180.0/M_PI, alt*180.0/M_PI);
+#endif
+				points[count * 4] = x;
+				points[count * 4 + 1] = y;
+				points[count * 4 + 2] = z;
+				points[count * 4 + 3] = v;
+				count++;
+			}
+		}
+	}
+	set_number_points(count);
+	delete tmp;
+}
+
+
+void PointArray::set_from(PointArray * source, string sym, Transform * transform)
+{
+	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
 
 }
 
-void PointArray::set_from(double *src, unsigned int num, Transform * transform, string sym)
+void PointArray::set_from(double *src, unsigned int num, string sym, Transform * transform)
 {
+	bool transform_set_here = false;
+	if(!transform) {
+		transform = new Transform();	// identity transform
+		transform_set_here = true;
+	}
+		
 	Rotation rot = transform->get_rotation();
 	rot.set_sym(sym);
 	unsigned int nsym = rot.get_max_nsym();
@@ -227,7 +355,286 @@ void PointArray::set_from(double *src, unsigned int num, Transform * transform, 
 			//printf("s=%d\tx,y,z=%g,%g,%g => %g,%g,%g\n",s,src[i],src[i+1],src[i+2],target[index    ],target[index + 1],target[index + 2]);
 		}
 	}
+	if(transform_set_here) delete transform;
 }
+
+
+void PointArray::set_from_density_map(EMData * map, int num, float thresh, float apix,
+									  Density2PointsArrayAlgorithm mode)
+{
+	if (mode == PEAKS_SUB || mode == PEAKS_DIV) {
+		// find out how many voxels are useful voxels
+		int num_voxels = 0;
+		int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
+		EMData *tmp_map = map->copy();
+		float *pd = tmp_map->get_data();
+		for (int i = 0; i < nx * ny * nz; i++) {
+			if (pd[i] > thresh)
+				num_voxels++;
+		}
+
+		double pointvol = double (num_voxels) / double (num);
+		double gauss_real_width = pow(pointvol, 1. / 3.);	// in pixels
+#ifdef DEBUG
+		printf("Average point range radius = %g pixels for %d points from %d used voxels\n",
+			   gauss_real_width, num, num_voxels);
+#endif
+
+		double min_table_val = 1e-4;
+		double max_table_x = sqrt(-log(min_table_val));	// for exp(-x*x)
+
+		double table_step_size = 1.;	// number of steps for each pixel
+		double inv_table_step_size = 1.0 / table_step_size;
+		int table_size = int (max_table_x * gauss_real_width / (table_step_size) * 1.25) + 1;
+		double *table = (double *) malloc(sizeof(double) * table_size);
+		for (int i = 0; i < table_size; i++) {
+			double x = i * table_step_size / gauss_real_width;
+			table[i] = exp(-x * x);
+		}
+
+		int gbox = int (max_table_x * gauss_real_width);	// local box half size in pixels to consider for each point
+		if (gbox <= 0)
+			gbox = 1;
+
+		set_number_points(num);
+		for (int count = 0; count < num; count++) {
+			float cmax = pd[0];
+			int cmaxpos = 0;
+			for (int i = 0; i < nx * ny * nz; i++) {
+				if (pd[i] > cmax) {
+					cmax = pd[i];
+					cmaxpos = i;
+				}
+			}
+			int iz = cmaxpos / (nx * ny), iy = (cmaxpos - iz * nx * ny) / nx, ix =
+				cmaxpos - iz * nx * ny - iy * nx;
+				
+			// update coordinates in pixels
+			points[4*count  ] = ix;
+			points[4*count+1] = iy;
+			points[4*count+2] = iz;
+			points[4*count+3] = cmax;
+#ifdef DEBUG
+			printf("Point %d: val = %g\tat  %d, %d, %d\n", count, cmax, ix, iy, iz);
+#endif
+			
+			int imin = ix - gbox, imax = ix + gbox;
+			int jmin = iy - gbox, jmax = iy + gbox;
+			int kmin = iz - gbox, kmax = iz + gbox;
+			if (imin < 0)
+				imin = 0;
+			if (jmin < 0)
+				jmin = 0;
+			if (kmin < 0)
+				kmin = 0;
+			if (imax > nx)
+				imax = nx;
+			if (jmax > ny)
+				jmax = ny;
+			if (kmax > nz)
+				kmax = nz;
+
+			for (int k = kmin; k < kmax; k++) {
+				int table_index_z = int (fabs(double (k - iz)) * inv_table_step_size);
+				double zval = table[table_index_z];
+				int pd_index_z = k * nx * ny;
+				//printf("k = %8d\tx = %8g\tval = %8g\n", k, float(k-iz), zval);
+				for (int j = jmin; j < jmax; j++) {
+					int table_index_y = int (fabs(double (j - iy)) * inv_table_step_size);
+					double yval = table[table_index_y];
+					int pd_index = pd_index_z + j * nx + imin;
+					for (int i = imin; i < imax; i++, pd_index++) {
+						int table_index_x = int (fabs(double (i - ix)) * inv_table_step_size);
+						double xval = table[table_index_x];
+						if (mode == PEAKS_SUB)
+							pd[pd_index] -= cmax * zval * yval * xval;
+						else
+							pd[pd_index] *= (1.0 - zval * yval * xval);	// mode == PEAKS_DIV 
+					}
+				}
+			}
+		}
+		set_number_points(num);
+		tmp_map->done_data();
+		delete tmp_map;
+	}
+	else if (mode == KMEANS) {
+		set_number_points(num);
+		zero();
+
+		PointArray tmp_pa;
+		tmp_pa.set_number_points(num);
+		tmp_pa.zero();
+
+		unsigned int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
+		float *pd = map->get_data();
+
+		// initialize segments with random centers at pixels with values > thresh
+#ifdef DEBUG
+		printf("Start initial random seeding\n");
+#endif
+		for (unsigned int i = 0; i < get_number_points(); i++) {
+			unsigned int x, y, z;
+			double v;
+			do {
+				x = (unsigned int) Util::get_frand(0, nx - 1);
+				y = (unsigned int) Util::get_frand(0, ny - 1);
+				z = (unsigned int) Util::get_frand(0, nz - 1);
+				v = pd[z * nx * ny + y * nx + x];
+#ifdef DEBUG
+				printf("Trying Point %d: val = %g\tat  %d, %d, %d\tfrom map (%d,%d,%d)\n", i, v, x,
+					   y, z, nx, ny, nz);
+#endif
+			} while (v <= thresh);
+			points[4 * i] = (double) x;
+			points[4 * i + 1] = (double) y;
+			points[4 * i + 2] = (double) z;
+			points[4 * i + 3] = (double) v;
+#ifdef DEBUG
+			printf("Point %d: val = %g\tat  %g, %g, %g\n", i, points[4 * i + 3], points[4 * i],
+				   points[4 * i + 1], points[4 * i + 2]);
+#endif
+		}
+
+		double min_dcen = 1e0;	// minimal mean segment center shift as convergence criterion
+		double dcen = 0.0;
+		int iter = 0, max_iter = 100;
+		do {
+#ifdef DEBUG
+			printf("Iteration %3d, start\n", iter);
+#endif
+			double *tmp_points = tmp_pa.get_points_array();
+
+			// reassign each pixel to the best segment
+			for (unsigned int k = 0; k < nz; k++) {
+				for (unsigned int j = 0; j < ny; j++) {
+					for (unsigned int i = 0; i < nx; i++) {
+						if (pd[k * nx * ny + j * nx + i] > thresh) {
+							double min_dist = 1e60;	// just a large distance
+							unsigned int min_s = 0;
+							for (unsigned int s = 0; s < get_number_points(); s++) {
+								double x = points[4 * s];
+								double y = points[4 * s + 1];
+								double z = points[4 * s + 2];
+								double dist =
+									(k - z) * (k - z) + (j - y) * (j - y) + (i - x) * (i - x);
+								if (dist < min_dist) {
+									min_dist = dist;
+									min_s = s;
+								}
+							}
+							tmp_points[4 * min_s] += i;
+							tmp_points[4 * min_s + 1] += j;
+							tmp_points[4 * min_s + 2] += k;
+							tmp_points[4 * min_s + 3] += 1.0;
+						}
+					}
+				}
+			}
+#ifdef DEBUG
+			printf("Iteration %3d, finished reassigning segments\n", iter);
+#endif
+			// update each segment's center
+			dcen = 0.0;
+			for (unsigned int s = 0; s < get_number_points(); s++) {
+				if (tmp_points[4 * s + 3]) {
+					tmp_points[4 * s] /= tmp_points[4 * s + 3];
+					tmp_points[4 * s + 1] /= tmp_points[4 * s + 3];
+					tmp_points[4 * s + 2] /= tmp_points[4 * s + 3];
+#ifdef DEBUG
+					printf("Iteration %3d, Point %3d at %8g, %8g, %8g -> %8g, %8g, %8g\n", iter, s,
+						   points[4 * s], points[4 * s + 1], points[4 * s + 2], tmp_points[4 * s],
+						   tmp_points[4 * s + 1], tmp_points[4 * s + 2]);
+#endif
+				}
+				else {			// empty segments are reseeded
+					unsigned int x, y, z;
+					double v;
+					do {
+						x = (unsigned int) Util::get_frand(0, nx - 1);
+						y = (unsigned int) Util::get_frand(0, ny - 1);
+						z = (unsigned int) Util::get_frand(0, nz - 1);
+						v = pd[z * nx * ny + y * nx + x];
+					} while (v <= thresh);
+					tmp_points[4 * s] = (double) x;
+					tmp_points[4 * s + 1] = (double) y;
+					tmp_points[4 * s + 2] = (double) z;
+					tmp_points[4 * s + 3] = (double) v;
+#ifdef DEBUG
+					printf
+						("Iteration %3d, Point %3d reseeded from %8g, %8g, %8g -> %8g, %8g, %8g\n",
+						 iter, s, points[4 * s], points[4 * s + 1], points[4 * s + 2],
+						 tmp_points[4 * s], tmp_points[4 * s + 1], tmp_points[4 * s + 2]);
+#endif
+				}
+				double dx = tmp_points[4 * s] - points[4 * s];
+				double dy = tmp_points[4 * s + 1] - points[4 * s + 1];
+				double dz = tmp_points[4 * s + 2] - points[4 * s + 2];
+				dcen += dx * dx + dy * dy + dz * dz;
+			}
+			dcen = sqrt(dcen / get_number_points());
+			//swap pointter, faster but risky
+#ifdef DEBUG
+			printf("before swap: points = %d\ttmp_points = %d\n", get_points_array(),
+				   tmp_pa.get_points_array());
+#endif
+			double *tp = get_points_array();
+			set_points_array(tmp_points);
+			tmp_pa.set_points_array(tp);
+			tmp_pa.zero();
+#ifdef DEBUG
+			printf("after  swap: points = %d\ttmp_points = %d\n", get_points_array(),
+				   tmp_pa.get_points_array());
+			printf("Iteration %3d, finished updating segment centers with dcen = %g pixels\n", iter,
+				   dcen);
+#endif
+
+			iter++;
+		} while (dcen > min_dcen && iter <= max_iter);
+		map->done_data();
+
+		sort_by_axis(2);	// x,y,z axes = 0, 1, 2
+	}
+	else {
+		LOGERR("PointArray::set_from_density_map(): mode = %d is not implemented yet", mode);
+	}
+	//update to use apix and origin
+	unsigned int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
+	float origx, origy, origz;
+	try {
+		origx = map->get_attr("origin_row");
+		origy = map->get_attr("origin_col");
+		origz = map->get_attr("origin_sec");
+	}
+	catch(...) {
+		origx = -nx / 2 * apix;
+		origy = -ny / 2 * apix;
+		origz = -nz / 2 * apix;
+	}
+
+#ifdef DEBUG
+	printf("Apix = %g\torigin x,y,z = %8g,%8g,%8g\n",apix, origx, origy, origz);
+#endif
+
+	float *pd = map->get_data();
+	for (unsigned int i = 0; i < get_number_points(); i++) {
+#ifdef DEBUG
+		printf("Point %4d: x,y,z,v = %8g,%8g,%8g,%8g",i, points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
+#endif
+		points[4 * i + 3] =
+			pd[(int) points[4 * i + 2] * nx * ny + (int) points[4 * i + 1] * nx +
+			   (int) points[4 * i]];
+		points[4 * i] = points[4 * i] * apix + origx;
+		points[4 * i + 1] = points[4 * i + 1] * apix + origy;
+		points[4 * i + 2] = points[4 * i + 2] * apix + origz;
+#ifdef DEBUG
+		printf("\t->\t%8g,%8g,%8g,%8g\n",points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
+#endif
+	}
+	map->done_data();
+}
+
+
 
 int cmp_axis_x(const void *a, const void *b)
 {
@@ -284,6 +691,9 @@ void PointArray::sort_by_axis(int axis)
 
 EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 {
+#ifdef DEBUG
+	printf("PointArray::pdb2mrc_by_summation(): %d points\tmapsize = %4d\tapix = %g\tres = %g\n",get_number_points(),map_size, apix, res);
+#endif
 	double gauss_real_width = res / (M_PI);	// in Angstrom, res is in Angstrom
 	//if ( gauss_real_width < apix) LOGERR("PointArray::projection_by_summation(): apix(%g) is too large for resolution (%g Angstrom in Fourier space) with %g pixels of 1/e half width", apix, res, gauss_real_width);
 
@@ -348,28 +758,14 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 	}
 	//for(int i=0; i<map_size*map_size; i++) pd[i]/=sqrt(M_PI);
 	map->done_data();
-	return map;
-/*
-	// precalculate a prototypical Gaussian to resample
-	// 64^3 box with a real-space 1/2 width of 12 pixels
-	EMData *gaus = new EMData();
-	gaus->set_size(64, 64, 64);
-	gaus->to_one();
-	gaus->filter("GaussMask", Dict("outer_radius", 12.0));
+	map->set_attr("apix_x", apix);
+	map->set_attr("apix_y", apix);
+	map->set_attr("apix_z", apix);
+	map->set_attr("origin_row", -map_size/2*apix);
+	map->set_attr("origin_col", -map_size/2*apix);
+	map->set_attr("origin_sec", -map_size/2*apix);
 
-	EMData *map = new EMData();
-	map->set_size(map_size, map_size, map_size);
-	map->to_zero();
-
-	for (unsigned int i = 0; i < 4 * get_number_points(); i += 4) {
-		map->insert_scaled_sum(gaus,
-							   FloatPoint(points[i] / apix + map_size / 2,
-										  points[i + 1] / apix + map_size / 2,
-										  points[i + 2] / apix + map_size / 2),
-							   res / (PI * 12.0 * apix), points[i+3]);
-	}
 	return map;
-*/
 }
 
 
@@ -442,26 +838,6 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 		pd[i] /= sqrt(M_PI);
 	proj->done_data();
 	return proj;
-/*
-	// precalculate a prototypical Gaussian to resample
-	// 64^2 box with a real-space 1/2 width of 12 pixels
-	EMData *gaus = new EMData();
-	gaus->set_size(64, 64, 1);
-	gaus->to_one();
-	gaus->filter("GaussMask", Dict("outer_radius", 12.0));
-
-	EMData *proj = new EMData();
-	proj->set_size(image_size, image_size, 1);
-	proj->to_zero();
-
-	for (unsigned int i = 0; i < 4 * get_number_points(); i += 4) {
-		proj->insert_scaled_sum(gaus,
-								FloatPoint(points[i] / apix + image_size / 2,
-										   points[i + 1] / apix + image_size / 2),
-								res / (PI * 12.0 * apix), points[i+3]);
-	}
-	return proj;
-*/
 }
 
 
@@ -535,6 +911,12 @@ EMData *PointArray::pdb2mrc_by_nfft(int map_size, float apix, float res)
 
 	fft->filter("Phase180");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
+	map->set_attr("apix_x", apix);
+	map->set_attr("apix_y", apix);
+	map->set_attr("apix_z", apix);
+	map->set_attr("origin_row", -map_size/2*apix);
+	map->set_attr("origin_col", -map_size/2*apix);
+	map->set_attr("origin_sec", -map_size/2*apix);
 	delete fft;
 	return map;
 #elif defined NFFT2
@@ -607,9 +989,16 @@ EMData *PointArray::pdb2mrc_by_nfft(int map_size, float apix, float res)
 
 	fft->filter("Phase180");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
+	map->set_attr("apix_x", apix);
+	map->set_attr("apix_y", apix);
+	map->set_attr("apix_z", apix);
+	map->set_attr("origin_row", -map_size / 2 * apix);
+	map->set_attr("origin_col", -map_size / 2 * apix);
+	map->set_attr("origin_sec", -map_size / 2 * apix);
 	delete fft;
 	return map;
 #else
+	LOGWARN("nfft support is not enabled. please recompile with nfft support enabled\n");
 	return 0;
 #endif
 }
@@ -755,189 +1144,8 @@ EMData *PointArray::projection_by_nfft(int image_size, float apix, float res)
 
 	return fft;
 #else
+	LOGWARN("nfft support is not enabled. please recompile with nfft support enabled\n");
 	return 0;
 #endif
 }
 
-double scoring_function_f(const gsl_vector *, void *)
-{
-	return 0.0;
-}
-
-void scoring_function_df(const gsl_vector *, void *, gsl_vector *)
-{
-}
-
-void scoring_function_fdf(const gsl_vector *, void *, double *, gsl_vector *)
-{
-}
-
-bool PointArray::refine(vector < EMData * >images, string sym, OptimizedParameters optparam,
-						Optimizer optimizer)
-{
-	const gsl_multimin_fdfminimizer_type *T;
-	switch (optimizer) {
-	case ConjugateGradientFletcherReeves:
-		T = gsl_multimin_fdfminimizer_conjugate_fr;
-		break;
-	case ConjugateGradientPolakRibiere:
-		T = gsl_multimin_fdfminimizer_conjugate_pr;
-		break;
-	case ConjugateGradientBFGS:
-		T = gsl_multimin_fdfminimizer_vector_bfgs;
-		break;
-	//case SimplexNelderMead:
-	//	T = gsl_multimin_fminimizer_nmsimplex;
-	//	break;
-	default:
-		T = gsl_multimin_fdfminimizer_vector_bfgs;
-		break;
-	}
-
-	size_t num_images = images.size();
-	size_t size_par_map = get_number_points() * 4;
-	size_t size_par_orientation = num_images * 3;
-	size_t size_par_center = num_images * 2;
-	size_t size_par_defocus = num_images * 1;
-	size_t size_par_astig = num_images * 2;
-	size_t size_par_bfactor = num_images * 1;
-	size_t size_par_drift = num_images * 2;
-	size_t size_par_scale = num_images * 1;
-	size_t size_par_distortion = num_images * 2;
-	size_t size_par_beamtilt = num_images * 1;	// ?
-
-	size_t num_parameters = 0;
-
-	if (optparam & Map)
-		num_parameters += size_par_map;
-	if (optparam & Orientation)
-		num_parameters += size_par_orientation;
-	if (optparam & Center)
-		num_parameters += size_par_center;
-	if (optparam & Defocus)
-		num_parameters += size_par_defocus;
-	if (optparam & Astigmatism)
-		num_parameters += size_par_astig;
-	if (optparam & BFactor)
-		num_parameters += size_par_bfactor;
-	if (optparam & Drift)
-		num_parameters += size_par_drift;
-	if (optparam & Scale)
-		num_parameters += size_par_scale;
-	if (optparam & Distortion)
-		num_parameters += size_par_distortion;
-	if (optparam & BeamTilt)
-		num_parameters += size_par_beamtilt;
-	if (optparam & DepthOfView)
-		num_parameters += 0;
-
-	gsl_multimin_fdfminimizer *s;
-	s = gsl_multimin_fdfminimizer_alloc(T, num_parameters);
-	//gsl_multimin_fminimizer *s;
-	//s = gsl_multimin_fminimizer_alloc(T, num_parameters);
-
-	// allocate the parameter array
-	double *par = (double *) calloc(num_parameters, sizeof(double));
-	double *par_map = 0, *par_orientation = 0, *par_center = 0, *par_defocus = 0, *par_astig = 0;
-	double *par_bfactor = 0, *par_drift = 0, *par_scale = 0, *par_distortion = 0, *par_beamtilt = 0;
-	size_t count = 0;
-	if (optparam & Map)
-		par_map = par + count, count += size_par_map;
-	if (optparam & Orientation)
-		par_orientation = par + count, count += size_par_orientation;
-	if (optparam & Center)
-		par_center = par + count, count += size_par_center;
-	if (optparam & Defocus)
-		par_defocus = par + count, count += size_par_defocus;
-	if (optparam & Astigmatism)
-		par_astig = par + count, count += size_par_astig;
-	if (optparam & BFactor)
-		par_bfactor = par + count, count += size_par_bfactor;
-	if (optparam & Drift)
-		par_drift = par + count, count += size_par_drift;
-	if (optparam & Scale)
-		par_scale = par + count, count += size_par_scale;
-	if (optparam & Distortion)
-		par_distortion = par + count, count += size_par_distortion;
-	if (optparam & BeamTilt)
-		par_beamtilt = par + count, count += size_par_beamtilt;
-	if (optparam & DepthOfView);
-
-	gsl_multimin_function_fdf scoring_function;
-	//gsl_multimin_function scoring_function;
-
-	scoring_function.f = &scoring_function_f;
-	scoring_function.df = &scoring_function_df;
-	scoring_function.fdf = &scoring_function_fdf;
-	scoring_function.n = num_parameters;
-	scoring_function.params = &par;
-
-	// starting point
-	gsl_vector *x0 = gsl_vector_alloc(num_parameters);
-	//gsl_vector_set(x, 0, 5.0);
-
-	double stepsize = 0.01;
-	double tolerance = 1e-4;
-	gsl_multimin_fdfminimizer_set(s, &scoring_function, x0, stepsize, tolerance);
-	
-	//double *stepsize = 0;
-	//gsl_multimin_fminimizer_set(s, &scoring_function, x0, stepsize, tolerance);
-
-	size_t iter = 0;
-	int status;
-
-	do {
-		iter++;
-		status = gsl_multimin_fdfminimizer_iterate(s);
-
-		if (status)
-			break;
-
-		status = gsl_multimin_test_gradient(s->gradient, 1e-3);
-
-		if (status == GSL_SUCCESS)
-			printf("Minimum found\n");
-	}
-	while (status == GSL_CONTINUE && iter < 100);
-
-	gsl_multimin_fdfminimizer_free(s);
-	gsl_vector_free(x0);
-
-	return true;
-}
-
-#if defined OPTPP
-
-/* Initializer for Rosenbrock */
-void init_rosen(int n, ColumnVector& x) {}
-/* Rosenbrock with analytic derivative */
-void rosen(int mode, int n, const ColumnVector& x, double& fx, ColumnVector& g, int& result) {}
-void update_model(int, int, ColumnVector) {}
-int foo()
-{
-  int n = 2;
-  
-  static char *status_file = {"tstqnewton.out"};
-
-//----------------------------------------------------------------------------
-// 1. Quasi-Newton with trust regions
-//----------------------------------------------------------------------------
-
-  //  Create a Nonlinear problem object
-
-  NLF1 nlp(n,rosen,init_rosen);
-  
-  nlp.setIsExpensive(true);
-  
-  //  Build a Quasi-Newton object and optimize 
-
-  OptQNewton objfcn(&nlp,update_model);   
-  if (!objfcn.setOutputFile(status_file, 0))
-    cerr << "main: output file open failed" << endl;
-  objfcn.setTRSize(100.);
-  objfcn.optimize();
-  objfcn.printStatus("Solution from quasi-newton");
-  objfcn.cleanup();	 
-}
-
-#endif
