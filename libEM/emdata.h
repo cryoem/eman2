@@ -257,7 +257,7 @@ namespace EMAN
 		 *
 		 * @return An image object that has been fft-padded/unpadded.
 		 */
-		EMData *pad_fft();
+		EMData *pad_fft(int npad = 1);
 
 		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
@@ -1015,6 +1015,16 @@ namespace EMAN
 		 * @param nz  z size of this image.
 		 */
 		void set_size(int nx, int ny, int nz);
+
+		/** Resize 'this' complex image.
+		 *
+		 * @param nx  x size of this image.
+		 * @param ny  y size of this image.
+		 * @param nz  z size of this image.
+		 */
+		void set_complex_size(int nx, int ny, int nz) {
+			set_size(nx*2, ny, nz); 
+		}
 
 		/** Set the path
 		 * @param path The new path.

@@ -818,13 +818,19 @@ void EMData::center_origin_fft()
 	EXITFUNC;
 }
 
+// #G2#
 EMData* EMData::zeropad_ntimes(int npad) {
 	ENTERFUNC;
 	EMData* newimg = copy_head();
 	int nxpad = npad*nx;
 	int nypad = npad*ny;
 	int nzpad = npad*nz;
-	if (nz == 1) {
+	if (1 == ny) {
+		// 1-d image, don't want to pad along y or z
+		// Also, assuming that we can't have an image sized as nx=5, ny=1, nz=5.
+		nypad = ny;
+		nzpad = nz;
+	} else if (nz == 1) {
 		// 2-d image, don't want to pad along z
 		nzpad = nz;
 	}
@@ -842,6 +848,68 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	newimg->done_data();
 	return newimg;
 	EXITFUNC;
+}
+
+/** #G2#
+Purpose: Create a new [npad-times zero-padded] fft-extended real image.  
+Method: Pad with zeros npad-times (npad may be 1, which is the default) and extend for fft,
+         return new real image.  
+Input: f real n-dimensional image
+       npad specify number of times to extend the image with zeros (default npad = 1, meaning no
+       padding)
+Output: real image that may have been zero-padded and has been extended along x for fft.
+*/
+EMData* EMData::pad_fft(int npad) {
+	ENTERFUNC;
+	EMData* newimg = copy_head();
+	if (is_fftpadded() == false) {
+		int nxpad = npad*nx;
+		int nypad = npad*ny;
+		int nzpad = npad*nz;
+		if (1 == ny) {
+			// 1-d image, don't want to pad along y or z
+			// Also, assuming that we can't have an image sized as nx=5, ny=1, nz=5.
+			nypad = ny;
+			nzpad = nz;
+		} else if (nz == 1) {
+			// 2-d image, don't want to pad along z
+			nzpad = nz;
+		}
+		size_t bytes;
+		size_t offset;
+		// Not currently padded, so we want to pad for ffts
+		offset = 2 - nxpad%2;
+		bytes = nxpad*sizeof(float);
+		newimg->set_size(nxpad+offset, nypad, nzpad);
+		newimg->set_fftpad(true);
+		if (offset == 1)
+			newimg->set_fftodd(true);
+		//FIXME Store npad*nx in the image!!!!
+		MArray3D dest = newimg->get_3dview();
+		MArray3D src = this->get_3dview();
+		for (int iz = 0; iz < nz; iz++) {
+			for (int iy = 0; iy < ny; iy++) {
+				memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+			}
+		}
+	} else {
+		// Image already padded, so we want to remove the padding
+		int nxold = (nx - 2 + is_fftodd())/npad; // using the value of is_fftodd() <- FIXME
+		int nyold = std::max(ny/npad, 1);
+		int nzold = std::max(nz/npad, 1);
+		int bytes = nxold*sizeof(float);
+		newimg->set_size(nxold, nyold, nzold);
+		newimg->set_fftpad(false);
+		MArray3D dest = newimg->get_3dview();
+		MArray3D src = this->get_3dview();
+		for (int iz = 0; iz < nzold; iz++) {
+			for (int iy = 0; iy < nyold; iy++) {
+				memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+			}
+		}
+	}
+	newimg->done_data();
+	return newimg;
 }
 
 EMData *EMData::do_fft()
@@ -917,43 +985,6 @@ EMData *EMData::do_fft()
 
 	EXITFUNC;
 	return dat;
-}
-
-EMData* EMData::pad_fft() {
-	ENTERFUNC;
-	EMData* newimg = copy_head();
-	size_t bytes;
-	size_t offset;
-	if (is_fftpadded() == false) {
-		// Not currently padded, so we want to pad for ffts
-		offset = 2 - nx%2;
-		bytes = nx*sizeof(float);
-		newimg->set_size(nx+offset, ny, nz);
-		newimg->set_fftpad(true);
-		if (offset == 1)
-			newimg->set_fftodd(true);
-	} else {
-		// Image already padded, so we want to remove the padding
-		if (is_fftodd() == false) {
-			// Already padded from an even number of real-space elements
-			offset = 2;
-		} else {
-			// Already padded from an odd number of real-space elements
-			offset = 1;
-		}
-		bytes = (nx-offset)*sizeof(float);
-		newimg->set_size(nx-offset, ny, nz);
-		newimg->set_fftpad(false);
-	}
-	MArray3D dest = newimg->get_3dview();
-	MArray3D src = this->get_3dview();
-	for (int iz = 0; iz < nz; iz++) {
-		for (int iy = 0; iy < ny; iy++) {
-			memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
-		}
-	}
-	newimg->done_data();
-	return newimg;
 }
 
 EMData *EMData::do_fft_inplace()
@@ -1117,10 +1148,6 @@ EMData *EMData::do_ift_inplace()
 	ap2ri();
 
 	int ndim = get_ndim();
-
-	if (ndim >= 2) {
-		memcpy((char *) rdata, (char *) rdata, nx * ny * nz * sizeof(float));
-	}
 
 
 	// turn off data shuffling if we're doing an in-place transform
@@ -2402,55 +2429,29 @@ void EMData::update_stat()
 		step = 2;
 	}
 
-	int i = 0;
-	double n_nonzero = 0;
+	int n_nonzero = 0;
 
-	for (int j = 0; j < nz; j++) {
-		for (int k = 0; k < ny; k++) {
-			for (int l = 0; l < nx; l += step) {
-				float v = rdata[i];
-				if (v > max) {
-					max = v;
-				}
-
-				if (v < min) {
-					min = v;
-				}
-				if (v != 0) {
-					n_nonzero++;
-				}
-
-				sum += v;
-				square_sum += v * v;
-				i += step;
-			}
-		}
+	for (int i = 0; i < nx*ny*nz; i += step) {
+		float v = rdata[i];
+		max=Util::max(max,v);  min=Util::min(min,v); sum += v; square_sum += v * (double)(v);
+		if (v != 0) n_nonzero++;
 	}
 
-	size_t size = nx * ny * nz;
-	float mean = (float)(sum * step / size);
+	int n = nx * ny * nz / step;
+	double mean = sum / n;
+	float sigma = sqrt(Util::max(0,(square_sum - sum*sum / n)/(n-1)));
 
-	if (n_nonzero == 0) {
-		n_nonzero = 1;
-	}
-
-	float mean_nonzero = (float)(sum * step / n_nonzero);
-	float tmp1 = (float)(square_sum * step / size - mean * mean);
-
-	if (tmp1 < 0) {
-		tmp1 = 0;
-	}
-
-	float sigma = sqrt(tmp1);
-	float sigma_nonzero = (float)(square_sum * step / n_nonzero - mean_nonzero * mean_nonzero);
+	n_nonzero = std::max(1,n_nonzero);
+	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
+	double sigma_nonzero = sqrt(Util::max(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
-	attr_dict["mean"] = mean;
-	attr_dict["sigma"] = sigma;
-	attr_dict["square_sum"] = square_sum;
-	attr_dict["mean_nonzero"] = mean_nonzero;
-	attr_dict["sigma_nonzero"] = sigma_nonzero;
+	attr_dict["mean"] = (float)(mean);
+	attr_dict["sigma"] = (float)(sigma);
+	attr_dict["square_sum"] = (float)(square_sum);
+	attr_dict["mean_nonzero"] = (float)(mean_nonzero);
+	attr_dict["sigma_nonzero"] = (float)(sigma_nonzero);
 	attr_dict["is_complex"] = (int) is_complex();
 	attr_dict["is_ri"] = (int) is_ri();
 
@@ -2472,9 +2473,6 @@ MArray2D EMData::get_2dview() const
 MArray3D EMData::get_3dview() const
 {
 	const int ndims = 3;
-	if (get_ndim() != ndims) {
-		throw ImageDimensionException("3D only");
-	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
 	MArray3D marray(rdata, dims, boost::fortran_storage_order());
 	return marray;
@@ -2495,9 +2493,6 @@ MCArray2D EMData::get_2dcview() const
 MCArray3D EMData::get_3dcview() const
 {
 	const int ndims = 3;
-	if (get_ndim() != ndims) {
-		throw ImageDimensionException("3D only");
-	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
@@ -2520,9 +2515,6 @@ MArray2D EMData::get_2dview(int x0, int y0) const
 MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
-	if (get_ndim() != ndims) {
-		throw ImageDimensionException("3D only");
-	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
 	MArray3D marray(rdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
@@ -2547,9 +2539,6 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
-	if (get_ndim() != ndims) {
-		throw ImageDimensionException("3D only");
-	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
@@ -2717,6 +2706,7 @@ void EMData::set_size(int x, int y, int z)
 	}
 	EXITFUNC;
 }
+
 
 void EMData::set_shared_data(int xsize, int ysize, int zsize, float *data)
 {
