@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <math.h>
 #include "emobject.h"
 
 using std::string;
@@ -41,14 +42,14 @@ namespace EMAN {
     
 	enum CtfCurveType {
 	    CTF_CURVE_AMP_S = 0,
-	    CTF_CURVE_NOISE_S,
-	    CTF_CURVE_ABS_AMP_S,
-	    CTF_CURVE_RELATIVE_SNR,
-	    CTF_CURVE_ABS_SNR,
-	    CTF_CURVE_SNR_WIENER_FILTER,
-	    CTF_CURVE_WIENER_CTF_CORRECTION1,
-	    CTF_CURVE_WIENER_CTF_CORRECTION2,
-	    CTF_CURVE_TOTAL_CURVE
+	    CTF_CURVE_NOISE_S = 1,
+	    CTF_CURVE_ABS_AMP_S = 2,
+	    CTF_CURVE_RELATIVE_SNR = 3,
+	    CTF_CURVE_ABS_SNR = 4,
+	    CTF_CURVE_SNR_WIENER = 5,
+	    CTF_CURVE_WIENER_CTF_CORRECTION1 = 6,
+	    CTF_CURVE_WIENER_CTF_CORRECTION2 = 7,
+	    CTF_CURVE_TOTAL_CURVE = 8
 	};
     };
     
@@ -59,17 +60,17 @@ namespace EMAN {
 
     class SimpleCtf : public Ctf {
     public:
-	float defocus;
-	float bfactor;
-	float amplitude;
-	float ampcont;
-	float noise1;
-	float noise2;
-	float noise3;
-	float noise4;
-	float voltage;
-	float cs;
-	float apix;
+	float defocus; // 0
+	float bfactor; // 1
+	float amplitude; // 2
+	float ampcont; // 3
+	float noise1; // 4
+	float noise2; // 5
+	float noise3; // 6
+	float noise4; // 7
+	float voltage; // 8
+	float cs; // 9
+	float apix; // 10
 
 	Ctf::CtfMapType ctfmaptype;
 	float astig_amp;
@@ -96,6 +97,39 @@ namespace EMAN {
 	
 	int from_dict(map<string, EMObject>& dict);
 	int to_dict(map<string, EMObject>& dict) const;
+
+	static float* calc_ctf_curve(EMData* image, CtfCurveType type, XYData *sf);
+
+    private:
+	static inline float calc_gamma(float g1, float g2, float s)
+	{
+	    float s2 = s * s;
+	    float gamma = -2 * M_PI * (g1 * s2 * s2 + g2 * s2);
+	    return gamma;
+	}
+
+	static inline float calc_ctf1(SimpleCtf* ctf, float g, float gamma, float s)
+	{
+	    float r = ctf->amplitude * exp(-(ctf->bfactor*s*s)) *
+		(g * sin(gamma) + ctf->ampcont * cos(gamma));
+	    return r;
+	}
+
+	static inline float calc_noise(SimpleCtf* ctf, float n4, float s)
+	{
+	    float ns = n4 * s;
+	    float ns2 = ns * ns;
+	    float n = ctf->noise3 * exp(-ns2 - s * ctf->noise2 - sqrt(fabs(s)) * ctf->noise1);
+	    return n;
+	}
+	
+	static inline float calc_ctf(SimpleCtf* ctf, float g1, float n4, float gamma, float s)
+	{
+	    float ctf1 = calc_ctf1(ctf, g1, gamma, s);
+	    float ctf2 = ctf1 * ctf1 / calc_noise(ctf, n4, s);
+	    return ctf2;
+	}
+
     };
 
 }

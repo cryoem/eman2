@@ -204,6 +204,8 @@ namespace EMAN {
 	Vec3f get_trans_align() const { return trans_align; }
 	
 	void set_name(const string& name);
+	string get_name() const;
+	
 	void set_path(const string& path);
 	void set_pathnum(int n);
 	
@@ -225,14 +227,14 @@ namespace EMAN {
 	void calc_radial_dist(int n, float x0, float dx, float* d, float acen, float amwid);
 
 	EMData* convolute(EMData* with);
-
+	
+	bool has_ctff() const;
 
 #if 0
 	void clear_ctf();
 	void calc_ctf_curve(XYData* result, CtfCurveType type = 0, XYData* sf = 0) const;
 	void create_ctf_map(CtfMapType type, XYData* sf = 0);
-	bool has_ctf() const;
-	bool has_ctff() const;
+	
 #endif
 
 	float dot(EMData* with, bool evenonly = false);
@@ -493,7 +495,21 @@ namespace EMAN {
 	    flags &= ~EMDATA_RI;
 	}
     }
-
+    
+    inline void EMData::set_path(const string& new_path) { path = new_path; }
+    inline void EMData::set_pathnum(int n) { pathnum = n; }	
+    inline void EMData::set_name(const string& new_name) { name = new_name; } 
+    inline string EMData::get_name() const { return name; }
+    
+    inline bool EMData::has_ctff() const
+    {
+	if (name[0] == '!' && name[1] == '$') {
+	    return true;
+	}
+	else {
+	    return false;
+	}
+    }
 }
 
 #endif

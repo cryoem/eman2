@@ -29,7 +29,7 @@ namespace EMAN {
 	void get_y_data(float ydata[]);
 	
 	
-	float get_yatx(float x) const;
+	float get_yatx(float x) const { return 0; }
 	
 	float get_x(int i) const;
 	float get_y(int i) const;
@@ -42,7 +42,7 @@ namespace EMAN {
 	float get_minx() const;
 	float get_maxx() const;
 	
-	bool is_validx(float x) const;
+	bool is_validx(float x) const { return false; }
     };
 }
 
