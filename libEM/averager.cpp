@@ -21,6 +21,14 @@ template <> Factory < Averager >::Factory()
 	force_add(&CtfCWautoAverager::NEW);
 }
 
+
+void Averager::add_image_list(const vector<EMData*> & image_list)
+{
+	for (size_t i = 0; i < image_list.size(); i++) {
+		add_image(image_list[i]);
+	}
+}
+
 ImageAverager::ImageAverager()
 	: result(0), sigma_image(0), nimg_n0(0), ignore0(0), nimg(0)
 {

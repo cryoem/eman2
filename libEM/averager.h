@@ -57,6 +57,8 @@ namespace EMAN
 		virtual void add_image(EMData * image) = 0;
 		virtual EMData * finish() = 0;
 
+		virtual void add_image_list(const vector<EMData*> & image_list);
+		
 		virtual string get_name() const = 0;
 
 		virtual void set_params(const Dict & new_params)
