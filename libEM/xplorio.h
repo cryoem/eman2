@@ -10,7 +10,25 @@
 
 namespace EMAN
 {
-
+	/** XPLOR image format
+	 * 1. header:  (note: each integer takes 8 Bytes space, each float
+	 *               is 12.5E format.)
+	 *    line 1: empty
+	 *    line 2: int: number of lines for title (ntitle)
+	 *    next ntitle lines: string: titles
+	 *    line ntitle+3: 9 int: nx, xmin, xmax, ny, ymin, ymax, nz, zmin, zmax
+	 *    line ntitle+4: 6 float: cell size (x, y, z), cell angles (alpha, beta, gamma)
+	 *    line ntitle+5: string: ZYX (this is the section mode. always ZYX)
+	 *    
+	 *
+	 * 2. data
+	 *
+	 *    for zindex = 1 to nz:
+	 *      zindex
+	 *      nx*ny floats. each line has 6 floats. each float is in 12.5E format.
+	 *
+	 */ 
+	
 	class XplorIO:public ImageIO
 	{
 	  public:
@@ -21,7 +39,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *xplor_file;
 
@@ -31,6 +49,19 @@ namespace EMAN
 		int nx;
 		int ny;
 		int nz;
+
+		float apix_x;
+		float apix_y;
+		float apix_z;
+
+		float cell_alpha;
+		float cell_beta;
+		float cell_gama;
+		
+		static string SECTION_MODE;
+		static size_t NFLOAT_PER_LINE;
+		static size_t INTEGER_SIZE;
+		static size_t FLOAT_SIZE;
 	};
 
 }

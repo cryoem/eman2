@@ -155,7 +155,7 @@ def main():
         nx = d.get_xsize()
         ny = d.get_ysize()
         
-        sigma = d.get_sigma()
+        sigma = d.get_attr("sigma").__float__()
         if sigma == 0:
             print "Warning: sigma = 0 for image " + i
             continue

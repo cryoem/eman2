@@ -421,6 +421,9 @@ ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 	case IMAGE_EM:
 		imageio = new EmIO(filename, rw_mode);
 		break;
+	case IMAGE_XPLOR:
+		imageio = new XplorIO(filename, rw_mode);
+		break;
 	default:
 		break;
 	}

@@ -154,6 +154,28 @@ string Util::int2str(int n)
 	return string(s);
 }
 
+string Util::get_line_from_string(char **slines)
+{
+	string result = "";
+	if (slines) {
+		char *str = *slines;
+		char buf[1024];
+		int i = 0;
+		while (*str != '\n') {
+			buf[i] = *str;
+			i++;
+			str++;
+		}
+		buf[i] = '\0';
+		str++;
+		result = string(buf);
+		*slines = str;
+	}
+	return result;
+}
+		
+
+
 bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
 {
 	size_t n = strlen(float_var);

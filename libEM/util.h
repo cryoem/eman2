@@ -55,6 +55,7 @@ namespace EMAN
 
 		static bool sstrncmp(const char *s1, const char *s2);
 		static string int2str(int n);
+		static string get_line_from_string(char **str);
 		
 		static bool get_str_float(const char *s, const char *float_var, float *p_val);
 		static bool get_str_float(const char *s, const char *float_var, float *p_v1, float *p_v2);
