@@ -28,7 +28,7 @@ EMObject::operator int () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to int from data type '%s'",
 				   get_object_type_name(type));
-			throw TypeException("Cannot convert to int from other data type ",
+			throw TypeException("Cannot convert to int this data type ",
 								get_object_type_name(type));
 		}
 	}
@@ -50,7 +50,7 @@ EMObject::operator float () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to float from data type '%s'",
 					  get_object_type_name(type));
-			throw TypeException("Cannot convert to float from data with type",
+			throw TypeException("Cannot convert to float from this data type",
 								get_object_type_name(type));
 		}
 	}
@@ -73,7 +73,7 @@ EMObject::operator double () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to double from data type '%s'",
 				   get_object_type_name(type));
-			throw TypeException("Cannot convert to double from data type",
+			throw TypeException("Cannot convert to double from this data type",
 								get_object_type_name(type));
 		}
 	}
@@ -86,6 +86,8 @@ EMObject::operator  const char *() const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to string from data type '%s'",
 				   get_object_type_name(type));
+			throw TypeException("Cannot convert to string from this data type",
+								get_object_type_name(type));
 		}
 		return "";
 	}
@@ -98,7 +100,7 @@ EMObject::operator  EMData * () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to EMData* from data type '%s'",
 				   get_object_type_name(type));
-			throw TypeException("Cannot convert to EMData* from data type",
+			throw TypeException("Cannot convert to EMData* from this data type",
 				   get_object_type_name(type));
 		}
 		return 0;
@@ -112,7 +114,7 @@ EMObject::operator  XYData * () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to XYData* data type '%s'",
 				   get_object_type_name(type));
-			throw TypeException("Cannot convert to XYData* data type",
+			throw TypeException("Cannot convert to XYData* from this data type",
 				   get_object_type_name(type));
 		}
 		return 0;
@@ -126,7 +128,7 @@ vector < float >EMObject::get_farray() const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot call get_farray for data type '%s'",
 				   get_object_type_name(type));
-			throw TypeException("Cannot call get_farray for data type",
+			throw TypeException("Cannot call get_farray for this data type",
 								get_object_type_name(type));
 		}
 		return vector < float >();

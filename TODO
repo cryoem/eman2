@@ -32,9 +32,6 @@
   034. in ImageIO classes, add a way to label images using EMAN1 'name'
 	   and set_name().
 
-  035. Make fftw3 work.
-
-	   	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -120,3 +117,6 @@
 			   OK. 4D?
   
 
+  9/28/04 035. Make fftw3 work.
+
+	   	   
