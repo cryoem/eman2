@@ -12,18 +12,16 @@ using std::vector;
 
 namespace EMAN
 {
-	/** Template Vec3 defines a 3-element vector and various vector
-     * operations. The vector may store any numeric data type
-     * including int, float, double, etc.
+	/** Vec3i defines a 3-element integer vector and various vector
+     * operations. 
      *
      * Some usage examples:
 	 *
-	 *    Vec3<float> v1(1,2,3);
-	 *    Vec3<float> v2(2,4,6);
-	 *    Vec3<float> v3 = v1 + v2;
-	 *    double dot = v1 * v2;
+	 *    Vec3i v1(1,2,3);
+	 *    Vec3i v2(2,4,6);
+	 *    Vec3i v3 = v1 + v2;
+	 *    int dot = v1 * v2;
      */
-
 	
 	class Vec3i
 	{
@@ -228,6 +226,16 @@ namespace EMAN
 		return false;
 	}
 
+	/** Vec3f defines a 3-element float vector and various vector
+     * operations. 
+     *
+     * Some usage examples:
+	 *
+	 *    Vec3f v1(1.1,2.2,3);
+	 *    Vec3f v2(2,4.12,6.2);
+	 *    Vec3f v3 = v1 + v2;
+	 *    float dot = v1 * v2;
+     */
 	
 	class Vec3f
 	{

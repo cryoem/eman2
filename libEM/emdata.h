@@ -191,7 +191,7 @@ namespace EMAN
 		 * @param block The image to inserted.
 		 * @param center The center of the inserted block in 'this'.
 		 * @param scale  Scale factor.
-		 * @param mult Number used to multiply the block's densities.
+		 * @param mult_factor Number used to multiply the block's densities.
 		 * @exception ImageDimensionException If 'this' image is not 2D/3D.
 		 */
 		void insert_scaled_sum(EMData *block, const FloatPoint & center,
@@ -578,7 +578,7 @@ namespace EMAN
 		void sub(const EMData & image);
 
 		/** multiply a number to each pixel value of the image.
-		 * @param f The number multiplied to 'this' image.
+		 * @param n The number multiplied to 'this' image.
 		 */
 		void mult(int n)
 		{
