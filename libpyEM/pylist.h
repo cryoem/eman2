@@ -17,11 +17,6 @@ using std::string;
 namespace EMAN {
     class PyList {
     public:
-	static void list2array(const python::list& l, int* array);
-	static void list2array(const python::list& l, float* array);
-	static void list2array(const python::list& l, const char** array);
-	static void array2list(const int* array, python::list& l, int nitems = 0);
-	static void array2list(const float* array, python::list& l, int nitems = 0);
 
 	template <class T>
 	static vector<T> list2vector(const python::list& l)
@@ -47,7 +42,7 @@ namespace EMAN {
     };
     
     template <class T>
-    struct vector_to_list : python::to_python_converter<vector<T>, vector_to_list<T> >
+    struct vector_to_python : python::to_python_converter<vector<T>, vector_to_python<T> >
     {
 	static PyObject* convert(vector<T> const& v)
 	{
@@ -62,7 +57,7 @@ namespace EMAN {
     };
 
     template <class T>
-    struct map_to_dict : python::to_python_converter<map<string, T>, map_to_dict<T> >
+    struct map_to_python : python::to_python_converter<map<string, T>, map_to_python<T> >
     {
 	static PyObject* convert(map<string, T> const& d)
 	{
@@ -77,13 +72,27 @@ namespace EMAN {
 	}
     };
 
+    struct Dict_to_python : python::to_python_converter<Dict, Dict_to_python>
+    {
+	static PyObject* convert(Dict const& dd)
+	{
+	    python::dict result;
+	    vector<string> keys = dd.keys();
+	    vector<EMObject> values = dd.values();
+	    for (unsigned int i = 0; i < keys.size(); i++) {
+		result[keys[i]] = values[i];
+	    }
+	
+	    return python::incref(python::dict(result).ptr());
+	}
+    };
+    
     template <class T>
     struct vector_from_python
     {
 	vector_from_python()
 	{
-	    python::converter::registry::push_back(&convertible,
-						   &construct,
+	    python::converter::registry::push_back(&convertible, &construct,
 						   python::type_id<vector<T> >());
 	}
     
@@ -91,13 +100,6 @@ namespace EMAN {
 	{
 	    if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
 		  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
-		return 0;
-	    }
-	   
-	    python::handle<> obj_iter(python::allow_null(PyObject_GetIter(obj_ptr)));
-
-	    if (!obj_iter.get()) {
-		PyErr_Clear();
 		return 0;
 	    }
 	
@@ -139,8 +141,7 @@ namespace EMAN {
     {
 	map_from_python()
 	{
-	    python::converter::registry::push_back(&convertible,
-						   &construct,
+	    python::converter::registry::push_back(&convertible, &construct,
 						   python::type_id<map<string, T> >());
 	}
     
@@ -180,6 +181,50 @@ namespace EMAN {
 	}
     };
 
+    struct Dict_from_python
+    {
+	Dict_from_python()
+	{
+	    python::converter::registry::push_back(&convertible, &construct,
+						   python::type_id<Dict>());
+	}
+    
+	static void* convertible(PyObject* obj_ptr)
+	{
+	    if (!(PyDict_Check(obj_ptr))) {
+		return 0;
+	    }
+	
+	    return obj_ptr;
+	}
+
+    
+	static void construct(PyObject* obj_ptr,
+			      python::converter::rvalue_from_python_stage1_data* data)
+	{
+	    void* storage = ((python::converter::rvalue_from_python_storage<Dict>*) data)->storage.bytes;
+	    new (storage) Dict();
+	    data->convertible = storage;
+	    Dict& result = *((Dict*) storage);
+
+	    python::handle<> obj_handle(obj_ptr);
+	    python::object dict_obj(obj_handle);
+	    
+	    python::dict d(dict_obj);
+	    
+	    python::list k = d.keys();
+	    python::list v = d.values();
+	    long l = python::len(k);
+	
+	    for(long i = 0; i < l; i++) {
+		string key = python::extract<string>(k[i]);
+		EMObject val = python::extract<EMObject>(v[i]);
+		result.put(key, val);
+	    }
+
+	}
+    };
+    
 }
 
 

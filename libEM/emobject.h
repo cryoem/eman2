@@ -3,7 +3,9 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
+using std::vector;
 using std::string;
 using std::map;
 
@@ -67,8 +69,29 @@ namespace EMAN {
 	ObjectType type;
     };
 
-    
-   
+
+    class Dict {
+    public:
+	Dict();
+	Dict(const map<string, EMObject>& d);
+	~Dict();
+
+	vector<string> keys() const;
+	vector<EMObject> values() const;
+
+	bool has_key(const string& key) const;
+	int size() const;
+	
+	EMObject get(const string& key);
+	void put(string key, EMObject val);
+	
+	map<string, EMObject>& get_dict();
+
+	EMObject& operator[](const string& key);
+	
+    private:
+	map<string, EMObject> dict;
+    };
     
 }
 

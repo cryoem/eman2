@@ -1,5 +1,6 @@
 #include "emobject.h"
 #include "emcache.h"
+#include "emutil.h"
 
 using namespace EMAN;
 
@@ -14,6 +15,26 @@ int test_emobject()
     e2.get_float();
     e2.get_string();
     
+    return 0;
+}
+
+int test_Dict()
+{
+    Dict d;
+    d["a"] = 1;
+    d["b"] = 2;
+    d["c"] = 3;
+
+    bool f1 = d.has_key("hello");
+    bool f2 = d.has_key("c");
+
+    assert(f1 == false);
+    assert(f2 == true);
+    
+    assert(d["a"].get_int() == d.get("a").get_int());
+    
+    EMUtil::dump_dict(d);
+
     return 0;
 }
 
@@ -43,6 +64,7 @@ int main()
 
     err = test_emobject();
     err = test_emcache();
+    err = test_Dict();
     
     return err;
 }

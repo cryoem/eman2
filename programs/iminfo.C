@@ -47,11 +47,11 @@ int main(int argc, char* argv[])
 
     EMData* d = new EMData();
     d->read_image(imagefile, 0, EMData::HEADER_ONLY);
-    map<string, EMObject> dict = d->get_attr_dict();
+    Dict dict = d->get_attr_dict();
     
-    int nx = dict["nx"].get_int();
-    int ny = dict["ny"].get_int();
-    int nz = dict["nz"].get_int();
+    int nx = dict.get("nx").get_int();
+    int ny = dict.get("ny").get_int();
+    int nz = dict.get("nz").get_int();
     
     printf("Image Dimensions: %dx%dx%d\n", nx, ny, nz);
 

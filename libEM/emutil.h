@@ -72,7 +72,7 @@ namespace EMAN {
 				   Region* area = 0, bool need_flip = false,
 				   int pre_row = 0, int post_row = 0);
 
-	static void dump_dict(map<string, EMObject>& dict);
+	static void dump_dict(const Dict& dict);
 	
     private:
 	static ImageType fast_get_image_type(string filename, const void* first_block);

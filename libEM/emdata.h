@@ -35,7 +35,7 @@ namespace EMAN {
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
-	map<string, EMObject> get_attr_dict() const;
+	Dict get_attr_dict() const;
 	float* get_data() const;
 
 	SimpleCtf* get_ctf();

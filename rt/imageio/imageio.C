@@ -55,8 +55,6 @@ int test_image(const char* base_filename, int r_image_index = 0,
     }
 
     
-    map<string, EMObject> dict = em->get_attr_dict();
-    
     if (image_type ==  EMUtil::IMAGE_UNKNOWN) {
 	image_type = EMUtil::IMAGE_MRC;
     }
@@ -285,8 +283,8 @@ int test_lst()
     
     for (int i = 0; i < nimg; i++) {
 	d->read_image(imagefile, i, true);
-	map<string, EMObject> dict = d->get_attr_dict();
-	int nx = dict["nx"].get_int();
+	Dict dict = d->get_attr_dict();
+	int nx = dict.get("nx").get_int();
 	x_sum += nx;
 	printf("%i ",i);
     }
@@ -325,6 +323,8 @@ int test_png()
     err = test_image("tablet.mrc",  0, 0, false, 0, EMUtil::IMAGE_PNG);
     err = test_image("search.dm3",  0, 0, false, 0, EMUtil::IMAGE_PNG);
 
+    err = test_image("zl8536-2000.mrc", 0, 0, false, 0, EMUtil::IMAGE_PNG);
+    
     return err;
 }
 
@@ -384,8 +384,8 @@ int test_performance()
     
     for (int i = 0; i < nimg; i++) {
 	d->read_image(imagefile, i, true);
-	map<string, EMObject> dict = d->get_attr_dict();
-	int nx = dict["nx"].get_int();
+	Dict dict = d->get_attr_dict();
+	int nx = dict.get("nx").get_int();
 	x_sum += nx;
 	//printf("%i ",i);
     }

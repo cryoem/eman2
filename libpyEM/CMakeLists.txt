@@ -10,7 +10,6 @@ ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 
 ADD_LIBRARY(pyEM SHARED
-		 pylist.C
 		 pyem.C
 		 libpyEM.cpp
 )

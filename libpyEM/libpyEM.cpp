@@ -36,12 +36,15 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_ext_overloads_3_5, py
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEM)
 {
-    EMAN::vector_to_list<EMAN::EMData*>();
+    EMAN::vector_to_python<EMAN::EMData*>();
     EMAN::vector_from_python<int>();
-    EMAN::map_to_dict<EMAN::EMObject>();
+    
+    EMAN::map_to_python<EMAN::EMObject>();
     EMAN::map_from_python<EMAN::EMObject>();
     
-
+    EMAN::Dict_to_python();
+    EMAN::Dict_from_python();
+    
     class_< EMAN::EMObject >("EMObject", init<  >())
         .def(init< const EMAN::EMObject & >())
         .def(init< int >())
