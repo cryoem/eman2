@@ -131,11 +131,11 @@ struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
     EMAN_ImageIO_Wrapper(PyObject* self_):
         EMAN::ImageIO(), self(self_) {}
 
-    int read_header(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0, int p1, const EMAN::Region* p2, bool p3) {
+    int read_header(EMAN::Dict& p0, int p1, const EMAN::Region* p2, bool p3) {
         return call_method< int >(self, "read_header", p0, p1, p2, p3);
     }
 
-    int write_header(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0, int p1) {
+    int write_header(const EMAN::Dict& p0, int p1) {
         return call_method< int >(self, "write_header", p0, p1);
     }
 

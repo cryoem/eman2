@@ -271,7 +271,7 @@ BOOST_PYTHON_MODULE(libpyFactory)
     ;
 
     class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("AlignerFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Aligner>::instance, return_internal_reference< 1 >())
+        .def("instance", &EMAN::Factory<EMAN::Aligner>::instance, return_value_policy< reference_existing_object >())
         .def("get", (EMAN::Aligner* (EMAN::Factory<EMAN::Aligner>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Aligner* (EMAN::Factory<EMAN::Aligner>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Aligner>::get_list)
@@ -287,7 +287,7 @@ BOOST_PYTHON_MODULE(libpyFactory)
     ;
 
     class_< EMAN::Factory<EMAN::Cmp>, boost::noncopyable >("CmpFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Cmp>::instance, return_internal_reference< 1 >())
+        .def("instance", &EMAN::Factory<EMAN::Cmp>::instance, return_value_policy< reference_existing_object >())
         .def("get", (EMAN::Cmp* (EMAN::Factory<EMAN::Cmp>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Cmp* (EMAN::Factory<EMAN::Cmp>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Cmp>::get_list)
@@ -302,7 +302,7 @@ BOOST_PYTHON_MODULE(libpyFactory)
     ;
 
     class_< EMAN::Factory<EMAN::Averager>, boost::noncopyable >("AveragerFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Averager>::instance, return_internal_reference< 1 >())
+        .def("instance", &EMAN::Factory<EMAN::Averager>::instance, return_value_policy< reference_existing_object >())
         .def("get", (EMAN::Averager* (EMAN::Factory<EMAN::Averager>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Averager>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Averager* (EMAN::Factory<EMAN::Averager>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Averager>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Averager>::get_list)
@@ -318,7 +318,7 @@ BOOST_PYTHON_MODULE(libpyFactory)
     ;
 
     class_< EMAN::Factory<EMAN::Projector>, boost::noncopyable >("ProjectorFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Projector>::instance, return_internal_reference< 1 >())
+        .def("instance", &EMAN::Factory<EMAN::Projector>::instance, return_value_policy< reference_existing_object >())
         .def("get", (EMAN::Projector* (EMAN::Factory<EMAN::Projector>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Projector* (EMAN::Factory<EMAN::Projector>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Projector>::get_list)
@@ -336,7 +336,7 @@ BOOST_PYTHON_MODULE(libpyFactory)
     ;
 
     class_< EMAN::Factory<EMAN::Reconstructor>, boost::noncopyable >("ReconstructorFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Reconstructor>::instance, return_internal_reference< 1 >())
+        .def("instance", &EMAN::Factory<EMAN::Reconstructor>::instance, return_value_policy< reference_existing_object >())
         .def("get", (EMAN::Reconstructor* (EMAN::Factory<EMAN::Reconstructor>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Reconstructor* (EMAN::Factory<EMAN::Reconstructor>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Reconstructor>::get_list)

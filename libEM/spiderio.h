@@ -76,7 +76,7 @@ namespace EMAN
 	    NUM_FLOATS_IN_HEADER = 211
 	};
 
-	int write_single_header(map<string, EMObject> & dict);
+	int write_single_header(const Dict & dict);
 	int write_single_data(float *data);
 	virtual bool is_valid_spider(const void *first_block);
 

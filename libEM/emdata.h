@@ -328,7 +328,7 @@ namespace EMAN
 	void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 
     private:
-	mutable map<string, EMObject> attr_dict;
+	mutable Dict attr_dict;
 	float *rdata;
 	float *supp;
 	SimpleCtf *ctf;
