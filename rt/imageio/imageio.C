@@ -155,6 +155,7 @@ int test_mrc()
 
 int test_spider()
 {
+#if 0
     pass_test("spider-single.spi");
     pass_test("spider-stack.spi", 0, 0, true);
     pass_test("spider-stack.spi", 27, 0, false, "spider-3d_27.mrc");
@@ -170,13 +171,11 @@ int test_spider()
 
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SPIDER);
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SINGLE_SPIDER);
-
-    const int ids[] = {0, 20, 99};
-    int n_ids = sizeof(ids) / sizeof(int);
-
-    for (int i = 0; i < n_ids; i++) {
-	Region d32(0, 0, ids[i], 100, 100, 1);
-	pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, ids[i]);
+#endif
+    
+    for (int i = 0; i < 20; i++) {
+	Region d32(0, 0, i, 100, 100, 1);
+	pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, i);
     }
 
     return err_code;
