@@ -43,6 +43,8 @@ namespace EMAN {
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
+	int filter(string filtername, const Dict& params);
+	
 	void normalize();
 
 	bool is_complex() const;

@@ -28,28 +28,38 @@ namespace EMAN {
     
     class EMObject {
     public:
-	EMObject() : type(UNKNOWN_OBJECT) {}
-	EMObject(int num) : n(num), type(INT_OBJECT) {}
-	EMObject(float ff) : f(ff), type(FLOAT_OBJECT) {}
-	EMObject(double dd) : d(dd), type(DOUBLE_OBJECT) {}
-	EMObject(string s) : str(s), type(STRING_OBJECT) {}
-	EMObject(EMData* em) : emdata(em), type(EMDATA_OBJECT) {}
+	enum ObjectType {
+	    INT,
+	    FLOAT,
+	    DOUBLE,
+	    STRING,
+	    EMDATA,
+	    UNKNOWN
+	};
+
+    public:
+	EMObject() : type(UNKNOWN) {}
+	EMObject(int num) : n(num), type(INT) {}
+	EMObject(float ff) : f(ff), type(FLOAT) {}
+	EMObject(double dd) : d(dd), type(DOUBLE) {}
+	EMObject(string s) : str(s), type(STRING) {}
+	EMObject(EMData* em) : emdata(em), type(EMDATA) {}
 	
 	~EMObject() { }
 
 	int get_int() const
 	{
-	    if (type == INT_OBJECT) {
+	    if (type == INT) {
 		return n;
 	    }
-	    else if (type == FLOAT_OBJECT) {
+	    else if (type == FLOAT) {
 		return (int) f;
 	    }
-	    else if (type == DOUBLE_OBJECT) {
+	    else if (type == DOUBLE) {
 		return (int) d;
 	    }
 	    else {
-		if (type != UNKNOWN_OBJECT) {
+		if (type != UNKNOWN) {
 		    Log::logger()->error("type error. Cannot call get_int() for data type '%s'", get_object_type_name(type));
 		}
 	    }
@@ -58,17 +68,17 @@ namespace EMAN {
 	
 	float get_float() const
 	{
-	    if (type == FLOAT_OBJECT) {
+	    if (type == FLOAT) {
 		return f;
 	    }
-	    else if (type == INT_OBJECT) {
+	    else if (type == INT) {
 		return (float) n;
 	    }
-	    else if (type == DOUBLE_OBJECT) {
+	    else if (type == DOUBLE) {
 		return (float) d;
 	    }
 	    else {
-		if (type != UNKNOWN_OBJECT) {
+		if (type != UNKNOWN) {
 		    Log::logger()->error("type error. Cannot call get_float() for data type '%s'", get_object_type_name(type));
 		}
 	    }
@@ -78,17 +88,17 @@ namespace EMAN {
 	
 	double get_double() const
 	{
-	    if (type == DOUBLE_OBJECT) {
+	    if (type == DOUBLE) {
 		return d;
 	    }
-	    else if (type == INT_OBJECT) {
+	    else if (type == INT) {
 		return (double)n;
 	    }
-	    else if (type == FLOAT_OBJECT) {
+	    else if (type == FLOAT) {
 		return (double) f;
 	    }
 	    else {
-		if (type != UNKNOWN_OBJECT) {
+		if (type != UNKNOWN) {
 		    Log::logger()->error("type error. Cannot call get_double() for data type '%s'", get_object_type_name(type));
 		}
 	    }    
@@ -97,8 +107,8 @@ namespace EMAN {
 	
 	string get_string() const
 	{
-	    if (type != STRING_OBJECT) {
-		if (type != UNKNOWN_OBJECT) {
+	    if (type != STRING) {
+		if (type != UNKNOWN) {
 		    Log::logger()->error("type error. Cannot call get_string() for data type '%s'", get_object_type_name(type));
 		}
 		return "";
@@ -109,8 +119,8 @@ namespace EMAN {
 	    
 	EMData* get_EMData() const
 	{
-	    if (type != EMDATA_OBJECT) {
-		if (type != UNKNOWN_OBJECT) {
+	    if (type != EMDATA) {
+		if (type != UNKNOWN) {
 		    Log::logger()->error("type error. Cannot call get_EMData() for data type '%s'", get_object_type_name(type));
 		}
 		return 0;
@@ -118,34 +128,24 @@ namespace EMAN {
 	    return emdata;
 	}
 
-	bool is_null() const { return (type == UNKNOWN_OBJECT); }
+	bool is_null() const { return (type == UNKNOWN); }
 	
 	string to_str() const;
-   
-    private:
-	enum ObjectType {
-	    INT_OBJECT,
-	    FLOAT_OBJECT,
-	    DOUBLE_OBJECT,
-	    STRING_OBJECT,
-	    EMDATA_OBJECT,
-	    UNKNOWN_OBJECT
-	};
-
-	const char* get_object_type_name(ObjectType t) const
+ 
+	static const char* get_object_type_name(ObjectType t) 
 	{
-	    switch(type) {
-	    case INT_OBJECT:
+	    switch(t) {
+	    case INT:
 		return "INT";
-	    case FLOAT_OBJECT:
+	    case FLOAT:
 		return "FLOAT";
-	    case DOUBLE_OBJECT:
+	    case DOUBLE:
 		return "DOUBLE";
-	    case STRING_OBJECT:
+	    case STRING:
 		return "STRING";
-	    case EMDATA_OBJECT:
+	    case EMDATA:
 		return "EMDATA";
-	    case UNKNOWN_OBJECT:
+	    case UNKNOWN:
 		return "UNKNOWN";
 	    }
     
@@ -190,6 +190,7 @@ namespace EMAN {
     
 	    return result;
 	}
+	
 	vector<EMObject> values() const
 	{
 	    vector<EMObject> result;
@@ -225,6 +226,38 @@ namespace EMAN {
 	
     private:
 	map<string, EMObject> dict;
+    };
+
+    class TypeDict {
+    public:
+	TypeDict() {}
+	~TypeDict() {}
+
+	vector<string> keys() const
+	{
+	    vector<string> result;
+    
+	    map<string, string>::const_iterator p = 0;
+	    for (p = dict.begin(); p != dict.end(); p++) {
+		result.push_back(p->first);
+	    }
+    
+	    return result;
+	}
+	
+	int size() const { return dict.size(); }
+
+	void put(string key, EMObject::ObjectType o)
+	{
+	    dict[key] = EMObject::get_object_type_name(o);
+	}
+	
+	string get(string key) { return dict[key]; }
+	
+	string operator[](const string& key) { return dict[key]; }
+
+    private:
+	map<string, string> dict;
     };
     
 }

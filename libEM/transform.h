@@ -13,7 +13,7 @@ namespace EMAN {
 
     class Vec3f {
     public:
-	Vec3f() {}
+	Vec3f() { vec[0] = 0; vec[1] = 0; vec[2] = 0; }
 	Vec3f(float x, float y, float z) { vec[0] = x; vec[1] = y; vec[2] = z; }
 	Vec3f(const float v[3]) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
 	virtual ~Vec3f() {}
@@ -81,8 +81,9 @@ namespace EMAN {
 	float get_element(int i, int j) const;
 	
 	Matrix3f& inverse();
+	Matrix3f& transpose();
 	Matrix3f create_inverse();
-
+	
 	Matrix3f& operator+=(float f);
 	Matrix3f& operator-=(float f);
 	Matrix3f& operator*=(float f);
@@ -140,6 +141,7 @@ namespace EMAN {
 	float get_element(int i, int j) const;
 	
 	Matrix4f& inverse();
+	Matrix4f& transpose();
 	Matrix4f create_inverse();
 
 	Matrix4f& operator+=(float f);
@@ -176,9 +178,9 @@ namespace EMAN {
     private:
 	Matrix4f(gsl_matrix* m);
 	gsl_matrix* get_gsl_matrix() const;
-	
 	gsl_matrix* matrix;
     };
+    
     /*
       Euler angles have the disadvantage of being
       susceptible to "Gimbal lock" where attempts to rotate an
@@ -359,83 +361,70 @@ namespace EMAN {
 	void get_pre_translation() const;
 	void get_post_translation() const;
 	
-	void concatenate(const Transform& t);      // [this] = [this] x [t]
-	void pre_concatenate(const Transform& t);  // [this] = [t] x [this]
+	Transform& concatenate(const Transform& t);      // [this] = [this] x [t]
+	Transform& concatenate(const Matrix4f& m);
+	Transform& pre_concatenate(const Transform& t);  // [this] = [t] x [this]
 	
-	void inverse();
-	void transpose();
-	void normalize();  
+	Transform& inverse();
+	Transform& transpose();
+	Transform& normalize();  
 	
 	void set_matrix(const Matrix4f& m);
-	void get_matrix(Matrix4f& m);
+	Matrix4f get_matrix() const;
 
 	// Concatenates this transform with a translation transformation.
-	void translate(float x, float y, float z);
-	void translate(const Vec3f& v);
+	Transform& translate(float x, float y, float z);
+	Transform& translate(const Vec3f& v);
 	
-	Vec3f get_translation() const;
-
 	// Concatenates this transform with a rotation transformation.
-	void rotate(const Rotation& r);
-	void rotate(const Matrix3f& m);
-	//void rotate(const AxisAngle& a);
+	Transform& rotate(const Rotation& r);
+	Transform& rotate(const Matrix3f& m);
 
 	// pre-translate, rotate, post-translate
-	void rotate(const Rotation& r, const Vec3f& t);
-	
+	Transform& rotate(const Rotation& r, const Vec3f& t);
 	
 	// Concatenates this transform with a scaling transformation.
-	void scale(float sx, float sy, float sz);
-	void scale(const Vec3f& scales);
+	Transform& scale(float sx, float sy, float sz);
+	Transform& scale(const Vec3f& scales);
 
 	// pre-translate, rotate, scale on post-translate
-	void rotate_scale(const Rotation& r, const Vec3f& t, float s);
+	Transform& rotate_scale(const Rotation& r, const Vec3f& t, float s);
 	
-	
-	void get_rotation(Rotation& r) const;
-	void get_rotation(Matrix3f& m);
-	
-	Vec3f get_scale() const;
-
-	void set_center(float x, float y, float z);
-	void set_center(const Vec3f& new_center);
-	Vec3f get_center() const;
-
 	Point<float> transform(const Point<float>& point_in);
 	Vec3f transform(const Vec3f& vec_in);
 	
 	Point<float> back_transform(const Point<float>& point_out);
 	Vec3f back_transform(const Vec3f& vec_out);
+		
+	void set_center(float x, float y, float z);
+	void set_center(const Vec3f& new_center);
 	
-	
+	Rotation get_rotation(Rotation& r) const;
+	Vec3f get_translation() const;
+	Vec3f get_scale() const;
+	Vec3f get_center() const;
 	int get_type() const;
-
-	// add other combinations of operators
-	Transform& operator+=(const Transform& t);
-	friend Transform operator+(const Transform& t1, const Transform& t2);
 	
+	Transform& operator+=(const Transform& t);
 	Transform& operator-=(const Transform& t);
-	friend Transform operator-(const Transform& t1, const Transform& t2);
-
 	Transform& operator*=(const Transform& t);
 	Transform& operator*=(float scalar);
+	Transform& operator/=(const Transform& t);
+	
+	friend Transform operator+(const Transform& t1, const Transform& t2);
+	friend Transform operator-(const Transform& t1, const Transform& t2);
 
 	friend Transform operator*(const Transform& t1, const Transform& t2);
 	friend Transform operator*(const Transform& t, float s);
 	friend Transform operator*(float s, const Transform& t);
 
-	
-	Transform& operator/=(const Transform& t);
 	friend Transform operator/(const Transform& t1, const Transform& t2);
 	friend Transform operator/(const Transform& t, float s);
 	friend Transform operator/(float s, const Transform& t);
 	
 	
     private:
-	Vec3f translation;
-	Rotation rotation;
-	Vec3f scale_factor;	// non-uniform scale
-	Vec3f center;
+	Matrix4f matrix;
     };
 
 
