@@ -1,5 +1,5 @@
-#ifndef __mrcio_h__
-#define __mrcio_h__
+#ifndef eman__mrcio_h__
+#define eman__mrcio_h__ 1
 
 #include "imageio.h"
 #include <stdio.h>

@@ -1,5 +1,5 @@
-#ifndef __portable_fileio_h__
-#define __portable_fileio_h__
+#ifndef eman__portable_fileio_h__
+#define eman__portable_fileio_h__ 1
 
 #include <stdio.h>
 #include <sys/types.h>

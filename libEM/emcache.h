@@ -1,5 +1,5 @@
-#ifndef __emcache__h__
-#define __emcache__h__
+#ifndef eman__emcache__h__
+#define eman__emcache__h__ 1
 
 #include <stdlib.h>
 #include <string>

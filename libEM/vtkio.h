@@ -1,5 +1,5 @@
-#ifndef __vtkio_h__
-#define __vtkio_h__
+#ifndef eman__vtkio_h__
+#define eman__vtkio_h__ 1
 
 #include "imageio.h"
 #include <stdio.h>

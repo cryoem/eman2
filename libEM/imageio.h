@@ -1,5 +1,5 @@
-#ifndef __imageio_h__
-#define __imageio_h__
+#ifndef eman__imageio_h__
+#define eman__imageio_h__ 1
 
 #include "emobject.h"
 #include "byteorder.h"

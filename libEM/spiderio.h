@@ -1,5 +1,5 @@
-#ifndef __spiderio_h__
-#define __spiderio_h__
+#ifndef eman__spiderio_h__
+#define eman__spiderio_h__ 1
 
 
 #include "imageio.h"

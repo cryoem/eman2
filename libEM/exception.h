@@ -1,5 +1,5 @@
-#ifndef __exception_h__
-#define __exception_h__
+#ifndef eman__exception_h__
+#define eman__exception_h__ 1
 
 #include <string>
 

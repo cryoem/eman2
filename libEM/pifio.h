@@ -1,5 +1,5 @@
-#ifndef __pifio_h__
-#define __pifio_h__
+#ifndef eman__pifio_h__
+#define eman__pifio_h__ 1
 
 
 #include "imageio.h"

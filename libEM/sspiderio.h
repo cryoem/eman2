@@ -1,5 +1,5 @@
-#ifndef __single_spider_io_h__
-#define __single_spider_io_h__
+#ifndef eman__single_spider_io_h__
+#define eman__single_spider_io_h__ 1
 
 #include "spiderio.h"
 

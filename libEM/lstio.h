@@ -1,5 +1,5 @@
-#ifndef __lstio_h__
-#define __lstio_h__
+#ifndef eman__lstio_h__
+#define eman__lstio_h__ 1
 
 
 #include "imageio.h"

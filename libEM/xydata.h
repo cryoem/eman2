@@ -1,5 +1,5 @@
-#ifndef __xydata_h__
-#define __xydata_h__
+#ifndef eman__xydata_h__
+#define eman__xydata_h__ 1
 
 #include <string>
 using std::string;

@@ -1,5 +1,5 @@
-#ifndef __pgmio_h__
-#define __pgmio_h__
+#ifndef eman__pgmio_h__
+#define eman__pgmio_h__ 1
 
 #include "imageio.h"
 #include <stdio.h>

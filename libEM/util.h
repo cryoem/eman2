@@ -1,5 +1,5 @@
-#ifndef __util_h__
-#define __util_h__
+#ifndef eman__util_h__
+#define eman__util_h__ 1
 
 #include <stdio.h>
 #include <string>

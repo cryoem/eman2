@@ -1,5 +1,5 @@
-#ifndef __byteorder_h__
-#define __byteorder_h__
+#ifndef eman__byteorder_h__
+#define eman__byteorder_h__ 1
 
 namespace EMAN {
     

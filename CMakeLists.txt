@@ -25,8 +25,8 @@ IF(CMAKE_SYSTEM MATCHES "IRIX.*")
     SET(EMAN_CXX_FLAGS "-g -n32 -w2 -fullwarn" CACHE INTERNAL "C++ compiler flags")
 #    SET(EMAN_CXX_FLAGS "-O2 -n32 -woffall" CACHE INTERNAL "C++ compiler flags")
 ELSE(CMAKE_SYSTEM MATCHES "IRIX.*")
-    SET(EMAN_CXX_FLAGS " -g -Wall -Werror" CACHE INTERNAL "C++ compiler flags")
-#    SET(EMAN_CXX_FLAGS "-O2 -w" CACHE INTERNAL "C++ compiler flags")
+#    SET(EMAN_CXX_FLAGS " -g -Wall -Werror" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "-O2 -w" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 

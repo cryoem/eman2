@@ -1,5 +1,5 @@
-#ifndef __salio_h__
-#define __salio_h__
+#ifndef eman__salio_h__
+#define eman__salio_h__ 1
 
 
 #include "imageio.h"

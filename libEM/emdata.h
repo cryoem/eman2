@@ -1,5 +1,5 @@
-#ifndef __emdata_h__
-#define __emdata_h__
+#ifndef eman__emdata_h__
+#define eman__emdata_h__ 1
 
 #include <string>
 #include <vector>
@@ -49,12 +49,22 @@ namespace EMAN {
 	void ri2ap();
 	void ap2ri();
 
+	EMData* get_parent() const;
+	
 	EMData* do_fft();
 	EMData* do_ift() { return 0; }
 	void gimme_fft() {}
 
-	void apply_radial_func(int, float, vector<float> array) {}
+	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	
+	void apply_radial_func(int, float, vector<float> array) {}
+	    
+	void set_talign_params(float dx, float dy);
+	void set_talign_params(float dx, float dy, float dz);
+
+	void set_ralign_params(float alt, float az, float phi);
+	void set_ralign_params(const Rotation& r);
+
 	int add(float f);
 	int add(const EMData& em);
 	int sub(const EMData& em);
@@ -146,45 +156,41 @@ namespace EMAN {
 	SimpleCtf* ctf;
 	int flags;
 	int rocount;
+	int nx;
+	int ny;
+	int nz;
     };
 
 
     inline int EMData::get_x() const
     {
-	return attr_dict["nx"].get_int();
+	return nx;
     }
     
     inline int EMData::get_y() const
     {	
-	return attr_dict["ny"].get_int();
+	return ny;
     }    
 
     inline int EMData::get_z() const
     {
-	return attr_dict["nz"].get_int();
+	return nz;
     }
     
     inline float EMData::get_value_at(int x, int y, int z) const
     {
-	int nx = get_x();
-	int ny = get_y();
 	return rdata[x+y*nx+z*nx*ny]; 
     }
 
 
     inline float EMData::get_value_at(int x, int y) const
     {
-	int nx = get_x();
 	return rdata[x+y*nx];
     }
 
 	
     inline float EMData::sget_value_at(int x, int y, int z) const
     {
-	int nx = get_x();
-	int ny = get_y();
-	int nz = get_z();
-    
 	if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
 	    return 0;
 	}
@@ -193,9 +199,6 @@ namespace EMAN {
 
     inline float EMData::sget_value_at(int x, int y) const
     {
-	int nx = get_x();
-	int ny = get_y();
-    
 	if (x < 0 || y < 0 || x >= nx || y >= ny) {
 	    return 0;
 	}
@@ -220,25 +223,16 @@ namespace EMAN {
 	
     inline void EMData::set_value_at(int x, int y, int z, float v)
     {	
-	int nx = get_x();
-	int ny = get_y();
 	rdata[x+y*nx+z*nx*ny] = v;
 	flags |= EMDATA_NEEDUPD;
     }
 
 
     inline void EMData::set_value_at(int x, int y, float v)
-    {
-	int nx = get_x();	
+    {	
 	rdata[x+y*nx] = v;
 	flags |= EMDATA_NEEDUPD;
     }
-
 }
 
 #endif
-
-
-
-
-

@@ -1,5 +1,5 @@
-#ifndef __icosio_h__
-#define __icosio_h__
+#ifndef eman__icosio_h__
+#define eman__icosio_h__ 1
 
 
 #include "imageio.h"

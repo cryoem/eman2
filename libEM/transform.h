@@ -1,5 +1,5 @@
-#ifndef __transform_h__
-#define __transform_h__
+#ifndef eman__transform_h__
+#define eman__transform_h__ 1
 
 #include <string>
 using std::string;

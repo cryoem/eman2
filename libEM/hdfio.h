@@ -1,5 +1,5 @@
-#ifndef __hdfio_h__
-#define __hdfio_h__
+#ifndef eman__hdfio_h__
+#define eman__hdfio_h__ 1
 
 #ifdef EM_HDF5
 

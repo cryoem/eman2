@@ -1,5 +1,5 @@
-#ifndef __pngio_h__
-#define __pngio_h__
+#ifndef eman__pngio_h__
+#define eman__pngio_h__ 1
 
 #ifdef EM_PNG
 

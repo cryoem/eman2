@@ -1,5 +1,5 @@
-#ifndef __log__h__
-#define __log__h__
+#ifndef eman__log__h__
+#define eman__log__h__ 1
 
 #include <stdio.h>
 #include <stdarg.h>

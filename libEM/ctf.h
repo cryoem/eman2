@@ -1,5 +1,5 @@
-#ifndef __ctf__h__
-#define __ctf__h__
+#ifndef eman__ctf__h__
+#define eman__ctf__h__ 1
 
 #include <string>
 #include <map>

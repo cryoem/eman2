@@ -1,5 +1,5 @@
-#ifndef __emutil__h__
-#define __emutil__h__
+#ifndef eman__emutil__h__
+#define eman__emutil__h__ 1
 
 #include "emobject.h"
 #include <string>
@@ -73,6 +73,8 @@ namespace EMAN {
 				   int pre_row = 0, int post_row = 0);
 
 	static void dump_dict(const Dict& dict);
+
+	static bool is_same_size(EMData* em1, EMData* em2);
 	
     private:
 	static ImageType fast_get_image_type(string filename, const void* first_block);

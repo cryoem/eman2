@@ -1,5 +1,5 @@
-#ifndef __xplorio_h__
-#define __xplorio_h__
+#ifndef eman__xplorio_h__
+#define eman__xplorio_h__ 1
 
 
 #include "imageio.h"

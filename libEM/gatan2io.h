@@ -1,6 +1,5 @@
-#ifndef __gatan2io_h__
-#define __gatan2io_h__
-
+#ifndef eman__gatan2io_h__
+#define eman__gatan2io_h__ 1
 
 #include "imageio.h"
 #include <stdio.h>

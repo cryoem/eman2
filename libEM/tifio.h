@@ -1,5 +1,5 @@
-#ifndef __tiffio_h__
-#define __tiffio_h__
+#ifndef eman__tiffio_h__
+#define eman__tiffio_h__ 1
 
 #ifdef EM_TIFF
 
