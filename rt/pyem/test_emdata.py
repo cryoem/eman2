@@ -27,10 +27,20 @@ class TestEMData(unittest.TestCase):
         for i in range(ny):
             for j in range(nx):
                 self.assertEqual(e.get_value_at(j,i), array[i][j])
-                
+
+        e *= 2
+        for i in range(ny):
+            for j in range(nx):
+                self.assertEqual(e.get_value_at(j,i), array[i][j])
+
+        array.savespace(1)
+        array *= 2
+        
+        for i in range(ny):
+            for j in range(nx):
+                self.assertEqual(e.get_value_at(j,i), array[i][j])
 
         os.unlink(infile)
-
 
 
     def test_multi_array_3d(self):
@@ -51,11 +61,23 @@ class TestEMData(unittest.TestCase):
             for j in range(ny):
                 for k in range(nx):
                     self.assertEqual(e.get_value_at(k,j,i), array[i][j][k])
-                
+
+        e *= 2
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(nx):
+                    self.assertEqual(e.get_value_at(k,j,i), array[i][j][k])
+
+        array.savespace(1)
+        array *= 2
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(nx):
+                    self.assertEqual(e.get_value_at(k,j,i), array[i][j][k])
+
 
         os.unlink(infile)
-
-        
+      
     def test_multi_array_c2d(self):
         nx = 16
         ny = 16
@@ -77,7 +99,23 @@ class TestEMData(unittest.TestCase):
                 c1 = array[i][j/2]
                 testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
                 testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
-            
+
+
+        e *= 2
+        for i in range(ny):
+            for j in range(0, nx2, 2):
+                c1 = array[i][j/2]
+                testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
+                testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
+
+        array.savespace(1)
+        array *= 2
+        for i in range(ny):
+            for j in range(0, nx2, 2):
+                c1 = array[i][j/2]
+                testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
+                testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
+
         os.unlink(infile)
 
     def test_multi_array_c3d(self):
@@ -105,10 +143,27 @@ class TestEMData(unittest.TestCase):
                     testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
+        e *= 2
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(0,nx2,2):
+                    c1 = array[i][j][k/2]
+                    testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
+                    testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
+
+
+        array.savespace(1)
+        array *= 2
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(0,nx2,2):
+                    c1 = array[i][j][k/2]
+                    testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
+                    testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
+
         os.unlink(infile)
 
 
- 
     def test_rotate_translate(self):
         infile = "test_rotate_translate.mrc"
         TestUtil.make_image_file(infile, MRC, EM_FLOAT, 16,16,16)
@@ -243,9 +298,6 @@ class TestEMData(unittest.TestCase):
 		region2 = Region(-nx/4, -ny/4, 2*nx, 2*ny)
 		outfile2 = filebase + "_out2.mrc"
 		e3 = e.get_clip(region2)
-		
-	
-
 
 
 def test_main():

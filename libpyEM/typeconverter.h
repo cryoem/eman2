@@ -27,6 +27,9 @@ using std::map;
 
 namespace EMAN {
 
+    python::numeric::array make_numeric_array(float * data, vector<int> dims);
+    python::numeric::array make_numeric_complex_array(complex<float> * data,
+                                                      vector<int> dims);
 	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
@@ -523,9 +526,6 @@ namespace EMAN {
 		}
     };
 
-    python::numeric::array make_numeric_array(float * data, vector<int> dims);
-    python::numeric::array make_numeric_complex_array(complex<float> * data,
-                                                      vector<int> dims);
 }
 
 
