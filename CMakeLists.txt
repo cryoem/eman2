@@ -98,8 +98,8 @@ EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
 
 SUBDIRS(libEM plugins rt programs utils)
 
-SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include /usr/local/include /usr/include /sw/include)
-SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${LIB64} /usr/local/lib /usr/lib /sw/lib)
+SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/include /sw/include)
+SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${LIB64} $ENV{FFTWDIR}/lib $ENV{GSLDIR}/lib /usr/local/lib /usr/lib /sw/lib)
 
 MACRO(CHECK_REQUIRED_LIB upper lower header)
     FIND_PATH(${upper}_INCLUDE_PATH ${header} $ENV{${upper}DIR}/include ${INCLUDE_DIRS})
