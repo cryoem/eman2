@@ -3880,22 +3880,27 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 		}
 	}
 	else if (with) {
+		float re,im;
 		for (int i = 0; i < cf_size; i += 2) {
-			rdata2[i] = rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1];
-			rdata2[i + 1] = rdata1[i + 1] * rdata2[i] - rdata1[i] * rdata2[i + 1];
+			re = rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1];
+			im = rdata1[i + 1] * rdata2[i] - rdata1[i] * rdata2[i + 1];
+			rdata2[i] = re;
+			rdata2[i + 1] = im;
 		}
 	}
 	else {
+		float re,im;
 		for (int i = 0; i < cf_size; i += 2) {
-			rdata2[i] = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
-			rdata2[i + 1] = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
+			re = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
+			im = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
+			rdata2[i] = re;
+			rdata2[i + 1] = im;
 		}
 	}
 
 	f1->done_data();
 	cf->done_data();
-	return cf;
-#if 0
+	
 	if (tocorner) {
 		cf->filter("Phase180");
 	}
@@ -3915,7 +3920,6 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 	
 	EXITFUNC;
 	return f2;
-#endif
 }
 
 EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)

@@ -6,6 +6,7 @@
 #define eman__vec3_h__ 1
 
 #include <vector>
+#include <math.h>
 using std::vector;
 
 namespace EMAN

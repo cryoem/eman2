@@ -12,16 +12,19 @@ cmp_probe=None
 cmp_target=None
 tdim=None
 pdim=None
+degrad=pi/180.0
 
 def compare(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
 	of the probe to the map"""
 	global cmp_probe,cmp_target
 	
-	print vec,pdim
-	a=cmp_target.get_rotated_clip(FloatPoint(*vec[3:6]),Rotation(*vec[0:3]+[Rotation.Type.EMAN]),IntSize(*pdim),1.0)
-	a.write_image("clip.mrc")
-	return cmp_probe.cmp("Dot",{"with":EMObject(a)})
+#	print vec,pdim
+#	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
+	a=cmp_target.get_rotated_clip((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),Rotation(*vec[0:3]+[Rotation.Type.EMAN]),pdim,1.0)
+#	a.write_image("clip.mrc")
+#	os.system("v2 clip.mrc")
+	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
 	
 def main():
 	global tdim,pdim
@@ -64,7 +67,8 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	
 	# shrink both by some factor which keeps the smallest axis of the probe at least 10 pixels
 	# we'll have to reread the files if we want to recover the unscaled images
-	sfac=int(floor(min(pdim)/10.0))
+#	sfac=int(floor(min(pdim)/10.0))
+	sfac=int(floor(min(pdim)/12.0))
 	print "Shrink by %d"%sfac
 	target.mean_shrink(sfac)
 	probe.mean_shrink(sfac)
@@ -86,7 +90,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
 			prr=probeclip.copy(0)
-			prr.rotate(a1,a2,a3)
+			prr.rotate(a1*degrad,a2*degrad,a3*degrad)
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
 			
 			ccf=target.calc_ccf(prr,1,None)
@@ -98,7 +102,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 			
 #			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
 			vec=ccf.calc_highest_locations(mean+sig+.0000001)
-			for v in vec: best.append([v.value,a1,a2,a3,v.x,v.y,v.z,0])
+			for v in vec: best.append([v.value,a1*degrad,a2*degrad,a3*degrad,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
 			
 #			print a1,a2,a3,mean+sig,float(ccf.get_attr("max")),len(vec)
 	
@@ -122,15 +126,19 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 
 	# now we find peaks in the sum of all CCF calculations, and find the best angle associated with each peak
 	sum.filter("PeakOnly",{"npeaks":0})
+	sum.write_image("sum.mrc")
 	vec=sum.calc_highest_locations(mean+sig+.0000001)
 	best2=[]
 	for v in vec:
+#		print "%5.1f  %5.1f  %5.1f"%(v.x*sfac-tdim[0]/2,v.y*sfac-tdim[1]/2,v.z*sfac-tdim[2]/2)
 		for i in best:
-			if i[4]==v.x and i[5]==v.y and i[6]==v.z :
-				best2.append(i)
+			if i[4]+tdim2[0]/2==v.x and i[5]+tdim2[1]/2==v.y and i[6]+tdim2[2]/2==v.z :
+				best2.append([i[0],i[1],i[2],i[3],i[4]*sfac,i[5]*sfac,i[6]*sfac,i[7]])
 				break
 
-	print len(best2)
+	best2.sort()
+	best2.reverse()
+	print len(best2), " final candidates"
 	for i in best2: print i
 	
 	# reread the original images
@@ -139,7 +147,25 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	cmp_target=target
 	cmp_probe=probe
 	
-	print compare(best2[0][1:7])
+#	for i in best2:
+#		c=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
+#		c.rotate_translate(*i[1:7])
+#		c.write_image("z.%02d.mrc"%best2.index(i))
+	
+	for j in range(len(best2)):
+		sm=Simplex(compare,best2[j][1:7],[1,1,1,2.,2.,2.])
+		bt=sm.minimize()
+		b=bt[0]
+		print "\n",j,"\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f"%(b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
+		a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.Type.EMAN]),pdim,1.0)
+		a.write_image("clip.%02d.mrc"%j)
+		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
+#		pc.write_image("finala.mrc")
+		pc.rotate_translate(*b)
+		pc.write_image("final.%02d.mrc"%j)
+
+	
+#	print compare(best2[0][1:7])
 	
 #	print best2[0]
 #	print best2[-1]
