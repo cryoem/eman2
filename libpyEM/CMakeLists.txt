@@ -9,11 +9,31 @@ IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 
-ADD_LIBRARY(pyEM SHARED
-		 pyem.C
-		 libpyEM.cpp
+ADD_LIBRARY(pyGeometry SHARED 
+	         libpyGeometry.cpp
 )
 
-INSTALL_TARGETS(/lib pyEM)
+
+ADD_LIBRARY(pyFactory SHARED 
+	         libpyFactory.cpp
+)
+
+
+ADD_LIBRARY(pyUtils SHARED 
+	         libpyUtils.cpp
+)
+
+
+ADD_LIBRARY(pyFilter SHARED 
+	         libpyFilter.cpp
+)
+
+
+ADD_LIBRARY(pyEMData SHARED
+		 pyem.C
+		 libpyEMData.cpp
+)
+
+INSTALL_TARGETS(/lib pyGeometry pyFactory pyUtils pyFilter pyEMData)
 INSTALL_FILES(/lib .py EMAN.py)
 INSTALL_FILES(/include "^.+\\.h$")

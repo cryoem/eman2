@@ -1,0 +1,19 @@
+all: libpyGeometry.cpp libpyFactory.cpp libpyEMData.cpp libpyUtils.cpp libpyFilter.cpp
+
+PYSTE = python /usr/bin/pyste.py -I../libEM -I/usr/local/include
+
+libpyGeometry.cpp: geometry.pyste
+	$(PYSTE) --module=libpyGeometry geometry.pyste
+
+libpyFactory.cpp: factory.pyste
+	$(PYSTE) --module=libpyFactory factory.pyste
+
+libpyEMData.cpp: emdata.pyste
+	$(PYSTE) --module=libpyEMData  emdata.pyste
+
+libpyUtils.cpp: utils.pyste
+	$(PYSTE) --module=libpyUtils utils.pyste
+
+libpyFilter.cpp: filter.pyste
+	$(PYSTE) --module=libpyFilter filter.pyste 		 
+	

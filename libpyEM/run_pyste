@@ -1,1 +1,1 @@
-python /usr/bin/pyste.py -I../libEM -I/usr/include/python2.2 -I/usr/local/include --module=libpyEM pyem.pyste
+make -f Makefile.pyste

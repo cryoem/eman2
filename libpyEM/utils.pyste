@@ -1,0 +1,31 @@
+Include("pylist.h")
+Include("pyem.h")
+Include("emdata.h")
+Include("log.h")
+
+FloatStat = Class("EMAN::FloatStat", "floatstat.h")
+
+Log = Class("EMAN::Log", "log.h")
+set_policy(Log.logger, return_value_policy(reference_existing_object))
+exclude(Log.variable)
+exclude(Log.log)
+exclude(Log.warn)
+exclude(Log.error)		       
+
+EMUtil = Class("EMAN::EMUtil", "emutil.h")
+set_policy(EMUtil.get_imageio, return_internal_reference())
+set_policy(EMUtil.vertical_acf, return_value_policy(manage_new_object))
+set_policy(EMUtil.make_image_median, return_value_policy(manage_new_object))
+exclude(EMUtil.get_region_dims)
+exclude(EMUtil.get_region_origins)
+exclude(EMUtil.get_region_data)
+
+Ctf = Class("EMAN::Ctf", "ctf.h")
+SimpleCtf = Class("EMAN::SimpleCtf", "ctf.h")
+
+ImageIO = Class("EMAN::ImageIO", "imageio.h")
+
+
+XYData = Class("EMAN::XYData", "xydata.h")
+
+Util = Class("EMAN::Util", "util.h")
