@@ -354,14 +354,6 @@ namespace EMAN
 		map < string, string > desc_dict;
 	};
 
-	class NotExistingObjectError : public Exception
-	{
-	public:
-		NotExistingObjectError(const string& objname, const string& file = "unknown",
-							   int line = 0, const string& desc = "none")
-			: Exception(file, line, desc, objname) {}
-	};
-	
 	/** Factory is used to store objects to create new instances.
      * It is a singleton template. Typical usages are as follows:
      *
@@ -444,8 +436,7 @@ namespace EMAN
 			return my_instance->my_dict[instancename] ();
 		}
 		
-		throw NotExistingObjectError(instancename, __FILE__, __LINE__,
-									 "No such an instance existing");
+		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
 
 	template < class T > T * Factory < T >::get(string instancename, const Dict & params)
@@ -461,8 +452,7 @@ namespace EMAN
 			return i;
 		}		
 
-		throw NotExistingObjectError(instancename, __FILE__, __LINE__,
-									 "No such an instance existing");
+		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
 
 	template < class T > vector < string > Factory < T >::get_list() {

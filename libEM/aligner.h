@@ -13,26 +13,36 @@ namespace EMAN
 	class EMData;
 	class Cmp;
 
-	/** Aligner class is the base class for all aligners. Each
-     * specific Aligner type has a unique name. This name is used to
+	/** Aligner class defines image alignment method. It aligns 2
+	 * images based on a user-given comparison method.
+	 * 
+	 * Aligner class is the base class for all aligners. Each
+     * specific Aligner class has a unique name. This name is used to
      * create a new Aligner instance or call an Aligner.
      *
+	 * All Aligner classes in EMAN are managed by a Factory
+	 * pattern. So each Aligner class must define:
+	 *   a) a unique name to idenfity itself in the factory.
+	 *   b) a static method to register itself in the factory.
+	 *
+	 *
      * Typical usage of Aligners:
      *
      * 1. How to get all the Aligner types
      *
-     *    vector<string> all_aligners = Factory<Aligner>.get_list();
+     *    vector<string> all_aligners = Factory<Aligner>::get_list();
      *
      * 2. How to use an Aligner
      *
-     *    EMData *img = ...;
-     *    EMData *with = ...;
-     *    img->align("ALIGNER_NAME", Dict("to", image1));
+     *    EMData *image1 = ...;
+     *    EMData *image2 = ...;
+     *    image1->align("ALIGNER_NAME", Dict("to", image2));
      *
      * 3. How to define a new Aligner class
      *
      *    A new XYZAligner class should implement the following functions:
-     *
+     *    (Please replace 'XYZ' with your own class name).
+	 *
      *        EMData *align(EMData * this_img, string cmp_name = "") const;
      *        TypeDict get_param_types() const;
      *        string get_name() const { return "XYZ"; }
@@ -45,20 +55,39 @@ namespace EMAN
 		{
 		}
 
+		/** To align 'this_img' with another image passed in through
+		 * its parameters. The alignment uses a user-given comparison
+		 * method to compare the two images. If none is given, a default
+		 * one is used.
+		 *
+		 * @param this_img The image to be compared.
+		 * @param cmp_name The comparison method to compare the two images.
+		 * @return The aligned image.
+		 */
 		virtual EMData *align(EMData * this_img, string cmp_name = "") const = 0;
+		
+		/** Get the Aligner's name. Each Aligner is identified by a unique name.
+		 * @return The Aligner's name.
+		 */
+		virtual string get_name() const = 0;
 
+		/** Get the Aligner parameters in a key/value dictionary.
+		 * @return A key/value pair dictionary containing the parameters.
+		 */
 		virtual Dict get_params() const
 		{
 			return params;
 		}
 
+		/** Set the Aligner parameters using a key/value dictionary.
+		 * @param new_params A dictionary containing the new parameters.
+		 */
 		virtual void set_params(const Dict & new_params)
 		{
 			params = new_params;
 		}
 
 		virtual TypeDict get_param_types() const = 0;
-		virtual string get_name() const = 0;
 
 	  protected:
 		mutable Dict params;

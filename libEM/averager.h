@@ -14,11 +14,21 @@ namespace EMAN
 	class EMData;
 	class XYData;
 
-	/** Averager is the base class for all averager classes.
-     * Each subclass averager defines a way to do averaging on a set
-     * of images. Each specific averager has a unique ID name. This name
-     * is used to call a averager.
-     *
+	/** Averager class defines a way to do averaging on a set
+     * of images. A user may add one or more images to the Averager at
+     * one time. The images are averaged at the time of adding to the
+     * Averager. After all images are added, Average will return the
+     * averaged result.
+	 *
+     * Averager class is the base class for all averager classes. Each
+     * specific averager has a unique ID name. This name is used to
+     * call a averager.
+	 *
+	 * All Averager classes in EMAN are managed by a Factory
+	 * pattern. So each Averager class must define:
+	 *   a) a unique name to idenfity itself in the factory.
+	 *   b) a static method to register itself in the factory.
+	 *
      * Typical usages of Averager:
      *
      * 1. How to get all Averager types
@@ -41,7 +51,7 @@ namespace EMAN
      *
      *    XYZAverager should extend Averager and implement the
      *    following functions:
-     *
+     *    (Please replace 'XYZ' with your own class name).
      *        void add_image(EMData * image);
 	 *        EMData * finish();
      *        string get_name() const { return "XYZ"; }
@@ -53,19 +63,44 @@ namespace EMAN
 		virtual ~ Averager()
 		{
 		}
-		
+
+		/** To add an image to the Averager. This image will be
+		 * averaged in this function.
+		 * @param image The image to be averaged.
+		 */
 		virtual void add_image(EMData * image) = 0;
+
+		/** To add multiple images to the Averager. All the
+		 * newly-added images are averaged in this function.
+		 * @param images The images to be averaged.
+		 */
+		virtual void add_image_list(const vector<EMData*> & images);
+
+		/** Finish up the averaging and return the result.
+		 *
+		 * @return The averaged image.
+		 */
 		virtual EMData * finish() = 0;
 
-		virtual void add_image_list(const vector<EMData*> & image_list);
-		
+		/** Get the Averager's name. Each Averager is identified by a unique name.
+		 * @return The Averager's name.
+		 */
 		virtual string get_name() const = 0;
 
+		/** Set the Averager parameters using a key/value dictionary.
+		 * @param new_params A dictionary containing the new parameters.
+		 */
 		virtual void set_params(const Dict & new_params)
 		{
 			params = new_params;
 		}
 
+		/** Get Averager  parameter information in a dictionary. Each
+		 * parameter has one record in the dictionary. Each record
+		 * contains its name, data-type, and description.
+		 *
+		 * @return A dictionary containing the parameter info.
+		 */	 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;

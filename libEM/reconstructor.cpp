@@ -29,14 +29,13 @@ FourierReconstructor::~FourierReconstructor()
 	}
 }
 
-int FourierReconstructor::setup()
+void FourierReconstructor::setup()
 {
 	int size = params["size"];
 	image = new EMData();
 	image->set_size(size + 2, size, size);
 	image->set_complex(true);
 	image->set_ri(true);
-
 
 	nx = image->get_xsize();
 	ny = image->get_ysize();
@@ -58,8 +57,6 @@ int FourierReconstructor::setup()
 	}
 	parent->set_size(size + 1, size, size);
 	image->set_parent(parent);
-
-	return 0;
 }
 
 int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
@@ -489,7 +486,7 @@ WienerFourierReconstructor::~WienerFourierReconstructor()
 	}
 }
 
-int WienerFourierReconstructor::setup()
+void WienerFourierReconstructor::setup()
 {
 	int size = params["size"];
 	image = new EMData();
@@ -517,8 +514,6 @@ int WienerFourierReconstructor::setup()
 	}
 	parent->set_size(size + 1, size, size);
 	image->set_parent(parent);
-
-	return 0;
 }
 
 
@@ -943,7 +938,7 @@ BackProjectionReconstructor::~BackProjectionReconstructor()
 	}
 }
 
-int BackProjectionReconstructor::setup()
+void BackProjectionReconstructor::setup()
 {
 	int size = params["size"];
 	image = new EMData();
@@ -951,7 +946,6 @@ int BackProjectionReconstructor::setup()
 	nx = size;
 	ny = size;
 	nz = size;
-	return 0;
 }
 
 int BackProjectionReconstructor::insert_slice(EMData * slice, const Rotation &)

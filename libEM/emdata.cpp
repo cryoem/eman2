@@ -73,13 +73,12 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 	
 	if (!imageio) {
-		throw UnknownImageFormat(filename, __FILE__, __LINE__, "cannot create an image io");
+		throw ImageFormatException(filename, "cannot create an image io");
 	}
 	else {
 		int err = imageio->read_header(attr_dict, img_index, r, is_3d);
 		if (err) {
-			throw ImageHeaderReadError(filename, __FILE__, __LINE__,
-									   "imageio read header failed");
+			throw ImageReadException(filename, "imageio read header failed");
 		}
 		else {
 			if (imageio->is_complex_mode()) {
@@ -106,8 +105,7 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 				set_size(nx, ny, nz);
 				int err = imageio->read_data(rdata, img_index, r, is_3d);
 				if (err) {
-					throw ImageDataReadError(filename, __FILE__, __LINE__,
-											 "imageio read data failed");
+					throw ImageReadException(filename, "imageio read data failed");
 				}
 				else {
 					flags |= EMDATA_NEEDUPD;
@@ -137,7 +135,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_WRITE, imgtype);
 	if (!imageio) {
-		throw UnknownImageFormat(filename, __FILE__, __LINE__, "cannot create an image io");
+		throw ImageFormatException(filename,  "cannot create an image io");
 	}
 	else {
 		update_stat();
@@ -146,8 +144,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 		}
 		int err = imageio->write_header(attr_dict, img_index, use_host_endian);
 		if (err) {
-			throw ImageHeaderWriteError(filename, __FILE__, __LINE__,
-										"imageio write header failed");
+			throw ImageWriteException(filename, "imageio write header failed");
 		}
 		else {
 			if (ctf) {
@@ -157,8 +154,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 			if (!header_only) {
 				err = imageio->write_data(rdata, img_index, use_host_endian);
 				if (err) {
-					throw ImageDataWriteError(filename, __FILE__, __LINE__,
-											  "imageio write data failed");
+					throw ImageWriteException(filename, "imageio write data failed");
 				}
 			}
 		}
@@ -1426,8 +1422,7 @@ void EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int i
 void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax)
 {
 	if (nz > 1) {
-		throw ImageDimError(__FILE__, __LINE__, 
-							"Can only calculate AZ distribution on 2D images");
+		throw ImageFormatException("dimension", "2D images only");
 	}
 
 	get_data();
@@ -1654,8 +1649,7 @@ void EMData::add(float f)
 void EMData::add(const EMData & em) 
 {
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		throw NotSameImageSizeError(__FILE__, __LINE__,
-									"cannot add 2 images with different sizes");
+		throw ImageFormatException("", "images not same sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -1682,8 +1676,7 @@ void EMData::sub(float f)
 void EMData::sub(const EMData & em) 
 {
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		throw NotSameImageSizeError(__FILE__, __LINE__,
-									"cannot substract 2 images with different sizes");
+		throw ImageFormatException("","cannot substract 2 images with different sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -1715,8 +1708,7 @@ void EMData::mult(float f)
 void EMData::mult(const EMData & em) 
 {
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		throw NotSameImageSizeError(__FILE__, __LINE__,
-									"cannot multiply 2 images with different sizes");
+		throw ImageFormatException("", "images not same sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -1743,8 +1735,7 @@ void EMData::div(float f)
 void EMData::div(const EMData & em) 
 {
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		throw NotSameImageSizeError(__FILE__, __LINE__,
-									"cannot divide 2 images with different sizes");
+		throw ImageFormatException("", "images not same sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -2772,8 +2763,7 @@ void EMData::rotate_translate(const Transform & xform)
 void EMData::rotate_180()
 {
 	if (nx != ny) {
-		throw NotSquareImageError(__FILE__, __LINE__, 
-								  "Rot180 on non-square image poorly defined.");
+		throw ImageFormatException("", "non-square image");
 	}
 
 	float *d = get_data();
@@ -2848,13 +2838,13 @@ EMData *EMData::do_radon()
 void EMData::mean_shrink(int shrink_factor)
 {
 	if (shrink_factor <= 1) {
-		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+		throw ShrinkFactorException(shrink_factor, 
 								 "mean shrink: shrink factor must > 1");
 	}
 
 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
-		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+		throw ShrinkFactorException(shrink_factor, 
 								 "Image size not divisible by shrink factor");
 	}
 
@@ -2913,13 +2903,13 @@ void EMData::mean_shrink(int shrink_factor)
 void EMData::median_shrink(int shrink_factor)
 {
 	if (shrink_factor <= 1) {
-		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+		throw ShrinkFactorException(shrink_factor, 
 								 "median shrink: shrink factor must > 1");
 	}
 
 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
-		throw ShrinkFactorError(shrink_factor, __FILE__, __LINE__,
+		throw ShrinkFactorException(shrink_factor, 
 								 "Image size not divisible by shrink factor");
 	}
 
@@ -3623,7 +3613,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 void EMData::add_incoherent(EMData * obj)
 {
 	if (!obj) {
-		throw NullEMDataObjectError(__FILE__, __LINE__);
+		throw NullPointerException("NULL image");
 	}
 
 	if (!obj->is_complex() || !is_complex()) {
@@ -3632,8 +3622,7 @@ void EMData::add_incoherent(EMData * obj)
 	}
 
 	if (!EMUtil::is_same_size(this, obj)) {
-		throw NotSameImageSizeError(__FILE__, __LINE__,
-									"add incoherent can only add same size image");
+		throw ImageFormatException("", "images not same size");
 	}
 
 	ri2ap();
@@ -4101,12 +4090,11 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						  int mode, int steps, bool horizontal)
 {
 	if (!image1 || !image2) {
-		throw NullEMDataObjectError(__FILE__, __LINE__, 
-									"common lines: cannot handle NULL image");
+		throw NullPointerException("NULL image");
 	}
 
 	if (mode < 0 || mode > 2) {
-		throw InvalidModeError(0, 2, mode, __FILE__, __LINE__, "invalid mode");
+		throw InvalidModeException(0, 2, mode,  "invalid mode");
 	}
 
 	if (!image1->is_complex()) {
@@ -4120,8 +4108,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 	image2->ap2ri();
 
 	if (!EMUtil::is_same_size(image1, image2)) {
-		throw NotSameImageSizeError(__FILE__, __LINE__, 
-									"common lines: input images must be the same size");
+		throw ImageFormatException("", "images not same sizes");
 	}
 
 	int image2_nx = image2->get_xsize();
@@ -4347,13 +4334,11 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 							   int steps, bool horiz)
 {
 	if (!image1 || !image2) {
-		throw NullEMDataObjectError(__FILE__, __LINE__, 
-									"common lines real: cannot handle NULL image");
+		throw NullPointerException("NULL image");
 	}
 
 	if (!EMUtil::is_same_size(image1, image2)) {
-		throw NotSameImageSizeError(__FILE__, __LINE__, 
-									"common lines real: input images must be the same size");
+		throw ImageFormatException("", "images not same size");
 	}
 
 	int steps2 = steps * 2;
@@ -4454,7 +4439,7 @@ void EMData::cut_slice(EMData * map, float dz, Rotation * ort,
 					   bool interpolate, float dx, float dy)
 {
 	if (!map) {
-		throw NullEMDataObjectError(__FILE__, __LINE__, "input map is empty");
+		throw NullPointerException("NULL image");
 	}
 
 	Rotation r(0, 0, 0, Rotation::EMAN);
@@ -4526,8 +4511,7 @@ void EMData::cut_slice(EMData * map, float dz, Rotation * ort,
 void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float dy)
 {
 	if (!map) {
-		throw NullEMDataObjectError(__FILE__, __LINE__,
-									"input map is empty");
+		throw NullPointerException("NULL image");
 	}
 
 	Rotation r(0, 0, 0, Rotation::EMAN);

@@ -21,7 +21,7 @@ namespace EMAN
 
 	/** initialize the reconstructor
 	 */
-		int setup();
+		void setup();
 
 	/** insert each image slice to the reconstructor. You may call
 	 * this function multiple times.

@@ -1,15 +1,17 @@
 #include "exception.h"
-#include "log.h"
+
 
 using namespace EMAN;
 
-void Exception::dump() const
+const char* Exception::what() const throw()
 {
 	string err1 = "";
 	if (objname != "") {
 		err1 = "error with '" + objname + "': ";
 	}
-	
-	LOGERR("%s:%d: %s%s\n", filename.c_str(), line, err1.c_str(), desc.c_str());
-	
+	string msg = filename + ":";
+	char sline[32];
+	sprintf(sline, "%d", line);
+	msg += string(sline) + ": " + err1 + desc;
+	return msg.c_str();
 }

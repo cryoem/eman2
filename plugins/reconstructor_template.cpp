@@ -10,9 +10,9 @@ XYZReconstructor::~XYZReconstructor()
 {
 }
 
-int XYZReconstructor::setup()
+void XYZReconstructor::setup()
 {
-	return 0;
+	
 }
 
 int XYZReconstructor::insert_slice(EMData * slice, const Rotation & euler)

@@ -16,21 +16,26 @@ namespace EMAN
 {
 	class EMData;
 
-	/** Projector class is the base class for all 3D projectors.
-     * Projector generates 2D projections from a 3D model.
-     * Each specific projector has a unique name and should be called
+	/** Projector class defines a method to generate 2D projections
+	 * from a 3D model. Projector class is the base class for all projectors.
+	 * Each specific projector has a unique name and should be called
      * through the name.
      *
+	 * All Projector classes in EMAN are managed by a Factory
+	 * pattern. So each Projector class must define:
+	 *   a) a unique name to idenfity itself in the factory.
+	 *   b) a static method to register itself in the factory.
+	 *
      * Typical usage of Projectors:
      *
      * 1. How to get all the Projector types
      *
-     *    vector<string> all_projectors = Factory<Projector>.get_list();
+     *    vector<string> all_projectors = Factory<Projector>::get_list();
      *
      * 2. How to use a Projector
      *
      *    EMData* img = ...;
-     *    Projector* proj = Factory<Projector>.get("FFT");
+     *    Projector* proj = Factory<Projector>::get("FFT");
      *    EMData* result = proj->project3d(img);
      *
      * 3. How to define a new Projector
@@ -50,20 +55,36 @@ namespace EMAN
 		{
 		}
 
+		/** Project an 3D image into a 2D image.
+		 * @return A 2D image from the projection.
+		 */
 		virtual EMData *project3d(EMData * image) const = 0;
 
+		/** Get the projector's name. Each projector is indentified by
+		 * unique name.
+		 * @return The projector's name.
+		 */
 		virtual string get_name() const = 0;
 
+		/** Get the projector parameters in a key/value dictionary.
+		 * return A key/value pair dictionary containing the
+		 *         parameters.
+		 */
 		virtual Dict get_params() const
 		{
 			return params;
 		}
-
+		/** Set the projector parameters using a key/value dictionary */
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
 		}
-
+		/** Get filter parameter information in a dictionary. Each
+		 * parameter has one record in the dictionary. Each record
+		 * contains its name, data-type, and description.
+		 *
+		 * @return A dictionary containing the parameter info.
+		 */	 
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -80,13 +101,13 @@ namespace EMAN
      * valid mode range: [1,7].
      * the gauss widths are as follows with mode from 1 to 7:
      * 
-     * 0;
-     * 4.0 / (M_PI * M_PI);
-     * 6.4 / (M_PI * M_PI);
-     * 8.8 / (M_PI * M_PI);
-     * 0;
-     * 10.4 / (M_PI * M_PI);
-     * 10.4 / (M_PI * M_PI);
+     * mode 1:  0;
+     * mode 2:  4.0 / (M_PI * M_PI);
+     * mode 3:  6.4 / (M_PI * M_PI);
+     * mode 4:  8.8 / (M_PI * M_PI);
+     * mode 5:  0;
+     * mode 6:  10.4 / (M_PI * M_PI);
+     * mode 7:  10.4 / (M_PI * M_PI);
      */
 
 	class GaussFFTProjector:public Projector

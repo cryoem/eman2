@@ -45,7 +45,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("sort_by_axis", &EMAN::PointArray::sort_by_axis, EMAN_PointArray_sort_by_axis_overloads_0_1())
         .def("pdb2mrc_by_nfft", &EMAN::PointArray::pdb2mrc_by_nfft, return_value_policy< manage_new_object >())
         .def("pdb2mrc_by_summation", &EMAN::PointArray::pdb2mrc_by_summation, return_value_policy< manage_new_object >())
-        .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, return_value_policy< manage_new_object >(), EMAN_PointArray_projection_by_nfft_overloads_2_3())
+        .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, EMAN_PointArray_projection_by_nfft_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("projection_by_summation", &EMAN::PointArray::projection_by_summation, return_value_policy< manage_new_object >())
         .def("refine", &EMAN::PointArray::refine, EMAN_PointArray_refine_overloads_1_4())
     );
