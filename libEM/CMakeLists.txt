@@ -9,7 +9,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     matrix.cpp
     quaternion.cpp
     transform.cpp
-	rotation.cpp
     geometry.cpp
     pointarray.cpp
     mrcio.cpp

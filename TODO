@@ -81,7 +81,10 @@
 		  1.45232928554 0.601708292961
 		  0.0 -1.45232927799
 
+  072. Transform::get_rotation() does not work in python.
 
+  073. check convertible in type converter functions.
+		  
 		 
 --- Low Priority ---
 

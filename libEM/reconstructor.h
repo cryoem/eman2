@@ -18,9 +18,8 @@ namespace EMAN
 {
 
 	class EMData;
-	class Rotation;
-
-
+	class Transform;
+	
 	/** Reconstructor class defines a way to do 3D recontruction.
 	 * A reconstruction is done by 3 steps:
 	 *   - set up.
@@ -57,7 +56,7 @@ namespace EMAN
      *    (Please replace 'XYZ' with your own class name).
 	 @code
      *        void setup();
-     *        int insert_slice(EMData * slice, const Rotation & euler);
+     *        int insert_slice(EMData * slice, const Transform & t);
      *        EMData * finish();
      *        string get_name() const { return "XYZ"; }
      *        static Reconstructor *NEW() { return new XYZReconstructor(); }
@@ -83,7 +82,7 @@ namespace EMAN
 		 * @param euler Euler angle of this image slice.
 		 * @return 0 if OK. 1 if error.
 		 */
-		virtual int insert_slice(EMData * slice, const Rotation & euler) = 0;
+		virtual int insert_slice(EMData * slice, const Transform & euler) = 0;
 
 		/** Finish reconstruction and return the complete model.
 		 * @return The result 3D model.
@@ -134,7 +133,7 @@ namespace EMAN
 		~FourierReconstructor();
 
 		void setup();
-		int insert_slice(EMData * slice, const Rotation & euler);
+		int insert_slice(EMData * slice, const Transform & euler);
 		EMData *finish();
 
 		string get_name() const
@@ -172,7 +171,7 @@ namespace EMAN
 		~WienerFourierReconstructor();
 
 		void setup();
-		int insert_slice(EMData * slice, const Rotation & euler);
+		int insert_slice(EMData * slice, const Transform & euler);
 		EMData *finish();
 
 		string get_name() const
@@ -215,7 +214,7 @@ namespace EMAN
 		~BackProjectionReconstructor();
 
 		void setup();
-		int insert_slice(EMData * slice, const Rotation & euler);
+		int insert_slice(EMData * slice, const Transform & euler);
 		EMData *finish();
 
 		string get_name() const

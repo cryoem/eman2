@@ -3,7 +3,7 @@
  */
 #include "reconstructor.h"
 #include "emdata.h"
-#include "rotation.h"
+#include "transform.h"
 #include "interp.h"
 #include "ctf.h"
 
@@ -59,7 +59,7 @@ void FourierReconstructor::setup()
 	image->set_parent(parent);
 }
 
-int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
+int FourierReconstructor::insert_slice(EMData * slice, const Transform & euler)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -96,8 +96,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 	float *norm = image->get_parent()->get_data();
 	float *dat = slice->get_data();
 	float *rdata = image->get_data();
-
-	Matrix3f mx = euler.get_matrix3();
+	
 	int rl = Util::square(ny / 2 - 1);
 	float dt[2];
 	float g[8];
@@ -107,9 +106,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 			if ((x * x + Util::square(y - ny / 2)) >= rl)
 				continue;
 
-			float xx = (float) (x * mx[0][0] + (y - ny / 2) * mx[0][1]);
-			float yy = (float) (x * mx[1][0] + (y - ny / 2) * mx[1][1]);
-			float zz = (float) (x * mx[2][0] + (y - ny / 2) * mx[2][1]);
+			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[0][1]);
+			float yy = (float) (x * euler[1][0] + (y - ny / 2) * euler[1][1]);
+			float zz = (float) (x * euler[2][0] + (y - ny / 2) * euler[2][1]);
 			float cc = 1;
 
 			if (xx < 0) {
@@ -540,7 +539,7 @@ EMData *WienerFourierReconstructor::finish()
 }
 
 
-int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
+int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform & euler)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -577,7 +576,6 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 	float *dat = slice->get_data();
 	float *rdata = image->get_data();
 
-	Matrix3f mx = euler.get_matrix3();
 	int rl = Util::square(ny / 2 - 1);
 	float dt[2];
 	float g[8];
@@ -595,9 +593,9 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 
 			float weight = snr[r];
 
-			float xx = (x * mx[0][0] + (y - ny / 2) * mx[0][1]);
-			float yy = (x * mx[1][0] + (y - ny / 2) * mx[1][1]);
-			float zz = (x * mx[2][0] + (y - ny / 2) * mx[2][1]);
+			float xx = (x * euler[0][0] + (y - ny / 2) * euler[0][1]);
+			float yy = (x * euler[1][0] + (y - ny / 2) * euler[1][1]);
+			float zz = (x * euler[2][0] + (y - ny / 2) * euler[2][1]);
 			float cc = 1;
 
 			if (xx < 0) {
@@ -948,7 +946,7 @@ void BackProjectionReconstructor::setup()
 	nz = size;
 }
 
-int BackProjectionReconstructor::insert_slice(EMData * slice, const Rotation &)
+int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform &)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");

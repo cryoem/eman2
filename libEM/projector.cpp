@@ -46,8 +46,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Rotation r(alt, az, phi, Rotation::EMAN);
-	Matrix3f mx = r.get_matrix3();
+	Transform r(Transform::EMAN, alt, az, phi);
 
 	int mode = params["mode"];
 	float gauss_width = 0;
@@ -72,9 +71,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 				data[ii + 1] = 0;
 			}
 			else {
-				float xx = (float) (x * mx[0][0] + (y - f_ny / 2) * mx[0][1]);
-				float yy = (float) (x * mx[1][0] + (y - f_ny / 2) * mx[1][1]);
-				float zz = (float) (x * mx[2][0] + (y - f_ny / 2) * mx[2][1]);
+				float xx = (float) (x * r[0][0] + (y - f_ny / 2) * r[0][1]);
+				float yy = (float) (x * r[1][0] + (y - f_ny / 2) * r[1][1]);
+				float zz = (float) (x * r[2][0] + (y - f_ny / 2) * r[2][1]);
 
 				int cc = 1;
 				if (xx < 0) {
@@ -476,8 +475,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 		}
 	}
 
-	Rotation rotation(alt, az, phi, Rotation::EMAN);
-	Matrix3f mat = rotation.get_matrix3();
+	Transform rotation(Transform::EMAN, alt, az, phi);
 
 	EMData *ret = new EMData();
 	ret->set_size(nx, ny, 1);
@@ -490,14 +488,14 @@ EMData *PawelProjector::project3d(EMData * image) const
 		for (int i = 0; i < nrows; i++) {
 			Pointers row_data = xmax[i];
 			int kb = row_data.location[1] + origins[1];
-			Vec3f vb = row_data.location * mat + origins;
+			Vec3f vb = row_data.location * rotation + origins;
 
 			for (int k = row_data.start - 1; k < row_data.end; k++) {
 				Vec3i iq((int) floor(vb[0]), (int) floor(vb[1]), (int) floor(vb[2]));
 
 				if (radius2 > nx || radius2 > ny) {
 					if (iq[0] > (nx - 1) || iq[1] > (ny - 1) || iq[2] > (nz - 1)) {
-						vb += mat.get_row(0);
+						vb += rotation.get_matrix3_row(0);
 						continue;
 					}
 				}
@@ -520,7 +518,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 				ret_data[k + kb * nx] = ret_data[k + kb * nx] + sum_a;
 
 				if (radius2 <= nx && radius2 <= ny) {
-					vb += mat.get_row(0);
+					vb += rotation.get_matrix3_row(0);
 				}
 			}
 		}
@@ -666,8 +664,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	Rotation r(alt, az, phi, Rotation::EMAN);
-	Matrix3f mx = r.get_matrix3();
+	Transform r(Transform::EMAN, alt, az, phi);
 	int xy = nx * ny;
 
 	EMData *proj = new EMData();
@@ -680,9 +677,9 @@ EMData *StandardProjector::project3d(EMData * image) const
 		for (int j = -ny / 2; j < ny - ny / 2; j++) {
 			ddata[l]=0;
 			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
-				float x2 = (float)(mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2);
-				float y2 = (float)(mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2);
-				float z2 = (float)(mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + nz / 2);
+				float x2 = (float)(r[0][0] * i + r[0][1] * j + r[0][2] * k + nx / 2);
+				float y2 = (float)(r[1][0] * i + r[1][1] * j + r[1][2] * k + ny / 2);
+				float z2 = (float)(r[2][0] * i + r[2][1] * j + r[2][2] * k + nz / 2);
 
 				if (x2 >= 0 && y2 >= 0 && z2 >= 0 && x2 < (nx - 1) && y2 < (ny - 1)
 					&& z2 < (nz - 1)) {

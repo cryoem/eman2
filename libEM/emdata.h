@@ -15,7 +15,6 @@
 #include "util.h"
 #include "vec3.h"
 #include "geometry.h"
-#include "rotation.h"
 #include "transform.h"
 
 using std::string;
