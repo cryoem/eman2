@@ -46,7 +46,7 @@ namespace EMAN {
 
 	EMData* align(string aligner_name, const Dict& params, string comp_name = "");
 	
-	EMData* copy(bool withfft = false, bool withparent = true) const;
+	EMData* copy(bool withfft = false, bool withparent = true);
 	EMData* copy_head();
 	
 	EMData* get_clip(const Region& area);
@@ -199,9 +199,10 @@ namespace EMAN {
 	Rotation get_rotation() const { return rotation; }
 	Vec3f get_trans_align() const { return trans_align; }
 	
-	void EMData::set_name(string name);
-	void EMData::set_path(string path);
-
+	void set_name(const string& name);
+	void set_path(const string& path);
+	void set_pathnum(int n);
+	
 	void dump_data(string filename);
 
 	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices,
@@ -266,15 +267,17 @@ namespace EMAN {
 	EMData* rfp;
 	int flags;
 	float pixel_size;
-	
 	int nx;
 	int ny;
 	int nz;
-	
+	int nimg;
 	Vec3f translation;
 	Rotation rotation;
 	Vec3f trans_align;
 	float align_score;
+	string name;
+	string path;
+	int pathnum;
     };
 
 
