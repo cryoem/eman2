@@ -86,9 +86,6 @@ namespace EMAN
 			 float min_render, float max_render,
 			 void *ref, void cmap(void *, int coord, unsigned char *tri));
 
-	int render_pha24(unsigned char *data, int x, int y, int xsize, int ysize,
-			 int bpl, float scale, float min_render, float max_render);
-
 
 	void ri2ap();
 	void ap2ri();

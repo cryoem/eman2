@@ -45,7 +45,7 @@ namespace EMAN
 	int minval;
 
 	DataType datatype;
-	long file_offset;
+	off_t file_offset;
     };
 }
 

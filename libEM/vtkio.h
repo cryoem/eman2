@@ -52,7 +52,7 @@ namespace EMAN
 	float spacingx;
 	float spacingy;
 	float spacingz;
-	long file_offset;
+	off_t file_offset;
     };
 
 }
