@@ -26,9 +26,6 @@
           - write a new header to this file.
           - write new data to this file.
 		  
-  045. ImageIO region writing are not supported in some imageio classes,
-       This includes AMRIRA, VTK.
-	   
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
 
@@ -52,7 +49,11 @@
 
   085. e2proc2d seems not working.
 
-  
+  093. SpiderIO. If an existing image has a single image, then writing to
+       it at image index = 0 should overwrite the old image. The current
+       implementation check image size and refuse overwriting if different
+       sizes. 2) maxim is wrong in 'e2iminfo spider-stack.spi'.
+       
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -73,13 +74,14 @@
 
   016. EMData class: get_clip() , get 2D from 3D, 3D from 2D?
 
-  032. add actual implementation of region write to ImageIO classes.
-
   039. make classes Vec3, Matrix3f, Matrix4f as python container classes.  
 	   refer indexing_suite in boost python.
 
   041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
        produced a core dump. 
+	   
+  045. ImageIO region writing are not supported in some imageio classes,
+       This includes AMRIRA, VTK.
 	   
   048. Add ASCII write and binary read to VtkIO.
 
@@ -182,6 +184,9 @@
   9/20/04 031. Fix the documentation for 2 things:
 			    1) new logging API;
 				2) new filter name conventions.
+
+  2/10/05 032. 
+       add actual implementation of region write to ImageIO classes.
 
   12/10/2004 033.
        in filter parameter passing from python to C++, is there a way to

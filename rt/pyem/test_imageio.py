@@ -8,6 +8,28 @@ import sys
 import testlib
 import os
 
+
+class TestSpiderIO(unittest.TestCase):
+
+
+    def test_make_spider(self):
+        file1 = "test_make_spider_1.spi"
+        nx1 = 100
+        ny1 = 24
+        TestUtil.make_image_file(file1, SPIDER, EM_FLOAT, nx1, nx1)
+        err = TestUtil.verify_image_file(file1, SPIDER, EM_FLOAT, nx1, nx1)
+        self.assertEqual(err, 0)
+        os.unlink(file1)
+
+    def test_overwrite_spider(self):
+        file1 = "test_overwrite_spider.spi"
+        nx1 = 24
+        ny1 = 32
+        TestUtil.make_image_file(file1, SPIDER, EM_FLOAT, nx1, ny1)
+        TestUtil.make_image_file(file1, SPIDER, EM_FLOAT, nx1*2, ny1*2)
+        #os.unlink(file1)
+        
+
 class TestHdfIO(unittest.TestCase):
 
     def test_make_image(self):
@@ -581,19 +603,34 @@ class TestImageIO(unittest.TestCase):
         (hedfile1, imgfile1) = testlib.get_imagic_filename_pair(infile)
         os.unlink(hedfile1)
         os.unlink(imgfile1)
-        
-        
+
+
+    def test_hdfio_region(self):
+        file1 = "test_hdfio_region_1.h5"
+        nx = 48
+        ny = 64
+        nz1 = 1
+        TestUtil.make_image_file(file1, HDF, EM_FLOAT, nx, ny, nz1)
+        self.region_read_write_test(HDF, file1)
+
+        file2 = "test_hdfio_region_2.h5"
+        nz2 = 12
+        TestUtil.make_image_file(file2, HDF, EM_FLOAT, nx, ny, nz2)
+        self.region_read_write_test(HDF, file2)
+
+        os.unlink(file1)
+        os.unlink(file2)
+              
 """
+    def  test_spiderio_region(self):
+        file1 = "test_spiderio_region_1.h5"
+        
+  
     def test_spiderio_region(self):
         self.region_read_write_test(SINGLE_SPIDER, "spider-single.spi")
         self.region_read_write_test(SPIDER, "spider-stack.spi")
 
-    def test_hdfio_region(self):
-        self.region_read_write_test(HDF, "search.h5")
-        self.region_read_write_test(HDF, "3d.h5")
-        self.region_read_write_test(HDF, "3dcopy.h5", MRC)
-
-    def test_hdfio_region(self):
+    def test_emio_region(self):
         self.region_read_write_test(EM, "20s2d.em")
         self.region_read_write_test(EM, "stack3d.em")
 
@@ -606,8 +643,8 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    #test_support.run_unittest(TestHdfIO)
-    test_support.run_unittest(TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
+    test_support.run_unittest(TestSpiderIO)
+    #test_support.run_unittest(TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
 
 if __name__ == '__main__':
     test_main()

@@ -38,19 +38,22 @@ int main(int argc, char* argv[])
     EMData* d = 0;
 	try {
 		int nimg = EMUtil::get_image_count(imagefile);
-		const char* imgtype =
-			EMUtil::get_imagetype_name(EMUtil::get_image_type(imagefile));
-		
+        EMUtil::ImageType imgtype = EMUtil::get_image_type(imagefile);
+		const char* imgtypename = EMUtil::get_imagetype_name(imgtype);
+		int image_index = 0;
+        if (imgtype == EMUtil::IMAGE_SPIDER) {
+            image_index = -1;
+        }
 		printf("\n%20s: %d\n", "Number of Images", nimg);
-		printf("%20s: %s\n", "Image Format", imgtype);
+		printf("%20s: %s\n", "Image Format", imgtypename);
 		
 		d = new EMData();
 
 		if (!stat) {
-			d->read_image(imagefile, 0, true);
+			d->read_image(imagefile, image_index, true);
 		}
 		else {
-			d->read_image(imagefile, 0, false);
+			d->read_image(imagefile, image_index, false);
 		}
 
 		printf("%20s: %d x %d x %d\n", "Image Dimensions",

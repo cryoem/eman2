@@ -431,6 +431,33 @@ class TestEMData(unittest.TestCase):
         
         os.unlink(file1)
 
+
+    def test_ctf(self):
+        infile = "test_ctf_in.mrc"
+        TestUtil.make_image_file(infile, MRC)
+        ctf = SimpleCtf()
+        d = {"defocus":1, "bfactor":2, "amplitude":3, "ampcont":4, "noise1":5, "noise2":6, "noise3":7, "noise4":8, "voltage":9, "cs":10,"apix":11}
+        
+        ctf.from_dict(d)
+
+        e = EMData()
+        e.read_image(infile)
+        e.set_ctf(ctf)
+
+        outfile = "test_ctf_out.mrc"
+        e.write_image(outfile)
+
+        e2 = EMData()
+        e2.read_image(outfile)
+        ctf2 = e2.get_ctf()
+
+        ctfstr = ctf2.to_string()
+        self.assertEqual(ctfstr, "1 2 3 4 5 6 7 8 9 10 11")
+        os.unlink(infile)
+        os.unlink(outfile)
+        
+        
+
         
 def test_main():
     test_support.run_unittest(TestEMData)
