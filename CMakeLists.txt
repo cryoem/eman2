@@ -18,6 +18,7 @@ MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
 OPTION(ENABLE_TIFF "if enable TIFF support" ON)
 OPTION(ENABLE_HDF "if enable HDF support" ON)
 OPTION(ENABLE_PNG "if enable PNG support" ON)
+OPTION(ENABLE_PYTHON "if enable boost python support" ON)
 
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
@@ -101,3 +102,27 @@ IF (ENABLE_PNG)
 	ENDIF(PNG_INCLUDE_PATH)
 ENDIF(ENABLE_PNG)
 
+
+IF(ENABLE_PYTHON)
+	FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+          $ENV{HOME}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
+
+	FIND_PATH(BOOST_INCLUDE_PATH boost/python.hpp
+          $ENV{HOME}/include /usr/local/include /usr/include)
+
+	FIND_LIBRARY(BOOST_LIBRARY
+             NAMES boost_python
+             PATHS $ENV{HOME}/lib /usr/lib /usr/local/lib)
+
+	IF(PYTHON_INCLUDE_PATH)
+		IF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
+			SUBDIRS(libpyEM)
+		ELSE(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
+			MESSAGE("WARNING: boost_python not found, ENABLE_PYTHON is set back to OFF")
+			OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
+		ENDIF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
+	ELSE(PYTHON_INCLUDE_PATH)
+		MESSAGE("WARNING: Python.h not found, ENABLE_PYTHON is set back to OFF")
+		OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
+	ENDIF(PYTHON_INCLUDE_PATH)
+ENDIF(ENABLE_PYTHON)

@@ -32,13 +32,23 @@ namespace EMAN {
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
 	
+	float get_value_at(int x, int y, int z);
+	float get_value_at(int x, int y);
+	
+	float sget_value_at(int x, int y, int z);
+	float sget_value_at(int x, int y);
+
+	float get_value_at_interp(float x, float y, float z);
+	float get_value_at_interp(float x, float y);
+	
+	void set_value_at(int x, int y, int z, float v);
+	void set_value_at(int x, int y, float v);
+
 	void dump_data(string filename);
 
-	static vector<EMData*> read_images(string filename, int img_indices[], int nimg, bool nodata = false);
-	static vector<EMData*> read_images(string filename, int img_index_start,
-					   int img_index_end, bool nodata = false);
-	static vector<EMData*> read_images_ext(string filename, string ext, int img_index_start,
-					       int img_index_end, bool nodata = false);
+	static vector<EMData*> read_images_by_index(string filename, int img_indices[], int nimg, bool nodata = false);
+	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
+						  bool nodata = false, string ext = "");
 	
     private:
 	enum EMDataFlags {
@@ -65,8 +75,6 @@ namespace EMAN {
 	SimpleCtf* ctf;
 	int flags;
     };
-
-    
 }
 
 #endif
