@@ -53,25 +53,47 @@ python::numeric::array Wrapper::em2numpy(EMData *image)
 
 void Wrapper::numpy2em(python::numeric::array& array, EMData* image)
 {
-	int nz = python::len(array);
-    int ny = python::len(array[0]);
-    int nx = python::len(array[0][0]);
-	int nxy = nx * ny;
+	if (!PyArray_Check(array.ptr())) {
+		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");
+		return;
+	}
 	
+	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
+	int ndim = array_ptr->nd;
+	int * dims_ptr = array_ptr->dimensions;
+	
+	int nx = 1;
+	int ny = 1;
+	int nz = 1;
+
+	if (ndim <= 0 || ndim > 3) {
+		LOGERR("%dD Numeric array to EMData is not supported.", ndim);
+		return;
+	}
+
+	if (ndim == 1) {
+		nx = dims_ptr[0];
+	}
+	else if (ndim == 2) {
+		ny = dims_ptr[0];
+		nx = dims_ptr[1];
+	}
+	else if (ndim == 3) {
+		nz = dims_ptr[0];
+		ny = dims_ptr[1];
+		nx = dims_ptr[2];
+	}
+
+	char* array_data = ((PyArrayObject*) array.ptr())->data;
+	image->set_shared_data(nx, ny, nz, (float*)array_data);
+	
+#if 0
     image->set_size(nx, ny, nz);
-    
+
     float* data = image->get_data();
-    
-    for (int i = 0; i < nz; i++) {
-		int i2 = i * nxy;
-		for (int j = 0; j < ny; j++) {
-			python::numeric::array array2 =
-				python::extract<python::numeric::array>(array[i][j]);
-			python::list l = python::list(array2);
-			int j2 = i2 + j * nx;
-			for (int k = 0; k < nx; k++) {
-				data[j2 + k] = python::extract<float>(l[k]);
-			}
-		}
-    }
+	
+	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
+	image->done_data();
+#endif
+	
 }

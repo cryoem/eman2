@@ -27,20 +27,15 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes IMAGIC, HDF, AMRIRA, SPIDER,
-       SINGLE_SPIDER, PIF, VTK, XPLOR.
+       This includes IMAGIC, HDF, AMRIRA, SPIDER, SINGLE_SPIDER, PIF, VTK, XPLOR.
 	   
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
-
-  055. write more documentations on how to install eman2 on windows.
 
   057. rotate_translate(): has some problems it seems that the 
 	   posttranslate was either treated like pretranslate or ignored...	
 
   058. CTF classes need more testing for the algorithm implementation.
-
-  059. Find an efficient way to implement EMData's data -> numeric array.
 
   060. HDFio problem. the read segfault after around 900 reads and the
        write crash after ~400 writes using the same EMData object in python. 
@@ -54,7 +49,15 @@
 
   064. On windows, when there is an exception, e2iminfo prints some garbage
        letters out after the regular error message.
-	   
+
+  065. Find an efficent way to implement numeric array to EMData's data.
+	   Both data blocks share the same memory.
+
+  066. ImageIO classes: for those supporting 2D stacks, they should also
+       support insert/append to a new file, insert/append beyond the end of
+       the file. The gap will be filled with zero. Check imagic format as
+       an example.
+	   	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -200,7 +203,6 @@
 
   10/20/04 047. Replace assert() with error code or exception.
 
-
   11/1/04 034. in ImageIO classes, add a way to label images using EMAN1 'name'
 			   and set_name().
 
@@ -215,26 +217,27 @@
   11/12/04 052
       Write unit tests for basic Vec and Matrix operations. It should
       cover all functions.
-			   
 
   11/14/04 053
        The overloaded binary operators for Vec3<> are not wrapped into
 	   boost python. While Matrix3f/Matrix4f's binary operators are wrapped.
 	   This may be related to the fact that Vec3<> is a template.
-
 	   
   11/14/04 054
       In ImageIO classes, use Exception to replace the error code checking
       for the following functions: check_read_access(), check_write_access(), 
       check_region().
+	  
+  11/26/04 055
+      write more documentations on how to install eman2 on windows.
 
   11/16/04 056	  
        MRC write is incorrect for the complex image. it uses
 	   16bits instead of 32bits. it was right a few monthes ago.
 
+  11/27/04 059. 
+       Find an efficient way to implement EMData's data -> numeric array.
+	   				
   11/20/04 061. 
        Windows support. error libpng12.dll is missing; HDF not working.
 
-
-	   
-	   				
