@@ -1372,9 +1372,9 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	}
 	
 	// this replicates r -> g,b
-	if (asrgb) {
-		for (j=ymin; j<=ymax*bpl; j+=bpl) {
-			for (i=xmin; i<xmax*3; i+=3) {
+	if (asrgb==3) {
+		for (int j=ymin; j<=ymax*bpl; j+=bpl) {
+			for (int i=xmin; i<xsize*3; i+=3) {
 				data[i+j+1]=data[i+j+2]=data[i+j];
 			}
 		}
@@ -1406,6 +1406,10 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 	if (render_max <= render_min) {
 		render_max = render_min + 0.01f;
 	}
+
+	std::string ret=std::string();
+	ret.resize(iysize*bpl);
+	unsigned char *data=(unsigned char *)ret.data();
 
 	float rm = render_min;
 	float inv_scale = 1.0f / scale;
