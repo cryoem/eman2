@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-#if 1
+
     if (low) {
 	printf("Low level tests starting. Please note that compiling with optimization may invalidate certain tests. Also note that overhead is difficult to compensate for, so in most cases it is not dealt with.\n");
 	
@@ -265,21 +265,21 @@ int main(int argc, char *argv[])
 	ti = (t2 - t1) / (float) CPS;
 	printf("Baseline 5i: %d, %d x %d ri2ap in %1.1f sec -> ~%1.2f ri2ap/sec (cached)\n",
 	       100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti));
-	data[0]->done_data();
 
+	data[0]->done_data();
 	t1 = clock();
 	
-	EMData *cp;
 	for (int i = 0; i < NTT * 100; i++) {
-	    cp = data[i % NTT]->copy(0, 0);
+	    EMData *cp = data[i % NTT]->copy(0, 0);
 	    cp->mean_shrink(2);
 	    delete cp;
+	    cp = 0;
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
 	printf("Baseline 6:  %1.1f sec %f meanshrink x 2/sec\n", ti, NTT * 100.0 / ti);
 
-	EMData *d1a, *d2a;
+	EMData *d1a = data[0]->copy(0, 0);
 	t1 = clock();
 
 	for (int i = 0; i < NTT * 1000; i++) {
@@ -289,13 +289,8 @@ int main(int argc, char *argv[])
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
 	printf("Baseline 7:  %1.1f sec %f ffts/sec\n", ti, NTT * 1000 / ti);
-	printf("%d\n", d1a->get_xsize());
-
-	d1a = data[0]->copy(0, 0);
-
+	
 	d1a = d1a->copy();
-	d2a = data[1]->copy(0, 0);
-
 	t1 = clock();
 
 	for (int i = 0; i < NTT * 1000; i++) {
@@ -307,9 +302,8 @@ int main(int argc, char *argv[])
 	printf("Baseline 8:  %1.1f sec   %f translates/sec\n", ti, NTT * 1000 / ti);
 
 	return 0;
-
     }
-#endif
+
     
     EMData *tmp = 0;
     clock_t t1 = clock();
@@ -377,13 +371,13 @@ int main(int argc, char *argv[])
 	       3.0 * ((slow == 2 ? NTT / 10 : NTT) - 5) / ti);
     }
     else if (big && !slow) {
-	//printf("An Athlon XP2400+ (2000mhz) with gcc3.2 and FFTWGEL has a BIG sf of 970\n");
 	printf("\nYour machines speed factor = %1.1f\n", 72000.0 / ti);
     }
     else {
 	printf("\nYour machines speed factor on this test = %1.1f\n", 25000.0 / ti);
     }
 
+    return 0;
 }
        
     
