@@ -92,7 +92,7 @@ int ImagicIO::init()
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&imagich.nx);
-		make_header_right_endian(imagich);
+		make_header_host_endian(imagich);
 		rewind(hed_file);
 	}
 
@@ -161,7 +161,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		memset(&hed, 0, sizeof(ImagicHeader));
 		portable_fseek(hed_file, sizeof(ImagicHeader) * image_index, SEEK_SET);
 		fread(&hed, sizeof(ImagicHeader), 1, hed_file);
-		make_header_right_endian(hed);
+		make_header_host_endian(hed);
 	}
 
 	if (check_region(area, Size(hed.nx, hed.ny, nimg)) != 0) {
@@ -227,7 +227,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index, bool)
 	int ny = dict["ny"];
 
 	if (!is_new_hed) {
-		make_header_right_endian(imagich);
+		make_header_host_endian(imagich);
 		if (imagich.nx != nx || imagich.ny != ny) {
 			Log::logger()->error("new IMAGIC size %dx%d is not equal to existing size %dx%d",
 								 nx, ny, imagich.nx, imagich.ny);
@@ -581,11 +581,11 @@ int ImagicIO::to_em_datatype(DataType t)
 	return EMUtil::EM_UNKNOWN;
 }
 
-void ImagicIO::make_header_right_endian(ImagicHeader & hed)
+void ImagicIO::make_header_host_endian(ImagicHeader & hed)
 {
-	become_host_endian((int *) &hed, NUM_4BYTES_PRE_IXOLD);
-	become_host_endian(&hed.ixold, NUM_4BYTES_AFTER_IXOLD);
-	become_host_endian((int *) &hed.space, NUM_4BYTES_AFTER_SPACE);
+	if (is_big_endian != ByteOrder::is_host_big_endian()) {
+		swap_header(hed);
+	}
 }
 
 

@@ -52,16 +52,16 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	int mode = params["mode"];
 	float gauss_width = 0;
 	if (mode == 2) {
-		gauss_width = 4.0 / (M_PI * M_PI);
+		gauss_width = EMConsts::I2G;
 	}
 	else if (mode == 3) {
-		gauss_width = 6.4 / (M_PI * M_PI);
+		gauss_width = EMConsts::I3G;
 	}
 	else if (mode == 4) {
-		gauss_width = 8.8 / (M_PI * M_PI);
+		gauss_width = EMConsts::I4G;
 	}
 	else if (mode == 6 || mode == 7) {
-		gauss_width = 10.4 / (M_PI * M_PI);
+		gauss_width = EMConsts::I5G; 
 	}
 
 	for (int y = 0; y < f_ny; y++) {
@@ -122,9 +122,9 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 	int nz = image->get_zsize();
 
 	if (mode == 1) {
-		int x0 = 2 * (int) floor(x + 0.5);
-		int y0 = (int) floor(y + 0.5);
-		int z0 = (int) floor(z + 0.5);
+		int x0 = 2 * (int) floor(x + 0.5f);
+		int y0 = (int) floor(y + 0.5f);
+		int z0 = (int) floor(z + 0.5f);
 
 		data[0] = rdata[x0 + y0 * nx + z0 * nx * ny];
 		data[1] = rdata[x0 + y0 * nx + z0 * nx * ny + 1];
@@ -417,10 +417,10 @@ EMData *PawelProjector::project3d(EMData * image) const
 
 	int radius = 0;
 	if (nz == 1) {
-		radius = static_cast < int >(Util::min(nx, ny)) / 2 - 1;
+		radius = Util::min(nx, ny) / 2 - 1;
 	}
 	else {
-		radius = static_cast < int >(Util::min(nx, ny, nz)) / 2 - 1;
+		radius = Util::min(nx, ny, nz) / 2 - 1;
 	}
 
 	if (new_radius > 0) {

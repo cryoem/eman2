@@ -88,7 +88,8 @@ namespace EMAN
 			float zorigin;		/* Y origin. */
 
 			char map[4];		/* constant string "MAP "  */
-			int machinestamp;	/* machine stamp in CCP4 convention: big endian=0x11110000 little endian=0x4444000 */
+			int machinestamp;	/* machine stamp in CCP4 convention:
+								   big endian=0x11110000 little endian=0x4444000 */
 
 			float rms;			/* rms deviation of map from mean density */
 
@@ -114,6 +115,7 @@ namespace EMAN
 		
 		/** generate the machine stamp used in MRC image format. */
 		static int generate_machine_stamp();
+		void swap_header(MrcHeader& mrch);
 	};
 }
 

@@ -22,10 +22,10 @@ namespace EMAN
 
 		static float hyperg(float v)
 		{
-			if (v < 0 || v > 4.998) {
+			if (v < 0 || v > 4.998f) {
 				return 0;
 			}
-			float r = v / 0.001;
+			float r = v / 0.001f;
 			int a = (int) floor(r);
 			r -= a;
 			return -(HYPERGEOM[a] * (1.0 - r) + HYPERGEOM[a + 1] * r);

@@ -17,15 +17,6 @@ using std::string;
 namespace EMAN
 {
 
-	/**
-     * these magic numbers and macros need to be removed later
-     */
-#define I5G	(10.4 / (M_PI*M_PI))	// used for 5x5x5 interpolation
-#define I4G	(8.8 / (M_PI*M_PI))	// used for 4 interpolation
-#define I3G	(6.4 / (M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
-#define I2G	(4.0 / (M_PI*M_PI))	// 2 interpolation
-
-
 	class EMData;
 	class Rotation;
 

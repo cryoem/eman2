@@ -10,32 +10,29 @@
 
 namespace EMAN
 {
-	/*
-	   IMAGIC-5 Header File Format
-
-	   An IMAGIC-5 file has 2 files:
-	   a) a header file with the extension ".hed",
-	   which contains information for every image
-	   b) an image file with extension ".img",
-	   which contains only raw data (image densities).
-
-	   The header file contains one (fixed-size) record per image
-	   stored. Every header record consists of 256 REAL/float
-	   for every image.
-
-	   The image file contains only the raw data. Depending on the
-	   internal IMAGIC-5 format used, which can be REAL, INTG, PACK
-	   or COMP, the data is stored as REAL/float, INTEGER/int,
-	   INTEGER*1/byte or 2x REAL/float, respectively. The first pixel
-	   stored is the upper left one. The data is stored line
-	   by line, section by section, volume by volume.
-
-	   3D imagic uses the same format to 2D. it is a bunch of 2D slices.
-	   use the 'hint' IS_3D to treat "2D slices" as 3D volume.
-
-	   imagic doesn't store multiple 3D images in one file.
+	/** IMAGIC-5 Header File Format
+	 *
+	 * An IMAGIC-5 file has 2 files:
+	 * a) a header file with extension ".hed". It contains information
+	 *    for every image.
+	 * b) an image file with extension ".img". It contains raw data.
+	 *
+	 * The header file contains one (fixed-size) record per image
+	 * stored. Every header record consists of 256 REAL/float
+	 * for every image.
+	 * 
+	 * The image file contains only the raw data. Depending on the
+	 * internal IMAGIC-5 format used, which can be REAL, INTG, PACK
+	 * or COMP, the data is stored as REAL/float, INTEGER/int,
+	 * INTEGER*1/byte or 2x REAL/float, respectively. The first pixel
+	 * stored is the upper left one. The data is stored line
+	 * by line, section by section, volume by volume.
+	 * 
+	 * 3D imagic uses the same format to 2D. it is a bunch of 2D slices.
+	 * use the 'hint' IS_3D to treat "2D slices" as 3D volume.
+	 * 
+	 * imagic doesn't store multiple 3D images in one file.
 	 */
-
 
 	class ImagicIO:public ImageIO
 	{
@@ -143,7 +140,7 @@ namespace EMAN
 
 		size_t get_datatype_size(DataType t);
 		int to_em_datatype(DataType t);
-		void make_header_right_endian(ImagicHeader & hed);
+		void make_header_host_endian(ImagicHeader & hed);
 		void swap_header(ImagicHeader & hed);
 		DataType get_datatype_from_name(const char *name);
 

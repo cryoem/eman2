@@ -82,9 +82,9 @@ namespace EMAN
 		static inline int round(float x)
 		{
 			if (x < 0) {
-				return (int) (x - 0.5);
+				return (int) (x - 0.5f);
 			}
-			return (int) (x + 0.5);
+			return (int) (x + 0.5f);
 		}
 
 		// p1=x0,y0, p2=x1,y0; p3=x1,y1; p4=x0,y1 
@@ -151,6 +151,23 @@ namespace EMAN
 			return (a * exp(-(dx * dx + dy * dy + dz * dz) / d));
 		}
 
+		/** Get the minimum of 2 int numbers */
+		static inline int min(int f1, int f2)
+		{
+			return (f1 < f2 ? f1 : f2);
+		}
+		/** Get the minimum of 3 int numbers */
+		static inline int min(int f1, int f2, int f3)
+		{
+			if (f1 <= f2 && f1 <= f3) {
+				return f1;
+			}
+			if (f2 <= f1 && f2 <= f3) {
+				return f2;
+			}
+			return f3;
+		}
+		
 		/** Get the minimum of 2 float numbers */
 		static inline float min(float f1, float f2)
 		{
@@ -268,10 +285,10 @@ namespace EMAN
 			return erfc(x);
 #else
 			static double a[] = { -1.26551223, 1.00002368,
-				0.37409196, 0.09678418,
-				-0.18628806, 0.27886807,
-				-1.13520398, 1.48851587,
-				-0.82215223, 0.17087277
+								  0.37409196, 0.09678418,
+								  -0.18628806, 0.27886807,
+								  -1.13520398, 1.48851587,
+								  -0.82215223, 0.17087277
 			};
 
 			double result = 1;

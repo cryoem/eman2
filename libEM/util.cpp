@@ -258,7 +258,7 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 
 	double div = sum * sum_xx - sum_x * sum_x;
 	if (div == 0) {
-		div = 0.0000001;
+		div = 0.0000001f;
 	}
 
 	*intercept = (float) (sum_xx * sum_y - sum_x * sum_xy) / div;

@@ -67,8 +67,11 @@ int MrcIO::init()
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
-		become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
-		become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
+		if (is_big_endian != ByteOrder::is_host_big_endian()) {
+			swap_header(mrch);
+		}
+		//become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
+		//become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
 		mode_size = get_mode_size(mrch.mode);
 
 		if (mrch.nxstart != 0 || mrch.nystart != 0 || mrch.nzstart != 0) {
@@ -257,12 +260,11 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 	int nz = dict["nz"];
 	is_ri = (int) dict["is_ri"];
 
+	bool opposite_endian = false;
+	
 	if (!is_new_file) {
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-			Log::logger()->
-				error("cannot write to existing file '%s' which is in opposite byte order",
-					  filename.c_str());
-			return 1;
+			opposite_endian = true;
 		}
 
 		if (new_mode != mrch.mode) {
@@ -273,7 +275,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 		portable_fseek(mrcfile, 0, SEEK_SET);
 	}
 	else {
-		mrch.alpha = mrch.beta = mrch.gamma = 90.0;
+		mrch.alpha = mrch.beta = mrch.gamma = 90.0f;
 		mrch.mapc = 1;
 		mrch.mapr = 2;
 		mrch.maps = 3;
@@ -347,7 +349,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 	sprintf(mrch.map, "MAP");
 	mrch.machinestamp = generate_machine_stamp();
 
-	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
+	MrcHeader mrch2 = mrch;
+	
+	if (opposite_endian) {
+		swap_header(mrch2);
+	}
+	
+	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
 		Log::logger()->error("cannot write mrc header to file '%s'", filename.c_str());
 		return 1;
 	}
@@ -408,7 +416,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 	for (int i = size - 1; i >= 0; i--) {
 		switch (mrch.mode) {
 		case MRC_UCHAR:
-			//rdata[i] = static_cast<float>(cdata[i]/100.0 - 1.28);
+			//rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
 			rdata[i] = static_cast < float >(cdata[i]);
 			break;
 		case MRC_USHORT:
@@ -440,7 +448,7 @@ int MrcIO::write_data(float *data, int image_index, bool)
 
 	if (is_complex_mode()) {
 		nx *= 2;
-		int size = nx * ny * nz;
+		size_t size = nx * ny * nz;
 		if (!is_ri) {
 			Util::ap2ri(data, size);
 			is_ri = true;
@@ -461,6 +469,18 @@ int MrcIO::write_data(float *data, int image_index, bool)
 	unsigned short *sbuf = (unsigned short *) cbuf;
 	int l = 0;
 
+	if (is_big_endian != ByteOrder::is_host_big_endian()) {
+		if (mrch.mode != MRC_UCHAR) {
+			size_t size = nz1 * nx * ny;
+			if (mode_size == sizeof(short)) {
+				ByteOrder::swap_bytes((short*) data, size);
+			}
+			else if (mode_size == sizeof(float)) {
+				ByteOrder::swap_bytes((float*) data, size);
+			}
+		}
+	}
+	
 	for (int i = 0; i < nz1; i++) {
 		for (int j = 0; j < ny; j++) {
 			int k = i * sec_size + j * nx;
@@ -492,7 +512,7 @@ int MrcIO::write_data(float *data, int image_index, bool)
 	cbuf = 0;
 
 	if (is_complex_mode()) {
-		int size = nx * ny * nz1;
+		size_t size = nx * ny * nz1;
 		if (!is_ri) {
 			Util::ap2ri(data, size);
 			is_ri = true;
@@ -676,4 +696,10 @@ int MrcIO::generate_machine_stamp()
 		p[3] = 0;
 	}
 	return stamp;
+}
+
+void MrcIO::swap_header(MrcHeader& mrch)
+{
+	ByteOrder::swap_bytes((int *) &mrch, NUM_4BYTES_PRE_MAP);
+	ByteOrder::swap_bytes((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
 }

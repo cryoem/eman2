@@ -127,7 +127,7 @@ namespace EMAN
 		 *        int, float, double, etc.
 		 * @param n Array size.
 		 */
-		template < class T > void become_host_endian(T * data, int n = 1)
+		template < class T > void become_host_endian(T * data, size_t n = 1)
 		{
 			if (is_image_big_endian() != ByteOrder::is_host_big_endian()) {
 				ByteOrder::swap_bytes(data, n);

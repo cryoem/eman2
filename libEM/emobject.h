@@ -17,6 +17,14 @@ using std::map;
 
 namespace EMAN
 {
+	class EMConsts {
+	public:
+		static float I2G;
+		static float I3G;
+		static float I4G;
+		static float I5G;
+	};
+	
 	class EMData;
 	class XYData;
 	class Aligner;

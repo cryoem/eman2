@@ -143,9 +143,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 
 			switch (mode) {
 			case 1:
-				x0 = 2 * (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = 2 * (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
 				rdata[x0 + y0 * nx + z0 * nxy] += weight * dt[0];
 				rdata[x0 + y0 * nx + z0 * nxy + 1] += weight * dt[1];
@@ -167,14 +167,14 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 
 				i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
 
-				g[0] = Util::agauss(1, dx, dy, dz, I2G);
-				g[1] = Util::agauss(1, 1 - dx, dy, dz, I2G);
-				g[2] = Util::agauss(1, dx, 1 - dy, dz, I2G);
-				g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, I2G);
-				g[4] = Util::agauss(1, dx, dy, 1 - dz, I2G);
-				g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, I2G);
-				g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, I2G);
-				g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, I2G);
+				g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
+				g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
+				g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
+				g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
+				g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
+				g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
+				g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
+				g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
 
 				for (int j = 0; j < 8; j++) {
 					int k = i + off[j];
@@ -187,9 +187,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 				break;
 
 			case 3:
-				x0 = 2 * (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = 2 * (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -204,7 +204,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = l; i <= x0 + 2; i += 2) {
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = exp(-r / I3G);
+							float gg = exp(-r / EMConsts::I3G);
 
 							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
 							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
@@ -232,7 +232,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 					for (int j = y0 - 1; j <= y0 + 2; j++) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = exp(-r / I4G);
+							float gg = exp(-r / EMConsts::I4G);
 
 							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
 							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
@@ -243,13 +243,13 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 				break;
 
 			case 5:
-				x0 = (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
-				mx0 = -(int) floor((xx - x0) * 39.0 + 0.5) - 78;
-				my0 = -(int) floor((yy - y0) * 39.0 + 0.5) - 78;
-				mz0 = -(int) floor((zz - z0) * 39.0 + 0.5) - 78;
+				mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f) - 78;
+				my0 = -(int) floor((yy - y0) * 39.0f + 0.5f) - 78;
+				mz0 = -(int) floor((zz - z0) * 39.0f + 0.5f) - 78;
 
 				x0 *= 2;
 
@@ -286,11 +286,11 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 					yy = -(yy - ny / 2) + ny / 2;
 					zz = -(zz - nz / 2) + nz / 2;
 
-					x0 = (int) floor(xx + 0.5);
-					y0 = (int) floor(yy + 0.5);
-					z0 = (int) floor(zz + 0.5);
+					x0 = (int) floor(xx + 0.5f);
+					y0 = (int) floor(yy + 0.5f);
+					z0 = (int) floor(zz + 0.5f);
 
-					int mx0 = -(int) floor((xx - x0) * 39.0 + 0.5);
+					int mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f);
 					x0 *= 2;
 
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
@@ -312,9 +312,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 				break;
 
 			case 6:
-				x0 = 2 * (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = 2 * (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 					break;
@@ -329,7 +329,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 						for (int i = l; i <= x0 + 4; i += 2) {
 							int ii = i + j * nx + k * nxy;
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = weight * exp(-r / I5G);
+							float gg = weight * exp(-r / EMConsts::I5G);
 
 							rdata[ii] += gg * dt[0];
 							rdata[ii + 1] += gg * dt[1];
@@ -343,9 +343,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 					yy = -(yy - ny / 2) + ny / 2;
 					zz = -(zz - nz / 2) + nz / 2;
 
-					x0 = 2 * (int) floor(xx + 0.5);
-					y0 = (int) floor(yy + 0.5);
-					z0 = (int) floor(zz + 0.5);
+					x0 = 2 * (int) floor(xx + 0.5f);
+					y0 = (int) floor(yy + 0.5f);
+					z0 = (int) floor(zz + 0.5f);
 
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 						break;
@@ -356,7 +356,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 								int ii = i + j * nx + k * nxy;
 								float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
 													   (float) k - zz);
-								float gg = weight * exp(-r / I5G);
+								float gg = weight * exp(-r / EMConsts::I5G);
 
 								rdata[ii] += gg * dt[0];
 								rdata[ii + 1] -= gg * dt[1];
@@ -368,9 +368,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 				break;
 
 			case 7:
-				x0 = 2 * (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = 2 * (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 					break;
@@ -399,9 +399,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 					xx = -xx;
 					yy = -(yy - ny / 2) + ny / 2;
 					zz = -(zz - nz / 2) + nz / 2;
-					x0 = 2 * (int) floor(xx + 0.5);
-					y0 = (int) floor(yy + 0.5);
-					z0 = (int) floor(zz + 0.5);
+					x0 = 2 * (int) floor(xx + 0.5f);
+					y0 = (int) floor(yy + 0.5f);
+					z0 = (int) floor(zz + 0.5f);
 
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 						break;
@@ -633,9 +633,9 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 
 			switch (mode) {
 			case 1:
-				x0 = 2 * (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = 2 * (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
 				rdata[x0 + y0 * nx + z0 * nxy] += weight * dt[0];
 				rdata[x0 + y0 * nx + z0 * nxy + 1] += weight * dt[1];
@@ -651,7 +651,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				dy = yy - y0;
 				dz = zz - z0;
 
-				weight /= pow(I2G * M_PI, 1.5);
+				weight /= pow(EMConsts::I2G * M_PI, 1.5);
 
 				if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
 					break;
@@ -660,14 +660,14 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
 
 
-				g[0] = Util::agauss(1, dx, dy, dz, I2G);
-				g[1] = Util::agauss(1, 1 - dx, dy, dz, I2G);
-				g[2] = Util::agauss(1, dx, 1 - dy, dz, I2G);
-				g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, I2G);
-				g[4] = Util::agauss(1, dx, dy, 1 - dz, I2G);
-				g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, I2G);
-				g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, I2G);
-				g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, I2G);
+				g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
+				g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
+				g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
+				g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
+				g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
+				g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
+				g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
+				g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
 
 				for (int j = 0; j < 8; j++) {
 					int k = i + off[j];
@@ -678,11 +678,11 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 
 				break;
 			case 3:
-				x0 = 2 * (int) floor(xx + 0.5);
-				y0 = (int) floor(yy + 0.5);
-				z0 = (int) floor(zz + 0.5);
+				x0 = 2 * (int) floor(xx + 0.5f);
+				y0 = (int) floor(yy + 0.5f);
+				z0 = (int) floor(zz + 0.5f);
 
-				weight /= pow(I3G * M_PI, 1.5);
+				weight /= pow(EMConsts::I3G * M_PI, 1.5);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -696,7 +696,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 					for (int j = y0 - 1; j <= y0 + 1; j++) {
 						for (int i = l; i <= x0 + 2; i += 2) {
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = exp(-r / I3G);
+							float gg = exp(-r / EMConsts::I3G);
 
 							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
 							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
@@ -711,7 +711,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy);
 				z0 = (int) floor(zz);
 
-				weight /= pow(I4G * M_PI, 1.5);
+				weight /= pow(EMConsts::I4G * M_PI, 1.5);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -725,7 +725,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 					for (int j = y0 - 1; j <= y0 + 2; j++) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = exp(-r / I4G);
+							float gg = exp(-r / EMConsts::I4G);
 
 							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
 							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
@@ -740,11 +740,11 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + .5);
 				z0 = (int) floor(zz + .5);
 
-				weight /= pow(I5G * M_PI, 1.5);
+				weight /= pow(EMConsts::I5G * M_PI, 1.5);
 
-				mx0 = -(int) floor((xx - x0) * 39.0 + .5) - 78;
-				my0 = -(int) floor((yy - y0) * 39.0 + .5) - 78;
-				mz0 = -(int) floor((zz - z0) * 39.0 + .5) - 78;
+				mx0 = -(int) floor((xx - x0) * 39.0f + .5) - 78;
+				my0 = -(int) floor((yy - y0) * 39.0f + .5) - 78;
+				mz0 = -(int) floor((zz - z0) * 39.0f + .5) - 78;
 				x0 *= 2;
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
@@ -777,10 +777,10 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 					xx = -xx;
 					yy = -(yy - ny / 2) + ny / 2;
 					zz = -(zz - nz / 2) + nz / 2;
-					x0 = (int) floor(xx + .5);
-					y0 = (int) floor(yy + .5);
-					z0 = (int) floor(zz + .5);
-					int mx0 = -(int) floor((xx - x0) * 39.0 + .5);
+					x0 = (int) floor(xx + 0.5f);
+					y0 = (int) floor(yy + 0.5f);
+					z0 = (int) floor(zz + 0.5f);
+					int mx0 = -(int) floor((xx - x0) * 39.0f + .5);
 					x0 *= 2;
 
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
@@ -807,7 +807,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + .5);
 				z0 = (int) floor(zz + .5);
 
-				weight /= pow(I5G * M_PI, 1.5);
+				weight /= pow(EMConsts::I5G * M_PI, 1.5);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 					break;
@@ -822,7 +822,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 							int ii = i + j * nx + k * nxy;
 							float r =
 								Util::hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz);
-							float gg = weight * exp(-r / I5G);
+							float gg = weight * exp(-r / EMConsts::I5G);
 
 							rdata[ii] += gg * dt[0];
 							rdata[ii + 1] += gg * dt[1];
@@ -848,7 +848,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 								int ii = i + j * nx + k * nxy;
 								float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
 													   (float) k - zz);
-								float gg = weight * exp(-r / I5G);
+								float gg = weight * exp(-r / EMConsts::I5G);
 
 								rdata[ii] += gg * dt[0];
 								rdata[ii + 1] -= gg * dt[1];	// note the -, complex conj.

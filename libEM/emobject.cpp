@@ -1,6 +1,16 @@
 #include "emobject.h"
+#include <math.h>
+#ifdef WIN32
+#define M_PI 3.14159265358979323846
+#endif
 
 using namespace EMAN;
+
+
+float EMConsts::I2G = (float) (4.0 / (M_PI*M_PI));  // 2 interpolation
+float EMConsts::I3G = (float) (6.4 / (M_PI*M_PI));  // used for 3 and 5x5x5 interpolation
+float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI));  // used for 4 interpolation
+float EMConsts::I5G = (float) (10.4 / (M_PI*M_PI)); // used for 5x5x5 interpolation
 
 EMObject::operator int () const
 {

@@ -122,7 +122,7 @@ vector < float >Matrix3f::get_value() const
 
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			m[i * n + j] = static_cast < float >(gsl_matrix_get(matrix, i, j));
+			m[i * n + j] = gsl_matrix_get(matrix, i, j);
 		}
 	}
 	return m;
@@ -173,7 +173,8 @@ Matrix3f Matrix3f::create_inverse() const
 Vec3 < float >Matrix3f::get_vector(int i) const
 {
 	return Vec3 < float >(gsl_matrix_get(matrix, i, 0),
-						  gsl_matrix_get(matrix, i, 1), gsl_matrix_get(matrix, i, 2));
+						  gsl_matrix_get(matrix, i, 1),
+						  gsl_matrix_get(matrix, i, 2));
 
 }
 
@@ -285,14 +286,13 @@ bool EMAN::operator!=(const Matrix3f & m1, const Matrix3f & m2)
 	return !(m1 == m2);
 }
 
-
 Vec3 < float >EMAN::operator*(const Vec3 < int >&v, const Matrix3f & m1)
 {
 	Vec3 < float >result;
 	for (int i = 0; i < 3; i++) {
 		result[i] = 0;
 		for (int j = 0; j < 3; j++) {
-			result[i] += m1[i][j] * v[j];
+			result[i] += (float)m1[i][j] * v[j];
 		}
 	}
 	return result;
@@ -304,7 +304,7 @@ Vec3 < float >EMAN::operator*(const Matrix3f & m1, const Vec3 < int >&v)
 	for (int i = 0; i < 3; i++) {
 		result[i] = 0;
 		for (int j = 0; j < 3; j++) {
-			result[i] += m1[i][j] * v[j];
+			result[i] += (float)m1[i][j] * v[j];
 		}
 	}
 	return result;
@@ -316,7 +316,7 @@ Vec3 < float >EMAN::operator*(const Vec3 < float >&v, const Matrix3f & m1)
 	for (int i = 0; i < 3; i++) {
 		result[i] = 0;
 		for (int j = 0; j < 3; j++) {
-			result[i] += m1[i][j] * v[j];
+			result[i] += (float) m1[i][j] * v[j];
 		}
 	}
 	return result;
@@ -328,7 +328,7 @@ Vec3 < float >EMAN::operator*(const Matrix3f & m1, const Vec3 < float >&v)
 	for (int i = 0; i < 3; i++) {
 		result[i] = 0;
 		for (int j = 0; j < 3; j++) {
-			result[i] += m1[i][j] * v[j];
+			result[i] += (float) m1[i][j] * v[j];
 		}
 	}
 	return result;
@@ -451,7 +451,7 @@ vector < float >Matrix4f::get_value() const
 	vector < float >m(n * n);
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			m[i * n + j] = static_cast < float >(gsl_matrix_get(matrix, i, j));
+			m[i * n + j] = gsl_matrix_get(matrix, i, j);
 		}
 	}
 	return m;
@@ -562,15 +562,14 @@ double *Matrix4f::operator[] (int i)
 	return gsl_matrix_ptr(matrix, i, 0);
 }
 
-const double *Matrix4f::operator[] (int i)
-	 const
-	 {
-		 return gsl_matrix_const_ptr(matrix, i, 0);
-	 }
+const double *Matrix4f::operator[] (int i) const
+{
+	return gsl_matrix_const_ptr(matrix, i, 0);
+}
 
 
 
-	 Matrix4f EMAN::operator+(float f, const Matrix4f & m2)
+Matrix4f EMAN::operator+(float f, const Matrix4f & m2)
 {
 	Matrix4f m = m2;
 	m += f;
@@ -692,8 +691,8 @@ Quaternion::Quaternion(float radians, const Vec3 < float >&axis)
 	Vec3 < float >q = axis;
 	//normalize();
 
-	q *= sin(radians / 2.0);
-	e0 = cos(radians / 2.0);
+	q *= sin(radians / 2.0f);
+	e0 = cos(radians / 2.0f);
 
 	e1 = q[0];
 	e2 = q[1];
@@ -705,8 +704,8 @@ Quaternion::Quaternion(const Vec3 < float >&axis, float radians)
 	Vec3 < float >q = axis;
 	//normalize();
 
-	q *= sin(radians / 2.0);
-	e0 = cos(radians / 2.0);
+	q *= sin(radians / 2.0f);
+	e0 = cos(radians / 2.0f);
 
 	e1 = q[0];
 	e2 = q[1];
@@ -741,7 +740,7 @@ Quaternion::Quaternion(const Matrix3f & m)
 	}
 
 	if (m[0][0] + m[1][1] + m[2][2] > m[i][i]) {
-		e0 = sqrt(m[0][0] + m[1][1] + m[2][2] + 1) / 2.0;
+		e0 = sqrt(m[0][0] + m[1][1] + m[2][2] + 1) / 2.0f;
 		e1 = (m[1][2] - m[2][1]) / (4 * e0);
 		e2 = (m[2][0] - m[0][2]) / (4 * e0);
 		e3 = (m[0][1] - m[1][0]) / (4 * e0);
@@ -751,7 +750,7 @@ Quaternion::Quaternion(const Matrix3f & m)
 		int j = (i + 1) % 3;
 		int k = (i + 2) % 3;
 
-		quat[i] = sqrt(m[i][i] - m[j][j] - m[k][k] + 1) / 2.0;
+		quat[i] = sqrt(m[i][i] - m[j][j] - m[k][k] + 1) / 2.0f;
 		quat[j] = (m[i][j] + m[j][i]) / (4 * quat[i]);
 		quat[k] = (m[i][k] + m[k][i]) / (4 * quat[i]);
 
@@ -787,7 +786,7 @@ Quaternion::Quaternion(const Matrix4f & m)
 	}
 
 	if (m[0][0] + m[1][1] + m[2][2] > m[i][i]) {
-		e0 = sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]) / 2.0;
+		e0 = sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]) / 2.0f;
 		e1 = (m[1][2] - m[2][1]) / (4 * e0);
 		e2 = (m[2][0] - m[0][2]) / (4 * e0);
 		e3 = (m[0][1] - m[1][0]) / (4 * e0);
@@ -797,7 +796,7 @@ Quaternion::Quaternion(const Matrix4f & m)
 		int j = (i + 1) % 3;
 		int k = (i + 2) % 3;
 
-		quat[i] = sqrt(m[i][i] - m[j][j] - m[k][k] + m[3][3]) / 2.0;
+		quat[i] = sqrt(m[i][i] - m[j][j] - m[k][k] + m[3][3]) / 2.0f;
 		quat[j] = (m[i][j] + m[j][i]) / (4 * quat[i]);
 		quat[k] = (m[i][k] + m[k][i]) / (4 * quat[i]);
 
@@ -813,7 +812,7 @@ Quaternion::Quaternion(const Matrix4f & m)
 
 void Quaternion::normalize()
 {
-	float dist = 1.0 / sqrt(norm());
+	float dist = 1.0f / sqrt(norm());
 	e0 *= dist;
 	e1 *= dist;
 	e2 *= dist;
@@ -822,7 +821,7 @@ void Quaternion::normalize()
 
 Quaternion & Quaternion::inverse()
 {
-	float f = 1.0 / norm();
+	float f = 1.0f / norm();
 	e0 *= f;
 	e1 *= -f;
 	e2 *= -f;
@@ -854,11 +853,11 @@ float Quaternion::to_angle() const
 	float len = q.length();
 	float radians = 0;
 
-	if (len > 0.00001) {
-		radians = 2.0 * acos(e0);
+	if (len > 0.00001f) {
+		radians = 2.0f * acos(e0);
 	}
 	else {
-		radians = 0.0;
+		radians = 0;
 	}
 	return radians;
 }
@@ -869,11 +868,11 @@ Vec3 < float >Quaternion::to_axis() const
 	float len = q.length();
 	Vec3 < float >axis;
 
-	if (len > 0.00001) {
-		axis = q * ((float) (1.0 / len));
+	if (len > 0.00001f) {
+		axis = q * ((float) (1.0f / len));
 	}
 	else {
-		axis.set_value(0.0, 0.0, 1.0);
+		axis.set_value(0.0f, 0.0f, 1.0f);
 	}
 	return axis;
 }
@@ -884,15 +883,15 @@ Matrix3f Quaternion::to_matrix3() const
 	vector < float >m(9);
 
 	m[0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
-	m[1] = 2.0 * (e1 * e2 + e0 * e3);
-	m[2] = 2.0 * (e1 * e3 - e0 * e2);
+	m[1] = 2.0f * (e1 * e2 + e0 * e3);
+	m[2] = 2.0f * (e1 * e3 - e0 * e2);
 
-	m[3] = 2.0 * (e1 * e2 - e0 * e3);
+	m[3] = 2.0f * (e1 * e2 - e0 * e3);
 	m[4] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
-	m[5] = 2.0 * (e2 * e3 + e0 * e1);
+	m[5] = 2.0f * (e2 * e3 + e0 * e1);
 
-	m[6] = 2.0 * (e1 * e3 + e0 * e2);
-	m[7] = 2.0 * (e2 * e3 - e0 * e1);
+	m[6] = 2.0f * (e1 * e3 + e0 * e2);
+	m[7] = 2.0f * (e2 * e3 - e0 * e1);
 	m[8] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
 
 	return Matrix3f(m);
@@ -903,23 +902,23 @@ Matrix4f Quaternion::to_matrix4() const
 	vector < float >m(16);
 
 	m[0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
-	m[1] = 2.0 * (e1 * e2 + e0 * e3);
-	m[2] = 2.0 * (e1 * e3 - e0 * e2);
-	m[3] = 0.0;
+	m[1] = 2.0f * (e1 * e2 + e0 * e3);
+	m[2] = 2.0f * (e1 * e3 - e0 * e2);
+	m[3] = 0;
 
-	m[4] = 2.0 * (e1 * e2 - e0 * e3);
+	m[4] = 2.0f * (e1 * e2 - e0 * e3);
 	m[5] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
-	m[6] = 2.0 * (e2 * e3 + e0 * e1);
-	m[7] = 0.0;
+	m[6] = 2.0f * (e2 * e3 + e0 * e1);
+	m[7] = 0;
 
-	m[8] = 2.0 * (e1 * e3 + e0 * e2);
-	m[9] = 2.0 * (e2 * e3 - e0 * e1);
+	m[8] = 2.0f * (e1 * e3 + e0 * e2);
+	m[9] = 2.0f * (e2 * e3 - e0 * e1);
 	m[10] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
-	m[11] = 0.0;
+	m[11] = 0;
 
-	m[12] = 0.0;
-	m[13] = 0.0;
-	m[14] = 0.0;
+	m[12] = 0;
+	m[13] = 0;
+	m[14] = 0;
 	m[15] = e0 * e0 + e1 * e1 + e2 * e2 + e3 * e3;
 
 	return Matrix4f(m);
@@ -1091,11 +1090,11 @@ bool EMAN::operator!=(const Quaternion & q1, const Quaternion & q2)
 
 Quaternion Quaternion::interpolate(const Quaternion & from, const Quaternion & to, float t)
 {
-	const double epsilon = 0.00001;
+	const double epsilon = 0.00001f;
 	double cosom = from.e1 * to.e1 + from.e2 * to.e2 + from.e3 * to.e3 + from.e0 * to.e0;
 
 	Quaternion q;
-	if (cosom < 0.0) {
+	if (cosom < 0.0f) {
 		cosom = -cosom;
 		q = q - to;
 	}
@@ -1312,23 +1311,23 @@ Rotation Rotation::get_sym(int n)
 
 	switch (type) {
 	case CSYM:
-		ret.set_angle(0, n * 2.0 * M_PI / nsym, 0, Rotation::EMAN);
+		ret.set_angle(0, n * 2.0f * M_PI / nsym, 0, Rotation::EMAN);
 		break;
 	case DSYM:
 		if (n >= nsym / 2) {
-			ret.set_angle(M_PI, (n - nsym / 2) * 2.0 * M_PI / (nsym / 2), 0, Rotation::EMAN);
+			ret.set_angle(M_PI, (n - nsym / 2) * 2.0f * M_PI / (nsym / 2), 0, Rotation::EMAN);
 		}
 		else {
-			ret.set_angle(0, n * 2.0 * M_PI / (nsym / 2), 0, Rotation::EMAN);
+			ret.set_angle(0, n * 2.0f * M_PI / (nsym / 2), 0, Rotation::EMAN);
 		}
 		break;
 	case ICOS_SYM:
-		ret.set_angle(ICOS[n * 3 + 1] * M_PI / 180.0, ICOS[n * 3 + 2] * M_PI / 180.0 - M_PI / 2,
-					  ICOS[n * 3] * M_PI / 180.0 + M_PI / 2., Rotation::EMAN);
+		ret.set_angle(ICOS[n * 3 + 1] * M_PI / 180.0f, ICOS[n * 3 + 2] * M_PI / 180.0f - M_PI / 2,
+					  ICOS[n * 3] * M_PI / 180.0f + M_PI / 2., Rotation::EMAN);
 		break;
 	case OCT_SYM:
-		ret.set_angle(OCT[n * 3] * M_PI / 180.0, OCT[n * 3 + 1] * M_PI / 180.0,
-					  OCT[n * 3 + 2] * M_PI / 180.0, Rotation::EMAN);
+		ret.set_angle(OCT[n * 3] * M_PI / 180.0f, OCT[n * 3 + 1] * M_PI / 180.0f,
+					  OCT[n * 3 + 2] * M_PI / 180.0f, Rotation::EMAN);
 		break;
 	case ISYM:
 		ret.set_angle(0, 0, 0, Rotation::EMAN);
@@ -1372,7 +1371,7 @@ void Rotation::set_angle(float a1, float a2, float a3, Type t)
 	}
 	else if (type == MRC) {
 		a2 = fmod(-a2 + 2.5 * M_PI, 2 * M_PI);
-		a3 = fmod(a3 + 0.5 * M_PI, 2.0 * M_PI);
+		a3 = fmod(a3 + 0.5 * M_PI, 2.0f * M_PI);
 	}
 	else if (type == EMAN) {
 		// nothing
@@ -1643,7 +1642,7 @@ Transform & Transform::set_transform_instance(const Vec3 < float >&translation,
 	Rotation so = scale_orientation;
 
 	matrix.make_identity();
-	translate((float) -1.0 * center);
+	translate((-1.0f) * center);
 
 	if (so != Rotation(1, 0, 0, 0, Rotation::QUATERNION)) {
 		Rotation inverse_so = so.create_inverse();

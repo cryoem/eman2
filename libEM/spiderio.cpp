@@ -308,7 +308,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 
 			first_h->reclen = (float)record_size;
 			first_h->headrec = (float)num_records;
-			first_h->headlen = header_length;
+			first_h->headlen = (float)header_length;
 			first_h->inuse = -1;
 			first_h->istack = STACK_OVERALL_HEADER;
 			first_h->maxim = 1;

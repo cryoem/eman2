@@ -32,9 +32,9 @@ namespace EMAN
 
 		Vec3(T x, T y, T z)
 		{
-			vec[0] = x;
-			vec[1] = y;
-			vec[2] = z;
+			vec[0] = (T)x;
+			vec[1] = (T)y;
+			vec[2] = (T)z;
 		}
 
 		Vec3(const vector < T > &v)

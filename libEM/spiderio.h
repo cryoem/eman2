@@ -86,7 +86,7 @@ namespace EMAN
 		virtual bool is_valid_spider(const void *first_block);
 
 	  private:
-		  bool need_swap() const;
+		bool need_swap() const;
 		void swap_data(float *data, int nitems);
 		void swap_header(SpiderHeader * header);
 
