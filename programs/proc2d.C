@@ -9,7 +9,7 @@ using std::map;
 
 void usage(const char *progname)
 {
-    printf("\n%s inputfile outputfile [-vN]\n", progname);
+    printf("\n%s inputfile outputfile [-vN] [first=<n>] [last=<n>] [inplace] [edgenorm] [norm[=<mean>,<sigma>]] [invert] [flip] [rot=<angle>] [trans=<dx>,<dy>] [center] [acfcenter] [scale=<sca>] [clip=<x,y>] [shrink=<n>] [meanshrink=<n>] [apix=<A/pix>] [lp=<filt r>] [hp=<filt r>]  [blfilt=<sigma1,sigma2,iter,localwidth>] [mask=<radius>] [imask=<radius>] [noisemask]  [mrc]  [pif] [hdf] [png] [em] [spider] [spider-single] [pgm[=<low>,<hi>]] [sharphp=<pixels>] [norefs] [rotav] [average]  [split=n] [ctfsplit] [interlv=<file 2 interleave>] [sym=<Cn>] [plt[=<plt file>]] [setsfpairs] [addnoise=<level>] [randomize=<dr>,<da>,<flip>]  [selfcl[=<steps>][,<mode>]] [radon] [rfp] [mraprep] [phot] [rsub] rfilt=<filtername><:param1=value1><...>\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -107,13 +107,17 @@ int main(int argc, char *argv[])
     int pgmlo = 0;
     int pgmhi = 0;
 
+    bool rfilt = false;
+    
     const char *interleaved_file = 0;
 
     int n0 = 0;
     int n1 = -1;
 
     argfilters[noisemask] = "MakeRadiusSquared";
-
+    string filtername;
+    Dict params_dict;
+    
     for (int i = 3; i < argc; i++) {
 	const char *arg = argv[i];
 
@@ -177,13 +181,44 @@ int main(int argc, char *argv[])
 		scl = 90;
 	    }
 	}
-	else if (strncmp(argv[i], "interlv=", 8) == 0) {
+	else if (strncmp(arg, "interlv=", 8) == 0) {
 	    interleaved_file = arg + 8;
 	}
 	else if (Util::get_str_int(arg, "pgm", &pgm, &pgmlo, &pgmhi)) {
 	}
 	else if (Util::sstrncmp(arg, noisemask.c_str())) {
 	    argfilters[noisemask] = "NoiseMask";
+	}
+	else if (strncmp(arg, "rfilt=", 6) == 0) {
+	    rfilt = true;
+	    string s(&arg[6]);
+	    size_t cpos = s.find(":");
+	    
+	    if (cpos == string::npos) {
+		filtername = s;
+	    }
+	    else {
+		filtername = s.substr(0, cpos);
+		size_t slen = s.length();
+		
+		while (cpos < slen) {
+		    size_t eqpos = s.find("=", cpos);
+		    string param1 = s.substr(cpos+1, eqpos-cpos-1);
+		    
+		    cpos = s.find(":", cpos+1);
+		    string val1;
+		    if (cpos == string::npos) {
+			val1 = s.substr(eqpos+1);
+			cpos = slen;
+		    }
+		    else {
+			val1 = s.substr(eqpos+1, cpos-eqpos-1);
+		    }
+		    
+		    params_dict[param1] = EMObject(atof(val1.c_str()));
+		}
+	    }
+	    
 	}
 	else {
 	    argdict[arg] = true;
@@ -507,10 +542,9 @@ int main(int argc, char *argv[])
 	    d = r;
 	}
 
-#if 0
-	if (rfilt >= 0)
-	    d->realFilter(rfilt, rft1, rft2, rft3);
-#endif
+	if (rfilt) {
+	    d->filter(filtername, params_dict);
+	}
 
 	if (bliter > 0 && blwidth > 0) {
 	    Dict p;
