@@ -5,34 +5,50 @@
 #include "emobject.h"
 #include "transform.h"
 
-namespace EMAN {
-
+namespace EMAN
+{
     class EMData;
     class Cmp;
-    
-    class Aligner {
-    public:
-	virtual ~Aligner() {}
 
-	virtual EMData* align(EMData* this_img, string cmp_name = "") const = 0;
+    class Aligner
+    {
+    public:
+	virtual ~Aligner() { }
+
+	virtual EMData *align(EMData * this_img, string cmp_name = "") const = 0;
+
+	virtual Dict get_params() const
+	{
+	    return params;
+	}
 	
-	virtual Dict get_params() const { return params; }
-	virtual void set_params(const Dict& new_params) { params = new_params; }
+	virtual void set_params(const Dict & new_params)
+	{
+	    params = new_params;
+	}
 
 	virtual TypeDict get_param_types() const = 0;
 	virtual string get_name() const = 0;
-    
+
     protected:
-	mutable Dict params;	
+	mutable Dict params;
     };
 
-    class TranslateAligner : public Aligner {
+    class TranslateAligner: public Aligner
+    {
     public:
-	string get_name() const { return "(TranslateAligner"; }
-	static Aligner* NEW() { return new TranslateAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "(TranslateAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new TranslateAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -43,63 +59,93 @@ namespace EMAN {
 	}
     };
 
-    class Translate3DAligner : public Aligner {
+    class Translate3DAligner: public Aligner
+    {
     public:
-	string get_name() const { return "Translate3DAligner"; }
-	static Aligner* NEW() { return new Translate3DAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "Translate3DAligner";
+	}
+	
+	static Aligner *NEW()
+	{
+	    return new Translate3DAligner();
+	}
 
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
-	    d.put("useparent",  EMObject::INT);
+	    d.put("useparent", EMObject::INT);
 	    return d;
 	}
-	
-    };
-    
-    class RotateAligner : public Aligner {
-    public:
-	string get_name() const { return "RotateAligner"; }
-	static Aligner* NEW() { return new RotateAligner(); }
-	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-	
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("with", EMObject::EMDATA);
-	    return d;
-	}
-	
-    };
-    
-    
-    class RotatePrecenterAligner : public Aligner {
-    public:
-	string get_name() const { return "RotatePrecenterAligner"; }
-	static Aligner* NEW() { return new RotatePrecenterAligner(); }
-	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-	
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("with", EMObject::EMDATA);
-	    return d;
-	}
-	
+
     };
 
-    class RotateCHAligner : public Aligner {
+    class RotateAligner: public Aligner
+    {
     public:
-	string get_name() const { return "RotateCHAligner"; }
-	static Aligner* NEW() { return new RotateCHAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RotateAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RotateAligner();
+	}
+
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("with", EMObject::EMDATA);
+	    return d;
+	}
+    };
+
+
+    class RotatePrecenterAligner: public Aligner
+    {
+    public:
+	EMData *align(EMData * this_img, string cmp_name = "") const;
+	
+	string get_name() const
+	{
+	    return "RotatePrecenterAligner";
+	}
+	
+	static Aligner *NEW()
+	{
+	    return new RotatePrecenterAligner();
+	}
+
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("with", EMObject::EMDATA);
+	    return d;
+	}
+    };
+
+    class RotateCHAligner: public Aligner
+    {
+    public:
+	EMData *align(EMData * this_img, string cmp_name = "") const;
+	
+	string get_name() const
+	{
+	    return "RotateCHAligner";
+	}
+	
+	static Aligner *NEW()
+	{
+	    return new RotateCHAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -108,16 +154,23 @@ namespace EMAN {
 	    d.put("orad", EMObject::INT);
 	    return d;
 	}
-	
     };
-    
-    class RotateTranslateAligner : public Aligner {
+
+    class RotateTranslateAligner: public Aligner
+    {
     public:
-	string get_name() const { return "RotateTranslateAligner"; }
-	static Aligner* NEW() { return new RotateTranslateAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RotateTranslateAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RotateTranslateAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -128,13 +181,21 @@ namespace EMAN {
 	}
     };
 
-    class RotateTranslateBestAligner : public Aligner {
+    class RotateTranslateBestAligner: public Aligner
+    {
     public:
-	string get_name() const { return "RotateTranslateBestAligner"; }
-	static Aligner* NEW() { return new RotateTranslateBestAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RotateTranslateBestAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RotateTranslateBestAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -142,17 +203,25 @@ namespace EMAN {
 	    d.put("maxshift", EMObject::INT);
 	    d.put("snr", EMObject::FLOATARRAY);
 	    return d;
-	}	
+	}
     };
 
-    
-    class RotateTranslateRadonAligner : public Aligner {
+
+    class RotateTranslateRadonAligner: public Aligner
+    {
     public:
-	string get_name() const { return "RotateTranslateRadonAligner"; }
-	static Aligner* NEW() { return new RotateTranslateRadonAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RotateTranslateRadonAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RotateTranslateRadonAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -164,14 +233,22 @@ namespace EMAN {
 	}
     };
 
-    
-    class RotateFlipAligner : public Aligner {
+
+    class RotateFlipAligner: public Aligner
+    {
     public:
-	string get_name() const { return "RotateFlipAligner"; }
-	static Aligner* NEW() { return new RotateFlipAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RotateFlipAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RotateFlipAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -181,14 +258,22 @@ namespace EMAN {
 	    return d;
 	}
     };
-    
-    class RotateTranslateFlipAligner : public Aligner {
-    public:
-	string get_name() const { return "RotateTranslateFlipAligner"; }
-	static Aligner* NEW() { return new RotateTranslateFlipAligner(); }
+
+    class RotateTranslateFlipAligner: public Aligner
+    {
+    public:	
+	EMData *align(EMData * this_img, string cmp_name = "") const;
+
+	string get_name() const
+	{
+	    return "RotateTranslateFlipAligner";
+	}
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-	
+	static Aligner *NEW()
+	{
+	    return new RotateTranslateFlipAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -199,14 +284,22 @@ namespace EMAN {
 	    return d;
 	}
     };
-    
-    class RTFSlowAligner : public Aligner {
-    public:
-	string get_name() const { return "RTFSlowAligner"; }
-	static Aligner* NEW() { return new RTFSlowAligner(); }
+
+    class RTFSlowAligner: public Aligner
+    {
+    public:	
+	EMData *align(EMData * this_img, string cmp_name = "") const;
+
+	string get_name() const
+	{
+	    return "RTFSlowAligner";
+	}
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-	
+	static Aligner *NEW()
+	{
+	    return new RTFSlowAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -217,13 +310,21 @@ namespace EMAN {
 	}
     };
 
-    class RTFSlowestAligner : public Aligner {
-    public:
-	string get_name() const { return "RTFSlowestAligner"; }
-	static Aligner* NEW() { return new RTFSlowestAligner(); }
+    class RTFSlowestAligner: public Aligner
+    {
+    public:	
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RTFSlowestAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RTFSlowestAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -233,15 +334,23 @@ namespace EMAN {
 	    return d;
 	}
     };
-    
-    
-    class RTFBestAligner : public Aligner {
+
+
+    class RTFBestAligner: public Aligner
+    {
     public:
-	string get_name() const { return "RTFBestAligner"; }
-	static Aligner* NEW() { return new RTFBestAligner(); }
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
+	string get_name() const
+	{
+	    return "RTFBestAligner";
+	}
 	
+	static Aligner *NEW()
+	{
+	    return new RTFBestAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -253,14 +362,22 @@ namespace EMAN {
 	}
     };
 
-    
-    class RTFRadonAligner : public Aligner {
-    public:
-	string get_name() const { return "RTFRadonAligner"; }
-	static Aligner* NEW() { return new RTFRadonAligner(); }
+
+    class RTFRadonAligner: public Aligner
+    {
+    public:	
+	EMData *align(EMData * this_img, string cmp_name = "") const;
+
+	string get_name() const
+	{
+	    return "RTFRadonAligner";
+	}
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-	
+	static Aligner *NEW()
+	{
+	    return new RTFRadonAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -273,15 +390,22 @@ namespace EMAN {
 	    return d;
 	}
     };
-    
-    
-    class RefineAligner : public Aligner {
-    public:
-	string get_name() const { return "RefineAligner"; }
-	static Aligner* NEW() { return new RefineAligner(); }
+
+
+    class RefineAligner: public Aligner
+    {
+    public:	
+	EMData *align(EMData * this_img, string cmp_name = "") const;
 	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-	
+	string get_name() const
+	{
+	    return "RefineAligner";
+	}
+	static Aligner *NEW()
+	{
+	    return new RefineAligner();
+	}
+
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -291,26 +415,27 @@ namespace EMAN {
 	    return d;
 	}
     };
-    
-    typedef Aligner* (*AlignerType)();
-    
-    class AlignerFactory {
+
+    typedef Aligner *(*AlignerType)();
+
+    class AlignerFactory
+    {
     public:
-	static AlignerFactory* instance();
-	
+	static AlignerFactory *instance();
+
 	void add(AlignerType aligner);
-	Aligner* get(string align_name);
-	Aligner* get(string align_name, const Dict& params);
+	Aligner *get(string align_name);
+	Aligner *get(string align_name, const Dict & params);
 	vector<string> get_list();
-	
+
     private:
 	AlignerFactory();
-	AlignerFactory(const AlignerFactory& a);
+	AlignerFactory(const AlignerFactory & a);
 	~AlignerFactory();
 
 	void force_add(AlignerType aligner);
-	
-	static AlignerFactory* my_instance;
+
+	static AlignerFactory *my_instance;
 	map<string, AlignerType> my_dict;
     };
 
