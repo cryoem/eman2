@@ -54,32 +54,50 @@ def main():
 
     parser = OptionParser(usage,version=EMANVERSION)
   
-    parser.add_option("--apix", type="float", help="the Angstrom/pixel for S scaling")
-    parser.add_option("--average", action="store_true", help="Averages all input images (without alignment) and writes a single (normalized) output image")
-    parser.add_option("--calcsf", type="string", nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
-    parser.add_option("--clip", metavar="xsize ysize", type="float", nargs=2, action="append", help="Define the output image size. CLIP=xsize ysize")
-    parser.add_option("--ctfsplit", action="store_true", help="Splits the input file into output files with the same CTF parameters")
-    parser.add_option("--exclude", type="string", help="Excludes image numbers in EXCLUDE file")
-    parser.add_option("--fftavg", type="string", help="Incoherent Fourier average of all images and write a single power spectrum image")
-    parser.add_option("--filter", type="string", action="append", help="apply a filter. FILTER=filtername:param1=val1:param2=val2")
-    parser.add_option("--first", type="int", help="the first image in the input to process [0 - n-1])")
-    parser.add_option("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
-    parser.add_option("--interlv", type="string", help="Specifies a 2nd input file. Output will be 2 files interleaved.")
-    parser.add_option("--last", type="int", help="the last image in the input to process")
-    parser.add_option("--list", type="string", help="Works only on the image numbers in LIST file")
-    parser.add_option("--meanshrink", type="int", action="append", help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
+    parser.add_option("--apix", type="float", help="A/pixel for S scaling")
+    parser.add_option("--average", action="store_true",
+                      help="Averages all input images (without alignment) and writes a single (normalized) output image")
+    parser.add_option("--calcsf", metavar="n outputfile", type="string", nargs=2,
+                      help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
+    parser.add_option("--clip", metavar="xsize ysize", type="float", nargs=2, action="append",
+                      help="Define the output image size. CLIP=xsize ysize")
+    parser.add_option("--ctfsplit", action="store_true",
+                      help="Splits the input file into output files with the same CTF parameters")
+    parser.add_option("--exclude", metavar="exclude-list-file",
+                      type="string", help="Excludes image numbers in EXCLUDE file")
+    parser.add_option("--fftavg", metavar="filename", type="string",
+                      help="Incoherent Fourier average of all images and write a single power spectrum image")
+    parser.add_option("--filter", metavar="filtername:param1=val1:param2=val2", type="string",
+                      action="append", help="apply a filter named 'filtername' with all its parameters/values.")
+    parser.add_option("--first", metavar="n", type="int", help="the first image in the input to process [0 - n-1])")
+    parser.add_option("--inplace", action="store_true",
+                      help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
+    parser.add_option("--interlv", metavar="interleave-file",
+                      type="string", help="Specifies a 2nd input file. Output will be 2 files interleaved.")
+    parser.add_option("--last", metavar="n", type="int", help="the last image in the input to process")
+    parser.add_option("--list", metavar="listfile", type="string",
+                      help="Works only on the image numbers in LIST file")
+    parser.add_option("--meanshrink", metavar="n", type="int", action="append",
+                      help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
     parser.add_option("--mraprep",  action="store_true", help="this is an experimental option")
     parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
-    parser.add_option("--outtype", type="string", help="output image format, mrc, imagic, hdf, etc")
-    parser.add_option("--plt", type="string", help="output the orientations in IMAGIC .plt file format")
+    parser.add_option("--outtype", metavar="image-type", type="string",
+                      help="output image format, mrc, imagic, hdf, etc")
+    parser.add_option("--plt", metavar="plt-file", type="string",
+                      help="output the orientations in IMAGIC .plt file format")
     parser.add_option("--radon",  action="store_true", help="Do Radon transform")
     parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
-    parser.add_option("--scale", type="float", action="append", help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
-    parser.add_option("--selfcl", type="int", nargs=2, help="Output file will be a 180x180 self-common lines map for each image.")
-    parser.add_option("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
-    parser.add_option("--shrink", type="int", action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
-    parser.add_option("--split", type="int", help="Splits the input file into a set of n output files")
-    parser.add_option("--verbose", type="int", help="verbose level [1-4]")
+    parser.add_option("--scale", metavar="f", type="float", action="append",
+                      help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
+    parser.add_option("--selfcl", metavar="steps mode", type="int", nargs=2,
+                      help="Output file will be a 180x180 self-common lines map for each image.")
+    parser.add_option("--setsfpairs",  action="store_true",
+                      help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
+    parser.add_option("--shrink", metavar="n", type="int", action="append",
+                      help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
+    parser.add_option("--split", metavar="n", type="int",
+                      help="Splits the input file into a set of n output files")
+    parser.add_option("--verbose", metavar="n", type="int", help="verbose level [1-4]")
 
     append_options = ["clip", "filter", "meanshrink", "shrink", "scale"]
 
