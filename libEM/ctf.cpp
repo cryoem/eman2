@@ -160,7 +160,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_ctf(amp1, gamma, s);
 			if (s) {
-				r[i] *= pow((float) 10.0, sf->get_yatx(s));
+				r[i] *= pow(10.0f, sf->get_yatx(s));
 			}
 			s += ds;
 		}
@@ -177,10 +177,10 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_ctf(amp1, gamma, s);
 			if (s) {
-				r[i] *= pow((float) 10.0, sf->get_yatx(s));
+				r[i] *= pow(10.0f, sf->get_yatx(s));
 			}
 
-			r[i] = 1.0 / (1.0 + 1.0 / r[i]);
+			r[i] = 1.0f / (1.0f + 1.0f / r[i]);
 			s += ds;
 		}
 		break;
@@ -195,7 +195,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_ctf(amp1, gamma, s);
 			if (s) {
-				r[i] *= pow((float) 10.0, sf->get_yatx(s));
+				r[i] *= pow(10.0f, sf->get_yatx(s));
 			}
 
 
@@ -204,7 +204,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 				r[i] = 0;
 			}
 			else {
-				r[i] = (1.0 / (1.0 + 1.0 / r[i])) / v;
+				r[i] = (1.0f / (1.0f + 1.0f / r[i])) / v;
 			}
 			s += ds;
 		}
@@ -220,14 +220,14 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 			float gamma = calc_gamma(g1, g2, s);
 			r[i] = calc_ctf(amp1, gamma, s);
 			if (s) {
-				r[i] *= pow((float) 10.0, sf->get_yatx(s));
+				r[i] *= pow(10.0f, sf->get_yatx(s));
 			}
 			float v = calc_ctf1(amp1, gamma, s);
 			if (r[i] == 0 || v == 0) {
 				r[i] = 0;
 			}
 			else {
-				r[i] = (1.0 / (1.0 + 1.0 / r[i])) / v;
+				r[i] = (1.0f / (1.0f + 1.0f / r[i])) / v;
 			}
 			s += ds;
 		}
@@ -243,7 +243,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 			float gamma = calc_gamma(g1, g2, s);
 			if (sf->is_validx(s)) {
 				r[i] = calc_ctf1(amp1, gamma, s);
-				r[i] = r[i] * r[i] * pow((float) 10.0, sf->get_yatx(s)) + calc_noise(s);
+				r[i] = r[i] * r[i] * pow(10.0f, sf->get_yatx(s)) + calc_noise(s);
 			}
 			else {
 				r[i] = 0;
@@ -287,7 +287,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		return;
 	}
 
-	float ds = 1.0 / (apix * ny);
+	float ds = 1.0f / (apix * ny);
 	image->to_one();
 
 	float *d = image->get_data();
@@ -299,7 +299,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			int ynx = y * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
-				float s = hypot(x, y - ny / 2.0) * ds;
+				float s = hypot(x, y - ny / 2.0f) * ds;
 				d[x * 2 + ynx] = calc_noise(s);
 				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
 			}
@@ -310,7 +310,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			int ynx = y * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
-				float s = hypot(x, y - ny / 2.0) * ds;
+				float s = hypot(x, y - ny / 2.0f) * ds;
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
 				d[x * 2 + ynx] *= v;
@@ -335,10 +335,10 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		for (int y = 0; y < ny; y++) {
 			int ynx = y * nx;
 			for (int x = 0; x < nx / 2; x++) {
-				float s = hypot(x, y - ny / 2.0) * ds;
+				float s = hypot(x, y - ny / 2.0f) * ds;
 				float gamma = calc_gamma(g1, g2, s);
 				float v = calc_amplitude(gamma);
-				v = v > 0 ? 1.0 : -1.0;
+				v = v > 0 ? 1.0f : -1.0f;
 				d[x * 2 + ynx] *= v;
 				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
 			}
@@ -350,7 +350,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			int ynx = y * nx;
 
 			for (int x = 0; x < nx / 2; x++) {
-				float s = hypot(x, y - ny / 2.0) * ds;
+				float s = hypot(x, y - ny / 2.0f) * ds;
 				float v = exp(-(bfactor * s * s));
 				d[x * 2 + ynx] *= v;
 				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
@@ -365,16 +365,16 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 
 			for (int x = 0; x < nx / 2; x++) {
 
-				float s = hypot(x, y - ny / 2.0) * ds;
+				float s = hypot(x, y - ny / 2.0f) * ds;
 				float gamma = calc_gamma(g1, g2, s);
 				float f = calc_ctf1(amp1, gamma, s);
 				float noise = calc_noise(s);
 				f = f * f / noise;
 
 				if (s) {
-					f *= pow((float) 10.0, sf->get_yatx(s));
+					f *= pow(10.0f, sf->get_yatx(s));
 				}
-				f = 1.0 / (1.0 + 1.0 / f);
+				f = 1.0f / (1.0f + 1.0f / f);
 				d[x * 2 + ynx] *= f;
 				d[x * 2 + ynx + 1] = d[x * 2 + ynx];
 			}

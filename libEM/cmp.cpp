@@ -72,10 +72,10 @@ float VarianceCmp::cmp(EMData * em, Transform *) const
 		m = FLT_MIN;
 	}
 	b = -b / m;
-	m = 1.0 / m;
+	m = 1.0f / m;
 	if (m < 0) {
 		b = 0;
-		m = 1.0;
+		m = 1.0f;
 	}
 
 	int keepzero = params.set_default("keepzero", 0);
@@ -116,20 +116,20 @@ float PhaseCmp::cmp(EMData * em, Transform *) const
 	int nx = em->get_xsize();
 	int ny = em->get_ysize();
 
-	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0) * ny / 2) + 2;
+	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
 	if (nsnr != np) {
 		nsnr = np;
 		dfsnr = (float *) realloc(dfsnr, np * sizeof(float));
 
-		float w = Util::square(nx / 4.0);
+		float w = Util::square(nx / 4.0f);
 
 		for (int i = 0; i < np; i++) {
 			float x2 = Util::square(i / (float) Ctf::CTFOS);
-			dfsnr[i] = (1.0 - exp(-x2 / 4.0)) * exp(-x2 / w);
+			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
 		}
 
-		Util::save_data(0, 1.0 / Ctf::CTFOS, dfsnr, np, "filt.txt");
+		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
 	}
 
 	EMData *em_fft = em->do_fft();
@@ -143,7 +143,7 @@ float PhaseCmp::cmp(EMData * em, Transform *) const
 	double norm = FLT_MIN;
 	int i = 0;
 
-	for (float y = -ny / 2.0; y < ny / 2.0; y++) {
+	for (float y = -ny / 2.0f; y < ny / 2.0f; y++) {
 		for (int x = 0; x < nx + 2; x += 2) {
 			int r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
 			float a = dfsnr[r] * with_fft_data[i];
@@ -154,7 +154,7 @@ float PhaseCmp::cmp(EMData * em, Transform *) const
 		}
 	}
 #if 0
-	return (1.0 - sum / norm);
+	return (1.0f - sum / norm);
 #endif
 	return (sum / norm);
 }
@@ -176,17 +176,17 @@ float FRCCmp::cmp(EMData * em, Transform *) const
 	vector < float >fsc_array;
 
 	if (snr.size() == 0) {
-		int np = (int) ceil(Ctf::CTFOS * sqrt(2.0) * ny / 2) + 2;
+		int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
 		fsc_array = em->calc_fourier_shell_correlation(with);
 
 		if (default_snr.size() != (unsigned int) np) {
 			default_snr = vector < float >(np);
-			float w = Util::square(nx / 8.0);
+			float w = Util::square(nx / 8.0f);
 
 			for (int i = 0; i < np; i++) {
 				float x2 = Util::square(i / (float) Ctf::CTFOS);
-				default_snr[i] = (1.0 - exp(-x2 / 4.0)) * exp(-x2 / w);
+				default_snr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
 			}
 		}
 	}

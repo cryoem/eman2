@@ -341,9 +341,9 @@ EMData * IterationAverager::finish()
 		for (int i = 1; i < nx - 1; i++) {
 			for (int j = 1; j < ny - 1; j++) {
 				int l = i + j * nx;
-				float c1 = (d2[l - 1] + d2[l + 1] + d2[l - nx] + d2[l + nx]) / 4.0 - d2[l];
+				float c1 = (d2[l - 1] + d2[l + 1] + d2[l - nx] + d2[l + nx]) / 4.0f - d2[l];
 				float c2 = fabs(result_data2[l] - sigma_image_data2[l]) / sigma;
-				result_data2[l] += c1 * Util::eman_erfc(c2) / 100.0;
+				result_data2[l] += c1 * Util::eman_erfc(c2) / 100.0f;
 			}
 		}
 
@@ -451,9 +451,9 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 		for (int i = 1; i < nx - 1; i++) {
 			for (int j = 1; j < ny - 1; j++) {
 				int l = i + j * nx;
-				float c1 = (d2[l - 1] + d2[l + 1] + d2[l - nx] + d2[l + nx]) / 4.0 - d2[l];
+				float c1 = (d2[l - 1] + d2[l + 1] + d2[l - nx] + d2[l + nx]) / 4.0f - d2[l];
 				float c2 = fabs(result_data2[l] - sigma_image_data2[l]) / sigma;
-				result_data2[l] += c1 * Util::eman_erfc(c2) / 100.0;
+				result_data2[l] += c1 * Util::eman_erfc(c2) / 100.0f;
 			}
 		}
 
@@ -544,11 +544,11 @@ void CtfAverager::add_image(EMData * image)
 		if (alg_name == "CtfC") {
 			filter = params["filter"];
 			if (filter == 0) {
-				filter = 22.0;
+				filter = 22.0f;
 			}
 			float spacing_col = image->get_attr_dict().get("spacing_col");
-			float ds = 1.0 / (spacing_col * ny * Ctf::CTFOS);
-			filter = 1.0 / (filter * ds);
+			float ds = 1.0f / (spacing_col * ny * Ctf::CTFOS);
+			filter = 1.0f / (filter * ds);
 		}
 		
 		if (alg_name == "CtfCWauto") {
@@ -609,14 +609,14 @@ void CtfAverager::add_image(EMData * image)
 		int j = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx / 2; x++, j += 2) {
-				float r = hypot(x, y - ny / 2.0);
+				float r = hypot(x, y - ny / 2.0f);
 				int l = static_cast < int >(Util::fast_floor(r));
 
 				if (l >= 0 && l < ny / 2) {
 					int k = y*nx/2 + x;
 					tdr[k] *= src[j];
 					tdi[k] *= src[j + 1];
-					tn[k] *= hypot(src[j], src[j + 1]);
+					tn[k] *= (float)hypot(src[j], src[j + 1]);
 				}
 			}
 		}
@@ -628,7 +628,7 @@ void CtfAverager::add_image(EMData * image)
 	int j = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++, j += 2) {
-			float r = Ctf::CTFOS * sqrt(x * x + (y - ny / 2.0) * (y - ny / 2.0));
+			float r = Ctf::CTFOS * sqrt(x * x + (y - ny / 2.0f) * (y - ny / 2.0f));
 			int l = static_cast < int >(Util::fast_floor(r));
 			r -= l;
 
@@ -651,7 +651,7 @@ EMData * CtfAverager::finish()
 	int j = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++, j += 2) {
-			float r = hypot(x, y - ny / 2.0);
+			float r = (float) hypot(x, y - ny / 2.0f);
 			int l = static_cast < int >(Util::fast_floor(r));
 			if (l >= 0 && l < ny / 2) {
 				int k = y*nx/2 + x;
@@ -680,7 +680,7 @@ EMData * CtfAverager::finish()
 		for (int j = 0; j < nimg; j++) {
 			ctf0 += ctfn[j][i];
 			if (ctf[j][i] == 0) {
-				ctf[j][i] = 1.0e-12;
+				ctf[j][i] = 1.0e-12f;
 			}
 
 			if (curves) {
@@ -701,8 +701,8 @@ EMData * CtfAverager::finish()
 			ctf1 = snri[i / Ctf::CTFOS];
 		}
 
-		if (ctf1 <= 0.0001) {
-			ctf1 = 0.1;
+		if (ctf1 <= 0.0001f) {
+			ctf1 = 0.1f;
 		}
 
 		if (alg_name == "CtfC") {
@@ -855,11 +855,11 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 	if (alg_name == "CtfC") {
 		filter = params["filter"];
 		if (filter == 0) {
-			filter = 22.0;
+			filter = 22.0f;
 		}
 		float spacing_col = image0->get_attr_dict().get("spacing_col");
-		float ds = 1.0 / (spacing_col * ny * Ctf::CTFOS);
-		filter = 1.0 / (filter * ds);
+		float ds = 1.0f / (spacing_col * ny * Ctf::CTFOS);
+		filter = 1.0f / (filter * ds);
 	}
 
 	float *snri = 0;
@@ -877,7 +877,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		int j = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx / 2; x++, j += 2) {
-				float r = hypot(x, y - ny / 2.0);
+				float r = hypot(x, y - ny / 2.0f);
 				int l = static_cast < int >(Util::fast_floor(r));
 
 				if (l >= 0 && l < ny / 2) {
@@ -930,8 +930,8 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 			ctf1 = snri[i / Ctf::CTFOS];
 		}
 
-		if (ctf1 <= 0.0001) {
-			ctf1 = 0.1;
+		if (ctf1 <= 0.0001f) {
+			ctf1 = 0.1f;
 		}
 
 		if (alg_name == "CtfC") {
@@ -972,7 +972,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 	int j = 0;
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++, j += 2) {
-			float r = Ctf::CTFOS * sqrt(x * x + (y - ny / 2.0) * (y - ny / 2.0));
+			float r = Ctf::CTFOS * sqrt(x * x + (y - ny / 2.0f) * (y - ny / 2.0f));
 			int l = static_cast < int >(Util::fast_floor(r));
 			r -= l;
 

@@ -122,14 +122,14 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 	}
 
 	if (!to) {
-		cur_trans /= 2.0;
+		cur_trans /= 2.0f;
 	}
 
 	int intonly = params["intonly"];
 
 	if (intonly) {
-		cur_trans[0] = floor(cur_trans[0] + 0.5);
-		cur_trans[1] = floor(cur_trans[1] + 0.5);
+		cur_trans[0] = floor(cur_trans[0] + 0.5f);
+		cur_trans[1] = floor(cur_trans[1] + 0.5f);
 	}
 
 	this_img->translate(cur_trans);
@@ -288,7 +288,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, string) const
 	float peak = 0;
 	int peak_index = 0;
 	Util::find_max(data, size, &peak, &peak_index);
-	float a = (1.0 - 1.0 * peak_index / size) * M_PI * 2;
+	float a = (float) (1.0f - 1.0f * peak_index / size) * M_PI * 2;
 	this_img->rotate(a, 0, 0);
 
 	cf->set_align_score(peak);
@@ -421,18 +421,18 @@ EMData *RotateCHAligner::align(EMData * this_img, string) const
 		ca = ca - floor(ca / (2 * M_PI)) * 2 * M_PI;
 
 		if (ca > M_PI) {
-			ca -= 2.0 * M_PI;
+			ca -= (float) 2.0 * M_PI;
 		}
 
 		if (ndot > 0) {
-			float dl = 2.0 * M_PI / max_num;
+			float dl = (float) 2.0 * M_PI / max_num;
 			float ep = aa / ndot;
 			ep = (ep - floor(ep / dl) * dl) * 2.0 * M_PI / dl;
 			ca -= ep;
-			ca = ca - floor(ca / (2.0 * M_PI)) * 2.0 * M_PI;
+			ca = (float) (ca - floor(ca / (2.0 * M_PI)) * 2.0 * M_PI);
 
 			if (ca > M_PI) {
-				ca -= 2.0 * M_PI;
+				ca -= (float) 2.0 * M_PI;
 			}
 
 			ca = aa / ndot + ca / max_num;
@@ -695,8 +695,8 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 
 		si = co = max = ta = 0;
 		for (int x = 0; x < size / 2; x++) {
-			si += sin(x * 2.0 * M_PI / size) * vert[x];
-			co += cos(x * 2 * M_PI / size) * vert[x];
+			si += (float) sin(x * 2.0 * M_PI / size) * vert[x];
+			co += (float) cos(x * 2 * M_PI / size) * vert[x];
 			if (fabs(vert[x]) > max) {
 				max = fabs(vert[x]);
 			}
@@ -705,7 +705,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 		float inten = (si * si + co * co) / (size * M_PI);
 		ta = atan2(co, si);
 		printf("x, y = %g, %g\ta, p=%g / %g, %g\n", co, si, sqrt(inten), max, 180.0 / M_PI * ta);
-		max = floor(sqrt(inten) + .5);
+		max = floor(sqrt(inten) + 0.5f);
 
 		t1->done_data();
 		radonwith->done_data();
@@ -949,7 +949,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 					if (cm < bestval) {
 						bestval = cm;
-						bestang = 2.0 * M_PI * a->get_max_index() / (float) a->get_xsize();
+						bestang = (float) 2.0 * M_PI * a->get_max_index() / (float) a->get_xsize();
 						bestdx = dx;
 						bestdy = dy;
 						bestflip = dflip;
@@ -1011,7 +1011,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 					if (cm < bestval) {
 						bestval = cm;
-						bestang = 2.0 * M_PI * a->get_max_index() / (float) a->get_xsize();
+						bestang = (float)2.0 * M_PI * a->get_max_index() / (float) a->get_xsize();
 						bestdx = dx;
 						bestdy = dy;
 						bestflip = dflip;
@@ -1083,7 +1083,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 		maxshift = nx / 10;
 	}
 
-	float astep = atan2(2.0, nx);
+	float astep = atan2(2.0f, (float)nx);
 
 	EMData *dns = dn->copy(false);
 	EMData *dfs = df->copy(false);
@@ -1118,7 +1118,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 		for (int dy = -half_maxshift; dy <= half_maxshift; dy++) {
 			for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
 				if (hypot(dx, dy) <= maxshift) {
-					for (float ang = -astep * 2.0; ang <= 2 * M_PI; ang += astep * 4.0) {
+					for (float ang = -astep * 2.0f; ang <= (float)2 * M_PI; ang += astep * 4.0f) {
 						u->rotate_translate(ang, 0, 0, dx, dy, 0);
 
 						Dict cmp_params;
@@ -1358,7 +1358,7 @@ static double refalifnfast(const gsl_vector * v, void *params)
 
 	double r = this_img->dot_rotate_translate(img_to, x, y, a);
 	int nsec = this_img->get_xsize() * this_img->get_ysize();
-	double result = 1.0 - r / nsec;
+	double result = 1.0f - r / nsec;
 
 	return result;
 }
@@ -1383,7 +1383,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	float sdy = params["dy"];
 	float sdz = params["dz"];
 
-	float dda = atan(2.0 / ny);
+	float dda = atan(2.0f / ny);
 
 	int mode = params.set_default("mode", 0);
 
@@ -1401,9 +1401,9 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 		const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 
 		gsl_vector *ss = gsl_vector_alloc(np);
-		gsl_vector_set(ss, 0, 1.0);
-		gsl_vector_set(ss, 1, 1.0);
-		gsl_vector_set(ss, 2, 0.1);
+		gsl_vector_set(ss, 0, 1.0f);
+		gsl_vector_set(ss, 1, 1.0f);
+		gsl_vector_set(ss, 2, 0.1f);
 
 		gsl_vector *x = gsl_vector_alloc(np);
 		gsl_vector_set(x, 0, sdx);
@@ -1436,7 +1436,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 				break;
 			}
 
-			rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), 0.04);
+			rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), 0.04f);
 		}
 
 		this_img->rotate_translate(gsl_vector_get(s->x, 2), 0, 0,
@@ -1463,7 +1463,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 		for (int i = 0; i < 5 && j; i++) {
 			j = 0;
 			float last_alt = salt;
-			for (float daz = salt - dda; daz <= salt + dda; daz += dda / 2.0) {
+			for (float daz = salt - dda; daz <= salt + dda; daz += dda / 2.0f) {
 				if (daz != salt) {
 					last_alt = daz;
 					this_img->rotate_translate(daz, 0, 0, sdx, sdy, sdz);
@@ -1478,8 +1478,8 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 				}
 			}
 
-			for (float dx = sdx - 1.0; dx <= sdx + 1.0; dx += .25) {
-				for (float dy = sdy - 1.0; dy <= sdy + 1.0; dy += .25) {
+			for (float dx = sdx - 1.0f; dx <= sdx + 1.0; dx += 0.25f) {
+				for (float dy = sdy - 1.0f; dy <= sdy + 1.0; dy += 0.25f) {
 					this_img->rotate_translate(last_alt, 0, 0, dx, dy, 0);
 					f = this_img->cmp(cmp_name, cmp_params);
 
