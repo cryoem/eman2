@@ -257,8 +257,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
-		LOGERR("cannot open image file: '%s'", filename.c_str());
-		return IMAGE_UNKNOWN;
+		throw FileAccessException(filename);
 	}
 
 	char first_block[1024];
@@ -341,7 +340,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 	else if (ImagicIO::is_valid(&first_block)) {
 		image_type = IMAGE_IMAGIC;
 	}
-	else {		
+	else {
 		LOGERR("I don't know this image's type: '%s'", filename.c_str());
 		throw ImageFormatException("invalid image type");
 	}
