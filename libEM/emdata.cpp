@@ -333,8 +333,8 @@ EMData *EMData::get_clip(const Region & area)
     int y1 = (int) (area.origin.y + area.size.ysize);
     y1 = y1 > ny? ny : y1;
 
-    int yd0 = area.origin.y < 0? -y0 : 0;
-    int xd0 = x0 < 0 ? -x0 : 0;
+    int yd0 = (int) (area.origin.y < 0? -area.origin.y : 0);
+    int xd0 = (int) (area.origin.x < 0? -area.origin.x : 0);
     
     int z0 = (int) area.origin.z;
     int z1 = (int) (area.origin.z + zsize);
@@ -377,8 +377,9 @@ EMData *EMData::get_clip(const Region & area)
     float spacing_col = attr_dict["spacing_col"];
     float spacing_sec = attr_dict["spacing_sec"];
 
-    result->set_xyz_origin(xorigin + spacing_row * x0, yorigin + spacing_col * y0,
-			   zorigin + spacing_sec * z0);
+    result->set_xyz_origin(xorigin + spacing_row * area.origin.x,
+			   yorigin + spacing_col * area.origin.y,
+			   zorigin + spacing_sec * area.origin.z);
 
     result->update();
     result->set_parent(0);
@@ -3625,7 +3626,11 @@ int EMData::add_incoherent(EMData * obj)
 vector<float> EMData::calc_radial_dist(int n, float x0, float dx)
 {
     float *yc = new float[n];
-    vector<float> d(n);
+    float *d = new float[n];
+    for (int i = 0; i < n; i++) {
+	yc[i] = 0;
+	d[i] = 0;
+    }
     
     int c = 0;
     float half_nz = 0;
@@ -3697,7 +3702,15 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx)
     delete [] yc;
     yc = 0;
 
-    return d;
+    vector<float> dv(n);
+    for (int i = 0; i < n; i++) {
+	dv[i] = d[i];
+    }
+
+    delete [] d;
+    d = 0;
+    
+    return dv;
 }
 
 vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, float awid)
@@ -3707,12 +3720,16 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, fl
 	return vector<float>();
     }
 
-    vector<float> d(n);
-    
     float *yc = new float[n];
     float *yc2 = new float[n];
+    float *d = new float[n];
     float *d2 = new float[n];
-
+    
+    memset(yc, 0, sizeof(float) * n);
+    memset(yc2, 0, sizeof(float) * n);
+    memset(d, 0, sizeof(float) * n);
+    memset(d2, 0, sizeof(float) * n);
+    
     int step = 1;
     if (is_complex()) {
 	step = 2;
@@ -3811,6 +3828,10 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, fl
 	}
     }
 
+    vector<float> dv(n);
+    for (int i = 0; i < n; i++) {
+	dv[i] = d[i];
+    }
 
     delete [] yc;
     yc = 0;
@@ -3821,7 +3842,10 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, fl
     delete [] d2;
     d2 = 0;
 
-    return d;
+    delete [] d;
+    d = 0;
+    
+    return dv;
 }
 
 
