@@ -70,7 +70,9 @@ namespace EMAN
 	int render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 			int bpl, float scale, int min_gray, int max_gray,
 			float min_render, float max_render);
-
+	int render_amp8_wrapper(int data, int x, int y, int xsize, int ysize,
+			int bpl, float scale, int min_gray, int max_gray,
+			float min_render, float max_render);
 	int render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
 			 int bpl, float scale, int min_gray, int max_gray,
 			 float min_render, float max_render,
@@ -584,7 +586,12 @@ namespace EMAN
     {
 	return trans_align;
     }
-    
+    int EMData::render_amp8_wrapper(int data, int x, int y, int xsize, int ysize,
+			int bpl, float scale, int min_gray, int max_gray,
+			float min_render, float max_render)
+	{
+		return render_amp8((unsigned char*)data, x, y, xsize, ysize, bpl, scale, min_gray, max_gray, min_render, max_render);
+	}
     inline void EMData::scale_pixel(float scale) const
     {	
 	attr_dict["spacing_row"] = EMObject(attr_dict["spacing_row"].get_float() * scale);
