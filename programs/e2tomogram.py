@@ -155,7 +155,7 @@ Processes a tomographic tilt series"""
 			iml=EMData.read_images(args[inn],range(i[0],i[0]+options.localavg))
 		for img in iml:
 			img.filter("normalize.edgemean")
-		im1=iml[0].copy()
+		im1=iml[0].copy(0)
 		for img in iml[1:]:
 			im1+=img
 		iml=None
@@ -191,7 +191,7 @@ Processes a tomographic tilt series"""
 			if i[0]==nimg/2 :
 				cen=(rgnp[0],rgnp[1])
 
-			ref=im1.copy()
+			ref=im1.copy(0)
 			
 			mask=ref.copy_head()
 			mask.to_one()

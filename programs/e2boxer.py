@@ -50,6 +50,8 @@ for single particle analysis."""
 	
 	shrink=image.copy(0)
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
+	shrink2=shrink.copy(0)
+	shrink2.filter("math.squared")
 	
 	print "Autobox mode ",options.auto
 	
@@ -59,17 +61,25 @@ for single particle analysis."""
 		# refptcls will contain shrunken normalized reference particles
 		refptcls=[]
 		for n,i in enumerate(refptcl):
-			ic=i.copy()
+			ic=i.copy(0)
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
 			# first a circular mask
 			ic.filter("mask.sharp",{"outer_radius":ic.get_xsize()/2-1})
 			
 			# make the unmasked portion mean -> 0
-			ic.add(ic.get_attr("mean_nonzero"),keepzero=1)
-			
-			ic.write_image("scaled_refs.hdf",-1)
-			
+			ic.add(-float(ic.get_attr("mean_nonzero")),1)
+			ic.filter("normalize.unitlen")
+#			ic.write_image("scaled_refs.hdf",-1)
+
+		# prepare a mask to use for local sigma calculaton
+		circle=refptcls[0].copy_head()
+		circle.to_one()
+		circle.filter("mask.sharp",{"outer_radius":circle.get_xsize()/2-1})
+		
+		ccfmean=shrink.calc_ccf(circle,True,None)
+		ccfsig=shrink2.calc_ccf(circle,True,None)
+		
 	
 	if "circle" in options.auto:
 		shrinksq=shrink.copy(0)
