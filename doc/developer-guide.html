@@ -129,6 +129,45 @@ EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">e.write_image("output.mrc")</span></li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+Use a Reconstructor in python?</big></li>
+  <ul>
+    <li
+ style="color: rgb(51, 51, 255); font-weight: bold; background-color: rgb(255, 255, 204);"><span
+ style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">import math</span><br
+ style="color: rgb(0, 0, 0);">
+      <br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e1 = EMData()</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e1.read_image(TestUtil.get_debug_image("samesize1.mrc"))</span><br
+ style="color: rgb(0, 0, 0);">
+      <br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e2 = EMData()</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e2.read_image(TestUtil.get_debug_image("samesize2.mrc"))</span><br
+ style="color: rgb(0, 0, 0);">
+      <br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">r =
+Reconstructors.get("BackProjection")</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">r.set_params({"size":100,
+"weight":1})</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">r.setup()</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">r.insert_slice(e1,
+Transform(EULER_EMAN, 0,0,0))</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">r.insert_slice(e2,
+Transform(EULER_EMAN, math.pi/2,0,0))</span><br
+ style="color: rgb(0, 0, 0);">
+      <br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">result = r.finish()</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">result.write_image("reconstructor.mrc")</span><br>
+      <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 show all Filters?</big></li>
   <ul>
     <li
@@ -473,40 +512,38 @@ in "<span style="font-family: monospace;">exception.h</span>".<br>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 use
 Transformation?</big></li>
-  <ul>
-    <li><span style="font-weight: bold;">Transform</span> class is
-defined to do varisous affine transformation: translation, rotation,
-scaling, and their combination.</li>
-    <li><br>
-    </li>
-    <li style="font-weight: bold;">What's the structure of the
-transformation matrix?</li>
-  </ul>
 </ol>
-<div style="margin-left: 80px;">Internally a transformation is stored
-in a 4x4 matrix. With the left-top 3x3 submatrix as the rotation;
-Center is stored in (m[3][0], m[3][1], m[3][2]); post translation is
-stored in (m[0][3], m[1][3], m[2][3]):&nbsp;&nbsp;&nbsp;&nbsp; <br>
-&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | R R R T |<br>
-&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | R R R T |<br>
-&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | R R R T |<br>
-&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | C C C 1 |</div>
 <ol>
   <ul>
     <li style="background-color: rgb(255, 255, 204);"><span
- style="font-weight: bold;">Can you give me an example how to transform
-a list of 3-element vectors in python?</span><br>
-      <br>
-      <span style="font-family: monospace;">t=Transform(Matrix4f([2,4,9,10,
-1,9,3,12, 6,4,3,9, 12,3,9,1])</span><br style="font-family: monospace;">
-      <span style="font-family: monospace;">vectors = [ [1,0,0],
-[1,1,1], [1,2,3] ]</span><br style="font-family: monospace;">
-      <span style="font-family: monospace;">for v in vectors:</span><br
- style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
-newvec=v*t</span><br style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; #do
-something</span><br>
+ style="font-family: monospace;"></span>&nbsp;&nbsp;&nbsp; * Transform
+defines a transformation, which can be rotation,<br>
+&nbsp;&nbsp;&nbsp;&nbsp; * translation, scale, and their combinations.<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* Internally a transformation is stored in a
+4x3 matrix.<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; a b c<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; e f g<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; i j k<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; m n o<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* The left-top 3x3 submatrix<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; &nbsp; a b c<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; e f g<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*&nbsp;&nbsp;&nbsp; i j k<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* provides rotation, scaling and skewing.<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* post translation is stored in (m,n,o).<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* a separate vector containing the
+pretranslation, with an implicit<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* column [0 0 0 1] at the end when 4x4
+multiplies are required.<br>
+&nbsp;&nbsp;&nbsp; &nbsp;*<br>
+&nbsp;&nbsp;&nbsp; &nbsp;* The 'center of rotation' is NOT implemented
+as a separate vector, <br>
+&nbsp;&nbsp;&nbsp; &nbsp;* but as a combination of pre and post
+translations.<br>
       <br>
     </li>
   </ul>
