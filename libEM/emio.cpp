@@ -314,7 +314,7 @@ int EmIO::get_machine_type()
     m = EM_PC;
 #elif defined __CYGWIN__
     m = EM_PC;
-#elif defined _WIN32
+#elif defined WIN32
     m = EM_PC;
 #else
     m = EM_UNKNOWN_MACHINE;

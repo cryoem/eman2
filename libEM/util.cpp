@@ -45,7 +45,7 @@ void Util::flip_complex_phase(float *data, size_t n)
 
 int Util::file_lock_wait(FILE * file)
 {
-#ifdef _WIN32
+#ifdef WIN32
     return 1;
 #else
 
@@ -61,7 +61,7 @@ int Util::file_lock_wait(FILE * file)
     fl.l_whence = SEEK_SET;
     fl.l_start = 0;
     fl.l_len = 0;
-#ifdef _WIN32
+#ifdef WIN32
     fl.l_pid = _getpid();
 #else
     fl.l_pid = getpid();
@@ -80,7 +80,7 @@ int Util::file_lock_wait(FILE * file)
 		break;
 	    }
 	    else {
-#ifdef _WIN32
+#ifdef WIN32
 		Sleep(0.001);
 #else
 		sleep(1);

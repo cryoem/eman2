@@ -4,10 +4,6 @@
 #include "interp.h"
 #include "util.h"
 
-#ifdef _WIN32
-#include "UnixToWin.h"
-#endif
-
 using namespace EMAN;
 
 float Interp::HYPERGEOM[] = {

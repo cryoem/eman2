@@ -220,7 +220,7 @@ namespace EMAN
 
 	static inline float eman_copysign(float a, float b)
 	{
-#ifndef _WIN32
+#ifndef WIN32
 	    return copysign(a, b);
 #else
 	    int flip = -1;
@@ -233,7 +233,7 @@ namespace EMAN
 
 	static inline double eman_erfc(double x)
 	{
-#ifndef _WIN32
+#ifndef WIN32
 	    return erfc(x);
 #else
 	    static double a[] = { -1.26551223, 1.00002368,
