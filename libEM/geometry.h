@@ -261,7 +261,7 @@ namespace EMAN
 		{
 			return value;
 		}
-		
+
 		int x;
 		int y;
 		int z;
@@ -270,7 +270,8 @@ namespace EMAN
 
 	
 	bool operator<(const Pixel& p1, const Pixel& p2);
-	
+	bool operator==(const Pixel& p1, const Pixel& p2);
+	bool operator!=(const Pixel& p1, const Pixel& p2);
 
 	
 	/** Region defines a 2D or 3D rectangular region specified by origins and sizes.

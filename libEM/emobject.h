@@ -116,6 +116,9 @@ namespace EMAN
 		string to_str() const;
 		static const char *get_object_type_name(ObjectType t);
 
+		friend bool operator==(const EMObject &e1, const EMObject & e2);
+		friend bool operator!=(const EMObject &e1, const EMObject & e2);
+		
 	private:
 		union
 		{
@@ -131,7 +134,10 @@ namespace EMAN
 		ObjectType type;
 	};
 
+	bool operator==(const EMObject &e1, const EMObject & e2);
+	bool operator!=(const EMObject &e1, const EMObject & e2);
 
+	
 	/** Dict is a dictionary to store <string, EMObject> pair.
      * Typical ways to construct a Dict:
      *

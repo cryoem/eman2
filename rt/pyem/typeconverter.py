@@ -2,55 +2,7 @@
 
 from EMAN2 import *
 import sys
-
-def assertlist(l1, t1):
-	assert(l1[0] == t1[0] and l1[1] == t1[1] and l1[2] == t1[2])
-
-def assertdict(d1, d2):
-	assert(len(d1) == len(d2))
-	k1 = d1.keys()
-	k2 = d2.keys()
-	k1.sort()
-	k2.sort()
-	assertlist(k1, k2)
-	for k in k1:
-		assert(d1[k] == d2[k])
-
-def get_list(typename):
-	l = []
-	for i in range(3):
-		if typename == "int":
-			n = TestUtil.get_debug_int(i)
-		elif typename == "float":
-			n = TestUtil.get_debug_float(i)
-		elif typename == "long":
-			n1 = TestUtil.get_debug_int(i)
-			n = long(n1)
-		elif typename == "string":
-			n = TestUtil.get_debug_string(i)
-		l.append(n)
-	return l
-
-
-def get_dict(typename):
-	d = {}
-	
-	for i in range(3):
-		s = str(i+1) + str(i+1)
-		
-		if typename == "int":
-			n = TestUtil.get_debug_int(i)
-		elif typename == "long":
-			n1 = TestUtil.get_debug_int(i)
-			n = long(n1)
-		elif typename == "float":
-			n = TestUtil.get_debug_float(i)
-		elif typename == "string":
-			n = TestUtil.get_debug_string(i)
-		d[s] = n
-		
-	return d
-
+from testlib import *
 
 def test_point_size():
 	nlist = get_list("int")
@@ -92,7 +44,13 @@ def test_map():
 	smap2 = TestUtil.test_map_string(smap)
 	assertdict(smap, smap2)
 
+	emobjectmap = get_dict("emobject")
+	emobjectmap2 = TestUtil.test_map_emobject(emobjectmap)
+	assertdict(emobjectmap, emobjectmap2)
+
+
 def test_vector():
+	
 	nlist = get_list("int")
 	flist = get_list("float")
 	llist = get_list("long")
@@ -109,6 +67,27 @@ def test_vector():
 
 	slist2 = TestUtil.test_vector_string(slist)
 	assertlist(slist, slist2)
+	
+	e1 = EMData()
+	e1.read_image(TestUtil.get_debug_image("samesize1.mrc"))
+	e2 = EMData()
+	e2.set_size(10, 20, 5)
+	e3 = EMData()
+
+	elist = [e1, e2, e3]
+	elist2 = TestUtil.test_vector_emdata(elist)
+	check_emdata_list(elist)
+	check_emdata_list(elist2)
+
+	p1 = Pixel(1,2,3, 1.1)
+	p2 = Pixel(4,5,6, 4.4)
+	p3 = Pixel(7,8,9, 5.5)
+
+	plist = [p1,p2,p3]
+	plist2 = TestUtil.test_vector_pixel(plist)
+
+	for i in range(len(plist)):
+		assert(plist[i] == plist2[i])
 
 test_map()
 test_vector()

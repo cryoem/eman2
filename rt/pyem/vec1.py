@@ -3,14 +3,15 @@
 from EMAN2 import *
 
 v = Vec3i(1,2,3)
-print v.as_list()
+vlist = v.as_list()
+assert (vlist == [1,2,3])
 
 e = EMData()
 e.set_size(32,32,1)
 intp = e.calc_min_location()
 
-print intp
-print type(intp)
+assert (intp == (0,0,0))
+assert (type(intp) == type((1,2)))
 
 e2 = EMData()
 e2.set_size(12,12,1)

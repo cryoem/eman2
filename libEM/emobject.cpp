@@ -198,6 +198,50 @@ const char *EMObject::get_object_type_name(ObjectType t)
 }
 
 
+bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
+{
+#if 0
+	if (e1.type != e2.type) {
+		return false;
+	}
+#endif
+	switch (e1.type) {
+	case EMObject::INT:
+		return (e1.n == e2.n);
+	case EMObject::FLOAT:
+		return (e1.f == e2.f);
+	case EMObject::DOUBLE:
+		return (e1.d == e2.d);
+	case EMObject::STRING:
+		return (e1.str == e2.str);
+	case EMObject::EMDATA:
+		return (e1.emdata == e2.emdata);
+	case EMObject::XYDATA:
+		return (e1.xydata == e2.xydata);
+	case EMObject::FLOATARRAY:
+		if (e1.farray.size() == e2.farray.size()) {
+			for (size_t i = 0; i < e1.farray.size(); i++) {
+				if (e1.farray[i] != e2.farray[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+		else {
+			return false;
+		}
+	default:
+		return false;
+	}
+	return false;
+}
+
+bool EMAN::operator!=(const EMObject &e1, const EMObject & e2)
+{
+	return !(e1 == e2);
+}
+
+
 void TypeDict::dump() 
 {
 	map < string, string >::iterator p;

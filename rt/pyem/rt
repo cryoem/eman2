@@ -1,10 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 
 run_cmd()
 {
     local cmd=$1
-	echo "========== running $cmd =========="
+	echo "== testing $cmd ==========  "
 	$cmd
+	if test $? == 0; then
+		echo "PASS"
+	else
+		echo "FAIL"
+	fi
 	echo
 }
 
@@ -13,3 +18,5 @@ run_cmd vec1.py
 run_cmd vec2.py
 run_cmd vec3.py
 run_cmd emobject.py
+run_cmd pixel2.py
+run_cmd emobject2.py

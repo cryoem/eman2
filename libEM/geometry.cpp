@@ -14,6 +14,20 @@ bool EMAN::operator<(const Pixel& p1, const Pixel& p2)
 	return false;
 }
 
+bool EMAN::operator==(const Pixel& p1, const Pixel& p2)
+{
+	if (p1.x == p2.x && p1.y == p2.y && p1.z == p2.z && p1.value == p2.value) {
+		return true;
+	}
+	return false;
+}
+
+bool EMAN::operator!=(const Pixel& p1, const Pixel& p2)
+{
+	return !(p1 == p2);
+}
+
+
 bool Region::inside_region() const
 {
 	if (size[0] >= 0 && size[1] >= 0 && size[2] >= 0) {
