@@ -15,7 +15,7 @@ namespace EMAN
      */
 	class XYZFilter:public Filter
 	{
-	  public:
+	public:
 		void process(EMData * image);
 
 		string get_name() const
@@ -28,20 +28,25 @@ namespace EMAN
 			return new XYZFilter();
 		}
 
-	/** Add your filter parameter names and types in
-	 * get_param_types(). For available parameter types, please
-	 * refer class EMObject.
-	 * 
-	 * As an example, XYZFilter has 2 parameters:
-	 *    int value1;
-	 *    float value2;
-	 */
+		string get_desc() const
+		{
+			return "add your documentation here.";
+		}
+		
+		/** Add your filter parameter names and types in
+		 * get_param_types(). For available parameter types, please
+		 * refer class EMObject.
+		 * 
+		 * As an example, XYZFilter has 2 parameters:
+		 *    int value1;
+		 *    float value2;
+		 */
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("value1", EMObject::INT);
-			  d.put("value2", EMObject::FLOAT);
-			  return d;
+			d.put("value1", EMObject::INT);
+			d.put("value2", EMObject::FLOAT);
+			return d;
 		}
 	};
 
@@ -50,7 +55,7 @@ namespace EMAN
      */
 	class FilterFactoryExt
 	{
-	  public:
+	public:
 		FilterFactoryExt()
 		{
 			Factory < Filter >::add(&XYZFilter::NEW);

@@ -108,7 +108,7 @@ show all Filters?</big></li>
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
       <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
  style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">EMUtil.dump_filters()</span><br>
+      <span style="color: rgb(0, 0, 0);">dump_filters()</span><br>
       <br>
     </li>
   </ul>
@@ -298,7 +298,7 @@ generic way to do this. It can send information to either standard out,
 a file, or a pine.</li>
       <li>How to use <span style="font-weight: bold;">Log</span></li>
       <ul>
-        <>1) in your main() file, set log level:&nbsp;&nbsp;&nbsp; <span
+&lt;&gt;1) in your main() file, set log level:&nbsp;&nbsp;&nbsp; <span
  style="color: rgb(51, 204, 0); font-weight: bold;">Log::logger()-&gt;set_log_level(WARNING_LOG);</span><br>
 2) log message in different levels: (log functions use the same
 argument format like <span style="font-weight: bold;">printf()</span>).<br>
@@ -313,7 +313,6 @@ size = (%d, %d, %d)\n", nx, ny, nz);<br>
 3) For best performance, you may remove all log messages by changing
 definition of the above log functions, which are MACROs in file
 eman2/libEM/log.h.<br>
-        </>
       </ul>
     </ul>
   </ul>

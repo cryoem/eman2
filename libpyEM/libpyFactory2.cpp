@@ -103,6 +103,8 @@ struct EMAN_Exception_Wrapper: EMAN::Exception
     PyObject* self;
 };
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_TypeDict_put_overloads_2_3, put, 2, 3)
+
 struct EMAN_Aligner_Wrapper: EMAN::Aligner
 {
     EMAN_Aligner_Wrapper(PyObject* self_, const EMAN::Aligner& p0):
@@ -362,6 +364,10 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     PyObject* self;
 };
 
@@ -419,6 +425,16 @@ BOOST_PYTHON_MODULE(libpyFactory2)
     ;
 
     delete EMAN_EMObject_scope;
+
+    class_< EMAN::TypeDict >("TypeDict", init<  >())
+        .def(init< const EMAN::TypeDict& >())
+        .def("keys", &EMAN::TypeDict::keys)
+        .def("size", &EMAN::TypeDict::size)
+        .def("put", &EMAN::TypeDict::put, EMAN_TypeDict_put_overloads_2_3())
+        .def("get_type", &EMAN::TypeDict::get_type)
+        .def("get_desc", &EMAN::TypeDict::get_desc)
+        .def("dump", &EMAN::TypeDict::dump)
+    ;
 
     class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("Aligner", init<  >())
         .def("align", pure_virtual(&EMAN::Aligner::align), return_value_policy< manage_new_object >())
@@ -510,6 +526,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_Filter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
     ;
 
     class_< EMAN::Factory<EMAN::Filter>, boost::noncopyable >("Filters", no_init)
@@ -520,5 +537,12 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .staticmethod("get")
     ;
 
+    def("dump_aligners", &EMAN::dump_aligners);
+    def("dump_averagers", &EMAN::dump_averagers);
+    def("dump_cmps", &EMAN::dump_cmps);
+    def("dump_filters", &EMAN::dump_filters);
+    def("multi_filters", &EMAN::multi_filters);
+    def("dump_projectors", &EMAN::dump_projectors);
+    def("dump_reconstructors", &EMAN::dump_reconstructors);
 }
 

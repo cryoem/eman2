@@ -50,8 +50,7 @@ set_policy(Transform.scale, return_internal_reference())
 
 Size = Class("EMAN::Size", "geometry.h")
 
-Point = Template("EMAN::Point", "geometry.h")
-Point("int", "IntPoint")
-Point("float", "FloatPoint")
+IntPoint = Class("EMAN::IntPoint", "geometry.h")
+FloatPoint = Class("EMAN::FloatPoint", "geometry.h")
 
 Region = Class("EMAN::Region", "geometry.h")

@@ -12,6 +12,8 @@ set_policy(EMObject.operator['EMAN::EMData*'], return_internal_reference())
 set_policy(EMObject.operator['EMAN::XYData*'], return_internal_reference())
 exclude(EMObject.operator['const char*'])
 
+TypeDict = Class("EMAN::TypeDict", "emobject.h")
+
 Factory = Template("EMAN::Factory", "emobject.h")
 
 Aligner = Class("EMAN::Aligner", "aligner.h")
@@ -19,7 +21,6 @@ set_policy(Aligner.align, return_value_policy(manage_new_object))
 AlignerFactory = Factory("EMAN::Aligner", "Aligners")
 set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
 exclude(AlignerFactory.add)
-
 
 Cmp = Class("EMAN::Cmp", "cmp.h")
 CmpFactory = Factory("EMAN::Cmp", "Cmps")
@@ -52,4 +53,14 @@ Filter = Class("EMAN::Filter", "filter.h")
 FilterFactory = Factory("EMAN::Filter", "Filters")
 set_policy(FilterFactory.get, return_value_policy(manage_new_object))
 exclude(FilterFactory.add)
+
+Function("EMAN::dump_aligners", "aligner.h")
+Function("EMAN::dump_averagers", "averager.h")
+Function("EMAN::dump_cmps", "cmp.h")
+
+Function("EMAN::dump_filters", "filter.h")
+Function("EMAN::multi_filters", "filter.h")
+
+Function("EMAN::dump_projectors", "projector.h")
+Function("EMAN::dump_reconstructors", "reconstructor.h")
 
