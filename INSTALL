@@ -96,8 +96,6 @@ For Developers Only:
            cd libs/python/pyste/install; python setup.py install
         2) install elementtree
         3) install GCCXML
-        4) for boost 1.31.0, apply a patch to pyste ClassExporter.py.
-           (Contact Liwei Peng for details.)
            
     2. To generate new boost python wrapper, run
         % cd eman2/libpyEm
@@ -114,8 +112,8 @@ How to Install Boost Python
    
     0. Download 'bjam' for your platform.
     
-    1. Download boost source from http://www.boost.org. Assume it's boost_1_31_0.
-       % cd /usr/local/src; tar zxf boost_1_31_0.tar.gz; cd boost_1_31_0.
+    1. Download boost source from http://www.boost.org. Assume it's boost_1_32_0.
+       % cd /usr/local/src; tar zxf boost_1_32_0.tar.gz; cd boost_1_32_0.
     
     2. set up environment variables "PYTHON_ROOT" and "PYTHON_VERSION".
        For example, if your python is at /usr/bin/python. PYTHON_ROOT is
