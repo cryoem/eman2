@@ -12,7 +12,7 @@ using namespace EMAN;
 int main(int argc, char *argv[])
 {
     int SIZE = 96;
-    int NTT = 500;
+    int NTT = 50;
  
     int slow = 0;
     int low = 0;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     pat.filter("CircleMeanNormalize");
     pat.filter("SharpMask", Dict("outer_radius", EMObject(pat.get_xsize()/2)));
 
-    EMData *data[5000];
+    EMData *data[500];
     
     for (int i = 0; i < NTT; i++) {
 	data[i] = pat.copy(false, false);

@@ -4,6 +4,8 @@
 #include "util.h"
 #include "ctf.h"
 
+// todo: [list=<list file>] [exclude=<list file>]  [filefilt=<file>]  [calcsf=[<n>,]<output>]  [fftavg=<file name>] 
+
 using namespace EMAN;
 using std::map;
 
@@ -291,7 +293,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[flip]) {
-	    d->filter("flip", Dict("axis", EMObject("y")));
+	    d->filter("Flip", Dict("axis", EMObject("y")));
 	}
 
 	if (argdict[invert]) {
@@ -401,7 +403,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (argdict[center]) {
-	    d->to_mass_center(true);
+	    d->filter("ToMassCenter", Dict("int_shift_only", EMObject(1)));
 	}
 
 	if (argdict[phot]) {
@@ -436,7 +438,7 @@ int main(int argc, char *argv[])
 		    d->set_talign_params(Util::get_gauss_rand(0, rizedx),
 					 Util::get_gauss_rand(0, rizedx), 0);
 		if (rizef && rand() % 2) {
-		    d->filter("flip", Dict("axis", EMObject("y")));
+		    d->filter("Flip", Dict("axis", EMObject("y")));
 		}
 	    }
 	    d->rotate_translate();
