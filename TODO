@@ -26,6 +26,7 @@
 	   one of the input images.  a=b.calc_ccf(c,True,None)  modifies c in some
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
+  028. add region write to ImageIO.
 
 --- Low Priority ---
 
