@@ -63,6 +63,8 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	edge=max(pdim2)/2		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
 	print "edge ",edge
 	best=[]
+	sum=probeclib.copy_head()
+	sum.to_zero()
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
 			prr=probeclip.copy()
@@ -73,6 +75,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 			mean=float(ccf.get_attr("mean"))
 			sig=float(ccf.get_attr("sigma"))
 			ccf.filter("ZeroEdgePlane",{"x0":edge,"x1":edge,"y0":edge,"y1":edge,"z0":edge,"z1":edge})
+			sum+=ccf
 			ccf.filter("PeakOnly",{"npeaks":0})		# only look at peak values in the CCF map
 			
 #			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
@@ -82,22 +85,37 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #			print a1,a2,a3,mean+sig,float(ccf.get_attr("max")),len(vec)
 	
 	best.sort()		# this is a list of all reasonable candidate locations
+	best.reverse()
 	
 	print len(best)
-	print best[0]
-	print best[-1]
 	
-	for i in best:
-		for j in best:
-			if (i[4]-j[4])**2+(i[5]-j[5])**2+(i[6]-j[6])**2>8.8 : continue
-			if j[0]>i[0] : i[7]=1
+	# this is designed to eliminate angular redundancies in peak location
+#	print best[0]
+#	print best[-1]
 	
+#	for i in best:
+#		for j in best:
+#			if (i[4]-j[4])**2+(i[5]-j[5])**2+(i[6]-j[6])**2>8.8 : continue
+#			if j[0]>i[0] : i[7]=1
+#	
+#	best2=[]
+#	for i in best:
+#		if not i[7]: best2.append(i)
+
+	# now we find peaks in the sum of all CCF calculations, and find the best angle associated with each peak
+	sum.filter("PeakOnly",{"npeaks":0})
+	vec=sum.calc_highest_locations(mean+sig+.0000001)
 	best2=[]
-	for i in best:
-		if not i[7]: best2.append(i)
+	for v in vec:
+		for i in best:
+			if i[4]==v.x and i[5]==v.y and i[6]==v.z :
+				best2.append(i)
+				break
 
 	print len(best2)
 	for i in best2: print i
+	
+	
 #	print best2[0]
 #	print best2[-1]
 		
