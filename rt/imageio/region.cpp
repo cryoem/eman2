@@ -20,6 +20,7 @@ void test_em()
 void test_region(EMUtil::ImageType imgtype, const char * testfile,
 				 EMUtil::ImageType outtype = EMUtil::IMAGE_UNKNOWN)
 {
+	printf("testing %s ...\n", testfile);
 	if (outtype == EMUtil::IMAGE_UNKNOWN) {
 		outtype = imgtype;
 	}
@@ -42,7 +43,7 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 
 	int ndims = e.get_ndim();
 	e.write_image(writefile_2d, 0, outtype);
-	return;
+	
 	if (ndims == 3) {
 		e.write_image(writefile_3d, 0, outtype);
 	}
@@ -89,16 +90,23 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	EMData e3;
 	e3.set_size(xsize, ysize, zsize);
 	e3.to_zero();
-	
-	e3.write_image(writefile_2d, 0, outtype, false, &region_2d);
-	if (ndims == 3) {
-		e3.write_image(writefile_3d, 0, outtype, false, &region_3d);
+
+	int image_index = 0;
+	if (outtype == EMUtil::IMAGE_SPIDER) {
+		image_index = nz/2;
 	}
+	
+	e3.write_image(writefile_2d, image_index, outtype, false, &region_2d);
+	
+	if (ndims == 3) {
+		e3.write_image(writefile_3d, image_index, outtype, false, &region_3d);
+	}
+	
 	try {
 		e3.write_image(writefile_2d, 0, outtype, false, &bad_region);		
 	}
 	catch (_ImageReadException& e) {
-		LOGERR(e.what());
+		//LOGERR(e.what());
 	}
 	
 	try {
@@ -106,10 +114,10 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 		e22.read_image(imgfile, 0, false, &bad_region, is_3d);
 	}
 	catch (_ImageReadException& e) {
-		LOGERR(e.what());
+		//LOGERR(e.what());
 	}
 	catch (E2Exception & e) {
-		LOGERR(e.what());
+		//LOGERR(e.what());
 	}
 	
 }
@@ -119,16 +127,18 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 int main(int argc, char *argv[])
 {
 	try {
-#if 0
+#if 1
 		test_region(EMUtil::IMAGE_MRC, "groel3d.mrc");
 		test_region(EMUtil::IMAGE_MRC, "samesize1.mrc");
 		test_region(EMUtil::IMAGE_MRC, "tablet.mrc");
-
-		test_region(EMUtil::IMAGE_IMAGIC, "start.hed");
-		test_region(EMUtil::IMAGE_PIF, "sv-3d.pif");
 #endif
-		//test_region(EMUtil::IMAGE_SINGLE_SPIDER, "spider-single.spi");
-		//test_region(EMUtil::IMAGE_SPIDER, "spider-stack.spi");
+		test_region(EMUtil::IMAGE_IMAGIC, "start.hed");
+#if 1
+		//test_region(EMUtil::IMAGE_PIF, "sv-3d.pif");
+
+		test_region(EMUtil::IMAGE_SINGLE_SPIDER, "spider-single.spi");
+		test_region(EMUtil::IMAGE_SPIDER, "spider-stack.spi");
+#endif
 	}
 	catch(E2Exception &e) {
 		printf("%s\n", e.what());

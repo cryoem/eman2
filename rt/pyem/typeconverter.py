@@ -16,7 +16,7 @@ def test_emobject():
 	TestUtil.to_emobject({"long": lnum})
 
 	fl = get_list("float")
-	TestUtil.to_emobject({"farray": fl})
+	TestUtil.to_emobject({"floatarray": fl})
 
 	e = EMData()
 	nx = TestUtil.get_debug_int(0)
@@ -36,6 +36,8 @@ def test_emobject():
 	TestUtil.to_emobject({"xydata" : xyd})
 	os.unlink(testfile)
 
+	strlist = get_list("string")
+	TestUtil.to_emobject({"stringarray":strlist})
 
 
 def test_Dict():
