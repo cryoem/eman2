@@ -379,6 +379,40 @@ namespace EMAN {
 		}
     };
 
+
+    	
+	struct emobject_string_from_python
+    {
+		emobject_string_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<EMObject>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			char * type_name = obj_ptr->ob_type->tp_name;
+			if (type_name == 0 || strcmp(type_name, "str") != 0) {
+				return 0;
+			}
+			return obj_ptr;
+		}
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage =
+				((python::converter::rvalue_from_python_storage<EMObject>*)
+				 data)->storage.bytes;
+			new (storage) EMObject();
+
+			data->convertible = storage;
+			EMObject& result = *((EMObject*) storage);
+			string str = python::extract<string>(obj_ptr);	   
+			result = EMObject(str);
+		}
+    };
+    
 	struct emobject_emdata_from_python
     {
 		emobject_emdata_from_python()
@@ -442,6 +476,7 @@ namespace EMAN {
 			result = EMObject(xydata);
 		}
     };
+
 }
 
 
