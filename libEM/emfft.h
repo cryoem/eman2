@@ -1,7 +1,7 @@
 #ifndef eman_emfft_h__
 #define eman_emfft_h__
 
-#define FFTW2 1
+
 
 #ifdef FFTW2
     
