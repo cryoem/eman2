@@ -1,5 +1,5 @@
 /**
- * $Id
+ * $Id$
  */
 
 #ifndef eman__byteorder_h__
