@@ -105,7 +105,7 @@ Processes a tomographic tilt series"""
 	parser.add_option("--box","-B", type="int", help="Box size for alignment probe (pixels), default=96",default=96.0)
 	parser.add_option("--highpass",type="float",help="Highpass Gaussian filter radius (pixels), default none", default=-1.0)
 	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian filter radius (pixels), default none",default=-1.0)
-	parser.add_option("--mode",type="string",help="centering mode 'modeshift' or 'censym'",default="censym")
+	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region=<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	
 	(options, args) = parser.parse_args()
@@ -115,26 +115,40 @@ Processes a tomographic tilt series"""
 	nimg=EMUtil.get_image_count(args[0])
 	if (nimg<3) : parser.error("Input file must contain at least 3 images")
 	
-	# copy the file with possible format conversion
 #	Log.logger().set_level(Log.LogLevel.VARIABLE_LOG)
-	for i in range(nimg):
-		a=EMData()
-		a.read_image(args[0],i)
-		a.write_image(args[1],i)
-		
 	
+	if options.mode[:6]=="region":
+		rgnp=[int(x) for x in options.mode[7:].split(',')]
+		cen=(rgnp[0],rgnp[1])
+		for i in range(nimg):
+			a=EMData()
+			a.read_image(args[0],i)
+			b=a.get_clip(Region(rgnp[0]+a.get_xsize()/2-rgnp[2]/2,rgnp[1]+a.get_ysize()/2-rgnp[2]/2,rgnp[2],rgnp[2]))
+			b.write_image(args[1],i)
+	else:
+		# copy the file with possible format conversion
+		for i in range(nimg):
+			a=EMData()
+			a.read_image(args[0],i)
+			a.write_image(args[1],i)
+		
+
+		
 	cmplist=[(x,x+1) for x in range(nimg/2,nimg-1)]+[(x,x-1) for x in range(nimg/2,0,-1)]
 	ii=-1
 	while ii< len(cmplist)-1:
 		ii+=1
 		i=cmplist[ii]
+		if options.mode[:6]=="region" : inn=0
+		else : inn=1
+		
 		im1=EMData()
-		im1.read_image(args[1],i[0])
+		im1.read_image(args[inn],i[0])
 		im1.filter("NormalizeEdgeMean")
 		if options.highpass>0 :im1.filter("HighpassGauss",{"highpass":options.highpass})
 		if (options.lowpass>0) : im1.filter("LowpassGauss",{"lowpass":options.lowpass})
 		im2=EMData()
-		im2.read_image(args[1],i[1])
+		im2.read_image(args[inn],i[1])
 		im2.filter("NormalizeEdgeMean")
 		if options.highpass>0 : im2.filter("HighpassGauss",{"highpass":options.highpass})
 		if (options.lowpass>0) : im2.filter("LowpassGauss",{"lowpass":options.lowpass})
@@ -156,6 +170,37 @@ Processes a tomographic tilt series"""
 			dys=[int(x[5]) for x in vec4]
 			
 			best=(mode(dxs),mode(dys))
+		elif options.mode[:6]=="region":
+			if i==nimg/2 : 
+				cen=(rgnp[0],rgnp[1])
+
+			ref=im1.copy()
+			
+			mask=ref.copy_head()
+			mask.to_one()
+			mask.filter("MaskSharp",{"outer_radius":rgnp[3]/2,"dx":cen[0],"dy":cen[1]})
+			ref*=mask
+			ref-=float(ref.get_attr("mean_nonzero"))
+			ref*=mask
+			
+			im1.filter("NormalizeStd")
+			im1s=im1.copy(0)
+			im1s.filter("ValueSquared")
+			
+			ccf=ref.calc_ccf(im1,1,None)
+			ccfs=mask.calc_ccf(im1s,1,None)	# this is the sum of the masked values^2 for each pixel center
+			ccfs.filter("ValueSqrt")
+			ccf/=ccfs
+	
+			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
+			ccf.write_image("dbug.hed",-1)
+			maxloc=ccf.calc_max_location()
+			
+			out=im2.get_clip(Region(cen[0]+maxloc[0]-rgnp[2]/2,cen[1]+maxloc[1]-rgnp[2]/2,rgnp[2],rgnp[2]))
+			cen=(cen[0]+maxloc[0]-im2.get_xsize()/2,cen[1]+maxloc[1]-im2.get_ysize()/2)
+			out.write_image(args[1],i[1])
+			print "%d.\t%d\t%d"%(i[1],cen[0],cen[1])
+			continue			
 		elif options.mode=="censym" :
 			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2)
 			pairs=[]
