@@ -337,11 +337,7 @@ int MrcIO::write_header(const Dict & dict, int image_index)
 
     sprintf(mrch.map, "MAP");
     mrch.machinestamp = Util::generate_machine_stamp();
-    /*
-      if (mrcfile != stdout) {
-      Util::file_lock_wait(mrcfile);
-      }
-    */
+
 
     if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
 	Log::logger()->error("cannot write mrc header to file '%s'", filename.c_str());
