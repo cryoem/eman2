@@ -126,7 +126,7 @@ namespace EMAN
 	int mean_shrink(int shrink_factor);
 	int median_shrink(int shrink_factor);
 
-	void apply_radial_func(int, float, vector<float> array);
+	void apply_radial_func(float x0, float step, vector<float> array, bool interp = true);
 
 	int add(float f);
 	int add(const EMData & em);
@@ -234,7 +234,9 @@ namespace EMAN
 	Dict get_attr_dict();
 	float get_mean() const;
 	float get_std() const;
-
+	float get_skewness() const;
+	float get_kurtosis() const;
+	
 	Point<int> get_min_location() const;
 	Point<int> get_max_location() const;
 

@@ -61,6 +61,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_mutual_correlation_overl
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_6, unwrap, 0, 6)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_apply_radial_func_overloads_3_4, apply_radial_func, 3, 4)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_random_noise_overloads_4_5, add_random_noise, 4, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_auto_mask_overloads_1_2, auto_mask, 1, 2)
@@ -138,7 +140,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("unwrap", &EMAN::EMData::unwrap, return_value_policy< manage_new_object >(), EMAN_EMData_unwrap_overloads_0_6())
         .def("mean_shrink", &EMAN::EMData::mean_shrink)
         .def("median_shrink", &EMAN::EMData::median_shrink)
-        .def("apply_radial_func", &EMAN::EMData::apply_radial_func)
+        .def("apply_radial_func", &EMAN::EMData::apply_radial_func, EMAN_EMData_apply_radial_func_overloads_3_4())
         .def("add", (int (EMAN::EMData::*)(float) )&EMAN::EMData::add)
         .def("add", (int (EMAN::EMData::*)(const EMAN::EMData&) )&EMAN::EMData::add)
         .def("sub", (int (EMAN::EMData::*)(float) )&EMAN::EMData::sub)
@@ -200,6 +202,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_attr_dict", &EMAN::EMData::get_attr_dict)
         .def("get_mean", &EMAN::EMData::get_mean)
         .def("get_std", &EMAN::EMData::get_std)
+        .def("get_skewness", &EMAN::EMData::get_skewness)
+        .def("get_kurtosis", &EMAN::EMData::get_kurtosis)
         .def("get_min_location", &EMAN::EMData::get_min_location)
         .def("get_max_location", &EMAN::EMData::get_max_location)
         .def("get_min_index", &EMAN::EMData::get_min_index)
