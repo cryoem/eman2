@@ -255,7 +255,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area, bool)
 	delete[]buf;
 	buf = 0;
 
-	//fflush(icos_file);
+	fflush(icos_file);
 	return err;
 }
 

@@ -556,7 +556,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 #endif
 #endif
 	
-	//fflush(mrcfile);
+	fflush(mrcfile);
 	return 0;
 }
 
