@@ -3,8 +3,8 @@
 #include <map>
 #include "util.h"
 #include "ctf.h"
+#include <ctype.h>
 
-// todo:  [calcsf=[<n>,]<output>]  
 
 using namespace EMAN;
 using std::map;

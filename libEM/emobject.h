@@ -26,8 +26,7 @@ namespace EMAN
 	class Projector;
 	class Reconstructor;
 
-	enum MapInfoType
-	{
+	enum MapInfoType {
 		NORMAL,
 		ICOS2F_FIRST_OCTANT,
 		ICOS2F_FULL,
@@ -50,9 +49,8 @@ namespace EMAN
      */
 	class EMObject
 	{
-	  public:
-		enum ObjectType
-		{
+	public:
+		enum ObjectType {
 			INT,
 			FLOAT,
 			DOUBLE,
@@ -63,7 +61,7 @@ namespace EMAN
 			UNKNOWN
 		};
 
-	  public:
+	public:
 		EMObject():type(UNKNOWN)
 		{
 			n = 0;
@@ -85,11 +83,11 @@ namespace EMAN
 		EMObject(const char *s):str(string(s)), type(STRING)
 		{
 		}
-	  EMObject(string s):str(s), type(STRING) {
+		EMObject(string s):str(s), type(STRING) {
 		}
-	  EMObject(EMData * em):emdata(em), type(EMDATA) {
+		EMObject(EMData * em):emdata(em), type(EMDATA) {
 		}
-	  EMObject(XYData * xy):xydata(xy), type(XYDATA) {
+		EMObject(XYData * xy):xydata(xy), type(XYDATA) {
 		}
 		EMObject(const vector < float >&v):farray(v), type(FLOATARRAY)
 		{
@@ -110,7 +108,7 @@ namespace EMAN
 		string to_str() const;
 		static const char *get_object_type_name(ObjectType t);
 
-	  private:
+	private:
 		union
 		{
 			int n;
@@ -137,7 +135,7 @@ namespace EMAN
      */
 	class Dict
 	{
-	  public:
+	public:
 		Dict()
 		{
 		}
@@ -183,8 +181,7 @@ namespace EMAN
 			vector < string > result;
 
 			map < string, EMObject >::const_iterator p;
-			for (p = dict.begin(); p != dict.end(); p++)
-			{
+			for (p = dict.begin(); p != dict.end(); p++) {
 				result.push_back(p->first);
 			}
 
@@ -196,8 +193,7 @@ namespace EMAN
 			vector < EMObject > result;
 
 			map < string, EMObject >::const_iterator p;
-			for (p = dict.begin(); p != dict.end(); p++)
-			{
+			for (p = dict.begin(); p != dict.end(); p++) {
 				result.push_back(p->second);
 			}
 
@@ -207,8 +203,7 @@ namespace EMAN
 		bool has_key(const string & key) const
 		{
 			map < string, EMObject >::const_iterator p = dict.find(key);
-			if (p != dict.end())
-			{
+			if (p != dict.end()) {
 				return true;
 			}
 			return false;
@@ -280,7 +275,7 @@ namespace EMAN
 			return dict[key];
 		}
 
-	  private:
+	private:
 		mutable map < string, EMObject > dict;
 	};
 
@@ -297,7 +292,7 @@ namespace EMAN
      */
 	class TypeDict
 	{
-	  public:
+	public:
 		TypeDict()
 		{
 		}
@@ -311,8 +306,7 @@ namespace EMAN
 			vector < string > result;
 			map < string, string >::const_iterator p;
 
-			for (p = dict.begin(); p != dict.end(); p++)
-			{
+			for (p = dict.begin(); p != dict.end(); p++) {
 				result.push_back(p->first);
 			}
 
@@ -341,7 +335,7 @@ namespace EMAN
 
 		void dump() const;
 
-	  private:
+	private:
 		map < string, string > dict;
 	};
 
@@ -371,7 +365,7 @@ namespace EMAN
      *      Filter *f2 = Factory<Filter>.get("GaussLowpass", Dict("lowpass", EMObject(12));
      */
 	template < class T > class Factory {
-	  public:
+	public:
 		typedef T *(*InstanceType) ();
 
 		static void add(InstanceType i);
@@ -379,7 +373,7 @@ namespace EMAN
 		static T *get(string instance_name, const Dict & params) throw (NotExistingObjectError);
 		static vector < string > get_list();
 
-	  private:
+	private:
 		Factory();
 		Factory(const Factory < T > &);
 		~Factory();
@@ -439,7 +433,7 @@ namespace EMAN
 	}
 
 	template < class T > T * Factory < T >::get(string instancename, const Dict & params)
-		throw(NotExistingObjectError){
+		throw(NotExistingObjectError) {
 		init();
 
 		typename map < string, InstanceType >::iterator fi =

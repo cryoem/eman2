@@ -49,7 +49,7 @@ ENDIF (ENABLE_DEBUG)
 
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-    SET(EMAN_CXX_FLAGS "-n32 -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "-n32 -LANG:std -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
     #SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
@@ -149,7 +149,7 @@ ENDIF(ENABLE_FFTW3)
 CHECK_REQUIRED_LIB(GSL gsl gsl/gsl_linalg.h)
 CHECK_REQUIRED_LIB(GSL_CBLAS gslcblas gsl/gsl_linalg.h)
 
-INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} ${EMAN_SOURCE_DIR}/libEM ${GSL_INCLUDE_PATH} ${GSL_INCLUDE_PATH}/gsl ${FFTW_INCLUDE_PATH}) 
+INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} ${EMAN_SOURCE_DIR}/libEM ${GSL_INCLUDE_PATH}  ${FFTW_INCLUDE_PATH}) 
 
 IF(ENABLE_TIFF)
     CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)

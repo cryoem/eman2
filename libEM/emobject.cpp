@@ -2,115 +2,103 @@
 
 using namespace EMAN;
 
-EMObject::operator  int ()
-	 const
-	 {
-		 if (type == INT)
+EMObject::operator int () const
 {
-return n;
+	if (type == INT) {
+		return n;
+	}
+	else if (type == FLOAT) {
+		return (int) f;
+	}
+	else if (type == DOUBLE) {
+		return (int) d;
+	}
+	else {
+		if (type != UNKNOWN) {
+			Log::logger()->error("type error. Cannot convert to int from data type '%s'",
+								 get_object_type_name(type));
+		}
+	}
+	return 0;
 }
-		 else if (type == FLOAT) {
-			 return (int) f;
-		 }
-		 else if (type == DOUBLE) {
-			 return (int) d;
-		 }
-		 else {
-			 if (type != UNKNOWN) {
-				 Log::logger()->error("type error. Cannot convert to int from data type '%s'",
-									  get_object_type_name(type));
-			 }
-		 }
-		 return 0;
-	 }
 
-EMObject::operator  float ()
-	 const
-	 {
-		 if (type == FLOAT)
+EMObject::operator float () const
 {
-return f;
+	if (type == FLOAT) {
+		return f;
+	}
+	else if (type == INT) {
+		return (float) n;
+	}
+	else if (type == DOUBLE) {
+		return (float) d;
+	}
+	else {
+		if (type != UNKNOWN) {
+			Log::logger()->
+				error("type error. Cannot convert to float from data with type '%s'",
+					  get_object_type_name(type));
+		}
+	}
+
+	return 0;
 }
-		 else if (type == INT) {
-			 return (float) n;
-		 }
-		 else if (type == DOUBLE) {
-			 return (float) d;
-		 }
-		 else {
-			 if (type != UNKNOWN) {
-				 Log::logger()->
-					 error("type error. Cannot convert to float from data with type '%s'",
-						   get_object_type_name(type));
-			 }
-		 }
 
-		 return 0;
-	 }
-
-EMObject::operator  double ()
-	 const
-	 {
-		 if (type == DOUBLE)
+EMObject::operator double () const
 {
-return d;
+	if (type == DOUBLE) {
+		return d;
+	}
+	else if (type == INT) {
+		return (double) n;
+	}
+	else if (type == FLOAT) {
+		return (double) f;
+	}
+	else {
+		if (type != UNKNOWN) {
+			Log::logger()->error("type error. Cannot convert to double from data type '%s'",
+								 get_object_type_name(type));
+		}
+	}
+	return 0;
 }
-		 else if (type == INT) {
-			 return (double) n;
-		 }
-		 else if (type == FLOAT) {
-			 return (double) f;
-		 }
-		 else {
-			 if (type != UNKNOWN) {
-				 Log::logger()->error("type error. Cannot convert to double from data type '%s'",
-									  get_object_type_name(type));
-			 }
-		 }
-		 return 0;
-	 }
 
-EMObject::operator  const char *()
-	 const
-	 {
-		 if (type != STRING)
-		 {
-			 if (type != UNKNOWN) {
-				 Log::logger()->error("type error. Cannot convert to string from data type '%s'",
-									  get_object_type_name(type));
-			 }
-			 return "";
-		 }
-		 return str.c_str();
-	 }
+EMObject::operator  const char *() const
+{
+	if (type != STRING) {
+		if (type != UNKNOWN) {
+			Log::logger()->error("type error. Cannot convert to string from data type '%s'",
+								 get_object_type_name(type));
+		}
+		return "";
+	}
+	return str.c_str();
+}
 
-EMObject::operator  EMData * ()
-	 const
-	 {
-		 if (type != EMDATA)
-		 {
-			 if (type != UNKNOWN) {
-				 Log::logger()->error("type error. Cannot convert to EMData* from data type '%s'",
-									  get_object_type_name(type));
-			 }
-			 return 0;
-		 }
-		 return emdata;
-	 }
+EMObject::operator  EMData * () const
+{
+	if (type != EMDATA) {
+			if (type != UNKNOWN) {
+				Log::logger()->error("type error. Cannot convert to EMData* from data type '%s'",
+									 get_object_type_name(type));
+			}
+			return 0;
+		}
+	return emdata;
+}
 
-EMObject::operator  XYData * ()
-	 const
-	 {
-		 if (type != XYDATA)
-		 {
-			 if (type != UNKNOWN) {
-				 Log::logger()->error("type error. Cannot convert to XYData* data type '%s'",
-									  get_object_type_name(type));
-			 }
-			 return 0;
-		 }
-		 return xydata;
-	 }
+EMObject::operator  XYData * () const
+{
+	if (type != XYDATA) {
+		if (type != UNKNOWN) {
+			Log::logger()->error("type error. Cannot convert to XYData* data type '%s'",
+								 get_object_type_name(type));
+		}
+			return 0;
+	}
+	return xydata;
+}
 
 vector < float >EMObject::get_farray() const
 {
