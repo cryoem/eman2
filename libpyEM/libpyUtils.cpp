@@ -31,10 +31,6 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
     EMAN_Ctf_Wrapper(PyObject* self_):
         EMAN::Ctf(), self(self_) {}
 
-    bool cmp() const {
-        return call_method< bool >(self, "cmp");
-    }
-
     int from_string(std::string p0) {
         return call_method< int >(self, "from_string", p0);
     }
@@ -49,6 +45,18 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
 
     EMAN::Dict to_dict() const {
         return call_method< EMAN::Dict >(self, "to_dict");
+    }
+
+    std::vector<float,std::allocator<float> > compute_1d(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        return call_method< std::vector<float,std::allocator<float> > >(self, "compute_1d", p0, p1, p2);
+    }
+
+    void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        call_method< void >(self, "compute_2d_real", p0, p1, p2);
+    }
+
+    void compute_2d_complex(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        call_method< void >(self, "compute_2d_complex", p0, p1, p2);
     }
 
     PyObject* self;
@@ -76,12 +84,40 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     EMAN_SimpleCtf_Wrapper(PyObject* self_):
         EMAN::SimpleCtf(), self(self_) {}
 
-    bool cmp() const {
-        return call_method< bool >(self, "cmp");
+    std::vector<float,std::allocator<float> > compute_1d(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        return call_method< std::vector<float,std::allocator<float> > >(self, "compute_1d", p0, p1, p2);
     }
 
-    bool default_cmp() const {
-        return EMAN::SimpleCtf::cmp();
+    std::vector<float,std::allocator<float> > default_compute_1d_2(EMAN::EMData* p0, EMAN::Ctf::CtfType p1) {
+        return EMAN::SimpleCtf::compute_1d(p0, p1);
+    }
+
+    std::vector<float,std::allocator<float> > default_compute_1d_3(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        return EMAN::SimpleCtf::compute_1d(p0, p1, p2);
+    }
+
+    void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        call_method< void >(self, "compute_2d_real", p0, p1, p2);
+    }
+
+    void default_compute_2d_real_2(EMAN::EMData* p0, EMAN::Ctf::CtfType p1) {
+        EMAN::SimpleCtf::compute_2d_real(p0, p1);
+    }
+
+    void default_compute_2d_real_3(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        EMAN::SimpleCtf::compute_2d_real(p0, p1, p2);
+    }
+
+    void compute_2d_complex(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        call_method< void >(self, "compute_2d_complex", p0, p1, p2);
+    }
+
+    void default_compute_2d_complex_2(EMAN::EMData* p0, EMAN::Ctf::CtfType p1) {
+        EMAN::SimpleCtf::compute_2d_complex(p0, p1);
+    }
+
+    void default_compute_2d_complex_3(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
+        EMAN::SimpleCtf::compute_2d_complex(p0, p1, p2);
     }
 
     int from_string(std::string p0) {
@@ -118,10 +154,6 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
 
     PyObject* self;
 };
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_SimpleCtf_compute_map_overloads_1_2, compute_map, 1, 2)
-
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_SimpleCtf_compute_curve_overloads_2_3, EMAN::SimpleCtf::compute_curve, 2, 3)
 
 struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
 {
@@ -296,44 +328,42 @@ BOOST_PYTHON_MODULE(libpyUtils)
 
     scope* EMAN_Ctf_scope = new scope(
     class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", init<  >())
-        .def("cmp", pure_virtual(&EMAN::Ctf::cmp))
         .def("from_string", pure_virtual(&EMAN::Ctf::from_string))
         .def("to_string", pure_virtual(&EMAN::Ctf::to_string))
         .def("from_dict", pure_virtual(&EMAN::Ctf::from_dict))
         .def("to_dict", pure_virtual(&EMAN::Ctf::to_dict))
+        .def("compute_1d", pure_virtual(&EMAN::Ctf::compute_1d))
+        .def("compute_2d_real", pure_virtual(&EMAN::Ctf::compute_2d_real))
+        .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
     );
+
+    enum_< EMAN::Ctf::CtfType >("CtfType")
+        .value("CTF_NOISE_S", EMAN::Ctf::CTF_NOISE_S)
+        .value("CTF_WIENER_CTF_CORRECTION2", EMAN::Ctf::CTF_WIENER_CTF_CORRECTION2)
+        .value("CTF_WIENER_CTF_CORRECTION1", EMAN::Ctf::CTF_WIENER_CTF_CORRECTION1)
+        .value("CTF_ABS_AMP_S", EMAN::Ctf::CTF_ABS_AMP_S)
+        .value("CTF_SNR_SIGN", EMAN::Ctf::CTF_SNR_SIGN)
+        .value("CTF_RELATIVE_SNR", EMAN::Ctf::CTF_RELATIVE_SNR)
+        .value("CTF_AMP_S", EMAN::Ctf::CTF_AMP_S)
+        .value("CTF_WIENER_CTF_CORRECTION", EMAN::Ctf::CTF_WIENER_CTF_CORRECTION)
+        .value("CTF_SIGN", EMAN::Ctf::CTF_SIGN)
+        .value("CTF_SNR_WIENER", EMAN::Ctf::CTF_SNR_WIENER)
+        .value("CTF_AMP", EMAN::Ctf::CTF_AMP)
+        .value("CTF_SNR", EMAN::Ctf::CTF_SNR)
+        .value("CTF_CTF_NO_BDECAY", EMAN::Ctf::CTF_CTF_NO_BDECAY)
+        .value("CTF_ABS_SNR", EMAN::Ctf::CTF_ABS_SNR)
+        .value("CTF_WIENER_FILTER", EMAN::Ctf::CTF_WIENER_FILTER)
+        .value("CTF_AMP_NO_BDECAY", EMAN::Ctf::CTF_AMP_NO_BDECAY)
+        .value("CTF_NOISE", EMAN::Ctf::CTF_NOISE)
+        .value("CTF_BFACTOR", EMAN::Ctf::CTF_BFACTOR)
+        .value("CTF_BACKGROUND", EMAN::Ctf::CTF_BACKGROUND)
+        .value("CTF_TOTAL_CURVE", EMAN::Ctf::CTF_TOTAL_CURVE)
+    ;
+
 
     enum_< UniqueInt<0> >("unnamed")
         .value("CTFOS", EMAN::Ctf::CTFOS)
         .export_values()
-    ;
-
-
-    enum_< EMAN::Ctf::CtfMapType >("CtfMapType")
-        .value("CTF_MAP_BACKGROUND", EMAN::Ctf::CTF_MAP_BACKGROUND)
-        .value("CTF_MAP_B_FACTOR", EMAN::Ctf::CTF_MAP_B_FACTOR)
-        .value("CTF_MAP_CTF_NO_B", EMAN::Ctf::CTF_MAP_CTF_NO_B)
-        .value("CTF_MAP_AMP_NO_B", EMAN::Ctf::CTF_MAP_AMP_NO_B)
-        .value("CTF_MAP_AMP", EMAN::Ctf::CTF_MAP_AMP)
-        .value("CTF_MAP_WIENER_CTF_CORRECTION", EMAN::Ctf::CTF_MAP_WIENER_CTF_CORRECTION)
-        .value("CTF_MAP_SNR_SIGN", EMAN::Ctf::CTF_MAP_SNR_SIGN)
-        .value("CTF_MAP_SIGN", EMAN::Ctf::CTF_MAP_SIGN)
-        .value("CTF_MAP_WIENER_FILTER", EMAN::Ctf::CTF_MAP_WIENER_FILTER)
-        .value("CTF_MAP_SNR", EMAN::Ctf::CTF_MAP_SNR)
-        .value("CTF_MAP_CTF", EMAN::Ctf::CTF_MAP_CTF)
-    ;
-
-
-    enum_< EMAN::Ctf::CtfCurveType >("CtfCurveType")
-        .value("CTF_CURVE_WIENER_CTF_CORRECTION1", EMAN::Ctf::CTF_CURVE_WIENER_CTF_CORRECTION1)
-        .value("CTF_CURVE_WIENER_CTF_CORRECTION2", EMAN::Ctf::CTF_CURVE_WIENER_CTF_CORRECTION2)
-        .value("CTF_CURVE_SNR_WIENER", EMAN::Ctf::CTF_CURVE_SNR_WIENER)
-        .value("CTF_CURVE_ABS_AMP_S", EMAN::Ctf::CTF_CURVE_ABS_AMP_S)
-        .value("CTF_CURVE_ABS_SNR", EMAN::Ctf::CTF_CURVE_ABS_SNR)
-        .value("CTF_CURVE_RELATIVE_SNR", EMAN::Ctf::CTF_CURVE_RELATIVE_SNR)
-        .value("CTF_CURVE_NOISE_S", EMAN::Ctf::CTF_CURVE_NOISE_S)
-        .value("CTF_CURVE_TOTAL_CURVE", EMAN::Ctf::CTF_CURVE_TOTAL_CURVE)
-        .value("CTF_CURVE_AMP_S", EMAN::Ctf::CTF_CURVE_AMP_S)
     ;
 
     delete EMAN_Ctf_scope;
@@ -351,22 +381,16 @@ BOOST_PYTHON_MODULE(libpyUtils)
         .def_readwrite("voltage", &EMAN::SimpleCtf::voltage)
         .def_readwrite("cs", &EMAN::SimpleCtf::cs)
         .def_readwrite("apix", &EMAN::SimpleCtf::apix)
-        .def_readwrite("ctfmaptype", &EMAN::SimpleCtf::ctfmaptype)
-        .def_readwrite("astig_amp", &EMAN::SimpleCtf::astig_amp)
-        .def_readwrite("astig_ang", &EMAN::SimpleCtf::astig_ang)
-        .def_readwrite("drift_amp", &EMAN::SimpleCtf::drift_amp)
-        .def_readwrite("drift_ang", &EMAN::SimpleCtf::drift_ang)
-        .def("cmp", (bool (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::cmp, (bool (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_cmp)
+        .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_1d, (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_1d_3)
+        .def("compute_1d", (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_1d_2)
+        .def("compute_2d_real", (void (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_2d_real, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_2d_real_3)
+        .def("compute_2d_real", (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_2d_real_2)
+        .def("compute_2d_complex", (void (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_2d_complex, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_2d_complex_3)
+        .def("compute_2d_complex", (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_2d_complex_2)
         .def("from_string", (int (EMAN::SimpleCtf::*)(std::string) )&EMAN::SimpleCtf::from_string, (int (EMAN_SimpleCtf_Wrapper::*)(std::string))&EMAN_SimpleCtf_Wrapper::default_from_string)
         .def("to_string", (std::string (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_string, (std::string (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_string)
         .def("from_dict", (void (EMAN::SimpleCtf::*)(const EMAN::Dict&) )&EMAN::SimpleCtf::from_dict, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Dict&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
         .def("to_dict", (EMAN::Dict (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_dict, (EMAN::Dict (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_dict)
-        .def("get_maptype", &EMAN::SimpleCtf::get_maptype)
-        .def("compute_map", &EMAN::SimpleCtf::compute_map, EMAN_SimpleCtf_compute_map_overloads_1_2())
-        .def("is_changed", &EMAN::SimpleCtf::is_changed)
-        .def("is_set_properly", &EMAN::SimpleCtf::is_set_properly)
-        .def("compute_curve", &EMAN::SimpleCtf::compute_curve, EMAN_SimpleCtf_compute_curve_overloads_2_3())
-        .staticmethod("compute_curve")
     ;
 
     scope* EMAN_ImageIO_scope = new scope(

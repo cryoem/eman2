@@ -11,53 +11,52 @@ using std::map;
 
 namespace EMAN
 {
+    class EMData;
+    class XYData;
+
     class Ctf
     {
+    public:	
+	// NOTE: ctf is positive for the first peak, instead of negative
+	enum CtfType {
+	    CTF_NOISE,	        // the true ctf with B decay and with positive and negative peaks, 	
+	    CTF_CTF_NO_BDECAY,	// the true ctf without B decay and with positive and negative peaks
+	    CTF_AMP,	        // ctf ampltidue only = fabs(CTF_CTF)
+	    CTF_AMP_NO_BDECAY,	// ctf ampltidue only = fabs(CTF_CTF_NO_B)
+	    CTF_SIGN,	        // ctf sign (+-1)       = sign(CTF_CTF)
+	    CTF_BFACTOR,	// B factor decay only, no ctf oscillation
+	    CTF_BACKGROUND,	// Background, no ctf oscillation
+	    CTF_SNR,	        // Signal to noise ratio
+	    CTF_SNR_SIGN,	// Signal to noise ratio with sign = CTF_SNR*CTF_SIGN
+	    CTF_WIENER_FILTER,	// Weiner Filter = 1/(1+1/snr)
+	    CTF_WIENER_CTF_CORRECTION,	// ctf correction with Weiner Filter = 1/(ctf*exp(-b*s^2)*(1+1/snr))	
+	    CTF_AMP_S,
+	    CTF_NOISE_S,
+	    CTF_ABS_AMP_S,
+	    CTF_RELATIVE_SNR,
+	    CTF_ABS_SNR,
+	    CTF_SNR_WIENER,
+	    CTF_WIENER_CTF_CORRECTION1,
+	    CTF_WIENER_CTF_CORRECTION2,
+	    CTF_TOTAL_CURVE
+	};
     public:
 	virtual ~Ctf() { }
-	virtual bool cmp() const = 0;
-	//virtual CtfMapType get_maptype() = 0;
 
 	virtual int from_string(string ctf) = 0;
 	virtual string to_string() const = 0;
 
 	virtual void from_dict(const Dict & dict) = 0;
 	virtual Dict to_dict() const = 0;
+	
+	virtual vector<float> compute_1d(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
+	virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
+	virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
     public:
 	enum { CTFOS = 5 };
 
-	// NOTE: ctf is positive for the first peak, instead of negative
-	enum CtfMapType {
-	    CTF_MAP_CTF,	// the true ctf with B decay and with positive and negative peaks, 	
-	    CTF_MAP_CTF_NO_B,	// the true ctf without B decay and with positive and negative peaks
-	    CTF_MAP_AMP,	// ctf ampltidue only = fabs(CTF_MAP_CTF)
-	    CTF_MAP_AMP_NO_B,	// ctf ampltidue only = fabs(CTF_MAP_CTF_NO_B)
-	    CTF_MAP_SIGN,	// ctf sign (+-1)       = sign(CTF_MAP_CTF)
-	    CTF_MAP_B_FACTOR,	// B factor decay only, no ctf oscillation
-	    CTF_MAP_BACKGROUND,	// Background, no ctf oscillation
-	    CTF_MAP_SNR,	// Signal to noise ratio
-	    CTF_MAP_SNR_SIGN,	// Signal to noise ratio with sign = CTF_MAP_SNR*CTF_MAP_SIGN
-	    CTF_MAP_WIENER_FILTER,	// Weiner Filter = 1/(1+1/snr)
-	    CTF_MAP_WIENER_CTF_CORRECTION	// ctf correction with Weiner Filter = 1/(ctf*exp(-b*s^2)*(1+1/snr))
-	};
-
-	enum CtfCurveType {
-	    CTF_CURVE_AMP_S = 0,
-	    CTF_CURVE_NOISE_S = 1,
-	    CTF_CURVE_ABS_AMP_S = 2,
-	    CTF_CURVE_RELATIVE_SNR = 3,
-	    CTF_CURVE_ABS_SNR = 4,
-	    CTF_CURVE_SNR_WIENER = 5,
-	    CTF_CURVE_WIENER_CTF_CORRECTION1 = 6,
-	    CTF_CURVE_WIENER_CTF_CORRECTION2 = 7,
-	    CTF_CURVE_TOTAL_CURVE = 8
-	};
     };
-
-
-    class EMData;
-    class XYData;
 
 
     class SimpleCtf: public Ctf
@@ -75,60 +74,77 @@ namespace EMAN
 	float cs;		// 9
 	float apix;		// 10
 
-	Ctf::CtfMapType ctfmaptype;
-	float astig_amp;
-	float astig_ang;
-	float drift_amp;
-	float drift_ang;
-
     public:
 	SimpleCtf();
 	~SimpleCtf();
 
-	bool cmp() const;
-	Ctf::CtfMapType get_maptype();
-	void compute_map(Ctf::CtfMapType maptype, EMData * power_spectrum = 0);
-
-	bool is_changed() const;
-
-	//void compute_bg(EMData* power_spectrum);
-	bool is_set_properly();
-
+	vector<float> compute_1d(EMData * image, CtfType type, XYData * struct_factor = 0);
+	void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
+	void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
+	
 	int from_string(string ctf);
 	string to_string() const;
 
 	void from_dict(const Dict & dict);
 	Dict to_dict() const;
 
-	static vector<float> compute_curve(EMData * image, CtfCurveType type, XYData * sf = 0);
-
     private:
-	static inline float calc_gamma(float g1, float g2, float s)
+	inline float calc_amp1()
+	{
+	    return (sqrt(1 - ampcont * ampcont));
+	}
+	
+	inline float calc_lambda()
+	{
+	    float lambda = 12.2639 / sqrt(voltage * 1000.0 + 0.97845 * voltage * voltage);
+	    return lambda;
+	}
+	
+	inline float calc_g1()
+	{
+	    float lambda = calc_lambda();
+	    float g1 = 2.5e6 * cs * lambda * lambda * lambda;
+	    return g1;
+	}
+
+	inline float calc_g2()
+	{
+	    float lambda = calc_lambda();
+	    float g2 = 5000.0 * defocus * lambda;
+	    return g2;
+	}
+	
+	inline float calc_gamma(float g1, float g2, float s)
 	{
 	    float s2 = s * s;
 	    float gamma = -2 * M_PI * (g1 * s2 * s2 + g2 * s2);
 	    return gamma;
 	}
 
-	static inline float calc_ctf1(SimpleCtf * ctf, float g, float gamma, float s)
+	inline float calc_ctf1(float g, float gamma, float s)
 	{
-	    float r = ctf->amplitude * exp(-(ctf->bfactor * s * s)) *
-		(g * sin(gamma) + ctf->ampcont * cos(gamma));
+	    float r = amplitude * exp(-(bfactor * s * s)) * (g * sin(gamma) + ampcont * cos(gamma));
 	    return r;
 	}
 
-	static inline float calc_noise(SimpleCtf * ctf, float n4, float s)
+	inline float calc_amplitude(float gamma)
 	{
-	    float ns = n4 * s;
+	    float v = amplitude * (sqrt(1.0-ampcont*ampcont)*sin(gamma)+ampcont*cos(gamma));
+	    return v;
+	}
+	
+	inline float calc_noise(float s)
+	{
+	    float ns = M_PI / 2 * noise4 * s;
 	    float ns2 = ns * ns;
-	    float n = ctf->noise3 * exp(-ns2 - s * ctf->noise2 - sqrt(fabs(s)) * ctf->noise1);
+	    float n = noise3 * exp(-ns2 - s * noise2 - sqrt(fabs(s)) * noise1);
 	    return n;
 	}
 
-	static inline float calc_ctf(SimpleCtf * ctf, float g1, float n4, float gamma, float s)
+	inline float calc_ctf(float g1, float gamma, float s)
 	{
-	    float ctf1 = calc_ctf1(ctf, g1, gamma, s);
-	    float ctf2 = ctf1 * ctf1 / calc_noise(ctf, n4, s);
+	    float ctf1 = calc_ctf1(g1, gamma, s);
+	    float ctf2 = ctf1 * ctf1 / calc_noise(s);
 	    return ctf2;
 	}
 
