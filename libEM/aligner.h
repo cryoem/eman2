@@ -26,14 +26,15 @@ namespace EMAN
      * 2. How to use an Aligner
      *
      *    EMData *img = ...;
+     *    EMData *with = ...;
      *    img->align("ALIGNER_NAME", Dict("with", image1));
      *
      * 3. How to define a new Aligner class
      *
-     *    A new aligner type "XYZAligner" should implement the
-     *    following 3 functions:
+     *    A new XYZAligner class should implement the following functions:
      *
      *        EMData *align(EMData * this_img, string cmp_name = "") const;
+     *        TypeDict get_param_types() const;
      *        string get_name() const { return "XYZ"; }
      *        static Aligner* NEW() { return new XYZAligner(); }
      */

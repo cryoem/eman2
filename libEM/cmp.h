@@ -13,14 +13,37 @@ namespace EMAN
     class EMData;
     class Transform;
     
-    /** Image Comparison methods. The bigger the result, the better.
+    /** Cmp is the base class for image Comparison methods.
+     * The bigger the comparison result, the better. Each specific
+     * coomparison class has a unique name. This name is used to
+     * create a new Cmp instance or call a Cmp.
+     *
+     * Cmp should be used as follows:
+     *
+     * 1. How to get all Cmp types
+     *
+     *      vector<string> all_cmps = Factory<Cmp>.instance()->get_list();
+     *
+     * 2. How to use a Cmp
+     *
+     *      EMData *img = ...;
+     *      EMData *with = ...;
+     *      float result = img->cmp("CMP_NAME", Dict("with", with));
+     *
+     * 3. How to define a new Cmp class
+     *
+     *    A new XYZCmp class should implement the following functions:
+     *        float cmp(EMData * image, Transform * transform = 0) const;
+     *        TypeDict get_param_types() const;
+     *        string get_name() const { return "XYZ"; }
+     *        static Cmp *NEW() { return XYZCmp(); }
      */
     
     class Cmp
     {
     public:
 	virtual ~Cmp() { }
-	virtual float cmp(EMData * em, Transform * transform = 0) const = 0;
+	virtual float cmp(EMData * image, Transform * transform = 0) const = 0;
 	virtual TypeDict get_param_types() const = 0;
 	virtual string get_name() const = 0;
 	
@@ -38,10 +61,13 @@ namespace EMAN
 	mutable Dict params;
     };
 
+    /** Use dot product of 2 same-size images to do the comparison.
+     * complex does not check r/i vs a/p.
+    */
     class DotCmp : public Cmp
     {
     public:
-	float cmp(EMData * em, Transform * transform = 0) const;
+	float cmp(EMData * image, Transform * transform = 0) const;
 
 	string get_name() const
 	{
@@ -63,10 +89,19 @@ namespace EMAN
 
     };
 
+    /** Linear comparison of 2 data sets. 'image' should be noisy and
+     * 'with' should be less noisy. Scaling of 'this' is determined to
+     * make the density histogram of the difference between the data
+     * sets as symmetric as possible scale will optionally return
+     * the scale factor which would be multiplied by 'this' to achieve
+     * this normalization shift will return the corresponding shift.
+     * If modifying 'this', scale should be applied first, then b
+     * should be added
+     */
     class VarianceCmp : public Cmp
     {
     public:
-	float cmp(EMData * em, Transform * transform = 0) const;
+	float cmp(EMData * image, Transform * transform = 0) const;
 
 	string get_name() const
 	{
@@ -86,11 +121,16 @@ namespace EMAN
 	    return d;
 	}
     };
+    /** Amplitude weighted mean phase difference (radians) with optional
+     * SNR weight. SNR should be an array as returned by ctfcurve()
+     * 'data' should be the less noisy image, since it's amplitudes 
+     * will be used to weight the phase residual. 2D only.
+     */
 
     class PhaseCmp : public Cmp
     {
     public:
-	float cmp(EMData * em, Transform * transform = 0) const;
+	float cmp(EMData * image, Transform * transform = 0) const;
 
 	string get_name() const
 	{
@@ -111,10 +151,12 @@ namespace EMAN
 	}
     };
 
+    /** returns a quality factor based on FSC between images.
+     */
     class FRCCmp : public Cmp
     {
     public:
-	float cmp(EMData * em, Transform * transform = 0) const;
+	float cmp(EMData * image, Transform * transform = 0) const;
 
 	string get_name() const
 	{

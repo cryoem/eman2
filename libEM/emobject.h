@@ -37,6 +37,14 @@ namespace EMAN
 	ICOS_UNKNOWN
     };
 
+    /** EMObject is a wrapper class for types including int, float, EMData*, etc. 
+     * The types wrapped by EMObject is defined in ObjectType. Each
+     * type is typically used as follows ('int' is the example):
+     *
+     *    int a = 12;
+     *    EMObject o(a);
+     *    int a1 = o.get_int();
+     */     
     class EMObject
     {
     public:
@@ -270,6 +278,15 @@ namespace EMAN
     };
 
 
+    /** Dict is a dictionary to store <string, EMObject> pair.
+     * Typical ways to construct a Dict:
+     *
+     *      Dict d;
+     *      d["lowpass"] = EMObject(12.23);
+     *      float lowpass1 = d["lowpass"].get_float();
+     *
+     *      Dict d2("lowpass", EMObject(12.23));
+     */
     class Dict
     {
     public:
@@ -420,6 +437,17 @@ namespace EMAN
 	mutable map<string, EMObject> dict;
     };
 
+    /** TypeDict is a dictionary to store <string, EMObject::ObjectType> pair.
+     * It is mainly used to store filter-like class's parameter
+     * information: <parameter-name, parameter-type>.
+     * Typical usage of this class:
+     *
+     *    TypeDict d;
+     *    d.put("with", EMObject::EMDATA);
+     *    d.put("lowpass", EMObject::FLOAT);
+     *
+     *    string lowpass_type = d["lowpass"];
+     */
     class TypeDict
     {
     public:
@@ -467,6 +495,24 @@ namespace EMAN
 	map<string, string> dict;
     };
 
+    /** Factory is used to store objects to create new instances.
+     * It is a singleton template. Typical usages are as follows:
+     *
+     *   1. How to define a new factory (e.g. Filter Factory):
+     *   
+     *      template<> Factory<Filter>::Factory()
+     *      {
+     *         force_add(&AbsoluateValueFilter::NEW);
+     *         force_add(&BooleanFilter::NEW);
+     *      }
+     *
+     *
+     *   2. How to use a Factory (e.g. Filter Factory):
+     *
+     *      Factory<Filter> *factory = Factory<Filter>::instance();
+     *	    Filter *f = factory->get("AbsoluateValue");
+     *      Filter *f2 = factory->get("GaussLowpass", Dict("lowpass", EMObject(12));
+     */
     template <class T> class Factory {
     public:
 	typedef T *(*InstanceType)();

@@ -75,14 +75,20 @@ namespace EMAN
 	Dict params;
     };
 
-   
-    // 0
-    // 4.0 / (M_PI * M_PI);
-    // 6.4 / (M_PI * M_PI);
-    // 8.8 / (M_PI * M_PI);
-    // 0
-    // 10.4 / (M_PI * M_PI);
-    // 10.4 / (M_PI * M_PI);
+    /** Gaussian FFT 3D projection.
+     * use integer 'mode' to determine the gaussian width and the way
+     * to interpolate a point in a 3d complex image.
+     * valid mode range: [1,7].
+     * the gauss widths are as follows with mode from 1 to 7:
+     * 
+     * 0;
+     * 4.0 / (M_PI * M_PI);
+     * 6.4 / (M_PI * M_PI);
+     * 8.8 / (M_PI * M_PI);
+     * 0;
+     * 10.4 / (M_PI * M_PI);
+     * 10.4 / (M_PI * M_PI);
+     */
 
     class GaussFFTProjector : public Projector
     {
