@@ -219,6 +219,14 @@ namespace EMAN {
 			sprintf(s, "%d", val);
 			objname = string(s);
 		}		
+		_InvalidValueException(float val, const string& file = "unknown",
+							   int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str)
+		{
+			char s[32];
+			sprintf(s, "%g", val);
+			objname = string(s);
+		}		
 		const char *name() const { return "InvalidValueException"; }
 		
 	};

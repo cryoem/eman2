@@ -3536,13 +3536,14 @@ EMData *EMData::do_radon()
 }
 
 
-void EMData::mean_shrink(int shrink_factor)
+void EMData::mean_shrink(float shrink_factor0)
 {
 	ENTERFUNC;
-	
-	if (shrink_factor <= 1) {
-		throw InvalidValueException(shrink_factor, 
-									"mean shrink: shrink factor must > 1");
+	int shrink_factor = int(shrink_factor0);
+
+	if (shrink_factor0 <= 1.0F || ((shrink_factor0 != shrink_factor) && (shrink_factor0 != 1.5F) ) ) {
+		throw InvalidValueException(shrink_factor0, 
+									"mean shrink: shrink factor must be >1 integer or 1.5");
 	}
 
 /*	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
@@ -3551,10 +3552,73 @@ void EMData::mean_shrink(int shrink_factor)
 									"Image size not divisible by shrink factor");
 	}*/
 
+	// here handle the special averaging by 1.5 for 2D case
+	if (shrink_factor0==1.5 ) {
+		if (nz > 1 ) throw InvalidValueException(shrink_factor0, "mean shrink: only support 2D images for shrink factor = 1.5");
+		
+		int shrinked_nx = (int(nx / 1.5)+1)/2*2;	// make sure the output size is even
+		int shrinked_ny = (int(ny / 1.5)+1)/2*2;
+		int nx0 = nx, ny0 = ny;	// the original size
+		
+		EMData* orig = copy(0);
+		set_size(shrinked_nx, shrinked_ny, 1);	// now nx = shrinked_nx, ny = shrinked_ny
+		to_zero();
+		
+		float *data = get_data(), *data0 = orig->get_data();
+		
+		for (int j = 0; j < ny; j++) {
+			int jj = int(j * 1.5);
+			float jw0 = 1.0F, jw1 = 0.5F;	// 3x3 -> 2x2, so each new pixel should have 2.25 of the old pixels
+			if ( j%2 ) { 
+				jw0 = 0.5F;
+				jw1 = 1.0F; 
+			}
+			for (int i = 0; i < nx; i++) {
+				int ii = int(i * 1.5);
+				float iw0 = 1.0F, iw1 = 0.5F;
+				float w = 0.0F;
+				
+				if ( i%2 ) { 
+					iw0 = 0.5F;
+					iw1 = 1.0F; 
+				}
+				if ( jj < ny0 ) {
+					if ( ii < nx0 ) {
+						data[j * nx + i] = data0[ jj * nx0 + ii ] * jw0 * iw0 ;
+						w += jw0 * iw0 ;
+						if ( ii+1 < nx0 ) {
+							data[j * nx + i] += data0[ jj * nx0 + ii + 1] * jw0 * iw1;
+							w += jw0 * iw1;
+						}
+					}
+					if ( jj +1 < ny0 ) {
+						if ( ii < nx0 ) {
+							data[j * nx + i] += data0[ (jj+1) * nx0 + ii ] * jw1 * iw0;
+							w += jw1 * iw0;
+							if ( ii+1 < nx0 ) {
+								data[j * nx + i] += data0[ (jj+1) * nx0 + ii + 1] * jw1 * iw1;
+								w += jw1 * iw1;
+							}
+						}
+					}
+				}
+				if ( w>0 ) data[j * nx + i] /= w;
+			}
+		}
+		orig->done_data();
+		delete orig;
+		done_data();
+		update();
+		
+		return;
+	}
+				
+		
 	int shrinked_nx = nx / shrink_factor;
 	int shrinked_ny = ny / shrink_factor;
 	int shrinked_nz = 1;
-
+	
+	
 	int threed_shrink_factor = shrink_factor * shrink_factor;
 	int z_shrink_factor = 1;
 

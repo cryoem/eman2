@@ -573,7 +573,7 @@ namespace EMAN
 		 * @param shrink_factor Image shrink factor.
 		 * @exception InvalidValueException If shrink factor is invalid.
 		 */
-		void mean_shrink(int shrink_factor);
+		void mean_shrink(float shrink_factor);
 		
 		/* Reduces the size of the image by a factor using a local median filter.
 		 *
