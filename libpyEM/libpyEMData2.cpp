@@ -272,7 +272,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	EMAN::tuple3_from_python<EMAN::IntSize, int>();
 	EMAN::tuple3_from_python<EMAN::FloatSize, float>();
 
-		EMAN::tuple3_from_python<EMAN::Vec3i, int>();
+	EMAN::tuple3_from_python<EMAN::Vec3i, int>();
 	EMAN::tuple3_from_python<EMAN::Vec3f, float>();
 
 	EMAN::emobject_farray_from_python();
