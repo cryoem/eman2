@@ -158,6 +158,9 @@ Transform Transform::inverse()
 	
 	id2.print();
 	ret.print();
+
+	ret.set_pretrans(get_posttrans()*-1.0);
+	ret.set_posttrans(get_pretrans()*-1.0);
 	
 	return ret;
 }
