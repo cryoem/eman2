@@ -122,6 +122,7 @@ namespace EMAN {
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
+	EMData* calc_mutual_correlation(EMData *with, bool tocorner = false, EMData *filter = 0);
 #if 0
 	void calc_rcf(EMData *with, vector<float>& sum_array);
 #endif
@@ -262,6 +263,7 @@ namespace EMAN {
 	SimpleCtf* ctf;
 	EMData* parent;
 	EMData* fft;
+	EMData* rfp;
 	int flags;
 	float pixel_size;
 	

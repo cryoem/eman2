@@ -45,6 +45,12 @@ namespace EMAN {
     
     class Region {
     public:
+	Region()
+	{
+	    origin = Point<float>(0, 0);
+	    size = Size(0, 0);
+	}
+	    
 	Region(float x, float y, int xsize, int ysize)
 	{
 	    origin = Point<float>(x, y);
