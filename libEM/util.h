@@ -19,11 +19,11 @@ namespace EMAN {
 	static bool is_sub_string(const char* s1, const char* s2);
 	static string get_filename_by_ext(string old_filename, string ext);
 
-	static void least_square_fit(int nitems, float* data_x, float* data_y, float* slope, float* intercept, bool ignore_zero);
+	static void calc_least_square_fit(int nitems, float* data_x, float* data_y, float* slope, float* intercept, bool ignore_zero);
 
 	static void save_data_to_file(vector<float> x_array, vector<float> y_array, const char* filename);
 	static void save_data_to_file(float x0, float dx, vector<float> y_array, const char* filename);
-
+	static void save_data_to_file(float x0, float dx, float* y_array, int array_size, const char* filename);
 
 	static float get_frand(float lo, float hi);
 	static float get_gaussian_rand(float avg, float std);
@@ -45,6 +45,10 @@ namespace EMAN {
 	static void find_min_and_max(float* data, int nitems, float* max_val, float* min_val,
 				     int* max_i = 0, int* min_i = 0);
 	static int calc_best_fft_size(int low);
+
+	static float square(float x) { return x*x; }
+
+	static float calc_angle_sub(float angle1, float angle2);
     };
 }
 

@@ -59,6 +59,8 @@ namespace EMAN {
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
 	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
+
+	float* calc_fourier_shell_correlation(EMData *with);
 	
 	void apply_radial_func(int, float, vector<float> array);
 	    
