@@ -43,12 +43,12 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
         return call_method< std::string >(self, "to_string");
     }
 
-    int from_dict(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0) {
-        return call_method< int >(self, "from_dict", p0);
+    void from_dict(const EMAN::Dict& p0) {
+        call_method< void >(self, "from_dict", p0);
     }
 
-    int to_dict(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0) const {
-        return call_method< int >(self, "to_dict", p0);
+    EMAN::Dict to_dict() const {
+        return call_method< EMAN::Dict >(self, "to_dict");
     }
 
     PyObject* self;
@@ -100,20 +100,20 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
         return EMAN::SimpleCtf::to_string();
     }
 
-    int from_dict(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0) {
-        return call_method< int >(self, "from_dict", p0);
+    void from_dict(const EMAN::Dict& p0) {
+        call_method< void >(self, "from_dict", p0);
     }
 
-    int default_from_dict(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0) {
-        return EMAN::SimpleCtf::from_dict(p0);
+    void default_from_dict(const EMAN::Dict& p0) {
+        EMAN::SimpleCtf::from_dict(p0);
     }
 
-    int to_dict(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0) const {
-        return call_method< int >(self, "to_dict", p0);
+    EMAN::Dict to_dict() const {
+        return call_method< EMAN::Dict >(self, "to_dict");
     }
 
-    int default_to_dict(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& p0) const {
-        return EMAN::SimpleCtf::to_dict(p0);
+    EMAN::Dict default_to_dict() const {
+        return EMAN::SimpleCtf::to_dict();
     }
 
     PyObject* self;
@@ -359,8 +359,8 @@ BOOST_PYTHON_MODULE(libpyUtils)
         .def("cmp", (bool (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::cmp, (bool (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_cmp)
         .def("from_string", (int (EMAN::SimpleCtf::*)(std::string) )&EMAN::SimpleCtf::from_string, (int (EMAN_SimpleCtf_Wrapper::*)(std::string))&EMAN_SimpleCtf_Wrapper::default_from_string)
         .def("to_string", (std::string (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_string, (std::string (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_string)
-        .def("from_dict", (int (EMAN::SimpleCtf::*)(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >&) )&EMAN::SimpleCtf::from_dict, (int (EMAN_SimpleCtf_Wrapper::*)(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
-        .def("to_dict", (int (EMAN::SimpleCtf::*)(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >&) const)&EMAN::SimpleCtf::to_dict, (int (EMAN_SimpleCtf_Wrapper::*)(std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >&) const)&EMAN_SimpleCtf_Wrapper::default_to_dict)
+        .def("from_dict", (void (EMAN::SimpleCtf::*)(const EMAN::Dict&) )&EMAN::SimpleCtf::from_dict, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Dict&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
+        .def("to_dict", (EMAN::Dict (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_dict, (EMAN::Dict (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_dict)
         .def("get_maptype", &EMAN::SimpleCtf::get_maptype)
         .def("compute_map", &EMAN::SimpleCtf::compute_map, EMAN_SimpleCtf_compute_map_overloads_1_2())
         .def("is_changed", &EMAN::SimpleCtf::is_changed)

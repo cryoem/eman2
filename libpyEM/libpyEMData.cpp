@@ -12,6 +12,7 @@
 #include <filter.h>
 #include <io.h>
 #include <log.h>
+#include <pylist.h>
 #include <transform.h>
 
 // Using =======================================================================
@@ -87,6 +88,18 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_2_5, un
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMData)
 {
+    EMAN::vector_to_python<EMAN::EMData*>();
+    EMAN::vector_from_python<int>();
+    EMAN::vector_from_python<float>();
+    EMAN::vector_to_python<std::string>();
+    
+    EMAN::map_to_python<EMAN::EMObject>();
+    EMAN::map_from_python<EMAN::EMObject>();
+
+    EMAN::Dict_to_python();
+    EMAN::Dict_from_python();
+
+
     class_< EMAN::EMData >("EMData", init<  >())
         .def(init< const EMAN::EMData& >())
         .def_readwrite("HEADER_ONLY", &EMAN::EMData::HEADER_ONLY)

@@ -6,6 +6,7 @@ Include("filter.h")
 Include("aligner.h")
 Include("cmp.h")
 Include("emfft.h")
+Include("pylist.h")
 	
 EMData = Class("EMAN::EMData", "emdata.h")
 set_policy(EMData.get_ctf, return_internal_reference())

@@ -84,7 +84,7 @@ BOOST_PYTHON_MODULE(libpyFilter)
     ;
 
     class_< EMAN::Factory<EMAN::Filter>, boost::noncopyable >("FilterFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Filter>::instance, return_internal_reference< 1 >())
+        .def("instance", &EMAN::Factory<EMAN::Filter>::instance, return_value_policy< reference_existing_object >())
         .def("get", (EMAN::Filter* (EMAN::Factory<EMAN::Filter>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Filter* (EMAN::Factory<EMAN::Filter>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Filter>::get_list)
