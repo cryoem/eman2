@@ -45,16 +45,14 @@
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
 
-  052. Write unit tests for basic Vec and Matrix operations. It should
-       cover all functions.
-	   
-  053. The overloaded binary operators for Vec3<> are not wrapped into
-	   boost python. While Matrix3f/Matrix4f's binary operators are wrapped.
-	   This may be related to the fact that Vec3<> is a template.
+  055. write more documentations on how to install eman2 on windows.
 
-  054. In ImageIO classes, use Exception to replace the error code checking
-       for the following functions: check_read_access(),
-       check_write_access(), check_region().
+  056. MRC write is incorrect for the complex image. it uses
+	   16bits instead of 32bits. it was right a few monthes ago.
+
+  057. rotate_translate(): has some problems it seems that the 
+	   posttranslate was either treated like pretranslate or ignored...	
+	   
 	   
 --- Low Priority ---
 
@@ -198,4 +196,20 @@
   11/1/04 034. in ImageIO classes, add a way to label images using EMAN1 'name'
 			   and set_name().
 
-				
+  11/12/04 052
+      Write unit tests for basic Vec and Matrix operations. It should
+      cover all functions.
+			   
+
+  11/14/04 053
+       The overloaded binary operators for Vec3<> are not wrapped into
+	   boost python. While Matrix3f/Matrix4f's binary operators are wrapped.
+	   This may be related to the fact that Vec3<> is a template.
+
+	   
+  11/14/04 054
+      In ImageIO classes, use Exception to replace the error code checking
+      for the following functions: check_read_access(), check_write_access(), 
+      check_region().
+
+	   				
