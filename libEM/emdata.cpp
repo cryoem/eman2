@@ -452,7 +452,35 @@ if (get_ndim()==3) {
 	}
 	update();
 }
-else LOGERR("insert_scaled_sum supports only 3D data");
+else if (get_ndim()==2) {
+	// Start by determining the region to operate on
+	int xs=(int)floor(block->get_xsize()*scale/2.0);
+	int ys=(int)floor(block->get_ysize()*scale/2.0);
+	int x0=(int)center.x-xs;
+	int x1=(int)center.x+xs;
+	int y0=(int)center.y-ys;
+	int y1=(int)center.y+ys;
+	
+	if (x1<0||y1<0||x0>get_xsize()||y0>get_ysize()) return;	// object is completely outside the target volume
+	
+	// make sure we stay inside the volume
+	if (x0<0) x0=0;
+	if (y0<0) y0=0;
+	if (x1>get_xsize()) x1=get_xsize();
+	if (y1>get_ysize()) y1=get_ysize();
+	
+	float bx=block->get_xsize()/2.0;
+	float by=block->get_ysize()/2.0;
+	
+	for (int x=x0; x<x1; x++) {
+		for (int y=y0; y<y1; y++) {
+			rdata[x + y * nx] += 
+				block->get_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by);
+		}
+	}
+	update();
+}
+else LOGERR("insert_scaled_sum supports only 2D and 3D data");
 
 }
 
