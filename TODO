@@ -50,11 +50,20 @@
 	   But the function overloading works at other situations. Need to 
 	   figure out why.
 
+<<<<<<< TODO
+  082. image writing errors. 1) a = EMData.read_images("zz.hed"); for i in
+       a; i.write_image("qq.hed", -1). every other image in output is back.
+	   2) for in in a: i.write_image("qq.spi", -1) have segmentation fault.
+
+  083. add a new EMObject wrapper around vector<string> type.
+	   
+=======
   080. Spider writing seems doesn't work. Need to fix it.
 
   081. rename multi_array_ref<float, 3> to better name like MultiArray3D.
   
   	   
+>>>>>>> 1.46
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -310,5 +319,16 @@
 	   The same rule applies to other functions. the reason is that init()
 	   will read the first block of the image, so that image info  like
 	   endian can be returned.
+	   
+  1/8/05 080. 
+       Spider writing seems doesn't work. Need to fix it.
+
+  1/8/05 081.
+       rename multi_array_ref<float, 3> to better name like MultiArray3D.
+
+
+
+	   
   
+  	   
 	   
