@@ -1,27 +1,18 @@
 #include "emdata.h"
 #include "log.h"
+#include "testutil.h"
+
 #include <assert.h>
 
 using namespace EMAN;
 
-
-const char* get_test_image()
-{
-	static char filename[256];
-	static bool done = false;
-	if (!done) {
-		sprintf(filename, "%s/images/groel2d.mrc", getenv("HOME"));
-		done = true;
-	}
-	return filename;
-}
 
 int main()
 {
 	int err = 0;
 	
 	EMData *image = new EMData();
-	const char* imagefile = get_test_image();
+	const char* imagefile = TestUtil::get_debug_image("groel2d.mrc");
 	
 	image->read_image(imagefile);
 

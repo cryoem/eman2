@@ -1,16 +1,11 @@
 #include "emdata.h"
+#include "testutil.h"
 
 using namespace EMAN;
 
 const char* get_test_image()
 {
-	static char filename[256];
-	static bool done = false;
-	if (!done) {
-		sprintf(filename, "%s/images/monomer.mrc", getenv("HOME"));
-		done = true;
-	}
-	return filename;
+	return TestUtil::get_debug_image("monomer.mrc");
 }
 
 void r1()

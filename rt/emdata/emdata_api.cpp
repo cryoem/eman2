@@ -1,5 +1,6 @@
 #include "emdata.h"
 #include "EMData.h"
+#include "testutil.h"
 
 static int terr = 0;
 
@@ -43,19 +44,9 @@ int cmp_data(EMData *em1, EMAN::EMData *em2)
 	return 0;
 }
 
-const char* get_test_image()
-{
-	static char filename[256];
-	static bool done = false;
-	if (!done) {
-		sprintf(filename, "%s/images/groel2d.mrc", getenv("HOME"));
-		done = true;
-	}
-	return filename;
-}
-
 int test_rfilter(EMData *em1, int type, float v1, float v2, float v3,
-				 EMAN::EMData *em2, string filtername, const EMAN::Dict& params = EMAN::Dict())
+				 EMAN::EMData *em2, string filtername,
+				 const EMAN::Dict& params = EMAN::Dict())
 {
 	fprintf(stdout, "testing real filter EMAN1:%d vs EMAN2:%s :   ",
 			type, filtername.c_str());
@@ -94,7 +85,7 @@ int test_rfilter(EMData *em1, int type, float v1, float v2, float v3,
 	
 void test_filters()
 {
-	const char *image1 = get_test_image();
+	const char *image1 = EMAN::TestUtil::get_debug_image("groel2d.mrc");
 
 	EMData * em1 = new EMData();
 	em1->readImage(image1, 0);

@@ -1,18 +1,9 @@
 #include "emdata.h"
+#include "testutil.h"
 #include <math.h>
 
 using namespace EMAN;
 
-const char* get_test_image()
-{
-	static char filename[256];
-	static bool done = false;
-	if (!done) {
-		sprintf(filename, "%s/images/groel3d.mrc", getenv("HOME"));
-		done = true;
-	}
-	return filename;
-}
 /*
 [(0, 0, 0), (0, 0, 45), (0, 0, 90), (0, 0, 135), (0, 0, 180), (0, 0, 225),
 (0, 0, 270), (0, 0, 315), (45, 0, 0), (45, 0, 45), (45, 0, 90), (45, 0,
@@ -48,7 +39,7 @@ void rotate(EMData * image, float alt, float az, float phi)
 	char outfile[128];
 	sprintf(outfile, "test_%d_%d_%d.mrc", (int)alt, (int)az, (int)phi);
 	float f = (float)M_PI / 180;
-	const char* imagefile = get_test_image();
+	const char* imagefile = TestUtil::get_debug_image("groel3d.mrc");
 	image->read_image(imagefile);
 	image->rotate(alt*f, az*f, phi*f);
 	image->write_image(outfile, 0, EMUtil::IMAGE_MRC);
