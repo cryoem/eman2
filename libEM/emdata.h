@@ -283,21 +283,6 @@ namespace EMAN
 	EMData & operator*=(const EMData & em);
 	EMData & operator/=(const EMData & em);
 
-	friend EMData operator+(const EMData & em, float n);
-	friend EMData operator-(const EMData & em, float n);
-	friend EMData operator*(const EMData & em, float n);
-	friend EMData operator/(const EMData & em, float n);
-
-	friend EMData operator+(float n, const EMData & em);
-	friend EMData operator-(float n, const EMData & em);
-	friend EMData operator*(float n, const EMData & em);
-	friend EMData operator/(float n, const EMData & em);
-
-	friend EMData operator+(const EMData & a, const EMData & b);
-	friend EMData operator-(const EMData & a, const EMData & b);
-	friend EMData operator*(const EMData & a, const EMData & b);
-	friend EMData operator/(const EMData & a, const EMData & b);
-
 	static vector<EMData *> read_images_by_index(string filename, vector<int>img_indices,
 						     bool header_only = false);
 
@@ -350,6 +335,21 @@ namespace EMAN
 	int pathnum;
     };
 
+
+    EMData operator+(const EMData & em, float n);
+    EMData operator-(const EMData & em, float n);
+    EMData operator*(const EMData & em, float n);
+    EMData operator/(const EMData & em, float n);
+
+    EMData operator+(float n, const EMData & em);
+    EMData operator-(float n, const EMData & em);
+    EMData operator*(float n, const EMData & em);
+    EMData operator/(float n, const EMData & em);
+
+    EMData operator+(const EMData & a, const EMData & b);
+    EMData operator-(const EMData & a, const EMData & b);
+    EMData operator*(const EMData & a, const EMData & b);
+    EMData operator/(const EMData & a, const EMData & b);
 
     inline int EMData::get_x() const
     {

@@ -128,22 +128,22 @@ namespace EMAN
 	    return *this;
 	}
 
-	friend Vec3f operator +(const Vec3f & v1, const Vec3f & v2);
-	friend Vec3f operator -(const Vec3f & v1, const Vec3f & v2);
-
-	friend Vec3f operator *(float d, const Vec3f v);
-	friend Vec3f operator /(float d, const Vec3f v);
-
-	friend Vec3f operator *(const Vec3f v, float d);
-	friend Vec3f operator /(const Vec3f v, float d);
-
-	friend bool operator ==(const Vec3f & v1, const Vec3f & v2);
-	friend bool operator !=(const Vec3f & v1, const Vec3f & v2);
-
     private:
 	float vec[3];
     };
 
+
+    Vec3f operator +(const Vec3f & v1, const Vec3f & v2);
+    Vec3f operator -(const Vec3f & v1, const Vec3f & v2);
+
+    Vec3f operator *(float d, const Vec3f v);
+    Vec3f operator /(float d, const Vec3f v);
+
+    Vec3f operator *(const Vec3f v, float d);
+    Vec3f operator /(const Vec3f v, float d);
+
+    bool operator ==(const Vec3f & v1, const Vec3f & v2);
+    bool operator !=(const Vec3f & v1, const Vec3f & v2);
 
     class Matrix3f
     {
@@ -179,27 +179,6 @@ namespace EMAN
 	Matrix3f & operator*=(const Matrix3f & m);
 	Matrix3f & operator/=(const Matrix3f & m);
 
-	friend Matrix3f operator+(float f, const Matrix3f & m2);
-	friend Matrix3f operator-(float f, const Matrix3f & m2);
-	friend Matrix3f operator*(float f, const Matrix3f & m2);
-	friend Matrix3f operator/(float f, const Matrix3f & m2);
-
-	friend Matrix3f operator+(const Matrix3f & m1, float f);
-	friend Matrix3f operator-(const Matrix3f & m1, float f);
-	friend Matrix3f operator*(const Matrix3f & m1, float f);
-	friend Matrix3f operator/(const Matrix3f & m1, float f);
-
-	friend Matrix3f operator+(const Matrix3f & m1, const Matrix3f & m2);
-	friend Matrix3f operator-(const Matrix3f & m1, const Matrix3f & m2);
-	friend Matrix3f operator*(const Matrix3f & m1, const Matrix3f & m2);
-	friend Matrix3f operator/(const Matrix3f & m1, const Matrix3f & m2);
-
-	friend bool operator==(const Matrix3f & m1, const Matrix3f & m2);
-	friend bool operator!=(const Matrix3f & m1, const Matrix3f & m2);
-
-	friend Vec3f operator*(const Vec3f & v, const Matrix3f & m2);
-	friend Vec3f operator*(const Matrix3f & m1, const Vec3f & v);
-
     private:
 	Matrix3f(gsl_matrix * m);
 	gsl_matrix *get_gsl_matrix() const;
@@ -207,6 +186,27 @@ namespace EMAN
 	gsl_matrix *matrix;
     };
 
+
+    Matrix3f operator+(float f, const Matrix3f & m2);
+    Matrix3f operator-(float f, const Matrix3f & m2);
+    Matrix3f operator*(float f, const Matrix3f & m2);
+    Matrix3f operator/(float f, const Matrix3f & m2);
+
+    Matrix3f operator+(const Matrix3f & m1, float f);
+    Matrix3f operator-(const Matrix3f & m1, float f);
+    Matrix3f operator*(const Matrix3f & m1, float f);
+    Matrix3f operator/(const Matrix3f & m1, float f);
+
+    Matrix3f operator+(const Matrix3f & m1, const Matrix3f & m2);
+    Matrix3f operator-(const Matrix3f & m1, const Matrix3f & m2);
+    Matrix3f operator*(const Matrix3f & m1, const Matrix3f & m2);
+    Matrix3f operator/(const Matrix3f & m1, const Matrix3f & m2);
+
+    bool operator==(const Matrix3f & m1, const Matrix3f & m2);
+    bool operator!=(const Matrix3f & m1, const Matrix3f & m2);
+
+    Vec3f operator*(const Vec3f & v, const Matrix3f & m2);
+    Vec3f operator*(const Matrix3f & m1, const Vec3f & v);
 
     class Matrix4f
     {
@@ -242,29 +242,31 @@ namespace EMAN
 	double *operator[] (int i);
 	const double *operator[] (int i) const;
 
-	friend Matrix4f operator+(float f, const Matrix4f & m2);
-	friend Matrix4f operator-(float f, const Matrix4f & m2);
-	friend Matrix4f operator*(float f, const Matrix4f & m2);
-	friend Matrix4f operator/(float f, const Matrix4f & m2);
-
-	friend Matrix4f operator+(const Matrix4f & m1, float f);
-	friend Matrix4f operator-(const Matrix4f & m1, float f);
-	friend Matrix4f operator*(const Matrix4f & m1, float f);
-	friend Matrix4f operator/(const Matrix4f & m1, float f);
-
-	friend Matrix4f operator+(const Matrix4f & m1, const Matrix4f & m2);
-	friend Matrix4f operator-(const Matrix4f & m1, const Matrix4f & m2);
-	friend Matrix4f operator*(const Matrix4f & m1, const Matrix4f & m2);
-	friend Matrix4f operator/(const Matrix4f & m1, const Matrix4f & m2);
-
-	friend bool operator==(const Matrix4f & m1, const Matrix4f & m2);
-	friend bool operator!=(const Matrix4f & m1, const Matrix4f & m2);
-
     private:
 	Matrix4f(gsl_matrix * m);
 	gsl_matrix *get_gsl_matrix() const;
 	gsl_matrix *matrix;
     };
+
+    
+    Matrix4f operator+(float f, const Matrix4f & m2);
+    Matrix4f operator-(float f, const Matrix4f & m2);
+    Matrix4f operator*(float f, const Matrix4f & m2);
+    Matrix4f operator/(float f, const Matrix4f & m2);
+
+    Matrix4f operator+(const Matrix4f & m1, float f);
+    Matrix4f operator-(const Matrix4f & m1, float f);
+    Matrix4f operator*(const Matrix4f & m1, float f);
+    Matrix4f operator/(const Matrix4f & m1, float f);
+
+    Matrix4f operator+(const Matrix4f & m1, const Matrix4f & m2);
+    Matrix4f operator-(const Matrix4f & m1, const Matrix4f & m2);
+    Matrix4f operator*(const Matrix4f & m1, const Matrix4f & m2);
+    Matrix4f operator/(const Matrix4f & m1, const Matrix4f & m2);
+
+    bool operator==(const Matrix4f & m1, const Matrix4f & m2);
+    bool operator!=(const Matrix4f & m1, const Matrix4f & m2);
+
 
     /*
       Euler angles have the disadvantage of being
@@ -334,17 +336,6 @@ namespace EMAN
 	Quaternion & operator/=(const Quaternion & q);
 	Quaternion & operator/=(float s);
 
-	friend Quaternion operator+(const Quaternion & q1, const Quaternion & q2);
-	friend Quaternion operator-(const Quaternion & q1, const Quaternion & q2);
-
-	friend Quaternion operator*(const Quaternion & q1, const Quaternion & q2);
-	friend Quaternion operator*(const Quaternion & q, float s);
-	friend Quaternion operator*(float s, const Quaternion & q);
-	friend Quaternion operator/(const Quaternion & q1, const Quaternion & q2);
-
-	friend bool operator==(const Quaternion & q1, const Quaternion & q2);
-	friend bool operator!=(const Quaternion & q1, const Quaternion & q2);
-
 	static Quaternion interpolate(const Quaternion & from, const Quaternion & to, float percent);
     private:
 	float e0;
@@ -352,6 +343,17 @@ namespace EMAN
 	float e2;
 	float e3;
     };
+
+    Quaternion operator+(const Quaternion & q1, const Quaternion & q2);
+    Quaternion operator-(const Quaternion & q1, const Quaternion & q2);
+
+    Quaternion operator*(const Quaternion & q1, const Quaternion & q2);
+    Quaternion operator*(const Quaternion & q, float s);
+    Quaternion operator*(float s, const Quaternion & q);
+    Quaternion operator/(const Quaternion & q1, const Quaternion & q2);
+
+    bool operator==(const Quaternion & q1, const Quaternion & q2);
+    bool operator!=(const Quaternion & q1, const Quaternion & q2);
 
 
     class Rotation
@@ -416,11 +418,6 @@ namespace EMAN
 	Rotation & operator*=(const Rotation & e);
 	Rotation & operator/=(const Rotation & e);
 
-	friend Rotation operator*(const Rotation & e1, const Rotation & e2);
-	friend Rotation operator/(const Rotation & e1, const Rotation & e2);
-
-	friend bool operator==(const Rotation & e1, const Rotation & e2);
-	friend bool operator!=(const Rotation & e1, const Rotation & e2);
 
 	static Rotation interpolate(const Rotation & from, const Rotation & to, float percent);
 	
@@ -436,6 +433,13 @@ namespace EMAN
 	int cur_sym;
     };
 
+    Rotation operator*(const Rotation & e1, const Rotation & e2);
+    Rotation operator/(const Rotation & e1, const Rotation & e2);
+
+    bool operator==(const Rotation & e1, const Rotation & e2);
+    bool operator!=(const Rotation & e1, const Rotation & e2);
+
+    
     // composite transform: = (-Translate) * Scale * Rotate * Translate
     // Translate = center
     class Transform
@@ -566,14 +570,16 @@ namespace EMAN
 	// [this] = [this] x [t]
 	Transform & post_concatenate(const Transform & t)
 	{
-	    (*this) = (*this) * t;
+	    (*this) *= t;
 	    return (*this);
 	}
 
 	// [this] = [t] x [this]
 	Transform & pre_concatenate(const Transform & t)
 	{
-	    (*this) = t * (*this);
+	    Transform t1 = t;
+	    t1 *= (*this);	    
+	    (*this) = t1;
 	    return (*this);
 	}
 
@@ -597,7 +603,7 @@ namespace EMAN
 	    if (r != Rotation(1, 0, 0, 0, Rotation::QUATERNION))
 		{
 		    Matrix4f m = r.get_matrix4();
-		    (*this) = (*this) * m;
+		    (*this) *= m;
 		}
 	    return (*this);
 	}
@@ -718,21 +724,21 @@ namespace EMAN
 	    return (*this);
 	}
 
-	friend Transform operator+(const Transform & t1, const Transform & t2);
-	friend Transform operator-(const Transform & t1, const Transform & t2);
-
-	friend Transform operator*(const Transform & t1, const Transform & t2);
-	friend Transform operator*(const Transform & t, float s);
-	friend Transform operator*(float s, const Transform & t);
-
-	friend Transform operator/(const Transform & t1, const Transform & t2);
-	friend Transform operator/(const Transform & t, float s);
-	friend Transform operator/(float s, const Transform & t);
-
     private:
 	Matrix4f matrix;
 	Vec3f pre_trans;
     };
+
+    Transform operator+(const Transform & t1, const Transform & t2);
+    Transform operator-(const Transform & t1, const Transform & t2);
+
+    Transform operator*(const Transform & t1, const Transform & t2);
+    Transform operator*(const Transform & t, float s);
+    Transform operator*(float s, const Transform & t);
+
+    Transform operator/(const Transform & t1, const Transform & t2);
+    Transform operator/(const Transform & t, float s);
+    Transform operator/(float s, const Transform & t);
 
 }
 

@@ -1,18 +1,12 @@
 SET(LIB_EM_SOURCE byteorder.C
     emobject.C
     emfft.C
-    filter.C
-    aligner.C
-    projector.C
-    cmp.C
-    averager.C
     log.C
     imageio.C
     util.C
     emutil.C
     floatstat.C
     interp.C
-    reconstructor.C
     transform.C
     geometry.C
     mrcio.C
@@ -38,6 +32,12 @@ SET(LIB_EM_SOURCE byteorder.C
     emcache.C
     ctf.C
     xydata.C
+    filter.C
+    aligner.C
+    projector.C
+    cmp.C
+    averager.C
+    reconstructor.C
     )
 
 ADD_LIBRARY(EM2 SHARED ${LIB_EM_SOURCE})
