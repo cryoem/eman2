@@ -54,7 +54,7 @@ namespace EMAN {
 
 	void normalize();
 
-	void calc_hist(XYData* hist, float hist_min = 0, float hist_max = 0, bool add = false);
+	void calc_hist(vector<float>& hist, float hist_min = 0, float hist_max = 0, bool add = false);
 
 	int render_amp8(unsigned char* data, int x, int y, int xsize, int ysize,
 			int bpl, float scale, int min_gray, int max_gray,
@@ -68,7 +68,7 @@ namespace EMAN {
 	int render_pha24(unsigned char* data, int x, int y, int xsize, int ysize, 
 			 int bpl, float scale, float min_render, float max_render);
 	
-	void calc_az_dist(int n,float a0,float da,float *d,float rmin,float rmax);
+	int calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
 	
 	bool is_complex() const;
 	void set_complex(bool is_complex);
@@ -76,7 +76,7 @@ namespace EMAN {
 	bool is_complex_x() const;
 	void set_complex_x(bool is_complex_x);	
 	
-	void set_ri(bool is_ri );
+	void set_ri(bool is_ri);
 	void ri2ap();
 	void ap2ri();
 
