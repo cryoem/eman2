@@ -2,6 +2,9 @@
 
 # $Id$
 
+# todo: verify the filters who have the same names in proc3d
+#       and proc2d have the same implementation
+
 from EMAN2 import *
 from optparse import OptionParser
 import sys
@@ -18,8 +21,12 @@ def main():
     parser.add_option("--clipc", type="float", nargs=3, action="append", help="")
     parser.add_option("--fftclip", type="float", nargs=3, action="append", help="")
     
-    # todo: rot, trans, apix
- 
+    parser.add_option("--apix", type="float", help="")
+    parser.add_option("--mult", type="float", help="")
+    parser.add_option("--add", type="float", help="")
+    
+    # next: signoise
+    
     
     
 if __name__ == "__main__":

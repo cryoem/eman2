@@ -37,9 +37,11 @@ EMData::EMData()
     fft = 0;
     rfp = 0;
     flags = 0;
-    attr_dict["spacing_row"] = EMObject(1.0);
-    attr_dict["spacing_col"] = EMObject(1.0);
-    attr_dict["spacing_sec"] = EMObject(1.0);
+    // used to replace cube 'pixel'
+    attr_dict["spacing_row"] = EMObject(1.0f);
+    attr_dict["spacing_col"] = EMObject(1.0f);
+    attr_dict["spacing_sec"] = EMObject(1.0f);
+    
     attr_dict["is_complex"] = EMObject(0);
     attr_dict["is_ri"] = EMObject(0);
 
@@ -48,7 +50,6 @@ EMData::EMData()
     nz = 0;
 
     average_nimg = -1;
-    
     align_score = 0;
 }
 
@@ -2305,6 +2306,13 @@ float *EMData::setup4slice(bool redo)
 void EMData::to_zero()
 {
     memset(rdata, 0, nx * ny * nz * sizeof(float));
+}
+
+void EMData::scale(float s)
+{
+    Transform t;
+    t.set_scale_instance(Vec3<float>(s, 1, 1));
+    rotate_translate(t);
 }
 
 void EMData::translate(float dx, float dy, float dz)

@@ -88,6 +88,8 @@ namespace EMAN
 
 	float *setup4slice(bool redo = false);
 
+	void scale(float s);
+	
 	void translate(float dx, float dy, float dz);
 	void translate(const Vec3<float> & translation);
 	
@@ -243,6 +245,14 @@ namespace EMAN
 	int get_zsize() const;
 	int get_ndim() const;
 
+	float get_xorigin() const;
+	float get_yorigin() const;
+	float get_zorigin() const;
+
+	float get_xpixel() const;
+	float get_ypixel() const;
+	float get_zpixel() const;
+	
 	EMData *get_parent() const;
 	void set_parent(EMData * new_parent);
 
@@ -272,7 +282,7 @@ namespace EMAN
 
 	bool is_ri() const;
 	void set_ri(bool is_ri);
-
+	
 	EMData & operator+=(float n);
 	EMData & operator-=(float n);
 	EMData & operator*=(float n);
@@ -369,7 +379,41 @@ namespace EMAN
 	return nz;
     }
 
+    inline float EMData::get_xorigin() const
+    {
+	return attr_dict["origin_row"].get_float();
+    }
 
+    
+    inline float EMData::get_yorigin() const
+    {
+	return attr_dict["origin_col"].get_float();
+    }
+
+    inline float EMData::get_zorigin() const
+    {
+	return attr_dict["origin_sec"].get_float();
+    }
+
+    
+    inline float EMData::get_xpixel() const
+    {
+	return attr_dict["spacing_row"].get_float();
+    }
+
+    
+    inline float EMData::get_ypixel() const
+    {
+	return attr_dict["spacing_col"].get_float();
+    }
+
+    
+    inline float EMData::get_zpixel() const
+    {
+	return attr_dict["spacing_sec"].get_float();
+    }
+
+    
     inline float EMData::get_value_at(int x, int y, int z) const
     {
 	return rdata[x + y * nx + z * nx * ny];

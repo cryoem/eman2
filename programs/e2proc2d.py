@@ -65,10 +65,10 @@ def main():
     usage = progname + " options inputfile outputfile"
 
     parser = OptionParser(usage)
-       
+  
     parser.add_option("--apix", type="float", help="the Angstrom/pixel for S scaling")
     parser.add_option("--average", action="store_true", help="Averages all input images (without alignment) and writes a single (normalized) output image")
-    parser.add_option("--calcsf", type="string", nargs=2, action="append", help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
+    parser.add_option("--calcsf", type="string", nargs=2, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
     parser.add_option("--clip", type="float", nargs=2, action="append", help="Define the output image size")
     parser.add_option("--ctfsplit", action="store_true", help="Splits the input file into output files with the same CTF parameters")
     parser.add_option("--exclude", type="string", help="Excludes image numbers in EXCLUDE file")
@@ -87,13 +87,13 @@ def main():
     parser.add_option("--radon",  action="store_true", help="Do Radon transform")
     parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
     parser.add_option("--scale", type="float", action="append", help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
-    parser.add_option("--selfcl", type="int", nargs=2, action="append", help="Output file will be a 180x180 self-common lines map for each image.")
+    parser.add_option("--selfcl", type="int", nargs=2, help="Output file will be a 180x180 self-common lines map for each image.")
     parser.add_option("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc") 
     parser.add_option("--shrink", type="int", action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
     parser.add_option("--split", type="int", help="Splits the input file into a set of n output files")
     parser.add_option("--verbose", type="int", help="verbose level [1-5]")
 
-    append_options = ["calcsf", "clip", "filter", "meanshrink", "shrink", "scale", "selfcl"]
+    append_options = ["clip", "filter", "meanshrink", "shrink", "scale"]
 
     optionlist = []
     for arg1 in sys.argv[1:]:
@@ -233,11 +233,7 @@ def main():
             elif option1 == "scale":
                 scale_f = options.scale[index_d[option1]]
                 if scale_f != 1.0:
-                    old_r = d.get_rotation()
-                    d.set_ralign_params(0, 0, 0)
-                    d.set_talign_params(0, 0, 0)
-                    d.rotate_translate(scale_f)
-                    d.set_ralign_params(old_r)
+                    d.scale(scale_f)
                 index_d[option1] += 1
                  
             elif option1 == "clip":
@@ -262,9 +258,8 @@ def main():
                 index_d[option1] += 1
         
             elif option1 == "selfcl":
-                selfcl_l = options.selfcl[index_d[option1]]
-                scl = selfcl_l[0] / 2
-                sclmd = selfcl_l[1]
+                scl = options.selfcl[0] / 2
+                sclmd = options.selfcl[1]
                 sc = EMData()
             
                 if sclmd == 0:
@@ -281,8 +276,6 @@ def main():
                     else:
                         print "Error: invalid common-line mode '" + sclmd + "'"
                         sys.exit(1)
-                        
-                index_d[option1] += 1
                 
             elif option1 == "radon":
                 r = d.do_radon()
@@ -310,10 +303,8 @@ def main():
                 continue
 
             elif option1 == "calcsf":
-                ci = index_dict[option1]
-
-                sfout_n = int(options.calcsf[ci][0])
-                sfout = options.calcsf[ci][1]
+                sfout_n = int(options.calcsf[0])
+                sfout = options.calcsf[1]
                 sf_amwid = 2 * math.pi / sfout_n
                     
                 dataf = d.do_fft()
@@ -334,7 +325,7 @@ def main():
                         if n1 != 0:
                             outfile2 = outfile2 + ".%03d" % (i+100)
                         Util.save_data(0, sf_dx, curve, outfile2)
-                index_dict[option1] += 1
+                
                 
             elif option1 == "interlv":
                 d.read_image(options.interlv, i)
