@@ -2265,6 +2265,7 @@ float *EMData::setup4slice(bool redo)
 void EMData::to_zero()
 {
 	memset(rdata, 0, nx * ny * nz * sizeof(float));
+	done_data();
 }
 
 void EMData::scale(float s)
@@ -3223,7 +3224,7 @@ void EMData::to_one()
 		rdata[i] = 1.0f;
 	}
 
-	done_data();
+	update();
 }
 
 

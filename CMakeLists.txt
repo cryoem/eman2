@@ -14,14 +14,15 @@ SET(EMAN_EXECUTABLE_PATH "${EXECUTABLE_OUTPUT_PATH}")
 SET(EMAN_LIBRARY_PATH "${LIBRARY_OUTPUT_PATH}")
 MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
 
-OPTION(ENABLE_FFTW2 "if enable fftw 2 support" ON)
-OPTION(ENABLE_FFTW3 "if enable fftw 3 support" OFF)
-OPTION(ENABLE_TIFF "if enable TIFF support" ON)
-OPTION(ENABLE_HDF5 "if enable HDF5 support" ON)
-OPTION(ENABLE_PNG "if enable PNG support" ON)
-OPTION(ENABLE_PYTHON "if enable boost python support" ON)
+OPTION(ENABLE_FFTW2 "enable fftw 2 support" ON)
+OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
+OPTION(ENABLE_TIFF "enable TIFF support" ON)
+OPTION(ENABLE_HDF5 "enable HDF5 support" ON)
+OPTION(ENABLE_PNG "enable PNG support" ON)
+OPTION(ENABLE_PYTHON "enable boost python support" ON)
 
-OPTION(ENABLE_DEBUG "if enable debug support" ON)
+OPTION(ENABLE_DEBUG "enable debug support" ON)
+OPTION(ENABLE_RT "enable RT support" OFF)
 
 OPTION(ENABLE_ATHLON "if enable ATHLON specific support" OFF)
 OPTION(ENABLE_OPTERON "if enable OPTERON/Ath64 specific support" OFF)
@@ -95,7 +96,11 @@ EMAN_CHECK_FUNCTION(ftell64 HAVE_FTELL64)
 EMAN_CHECK_FUNCTION(ftello HAVE_FTELLO)
 # end for 64-bit large file support
 
-SUBDIRS(libEM plugins rt programs utils)
+SUBDIRS(libEM plugins programs utils)
+
+IF(ENABLE_RT)
+	SUBDIRS(rt)
+ENDIF(ENABLE_RT)
 
 SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/local/include/boost-1_31 /usr/include /sw/include)
 SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${LIB64} $ENV{FFTWDIR}/lib $ENV{GSLDIR}/lib /usr/local/lib /usr/lib /sw/lib)
