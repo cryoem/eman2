@@ -309,22 +309,22 @@ EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient,
 								 IntSize &size, float scale)
 {
 	EMData *result = new EMData();
-	result->set_size(size.x,size.y,size.z);
+	result->set_size(size[0],size[1],size[2]);
 
 	Matrix3f mx=orient.get_matrix3();
 	
 	int x,y,z;
-	for (z=-size.z/2; z<size.z/2; z++) {
-		for (y=-size.y/2; y<size.y/2; y++) {
-			for (x=-size.x/2; x<size.x/2; x++) {
+	for (z=-size[2]/2; z<size[2]/2; z++) {
+		for (y=-size[1]/2; y<size[1]/2; y++) {
+			for (x=-size[0]/2; x<size[0]/2; x++) {
 				float xx,yy,zz;
-				xx=scale*(x*mx[0][0]+y*mx[0][1]+z*mx[0][2])+center.x;
-				yy=scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center.y;
-				zz=scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center.z;
+				xx=scale*(x*mx[0][0]+y*mx[0][1]+z*mx[0][2])+center[0];
+				yy=scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center[1];
+				zz=scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center[2];
 				float v;
 				if (xx<0||yy<0||zz<0||xx>nx-2||yy>ny-2||zz>nz-2) v=0.;
 				else v=sget_value_at_interp(xx,yy,zz);
-				result->set_value_at(x+size.x/2,y+size.y/2,z+size.z/2,v);
+				result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
 			}
 		}
 	}
@@ -342,54 +342,54 @@ EMData *EMData::get_clip(const Region & area)
 	}
 
 	EMData *result = new EMData();
-	int zsize = (int)area.size.z;
+	int zsize = (int)area.size[2];
 	if (zsize == 0 || nz <= 1) {
 		zsize = 1;
 	}
 
-	result->set_size((int)area.size.x, (int)area.size.y, zsize);
+	result->set_size((int)area.size[0], (int)area.size[1], zsize);
 
-	int x0 = (int) area.origin.x;
+	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;
 
-	int y0 = (int) area.origin.y;
+	int y0 = (int) area.origin[1];
 	y0 = y0 < 0 ? 0 : y0;
 
-	int z0 = (int) area.origin.z;
+	int z0 = (int) area.origin[2];
 	z0 = z0 < 0 ? 0 : z0;
 								
-	int x1 = (int) (area.origin.x + area.size.x);
+	int x1 = (int) (area.origin[0] + area.size[0]);
 	x1 = x1 > nx ? nx : x1;
 										
-	int y1 = (int) (area.origin.y + area.size.y);
+	int y1 = (int) (area.origin[1] + area.size[1]);
 	y1 = y1 > ny ? ny : y1;
 
-	int z1 = (int) (area.origin.z + area.size.z);
+	int z1 = (int) (area.origin[2] + area.size[2]);
 	z1 = z1 > nz ? nz : z1;
 	if (z1 <= 0) {
 		z1 = 1;
 	}
 	
-	int xd0 = (int) (area.origin.x < 0 ? -area.origin.x : 0);
-	int yd0 = (int) (area.origin.y < 0 ? -area.origin.y : 0);
-	int zd0 = (int) (area.origin.z < 0 ? -area.origin.z : 0);
+	int xd0 = (int) (area.origin[0] < 0 ? -area.origin[0] : 0);
+	int yd0 = (int) (area.origin[1] < 0 ? -area.origin[1] : 0);
+	int zd0 = (int) (area.origin[2] < 0 ? -area.origin[2] : 0);
 
 	int clipped_row_size = (x1-x0) * sizeof(float);
 	int src_secsize = nx * ny;
-	int dst_secsize = (int)(area.size.x * area.size.y);
+	int dst_secsize = (int)(area.size[0] * area.size[1]);
 
 	float *src = rdata + z0 * src_secsize + y0 * nx + x0;
 	float *dst = result->get_data();
-	dst += zd0 * dst_secsize + yd0 * (int)area.size.x + xd0;
+	dst += zd0 * dst_secsize + yd0 * (int)area.size[0] + xd0;
 
 	int src_gap = src_secsize - (y1-y0) * nx;
-	int dst_gap = dst_secsize - (y1-y0) * (int)area.size.x;
+	int dst_gap = dst_secsize - (y1-y0) * (int)area.size[0];
 	
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
 			memcpy(dst, src, clipped_row_size);
 			src += nx;
-			dst += (int)area.size.x;
+			dst += (int)area.size[0];
 		}
 		src += src_gap;
 		dst += dst_gap;
@@ -410,9 +410,9 @@ EMData *EMData::get_clip(const Region & area)
 	float apix_y = attr_dict["apix_y"];
 	float apix_z = attr_dict["apix_z"];
 
-	result->set_xyz_origin(xorigin + apix_x * area.origin.x,
-						   yorigin + apix_y * area.origin.y,
-						   zorigin + apix_z * area.origin.z);
+	result->set_xyz_origin(xorigin + apix_x * area.origin[0],
+						   yorigin + apix_y * area.origin[1],
+						   zorigin + apix_z * area.origin[2]);
 
 	result->update();
 	result->set_parent(0);
@@ -431,17 +431,17 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	int ny1 = block->get_ysize();
 	int nz1 = block->get_zsize();
 
-	Region area(nx1, ny1, nz1, origin.x, origin.y, origin.z);
+	Region area(nx1, ny1, nz1, origin[0], origin[1], origin[2]);
 
 	if (area.inside_region(nx, ny, nz)) {
 		throw ImageFormatException("outside of destination image not supported.");
 	}
 
-	int x0 = origin.x;
-	int y0 = origin.y;
-	int y1 = origin.y + ny1;
-	int z0 = origin.z;
-	int z1 = origin.z + nz1;
+	int x0 = origin[0];
+	int y0 = origin[1];
+	int y1 = origin[1] + ny1;
+	int z0 = origin[2];
+	int z1 = origin[2] + nz1;
 
 	size_t inserted_row_size = nx1 * sizeof(float);
 	int nxy = nx * ny;
@@ -475,12 +475,12 @@ if (get_ndim()==3) {
 	int xs=(int)floor(block->get_xsize()*scale/2.0);
 	int ys=(int)floor(block->get_ysize()*scale/2.0);
 	int zs=(int)floor(block->get_zsize()*scale/2.0);
-	int x0=(int)center.x-xs;
-	int x1=(int)center.x+xs;
-	int y0=(int)center.y-ys;
-	int y1=(int)center.y+ys;
-	int z0=(int)center.z-zs;
-	int z1=(int)center.z+zs;
+	int x0=(int)center[0]-xs;
+	int x1=(int)center[0]+xs;
+	int y0=(int)center[1]-ys;
+	int y1=(int)center[1]+ys;
+	int z0=(int)center[2]-zs;
+	int z1=(int)center[2]+zs;
 	
 	if (x1<0||y1<0||z1<0||x0>get_xsize()||y0>get_ysize()||z0>get_zsize()) return;	// object is completely outside the target volume
 	
@@ -500,7 +500,7 @@ if (get_ndim()==3) {
 		for (int y=y0; y<y1; y++) {
 			for (int z=z0; z<z1; z++) {
 				rdata[x + y * nx + z * nx * ny] += 
-					block->sget_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by,(z-center.z)/scale+bz);
+					block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
 			}
 		}
 	}
@@ -510,10 +510,10 @@ else if (get_ndim()==2) {
 	// Start by determining the region to operate on
 	int xs=(int)floor(block->get_xsize()*scale/2.0);
 	int ys=(int)floor(block->get_ysize()*scale/2.0);
-	int x0=(int)center.x-xs;
-	int x1=(int)center.x+xs;
-	int y0=(int)center.y-ys;
-	int y1=(int)center.y+ys;
+	int x0=(int)center[0]-xs;
+	int x1=(int)center[0]+xs;
+	int y0=(int)center[1]-ys;
+	int y1=(int)center[1]+ys;
 	
 	if (x1<0||y1<0||x0>get_xsize()||y0>get_ysize()) return;	// object is completely outside the target volume
 	
@@ -529,7 +529,7 @@ else if (get_ndim()==2) {
 	for (int x=x0; x<x1; x++) {
 		for (int y=y0; y<y1; y++) {
 			rdata[x + y * nx] += 
-				block->sget_value_at_interp((x-center.x)/scale+bx,(y-center.y)/scale+by);
+				block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by);
 		}
 	}
 	update();
@@ -3535,7 +3535,7 @@ IntPoint EMData::calc_max_location() const
 int EMData::calc_min_index() const
 {
 	IntPoint min_location = calc_min_location();
-	int i = min_location.x + min_location.y * nx + min_location.z * nx * ny;
+	int i = min_location[0] + min_location[1] * nx + min_location[2] * nx * ny;
 	return i;
 }
 
@@ -3543,7 +3543,7 @@ int EMData::calc_min_index() const
 int EMData::calc_max_index() const
 {
 	IntPoint max_location = calc_max_location();
-	int i = max_location.x + max_location.y * nx + max_location.z * nx * ny;
+	int i = max_location[0] + max_location[1] * nx + max_location[2] * nx * ny;
 	return i;
 }
 

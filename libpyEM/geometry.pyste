@@ -1,8 +1,3 @@
-IntSize = Class("EMAN::IntSize", "geometry.h")
-FloatSize = Class("EMAN::FloatSize", "geometry.h")
-
-IntPoint = Class("EMAN::IntPoint", "geometry.h")
-FloatPoint = Class("EMAN::FloatPoint", "geometry.h")
 
 Region = Class("EMAN::Region", "geometry.h")
 

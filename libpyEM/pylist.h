@@ -2,6 +2,7 @@
 #define eman__pylist_h__
 
 #include "emobject.h"
+#include "transform.h"
 
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
@@ -66,6 +67,66 @@ namespace EMAN {
 		}
     };
 
+	struct IntPoint_to_python : python::to_python_converter<IntPoint, IntPoint_to_python>
+    {
+		static PyObject* convert(IntPoint const& p)
+		{
+			python::list result;
+	    
+			for (int i = 0; i < p.get_ndim(); i++) {
+				result.append(p[i]);
+			}
+	    
+			return python::incref(python::list(result).ptr());
+		}
+    };
+
+	
+	struct FloatPoint_to_python : python::to_python_converter<FloatPoint, FloatPoint_to_python>
+    {
+		static PyObject* convert(FloatPoint const& p)
+		{
+			python::list result;
+	    
+			for (int i = 0; i < p.get_ndim(); i++) {
+				result.append(p[i]);
+			}
+	    
+			return python::incref(python::list(result).ptr());
+		}
+    };
+
+	
+	struct IntSize_to_python : python::to_python_converter<IntSize, IntSize_to_python>
+    {
+		static PyObject* convert(IntSize const& p)
+		{
+			python::list result;
+	    
+			for (int i = 0; i < p.get_ndim(); i++) {
+				result.append(p[i]);
+			}
+	    
+			return python::incref(python::list(result).ptr());
+		}
+    };
+
+	
+	struct FloatSize_to_python : python::to_python_converter<FloatSize, FloatSize_to_python>
+    {
+		static PyObject* convert(FloatSize const& p)
+		{
+			python::list result;
+	    
+			for (int i = 0; i < p.get_ndim(); i++) {
+				result.append(p[i]);
+			}
+	    
+			return python::incref(python::list(result).ptr());
+		}
+    };
+
+
     template <class T>
     struct map_to_python : python::to_python_converter<map<std::string, T>, map_to_python<T> >
     {
@@ -96,7 +157,7 @@ namespace EMAN {
 			return python::incref(python::dict(result).ptr());
 		}
     };
-    
+
     template <class T>
     struct vector_from_python
     {
@@ -234,6 +295,210 @@ namespace EMAN {
 
 		}
     };
+
+    struct IntPoint_from_python
+    {
+		IntPoint_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<IntPoint>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
+
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<IntPoint>*) data)->storage.bytes;
+			new (storage) IntPoint();
+
+			data->convertible = storage;
+
+			IntPoint& result = *((IntPoint*) storage);
+	
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+			
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+	    
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+	    
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<int> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+    };
+    
+	
+    struct FloatPoint_from_python
+    {
+		FloatPoint_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<FloatPoint>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
+
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<FloatPoint>*) data)->storage.bytes;
+			new (storage) FloatPoint();
+
+			data->convertible = storage;
+
+			FloatPoint& result = *((FloatPoint*) storage);
+	
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+			
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+	    
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+	    
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<float> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+    };
+
+	
+    struct IntSize_from_python
+    {
+		IntSize_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<IntSize>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
+
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<IntSize>*) data)->storage.bytes;
+			new (storage) IntSize();
+
+			data->convertible = storage;
+
+			IntSize& result = *((IntSize*) storage);
+	
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+			
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+	    
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+	    
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<int> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+    };
+    
+	
+    struct FloatSize_from_python
+    {
+		FloatSize_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<FloatSize>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
+
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<FloatSize>*) data)->storage.bytes;
+			new (storage) FloatSize();
+
+			data->convertible = storage;
+
+			FloatSize& result = *((FloatSize*) storage);
+	
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+			
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+	    
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+	    
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<float> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+    };
+
 }
 
 

@@ -16,7 +16,7 @@ bool EMAN::operator<(const Pixel& p1, const Pixel& p2)
 
 bool Region::inside_region() const
 {
-	if (size.x >= 0 && size.y >= 0 && size.z >= 0) {
+	if (size[0] >= 0 && size[1] >= 0 && size[2] >= 0) {
 		return true;
 	}
 
@@ -26,17 +26,17 @@ bool Region::inside_region() const
 bool Region::inside_region(const FloatPoint & p) const
 {
 	if (p.get_ndim() == 2) {
-		return inside_region(p.x, p.y);
+		return inside_region(p[0], p[1]);
 	}
 
-	return inside_region(p.x, p.y, p.z);
+	return inside_region(p[0], p[1], p[2]);
 }
 
 bool Region::inside_region(float x, float y) const
 {
-	if (size.x >= 0 && size.y >= 0 &&
-		origin.x <= x && origin.y <= y &&
-		(origin.x + size.x) >= x && (origin.y + size.y) >= y) {
+	if (size[0] >= 0 && size[1] >= 0 &&
+		origin[0] <= x && origin[1] <= y &&
+		(origin[0] + size[0]) >= x && (origin[1] + size[1]) >= y) {
 		return true;
 	}
 	return false;
@@ -44,10 +44,10 @@ bool Region::inside_region(float x, float y) const
 
 bool Region::inside_region(float x, float y, float z) const
 {
-	if (size.x >= 0 && size.y >= 0 && size.z >= 0 &&
-		origin.x <= x && origin.y <= y && origin.z <= z &&
-		(origin.x + size.x) >= x &&
-		(origin.y + size.y) >= y && (origin.z + size.z) >= z) {
+	if (size[0] >= 0 && size[1] >= 0 && size[2] >= 0 &&
+		origin[0] <= x && origin[1] <= y && origin[2] <= z &&
+		(origin[0] + size[0]) >= x &&
+		(origin[1] + size[1]) >= y && (origin[2] + size[2]) >= z) {
 		return true;
 	}
 	return false;
@@ -60,11 +60,11 @@ string Region::get_string() const
 
 	if (ndim == 2) {
 		sprintf(str, "(%2.1f, %2.1f; %2.1f, %2.1f)",
-				origin.x, origin.y, size.x, size.y);
+				origin[0], origin[1], size[0], size[1]);
 	}
 	else if (ndim == 3) {
 		sprintf(str, "(%2.1f, %2.1f, %2.1f; %2.1f, %2.1f, %2.1f)",
-				origin.x, origin.y, origin.z, size.x, size.y, size.z);
+				origin[0], origin[1], origin[2], size[0], size[1], size[2]);
 	}
 
 	return string(str);

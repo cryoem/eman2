@@ -205,11 +205,11 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["nz"] = zlen;
 
 	if (area) {
-		dict["origin_row"] = mrch.xorigin + mrch.xlen * area->origin.x;
-		dict["origin_col"] = mrch.yorigin + mrch.xlen * area->origin.y;
+		dict["origin_row"] = mrch.xorigin + mrch.xlen * area->origin[0];
+		dict["origin_col"] = mrch.yorigin + mrch.xlen * area->origin[1];
 
 		if (area->get_ndim() == 3 && mrch.nz > 1) {
-			dict["origin_sec"] = mrch.zorigin + mrch.xlen * area->origin.z;
+			dict["origin_sec"] = mrch.zorigin + mrch.xlen * area->origin[2];
 		}
 		else {
 			dict["origin_sec"] = mrch.zorigin;

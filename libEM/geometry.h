@@ -15,27 +15,36 @@ namespace EMAN
 	class IntSize
 	{
 	public:
-		IntSize():x(0), y(0), z(0)
+		IntSize(int xx=0, int yy=0, int zz=0)
 		{
-		}
-		IntSize(int xx, int yy):x(xx), y(yy), z(0)
-		{
-		}
-		IntSize(int xx, int yy, int zz):x(xx), y(yy), z(zz)
-		{
+			data[0] = xx;
+			data[1] = yy;
+			data[2] = zz;
 		}
 
 		int get_ndim() const
 		{
-			if (z > 1) {
+			if (data[2] > 1) {
 				return 3;
 			}
-			return 2;
+			else if (data[1] > 1) {
+				return 2;
+			}
+			return 1;
 		}
 
-		int x;
-		int y;
-		int z;
+		int operator[] (int i) const
+		{
+			return data[i];
+		}
+
+		int & operator[] (int i) 
+		{
+			return data[i];
+		}
+		
+	private:
+		int data[3];
 	};
 
 	/** FloatSize is used to describe a 2D or 3D rectangular size.
@@ -43,60 +52,120 @@ namespace EMAN
 	class FloatSize
 	{
 	public:
-		FloatSize():x(0), y(0), z(0)
+		FloatSize(float xx=0, float yy=0, float zz=0)
 		{
-		}
-		FloatSize(float xx, float yy):x(xx), y(yy), z(0)
-		{
-		}
-		FloatSize(float xx, float yy, float zz):x(xx), y(yy), z(zz)
-		{
+			data[0] = xx;
+			data[1] = yy;
+			data[2] = zz;
 		}
 
 		int get_ndim() const
 		{
-			if (z > 1) {
+			if (data[2] > 1) {
 				return 3;
 			}
-			return 2;
+			else if (data[1] > 1) {
+				return 2;
+			}
+			return 1;
+		}
+		
+		float operator[] (int i) const
+		{
+			return data[i];
 		}
 
-		float x;
-		float y;
-		float z;
+		float & operator[] (int i) 
+		{
+			return data[i];
+		}
+		
+	private:
+		float data[3];
 	};
 	
 	/** IntPoint defines a integer-coordinate point in a 2D/3D space. */
 	class IntPoint {
 	public:
-		IntPoint():x(0), y(0), z(0), ndim(0) {
+		IntPoint()
+		{
+			data[0] = 0;
+			data[1] = 0;
+			data[2] = 0;
+			ndim = 0;
 		}
-		IntPoint(int xx, int yy):x(xx), y(yy), z(0), ndim(2) {
+		IntPoint(int xx)
+		{
+			data[0] = xx;
+			data[1] = 0;
+			data[2] = 0;
+			ndim = 1;
 		}
-		IntPoint(int xx, int yy, int zz):x(xx), y(yy), z(zz), ndim(3) {
+		IntPoint(int xx, int yy)
+		{
+			data[0] = xx;
+			data[1] = yy;
+			data[2] = 0;
+			ndim = 2;
+		}
+		IntPoint(int xx, int yy, int zz)
+		{
+			data[0] = xx;
+			data[1] = yy;
+			data[2] = zz;
+			ndim = 3;
 		}
 		
 		int get_ndim() const
 		{
 			return ndim;
 		}
+		
+		int operator[] (int i) const
+		{
+			return data[i];
+		}
 
-		int x;
-		int y;
-		int z;
+		int & operator[] (int i) 
+		{
+			return data[i];
+		}
 		
 	private:
+		int data[3];
 		int ndim;
 	};
 
 	/** FloatPoint defines a float-coordinate point in a 2D/3D space. */
 	class FloatPoint {
 	public:
-		FloatPoint():x(0), y(0), z(0), ndim(0) {
+		FloatPoint()
+		{
+			data[0] = 0;
+			data[1] = 0;
+			data[2] = 0;
+			ndim = 0;
 		}
-		FloatPoint(float xx, float yy):x(xx), y(yy), z(0), ndim(2) {
+		FloatPoint(float xx)
+		{
+			data[0] = xx;
+			data[1] = 0;
+			data[2] = 0;
+			ndim = 1;
 		}
-		FloatPoint(float xx, float yy, float zz):x(xx), y(yy), z(zz), ndim(3) {
+		FloatPoint(float xx, float yy)
+		{
+			data[0] = xx;
+			data[1] = yy;
+			data[2] = 0;
+			ndim = 2;
+		}
+		FloatPoint(float xx, float yy, float zz)
+		{
+			data[0] = xx;
+			data[1] = yy;
+			data[2] = zz;
+			ndim = 3;
 		}
 		
 		int get_ndim() const
@@ -104,10 +173,18 @@ namespace EMAN
 			return ndim;
 		}
 
-		float x;
-		float y;
-		float z;
+		float operator[] (int i) const
+		{
+			return data[i];
+		}
+
+		float & operator[] (int i) 
+		{
+			return data[i];
+		}
+		
 	private:
+		float data[3];
 		int ndim;
 	};
 

@@ -543,12 +543,12 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 		}
 	}
 	else {
-		*area_x = (int)area->size.x;
-		*area_y = (int)area->size.y;
+		*area_x = (int)area->size[0];
+		*area_y = (int)area->size[1];
 
 		if (area_z) {
 			if (area->get_ndim() > 2 && nz > 1) {
-				*area_z = (int)area->size.z;
+				*area_z = (int)area->size[2];
 			}
 			else {
 				*area_z = 1;
@@ -561,11 +561,11 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 								int nz, int image_index)
 {
 	if (area) {
-		*p_x0 = static_cast < int >(area->origin.x);
-		*p_y0 = static_cast < int >(area->origin.y);
+		*p_x0 = static_cast < int >(area->origin[0]);
+		*p_y0 = static_cast < int >(area->origin[1]);
 
 		if (p_z0 && nz > 1 && area->get_ndim() > 2) {
-			*p_z0 = static_cast < int >(area->origin.z);
+			*p_z0 = static_cast < int >(area->origin[2]);
 		}
 	}
 	else {
@@ -592,10 +592,10 @@ int EMUtil::get_region_data(unsigned char *cdata, FILE * in, int image_index, si
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
 	if (area) {
-		x0 = static_cast < int >(area->origin.x);
-		y0 = static_cast < int >(area->origin.y);
+		x0 = static_cast < int >(area->origin[0]);
+		y0 = static_cast < int >(area->origin[1]);
 		if (nz > 1 && area->get_ndim() > 2) {
-			z0 = static_cast < int >(area->origin.z);
+			z0 = static_cast < int >(area->origin[2]);
 		}
 	}
 

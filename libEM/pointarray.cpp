@@ -199,9 +199,9 @@ void PointArray::center_to_zero()
 {
 	FloatPoint center = get_center();
 	for (unsigned int i = 0; i < 4 * get_number_points(); i += 4) {
-		points[i] -= center.x;
-		points[i + 1] -= center.y;
-		points[i + 2] -= center.z;
+		points[i] -= center[0];
+		points[i + 1] -= center[1];
+		points[i + 2] -= center[2];
 	}
 }
 

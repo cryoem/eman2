@@ -175,6 +175,7 @@ Vec3 < float >Matrix3f::get_vector(int i) const
 }
 
 
+
 Matrix3f EMAN::operator+(float f, const Matrix3f & m2)
 {
 	Matrix3f m = m2;
