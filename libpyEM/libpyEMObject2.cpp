@@ -6,7 +6,6 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <emobject.h>
-#include <exception.h>
 #include <xydata.h>
 
 // Using =======================================================================
@@ -14,37 +13,6 @@ using namespace boost::python;
 
 // Declarations ================================================================
 namespace  {
-
-struct EMAN_Exception_Wrapper: EMAN::Exception
-{
-    EMAN_Exception_Wrapper(PyObject* self_, const EMAN::Exception& p0):
-        EMAN::Exception(p0), self(self_) {}
-
-    EMAN_Exception_Wrapper(PyObject* self_):
-        EMAN::Exception(), self(self_) {}
-
-    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0):
-        EMAN::Exception(p0), self(self_) {}
-
-    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1):
-        EMAN::Exception(p0, p1), self(self_) {}
-
-    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1, const std::string& p2):
-        EMAN::Exception(p0, p1, p2), self(self_) {}
-
-    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1, const std::string& p2, const std::string& p3):
-        EMAN::Exception(p0, p1, p2, p3), self(self_) {}
-
-    const char* what() const throw() {
-        return call_method< const char* >(self, "what");
-    }
-
-    const char* default_what() const {
-        return EMAN::Exception::what();
-    }
-
-    PyObject* self;
-};
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_TypeDict_put_overloads_2_3, put, 2, 3)
 
@@ -55,15 +23,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_TypeDict_put_overloads_2_3, put, 2, 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMObject2)
 {
-    class_< EMAN::Exception, EMAN_Exception_Wrapper >("Exception", init< const EMAN::Exception& >())
-        .def(init< optional< const std::string&, int, const std::string&, const std::string& > >())
-        .def_readwrite("filename", &EMAN::Exception::filename)
-        .def_readwrite("line", &EMAN::Exception::line)
-        .def_readwrite("desc", &EMAN::Exception::desc)
-        .def_readwrite("objname", &EMAN::Exception::objname)
-        .def("what", (const char* (EMAN::Exception::*)() const throw())&EMAN::Exception::what, (const char* (EMAN_Exception_Wrapper::*)() const)&EMAN_Exception_Wrapper::default_what)
-    ;
-
     scope* EMAN_EMObject_scope = new scope(
     class_< EMAN::EMObject >("EMObject", init<  >())
         .def(init< const EMAN::EMObject& >())

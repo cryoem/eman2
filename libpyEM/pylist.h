@@ -106,8 +106,26 @@ namespace EMAN {
 			return python::incref(python::tuple(result).ptr());
 		}
     };
+#if 0
+	struct Vec3i_to_python : python::to_python_converter<Vec3i, Vec3i_to_python>
+    {
+		static PyObject* convert(Vec3i const& p)
+		{
+			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
+			return python::incref(python::tuple(result).ptr());
+		}
+    };
 
-
+	struct Vec3f_to_python : python::to_python_converter<Vec3f, Vec3f_to_python>
+    {
+		static PyObject* convert(Vec3f const& p)
+		{
+			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
+			return python::incref(python::tuple(result).ptr());
+		}
+    };
+#endif
+	
     template <class T>
     struct map_to_python : python::to_python_converter<map<std::string, T>, map_to_python<T> >
     {
@@ -479,7 +497,107 @@ namespace EMAN {
 			}
 		}
     };
+	
+    struct Vec3f_from_python
+    {
+		Vec3f_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<Vec3f>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
 
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<Vec3f>*) data)->storage.bytes;
+			new (storage) Vec3f();
+
+			data->convertible = storage;
+
+			Vec3f& result = *((Vec3f*) storage);
+	
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+			
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+	    
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+	    
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<float> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+    };
+	
+    struct Vec3i_from_python
+    {
+		Vec3i_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<Vec3i>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
+
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<Vec3i>*) data)->storage.bytes;
+			new (storage) Vec3i();
+
+			data->convertible = storage;
+
+			Vec3i& result = *((Vec3i*) storage);
+	
+			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			int i = 0;
+			
+			while(1) {
+				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+				if (PyErr_Occurred()) {
+					python::throw_error_already_set();
+				}
+	    
+				if (!py_elem_hdl.get()) {
+					break;
+				}
+	    
+				python::object py_elem_obj(py_elem_hdl);
+				python::extract<int> elem_proxy(py_elem_obj);
+				result[i] = elem_proxy();
+				i++;
+			}
+		}
+    };
+	
 }
 
 

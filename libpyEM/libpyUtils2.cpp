@@ -281,8 +281,8 @@ struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
         return EMAN::ImageIO::is_single_image_format();
     }
 
-    int init() {
-        return call_method< int >(self, "init");
+    void init() {
+        call_method< void >(self, "init");
     }
 
     PyObject* self;
@@ -549,9 +549,12 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("save_data", (void (*)(const std::vector<float,std::allocator<float> >&, const std::vector<float,std::allocator<float> >&, std::string))&EMAN::Util::save_data)
         .def("save_data", (void (*)(float, float, const std::vector<float,std::allocator<float> >&, std::string))&EMAN::Util::save_data)
         .def("save_data", (void (*)(float, float, float*, size_t, std::string))&EMAN::Util::save_data)
-        .def("get_frand", &EMAN::Util::get_frand)
+        .def("get_frand", (float (*)(int, int))&EMAN::Util::get_frand)
+        .def("get_frand", (float (*)(float, float))&EMAN::Util::get_frand)
+        .def("get_frand", (float (*)(double, double))&EMAN::Util::get_frand)
         .def("get_gauss_rand", &EMAN::Util::get_gauss_rand)
-        .def("round", &EMAN::Util::round)
+        .def("round", (int (*)(float))&EMAN::Util::round)
+        .def("round", (int (*)(double))&EMAN::Util::round)
         .def("bilinear_interpolate", &EMAN::Util::bilinear_interpolate)
         .def("trilinear_interpolate", &EMAN::Util::trilinear_interpolate)
         .def("find_max", &EMAN::Util::find_max, EMAN_Util_find_max_overloads_3_4())
@@ -559,9 +562,11 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("calc_best_fft_size", &EMAN::Util::calc_best_fft_size)
         .def("square", (int (*)(int))&EMAN::Util::square)
         .def("square", (float (*)(float))&EMAN::Util::square)
-        .def("square", (double (*)(double))&EMAN::Util::square)
+        .def("square", (float (*)(double))&EMAN::Util::square)
         .def("square_sum", &EMAN::Util::square_sum)
-        .def("hypot3", &EMAN::Util::hypot3)
+        .def("hypot3", (float (*)(int, int, int))&EMAN::Util::hypot3)
+        .def("hypot3", (float (*)(float, float, float))&EMAN::Util::hypot3)
+        .def("hypot3", (float (*)(double, double, double))&EMAN::Util::hypot3)
         .def("fast_floor", &EMAN::Util::fast_floor)
         .def("agauss", &EMAN::Util::agauss)
         .def("min", (int (*)(int, int))&EMAN::Util::min)
