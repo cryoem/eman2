@@ -161,7 +161,7 @@ string Util::get_line_from_string(char **slines)
 		char *str = *slines;
 		char buf[1024];
 		int i = 0;
-		while (*str != '\n') {
+		while (*str != '\n' && i < 1024) {
 			buf[i] = *str;
 			i++;
 			str++;
