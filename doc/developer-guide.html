@@ -296,15 +296,24 @@ scaling, and their combination.</li>
 to print out
 error/warning/debugging information?</big></li>
   <ul>
-    <li><span style="font-weight: bold;">Log</span> class defines a
-generic way to do this. It can send information to either standard out,
+    <li><span style="font-weight: bold;">use Log</span> class.</li>
+    <li style="font-weight: bold; color: rgb(51, 51, 255);">Why use Log
+class?</li>
+    <ul>
+      <li>&nbsp;It defines a
+generic way to do logging. The logging may go to either standard out,
 a file, or a pipe.</li>
-    <li>To log function enter point, use <span
- style="color: rgb(51, 255, 51); font-weight: bold;">ENTERFUNC;</span><span
- style="font-weight: bold;"> </span>to log function exit point, use <span
- style="font-weight: bold; color: rgb(51, 255, 51);">EXITFUNC.</span><br>
+      <li>It may give you best performance. Log functions are defined
+as macros. With an option to define all macros to be void, we may make
+the program completely silient and remove all the IO overhead.</li>
+      <li>It allows different level of verbosity from 0-4, with 0 means
+completely silient, 4 means very verbose.<br>
+      </li>
+    </ul>
+    <li><span style="font-weight: bold; color: rgb(51, 255, 51);"></span><br>
     </li>
-    <li>How to use <span style="font-weight: bold;">Log</span></li>
+    <li style="font-weight: bold; color: rgb(51, 51, 255);">How to use
+Log</li>
     <ul>
 1) in your main() file, set log level:&nbsp;&nbsp;&nbsp; <span
  style="color: rgb(51, 204, 0); font-weight: bold;">Log::logger()-&gt;set_log_level(WARNING_LOG);</span><br>
@@ -318,13 +327,11 @@ image size");<br>
 mean density = %f\n", mean);<br>
 &nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGVAR</span>("image
 size = (%d, %d, %d)\n", nx, ny, nz);<br>
-3) For best performance, you may remove all log messages by changing
-definition of the above log functions, which are MACROs in file
-eman2/libEM/log.h.<br>
+3) To log function enter point, use ENTERFUNC; To log function exit
+point, use EXITFUNC.<br>
     </ul>
   </ul>
 </ol>
-<br>
 <br>
 <hr>
 <address>lpeng@bcm.tmc.edu</address>
