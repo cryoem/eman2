@@ -116,7 +116,7 @@ namespace EMAN {
 		_OutofRangeException(int low, int high, int input,
 							 const string& file = "unknown",
 							 int line = 0, const string& objname = "")
-			: Exception(file, line, desc)
+			: Exception(file, line, desc, objname)
 		{
 			char s[128];
 			sprintf(s, "%d out of range [%d,%d]", input, low, high);

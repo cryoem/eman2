@@ -44,16 +44,10 @@ int ImageIO::check_region(const Region * area, const IntSize & max_size)
 	return 0;
 }
 
-int ImageIO::check_read_access(int image_index, bool check_data, float *data)
+int ImageIO::check_read_access(int image_index)
 {
 	if (init() != 0) {
 		return 1;
-	}
-
-	if (check_data) {
-		if (!data) {
-			throw NullPointerException("image data is NULL");
-		}
 	}
 
 	int nimg = get_nimg();
@@ -63,9 +57,17 @@ int ImageIO::check_read_access(int image_index, bool check_data, float *data)
 
 	return 0;
 }
+int ImageIO::check_read_access(int image_index, float *data)
+{
+	int err = check_read_access(image_index);
+	if (!err && !data) {
+		throw NullPointerException("image data is NULL");
+	}
+	
+	return err;
+}
 
-int ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg,
-								bool check_data, float *data)
+int ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg)
 {
 	if (init() != 0) {
 		return 1;
@@ -80,13 +82,19 @@ int ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg,
 		throw OutofRangeException(-1, max_nimg - 1, image_index, "image index");
 	}
 	
-	if (check_data) {
+	return 0;
+}
+
+int ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg, float *data)
+{
+	int err = check_write_access(iomode, image_index, max_nimg);
+	if (!err && !data) {
 		if (!data) {
 			throw NullPointerException("image data is NULL");
 		}
 	}
 
-	return 0;
+	return err;
 }
 
 FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrite)
@@ -131,4 +139,14 @@ FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrit
 		LOGERR("cannot access file '%s'", filename.c_str());
 	}
 	return f;
+}
+
+
+int ImageIO::get_nimg()
+{
+	if (init() != 0) {
+		return 0;
+	}
+
+	return 1;
 }

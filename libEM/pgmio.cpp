@@ -195,7 +195,7 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -216,11 +216,8 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 		mode_size = sizeof(unsigned short);
 	}
 
-	int err = EMUtil::get_region_data(cdata, pgm_file, image_index, mode_size,
-									  nx, ny, 1, area, true);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io(cdata, pgm_file, READ_ONLY, image_index, 
+							  mode_size, nx, ny, 1, area, true);
 
 #if 0
 	int ushort_size = sizeof(unsigned short);
@@ -264,7 +261,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
 		return 1;
 	}
 	portable_fseek(pgm_file, file_offset, SEEK_SET);
@@ -292,11 +289,3 @@ bool PgmIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-int PgmIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}

@@ -15,6 +15,7 @@ IcosIO::IcosIO(string file, IOMode rw)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
+	memset(&icosh, 0, sizeof(IcosHeader));
 }
 
 IcosIO::~IcosIO()
@@ -160,7 +161,7 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 	ENTERFUNC;
 	int err = 0;
 	
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		err = 1;
 	}
 	else {
@@ -170,17 +171,14 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 		else {
 			portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
 			
-			err = EMUtil::get_region_data((unsigned char *) data, icos_file, image_index,
-										  sizeof(float), icosh.nx, icosh.ny, icosh.nz, 
-										  area,false, sizeof(int), sizeof(int));
-			if (err) {
-				err = 1;
-			}
-			else {
-				int xlen = 0, ylen = 0, zlen = 0;
-				EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
-				become_host_endian(data, xlen * ylen * zlen);
-			}
+			EMUtil::process_region_io((unsigned char *) data, icos_file,
+									  READ_ONLY, image_index,
+									  sizeof(float), icosh.nx, icosh.ny, icosh.nz, 
+									  area,false, sizeof(int), sizeof(int));
+			
+			int xlen = 0, ylen = 0, zlen = 0;
+			EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
+			become_host_endian(data, xlen * ylen * zlen);
 		}
 	}
 	EXITFUNC;
@@ -192,7 +190,7 @@ int IcosIO::write_data(float *data, int image_index, const Region* area, bool)
 	ENTERFUNC;
 	int err = 0;
 	
-	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
 		err = 1;
 	}
 	else {
@@ -243,11 +241,3 @@ bool IcosIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-int IcosIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}

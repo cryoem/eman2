@@ -66,7 +66,10 @@ void Log::loc(LogLevel level, const string & filename, int linenum, const string
 		return;
 	}
 
-	location = Util::sbasename(filename) + ":" + Util::int2str(linenum) + " " + func;
+	location = Util::sbasename(filename) + ":" + Util::int2str(linenum);
+        if (func != "") {
+	      location +=" " + func + "()";
+	}
 }
 
 void Log::vlog(const char *format, LogLevel level, va_list arg)

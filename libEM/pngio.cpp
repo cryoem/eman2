@@ -253,7 +253,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -309,7 +309,7 @@ int PngIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
 		return 1;
 	}
 
@@ -360,13 +360,5 @@ bool PngIO::is_image_big_endian()
 	return true;
 }
 
-int PngIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}
 
 #endif

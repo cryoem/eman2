@@ -21,7 +21,12 @@ namespace EMAN
 					   bool use_host_endian = true);
 
 		static bool is_valid(const void *first_block);
-
+		
+		bool is_single_image_format() const
+		{
+			return true;
+		}
+		
 	  protected:
 		  bool is_valid_spider(const void *first_block);
 	};

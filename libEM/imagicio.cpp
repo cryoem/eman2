@@ -356,7 +356,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -379,11 +379,8 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	unsigned char *cdata = (unsigned char *) data;
 	size_t mode_size = get_datatype_size(datatype);
 
-	int err = EMUtil::get_region_data(cdata, img_file, image_index, mode_size,
-									  imagich.nx, imagich.ny, nimg, area, true);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io(cdata, img_file, READ_ONLY, image_index, mode_size,
+							  imagich.nx, imagich.ny, nimg, area, true);
 
 #if 0
 	int row_size = imagich.nx * mode_size;
@@ -424,7 +421,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
 		return 1;
 	}
 

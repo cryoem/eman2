@@ -12,17 +12,20 @@ using std::string;
 
 namespace EMAN
 {
+#ifndef __func__
+#define __func__ ""
+#endif
 
 #define ENTERFUNC  LOGDEBUG("Enter ")
 #define EXITFUNC   LOGDEBUG("Exit ")
 	
 #define LOGERR Log::logger()->loc(Log::ERROR_LOG, __FILE__, __LINE__, __func__); Log::logger()->error
 
-#define LOGWARN Log::logger()->loc(Log::WARNING_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->warn
+#define LOGWARN Log::logger()->loc(Log::WARNING_LOG, __FILE__, __LINE__, __func__); Log::logger()->warn
 
-#define LOGDEBUG Log::logger()->loc(Log::DEBUG_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->debug
+#define LOGDEBUG Log::logger()->loc(Log::DEBUG_LOG, __FILE__, __LINE__, __func__); Log::logger()->debug
 
-#define LOGVAR Log::logger()->loc(Log::VARIABLE_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->variable
+#define LOGVAR Log::logger()->loc(Log::VARIABLE_LOG, __FILE__, __LINE__, __func__); Log::logger()->variable
 	
 
 	/** Log defines a way to output logging information.

@@ -16,6 +16,7 @@ EmIO::EmIO(string file, IOMode rw)
 	mode_size = 0;
 	mode = EM_EM_UNKNOWN;
 	is_big_endian = ByteOrder::is_host_big_endian();
+	memset(&emh, 0, sizeof(EMHeader));
 }
 
 EmIO::~EmIO()
@@ -129,7 +130,7 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, area) != 0) {
+	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
 	if (check_region(area, IntSize(emh.nx, emh.ny, emh.nz)) != 0) {
@@ -156,24 +157,19 @@ int EmIO::write_header(const Dict & dict, int image_index, const Region* area, b
 		err = 1;
 	}
 	else {
-		if (area) {
-			LOGERR("region write is not supported yet");
+		emh.machine = static_cast < char >(get_machine_type());
+		emh.nx = dict["nx"];
+		emh.ny = dict["ny"];
+		emh.nz = dict["nz"];
+		emh.data_type = EM_EM_FLOAT;
+			
+		rewind(em_file);
+		if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
+			LOGERR("cannot write header to file '%s'", filename.c_str());
 			err = 1;
 		}
-		else {
-			emh.machine = static_cast < char >(get_machine_type());
-			emh.nx = dict["nx"];
-			emh.ny = dict["ny"];
-			emh.nz = dict["nz"];
-			emh.data_type = EM_EM_FLOAT;
-			
-			rewind(em_file);
-			if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-				LOGERR("cannot write header to file '%s'", filename.c_str());
-				err = 1;
-			}
-		}
 	}
+
 	EXITFUNC;
 	return err;
 }
@@ -182,7 +178,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -193,11 +189,8 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
 
 	unsigned char *cdata = (unsigned char *) data;
-	int err = EMUtil::get_region_data(cdata, em_file, image_index, mode_size,
-									  emh.nx, emh.ny, emh.nz, area);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io(cdata, em_file, READ_ONLY, image_index, mode_size,
+							  emh.nx, emh.ny, emh.nz, area);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, emh.nz, &zlen);
@@ -247,28 +240,28 @@ int EmIO::write_data(float *data, int image_index, const Region* area, bool)
 	ENTERFUNC;
 	int err = 0;
 	
-	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
 		err = 1;
 	}
-	else {
-		if (area) {
-			LOGERR("region write is not supported yet");
-			err = 1;
-		}
-		else {
-			portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
-			
-			int sec_size = emh.nx * emh.ny;
-			int row_size = sizeof(float) * emh.nx;
-			
-			for (int i = 0; i < emh.nz; i++) {
-				int k = i * sec_size;
-				for (int j = 0; j < emh.ny; j++) {
-					fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
-				}
+	else {		
+		portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
+
+		EMUtil::process_region_io(data, em_file, WRITE_ONLY,
+								  image_index, sizeof(float), 
+								  emh.nx, emh.ny, emh.nz, area);
+#if 0
+		int sec_size = emh.nx * emh.ny;
+		int row_size = sizeof(float) * emh.nx;
+		
+		for (int i = 0; i < emh.nz; i++) {
+			int k = i * sec_size;
+			for (int j = 0; j < emh.ny; j++) {
+				fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
 			}
 		}
+#endif
 	}
+
 	EXITFUNC;
 	return err;
 }
@@ -291,14 +284,6 @@ bool EmIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-int EmIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}
 
 int EmIO::to_em_datatype(char t)
 {
@@ -333,6 +318,10 @@ int EmIO::get_machine_type()
 	m = EM_PC;
 #elif defined WIN32
 	m = EM_PC;
+#elif defined MACOS
+	m = EM_MAC;
+#elif defined macintosh
+	m = EM_MAC;
 #else
 	m = EM_UNKNOWN_MACHINE;
 #endif

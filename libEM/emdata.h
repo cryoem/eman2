@@ -13,7 +13,9 @@
 #include "emobject.h"
 #include "emutil.h"
 #include "util.h"
-#include "transform.h"
+#include "vec3.h"
+#include "geometry.h"
+#include "rotation.h"
 
 using std::string;
 using std::vector;
@@ -25,7 +27,8 @@ namespace EMAN
 	class ImageIO;
 	class Ctf;
 	class XYData;
-
+	class Transform;
+	
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
 	 *

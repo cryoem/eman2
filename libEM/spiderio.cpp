@@ -132,7 +132,7 @@ bool SpiderIO::is_valid(const void *first_block)
 	}
 
 	EXITFUNC;
-	return false;
+	return result;
 }
 
 int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, bool)
@@ -452,7 +452,7 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -480,12 +480,9 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	size_t pad_size = static_cast < size_t > (first_h->headlen - sizeof(SpiderHeader));
 	portable_fseek(spider_file, pad_size, SEEK_CUR);
 
-	int err = EMUtil::get_region_data((unsigned char *) data, spider_file, 0, sizeof(float),
-									  (int) first_h->nx, (int) first_h->ny, (int) first_h->nslice,
-									  area);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io((unsigned char *) data, spider_file, READ_ONLY,
+							  0, sizeof(float), (int) first_h->nx, (int) first_h->ny, 
+							  (int) first_h->nslice, area);
 
 #if 0
 	unsigned int nz = static_cast < unsigned int >(first_h->nslice);
@@ -511,7 +508,7 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
 		return 1;
 	}
 
@@ -578,7 +575,7 @@ int SpiderIO::write_single_data(float *data)
 {
 	ENTERFUNC;
 	
-	if (check_write_access(rw_mode, 0, true, data) != 0) {
+	if (check_write_access(rw_mode, 0, 1, data) != 0) {
 		return 1;
 	}
 	if (!first_h) {

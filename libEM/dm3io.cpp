@@ -751,7 +751,7 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, rdata) != 0) {
+	if (check_read_access(image_index, rdata) != 0) {
 		return 1;
 	}
 		
@@ -813,7 +813,7 @@ bool DM3IO::is_complex_mode()
 	return false;
 }
 
-int DM3IO::write_header(const Dict &, int, const Region* area, bool)
+int DM3IO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("DM3 write is not supported.");
@@ -821,7 +821,7 @@ int DM3IO::write_header(const Dict &, int, const Region* area, bool)
 	return 1;
 }
 
-int DM3IO::write_data(float *, int, const Region* area, bool)
+int DM3IO::write_data(float *, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("DM3 write is not supported.");
@@ -1011,10 +1011,3 @@ const char *Gatan::to_str(Gatan::DataType::GatanDataType type)
 	return "Unknown Type";
 }
 
-int DM3IO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-	return 1;
-}

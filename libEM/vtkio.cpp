@@ -19,8 +19,9 @@ VtkIO::VtkIO(string vtk_filename, IOMode rw)
 :	filename(vtk_filename), rw_mode(rw), vtk_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
-
-	datatype = DATA_UNKNOWN;
+	is_new_file = false;
+	
+	datatype = DATATYPE_UNKNOWN;
 	filetype = VTK_UNKNOWN;
 	nx = 0;
 	ny = 0;
@@ -58,71 +59,82 @@ int VtkIO::init()
 	
 	initialized = true;
 
-	vtk_file = sfopen(filename, rw_mode);
+	vtk_file = sfopen(filename, rw_mode, &is_new_file);
 	if (!vtk_file) {
 		err = 1;
 		return 1;
 	}
+	
+	if (!is_new_file) {
+		char buf[1024];
+		int bufsz = sizeof(buf);
+		if (fgets(buf, bufsz, vtk_file) == 0) {
+			throw ImageReadException(filename, "read VTK file failed");
+		}
 
-	char buf[1024];
-	int bufsz = sizeof(buf);
-	if (fgets(buf, bufsz, vtk_file) == 0) {
-		LOGERR("read VTK file '%s' failed", filename.c_str());
-		return 1;
-	}
+		if (!is_valid(&buf)) {
+			LOGERR("not a valid VTK file");
+			return 1;
+		}
+		
+		if (fgets(buf, bufsz, vtk_file) == 0) {
+			throw ImageReadException(filename, "read VTK file failed");
+		}
 
-	if (!is_valid(&buf)) {
-		LOGERR("not a valid VTK file");
-		return 1;
-	}
-
-	while (fgets(buf, bufsz, vtk_file)) {
-		if (samestr(buf, "LOOKUP_TABLE default")) {
-			break;
-		}
-		else if (samestr(buf, "ASCII")) {
-			filetype = VTK_ASCII;
-		}
-		else if (samestr(buf, "BINARY")) {
-			filetype = VTK_BINARY;
-		}
-		else if (samestr(buf, "DIMENSIONS")) {
-			sscanf(buf, "DIMENSIONS %d %d %d", &nx, &ny, &nz);
-		}
-		else if (samestr(buf, "ORIGIN")) {
-			sscanf(buf, "ORIGIN %f %f %f", &originx, &originy, &originz);
-		}
-		else if (samestr(buf, "SPACING")) {
-			sscanf(buf, "SPACING %f %f %f", &spacingx, &spacingy, &spacingz);
-			if (spacingx != spacingy || spacingx != spacingz || spacingy != spacingz) {
-				LOGERR("cannot handle non-uniform spacing VTK file\n");
-				return 1;
+		if (fgets(buf, bufsz, vtk_file)) {
+			if (samestr(buf, "ASCII")) {
+				filetype = VTK_ASCII;
+			}
+			else if (samestr(buf, "BINARY")) {
+				filetype = VTK_BINARY;
 			}
 		}
-		else if (samestr(buf, "SCALARS")) {
-			char datatypestr[32];
-			char scalartype[32];
-			sscanf(buf, "SCALARS %s %s", scalartype, datatypestr);
+		else {
+			throw ImageReadException(filename, "read VTK file failed");
+		}
 
-			if (samestr(datatypestr, "unsigned_short")) {
-				datatype = UNSIGNED_SHORT;
-			}
-			else if (samestr(datatypestr, "float")) {
-				datatype = FLOAT;
-			}
-			else {
-				LOGERR("unknown data type: %s", datatypestr);
-				return 1;
+		if (fgets(buf, bufsz, vtk_file)) {
+			if (samestr(buf, "DATASET")) {
+				char dataset_name[128];
+				sscanf(buf, "DATASET %s", dataset_name);
+				DatasetType ds_type = get_datasettype_from_name(dataset_name);
+				read_dataset(ds_type);
 			}
 		}
-	}
+		else {
+			throw ImageReadException(filename, "read VTK file failed");
+		}
+		
+		while (fgets(buf, bufsz, vtk_file)) {
+			if (samestr(buf, "SCALARS")) {
+				char datatypestr[32];
+				char scalartype[32];
+				sscanf(buf, "SCALARS %s %s", scalartype, datatypestr);
 
-	if (filetype == VTK_BINARY) {
-		LOGERR("binary VTK is not supported");
-		return 1;
+				datatype = get_datatype_from_name(datatypestr);
+				if (datatype != UNSIGNED_SHORT && datatype != FLOAT) {
+					string desc = "unknown data type: " + string(datatypestr);
+					throw ImageReadException(filename, desc);
+				}
+			}
+			else if (samestr(buf, "LOOKUP_TABLE")) {
+				char tablename[128];
+				sscanf(buf, "LOOKUP_TABLE %s", tablename);
+				if (!samestr(tablename, "default")) {
+					throw ImageReadException(filename, "only default LOOKUP_TABLE supported");
+				}
+				else {
+					break;
+				}
+			}
+		}
+#if 0
+		if (filetype == VTK_BINARY) {
+			throw ImageReadException(filename, "binary VTK is not supported");
+		}
+#endif
+		file_offset = portable_ftell(vtk_file);
 	}
-
-	file_offset = portable_ftell(vtk_file);
 	EXITFUNC;
 	return 0;
 }
@@ -206,7 +218,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -221,28 +233,46 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 	EMUtil::get_region_origins(area, &x0, &y0, &z0, nz, image_index);
 
-	int bufsz = nx * get_mode_size(datatype) * CHAR_BIT;
-	char *buf = new char[bufsz];
-	int i = 0;
+	if (filetype == VTK_ASCII) {
+	
+		int bufsz = nx * get_mode_size(datatype) * CHAR_BIT;
+		char *buf = new char[bufsz];
+		int i = 0;
 
-	while (fgets(buf, bufsz, vtk_file)) {
-		size_t bufslen = strlen(buf) - 1;
-		char numstr[32];
-		int k = 0;
-		for (size_t j = 0; j < bufslen; j++) {
-			if (!isspace(buf[j])) {
-				numstr[k++] = buf[j];
+		while (fgets(buf, bufsz, vtk_file)) {
+			size_t bufslen = strlen(buf) - 1;
+			char numstr[32];
+			int k = 0;
+			for (size_t j = 0; j < bufslen; j++) {
+				if (!isspace(buf[j])) {
+					numstr[k++] = buf[j];
+				}
+				else {
+					numstr[k] = '\0';
+					data[i++] = (float)atoi(numstr);
+					k = 0;
+				}
 			}
-			else {
-				numstr[k] = '\0';
-				data[i++] = (float)atoi(numstr);
-				k = 0;
+		}
+		delete[]buf;
+		buf = 0;
+	}
+	else if (filetype == VTK_BINARY) {
+		int nxy = nx * ny;
+		int row_size = nx * get_mode_size(datatype);
+		
+		for (int i = 0; i < nz; i++) {
+			int i2 = i * nxy;
+			for (int j = 0; j < ny; j++) {
+				fread(&data[i2 + j * nx], row_size, 1, vtk_file);
 			}
+		}
+		
+		if (!ByteOrder::is_host_big_endian()) {
+			ByteOrder::swap_bytes(data, nx * ny * nz);
 		}
 	}
 
-	delete[]buf;
-	buf = 0;
 	EXITFUNC;
 	return 0;
 }
@@ -251,7 +281,7 @@ int VtkIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 	
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
 		return 1;
 	}
 
@@ -299,23 +329,124 @@ int VtkIO::to_em_datatype(int vtk_datatype)
 	return EMUtil::EM_UNKNOWN;
 }
 
-int VtkIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-	return 1;
-}
 
 int VtkIO::get_mode_size(DataType d)
 {
 	switch (d) {
+	case UNSIGNED_CHAR:
+	case CHAR:
+		return sizeof(char);
 	case UNSIGNED_SHORT:
+	case SHORT:
 		return sizeof(short);
+	case UNSIGNED_INT:
+	case INT:
+		return sizeof(int);
+	case UNSIGNED_LONG:
+	case LONG:
+		return sizeof(long);
 	case FLOAT:
 		return sizeof(float);
+	case DOUBLE:
+		return sizeof(double);
 	default:
+		LOGERR("don't support this data type '%d'", d);
 		break;
 	}
 	return 0;
 }
+
+VtkIO::DataType VtkIO::get_datatype_from_name(const string& datatype_name)
+{
+	static bool initialized = false;
+	static map < string, VtkIO::DataType > datatypes;
+
+	if (!initialized) {
+		datatypes["bit"] = BIT;
+		
+		datatypes["unsigned_char"] = UNSIGNED_CHAR;
+		datatypes["char"] = CHAR;
+		
+		datatypes["unsigned_short"] = UNSIGNED_SHORT;
+		datatypes["short"] = SHORT;
+		
+		datatypes["unsigned_int"] = UNSIGNED_INT;
+		datatypes["int"] = INT;
+		
+		datatypes["unsigned_long"] = UNSIGNED_LONG;
+		datatypes["long"] = LONG;
+
+		datatypes["float"] = FLOAT;
+		datatypes["double"] = DOUBLE;
+		initialized = true;
+	}
+
+	DataType result = DATATYPE_UNKNOWN;
+	
+	if (datatypes.find(datatype_name) != datatypes.end()) {
+		result = datatypes[datatype_name];
+	}
+	return result;
+}
+
+VtkIO::DatasetType VtkIO::get_datasettype_from_name(const string& dataset_name)
+{
+
+	static bool initialized = false;
+	static map < string, DatasetType > types;
+	
+	if (!initialized) {
+		types["STRUCTURED_POINTS"] = STRUCTURED_POINTS;
+		types["STRUCTURED_GRID"] = STRUCTURED_GRID;
+		types["RECTILINEAR_GRID"] = RECTILINEAR_GRID;
+		types["UNSTRUCTURED_GRID"] = UNSTRUCTURED_GRID;
+		types["POLYDATA"] = POLYDATA;
+	}
+
+	DatasetType result = DATASET_UNKNOWN;
+	if (types.find(dataset_name) != types.end()) {
+		result = types[dataset_name];
+	}
+	return result;
+}
+
+void VtkIO::read_dataset(DatasetType dstype)
+{
+	char buf[1024];
+	int bufsz = sizeof(buf);
+	
+	if (dstype == STRUCTURED_POINTS) {
+		int nlines = 3;
+		int i = 0;
+		while (i < nlines && fgets(buf, bufsz, vtk_file)) {
+			if (samestr(buf, "DIMENSIONS")) {
+				sscanf(buf, "DIMENSIONS %d %d %d", &nx, &ny, &nz);
+			}
+			else if (samestr(buf, "ORIGIN")) {
+				sscanf(buf, "ORIGIN %f %f %f", &originx, &originy, &originz);
+			}
+			else if (samestr(buf, "SPACING") || samestr(buf, "ASPECT_RATIO")) {
+				if (samestr(buf, "SPACING")) {
+					sscanf(buf, "SPACING %f %f %f", &spacingx, &spacingy, &spacingz);
+				}
+				else {
+					sscanf(buf, "ASPECT_RATIO %f %f %f", &spacingx, &spacingy, &spacingz);
+				}
+				
+				if (spacingx != spacingy || spacingx != spacingz || spacingy != spacingz) {
+					throw ImageReadException(filename,
+											 "not support non-uniform spacing VTK so far\n");
+				}
+			}
+			i++;
+		}
+
+		if (i != nlines) {
+			throw ImageReadException(filename, "read VTK file failed");
+		}
+	}
+	else {
+		throw ImageReadException(filename, "only STRUCTURED_POINTS is supported so far");
+	}
+}
+

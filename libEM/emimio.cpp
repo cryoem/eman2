@@ -14,6 +14,7 @@ EmimIO::EmimIO(string file, IOMode rw)
 :	filename(file), rw_mode(rw), emim_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
+	memset(&efh, 0, sizeof(EmimFileHeader));
 }
 
 EmimIO::~EmimIO()
@@ -139,7 +140,7 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	int err = 0;
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		err = 1;
 	}
 	else {
@@ -148,14 +149,11 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 		portable_fseek(emim_file, offset, SEEK_SET);
 		
 		unsigned char *cdata = (unsigned char *) data;
-		err = EMUtil::get_region_data(cdata, emim_file, 0, sizeof(float),
-									  efh.nx, efh.ny, efh.nz, area);
-		if (err) {
-			err = 1;
-		}
-		else {
-			become_host_endian(data, efh.nx * efh.ny * efh.nz);
-		}
+		EMUtil::process_region_io(cdata, emim_file, READ_ONLY, 0, sizeof(float),
+								  efh.nx, efh.ny, efh.nz, area);
+		
+		become_host_endian(data, efh.nx * efh.ny * efh.nz);
+		
 	}
 	EXITFUNC;
 	return err;

@@ -29,10 +29,10 @@ namespace EMAN
 	 * type of image format. For example, MrcIO is for reading/writing
 	 * MRC images.
 	 * 
-     * A subclass should implement functions declared in
-     * DEFINE_IMAGEIO_FUNC macro.
-     *
-     * Image header I/O is separated from image data I/O.
+	 * A subclass should implement functions declared in
+	 * DEFINE_IMAGEIO_FUNC macro.
+	 *
+	 * Image header I/O is separated from image data I/O.
 	 *
 	 * Some image formats (e.g., MRC, DM3, Gatan2, TIFF, PNG, EM, ICOS) only store a
 	 * single 2D or 3D images. For them, image_index should always be
@@ -48,7 +48,7 @@ namespace EMAN
 	 * Some image formats (e.g. HDF) can store a stack of images. Each
 	 * image can be 2D or 3D.
 	 * 
-     * For image formats storing multiple images, valid image_index = [0, n].
+	 * For image formats storing multiple images, valid image_index = [0, n].
 	 *
 	 * The typical way to use an ImageIO instance is:
 	 * a) To read:
@@ -140,7 +140,7 @@ namespace EMAN
 		virtual void flush() = 0;
 		
 		/** Return the number of images in this image file. */
-		virtual int get_nimg() = 0;
+		virtual int get_nimg();
 
 		/** Is this an complex image or not. */
 		virtual bool is_complex_mode() = 0;
@@ -169,18 +169,18 @@ namespace EMAN
 
 	protected:
 		virtual int init() = 0;
-		int check_read_access(int image_index, bool check_data = false, float *data = 0);
-		int check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0, 
-							   bool check_data = false, float *data = 0);
+		int check_read_access(int image_index);
+		int check_read_access(int image_index, float *data);
+		int check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0);
+		int check_write_access(IOMode rw_mode, int image_index, int max_nimg, float *data);
 		int check_region(const Region * area, const IntSize & max_size);
-		
 
 		FILE *sfopen(string filename, IOMode mode, bool * is_new = 0, bool overwrite = false);
 	};
 
 	/** DEFINE_IMAGEIO_FUNC declares the functions that needs to
-     * be implemented by any subclass of ImageIO.
-     */
+	 * be implemented by any subclass of ImageIO.
+	 */
 #define DEFINE_IMAGEIO_FUNC \
 		int read_header(Dict & dict, int image_index = 0, const Region* area = 0, bool is_3d = false); \
 		int write_header(const Dict & dict, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
@@ -189,7 +189,6 @@ namespace EMAN
 		void flush(); \
 		bool is_complex_mode(); \
 		bool is_image_big_endian(); \
-		int get_nimg(); \
 		int init()
 
 }

@@ -19,10 +19,10 @@ namespace EMAN
 {
 	class EMConsts {
 	public:
-		static float I2G;
-		static float I3G;
-		static float I4G;
-		static float I5G;
+		static const float I2G; // 2 interpolation
+		static const float I3G; // used for 3 and 5x5x5 interpolation
+		static const float I4G; // used for 4 interpolation
+		static const float I5G; // used for 5x5x5 interpolation
 	};
 	
 	class EMData;

@@ -14,6 +14,7 @@ Gatan2IO::Gatan2IO(string file, IOMode rw)
 :	filename(file), rw_mode(rw), gatan2_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
+	memset(&gatanh, 0, sizeof(Gatan2Header));
 }
 
 Gatan2IO::~Gatan2IO()
@@ -131,10 +132,10 @@ int Gatan2IO::write_header(const Dict &, int, const Region* area, bool)
 	return 1;
 }
 
-int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool is_3d)
+int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -160,11 +161,8 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	unsigned char *cdata = (unsigned char *) data;
 	int *ldata = (int *) data;
 
-	int err = EMUtil::get_region_data(cdata, gatan2_file, image_index, gatanh.len,
-									  gatanh.nx, gatanh.ny, 1, area);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io(cdata, gatan2_file, READ_ONLY, image_index, gatanh.len,
+							  gatanh.nx, gatanh.ny, 1, area);
 
 	int i = 0;
 
@@ -197,7 +195,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int Gatan2IO::write_data(float *, int, const Region* area, bool)
+int Gatan2IO::write_data(float *, int, const Region*, bool)
 {
 	ENTERFUNC;
 	LOGWARN("Gatan2 write is not supported.");
@@ -222,14 +220,7 @@ bool Gatan2IO::is_image_big_endian()
 	return is_big_endian;
 }
 
-int Gatan2IO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
 
-	return 1;
-}
 
 int Gatan2IO::to_em_datatype(int gatan_type)
 {

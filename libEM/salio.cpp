@@ -173,7 +173,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 	if (check_region(area, IntSize(nx, ny)) != 0) {
@@ -194,11 +194,8 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	size_t block_size = (((row_size - 1) / record_length) + 1) * record_length;
 	size_t post_row = block_size - row_size;
 
-	int err = EMUtil::get_region_data(cdata, sal_file, image_index, mode_size,
-									  nx, ny, 1, area, false, 0, post_row);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io(cdata, sal_file, READ_ONLY, image_index, 
+							  mode_size, nx, ny, 1, area, false, 0, post_row);
 
 #if 0
 	int row_size = nx * mode_size;
@@ -257,11 +254,3 @@ bool SalIO::is_image_big_endian()
 	return false;
 }
 
-int SalIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}

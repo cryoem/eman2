@@ -40,6 +40,12 @@ namespace EMAN
 		int write_array_attr(int image_index, string attr_name, int nitems, void *data,
 							 DataType type);
 
+		bool is_single_image_format() const
+		{
+			return false;
+		}
+		int get_nimg();
+		
 	  private:
 		hid_t create_dataset(int image_index, int nx, int ny, int nz);
 

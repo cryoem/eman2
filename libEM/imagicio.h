@@ -44,7 +44,12 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 		int read_ctf(Ctf & ctf, int image_index = 0);
 		int write_ctf(const Ctf & ctf, int image_index = 0);
-
+		
+		bool is_single_image_format() const
+		{
+			return false;
+		}
+		int get_nimg();
 	  private:
 		static const char *HED_EXT;
 		static const char *IMG_EXT;
@@ -145,7 +150,7 @@ namespace EMAN
 		DataType get_datatype_from_name(const char *name);
 
 	  private:
-		  string filename;
+		string filename;
 		string hed_filename;
 		string img_filename;
 

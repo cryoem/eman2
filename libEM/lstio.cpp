@@ -205,7 +205,7 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 

@@ -66,7 +66,7 @@ bool SingleSpiderIO::is_valid(const void *first_block)
 	}
 
 	EXITFUNC;
-	return false;
+	return result;
 }
 
 

@@ -376,7 +376,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, rdata) != 0) {
+	if (check_read_access(image_index, rdata) != 0) {
 		return 1;
 	}
 
@@ -394,11 +394,9 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
-	int err = EMUtil::get_region_data(cdata, mrcfile, image_index, mode_size,
-									  mrch.nx, mrch.ny, mrch.nz, area);
-	if (err) {
-		return 1;
-	}
+	EMUtil::process_region_io(cdata, mrcfile, READ_ONLY,
+							  image_index, mode_size,
+							  mrch.nx, mrch.ny, mrch.nz, area);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
@@ -414,15 +412,15 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 		}
 	}
 
-	for (int i = size - 1; i >= 0; i--) {
-		switch (mrch.mode) {
-		case MRC_UCHAR:
+	if (mrch.mode == MRC_UCHAR) {
+		for (int i = size - 1; i >= 0; i--) {
 			//rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
 			rdata[i] = static_cast < float >(cdata[i]);
-			break;
-		case MRC_USHORT:
-			rdata[i] = static_cast < float >(sdata[i]);
-			break;
+		}
+	}
+	else if (mrch.mode == MRC_USHORT) {
+		for (int i = size - 1; i >= 0; i--) {
+			rdata[i] = static_cast < float >(sdata[i]);		
 		}
 	}
 
@@ -438,7 +436,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 1, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
 		return 1;
 	}
 
@@ -460,12 +458,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
-	int row_size = nx * get_mode_size(mrch.mode);
-	int sec_size = nx * ny;
-
-	unsigned char *cbuf = new unsigned char[row_size];
-	unsigned short *sbuf = (unsigned short *) cbuf;
-	int l = 0;
 
 	if (is_big_endian != ByteOrder::is_host_big_endian()) {
 		if (mrch.mode != MRC_UCHAR) {
@@ -478,41 +470,80 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 			}
 		}
 	}
+	mode_size = get_mode_size(mrch.mode);
+	
+	unsigned char *cdata = (unsigned char *) data;
+	short *sdata = (short *) data;
+	
+	int xlen = 0, ylen = 0, zlen = 0;
+	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+	int size = xlen * ylen * zlen;
+	void * ptr_data = data;
 
+	if (mrch.mode == MRC_UCHAR) {
+		for (int i = 0; i < size; i++) {
+			cdata[i] = static_cast < unsigned char >(data[i]);
+		}
+		ptr_data = cdata;
+	}
+	else if (mrch.mode == MRC_USHORT ||
+			 mrch.mode == MRC_USHORT_COMPLEX) {
+		for (int i = 0; i < size; i++) {
+			sdata[i] = static_cast < unsigned short >(data[i]);
+		}
+		ptr_data = sdata;
+	}
+	
+	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
+							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
+	
+	
+#if 0
+	int row_size = nx * get_mode_size(mrch.mode);
+	int sec_size = nx * ny;
 
-
+	unsigned char *cbuf = new unsigned char[row_size];
+	unsigned short *sbuf = (unsigned short *) cbuf;
 	
 	for (int i = 0; i < nz; i++) {
 		int i2 = i * sec_size;
 		for (int j = 0; j < ny; j++) {
 			int k = i2 + j * nx;
+			void *pbuf = 0;
+			
 			switch (mrch.mode) {
 			case MRC_UCHAR:
-				for (l = 0; l < nx; l++) {
+				for (int l = 0; l < nx; l++) {
 					cbuf[l] = static_cast < unsigned char >(data[k + l]);
 				}
+				pbuf = cbuf;
 				fwrite(cbuf, row_size, 1, mrcfile);
 				break;
 
 			case MRC_USHORT:
 			case MRC_USHORT_COMPLEX:
-				for (l = 0; l < nx; l++) {
+				for (int l = 0; l < nx; l++) {
 					sbuf[l] = static_cast < unsigned short >(data[k + l]);
 				}
+				pbuf = sbuf;
 				fwrite(sbuf, row_size, 1, mrcfile);
 				break;
 
 			case MRC_FLOAT:
 			case MRC_FLOAT_COMPLEX:
-				fwrite(&data[k], row_size, 1, mrcfile);
+				pbuf = &data[k];
 				break;
+			}
+			if (pbuf) {
+				fwrite(pbuf, row_size, 1, mrcfile);
 			}
 		}
 	}
 
 	delete[]cbuf;
 	cbuf = 0;
-
+#endif
+	
 	if (is_complex_mode()) {
 		size_t size = nx * ny * nz;
 		if (!is_ri) {
@@ -581,14 +612,6 @@ void MrcIO::flush()
 	fflush(mrcfile);
 }
 
-int MrcIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}
 
 int MrcIO::get_mode_size(int mm)
 {

@@ -325,7 +325,7 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -388,7 +388,7 @@ int PifIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 0, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
 		return 1;
 	}
 

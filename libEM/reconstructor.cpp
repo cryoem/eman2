@@ -3,7 +3,7 @@
  */
 #include "reconstructor.h"
 #include "emdata.h"
-#include "transform.h"
+#include "rotation.h"
 #include "interp.h"
 #include "ctf.h"
 

@@ -4,7 +4,7 @@
 #include "emutil.h"
 #include "log.h"
 #include "io.h"
-#include "transform.h"
+
 #include "portable_fileio.h"
 #include "emcache.h"
 #include "emdata.h"
@@ -578,15 +578,21 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 }
 
 
-int EMUtil::get_region_data(unsigned char *cdata, FILE * in, int image_index, size_t mode_size,
-							int nx, int ny, int nz, const Region * area, bool need_flip,
-							int pre_row, int post_row)
+void EMUtil::process_region_io(void *vdata, FILE * file,
+							   ImageIO::IOMode rw_mode, int image_index,
+							   size_t mode_size, int nx, int ny, int nz,
+							   const Region * area, bool need_flip, 
+							   int pre_row, int post_row)
 {
+	unsigned char * cdata = (unsigned char *)vdata;
+	
 	int x0 = 0;
 	int y0 = 0;
 	int z0 = nz > 1 ? 0 : image_index;
 
-	int xlen, ylen, zlen;
+	int xlen = 0;
+	int ylen = 0;
+	int zlen = 0;
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
 	if (area) {
@@ -607,19 +613,21 @@ int EMUtil::get_region_data(unsigned char *cdata, FILE * in, int image_index, si
 	size_t y_pre_gap = y0 * img_row_size;
 	size_t y_post_gap = (ny - y0 - ylen) * img_row_size;
 
-	portable_fseek(in, img_row_size * ny * z0, SEEK_CUR);
+	portable_fseek(file, img_row_size * ny * z0, SEEK_CUR);
 
 	for (int k = 0; k < zlen; k++) {
 		if (area) {
-			portable_fseek(in, y_pre_gap, SEEK_CUR);
+			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
+		int k2 = k * area_sec_size;
+		
 		for (int j = 0; j < ylen; j++) {
 			if (pre_row > 0) {
-				portable_fseek(in, pre_row, SEEK_CUR);
+				portable_fseek(file, pre_row, SEEK_CUR);
 			}
 
 			if (area) {
-				portable_fseek(in, x_pre_gap, SEEK_CUR);
+				portable_fseek(file, x_pre_gap, SEEK_CUR);
 			}
 
 			int jj = j;
@@ -627,25 +635,32 @@ int EMUtil::get_region_data(unsigned char *cdata, FILE * in, int image_index, si
 				jj = ylen - 1 - j;
 			}
 
-			if (fread(&cdata[k * area_sec_size + jj * area_row_size], area_row_size, 1, in) != 1) {
-				LOGERR("incomplete data read");
-				return 1;
+			if (rw_mode == ImageIO::READ_ONLY) {
+				if (fread(&cdata[k2 + jj * area_row_size],
+						  area_row_size, 1, file) != 1) {
+					throw ImageReadException("", "incomplete data read");
+				}
 			}
-			if (area) {
-				portable_fseek(in, x_post_gap, SEEK_CUR);
+			else {
+				if (fwrite(&cdata[k2 + jj * area_row_size],
+						   area_row_size, 1, file) != 1) {
+					throw ImageWriteException("", "incomplete data write");
+				}
+			}
+				
+			if (area) {                
+				portable_fseek(file, x_post_gap, SEEK_CUR);
 			}
 
 			if (post_row > 0) {
-				portable_fseek(in, post_row, SEEK_CUR);
+				portable_fseek(file, post_row, SEEK_CUR);
 			}
 		}
 
 		if (area) {
-			portable_fseek(in, y_post_gap, SEEK_CUR);
+			portable_fseek(file, y_post_gap, SEEK_CUR);
 		}
 	}
-
-	return 0;
 }
 
 

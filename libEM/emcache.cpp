@@ -3,7 +3,7 @@
  */
 #include "emcache.h"
 #include "imageio.h"
-
+#include "util.h"
 
 #ifdef WIN32
 #define access _access
@@ -50,7 +50,7 @@ ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
 			io = 0;
 		}
 		else {
-			if (access(filename.c_str(), F_OK) != 0) {
+			if (!Util::is_file_exist(filename)) {
 				printf("Warning: %s was removed\n", filename.c_str());
 				imageio_cache->remove(filename);
 				io = 0;

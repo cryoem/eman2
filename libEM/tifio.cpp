@@ -170,7 +170,7 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(img_index, true, rdata) != 0) {
+	if (check_read_access(img_index, rdata) != 0) {
 		return 1;
 	}
 
@@ -245,7 +245,7 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 }
 
 
-int TiffIO::write_header(const Dict &, int, const Region* area, bool)
+int TiffIO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGERR("TIFF write is not supported");
@@ -253,7 +253,7 @@ int TiffIO::write_header(const Dict &, int, const Region* area, bool)
 	return 0;
 }
 
-int TiffIO::write_data(float *, int, const Region* area, bool)
+int TiffIO::write_data(float *, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGERR("TIFF write is not supported");
@@ -276,13 +276,5 @@ bool TiffIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-int TiffIO::get_nimg()
-{
-	if (init() != 0) {
-		return 0;
-	}
-
-	return 1;
-}
 
 #endif

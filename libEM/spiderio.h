@@ -41,7 +41,12 @@ namespace EMAN
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
-
+		
+		bool is_single_image_format() const
+		{
+			return false;
+		}
+		int get_nimg();
 	  protected:
 		struct SpiderHeader
 		{
