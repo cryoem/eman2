@@ -5,12 +5,12 @@
 
 using std::string;
 
-/** Exception class
+/** E2Exception class
  *
- * Exception class is a subclass of std::exception; All EMAN2
- * exception classes are subclass of Exception class.
+ * E2Exception class is a subclass of std::exception; All EMAN2
+ * E2Exception classes are subclass of E2Exception class.
  *
- * A XYZ exception class is defined in the following way:
+ * A XYZ E2Exception class is defined in the following way:
  *   1) The class is named _XYZException.
  *   2) The class has a function to return its name "XYZException".
  *   3) A macro called "XYZException" is defined to simplify the usage
@@ -18,33 +18,33 @@ using std::string;
  */
 namespace EMAN {
 
-	/** Exception class is the parent class of all EMAN2 exceptions.
+	/** E2Exception class is the parent class of all EMAN2 E2Exceptions.
 	 */
-    class Exception : public std::exception {
+    class E2Exception : public std::exception {
     public:
 		/** Contructor.
-		 * @param file The name of the file where an exception is
+		 * @param file The name of the file where an E2Exception is
 		 * thrown.
 		 * @param line The line number in the file where the
-		 * exception is thrown.
-		 * @param desc_str Exception description string.
-		 * @param objname_str Exception involved object name.
+		 * E2Exception is thrown.
+		 * @param desc_str E2Exception description string.
+		 * @param objname_str E2Exception involved object name.
 		 */ 
-		Exception(const string& file = "", int line = 0,
+		E2Exception(const string& file = "", int line = 0,
 				  const string& desc_str = "", const string& objname_str = "")
 			: filename(file), linenum(line), desc(desc_str), objname(objname_str) {}
 		
-		virtual ~Exception() throw() {}
+		virtual ~E2Exception() throw() {}
 
-		/** The exception information.
-		 * @return The exception information including exception
+		/** The E2Exception information.
+		 * @return The E2Exception information including E2Exception
 		 * location (filename, line number,function name) and
 		 * description.
 		 */
 		virtual const char *what() const throw();
 
-		/** The name of this exception class.
-		 * @return The name of this exception class.
+		/** The name of this E2Exception class.
+		 * @return The name of this E2Exception class.
 		 */
 		virtual const char *name() const { return "Exception"; }
 	protected:
@@ -61,14 +61,14 @@ namespace EMAN {
 	 *   1. objname  The name of the not-existing object.
 	 *   2. desc The description of the situation.
 	 */
-	class _NotExistingObjectException : public Exception
+	class _NotExistingObjectException : public E2Exception
 	{
 	public:
 		_NotExistingObjectException(const string& objname_str,
 									const string& file = "unknown",
 									int line = 0,
 									const string& desc_str = "none")
-			: Exception(file, line, desc_str, objname_str) {}
+			: E2Exception(file, line, desc_str, objname_str) {}
 		
 		const char *name() const { return "NotExistingObjectException"; }
 		
@@ -79,13 +79,13 @@ namespace EMAN {
 
 	/** Used when an image is not in the expected format.
 	 */
-	class _ImageFormatException : public Exception
+	class _ImageFormatException : public E2Exception
 	{
 	public:
 		_ImageFormatException(const string& desc_str,
 							  const string& file = "unknown",
 							  int line = 0)
-			: Exception(file, line, desc_str) {}
+			: E2Exception(file, line, desc_str) {}
 		
 		const char *name() const { return "ImageFormatException"; }
 		
@@ -98,12 +98,12 @@ namespace EMAN {
 	 *  Parameters:
 	 *    1. desc  The description of the situation.
 	 */
-	class _ImageDimensionException : public Exception
+	class _ImageDimensionException : public E2Exception
 	{
 	public:
 		_ImageDimensionException(const string& desc_str, const string& file = "unknown",
 								 int line = 0)
-			: Exception(file, line, desc_str) {}
+			: E2Exception(file, line, desc_str) {}
 		
 		const char *name() const { return "ImageDimensionException"; }
 		
@@ -116,12 +116,12 @@ namespace EMAN {
 	 * Parameters:
 	 *   1. filename  The name of the file with access error.
 	 */
-	class _FileAccessException : public Exception
+	class _FileAccessException : public E2Exception
 	{
 	public:
 		_FileAccessException(const string& filename_str, const string& file = "unknown",
 							 int line = 0, const string& desc_str = "")
-			: Exception(file, line, desc_str, filename_str)
+			: E2Exception(file, line, desc_str, filename_str)
 		{
 			desc = "cannot access file '" + filename_str + "'";
 		}
@@ -136,12 +136,12 @@ namespace EMAN {
 	 *   1. imagename The name of image with writing error.
 	 *   2. desc The description of the situation.
 	 */
-	class _ImageReadException : public Exception
+	class _ImageReadException : public E2Exception
 	{
 	public:
 		_ImageReadException(const string& imagename, const string& file = "unknown",
 							int line = 0, const string& desc_str = "")
-			: Exception(file, line, desc_str, imagename) {}
+			: E2Exception(file, line, desc_str, imagename) {}
 		
 		const char *name() const { return "ImageReadException"; }
 		
@@ -154,12 +154,12 @@ namespace EMAN {
 	 *   1. imagename The name of image with writing error.
 	 *   2. desc The description of the situation.
 	 */
-	class _ImageWriteException : public Exception
+	class _ImageWriteException : public E2Exception
 	{
 	public:
 		_ImageWriteException(const string& imagename, const string& file = "unknown",
 							 int line = 0, const string& desc_str = "")
-			: Exception(file, line, desc_str, imagename) {}
+			: E2Exception(file, line, desc_str, imagename) {}
 		
 		const char *name() const { return "ImageWriteException"; }
 		
@@ -171,12 +171,12 @@ namespace EMAN {
 	 * Parameter:
 	 *   1. desc: The description string.
 	 */
-	class _NullPointerException : public Exception
+	class _NullPointerException : public E2Exception
 	{
 	public:
 		_NullPointerException(const string& file = "unknown",
 							  int line = 0, const string& desc_str = "")
-			: Exception(file, line, desc_str) {}
+			: E2Exception(file, line, desc_str) {}
 		
 		const char *name() const { return "NullPointerException"; }
 		
@@ -190,12 +190,12 @@ namespace EMAN {
 	 *  1. desc  Description of the situation.
 	 *  2. type  The name of type causing trouble.
 	 */
-	class _TypeException : public Exception
+	class _TypeException : public E2Exception
 	{
 	public:
 		_TypeException(const string & desc_str, const string & type,
 					   const string & file = "unknown", int line = 0)
-			: Exception(file, line, desc_str, type) {}
+			: E2Exception(file, line, desc_str, type) {}
 		
 		const char *name() const { return "TypeException"; }
 		
@@ -207,12 +207,12 @@ namespace EMAN {
 	 *  1. val  The invalid integer value.
 	 *  2. desc Description of the situation.
 	 */
-	class _InvalidValueException : public Exception
+	class _InvalidValueException : public E2Exception
 	{
 	public:
 		_InvalidValueException(int val, const string& file = "unknown",
 							   int line = 0, const string& desc_str = "")
-			: Exception(file, line, desc_str)
+			: E2Exception(file, line, desc_str)
 		{
 			char s[32];
 			sprintf(s, "%d", val);
@@ -232,14 +232,14 @@ namespace EMAN {
 	 *  3. input  The given, out-of-range value.
 	 *  4. objname The name of the variable holding the value.
 	 */
-	class _OutofRangeException : public Exception
+	class _OutofRangeException : public E2Exception
 	{
 	public:
 		_OutofRangeException(int low, int high, int input,
 							 const string& file = "unknown", 
 							 int line = 0, const string & desc_str = "",
 							 const string& objname_str = "")
-			: Exception(file, line, desc_str, objname_str)
+			: E2Exception(file, line, desc_str, objname_str)
 		{
 
 			char s[128];

@@ -2402,7 +2402,7 @@ vector < EMData * >EMData::read_images(string filename, vector < int >img_indice
 		try {
 			d->read_image(filename, (int)k, header_only);
 		}
-		catch(Exception &e) {
+		catch(E2Exception &e) {
 			delete d;
 			d = 0;
 			throw(e);
@@ -2443,7 +2443,7 @@ vector < EMData * >EMData::read_images_ext(string filename, int img_index_start,
 		try {
 			d->read_image(new_filename, i, header_only);
 		}
-		catch(Exception &e) {
+		catch(E2Exception &e) {
 			delete d;
 			d = 0;
 			throw(e);

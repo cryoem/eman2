@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 		delete d;
 		d = 0;
 	}
-	catch(Exception  & e) {
+	catch(E2Exception  & e) {
 		if (d) {
 			delete d;
 			d = 0;

@@ -1161,7 +1161,7 @@ PointArray *optobj;
 void init_opt_proj(int ndim, ColumnVector& x)
 {
 int i;
-double data=optobj->get_points_array();
+double *data=optobj->get_points_array();
 
 for (i=0; i<ndim; i++) x(i+1)=data[i];
 }
@@ -1170,9 +1170,9 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 {
 	int i;
 	PointArray pa;
+	Transform T;
 	
-	
-	pa.set_from(x.nric()+1,n,"c1",Transform());
+	pa.set_from((double *)x.nric()+1,n,std::string("c1"),&T);
 		
 	
 	result=NLPFunction;
@@ -1198,7 +1198,7 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj) {
 	optdata=proj;
 	optobj=this;
 	
-	FDNLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_proj);
+	FDNLF1 nlf(get_number_points()*4,calc_opt_proj,init_opt_proj);
 //	NLF1 nlf(get_number_points()*4,init_opt_proj,calc_opt_projd);
 	nlf.initFcn();
 	
@@ -1209,7 +1209,6 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj) {
 	LOGWARN("OPT++ support not enabled.\n");
 	return;
 #endif
-
 }
 
 Vec3f PointArray::get_vector_at(int i)

@@ -4,7 +4,7 @@
 
 using namespace EMAN;
 
-const char* Exception::what() const throw()
+const char* E2Exception::what() const throw()
 {
 	string err1 = "";
 	if (objname != "") {

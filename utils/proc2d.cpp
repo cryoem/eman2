@@ -690,7 +690,7 @@ int main(int argc, char *argv[])
 
     }
 	}
-	catch(Exception &e ) {
+	catch(E2Exception &e ) {
 		e.what();
 	}
 	
