@@ -10,6 +10,8 @@ using std::vector;
 
 #include <math.h>
 
+#define SQR(X) ((X)*(X))
+
 namespace EMAN
 {
 	/** Vec3i defines a 3-element integer vector and various vector
@@ -465,6 +467,11 @@ namespace EMAN
 	inline Vec3f operator -(const Vec3f &v1, const Vec3i &v2)
 	{
 		return Vec3f(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
+	}
+	
+	inline Vec3f operator -(const Vec3f &v)
+	{
+		return Vec3f(-v[0],-v[1],-v[2]);
 	}
 	
 	inline float operator *(const Vec3f &v1, const Vec3i &v2)
