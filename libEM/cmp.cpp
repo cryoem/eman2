@@ -203,7 +203,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
-	vector < float >snr = params["snr"].get_farray();
+	vector < float >snr = params["snr"];
 	vector < float >fsc_array;
 
 	if (snr.size() == 0) {

@@ -16,7 +16,8 @@ namespace EMAN
 	 *
 	 * A single image = header + data.
 	 *
-	 * The header length = ceiling(265/nx), where nx is the number of
+	 * header-length = ( ceiling(1024/(nx*4)) * (nx*4) )
+	 * where nx is the number of
 	 * pixels per row. The data is (nx * ny * nslice) of floating numbers,
 	 * where ny is number of rows per slice. nslice is number of slices.
 	 *

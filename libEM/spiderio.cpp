@@ -6,7 +6,7 @@
 #include "geometry.h"
 #include "portable_fileio.h"
 #include "emutil.h"
-
+#include <assert.h>
 
 using namespace EMAN;
 
@@ -389,6 +389,18 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	cur_h->angvalid = 1.0;
 	cur_h->u1 = (float)irec;
 
+	size_t img_size = (size_t)(cur_h->nx) * (size_t)(cur_h->ny) * (size_t)(cur_h->nslice);
+	off_t cur_offset = (off_t) (cur_h->headlen +
+								(img_size*sizeof(float) + cur_h->headlen) * image_index);
+	portable_fseek(spider_file, cur_offset, SEEK_SET);
+	fwrite(cur_h, header_size, 1, spider_file);
+	
+	int pad_size =  (int)cur_h->headlen - header_size;
+	if (pad_size > 0) {
+		char *pad = static_cast < char *>(calloc(pad_size, 1));
+		fwrite(pad, pad_size, 1, spider_file);
+	}
+	
 	EXITFUNC;
 	return 0;
 
@@ -520,8 +532,6 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-#if 0
-// adding region
 int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
@@ -565,18 +575,15 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 		fwrite(data, sec_size, nz, spider_file);
 	}
 
-	off_t cur_offset = (off_t) (hl + (img_size * 1.0 * sizeof(float) + hl) *
-								image_index);
+	off_t cur_offset = (off_t) (hl + (img_size * sizeof(float) + hl) * image_index + hl);
 	portable_fseek(spider_file, cur_offset, SEEK_SET);
 
-	fwrite(cur_h, head_size, 1, spider_file);
-	fwrite(pad, pad_size, 1, spider_file);
-#if 0
+#if 1
 	EMUtil::process_region_io(data, spider_file, WRITE_ONLY, image_index,
 							  sizeof(float), (int)cur_h->nx, (int)cur_h->ny,
 							  (int)cur_h->nslice, area);
 #endif
-#if 1
+#if 0
 	if (fwrite(data, sec_size, nz, spider_file) != (unsigned int) nz) {
 		throw ImageWriteException(filename, "spider writing failed");
 	}
@@ -588,68 +595,7 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 	EXITFUNC;
 	return 0;
 }
-#endif
 
-// without region
-int SpiderIO::write_data(float *data, int image_index, const Region* , bool)
-{
-	ENTERFUNC;
-
-	check_write_access(rw_mode, image_index, 0, data);
-
-	if (!cur_h) {
-		LOGERR("please write header before write data");
-		return 1;
-	}
-
-	if (cur_h->istack == SINGLE_IMAGE_HEADER) {
-		LOGERR("cannot mix your single spider and stack spider.");
-		return 1;
-	}
-
-	int hl = static_cast < int >(cur_h->headlen);
-	int head_size = sizeof(SpiderHeader);
-	int pad_size = hl - head_size;
-
-	char *pad = static_cast < char *>(calloc(pad_size, 1));
-	int img_size = static_cast < int >(cur_h->nx * cur_h->ny * cur_h->nslice);
-
-	int sec_size = static_cast < int >(cur_h->nx * cur_h->ny * sizeof(float));
-	int nz = static_cast < int >(cur_h->nslice);
-
-	swap_header(cur_h);
-	swap_data(data, img_size);
-
-	while (image_index > first_h->maxim) {
-		first_h->maxim++;
-		first_h->inuse = 1.0;
-		first_h->imgnum = first_h->maxim;
-
-		portable_fseek(spider_file, 0, SEEK_END);
-		fwrite(cur_h, head_size, 1, spider_file);
-		fwrite(pad, pad_size, 1, spider_file);
-		fwrite(data, sec_size, nz, spider_file);
-	}
-
-	off_t cur_offset = (off_t) (hl + (img_size * 1.0 * sizeof(float) + hl) * image_index);
-	portable_fseek(spider_file, cur_offset, SEEK_SET);
-
-	fwrite(cur_h, head_size, 1, spider_file);
-	fwrite(pad, pad_size, 1, spider_file);
-
-	int err = 0;
-	if (fwrite(data, sec_size, nz, spider_file) != (unsigned int) nz) {
-		LOGERR("cannot write to spider file '%s'", filename.c_str());
-		err = 1;
-	}
-
-	swap_header(cur_h);
-	swap_data(data, img_size);
-
-	free(pad);
-	EXITFUNC;
-	return err;
-}
 
 void SpiderIO::flush()
 {
@@ -723,9 +669,15 @@ bool SpiderIO::is_image_big_endian()
 int SpiderIO::get_nimg()
 {
 	init();
+	if (!first_h) {
+		assert(is_new_file);
+		return 0;
+	}
+	
 	if (first_h->istack == STACK_OVERALL_HEADER) {
 		return static_cast < int >(first_h->maxim);
 	}
+
 	return 1;
 }
 

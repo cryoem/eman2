@@ -444,7 +444,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 	// New way to write data which includes region writing.
 	// If it is tested to be OK, remove the old code in the
 	// #if 0  ... #endif block.
-	EMUtil::process_region_io(data, img_file, WRITE_ONLY, image_index,
+	EMUtil::process_region_io(data, img_file, WRITE_ONLY, 0,
 							  sizeof(float), imagich.nx, imagich.ny,
 							  nz, area, true);
 

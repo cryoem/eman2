@@ -51,11 +51,11 @@ string TestUtil::get_debug_image(const string & imagename)
 
 void TestUtil::to_emobject(const Dict& d)
 {
-	if (d.has_key("farray")) {
-		vector<float> array = d["farray"].get_farray();
+	if (d.has_key("floatarray")) {
+		vector<float> array = d["floatarray"];
 		for (size_t i = 0; i < array.size(); i++) {
 			assert(array[i] == tf[i]);
-			LOGDEBUG("farray[%d] = %f\n", i, array[i]);
+			LOGDEBUG("floatarray[%d] = %f\n", i, array[i]);
 		}
 	}
 	
@@ -99,6 +99,14 @@ void TestUtil::to_emobject(const Dict& d)
 			LOGDEBUG("xydata[%d] = (%f,%f)\n", i, xi, yi);
 			assert(xi == tf[i]);
 			assert(yi == tf[i]);
+		}
+	}
+
+	if (d.has_key("stringarray")) {
+		vector<string> array = d["stringarray"];
+		for (size_t i = 0; i < array.size(); i++) {
+			assert(array[i] == get_debug_string(i));
+			LOGDEBUG("stringarray[%d] = %s\n", i, array[i].c_str());
 		}
 	}
 }

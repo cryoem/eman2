@@ -26,8 +26,6 @@ EMObject::operator int () const
 	}
 	else {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to int from data type '%s'",
-				   get_object_type_name(type));
 			throw TypeException("Cannot convert to int this data type ",
 								get_object_type_name(type));
 		}
@@ -48,8 +46,6 @@ EMObject::operator float () const
 	}
 	else {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to float from data type '%s'",
-					  get_object_type_name(type));
 			throw TypeException("Cannot convert to float from this data type",
 								get_object_type_name(type));
 		}
@@ -71,8 +67,6 @@ EMObject::operator double () const
 	}
 	else {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to double from data type '%s'",
-				   get_object_type_name(type));
 			throw TypeException("Cannot convert to double from this data type",
 								get_object_type_name(type));
 		}
@@ -84,8 +78,6 @@ EMObject::operator  const char *() const
 {
 	if (type != STRING) {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to string from data type '%s'",
-				   get_object_type_name(type));
 			throw TypeException("Cannot convert to string from this data type",
 								get_object_type_name(type));
 		}
@@ -98,8 +90,6 @@ EMObject::operator EMData * () const
 {
 	if (type != EMDATA) {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to EMData* from data type '%s'",
-				   get_object_type_name(type));
 			throw TypeException("Cannot convert to EMData* from this data type",
 				   get_object_type_name(type));
 		}
@@ -112,8 +102,6 @@ EMObject::operator  XYData * () const
 {
 	if (type != XYDATA) {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to XYData* data type '%s'",
-				   get_object_type_name(type));
 			throw TypeException("Cannot convert to XYData* from this data type",
 				   get_object_type_name(type));
 		}
@@ -122,18 +110,28 @@ EMObject::operator  XYData * () const
 	return xydata;
 }
 
-vector < float >EMObject::get_farray() const
+EMObject::operator vector < float > () const
 {
 	if (type != FLOATARRAY) {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot call get_farray for data type '%s'",
-				   get_object_type_name(type));
-			throw TypeException("Cannot call get_farray for this data type",
+			throw TypeException("Cannot convert to vector<float> from this data type",
 								get_object_type_name(type));
 		}
 		return vector < float >();
 	}
 	return farray;
+}
+
+EMObject::operator vector<string> () const
+{
+	if (type != STRINGARRAY) {
+		if (type != UNKNOWN) {
+			throw TypeException("Cannot convert to vector<string> from this data type",
+								get_object_type_name(type));
+		}
+		return vector<string>();
+	}
+	return strarray;
 }
 
 bool EMObject::is_null() const
@@ -189,6 +187,8 @@ const char *EMObject::get_object_type_name(ObjectType t)
 		return "XYDATA";
 	case FLOATARRAY:
 		return "FLOATARRAY";
+	case STRINGARRAY:
+		return "STRINGARRAY";
 	case UNKNOWN:
 		LOGERR("No such EMObject defined");
 		throw NotExistingObjectException("EMObject", "unknown type");
@@ -222,6 +222,18 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 		if (e1.farray.size() == e2.farray.size()) {
 			for (size_t i = 0; i < e1.farray.size(); i++) {
 				if (e1.farray[i] != e2.farray[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+		else {
+			return false;
+		}
+	case EMObject::STRINGARRAY:
+		if (e1.strarray.size() == e2.strarray.size()) {
+			for (size_t i = 0; i < e1.strarray.size(); i++) {
+				if (e1.strarray[i] != e2.strarray[i]) {
 					return false;
 				}
 			}

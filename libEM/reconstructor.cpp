@@ -548,7 +548,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform & e
 
 	int mode = params["mode"];
 	float padratio = params["padratio"];
-	vector < float >snr = params["snr"].get_farray();
+	vector < float >snr = params["snr"];
 
 	if (!slice->is_complex()) {
 		LOGERR("Only complex slice can be inserted.");

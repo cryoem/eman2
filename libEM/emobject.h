@@ -66,6 +66,7 @@ namespace EMAN
 			EMDATA,
 			XYDATA,
 			FLOATARRAY,
+			STRINGARRAY,
 			UNKNOWN
 		};
 
@@ -91,17 +92,25 @@ namespace EMAN
 		EMObject(const char *s): n(0), emdata(0), xydata(0), str(string(s)), type(STRING)
 		{
 		}
-		EMObject(const string & s):n(0), emdata(0), xydata(0), str(s), type(STRING) {
+		EMObject(const string & s):n(0), emdata(0), xydata(0), str(s), type(STRING)
+		{
 		}
-		EMObject(EMData * em):n(0), emdata(em), xydata(0), type(EMDATA) {
+		EMObject(EMData * em):n(0), emdata(em), xydata(0), type(EMDATA)
+		{
 		}
-		EMObject(XYData * xy):n(0),  emdata(0), xydata(xy),type(XYDATA) {
+		EMObject(XYData * xy):n(0),  emdata(0), xydata(xy),type(XYDATA)
+		{
 		}
 		EMObject(const vector < float >&v)
 			:n(0), emdata(0), xydata(0), farray(v),type(FLOATARRAY)
 		{
 		}
 
+		EMObject(const vector <string>& sarray)
+			:n(0),emdata(0),xydata(0),strarray(sarray),type(STRINGARRAY)
+		{
+		}
+		
 		~EMObject() {
 		}
 
@@ -112,7 +121,9 @@ namespace EMAN
 		operator  EMData *() const;
 		operator  XYData *() const;
 
-		vector < float >get_farray() const;
+		operator vector < float > () const;
+		operator vector<string> () const;
+		
 		bool is_null() const;
 		string to_str() const;
 		static const char *get_object_type_name(ObjectType t);
@@ -132,6 +143,7 @@ namespace EMAN
 		XYData *xydata;
 		string str;
 		vector < float >farray;
+		vector < string> strarray;
 		ObjectType type;
 	};
 
