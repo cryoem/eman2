@@ -852,8 +852,8 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	EMData *result = 0;
 
 	if (dot1 > dot2) {
-		this_copy2->set_attr("flipped",0);
-
+		this_copy->set_attr("flipped",0);
+		this_copy->set_attr("align_score",dot1);
 		if (!flip) {
 			this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		}
@@ -864,6 +864,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	}
 	else {
 		this_copy2->set_attr("flipped",1);
+		this_copy2->set_attr("align_score",dot2);
 		delete this_copy;
 		this_copy = 0;
 		result = this_copy2;

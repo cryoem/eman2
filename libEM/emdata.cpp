@@ -5093,8 +5093,6 @@ EMData *EMData::convolute(EMData * with)
 		cf = f1->copy(false);
 	}
 
-	printf("%p  %p\n",f1,cf);
-	
 	if (with && !EMUtil::is_same_size(f1, cf)) {
 		LOGERR("images not same size");
 		throw ImageFormatException("images not same size");

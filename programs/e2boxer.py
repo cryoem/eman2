@@ -8,6 +8,8 @@ from math import *
 import os
 import sys
 
+pl=()
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: %prog [options] <image>
@@ -24,7 +26,8 @@ for single particle analysis."""
 	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
 	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
-			
+	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
@@ -110,8 +113,8 @@ for single particle analysis."""
 		ccfmean.filter("eman1.math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
 		ccfsig.filter("eman1.math.sqrt")
-#		shrink.write_image("z0.mrc")
-#		ccfsig.write_image("z1.mrc")
+		shrink.write_image("z0.mrc")
+		ccfsig.write_image("z1.mrc")
 		
 		print "Locating possible particles"
 		xs=shrink.get_xsize()
@@ -119,14 +122,14 @@ for single particle analysis."""
 		pks=[]
 		for n,i in enumerate(refptcls):
 			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
-#			j.write_image("0.%0d.mrc"%n)
+			j.write_image("0.%0d.mrc"%n)
 			ccfone=shrink.calc_ccf(j,True,None)
-#			ccfone.write_image("a.%0d.mrc"%n)
+			ccfone.write_image("a.%0d.mrc"%n)
 			ccfone/=ccfsig
-#			ccfone.write_image("b.%0d.mrc"%n)
+			ccfone.write_image("b.%0d.mrc"%n)
 			sig=float(ccfone.get_attr("sigma"))
 			ccfone.filter("eman1.mask.onlypeaks",{"npeaks":0})
-#			ccfone.write_image("c.%0d.mrc"%n)
+			ccfone.write_image("c.%0d.mrc"%n)
 			pk=ccfone.calc_highest_locations(sig*4.0)
 			for m,p in enumerate(pk):
 				pk[m]=(-p.value,n,p.x,p.y)
@@ -151,18 +154,50 @@ for single particle analysis."""
 		print "refine particle locations"
 		# This will optimize the center location of each particle and improve
 		# the similarity calculation
+		goodpks2=[]
 		for n,i in enumerate(goodpks):
-			print n
 			b=EMData()
 			b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
-			ba=refptcl[i[1]].align("RotateTranslateFlip",b,{},"phase")
-			
-			
+			b.filter("eman1.normalize.edgemean")
+#			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Phase")
+			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Phase")
+			goodpks2.append((ba.get_attr("align_score"),i[2]-ba.get_attr("translational.dx"),i[3]-ba.get_attr("translational.dy")))
+			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"))
+#			display([b,ba,refptcl[i[1]]])
+						
+		goodpks2.sort()
+		
+		# now we do 1-D k-means to split the data into 3 groups
+		pl=[(goodpks2[0][0],0),((goodpks2[0][0]+goodpks2[-1][0])/2.0,0),(goodpks2[-1][0],0)]
+		
+		for i in range(10):
+			pl2=[(0,0.1),(0,0.1),(0,0.1)]
+			for j in goodpks2:
+				if j[0]<(pl[0][0]+pl[1][0])/2.0 : pl2[0]=(pl2[0][0]+j[0],pl2[0][1]+1.0)
+				elif j[0]>(pl[1][0]+pl[2][0])/2.0 : pl2[2]=(pl2[2][0]+j[0],pl2[2][1]+1.0)
+				else : pl2[1]=(pl2[1][0]+j[0],pl2[1][1]+1.0)
+		
+			pl=[(pl2[0][0]/pl2[0][1],pl2[0][1]),(pl2[1][0]/pl2[1][1],pl2[1][1]),(pl2[2][0]/pl2[2][1],pl2[2][1])]
+		
+		print pl
+		
+		
+		if   (options.threshold<1.0) : thr=pl[0][0]*options.threshold+goodpks2[0][0]*(1.0-options.threshold)
+		elif (options.threshold<2.0) : thr=pl[1][0]*(options.threshold-1.0)+pl[0][0]*(2.0-options.threshold)
+		elif (options.threshold<3.0) : thr=pl[2][0]*(options.threshold-2.0)+pl[1][0]*(3.0-options.threshold)
+		elif (options.threshold<4.0) : thr=goodpks2[-1][0]*(options.threshold-3.0)+pl[2][0]*(4.0-options.threshold)
+		else : thr=goodpks2[-1][0]
+		
+		print "Threshold : ",thr
 		# Write EMAN1 style box database
 		out=open(args[0][:-3]+"box","w")
-		for i in goodpks[:500]:
-			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[2],i[3],options.box,options.box))
+		for i in goodpks2:
+			if i[0]>thr : break
+			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[1],i[2],options.box,options.box))		
+		out.close()
 		
+		out=open("box.stats","w")
+		for i in goodpks2: out.write("%f\n"%i[0])
 		out.close()
 		
 	if "circle" in options.auto:
@@ -191,6 +226,7 @@ for single particle analysis."""
 		ccf1/=ccf2
 		
 		ccf1.write_image("b_result.mrc")
-	
+
+		
 if __name__ == "__main__":
 	main()

@@ -26,12 +26,13 @@ Transform.__str__=lambda x:"Transform(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%
 def display(img):
 	"""This will use 'v2', and EMAN1 program to view an image
 	or a list/tuple of images. This is basically a hack."""
-	os.unlink("/tmp/img.spi")
+	try: os.unlink("/tmp/img.hdf")
+	except: pass
 	if isinstance(img,list) or isinstance(img,tuple) :
-		for i in img: i.write_image("/tmp/img.spi",-1)
+		for i in img: i.write_image("/tmp/img.hdf",-1)
 	else:
 		img.write_image("/tmp/img.hdf")
-	os.system("v2 /tmp/img.spi")
+	os.system("v2 /tmp/img.hdf")
 
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function
