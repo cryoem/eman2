@@ -17,6 +17,8 @@ exclude(EMUtil.get_region_dims)
 exclude(EMUtil.get_region_origins)
 exclude(EMUtil.get_region_data)
 
+ImageSort = Class("EMAN::ImageSort", "emutil.h")
+
 Ctf = Class("EMAN::Ctf", "ctf.h")
 SimpleCtf = Class("EMAN::SimpleCtf", "ctf.h")
 

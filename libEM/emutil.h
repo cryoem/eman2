@@ -107,7 +107,8 @@ namespace EMAN
 		void sort();
 		
 		void set(int i, float score);
-		ImageScore get(int i) const;
+		int get_index(int i) const;
+		float get_score(int i) const;
 
 		int size() const;
 	private:

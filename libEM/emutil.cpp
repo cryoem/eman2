@@ -831,10 +831,17 @@ void ImageSort::set(int i, float score)
 	image_scores[i] = ImageScore(i, score);
 }
 
-ImageScore ImageSort::get(int i) const
+int ImageSort::get_index(int i) const
 {
-	return image_scores[i];
+	return image_scores[i].index;
 }
+
+
+float ImageSort::get_score(int i) const
+{
+	return image_scores[i].score;
+}
+
 
 int ImageSort::size() const
 {

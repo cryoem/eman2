@@ -373,6 +373,15 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 
     delete EMAN_EMUtil_scope;
 
+    class_< EMAN::ImageSort >("ImageSort", init< const EMAN::ImageSort& >())
+        .def(init< int >())
+        .def("sort", &EMAN::ImageSort::sort)
+        .def("set", &EMAN::ImageSort::set)
+        .def("get_index", &EMAN::ImageSort::get_index)
+        .def("get_score", &EMAN::ImageSort::get_score)
+        .def("size", &EMAN::ImageSort::size)
+    ;
+
     scope* EMAN_Ctf_scope = new scope(
     class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", init<  >())
         .def("from_string", pure_virtual(&EMAN::Ctf::from_string))

@@ -10,7 +10,6 @@ import os.path
 
 
 def main():
-
 	progname = os.path.basename(sys.argv[0])
 	
 	usage = progname + " options inputfile outputfile"
@@ -98,10 +97,12 @@ def main():
 			print i, score/(csym-1)
 
 	if options.mirror:
-		
+		imgsort.sort()
+		for i in range(options.nkeep):
+			s = "%1.1f" % imgsort.score
+			d1.write_image(options.mirror, -1, EMUtil::IMAGE_LST, inputfile, imgsort.get_index(i), s)
+			
 		
 
 if __name__ == "__main__":
     main()
-
-    
