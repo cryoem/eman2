@@ -58,6 +58,7 @@ namespace EMAN
 	    d.put("with", EMObject::EMDATA);
 	    d.put("intonly", EMObject::INT);
 	    d.put("maxshift", EMObject::INT);
+	    d.put("useparent", EMObject::INT);
 	    return d;
 	}
     };

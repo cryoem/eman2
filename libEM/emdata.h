@@ -109,8 +109,10 @@ namespace EMAN
 	int mean_shrink(int shrink_factor);
 	int median_shrink(int shrink_factor);
 
-	void apply_radial_func(float x0, float step, vector<float> array, bool interp = true);
-
+	void apply_radial_func(float x0, float dx, vector<float> array, bool interp = true);
+	vector<float> calc_radial_dist(int n, float x0, float dx);
+	vector<float> calc_radial_dist(int n, float x0, float dx, float acen, float amwid);
+	
 	int add(float f);
 	int add(const EMData & em);
 
@@ -146,8 +148,7 @@ namespace EMAN
 #endif
 	float calc_dist(EMData * second_img, int y_index = 0) const;
 	EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "SharpMask");
-	void calc_radial_dist(int n, float x0, float dx, float *d);
-	void calc_radial_dist(int n, float x0, float dx, float *d, float acen, float amwid);
+	
 
 	EMData *convolute(EMData * with);
 
@@ -176,7 +177,7 @@ namespace EMAN
 	float get_edge_mean() const;
 	float get_circle_mean();
 
-	void radial_mean();
+	void radial_average();
 	void radial_subtract();
 
 	int sub_noise();
@@ -215,6 +216,8 @@ namespace EMAN
 	float get_sigma_diff();
 
 	Dict get_attr_dict();
+	void set_attr_dict(string key, EMObject val);
+	
 	float get_max();
 	float get_min();
 	float get_mean();

@@ -27,8 +27,11 @@ int main(int argc, char *argv[])
     string center = "center";
     string acfcenter = "acfcenter";
     string invert = "invert";
-    string plot = "plot";
+    string phot = "phot";
+    
     string avgonly = "average";
+    EMData* average = 0;
+    
     string rfp = "rfp";
     string noisemask = "noisemask";
     string mraprep = "mraprep";
@@ -56,6 +59,10 @@ int main(int argc, char *argv[])
     string edgenorm = "edgenorm";
     string radon = "radon";
     
+    float blsigma1 = 0;
+    float blsigma2 = 0;
+    int bliter = 0;
+    int blwidth = 0;
     
     map<string, bool> argdict;
     map<string, string> argfilters;
@@ -64,12 +71,42 @@ int main(int argc, char *argv[])
     float lp = 0;
     float tlp = 0;
 
+    float hp = 0;
+    float sharphp = 0;
+    
     int norm = 0;
     float nmean = 0;
     float nsig = 0;
 
     float ramp = 0;
     int mask = 0;
+    int imask = 0;
+
+    float anoise = 0;
+    float rot = 0;
+    float dx = 0;
+    float dy = 0;
+
+    int rize = 0;
+    int rizef = 0;
+    float rizedx = 0;
+    float rizeda = 0;
+
+    float scale = 0;
+    int clipx = -1;
+    int clipy = -1;
+
+    int shrink = 1;
+    int csym = 0;
+
+    int scl = 0;
+    int sclmd = 0;
+
+    int pgm = 0;
+    int pgmlo = 0;
+    int pgmhi = 0;
+
+    const char* interleaved_file = 0;
     
     int n0 = 0;
     int n1 = 0;
@@ -85,6 +122,10 @@ int main(int argc, char *argv[])
 	}
 	else if (Util::get_str_float(arg, "tlp=", &tlp)) {
 	}
+	else if (Util::get_str_float(arg, "hp=", &hp)) {
+	}
+	else if (Util::get_str_float(arg, "sharphp=", &sharphp)) {
+	}
 	else if (Util::get_str_int(arg, "first=", &n0)) {
 	}
 	else if (Util::get_str_int(arg, "last=", &n1)) {
@@ -93,14 +134,50 @@ int main(int argc, char *argv[])
 	}
 	else if (Util::get_str_int(arg, "mask=", &mask)) {
 	}
-	else if (Util::sstrncmp(arg, "norm")) {
-	    if (arg[4] == '=') {
-		norm = 2;
-		sscanf(arg+5,"%f,%f", &nmean, &nsig);
+	else if (Util::get_str_int(arg, "imask=", &imask)) {
+	}
+	else if (Util::get_str_float(arg, "addnoise=", &anoise)) {
+	}
+	else if (Util::get_str_float(arg, "rot=", &rot)) {
+	}
+	else if (Util::get_str_float(arg, "trans=", &dx, &dy)) {
+	}
+	else if (Util::get_str_float(arg, "scale=", &scale)) {
+	}
+	else if (Util::get_str_int(arg, "clip=", &clipx, &clipy)) {
+	}
+	else if (Util::get_str_int(arg, "shrink=", &shrink)) {
+	}
+	else if (strncmp(argv[i],"blfilt=",7)==0) {
+	    sscanf(argv[i]+7,"%f,%f,%d,%d",&blsigma1,&blsigma2,&bliter,&blwidth);
+	}
+	else if (strncmp(arg, "sym=", 4)==0) {
+	    if (tolower(argv[i][4])!='c') {
+		Log::logger()->error("Only C symmetry currently supported!\n");
+		exit(1);
+	    }
+	    csym=atoi(&argv[i][5]);
+	}
+	else if (strncmp(arg, "randomize=", 10) == 0) {
+	    rize=1;
+	    sscanf(&argv[i][10],"%f,%f,%d",&rizedx,&rizeda,&rizef);
+	    rizeda*=M_PI/180.0;
+	}
+	else if (Util::get_str_float(arg, "norm", &norm, &nmean, &nsig)) {
+	}
+	else if (strncmp(argv[i],"selfcl",6)==0) {
+	    if (argv[i][6]=='=') {
+		sscanf(argv[i]+7,"%d,%d",&scl,&sclmd);
+		scl/=2;
 	    }
 	    else {
-		norm = 1;
+		scl=90;
 	    }
+	}
+	else if (strncmp(argv[i],"interlv=",8)==0) {
+	    interleaved_file=argv[i]+8;
+	}
+	else if (Util::get_str_int(arg, "pgm", &pgm, &pgmlo,&pgmhi)) {
 	}
 	else if (Util::sstrncmp(arg, noisemask)) {
 	    argfilters[noisemask] = "NoiseMask";
@@ -118,7 +195,13 @@ int main(int argc, char *argv[])
     if (nimg <= n1 || n1 < 0) {
 	n1 = nimg - 1;
     }
+
     const char *outfile = argv[2];
+    
+    char spiderformat[256];
+    sprintf(spiderformat,"%s%%0%dd.spi",outfile, (int)(log10((float)i))+1);
+    
+    
     EMData *ld = new EMData();
     
     for (int i = n0; i < n1; i++) {
@@ -183,219 +266,309 @@ int main(int argc, char *argv[])
 	    d->filter("LinearRamp", Dict("intercept", EMObject(1), "slope", EMObject(ramp)));
 	    d->filter(ramp,1.,6);
 	}
+	
 	int y=d->get_ysize();
 
 	if (argdict[setsfpairs]) {
 	    if (mask) {
 		d->filter(argfilters[noisemask], Dict("outer_radius", EMObject(mask)));
 	    }
-	    EMData *dataf=d->doFFT();
-	    d->gimmeFFT();
+	    EMData *dataf=d->do_fft();
+	    d->gimme_fft();
+
+	    float x0 = 0;
+	    float step = 0.5;
+
+	    vector<float> sfcurve1;
 	    if (i%2==0) {
-		dataf->calcRadDist(nx,0,.5,sfcurve1);
+		sfcurve1 = dataf->calc_radial_dist(nx,x0,step);
 	    }
 	    else {
-		dataf->calcRadDist(nx,0,.5,sfcurve2);
+		vector<float> sfcurve2 = dataf->calc_radial_dist(nx,x0,step);
+		
 		for (int j=0; j<nx; j++) {
-		    if (sfcurve1[j]>0 && sfcurve2[j]>0) sfcurve2[j]=sqrt(sfcurve1[j]/sfcurve2[j]);
-		    else sfcurve2[j]=0;
+		    if (sfcurve1[j]>0 && sfcurve2[j]>0) {
+			sfcurve2[j]=sqrt(sfcurve1[j]/sfcurve2[j]);
+		    }
+		    else {
+			sfcurve2[j]=0;
+		    }
 		}
 
-		dataf->applyRadFn(nx,0,.5,sfcurve2);
+		dataf->apply_radial_func(x0,step,sfcurve2);
 		delete d;
-		d=dataf->doIFT();
-		dataf->gimmeFFT();
+		d=dataf->do_ift();
+		dataf->gimme_fft();
 	    }
+	    
 	    delete dataf;
+	    dataf = 0;
+	}
+	
+	
+
+	float Xlp = lp;
+	float Xtlp = tlp;
+	float Xhp = hp;
+	float Xsharphp = sharphp;
+	
+	if (apix>0 && lp) {
+	    Xlp=y*apix/lp;
+	}
+	
+	if (apix>0 && tlp) {
+	    Xtlp=y*apix/tlp; 
+	}
+	
+	if (apix>0 && hp) {
+	    Xhp=y*apix/hp;
+	}
+	
+	if (apix>0 && sharphp) {
+	    Xsharphp=y*apix/sharphp; 
+	}
+	
+	if (Xlp || Xhp) {
+	    d->filter("Guasslowpass", Dict("lowpass", EMObject(Xhp==0?-10.0:Xhp)));
+	    d->filter("TanhHighpass", Dict("highpass", EMObject(Xlp==0?100000.0:Xlp)));
 	}
 
-	if (snrfilt) {
-	    float *ctf;
-	    EMData *d2;
-	    if (wiener) ctf=d->ctfCurve(6,&SF);
-	    else ctf=d->ctfCurve(4,&SF);
-	    d->edgeNormalize();
-	    EMData *d3=d->clip(-d->xSize()/2,-d->ySize()/2,d->xSize()*2,d->ySize()*2);
-	    d2=d3->doFFT();
-	    d3->gimmeFFT();
-	    d2->applyRadFn(CTFOS*d->ySize()/2,0,2.0/CTFOS,ctf,0);
-	    delete d3;
-	    delete d;
-	    d3=d2->doIFT();
-	    d=d3->clip(d3->xSize()/4,d3->ySize()/4,d3->xSize()/2,d3->ySize()/2);
-	    d->setParent(NULL);
-	    delete d3;
-	    d2->gimmeFFT();
-	    delete d2;
-	    free(ctf);
+	if (Xtlp) {
+	    d->filter("Tanhlowpass", Dict("lowpass", EMObject(-10.0)));
+	    d->filter("TanhHighpass", Dict("highpass", EMObject(Xtlp)));
+	}
+	
+	if (Xsharphp) {
+	    d->filter("SharpCutoffLowpass", Dict("lowpass", EMObject(Xsharphp)));
+	    d->filter("SharpCutoffHighpass", Dict("highpass", EMObject(100000.0)));
 	}
 
-	float Xlp,Xhp,Xhp2,Xtlp;
-	if (apix>0 && lp) Xlp=y*apix/lp; else Xlp=lp;
-	if (apix>0 && tlp) Xtlp=y*apix/tlp; else Xtlp=tlp;
-	if (apix>0 && hp) Xhp=y*apix/hp; else Xhp=hp;
-	if (apix>0 && hp2) Xhp2=y*apix/hp2; else Xhp2=hp2;
+	if (mask) {
+	    d->filter(argfilters[noisemask], Dict("outer_radius", EMObject(mask)));
+	}
+	
+	if (imask>0) {
+	    d->filter("SharpMask", Dict("inner_radius", EMObject(imask)));
+	}
+	
+	if (amask) {
+	    d->auto_mask(amask,.1);
+	}
 
-	if (Xlp || Xhp) {  d->filter(Xhp==0?-10.0:Xhp,Xlp==0?100000.0:Xlp,1); }
-	if (Xtlp) d->filter(-10.0,Xtlp,2);
-	if (Xhp2) d->filter(Xhp2,100000.0,0);
 
-	if (mask) d->applyMask(mask,noisemask);
-	if (imask>0) d->applyMask(imask,5);
-
-	if (amask) d->autoMask(amask,.1);
-
+	
 	// uses correlation with 180 deg rot for centering
-	if (acfcenter) { d->transAlign(NULL,0,1,d->xSize()/4); d->rotateAndTranslate(); }
-
-	// uses center of mass to center
-	if (center) d->cmCenter(1);
-	if (phot) d->toCorner();
-	//	if (d->Sigma()==0 || !finite(d->Sigma())) continue;
+	if (argdict[acfcenter]) {
+	    Dict params;
+	    params["useparent"] = EMObject(0);
+	    params["intonly"] = EMObject(1);
+	    params["maxshift"] = d->get_xsize() / 4;
+	    d->align("Translate", params);
+	    d->rotate_translate();
+	}
+	
+	if (argdict[center]) {
+	    d->to_mass_center(true);
+	}
+	
+	if (argdict[phot]) {
+	    d->to_corner();
+	}
 
 	if (anoise) {
-	    dat=d->getData();
-	    for (j=0; j<d->xSize()*d->ySize(); j++) dat[j]+=grand(anoise,anoise/2);
-	    d->doneData();
+	    float *dat=d->get_data();
+	    for (int j=0; j<d->get_xsize()*d->get_ysize(); j++) {
+		dat[j]+=get_gauss_rand(anoise,anoise/2);
+	    }
+	    d->done_data();
 	}
 
-	if (rfp) { 
-	    e=d->makeRFP(); 
-	    e->writeImage("rfp.hed",-1); 
+	if (argdict[rfp]) { 
+	    e=d->make_rotational_footprint(); 
+	    e->append_image("rfp.hed"); 
 	}
+
+	
 
 	if (rot||dx||dy||rize) {
-	    Euler oldang=Euler(*d->getEuler());
-	    float dx0=d->Dx(),	dy0=d->Dy();
-	    d->setParent(NULL);
-	    d->setRAlign(rot*PI/180.0,0,0);
-	    d->setTAlign(dx,dy,0);
+	    Rotation oldang=d->get_rotation();
+	    
+	    Vec3<float> t0 = d->get_translation();
+	    float dx0=t0[0];
+	    float dy0=t0[1];
+
+	    d->set_parent(0);
+	    d->set_ralign_params(rot*M_PI/180.0, 0, 0);
+	    d->set_talign_params(dx,dy,0);
+
 	    if (rize) {
-		if (rizeda>0) d->setRAlign(frand(-rizeda/2.0,rizeda/2.0));
-		if (rizedx>0) d->setTAlign(grand(0,rizedx),grand(0,rizedx),0);
-		if (rizef && random()%2) d->vFlip();
+		if (rizeda>0) d->set_ralign_params(Util::get_frand(-rizeda/2.0,rizeda/2.0));
+		if (rizedx>0) d->set_talign_params(Util::get_gauss_rand(0,rizedx),
+						   Util::get_gauss_rand(0,rizedx),
+						   0);
+		if (rizef && rand()%2) {
+		    d->vertical_flip();
+		}
 	    }
-	    d->rotateAndTranslate();
-	    d->setRAlign(oldang.alt(),oldang.az(),oldang.phi()+rot*PI/180.0);
-	    d->setTAlign(dx0+dx,dy0+dy,0);
+	    d->rotate_translate();
+	    d->set_ralign_params(oldang.eman_alt(), oldang.eman_az(),
+				 oldang.eman_phi()+rot*M_PI/180.0);
+	    
+	    d->set_talign_params(dx0+dx,dy0+dy,0);
 	}
 
 	Euler ee = *d->getEuler();
-	int ni = d->NImg();
-	if (scale<1.0) { d->setRAlign(0,0,0); d->setTAlign(0,0,0); d->rotateAndTranslate(scale); }
-	if (clip>0) {
-	    e=d->clip((d->xSize()-clip)/2,(d->ySize()-clipy)/2,clip,clipy);
+	//int nimg = d->get_nimg();
+	
+	if (scale<1.0) {
+	    d->set_ralign_params(0,0,0);
+	    d->set_talign_params(0,0,0);
+	    d->rotate_translate(scale);
+	}
+	
+	if (clipx>0) {
+	    EMData* e=d->get_clip(Region((d->get_xsize()-clipx)/2,(d->get_ysize()-clipy)/2,
+					 clipx, clipy));
 	    delete d;
 	    d=e;
 	}
-	if (scale>1.0) { d->setRAlign(0,0,0); d->setTAlign(0,0,0); d->rotateAndTranslate(scale); }
-	d->setRAlign(&ee);
-	d->setNImg(ni);
 
-	if (shrink>1) d->medianShrink(shrink);
-	else if (shrink<-1) d->meanShrink(-shrink);
-
-	// this is handled by the library now
-	/*	if (abs(shrink)>1 || scale!=1.0) {
-		if (d->hasCTF()) {
-		float *ctf=d->getCTF();
-		ctf[10]*=fabs((float)abs(shrink))/scale;
-		}
-		}*/
-
-	if (rotav) {
-	    d->radialAverage();
+	if (scale>1.0) {
+	    d->set_ralign_params(0,0,0);
+	    d->set_talign_params(0,0,0);
+	    d->rotate_translate(scale);
 	}
+	
+	d->set_ralign_params(&ee);
+	//d->setNImg(nimg);
 
+	if (fabs(shrink) > 1) {	    
+	    d->median_shrink((int)fabs(shrink));
+	}
+	
+	if (argdict[rotav]) {
+	    d->radial_average();
+	}
 
 	if (csym>1) {
-	    f=d->copy();
-	    f->setParent(NULL);
-	    e=f->copy();
-	    for (j=1; j<csym; j++) {
-		e->setRAlign(j*PI*2.0/(float)csym,0,0);
-		e->rotateAndTranslate();
-		d->add(e);
+	    EMData *f=d->copy();
+	    f->set_parent(0);
+	    
+	    EMData *e=f->copy();
+	    for (int j=1; j<csym; j++) {
+		e->set_ralign_params(j*M_PI*2.0/csym,0,0);
+		e->rotate_translate();
+		(*d) += (*e);
 	    }
-	    d->multConst(1.0/(float)csym);
+
+	    *d *= (1.0/csym);
+	    
 	    delete e;
+	    e = 0;
 	    delete f;
+	    f = 0;
 	}
 
-	if (rsub) {
-	    d->radialSubtract();
+	if (argdict[rsub]) {
+	    d->radial_subtract();
 	}
 
 	if (scl) {
-	    EMData *sc = new EMData;
-	    if (sclmd==0) sc->commonLinesR(d,d,scl,1);
-	    else {
-		//			EMData *e=d->clip(-d->xSize()/2,-d->ySize()/2,d->xSize()*2,d->ySize()*2);
+	    EMData *sc = new EMData();
+	    if (sclmd==0) {
+		sc->common_lines_real(d,d,scl,true);
+	    }
+	    else {	
 		EMData *e=d->copy();
-		e->toCorner();
+		e->to_corner();
+		
 		if (sclmd==1) {
-		    sc->commonLines(e,e,1,scl,1);
-		    sc->realFilter(9,-90.0,-1.0);
+		    sc->common_lines(e,e,sclmd,scl,true);
+		    sc->filter("LinearXform", Dict("shift", EMObject(-90.0),
+						   "scale", EMObject(-1.0)));
 		}
 		else if (sclmd==2) {
-		    sc->commonLines(e,e,2,scl,1);
+		    sc->common_lines(e,e,sclmd,scl,true);
 		}
-		else error(ERR_EXIT,"Invalid common-lines mode");
+		else {
+		    Log::logger()->error("Invalid common-lines mode");
+		    exit(1);
+		}
 		delete e;
+		e = 0;
 	    }
 	    delete d;
 	    d=sc;
 	}
 
-	if(radon) {
-	    EMData *r=d->doRadon();
+	if(argdict[radon]) {
+	    EMData *r=d->do_radon();
 	    delete d;
 	    d=r;
 	}
 
-
+#if 0
 	if (rfilt>=0) d->realFilter(rfilt,rft1,rft2,rft3);
+#endif
+	
+	if (bliter >0 && blwidth>0) {
+	    Dict p;
+	    p["distance_sigma"] = EMObject(blsigma1);
+	    p["value_sigma"] = EMObject(blsigma2);
+	    p["niter"] = EMObject(bliter);
+	    p["half_width"] = EMObject(blwidth);
 
-	if (bliter >0 && blwidth>0) {	// bilateral filtering
-	    d->BilateralFilter(blsigma1, blsigma2, bliter, blwidth);
+	    d->filter("Bilateral", p);	    
 	}
-	// This filters an image using a filter specified as a 2 column text file with s and the filter amp
+	
+#if 0
 	if (filefilt) {
-	    EMData *d2;
-	    d2=d->doFFT();
-	    d->gimmeFFT();
+	    EMData *d2 =d->do_fft();
+	    d->gimme_fft();
 	    delete d;
-	    d2->applyRadFn(nxyd,xd[0],xd[1]-xd[0],yd,1);
-	    d=d2->doIFT();
-	    d2->gimmeFFT();
+	    
+	    d2->apply_radial_func(nxyd,xd[0],xd[1]-xd[0],yd,true);
+	    d=d2->do_ift();
+	    d2->gimme_fft();
 	}
-
-	if (avgonly) {
-	    if (!average) average=d->copy(0,0);
-	    else average->add(d);
+#endif
+	
+	if (argdict[avgonly]) {
+	    if (!average) {
+		average=d->copy(0,0);
+	    }
+	    else {
+		(*average) += (*d);
+	    }
 	    continue;
 	}
-
+#if 0
 	if (fftavgfile) {
-	    if (!fftavg) { fftavg=new EMData; fftavg->setSize(d->xSize()+2,d->ySize());	fftavg->setComplex(1);	fftavg->zero(); }
+	    if (!fftavg) {
+		fftavg=new EMData;
+		fftavg->setSize(d->get_xsize()+2,d->get_ysize());
+		fftavg->setComplex(1);
+		fftavg->zero();
+	    }
 	    d->applyMask(-1,6);
 	    d->normalize();
-	    EMData* df=d->doFFT();
-	    df->multConst(df->ySize());	// just for scaling of the intensity level
+	    EMData* df=d->do_fft();
+	    df->multConst(df->get_ysize());	// just for scaling of the intensity level
 	    fftavg->addIncoherent(df);	
-	    d->gimmeFFT();
+	    d->gimme_fft();
 	    delete df;
 	    continue;	// no writing yet
 	}
-	
-
+#endif
+// stop here
+#if 0
 	if (strlen(sfout)) {
 	    char outfile2[1024];
-	    int y = d->ySize();
+	    int y = d->get_ysize();
 	    float *curve = (float *)malloc(y*4*sizeof(float));
-	    EMData *dataf=d->doFFT();
-	    d->gimmeFFT();
-	    dataf->calcRadDist(y,0,.5,curve);
+	    EMData *dataf=d->do_fft();
+	    d->gimme_fft();
+	    dataf->calc_radial_dist(y,0,.5,curve);
 	    // single images go to outfile
 	    if (n1==0) {
 		save_data(0,1.0/(apix*2.0*y),curve,y,sfout);
@@ -407,7 +580,7 @@ int main(int argc, char *argv[])
 	    }
 	    if (sfout_n) {
 		for(int j=0; j<sfout_n; j++){
-		    dataf->calcRadDist(y,0,.5,curve,j*2*PI/sfout_n,2*PI/sfout_n);
+		    dataf->calc_radial_dist(y,0,.5,curve,j*2*M_PI/sfout_n,2*M_PI/sfout_n);
 		    // single images go to outfile
 		    if (n1==0) {
 			sprintf(outfile2,"%s-%d-%d.pwr",file_basename(sfout),j,sfout_n);
@@ -421,85 +594,78 @@ int main(int argc, char *argv[])
 		}
 	    }
 	}
+#endif
 
-	if (mrc) {
-	    // single images go to outfile
-	    if (n1==0) {
-		d->writeMRC(outfile,mrc==2?0:2);
-	    }
-	    // multi-images get numbered
-	    else {
+	if (argdict[mrc]) {
+	    if (n1!=0) {
 		sprintf(outfile,"%03d.%s",i+100,argv[2]);
-		d->writeMRC(outfile,mrc==2?0:2);
 	    }
+	    d->write_image(outfile, 0, EMUtil::IMAGE_MRC);
 	}
-	else if (spidersingle) {
-	    if (n1==0) {
-		d->writeSingleSPIDER(outfile,spidersingle-1);
-	    }
-	    else {
+	else if (spidersingle) {	    
+	    if (n1!=0) {
 		sprintf(spiderfile,spiderformat,i);
-		d->writeSingleSPIDER(spiderfile,spidersingle-1);
 	    }
+	    
+	    d->write_image(outfile, 0, EMUtil::IMAGE_SINGLE_SPIDER);
 	}
 	else if (hdf) {
-	    d->writeHDF(outfile, -1);
+	    d->append_image(outfile, EMUtil::IMAGE_HDF);
 	}
 	else if (em) {
-	    d->writeEM(outfile);
+	    d->write_image(outfile, EMUtil::IMAGE_EM);
 	}
 	else if (pif) {
-	    if (n1==0) {
-		d->writePIF(outfile, false);
+	    if (n1!=0) {
+		sprintf(outfile,"%03d.%s",i+100,outfile);
 	    }
-	    else {
-		sprintf(outfile,"%03d.%s",i+100,argv[2]);
-		d->writePIF(outfile, false);
-	    }
+
+	    d->write_image(outfile, 0, EMUtil::IMAGE_PIF);
 	}
 	else if (png) {
-	    if (n1==0) {
-		d->writePNG(outfile);
+	    if (n1!=0) {
+		sprintf(outfile,"%03d.%s",i+100,outfile);
 	    }
-	    else {
-		sprintf(outfile,"%03d.%s",i+100,argv[2]);
-		d->writePNG(outfile);
-	    }
+	    
+	    d->write_image(outfile, 0, EMUtil::IMAGE_PNG);
 	}
 	else if (pgm) {
-	    // single images go to outfile
-	    if (n1==0) {
-		if (pgmlo>=pgmhi) d->writePGM(outfile,d->Min(),d->Max());
-		else d->writePGM(outfile,pgmlo,pgmhi);
+	    if (pgmlo>=pgmhi) {
+		pgmlo = (int) d->get_min();
+		pgmhi = (int) d->get_max();
 	    }
-	    // multi-images get numbered
-	    else {
-		sprintf(outfile,"%03d.%s",i+100,argv[2]);
-		if (pgmlo>=pgmhi) d->writePGM(outfile,d->Min(),d->Max());
-		else d->writePGM(outfile,pgmlo,pgmhi);
+	    
+	    d->set_attr_dict("min_gray", EMObject(pgmlo));
+	    d->set_attr_dict("max_gray", EMObject(pgmhi));
+	    
+	    if (n1!=0) {
+		sprintf(outfile,"%03d.%s",i+100,outfile);
 	    }
+	    d->write_image(outfile, 0, EMUtil::IMAGE_PGM);	    
 	}
-	else if (spider) {
-	    if (spider==1) d->writeSPIDER(outfile,-1);
-	    else d->writeSPIDER(outfile,-1,1);	// write byte-swapped
+	else if (argdict[spider]) {
+	    d->write_image(outfile, 0, EMUtil::IMAGE_SPIDER);
 	}
 	else {
-	    if (inpl) d->writeImage(outfile,i);
-	    else if (mraprep) {
+	    if (argdict[inplace]) {
+		d->write_image(outfile,i);
+	    }
+	    else if (argdict[mraprep]) {
 		char nf[1024];
 		sprintf(nf,"%s%04d.lst",outfile,i);
-		d->writeLST(nf,0);
+		d->write_image(nf,0, EMUtil::IMAGE_LST);
 	    }
-	    else d->writeImage(outfile,-1);
+	    else {
+		d->append_image(outfile,EMUtil::IMAGE_IMAGIC);
+	    }
 	}
 
 	// interleaved images not processed
-	if (il) {
-	    d->readImage(il,i);
-	    d->writeImage(outfile,-1);
+	if (interleaved_file) {
+	    d->readImage(interleaved_File,i);
+	    d->write_image(outfile,-1, EMUtil::IMAGE_IMAGIC);
 	}
 
-	//	if (rfp) delete e;	// auotmatically freed by emdata
     }
 
     if (average) {
@@ -513,13 +679,8 @@ int main(int argc, char *argv[])
 	fftavg->writeMRC(fftavgfile);
     }
 
-    LOG(Ref,argv[2],LOG_OUTFILE,NULL);
-    LOG(Ref,NULL,LOG_END,NULL);
-
-    printf("%d images\n",fileCount(argv[2]));
-}
-
-
+    printf("%d images\n", nimg);
+    
     
 #endif
 
