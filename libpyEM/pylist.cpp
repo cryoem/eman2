@@ -26,7 +26,7 @@ python::numeric::array Wrapper::em2numpy(EMData *image)
 			int j2 = j * nx + i2;
 			
 			for (int k = 0; k < nx; k++) {
-				l.append(data[i2 + k]);
+				l.append(data[j2 + k]);
 			}
 			
 			ll.append(l);
