@@ -32,6 +32,45 @@
   034. in ImageIO classes, add a way to label images using EMAN1 'name'
 	   and set_name().
 
+  035. Add the following to image header documentation:
+	   CTF 1D and 2D versions
+	   micrograph id
+	   particle location in the micrograph
+	   the last two will be really help to trace back the source of particle.
+	   for some applications this will be really valuable.
+
+  036. eman2 writing problem. details as follows:
+
+	   from EMAN2 import *
+	   a=EMData()
+	   a.read_image("monomer.mrc")
+	   b=a.get_rotated_clip(FloatPoint(24,24,24),Rotation(0,0,0,Rotation.Type.EMAN),
+	   IntSize(5,7,11), 1.0)
+	   b.write_image("z.mrc")
+
+       an empty file is written (though the image has the appropriate size)
+
+	   If I delete z.mrc and then do
+	       b.write_image("z.mrc")
+
+	   it doesn't do anything at all
+	   if I do:
+	      b.write_image("q.mrc")
+       it creates q.mrc, but if I delete and write again, it doesn't recreate it.
+	   Are you doing some sort of funny caching ?
+
+	   Also, in several cases I've written a (for example) 32x32x32 pixel MRC
+	   file, but the file is missing one 32x32k slice at the end. ie - the file
+	   is 131072 bytes.
+
+037. mdk 10.1-related issues. (debug option enabled) 
+	     from EMAN2 import *
+		 a=EMData()
+		 a.read_image("monomer.mrc")
+		 a.write_image("z.mrc")
+	 The output image file size is too small.
+
+	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
