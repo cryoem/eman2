@@ -19,7 +19,7 @@ namespace EMAN
 
     /*
      * valid: image_index = [0, n]
-     * write_header(), write_data(): "image_index = -1" is append
+     * write_header(), write_data() : "image_index = -1" is append
      * 
      */
     class ImageIO

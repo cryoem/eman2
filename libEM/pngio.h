@@ -8,24 +8,33 @@
 #include <png.h>
 
 
-namespace EMAN {
-
-    class PngIO: public ImageIO {
+namespace EMAN
+{
+    class PngIO : public ImageIO
+    {
     public:
 	PngIO(string filename, IOMode rw_mode = READ_ONLY);
 	~PngIO();
-	
+
 	DEFINE_IMAGEIO_FUNC;
-	static bool is_valid(const void* first_block);
-    private:
-	enum { PNG_BYTES_TO_CHECK = 8 };
-	enum BitDepthType { PNG_CHAR_DEPTH, PNG_SHORT_DEPTH, PNG_INVALID_DEPTH };
+	static bool is_valid(const void *first_block);
 	
+    private:
+	enum {
+	    PNG_BYTES_TO_CHECK = 8
+	};
+	
+	enum BitDepthType {
+	    PNG_CHAR_DEPTH,
+	    PNG_SHORT_DEPTH,
+	    PNG_INVALID_DEPTH
+	};
+
     private:
 	string filename;
 	IOMode rw_mode;
-	FILE* png_file;
-	
+	FILE *png_file;
+
 	bool initialized;
 
 	png_structp png_ptr;

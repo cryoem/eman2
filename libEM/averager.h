@@ -86,7 +86,7 @@ namespace EMAN
 	}
 	
     protected:
-	CtfAverager():sf(0), curves(0), need_snr(false) 
+	CtfAverager() : sf(0), curves(0), need_snr(false) 
 	{
 	}
 	

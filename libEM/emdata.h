@@ -310,29 +310,28 @@ namespace EMAN
 
 
     private:
-	enum EMDataFlags
-	    {
-		EMDATA_COMPLEX = 1 << 0,
-		EMDATA_RI = 1 << 1,	// real/imaginary or amp/phase
-		EMDATA_BUSY = 1 << 2,	// someone is modifying data
-		EMDATA_SHARED = 1 << 3,	// Stored in shared memory
-		EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
-		EMDATA_NEWFFT = 1 << 5,	// Data has changed, redo fft
-		EMDATA_HASCTF = 1 << 6,	// has CTF info
-		EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
-		EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
-		EMDATA_NEWRFP = 1 << 9,	// needs new rotational footprint
-		EMDATA_NODATA = 1 << 10,	// no actual data
-		EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
-		EMDATA_FLIP = 1 << 11,	// a flag only
-		EMDATA_CHANGED = (EMDATA_NEWFFT + EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
-	    };
+	enum EMDataFlags {
+	    EMDATA_COMPLEX = 1 << 0,
+	    EMDATA_RI = 1 << 1,	        // real/imaginary or amp/phase
+	    EMDATA_BUSY = 1 << 2,	// someone is modifying data
+	    EMDATA_SHARED = 1 << 3,	// Stored in shared memory
+	    EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
+	    EMDATA_NEWFFT = 1 << 5,	// Data has changed, redo fft
+	    EMDATA_HASCTF = 1 << 6,	// has CTF info
+	    EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
+	    EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
+	    EMDATA_NEWRFP = 1 << 9,	// needs new rotational footprint
+	    EMDATA_NODATA = 1 << 10,	// no actual data
+	    EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
+	    EMDATA_FLIP = 1 << 12,	// a flag only
+	    EMDATA_CHANGED = (EMDATA_NEWFFT + EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
+	};
 
 	int update_stat();
 	void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 
     private:
-	mutable map <string, EMObject> attr_dict;
+	mutable map<string, EMObject> attr_dict;
 	float *rdata;
 	float *supp;
 	SimpleCtf *ctf;
@@ -412,8 +411,8 @@ namespace EMAN
 
     inline float EMData::get_value_at_interp(float xx, float yy) const
     {
-	int x = static_cast < int >(floor(xx));
-	int y = static_cast < int >(floor(yy));
+	int x = static_cast<int>(floor(xx));
+	int y = static_cast<int>(floor(yy));
 
 	float p1 = sget_value_at(x, y);
 	float p2 = sget_value_at(x + 1, y);

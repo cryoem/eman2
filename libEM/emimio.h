@@ -8,7 +8,7 @@
 namespace EMAN
 {
 
-    class EmimIO:public ImageIO
+    class EmimIO : public ImageIO
     {
     public:
 	EmimIO(string filename, IOMode rw_mode = READ_ONLY);

@@ -12,7 +12,7 @@ namespace EMAN {
     class XYData {
     public:
 	struct Pair {
-	    Pair(float xx, float yy): x(xx), y(yy) { }
+	    Pair(float xx, float yy) : x(xx), y(yy) { }
 	    float x;
 	    float y;
 	    bool operator<(const Pair& p) const { return (x < p.x); }
