@@ -26,7 +26,27 @@
 	   one of the input images.  a=b.calc_ccf(c,True,None)  modifies c in some
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
-  028. add region write to ImageIO.
+	   
+  028. add region write to ImageIO. The first thing is to change the
+       API. The real implementation may come in the future.
+
+  029. use the new log API for entering/exiting functions. i.e., use
+       ENTERFUNC and EXITFUNC macros to replace LOGDEBUG("...").
+	   
+  030. Filter naming convention change. Right now, filters that do similar
+       things have very different names. I'd like to suggest that the most
+       general word go first, ie:
+
+	   GaussMask -> MaskGauss
+	   SharpMask -> MaskSharp
+
+	   StdNormalize -> NormalizeStd
+	   EdgeMeanNormalize -> NormalizeEdgeMean
+
+  031. Fix the documentation for 2 things:
+	   1) new logging API;
+	   2) new filter name conventions.
+	   
 
 --- Low Priority ---
 
