@@ -595,7 +595,7 @@ int main(int argc, char *argv[])
 	    continue;		// no writing yet
 	}
 #endif
-// stop here
+
 #if 0
 	if (strlen(sfout)) {
 	    
@@ -716,7 +716,8 @@ int main(int argc, char *argv[])
 	fftavg->writeMRC(fftavgfile);
     }
 #endif
-    printf("%d images\n", nimg);
+    int n_outimg = EMUtil::get_image_count(argv[2]);
+    printf("%d images\n", n_outimg);
     
     return 0;
 }
