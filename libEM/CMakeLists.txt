@@ -1,5 +1,6 @@
 SET(LIB_EM_SOURCE byteorder.C
 		  emobject.C
+		  filter.C		  
 		  log.C
 		  imageio.C
 		  util.C

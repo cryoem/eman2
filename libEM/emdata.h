@@ -9,6 +9,7 @@
 #include "emobject.h"
 #include "emutil.h"
 #include "util.h"
+#include "transform.h"
 
 using std::string;
 using std::vector;
@@ -16,7 +17,6 @@ using std::map;
 
 namespace EMAN {
     class ImageIO;
-    class Region;
     class SimpleCtf;
     
     class EMData {
@@ -33,10 +33,24 @@ namespace EMAN {
 	EMData();
 	virtual ~EMData();
 	
+	EMData* copy(bool withfft = false, bool withparent = true) const;
+	
+	EMData* get_clip(const Region& area);
+	void insert_clip(EMData* block, const Point<int>& originn);
+
 	int read_image(string filename, int img_index = 0, bool header_only = false,
 		       Region* r = 0, bool is_3d = NOT_3D);
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
+
+	void normalize();
+
+	bool is_complex() const;
+	void ri2ap();
+	void ap2ri();
+
+	EMData* do_fft();
+	
 	
 	int add(float f);
 	int add(const EMData& em);

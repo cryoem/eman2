@@ -3,8 +3,10 @@
 
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 using std::string;
+using std::vector;
 
 namespace EMAN {
     class Util {
@@ -16,6 +18,12 @@ namespace EMAN {
 	static void flip_image(float* data, int nx, int ny);
 	static bool is_sub_string(const char* s1, const char* s2);
 	static string get_filename_by_ext(string old_filename, string ext);
+
+	static void least_square_fit(int nitems, float* data_x, float* data_y, float* slope, float* intercept, bool ignore_zero);
+
+	static void save_data_to_file(vector<float> x_array, vector<float> y_array, const char* filename);
+	static void save_data_to_file(float x0, float dx, vector<float> y_array, const char* filename);
+
 	
 	static inline float bilinear_interpolate(float p1, float p2, float p3, float p4, float t, float u) {
 	    return (1.0f-t)*(1.0f-u)*p1+t*(1.0f-u)*p2+t*u*p3+(1.0f-t)*u*p4;

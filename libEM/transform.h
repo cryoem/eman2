@@ -6,23 +6,6 @@ using std::string;
 
 namespace EMAN {
 
-    template <class T>
-    class Point {
-    public:
-	Point() : x(0), y(0), z(0), ndim(0) {}
-	Point(T xx, T yy) : x(xx), y(yy), z(0), ndim(2) {}
-	Point(T xx, T yy, T zz) :  x(xx), y(yy), z(zz), ndim(3) {}
-	
-	int get_ndim() const { return ndim; }
-
-	T x;
-	T y;
-	T z;
-
-    private:
-	int ndim;
-    };
-    
     class Size {
     public:
 	Size() : xsize(0), ysize(0), zsize(0), ndim(0) {}
@@ -47,6 +30,32 @@ namespace EMAN {
 	int ndim;
     };
     
+    template <class T>
+    class Point {
+    public:
+	Point() : x(0), y(0), z(0), ndim(0) {}
+	Point(T xx, T yy) : x(xx), y(yy), z(0), ndim(2) {}
+	Point(T xx, T yy, T zz) :  x(xx), y(yy), z(zz), ndim(3) {}
+#if 0
+	bool inside_box(const Size& box) const
+	{
+	    if (box.xsize >= 0 && box.ysize >= 0 && box.zsize >= 0 &&
+		x < box.xsize && y < box.ysize && z < box.zsize) {
+		return true;
+	    }
+	    return false;
+	}
+#endif
+	int get_ndim() const { return ndim; }
+
+	T x;
+	T y;
+	T z;
+
+    private:
+	int ndim;
+    };
+    
     
     class Region {
     public:
@@ -56,10 +65,11 @@ namespace EMAN {
 
 	~Region();
 
-	bool is_valid() const;
-	bool is_valid(const Size& size) const;
-	bool is_valid(float xsize, float ysize) const;
-	bool is_valid(float xsize, float ysize, float zsize) const;
+	bool inside_region() const;
+	bool inside_region(const Size& size) const;
+	bool inside_region(float xsize, float ysize) const;
+	bool inside_region(float xsize, float ysize, float zsize) const;
+	
 	int get_ndim() const { return origin.get_ndim(); }
 	string get_string() const;
 	
