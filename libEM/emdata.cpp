@@ -325,12 +325,16 @@ EMData *EMData::get_clip(const Region & area)
     result->set_size(area.size.xsize, area.size.ysize, zsize);
 
     int x0 = (int) area.origin.x;
-
+    x0 = x0 < 0? 0 : x0;
+    
     int y0 = (int) area.origin.y;
+    y0 = y0 < 0? 0 : y0;
+
     int y1 = (int) (area.origin.y + area.size.ysize);
-    if (y1 > ny) {
-	y1 = ny;
-    }
+    y1 = y1 > ny? ny : y1;
+
+    int yd0 = area.origin.y < 0? -y0 : 0;
+    int xd0 = x0 < 0 ? -x0 : 0;
     
     int z0 = (int) area.origin.z;
     int z1 = (int) (area.origin.z + zsize);
@@ -346,7 +350,8 @@ EMData *EMData::get_clip(const Region & area)
 
     float *src = rdata + y0 * nx + x0;
     float *dst = result->get_data();
-
+    dst += yd0 * area.size.xsize + xd0;
+    
     for (int i = z0; i < z1; i++) {
 	for (int j = y0; j < y1; j++) {
 	    memcpy(dst, src, result_row_size);
@@ -3749,17 +3754,17 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, fl
 		else if (i > 0 && i < n - 1) {
 		    float h = 0;
 		    if (is_complex()) {
-		    if (is_ri()) {
+			if (is_ri()) {
 			    h = Util::square(rdata[c]) + Util::square(rdata[c + 1]);
-		    }
-		    else {
-				h = rdata[c] * rdata[c];
-		    }
 			}
+			else {
+			    h = rdata[c] * rdata[c];
+			}
+		    }
 		    else {
 			h = rdata[c];
 		    }
-
+		    
 		    d[i] += h * (1 - r);
 		    yc[i] += 1 - r;
 		    d[i + 1] += h * r;

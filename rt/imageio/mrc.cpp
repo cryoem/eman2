@@ -21,11 +21,19 @@ int main(int argc, char *argv[])
     delete c;
     c = 0;
 
-    EMData *c2 = e.get_clip(Region(0, 0, nx*2, ny*2));
+    EMData *c2 = e.get_clip(Region(-nx, -ny, nx*2, ny*2));
     c2->write_image("a2.mrc", 0, EMUtil::IMAGE_MRC);
 
     delete c2;
     c2 = 0;
+
+    
+    EMData *c3 = e.get_clip(Region(0, 0, nx*2, ny*2));
+    c3->write_image("a3.mrc", 0, EMUtil::IMAGE_MRC);
+
+    delete c3;
+    c3 = 0;
+
     
     return 0;
 }
