@@ -3760,21 +3760,27 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, fl
 		r -= i;
 
 		if (i == 0) {
-		    d[i] += rdata[c] * (1 - r);
+		    d[i] += Util::square(rdata[c]) * (1 - r);
 		    yc[i] += 1 - r;
 		}
 		else if (i == n - 1) {
-		    d[i] += rdata[c] * r;
+		    d[i] += Util::square(rdata[c]) * r;
 		    yc[i] += r;
 		}
 		else if (i > 0 && i < n - 1) {
 		    float h = 0;
+		    if (is_complex()) {
 		    if (is_ri()) {
-			h = hypot(rdata[c], rdata[c + 1]);
+			    h = Util::square(rdata[c]) + Util::square(rdata[c + 1]);
 		    }
+		    else {
+				h = rdata[c] * rdata[c];
+		    }
+			}
 		    else {
 			h = rdata[c];
 		    }
+
 		    d[i] += h * (1 - r);
 		    yc[i] += 1 - r;
 		    d[i + 1] += h * r;
