@@ -67,7 +67,7 @@ EMObject::operator const char*() const
 {
     if (type != STRING) {
 	if (type != UNKNOWN) {
-	    Log::logger()->error("type error. Cannot conver to string from data type '%s'",
+	    Log::logger()->error("type error. Cannot convert to string from data type '%s'",
 				 get_object_type_name(type));
 	}
 	return "";

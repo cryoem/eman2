@@ -54,6 +54,7 @@ namespace EMAN
 	int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 			 bool header_only = false);
 
+	/** apply a filter with its parameters on this image */
 	int filter(string filtername, const Dict & params = Dict());
 	float cmp(string cmpname, const Dict & params = Dict());
 	EMData *align(string aligner_name, const Dict & params = Dict(), string comp_name = "");

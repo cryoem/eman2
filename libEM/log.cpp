@@ -26,7 +26,12 @@ Log::Log()
 {
     out = 0;
     log_level = ERROR_LOG;
+#ifdef WIN32
+    char c = getenv("WINDIR")[0];
+    default_emandir = string(c) + string(":\.eman");
+#else
     default_emandir = string(getenv("HOME")) + "/.eman";
+#endif
     default_emanlog = ".emanlog";
     mkdir(default_emandir.c_str(), 0xffff);
 }

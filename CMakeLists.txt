@@ -1,9 +1,7 @@
 PROJECT(EMAN)
 
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
-
 MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
-
 OPTION(CMAKE_VERBOSE_MAKEFILE "if all commands will be echoed to the console during the make" ON)
 
 SET(EMAN_INSTALL_PREFIX $ENV{HOME}/EMAN2 CACHE PATH "installation prefix")
@@ -31,7 +29,7 @@ OPTION(ENABLE_OPTERON "if enable OPTERON/Ath64 specific support" OFF)
 OPTION(ENABLE_G5 "if enable G5 CPU specific support" OFF)
 
 IF (ENABLE_DEBUG)
-    SET (OPT_FLAGS "-g -DDEBUG")
+    SET (OPT_FLAGS "-DDEBUG")
 ELSE (ENABLE_DEBUG)
     IF (ENABLE_ATHLON)
 	SET (OPT_FLAGS "-O3 -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")

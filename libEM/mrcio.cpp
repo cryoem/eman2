@@ -264,11 +264,6 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool )
 	    return 1;
 	}
 	
-	if (nx != mrch.nx || ny != mrch.ny) {
-	    Log::logger()->error("cannot write to different size file %s\n", filename.c_str());
-	    return 1;
-	}
-
 	if (new_mode != mrch.mode) {
 	    Log::logger()->error("cannot write to different mode file %sn", filename.c_str());
 	    return 1;
@@ -287,12 +282,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool )
     if (dict.has_key("MRC.nlabels")) {
 	mrch.nlabels = dict["MRC.nlabels"];
     }
-    
-    for (int i = 0; i < mrch.nlabels; i++) {
+
+    for (int i = 0; i < MRC_NUM_LABELS; i++) {
 	char label[32];
 	sprintf(label, "MRC.label%d", i);
 	if (dict.has_key(label)) {
 	    sprintf(&mrch.labels[i][0], "%s", (const char*)dict[label]);
+	    mrch.nlabels = i+1;
 	}
     }
 
