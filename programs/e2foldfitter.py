@@ -87,7 +87,7 @@ both box sizes should be multiples of 8."""
 	tdim2=(target.get_xsize(),target.get_ysize(),target.get_zsize())
 	pdim2=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
 #	print (pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]
-	probe.filter("NormalizeEdgeMean")
+	probe.filter("normalize.edgemean")
 	probeclip=probe.get_clip(Region((pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]))
 	
 	roughang=[(0,0),(45,0),(45,90),(45,180),(45,270),(90,0),(90,60),(90,120),(90,180),(90,240),(90,300),(135,0),(135,90),(135,180),(135,270),(180,0)]
@@ -112,9 +112,9 @@ both box sizes should be multiples of 8."""
 			ccf=target.calc_ccf(prr,1,None)
 			mean=float(ccf.get_attr("mean"))
 			sig=float(ccf.get_attr("sigma"))
-			ccf.filter("ZeroEdgePlane",{"x0":edge,"x1":edge,"y0":edge,"y1":edge,"z0":edge,"z1":edge})
+			ccf.filter("mask.zeroedge3d",{"x0":edge,"x1":edge,"y0":edge,"y1":edge,"z0":edge,"z1":edge})
 			sum+=ccf
-			ccf.filter("PeakOnly",{"npeaks":0})		# only look at peak values in the CCF map
+			ccf.filter("mask.onlypeaks",{"npeaks":0})		# only look at peak values in the CCF map
 			
 #			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
 			vec=ccf.calc_highest_locations(mean+sig+.0000001)
@@ -141,7 +141,7 @@ both box sizes should be multiples of 8."""
 #		if not i[7]: best2.append(i)
 
 	# now we find peaks in the sum of all CCF calculations, and find the best angle associated with each peak
-	sum.filter("PeakOnly",{"npeaks":0})
+	sum.filter("mask.onlypeaks",{"npeaks":0})
 	sum.write_image("sum.mrc")
 	vec=sum.calc_highest_locations(mean+sig+.0000001)
 	best2=[]

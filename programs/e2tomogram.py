@@ -43,23 +43,23 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			# that
 			mask=clip1.copy_head()
 			mask.to_one()
-			mask.filter("MaskSharp",{"outer_radius":box/2})
+			mask.filter("mask.sharp",{"outer_radius":box/2})
 			clip1*=mask
 			clip1-=float(clip1.get_attr("mean_nonzero"))
 			clip1*=mask
 			
-			clip2.filter("NormalizeStd")
+			clip2.filter("normalize")
 			clip2s=clip2.copy(0)
-			clip2s.filter("ValueSquared")
+			clip2s.filter("math.squared")
 			
 			ccf=clip1.calc_ccf(clip2,1,None)
 			ccfs=mask.calc_ccf(clip2s,1,None)	# this is the sum of the masked values^2 for each pixel center
-			ccfs.filter("ValueSqrt")
+			ccfs.filter("math.sqrt")
 			ccf/=ccfs
 	
-			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
-			if bigpad*2>padbox/2 : ccf.filter("MaskSharp",{"outer_radius":padbox/2-1})
-			else : ccf.filter("MaskSharp",{"outer_radius":bigpad*2})		# max translation
+			ccf.filter("normalize")		# peaks relative to 1 std-dev
+			if bigpad*2>padbox/2 : ccf.filter("mask.sharp",{"outer_radius":padbox/2-1})
+			else : ccf.filter("mask.sharp",{"outer_radius":bigpad*2})		# max translation
 			ccf.set_value_at(int(padbox/2),int(padbox/2),0,0)		# remove 0 shift artifacts
 			
 			if (debug):
@@ -154,21 +154,21 @@ Processes a tomographic tilt series"""
 		else :
 			iml=EMData.read_images(args[inn],range(i[0],i[0]+options.localavg))
 		for img in iml:
-			img.filter("NormalizeEdgeMean")
+			img.filter("normalize.edgemean")
 		im1=iml[0].copy()
 		for img in iml[1:]:
 			im1+=img
 		iml=None
-		im1.filter("NormalizeEdgeMean")
-		if options.highpass>0 :im1.filter("HighpassGauss",{"highpass":options.highpass})
-		if (options.lowpass>0) : im1.filter("LowpassGauss",{"lowpass":options.lowpass})
+		im1.filter("normalize.edgemean")
+		if options.highpass>0 :im1.filter("filter.highpass.gaussian",{"highpass":options.highpass})
+		if (options.lowpass>0) : im1.filter("filter.lowpass.gaussian",{"lowpass":options.lowpass})
 		if options.localavg>1: im1.write_image("aliref.hed",i[0])
 		
 		im2=EMData()
 		im2.read_image(args[inn],i[1])
-		im2.filter("NormalizeEdgeMean")
-		if options.highpass>0 : im2.filter("HighpassGauss",{"highpass":options.highpass})
-		if (options.lowpass>0) : im2.filter("LowpassGauss",{"lowpass":options.lowpass})
+		im2.filter("normalize.edgemean")
+		if options.highpass>0 : im2.filter("filter.highpass.gaussian",{"highpass":options.highpass})
+		if (options.lowpass>0) : im2.filter("filter.lowpass.gaussian",{"lowpass":options.lowpass})
 		
 		
 		if options.mode=="modeshift" :
@@ -195,25 +195,25 @@ Processes a tomographic tilt series"""
 			
 			mask=ref.copy_head()
 			mask.to_one()
-			mask.filter("MaskSharp",{"outer_radius":rgnp[3]/2,"dx":cen[0],"dy":cen[1]})
+			mask.filter("mask.sharp",{"outer_radius":rgnp[3]/2,"dx":cen[0],"dy":cen[1]})
 			ref*=mask
 			ref-=float(ref.get_attr("mean_nonzero"))
 			ref*=mask
 			
-			im2.filter("NormalizeStd")
+			im2.filter("normalize")
 			im2s=im2.copy(0)
-			im2s.filter("ValueSquared")
+			im2s.filter("math.squared")
 			
 #			ref.write_image("dbug.hed",-1)
 #			im2.write_image("dbug.hed",-1)
 			ccf=ref.calc_ccf(im2,1,None)
 			ccfs=mask.calc_ccf(im2s,1,None)	# this is the sum of the masked values^2 for each pixel center
-			ccfs.filter("ValueSqrt")
+			ccfs.filter("math.sqrt")
 			ccf/=ccfs
-#			ccf.filter("MaskSharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
-			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
-			ccf.filter("PeakOnly",{"npeaks":0})
-			ccf.filter("MaskSharp",{"outer_radius":options.maxshift})
+#			ccf.filter("mask.sharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
+			ccf.filter("normalize")		# peaks relative to 1 std-dev
+			ccf.filter("mask.onlypeaks",{"npeaks":0})
+			ccf.filter("mask.sharp",{"outer_radius":options.maxshift})
 			if options.nozero : ccf.set_value_at(ccf.get_xsize()/2,ccf.get_ysize()/2,0,0)
 
 			if i[1] in range(72,77) : ccf.write_image("dbug.hed",-1)
@@ -266,7 +266,7 @@ Processes a tomographic tilt series"""
 					
 		print "%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1])
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
-		im2.filter("NormalizeStd")
+		im2.filter("normalize")
 		im2.write_image(args[1],i[1])
 	
 	print "Alignment Stage Complete"
@@ -283,11 +283,11 @@ Processes a tomographic tilt series"""
 		for i in range(nimg):
 			a=EMData()
 			a.read_image(args[1],i)
-			a.filter("MeanZeroEdge")
-			a.filter("NormalizeStd")
-			a.filter("MaskGauss",{"outer_radius":a.get_xsize()/4})
+			a.filter("mask.dampedzeroedgefill")
+			a.filter("normalize")
+			a.filter("mask.gaussian",{"outer_radius":a.get_xsize()/4})
 			b=a.do_fft()
-			b.filter("ComplexNormPixel")
+			b.filter("complex.normpixels")
 			sum+=b
 		print "Phase average calculated"
 			

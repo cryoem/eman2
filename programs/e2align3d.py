@@ -85,7 +85,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	tdim2=(target.get_xsize(),target.get_ysize(),target.get_zsize())
 	pdim2=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
 #	print (pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]
-	probe.filter("NormalizeEdgeMean")
+	probe.filter("normalize.edgemean")
 	probeclip=probe.get_clip(Region((pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]))
 	
 	if options.csym: roughang=[(0,0),(180,0)]
@@ -110,9 +110,9 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 			mean=float(ccf.get_attr("mean"))
 			sig=float(ccf.get_attr("sigma"))
 #			ccf.write_image('ccf1.%0d%0d%0d.mrc'%(a1,a2,a3))
-			ccf.filter("ZeroEdgePlane",{"x0":pdim2[0]/4,"x1":pdim2[0]/4,"y0":pdim2[1]/4,"y1":pdim2[1]/4,"z0":pdim2[2]/4,"z1":pdim2[2]/4})
+			ccf.filter("mask.zeroedge3d",{"x0":pdim2[0]/4,"x1":pdim2[0]/4,"y0":pdim2[1]/4,"y1":pdim2[1]/4,"z0":pdim2[2]/4,"z1":pdim2[2]/4})
 #			ccf.write_image('ccf2.%0d%0d%0d.mrc'%(a1,a2,a3))
-			ccf.filter("PeakOnly",{"npeaks":0})		# only look at peak values in the CCF map
+			ccf.filter("mask.onlypeaks",{"npeaks":0})		# only look at peak values in the CCF map
 			sum+=ccf
 
 #			print mean,sig
@@ -144,7 +144,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 
 	# now we find peaks in the sum of all CCF calculations, and find the best angle associated with each peak
 #	sum.write_image("sum.mrc")
-	sum.filter("PeakOnly",{"npeaks":0})
+	sum.filter("mask.onlypeaks",{"npeaks":0})
 	sum.write_image("sum.mrc")
 	vec=sum.calc_highest_locations(mean+sig+.0000001)
 	best2=[]

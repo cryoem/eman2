@@ -59,11 +59,10 @@ for single particle analysis."""
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
 			# first a circular mask
-			ic.filter("MaskSharp",{"outer_radius":ic.get_xsize()/2-1})
+			ic.filter("mask.sharp",{"outer_radius":ic.get_xsize()/2-1})
 			
 			# make the unmasked portion mean -> 0
-			mnz=ic.get_attr("mean_nonzero")
-			ic.add(mnz,keepzero=1)
+			ic.add(ic.get_attr("mean_nonzero"),keepzero=1)
 			
 			
 			
@@ -79,8 +78,8 @@ for single particle analysis."""
 		outer.to_one()
 		inner=outer.copy(0)
 		
-		outer.filter("MaskSharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
-		inner.filter("MaskSharp",{"outer_radius":sbox*2/5})
+		outer.filter("mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
+		inner.filter("mask.sharp",{"outer_radius":sbox*2/5})
 		
 		outer.write_image("b_outer.mrc")
 		inner.write_image("b_inner.mrc")
