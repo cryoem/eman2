@@ -1186,6 +1186,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	
 	std::string ret=std::string();
 	ret.resize(iysize*bpl);
+	ret.assign(iysize*bpl,char(mingray));
 	unsigned char *data=(unsigned char *)ret.data();
 	
 	float rm = render_min;
@@ -1376,7 +1377,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	
 	// this replicates r -> g,b
 	if (asrgb==3) {
-		for (int j=ymin; j<=ymax*bpl; j+=bpl) {
+		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*3; i+=3) {
 				data[i+j+1]=data[i+j+2]=data[i+j];
 			}
