@@ -196,6 +196,8 @@ namespace EMAN
 	}
 
 	static string get_time_label();
+
+	static void set_log_level(int argc, char* argv[]);
 	
     };
 }

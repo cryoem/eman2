@@ -191,8 +191,36 @@ namespace EMAN
 	    return (type == UNKNOWN);
 	}
 
-	string to_str() const;
+	string to_str() const
+	{
+	    if (type == STRING) {
+		return str;
+	    }
+	    else {
+		char tmp_str[32];
 
+		if (type == INT) {
+		    sprintf(tmp_str, "%d", n);
+		}
+		else if (type == FLOAT) {
+		    sprintf(tmp_str, "%f", f);
+		}
+		else if (type == DOUBLE) {
+		    sprintf(tmp_str, "%f", d);
+		}
+		else if (type == EMDATA) {
+		    sprintf(tmp_str, "EMDATA");
+		}
+		else if (type == XYDATA) {
+		    sprintf(tmp_str, "XYDATA");
+		}
+		else {
+		    sprintf(tmp_str, "Unknown");
+		}
+		return string(tmp_str);
+	    }
+	}
+	
 	static const char *get_object_type_name(ObjectType t)
 	{
 	    switch (t) {
