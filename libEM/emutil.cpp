@@ -99,7 +99,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first
     
     switch (image_type) {
     case IMAGE_MRC:
-	if (MrcIO::is_valid(first_block), file_size) {
+	if (MrcIO::is_valid(first_block, file_size)) {
 	    return IMAGE_MRC;
 	}
 	break;
