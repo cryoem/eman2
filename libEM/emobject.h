@@ -500,12 +500,12 @@ namespace EMAN
 
 		for (size_t i = 0; i < item_names.size(); i++) {
 			T *item = Factory < T >::get(item_names[i]);
-			printf("%s\n", item->get_name().c_str());
+			printf("%s :  %s\n", item->get_name().c_str(),item->get_desc().c_str());
 			TypeDict td = item->get_param_types();
 			td.dump();
 		}
 	}
-
+	
 }
 
 #endif

@@ -90,6 +90,8 @@ namespace EMAN
 		 */
 		virtual string get_name() const = 0;
 
+		virtual string get_desc() const = 0;
+
 		/** Set the Averager parameters using a key/value dictionary.
 		 * @param new_params A dictionary containing the new parameters.
 		 */
@@ -130,6 +132,11 @@ namespace EMAN
 			return "Image";
 		}
 
+		string get_desc() const
+		{
+			return "Simple average of images";
+		}
+
 		static Averager *NEW()
 		{
 			return new ImageAverager();
@@ -163,6 +170,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "Iteration";
+		}
+
+		string get_desc() const
+		{
+			return "Unknown";
 		}
 
 		static Averager *NEW()
@@ -223,7 +235,12 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "Weighting";
+			return "SNRWeight";
+		}
+
+		string get_desc() const
+		{
+			return "SNR Weighted average without CTF amplitude correction";
 		}
 
 		static Averager *NEW()
@@ -254,7 +271,12 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "CtfC";
+			return "CTFC";
+		}
+
+		string get_desc() const
+		{
+			return "CTF amplitude corrected average, including SNR weight, but result is unfiltered.";
 		}
 
 		static Averager *NEW()
@@ -270,7 +292,12 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "CtfCW";
+			return "CTFCW";
+		}
+
+		string get_desc() const
+		{
+			return "CTF amplitude corrected average, including SNR weight and Wiener filtration";
 		}
 
 		static Averager *NEW()
@@ -298,7 +325,12 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "CtfCWauto";
+			return "CTFCWauto";
+		}
+
+		string get_desc() const
+		{
+			return "Experimental, do not use";
 		}
 
 		static Averager *NEW()

@@ -258,7 +258,7 @@ void TypeDict::dump()
 {
 	map < string, string >::iterator p;
 	for (p = type_dict.begin(); p != type_dict.end(); p++) {
-		printf("%20s    %s  %s\n",
+		printf("%-20s    %s  %s\n",
 			   p->first.c_str(), p->second.c_str(), desc_dict[p->first].c_str());
 	}
 }

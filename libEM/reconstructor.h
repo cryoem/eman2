@@ -96,6 +96,8 @@ namespace EMAN
 		virtual string get_name() const = 0;
 
 		
+		virtual string get_desc() const = 0;
+
 		/** Get the Reconstructor's parameters in a key/value dictionary.
 		 * @return A key/value pair dictionary containing the parameters.
 		 */
@@ -140,6 +142,12 @@ namespace EMAN
 		{
 			return "Fourier";
 		}
+		
+		string get_desc() const
+		{
+			return "Reconstruction via direct Fourier methods using a Gaussian kernel";
+		}
+
 		static Reconstructor *NEW()
 		{
 			return new FourierReconstructor();
@@ -178,6 +186,12 @@ namespace EMAN
 		{
 			return "WienerFourier";
 		}
+		
+		string get_desc() const
+		{
+			return "Experimental - Direct Fourier reconstruction taking into account the Wiener filtration of the individual images.";
+		}
+
 		static Reconstructor *NEW()
 		{
 			return new WienerFourierReconstructor();
@@ -221,6 +235,12 @@ namespace EMAN
 		{
 			return "BackProjection";
 		}
+		
+		string get_desc() const
+		{
+			return "Simple (unfiltered) back-projection reconstruction";
+		}
+
 		static Reconstructor *NEW()
 		{
 			return new BackProjectionReconstructor();

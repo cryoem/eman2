@@ -24,6 +24,11 @@ namespace EMAN
 			return "XYZ";
 		}
 
+		string get_desc() const
+		{
+			return "XYZ Description";
+		}
+
 		static Projector *NEW()
 		{
 			return new XYZProjector();

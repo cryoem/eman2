@@ -68,6 +68,8 @@ namespace EMAN
 		 */
 		virtual string get_name() const = 0;
 
+		virtual string get_desc() const = 0;
+		
 		/** Get the projector parameters in a key/value dictionary.
 		 * return A key/value pair dictionary containing the
 		 *         parameters.
@@ -134,6 +136,11 @@ namespace EMAN
 			return "GaussFFT";
 		}
 
+		string get_desc() const
+		{
+			return "Projections using a Gaussian kernel in Fourier space. Produces artifacts, not recommended.";
+		}
+
 		static Projector *NEW()
 		{
 			return new GaussFFTProjector();
@@ -169,6 +176,11 @@ namespace EMAN
 			return "Pawel";
 		}
 
+		string get_desc() const
+		{
+			return "Pawel Penczek's optimized real-space projection generation. Minor interpolation artifacts.";
+		}
+
 		static Projector *NEW()
 		{
 			return new PawelProjector();
@@ -200,6 +212,11 @@ namespace EMAN
 			return "SimpleIsoSurface";
 		}
 
+		string get_desc() const
+		{
+			return "Simple isosurface rendering, not projections.";
+		}
+
 		static Projector *NEW()
 		{
 			return new SimpleIsoSurfaceProjector();
@@ -216,6 +233,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "Standard";
+		}
+
+		string get_desc() const
+		{
+			return "Simple real-space projection. Most accurate.";
 		}
 
 		static Projector *NEW()
@@ -238,6 +260,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "StandardFast";
+		}
+
+		string get_desc() const
+		{
+			return "Standard with some optimizations. Might be minor accuracy difference.";
 		}
 
 		static Projector *NEW()

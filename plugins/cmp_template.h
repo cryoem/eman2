@@ -23,6 +23,11 @@ namespace EMAN
 			return "xYZ";
 		}
 
+		string get_desc() const
+		{
+			return "XYZ Description";
+		}
+
 		static Cmp *NEW()
 		{
 			return new XYZCmp();

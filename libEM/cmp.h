@@ -76,6 +76,8 @@ namespace EMAN
 		 */
 		virtual string get_name() const = 0;
 
+		virtual string get_desc() const = 0;
+
 		/** Get the Cmp parameters in a key/value dictionary.
 		 * @return A key/value pair dictionary containing the parameters.
 		 */
@@ -119,6 +121,11 @@ namespace EMAN
 			return "Dot";
 		}
 
+		string get_desc() const
+		{
+			return "Dot product";
+		}
+
 		static Cmp *NEW()
 		{
 			return new DotCmp();
@@ -152,6 +159,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "Variance";
+		}
+
+		string get_desc() const
+		{
+			return "Real-space variance after density optimization, self should be noisy and target less noisy. Linear transform applied to density to minimize variance.";
 		}
 
 		static Cmp *NEW()
@@ -201,6 +213,11 @@ namespace EMAN
 			return "Phase";
 		}
 
+		string get_desc() const
+		{
+			return "Mean phase difference";
+		}
+
 		static Cmp *NEW()
 		{
 			return new PhaseCmp();
@@ -227,6 +244,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "FRC";
+		}
+
+		string get_desc() const
+		{
+			return "Mean Fourier ring correlation";
 		}
 
 		static Cmp *NEW()

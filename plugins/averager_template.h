@@ -25,6 +25,11 @@ namespace EMAN
 			return "XYZ";
 		}
 
+		string get_desc() const
+		{
+			return "XYZ description";
+		}
+
 		static Averager *NEW()
 		{
 			return new XYZAverager();

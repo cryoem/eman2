@@ -72,6 +72,7 @@ namespace EMAN
 		 */
 		virtual string get_name() const = 0;
 
+		virtual string get_desc() const = 0;
 		/** Get the Aligner parameters in a key/value dictionary.
 		 * @return A key/value pair dictionary containing the parameters.
 		 */
@@ -107,6 +108,11 @@ namespace EMAN
 		{
 			return "Translational";
 		}
+		
+		string get_desc() const
+		{
+			return "Translational 2D alignment by cross-correlation";
+		}
 
 		static Aligner *NEW()
 		{
@@ -137,6 +143,11 @@ namespace EMAN
 		{
 			return "Translational3D";
 		}
+		
+		string get_desc() const
+		{
+			return "Translational 3D alignment by cross-correlation";
+		}
 
 		static Aligner *NEW()
 		{
@@ -164,6 +175,11 @@ namespace EMAN
 		{
 			return "Rotational";
 		}
+		
+		string get_desc() const
+		{
+			return "Rotational 2D alignment by angular correlation using make_rotational_footprint(), ~translationally independent";
+		}
 
 		static Aligner *NEW()
 		{
@@ -189,6 +205,11 @@ namespace EMAN
 		{
 			return "RotatePrecenter";
 		}
+		
+		string get_desc() const
+		{
+			return "Rotational 2D alignment by angular correlation using unwrap(4,ny*7/16,...), precentered images only";
+		}
 
 		static Aligner *NEW()
 		{
@@ -213,6 +234,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "RotateCH";
+		}
+		
+		string get_desc() const
+		{
+			return "Rotational 2D alignment using circular harmonics";
 		}
 
 		static Aligner *NEW()
@@ -241,6 +267,11 @@ namespace EMAN
 		{
 			return "RotateTranslate";
 		}
+		
+		string get_desc() const
+		{
+			return "Full 2D alignment using 'Rotational' and 'Translational'.";
+		}
 
 		static Aligner *NEW()
 		{
@@ -268,6 +299,11 @@ namespace EMAN
 		{
 			return "RotateTranslateBest";
 		}
+		
+		string get_desc() const
+		{
+			return "Full 2D alignment using 'Rotational' and 'Translational', also incorporates 2D 'Refine' alignments.";
+		}
 
 		static Aligner *NEW()
 		{
@@ -294,6 +330,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "RotateTranslateRadon";
+		}
+
+		string get_desc() const
+		{
+			return "Experimental 2D alignment using Radon transforms.";
 		}
 
 		static Aligner *NEW()
@@ -324,6 +365,11 @@ namespace EMAN
 			return "RotateFlip";
 		}
 
+		string get_desc() const
+		{
+			return "'Rotational' alignment with possible handedness change";
+		}
+
 		static Aligner *NEW()
 		{
 			return new RotateFlipAligner();
@@ -349,6 +395,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "RotateTranslateFlip";
+		}
+
+		string get_desc() const
+		{
+			return "'RotatateTranslate' alignment with possible handedness change";
 		}
 
 		static Aligner *NEW()
@@ -379,6 +430,11 @@ namespace EMAN
 			return "RTFSlow";
 		}
 
+		string get_desc() const
+		{
+			return "Experimental full 2D alignment with handedness check using semi-exhaustive search (not necessarily better than RTFBest)";
+		}
+		
 		static Aligner *NEW()
 		{
 			return new RTFSlowAligner();
@@ -405,6 +461,11 @@ namespace EMAN
 			return "RTFSlowest";
 		}
 
+		string get_desc() const
+		{
+			return "Experimental full 2D alignment with handedness check using more exhaustive search (not necessarily better than RTFBest)";
+		}
+		
 		static Aligner *NEW()
 		{
 			return new RTFSlowestAligner();
@@ -433,6 +494,11 @@ namespace EMAN
 			return "RTFBest";
 		}
 
+		string get_desc() const
+		{
+			return "Best full 2D alignment with handedness check currently in EMAN.";
+		}
+		
 		static Aligner *NEW()
 		{
 			return new RTFBestAligner();
@@ -459,6 +525,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "RTFRadon";
+		}
+
+		string get_desc() const
+		{
+			return "Experimental 2D alignment using Radon transforms with handedness check.";
 		}
 
 		static Aligner *NEW()
@@ -489,6 +560,11 @@ namespace EMAN
 		string get_name() const
 		{
 			return "Refine";
+		}
+
+		string get_desc() const
+		{
+			return "Refines a preliminary 2D alignment using a simplex algorithm. Subpixel accuracy.";
 		}
 
 		static Aligner *NEW()

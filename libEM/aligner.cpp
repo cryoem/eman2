@@ -745,7 +745,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, const string&) const
 	EMData *this_copy2 = this_img->copy();
 
 	if (!flip) {
-		this_copy2->filter("Filp", Dict("axis", "y"));
+		this_copy2->filter("Flip", Dict("axis", "y"));
 	}
 
 	this_copy2->align("Rotational", params);
