@@ -212,9 +212,9 @@ both box sizes should be multiples of 8."""
 		a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%i)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
-#		pc.rotate(-b[0],-b[2],-b[1])
-#		pc.rotate_translate(0,0,0,b[3],b[4],b[5])		# FIXME, when rotate_translate with post-translate works
-		pc.rotate_translate(-b[0],-b[2],-b[1],0,0,0,b[3],b[4],b[5])
+		pc.rotate(-b[0],-b[2],-b[1])
+		pc.rotate_translate(0,0,0,b[3],b[4],b[5])		# FIXME, when rotate_translate with post-translate works
+#		pc.rotate_translate(-b[0],-b[2],-b[1],0,0,0,b[3],b[4],b[5])
 		pc.write_image("final.%02d.mrc"%i)
 
 	print ncmp," total comparisons"
