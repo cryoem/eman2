@@ -16,12 +16,14 @@ using std::string;
 using std::vector;
 using std::map;
 
-namespace EMAN {
+namespace EMAN
+{
     class ImageIO;
     class SimpleCtf;
     class XYData;
-    
-    class EMData {
+
+    class EMData
+    {
     public:
 	static bool HEADER_ONLY;
 	static bool HEADER_AND_DATA;
@@ -30,118 +32,110 @@ namespace EMAN {
 	static bool DATA_READ_ONLY;
 	static bool DATA_READ_WRITE;
 
-	
+
     public:
 	EMData();
 	virtual ~EMData();
-	
+
 	int read_image(string filename, int img_index = 0, bool header_only = false,
-		       const Region* r = 0, bool is_3d = NOT_3D);
-	
+		       const Region * r = 0, bool is_3d = NOT_3D);
+
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
 	int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 			 bool header_only = false);
-	
-	int filter(string filtername, const Dict& params = Dict());
 
-	float cmp(string cmpname, const Dict& params);
+	int filter(string filtername, const Dict & params = Dict());
 
-	EMData* align(string aligner_name, const Dict& params, string comp_name = "");
-	
-	EMData* copy(bool withfft = false, bool withparent = true);
-	EMData* copy_head();
-	
-	EMData* get_clip(const Region& area);
-	void insert_clip(EMData* block, const Point<int>& originn);
+	float cmp(string cmpname, const Dict & params);
 
-	EMData* do_fft();
-	EMData* do_ift();
+	EMData *align(string aligner_name, const Dict & params, string comp_name = "");
+
+	EMData *copy(bool withfft = false, bool withparent = true);
+	EMData *copy_head();
+
+	EMData *get_clip(const Region & area);
+	void insert_clip(EMData * block, const Point<int> & originn);
+
+	EMData *do_fft();
+	EMData *do_ift();
+	EMData *ift_slice();
 	void gimme_fft();
-	
-	void normalize();	
-	void mask_normalize(const EMData* mask, bool sigmatoo = true);
+
+	void normalize();
+	void mask_normalize(const EMData * mask, bool sigmatoo = true);
 	float edge_normalize(int mode = 0);
 	void row_normalize();
 	void normalize_max();
-	
-	Point<float> normalize_slice(EMData* slice, float alt, float az, float phi);
-	
-	Point<float> normalize_to(const EMData* noisy, bool keepzero = false, bool invert = false,
-				  float mult = 0, float add = 0);
-	
-	Point<float> least_square_normalize_to(const EMData* to, float low_thresh = FLT_MIN,
+
+	Point<float> normalize_slice(EMData * slice, float alt, float az, float phi);
+
+	Point<float> normalize_to(const EMData * noisy, bool keepzero = false, bool invert =
+				  false, float mult = 0, float add = 0);
+
+	Point<float> least_square_normalize_to(const EMData * to, float low_thresh = FLT_MIN,
 					       float high_thresh = FLT_MAX);
-	
-	
-	void calc_hist(vector<float>& hist, float hist_min = 0, float hist_max = 0, bool add = false);
 
-	EMData* little_big_dot(EMData* little_img, bool do_sigma = false);
-
-	int render_amp8(unsigned char* data, int x, int y, int xsize, int ysize,
+	int render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 			int bpl, float scale, int min_gray, int max_gray,
 			float min_render, float max_render);
-    
-	int render_amp24(unsigned char* data, int x, int y, int xsize, int ysize,
+
+	int render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
 			 int bpl, float scale, int min_gray, int max_gray,
 			 float min_render, float max_render,
-			 void *ref, void cmap(void*, int coord, unsigned char *tri));
-    
-	int render_pha24(unsigned char* data, int x, int y, int xsize, int ysize, 
+			 void *ref, void cmap(void *, int coord, unsigned char *tri));
+
+	int render_pha24(unsigned char *data, int x, int y, int xsize, int ysize,
 			 int bpl, float scale, float min_render, float max_render);
-	
-	int calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
-	
+
+
 	void ri2ap();
 	void ap2ri();
 
-	float* setup4slice(bool redo = false);
+	float *setup4slice(bool redo = false);
+
 	void to_corner();
-	
+	void to_mass_center(bool int_shift_only = true);
+
 	void rotate_x(int dx);
 	int rotate_180();
 	int fast_translate(bool inplace = true);
 	void rotate_translate(float scale = 1.0, float dxc = 0,
 			      float dyc = 0, float dzc = 0, int r = 0);
 	void fast_rotate_translate(float scale = 1.0);
-	double dot_rotate_translate(EMData* data, float dx, float dy, float da);
+	double dot_rotate_translate(EMData * data, float dx, float dy, float da);
 
-	
-	EMData* do_radon();
-	
 	void vertical_flip();
 	void horizontal_flip();
-	
-	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
-	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
-	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
-	EMData* calc_mutual_correlation(EMData *with, bool tocorner = false, EMData *filter = 0);
-#if 0
-	void calc_rcf(EMData *with, vector<float>& sum_array);
-#endif
-	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 
-	vector<float> calc_fourier_shell_correlation(EMData *with);
-	
+	EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
+	EMData *do_radon();
+	EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = 0);
+	EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
+	EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
+	EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
+	EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0, bool do360 =
+		       false);
+
 	int mean_shrink(int shrink_factor);
 	int median_shrink(int shrink_factor);
-	
+
 	void apply_radial_func(int, float, vector<float> array);
-	
+
 	int add(float f);
-	int add(const EMData& em);
+	int add(const EMData & em);
 
 	int sub(float f);
-	int sub(const EMData& em);
-	
+	int sub(const EMData & em);
+
 	int mult(float f);
-	int mult(const EMData& em);
+	int mult(const EMData & em);
 
 	int div(float f);
-	int div(const EMData& em);
-	
-	float* get_data() const;
+	int div(const EMData & em);
+
+	float *get_data() const;
 	void done_data();
 
 	void update();
@@ -150,192 +144,201 @@ namespace EMAN {
 
 	void dump_data(string filename);
 
-	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices,
-						    bool header_only=false);
-	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
-						  bool header_only = false, string ext="");
-
-	int add_incoherent(EMData* obj);
+	int add_incoherent(EMData * obj);
 	int add_mask_shell(int num_shells);
-	int add_random_noise(int n, float x0, float dx, float* y, bool interpolation = true);
+	int add_random_noise(int n, float x0, float dx, float *y, bool interpolation = true);
 	void auto_mask(float thresh, float filter = 0.1);
 
-	float calc_dist(EMData* second_img, int y_index = 0) const;
-	EMData* calc_flcf(EMData* with, int radius = 50, string maskfilter="ZeroMask");
-	void calc_radial_dist(int n, float x0, float dx, float* d);
-	void calc_radial_dist(int n, float x0, float dx, float* d, float acen, float amwid);
+	vector<float> calc_fourier_shell_correlation(EMData * with);
+	void calc_hist(vector<float> & hist, float hist_min = 0, float hist_max = 0, bool add =
+		       false);
+	int calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
+#if 0
+	void calc_rcf(EMData * with, vector<float> & sum_array);
+#endif
+	float calc_dist(EMData * second_img, int y_index = 0) const;
+	EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "ZeroMask");
+	void calc_radial_dist(int n, float x0, float dx, float *d);
+	void calc_radial_dist(int n, float x0, float dx, float *d, float acen, float amwid);
 
-	EMData* convolute(EMData* with);
-	
+	EMData *convolute(EMData * with);
+
 	bool has_ctff() const;
 
 #if 0
 	void clear_ctf();
-	void create_ctf_map(CtfMapType type, XYData* sf = 0);	
+	void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
 
-	float dot(EMData* with, bool evenonly = false);
-	
-	int common_lines(EMData* image1, EMData* image2, int mode = 0,
-			 int steps = 180, bool horizontal = false);	
-	
-	int common_lines_real(EMData* image1, EMData* image2,
+	float dot(EMData * with, bool evenonly = false);
+
+	int common_lines(EMData * image1, EMData * image2, int mode = 0,
+			 int steps = 180, bool horizontal = false);
+
+	int common_lines_real(EMData * image1, EMData * image2,
 			      int steps = 180, bool horizontal = false);
-	
-	int cut_slice(EMData* map, float dz, Rotation* orientation = 0,
+
+	int cut_slice(EMData * map, float dz, Rotation * orientation = 0,
 		      bool interpolate = true, float dx = 0, float dy = 0);
 
-	int uncut_slice(EMData* map, float dz, Rotation* orientation = 0,
+	int uncut_slice(EMData * map, float dz, Rotation * orientation = 0,
 			float dx = 0, float dy = 0);
-	EMData* ift_slice();
-	
+
+
 	float get_edge_mean() const;
 	float get_circle_mean();
-	
+
 	void radial_average();
 	void radial_subtract();
-	
+
 	int sub_noise();
 	void setup_insert_slice(int size);
-	
-	void to_mass_center(bool int_shift_only = true);
 
-	SimpleCtf* get_ctf() const;
-	void set_ctf(const SimpleCtf& ctf);
+
+	SimpleCtf *get_ctf() const;
+	void set_ctf(const SimpleCtf & ctf);
 
 	Vec3f get_translation() const;
-	void set_translation(const Vec3f& t);
+	void set_translation(const Vec3f & t);
 
 	Rotation get_rotation() const;
 	Vec3f get_trans_align() const;
 
 	void set_size(int nx, int ny, int nz);
-	void set_path(const string& path);
+	void set_path(const string & path);
 	void set_pathnum(int n);
-	
-	EMData* get_row(int row_index) const;
-	void set_row(const EMData *d, int row_index);
-	
-	EMData* get_col(int col_index) const;
-	void set_col(const EMData *d, int n);
-	
+
+	EMData *get_row(int row_index) const;
+	void set_row(const EMData * d, int row_index);
+
+	EMData *get_col(int col_index) const;
+	void set_col(const EMData * d, int n);
+
 	void set_talign_params(float dx, float dy);
 	void set_talign_params(float dx, float dy, float dz);
 
 	void set_ralign_params(float alt, float az, float phi);
-	void set_ralign_params(const Rotation& r);
+	void set_ralign_params(const Rotation & r);
 
 	float get_align_score() const;
 	void set_align_score(float score);
-	
+
 	float get_density_center() const;
 	float get_sigma_diff() const;
 
 	Dict get_attr_dict();
 	float get_mean() const;
 	float get_std() const;
-	
+
 	Point<int> get_min_location() const;
 	Point<int> get_max_location() const;
 
 	int get_min_index() const;
 	int get_max_index() const;
-	
+
 	int get_x() const;
 	int get_y() const;
 	int get_z() const;
 	int get_dim() const;
-	
-	EMData* get_parent() const;
-	void set_parent(EMData* new_parent);
+
+	EMData *get_parent() const;
+	void set_parent(EMData * new_parent);
 
 	string get_name() const;
-	void set_name(const string& name);
-	
+	void set_name(const string & name);
+
 	void set_pixel_size(float pixel_size);
 	float get_pixel_size() const;
-	
+
 	float get_value_at(int x, int y, int z) const;
 	float get_value_at(int x, int y) const;
-	
+
 	float sget_value_at(int x, int y, int z) const;
 	float sget_value_at(int x, int y) const;
 
 	float get_value_at_interp(float x, float y) const;
 	float get_value_at_interp(float x, float y, float z) const;
-	
+
 	void set_value_at(int x, int y, int z, float v);
 	void set_value_at(int x, int y, float v);
 
 
-	
+
 	bool is_complex() const;
 	void set_complex(bool is_complex);
 
 	bool is_complex_x() const;
-	void set_complex_x(bool is_complex_x);	
+	void set_complex_x(bool is_complex_x);
 
 	bool is_flipped() const;
 	void set_flipped(bool is_flipped);
-	
+
 	bool is_ri() const;
 	void set_ri(bool is_ri);
-	
-	EMData& operator+=(float n);
-        EMData& operator-=(float n);
-        EMData& operator*=(float n);
-        EMData& operator/=(float n);
 
-        EMData& operator+=(const EMData& em);
-        EMData& operator-=(const EMData& em);
-        EMData& operator*=(const EMData& em);
-        EMData& operator/=(const EMData& em);
+	EMData & operator+=(float n);
+	EMData & operator-=(float n);
+	EMData & operator*=(float n);
+	EMData & operator/=(float n);
 
-        friend EMData operator+(const EMData& em, float n);
-        friend EMData operator-(const EMData& em, float n);
-        friend EMData operator*(const EMData& em, float n);
-        friend EMData operator/(const EMData& em, float n);
+	EMData & operator+=(const EMData & em);
+	EMData & operator-=(const EMData & em);
+	EMData & operator*=(const EMData & em);
+	EMData & operator/=(const EMData & em);
 
-        friend EMData operator+(float n, const EMData& em);
-        friend EMData operator-(float n, const EMData& em);
-        friend EMData operator*(float n, const EMData& em);
-        friend EMData operator/(float n, const EMData& em);
+	friend EMData operator+(const EMData & em, float n);
+	friend EMData operator-(const EMData & em, float n);
+	friend EMData operator*(const EMData & em, float n);
+	friend EMData operator/(const EMData & em, float n);
 
-        friend EMData operator+(const EMData& a, const EMData& b);
-        friend EMData operator-(const EMData& a, const EMData& b);
-        friend EMData operator*(const EMData& a, const EMData& b);
-        friend EMData operator/(const EMData& a, const EMData& b);
+	friend EMData operator+(float n, const EMData & em);
+	friend EMData operator-(float n, const EMData & em);
+	friend EMData operator*(float n, const EMData & em);
+	friend EMData operator/(float n, const EMData & em);
 
-	
+	friend EMData operator+(const EMData & a, const EMData & b);
+	friend EMData operator-(const EMData & a, const EMData & b);
+	friend EMData operator*(const EMData & a, const EMData & b);
+	friend EMData operator/(const EMData & a, const EMData & b);
+
+	static vector<EMData *> read_images_by_index(string filename, vector<int>img_indices,
+						     bool header_only = false);
+
+	static vector<EMData *> read_images_by_ext(string filename, int img_index_start,
+						   int img_index_end, bool header_only =
+						   false, string ext = "");
+
+
     private:
-	enum EMDataFlags {
-	    EMDATA_COMPLEX      = 1<<0, 
-	    EMDATA_RI	        = 1<<1,		// real/imaginary or amp/phase
-	    EMDATA_BUSY	        = 1<<2,		// someone is modifying data
-	    EMDATA_SHARED	= 1<<3,		// Stored in shared memory
-	    EMDATA_SWAPPED	= 1<<4,		// Data is swapped = may be offloaded if memory is tight,
-	    EMDATA_NEWFFT	= 1<<5,		// Data has changed, redo fft
-	    EMDATA_HASCTF	= 1<<6,		// has CTF info
-	    EMDATA_NEEDUPD	= 1<<7,		// needs a realupdate= ,
-	    EMDATA_NEEDHIST	= 1<<8,		// histogram needs update
-	    EMDATA_NEWRFP	= 1<<9,		// needs new rotational footprint
-	    EMDATA_NODATA	= 1<<10,	// no actual data
-	    EMDATA_COMPLEXX	= 1<<11,       	// 1D fft's in X
-	    EMDATA_FLIP         = 1<<11,        // a flag only
-	    EMDATA_CHANGED      = (EMDATA_NEWFFT+EMDATA_NEEDUPD+EMDATA_NEEDHIST+EMDATA_NEWRFP)
-	};
+	enum EMDataFlags
+	    {
+		EMDATA_COMPLEX = 1 << 0,
+		EMDATA_RI = 1 << 1,	// real/imaginary or amp/phase
+		EMDATA_BUSY = 1 << 2,	// someone is modifying data
+		EMDATA_SHARED = 1 << 3,	// Stored in shared memory
+		EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
+		EMDATA_NEWFFT = 1 << 5,	// Data has changed, redo fft
+		EMDATA_HASCTF = 1 << 6,	// has CTF info
+		EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
+		EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
+		EMDATA_NEWRFP = 1 << 9,	// needs new rotational footprint
+		EMDATA_NODATA = 1 << 10,	// no actual data
+		EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
+		EMDATA_FLIP = 1 << 11,	// a flag only
+		EMDATA_CHANGED = (EMDATA_NEWFFT + EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
+	    };
 
 	int update_stat();
 	void set_xyz_origin(float origin_x, float origin_y, float origin_z);
-	
+
     private:
-	mutable map<string, EMObject> attr_dict;
-	float* rdata;
-	float* supp;
-	SimpleCtf* ctf;
-	EMData* parent;
-	EMData* fft;
-	EMData* rfp;
+	mutable map <string, EMObject> attr_dict;
+	float *rdata;
+	float *supp;
+	SimpleCtf *ctf;
+	EMData *parent;
+	EMData *fft;
+	EMData *rfp;
 	int flags;
 	float pixel_size;
 	int nx;
@@ -356,40 +359,46 @@ namespace EMAN {
     {
 	return nx;
     }
-    
+
     inline int EMData::get_y() const
-    {	
+    {
 	return ny;
-    }    
+    }
 
     inline int EMData::get_z() const
     {
 	return nz;
     }
 
-    
-    inline Vec3f EMData::get_translation() const { return translation; }
-    
-    inline void EMData::set_translation(const Vec3f& t) { translation = t; }
-    
+
+    inline Vec3f EMData::get_translation() const
+    {
+	return translation;
+    }
+
+    inline void EMData::set_translation(const Vec3f & t)
+    {
+	translation = t;
+    }
+
     inline float EMData::get_value_at(int x, int y, int z) const
     {
-	return rdata[x+y*nx+z*nx*ny]; 
+	return rdata[x + y * nx + z * nx * ny];
     }
 
 
     inline float EMData::get_value_at(int x, int y) const
     {
-	return rdata[x+y*nx];
+	return rdata[x + y * nx];
     }
 
-	
+
     inline float EMData::sget_value_at(int x, int y, int z) const
     {
 	if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
 	    return 0;
 	}
-	return rdata[x+y*nx+z*nx*ny];
+	return rdata[x + y * nx + z * nx * ny];
     }
 
     inline float EMData::sget_value_at(int x, int y) const
@@ -397,51 +406,51 @@ namespace EMAN {
 	if (x < 0 || y < 0 || x >= nx || y >= ny) {
 	    return 0;
 	}
-	return rdata[x+y*nx];
+	return rdata[x + y * nx];
     }
 
 
     inline float EMData::get_value_at_interp(float xx, float yy) const
     {
-	int x = static_cast<int>(floor(xx));
-	int y = static_cast<int>(floor(yy));
+	int x = static_cast < int >(floor(xx));
+	int y = static_cast < int >(floor(yy));
 
 	float p1 = sget_value_at(x, y);
-	float p2 = sget_value_at(x+1, y);
-	float p3 = sget_value_at(x+1, y+1);
-	float p4 = sget_value_at(x, y+1);
-	
-	return Util::bilinear_interpolate(p1, p2, p3, p4, xx-x, yy-y);
+	float p2 = sget_value_at(x + 1, y);
+	float p3 = sget_value_at(x + 1, y + 1);
+	float p4 = sget_value_at(x, y + 1);
+
+	return Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
     }
 
     inline float EMData::get_value_at_interp(float xx, float yy, float zz) const
     {
-	int x = (int)floor(xx);
-	int y = (int)floor(yy);
-	int z = (int)floor(zz);
+	int x = (int) floor(xx);
+	int y = (int) floor(yy);
+	int z = (int) floor(zz);
 	float p1 = sget_value_at(x, y, z);
-	float p2 = sget_value_at(x+1, y, z);
-	float p3 = sget_value_at(x, y+1, z);
-	float p4 = sget_value_at(x+1, y+1, z);
-	
-	float p5 = sget_value_at(x, y, z+1);
-	float p6 = sget_value_at(x+1, y, z+1);
-	float p7 = sget_value_at(x, y+1, z+1);
-	float p8 = sget_value_at(x+1, y+1, z+1);
-	
-	return Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8, xx-x, yy-y, zz-z);
+	float p2 = sget_value_at(x + 1, y, z);
+	float p3 = sget_value_at(x, y + 1, z);
+	float p4 = sget_value_at(x + 1, y + 1, z);
+
+	float p5 = sget_value_at(x, y, z + 1);
+	float p6 = sget_value_at(x + 1, y, z + 1);
+	float p7 = sget_value_at(x, y + 1, z + 1);
+	float p8 = sget_value_at(x + 1, y + 1, z + 1);
+
+	return Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8, xx - x, yy - y, zz - z);
     }
-    
+
     inline void EMData::set_value_at(int x, int y, int z, float v)
-    {	
-	rdata[x+y*nx+z*nx*ny] = v;
+    {
+	rdata[x + y * nx + z * nx * ny] = v;
 	flags |= EMDATA_NEEDUPD;
     }
 
 
     inline void EMData::set_value_at(int x, int y, float v)
-    {	
-	rdata[x+y*nx] = v;
+    {
+	rdata[x + y * nx] = v;
 	flags |= EMDATA_NEEDUPD;
     }
 
@@ -450,15 +459,30 @@ namespace EMAN {
 	flags |= EMDATA_CHANGED;
     }
 
-    inline void EMData::set_pixel_size(float new_pixel_size) { pixel_size = new_pixel_size; }
-    inline float EMData::get_pixel_size() const { return pixel_size; }
+    inline void EMData::set_pixel_size(float new_pixel_size)
+    {
+	pixel_size = new_pixel_size;
+    }
+    inline float EMData::get_pixel_size() const
+    {
+	return pixel_size;
+    }
 
-    inline bool EMData::is_complex() const { return (flags & EMDATA_COMPLEX); }
-    inline bool EMData::is_complex_x() const { return (flags & EMDATA_COMPLEXX); }
-    inline bool EMData::is_ri() const { return (flags & EMDATA_RI); }
-    
-   
-    inline void EMData::set_complex(bool is_complex) 
+    inline bool EMData::is_complex() const
+    {
+	return (flags & EMDATA_COMPLEX);
+    }
+    inline bool EMData::is_complex_x() const
+    {
+	return (flags & EMDATA_COMPLEXX);
+    }
+    inline bool EMData::is_ri() const
+    {
+	return (flags & EMDATA_RI);
+    }
+
+
+    inline void EMData::set_complex(bool is_complex)
     {
 	if (is_complex) {
 	    flags |= EMDATA_COMPLEX;
@@ -467,8 +491,8 @@ namespace EMAN {
 	    flags &= ~EMDATA_COMPLEX;
 	}
     }
-    
-    inline void EMData::set_complex_x(bool is_complex_x) 
+
+    inline void EMData::set_complex_x(bool is_complex_x)
     {
 	if (is_complex_x) {
 	    flags |= EMDATA_COMPLEXX;
@@ -478,8 +502,8 @@ namespace EMAN {
 	}
     }
 
-     
-    inline void EMData::set_ri(bool is_ri) 
+
+    inline void EMData::set_ri(bool is_ri)
     {
 	if (is_ri) {
 	    flags |= EMDATA_RI;
@@ -488,8 +512,11 @@ namespace EMAN {
 	    flags &= ~EMDATA_RI;
 	}
     }
-    
-    inline bool EMData::is_flipped() const { return (flags & EMDATA_FLIP); }
+
+    inline bool EMData::is_flipped() const
+    {
+	return (flags & EMDATA_FLIP);
+    }
 
     inline void EMData::set_flipped(bool is_flipped)
     {
@@ -500,12 +527,24 @@ namespace EMAN {
 	    flags &= ~EMDATA_FLIP;
 	}
     }
-    
-    inline void EMData::set_path(const string& new_path) { path = new_path; }
-    inline void EMData::set_pathnum(int n) { pathnum = n; }	
-    inline void EMData::set_name(const string& new_name) { name = new_name; } 
-    inline string EMData::get_name() const { return name; }
-    
+
+    inline void EMData::set_path(const string & new_path)
+    {
+	path = new_path;
+    }
+    inline void EMData::set_pathnum(int n)
+    {
+	pathnum = n;
+    }
+    inline void EMData::set_name(const string & new_name)
+    {
+	name = new_name;
+    }
+    inline string EMData::get_name() const
+    {
+	return name;
+    }
+
     inline bool EMData::has_ctff() const
     {
 	if (name[0] == '!' && name[1] == '$') {
@@ -515,21 +554,48 @@ namespace EMAN {
 	    return false;
 	}
     }
-    
-    inline float EMData::get_mean() const { return attr_dict["mean"].get_float(); }
 
-    inline float EMData::get_std() const { return attr_dict["std"].get_float(); }
+    inline float EMData::get_mean() const
+    {
+	return attr_dict["mean"].get_float();
+    }
 
-    inline SimpleCtf* EMData::get_ctf() const { return ctf; }
+    inline float EMData::get_std() const
+    {
+	return attr_dict["std"].get_float();
+    }
 
-    inline EMData* EMData::get_parent() const { return parent; }
-    inline void EMData::set_parent(EMData* new_parent) { parent = new_parent; }
-    
-    inline void EMData::set_align_score(float score) { align_score = score; }
-    inline float EMData::get_align_score() const { return align_score; }
+    inline SimpleCtf *EMData::get_ctf() const
+    {
+	return ctf;
+    }
 
-    inline Rotation EMData::get_rotation() const { return rotation; }
-    inline Vec3f EMData::get_trans_align() const { return trans_align; }
+    inline EMData *EMData::get_parent() const
+    {
+	return parent;
+    }
+    inline void EMData::set_parent(EMData * new_parent)
+    {
+	parent = new_parent;
+    }
+
+    inline void EMData::set_align_score(float score)
+    {
+	align_score = score;
+    }
+    inline float EMData::get_align_score() const
+    {
+	return align_score;
+    }
+
+    inline Rotation EMData::get_rotation() const
+    {
+	return rotation;
+    }
+    inline Vec3f EMData::get_trans_align() const
+    {
+	return trans_align;
+    }
 
 
 }
