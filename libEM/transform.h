@@ -320,18 +320,20 @@ namespace EMAN
 	inline Matrix3f & Matrix3f::operator*=(const Matrix3f & m)
 	{
 		int n=3;
-		gsl_matrix* temp = gsl_matrix_alloc(n, n);	// copy to temp matrix
+		gsl_matrix* temp = gsl_matrix_alloc(n, n);
 		gsl_matrix_memcpy(temp, matrix);
 		gsl_matrix_set_zero(matrix);
 		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-				temp, m.get_gsl_matrix(), 0.0, matrix);
+					   temp, m.get_gsl_matrix(), 0.0, matrix);
+		gsl_matrix_free(temp);
+		temp = 0;
 		return *this;
 	}
 
 	inline Matrix3f & Matrix3f::operator/=(const Matrix3f & m)
 	{
-		// this is also wrong, but I don't have time to fix now
-		gsl_matrix_div_elements(matrix, m.get_gsl_matrix());
+		Matrix3f m_inverse = m.create_inverse();
+		(*this) *= m_inverse;
 		return *this;
 	}
 

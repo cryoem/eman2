@@ -84,19 +84,15 @@ void Matrix3f::make_identity()
 
 Matrix3f & Matrix3f::mult_right(const Matrix3f & m)
 {
-	gsl_matrix_mul_elements(matrix, m.get_gsl_matrix());
+	(*this) = (*this) * m;
 	return *this;
 }
 
 Matrix3f & Matrix3f::mult_left(const Matrix3f & m)
 {
-	gsl_matrix *m1 = gsl_matrix_alloc(3, 3);
-	gsl_matrix_memcpy(m1, m.get_gsl_matrix());
-	gsl_matrix_mul_elements(m1, matrix);
-	gsl_matrix_memcpy(matrix, m1);
-	gsl_matrix_free(m1);
-	m1 = 0;
-
+	Matrix3f mcopy = m;
+	mcopy = mcopy * (*this);
+	(*this) = mcopy;
 	return *this;
 }
 
@@ -128,7 +124,7 @@ vector < float >Matrix3f::get_value() const
 	return m;
 }
 
-
+// todo: check whether the matrix can be inversed or not.
 Matrix3f & Matrix3f::inverse()
 {
 	const int n = 3;
@@ -407,19 +403,15 @@ Matrix4f & Matrix4f::operator=(const Matrix4f & m)
 
 Matrix4f & Matrix4f::mult_right(const Matrix4f & m)
 {
-	gsl_matrix_mul_elements(matrix, m.get_gsl_matrix());
+	(*this) = (*this) * m;
 	return *this;
 }
 
 Matrix4f & Matrix4f::mult_left(const Matrix4f & m)
 {
-	gsl_matrix *m1 = gsl_matrix_alloc(4, 4);
-	gsl_matrix_memcpy(m1, m.get_gsl_matrix());
-	gsl_matrix_mul_elements(m1, matrix);
-	gsl_matrix_memcpy(matrix, m1);
-	gsl_matrix_free(m1);
-	m1 = 0;
-
+	Matrix4f mcopy = m;
+	mcopy = mcopy * (*this);
+	(*this) = mcopy;
 	return *this;
 }
 
@@ -554,17 +546,20 @@ Matrix4f & Matrix4f::operator-=(const Matrix4f & m)
 Matrix4f & Matrix4f::operator*=(const Matrix4f & m)
 {
 	int n=4;
-	gsl_matrix* temp = gsl_matrix_alloc(n, n);	// copy to temp matrix
+	gsl_matrix* temp = gsl_matrix_alloc(n, n);
 	gsl_matrix_memcpy(temp, matrix);
 	gsl_matrix_set_zero(matrix);
 	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
-			temp, m.get_gsl_matrix(), 0.0, matrix);
+				   temp, m.get_gsl_matrix(), 0.0, matrix);
+	gsl_matrix_free(temp);
+	temp = 0;
+	
 	return *this;
 }
 
 Matrix4f & Matrix4f::operator/=(const Matrix4f & m)
 {
-	gsl_matrix_div_elements(matrix, m.get_gsl_matrix());
+	(*this) *= m.create_inverse();
 	return *this;
 }
 
