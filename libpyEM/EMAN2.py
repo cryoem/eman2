@@ -32,3 +32,15 @@ def display(img):
 		img.write_image("/tmp/img.hdf")
 	from os import system
 	system("v2 /tmp/img.spi")
+
+
+__doc__ = \
+"EMAN classes and routines for image/volume processing in \n\
+single particle reconstructions.\n\
+\n\
+The following classes are defined: \n\
+  EMData - the primary class to process electronic microscopy images. \n\
+  Transform - defines a transformation. \n\
+"
+
+
