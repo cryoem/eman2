@@ -5,8 +5,8 @@ import sys
 import time
 
 out = open("filters.html", "wb")
-out.write("<head><title>EMAN2 Filters</title></head><body>\n")
-out.write("<h1> <center> <font color=\"blue\">EMAN2 Filter Overview </font></center></h1>\n")
+out.write("<head><title>EMAN2 Filter Manual</title></head><body>\n")
+out.write("<h1> <center> <font color=\"blue\">EMAN2 Filter Manual </font></center></h1>\n")
 out.write("<br>")
 out.write("<i>Last modified on " + time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
 out.write("<br>")

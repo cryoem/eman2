@@ -65,12 +65,12 @@ For Developers Only:
        into python. Here is the way to install Pyste:
 
         1) get boost python.
-	   cd libs/python/pyste/install; python setup.py install
-
+		   cd libs/python/pyste/install; python setup.py install
         2) install elementtree
-
         3) install GCCXML
-	
+		4) for boost 1.31.0, apply a patch to pyste ClassExporter.py.
+		   (Contact Liwei Peng for details.)
+		   
     2. To generate new boost python wrapper, run
         % cd eman2/libpyEm
 		% ./create_boost_python

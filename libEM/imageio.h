@@ -97,8 +97,7 @@ namespace EMAN
 
 		/** Read CTF data from this image.
 		 *
-		 * @param ctf Used to store the CTF data. It must refer to an
-		 *        existing CTF instance created outside of this routine.
+		 * @param ctf Used to store the CTF data. 
 		 * @param image_index The index of the image to read.
 		 * @return 0 if OK; 1 if error.
 		 */
