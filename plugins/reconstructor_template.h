@@ -70,8 +70,7 @@ namespace EMAN {
     class ReconstructorFactoryExt {
     public:
 	ReconstructorFactoryExt() {
-	    Factory<Reconstructor> *reconstructors = Factory<Reconstructor>::instance();
-	    reconstructors->add(&XYZReconstructor::NEW);
+	    Factory<Reconstructor>::add(&XYZReconstructor::NEW);
 	}
     };
 

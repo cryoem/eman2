@@ -4,6 +4,7 @@
 #include "emdata.h"
 #include "xydata.h"
 #include <assert.h>
+#include "filter.h"
 
 using namespace EMAN;
 
@@ -78,12 +79,8 @@ int test_emcache()
 
 void test_factory()
 {
-    EMUtil::dump_filters();
-    EMUtil::dump_aligners();
-    EMUtil::dump_cmps();
-    EMUtil::dump_averagers();
-    EMUtil::dump_projectors();
-    EMUtil::dump_reconstructors();
+    //Factory<Filter>::instance()->dump();
+    EMAN::dump_filters();
 }
 
 

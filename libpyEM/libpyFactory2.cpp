@@ -218,6 +218,61 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     PyObject* self;
 };
 
+struct EMAN_Filter_Wrapper: EMAN::Filter
+{
+    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Filter& p0):
+        EMAN::Filter(p0), self(self_) {}
+
+    EMAN_Filter_Wrapper(PyObject* self_):
+        EMAN::Filter(), self(self_) {}
+
+    void process(EMAN::EMData* p0) {
+        call_method< void >(self, "process", p0);
+    }
+
+    void default_process(EMAN::EMData* p0) {
+        EMAN::Filter::process(p0);
+    }
+
+    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        call_method< void >(self, "process_list", p0);
+    }
+
+    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        EMAN::Filter::process_list(p0);
+    }
+
+    EMAN::Dict get_params() const {
+        return call_method< EMAN::Dict >(self, "get_params");
+    }
+
+    EMAN::Dict default_get_params() const {
+        return EMAN::Filter::get_params();
+    }
+
+    void set_params(const EMAN::Dict& p0) {
+        call_method< void >(self, "set_params", p0);
+    }
+
+    void default_set_params(const EMAN::Dict& p0) {
+        EMAN::Filter::set_params(p0);
+    }
+
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
+    }
+
+    EMAN::TypeDict default_get_param_types() const {
+        return EMAN::Filter::get_param_types();
+    }
+
+    std::string get_name() const {
+        return call_method< std::string >(self, "get_name");
+    }
+
+    PyObject* self;
+};
+
 
 }// namespace 
 
@@ -269,12 +324,12 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("get_name", pure_virtual(&EMAN::Aligner::get_name))
     ;
 
-    class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("AlignerFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Aligner>::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Aligner* (EMAN::Factory<EMAN::Aligner>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Aligner* (EMAN::Factory<EMAN::Aligner>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
+    class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("Aligners", no_init)
+        .def("get", (EMAN::Aligner* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Aligner* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Aligner>::get_list)
-        .staticmethod("instance")
+        .staticmethod("get_list")
+        .staticmethod("get")
     ;
 
     class_< EMAN::Cmp, boost::noncopyable, EMAN_Cmp_Wrapper >("Cmp", init<  >())
@@ -285,12 +340,12 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Cmp::set_params, &EMAN_Cmp_Wrapper::default_set_params)
     ;
 
-    class_< EMAN::Factory<EMAN::Cmp>, boost::noncopyable >("CmpFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Cmp>::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Cmp* (EMAN::Factory<EMAN::Cmp>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Cmp* (EMAN::Factory<EMAN::Cmp>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
+    class_< EMAN::Factory<EMAN::Cmp>, boost::noncopyable >("Cmps", no_init)
+        .def("get", (EMAN::Cmp* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Cmp* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Cmp>::get_list)
-        .staticmethod("instance")
+        .staticmethod("get_list")
+        .staticmethod("get")
     ;
 
     class_< EMAN::Averager, boost::noncopyable, EMAN_Averager_Wrapper >("Averager", init<  >())
@@ -300,12 +355,12 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("get_param_types", &EMAN::Averager::get_param_types, &EMAN_Averager_Wrapper::default_get_param_types)
     ;
 
-    class_< EMAN::Factory<EMAN::Averager>, boost::noncopyable >("AveragerFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Averager>::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Averager* (EMAN::Factory<EMAN::Averager>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Averager>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Averager* (EMAN::Factory<EMAN::Averager>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Averager>::get, return_value_policy< manage_new_object >())
+    class_< EMAN::Factory<EMAN::Averager>, boost::noncopyable >("Averagers", no_init)
+        .def("get", (EMAN::Averager* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Averager>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Averager* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Averager>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Averager>::get_list)
-        .staticmethod("instance")
+        .staticmethod("get_list")
+        .staticmethod("get")
     ;
 
     class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("Projector", init<  >())
@@ -316,12 +371,12 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Projector::set_params)
     ;
 
-    class_< EMAN::Factory<EMAN::Projector>, boost::noncopyable >("ProjectorFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Projector>::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Projector* (EMAN::Factory<EMAN::Projector>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Projector* (EMAN::Factory<EMAN::Projector>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
+    class_< EMAN::Factory<EMAN::Projector>, boost::noncopyable >("Projectors", no_init)
+        .def("get", (EMAN::Projector* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Projector* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Projector>::get_list)
-        .staticmethod("instance")
+        .staticmethod("get_list")
+        .staticmethod("get")
     ;
 
     class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("Reconstructor", init<  >())
@@ -334,12 +389,29 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("get_param_types", pure_virtual(&EMAN::Reconstructor::get_param_types))
     ;
 
-    class_< EMAN::Factory<EMAN::Reconstructor>, boost::noncopyable >("ReconstructorFactory", no_init)
-        .def("instance", &EMAN::Factory<EMAN::Reconstructor>::instance, return_value_policy< reference_existing_object >())
-        .def("get", (EMAN::Reconstructor* (EMAN::Factory<EMAN::Reconstructor>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Reconstructor* (EMAN::Factory<EMAN::Reconstructor>::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&) )&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
+    class_< EMAN::Factory<EMAN::Reconstructor>, boost::noncopyable >("Reconstructors", no_init)
+        .def("get", (EMAN::Reconstructor* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Reconstructor* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Reconstructor>::get_list)
-        .staticmethod("instance")
+        .staticmethod("get_list")
+        .staticmethod("get")
+    ;
+
+    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
+        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
+        .def("get_params", &EMAN::Filter::get_params, &EMAN_Filter_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_Filter_Wrapper::default_get_param_types)
+        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+    ;
+
+    class_< EMAN::Factory<EMAN::Filter>, boost::noncopyable >("Filters", no_init)
+        .def("get", (EMAN::Filter* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Filter* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
+        .def("get_list", &EMAN::Factory<EMAN::Filter>::get_list)
+        .staticmethod("get_list")
+        .staticmethod("get")
     ;
 
 }

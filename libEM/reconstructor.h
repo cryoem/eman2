@@ -39,11 +39,11 @@ namespace EMAN
      *
      * 1. How to get all the Reconstructor types:
      *
-     *    vector<string> all_reconstructors = Factory<Reconstructor>.instance()->get_list();
+     *    vector<string> all_reconstructors = Factory<Reconstructor>.get_list();
      *
      * 2. How to use a Reconstructor
      *
-     *    Reconstructor* r = Factory<Reconstructor>.instance()->get("Fourier");
+     *    Reconstructor* r = Factory<Reconstructor>.get("Fourier");
      *    r->setup;
      *    r->insert->slice(slice1, euler1);
      *    insert more
@@ -216,6 +216,8 @@ namespace EMAN
     };
 
     template<> Factory<Reconstructor>::Factory();
+    
+    void dump_reconstructors();
 }
 
 #endif

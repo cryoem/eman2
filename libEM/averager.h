@@ -23,11 +23,11 @@ namespace EMAN
      *
      * 1. How to get all Averager types
      *
-     *    vector<string> all_averagers = Factory<Averager>.instance()->get_list();
+     *    vector<string> all_averagers = Factory<Averager>.get_list();
      *
      * 2. How to use an Averager
      *
-     *    Averager *imgavg = Factory<Averager>.instance()->get("Image");
+     *    Averager *imgavg = Factory<Averager>.get("Image");
      *    vector<EMData *> images(2);
      *    EMData *image1 = ...;
      *    EMData *image2 = ...;
@@ -229,7 +229,10 @@ namespace EMAN
 	}
     };
 
-    template<> Factory<Averager>::Factory();    
+    template<> Factory<Averager>::Factory();
+
+    void dump_averagers();
+    
 }
 
 

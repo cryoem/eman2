@@ -14,40 +14,40 @@ Factory = Template("EMAN::Factory", "emobject.h")
 
 Aligner = Class("EMAN::Aligner", "aligner.h")
 set_policy(Aligner.align, return_value_policy(manage_new_object))
-
-AlignerFactory = Factory("EMAN::Aligner", "AlignerFactory")
+AlignerFactory = Factory("EMAN::Aligner", "Aligners")
 set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
-set_policy(AlignerFactory.instance, return_value_policy(reference_existing_object))
 exclude(AlignerFactory.add)
 
-Cmp = Class("EMAN::Cmp", "cmp.h")
 
-CmpFactory = Factory("EMAN::Cmp", "CmpFactory")
+Cmp = Class("EMAN::Cmp", "cmp.h")
+CmpFactory = Factory("EMAN::Cmp", "Cmps")
 set_policy(CmpFactory.get, return_value_policy(manage_new_object))
-set_policy(CmpFactory.instance, return_value_policy(reference_existing_object))
 exclude(CmpFactory.add)
+
 
 Averager = Class("EMAN::Averager", "averager.h")
 set_policy(Averager.average, return_value_policy(manage_new_object))
-
-AveragerFactory = Factory("EMAN::Averager", "AveragerFactory")
+AveragerFactory = Factory("EMAN::Averager", "Averagers")
 set_policy(AveragerFactory.get, return_value_policy(manage_new_object))
-set_policy(AveragerFactory.instance, return_value_policy(reference_existing_object))
 exclude(AveragerFactory.add)
+
 
 Projector = Class("EMAN::Projector", "projector.h")
 set_policy(Projector.project3d, return_value_policy(manage_new_object))
-
-ProjectorFactory = Factory("EMAN::Projector", "ProjectorFactory")
+ProjectorFactory = Factory("EMAN::Projector", "Projectors")
 set_policy(ProjectorFactory.get, return_value_policy(manage_new_object))
-set_policy(ProjectorFactory.instance, return_value_policy(reference_existing_object))
 exclude(ProjectorFactory.add)
+
 
 Reconstructor = Class("EMAN::Reconstructor", "reconstructor.h")
 set_policy(Reconstructor.finish, return_value_policy(manage_new_object))
-
-ReconstructorFactory = Factory("EMAN::Reconstructor", "ReconstructorFactory")
+ReconstructorFactory = Factory("EMAN::Reconstructor", "Reconstructors")
 set_policy(ReconstructorFactory.get, return_value_policy(manage_new_object))
-set_policy(ReconstructorFactory.instance, return_value_policy(reference_existing_object))
 exclude(ReconstructorFactory.add)
+
+
+Filter = Class("EMAN::Filter", "filter.h")
+FilterFactory = Factory("EMAN::Filter", "Filters")
+set_policy(FilterFactory.get, return_value_policy(manage_new_object))
+exclude(FilterFactory.add)
 

@@ -94,7 +94,6 @@ EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first
 	return IMAGE_UNKNOWN;
     }    
     ext++;
-
     ImageType image_type = get_image_ext_type(ext);
     
     switch (image_type) {

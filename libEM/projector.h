@@ -25,12 +25,12 @@ namespace EMAN
      *
      * 1. How to get all the Projector types
      *
-     *    vector<string> all_projectors = Factory<Projector>.instance()->get_list();
+     *    vector<string> all_projectors = Factory<Projector>.get_list();
      *
      * 2. How to use a Projector
      *
      *    EMData* img = ...;
-     *    Projector* proj = Factory<Projector>.instance()->get("FFT");
+     *    Projector* proj = Factory<Projector>.get("FFT");
      *    EMData* result = proj->project3d(img);
      *
      * 3. How to define a new Projector
@@ -220,6 +220,8 @@ namespace EMAN
     };
 
     template<> Factory<Projector>::Factory();
+    
+    void dump_projectors();
 }
 
 #endif

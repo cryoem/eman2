@@ -51,8 +51,7 @@ namespace EMAN {
     class AveragerFactoryExt {
     public:
 	AveragerFactoryExt() {
-	    Factory<Averager> *filters = Factory<Averager>::instance();
-	    filters->add(&XYZAverager::NEW);
+	    Factory<Averager>::add(&XYZAverager::NEW);
 	}
     };
 

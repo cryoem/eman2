@@ -52,8 +52,7 @@ namespace EMAN {
     {
     public:
 	CmpFactoryExt() {
-	    Factory<Cmp> *cmps = Factory<Cmp>::instance();
-	    cmps->add(&XYZCmp::NEW);
+	    Factory<Cmp>::add(&XYZCmp::NEW);
 	}
     };
 

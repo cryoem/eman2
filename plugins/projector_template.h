@@ -50,8 +50,7 @@ namespace EMAN {
     {
     public:
 	ProjectorFactoryExt() {
-	    Factory<Projector> *projectors = Factory<Projector>::instance();
-	    projectors->add(&XYZProjector::NEW);
+	    Factory<Projector>::add(&XYZProjector::NEW);
 	}
     };
 

@@ -22,7 +22,7 @@ namespace EMAN
      *
      * 1. How to get all Cmp types
      *
-     *      vector<string> all_cmps = Factory<Cmp>.instance()->get_list();
+     *      vector<string> all_cmps = Factory<Cmp>.get_list();
      *
      * 2. How to use a Cmp
      *
@@ -187,6 +187,8 @@ namespace EMAN
     };
 
     template<> Factory<Cmp>::Factory();
+    
+    void dump_cmps();
 }
 
 

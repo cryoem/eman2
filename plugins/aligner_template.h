@@ -53,8 +53,7 @@ namespace EMAN {
     {
     public:
 	AlignerFactoryExt() {
-	    Factory<Aligner> *aligners = Factory<Aligner>::instance();
-	    aligners->add(&XYZAligner::NEW);
+	    Factory<Aligner>::add(&XYZAligner::NEW);
 	}
     };
 

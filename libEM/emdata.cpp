@@ -140,6 +140,15 @@ int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtyp
     Log::logger()->log("\n\nEMData::write_image() on file '%s'", filename.c_str());
 
     int err = 0;
+
+    if (imgtype == EMUtil::IMAGE_UNKNOWN) {
+	char *ext = strrchr(filename.c_str(), '.');
+	if (ext) {
+	    ext++;
+	    imgtype = EMUtil::get_image_ext_type(ext);
+	}
+    }
+    
     ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_WRITE, imgtype);
 
     if (!imageio) {
@@ -181,14 +190,13 @@ int EMData::append_image(string filename, EMUtil::ImageType imgtype, bool header
 int EMData::filter(string filtername, const Dict & params)
 {
     int err = 1;
-    Factory<Filter> *factory = Factory<Filter>::instance();
-    if (factory) {
-	Filter *f = factory->get(filtername, params);
-	if (f) {
-	    f->process(this);
-	    err = 0;
-	}
+
+    Filter *f = Factory<Filter>::get(filtername, params);
+    if (f) {
+	f->process(this);
+	err = 0;
     }
+    
     return err;
 }
 
@@ -196,12 +204,9 @@ float EMData::cmp(string cmpname, const Dict & params)
 {
     float result = 0;
     
-    Factory<Cmp> *factory = Factory<Cmp>::instance();
-    if (factory) {
-	Cmp *c = factory->get(cmpname, params);
-	if (c) {
-	    result = c->cmp(this);
-	}
+    Cmp *c = Factory<Cmp>::get(cmpname, params);
+    if (c) {
+	result = c->cmp(this);    
     }
     return result;
 }
@@ -210,31 +215,27 @@ EMData *EMData::align(string aligner_name, const Dict & params, string cmp_name)
 {
     EMData *result = 0;
     
-    Factory<Aligner> *factory = Factory<Aligner>::instance();
-    if (factory) {
-	Aligner *a = factory->get(aligner_name, params);
-	if (a) {
-	    if (cmp_name == "") {
-		result = a->align(this);
-	    }
-	    else {
-		result = a->align(this, cmp_name);
-	    }
+    Aligner *a = Factory<Aligner>::get(aligner_name, params);
+    if (a) {
+	if (cmp_name == "") {
+	    result = a->align(this);
+	}
+	else {
+	    result = a->align(this, cmp_name);
 	}
     }
+    
     return result;
 }
 
 EMData *EMData::project(string projector_name, const Dict & params)
 {
     EMData *result = 0;
-    Factory<Projector> *factory = Factory<Projector>::instance();
-    if (factory) {
-	Projector *p = factory->get(projector_name, params);
-	if (p) {
-	    result = p->project3d(this);
-	}
+    Projector *p = Factory<Projector>::get(projector_name, params);
+    if (p) {
+	result = p->project3d(this);
     }
+
     return result;
 }
 
@@ -1919,8 +1920,8 @@ void EMData::set_ctf(Ctf * new_ctf)
 }
 
 
-vector<EMData *> EMData::read_images_by_index(string filename, vector<int> img_indices,
-					      bool header_only)
+vector<EMData *> EMData::read_images(string filename, vector<int> img_indices,
+				     bool header_only)
 {
     int total_img = EMUtil::get_image_count(filename);
     size_t num_img = img_indices.size();
@@ -1948,8 +1949,8 @@ vector<EMData *> EMData::read_images_by_index(string filename, vector<int> img_i
 }
 
 
-vector<EMData *> EMData::read_images_by_ext(string filename, int img_index_start,
-					    int img_index_end, bool header_only, string ext)
+vector<EMData *> EMData::read_images_ext(string filename, int img_index_start,
+					 int img_index_end, bool header_only, string ext)
 {
     assert(img_index_end >= img_index_start);
 

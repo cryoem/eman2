@@ -1006,3 +1006,8 @@ EMData *BackProjectionReconstructor::finish()
 {
     return image;
 }
+
+void dump_reconstructors()
+{
+    dump_factory<Reconstructor>();
+}	

@@ -360,26 +360,23 @@ namespace EMAN
      *   2. How to use a Factory (e.g. Filter Factory):
      *
      *      Factory<Filter> *factory = Factory<Filter>::instance();
-     *	    Filter *f = factory->get("AbsoluateValue");
-     *      Filter *f2 = factory->get("GaussLowpass", Dict("lowpass", EMObject(12));
+     *	    Filter *f = Factory<Filter>.get("AbsoluateValue");
+     *      Filter *f2 = Factory<Filter>.get("GaussLowpass", Dict("lowpass", EMObject(12));
      */
     template <class T> class Factory {
     public:
 	typedef T *(*InstanceType)();
-	
-	static Factory<T> *instance();
 
-	void add(InstanceType i);
-	T *get(string instance_name);
-	T *get(string instance_name, const Dict & params);
-	
-	vector<string> get_list();
+	static void add(InstanceType i);
+	static T *get(string instance_name);
+	static T *get(string instance_name, const Dict & params);	
+	static vector<string> get_list();
 	
     private:
 	Factory();
 	Factory(const Factory<T> &);
 	~Factory();
-	
+	static void init();	
 	void force_add(InstanceType i);
 
 	static Factory<T> *my_instance;
@@ -388,12 +385,11 @@ namespace EMAN
     
     template <class T> Factory<T> *Factory<T>::my_instance = 0;
 
-    template <class T> Factory<T> *Factory<T>::instance()
+    template <class T> void Factory<T>::init()
     {
 	if (!my_instance) {
 	    my_instance = new Factory<T>();
 	}
-	return my_instance;
     }
 
     template <class T> void Factory<T>::force_add(InstanceType new_instance)
@@ -408,12 +404,14 @@ namespace EMAN
 
     template <class T> void Factory<T>::add(InstanceType new_instance)
     {
+	init();
+	
 	T *i = new_instance();
 	string name = i->get_name();    
-	typename map<string, InstanceType>::iterator fi = my_dict.find(name);
+	typename map<string, InstanceType>::iterator fi = my_instance->my_dict.find(name);
 
-	if (fi == my_dict.end()) {
-	    my_dict[name] = new_instance;
+	if (fi == my_instance->my_dict.end()) {
+	    my_instance->my_dict[name] = new_instance;
 	}
 	delete i;
 	i = 0;
@@ -421,9 +419,10 @@ namespace EMAN
 
     template <class T> T *Factory<T>::get(string instancename)
     {
-	typename map<string, InstanceType>::iterator fi = my_dict.find(instancename);
-	if (fi != my_dict.end()) {
-	    return my_dict[instancename]();
+	init();
+	typename map<string, InstanceType>::iterator fi = my_instance->my_dict.find(instancename);
+	if (fi != my_instance->my_dict.end()) {
+	    return my_instance->my_dict[instancename]();
 	}
 	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
 
@@ -432,10 +431,12 @@ namespace EMAN
 
     template <class T> T *Factory<T>::get(string instancename, const Dict & params)
     {
-	typename map<string, InstanceType>::iterator fi = my_dict.find(instancename);
+	init();
+	
+	typename map<string, InstanceType>::iterator fi = my_instance->my_dict.find(instancename);
     
-	if (fi != my_dict.end()) {
-	    T *i = my_dict[instancename]();
+	if (fi != my_instance->my_dict.end()) {
+	    T *i = my_instance->my_dict[instancename]();
 	    i->set_params(params);
 	    return i;
 	}
@@ -446,13 +447,26 @@ namespace EMAN
 
     template <class T> vector<string> Factory<T>::get_list()
     {
+	init();
 	vector<string> result;
 	typename map<string, InstanceType>::const_iterator p;
-	for (p = my_dict.begin(); p != my_dict.end(); p++) {
+	for (p = my_instance->my_dict.begin(); p != my_instance->my_dict.end(); p++) {
 	    result.push_back(p->first);
 	}
 
 	return result;
+    }
+
+    template<class T> void dump_factory()
+    {
+	vector<string> item_names = Factory<T>::get_list();
+
+	for (size_t i = 0; i < item_names.size(); i++) {
+	    T* item = Factory<T>::get(item_names[i]);
+	    printf("%s\n", item->get_name().c_str());
+	    TypeDict td = item->get_param_types();
+	    td.dump();
+	}
     }
 
 }

@@ -709,3 +709,8 @@ EMData *StandardBigProjector::project3d(EMData * image) const
     return proj;
 }
 
+
+void dump_projectors()
+{
+    dump_factory<Projector>();
+}

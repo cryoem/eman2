@@ -202,3 +202,8 @@ float FRCCmp::cmp(EMData * em, Transform * ) const
 
     return (sum / norm);
 }
+
+void dump_cmps()
+{
+    dump_factory<Cmp>();
+}

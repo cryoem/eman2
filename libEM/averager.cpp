@@ -492,3 +492,10 @@ EMData *CtfAverager::average(const vector<EMData*>& image_list) const
     result->update();
     return result;
 }
+
+   
+void dump_averagers()
+{
+    dump_factory<Averager>();
+}
+	

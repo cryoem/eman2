@@ -49,8 +49,7 @@ namespace EMAN {
     class FilterFactoryExt {
     public:
 	FilterFactoryExt() {
-	    Factory<Filter> *filters = Factory<Filter>::instance();
-	    filters->add(&XYZFilter::NEW);
+	    Factory<Filter>::add(&XYZFilter::NEW);
 	}
     };
 

@@ -21,7 +21,7 @@ namespace EMAN
      *
      * 1. How to get all the Aligner types
      *
-     *    vector<string> all_aligners = Factory<Aligner>.instance()->get_list();
+     *    vector<string> all_aligners = Factory<Aligner>.get_list();
      *
      * 2. How to use an Aligner
      *
@@ -483,6 +483,9 @@ namespace EMAN
     };
     
     template<> Factory<Aligner>::Factory();
+
+    void dump_aligners();
+    
 }
 
 #endif
