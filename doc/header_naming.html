@@ -1,0 +1,439 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>EMAN2 Image Header Naming</title>
+</head>
+<body>
+<div style="text-align: center;"><big><big
+ style="color: rgb(51, 51, 255);"><big><span style="font-weight: bold;">EMAN2&nbsp;
+Image Header Attribute Naming Conventions</span></big></big></big><br>
+</div>
+<br>
+<big>EMAN2 uses a unique name to reference an image header attribute.
+The following table is the naming conventions.<br>
+</big><br>
+<br>
+<table style="width: 80%; text-align: left;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><big>Attribute
+Name<br>
+      </big></td>
+      <td style="vertical-align: top; font-weight: bold;"><big>DataType<br>
+      </big></td>
+      <td
+ style="vertical-align: top; font-weight: bold; text-align: center;"><big>Attribute
+Description<br>
+      </big></td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">apix_x<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">pixel
+x size in &Aring; unit&nbsp; </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">apix_y<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">pixel
+y size in &Aring; unit<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">apix_z<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">pixel
+z size in &Aring; unit<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">nx<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">image
+x-direction size in number of pixels<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">ny<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">image
+y-direction size in number of pixels</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">nz<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">image
+z-direction size in number of pixels</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">origin_row<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">float<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">origin
+location along row (x) in number of pixels</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">origin_col<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">origin
+location along column (y) in number of pixels</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">origin_sec<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">origin
+location along section (z) in number of pixels <br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">minimum<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">minimum
+pixel density value in the image<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">maximum<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">maximum
+pixel density value in the image</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">mean<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">mean
+pixel density value in the image</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">sigma<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">sigma&nbsp;
+pixel density value in the image</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">square_sum<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">sum
+of the squares of each pixel density value in the image<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">mean_nonzero<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">mean
+pixel density value in the image, ignoring pixel whose value =0.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">sigma_nonzero<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">sigma&nbsp;
+pixel density value in the image, ignoring pixel whose value =0.</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">kurtosis<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">kurtosis
+pixel density value in the image</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204); font-weight: bold;">skewness<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">float</td>
+      <td
+ style="vertical-align: top; background-color: rgb(255, 255, 204);">skewness
+pixel density value in the image</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">datatype</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">pixel
+data type in the image physical file (e.g., float, int, double, etc).
+This is an enumeration type.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">is_complex</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">1
+if this image is a complex image. 0 if it is a real image.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">is_ri</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">1
+if this is a complex image and is in real/imaginary format; 0 otherwise.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255); font-weight: bold;">avgnimg<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 204, 255);">If
+the image is the result of averaging, avgnimg is the number of images
+used in averaging. Otherwise, avgnimg is 0.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">dm3_exposure_number<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">DM3
+image only. exposure number.</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">dm3_exposure_time<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">double<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">DM3
+image only. exposure time in seconds.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">zoom<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">double<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">zoom<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">antiblooming<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">antiblooming</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">magnification<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">double<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">Indicated
+magnification</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">frame_type<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">string<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">frame_type</td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">camera_x<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">DM3
+image only. camera size&nbsp; along x direction in number of pixels.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">camera_y<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">DM3
+image only. camera size along y direction in number of pixels.<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">binning_x<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int</td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">DM3
+image only. Binning #0<br>
+      </td>
+    </tr>
+    <tr>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255); font-weight: bold;">binning_y<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">int<br>
+      </td>
+      <td
+ style="vertical-align: top; background-color: rgb(204, 255, 255);">DM3
+image only. Binning #1<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; font-weight: bold;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+<br>
+Last modified on 09/29/2004, by Liwei Peng (lpeng@bcm.tmc.edu).<br>
+<br>
+</body>
+</html>
