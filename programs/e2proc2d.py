@@ -73,7 +73,7 @@ def main():
     parser.add_option("--ctfsplit", action="store_true", help="Splits the input file into output files with the same CTF parameters")
     parser.add_option("--exclude", type="string", help="Excludes image numbers in EXCLUDE file")
     parser.add_option("--fftavg", type="string", help="Incoherent Fourier average of all images and write a single power spectrum image")
-    parser.add_option("--filter", type="string", action="append", help="apply a filter")
+    parser.add_option("--filter", type="string", action="append", help="apply a filter. FILTER=filtername:param1=val1:param2=val2")
     parser.add_option("--first", type="int", help="the first image in the input to process [0 - n-1])")
     parser.add_option("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
     parser.add_option("--interlv", type="string", help="Specifies a 2nd input file. Output will be 2 files interleaved.")
@@ -252,9 +252,7 @@ def main():
             elif option1 == "shrink":
                 shrink_f = options.shrink[index_d[option1]]
                 if shrink_f > 1:
-                     print "shrinking ", shrink_f
                      d.median_shrink(shrink_f)
-                     print d.get_xsize()
                 index_d[option1] += 1
 
             elif option1 == "meanshrink":
@@ -342,7 +340,7 @@ def main():
                 d.read_image(options.interlv, i)
                 d.append_image(outfile, IMAGIC)
             
-            elif option1 in ["o", "outtype"]:
+            elif option1 == "outtype":
                 if options.outtype in ["mrc", "pif", "png", "pgm"]:
                     if n1 != 0:
                         outfile = "%03d." % (i + 100) + outfile

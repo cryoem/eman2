@@ -219,6 +219,9 @@ namespace EMAN
 
 	Dict get_attr_dict();
 	void set_attr_dict(string key, EMObject val);
+
+	int get_average_nimg() const;
+	void set_average_nimg(int n);
 	
 	float get_max();
 	float get_min();
@@ -322,6 +325,8 @@ namespace EMAN
 	int ny;
 	int nz;
 
+	int average_nimg;
+	
 	Vec3<float> translation;
 	Rotation rotation;
 	Vec3<float> trans_align;
@@ -543,6 +548,16 @@ namespace EMAN
 	}
     }
 
+    inline int EMData::get_average_nimg() const
+    {
+	return average_nimg;
+    }
+
+    inline void EMData::set_average_nimg(int n)
+    {
+	average_nimg = n;
+    }
+    
     inline float EMData::get_max()
     {
 	update_stat();

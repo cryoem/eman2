@@ -42,9 +42,13 @@ EMData::EMData()
     attr_dict["spacing_sec"] = EMObject(1.0);
     attr_dict["is_complex"] = EMObject(0);
     attr_dict["is_ri"] = EMObject(0);
+
     nx = 0;
     ny = 0;
     nz = 0;
+
+    average_nimg = -1;
+    
     align_score = 0;
 }
 
@@ -102,7 +106,7 @@ int EMData::read_image(string filename, int img_index, bool nodata, const Region
 	    nx = attr_dict["nx"].get_int();
 	    ny = attr_dict["ny"].get_int();
 	    nz = attr_dict["nz"].get_int();
-	    
+
 	    if (!ctf) {
 		ctf = new SimpleCtf();
 	    }
@@ -268,9 +272,7 @@ EMData *EMData::copy(bool with_fft, bool with_parent)
     ret->rfp = 0;
 
     ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
-
-    //ret->nimg = nimg;
-
+    ret->average_nimg = average_nimg;
     ret->translation = translation;
     ret->rotation = rotation;
     ret->trans_align = trans_align;
@@ -298,8 +300,7 @@ EMData *EMData::copy_head()
     ret->rfp = 0;
 
     ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
-
-    //ret->nimg = nimg;
+    ret->average_nimg = average_nimg;
     ret->translation = translation;
     ret->rotation = rotation;
     ret->trans_align = trans_align;
@@ -385,7 +386,8 @@ EMData *EMData::get_clip(const Region & area)
     result->set_name(name);
     result->set_path(path);
     result->set_pathnum(pathnum);
-
+    result->set_average_nimg(average_nimg);
+    
     return result;
 }
 
