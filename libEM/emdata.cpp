@@ -304,8 +304,8 @@ EMData *EMData::copy_head()
 	return ret;
 }
 
-EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient,
-								 IntSize &size, float scale)
+EMData *EMData::get_rotated_clip(const FloatPoint &center, const Rotation &orient,
+								 const IntSize &size, float scale)
 {
 	EMData *result = new EMData();
 	result->set_size(size[0],size[1],size[2]);

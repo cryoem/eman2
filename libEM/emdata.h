@@ -155,8 +155,8 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */ 
-		EMData *get_rotated_clip(FloatPoint &center, Rotation & orient,
-								 IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(const FloatPoint &center, const Rotation & orient,
+								 const IntSize &size, float scale=1.0);
 				
 		/** Add a scaled image into another image at a specified location.
 		 *  This is used, for example, to accumulate gaussians in
