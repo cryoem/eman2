@@ -148,6 +148,12 @@ namespace EMAN
 		/** Is this image in big endian or not. */
 		virtual bool is_image_big_endian() = 0;
 
+		/** Is this image format only storing 1 image or not.*/
+		virtual bool is_single_image_format() const
+		{
+			return true;
+		}
+		
 		/** Convert data of this image into host endian format.
 		 *
 		 * @param data An array of data. It can be any type, short,
