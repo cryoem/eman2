@@ -15,6 +15,7 @@ namespace EMAN {
     
     class Region;
     class Size;
+    class Ctf;
     
     class ImageIO {
     public:

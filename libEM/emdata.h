@@ -14,6 +14,7 @@ using std::map;
 namespace EMAN {
     class ImageIO;
     class Region;
+    class SimpleCtf;
     
     class EMData {
     public:

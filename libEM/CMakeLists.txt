@@ -26,7 +26,8 @@ SET(LIB_EM_SOURCE byteorder.C
 		  gatan2io.C
 		  emio.C
 		  imagicio.C
-		  emcache.C )
+		  emcache.C
+		  ctf.C )
 		  
 ADD_LIBRARY(EM SHARED ${LIB_EM_SOURCE})
 

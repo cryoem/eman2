@@ -51,7 +51,6 @@ namespace EMAN {
 	int get_num_dataset();
 	vector<int> get_image_indices();
     
-
     private:
 	enum Nametype { ROOT_GROUP, CTFIT, NUMDATASET, COMPOUND_DATA_MAGIC };
 	static const char* HDF5_SIGNATURE;
