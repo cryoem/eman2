@@ -116,8 +116,8 @@ def test_vector():
 
 	elist = [e1, e2, e3]
 	elist2 = TestUtil.test_vector_emdata(elist)
-	check_emdata_list(elist)
-	check_emdata_list(elist2)
+	check_emdata_list(elist, sys.argv[0])
+	check_emdata_list(elist2, sys.argv[0])
 
 	p1 = Pixel(1,2,3, 1.1)
 	p2 = Pixel(4,5,6, 4.4)

@@ -13,9 +13,35 @@ run_cmd()
 	echo
 }
 
+clean_images()
+{
+	rm -f *.mrc *.img *.hed
+}
+
+if [ "X$1" == "Xclean" ]; then
+	clean_images
+	exit 0
+fi
+
+
+run_cmd ccf1.py
+run_cmd ccf2.py
+run_cmd converter.py
+run_cmd defaultargs.py
+run_cmd emobject.py
+run_cmd exception2.py
+run_cmd exception.py
+run_cmd filter1.py
+run_cmd imageio1.py
+run_cmd imageio_caching.py
+run_cmd namedclass.py
+run_cmd pixel2.py
+run_cmd pixel.py
+run_cmd project1.py
+run_cmd rotate.py
+run_cmd rotate_translate.py
+run_cmd rotation.py
 run_cmd typeconverter.py
 run_cmd vec1.py
 run_cmd vec2.py
 run_cmd vec3.py
-run_cmd emobject.py
-run_cmd pixel2.py

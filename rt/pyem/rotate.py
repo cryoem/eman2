@@ -2,6 +2,8 @@
 
 from EMAN2 import *
 import math
+import sys
+import testlib
 
 def rotate_3d():
 	img = TestUtil.get_debug_image("3d.mrc")
@@ -10,11 +12,12 @@ def rotate_3d():
 	a.read_image(img)
 	b=a.copy(0)
 	b.rotate(0,0,math.pi/4)
-	b.write_image("3d1.mrc")
+	testlib.check_emdata(b, sys.argv[0])
+
 	b=a.copy(0)
 	b.rotate(0,0,math.pi/2)
-	b.write_image("3d2.mrc")
-
+	testlib.check_emdata(b, sys.argv[0])
+	
 def rotate_2d():
 	img = TestUtil.get_debug_image("lattice.mrc")
 	
@@ -22,10 +25,11 @@ def rotate_2d():
 	a.read_image(img)
 	b=a.copy(0)
 	b.rotate(0,0,math.pi/4)
-	b.write_image("2d1.mrc")
+	testlib.check_emdata(b, sys.argv[0])
+	
 	b=a.copy(0)
 	b.rotate(0,0,math.pi/2)
-	b.write_image("2d2.mrc")
+	testlib.check_emdata(b, sys.argv[0])
 
 
 rotate_2d()

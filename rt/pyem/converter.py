@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/bin/env python
 
 from EMAN2 import *
 
 e = EMData()
-e.read_image("/home/lpeng/images/tablet.mrc")
+e.read_image(TestUtil.get_debug_image("tablet.mrc"))
 d = e.get_attr_dict()
 
 for k in d.keys():
@@ -11,9 +11,8 @@ for k in d.keys():
 
 EMUtil.dump_dict(d)
 
-    
 nums = [1, 3]
-images = EMData.read_images_by_index("/home/lpeng/images/ali.hed", nums)
+images = EMData.read_images(TestUtil.get_debug_image("ali.hed"), nums)
 
 nimg = len(images)
 print "nimg = ", nimg
