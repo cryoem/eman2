@@ -14,6 +14,7 @@ ADD_EXECUTABLE(rotate_phi rotate_phi.cpp)
 ADD_EXECUTABLE(ccf2 ccf2.cpp)
 ADD_EXECUTABLE(compleximg compleximg.cpp)
 ADD_EXECUTABLE(exception1 exception1.cpp)
+ADD_EXECUTABLE(shared_data shared_data.cpp)
 
 
 FIND_LIBRARY(EMAN1_LIBRARY NAMES EM PATHS $ENV{EMANDIR}/lib $ENV{HOME}/EMAN/lib)

@@ -2,21 +2,11 @@
 
 using namespace EMAN;
 
-const char* get_test_image()
-{
-	static char filename[256];
-	static bool done = false;
-	if (!done) {
-		sprintf(filename, "%s/images/groel2d.mrc", getenv("HOME"));
-		done = true;
-	}
-	return filename;
-}
 
 int main()
 {
 	EMData * image = new EMData();
-	const char* test_imagename = get_test_image();
+	const char* test_imagename = Util::get_debug_image("groel2d.mrc");
 
 	int err = 0;
 	try {
