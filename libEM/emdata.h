@@ -122,9 +122,9 @@ namespace EMAN {
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
-
+#if 0
 	void calc_rcf(EMData *with, vector<float>& sum_array);
-	
+#endif
 	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 
 	vector<float> calc_fourier_shell_correlation(EMData *with);

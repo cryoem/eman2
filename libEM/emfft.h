@@ -1,6 +1,10 @@
 #ifndef eman_emfft_h__
 #define eman_emfft_h__
 
+#define FFTW2 1
+
+#ifdef FFTW2
+
 #include <list>
 using std::list;
 
@@ -17,7 +21,7 @@ namespace EMAN {
     class FftwPlan {
     public:
 	FftwPlan();
-	FftwPlan(int nx, FftwDirection direction, int flags);
+	FftwPlan(int n, FftwDirection direction, int flags);
 	FftwPlan(int ndim, int nx, int ny, int nz, FftwDirection direction, int flags);	
 	~FftwPlan();
 	
@@ -40,8 +44,8 @@ namespace EMAN {
 
     class EMfft {
     public:
-	static int real_to_complex_1d(float* real_data, float* complex_data, int nx, bool is_measure);
-	static int complex_to_real_1d(float* complex_data, float* real_data, int nx, bool is_measure);
+	static int real_to_complex_1d(float* real_data, float* complex_data, int n);
+	static int complex_to_real_1d(float* complex_data, float* real_data, int n);
 
 	static int real_to_complex_nd(float* real_data, float* complex_data, int nx, int ny, int nz);
 	static int complex_to_real_nd(float* complex_data, float* real_data, int nx, int ny, int nz);
@@ -56,5 +60,30 @@ namespace EMAN {
 	static FftwPlan planr_1d;
     };
 }
+
+#endif
+
+#ifdef FFTW3
+#include <fftw3.h>
+// link to -lfftw3f
+// prefix: fftwf_
+
+namespace EMAN {
+
+    class EMfft {
+    public:
+	static int real_to_complex_1d(float* real_data, float* complex_data, int n);
+	static int complex_to_real_1d(float* complex_data, float* real_data, int n);
+
+	static int real_to_complex_nd(float* real_data, float* complex_data, int nx, int ny, int nz);
+	static int complex_to_real_nd(float* complex_data, float* real_data, int nx, int ny, int nz);
+    };
+    
+    
+}
+
+
+#endif
+
 
 #endif
