@@ -13,12 +13,13 @@ namespace EMAN
 	/** SPIDER: (System for Processing Image Data from Electron microscopy 
 	 * and Related fields) is an image processing system for electron
 	 * microscopy. SpiderIO reads/writes images used in spider format.
-	 *
+	 * (reference: http://www.wadsworth.org/spider_doc/spider/docs/index.html)
+     *
 	 * A single image = header + data.
 	 *
 	 * header-length = ( ceiling(1024/(nx*4)) * (nx*4) )
-	 * where nx is the number of
-	 * pixels per row. The data is (nx * ny * nslice) of floating numbers,
+	 * where nx is the number of pixels per row. 
+	 * The data is (nx * ny * nslice) of floating numbers,
 	 * where ny is number of rows per slice. nslice is number of slices.
 	 *
 	 * There are 2 spider image formats:
@@ -34,8 +35,9 @@ namespace EMAN
 	 *                 
 	 * Record: In spider terminology, each row is called a record.
 	 *
-	 * 
-	 *
+	 * Note: To read the overall image header in a stacked spider
+	 * file, use image_index = -1.
+     *
 	 */
 		
 

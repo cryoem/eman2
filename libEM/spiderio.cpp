@@ -126,10 +126,18 @@ bool SpiderIO::is_valid(const void *first_block)
 	return result;
 }
 
+/** If image_index = -1, read the overall spider header.
+ */
 int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
+    bool is_read_overall_header = false;
+    if (image_index == -1) {
+        is_read_overall_header = true;
+        image_index = 0;
+    }
+    
 	check_read_access(image_index);
 	
 	if (!first_h) {
@@ -142,17 +150,19 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	float size = first_h->nx * first_h->ny * first_h->nslice;
 	int overall_headlen = 0;
 
-	if (first_h->istack == STACK_OVERALL_HEADER) {
-		overall_headlen = (int) first_h->headlen;
-	}
-	else {
-		if(image_index != 0) {
-			char desc[1024];
-			sprintf(desc, "image index must be 0. Your image index = %d.", image_index);
-			throw ImageReadException(filename, desc);
-		}
-	}
-
+    if (!is_read_overall_header) {
+        if (first_h->istack == STACK_OVERALL_HEADER) {
+            overall_headlen = (int) first_h->headlen;
+        }
+        else {
+            if(image_index != 0) {
+                char desc[1024];
+                sprintf(desc, "image index must be 0. Your image index = %d.", image_index);
+                throw ImageReadException(filename, desc);
+            }
+        }
+    }
+    
 	size_t single_image_size = (size_t) (first_h->headlen + size * sizeof(float));
 	size_t offset = overall_headlen + single_image_size * image_index;
 
@@ -199,22 +209,22 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["mean"] = cur_image_hed->mean;
 	dict["sigma"] = cur_image_hed->sigma;
 
-	dict["SPIDER.nslice"] = cur_image_hed->nslice;
-	dict["SPIDER.type"] = cur_image_hed->type;
-	dict["SPIDER.headrec"] = cur_image_hed->headrec;
+	dict["SPIDER.nslice"] = (int) cur_image_hed->nslice;
+	dict["SPIDER.type"] = (int) cur_image_hed->type;
+	dict["SPIDER.headrec"] = (int) cur_image_hed->headrec;
 	dict["SPIDER.angvalid"] = cur_image_hed->angvalid;
 
-	dict["SPIDER.headlen"] = cur_image_hed->headlen;
+	dict["SPIDER.headlen"] = (int) cur_image_hed->headlen;
 	dict["SPIDER.dx"] = cur_image_hed->dx;
 	dict["SPIDER.dy"] = cur_image_hed->dy;
 	dict["SPIDER.dz"] = cur_image_hed->dz;
 
-	dict["SPIDER.reclen"] = cur_image_hed->reclen;
-	dict["SPIDER.istack"] = cur_image_hed->istack;
+	dict["SPIDER.reclen"] = (int) cur_image_hed->reclen;
+	dict["SPIDER.istack"] = (int) cur_image_hed->istack;
 	dict["SPIDER.date"] = cur_image_hed->date;
 	dict["SPIDER.name"] = cur_image_hed->name;
-	dict["SPIDER.maxim"] = cur_image_hed->maxim;
-	dict["SPIDER.imgnum"] = cur_image_hed->imgnum;
+	dict["SPIDER.maxim"] = (int)cur_image_hed->maxim;
+	dict["SPIDER.imgnum"] = (int)cur_image_hed->imgnum;
 
 	if (offset != 0) {
 		free(cur_image_hed);
@@ -390,9 +400,9 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	cur_h->angvalid = 1.0;
 	cur_h->u1 = (float)irec;
 
-	size_t img_size = (size_t)(cur_h->nx) * (size_t)(cur_h->ny) * (size_t)(cur_h->nslice);
+	size_t data_size = (size_t)(cur_h->nx) * (size_t)(cur_h->ny) * (size_t)(cur_h->nslice);
 	off_t cur_offset = (off_t) (cur_h->headlen +
-								(img_size*sizeof(float) + cur_h->headlen) * image_index);
+								(data_size*sizeof(float) + cur_h->headlen) * image_index);
 	portable_fseek(spider_file, cur_offset, SEEK_SET);
 	fwrite(cur_h, header_size, 1, spider_file);
 	
@@ -400,6 +410,8 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	if (pad_size > 0) {
 		char *pad = static_cast < char *>(calloc(pad_size, 1));
 		fwrite(pad, pad_size, 1, spider_file);
+        free(pad);
+        pad = 0;
 	}
 	
 	EXITFUNC;
@@ -505,14 +517,14 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 													   size * sizeof(float));
 	off_t offset = overall_headlen + single_image_size * image_index;
 	portable_fseek(spider_file, offset, SEEK_SET);
-
-	size_t pad_size = static_cast < size_t > (first_h->headlen - sizeof(SpiderHeader));
-	portable_fseek(spider_file, pad_size, SEEK_CUR);
-
+        
+	portable_fseek(spider_file, (int) first_h->headlen, SEEK_CUR);
+   
+#if 1
 	EMUtil::process_region_io(data, spider_file, READ_ONLY, 0, sizeof(float), 
 							  (int) first_h->nx, (int) first_h->ny, 
 							  (int) first_h->nslice, area);
-
+#endif
 #if 0
 	unsigned int nz = static_cast < unsigned int >(first_h->nslice);
 	int sec_size = static_cast < int >(first_h->nx * first_h->ny * sizeof(float));
@@ -557,13 +569,13 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 	int pad_size = hl - head_size;
 
 	char *pad = static_cast < char *>(calloc(pad_size, 1));
-	size_t img_size = static_cast <size_t>(cur_h->nx * cur_h->ny * cur_h->nslice);
+	size_t data_size = static_cast <size_t>(cur_h->nx * cur_h->ny * cur_h->nslice);
 
 	int sec_size = static_cast < int >(cur_h->nx * cur_h->ny * sizeof(float));
 	int nz = static_cast < int >(cur_h->nslice);
 
 	swap_header(cur_h);
-	swap_data(data, img_size);
+	swap_data(data, data_size);
 	
 	while (image_index > first_h->maxim) {
 		first_h->maxim++;
@@ -576,21 +588,21 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 		fwrite(data, sec_size, nz, spider_file);
 	}
 
-	off_t cur_offset = (off_t) (hl + (img_size * sizeof(float) + hl) * image_index + hl);
+	off_t cur_offset = (off_t) (hl + (data_size * sizeof(float) + hl) * image_index + hl);
 	portable_fseek(spider_file, cur_offset, SEEK_SET);
 
-#if 1
+#if 0
 	EMUtil::process_region_io(data, spider_file, WRITE_ONLY, image_index,
 							  sizeof(float), (int)cur_h->nx, (int)cur_h->ny,
 							  (int)cur_h->nslice, area);
 #endif
-#if 0
+#if 1
 	if (fwrite(data, sec_size, nz, spider_file) != (unsigned int) nz) {
 		throw ImageWriteException(filename, "spider writing failed");
 	}
 #endif
 	swap_header(cur_h);
-	swap_data(data, img_size);
+	swap_data(data, data_size);
 
 	free(pad);
 	EXITFUNC;
