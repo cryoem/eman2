@@ -12,8 +12,6 @@ set_policy(EMObject.operator['EMAN::EMData*'], return_internal_reference())
 set_policy(EMObject.operator['EMAN::XYData*'], return_internal_reference())
 exclude(EMObject.operator['const char*'])
 
-NotExistingObjectError = Class("EMAN::NotExistingObjectError", "emobject.h")
-
 Factory = Template("EMAN::Factory", "emobject.h")
 
 Aligner = Class("EMAN::Aligner", "aligner.h")
