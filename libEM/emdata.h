@@ -119,7 +119,6 @@ namespace EMAN {
 	    }
 	}
 	
-	float dot(EMData* with, bool evenonly = false) { return 0; }
 	
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
@@ -233,29 +232,34 @@ namespace EMAN {
 	bool has_ctff() const;
 #endif
 
-	int common_lines(EMData* d1, EMData* d2, int mode = 0,
-			 int steps = 180, bool horiz = false);	
+	float dot(EMData* with, bool evenonly = false);
 	
-	int common_lines_real(EMData* data1, EMData* data2,
-			      int steps = 180, bool horiz = false);
+	int common_lines(EMData* image1, EMData* image2, int mode = 0,
+			 int steps = 180, bool horizontal = false);	
 	
+	int common_lines_real(EMData* image1, EMData* image2,
+			      int steps = 180, bool horizontal = false);
 	
-	int cut_slice(EMData* map, float z, Rotation* r = 0,
-		      bool interpolate = true, float x = 0, float y = 0);
+	int cut_slice(EMData* map, float dz, Rotation* orientation = 0,
+		      bool interpolate = true, float dx = 0, float dy = 0);
 
-	int uncut_slice(EMData* map, float z, Rotation* r = 0, float x = 0, float y = 0);
-
-	void do_dwt(int basis, int level);
-	void do_iwt(int basis, int level);
-	void dwt_filt(int basis, int level, float thresh);
-
-#if 0
-	void edge_normalize(bool circular = false);
-	EMData* fft_slice(float alt, float az, float phi, int mode = 5);
-	void fourier_shell_correlation(EMData* with, XYData& result);
-	float get_ali_peak() const;
+	int uncut_slice(EMData* map, float dz, Rotation* orientation = 0,
+			float dx = 0, float dy = 0);
+	EMData* ift_slice();
+	
 	float get_edge_mean() const;
-	float get_circle_mean() const;
+	float get_circle_mean();
+	float edge_normalize(int mode = 0);
+
+	
+	
+#if 0
+	Point<float> least_square_normalize_to(EMData* to, float low_thresh, float high_thresh);
+	EMData* little_big_dot(EMData* little_img, bool do_sigma = false);
+
+	
+	float get_ali_peak() const;
+
 	
 	EMData* get_row(int row_index) const;
 	EMData* get_col(int col_index) const;
@@ -263,15 +267,9 @@ namespace EMAN {
 	float get_sigma_diff() const;
 	int get_dim() const;
 	
-	EMData* ift_slice();
-	Point<float> interpolate_ft_3d(float x, float y, float z, InterpType mode);
-	void invert();
 
 	bool is_flipped();
-	Point<float> least_square_normalize_to(EMData* to, float low_thresh, float high_thresh);
-
-	EMData* little_big_dot(EMData* little_img, bool do_sigma = false);
-
+	
 
 	void make_image_average(const vector<EMData*>& image_list, EMData* sigma = 0);
 	void make_average_iter(const vector<EMData*>& image_list);
