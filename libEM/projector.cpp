@@ -5,6 +5,9 @@
 #include "log.h"
 #include "emdata.h"
 #include "interp.h"
+#ifdef WIN32
+#define M_PI 3.14159265358979323846
+#endif
 
 using namespace EMAN;
 

@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 	    sprintf(outfile + strlen(outfile), ".%02d.img", j);
 
 	    delete ld;
-	    ld = d->copy(false, false);
+	    ld = d->copy(false);
 	}
 
 	float sigma = d->get_sigma();
@@ -554,7 +554,7 @@ int main(int argc, char *argv[])
 
 	if (argdict[avgonly]) {
 	    if (!average) {
-		average = d->copy(0, 0);
+		average = d->copy(false);
 	    }
 	    else {
 		(*average) += (*d);

@@ -10,6 +10,7 @@
 #include <math.h>
 #include <sys/types.h>
 #ifndef WIN32
+#include <unistd.h>
 #include <sys/param.h>
 #endif
 
@@ -98,7 +99,7 @@ int Util::file_lock_wait(FILE * file)
 #endif
 }
 
-void Util::file_unlock(FILE *file)
+void Util::file_unlock(FILE *)
 {
     
 }

@@ -95,9 +95,8 @@ namespace EMAN
 	static bool is_same_ctf(const EMData *image1, const EMData * image2);
 
 
-	template<class T> static void dump()
+	template<class T> static void dump(Factory<T> *factory)
 	{
-	    Factory<T> *factory = Factory<T>::instance();
 	    vector<string> item_names = factory->get_list();
 
 	    for (size_t i = 0; i < item_names.size(); i++) {
@@ -110,36 +109,36 @@ namespace EMAN
 
 	static void dump_filters()
 	{
-	    return dump<Filter>();
+	    dump<Filter>(Factory<Filter>::instance());
 	}
 
 	static void dump_aligners()
 	{
-	    return dump<Aligner>();
+	    dump<Aligner>(Factory<Aligner>::instance());
 	}
 	
 	
 	static void dump_cmps()
 	{
-	    return dump<Cmp>();
+	    dump<Cmp>(Factory<Cmp>::instance());
 	}
 	
 	
 	static void dump_averagers()
 	{
-	    return dump<Averager>();
+	    dump<Averager>(Factory<Averager>::instance());
 	}
 	
 
 	static void dump_projectors()
 	{
-	    return dump<Projector>();
+	    dump<Projector>(Factory<Projector>::instance());
 	}
 	
 	
 	static void dump_reconstructors()
 	{
-	    return dump<Reconstructor>();
+	    dump<Reconstructor>(Factory<Reconstructor>::instance());
 	}
 	
     private:

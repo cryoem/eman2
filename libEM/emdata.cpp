@@ -239,7 +239,7 @@ EMData *EMData::project(string projector_name, const Dict & params)
 }
 
 
-EMData *EMData::copy(bool with_fft, bool with_parent)
+EMData *EMData::copy(bool with_parent)
 {
     EMData *ret = new EMData();
 
@@ -3295,11 +3295,11 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
     EMData *cf = 0;
 
     if (with) {
-	cf = with_fft->copy(0, 0);
+	cf = with_fft->copy(false);
 	cf->ap2ri();
     }
     else {
-	cf = f1->copy(0, 0);
+	cf = f1->copy(false);
     }
 
     if (filter) {
@@ -3469,11 +3469,11 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	if (!cf1) {
 	    return 0;
 	}
-	cf = cf1->copy(0, 0);
+	cf = cf1->copy(false);
 	cf->ap2ri();
     }
     else {
-	cf = this_fft->copy(0, 0);
+	cf = this_fft->copy(false);
     }
 
     if (filter) {
@@ -3886,8 +3886,8 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 	filter_dict["value"] = 0;
     }
     
-    EMData *img1 = this->copy(0, 0);
-    EMData *img2 = with->copy(0, 0);
+    EMData *img1 = this->copy(false);
+    EMData *img2 = with->copy(false);
 
     int img1_nx = img1->get_xsize();
     int img1_ny = img1->get_ysize();
@@ -3902,7 +3902,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
     
     filter_dict["outer_radius"] = radius;
 
-    EMData *img1_copy = img1->copy(0, 0);
+    EMData *img1_copy = img1->copy(false);
     img1_copy->to_one();
     img1_copy->filter(mask_filter, filter_dict);
     img1_copy->filter("Phase180");
@@ -3950,7 +3950,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 
     img2->done_data();
 
-    EMData *img2_copy = img2->copy(0, 0);
+    EMData *img2_copy = img2->copy(false);
     delete img2;
     img2 = 0;
 
@@ -3960,7 +3960,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
     delete img1_copy;
     img1_copy = 0;
 
-    EMData *img1_copy2 = img1->copy(0, 0);
+    EMData *img1_copy2 = img1->copy(false);
     
     img1_copy2->filter("Square");
 
@@ -3985,7 +3985,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
     conv1->filter("Square");
     conv1->mult(1.0 / (num * num));
 
-    EMData *conv2_copy = conv2->copy(0, 0);
+    EMData *conv2_copy = conv2->copy(false);
     delete conv2;
     conv2 = 0;
 
@@ -3996,7 +3996,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
     conv2_copy->mult(1.0 / num);
     conv2_copy->filter("Sqrt");
 
-    EMData *ccf_copy = ccf->copy(0, 0);
+    EMData *ccf_copy = ccf->copy(false);
     delete ccf;
     ccf = 0;
 
@@ -4014,7 +4014,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
     conv2_copy = 0;
 
     ccf_copy->done_data();
-    EMData *lcf = ccf_copy->copy(0, 0);
+    EMData *lcf = ccf_copy->copy(false);
     delete ccf_copy;
     ccf_copy = 0;
 
@@ -4036,11 +4036,11 @@ EMData *EMData::convolute(EMData * with)
 	if (!cf1) {
 	    return 0;
 	}
-	cf = cf1->copy(0, 0);
+	cf = cf1->copy(false);
 	cf->ap2ri();
     }
     else {
-	cf = f1->copy(0, 0);
+	cf = f1->copy(false);
     }
 
     if (with && !EMUtil::is_same_size(f1, cf)) {

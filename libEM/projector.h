@@ -4,16 +4,10 @@
 #ifndef eman__projector_h__
 #define eman__projector_h__ 1
 
-
 #include "emobject.h"
-#include <map>
 #include <string>
 #include <math.h>
-#ifdef WIN32
-#define M_PI 3.14159265358979323846
-#endif
 
-using std::map;
 using std::string;
 
 
@@ -55,7 +49,7 @@ namespace EMAN
 	{
 	}
 
-	virtual EMData *project3d(EMData * em) const = 0;
+	virtual EMData *project3d(EMData * image) const = 0;
 	
 	virtual string get_name() const = 0;
 	
@@ -101,7 +95,7 @@ namespace EMAN
 	{
 	}
 
-	EMData *project3d(EMData * em) const;
+	EMData *project3d(EMData * image) const;
 	
 	void set_params(const Dict & new_params)
 	{
@@ -144,7 +138,7 @@ namespace EMAN
     class PawelProjector : public Projector
     {
     public:
-	EMData *project3d(EMData * em) const;
+	EMData *project3d(EMData * image) const;
 	
 	string get_name() const
 	{
@@ -162,7 +156,7 @@ namespace EMAN
     class SimpleIsoSurfaceProjector : public Projector
     {
     public:
-	EMData *project3d(EMData * em) const;
+	EMData *project3d(EMData * image) const;
 	
 	string get_name() const
 	{
@@ -180,7 +174,7 @@ namespace EMAN
     class StandardProjector : public Projector
     {
     public:
-	EMData *project3d(EMData * em) const;
+	EMData *project3d(EMData * image) const;
 	
 	string get_name() const
 	{
@@ -202,7 +196,7 @@ namespace EMAN
     class StandardBigProjector : public Projector
     {
     public:
-	EMData *project3d(EMData * em) const;
+	EMData *project3d(EMData * image) const;
 	
 	string get_name() const
 	{

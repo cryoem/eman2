@@ -259,7 +259,7 @@ vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 }
 
 
-void SimpleCtf::compute_2d_real(EMData * image, CtfType type, XYData * sf)
+void SimpleCtf::compute_2d_real(EMData * , CtfType , XYData * )
 {
 
 

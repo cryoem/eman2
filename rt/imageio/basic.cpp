@@ -78,13 +78,12 @@ int test_emcache()
 
 void test_factory()
 {
-    EMUtil::dump<Filter>();
-    EMUtil::dump<Aligner>();
-    EMUtil::dump<Cmp>();
-    EMUtil::dump<Averager>();
-    EMUtil::dump<Projector>();
-    EMUtil::dump<Reconstructor>();
-    
+    EMUtil::dump_filters();
+    EMUtil::dump_aligners();
+    EMUtil::dump_cmps();
+    EMUtil::dump_averagers();
+    EMUtil::dump_projectors();
+    EMUtil::dump_reconstructors();
 }
 
 

@@ -60,7 +60,7 @@ namespace EMAN
 	EMData *align(string aligner_name, const Dict & params = Dict(), string comp_name = "");
 	EMData *project(string projector_name, const Dict & params = Dict());
 	
-	EMData *copy(bool withfft = false, bool withparent = true);
+	EMData *copy(bool withparent = true);
 	EMData *copy_head();
 
 	/** Inclusive clip. Pads 0 if larger than this image. */
