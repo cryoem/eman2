@@ -52,8 +52,8 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			clip2s=clip2.copy(0)
 			clip2s.filter("ValueSquared")
 			
-			ccf=clip1.calc_ccf(clip2,1)
-			ccfs=mask.calc_ccf(clip2s,1)	# this is the sum of the masked values^2 for each pixel center
+			ccf=clip1.calc_ccf(clip2,1,None)
+			ccfs=mask.calc_ccf(clip2s,1,None)	# this is the sum of the masked values^2 for each pixel center
 			ccfs.filter("ValueSqrt")
 			ccf/=ccfs
 	

@@ -446,14 +446,14 @@ namespace EMAN
 		 * @param with The image used to calculate CCF. If 'with' is
 		 *   NULL, does mirror ACF.
 		 * @param tocorner Set whether to translate the result image
-		 *   to the corner.
-		 * @param filter The filter image used in calculating CCF.
+		 *   to the center.
+		 * @param filter optional filter to apply to both images before CCF.
 		 * @exception NullPointerException If FFT returns NULL image.
 		 * @exception ImageFormatException If filter has improper size.
 		 *
 		 * @return The result image containing the CCF.
 		 */
-		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = NULL);
+		EMData *calc_ccf(EMData * with, int tocorner = 0, EMData * filter = NULL);
 
 		/** Calculate Cross-Correlation Function (CCF) in the x-direction 
 		 * and adds them up, result in 1D.
