@@ -17,6 +17,45 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
+struct EMAN_Cmp_Wrapper: EMAN::Cmp
+{
+    EMAN_Cmp_Wrapper(PyObject* self_, const EMAN::Cmp& p0):
+        EMAN::Cmp(p0), self(self_) {}
+
+    EMAN_Cmp_Wrapper(PyObject* self_):
+        EMAN::Cmp(), self(self_) {}
+
+    float cmp(EMAN::EMData* p0, EMAN::EMData* p1) const {
+        return call_method< float >(self, "cmp", p0, p1);
+    }
+
+    std::string get_name() const {
+        return call_method< std::string >(self, "get_name");
+    }
+
+    EMAN::Dict get_params() const {
+        return call_method< EMAN::Dict >(self, "get_params");
+    }
+
+    EMAN::Dict default_get_params() const {
+        return EMAN::Cmp::get_params();
+    }
+
+    void set_params(const EMAN::Dict& p0) {
+        call_method< void >(self, "set_params", p0);
+    }
+
+    void default_set_params(const EMAN::Dict& p0) {
+        EMAN::Cmp::set_params(p0);
+    }
+
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
+    }
+
+    PyObject* self;
+};
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Log_end_overloads_1_3, end, 1, 3)
 
 
@@ -33,6 +72,14 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("get_list", &EMAN::Factory<EMAN::Cmp>::get_list)
         .staticmethod("get_list")
         .staticmethod("get")
+    ;
+
+    class_< EMAN::Cmp, boost::noncopyable, EMAN_Cmp_Wrapper >("__Cmp", init<  >())
+        .def("cmp", pure_virtual(&EMAN::Cmp::cmp))
+        .def("get_name", pure_virtual(&EMAN::Cmp::get_name))
+        .def("get_params", &EMAN::Cmp::get_params, &EMAN_Cmp_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Cmp::set_params, &EMAN_Cmp_Wrapper::default_set_params)
+        .def("get_param_types", pure_virtual(&EMAN::Cmp::get_param_types))
     ;
 
     scope* EMAN_Log_scope = new scope(

@@ -8,6 +8,9 @@ CmpFactory = Factory("EMAN::Cmp", "Cmps")
 set_policy(CmpFactory.get, return_value_policy(manage_new_object))
 exclude(CmpFactory.add)
 
+Cmp = Class("EMAN::Cmp", "cmp.h")
+rename(Cmp, "__Cmp")
+
 Log = Class("EMAN::Log", "log.h")
 set_policy(Log.logger, return_value_policy(reference_existing_object))
 exclude(Log.variable)
