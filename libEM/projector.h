@@ -5,6 +5,7 @@
 #define eman__projector_h__ 1
 
 #include "emobject.h"
+#include "transform.h"
 #include <string>
 #include <math.h>
 
@@ -148,7 +149,16 @@ namespace EMAN
 	static Projector *NEW()
 	{
 	    return new PawelProjector();
-	}	
+	}
+	
+    private:
+	
+	struct Pointers {
+	    Vec3<int> location;
+	    int start;
+	    int end;
+	};
+
     };
 
     /** fast real-space isosurface 3D proejection.

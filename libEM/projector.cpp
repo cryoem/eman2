@@ -391,6 +391,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
     }
 }
 
+#if 1
 EMData *PawelProjector::project3d(EMData * image) const
 {
     if (!image) {
@@ -426,12 +427,6 @@ EMData *PawelProjector::project3d(EMData * image) const
     }
     float radius_square = radius * radius;
     
-    struct Pointers {
-	Vec3<int> location;
-	int start;
-	int end;
-    };
-
     int nsec = ny * nz;
     Pointers *xmax = new Pointers[nsec];
     
@@ -532,7 +527,7 @@ EMData *PawelProjector::project3d(EMData * image) const
     ret->update();
     return ret;
 }
-
+#endif
 
 
 EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
@@ -713,3 +708,4 @@ EMData *StandardBigProjector::project3d(EMData * image) const
     proj->update();
     return proj;
 }
+
