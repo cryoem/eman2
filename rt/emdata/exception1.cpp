@@ -3,7 +3,21 @@
 
 using namespace EMAN;
 
-int main()
+void test1()
+{
+	try {
+		EMData * e1 = new EMData();
+		const char *img1 = Util::get_debug_image("square288.mrc");
+		e1->read_image(img1);
+
+		e1->calc_fourier_shell_correlation(0);
+	}
+	catch (_NullPointerException& e) {
+		LOGERR("%s", e.what());
+	}
+}
+
+void test2()
 {
 	try {
 		EMData e1;
@@ -13,7 +27,13 @@ int main()
 	catch (E2Exception & e) {
 		LOGERR("%s", e.what());
 	}
-	
+}
+
+
+int main()
+{
+	test1();
+	test2();
 	return 0;
 }
 
