@@ -414,6 +414,7 @@ void EMData::insert_scaled_sum(EMData *block, const Point <float>&center, float 
 {
 
 if (get_ndim()==3) {
+	// Start by determining the region to operate on
 	int xs=(int)floor(block->get_xsize()*scale/2.0);
 	int ys=(int)floor(block->get_ysize()*scale/2.0);
 	int zs=(int)floor(block->get_zsize()*scale/2.0);
@@ -424,6 +425,9 @@ if (get_ndim()==3) {
 	int z0=(int)center.z-zs;
 	int z1=(int)center.z+zs;
 	
+	if (x1<0||y1<0||z1<0||x0>get_xsize()||y0>get_ysize()||z0>get_zsize()) return;	// object is completely outside the target volume
+	
+	// make sure we stay inside the volume
 	if (x0<0) x0=0;
 	if (y0<0) y0=0;
 	if (z0<0) z0=0;

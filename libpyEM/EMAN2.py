@@ -3,6 +3,8 @@ from libpyFactory2 import *
 from libpyGeometry2 import *
 from libpyUtils2 import *
 
+EMANVERSION="EMAN2 v1.90"
+
 MRC = EMUtil.ImageType.IMAGE_MRC
 SPIDER = EMUtil.ImageType.IMAGE_SPIDER
 SINGLE_SPIDER = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
