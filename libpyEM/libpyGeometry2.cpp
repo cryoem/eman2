@@ -1,5 +1,6 @@
 
 // Boost Includes ==============================================================
+#include <Python.h>
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
 

@@ -1,3 +1,4 @@
+#include <Python.h>
 #include "pylist.h"
 #include "emdata.h"
 
