@@ -53,11 +53,16 @@
 	   2) If your libraries are not installed at the default places,
           set up the related environment variables:
 		    - fftw -> FFTWDIR
-			- gsl  -> GSLDIR 
+			- gsl  -> GSLDIR
+			- tiff -> TIFFDIR
+			- png  -> PNGDIR
+			- hdf5 -> HDF5DIR
+			- python -> PYTHON_ROOT
 			
        3) % ccmake ../eman2
-          make changes if necessary
-          Then type 'c', and type 'g'.
+		  - type 'c' if it asks about "CMAKE_BACKWARDS_COMPATIBILITY".
+          - make necessary changes for compilation flags.
+          - Then type 'c', and type 'g'.
         
        4) % make
 		  % make install
