@@ -256,6 +256,7 @@ bool PgmIO::is_complex_mode()
 
 bool PgmIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

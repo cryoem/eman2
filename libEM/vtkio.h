@@ -93,8 +93,7 @@ namespace EMAN
 		void read_dataset(DatasetType dstype);
 		DataType get_datatype_from_name(const string& datatype_name);
 		DatasetType get_datasettype_from_name(const string& dataset_name);
-		
-	  private:
+	
 		string filename;
 		IOMode rw_mode;
 		FILE *vtk_file;

@@ -12,6 +12,7 @@
 #include "cmp.h"
 #include "emfft.h"
 #include "projector.h"
+#include "byteorder.h"
 
 #include <float.h>
 #include <math.h>
@@ -102,6 +103,8 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				set_ri(true);
 			}
 
+			save_byteorder_to_dict(imageio);
+			
 			nx = attr_dict["nx"];
 			ny = attr_dict["ny"];
 			nz = attr_dict["nz"];
@@ -5395,3 +5398,24 @@ float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 	
 	return result;
 }
+
+void EMData::save_byteorder_to_dict(ImageIO * imageio)
+{
+	string image_endian = "ImageEndian";
+	string host_endian = "HostEndian";
+	
+	if (imageio->is_image_big_endian()) {
+		attr_dict[image_endian] = "big";
+	}
+	else {
+		attr_dict[image_endian] = "little";
+	}
+
+	if (ByteOrder::is_host_big_endian()) {
+		attr_dict[host_endian] = "big";
+	}
+	else {
+		attr_dict[host_endian] = "little";
+	}
+}
+	

@@ -161,15 +161,22 @@ void PifIO::fseek_to(int image_index)
 {
 	int pih_sz = sizeof(PifImageHeader);
 	int image_size = 0;
-
+	
+#if 0
+	// this works for some images that PURDUE people gave to me.
+	// But those images don't follow the PIF specification. So
+	// I believe they are in wrong format.
 	if (pfh.nimg == 1) {
 		image_size = pfh.nx * pfh.ny * pfh.nz;
 	}
 	else {
 		image_size = pfh.nx * pfh.ny;
 	}
-
-	size_t file_offset = sizeof(PifFileHeader) + (pih_sz + image_size * mode_size) * image_index;
+#endif
+	image_size = pfh.nx * pfh.ny * pfh.nz;
+	
+	size_t file_offset = sizeof(PifFileHeader) +
+		(pih_sz + image_size * mode_size) * image_index;
 
 	portable_fseek(pif_file, file_offset, SEEK_SET);
 }
@@ -180,16 +187,16 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 	
 	check_read_access(image_index);
-	int pih_sz = sizeof(PifImageHeader);
 	fseek_to(image_index);
 	
+	int pih_sz = sizeof(PifImageHeader);
 	PifImageHeader pih;
 
 	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
 		throw ImageReadException(filename, "PIF Image header");
 	}
 	else {
-		check_region(area, IntSize(pih.nx, pih.ny, pih.nz));
+		check_region(area, FloatSize(pih.nx, pih.ny, pih.nz), is_new_file);
 		int xlen = 0, ylen = 0, zlen = 0;
 		EMUtil::get_region_dims(area, pih.nx, &xlen, pih.ny, &ylen, pih.nz, &zlen);
 
@@ -217,11 +224,18 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PifIO::write_header(const Dict & dict, int image_index, const Region* , bool)
+int PifIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
 	check_write_access(rw_mode, image_index);
+
+	if (area) {
+		check_region(area, FloatSize(pfh.nx, pfh.ny, pfh.nz), is_new_file);
+		EXITFUNC;
+		return 0;
+	}
+
 	time_t t0 = time(0);
 	struct tm *t = localtime(&t0);
 
@@ -305,27 +319,79 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	ENTERFUNC;
 
 	check_read_access(image_index, data);
+	fseek_to(image_index);
 
 	int pih_sz = sizeof(PifImageHeader);
-	fseek_to(image_index);
+	PifImageHeader pih;
+	
+	if (fread(&pih, pih_sz, 1, pif_file) != 1) {
+		throw ImageReadException(filename, "PIF Image header");
+	}
+
+	if (area) {
+		check_region(area, FloatSize(pih.nx, pih.ny, pih.nz), is_new_file);
+	}
+	
 	portable_fseek(pif_file, pih_sz, SEEK_CUR);
 
-	int buf_size = pfh.nx * mode_size;
+	int buf_size = pih.nx * mode_size;
 	unsigned char *buf = new unsigned char[buf_size];
 
-	int num_layers = pfh.nz;
+	int num_layers = pih.nz;
+#if 0
 	if (pfh.nz == pfh.nimg) {
 		num_layers = 1;
 	}
+#endif
+	// new way to read PIF data. The new way includes region reading.
+	// If it is tested to be OK, remove the code in #if 0 ... #endif 
+	unsigned char * cdata = (unsigned char*)data;
+	short *sdata = (short*) data;
 
+	EMUtil::process_region_io(cdata, pif_file, READ_ONLY,
+							  0, mode_size, pih.nx, pih.ny, 
+							  num_layers, area);
+
+	int xlen = 0, ylen = 0, zlen = 0;
+	EMUtil::get_region_dims(area, pih.nx, &xlen, pih.ny, &ylen, pih.nz, &zlen);
+	size_t size = xlen * ylen * zlen;
+
+	if (mode_size == sizeof(short)) {
+		become_host_endian((short *) sdata, size);
+	}
+	else if (mode_size == sizeof(int)) {
+		become_host_endian((int *) data, size);
+	}
+
+	if (mode_size == sizeof(char)) {
+		for (size_t i = 0; i < size; i++) {
+			size_t j = size - 1 - i;
+			data[j] = (float)(cdata[j]) * real_scale_factor;
+		}
+	}
+	else if (mode_size == sizeof(short)) {
+		for (size_t i = 0; i < size; i++) {
+			size_t j = size - 1 - i;
+			data[j] = (float)(sdata[j]) * real_scale_factor;
+		}
+	}
+	else if (mode_size == sizeof(int)) {
+		for (size_t i = 0; i < size; i++) {
+			size_t j = size - 1 - i;
+			data[j] = (float) ((int *)data)[j] * real_scale_factor;
+		}
+	}
+	
+	// end of new way for region reading
+	
+#if 0
 	for (int l = 0; l < num_layers; l++) {
 		int offset1 = l * pfh.nx * pfh.ny;
 		for (int j = 0; j < pfh.ny; j++) {
 			if (fread(buf, mode_size, pfh.nx, pif_file) != (unsigned int) pfh.nx) {
-				LOGERR("read PIF image file '%s' failed", filename.c_str());
 				delete[]buf;
 				buf = 0;
-				return 1;
+				throw ImageReadException(filename, "incomplete PIF read");
 			}
 
 			if (mode_size == sizeof(short)) {
@@ -353,7 +419,8 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 			}
 		}
 	}
-
+#endif
+	
 	delete[]buf;
 	buf = 0;
 	EXITFUNC;
@@ -396,6 +463,7 @@ void PifIO::flush()
 
 bool PifIO::is_complex_mode()
 {
+	init();
 	if (pfh.mode == PIF_SHORT_COMPLEX ||
 		pfh.mode == PIF_FLOAT_INT_COMPLEX ||
 		pfh.mode == PIF_FLOAT_COMPLEX || pfh.mode == PIF_SHORT_FLOAT_COMPLEX) {
@@ -406,6 +474,7 @@ bool PifIO::is_complex_mode()
 
 bool PifIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

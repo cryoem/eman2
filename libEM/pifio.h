@@ -17,6 +17,10 @@ namespace EMAN
 	 * A PIF file has a overall file header followed by n images. Each
 	 * image has a header and data block.
 	 *
+	 * EMAN only supports homogeneous PIF file, which means all images
+	 * n a PIF should have the same dimensions. We also assume the
+	 * (nx,ny,nz) in PifFileHeader are equal to (nx,ny,nz) in each
+	 * Image header.
 	 */
 	class PifIO:public ImageIO
 	{
@@ -62,14 +66,14 @@ namespace EMAN
 		{
 			int magic[2];		// magic number; identify PIF file
 			char scalefactor[16];	// to convert float ints -> floats
-			int nimg;			// # images in file
+			int nimg;			// number of images in file
 			int endian;			// endianness, 0 -> vax,intel (little), 1 -> SGI, PowerPC (big)
 			char program[32];	// program which generated image
 			int htype;			// 1 - all images same number of pixels and depth, 0 - otherwise
 			int nx;				// number of columns
 			int ny;				// number of rows
 			int nz;				// number of sections
-			int mode;			// image data type                              
+			int mode;			// image data type
 			int pad[107];
 		};
 
@@ -119,14 +123,13 @@ namespace EMAN
 			int mapabang;
 			int pad[63];		// later use
 		};
-	  private:
+	  
 		int get_mode_size(PifDataMode mode);
 		bool is_float(int mode);
 		void fseek_to(int image_index);
 		int to_em_datatype(int pif_datatype);
 		int to_pif_datatype(int em_datatype);
 
-	  private:
 	    string filename;
 		IOMode rw_mode;
 		PifFileHeader pfh;

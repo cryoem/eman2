@@ -22,10 +22,14 @@ int ImageIO::write_ctf(const Ctf &, int)
 	return 1;
 }
 
-void ImageIO::check_region(const Region * area, const IntSize & max_size)
+void ImageIO::check_region(const Region * area, const FloatSize & max_size,
+						   bool is_new_file)
 {
-	int img_ndim = max_size.get_ndim();
 	if (area) {
+		if (is_new_file) {
+			throw ImageReadException("", "file must exist before accessing its region");
+		}
+		int img_ndim = max_size.get_ndim();
 		int area_ndim = area->get_ndim();
 		
 		if (area_ndim > img_ndim) {
@@ -33,13 +37,20 @@ void ImageIO::check_region(const Region * area, const IntSize & max_size)
 			sprintf(desc, "Image is %dD. Cannot read %dD region", img_ndim, area_ndim);
 			throw ImageReadException("", desc);
 		}
-#if 0
-		if (!area->inside_region(max_size)) {
-			LOGERR("Region box %s is outside image area->", area->get_string().c_str());			
+		
+		if (!area->is_region_in_box(max_size)) {
+			LOGERR("Region box %s is outside image area (%d,%d,%d)",
+				   area->get_string().c_str(), max_size[0],
+				   max_size[1], max_size[2]);		
 		}
-#endif
-
 	}
+}
+
+void ImageIO::check_region(const Region * area, const IntSize & max_size,
+						   bool is_new_file)
+{
+	check_region(area, FloatSize(max_size[0], max_size[1], max_size[2]),
+				 is_new_file);
 }
 
 void ImageIO::check_read_access(int image_index)
@@ -52,7 +63,7 @@ void ImageIO::check_read_access(int image_index)
 	}
 }
 
-void ImageIO::check_read_access(int image_index, float *data)
+void ImageIO::check_read_access(int image_index, const float *data)
 {
 	check_read_access(image_index);
 	if (!data) {
@@ -74,13 +85,11 @@ void ImageIO::check_write_access(IOMode iomode, int image_index, int max_nimg)
 }
 
 void ImageIO::check_write_access(IOMode iomode, int image_index,
-								 int max_nimg, float *data)
+								 int max_nimg, const float *data)
 {
 	check_write_access(iomode, image_index, max_nimg);
 	if (!data) {
-		if (!data) {
-			throw NullPointerException("image data is NULL");
-		}
+		throw NullPointerException("image data is NULL");
 	}
 }
 

@@ -200,6 +200,7 @@ bool IcosIO::is_complex_mode()
 
 bool IcosIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

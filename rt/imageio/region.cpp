@@ -27,12 +27,15 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile)
 	const char * imgfile = TestUtil::get_debug_image(testfile);
 	string imgbase = Util::remove_filename_ext(testfile);
 	string ext = Util::get_filename_ext(testfile);
-	string imgfile2 = imgbase + "_write_region." + ext;
-	string imgfile3 = imgbase + "_read_region." + ext;
+	string writefile_2d = imgbase + "_write_region_2d." + ext;
+	string writefile_3d = imgbase + "_write_region_3d." + ext;
+	string readfile_2d = imgbase + "_read_region_2d." + ext;
+	string readfile_3d = imgbase + "_read_region_3d." + ext;
 	
 	EMData e;
 	e.read_image(imgfile, 0, false, 0, is_3d);
-	e.write_image(imgfile2, 0, imgtype);
+	e.write_image(writefile_2d, 0, imgtype);
+	e.write_image(writefile_3d, 0, imgtype);
 	
 	int nx = e.get_xsize();
 	int ny = e.get_ysize();
@@ -49,25 +52,36 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile)
 	}
 	int ndims = e.get_ndim();
 	
-	Region region;
+	Region region_2d;
+	Region region_3d;
+	
 	if (ndims == 2) {
-		region = Region(x0, y0, xsize, ysize);
+		region_2d = Region(x0, y0, xsize, ysize);
 	}
 	else if (ndims == 3) {
-		region = Region(x0, y0, z0, xsize, ysize, zsize);
+		region_2d = Region(x0, y0, z0, xsize, ysize, 1);
+		region_3d = Region(x0, y0, z0, xsize, ysize, zsize);
 	}
 	
-	int image_index = 0;
 	
 	EMData e2;
-	e2.read_image(imgfile, image_index, false, &region);
-	e2.write_image(imgfile3, 0, imgtype);
+	e2.read_image(imgfile, 0, false, &region_2d, is_3d);
+	e2.write_image(readfile_2d, 0, imgtype);
+
+	if (ndims == 3) {
+		EMData e4;
+		e4.read_image(imgfile, 0, false, &region_3d, is_3d);
+		e4.write_image(readfile_3d, 0, imgtype);
+	}
 
 	EMData e3;
 	e3.set_size(xsize, ysize, zsize);
 	e3.to_zero();
 	
-	e3.write_image(imgfile2, image_index, imgtype, false, &region);
+	e3.write_image(writefile_2d, 0, imgtype, false, &region_2d);
+	if (ndims == 3) {
+		e3.write_image(writefile_3d, 0, imgtype, false, &region_3d);
+	}
 }
 
 	
@@ -75,14 +89,13 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile)
 int main(int argc, char *argv[])
 {
 	try {
+#if 0
 		test_region(EMUtil::IMAGE_MRC, "groel3d.mrc");
 		test_region(EMUtil::IMAGE_MRC, "samesize1.mrc");
 		test_region(EMUtil::IMAGE_MRC, "tablet.mrc");
-#if 0
-		test_region(EMUtil::IMAGE_IMAGIC, 2);
-
-		test_region(EMUtil::IMAGE_MRC, 3);
-		test_region(EMUtil::IMAGE_IMAGIC, 3);
+#endif
+#if 1
+		test_region(EMUtil::IMAGE_IMAGIC, "start.hed");
 #endif
 		
 	}

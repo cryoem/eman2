@@ -158,6 +158,7 @@ void EmimIO::flush()
 
 bool EmimIO::is_complex_mode()
 {
+	init();
 	if (efh.flag & EMIM_COMPLEX) {
 		return true;
 	}
@@ -166,6 +167,7 @@ bool EmimIO::is_complex_mode()
 
 bool EmimIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

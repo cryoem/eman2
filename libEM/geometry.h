@@ -498,6 +498,14 @@ namespace EMAN
 		bool inside_region(float x, float y) const;
 		bool inside_region(float x, float y, float z) const;
 
+
+		/** To check whether 'this' region is inside a given box
+		 * assuming the box's origins are (0,0,0).
+		 * @param box The nD rectangular box.
+		 * @return True if 'this' region is inside the box; Otherwise, false.
+		 */
+		bool is_region_in_box(const FloatSize & box) const;
+		
 		/** Get the region's dimension.
 		 * @return The region's dimension.
 		 */

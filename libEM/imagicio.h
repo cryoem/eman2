@@ -51,7 +51,9 @@ namespace EMAN
 		{
 			return false;
 		}
+		
 		int get_nimg();
+		
 	  private:
 		static const char *HED_EXT;
 		static const char *IMG_EXT;

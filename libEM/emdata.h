@@ -1250,7 +1250,8 @@ namespace EMAN
 		void update_stat();
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void scale_pixel(float scale_factor) const;
-
+		void save_byteorder_to_dict(ImageIO * imageio);
+		
 	private:
 		
 		mutable Dict attr_dict; /** to store all image header info */

@@ -125,8 +125,8 @@ namespace EMAN
 		 * @param nz  Image z size.
 		 * @param image_index Image index.
 		 */
-		static void get_region_origins(const Region * area, int *p_x0, int *p_y0, int *p_z0 = 0,
-									   int nz = 1, int image_index = 0);
+		static void get_region_origins(const Region * area, int *p_x0, int *p_y0, 
+									   int *p_z0 = 0, int nz = 1, int image_index = 0);
 
 		/** Process image region IO. It eithers read a region from an
 		 * image file. Or write a region to an image file.
@@ -199,8 +199,7 @@ namespace EMAN
 		ImageScore* image_scores;
 		int n;
 
-	};
-		
+	};		
 }
 
 #endif

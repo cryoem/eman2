@@ -38,7 +38,8 @@ int main(int argc, char* argv[])
     EMData* d = 0;
 	try {
 		int nimg = EMUtil::get_image_count(imagefile);
-		const char* imgtype = EMUtil::get_imagetype_name(EMUtil::get_image_type(imagefile));
+		const char* imgtype =
+			EMUtil::get_imagetype_name(EMUtil::get_image_type(imagefile));
 		
 		printf("\n%20s: %d\n", "Number of Images", nimg);
 		printf("%20s: %s\n", "Image Format", imgtype);

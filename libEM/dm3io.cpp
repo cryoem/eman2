@@ -787,7 +787,6 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 bool DM3IO::is_complex_mode()
 {
-	init();
 	return false;
 }
 

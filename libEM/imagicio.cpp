@@ -156,7 +156,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		make_header_host_endian(hed);
 	}
 
-	check_region(area, IntSize(hed.nx, hed.ny, nimg));
+	check_region(area, FloatSize(hed.nx, hed.ny, nimg), is_new_hed);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
@@ -203,20 +203,28 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	return 0;
 }
 
-int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , bool)
+int ImagicIO::write_header(const Dict & dict, int image_index,
+						   const Region * area, bool)
 {
 	ENTERFUNC;
 
 	check_write_access(rw_mode, image_index);
-
 	nz = dict["nz"];
+	if (nz > 1 && image_index != 0) {
+		throw ImageWriteException(filename, "to write 3D IMAGIC image, image index must be 0");
+	}
+	
+	if (area) {
+		check_region(area, FloatSize(imagich.nx, imagich.ny, imagich.count+1),
+					 is_new_hed);
+		EXITFUNC;
+		return 0;
+	}
+	
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nimg=0;		//# images currently in file
 		
-	if (nz > 1 && image_index != 0) {
-		throw ImageWriteException(filename, "to write 3D IMAGIC image, image index must be 0");
-	}
 
 	if (!is_new_hed) {
 		if (imagich.nx != nx || imagich.ny != ny) {
@@ -225,7 +233,9 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 					nx, ny, imagich.nx, imagich.ny);
 			throw ImageWriteException(filename, desc);
 		}
-		if (datatype!=IMAGIC_FLOAT) throw ImageWriteException(filename, "Attempted write to non REAL Imagic file");
+		if (datatype!=IMAGIC_FLOAT) {
+			throw ImageWriteException(filename, "Attempted write to non REAL Imagic file");
+		}
 		rewind(hed_file);
 		nimg=imagich.count+1;
 	}
@@ -356,7 +366,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 		is_3d = false;
 	}
 	
-	check_region(area, IntSize(imagich.nx, imagich.ny, nimg));
+	check_region(area, FloatSize(imagich.nx, imagich.ny, nimg), is_new_hed);
 
 	rewind(img_file);
 
@@ -407,6 +417,8 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 	ENTERFUNC;
 
 	check_write_access(rw_mode, image_index, 0, data);
+	check_region(area, FloatSize(imagich.nx, imagich.ny, imagich.count+1),
+				 is_new_hed);
 	
 	if (nz == 1) {
 		if (image_index == -1) {
@@ -429,11 +441,13 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 	}
 #endif
 
-#if 1
+	// New way to write data which includes region writing.
+	// If it is tested to be OK, remove the old code in the
+	// #if 0  ... #endif block.
 	EMUtil::process_region_io(data, img_file, WRITE_ONLY, image_index,
 							  sizeof(float), imagich.nx, imagich.ny,
 							  nz, area, true);
-#endif
+
 
 #if 0
 	size_t row_size = imagich.nx * sizeof(float);
@@ -493,6 +507,7 @@ int ImagicIO::write_ctf(const Ctf & ctf, int)
 
 bool ImagicIO::is_complex_mode()
 {
+	init();
 	if (datatype == IMAGIC_FLOAT_COMPLEX || datatype == IMAGIC_FFT_FLOAT_COMPLEX) {
 		return true;
 	}
@@ -501,6 +516,7 @@ bool ImagicIO::is_complex_mode()
 
 bool ImagicIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

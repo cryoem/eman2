@@ -27,7 +27,7 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes IMAGIC, HDF, AMRIRA, SPIDER, SINGLE_SPIDER, PIF, VTK, XPLOR.
+       This includes HDF, AMRIRA, SPIDER, SINGLE_SPIDER, PIF, VTK, XPLOR.
 	   
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
@@ -45,15 +45,11 @@
        the file. The gap will be filled with zero. Check imagic format as
        an example.
 
-  075. ImageIO::write_data(), float* data should be changed to 'const
-       float* data'. 
-
   076. boost python function overloading doesn't work at certain situation.
 	   e.g. on mdk9.2, gcc 3.3.1, python 2.3, boost 1.31.0.
 	   But the function overloading works at other situations. Need to 
 	   figure out why.
-	   
-	   
+
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -111,7 +107,9 @@
          >>> help(EMAN2)
          gives a starting point.
 
-		 
+  077. In ImageIO region writing, if the region data is in different endian
+       order from the original image, the region data needs to be converted
+       into the proper endian order.
 
 --- Items Done ----
 
@@ -272,8 +270,6 @@
       rename Transform EMData::get_rotation() const;
 	  to get_transform().
 
-
-
   12/14/04 072. 
       Transform::get_rotation() does not work in python.
 
@@ -292,5 +288,22 @@
 		  1.45232928554 0.601708292961
 		  0.0 -1.45232927799
 
-  1/2/04 074. 
+  1/2/05 074. 
      Change 'string' to 'const string &' in functions whenever possible.
+
+  1/3/05 075.
+       ImageIO::check_read_access(), ImageIO::check_write_access(),
+	   float* data should be changed to 'const float* data'. 
+
+  1/3/05 078.
+       In e2iminfo, add new fields "ImageEndian" and "HostEndian". Useful
+       for debugging endian problems. These fields were only printed when
+	   using the -H option.
+
+  1/4/05 079. 
+       In ImageIO classes, is_image_big_endian() should run init() first.
+	   The same rule applies to other functions. the reason is that init()
+	   will read the first block of the image, so that image info  like
+	   endian can be returned.
+  
+	   

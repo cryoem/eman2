@@ -184,6 +184,7 @@ void Gatan2IO::flush()
 
 bool Gatan2IO::is_complex_mode()
 {
+	init();
 	if (gatanh.type == GATAN2_COMPLEX || gatanh.type == GATAN2_PACKED_COMPLEX) {
 		return true;
 	}
@@ -192,6 +193,7 @@ bool Gatan2IO::is_complex_mode()
 
 bool Gatan2IO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

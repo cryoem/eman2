@@ -145,7 +145,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	ENTERFUNC;
 
 	check_read_access(image_index);
-	check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz));
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
 	dict["apix_x"] = mrch.xlen / (mrch.nx - 1);
 	dict["apix_y"] = mrch.ylen / (mrch.ny - 1);
@@ -229,18 +229,13 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
-
+	check_write_access(rw_mode, image_index, 1);
 	if (area) {
-		if (is_new_file) {
-			throw ImageWriteException(filename,
-									  "file must exist before writing a region to it");
-		}
+		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 		EXITFUNC;
 		return 0;
 	}
 	
-	check_write_access(rw_mode, image_index, 1);
-
 	int new_mode = to_mrcmode(dict["datatype"], (int) dict["is_complex"]);
 	int nx = dict["nx"];
 	int ny = dict["ny"];
@@ -363,7 +358,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 		return 1;
 	}
 
-	check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz));
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz)), is_new_file;
 
 	unsigned char *cdata = (unsigned char *) rdata;
 	short *sdata = (short *) rdata;
@@ -410,17 +405,13 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	return 0;
 }
 
-/** for region write, we must check the following things:
-	1. The region is in the range of the image.
-	2. the data type is the same. If not, cast.
-	3. The endian must be the same. If not, swap.
-*/
 int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
 	check_write_access(rw_mode, image_index, 1, data);
-
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
+	
 	int nx = mrch.nx;
 	int ny = mrch.ny;
 	int nz = mrch.nz;

@@ -27,6 +27,7 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
         .def("inside_region", (bool (EMAN::Region::*)(const EMAN::FloatPoint&) const)&EMAN::Region::inside_region)
         .def("inside_region", (bool (EMAN::Region::*)(float, float) const)&EMAN::Region::inside_region)
         .def("inside_region", (bool (EMAN::Region::*)(float, float, float) const)&EMAN::Region::inside_region)
+        .def("is_region_in_box", &EMAN::Region::is_region_in_box)
         .def("get_ndim", &EMAN::Region::get_ndim)
         .def("get_string", &EMAN::Region::get_string)
     ;

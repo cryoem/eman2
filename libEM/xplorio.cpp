@@ -279,6 +279,7 @@ bool XplorIO::is_complex_mode()
 
 bool XplorIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

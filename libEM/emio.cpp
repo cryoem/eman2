@@ -237,6 +237,7 @@ void EmIO::flush()
 
 bool EmIO::is_complex_mode()
 {
+	init();
 	if (emh.data_type == EM_EM_COMPLEX) {
 		return true;
 	}
@@ -245,6 +246,7 @@ bool EmIO::is_complex_mode()
 
 bool EmIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

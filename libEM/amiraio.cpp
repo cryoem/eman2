@@ -151,6 +151,7 @@ bool AmiraIO::is_complex_mode()
 
 bool AmiraIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 

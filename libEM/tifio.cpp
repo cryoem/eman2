@@ -224,7 +224,7 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 int TiffIO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
-	LOGERR("TIFF write is not supported");
+	LOGERR("TIFF writing is not supported");
 	EXITFUNC;
 	return 0;
 }
@@ -232,7 +232,7 @@ int TiffIO::write_header(const Dict &, int, const Region* , bool)
 int TiffIO::write_data(float *, int, const Region* , bool)
 {
 	ENTERFUNC;
-	LOGERR("TIFF write is not supported");
+	LOGERR("TIFF writing is not supported");
 	EXITFUNC;
 	return 0;
 }

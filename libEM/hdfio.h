@@ -77,16 +77,17 @@ namespace EMAN
 		int get_num_dataset();
 		vector < int >get_image_indices();
 
-	  private:
+
 		enum Nametype
 		{ ROOT_GROUP, CTFIT, NUMDATASET, COMPOUND_DATA_MAGIC };
 		static const char *HDF5_SIGNATURE;
 
-	  private:
+
 		string filename;
 		IOMode rw_mode;
 		bool initialized;
-
+		bool is_new_file;
+		
 		hid_t file;
 		hid_t group;
 		hid_t cur_dataset;
@@ -100,7 +101,6 @@ namespace EMAN
 
 		vector < int >image_indices;
 
-	  private:
 		void hdf_err_off();
 		void hdf_err_on();
 

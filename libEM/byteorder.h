@@ -39,7 +39,7 @@ namespace EMAN
 		 * e.g., for 'int', number should < 65535;
 		 * for 'short', number should < 255.
 		 */
-		template < class T > static bool is_data_big_endian(T * small_num_addr)
+		template < class T > static bool is_data_big_endian(const T * small_num_addr)
 		{
 			if (!small_num_addr) {
 				return false;

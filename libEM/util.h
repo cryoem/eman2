@@ -293,7 +293,7 @@ namespace EMAN
 			return r;
 		}
 
-		static inline int goodf(float *f)
+		static inline int goodf(const float *f)
 		{
 			// the first is abnormal zero the second is +-inf or NaN 
 			if ((((int *) f)[0] & 0x7f800000) == 0 ||

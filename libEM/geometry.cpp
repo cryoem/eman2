@@ -67,6 +67,22 @@ bool Region::inside_region(float x, float y, float z) const
 	return false;
 }
 
+
+bool Region::is_region_in_box(const FloatSize & box) const
+{
+	if (size[0] >= 0 && size[1] >= 0 && size[2] >= 0 &&
+		origin[0] >= 0 && origin[1] >= 0 && origin[2] >= 0 &&
+		(origin[0] + size[0]) <= box[0] &&
+		(origin[1] + size[1]) <= box[1] &&
+		(origin[2] + size[2]) <= box[2]) {
+		return true;
+	}
+	
+	return false;	
+}
+
+
+
 string Region::get_string() const
 {
 	char str[1028];

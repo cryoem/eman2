@@ -17,6 +17,7 @@ using std::string;
 namespace EMAN
 {
 	class Region;
+	class FloatSize;
 	class IntSize;
 	class Ctf;
 
@@ -45,7 +46,7 @@ namespace EMAN
 	 * images, or a single 3D image. A boolean hint should be given for these
 	 * formats at reading time.
 	 *
-	 * Some image formats (e.g. HDF) can store a stack of images. Each
+	 * Some image formats (e.g. HDF, PIF) can store a stack of images. Each
 	 * image can be 2D or 3D.
 	 * 
 	 * For image formats storing multiple images, valid image_index = [0, n].
@@ -205,11 +206,15 @@ namespace EMAN
 	protected:
 		virtual void init() = 0;
 		void check_read_access(int image_index);
-		void check_read_access(int image_index, float *data);
+		void check_read_access(int image_index, const float *data);
 		void check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0);
-		void check_write_access(IOMode rw_mode, int image_index, int max_nimg, float *data);
-		void check_region(const Region * area, const IntSize & max_size);
-
+		void check_write_access(IOMode rw_mode, int image_index, int max_nimg,
+								const float *data);
+		void check_region(const Region * area, const FloatSize & max_size,
+						  bool is_new_file = false);
+		void check_region(const Region * area, const IntSize & max_size,
+						  bool is_new_file = false);
+		
 		FILE *sfopen(const string & filename, IOMode mode,
 					 bool * is_new = 0, bool overwrite = false);
 	};

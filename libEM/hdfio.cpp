@@ -32,6 +32,7 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
 {
 	initialized = false;
+	is_new_file = false;
 	file = -1;
 	group = -1;
 	cur_dataset = -1;
@@ -55,7 +56,7 @@ void HdfIO::init()
 	}
 
 	initialized = true;
-	bool is_new_file = false;
+	
 	FILE *tmp_file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
@@ -206,7 +207,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 		throw ImageReadException(filename, "invalid image dimensions");
 	}
 	
-	check_region(area, IntSize(nx, ny, nz));
+	check_region(area, FloatSize(nx, ny, nz));
 
 	int err = 0;
 	if (!area) {
@@ -272,11 +273,26 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 
-int HdfIO::write_header(const Dict & dict, int image_index, const Region* , bool)
+int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index);
 
+	if (area) {
+		int nx0 = 0;
+		int ny0 = 0;
+		int nz0 = 0;
+		
+		if (get_hdf_dims(image_index, &nx0, &ny0, &nz0) != 0) {
+			throw ImageReadException(filename, "invalid image dimensions");
+		}
+
+		check_region(area, FloatSize(nx0, ny0, nz0), is_new_file);
+
+		EXITFUNC;
+		return 0;		
+	}
+	
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nz = dict["nz"];

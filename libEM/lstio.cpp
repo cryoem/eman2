@@ -215,6 +215,7 @@ bool LstIO::is_complex_mode()
 
 bool LstIO::is_image_big_endian()
 {
+	init();
 	return is_big_endian;
 }
 
