@@ -23,30 +23,32 @@ namespace EMAN
      *
 	 * All Projector classes in EMAN are managed by a Factory
 	 * pattern. So each Projector class must define:
-	 *   a) a unique name to idenfity itself in the factory.
-	 *   b) a static method to register itself in the factory.
+	 *   - a unique name to idenfity itself in the factory.
+	 *   - a static method to register itself in the factory.
 	 *
      * Typical usage of Projectors:
      *
-     * 1. How to get all the Projector types
-     *
+     *  - How to get all the Projector types
+     @code
      *    vector<string> all_projectors = Factory<Projector>::get_list();
-     *
-     * 2. How to use a Projector
-     *
+     @endcode
+	 *
+     *  - How to use a Projector
+     @code
      *    EMData* img = ...;
      *    Projector* proj = Factory<Projector>::get("FFT");
      *    EMData* result = proj->project3d(img);
-     *
-     * 3. How to define a new Projector
-     *
+     @endcode
+	 *
+     *  - How to define a new Projector
      *    A new projector type "XYZProjector" should implement at
      *    least the following 3 functions:
-     *
+     @code
      *        EMData *project3d(EMData * em) const;
      *        string get_name() const { return "XYZ"; }
      *        static Projector* NEW() { return new XYZProjector(); }
-     */
+	 @endcode
+	*/
 
 	class Projector
 	{

@@ -62,6 +62,7 @@ namespace EMAN
 		 *
 		 * @param dict A keyed-dictionary storing the header information.
 		 * @param image_index The index of the image to write.
+		 * @param area The region to write data to.
 		 * @param use_host_endian Whether to use the host machine
 		 *        endian to write out or not. If false, use the
 		 *        endian opposite to the host machine's endian.
@@ -88,6 +89,7 @@ namespace EMAN
 		 *
 		 * @param data An array storing the data.
 		 * @param image_index The index of the image to write.
+		 * @param area The region to write data to.
 		 * @param use_host_endian Whether to use the host machine
 		 *        endian to write out or not. If false, use the
 		 *        endian opposite to the host machine's endian.

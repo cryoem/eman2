@@ -27,11 +27,6 @@
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
 
-  031. Fix the documentation for 2 things:
-	   1) new logging API;
-	   2) new filter name conventions.
-
-
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -107,6 +102,11 @@
 		SharpMask -> MaskSharp
 		StdNormalize -> NormalizeStd
 		EdgeMeanNormalize -> NormalizeEdgeMean
+
+
+  9/20/04 031. Fix the documentation for 2 things:
+	       1) new logging API;
+	       2) new filter name conventions.
 
 
 	   

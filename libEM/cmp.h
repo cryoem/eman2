@@ -24,31 +24,33 @@ namespace EMAN
 	 *
 	 * All Cmp classes in EMAN are managed by a Factory pattern. So 
 	 * each Cmp class must define:
-	 *   a) a unique name to idenfity itself in the factory.
-	 *   b) a static method to register itself in the factory.
+	 *   - a unique name to idenfity itself in the factory.
+	 *   - a static method to register itself in the factory.
 	 *
 	 *
      * Typical usage of Cmp:
      *
-     * 1. How to get all Cmp names
-     *
+     *  - How to get all Cmp names
+     @code
      *      vector<string> all_cmps = Factory<Cmp>::get_list();
-     *
-     * 2. How to use a Cmp
-     *
+     @endcode
+	 *
+     *  - How to use a Cmp
+     @code
      *      EMData *image1 = ...;
      *      EMData *image2 = ...;
      *      float result = image1->cmp("CMP_NAME", Dict("with", image2));
-     *
-     * 3. How to define a new Cmp class
-     *
+     @endcode
+	 *
+     *  - How to define a new Cmp class \n
      *    A new XYZCmp class should implement the following functions:
 	 *    (Please replace 'XYZ' with your own class name).
-	 *
+	 @code
      *        float cmp(EMData * image, Transform * transform = 0) const;
      *        TypeDict get_param_types() const;
      *        string get_name() const { return "XYZ"; }
      *        static Cmp *NEW() { return XYZCmp(); }
+	 @endcode
      */
 
 	class Cmp

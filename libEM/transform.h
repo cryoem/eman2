@@ -230,24 +230,24 @@ namespace EMAN
 
 		void make_identity();
 
-	/** this = this * m
+		/** this = this * m
 	 */
 		Matrix3f & mult_right(const Matrix3f & m);
 
-	/** this = m * this
-	 */
+		/** this = m * this
+		 */
 		Matrix3f & mult_left(const Matrix3f & m);
 
 		void set_value(const vector < float >&m);
 		vector < float >get_value() const;
 
-	/** inverse this matrix and return it.
-	 */
+		/** inverse this matrix and return it.
+		 */
 		Matrix3f & inverse();
 		Matrix3f & transpose();
 
-	/** return the inverse of this matrix without changing this matrix.
-	 */
+		/** return the inverse of this matrix without changing this matrix.
+		 */
 		Matrix3f create_inverse() const;
 
 		Vec3 < float >get_vector(int i) const;
@@ -388,12 +388,12 @@ namespace EMAN
 
 		Matrix4f & operator=(const Matrix4f & m);
 
-	/** this = this * m
-	 */
+		/** this = this * m
+		 */
 		Matrix4f & mult_right(const Matrix4f & m);
 
-	/** this = m * this
-	 */
+		/** this = m * this
+		 */
 		Matrix4f & mult_left(const Matrix4f & m);
 
 		void make_identity();
@@ -402,13 +402,13 @@ namespace EMAN
 		vector < float >get_value() const;
 		Matrix3f get_matrix3() const;
 
-	/** inverse this matrix and return it.
-	 */
+		/** inverse this matrix and return it.
+		 */
 		Matrix4f & inverse();
 		Matrix4f & transpose();
 
-	/** return the inverse of this matrix without changing this matrix.
-	 */
+		/** return the inverse of this matrix without changing this matrix.
+		 */
 		Matrix4f create_inverse() const;
 
 		Matrix4f & operator+=(float f);
@@ -550,9 +550,9 @@ namespace EMAN
      * Any rotation may be described using three angles called Euler Angles.
      * There are several conventions for Euler angles, depending on
      * the axes about which the rotations are carried out.    
-     *   1. x-convention: (z, x, z')
-     *   2. y-convention
-     *   3. xyz-convention
+     *   - x-convention: (z, x, z')
+     *   - y-convention
+     *   - xyz-convention
      *
      * Currently the following conventions are supported: EMAN,
      * IMAGIC, SPIN,  QUATERNION, MATRIX, SGIROT, SPIDER, MRC.

@@ -27,11 +27,12 @@ namespace EMAN
 	class XYData;
 
 	/** EMData stores an image's data and defines core image processing routines.
-     * The image is 2D or 3D, in real space or fourier space (complex image).
+     * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
      */
 	class EMData
 	{
 	public:
+		/** Construct an empty EMData instance. It has no image data. */
 		EMData();
 		virtual ~ EMData();
 
@@ -44,6 +45,8 @@ namespace EMAN
 		 * @param is_3d  Whether to treat the image as a single 3D or a
 		 *   set of 2Ds. This is a hint for certain image formats which
 		 *   has no difference between 3D image and set of 2Ds.
+		 * @exception ImageFormatException
+		 * @exception ImageReadException
 		 */
 		void read_image(string filename, int img_index = 0, bool header_only = false,
 						const Region * region = 0, bool is_3d = false);
@@ -55,7 +58,11 @@ namespace EMAN
 		 * @param imgtype Write to the given image format type. if not
 		 *        specified, use the 'filename' extension to decide.
 		 * @param header_only To write only the header or both header and data.
+		 * @param region Define the region to write to.
 		 * @param use_host_endian To write in the host computer byte order.
+		 * 
+		 * @exception ImageFormatException
+		 * @exception ImageWriteException
 		 */
 		void write_image(string filename, int img_index = 0,
 						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
@@ -106,21 +113,46 @@ namespace EMAN
 		 */
 		EMData *project(string projector_name, const Dict & params = Dict());
 
-		/** Return a copy of this image including both data and header*/
+		/** Make a copy of this image including both data and header.
+		 * @param withparent Copy the parent or not.
+		 * @return A copy of this image including both data and header.
+		 */
 		EMData *copy(bool withparent = true);
 		
-		/** Return a image with only a copy of the header */
+		/** Make an image with a copy of the current image's header.
+		 * @return An image with a copy of the current image's header.
+		 */
 		EMData *copy_head();
 
-		/** Inclusive clip. Pads 0 if larger than this image. */
+		/** Get an inclusive clip. Pads 0 if larger than this image.
+		 * @param area The clip area.
+		 * @return The clip image.
+		 */
 		EMData *get_clip(const Region & area);
-		void insert_clip(EMData * block, const IntPoint & originn);
+
+		/** Insert a clip into this image.
+		 * @param block An image block.
+		 * @param origin The origin location to insert the clip.
+		 * @exception ImageFormatException If clip is outside of the
+		 * destination image (i.e., this image).
+		 */
+		void insert_clip(EMData * block, const IntPoint & origin);
+
+		/** Get the top half of this 3D image.
+		 * @exception ImageDimensionException If this image is not 3D.
+		 * @return The top half of this image.
+		 */
 		EMData *get_top_half() const;
 		
-		/** This will exctract an arbitrarily oriented and sized region from the
-		 *  image. The orientation is defined by rotating the target image into
-		 *  the source image ('this'). 'center' defines the location of the
-		 *  center of the returned image in 'this'
+		/** This will extract an arbitrarily oriented and sized region from the
+		 *  image. 
+		 *
+		 *  @param center The location of the center of returned image in 'this'.
+		 *  @param orient The orientation. It is defined by rotating the 
+		 *  target image into the source image ('this'). 
+		 *  @param size Size of the clip.
+		 *  @param scale Scaling put on the returned image.
+		 *  @return The clip image.
 		 */ 
 		EMData *get_rotated_clip(FloatPoint &center, Rotation &orient, IntSize &size, float scale=1.0);
 				
@@ -133,24 +165,88 @@ namespace EMAN
 		void insert_scaled_sum(EMData *block, const FloatPoint&center, float scale=1.0, float mult=1.0);
 
 		/** return the fast fourier transform image of the current
-		 * image. the current image is not changed.
-		 * the result is in real/imaginary format.
+		 * image. the current image is not changed. The result is in
+		 * real/imaginary format.
+		 *
+		 * @return The FFT of the current image in real/imaginary format.
 		 */
 		EMData *do_fft();
 
 		/** return the inverse fourier transform image of the current
-		 * image. the current image is not changed. 
+		 * image. the current image is not changed.
+		 * @exception ImageFormatException If the image is not a complex image.
+		 * @return The current image's inverse fourier transform image.
 		 */
 		EMData *do_ift();
 
+		/** Caclulates normalization and phase residual for a slice in
+		 * an already existing volume. phase residual is calculated
+		 * using only the inner 1/2 of the fourier sphere. Both the
+		 * slice image and this image must be in complex image format.
+		 *
+		 * @param slice An slice image to be normalized.
+		 * @param r Orientation of the slice.
+		 * @exception ImageFormatException If the images are not complex.
+		 * @exception ImageDimensionException If the image is 3D.
+		 * @return A float number pair (result, phase-residual).
+		 */
+		FloatPoint normalize_slice(EMData * slice, const Rotation & orient);
+
+		/** Caclulates normalization and phase residual for a slice in
+		 * an already existing volume. phase residual is calculated
+		 * using only the inner 1/2 of the fourier sphere. Both the
+		 * slice image and this image must be in complex image format.
+		 *
+		 * @param slice An slice image to be normalized.
+		 * @param alt Orientation angle alt (in EMAN convention).
+		 * @param az Orientation angle  az (in EMAN convention).
+		 * @param phi Orientation angle phi (in EMAN convention).
+		 * @exception ImageFormatException If the images are not complex.
+		 * @exception ImageDimensionException If the image is 3D.
+		 * @return A float number pair (result, phase-residual).
+		 */
 		FloatPoint normalize_slice(EMData * slice, float alt, float az, float phi);
 
+		/** Render the image into an 8-bit image. 2D image only.
+		 *
+		 * @param data
+		 * @param x
+		 * @param y
+		 * @param xsize
+		 * @param ysize
+		 * @param bpl
+		 * @param scale
+		 * @param min_gray
+		 * @param max_gray
+		 * @param min_render
+		 * @param max_render
+		 */
 		void render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
 						 float min_render, float max_render);
+		
+		/** wrapper to render_amp8. The data pointer is casted to a
+		 * long integer.
+		*/
 		void render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
 								 int bpl, float scale, int min_gray, int max_gray,
 								 float min_render, float max_render);
+
+		/** Render the image into a 24-bit image. 2D image only.
+		 * @param data
+		 * @param x
+		 * @param y
+		 * @param xsize
+		 * @param ysize
+		 * @param bpl
+		 * @param scale
+		 * @param min_gray
+		 * @param max_gray
+		 * @param min_render
+		 * @param max_render
+		 * @param ref
+		 * @param cmap
+		 */		 
 		void render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
 						  int bpl, float scale, int min_gray, int max_gray,
 						  float min_render, float max_render,
@@ -163,7 +259,10 @@ namespace EMAN
 
 		float *setup4slice(bool redo = false);
 
-		void scale(float s);
+		/** scale the image by a factor.
+		 * @param scale_factor scale factor.
+		 */
+		void scale(float scale_factor);
 
 		void translate(float dx, float dy, float dz);
 		void translate(const Vec3 < float >&translation);
@@ -308,8 +407,9 @@ namespace EMAN
 		/** Make all the pixel value = 1. */
 		void to_one();
 
+		/** Dump the image data to a binary file. Used for debugging purpose. */
 		void dump_data(string filename);
-
+		
 		void add_incoherent(EMData * obj);
 
 		vector < float >calc_fourier_shell_correlation(EMData * with);

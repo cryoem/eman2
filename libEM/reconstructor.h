@@ -22,8 +22,10 @@ namespace EMAN
 
 
 	/** Reconstructor class defines a way to do 3D recontruction.
-	 * A reconstruction is done by 3 steps: 1) set up; 2) insert all
-	 * image slices; 3) finish up. The last step will return the result.
+	 * A reconstruction is done by 3 steps:
+	 *   - set up.
+	 *   - insert all image slices.
+	 *   - finish up. The last step will return the result.
 	 * 
 	 * Reconstructor class is the base class for all reconstructors.
      * Each specific Reconstructor class has a unique ID name. This name
@@ -31,35 +33,37 @@ namespace EMAN
      *
 	 * All Reconstructor classes in EMAN are managed by a Factory
 	 * pattern. So each Reconstructor class must define:
-	 *   a) a unique name to idenfity itself in the factory.
-	 *   b) a static method to register itself in the factory.
+	 *   - a unique name to idenfity itself in the factory.
+	 *   - a static method to register itself in the factory.
 	 *
      * Typical usages of Reconstructors are as follows:
      * 
-     * 1. How to get all the Reconstructor names:
-     * 
+     *  - How to get all the Reconstructor names:
+     *@code
      *    vector<string> all_reconstructors = Factory<Reconstructor>::get_list();
-     * 
-     * 2. How to use a Reconstructor
-     * 
+     @endcode
+	 *
+     *  - How to use a Reconstructor
+     *@code 
      *    Reconstructor* r = Factory<Reconstructor>::get("Fourier");
      *    r->setup();
      *    r->insert_slice(slice1, euler1);
      *    insert more
      *    EMData* result = r->finish();
-     * 
-     * 3. How to define a new Reconstructor type
-     *
+     @endcode
+	 *
+     *  - How to define a new Reconstructor type \n     
      *    A new XYZReconstructor class must implement the following functions:
      *    (Please replace 'XYZ' with your own class name).
-	 *
+	 @code
      *        void setup();
      *        int insert_slice(EMData * slice, const Rotation & euler);
      *        EMData * finish();
      *        string get_name() const { return "XYZ"; }
      *        static Reconstructor *NEW() { return new XYZReconstructor(); }
      *        TypeDict get_param_types() const;
-     */
+	 @endcode
+	*/
 	class Reconstructor
 	{
 	  public:
@@ -75,9 +79,9 @@ namespace EMAN
 		/** Insert an image slice to the reconstructor. To insert multiple
 		 * image slices, call this function multiple times.
 		 *
-		 * @param slice: Image slice.
-		 * @euler: Euler angle of this image slice.
-		 * @return: 0 if OK. 1 if error.
+		 * @param slice Image slice.
+		 * @param euler Euler angle of this image slice.
+		 * @return 0 if OK. 1 if error.
 		 */
 		virtual int insert_slice(EMData * slice, const Rotation & euler) = 0;
 

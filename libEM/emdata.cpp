@@ -407,12 +407,11 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	int nz1 = block->get_zsize();
 
 	Region area(nx1, ny1, nz1, origin.x, origin.y, origin.z);
-#if 0
-	if (area.inside_region(IntSize(nx, ny, nz))) {
-		LOGERR("outside of destination image not supported.");
-		return;
+
+	if (area.inside_region(nx, ny, nz)) {
+		throw ImageFormatException("outside of destination image not supported.");
 	}
-#endif
+
 	int x0 = origin.x;
 	int y0 = origin.y;
 	int y1 = origin.y + ny1;
@@ -524,6 +523,10 @@ else LOGERR("insert_scaled_sum supports only 2D and 3D data");
 EMData *EMData::get_top_half() const
 {
 	ENTERFUNC;
+
+	if (nz <= 1) {
+		throw ImageDimensionException("3D only");
+	}
 	
 	EMData *half = new EMData();
 	half->attr_dict = attr_dict;
@@ -720,28 +723,26 @@ EMData *EMData::do_ift()
 }
 
 
-FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
+FloatPoint EMData::normalize_slice(EMData * slice, const Rotation & rotation)
 {
 	ENTERFUNC;
 	
 	if (!is_complex() || !slice->is_complex() || !parent) {
-		LOGERR("normalize slice only works on complex images");
-		return FloatPoint();
+		throw ImageFormatException("complex images only");
 	}
 
+	if (get_ndim() != slice->get_ndim() ||
+		get_ndim() > 2) {
+		throw ImageDimensionException("2D only");
+	}
+	
 	slice->ap2ri();
 	get_data();
 
 	float *norm = parent->get_data();
 	float *dat = slice->get_data();
-	float mx[6];
-	mx[0] = (cos(phi) * cos(az) - cos(alt) * sin(az) * sin(phi));
-	mx[1] = -(sin(phi) * cos(az) + cos(alt) * sin(az) * cos(phi));
-	mx[2] = (cos(phi) * sin(az) + cos(alt) * cos(az) * sin(phi));
-	mx[3] = (-sin(phi) * sin(az) + cos(alt) * cos(az) * cos(phi));
-	mx[4] = sin(alt) * sin(phi);
-	mx[5] = sin(alt) * cos(phi);
-
+	Matrix3f mx = rotation.get_matrix3();
+	
 	float r = 0;
 	float rn = 0;
 	float pr = 0;
@@ -753,9 +754,9 @@ FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float ph
 			float rad = hypot(x, y - ny / 2);
 
 			if (rad < ny / 2 - 1) {
-				float xx = x * mx[0] + (y - ny / 2) * mx[1];
-				float yy = x * mx[2] + (y - ny / 2) * mx[3];
-				float zz = x * mx[4] + (y - ny / 2) * mx[5];
+				float xx = x * mx[0][0] + (y - ny / 2) * mx[0][1];
+				float yy = x * mx[1][0] + (y - ny / 2) * mx[1][1];
+				float zz = x * mx[2][0] + (y - ny / 2) * mx[2][1];
 				float cc = 1.0f;
 				if (xx < 0) {
 					xx = -xx;
@@ -814,6 +815,11 @@ FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float ph
 
 	EXITFUNC;
 	return FloatPoint(r, phaseres);
+}
+
+FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
+{
+	return normalize_slice(slice, Rotation(alt, az, phi, Rotation::EMAN));
 }
 
 
@@ -2288,7 +2294,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 
 	if (nz != 1) {
 		LOGERR("2D Images only");
-		throw ImageFormatException("2D Images only");
+		throw ImageDimensionException("2D only");
 	}
 
 	float *this_data = 0;
@@ -2944,7 +2950,7 @@ EMData *EMData::do_radon()
 	
 	if (nx != ny || nz != 1) {
 		LOGERR("2D images only");
-		throw ImageFormatException("2D images only");
+		throw ImageDimensionException("2D images only");
 	}
 
 	EMData *result = new EMData();
@@ -3257,8 +3263,8 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		throw ImageFormatException( "images not same size");
 	}
 	if (nz > 1) {
-		LOGERR("only works on 2D images");
-		throw ImageFormatException( "2D images only");
+		LOGERR("2D images only");
+		throw ImageDimensionException( "2D images only");
 	}
 
 	EMData *cf = new EMData();

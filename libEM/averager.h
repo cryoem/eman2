@@ -26,17 +26,18 @@ namespace EMAN
 	 *
 	 * All Averager classes in EMAN are managed by a Factory
 	 * pattern. So each Averager class must define:
-	 *   a) a unique name to idenfity itself in the factory.
-	 *   b) a static method to register itself in the factory.
+	 *   - a unique name to idenfity itself in the factory.
+	 *   - a static method to register itself in the factory.
 	 *
      * Typical usages of Averager:
      *
-     * 1. How to get all Averager types
-     *
+     *  - How to get all Averager types
+     @code
      *    vector<string> all_averagers = Factory<Averager>::get_list();
-     *
-     * 2. How to use an Averager
-     *
+     @endcode
+	 *
+     *  - How to use an Averager
+     @code
      *    Averager *imgavg = Factory<Averager>::get("Image");
      *    vector<EMData *> images(2);
      *    EMData *image1 = ...;
@@ -46,16 +47,18 @@ namespace EMAN
 	 *    imgavg->add_image(image1);
 	 *    imgavg->add_image(image2);
      *    EMData *result = imgavg->finish();
+	 @endcode
      *
-     * 3. How to define a new XYZAverager
-     *
+     *  - How to define a new XYZAverager \n
      *    XYZAverager should extend Averager and implement the
      *    following functions:
      *    (Please replace 'XYZ' with your own class name).
+	 @code
      *        void add_image(EMData * image);
 	 *        EMData * finish();
      *        string get_name() const { return "XYZ"; }
      *        static Averager *NEW() { return new XYZAverager(); }
+	 @endcode
      */
 	class Averager
 	{

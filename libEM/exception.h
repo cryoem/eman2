@@ -45,6 +45,18 @@ namespace EMAN {
 
 #define ImageFormatException(desc) _ImageFormatException(desc, __FILE__, __LINE__)
 
+	
+	class _ImageDimensionException : public Exception
+	{
+	public:
+		_ImageDimensionException(const string& desc, const string& file = "unknown",
+							 int line = 0)
+			: Exception(file, line, desc) {}
+	};
+
+#define ImageDimensionException(desc) _ImageDimensionException(desc, __FILE__, __LINE__)
+
+	
 	class _ImageReadException : public Exception
 	{
 	public:

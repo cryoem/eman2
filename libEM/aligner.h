@@ -14,39 +14,40 @@ namespace EMAN
 	class Cmp;
 
 	/** Aligner class defines image alignment method. It aligns 2
-	 * images based on a user-given comparison method.
-	 * 
+	 * images based on a user-given comparison method. 
 	 * Aligner class is the base class for all aligners. Each
      * specific Aligner class has a unique name. This name is used to
      * create a new Aligner instance or call an Aligner.
      *
 	 * All Aligner classes in EMAN are managed by a Factory
 	 * pattern. So each Aligner class must define:
-	 *   a) a unique name to idenfity itself in the factory.
-	 *   b) a static method to register itself in the factory.
+	 *   - a unique name to idenfity itself in the factory.
+	 *   - a static method to register itself in the factory.
 	 *
 	 *
      * Typical usage of Aligners:
      *
-     * 1. How to get all the Aligner types
-     *
+     *  - How to get all the Aligner types
+     @code
      *    vector<string> all_aligners = Factory<Aligner>::get_list();
-     *
-     * 2. How to use an Aligner
-     *
+     @endcode
+	 *
+     *  - How to use an Aligner
+     @code
      *    EMData *image1 = ...;
      *    EMData *image2 = ...;
      *    image1->align("ALIGNER_NAME", Dict("to", image2));
-     *
-     * 3. How to define a new Aligner class
-     *
+     @endcode
+	 
+     *  - How to define a new Aligner class \n
      *    A new XYZAligner class should implement the following functions:
      *    (Please replace 'XYZ' with your own class name).
-	 *
+	 @code
      *        EMData *align(EMData * this_img, string cmp_name = "") const;
      *        TypeDict get_param_types() const;
      *        string get_name() const { return "XYZ"; }
      *        static Aligner* NEW() { return new XYZAligner(); }
+	 @endcode
      */
 	class Aligner
 	{
