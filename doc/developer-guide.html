@@ -1,0 +1,321 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>guide.html</title>
+</head>
+<body style="color: rgb(0, 0, 0);" alink="#ee0000" link="#0000ee"
+ vlink="#551a8b">
+<div style="text-align: center;"><big style="color: rgb(51, 51, 255);"><span
+ style="font-weight: bold;"><br>
+<big>EMAN2: Developer's Guide</big></span></big><br>
+</div>
+<br>
+As a redesign based on EMAN1, EMAN2 is more object-oriented, and is
+more modular, and is designed to be easier to use for both regular
+users and developers. <br>
+<ol>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+read/write an image in python?</big></li>
+  <ul>
+    <li
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">#
+to convert from IMAGIC to MRC or SPIDER:<br>
+      <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e = EMData()</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.read_image(&#8220;proj.img&#8221;)</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.write_image(&#8220;proj.mrc&#8221;)&nbsp;&nbsp;&nbsp;&nbsp;
+# output image format is determined by file ext</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.write_image(&#8220;proj.spi&#8221;, 1,
+SPIDER)&nbsp; # alternatively, explicitly specifiy the output image
+format</span><br>
+      <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+define a&nbsp; XYZFilter?</big></li>
+  <ul>
+    <li
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">&nbsp;
+      <br>
+      <span style="color: rgb(0, 0, 0);">/* 1) Replace all 'XYZ' with
+your new filter name.</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;* 2) Define the filter
+parameter names and types in get_param_types().</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;* 3) Implement the
+filter in XYZFilter::process().</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;*/</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">class XYZFilter : public
+Filter {</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">public:</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; void
+process(EMData *image);</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; string
+get_name() const { return "XYZ"; }</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; static
+Filter *NEW() { return new XYZFilter(); }</span><span
+ style="color: rgb(0, 0, 0);"></span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; TypeDict
+get_param_types() const</span><span style="color: rgb(0, 0, 0);"> {</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+TypeDict d;</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+d.put("value1", EMObject::INT);</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; d.put("value2", EMObject::FLOAT);</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp; &nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return d;</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; }</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">};</span><br>
+      <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+use a Filter in python?</big></li>
+  <ul>
+    <li
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
+      <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0);">
+      <br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e = EMData()</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.read_image("test1.mrc")</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.filter("ValueSqrt")</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.filter("RangeMask", {"low" :
+5.2, "high" : 10})</span><br style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">e.write_image("output.mrc")</span></li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+show all Filters?</big></li>
+  <ul>
+    <li
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
+      <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0);">
+      <span style="color: rgb(0, 0, 0);">EMUtil.dump_filters()</span><br>
+      <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+use boost python?</big></li>
+  <ul>
+    <li>EMAN2 use <span style="font-weight: bold;">Pyste</span> to
+automatically parse the C++ code to generate
+boost python wrapper. To use Pyste, <br>
+    </li>
+    <ol>
+      <li>Install Pyste libraries/tools: a) <span
+ style="font-weight: bold;">Pyste</span> in boost library; b) <span
+ style="font-weight: bold;">elementtree</span> c) <span
+ style="font-weight: bold;">gccxml</span></li>
+      <li>Create or modify the pyste file. e.g.,
+        <span style="font-style: italic;">eman2/libpyEM/filter.pyste</span>.
+For a function that return a pointer, a return-policy
+must be defined in the pyste file. The typical cases
+are: <br>
+      </li>
+      <ol>
+        <li>If the function returns a pointer allocated in this
+function, do: <span
+ style="font-family: courier new,courier,monospace; color: rgb(0, 153, 0); font-weight: bold;">set_policy(YOUR_FUNCTION,
+return_value_policy(manage_new_object))</span></li>
+        <li>If the function returns a static pointer , do: <span
+ style="font-family: courier new,courier,monospace; color: rgb(0, 153, 0); font-weight: bold;">set_policy(YOUR_FUNCTION,
+return_value_policy(reference_existing_object))</span></li>
+        <li>For other cases, do: <span
+ style="font-family: courier new,courier,monospace; color: rgb(0, 153, 0); font-weight: bold;">set_policy(YOUR_FUNCTION,
+return_internal_reference())</span></li>
+      </ol>
+      <li>Run script: <span style="font-weight: bold;"><span
+ style="color: rgb(0, 153, 0);">eman2/libpyEM/create_boost_python</span><br>
+        <br>
+        </span></li>
+    </ol>
+  </ul>
+  <li style="color: rgb(51, 51, 255);"><big>How to use Factory classes
+like Filter, Aligner, Averager, Cmp, Projector, Reconstructor?</big></li>
+  <ul>
+    <li>EMAN has many functions that implement specific algorithms to
+do image processing.&nbsp; These algorithms are relatively independent
+and a user chooses which one to use. In EMAN2, we define a <span
+ style="font-weight: bold;">Factory</span>
+class to manage these algorithms, including <br>
+    </li>
+    <ul>
+      <li><span style="font-weight: bold;">Filter</span> (image filter)</li>
+      <li><span style="font-weight: bold;">Aligner</span> (2D/3D image
+alignment)</li>
+      <li><span style="font-weight: bold;">Averager</span> (averaging a
+set of images)</li>
+      <li><span style="font-weight: bold;">Cmp</span> (comparing 2
+same-size Images)</li>
+      <li><span style="font-weight: bold;">Projector</span> (3D image
+projection)</li>
+      <li><span style="font-weight: bold;">Reconstructor</span> (3D
+image reconstruction)</li>
+    </ul>
+    <li style="color: rgb(51, 51, 255);"><big>How to define/use a
+XYZFilter</big></li>
+    <ul>
+      <li>Filter is the base class. <span style="font-weight: bold;">XYZFilter</span>
+should extend Filter or a
+subclass of Filter.</li>
+      <li>filters are identified by names. <span
+ style="font-weight: bold;">XYZFilter</span>'s name should be
+"XYZ" for consistency.</li>
+      <li><span style="font-weight: bold;">XYZFilter</span> must define
+a static function to construct a new
+XYZFilter instance. This function is going to be stored in the Filter
+Factory.<br>
+      </li>
+      <li>To use <span style="font-weight: bold;">XYZFilter</span>: <span
+ style="color: rgb(0, 153, 0);">EMData* img1 = ...;
+img1-&gt;filter("XYZ");</span></li>
+    </ul>
+    <li style="color: rgb(51, 51, 255);"><big>How to use the <span
+ style="font-weight: bold;">Factory</span>
+template</big></li>
+    <ul>
+      <li style="background-color: rgb(255, 255, 204);">template&lt;&gt;
+Factory&lt;Filter&gt;::Factory()<br>
+{<br>
+&nbsp;&nbsp;&nbsp; add(&amp;AbsoluateValueFilter::NEW);<br>
+&nbsp;&nbsp;&nbsp; add(&amp;GaussLowpassFilter::NEW);<br>
+}<br>
+        <br>
+      </li>
+    </ul>
+    <ul>
+      <li style="background-color: rgb(255, 255, 204);"><br>
+Filter *abs_filter = Factory&lt;Filter&gt;::get("AbsoluateValue");<br>
+Filter *gauss_lowpass_filter =
+Factory&lt;Filter&gt;::get("GaussLowpass", Dict("lowpass", 12);<br>
+        <br>
+      </li>
+    </ul>
+  </ul>
+  <li style="font-weight: bold; color: rgb(51, 51, 255);"><big>How to
+use FFTW library?</big></li>
+  <ul>
+    <li>EMAN2 works with both <span style="font-weight: bold;">fftw2</span>
+and <span style="font-weight: bold;">fftw3.</span> A user makes the
+choice
+at compile time.</li>
+    <li>A standard interface is defined to do fft:</li>
+    <li style="background-color: rgb(255, 255, 204);">class <span
+ style="font-weight: bold;">EMfft</span> {<br>
+public:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
+real_to_complex_1d(float *real_data, float *complex_data, int n);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
+complex_to_real_1d(float *complex_data, float *real_data, int n);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
+real_to_complex_nd(float *real_data, float *complex_data, int nx, int
+ny, int nz);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
+complex_to_real_nd(float *complex_data, float *real_data, int nx, int
+ny, int nz);<br>
+&nbsp;};<br>
+      <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+handle image data
+byte-order?</big></li>
+  <ul>
+    <li><span style="font-weight: bold;">ByteOrder</span> class is
+defined to handle data byte-orders:</li>
+    <ul>
+      <li>check running-host byte-order;</li>
+      <li>check a given data-block byte-order;</li>
+      <li>convert host byte-order to little-endian or big-endian</li>
+      <li>swap byte-orders<br>
+        <br>
+      </li>
+    </ul>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+handle large-file
+(&gt;2G) IO?</big></li>
+  <ul>
+    <li><span style="font-weight: bold;">portable_fseek()</span> should
+be used for fseek.</li>
+    <li><span style="font-weight: bold;">portable_ftell()</span> should
+be used for ftell.</li>
+    <li style="font-weight: bold;"><br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+use Euler Angles?</big></li>
+  <ul>
+    <li>Euler angles are implemented in <span
+ style="font-weight: bold;">Rotation</span> class.</li>
+    <li style="background-color: rgb(255, 255, 204);">Rotation r =
+Rotation(alt, az, phi, Rotation::EMAN);<br>
+float alt2 = r.eman_alt();<br>
+float az2 = r.eman_az();<br>
+float phi2 = r.eman_phi();<br>
+      <br>
+float theta = r.mrc_theta();<br>
+float phi = r.mrc_phi();<br>
+float omega = r.mrc_omega();<br>
+&nbsp; <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+handle
+Transformation?</big></li>
+  <ul>
+    <li><span style="font-weight: bold;">Transform</span> class is
+defined to do varisous affine transformation: translation, rotation,
+scaling, and their combination.</li>
+    <li><br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;" type="1"><big>How
+to print out
+error/warning/debugging information?</big></li>
+  <ul> 
+    <ul>
+      <li><span style="font-weight: bold;">Log</span> class defines a
+generic way to do this. It can send information to either standard out,
+a file, or a pine.</li>
+      <li>How to use <span style="font-weight: bold;">Log</span></li>
+      <ul>
+        <li style="background-color: rgb(255, 255, 204);">Log::logger()-&gt;set_log_level(WARNING_LOG);<br>
+&nbsp; <br>
+Log::logger()-&gt;error("out of memory");<br>
+Log::logger()-&gt;warn("invalid image size");<br>
+Log::logger()-&gt;log("read an image");<br>
+Log::logger()-&gt;variable("image size = (%d, %d, %d)\n", nx, ny, nz);<br>
+          <br>
+        </li>
+      </ul>
+    </ul>
+  </ul>
+</ol>
+<br>
+<br>
+<hr>
+<address>lpeng@bcm.tmc.edu</address>
+<!-- hhmts start -->
+Last modified: Fri Jul 23 08:39:54 CDT 2004
+<!-- hhmts end -->
+</body>
+</html>
