@@ -115,8 +115,6 @@
 
   087. add [in] [out] or [inout] to params in documentation.
 
-  091. CTF: set_ctf() doesn't work using python.
-
 --- Items Done ----
 
   8/9/04:  001: convert CCTBX flex array to EMData
@@ -345,6 +343,9 @@
        ImageIO caching causes memory leak or memory not freed. Need a
        better way to handle this.
        
+  3/6/05 091.
+       CTF: set_ctf() doesn't work using python.
+
   3/2/05 092. 
        HdfIO: create functions to read/write compound attributes including
        CTF, EulerAngles, etc

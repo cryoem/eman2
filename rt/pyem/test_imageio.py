@@ -56,7 +56,7 @@ class TestHdfIO(unittest.TestCase):
         alt = 2.5
         phi = 0.5        
         e.set_rotation(az, alt, phi)
-        #e.set_ctf(ctf)
+        e.set_ctf(ctf)
         
         outfile = "test_hdf_attr_out_1.h5"
         e.write_image(outfile, 0, HDF)
@@ -92,7 +92,7 @@ class TestHdfIO(unittest.TestCase):
         self.assertEqual(attrdict3["euler_phi"], phi)
         
         os.unlink(infile)
-        os.unlink(outfile)
+        #os.unlink(outfile)
         os.unlink(outfile2)
 
     def test_write_image(self):
