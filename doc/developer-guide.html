@@ -419,7 +419,7 @@ input image");</span><br style="font-family: monospace;">
     <span style="font-family: monospace;">//...</span><br
  style="font-family: monospace;">
     <span style="font-family: monospace;">}</span><br>
-    <><span style="font-weight: bold;">Here is an example on catching
+&lt;&gt;<span style="font-weight: bold;">Here is an example on catching
 the exceptions:</span><br>
     <span style="font-family: monospace;">void foo()</span><br
  style="font-family: monospace;">
@@ -459,7 +459,7 @@ null_excp.what());<br>
     <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
  style="font-family: monospace;">
     <span style="font-family: monospace;">}</span><br>
-    </> <li style="font-weight: bold;"><span
+    <li style="font-weight: bold;"><span
  style="color: rgb(51, 51, 255);">NOTE:</span> A XYZ exception is
 thrown as XYZException, but caught as _XYZException. Be aware of the
 "_".<br>
@@ -479,10 +479,42 @@ defined to do varisous affine transformation: translation, rotation,
 scaling, and their combination.</li>
     <li><br>
     </li>
+    <li style="font-weight: bold;">What's the structure of the
+transformation matrix?</li>
   </ul>
-  <li style="color: rgb(51, 51, 255); font-weight: bold;" type="1"><big>How
+</ol>
+<div style="margin-left: 80px;">Internally a transformation is stored
+in a 4x4 matrix. With the left-top 3x3 submatrix as the rotation;
+Center is stored in (m[3][0], m[3][1], m[3][2]); post translation is
+stored in (m[0][3], m[1][3], m[2][3]):&nbsp;&nbsp;&nbsp;&nbsp; <br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | R R R T |<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | R R R T |<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | R R R T |<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; | C C C 1 |</div>
+<ol>
+  <ul>
+    <li style="background-color: rgb(255, 255, 204);"><span
+ style="font-weight: bold;">Can you give me an example how to transform
+a list of 3-element vectors in python?</span><br>
+      <br>
+      <span style="font-family: monospace;">t=Transform(Matrix4f([2,4,9,10,
+1,9,3,12, 6,4,3,9, 12,3,9,1])</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">vectors = [ [1,0,0],
+[1,1,1], [1,2,3] ]</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">for v in vectors:</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+newvec=v*t</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; #do
+something</span><br>
+      <br>
+    </li>
+  </ul>
+</ol>
+<big style="color: rgb(51, 51, 255);">14. How
 to print out
-error/warning/debugging information?</big></li>
+error/warning/debugging information?</big>
+<ol>
   <ul>
     <li><span style="font-weight: bold;">use Log</span> class.</li>
     <li style="font-weight: bold; color: rgb(51, 51, 255);">Why use Log

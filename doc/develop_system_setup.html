@@ -16,16 +16,16 @@ System Setup HowTo</span></big></big><br style="font-weight: bold;">
 <br>
 This document gives the step-by-step guide on how to set up EMAN2
 development system on Linux, SGI IRIX, and Windows. It includes
-installation of the 3rd party libraries as well as development tools.
+installation of the 3rd party libraries as well as setting up login
+shell.
 The intended
-audiences are&nbsp; EMAN2 developers and EMAN2 users.&nbsp; <br>
+audience is&nbsp; EMAN2 developers and EMAN2 users.&nbsp; <br>
 <br>
 <span style="font-weight: bold; color: rgb(102, 0, 204);">NOTE:</span>
 For any
 3rd-party package listed in the document, if you can get the proper
 binary version for your platform, you won't need to compile it from the
 source code.<br>
-<br>
 <br style="color: rgb(51, 51, 255);">
 <big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">1.&nbsp;
 Linux. </span></big><br>
@@ -238,6 +238,69 @@ gccxml-0.6.0-x86-linux-files.tar /usr/local/</span><br
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; &nbsp; - tar
 xf gccxml-0.6.0-x86-linux-files.tar<br>
 </span><br>
+<span style="font-weight: bold; color: rgb(0, 0, 0);">&nbsp; 5) Install
+EMAN2.</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The typical way to install EMAN2
+is as follows. For more details, please refer the INSTALL document.<br>
+<br>
+<span style="font-family: monospace;">&nbsp;&nbsp; % cd $HOME</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % mkdir -p EMAN2/src</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % cd EMAN2/src</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % gunzip eman2.tar.gz</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % tar xf eman2.tar</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % mkdir build</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % cd build</span><br
+ style="font-family: monospace;">
+<br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % cmake ../eman2</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % make</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp; % make install</span><br>
+<span style="color: rgb(0, 0, 0);">&nbsp; </span><br
+ style="color: rgb(0, 0, 0);">
+<span style="font-weight: bold; color: rgb(0, 0, 0);">&nbsp;6) set up
+your login shell</span><br>
+<ul>
+  <li><><span style="font-weight: bold;">For csh/tcsh, add the
+following to the end of your $HOME/.cshrc file:&nbsp;</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </></li>
+  <><span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;
+setenv EMAN2DIR $HOME/EMAN2</span><br style="font-family: monospace;">
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; setenv
+PATH $EMAN2DIR/bin:${PATH}</span><br style="font-family: monospace;">
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; setenv
+LD_LIBRARY_PATH&nbsp; $EMAN2DIR/lib</span><br
+ style="font-family: monospace;">
+  <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; setenv
+PYTHONPATH .:$HOME/EMAN2/lib</span><br>
+  <br>
+  </><li><span style="font-weight: bold;">For bash, add the following
+to the end of your $HOME/.bashrc. For zsh, add it to the end of your
+$HOME/.zshrc.</span><br>
+  </li>
+</ul>
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export EMAN2DIR=$HOME/EMAN2</span><br style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export PATH=$EMAN2DIR/bin:${PATH}</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export LD_LIBRARY_PATH=$EMAN2DIR/lib</span><br
+ style="font-family: monospace;">
+<span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+export PYTHONPATH=.:$HOME/EMAN2/lib</span><br>
+<br>
+<br>
+<br>
 <big style="font-weight: bold; color: rgb(51, 51, 255);">2. SGI IRIX.</big><br>
 <br>
 <span style="font-weight: bold;">&nbsp;&nbsp; 1) install fftw from
@@ -439,6 +502,12 @@ install Numeric python Numeric numpy</span><br>
 &nbsp;&nbsp;&nbsp; - cd </span><span style="font-family: monospace;">Numeric-23.6</span><br>
 <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; - python
 setup.py install</span><br>
+<br>
+<span style="font-weight: bold;">&nbsp;&nbsp; 8) Install EMAN2. (see
+linux section 5)<br>
+<br style="font-weight: bold;">
+</span><span style="font-weight: bold;">&nbsp;&nbsp; 9) Set up login
+shell (see linux section 6)</span><br style="font-weight: bold;">
 <br>
 <big style="color: rgb(51, 51, 255);"><span style="font-weight: bold;">3.
 Microsoft Windows</span></big><br>
@@ -651,7 +720,7 @@ Contact Liwei Peng (lpeng@bcm.tmc.edu) on where to get it.<br>
 2003 CD. It is very straight-forward.<br>
 <br>
 <br style="font-weight: bold;">
-<span style="font-weight: bold;">2. Use CMake to configure EMAN</span><br>
+<span style="font-weight: bold;">2. Use CMake to configure EMAN2</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <span style="font-family: monospace;">- run CMake program<br>
 &nbsp;&nbsp; - at "Where is the source code", select C:\EMAN2\src\eman2<br>
@@ -698,7 +767,7 @@ C:\EMAN2\includ</span><br style="font-family: monospace;">
 <br>
 &nbsp; <br>
 <hr style="width: 100%; height: 2px;">Last Modified on <big><span
- style="font-weight: bold;">11/27/2004</span></big> by <big><span
+ style="font-weight: bold;">12/8/2004</span></big> by <big><span
  style="font-weight: bold;">Liwei Peng</span></big> (lpeng@bcm.tmc.edu)<br>
 <br>
 <br>
