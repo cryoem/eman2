@@ -134,6 +134,7 @@ namespace EMAN {
 	void done_data();
 
 	void update();
+	void zero() {}
 	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);

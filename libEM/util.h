@@ -26,7 +26,7 @@ namespace EMAN {
 	static void save_data_to_file(float x0, float dx, vector<float> y_array, const char* filename);
 	static void save_data_to_file(float x0, float dx, float* y_array, int array_size, const char* filename);
 
-	static float get_frand(float lo, float hi);
+	static float get_frand(float low, float high);
 	static float get_gaussian_rand(float avg, float std);
 	
 	static inline int round(float x) {
@@ -56,10 +56,15 @@ namespace EMAN {
 	static void find_min_and_max(float* data, int nitems, float* max_val, float* min_val,
 				     int* max_i = 0, int* min_i = 0);
 	static int calc_best_fft_size(int low);
-
+		
+	static int square(int n) { return n * n; }
 	static float square(float x) { return x*x; }
-	static double hypot3(double x, double y, double z) { return sqrt(x*x + y*y + z*z); }
+	static double square(double x) { return x*x; }
 
+	static double square_sum(double x, double y) { return (x*x + y*y); }
+	    
+	static double hypot3(double x, double y, double z) { return sqrt(x*x + y*y + z*z); }
+	
 	static float calc_angle_sub(float angle1, float angle2);
 
 	static int fast_floor(float x)
