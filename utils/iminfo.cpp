@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
         EMUtil::ImageType imgtype = EMUtil::get_image_type(imagefile);
 		const char* imgtypename = EMUtil::get_imagetype_name(imgtype);
 		int image_index = 0;
-        if (imgtype == EMUtil::IMAGE_SPIDER) {
+        if (imgtype == EMUtil::IMAGE_SPIDER && !stat) {
             image_index = -1;
         }
 		printf("\n%20s: %d\n", "Number of Images", nimg);

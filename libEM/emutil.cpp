@@ -376,6 +376,10 @@ int EMUtil::get_image_count(const string & filename)
 	if (imageio) {
 		nimg = imageio->get_nimg();
 	}
+#ifndef IMAGEIO_CACHE
+	delete imageio;
+	imageio = 0;
+#endif
 	EXITFUNC;
 	return nimg;
 }

@@ -180,7 +180,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 			throw ImageReadException(filename, desc);
 		}
 
-		become_host_endian((float *) &cur_image_hed, NUM_FLOATS_IN_HEADER);
+		become_host_endian((float *) cur_image_hed, NUM_FLOATS_IN_HEADER);
 
 		if (cur_image_hed->nx != first_h->nx || cur_image_hed->ny != first_h->ny
 			|| cur_image_hed->nslice != first_h->nslice) {
