@@ -19,9 +19,16 @@ from pyemtbx.box import *
 EMANVERSION="EMAN2 v1.90"
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
-Transform.__str__=lambda x:"Transform(\t%1.4g\t%1.4g\t%1.4g\n\t\t%1.4g\t%1.4g\t%1.4g\n\t\t%1.4g\t%1.4g\t%1.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
+
+Transform.__str__=lambda x:"Transform(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 def display(img):
+	"""This will use 'v2', and EMAN1 program to view an image
+	or a list/tuple of images. This is basically a hack."""
+	os.unlink("/tmp/img.spi")
+	if isinstance(img,list) or isinstance(img,tuple) :
+		for i in img: i.write_image("/tmp/img.spi",-1)
+	else:
+		img.write_image("/tmp/img.hdf")
 	from os import system
-	img.write_image("/tmp/img.mrc")
-	system("v2 /tmp/img.mrc")
+	system("v2 /tmp/img.spi")

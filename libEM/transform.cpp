@@ -109,10 +109,59 @@ void Transform::orthogonalize()
 
 Transform Transform::inverse()
 {
-	return Transform();
+	print();
+	
+	// we use unrolled Gauss-Jordan elimination to invert the rotation matrix
+	// this could be slightly more efficient if the function calls were also unrolled
+	Transform ret;	// start with the identity matrix
+	Transform id2=*this;
+	
+	// start by making 00 -> 1.0
+	if (fabs(id2[1][0])>fabs(id2[0][0])) { id2.row_exch(0,1); ret.row_exch(0,1); }
+	if (fabs(id2[2][0])>fabs(id2[0][0])) { id2.row_exch(0,2); ret.row_exch(0,2); }
+	if (id2[0][0]==0) throw InvalidValueException(0,"Singular matrix inversion");
+	
+	ret.row_mult(0,1.0/id2[0][0]);
+	id2.row_mult(0,1.0/id2[0][0]);
+
+	// now make 10 and 20 -> 0.0 by subtracting a multiple of row 0
+	ret.row_add(1,-id2[1][0]*ret[0][0],-id2[1][0]*ret[0][1],-id2[1][0]*ret[0][2]);
+	id2.row_add(1,-id2[1][0]*id2[0][0],-id2[1][0]*id2[0][1],-id2[1][0]*id2[0][2]);
+	ret.row_add(2,-id2[2][0]*ret[0][0],-id2[2][0]*ret[0][1],-id2[2][0]*ret[0][2]);
+	id2.row_add(2,-id2[2][0]*id2[0][0],-id2[2][0]*id2[0][1],-id2[2][0]*id2[0][2]);
+	id2.print();
+	
+	// now make 11 -> 1.0
+	if (fabs(id2[2][1])>fabs(id2[1][1])) { row_exch(1,2); ret.row_exch(1,2); }
+	if (id2[1][1]==0) throw InvalidValueException(0,"Singular matrix inversion");
+	
+	ret.row_mult(1,1.0/id2[1][1]);
+	id2.row_mult(1,1.0/id2[1][1]);
+	
+	// subtract to make 01 and 21 -> 0
+	ret.row_add(0,-id2[0][1]*ret[1][0],-id2[0][1]*ret[1][1],-id2[0][1]*ret[1][2]);
+	id2.row_add(0,-id2[0][1]*id2[1][0],-id2[0][1]*id2[1][1],-id2[0][1]*id2[1][2]);
+	ret.row_add(2,-id2[2][1]*ret[1][0],-id2[2][1]*ret[1][1],-id2[2][1]*ret[1][2]);
+	id2.row_add(2,-id2[2][1]*id2[1][0],-id2[2][1]*id2[1][1],-id2[2][1]*id2[1][2]);
+	id2.print();
+	
+	// now make 22 -> 1.0
+	if (id2[2][2]==0) throw InvalidValueException(2,"Singular matrix inversion");
+	ret.row_mult(2,1.0/id2[2][2]);
+	id2.row_mult(2,1.0/id2[2][2]);
+	
+	// subtract to make 02 and 12 -> 0
+	ret.row_add(0,-id2[0][2]*ret[2][0],-id2[0][2]*ret[2][1],-id2[0][2]*ret[2][2]);
+	id2.row_add(0,-id2[0][2]*id2[2][0],-id2[0][2]*id2[2][1],-id2[0][2]*id2[2][2]);
+	ret.row_add(1,-id2[1][2]*ret[2][0],-id2[1][2]*ret[2][1],-id2[1][2]*ret[2][2]);
+	id2.row_add(1,-id2[1][2]*id2[2][0],-id2[1][2]*id2[2][1],-id2[1][2]*id2[2][2]);
+	
+	id2.print();
+	ret.print();
+	
+	return ret;
 }
 
-	
 void Transform::set_pretrans(const Vec3f & pretrans)
 {
 	pre_trans = pretrans;
@@ -133,7 +182,7 @@ void Transform::set_center(const Vec3f & center)
 	}
 }
 
-void Transform::set_rotation(EulerType euler_type,float a0, float a1, float a2, float a3)
+void Transform::set_rotation(EulerType euler_type, float a1, float a2, float a3,float a4)
 {
 	
 	bool is_quaternion = 0;
@@ -161,11 +210,11 @@ void Transform::set_rotation(EulerType euler_type,float a0, float a1, float a2, 
 	case SGIROT:
 		{
 			is_quaternion = 1;
-			float f = sin(a0 / 2.0f);
-			a1 *= f;
+			float f = sin(a1 / 2.0f);
 			a2 *= f;
 			a3 *= f;
-			a0 = cos(a0 / 2.0f);
+			a4 *= f;
+			a1 = cos(a1 / 2.0f);
 		}
 		break;
 				
@@ -174,7 +223,7 @@ void Transform::set_rotation(EulerType euler_type,float a0, float a1, float a2, 
 	}
 	
 	if (is_quaternion) {
-		quaternion2matrix(a0, a1, a2, a3);
+		quaternion2matrix( a1, a2, a3, a4);
 	}
 	
 	matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
