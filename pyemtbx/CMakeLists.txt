@@ -1,1 +1,1 @@
-INSTALL_PROGRAMS(/pyemtbx "^.+\\.py$")
+INSTALL_PROGRAMS(/lib/pyemtbx "^.+\\.py$")

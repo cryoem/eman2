@@ -706,8 +706,7 @@ int MrcIO::to_mrcmode(int e, bool is_complex)
 		m = MRC_FLOAT_COMPLEX;
 		break;
 	default:
-		LOGERR("unknown MRC mode: %s", EMUtil::get_datatype_string(em_type));
-		m = MRC_UNKNOWN;
+	        m = MRC_FLOAT;
 	}
 
 	return m;

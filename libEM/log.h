@@ -67,7 +67,7 @@ namespace EMAN
 		 * Its args are the same as printf().*/
 		void variable(const char *format, ...);
 		
-		void set_level(LogLevel level);
+		void set_level(int level);
 
 		/** set log output file. If this function is not called,
 		 * output is standart output.

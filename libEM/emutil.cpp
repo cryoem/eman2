@@ -33,11 +33,23 @@ EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
 		imagetypes["spi"] = IMAGE_SPIDER;
 		imagetypes["SPI"] = IMAGE_SPIDER;
 		
+		imagetypes["spider"] = IMAGE_SPIDER;
+		imagetypes["SPIDER"] = IMAGE_SPIDER;
+		
+		imagetypes["spidersingle"] = IMAGE_SINGLE_SPIDER;
+		imagetypes["SPIDERSINGLE"] = IMAGE_SINGLE_SPIDER;
+
+		imagetypes["singlespider"] = IMAGE_SINGLE_SPIDER;
+		imagetypes["SINGLESPIDER"] = IMAGE_SINGLE_SPIDER;
+		
 		imagetypes["img"] = IMAGE_IMAGIC;
 		imagetypes["IMG"] = IMAGE_IMAGIC;
 		
 		imagetypes["hed"] = IMAGE_IMAGIC;
 		imagetypes["HED"] = IMAGE_IMAGIC;
+
+		imagetypes["imagic"] = IMAGE_IMAGIC;
+		imagetypes["IMAGIC"] = IMAGE_IMAGIC;
 		
 		imagetypes["pgm"] = IMAGE_PGM;
 		imagetypes["PGM"] = IMAGE_PGM;

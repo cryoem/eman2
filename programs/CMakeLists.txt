@@ -1,2 +1,2 @@
 LINK_LIBRARIES(EM2)
-INSTALL_FILES(/bin "^.+\\.py$")
+INSTALL_PROGRAMS(/bin "^.+\\.py$")

@@ -134,9 +134,9 @@ void Log::error(const char *format, ...)
 }
 
 
-void Log::set_level(LogLevel level)
+void Log::set_level(int level)
 {
-	log_level = level;
+	log_level = (LogLevel)level;
 }
 
 void Log::set_logfile(const char *filename)

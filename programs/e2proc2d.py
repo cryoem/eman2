@@ -8,6 +8,7 @@ import sys
 import os.path
 import math
 import random
+import pyemtbx.options
 
 # usage: e2proc2d.py --clip 200 200 --outtype mrc input.mrc output.mrc
 
@@ -82,7 +83,7 @@ def main():
 
     append_options = ["clip", "filter", "meanshrink", "shrink", "scale"]
 
-    optionlist = get_optionlist(sys.argv[1:])
+    optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
     
     (options, args) = parser.parse_args()
     
@@ -161,11 +162,14 @@ def main():
             print "Warning: sigma = 0 for image " + i
             continue
 
+        if not "outtype" in optionlist:
+            optionlist.append("outtype")
+
         for option1 in optionlist:
 
             if option1 == "filter":
                 fi = index_d[option1]
-                (filtername, param_dict) = parse_filter_params(options.filter[fi])
+                (filtername, param_dict) = pyemtbx.options.parse_filter_params(options.filter[fi])
                 d.filter(filtername, param_dict)
                 index_d[option1] += 1
 
@@ -316,6 +320,9 @@ def main():
                 d.append_image(outfile, IMAGIC)
             
             elif option1 == "outtype":
+                if not options.outtype:
+                    options.outtype = "unknown"
+                    
                 if options.outtype in ["mrc", "pif", "png", "pgm"]:
                     if n1 != 0:
                         outfile = "%03d." % (i + 100) + outfile
