@@ -316,7 +316,7 @@ EMData * IterationAverager::finish()
 		result_data[j] /= nimg;
 		float f1 = sigma_image_data[j] / nimg;
 		float f2 = result_data[j];
-		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt(nimg);
+		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt((float)nimg);
 	}
 		
 	result->done_data();

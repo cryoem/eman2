@@ -417,7 +417,6 @@ int main(int argc, char *argv[])
 
 
 	if (rot || dx || dy || rize) {
-	    Rotation oldang = d->get_rotation();
 	    d->set_parent(0);
 
 	    if (!rize) {

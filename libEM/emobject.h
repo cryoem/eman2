@@ -1,8 +1,8 @@
 /**
  * $Id$
  */
-#ifndef eman__obejct__em__
-#define eman__obejct__em__ 1
+#ifndef eman__object__h__
+#define eman__object__h__ 1
 
 #include <string>
 #include <map>
@@ -428,8 +428,6 @@ namespace EMAN
 		
 		string desc = string("No such an instance existing: ") + instancename;
 		throw NotExistingObjectError(__FILE__, __LINE__, desc);
-
-		return 0;
 	}
 
 	template < class T > T * Factory < T >::get(string instancename, const Dict & params)
@@ -447,8 +445,6 @@ namespace EMAN
 
 		string desc = string("No such an instance existing: ") + instancename;
 		throw NotExistingObjectError(__FILE__, __LINE__, desc);
-
-		return 0;
 	}
 
 	template < class T > vector < string > Factory < T >::get_list() {
