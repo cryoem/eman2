@@ -14,7 +14,13 @@ namespace EMAN
 {    
     class EMData;
     class XYData;
-
+    class Aligner;
+    class Averager;
+    class Cmp;
+    class Filter;
+    class Projector;
+    class Reconstructor;
+    
     enum MapInfoType {
 	NORMAL,
 	ICOS2F_FIRST_OCTANT,
@@ -411,10 +417,10 @@ namespace EMAN
 	T *i = new_instance();
 	string name = i->get_name();
     
-	typename map<string, InstanceType>::iterator fi = my_dict.find(fname);
+	typename map<string, InstanceType>::iterator fi = my_dict.find(name);
 
 	if (fi != my_dict.end()) {
-	    my_dict[fname] = new_instance;
+	    my_dict[name] = new_instance;
 	}
 	delete i;
 	i = 0;
