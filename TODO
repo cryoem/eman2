@@ -63,14 +63,6 @@
 	   file, but the file is missing one 32x32k slice at the end. ie - the file
 	   is 131072 bytes.
 
-037. mdk 10.1-related issues. (debug option enabled) 
-	     from EMAN2 import *
-		 a=EMData()
-		 a.read_image("monomer.mrc")
-		 a.write_image("z.mrc")
-	 The output image file size is too small.
-
-	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -158,4 +150,11 @@
 
   9/28/04 035. Make fftw3 work.
 
-	   	   
+  10/12/04 037. mdk 10.1-related issues. (debug option enabled) 
+				  from EMAN2 import *
+				  a=EMData()
+				  a.read_image("monomer.mrc")
+				  a.write_image("z.mrc")
+				The output image file size is too small.
+
+				solution: this error couldn't be reproduced.
