@@ -54,7 +54,7 @@ EMData::EMData()
 	nz = 0;
 
 	EMData::totalalloc++;
-	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+//	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
 	EXITFUNC;
 }
 
@@ -84,7 +84,7 @@ EMData::~EMData()
 	}
 	
 	EMData::totalalloc--;
-	printf("EMDATA-  %4d %p\n",EMData::totalalloc,this);
+//	printf("EMDATA-  %4d %p\n",EMData::totalalloc,this);
 	EXITFUNC;
 }
 
