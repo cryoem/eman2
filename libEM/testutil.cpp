@@ -545,7 +545,7 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
 	bool is_complex = EMUtil::is_complex_type(datatype);
 	
 	if (is_complex) {
-		nx = (nx+2)/2;
+		nx = (nx+2);
 	}
 
 	if (nx != (int) attr_dict["nx"]) {

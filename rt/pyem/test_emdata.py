@@ -8,7 +8,6 @@ import sys
 import math
 import os
 
-
 class TestEMData(unittest.TestCase):
 
     def test_multi_array_2d(self):
@@ -268,6 +267,36 @@ class TestEMData(unittest.TestCase):
         old_attrlist = attrfile.readlines()        
         attrfile.close()
         
+    def test_get_clip(self):
+        nx = 32
+        ny = 48
+        filebase = "test_get_clip_" + str(os.getpid())
+        infile = filebase + ".mrc"
+        TestUtil.make_image_file(infile, MRC, EM_FLOAT, nx, ny)
+
+        e = EMData()
+        e.read_image(infile)
+
+        region1 = Region(nx/4, ny/4, nx/2, ny/2)
+        outfile1 = filebase + "_out1.mrc"
+        e2 = e.get_clip(region1)
+        e2.write_image(outfile1)
+
+        self.assertEqual(e2.get_xsize(), nx/2)
+        self.assertEqual(e2.get_ysize(), ny/2)
+        
+        region2 = Region(-nx/4, -ny/4, 2*nx, 2*ny)
+        outfile2 = filebase + "_out2.mrc"
+        e3 = e.get_clip(region2)
+        e3.write_image(outfile2)
+        
+        self.assertEqual(e3.get_xsize(), nx*2)
+        self.assertEqual(e3.get_ysize(), ny*2)
+
+        os.unlink(infile)
+        os.unlink(outfile1)
+        os.unlink(outfile2)
+
         
     def test_get_rotated_clip(self):
         imagename = TestUtil.get_debug_image("monomer.mrc")
@@ -278,26 +307,68 @@ class TestEMData(unittest.TestCase):
         outfile = "test_get_rotated_clip_" + str(os.getpid()) + ".mrc"
         b.write_image(outfile)
         os.unlink(outfile)
+
+
+    def test_complex_image(self):
+        nx = 16
+        ny = 32
+        infile = "test_complex_image_1.mrc"
+        TestUtil.make_image_file(infile, MRC, EM_FLOAT_COMPLEX, nx, ny)
+
+        e = EMData()
+        e.read_image(infile)
+        attrd = e.get_attr_dict()
+
+        self.assertEqual(attrd["nx"], nx+2)
+        self.assertEqual(attrd["ny"], ny)
+        self.assertEqual(attrd["nz"], 1)
+        self.assertEqual(attrd["datatype"], EM_FLOAT_COMPLEX)
+
+        os.unlink(infile)
+
         
+    def test_set_value_at(self):
+        nx = 10
+        ny = 20
+        nz = 2
+        infile = "test_set_value_at_in.mrc"
+        TestUtil.make_image_file(infile, MRC, EM_FLOAT, nx, ny, nz)
+        
+        e = EMData()
+        e.read_image(infile)
 
-	def test_get_clip(self):
-		nx = 50
-		ny = 50
-		filebase = "test_get_clip_" + str(os.getpid())
-		infile = filebase + ".mrc"
-		TestUtil.make_image_file(infile, MRC, nx, ny, 2)
-		
-		e = EMData()
-		e.read_image(infile)
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(nx):
+                    e.set_value_at(k,j,i, 1)
 
-		region1 = Region(nx/4, ny/4, nx/2, ny/2)
-		outfile1 = filebase + "_out1.mrc"
-		e2 = e.get_clip(region1)
-		e2.write_image(outfile1)
+        os.unlink(infile)
+        narray = EMNumPy.em2numpy(e)
 
-		region2 = Region(-nx/4, -ny/4, 2*nx, 2*ny)
-		outfile2 = filebase + "_out2.mrc"
-		e3 = e.get_clip(region2)
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(nx):
+                    self.assertEqual(e.get_value_at(k,j,i), 1)
+                    self.assertEqual(narray[i][j][k], 1)
+        
+    def test_to_one(self):
+        nx = 12
+        ny = 24
+        nz = 2
+        file1 = "test_to_one.mrc"
+        TestUtil.make_image_file(file1, MRC, EM_FLOAT, nx, ny, nz)
+
+        e1 = EMData()
+        e1.read_image(file1)
+        e1.to_one()
+
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(nx):
+                    self.assertEqual(e1.get_value_at(k,j,i), 1)
+        
+        os.unlink(file1)
+        
 
 
 def test_main():

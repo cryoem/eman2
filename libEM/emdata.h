@@ -687,6 +687,13 @@ namespace EMAN
 		 */
 		float *get_data() const;
 
+        /** set 'this' image to share the data block memory given by 'data'.
+         * 'this' image will be resized to be (xsize,ysize,zsize).
+         * @param xsize The x size of the shared data block.
+         * @param ysize The y size of the shared data block.
+         * @param zsize The z size of the shared data block.
+         * @param data The shared data block pointer.
+         */
 		void set_shared_data(int xsize, int ysize, int zsize, float *data);
 		
 		/** Done with data manipulation. It mark EMData as changed.
