@@ -14,7 +14,7 @@ namespace EMAN {
 	~SpiderIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-
+	static bool is_valid(const void* first_block);
     protected:
 	struct SpiderHeader {
 	    float nslice;           // 1 for images

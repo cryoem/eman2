@@ -20,6 +20,7 @@ namespace EMAN {
 	~IcosIO();
 	
 	DEFINE_IMAGEIO_FUNC;
+	static bool is_valid(const void* first_block);
 	
     private:
 	enum { STAMP = 72, STAMP1 = 72, STAMP2 = 20, STAMP3 = 20 };

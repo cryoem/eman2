@@ -13,7 +13,7 @@ namespace EMAN {
 	~LstIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-	
+	static bool is_valid(const void* first_block);
     private:
 	int calc_ref_image_index(int image_index);
 	static const char* MAGIC;

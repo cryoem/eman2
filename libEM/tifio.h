@@ -15,7 +15,7 @@ namespace EMAN {
 	~TiffIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-	
+	static bool is_valid(const void* first_block);
     private:
 	enum { TIFF_LITTLE_ENDIAN = 0x49, TIFF_BIG_ENDIAN = 0x4d  };
 	

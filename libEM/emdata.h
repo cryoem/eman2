@@ -209,7 +209,94 @@ namespace EMAN {
 						    bool header_only=false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
 						  bool header_only = false, string ext="");
+#if 0
 
+	void add_incoherent(EMData* in);
+	void add_mask_shell(int num_shells);
+	void add_random_noise(XYData& noise, float s0, float ds, bool interpolation = true);
+	void auto_mask(float thresh, float filter = 0.1);
+
+	void clear_ctf();
+	void calc_ctf_curve(XYData* result, CtfCurveType type = 0, XYData* sf = 0) const;
+	void create_ctf_map(CtfMapType type, XYData* sf = 0);
+	
+	bool has_ctf() const;
+	bool has_ctff() const;
+
+	float calc_dist(EMData* second_img, int y_index = 0) const;
+	EMData* calc_flcf(EMData* with, int radius = DEFAULT_FLCF_RADIUS, string mask="ZeroMaskFilter");
+	void calc_radial_dist(XYData& data, float x0, float dx);
+	void calc_radial_dist(XYData& data, int num_data, float x0, float dx, float acen, float amwid);
+
+
+	void common_lines(EMData* d1, EMData* d2, int mode = 0,
+			  int steps = 180, bool horiz = false);	
+    
+	void common_lines_real(EMData* data1, EMData* data2,
+			       int steps = 180, bool horiz = false);
+	EMData* convolute(EMData* with);
+	
+	void cut_slice(EMData* map, float z, Rotation* r = 0,
+		       bool interpolate = true, float x = 0, float y = 0);
+
+	void uncut_slice(EMData* map, float z, Rotation* r = 0, float x = 0, float y = 0);
+
+	void do_dwt(int basis, int level);
+	void do_iwt(int basis, int level);
+	void dwt_filt(int basis, int level, float thresh);
+
+	void edge_normalize(bool circular = false);
+	EMData* fft_slice(float alt, float az, float phi, int mode = 5);
+	void fourier_shell_correlation(EMData* with, XYData& result);
+	float get_ali_peak() const;
+	float get_edge_mean() const;
+	float get_circle_mean() const;
+	
+	EMData* get_row(int row_index) const;
+	EMData* get_col(int col_index) const;
+	float get_density_center() const;
+	float get_sigma_diff() const;
+	int get_dim() const;
+	
+	EMData* ift_slice();
+	Point<float> interpolate_ft_3d(float x, float y, float z, InterpType mode);
+	void invert();
+
+
+	bool is_flipped();
+	Point<float> least_square_normalize_to(EMData* to, float low_thresh, float high_thresh);
+
+	EMData* little_big_dot(EMData* little_img, bool do_sigma = false);
+
+
+	void make_image_average(const vector<EMData*>& image_list, EMData* sigma = 0);
+	void make_average_iter(const vector<EMData*>& image_list);
+	void make_average_WT(const vector<EMData*>& in, EMData* curves, XYData* sf);
+
+	void make_average_CTFC(const vector<EMData*>& in, float filtr);
+	void make_average_CTFCWauto(const vector<EMData*>& in, string outfile = "");
+
+	float make_average_CTFCW(const vector<EMData*>& in, XYData* sf, XYData* SNR = NULL);
+	
+	void make_image_median(const vector<EMData*>& image_list);
+
+	EMData* make_rfp(bool premasked = false, bool unwrap = true);
+	void mask_normalize(EMData* mask, bool sigmatoo = true);
+	void normalize_max();
+	void row_normalize();
+	
+	Point<float> normalize_to(EMData* noisy, bool keepzero = false, bool invert = false);
+	Point<float> normalize_slice(EMData* slice, float alt, float az, float phi);
+	void radial_average();
+
+	void radial_subtract();
+	void sub_noise();
+	void setup_insert_slice(int size);
+	void to_mass_center(bool int_shift_only = true);
+	EMData* vert_acf(int maxdy);
+#endif
+	
+	
 	EMData& operator+=(float n);
         EMData& operator-=(float n);
         EMData& operator*=(float n);

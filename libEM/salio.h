@@ -15,7 +15,7 @@ namespace EMAN {
 	~SalIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-
+	static bool is_valid(const void* first_block);
     private:
 	static const char* HDR_EXT;
 	static const char* IMG_EXT;

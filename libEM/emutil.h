@@ -79,7 +79,7 @@ namespace EMAN {
 	
 	
     private:
-	static ImageType fast_get_image_type(string filename, const void* first_block);
+	static ImageType fast_get_image_type(string filename, const void* first_block, long file_size);
     };
 }
 

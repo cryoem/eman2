@@ -55,7 +55,6 @@ namespace EMAN {
     };
 
 #define DEFINE_IMAGEIO_FUNC \
-	static bool is_valid(const void* first_block); \
         int read_header(map<string, EMObject>& dict, int image_index = 0, Region* area = 0, bool is_3d = false); \
 	int write_header(map<string, EMObject>& dict, int image_index = 0); \
 	int read_data(float* data, int image_index = 0, Region* area = 0, bool is_3d = false); \
@@ -63,7 +62,6 @@ namespace EMAN {
         bool is_complex_mode(); \
         bool is_image_big_endian(); \
         int get_nimg(); \
-    protected: \
         int init()
         
 }

@@ -13,7 +13,7 @@ namespace EMAN {
 	~EmimIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-	
+	static bool is_valid(const void* first_block);
     private:
 	static const char* MAGIC;
 	enum { EMIM_COMPLEX = 1, PARM_NONE = 0, PARM_NORM = 1, NUM_INT_IN_FILE_HEADER = 16 };

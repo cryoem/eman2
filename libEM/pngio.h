@@ -16,7 +16,7 @@ namespace EMAN {
 	~PngIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-
+	static bool is_valid(const void* first_block);
     private:
 	enum { PNG_BYTES_TO_CHECK = 8 };
 	enum BitDepthType { PNG_CHAR_DEPTH, PNG_SHORT_DEPTH, PNG_INVALID_DEPTH };

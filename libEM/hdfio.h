@@ -20,7 +20,8 @@ namespace EMAN {
 	~HdfIO();
 	
 	DEFINE_IMAGEIO_FUNC;
-
+	static bool is_valid(const void* first_block);
+	
 	int read_ctf(Ctf& ctf, int image_index = 0);
         int write_ctf(const Ctf& ctf, int image_index = 0);
 	

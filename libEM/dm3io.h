@@ -195,7 +195,7 @@ namespace EMAN { namespace Gatan {
 	~DM3IO();
 
 	DEFINE_IMAGEIO_FUNC;
-	
+	static bool is_valid(const void* first_block);
     private:
 	enum { NUM_ID_INT = 3 };
 	

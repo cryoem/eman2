@@ -13,6 +13,10 @@ namespace EMAN {
 	~EmIO();
 	
 	DEFINE_IMAGEIO_FUNC;
+	static bool is_valid(const void* first_block, long file_size = -1);
+	static int get_mode_size(char data_type);
+	static int get_machine_type();
+	static int to_em_datatype(char t);
 	
     private:
 	struct EMHeader {
@@ -60,10 +64,6 @@ namespace EMAN {
 	DataType mode;
 	bool is_big_endian;
 	bool initialized;
-
-	int get_mode_size(char data_type);
-	int to_em_datatype(char t);
-	int get_machine_type();
     };
     
 }

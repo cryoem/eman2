@@ -12,6 +12,7 @@ namespace EMAN {
 	~VtkIO();
 	
 	DEFINE_IMAGEIO_FUNC;
+	static bool is_valid(const void* first_block);
     private:
 	static const char* MAGIC;
 	enum VtkType { VTK_ASCII, VTK_BINARY, VTK_UNKNOWN };
