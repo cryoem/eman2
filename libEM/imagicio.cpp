@@ -487,7 +487,7 @@ int ImagicIO::read_ctf(Ctf & ctf, int)
 	return err;
 }
 
-int ImagicIO::write_ctf(const Ctf & ctf, int)
+void ImagicIO::write_ctf(const Ctf & ctf, int)
 {
 	ENTERFUNC;
 	init();
@@ -502,7 +502,6 @@ int ImagicIO::write_ctf(const Ctf & ctf, int)
 	}
 	
 	EXITFUNC;
-	return 0;
 }
 
 bool ImagicIO::is_complex_mode()

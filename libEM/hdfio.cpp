@@ -212,59 +212,31 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	int err = 0;
 	if (!area) {
-		err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+		err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
+					  H5S_ALL, H5P_DEFAULT, data);
 	}
 	else {
-		hssize_t offset[3];
-		hsize_t count[3];
-
-		int x0 = 0, y0 = 0, z0 = 0;
-		int xlen = 0, ylen = 0, zlen = 0;
-
-		EMUtil::get_region_origins(area, &x0, &y0, &z0, nz, image_index);
-		EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
-
-		offset[0] = static_cast < hssize_t > (x0);
-		offset[1] = static_cast < hssize_t > (y0);
-		offset[2] = static_cast < hssize_t > (z0);
-
-		count[0] = static_cast < hsize_t > (xlen);
-		count[1] = static_cast < hsize_t > (ylen);
-		count[2] = static_cast < hsize_t > (zlen);
-
-		hid_t dataspace = H5Dget_space(cur_dataset);
-
-		err = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, offset, NULL, count, NULL);
-		if (err < 0) {
-			LOGERR("failed to create dataspace hyperslab when reading '%s'",
-				   filename.c_str());
+		hid_t dataspace_id = 0;
+		hid_t memspace_id = 0;
+		
+		err = create_region_space(&dataspace_id, &memspace_id, area,
+								  nx, ny, nz, image_index);
+		if (err == 0) {
+			err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, memspace_id,
+						  dataspace_id, H5P_DEFAULT, data);
 		}
-		else {
-			hid_t memspace = H5Screate_simple(3, count, NULL);
-			hssize_t offset_out[3];
-			offset_out[0] = 0;
-			offset_out[1] = 0;
-			offset_out[2] = 0;
-
-			err = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
-									  offset_out, NULL, count, NULL);
-			if (err < 0) {
-				LOGERR("failed to create memspace hyperslab when reading '%s'",
-					   filename.c_str());
-			}
-			else {
-				err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, memspace,
-							  dataspace, H5P_DEFAULT, data);
-			}
-
-			H5Sclose(dataspace);
-			H5Sclose(memspace);
+		
+		H5Sclose(dataspace_id);
+		H5Sclose(memspace_id);
+		if (err < 0) {
+			throw ImageReadException(filename,
+									 "creating memory space or file space id failed");
 		}
 	}
 
 	if (err < 0) {
 		char desc[256];
-		sprintf(desc, "reading %dth hdf image failed", image_index);
+		sprintf(desc, "reading %dth HDF5 image failed", image_index);
 		throw ImageReadException(filename, desc);
 	}
 
@@ -344,7 +316,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	return 0;
 }
 
-int HdfIO::write_data(float *data, int image_index, const Region* , bool)
+int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
@@ -354,19 +326,43 @@ int HdfIO::write_data(float *data, int image_index, const Region* , bool)
 	int ny = read_int_attr(image_index, "ny");
 	int nz = read_int_attr(image_index, "nz");
 
+	check_region(area, FloatSize(nx, ny, nz), is_new_file);
 	cur_dataset = create_dataset(image_index, nx, ny, nz);
 
 	if (cur_dataset >= 0) {
-		int err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
+		int err = 0;
+		
+		if (!area) {
+			err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
 						   H5S_ALL, H5P_DEFAULT, data);
-		if (err >= 0) {
-			increase_num_dataset();
-			image_indices.push_back(image_index);
-			err = 0;
+			if (err >= 0) {
+				increase_num_dataset();
+				image_indices.push_back(image_index);
+			}
 		}
 		else {
-			throw ImageWriteException(filename, "HDF data write");
+			hid_t dataspace_id = 0;
+			hid_t memspace_id = 0;
+			
+			err = create_region_space(&dataspace_id, &memspace_id, area,
+									  nx, ny, nz, image_index);
+			if (err == 0) {
+				err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, memspace_id,
+							   dataspace_id, H5P_DEFAULT, data);
+			}
+			
+			H5Sclose(dataspace_id);
+			H5Sclose(memspace_id);
+			if (err < 0) {
+				throw ImageReadException(filename,
+										 "creating memory space or file space id failed");
+			}
 		}
+
+		if (err < 0) {
+			throw ImageWriteException(filename, "HDF data write failed");
+		}
+		
 	}
 	EXITFUNC;
 	return 0;
@@ -898,7 +894,7 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 }
 
 // assume all ctf fields are floats.
-int HdfIO::write_ctf(const Ctf & ctf, int image_index)
+void HdfIO::write_ctf(const Ctf & ctf, int image_index)
 {
 	ENTERFUNC;
 	init();
@@ -924,7 +920,6 @@ int HdfIO::write_ctf(const Ctf & ctf, int image_index)
 
 	cur_image_index = -1;
 	EXITFUNC;
-	return 0;
 }
 
 bool HdfIO::is_complex_mode()
@@ -1110,6 +1105,57 @@ hid_t HdfIO::create_dataset(int image_index, int nx, int ny, int nz)
 
 	return tmp_dataset;
 }
+
+int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
+							   const Region * area, int nx, int ny, int nz,
+							   int image_index)
+{
+	Assert(p_dataspace_id);
+	Assert(p_memspace_id);
+	Assert(area);
+	
+	if (!p_dataspace_id || !p_memspace_id || !area) {
+		return -1;
+	}
+	
+	hssize_t offset[3];
+	hsize_t count[3];
+
+	int x0 = 0, y0 = 0, z0 = 0;
+	int xlen = 0, ylen = 0, zlen = 0;
+
+	EMUtil::get_region_origins(area, &x0, &y0, &z0, nz, image_index);
+	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
+
+	offset[0] = static_cast < hssize_t > (x0);
+	offset[1] = static_cast < hssize_t > (y0);
+	offset[2] = static_cast < hssize_t > (z0);
+	
+	count[0] = static_cast < hsize_t > (xlen);
+	count[1] = static_cast < hsize_t > (ylen);
+	count[2] = static_cast < hsize_t > (zlen);
+	
+	*p_dataspace_id = H5Dget_space(cur_dataset);
+	
+	int err = H5Sselect_hyperslab(*p_dataspace_id, H5S_SELECT_SET,
+								  offset, NULL, count, NULL);
+	if (err >= 0) {	
+		*p_memspace_id = H5Screate_simple(3, count, NULL);
+		hssize_t offset_out[3];
+		offset_out[0] = 0;
+		offset_out[1] = 0;
+		offset_out[2] = 0;
+		
+		err = H5Sselect_hyperslab(*p_memspace_id, H5S_SELECT_SET,
+								  offset_out, NULL, count, NULL);
+		if (err >= 0) {
+			err = 0;
+		}
+	}
+
+	return err;
+}
+
 
 
 

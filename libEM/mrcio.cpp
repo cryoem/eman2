@@ -560,7 +560,7 @@ int MrcIO::read_ctf(Ctf & ctf, int)
 	return err;
 }
 
-int MrcIO::write_ctf(const Ctf & ctf, int)
+void MrcIO::write_ctf(const Ctf & ctf, int)
 {
 	ENTERFUNC;
 	init();
@@ -570,11 +570,9 @@ int MrcIO::write_ctf(const Ctf & ctf, int)
 	rewind(mrcfile);
 
 	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
-		LOGERR("cannot write MRC header to file '%s'", filename.c_str());
-		return 1;
+		throw ImageWriteException(filename, "write CTF info to header failed");
 	}
 	EXITFUNC;
-	return 0;
 }
 
 void MrcIO::flush()

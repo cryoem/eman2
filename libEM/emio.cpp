@@ -16,6 +16,7 @@ EmIO::EmIO(const string & file, IOMode rw)
 	mode_size = 0;
 	mode = EM_EM_UNKNOWN;
 	is_big_endian = ByteOrder::is_host_big_endian();
+	is_new_file = false;
 	memset(&emh, 0, sizeof(EMHeader));
 }
 
@@ -37,8 +38,6 @@ void EmIO::init()
 
 	
 	initialized = true;
-
-	bool is_new_file = false;
 	em_file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
@@ -131,11 +130,16 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int EmIO::write_header(const Dict & dict, int image_index, const Region* , bool)
+int EmIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index, 1);
-
+	if (area) {
+		check_region(area, FloatSize(emh.nx, emh.ny, emh.nz), is_new_file);
+		EXITFUNC;
+		return 0;
+	}
+	
 	emh.machine = static_cast < char >(get_machine_type());
 	emh.nx = dict["nx"];
 	emh.ny = dict["ny"];

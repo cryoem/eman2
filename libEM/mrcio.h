@@ -23,7 +23,7 @@ namespace EMAN
 		DEFINE_IMAGEIO_FUNC;
 
 		int read_ctf(Ctf & ctf, int image_index = 0);
-		int write_ctf(const Ctf & ctf, int image_index = 0);
+		void write_ctf(const Ctf & ctf, int image_index = 0);
 
 		static bool is_valid(const void *first_block, off_t file_size = 0);
 		static int get_mode_size(int mm);

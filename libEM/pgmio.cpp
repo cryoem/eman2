@@ -111,7 +111,10 @@ void PgmIO::init()
 bool PgmIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-	bool result = Util::check_file_by_magic(first_block, MAGIC_BINARY);
+	bool result = false;
+	if (first_block) {
+		result = Util::check_file_by_magic(first_block, MAGIC_BINARY);
+	}
 	EXITFUNC;
 	return result;
 }

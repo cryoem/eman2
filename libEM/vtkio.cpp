@@ -135,7 +135,10 @@ void VtkIO::init()
 bool VtkIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
-	bool result = Util::check_file_by_magic(first_block, MAGIC);
+	bool result = false;
+	if (first_block) {
+		result = Util::check_file_by_magic(first_block, MAGIC);
+	}
 	EXITFUNC;
 	return result;
 }

@@ -34,7 +34,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 		int read_ctf(Ctf & ctf, int image_index = 0);
-		int write_ctf(const Ctf & ctf, int image_index = 0);
+		void write_ctf(const Ctf & ctf, int image_index = 0);
 
 		int read_array_attr(int image_index, const string & attr_name, void *value);
 		int write_array_attr(int image_index, const string & attr_name,
@@ -122,6 +122,9 @@ namespace EMAN
 		int get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz);
 
 		static herr_t file_info(hid_t loc_id, const char *name, void *opdata);
+		int create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
+								const Region * area, int nx, int ny, int nz,
+								int image_index);
 	};
 }
 

@@ -171,7 +171,7 @@ namespace EMAN
 		 * @param image_index The index of the image to write.
 		 * @return 0 if OK; 1 if error.
 		 */
-		virtual int write_ctf(const Ctf & ctf, int image_index = 0);
+		virtual void write_ctf(const Ctf & ctf, int image_index = 0);
 
 		virtual void flush() = 0;
 		

@@ -27,7 +27,7 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes HDF, AMRIRA, SPIDER, SINGLE_SPIDER, VTK, XPLOR.
+       This includes AMRIRA, VTK, XPLOR.
 	   
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
@@ -50,20 +50,6 @@
 	   But the function overloading works at other situations. Need to 
 	   figure out why.
 
-<<<<<<< TODO
-  082. image writing errors. 1) a = EMData.read_images("zz.hed"); for i in
-       a; i.write_image("qq.hed", -1). every other image in output is back.
-	   2) for in in a: i.write_image("qq.spi", -1) have segmentation fault.
-
-  083. add a new EMObject wrapper around vector<string> type.
-	   
-=======
-  080. Spider writing seems doesn't work. Need to fix it.
-
-  081. rename multi_array_ref<float, 3> to better name like MultiArray3D.
-  
-  	   
->>>>>>> 1.46
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -88,7 +74,6 @@
 
   039. make classes Vec3, Matrix3f, Matrix4f as python container classes.  
 	   refer indexing_suite in boost python.
-
 
   041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
        produced a core dump. 
@@ -326,7 +311,15 @@
   1/8/05 081.
        rename multi_array_ref<float, 3> to better name like MultiArray3D.
 
+  1/10/05 082. 
+       image writing errors. 1) a = EMData.read_images("zz.hed"); for i in
+       a; i.write_image("qq.hed", -1). every other image in output is back.
+	   2) for in in a: i.write_image("qq.spi", -1) have segmentation fault.
+	   
+  1/10/05 083. 
+       add a new EMObject wrapper around vector<string> type.
 
+  	   
 
 	   
   

@@ -17,9 +17,9 @@ int ImageIO::read_ctf(Ctf &, int)
 	return 1;
 }
 
-int ImageIO::write_ctf(const Ctf &, int)
+void ImageIO::write_ctf(const Ctf &, int)
 {
-	return 1;
+
 }
 
 void ImageIO::check_region(const Region * area, const FloatSize & max_size,
