@@ -22,9 +22,31 @@ namespace EMAN {
 	static void list2array(const python::list& l, const char** array);
 	static void array2list(const int* array, python::list& l, int nitems = 0);
 	static void array2list(const float* array, python::list& l, int nitems = 0);
+
+	template <class T>
+	static vector<T> list2vector(const python::list& l)
+	{
+	    vector<T> v;
+	    for (int i = 0; i < python::len(l); i++) {
+		v.push_back(python::extract<T>(l[i]));
+		
+	    }
+	    return v;
+	}
+
+	template <class T>
+	static python::list vector2list(const vector<T>& v)
+	{
+	    python::list l;
+	    for (unsigned int i = 0; i < v.size(); i++) {
+		l.append(v[i]);
+	    }
+	    return l;
+	}
+	
     };
     
-    template <typename T>
+    template <class T>
     struct vector_to_list : python::to_python_converter<vector<T>, vector_to_list<T> >
     {
 	static PyObject* convert(vector<T> const& v)

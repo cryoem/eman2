@@ -54,9 +54,9 @@ namespace EMAN {
 
 	void dump_data(string filename);
 
-	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices, bool header_only = false);
+	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices, bool header_only=false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
-						  bool header_only = false, string ext = "");
+						  bool header_only = false, string ext="");
 #if 0
 	EMData& operator+=(float n);
         EMData& operator-=(float n);

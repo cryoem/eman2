@@ -4,6 +4,7 @@
 #include <ctf.h>
 #include <emobject.h>
 #include <pylist.h>
+#include <pyem.h>
 #include <log.h>
 #include <imageio.h>
 #include <emdata.h>
@@ -22,11 +23,11 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, ge
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_5, read_image, 1, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_image_overloads_1_4, write_image, 1, 4)
-#if 0
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_index_overloads_2_3, read_images_by_index, 2, 3)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_ext_overloads_3_5, read_images_by_ext, 3, 5)
-#endif
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_index_overloads_2_3, py_read_images_by_index, 2, 3)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_ext_overloads_3_5, py_read_images_by_ext, 3, 5)
+
 
 
 }// namespace 
@@ -41,7 +42,6 @@ BOOST_PYTHON_MODULE(libpyEM)
     EMAN::map_from_python<EMAN::EMObject>();
     
 
-    
     class_< EMAN::EMObject >("EMObject", init<  >())
         .def(init< const EMAN::EMObject & >())
         .def(init< int >())
@@ -57,23 +57,6 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("is_null", &EMAN::EMObject::is_null)
         .def("to_str", &EMAN::EMObject::to_str)
     ;
-
-    scope* EMAN_Log_scope = new scope(
-    class_< EMAN::Log, boost::noncopyable >("Log", no_init)
-        .def("logger", &EMAN::Log::logger, return_internal_reference< 1 >())
-        .staticmethod("logger")
-        .def("set_level", &EMAN::Log::set_level)
-        .def("set_logfile", &EMAN::Log::set_logfile)
-    );
-
-    enum_< EMAN::Log::LogLevel >("LogLevel")
-        .value("ERROR_LOG", EMAN::Log::ERROR_LOG)
-        .value("NORMAL_LOG", EMAN::Log::NORMAL_LOG)
-        .value("WARNING_LOG", EMAN::Log::WARNING_LOG)
-        .value("VARIABLE_LOG", EMAN::Log::VARIABLE_LOG)
-    ;
-
-    delete EMAN_Log_scope;
 
     scope* EMAN_EMUtil_scope = new scope(
     class_< EMAN::EMUtil >("EMUtil", init<  >())
@@ -149,17 +132,32 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("set_value_at", (void (EMAN::EMData::*)(int, int, int, float) )&EMAN::EMData::set_value_at)
         .def("set_value_at", (void (EMAN::EMData::*)(int, int, float) )&EMAN::EMData::set_value_at)
         .def("dump_data", &EMAN::EMData::dump_data)
-#if 0
-        .def("read_images_by_index", &EMAN::EMData::read_images_by_index, EMAN_EMData_read_images_by_index_overloads_2_3())
+        .def("read_images_by_index", &py_read_images_by_index, EMAN_EMData_read_images_by_index_overloads_2_3())
         .staticmethod("read_images_by_index")
-        .def("read_images_by_ext", &EMAN::EMData::read_images_by_ext, EMAN_EMData_read_images_by_ext_overloads_3_5())
+        .def("read_images_by_ext", &py_read_images_by_ext, EMAN_EMData_read_images_by_ext_overloads_3_5())
         .staticmethod("read_images_by_ext")
-#endif
     );
     EMAN_EMData_scope->attr("HEADER_ONLY") = EMAN::EMData::HEADER_ONLY;
     EMAN_EMData_scope->attr("HEADER_AND_DATA") = EMAN::EMData::HEADER_AND_DATA;
     EMAN_EMData_scope->attr("IS_3D") = EMAN::EMData::IS_3D;
     EMAN_EMData_scope->attr("NOT_3D") = EMAN::EMData::NOT_3D;
     delete EMAN_EMData_scope;
+
+    scope* EMAN_Log_scope = new scope(
+    class_< EMAN::Log, boost::noncopyable >("Log", no_init)
+        .def("logger", &EMAN::Log::logger, return_internal_reference< 1 >())
+        .staticmethod("logger")
+        .def("set_level", &EMAN::Log::set_level)
+        .def("set_logfile", &EMAN::Log::set_logfile)
+    );
+
+    enum_< EMAN::Log::LogLevel >("LogLevel")
+        .value("ERROR_LOG", EMAN::Log::ERROR_LOG)
+        .value("NORMAL_LOG", EMAN::Log::NORMAL_LOG)
+        .value("WARNING_LOG", EMAN::Log::WARNING_LOG)
+        .value("VARIABLE_LOG", EMAN::Log::VARIABLE_LOG)
+    ;
+
+    delete EMAN_Log_scope;
 
 }
