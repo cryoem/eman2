@@ -16,4 +16,5 @@ ADD_LIBRARY(pyEM SHARED
 )
 
 INSTALL_TARGETS(/lib pyEM)
+INSTALL_FILES(/lib .py EMAN.py)
 INSTALL_FILES(/include "^.+\\.h$")
