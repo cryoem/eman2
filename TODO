@@ -35,12 +35,24 @@
 
   055. write more documentations on how to install eman2 on windows.
 
-  056. MRC write is incorrect for the complex image. it uses
-	   16bits instead of 32bits. it was right a few monthes ago.
-
   057. rotate_translate(): has some problems it seems that the 
 	   posttranslate was either treated like pretranslate or ignored...	
-	   
+
+  058. CTF classes need more testing for the algorithm implementation.
+
+  059. Find an efficient way to implement EMData's data -> numeric array.
+
+  060. HDFio problem. the read segfault after around 900 reads and the
+       write crash after ~400 writes using the same EMData object in python. 
+
+  061. Windows support. libpng12.dll is missing. 
+
+  062. Windows support. debug build failed with:
+	   libpyFilter (debug info exceeds limit);
+	   libpyUtils complaining that libpython_d.dll could not be found.
+ 
+  063. to handle large volume (>32 bits), use size_t for nx*ny*nz and
+	   data index.
 	   
 --- Low Priority ---
 
@@ -215,4 +227,11 @@
       for the following functions: check_read_access(), check_write_access(), 
       check_region().
 
+  11/16/04 056	  
+       MRC write is incorrect for the complex image. it uses
+	   16bits instead of 32bits. it was right a few monthes ago.
+
+
+
+	   
 	   				
