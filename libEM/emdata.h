@@ -64,7 +64,11 @@ namespace EMAN
 
 	EMData *do_fft();
 	EMData *do_ift();
+#if 0
+	// not used in EMAN1
+	EMData *fft_slice();
 	EMData *ift_slice();
+#endif
 	void gimme_fft();
 
 	void normalize();
