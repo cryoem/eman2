@@ -2,7 +2,6 @@ LINK_LIBRARIES(EM2)
 
 ADD_EXECUTABLE(blankimg blankimg.cpp)
 ADD_EXECUTABLE(fft fft.cpp)
-ADD_EXECUTABLE(image_overwrite image_overwrite.cpp)
 ADD_EXECUTABLE(rotate rotate.cpp)
 ADD_EXECUTABLE(rotate_translate rotate_translate.cpp)
 ADD_EXECUTABLE(rotate_phi rotate_phi.cpp)

@@ -432,6 +432,31 @@ class TestEMData(unittest.TestCase):
         os.unlink(file1)
 
 
+    def test_image_overwrite(self):
+        file1 = "test_image_overwrite.mrc"
+        nx = 16
+        ny = 18
+        nz = 2
+        TestUtil.make_image_file(file1, MRC, EM_FLOAT, nx, ny, nz)
+        e = EMData()
+        e.read_image(file1)
+        
+        nx2 = nx*2
+        ny2 = ny*2
+        nz2 = nz
+        e.set_size(nx2, ny2, nz2)
+        e.write_image(file1)
+        
+        e2 = EMData()
+        e2.read_image(file1)
+        self.assertEqual(nx2, e2.get_xsize())
+        self.assertEqual(ny2, e2.get_ysize())
+        self.assertEqual(nz2, e2.get_zsize())
+
+        os.unlink(file1)
+        
+
+
     def test_ctf(self):
         infile = "test_ctf_in.mrc"
         TestUtil.make_image_file(infile, MRC)
