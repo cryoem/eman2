@@ -33,7 +33,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -50,7 +50,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -67,7 +67,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -84,7 +84,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -100,7 +100,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -118,7 +118,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -135,15 +135,14 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
 	    d.put("maxshift", EMObject::INT);
 	    d.put("snr", EMObject::FLOATARRAY);
 	    return d;
-	}
-	
+	}	
     };
 
     
@@ -154,7 +153,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -173,7 +172,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -190,7 +189,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -208,7 +207,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -225,7 +224,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -243,7 +242,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -262,7 +261,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
@@ -283,7 +282,7 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
 	
-	TypeDict  get_param_types() const
+	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);

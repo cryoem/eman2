@@ -69,7 +69,11 @@ namespace EMAN {
 	    }
 	    return (int)x;
 	}
-	
+
+	static float agauss(float a, float dx, float dy, float dz, float d)
+	{
+	    return (a * exp(-(dx*dx+dy*dy+dz*dz)/d));
+	}
     };
 }
 

@@ -60,8 +60,11 @@ namespace EMAN {
 	void set_parent(EMData* new_parent) { parent = new_parent; }
 
 	void setup4slice(bool redo = true);
-	EMData* fft_slice(const Rotation& r, int mode = 5);
+	//EMData* fft_slice(const Rotation& r, int mode = 5);
 	void to_corner();
+
+	float* get_supp() const { return 0; }
+	
 	
 	EMData* do_fft();
 	EMData* do_ift();
