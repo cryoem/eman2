@@ -1,0 +1,4 @@
+LINK_LIBRARIES(EM)
+
+ADD_EXECUTABLE(imageio imageio.C)
+ADD_EXECUTABLE(basic basic.C)

@@ -1,0 +1,72 @@
+#ifndef __emio_h__
+#define __emio_h__
+
+
+#include "imageio.h"
+#include <stdio.h>
+
+namespace EMAN {
+
+    class EmIO: public ImageIO {
+    public:
+	EmIO(string filename, IOMode rw_mode = READ_ONLY);
+	~EmIO();
+	
+	DEFINE_IMAGEIO_FUNC;
+	
+    private:
+	struct EMHeader {
+	    char machine;     // 0=OS-8, 1=VAX; 2=Convex; 3=SGI; 5=Mac; 6=PC
+	    char is_new_ver;  // OS-9 only
+	    char not_used1;
+	    char data_type;  // 1=byte, 2=short; 4=int; 5=float; 8=complex; 9=double
+	    int nx;
+	    int ny;
+	    int nz;
+	    char comment[80];
+	    int parameters[40];
+	    char username[20];
+	    char date[8];
+	    char userdata[228];
+	};
+
+	enum DataType {
+	    EM_EM_CHAR = 1,
+	    EM_EM_SHORT = 2,
+	    EM_EM_INT = 4,
+	    EM_EM_FLOAT = 5,
+	    EM_EM_COMPLEX = 8,
+	    EM_EM_DOUBLE = 9,
+	    EM_EM_UNKNOWN
+	};
+	
+	enum MachineType {
+	    EM_OS8 = 0,
+	    EM_VAX = 1,
+	    EM_CONVEX = 2,
+	    EM_SGI = 3,
+	    EM_MAC = 5,
+	    EM_PC = 6,
+	    EM_UNKNOWN_MACHINE
+	};
+	
+    private:
+	string filename;
+	IOMode rw_mode;
+	FILE* em_file;
+	EMHeader emh;
+
+	int mode_size;
+	DataType mode;
+	bool is_big_endian;
+	bool initialized;
+
+	int get_mode_size(char data_type);
+	int to_em_datatype(char t);
+	int get_machine_type();
+    };
+    
+}
+
+
+#endif
