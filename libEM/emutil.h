@@ -55,6 +55,9 @@ namespace EMAN {
 	};
 	
 	static EMData* vertical_acf(const EMData* image, int maxdy);
+
+	static EMData* make_image_median(const vector<EMData*>& image_list);
+
 	
 	static ImageType get_image_type(string filename);
 	static int get_image_count(string filename);

@@ -191,10 +191,7 @@ namespace EMAN {
 	
 	float get_edge_mean() const;
 	float get_circle_mean();
-
 	
-	void make_image_median(const vector<EMData*>& image_list);
-
 	void radial_average();
 	void radial_subtract();
 	
@@ -202,7 +199,6 @@ namespace EMAN {
 	void setup_insert_slice(int size);
 	
 	void to_mass_center(bool int_shift_only = true);
-
 
 	SimpleCtf* get_ctf() const;
 	void set_ctf(const SimpleCtf& ctf);
