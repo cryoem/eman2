@@ -7,9 +7,10 @@ using namespace EMAN;
 
 void usage(const char* progname)
 {
-    printf("\n%s [-H] [-vN] <image file>\n", progname);
-    printf("    -H: to display all header information\n");
+    printf("\n%s [-H] [-vN] [-stat] <image file>\n", progname);
+    printf("    -H: show all header information.\n");
     printf("   -vN: set verbosity level. N=0,1,2,3. large N means more verbose.\n");
+    printf(" -stat: show statistical information about the image(s).\n");
     printf("\n");
 }
 
@@ -20,22 +21,18 @@ int main(int argc, char* argv[])
 	exit(1);
     }
 
-    Log::LogLevel log_level = Log::ERROR_LOG;
     bool show_all_header = false;
-    
+    bool stat = false;
+
+    Util::set_log_level(argc, argv);
     for (int i = 1; i < argc - 1; i++) {
-	if (strncmp(argv[i], "-v", 2) == 0) {
-	    char str1[32];
-	    strcpy(str1, argv[1]+2);
-	    log_level = (Log::LogLevel) atoi(str1);
-	}
-	else if (strcmp(argv[i], "-H") == 0) {
+	if (strcmp(argv[i], "-H") == 0) {
 	    show_all_header = true;
 	}
+	else if (strcmp(argv[i], "-stat") == 0) {
+	    stat = true;
+	}
     }
-    
-    Log::logger()->set_level(log_level);
-    
     
     const char* imagefile = argv[argc-1];
     
@@ -46,21 +43,27 @@ int main(int argc, char* argv[])
     printf("%20s: %s\n", "Image Format", imgtype);
 
     EMData* d = new EMData();
-    d->read_image(imagefile, 0, EMData::HEADER_ONLY);
-    Dict dict = d->get_attr_dict();
+    if (!stat) {
+	d->read_image(imagefile, 0, EMData::HEADER_ONLY);
+    }
+    else {
+	d->read_image(imagefile, 0, EMData::HEADER_AND_DATA);
+    }
     
-    int nx = dict.get("nx").get_int();
-    int ny = dict.get("ny").get_int();
-    int nz = dict.get("nz").get_int();
-    
-    printf("%20s: %dx%dx%d\n", "Image Dimensions", nx, ny, nz);
+    printf("%20s: %d x %d x %d\n", "Image Dimensions", d->get_x(), d->get_y(), d->get_z());
 
+    if (stat) {
+	printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
+	       d->get_mean(), d->get_sigma(), d->get_skewness(), d->get_kurtosis());
+    }
+    
     Ctf* ctf = d->get_ctf();
     if (ctf) {
 	printf("CTF: %s\n", ctf->to_string().c_str());
     }
     
     if (show_all_header) {
+	Dict dict = d->get_attr_dict();
 	printf("\nDetailed Header Information:\n");
 	EMUtil::dump_dict(dict);
     }

@@ -34,7 +34,7 @@ namespace EMAN
 				      string filename);
 
 	static float get_frand(float low, float high);
-	static float get_gaussian_rand(float avg, float std);
+	static float get_gaussian_rand(float mean, float sigma);
 
 	static inline int round(float x)
 	{

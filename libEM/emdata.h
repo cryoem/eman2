@@ -193,7 +193,7 @@ namespace EMAN
 	float get_edge_mean() const;
 	float get_circle_mean();
 
-	void radial_average();
+	void radial_mean();
 	void radial_subtract();
 
 	int sub_noise();
@@ -228,14 +228,14 @@ namespace EMAN
 	float get_align_score() const;
 	void set_align_score(float score);
 
-	float get_density_center() const;
-	float get_sigma_diff() const;
+	float get_density_center();
+	float get_sigma_diff();
 
 	Dict get_attr_dict();
-	float get_mean() const;
-	float get_std() const;
-	float get_skewness() const;
-	float get_kurtosis() const;
+	float get_mean();
+	float get_sigma();
+	float get_skewness();
+	float get_kurtosis();
 	
 	Point<int> get_min_location() const;
 	Point<int> get_max_location() const;
@@ -553,14 +553,16 @@ namespace EMAN
 	}
     }
 
-    inline float EMData::get_mean() const
+    inline float EMData::get_mean()
     {
+	update_stat();
 	return attr_dict["mean"].get_float();
     }
 
-    inline float EMData::get_std() const
+    inline float EMData::get_sigma()
     {
-	return attr_dict["std"].get_float();
+	update_stat();
+	return attr_dict["sigma"].get_float();
     }
 
     inline Ctf *EMData::get_ctf() const
@@ -601,8 +603,6 @@ namespace EMAN
 	attr_dict["spacing_row"] = EMObject(attr_dict["spacing_row"].get_float() * scale);
 	attr_dict["spacing_col"] = EMObject(attr_dict["spacing_col"].get_float() * scale);
 	attr_dict["spacing_sec"] = EMObject(attr_dict["spacing_sec"].get_float() * scale);
-
-	
     }
 
 }
