@@ -8,7 +8,6 @@
 #include <map>
 #include <vector>
 #include "log.h"
-#include <assert.h>
 
 using std::vector;
 using std::string;
@@ -559,11 +558,10 @@ namespace EMAN
     template <class T> void Factory<T>::add(InstanceType new_instance)
     {
 	T *i = new_instance();
-	string name = i->get_name();
-    
+	string name = i->get_name();    
 	typename map<string, InstanceType>::iterator fi = my_dict.find(name);
 
-	if (fi != my_dict.end()) {
+	if (fi == my_dict.end()) {
 	    my_dict[name] = new_instance;
 	}
 	delete i;
@@ -577,7 +575,7 @@ namespace EMAN
 	    return my_dict[instancename]();
 	}
 	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
-	assert(0);
+
 	return 0;
     }
 
@@ -591,7 +589,7 @@ namespace EMAN
 	    return i;
 	}
 	Log::logger()->error("No such an instance existing: %s", instancename.c_str());
-	assert(0 && "hello");
+
 	return 0;
     }
 
