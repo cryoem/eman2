@@ -337,7 +337,7 @@ namespace EMAN
 		/** Rotate this image.
 		 * @param rotation Rotation angles
 		 */
-		void rotate(const Rotation & rotation);
+		void rotate(const Transform & t);
 
 		/** Rotate this image.
 		 * @param alt Rotation euler angle alt in EMAN convention.
@@ -349,13 +349,7 @@ namespace EMAN
 		/** Rotate then translate the image.
 		 * @param xform The rotation and translation transformation to be done.
 		 */
-		void rotate_translate(const Transform & xform);
-
-		/** Rotate then translate the image.
-		 * @param rotation The rotation angles
-		 * @param translation The translation distance vector
-		 */
-		void rotate_translate(const Rotation & rotation, const Vec3f &translation);
+		void rotate_translate(const Transform & t);
 
 		/** Rotate then translate the image.
 		 * @param alt Rotation euler angle alt in EMAN convention.

@@ -62,6 +62,15 @@ namespace EMAN
 	public:
 		Transform();
 
+		
+		Transform(const vector<float> & rotation, EulerType euler_type);
+		
+		Transform(const vector<float> & rotation, EulerType euler_type, 
+				  const Vec3f& posttrans);
+		
+		Transform(const vector<float> & rotation, EulerType euler_type, 
+				  const Vec3f & pretrans, const Vec3f& posttrans);
+		
 		Transform(map<string, float>& rotation, EulerType euler_type);
 
 		Transform(map<string, float>& rotation, EulerType euler_type, 
@@ -82,12 +91,14 @@ namespace EMAN
 		void set_posttrans(const Vec3f & posttrans);
 		void set_center(const Vec3f & center);
 		void set_rotation(map<string, float>& rotation, EulerType euler_type);
+		void set_rotation(const vector<float>& rotation, EulerType euler_type);
 		void set_scale(float scale);
 
 		Vec3f get_pretrans() const;
 		Vec3f get_posttrans() const;
-		//Vec3f get_center() const;
+		Vec3f get_center() const;
 		map<string, float> get_rotation(EulerType euler_type) const;
+		
 		float get_scale() const;
 		
 		// returns orthogonality coefficient 0-1 range;

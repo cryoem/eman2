@@ -2786,9 +2786,8 @@ void EMData::to_zero()
 void EMData::scale(float s)
 {
 	ENTERFUNC;
-	
 	Transform t;
-	t.set_scale_instance(Vec3f(s, 1, 1));
+	t.set_scale(s);
 	rotate_translate(t);
 	EXITFUNC;
 }
@@ -2796,7 +2795,6 @@ void EMData::scale(float s)
 void EMData::translate(float dx, float dy, float dz)
 {
 	ENTERFUNC;
-	
 	translate(Vec3f(dx, dy, dz));
 	EXITFUNC;
 }
@@ -2855,19 +2853,27 @@ void EMData::translate(const Vec3f &translation)
 
 void EMData::rotate(float alt, float az, float phi)
 {
-	Transform t(Rotation(alt, az, phi, Rotation::EMAN), Vec3f(0, 0, 0));
+	vector<float> v(3);
+	v[0] = alt;
+	v[1] = az;
+	v[2] = phi;
+	
+	Transform t(v, Transform::EMAN, Vec3f(0, 0, 0));
 	rotate_translate(t);
 }
 
-void EMData::rotate(const Rotation & r)
+void EMData::rotate(const Transform & t)
 {
-	Transform t(r);
 	rotate_translate(t);
 }
 
 void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy, float dz)
 {
-	Transform t(Rotation(alt, az, phi, Rotation::EMAN), Vec3f(dx, dy, dz));
+	vector<float> v(3);
+	v[0] = alt;
+	v[1] = az;
+	v[2] = phi;
+	Transform t(v, Transform::EMAN, Vec3f(dx, dy, dz));
 	rotate_translate(t);
 }
 
@@ -2875,16 +2881,14 @@ void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy
 void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
-	Transform t(Rotation(alt, az, phi, Rotation::EMAN), Vec3f(dx, dy, dz));
-	t.set_post_translate(Vec3f(pdx,pdy,pdz));
+	vector<float> v(3);
+	v[0] = alt;
+	v[1] = az;
+	v[2] = phi;
+	Transform t(v, Transform::EMAN, Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz));
 	rotate_translate(t);
 }
 
-void EMData::rotate_translate(const Rotation & rotation, const Vec3f &translation)
-{
-	Transform t(rotation, translation);
-	rotate_translate(t);
-}
 
 #if 0
 void EMData::rotate_translate_fast(const Rotation & rotation, const Vec3f &translation)
@@ -3032,11 +3036,12 @@ void EMData::rotate_translate(const Transform & xform)
 {
 	ENTERFUNC;
 	
-	float scale = xform.get_scale(0);
+	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
-	Vec3f translation = xform.get_post_translate();
+	Vec3f translation = xform.get_posttrans();
 	Rotation rotation = xform.get_rotation();
-
+	map<string, float> rotation = xform.get_rotation(Transform::EMAN);
+	
 	int nx2 = nx;
 	int ny2 = ny;
 	float inv_scale = 1.0f;
@@ -3060,8 +3065,8 @@ void EMData::rotate_translate(const Transform & xform)
 	}
 
 	if (nz == 1) {
-		float mx0 = inv_scale * cos(rotation.eman_alt());
-		float mx1 = inv_scale * sin(rotation.eman_alt());
+		float mx0 = inv_scale * cos(rotation["alt"]);
+		float mx1 = inv_scale * sin(rotation["alt"]);
 
 		float x2c = nx / 2.0f - dcenter[0] - translation[0];
 		float y2c = ny / 2.0f - dcenter[1] - translation[1];
@@ -3112,7 +3117,7 @@ void EMData::rotate_translate(const Transform & xform)
 
 	else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) {
 		// make sure this is right
-		Matrix3f mx = rotation.get_matrix3();
+		Transform mx = xform;
 		mx *= inv_scale;
 		int nxy = nx * ny;
 		int l = 0;
@@ -5161,7 +5166,7 @@ void EMData::cut_slice(const EMData * map, float dz, Rotation * ort,
 		throw NullPointerException("NULL image");
 	}
 
-	Rotation r(0, 0, 0, Rotation::EMAN);
+	Rotation r(0, 0, 0, Transform::EMAN);
 	if (!ort) {
 		ort = &r;
 	}
@@ -5237,7 +5242,7 @@ void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float
 		throw NullPointerException("NULL image");
 	}
 
-	Rotation r(0, 0, 0, Rotation::EMAN);
+	Rotation r(0, 0, 0, Transform::EMAN);
 	if (!ort) {
 		ort = &r;
 	}

@@ -16,6 +16,32 @@ Transform::Transform()
 }
 
 
+
+Transform::Transform(const vector<float>& rotation, EulerType euler_type)
+{
+	init();
+	set_rotation(rotation, euler_type);
+}
+
+
+Transform::Transform(const vector<float>& rotation, EulerType euler_type, 
+					 const Vec3f& posttrans)
+{
+	init();
+	set_rotation(rotation, euler_type);
+	set_posttrans(posttrans);
+}
+
+		
+Transform::Transform(const vector<float>& rotation, EulerType euler_type, 
+					 const Vec3f & pretrans, const Vec3f& posttrans)
+{
+	init();
+	set_rotation(rotation, euler_type);
+	set_pretrans(pretrans);
+	set_posttrans(posttrans);
+}
+
 Transform::Transform(map<string, float>& rotation, EulerType euler_type)
 {
 	init();
@@ -105,6 +131,78 @@ void Transform::set_center(const Vec3f & center)
 	}
 }
 
+void Transform::set_rotation(const vector<float> & rotation, EulerType euler_type)
+{
+	float a0 = rotation[0];
+	float a1 = rotation[1];
+	float a2 = rotation[2];
+	float a3 = 0;
+	if (rotation.size() > 3) {
+		a3 = rotation[3];
+	}
+	
+	bool is_quaternion = 0;
+
+	switch(euler_type) {
+	case EMAN:
+	case IMAGIC:
+		break;
+		
+	case SPIDER:
+		a1 = a1 - 1.5f * M_PI;
+		a2 = a2 - 0.5f * M_PI;
+		break;
+		
+	case MRC:
+		a1 = fmod(-a1 + 2.5f * M_PI, 2 * M_PI);
+		a2 = fmod(a2 + 0.5f * M_PI, 2.0f * M_PI);
+		break;
+		
+	case QUATERNION:
+		is_quaternion = 1;
+		break;
+		
+	case SPIN:
+	case SGIROT:
+		{
+			is_quaternion = 1;
+			float f = sin(a0 / 2.0f);
+			a1 *= f;
+			a2 *= f;
+			a3 *= f;
+			a0 = cos(a0 / 2.0f);
+		}
+		break;
+		
+	case MATRIX:
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				matrix[i][j] = rotation[i*3+j];
+			}
+		}
+		break;
+		
+	default:
+		throw InvalidValueException(euler_type, "unknown Euler Type");
+	}
+	
+	if (is_quaternion) {
+		quaternion2matrix(a0, a1, a2, a3);
+	}
+	else if (euler_type != MATRIX) {
+		matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
+		matrix[0][1] = -(sin(a3)*cos(a2) + cos(a1)*sin(a2)*cos(a3));
+		matrix[0][2] = sin(a1)*sin(a2);
+		matrix[1][0] = cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
+		matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
+		matrix[1][2] = -sin(a1)*cos(a2);
+		matrix[2][0] = sin(a1)*sin(a3);
+		matrix[2][1] = sin(a1)*cos(a3);
+		matrix[2][2] = cos(a1);
+	}
+	
+}
+
 void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type)
 {
 	float a0 = 0;
@@ -112,12 +210,7 @@ void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type
 	float a2 = 0;
 	float a3 = 0;
 	bool is_quaternion = 0;
-#if 0
-		a0 = rotation[""];
-		a1 = rotation[""];
-		a2 = rotation[""];
-#endif
-		
+
 	switch(euler_type) {
 	case EMAN:
 		a0 = rotation["alt"];
@@ -208,6 +301,10 @@ void Transform::set_scale(float scale)
 	}
 }
 
+Vec3f Transform::get_center() const
+{
+	return Vec3f();
+}
 
 Vec3f Transform::get_pretrans() const
 {
