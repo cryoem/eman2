@@ -14,7 +14,7 @@ void usage(const char *progname)
 
 int main(int argc, char *argv[])
 {
-#if 1
+
     if (argc < 3) {
 	usage(argv[0]);
 	exit(0);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     float rizedx = 0;
     float rizeda = 0;
 
-    float scale = 0;
+    float scale = 1;
     int clipx = -1;
     int clipy = -1;
 
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     const char *interleaved_file = 0;
 
     int n0 = 0;
-    int n1 = 0;
+    int n1 = -1;
 
     argfilters[noisemask] = "MakeRadiusSquared";
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 	else if (strncmp(argv[i], "interlv=", 8) == 0) {
-	    interleaved_file = argv[i] + 8;
+	    interleaved_file = arg + 8;
 	}
 	else if (Util::get_str_int(arg, "pgm", &pgm, &pgmlo, &pgmhi)) {
 	}
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 	    argfilters[noisemask] = "NoiseMask";
 	}
 	else {
-	    argdict[argv[i]] = true;
+	    argdict[arg] = true;
 	}
     }
 
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 
     EMData *ld = new EMData();
 
-    for (int i = n0; i < n1; i++) {
+    for (int i = n0; i <= n1; i++) {
 	d->read_image(argv[1], i);
 	int nx = d->get_xsize();
 	
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
 	}
 
 	float sigma = d->get_sigma();
-	if (Util::goodf(&sigma)) {
+	if (!Util::goodf(&sigma)) {
 	    continue;
 	}
 	if (sigma == 0) {
@@ -601,7 +601,7 @@ int main(int argc, char *argv[])
 
 	if (argdict[mrc]) {
 	    if (n1 != 0) {
-		sprintf(outfile, "%03d.%s", i + 100, argv[2]);
+		sprintf(outfile, "%03d.%s", i + 100, outfile);
 	    }
 	    d->write_image(outfile, 0, EMUtil::IMAGE_MRC);
 	}
@@ -614,7 +614,7 @@ int main(int argc, char *argv[])
 	    d->write_image(outfile, 0, EMUtil::IMAGE_SINGLE_SPIDER);
 	}
 	else if (argdict[hdf]) {
-	    d->append_image(outfile, EMUtil::IMAGE_HDF);
+	    d->append_image(outfile,  EMUtil::IMAGE_HDF);
 	}
 	else if (argdict[em]) {
 	    d->write_image(outfile, 0, EMUtil::IMAGE_EM);
@@ -683,9 +683,6 @@ int main(int argc, char *argv[])
     }
 #endif
     printf("%d images\n", nimg);
-
-
-#endif
-
+    
     return 0;
 }

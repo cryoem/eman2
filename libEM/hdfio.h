@@ -51,6 +51,8 @@ namespace EMAN
 	int write_float_attr(int image_index, string attr_name, float value);
 	int write_string_attr(int image_index, string attr_name, string value);
 
+	int write_float_attr_from_dict(int image_index, string attr_name, const Dict& dict);
+	
 	int write_global_int_attr(string attr_name, int value);
 
 	int write_euler_attr(int image_index, string attr_name, int value);
