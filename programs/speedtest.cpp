@@ -75,14 +75,14 @@ int main(int argc, char *argv[])
 	}
     }
 
-#if 0
+#if 1
     if (low) {
 	printf("Low level tests starting. Please note that compiling with optimization may invalidate certain tests. Also note that overhead is difficult to compensate for, so in most cases it is not dealt with.\n");
 	
 	clock_t t1 = clock();
 	for (float fj = 0; fj < 500.0; fj += 1.0) {
 	    for (int i = 0; i < NTT / 2.0; i += 1)
-		r = data[i]->dot(data[i + NTT / 2]);
+		data[i]->dot(data[i + NTT / 2]);
 	}
 	
 	clock_t t2 = clock();
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	t1 = clock();
 	for (float fj = 0; fj < 500.0; fj += 1.0) {
 	    for (float fi = 0; fi < NTT / 2.0; fi += 1.0)
-		float r = data[1]->dot(data[12]);
+		data[1]->dot(data[12]);
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -105,8 +105,12 @@ int main(int argc, char *argv[])
 	
 	t1 = clock();
 	for (int j = 0; j < 500; j++) {
-	    for (int i = 0; i < NTT / 2; i++)
-		float r = data[i]->lcmp(data[i + NTT / 2], 1);
+	    for (int i = 0; i < NTT / 2; i++) {
+		Dict d;
+		d["with"] = EMObject(data[i + NTT / 2]);
+		d["keepzero"] = EMObject(1);
+		data[i]->cmp("Variance", d);
+	    }
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -114,9 +118,12 @@ int main(int argc, char *argv[])
 	       SIZE, ti, 500 * NTT / (2.0 * ti));
 
 	t1 = clock();
-	for (j = 0; j < 100; j++) {
-	    for (i = 0; i < NTT / 2; i++)
-		r = data[i]->pcmp(data[i + NTT / 2], NULL);
+	for (int j = 0; j < 100; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		Dict d;
+		d["with"] = EMObject(data[i + NTT / 2]);
+		data[i]->cmp("Phase", d);
+	    }
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -124,9 +131,9 @@ int main(int argc, char *argv[])
 	       SIZE, ti, 100 * NTT / (2.0 * ti));
 
 	t1 = clock();
-	for (j = 0; j < 100; j++) {
-	    for (i = 0; i < NTT / 2; i++)
-		r = data[i]->fscmp(data[i + NTT / 2], NULL);
+	for (int j = 0; j < 100; j++) {
+	    for (int i = 0; i < NTT / 2; i++)
+		data[i]->cmp("FRC", Dict("with", EMObject(data[i + NTT / 2])));
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -134,9 +141,9 @@ int main(int argc, char *argv[])
 	       SIZE, ti, 100 * NTT / (2.0 * ti));
 
 	t1 = clock();
-	for (j = 0; j < 500; j++) {
-	    for (i = 0; i < NTT / 2; i++)
-		data[i]->realFilter(4);
+	for (int j = 0; j < 500; j++) {
+	    for (int i = 0; i < NTT / 2; i++)
+		data[i]->filter("AbsoluateValue");
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -144,9 +151,9 @@ int main(int argc, char *argv[])
 	       SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti));
 
 	t1 = clock();
-	for (j = 0; j < 100; j++) {
-	    for (i = 0; i < NTT / 2; i++)
-		data[i]->realFilter(10);
+	for (int j = 0; j < 100; j++) {
+	    for (int i = 0; i < NTT / 2; i++)
+		data[i]->filter("ValueSqrt");
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
@@ -155,10 +162,10 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 100; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE; k++)
-		    f = sqrt(d[k]);
+	for (int j = 0; j < 100; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE; k++)
+		    sqrt(d[k]);
 	    }
 	}
 	t2 = clock();
@@ -169,10 +176,10 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 100; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE; k++)
-		    f = cos(d[k]);
+	for (int j = 0; j < 100; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE; k++)
+		    cos(d[k]);
 	    }
 	}
 	t2 = clock();
@@ -183,10 +190,10 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 100; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE - 1; k++)
-		    f = hypot(d[k], d[k + 1]);
+	for (int j = 0; j < 100; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE - 1; k++)
+		    hypot(d[k], d[k + 1]);
 	    }
 	}
 	t2 = clock();
@@ -197,12 +204,15 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 1000; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE - 1; k++)
-		    f = d[k] * d[k + 1];
+	for (int j = 0; j < 1000; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE - 1; k++) {
+		    float f = d[k] * d[k + 1];
+		    f = f + f;
+		}
 	    }
 	}
+	
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
 	printf("Baseline 5f: %d, %d x %d mult in %1.1f sec -> ~%1.2f mmult/sec (cached)\n",
@@ -211,10 +221,12 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 500; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE - 1; k++)
-		    f = d[k] / d[k + 1];
+	for (int j = 0; j < 500; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE - 1; k++) {
+		    float a = d[k] / d[k + 1];
+		    a = a + a;
+		}
 	    }
 	}
 	t2 = clock();
@@ -225,10 +237,12 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 500; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE - 1; k++)
-		    f = fabs(d[k]);
+	for (int j = 0; j < 500; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE - 1; k++) {
+		    float f = fabs(d[k]);
+		    f = f + f;
+		}
 	    }
 	}
 	t2 = clock();
@@ -239,11 +253,11 @@ int main(int argc, char *argv[])
 
 	d = data[0]->get_data();
 	t1 = clock();
-	for (j = 0; j < 500; j++) {
-	    for (i = 0; i < NTT / 2; i++) {
-		for (k = 0; k < SIZE * SIZE - 1; k++) {
-		    f = atan2(d[k], d[k + 1]);
-		    r = hypot(d[k], d[k + 1]);
+	for (int j = 0; j < 500; j++) {
+	    for (int i = 0; i < NTT / 2; i++) {
+		for (int k = 0; k < SIZE * SIZE - 1; k++) {
+		    atan2(d[k], d[k + 1]);
+		    hypot(d[k], d[k + 1]);
 		}
 	    }
 	}
@@ -254,11 +268,11 @@ int main(int argc, char *argv[])
 	data[0]->done_data();
 
 	t1 = clock();
-	r = 0;
+	
 	EMData *cp;
-	for (i = 0; i < NTT * 100; i++) {
+	for (int i = 0; i < NTT * 100; i++) {
 	    cp = data[i % NTT]->copy(0, 0);
-	    cp->meanShrink(2);
+	    cp->mean_shrink(2);
 	    delete cp;
 	}
 	t2 = clock();
@@ -267,33 +281,32 @@ int main(int argc, char *argv[])
 
 	EMData *d1a, *d2a;
 	t1 = clock();
-	r = 0;
-	for (i = 0; i < NTT * 1000; i++) {
-	    EMData *d = d1a->doFFT();
+
+	for (int i = 0; i < NTT * 1000; i++) {
+	    d1a->do_fft();
 	    d1a->update();
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
 	printf("Baseline 7:  %1.1f sec %f ffts/sec\n", ti, NTT * 1000 / ti);
-	printf("%d\n", d1a->xSize());
+	printf("%d\n", d1a->get_xsize());
 
 	d1a = data[0]->copy(0, 0);
-//      d1a->meanShrink(4);
+
 	d1a = d1a->copy();
 	d2a = data[1]->copy(0, 0);
-//      d2a->meanShrink(4);
+
 	t1 = clock();
-	r = 0;
-	for (i = 0; i < NTT * 1000; i++) {
-	    d1a->setTAlign(-1, -3, 0);
-//              d1a->fastTranslate(0);
-	    d1a->rotateAndTranslate();
+
+	for (int i = 0; i < NTT * 1000; i++) {
+	    d1a->set_talign_params(-1, -3, 0);
+	    d1a->rotate_translate();
 	}
 	t2 = clock();
 	ti = (t2 - t1) / (float) CPS;
 	printf("Baseline 8:  %1.1f sec   %f translates/sec\n", ti, NTT * 1000 / ti);
 
-	exit(0);
+	return 0;
 
     }
 #endif
@@ -364,7 +377,7 @@ int main(int argc, char *argv[])
 	       3.0 * ((slow == 2 ? NTT / 10 : NTT) - 5) / ti);
     }
     else if (big && !slow) {
-//printf("An Athlon XP2400+ (2000mhz) with gcc3.2 and FFTWGEL has a BIG sf of 970\n");
+	//printf("An Athlon XP2400+ (2000mhz) with gcc3.2 and FFTWGEL has a BIG sf of 970\n");
 	printf("\nYour machines speed factor = %1.1f\n", 72000.0 / ti);
     }
     else {
@@ -372,3 +385,5 @@ int main(int argc, char *argv[])
     }
 
 }
+       
+    
