@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 		e.write_image("test.mrc", 0, EMUtil::IMAGE_MRC, true);
 	}
 	catch(Exception &e) {
-		e.what();
+		printf("%s", e.what());
 	}
 	return 0;
 }

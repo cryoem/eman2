@@ -224,7 +224,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 		}
 		rewind(hed_file);
 	}
-
+	
 	ImagicHeader new_hed;
 	memset(&new_hed, 0, sizeof(ImagicHeader));
 
@@ -234,7 +234,13 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 	}
 	else {
 		new_hed.imgnum = image_index + 1;
-		portable_fseek(hed_file, sizeof(ImagicHeader) * image_index, SEEK_SET);
+
+		if (image_index > (imagich.count + 1)) {
+			portable_fseek(hed_file, 0, SEEK_END);
+		}
+		else {
+			portable_fseek(hed_file, sizeof(ImagicHeader) * image_index, SEEK_SET);
+		}
 	}
 
 	time_t cur_time = time(0);
@@ -300,7 +306,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 			swap_header(new_hed);
 		}
 	}
-
+	
 	strcpy(new_hed.type, REAL_TYPE_MAGIC);
 
 	int n_pad_heds = 0;
@@ -309,30 +315,45 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 		n_pad_heds = image_index - old_num_imgs;
 	}
 
-	if (image_index<old_num_imgs && n_new_img==1) n_new_img=0;
-	
-	for (int i = 0; i < n_pad_heds + n_new_img; i++) {
+	if (image_index < old_num_imgs && n_new_img == 1) {
+		n_new_img=0;
+	}
+
+	int imgnum_bak = new_hed.imgnum;
+
+	for (int i = 0; i < n_pad_heds; i++) {
+		new_hed.imgnum = i + 1 + old_num_imgs;
 		fwrite(&new_hed, sizeof(ImagicHeader), 1, hed_file);
 	}
+	for (int i = 0; i < n_new_img; i++) {
+		new_hed.imgnum = i + 1 + image_index;
+		fwrite(&new_hed, sizeof(ImagicHeader), 1, hed_file);
+	}
+	
+	new_hed.imgnum = imgnum_bak;
 
 	if (is_new_hed && imagich.nx == 0) {
 		imagich = new_hed;
 		imagich.count = -1;
 	}
 
-	imagich.count += (n_pad_heds + n_new_img);
-
-	if (is_big_endian != ByteOrder::is_host_big_endian()) {
-		ByteOrder::swap_bytes(&imagich.count);
+	if (old_num_imgs < (image_index+1)) {
+		imagich.count += (n_pad_heds + n_new_img);
+		
+		if (is_big_endian != ByteOrder::is_host_big_endian()) {
+			ByteOrder::swap_bytes(&imagich.count);
+		}
+		
+		portable_fseek(hed_file, sizeof(int), SEEK_SET);
+		fwrite(&imagich.count, sizeof(int), 1, hed_file);
 	}
-	portable_fseek(hed_file, sizeof(int), SEEK_SET);
-	fwrite(&imagich.count, sizeof(int), 1, hed_file);
-
+	
 	if (!is_new_hed) {
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			swap_header(new_hed);
 		}
 	}
+
 	EXITFUNC;
 	return 0;
 }
@@ -394,7 +415,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	else {
 		throw ImageReadException(filename, "unknown imagic data type");
 	}
-	
+ 	
 	EXITFUNC;
 	return 0;
 }
@@ -418,22 +439,18 @@ int ImagicIO::write_data(float *data, int image_index, const Region* , bool)
 	if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
 		ByteOrder::swap_bytes(data, imagich.nx * imagich.ny * nz);
 	}
-
-	int nimg = 0;
-	if (nz == 1) {
-		if (image_index > imagich.count) {
-			nimg = image_index - imagich.count;
-		}
-		nimg++;
+#if 0
+	int n_pad_imgs = 0;
+	int old_num_imgs = imagich.count + 1;	
+	if (image_index > old_num_imgs) {
+		n_pad_imgs = image_index - old_num_imgs;
 	}
-	else {
-		nimg = nz;
-	}
-
+#endif
+	
 	size_t row_size = imagich.nx * sizeof(float);
 	int sec_dim = imagich.nx * imagich.ny;
 
-	for (int i = 0; i < nimg; i++) {
+	for (int i = 0; i < nz; i++) {
 		for (int j = imagich.ny - 1; j >= 0; j--) {
 			fwrite(&data[i * sec_dim + j * imagich.nx], row_size, 1, img_file);
 		}

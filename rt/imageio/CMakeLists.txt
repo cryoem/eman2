@@ -6,3 +6,5 @@ ADD_EXECUTABLE(mrc mrc.cpp)
 ADD_EXECUTABLE(ctf ctf.cpp)
 ADD_EXECUTABLE(writetwice writetwice.cpp)
 ADD_EXECUTABLE(region region.cpp)
+ADD_EXECUTABLE(imagic1 imagic1.cpp)
+

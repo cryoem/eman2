@@ -31,7 +31,9 @@ namespace EMAN
 	 * 3D imagic uses the same format to 2D. it is a bunch of 2D slices.
 	 * use the 'hint' IS_3D to treat "2D slices" as 3D volume.
 	 * 
-	 * imagic doesn't store multiple 3D images in one file.
+	 * imagic doesn't store multiple 3D images in one file
+	 * (header/data pair).
+	 * 
 	 */
 
 	class ImagicIO:public ImageIO

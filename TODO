@@ -51,6 +51,9 @@
  
   063. to handle large volume (>32 bits), use size_t for nx*ny*nz and
 	   data index.
+
+  064. On windows, when there is an exception, e2iminfo prints some garbage
+       letters out after the regular error message.
 	   
 --- Low Priority ---
 
