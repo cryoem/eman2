@@ -1939,6 +1939,86 @@ void EMData::update_stat()
 	EXITFUNC;
 }
 
+EMData *EMData::get_row(int row_index) const
+{
+	ENTERFUNC;
+
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D image only");
+	}
+	
+	EMData *ret = new EMData();
+	ret->set_size(nx, 1, 1);
+	memcpy(ret->get_data(), get_data() + nx * row_index, nx * sizeof(float));
+	ret->done_data();
+	EXITFUNC;
+	return ret;
+}
+
+
+void EMData::set_row(const EMData * d, int row_index)
+{
+	ENTERFUNC;
+
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D image only");
+	}
+	if (d->get_ndim() != 1) {
+		throw ImageDimensionException("1D image only");
+	}
+	
+	float *dst = get_data();
+	float *src = d->get_data();
+	memcpy(dst + nx * row_index, src, nx * sizeof(float));
+	done_data();
+	EXITFUNC;
+}
+
+EMData *EMData::get_col(int col_index) const
+{
+	ENTERFUNC;
+
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D image only");
+	}
+	
+	EMData *ret = new EMData();
+	ret->set_size(ny, 1, 1);
+	float *dst = ret->get_data();
+	float *src = get_data();
+
+	for (int i = 0; i < ny; i++) {
+		dst[i] = src[i * nx + col_index];
+	}
+
+	ret->done_data();
+	EXITFUNC;
+	return ret;
+}
+
+
+void EMData::set_col(const EMData * d, int n)
+{
+	ENTERFUNC;
+	
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D image only");
+	}
+	if (d->get_ndim() != 1) {
+		throw ImageDimensionException("1D image only");
+	}
+	
+	float *dst = get_data();
+	float *src = d->get_data();
+
+	for (int i = 0; i < ny; i++) {
+		dst[i * nx + n] = src[i];
+	}
+
+	done_data();
+	EXITFUNC;
+}
+
 
 EMObject EMData::get_attr(string key)
 {	
@@ -5164,72 +5244,3 @@ void EMData::setup_insert_slice(int size)
 	EXITFUNC;
 }
 
-
-EMData *EMData::get_row(int row_index) const
-{
-	ENTERFUNC;
-
-	if (get_ndim() > 2) {
-		throw ImageDimensionException("1D/2D image only");
-	}
-	
-	EMData *ret = new EMData();
-	ret->set_size(nx, 1, 1);
-	memcpy(ret->get_data(), get_data() + nx * row_index, nx * sizeof(float));
-	ret->done_data();
-	EXITFUNC;
-	return ret;
-}
-
-
-void EMData::set_row(const EMData * d, int row_index)
-{
-	ENTERFUNC;
-
-	if (get_ndim() > 2) {
-		throw ImageDimensionException("1D/2D image only");
-	}
-	if (d->get_ndim() != 1) {
-		throw ImageDimensionException("1D only");
-	}
-	
-	float *dst = get_data();
-	float *src = d->get_data();
-	memcpy(dst + nx * row_index, src, nx * sizeof(float));
-	done_data();
-	EXITFUNC;
-}
-
-EMData *EMData::get_col(int col_index) const
-{
-	ENTERFUNC;
-	
-	EMData *ret = new EMData();
-	ret->set_size(ny, 1, 1);
-	float *dst = ret->get_data();
-	float *src = get_data();
-
-	for (int i = 0; i < ny; i++) {
-		dst[i] = src[i * nx + col_index];
-	}
-
-	ret->done_data();
-	EXITFUNC;
-	return ret;
-}
-
-
-void EMData::set_col(const EMData * d, int n)
-{
-	ENTERFUNC;
-	
-	float *dst = get_data();
-	float *src = d->get_data();
-
-	for (int i = 0; i < ny; i++) {
-		dst[i * nx + n] = src[i];
-	}
-
-	done_data();
-	EXITFUNC;
-}

@@ -935,10 +935,33 @@ namespace EMAN
 		 */
 		void set_col(const EMData * data, int col_index);
 
-		EMObject get_attr(string key);
-		void set_attr(string key, EMObject val);
+		/** The generic way to get any image header information
+		 * given a header attribute name.
+		 *
+		 * @param attr_name The header attribute name.
+		 * @return The attribute value.
+		 */
+		EMObject get_attr(string attr_name);
 		
+		/** Set a header attribute's value.
+		 *
+		 * @param attr_name The header attribute name.
+		 * @param val The attribute value.
+		 */
+		void set_attr(string attr_name, EMObject val);
+
+		/** Get the image attribute dictionary containing all the
+		 * image attribute names and attribute values.
+		 *
+		 * @return The image attribute dictionary containing all
+		 * attribute names and values.
+		 */
 		Dict get_attr_dict();
+
+		/* Set the attribute dictionary to a new dictioanary.
+		 *
+		 * @param new_dict The new attribute dictionary.
+		 */
 		void set_attr_dict(const Dict & new_dict);
 		
 		int get_xsize() const;
