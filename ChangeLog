@@ -1,0 +1,21 @@
+2003-11-05  Michael Hohn  <hohn@worm.lbl.gov>
+
+	* CMakeLists.txt: 
+	    - there is no provision in  eman2/CMakeLists.txt
+	      for user-defined root directories, e.g.
+		  FIND_PATH(BOOST_INCLUDE_PATH boost/python.hpp
+					    $ENV{HOME}/include
+					    /usr/local/include
+					    /usr/include)
+
+	    - $ENV{GSLDIR} gives a way for custom gsl locations,
+	      but for boost...
+
+	Thus, I added the use of a generic EMAN2_PREFIX, analogous to the
+	--prefix option in configure. 
+
+	For boost (the headers), I added EMAN2_BOOST_DIST, which should
+	point to the top-level boost directory.
+	
+	Lastly, I had emacs re-indent the file...
+	
