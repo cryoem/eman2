@@ -4,6 +4,7 @@
 #include <gsl/gsl_linalg.h>
 #include <string>
 #include <vector>
+#include <math.h>
 #include "geometry.h"
 
 using std::vector;
@@ -15,7 +16,7 @@ namespace EMAN {
     public:
 	Vec3f() { vec[0] = 0; vec[1] = 0; vec[2] = 0; }
 	Vec3f(float x, float y, float z) { vec[0] = x; vec[1] = y; vec[2] = z; }
-	Vec3f(const float v[3]) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
+	Vec3f(const vector<float>& v) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
 	virtual ~Vec3f() {}
 	
 	float normalize();
@@ -29,12 +30,11 @@ namespace EMAN {
 	}
 	
 	float length() const;
-	void negate() {  vec[0] = -vec[0]; vec[1] = -vec[1]; vec[2] = -vec[2]; }
+	Vec3f& negate() {  vec[0] = -vec[0]; vec[1] = -vec[1]; vec[2] = -vec[2]; return (*this); }
 	
-	void get_value(float* v) const { v[0] = vec[0]; v[1] = vec[1]; v[2] = vec[2]; }
-	void get_value(float &x, float &y, float &z) const { x = vec[0]; y = vec[1]; z = vec[2]; }
-
-	void set_value(const float v[3]) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
+	vector<float> get_value() const { vector<float> v(3); v[0] = vec[0]; v[1] = vec[1]; v[2] = vec[2]; return v; }
+	
+	void set_value(const vector<float>& v) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
 	void set_value(float x, float y, float z) { vec[0] = x; vec[1] = y; vec[2] = z; }
 
 	float operator[](int i) const { return vec[i]; }
@@ -46,8 +46,8 @@ namespace EMAN {
 	Vec3f& operator *= (float d) { vec[0] *= d; vec[1] *= d; vec[2] *= d; return *this; }
 	Vec3f& operator /= (float d) { if (d != 0) { vec[0] /= d; vec[1] /= d; vec[2] /= d; } return *this; }
 
-	friend Vec3f operator+(const Vec3f& v1, const Vec3f& v2);
-	friend Vec3f operator-(const Vec3f& v1, const Vec3f& v2);
+	friend Vec3f operator + (const Vec3f& v1, const Vec3f& v2);
+	friend Vec3f operator - (const Vec3f& v1, const Vec3f& v2);
 
 	friend Vec3f operator * (float d, const Vec3f v);
 	friend Vec3f operator / (float d, const Vec3f v);
@@ -55,8 +55,8 @@ namespace EMAN {
 	friend Vec3f operator * (const Vec3f v, float d);
 	friend Vec3f operator / (const Vec3f v, float d);
 	
-	friend bool operator==(const Vec3f& v1, const Vec3f& v2);
-	friend bool operator!=(const Vec3f& v1, const Vec3f& v2);
+	friend bool operator == (const Vec3f& v1, const Vec3f& v2);
+	friend bool operator != (const Vec3f& v1, const Vec3f& v2);
 	
     private:
 	float vec[3];
@@ -66,26 +66,24 @@ namespace EMAN {
     class  Matrix3f {
     public:
 	Matrix3f();
-	Matrix3f(float m[]);
+	Matrix3f(float m0, float m1, float m2, float m3, float m4, float m5, float m6, float m7, float m8);
+	Matrix3f(const vector<float>& m);
 	virtual ~Matrix3f();
+	
+	void make_identity();
 	
 	Matrix3f& mult_right(const Matrix3f& m);
 	Matrix3f& mult_left(const Matrix3f& m);
 	
-	void make_identity();
-	
-	void set_value(float m[]);
-	void set_element(int i, int j, float v);
-	
-	void get_value(float m[]) const;
-	float get_element(int i, int j) const;
+	void set_value(const vector<float>& m);
+	vector<float> get_value() const;
 	
 	Matrix3f& inverse();
 	Matrix3f& transpose();
 	Matrix3f create_inverse();
 	
-	double* operator[] (int i);
-	const double* operator[] (int i) const;
+	double* operator[](int i);
+	const double* operator[](int i) const;
 	
 	Matrix3f& operator+=(float f);
 	Matrix3f& operator-=(float f);
@@ -129,7 +127,7 @@ namespace EMAN {
     class  Matrix4f {
     public:
 	Matrix4f();
-	Matrix4f(float m[]);
+	Matrix4f(const vector<float>& m);
 	Matrix4f(const Matrix3f& m3);
 	virtual ~Matrix4f();
 	
@@ -138,11 +136,8 @@ namespace EMAN {
 	
 	void make_identity();
 	
-	void set_value(float m[]);
-	void set_element(int i, int j, float v);
-	
-	void get_value(float m[]) const;
-	float get_element(int i, int j) const;
+	void set_value(const vector<float>& m);
+	vector<float> get_value() const;
 	Matrix3f get_matrix3() const;
 	
 	Matrix4f& inverse();
@@ -207,16 +202,16 @@ namespace EMAN {
     class Quaternion {
     public:
 	Quaternion();
+	Quaternion(float e0, float e1, float e2, float e3);
 	Quaternion(float radians, const Vec3f& axis);
 	Quaternion(const Vec3f& axis, float radians);
-	Quaternion(float e0, float e1, float e2, float e3);
 	Quaternion(const Matrix3f& m);
 	Quaternion(const Matrix4f& m);
-	~Quaternion();
+	~Quaternion() {}
 
-	float norm() const;
-	Quaternion conj() const;
-	float abs() const;
+	float norm() const { return (e0*e0 + e1*e1 + e2*e2 + e3*e3); }
+	Quaternion conj() const { return (Quaternion(e0, -e1, -e2, -e3)); }
+	float abs() const { return sqrt(norm()); }
 	
 	void normalize();
 	Quaternion& inverse();
@@ -224,6 +219,9 @@ namespace EMAN {
 	
 	Vec3f rotate(const Vec3f& v) const;
 
+	void interpolate(const Quaternion& q1, float alpha);
+	void interpolate(const Quaternion& q1, const Quaternion& q2, float alpha);
+	
 	float to_angle() const;
 	Vec3f to_axis() const;
 	

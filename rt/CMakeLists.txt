@@ -1,1 +1,1 @@
-SUBDIRS(imageio filter pyem emdata)
+SUBDIRS(imageio filter pyem emdata algebra)
