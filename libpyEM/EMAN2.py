@@ -17,4 +17,7 @@ from pyemtbx.box import *
 
 EMANVERSION="EMAN2 v1.90"
 
-
+def display(img):
+	from os import system
+	img.write_image("/tmp/img.mrc")
+	system("v2 /tmp/img.mrc")

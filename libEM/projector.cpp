@@ -675,10 +675,11 @@ EMData *StandardProjector::project3d(EMData * image) const
 
 	float *sdata = image->get_data();
 	float *ddata = proj->get_data();
-	int l = 0;
 	for (int k = -nz / 2; k < nz - nz / 2; k++) {
+		int l = 0;
 		for (int j = -ny / 2; j < ny - ny / 2; j++) {
-			for (int i = -nx / 2; i < nx - nx / 2; i++, l++) {
+			ddata[l]=0;
+			for (int i = -nx / 2; i < nx - nx / 2; i++,l++) {
 				float x2 = (float)(mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2);
 				float y2 = (float)(mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2);
 				float z2 = (float)(mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + nz / 2);
