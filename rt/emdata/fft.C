@@ -20,14 +20,14 @@ void create_lattice_image(const char* filename)
 	int end = size/nslices*i + width;
 	
 	for (int j = start; j < end; j++) {
-	    for (int k = 0; k < size; k++) {
+	    for (int k = 0; k < size/2; k++) {
 		data[j*size+k]  = 1;
 	    }
 	}
     }
     
     for (int l = 0; l < size; l++) {
-	for (int i = 1; i < nslices; i++) {
+	for (int i = 1; i < nslices-1; i++) {
 	    int start = size/nslices*i - width;
 	    int end = size/nslices*i + width;
 	    
