@@ -256,17 +256,17 @@ namespace EMAN
 
 		/** Render the image into an 8-bit image. 2D image only.
 		 *
-		 * @param data
-		 * @param x
+		 * @param x	origin of the area to render
 		 * @param y
-		 * @param xsize
+		 * @param xsize	size of the area to render in output pixels
 		 * @param ysize
-		 * @param bpl
-		 * @param scale
-		 * @param min_gray
-		 * @param max_gray
-		 * @param min_render
-		 * @param max_render
+		 * @param bpl	bytes per line, if asrgb remember *3
+		 * @param scale	scale factor for rendering
+		 * @param min_gray	minimum gray value to render (0-255)
+		 * @param max_gray	maximum gray value to render (0-255)
+		 * @param min_render	float image density corresponding to min_gray
+		 * @param max_render	float image density corresponding to max_gray
+		 * @param asrgb	duplicate each output pixel 3x for RGB rendering
 		 * @exception ImageDimensionException If the image is not 2D.
 		 */
 		std::string render_amp8(int x, int y, int xsize, int ysize,
