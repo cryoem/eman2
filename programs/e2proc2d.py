@@ -10,20 +10,6 @@ import math
 import random
 
 
-def parse_filter_params(filterparams):
-    params = filterparams.split(":")
-    filtername = params[0]
-
-    if len(params) == 1:
-        return (filtername, None)
-    else:
-        d = Dict()
-        for param in params[1:]:
-            key_values = param.split("=")
-            d[key_values[0]] = EMObject(key_values[1])
-        return (filtername, d)
-    
-
 def read_listfile(listfile, excludefile, nimg):
     imagelist = None
     infile = None
@@ -95,11 +81,8 @@ def main():
 
     append_options = ["clip", "filter", "meanshrink", "shrink", "scale"]
 
-    optionlist = []
-    for arg1 in sys.argv[1:]:
-        if arg1[0] == "-":
-            optionlist.append(arg1.lstrip("-"))
-
+    optionlist = get_optionlist(sys.argv[1:])
+    
     (options, args) = parser.parse_args()
     
     if len(args) != 2:
@@ -238,8 +221,7 @@ def main():
                  
             elif option1 == "clip":
                 ci = index_d[option1]
-                clipx = options.clip[ci][0]
-                clipy = options.clip[ci][1]    
+                (clipx, clipy) = options.clip[ci]
                 e = d.get_clip(Region(nx-clipx)/2, (ny-clipy)/2, clipx, clipy)
                 e.set_average_nimg(d.get_average_nimg())
                 d = e

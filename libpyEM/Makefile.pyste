@@ -2,6 +2,12 @@ all: libpyGeometry2.cpp libpyFactory2.cpp libpyEMData2.cpp libpyUtils2.cpp libpy
 
 PYSTE = python /usr/bin/pyste.py -I../libEM
 
+a: libpyFactory2.cpp
+b: libpyGeometry2.cpp
+c: libpyEMData2.cpp
+d: libpyUtils2.cpp
+e: libpyFilter2.cpp
+
 libpyGeometry2.cpp: geometry.pyste
 	$(PYSTE) --module=libpyGeometry2 geometry.pyste
 

@@ -12,6 +12,7 @@ EMData = Class("EMAN::EMData", "emdata.h")
 set_policy(EMData.get_ctf, return_internal_reference())
 set_policy(EMData.copy, return_value_policy(manage_new_object))
 set_policy(EMData.get_clip, return_value_policy(manage_new_object))
+set_policy(EMData.get_top_half, return_value_policy(manage_new_object))
 set_policy(EMData.do_fft, return_value_policy(manage_new_object))
 set_policy(EMData.do_ift, return_value_policy(manage_new_object))
 
