@@ -132,14 +132,17 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 		cur_trans[1] = floor(cur_trans[1] + 0.5f);
 	}
 
-	this_img->translate(cur_trans);
+	cf->done_data();
+	delete cf;
+	cf=this_img->copy(0);
+	cf->translate(cur_trans);
 
+	
 	float score = (float)hypot(result[0], result[1]);
 	cf->set_attr("align_score", max_value);
 	cf->set_attr("translational.dx",result[0]); 
 	cf->set_attr("translational.dy",result[1]); 
 	cf->set_attr("translational.dz",result[2]); 
-	cf->done_data();
 
 	return cf;
 }
@@ -470,6 +473,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  const stri
 	
 	EMData *this_copy2 = this_copy->copy(0);
 	this_copy2->rotate_180();
+	this_copy2->set_attr("rotational",(float)this_copy2->get_attr("rotational")+M_PI);
 
 	Dict trans_params;
 	
