@@ -35,19 +35,23 @@ for single particle analysis."""
 		print "%d reference particles read"%len(refptcl)
 	
 	if options.box<5 :
-		if options.refptcl : options.box=refptcl.get_xsize()
+		if options.refptcl : options.box=refptcl[0].get_xsize()
 		elif options.ptclsize : 
 			options.box=good_boxsize(options.ptclsize*1.2)
 		else : parser.error("Please specify a box size")
 	else:
 		if not options.box in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
-			
-	shrinkfactor=int(ceil(image.get_ysize()/1024.0))
-	if options.box/shrinkfactor<12 : shrinkfactor/=2
+	
+	shrinkfactor=int(ceil(options.box/16))
+	print "Shrink factor = ",shrinkfactor
+	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
+	#if options.box/shrinkfactor<12 : shrinkfactor/=2
 	
 	shrink=image.copy(0)
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
+	
+	print "Autobox mode ",options.auto
 	
 	if "ref" in options.auto:
 		if not refptcl: error_exit("Reference particles required")
@@ -64,7 +68,7 @@ for single particle analysis."""
 			# make the unmasked portion mean -> 0
 			ic.add(ic.get_attr("mean_nonzero"),keepzero=1)
 			
-			
+			ic.write_image("scaled_refs.hdf",-1)
 			
 	
 	if "circle" in options.auto:
