@@ -55,3 +55,7 @@ IntPoint = Class("EMAN::IntPoint", "geometry.h")
 FloatPoint = Class("EMAN::FloatPoint", "geometry.h")
 
 Region = Class("EMAN::Region", "geometry.h")
+
+Pixel = Class("EMAN::Pixel", "geometry.h")
+
+

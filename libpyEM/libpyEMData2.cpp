@@ -208,18 +208,18 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5())
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
+        .def( self - other< float >() )
         .def( self + other< float >() )
+        .def( other< float >() - self )
         .def( other< float >() + self )
         .def( self / other< float >() )
         .def( self * other< float >() )
-        .def( self - other< float >() )
-        .def( self / self )
-        .def( other< float >() / self )
         .def( self + self )
         .def( self - self )
         .def( self * self )
-        .def( other< float >() - self )
+        .def( self / self )
         .def( other< float >() * self )
+        .def( other< float >() / self )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )
@@ -235,11 +235,13 @@ BOOST_PYTHON_MODULE(libpyEMData2)
     EMAN::vector_to_python<float>();
     EMAN::vector_to_python<std::string>();
     EMAN::vector_to_python<EMAN::EMData*>();
+    EMAN::vector_to_python<EMAN::Pixel>();
 
     EMAN::vector_from_python<int>();
     EMAN::vector_from_python<float>();
     EMAN::vector_from_python<std::string>();
     EMAN::vector_from_python<EMAN::EMData*>();
+    EMAN::vector_from_python<EMAN::Pixel>();
 
     EMAN::map_to_python<EMAN::EMObject>();
     EMAN::map_from_python<EMAN::EMObject>();

@@ -355,5 +355,16 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
         .def("get_string", &EMAN::Region::get_string)
     ;
 
+    class_< EMAN::Pixel >("Pixel", init< const EMAN::Pixel& >())
+        .def(init< int, int, int, float >())
+        .def_readwrite("x", &EMAN::Pixel::x)
+        .def_readwrite("y", &EMAN::Pixel::y)
+        .def_readwrite("z", &EMAN::Pixel::z)
+        .def_readwrite("value", &EMAN::Pixel::value)
+        .def("get_point", &EMAN::Pixel::get_point)
+        .def("get_value", &EMAN::Pixel::get_value)
+        .def( self < self )
+    ;
+
 }
 
