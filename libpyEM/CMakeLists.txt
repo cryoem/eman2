@@ -9,11 +9,11 @@ IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
 
-ADD_LIBRARY(pyGeometry2 SHARED libpyGeometry.cpp)
-ADD_LIBRARY(pyFactory2 SHARED libpyFactory.cpp)
-ADD_LIBRARY(pyUtils2 SHARED libpyUtils.cpp)
-ADD_LIBRARY(pyFilter2 SHARED libpyFilter.cpp)
-ADD_LIBRARY(pyEMData2 SHARED pyem.C libpyEMData.cpp)
+ADD_LIBRARY(pyGeometry2 SHARED libpyGeometry2.cpp)
+ADD_LIBRARY(pyFactory2 SHARED libpyFactory2.cpp)
+ADD_LIBRARY(pyUtils2 SHARED libpyUtils2.cpp)
+ADD_LIBRARY(pyFilter2 SHARED libpyFilter2.cpp)
+ADD_LIBRARY(pyEMData2 SHARED pyem.C libpyEMData2.cpp)
 
 INSTALL_TARGETS(/lib pyGeometry2 pyFactory2 pyUtils2 pyFilter2 pyEMData2)
 INSTALL_FILES(/lib .py e2EMAN.py)

@@ -413,15 +413,7 @@ int main(int argc, char* argv[])
 	exit(1);
     }
 
-    Log::LogLevel log_level = Log::WARNING_LOG;
-    
-    if (strncmp(argv[1], "-v", 2) == 0) {
-	char str1[32];
-	strcpy(str1, argv[1]+2);
-	log_level = (Log::LogLevel) atoi(str1);
-    }
-    
-    Log::logger()->set_level(log_level);
+    Util::set_log_level(argc, argv);
 			     
     const char* imageformat = argv[argc-1];
 

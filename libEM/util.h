@@ -105,6 +105,7 @@ namespace EMAN
 	    return (a * exp(-(dx * dx + dy * dy + dz * dz) / d));
 	}
 
+	
 	static inline float min(float f1, float f2)
 	{
 	    return (f1 < f2 ? f1 : f2);
@@ -138,7 +139,7 @@ namespace EMAN
 
 	static inline float max(float f1, float f2)
 	{
-	    return f1 < f2 ? f2 : f1;
+	    return (f1 < f2 ? f2 : f1);
 	}
 
 	static inline float max(float f1, float f2, float f3)
@@ -198,6 +199,45 @@ namespace EMAN
 	static string get_time_label();
 
 	static void set_log_level(int argc, char* argv[]);
+
+	static inline float eman_copysign(float a, float b)
+	{
+#ifndef _WIN32
+	    return copysign(a, b);
+#else
+	    int flip = -1;
+	    if ((a <= 0 && b <= 0) || ( a > 0 && b > 0)) {
+		flip = 1;
+	    }	    
+	    return a*flip;
+#endif
+	}
+
+	static inline double eman_erfc(double x)
+	{
+#ifndef _WIN32
+	    return erfc(x);
+#else
+	    static double a[] = { -1.26551223, 1.00002368,
+				   0.37409196, 0.09678418,
+				  -0.18628806, 0.27886807,
+				  -1.13520398, 1.48851587,
+				  -0.82215223, 0.17087277 };
+	    
+	    double result = 1;
+	    double z = fabs(x);
+	    if (z > 0) {
+		double t = 1 / (1 + 0.5*z);
+		double f1 = t*(a[4]+t*(a[5]+t*(a[6]+t*(a[7]+t*(a[8]+t*a[9])))));
+		result = t*exp((-z*z) + a[0] + t*(a[1]+t*(a[2]+t*(a[3]+f1))));
+		
+		if (x < 0) {
+		    result = 2 - result;
+		}
+	    }
+	    return result;
+#endif
+	}
 	
     };
 }

@@ -42,9 +42,9 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
     ;
 
     class_< EMAN::Matrix3f >("Matrix3f", init<  >())
-        .def(init< const EMAN::Matrix3f& >())
         .def(init< float, float, float, float, float, float, float, float, float >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
+        .def(init< const EMAN::Matrix3f& >())
         .def("make_identity", &EMAN::Matrix3f::make_identity)
         .def("mult_right", &EMAN::Matrix3f::mult_right, return_internal_reference< 1 >())
         .def("mult_left", &EMAN::Matrix3f::mult_left, return_internal_reference< 1 >())
@@ -80,9 +80,9 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
     ;
 
     class_< EMAN::Matrix4f >("Matrix4f", init<  >())
-        .def(init< const EMAN::Matrix4f& >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
         .def(init< const EMAN::Matrix3f& >())
+        .def(init< const EMAN::Matrix4f& >())
         .def("mult_right", &EMAN::Matrix4f::mult_right, return_internal_reference< 1 >())
         .def("mult_left", &EMAN::Matrix4f::mult_left, return_internal_reference< 1 >())
         .def("make_identity", &EMAN::Matrix4f::make_identity)
