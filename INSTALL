@@ -29,8 +29,9 @@
        
        1) install CMake (http://www.cmake.org)
 
-       2) % mkdir -p EMAN/src
-          % cd EMAN/src
+       2) % cd $HOME
+          % mkdir -p EMAN2/src
+          % cd EMAN2/src
           % gunzip eman2.tar.gz
           % tar xf eman2.tar
       
@@ -40,8 +41,17 @@
        4) % cmake ../eman2
           % make
           % make install
-
+      
+       5) set up login shell
+          for csh/tcsh, put the following to your .cshrc or .tcshrc file:
           
+          setenv EMAN2DIR $HOME/EMAN2
+          setenv PATH $EMAN2DIR/bin:${PATH}
+          setenv LD_LIBRARY_PATH  $EMAN2DIR/lib
+          setenv PYTHONPATH .:$HOME/EMAN2/lib
+
+       
+		  
 4. Advanced Installation
 ------------------------
 
