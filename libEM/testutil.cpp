@@ -143,7 +143,7 @@ Vec3f TestUtil::test_Vec3f(const Vec3f & p)
 	return Vec3f(tf[0], tf[1], tf[2]);
 }
 
-#if 1
+
 map<string, int> TestUtil::test_map_int(const map<string, int>& d)
 {
 	map<string, int> r;
@@ -211,7 +211,6 @@ map<string, vector<string> > TestUtil::test_map_vecstring(const map<string,
 	return r;
 }
 
-#endif
 
 vector<int> TestUtil::test_vector_int(const vector<int> & v)
 {
@@ -278,25 +277,3 @@ vector<Pixel> TestUtil::test_vector_pixel(const vector<Pixel> & v)
 	return r;
 }
 
-#if 0
-void  TestUtil::test_map_int(const map<string, int>& d)
-{
-
-
-}
-
-void TestUtil::test_map_long(const map<string, long>& d)
-{
-
-
-}
-
-void  TestUtil::test_map_float(const map<string, float>& d)
-{
-
-}
-
-void  TestUtil::test_map_string(const map<string, string>& d)
-{
-}
-#endif

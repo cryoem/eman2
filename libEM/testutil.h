@@ -58,13 +58,7 @@ namespace EMAN
 		static map<string, vector<string> > test_map_vecstring(const map<string,
 															   vector<string> >& d);
 
-#if 0
-		static void test_map_int(const map<string, int>& d);
-		static void test_map_long(const map<string, long>& d);
-		static void test_map_float(const map<string, float>& d);
-		static void test_map_string(const map<string, string>& d);
-#endif
-		
+	
 	private:
 		static float tf[10];
 		static int ti[10];
