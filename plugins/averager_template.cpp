@@ -2,11 +2,11 @@
 
 using namespace EMAN;
 
-EMData *XYZAverager::average(const vector<EMData*>& image_list) const
+EMData *XYZAverager::average(const vector < EMData * >&image_list) const
 {
-    if (image_list.size() == 0) {
+	if (image_list.size() == 0) {
+		return 0;
+	}
+
 	return 0;
-    }
-    
-    return 0;
 }

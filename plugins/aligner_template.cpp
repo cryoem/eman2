@@ -4,14 +4,14 @@ using namespace EMAN;
 
 EMData *XYZAligner::align(EMData * this_img, string cmp_name) const
 {
-    if (!this_img) {
-	return 0;
-    }
+	if (!this_img) {
+		return 0;
+	}
 #if 0
-    EMData *with = params["with"];
-    int param1 = params["param1"];
-    float param2 = params["param2"];
+	EMData *with = params["with"];
+	int param1 = params["param1"];
+	float param2 = params["param2"];
 #endif
 
-    return 0;
+	return 0;
 }

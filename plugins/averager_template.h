@@ -3,30 +3,31 @@
 
 #include "averager.h"
 
-namespace EMAN {
-    
-    /** XYZAverager is an averager  template for defining new
+namespace EMAN
+{
+
+	/** XYZAverager is an averager  template for defining new
      * averagers. Please add your own code at the proper place.
      *
      * 1) Replace all 'XYZ' with your new averager name.
      * 2) Define the averager parameter names and types in get_param_types().
      * 3) Implement the averager in XYZAverager::align().
      */
-    class XYZAverager : public Averager
-    {
-    public:
-	EMData * average(const vector<EMData *> & image_list) const;
-
-	string get_name() const
+	class XYZAverager:public Averager
 	{
-	    return "XYZ";
-	}
+	  public:
+		EMData * average(const vector < EMData * >&image_list) const;
 
-	static Averager *NEW()
-	{
-	    return new XYZAverager();
-	}
-	
+		string get_name() const
+		{
+			return "XYZ";
+		}
+
+		static Averager *NEW()
+		{
+			return new XYZAverager();
+		}
+
 	/** Add your averager parameter names and types in
 	 * get_param_types(). For available parameter types, please
 	 * refer class EMObject.
@@ -36,26 +37,28 @@ namespace EMAN {
 	 *    int param2;
 	 *    float param3;
 	 */
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("param1", EMObject::EMDATA);
-	    d.put("param2", EMObject::INT);
-	    d.put("param3", EMObject::FLOAT);
-	    return d;
-	}
-    };
-    
-    /** Add your new averager to AveragerFactoryExt().
-     */
-    class AveragerFactoryExt {
-    public:
-	AveragerFactoryExt() {
-	    Factory<Averager>::add(&XYZAverager::NEW);
-	}
-    };
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			  d.put("param1", EMObject::EMDATA);
+			  d.put("param2", EMObject::INT);
+			  d.put("param3", EMObject::FLOAT);
+			  return d;
+		}
+	};
 
-    static AveragerFactoryExt averager_factory_ext;
+	/** Add your new averager to AveragerFactoryExt().
+     */
+	class AveragerFactoryExt
+	{
+	  public:
+		AveragerFactoryExt()
+		{
+			Factory < Averager >::add(&XYZAverager::NEW);
+		}
+	};
+
+	static AveragerFactoryExt averager_factory_ext;
 }
 
 #endif
