@@ -32,10 +32,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_3, align, 2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_2, copy, 0, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_mask_normalize_overloads_1_2, mask_normalize, 1, 2)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_edge_normalize_overloads_0_1, edge_normalize, 0, 1)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_normalize_to_overloads_1_5, normalize_to, 1, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_least_square_normalize_to_overloads_1_3, least_square_normalize_to, 1, 3)
@@ -110,11 +106,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
         .def("gimme_fft", &EMAN::EMData::gimme_fft)
-        .def("normalize", &EMAN::EMData::normalize)
-        .def("mask_normalize", &EMAN::EMData::mask_normalize, EMAN_EMData_mask_normalize_overloads_1_2())
-        .def("edge_normalize", &EMAN::EMData::edge_normalize, EMAN_EMData_edge_normalize_overloads_0_1())
-        .def("row_normalize", &EMAN::EMData::row_normalize)
-        .def("normalize_max", &EMAN::EMData::normalize_max)
         .def("normalize_slice", &EMAN::EMData::normalize_slice)
         .def("normalize_to", &EMAN::EMData::normalize_to, EMAN_EMData_normalize_to_overloads_1_5())
         .def("least_square_normalize_to", &EMAN::EMData::least_square_normalize_to, EMAN_EMData_least_square_normalize_to_overloads_1_3())
@@ -199,6 +190,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_density_center", &EMAN::EMData::get_density_center)
         .def("get_sigma_diff", &EMAN::EMData::get_sigma_diff)
         .def("get_attr_dict", &EMAN::EMData::get_attr_dict)
+        .def("get_max", &EMAN::EMData::get_max)
+        .def("get_min", &EMAN::EMData::get_min)
         .def("get_mean", &EMAN::EMData::get_mean)
         .def("get_sigma", &EMAN::EMData::get_sigma)
         .def("get_skewness", &EMAN::EMData::get_skewness)

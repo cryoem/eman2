@@ -59,6 +59,10 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
         return call_method< EMAN::TypeDict >(self, "get_param_types");
     }
 
+    EMAN::TypeDict default_get_param_types() const {
+        return EMAN::Filter::get_param_types();
+    }
+
     std::string get_name() const {
         return call_method< std::string >(self, "get_name");
     }
@@ -78,7 +82,7 @@ BOOST_PYTHON_MODULE(libpyFilter2)
         .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
         .def("get_params", &EMAN::Filter::get_params, &EMAN_Filter_Wrapper::default_get_params)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
-        .def("get_param_types", pure_virtual(&EMAN::Filter::get_param_types))
+        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_Filter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
     ;
 

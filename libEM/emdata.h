@@ -16,9 +16,6 @@ using std::string;
 using std::vector;
 using std::map;
 
-/*
- * todo: fix ap2ri(), e.g. mrcio
- */
 
 namespace EMAN
 {
@@ -64,18 +61,7 @@ namespace EMAN
 
 	EMData *do_fft();
 	EMData *do_ift();
-#if 0
-	// not used in EMAN1
-	EMData *fft_slice();
-	EMData *ift_slice();
-#endif
 	void gimme_fft();
-
-	void normalize();
-	void mask_normalize(const EMData * mask, bool sigmatoo = true);
-	float edge_normalize(int mode = 0);
-	void row_normalize();
-	void normalize_max();
 
 	Point<float> normalize_slice(EMData * slice, float alt, float az, float phi);
 
@@ -232,6 +218,8 @@ namespace EMAN
 	float get_sigma_diff();
 
 	Dict get_attr_dict();
+	float get_max();
+	float get_min();
 	float get_mean();
 	float get_sigma();
 	float get_skewness();
@@ -553,6 +541,18 @@ namespace EMAN
 	}
     }
 
+    inline float EMData::get_max()
+    {
+	update_stat();
+	return attr_dict["maximum"].get_float();
+    }
+
+    inline float EMData::get_min()
+    {
+	update_stat();
+	return attr_dict["minimum"].get_float();
+    }
+    
     inline float EMData::get_mean()
     {
 	update_stat();
