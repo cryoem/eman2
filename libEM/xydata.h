@@ -44,7 +44,7 @@ namespace EMAN
 
 	float get_x(size_t i) const
 	{
-	    if (i < 0 || i > data.size()) {
+	    if (i >= data.size()) {
 		return 0;
 	    }
 	    return data[i].x;
@@ -52,15 +52,15 @@ namespace EMAN
 
 	float get_y(size_t i) const
 	{
-	    if (i < 0 || i > data.size()) {
+	    if (i >= data.size()) {
 		return 0;
 	    }
 	    return data[i].y;
 	}
 
-	int get_size() const
+	size_t get_size() const
 	{
-	    return (int)data.size();
+	    return data.size();
 	}
 
 	float get_miny() const

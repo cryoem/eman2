@@ -195,6 +195,8 @@ namespace EMAN
 	    return 1;
 	}
 
+	static string get_time_label();
+	
     };
 }
 

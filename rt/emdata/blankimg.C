@@ -7,7 +7,10 @@ int main()
 {
     int err = 0;
     EMData e1;
-    err = e1.read_image("/home/lpeng/images/search.dm3");
+
+    char filename[1024];
+    sprintf(filename, "%s/images/search.dm3", getenv("HOME"));    
+    err = e1.read_image(filename); 
 
     if (!err) {    
 	EMData e2;
