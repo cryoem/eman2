@@ -57,6 +57,10 @@ namespace EMAN
 	virtual void compute_2d_complex(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
 
 	virtual void copy_from(Ctf * new_ctf) = 0;
+	virtual bool equal(Ctf * ctf1) const = 0;
+
+	virtual float get_defocus() const = 0;
+	virtual float get_bfactor() const = 0;
 	
     public:
 	enum { CTFOS = 5 };
@@ -94,6 +98,11 @@ namespace EMAN
 	Dict to_dict() const;
 	
 	void copy_from(Ctf * new_ctf);
+
+	bool equal(const Ctf& ctf1) const;
+	
+	float get_defocus() const { return defocus; }
+	float get_bfactor() const { return bfactor; }
 	
     private:
 	inline float calc_amp1()

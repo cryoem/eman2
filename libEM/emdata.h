@@ -515,14 +515,17 @@ namespace EMAN
     {
 	path = new_path;
     }
+
     inline void EMData::set_pathnum(int n)
     {
 	pathnum = n;
     }
+
     inline void EMData::set_name(const string & new_name)
     {
 	name = new_name;
     }
+    
     inline string EMData::get_name() const
     {
 	return name;
