@@ -8,7 +8,7 @@
 #ifdef FFTW2
     
 #include <list>
-#include <srfftw.h>
+#include <rfftw.h>
     
 using std::list;
 

@@ -6,14 +6,11 @@
 #include "byteorder.h"
 #include "log.h"
 
-
 #include <string.h>
 #include <math.h>
 #include <sys/types.h>
 #include <sys/param.h>
-#ifndef _WIN32
-#include <unistd.h>
-#endif
+
 #include <fcntl.h>
 #include <float.h>
 #include <time.h>

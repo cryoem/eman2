@@ -6,10 +6,6 @@
 #include "emutil.h"
 #include "util.h"
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 #include <string.h>
 #include <sys/param.h>
 #include <assert.h>
