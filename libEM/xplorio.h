@@ -5,20 +5,23 @@
 #include "imageio.h"
 #include <stdio.h>
 
-namespace EMAN {
+namespace EMAN
+{
 
-    class XplorIO: public ImageIO {
+    class XplorIO : public ImageIO
+    {
     public:
 	XplorIO(string filename, IOMode rw_mode = READ_ONLY);
 	~XplorIO();
-	
+
 	DEFINE_IMAGEIO_FUNC;
-	static bool is_valid(const void* first_block);
+	static bool is_valid(const void *first_block);
+	
     private:
 	string filename;
 	IOMode rw_mode;
-	FILE* xplor_file;
-	
+	FILE *xplor_file;
+
 	bool is_big_endian;
 	bool initialized;
 
@@ -26,7 +29,7 @@ namespace EMAN {
 	int ny;
 	int nz;
     };
-    
+
 }
 
 

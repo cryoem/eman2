@@ -7,53 +7,75 @@
 using std::string;
 using std::vector;
 
-namespace EMAN {
-
-    class XYData {
+namespace EMAN
+{
+    class XYData
+    {
     public:
-	struct Pair {
-	    Pair(float xx, float yy) : x(xx), y(yy) { }
+	struct Pair
+	{
+	    Pair(float xx, float yy)
+		: x(xx), y(yy)
+	    {
+	    }
+	    
+	    bool operator<(const Pair & p) const
+	    {
+		return (x < p.x);
+	    }
+	    
 	    float x;
 	    float y;
-	    bool operator<(const Pair& p) const { return (x < p.x); }
 	};
-	
+
     public:
 	XYData();
-	virtual ~XYData() {}
+	virtual ~XYData()
+	{
+	}
 
 	int read_file(string filename);
 
 	int write_file(string filename) const;
 
-	float calc_correlation(XYData* xy, float minx, float maxx) const;
+	float calc_correlation(XYData * xy, float minx, float maxx) const;
 
 	float get_yatx(float x) const;
-	
+
 	float get_x(int i) const
 	{
-	    if (i < 0 || i > (int)data.size())  {
+	    if (i < 0 || i > (int) data.size()) {
 		return 0;
 	    }
 	    return data[i].x;
 	}
-	
-	float get_y(int i) const 
+
+	float get_y(int i) const
 	{
-	    if (i < 0 || i > (int)data.size())  {
+	    if (i < 0 || i > (int) data.size()) {
 		return 0;
 	    }
 	    return data[i].y;
 	}
+
+	int get_size() const
+	{
+	    return data.size();
+	}
+
+	float get_miny() const
+	{
+	    return ymin;
+	}
 	
-	int get_size() const { return data.size(); }
-	
-	float get_miny() const { return ymin; };
-	float get_maxy() const { return ymax; }
-	
+	float get_maxy() const
+	{
+	    return ymax;
+	}
+
 	bool is_validx(float x) const
-	{ 
-	    if (x < data[0].x || x > data[data.size()-1].x) {
+	{
+	    if (x < data[0].x || x > data[data.size() - 1].x) {
 		return false;
 	    }
 	    return true;
@@ -64,7 +86,7 @@ namespace EMAN {
 	float ymin;
 	float ymax;
 	float mean_x_spacing;
-	
+
 	void update();
     };
 }
