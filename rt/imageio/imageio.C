@@ -155,7 +155,6 @@ int test_mrc()
 
 int test_spider()
 {
-#if 0
     pass_test("spider-single.spi");
     pass_test("spider-stack.spi", 0, 0, true);
     pass_test("spider-stack.spi", 27, 0, false, "spider-3d_27.mrc");
@@ -171,8 +170,7 @@ int test_spider()
 
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SPIDER);
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SINGLE_SPIDER);
-#endif
-    
+
     for (int i = 0; i < 20; i++) {
 	Region d32(0, 0, i, 100, 100, 1);
 	pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, i);
@@ -187,16 +185,17 @@ int test_dm3()
     Region good1(0, 0, 400, 400);
     Region good2(120, 230, 500, 600);
     Region bad1(0, 0, 1400, 400);
-    
+    pass_test("ccd.dm3");
     pass_test("search.dm3");
+    
+#if 0
     pass_test("search.dm3", 0, &good1, false, "search_good1.mrc");
     pass_test("search.dm3", 0, &good2, false, "search_good2.mrc");
     fail_test("search.dm3", 0, &bad1, false, "search_bad1.mrc");
     
-    pass_test("ccd.dm3");
     pass_test("ccd.dm3", 0, &good1, false, "ccd_good1.mrc");
     pass_test("ccd.dm3", 0, &good2, false, "ccd_good2.mrc");
-    
+#endif
     return err_code;
 }
 

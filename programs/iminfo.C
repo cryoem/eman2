@@ -42,8 +42,8 @@ int main(int argc, char* argv[])
     int nimg = EMUtil::get_image_count(imagefile);
     const char* imgtype = EMUtil::get_imagetype_name(EMUtil::get_image_type(imagefile));
     
-    printf("\nNumber of Images:  %d\n", nimg);
-    printf("Image Format: %s\n", imgtype);
+    printf("\n%20s: %d\n", "Number of Images", nimg);
+    printf("%20s: %s\n", "Image Format", imgtype);
 
     EMData* d = new EMData();
     d->read_image(imagefile, 0, EMData::HEADER_ONLY);
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     int ny = dict.get("ny").get_int();
     int nz = dict.get("nz").get_int();
     
-    printf("Image Dimensions: %dx%dx%d\n", nx, ny, nz);
+    printf("%20s: %dx%dx%d\n", "Image Dimensions", nx, ny, nz);
 
     Ctf* ctf = d->get_ctf();
     if (ctf) {

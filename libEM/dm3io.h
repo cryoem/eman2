@@ -13,8 +13,8 @@ namespace EMAN { namespace Gatan {
     
     class TagTable {
     public:
-	static TagTable* get_instance();
-	static void clear();
+	TagTable();
+	~TagTable();
 	
 	void add(string name, string value);
 	void add_data(char* data);
@@ -32,33 +32,27 @@ namespace EMAN { namespace Gatan {
 	void dump() const;
 
 	template <class T>
-	static void become_platform_endian(T* data, int n = 1) {
+	void become_platform_endian(T* data, int n = 1) {
 	    if (is_big_endian !=  ByteOrder::is_machine_big_endian()) {
 		ByteOrder::swap_bytes(data, n);
 	    }
 	}
 
-	static void set_endian(bool big_endian) {
+	void set_endian(bool big_endian) {
 	    is_big_endian = big_endian;
 	}
-
-    private:
-	TagTable();
-	~TagTable();
-	void set_thumb_index(int i);
 
     private:
 	static const char* IMAGE_WIDTH_TAG;
 	static const char* IMAGE_HEIGHT_TAG;
 	static const char* IMAGE_DATATYPE_TAG;
 	static const char* IMAGE_THUMB_INDEX_TAG;
+	void set_thumb_index(int i);
 	
     private:
-	static TagTable* instance;
-	static bool is_big_endian;
-	std::map<string, string> tags;
-	
 	int img_index;
+	bool is_big_endian;
+	std::map<string, string> tags;
 	vector<int> x_list;
 	vector<int> y_list;
 	vector<int> datatype_list;
@@ -83,7 +77,7 @@ namespace EMAN { namespace Gatan {
 	    ARRAY   = 20
 	};
    
-	TagData(FILE* data_file, string tagname);
+	TagData(FILE* data_file, TagTable* tagtable, string tagname);
 	~TagData();
 
 	int read(bool nodata = false);
@@ -101,6 +95,7 @@ namespace EMAN { namespace Gatan {
 	
     private:
 	FILE* in;
+	TagTable* tagtable;
 	string name;
 	Type tag_type;
     };
@@ -108,7 +103,7 @@ namespace EMAN { namespace Gatan {
     
     class TagGroup {
     public:
-	TagGroup(FILE* data_file, string groupname);
+	TagGroup(FILE* data_file, TagTable* tagtable, string groupname);
 	~TagGroup();
 	
 	int read(bool nodata = false);
@@ -117,6 +112,7 @@ namespace EMAN { namespace Gatan {
 	
     private:
 	FILE* in;
+	TagTable* tagtable;
 	string name;
 	int entry_id;
     };
@@ -129,15 +125,16 @@ namespace EMAN { namespace Gatan {
 	    DATA_TAG = 21
 	};
 	    
-	TagEntry(FILE* data_file, TagGroup* parent_group);
+	TagEntry(FILE* data_file, TagTable* tagtable, TagGroup* parent_group);
 	~TagEntry();
 	
 	int read(bool nodata=false);
 	
     private:
 	FILE* in;
+	TagTable* tagtable;
 	TagGroup* parent_group;
-	string name;	
+	string name;
     };
 
     
@@ -208,6 +205,7 @@ namespace EMAN {
 	FILE* dm3file;
 	bool is_big_endian;
 	bool initialized;
+	Gatan::TagTable* tagtable;
     };
     
 }
