@@ -75,8 +75,8 @@ namespace EMAN {
 	void fast_rotate_translate(float scale = 1.0);
 	double dot_rotate_translate(EMData* data, float dx, float dy, float da);
 
-	void fast_translate(bool inplace = true);
-	void rotate_180();
+	int fast_translate(bool inplace = true);
+	int rotate_180();
 	
 	EMData* do_radon();
 	EMData* vertical_acf(int maxdy);
@@ -103,8 +103,8 @@ namespace EMAN {
 
 	vector<float> calc_fourier_shell_correlation(EMData *with);
 	
-	void mean_shrink(int shrink_factor);
-	void median_shrink(int shrink_factor);
+	int mean_shrink(int shrink_factor);
+	int median_shrink(int shrink_factor);
 	
 	void apply_radial_func(int, float, vector<float> array);
 	    
@@ -138,9 +138,13 @@ namespace EMAN {
 
 	void set_size(int nx, int ny, int nz);
 
+	void set_pixel_size(float pixel_size);
+	float get_pixel_size() const;
+	
 	Point<int> get_min_location() const;
 	Point<int> get_max_location() const;
 
+	int get_min_index() const;
 	int get_max_index() const;
 	
 	Dict get_attr_dict();
@@ -218,7 +222,7 @@ namespace EMAN {
 	};
 
 	int update_stat();
-
+	void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 	
     private:
 	mutable map<string, EMObject> attr_dict;
@@ -227,7 +231,8 @@ namespace EMAN {
 	SimpleCtf* ctf;
 	EMData* parent;
 	int flags;
-
+	float pixel_size;
+	
 	int nx;
 	int ny;
 	int nz;
@@ -336,6 +341,11 @@ namespace EMAN {
     {
 	flags |= EMDATA_CHANGED;
     }
+
+    inline void EMData::set_pixel_size(float new_pixel_size) { pixel_size = new_pixel_size; }
+    inline float EMData::get_pixel_size() const { return pixel_size; }
+
+    
 }
 
 #endif
