@@ -31,30 +31,44 @@ namespace EMAN
      */
 	class EMData
 	{
-	  public:
-		static bool HEADER_ONLY;
-		static bool HEADER_AND_DATA;
-		static bool IS_3D;
-		static bool NOT_3D;
-		static bool DATA_READ_ONLY;
-		static bool DATA_READ_WRITE;
-
-
-	  public:
+	public:
 		EMData();
 		virtual ~ EMData();
 
-		int read_image(string filename, int img_index = 0, bool header_only = false,
-					   const Region * r = 0, bool is_3d = NOT_3D);
+		/** read an image file and stores its information.
+		 * @param filename The image file name.
+		 * @param img_index The nth image you want to read.
+		 * @param header_only To read only the header or both header and data.
+		 * @param region To read only a region of the image.
+		 * @param is_3d  To read a stack of images as a 3D image or not.
+		 * @return 0 if OK; 1 if any error.
+		 */
+		 int read_image(string filename, int img_index = 0, bool header_only = false,
+					   const Region * region = 0, bool is_3d = false);
 
+		/** write the data out to an image.
+		 * @param filename The image file name.
+		 * @param img_index The nth image to write as.
+		 * @param imgtype Write to the given image format type. if not
+		 *        specified, use the 'filename' extension to decide.
+		 * @param header_only To write only the header or both header and data.
+		 * @param use_host_endian To write in the host computer byte order.
+		 * @return 0 if OK; 1 if any error.
+		 */
 		int write_image(string filename, int img_index = 0,
 						EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false,
 						bool use_host_endian = true);
 
+		/** append to image file. If the file doesn't exist, create one.
+		 * @param filename The image file name.
+		 * @param imgtype Write to the given image format type. if not
+		 *        specified, use the 'filename' extension to decide.
+		 * @param header_only To write only the header or both header and data.
+		 */
 		int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						 bool header_only = false);
 
-	/** apply a filter with its parameters on this image */
+		/** apply a filter with its parameters on this image */
 		int filter(string filtername, const Dict & params = Dict());
 		float cmp(string cmpname, const Dict & params = Dict());
 		EMData *align(string aligner_name, const Dict & params = Dict(), string comp_name = "");
@@ -63,12 +77,20 @@ namespace EMAN
 		EMData *copy(bool withparent = true);
 		EMData *copy_head();
 
-	/** Inclusive clip. Pads 0 if larger than this image. */
+		/** Inclusive clip. Pads 0 if larger than this image. */
 		EMData *get_clip(const Region & area);
 		void insert_clip(EMData * block, const Point < int >&originn);
 		EMData *get_top_half() const;
 
+		/** return the fast fourier transform image of the current
+		 * image. the current image is not changed.
+		 * the result is in real/imaginary format.
+		 */
 		EMData *do_fft();
+
+		/** return the inverse fourier transform image of the current
+		 * image. the current image is not changed. 
+		 */
 		EMData *do_ift();
 
 		Point < float >normalize_slice(EMData * slice, float alt, float az, float phi);
@@ -84,9 +106,9 @@ namespace EMAN
 						 float min_render, float max_render,
 						 void *ref, void cmap(void *, int coord, unsigned char *tri));
 
-	/** convert the complex image from real/imaginary to amplitude/phase */
+		/** convert the complex image from real/imaginary to amplitude/phase */
 		void ri2ap();
-	/** convert the complex image from amplitude/phase to real/imaginary */
+		/** convert the complex image from amplitude/phase to real/imaginary */
 		void ap2ri();
 
 		float *setup4slice(bool redo = false);
@@ -111,28 +133,57 @@ namespace EMAN
 		EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
 		EMData *do_radon();
 
-	/** calculate Cross-correlation function (CCF).
-	 *
-	 * CCF is a 2D function that is obtained by forming the scalar
-	 * cross-product of two images (i.e., the sum of products of
-	 * equivalent pixels) as a function of a 2D shift vector. The
-	 * CCF is often used to achieve alignment between two images,
-	 * since it displays a high value (a peak) at the place where
-	 * a motif contained in both images come into register.
-	 */
+		/** calculate Cross-correlation function (CCF).
+		 *
+		 * CCF is a 2D function that is obtained by forming the scalar
+		 * cross-product of two images (i.e., the sum of products of
+		 * equivalent pixels) as a function of a 2D shift vector. The
+		 * CCF is often used to achieve alignment between two images,
+		 * since it displays a high value (a peak) at the place where
+		 * a motif contained in both images come into register.
+		 */
 		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = 0);
+
+		/** Makes a 'rotational footprint', which is an 'unwound'
+		 * autocorrelation function. generally the image should be
+		 * edgenormalized and masked before using this.
+		 * @param unwrap To cache the rfp or not. false means not cached.
+		 * @param premasked
+		 */
 		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
+
 		EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
+
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
+
+		/** maps polar coordinates to Cartesian coordinates */
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 					   int dy = 0, bool do360 = false);
 
 		int mean_shrink(int shrink_factor);
 		int median_shrink(int shrink_factor);
 
+		/** multiplies by a radial function in fourier space */
 		void apply_radial_func(float x0, float dx, vector < float >array, bool interp = true);
+
+		/** calculates radial distribution. works for real and imaginary images. 
+		 * @param n number of points.
+		 * @param x0 starting x coordinate.
+		 * @param dx step of x.
+		 * @return The radial distribution in an array.
+		 */					
 		vector < float >calc_radial_dist(int n, float x0, float dx);
-		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float amwid);
+
+		/** calculates radial distribution. works for real and imaginary images. 
+		 * @param n number of points.
+		 * @param x0 starting x coordinate.
+		 * @param dx step of x.
+		 * @param acen The direction.
+		 * @param arange The angular range around the direction in radians.
+		 * @param smooting Control if the returned curve in y is smoothed.
+		 * @return The radial distribution in an array.
+		 */
+		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
 		int add(float f);
 		int add(const EMData & em);
@@ -158,8 +209,8 @@ namespace EMAN
 		int add_incoherent(EMData * obj);
 
 		vector < float >calc_fourier_shell_correlation(EMData * with);
-		void calc_hist(vector < float >&hist, float hist_min = 0, float hist_max = 0, bool add =
-					   false);
+		void calc_hist(vector < float >&hist, float hist_min = 0, float hist_max = 0,
+					   bool add = false);
 		int calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
 #if 0
 		void calc_rcf(EMData * with, vector < float >&sum_array);
@@ -304,30 +355,30 @@ namespace EMAN
 												  false, string ext = "");
 
 
-	  private:
+	private:
 		enum EMDataFlags
-		{
-			EMDATA_COMPLEX = 1 << 0,
-			EMDATA_RI = 1 << 1,	// real/imaginary or amp/phase
-			EMDATA_BUSY = 1 << 2,	// someone is modifying data
-			EMDATA_SHARED = 1 << 3,	// Stored in shared memory
-			EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
-			EMDATA_HASCTF = 1 << 6,	// has CTF info
-			EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
-			EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
-			EMDATA_NEWRFP = 1 << 9,	// needs new rotational footprint
-			EMDATA_NODATA = 1 << 10,	// no actual data
-			EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
-			EMDATA_FLIP = 1 << 12,	// a flag only
-			EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
-		};
+			{
+				EMDATA_COMPLEX = 1 << 0,
+				EMDATA_RI = 1 << 1,	// real/imaginary or amp/phase
+				EMDATA_BUSY = 1 << 2,	// someone is modifying data
+				EMDATA_SHARED = 1 << 3,	// Stored in shared memory
+				EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
+				EMDATA_HASCTF = 1 << 6,	// has CTF info
+				EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
+				EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
+				EMDATA_NEWRFP = 1 << 9,	// needs new rotational footprint
+				EMDATA_NODATA = 1 << 10,	// no actual data
+				EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
+				EMDATA_FLIP = 1 << 12,	// a flag only
+				EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
+			};
 
 		int update_stat();
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void scale_pixel(float scale_factor) const;
 
-	  private:
-	/** to store all image header information */
+	private:
+		/** to store all image header information */
 		mutable Dict attr_dict;
 		float *rdata;	  /** image real data */
 		float *supp;
@@ -341,9 +392,9 @@ namespace EMAN
 		int average_nimg; /** how many images are used in averaging to generate this image*/
 
 		Vec3 < float >all_translation;
-								  /** translation from the original location */
+		/** translation from the original location */
 		Vec3 < float >all_rotation;
-								  /** rotation (alt, az, phi) from the original locaton*/
+		/** rotation (alt, az, phi) from the original locaton*/
 
 		float align_score;
 		string name;
@@ -432,18 +483,18 @@ namespace EMAN
 	inline float EMData::sget_value_at(int x, int y, int z) const
 	{
 		if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz)
-		{
-			return 0;
-		}
+			{
+				return 0;
+			}
 		return rdata[x + y * nx + z * nx * ny];
 	}
 
 	inline float EMData::sget_value_at(int x, int y) const
 	{
 		if (x < 0 || y < 0 || x >= nx || y >= ny)
-		{
-			return 0;
-		}
+			{
+				return 0;
+			}
 		return rdata[x + y * nx];
 	}
 
@@ -585,9 +636,9 @@ namespace EMAN
 			return true;
 		}
 		else
-		{
-			return false;
-		}
+			{
+				return false;
+			}
 	}
 
 	inline int EMData::get_average_nimg() const

@@ -80,12 +80,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 {
     class_< EMAN::EMData >("EMData", init<  >())
         .def(init< const EMAN::EMData& >())
-        .def_readwrite("HEADER_ONLY", &EMAN::EMData::HEADER_ONLY)
-        .def_readwrite("HEADER_AND_DATA", &EMAN::EMData::HEADER_AND_DATA)
-        .def_readwrite("IS_3D", &EMAN::EMData::IS_3D)
-        .def_readwrite("NOT_3D", &EMAN::EMData::NOT_3D)
-        .def_readwrite("DATA_READ_ONLY", &EMAN::EMData::DATA_READ_ONLY)
-        .def_readwrite("DATA_READ_WRITE", &EMAN::EMData::DATA_READ_WRITE)
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_5())
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
@@ -222,18 +216,18 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5())
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
+        .def( self + other< float >() )
+        .def( self + self )
+        .def( other< float >() / self )
         .def( other< float >() * self )
         .def( other< float >() - self )
         .def( other< float >() + self )
         .def( self / other< float >() )
         .def( self * other< float >() )
         .def( self - other< float >() )
-        .def( self + other< float >() )
-        .def( self * self )
-        .def( other< float >() / self )
-        .def( self + self )
-        .def( self / self )
         .def( self - self )
+        .def( self * self )
+        .def( self / self )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )
@@ -260,7 +254,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
-    implicitly_convertible<bool, EMAN::EMObject>();
+
     implicitly_convertible<int, EMAN::EMObject>();
     implicitly_convertible<float, EMAN::EMObject>();
     implicitly_convertible<double, EMAN::EMObject>();

@@ -17,8 +17,8 @@ void usage(const char *progname)
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-	usage(argv[0]);
-	exit(1);
+		usage(argv[0]);
+		exit(1);
     }
 
     bool show_all_header = false;
@@ -26,12 +26,12 @@ int main(int argc, char* argv[])
 
     Util::set_log_level(argc, argv);
     for (int i = 1; i < argc - 1; i++) {
-	if (strcmp(argv[i], "-H") == 0) {
-	    show_all_header = true;
-	}
-	else if (strcmp(argv[i], "-stat") == 0) {
-	    stat = true;
-	}
+		if (strcmp(argv[i], "-H") == 0) {
+			show_all_header = true;
+		}
+		else if (strcmp(argv[i], "-stat") == 0) {
+			stat = true;
+		}
     }
     
     const char* imagefile = argv[argc-1];
@@ -44,29 +44,29 @@ int main(int argc, char* argv[])
 
     EMData* d = new EMData();
     if (!stat) {
-	d->read_image(imagefile, 0, EMData::HEADER_ONLY);
+		d->read_image(imagefile, 0, true);
     }
     else {
-	d->read_image(imagefile, 0, EMData::HEADER_AND_DATA);
+		d->read_image(imagefile, 0, false);
     }
     
     printf("%20s: %d x %d x %d\n", "Image Dimensions",
-	   d->get_xsize(), d->get_ysize(), d->get_zsize());
+		   d->get_xsize(), d->get_ysize(), d->get_zsize());
 
     if (stat) {
-	printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
-	       d->get_mean(), d->get_sigma(), d->get_skewness(), d->get_kurtosis());
+		printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",
+			   d->get_mean(), d->get_sigma(), d->get_skewness(), d->get_kurtosis());
     }
     
     Ctf* ctf = d->get_ctf();
     if (ctf) {
-	printf("CTF: %s\n", ctf->to_string().c_str());
+		printf("CTF: %s\n", ctf->to_string().c_str());
     }
     
     if (show_all_header) {
-	Dict dict = d->get_attr_dict();
-	printf("\nDetailed Header Information:\n");
-	EMUtil::dump_dict(dict);
+		Dict dict = d->get_attr_dict();
+		printf("\nDetailed Header Information:\n");
+		EMUtil::dump_dict(dict);
     }
     printf("\n");
     

@@ -19,15 +19,6 @@
 
 using namespace EMAN;
 
-bool EMData::HEADER_ONLY = true;
-bool EMData::HEADER_AND_DATA = false;
-
-bool EMData::IS_3D = true;
-bool EMData::NOT_3D = false;
-
-bool EMData::DATA_READ_ONLY = true;
-bool EMData::DATA_READ_WRITE = false;
-
 EMData::EMData()
 {
 	rdata = 0;
@@ -289,7 +280,6 @@ EMData *EMData::copy_head()
 	}
 
 	ret->parent = this;
-
 	ret->rfp = 0;
 
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);

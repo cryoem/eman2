@@ -3,18 +3,17 @@
 from EMAN2 import *
 import os
 
-filters = FilterFactory.instance()
-filternames = filters.get_list()
+
+filternames = Filters.get_list()
 print "all filters: ", filternames
 
 e = EMData()
 e.read_image(os.environ['HOME'] + "/images/search.dm3")
 
-params = {'value': EMObject(int(1000))}
-f1 = filters.get("Binarize", params)
+f1 = Filters.get("Binarize", {'value': 1000})
 
 new_params = f1.get_params()
-print "Params in C++: ", new_params
+print "Params in C++: value = ", float(new_params["value"])
 
 f1.process(e)
 
