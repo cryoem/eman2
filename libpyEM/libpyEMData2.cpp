@@ -280,5 +280,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	implicitly_convertible<const char*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
+
 }
 

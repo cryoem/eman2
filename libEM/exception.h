@@ -20,7 +20,9 @@ namespace EMAN {
 	
 		virtual ~Exception() throw() {}
 
-		virtual const char *what() const throw() ;
+		virtual const char *what() const throw();
+
+		virtual const char *name() const { return "Exception"; }
     };
 
 
@@ -30,6 +32,9 @@ namespace EMAN {
 		_NotExistingObjectException(const string& objname1, const string& file = "unknown",
 									int line = 0, const string& desc1 = "none")
 			: Exception(file, line, desc1, objname1) {}
+		
+		const char *name() const { return "NotExistingObjectException"; }
+		
 	};
 	
 #define NotExistingObjectException(objname, desc)  _NotExistingObjectException(objname, __FILE__, __LINE__, desc)
@@ -41,6 +46,9 @@ namespace EMAN {
 		_ImageFormatException(const string& desc1, const string& file = "unknown",
 							  int line = 0)
 			: Exception(file, line, desc1) {}
+		
+		const char *name() const { return "ImageFormatException"; }
+		
 	};
 
 #define ImageFormatException(desc) _ImageFormatException(desc, __FILE__, __LINE__)
@@ -52,6 +60,9 @@ namespace EMAN {
 		_ImageDimensionException(const string& desc1, const string& file = "unknown",
 								 int line = 0)
 			: Exception(file, line, desc1) {}
+		
+		const char *name() const { return "ImageDimensionException"; }
+		
 	};
 
 #define ImageDimensionException(desc) _ImageDimensionException(desc, __FILE__, __LINE__)
@@ -65,6 +76,9 @@ namespace EMAN {
 		{
 			desc = "cannot access file '" + filename1 + "'";
 		}
+		
+		const char *name() const { return "FileAccessException"; }
+		
 	};
 #define FileAccessException(filename) _FileAccessException(filename, __FILE__, __LINE__)
 	
@@ -75,6 +89,9 @@ namespace EMAN {
 		_ImageReadException(const string& imagename, const string& file = "unknown",
 							int line = 0, const string& desc1 = "")
 			: Exception(file, line, desc1, imagename) {}
+		
+		const char *name() const { return "ImageReadException"; }
+		
 	};
 #define ImageReadException(filename, desc) _ImageReadException(filename, __FILE__, __LINE__, desc)
 	
@@ -85,6 +102,9 @@ namespace EMAN {
 		_ImageWriteException(const string& imagename, const string& file = "unknown",
 							 int line = 0, const string& desc1 = "")
 			: Exception(file, line, desc1, imagename) {}
+		
+		const char *name() const { return "ImageWriteException"; }
+		
 	};
 #define ImageWriteException(imagename, desc) _ImageWriteException(imagename, __FILE__, __LINE__, desc)
 
@@ -94,6 +114,9 @@ namespace EMAN {
 		_NullPointerException(const string& file = "unknown",
 							  int line = 0, const string& desc1 = "")
 			: Exception(file, line, desc1) {}
+		
+		const char *name() const { return "NullPointerException"; }
+		
 	};
 #define NullPointerException(desc) _NullPointerException(__FILE__, __LINE__, desc)
 	
@@ -104,10 +127,13 @@ namespace EMAN {
 		_TypeException(const string & desc1, const string & type,
 					   const string & file = "unknown", int line = 0)
 			: Exception(file, line, desc1, type) {}
+		
+		const char *name() const { return "TypeException"; }
+		
 	};
-
 #define TypeException(desc, type) _TypeException(desc, type, __FILE__, __LINE__)
 
+	
 	class _InvalidValueException : public Exception
 	{
 	public:
@@ -118,9 +144,13 @@ namespace EMAN {
 			char s[32];
 			sprintf(s, "%d", val);
 			objname = string(s);
-		}
+		}		
+		const char *name() const { return "InvalidValueException"; }
+		
 	};
 #define InvalidValueException(val, desc) _InvalidValueException(val, __FILE__, __LINE__, desc)
+
+
 	
 	class _OutofRangeException : public Exception
 	{
@@ -136,8 +166,12 @@ namespace EMAN {
 			sprintf(s, "%d out of range [%d,%d]", input, low, high);
 			desc = string(s);
 		}
+		
+		const char *name() const { return "OutofRangeException"; }
+		
 	};
-#define OutofRangeException(low, high, input, objname) _OutofRangeException(low, high, input,  __FILE__, __LINE__, objname)
+#define OutofRangeException(low, high, input, objname) \
+ _OutofRangeException(low, high, input,  __FILE__, __LINE__, objname)
 
 }
     

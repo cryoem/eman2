@@ -45,8 +45,6 @@
   060. HDFio problem. the read segfault after around 900 reads and the
        write crash after ~400 writes using the same EMData object in python. 
 
-  061. Windows support. libpng12.dll is missing. 
-
   062. Windows support. debug build failed with:
 	   libpyFilter (debug info exceeds limit);
 	   libpyUtils complaining that libpython_d.dll could not be found.
@@ -231,6 +229,8 @@
        MRC write is incorrect for the complex image. it uses
 	   16bits instead of 32bits. it was right a few monthes ago.
 
+  11/20/04 061. 
+       Windows support. error libpng12.dll is missing; HDF not working.
 
 
 	   
