@@ -617,7 +617,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	float nxlendata[1];
 	int floatsize = (int) sizeof(float);
-	nxlendata[0] = nx * floatsize;
+	nxlendata[0] = (float)(nx * floatsize);
 	
 	for (int k = 0; k < zlen; k++) {
 		if (y_pre_gap > 0) {

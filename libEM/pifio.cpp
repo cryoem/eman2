@@ -300,7 +300,7 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* , bool
 	return 0;
 }
 
-int PifIO::read_data(float *data, int image_index, const Region *, bool)
+int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
 

@@ -111,7 +111,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 	}
 
 	Vec3f pre_trans = this_img->get_translation();
-	Vec3f cur_trans = Vec3f (nx / 2 - peak_x, ny / 2 - peak_y, 0);
+	Vec3f cur_trans = Vec3f ((float)(nx / 2 - peak_x), (float)(ny / 2 - peak_y), 0);
 
 	Vec3f result;
 	if (useparent && parent) {

@@ -66,7 +66,7 @@ namespace EMAN
 
 		float length() const
 		{
-			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+			float t = (float)(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 			return (float)sqrt(t);
 		}
 
@@ -262,9 +262,9 @@ namespace EMAN
 		
 		Vec3f(const Vec3i &v)
 		{
-			vec[0] = v[0];
-			vec[1] = v[1];
-			vec[2] = v[2];
+			vec[0] = (float)v[0];
+			vec[1] = (float)v[1];
+			vec[2] = (float)v[2];
 		}
 
 		virtual ~ Vec3f() {

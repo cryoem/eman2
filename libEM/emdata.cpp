@@ -3120,7 +3120,7 @@ void EMData::rotate_translate(const Transform & xform)
 		Matrix3f mx = rotation.get_matrix3();
 		mx *= inv_scale;
 
-		Vec3f dcenter2 = Vec3f(nx,ny,nz)/(-2.0f) + dcenter;
+		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
 		Vec3f v4 = mx * dcenter2 - dcenter2 - translation;
 		
 		int nxy = nx * ny;
@@ -3142,7 +3142,7 @@ void EMData::rotate_translate(const Transform & xform)
 						int x = Util::fast_floor(v2[0]);
 						int y = Util::fast_floor(v2[1]);
 						int z = Util::fast_floor(v2[2]);
-						Vec3f tuv = v2 - Vec3f(x,y,z);
+						Vec3f tuv = v2 - Vec3f((float)x,(float)y,(float)z);
 						int ii = x + y * nx + z * nxy;
 						
 						des_data[l] = Util::trilinear_interpolate(src_data[ii],
