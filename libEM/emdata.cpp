@@ -811,41 +811,26 @@ EMData* EMData::get_fft_amplitude()
 	float *d = dat->get_data();
 
 	int ndim = get_ndim();
+	
 	if (ndim == 3) {
-		int nxy = nx * ny;
-		int nx2y = nx2 * ny;
-		
 		for (int k = 1; k < nz; k++) {
-			int knx2y = k * nx2y;
-			int knxy = k * nxy;
-			int knx2y2 = (nz-k)*nx2y;
-				
 			for (int j = 1; j < ny; j++) {
-				int j2 = knx2y+j*nx2+nx2/2;
-				int j3 = knxy+j*nx;
-				int j4 = knx2y2 + (ny-j)*nx2+nx2/2;
-				
 				for (int i = 0; i < nx2/2; i++) {
-					int i2 = j3+2*i;
-					d[j2+i] = rdata[i2];
-					d[j4-i] = rdata[i2];
+					d[k*nx2*ny+j*nx2+nx2/2+i] = rdata[k*nx*ny+j*nx+2*i];
+					d[(nz-k)*nx2*ny+(ny-j)*nx2+nx2/2-i] = rdata[k*nx*ny+j*nx+2*i];
 				}
 			}
 		}
 	}
 	else if (ndim == 2) {
 		for (int j = 1; j < ny; j++) {
-			int j2 = j * nx;
-			int j3 = j*nx2+nx2/2;
-			int j4 = (ny-j)*nx2+nx2/2;
-			
 			for (int i = 0; i < nx2/2; i++) {
-				int i2 = j2+2*i;
-				d[j3+i] = rdata[i2];
-				d[j4-i] = rdata[i2];
+				d[j*nx2+nx2/2+i] = rdata[j*nx+2*i];
+				d[(ny-j)*nx2+nx2/2-i] = rdata[j*nx+2*i];
 			}
 		}
 	}
+
 	done_data();
 
 	dat->done_data();
