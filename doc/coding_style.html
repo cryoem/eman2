@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <title>codingstyle.html</title>
+</head>
+<body>
+<div style="text-align: center;"><big
+ style="color: rgb(0, 0, 153); font-weight: bold;"><big><br>
+EMAN2 Coding Style</big></big><br>
+</div>
+<ol>
+  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Overview</big></li>
+  <div style="margin-left: 40px;"><big><span style="font-weight: bold;">Coding:</span></big>
+  <br>
+  <ol>
+    <li>EMAN2 follows the GNU coding style with minor changes. We use <a
+ href="http://www.gnu.org/software/indent/indent.html">indent</a>
+for beautifying EMAN2 code. </li>
+  </ol>
+  <big><span style="font-weight: bold;">Naming:</span></big> <br>
+  <ol>
+    <li>All source code files use lower cases.<br>
+    </li>
+    <li>All classes and data types use uppercase in the first letter; </li>
+    <li>All functions use lower cases with '_' if necessary.</li>
+  </ol>
+  </div>
+  <p> </p>
+  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">indent
+HowTo</big></li>
+  <ol>
+    <ol>
+      <li> install indent. (for linux, rpm is available from standard
+distribution.) </li>
+      <li>save file <a href="./.indent.pro">.indent.pro</a> to your
+home
+directory.</li>
+      <li>say you have a file called "foo.C", run indent like this: <span
+ style="font-weight: bold; font-family: courier new,courier,monospace; color: rgb(102, 0, 204);">indent
+foo.C </span><br>
+      </li>
+      <li>because indent is designed for C code, it is not perfect for
+C++ code. Read your new source and fix the following possible errors:</li>
+    </ol>
+  </ol>
+  <ol>
+    <ol>
+      <ol>
+        <li>change 'const const' to 'const'</li>
+      </ol>
+    </ol>
+  </ol>
+  <p>
+  </p>
+  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
+    <ul>
+Use JavaDoc style:
+<pre>
+/** Brief description which ends at this dot. Details follow
+ *  here.
+ */
+class Test
+{
+public:	
+    /** The constructor's brief description
+     * A more elaborate description of the constructor.
+     */
+    Test();
+
+    /** do some test.
+     * @param low the low threshold.
+     * @param high the high threshold.
+     */
+    int do_test(float low, float high);
+}
+</pre>
+	
+    </ul>
+  </li>
+  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Samples</big><br>
+    <ol>
+      <li> <a href="./html/emdata_8h-source.html">emdata.h </a> </li>
+      <li> <a href="./html/emdata_8cpp-source.html"> emdata.cpp </a> </li>
+    </ol>
+  </li>
+  <div style="margin-left: 40px;"><br>
+  </div>
+</ol>
+</body>
+</html>
