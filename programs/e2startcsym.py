@@ -17,7 +17,7 @@ def main():
 	parser = OptionParser(usage,version=EMANVERSION)
 
 	parser.add_option("--nkeep", metavar="N", type="int", help="Number of particles to use for each view")
-	parser.add_option("--out", metavar="outfile", type="string", help="output filename")
+	parser.add_option("--out", metavar="outputfile", type="string", help="output filename")
 	parser.add_option("--mode", metavar="n", type="int", help="")
 	parser.add_option("--sym", metavar="Cn", type="string", help="Symmetry of model")
 
@@ -29,6 +29,12 @@ def main():
 	
 	(options, args) = parser.parse_args()
 
+	if len(args) != 1:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
+        sys.exit(1)
+
+		
 	inputfile = args[0]
 	
 	nk = options.nkeep
@@ -49,8 +55,9 @@ def main():
 		files.remove_files("cls*lst")
 		os.remove("sym.hed")
 		os.remove("sym.img")
-	
-		# call symbest
+
+		symbest_cmd = "--sym=" + options.sym + " --mirror=cls0001.lst --nkeep=" + string(options.nkeep)
+		system("e2symbest.py " + symbest_options + inputfile)
 		
 		
 
