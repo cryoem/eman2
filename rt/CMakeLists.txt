@@ -1,1 +1,1 @@
-SUBDIRS(imageio)
+SUBDIRS(imageio emdata)

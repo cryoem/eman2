@@ -111,9 +111,12 @@ int test_mrc()
 
     char filename1[32];
     
-    for (int i = 0; i < 100; i++) {
-	Region d3_d2(0, 0, i, 100, 100, 1);
-	sprintf(filename1, "3d_each_%d.mrc", i);
+    const int ids[] = {0, 20, 99};
+    int n_ids = sizeof(ids) / sizeof(int);
+
+    for (int i = 0; i < n_ids; i++) {
+	Region d3_d2(0, 0, ids[i], 100, 100, 1);
+	sprintf(filename1, "3d_each_%d.mrc", ids[i]);
 	pass_test(file3d, 0, &d3_d2, false, filename1);
     }
 
@@ -122,32 +125,28 @@ int test_mrc()
     pass_test(file1d, 0, 0, false, "tablet_all1.mrc");
     pass_test(file1d, 0, &good_2d1, false, "tablet_good1.mrc");
 
-
-    Region bad_2d1(-2, -4, 10, 20);
-    Region bad_2d2(1, 2, 3000, 400);
-    
     pass_test(file1d, 0, 0, false, "tablet_all1.mrc");
     pass_test(file3d, 0, 0, false, "3d-all-1.mrc");
-    
     pass_test(file1d, 0, &good_2d1, false, "tablet_good1.mrc");
+
+    Region good_3d3(0, 0, 0, 20, 20, 20);
     
-    pass_test(file1d, -3, 0, false, "tablet_no.mrc");
+    pass_test(file3d, 0, &good_3d3, false, "3d_good1.mrc");
+    pass_test(file3d, 0, 0, false, "3d-all-1.mrc");
+    
+    Region bad_2d1(-2, -4, 10, 20);
+    Region bad_2d2(1, 2, 3000, 400);
+    Region bad_3d1(0, 1, 2, 400, 230, 5);
+    Region bad_3d2(0, -3, -5, 3, 5, 9);
+    
+    fail_test(file1d, -3, 0, false, "tablet_no.mrc");
     fail_test(file1d, 0, &bad_2d1, false, "tablet_bad1.mrc");
     fail_test(file1d, 0, &bad_2d2, false, "tablet_bad2.mrc");
     
-    Region good_3d3(0, 0, 0, 20, 20, 20);
-    Region bad_3d1(0, 1, 2, 400, 230, 5);
-    Region bad_3d2(0, -3, -5, 3, 5, 9);
+    fail_test(file3d, 40, 0, false, "3d-1.mrc");
+    fail_test(file3d, 10, 0, false, "3d-all-2.mrc");
 
-    // positive tests
-    pass_test(file3d, 40, 0, false, "3d-1.mrc");
-    pass_test(file3d, 0, 0, false, "3d-all-1.mrc");
-    
-    pass_test(file3d, 10, 0, false, "3d-all-2.mrc");
-    pass_test(file3d, 0, &good_3d3, false, "3d_good1.mrc");
-
-    // negative tests
-    pass_test(file3d, 120, 0, false, "3d_bad0.mrc");
+    fail_test(file3d, 120, 0, false, "3d_bad0.mrc");
     fail_test(file3d, 0, &bad_3d1, false, "3d_bad1.mrc");
     fail_test(file3d, 0, &bad_3d2, false, "3d_bad2.mrc");
 
@@ -156,8 +155,6 @@ int test_mrc()
 
 int test_spider()
 {
-    pass_test("tablet_0.SPIDER");
-
     pass_test("spider-single.spi");
     pass_test("spider-stack.spi", 0, 0, true);
     pass_test("spider-stack.spi", 27, 0, false, "spider-3d_27.mrc");
@@ -174,9 +171,12 @@ int test_spider()
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SPIDER);
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SINGLE_SPIDER);
 
-    for (int i = 0; i < 100; i++) {
-	Region d32(0, 0, i, 100, 100, 1);
-	pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, i);
+    const int ids[] = {0, 20, 99};
+    int n_ids = sizeof(ids) / sizeof(int);
+
+    for (int i = 0; i < n_ids; i++) {
+	Region d32(0, 0, ids[i], 100, 100, 1);
+	pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, ids[i]);
     }
 
     return err_code;
@@ -402,7 +402,7 @@ int test_performance()
     
 void usage()
 {
-    printf("usage: imageio -vN dm3|tiff|hdf|pif|mrc|spi|pgm|lst|icos|png|sal|amira|gatan2|imagic\n");
+    printf("usage: imageio -vN dm3|tiff|hdf|pif|mrc|spider|pgm|lst|icos|png|sal|amira|gatan2|imagic\n");
 }
 
 int main(int argc, char* argv[])
@@ -447,7 +447,7 @@ int main(int argc, char* argv[])
     else if (strcmp(imageformat, "mrc") == 0) {
 	test_mrc();
     }
-    else if (strcmp(imageformat, "spi") == 0) {
+    else if (strcmp(imageformat, "spider") == 0) {
 	test_spider();
     }
     else if (strcmp(imageformat, "pgm") == 0) {

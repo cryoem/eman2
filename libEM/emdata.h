@@ -49,6 +49,7 @@ namespace EMAN {
 	int div(const EMData& em);
 	
 	float* get_data() const;
+	void done_data();
 	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
