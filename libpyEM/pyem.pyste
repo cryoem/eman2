@@ -7,9 +7,11 @@ exclude(Log.error)
 
 EMObject = Class("EMAN::EMObject", "emobject.h")
 set_policy(EMObject.get_emdata, return_internal_reference())
+set_policy(EMObject.get_xydata, return_internal_reference())
 
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
+set_policy(EMUtil.vertical_acf, return_value_policy(manage_new_object))
 exclude(EMUtil.get_region_dims)
 exclude(EMUtil.get_region_origins)
 exclude(EMUtil.get_region_data)
@@ -30,11 +32,26 @@ set_policy(EMData.make_rotational_footprint, return_value_policy(manage_new_obje
 set_policy(EMData.calc_ccfx, return_value_policy(manage_new_object))
 set_policy(EMData.unwrap, return_value_policy(manage_new_object))
 
+set_policy(EMData.copy_head, return_value_policy(manage_new_object))
+set_policy(EMData.little_big_dot, return_value_policy(manage_new_object))
+set_policy(EMData.calc_mutual_correlation, return_value_policy(manage_new_object))
+set_policy(EMData.calc_flcf, return_value_policy(manage_new_object))
+set_policy(EMData.convolute, return_value_policy(manage_new_object))
+set_policy(EMData.ift_slice, return_value_policy(manage_new_object))
+
+
+set_policy(EMData.get_row, return_value_policy(manage_new_object))
+set_policy(EMData.get_col, return_value_policy(manage_new_object))
+
 
 exclude(EMData.get_data)
 exclude(EMData.read_images_by_index)
 exclude(EMData.read_images_by_ext)
 exclude(EMData.fft_slice)
+exclude(EMData.render_amp8)
+exclude(EMData.render_amp24)
+exclude(EMData.render_pha24)
+exclude(EMData.get_supp)
 
 
 Include("pyem.h")
@@ -45,6 +62,7 @@ Include("ctf.h")
 Include("imageio.h")
 Include("transform.h")
 Include("pylist.h")
+Include("xydata.h")
 
 FilterFactory = Class("EMAN::FilterFactory", "filter.h")
 set_policy(FilterFactory.instance, return_value_policy(reference_existing_object))
@@ -59,6 +77,7 @@ set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
 exclude(AlignerFactory.add)
 
 Aligner = Class("EMAN::Aligner", "aligner.h")
+set_policy(Aligner.align, return_value_policy(manage_new_object))
 
 ProjectorFactory = Class("EMAN::ProjectorFactory", "projector.h")
 set_policy(ProjectorFactory.instance, return_value_policy(reference_existing_object))
@@ -66,4 +85,4 @@ set_policy(ProjectorFactory.get, return_value_policy(manage_new_object))
 exclude(ProjectorFactory.add)
 
 Projector = Class("EMAN::Projector", "projector.h")
-
+set_policy(Projector.project3d, return_value_policy(manage_new_object))

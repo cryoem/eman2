@@ -28,10 +28,14 @@ namespace EMAN {
     public:
 	virtual ~ImageIO();
 	
-	virtual int read_header(map<string, EMObject>& dict, int image_index = 0, Region* area = 0, bool is_3d = false) = 0; 
+	virtual int read_header(map<string, EMObject>& dict, int image_index = 0,
+				const Region* area = 0, bool is_3d = false) = 0;
+	
 	virtual int write_header(map<string, EMObject>& dict, int image_index = 0) = 0;
 
-	virtual int read_data(float* data, int image_index = 0, Region* area = 0, bool is_3d = false) = 0;
+	virtual int read_data(float* data, int image_index = 0,
+			      const Region* area = 0, bool is_3d = false) = 0;
+	
 	virtual int write_data(float* data, int image_index = 0) = 0;
 	
 	virtual int read_ctf(Ctf& ctf, int image_index = 0);
@@ -54,15 +58,15 @@ namespace EMAN {
 	int check_write_access(IOMode rw_mode, int image_index, bool check_data = false,
 			       float* data = 0);
 	
-	int check_region(Region* area, const Size& max_size);
+	int check_region(const Region* area, const Size& max_size);
 	
-	FILE* sfopen(const char* filename, IOMode mode, bool* is_new = 0, bool overwrite = false);
+	FILE* sfopen(string filename, IOMode mode, bool* is_new = 0, bool overwrite = false);
     };
 
 #define DEFINE_IMAGEIO_FUNC \
-        int read_header(map<string, EMObject>& dict, int image_index = 0, Region* area = 0, bool is_3d = false); \
+        int read_header(map<string, EMObject>& dict, int image_index = 0, const Region* area = 0, bool is_3d = false); \
 	int write_header(map<string, EMObject>& dict, int image_index = 0); \
-	int read_data(float* data, int image_index = 0, Region* area = 0, bool is_3d = false); \
+	int read_data(float* data, int image_index = 0, const Region* area = 0, bool is_3d = false); \
 	int write_data(float* data, int image_index = 0); \
         bool is_complex_mode(); \
         bool is_image_big_endian(); \

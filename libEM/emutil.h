@@ -54,7 +54,7 @@ namespace EMAN {
 	    IMAGE_UNKNOWN
 	};
 	
-	static EMData* vertical_acf(const EMData& image, int maxdy);
+	static EMData* vertical_acf(const EMData* image, int maxdy);
 	
 	static ImageType get_image_type(string filename);
 	static int get_image_count(string filename);
@@ -63,20 +63,20 @@ namespace EMAN {
 	static const char* get_imagetype_name(EMUtil::ImageType type);
 	static const char* get_datatype_string(EMDataType type);
 	
-	static void get_region_dims(Region* area, int nx, int* area_x, int ny, 
+	static void get_region_dims(const Region* area, int nx, int* area_x, int ny, 
 				    int* area_y, int nz = 1, int* area_z = 0);
 
-	static void get_region_origins(Region* area, int* p_x0, int* p_y0, int* p_z0 = 0, 
+	static void get_region_origins(const Region* area, int* p_x0, int* p_y0, int* p_z0 = 0, 
 				       int nz = 1, int image_index = 0);
 	
 	static int get_region_data(unsigned char* cdata, FILE* in, int image_index, 
 				   int mode_size, int nx, int ny, int nz = 1,
-				   Region* area = 0, bool need_flip = false,
+				   const Region* area = 0, bool need_flip = false,
 				   int pre_row = 0, int post_row = 0);
 
 	static void dump_dict(const Dict& dict);
 
-	static bool is_same_size(EMData* em1, EMData* em2);
+	static bool is_same_size(const EMData* em1, const EMData* em2);
 	
 	
 	
