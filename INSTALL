@@ -7,7 +7,6 @@ Optional Libraries
 
 Basic Installation
 ------------------
-
        1) download CMake from our web site: http://ncmi.bcm.tmc.edu/ncmi/software/,
 	  select 'EMAN', then select version "Compilation Libraries and External 
 	  Software". Then download cmake.tar.gz.
