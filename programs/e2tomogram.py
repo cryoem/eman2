@@ -107,6 +107,9 @@ Processes a tomographic tilt series"""
 	parser.add_option("--highpass",type="float",help="Highpass Gaussian filter radius (pixels), default none", default=-1.0)
 	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian filter radius (pixels), default none",default=-1.0)
 	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
+	parser.add_option("--localavg",type="int",help="Average several images for the alignment",default=1)
+	parser.add_option("--tiltaxis",type="float",help="Skip automatic tilt axis location, use fixed angle from x",default=400.0)
+	parser.add_option("--twopass",type="int",help="Skip automatic tilt axis location, use fixed angle from x",default=0)
 #	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	
 	(options, args) = parser.parse_args()
@@ -136,6 +139,7 @@ Processes a tomographic tilt series"""
 
 		
 	cmplist=[(x,x+1) for x in range(nimg/2,nimg-1)]+[(x,x-1) for x in range(nimg/2,0,-1)]
+	if options.twopass : cmplist+=cmplist
 	ii=-1
 	while ii< len(cmplist)-1:
 		ii+=1
@@ -143,11 +147,22 @@ Processes a tomographic tilt series"""
 		if options.mode[:6]=="region" : inn=0
 		else : inn=1
 		
-		im1=EMData()
-		im1.read_image(args[inn],i[0])
+		# read local set of images to average for alignment
+		if i[1]>i[0] :
+			iml=EMData.read_images(args[inn],range(i[0]-options.localavg+1,i[0]+1))
+		else :
+			iml=EMData.read_images(args[inn],range(i[0],i[0]+options.localavg))
+		for img in iml:
+			img.filter("NormalizeEdgeMean")
+		im1=iml[0].copy()
+		for img in iml[1:]:
+			im1+=img
+		iml=None
 		im1.filter("NormalizeEdgeMean")
 		if options.highpass>0 :im1.filter("HighpassGauss",{"highpass":options.highpass})
 		if (options.lowpass>0) : im1.filter("LowpassGauss",{"lowpass":options.lowpass})
+		if options.localavg>1: im1.write_image("aliref.hed",i[0])
+		
 		im2=EMData()
 		im2.read_image(args[inn],i[1])
 		im2.filter("NormalizeEdgeMean")
@@ -194,11 +209,13 @@ Processes a tomographic tilt series"""
 			ccfs=mask.calc_ccf(im2s,1,None)	# this is the sum of the masked values^2 for each pixel center
 			ccfs.filter("ValueSqrt")
 			ccf/=ccfs
-			ccf.filter("MaskSharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
+#			ccf.filter("MaskSharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
+#			ccf.filter("PeakOnly",{"npeaks":0})
+			ccf.filter("MaskSharp",{"outer_radius":options.maxshift})
 			ccf.set_value_at(ccf.get_xsize()/2,ccf.get_ysize()/2,0,0)
 
 			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
-#			ccf.write_image("dbug.hed",-1)
+			if i[1]==53 : ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
 			maxloc=(maxloc[0]-im1.get_xsize()/2,maxloc[1]-im1.get_ysize()/2)
 #			print maxloc
@@ -209,14 +226,14 @@ Processes a tomographic tilt series"""
 			print "%d.\t%d\t%d"%(i[1],cen[0],cen[1])
 			continue			
 		elif options.mode=="censym" :
-			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2,debug=(i[0]==71))
+			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2)
 			pairs=[]
 			for x in range(3):
 				for y in range(-2,3):
 					if y<=0 and x==0 : continue
 					a=dct[(x,y)]
 					b=dct[(-x,-y)]
-					if hypot(a[3]-b[3],a[4]-b[4])>6.0 : continue
+					if hypot(a[3]-b[3],a[4]-b[4])>7.0 : continue
 					pairs.append((x,y,(a[3]+b[3])/2.0,(a[4]+b[4])/2.0,hypot(a[3]-b[3],a[4]-b[4])))
 #					print "%d,%d\t%5.2f %5.2f\t%5.2f"%(pairs[-1][0],pairs[-1][1],pairs[-1][2],pairs[-1][3],pairs[-1][4])
 			
@@ -252,32 +269,36 @@ Processes a tomographic tilt series"""
 		im2.write_image(args[1],i[1])
 	
 	print "Alignment Stage Complete"
-	print "Begin tilt axis search"
 	
-	# now we look for the common-line in the aligned images
-	im1.read_image(args[1],0)
-	sum=im1.do_fft()
-	sum.to_zero()
-	for i in range(nimg):
-		a=EMData()
-		a.read_image(args[1],i)
-		a.filter("MeanZeroEdge")
-		a.filter("NormalizeStd")
-		a.filter("MaskGauss",{"outer_radius":a.get_xsize()/4})
-		b=a.do_fft()
-		b.filter("ComplexNormPixel")
-		sum+=b
-	print "Phase average calculated"
+	if options.tiltaxis!=400.0 :
+		tiltaxis=(0,options.tiltaxis)
+	else:
+		print "Begin tilt axis search"
 		
-	sum.ri2ap()
-	curve=[]
-	for angi in range(-90*4,90*4+1):
-			ang=angi*pi/(180.0*4.0)
-			v=0
-			for r in range(a.get_xsize()/64,a.get_xsize()/2):
-					v+=sum.get_value_at(2*int(r*cos(ang)),a.get_ysize()/2+int(r*sin(ang)))
-			curve.append((v,ang*180.0/pi))
-	tiltaxis=max(curve)
+		# now we look for the common-line in the aligned images
+		im1.read_image(args[1],0)
+		sum=im1.do_fft()
+		sum.to_zero()
+		for i in range(nimg):
+			a=EMData()
+			a.read_image(args[1],i)
+			a.filter("MeanZeroEdge")
+			a.filter("NormalizeStd")
+			a.filter("MaskGauss",{"outer_radius":a.get_xsize()/4})
+			b=a.do_fft()
+			b.filter("ComplexNormPixel")
+			sum+=b
+		print "Phase average calculated"
+			
+		sum.ri2ap()
+		curve=[]
+		for angi in range(-90*4,90*4+1):
+				ang=angi*pi/(180.0*4.0)
+				v=0
+				for r in range(a.get_xsize()/64,a.get_xsize()/2):
+						v+=sum.get_value_at(2*int(r*cos(ang)),a.get_ysize()/2+int(r*sin(ang)))
+				curve.append((v,ang*180.0/pi))
+		tiltaxis=max(curve)
 	
 	print "Tilt axis at %1.2f degrees from x"%tiltaxis[1]
 
