@@ -630,7 +630,89 @@ EMData *EMData::get_top_half() const
 	return half;
 }
 
+EMData* EMData::windum(int l, int lsd, int n, WINDOWPLACE windowplace) {
+	ENTERFUNC;
+	typedef MArray3D::index_range range;
+	MArray3D bi(rdata, 
+			    boost::extents[lsd][n][n],
+				boost::fortran_storage_order());
+	bi.reindex(1);
+	EMData* ret;
+	if (windowplace == WINDOW_IN_PLACE) {
+		ret = this;
+	} else {
+		ret = new EMData;
+		ret->set_size(l, l, l);
+	}
+	float* retdata = ret->get_data();
+	MArray3D r(retdata, 
+			   boost::extents[l][l][l],
+			   boost::fortran_storage_order());
+	r.reindex(1);
+	int ip = (n-l)/2 + l%2;
+	for (int iz = 1; iz <= l; iz++)
+		for (int iy = 1; iy <= l; iy++)
+			for (int ix = 1; ix <= l; ix++)
+				r[ix][iy][iz] = bi[ip+ix][ip+iy][ip+iz];
+	return ret;
+	EXITFUNC;
+}
+
+void EMData::center_origin_fft()
+{
+	ENTERFUNC;
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is real image.");
+	}
+
+	if (!is_ri()) {
+		LOGWARN("Only RI should be used. ");
+	}
+	MCArray3D dat = get_3dcview();
+	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2]
+	boost::array<MArray3D::index,3> bases = {{0, 1, 1}};
+	dat.reindex(bases);
+	float factor = +1.;
+	for (int iz = 1; iz <= nz; iz++) {
+		for (int iy = 1; iy <= ny; iy++) {
+			for (int ix = 0; ix <= nx/2; ix++) {
+				dat[ix][iy][iz] *= factor;
+				factor = -factor;
+			}
+		}
+	}
+	EXITFUNC;
+}
+
+EMData* EMData::zeropad_ntimes(int npad) {
+	ENTERFUNC;
+	EMData* newimg = copy_head();
+	int nxpad = npad*nx;
+	int nypad = npad*ny;
+	int nzpad = npad*nz;
+	if (nz == 1) {
+		// 2-d image, don't want to pad along z
+		nzpad = nz;
+	}
+	newimg->set_size(nxpad,nypad,nzpad);
+	newimg->to_zero();
+	size_t bytes = nx*sizeof(float);
+	MArray3D dest = newimg->get_3dview();
+	MArray3D src = this->get_3dview();
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = 0; iy < ny; iy++) {
+			//memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+			memmove(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+		}
+	}
+	newimg->done_data();
+	return newimg;
+	EXITFUNC;
+}
+
 EMData* EMData::pad_fft() {
+	ENTERFUNC;
 	EMData* newimg = copy_head();
 	size_t bytes;
 	size_t offset;
@@ -2207,6 +2289,28 @@ MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
 	return marray;
+}
+
+MCArray2D EMData::get_2dcview(int x0, int y0) const
+{
+	const int ndims = 2;
+	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
+	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
+	boost::array<std::size_t,ndims> bases={{x0, y0}};
+	marray.reindex(bases);
+	return marray;	
+}
+
+MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
+{
+	const int ndims = 3;
+	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
+	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
+	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
+	marray.reindex(bases);
+	return marray;	
 }
 
 

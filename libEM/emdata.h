@@ -37,6 +37,7 @@ namespace EMAN
 	typedef boost::multi_array_ref<complex<float>, 2> MCArray2D;
 	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
 	enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
+	enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
 
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
@@ -212,6 +213,31 @@ namespace EMAN
 		void insert_scaled_sum(EMData *block, const FloatPoint & center,
 							   float scale=1.0, float mult_factor=1.0);
 
+
+		/** return an image object that has been windowed.
+		 *
+		 * @return An image object that has been windowed.
+		 */
+		EMData* windum(int l, int lsd, int n, 
+				       WINDOWPLACE windowplace = WINDOW_IN_PLACE);
+
+
+		
+		/** return an image object that has the origin centered
+		 *  in the middle of the box.
+		 *
+		 */
+		void center_origin_fft();
+
+		/** return an image object that has been padded with zeros to
+		 *  an integral (npad) factor (e.g., npad=4 means the new 
+		 *  image will be 2x larger in each direction).  The default
+		 *  is to pad 4x.
+		 * The current image is not changed.
+		 *
+		 * @return An image object that has been padded npad-times.
+		 */
+		EMData *zeropad_ntimes(int npad=4);
 
 		/** return an image object that has been fft-padded/unpadded.
 		 * The current image is not changed.
@@ -973,6 +999,8 @@ namespace EMAN
 		MCArray3D get_3dcview() const;
 		MArray2D get_2dview(int x0, int y0) const;
 		MArray3D get_3dview(int x0, int y0, int z0) const;
+		MCArray2D get_2dcview(int x0, int y0) const;
+		MCArray3D get_3dcview(int x0, int y0, int z0) const;
 		
 		/** Get one row of a 1D/2D image.
 		 *
@@ -1591,4 +1619,5 @@ namespace EMAN
 	
 }
 
+			
 #endif
