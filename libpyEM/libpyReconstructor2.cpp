@@ -38,6 +38,10 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     EMAN::Dict get_params() const {
         return call_method< EMAN::Dict >(self, "get_params");
     }
@@ -74,6 +78,7 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
         .def("insert_slice", pure_virtual(&EMAN::Reconstructor::insert_slice))
         .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Reconstructor::get_desc))
         .def("get_params", &EMAN::Reconstructor::get_params, &EMAN_Reconstructor_Wrapper::default_get_params)
         .def("set_params", &EMAN::Reconstructor::set_params, &EMAN_Reconstructor_Wrapper::default_set_params)
         .def("get_param_types", pure_virtual(&EMAN::Reconstructor::get_param_types))

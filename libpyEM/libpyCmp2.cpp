@@ -33,6 +33,10 @@ struct EMAN_Cmp_Wrapper: EMAN::Cmp
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     EMAN::Dict get_params() const {
         return call_method< EMAN::Dict >(self, "get_params");
     }
@@ -77,6 +81,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
     class_< EMAN::Cmp, boost::noncopyable, EMAN_Cmp_Wrapper >("__Cmp", init<  >())
         .def("cmp", pure_virtual(&EMAN::Cmp::cmp))
         .def("get_name", pure_virtual(&EMAN::Cmp::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Cmp::get_desc))
         .def("get_params", &EMAN::Cmp::get_params, &EMAN_Cmp_Wrapper::default_get_params)
         .def("set_params", &EMAN::Cmp::set_params, &EMAN_Cmp_Wrapper::default_set_params)
         .def("get_param_types", pure_virtual(&EMAN::Cmp::get_param_types))

@@ -30,6 +30,10 @@ struct EMAN_Projector_Wrapper: EMAN::Projector
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     EMAN::Dict get_params() const {
         return call_method< EMAN::Dict >(self, "get_params");
     }
@@ -60,6 +64,7 @@ BOOST_PYTHON_MODULE(libpyProjector2)
     class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("__Projector", init<  >())
         .def("project3d", pure_virtual(&EMAN::Projector::project3d), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Projector::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Projector::get_desc))
         .def("get_params", &EMAN::Projector::get_params, &EMAN_Projector_Wrapper::default_get_params)
         .def("get_param_types", &EMAN::Projector::get_param_types, &EMAN_Projector_Wrapper::default_get_param_types)
         .def("set_params", &EMAN::Projector::set_params)

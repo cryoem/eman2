@@ -32,6 +32,10 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     EMAN::Dict get_params() const {
         return call_method< EMAN::Dict >(self, "get_params");
     }
@@ -191,6 +195,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("__Aligner", init<  >())
         .def("align", pure_virtual(&EMAN::Aligner::align), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Aligner::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Aligner::get_desc))
         .def("get_params", &EMAN::Aligner::get_params, &EMAN_Aligner_Wrapper::default_get_params)
         .def("set_params", &EMAN::Aligner::set_params, &EMAN_Aligner_Wrapper::default_set_params)
         .def("get_param_types", pure_virtual(&EMAN::Aligner::get_param_types))

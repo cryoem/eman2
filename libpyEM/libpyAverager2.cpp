@@ -42,6 +42,10 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     void set_params(const EMAN::Dict& p0) {
         call_method< void >(self, "set_params", p0);
     }
@@ -73,6 +77,7 @@ BOOST_PYTHON_MODULE(libpyAverager2)
         .def("add_image_list", &EMAN::Averager::add_image_list, &EMAN_Averager_Wrapper::default_add_image_list)
         .def("finish", pure_virtual(&EMAN::Averager::finish), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Averager::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Averager::get_desc))
         .def("set_params", &EMAN::Averager::set_params, &EMAN_Averager_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Averager::get_param_types, &EMAN_Averager_Wrapper::default_get_param_types)
     ;
