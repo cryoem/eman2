@@ -582,7 +582,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 							   ImageIO::IOMode rw_mode, int image_index,
 							   size_t mode_size, int nx, int ny, int nz,
 							   const Region * area, bool need_flip, 
-							   int pre_row, int post_row)
+							   ImageType imgtype, int pre_row, int post_row)
 {
 	unsigned char * cdata = (unsigned char *)vdata;
 	
@@ -615,18 +615,27 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	portable_fseek(file, img_row_size * ny * z0, SEEK_CUR);
 
+	float nxlendata[1];
+	int floatsize = (int) sizeof(float);
+	nxlendata[0] = nx * floatsize;
+	
 	for (int k = 0; k < zlen; k++) {
-		if (area) {
+		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
 		int k2 = k * (int)area_sec_size;
 		
 		for (int j = 0; j < ylen; j++) {
 			if (pre_row > 0) {
-				portable_fseek(file, pre_row, SEEK_CUR);
+				if (imgtype == IMAGE_ICOS && rw_mode != ImageIO::READ_ONLY && !area) {
+					fwrite(nxlendata, floatsize, 1, file);
+				}
+				else {
+					portable_fseek(file, pre_row, SEEK_CUR);
+				}
 			}
 
-			if (area) {
+			if (x_pre_gap > 0) {
 				portable_fseek(file, x_pre_gap, SEEK_CUR);
 			}
 
@@ -648,16 +657,21 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 				}
 			}
 				
-			if (area) {                
+			if (x_post_gap > 0) {                
 				portable_fseek(file, x_post_gap, SEEK_CUR);
 			}
 
 			if (post_row > 0) {
-				portable_fseek(file, post_row, SEEK_CUR);
+				if (imgtype == IMAGE_ICOS && rw_mode != ImageIO::READ_ONLY && !area) {
+					fwrite(nxlendata, floatsize, 1, file);
+				}
+				else {
+					portable_fseek(file, post_row, SEEK_CUR);
+				}
 			}
 		}
 
-		if (area) {
+		if (y_post_gap > 0) {
 			portable_fseek(file, y_post_gap, SEEK_CUR);
 		}
 	}

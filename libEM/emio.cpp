@@ -211,7 +211,7 @@ int EmIO::write_data(float *data, int image_index, const Region* area, bool)
 	check_write_access(rw_mode, image_index, 1, data);
 	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
 
-	EMUtil::process_region_io(data, em_file, WRITE_ONLY,
+	EMUtil::process_region_io(data, em_file, rw_mode,
 							  image_index, sizeof(float), 
 							  emh.nx, emh.ny, emh.nz, area);
 #if 0

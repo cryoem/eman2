@@ -148,7 +148,8 @@ namespace EMAN
 		static void process_region_io(void *cdata, FILE * file, ImageIO::IOMode rw_mode,
 									  int image_index, size_t mode_size, int nx, 
 									  int ny, int nz = 1, const Region * area = 0, 
-									  bool need_flip = false, int pre_row = 0, int post_row = 0);
+									  bool need_flip = false, ImageType imgtype=IMAGE_UNKNOWN,
+									  int pre_row = 0, int post_row = 0);
 
 		/** Dump a Dict object.
 		 * @params dict A Dict object.

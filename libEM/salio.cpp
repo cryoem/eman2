@@ -171,7 +171,8 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	size_t post_row = block_size - row_size;
 
 	EMUtil::process_region_io(cdata, sal_file, READ_ONLY, image_index, 
-							  mode_size, nx, ny, 1, area, false, 0, post_row);
+							  mode_size, nx, ny, 1, area, false, 
+							  EMUtil::IMAGE_SAL, 0, post_row);
 
 #if 0
 	int row_size = nx * mode_size;
