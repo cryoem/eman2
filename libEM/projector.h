@@ -227,19 +227,19 @@ namespace EMAN
      * (ie: less memory requirement). It does not modify the self
      * data either.
      */
-	class StandardBigProjector:public Projector
+	class StandardFastProjector:public Projector
 	{
 	  public:
 		EMData * project3d(EMData * image) const;
 
 		string get_name() const
 		{
-			return "StandardBig";
+			return "StandardFast";
 		}
 
 		static Projector *NEW()
 		{
-			return new StandardBigProjector();
+			return new StandardFastProjector();
 		}
 	};
 

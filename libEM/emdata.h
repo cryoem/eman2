@@ -271,7 +271,7 @@ namespace EMAN
 		 */
 		std::string render_amp8(int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
-						 float min_render, float max_render);
+						 float min_render, float max_render,int asrgb);
 		
 		/** Render the image into a 24-bit image. 2D image only.
 		 * @param data
@@ -289,7 +289,7 @@ namespace EMAN
 		 * @param cmap
 		 * @exception ImageDimensionException If the image is not 2D.
 		 */		 
-		void render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
+		void render_amp24(int x, int y, int xsize, int ysize,
 						  int bpl, float scale, int min_gray, int max_gray,
 						  float min_render, float max_render,
 						  void *ref, void cmap(void *, int coord, unsigned char *tri));

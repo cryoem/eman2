@@ -23,12 +23,12 @@ namespace EMAN {
     class Exception : public std::exception {
     public:
 		/** Contructor.
-		 * @params file The name of the file where an exception is
+		 * @param file The name of the file where an exception is
 		 * thrown.
-		 * @params line The line number in the file where the
+		 * @param line The line number in the file where the
 		 * exception is thrown.
-		 * @params desc_str Exception description string.
-		 * @params objname_str Exception involved object name.
+		 * @param desc_str Exception description string.
+		 * @param objname_str Exception involved object name.
 		 */ 
 		Exception(const string& file = "", int line = 0,
 				  const string& desc_str = "", const string& objname_str = "")

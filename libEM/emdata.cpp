@@ -1162,7 +1162,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 
 std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
-						 float render_min, float render_max)
+						 float render_min, float render_max,int asrgb)
 {
 	ENTERFUNC;
 
@@ -1178,6 +1178,9 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 		render_max = render_min + 0.01f;
 	}
 
+	if (asrgb) asrgb=3;
+	else asrgb=1;
+	
 	std::string ret=std::string();
 	ret.resize(iysize*bpl);
 	unsigned char *data=(unsigned char *)ret.data();
@@ -1260,7 +1263,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k = (int) (gs * (t - render_min));
 						k += mingray;
 					}
-					data[i + j * bpl] = static_cast < unsigned char >(k);
+					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
 					ll += dsx;
 				}
 				l += dsy;
@@ -1294,7 +1297,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k = (int) (gs * (t - render_min));
 						k += mingray;
 					}
-					data[i + j * bpl] = static_cast < unsigned char >(k);
+					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
 					ll += addi;
 					remx += addr;
 					if (remx > scale_n) {
@@ -1328,7 +1331,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k = (int) (gs * (t - render_min));
 						k += mingray;
 					}
-					data[i + j * bpl] = static_cast < unsigned char >(k);
+					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
 					l += dsx;
 				}
 				l = br + dsy;
@@ -1350,7 +1353,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k = (int) (gs * (t - render_min));
 						k += mingray;
 					}
-					data[i + j * bpl] = static_cast < unsigned char >(k);
+					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
 					l += addi;
 					remx += addr;
 					if (remx > scale_n) {
@@ -1367,6 +1370,15 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 			}
 		}
 	}
+	
+	// this replicates r -> g,b
+	if (asrgb) {
+		for (j=ymin; j<=ymax*bpl; j+=bpl) {
+			for (i=xmin; i<xmax*3; i+=3) {
+				data[i+j+1]=data[i+j+2]=data[i+j];
+			}
+		}
+	}
 
 	done_data();
 	EXITFUNC;
@@ -1376,7 +1388,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 }
 
 
-void EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int iysize,
+void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 						  int bpl, float scale, int mingray, int maxgray,
 						  float render_min, float render_max, void *ref,
 						  void cmap(void *, int coord, unsigned char *tri))

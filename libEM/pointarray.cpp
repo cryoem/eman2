@@ -1151,7 +1151,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 
 #ifdef OPTPP
 #include "NLF.h"
-#include "BoundConstraint.h
+#include "BoundConstraint.h"
 #include "OptCG.h"
 #include "newmatap.h"
 

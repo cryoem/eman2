@@ -17,7 +17,7 @@ template <> Factory < Projector >::Factory()
 	force_add(&PawelProjector::NEW);
 	force_add(&SimpleIsoSurfaceProjector::NEW);
 	force_add(&StandardProjector::NEW);
-	force_add(&StandardBigProjector::NEW);
+	force_add(&StandardFastProjector::NEW);
 }
 
 
@@ -615,7 +615,7 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 
 
 
-EMData *StandardProjector::project3d(EMData * image) const
+EMData *StandardFastProjector::project3d(EMData * image) const
 {
 	float alt = params["alt"];
 	float az = params["az"];
@@ -656,7 +656,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	return ret;
 }
 
-EMData *StandardBigProjector::project3d(EMData * image) const
+EMData *StandardProjector::project3d(EMData * image) const
 {
 	float alt = params["alt"];
 	float az = params["az"];
