@@ -9,6 +9,8 @@ using std::string;
 
 namespace EMAN
 {
+    /** Size is used to describe a 2D or 3D rectangular size.
+     */
     class Size
     {
     public:
@@ -35,8 +37,7 @@ namespace EMAN
 	int zsize;
     };
 
-    /**
-     * template Point defines a point in a 2D/3D space. It stores the
+    /** Template Point defines a point in a 2D/3D space. It stores the
      * point's coordinates. The coordinates can be in any native
      * numerical type: int, float, double, etc. 
      */
@@ -63,9 +64,7 @@ namespace EMAN
     };
 
 
-    /**
-     * class Region defines either a 2D rectangular region or 3D
-     * rectangular region.
+    /** Region defines a 2D or 3D rectangular region specified by origins and sizes.
      */    
     class Region
     {

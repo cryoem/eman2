@@ -17,7 +17,7 @@ namespace EMAN
      * specific Aligner type has a unique name. This name is used to
      * create a new Aligner instance or call an Aligner.
      *
-     * Aligners should be used as follows:
+     * Typical usage of Aligners:
      *
      * 1. How to get all the Aligner types
      *

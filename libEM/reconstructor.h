@@ -19,8 +19,7 @@ namespace EMAN
 
     /**
      * these magic numbers and macros need to be removed later
-     */
-    
+     */    
 #define I5G	(10.4 / (M_PI*M_PI))	// used for 5x5x5 interpolation
 #define I4G	(8.8 / (M_PI*M_PI))	// used for 4 interpolation
 #define I3G	(6.4 / (M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
@@ -31,11 +30,12 @@ namespace EMAN
     class Rotation;
 
 
-    /** Reconstructor class is the base class for all Reconstructors.
-     * Each specific Reconstructor type has a unique name. This name
+    /** Reconstructor is the base class for all reconstructors.
+     * Each subclass Reconstructor defines a way to do 3D recontruction.
+     * Each specific Reconstructor type has a unique ID name. This name
      * is used to create a Reconstructor instance or do a reconstruction.
      *
-     * Reconstructor should be used as follows:
+     * Typical usages of Reconstructors are as follows:
      *
      * 1. How to get all the Reconstructor types:
      *

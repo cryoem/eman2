@@ -15,8 +15,7 @@ using std::string;
 
 namespace EMAN
 {
-    /**
-     * template Vec3 defines a 3-element vector and various vector
+    /** Template Vec3 defines a 3-element vector and various vector
      * operations. The vector may store any numeric data type
      * including int, float, double, etc.
      */
@@ -226,8 +225,7 @@ namespace EMAN
 	return false;
     }
 
-    /**
-     * class Matrix3f defines a 3x3 floating-point matrix and various
+    /** Matrix3f defines a 3x3 floating-point matrix and various
      * matrix operation. It uses gsl matrix as its internal
      * representation and implementation.
      */      
@@ -370,8 +368,7 @@ namespace EMAN
 
 
     
-    /**
-     * class Matrix4f defines a 4x4 floating-point matrix and various
+    /** Matrix4f defines a 4x4 floating-point matrix and various
      * matrix operation. It uses gsl matrix as its internal
      * representation and implementation.
      */      
@@ -438,9 +435,8 @@ namespace EMAN
     bool operator!=(const Matrix4f & m1, const Matrix4f & m2);
 
 
-    /**
-     * class Quaternion is used in Rotation and Transformation to
-     * replace Euler angles.
+    /** Quaternion is used in Rotation and Transformation to replace Euler angles.
+     *
      * Euler angles have the disadvantage of being
      * susceptible to "Gimbal lock" where attempts to rotate an
      * object fail due to the order in which the rotations are performed.
@@ -526,7 +522,12 @@ namespace EMAN
     bool operator==(const Quaternion & q1, const Quaternion & q2);
     bool operator!=(const Quaternion & q1, const Quaternion & q2);
 
-
+    /** Rotation defines various conventions of Euler angles.
+     * It can also convert any convention to any other convention.
+     * Currently the following conventions are supported: EMAN,
+     * IMAGIC, SPIN,  QUATERNION, MATRIX, SGIROT, SPIDER, MRC.
+     *
+     */
     class Rotation
     {
     public:
@@ -610,9 +611,10 @@ namespace EMAN
     bool operator==(const Rotation & e1, const Rotation & e2);
     bool operator!=(const Rotation & e1, const Rotation & e2);
 
-    
-    // composite transform: = (-Translate) * Scale * Rotate * Translate
-    // Translate = center
+
+    /** Transform defines a transformation, which can be rotation,
+     * translation, scale, and their combinations.
+     */
     class Transform
     {
     public:
@@ -738,14 +740,16 @@ namespace EMAN
 	    return (*this);
 	}
 
-	// [this] = [this] x [t]
+	/** [this] = [this] x [t]
+	 */
 	Transform & post_concatenate(const Transform & t)
 	{
 	    (*this) *= t;
 	    return (*this);
 	}
 
-	// [this] = [t] x [this]
+	/** [this] = [t] x [this]
+	 */
 	Transform & pre_concatenate(const Transform & t)
 	{
 	    Transform t1 = t;
@@ -754,7 +758,8 @@ namespace EMAN
 	    return (*this);
 	}
 
-	// Concatenates this transform with a translation transformation.
+	/** Concatenates this transform with a translation transformation.
+	*/
 	Transform & translate(const Vec3<float> & v)
 	{
 	    if (v != Vec3<float>(0, 0, 0)) {
@@ -768,7 +773,8 @@ namespace EMAN
 	}
 
 
-	// Concatenates this transform with a rotation transformation.
+	/** Concatenates this transform with a rotation transformation.
+	 */
 	Transform & rotate(const Rotation & r)
 	{
 	    if (r != Rotation(1, 0, 0, 0, Rotation::QUATERNION))
@@ -809,7 +815,8 @@ namespace EMAN
 	    return (*this);
 	}
 
-	// Concatenates this transform with a scaling transformation.
+	/** Concatenates this transform with a scaling transformation.
+	 */
 	Transform & scale(const Vec3<float> & scale_factor)
 	{
 	    if (scale_factor != Vec3<float>(1, 1, 1)) {

@@ -22,7 +22,7 @@ namespace EMAN
      * Each specific projector has a unique name and should be called
      * through the name.
      *
-     * Projectors should be used as follows:
+     * Typical usage of Projectors:
      *
      * 1. How to get all the Projector types
      *

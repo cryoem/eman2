@@ -18,7 +18,7 @@ namespace EMAN
      * coomparison class has a unique name. This name is used to
      * create a new Cmp instance or call a Cmp.
      *
-     * Cmp should be used as follows:
+     * Typical usage of Cmp:
      *
      * 1. How to get all Cmp types
      *

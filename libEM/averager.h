@@ -14,6 +14,36 @@ namespace EMAN
     class EMData;
     class XYData;
 
+    /** Averager is the base class for all averager classes.
+     * Each subclass averager defines a way to do averaging on a set
+     * of images. Each specific averager has a unique ID name. This name
+     * is used to call a averager.
+     *
+     * Typical usages of Averager:
+     *
+     * 1. How to get all Averager types
+     *
+     *    vector<string> all_averagers = Factory<Averager>.instance()->get_list();
+     *
+     * 2. How to use an Averager
+     *
+     *    Averager *imgavg = Factory<Averager>.instance()->get("Image");
+     *    vector<EMData *> images(2);
+     *    EMData *image1 = ...;
+     *    EMData *image2 = ...;
+     *    images[0] = image1;
+     *    images[1] = image2;
+     *    EMData *result = imgavg->average(images);
+     *
+     * 3. How to define a new XYZAverager
+     *
+     *    XYZAverager should extend Averager and implement the
+     *    following functions:
+     *
+     *        EMData *average(const vector<EMData *> & image_list) const;
+     *        string get_name() const { return "XYZ"; }
+     *        static Averager *NEW() { return new XYZAverager(); }
+     */
     class Averager
     {
     public:
@@ -37,7 +67,9 @@ namespace EMAN
 	mutable Dict params;
     };
 
-
+    /** ImageAverager averages a list of images. It optionally makes
+     * a sigma image.
+     */
     class ImageAverager : public Averager
     {
     public:
@@ -62,6 +94,8 @@ namespace EMAN
 	}
     };
 
+    /** IterationAverager averages images by doing the smoothing iteration.
+     */
     class IterationAverager : public Averager
     {
     public:
@@ -78,6 +112,8 @@ namespace EMAN
 	}
     };
 
+    /** CtfAverager is the base Averager class for CTF correction or SNR weighting.
+    */
     class CtfAverager : public Averager
     {
     public:
@@ -101,7 +137,8 @@ namespace EMAN
 	mutable vector<float> snr;
     };
 
-
+    /** WeightingAverager averages the images with SNR weighting, but no CTF correction.
+     */
     class WeightingAverager : public CtfAverager
     {
     public:
@@ -131,8 +168,8 @@ namespace EMAN
 	}
     };
 
-
-
+    /** CtfCAverager averages the images with CTF correction.
+     */
     class CtfCAverager : public CtfAverager
     {
     public:
@@ -147,7 +184,8 @@ namespace EMAN
 	}
     };
 
-
+    /** CtfCWAverager averages the images with CTF correction.
+     */
     class CtfCWAverager : public CtfAverager
     {
     public:
@@ -168,7 +206,9 @@ namespace EMAN
 	}
     };
 
-
+    /** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
+     *  The Weiner filter is estimated directly from the data.
+     */
     class CtfCWautoAverager : public CtfAverager
     {
     public:
