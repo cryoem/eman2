@@ -33,6 +33,13 @@ namespace EMAN
 	public:
 		static bool is_host_big_endian();
 
+		/** given a small floating number, return whether the number
+		 * is in big endian or not. If a number is smaller than 65535,
+		 * it is defined as a "small" number here.
+		 */
+		static bool is_float_big_endian(float small_number);
+		
+		
 		/** given a pointer to a reasonable small integer number,
 		 * return whether the number is big endian or not.
 		 * For a n-bit integer, the number should < (2 ^ (n/2)).

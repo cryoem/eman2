@@ -7,7 +7,7 @@
 #include "portable_fileio.h"
 #include "emutil.h"
 #include "Assert.h"
-#include "util.h"
+
 
 using namespace EMAN;
 
@@ -63,14 +63,8 @@ void SpiderIO::init()
 		}
 
 		float nslice = first_h->nslice;
-		
-		if (Util::goodf(&nslice) && nslice > 0 && nslice < 10000 && nslice == floor(nslice)) {
-			is_big_endian = ByteOrder::is_host_big_endian();
-		}
-		else {
-			is_big_endian = ! ByteOrder::is_host_big_endian();
-		}
-		
+
+		is_big_endian = ByteOrder::is_float_big_endian(nslice);
 		become_host_endian((float *) first_h, NUM_FLOATS_IN_HEADER);
 		
 		if (first_h->istack == SINGLE_IMAGE_HEADER && rw_mode == WRITE_ONLY) {
@@ -103,13 +97,10 @@ bool SpiderIO::is_valid(const void *first_block)
 		float type = data[4];
 		float ny = data[1];
 		float istack = data[23];
-		bool swap = true;
-		
-		if (Util::goodf(&nslice) && nslice > 0 && nslice < 10000.0 && nslice == floor(nslice)) {
-			swap = false;
-		}
-		
-		if (swap) {
+
+		bool bigendian = ByteOrder::is_float_big_endian(nslice);
+				
+		if (bigendian != ByteOrder::is_host_big_endian()) {
 			ByteOrder::swap_bytes(&nslice);
 			ByteOrder::swap_bytes(&type);
 			ByteOrder::swap_bytes(&ny);

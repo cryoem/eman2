@@ -2,6 +2,7 @@
  * $Id$
  */
 #include "byteorder.h"
+#include "util.h"
 
 using namespace EMAN;
 
@@ -25,4 +26,18 @@ bool ByteOrder::is_host_big_endian()
 	}
 
 	return host_big_endian;
+}
+
+bool ByteOrder::is_float_big_endian(float f)
+{
+	bool is_big = false;
+	
+	if (Util::goodf(&f) && f > 0 && f < 65535.0 && f == floor(f)) {
+		is_big = is_host_big_endian();
+	}
+	else {
+		is_big = !is_host_big_endian();
+	}
+
+	return is_big;
 }

@@ -5,7 +5,6 @@
 #include "log.h"
 #include "geometry.h"
 #include "portable_fileio.h"
-#include "util.h"
 
 using namespace EMAN;
 
@@ -45,13 +44,9 @@ bool SingleSpiderIO::is_valid(const void *first_block)
 	float type = data[4];
 	float ny = data[1];
 	float istack = data[23];
-	bool swap = true;
+	bool big_endian = ByteOrder::is_float_big_endian(nslice);
 	
-	if (Util::goodf(&nslice) && nslice > 0 && nslice < 10000.0 && nslice == floor(nslice)) {
-		swap = false;
-	}
-
-	if (swap) {
+	if (big_endian != ByteOrder::is_host_big_endian()) {
 		ByteOrder::swap_bytes(&nslice);
 		ByteOrder::swap_bytes(&type);
 		ByteOrder::swap_bytes(&ny);

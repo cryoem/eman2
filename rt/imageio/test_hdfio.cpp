@@ -23,7 +23,7 @@ void test_write()
 {
 	EMData * e = new EMData();
 	e->read_image(TestUtil::get_debug_image("3d.mrc"));
-	e->write_image("test_hdfio_2.h5", 0, EMUtil::IMAGE_HDF);
+	e->write_image("test_hdfio_write_2.h5", 0, EMUtil::IMAGE_HDF);
 	delete e;
 	e = 0;
 }
@@ -32,7 +32,7 @@ void test_write()
 int main()
 {
 	test_read();
-	//test_write();
+	test_write();
 	return 0;
 }
 
