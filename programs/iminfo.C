@@ -1,6 +1,7 @@
 #include "emdata.h"
 #include <stdio.h>
 #include "log.h"
+#include "ctf.h"
 
 using namespace EMAN;
 
@@ -8,7 +9,7 @@ void usage(const char* progname)
 {
     printf("\n%s [-H] [-vN] <image file>\n", progname);
     printf("    -H: to display all header information\n");
-    printf("   -vN: set log level. N=0,1,2,3, from most detailed to least detailed\n");
+    printf("   -vN: set verbosity level. N=0,1,2,3. large N means more verbose.\n");
     printf("\n");
 }
 
@@ -52,12 +53,18 @@ int main(int argc, char* argv[])
     int ny = dict["ny"].get_int();
     int nz = dict["nz"].get_int();
     
-    printf("Image Dimensions: %dx%dx%d\n\n", nx, ny, nz);
+    printf("Image Dimensions: %dx%dx%d\n", nx, ny, nz);
 
+    Ctf* ctf = d->get_ctf();
+    if (ctf) {
+	printf("CTF: %s\n", ctf->to_string().c_str());
+    }
+    
     if (show_all_header) {
 	printf("\nDetailed Header Information:\n");
 	EMUtil::dump_dict(dict);
     }
+    printf("\n");
     
     delete d;
     d = 0;

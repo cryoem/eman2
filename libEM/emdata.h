@@ -29,6 +29,9 @@ namespace EMAN {
 	map<string, EMObject> get_attr_dict() const;
 	float* get_data() const;
 
+	SimpleCtf* get_ctf();
+	void set_ctf(const SimpleCtf& ctf);
+	
 	void dump_data(string filename);
 
 	static vector<EMData*> read_images(string filename, int img_indices[], int nimg, bool nodata = false);

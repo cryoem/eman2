@@ -80,7 +80,7 @@ namespace EMAN {
     public:
 	SimpleCtf();
 	~SimpleCtf();
-    
+
 	bool cmp() const;
 	Ctf::CtfMapType get_maptype();
 	void compute_map(Ctf::CtfMapType maptype, EMData* power_spectrum = 0);

@@ -45,9 +45,9 @@ namespace EMAN {
 	
 	int write_euler_attr(int image_index, string attr_name, int value);
 	int write_mapinfo_attr(int image_index, string attr_name, int value);
-    
+
 	int delete_attr(int image_index, string attr_name);
-    
+
 	int get_num_dataset();
 	vector<int> get_image_indices();
     

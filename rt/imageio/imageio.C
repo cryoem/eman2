@@ -248,6 +248,7 @@ int test_hdf()
     err = test_image("m1.h5", 0, &good3, false, "m1_good3.mrc");
     err = test_image("m1.h5", 0, &good4, false, "m1_good4.mrc");
 
+    err = test_image("bob_ctf.mrc", 0, 0, false, 0, EMUtil::IMAGE_HDF);
     err = test_image("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_HDF);
     err = test_image("search.dm3", 0, 0, false, 0, EMUtil::IMAGE_HDF);
     err = test_image("3d.mrc", 0, 0, false, 0, EMUtil::IMAGE_HDF);

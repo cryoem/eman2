@@ -7,7 +7,7 @@
 namespace EMAN {
     class Log {
     public:
-	enum LogLevel { VARIABLE_LOG, NORMAL_LOG, WARNING_LOG, ERROR_LOG };
+	enum LogLevel { ERROR_LOG, WARNING_LOG, NORMAL_LOG, VARIABLE_LOG };
 	
     public:
 	static Log* logger();
@@ -32,6 +32,5 @@ namespace EMAN {
 	LogLevel log_level;
     };
 }
-
 
 #endif
