@@ -65,12 +65,6 @@ namespace EMAN
 
 	Point<float> normalize_slice(EMData * slice, float alt, float az, float phi);
 
-	Point<float> normalize_to(const EMData * noisy, bool keepzero = false, bool invert =
-				  false, float mult = 0, float add = 0);
-
-	Point<float> least_square_normalize_to(const EMData * to, float low_thresh = FLT_MIN,
-					       float high_thresh = FLT_MAX);
-
 	int render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 			int bpl, float scale, int min_gray, int max_gray,
 			float min_render, float max_render);
