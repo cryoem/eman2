@@ -19,3 +19,7 @@ e2 = EMData()
 e2.set_size(12,12,1)
 e.insert_clip(e2, [1,1,0])
 e.insert_clip(e2, (1,1,0))
+
+e2.translate(Vec3f(1,2,3))
+e2.translate((1,2,3))
+e2.translate([1,2,3])
