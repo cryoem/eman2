@@ -83,17 +83,17 @@ namespace EMAN
 	virtual void interp_ft_3d(EMData * image, float x, float y, float z, float *data) const = 0;
     };
 
-    class RoundFFTProjector : public FFTProjector
+    class Gaussian1FFTProjector : public FFTProjector
     {
     public:
 	string get_name() const
 	{
-	    return "RoundFFT";
+	    return "Gaussian1FFT";
 	}
 	
 	static Projector *NEW()
 	{
-	    return new RoundFFTProjector();
+	    return new Gaussian1FFTProjector();
 	}
 	
     protected:
@@ -242,111 +242,68 @@ namespace EMAN
     };
 
 
-    // mode = -1
-    class OptimizedProjector : public Projector
+    class PawelProjector : public Projector
     {
     public:
 	EMData *project3d(EMData * em) const;
 	
 	string get_name() const
 	{
-	    return "Optimized";
+	    return "Pawel";
 	}
 
 	static Projector *NEW()
 	{
-	    return new OptimizedProjector();
+	    return new PawelProjector();
 	}	
     };
 
-    // mode = -2
-    class FastProjector : public Projector
+    class SimpleIsoSurfaceProjector : public Projector
     {
-    public:	
+    public:
 	EMData *project3d(EMData * em) const;
 	
 	string get_name() const
 	{
-	    return "Fast";
+	    return "SimpleIsoSurface";
 	}
 	
 	static Projector *NEW()
 	{
-	    return new FastProjector();
+	    return new SimpleIsoSurfaceProjector();
 	}	
     };
 
-    // mode = -3
-    class FastSurfaceProjector : public Projector
+
+    class StandardProjector : public Projector
     {
     public:
 	EMData *project3d(EMData * em) const;
 	
 	string get_name() const
 	{
-	    return "FastSurface";
+	    return "Standard";
 	}
 	
 	static Projector *NEW()
 	{
-	    return new FastSurfaceProjector();
+	    return new StandardProjector();
 	}	
     };
 
-    // mode = -4
-    class SlowAccurateProjector : public Projector
+    class StandardBigProjector : public Projector
     {
     public:
 	EMData *project3d(EMData * em) const;
 	
 	string get_name() const
 	{
-	    return "SlowAccurate";
+	    return "StandardBig";
 	}
 	
 	static Projector *NEW()
 	{
-	    return new SlowAccurateProjector();
-	}	
-    };
-
-    // mode = -5
-    class SlowAccurateYProjector : public Projector
-    {
-    public:
-	EMData *project3d(EMData * em) const;
-	
-	string get_name() const
-	{
-	    return "SlowAccurateY";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new SlowAccurateYProjector();
-	}
-
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    return d;
-	}
-    };
-
-    // mode = -6
-    class SlowAccurate2DProjector : public Projector
-    {
-    public:
-	EMData *project3d(EMData * em) const;
-	
-	string get_name() const
-	{
-	    return "SlowAccurate2D";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new SlowAccurate2DProjector();
+	    return new StandardBigProjector();
 	}
     };
 

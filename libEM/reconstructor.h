@@ -56,11 +56,11 @@ namespace EMAN
 	mutable Dict params;
     };
 
-    class FftReconstructor : public Reconstructor
+    class FourierReconstructor : public Reconstructor
     {
       public:
-	FftReconstructor();
-	~FftReconstructor();
+	FourierReconstructor();
+	~FourierReconstructor();
 
 	int setup();
 	int insert_slice(EMData * slice, const Rotation & euler);
@@ -68,11 +68,11 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "Fft";
+	    return "Fourier";
 	}
 	static Reconstructor *NEW()
 	{
-	    return new FftReconstructor();
+	    return new FourierReconstructor();
 	}
 
 	TypeDict get_param_types() const
@@ -93,11 +93,11 @@ namespace EMAN
     };
 
 
-    class WfFftReconstructor : public Reconstructor
+    class WienerFourierReconstructor : public Reconstructor
     {
       public:
-	WfFftReconstructor();
-	~WfFftReconstructor();
+	WienerFourierReconstructor();
+	~WienerFourierReconstructor();
 
 	int setup();
 	int insert_slice(EMData * slice, const Rotation & euler);
@@ -105,11 +105,11 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "WfFft";
+	    return "WienerFourier";
 	}
 	static Reconstructor *NEW()
 	{
-	    return new WfFftReconstructor();
+	    return new WienerFourierReconstructor();
 	}
 
 	TypeDict get_param_types() const
@@ -129,11 +129,11 @@ namespace EMAN
 	int nz;
     };
 
-    class BpRealReconstructor : public Reconstructor
+    class BackprojectionReconstructor : public Reconstructor
     {
       public:
-	BpRealReconstructor();
-	~BpRealReconstructor();
+	BackprojectionReconstructor();
+	~BackprojectionReconstructor();
 
 	int setup();
 	int insert_slice(EMData * slice, const Rotation & euler);
@@ -141,11 +141,11 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "BpReal";
+	    return "Backprojection";
 	}
 	static Reconstructor *NEW()
 	{
-	    return new BpRealReconstructor();
+	    return new BackprojectionReconstructor();
 	}
 
 	TypeDict get_param_types() const

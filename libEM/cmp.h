@@ -13,9 +13,7 @@ namespace EMAN
     class EMData;
     class Transform;
     
-    /** todo: 
-     * define a function to return native value; another function to
-     * return normlized value from 0-1, where bigger means better.
+    /** Image Comparison methods. The bigger the result, the better.
      */
     
     class Cmp
@@ -65,26 +63,25 @@ namespace EMAN
 
     };
 
-    class LinearCmp : public Cmp
+    class VarianceCmp : public Cmp
     {
     public:
 	float cmp(EMData * em, Transform * transform = 0) const;
 
 	string get_name() const
 	{
-	    return "Linear";
+	    return "Variance";
 	}
 
 	static Cmp *NEW()
 	{
-	    return new LinearCmp();
+	    return new VarianceCmp();
 	}
 
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
 	    d.put("with", EMObject::EMDATA);
-	    d.put("invert", EMObject::INT);
 	    d.put("keepzero", EMObject::INT);
 	    return d;
 	}
@@ -114,19 +111,19 @@ namespace EMAN
 	}
     };
 
-    class FSCCmp : public Cmp
+    class FRCCmp : public Cmp
     {
     public:
 	float cmp(EMData * em, Transform * transform = 0) const;
 
 	string get_name() const
 	{
-	    return "FSC";
+	    return "FRC";
 	}
 
 	static Cmp *NEW()
 	{
-	    return new FSCCmp();
+	    return new FRCCmp();
 	}
 
 	TypeDict get_param_types() const
