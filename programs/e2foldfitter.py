@@ -16,15 +16,16 @@ pdim=None
 def compare(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
 	of the probe to the map"""
-	global cmp_probe
-	global cmp_target
+	global cmp_probe,cmp_target
 	
-	a=cmp_target.get_rotated_clip((x,y,z),(alt,az,phi),pdim,1.0)
+	print vec,pdim
+	a=cmp_target.get_rotated_clip(FloatPoint(*vec[3:6]),Rotation(*vec[0:3]+[Rotation.Type.EMAN]),IntSize(*pdim),1.0)
 	a.write_image("clip.mrc")
 	return cmp_probe.cmp("Dot",{"with":EMObject(a)})
 	
 def main():
 	global tdim,pdim
+	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: %prog [options] target.mrc probe.mrc
 	
@@ -70,7 +71,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	tdim2=(target.get_xsize(),target.get_ysize(),target.get_zsize())
 	pdim2=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
 #	print (pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]
-#	probe.filter("NormalizeEdgeMean")
+	probe.filter("NormalizeEdgeMean")
 	probeclip=probe.get_clip(Region((pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]))
 	
 	roughang=[(0,0),(45,0),(45,90),(45,180),(45,270),(90,0),(90,60),(90,120),(90,180),(90,240),(90,300),(135,0),(135,90),(135,180),(135,270),(180,0)]
@@ -80,15 +81,15 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	edge=max(pdim2)/2		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
 	print "edge ",edge
 	best=[]
-	sum=probeclip*.copy_head()
+	sum=probeclip.copy_head()
 	sum.to_zero()
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
-			prr=probeclip.copy()
+			prr=probeclip.copy(0)
 			prr.rotate(a1,a2,a3)
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
 			
-			ccf=target.calc_ccf(prr,1)
+			ccf=target.calc_ccf(prr,1,None)
 			mean=float(ccf.get_attr("mean"))
 			sig=float(ccf.get_attr("sigma"))
 			ccf.filter("ZeroEdgePlane",{"x0":edge,"x1":edge,"y0":edge,"y1":edge,"z0":edge,"z1":edge})
@@ -135,6 +136,8 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	# reread the original images
 	target.read_image(args[0])
 	probe.read_image(args[1])
+	cmp_target=target
+	cmp_probe=probe
 	
 	print compare(best2[0][1:7])
 	

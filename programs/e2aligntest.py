@@ -20,7 +20,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--axes",type="string",help="String list 3 axes from xyzazp",default="xaz")
+	parser.add_option("--axes",type="string",help="String list 3 axes from xyzaqp",default="xaq")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input1 and Input2 required")
@@ -45,16 +45,16 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	dy=0.
 	dz=0.
 	v=[0,0,0]
-	for v[2] in range(64):
-		print v[2],"/64"
-		for v[1] in range(64):
-			for v[0] in range(64):
-				if "x" in axes: x=(v[axes.find("x")]-32)/4.0
-				if "y" in axes: y=(v[axes.find("y")]-32)/4.0
-				if "z" in axes: z=(v[axes.find("z")]-32)/4.0
-				if "a" in axes: alt=(v[axes.find("a")]-32)*32*pi/180.0
-				if "z" in axes: az =(v[axes.find("z")]-32)*32*pi/180.0
-				if "p" in axes: phi=(v[axes.find("p")]-32)*32*pi/180.0
+	for v[2] in range(32):
+		print v[2],"/32"
+		for v[1] in range(32):
+			for v[0] in range(32):
+				if "x" in axes: dx=(v[axes.find("x")]-16)/2.0
+				if "y" in axes: dy=(v[axes.find("y")]-16)/2.0
+				if "z" in axes: dz=(v[axes.find("z")]-16)/2.0
+				if "a" in axes: alt=(v[axes.find("a")]-16)*2*pi/180.0
+				if "q" in axes: az =(v[axes.find("q")]-16)*2*pi/180.0
+				if "p" in axes: phi=(v[axes.find("p")]-16)*2*pi/180.0
 				
 				i2a=i2.copy(0)
 				i2a.rotate_translate(alt,az,phi,dx,dy,dz)
