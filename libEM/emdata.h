@@ -40,7 +40,7 @@ namespace EMAN {
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
-	int filter(string filtername, const Dict& params);
+	int filter(string filtername, const Dict& params = Dict());
 
 	float cmp(string cmpname, const Dict& params);
 
