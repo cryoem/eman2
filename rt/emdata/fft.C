@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	
 	if (!err) {
 	    EMData* ift1 = fft1->do_ift();
-	    fft1->gimme_fft();
+	    //fft1->gimme_fft();
 	    
 	    err = ift1->write_image("lattice_fft_ift.mrc", 0, EMUtil::IMAGE_MRC);
 	}
