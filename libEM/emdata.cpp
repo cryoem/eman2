@@ -41,7 +41,8 @@ EMData::EMData()
 
 	attr_dict["is_complex"] = 0;
 	attr_dict["is_ri"] = 0;
-
+	attr_dict["is_shared_memory"] = 0;
+	
 	nx = 0;
 	ny = 0;
 	nz = 0;
@@ -52,10 +53,12 @@ EMData::EMData()
 EMData::~EMData()
 {
 	ENTERFUNC;
-	if (rdata) {
-		free(rdata);
-		rdata = 0;
+	if ((int)attr_dict["is_shared_memory"] == 0) {
+		if (rdata) {
+			free(rdata);
+		}
 	}
+	rdata = 0;
 
 	if (supp) {
 		free(supp);
@@ -2242,7 +2245,8 @@ void EMData::set_size(int x, int y, int z)
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
-
+	attr_dict["is_shared_memory"] = 0;
+	
 	if (old_nx == 0) {
 		memset(rdata, 0, x * y * z * sizeof(float));
 	}
@@ -2253,6 +2257,51 @@ void EMData::set_size(int x, int y, int z)
 	}
 	EXITFUNC;
 }
+
+void EMData::set_shared_data(int xsize, int ysize, int zsize, float *data)
+{
+	ENTERFUNC;
+	
+	if (xsize <= 0) {
+		throw InvalidValueException(xsize, "x size <= 0");
+	}
+	else if (ysize <= 0) {
+		throw InvalidValueException(ysize, "y size <= 0");
+	}
+	else if (zsize <= 0) {
+		throw InvalidValueException(zsize, "z size <= 0");
+	}
+
+	if (!data) {
+		throw NullPointerException("pixel data pointer");
+	}
+	
+	nx = xsize;
+	ny = ysize;
+	nz = zsize;
+
+	if ((int)attr_dict["is_shared_memory"] == 0) {
+		if (rdata) {
+			free(rdata);
+		}
+	}
+	
+	rdata = data;
+	update();
+	
+	attr_dict["nx"] = xsize;
+	attr_dict["ny"] = ysize;
+	attr_dict["nz"] = zsize;
+	attr_dict["is_shared_memory"] = 1;
+	
+	if (supp) {
+		free(supp);
+		supp = 0;
+	}
+	
+	EXITFUNC;
+}
+
 
 float *EMData::get_data() const
 {
@@ -3163,8 +3212,11 @@ void EMData::rotate_translate(const Transform & xform)
 		parent->done_data();
 	}
 	else {
-		free(rdata);
+		if ((int)attr_dict["is_shared_memory"] == 0) {
+			free(rdata);
+		}
 		rdata = des_data;
+		attr_dict["is_shared_memory"] = 0;
 	}
 
 	scale_pixel(inv_scale);

@@ -621,6 +621,8 @@ namespace EMAN
 		 */
 		float *get_data() const;
 
+		void set_shared_data(int xsize, int ysize, int zsize, float *data);
+		
 		/** Done with data manipulation. It mark EMData as changed.
 		 *
 		 * This function is used together with 'get_data()'.

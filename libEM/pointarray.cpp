@@ -1191,7 +1191,7 @@ if (mode & NLPGradient) {
 }
 
 }
-#endif OPTPP
+#endif
 
 void PointArray::opt_from_proj(const vector<EMData*> & proj) {
 #ifdef OPTPP
@@ -1205,10 +1205,10 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj) {
 	OptCG opt(&nlf);
 	
 
-#else OPTPP
+#else 
 	LOGWARN("OPT++ support not enabled.\n");
 	return;
-#endif OPTPP
+#endif
 
 }
 
