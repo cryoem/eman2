@@ -2,12 +2,17 @@
 
 from EMAN2 import *
 import sys
+import time
 
 out = open("filters.html", "wb")
 out.write("<head><title>EMAN2 Filters</title></head><body>\n")
 out.write("<h1> <center> <font color=\"blue\">EMAN2 Filter Overview </font></center></h1>\n")
 out.write("<br>")
+out.write("<i>Last modified on " + time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
+out.write("<br>")
 out.write("<i>This document is automatically generated. Please don't edit it.</i>\n")
+
+
 out.write("<br><br>")
 out.write("<table border=1 cellspacing=4 cellpadding=4>")
 out.write("<tr>\n")
