@@ -1032,7 +1032,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 #endif
 
 
-void dump_averagers()
+void EMAN::dump_averagers()
 {
 	dump_factory < Averager > ();
 }

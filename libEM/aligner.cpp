@@ -1507,7 +1507,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	return result;
 }
 
-void dump_aligners()
+void EMAN::dump_aligners()
 {
 	dump_factory < Aligner > ();
 }

@@ -713,7 +713,7 @@ EMData *StandardBigProjector::project3d(EMData * image) const
 }
 
 
-void dump_projectors()
+void EMAN::dump_projectors()
 {
 	dump_factory < Projector > ();
 }
