@@ -147,6 +147,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
 
 	if (Util::is_file_exist(filename)) {
+		LOGVAR("file exists");
 		if (!header_only && region == 0) {
 			ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
 			if (tmp_imageio->is_single_image_format()) {
@@ -155,6 +156,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 		}
 	}
 	
+	LOGVAR("getimageio %d",rwmode);
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
 	if (!imageio) {
 		throw ImageFormatException("cannot create an image io");
@@ -164,6 +166,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 		if (img_index < 0) {
 			img_index = imageio->get_nimg();
 		}
+		LOGVAR("header write %d",img_index);
 		int err = imageio->write_header(attr_dict, img_index, region, use_host_endian);
 		if (err) {
 			throw ImageWriteException(filename, "imageio write header failed");

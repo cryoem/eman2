@@ -91,7 +91,7 @@ Processes a tomographic tilt series"""
 	if (nimg<3) : parser.error("Input file must contain at least 3 images")
 	
 	# copy the file with possible format conversion
-	Log.logger().set_level(Log.LogLevel.VARIABLE_LOG)
+#	Log.logger().set_level(Log.LogLevel.VARIABLE_LOG)
 	for i in range(nimg):
 		a=EMData()
 		a.read_image(args[0],i)
@@ -108,12 +108,17 @@ Processes a tomographic tilt series"""
 		vec=matrixalign(im1,im2,64,64+options.maxshift*2)
 		
 		vec.sort()
-		vec2=vec[-len(vec)/5:]
+		vec2=vec[-10:]
 		
-		dxs=[int(x[3]) for x in vec2]
-		dys=[int(x[4]) for x in vec2]
+		vec3=[(hypot(x[1],x[2]),x[0],x[1],x[2],x[3],x[4]) for x in vec2]
+		vec3.sort()
+		for x in vec3: print x
+		best=(vec3[0][4],vec3[0][5])
 		
-		best=(mode(dxs),mode(dys))
+#		dxs=[int(x[3]) for x in vec2]
+#		dys=[int(x[4]) for x in vec2]
+		
+#		best=(mode(dxs),mode(dys))
 	
 		print i,best
 		im2.rotate_translate(0,0,0,best[0],best[1],0)

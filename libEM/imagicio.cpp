@@ -309,6 +309,8 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 		n_pad_heds = image_index - old_num_imgs;
 	}
 
+	if (image_index<old_num_imgs && n_new_img==1) n_new_img=0;
+	
 	for (int i = 0; i < n_pad_heds + n_new_img; i++) {
 		fwrite(&new_hed, sizeof(ImagicHeader), 1, hed_file);
 	}

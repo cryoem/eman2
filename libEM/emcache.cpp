@@ -45,7 +45,7 @@ ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
 {
 	ImageIO *io = imageio_cache->get(filename);
 	if (io) {
-		if (rw_mode == ImageIO::WRITE_ONLY) {
+		if (rw_mode == ImageIO::WRITE_ONLY || rw_mode == ImageIO::READ_WRITE) {
 			imageio_cache->remove(filename);
 			io = 0;
 		}

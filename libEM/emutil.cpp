@@ -374,7 +374,7 @@ ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 	}
 
 	ImageIO::IOMode rw_mode = static_cast < ImageIO::IOMode > (rw);
-
+	
 	if (image_type == IMAGE_UNKNOWN) {
 		image_type = get_image_type(filename);
 	}
