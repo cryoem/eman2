@@ -57,6 +57,8 @@ namespace EMAN {
 	    else {
 		int r = (int) (1.0 * rand() / RAND_MAX * size);
 		delete item_cache[r];
+		item_cache[r] = 0;
+		
 		item_cache[r] = item;
 		name_cache[r] = itemname;		
 	    }	    

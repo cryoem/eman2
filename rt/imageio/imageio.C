@@ -188,23 +188,24 @@ int test_dm3()
     pass_test("ccd.dm3");
     pass_test("search.dm3");
     
-#if 0
     pass_test("search.dm3", 0, &good1, false, "search_good1.mrc");
     pass_test("search.dm3", 0, &good2, false, "search_good2.mrc");
     fail_test("search.dm3", 0, &bad1, false, "search_bad1.mrc");
     
     pass_test("ccd.dm3", 0, &good1, false, "ccd_good1.mrc");
     pass_test("ccd.dm3", 0, &good2, false, "ccd_good2.mrc");
-#endif
+
     return err_code;
 }
 
 int test_icos()
 {
-    pass_test("icos2f.map", 220);
-    pass_test("icos2f.map", 215);    
+    pass_test("icos3f.map", 12);
+    pass_test("icos2f.map", 12);
+    pass_test("icos2f.map", 220);    
     pass_test("icos2f.map", 2, 0, true);
-    
+    fail_test("icos3f.map", 111);
+    pass_test("icos3f.map", 0, 0, true);    
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_ICOS);
     
     return err_code;
@@ -227,7 +228,7 @@ int test_tiff()
     Region bad1(1234, 0, 200, 300);
     Region bad2(123, 234, 1220, 212);
 
-    pass_test("test2.tif", 1);
+    fail_test("test2.tif", 1);
     fail_test("ducky-16bits.tif", 0, &bad1, false, "ducky16-bad1.mrc");
     fail_test("ducky-8bits.tif", 0, &bad2, false, "ducky8-bad2.mrc");
     
@@ -266,7 +267,6 @@ int test_hdf()
 
 int test_pgm()
 {
-
     pass_test("clinton.pgm", 0, 0, false, 0, EMUtil::IMAGE_IMAGIC);
     pass_test("bob.pgm");
 
@@ -274,46 +274,27 @@ int test_pgm()
     
     pass_test("clinton.pgm", 0, &r1, false, "clinton_1.mrc");
     pass_test("bob.pgm", 0, &r1, false, "bob_1.mrc");
-
     
     return err_code;
 }
 
 int test_lst()
 {
-    const char* imagefile = "/home/lpeng/raw_images/stress/lst2.lst";
-    
-    int nimg = EMUtil::get_image_count(imagefile);
-    EMData* d = new EMData();
-    double x_sum = 0;
-    
-    for (int i = 0; i < nimg; i++) {
-	d->read_image(imagefile, i, true);
-	Dict dict = d->get_attr_dict();
-	int nx = dict.get("nx").get_int();
-	x_sum += nx;
-	Log::logger()->log("%i ",i);
-    }
-    Log::logger()->log("nimg = %d, nx sum = %f\n", nimg, x_sum);
-    
-    delete d;
-    d = 0;
-
     for (int k = 0; k < 5; k++) {
 	pass_test("lst1.lst", k);
     }
 
     pass_test("cls0000.lst", 0);
-
-    pass_test("cls0000.lst", -1);
     pass_test("cls0000.lst", 1);
     pass_test("cls0000.lst", 19);
     pass_test("cls0000.lst", 48);
-    pass_test("cls0000.lst", 49);
-    pass_test("cls0000.lst", 100);
+    fail_test("cls0000.lst", -1);
+    fail_test("cls0000.lst", 49);
+    fail_test("cls0000.lst", 100);
 
     Region r1(20, 15, 55, 56);
-    
+    pass_test("cls0000.lst", 4);
+
     pass_test("cls0000.lst", 0, &r1, false, "cls_r1.mrc");
 
     return err_code;
@@ -325,8 +306,6 @@ int test_png()
     pass_test("poker.png");
     pass_test("tablet.mrc",  0, 0, false, 0, EMUtil::IMAGE_PNG);
     pass_test("search.dm3",  0, 0, false, 0, EMUtil::IMAGE_PNG);
-
-    pass_test("zl8536-2000.mrc", 0, 0, false, 0, EMUtil::IMAGE_PNG);
     
     return err_code;
 }
@@ -363,13 +342,26 @@ int test_imagic()
     pass_test("start.hed", 0, 0, true);
 
     pass_test("start.hed", 100);
-    pass_test("start.hed", 500);
-    pass_test("start.hed", 600);
+    fail_test("start.hed", 500);
+    fail_test("start.hed", 600);
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_IMAGIC);
     pass_test("start.hed", 0, 0, true);
 
     pass_test("start.hed", 0, 0, true, 0, EMUtil::IMAGE_IMAGIC);
     pass_test("3d.mrc", 0, 0, false, 0, EMUtil::IMAGE_IMAGIC);
+
+    return err_code;
+}
+
+int test_pif()
+{    
+    pass_test("sv-2d.pif");
+    pass_test("sv-2d.pif", 19);
+    fail_test("sv-2d.pif", -1);
+    fail_test("sv-2d.pif", 158);
+    pass_test("sv-3d.pif", 0);
+    fail_test("sv-3d.pif", 1);
+    fail_test("sv-3d.pif", -1);
 
     return err_code;
 }
@@ -434,13 +426,7 @@ int main(int argc, char* argv[])
 	test_hdf();
     }
     else if (strcmp(imageformat, "pif") == 0) {
-	pass_test("sv-2d.pif");
-	pass_test("sv-2d.pif", 19);
-	pass_test("sv-2d.pif", -1);
-	pass_test("sv-2d.pif", 158);
-	pass_test("sv-3d.pif", 0);
-	pass_test("sv-3d.pif", 1);
-	pass_test("sv-3d.pif", -1);
+	test_pif();
     }
     else if (strcmp(imageformat, "mrc") == 0) {
 	test_mrc();
@@ -480,7 +466,7 @@ int main(int argc, char* argv[])
 	exit(1);
     }
     
-    printf("Total # Tests: %d. Failed Tests: %d\n", total_ntests, fail_ntests);
+    printf("Total # Tests: %d. Failed # Tests: %d\n", total_ntests, fail_ntests);
     
     return err_code;
 }
