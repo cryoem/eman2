@@ -199,7 +199,7 @@ namespace EMAN {
 	{
 	    vector<string> result;
     
-	    map<string, EMObject>::const_iterator p = 0;
+	    map<string, EMObject>::const_iterator p;
 	    for (p = dict.begin(); p != dict.end(); p++) {
 		result.push_back(p->first);
 	    }
@@ -211,7 +211,7 @@ namespace EMAN {
 	{
 	    vector<EMObject> result;
     
-	    map<string, EMObject>::const_iterator p = 0;
+	    map<string, EMObject>::const_iterator p;
 	    for (p = dict.begin(); p != dict.end(); p++) {
 		result.push_back(p->second);
 	    }
@@ -253,7 +253,7 @@ namespace EMAN {
 	{
 	    vector<string> result;
     
-	    map<string, string>::const_iterator p = 0;
+	    map<string, string>::const_iterator p;
 	    for (p = dict.begin(); p != dict.end(); p++) {
 		result.push_back(p->first);
 	    }

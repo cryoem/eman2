@@ -186,9 +186,9 @@ namespace EMAN { namespace Gatan {
     const char* to_str(TagData::Type type);
     const char* to_str(TagEntry::EntryType type);
     const char* to_str(DataType::Type type);
-} }
+}
+    
 
-namespace EMAN {
     class DM3IO : public ImageIO {
     public:
 	DM3IO(string filename, IOMode rw_mode = READ_ONLY);
