@@ -125,8 +125,8 @@ ENDIF(ENABLE_PNG)
 
 IF(ENABLE_PYTHON)
 	FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-          $ENV{HOME}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
-
+          $ENV{HOME}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2
+	  $ENV{HOME}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3)
 	FIND_PATH(BOOST_INCLUDE_PATH boost/python.hpp
           $ENV{HOME}/include /usr/local/include /usr/include)
 

@@ -36,6 +36,14 @@ namespace EMAN {
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
 
+    class Translate3DAligner : public Aligner {
+    public:
+	string get_name() const { return "Translate3DAligner"; }
+	static Aligner* NEW() { return new Translate3DAligner(); }
+	
+	EMData* align(EMData* this_img, string cmp_name = "") const;
+    };
+    
     class RotateAligner : public Aligner {
     public:
 	string get_name() const { return "RotateAligner"; }
@@ -53,10 +61,10 @@ namespace EMAN {
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
 
-    class RefineAligner : public Aligner {
+    class RotateCHAligner : public Aligner {
     public:
-	string get_name() const { return "RefineAligner"; }
-	static Aligner* NEW() { return new RefineAligner(); }
+	string get_name() const { return "RotateCHAligner"; }
+	static Aligner* NEW() { return new RotateCHAligner(); }
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
@@ -68,6 +76,24 @@ namespace EMAN {
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
+
+    class RotateTranslateBestAligner : public Aligner {
+    public:
+	string get_name() const { return "RotateTranslateBestAligner"; }
+	static Aligner* NEW() { return new RotateTranslateBestAligner(); }
+	
+	EMData* align(EMData* this_img, string cmp_name = "") const;
+    };
+
+    
+    class RotateTranslateRadonAligner : public Aligner {
+    public:
+	string get_name() const { return "RotateTranslateRadonAligner"; }
+	static Aligner* NEW() { return new RotateTranslateRadonAligner(); }
+	
+	EMData* align(EMData* this_img, string cmp_name = "") const;
+    };
+
     
     class RotateFlipAligner : public Aligner {
     public:
@@ -85,6 +111,14 @@ namespace EMAN {
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
+    class RTFSlowAligner : public Aligner {
+    public:
+	string get_name() const { return "RTFSlowAligner"; }
+	static Aligner* NEW() { return new RTFSlowAligner(); }
+	
+	EMData* align(EMData* this_img, string cmp_name = "") const;
+    };
+
     class RTFSlowestAligner : public Aligner {
     public:
 	string get_name() const { return "RTFSlowestAligner"; }
@@ -93,13 +127,15 @@ namespace EMAN {
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-    class RTFSlowAligner : public Aligner {
+    
+    class RTFBestAligner : public Aligner {
     public:
-	string get_name() const { return "RTFSlowAligner"; }
-	static Aligner* NEW() { return new RTFSlowAligner(); }
+	string get_name() const { return "RTFBestAligner"; }
+	static Aligner* NEW() { return new RTFBestAligner(); }
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
+
     
     class RTFRadonAligner : public Aligner {
     public:
@@ -109,22 +145,14 @@ namespace EMAN {
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
     
-    class Translate3DAligner : public Aligner {
+    
+    class RefineAligner : public Aligner {
     public:
-	string get_name() const { return "Translate3DAligner"; }
-	static Aligner* NEW() { return new Translate3DAligner(); }
+	string get_name() const { return "RefineAligner"; }
+	static Aligner* NEW() { return new RefineAligner(); }
 	
 	EMData* align(EMData* this_img, string cmp_name = "") const;
     };
-    
-    class RotateCHAligner : public Aligner {
-    public:
-	string get_name() const { return "RotateCHAligner"; }
-	static Aligner* NEW() { return new RotateCHAligner(); }
-	
-	EMData* align(EMData* this_img, string cmp_name = "") const;
-    };
-    
     
     typedef Aligner* (*AlignerType)();
     

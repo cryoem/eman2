@@ -59,13 +59,17 @@ namespace EMAN {
 	EMData* do_fft();
 	EMData* do_ift();
 	void gimme_fft();
-
+	
+	void rotate_x(int dx);
 	void rotate_translate(float scale = 1.0, float dxc = 0,
 			      float dyc = 0, float dzc = 0, int r = 0);
 	double dot_rotate_translate(EMData* data, float dx, float dy, float da);
 
 	void fast_translate(bool inplace = true);
 	void rotate_180();
+	
+	EMData* do_radon();
+	EMData* vertical_acf(int maxdy);
 	
 	void vertical_flip();
 	void horizontal_flip();
@@ -88,6 +92,11 @@ namespace EMAN {
 	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 
 	vector<float> calc_fourier_shell_correlation(EMData *with);
+	
+	void mean_shrink(int shrink_factor);
+	void median_shrink(int shrink_factor);
+
+
 	
 	void apply_radial_func(int, float, vector<float> array);
 	    
@@ -117,6 +126,11 @@ namespace EMAN {
 	void set_ctf(const SimpleCtf& ctf);
 
 	void set_size(int nx, int ny, int nz);
+
+	Point<int> get_min_location() const;
+	Point<int> get_max_location() const;
+
+	int get_max_index() const;
 	
 	Dict get_attr_dict();
 	
@@ -127,6 +141,7 @@ namespace EMAN {
 	float sget_value_at(int x, int y) const;
 
 	float get_value_at_interp(float x, float y) const;
+	float get_value_at_interp(float x, float y, float z) const;
 	
 	void set_value_at(int x, int y, int z, float v);
 	void set_value_at(int x, int y, float v);
@@ -265,16 +280,32 @@ namespace EMAN {
 	int x = static_cast<int>(floor(xx));
 	int y = static_cast<int>(floor(yy));
 
-	float v = Util::bilinear_interpolate(sget_value_at(x, y),
-					   sget_value_at(x+1, y),
-					   sget_value_at(x+1, y+1),
-					   sget_value_at(x, y+1),
-					   xx-x,
-					   yy-y);
-	return v;
+	float p1 = sget_value_at(x, y);
+	float p2 = sget_value_at(x+1, y);
+	float p3 = sget_value_at(x+1, y+1);
+	float p4 = sget_value_at(x, y+1);
+	
+	return Util::bilinear_interpolate(p1, p2, p3, p4, xx-x, yy-y);
     }
 
+    inline float EMData::get_value_at_interp(float xx, float yy, float zz) const
+    {
+	int x = (int)floor(xx);
+	int y = (int)floor(yy);
+	int z = (int)floor(zz);
+	float p1 = sget_value_at(x, y, z);
+	float p2 = sget_value_at(x+1, y, z);
+	float p3 = sget_value_at(x, y+1, z);
+	float p4 = sget_value_at(x+1, y+1, z);
 	
+	float p5 = sget_value_at(x, y, z+1);
+	float p6 = sget_value_at(x+1, y, z+1);
+	float p7 = sget_value_at(x, y+1, z+1);
+	float p8 = sget_value_at(x+1, y+1, z+1);
+	
+	return Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8, xx-x, yy-y, zz-z);
+    }
+    
     inline void EMData::set_value_at(int x, int y, int z, float v)
     {	
 	rdata[x+y*nx+z*nx*ny] = v;

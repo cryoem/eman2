@@ -34,11 +34,13 @@ namespace EMAN {
 	    return (int)(x + 0.5);
 	}
 
-	
+	// p1=x0,y0, p2=x1,y0; p3=x1,y1; p4=x0,y1 
 	static inline float bilinear_interpolate(float p1, float p2, float p3, float p4, float t, float u) {
 	    return (1.0f-t)*(1.0f-u)*p1+t*(1.0f-u)*p2+t*u*p3+(1.0f-t)*u*p4;
 	}
-
+	
+	// p1=x0,y0,z0; p2=x1,y0,z0; p3=x0,y1,z0, p4=x1,y1,z0
+	// p5=x0,y0,z1; p6=x1,y0,z1; p7=x0,y1,z1, p8=x1,y1,z1
 	static inline float trilinear_interpolate(float p1, float p2, float p3, float p4, float p5, float p6,
 						  float p7, float p8, float t, float u, float v) {
 	    return (1.0-t)*(1.0-u)*(1.0-v)*p1+t*(1.0-u)*(1.0-v)*p2+
