@@ -116,6 +116,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Transform&) )&EMAN::EMData::rotate_translate)
         .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Rotation&, const EMAN::Vec3f&) )&EMAN::EMData::rotate_translate)
         .def("rotate_translate", (void (EMAN::EMData::*)(float, float, float, float, float, float) )&EMAN::EMData::rotate_translate)
+        .def("rotate_translate", (void (EMAN::EMData::*)(float, float, float, float, float, float, float, float, float) )&EMAN::EMData::rotate_translate)
         .def("rotate_x", &EMAN::EMData::rotate_x)
         .def("rotate_180", &EMAN::EMData::rotate_180)
         .def("dot_rotate_translate", &EMAN::EMData::dot_rotate_translate)
@@ -239,12 +240,14 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
 	EMAN::vector_to_python<int>();
 	EMAN::vector_to_python<float>();
+	EMAN::vector_to_python<double>();
 	EMAN::vector_to_python<std::string>();
 	EMAN::vector_to_python<EMAN::EMData*>();
 	EMAN::vector_to_python<EMAN::Pixel>();
 
 	EMAN::vector_from_python<int>();
 	EMAN::vector_from_python<float>();
+	EMAN::vector_from_python<double>();
 	EMAN::vector_from_python<std::string>();
 	EMAN::vector_from_python<EMAN::EMData*>();
 	EMAN::vector_from_python<EMAN::Pixel>();
