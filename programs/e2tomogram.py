@@ -190,7 +190,22 @@ Processes a tomographic tilt series"""
 					
 		print "%d.\t%5.2f\t%5.2f"%(i[1],best[0],best[1])
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
+		im2.filter("NormalizeStd")
 		im2.write_image(args[1],i[1])
+	
+	return
+	# now we look for the common-line in the aligned images
+	sum=im1.do_fft()
+	sum.to_zero()
+	for i in range(nimg):
+		a=EMData()
+		a.read_image(args[1],i)
+		b=a.do_fft()
+		sum+=b
+	
+	sum=sum.do_ift()
+	sum.write_image("fft.mrc",0)
+	
 			
 if __name__ == "__main__":
     main()
