@@ -82,7 +82,7 @@ void ImagicIO::init()
 			throw ImageReadException(hed_filename, "unsupported imagic data type");
 		}
 
-		is_big_endian = ByteOrder::is_data_big_endian(&imagich.nx);
+		is_big_endian = ByteOrder::is_data_big_endian(&imagich.ny);
 		make_header_host_endian(imagich);
 		rewind(hed_file);
 	}
@@ -172,6 +172,10 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["mean"] = hed.avdens;
 	dict["sigma"] = hed.sigma;
 
+	dict["rot_alt"] = hed.mrc1[1];			// EMAN style Euler angles
+	dict["rot_az"] = hed.mrc1[2];
+	dict["rot_phi"] = hed.mrc1[0];
+	
 	dict["IMAGIC.imgnum"] = hed.imgnum;
 	dict["IMAGIC.count"] = hed.count;
 	dict["IMAGIC.error"] = hed.error;
@@ -194,7 +198,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 	dict["IMAGIC.oldav"] = hed.oldav;
 	dict["IMAGIC.label"] = hed.label;
-	dict["IMAGIC.mrc2"] = hed.mrc2;
+	dict["ptcl_repr"] = hed.mrc2;			// raw images represented by this image
 	EXITFUNC;
 	return 0;
 }
@@ -206,47 +210,32 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 	check_write_access(rw_mode, image_index);
 
 	nz = dict["nz"];
-	int n_new_img = nz;
-	if (n_new_img > 1 && image_index != 0) {
+	int nx = dict["nx"];
+	int ny = dict["ny"];
+	int nimg=0;		//# images currently in file
+		
+	if (nz > 1 && image_index != 0) {
 		throw ImageWriteException(filename, "to write 3D IMAGIC image, image index must be 0");
 	}
 
-	int nx = dict["nx"];
-	int ny = dict["ny"];
-
 	if (!is_new_hed) {
-		make_header_host_endian(imagich);
 		if (imagich.nx != nx || imagich.ny != ny) {
 			char desc[256];
 			sprintf(desc, "new IMAGIC size %dx%d is not equal to existing size %dx%d",
 					nx, ny, imagich.nx, imagich.ny);
 			throw ImageWriteException(filename, desc);
 		}
+		if (datatype!=IMAGIC_FLOAT) throw ImageWriteException(filename, "Attempted write to non REAL Imagic file");
 		rewind(hed_file);
+		nimg=imagich.count+1;
 	}
 	
 	ImagicHeader new_hed;
 	memset(&new_hed, 0, sizeof(ImagicHeader));
 
-	if (image_index == -1) {
-		portable_fseek(hed_file, 0, SEEK_END);
-		new_hed.imgnum = imagich.count + 2;
-	}
-	else {
-		new_hed.imgnum = image_index + 1;
-
-		if (image_index > (imagich.count + 1)) {
-			portable_fseek(hed_file, 0, SEEK_END);
-		}
-		else {
-			portable_fseek(hed_file, sizeof(ImagicHeader) * image_index, SEEK_SET);
-		}
-	}
-
 	time_t cur_time = time(0);
 	struct tm *tm = localtime(&cur_time);
 
-	new_hed.count = 0;
 	new_hed.error = 0;
 	new_hed.headrec = 1;
 
@@ -266,16 +255,16 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 	new_hed.iyold = 0;
 	new_hed.oldav = 0;
 
-	new_hed.min = dict["minimum"];
-	new_hed.max = dict["maximum"];
-	new_hed.avdens = dict["mean"];
-	new_hed.sigma = dict["sigma"];
+	new_hed.min = (float)dict["minimum"];
+	new_hed.max = (float)dict["maximum"];
+	new_hed.avdens = (float)dict["mean"];
+	new_hed.sigma = (float)dict["sigma"];
 	
-	new_hed.mrc1[0] = dict["alt"];
-	new_hed.mrc1[1] = dict["az"];
-	new_hed.mrc1[2] = dict["phi"];
+	new_hed.mrc1[1] = (float)dict["rot_alt"];
+	new_hed.mrc1[2] = (float)dict["rot_az"];
+	new_hed.mrc1[0] = (float)dict["rot_phi"];
 	
-	new_hed.mrc2 = n_new_img;
+	new_hed.mrc2 = (int)dict["ptcl_repr"];
 
 	new_hed.lbuf = nx;
 	new_hed.inn = 1;
@@ -300,60 +289,53 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 	new_hed.ntotbuf = -1;
 	new_hed.icstart = 1;
 	new_hed.icend = nx / 2;
+	strncpy(new_hed.type, REAL_TYPE_MAGIC,4);
 
-	if (!is_new_hed) {
-		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-			swap_header(new_hed);
-		}
+
+	// header in file order
+	if (is_big_endian != ByteOrder::is_host_big_endian())  swap_header(new_hed);
+
+	// overwrite existing header if necessary
+	if (image_index>=0 && image_index<nimg) {
+		portable_fseek(hed_file, sizeof(ImagicHeader)*image_index, SEEK_SET);
+		new_hed.imgnum=image_index+1;
+		if (is_big_endian != ByteOrder::is_host_big_endian()) 
+				ByteOrder::swap_bytes((int *) &new_hed.imgnum,1);
+		fwrite(&new_hed, sizeof(ImagicHeader),1,hed_file);		
 	}
-	
-	strcpy(new_hed.type, REAL_TYPE_MAGIC);
-
-	int n_pad_heds = 0;
-	int old_num_imgs = imagich.count + 1;
-	if (image_index > old_num_imgs) {
-		n_pad_heds = image_index - old_num_imgs;
-	}
-
-	if (image_index < old_num_imgs && n_new_img == 1) {
-		n_new_img=0;
-	}
-
-	int imgnum_bak = new_hed.imgnum;
-
-	for (int i = 0; i < n_pad_heds; i++) {
-		new_hed.imgnum = i + 1 + old_num_imgs;
-		fwrite(&new_hed, sizeof(ImagicHeader), 1, hed_file);
-	}
-	for (int i = 0; i < n_new_img; i++) {
-		new_hed.imgnum = i + 1 + image_index;
-		fwrite(&new_hed, sizeof(ImagicHeader), 1, hed_file);
-	}
-	
-	new_hed.imgnum = imgnum_bak;
-
-	if (is_new_hed && imagich.nx == 0) {
-		imagich = new_hed;
-		imagich.count = -1;
-	}
-
-	if (old_num_imgs < (image_index+1)) {
-		imagich.count += (n_pad_heds + n_new_img);
 		
-		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-			ByteOrder::swap_bytes(&imagich.count);
-		}
-		
-		portable_fseek(hed_file, sizeof(int), SEEK_SET);
-		fwrite(&imagich.count, sizeof(int), 1, hed_file);
-	}
-	
-	if (!is_new_hed) {
-		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-			swap_header(new_hed);
-		}
+	// How many images does the file need when we're done ?
+	int required_len;
+	if (nz>1) required_len=nz;
+	else {
+		if (image_index<0) required_len=nimg+1;
+		else if (image_index+1>nimg) required_len=image_index+1;
+		else required_len=nimg;
 	}
 
+	// Extend the file to the necessary length
+	portable_fseek(hed_file, 0, SEEK_END);
+	while (nimg<required_len) {
+		nimg++;
+		new_hed.imgnum=nimg;
+		if (is_big_endian != ByteOrder::is_host_big_endian()) 
+				ByteOrder::swap_bytes((int *) &new_hed.imgnum,1);
+		fwrite(&new_hed, sizeof(ImagicHeader),1,hed_file);
+	}
+
+	// update the 1st header with total # images
+	portable_fseek(hed_file, sizeof(int), SEEK_SET);
+	nimg--;
+	if (is_big_endian != ByteOrder::is_host_big_endian()) 
+			ByteOrder::swap_bytes((int *) &nimg,1);
+	fwrite(&nimg, sizeof(int), 1, hed_file);
+	
+	// header in machine order
+	if (is_big_endian != ByteOrder::is_host_big_endian())  swap_header(new_hed);
+	imagich=new_hed;
+	imagich.count=nimg;
+	is_new_hed = false;
+	
 	EXITFUNC;
 	return 0;
 }

@@ -930,15 +930,12 @@ namespace EMAN
 		 */
 		void set_translation(float dx, float dy, float dz);
 
-		/** Get the rotation of 'this' image rotated from the original
-		 * locaton.
-		 * @return The rotation of 'this' image rotated from the original
-		 * locaton.
+		/** Get the 3D orientation of 'this' image
 		 */
 		Rotation get_rotation() const;
 
-		/** Reset the rotation of 'this' image rotated from the original
-		 * locaton.
+		/** Define the 3D orientation of this particle, also
+		 * used to indicate relative rotations for reconstructions
 		 *
 		 * @param alt 'alt' Euler angle in EMAN convention.
 		 * @param az  'az' Euler angle in EMAN convention.
@@ -1266,7 +1263,7 @@ namespace EMAN
 		int nx, ny, nz;	        /** image size */
 
 		Vec3f all_translation; /** translation from the original location */
-		Vec3f all_rotation;    /** rotation (alt, az, phi) from the original locaton*/
+//		Vec3f all_rotation;    /** rotation (alt, az, phi) from the original locaton*/
 
 		string path;
 		int pathnum;
@@ -1486,12 +1483,14 @@ namespace EMAN
 
 	inline Rotation EMData::get_rotation() const
 	{
-		return Rotation(all_rotation[0], all_rotation[1], all_rotation[2], Rotation::EMAN);
+		return Rotation((float)attr_dict["rot_alt"],(float)attr_dict["rot_az"],(float)attr_dict["rot_phi"], Rotation::EMAN);
 	}
 
 	inline void EMData::set_rotation(float alt, float az, float phi)
 	{
-		all_rotation = Vec3f(alt, az, phi);
+		attr_dict["rot_alt"]=alt;
+		attr_dict["rot_az"]=az;
+		attr_dict["rot_phi"]=phi;
 	}
 
 	inline void EMData::render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,

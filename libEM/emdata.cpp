@@ -319,7 +319,6 @@ EMData *EMData::copy(bool with_parent)
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
 
 	ret->all_translation = all_translation;
-	ret->all_rotation = all_rotation;
 
 	ret->path = path;
 	ret->pathnum = pathnum;
@@ -348,7 +347,6 @@ EMData *EMData::copy_head()
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
 
 	ret->all_translation = all_translation;
-	ret->all_rotation = all_rotation;
 
 	ret->path = path;
 	ret->pathnum = pathnum;
@@ -3191,7 +3189,6 @@ void EMData::rotate_translate(const Transform & xform)
 	update();
 
 
-	all_rotation += Vec3f(rotation.eman_alt(), rotation.eman_az(), rotation.eman_phi());
 	all_translation += translation;
 	EXITFUNC;
 }
@@ -3230,7 +3227,6 @@ void EMData::rotate_180()
 	}
 
 	done_data();
-	all_rotation[0] += M_PI;
 	EXITFUNC;
 }
 

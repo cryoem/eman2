@@ -138,11 +138,7 @@ namespace EMAN
 			int icstart;		// complex line start = 1
 			int icend;			// complex line end = nx/2
 			int rdonly;			// read only = 0
-			int clsrep;			// EMAN specific, classes represented with 0x7a6b5c00 mask
-			int emanmisc[6];
-			float qual[50];		// quality info from EMAN classification
-			int cls[50];		// number of best class
-			int flags[50];		// eman flags
+			int misc[157];		// Remainder of header (EMAN1 specific settings not supported)
 		};
 
 		size_t get_datatype_size(DataType t);

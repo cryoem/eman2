@@ -225,7 +225,7 @@ Processes a tomographic tilt series"""
 	for i in range(nimg):
 		a=EMData()
 		a.read_image(args[1],i)
-		a.set_rotation(options.tilt*(i-nimg/2-1)*pi/180.0,0,-tiltaxis[1]*pi/180.0)
+		a.set_rotation(options.tilt*(i-nimg/2-1)*pi/180.0,0.0,-tiltaxis[1]*pi/180.0)
 		a.write_image(args[1],i)
 		
 #	sum=sum.do_ift()
