@@ -3,6 +3,7 @@
 #include <time.h>
 #include "emdata.h"
 #include "util.h"
+#include "exception.h"
 
 using namespace EMAN;
 
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
 
 
     printf("Initializing\n");
+
     EMData pat;
     pat.set_size(SIZE, SIZE, 1);
     float *d = pat.get_data();
@@ -56,7 +58,7 @@ int main(int argc, char *argv[])
     }
     pat.done_data();
     pat.filter("NormalizeCircleMean");
-    pat.filter("MaskSharp", Dict("outer_radius", pat.get_xsize()/2));
+    pat.filter("mask.sharp", Dict("outer_radius", pat.get_xsize()/2));
 
     EMData *data[5000];
     
@@ -69,7 +71,7 @@ int main(int argc, char *argv[])
 		}
 		data[i]->done_data();
 		data[i]->filter("NormalizeCircleMean");
-		data[i]->filter("MaskSharp", Dict("outer_radius", data[i]->get_xsize()/2));
+		data[i]->filter("mask.sharp", Dict("outer_radius", data[i]->get_xsize()/2));
 	
 		if (i < 5) {
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
@@ -370,7 +372,6 @@ int main(int argc, char *argv[])
     else {
 		printf("\nYour machines speed factor on this test = %1.1f\n", 25000.0 / ti);
     }
-
     return 0;
 }
        

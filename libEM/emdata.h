@@ -804,7 +804,7 @@ namespace EMAN
 		 * @return the cross correlation image.
 		 */
 		EMData *calc_flcf(EMData * with, int radius = 50,
-						  const string & maskfilter = "MaskSharp");
+						  const string & maskfilter = "mask.sharp");
 
 		/** Convolutes 2 data sets. The 2 images must be of the same size.
 		 * @param with One data set. 'this' image is the other data set.

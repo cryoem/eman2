@@ -55,7 +55,9 @@ namespace EMAN
 		virtual ~ Aligner()
 		{
 		}
-
+		
+		virtual EMData *align(EMData * this_img, EMData * to_img) const = 0;
+		
 		/** To align 'this_img' with another image passed in through
 		 * its parameters. The alignment uses a user-given comparison
 		 * method to compare the two images. If none is given, a default
@@ -67,7 +69,7 @@ namespace EMAN
 		 * @return The aligned image.
 		 */
 		virtual EMData *align(EMData * this_img, EMData * to_img, 
-							  const string & cmp_name = "") const = 0;
+							  const string & cmp_name) const = 0;
 		
 		/** Get the Aligner's name. Each Aligner is identified by a unique name.
 		 * @return The Aligner's name.
@@ -104,8 +106,13 @@ namespace EMAN
 	class TranslationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
+		
 		string get_name() const
 		{
 			return "Translational";
@@ -138,8 +145,13 @@ namespace EMAN
 	class Translational3DAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
+		
 		string get_name() const
 		{
 			return "Translational3D";
@@ -171,6 +183,11 @@ namespace EMAN
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
+		
 		string get_name() const
 		{
 			return "Rotational";
@@ -200,6 +217,11 @@ namespace EMAN
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
+		
 		string get_name() const
 		{
 			return "RotatePrecenter";
@@ -227,8 +249,13 @@ namespace EMAN
 	class RotateCHAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
+		
 		string get_name() const
 		{
 			return "RotateCH";
@@ -259,8 +286,13 @@ namespace EMAN
 	class RotateTranslateAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "FRC");
+		}
+		
 		string get_name() const
 		{
 			return "RotateTranslate";
@@ -290,7 +322,12 @@ namespace EMAN
 	class RotateTranslateBestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "FRC");
+		}
 
 		string get_name() const
 		{
@@ -321,8 +358,11 @@ namespace EMAN
 	class RotateTranslateRadonAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
-
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
 		string get_name() const
 		{
 			return "RotateTranslateRadon";
@@ -354,8 +394,11 @@ namespace EMAN
 	class RotateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
-
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "");
+		}
 		string get_name() const
 		{
 			return "RotateFlip";
@@ -386,8 +429,12 @@ namespace EMAN
 	class RotateTranslateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
-
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "Variance");
+		}
+		
 		string get_name() const
 		{
 			return "RotateTranslateFlip";
@@ -419,8 +466,12 @@ namespace EMAN
 	class RTFSlowAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
-
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "Variance");
+		}
+		
 		string get_name() const
 		{
 			return "RTFSlow";
@@ -450,8 +501,11 @@ namespace EMAN
 	class RTFSlowestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
-
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "Variance");
+		}
 		string get_name() const
 		{
 			return "RTFSlowest";
@@ -483,7 +537,12 @@ namespace EMAN
 	class RTFBestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "FRC");
+		}
 
 		string get_name() const
 		{
@@ -516,8 +575,11 @@ namespace EMAN
 	class RTFRadonAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
-
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "Variance");
+		}
 		string get_name() const
 		{
 			return "RTFRadon";
@@ -551,8 +613,13 @@ namespace EMAN
 	class RefineAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name) const;
 
+		EMData * align(EMData * this_img, EMData * to_img) const
+		{
+			return align(this_img, to_img, "FRC");
+		}
+		
 		string get_name() const
 		{
 			return "Refine";

@@ -791,7 +791,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  const string&) 
 EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
 										  const string & given_cmp_name) const
 {
-	EMData *with = params.set_default("to", (EMData *) 0);
+	EMData *with = to;
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	
 	params.set_default("maxshift", -1);
@@ -1337,7 +1337,7 @@ static double refalifnfast(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
 	EMData *this_img = (*dict)["this"];
-	EMData *img_to = (*dict)["to"];
+	EMData *img_to = (*dict)["with"];
 
 	double x = gsl_vector_get(v, 0);
 	double y = gsl_vector_get(v, 1);
