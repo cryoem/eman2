@@ -11,7 +11,7 @@ if test ! $? = 0; then
     exit 1
 fi
 
-DIRS="libEM"
+DIRS="plugins"
 INDENT_F="-br -nce -i4  -npcs -nprs  -npsl -l100 -ts4"
 
 for dir1 in $DIRS; do
