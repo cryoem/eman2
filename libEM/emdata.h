@@ -1266,6 +1266,11 @@ namespace EMAN
 		 */
 		void set_fftodd(bool is_fftodd);
 
+		/** Set the number of complex elements along x.
+		 * @param nxc is the number of complex elements along x.
+		 */
+		void set_nxc(int nxc);
+
 		EMData & operator+=(float n);
 		EMData & operator-=(float n);
 		EMData & operator*=(float n);
@@ -1505,6 +1510,11 @@ namespace EMAN
 		}
 	}
 
+
+	inline void EMData::set_nxc(int nxc)
+	{
+		attr_dict["nxc"] = nxc;
+	}
 
 	inline void EMData::set_complex(bool is_complex)
 	{

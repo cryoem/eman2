@@ -634,10 +634,9 @@ EMData *EMData::get_top_half() const
 
 void
 EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
-		          MIArray3D& nr, MCArray2D& bi, float* dm0) {
+		          MIArray3D& nr, MCArray2D& bi, float* dm) {
 	int jp = (j >= 0) ? j+1 : n+j+1;
-	// want dm to start at index 1
-	float* dm = dm0 - 1;
+	dm--; // want dm to start at index 1
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 		if (((i*i+j*j) < n*n/4) && !((0 == i) and (j < 0))) {
@@ -696,14 +695,13 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 void
 EMData::nn(MIArray3D& nr, EMData* myfft, float* dms) {
 	ENTERFUNC;
-	int nxc = attr_dict["nxc"];
-	int n = nxc*2;
+	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
 	MCArray3D x = get_3dcview(0,1,1);
 	MCArray2D bi = myfft->get_2dcview(0,1);
 	// loop over frequencies in y
-	for (int iy = -nxc + 1; iy <= nxc; iy++) {
-		onelinenn(iy, n, nxc, x, nr, bi, dms);
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) {
+		onelinenn(iy, ny, nxc, x, nr, bi, dms);
 	}
 	EXITFUNC;
 }
@@ -822,43 +820,6 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	EXITFUNC;
 }
 
-EMData* EMData::pad_fft() {
-	ENTERFUNC;
-	EMData* newimg = copy_head();
-	size_t bytes;
-	size_t offset;
-	if (is_fftpadded() == false) {
-		// Not currently padded, so we want to pad for ffts
-		offset = 2 - nx%2;
-		bytes = nx*sizeof(float);
-		newimg->set_size(nx+offset, ny, nz);
-		newimg->set_fftpad(true);
-		if (offset == 1)
-			newimg->set_fftodd(true);
-	} else {
-		// Image already padded, so we want to remove the padding
-		if (is_fftodd() == false) {
-			// Already padded from an even number of real-space elements
-			offset = 2;
-		} else {
-			// Already padded from an odd number of real-space elements
-			offset = 1;
-		}
-		bytes = (nx-offset)*sizeof(float);
-		newimg->set_size(nx-offset, ny, nz);
-		newimg->set_fftpad(false);
-	}
-	MArray3D dest = newimg->get_3dview();
-	MArray3D src = this->get_3dview();
-	for (int iz = 0; iz < nz; iz++) {
-		for (int iy = 0; iy < ny; iy++) {
-			memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
-		}
-	}
-	newimg->done_data();
-	return newimg;
-}
-
 EMData *EMData::do_fft()
 {
 	ENTERFUNC;
@@ -934,6 +895,43 @@ EMData *EMData::do_fft()
 	return dat;
 }
 
+EMData* EMData::pad_fft() {
+	ENTERFUNC;
+	EMData* newimg = copy_head();
+	size_t bytes;
+	size_t offset;
+	if (is_fftpadded() == false) {
+		// Not currently padded, so we want to pad for ffts
+		offset = 2 - nx%2;
+		bytes = nx*sizeof(float);
+		newimg->set_size(nx+offset, ny, nz);
+		newimg->set_fftpad(true);
+		if (offset == 1)
+			newimg->set_fftodd(true);
+	} else {
+		// Image already padded, so we want to remove the padding
+		if (is_fftodd() == false) {
+			// Already padded from an even number of real-space elements
+			offset = 2;
+		} else {
+			// Already padded from an odd number of real-space elements
+			offset = 1;
+		}
+		bytes = (nx-offset)*sizeof(float);
+		newimg->set_size(nx-offset, ny, nz);
+		newimg->set_fftpad(false);
+	}
+	MArray3D dest = newimg->get_3dview();
+	MArray3D src = this->get_3dview();
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = 0; iy < ny; iy++) {
+			memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+		}
+	}
+	newimg->done_data();
+	return newimg;
+}
+
 EMData *EMData::do_fft_inplace()
 {
 	ENTERFUNC;
@@ -941,8 +939,38 @@ EMData *EMData::do_fft_inplace()
 	if (flags & EMDATA_COMPLEX) {
 		return this;
 	}
-	int offset = is_fftodd() ? 1 : 2;
-	int nxreal = nx - offset;
+	size_t offset;
+	int nxreal;
+#if 0 // not at all tested
+	if (!is_fftpadded()) {
+		// need to extend the matrix along x
+		// meaning nx is the un-fftpadded size
+		offset = 2 - nx%2;
+		if (1 == offset) set_fftodd(true);
+		size_t bytes = (nx+offset)*ny*nz*sizeof(float);
+		realloc(rdata, bytes);
+		nx += offset;
+		nxreal = nx - offset;
+		// now need to relocate the data in rdata
+		float* srccol = rdata + nxreal*ny*nz - nxreal;
+		float* destcol = rdata + nx*ny*nz - nx;
+		for (int iz = nz - 1; iz >= 0; iz--) {
+			for (int iy = ny - 1; iy >= 0; iy--) {
+				for (int ix = 0; ix < nxreal; ix++) {
+					destcol[ix] = srccol[ix];
+				}
+				srccol -= nx;
+				destcol -= nx+offset;
+			}
+		}
+		set_fftpad(true);
+	} else {
+#endif // 0
+		offset = is_fftodd() ? 1 : 2;
+		nxreal = nx - offset;
+#if 0 // part of above stuff that needs to be tested
+	}
+#endif // 0
 	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
 	float scale = 1.0f / (nxreal * ny * nz);
 	mult(scale);
