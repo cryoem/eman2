@@ -205,7 +205,7 @@ namespace EMAN
 		 * @param filter The filter image used in calculating CCF.
 		 * @return The result image containing the CCF.
 		 */
-		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = 0);
+		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = NULL);
 
 		/** Calculate Cross-Correlation Function (CCF) in the
 		 * x-direction and adds them up, result in 1D.

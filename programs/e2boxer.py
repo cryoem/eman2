@@ -17,11 +17,11 @@ for single particle analysis."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=false)
+	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=-1)
 	parser.add_option("--refptcl","-R",type="string",help="A stack of reference images. Must have the same scale as the image being boxed.",default=None)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle")
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle",default=[])
 			
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -45,7 +45,8 @@ for single particle analysis."""
 	shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	if options.box/shrinkfactor<12 : shrinkfactor/=2
 	
-	shrink=image.mean_shrink(shrinkfactor)		# shrunken original image
+	shrink=image.copy(0)
+	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
 	if "circle" in options.auto:
 		shrinksq=shrink.copy(0)
@@ -64,8 +65,8 @@ for single particle analysis."""
 		outer.write_image("b_outer.mrc")
 		inner.write_image("b_inner.mrc")
 
-		ccf1=  shrink.calc_ccf(outer,1)
-		ccf2=shrinksq.calc_ccf(outer,1)
+		ccf1=  shrink.calc_ccf(outer,True,None)
+		ccf2=shrinksq.calc_ccf(outer,True,None)
 		
 		ccf1.write_image("b_ccf1.mrc")
 		ccf2.write_image("b_ccf2.mrc")
