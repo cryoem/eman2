@@ -12,7 +12,7 @@ using namespace EMAN;
 int main(int argc, char *argv[])
 {
     int SIZE = 96;
-    int NTT = 50;
+    int NTT = 500;
  
     int slow = 0;
     int low = 0;
@@ -49,15 +49,16 @@ int main(int argc, char *argv[])
     for (int i = -SIZE / 2; i < SIZE / 2; i++) {
 	for (int j = -SIZE / 2; j < SIZE / 2; j++) {
 	    d[(i + SIZE / 2) + (j + SIZE / 2) * SIZE] =
-		-3.0 * exp(-Util::square((fabs(i) + fabs(j))) / 10.0) +
-		exp(-Util::square((fabs(i) + fabs(j) / 2.0)) / 100.0) * (abs(i) < 2 ? 2.0 : 1.0);
+		-3.0 * exp(-Util::square((fabs((float)i) + fabs((float)j))) / 10.0) +
+		exp(-Util::square((fabs((float)i) + fabs((float)j) / 2.0)) / 100.0) *
+		(abs(i) < 2 ? 2.0 : 1.0);
 	}
     }
     pat.done_data();
     pat.filter("CircleMeanNormalize");
     pat.filter("SharpMask", Dict("outer_radius", EMObject(pat.get_xsize()/2)));
 
-    EMData *data[500];
+    EMData *data[5000];
     
     for (int i = 0; i < NTT; i++) {
 	data[i] = pat.copy(false, false);

@@ -7,14 +7,16 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+
 #ifdef WIN32
 #include <windows.h>
 #include <io.h>
-#define F_OK 0
 #include <time.h>
 #include <process.h>
 #include <direct.h>
 #define mkdir(a,b) _mkdir(a)
+#else
+#include <unistd.h>
 #endif
 
 using namespace EMAN;
@@ -26,9 +28,7 @@ Log::Log()
     log_level = ERROR_LOG;
     default_emandir = string(getenv("HOME")) + "/.eman";
     default_emanlog = ".emanlog";
-    if (access(default_emandir.c_str(), F_OK)) {
-	mkdir(default_emandir.c_str(), 0xffff);
-    }
+    mkdir(default_emandir.c_str(), 0xffff);
 }
 
 Log::Log(const Log &)

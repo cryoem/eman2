@@ -34,7 +34,7 @@ EMData::EMData()
     supp = 0;
     ctf = 0;
     parent = 0;
-    fft = 0;
+
     rfp = 0;
     flags = 0;
     // used to replace cube 'pixel'
@@ -68,11 +68,6 @@ EMData::~EMData()
     if (ctf) {
 	delete ctf;
 	ctf = 0;
-    }
-
-    if (fft) {
-	delete fft;
-	fft = 0;
     }
 
     if (rfp) {
@@ -264,12 +259,7 @@ EMData *EMData::copy(bool with_fft, bool with_parent)
     else {
 	ret->parent = 0;
     }
-    if (fft && with_fft) {
-	ret->fft = fft->copy();
-    }
-    else {
-	ret->fft = 0;
-    }
+
     ret->rfp = 0;
 
     ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
@@ -297,7 +287,7 @@ EMData *EMData::copy_head()
     }
     
     ret->parent = this;
-    ret->fft = 0;
+
     ret->rfp = 0;
 
     ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_HASCTF);
@@ -441,27 +431,15 @@ EMData *EMData::do_fft()
 	return this;
     }
 
-    if (fft != 0 && !(flags & EMDATA_NEWFFT)) {
-	int i = flags;
-	flags = i & ~EMDATA_BUSY;
-	return fft;
-    }
-
     int nx2 = nx + 2;
     
-    EMData *dat = 0;
-    if (fft) {
-	fft->set_size(nx2, ny, nz);
-	dat = fft;
-    }
-    else {
-	dat = copy_head();
-	fft = dat;
-	dat->set_size(nx2, ny, nz);
-    }
+    EMData *dat = copy_head();
+    dat->set_size(nx2, ny, nz);
+
 
     float *d = dat->get_data();
     get_data();
+
 
     EMfft::real_to_complex_nd(rdata, d, nx, ny, nz);
 
@@ -505,7 +483,6 @@ EMData *EMData::do_fft()
 	t = 0;
     }
 
-    fft = dat;
 
     float scale = 1.0 / (nx * ny * nz);
     dat->mult(scale);
@@ -516,7 +493,7 @@ EMData *EMData::do_fft()
     
     int i = flags;
     done_data();
-    flags = i & ~(EMDATA_NEWFFT | EMDATA_BUSY);
+    flags = i & ~EMDATA_BUSY;
 
     return dat;
 }
@@ -532,29 +509,13 @@ EMData *EMData::do_ift()
 	Log::logger()->warn("run IFT on AP data, only RI should be used. ");
     }
 
-    if (fft != 0 && !(flags & EMDATA_NEWFFT)) {
-	Log::logger()->warn("Old fft\n");
-	return fft;
-    }
-
-    EMData *dat = 0;
-
-    if (fft) {
-	fft->set_size(nx, ny, nz);
-	dat = fft;
-	Log::logger()->warn("old fft pointer");
-    }
-    else {
-	dat = copy_head();
+    EMData *dat = copy_head();
 #if 0
-	if (strlen(name) > 74)
-	    name[75] = 0;
+    if (strlen(name) > 74)
+	name[75] = 0;
 #endif
-
-	fft = dat;
-	dat->set_size(nx, ny, nz);
-    }
-
+	
+    dat->set_size(nx, ny, nz);
     get_data();
     ap2ri();
 
@@ -627,15 +588,9 @@ EMData *EMData::do_ift()
 
     int i = flags;
     done_data();
-    flags = i & ~(EMDATA_NEWFFT | EMDATA_BUSY);
+    flags = i & ~EMDATA_BUSY;
 
     return dat;
-}
-
-
-void EMData::gimme_fft()
-{
-    fft = 0;
 }
 
 
@@ -3359,7 +3314,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
     }
 
     EMData *f2 = cf->do_ift();
-    cf->gimme_fft();
+
     delete cf;
     cf = 0;
 
@@ -3539,7 +3494,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
     }
 
     EMData *f2 = cf->do_ift();
-    cf->gimme_fft();
+
     delete cf;
     cf = 0;
 
@@ -4048,7 +4003,6 @@ EMData *EMData::convolute(EMData * with)
 
     cf->done_data();
     EMData *f2 = cf->do_ift();
-    cf->gimme_fft();
 
     delete cf;
     cf = 0;

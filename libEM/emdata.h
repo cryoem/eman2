@@ -66,7 +66,6 @@ namespace EMAN
 
 	EMData *do_fft();
 	EMData *do_ift();
-	void gimme_fft();
 
 	Point<float> normalize_slice(EMData * slice, float alt, float az, float phi);
 
@@ -308,7 +307,6 @@ namespace EMAN
 	    EMDATA_BUSY = 1 << 2,	// someone is modifying data
 	    EMDATA_SHARED = 1 << 3,	// Stored in shared memory
 	    EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
-	    EMDATA_NEWFFT = 1 << 5,	// Data has changed, redo fft
 	    EMDATA_HASCTF = 1 << 6,	// has CTF info
 	    EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
 	    EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
@@ -316,7 +314,7 @@ namespace EMAN
 	    EMDATA_NODATA = 1 << 10,	// no actual data
 	    EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
 	    EMDATA_FLIP = 1 << 12,	// a flag only
-	    EMDATA_CHANGED = (EMDATA_NEWFFT + EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
+	    EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
 	};
 
 	int update_stat();
@@ -329,7 +327,7 @@ namespace EMAN
 	float *supp;
 	Ctf *ctf;
 	EMData *parent;
-	EMData *fft;
+	
 	EMData *rfp;
 	int flags;
 
@@ -672,8 +670,11 @@ namespace EMAN
 					   int bpl, float scale, int min_gray, int max_gray,
 					   float min_render, float max_render)
     {
+#if 0
 	return render_amp8((unsigned char*)data, x, y, xsize, ysize, bpl,
 			   scale, min_gray, max_gray, min_render, max_render);
+#endif
+	return 0;
     }
     
     inline void EMData::scale_pixel(float scale) const

@@ -7,14 +7,17 @@
 #include "util.h"
 
 #include <string.h>
+
 #ifndef WIN32
 #include <sys/param.h>
+#include <unistd.h>
 #else
 #include <direct.h>
 #define M_PI 3.14159265358979323846
 #define MAXPATHLEN 1024
 #define getcwd _getcwd 
 #endif
+
 #include <assert.h>
 
 using namespace EMAN;

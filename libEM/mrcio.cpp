@@ -231,8 +231,12 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
     dict["MRC.rms"] = EMObject(mrch.rms);
     dict["MRC.nlabels"] = EMObject(mrch.nlabels);
-    dict["MRC.labels"] = EMObject(mrch.labels[0]);
-
+    for (int i = 0; i < mrch.nlabels; i++) {
+	char label[32];
+	sprintf(label, "MRC.label%d", i);
+	dict[string(label)] = EMObject(mrch.labels[0]);
+    }
+    
     return 0;
 }
 

@@ -312,7 +312,6 @@ int main(int argc, char *argv[])
 		d->filter(argfilters[noisemask], Dict("outer_radius", EMObject(mask)));
 	    }
 	    EMData *dataf = d->do_fft();
-	    d->gimme_fft();
 
 	    float x0 = 0;
 	    float step = 0.5;
@@ -335,7 +334,6 @@ int main(int argc, char *argv[])
 		dataf->apply_radial_func(x0, step, sfcurve2);
 		delete d;
 		d = dataf->do_ift();
-		dataf->gimme_fft();
 	    }
 
 	    delete dataf;
@@ -466,8 +464,8 @@ int main(int argc, char *argv[])
 	d->set_rotation(rr.eman_alt(), rr.eman_az(), rr.eman_phi());
 	//d->setNImg(nimg);
 
-	if (fabs(shrink) > 1) {
-	    d->median_shrink((int) fabs(shrink));
+	if (fabs((float)shrink) > 1) {
+	    d->median_shrink((int) fabs((float)shrink));
 	}
 
 	if (argdict[rotav]) {
@@ -547,12 +545,11 @@ int main(int argc, char *argv[])
 #if 0
 	if (filefilt) {
 	    EMData *d2 = d->do_fft();
-	    d->gimme_fft();
 	    delete d;
+	    d = 0;
 
 	    d2->apply_radial_func(nxyd, xd[0], xd[1] - xd[0], yd, true);
 	    d = d2->do_ift();
-	    d2->gimme_fft();
 	}
 #endif
 
@@ -578,7 +575,7 @@ int main(int argc, char *argv[])
 	    EMData *df = d->do_fft();
 	    df->multConst(df->get_ysize());	// just for scaling of the intensity level
 	    fftavg->addIncoherent(df);
-	    d->gimme_fft();
+
 	    delete df;
 	    continue;		// no writing yet
 	}
@@ -590,7 +587,7 @@ int main(int argc, char *argv[])
 	    int y = d->get_ysize();
 	    float *curve = (float *) malloc(y * 4 * sizeof(float));
 	    EMData *dataf = d->do_fft();
-	    d->gimme_fft();
+
 	    dataf->calc_radial_dist(y, 0, .5, curve);
 	    // single images go to outfile
 	    if (n1 == 0) {

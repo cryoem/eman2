@@ -95,7 +95,6 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 
     tmp->filter("Phase180");
     EMData *ret = tmp->do_ift();
-    tmp->gimme_fft();
 
     Dict filter_d;
     filter_d["gauss_width"] = EMObject(gauss_width);
