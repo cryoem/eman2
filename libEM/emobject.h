@@ -126,6 +126,7 @@ namespace EMAN
 		
 		bool is_null() const;
 		string to_str() const;
+		ObjectType get_type() const;
 		static const char *get_object_type_name(ObjectType t);
 
 		friend bool operator==(const EMObject &e1, const EMObject & e2);

@@ -16,7 +16,7 @@ namespace EMAN
 	class XYZAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -33,22 +33,22 @@ namespace EMAN
 			return new XYZAligner();
 		}
 
-	/** Add your aligner parameter names and types in
-	 * get_param_types(). For available parameter types, please
-	 * refer class EMObject.
-	 * 
-	 * As an example, XYZAligner has 3 parameters:
-	 *    EMData *with;
-	 *    int param1;
-	 *    float param2;
-	 */
+		/** Add your aligner parameter names and types in
+		 * get_param_types(). For available parameter types, please
+		 * refer class EMObject.
+		 * 
+		 * As an example, XYZAligner has 3 parameters:
+		 *    EMData *with;
+		 *    int param1;
+		 *    float param2;
+		 */
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
-			  d.put("param1", EMObject::INT);
-			  d.put("param2", EMObject::FLOAT);
-			  return d;
+
+			d.put("param1", EMObject::INT);
+			d.put("param2", EMObject::FLOAT);
+			return d;
 		}
 	};
 

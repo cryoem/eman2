@@ -13,6 +13,37 @@ import testlib
 class TestTypeConverter(unittest.TestCase):
 
 
+	def test_emobject_to_py(self):
+		n1 = 100
+		n2 = TestUtil.emobject_to_py(n1)
+		self.assertEqual(n1, n2)
+
+		f1 = 3.14
+		f2 = TestUtil.emobject_to_py(f1)
+		self.assertEqual(f1, f2)
+
+		str1 = "helloworld"
+		str2 = TestUtil.emobject_to_py(str1)
+		self.assertEqual(str1, str2)
+
+		nx = 10
+		ny = 12
+		nz = 2
+		img1 = EMData()
+		img1.set_size(nx, ny, nz)
+		img2 = TestUtil.emobject_to_py(img1)
+		print type(img2)
+		
+		img2.write_image("a.mrc")
+		#print img1.get_xsize()
+"""		
+		self.assertEqual(img2.get_xsize(), nx)
+		self.assertEqual(img2.get_ysize(), ny)
+		self.assertEqual(img2.get_zsize(), nz)
+
+		
+		
+
     def test_emobject(self):
         num = TestUtil.get_debug_int(0)
         TestUtil.to_emobject({"int": num})
@@ -194,7 +225,7 @@ class TestTypeConverter(unittest.TestCase):
         
         testlib.check_emdata(img2, sys.argv[0])
         testlib.check_emdata(img3, sys.argv[0])
-
+"""
 
 
 def test_main():

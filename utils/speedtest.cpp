@@ -310,31 +310,26 @@ int main(int argc, char *argv[])
 		for (int j = 5; j < (slow == 2 ? NTT / 10 : NTT); j++) {
 			if (slow == 2) {
 				Dict d;
-				d["with"] =  data[j];
 				d["flip"] = (EMData*)0;
 				d["maxshift"] = SIZE/8;
-				tmp = data[i]->align("RTFSlowest", d);
+				tmp = data[i]->align("RTFSlowest", data[j], d);
 			}
 			else if (slow == 3) {
-				tmp = data[i]->align("RTFBest", Dict("with", data[j],
-													 "flip", (EMData*)0,
-													 "maxshift", SIZE/8));
+				tmp = data[i]->align("RTFBest", data[j],
+									 Dict("flip", (EMData*)0,"maxshift", SIZE/8));
 			}
 			else if (slow == 1) {
 				Dict d;
-				d["with"] =  data[j];
 				d["flip"] = (EMData*)0;
 				d["maxshift"] = SIZE/8;
-				tmp = data[i]->align("RTFSlow", d);
+				tmp = data[i]->align("RTFSlow", data[j], d);
 			}
 			else if (newali == 1) {
-				tmp = data[i]->align("RotateTranslateFlip", Dict("with", data[j]));
-				tmp->align("Refine", Dict("with", data[j]));
+				tmp = data[i]->align("RotateTranslateFlip", data[j], Dict());
+				tmp->align("Refine", data[j], Dict());
 			}
 			else {
-				Dict d;
-				d["with"] = data[j];
-				tmp = data[i]->align("RotateTranslateFlip", d);
+				tmp = data[i]->align("RotateTranslateFlip", data[j], Dict());
 			}
 	    
 			delete tmp;

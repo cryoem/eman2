@@ -595,10 +595,52 @@ int TestUtil::verify_image_file_by_mode(const string & filename,
 	return err;
 }
 
+EMObject TestUtil::emobject_to_py(int n)
+{
+	return EMObject(n);
+}
+
+EMObject TestUtil::emobject_to_py(float f)
+{
+	return EMObject(f);
+}
+
+EMObject TestUtil::emobject_to_py(double f)
+{
+	return EMObject(f);
+}
+
+EMObject TestUtil::emobject_to_py(const string& str)
+{
+	return EMObject(str);
+}
+
+
+EMObject TestUtil::emobject_to_py(EMData * emdata)
+{
+	return EMObject(emdata);
+}
+
+
+EMObject TestUtil::emobject_to_py(XYData * xydata)
+{
+	return EMObject(xydata);
+}
+
+
+EMObject TestUtil::emobject_to_py(const vector<float> & farray)
+{
+	return EMObject(farray);
+}
+
+
+EMObject TestUtil::emobject_to_py(const vector<string> & strarray)
+{
+	return EMObject(strarray);
+}
 
 
 
-
-
+		
 
 

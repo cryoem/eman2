@@ -275,18 +275,18 @@ float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 	return result;
 }
 
-EMData *EMData::align(const string & aligner_name, const Dict & params,
-					  const string & cmp_name)
+EMData *EMData::align(const string & aligner_name, EMData * to_img, 
+					  const Dict & params, const string & cmp_name)
 {
 	ENTERFUNC;
 	EMData *result = 0;
 	Aligner *a = Factory < Aligner >::get(aligner_name, params);
 	if (a) {
 		if (cmp_name == "") {
-			result = a->align(this);
+			result = a->align(this, to_img);
 		}
 		else {
-			result = a->align(this, cmp_name);
+			result = a->align(this, to_img, cmp_name);
 		}
 	}
 

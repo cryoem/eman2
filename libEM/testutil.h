@@ -39,6 +39,15 @@ namespace EMAN
 		static string get_golden_image(const string & imagename);
 		
 		static void to_emobject(const Dict & d);
+
+		static EMObject emobject_to_py(int n);
+		static EMObject emobject_to_py(float f);
+		static EMObject emobject_to_py(double f);
+		static EMObject emobject_to_py(const string& str);
+		static EMObject emobject_to_py(EMData * emdata);
+		static EMObject emobject_to_py(XYData * xydata);
+		static EMObject emobject_to_py(const vector<float> & farray);
+		static EMObject emobject_to_py(const vector<string> & strarray);
 		
 		static IntPoint test_IntPoint(const IntPoint & p);
 		static FloatPoint test_FloatPoint(const FloatPoint & p);
@@ -184,6 +193,8 @@ namespace EMAN
 	};
 
 
+	
+	
     
 }
 

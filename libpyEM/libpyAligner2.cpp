@@ -24,8 +24,8 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
     EMAN_Aligner_Wrapper(PyObject* self_):
         EMAN::Aligner(), self(self_) {}
 
-    EMAN::EMData* align(EMAN::EMData* p0, const std::string& p1) const {
-        return call_method< EMAN::EMData* >(self, "align", p0, p1);
+    EMAN::EMData* align(EMAN::EMData* p0, EMAN::EMData* p1, const std::string& p2) const {
+        return call_method< EMAN::EMData* >(self, "align", p0, p1, p2);
     }
 
     std::string get_name() const {

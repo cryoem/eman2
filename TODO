@@ -61,7 +61,11 @@
   087. add [in] [out] or [inout] to params in documentation.
 
   088. add typeconverter method to convert multi_array from c++ to python.
-		 	   
+
+  089. convert EMObject to its native type in python side. so a C++
+       EMObject(100) will be integer 100 in python.
+
+  
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.

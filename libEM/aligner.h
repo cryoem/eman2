@@ -36,14 +36,14 @@ namespace EMAN
      @code
      *    EMData *image1 = ...;
      *    EMData *image2 = ...;
-     *    image1->align("ALIGNER_NAME", Dict("to", image2));
+     *    image1->align("ALIGNER_NAME", image2);
      @endcode
 	 
      *  - How to define a new Aligner class \n
      *    A new XYZAligner class should implement the following functions:
      *    (Please replace 'XYZ' with your own class name).
 	 @code
-     *        EMData *align(EMData * this_img, string cmp_name = "") const;
+     *        EMData *align(EMData * this_img, EMData * to_img, string cmp_name = "") const;
      *        TypeDict get_param_types() const;
      *        string get_name() const { return "XYZ"; }
      *        static Aligner* NEW() { return new XYZAligner(); }
@@ -65,7 +65,8 @@ namespace EMAN
 		 * @param cmp_name The comparison method to compare the two images.
 		 * @return The aligned image.
 		 */
-		virtual EMData *align(EMData * this_img, const string & cmp_name = "") const = 0;
+		virtual EMData *align(EMData * this_img, EMData * to_img, 
+							  const string & cmp_name = "") const = 0;
 		
 		/** Get the Aligner's name. Each Aligner is identified by a unique name.
 		 * @return The Aligner's name.
@@ -102,7 +103,7 @@ namespace EMAN
 	class TranslationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -122,11 +123,10 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("intonly", EMObject::INT);
-			  d.put("maxshift", EMObject::INT);
-			  d.put("useparent", EMObject::INT);
-			  return d;
+			d.put("intonly", EMObject::INT);
+			d.put("maxshift", EMObject::INT);
+			d.put("useparent", EMObject::INT);
+			return d;
 		}
 	};
 
@@ -137,7 +137,7 @@ namespace EMAN
 	class Translational3DAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -157,7 +157,6 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
 			  d.put("useparent", EMObject::INT);
 			  return d;
 		}
@@ -169,7 +168,7 @@ namespace EMAN
 	class RotationalAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -189,8 +188,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  return d;
+			return d;
 		}
 	};
 
@@ -199,7 +197,7 @@ namespace EMAN
 	class RotatePrecenterAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -219,8 +217,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  return d;
+			return d;
 		}
 	};
 
@@ -229,7 +226,7 @@ namespace EMAN
 	class RotateCHAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -249,10 +246,10 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("irad", EMObject::INT);
-			  d.put("orad", EMObject::INT);
-			  return d;
+			
+			d.put("irad", EMObject::INT);
+			d.put("orad", EMObject::INT);
+			return d;
 		}
 	};
 
@@ -261,7 +258,7 @@ namespace EMAN
 	class RotateTranslateAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
 
 		string get_name() const
 		{
@@ -281,10 +278,9 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  //d.put("usedot", EMObject::INT);
-			  d.put("maxshift", EMObject::INT);
-			  return d;
+			//d.put("usedot", EMObject::INT);
+			d.put("maxshift", EMObject::INT);
+			return d;
 		}
 	};
 
@@ -293,7 +289,7 @@ namespace EMAN
 	class RotateTranslateBestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
 
 		string get_name() const
 		{
@@ -312,11 +308,10 @@ namespace EMAN
 
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("maxshift", EMObject::INT);
-			  d.put("snr", EMObject::FLOATARRAY);
-			  return d;
+			TypeDict d;			
+			d.put("maxshift", EMObject::INT);
+			d.put("snr", EMObject::FLOATARRAY);
+			return d;
 		}
 	};
 
@@ -325,7 +320,7 @@ namespace EMAN
 	class RotateTranslateRadonAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -345,11 +340,11 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("maxshift", EMObject::INT);
-			  d.put("radonwith", EMObject::EMDATA);
-			  d.put("radonthis", EMObject::EMDATA);
-			  return d;
+
+			d.put("maxshift", EMObject::INT);
+			d.put("radonwith", EMObject::EMDATA);
+			d.put("radonthis", EMObject::EMDATA);
+			return d;
 		}
 	};
 
@@ -358,7 +353,7 @@ namespace EMAN
 	class RotateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{
@@ -378,10 +373,10 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("flip", EMObject::EMDATA);
-			  d.put("imask", EMObject::INT);
-			  return d;
+			
+			d.put("flip", EMObject::EMDATA);
+			d.put("imask", EMObject::INT);
+			return d;
 		}
 	};
 
@@ -390,7 +385,7 @@ namespace EMAN
 	class RotateTranslateFlipAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "Variance") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
 
 		string get_name() const
 		{
@@ -410,11 +405,11 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("flip", EMObject::EMDATA);
-			  d.put("usedot", EMObject::INT);
-			  d.put("maxshift", EMObject::INT);
-			  return d;
+			
+			d.put("flip", EMObject::EMDATA);
+			d.put("usedot", EMObject::INT);
+			d.put("maxshift", EMObject::INT);
+			return d;
 		}
 	};
 
@@ -423,7 +418,7 @@ namespace EMAN
 	class RTFSlowAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "Variance") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
 
 		string get_name() const
 		{
@@ -443,10 +438,10 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("flip", EMObject::EMDATA);
-			  d.put("maxshift", EMObject::INT);
-			  return d;
+
+			d.put("flip", EMObject::EMDATA);
+			d.put("maxshift", EMObject::INT);
+			return d;
 		}
 	};
 	/** rotational, translational and flip alignment using exhaustive search. VERY SLOW
@@ -454,7 +449,7 @@ namespace EMAN
 	class RTFSlowestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "Variance") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
 
 		string get_name() const
 		{
@@ -474,10 +469,10 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("flip", EMObject::EMDATA);
-			  d.put("maxshift", EMObject::INT);
-			  return d;
+			
+			d.put("flip", EMObject::EMDATA);
+			d.put("maxshift", EMObject::INT);
+			return d;
 		}
 	};
 
@@ -487,7 +482,7 @@ namespace EMAN
 	class RTFBestAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
 
 		string get_name() const
 		{
@@ -507,11 +502,11 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("flip", EMObject::EMDATA);
-			  d.put("maxshift", EMObject::INT);
-			  d.put("snr", EMObject::FLOATARRAY);
-			  return d;
+			
+			d.put("flip", EMObject::EMDATA);
+			d.put("maxshift", EMObject::INT);
+			d.put("snr", EMObject::FLOATARRAY);
+			return d;
 		}
 	};
 
@@ -520,7 +515,7 @@ namespace EMAN
 	class RTFRadonAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "Variance") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "Variance") const;
 
 		string get_name() const
 		{
@@ -540,13 +535,13 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("maxshift", EMObject::INT);
-			  d.put("thisf", EMObject::EMDATA);
-			  d.put("radonwith", EMObject::EMDATA);
-			  d.put("radonthis", EMObject::EMDATA);
-			  d.put("radonthisf", EMObject::EMDATA);
-			  return d;
+			
+			d.put("maxshift", EMObject::INT);
+			d.put("thisf", EMObject::EMDATA);
+			d.put("radonwith", EMObject::EMDATA);
+			d.put("radonthis", EMObject::EMDATA);
+			d.put("radonthisf", EMObject::EMDATA);
+			return d;
 		}
 	};
 
@@ -555,7 +550,7 @@ namespace EMAN
 	class RefineAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, const string & cmp_name = "FRC") const;
+		EMData * align(EMData * this_img, EMData * to_img, const string & cmp_name = "FRC") const;
 
 		string get_name() const
 		{
@@ -575,18 +570,17 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("to", EMObject::EMDATA);
-			  d.put("mode", EMObject::INT);
-			  d.put("snr", EMObject::FLOATARRAY);
-			  d.put("alot", EMObject::FLOAT);
-			  d.put("az", EMObject::FLOAT);
-			  d.put("phi", EMObject::FLOAT);
-			  d.put("dx", EMObject::FLOAT);
-			  d.put("dy", EMObject::FLOAT);
-			  d.put("dz", EMObject::FLOAT);
 
+			d.put("mode", EMObject::INT);
+			d.put("snr", EMObject::FLOATARRAY);
+			d.put("alot", EMObject::FLOAT);
+			d.put("az", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			d.put("dx", EMObject::FLOAT);
+			d.put("dy", EMObject::FLOAT);
+			d.put("dz", EMObject::FLOAT);
 
-			  return d;
+			return d;
 		}
 	};
 

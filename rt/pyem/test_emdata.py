@@ -21,10 +21,10 @@ class TestEMData(unittest.TestCase):
         az = 3.7260642381912579
         phi = 5.7671541529246966
 
-        x.rotate_translate(alt, az, phi, 12, 12, 12)
+        x.rotate_translate(az, alt, phi, 12, 12, 12)
         testlib.check_emdata(x, sys.argv[0])
 
-        x.rotate_translate(alt, az, phi, 16,16,16)
+        x.rotate_translate(az, alt, phi, 16,16,16)
         testlib.check_emdata(x, sys.argv[0])
 
 		
@@ -108,6 +108,30 @@ class TestEMData(unittest.TestCase):
 
         outfile = "test_get_rotated_clip_" + str(os.getpid()) + ".mrc"
         b.write_image(outfile)
+
+
+	def test_get_clip(self):
+		nx = 50
+		ny = 50
+		filebase = "test_get_clip_" + str(os.getpid())
+		infile = filebase + ".mrc"
+		TestUtil.make_image_file(infile, MRC, nx, ny, 2)
+		
+		e = EMData()
+		e.read_image(infile)
+
+		region1 = Region(nx/4, ny/4, nx/2, ny/2)
+		outfile1 = filebase + "_out1.mrc"
+		e2 = e.get_clip(region1)
+		e2.write_image(outfile1)
+
+		region2 = Region(-nx/4, -ny/4, 2*nx, 2*ny)
+		outfile2 = filebase + "_out2.mrc"
+		e3 = e.get_clip(region2)
+		
+		
+		
+
 
 
 def test_main():

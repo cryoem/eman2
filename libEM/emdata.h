@@ -139,13 +139,14 @@ namespace EMAN
 		/** Align this image with another image and return the result image.
 		 *
 		 * @param aligner_name Alignment algorithm name.
+		 * @param to_img The image 'this' image aligns to.
 		 * @param params  Alignment algorithm parameters in a keyed dictionary.
 		 * @param comp_name Comparison algorithm used in alighment.
 		 * @exception NotExistingObjectError If the alignment algorithm doesn't exist.
 		 * @return The result image.
 		 */
-		EMData *align(const string & aligner_name, const Dict & params = Dict(),
-					  const string & comp_name = "");
+		EMData *align(const string & aligner_name, EMData * to_img,
+					  const Dict & params = Dict(), const string & comp_name = "");
 
 		/** Calculate the projection of this image and return the result.
 		 * @param projector_name Projection algorithm name.

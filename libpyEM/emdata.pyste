@@ -41,7 +41,6 @@ set_policy(EMData.ift_slice, return_value_policy(manage_new_object))
 
 set_policy(EMData.get_row, return_value_policy(manage_new_object))
 set_policy(EMData.get_col, return_value_policy(manage_new_object))
-set_policy(EMData.windum, return_internal_reference())
 set_policy(EMData.zeropad_ntimes, return_value_policy(manage_new_object))
 
 exclude(EMData.get_data)

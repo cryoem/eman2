@@ -8,6 +8,7 @@
 #include <emutil.h>
 #include <testutil.h>
 #include <util.h>
+#include <xydata.h>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -236,6 +237,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_debug_image", &EMAN::TestUtil::get_debug_image)
         .def("get_golden_image", &EMAN::TestUtil::get_golden_image)
         .def("to_emobject", &EMAN::TestUtil::to_emobject)
+        .def("emobject_to_py", (EMAN::EMObject (*)(int))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(float))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(double))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(const std::string&))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(EMAN::EMData*))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(EMAN::XYData*))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(const std::vector<float,std::allocator<float> >&))&EMAN::TestUtil::emobject_to_py)
+        .def("emobject_to_py", (EMAN::EMObject (*)(const std::vector<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,std::allocator<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > >&))&EMAN::TestUtil::emobject_to_py)
         .def("test_IntPoint", &EMAN::TestUtil::test_IntPoint)
         .def("test_FloatPoint", &EMAN::TestUtil::test_FloatPoint)
         .def("test_IntSize", &EMAN::TestUtil::test_IntSize)
@@ -282,6 +291,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("test_map_long")
         .staticmethod("to_emobject")
         .staticmethod("make_image_file2")
+        .staticmethod("emobject_to_py")
         .staticmethod("get_golden_image")
         .staticmethod("test_map_string")
         .staticmethod("test_vector_int")

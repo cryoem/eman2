@@ -170,6 +170,12 @@ string EMObject::to_str() const
 	}
 }
 
+EMObject::ObjectType EMObject::get_type() const
+{
+	return type;
+}
+
+
 const char *EMObject::get_object_type_name(ObjectType t)
 {
 	switch (t) {

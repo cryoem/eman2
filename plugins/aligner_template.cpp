@@ -2,13 +2,13 @@
 
 using namespace EMAN;
 
-EMData *XYZAligner::align(EMData * this_img, const string & ) const
+EMData *XYZAligner::align(EMData * this_img, EMData * to_img, const string & ) const
 {
 	if (!this_img) {
 		return 0;
 	}
 #if 0
-	EMData *with = params["with"];
+
 	int param1 = params["param1"];
 	float param2 = params["param2"];
 #endif

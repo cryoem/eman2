@@ -117,7 +117,7 @@ namespace EMAN
 	class GaussFFTProjector:public Projector
 	{
 	  public:
-		GaussFFTProjector():az(0), alt(0), phi(0)
+		GaussFFTProjector():alt(0), az(0), phi(0)
 		{
 		}
 

@@ -39,7 +39,19 @@ namespace EMAN {
 		 */
 		static void numpy2em(python::numeric::array& array, EMData* image);
     };
-    
+#if 0
+	struct PyEMDataObject
+	{
+		PyObject_HEAD
+		EMData * emdata;
+	};
+	
+	struct extract_EMData_object
+	{
+		static EMData * & execute(PyEMDataObject & o) { return o.emdata; }
+	};
+#endif
+	
     template <class T>
     struct vector_to_python : python::to_python_converter<vector<T>,
 														  vector_to_python<T> >
@@ -99,6 +111,14 @@ namespace EMAN {
 		}
     };
 
+#if 0
+	struct EMObject_to_python : python::to_python_converter<EMObject,
+							   EMObject_to_python>
+	{
+		static PyObject* convert(EMObject const& emobj);
+	};
+#endif
+	
     template <class T>
     struct vector_from_python
     {
@@ -286,57 +306,6 @@ namespace EMAN {
 		}
     };
 
-#if 0
-    struct Vec3i_from_python
-    {
-		Vec3i_from_python()
-		{
-			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<Vec3i>());
-		}
-    
-		static void* convertible(PyObject* obj_ptr)
-		{
-			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
-				return 0;
-			}
-	
-			return obj_ptr;
-		}
-
-    
-		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
-		{
-			void* storage = ((python::converter::rvalue_from_python_storage<Vec3i>*) data)->storage.bytes;
-			new (storage) Vec3i();
-
-			data->convertible = storage;
-
-			Vec3i& result = *((Vec3i*) storage);
-	
-			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			int i = 0;
-			
-			while(1) {
-				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
-				if (PyErr_Occurred()) {
-					python::throw_error_already_set();
-				}
-	    
-				if (!py_elem_hdl.get()) {
-					break;
-				}
-	    
-				python::object py_elem_obj(py_elem_hdl);
-				python::extract<int> elem_proxy(py_elem_obj);
-				result[i] = elem_proxy();
-				i++;
-			}
-		}
-    };
-#endif
 	
     struct emobject_array_from_python
     {

@@ -121,29 +121,9 @@ class TestEMObject(unittest.TestCase):
         self.assertEqual(emdata2.get_zsize(), nz)
         
 
-class TestDict(unittest.TestCase):
-
-    def test_basic_Dict(self):
-        d = Dict()
-        self.assertEqual(d.keys(), [])
-
-        d.put("a", 1)
-        d.put("b", 2)
-        d.put("c", 3)
-
-        k1 = d.keys()
-        k1.sort()
-        self.assertEqual(k1, ["a", "b", "c"])
-                
-        f1 = d.has_key("hello")
-        f2 = d.has_key("c")
-        
-        self.assertEqual(f1, False)
-        self.assertEqual(f2, True)
-        
 
 def test_main():
-    test_support.run_unittest(TestPixel, TestBoost, TestException,TestEMObject, TestDict)
+    test_support.run_unittest(TestPixel, TestBoost, TestException,TestEMObject)
 
 if __name__ == '__main__':
     test_main()

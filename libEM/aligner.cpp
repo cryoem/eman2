@@ -33,7 +33,7 @@ template <> Factory < Aligner >::Factory()
 }
 
 
-EMData *TranslationalAligner::align(EMData * this_img, const string&) const
+EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
 	if (!this_img) {
 		return 0;
@@ -45,7 +45,7 @@ EMData *TranslationalAligner::align(EMData * this_img, const string&) const
 		return 0;
 	}
 
-	EMData *to = params["to"];
+
 	if (to && !EMUtil::is_same_size(this_img, to)) {
 		LOGERR("%s: images must be the same size", get_name().c_str());
 		return 0;
@@ -146,13 +146,13 @@ EMData *TranslationalAligner::align(EMData * this_img, const string&) const
 
 
 
-EMData *Translational3DAligner::align(EMData * this_img, const string&) const
+EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
 	if (!this_img) {
 		return 0;
 	}
 
-	EMData *to = params["to"];
+	
 	int useparent = params.set_default("useparent", 0);
 	params.set_default("intonly", 0);
 
@@ -243,10 +243,8 @@ EMData *Translational3DAligner::align(EMData * this_img, const string&) const
 }
 
 
-EMData *RotationalAligner::align(EMData * this_img, const string&) const
+EMData *RotationalAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
-	EMData *to = params["to"];
-
 	if (!to) {
 		return 0;
 	}
@@ -278,9 +276,8 @@ EMData *RotationalAligner::align(EMData * this_img, const string&) const
 }
 
 
-EMData *RotatePrecenterAligner::align(EMData * this_img, const string&) const
+EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
-	EMData *to = params["to"];
 	if (!to) {
 		return 0;
 	}
@@ -313,7 +310,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, const string&) const
 }
 
 
-EMData *RotateCHAligner::align(EMData * this_img, const string&) const
+EMData *RotateCHAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
 	static vector < EMData * >ralfp;
 	static int rali = 0;
@@ -324,7 +321,7 @@ EMData *RotateCHAligner::align(EMData * this_img, const string&) const
 		return 0;
 	}
 
-	EMData *to = params["to"];
+
 	int irad = params.set_default("irad", 8);
 	int orad = params.set_default("orad", 0);
 
@@ -460,7 +457,7 @@ EMData *RotateCHAligner::align(EMData * this_img, const string&) const
 }
 
 
-EMData *RotateTranslateAligner::align(EMData * this_img, const string & cmp_name) const
+EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  const string & cmp_name) const
 {
 	params.set_default("maxshift", -1);
 #if 0
@@ -469,26 +466,26 @@ EMData *RotateTranslateAligner::align(EMData * this_img, const string & cmp_name
 		cmp_name = "Dot";
 	}
 #endif
-	EMData *this_copy = this_img->align("Rotational", params);
+	EMData *this_copy = this_img->align("Rotational", to, params);
 	
 	EMData *this_copy2 = this_copy->copy(0);
 	this_copy2->rotate_180();
 
 	Dict trans_params;
-	trans_params["to"] = params["to"];
+	
 	trans_params["useparent"] = 0;
 	trans_params["intonly"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
 
 	EMData *tmp = this_copy;
-	this_copy=tmp->align("Translational", trans_params);
+	this_copy=tmp->align("Translational", to, trans_params);
 	delete tmp;
 	
 	tmp=this_copy2;
-	this_copy2=tmp->align("Translational", trans_params);
+	this_copy2=tmp->align("Translational", to, trans_params);
 	delete tmp;
 	
-	tmp = params["to"];
+	tmp = to;
 
 	float dot1 = 0;
 	float dot2 = 0;
@@ -514,12 +511,12 @@ EMData *RotateTranslateAligner::align(EMData * this_img, const string & cmp_name
 }
 
 
-EMData *RotateTranslateBestAligner::align(EMData * this_img, const string & cmp_name) const
+EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  const string & cmp_name) const
 {
 	params.set_default("maxshift", -1);
 
 	EMData *this_copy = this_img->copy();
-	this_img->align("Rotational", params);
+	this_img->align("Rotational", to, params);
 	
 	Dict rotation = this_img->get_transform().get_rotation(Transform::EMAN);
 	float cda = rotation["alt"];
@@ -528,11 +525,11 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, const string & cmp_
 	this_copy2->set_parent(this_copy->get_parent());
 
 	Dict trans_params;
-	trans_params["to"] = params["to"];
+	
 	trans_params["intonly"] = 0;
 	trans_params["useparent"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
-	this_copy->align("Translational", trans_params);
+	this_copy->align("Translational", to, trans_params);
 
 	Vec3f trans_v = this_copy->get_translation();
 	float cdx = trans_v[0] * cos(cda) + trans_v[1] * sin(cda);
@@ -542,12 +539,12 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, const string & cmp_
 	params["dx"] = cdx;
 	params["dy"] = cdy;
 
-	this_copy->align("Refine", params);
+	this_copy->align("Refine", to, params);
 
 	float cda2 = cda + (float)M_PI;
 	this_copy2->rotate_180();
 
-	this_copy2->align("Translational", trans_params);
+	this_copy2->align("Translational", to, trans_params);
 	Vec3f trans_v2 = this_copy2->get_translation();
 
 	cdx = trans_v2[0] * cos(cda2) + trans_v2[1] * sin(cda2);
@@ -557,8 +554,8 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, const string & cmp_
 	params["dx"] = cdx;
 	params["dy"] = cdy;
 
-	this_copy2->align("Refine", params);
-	EMData * with = params["to"];
+	this_copy2->align("Refine", to, params);
+	EMData * with = to;
 	float dot1 = this_copy->cmp(cmp_name, with, params);
 	float dot2 = this_copy2->cmp(cmp_name, with, params);
 
@@ -581,9 +578,9 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, const string & cmp_
 
 
 
-EMData *RotateTranslateRadonAligner::align(EMData * this_img, const string&) const
+EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
-	EMData *to = params["to"];
+
 	int maxshift = params.set_default("maxshift", -1);
 	EMData *radonwith = params.set_default("radonwith", (EMData *) 0);
 	EMData *radonthis = params.set_default("radonthis", (EMData *) 0);
@@ -741,14 +738,13 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, const string&) con
 
 
 
-EMData *RotateFlipAligner::align(EMData * this_img, const string&) const
+EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
-	EMData *to = params["to"];
-	EMData *flip = params.set_default("to", (EMData *) 0);
+	EMData *flip = to;
 	params.set_default("imask", 0);
 
 	EMData *this_copy = this_img->copy();
-	this_copy->align("Rotational", params);
+	this_copy->align("Rotational", to, params);
 
 	float dot1 = this_copy->dot(to);
 	float dot2 = 0;
@@ -759,7 +755,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, const string&) const
 		this_copy2->filter("xform.flip", Dict("axis", "y"));
 	}
 
-	this_copy2->align("Rotational", params);
+	this_copy2->align("Rotational", to, params);
 	dot2 = this_copy2->dot(to);
 
 	EMData *result = 0;
@@ -788,7 +784,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, const string&) const
 	return result;
 }
 
-EMData *RotateTranslateFlipAligner::align(EMData * this_img,
+EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to, 
 										  const string & given_cmp_name) const
 {
 	EMData *with = params.set_default("to", (EMData *) 0);
@@ -801,15 +797,15 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img,
 		cmp_name = "Dot";
 	}
 
-	EMData *this_copy = this_img->align("RotateTranslate", params);
+	EMData *this_copy = this_img->align("RotateTranslate", to, params);
 	EMData *this_copy2 = 0;
 
 	if (flip) {
-		this_copy2 = flip->align("RotateTranslate", params);
+		this_copy2 = flip->align("RotateTranslate", to, params);
 	}
 	else {
 		this_img->filter("xform.flip", Dict("axis", "x"));
-		this_copy2 = this_img->align("RotateTranslate", params);
+		this_copy2 = this_img->align("RotateTranslate", to, params);
 	}
 
 	if (!this_copy) {
@@ -874,9 +870,9 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img,
 
 
 
-EMData *RTFSlowAligner::align(EMData * this_img, const string & cmp_name) const
+EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp_name) const
 {
-	EMData *to = params["to"];
+
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
@@ -1052,9 +1048,9 @@ EMData *RTFSlowAligner::align(EMData * this_img, const string & cmp_name) const
 }
 
 
-EMData *RTFSlowestAligner::align(EMData * this_img, const string & cmp_name) const
+EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & cmp_name) const
 {
-	EMData *to = params["to"];
+
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
@@ -1210,21 +1206,21 @@ EMData *RTFSlowestAligner::align(EMData * this_img, const string & cmp_name) con
 	return dn;
 }
 
-EMData *RTFBestAligner::align(EMData * this_img, const string & cmp_name) const
+EMData *RTFBestAligner::align(EMData * this_img, EMData *to,  const string & cmp_name) const
 {
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	params.set_default("maxshift", -1);
 
 
-	EMData *this_copy = this_img->align("RotateTranslateBest", params);
+	EMData *this_copy = this_img->align("RotateTranslateBest", to, params);
 	EMData *flip_copy = 0;
 
 	if (!flip) {
 		this_img->filter("xform.flip", Dict("axis", "x"));
-		flip_copy = this_img->align("RotateTranslateBest", params);
+		flip_copy = this_img->align("RotateTranslateBest", to, params);
 	}
 	else {
-		flip_copy = flip->align("RotateTranslateBest", params);
+		flip_copy = flip->align("RotateTranslateBest", to, params);
 	}
 
 	if (!this_copy) {
@@ -1236,7 +1232,7 @@ EMData *RTFBestAligner::align(EMData * this_img, const string & cmp_name) const
 		return this_copy;
 	}
 
-	EMData * with = params["to"];
+	EMData * with = to;
 	float this_cmp = this_copy->cmp(cmp_name, with, params);
 	float flip_cmp = flip_copy->cmp(cmp_name, with, params);
 
@@ -1262,9 +1258,9 @@ EMData *RTFBestAligner::align(EMData * this_img, const string & cmp_name) const
 }
 
 
-EMData *RTFRadonAligner::align(EMData * this_img, const string&) const
+EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,  const string&) const
 {
-	EMData *to = params["to"];
+
 	params.set_default("maxshift", -1);
 	EMData *thisf = params.set_default("thisf", (EMData *) 0);
 	EMData *radonwith = params.set_default("radonwith", (EMData *) 0);
@@ -1278,16 +1274,16 @@ EMData *RTFRadonAligner::align(EMData * this_img, const string&) const
 		params["radonwith"] = radonwith;
 	}
 
-	EMData *r1 = this_img->align("RotateTranslateRadon", params);
+	EMData *r1 = this_img->align("RotateTranslateRadon", to, params);
 	EMData *r2 = 0;
 
 	if (!thisf) {
 		this_img->filter("xform.flip", Dict("axis", "x"));
-		r2 = this_img->align("RTFRadon", params);
+		r2 = this_img->align("RTFRadon", to, params);
 		this_img->filter("xform.flip", Dict("axis", "x"));
 	}
 	else {
-		r2 = thisf->align("RTFRadon", params);
+		r2 = thisf->align("RTFRadon", to, params);
 	}
 
 	float r1_score = r1->dot(to);
@@ -1351,9 +1347,9 @@ static double refalifnfast(const gsl_vector * v, void *params)
 }
 
 
-EMData *RefineAligner::align(EMData * this_img, const string & cmp_name) const
+EMData *RefineAligner::align(EMData * this_img, EMData *to, const string & cmp_name) const
 {
-	EMData *to = params["to"];
+
 	if (!to) {
 		return 0;
 	}

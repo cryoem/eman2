@@ -16,15 +16,11 @@ static python::numeric::array make_numeric_array(float * data, vector<int> dims)
 		total *= *iter;
 		++iter;
 	}    
-#if 1
+
 	python::object obj(python::handle<>(PyArray_FromDimsAndData(dims.size(),&dims[0],
 																PyArray_FLOAT, (char*)data)));
-#endif
-#if 0
-	python::object obj(python::handle<>(PyArray_FromDims(dims.size(),&dims[0], PyArray_FLOAT)));
-	char *arr_data = ((PyArrayObject*) obj.ptr())->data;
-	memcpy(arr_data, data, sizeof(float) * total);
-#endif
+
+
 	return python::extract<python::numeric::array>(obj);
 }
 
@@ -87,13 +83,42 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	char* array_data = ((PyArrayObject*) array.ptr())->data;
 	image->set_shared_data(nx, ny, nz, (float*)array_data);
 	
-#if 0
-    image->set_size(nx, ny, nz);
-
-    float* data = image->get_data();
-	
-	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
-	image->done_data();
-#endif
-	
 }
+
+#if 0
+// need further investigation to make it work
+PyObject* EMObject_to_python::convert(EMObject const& emobj)
+{
+
+	EMObject::ObjectType t = emobj.get_type();
+	PyObject * result = 0;
+			
+	if (t == EMObject::INT) {
+		result = PyInt_FromLong((int)emobj);
+	}
+	else if (t == EMObject::FLOAT) {
+		result = PyFloat_FromDouble((float) emobj);
+	}
+	else if (t == EMObject::DOUBLE) {
+		result = PyFloat_FromDouble((double) emobj);
+	}
+	else if (t == EMObject::STRING) {
+		result = PyString_FromString((const char*) emobj);
+	}
+	else if (t == EMObject::EMDATA) {
+		EMData * img = (EMData*) emobj;
+		result = python::object(img).ptr();
+	}
+	else if (t == EMObject::XYDATA) {
+		XYData * xyd = (XYData*) xyd;
+		result = python::object(xyd).ptr();
+	}
+			
+	if (result) {
+		return python::incref(result);
+	}
+	return 0;
+}
+
+
+#endif
