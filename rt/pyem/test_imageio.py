@@ -92,7 +92,7 @@ class TestHdfIO(unittest.TestCase):
         self.assertEqual(attrdict3["euler_phi"], phi)
         
         os.unlink(infile)
-        #os.unlink(outfile)
+        os.unlink(outfile)
         os.unlink(outfile2)
 
     def test_write_image(self):

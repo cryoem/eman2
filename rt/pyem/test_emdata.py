@@ -369,8 +369,69 @@ class TestEMData(unittest.TestCase):
         
         os.unlink(file1)
         
+    def test_to_zero(self):
+        nx = 12
+        ny = 24
+        nz = 2
+        file1 = "test_to_zero.mrc"
+        TestUtil.make_image_file(file1, MRC, EM_FLOAT, nx, ny, nz)
+
+        e1 = EMData()
+        e1.read_image(file1)
+        e1.to_zero()
+
+        for i in range(nz):
+            for j in range(ny):
+                for k in range(nx):
+                    self.assertEqual(e1.get_value_at(k,j,i), 0)
+        
+        os.unlink(file1)
+
+    def test_calc_radial_dist(self):
+        file1 = "test_calc_radial_dist.mrc"
+        TestUtil.make_image_file(file1, MRC)
+        
+        e1 = EMData()
+        e1.read_image(file1)
+        ny = e1.get_ysize()
+        dlist = e1.calc_radial_dist(ny, 0, 0.5)
+
+        dlist2 = [0.0, 0.5732, 1.1464, 2.0, 4.5135, 5.7996, 9.2307, 12.1255, 16.4826, 19.1460, 25.6796, 30.2887, 36.4654, 41.4641, 49.9667, 1538.3833]
+
+        for i in range(len(dlist)):
+            testlib.assertfloat(self, dlist[i], dlist2[i])
+
+        os.unlink(file1)
 
 
+    def test_stat_locations(self):
+        nx = 16
+        ny = 24
+        file1 = "test_stat_locations.mrc"
+        TestUtil.make_image_file(file1, MRC, EM_FLOAT, nx, ny)
+        
+        e1 = EMData()
+        e1.read_image(file1)
+
+        max_index = e1.calc_max_index()
+        self.assertEqual(max_index, 0)
+
+        max_location = e1.calc_max_location()
+        self.assertEqual(max_location, (0,0,0))
+
+        max_index2 = max_location[2] * nx * ny + max_location[1] * nx + max_location[0]
+        self.assertEqual(max_index, max_index2)
+        
+        attrdict = e1.get_attr_dict()
+        max = attrdict["maximum"]
+        self.assertEqual(max, 208)
+
+        max2 = e1.get_value_at(max_location[2], max_location[1], max_location[0])
+        self.assertEqual(max, max2)
+        
+        os.unlink(file1)
+
+        
 def test_main():
     test_support.run_unittest(TestEMData)
 
