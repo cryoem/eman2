@@ -28,6 +28,9 @@ namespace EMAN
 	class TestUtil
 	{
 	public:
+		static const char * EMDATA_HEADER_EXT;
+		static const char * EMDATA_DATA_EXT;
+		
 		static int get_debug_int(int i);
 		static float get_debug_float(int i);
 		static string get_debug_string(int i);
@@ -69,8 +72,6 @@ namespace EMAN
 	private:
 		static float tf[10];
 		static int ti[10];
-		static const char * EMDATA_HEADER_EXT;
-		static const char * EMDATA_DATA_EXT;
 		static string progname;
 	};
 }

@@ -174,6 +174,9 @@ int main(int argc, char *argv[])
 			rizeda *= M_PI / 180.0f;
 		}
 		else if (Util::get_str_float(arg, "norm", &norm, &nmean, &nsig)) {
+			if (norm != 2) {
+				norm = 1;
+			}
 		}
 		else if (strncmp(argv[i], "selfcl", 6) == 0) {
 			if (argv[i][6] == '=') {
@@ -188,6 +191,9 @@ int main(int argc, char *argv[])
 			interleaved_file = arg + 8;
 		}
 		else if (Util::get_str_int(arg, "pgm", &pgm, &pgmlo, &pgmhi)) {
+			if (pgm != 2) {
+				pgm = 1;
+			}
 		}
 		else if (Util::sstrncmp(arg, noisemask.c_str())) {
 			argfilters[noisemask] = "NoiseMask";
@@ -244,452 +250,452 @@ int main(int argc, char *argv[])
     EMData *ld = new EMData();
     vector < float >sfcurve1;
     try {
-    for (int i = n0; i <= n1; i++) {
-		d->read_image(argv[1], i);
-		int nx = d->get_xsize();
+		for (int i = n0; i <= n1; i++) {
+			d->read_image(argv[1], i);
+			int nx = d->get_xsize();
 	
-		if ((argdict[ctfsplit] != 0) && (i == n0 || !EMUtil::is_same_ctf(d, ld))) {
-			Ctf *ctf = d->get_ctf();
+			if ((argdict[ctfsplit] != 0) && (i == n0 || !EMUtil::is_same_ctf(d, ld))) {
+				Ctf *ctf = d->get_ctf();
 
-			int j = 0;
-			for (j = 1; j < argdict[ctfsplit]; j++) {
-				if (defocus_val[j] == ctf->get_defocus() && bfactor_val[j] == ctf->get_bfactor()) {
-					break;
+				int j = 0;
+				for (j = 1; j < argdict[ctfsplit]; j++) {
+					if (defocus_val[j] == ctf->get_defocus() && bfactor_val[j] == ctf->get_bfactor()) {
+						break;
+					}
 				}
-			}
-			if (argdict[ctfsplit] <= j) {
-				argdict[ctfsplit] = j + 1;
-				printf("New CTF at %d\n", i);
-			}
-			defocus_val[j] = ctf->get_defocus();
-			bfactor_val[j] = ctf->get_bfactor();
-			outfile[strlen(outfile) - 4] = 0;
-			sprintf(outfile + strlen(outfile), ".%02d.img", j);
+				if (argdict[ctfsplit] <= j) {
+					argdict[ctfsplit] = j + 1;
+					printf("New CTF at %d\n", i);
+				}
+				defocus_val[j] = ctf->get_defocus();
+				bfactor_val[j] = ctf->get_bfactor();
+				outfile[strlen(outfile) - 4] = 0;
+				sprintf(outfile + strlen(outfile), ".%02d.img", j);
 
-			delete ld;
-			ld = d->copy(false);
-		}
+				delete ld;
+				ld = d->copy(false);
+			}
 
-		float sigma = d->get_attr("sigma");
-		if (!Util::goodf(&sigma)) {
-			LOGWARN("Warning! bad Sigma for image %d in file '%s'", i, argv[1]);
-			continue;
-		}
+			float sigma = d->get_attr("sigma");
+			if (!Util::goodf(&sigma)) {
+				LOGWARN("Warning! bad Sigma for image %d in file '%s'", i, argv[1]);
+				continue;
+			}
 #if 0
-		if (argdict[norefs] && d->get_nimg() < 0) {
-			continue;
-		}
+			if (argdict[norefs] && d->get_nimg() < 0) {
+				continue;
+			}
 #endif
-		if (argdict[edgenorm]) {
-			d->filter("CircleMeanNormalize");
-		}
+			if (argdict[edgenorm]) {
+				d->filter("CircleMeanNormalize");
+			}
 
-		if (norm == 1) {
-			d->filter("StdNormalize");
-		}
-		else if (norm == 2) {
-			(*d) *= nsig / sigma;
-			(*d) += nmean - (float)d->get_attr("mean");
-		}
+			if (norm == 1) {
+				d->filter("StdNormalize");
+			}
+			else if (norm == 2) {
+				(*d) *= nsig / sigma;
+				(*d) += nmean - (float)d->get_attr("mean");
+			}
 
-		if (argdict[flip]) {
-			d->filter("Flip", Dict("axis", "y"));
-		}
+			if (argdict[flip]) {
+				d->filter("Flip", Dict("axis", "y"));
+			}
 
-		if (argdict[invert]) {
-			(*d) *= -1;
-		}
+			if (argdict[invert]) {
+				(*d) *= -1;
+			}
 
-		if (ramp) {
-			d->filter("LinearRamp", Dict("intercept", 1, "slope", ramp));	    
-		}
+			if (ramp) {
+				d->filter("LinearRamp", Dict("intercept", 1, "slope", ramp));	    
+			}
 
-		int y = d->get_ysize();
+			int y = d->get_ysize();
 
-		if (argdict[setsfpairs]) {
+			if (argdict[setsfpairs]) {
+				if (mask) {
+					d->filter(argfilters[noisemask], Dict("outer_radius", mask));
+				}
+				EMData *dataf = d->do_fft();
+
+				float x0 = 0;
+				float step = 0.5;
+	    
+				if (i % 2 == 0) {
+					sfcurve1 = dataf->calc_radial_dist(nx, x0, step);
+				}
+				else {
+					vector < float >sfcurve2 = dataf->calc_radial_dist(nx, x0, step);
+
+					for (int j = 0; j < nx; j++) {
+						if (sfcurve1[j] > 0 && sfcurve2[j] > 0) {
+							sfcurve2[j] = sqrt(sfcurve1[j] / sfcurve2[j]);
+						}
+						else {
+							sfcurve2[j] = 0;
+						}
+					}
+
+					dataf->apply_radial_func(x0, step, sfcurve2);
+					delete d;
+					d = dataf->do_ift();
+				}
+
+				delete dataf;
+				dataf = 0;
+			}
+
+			float Xlp = lp;
+			float Xtlp = tlp;
+			float Xhp = hp;
+			float Xsharphp = sharphp;
+
+			if (apix > 0 && lp) {
+				Xlp = y * apix / lp;
+			}
+
+			if (apix > 0 && tlp) {
+				Xtlp = y * apix / tlp;
+			}
+
+			if (apix > 0 && hp) {
+				Xhp = y * apix / hp;
+			}
+
+			if (apix > 0 && sharphp) {
+				Xsharphp = y * apix / sharphp;
+			}
+
+			if (Xlp || Xhp) {
+				d->filter("Guasslowpass", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
+				d->filter("TanhHighpass", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
+			}
+
+			if (Xtlp) {
+				d->filter("Tanhlowpass", Dict("lowpass", -10.0));
+				d->filter("TanhHighpass", Dict("highpass", Xtlp));
+			}
+
+			if (Xsharphp) {
+				d->filter("SharpCutoffLowpass", Dict("lowpass", Xsharphp));
+				d->filter("SharpCutoffHighpass", Dict("highpass", 100000.0));
+			}
+
 			if (mask) {
 				d->filter(argfilters[noisemask], Dict("outer_radius", mask));
 			}
-			EMData *dataf = d->do_fft();
 
-			float x0 = 0;
-			float step = 0.5;
-	    
-			if (i % 2 == 0) {
-				sfcurve1 = dataf->calc_radial_dist(nx, x0, step);
-			}
-			else {
-				vector < float >sfcurve2 = dataf->calc_radial_dist(nx, x0, step);
-
-				for (int j = 0; j < nx; j++) {
-					if (sfcurve1[j] > 0 && sfcurve2[j] > 0) {
-						sfcurve2[j] = sqrt(sfcurve1[j] / sfcurve2[j]);
-					}
-					else {
-						sfcurve2[j] = 0;
-					}
-				}
-
-				dataf->apply_radial_func(x0, step, sfcurve2);
-				delete d;
-				d = dataf->do_ift();
+			if (imask > 0) {
+				d->filter("SharpMask", Dict("inner_radius", imask, "value", 0));
 			}
 
-			delete dataf;
-			dataf = 0;
-		}
-
-		float Xlp = lp;
-		float Xtlp = tlp;
-		float Xhp = hp;
-		float Xsharphp = sharphp;
-
-		if (apix > 0 && lp) {
-			Xlp = y * apix / lp;
-		}
-
-		if (apix > 0 && tlp) {
-			Xtlp = y * apix / tlp;
-		}
-
-		if (apix > 0 && hp) {
-			Xhp = y * apix / hp;
-		}
-
-		if (apix > 0 && sharphp) {
-			Xsharphp = y * apix / sharphp;
-		}
-
-		if (Xlp || Xhp) {
-			d->filter("Guasslowpass", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
-			d->filter("TanhHighpass", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
-		}
-
-		if (Xtlp) {
-			d->filter("Tanhlowpass", Dict("lowpass", -10.0));
-			d->filter("TanhHighpass", Dict("highpass", Xtlp));
-		}
-
-		if (Xsharphp) {
-			d->filter("SharpCutoffLowpass", Dict("lowpass", Xsharphp));
-			d->filter("SharpCutoffHighpass", Dict("highpass", 100000.0));
-		}
-
-		if (mask) {
-			d->filter(argfilters[noisemask], Dict("outer_radius", mask));
-		}
-
-		if (imask > 0) {
-			d->filter("SharpMask", Dict("inner_radius", imask, "value", 0));
-		}
-
-		if (automask) {
-			d->filter("AutoMask", Dict("threshold", automask));
-		}
-
-		// uses correlation with 180 deg rot for centering
-		if (argdict[acfcenter]) {
-			Dict params;
-			params["useparent"] = 0;
-			params["intonly"] = 1;
-			params["maxshift"] = d->get_xsize() / 4;
-			d->align("Translate", params);
-			//d->rotate_translate();
-		}
-
-		if (argdict[center]) {
-			d->filter("ToMassCenter", Dict("int_shift_only", 1));
-		}
-
-		if (argdict[phot]) {
-			d->filter("Phase180");
-		}
-
-		if (anoise) {
-			d->filter("AddNoise");
-		}
-
-		if (argdict[rfp]) {
-			EMData *e = d->make_rotational_footprint();
-			e->append_image("rfp.hed");
-		}
-
-
-		if (rot || dx || dy || rize) {
-			d->set_parent(0);
-
-			if (!rize) {
-				d->rotate_translate(rot * M_PI / 180.0f, 0, 0, dx, dy, 0);
-			}
-			else {
-				if (rizef && rand() % 2) {
-					d->filter("Flip", Dict("axis", "y"));
-				}
-
-				if (rizeda > 0) {
-					d->rotate(Util::get_frand(-rizeda / 2.0f, rizeda / 2.0f), 0, 0);
-				}
-		
-				if (rizedx > 0) {
-					d->translate(Util::get_gauss_rand(0, rizedx),
-								 Util::get_gauss_rand(0, rizedx), 0);
-				}
-			}
-		}
-
-		Dict rr = d->get_transform().get_rotation(Transform::EMAN);
-		//int nimg = d->get_nimg();
-
-		if (scale < 1.0) {
-			Transform t;
-			t.set_scale(scale);
-			d->rotate_translate(t);
-		}
-
-		if (clipx > 0) {
-			EMData *e = d->get_clip(Region((d->get_xsize() - clipx) / 2,
-										   (d->get_ysize() - clipy) / 2,
-										   clipx, clipy));
-			delete d;
-			d = e;
-		}
-
-		if (scale > 1.0) {
-			Transform t;
-			t.set_scale(scale);
-			d->rotate_translate(t);
-		}
-
-		d->set_rotation((float)rr["alt"], (float)rr["az"], (float)rr["phi"]);
-		//d->setNImg(nimg);
-
-		if (fabs((float)shrink) > 1) {
-			d->median_shrink((int) fabs((float)shrink));
-		}
-
-		if (argdict[rotav]) {
-			d->filter("RadialAverage");
-		}
-
-		if (csym > 1) {
-			EMData *f = d->copy();
-			f->set_parent(0);
-
-			EMData *e = f->copy();
-			for (int j = 1; j < csym; j++) {
-				e->rotate(j * M_PI * 2.0f / csym, 0, 0);
-				(*d) += (*e);
+			if (automask) {
+				d->filter("AutoMask", Dict("threshold", automask));
 			}
 
-			*d *= (1.0f / csym);
-
-			delete e;
-			e = 0;
-			delete f;
-			f = 0;
-		}
-
-		if (argdict[rsub]) {
-			d->filter("RadialSubstract");
-		}
-
-		if (scl) {
-			EMData *sc = new EMData();
-			if (sclmd == 0) {
-				sc->common_lines_real(d, d, scl, true);
+			// uses correlation with 180 deg rot for centering
+			if (argdict[acfcenter]) {
+				Dict params;
+				params["useparent"] = 0;
+				params["intonly"] = 1;
+				params["maxshift"] = d->get_xsize() / 4;
+				d->align("Translate", params);
+				//d->rotate_translate();
 			}
-			else {
-				EMData *e = d->copy();
-				e->filter("Phase180");
 
-				if (sclmd == 1) {
-					sc->common_lines(e, e, sclmd, scl, true);
-					sc->filter("LinearXform", Dict("shift", -90.0, "scale", -1.0));
-				}
-				else if (sclmd == 2) {
-					sc->common_lines(e, e, sclmd, scl, true);
+			if (argdict[center]) {
+				d->filter("ToMassCenter", Dict("int_shift_only", 1));
+			}
+
+			if (argdict[phot]) {
+				d->filter("Phase180");
+			}
+
+			if (anoise) {
+				d->filter("AddNoise");
+			}
+
+			if (argdict[rfp]) {
+				EMData *e = d->make_rotational_footprint();
+				e->append_image("rfp.hed");
+			}
+
+
+			if (rot || dx || dy || rize) {
+				d->set_parent(0);
+
+				if (!rize) {
+					d->rotate_translate(rot * M_PI / 180.0f, 0, 0, dx, dy, 0);
 				}
 				else {
-					LOGERR("Invalid common-lines mode");
-					exit(1);
+					if (rizef && rand() % 2) {
+						d->filter("Flip", Dict("axis", "y"));
+					}
+
+					if (rizeda > 0) {
+						d->rotate(Util::get_frand(-rizeda / 2.0f, rizeda / 2.0f), 0, 0);
+					}
+		
+					if (rizedx > 0) {
+						d->translate(Util::get_gauss_rand(0, rizedx),
+									 Util::get_gauss_rand(0, rizedx), 0);
+					}
 				}
+			}
+
+			Dict rr = d->get_transform().get_rotation(Transform::EMAN);
+			//int nimg = d->get_nimg();
+
+			if (scale < 1.0) {
+				Transform t;
+				t.set_scale(scale);
+				d->rotate_translate(t);
+			}
+
+			if (clipx > 0) {
+				EMData *e = d->get_clip(Region((d->get_xsize() - clipx) / 2,
+											   (d->get_ysize() - clipy) / 2,
+											   clipx, clipy));
+				delete d;
+				d = e;
+			}
+
+			if (scale > 1.0) {
+				Transform t;
+				t.set_scale(scale);
+				d->rotate_translate(t);
+			}
+
+			d->set_rotation((float)rr["alt"], (float)rr["az"], (float)rr["phi"]);
+			//d->setNImg(nimg);
+
+			if (fabs((float)shrink) > 1) {
+				d->median_shrink((int) fabs((float)shrink));
+			}
+
+			if (argdict[rotav]) {
+				d->filter("RadialAverage");
+			}
+
+			if (csym > 1) {
+				EMData *f = d->copy();
+				f->set_parent(0);
+
+				EMData *e = f->copy();
+				for (int j = 1; j < csym; j++) {
+					e->rotate(j * M_PI * 2.0f / csym, 0, 0);
+					(*d) += (*e);
+				}
+
+				*d *= (1.0f / csym);
+
 				delete e;
 				e = 0;
+				delete f;
+				f = 0;
 			}
-			delete d;
-			d = sc;
-		}
 
-		if (argdict[radon]) {
-			EMData *r = d->do_radon();
-			delete d;
-			d = r;
-		}
-
-		if (rfilt) {
-			d->filter(filtername, params_dict);
-		}
-
-		if (bliter > 0 && blwidth > 0) {
-			Dict p;
-			p["distance_sigma"] = blsigma1;
-			p["value_sigma"] = blsigma2;
-			p["niter"] = bliter;
-			p["half_width"] = blwidth;
-
-			d->filter("Bilateral", p);
-		}
-
-#if 0
-		if (filefilt) {
-			EMData *d2 = d->do_fft();
-			delete d;
-			d = 0;
-
-			d2->apply_radial_func(nxyd, xd[0], xd[1] - xd[0], yd, true);
-			d = d2->do_ift();
-		}
-#endif
-
-		if (argdict[avgonly]) {
-			if (!average) {
-				average = d->copy(false);
+			if (argdict[rsub]) {
+				d->filter("RadialSubstract");
 			}
-			else {
-				(*average) += (*d);
-			}
-			continue;
-		}
-#if 0
-		if (fftavgfile) {
-			if (!fftavg) {
-				fftavg = new EMData;
-				fftavg->setSize(d->get_xsize() + 2, d->get_ysize());
-				fftavg->setComplex(1);
-				fftavg->zero();
-			}
-			d->applyMask(-1, 6);
-			d->normalize();
-			EMData *df = d->do_fft();
-			df->multConst(df->get_ysize());	// just for scaling of the intensity level
-			fftavg->addIncoherent(df);
 
-			delete df;
-			continue;		// no writing yet
-		}
-#endif
+			if (scl) {
+				EMData *sc = new EMData();
+				if (sclmd == 0) {
+					sc->common_lines_real(d, d, scl, true);
+				}
+				else {
+					EMData *e = d->copy();
+					e->filter("Phase180");
 
-#if 0
-		if (strlen(sfout)) {
-	    
-			int y = d->get_ysize();
-			float *curve = (float *) malloc(y * 4 * sizeof(float));
-			EMData *dataf = d->do_fft();
-
-			dataf->calc_radial_dist(y, 0, .5, curve);
-			// single images go to outfile
-			if (n1 == 0) {
-				save_data(0, 1.0 / (apix * 2.0 * y), curve, y, sfout);
-			}
-			// multi-images get numbered
-			else {
-				sprintf(outfile2, "%s.%03d", sfout, i + 100);
-				save_data(0, 1.0 / (apix * 2.0 * y), curve, y, outfile2);
-			}
-			if (sfout_n) {
-				for (int j = 0; j < sfout_n; j++) {
-					dataf->calc_radial_dist(y, 0, .5, curve, j * 2 * M_PI / sfout_n,
-											2 * M_PI / sfout_n);
-					// single images go to outfile
-					if (n1 == 0) {
-						sprintf(outfile2, "%s-%d-%d.pwr", file_basename(sfout), j, sfout_n);
-						save_data(0, 1.0 / (apix * 2.0 * y), curve, y, outfile2);
+					if (sclmd == 1) {
+						sc->common_lines(e, e, sclmd, scl, true);
+						sc->filter("LinearXform", Dict("shift", -90.0, "scale", -1.0));
 					}
-					// multi-images get numbered
+					else if (sclmd == 2) {
+						sc->common_lines(e, e, sclmd, scl, true);
+					}
 					else {
-						sprintf(outfile2, "%s-%d-%d.pwr.%03d", file_basename(sfout), j, sfout_n,
-								i + 100);
-						save_data(0, 1.0 / (apix * 2.0 * y), curve, y, outfile2);
+						LOGERR("Invalid common-lines mode");
+						exit(1);
+					}
+					delete e;
+					e = 0;
+				}
+				delete d;
+				d = sc;
+			}
+
+			if (argdict[radon]) {
+				EMData *r = d->do_radon();
+				delete d;
+				d = r;
+			}
+
+			if (rfilt) {
+				d->filter(filtername, params_dict);
+			}
+
+			if (bliter > 0 && blwidth > 0) {
+				Dict p;
+				p["distance_sigma"] = blsigma1;
+				p["value_sigma"] = blsigma2;
+				p["niter"] = bliter;
+				p["half_width"] = blwidth;
+
+				d->filter("Bilateral", p);
+			}
+
+#if 0
+			if (filefilt) {
+				EMData *d2 = d->do_fft();
+				delete d;
+				d = 0;
+
+				d2->apply_radial_func(nxyd, xd[0], xd[1] - xd[0], yd, true);
+				d = d2->do_ift();
+			}
+#endif
+
+			if (argdict[avgonly]) {
+				if (!average) {
+					average = d->copy(false);
+				}
+				else {
+					(*average) += (*d);
+				}
+				continue;
+			}
+#if 0
+			if (fftavgfile) {
+				if (!fftavg) {
+					fftavg = new EMData;
+					fftavg->setSize(d->get_xsize() + 2, d->get_ysize());
+					fftavg->setComplex(1);
+					fftavg->zero();
+				}
+				d->applyMask(-1, 6);
+				d->normalize();
+				EMData *df = d->do_fft();
+				df->multConst(df->get_ysize());	// just for scaling of the intensity level
+				fftavg->addIncoherent(df);
+
+				delete df;
+				continue;		// no writing yet
+			}
+#endif
+
+#if 0
+			if (strlen(sfout)) {
+	    
+				int y = d->get_ysize();
+				float *curve = (float *) malloc(y * 4 * sizeof(float));
+				EMData *dataf = d->do_fft();
+
+				dataf->calc_radial_dist(y, 0, .5, curve);
+				// single images go to outfile
+				if (n1 == 0) {
+					save_data(0, 1.0 / (apix * 2.0 * y), curve, y, sfout);
+				}
+				// multi-images get numbered
+				else {
+					sprintf(outfile2, "%s.%03d", sfout, i + 100);
+					save_data(0, 1.0 / (apix * 2.0 * y), curve, y, outfile2);
+				}
+				if (sfout_n) {
+					for (int j = 0; j < sfout_n; j++) {
+						dataf->calc_radial_dist(y, 0, .5, curve, j * 2 * M_PI / sfout_n,
+												2 * M_PI / sfout_n);
+						// single images go to outfile
+						if (n1 == 0) {
+							sprintf(outfile2, "%s-%d-%d.pwr", file_basename(sfout), j, sfout_n);
+							save_data(0, 1.0 / (apix * 2.0 * y), curve, y, outfile2);
+						}
+						// multi-images get numbered
+						else {
+							sprintf(outfile2, "%s-%d-%d.pwr.%03d", file_basename(sfout), j, sfout_n,
+									i + 100);
+							save_data(0, 1.0 / (apix * 2.0 * y), curve, y, outfile2);
+						}
 					}
 				}
 			}
-		}
 #endif
 
-		if (argdict[mrc]) {
-			if (n1 != 0) {
-				sprintf(outfile, "%03d.%s", i + 100, outfile);
+			if (argdict[mrc]) {
+				if (n1 != 0) {
+					sprintf(outfile, "%03d.%s", i + 100, outfile);
+				}
+				d->write_image(outfile, 0, EMUtil::IMAGE_MRC);
 			}
-			d->write_image(outfile, 0, EMUtil::IMAGE_MRC);
-		}
-		else if (argdict[spidersingle]) {
-			if (n1 != 0) {
-				sprintf(spiderformat, "%s%%0%dd.spi", outfile, (int) (log10((float) i)) + 1);
-				sprintf(outfile, spiderformat, i);
-			}
+			else if (argdict[spidersingle]) {
+				if (n1 != 0) {
+					sprintf(spiderformat, "%s%%0%dd.spi", outfile, (int) (log10((float) i)) + 1);
+					sprintf(outfile, spiderformat, i);
+				}
 
-			d->write_image(outfile, 0, EMUtil::IMAGE_SINGLE_SPIDER);
-		}
-		else if (argdict[hdf]) {
-			d->append_image(outfile,  EMUtil::IMAGE_HDF);
-		}
-		else if (argdict[em]) {
-			d->write_image(outfile, 0, EMUtil::IMAGE_EM);
-		}
-		else if (argdict[pif]) {
-			if (n1 != 0) {
-				sprintf(outfile, "%03d.%s", i + 100, outfile);
+				d->write_image(outfile, 0, EMUtil::IMAGE_SINGLE_SPIDER);
 			}
+			else if (argdict[hdf]) {
+				d->append_image(outfile,  EMUtil::IMAGE_HDF);
+			}
+			else if (argdict[em]) {
+				d->write_image(outfile, 0, EMUtil::IMAGE_EM);
+			}
+			else if (argdict[pif]) {
+				if (n1 != 0) {
+					sprintf(outfile, "%03d.%s", i + 100, outfile);
+				}
 
-			d->write_image(outfile, 0, EMUtil::IMAGE_PIF);
-		}
-		else if (argdict[png]) {
-			if (n1 != 0) {
-				sprintf(outfile, "%03d.%s", i + 100, outfile);
+				d->write_image(outfile, 0, EMUtil::IMAGE_PIF);
 			}
+			else if (argdict[png]) {
+				if (n1 != 0) {
+					sprintf(outfile, "%03d.%s", i + 100, outfile);
+				}
 
-			d->write_image(outfile, 0, EMUtil::IMAGE_PNG);
-		}
-		else if (pgm) {
-			if (pgmlo >= pgmhi) {
-				pgmlo = (int) d->get_attr("minimum");
-				pgmhi = (int) d->get_attr("maximum");
+				d->write_image(outfile, 0, EMUtil::IMAGE_PNG);
 			}
+			else if (pgm) {
+				if (pgmlo >= pgmhi) {
+					pgmlo = (int) d->get_attr("minimum");
+					pgmhi = (int) d->get_attr("maximum");
+				}
 
-			d->set_attr("min_gray", pgmlo);
-			d->set_attr("max_gray", pgmhi);
+				d->set_attr("min_gray", pgmlo);
+				d->set_attr("max_gray", pgmhi);
 
-			if (n1 != 0) {
-				sprintf(outfile, "%03d.%s", i + 100, outfile);
+				if (n1 != 0) {
+					sprintf(outfile, "%03d.%s", i + 100, outfile);
+				}
+				d->write_image(outfile, 0, EMUtil::IMAGE_PGM);
 			}
-			d->write_image(outfile, 0, EMUtil::IMAGE_PGM);
-		}
-		else if (argdict[spider]) {
-			d->write_image(outfile, 0, EMUtil::IMAGE_SPIDER);
-		}
-		else if (argdict[vtk]) {
-			d->write_image(outfile, 0, EMUtil::IMAGE_VTK);
-		}
-		else {
-			if (argdict[inplace]) {
-				d->write_image(outfile, i);
+			else if (argdict[spider]) {
+				d->write_image(outfile, 0, EMUtil::IMAGE_SPIDER);
 			}
-			else if (argdict[mraprep]) {
-				char nf[1024];
-				sprintf(nf, "%s%04d.lst", outfile, i);
-				d->write_image(nf, 0, EMUtil::IMAGE_LST);
+			else if (argdict[vtk]) {
+				d->write_image(outfile, 0, EMUtil::IMAGE_VTK);
 			}
 			else {
-				d->append_image(outfile, EMUtil::IMAGE_IMAGIC);
+				if (argdict[inplace]) {
+					d->write_image(outfile, i);
+				}
+				else if (argdict[mraprep]) {
+					char nf[1024];
+					sprintf(nf, "%s%04d.lst", outfile, i);
+					d->write_image(nf, 0, EMUtil::IMAGE_LST);
+				}
+				else {
+					d->append_image(outfile);
+				}
 			}
-		}
 
-		if (interleaved_file) {
-			d->read_image(interleaved_file, i);
-			d->write_image(outfile, -1, EMUtil::IMAGE_IMAGIC);
-		}
+			if (interleaved_file) {
+				d->read_image(interleaved_file, i);
+				d->write_image(outfile, -1, EMUtil::IMAGE_IMAGIC);
+			}
 
-    }
+		}
 	}
 	catch(E2Exception &e ) {
 		e.what();

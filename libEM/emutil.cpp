@@ -11,7 +11,8 @@
 #include "Assert.h"
 
 #ifdef WIN32
-#define MAXPATHLEN 1024
+#include <windows.h>
+#define MAXPATHLEN (MAX_PATH*4)
 #else
 #include <sys/param.h>
 #endif
@@ -137,6 +138,10 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 											  off_t file_size)
 {
 	ENTERFUNC;
+	Assert(filename != "");
+	Assert(first_block != 0);
+	Assert(file_size > 0);
+	
 	string ext = Util::get_filename_ext(filename);
 	if (ext == "") {
 		return IMAGE_UNKNOWN;
@@ -256,13 +261,15 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 {
 	ENTERFUNC;
+	Assert(in_filename != "");
 	
 	string filename = in_filename;
-	size_t ext_pos = filename.find(".img");
-	if (ext_pos != string::npos) {
-		filename.replace(ext_pos, 4, ".hed");
-	}
 
+	string old_ext = Util::get_filename_ext(filename);
+	if (old_ext == ImagicIO::IMG_EXT) {
+		filename = Util::change_filename_ext(filename, ImagicIO::HED_EXT);
+	}
+	
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
 		throw FileAccessException(filename);
@@ -349,7 +356,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 		image_type = IMAGE_IMAGIC;
 	}
 	else {
-		LOGERR("I don't know this image's type: '%s'", filename.c_str());
+		//LOGERR("I don't know this image's type: '%s'", filename.c_str());
 		throw ImageFormatException("invalid image type");
 	}
 
@@ -361,6 +368,8 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 int EMUtil::get_image_count(const string & filename)
 {
 	ENTERFUNC;
+	Assert(filename != "");
+	
 	int nimg = 0;
 	ImageIO *imageio = get_imageio(filename, ImageIO::READ_ONLY);
 
@@ -376,6 +385,11 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 							 ImageType image_type)
 {
 	ENTERFUNC;
+	Assert(filename != "");
+	Assert(rw == ImageIO::READ_ONLY ||
+		   rw == ImageIO::READ_WRITE ||
+		   rw == ImageIO::WRITE_ONLY);
+	
 	ImageIO *imageio = GlobalCache::instance()->get_imageio(filename, rw);
 	if (imageio) {
 		return imageio;
@@ -543,6 +557,9 @@ const char *EMUtil::get_datatype_string(EMDataType type)
 void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 							 int ny, int *area_y, int nz, int *area_z)
 {
+	Assert(area_x);
+	Assert(area_y);
+	
 	if (!area) {
 		*area_x = nx;
 		*area_y = ny;
@@ -568,6 +585,9 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *p_z0,
 								int nz, int image_index)
 {
+	Assert(p_x0);
+	Assert(p_y0);
+	
 	if (area) {
 		*p_x0 = static_cast < int >(area->origin[0]);
 		*p_y0 = static_cast < int >(area->origin[1]);
@@ -592,6 +612,12 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 							   const Region * area, bool need_flip, 
 							   ImageType imgtype, int pre_row, int post_row)
 {
+	Assert(vdata != 0);
+	Assert(file != 0);
+	Assert(rw_mode == ImageIO::READ_ONLY ||
+		   rw_mode == ImageIO::READ_WRITE ||
+		   rw_mode == ImageIO::WRITE_ONLY);
+	
 	unsigned char * cdata = (unsigned char *)vdata;
 	
 	int x0 = 0;
@@ -703,21 +729,12 @@ void EMUtil::dump_dict(const Dict & dict)
 	}
 }
 
-#if 0
-bool EMUtil::is_same_size(const EMData & em1, const EMData & em2)
-{
-	if (em1.get_xsize() == em2.get_xsize() &&
-		em1.get_ysize() == em2.get_ysize() && em1.get_zsize() == em2.get_zsize()) {
-		return true;
-	}
-	return false;
-}
-#endif
 
 bool EMUtil::is_same_size(const EMData * em1, const EMData * em2)
 {
 	if (em1->get_xsize() == em2->get_xsize() &&
-		em1->get_ysize() == em2->get_ysize() && em1->get_zsize() == em2->get_zsize()) {
+		em1->get_ysize() == em2->get_ysize() &&
+		em1->get_zsize() == em2->get_zsize()) {
 		return true;
 	}
 	return false;
@@ -726,6 +743,10 @@ bool EMUtil::is_same_size(const EMData * em1, const EMData * em2)
 
 EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
 {
+	if (!image) {
+		throw NullPointerException("NULL Image");
+	}
+	
 	EMData *ret = new EMData();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -818,6 +839,13 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 
 bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 {
+	if (!image1) {
+		throw NullPointerException("image1 is NULL");
+	}
+	if (!image2) {
+		throw NullPointerException("image2 is NULL");
+	}
+	
 	Ctf *ctf1 = image1->get_ctf();
 	Ctf *ctf2 = image2->get_ctf();
 
@@ -833,6 +861,9 @@ bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 
 static int imgscore_cmp(const void *imgscore1, const void *imgscore2)
 {
+	Assert(imgscore1 != 0);
+	Assert(imgscore2 != 0);
+	
 	float c = ((ImageScore *)imgscore1)->score - ((ImageScore *)imgscore2)->score;
 	if (c<0) {
 		return 1;
@@ -845,6 +876,7 @@ static int imgscore_cmp(const void *imgscore1, const void *imgscore2)
 
 ImageSort::ImageSort(int nn)
 {
+	Assert(nn > 0);
 	n = nn;
 	image_scores = new ImageScore[n];
 }
@@ -863,17 +895,20 @@ void ImageSort::sort()
 
 void ImageSort::set(int i, float score)
 {
+	Assert(i >= 0);
 	image_scores[i] = ImageScore(i, score);
 }
 
 int ImageSort::get_index(int i) const
 {
+	Assert(i >= 0);
 	return image_scores[i].index;
 }
 
 
 float ImageSort::get_score(int i) const
 {
+	Assert(i >= 0);
 	return image_scores[i].score;
 }
 
@@ -889,6 +924,12 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, ImageIO::IOMode r
 									 const Region * area, bool has_index_line,
 									 int nitems_per_line, const char *outformat)
 {
+	Assert(data != 0);
+	Assert(file != 0);
+	Assert(rw_mode == ImageIO::READ_ONLY ||
+		   rw_mode == ImageIO::READ_WRITE ||
+		   rw_mode == ImageIO::WRITE_ONLY);
+	
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 	
@@ -990,6 +1031,7 @@ void EMUtil::process_ascii_region_io(float *data, FILE * file, ImageIO::IOMode r
 void EMUtil::jump_lines_by_items(FILE * file, int nitems, int nitems_per_line)
 {
 	Assert(file);
+	Assert(nitems_per_line > 0);
 	
 	if (nitems <= 0) {
 		return;

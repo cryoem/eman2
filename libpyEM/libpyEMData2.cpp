@@ -40,6 +40,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_rotated_clip_overloads_2_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccf_overloads_1_3, calc_ccf, 1, 3)
@@ -81,6 +83,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN:
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMData2)
 {
+    scope* EMAN_EMData_scope = new scope(
     class_< EMAN::EMData >("EMData", init<  >())
         .def(init< const EMAN::EMData& >())
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
@@ -100,6 +103,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("insert_scaled_sum", &EMAN::EMData::insert_scaled_sum, EMAN_EMData_insert_scaled_sum_overloads_2_4())
         .def("window_padded", &EMAN::EMData::window_padded, return_value_policy< manage_new_object >())
         .def("center_origin_fft", &EMAN::EMData::center_origin_fft)
+        .def("zeropad_ntimes", &EMAN::EMData::zeropad_ntimes, return_value_policy< manage_new_object >(), EMAN_EMData_zeropad_ntimes_overloads_0_1())
         .def("pad_fft", &EMAN::EMData::pad_fft, return_value_policy< manage_new_object >())
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
@@ -226,6 +230,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("set_fftpad", &EMAN::EMData::set_fftpad)
         .def("is_fftodd", &EMAN::EMData::is_fftodd)
         .def("set_fftodd", &EMAN::EMData::set_fftodd)
+        .def("set_nxc", &EMAN::EMData::set_nxc)
         .def("read_images", &EMAN::EMData::read_images, EMAN_EMData_read_images_overloads_1_3())
         .def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5())
         .def("onelinenn", &EMAN::EMData::onelinenn)
@@ -234,18 +239,18 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
         .staticmethod("onelinenn")
-        .def( self * self )
-        .def( self / self )
-        .def( self - other< float >() )
-        .def( self + other< float >() )
-        .def( self - self )
-        .def( self + self )
-        .def( other< float >() / self )
-        .def( other< float >() * self )
-        .def( other< float >() - self )
-        .def( other< float >() + self )
         .def( self / other< float >() )
         .def( self * other< float >() )
+        .def( other< float >() - self )
+        .def( other< float >() + self )
+        .def( other< float >() / self )
+        .def( other< float >() * self )
+        .def( self - self )
+        .def( self + self )
+        .def( self - other< float >() )
+        .def( self + other< float >() )
+        .def( self / self )
+        .def( self * self )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )
@@ -254,7 +259,20 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def( self -= self )
         .def( self *= self )
         .def( self /= self )
+    );
+
+    enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")
+        .value("FFT_IN_PLACE", EMAN::EMData::FFT_IN_PLACE)
+        .value("FFT_OUT_OF_PLACE", EMAN::EMData::FFT_OUT_OF_PLACE)
     ;
+
+
+    enum_< EMAN::EMData::WINDOWPLACE >("WINDOWPLACE")
+        .value("WINDOW_OUT_OF_PLACE", EMAN::EMData::WINDOW_OUT_OF_PLACE)
+        .value("WINDOW_IN_PLACE", EMAN::EMData::WINDOW_IN_PLACE)
+    ;
+
+    delete EMAN_EMData_scope;
 
 }
 

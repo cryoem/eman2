@@ -5,6 +5,7 @@
 #include "byteorder.h"
 #include "log.h"
 #include "exception.h"
+#include "Assert.h"
 
 #include <string.h>
 #include <math.h>
@@ -26,6 +27,8 @@ using namespace EMAN;
 
 void Util::ap2ri(float *data, size_t n)
 {
+	Assert(n > 0);
+	
 	if (!data) {
 		throw NullPointerException("pixel data array");
 	}
@@ -39,6 +42,8 @@ void Util::ap2ri(float *data, size_t n)
 
 void Util::flip_complex_phase(float *data, size_t n)
 {
+	Assert(n > 0);
+	
 	if (!data) {
 		throw NullPointerException("pixel data array");
 	}
@@ -55,8 +60,7 @@ int Util::file_lock_wait(FILE * file)
 #else
 
 	if (!file) {
-		LOGERR("Tried to lock NULL file");
-		return 1;
+		throw NullPointerException("Tried to lock NULL file");
 	}
 
 	int fdes = fileno(file);
@@ -76,6 +80,7 @@ int Util::file_lock_wait(FILE * file)
 	fl.l_sysid = getpid();
 #endif
 
+	int err = 0;
 	if (fcntl(fdes, F_SETLKW, &fl) == -1) {
 		LOGERR("file locking error! NFS problem?");
 
@@ -86,7 +91,7 @@ int Util::file_lock_wait(FILE * file)
 			}
 			else {
 #ifdef WIN32
-				Sleep(0.001);
+				Sleep(1000);
 #else
 				sleep(1);
 #endif
@@ -95,18 +100,14 @@ int Util::file_lock_wait(FILE * file)
 		}
 		if (i == 5) {
 			LOGERR("Fatal file locking error");
-			return 1;
+			err = 1;
 		}
 	}
 
-	return 0;
+	return err;
 #endif
 }
 
-void Util::file_unlock(FILE *)
-{
-
-}
 
 
 bool Util::check_file_by_magic(const void *first_block, const char *magic)
@@ -137,7 +138,8 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 	if (!data) {
 		throw NullPointerException("image data array");
 	}
-
+	Assert(nx > 0);
+	Assert(ny > 0);
 	
 	float *buf = new float[nx];
 	size_t row_size = nx * sizeof(float);
@@ -174,22 +176,20 @@ string Util::int2str(int n)
 
 string Util::get_line_from_string(char **slines)
 {
-	if (!slines) {
+	if (!slines || !(*slines)) {
 		throw NullPointerException("Null string");
 	}
+	
 	string result = "";
-
 	char *str = *slines;
-	char buf[1024];
-	int i = 0;
-	while (*str != '\n' && i < 1024) {
-		buf[i] = *str;
-		i++;
+
+	while (*str != '\n' && *str != '\0') {
+		result.push_back(*str);
 		str++;
 	}
-	buf[i] = '\0';
-	str++;
-	result = string(buf);
+	if (*str != '\0') {
+		str++;
+	}
 	*slines = str;
 	
 	return result;
@@ -226,7 +226,8 @@ bool Util::get_str_float(const char *s, const char *float_var, float *p_v1, floa
 	return false;
 }
 
-bool Util::get_str_float(const char *s, const char *float_var, int *p_v0, float *p_v1, float *p_v2)
+bool Util::get_str_float(const char *s, const char *float_var,
+						 int *p_v0, float *p_v1, float *p_v2)
 {
 	if (!s || !float_var || !p_v0 || !p_v1 || !p_v2) {
 		throw NullPointerException("string float");
@@ -296,32 +297,46 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_v0, int *p_v1,
 	return false;
 }
 
-string Util::get_filename_by_ext(const string & old_filename,
+string Util::change_filename_ext(const string & old_filename,
 								 const string & ext)
 {
-	char buf[MAXPATHLEN];
-	strcpy(buf, old_filename.c_str());
-	char *old_ext = strrchr(buf, '.');
-	if (old_ext) {
-		buf[strlen(buf) - strlen(old_ext)] = '\0';
+	Assert(old_filename != "");
+	if (ext == "") {
+		return old_filename;
 	}
-	strcat(buf, ext.c_str());
-	return string(buf);
+	
+	string filename = old_filename;
+	size_t dot_pos = filename.rfind(".");
+	if (dot_pos != string::npos) {
+		filename = filename.substr(0, dot_pos+1);
+	}
+	else {
+		filename = filename + ".";
+	}
+	filename = filename + ext;
+	return filename;
 }
 
 string Util::remove_filename_ext(const string& filename)
 {
-	char buf[MAXPATHLEN];
+	Assert(filename != "");
+	
+	char *buf = new char[filename.size()+1];
 	strcpy(buf, filename.c_str());
 	char *old_ext = strrchr(buf, '.');
 	if (old_ext) {
 		buf[strlen(buf) - strlen(old_ext)] = '\0';
 	}
-	return string(buf);
+	string result = string(buf);
+	delete [] buf;
+	buf = 0;
+	return result;
 }
 
 string Util::sbasename(const string & filename)
 {
+	Assert(filename != "");
+	
 	char s = '/';	
 #ifdef WIN32
 	s = '\\';
@@ -339,6 +354,7 @@ string Util::sbasename(const string & filename)
 
 string Util::get_filename_ext(const string& filename)
 {
+	Assert(filename != "");
 	string result = "";
 	char *ext = strrchr(filename.c_str(), '.');
 	if (ext) {
@@ -353,6 +369,8 @@ string Util::get_filename_ext(const string& filename)
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 								 float *slope, float *intercept, bool ignore_zero)
 {
+	Assert(nitems > 0);
+	
 	if (!data_x || !data_y || !slope || !intercept) {
 		throw NullPointerException("null float pointer");
 	}
@@ -390,6 +408,10 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 void Util::save_data(const vector < float >&x_array, const vector < float >&y_array,
 					 const string & filename)
 {
+	Assert(x_array.size() > 0);
+	Assert(y_array.size() > 0);
+	Assert(filename != "");
+	
 	if (x_array.size() != y_array.size()) {
 		LOGERR("array x and array y have different size: %d != %d\n",
 			   x_array.size(), y_array.size());
@@ -410,6 +432,10 @@ void Util::save_data(const vector < float >&x_array, const vector < float >&y_ar
 void Util::save_data(float x0, float dx, const vector < float >&y_array,
 					 const string & filename)
 {
+	Assert(dx != 0);
+	Assert(y_array.size() > 0);
+	Assert(filename != "");
+	
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
 		throw FileAccessException(filename);
@@ -425,6 +451,10 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array,
 void Util::save_data(float x0, float dx, float *y_array, 
 					 size_t array_size, const string & filename)
 {
+	Assert(dx > 0);
+	Assert(array_size > 0);
+	Assert(filename != "");
+	
 	if (!y_array) {
 		throw NullPointerException("y array");
 	}
@@ -490,8 +520,10 @@ float Util::get_gauss_rand(float mean, float sigma)
 	return result;
 }
 
-void Util::find_max(float *data, size_t nitems, float *max_val, int *max_index)
+void Util::find_max(const float *data, size_t nitems, float *max_val, int *max_index)
 {
+	Assert(nitems > 0);
+	
 	if (!data || !max_val || !max_index) {
 		throw NullPointerException("data/max_val/max_index");
 	}
@@ -512,9 +544,12 @@ void Util::find_max(float *data, size_t nitems, float *max_val, int *max_index)
 	}
 }
 
-void Util::find_min_and_max(float *data, size_t nitems, float *max_val, float *min_val,
+void Util::find_min_and_max(const float *data, size_t nitems,
+							float *max_val, float *min_val,
 							int *max_index, int *min_index)
 {
+	Assert(nitems > 0);
+	
 	if (!data || !max_val || !min_val || !max_index || !min_index) {
 		throw NullPointerException("data/max_val/min_val/max_index/min_index");
 	}
@@ -548,9 +583,11 @@ void Util::find_min_and_max(float *data, size_t nitems, float *max_val, float *m
 }
 
 
-// finds fft sizes with good primes. needs some work ...
+
 int Util::calc_best_fft_size(int low)
 {
+	Assert(low >= 0);
+	
 	//array containing valid sizes <1024 for speed
 	static char *valid = NULL;
 
@@ -596,7 +633,7 @@ string Util::get_time_label()
 	struct tm *t = localtime(&t0);
 	char label[32];
 	sprintf(label, "%d/%02d/%04d %d:%02d",
-			t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour, t->tm_min);
+			t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour, t->tm_min);	
 	return string(label);
 }
 

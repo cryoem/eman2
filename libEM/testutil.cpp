@@ -11,6 +11,13 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#define MAXPATHLEN MAX_PATH
+#else
+#include <sys/param.h>
+#endif
+
 using std::vector;
 using std::string;
 using std::map;
@@ -44,7 +51,7 @@ string TestUtil::get_debug_string(int i)
 
 string TestUtil::get_debug_image(const string & imagename)
 {
-	char imgpath[1024];
+	char imgpath[MAXPATHLEN];
 	char * path_env = getenv("DEBUG_IMAGE_PATH");
 	if (path_env) {
 		sprintf(imgpath, "%s/%s", path_env, imagename.c_str());
@@ -57,7 +64,7 @@ string TestUtil::get_debug_image(const string & imagename)
 
 string TestUtil::get_golden_image(const string & imagename)
 {
-	char imgpath[1024];
+	char imgpath[MAXPATHLEN];
 	char * path_env = getenv("DEBUG_IMAGE_PATH");
 	if (path_env) {
 		sprintf(imgpath, "%s/testdata/%s", path_env, imagename.c_str());
@@ -349,16 +356,17 @@ Dict TestUtil::test_dict(const Dict & d)
 
 int TestUtil::check_image(const string& imagefile, EMData * image)
 {
-	string headerfile1 = imagefile + EMDATA_HEADER_EXT;
-	string datafile1 = imagefile + EMDATA_DATA_EXT;
+	
+	string headerfile1 = Util::sbasename(imagefile) + EMDATA_HEADER_EXT;
+	string datafile1 = Util::sbasename(imagefile) + EMDATA_DATA_EXT;
 
-	char imgpath[1024];
+	char imgpath[MAXPATHLEN];
 	char * path_env = getenv("DEBUG_IMAGE_PATH");
 	if (path_env) {
 		sprintf(imgpath, "%s/testdata/%s/", path_env, progname.c_str());
 	}
 	else {
-		sprintf(imgpath, "%s/images/testdata/", getenv("HOME"), progname.c_str());
+		sprintf(imgpath, "%s/images/testdata/%s/", getenv("HOME"), progname.c_str());
 	}
 
 	string headerfile2 = string(imgpath) + headerfile1;
@@ -405,14 +413,37 @@ void TestUtil::dump_emdata(EMData * image, const string & filename)
 	if (!hfile) {
 		throw FileAccessException(headerfile);
 	}
-
+#if 0
+	vector<string> excl_keys;
+	excl_keys.push_back("MRC.label");
+	excl_keys.push_back("IMAGIC.minute");
+	excl_keys.push_back("IMAGIC.sec");
+	
 	Dict attr_dict = image->get_attr_dict();
 	vector < string > keys = attr_dict.keys();
 	
+
+	
 	for (size_t i = 0; i < keys.size(); i++) {
-		fprintf(hfile, "%s = %s\n", keys[i].c_str(),
-				attr_dict[keys[i]].to_str().c_str());
+
+		bool is_exclude = false;
+		for (size_t j = 0; j < excl_keys.size(); j++) {
+			if (Util::sstrncmp(keys[i].c_str(), excl_keys[j].c_str())) {
+				is_exclude = true;
+				break;
+			}
+		}
+		if (!is_exclude) {		
+			fprintf(hfile, "%s = %s\n", keys[i].c_str(),
+					attr_dict[keys[i]].to_str().c_str());
+		}
 	}
+#endif
+
+	fprintf(hfile, "nx = %d\n", image->get_xsize());
+	fprintf(hfile, "ny = %d\n", image->get_ysize());
+	fprintf(hfile, "nz = %d\n", image->get_zsize());
+	
 	fclose(hfile);
 	hfile = 0;
 

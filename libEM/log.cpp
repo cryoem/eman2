@@ -170,9 +170,8 @@ int Log::begin(int argc, char *argv[], int ppid)
 		return 0;
 	}
 
-	Util::file_lock_wait(eman_file);
+	//Util::file_lock_wait(eman_file);
 	fprintf(eman_file, "%s", s);
-	Util::file_unlock(eman_file);
 	fclose(eman_file);
 
 	string dirlist = default_emandir + "./dirlist";
@@ -211,9 +210,8 @@ void Log::end(int ref, char *file, char *text)
 
 	if (out) {
 		time_t tm = time(0);
-		Util::file_lock_wait(out);
+		//Util::file_lock_wait(out);
 		fprintf(out, "%d\t%d\t%s\t%s\n", ref, tm, file, text);
-		Util::file_unlock(out);
 		fclose(out);
 	}
 }

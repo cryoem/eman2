@@ -38,7 +38,6 @@ namespace EMAN
 	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
 	typedef boost::multi_array_ref<int, 2> MIArray2D;
 	typedef boost::multi_array_ref<int, 3> MIArray3D;
-
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
 	 *
@@ -47,7 +46,9 @@ namespace EMAN
 	class EMData
 	{
 	public:
-
+		
+		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
+		enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
 		
 		/** Construct an empty EMData instance. It has no image data. */
 		EMData();

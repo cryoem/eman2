@@ -13,8 +13,9 @@
 #include <unistd.h>
 #else
 #include <direct.h>
+#include <windows.h>
 #define M_PI 3.14159265358979323846f
-#define MAXPATHLEN 1024
+#define MAXPATHLEN (MAX_PATH*4)
 #endif
 
 

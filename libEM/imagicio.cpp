@@ -13,16 +13,16 @@
 
 using namespace EMAN;
 
-const char *ImagicIO::HED_EXT = ".hed";
-const char *ImagicIO::IMG_EXT = ".img";
+const char *ImagicIO::HED_EXT = "hed";
+const char *ImagicIO::IMG_EXT = "img";
 const char *ImagicIO::REAL_TYPE_MAGIC = "REAL";
 const char *ImagicIO::CTF_MAGIC = "!-";
 
 ImagicIO::ImagicIO(string file, IOMode rw)
 :	filename(file), rw_mode(rw), hed_file(0), img_file(0), initialized(false)
 {
-	hed_filename = Util::get_filename_by_ext(filename, HED_EXT);
-	img_filename = Util::get_filename_by_ext(filename, IMG_EXT);
+	hed_filename = Util::change_filename_ext(filename, HED_EXT);
+	img_filename = Util::change_filename_ext(filename, IMG_EXT);
 
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_hed = false;

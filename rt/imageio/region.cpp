@@ -1,8 +1,51 @@
 #include "emdata.h"
 #include "testutil.h"
+#include "imagicio.h"
 #include <assert.h>
 
+#ifndef _WIN32
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
 using namespace EMAN;
+
+static vector<string> outfiles;
+
+void clean_data_header_file(const string & imgfile)
+{
+	outfiles.push_back(Util::sbasename(imgfile) + TestUtil::EMDATA_HEADER_EXT);
+	outfiles.push_back(Util::sbasename(imgfile) + TestUtil::EMDATA_DATA_EXT);
+}
+
+void dump_clean(const char *progname)
+{
+	char file[256];
+	sprintf(file, "%s.clean", progname);
+	FILE* f = fopen(file, "wb");
+	if (!f) {
+		return ;
+	}
+	
+	for (size_t i = 0; i < outfiles.size(); i++) {
+#ifndef _WIN32
+		string f1 = Util::sbasename(outfiles[i]);
+		fprintf(f, "rm -f %s\n", f1.c_str());
+		string ext = Util::get_filename_ext(f1);
+		if (ext == "hed") {
+			string imgf = Util::change_filename_ext(f1, ImagicIO::IMG_EXT);
+			fprintf(f, "rm -f %s\n", imgf.c_str());
+		}
+#endif
+	}
+	
+	fclose(f);
+#ifndef _WIN32
+	chmod(file, 00755);
+#endif
+	
+}
 
 
 void test_region(EMUtil::ImageType imgtype, const char * testfile,
@@ -29,15 +72,16 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	EMData e;
 	e.read_image(imgfile, 0, false, 0, is_3d);
 	
-	//TestUtil::check_image(imgfile, &e);
+	TestUtil::check_image(imgfile, &e);
+	clean_data_header_file(imgfile);
 	
 	int ndims = e.get_ndim();
 	e.write_image(writefile_2d, 0, outtype);
-
-	//TestUtil::check_image(writefile_2d);
+	outfiles.push_back(writefile_2d);
 	
 	if (ndims == 3) {
 		e.write_image(writefile_3d, 0, outtype);
+		outfiles.push_back(writefile_3d);
 	}
 
 	
@@ -71,15 +115,19 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	
 	EMData e2;
 	e2.read_image(imgfile, 0, false, &region_2d, is_3d);
-	//TestUtil::check_image(readfile_2d, &e2);
+	TestUtil::check_image(readfile_2d, &e2);
+	clean_data_header_file(readfile_2d);
 	
 	e2.write_image(readfile_2d, 0, outtype);
-
+	outfiles.push_back(readfile_2d);
+	
 	if (ndims == 3) {
 		EMData e4;
 		e4.read_image(imgfile, 0, false, &region_3d, is_3d);
-		//TestUtil::check_image(readfile_3d, &e4);
 		e4.write_image(readfile_3d, 0, outtype);
+		TestUtil::check_image(readfile_3d, &e4);
+		outfiles.push_back(readfile_3d);
+		clean_data_header_file(readfile_3d);
 	}
 
 	EMData e3;
@@ -92,11 +140,13 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	}
 	
 	e3.write_image(writefile_2d, image_index, outtype, false, &region_2d);
-	//TestUtil::check_image(writefile_2d);
+	TestUtil::check_image(writefile_2d);
+	clean_data_header_file(writefile_2d);
 	
 	if (ndims == 3) {
 		e3.write_image(writefile_3d, image_index, outtype, false, &region_3d);
-		//TestUtil::check_image(writefile_3d);
+		TestUtil::check_image(writefile_3d);
+		clean_data_header_file(writefile_3d);
 	}
 	
 	try {
@@ -124,13 +174,14 @@ int main(int argc, char *argv[])
 {
 	try {
 		TestUtil::set_progname(argv[0]);
-#if 0
+
 		test_region(EMUtil::IMAGE_MRC, "groel3d.mrc");
+
 		test_region(EMUtil::IMAGE_MRC, "samesize1.mrc");
 		test_region(EMUtil::IMAGE_MRC, "tablet.mrc");
 
 		test_region(EMUtil::IMAGE_IMAGIC, "start.hed");
-
+		
 		//test_region(EMUtil::IMAGE_PIF, "sv-3d.pif");
 
 		test_region(EMUtil::IMAGE_SINGLE_SPIDER, "spider-single.spi");
@@ -142,12 +193,14 @@ int main(int argc, char *argv[])
 
 		test_region(EMUtil::IMAGE_EM, "20s2d.em");
 		test_region(EMUtil::IMAGE_EM, "stack3d.em");
-#endif
-		//test_region(EMUtil::IMAGE_XPLOR, "dummy.xplor", EMUtil::IMAGE_MRC);
+
 		test_region(EMUtil::IMAGE_XPLOR, "2f.xplor");
+
 	}
 	catch(E2Exception &e) {
 		printf("%s\n", e.what());
 	}
+	
+	dump_clean(argv[0]);
 	return 0;
 }

@@ -5,7 +5,7 @@
 #include "log.h"
 #include "emdata.h"
 #include "xydata.h"
-
+#include "Assert.h"
 
 using namespace EMAN;
 
@@ -32,6 +32,7 @@ SimpleCtf::~SimpleCtf()
 
 int SimpleCtf::from_string(const string & ctf)
 {
+	Assert(ctf != "");
 	int i = sscanf(ctf.c_str(), "%f %f %f %f %f %f %f %f %f %f %f",
 				   &defocus, &bfactor, &amplitude, &ampcont, &noise1,
 				   &noise2, &noise3, &noise4, &voltage, &cs, &apix);
@@ -106,6 +107,8 @@ void SimpleCtf::copy_from(const Ctf * new_ctf)
 
 vector < float >SimpleCtf::compute_1d(int size, CtfType type, XYData * sf)
 {
+	Assert(size > 0);
+	
 	float tmp_f1 = CTFOS * sqrt((float) 2) * size / 2;
 	int np = (int) ceil(tmp_f1) + 2;
 	vector < float >r;

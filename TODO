@@ -54,8 +54,14 @@
 	   etc, for more solid code.
 
   085. e2proc2d seems not working.
-  
-	   
+
+  086. file extension somewhere is "img"/"hed". but somewhere it is ".img"/
+       ".hed". make them consistent.
+	     
+  087. add [in] [out] or [inout] to params in documentation.
+
+  088. add typeconverter method to convert multi_array from c++ to python.
+		 	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.

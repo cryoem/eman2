@@ -7,7 +7,8 @@
 #ifndef WIN32
 #include <sys/param.h>
 #else
-#define MAXPATHLEN 1024
+#include <windows.h>
+#define MAXPATHLEN (MAX_PATH*4)
 #endif
 
 using namespace EMAN;

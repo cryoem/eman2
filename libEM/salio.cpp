@@ -15,8 +15,8 @@
 
 using namespace EMAN;
 
-const char *SalIO::HDR_EXT = ".hdr";
-const char *SalIO::IMG_EXT = ".img";
+const char *SalIO::HDR_EXT = "hdr";
+const char *SalIO::IMG_EXT = "img";
 const char *SalIO::MAGIC = " IDENTIFICATION";
 
 
@@ -48,8 +48,8 @@ void SalIO::init()
 
 	initialized = true;
 
-	string hdr_filename = Util::get_filename_by_ext(filename, HDR_EXT);
-	string img_filename = Util::get_filename_by_ext(filename, IMG_EXT);
+	string hdr_filename = Util::change_filename_ext(filename, HDR_EXT);
+	string img_filename = Util::change_filename_ext(filename, IMG_EXT);
 
 	bool is_new_file = false;
 	sal_file = sfopen(hdr_filename, rw_mode, &is_new_file);

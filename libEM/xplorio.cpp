@@ -11,7 +11,8 @@
 
 #ifdef WIN32
 #include <time.h>
-#define MAXPATHLEN 1024
+#include <windows.h>
+#define MAXPATHLEN (MAX_PATH*4)
 #else
 #include <sys/param.h>
 #endif

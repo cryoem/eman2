@@ -39,6 +39,9 @@ namespace EMAN
 	class ImagicIO:public ImageIO
 	{
 	  public:
+		static const char *HED_EXT;
+		static const char *IMG_EXT;
+		
 		ImagicIO(string filename, IOMode rw_mode = READ_ONLY);
 		~ImagicIO();
 
@@ -55,8 +58,6 @@ namespace EMAN
 		int get_nimg();
 		
 	  private:
-		static const char *HED_EXT;
-		static const char *IMG_EXT;
 		static const char *REAL_TYPE_MAGIC;
 		static const char *CTF_MAGIC;
 

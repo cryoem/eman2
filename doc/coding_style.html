@@ -63,10 +63,34 @@ C++ code. Read your new source and fix the following possible errors:</li>
     </ol>
   </ol>
   <p> </p>
-  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
+  <><big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
+  <>Use JavaDoc style: <><br>
+  <br>
+/** Brief description which ends at this dot. Details follow<br>
+* here.<br>
+*/<br>
+class Test<br>
+{<br>
+public: <br>
+/** The constructor's brief description in one line.<br>
+* A more elaborate description of the constructor.<br>
+*/<br>
+Test();<br>
+  <br>
+/** do some test.<br>
+* @author Liwei Peng &lt;lpeng@bcm.tmc.edu&gt;<br>
+* @date 1/20/2005<span style="font-family: monospace;"></span></><><span
+ style="font-family: monospace;"></span><br>
+* @param low the low threshold.<br>
+* @param high the high threshold.<br>
+* @return 0 if do_test succeeds; 1 if do_test fails.</></><br>
+  <><> */<br>
+int do_test(float low, float high);<br>
+}<br>
+  </></></><li><br>
+  </li>
+  <li>
     <ul>
-Use JavaDoc style:
-      <pre>/** Brief description which ends at this dot. Details follow<br> *  here.<br> */<br>class Test<br>{<br>public:	<br>    /** The constructor's brief description<br>     * A more elaborate description of the constructor.<br>     */<br>    Test();<br><br>    /** do some test.<br>     * @param low the low threshold.<br>     * @param high the high threshold.<br>     */<br>    int do_test(float low, float high);<br>}<br></pre>
     </ul>
   </li>
   <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Samples</big><br>
