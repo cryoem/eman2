@@ -239,9 +239,11 @@ namespace EMAN {
 	map<string, EMObject> get_dict() const { return dict; }
 
 	EMObject& operator[](const string& key) { return dict[key]; }
+
+	EMObject operator[](const string& key) const { return dict[key]; }
 	
     private:
-	map<string, EMObject> dict;
+	mutable map<string, EMObject> dict;
     };
 
     class TypeDict {

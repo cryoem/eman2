@@ -49,12 +49,17 @@ namespace EMAN {
 	
 	void normalize();
 
+	
 	bool is_complex() const;
 	void ri2ap();
 	void ap2ri();
 
 	EMData* get_parent() const;
 	void set_parent(EMData* new_parent) { parent = new_parent; }
+
+	void setup4slice(bool redo = true);
+	EMData* fft_slice(float alt, float az, float phi, int mode = 5);
+	void to_corner();
 	
 	EMData* do_fft();
 	EMData* do_ift();
@@ -63,6 +68,7 @@ namespace EMAN {
 	void rotate_x(int dx);
 	void rotate_translate(float scale = 1.0, float dxc = 0,
 			      float dyc = 0, float dzc = 0, int r = 0);
+	void fast_rotate_translate(float scale = 1.0);
 	double dot_rotate_translate(EMData* data, float dx, float dy, float da);
 
 	void fast_translate(bool inplace = true);
@@ -121,6 +127,8 @@ namespace EMAN {
 	
 	float* get_data() const;
 	void done_data();
+
+	void update();
 	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
@@ -202,7 +210,8 @@ namespace EMAN {
 	    EMDATA_NEWRFP	= 1<<9,		// needs new rotational footprint
 	    EMDATA_NODATA	= 1<<10,	// no actual data
 	    EMDATA_COMPLEXX	= 1<<11,       	// 1D fft's in X
-	    EMDATA_FLIP         = 1<<12
+	    EMDATA_FLIP         = 1<<12,
+	    EMDATA_CHANGED      = (EMDATA_NEWFFT+EMDATA_NEEDUPD+EMDATA_NEEDHIST+EMDATA_NEWRFP)
 	};
 
 	int update_stat();
@@ -317,6 +326,11 @@ namespace EMAN {
     {	
 	rdata[x+y*nx] = v;
 	flags |= EMDATA_NEEDUPD;
+    }
+
+    inline void EMData::update()
+    {
+	flags |= EMDATA_CHANGED;
     }
 }
 

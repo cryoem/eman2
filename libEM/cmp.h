@@ -19,6 +19,7 @@ namespace EMAN {
 	virtual float cmp(EMData* em, Transform* transform = 0) const = 0;
 	virtual Dict get_params() const { return params; }
 	virtual void set_params(const Dict& new_params) { params = new_params; }
+	virtual TypeDict get_param_types() const = 0;
 	virtual string get_name() const = 0;
 	
     protected:
@@ -30,6 +31,15 @@ namespace EMAN {
 	float cmp(EMData* em, Transform* transform = 0) const;
 	string get_name() const { return "DotCmp"; }
 	static Cmp* NEW() { return new DotCmp(); }
+
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("with", EMObject::EMDATA);
+	    d.put("evenonly", EMObject::INT);
+	    return d;
+	}
+	
     };
 
     class LinearCmp : public Cmp {
@@ -37,6 +47,15 @@ namespace EMAN {
 	float cmp(EMData* em, Transform* transform = 0) const;
 	string get_name() const { return "LinearCmp"; }
 	static Cmp* NEW() { return new LinearCmp(); }
+	
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("with", EMObject::EMDATA);
+	    d.put("invert", EMObject::INT);
+	    d.put("keepzero", EMObject::INT);
+	    return d;
+	}
     };
 
     class PhaseCmp : public Cmp {
@@ -44,6 +63,14 @@ namespace EMAN {
 	float cmp(EMData* em, Transform* transform = 0) const;
 	string get_name() const { return "PhaseCmp"; }
 	static Cmp* NEW() { return new PhaseCmp(); }
+	
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("with", EMObject::EMDATA);
+	    
+	    return d;
+	}
     private:
 	enum { CTFOS = 5 };
     };
@@ -53,6 +80,14 @@ namespace EMAN {
 	float cmp(EMData* em, Transform* transform = 0) const;
 	string get_name() const { return "FSCCmp"; }
 	static Cmp* NEW() { return new FSCCmp(); }
+	
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("with", EMObject::EMDATA);
+	    d.put("snr", EMObject::FLOATARRAY);
+	    return d;
+	}
     private:
 	enum { CTFOS = 5 };
     };
