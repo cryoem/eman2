@@ -82,7 +82,8 @@ namespace EMAN
 									  int nz);
 
 	  private:
-		static FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir);
+		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
+		static FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir, FFTPLACE fftplace = FFT_IN_PLACE);
 
 		enum
 		{ MAX_NUM_PLANS = 6 };

@@ -120,7 +120,11 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 
 int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
 {
-	FftwPlan *fwplan = make_plan(nx, ny, nz, REAL_TO_COMPLEX);
+	// in-place or out-of-place?
+	FFTPLACE fftplace = (real_data == complex_data) 
+		? FFT_IN_PLACE
+		: FFT_OUT_OF_PLACE;
+	FftwPlan *fwplan = make_plan(nx, ny, nz, REAL_TO_COMPLEX, fftplace);
 	rfftwnd_one_real_to_complex(fwplan->get_plan_nd(), (fftw_real *) real_data,
 								(fftw_complex *) complex_data);
 	return 0;
@@ -134,10 +138,30 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 	return 0;
 }
 
-FftwPlan *EMfft::make_plan(int nx, int ny, int nz, FftwDirection dir)
+FftwPlan *EMfft::make_plan(int nx, int ny, int nz, 
+		                   FftwDirection dir,
+						   FFTPLACE fftplace)
 {
 	int rank = get_rank(ny, nz);
+	int flags = FFTW_ESTIMATE | FFTW_USE_WISDOM | FFTW_THREADSAFE;
+	if (dir == REAL_TO_COMPLEX) {
+		if (FFT_OUT_OF_PLACE == fftplace) {
+			flags |= FFTW_OUT_OF_PLACE;
+		} else {
+			flags |= FFTW_IN_PLACE;
+		}
+	}
+	else if (dir == COMPLEX_TO_REAL) {
+		// Always in place because the inverse transform
+		// destroys the input array.
+		flags |= FFTW_IN_PLACE;
+	}
 
+
+	// plan caching seems to fail if out-of-place transform
+	// is followed by an in-place transform, since the in-place
+	// transform then uses the out-of-place plan (which
+	// has the wrong flags)
 	list < FftwPlan * >::iterator qi = fwplans.begin();
 	for (; qi != fwplans.end(); qi++) {
 		if (**qi == FftwPlan(rank, nx, ny, nz, dir, 0)) {
@@ -151,14 +175,6 @@ FftwPlan *EMfft::make_plan(int nx, int ny, int nz, FftwDirection dir)
 	if (fwplans.size() == MAX_NUM_PLANS) {
 		delete fwplans.front();
 		fwplans.pop_front();
-	}
-
-	int flags = FFTW_ESTIMATE | FFTW_USE_WISDOM | FFTW_THREADSAFE;
-	if (dir == REAL_TO_COMPLEX) {
-		flags |= FFTW_OUT_OF_PLACE;
-	}
-	else if (dir == COMPLEX_TO_REAL) {
-		flags |= FFTW_IN_PLACE;
 	}
 
 	FftwPlan *new_plan = new FftwPlan(rank, nx, ny, nz, dir, flags);

@@ -18,6 +18,7 @@
 #include <math.h>
 #include <algorithm>
 #include <boost/array.hpp>
+#include <iostream>
 
 #ifdef WIN32
 #define M_PI 3.14159265358979323846f
@@ -671,14 +672,16 @@ void EMData::center_origin_fft()
 	}
 	MCArray3D dat = get_3dcview();
 	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2]
-	boost::array<MArray3D::index,3> bases = {{0, 1, 1}};
+	boost::array<MCArray3D::index,3> bases = {{0, 1, 1}};
 	dat.reindex(bases);
-	float factor = +1.;
+	int xmax = (is_fftodd()) 
+		? (nx-1)/2 + 1
+		: (nx-2)/2;
 	for (int iz = 1; iz <= nz; iz++) {
 		for (int iy = 1; iy <= ny; iy++) {
-			for (int ix = 0; ix <= nx/2; ix++) {
-				dat[ix][iy][iz] *= factor;
-				factor = -factor;
+			for (int ix = 0; ix <= xmax; ix++) {
+				// next line multiplies by +/- 1
+				dat[ix][iy][iz] *= -2*((ix+iy+iz)%2) + 1;
 			}
 		}
 	}
@@ -700,10 +703,11 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	size_t bytes = nx*sizeof(float);
 	MArray3D dest = newimg->get_3dview();
 	MArray3D src = this->get_3dview();
+	int start = (nxpad - nx)/2 + nx%2;
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
 			//memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
-			memmove(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+			memcpy(&dest[start][iy+start][iz], &src[0][iy][iz], bytes);
 		}
 	}
 	newimg->done_data();
