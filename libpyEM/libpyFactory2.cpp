@@ -178,6 +178,14 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
         return call_method< EMAN::EMData* >(self, "finish");
     }
 
+    void add_image_list(const std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        call_method< void >(self, "add_image_list", p0);
+    }
+
+    void default_add_image_list(const std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        EMAN::Averager::add_image_list(p0);
+    }
+
     std::string get_name() const {
         return call_method< std::string >(self, "get_name");
     }
@@ -429,6 +437,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
     class_< EMAN::Averager, boost::noncopyable, EMAN_Averager_Wrapper >("Averager", init<  >())
         .def("add_image", pure_virtual(&EMAN::Averager::add_image))
         .def("finish", pure_virtual(&EMAN::Averager::finish), return_value_policy< manage_new_object >())
+        .def("add_image_list", &EMAN::Averager::add_image_list, &EMAN_Averager_Wrapper::default_add_image_list)
         .def("get_name", pure_virtual(&EMAN::Averager::get_name))
         .def("set_params", &EMAN::Averager::set_params, &EMAN_Averager_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Averager::get_param_types, &EMAN_Averager_Wrapper::default_get_param_types)

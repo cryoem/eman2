@@ -576,5 +576,13 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("round")
     ;
 
+    class_< EMAN::Wrapper >("Wrapper", init<  >())
+        .def(init< const EMAN::Wrapper& >())
+        .def("em2numpy", &EMAN::Wrapper::em2numpy)
+        .def("numpy2em", &EMAN::Wrapper::numpy2em)
+        .staticmethod("em2numpy")
+        .staticmethod("numpy2em")
+    ;
+
 }
 

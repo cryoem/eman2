@@ -1,6 +1,6 @@
 all: libpyGeometry2.cpp libpyFactory2.cpp libpyEMData2.cpp libpyUtils2.cpp 
 
-PYSTE = python /usr/bin/pyste.py -I../libEM
+PYSTE = python /usr/bin/pyste.py -I../libEM -I//usr/include/python2.3
 
 f: libpyFactory2.cpp
 g: libpyGeometry2.cpp
@@ -8,6 +8,7 @@ e: libpyEMData2.cpp
 u: libpyUtils2.cpp
 
 libpyGeometry2.cpp: geometry.pyste
+	echo $PYSTE
 	$(PYSTE) --module=libpyGeometry2 geometry.pyste
 
 libpyFactory2.cpp: factory.pyste

@@ -1,13 +1,11 @@
 #ifndef eman__pylist_h__
 #define eman__pylist_h__
 
+#include "emobject.h"
+
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
-
-#ifdef EM_NUMPY
-#include <numarray/libnumarray.h>
-#endif
 
 #include <vector>
 #include <map>
@@ -17,7 +15,17 @@ namespace python = boost::python;
 using std::vector;
 using std::map;
 
+
 namespace EMAN {
+	
+	class EMData;
+
+	class Wrapper {
+	public:
+		static python::numeric::array em2numpy(EMData *image);
+		static void numpy2em(python::numeric::array& array, EMData* image);
+	};
+	
     class PyList {
     public:
 
@@ -228,16 +236,8 @@ namespace EMAN {
     };
 
 	
-#ifdef EM_NUMPY
-	PyObject* emdata2numpy(EMData *image)
-	{
-		if (!image) {
-			return 0;
-		}
+	
 
-		
-	}
-#endif
 	
 }
 
