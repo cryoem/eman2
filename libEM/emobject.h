@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include "log.h"
+#include <stdio.h>
 
 using std::vector;
 using std::string;
@@ -343,6 +344,8 @@ namespace EMAN
 	    return dict[key];
 	}
 
+	void dump() const;
+	    
     private:
 	map<string, string> dict;
     };
@@ -376,7 +379,7 @@ namespace EMAN
 	T *get(string instance_name, const Dict & params);
 	
 	vector<string> get_list();
-
+	
     private:
 	Factory();
 	Factory(const Factory<T> &);
@@ -456,7 +459,6 @@ namespace EMAN
 
 	return result;
     }
-
 
 }
 

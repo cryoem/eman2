@@ -209,17 +209,17 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("set_flipped", &EMAN::EMData::set_flipped)
         .def("is_ri", &EMAN::EMData::is_ri)
         .def("set_ri", &EMAN::EMData::set_ri)
-        .def( self / other< float >() )
-        .def( self * other< float >() )
-        .def( self - other< float >() )
         .def( self + other< float >() )
-        .def( other< float >() / self )
+        .def( self / other< float >() )
         .def( other< float >() + self )
-        .def( other< float >() - self )
+        .def( self - other< float >() )
+        .def( self * other< float >() )
+        .def( other< float >() / self )
         .def( self + self )
-        .def( self - self )
+        .def( other< float >() - self )
         .def( other< float >() * self )
         .def( self * self )
+        .def( self - self )
         .def( self / self )
         .def( self += other< float >() )
         .def( self -= other< float >() )
@@ -247,6 +247,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
+    implicitly_convertible<bool, EMAN::EMObject>();
     implicitly_convertible<int, EMAN::EMObject>();
     implicitly_convertible<float, EMAN::EMObject>();
     implicitly_convertible<double, EMAN::EMObject>();

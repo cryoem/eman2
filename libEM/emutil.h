@@ -5,6 +5,14 @@
 #define eman__emutil__h__ 1
 
 #include "emobject.h"
+
+#include "aligner.h"
+#include "averager.h"
+#include "cmp.h"
+#include "filter.h"
+#include "projector.h"
+#include "reconstructor.h"
+
 #include <string>
 #include <vector>
 
@@ -87,6 +95,53 @@ namespace EMAN
 	static bool is_same_ctf(const EMData *image1, const EMData * image2);
 
 
+	template<class T> static void dump()
+	{
+	    Factory<T> *factory = Factory<T>::instance();
+	    vector<string> item_names = factory->get_list();
+
+	    for (size_t i = 0; i < item_names.size(); i++) {
+		T* item = factory->get(item_names[i]);		
+		printf("%s\n", item->get_name().c_str());
+		TypeDict td = item->get_param_types();
+		td.dump();
+	    }
+	}
+
+	static void dump_filters()
+	{
+	    return dump<Filter>();
+	}
+
+	static void dump_aligners()
+	{
+	    return dump<Aligner>();
+	}
+	
+	
+	static void dump_cmps()
+	{
+	    return dump<Cmp>();
+	}
+	
+	
+	static void dump_averagers()
+	{
+	    return dump<Averager>();
+	}
+	
+
+	static void dump_projectors()
+	{
+	    return dump<Projector>();
+	}
+	
+	
+	static void dump_reconstructors()
+	{
+	    return dump<Reconstructor>();
+	}
+	
     private:
 	static ImageType fast_get_image_type(string filename, const void *first_block,
 					     off_t file_size);

@@ -74,7 +74,19 @@ int test_emcache()
 
     return 0;
 }
+
+
+void test_factory()
+{
+    EMUtil::dump<Filter>();
+    EMUtil::dump<Aligner>();
+    EMUtil::dump<Cmp>();
+    EMUtil::dump<Averager>();
+    EMUtil::dump<Projector>();
+    EMUtil::dump<Reconstructor>();
     
+}
+
 
 int main()
 {
@@ -83,6 +95,8 @@ int main()
     err = test_emobject();
     err = test_emcache();
     err = test_Dict();
+
+    test_factory();
     
     return err;
 }

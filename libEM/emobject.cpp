@@ -185,3 +185,12 @@ const char *EMObject::get_object_type_name(ObjectType t)
 
     return "UNKNOWN";
 }
+
+
+void TypeDict::dump() const
+{
+    map<string, string>::const_iterator p;
+    for (p = dict.begin(); p != dict.end(); p++) {
+	printf("%20s    %s\n", p->first.c_str(), p->second.c_str());
+    }
+}

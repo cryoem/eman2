@@ -8,10 +8,12 @@
 #include <string>
 #include <vector>
 #include <math.h>
+
 #ifdef WIN32
 #define M_PI 3.14159265358979323846
 #define MAXPATHLEN 1024
 #endif
+
 using std::string;
 using std::vector;
 
