@@ -5,6 +5,10 @@
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
 
+#ifdef EM_NUMPY
+#include <numarray/libnumarray.h>
+#endif
+
 #include <vector>
 #include <map>
 #include <string>
@@ -222,7 +226,19 @@ namespace EMAN {
 
 		}
     };
-    
+
+	
+#ifdef EM_NUMPY
+	PyObject* emdata2numpy(EMData *image)
+	{
+		if (!image) {
+			return 0;
+		}
+
+		
+	}
+#endif
+	
 }
 
 
