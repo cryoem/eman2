@@ -124,7 +124,6 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 			}
 		}
 	}
-
 	EXITFUNC;
 }
 
