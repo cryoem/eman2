@@ -11,7 +11,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     transform.cpp
 	rotation.cpp
     geometry.cpp
-    pointarray.cpp
+#    pointarray.cpp
     mrcio.cpp
     dm3io.cpp
     tifio.cpp
