@@ -225,7 +225,7 @@ namespace EMAN
     class RotateTranslateBestAligner: public Aligner
     {
     public:
-	EMData *align(EMData * this_img, string cmp_name = "") const;
+	EMData *align(EMData * this_img, string cmp_name = "FRC") const;
 	
 	string get_name() const
 	{
@@ -306,7 +306,7 @@ namespace EMAN
      */
     class RotateTranslateFlipAligner: public Aligner
     {
-    public:	
+    public:
 	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
 
 	string get_name() const
@@ -389,7 +389,7 @@ namespace EMAN
     class RTFBestAligner: public Aligner
     {
     public:
-	EMData *align(EMData * this_img, string cmp_name = "Variance") const;
+	EMData *align(EMData * this_img, string cmp_name = "FRC") const;
 	
 	string get_name() const
 	{
