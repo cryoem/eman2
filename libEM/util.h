@@ -15,6 +15,7 @@ namespace EMAN
     {
     public:
 	static void ap2ri(float *data, int n);
+	static void flip_complex_phase(float *data, int n);
 	static int file_lock_wait(FILE * file);
 	static int generate_machine_stamp();
 	static bool check_file_by_magic(const void *first_block, const char *magic);

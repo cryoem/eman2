@@ -108,6 +108,7 @@ namespace EMAN
 	MrcHeader mrch;
 	int mode_size;
 
+	bool is_ri;
 	bool is_big_endian;
 	bool is_new_file;
 	bool initialized;

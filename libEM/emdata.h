@@ -17,9 +17,7 @@ using std::vector;
 using std::map;
 
 /*
- * pixel may not be square. so 'pixel_size' won't be used.
- * instead, use 3 float numbers to describe a pixel:
- * (spacing_row, spacing_col, and spacing_sec)
+ * todo: fix ap2ri(), e.g. mrcio
  */
 
 namespace EMAN
