@@ -60,11 +60,11 @@ namespace EMAN
 		};
 	public:
 		Transform();
-
 		
 		Transform(EulerType euler_type, float a1,float a2,float a3, float a4=0);
 		
-		Transform(const Vec3f& posttrans, EulerType euler_type,float a1,float a2, float a3, float a4=0);
+		Transform(const Vec3f& posttrans, EulerType euler_type,
+				  float a1,float a2, float a3, float a4=0);
 		
 		Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType euler_type, 
 				  float a1,float a2, float a3, float a4=0);
@@ -80,24 +80,15 @@ namespace EMAN
 
 		void to_identity();
 		bool is_identity();
-
-		// reorthogonalize the matrix
-		void orthogonalize();	
+		
+		void orthogonalize();	// reorthogonalize the matrix
 		Transform inverse();
 	
-		// This should return an iterator which will produce
-		// all of the symmetrically equivalent Transform objects
-		// for the given symmetry including the current Transform
-		Transform get_symmetry(const string & symname) const;
-		void begin();
-		Transform next();
-		bool end() const;
-		
 		void set_pretrans(const Vec3f & pretrans);
 		void set_posttrans(const Vec3f & posttrans);
 		void set_center(const Vec3f & center);
+		void set_rotation(EulerType euler_type, float a0, float a1,float a2, float a3=0);
 		void set_rotation(EulerType euler_type, map<string, float>& rotation );
-		void set_rotation(EulerType euler_type, float a1,float a2, float a3, float a4=0 );
 		void set_scale(float scale);
 
 		Vec3f get_pretrans() const;
@@ -110,8 +101,8 @@ namespace EMAN
 		// returns orthogonality coefficient 0-1 range;
 		float orthogonality() const;
 		
-		int get_nsym(string sym);
-		Transform get_sym(string sym, int n);
+		static int get_nsym(const string & sym);
+		Transform get_sym(const string & sym, int n);
 		
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
@@ -131,12 +122,10 @@ namespace EMAN
 
 		void init();
 
-		void set_rotation(float a0, float a1, float a2, EulerType euler_type,
-						  float a3 = 0);
-		
 		float eman_alt() const;
 		float eman_az() const;
 		float eman_phi() const;
+		
 		vector<float> matrix2quaternion() const;
 		vector<float> matrix2sgi() const;
 		void quaternion2matrix(float e0, float e1, float e2, float e3);
@@ -145,9 +134,7 @@ namespace EMAN
 		float matrix[4][3];
 		Vec3f pre_trans;
 
-		string symname;
-		int nsym;
-		int cur_sym;
+		static map<string, int> symmetry_map;
 	};
 
 	Transform operator*(const Vec3f & v, const Transform & t);
