@@ -919,8 +919,21 @@ namespace EMAN
 		 */
 		void set_row(const EMData * data, int row_index);
 
+		/** Get one column of a 2D images.
+		 *
+		 * @param col_index Index of the column.
+		 * @exception ImageDimensionException If this image is not 2D.
+		 * @return A 1D image with the column data.
+		 */
 		EMData *get_col(int col_index) const;
-		void set_col(const EMData * data, int n);
+
+		/** Set one column of a 2D image.
+		 *
+		 * @param data The column image data.
+		 * @param col_index Index of the column.
+		 * @exception ImageDimensionException If this image is not 2D.
+		 */
+		void set_col(const EMData * data, int col_index);
 
 		EMObject get_attr(string key);
 		void set_attr(string key, EMObject val);
