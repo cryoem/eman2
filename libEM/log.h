@@ -6,6 +6,15 @@
 
 namespace EMAN
 {
+    /** class Log 
+     * defines a way to output logging information.
+     * 1) The logs can either go to standard output (default), or go to a
+     *    user-given file. 
+     * 2) 4 verbose log levels are defined. by default, ERROR_LOG is used.
+     * 3) Typical usage:
+     *    Log::logger()->set_level(Log::WARNING_LEVEL);
+     *    Log::logger()->error("cannot open file");
+     */
     class Log
     {
     public:
