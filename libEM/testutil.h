@@ -33,7 +33,8 @@ namespace EMAN
 		static string get_debug_string(int i);
 		
 		static string get_debug_image(const string & imagename);
-
+		static string get_golden_image(const string & imagename);
+		
 		static void to_emobject(const Dict & d);
 		
 		static IntPoint test_IntPoint(const IntPoint & p);
@@ -59,10 +60,18 @@ namespace EMAN
 															   vector<string> >& d);
 
 		static Dict test_dict(const Dict & d);
+
+		static void dump_image_from_file(const string & filename);
+		static void dump_emdata(EMData * image, const string & filename);
+		static int check_image(const string& imagefile, EMData * image = 0);
 		
+		static void set_progname(const string & cur_progname);
 	private:
 		static float tf[10];
 		static int ti[10];
+		static const char * EMDATA_HEADER_EXT;
+		static const char * EMDATA_DATA_EXT;
+		static string progname;
 	};
 }
 

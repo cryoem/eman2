@@ -6,6 +6,11 @@
 #include <ctype.h>
 
 using namespace EMAN;
+#ifdef WIN32
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+#endif
 
 const float Transform::ERR_LIMIT = 0.000001f;
 
@@ -121,8 +126,8 @@ Transform Transform::inverse()
 	if (fabs(id2[2][0])>fabs(id2[0][0])) { id2.row_exch(0,2); ret.row_exch(0,2); }
 	if (id2[0][0]==0) throw InvalidValueException(0,"Singular matrix inversion");
 	
-	ret.row_mult(0,1.0/id2[0][0]);
-	id2.row_mult(0,1.0/id2[0][0]);
+	ret.row_mult(0,1.0f/id2[0][0]);
+	id2.row_mult(0,1.0f/id2[0][0]);
 
 	// now make 10 and 20 -> 0.0 by subtracting a multiple of row 0
 	ret.row_add(1,-id2[1][0]*ret[0][0],-id2[1][0]*ret[0][1],-id2[1][0]*ret[0][2]);
@@ -135,8 +140,8 @@ Transform Transform::inverse()
 	if (fabs(id2[2][1])>fabs(id2[1][1])) { row_exch(1,2); ret.row_exch(1,2); }
 	if (id2[1][1]==0) throw InvalidValueException(0,"Singular matrix inversion");
 	
-	ret.row_mult(1,1.0/id2[1][1]);
-	id2.row_mult(1,1.0/id2[1][1]);
+	ret.row_mult(1,1.0f/id2[1][1]);
+	id2.row_mult(1,1.0f/id2[1][1]);
 	
 	// subtract to make 01 and 21 -> 0
 	ret.row_add(0,-id2[0][1]*ret[1][0],-id2[0][1]*ret[1][1],-id2[0][1]*ret[1][2]);
@@ -147,8 +152,8 @@ Transform Transform::inverse()
 	
 	// now make 22 -> 1.0
 	if (id2[2][2]==0) throw InvalidValueException(2,"Singular matrix inversion");
-	ret.row_mult(2,1.0/id2[2][2]);
-	id2.row_mult(2,1.0/id2[2][2]);
+	ret.row_mult(2,1.0f/id2[2][2]);
+	id2.row_mult(2,1.0f/id2[2][2]);
 	
 	// subtract to make 02 and 12 -> 0
 	ret.row_add(0,-id2[0][2]*ret[2][0],-id2[0][2]*ret[2][1],-id2[0][2]*ret[2][2]);
@@ -269,7 +274,7 @@ void Transform::set_rotation(EulerType euler_type, Dict& rotation)
 		
 	case MRC:
 		a1 = (float)rotation["theta"];
-		a2 = fmod(-(float)rotation["phi"] + 2.5f * M_PI, 2.0 * M_PI);
+		a2 = fmod(-(float)rotation["phi"] + 2.5f * M_PI, 2.0f * M_PI);
 		a3 = fmod((float)rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
 		break;
 		

@@ -380,7 +380,7 @@ EMData *EMData::get_rotated_clip(const Transform &xform,
 	for (int z=-size[2]/2; z<size[2]/2; z++) {
 		for (int y=-size[1]/2; y<size[1]/2; y++) {
 			for (int x=-size[0]/2; x<size[0]/2; x++) {
-				Vec3f xv=Vec3f(x,y,z)*xform;
+				Vec3f xv=Vec3f((float)x,(float)y,(float)z)*xform;
 				float v = 0;
 				
 				if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
@@ -2271,7 +2271,8 @@ void EMData::set_size(int x, int y, int z)
 	ny = y;
 	nz = z;
 
-	rdata = static_cast < float *>(realloc(rdata, x * y * z * sizeof(float)));
+	size_t size = (size_t)x * (size_t)y * (size_t)z * sizeof(float);
+	rdata = static_cast < float *>(realloc(rdata, size));
 	update();
 
 	attr_dict["nx"] = x;
@@ -2280,7 +2281,7 @@ void EMData::set_size(int x, int y, int z)
 	attr_dict["is_shared_memory"] = 0;
 	
 	if (old_nx == 0) {
-		memset(rdata, 0, x * y * z * sizeof(float));
+		memset(rdata, 0, size);
 	}
 
 	if (supp) {
@@ -2356,45 +2357,6 @@ Dict EMData::get_attr_dict()
 void EMData::set_attr_dict(const Dict & new_dict)
 {
 	attr_dict = new_dict;
-}
-
-void EMData::dump_data(const string & filename)
-{
-	ENTERFUNC;
-	
-	string headerfile = filename + ".head";
-	string datafile = filename + +".data";
-
-	FILE *hfile = fopen(headerfile.c_str(), "wb");
-	if (!hfile) {
-		LOGERR("cannot open dump header file: %s", headerfile.c_str());
-		return;
-	}
-
-	vector < string > keys = attr_dict.keys();
-	for (size_t i = 0; i < keys.size(); i++) {
-		fprintf(hfile, "%s = %s\n", keys[i].c_str(), attr_dict[keys[i]].to_str().c_str());
-	}
-	fclose(hfile);
-	hfile = 0;
-
-	FILE *dfile = fopen(datafile.c_str(), "wb");
-	if (!dfile) {
-		LOGERR("cannot open dump data file: %s", datafile.c_str());
-		return;
-	}
-
-	size_t row_size = nx * sizeof(float);
-	int nxy = nx * ny;
-
-	for (int i = 0; i < nz; i++) {
-		for (int j = 0; j < ny; j++) {
-			fwrite(&rdata[i * nxy + j * nx], row_size, 1, dfile);
-		}
-	}
-	fclose(dfile);
-	dfile = 0;
-	EXITFUNC;
 }
 
 
@@ -2944,8 +2906,8 @@ void EMData::rotate_translate(const Transform & xform)
 	}
 
 	if (nz == 1) {
-		float mx0 = inv_scale * cos(rotation["alt"]);
-		float mx1 = inv_scale * sin(rotation["alt"]);
+		float mx0 = inv_scale * cos((float)rotation["alt"]);
+		float mx1 = inv_scale * sin((float)rotation["alt"]);
 
 		float x2c = nx / 2.0f - dcenter[0] - translation[0];
 		float y2c = ny / 2.0f - dcenter[1] - translation[1];

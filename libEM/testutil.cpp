@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <assert.h>
+#include <stdlib.h>
 
 using std::vector;
 using std::string;
@@ -18,6 +19,11 @@ using namespace EMAN;
 
 int TestUtil::ti[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
 float TestUtil::tf[] = {1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5};
+
+const char * TestUtil::EMDATA_HEADER_EXT = ".head";
+const char * TestUtil::EMDATA_DATA_EXT = ".data";
+
+string TestUtil::progname = "";
 
 int TestUtil::get_debug_int(int i)
 {
@@ -45,6 +51,19 @@ string TestUtil::get_debug_image(const string & imagename)
 	}
 	else {
 		sprintf(imgpath, "%s/images/%s", getenv("HOME"), imagename.c_str());
+	}
+	return string(imgpath);
+}
+
+string TestUtil::get_golden_image(const string & imagename)
+{
+	char imgpath[1024];
+	char * path_env = getenv("DEBUG_IMAGE_PATH");
+	if (path_env) {
+		sprintf(imgpath, "%s/testdata/%s", path_env, imagename.c_str());
+	}
+	else {
+		sprintf(imgpath, "%s/images/testdata/%s", getenv("HOME"), imagename.c_str());
 	}
 	return string(imgpath);
 }
@@ -328,4 +347,95 @@ Dict TestUtil::test_dict(const Dict & d)
 }
 
 
+int TestUtil::check_image(const string& imagefile, EMData * image)
+{
+	string headerfile1 = imagefile + EMDATA_HEADER_EXT;
+	string datafile1 = imagefile + EMDATA_DATA_EXT;
+
+	char imgpath[1024];
+	char * path_env = getenv("DEBUG_IMAGE_PATH");
+	if (path_env) {
+		sprintf(imgpath, "%s/testdata/%s/", path_env, progname.c_str());
+	}
+	else {
+		sprintf(imgpath, "%s/images/testdata/", getenv("HOME"), progname.c_str());
+	}
+
+	string headerfile2 = string(imgpath) + headerfile1;
+	string datafile2 = string(imgpath) + datafile1;
+
+
+	if (image) {
+		dump_emdata(image, imagefile);
+	}
+	else {
+		dump_image_from_file(imagefile);
+	}
 	
+	string diffcmd1 = "diff " + headerfile1 + " " + headerfile2;
+	
+	int err = system(diffcmd1.c_str());
+	if (!err) {
+		string diffcmd2 = "diff " + datafile1 + " " + datafile2;
+		err = system(diffcmd2.c_str());
+	}
+		
+	return err;
+}
+
+void TestUtil::dump_image_from_file(const string & filename)
+{
+	EMData * e = new EMData();
+	e->read_image(filename);
+	dump_emdata(e, filename);
+	delete e;
+	e = 0;
+}
+
+void TestUtil::dump_emdata(EMData * image, const string & filename)
+{
+	string filebase = Util::sbasename(filename);
+	string headerfile = filebase + EMDATA_HEADER_EXT;
+	string datafile = filebase + EMDATA_DATA_EXT;
+
+	FILE *hfile = fopen(headerfile.c_str(), "wb");
+	if (!hfile) {
+		throw FileAccessException(headerfile);
+	}
+
+	Dict attr_dict = image->get_attr_dict();
+	vector < string > keys = attr_dict.keys();
+	
+	for (size_t i = 0; i < keys.size(); i++) {
+		fprintf(hfile, "%s = %s\n", keys[i].c_str(),
+				attr_dict[keys[i]].to_str().c_str());
+	}
+	fclose(hfile);
+	hfile = 0;
+
+	FILE *dfile = fopen(datafile.c_str(), "wb");
+	if (!dfile) {
+		throw FileAccessException(datafile);
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	size_t row_size = nx * sizeof(float);
+	size_t nxy = nx * ny;
+	float * rdata = image->get_data();
+	
+	for (int i = 0; i < nz; i++) {
+		for (int j = 0; j < ny; j++) {
+			fwrite(&rdata[i * nxy + j * nx], row_size, 1, dfile);
+		}
+	}
+	fclose(dfile);
+	dfile = 0;
+}
+
+void TestUtil::set_progname(const string & cur_progname)
+{
+	progname = Util::sbasename(cur_progname);
+}

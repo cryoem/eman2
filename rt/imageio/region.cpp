@@ -41,8 +41,12 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	EMData e;
 	e.read_image(imgfile, 0, false, 0, is_3d);
 
+	TestUtil::check_image(imgfile, &e);
+	
 	int ndims = e.get_ndim();
 	e.write_image(writefile_2d, 0, outtype);
+
+	TestUtil::check_image(writefile_2d);
 	
 	if (ndims == 3) {
 		e.write_image(writefile_3d, 0, outtype);
@@ -78,12 +82,14 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	
 	EMData e2;
 	e2.read_image(imgfile, 0, false, &region_2d, is_3d);
+	TestUtil::check_image(readfile_2d, &e2);
 	
 	e2.write_image(readfile_2d, 0, outtype);
 
 	if (ndims == 3) {
 		EMData e4;
 		e4.read_image(imgfile, 0, false, &region_3d, is_3d);
+		TestUtil::check_image(readfile_3d, &e4);
 		e4.write_image(readfile_3d, 0, outtype);
 	}
 
@@ -97,9 +103,11 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	}
 	
 	e3.write_image(writefile_2d, image_index, outtype, false, &region_2d);
+	TestUtil::check_image(writefile_2d);
 	
 	if (ndims == 3) {
 		e3.write_image(writefile_3d, image_index, outtype, false, &region_3d);
+		TestUtil::check_image(writefile_3d);
 	}
 	
 	try {
@@ -127,6 +135,7 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 int main(int argc, char *argv[])
 {
 	try {
+		TestUtil::set_progname(argv[0]);
 #if 1
 		test_region(EMUtil::IMAGE_MRC, "groel3d.mrc");
 		test_region(EMUtil::IMAGE_MRC, "samesize1.mrc");

@@ -648,10 +648,6 @@ namespace EMAN
 		/** Make all the pixel value = 1. */
 		void to_one();
 
-		/** Dump the image pixel data to a binary file. Used for debugging purpose.
-		 * @param filename The file to dump the data to.
-		 */
-		void dump_data(const string & filename);
 
 		/** Adds 'obj' to 'this' incoherently. 'obj' and 'this' should
 		 * be same size. Both images should be complex images.

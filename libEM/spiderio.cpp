@@ -6,7 +6,7 @@
 #include "geometry.h"
 #include "portable_fileio.h"
 #include "emutil.h"
-#include <assert.h>
+#include "Assert.h"
 
 using namespace EMAN;
 
@@ -670,7 +670,7 @@ int SpiderIO::get_nimg()
 {
 	init();
 	if (!first_h) {
-		assert(is_new_file);
+		Assert(is_new_file);
 		return 0;
 	}
 	

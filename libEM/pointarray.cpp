@@ -328,7 +328,7 @@ void PointArray::set_from(double *src, unsigned int num, const string & sym, Tra
 	for (unsigned int s = 0; s < nsym; s++) {
 		int index = s * 4 * num;
 		for (unsigned int i = 0; i < 4 * num; i += 4, index += 4) {
-			Vec3f v(src[i],src[i+1],src[i+2]);
+			Vec3f v((float)src[i],(float)src[i+1],(float)src[i+2]);
 			v=v*xform->get_sym(sym,s);
 			target[index]  =v[0];
 			target[index+1]=v[1];
@@ -833,7 +833,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 	double *table = (double *) malloc(sizeof(double) * table_size);
 	for (int i = 0; i < table_size; i++) {
 		double x = -i * table_step_size * apix / gauss_real_width;
-		table[i] = exp(-x * x)/pow(M_PI,.25);
+		table[i] = exp(-x * x)/pow((float)M_PI,.25f);
 	}
 	int image_size=proj->get_xsize();
 
@@ -1284,7 +1284,7 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
 
 Vec3f PointArray::get_vector_at(int i)
 {
-return Vec3f(points[i*4],points[i*4+1],points[i*4+2]);
+return Vec3f((float)points[i*4],(float)points[i*4+1],(float)points[i*4+2]);
 }
 
 double PointArray::get_value_at(int i)

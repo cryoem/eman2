@@ -11,10 +11,11 @@
 #include "geometry.h"
 #include "ctf.h"
 #include "exception.h"
+#include "Assert.h"
 
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
+#include "assert.h"
 
 #ifndef WIN32
 #include <sys/param.h>
@@ -1083,10 +1084,10 @@ hid_t HdfIO::create_dataset(int image_index, int nx, int ny, int nz)
 	if (tmp_dataset >= 0) {
 		int ndim1 = 0;
 		int *dims1 = read_dims(image_index, &ndim1);
-		assert(ndim == ndim1);
+		Assert(ndim == ndim1);
 
 		for (int i = 0; i < ndim; i++) {
-			assert(dims[i] == dims1[i]);
+			Assert(dims[i] == dims1[i]);
 		}
 	}
 	else {

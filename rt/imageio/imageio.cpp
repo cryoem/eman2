@@ -29,7 +29,7 @@ int write_image(EMData* em, const char* infile, char* outfile,
 		sprintf(outfile, "%s_%d.%s", outfile, r_image_index, imgext);
     }
 
-    em->dump_data(outfile);
+    //em->dump_data(outfile);
 	try {
 		em->write_image(outfile, w_image_index, image_type);
 	}

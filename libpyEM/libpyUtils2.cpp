@@ -23,6 +23,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMU
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_process_region_io_overloads_7_13, EMAN::EMUtil::process_region_io, 7, 13)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_check_image_overloads_1_2, EMAN::TestUtil::check_image, 1, 2)
+
 
 }// namespace 
 
@@ -218,6 +220,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_debug_float", &EMAN::TestUtil::get_debug_float)
         .def("get_debug_string", &EMAN::TestUtil::get_debug_string)
         .def("get_debug_image", &EMAN::TestUtil::get_debug_image)
+        .def("get_golden_image", &EMAN::TestUtil::get_golden_image)
         .def("to_emobject", &EMAN::TestUtil::to_emobject)
         .def("test_IntPoint", &EMAN::TestUtil::test_IntPoint)
         .def("test_FloatPoint", &EMAN::TestUtil::test_FloatPoint)
@@ -238,6 +241,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("test_map_emobject", &EMAN::TestUtil::test_map_emobject)
         .def("test_map_vecstring", &EMAN::TestUtil::test_map_vecstring)
         .def("test_dict", &EMAN::TestUtil::test_dict)
+        .def("dump_image_from_file", &EMAN::TestUtil::dump_image_from_file)
+        .def("dump_emdata", &EMAN::TestUtil::dump_emdata)
+        .def("check_image", &EMAN::TestUtil::check_image, EMAN_TestUtil_check_image_overloads_1_2())
+        .def("set_progname", &EMAN::TestUtil::set_progname)
         .staticmethod("test_Vec3f")
         .staticmethod("test_vector_float")
         .staticmethod("test_Vec3i")
@@ -246,10 +253,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_debug_int")
         .staticmethod("test_vector_long")
         .staticmethod("test_IntPoint")
+        .staticmethod("dump_image_from_file")
+        .staticmethod("dump_emdata")
+        .staticmethod("set_progname")
         .staticmethod("test_IntSize")
         .staticmethod("test_FloatSize")
         .staticmethod("test_map_long")
         .staticmethod("to_emobject")
+        .staticmethod("get_golden_image")
         .staticmethod("test_map_string")
         .staticmethod("test_vector_int")
         .staticmethod("test_vector_emdata")
@@ -262,6 +273,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("test_map_float")
         .staticmethod("get_debug_float")
         .staticmethod("get_debug_image")
+        .staticmethod("check_image")
     ;
 
 }
