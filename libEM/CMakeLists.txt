@@ -36,7 +36,9 @@ SET(LIB_EM_SOURCE byteorder.C
 		  emio.C
 		  imagicio.C
 		  emcache.C
-		  ctf.C )
+		  ctf.C
+		  xydata.C
+		  )
 		  
 ADD_LIBRARY(EM SHARED ${LIB_EM_SOURCE})
 
