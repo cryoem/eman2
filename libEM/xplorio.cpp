@@ -23,6 +23,7 @@ const string XplorIO::SECTION_MODE = "ZYX";
 const int XplorIO::NFLOAT_PER_LINE = 6;
 const int XplorIO::INTEGER_SIZE = 8;
 const int XplorIO::FLOAT_SIZE = 12;
+const char * XplorIO::OUTFORMAT = "%12.5E";
 
 XplorIO::XplorIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), xplor_file(0), initialized(false)
@@ -207,7 +208,7 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	
 	fprintf(xplor_file, "\n");
 	fprintf(xplor_file, "%8d\n", 1);
-	fprintf(xplor_file, "\"%s\" written by EMAN at %s\n", filename.c_str(), asctime(t));
+	fprintf(xplor_file, "\"%s\" written by EMAN at %s", filename.c_str(), asctime(t));
 	
 	int z0 = -nz / 2;
 	int z1 = (nz - 1) / 2;
@@ -220,10 +221,16 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 	fprintf(xplor_file, "%8d%8d%8d%8d%8d%8d%8d%8d%8d\n",
 			nx, -nx / 2, nx % 2 ? nx / 2 : nx / 2 - 1, ny, -ny / 2,
 			ny % 2 ? ny / 2 : ny / 2 - 1, nz, z0, z1);
-	fprintf(xplor_file, "%12.5E%12.5E%12.5E%12.5E%12.5E%12.5E\n", 
+
+	char fformat[256];
+	sprintf(fformat, "%s%s%s%s%s%s\n",
+			OUTFORMAT, OUTFORMAT,OUTFORMAT, OUTFORMAT, OUTFORMAT,OUTFORMAT);
+	
+	fprintf(xplor_file, fformat, 
 			nx * pixel, ny * pixel, nz * pixel, 90.0, 90.0, 90.0);
 	fprintf(xplor_file, "ZYX\n");
-	nlines_in_header = 6;
+	nlines_in_header = 5;
+	flush();
 	
 	EXITFUNC;
 	return 0;
@@ -238,106 +245,11 @@ int XplorIO::read_data(float *data, int image_index, const Region *area, bool)
 
 	Assert(nlines_in_header > 0);
 	rewind(xplor_file);
-	jump_lines(xplor_file, nlines_in_header);
+	EMUtil::jump_lines(xplor_file, nlines_in_header);
 
-	
-	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
-	
-	int nlines_per_sec = (nx *ny) / NFLOAT_PER_LINE;
-	int nitems_last_line = (nx * ny) % NFLOAT_PER_LINE;
-	if (nitems_last_line != 0) {
-		nlines_per_sec++;
-	}
-	nlines_per_sec++; // image index line
-	
-	int x0 = 0;
-	int y0 = 0;
-	int z0 = 0;
-
-	if (area) {
-		x0 = (int)area->origin[0];
-		y0 = (int)area->origin[1];
-		z0 = (int)area->origin[2];
-	}
-	if (z0 > 0) {
-		jump_lines(xplor_file, z0 * nlines_per_sec);
-	}
-
-	char line[MAXPATHLEN];
-	size_t nlines_pre_sec = (y0 * nx + x0) / NFLOAT_PER_LINE;
-	int head_nitems = (y0 * nx + x0) % NFLOAT_PER_LINE;
-	int gap_nitems = nx - xlen;
-	int ti = 0;
-	
-	for (int k = 0; k < zlen; k++) {
-		
-		if (!fgets(line, sizeof(line), xplor_file)) {
-			throw ImageReadException(filename, "read xplor file failed");
-		}
-		int kk = 0;
-		sscanf(line, "%d", &kk);
-
-		if (kk != (k+1+z0)) {
-			char desc[256];
-			sprintf(desc, "section index = %d. It should be %d", kk, (k+1+z0));
-			throw ImageReadException(filename, desc);
-		}
-
-		if (!area) {
-			Assert(ti == (k*xlen*ylen));
-		}
-		
-		if (nlines_pre_sec > 0) {
-			jump_lines(xplor_file, nlines_pre_sec);
-		}
-		
-		int tail_nitems = 0;
-		bool is_head_read = false;
-		
-		for (int j = 0; j < ylen; j++) {
-			if (head_nitems > 0 && !is_head_read) {
-				read_numbers(xplor_file, NFLOAT_PER_LINE-head_nitems,
-							 NFLOAT_PER_LINE-1, data, &ti);
-			}
-			
-			read_lines(xplor_file, (xlen - head_nitems), data, &ti);
-			tail_nitems = (xlen - head_nitems) % NFLOAT_PER_LINE;
-			
-			if ((gap_nitems + tail_nitems) > 0) {
-				head_nitems = NFLOAT_PER_LINE -
-					(gap_nitems + tail_nitems) % NFLOAT_PER_LINE;
-			}
-			else {
-				head_nitems = 0;
-			}
-			
-			is_head_read = false;
-			
-			if (tail_nitems > 0) {
-				if (gap_nitems < (NFLOAT_PER_LINE-tail_nitems) && j != (ylen-1)) {
-					not_read_numbers(xplor_file, tail_nitems,
-									 tail_nitems+gap_nitems, data, &ti);
-					is_head_read = true;
-				}
-				else {
-					read_numbers(xplor_file, 0, tail_nitems-1, data, &ti);
-				}
-			}
-
-			if (gap_nitems > (NFLOAT_PER_LINE-tail_nitems)) {
-				int gap_nlines = (gap_nitems - (NFLOAT_PER_LINE-tail_nitems)) /
-					NFLOAT_PER_LINE;
-				if (gap_nlines > 0 && j != (ylen-1)) {
-					jump_lines(xplor_file, gap_nlines);
-				}
-			}
-		}
-		
-		int ytail_nitems = (ny-ylen-y0) * nx + (nx-xlen-x0) - (NFLOAT_PER_LINE-tail_nitems);
-		jump_line_by_items(xplor_file, ytail_nitems);
-	}
-			
+	EMUtil::process_ascii_region_io(data, xplor_file, ImageIO::READ_ONLY, image_index,
+									FLOAT_SIZE, nx, ny, nz, area, true,
+									NFLOAT_PER_LINE, OUTFORMAT);
 	
 	EXITFUNC;
 	return 0;
@@ -392,29 +304,32 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 
 int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
 {
+
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, FloatSize(nx,ny,nz), is_new_file);
 
-	rewind(xplor_file);
-	jump_lines(xplor_file, nlines_in_header);
+	if (!is_new_file) {
+		rewind(xplor_file);
+		EMUtil::jump_lines(xplor_file, nlines_in_header);
+	}
 	
 	int nsecs = nx * ny;
 	int step = NFLOAT_PER_LINE;
 	
 	if (!area) {
 		for (int k = 0; k < nz; k++) {
-			fprintf(xplor_file, "%8d\n", k);
+			fprintf(xplor_file, "%8d\n", (k+1));
 
 			for (int i = 0; i < nsecs - step; i += step) {
 				for (int j = 0; j < step; j++) {
-					fprintf(xplor_file, "%12.5E", data[k * nsecs + i + j]);
+					fprintf(xplor_file, OUTFORMAT, data[k * nsecs + i + j]);
 				}
 				fprintf(xplor_file, "\n");
 			}
 
 			for (int l = (nsecs - 1) / step * step; l < nsecs; l++) {
-				fprintf(xplor_file, "%12.5E", data[k * nsecs + l]);
+				fprintf(xplor_file, OUTFORMAT, data[k * nsecs + l]);
 			}
 
 			fprintf(xplor_file, "\n");
@@ -424,7 +339,10 @@ int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
 		//fprintf(xplor_file, "%8d\n", -9999); 
 	}
 	else {
-		LOGERR("not implemented yet");
+		EMUtil::process_ascii_region_io(data, xplor_file, ImageIO::WRITE_ONLY,
+										image_index, FLOAT_SIZE, nx, ny, nz,
+										area, true, NFLOAT_PER_LINE, OUTFORMAT);
+
 	}
 	
 	EXITFUNC;
@@ -447,105 +365,3 @@ bool XplorIO::is_image_big_endian()
 	init();
 	return is_big_endian;
 }
-
-void XplorIO::jump_line_by_items(FILE * xplor_file, int nitems)
-{
-	Assert(xplor_file);
-	
-	if (nitems <= 0) {
-		return;
-	}
-	
-	int nlines = nitems / NFLOAT_PER_LINE;
-	if ((nitems % NFLOAT_PER_LINE) != 0) {
-		nlines++;
-	}
-	if (nlines > 0) {
-		jump_lines(xplor_file, nlines);
-	}
-}
-
-
-void XplorIO::jump_lines(FILE * xplor_file, int nlines)
-{
-	Assert(xplor_file);
-	
-	if (nlines > 0) {
-		char line[MAXPATHLEN];
-		for (int l = 0; l < nlines; l++) {
-			if (!fgets(line, sizeof(line), xplor_file)) {
-				Assert("read xplor file failed");
-			}
-		}
-	}
-}
-
-void XplorIO::read_numbers(FILE * xplor_file, int start, int end,
-						   float *data, int *p_i)
-{
-	Assert(start >= 0);
-	Assert(start <= end);
-	Assert(end <= NFLOAT_PER_LINE);
-	Assert(xplor_file);
-	Assert(data);
-
-	char line[MAXPATHLEN];
-	float d[NFLOAT_PER_LINE];
-	if (!fgets(line, sizeof(line), xplor_file)) {
-		Assert("read xplor file failed");
-	}
-	
-	sscanf(line, "%f %f %f %f %f %f",
-		   &d[0], &d[1], &d[2], &d[3], &d[4],&d[5]);
-	
-	for (int i = start; i <= end; i++) {
-		data[*p_i] = d[i];
-		(*p_i)++;
-	}
-}
-
-
-void XplorIO::not_read_numbers(FILE * xplor_file, int start, int end,
-							   float * data, int *p_i)
-{
-	Assert(start >= 0);
-	Assert(start <= end);
-	Assert(end <= NFLOAT_PER_LINE);
-	Assert(xplor_file);
-	Assert(data);
-
-	char line[MAXPATHLEN];
-	float d[NFLOAT_PER_LINE];
-	if (!fgets(line, sizeof(line), xplor_file)) {
-		Assert("read xplor file failed");
-	}
-	
-	sscanf(line, "%f %f %f %f %f %f",
-		   &d[0], &d[1], &d[2], &d[3], &d[4],&d[5]);
-	
-	for (int i = 0; i < start; i++) {
-		data[*p_i] = d[i];
-		(*p_i)++;
-	}
-
-	for (int i = end; i < NFLOAT_PER_LINE; i++) {
-		data[*p_i] = d[i];
-		(*p_i)++;
-	}
-	
-}
-
-void XplorIO::read_lines(FILE * xplor_file, int nitems, float *data, int *p_i)
-{
-	Assert(xplor_file);
-	Assert(data);
-	Assert(p_i);
-	
-	if (nitems > 0) {
-		int nlines = nitems / NFLOAT_PER_LINE;
-		for (int i = 0; i < nlines; i++) {
-			read_numbers(xplor_file, 0, NFLOAT_PER_LINE-1, data, p_i);
-		}
-	}
-}
-

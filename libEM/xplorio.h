@@ -41,14 +41,6 @@ namespace EMAN
 		static bool is_valid(const void *first_block);
 
 	  private:		
-		static void jump_lines(FILE *xplor_file, int nlines);
-		static void jump_line_by_items(FILE * xplor_file, int nitems);
-		static void read_numbers(FILE * xplor_file, int start, int end,
-								 float * data, int *p_i);
-		static void not_read_numbers(FILE * xplor_file, int start,
-									 int end, float * data, int *p_i);
-		static void read_lines(FILE * xplor_file, int nitems, float *data, int *p_i);
-		
 		string filename;
 		IOMode rw_mode;
 		FILE *xplor_file;
@@ -74,6 +66,7 @@ namespace EMAN
 		static const int NFLOAT_PER_LINE;
 		static const int INTEGER_SIZE;
 		static const int FLOAT_SIZE;
+		static const char * OUTFORMAT;
 	};
 
 }

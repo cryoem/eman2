@@ -5,18 +5,6 @@
 using namespace EMAN;
 
 
-void test_em()
-{
-	EMData e;
-	e.set_size(100,100,1);
-	e.to_one();
-	e.write_image("test.em", 0, EMUtil::IMAGE_EM);
-	Region area(0, 0, 20, 40);
-	e.to_zero();
-	e.write_image("test.em", 0, EMUtil::IMAGE_EM, false, &area);
-}
-
-
 void test_region(EMUtil::ImageType imgtype, const char * testfile,
 				 EMUtil::ImageType outtype = EMUtil::IMAGE_UNKNOWN)
 {
@@ -40,7 +28,7 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	
 	EMData e;
 	e.read_image(imgfile, 0, false, 0, is_3d);
-
+	
 	//TestUtil::check_image(imgfile, &e);
 	
 	int ndims = e.get_ndim();
@@ -51,7 +39,7 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile,
 	if (ndims == 3) {
 		e.write_image(writefile_3d, 0, outtype);
 	}
-	//	return;
+
 	
 	int nx = e.get_xsize();
 	int ny = e.get_ysize();
@@ -156,7 +144,7 @@ int main(int argc, char *argv[])
 		test_region(EMUtil::IMAGE_EM, "stack3d.em");
 #endif
 		//test_region(EMUtil::IMAGE_XPLOR, "dummy.xplor", EMUtil::IMAGE_MRC);
-		test_region(EMUtil::IMAGE_XPLOR, "2f.xplor", EMUtil::IMAGE_MRC);
+		test_region(EMUtil::IMAGE_XPLOR, "2f.xplor");
 	}
 	catch(E2Exception &e) {
 		printf("%s\n", e.what());

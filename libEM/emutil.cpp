@@ -4,11 +4,18 @@
 #include "emutil.h"
 #include "log.h"
 #include "all_imageio.h"
-
 #include "portable_fileio.h"
 #include "emcache.h"
 #include "emdata.h"
 #include "ctf.h"
+#include "Assert.h"
+
+#ifdef WIN32
+#define MAXPATHLEN 1024
+#else
+#include <sys/param.h>
+#endif
+
 
 
 
@@ -876,4 +883,262 @@ int ImageSort::size() const
 	return n;
 }
 
+
+void EMUtil::process_ascii_region_io(float *data, FILE * file, ImageIO::IOMode rw_mode,
+									 int , size_t mode_size, int nx, int ny, int nz,
+									 const Region * area, bool has_index_line,
+									 int nitems_per_line, const char *outformat)
+{
+	int xlen = 0, ylen = 0, zlen = 0;
+	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
+	
+	int x0 = 0;
+	int y0 = 0;
+	int z0 = 0;
+
+	if (area) {
+		x0 = (int)area->origin[0];
+		y0 = (int)area->origin[1];
+		z0 = (int)area->origin[2];
+	}
+	
+	int nlines_per_sec = (nx *ny) / nitems_per_line;
+	int nitems_last_line = (nx * ny) % nitems_per_line;
+	if (nitems_last_line != 0) {
+		nlines_per_sec++;
+	}
+	
+	if (has_index_line) {
+		nlines_per_sec++;
+	}
+	
+	if (z0 > 0) {
+		jump_lines(file, z0 * nlines_per_sec);
+	}
+
+
+	int nlines_pre_sec = (y0 * nx + x0) / nitems_per_line;
+	int gap_nitems = nx - xlen;
+	int ti = 0;
+	int rlines = 0;
+	
+	for (int k = 0; k < zlen; k++) {		
+		EMUtil::jump_lines(file, nlines_pre_sec+1);
+		
+		int head_nitems = (y0 * nx + x0) % nitems_per_line;
+		int tail_nitems = 0;
+		bool is_head_read = false;
+		
+		for (int j = 0; j < ylen; j++) {
+			
+			if (head_nitems > 0 && !is_head_read) {
+				EMUtil::process_numbers_io(file, rw_mode, nitems_per_line, mode_size,
+										   nitems_per_line-head_nitems,
+										   nitems_per_line-1, data, &ti, outformat);
+				rlines++;
+			}
+			
+			EMUtil::process_lines_io(file, rw_mode, nitems_per_line,
+									 mode_size, (xlen - head_nitems),
+									 data, &ti, outformat);
+
+			rlines += ((xlen - head_nitems)/nitems_per_line);
+			
+			tail_nitems = (xlen - head_nitems) % nitems_per_line;
+			
+			if ((gap_nitems + tail_nitems) > 0) {
+				head_nitems = nitems_per_line -
+					(gap_nitems + tail_nitems) % nitems_per_line;
+			}
+			else {
+				head_nitems = 0;
+			}
+			
+			is_head_read = false;
+			
+			if (tail_nitems > 0) {
+				if ((gap_nitems < (nitems_per_line-tail_nitems)) &&
+					(j != (ylen-1))) {
+					EMUtil::exclude_numbers_io(file, rw_mode, nitems_per_line,
+											   mode_size, tail_nitems, 
+											   tail_nitems+gap_nitems-1, data, &ti, outformat);
+					is_head_read = true;
+					rlines++;
+				}
+				else {
+					EMUtil::process_numbers_io(file, rw_mode, nitems_per_line, mode_size,
+											   0, tail_nitems-1, data, &ti, outformat);
+					rlines++;
+				}
+			}
+
+			if (gap_nitems > (nitems_per_line-tail_nitems)) {
+				int gap_nlines = (gap_nitems - (nitems_per_line-tail_nitems)) /
+					nitems_per_line;
+				if (gap_nlines > 0 && j != (ylen-1)) {
+					EMUtil::jump_lines(file, gap_nlines);
+				}
+			}
+		}
+		
+		int ytail_nitems = (ny-ylen-y0) * nx + (nx-xlen-x0) - (nitems_per_line-tail_nitems);
+		EMUtil::jump_lines_by_items(file, ytail_nitems, nitems_per_line);
+	}
+}
+
+
+void EMUtil::jump_lines_by_items(FILE * file, int nitems, int nitems_per_line)
+{
+	Assert(file);
+	
+	if (nitems <= 0) {
+		return;
+	}
+	
+	int nlines = nitems / nitems_per_line;
+	if ((nitems % nitems_per_line) != 0) {
+		nlines++;
+	}
+	if (nlines > 0) {
+		jump_lines(file, nlines);
+	}
+}
+
+
+void EMUtil::jump_lines(FILE * file, int nlines)
+{
+	Assert(file);
+	
+	if (nlines > 0) {
+		char line[MAXPATHLEN];
+		for (int l = 0; l < nlines; l++) {
+			if (!fgets(line, sizeof(line), file)) {
+				Assert("read xplor file failed");
+			}
+		}
+	}
+}
+
+void EMUtil::process_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+								int nitems_per_line, size_t mode_size, int start,
+								int end, float *data, int *p_i, const char * outformat)
+{
+	Assert(file);
+	Assert(start >= 0);
+	Assert(start <= end);
+	Assert(end <= nitems_per_line);
+	Assert(data);
+	Assert(p_i);
+	Assert(outformat);
+	
+	char line[MAXPATHLEN];
+	
+	if (rw_mode == ImageIO::READ_ONLY) {
+		if (!fgets(line, sizeof(line), file)) {
+			Assert("read xplor file failed");
+		}
+		
+		int nitems_in_line = (int) (strlen(line) / mode_size);
+		Assert(end <= nitems_in_line);
+		float d[nitems_in_line];
+		char * pline = line;
+		
+		for (int i = 0; i < nitems_in_line; i++) {
+			sscanf(pline, "%f", &d[i]);
+			pline += (int)mode_size;
+		}
+		
+		
+		for (int i = start; i <= end; i++) {
+			data[*p_i] = d[i];
+			(*p_i)++;
+		}
+	}
+	else {
+		portable_fseek(file, mode_size * start, SEEK_CUR);
+		for (int i = start; i <= end; i++) {
+			fprintf(file, outformat, data[*p_i]);
+			(*p_i)++;
+		}
+		
+		portable_fseek(file, mode_size * (nitems_per_line - end-1)+1, SEEK_CUR);		
+	}
+}
+
+
+void EMUtil::exclude_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+								int nitems_per_line, size_t mode_size, int start,
+								int end, float * data, int *p_i, const char * outformat)
+{
+	Assert(file);
+	Assert(mode_size > 0);
+	Assert(start >= 0);
+	Assert(end <= nitems_per_line);
+	Assert(data);
+	Assert(p_i);
+	Assert(outformat);
+	
+	char line[MAXPATHLEN];
+	
+	if (rw_mode == ImageIO::READ_ONLY) {
+		
+		if (!fgets(line, sizeof(line), file)) {
+			Assert("read xplor file failed");
+		}
+
+		int nitems_in_line =  (int) (strlen(line) / mode_size);
+		Assert(end <= nitems_in_line);
+		
+		float d[nitems_in_line];
+		char *pline = line;
+		
+		for (int i = 0; i < nitems_in_line; i++) {
+			sscanf(pline, "%f", &d[i]);
+			pline = pline + (int)mode_size;
+		}
+		
+	
+		for (int i = 0; i < start; i++) {
+			data[*p_i] = d[i];
+			(*p_i)++;
+		}
+		
+		for (int i = end+1; i < nitems_in_line; i++) {
+			data[*p_i] = d[i];
+			(*p_i)++;
+		}
+	}
+	else {
+		for (int i = 0; i < start; i++) {
+			fprintf(file, outformat, data[*p_i]);
+			(*p_i)++;
+		}
+
+		portable_fseek(file, (end-start+1) * mode_size, SEEK_CUR);
+
+		for (int i = end+1; i < nitems_per_line; i++) {
+			fprintf(file, outformat, data[*p_i]);
+			(*p_i)++;
+		}
+		portable_fseek(file, 1, SEEK_CUR);
+	}
+}
+
+void EMUtil::process_lines_io(FILE * file, ImageIO::IOMode rw_mode,
+							  int nitems_per_line, size_t mode_size,
+							  int nitems, float *data, int *p_i,
+							  const char * outformat)
+{
+	Assert(file);
+	Assert(data);
+	Assert(p_i);
+
+	if (nitems > 0) {
+		int nlines = nitems / nitems_per_line;
+		for (int i = 0; i < nlines; i++) {
+			EMUtil::process_numbers_io(file, rw_mode, nitems_per_line, mode_size, 0, 
+									   nitems_per_line-1, data, p_i, outformat);
+		}
+	}
+}
 

@@ -15,6 +15,7 @@ set_policy(EMData.get_rotated_clip, return_value_policy(manage_new_object))
 set_policy(EMData.get_top_half, return_value_policy(manage_new_object))
 set_policy(EMData.do_fft, return_value_policy(manage_new_object))
 set_policy(EMData.do_ift, return_value_policy(manage_new_object))
+set_policy(EMData.pad_fft, return_value_policy(manage_new_object))
 set_policy(EMData.get_fft_amplitude, return_value_policy(manage_new_object))
 set_policy(EMData.get_fft_phase, return_value_policy(manage_new_object))
 
@@ -39,7 +40,8 @@ set_policy(EMData.get_row, return_value_policy(manage_new_object))
 set_policy(EMData.get_col, return_value_policy(manage_new_object))
 
 exclude(EMData.get_data)
-
+exclude(EMData.windum)
+exclude(EMData.zeropad_ntimes)
 exclude(EMData.fft_slice)
 exclude(EMData.render_amp24)
 exclude(EMData.render_pha24)

@@ -27,7 +27,7 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes AMRIRA, VTK, XPLOR.
+       This includes AMRIRA, VTK.
 	   
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
@@ -50,6 +50,12 @@
 	   But the function overloading works at other situations. Need to 
 	   figure out why.
 
+  084. Add DEBUG macros at proper places to check array bounds, pointers,
+	   etc, for more solid code.
+
+  085. e2proc2d seems not working.
+  
+	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.

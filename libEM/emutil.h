@@ -151,6 +151,14 @@ namespace EMAN
 									  bool need_flip = false, ImageType imgtype=IMAGE_UNKNOWN,
 									  int pre_row = 0, int post_row = 0);
 
+
+		static void process_ascii_region_io(float *data, FILE * file, ImageIO::IOMode rw_mode,
+											int image_index, size_t mode_size,
+											int nx, int ny, int nz,
+											const Region * area, bool has_index_line,
+											int nitems_per_line, const char *outformat);
+
+		
 		/** Dump a Dict object.
 		 * @param dict A Dict object.
 		 */
@@ -170,11 +178,33 @@ namespace EMAN
 		 * @return whether two EMData images have the same CTF.
 		 */
 		static bool is_same_ctf(const EMData * image1, const EMData * image2);
-
+		static void EMUtil::jump_lines(FILE * file, int nlines);
+		
 	  private:
 		static ImageType fast_get_image_type(const string & filename,
 											 const void *first_block,
 											 off_t file_size);
+
+		static void EMUtil::jump_lines_by_items(FILE * file, int nitems, int nitems_per_line);
+		
+		
+
+		static void EMUtil::process_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+											   int nitems_per_line,
+											   size_t mode_size, int start, int end,
+											   float *data, int *p_i,
+											   const char *outformat);
+		
+		static void EMUtil::exclude_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+											   int nitems_per_line,
+											   size_t mode_size, int start, int end,
+											   float * data, int *p_i,
+											   const char *outformat);
+		
+		static void EMUtil::process_lines_io(FILE * file, ImageIO::IOMode rw_mode,
+											 int nitems_per_line, size_t mode_size,
+											 int nitems, float *data, int *p_i,
+											 const char *outformat);
 	};
 
 	struct ImageScore {

@@ -379,7 +379,10 @@ int TestUtil::check_image(const string& imagefile, EMData * image)
 		string diffcmd2 = "diff " + datafile1 + " " + datafile2;
 		err = system(diffcmd2.c_str());
 	}
-		
+	if (err) {
+		LOGERR("check_image on %s FAILED\n", imagefile.c_str());
+	}
+	
 	return err;
 }
 
