@@ -71,6 +71,7 @@ EMData::~EMData()
 		delete rfp;
 		rfp = 0;
 	}
+	
 	EXITFUNC;
 }
 
@@ -3932,12 +3933,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 #if 1
 	EMData *f1 = 0;
 
-	if (filter) {
-		f1 = do_fft()->copy();
-	}
-	else {
-		f1 = do_fft();
-	}
+	f1 = do_fft();
 
 	if (!f1) {
 		LOGERR("FFT returns NULL image");
@@ -3949,14 +3945,12 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 	EMData *cf = 0;
 
 	if (with) {
-		EMData *with_fft = with->do_fft();
-		if (!with_fft) {
+		cf = with->do_fft();
+		if (!cf) {
 			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");
 		}
 		
-		
-		cf = with_fft->copy(false);
 		cf->ap2ri();
 	}
 	else {
@@ -4018,12 +4012,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 
 	EMData *f2 = cf->do_ift();
 	delete cf;
-	cf = 0;
-
-	if (filter) {
-		delete f1;
-		f1 = 0;
-	}
+	delete f1;
 
 	f2->set_attr("label", "CCF");
 	f2->set_path("/tmp/eman.ccf");
