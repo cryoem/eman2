@@ -135,6 +135,8 @@ How to Install Boost Python
     4. run 'bjam' with your options:
        1) linux-x86: % bjam
        2) SGI Irix:  % bjam "-sTOOLS=mipspro"
-       
-    5. cp -df bin-stage/libboost_python.so* /usr/local/lib
+
+	5. login as root
+	
+    6. cp -df bin-stage/libboost_python.so* /usr/local/lib
        cd ../../..; cp -rf boost /usr/local/include
