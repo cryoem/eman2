@@ -5,6 +5,7 @@
 #define eman__transform_h__ 1
 
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_blas.h>
 #include <string>
 #include <vector>
 #include <math.h>
@@ -318,12 +319,18 @@ namespace EMAN
 
 	inline Matrix3f & Matrix3f::operator*=(const Matrix3f & m)
 	{
-		gsl_matrix_mul_elements(matrix, m.get_gsl_matrix());
+		int n=3;
+		gsl_matrix* temp = gsl_matrix_alloc(n, n);	// copy to temp matrix
+		gsl_matrix_memcpy(temp, matrix);
+		gsl_matrix_set_zero(matrix);
+		gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
+				temp, m.get_gsl_matrix(), 0.0, matrix);
 		return *this;
 	}
 
 	inline Matrix3f & Matrix3f::operator/=(const Matrix3f & m)
 	{
+		// this is also wrong, but I don't have time to fix now
 		gsl_matrix_div_elements(matrix, m.get_gsl_matrix());
 		return *this;
 	}

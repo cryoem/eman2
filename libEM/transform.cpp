@@ -459,8 +459,14 @@ vector < float >Matrix4f::get_value() const
 
 Matrix3f Matrix4f::get_matrix3() const
 {
-	vector < float >m = get_value();
-	return Matrix3f(m);
+	const int n = 3;
+	Matrix3f m;
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			m[i][j] = gsl_matrix_get(matrix, i, j);
+		}
+	}
+	return m;
 }
 
 
@@ -547,7 +553,12 @@ Matrix4f & Matrix4f::operator-=(const Matrix4f & m)
 
 Matrix4f & Matrix4f::operator*=(const Matrix4f & m)
 {
-	gsl_matrix_mul_elements(matrix, m.get_gsl_matrix());
+	int n=4;
+	gsl_matrix* temp = gsl_matrix_alloc(n, n);	// copy to temp matrix
+	gsl_matrix_memcpy(temp, matrix);
+	gsl_matrix_set_zero(matrix);
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, 
+			temp, m.get_gsl_matrix(), 0.0, matrix);
 	return *this;
 }
 
