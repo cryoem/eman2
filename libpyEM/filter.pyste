@@ -3,23 +3,23 @@ Include("emdata.h")
 Filter = Class("EMAN::Filter", "filter.h")
 rename(Filter, "__Filter")
 
-RealPixelFilter = Class("EMAN::RealPixelFilter", "filter.h")
-rename(RealPixelFilter, "__RealPixelFilter")
+#RealPixelFilter = Class("EMAN::RealPixelFilter", "filter.h")
+#rename(RealPixelFilter, "__RealPixelFilter")
 
-BoxStatFilter = Class("EMAN::BoxStatFilter", "filter.h")
-rename(BoxStatFilter, "__BoxStatFilter")
+#BoxStatFilter = Class("EMAN::BoxStatFilter", "filter.h")
+#rename(BoxStatFilter, "__BoxStatFilter")
 
-ComplexPixelFilter = Class("EMAN::ComplexPixelFilter", "filter.h")
-rename(ComplexPixelFilter, "__ComplexPixelFilter")
+#ComplexPixelFilter = Class("EMAN::ComplexPixelFilter", "filter.h")
+#rename(ComplexPixelFilter, "__ComplexPixelFilter")
 
-CoordinateFilter = Class("EMAN::CoordinateFilter", "filter.h")
-rename(CoordinateFilter, "__CoordinateFilter")
+#CoordinateFilter = Class("EMAN::CoordinateFilter", "filter.h")
+#rename(CoordinateFilter, "__CoordinateFilter")
 
-FourierFilter = Class("EMAN::FourierFilter", "filter.h")
-rename(FourierFilter, "__FourierFilter")
+#FourierFilter = Class("EMAN::FourierFilter", "filter.h")
+#rename(FourierFilter, "__FourierFilter")
 
-NormalizeFilter = Class("EMAN::NormalizeFilter", "filter.h")
-rename(NormalizeFilter, "__NormalizeFilter")
+#NormalizeFilter = Class("EMAN::NormalizeFilter", "filter.h")
+#rename(NormalizeFilter, "__NormalizeFilter")
 
 Function("EMAN::dump_filters", "filter.h")
 Function("EMAN::multi_filters", "filter.h")
