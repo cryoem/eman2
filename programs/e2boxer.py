@@ -148,7 +148,7 @@ for single particle analysis."""
 		for n,i in enumerate(goodpks):
 			b=EMData()
 			b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
-			ba=refptcl[i[1].align("RotateTranslateFlip",{"to",b})
+			ba=refptcl[i[1].align("RotateTranslateFlip",{"to":b})]
 			
 			
 		# Write EMAN1 style box database
