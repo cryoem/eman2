@@ -16,6 +16,8 @@ set_policy(EMData.get_rotated_clip, return_value_policy(manage_new_object))
 set_policy(EMData.get_top_half, return_value_policy(manage_new_object))
 set_policy(EMData.do_fft, return_value_policy(manage_new_object))
 set_policy(EMData.do_ift, return_value_policy(manage_new_object))
+set_policy(EMData.get_fft_amplitude, return_value_policy(manage_new_object))
+set_policy(EMData.get_fft_phase, return_value_policy(manage_new_object))
 
 set_policy(EMData.align, return_value_policy(manage_new_object))
 set_policy(EMData.project, return_value_policy(manage_new_object))
