@@ -10,14 +10,18 @@ ADD_EXECUTABLE(image_overwrite image_overwrite.cpp)
 ADD_EXECUTABLE(getclip getclip.cpp)
 ADD_EXECUTABLE(rotate rotate.cpp)
 ADD_EXECUTABLE(rotate_translate rotate_translate.cpp)
-
+ADD_EXECUTABLE(rotate_phi rotate_phi.cpp)
 
 FIND_LIBRARY(EMAN1_LIBRARY NAMES EM PATHS $ENV{EMANDIR}/lib $ENV{HOME}/EMAN/lib)
 IF(EMAN1_LIBRARY)
 	FIND_PATH(EMAN1_INCLUDE_PATH EMData.h $ENV{EMANDIR}/include $ENV{HOME}/EMAN/include)	
 	IF(EMAN1_INCLUDE_PATH)
 		ADD_EXECUTABLE(emdata_api emdata_api.cpp)
+		ADD_EXECUTABLE(rotate1 rotate1.cpp)
+		
 		TARGET_LINK_LIBRARIES(emdata_api ${EMAN1_LIBRARY})
+		TARGET_LINK_LIBRARIES(rotate1 ${EMAN1_LIBRARY})
+
 		INCLUDE_DIRECTORIES(${EMAN1_INCLUDE_PATH})
 	ENDIF(EMAN1_INCLUDE_PATH)
 ENDIF(EMAN1_LIBRARY)
