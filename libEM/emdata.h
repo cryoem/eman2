@@ -18,6 +18,7 @@ using std::map;
 namespace EMAN {
     class ImageIO;
     class SimpleCtf;
+    class XYData;
     
     class EMData {
     public:
@@ -33,26 +34,49 @@ namespace EMAN {
 	EMData();
 	virtual ~EMData();
 	
+	int read_image(string filename, int img_index = 0, bool header_only = false,
+		       Region* r = 0, bool is_3d = NOT_3D);
+	
+	int write_image(string filename, int img_index = 0,
+			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
+
+	int filter(string filtername, const Dict& params);
+
+	float cmp(string cmpname, const Dict& params);
+
+	EMData* align(string aligner_name, const Dict& params, string comp_name = "");
+	
 	EMData* copy(bool withfft = false, bool withparent = true) const;
 	
 	EMData* get_clip(const Region& area);
 	void insert_clip(EMData* block, const Point<int>& originn);
 
-	int read_image(string filename, int img_index = 0, bool header_only = false,
-		       Region* r = 0, bool is_3d = NOT_3D);
-	int write_image(string filename, int img_index = 0,
-			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
-
-	int filter(string filtername, const Dict& params);
-	float cmp(string cmpname, const Dict& params);
-	EMData* align(string aligner_name, const Dict& params, string comp_name = "");
-	
 	void normalize();
 
+	void calc_hist(XYData* hist, float hist_min = 0, float hist_max = 0, bool add = false);
+
+	int render_amp8(unsigned char* data, int x, int y, int xsize, int ysize,
+			int bpl, float scale, int min_gray, int max_gray,
+			float min_render, float max_render);
+    
+	int render_amp24(unsigned char* data, int x, int y, int xsize, int ysize,
+			 int bpl, float scale, int min_gray, int max_gray,
+			 float min_render, float max_render,
+			 void *ref, void cmap(void*, int coord, unsigned char *tri));
+    
+	int render_pha24(unsigned char* data, int x, int y, int xsize, int ysize, 
+			 int bpl, float scale, float min_render, float max_render);
+	
+	void calcAzDist(int n,float a0,float da,float *d,float rmin,float rmax);
 	
 	bool is_complex() const;
-	void set_complex(int)  const { };
-	void set_ri(int ) const { };
+	void set_complex(int)  const;
+
+	bool is_complex_x() const;
+	void set_complex_x(int)  const;
+	
+	
+	void set_ri(int ) const;
 	void ri2ap();
 	void ap2ri();
 
@@ -60,7 +84,6 @@ namespace EMAN {
 	void set_parent(EMData* new_parent) { parent = new_parent; }
 
 	void setup4slice(bool redo = true);
-	//EMData* fft_slice(const Rotation& r, int mode = 5);
 	void to_corner();
 
 	float* get_supp() const { return 0; }
@@ -99,6 +122,9 @@ namespace EMAN {
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
+
+	void calc_rcf(EMData *with, vector<float> sum_array);
+	
 	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 
 	vector<float> calc_fourier_shell_correlation(EMData *with);
@@ -131,7 +157,8 @@ namespace EMAN {
 	void done_data();
 
 	void update();
-	void zero();
+	void to_zero();
+	void to_one();
 	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
@@ -171,9 +198,13 @@ namespace EMAN {
 	Rotation get_rotation() const { return rotation; }
 	Vec3f get_trans_align() const { return trans_align; }
 	
+	void EMData::set_name(string name);
+	void EMData::set_path(string path);
+
 	void dump_data(string filename);
 
-	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices, bool header_only=false);
+	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices,
+						    bool header_only=false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
 						  bool header_only = false, string ext="");
 

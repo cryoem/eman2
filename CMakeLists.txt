@@ -46,6 +46,22 @@ MARK_AS_ADVANCED(CMAKE_CXX_FLAGS)
 
 SUBDIRS(libEM rt programs)
 
+FIND_PATH(FFTW_INCLUDE_PATH fftw.h
+          $ENV{FFTWDIR}/include ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include /usr/local/include /usr/include)
+
+FIND_LIBRARY(FFTW_LIBRARY
+             NAMES sfftw fftw
+             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+
+FIND_LIBRARY(RFFTW_LIBRARY
+             NAMES srfftw rfftw
+             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+
+IF(FFTW_LIBRARY AND RFFTW_LIBRARY)
+ELSE(FFTW_LIBRARY AND RFFTW_LIBRARY)
+	MESSAGE(SEND_ERROR "ERROR: FFTW not found and EMAN cannot be build. please install FFTW first!")
+ENDIF(FFTW_LIBRARY AND RFFTW_LIBRARY)
+
 
 FIND_PATH(GSL_INCLUDE_PATH gsl/gsl_linalg.h
   $ENV{EMAN2_PREFIX}/include  
