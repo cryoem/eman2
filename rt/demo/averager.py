@@ -4,6 +4,7 @@
 from EMAN2 import *
 import sys
 
+
 images = EMData.read_images(sys.argv[1])
 averager = Averagers.get("Image")
 avg_image = averager.average(images)
