@@ -65,7 +65,6 @@ namespace EMAN {
 
 	float* get_supp() const { return 0; }
 	
-	
 	EMData* do_fft();
 	EMData* do_ift();
 	void gimme_fft();
@@ -106,8 +105,6 @@ namespace EMAN {
 	
 	void mean_shrink(int shrink_factor);
 	void median_shrink(int shrink_factor);
-
-
 	
 	void apply_radial_func(int, float, vector<float> array);
 	    
@@ -134,7 +131,7 @@ namespace EMAN {
 	void done_data();
 
 	void update();
-	void zero() {}
+	void zero();
 	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
@@ -226,6 +223,7 @@ namespace EMAN {
     private:
 	mutable map<string, EMObject> attr_dict;
 	float* rdata;
+	float* supp;
 	SimpleCtf* ctf;
 	EMData* parent;
 	int flags;
