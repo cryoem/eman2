@@ -277,7 +277,7 @@ def main():
                     fftavg.set_complex(1)
                     fftavg.to_zero()
                 d.filter("EdgeMeanMask")
-                d.filter("StdNormalize")
+                d.filter("NormalizeStd")
                 df = d.do_fft()
                 df.mult(df.get_ysize())
                 fftavg.add_incoherent(df)
@@ -334,7 +334,7 @@ def main():
 
     if average:
         average.set_average_nimg(n1-n0+1)
-        average.filter("StdNormalize");
+        average.filter("NormalizeStd");
 	average.append_image(outfile);
 
     if options.fftavg:
