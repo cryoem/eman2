@@ -11,6 +11,8 @@ using std::string;
 
 namespace EMAN {
 
+    // these magic numbers and macros need to be removed later
+    
 #define I5G	(10.4/(M_PI*M_PI))	// used for 5x5x5 interpolation
 #define I4G	(8.8/(M_PI*M_PI))	// used for 4 interpolation
 #define I3G	(6.4/(M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
@@ -32,7 +34,7 @@ namespace EMAN {
 	
 	virtual Dict get_params() const { return params; }
 	virtual void set_params(const Dict& new_params) { params = new_params; }
-	virtual TypeDict get_param_types() const { return TypeDict(); }
+	virtual TypeDict get_param_types() const  = 0;
 	
     protected:
 	mutable Dict params;
@@ -50,6 +52,16 @@ namespace EMAN {
 	string get_name() const { return "FftReconstructor"; }
 	static Reconstructor* NEW() { return new FftReconstructor(); }
 
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("size", EMObject::INT);
+	    d.put("mode", EMObject::INT);
+	    d.put("weight", EMObject::FLOAT);
+	    d.put("dlog", EMObject::INT);
+	    return d;
+	}
+	
     private:
 	EMData* image;
 	int nx;
@@ -70,6 +82,16 @@ namespace EMAN {
 	string get_name() const { return "WfFftReconstructor"; }
 	static Reconstructor* NEW() { return new WfFftReconstructor(); }
 
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("size", EMObject::INT);
+	    d.put("mode", EMObject::INT);
+	    d.put("padratio", EMObject::FLOAT);
+	    d.put("snr", EMObject::FLOATARRAY);
+	    return d;
+	}
+	
     private:
 	EMData* image;
 	int nx;
@@ -77,6 +99,34 @@ namespace EMAN {
 	int nz;
     };
 
+    class BpRealReconstructor : public Reconstructor {
+    public:
+	BpRealReconstructor();
+	~BpRealReconstructor();
+	
+	int setup();
+	int insert_slice(EMData* slice, const Rotation& euler);
+	EMData* finish();
+
+	string get_name() const { return "BpRealReconstructor"; }
+	static Reconstructor* NEW() { return new BpRealReconstructor(); }
+
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    d.put("size", EMObject::INT);
+	    d.put("weight", EMObject::FLOAT);
+	    return d;
+	}
+	
+    private:
+	EMData* image;
+	int nx;
+	int ny;
+	int nz;
+    };
+
+    
     
     typedef Reconstructor* (ReconstructorType)();
 
