@@ -47,6 +47,7 @@ namespace EMAN {
 	EMData* align(string aligner_name, const Dict& params, string comp_name = "");
 	
 	EMData* copy(bool withfft = false, bool withparent = true) const;
+	EMData* copy_head();
 	
 	EMData* get_clip(const Region& area);
 	void insert_clip(EMData* block, const Point<int>& originn);
@@ -67,14 +68,13 @@ namespace EMAN {
 	int render_pha24(unsigned char* data, int x, int y, int xsize, int ysize, 
 			 int bpl, float scale, float min_render, float max_render);
 	
-	void calcAzDist(int n,float a0,float da,float *d,float rmin,float rmax);
+	void calc_az_dist(int n,float a0,float da,float *d,float rmin,float rmax);
 	
 	bool is_complex() const;
 	void set_complex(int)  const;
 
 	bool is_complex_x() const;
-	void set_complex_x(int)  const;
-	
+	void set_complex_x(int)  const;	
 	
 	void set_ri(int ) const;
 	void ri2ap();
@@ -123,7 +123,7 @@ namespace EMAN {
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData* calc_ccfx(EMData* with, int y0 = 0, int y1 = -1, bool nosum = false);
 
-	void calc_rcf(EMData *with, vector<float> sum_array);
+	void calc_rcf(EMData *with, vector<float>& sum_array);
 	
 	EMData* unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0, int dy = 0,  bool do360 = false);
 
@@ -261,6 +261,7 @@ namespace EMAN {
 	float* supp;
 	SimpleCtf* ctf;
 	EMData* parent;
+	EMData* fft;
 	int flags;
 	float pixel_size;
 	
