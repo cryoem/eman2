@@ -1,8 +1,6 @@
-#define PY_ARRAY_UNIQUE_SYMBOL PyArrayHandle
 #define NO_IMPORT_ARRAY
 
 #include <Python.h>
-#include <Numeric/arrayobject.h>
 
 #include "pylist.h"
 #include "emdata.h"
@@ -31,54 +29,23 @@ static python::numeric::array make_numeric_array(float * data, vector<int> dims)
 }
 
 
-
 python::numeric::array Wrapper::em2numpy(EMData *image)
-{	 
-	python::list datalist = python::list();
-	
-	if (!image) {
-		return python::numeric::array(datalist);
-	}
-
-	float * data = image->get_data();
-    int nx = image->get_xsize();
-    int ny = image->get_ysize();
-    int nz = image->get_zsize();
-	int nxy = nx * ny;
-    
-    for (int i = 0; i < nz; i++) {
-		python::list ll = python::list();
-		int i2 = i * nxy;
-		
-		for (int j = 0; j < ny; j++) {
-			python::list l = python::list();
-			int j2 = j * nx + i2;
-			
-			for (int k = 0; k < nx; k++) {
-				l.append(data[j2 + k]);
-			}
-			
-			ll.append(l);
-		}
-		datalist.append(ll);
-    }
-    
-    return python::numeric::array(datalist);
-}
-
-python::numeric::array Wrapper::em2numpy2(EMData *image)
 {
 	float * data = image->get_data();
 	int nx = image->get_xsize();
     int ny = image->get_ysize();
     int nz = image->get_zsize();
+	
 	vector<int> dims;
+	
 	if (nz > 1) {
 		dims.push_back(nz);
 	}
+	
 	if (ny > 1) {
 		dims.push_back(ny);
 	}
+	
 	dims.push_back(nx);
 	
 	return make_numeric_array(data, dims);

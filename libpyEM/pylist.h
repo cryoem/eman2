@@ -1,6 +1,8 @@
 #ifndef eman__pylist_h__
 #define eman__pylist_h__
 
+#define PY_ARRAY_UNIQUE_SYMBOL PyArrayHandle
+
 #include "emobject.h"
 #include "transform.h"
 #include "geometry.h"
@@ -8,11 +10,12 @@
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
-//#include <Numeric/arrayobject.h>
+#include <Numeric/arrayobject.h>
 
 #include <vector>
 #include <map>
 #include <string>
+
 
 namespace python = boost::python;
 using std::vector;
@@ -26,7 +29,6 @@ namespace EMAN {
 	class Wrapper {
 	public:
 		static python::numeric::array em2numpy(EMData *image);
-		static python::numeric::array em2numpy2(EMData *image);
 		static void numpy2em(python::numeric::array& array, EMData* image);
 	};
 	

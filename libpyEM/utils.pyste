@@ -1,4 +1,3 @@
-
 Include("emdata.h")
 Include("log.h")
 
@@ -29,3 +28,5 @@ XYData = Class("EMAN::XYData", "xydata.h")
 Util = Class("EMAN::Util", "util.h")
 
 Wrapper = Class("EMAN::Wrapper", "pylist.h")
+
+module_code("\n	import_array();\n	python::numeric::array::set_module_and_type(\"Numeric\", \"ArrayType\");\n\n")
