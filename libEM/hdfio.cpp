@@ -202,7 +202,8 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool )
     H5T_class_t t_class = H5Tget_class(datatype);
 
     if (t_class != H5T_FLOAT) {
-	Log::logger()->error("can only read/write hdf FLOAT data");
+	Log::logger()->error("unknown data type '%d'. Can only read FLOAT data in HDF",
+			     (int) t_class);
 	H5Tclose(datatype);
 	return 1;
     }
@@ -873,6 +874,7 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 	}
     }
 
+    cur_image_index = -1;
     return err;
 }
 
@@ -903,6 +905,8 @@ int HdfIO::write_ctf(const Ctf & ctf, int image_index)
 	write_float_attr(keys[i].c_str(), v);
     }
 
+    cur_image_index = -1;
+    
     return 0;
 }
 

@@ -125,6 +125,10 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 	ByteOrder::swap_bytes(&mrcmode);
     }
 
+    if (mrcmode == MRC_USHORT_COMPLEX || mrcmode == MRC_FLOAT_COMPLEX) {
+	nx *= 2; 
+    }
+	
     const int max_dim = 1 << 20;
 
     if ((mrcmode >= MRC_UCHAR && mrcmode < MRC_UNKNOWN) &&
