@@ -1,0 +1,25 @@
+Optional Libraries
+------------------
+  
+   - To enable python support, use
+	 1. Python (version 2.2+)		(http://www.python.org)
+	 2. Boost python (version 1.30.2+)	(http://www.boost.org)
+
+
+Basic Installation
+------------------
+
+       1) download CMake from our web site: http://ncmi.bcm.tmc.edu/ncmi/software/,
+	  select 'EMAN', then select version "Compilation Libraries and External 
+	  Software". Then download cmake.tar.gz.
+	  
+       2) install CMake:
+	  % tar zxf cmake.tar.gz
+	  % cd CMake
+	  % ./configure && make && make install
+
+       3) % cd EMAN/src; mkdir build; cd build
+       4) % ccmake ../eman2
+	    Then type 'c', and type 'g'.
+       5) % make
+       6) % make install

@@ -21,6 +21,9 @@ namespace EMAN {
 	
 	DEFINE_IMAGEIO_FUNC;
 
+	int read_ctf(Ctf& ctf, int image_index = 0);
+        int write_ctf(const Ctf& ctf, int image_index = 0);
+	
 	int read_array_attr(int image_index, string attr_name, void* value);
 	int write_array_attr(int image_index, string attr_name, int nitems, void* data, DataType type);
 	

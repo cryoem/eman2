@@ -12,7 +12,6 @@
 namespace python = boost::python;
 using std::vector;
 using std::map;
-using std::string;
 
 namespace EMAN {
     class PyList {
@@ -57,13 +56,13 @@ namespace EMAN {
     };
 
     template <class T>
-    struct map_to_python : python::to_python_converter<map<string, T>, map_to_python<T> >
+    struct map_to_python : python::to_python_converter<map<std::string, T>, map_to_python<T> >
     {
-	static PyObject* convert(map<string, T> const& d)
+	static PyObject* convert(map<std::string, T> const& d)
 	{
 	    python::dict result;
 
-	    typedef typename map<string, T>::const_iterator MI;
+	    typedef typename map<std::string, T>::const_iterator MI;
 	    for (MI p = d.begin(); p != d.end(); p++) {
 		result[p->first] = p->second;
 	    }
@@ -77,7 +76,7 @@ namespace EMAN {
 	static PyObject* convert(Dict const& dd)
 	{
 	    python::dict result;
-	    vector<string> keys = dd.keys();
+	    vector<std::string> keys = dd.keys();
 	    vector<EMObject> values = dd.values();
 	    for (unsigned int i = 0; i < keys.size(); i++) {
 		result[keys[i]] = values[i];
@@ -142,7 +141,7 @@ namespace EMAN {
 	map_from_python()
 	{
 	    python::converter::registry::push_back(&convertible, &construct,
-						   python::type_id<map<string, T> >());
+						   python::type_id<map<std::string, T> >());
 	}
     
 	static void* convertible(PyObject* obj_ptr)
@@ -158,10 +157,10 @@ namespace EMAN {
 	static void construct(PyObject* obj_ptr,
 			      python::converter::rvalue_from_python_stage1_data* data)
 	{
-	    void* storage = ((python::converter::rvalue_from_python_storage<map<string, T> >*) data)->storage.bytes;
-	    new (storage) map<string, T>();
+	    void* storage = ((python::converter::rvalue_from_python_storage<map<std::string, T> >*) data)->storage.bytes;
+	    new (storage) map<std::string, T>();
 	    data->convertible = storage;
-	    map<string, T>& result = *((map<string, T>*) storage);
+	    map<std::string, T>& result = *((map<std::string, T>*) storage);
 
 	    python::handle<> obj_handle(obj_ptr);
 	    python::object dict_obj(obj_handle);
@@ -173,7 +172,7 @@ namespace EMAN {
 	    long l = python::len(k);
 	
 	    for(long i = 0; i < l; i++) {
-		string key = python::extract<string>(k[i]);
+		std::string key = python::extract<std::string>(k[i]);
 		T val = python::extract<T>(v[i]);
 		result[key] = val;
 	    }
@@ -217,7 +216,7 @@ namespace EMAN {
 	    long l = python::len(k);
 	
 	    for(long i = 0; i < l; i++) {
-		string key = python::extract<string>(k[i]);
+		std::string key = python::extract<std::string>(k[i]);
 		EMObject val = python::extract<EMObject>(v[i]);
 		result.put(key, val);
 	    }

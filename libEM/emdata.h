@@ -130,6 +130,22 @@ namespace EMAN {
 	int rocount;
     };
 
+
+    inline int EMData::get_x() const
+    {
+	return attr_dict["nx"].get_int();
+    }
+    
+    inline int EMData::get_y() const
+    {	
+	return attr_dict["ny"].get_int();
+    }    
+
+    inline int EMData::get_z() const
+    {
+	return attr_dict["nz"].get_int();
+    }
+    
     inline float EMData::get_value_at(int x, int y, int z) const
     {
 	int nx = get_x();
@@ -200,22 +216,6 @@ namespace EMAN {
 	flags |= EMDATA_NEEDUPD;
     }
 
-
-    inline int EMData::get_x() const
-    {
-	return attr_dict["nx"].get_int();
-    }
-    
-    inline int EMData::get_y() const
-    {	
-	return attr_dict["ny"].get_int();
-    }    
-
-    inline int EMData::get_z() const
-    {
-	return attr_dict["nz"].get_int();
-    }
-    
 }
 
 #endif

@@ -19,7 +19,7 @@ namespace EMAN {
 	
 	    if (is_machine_big_endian()) {
 		data_big_endian = false;
-		for (int i = 0; i < typesize/2; i++) {
+		for (int i = typesize/2; i < typesize; i++) {
 		    if (d[i] != 0) {
 			data_big_endian = true;
 			break;

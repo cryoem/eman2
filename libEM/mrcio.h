@@ -16,6 +16,9 @@ namespace EMAN {
 	~MrcIO();
 	
 	DEFINE_IMAGEIO_FUNC;
+
+	int read_ctf(Ctf& ctf, int image_index = 0);
+        int write_ctf(const Ctf& ctf, int image_index = 0);
 	
     private:	
 	enum MrcMode {
