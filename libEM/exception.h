@@ -73,6 +73,15 @@ namespace EMAN {
 	};
 #define NullPointerException(desc) _NullPointerException(__FILE__, __LINE__, desc)
 	
+
+	class _TypeException : public Exception
+	{
+	public:
+		_TypeException(const string & desc, const string & type,
+					   const string & file = "unknown", int line = 0)
+			: Exception(file, line, desc, type) {}
+	};
+#define TypeException(desc, type) _TypeException(desc, type, __FILE__, __LINE__)
 	
 	class ShrinkFactorException : public Exception
 	{

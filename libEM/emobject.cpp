@@ -1,4 +1,5 @@
 #include "emobject.h"
+#include "exception.h"
 #include <math.h>
 #ifdef WIN32
 #define M_PI 3.14159265358979323846
@@ -27,6 +28,8 @@ EMObject::operator int () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to int from data type '%s'",
 				   get_object_type_name(type));
+			throw TypeException("Cannot convert to int from other data type ",
+								get_object_type_name(type));
 		}
 	}
 	return 0;
@@ -45,8 +48,10 @@ EMObject::operator float () const
 	}
 	else {
 		if (type != UNKNOWN) {
-			LOGERR("type error. Cannot convert to float from data with type '%s'",
+			LOGERR("type error. Cannot convert to float from data type '%s'",
 					  get_object_type_name(type));
+			throw TypeException("Cannot convert to float from data with type",
+								get_object_type_name(type));
 		}
 	}
 
@@ -68,6 +73,8 @@ EMObject::operator double () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to double from data type '%s'",
 				   get_object_type_name(type));
+			throw TypeException("Cannot convert to double from data type",
+								get_object_type_name(type));
 		}
 	}
 	return 0;
@@ -91,6 +98,8 @@ EMObject::operator  EMData * () const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to EMData* from data type '%s'",
 				   get_object_type_name(type));
+			throw TypeException("Cannot convert to EMData* from data type",
+				   get_object_type_name(type));
 		}
 		return 0;
 	}
@@ -102,6 +111,8 @@ EMObject::operator  XYData * () const
 	if (type != XYDATA) {
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot convert to XYData* data type '%s'",
+				   get_object_type_name(type));
+			throw TypeException("Cannot convert to XYData* data type",
 				   get_object_type_name(type));
 		}
 		return 0;
@@ -115,6 +126,8 @@ vector < float >EMObject::get_farray() const
 		if (type != UNKNOWN) {
 			LOGERR("type error. Cannot call get_farray for data type '%s'",
 				   get_object_type_name(type));
+			throw TypeException("Cannot call get_farray for data type",
+								get_object_type_name(type));
 		}
 		return vector < float >();
 	}
@@ -150,7 +163,8 @@ string EMObject::to_str() const
 			sprintf(tmp_str, "XYDATA");
 		}
 		else {
-			sprintf(tmp_str, "Unknown");
+			LOGERR("No such EMObject defined");
+			throw NotExistingObjectException("EMObject", "unknown type");
 		}
 		return string(tmp_str);
 	}
@@ -174,7 +188,8 @@ const char *EMObject::get_object_type_name(ObjectType t)
 	case FLOATARRAY:
 		return "FLOATARRAY";
 	case UNKNOWN:
-		return "UNKNOWN";
+		LOGERR("No such EMObject defined");
+		throw NotExistingObjectException("EMObject", "unknown type");
 	}
 
 	return "UNKNOWN";
