@@ -47,7 +47,7 @@ namespace EMAN
 		int get_nimg();
 		
 	  private:
-		hid_t create_dataset(int image_index, int nx, int ny, int nz);
+		void create_cur_dataset(int image_index, int nx, int ny, int nz);
 
 		int read_int_attr(int image_index, const string & attr_name);
 		float read_float_attr(int image_index, const string & attr_name);
@@ -108,7 +108,7 @@ namespace EMAN
 
 		void set_dataset(int image_index);
 		int create_compound_attr(int image_index, const string & attr_name);
-		void close_dataset(hid_t dataset);
+		void close_cur_dataset();
 		static string get_item_name(Nametype type);
 		void increase_num_dataset();
 

@@ -44,7 +44,7 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 
 HdfIO::~HdfIO()
 {
-	close_dataset(cur_dataset);
+	close_cur_dataset();
 	H5Gclose(group);
 	H5Fclose(file);
 }
@@ -63,10 +63,12 @@ void HdfIO::init()
 	if (!is_new_file) {
 		char buf[128];
 		if (fread(buf, sizeof(buf), 1, tmp_file) != 1) {
+			fclose(tmp_file);
 			throw ImageReadException(filename, "read HDF5 first block");
 		}
 		else {
 			if (!is_valid(&buf)) {
+				fclose(tmp_file);
 				throw ImageReadException(filename, "invalid HDF5 file");
 			}
 		}
@@ -87,6 +89,10 @@ void HdfIO::init()
 			H5Fclose(file);
 			file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 		}
+	}
+	
+	if (file < 0) {
+		throw FileAccessException(filename);
 	}
 	
 	string root_group_str = get_item_name(ROOT_GROUP);
@@ -180,7 +186,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	
 	check_read_access(image_index, data);
 	set_dataset(image_index);
-
+#if 0
 	if (cur_dataset < 0) {
 		char cur_dataset_name[32];
 		sprintf(cur_dataset_name, "%d", image_index);
@@ -192,14 +198,14 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 			throw ImageReadException(filename, desc);
 		}
 	}
-
+#endif
 	hid_t datatype = H5Dget_type(cur_dataset);
 	H5T_class_t t_class = H5Tget_class(datatype);
-
+	H5Tclose(datatype);
+	
 	if (t_class != H5T_FLOAT) {
 		char desc[256];
 		sprintf(desc, "unsupported HDF5 data type '%d'", (int) t_class);
-		H5Tclose(datatype);
 		throw ImageReadException(filename, desc);
 	}
 
@@ -240,7 +246,6 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 		throw ImageReadException(filename, desc);
 	}
 
-	H5Tclose(datatype);
 	EXITFUNC;
 	return 0;
 }
@@ -269,12 +274,10 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nz = dict["nz"];
-
-	cur_dataset = create_dataset(image_index, nx, ny, nz);
-	if (cur_dataset < 0) {
-		throw ImageWriteException(filename, "create dataset failed");
-	}
-
+	
+	create_cur_dataset(image_index, nx, ny, nz);
+	Assert(cur_dataset >= 0);
+	
 	write_int_attr(image_index, "nx", nx);
 	write_int_attr(image_index, "ny", ny);
 	write_int_attr(image_index, "nz", nz);
@@ -312,6 +315,10 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 		write_euler_attr(image_index, "orientation_convention",
 						 dict["orientation_convention"]);
 	}
+	
+	//flush();
+	close_cur_dataset();
+	
 	EXITFUNC;
 	return 0;
 }
@@ -326,68 +333,72 @@ int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
 	int ny = read_int_attr(image_index, "ny");
 	int nz = read_int_attr(image_index, "nz");
 
+	
 	check_region(area, FloatSize(nx, ny, nz), is_new_file);
-	cur_dataset = create_dataset(image_index, nx, ny, nz);
-
-	if (cur_dataset >= 0) {
-		int err = 0;
+	create_cur_dataset(image_index, nx, ny, nz);
+	Assert(cur_dataset >= 0);
+	
+	int err = 0;
 		
-		if (!area) {
-			err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
-						   H5S_ALL, H5P_DEFAULT, data);
-			if (err >= 0) {
-				increase_num_dataset();
-				image_indices.push_back(image_index);
-			}
-		}
-		else {
-			hid_t dataspace_id = 0;
-			hid_t memspace_id = 0;
-			
-			err = create_region_space(&dataspace_id, &memspace_id, area,
-									  nx, ny, nz, image_index);
-			if (err == 0) {
-				err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, memspace_id,
-							   dataspace_id, H5P_DEFAULT, data);
-			}
-			
-			H5Sclose(dataspace_id);
-			H5Sclose(memspace_id);
-			if (err < 0) {
-				throw ImageReadException(filename,
-										 "creating memory space or file space id failed");
-			}
-		}
-
-		if (err < 0) {
-			throw ImageWriteException(filename, "HDF data write failed");
-		}
-		
+	if (!area) {
+		err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
+					   H5S_ALL, H5P_DEFAULT, data);
+		//if (err >= 0) {
+		//increase_num_dataset();
+		//image_indices.push_back(image_index);
+		//}
 	}
+	else {
+		hid_t dataspace_id = 0;
+		hid_t memspace_id = 0;
+			
+		err = create_region_space(&dataspace_id, &memspace_id, area,
+								  nx, ny, nz, image_index);
+		if (err == 0) {
+			err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, memspace_id,
+						   dataspace_id, H5P_DEFAULT, data);
+		}
+			
+		H5Sclose(dataspace_id);
+		H5Sclose(memspace_id);
+		if (err < 0) {
+			throw ImageReadException(filename,
+									 "creating memory space or file space id failed");
+		}
+	}
+
+	if (err < 0) {
+		throw ImageWriteException(filename, "HDF data write failed");
+	}		
+	
+	//flush();
+	close_cur_dataset();
+	
 	EXITFUNC;
 	return 0;
 }
 
 void HdfIO::flush()
 {
-	H5Fflush(cur_dataset, H5F_SCOPE_LOCAL);
+	if (cur_dataset > 0) {
+		H5Fflush(cur_dataset, H5F_SCOPE_LOCAL);
+	}
 }
 
 int *HdfIO::read_dims(int image_index, int *p_ndim)
 {
 	set_dataset(image_index);
-
+#if 0
 	if (cur_dataset < 0) {
 		char cur_dataset_name[32];
 		sprintf(cur_dataset_name, "%d", image_index);
 		cur_dataset = H5Dopen(file, cur_dataset_name);
 
-		if (cur_dataset < 0) {
-			fprintf(stderr, "Error in reading data dimensions in hdf: %d", image_index);
-			return 0;
+		if (cur_dataset < 0) {			
+			throw ImageReadException(filename, "reading data dimensions");
 		}
 	}
-
+#endif
 	hid_t dataspace = H5Dget_space(cur_dataset);
 	int rank = H5Sget_simple_extent_ndims(dataspace);
 	hsize_t *dims = new hsize_t[rank];
@@ -464,14 +475,20 @@ void HdfIO::set_dataset(int image_index)
 		need_update = 1;
 	}
 
-	if (need_update) {
+	if (need_update || cur_dataset < 0) {
 		char cur_dataset_name[32];
 		sprintf(cur_dataset_name, "%d", image_index);
 		hdf_err_off();
-		close_dataset(cur_dataset);
+		close_cur_dataset();
 		cur_dataset = H5Dopen(file, cur_dataset_name);
+		if (cur_dataset < 0) {
+			throw ImageReadException(filename, "open data set failed");
+		}
 		hdf_err_on();
+		cur_image_index = image_index;
 	}
+	
+	Assert(cur_dataset >= 0);
 }
 
 
@@ -832,10 +849,12 @@ int HdfIO::create_compound_attr(int image_index, const string & attr_name)
 	dims[0] = 1;
 	hid_t datatype = H5Tcopy(H5T_NATIVE_INT);
 	hid_t dataspace = H5Screate_simple(1, dims, NULL);
-
-	close_dataset(cur_dataset);
+	
+	close_cur_dataset();
 	cur_dataset = H5Dcreate(file, cur_dataset_name.c_str(), datatype, dataspace, H5P_DEFAULT);
 
+	H5Tclose(datatype);
+	H5Sclose(dataspace);
 	return 0;
 }
 
@@ -869,8 +888,9 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 	init();
 
 	int err = 0;
-	set_dataset(image_index);
-
+	//set_dataset(image_index);
+	hid_t cur_dataset_orig = cur_dataset;
+	
 	string cur_dataset_name = get_compound_name(image_index, get_item_name(CTFIT));
 	cur_dataset = H5Dopen(file, cur_dataset_name.c_str());
 
@@ -887,7 +907,10 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 			err = 1;
 		}
 	}
-
+	
+	H5Dclose(cur_dataset);
+    cur_dataset = cur_dataset_orig;
+	
 	cur_image_index = -1;
 	EXITFUNC;
 	return err;
@@ -899,8 +922,9 @@ void HdfIO::write_ctf(const Ctf & ctf, int image_index)
 	ENTERFUNC;
 	init();
 
-	set_dataset(image_index);
-
+	//set_dataset(image_index);
+	hid_t cur_dataset_orig = cur_dataset;
+	
 	string attr_name = get_item_name(CTFIT);
 	string cur_dataset_name = get_compound_name(image_index, attr_name);
 
@@ -918,6 +942,9 @@ void HdfIO::write_ctf(const Ctf & ctf, int image_index)
 		write_float_attr(keys[i].c_str(), v);
 	}
 
+	H5Dclose(cur_dataset);
+	cur_dataset = cur_dataset_orig;
+	
 	cur_image_index = -1;
 	EXITFUNC;
 }
@@ -962,11 +989,13 @@ void HdfIO::hdf_err_on()
 	H5Eset_auto(old_func, old_client_data);
 }
 
-void HdfIO::close_dataset(hid_t dataset)
+void HdfIO::close_cur_dataset()
 {
 	hdf_err_off();
-	if (dataset >= 0) {
-		H5Dclose(dataset);
+	if (cur_dataset >= 0) {
+		H5Dclose(cur_dataset);
+		cur_dataset = -1;
+		cur_image_index = -1;
 	}
 	hdf_err_on();
 }
@@ -1023,6 +1052,8 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 
 		if (ndim != 2 && ndim != 3) {
 			LOGERR("only handle 2D/3D HDF5. Your file is %dD.", ndim);
+			delete [] dims;
+			dims = 0;
 			return 1;
 		}
 		else {
@@ -1035,6 +1066,8 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 				*p_nz = 1;
 			}
 		}
+		delete [] dims;
+		dims = 0;
 	}
 	return 0;
 }
@@ -1054,7 +1087,7 @@ herr_t HdfIO::file_info(hid_t loc_id, const char *name, void *opdata)
 	return 0;
 }
 
-hid_t HdfIO::create_dataset(int image_index, int nx, int ny, int nz)
+void HdfIO::create_cur_dataset(int image_index, int nx, int ny, int nz)
 {
 	int ndim = 0;
 	int dims[3];
@@ -1071,12 +1104,14 @@ hid_t HdfIO::create_dataset(int image_index, int nx, int ny, int nz)
 
 	char tmp_dataset_name[32];
 	sprintf(tmp_dataset_name, "%d", image_index);
-
+	cur_image_index = image_index;
+	
 	hdf_err_off();
-	hid_t tmp_dataset = H5Dopen(file, tmp_dataset_name);
+	cur_dataset = H5Dopen(file, tmp_dataset_name);
 	hdf_err_on();
+	
 
-	if (tmp_dataset >= 0) {
+	if (cur_dataset >= 0) {
 		int ndim1 = 0;
 		int *dims1 = read_dims(image_index, &ndim1);
 		Assert(ndim == ndim1);
@@ -1084,8 +1119,10 @@ hid_t HdfIO::create_dataset(int image_index, int nx, int ny, int nz)
 		for (int i = 0; i < ndim; i++) {
 			Assert(dims[i] == dims1[i]);
 		}
+		delete [] dims1;
+		dims1 = 0;
 	}
-	else {
+	else {		
 		hsize_t *sdims = new hsize_t[ndim];
 		for (int i = 0; i < ndim; i++) {
 			sdims[i] = dims[i];
@@ -1094,16 +1131,22 @@ hid_t HdfIO::create_dataset(int image_index, int nx, int ny, int nz)
 		hid_t datatype = H5Tcopy(H5T_NATIVE_FLOAT);
 		hid_t dataspace = H5Screate_simple(ndim, sdims, NULL);
 
-		tmp_dataset = H5Dcreate(file, tmp_dataset_name, datatype, dataspace, H5P_DEFAULT);
+		cur_dataset = H5Dcreate(file, tmp_dataset_name, datatype, dataspace, H5P_DEFAULT);
 
 		H5Tclose(datatype);
 		H5Sclose(dataspace);
 
 		delete[]sdims;
 		sdims = 0;
+		
+		if (cur_dataset < 0) {
+			throw ImageWriteException(filename, "create dataset failed");
+		}
+		else {
+			increase_num_dataset();
+			image_indices.push_back(image_index);
+		}		
 	}
-
-	return tmp_dataset;
 }
 
 int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
