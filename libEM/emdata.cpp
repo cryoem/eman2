@@ -322,8 +322,8 @@ EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient,
 				yy=scale*(x*mx[1][0]+y*mx[1][1]+z*mx[1][2])+center.y;
 				zz=scale*(x*mx[2][0]+y*mx[2][1]+z*mx[2][2])+center.z;
 				float v;
-				if (xx<0||yy<0||zz<0||xx>=nx||yy>=ny||zz>=nz) v=0;
-				else v=sget_value_at_interp(xx,yy,zz);
+				if (xx<0||yy<0||zz<0||xx>nx-2||yy>ny-2||zz>nz-2) v=0.;
+				else v=get_value_at_interp(xx,yy,zz);
 				result->set_value_at(x+size.x/2,y+size.y/2,z+size.z/2,v);
 			}
 		}
