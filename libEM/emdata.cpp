@@ -786,8 +786,9 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 
 
 	// turn off data shuffling if we're doing an in-place transform
+	int offset = is_fftodd() ? 1 : 2;
 	if (ndim == 1) {
-		EMfft::complex_to_real_nd(rdata, d, nx - 2, ny, nz);
+		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 	}
 	else if (ndim == 2 && (fftplace == FFT_OUT_OF_PLACE)) {
 		int l = ny / 2 * nx;
@@ -801,7 +802,7 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 		}
 	}
 	else if (fftplace == FFT_OUT_OF_PLACE) {
-		char *t = new char[(nx + 2) * sizeof(float)];
+		char *t = new char[(nx + offset) * sizeof(float)];
 		int k = nx * ny * (nz + 1) / 2;
 		int l = nx * ny * (nz - 1) / 2;
 		size_t jj = nx * sizeof(float);
@@ -828,7 +829,6 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 		t = 0;
 	}
 
-	int offset = is_fftodd() ? 1 : 2;
 	if (ndim >= 2) {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
