@@ -54,7 +54,7 @@ namespace EMAN {
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
 
-	Dict get_attr_dict() const;
+	Dict get_attr_dict();
 	
 	float get_value_at(int x, int y, int z) const;
 	float get_value_at(int x, int y) const;
