@@ -20,7 +20,7 @@ namespace EMAN
 	static int generate_machine_stamp();
 	static bool check_file_by_magic(const void *first_block, const char *magic);
 	static void flip_image(float *data, size_t nx, size_t ny);
-	static bool is_sub_string(const char *s1, const char *s2);
+	static bool sstrncmp(const char *s1, const char *s2);
 	static string get_filename_by_ext(string old_filename, string ext);
 
 	static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,

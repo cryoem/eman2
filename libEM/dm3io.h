@@ -27,8 +27,8 @@ namespace EMAN
 	    float get_float(string name);
 	    double get_double(string name);
 
-	    int get_x() const;
-	    int get_y() const;
+	    int get_xsize() const;
+	    int get_ysize() const;
 	    int get_datatype() const;
 	    char *get_data() const;
 

@@ -32,6 +32,11 @@ namespace EMAN
 	int zsize;
     };
 
+    /**
+     * template Point defines a point in a 2D/3D space. It stores the
+     * point's coordinates. The coordinates can be in any native
+     * numerical type: int, float, double, etc. 
+     */
     template <class T> class Point {
     public:
 	Point() : x(0), y(0), z(0), ndim(0) {
@@ -55,6 +60,10 @@ namespace EMAN
     };
 
 
+    /**
+     * class Region defines either a 2D rectangular region or 3D
+     * rectangular region.
+     */    
     class Region
     {
     public:

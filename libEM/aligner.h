@@ -41,7 +41,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "(TranslateAligner";
+	    return "Translate";
 	}
 	
 	static Aligner *NEW()
@@ -66,7 +66,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "Translate3DAligner";
+	    return "Translate3D";
 	}
 	
 	static Aligner *NEW()
@@ -91,7 +91,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotateAligner";
+	    return "Rotate";
 	}
 	
 	static Aligner *NEW()
@@ -115,7 +115,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotatePrecenterAligner";
+	    return "RotatePrecenter";
 	}
 	
 	static Aligner *NEW()
@@ -138,7 +138,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotateCHAligner";
+	    return "RotateCH";
 	}
 	
 	static Aligner *NEW()
@@ -163,7 +163,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotateTranslateAligner";
+	    return "RotateTranslate";
 	}
 	
 	static Aligner *NEW()
@@ -188,7 +188,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotateTranslateBestAligner";
+	    return "RotateTranslateBest";
 	}
 	
 	static Aligner *NEW()
@@ -214,7 +214,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotateTranslateRadonAligner";
+	    return "RotateTranslateRadon";
 	}
 	
 	static Aligner *NEW()
@@ -241,7 +241,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RotateFlipAligner";
+	    return "RotateFlip";
 	}
 	
 	static Aligner *NEW()
@@ -266,7 +266,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "RotateTranslateFlipAligner";
+	    return "RotateTranslateFlip";
 	}
 	
 	static Aligner *NEW()
@@ -292,7 +292,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "RTFSlowAligner";
+	    return "RTFSlow";
 	}
 	
 	static Aligner *NEW()
@@ -317,7 +317,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RTFSlowestAligner";
+	    return "RTFSlowest";
 	}
 	
 	static Aligner *NEW()
@@ -343,7 +343,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RTFBestAligner";
+	    return "RTFBest";
 	}
 	
 	static Aligner *NEW()
@@ -370,7 +370,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "RTFRadonAligner";
+	    return "RTFRadon";
 	}
 	
 	static Aligner *NEW()
@@ -399,7 +399,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "RefineAligner";
+	    return "Refine";
 	}
 	static Aligner *NEW()
 	{

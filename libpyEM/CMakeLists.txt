@@ -16,6 +16,6 @@ ADD_LIBRARY(pyFilter2 SHARED libpyFilter2.cpp)
 ADD_LIBRARY(pyEMData2 SHARED pyem.C libpyEMData2.cpp)
 
 INSTALL_TARGETS(/lib pyGeometry2 pyFactory2 pyUtils2 pyFilter2 pyEMData2)
-INSTALL_FILES(/lib .py e2EMAN.py)
+INSTALL_FILES(/lib "^.+\\.py$")
 INSTALL_FILES(/include "^.+\\.h$")
 

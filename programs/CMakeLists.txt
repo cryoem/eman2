@@ -1,4 +1,5 @@
 LINK_LIBRARIES(EM2)
 ADD_EXECUTABLE(e2iminfo iminfo.C)
-INSTALL_TARGETS(/bin e2iminfo )
+ADD_EXECUTABLE(e2proc2d proc2d.C)
+INSTALL_TARGETS(/bin e2iminfo e2proc2d)
 

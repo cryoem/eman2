@@ -5,7 +5,7 @@
 
 using namespace EMAN;
 
-void usage(const char* progname)
+void usage(const char *progname)
 {
     printf("\n%s [-H] [-vN] [-stat] <image file>\n", progname);
     printf("    -H: show all header information.\n");
@@ -50,7 +50,8 @@ int main(int argc, char* argv[])
 	d->read_image(imagefile, 0, EMData::HEADER_AND_DATA);
     }
     
-    printf("%20s: %d x %d x %d\n", "Image Dimensions", d->get_x(), d->get_y(), d->get_z());
+    printf("%20s: %d x %d x %d\n", "Image Dimensions",
+	   d->get_xsize(), d->get_ysize(), d->get_zsize());
 
     if (stat) {
 	printf("mean=%1.3g sigma=%1.3g skewness=%1.3g kurtosis=%1.3g\n",

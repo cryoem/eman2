@@ -32,10 +32,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_3, align, 2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_2, copy, 0, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_normalize_to_overloads_1_5, normalize_to, 1, 5)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_least_square_normalize_to_overloads_1_3, least_square_normalize_to, 1, 3)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_to_mass_center_overloads_0_1, to_mass_center, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_fast_translate_overloads_0_1, fast_translate, 0, 1)
@@ -198,9 +194,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_max_location", &EMAN::EMData::get_max_location)
         .def("get_min_index", &EMAN::EMData::get_min_index)
         .def("get_max_index", &EMAN::EMData::get_max_index)
-        .def("get_x", &EMAN::EMData::get_x)
-        .def("get_y", &EMAN::EMData::get_y)
-        .def("get_z", &EMAN::EMData::get_z)
+        .def("get_xsize", &EMAN::EMData::get_xsize)
+        .def("get_ysize", &EMAN::EMData::get_ysize)
+        .def("get_zsize", &EMAN::EMData::get_zsize)
         .def("get_ndim", &EMAN::EMData::get_ndim)
         .def("get_parent", &EMAN::EMData::get_parent, return_value_policy< manage_new_object >())
         .def("set_parent", &EMAN::EMData::set_parent)

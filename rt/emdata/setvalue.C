@@ -19,9 +19,9 @@ int main(int argc, char* argv[])
     err = e1.read_image("/home/lpeng/images/jj0880f.mrc");
 
     
-    int nx = e1.get_x();
-    int ny = e1.get_y();
-    int nz = e1.get_z();
+    int nx = e1.get_xsize();
+    int ny = e1.get_ysize();
+    int nz = e1.get_zsize();
     
     if (!err) {
 	if (method == 0) {

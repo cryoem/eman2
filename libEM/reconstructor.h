@@ -14,8 +14,10 @@ using std::string;
 namespace EMAN
 {
 
-    // these magic numbers and macros need to be removed later
-
+    /**
+     * these magic numbers and macros need to be removed later
+     */
+    
 #define I5G	(10.4 / (M_PI*M_PI))	// used for 5x5x5 interpolation
 #define I4G	(8.8 / (M_PI*M_PI))	// used for 4 interpolation
 #define I3G	(6.4 / (M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
@@ -63,7 +65,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "FftReconstructor";
+	    return "Fft";
 	}
 	static Reconstructor *NEW()
 	{
@@ -100,7 +102,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "WfFftReconstructor";
+	    return "WfFft";
 	}
 	static Reconstructor *NEW()
 	{
@@ -136,7 +138,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "BpRealReconstructor";
+	    return "BpReal";
 	}
 	static Reconstructor *NEW()
 	{

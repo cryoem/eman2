@@ -10,10 +10,11 @@ namespace EMAN
     class EMData;
     class Transform;
     
-    // todo: 
-    // define a function to return native value; another function to
-    // return normlized value from 0-1, where bigger means better.
-
+    /** todo: 
+     * define a function to return native value; another function to
+     * return normlized value from 0-1, where bigger means better.
+     */
+    
     class Cmp
     {
     public:
@@ -43,7 +44,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "DotCmp";
+	    return "Dot";
 	}
 
 	static Cmp *NEW() 
@@ -68,7 +69,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "LinearCmp";
+	    return "Linear";
 	}
 
 	static Cmp *NEW()
@@ -93,7 +94,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "PhaseCmp";
+	    return "Phase";
 	}
 
 	static Cmp *NEW()
@@ -117,7 +118,7 @@ namespace EMAN
 
 	string get_name() const
 	{
-	    return "FSCCmp";
+	    return "FSC";
 	}
 
 	static Cmp *NEW()

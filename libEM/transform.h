@@ -12,6 +12,11 @@ using std::string;
 
 namespace EMAN
 {
+    /**
+     * template Vec3 defines a 3-element vector and various vector
+     * operations. The vector may store any numeric data type
+     * including int, float, double, etc.
+     */
     template <class T> class Vec3
     {
     public:
@@ -217,7 +222,12 @@ namespace EMAN
 	}
 	return false;
     }
-    
+
+    /**
+     * class Matrix3f defines a 3x3 floating-point matrix and various
+     * matrix operation. It uses gsl matrix as its internal
+     * representation and implementation.
+     */      
     class Matrix3f
     {
     public:
@@ -357,7 +367,11 @@ namespace EMAN
 
 
     
-    
+    /**
+     * class Matrix4f defines a 4x4 floating-point matrix and various
+     * matrix operation. It uses gsl matrix as its internal
+     * representation and implementation.
+     */      
     class Matrix4f
     {
     public:
@@ -421,24 +435,25 @@ namespace EMAN
     bool operator!=(const Matrix4f & m1, const Matrix4f & m2);
 
 
-    /*
-      Euler angles have the disadvantage of being
-      susceptible to "Gimbal lock" where attempts to rotate an
-      object fail due to the order in which the rotations are performed.
-
-      Quaternions are a solution to this problem. Instead of rotating an
-      object through a series of successive rotations, a quaternion allows
-      the programmer to rotate an object through a single arbitary rotation
-      axis.
-
-      Because the rotation axis is specifed as a unit direction vector,
-      it may be calculated through vector mathematics or from spherical
-      coordinates ie (longitude/latitude).
-
-      Quaternions offer another advantage in that they be interpolated.
-      This allows for smooth and predictable rotation effects.
-    */
-
+    /**
+     * class Quaternion is used in Rotation and Transformation to
+     * replace Euler angles.
+     * Euler angles have the disadvantage of being
+     * susceptible to "Gimbal lock" where attempts to rotate an
+     * object fail due to the order in which the rotations are performed.
+     * 
+     * Quaternions are a solution to this problem. Instead of rotating an
+     * object through a series of successive rotations, a quaternion allows
+     * the programmer to rotate an object through a single arbitary rotation
+     * axis.
+     * 
+     * Because the rotation axis is specifed as a unit direction vector,
+     * it may be calculated through vector mathematics or from spherical
+     * coordinates ie (longitude/latitude).
+     * 
+     * Quaternions offer another advantage in that they be interpolated.
+     * This allows for smooth and predictable rotation effects.
+     */
     class Quaternion
     {
     public:

@@ -14,9 +14,9 @@ int main()
 
     if (!err) {    
 	EMData e2;
-	e2.set_size(e1.get_x(), e1.get_y(), e1.get_z());
+	e2.set_size(e1.get_xsize(), e1.get_ysize(), e1.get_zsize());
 	float* data = e2.get_data();
-	int size = e1.get_x() * e1.get_y() * e1.get_z();
+	int size = e1.get_xsize() * e1.get_ysize() * e1.get_zsize();
     
 	for (int i = 0; i < size; i++) {
 	    data[i] = 0;

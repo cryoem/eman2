@@ -225,9 +225,9 @@ namespace EMAN
 	int get_min_index() const;
 	int get_max_index() const;
 
-	int get_x() const;
-	int get_y() const;
-	int get_z() const;
+	int get_xsize() const;
+	int get_ysize() const;
+	int get_zsize() const;
 	int get_ndim() const;
 
 	EMData *get_parent() const;
@@ -342,17 +342,17 @@ namespace EMAN
     EMData operator*(const EMData & a, const EMData & b);
     EMData operator/(const EMData & a, const EMData & b);
 
-    inline int EMData::get_x() const
+    inline int EMData::get_xsize() const
     {
 	return nx;
     }
 
-    inline int EMData::get_y() const
+    inline int EMData::get_ysize() const
     {
 	return ny;
     }
 
-    inline int EMData::get_z() const
+    inline int EMData::get_zsize() const
     {
 	return nz;
     }

@@ -46,7 +46,7 @@ namespace EMAN
 	Dict params;
     };
 
-    // mode = 1,2,3,4,5,6,7
+   
     class FFTProjector : public Projector
     {
     public:
@@ -85,7 +85,7 @@ namespace EMAN
     public:
 	string get_name() const
 	{
-	    return "RoundFFTProjector";
+	    return "RoundFFT";
 	}
 	
 	static Projector *NEW()
@@ -247,7 +247,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "OptimizedProjector";
+	    return "Optimized";
 	}
 
 	static Projector *NEW()
@@ -264,7 +264,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "FastProjector";
+	    return "Fast";
 	}
 	
 	static Projector *NEW()
@@ -281,7 +281,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "FastSurfaceProjector";
+	    return "FastSurface";
 	}
 	
 	static Projector *NEW()
@@ -298,7 +298,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "SlowAccurateProjector";
+	    return "SlowAccurate";
 	}
 	
 	static Projector *NEW()
@@ -315,7 +315,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "SlowAccurateYProjector";
+	    return "SlowAccurateY";
 	}
 	
 	static Projector *NEW()
@@ -338,7 +338,7 @@ namespace EMAN
 	
 	string get_name() const
 	{
-	    return "SlowAccurate2DProjector";
+	    return "SlowAccurate2D";
 	}
 	
 	static Projector *NEW()
