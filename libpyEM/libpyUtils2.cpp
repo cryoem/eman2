@@ -215,16 +215,16 @@ struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
         return call_method< int >(self, "read_header", p0, p1, p2, p3);
     }
 
-    int write_header(const EMAN::Dict& p0, int p1, bool p2) {
-        return call_method< int >(self, "write_header", p0, p1, p2);
+    int write_header(const EMAN::Dict& p0, int p1, const EMAN::Region* p2, bool p3) {
+        return call_method< int >(self, "write_header", p0, p1, p2, p3);
     }
 
     int read_data(float* p0, int p1, const EMAN::Region* p2, bool p3) {
         return call_method< int >(self, "read_data", p0, p1, p2, p3);
     }
 
-    int write_data(float* p0, int p1, bool p2) {
-        return call_method< int >(self, "write_data", p0, p1, p2);
+    int write_data(float* p0, int p1, const EMAN::Region* p2, bool p3) {
+        return call_method< int >(self, "write_data", p0, p1, p2, p3);
     }
 
     int read_ctf(EMAN::Ctf& p0, int p1) {
@@ -288,6 +288,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("end", &EMAN::Log::end, EMAN_Log_end_overloads_1_3())
         .def("set_level", &EMAN::Log::set_level)
         .def("set_logfile", &EMAN::Log::set_logfile)
+        .def("loc", &EMAN::Log::loc)
         .staticmethod("logger")
     );
 
@@ -308,7 +309,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_image_ext_type", &EMAN::EMUtil::get_image_ext_type)
         .def("get_image_type", &EMAN::EMUtil::get_image_type)
         .def("get_image_count", &EMAN::EMUtil::get_image_count)
-        .def("get_imageio", &EMAN::EMUtil::get_imageio, EMAN_EMUtil_get_imageio_overloads_2_3()[ return_internal_reference< 1 >() ])
+        .def("get_imageio", &EMAN::EMUtil::get_imageio, return_internal_reference< 1 >(), EMAN_EMUtil_get_imageio_overloads_2_3())
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
         .def("dump_dict", &EMAN::EMUtil::dump_dict)
@@ -461,6 +462,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     enum_< EMAN::ImageIO::IOMode >("IOMode")
         .value("READ_ONLY", EMAN::ImageIO::READ_ONLY)
         .value("READ_WRITE", EMAN::ImageIO::READ_WRITE)
+        .value("WRITE_ONLY", EMAN::ImageIO::WRITE_ONLY)
     ;
 
     delete EMAN_ImageIO_scope;
@@ -501,6 +503,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("check_file_by_magic", &EMAN::Util::check_file_by_magic)
         .def("flip_image", &EMAN::Util::flip_image)
         .def("sstrncmp", &EMAN::Util::sstrncmp)
+        .def("int2str", &EMAN::Util::int2str)
+        .def("get_line_from_string", &EMAN::Util::get_line_from_string)
         .def("get_str_float", (bool (*)(const char*, const char*, float*))&EMAN::Util::get_str_float)
         .def("get_str_float", (bool (*)(const char*, const char*, float*, float*))&EMAN::Util::get_str_float)
         .def("get_str_float", (bool (*)(const char*, const char*, int*, float*, float*))&EMAN::Util::get_str_float)
@@ -508,6 +512,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_str_int", (bool (*)(const char*, const char*, int*, int*))&EMAN::Util::get_str_int)
         .def("get_str_int", (bool (*)(const char*, const char*, int*, int*, int*))&EMAN::Util::get_str_int)
         .def("get_filename_by_ext", &EMAN::Util::get_filename_by_ext)
+        .def("sbasename", &EMAN::Util::sbasename)
         .def("calc_least_square_fit", &EMAN::Util::calc_least_square_fit)
         .def("save_data", (void (*)(const std::vector<float,std::allocator<float> >&, const std::vector<float,std::allocator<float> >&, std::string))&EMAN::Util::save_data)
         .def("save_data", (void (*)(float, float, const std::vector<float,std::allocator<float> >&, std::string))&EMAN::Util::save_data)
@@ -544,9 +549,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
         .staticmethod("flip_complex_phase")
         .staticmethod("square")
+        .staticmethod("int2str")
         .staticmethod("get_str_int")
         .staticmethod("calc_best_fft_size")
-        .staticmethod("square_sum")
+        .staticmethod("get_frand")
         .staticmethod("angle_sub_pi")
         .staticmethod("get_time_label")
         .staticmethod("trilinear_interpolate")
@@ -567,14 +573,16 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("agauss")
         .staticmethod("eman_erfc")
         .staticmethod("bilinear_interpolate")
-        .staticmethod("calc_least_square_fit")
+        .staticmethod("get_line_from_string")
         .staticmethod("find_min_and_max")
         .staticmethod("get_filename_by_ext")
-        .staticmethod("get_frand")
+        .staticmethod("calc_least_square_fit")
+        .staticmethod("square_sum")
         .staticmethod("goodf")
         .staticmethod("hypot3")
         .staticmethod("flip_image")
         .staticmethod("eman_copysign")
+        .staticmethod("sbasename")
         .staticmethod("round")
     ;
 

@@ -1,0 +1,12 @@
+Include("emdata.h")
+
+Factory = Template("EMAN::Factory", "emobject.h")
+
+Projector = Class("EMAN::Projector", "projector.h")
+set_policy(Projector.project3d, return_value_policy(manage_new_object))
+
+Function("EMAN::dump_projectors", "projector.h")
+
+ProjectorFactory = Factory("EMAN::Projector", "Projectors")
+set_policy(ProjectorFactory.get, return_value_policy(manage_new_object))
+exclude(ProjectorFactory.add)

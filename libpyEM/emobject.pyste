@@ -1,0 +1,11 @@
+Include("emdata.h")
+Include("xydata.h")
+
+Exception = Class("EMAN::Exception", "exception.h")
+
+EMObject = Class("EMAN::EMObject", "emobject.h")
+set_policy(EMObject.operator['EMAN::EMData*'], return_internal_reference())
+set_policy(EMObject.operator['EMAN::XYData*'], return_internal_reference())
+exclude(EMObject.operator['const char*'])
+
+TypeDict = Class("EMAN::TypeDict", "emobject.h")

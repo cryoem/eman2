@@ -26,8 +26,8 @@ namespace EMAN {
 		static void numpy2em(python::numeric::array& array, EMData* image);
 	};
 	
-    class PyList {
-    public:
+	class PyList {
+	public:
 
 		template <class T>
 		static vector<T> list2vector(const python::list& l)
