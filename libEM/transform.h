@@ -437,6 +437,10 @@ namespace EMAN
 
     /** Quaternion is used in Rotation and Transformation to replace Euler angles.
      *
+     * Quaternions extend the concept of rotation in three dimensions to
+     * rotation in four dimensions. This avoids the problem of "gimbal-lock"
+     * and allows for the implementation of smooth and continuous rotation.
+     *
      * Euler angles have the disadvantage of being
      * susceptible to "Gimbal lock" where attempts to rotate an
      * object fail due to the order in which the rotations are performed.
@@ -522,11 +526,21 @@ namespace EMAN
     bool operator==(const Quaternion & q1, const Quaternion & q2);
     bool operator!=(const Quaternion & q1, const Quaternion & q2);
 
-    /** Rotation defines various conventions of Euler angles.
+    /** Rotation class defines various conventions of Euler angles.
      * It can also convert any convention to any other convention.
+     *
+     * Any rotation may be described using three angles called Euler Angles.
+     * There are several conventions for Euler angles, depending on
+     * the axes about which the rotations are carried out.    
+     *   1. x-convention: (z, x, z')
+     *   2. y-convention
+     *   3. xyz-convention
+     *
      * Currently the following conventions are supported: EMAN,
      * IMAGIC, SPIN,  QUATERNION, MATRIX, SGIROT, SPIDER, MRC.
      *
+     * EMAN is a (z,x,z') -> (az, alt, phi), usually specified as
+     * (alt, az, phi).
      */
     class Rotation
     {

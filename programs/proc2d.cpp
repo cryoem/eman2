@@ -4,7 +4,7 @@
 #include "util.h"
 #include "ctf.h"
 
-// todo: [list=<list file>] [exclude=<list file>]  [filefilt=<file>]  [calcsf=[<n>,]<output>]  [fftavg=<file name>] 
+// todo:  [calcsf=[<n>,]<output>]  [fftavg=<file name>] 
 
 using namespace EMAN;
 using std::map;

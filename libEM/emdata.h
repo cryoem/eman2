@@ -26,6 +26,9 @@ namespace EMAN
     class Ctf;
     class XYData;
 
+    /** EMData stores an image's data and defines core image processing routines.
+     * The image is 2D or 3D, in real space or fourier space (complex image).
+     */
     class EMData
     {
     public:
@@ -78,8 +81,9 @@ namespace EMAN
 			 float min_render, float max_render,
 			 void *ref, void cmap(void *, int coord, unsigned char *tri));
 
-
+	/** convert the complex image from real/imaginary to amplitude/phase */
 	void ri2ap();
+	/** convert the complex image from amplitude/phase to real/imaginary */
 	void ap2ri();
 
 	float *setup4slice(bool redo = false);
@@ -94,6 +98,16 @@ namespace EMAN
 
 	EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
 	EMData *do_radon();
+	
+	/** calculate Cross-correlation function (CCF).
+	 *
+	 * CCF is a 2D function that is obtained by forming the scalar
+	 * cross-product of two images (i.e., the sum of products of
+	 * equivalent pixels) as a function of a 2D shift vector. The
+	 * CCF is often used to achieve alignment between two images,
+	 * since it displays a high value (a peak) at the place where
+	 * a motif contained in both images come into register.
+	 */
 	EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = 0);
 	EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
 	EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);

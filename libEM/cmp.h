@@ -121,12 +121,17 @@ namespace EMAN
 	    return d;
 	}
     };
+    
     /** Amplitude weighted mean phase difference (radians) with optional
      * SNR weight. SNR should be an array as returned by ctfcurve()
      * 'data' should be the less noisy image, since it's amplitudes 
      * will be used to weight the phase residual. 2D only.
-     */
 
+     * Use Phase Residual as a measure of similarity
+     * Differential phase residual (DPR) is a measure of statistical
+     * dependency between two averages, computed over rings in Fourier
+     * space as a function of ring radius (= spatial frequency, or resolution) 
+     */
     class PhaseCmp : public Cmp
     {
     public:
@@ -151,7 +156,11 @@ namespace EMAN
 	}
     };
 
-    /** returns a quality factor based on FSC between images.
+    /** returns a quality factor based on FRC between images.
+     *  Fourier ring correlation (FRC) is a measure of statistical
+     * dependency between two averages, computed by comparison of
+     * rings in Fourier space. 1 means prefect agreement. 0 means no
+     * correlation.    
      */
     class FRCCmp : public Cmp
     {

@@ -22,6 +22,7 @@ namespace EMAN
     class EMData;
 
     /** Projector class is the base class for all 3D projectors.
+     * Projector generates 2D projections from a 3D model.
      * Each specific projector has a unique name and should be called
      * through the name.
      *

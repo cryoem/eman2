@@ -20,6 +20,10 @@ namespace EMAN
     class XYData;
 
     /** Ctf is the base class for all CTF model.
+     *
+     * Contrast transfer function (CTF) is the  function that
+     * describes the transfer of information from the object
+     * to the contrast observed in the image for electron microscopy.
      */
     class Ctf
     {

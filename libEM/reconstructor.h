@@ -165,6 +165,11 @@ namespace EMAN
     };
 
     /** Real space 3D reconstruction using back projection.
+     * 
+     * Back-projection is a method of 3D reconstruction from 2D
+     * projections. It is based on superposing 3D functions
+     * ("back-projection bodies") obtained by translating the
+     * 2D projections along the directions of projection. 
      */
     class BackProjectionReconstructor : public Reconstructor
     {
