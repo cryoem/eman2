@@ -50,6 +50,23 @@ namespace EMAN
 	 * 
 	 * For image formats storing multiple images, valid image_index = [0, n].
 	 *
+	 * For image formats storing multiple images, the image append and
+	 * insertion policy is:
+	 *
+	 *   - it should support appending image to existing file.
+	 *
+	 *   - it should support appending image to new file.
+	 *
+	 *   - it should support insert image in existing file with gap
+	 *     between EOF and the new image. The gap should be zeroed.
+	 * 
+	 *   - it should support insert image in new file with image index != 0.
+	 *
+	 *   - insert image in existing file overwriting existing image.
+	 *
+	 *   - The gap from insertion or appending should be filled with zero.
+	 *
+	 *
 	 * The typical way to use an ImageIO instance is:
 	 * a) To read:
 	 *    ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
