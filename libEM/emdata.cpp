@@ -645,11 +645,7 @@ EMData *EMData::do_fft()
 	EMData *dat = copy_head();
 	dat->set_size(nx2, ny, nz);
 
-
 	float *d = dat->get_data();
-	get_data();
-
-
 	EMfft::real_to_complex_nd(rdata, d, nx, ny, nz);
 
 	if (nz == 1) {
@@ -724,7 +720,6 @@ EMData *EMData::do_ift()
 	EMData *dat = copy_head();
 
 	dat->set_size(nx, ny, nz);
-	get_data();
 	ap2ri();
 
 	float *d = dat->get_data();
@@ -812,7 +807,6 @@ EMData* EMData::get_fft_amplitude()
 	}
 
 	ri2ap();
-	get_data();
 
 	int nx2 = nx - 2;
 	EMData *dat = copy_head();
@@ -863,7 +857,6 @@ EMData* EMData::get_fft_phase()
 	}
 
 	ri2ap();
-	get_data();
 
 	int nx2 = nx - 2;
 	EMData *dat = copy_head();
@@ -916,7 +909,6 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Transform &xform)
 	}
 	
 	slice->ap2ri();
-	get_data();
 
 	float *norm = parent->get_data();
 	float *dat = slice->get_data();
@@ -1668,7 +1660,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 		throw ImageDimensionException("no 3D image");
 	}
 
-	get_data();
+
 	float *yc = new float[n];
 
 	for (int i = 0; i < n; i++) {
@@ -2103,29 +2095,37 @@ void EMData::update_stat()
 	EXITFUNC;
 }
 
-boost::multi_array_ref<float, 3> EMData::get_view() const
-{
-	const int ndims = 3;
-	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
-	boost::multi_array_ref<float, ndims> marray(rdata, dims);
-	return marray;	
-}
-
-boost::multi_array_ref<float, 2> EMData::get_view(int x0, int y0) const
+MArray2D EMData::get_2dview() const
 {
 	const int ndims = 2;
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
-	boost::multi_array_ref<float, ndims> marray(rdata, dims);
+	MArray2D marray(rdata, dims);
+	return marray;	
+}
+
+MArray3D EMData::get_3dview() const
+{
+	const int ndims = 3;
+	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
+	MArray3D marray(rdata, dims);
+	return marray;	
+}
+
+MArray2D EMData::get_2dview(int x0, int y0) const
+{
+	const int ndims = 2;
+	boost::array<std::size_t,ndims> dims = {{nx, ny}};
+	MArray2D marray(rdata, dims);
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
 	marray.reindex(bases);
 	return marray;
 }
 
-boost::multi_array_ref<float, 3> EMData::get_view(int x0, int y0, int z0) const
+MArray3D EMData::get_3dview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
-	boost::multi_array_ref<float, ndims> marray(rdata, dims);
+	MArray3D marray(rdata, dims);
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
 	return marray;
@@ -3310,8 +3310,6 @@ void EMData::median_shrink(int shrink_factor)
 	set_size(shrinked_nx, shrinked_ny, shrinked_nz);
 	scale_pixel((float)shrink_factor);
 
-	get_data();
-
 	int nxy_old = nx_old * ny_old;
 	int nxy_new = nx * ny;
 
@@ -3380,7 +3378,6 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	int n = static_cast < int >(array.size());
 
 	ap2ri();
-	get_data();
 
 	size_t ndims = get_ndim();
 
@@ -5320,7 +5317,7 @@ void EMData::setup_insert_slice(int size)
 	set_ri(true);
 	to_zero();
 
-	get_data();
+
 	for (int i = 0; i < nx * ny * nz; i += 2) {
 		float f = Util::get_frand(0.0f, (float)(2 * M_PI));
 		rdata[i] = scale * sin(f);

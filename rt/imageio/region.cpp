@@ -17,14 +17,19 @@ void test_em()
 }
 
 
-void test_region(EMUtil::ImageType imgtype, const char * testfile)
-{	
+void test_region(EMUtil::ImageType imgtype, const char * testfile,
+				 EMUtil::ImageType outtype = EMUtil::IMAGE_UNKNOWN)
+{
+	if (outtype == EMUtil::IMAGE_UNKNOWN) {
+		outtype = imgtype;
+	}
+	
 	bool is_3d = false;
 	if (imgtype == EMUtil::IMAGE_IMAGIC) {
 		is_3d = true;
 	}
 		
-	const char * imgfile = TestUtil::get_debug_image(testfile);
+	string imgfile = TestUtil::get_debug_image(testfile);
 	string imgbase = Util::remove_filename_ext(testfile);
 	string ext = Util::get_filename_ext(testfile);
 	string writefile_2d = imgbase + "_write_region_2d." + ext;
@@ -34,8 +39,13 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile)
 	
 	EMData e;
 	e.read_image(imgfile, 0, false, 0, is_3d);
-	e.write_image(writefile_2d, 0, imgtype);
-	e.write_image(writefile_3d, 0, imgtype);
+
+	int ndims = e.get_ndim();
+	e.write_image(writefile_2d, 0, outtype);
+	return;
+	if (ndims == 3) {
+		e.write_image(writefile_3d, 0, outtype);
+	}
 	
 	int nx = e.get_xsize();
 	int ny = e.get_ysize();
@@ -50,11 +60,12 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile)
 	if (zsize == 0) {
 		zsize = 1;
 	}
-	int ndims = e.get_ndim();
+	
 	
 	Region region_2d;
 	Region region_3d;
-	
+	Region bad_region(x0, y0, xsize, 4*ysize);
+
 	if (ndims == 2) {
 		region_2d = Region(x0, y0, xsize, ysize);
 	}
@@ -62,26 +73,45 @@ void test_region(EMUtil::ImageType imgtype, const char * testfile)
 		region_2d = Region(x0, y0, z0, xsize, ysize, 1);
 		region_3d = Region(x0, y0, z0, xsize, ysize, zsize);
 	}
-	
+
 	
 	EMData e2;
 	e2.read_image(imgfile, 0, false, &region_2d, is_3d);
-	e2.write_image(readfile_2d, 0, imgtype);
+	
+	e2.write_image(readfile_2d, 0, outtype);
 
 	if (ndims == 3) {
 		EMData e4;
 		e4.read_image(imgfile, 0, false, &region_3d, is_3d);
-		e4.write_image(readfile_3d, 0, imgtype);
+		e4.write_image(readfile_3d, 0, outtype);
 	}
 
 	EMData e3;
 	e3.set_size(xsize, ysize, zsize);
 	e3.to_zero();
 	
-	e3.write_image(writefile_2d, 0, imgtype, false, &region_2d);
+	e3.write_image(writefile_2d, 0, outtype, false, &region_2d);
 	if (ndims == 3) {
-		e3.write_image(writefile_3d, 0, imgtype, false, &region_3d);
+		e3.write_image(writefile_3d, 0, outtype, false, &region_3d);
 	}
+	try {
+		e3.write_image(writefile_2d, 0, outtype, false, &bad_region);		
+	}
+	catch (_ImageReadException& e) {
+		LOGERR(e.what());
+	}
+	
+	try {
+		EMData e22;
+		e22.read_image(imgfile, 0, false, &bad_region, is_3d);
+	}
+	catch (_ImageReadException& e) {
+		LOGERR(e.what());
+	}
+	catch (E2Exception & e) {
+		LOGERR(e.what());
+	}
+	
 }
 
 	
@@ -93,11 +123,12 @@ int main(int argc, char *argv[])
 		test_region(EMUtil::IMAGE_MRC, "groel3d.mrc");
 		test_region(EMUtil::IMAGE_MRC, "samesize1.mrc");
 		test_region(EMUtil::IMAGE_MRC, "tablet.mrc");
-#endif
-#if 1
+
 		test_region(EMUtil::IMAGE_IMAGIC, "start.hed");
+		test_region(EMUtil::IMAGE_PIF, "sv-3d.pif");
 #endif
-		
+		//test_region(EMUtil::IMAGE_SINGLE_SPIDER, "spider-single.spi");
+		//test_region(EMUtil::IMAGE_SPIDER, "spider-stack.spi");
 	}
 	catch(E2Exception &e) {
 		printf("%s\n", e.what());

@@ -30,6 +30,9 @@ namespace EMAN
 	class XYData;
 	class Transform;
 	
+#define MArray2D boost::multi_array_ref<float, 2>
+#define MArray3D boost::multi_array_ref<float, 3>
+	
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
 	 *
@@ -38,6 +41,8 @@ namespace EMAN
 	class EMData
 	{
 	public:
+
+		
 		/** Construct an empty EMData instance. It has no image data. */
 		EMData();
 		virtual ~ EMData();
@@ -953,9 +958,10 @@ namespace EMAN
 		 */
 		void set_pathnum(int n);
 
-		boost::multi_array_ref<float, 3> get_view() const;
-		boost::multi_array_ref<float, 2> get_view(int x0, int y0) const;
-		boost::multi_array_ref<float, 3> get_view(int x0, int y0, int z0) const;
+		MArray2D get_2dview() const;
+		MArray3D get_3dview() const;
+		MArray2D get_2dview(int x0, int y0) const;
+		MArray3D get_3dview(int x0, int y0, int z0) const;
 		
 		/** Get one row of a 1D/2D image.
 		 *

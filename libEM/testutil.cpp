@@ -36,22 +36,17 @@ string TestUtil::get_debug_string(int i)
 	return string(a);
 }
 
-const char* TestUtil::get_debug_image(const char* imagename)
+string TestUtil::get_debug_image(const string & imagename)
 {
-	if (!imagename) {
-		return "";
-	}
-	
-	string fullpath = "";
-	char * imgpath = getenv("DEBUG_IMAGE_PATH");
-	if (imgpath) {
-		fullpath = string(imgpath);
+	char imgpath[1024];
+	char * path_env = getenv("DEBUG_IMAGE_PATH");
+	if (path_env) {
+		sprintf(imgpath, "%s/%s", path_env, imagename.c_str());
 	}
 	else {
-		fullpath = string(getenv("HOME")) + "/images";
+		sprintf(imgpath, "%s/images/%s", getenv("HOME"), imagename.c_str());
 	}
-	fullpath = fullpath + "/" + string(imagename);
-	return fullpath.c_str();
+	return string(imgpath);
 }
 
 void TestUtil::to_emobject(const Dict& d)

@@ -85,10 +85,10 @@ int test_rfilter(EMData *em1, int type, float v1, float v2, float v3,
 	
 void test_filters()
 {
-	const char *image1 = EMAN::TestUtil::get_debug_image("groel2d.mrc");
+	string image1 = EMAN::TestUtil::get_debug_image("groel2d.mrc");
 
 	EMData * em1 = new EMData();
-	em1->readImage(image1, 0);
+	em1->readImage(image1.c_str(), 0);
 
 	EMAN::EMData *em2 = new EMAN::EMData();
 	em2->read_image(image1);

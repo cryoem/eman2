@@ -27,7 +27,7 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes HDF, AMRIRA, SPIDER, SINGLE_SPIDER, PIF, VTK, XPLOR.
+       This includes HDF, AMRIRA, SPIDER, SINGLE_SPIDER, VTK, XPLOR.
 	   
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
@@ -50,6 +50,11 @@
 	   But the function overloading works at other situations. Need to 
 	   figure out why.
 
+  080. Spider writing seems doesn't work. Need to fix it.
+
+  081. rename multi_array_ref<float, 3> to better name like MultiArray3D.
+  
+  	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.

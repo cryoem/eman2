@@ -7,7 +7,7 @@ int main()
 	EMData * image = new EMData();
 	EMData * image2 = new EMData();
 	
-	const char* test_imagename = TestUtil::get_debug_image("search.dm3");
+	string test_imagename = TestUtil::get_debug_image("search.dm3");
 	int err = 0;
 	
 	try {

@@ -22,12 +22,18 @@ namespace EMAN
 	 *
 	 * There are 2 spider image formats:
 	 *
-	 *  - single-spider. It is simple 2D/3D non-stack file. image = header + data.
+	 *  - single-spider.
+	 *       It is simple 2D/3D non-stack file. image = header + data.
 	 *
-	 *  - image stack. There is one overall stack header followed by a stack 
-	 *                 of images in which each image has its own image header.
-	 *
+	 *  - image stack.
+	 *        There is one overall stack header followed by a stack 
+	 *        of images in which each image has its own image header.
+	 *        EMAN currently only supports homogeneous image stack,
+	 *        which means all images have the same sizes. 
+	 *                 
 	 * Record: In spider terminology, each row is called a record.
+	 *
+	 * 
 	 *
 	 */
 		
@@ -46,8 +52,10 @@ namespace EMAN
 		{
 			return false;
 		}
+
 		int get_nimg();
-	  protected:
+
+	protected:
 		struct SpiderHeader
 		{
 			float nslice;		// number of slices in volume; 1 for a 2D image.
@@ -140,13 +148,14 @@ namespace EMAN
 			NUM_FLOATS_IN_HEADER = 211
 		};
 
-		int write_single_header(const Dict & dict);
-		int write_single_data(float *data);
+		int write_single_header(const Dict & dict, const Region* area,
+								bool use_host_endian);
+		int write_single_data(float *data, const Region * area, bool use_host_endian);
 		virtual bool is_valid_spider(const void *first_block);
 
 	  private:
 		bool need_swap() const;
-		void swap_data(float *data, int nitems);
+		void swap_data(float *data, size_t nitems);
 		void swap_header(SpiderHeader * header);
 
 	  private:
@@ -156,7 +165,7 @@ namespace EMAN
 		FILE *spider_file;
 		SpiderHeader *first_h;
 		SpiderHeader *cur_h;
-
+		
 		bool is_big_endian;
 		bool initialized;
 		bool is_new_file;

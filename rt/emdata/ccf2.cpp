@@ -5,14 +5,11 @@ using namespace EMAN;
 
 int main()
 {
-	const char* img1 = TestUtil::get_debug_image("3d86_1.mrc");
-	const char* img2 = TestUtil::get_debug_image("3d86_2.mrc");
-	
 	EMData *a = new EMData();
-	a->read_image(img1);
+	a->read_image(TestUtil::get_debug_image("3d86_1.mrc"));
 
 	EMData *b = new EMData();
-	b->read_image(img2);
+	b->read_image(TestUtil::get_debug_image("3d86_2.mrc"));
 #if 1
 	EMData *c = a->calc_ccf(b, 0);
 	delete b;

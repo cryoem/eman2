@@ -5,10 +5,8 @@ using namespace EMAN;
 
 int main()
 {
-	const char* img1 = TestUtil::get_debug_image("square.mrc");
-	
 	EMData *a = new EMData();
-	a->read_image(img1);
+	a->read_image(TestUtil::get_debug_image("square.mrc"));
 
 	EMData *fft = a->do_fft();
 	fft->write_image("aatest2.mrc");

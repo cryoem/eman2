@@ -39,8 +39,7 @@ void rotate(EMData * image, float alt, float az, float phi)
 	char outfile[128];
 	sprintf(outfile, "test_%d_%d_%d.mrc", (int)alt, (int)az, (int)phi);
 	float f = (float)M_PI / 180;
-	const char* imagefile = TestUtil::get_debug_image("groel3d.mrc");
-	image->read_image(imagefile);
+	image->read_image(TestUtil::get_debug_image("groel3d.mrc"));
 	image->rotate(alt*f, az*f, phi*f);
 	image->write_image(outfile, 0, EMUtil::IMAGE_MRC);
 }

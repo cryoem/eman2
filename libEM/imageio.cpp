@@ -39,9 +39,11 @@ void ImageIO::check_region(const Region * area, const FloatSize & max_size,
 		}
 		
 		if (!area->is_region_in_box(max_size)) {
-			LOGERR("Region box %s is outside image area (%d,%d,%d)",
-				   area->get_string().c_str(), max_size[0],
-				   max_size[1], max_size[2]);		
+			char desc[1024];
+			sprintf(desc, "Region box %s is outside image area (%d,%d,%d)",
+					area->get_string().c_str(), (int)max_size[0],
+					(int)max_size[1], (int)max_size[2]);
+			throw ImageReadException("", desc);
 		}
 	}
 }

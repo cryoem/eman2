@@ -15,7 +15,7 @@ run_cmd()
 
 clean_images()
 {
-	rm -f *.mrc *.img *.hed
+	rm -f *.mrc *.img *.hed core core.*
 }
 
 if [ "X$1" == "Xclean" ]; then

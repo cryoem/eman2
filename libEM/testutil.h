@@ -32,7 +32,7 @@ namespace EMAN
 		static float get_debug_float(int i);
 		static string get_debug_string(int i);
 		
-		static const char* get_debug_image(const char* imagename);
+		static string get_debug_image(const string & imagename);
 
 		static void to_emobject(const Dict & d);
 		

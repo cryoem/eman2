@@ -19,14 +19,16 @@ SingleSpiderIO::~SingleSpiderIO()
 }
 
 
-int SingleSpiderIO::write_header(const Dict & dict, int , const Region* , bool)
+int SingleSpiderIO::write_header(const Dict & dict, int , const Region* area,
+								 bool use_host_endian)
 {
-	return write_single_header(dict);
+	return write_single_header(dict, area, use_host_endian);
 }
 
-int SingleSpiderIO::write_data(float *data, int , const Region* , bool)
+int SingleSpiderIO::write_data(float *data, int , const Region* area,
+							   bool use_host_endian)
 {
-	return write_single_data(data);
+	return write_single_data(data, area, use_host_endian);
 }
 
 bool SingleSpiderIO::is_valid(const void *first_block)

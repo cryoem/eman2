@@ -358,7 +358,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 		return 1;
 	}
 
-	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz)), is_new_file;
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
 	unsigned char *cdata = (unsigned char *) rdata;
 	short *sdata = (short *) rdata;

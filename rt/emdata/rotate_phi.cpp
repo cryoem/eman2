@@ -9,7 +9,7 @@ void rotate(EMData * image, float alt, float phi, const char * imagename)
 	char outfile[128];
 	
 	float f = (float)M_PI / 180;
-	const char* imagefile = TestUtil::get_debug_image(imagename);
+	string imagefile = TestUtil::get_debug_image(imagename);
 	image->read_image(imagefile, 0, false, 0, true);
 	image->rotate(alt*f, 0, phi*f);
 	

@@ -241,9 +241,7 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area, 
 
 	if (!is_new_file) {
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
-			LOGERR("cannot write to existing file '%s' which is in opposite byte order",
-				   filename.c_str());
-			return 1;
+			throw ImageWriteException(filename, "writing to opposite byteorder file");
 		}
 
 		int nx1 = dict["nx"];
@@ -255,12 +253,11 @@ int PifIO::write_header(const Dict & dict, int image_index, const Region* area, 
 		if (nx1 != pfh.nx || ny1 != pfh.ny || nz1 != pfh.nz) {
 			LOGERR("cannot write to different size file %s (%dx%dx%d != %dx%dx%d)",
 				   filename.c_str(), nx1, ny1, nz1, pfh.nx, pfh.ny, pfh.nz);
-			return 1;
+			throw ImageWriteException(filename, "different image size");
 		}
 
 		if (mode1 != pfh.mode) {
-			LOGERR("cannot write to different data type file %s", filename.c_str());
-			return 1;
+			throw ImageWriteException(filename, "different data type");
 		}
 
 		fseek_to(image_index);
@@ -331,11 +328,6 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	if (area) {
 		check_region(area, FloatSize(pih.nx, pih.ny, pih.nz), is_new_file);
 	}
-	
-	portable_fseek(pif_file, pih_sz, SEEK_CUR);
-
-	int buf_size = pih.nx * mode_size;
-	unsigned char *buf = new unsigned char[buf_size];
 
 	int num_layers = pih.nz;
 #if 0
@@ -385,6 +377,9 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 	// end of new way for region reading
 	
 #if 0
+	int buf_size = pih.nx * mode_size;
+	unsigned char *buf = new unsigned char[buf_size];
+
 	for (int l = 0; l < num_layers; l++) {
 		int offset1 = l * pfh.nx * pfh.ny;
 		for (int j = 0; j < pfh.ny; j++) {
@@ -419,27 +414,34 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 			}
 		}
 	}
-#endif
 	
 	delete[]buf;
 	buf = 0;
+#endif
 	EXITFUNC;
 	return 0;
 }
 
 
-int PifIO::write_data(float *data, int image_index, const Region* , bool)
+int PifIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
 	check_write_access(rw_mode, image_index, 0, data);
-
 	fseek_to(image_index);
-
+	
 	int nx = pfh.nx;
 	int ny = pfh.ny;
 	int nz = pfh.nz;
 
+	check_region(area, FloatSize(nx, ny, nz), is_new_file);
+
+	// to write a region; if it works, please remove the code
+	// in #if 0 ... #endif
+	EMUtil::process_region_io(data, pif_file, WRITE_ONLY, 0,
+							  mode_size, nx, ny, nz, area);
+	
+#if 0
 	int *buf = new int[nx];
 	for (int i = 0; i < nz; i++) {
 		for (int j = 0; j < ny; j++) {
@@ -452,6 +454,8 @@ int PifIO::write_data(float *data, int image_index, const Region* , bool)
 
 	delete[]buf;
 	buf = 0;
+#endif
+	
 	EXITFUNC;
 	return 0;
 }

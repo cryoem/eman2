@@ -3,7 +3,7 @@
 
 using namespace EMAN;
 
-const char* get_test_image()
+string get_test_image()
 {
 	return TestUtil::get_debug_image("monomer.mrc");
 }

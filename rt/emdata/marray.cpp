@@ -8,7 +8,7 @@ using namespace EMAN;
 void test_get_view_raw(EMData * image)
 {
 	const int ndims = 3;
-	boost::multi_array_ref<float, ndims> marray = image->get_view();
+	MArray3D marray = image->get_3dview();
 
 	float * data = image->get_data();
 
@@ -41,7 +41,7 @@ void test_get_view_trans_2d(EMData * image)
 	const int x0 = 50;
 	const int y0 = 150;
 	
-	boost::multi_array_ref<float, ndims> marray = image->get_view(x0,y0);
+	MArray2D marray = image->get_2dview(x0,y0);
 
 	float * data = image->get_data();
 

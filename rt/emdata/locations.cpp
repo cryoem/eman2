@@ -12,7 +12,7 @@ int main()
 	int err = 0;
 	
 	EMData *image = new EMData();
-	const char* imagefile = TestUtil::get_debug_image("groel2d.mrc");
+	string imagefile = TestUtil::get_debug_image("groel2d.mrc");
 	
 	image->read_image(imagefile);
 
@@ -33,9 +33,9 @@ int main()
 		err = 1;
 	}
 	
-	LOGDEBUG("%s:  max index = %d\n", imagefile, max_index);
+	LOGDEBUG("%s:  max index = %d\n", imagefile.c_str(), max_index);
 	LOGDEBUG("%s:  max location = (%d,%d,%d)\n",
-			 imagefile, max_location[0],
+			 imagefile.c_str(), max_location[0],
 			 max_location[1], max_location[2]);
 
 	float max = (float) image->get_attr("maximum");
