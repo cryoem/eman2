@@ -1,0 +1,22 @@
+/*! \mainpage EMAN2 Documentation
+ *
+ * \section intro_sec Introduction
+ * Welcome to VERSION 2 of EMAN, a open-source Software for Single
+ * Particle Analysis and Electron Micrograph Analysis. EMAN2 is
+ * designed to handle both small, low-symmetry single particles and
+ * large, high symmetry viruses. It uses more object-oriented
+ * technologies for better modular design, has convenient and flexible
+ * interfaces to promote extendibility, emphases easy and efficient
+ * use in Python, and many new capabilities.
+ *
+ *
+ * \section install_sec Installation
+ *  Here is the <a href="../INSTALL"> Installation Instruction</a>.
+ *
+ * \section manual_sec Manuals
+ *  <ul>
+ *    <li> <a href="../filters.html"> Manual of Individual Filters</a>
+ *    <li> <a href="../filter_groups.html"> Manual of Grouped Filters</a>
+ *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
+ *  </ul>
+ */

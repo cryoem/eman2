@@ -58,7 +58,7 @@ namespace EMAN
 	public:
 		FilterFactoryExt()
 		{
-			Factory < Filter >::add(&XYZFilter::NEW);
+			//Factory < Filter >::add(&XYZFilter::NEW);
 		}
 	};
 

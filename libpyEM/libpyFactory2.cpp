@@ -364,6 +364,10 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     PyObject* self;
 };
 
@@ -439,6 +443,10 @@ struct EMAN_RealPixelFilter_Wrapper: EMAN::RealPixelFilter
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     PyObject* self;
 };
 
@@ -498,6 +506,10 @@ struct EMAN_BoxStatFilter_Wrapper: EMAN::BoxStatFilter
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     PyObject* self;
 };
 
@@ -555,6 +567,10 @@ struct EMAN_ComplexPixelFilter_Wrapper: EMAN::ComplexPixelFilter
 
     std::string get_name() const {
         return call_method< std::string >(self, "get_name");
+    }
+
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
     }
 
     PyObject* self;
@@ -632,6 +648,10 @@ struct EMAN_CoordinateFilter_Wrapper: EMAN::CoordinateFilter
         return call_method< std::string >(self, "get_name");
     }
 
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
+    }
+
     PyObject* self;
 };
 
@@ -689,6 +709,10 @@ struct EMAN_FourierFilter_Wrapper: EMAN::FourierFilter
 
     std::string get_name() const {
         return call_method< std::string >(self, "get_name");
+    }
+
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
     }
 
     PyObject* self;
@@ -756,6 +780,10 @@ struct EMAN_NormalizeFilter_Wrapper: EMAN::NormalizeFilter
 
     std::string get_name() const {
         return call_method< std::string >(self, "get_name");
+    }
+
+    std::string get_desc() const {
+        return call_method< std::string >(self, "get_desc");
     }
 
     PyObject* self;
@@ -916,6 +944,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_Filter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::Filter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
@@ -927,6 +956,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("get_params", &EMAN::Filter::get_params, &EMAN_RealPixelFilter_Wrapper::default_get_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_RealPixelFilter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::RealPixelFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
@@ -938,6 +968,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_BoxStatFilter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_BoxStatFilter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::BoxStatFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
@@ -949,6 +980,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_ComplexPixelFilter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_ComplexPixelFilter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::ComplexPixelFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
@@ -960,6 +992,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_CoordinateFilter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_CoordinateFilter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::CoordinateFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
@@ -971,6 +1004,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_FourierFilter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_FourierFilter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::FourierFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;
@@ -982,6 +1016,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("set_params", &EMAN::Filter::set_params, &EMAN_NormalizeFilter_Wrapper::default_set_params)
         .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_NormalizeFilter_Wrapper::default_get_param_types)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
+        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
         .def("get_group_desc", &EMAN::NormalizeFilter::get_group_desc)
         .staticmethod("get_group_desc")
     ;

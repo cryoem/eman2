@@ -4,10 +4,6 @@ from EMAN2 import *
 import sys
 import time
 
-
-bgcolor1 = 'f0f0fa'
-bgcolor2 = 'fafaf0'
-bgcolor = bgcolor1
 	
 def write_header(output):
 	output.write("<head><title>EMAN2 Filter Manual</title></head><body>\n")
@@ -28,14 +24,10 @@ def write_header(output):
 def write_tail(output):
 	output.write("</table>\n</body>\n")
 
-def write_filter(filtername, output):
-	if bgcolor == bgcolor1:
-			bgcolor = bgcolor2
-		else:
-			bgcolor = bgcolor1
-
+def write_filter(filtername, output, bgcolor):
 	output.write("<tr bgcolor=" + bgcolor + ">\n")
 	output.write("  <td> <font color='0000a0'> <b>"  + filtername + " </b></font> </td>\n")
+
 	filter = Filters.get(filtername)
 
 	typedict = filter.get_param_types()
@@ -68,9 +60,16 @@ def write_group(groupname, output):
 	elif groupname == "NormalizeFilter":
 		groupclass = NormalizeFilter
 
-	
-
-
+	groupbg = "a0a0f0"
+	output.write("<tr bgcolor=" + groupbg + ">\n")
+	output.write("  <td> <font color='a000a0' size=+1> <b>"  + groupname + " </b></font> </td>\n")
+	output.write("  <td> </td>")
+	output.write("  <td><b>");
+	if groupclass:
+		output.write(groupclass.get_group_desc())
+		
+	output.write("</b></td>\n")
+	output.write("</tr>\n")
 		
 
 
@@ -78,9 +77,17 @@ def write_single_filters():
 	out = open("filters.html", "wb")
 	write_header(out)
 	filter_names = Filters.get_list()
+	bgcolor1 = 'f0f0fa'
+	bgcolor2 = 'fafaf0'
+	bgcolor = bgcolor1
 	
 	for filtername in filter_names:
-		write_filter(filtername, out)
+		if bgcolor == bgcolor1:
+			bgcolor = bgcolor2
+		else:
+			bgcolor = bgcolor1
+
+		write_filter(filtername, out, bgcolor)
 	write_tail(out)
 	
 	
@@ -88,24 +95,36 @@ def write_single_filters():
 def write_group_filters():
 	gout = open("filter_groups.html", "wb")
 	write_header(gout)
-
 	filtergroups = group_filters()
-
 	groupnames = filtergroups.keys()
-	
+	bgcolor1 = 'f0f0fa'
+	bgcolor2 = 'fafaf0'
+	bgcolor = bgcolor1
+
+	sorted_groupnames = []
 	for groupname in groupnames:
+		if groupname != "Others":
+			sorted_groupnames.append(groupname)
+
+	sorted_groupnames.sort()
+	sorted_groupnames.append("Others")
+
+	for groupname in sorted_groupnames:
 		groupitems = filtergroups[groupname]
-
-		if groupname == "RealPixelFilter":
-			
-
-		for filtername in groupitems:
-			#write_filter(filtername, gout)
-			print "  ", filtername
-
+		write_group(groupname, gout)
 		
-def main():
+		for filtername in groupitems:
+			if bgcolor == bgcolor1:
+				bgcolor = bgcolor2
+			else:
+				bgcolor = bgcolor1
+
+			write_filter(filtername, gout, bgcolor)
+			
+		
+def main():	
 	write_single_filters()
+	write_group_filters()
 	
 if __name__ == '__main__':
     main()
