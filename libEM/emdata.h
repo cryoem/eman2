@@ -125,6 +125,7 @@ namespace EMAN
 		EMData *copy_head();
 
 		/** Get an inclusive clip. Pads 0 if larger than this image.
+		 * area can be 2D/3D.
 		 * @param area The clip area.
 		 * @return The clip image.
 		 */
@@ -167,6 +168,7 @@ namespace EMAN
 		 * @param center The center of the inserted block in 'this'.
 		 * @param scale  Scale factor.
 		 * @param mult Number used to multiply the block's densities.
+		 * @exception ImageDimensionException If 'this' image is not 2D/3D.
 		 */
 		void insert_scaled_sum(EMData *block, const FloatPoint & center,
 							   float scale=1.0, float mult=1.0);
@@ -193,7 +195,7 @@ namespace EMAN
 		 * slice image and this image must be in complex image format.
 		 *
 		 * @param slice An slice image to be normalized.
-		 * @param r Orientation of the slice.
+		 * @param orient Orientation of the slice.
 		 * @exception ImageFormatException If the images are not complex.
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
@@ -228,6 +230,7 @@ namespace EMAN
 		 * @param max_gray
 		 * @param min_render
 		 * @param max_render
+		 * @exception ImageDimensionException If the image is not 2D.
 		 */
 		void render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
@@ -254,6 +257,7 @@ namespace EMAN
 		 * @param max_render
 		 * @param ref
 		 * @param cmap
+		 * @exception ImageDimensionException If the image is not 2D.
 		 */		 
 		void render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
 						  int bpl, float scale, int min_gray, int max_gray,
@@ -262,10 +266,25 @@ namespace EMAN
 
 		/** convert the complex image from real/imaginary to amplitude/phase */
 		void ri2ap();
+
 		/** convert the complex image from amplitude/phase to real/imaginary */
 		void ap2ri();
 
-		float *setup4slice(bool redo = false);
+		/** Set up for fftslice operations.
+		 * When interpolating in fourier space there is a little
+		 * problem when we get close to x=0, since f(-x,-y,-z) = f(x,y,z)* .
+		 * So this makes a supplementary array that allows for up to +-2
+		 * point interpolation all the way to the origin in x.
+		 *
+		 * 3D only; complex image only
+		 *
+		 * @param redo If true,  recalculate the supplementary array.
+		 * @exception ImageFormatException If the image is not a
+		 * complex image.
+		 * @exception ImageDimensionException If the image is not 3D.
+		 * @return The supplementary array.
+		 */
+		float *setup4slice(bool redo = true);
 
 		/** scale the image by a factor.
 		 * @param scale_factor scale factor.
@@ -320,10 +339,13 @@ namespace EMAN
 		/** This performs a translation of each line along x with wraparound.
 		 *  This is equivalent to a rotation when performed on 'unwrapped' maps.
 		 *  @param dx Translation distance align x direction.
+		 *  @exception ImageDimensionException If the image is 3D.
 		 */
 		void rotate_x(int dx);
 
-		/** Fast rotation by 180 degrees.
+		/** Fast rotation by 180 degrees. Square 2D image only.
+		 *  @exception ImageFormatException If the image is not square.
+		 *  @exception ImageDimensionException If the image is not 2D.
 		 */
 		void rotate_180();
 
@@ -331,22 +353,25 @@ namespace EMAN
 		 * It is much faster than Rotate/Translate then dot product. 
 		 * 2D images only.
 		 *
-		 * @param data
+		 * @param with The image used to do the dot product.
 		 * @param dx Translation distance in x direction.
 		 * @param dy Translation distance in y direction.
 		 * @param da Rotation euler angle.
+		 * @exception ImageFormatException If the 2 images are not the
+		 * same size.
+		 * @exception ImageDimensionException If the image is 3D.
 		 * @return
 		 */
-		double dot_rotate_translate(EMData * data, float dx, float dy, float da);
+		double dot_rotate_translate(EMData * with, float dx, float dy, float da);
 
 		/** This does a normalized dot product of a little image with a big image 
 		 * using real-space methods. The result is the same size as 'this', 
 		 * but a border 1/2 the size of 'little_img' will be zero. 
 		 * This routine is only efficient when 'little_img' is fairly small.
-		 * 2D only.
-		 *
+		 * 
 		 * @param little_img A small image.
 		 * @param do_sigma Calculate sigma or not.
+		 * @exception ImageDimensionException If the image is not 1D/2D.
 		 * @return normalized dot product image.
 		 */
 		EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
@@ -358,6 +383,9 @@ namespace EMAN
 		 *
 		 * Do radon transformation on this image. This image must be
 		 * 2D square.
+		 
+		 * @exception ImageFormatException If the image is not square.
+		 * @exception ImageDimensionException If the image is not 2D.
 		 * @return Radon transform image in square.
 		 */
 		EMData *do_radon();
@@ -376,6 +404,9 @@ namespace EMAN
 		 * @param tocorner Set whether to translate the result image
 		 *   to the corner.
 		 * @param filter The filter image used in calculating CCF.
+		 * @exception NullPointerException If FFT returns NULL image.
+		 * @exception ImageFormatException If filter has improper size.
+		 *
 		 * @return The result image containing the CCF.
 		 */
 		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = NULL);
@@ -392,6 +423,10 @@ namespace EMAN
 		 *        end of the row.
 		 * @param nosum If true, returns an image y1-y0+1 pixels high.
 		 * @see #calc_ccf()
+		 * @exception NullPointerException If input image 'with' is NULL.
+		 * @exception ImageFormatException If 'with' and 'this' are
+		 * not same size.
+		 * @exception ImageDimensionException If 'this' image is 3D.
 		 * @return The result image containing the CCF.
 		 */
 		EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
@@ -402,6 +437,7 @@ namespace EMAN
 		 *
 		 * @param unwrap To cache the rfp or not. false means not cached.
 		 * @param premasked Is the image pre-masked?
+		 * @exception ImageFormatException If image size is not even.
 		 * @return The rotaional footprint image.
 		 */
 		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
@@ -413,6 +449,9 @@ namespace EMAN
 		 * @param tocorner Set whether to translate the result image
 		 *        to the corner.
 		 * @param filter The filter image used in calculating MCF.
+		 * @exception ImageFormatException If 'with' is not NULL and
+		 * it doesn't have the same size to 'this' image.
+		 * @exception NullPointerException If FFT returns NULL image.
 		 * @return Mutual correlation function image.
 		 */
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
@@ -428,6 +467,7 @@ namespace EMAN
 		 * @param dy
 		 * @param do360  If true, do 0-360 degree mapping. Otherwise,
 		 * do 0-180 degree mapping.
+		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @return The image in Cartesian coordinates.
 		 */		 
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
@@ -436,12 +476,14 @@ namespace EMAN
 		/** Reduces the size of the image by a factor 
 		 * using the average value of the pixels in a block.
 		 * @param shrink_factor Image shrink factor.
+		 * @exception ShrinkFactorException If shrink factor is invalid.
 		 */
 		void mean_shrink(int shrink_factor);
 		
 		/* Reduces the size of the image by a factor using a local median filter.
 		 *
 		 * @param shrink_factor Image shrink factor.
+		 * @exception ShrinkFactorException If shrink factor is invalid.
 		 */
 		void median_shrink(int shrink_factor);
 
@@ -450,7 +492,7 @@ namespace EMAN
 		 * @param x0  starting point x coordinate.
 		 * @param dx  step of x.
 		 * @param array radial function data array.
-		 * @interp Do the interpolation or not.
+		 * @param interp Do the interpolation or not.
 		 */
 		void apply_radial_func(float x0, float dx, vector < float >array, bool interp = true);
 
@@ -469,6 +511,7 @@ namespace EMAN
 		 * @param dx step of x.
 		 * @param acen The direction.
 		 * @param arange The angular range around the direction in radians.
+		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @return The radial distribution in an array.
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
@@ -479,17 +522,20 @@ namespace EMAN
 		void add(float f);
 		
 		/** add a same-size image to this image pixel by pixel.
+		 *
 		 * @param image The image added to 'this' image.
+		 * @exception ImageFormatException If the 2 images are not same size.
 		 */
 		void add(const EMData & image);
 		
 		/** subtract a number to each pixel value of the image.
-		 * @param f The number subtracted from 'this' image.
+		 * @param f The number subtracted from 'this' image.		 
 		 */
 		void sub(float f);
 		
 		/** subtract a same-size image from this image pixel by pixel.
 		 * @param image The image subtracted  from 'this' image.
+		 * @exception ImageFormatException If the 2 images are not same size.
 		 */
 		void sub(const EMData & image);
 		
@@ -502,6 +548,7 @@ namespace EMAN
 		 * other same-size image.
 		 *
 		 * @param image The image multiplied to 'this' image.
+		 * @exception ImageFormatException If the 2 images are not same size.
 		 */
 		void mult(const EMData & image);
 
@@ -513,6 +560,7 @@ namespace EMAN
 		/** make each pixel value divided by pixel value of another
 		 * same-size image.
 		 * @param image The image 'this' image divided by.
+		 * @exception ImageFormatException If the 2 images are not same size.
 		 */
 		void div(const EMData & image);
 
@@ -544,23 +592,107 @@ namespace EMAN
 		 */
 		void dump_data(string filename);
 
-		/**
-		 * @param obj
+		/** Adds 'obj' to 'this' incoherently. 'obj' and 'this' should
+		 * be same size. Both images should be complex images.
+		 *
+		 * @param obj The image added to 'this' image.
+		 * @exception ImageFormatException If the 2 images are not
+		 * same size; or if the 2 images are not complex images.
 		 */
 		void add_incoherent(EMData * obj);
 
+		/** Caculates the fourier ring/shell correlation coefficients
+		 * as an array with ysize/2 elements (corners not calculated).
+		 * The input image 'with' must have the same size to 'this' image.
+		 *
+		 * @param with The image used to caculate the fourier shell
+		 * correlation together with 'this' image.
+		 * @exception ImageFormatException If the 2 images are not
+		 * same size.
+		 * @return The fourier shell correlation coefficients array.
+		 */
 		vector < float >calc_fourier_shell_correlation(EMData * with);
+
+		/** Calculates the histogram of 'this' image. The result is
+		 * stored in float array 'hist'. If 'add' is true, the new
+		 * histogram data will be added to existing 'hist' array.
+		 * If hist_min = hist_max, use image data min as hist_min; use
+		 * image data max as hist_max.
+		 *
+		 * @param hist Float array storing histogram data.
+		 * @param hist_min Minimum histogram value.
+		 * @param hist_max Maximum histogram value.
+		 * @param add If true, the new histogram data will be added to
+		 * existing 'hist' array.
+		 */
 		void calc_hist(vector < float >&hist, float hist_min = 0, float hist_max = 0,
 					   bool add = false);
-		void calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax);
+
+		/** Caculates the azimuthal distributions.
+		 * works for real or complex images, 2D only.
+		 *
+		 * @param n  Number of elements.
+		 * @param a0 Starting angle.
+		 * @param da Angle step.
+		 * @param data Float array to store the data.
+		 * @param rmin Minimum radius.
+		 * @param rmax  Maximum radius.
+		 * @exception ImageDimensionException If image is 3D.
+		 */
+		void calc_az_dist(int n, float a0, float da, float *data,
+						  float rmin, float rmax);
 #if 0
 		void calc_rcf(EMData * with, vector < float >&sum_array);
 #endif
+		/** Calculates the distance between 2 vectors. 'this' image is
+		 * 1D, which contains a vector; 'second_img' may be nD. One of
+		 * its row is used as the second vector. 'second_img' and
+		 * 'this' must have the same x size. 
+		 *
+		 * @param second_img The image used to caculate the distance.
+		 * @param y_index Specifies which row in 'second_img' is used to do
+		 * the caculation.
+		 * @exception ImageDimensionException If 'this' image is not 1D.
+		 * @exception ImageFormatException If the 2 images don't have
+		 * same xsize.
+		 * @return The distance between 2 vectors.
+		 */
 		float calc_dist(EMData * second_img, int y_index = 0) const;
-		EMData *calc_flcf(EMData * with, int radius = 50, string maskfilter = "MaskSharp");
 
+		/** Calculates the cross correlation with local normalization
+		 * between 2 images. This is a fater version of local correlation.
+		 *
+		 * This is the fast local correlation program based upon local
+		 * real space correlation. The traditional real-space technies
+		 * are know to be senisitve for finding small objects in a large
+		 * field due to local optimization of numerical
+		 * scaling. However, they are slow to compute. This technique is
+		 * based upon Fourier transform and claimed to be two times
+		 * faster than the explicit real-space formula.
+		 * 
+		 * The technique is published in Ultramicroscopy by Alan M. Roseman, 
+		 * MRC Cambridge.
+		 *
+		 * Imlemented by htet khant, 02-2003
+		 *
+		 * @param with The image used to calculate cross correlation.
+		 * @param radius
+		 * @param maskfilter
+		 * @return the cross correlation image.
+		 */
+		EMData *calc_flcf(EMData * with, int radius = 50,
+						  string maskfilter = "MaskSharp");
+
+		/** Convolutes 2 data sets. The 2 images must be of the same size.
+		 * @param with One data set. 'this' image is the other data set.
+		 * @exception NullPointerException If FFT resturns NULL image.
+		 * @return The result image.
+		 */
 		EMData *convolute(EMData * with);
 
+		/** check whether 'this' image has the CTF information stored.
+		 * @return True if it has the CTF information. Otherwise, false.
+		*/
 		bool has_ctff() const;
 
 #if 0
@@ -568,6 +700,17 @@ namespace EMAN
 		void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
 
+		/** Dot product 2 images. The 2 images must be of same size.
+		 * If 'evenonly' is true, only calculates pixels with even
+		 * positions assuming all pixels are in a single array. If
+		 * 'evenonly' is false, calculates all pixels.
+		 *
+		 * @param with The image to do dot product with.
+		 * @param evenonly If true,  only calculate pixels with even
+		 * positions assuming all pixels are in a single array. If
+		 * 'evenonly' is false, calculates all pixels.
+		 * @return The dot product result.
+		 */
 		float dot(EMData * with, bool evenonly = false);
 
 		/** Finds common lines between 2 complex images.
@@ -585,34 +728,84 @@ namespace EMAN
 		 *   weighted phase residual, lower value means better match.		 
 		 * @param steps: 1/2 of the resolution of the map.
 		 * @param horizontal In horizontal way or not.
+		 * @exception NullPointerException If 'image1' or 'image2' is NULL.
+		 * @exception InvalidModeException If 'mode' is invalid.
+		 * @exception ImageFormatException If 'image1' 'image2' are
+		 * not same size.
 		 */
 		void common_lines(EMData * image1, EMData * image2, int mode = 0,
 						  int steps = 180, bool horizontal = false);
 
 		/** Finds common lines between 2 real images.
+		 *
+		 * @param image1 The first image.
+		 * @param image2 The second image.
+		 * @param steps: 1/2 of the resolution of the map.
+		 * @param horizontal In horizontal way or not.
+		 * @exception NullPointerException If 'image1' or 'image2' is NULL.
+		 * @exception ImageFormatException If 'image1' 'image2' are
+		 * not same size.
 		 */
 		void common_lines_real(EMData * image1, EMData * image2,
 							   int steps = 180, bool horizontal = false);
 
-		/** cut a slice out of a real 3D map */
-		void cut_slice(EMData * map, float dz, Rotation * orientation = 0,
+		/** cut a 2D slice out of a real 3D map. Put slice into 'this' image.
+		 *
+		 * @param map The real 3D map.
+		 * @param dz 
+		 * @param orientation Orientation of the slice.
+		 * @param interpolate Do interpolation or not.
+		 * @param dx
+		 * @param dy
+		 */
+		void cut_slice(const EMData * map, float dz, Rotation * orientation = 0,
 					   bool interpolate = true, float dx = 0, float dy = 0);
 
 		/** Opposite of the cut_slice(). It will take a slice and insert
 		 * the data into a real 3D map. It does not interpolate, it uses
 		 * the nearest neighbor.
-		 */
+		 *
+		 * @param map  The real 3D map.
+		 * @param dz
+		 * @param orientation Orientation of the slice.
+		 * @param dx
+		 * @param dy
+		 */		 
 		void uncut_slice(EMData * map, float dz, Rotation * orientation = 0,
 						 float dx = 0, float dy = 0);
 
+		/** Calculates the density value at the peak of the
+		 * image histogram, sort of like the mode of the density.
+		 * @return The density value at the peak of the image histogram.
+		*/
+		float calc_center_density();
 
-		float calc_density_center();
+		/** Calculates sigma above and below the mean and returns the
+		 * difference between them.
+		 * @return The difference between sigma above and below the mean.
+		 */
 		float calc_sigma_diff();
-		
+
+		/** Calculates the coordinates of the minimum-value pixel.
+		 * @return The coordinates of the minimum-value pixel.
+		 */
 		IntPoint calc_min_location() const;
+		
+		/** Calculates the coordinates of the maximum-value pixel.
+		 * @return The coordinates of the maximum-value pixel.
+		 */
 		IntPoint calc_max_location() const;
 
+		/** Calculates the index of minimum-value pixel when assuming
+		 * all pixels are in a 1D array.
+		 * @return Index of the minimum-value pixel.
+		 */
 		int calc_min_index() const;
+
+		/** Calculates the index of maximum-value pixel when assuming
+		 * all pixels are in a 1D array.
+		 * @return Index of the maximum-value pixel.
+		 */
 		int calc_max_index() const;
 
 		/** Calculate and return a sorted list of pixels whose values
@@ -625,33 +818,109 @@ namespace EMAN
 		 *     locations. Their values are higher than threshold.
 		 */
 		vector<Pixel> calc_highest_locations(float threshold);
-		
-		
+//
+		/** Calculates the mean pixel values around the (1 pixel) edge
+		 * of the image.
+		 *
+		 * @return The mean pixel values around the (1 pixel) edge.
+		*/
 		float get_edge_mean() const;
+
+		/** Calculates the circular edge mean by applying a circular
+		 * mask on 'this' image.
+		 * @return The circular edge mean.
+		 */
 		float get_circle_mean();
 
+		/** this initializes a new image to receive 'insertSlice' operations
+		 * for fourier volume inversion. If the image has a parent, it will also
+		 * be affected. WARNING: will use 8*size^3 bytes of memory.
+		 *
+		 * @param size The volume's size.
+		 */
 		void setup_insert_slice(int size);
 
+		/** Get ctf parameter of this image.
+		 * @return The ctf parameter.
+		 */
 		Ctf *get_ctf() const;
+
+		/** Set the CTF parameter of this image.
+		 * @param ctf The CTF parameter object.
+		 */
 		void set_ctf(Ctf * ctf);
 
+		/** Get 'this' image's translation vector from the original
+		 * location.
+		 * @return 'this' image's translation vector from the original
+		 * location.
+		 */
 		Vec3 < float >get_translation() const;
+
+		/** Set 'this' images' translation vector from the original
+		 * location.
+		 * @param new_translation The new translation vector.
+		 */
 		void set_translation(const Vec3 < float >&new_translation);
+
+		/** Set 'this' images' translation vector from the original
+		 * location.
+		 * @param dx The translation distance in x direction.
+		 * @param dy The translation distance in y direction.
+		 * @param dz The translation distance in z direction.
+		 */
 		void set_translation(float dx, float dy, float dz);
 
+		/** Get the rotation of 'this' image rotated from the original
+		 * locaton.
+		 * @return The rotation of 'this' image rotated from the original
+		 * locaton.
+		 */
 		Rotation get_rotation() const;
+
+		/** Reset the rotation of 'this' image rotated from the original
+		 * locaton.
+		 *
+		 * @param alt 'alt' Euler angle in EMAN convention.
+		 * @param az  'az' Euler angle in EMAN convention.
+		 * @param phi 'phi' Euler angle in EMAN convention.
+		 */
 		void set_rotation(float alt, float az, float phi);
 
+		/** Resize 'this' image.
+		 *
+		 * @param nx  x size of this image.
+		 * @param ny  y size of this image.
+		 * @param nz  z size of this image.
+		 */
 		void set_size(int nx, int ny, int nz);
+
+		/** Set the path
+		 */
 		void set_path(const string & path);
+
+		/** Set the number of paths
+		 */
 		void set_pathnum(int n);
 
+		/** Get one row of a 1D/2D image.
+		 *
+		 * @param row_index Index of the row.
+		 * @exception ImageDimensionException If this image is 3D.
+		 * @return A 1D image with the row data.
+		 */
 		EMData *get_row(int row_index) const;
+
+		/** Set one row of a 1D/2D image.
+		 *
+		 * @param data The row image data.
+		 * @param row_index Index of the row.
+		 * @exception ImageDimensionException If this image is 3D.
+		 */
 		void set_row(const EMData * data, int row_index);
 
 		EMData *get_col(int col_index) const;
 		void set_col(const EMData * data, int n);
-
 
 		EMObject get_attr(string key);
 		void set_attr(string key, EMObject val);

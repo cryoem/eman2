@@ -514,7 +514,10 @@ else if (get_ndim()==2) {
 	}
 	update();
 }
-else LOGERR("insert_scaled_sum supports only 2D and 3D data");
+else {
+	LOGERR("insert_scaled_sum supports only 2D and 3D data");
+	throw ImageDimensionException("2D/3D only");
+}
 
 	EXITFUNC;
 }
@@ -523,7 +526,7 @@ EMData *EMData::get_top_half() const
 {
 	ENTERFUNC;
 
-	if (nz <= 1) {
+	if (get_ndim() != 3) {
 		throw ImageDimensionException("3D only");
 	}
 	
@@ -898,6 +901,10 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 {
 	ENTERFUNC;
+
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D only");
+	}
 	
 	EMData *ret = copy_head();
 	ret->to_zero();
@@ -988,6 +995,10 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 						 float render_min, float render_max)
 {
 	ENTERFUNC;
+
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D only");
+	}
 	
 	if (is_complex()) {
 		ri2ap();
@@ -1231,6 +1242,10 @@ void EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int i
 						  void cmap(void *, int coord, unsigned char *tri))
 {
 	ENTERFUNC;
+	
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D only");
+	}
 	
 	if (is_complex()) {
 		ri2ap();
@@ -1484,8 +1499,8 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 {
 	ENTERFUNC;
 	
-	if (nz > 1) {
-		throw ImageFormatException("2D images only");
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("no 3D image");
 	}
 
 	get_data();
@@ -1542,10 +1557,13 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 	}
 	else {
 		int c = 0;
+		float half_nx = (nx - 1) / 2.0f;
+		float half_ny = (ny - 1) / 2.0f;
+		
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
-				float y1 = y - (ny - 1) / 2.0f;
-				float x1 = x - (nx - 1) / 2.0f;
+				float y1 = y - half_ny;
+				float x1 = x - half_nx;
 				float r = hypot(x1, y1);
 
 				if (r >= rmin && r <= rmax) {
@@ -1637,12 +1655,12 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 	ENTERFUNC;
 	
 	if (!with) {
-		return vector < float >();
+		throw NullPointerException("NULL input image");
 	}
 
 	if (!EMUtil::is_same_size(this, with)) {
-		LOGERR("size mismatch in calc_fourier_shell_correlation");
-		return vector < float >();
+		LOGERR("images not same size");
+		throw ImageFormatException( "images not same size");
 	}
 
 	EMData *f1 = this;
@@ -1722,16 +1740,16 @@ void EMData::add(float f)
 	EXITFUNC;
 }
 
-void EMData::add(const EMData & em) 
+void EMData::add(const EMData & image) 
 {
 	ENTERFUNC;
 	
-	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
+	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
-		const float *src_data = em.get_data();
+		const float *src_data = image.get_data();
 		int size = nx * ny * nz;
 
 		for (int i = 0; i < size; i++) {
@@ -2291,9 +2309,9 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 		throw ImageFormatException("images not same size");
 	}
 
-	if (get_ndim() != 2) {
-		LOGERR("2D Images only");
-		throw ImageDimensionException("2D only");
+	if (get_ndim() == 3) {
+		LOGERR("1D/2D Images only");
+		throw ImageDimensionException("1D/2D only");
 	}
 
 	float *this_data = 0;
@@ -2368,6 +2386,10 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 void EMData::rotate_x(int dx)
 {
 	ENTERFUNC;
+
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("no 3D image");
+	}
 	
 	float *tmp = new float[nx];
 	size_t row_size = nx * sizeof(float);
@@ -2397,8 +2419,12 @@ float *EMData::setup4slice(bool redo)
 {
 	ENTERFUNC;
 	
-	if (!is_complex() || nz == 1) {		
-		return 0;
+	if (!is_complex()) {
+		throw ImageFormatException("complex image only");
+	}
+	
+	if (get_ndim() != 3) {
+		throw ImageDimensionException("3D only");
 	}
 
 	if (supp) {
@@ -2915,9 +2941,13 @@ void EMData::rotate_180()
 	ENTERFUNC;
 	
 	if (nx != ny) {
-		throw ImageFormatException( "non-square image");
+		throw ImageFormatException("non-square image");
 	}
 
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D only");
+	}
+	
 	float *d = get_data();
 
 	for (int x = 1; x < nx; x++) {
@@ -2946,10 +2976,13 @@ void EMData::rotate_180()
 EMData *EMData::do_radon()
 {
 	ENTERFUNC;
-	
-	if (nx != ny || nz != 1) {
-		LOGERR("2D images only");
-		throw ImageDimensionException("2D images only");
+
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D only");
+	}
+
+	if (nx != ny) {
+		throw ImageFormatException("square image only");
 	}
 
 	EMData *result = new EMData();
@@ -2987,7 +3020,6 @@ EMData *EMData::do_radon()
 
 	EXITFUNC;
 	return result;
-
 }
 
 
@@ -2997,13 +3029,13 @@ void EMData::mean_shrink(int shrink_factor)
 	
 	if (shrink_factor <= 1) {
 		throw ShrinkFactorException(shrink_factor, 
-								 "mean shrink: shrink factor must > 1");
+									"mean shrink: shrink factor must > 1");
 	}
 
 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
 		throw ShrinkFactorException(shrink_factor, 
-								 "Image size not divisible by shrink factor");
+									"Image size not divisible by shrink factor");
 	}
 
 	int shrinked_nx = nx / shrink_factor;
@@ -3158,6 +3190,175 @@ void EMData::median_shrink(int shrink_factor)
 	EXITFUNC;
 }
 
+void EMData::apply_radial_func(float x0, float step, vector < float >array, bool interp)
+{
+	ENTERFUNC;
+	
+	if (is_complex()) {
+		return;
+	}
+
+	int n = static_cast < int >(array.size());
+
+	ap2ri();
+	get_data();
+
+	size_t ndims = get_ndim();
+
+	if (ndims == 2) {
+		int k = 0;
+		for (int j = 0; j < ny; j++) {
+			for (int i = 0; i < nx; i += 2, k += 2) {
+				float r = hypot(i / 2.0f, (j - ny / 2.0f));
+				r = (r - x0) / step;
+
+				int l = 0;
+				if (interp) {
+					l = (int) floor(r);
+				}
+				else {
+					l = (int) floor(r + 1);
+				}
+
+				r -= l;
+
+				float f = 0;
+				if (l >= n - 2) {
+					f = array[n - 1];
+				}
+				else {
+					if (interp) {
+						f = (array[l] * (1.0f - r) + array[l + 1] * r);
+					}
+					else {
+						f = array[l];
+					}
+				}
+
+				rdata[k] *= f;
+				rdata[k + 1] *= f;
+			}
+		}
+	}
+	else if (ndims == 3) {
+		int k = 0;
+		for (int m = 0; m < nz; m++) {
+			float mnz = (m - nz / 2.0f) * (m - nz / 2.0f);
+			for (int j = 0; j < ny; j++) {
+				float jny = (j - ny / 2.0f) * (j - ny / 2.0f);
+				for (int i = 0; i < nx; i += 2, k += 2) {
+					float r = sqrt((i * i / 4.0f) + jny + mnz);
+					r = (r - x0) / step;
+
+					int l = 0;
+					if (interp) {
+						l = (int) floor(r);
+					}
+					else {
+						l = (int) floor(r + 1);
+					}
+
+					r -= l;
+
+					float f = 0;
+					if (l >= n - 2) {
+						f = array[n - 1];
+					}
+					else {
+						if (interp) {
+							f = (array[l] * (1.0f - r) + array[l + 1] * r);
+						}
+						else {
+							f = array[l];
+						}
+					}
+
+					rdata[k] *= f;
+					rdata[k + 1] *= f;
+				}
+			}
+		}
+
+	}
+
+	done_data();
+	update();
+	EXITFUNC;
+}
+
+float EMData::calc_center_density()
+{
+	ENTERFUNC;
+	
+	float center = get_attr("mean");
+	float sigma = get_attr("sigma");
+	float ds = sigma / 2;
+	size_t size = nx * ny * nz;
+	float *d = get_data();
+	float sigma1 = sigma / 20;
+	float sigma2 = sigma / 1000;
+
+	while (ds > sigma1) {
+		double sum = 0;
+		int norm = 0;
+
+		for (size_t i = 0; i < size; i++) {
+			if (fabs(d[i] - center) < ds) {
+				sum += d[i];
+				norm++;
+			}
+		}
+		if (!norm) {
+			break;
+		}
+		double mean = sum / norm;
+		if (fabs(mean - center) < sigma2) {
+			ds *= 0.5f;
+		}
+		center = mean;
+	}
+	EXITFUNC;
+
+	return center;
+}
+
+float EMData::calc_sigma_diff()
+{
+	ENTERFUNC;
+	
+	float *d = get_data();
+	float mean = get_attr("mean");
+	float sigma = get_attr("sigma");
+	
+	double sum_up = 0;
+	double sum_down = 0;
+	int nup = 0;
+	int ndown = 0;
+
+	size_t size = nx * ny * nz;
+
+	for (size_t i = 0; i < size; i++) {
+		if (d[i] > mean) {
+			sum_up += Util::square(d[i] - mean);
+			nup++;
+		}
+		else {
+			sum_down += Util::square(mean - d[i]);
+			ndown++;
+		}
+	}
+
+	float sigup = sqrt(sum_up / nup);
+	float sigdown = sqrt(sum_down / ndown);
+	float sig_diff = fabs(sigup - sigdown) / sigma;
+	
+
+	EXITFUNC;
+	return sig_diff;
+
+}
+
+
 IntPoint EMData::calc_min_location() const
 {
 	ENTERFUNC;
@@ -3254,16 +3455,16 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 	
 	if (!with) {
 		LOGERR("NULL 'with' image. ");
-		throw NullPointerException("NULL with image");
+		throw NullPointerException("NULL input image");
 	}
 
 	if (!EMUtil::is_same_size(this, with)) {
 		LOGERR("images not same size");
-		throw ImageFormatException( "images not same size");
+		throw ImageFormatException("images not same size");
 	}
-	if (nz > 1) {
+	if (get_ndim() > 2) {
 		LOGERR("2D images only");
-		throw ImageDimensionException( "2D images only");
+		throw ImageDimensionException("2D images only");
 	}
 
 	EMData *cf = new EMData();
@@ -3506,7 +3707,7 @@ EMData *EMData::calc_ccf(EMData * with, bool tocorner, EMData * filter)
 	if (filter) {
 		if (!EMUtil::is_same_size(filter, cf)) {
 			LOGERR("improperly sized filter");
-			throw ImageFormatException( "improperly sized filter");
+			throw ImageFormatException("improperly sized filter");
 		}
 
 		cf->mult(*filter);
@@ -3757,6 +3958,10 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 {
 	ENTERFUNC;
+
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D image only");
+	}
 	
 	int p = 1;
 	if (do360) {
@@ -3816,8 +4021,7 @@ void EMData::add_incoherent(EMData * obj)
 	}
 
 	if (!obj->is_complex() || !is_complex()) {
-		LOGERR("add incoherent can only work on complex images");
-		return;
+		throw ImageFormatException("complex images only");
 	}
 
 	if (!EMUtil::is_same_size(this, obj)) {
@@ -3940,8 +4144,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 	ENTERFUNC;
 	
 	if (nz > 1) {
-		LOGERR("calc radial dist: can only handle 2D images.");
-		return vector < float >();
+		LOGERR("2D images only.");
+		throw ImageDimensionException("2D images only");
 	}
 
 	float *yc = new float[n];
@@ -4079,9 +4283,13 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 float EMData::calc_dist(EMData * second_img, int y_index) const
 {
 	ENTERFUNC;
+
+	if (get_ndim() != 1) {
+		throw ImageDimensionException("'this' image is 1D only");
+	}
 	
 	if (second_img->get_xsize() != nx || ny != 1) {
-		return -1;
+		throw ImageFormatException("image xsize not same");
 	}
 
 	if (y_index > second_img->get_ysize() || y_index < 0) {
@@ -4299,7 +4507,6 @@ EMData *EMData::convolute(EMData * with)
 
 	EXITFUNC;
 	return f2;
-
 }
 
 
@@ -4658,7 +4865,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 }
 
 
-void EMData::cut_slice(EMData * map, float dz, Rotation * ort,
+void EMData::cut_slice(const EMData * map, float dz, Rotation * ort,
 					   bool interpolate, float dx, float dy)
 {
 	ENTERFUNC;
@@ -4730,7 +4937,7 @@ void EMData::cut_slice(EMData * map, float dz, Rotation * ort,
 	}
 
 	done_data();
-	map->done_data();
+	
 	EXITFUNC;
 }
 
@@ -4961,6 +5168,10 @@ void EMData::setup_insert_slice(int size)
 EMData *EMData::get_row(int row_index) const
 {
 	ENTERFUNC;
+
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D image only");
+	}
 	
 	EMData *ret = new EMData();
 	ret->set_size(nx, 1, 1);
@@ -4974,6 +5185,13 @@ EMData *EMData::get_row(int row_index) const
 void EMData::set_row(const EMData * d, int row_index)
 {
 	ENTERFUNC;
+
+	if (get_ndim() > 2) {
+		throw ImageDimensionException("1D/2D image only");
+	}
+	if (d->get_ndim() != 1) {
+		throw ImageDimensionException("1D only");
+	}
 	
 	float *dst = get_data();
 	float *src = d->get_data();
@@ -5013,174 +5231,5 @@ void EMData::set_col(const EMData * d, int n)
 	}
 
 	done_data();
-	EXITFUNC;
-}
-
-float EMData::calc_density_center()
-{
-	ENTERFUNC;
-	
-	float center = get_attr("mean");
-	float sigma = get_attr("sigma");
-	float ds = sigma / 2;
-	size_t size = nx * ny * nz;
-	float *d = get_data();
-	float sigma1 = sigma / 20;
-	float sigma2 = sigma / 1000;
-
-	while (ds > sigma1) {
-		double sum = 0;
-		int norm = 0;
-
-		for (size_t i = 0; i < size; i++) {
-			if (fabs(d[i] - center) < ds) {
-				sum += d[i];
-				norm++;
-			}
-		}
-		if (!norm) {
-			break;
-		}
-		double mean = sum / norm;
-		if (fabs(mean - center) < sigma2) {
-			ds *= 0.5f;
-		}
-		center = mean;
-	}
-	EXITFUNC;
-
-	return center;
-}
-
-float EMData::calc_sigma_diff()
-{
-	ENTERFUNC;
-	
-	float *d = get_data();
-	float mean = get_attr("mean");
-	float sigma = get_attr("sigma");
-	
-	double sum_up = 0;
-	double sum_down = 0;
-	int nup = 0;
-	int ndown = 0;
-
-	size_t size = nx * ny * nz;
-
-	for (size_t i = 0; i < size; i++) {
-		if (d[i] > mean) {
-			sum_up += Util::square(d[i] - mean);
-			nup++;
-		}
-		else {
-			sum_down += Util::square(mean - d[i]);
-			ndown++;
-		}
-	}
-
-	float sigup = sqrt(sum_up / nup);
-	float sigdown = sqrt(sum_down / ndown);
-	float sig_diff = fabs(sigup - sigdown) / sigma;
-	
-
-	EXITFUNC;
-	return sig_diff;
-
-}
-
-
-void EMData::apply_radial_func(float x0, float step, vector < float >array, bool interp)
-{
-	ENTERFUNC;
-	
-	if (is_complex()) {
-		return;
-	}
-
-	int n = static_cast < int >(array.size());
-
-	ap2ri();
-	get_data();
-
-	size_t ndims = get_ndim();
-
-	if (ndims == 2) {
-		int k = 0;
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < nx; i += 2, k += 2) {
-				float r = hypot(i / 2.0f, (j - ny / 2.0f));
-				r = (r - x0) / step;
-
-				int l = 0;
-				if (interp) {
-					l = (int) floor(r);
-				}
-				else {
-					l = (int) floor(r + 1);
-				}
-
-				r -= l;
-
-				float f = 0;
-				if (l >= n - 2) {
-					f = array[n - 1];
-				}
-				else {
-					if (interp) {
-						f = (array[l] * (1.0f - r) + array[l + 1] * r);
-					}
-					else {
-						f = array[l];
-					}
-				}
-
-				rdata[k] *= f;
-				rdata[k + 1] *= f;
-			}
-		}
-	}
-	else if (ndims == 3) {
-		int k = 0;
-		for (int m = 0; m < nz; m++) {
-			float mnz = (m - nz / 2.0f) * (m - nz / 2.0f);
-			for (int j = 0; j < ny; j++) {
-				float jny = (j - ny / 2.0f) * (j - ny / 2.0f);
-				for (int i = 0; i < nx; i += 2, k += 2) {
-					float r = sqrt((i * i / 4.0f) + jny + mnz);
-					r = (r - x0) / step;
-
-					int l = 0;
-					if (interp) {
-						l = (int) floor(r);
-					}
-					else {
-						l = (int) floor(r + 1);
-					}
-
-					r -= l;
-
-					float f = 0;
-					if (l >= n - 2) {
-						f = array[n - 1];
-					}
-					else {
-						if (interp) {
-							f = (array[l] * (1.0f - r) + array[l + 1] * r);
-						}
-						else {
-							f = array[l];
-						}
-					}
-
-					rdata[k] *= f;
-					rdata[k + 1] *= f;
-				}
-			}
-		}
-
-	}
-
-	done_data();
-	update();
 	EXITFUNC;
 }
