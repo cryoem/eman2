@@ -270,11 +270,11 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , b
 	new_hed.max = dict["maximum"];
 	new_hed.avdens = dict["mean"];
 	new_hed.sigma = dict["sigma"];
-	/*
-	   new_hed.mrc1[0] = euler.phi();
-	   new_hed.mrc1[1] = euler.alt();
-	   new_hed.mrc1[2] = euler.az();
-	 */
+	
+	new_hed.mrc1[0] = dict["alt"];
+	new_hed.mrc1[1] = dict["az"];
+	new_hed.mrc1[2] = dict["phi"];
+	
 	new_hed.mrc2 = n_new_img;
 
 	new_hed.lbuf = nx;

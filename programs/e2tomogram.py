@@ -193,18 +193,43 @@ Processes a tomographic tilt series"""
 		im2.filter("NormalizeStd")
 		im2.write_image(args[1],i[1])
 	
-	return
+	print "Alignment Stage Complete"
+	print "Begin tilt axis search"
+	
 	# now we look for the common-line in the aligned images
 	sum=im1.do_fft()
 	sum.to_zero()
 	for i in range(nimg):
 		a=EMData()
 		a.read_image(args[1],i)
+		a.filter("MeanZeroEdge")
+		a.filter("NormalizeStd")
+		a.filter("MaskGauss",{"outer_radius":a.get_xsize()/4})
 		b=a.do_fft()
+		b.filter("ComplexNormPixel")
 		sum+=b
+	print "Phase average calculated"
+		
+	sum.ri2ap()
+	curve=[]
+	for angi in range(-90*4,90*4+1):
+			ang=angi*pi/(180.0*4.0)
+			v=0
+			for r in range(a.get_xsize()/64,a.get_xsize()/2):
+					v+=sum.get_value_at(2*int(r*cos(ang)),a.get_ysize()/2+int(r*sin(ang)))
+			curve.append((v,ang*180.0/pi))
+	tiltaxis=max(curve)
 	
-	sum=sum.do_ift()
-	sum.write_image("fft.mrc",0)
+	print "Tilt axis at %1.2f degrees from x"%tiltaxis[1]
+
+	for i in range(nimg):
+		a=EMData()
+		a.read_image(args[1],i)
+		a.set_rotation(options.tilt*(i-nimg/2-1)*pi/180.0,0,-tiltaxis[1]*pi/180.0)
+		a.write_image(args[1],i)
+		
+#	sum=sum.do_ift()
+#	sum.write_image("fft.mrc",0)
 	
 			
 if __name__ == "__main__":
