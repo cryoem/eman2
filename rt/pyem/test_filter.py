@@ -53,10 +53,14 @@ class TestFilter(unittest.TestCase):
         self.assertEqual(d2["xc"], xc)
         self.assertEqual(d2["ring_width"], rw)
 
+        outfile1 = "test_RangeThreshold_out.mrc"
+        
         e.filter("threshold.binary", {"value": 200})
-        e.write_image("test_RangeThreshold_out.mrc")
+        e.write_image(outfile1)
 
-
+        os.unlink(imgfile1)
+        os.unlink(outfile1)
+        
 
 class TestCmp(unittest.TestCase):
     def test_variance(self):

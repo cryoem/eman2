@@ -187,6 +187,104 @@ class TestImagicIO(unittest.TestCase):
         os.unlink(outfileimg)
 
 
+    def test_append_to_newfile(self):
+        infile = "test_append_to_newfile_in.mrc"
+        outfile = "test_append_to_newfile_in.img"
+        
+        TestUtil.make_image_file(infile, MRC)
+        e = EMData()
+        e.read_image(infile)
+        e.append_image(outfile, IMAGIC)
+
+        # check e
+
+        (outhed, outimg) = testlib.get_imagic_filename_pair(outfile)
+
+        os.unlink(infile)
+        os.unlink(outhed)
+        os.unlink(outimg)
+
+    def test_append_to_existing_file(self):
+        img1 = "test_append_to_existing_file_1.hed"
+        TestUtil.make_image_file(img1, IMAGIC)
+        e = EMData()
+        e.read_image(img1, 0, False, None, True)
+        e.append_image(img1, IMAGIC)
+
+        # verify here
+        
+        (hedfile, imgfile) = testlib.get_imagic_filename_pair(img1)
+        os.unlink(hedfile)
+        os.unlink(imgfile)
+
+        
+    def test_insert_to_newfile(self):
+        img1 = "test_insert_to_newfile_in.hed"
+        TestUtil.make_image_file(img1, IMAGIC)
+        e = EMData()
+        e.read_image(img1)
+        outfile = "test_insert_to_newfile_out.hed"
+        nimg = 4
+        e.write_image(outfile, nimg-1, IMAGIC)
+
+        nimg2 = EMUtil.get_image_count(outfile)
+        self.assertEqual(nimg2, nimg)
+        
+        (hedfile1, imgfile1) = testlib.get_imagic_filename_pair(img1)
+        (hedfile2, imgfile2) = testlib.get_imagic_filename_pair(outfile)
+        
+        os.unlink(hedfile1)
+        os.unlink(imgfile1)
+        os.unlink(hedfile2)
+        os.unlink(imgfile2)
+
+
+    def test_insert_beyond_existing_file(self):
+        infile = "insert_beyond_existing_in.hed"
+        TestUtil.make_image_file(infile, IMAGIC)
+        e = EMData()
+        e.read_image(infile, 0, False, None, True)
+
+        nimg1 = EMUtil.get_image_count(infile)
+        self.assertEqual(nimg1, 1)
+
+        n2 = 9
+        e.write_image(infile, n2, IMAGIC)
+        nimg2 = EMUtil.get_image_count(infile)
+        self.assertEqual(nimg2, n2+1)
+
+        # todo: verify images
+
+        n3 = 14
+        e.write_image(infile, n3, IMAGIC)
+        nimg3 = EMUtil.get_image_count(infile)
+        self.assertEqual(nimg3, n3+1)
+
+        # todo: verify images
+    
+        (hedfile, imgfile) = testlib.get_imagic_filename_pair(infile)
+        os.unlink(hedfile)
+        os.unlink(imgfile)
+
+    def test_insert_inside_existing_file(self):
+        infile = "test_insert_inside_existing_file_1.img"
+        TestUtil.make_image_file(infile, IMAGIC, EM_FLOAT, 20, 30, 20)
+        
+        insertfile = "test_insert_inside_existing_file_2.mrc"
+        TestUtil.make_image_file(insertfile, MRC, EM_FLOAT, 20, 30)
+        e = EMData()
+        e.read_image(insertfile)
+        e.write_image(infile, 2, IMAGIC)
+
+        # verify result
+        
+        (hedfile1, imgfile1) = testlib.get_imagic_filename_pair(infile)
+        os.unlink(hedfile1)
+        os.unlink(imgfile1)
+        os.unlink(insertfile)
+
+        
+
 class TestImageIO(unittest.TestCase):
 
 
@@ -389,11 +487,11 @@ class TestImageIO(unittest.TestCase):
 
     def test_xplorio_region(self):
         self.region_read_write_test(XPLOR, "2f.xplor")
-     
+
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestHdfIO)
+    test_support.run_unittest(TestImagicIO)
 
 if __name__ == '__main__':
     test_main()
