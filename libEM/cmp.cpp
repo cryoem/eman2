@@ -129,7 +129,7 @@ float PhaseCmp::cmp(EMData * em, Transform * ) const
 	    dfsnr[i] = (1.0 - exp(-x2 / 4.0)) * exp(-x2 / w);
 	}
 
-	Util::save_data_to_file(0, 1.0 / Ctf::CTFOS, dfsnr, np, "filt.txt");
+	Util::save_data(0, 1.0 / Ctf::CTFOS, dfsnr, np, "filt.txt");
     }
 
     EMData *em_fft = em->do_fft();

@@ -46,12 +46,11 @@ namespace EMAN
 	static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 					  float *slope, float *intercept, bool ignore_zero);
 
-	static void save_data_to_file(const vector<float> & x_array,
-				      const vector<float> & y_array, string filename);
-	static void save_data_to_file(float x0, float dx, const vector<float> & y_array,
-				      string filename);
-	static void save_data_to_file(float x0, float dx, float *y_array, size_t array_size,
-				      string filename);
+	static void save_data(const vector<float> & x_array, const vector<float> & y_array,
+			      string filename);
+	static void save_data(float x0, float dx, const vector<float> & y_array, string filename);
+	static void save_data(float x0, float dx, float *y_array, size_t array_size,
+			      string filename);
 
 	static float get_frand(float low, float high);
 	static float get_gauss_rand(float mean, float sigma);

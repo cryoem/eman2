@@ -358,7 +358,7 @@ EMData *CtfAverager::average(const vector<EMData*>& image_list) const
 	    snri[i] *= num_images / snrn[i];
 	}
 	if (outfile != "") {
-	    Util::save_data_to_file(0, 1, snri, ny/2, outfile);
+	    Util::save_data(0, 1, snri, ny/2, outfile);
 	}
     }
 

@@ -285,7 +285,7 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
     *slope = (sum * sum_xy - sum_x * sum_y) / div;
 }
 
-void Util::save_data_to_file(const vector<float> & x_array, const vector<float> & y_array,
+void Util::save_data(const vector<float> & x_array, const vector<float> & y_array,
 			     string filename)
 {
     if (x_array.size() != y_array.size()) {
@@ -306,7 +306,7 @@ void Util::save_data_to_file(const vector<float> & x_array, const vector<float> 
     fclose(out);
 }
 
-void Util::save_data_to_file(float x0, float dx, const vector<float> & y_array, string filename)
+void Util::save_data(float x0, float dx, const vector<float> & y_array, string filename)
 {
     FILE *out = fopen(filename.c_str(), "wb");
     if (!out) {
@@ -321,7 +321,7 @@ void Util::save_data_to_file(float x0, float dx, const vector<float> & y_array, 
 }
 
 
-void Util::save_data_to_file(float x0, float dx, float *y_array, size_t array_size, string filename)
+void Util::save_data(float x0, float dx, float *y_array, size_t array_size, string filename)
 {
     if (!y_array) {
 	return;

@@ -4,7 +4,7 @@
 #include "util.h"
 #include "ctf.h"
 
-// todo:  [calcsf=[<n>,]<output>]  [fftavg=<file name>] 
+// todo:  [calcsf=[<n>,]<output>]  
 
 using namespace EMAN;
 using std::map;
@@ -241,7 +241,8 @@ int main(int argc, char *argv[])
     char spiderformat[256];
 
     EMData *ld = new EMData();
-
+    vector < float >sfcurve1;
+    
     for (int i = n0; i <= n1; i++) {
 	d->read_image(argv[1], i);
 	int nx = d->get_xsize();
@@ -276,7 +277,7 @@ int main(int argc, char *argv[])
 	    Log::logger()->warn("Warning! Sigma=0 for image %d", i);
 	}
 #if 0
-	if (argdict[norefs] && d->get_nimg < 0) {
+	if (argdict[norefs] && d->get_nimg() < 0) {
 	    continue;
 	}
 #endif
@@ -315,8 +316,7 @@ int main(int argc, char *argv[])
 
 	    float x0 = 0;
 	    float step = 0.5;
-
-	    vector < float >sfcurve1;
+	    
 	    if (i % 2 == 0) {
 		sfcurve1 = dataf->calc_radial_dist(nx, x0, step);
 	    }
@@ -341,8 +341,6 @@ int main(int argc, char *argv[])
 	    delete dataf;
 	    dataf = 0;
 	}
-
-
 
 	float Xlp = lp;
 	float Xtlp = tlp;
