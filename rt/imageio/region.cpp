@@ -1,17 +1,9 @@
 #include "emdata.h"
+#include "testutil.h"
+#include <assert.h>
 
 using namespace EMAN;
 
-const char* get_test_image()
-{
-	static char filename[256];
-	static bool done = false;
-	if (!done) {
-		sprintf(filename, "%s/images/tablet.mrc", getenv("HOME"));
-		done = true;
-	}
-	return filename;
-}
 
 void test_em()
 {
@@ -25,21 +17,72 @@ void test_em()
 }
 
 
-void test_mrc()
+void test_region(EMUtil::ImageType imgtype, int ndims)
 {
+	const char * testfile = "";
+	bool is_3d = false;
+	
+	if (imgtype == EMUtil::IMAGE_MRC) {
+		testfile = "groel3d.mrc";
+	}
+	else if (imgtype == EMUtil::IMAGE_IMAGIC) {
+		testfile = "start.hed";
+		is_3d = true;
+	}
+		
+		
+	const char * imgfile = TestUtil::get_debug_image(testfile);
+	string imgbase = Util::remove_filename_ext(testfile);
+	string ext = Util::get_filename_ext(testfile);
+	string imgfile2 = imgbase + "_write_region." + ext;
+	string imgfile3 = imgbase + "_read_region." + ext;
+	
 	EMData e;
-	Region region(20, 50, 200, 400);
-	const char * imgfile = get_test_image();
-	e.read_image(imgfile, 0, false, &region);
-	e.write_image("tablet_region.mrc");
+	e.read_image(imgfile, 0, false, 0, is_3d);
+	e.write_image(imgfile2, 0, imgtype);
+	
+	int nx = e.get_xsize();
+	int ny = e.get_ysize();
+	int nz = e.get_zsize();
+	
+	int x0 = nx/4;
+	int y0 = ny/4;
+	int z0 = nz/4;
+	int xsize = nx/2;
+	int ysize = ny/2;
+	int zsize = nz/2;
+	if (zsize == 0) {
+		zsize = 1;
+	}
+
+	int image_index = 0;
+	Region region;
+	if (ndims == 2) {
+		region = Region(x0, y0, xsize, ysize);
+		image_index = nz / 2;
+	}
+	else if (ndims == 3) {
+		region = Region(x0, y0, z0, xsize, ysize, zsize);
+	}
+	
+	EMData e2;
+	e2.read_image(imgfile, image_index, false, &region);
+	e2.write_image(imgfile3, 0, imgtype);
+
+	EMData e3;
+	e3.set_size(xsize, ysize, zsize);
+	e3.to_zero();
+	
+	e3.write_image(imgfile2, image_index, imgtype, false, &region);
 }
+
+	
 
 int main(int argc, char *argv[])
 {
 	try {
-
-		test_mrc();
-		
+		test_region(EMUtil::IMAGE_MRC, 2);
+		test_region(EMUtil::IMAGE_IMAGIC, 2);
 					  
 	}
 	catch(E2Exception &e) {
