@@ -989,7 +989,7 @@ namespace EMAN
 		/** Get the 3D orientation of 'this' image.
 		 * @return The 3D orientation of 'this' image.
 		 */
-		Transform get_transform() const; // rename this to get_transform().
+		Transform get_transform() const; 
 
 		/** Define the 3D orientation of this particle, also
 		 * used to indicate relative rotations for reconstructions
@@ -1743,17 +1743,18 @@ namespace EMAN
 	inline Transform EMData::get_transform() const
 	{
 		return Transform(Transform::EMAN,
-						 (float)attr_dict["rot_alt"],
-						 (float)attr_dict["rot_az"],
-						 (float)attr_dict["rot_phi"]);
+						 (float)attr_dict["euler_alt"],
+						 (float)attr_dict["euler_az"],
+						 (float)attr_dict["euler_phi"]);
 	}
 
 	inline void EMData::set_rotation(float az, float alt, float phi)
 	{
-		attr_dict["rot_alt"]=alt;
-		attr_dict["rot_az"]=az;
-		attr_dict["rot_phi"]=phi;
-	}
+        attr_dict["orientation_convention"] = "EMAN";
+		attr_dict["euler_alt"]=alt;
+		attr_dict["euler_az"]=az;
+		attr_dict["euler_phi"]=phi;
+    }
 	
 	inline void EMData::scale_pixel(float scale) const
 	{

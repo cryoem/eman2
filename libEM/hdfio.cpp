@@ -12,10 +12,11 @@
 #include "ctf.h"
 #include "exception.h"
 #include "Assert.h"
+#include "transform.h"
 
 #include <string.h>
 #include <stdlib.h>
-#include "assert.h"
+
 
 #ifndef WIN32
 #include <sys/param.h>
@@ -24,7 +25,6 @@
 
 using namespace EMAN;
 
-hid_t HdfIO::euler_type = -1;
 hid_t HdfIO::mapinfo_type = -1;
 const char *HdfIO::HDF5_SIGNATURE = "\211HDF\r\n\032\n";
 
@@ -45,8 +45,12 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 HdfIO::~HdfIO()
 {
 	close_cur_dataset();
-	H5Gclose(group);
-	H5Fclose(file);
+    if (group >= 0) {
+        H5Gclose(group);
+    }
+    if (file >= 0) {
+        H5Fclose(file);
+    }
 }
 
 void HdfIO::init()
@@ -172,8 +176,18 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	dict["score"] = read_float_attr(image_index, "score");
 	dict["good"] = read_int_attr(image_index, "good");
-	dict["orientation_convention"] = (int) read_euler_attr(image_index, "orientation_convention");
 
+    string eulerstr = read_string_attr(image_index, "orientation_convention");
+    dict["orientation_convention"] = eulerstr;
+
+    Dict euler_angles;
+    read_euler_angles(euler_angles, image_index);
+
+    vector<string> euler_names = euler_angles.keys();
+    for (size_t i = 0; i < euler_names.size(); i++) {
+        dict[euler_names[i]] = euler_angles[euler_names[i]];
+    }
+    
 	dict["datatype"] = EMUtil::EM_FLOAT;
 	EXITFUNC;
 	return 0;
@@ -312,10 +326,19 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	}
 
 	if (dict.has_key("orientation_convention")) {
-		write_euler_attr(image_index, "orientation_convention",
-						 dict["orientation_convention"]);
-	}
-	
+        string eulerstr = (const char*) dict["orientation_convention"];
+        write_string_attr(image_index, "orientation_convention", eulerstr);
+
+        vector<string> euler_names = EMUtil::get_euler_names(eulerstr);
+        Dict euler_dict;
+        for (size_t i = 0; i < euler_names.size(); i++) {
+            euler_dict[euler_names[i]] = dict[euler_names[i]];
+        }
+
+        write_euler_angles(euler_dict, image_index);
+    }
+
+    
 	//flush();
 	close_cur_dataset();
 	
@@ -580,25 +603,13 @@ int HdfIO::read_array_attr(int image_index, const string & attr_name, void *valu
 	}
 	return err;
 }
-
-int HdfIO::read_euler_attr(int image_index, const string &)
+#if 0
+float HdfIO::read_euler_attr(int image_index, const string &attr_name)
 {
-	set_dataset(image_index);
-	/*
-	   Euler::EulerType val;
-	   hid_t attr = H5Aopen_name(cur_dataset, attr_name.c_str());
-	   if (attr < 0) {
-	   LOGERR(no such hdf attribute '%s'", attr_name.c_str());
-	   return attr;
-	   }
-	   H5Aread(attr, euler_type, &val);
-	   H5Aclose(attr);
-
-	   return static_cast<int>(val);
-	 */
-	return 1;
+    string full_attr_name = string(EULER_MAGIC) + attr_name;
+    return read_float_attr(image_index, full_attr_name);
 }
-
+#endif
 
 int HdfIO::read_mapinfo_attr(int image_index, const string & attr_name)
 {
@@ -769,21 +780,13 @@ int HdfIO::write_global_int_attr(const string & attr_name, int value)
 	return err;
 }
 
-
-int HdfIO::write_euler_attr(int image_index, const string & attr_name, int value)
+#if 0
+int HdfIO::write_euler_attr(int image_index, const string & attr_name, float value)
 {
-	set_dataset(image_index);
-	delete_attr(attr_name);
-
-	hsize_t dim[] = { 1 };
-	hid_t dataspace = H5Screate_simple(1, dim, NULL);
-	hid_t attr = H5Acreate(cur_dataset, attr_name.c_str(), euler_type, dataspace, H5P_DEFAULT);
-	H5Awrite(attr, euler_type, &value);
-	H5Sclose(dataspace);
-	H5Aclose(attr);
-	return 0;
+    string full_attr_name = string(EULER_MAGIC) + attr_name;
+    return write_float_attr(image_index, full_attr_name, value);
 }
-
+#endif
 
 int HdfIO::write_mapinfo_attr(int image_index, const string & attr_name, int value)
 {
@@ -835,7 +838,7 @@ string HdfIO::get_compound_name(int id, const string & name)
 	string magic = get_item_name(COMPOUND_DATA_MAGIC);
 	char id_str[32];
 	sprintf(id_str, "%d", id);
-	string compound_name = magic + id_str + name;
+	string compound_name = magic + "." + id_str + "." + name;
 	return compound_name;
 }
 
@@ -871,7 +874,7 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 			(*dict)[name] = value;
 		}
 		else {
-			LOGERR("can only handle float CTF parameters in HDF");
+			LOGERR("can only handle float parameters in HDF attr_info()");
 			exit(1);
 		}
 		H5Aclose(attr);
@@ -881,29 +884,56 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 	return 0;
 }
 
-// assume all ctf fields are floats.
 int HdfIO::read_ctf(Ctf & ctf, int image_index)
 {
-	ENTERFUNC;
+    Dict ctf_dict;
+    int err = read_compound_dict(CTFIT, ctf_dict, image_index);
+    if (!err) {
+        ctf.from_dict(ctf_dict);
+    }
+    
+	return err;
+}
+
+void HdfIO::write_ctf(const Ctf & ctf, int image_index)
+{
+    Dict ctf_dict = ctf.to_dict();
+    write_compound_dict(CTFIT, ctf_dict, image_index);
+}
+
+int HdfIO::read_euler_angles(Dict & euler_angles, int image_index)
+{
+    int err = read_compound_dict(EULER, euler_angles, image_index);
+    return err;
+}
+
+
+void HdfIO::write_euler_angles(const Dict & euler_angles, int image_index)
+{
+    write_compound_dict(EULER, euler_angles, image_index);
+}
+
+int HdfIO::read_compound_dict(Nametype compound_type,
+                              Dict & values, int image_index)
+{
+    ENTERFUNC;
 	init();
 
 	int err = 0;
-	//set_dataset(image_index);
-	hid_t cur_dataset_orig = cur_dataset;
-	
-	string cur_dataset_name = get_compound_name(image_index, get_item_name(CTFIT));
-	cur_dataset = H5Dopen(file, cur_dataset_name.c_str());
 
+	hid_t cur_dataset_orig = cur_dataset;	
+	string cur_dataset_name = get_compound_name(image_index, get_item_name(compound_type));
+
+    hdf_err_off();
+    cur_dataset = H5Dopen(file, cur_dataset_name.c_str());
+    hdf_err_on();
+    
 	if (cur_dataset < 0) {
 		err = 1;
 	}
 	else {
-		Dict dict;
-		err = H5Aiterate(cur_dataset, 0, attr_info, &dict);
-		if (err >= 0) {
-			ctf.from_dict(dict);
-		}
-		else {
+		err = H5Aiterate(cur_dataset, 0, attr_info, &values);
+		if (err < 0) {
 			err = 1;
 		}
 	}
@@ -916,8 +946,9 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 	return err;
 }
 
-// assume all ctf fields are floats.
-void HdfIO::write_ctf(const Ctf & ctf, int image_index)
+
+void HdfIO::write_compound_dict(Nametype compound_type,
+                                const Dict & values, int image_index)
 {
 	ENTERFUNC;
 	init();
@@ -925,20 +956,31 @@ void HdfIO::write_ctf(const Ctf & ctf, int image_index)
 	//set_dataset(image_index);
 	hid_t cur_dataset_orig = cur_dataset;
 	
-	string attr_name = get_item_name(CTFIT);
+	string attr_name = get_item_name(compound_type);
 	string cur_dataset_name = get_compound_name(image_index, attr_name);
 
+    hdf_err_off();
 	cur_dataset = H5Dopen(file, cur_dataset_name.c_str());
-
+    hdf_err_on();
+    
 	if (cur_dataset < 0) {
 		create_compound_attr(image_index, attr_name);
 	}
+    else {
+        // remove all existing attributes first
+        Dict attr_dict;
+        H5Aiterate(cur_dataset, 0, attr_info, &attr_dict);
+        vector <string> attr_keys = attr_dict.keys();
+        for (size_t i = 0; i < attr_keys.size(); i++) {
+            H5Adelete(cur_dataset, attr_keys[i].c_str());
+        }
+    }
 
-
-	Dict dict = ctf.to_dict();
-	vector < string > keys = dict.keys();
+    // writing new attributes
+    
+	vector < string > keys = values.keys();
 	for (size_t i = 0; i < keys.size(); i++) {
-		float v = dict[keys[i]];
+		float v = values[keys[i]];
 		write_float_attr(keys[i].c_str(), v);
 	}
 
@@ -948,6 +990,7 @@ void HdfIO::write_ctf(const Ctf & ctf, int image_index)
 	cur_image_index = -1;
 	EXITFUNC;
 }
+
 
 bool HdfIO::is_complex_mode()
 {
@@ -971,7 +1014,9 @@ string HdfIO::get_item_name(Nametype type)
 	case NUMDATASET:
 		return "num_dataset";
 	case COMPOUND_DATA_MAGIC:
-		return "compound.";
+		return "compound";
+    case EULER:
+        return "euler_angles";
 	}
 
 
@@ -1000,24 +1045,22 @@ void HdfIO::close_cur_dataset()
 	hdf_err_on();
 }
 
-// EMAN,IMAGIC,SPIN,QUAT,MATRIX,SGIROT,SPIDER,MRC
-
 void HdfIO::create_enum_types()
 {
 	static int enum_types_created = 0;
 
 	if (!enum_types_created) {
 #if 0
-		Euler::EulerType e;
-		euler_type = H5Tcreate(H5T_ENUM, sizeof(Euler::EulerType));
-		H5Tenum_insert(euler_type, "EMAN", (e = Euler::EMAN, &e));
-		H5Tenum_insert(euler_type, "IMAGIC", (e = Euler::IMAGIC, &e));
-		H5Tenum_insert(euler_type, "SPIN", (e = Euler::SPIN, &e));
-		H5Tenum_insert(euler_type, "QUAT", (e = Euler::QUAT, &e));
-		H5Tenum_insert(euler_type, "MATRIX", (e = Euler::MATRIX, &e));
-		H5Tenum_insert(euler_type, "SGIROT", (e = Euler::SGIROT, &e));
-		H5Tenum_insert(euler_type, "SPIDER", (e = Euler::SPIDER, &e));
-		H5Tenum_insert(euler_type, "MRC", (e = Euler::MRC, &e));
+        Transform::EulerType e;
+		euler_type = H5Tcreate(H5T_ENUM, sizeof(Transform::EulerType));
+        
+		H5Tenum_insert(euler_type, "EMAN", (e = Transform::EMAN, &e));
+		H5Tenum_insert(euler_type, "IMAGIC", (e = Transform::IMAGIC, &e));
+		H5Tenum_insert(euler_type, "SPIN", (e = Transform::SPIN, &e));
+		H5Tenum_insert(euler_type, "QUATERNION", (e = Transform::QUATERNION, &e));
+		H5Tenum_insert(euler_type, "SGIROT", (e = Transform::SGIROT, &e));
+		H5Tenum_insert(euler_type, "SPIDER", (e = Transform::SPIDER, &e));
+		H5Tenum_insert(euler_type, "MRC", (e = Transform::MRC, &e));
 
 		MapInfoType m;
 		mapinfo_type = H5Tcreate(H5T_ENUM, sizeof(MapInfoType));

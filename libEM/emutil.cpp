@@ -1200,3 +1200,45 @@ void EMUtil::process_lines_io(FILE * file, ImageIO::IOMode rw_mode,
 	}
 }
 
+vector<string> EMUtil::get_euler_names(const string & euler_convention)
+{
+    vector<string> v;
+    string b = "euler_";
+    
+    if (euler_convention == "EMAN") {
+        v.push_back(b + "alt");
+        v.push_back(b + "az");
+        v.push_back(b + "phi");
+    }
+    else if (euler_convention == "MRC") {
+        v.push_back(b + "theta");
+        v.push_back(b + "phi");
+        v.push_back(b + "omega");
+    }
+    else if (euler_convention == "IMAGIC") {
+        v.push_back(b + "alpha");
+        v.push_back(b + "beta");
+        v.push_back(b + "gamma");
+    }
+    else if (euler_convention == "SPIDER") {
+        v.push_back(b + "phi");
+        v.push_back(b + "theta");
+        v.push_back(b + "gamma");
+    }
+    else if (euler_convention == "SPIN" ||
+             euler_convention == "SGIROT") {
+        v.push_back(b + "q");
+        v.push_back(b + "n1");
+        v.push_back(b + "n2");
+        v.push_back(b + "n3");
+    }
+
+    else if (euler_convention == "QUATERNION") {
+        v.push_back(b + "e0");
+        v.push_back(b + "e1");
+        v.push_back(b + "e2");
+        v.push_back(b + "e3");
+    }
+
+    return v;
+}

@@ -185,6 +185,9 @@ namespace EMAN
 		
 		static void jump_lines(FILE * file, int nlines);
 		
+        static vector<string> get_euler_names(const string & euler_convention);
+
+        
 	  private:
 		static ImageType fast_get_image_type(const string & filename,
 											 const void *first_block,

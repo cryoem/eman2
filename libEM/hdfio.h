@@ -36,6 +36,9 @@ namespace EMAN
 		int read_ctf(Ctf & ctf, int image_index = 0);
 		void write_ctf(const Ctf & ctf, int image_index = 0);
 
+        int read_euler_angles(Dict & euler_angles, int image_index = 0);
+        void write_euler_angles(const Dict & euler_angles, int image_index = 0);
+        
 		int read_array_attr(int image_index, const string & attr_name, void *value);
 		int write_array_attr(int image_index, const string & attr_name,
 							 int nitems, void *data, DataType type);
@@ -44,19 +47,16 @@ namespace EMAN
 		{
 			return false;
 		}
+        
 		int get_nimg();
-		
-	  private:
-		void create_cur_dataset(int image_index, int nx, int ny, int nz);
 
+        
 		int read_int_attr(int image_index, const string & attr_name);
 		float read_float_attr(int image_index, const string & attr_name);
 		string read_string_attr(int image_index, const string & attr_name);
 		int read_global_int_attr(const string & attr_name);
 		float read_global_float_attr(const string & attr_name);
 
-		int *read_dims(int image_index, int *p_ndim);
-		int read_euler_attr(int image_index, const string & attr_name);
 		int read_mapinfo_attr(int image_index, const string & attr_name);
 
 		int write_int_attr(int image_index, const string & attr_name, int value);
@@ -69,19 +69,30 @@ namespace EMAN
 
 		int write_global_int_attr(const string & attr_name, int value);
 
-		int write_euler_attr(int image_index, const string & attr_name, int value);
 		int write_mapinfo_attr(int image_index, const string & attr_name, int value);
 
 		int delete_attr(int image_index, const string & attr_name);
 
 		int get_num_dataset();
 		vector < int >get_image_indices();
-
-
+        
+	  private:
 		enum Nametype
-		{ ROOT_GROUP, CTFIT, NUMDATASET, COMPOUND_DATA_MAGIC };
-		static const char *HDF5_SIGNATURE;
+		{ ROOT_GROUP, CTFIT, NUMDATASET, COMPOUND_DATA_MAGIC, EULER };
+        
+		void create_cur_dataset(int image_index, int nx, int ny, int nz);
 
+		int *read_dims(int image_index, int *p_ndim);
+
+        int read_compound_dict(Nametype compound_type,
+                               Dict & values, int image_index);
+        
+        void write_compound_dict(Nametype compound_type,
+                                 const Dict & values, int image_index);
+        
+
+		static const char *HDF5_SIGNATURE;
+        
 
 		string filename;
 		IOMode rw_mode;
@@ -96,7 +107,6 @@ namespace EMAN
 		herr_t(*old_func) (void *);
 		void *old_client_data;
 
-		static hid_t euler_type;
 		static hid_t mapinfo_type;
 
 		vector < int >image_indices;
@@ -125,6 +135,8 @@ namespace EMAN
 		int create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 								const Region * area, int nx, int ny, int nz,
 								int image_index);
+
+       
 	};
 }
 

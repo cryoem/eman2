@@ -175,9 +175,10 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["mean"] = hed.avdens;
 	dict["sigma"] = hed.sigma;
 
-	dict["rot_alt"] = hed.mrc1[1];			// EMAN style Euler angles
-	dict["rot_az"] = hed.mrc1[2];
-	dict["rot_phi"] = hed.mrc1[0];
+    dict["orientation_convention"] = "EMAN";
+	dict["euler_alt"] = hed.mrc1[1];
+	dict["euler_az"] = hed.mrc1[2];
+	dict["euler_phi"] = hed.mrc1[0];
 	
 	dict["IMAGIC.imgnum"] = hed.imgnum;
 	dict["IMAGIC.count"] = hed.count;
@@ -277,9 +278,9 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	new_hed.avdens = (float)dict["mean"];
 	new_hed.sigma = (float)dict["sigma"];
 	
-	new_hed.mrc1[1] = (float)dict["rot_alt"];
-	new_hed.mrc1[2] = (float)dict["rot_az"];
-	new_hed.mrc1[0] = (float)dict["rot_phi"];
+	new_hed.mrc1[1] = (float)dict["euler_alt"];
+	new_hed.mrc1[2] = (float)dict["euler_az"];
+	new_hed.mrc1[0] = (float)dict["euler_phi"];
 	
 	new_hed.mrc2 = (int)dict["ptcl_repr"];
 

@@ -37,9 +37,6 @@
 
   058. CTF classes need more testing for the algorithm implementation.
 
-  060. HDFio problem. the read segfault after around 900 reads and the
-       write crash after ~400 writes using the same EMData object in python. 
-
   066. ImageIO classes: for those supporting 2D stacks, they should also
        support insert/append to a new file, insert/append beyond the end of
        the file. The gap will be filled with zero. Check imagic format as
@@ -117,6 +114,8 @@
        into the proper endian order.
 
   087. add [in] [out] or [inout] to params in documentation.
+
+  091. CTF: set_ctf() doesn't work using python.
 
 --- Items Done ----
 
@@ -264,7 +263,11 @@
 
   11/27/04 059. 
        Find an efficient way to implement EMData's data -> numeric array.
-	   				
+	   		      
+  3/2/05 060
+       HDFio problem. the read segfault after around 900 reads and the
+       write crash after ~400 writes using the same EMData object in python. 
+		
   11/20/04 061. 
        Windows support. error libpng12.dll is missing; HDF not working.
 
@@ -341,6 +344,10 @@
   2/24/05 090	   
        ImageIO caching causes memory leak or memory not freed. Need a
        better way to handle this.
-  
+       
+  3/2/05 092. 
+       HdfIO: create functions to read/write compound attributes including
+       CTF, EulerAngles, etc
+ 
   	   
 	   
