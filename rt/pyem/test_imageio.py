@@ -10,40 +10,119 @@ import os
 
 class TestHdfIO(unittest.TestCase):
 
+    def test_make_image(self):
+        imgfile = "test_make_image_1.h5"
+        TestUtil.make_image_file(imgfile, HDF, EM_FLOAT)
+        err = TestUtil.verify_image_file(imgfile, HDF, EM_FLOAT)
+        self.assertEqual(err, 0)
+
+        os.unlink(imgfile)
+        
     def test_read_image(self):
+        nx = 20
+        ny = 30
+        nz = 2
         imgfile = "test_read_image.h5"
-        TestUtil.make_image_file(imgfile, HDF)
-		
+        TestUtil.make_image_file(imgfile, HDF, EM_FLOAT, nx, ny, nz)
 
+        e = EMData()
+        e.read_image(imgfile)
+        attrdict = e.get_attr_dict()
+        
+        self.assertEqual(attrdict["nx"], nx)
+        self.assertEqual(attrdict["ny"], ny)
+        self.assertEqual(attrdict["nz"], nz)
+        self.assertEqual(attrdict["ImageEndian"], "big")
+        self.assertEqual(attrdict["datatype"], EM_FLOAT)
+        self.assertEqual(attrdict["is_complex"], 0)
+        self.assertEqual(attrdict["maximum"], 325.0)
+        self.assertEqual(attrdict["minimum"], 0.0)
 
-	def test_write_image(self):
-		imgfile1 = "test_write_image_1.mrc"
-		imgfile2 = "test_write_image_2.mrc"
-		imgfile3 = "test_write_image_3.mrc"
+        os.unlink(imgfile)
+        
 
-		TestUtil.make_image_file(imgfile1, MRC)
-		TestUtil.make_image_file(imgfile2, MRC)
-		TestUtil.make_image_file(imgfile3, MRC)
+    def test_hdf_attr(self):
 
-		e1 = EMData()
-		e1.read_image(imgfile1)
+        infile = "test_hdf_attr_in.mrc"
+        TestUtil.make_image_file(infile, MRC, EM_FLOAT)
 
-		e2 = EMData()
-		e2.read_image(imgfile2)
+        ctf = SimpleCtf()
+        d = {"defocus":1, "bfactor":2}
+        ctf.from_dict(d)
 
-		e3 = EMData()
-		e3.read_image(imgfile3)
+        e = EMData()
+        e.read_image(infile)
+        az = 1.5
+        alt = 2.5
+        phi = 0.5        
+        e.set_rotation(az, alt, phi)
+        #e.set_ctf(ctf)
+        
+        outfile = "test_hdf_attr_out_1.h5"
+        e.write_image(outfile, 0, HDF)
+        
+        e2 = EMData()
+        e2.read_image(outfile)
+        attrdict2 = e2.get_attr_dict()
 
-		outfile = "test_write_image_out.h5"
-		e1.write_image(outfile, 0)
-		e2.write_image(outfile, 1)
-		e3.write_image(outfile, 2)
-		
-		os.unlink(imgfile1)
-		os.unlink(imgfile2)
-		os.unlink(imgfile3)
+        self.assertEqual(attrdict2["orientation_convention"], "EMAN")
+        self.assertEqual(attrdict2["euler_az"], az)
+        self.assertEqual(attrdict2["euler_alt"], alt)
+        self.assertEqual(attrdict2["euler_phi"], phi)
 
-		os.unlink(outfile)
+        theta = 10.0
+        phi = 20.0
+        omega = 30.0
+
+        e2.set_attr("orientation_convention", "MRC")
+        e2.set_attr("euler_theta", theta)
+        e2.set_attr("euler_phi", phi)
+        e2.set_attr("euler_omega", omega)
+
+        outfile2 = "test_hdf_attr_out_2.h5"
+        e2.write_image(outfile2, 0, HDF)
+
+        e3 = EMData()
+        e3.read_image(outfile2)
+        attrdict3 = e3.get_attr_dict()
+        
+        self.assertEqual(attrdict3["orientation_convention"], "MRC")
+        self.assertEqual(attrdict3["euler_theta"], theta)
+        self.assertEqual(attrdict3["euler_omega"], omega)
+        self.assertEqual(attrdict3["euler_phi"], phi)
+        
+        os.unlink(infile)
+        os.unlink(outfile)
+        os.unlink(outfile2)
+
+    def test_write_image(self):
+        imgfile1 = "test_write_image_1.mrc"
+        imgfile2 = "test_write_image_2.mrc"
+        imgfile3 = "test_write_image_3.mrc"
+
+        TestUtil.make_image_file(imgfile1, MRC)
+        TestUtil.make_image_file(imgfile2, MRC)
+        TestUtil.make_image_file(imgfile3, MRC)
+
+        e1 = EMData()
+        e1.read_image(imgfile1)
+
+        e2 = EMData()
+        e2.read_image(imgfile2)
+
+        e3 = EMData()
+        e3.read_image(imgfile3)
+
+        outfile = "test_write_image_out.h5"
+        e1.write_image(outfile, 0)
+        e2.write_image(outfile, 1)
+        e3.write_image(outfile, 2)
+        
+        os.unlink(imgfile1)
+        os.unlink(imgfile2)
+        os.unlink(imgfile3)
+
+        os.unlink(outfile)
         
 
 class TestMrcIO(unittest.TestCase):
@@ -402,11 +481,20 @@ class TestImageIO(unittest.TestCase):
              e4.write_image(readfile_3d, 0, outtype)
              TestUtil.check_image(readfile_3d, e4)
 
-         # check for imagic file type, which need to remove the pairs
-         testlib.safe_unlink(readfile_2d)
-         testlib.unlink_data_header_files(readfile_2d)
-         testlib.safe_unlink(readfile_3d)
-         testlib.unlink_data_header_files(readfile_3d)
+             if outtype == IMAGIC:
+                 (hed3d, img3d) = testlib.get_imagic_filename_pair(readfile_3d)
+                 os.unlink(hed3d)
+                 os.unlink(img3d)
+             else:
+                 os.unlink(readfile_3d)
+             
+         if outtype == IMAGIC:
+             (hed2d, img2d) = testlib.get_imagic_filename_pair(readfile_2d)
+             os.unlink(hed2d)
+             os.unlink(img2d)
+         else:
+             os.unlink(readfile_2d)
+             
 
 
     def region_write_test(self, imgtype, imgfile, outtype = None):
@@ -455,10 +543,19 @@ class TestImageIO(unittest.TestCase):
             e3.write_image(writefile_3d, image_index, outtype, False, region_3d)
             TestUtil.check_image(writefile_3d)
 
-        testlib.safe_unlink(writefile_2d)
-        testlib.unlink_data_header_files(writefile_2d)
-        testlib.safe_unlink(writefile_3d)
-        testlib.unlink_data_header_files(writefile_3d)
+            if outtype  == IMAGIC:
+                (hed3d, img3d) = testlib.get_imagic_filename_pair(writefile_3d)
+                os.unlink(hed3d)
+                os.unlink(img3d)
+            else:
+                os.unlink(writefile_3d)
+                
+        if outtype == IMAGIC:
+            (hed2d, img2d) = testlib.get_imagic_filename_pair(writefile_2d)
+            os.unlink(hed2d)
+            os.unlink(img2d)
+        else:
+            os.unlink(writefile_2d)
 
 
     def region_read_write_test(self, imgtype, imgfile, outtype = None):
@@ -509,8 +606,8 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    #test_support.run_unittest(TestHdfIO, TestMrcIO, TestImagicIO, TestImageIO)
-    test_support.run_unittest(TestImageIO)
+    #test_support.run_unittest(TestHdfIO)
+    test_support.run_unittest(TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
 
 if __name__ == '__main__':
     test_main()

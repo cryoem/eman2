@@ -3,6 +3,7 @@
 #include "emdata.h"
 #include "util.h"
 #include "testutil.h"
+#include "ctf.h"
 
 using namespace EMAN;
 
@@ -23,6 +24,15 @@ void test_write()
 {
 	EMData * e = new EMData();
 	e->read_image(TestUtil::get_debug_image("3d.mrc"));
+
+    SimpleCtf ctf;
+    Dict d;
+    d["defocus"] = 1;
+    d["bfactor"] = 2;
+    ctf.from_dict(d);
+
+    e->set_ctf(&ctf);
+    
 	e->write_image("test_hdfio_write_2.h5", 0, EMUtil::IMAGE_HDF);
 	delete e;
 	e = 0;
@@ -31,7 +41,7 @@ void test_write()
 
 int main()
 {
-	test_read();
+	//test_read();
 	test_write();
 	return 0;
 }
