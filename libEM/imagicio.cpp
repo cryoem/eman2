@@ -463,8 +463,8 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 		ByteOrder::swap_bytes(data, imagich.nx * imagich.ny);
 	}
 
-	fflush(img_file);
-	fflush(hed_file);
+	//fflush(img_file);
+	//fflush(hed_file);
 	return 0;
 }
 

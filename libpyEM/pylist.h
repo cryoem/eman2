@@ -71,13 +71,8 @@ namespace EMAN {
     {
 		static PyObject* convert(IntPoint const& p)
 		{
-			python::list result;
-	    
-			for (int i = 0; i < p.get_ndim(); i++) {
-				result.append(p[i]);
-			}
-	    
-			return python::incref(python::list(result).ptr());
+			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
+			return python::incref(python::tuple(result).ptr());
 		}
     };
 
@@ -86,13 +81,8 @@ namespace EMAN {
     {
 		static PyObject* convert(FloatPoint const& p)
 		{
-			python::list result;
-	    
-			for (int i = 0; i < p.get_ndim(); i++) {
-				result.append(p[i]);
-			}
-	    
-			return python::incref(python::list(result).ptr());
+			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
+			return python::incref(python::tuple(result).ptr());
 		}
     };
 
@@ -101,13 +91,8 @@ namespace EMAN {
     {
 		static PyObject* convert(IntSize const& p)
 		{
-			python::list result;
-	    
-			for (int i = 0; i < p.get_ndim(); i++) {
-				result.append(p[i]);
-			}
-	    
-			return python::incref(python::list(result).ptr());
+			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
+			return python::incref(python::tuple(result).ptr());
 		}
     };
 
@@ -116,13 +101,8 @@ namespace EMAN {
     {
 		static PyObject* convert(FloatSize const& p)
 		{
-			python::list result;
-	    
-			for (int i = 0; i < p.get_ndim(); i++) {
-				result.append(p[i]);
-			}
-	    
-			return python::incref(python::list(result).ptr());
+			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
+			return python::incref(python::tuple(result).ptr());
 		}
     };
 

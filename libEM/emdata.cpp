@@ -131,7 +131,7 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
 						 bool header_only, const Region * region, bool use_host_endian) 
 {
-	ENTERFUNC;	
+	ENTERFUNC;
 	LOGDEBUG("write to file '%s'", filename.c_str());
 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {

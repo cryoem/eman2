@@ -66,6 +66,9 @@
   038. convert named classes including IntSize, FloatSize, IntPoint,
        FloatPoint to python list in boost python part.
 
+  040. convert named classes including IntSize, FloatSize, IntPoint,
+       FloatPoint to python tuple in boost python part.
+
 	   
 --- Low Priority ---
 
