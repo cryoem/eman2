@@ -3364,8 +3364,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
     tmp2 = get_clip(r1);
 
     if (!premasked) {
-	tmp2->filter("SharpMask", Dict("outer_radius", EMObject(nx / 2),
-				       "value", EMObject(0)));
+	tmp2->filter("SharpMask", Dict("outer_radius", nx / 2, "value", 0));
     }
 
     if (filt->get_xsize() != tmp2->get_xsize() + 2 || filt->get_ysize() != tmp2->get_ysize() ||
@@ -3373,8 +3372,8 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
 	filt->to_one();
 
-	filt->filter("GaussLowpass", Dict("lowpass", EMObject(3)));
-	filt->filter("GaussHighpass", Dict("highpass", EMObject(9999)));
+	filt->filter("GaussLowpass", Dict("lowpass", 3));
+	filt->filter("GaussHighpass", Dict("highpass", 9999));
     }
 
     EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
@@ -3396,8 +3395,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 
     if (nz == 1) {
 	if (!unwrap) {
-	    tmp2->filter("SharpMask", Dict("outer_radius", EMObject(-1),
-					   "value", EMObject(0)));
+	    tmp2->filter("SharpMask", Dict("outer_radius", -1, "value", 0));
 	    rfp = 0;
 	    return tmp2;
 	}
