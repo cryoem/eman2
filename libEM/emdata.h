@@ -80,6 +80,9 @@ namespace EMAN {
 	bool is_complex_x() const;
 	void set_complex_x(bool is_complex_x);	
 
+	bool is_flipped() const;
+	void set_flipped(bool is_flipped);
+	
 	bool is_ri() const;
 	void set_ri(bool is_ri);
 	
@@ -111,17 +114,6 @@ namespace EMAN {
 	
 	void vertical_flip();
 	void horizontal_flip();
-	
-	void set_flipped(bool flipped)
-	{
-	    if (flipped) {
-		flags |= EMDATA_FLIP;
-	    }
-	    else {
-		flags&=~EMDATA_FLIP;
-	    }
-	}
-	
 	
 	EMData* calc_ccf(EMData* with, bool tocorner = false, EMData* filter = 0);
 	EMData* make_rotational_footprint(bool premasked = false, bool unwrap = true);
@@ -164,8 +156,8 @@ namespace EMAN {
 	void update();
 	void to_zero();
 	void to_one();
-	
-	SimpleCtf* get_ctf();
+
+	SimpleCtf* get_ctf() const;
 	void set_ctf(const SimpleCtf& ctf);
 
 	void set_size(int nx, int ny, int nz);
@@ -180,9 +172,8 @@ namespace EMAN {
 	int get_max_index() const;
 	
 	Dict get_attr_dict();
-	float get_mean();
-	float get_std();
-
+	float get_mean() const;
+	float get_std() const;
 	
 	float get_value_at(int x, int y, int z) const;
 	float get_value_at(int x, int y) const;
@@ -268,7 +259,6 @@ namespace EMAN {
 	void normalize_max();
 	void row_normalize();
 	
-	
 	Point<float> normalize_to(EMData* noisy, bool keepzero = false, bool invert = false,
 				  float mult = 0, float add = 0);
 	Point<float> normalize_slice(EMData* slice, float alt, float az, float phi);
@@ -280,19 +270,17 @@ namespace EMAN {
 	void setup_insert_slice(int size);
 	
 	void to_mass_center(bool int_shift_only = true);
-
 	
-#if 0
-	float get_ali_peak() const;	
+	float get_ali_peak() const;
 	EMData* get_row(int row_index) const;
+	void set_row(const EMData *d, int row_index);
+	
 	EMData* get_col(int col_index) const;
+	void set_col(const EMData *d, int n);
+	
 	float get_density_center() const;
 	float get_sigma_diff() const;
 	int get_dim() const;
-	bool is_flipped();
-	
-#endif
-	
 	
 	EMData& operator+=(float n);
         EMData& operator-=(float n);
@@ -334,7 +322,7 @@ namespace EMAN {
 	    EMDATA_NEWRFP	= 1<<9,		// needs new rotational footprint
 	    EMDATA_NODATA	= 1<<10,	// no actual data
 	    EMDATA_COMPLEXX	= 1<<11,       	// 1D fft's in X
-	    EMDATA_FLIP         = 1<<12,
+	    EMDATA_FLIP         = 1<<11,        // a flag only
 	    EMDATA_CHANGED      = (EMDATA_NEWFFT+EMDATA_NEEDUPD+EMDATA_NEEDHIST+EMDATA_NEWRFP)
 	};
 
@@ -502,6 +490,18 @@ namespace EMAN {
 	}
     }
     
+    inline bool EMData::is_flipped() const { return (flags & EMDATA_FLIP); }
+
+    inline void EMData::set_flipped(bool is_flipped)
+    {
+	if (is_flipped) {
+	    flags |= EMDATA_FLIP;
+	}
+	else {
+	    flags &= ~EMDATA_FLIP;
+	}
+    }
+    
     inline void EMData::set_path(const string& new_path) { path = new_path; }
     inline void EMData::set_pathnum(int n) { pathnum = n; }	
     inline void EMData::set_name(const string& new_name) { name = new_name; } 
@@ -517,17 +517,11 @@ namespace EMAN {
 	}
     }
     
-    inline float EMData::get_mean()
-    {
-	Dict d = get_attr_dict();
-	return d["mean"].get_float();
-    }
+    inline float EMData::get_mean() const { return attr_dict["mean"].get_float(); }
 
-    inline float EMData::get_std()
-    {
-	Dict d = get_attr_dict();	
-	return d["std"].get_float();
-    }
+    inline float EMData::get_std() const { return attr_dict["std"].get_float(); }
+
+    inline SimpleCtf* EMData::get_ctf() const { return ctf; }
 }
 
 #endif
