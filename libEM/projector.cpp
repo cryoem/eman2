@@ -497,7 +497,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 
 				if (radius2 > nx || radius2 > ny) {
 					if (iq[0] > (nx - 1) || iq[1] > (ny - 1) || iq[2] > (nz - 1)) {
-						vb += mat.get_vector(0);
+						vb += mat.get_row(0);
 						continue;
 					}
 				}
@@ -520,7 +520,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 				ret_data[k + kb * nx] = ret_data[k + kb * nx] + sum_a;
 
 				if (radius2 <= nx && radius2 <= ny) {
-					vb += mat.get_vector(0);
+					vb += mat.get_row(0);
 				}
 			}
 		}
