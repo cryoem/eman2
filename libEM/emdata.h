@@ -615,7 +615,7 @@ namespace EMAN
 		 * @param f The number added to 'this' image.
 		 * @param keepzero If set will not modify pixels that are exactly zero
 		 */
-		void add(float f,keepzero=0);
+		void add(float f,int keepzero=0);
 		
 		/** add a same-size image to this image pixel by pixel.
 		 *
