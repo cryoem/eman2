@@ -130,8 +130,6 @@ namespace EMAN
 	void dump_data(string filename);
 
 	int add_incoherent(EMData * obj);
-	int add_mask_shell(int num_shells);
-	int add_random_noise(int n, float x0, float dx, float *y, bool interpolation = true);
 
 	vector<float> calc_fourier_shell_correlation(EMData * with);
 	void calc_hist(vector<float> & hist, float hist_min = 0, float hist_max = 0, bool add =
