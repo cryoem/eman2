@@ -32,7 +32,7 @@ namespace EMAN
 			vec[2] = 0;
 		}
 
-		Vec3i(int x, int y, int z)
+		Vec3i(int x, int y, int z = 0)
 		{
 			vec[0] = x;
 			vec[1] = y;
@@ -83,15 +83,7 @@ namespace EMAN
 						 (vec[0] * v[1] - vec[1] * v[0]));
 		}
 
-		Vec3i  &negate()
-		{
-			vec[0] = -vec[0];
-			vec[1] = -vec[1];
-			vec[2] = -vec[2];
-			return (*this);
-		}
-
-		vector < int > get_as_list()const
+		vector < int > as_list()const
 		{
 			vector < int > v(3);
 			v[0] = vec[0];
@@ -178,12 +170,41 @@ namespace EMAN
 	{
 		return Vec3i(v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]);
 	}
+	
+	inline Vec3i operator +(const Vec3i &v, int n)
+	{
+		Vec3i v1 = v;
+		v1 += n;
+		return v1;
+	}
+	
+	inline Vec3i operator +(int n, const Vec3i &v)
+	{
+		Vec3i v1 = v;
+		v1 += n;
+		return v1;
+	}
 
+	
 	inline Vec3i operator -(const Vec3i &v1, const Vec3i &v2)
 	{
 		return Vec3i(v1[0] - v2[0], v1[1] - v2[1], v1[2] - v2[2]);
 	}	
+
+	inline Vec3i operator -(const Vec3i &v, int n)
+	{
+		Vec3i v1 = v;
+		v1 -= n;
+		return v1;
+	}
 	
+	inline Vec3i operator -(int n, const Vec3i &v)
+	{
+		Vec3i v1 = v;
+		v1 -= n;
+		return v1;
+	}
+
 	inline int operator *(const Vec3i &v1, const Vec3i &v2)
 	{
 		return v1.dot(v2);
@@ -246,7 +267,8 @@ namespace EMAN
 			vec[2] = 0;
 		}
 
-		Vec3f(float x, float y, float z)
+		
+		Vec3f(float x, float y, float z = 0)
 		{
 			vec[0] = x;
 			vec[1] = y;
@@ -292,17 +314,10 @@ namespace EMAN
 		{
 			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
 		}
-
+#if 0
 		float dot(const Vec3i & v) const
 		{
 			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
-		}
-
-		Vec3f cross(const Vec3f & v) const
-		{
-			return Vec3f((vec[1] * v[2] - vec[2] * v[1]),
-						(vec[2] * v[0] - vec[0] * v[2]),
-						(vec[0] * v[1] - vec[1] * v[0]));
 		}
 		
 		Vec3f cross(const Vec3i & v) const
@@ -312,30 +327,15 @@ namespace EMAN
 						(vec[0] * v[1] - vec[1] * v[0]));
 		}
 		
-		Vec3f  &negate()
+#endif
+		Vec3f cross(const Vec3f & v) const
 		{
-			vec[0] = -vec[0];
-			vec[1] = -vec[1];
-			vec[2] = -vec[2];
-			return (*this);
-		}
-
-		inline float x() const
-		{
-			return vec[0];
+			return Vec3f((vec[1] * v[2] - vec[2] * v[1]),
+						(vec[2] * v[0] - vec[0] * v[2]),
+						(vec[0] * v[1] - vec[1] * v[0]));
 		}
 		
-		inline float y() const
-		{
-			return vec[1];
-		}
-		
-		inline float z() const
-		{
-			return vec[2];
-		}
-		
-		vector < float > get_as_list()const
+		vector < float > as_list()const
 		{
 			vector < float > v(3);
 			v[0] = vec[0];
@@ -475,6 +475,32 @@ namespace EMAN
 	inline float operator *(const Vec3i &v1, const Vec3f &v2)
 	{
 		return v2.dot(v1);
+	}
+	
+	inline Vec3f operator +(float d, const Vec3f & v)
+	{
+		Vec3f v1 = v;
+		v1 += d;
+		return v1;
+	}
+	
+	inline Vec3f operator +(const Vec3f & v, float d) {
+		Vec3f v1 = v;
+		v1 += d;
+		return v1;
+	}
+	
+	inline Vec3f operator -(float d, const Vec3f & v)
+	{
+		Vec3f v1 = v;
+		v1 -= d;
+		return v1;
+	}
+	
+	inline Vec3f operator -(const Vec3f & v, float d) {
+		Vec3f v1 = v;
+		v1 -= d;
+		return v1;
 	}
 	
 	inline Vec3f operator *(float d, const Vec3f & v)

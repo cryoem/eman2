@@ -338,6 +338,7 @@ namespace EMAN
 #endif
 		}
 
+		
 	};
 }
 

@@ -79,25 +79,25 @@ namespace EMAN
 			xydata = 0;
 		}
 
-		EMObject(int num):n(num), type(INT)
+		EMObject(int num):n(num), emdata(0), xydata(0), type(INT)
 		{
 		}
-		EMObject(float ff):f(ff), type(FLOAT)
+		EMObject(float ff):f(ff), emdata(0), xydata(0), type(FLOAT)
 		{
 		}
-		EMObject(double dd):d(dd), type(DOUBLE)
+		EMObject(double dd):d(dd), emdata(0), xydata(0), type(DOUBLE)
 		{
 		}
-		EMObject(const char *s):str(string(s)), type(STRING)
+		EMObject(const char *s): n(0), emdata(0), xydata(0), str(string(s)), type(STRING)
 		{
 		}
-		EMObject(string s):str(s), type(STRING) {
+		EMObject(string s):n(0), emdata(0), xydata(0), str(s), type(STRING) {
 		}
-		EMObject(EMData * em):emdata(em), type(EMDATA) {
+		EMObject(EMData * em):n(0), emdata(em), xydata(0), type(EMDATA) {
 		}
-		EMObject(XYData * xy):xydata(xy), type(XYDATA) {
+		EMObject(XYData * xy):n(0),  emdata(0), xydata(xy),type(XYDATA) {
 		}
-		EMObject(const vector < float >&v):farray(v), type(FLOATARRAY)
+		EMObject(const vector < float >&v):n(0), emdata(0), xydata(0), farray(v),type(FLOATARRAY)
 		{
 		}
 

@@ -79,63 +79,16 @@ namespace EMAN {
 		}
     };
 
-	struct IntPoint_to_python : python::to_python_converter<IntPoint, IntPoint_to_python>
-    {
-		static PyObject* convert(IntPoint const& p)
+	template <class T>
+	struct tuple3_to_python : python::to_python_converter<T, tuple3_to_python<T> >
+	{
+		static PyObject* convert(T const& p)
 		{
 			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
 			return python::incref(python::tuple(result).ptr());
 		}
-    };
-
+	};
 	
-	struct FloatPoint_to_python : python::to_python_converter<FloatPoint, FloatPoint_to_python>
-    {
-		static PyObject* convert(FloatPoint const& p)
-		{
-			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
-			return python::incref(python::tuple(result).ptr());
-		}
-    };
-
-	
-	struct IntSize_to_python : python::to_python_converter<IntSize, IntSize_to_python>
-    {
-		static PyObject* convert(IntSize const& p)
-		{
-			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
-			return python::incref(python::tuple(result).ptr());
-		}
-    };
-
-	
-	struct FloatSize_to_python : python::to_python_converter<FloatSize, FloatSize_to_python>
-    {
-		static PyObject* convert(FloatSize const& p)
-		{
-			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
-			return python::incref(python::tuple(result).ptr());
-		}
-    };
-#if 0
-	struct Vec3i_to_python : python::to_python_converter<Vec3i, Vec3i_to_python>
-    {
-		static PyObject* convert(Vec3i const& p)
-		{
-			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
-			return python::incref(python::tuple(result).ptr());
-		}
-    };
-
-	struct Vec3f_to_python : python::to_python_converter<Vec3f, Vec3f_to_python>
-    {
-		static PyObject* convert(Vec3f const& p)
-		{
-			python::tuple result = python::make_tuple(p[0], p[1], p[2]);
-			return python::incref(python::tuple(result).ptr());
-		}
-    };
-#endif
 	
     template <class T>
     struct map_to_python : python::to_python_converter<map<std::string, T>, map_to_python<T> >
@@ -306,12 +259,13 @@ namespace EMAN {
 		}
     };
 
-    struct IntPoint_from_python
+	template<class T, class T2>
+	struct tuple3_from_python
     {
-		IntPoint_from_python()
+		tuple3_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<IntPoint>());
+												   python::type_id<tuple3_from_python<T,T2> >());
 		}
     
 		static void* convertible(PyObject* obj_ptr)
@@ -328,12 +282,12 @@ namespace EMAN {
 		static void construct(PyObject* obj_ptr,
 							  python::converter::rvalue_from_python_stage1_data* data)
 		{
-			void* storage = ((python::converter::rvalue_from_python_storage<IntPoint>*) data)->storage.bytes;
-			new (storage) IntPoint();
+			void* storage = ((python::converter::rvalue_from_python_storage<T>*) data)->storage.bytes;
+			new (storage) T();
 
 			data->convertible = storage;
 
-			IntPoint& result = *((IntPoint*) storage);
+			T& result = *((T*) storage);
 	
 			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
 			int i = 0;
@@ -349,7 +303,7 @@ namespace EMAN {
 				}
 	    
 				python::object py_elem_obj(py_elem_hdl);
-				python::extract<int> elem_proxy(py_elem_obj);
+				python::extract<T2> elem_proxy(py_elem_obj);
 				result[i] = elem_proxy();
 				i++;
 			}
@@ -357,12 +311,12 @@ namespace EMAN {
     };
     
 	
-    struct FloatPoint_from_python
+    struct emobject_farray_from_python
     {
-		FloatPoint_from_python()
+		emobject_farray_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<FloatPoint>());
+												   python::type_id<EMObject >());
 		}
     
 		static void* convertible(PyObject* obj_ptr)
@@ -379,117 +333,15 @@ namespace EMAN {
 		static void construct(PyObject* obj_ptr,
 							  python::converter::rvalue_from_python_stage1_data* data)
 		{
-			void* storage = ((python::converter::rvalue_from_python_storage<FloatPoint>*) data)->storage.bytes;
-			new (storage) FloatPoint();
+			void* storage = ((python::converter::rvalue_from_python_storage<EMObject>*) data)->storage.bytes;
+			new (storage) EMObject();
 
 			data->convertible = storage;
 
-			FloatPoint& result = *((FloatPoint*) storage);
+			EMObject& result = *((EMObject*) storage);
 	
 			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			int i = 0;
-			
-			while(1) {
-				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
-				if (PyErr_Occurred()) {
-					python::throw_error_already_set();
-				}
-	    
-				if (!py_elem_hdl.get()) {
-					break;
-				}
-	    
-				python::object py_elem_obj(py_elem_hdl);
-				python::extract<float> elem_proxy(py_elem_obj);
-				result[i] = elem_proxy();
-				i++;
-			}
-		}
-    };
-
-	
-    struct IntSize_from_python
-    {
-		IntSize_from_python()
-		{
-			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<IntSize>());
-		}
-    
-		static void* convertible(PyObject* obj_ptr)
-		{
-			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
-				return 0;
-			}
-	
-			return obj_ptr;
-		}
-
-    
-		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
-		{
-			void* storage = ((python::converter::rvalue_from_python_storage<IntSize>*) data)->storage.bytes;
-			new (storage) IntSize();
-
-			data->convertible = storage;
-
-			IntSize& result = *((IntSize*) storage);
-	
-			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			int i = 0;
-			
-			while(1) {
-				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
-				if (PyErr_Occurred()) {
-					python::throw_error_already_set();
-				}
-	    
-				if (!py_elem_hdl.get()) {
-					break;
-				}
-	    
-				python::object py_elem_obj(py_elem_hdl);
-				python::extract<int> elem_proxy(py_elem_obj);
-				result[i] = elem_proxy();
-				i++;
-			}
-		}
-    };
-    
-	
-    struct FloatSize_from_python
-    {
-		FloatSize_from_python()
-		{
-			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<FloatSize>());
-		}
-    
-		static void* convertible(PyObject* obj_ptr)
-		{
-			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
-				return 0;
-			}
-	
-			return obj_ptr;
-		}
-
-    
-		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
-		{
-			void* storage = ((python::converter::rvalue_from_python_storage<FloatSize>*) data)->storage.bytes;
-			new (storage) FloatSize();
-
-			data->convertible = storage;
-
-			FloatSize& result = *((FloatSize*) storage);
-	
-			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			int i = 0;
+			vector<float> farray;
 			
 			while(1) {
 				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
@@ -503,112 +355,12 @@ namespace EMAN {
 	    
 				python::object py_elem_obj(py_elem_hdl);
 				python::extract<float> elem_proxy(py_elem_obj);
-				result[i] = elem_proxy();
-				i++;
+				farray.push_back(elem_proxy());
 			}
+			result = EMObject(farray);
 		}
     };
-	
-    struct Vec3f_from_python
-    {
-		Vec3f_from_python()
-		{
-			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<Vec3f>());
-		}
     
-		static void* convertible(PyObject* obj_ptr)
-		{
-			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
-				return 0;
-			}
-	
-			return obj_ptr;
-		}
-
-    
-		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
-		{
-			void* storage = ((python::converter::rvalue_from_python_storage<Vec3f>*) data)->storage.bytes;
-			new (storage) Vec3f();
-
-			data->convertible = storage;
-
-			Vec3f& result = *((Vec3f*) storage);
-	
-			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			int i = 0;
-			
-			while(1) {
-				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
-				if (PyErr_Occurred()) {
-					python::throw_error_already_set();
-				}
-	    
-				if (!py_elem_hdl.get()) {
-					break;
-				}
-	    
-				python::object py_elem_obj(py_elem_hdl);
-				python::extract<float> elem_proxy(py_elem_obj);
-				result[i] = elem_proxy();
-				i++;
-			}
-		}
-    };
-	
-    struct Vec3i_from_python
-    {
-		Vec3i_from_python()
-		{
-			python::converter::registry::push_back(&convertible, &construct,
-												   python::type_id<Vec3i>());
-		}
-    
-		static void* convertible(PyObject* obj_ptr)
-		{
-			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
-				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
-				return 0;
-			}
-	
-			return obj_ptr;
-		}
-
-    
-		static void construct(PyObject* obj_ptr,
-							  python::converter::rvalue_from_python_stage1_data* data)
-		{
-			void* storage = ((python::converter::rvalue_from_python_storage<Vec3i>*) data)->storage.bytes;
-			new (storage) Vec3i();
-
-			data->convertible = storage;
-
-			Vec3i& result = *((Vec3i*) storage);
-	
-			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			int i = 0;
-			
-			while(1) {
-				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
-				if (PyErr_Occurred()) {
-					python::throw_error_already_set();
-				}
-	    
-				if (!py_elem_hdl.get()) {
-					break;
-				}
-	    
-				python::object py_elem_obj(py_elem_hdl);
-				python::extract<int> elem_proxy(py_elem_obj);
-				result[i] = elem_proxy();
-				i++;
-			}
-		}
-    };
-	
 }
 
 

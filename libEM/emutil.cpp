@@ -824,6 +824,17 @@ bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 
 
 
+
+void EMUtil::test_pyem_emobject(const Dict& d)
+{
+	vector<float> array = d["farray"].get_farray();
+	for (size_t i = 0; i < array.size(); i++) {
+		printf("farray[%d] = %f\n", i, array[i]);
+	}
+}
+
+
+
 static int imgscore_cmp(const void *imgscore1, const void *imgscore2)
 {
 	float c = ((ImageScore *)imgscore1)->score - ((ImageScore *)imgscore2)->score;

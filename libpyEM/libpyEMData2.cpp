@@ -260,20 +260,22 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	EMAN::Dict_to_python();
 	EMAN::Dict_from_python();
 
-	EMAN::IntPoint_to_python();
-	EMAN::FloatPoint_to_python();
+	EMAN::tuple3_to_python<EMAN::IntPoint>();
+	EMAN::tuple3_to_python<EMAN::FloatPoint>();
 
-	EMAN::IntSize_to_python();
-	EMAN::FloatSize_to_python();
+	EMAN::tuple3_to_python<EMAN::IntSize>();
+	EMAN::tuple3_to_python<EMAN::FloatSize>();
 
-	EMAN::IntPoint_from_python();
-	EMAN::FloatPoint_from_python();
+	EMAN::tuple3_from_python<EMAN::IntPoint, int>();
+	EMAN::tuple3_from_python<EMAN::FloatPoint, float>();
 
-	EMAN::IntSize_from_python();
-	EMAN::FloatSize_from_python();
+	EMAN::tuple3_from_python<EMAN::IntSize, int>();
+	EMAN::tuple3_from_python<EMAN::FloatSize, float>();
 
-	EMAN::Vec3f_from_python();
-	EMAN::Vec3i_from_python();
+		EMAN::tuple3_from_python<EMAN::Vec3i, int>();
+	EMAN::tuple3_from_python<EMAN::Vec3f, float>();
+
+	EMAN::emobject_farray_from_python();
 
 	implicitly_convertible<int, EMAN::EMObject>();
 	implicitly_convertible<float, EMAN::EMObject>();
