@@ -57,17 +57,17 @@ namespace EMAN {
 				     int* max_i = 0, int* min_i = 0);
 	static int calc_best_fft_size(int low);
 		
-	static int square(int n) { return n * n; }
-	static float square(float x) { return x*x; }
+	static inline int square(int n) { return n * n; }
+	static inline float square(float x) { return x*x; }
 	static double square(double x) { return x*x; }
 
 	static double square_sum(double x, double y) { return (x*x + y*y); }
 	    
-	static double hypot3(double x, double y, double z) { return sqrt(x*x + y*y + z*z); }
+	static inline double hypot3(double x, double y, double z) { return sqrt(x*x + y*y + z*z); }
 	
 	static float calc_angle_sub(float angle1, float angle2);
 
-	static int fast_floor(float x)
+	static inline int fast_floor(float x)
 	{
 	    if (x < 0) {
 		return ((int)x-1);
@@ -75,11 +75,95 @@ namespace EMAN {
 	    return (int)x;
 	}
 
-	static float agauss(float a, float dx, float dy, float dz, float d)
+	static inline float agauss(float a, float dx, float dy, float dz, float d)
 	{
 	    return (a * exp(-(dx*dx+dy*dy+dz*dz)/d));
 	}
+
+	static inline float min(float f1, float f2)
+	{
+	    return (f1 < f2 ? f1 : f2); 
+	}
+
+	static inline float min(float f1, float f2, float f3)
+	{
+	    if (f1 <= f2 && f1 <= f3) {
+		return f1;
+	    }
+	    if (f2 <= f1 && f2 <= f3) {
+		return f2;
+	    }
+	    return f3;
+	}
+
+	static inline float min(float f1, float f2, float f3, float f4)
+	{
+	    float m = f1;
+	    if (f2 < m) {
+		m = f2;
+	    }
+	    if (f3 < m) {
+		m = f3;
+	    }
+	    if (f4 < m) {
+		m = f4;
+	    }
+	    return m;
+	}
+
+	static inline float max(float f1,  float f2)
+	{
+	    return f1 < f2 ? f2: f1;
+	}
+	
+	static inline float max(float f1, float f2, float f3)
+	{
+	    if (f1 >= f2 && f1 >= f3) {
+		return f1;
+	    }
+	    if (f2 >= f1 && f2 >= f3) {
+		return f2;
+	    }
+	    return f3;
+	}
+
+	static inline float max(float f1, float f2, float f3, float f4)
+	{
+	    float m = f1;
+	    if (f2 > m) {
+		m = f2;
+	    }
+	    if (f3 > m) {
+		m = f3;
+	    }
+	    if (f4 > m) {
+		m = f4;
+	    }
+	    return m;
+	}
+#if 0
+	static inline float angle_sub(float x, float y)
+	{
+	    float r = fabs(x-y);
+	    if (r > M_PI) {
+		r = 2.0*M_PI - r;
+	    }
+	    
+	    return r;
+	}
+#endif
+	static inline float angle_sub(float x, float y)
+	{
+	    float r = fmod(fabs(x-y), (float)M_PI);
+	    if (r > M_PI / 2.0) {
+		r = M_PI - r;
+	    }
+	    return r;
+	}
+
+	
     };
 }
 
 #endif
+

@@ -75,8 +75,10 @@ namespace EMAN {
 
 	bool is_complex_x() const;
 	void set_complex_x(bool is_complex_x);	
-	
+
+	bool is_ri() const;
 	void set_ri(bool is_ri);
+	
 	void ri2ap();
 	void ap2ri();
 
@@ -209,25 +211,26 @@ namespace EMAN {
 						    bool header_only=false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
 						  bool header_only = false, string ext="");
-#if 0
 
-	void add_incoherent(EMData* in);
-	void add_mask_shell(int num_shells);
-	void add_random_noise(XYData& noise, float s0, float ds, bool interpolation = true);
+	int add_incoherent(EMData* obj);
+	int add_mask_shell(int num_shells);
+	int add_random_noise(int n, float x0, float dx, float* y, bool interpolation = true);
 	void auto_mask(float thresh, float filter = 0.1);
 
+	float calc_dist(EMData* second_img, int y_index = 0) const;
+	EMData* calc_flcf(EMData* with, int radius = 50, string maskfilter="ZeroMask");
+	void calc_radial_dist(int n, float x0, float dx, float* d);
+	void calc_radial_dist(int n, float x0, float dx, float* d, float acen, float amwid);
+
+	EMData* convolute(EMData* with) { return 0; }
+
+
+#if 0
 	void clear_ctf();
 	void calc_ctf_curve(XYData* result, CtfCurveType type = 0, XYData* sf = 0) const;
 	void create_ctf_map(CtfMapType type, XYData* sf = 0);
-	
 	bool has_ctf() const;
 	bool has_ctff() const;
-
-	float calc_dist(EMData* second_img, int y_index = 0) const;
-	EMData* calc_flcf(EMData* with, int radius = DEFAULT_FLCF_RADIUS, string mask="ZeroMaskFilter");
-	void calc_radial_dist(XYData& data, float x0, float dx);
-	void calc_radial_dist(XYData& data, int num_data, float x0, float dx, float acen, float amwid);
-
 
 	void common_lines(EMData* d1, EMData* d2, int mode = 0,
 			  int steps = 180, bool horiz = false);	
@@ -261,7 +264,6 @@ namespace EMAN {
 	EMData* ift_slice();
 	Point<float> interpolate_ft_3d(float x, float y, float z, InterpType mode);
 	void invert();
-
 
 	bool is_flipped();
 	Point<float> least_square_normalize_to(EMData* to, float low_thresh, float high_thresh);
@@ -472,17 +474,9 @@ namespace EMAN {
 
     inline bool EMData::is_complex() const { return (flags & EMDATA_COMPLEX); }
     inline bool EMData::is_complex_x() const { return (flags & EMDATA_COMPLEXX); }
+    inline bool EMData::is_ri() const { return (flags & EMDATA_RI); }
     
-    inline void EMData::set_ri(bool is_ri) 
-    {
-	if (is_ri) {
-	    flags |= EMDATA_RI;
-	}
-	else {
-	    flags &= ~EMDATA_RI;
-	}
-    }
-
+   
     inline void EMData::set_complex(bool is_complex) 
     {
 	if (is_complex) {
@@ -503,7 +497,17 @@ namespace EMAN {
 	}
     }
 
-    
+     
+    inline void EMData::set_ri(bool is_ri) 
+    {
+	if (is_ri) {
+	    flags |= EMDATA_RI;
+	}
+	else {
+	    flags &= ~EMDATA_RI;
+	}
+    }
+
 }
 
 #endif
