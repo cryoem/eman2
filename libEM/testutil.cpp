@@ -116,6 +116,13 @@ void TestUtil::to_emobject(const Dict& d)
 		LOGDEBUG("long l = %d\n", l);
 	}
 
+    if (d.has_key("string")) {
+        string s = (const char*)d["string"];
+        string s2 = get_debug_string(0);
+        assert(s == s2);
+    }
+
+    
 	if (d.has_key("xydata")) {
 		XYData *xyd = d["xydata"];
 		size_t nitems = xyd->get_size();
