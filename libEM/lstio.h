@@ -10,33 +10,33 @@
 
 namespace EMAN
 {
-    class LstIO : public ImageIO
-    {
-    public:
-	LstIO(string filename, IOMode rw_mode = READ_ONLY);
-	~LstIO();
+	class LstIO:public ImageIO
+	{
+	  public:
+		LstIO(string filename, IOMode rw_mode = READ_ONLY);
+		~LstIO();
 
-	DEFINE_IMAGEIO_FUNC;
-	static bool is_valid(const void *first_block);
-	
-    private:
-	string filename;
-	IOMode rw_mode;
-	FILE *lst_file;
+		DEFINE_IMAGEIO_FUNC;
+		static bool is_valid(const void *first_block);
 
-	bool is_big_endian;
-	bool initialized;
-	int nimg;
+	  private:
+		  string filename;
+		IOMode rw_mode;
+		FILE *lst_file;
 
-	ImageIO *imageio;
-	string ref_filename;
+		bool is_big_endian;
+		bool initialized;
+		int nimg;
 
-	int last_lst_index;
-	int last_ref_index;
+		ImageIO *imageio;
+		string ref_filename;
 
-	int calc_ref_image_index(int image_index);
-	static const char *MAGIC;
-    };
+		int last_lst_index;
+		int last_ref_index;
+
+		int calc_ref_image_index(int image_index);
+		static const char *MAGIC;
+	};
 
 }
 

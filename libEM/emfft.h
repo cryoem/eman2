@@ -6,21 +6,22 @@
 
 
 #ifdef FFTW2
-    
+
 #include <list>
 #include <rfftw.h>
-    
+
 using std::list;
 
 namespace EMAN
 {
-    enum FftwDirection {
-	REAL_TO_COMPLEX = 0,
-	COMPLEX_TO_REAL = 1,
-	UNKNOWN_DIRECTION
-    };
+	enum FftwDirection
+	{
+		REAL_TO_COMPLEX = 0,
+		COMPLEX_TO_REAL = 1,
+		UNKNOWN_DIRECTION
+	};
 
-    /** FftwPlan wraps 1d/nd fftw plan operation.
+	/** FftwPlan wraps 1d/nd fftw plan operation.
      *
      *  Typical usage:
      *
@@ -30,61 +31,65 @@ namespace EMAN
      *  FftwPlan *plan_nd = new FftwPlan(rank, nx, ny, nz, REAL_TO_COMPLEX, FFTW_ESTIMATE);
      *  rfftwnd_plan *plan2 = plan_nd->get_plan_nd()
      */
-    class FftwPlan
-    {
-    public:
-	FftwPlan();
-	FftwPlan(int n, FftwDirection direction, int flags);
-	FftwPlan(int ndim, int nx, int ny, int nz, FftwDirection direction, int flags);
-	~FftwPlan();
-
-	rfftwnd_plan get_plan_nd() const
+	class FftwPlan
 	{
-	    return plan_nd;
-	}
-	
-	rfftw_plan get_plan_1d() const
-	{
-	    return plan_1d;
-	}
+	  public:
+		FftwPlan();
+		FftwPlan(int n, FftwDirection direction, int flags);
+		FftwPlan(int ndim, int nx, int ny, int nz, FftwDirection direction, int flags);
+		 ~FftwPlan();
 
-	int get_dim(int i) const
-	{
-	    return dims[NDIMS - i - 1];
-	}
+		rfftwnd_plan get_plan_nd() const
+		{
+			return plan_nd;
+		}
 
-	friend bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
-    private:
-	enum { NDIMS = 3 };
+		rfftw_plan get_plan_1d() const
+		{
+			return plan_1d;
+		}
 
-	int rank;
-	int dims[NDIMS];
-	FftwDirection direction;
-	static rfftwnd_plan plan_nd;
-	static rfftw_plan plan_1d;
-    };
-    
-    bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
+		int get_dim(int i) const
+		{
+			return dims[NDIMS - i - 1];
+		}
 
-    /** EMfft converts 1d/nd data from real to complex or from complex to real.
+		friend bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
+	  private:
+		enum
+		{ NDIMS = 3 };
+
+		int rank;
+		int dims[NDIMS];
+		FftwDirection direction;
+		static rfftwnd_plan plan_nd;
+		static rfftw_plan plan_1d;
+	};
+
+	bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
+
+	/** EMfft converts 1d/nd data from real to complex or from complex to real.
      */
-    class EMfft
-    {
-    public:
-	static int real_to_complex_1d(float *real_data, float *complex_data, int n);
-	static int complex_to_real_1d(float *complex_data, float *real_data, int n);
+	class EMfft
+	{
+	  public:
+		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
+		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
 
-	static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz);
-	static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz);
+		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
+									  int nz);
+		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
+									  int nz);
 
-    private:
-	static FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir);
+	  private:
+		static FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir);
 
-	enum { MAX_NUM_PLANS = 6 };
-	static list<FftwPlan *> fwplans;
-	static FftwPlan planf_1d;
-	static FftwPlan planr_1d;
-    };
+		enum
+		{ MAX_NUM_PLANS = 6 };
+		static list < FftwPlan * >fwplans;
+		static FftwPlan planf_1d;
+		static FftwPlan planr_1d;
+	};
 }
 #endif
 
@@ -93,17 +98,19 @@ namespace EMAN
 
 namespace EMAN
 {
-    /** EMfft converts 1d/nd data from real to complex or from complex to real.
+	/** EMfft converts 1d/nd data from real to complex or from complex to real.
      */
-    class EMfft
-    {
-    public:
-	static int real_to_complex_1d(float *real_data, float *complex_data, int n);
-	static int complex_to_real_1d(float *complex_data, float *real_data, int n);
+	class EMfft
+	{
+	  public:
+		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
+		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
 
-	static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz);
-	static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz);
-    };
+		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny,
+									  int nz);
+		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
+									  int nz);
+	};
 }
 #endif
 

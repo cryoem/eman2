@@ -9,11 +9,11 @@
 
 namespace EMAN
 {
-    
-    class EMData;
-    class Transform;
-    
-    /** Cmp is the base class for image Comparison methods.
+
+	class EMData;
+	class Transform;
+
+	/** Cmp is the base class for image Comparison methods.
      * The bigger the comparison result, the better. Each specific
      * coomparison class has a unique name. This name is used to
      * create a new Cmp instance or call a Cmp.
@@ -38,58 +38,60 @@ namespace EMAN
      *        string get_name() const { return "XYZ"; }
      *        static Cmp *NEW() { return XYZCmp(); }
      */
-    
-    class Cmp
-    {
-    public:
-	virtual ~Cmp() { }
-	virtual float cmp(EMData * image, Transform * transform = 0) const = 0;
-	virtual TypeDict get_param_types() const = 0;
-	virtual string get_name() const = 0;
-	
-	virtual Dict get_params() const
-	{
-	    return params;
-	}
 
-	virtual void set_params(const Dict & new_params)
+	class Cmp
 	{
-	    params = new_params;
-	}
-	
-    protected:
-	mutable Dict params;
-    };
+	  public:
+		virtual ~ Cmp()
+		{
+		}
+		virtual float cmp(EMData * image, Transform * transform = 0) const = 0;
+		virtual TypeDict get_param_types() const = 0;
+		virtual string get_name() const = 0;
 
-    /** Use dot product of 2 same-size images to do the comparison.
+		virtual Dict get_params() const
+		{
+			return params;
+		}
+
+		virtual void set_params(const Dict & new_params)
+		{
+			params = new_params;
+		}
+
+	  protected:
+		  mutable Dict params;
+	};
+
+	/** Use dot product of 2 same-size images to do the comparison.
      * complex does not check r/i vs a/p.
     */
-    class DotCmp : public Cmp
-    {
-    public:
-	float cmp(EMData * image, Transform * transform = 0) const;
-
-	string get_name() const
+	class DotCmp:public Cmp
 	{
-	    return "Dot";
-	}
+	  public:
+		float cmp(EMData * image, Transform * transform = 0) const;
 
-	static Cmp *NEW() 
-	{
-	    return new DotCmp();
-	}
+		string get_name() const
+		{
+			return "Dot";
+		}
 
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("with", EMObject::EMDATA);
-	    d.put("evenonly", EMObject::INT);
-	    return d;
-	}
+		static Cmp *NEW()
+		{
+			return new DotCmp();
+		}
 
-    };
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			  d.put("with", EMObject::EMDATA);
+			  d.put("evenonly", EMObject::INT);
+			  return d;
+		}
 
-    /** Linear comparison of 2 data sets. 'image' should be noisy and
+	};
+
+	/** Linear comparison of 2 data sets. 'image' should be noisy and
      * 'with' should be less noisy. Scaling of 'this' is determined to
      * make the density histogram of the difference between the data
      * sets as symmetric as possible scale will optionally return
@@ -98,31 +100,31 @@ namespace EMAN
      * If modifying 'this', scale should be applied first, then b
      * should be added
      */
-    class VarianceCmp : public Cmp
-    {
-    public:
-	float cmp(EMData * image, Transform * transform = 0) const;
-
-	string get_name() const
+	class VarianceCmp:public Cmp
 	{
-	    return "Variance";
-	}
+	  public:
+		float cmp(EMData * image, Transform * transform = 0) const;
 
-	static Cmp *NEW()
-	{
-	    return new VarianceCmp();
-	}
+		string get_name() const
+		{
+			return "Variance";
+		}
 
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("with", EMObject::EMDATA);
-	    d.put("keepzero", EMObject::INT);
-	    return d;
-	}
-    };
-    
-    /** Amplitude weighted mean phase difference (radians) with optional
+		static Cmp *NEW()
+		{
+			return new VarianceCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			  d.put("with", EMObject::EMDATA);
+			  d.put("keepzero", EMObject::INT);
+			  return d;
+		}
+	};
+
+	/** Amplitude weighted mean phase difference (radians) with optional
      * SNR weight. SNR should be an array as returned by ctfcurve()
      * 'data' should be the less noisy image, since it's amplitudes 
      * will be used to weight the phase residual. 2D only.
@@ -132,63 +134,63 @@ namespace EMAN
      * dependency between two averages, computed over rings in Fourier
      * space as a function of ring radius (= spatial frequency, or resolution) 
      */
-    class PhaseCmp : public Cmp
-    {
-    public:
-	float cmp(EMData * image, Transform * transform = 0) const;
-
-	string get_name() const
+	class PhaseCmp:public Cmp
 	{
-	    return "Phase";
-	}
+	  public:
+		float cmp(EMData * image, Transform * transform = 0) const;
 
-	static Cmp *NEW()
-	{
-	    return new PhaseCmp();
-	}
+		string get_name() const
+		{
+			return "Phase";
+		}
 
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("with", EMObject::EMDATA);
+		static Cmp *NEW()
+		{
+			return new PhaseCmp();
+		}
 
-	    return d;
-	}
-    };
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			  d.put("with", EMObject::EMDATA);
 
-    /** returns a quality factor based on FRC between images.
+			  return d;
+		}
+	};
+
+	/** returns a quality factor based on FRC between images.
      *  Fourier ring correlation (FRC) is a measure of statistical
      * dependency between two averages, computed by comparison of
      * rings in Fourier space. 1 means prefect agreement. 0 means no
      * correlation.    
      */
-    class FRCCmp : public Cmp
-    {
-    public:
-	float cmp(EMData * image, Transform * transform = 0) const;
-
-	string get_name() const
+	class FRCCmp:public Cmp
 	{
-	    return "FRC";
-	}
+	  public:
+		float cmp(EMData * image, Transform * transform = 0) const;
 
-	static Cmp *NEW()
-	{
-	    return new FRCCmp();
-	}
+		string get_name() const
+		{
+			return "FRC";
+		}
 
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("with", EMObject::EMDATA);
-	    d.put("snr", EMObject::FLOATARRAY);
-	    return d;
-	}
-    };
+		static Cmp *NEW()
+		{
+			return new FRCCmp();
+		}
 
-    template<> Factory<Cmp>::Factory();
-    
-    void dump_cmps();
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			  d.put("with", EMObject::EMDATA);
+			  d.put("snr", EMObject::FLOATARRAY);
+			  return d;
+		}
+	};
+
+	template <> Factory < Cmp >::Factory();
+
+	void dump_cmps();
 }
 
 

@@ -9,7 +9,7 @@
 
 namespace EMAN
 {
-    /** ByteOrder defines functions to work on big/little endian byte orders.
+	/** ByteOrder defines functions to work on big/little endian byte orders.
      *
      * The byte order is the order in which bytes are stored to
      * create larger data types such as the int and long values.
@@ -28,10 +28,10 @@ namespace EMAN
      *    checking data byte-order,
      *    convert data from one byte-order to another byte-order.
      */
-    class ByteOrder
-    {
-    public:
-	static bool is_host_big_endian();
+	class ByteOrder
+	{
+	  public:
+		static bool is_host_big_endian();
 
 	/** given a pointer to a reasonable small integer number,
 	 * return whether the number is big endian or not.
@@ -39,78 +39,81 @@ namespace EMAN
 	 * e.g., for 'int', number should < 65535;
 	 * for 'short', number should < 255.
 	 */
-	template <class T> static bool is_data_big_endian(T * small_num_addr)
-	{
-	    if (!small_num_addr) {
-		return false;
-	    }
+		  template < class T > static bool is_data_big_endian(T * small_num_addr)
+		{
+			if (!small_num_addr) {
+				return false;
+			}
 
-	    bool data_big_endian = false;
-	    size_t typesize = sizeof(T);
-	    char *d = (char *) small_num_addr;
+			bool data_big_endian = false;
+			size_t typesize = sizeof(T);
+			char *d = (char *) small_num_addr;
 
-	    if (is_host_big_endian()) {
-		data_big_endian = false;
-		for (size_t i = typesize / 2; i < typesize; i++) {
-		    if (d[i] != 0) {
-			data_big_endian = true;
-			break;
-		    }
+			if (is_host_big_endian())
+			{
+				data_big_endian = false;
+				for (size_t i = typesize / 2; i < typesize; i++)
+				{
+					if (d[i] != 0) {
+						data_big_endian = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				data_big_endian = true;
+				for (size_t j = 0; j < typesize / 2; j++) {
+					if (d[j] != 0) {
+						data_big_endian = false;
+						break;
+					}
+				}
+			}
+
+			return data_big_endian;
 		}
-	    }
-	    else {
-		data_big_endian = true;
-		for (size_t j = 0; j < typesize / 2; j++) {
-		    if (d[j] != 0) {
-			data_big_endian = false;
-			break;
-		    }
-		}
-	    }
-
-	    return data_big_endian;
-	}
 
 	/** convert data from host byte order to big endian order.
 	 * 'n' is the number of elements of type T.
 	 */
-	template <class T> static void become_big_endian(T * data, size_t n = 1) {
-	    if (!is_host_big_endian()) {
-		swap_bytes<T>(data, n);
-	    }
-	}
+		template < class T > static void become_big_endian(T * data, size_t n = 1) {
+			if (!is_host_big_endian()) {
+				swap_bytes < T > (data, n);
+			}
+		}
 
 	/** convert data from host byte order to little endian order.
 	 * 'n' is the number of elements of type T.
 	 */
-	template <class T> static void become_little_endian(T * data, size_t n = 1) {
-	    if (is_host_big_endian()) {
-		swap_bytes<T>(data, n);
-	    }
-	}
+		template < class T > static void become_little_endian(T * data, size_t n = 1) {
+			if (is_host_big_endian()) {
+				swap_bytes < T > (data, n);
+			}
+		}
 
 	/** swap the byte order of data with 'n' T-type elements.
 	 */
-	template <class T> static void swap_bytes(T * data, size_t n = 1) {
-	    unsigned char s;
-	    size_t p = sizeof(T);
-	    char *d = (char *) data;
+		template < class T > static void swap_bytes(T * data, size_t n = 1) {
+			unsigned char s;
+			size_t p = sizeof(T);
+			char *d = (char *) data;
 
-	    if (p > 1) {
-		for (size_t i = 0; i < n; i++, d += p) {
-		    for (size_t j = 0; j < p / 2; j++) {
-			s = d[j];
-			d[j] = d[p - 1 - j];
-			d[p - 1 - j] = s;
-		    }
+			if (p > 1) {
+				for (size_t i = 0; i < n; i++, d += p) {
+					for (size_t j = 0; j < p / 2; j++) {
+						s = d[j];
+						d[j] = d[p - 1 - j];
+						d[p - 1 - j] = s;
+					}
+				}
+			}
 		}
-	    }
-	}
 
-    private:
-	static bool is_host_endian_checked;
-	static bool host_big_endian;
-    };
+	  private:
+		static bool is_host_endian_checked;
+		static bool host_big_endian;
+	};
 
 }
 

@@ -11,10 +11,10 @@ using std::vector;
 
 namespace EMAN
 {
-    class EMData;
-    class XYData;
+	class EMData;
+	class XYData;
 
-    /** Averager is the base class for all averager classes.
+	/** Averager is the base class for all averager classes.
      * Each subclass averager defines a way to do averaging on a set
      * of images. Each specific averager has a unique ID name. This name
      * is used to call a averager.
@@ -44,195 +44,197 @@ namespace EMAN
      *        string get_name() const { return "XYZ"; }
      *        static Averager *NEW() { return new XYZAverager(); }
      */
-    class Averager
-    {
-    public:
-	virtual ~Averager() { }
-	virtual EMData *average(const vector<EMData *> & image_list) const = 0;
-
-	virtual string get_name() const = 0;
-	
-	virtual void set_params(const Dict & new_params)
+	class Averager
 	{
-	    params = new_params;
-	}
-	
-	virtual TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    return d;
-	}
-	
-    protected:
-	mutable Dict params;
-    };
+	  public:
+		virtual ~ Averager()
+		{
+		}
+		virtual EMData *average(const vector < EMData * >&image_list) const = 0;
 
-    /** ImageAverager averages a list of images. It optionally makes
+		virtual string get_name() const = 0;
+
+		virtual void set_params(const Dict & new_params)
+		{
+			params = new_params;
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+	  protected:
+		mutable Dict params;
+	};
+
+	/** ImageAverager averages a list of images. It optionally makes
      * a sigma image.
      */
-    class ImageAverager : public Averager
-    {
-    public:
-	EMData * average(const vector<EMData *> & image_list) const;
-
-	string get_name() const
+	class ImageAverager:public Averager
 	{
-	    return "Image";
-	}
+	  public:
+		EMData * average(const vector < EMData * >&image_list) const;
 
-	static Averager *NEW()
-	{
-	    return new ImageAverager();
-	}
+		string get_name() const
+		{
+			return "Image";
+		}
 
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("sigma", EMObject::EMDATA);
-	    d.put("ignore0", EMObject::INT);
-	    return d;
-	}
-    };
+		static Averager *NEW()
+		{
+			return new ImageAverager();
+		}
 
-    /** IterationAverager averages images by doing the smoothing iteration.
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sigma", EMObject::EMDATA);
+			d.put("ignore0", EMObject::INT);
+			return d;
+		}
+	};
+
+	/** IterationAverager averages images by doing the smoothing iteration.
      */
-    class IterationAverager : public Averager
-    {
-    public:
-	EMData * average(const vector<EMData *> & image_list) const;
-
-	string get_name() const
+	class IterationAverager:public Averager
 	{
-	    return "Iteration";
-	}
+	  public:
+		EMData * average(const vector < EMData * >&image_list) const;
 
-	static Averager *NEW()
-	{
-	    return new IterationAverager();
-	}
-    };
+		string get_name() const
+		{
+			return "Iteration";
+		}
 
-    /** CtfAverager is the base Averager class for CTF correction or SNR weighting.
+		static Averager *NEW()
+		{
+			return new IterationAverager();
+		}
+	};
+
+	/** CtfAverager is the base Averager class for CTF correction or SNR weighting.
     */
-    class CtfAverager : public Averager
-    {
-    public:
-	EMData * average(const vector<EMData *> & image_list) const;
-
-	vector<float> get_snr() const
+	class CtfAverager:public Averager
 	{
-	    return snr;
-	}
-	
-    protected:
-	CtfAverager() : sf(0), curves(0), need_snr(false) 
-	{
-	}
-	
-	XYData *sf;
-	EMData *curves;
-	bool need_snr;
-	const char *outfile;
-    private:
-	mutable vector<float> snr;
-    };
+	  public:
+		EMData * average(const vector < EMData * >&image_list) const;
 
-    /** WeightingAverager averages the images with SNR weighting, but no CTF correction.
+		vector < float >get_snr() const
+		{
+			return snr;
+		}
+
+	  protected:
+		CtfAverager():sf(0), curves(0), need_snr(false)
+		{
+		}
+
+		XYData *sf;
+		EMData *curves;
+		bool need_snr;
+		const char *outfile;
+	  private:
+		mutable vector < float >snr;
+	};
+
+	/** WeightingAverager averages the images with SNR weighting, but no CTF correction.
      */
-    class WeightingAverager : public CtfAverager
-    {
-    public:
-	string get_name() const
+	class WeightingAverager:public CtfAverager
 	{
-	    return "Weighting";
-	}
+	  public:
+		string get_name() const
+		{
+			return "Weighting";
+		}
 
-	static Averager *NEW()
-	{
-	    return new WeightingAverager();
-	}
+		static Averager *NEW()
+		{
+			return new WeightingAverager();
+		}
 
-	void set_params(const Dict & new_params)
-	{
-	    params = new_params;
-	    curves = params["curves"];
-	    sf = params["sf"];
-	}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			curves = params["curves"];
+			sf = params["sf"];
+		}
 
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("curves", EMObject::EMDATA);
-	    d.put("sf", EMObject::XYDATA);
-	    return d;
-	}
-    };
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("curves", EMObject::EMDATA);
+			d.put("sf", EMObject::XYDATA);
+			return d;
+		}
+	};
 
-    /** CtfCAverager averages the images with CTF correction.
+	/** CtfCAverager averages the images with CTF correction.
      */
-    class CtfCAverager : public CtfAverager
-    {
-    public:
-	string get_name() const
+	class CtfCAverager:public CtfAverager
 	{
-	    return "CtfC";
-	}
-	
-	static Averager *NEW()
-	{
-	    return new CtfCAverager();
-	}
-    };
+	  public:
+		string get_name() const
+		{
+			return "CtfC";
+		}
 
-    /** CtfCWAverager averages the images with CTF correction.
+		static Averager *NEW()
+		{
+			return new CtfCAverager();
+		}
+	};
+
+	/** CtfCWAverager averages the images with CTF correction.
      */
-    class CtfCWAverager : public CtfAverager
-    {
-    public:
-	string get_name() const
+	class CtfCWAverager:public CtfAverager
 	{
-	    return "CtfCW";
-	}
-	
-	static Averager *NEW()
-	{
-	    return new CtfCWAverager();
-	}
+	  public:
+		string get_name() const
+		{
+			return "CtfCW";
+		}
 
-	void set_params(const Dict & new_params)
-	{
-	    params = new_params;
-	    need_snr = (bool) (int)params["need_snr"];
-	}
-    };
+		static Averager *NEW()
+		{
+			return new CtfCWAverager();
+		}
 
-    /** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			need_snr = (bool) (int) params["need_snr"];
+		}
+	};
+
+	/** CtfCWautoAverager averages the images with CTF correction with a Wiener filter.
      *  The Weiner filter is estimated directly from the data.
      */
-    class CtfCWautoAverager : public CtfAverager
-    {
-    public:
-	string get_name() const
+	class CtfCWautoAverager:public CtfAverager
 	{
-	    return "CtfCWauto";
-	}
-	
-	static Averager *NEW()
-	{
-	    return new CtfCWautoAverager();
-	}
+	  public:
+		string get_name() const
+		{
+			return "CtfCWauto";
+		}
 
-	void set_params(const Dict & new_params)
-	{
-	    params = new_params;
-	    outfile = params["outfile"];
-	}
-    };
+		static Averager *NEW()
+		{
+			return new CtfCWautoAverager();
+		}
 
-    template<> Factory<Averager>::Factory();
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			outfile = params["outfile"];
+		}
+	};
 
-    void dump_averagers();
-    
+	template <> Factory < Averager >::Factory();
+
+	void dump_averagers();
+
 }
 
 

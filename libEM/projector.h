@@ -14,9 +14,9 @@ using std::string;
 
 namespace EMAN
 {
-    class EMData;
+	class EMData;
 
-    /** Projector class is the base class for all 3D projectors.
+	/** Projector class is the base class for all 3D projectors.
      * Projector generates 2D projections from a 3D model.
      * Each specific projector has a unique name and should be called
      * through the name.
@@ -42,39 +42,39 @@ namespace EMAN
      *        string get_name() const { return "XYZ"; }
      *        static Projector* NEW() { return new XYZProjector(); }
      */
-    
-    class Projector
-    {
-    public:
-	virtual ~Projector()
-	{
-	}
 
-	virtual EMData *project3d(EMData * image) const = 0;
-	
-	virtual string get_name() const = 0;
-	
-	virtual Dict get_params() const
+	class Projector
 	{
-	    return params;
-	}
-	
-	void set_params(const Dict & new_params)
-	{
-	    params = new_params;
-	}
+	  public:
+		virtual ~ Projector()
+		{
+		}
 
-	virtual TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    return d;
-	}
+		virtual EMData *project3d(EMData * image) const = 0;
 
-    protected:
-	Dict params;
-    };
+		virtual string get_name() const = 0;
 
-    /** Gaussian FFT 3D projection.
+		virtual Dict get_params() const
+		{
+			return params;
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+	  protected:
+		Dict params;
+	};
+
+	/** Gaussian FFT 3D projection.
      * use integer 'mode' to determine the gaussian width and the way
      * to interpolate a point in a 3d complex image.
      * valid mode range: [1,7].
@@ -89,139 +89,140 @@ namespace EMAN
      * 10.4 / (M_PI * M_PI);
      */
 
-    class GaussFFTProjector : public Projector
-    {
-    public:
-	GaussFFTProjector() : alt(0), az(0), phi(0)
+	class GaussFFTProjector:public Projector
 	{
-	}
+	  public:
+		GaussFFTProjector():alt(0), az(0), phi(0)
+		{
+		}
 
-	EMData *project3d(EMData * image) const;
-	
-	void set_params(const Dict & new_params)
-	{
-	    Projector::set_params(new_params);
-	    alt = params["alt"];
-	    az = params["az"];
-	    phi = params["phi"];
-	}
-	
-	string get_name() const
-	{
-	    return "GaussFFT";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new GaussFFTProjector();
-	}
-	
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    d.put("alt", EMObject::FLOAT);
-	    d.put("az", EMObject::FLOAT);
-	    d.put("phi", EMObject::FLOAT);
-	    d.put("mode", EMObject::INT);
-	    return d;
-	}
-	
-    private:
-	float alt, az, phi;
-	void interp_ft_3d(int mode, EMData * image, float x, float y,
-			  float z, float *data, float gauss_width) const;
-    };
-    
+		EMData *project3d(EMData * image) const;
 
-    /** Pawel Penczek's optimized projection routine.
-     * Subject to some small artifacts due to interpolation scheme used.
-     */
-    class PawelProjector : public Projector
-    {
-    public:
-	EMData *project3d(EMData * image) const;
-	
-	string get_name() const
-	{
-	    return "Pawel";
-	}
+		void set_params(const Dict & new_params)
+		{
+			Projector::set_params(new_params);
+			alt = params["alt"];
+			az = params["az"];
+			phi = params["phi"];
+		}
 
-	static Projector *NEW()
-	{
-	    return new PawelProjector();
-	}
-	
-    private:
-	
-	struct Pointers {
-	    Vec3<int> location;
-	    int start;
-	    int end;
+		string get_name() const
+		{
+			return "GaussFFT";
+		}
+
+		static Projector *NEW()
+		{
+			return new GaussFFTProjector();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("alt", EMObject::FLOAT);
+			d.put("az", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			d.put("mode", EMObject::INT);
+			return d;
+		}
+
+	  private:
+		float alt, az, phi;
+		void interp_ft_3d(int mode, EMData * image, float x, float y,
+						  float z, float *data, float gauss_width) const;
 	};
 
-    };
 
-    /** fast real-space isosurface 3D proejection.
+	/** Pawel Penczek's optimized projection routine.
+     * Subject to some small artifacts due to interpolation scheme used.
      */
-    class SimpleIsoSurfaceProjector : public Projector
-    {
-    public:
-	EMData *project3d(EMData * image) const;
-	
-	string get_name() const
+	class PawelProjector:public Projector
 	{
-	    return "SimpleIsoSurface";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new SimpleIsoSurfaceProjector();
-	}	
-    };
+	  public:
+		EMData * project3d(EMData * image) const;
 
-    /** Fast real-space 3D projection.
+		string get_name() const
+		{
+			return "Pawel";
+		}
+
+		static Projector *NEW()
+		{
+			return new PawelProjector();
+		}
+
+	  private:
+
+		struct Pointers
+		{
+			Vec3 < int >location;
+			int start;
+			int end;
+		};
+
+	};
+
+	/** fast real-space isosurface 3D proejection.
      */
-    class StandardProjector : public Projector
-    {
-    public:
-	EMData *project3d(EMData * image) const;
-	
-	string get_name() const
+	class SimpleIsoSurfaceProjector:public Projector
 	{
-	    return "Standard";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new StandardProjector();
-	}	
-    };
+	  public:
+		EMData * project3d(EMData * image) const;
 
-    /** Real-space 3D projection with trilinear interpolation.
+		string get_name() const
+		{
+			return "SimpleIsoSurface";
+		}
+
+		static Projector *NEW()
+		{
+			return new SimpleIsoSurfaceProjector();
+		}
+	};
+
+	/** Fast real-space 3D projection.
+     */
+	class StandardProjector:public Projector
+	{
+	  public:
+		EMData * project3d(EMData * image) const;
+
+		string get_name() const
+		{
+			return "Standard";
+		}
+
+		static Projector *NEW()
+		{
+			return new StandardProjector();
+		}
+	};
+
+	/** Real-space 3D projection with trilinear interpolation.
      * It accumulates the results directly in the 2D image
      * instead of storing in another rotated copy then accumulating
      * (ie: less memory requirement). It does not modify the self
      * data either.
      */
-    class StandardBigProjector : public Projector
-    {
-    public:
-	EMData *project3d(EMData * image) const;
-	
-	string get_name() const
+	class StandardBigProjector:public Projector
 	{
-	    return "StandardBig";
-	}
-	
-	static Projector *NEW()
-	{
-	    return new StandardBigProjector();
-	}
-    };
+	  public:
+		EMData * project3d(EMData * image) const;
 
-    template<> Factory<Projector>::Factory();
-    
-    void dump_projectors();
+		string get_name() const
+		{
+			return "StandardBig";
+		}
+
+		static Projector *NEW()
+		{
+			return new StandardBigProjector();
+		}
+	};
+
+	template <> Factory < Projector >::Factory();
+
+	void dump_projectors();
 }
 
 #endif
