@@ -1699,6 +1699,27 @@ Vec3 < float >Transform::inverse_transform(const Vec3 < float >&v)
 	return t.transform(v);
 }
 
+float Transform::get_scale(int i) const
+{
+	float s = matrix[i][0] *  matrix[i][0] + matrix[i][1]*matrix[i][1]
+		+ matrix[i][2] * matrix[i][2];
+	return s;
+}
+
+Vec3 < float > Transform::get_scale() const
+{
+	float s1 = matrix[0][0] *  matrix[0][0] + matrix[0][1]*matrix[0][1]
+		+ matrix[0][2] * matrix[0][2];
+	float s2 = matrix[1][0] *  matrix[1][0] + matrix[1][1]*matrix[1][1]
+		+ matrix[1][2] * matrix[1][2];
+
+	float s3 = matrix[2][0] *  matrix[2][0] + matrix[2][1]*matrix[2][1]
+		+ matrix[2][2] * matrix[2][2];
+	
+	return Vec3 < float >(s1, s2, s3);
+}
+
+
 int Transform::get_type() const
 {
 	return TRANSFORM;
@@ -1771,3 +1792,4 @@ Rotation Rotation::interpolate(const Rotation & from, const Rotation & to, float
 	Quaternion q = Quaternion::interpolate(q1, q2, percent);
 	return Rotation(q);
 }
+

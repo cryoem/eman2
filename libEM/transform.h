@@ -648,6 +648,19 @@ namespace EMAN
 
 	/** Transform defines a transformation, which can be rotation,
      * translation, scale, and their combinations.
+	 *
+	 * Internally a transformation is stored in a 4x4 matrix. With the
+	 * left-top 3x3 submatrix as the rotation part.
+	 *
+	 * Center is stored in (m[3][0], m[3][1], m[3][2])
+	 * post translation is stored in (m[0][3], m[1][3], m[2][3])
+	 * pre translation is stored out side of this matrix separately.
+	 *
+	 *   | R R R T |
+	 *   | R R R T |
+	 *   | R R R T |
+	 *   | C C C 1 |
+	 *
      */
 	class Transform
 	{
@@ -747,7 +760,7 @@ namespace EMAN
 			pre_trans = (float) -1.0 * c;
 
 			for (int i = 0; i < 3; i++) {
-				matrix[i][3] += c[i];
+				matrix[3][i] += c[i];
 			}
 			return (*this);
 		}
@@ -760,7 +773,7 @@ namespace EMAN
 
 		Transform & set_post_translate(const Vec3 < float >&s) {
 			for (int i = 0; i < 3; i++) {
-				matrix[3][i] = s[i];
+				matrix[i][3] = s[i];
 			}
 			return (*this);
 		}
@@ -802,7 +815,7 @@ namespace EMAN
 			if (v != Vec3 < float >(0, 0, 0)) {
 				Matrix4f m;
 				for (int i = 0; i < 3; i++) {
-					m[3][i] = v[i];
+					m[i][3] = v[i];
 				}
 				matrix *= m;
 			}
@@ -869,11 +882,9 @@ namespace EMAN
 			return Rotation(matrix.get_matrix3());
 		}
 
-		Vec3 < float >get_scale() const
-		{
-			return Vec3 < float >(matrix[0][0], matrix[1][1], matrix[2][2]);
-		}
-
+		float get_scale(int i) const;		
+		Vec3 < float >get_scale() const;
+		
 		Vec3 < float >get_center() const
 		{
 			return pre_trans;
@@ -891,7 +902,7 @@ namespace EMAN
 
 		Vec3 < float >get_post_translate() const
 		{
-			return Vec3 < float >(matrix[3][0], matrix[3][1], matrix[3][2]);
+			return Vec3 < float >(matrix[0][3], matrix[1][3], matrix[2][3]);
 		}
 
 		int get_type() const;

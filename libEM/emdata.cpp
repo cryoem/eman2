@@ -71,10 +71,9 @@ EMData::~EMData()
 }
 
 void EMData::read_image(string filename, int img_index, bool nodata,
-						const Region * r, bool is_3d)
+						const Region * region, bool is_3d)
 {
 	ENTERFUNC;
-	LOGDEBUG("read '%s'", filename.c_str());
 	
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 	
@@ -82,7 +81,7 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 		throw ImageFormatException("cannot create an image io");
 	}
 	else {
-		int err = imageio->read_header(attr_dict, img_index, r, is_3d);
+		int err = imageio->read_header(attr_dict, img_index, region, is_3d);
 		if (err) {
 			throw ImageReadException(filename, "imageio read header failed");
 		}
@@ -113,7 +112,7 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 			
 			if (!nodata) {
 				set_size(nx, ny, nz);
-				int err = imageio->read_data(rdata, img_index, r, is_3d);
+				int err = imageio->read_data(rdata, img_index, region, is_3d);
 				if (err) {
 					throw ImageReadException(filename, "imageio read data failed");
 				}
@@ -142,8 +141,14 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 	}
 
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
-	if (!header_only && img_index == 0 && region == 0) {
-		rwmode = ImageIO::WRITE_ONLY;
+
+	if (Util::is_file_exist(filename)) {
+		if (!header_only && region == 0) {
+			ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
+			if (tmp_imageio->is_single_image_format()) {
+				rwmode = ImageIO::WRITE_ONLY;
+			}
+		}
 	}
 	
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
@@ -2705,7 +2710,8 @@ void EMData::translate(const Vec3 < float >&translation)
 
 void EMData::rotate(float alt, float az, float phi)
 {
-	rotate_translate(alt, az, phi, 0, 0, 0);
+	Transform t(Rotation(alt, az, phi, Rotation::EMAN), Vec3 < float >(0, 0, 0));
+	rotate_translate(t);
 }
 
 void EMData::rotate(const Rotation & r)
@@ -2872,7 +2878,7 @@ void EMData::rotate_translate(const Transform & xform)
 {
 	ENTERFUNC;
 	
-	float scale = xform.get_scale()[0];
+	float scale = xform.get_scale(0);
 	Vec3 < float >dcenter = xform.get_center();
 	float dxc = dcenter[0];
 	float dyc = dcenter[1];
@@ -3065,25 +3071,24 @@ void EMData::rotate_translate(const Transform & xform)
 			y4 += mx[1][2];
 			z4 += mx[2][2];
 		}
-
-
-		if (parent) {
-			parent->done_data();
-		}
-		else {
-			free(rdata);
-			rdata = des_data;
-		}
-
-		scale_pixel(inv_scale);
-
-		attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
-		attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
-		attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
-
-		done_data();
-		update();
 	}
+
+	if (parent) {
+		parent->done_data();
+	}
+	else {
+		free(rdata);
+		rdata = des_data;
+	}
+
+	scale_pixel(inv_scale);
+
+	attr_dict["origin_row"] = (float) attr_dict["origin_row"] * inv_scale;
+	attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
+	attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
+
+	done_data();
+	update();
 
 
 	all_rotation += Vec3 < float >(rotation.eman_alt(), rotation.eman_az(), rotation.eman_phi());

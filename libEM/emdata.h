@@ -28,7 +28,9 @@ namespace EMAN
 
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
-     */
+	 *
+	 * Data are ordered with x increasing fastest, then y, then z.
+	*/
 	class EMData
 	{
 	public:
@@ -36,7 +38,13 @@ namespace EMAN
 		EMData();
 		virtual ~ EMData();
 
-		/** read an image file and stores its information.
+		/** read an image file and stores its information to this
+		 * EMData object.
+		 *
+		 * If a region is given, then only read a
+		 * region of the image file. The region will be this
+		 * EMData object. The given region must be inside the given
+		 * image file. Otherwise, an error will be created.
 		 *
 		 * @param filename The image file name.
 		 * @param img_index The nth image you want to read.
@@ -52,6 +60,15 @@ namespace EMAN
 						const Region * region = 0, bool is_3d = false);
 
 		/** write the header and data out to an image.
+		 *
+		 * If the img_index = -1, append the image to the given image file.
+		 *
+		 * If the given image file already exists, this image
+		 * format only stores 1 image, and no region is given, then
+		 * truncate the image file  to  zero length before writing
+		 * data out. For head writing only, no truncation happens.
+		 *
+		 * If a region is given, then write a region only.
 		 *
 		 * @param filename The image file name.
 		 * @param img_index The nth image to write as.
