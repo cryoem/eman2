@@ -8,6 +8,7 @@
 #include "geometry.h"
 #include "emdata.h"
 #include "xydata.h"
+#include "exception.h"
 
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
@@ -337,9 +338,9 @@ namespace EMAN {
     };
 #endif
 	
-    struct emobject_farray_from_python
+    struct emobject_array_from_python
     {
-		emobject_farray_from_python()
+		emobject_array_from_python()
 		{
 			python::converter::registry::push_back(&convertible, &construct,
 												   python::type_id<EMObject>());
@@ -369,6 +370,9 @@ namespace EMAN {
 	
 			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
 			vector<float> farray;
+			vector<string> strarray;
+			
+			EMObject::ObjectType object_type = EMObject::UNKNOWN;
 			
 			while(1) {
 				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
@@ -381,13 +385,39 @@ namespace EMAN {
 				}
 	    
 				python::object py_elem_obj(py_elem_hdl);
-				python::extract<float> elem_proxy(py_elem_obj);
-				farray.push_back(elem_proxy());
+
+				if (object_type == EMObject::UNKNOWN) {
+					python::extract<float> elem_proxy1(py_elem_obj);
+					if (elem_proxy1.check()) {					
+						farray.push_back(elem_proxy1());
+						object_type = EMObject::FLOATARRAY;
+					}
+					else {
+						python::extract<string> elem_proxy2(py_elem_obj);
+						if (elem_proxy2.check()) {
+							strarray.push_back(elem_proxy2());
+							object_type = EMObject::STRINGARRAY;
+						}
+					}
+				}
+				else if (object_type == EMObject::FLOATARRAY) {
+					python::extract<float> elem_proxy1(py_elem_obj);
+					farray.push_back(elem_proxy1());
+				}
+				else if (object_type == EMObject::STRINGARRAY) {
+					python::extract<string> elem_proxy2(py_elem_obj);
+					strarray.push_back(elem_proxy2());
+				}
 			}
-			result = EMObject(farray);
+			if (object_type == EMObject::FLOATARRAY) {
+				result = EMObject(farray);
+			}
+			else if (object_type == EMObject::STRINGARRAY) {
+				result = EMObject(strarray);
+			}
 		}
     };
-	
+
 	struct emobject_emdata_from_python
     {
 		emobject_emdata_from_python()

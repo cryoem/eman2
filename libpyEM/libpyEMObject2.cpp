@@ -34,7 +34,7 @@ BOOST_PYTHON_MODULE(libpyEMObject2)
         .def(init< EMAN::EMData* >())
         .def(init< EMAN::XYData* >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
-        .def("get_farray", &EMAN::EMObject::get_farray)
+        .def(init< const std::vector<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,std::allocator<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > >& >())
         .def("is_null", &EMAN::EMObject::is_null)
         .def("to_str", &EMAN::EMObject::to_str)
         .def("get_object_type_name", &EMAN::EMObject::get_object_type_name)
@@ -46,6 +46,8 @@ BOOST_PYTHON_MODULE(libpyEMObject2)
         .def("__float__", &EMAN::EMObject::operator double)
         .def("to_EMAN_EMData", &EMAN::EMObject::operator EMAN::EMData*, return_internal_reference< 1 >())
         .def("to_EMAN_XYData", &EMAN::EMObject::operator EMAN::XYData*, return_internal_reference< 1 >())
+        .def("to_std_vector_float_std_allocator_float", &EMAN::EMObject::operator std::vector<float,std::allocator<float> >)
+        .def("__str__", &EMAN::EMObject::operator std::vector<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,std::allocator<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > >)
     );
 
     enum_< EMAN::EMObject::ObjectType >("ObjectType")
@@ -57,6 +59,7 @@ BOOST_PYTHON_MODULE(libpyEMObject2)
         .value("XYDATA", EMAN::EMObject::XYDATA)
         .value("FLOATARRAY", EMAN::EMObject::FLOATARRAY)
         .value("UNKNOWN", EMAN::EMObject::UNKNOWN)
+        .value("STRINGARRAY", EMAN::EMObject::STRINGARRAY)
     ;
 
     delete EMAN_EMObject_scope;
