@@ -1547,7 +1547,7 @@ float Rotation::imagic_gamma() const
 
 float Rotation::spider_phi() const
 {
-	return (eman_az() + 1.5 * M_PI);
+	return fmod((eman_az() + 1.5 * M_PI), 2.0 * M_PI);
 }
 
 float Rotation::spider_theta() const
@@ -1555,9 +1555,9 @@ float Rotation::spider_theta() const
 	return (eman_alt());
 }
 
-float Rotation::spider_psi() const
+float Rotation::spider_gamma() const
 {
-	return (eman_phi() + 0.5 * M_PI);
+	return fmod((eman_phi() + 0.5 * M_PI), 2.0 * M_PI);
 }
 
 vector < float >Rotation::get_spin_axis() const

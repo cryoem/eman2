@@ -608,7 +608,7 @@ namespace EMAN
 
 		float spider_phi() const;
 		float spider_theta() const;
-		float spider_psi() const;
+		float spider_gamma() const;
 
 		vector < float >get_spin_axis() const;
 		void get_spin_axis(float *q, float *n1, float *n2, float *n3) const;
