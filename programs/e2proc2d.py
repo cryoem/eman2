@@ -9,7 +9,21 @@ import os.path
 import math
 import random
 
-# todo: average_nimg
+# todo: average_nimg; 
+
+def parse_filter_params(filterparams):
+    params = filterparams.split(":")
+    filtername = params[0]
+
+    if len(params) == 1:
+        return (filtername, None)
+    else:
+        d = Dict()
+        for param in params[1:]:
+            key_values = param.split("=")
+            d[key_values[0]] = EMObject(key_values[1])
+        return (filtername, d)
+    
 
 def read_listfile(listfile, excludefile, nimg):
     imagelist = None
@@ -53,44 +67,50 @@ def main():
 
     parser = OptionParser(usage)
 
-    parser.add_option("--first", type="int", help="first image")
-    parser.add_option("--last", type="int", help="last image")
-    parser.add_option("--exclude", type="string", help="")
-    parser.add_option("--list", type="string", help="")
+    parser.add_option("--first", type="int", help="the first image in the input to process [0 - n-1])")
+    parser.add_option("--last", type="int", help="the last image in the input to process")
+    parser.add_option("--exclude", type="string", help="Excludes image numbers in EXCLUDE file")
+    parser.add_option("--list", type="string", help="Works only on the image numbers in LIST file")
     
-    parser.add_option("--apix", type="float", help="")
-    parser.add_option("--average", action="store_true", help="")
-    parser.add_option("--inplace", action="store_true", help="inplace ")
-    parser.add_option("--verbose", type="int", help="verbose level [1-5]")
+    parser.add_option("--apix", type="float", help="the Angstrom/pixel for S scaling")
 
-    parser.add_option("--plt", type="string", help="")
-    parser.add_option("--split", type="int", help="")
-    
-    parser.add_option("--ctfsplit", action="store_true", help="")
-    parser.add_option("--mraprep",  action="store_true", help="")
-
-    parser.add_option("--norefs", action="store_true", help="")
-
-    parser.add_option("--outtype", type="string", help="")
-    parser.add_option("--radon",  action="store_true", help="")
-    parser.add_option("--rfp",  action="store_true", help="")
-    # check
-    parser.add_option("--setsfpairs",  action="store_true", help="")    
-
-    # the following needs append
-    parser.add_option("--calcsf", type="string", nargs=2, help="")    
-    parser.add_option("--clip", type="float", nargs=2, help="2D clip")
+    parser.add_option("--average", action="store_true", help="Averages all input images (without alignment) and writes a single (normalized) output image")
 
     parser.add_option("--fftavg", type="string", help="")
-    parser.add_option("--filter", type="string", action="append", help="filter name")
-    parser.add_option("--interlv", type="string", help="")
     
-    parser.add_option("--meanshrink", type="int", help="")
-    parser.add_option("--shrink", type="int", help="shrink factor")
+    parser.add_option("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
+    parser.add_option("--verbose", type="int", help="verbose level [1-5]")
+
+    parser.add_option("--plt", type="string", help="output the orientations in IMAGIC .plt file format")
+    parser.add_option("--split", type="int", help="Splits the input file into a set of n output files")
+    
+    parser.add_option("--ctfsplit", action="store_true", help="Splits the input file into output files with the same CTF parameters")
+    parser.add_option("--mraprep",  action="store_true", help="this is an experimental option")
+
+    parser.add_option("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
+
+    parser.add_option("--outtype", type="string", help="output image format, mrc, imagic, hdf, etc")
+    parser.add_option("--radon",  action="store_true", help="Do Radon transform")
+    parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
+    
+    parser.add_option("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc")    
+    
+    # the following needs append
+    parser.add_option("--calcsf", type="string", nargs=2, action="append", help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")    
+    parser.add_option("--clip", type="float", nargs=2, action="append", help="2D clip")
+    
+    parser.add_option("--filter", type="string", action="append", help="apply a filter")
+
+    parser.add_option("--interlv", type="string", help="Specifies a 2nd input file. Output will be 2 files interleaved.")
+    
+    parser.add_option("--meanshrink", type="int", action="append", help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
+    
+    parser.add_option("--shrink", type="int", action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
        
-    parser.add_option("--scale", type="float", help="scale")
-    parser.add_option("--selfcl", type="int", nargs=2, help="")
- 
+    parser.add_option("--scale", type="float", action="append", help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
+    parser.add_option("--selfcl", type="int", nargs=2, action="append", help="Output file will be a 180x180 self-common lines map for each image.")
+
+    append_options = ["calcsf", "clip", "filter", "meanshrink", "shrink", "scale", "selfcl"]
 
     optionlist = []
     for arg1 in sys.argv[1:]:
@@ -98,9 +118,6 @@ def main():
             optionlist.append(arg1.lstrip("-"))
 
     (options, args) = parser.parse_args()
-
-    print options
-    print args
     
     if len(args) != 2:
         print "usage: " + usage
@@ -125,10 +142,6 @@ def main():
     sfout = None
     sf_amwid = 0
 
-    if options.calcsf:
-        sfout_n = int(options.calcsf[0])
-        sfout = options.calcsf[1]
-        sf_amwid = 2 * math.pi / sfout_n
         
     MAXMICROCTF = 1000
     defocus_val = [0] * MAXMICROCTF
@@ -150,7 +163,12 @@ def main():
     print "nimg = ", nimg
 
     imagelist = read_listfile(options.list, options.exclude, nimg)
-        
+    sfcurve1 = None
+
+    index_d = {}
+    for append_option in append_options:
+        index_d[append_option] = 0
+    
     for i in range(n0, n1+1):
         if imagelist and (not imagelist[i]):
             continue
@@ -179,7 +197,13 @@ def main():
         for option1 in optionlist:
             print "option: " + option1
 
-            if option1 == "norefs" and d.get_average_nimg() <= 0:
+            if option1 == "filter":
+                fi = index_d[option1]
+                (filtername, param_dict) = parse_filter_params(options.filter[fi])
+                d.filter(filtername, param_dict)
+                index_d[option1] += 1
+
+            elif option1 == "norefs" and d.get_average_nimg() <= 0:
                 continue
             
             elif option1 == "ctfsplit":
@@ -199,34 +223,65 @@ def main():
                     outfile = outfile + ".%02d.img" % j
                     ld = d.copy(False, False)
             
-            # run the filters
-        
+                
+            elif option1 == "setsfpairs":
+                dataf = d.do_fft()
+                d.gimme_fft()
+                x0 = 0
+                step = 0.5
+                
+                if i%2 == 0:
+                    sfcurve1 = dataf.calc_radial_dist(nx, x0, step)
+                else:
+                    sfcurve2 = dataf.calc_radial_dist(nx, x0, step)
+                    for j in range(nx):
+                        if sfcurve1[j] > 0 and sfcurve2[j] > 0:
+                            sfcurve2[j] = sqrt(sfcurve1[j] / sfcurve2[j])
+                        else:
+                            sfcurve2[j] = 0;
+
+		    dataf.apply_radial_func(x0, step, sfcurve2);
+                    d = dataf.do_ift();
+                    dataf.gimme_fft();
+                    
             elif option1 == "rfp":
                 e = d.make_rotational_footprint()
                 e.append_image("rfp.hed")
 
-            elif option1 == "scale" and options.scale != 1.0:
-                old_r = d.get_rotation()
-                d.set_ralign_params(0, 0, 0)
-                d.set_talign_params(0, 0, 0)
-                d.rotate_translate(options.scale)
-                d.set_ralign_params(old_r)
-            
+            elif option1 == "scale":
+                scale_f = options.scale[index_d[option1]]
+                if scale_f != 1.0:
+                    old_r = d.get_rotation()
+                    d.set_ralign_params(0, 0, 0)
+                    d.set_talign_params(0, 0, 0)
+                    d.rotate_translate(scale_f)
+                    d.set_ralign_params(old_r)
+                index_d[option1] += 1
+                
             elif option1 == "clip":
-                clipx = options.clip[0]
-                clipy = options.clip[1]                    
+                ci = index_d[option1]
+                clipx = options.clip[ci][0]
+                clipy = options.clip[ci][1]    
                 e = d.get_clip(Region(nx-clipx)/2, (ny-clipy)/2, clipx, clipy)
                 d = e
+                index_d[option1] += 1
             
-            elif option1 == "shrink" and options.shrink > 1:
-                d.median_shrink(options.shrink)
+            elif option1 == "shrink":
+                shrink_f = options.shrink[index_d[option1]]
+                if shrink_f > 1:
+                    d.median_shrink(shrink_f)
+                index_d[option1] += 1
 
-            elif option1 == "meanshrink" and options.meanshrink > 1:
-                d.mean_shrink(options.meanshrink)
+            elif option1 == "meanshrink":
+                mshrink = options.meanshrink[index_d[option1]]
+                if mshrink > 1:
+                    d.mean_shrink(mshrink)
+                index_d[option1] += 1
         
             elif option1 == "selfcl":
-                scl = options.selfcl[0] / 2
-                sclmd = options.selfcl[1]
+                selfcl_l = options.selfcl[index_d[option1]]
+                scl = selfcl_l[0] / 2
+                sclmd = selfcl_l[1]
                 sc = EMData()
             
                 if sclmd == 0:
@@ -243,6 +298,9 @@ def main():
                     else:
                         print "Error: invalid common-line mode '" + sclmd + "'"
                         sys.exit(1)
+                        
+                index_d[option1] += 1
+                
             elif option1 == "radon":
                 r = d.do_radon()
                 d = r
@@ -269,6 +327,12 @@ def main():
                 continue
 
             elif option1 == "calcsf":
+                ci = index_dict[option1]
+
+                sfout_n = int(options.calcsf[ci][0])
+                sfout = options.calcsf[ci][1]
+                sf_amwid = 2 * math.pi / sfout_n
+                    
                 dataf = d.do_fft()
                 d.gimme_fft()
                 curve = dataf.calc_radial_dist(ny, 0, 0.5)
@@ -287,7 +351,8 @@ def main():
                         if n1 != 0:
                             outfile2 = outfile2 + ".%03d" % (i+100)
                         Util.save_data(0, sf_dx, curve, outfile2)
-         
+                index_dict[option1] += 1
+                
             elif option1 == "interlv":
                 d.read_image(options.interlv, i)
                 d.append_image(outfile, IMAGIC)
