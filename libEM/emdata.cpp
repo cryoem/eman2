@@ -1655,7 +1655,7 @@ int EMData::sub(const EMData & em)
 int EMData::mult(float f)
 {
 	if (is_complex()) {
-		return 1;
+		ap2ri();
 	}
 	if (f != 1) {
 		flags |= EMDATA_NEEDUPD;
