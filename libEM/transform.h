@@ -85,6 +85,14 @@ namespace EMAN
 		void orthogonalize();	
 		Transform inverse();
 	
+		// This should return an iterator which will produce
+		// all of the symmetrically equivalent Transform objects
+		// for the given symmetry including the current Transform
+		Transform get_symmetry(const string & symname) const;
+		void begin();
+		Transform next();
+		bool end() const;
+		
 		void set_pretrans(const Vec3f & pretrans);
 		void set_posttrans(const Vec3f & posttrans);
 		void set_center(const Vec3f & center);
@@ -108,23 +116,43 @@ namespace EMAN
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
 
-		// This should return an iterator which will produce
-		// all of the symmetrically equivalent Transform objects
-		// for the given symmetry including the current Transform
-		//iterator get_symmetry(string symname);
+		Transform operator*=(const Transform& t);
 		
 	  private:
+		enum SymType
+		{
+			CSYM,
+			DSYM,
+			ICOS_SYM,
+			OCT_SYM,
+			ISYM,
+			UNKNOWN_SYM
+		};
+
 		void init();
+
+		void set_rotation(float a0, float a1, float a2, EulerType euler_type,
+						  float a3 = 0);
+		
 		float eman_alt() const;
 		float eman_az() const;
 		float eman_phi() const;
 		vector<float> matrix2quaternion() const;
 		vector<float> matrix2sgi() const;
 		void quaternion2matrix(float e0, float e1, float e2, float e3);
+		static SymType get_sym_type(const string & symname);
 		
 		float matrix[4][3];
 		Vec3f pre_trans;
+
+		string symname;
+		int nsym;
+		int cur_sym;
 	};
+
+	Transform operator*(const Vec3f & v, const Transform & t);
+	Transform operator*(const Transform & t1, const Transform & t2);
+	
 #if 0
 	Transform operator+(const Transform & t1, const Transform & t2);
 	Transform operator-(const Transform & t1, const Transform & t2);

@@ -17,7 +17,7 @@ Transform::Transform()
 
 
 
-Transform::		Transform(EulerType euler_type, float a1,float a2,float a3, float a4)
+Transform::Transform(EulerType euler_type, float a1,float a2,float a3, float a4)
 {
 	init();
 	set_rotation(euler_type,a1,a2,a3,a4);
@@ -67,11 +67,11 @@ Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans,
 
 void Transform::init()
 {
-for (int i=0; i<4; i++) {
-	for (int j=0; j<3; j++) {
-		matrix[i][j]=0;
+	for (int i=0; i<4; i++) {
+		for (int j=0; j<3; j++) {
+			matrix[i][j]=0;
+		}
 	}
-}
 }
 
 
@@ -81,19 +81,18 @@ void Transform::to_identity()
 		matrix[i][i] = 1;
 	}
 	set_center(Vec3f(0,0,0));
-	
 }
 
 bool Transform::is_identity()
 {
-for (int i=0; i<4; i++) {
-	for (int j=0; j<3; j++) {
-		if (i==j && matrix[i][j]!=1.0) return 0; 
-		if (i!=j && matrix[i][j]!=0.0) return 0; 
+	for (int i=0; i<4; i++) {
+		for (int j=0; j<3; j++) {
+			if (i==j && matrix[i][j]!=1.0) return 0; 
+			if (i!=j && matrix[i][j]!=0.0) return 0; 
+		}
 	}
-}
-if (pre_trans[0]!=0 || pre_trans[1]!=0 ||pre_trans[2]!=0) return 0;
-return 1;
+	if (pre_trans[0]!=0 || pre_trans[1]!=0 ||pre_trans[2]!=0) return 0;
+	return 1;
 }
 
 void Transform::orthogonalize()	
@@ -121,7 +120,7 @@ void Transform::set_posttrans(const Vec3f & posttrans)
 
 void Transform::set_center(const Vec3f & center)
 {
-	pre_trans= -center;
+	pre_trans = Vec3f(0,0,0)-center;
 	for (int i = 0; i < 3; i++) {
 		matrix[3][i]=center[i];
 	}
@@ -182,6 +181,7 @@ void Transform::set_rotation(EulerType euler_type,float a0, float a1, float a2, 
 	matrix[2][2] = cos(a1);
 	
 }
+
 
 void Transform::set_rotation(EulerType euler_type, map<string, float> & rotation)
 {
@@ -401,9 +401,10 @@ map<string,float> Transform::get_rotation(EulerType euler_type) const
 
 float Transform::get_scale() const
 {
-	// Assumes uniform scaling, calculation uses Z only
-	float ksq=SQR(matrix[0][2])+SQR(matrix[1][2])+SQR(matrix[2][2]);	// should be 1.0 if no scaling
-
+	// Assumes uniform scaling, calculation uses Z only.
+	float ksq = matrix[0][2] * matrix[0][2] +
+		matrix[1][2] * matrix[1][2] + matrix[2][2] * matrix[2][2];	// should be 1.0 if no scaling
+	
 	return sqrt(ksq);
 }
 
@@ -424,7 +425,11 @@ float Transform::orthogonality() const
 	return 0;
 }
 
-		
+Transform Transform::operator*=(const Transform& t)
+{
+	return Transform();
+}
+
 float * Transform::operator[] (int i)
 {
 	return matrix[i];
@@ -522,4 +527,178 @@ void Transform::quaternion2matrix(float e0, float e1, float e2, float e3)
 	matrix[2][1] = 2.0f * (e2 * e3 - e0 * e1);
 	matrix[2][2] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
 }
+
+Transform Transform::get_symmetry(const string & name) const
+{
+	Transform result = *this;
+	string symname2 = "";
+	int nsym2 = 0;
+	
+	if (name == "") {
+		symname2 = "i";
+	}
+	else {
+		symname2 = name;
+
+		for (size_t i = 0; i < name.size(); i++) {
+			if (isalpha(name[i])) {
+				symname2[i] = (char)tolower(name[i]);
+			}
+		}
+
+		SymType type = get_sym_type(symname2);
+		switch (type) {
+		case CSYM:
+			nsym2 = atoi(symname2.c_str() + 1);
+			break;
+		case DSYM:
+			nsym2 = atoi(symname2.c_str() + 1) * 2;
+			break;
+		case ICOS_SYM:
+			nsym2 = 60;
+			break;
+		case OCT_SYM:
+			nsym2 = 24;
+			break;
+		case ISYM:
+			nsym2 = 1;
+			break;
+		case UNKNOWN_SYM:
+		default:
+			nsym2 = 0;
+		}
+	}
+	result.symname = symname2;
+	result.nsym = nsym2;
+	return result;
+}
+
+Transform Transform::next()
+{
+	int n = cur_sym;
+	
+	Transform invalid;
+	invalid.set_rotation(-0.1f, -0.1f, -0.1f, Transform::EMAN);
+	Transform ret;
+
+	static double ICOS[180] = {
+		0, 0, 0, 0, 0, 288, 0, 0, 216, 0, 0, 144, 0, 0, 72,
+		0, 63.4349, 36, 0, 63.4349, 324, 0, 63.4349, 252, 0, 63.4349, 180, 0, 63.4349, 108,
+		72, 63.4349, 36, 72, 63.4349, 324, 72, 63.4349, 252, 72, 63.4349, 180, 72, 63.4349, 108,
+		144, 63.4349, 36, 144, 63.4349, 324, 144, 63.4349, 252, 144, 63.4349, 180, 144, 63.4349,
+		108,
+		216, 63.4349, 36, 216, 63.4349, 324, 216, 63.4349, 252, 216, 63.4349, 180, 216, 63.4349,
+		108,
+		288, 63.4349, 36, 288, 63.4349, 324, 288, 63.4349, 252, 288, 63.4349, 180, 288, 63.4349,
+		108,
+		36, 116.5651, 0, 36, 116.5651, 288, 36, 116.5651, 216, 36, 116.5651, 144, 36, 116.5651, 72,
+		108, 116.5651, 0, 108, 116.5651, 288, 108, 116.5651, 216, 108, 116.5651, 144, 108, 116.5651,
+		72,
+		180, 116.5651, 0, 180, 116.5651, 288, 180, 116.5651, 216, 180, 116.5651, 144, 180, 116.5651,
+		72,
+		252, 116.5651, 0, 252, 116.5651, 288, 252, 116.5651, 216, 252, 116.5651, 144, 252, 116.5651,
+		72,
+		324, 116.5651, 0, 324, 116.5651, 288, 324, 116.5651, 216, 324, 116.5651, 144, 324, 116.5651,
+		72,
+		0, 180, 0, 0, 180, 288, 0, 180, 216, 0, 180, 144, 0, 180, 72
+	};
+
+	static float OCT[72] = {
+		0, 0, 0, 90, 0, 0, 180, 0, 0, 270, 0, 0, 90, 90, 0, 90, 270, 0,
+		0, 0, 90, 90, 0, 90, 180, 0, 90, 270, 0, 90, 90, 90, 90, 90, 270, 90,
+		0, 0, 180, 90, 0, 180, 180, 0, 180, 270, 0, 180, 90, 90, 180, 90, 270, 180,
+		0, 0, 270, 90, 0, 270, 180, 0, 270, 270, 0, 270, 90, 90, 270, 90, 270, 270
+	};
+
+	if (n >= nsym) {
+		return invalid;
+	}
+
+	SymType type = get_sym_type(symname);
+
+	switch (type) {
+	case CSYM:
+		ret.set_rotation(0, n * 2.0f * M_PI / nsym, 0, Transform::EMAN);
+		break;
+	case DSYM:
+		if (n >= nsym / 2) {
+			ret.set_rotation(M_PI, (n - nsym / 2) * 2.0f * M_PI / (nsym / 2),
+							 0, Transform::EMAN);
+		}
+		else {
+			ret.set_rotation(0, n * 2.0f * M_PI / (nsym / 2), 0, Transform::EMAN);
+		}
+		break;
+	case ICOS_SYM:
+		ret.set_rotation((float)ICOS[n * 3 + 1] * M_PI / 180, 
+						 (float)ICOS[n * 3 + 2] * M_PI / 180 - M_PI / 2,
+						 (float)ICOS[n * 3] * M_PI / 180 + M_PI / 2, 
+						 Transform::EMAN);
+		break;
+	case OCT_SYM:
+		ret.set_rotation(OCT[n * 3] * M_PI / 180, OCT[n * 3 + 1] * M_PI / 180,
+						 OCT[n * 3 + 2] * M_PI / 180, Transform::EMAN);
+		break;
+	case ISYM:
+		ret.set_rotation(0, 0, 0, Transform::EMAN);
+	default:
+		throw InvalidValueException(type, "symmetry name");		
+	}
+
+	ret = (*this) * ret;
+	cur_sym++;
+	return ret;
+}
+
+void Transform::begin()
+{
+	cur_sym = 0;
+}
+
+bool Transform::end() const
+{
+	return (cur_sym >= nsym);
+}
+
+
+Transform::SymType Transform::get_sym_type(const string & name)
+{
+	SymType t = UNKNOWN_SYM;
+
+	if (name[0] == 'c') {
+		t = CSYM;
+	}
+	else if (name[0] == 'd') {
+		t = DSYM;
+	}
+	else if (name == "icos") {
+		t = ICOS_SYM;
+	}
+	else if (name == "oct") {
+		t = OCT_SYM;
+	}
+	else if (name == "i") {
+		t = ISYM;
+	}
+	return t;
+}
+
+
+Transform EMAN::operator*(const Vec3f & v, const Transform & t)
+{
+	return Transform();
+}
+
+Transform EMAN::operator*(const Transform & t1, const Transform & t2)
+{
+	return Transform();
+}
+
+
+
+
+
+
+
+
 
