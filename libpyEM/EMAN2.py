@@ -14,7 +14,7 @@ from libpyTypeConverter2 import *
 from bisect import bisect_left
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
-
+from sys import exit
 
 EMANVERSION="EMAN2 v1.90"
 
@@ -33,6 +33,12 @@ def display(img):
 	from os import system
 	system("v2 /tmp/img.spi")
 
+def error_exit(s) :
+	"""A quick hack until I can figure out the logging stuff. This function
+	should still remain as a shortcut"""
+	print s
+	exit(1)
+	
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

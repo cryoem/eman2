@@ -613,8 +613,9 @@ namespace EMAN
 
 		/** add a number to each pixel value of the image.
 		 * @param f The number added to 'this' image.
+		 * @param keepzero If set will not modify pixels that are exactly zero
 		 */
-		void add(float f);
+		void add(float f,keepzero=0);
 		
 		/** add a same-size image to this image pixel by pixel.
 		 *

@@ -21,7 +21,7 @@ for single particle analysis."""
 	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=-1)
 	parser.add_option("--refptcl","-R",type="string",help="A stack of reference images. Must have the same scale as the image being boxed.",default=None)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle",default=[])
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
 			
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -29,6 +29,7 @@ for single particle analysis."""
 	image=EMData()
 	image.read_image(args[0])
 	
+	refptcl=None
 	if options.refptcl :
 		refptcl=EMData.read_images(options.refptcl)
 		print "%d reference particles read"%len(refptcl)
@@ -48,6 +49,25 @@ for single particle analysis."""
 	shrink=image.copy(0)
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
+	if "ref" in options.auto:
+		if not refptcl: error_exit("Reference particles required")
+		
+		# refptcls will contain shrunken normalized reference particles
+		refptcls=[]
+		for n,i in enumerate(refptcl):
+			ic=i.copy()
+			refptcls.append(ic)
+			ic.mean_shrink(shrinkfactor)
+			# first a circular mask
+			ic.filter("MaskSharp",{"outer_radius":ic.get_xsize()/2-1})
+			
+			# make the unmasked portion mean -> 0
+			mnz=ic.get_attr("mean_nonzero")
+			ic.add(mnz,keepzero=1)
+			
+			
+			
+	
 	if "circle" in options.auto:
 		shrinksq=shrink.copy(0)
 		shrinksq*=shrinksq			# shrunken original image squared
@@ -65,11 +85,15 @@ for single particle analysis."""
 		outer.write_image("b_outer.mrc")
 		inner.write_image("b_inner.mrc")
 
-		ccf1=  shrink.calc_ccf(outer,True,None)
+		ccf1=shrinksq.calc_ccf(inner,True,None)
 		ccf2=shrinksq.calc_ccf(outer,True,None)
 		
 		ccf1.write_image("b_ccf1.mrc")
 		ccf2.write_image("b_ccf2.mrc")
+		
+		ccf1/=ccf2
+		
+		ccf1.write_image("b_result.mrc")
 	
 if __name__ == "__main__":
 	main()

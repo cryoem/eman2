@@ -2207,15 +2207,22 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 }
 
 
-void EMData::add(float f)
+void EMData::add(float f,int keepzero)
 {
 	ENTERFUNC;
 	
 	if (f != 0) {
 		flags |= EMDATA_NEEDUPD;
 		int size = nx * ny * nz;
-		for (int i = 0; i < size; i++) {
-			rdata[i] += f;
+		if (keepzero) {
+			for (int i = 0; i < size; i++) {
+				if (rdata[i]) rdata[i] += f;
+			}		
+		}
+		else {
+			for (int i = 0; i < size; i++) {
+				rdata[i] += f;
+			}
 		}
 	}
 	EXITFUNC;
@@ -3538,11 +3545,11 @@ void EMData::mean_shrink(int shrink_factor)
 									"mean shrink: shrink factor must > 1");
 	}
 
-	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
+/*	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
 		throw InvalidValueException(shrink_factor, 
 									"Image size not divisible by shrink factor");
-	}
+	}*/
 
 	int shrinked_nx = nx / shrink_factor;
 	int shrinked_ny = ny / shrink_factor;
