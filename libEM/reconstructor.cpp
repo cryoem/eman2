@@ -977,8 +977,8 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform &)
 
 	tmp->done_data();
 
-	map<string,float> slice_euler = slice->get_rotation().get_rotation(Transform::EMAN);
-	tmp->rotate(-slice_euler["alt"], -slice_euler["az"], -slice_euler["phi"]);
+	Dict slice_euler = slice->get_rotation().get_rotation(Transform::EMAN);
+	tmp->rotate(-(float)slice_euler["alt"], -(float)slice_euler["az"], -(float)slice_euler["phi"]);
 
 	image->add(*tmp);
 	delete slice_copy;

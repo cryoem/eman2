@@ -5,6 +5,7 @@
 #define eman__transform_h__ 1
 
 #include "vec3.h"
+#include "emobject.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -69,12 +70,12 @@ namespace EMAN
 		Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType euler_type, 
 				  float a1,float a2, float a3, float a4=0);
 		
-		Transform(EulerType euler_type, map<string, float>& rotation);
+		Transform(EulerType euler_type, Dict& rotation);
 
-		Transform(const Vec3f& posttrans, EulerType euler_type, map<string, float>& rotation);
+		Transform(const Vec3f& posttrans, EulerType euler_type, Dict& rotation);
 		
 		Transform(const Vec3f & pretrans, const Vec3f& posttrans,   
-				  EulerType euler_type, map<string, float>& rotation);
+				  EulerType euler_type, Dict& rotation);
 		
 		virtual ~ Transform();
 
@@ -88,13 +89,13 @@ namespace EMAN
 		void set_posttrans(const Vec3f & posttrans);
 		void set_center(const Vec3f & center);
 		void set_rotation(EulerType euler_type, float a0, float a1,float a2, float a3=0);
-		void set_rotation(EulerType euler_type, map<string, float>& rotation );
+		void set_rotation(EulerType euler_type, Dict &rotation );
 		void set_scale(float scale);
 
 		Vec3f get_pretrans() const;
 		Vec3f get_posttrans() const;
 		Vec3f get_center() const;
-		map<string, float> get_rotation(EulerType euler_type) const;
+		Dict get_rotation(EulerType euler_type) const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;
 		float get_scale() const;

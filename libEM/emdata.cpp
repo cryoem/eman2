@@ -2878,7 +2878,7 @@ void EMData::rotate_translate(const Transform & xform)
 	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
 	Vec3f translation = xform.get_posttrans();
-	map<string, float> rotation = xform.get_rotation(Transform::EMAN);
+	Dict rotation = xform.get_rotation(Transform::EMAN);
 	
 	int nx2 = nx;
 	int ny2 = ny;

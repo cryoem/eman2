@@ -43,7 +43,7 @@ Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType e
 	set_posttrans(posttrans);
 }
 
-Transform::Transform(EulerType euler_type, map<string, float>& rotation)
+Transform::Transform(EulerType euler_type, Dict& rotation)
 {
 	init();
 	set_rotation(euler_type,rotation);
@@ -51,7 +51,7 @@ Transform::Transform(EulerType euler_type, map<string, float>& rotation)
 
 
 Transform::Transform(const Vec3f& posttrans, EulerType euler_type,
-					 map<string, float>& rotation)
+					 Dict& rotation)
 {
 	init();
 	set_rotation(euler_type, rotation);
@@ -60,7 +60,7 @@ Transform::Transform(const Vec3f& posttrans, EulerType euler_type,
 
 		
 Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans,   
-					 EulerType euler_type, map<string, float>& rotation)
+					 EulerType euler_type, Dict& rotation)
 {
 	init();
 	set_rotation(euler_type,rotation);
@@ -241,7 +241,7 @@ void Transform::set_rotation(EulerType euler_type, float a1, float a2, float a3,
 }
 
 
-void Transform::set_rotation(EulerType euler_type, map<string, float> & rotation)
+void Transform::set_rotation(EulerType euler_type, Dict& rotation)
 {
 	float a0 = 0;
 	float a1 = 0;
@@ -251,33 +251,33 @@ void Transform::set_rotation(EulerType euler_type, map<string, float> & rotation
 
 	switch(euler_type) {
 	case EMAN:
-		a1 = rotation["alt"];
-		a2 = rotation["az"];
-		a3 = rotation["phi"];
+		a1 = (float)rotation["alt"];
+		a2 = (float)rotation["az"];
+		a3 = (float)rotation["phi"];
 		break;
 	case IMAGIC:
-		a1 = rotation["alpha"];
-		a2 = rotation["beta"];
-		a3 = rotation["gamma"];
+		a1 = (float)rotation["alpha"];
+		a2 = (float)rotation["beta"];
+		a3 = (float)rotation["gamma"];
 		break;
 		
 	case SPIDER:
-		a1 = rotation["phi"];
-		a2 = rotation["theta"] - 1.5f * M_PI;
-		a3 = rotation["gamma"] - 0.5f * M_PI;
+		a1 = (float)rotation["phi"];
+		a2 = (float)rotation["theta"] - 1.5f * M_PI;
+		a3 = (float)rotation["gamma"] - 0.5f * M_PI;
 		break;
 		
 	case MRC:
-		a1 = rotation["theta"];
-		a2 = fmod(-rotation["phi"] + 2.5f * M_PI, 2.0 * M_PI);
-		a3 = fmod(rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
+		a1 = (float)rotation["theta"];
+		a2 = fmod(-(float)rotation["phi"] + 2.5f * M_PI, 2.0 * M_PI);
+		a3 = fmod((float)rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
 		break;
 		
 	case QUATERNION:
-		a0 = rotation["e0"];
-		a1 = rotation["e1"];
-		a2 = rotation["e2"];
-		a3 = rotation["e3"];
+		a0 = (float)rotation["e0"];
+		a1 = (float)rotation["e1"];
+		a2 = (float)rotation["e2"];
+		a3 = (float)rotation["e3"];
 		
 		is_quaternion = 1;
 		break;
@@ -285,10 +285,10 @@ void Transform::set_rotation(EulerType euler_type, map<string, float> & rotation
 	case SPIN:
 	case SGIROT:
 		{
-			a0 = rotation["q"];
-			a1 = rotation["n1"];
-			a2 = rotation["n2"];
-			a3 = rotation["n3"];
+			a0 = (float)rotation["q"];
+			a1 = (float)rotation["n1"];
+			a2 = (float)rotation["n2"];
+			a3 = (float)rotation["n3"];
 		
 			is_quaternion = 1;
 			float f = sin(a0 / 2.0f);
@@ -396,9 +396,9 @@ float Transform::eman_phi() const
 
 	
 
-map<string,float> Transform::get_rotation(EulerType euler_type) const
+Dict Transform::get_rotation(EulerType euler_type) const
 {
-	map<string, float> result;
+	Dict result;
 	
 	float alt = eman_alt();
 	float az = eman_az();
