@@ -240,10 +240,10 @@ namespace EMAN {
 			      int steps = 180, bool horiz = false);
 	
 	
-	void cut_slice(EMData* map, float z, Rotation* r = 0,
-		       bool interpolate = true, float x = 0, float y = 0);
+	int cut_slice(EMData* map, float z, Rotation* r = 0,
+		      bool interpolate = true, float x = 0, float y = 0);
 
-	void uncut_slice(EMData* map, float z, Rotation* r = 0, float x = 0, float y = 0);
+	int uncut_slice(EMData* map, float z, Rotation* r = 0, float x = 0, float y = 0);
 
 	void do_dwt(int basis, int level);
 	void do_iwt(int basis, int level);
