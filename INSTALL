@@ -58,7 +58,7 @@
             - tiff -> TIFFDIR
             - png  -> PNGDIR
             - hdf5 -> HDF5DIR
-            - python -> PYTHON_ROOT
+            - python -> PYTHON_ROOT and PYTHON_VERSION
             
        3) % ccmake ../eman2
           - type 'c' if it asks about "CMAKE_BACKWARDS_COMPATIBILITY".
@@ -142,7 +142,16 @@ How to Install Boost Python
     6. cp -df bin-stage/libboost_python.so* /usr/local/lib
        cd ../../..; cp -rf boost /usr/local/include
 
-       
+
+How to use your own python version
+----------------------------------
+
+    If the python you want to use in your computer is not found by CMake,
+	you may set up environment variables "PYTHON_ROOT" and "PYTHON_VERSION".
+	For example, if your python is at /usr/local/python2.4/bin/python.
+	PYTHON_ROOT is "/usr/local/python2.4". if your python is 2.4.X,
+	PYTHON_VERSION is '2.4'.
+	   
 How to Install Numeric Python
 -----------------------------
     - go to web site http://www.pfdubois.com/numpy

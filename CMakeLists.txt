@@ -157,34 +157,32 @@ MACRO(CHECK_LIB_ONLY upper lower)
 ENDMACRO(CHECK_LIB_ONLY)
 
 
-MACRO(CHECK_PYTHON_WIN32)
-	FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-		$ENV{PYTHON_ROOT}/include C:/Python23/include)
-	
-	FIND_LIBRARY(PYTHON_LIBRARY NAMES python23
-		PATHS $ENV{PYTHON_ROOT}/libs C:/Python23/libs)
-	
-	
-ENDMACRO(CHECK_PYTHON_WIN32)
-
 
 MACRO(CHECK_PYTHON)
 	SET(PYTHON_FOUND FALSE)
 	
-	FOREACH(PYI RANGE 0 ARGC)
+	FOREACH(PYVER ${ARGV})
 		IF(NOT PYTHON_FOUND)
-			SET(PYVER "${ARGV${PYI}")
-		
-			FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-				$ENV{PYTHON_ROOT}/include/python${PYVER}
-				/usr/local/include/python${PYVER}
-				/usr/include/python${PYVER})
-			
-			FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER}
-				PATHS
-				$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
-				/usr/local/lib/python${PYVER}/config
-				/usr/lib/python${PYVER}/config)
+			IF (WIN32) 
+				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+					$ENV{PYTHON_ROOT}/include C:/Python${PYVER}/include)
+
+				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS 
+					$ENV{PYTHON_ROOT}/libs C:/Python${PYVER}/libs)
+				
+			ELSE (WIN32)
+				FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+					$ENV{PYTHON_ROOT}/include/python${PYVER}
+					/usr/local/include/python${PYVER}
+					/usr/include/python${PYVER})
+				
+				FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER} PATHS
+					$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
+					/usr/local/lib/python${PYVER}/config
+					/usr/lib/python${PYVER}/config
+					$ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
+
+			ENDIF (WIN32)
 			
 			IF(PYTHON_INCLUDE_PATH)
 				IF(PYTHON_LIBRARY)
@@ -193,7 +191,7 @@ MACRO(CHECK_PYTHON)
 			ENDIF(PYTHON_INCLUDE_PATH)
 			
 		ENDIF(NOT PYTHON_FOUND)
-    ENDFOREACH(PYI)
+    ENDFOREACH(PYVER)
 ENDMACRO(CHECK_PYTHON)
 
 
@@ -280,24 +278,11 @@ IF(ENABLE_PNG)
 ENDIF(ENABLE_PNG)
 
 IF(ENABLE_PYTHON)
+	
     IF(WIN32)
-		FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-			$ENV{PYTHON_ROOT}/include C:/Python23/include C:/Python22/include)
-		
-		FIND_LIBRARY(PYTHON_LIBRARY NAMES python23 python22 python
-			PATHS $ENV{PYTHON_ROOT}/libs C:/Python23/libs C:/Python22/libs)
+		CHECK_PYTHON($ENV{PYTHON_VERSION} 24 23 22)
     ELSE(WIN32)
-		CHECK_PYTHON(2.4 2.3 2.2)
-		
-		#FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-		#	$ENV{PYTHON_ROOT}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3
-		#	$ENV{PYTHON_ROOT}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
-
-		#FIND_LIBRARY(PYTHON_LIBRARY NAMES python2.4 python2.3 python2.2 
-        #    PATHS
-		#	$ENV{PYTHON_ROOT}/lib/python2.4/config /usr/local/lib/python2.4/config /usr/lib/python2.4/config 
-		#	$ENV{PYTHON_ROOT}/lib/python2.3/config /usr/local/lib/python2.3/config /usr/lib/python2.3/config 
-		#	$ENV{PYTHON_ROOT}/lib/python2.2/config /usr/local/lib/python2.2/config /usr/lib/python2.2/config)		
+		CHECK_PYTHON($ENV{PYTHON_VERSION} 2.4 2.3 2.2)
     ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)
