@@ -64,9 +64,9 @@ namespace EMAN { namespace Gatan {
 	enum Type {
 	    UNKNOWN = 0,
 	    SHORT   = 2,
-	    LONG    = 3,
+	    INT     = 3,
 	    USHORT  = 4,
-	    ULONG   = 5,
+	    UINT    = 5,
 	    FLOAT   = 6,
 	    DOUBLE  = 7,
 	    BOOLEAN = 8,

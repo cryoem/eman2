@@ -40,6 +40,9 @@ namespace EMAN {
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
+	int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+			 bool header_only = false);
+	
 	int filter(string filtername, const Dict& params = Dict());
 
 	float cmp(string cmpname, const Dict& params);
@@ -193,7 +196,7 @@ namespace EMAN {
 	int get_x() const;
 	int get_y() const;
 	int get_z() const;
-
+	
 	Vec3f get_translation() const;
 	void set_translation(const Vec3f& t);
 
@@ -250,13 +253,7 @@ namespace EMAN {
 	float get_edge_mean() const;
 	float get_circle_mean();
 	float edge_normalize(int mode = 0);
-
-	void make_average(const vector<EMData*>& image_list, EMData* sigma = 0, int ignore0 = 0);
-	void make_average_iter(const vector<EMData*>& image_list);
-	void make_average_WT(const vector<EMData*>& in, EMData* curves, XYData* sf);
-	void make_average_CTFC(const vector<EMData*>& in, float filter);
-	void make_average_CTFCWauto(const vector<EMData*>& in, string outfile = "");
-	float make_average_CTFCW(const vector<EMData*>& in, XYData* sf, XYData* snr = 0);	
+	
 	void make_image_median(const vector<EMData*>& image_list);
 	
 #if 0
@@ -348,7 +345,7 @@ namespace EMAN {
 	int nx;
 	int ny;
 	int nz;
-	int nimg;
+
 	Vec3f translation;
 	Rotation rotation;
 	Vec3f trans_align;
@@ -374,6 +371,7 @@ namespace EMAN {
 	return nz;
     }
 
+    
     inline Vec3f EMData::get_translation() const { return translation; }
     
     inline void EMData::set_translation(const Vec3f& t) { translation = t; }

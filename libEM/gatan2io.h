@@ -20,7 +20,7 @@ namespace EMAN {
 	    GATAN2_COMPLEX = 3,
 	    GATAN2_PACKED_COMPLEX = 5,
 	    GATAN2_CHAR = 6,
-	    GATAN2_LONG = 7,
+	    GATAN2_INT = 7,
 	    GATAN2_INVALID
 	};
 	

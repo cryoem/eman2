@@ -25,6 +25,7 @@ namespace EMAN {
     };
 
     class EMData;
+    class XYData;
     
     class EMObject {
     public:
@@ -34,6 +35,7 @@ namespace EMAN {
 	    DOUBLE,
 	    STRING,
 	    EMDATA,
+	    XYDATA,
 	    FLOATARRAY,
 	    UNKNOWN
 	};
@@ -45,6 +47,7 @@ namespace EMAN {
 	EMObject(double dd) : d(dd), type(DOUBLE) {}
 	EMObject(string s) : str(s), type(STRING) {}
 	EMObject(EMData* em) : emdata(em), type(EMDATA) {}
+	EMObject(XYData* xy) : xydata(xy), type(XYDATA) {}
 	EMObject(const vector<float>& v) : farray(v), type(FLOATARRAY) {}
 
 	~EMObject() { }
@@ -130,6 +133,17 @@ namespace EMAN {
 	    return emdata;
 	}
 
+	XYData* get_XYData() const
+	{
+	    if (type != XYDATA) {
+		if (type != UNKNOWN) {
+		    Log::logger()->error("type error. Cannot call get_XYData() for data type '%s'", get_object_type_name(type));
+		}
+		return 0;
+	    }
+	    return xydata;
+	}
+	
 	vector<float> get_farray() const
 	{
 	    if (type != FLOATARRAY) {
@@ -158,6 +172,8 @@ namespace EMAN {
 		return "STRING";
 	    case EMDATA:
 		return "EMDATA";
+	    case XYDATA:
+		return "XYDATA";
 	    case FLOATARRAY:
 		return "FLOATARRAY";
 	    case UNKNOWN:
@@ -175,6 +191,7 @@ namespace EMAN {
 	};
 	
 	EMData* emdata;
+	XYData* xydata;
 	string str;
 	vector<float> farray;
 	ObjectType type;

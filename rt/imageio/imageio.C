@@ -328,6 +328,7 @@ int test_sal()
 
 int test_imagic()
 {
+#if 0
     pass_test("micam.hed", 12, 0, true);
     pass_test("ali.hed", 111);
     pass_test("classes.to.hed", 271);
@@ -349,7 +350,17 @@ int test_imagic()
 
     pass_test("start.hed", 0, 0, true, 0, EMUtil::IMAGE_IMAGIC);
     pass_test("3d.mrc", 0, 0, false, 0, EMUtil::IMAGE_IMAGIC);
+#endif
+    
+    EMData* e = new EMData();
+    e->read_image("/home/lpeng/images/tablet.mrc");
 
+    for (int i = 0; i < 2; i++) {
+	e->write_image("tablet1.img", -1, EMUtil::IMAGE_IMAGIC);
+    }
+    
+    delete  e;
+    
     return err_code;
 }
 

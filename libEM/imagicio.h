@@ -7,6 +7,33 @@
 
 namespace EMAN {
 
+    /*
+      IMAGIC-5 Header File Format
+
+      An IMAGIC-5 file has 2 files:
+        a) a header file with the extension ".hed",
+	   which contains information for every image
+	b) an image file with extension ".img",
+	   which contains only raw data (image densities).
+	   
+        The header file contains one (fixed-size) record per image
+        stored. Every header record consists of 256 REAL/float
+        for every image.
+       
+        The image file contains only the raw data. Depending on the
+        internal IMAGIC-5 format used, which can be REAL, INTG, PACK
+        or COMP, the data is stored as REAL/float, INTEGER/int,
+        INTEGER*1/byte or 2x REAL/float, respectively. The first pixel
+        stored is the upper left one. The data is stored line
+	by line, section by section, volume by volume.
+
+     3D imagic uses the same format to 2D. it is a bunch of 2D slices.
+     use the 'hint' IS_3D to treat "2D slices" as 3D volume.
+
+     imagic doesn't store multiple 3D images in one file.
+    */
+
+    
     class ImagicIO: public ImageIO {
     public:
 	ImagicIO(string filename, IOMode rw_mode = READ_ONLY);
@@ -38,8 +65,8 @@ namespace EMAN {
 	       NUM_4BYTES_AFTER_SPACE = 207 };
 	
 	struct ImagicHeader {
-	    int imgnum;	        // image number
-	    int count;	        // total number of images (only 1st image)
+	    int imgnum;	        // image number, [1,n]
+	    int count;	        // total number of images - 1 (only first image), [0,n-1]
 	    int error;          // Error code for this image
 	    int headrec;	// # of header records/image (always 1)
 	    int mday;           // image creation time
@@ -127,6 +154,7 @@ namespace EMAN {
 	bool is_new_img;
 	
 	DataType datatype;
+	int nz;
     };
     
 }
