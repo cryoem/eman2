@@ -8,8 +8,8 @@ SET(LIB_EM_SOURCE byteorder.cpp
     interp.cpp
     matrix.cpp
     quaternion.cpp
-    rotation.cpp
     transform.cpp
+	rotation.cpp
     geometry.cpp
     pointarray.cpp
     mrcio.cpp

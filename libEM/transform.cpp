@@ -2,143 +2,450 @@
  * $Id$
  */
 #include "transform.h"
+#include "exception.h"
 
 using namespace EMAN;
 
-Transform & Transform::set_transform_instance(const Vec3f &translation,
-											  const Rotation & rotation,
-											  const Vec3f &scale_factor,
-											  const Rotation & scale_orientation,
-											  const Vec3f &center)
+const float Transform::ERR_LIMIT = 0.000001f;
+
+
+Transform::Transform()
 {
-	Rotation so = scale_orientation;
+	init();
+	to_identity();
+}
 
-	matrix.make_identity();
-	translate((-1.0f) * center);
 
-	if (so != Rotation(1, 0, 0, 0, Rotation::QUATERNION)) {
-		Rotation inverse_so = so.create_inverse();
-		rotate(inverse_so);
+Transform::Transform(map<string, float>& rotation, EulerType euler_type)
+{
+	init();
+	set_rotation(rotation, euler_type);
+}
+
+
+Transform::Transform(map<string, float>& rotation, EulerType euler_type, 
+					 const Vec3f& posttrans)
+{
+	init();
+	set_rotation(rotation, euler_type);
+	set_posttrans(posttrans);
+}
+
+		
+Transform::Transform(map<string, float>& rotation, EulerType euler_type, 
+					 const Vec3f & pretrans, const Vec3f& posttrans)
+{
+	init();
+	set_rotation(rotation, euler_type);
+	set_pretrans(pretrans);
+	set_posttrans(posttrans);
+}
+
+		
+Transform::~Transform()
+{
+	const int n = 4;
+	for (int i = 0; i < n; i++) {
+		delete [] matrix[i];
+		matrix[i] = 0;
 	}
-	scale(scale_factor);
-	rotate(so);
-	rotate(rotation);
-	translate(center);
-	translate(translation);
-
-	return (*this);
+	delete [] matrix;
 }
 
 
-
-Vec3f Transform::transform(const Vec3f &x)
+void Transform::init()
 {
-	Vec3f x1 = x - pre_trans;
-	Matrix3f r = matrix.get_matrix3();
-	x1 = r * x1;
-	x1 += get_post_translate();
-
-	return x1;
-}
-
-
-Vec3f Transform::inverse_transform(const Vec3f &v)
-{
-	Transform t = create_inverse();
-	return t.transform(v);
-}
-
-float Transform::get_scale(int i) const
-{
-	float s = (float)(matrix[i][0] *  matrix[i][0] + matrix[i][1]*matrix[i][1]
-		+ matrix[i][2] * matrix[i][2]);
-	return s;
-}
-
-Vec3f  Transform::get_scale() const
-{
-	float s1 = (float)(matrix[0][0] *  matrix[0][0] + matrix[0][1]*matrix[0][1]
-		+ matrix[0][2] * matrix[0][2]);
-	float s2 = (float)(matrix[1][0] *  matrix[1][0] + matrix[1][1]*matrix[1][1]
-		+ matrix[1][2] * matrix[1][2]);
-
-	float s3 = (float)(matrix[2][0] *  matrix[2][0] + matrix[2][1]*matrix[2][1]
-		+ matrix[2][2] * matrix[2][2]);
+	const int n = 4;
+	const int m = 3;
 	
-	return Vec3f(s1, s2, s3);
+	matrix = new float*[4];
+	for (int i = 0; i < n; i++) {
+		matrix[i] = new float[m];
+		memset(matrix[i], 0, sizeof(float) * m);
+	}
 }
 
 
-int Transform::get_type() const
+void Transform::to_identity()
 {
-	return TRANSFORM;
+	for (int i = 0; i < 3; i++) {
+		matrix[i][i] = 1;
+	}	
 }
 
 
-
-Transform EMAN::operator+(const Transform & t1, const Transform & t2)
+void Transform::orthogonalize()	
 {
-	Transform t = t1;
-	t += t2;
-	return t;
+
 }
 
-Transform EMAN::operator-(const Transform & t1, const Transform & t2)
+Transform Transform::inverse()
 {
-	Transform t = t1;
-	t -= t2;
-	return t;
+	return Transform();
+}
+
+	
+void Transform::set_pretrans(const Vec3f & pretrans)
+{
+	pre_trans = pretrans;
+}
+
+void Transform::set_posttrans(const Vec3f & posttrans)
+{
+	for (int i = 0; i < 3; i++) {
+		matrix[3][i] = posttrans[i];
+	}
+}
+
+void Transform::set_center(const Vec3f & center)
+{
+	pre_trans -= center;
+	for (int i = 0; i < 3; i++) {
+		matrix[3][i] += center[i];
+	}
+}
+
+void Transform::set_rotation(map<string, float> & rotation, EulerType euler_type)
+{
+	float a0 = 0;
+	float a1 = 0;
+	float a2 = 0;
+	float a3 = 0;
+	bool is_quaternion = 0;
+#if 0
+		a0 = rotation[""];
+		a1 = rotation[""];
+		a2 = rotation[""];
+#endif
+		
+	switch(euler_type) {
+	case EMAN:
+		a0 = rotation["alt"];
+		a1 = rotation["az"];
+		a2 = rotation["phi"];
+		break;
+	case IMAGIC:
+		a0 = rotation["alpha"];
+		a1 = rotation["beta"];
+		a2 = rotation["gamma"];
+		break;
+		
+	case SPIDER:
+		a0 = rotation["phi"];
+		a1 = rotation["theta"] - 1.5f * M_PI;
+		a2 = rotation["gamma"] - 0.5f * M_PI;
+		break;
+		
+	case MRC:
+		a0 = rotation["theta"];
+		a1 = fmod(-rotation["phi"] + 2.5f * M_PI, 2 * M_PI);
+		a2 = fmod(rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
+		break;
+		
+	case QUATERNION:
+		a0 = rotation["e0"];
+		a1 = rotation["e1"];
+		a2 = rotation["e2"];
+		a2 = rotation["e3"];
+		
+		is_quaternion = 1;
+		break;
+		
+	case SPIN:
+	case SGIROT:
+		{
+			a0 = rotation["q"];
+			a1 = rotation["n1"];
+			a2 = rotation["n2"];
+			a2 = rotation["n3"];
+		
+			is_quaternion = 1;
+			float f = sin(a0 / 2.0f);
+			a1 *= f;
+			a2 *= f;
+			a3 *= f;
+			a0 = cos(a0 / 2.0f);
+		}
+		break;
+		
+	case MATRIX:
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				char str[32];
+				sprintf(str, "m%d%d", i, j);
+				matrix[i][j] = rotation[str];
+			}
+		}
+		break;
+		
+	default:
+		throw InvalidValueException(euler_type, "unknown Euler Type");
+	}
+	
+	if (is_quaternion) {
+		quaternion2matrix(a0, a1, a2, a3);
+	}
+	else if (euler_type != MATRIX) {
+		matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
+		matrix[0][1] = -(sin(a3)*cos(a2) + cos(a1)*sin(a2)*cos(a3));
+		matrix[0][2] = sin(a1)*sin(a2);
+		matrix[1][0] = cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
+		matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
+		matrix[1][2] = -sin(a1)*cos(a2);
+		matrix[2][0] = sin(a1)*sin(a3);
+		matrix[2][1] = sin(a1)*cos(a3);
+		matrix[2][2] = cos(a1);
+	}
+	
+}
+
+void Transform::set_scale(float scale)
+{
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			matrix[i][j] *= scale;
+		}
+	}
 }
 
 
-Transform EMAN::operator*(const Transform & t1, const Transform & t2)
+Vec3f Transform::get_pretrans() const
 {
-	Transform t = t1;
-	t *= t2;
-	return t;
+	return pre_trans;
 }
 
-Transform EMAN::operator*(const Transform & t, float s)
+Vec3f Transform::get_posttrans() const
 {
-	Transform new_t = t;
-	new_t *= s;
-	return new_t;
-}
-
-Transform EMAN::operator*(float s, const Transform & t)
-{
-	Transform new_t = t;
-	new_t *= s;
-	return new_t;
+	return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
 }
 
 
-Transform EMAN::operator/(const Transform & t1, const Transform & t2)
+float Transform::eman_alt() const
 {
-	Transform t = t1;
-	t /= t2;
-	return t;
+	float alt = 0;
+	float max = 1 - ERR_LIMIT;
+
+	if (matrix[2][2] > max) {
+		alt = 0;
+	}
+	else if (matrix[2][2] < -max) {
+		alt = M_PI;
+	}
+	else {
+		alt = (float) acos(matrix[2][2]);
+	}
+	return alt;
 }
 
-Transform EMAN::operator/(const Transform & t, float s)
+float Transform::eman_az() const
 {
-	Transform new_t = t;
-	new_t /= s;
-	return new_t;
+	float az = 0;
+	float max = 1 - ERR_LIMIT;
+	if (matrix[2][2] > max) {
+		az = (float)atan2(matrix[0][1], matrix[1][1]);
+	}
+	else if (matrix[2][2] < -max) {
+		az = (float)atan2(matrix[0][1], -matrix[1][1]);
+	}
+	else {
+		az = (float)atan2(matrix[2][0], -matrix[2][1]);
+	}
+	return az;
 }
 
-Transform EMAN::operator/(float s, const Transform & t)
+float Transform::eman_phi() const
 {
-	Transform new_t = t;
-	new_t /= s;
-	return new_t;
+	float phi = 0;
+
+	if (fabs(matrix[2][2]) > (1 - ERR_LIMIT)) {
+		phi = 0;
+	}
+	else {
+		phi = (float)atan2(matrix[0][2], matrix[1][2]);
+	}
+
+	return phi;
 }
 
-Rotation Rotation::interpolate(const Rotation & from, const Rotation & to, float percent)
+	
+
+map<string,float> Transform::get_rotation(EulerType euler_type) const
 {
-	Quaternion q1 = from.get_quaternion();
-	Quaternion q2 = to.get_quaternion();
-	Quaternion q = Quaternion::interpolate(q1, q2, percent);
-	return Rotation(q);
+	map<string, float> result;
+	
+	float alt = eman_alt();
+	float az = eman_az();
+	float phi = eman_phi();
+	
+	switch (euler_type) {
+	case EMAN:
+		result["alt"] = alt;
+		result["az"] = az;
+		result["phi"] = phi;
+		break;
+
+	case MRC:
+		result["theta"] = alt;
+		result["phi"] = fmod(-az + 2.5f * M_PI, 2 * M_PI);
+		result["omega"] = fmod(phi + 1.5f * M_PI, 2 * M_PI);
+		break;
+
+	case IMAGIC:
+		result["alpha"] = phi;
+		result["beta"] = alt;
+		result["gamma"] = az;
+		break;
+
+	case SPIDER:
+		result["phi"] = fmod((az + 1.5f * M_PI), 2 * M_PI);
+		result["theta"] = alt;
+		result["gamma"] = fmod((phi + M_PI/2), 2 * M_PI);	
+		break;
+
+	case SPIN:
+	case SGIROT:
+		{
+			vector<float> sgivec = matrix2sgi();
+			result["q"] = sgivec[0];
+			result["n1"] = sgivec[1];
+			result["n2"] = sgivec[2];
+			result["n3"] = sgivec[3];
+		}
+		break;
+		
+	case QUATERNION:
+		{
+			vector<float> quatvec = matrix2quaternion();
+			result["e0"] = quatvec[0];
+			result["e1"] = quatvec[1];
+			result["e2"] = quatvec[2];
+			result["e3"] = quatvec[3];
+		}
+		break;
+		
+	case MATRIX:
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				char str[32];
+				sprintf(str, "m%d%d", i, j);
+				result[string(str)] = matrix[i][j];
+			}
+		}
+		break;
+	default:
+		throw InvalidValueException(euler_type, "unknown Euler Type");
+	}
+
+	return result;
+}
+
+float Transform::get_scale() const
+{
+	return 0;
+}
+
+		
+float Transform::is_orthogonal() const
+{
+	return 0;
+}
+
+		
+float * Transform::operator[] (int i)
+{
+	return matrix[i];
+}
+
+const float * Transform::operator[] (int i) const
+{
+	return matrix[i];
+}
+
+vector<float> Transform::matrix2quaternion() const
+{
+	vector<float> result(4);
+	int i = 0;
+
+	if (matrix[0][0] > matrix[1][1]) {
+		if (matrix[0][0] > matrix[2][2]) {
+			i = 0;
+		}
+		else {
+			i = 2;
+		}
+	}
+	else {
+		if (matrix[1][1] > matrix[2][2]) {
+			i = 1;
+		}
+		else {
+			i = 2;
+		}
+	}
+
+	if (matrix[0][0] + matrix[1][1] + matrix[2][2] > matrix[i][i]) {
+		result[0] = (float) (sqrt(matrix[0][0] + matrix[1][1] + matrix[2][2] + 1) / 2.0);
+		result[1] = (float) ((matrix[1][2] - matrix[2][1]) / (4 * result[0]));
+		result[2] = (float) ((matrix[2][0] - matrix[0][2]) / (4 * result[0]));
+		result[3] = (float) ((matrix[0][1] - matrix[1][0]) / (4 * result[0]));
+	}
+	else {
+		float quat[3];
+		int j = (i + 1) % 3;
+		int k = (i + 2) % 3;
+
+		quat[i] = (float) (sqrt(matrix[i][i] - matrix[j][j] - matrix[k][k] + 1) / 2.0);
+		quat[j] = (float) ((matrix[i][j] + matrix[j][i]) / (4 * quat[i]));
+		quat[k] = (float) ((matrix[i][k] + matrix[k][i]) / (4 * quat[i]));
+
+		result[0] = (float) ((matrix[j][k] - matrix[k][j]) / (4 * quat[i]));
+		result[1] = quat[0];
+		result[2] = quat[1];
+		result[3] = quat[2];
+	}
+							 
+	return result;
+}
+
+
+vector<float> Transform::matrix2sgi() const
+{
+	vector<float> q = matrix2quaternion();
+	Vec3f vec(q[1], q[2], q[3]);
+	float len = vec.length();
+	float radians = 0;
+	Vec3f axis;
+	
+	if (len > 0.00001f) {
+		radians = 2.0f * acos(q[0]);
+		axis = vec * ((float) (1.0f / len));
+	}
+	else {
+		radians = 0;
+		axis.set_value(0.0f, 0.0f, 1.0f);
+	}
+
+	vector<float> result(4);
+	result[0] = radians;
+	result[1] = axis[0];
+	result[2] = axis[1];
+	result[3] = axis[2];
+	
+	return result;
+}
+
+void Transform::quaternion2matrix(float e0, float e1, float e2, float e3)
+{
+	matrix[0][0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
+	matrix[0][1] = 2.0f * (e1 * e2 + e0 * e3);
+	matrix[0][2] = 2.0f * (e1 * e3 - e0 * e2);
+
+	matrix[1][0] = 2.0f * (e1 * e2 - e0 * e3);
+	matrix[1][1] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
+	matrix[1][2] = 2.0f * (e2 * e3 + e0 * e1);
+
+	matrix[2][0] = 2.0f * (e1 * e3 + e0 * e2);
+	matrix[2][1] = 2.0f * (e2 * e3 - e0 * e1);
+	matrix[2][2] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
 }
 

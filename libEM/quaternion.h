@@ -40,9 +40,10 @@ namespace EMAN
 		Quaternion(float e0, float e1, float e2, float e3);
 		Quaternion(float radians, const Vec3f &axis);
 		Quaternion(const Vec3f &axis, float radians);
-		Quaternion(const Matrix3f & m);
-		Quaternion(const Matrix4f & m);
-		 ~Quaternion()
+		Quaternion(const vector<float> & matrix3);
+		Quaternion(const Matrix3f & matrix3);
+		
+		~Quaternion()
 		{
 		}
 
@@ -70,13 +71,12 @@ namespace EMAN
 		float to_angle() const;
 		Vec3f to_axis() const;
 
-		Matrix3f to_matrix3() const;
-		Matrix4f to_matrix4() const;
+		vector<float> to_matrix3() const;
 
 		float real() const;
 		Vec3f unreal() const;
 
-		vector < float >get_as_list() const;
+		vector < float > as_list() const;
 
 		Quaternion & operator+=(const Quaternion & q);
 		Quaternion & operator-=(const Quaternion & q);

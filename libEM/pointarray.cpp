@@ -333,10 +333,10 @@ void PointArray::set_from(double *src, unsigned int num, string sym, Transform *
 
 	double *target = get_points_array();
 
-	Vec3f pre_trans = transform->get_pre_translate();
+	Vec3f pre_trans = transform->get_pretrans();
 	double tx0 = pre_trans[0], ty0 = pre_trans[1], tz0 = pre_trans[2];
 
-	Vec3f post_trans = transform->get_post_translate();
+	Vec3f post_trans = transform->get_posttrans();
 	double tx1 = post_trans[0], ty1 = post_trans[1], tz1 = post_trans[2];
 
 	for (unsigned int s = 0; s < nsym; s++) {

@@ -43,6 +43,52 @@ Quaternion::Quaternion(float ee0, float ee1, float ee2, float ee3)
 	//normalize();
 }
 
+Quaternion::Quaternion(const vector<float> & m)
+{
+	int i = 0;
+
+	if (m[0] > m[4]) {
+		if (m[0] > m[8]) {
+			i = 0;
+		}
+		else {
+			i = 2;
+		}
+	}
+	else {
+		if (m[4] > m[8]) {
+			i = 1;
+		}
+		else {
+			i = 2;
+		}
+	}
+
+	if (m[0] + m[4] + m[8] > m[i*3+i]) {
+		e0 = (float) (sqrt(m[0] + m[4] + m[8] + 1) / 2.0);
+		e1 = (float) ((m[5] - m[7]) / (4 * e0));
+		e2 = (float) ((m[6] - m[2]) / (4 * e0));
+		e3 = (float) ((m[1] - m[3]) / (4 * e0));
+	}
+	else {
+		float quat[3];
+		int j = (i + 1) % 3;
+		int k = (i + 2) % 3;
+
+		quat[i] = (float) (sqrt(m[i*3+i] - m[j*3+j] - m[k*3+k] + 1) / 2.0);
+		quat[j] = (float) ((m[i*3+j] + m[j*3+i]) / (4 * quat[i]));
+		quat[k] = (float) ((m[i*3+k] + m[k*3+i]) / (4 * quat[i]));
+
+		e0 = (float) ((m[j*3+k] - m[k*3+j]) / (4 * quat[i]));
+		e1 = quat[0];
+		e2 = quat[1];
+		e3 = quat[2];
+	}
+
+	//normalize();
+}
+
+
 Quaternion::Quaternion(const Matrix3f & m)
 {
 	int i = 0;
@@ -88,51 +134,6 @@ Quaternion::Quaternion(const Matrix3f & m)
 	//normalize();
 }
 
-
-Quaternion::Quaternion(const Matrix4f & m)
-{
-	int i = 0;
-
-	if (m[0][0] > m[1][1]) {
-		if (m[0][0] > m[2][2]) {
-			i = 0;
-		}
-		else {
-			i = 2;
-		}
-	}
-	else {
-		if (m[1][1] > m[2][2]) {
-			i = 1;
-		}
-		else {
-			i = 2;
-		}
-	}
-
-	if (m[0][0] + m[1][1] + m[2][2] > m[i][i]) {
-		e0 = (float) (sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]) / 2.0f);
-		e1 = (float) ((m[1][2] - m[2][1]) / (4 * e0));
-		e2 = (float) ((m[2][0] - m[0][2]) / (4 * e0));
-		e3 = (float) ((m[0][1] - m[1][0]) / (4 * e0));
-	}
-	else {
-		float quat[3];
-		int j = (i + 1) % 3;
-		int k = (i + 2) % 3;
-
-		quat[i] = (float) (sqrt(m[i][i] - m[j][j] - m[k][k] + m[3][3]) / 2.0f);
-		quat[j] = (float) ((m[i][j] + m[j][i]) / (4 * quat[i]));
-		quat[k] = (float) ((m[i][k] + m[k][i]) / (4 * quat[i]));
-
-		e0 = (float) ((m[j][k] - m[k][j]) / (4 * quat[i]));
-		e1 = quat[0];
-		e2 = quat[1];
-		e3 = quat[2];
-	}
-
-	//normalize();
-}
 
 
 void Quaternion::normalize()
@@ -203,7 +204,7 @@ Vec3f Quaternion::to_axis() const
 }
 
 
-Matrix3f Quaternion::to_matrix3() const
+vector<float> Quaternion::to_matrix3() const
 {
 	vector < float >m(9);
 
@@ -219,34 +220,7 @@ Matrix3f Quaternion::to_matrix3() const
 	m[7] = 2.0f * (e2 * e3 - e0 * e1);
 	m[8] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
 
-	return Matrix3f(m);
-}
-
-Matrix4f Quaternion::to_matrix4() const
-{
-	vector < float >m(16);
-
-	m[0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
-	m[1] = 2.0f * (e1 * e2 + e0 * e3);
-	m[2] = 2.0f * (e1 * e3 - e0 * e2);
-	m[3] = 0;
-
-	m[4] = 2.0f * (e1 * e2 - e0 * e3);
-	m[5] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
-	m[6] = 2.0f * (e2 * e3 + e0 * e1);
-	m[7] = 0;
-
-	m[8] = 2.0f * (e1 * e3 + e0 * e2);
-	m[9] = 2.0f * (e2 * e3 - e0 * e1);
-	m[10] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
-	m[11] = 0;
-
-	m[12] = 0;
-	m[13] = 0;
-	m[14] = 0;
-	m[15] = e0 * e0 + e1 * e1 + e2 * e2 + e3 * e3;
-
-	return Matrix4f(m);
+	return m;
 }
 
 
@@ -261,7 +235,7 @@ Vec3f Quaternion::unreal() const
 	return Vec3f(e1, e2, e3);
 }
 
-vector < float >Quaternion::get_as_list() const
+vector < float >Quaternion::as_list() const
 {
 	vector < float >v(4);
 	v[0] = e0;
@@ -396,8 +370,8 @@ bool EMAN::operator==(const Quaternion & q1, const Quaternion & q2)
 	bool result = true;
 	const float err_limit = 0.00001f;
 	
-	vector < float >v1 = q1.get_as_list();
-	vector < float >v2 = q2.get_as_list();
+	vector < float >v1 = q1.as_list();
+	vector < float >v2 = q2.as_list();
 
 	for (size_t i = 0; i < v1.size(); i++) {
 		if (fabs(v1[i] - v2[i]) > err_limit) {
