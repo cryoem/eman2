@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     printf("Image Format: %s\n", imgtype);
 
     EMData* d = new EMData();
-    d->read_image(imagefile, 0, true);
+    d->read_image(imagefile, 0, EMData::HEADER_ONLY);
     map<string, EMObject> dict = d->get_attr_dict();
     
     int nx = dict["nx"].get_int();

@@ -21,7 +21,7 @@ namespace EMAN {
 	
 	DEFINE_IMAGEIO_FUNC;
 
-	void read_array_attr(int image_index, string attr_name, void* value);
+	int read_array_attr(int image_index, string attr_name, void* value);
 	int write_array_attr(int image_index, string attr_name, int nitems, void* data, DataType type);
 	
     private:

@@ -2,9 +2,17 @@
 #define __pylist_h__
 
 #include <boost/python.hpp>
+#include <boost/python/to_python_converter.hpp>
+#include <boost/python/detail/api_placeholder.hpp>
+
 #include <vector>
+#include <map>
+#include <string>
 
 namespace python = boost::python;
+using std::vector;
+using std::map;
+using std::string;
 
 namespace EMAN {
     class PyList {
@@ -14,19 +22,142 @@ namespace EMAN {
 	static void list2array(const python::list& l, const char** array);
 	static void array2list(const int* array, python::list& l, int nitems = 0);
 	static void array2list(const float* array, python::list& l, int nitems = 0);
-	
-	template <class T>
-	static python::list vector2list(const std::vector<T> & v)
+    };
+    
+    template <typename T>
+    struct vector_to_list : python::to_python_converter<vector<T>, vector_to_list<T> >
+    {
+	static PyObject* convert(vector<T> const& v)
 	{
-	    python::list res;
-	    for (unsigned int i = 0; i < v.size(); i++) {
-		res.append(v[i]);
+	    python::list result;
+	    
+	    for (size_t i = 0; i < v.size(); i++) {
+		result.append(v[i]);
 	    }
 	    
-	    Py_XINCREF(res.ptr());
-	    return res;
+	    return python::incref(python::list(result).ptr());
 	}
     };
+
+    template <class T>
+    struct map_to_dict : python::to_python_converter<map<string, T>, map_to_dict<T> >
+    {
+	static PyObject* convert(map<string, T> const& d)
+	{
+	    python::dict result;
+
+	    typedef typename map<string, T>::const_iterator MI;
+	    for (MI p = d.begin(); p != d.end(); p++) {
+		result[p->first] = p->second;
+	    }
+	
+	    return python::incref(python::dict(result).ptr());
+	}
+    };
+
+    template <class T>
+    struct vector_from_python
+    {
+	vector_from_python()
+	{
+	    python::converter::registry::push_back(&convertible,
+						   &construct,
+						   python::type_id<vector<T> >());
+	}
+    
+	static void* convertible(PyObject* obj_ptr)
+	{
+	    if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
+		  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
+		return 0;
+	    }
+	   
+	    python::handle<> obj_iter(python::allow_null(PyObject_GetIter(obj_ptr)));
+
+	    if (!obj_iter.get()) {
+		PyErr_Clear();
+		return 0;
+	    }
+	
+	    return obj_ptr;
+	}
+
+    
+	static void construct(PyObject* obj_ptr,
+			      python::converter::rvalue_from_python_stage1_data* data)
+	{
+	    void* storage = ((python::converter::rvalue_from_python_storage<vector<T> >*) data)->storage.bytes;
+	    new (storage) vector<T>();
+
+	    data->convertible = storage;
+
+	    vector<T>& result = *((vector<T>*) storage);
+	
+	    python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+	
+	    while(1) {
+		python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
+		if (PyErr_Occurred()) {
+		    python::throw_error_already_set();
+		}
+	    
+		if (!py_elem_hdl.get()) {
+		    break;
+		}
+	    
+		python::object py_elem_obj(py_elem_hdl);
+		python::extract<T> elem_proxy(py_elem_obj);
+		result.push_back(elem_proxy());
+	    }
+	}
+    };
+    
+    template <class T>
+    struct map_from_python
+    {
+	map_from_python()
+	{
+	    python::converter::registry::push_back(&convertible,
+						   &construct,
+						   python::type_id<map<string, T> >());
+	}
+    
+	static void* convertible(PyObject* obj_ptr)
+	{
+	    if (!(PyDict_Check(obj_ptr))) {
+		return 0;
+	    }
+	
+	    return obj_ptr;
+	}
+
+    
+	static void construct(PyObject* obj_ptr,
+			      python::converter::rvalue_from_python_stage1_data* data)
+	{
+	    void* storage = ((python::converter::rvalue_from_python_storage<map<string, T> >*) data)->storage.bytes;
+	    new (storage) map<string, T>();
+	    data->convertible = storage;
+	    map<string, T>& result = *((map<string, T>*) storage);
+
+	    python::handle<> obj_handle(obj_ptr);
+	    python::object dict_obj(obj_handle);
+	    
+	    python::dict d(dict_obj);
+		       
+	    python::list k = d.keys();
+	    python::list v = d.values();
+	    long l = python::len(k);
+	
+	    for(long i = 0; i < l; i++) {
+		string key = python::extract<string>(k[i]);
+		T val = python::extract<T>(v[i]);
+		result[key] = val;
+	    }
+
+	}
+    };
+
 }
 
 

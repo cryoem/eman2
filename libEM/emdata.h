@@ -21,13 +21,19 @@ namespace EMAN {
     
     class EMData {
     public:
+	static bool HEADER_ONLY;
+	static bool HEADER_AND_DATA;
+	static bool IS_3D;
+	static bool NOT_3D;
+	
+    public:
 	EMData();
 	virtual ~EMData();
-
-	int read_image(string filename, int img_index = 0, bool nodata = false,
-		       Region* r = 0, bool is_3d = false);
+	
+	int read_image(string filename, int img_index = 0, bool header_only = false,
+		       Region* r = 0, bool is_3d = NOT_3D);
 	int write_image(string filename, int img_index = 0,
-			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool nodata = false);
+			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
 
 	map<string, EMObject> get_attr_dict() const;
 	float* get_data() const;
@@ -48,11 +54,10 @@ namespace EMAN {
 
 	void dump_data(string filename);
 
-	static vector<EMData*> read_images_by_index(string filename, int img_indices[],
-						    int nimg, bool nodata = false);
+	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices, bool header_only = false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
-						  bool nodata = false, string ext = "");
-
+						  bool header_only = false, string ext = "");
+#if 0
 	EMData& operator+=(float n);
         EMData& operator-=(float n);
         EMData& operator*=(float n);
@@ -77,7 +82,8 @@ namespace EMAN {
         friend EMData& operator-(const EMData& a, const EMData& b);
         friend EMData& operator*(const EMData& a, const EMData& b);
         friend EMData& operator/(const EMData& a, const EMData& b);
-
+#endif
+	
     private:
 	enum EMDataFlags {
 	    EMDATA_COMPLEX      = 1<<0, 
@@ -176,10 +182,6 @@ namespace EMAN {
 	rdata[x+y*nx] = v;
 	flags |= EMDATA_NEEDUPD;
     }
-
-
-
-
     
 }
 

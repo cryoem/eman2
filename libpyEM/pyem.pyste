@@ -1,3 +1,10 @@
+Log = Class("EMAN::Log", "log.h")
+set_policy(Log.logger, return_internal_reference())
+exclude(Log.variable)
+exclude(Log.log)
+exclude(Log.warn)
+exclude(Log.error)		       
+
 EMObject = Class("EMAN::EMObject", "emobject.h")
 set_policy(EMObject.get_EMData, return_internal_reference())
 
@@ -11,7 +18,7 @@ EMData = Class("EMAN::EMData", "emdata.h")
 set_policy(EMData.get_ctf, return_internal_reference())
 exclude(EMData.get_data)
 
-Include("pyem.h")
-set_wrapper(EMData.read_images_by_index, "py_read_images_by_index")
-set_wrapper(EMData.read_images_by_ext, "py_read_images_by_ext")
-
+Include("ctf.h")
+Include("imageio.h")
+Include("transform.h")
+Include("pylist.h")
