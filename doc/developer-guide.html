@@ -22,17 +22,21 @@ read/write an image in python?</big></li>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">#
 to convert from IMAGIC to MRC or SPIDER:<br>
-      <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e = EMData()</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.read_image(&#8220;proj.img&#8221;)</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.write_image(&#8220;proj.mrc&#8221;)&nbsp;&nbsp;&nbsp;&nbsp;
-# output image format is determined by file ext</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.write_image(&#8220;proj.spi&#8221;, 1,
-SPIDER)&nbsp; # alternatively, explicitly specifiy the output image
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">from
+EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e =
+EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.read_image(&#8220;proj.img&#8221;)</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.write_image(&#8220;proj.mrc&#8221;)&nbsp;&nbsp;&nbsp;&nbsp;
+      </span><span style="color: rgb(0, 0, 0);"># <span
+ style="font-family: monospace;">output image format is determined by
+file extension</span></span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.write_image(&#8220;proj.spi&#8221;,
+1,
+SPIDER)&nbsp; # explicitly specifiy the output image
 format</span><br>
       <br>
     </li>
@@ -47,43 +51,58 @@ LowpassGaussFilter, HighpassGaussFilter.<br>
     </li>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
-      <span style="color: rgb(0, 0, 0);">/* 1) Replace all 'XYZ' with
-your new filter name.</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;* 2) Define the filter
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">/* 1)
+Replace all 'XYZ' with
+your new filter name.</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;*
+2) Define the filter
 parameter names and types in get_param_types().</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;* 3) Implement the
-filter in XYZFilter::process().</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;*/</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">class XYZFilter : public
-Filter {</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">public:</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; void
-process(EMData *image);</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; string
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;*
+3) Implement the
+filter in XYZFilter::process().</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;*/</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">class
+XYZFilter : public
+Filter {</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">public:</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
+void
+process(EMData *image);</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
+string
 get_name() const { return "XYZ"; }</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; static
-Filter *NEW() { return new XYZFilter(); }</span><span
- style="color: rgb(0, 0, 0);"></span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; TypeDict
-get_param_types() const</span><span style="color: rgb(0, 0, 0);"> {</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-TypeDict d;</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-d.put("value1", EMObject::INT);</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp; &nbsp;
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
+static
+Filter *NEW() { return new XYZFilter(); }</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
+TypeDict
+get_param_types() const {</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+TypeDict d;</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+d.put("value1", EMObject::INT);</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;
+&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; d.put("value2", EMObject::FLOAT);</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp; &nbsp;
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;
+&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return d;</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">&nbsp;&nbsp;&nbsp; }</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">};</span><br>
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
+}</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">};</span><br>
       <br>
     </li>
   </ul>
@@ -92,27 +111,32 @@ use a Filter in python?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
-      <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
- style="color: rgb(0, 0, 0);">
-      <br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e = EMData()</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.read_image("test1.mrc")</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.filter("ValueSqrt")</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.filter("RangeMask", {"low" :
-5.2, "high" : 10})</span><br style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">e.write_image("output.mrc")</span></li>
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">from
+EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <br style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e =
+EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.read_image("test1.mrc")</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.filter("ValueSqrt")</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.filter("RangeMask",
+{"low" :
+5.2, "high" : 10})</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.write_image("output.mrc")</span></li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 show all Filters?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
-      <span style="color: rgb(0, 0, 0);">from EMAN2 import *</span><br
- style="color: rgb(0, 0, 0);">
-      <span style="color: rgb(0, 0, 0);">dump_filters()</span><br>
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">from
+EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">dump_filters()</span><br
+ style="font-family: monospace;">
       <br>
     </li>
   </ul>
@@ -195,7 +219,7 @@ img1-&gt;filter("XYZ");</span></li>
     <li style="color: rgb(51, 51, 255);"><big>How to use the <span
  style="font-weight: bold;">Factory</span>
 template</big></li>
-    <ul>
+    <ul style="font-family: monospace;">
       <li style="background-color: rgb(255, 255, 204);">template&lt;&gt;
 Factory&lt;Filter&gt;::Factory()<br>
 {<br>
@@ -205,13 +229,14 @@ Factory&lt;Filter&gt;::Factory()<br>
         <br>
       </li>
     </ul>
-    <ul>
-      <li style="background-color: rgb(255, 255, 204);"><br>
-Filter *abs_filter = Factory&lt;Filter&gt;::get("AbsoluateValue");<br>
-Filter *gauss_lowpass_filter =
-Factory&lt;Filter&gt;::get("LowpassGauss", Dict("lowpass", 12);<br>
-        <br>
-      </li>
+    <ul style="background-color: rgb(255, 255, 204);">
+Filter *abs_filter =
+Factory&lt;Filter&gt;::get("AbsoluateValue");<br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">Filter
+*gauss_lowpass_filter =
+Factory&lt;Filter&gt;::get("LowpassGauss", <br>
+Dict("lowpass", 12); </span>
     </ul>
   </ul>
   <li style="font-weight: bold; color: rgb(51, 51, 255);"><big>How to
@@ -222,20 +247,30 @@ and <span style="font-weight: bold;">fftw3.</span> A user makes the
 choice
 at compile time.</li>
     <li>A standard interface is defined to do fft:</li>
-    <li style="background-color: rgb(255, 255, 204);">class <span
- style="font-weight: bold;">EMfft</span> {<br>
-public:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
-real_to_complex_1d(float *real_data, float *complex_data, int n);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
-complex_to_real_1d(float *complex_data, float *real_data, int n);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
+    <li style="background-color: rgb(255, 255, 204);"><span
+ style="font-family: monospace;">class </span><span
+ style="font-weight: bold; font-family: monospace;">EMfft</span><span
+ style="font-family: monospace;"> {</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">public:</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; static
+int
+real_to_complex_1d(float *real_data, float *complex_data, int n);</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; static
+int
+complex_to_real_1d(float *complex_data, float *real_data, int n);</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; static
+int
 real_to_complex_nd(float *real_data, float *complex_data, int nx, int
-ny, int nz);<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; static int
+ny, int nz);</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; static
+int
 complex_to_real_nd(float *complex_data, float *real_data, int nx, int
-ny, int nz);<br>
-&nbsp;};<br>
+ny, int nz);</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;};</span><br>
       <br>
     </li>
   </ul>
@@ -270,17 +305,97 @@ use Euler Angles?</big></li>
   <ul>
     <li>Euler angles are implemented in <span
  style="font-weight: bold;">Rotation</span> class.</li>
-    <li style="background-color: rgb(255, 255, 204);">Rotation r =
-Rotation(alt, az, phi, Rotation::EMAN);<br>
-float alt2 = r.eman_alt();<br>
-float az2 = r.eman_az();<br>
-float phi2 = r.eman_phi();<br>
-      <br>
-float theta = r.mrc_theta();<br>
-float phi = r.mrc_phi();<br>
-float omega = r.mrc_omega();<br>
+    <li style="background-color: rgb(255, 255, 204);"><span
+ style="font-family: monospace;">Rotation r =
+Rotation(alt, az, phi, Rotation::EMAN);</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">float alt2 = r.eman_alt();</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">float az2 = r.eman_az();</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">float phi2 = r.eman_phi();</span><br
+ style="font-family: monospace;">
+      <br style="font-family: monospace;">
+      <span style="font-family: monospace;">float theta = r.mrc_theta();</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">float phi = r.mrc_phi();</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">float omega = r.mrc_omega();</span><br>
 &nbsp; <br>
     </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+use
+Exception handling in EMAN2?</big></li>
+  <ul style="background-color: rgb(255, 255, 204);">
+    <li style="font-weight: bold;"> Here is an example on throwing an
+exception:</li>
+    <span style="font-family: monospace;">vector &lt; float
+&gt;EMData::calc_fourier_shell_correlation(EMData * with)</span><br
+ style="font-family: monospace;">
+    <span style="font-family: monospace;">{&nbsp;&nbsp; </span><br
+ style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; if (!with)
+{</span><br style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; throw NullPointerException("NULL
+input image");</span><br style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
+ style="font-family: monospace;">
+    <br style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; if
+(!EMUtil::is_same_size(this, with)) {</span><br
+ style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; LOGERR("images not same size");</span><br
+ style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; throw ImageFormatException(
+"images not same size");</span><br style="font-family: monospace;">
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }&nbsp; </span><br
+ style="font-family: monospace;">
+    <span style="font-family: monospace;">//...</span><br
+ style="font-family: monospace;">
+    <span style="font-family: monospace;">}</span><br>
+    <li><span style="font-weight: bold;">Here is an example on catching
+the exceptions:</span><br>
+      <span style="font-family: monospace;">void foo()</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">{</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; EMData*
+e1 = new EMData();</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; EMData*
+e2 = new EMData();</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; try {</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; e1-&gt;read_image("test1.mrc");</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; e2-&gt;read_image("test2.mrc");</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; vector&lt;float&gt; v =
+e1-&gt;calc_fourier_shell_correlation(e2);</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; catch
+(E2Exception &amp; exception) {</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp; printf("%s\n", exception.what());</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
+ style="font-family: monospace;">
+      <span style="font-family: monospace;">}</span><br>
+    </li>
+    <li style="font-weight: bold;">For the possible Exception types.
+please refer the EMAN2 code
+in "<span style="font-family: monospace;">exception.h</span>".<br>
+    </li>
+    <br>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 use
@@ -319,14 +434,22 @@ Log</li>
  style="color: rgb(51, 204, 0); font-weight: bold;">Log::logger()-&gt;set_log_level(WARNING_LOG);</span><br>
 2) log message in different levels: (log functions use the same
 argument format like <span style="font-weight: bold;">printf()</span>).<br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGERR</span>("out
-of memory");<br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGWARN</span>("invalid
-image size");<br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGDEBUG</span>("image
-mean density = %f\n", mean);<br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-weight: bold;">LOGVAR</span>("image
-size = (%d, %d, %d)\n", nx, ny, nz);<br>
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; </span><span
+ style="font-weight: bold; font-family: monospace;">LOGERR</span><span
+ style="font-family: monospace;">("out
+of memory");</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; </span><span
+ style="font-weight: bold; font-family: monospace;">LOGWARN</span><span
+ style="font-family: monospace;">("invalid
+image size");</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; </span><span
+ style="font-weight: bold; font-family: monospace;">LOGDEBUG</span><span
+ style="font-family: monospace;">("image
+mean density = %f\n", mean);</span><br style="font-family: monospace;">
+      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;&nbsp; </span><span
+ style="font-weight: bold; font-family: monospace;">LOGVAR</span><span
+ style="font-family: monospace;">("image
+size = (%d, %d, %d)\n", nx, ny, nz);</span><br>
 3) To log function enter point, use ENTERFUNC; To log function exit
 point, use EXITFUNC.<br>
     </ul>
@@ -334,9 +457,9 @@ point, use EXITFUNC.<br>
 </ol>
 <br>
 <hr>
-<address>lpeng@bcm.tmc.edu</address>
 <!-- hhmts start -->
-Last modified: Sat Jul 31 16:28:26 CDT 2004
-<!-- hhmts end -->
+Last modified on <big><span style="font-weight: bold;">11/30/2004</span></big>&nbsp;
+by&nbsp; <big><span style="font-weight: bold;">Liwei Peng&nbsp;</span></big>
+(lpeng@bcm.tmc.edu)<!-- hhmts end -->
 </body>
 </html>
