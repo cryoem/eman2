@@ -1387,6 +1387,8 @@ void Rotation::set_angle(float a1, float a2, float a3, Type t)
 		return;
 	}
 	// for eman: a1: alt, a2: az, a3: phi.
+#if 0
+	// this version is from EMAN1 Euler.C; seems not working
 	matrix[0][0] = cos(a3) * cos(a2) - cos(a1) * sin(a2) * sin(a3);
 	matrix[0][1] = cos(a3) * sin(a2) + cos(a1) * cos(a2) * sin(a3);
 	matrix[0][2] = sin(a3) * sin(a1);
@@ -1398,7 +1400,21 @@ void Rotation::set_angle(float a1, float a2, float a3, Type t)
 	matrix[2][0] = sin(a1) * sin(a2);
 	matrix[2][1] = -sin(a1) * cos(a2);
 	matrix[2][2] = cos(a1);
+#endif
 
+	// the following version is from EMAN1 EMDataB.C rotateAndTranslate().
+
+	matrix[0][0]=cos(a3)*cos(a2)-cos(a1)*sin(a2)*sin(a3);
+	matrix[0][1]=-(sin(a3)*cos(a2)+cos(a1)*sin(a2)*cos(a3));
+	matrix[0][2]=sin(a1)*sin(a2);
+	matrix[1][0]=cos(a3)*sin(a2)+cos(a1)*cos(a2)*sin(a3);
+	matrix[1][1]=-sin(a3)*sin(a2)+cos(a1)*cos(a2)*cos(a3);
+	matrix[1][2]=-sin(a1)*cos(a2);
+	matrix[2][0]=sin(a1)*sin(a3);
+	matrix[2][1]=sin(a1)*cos(a3);
+	matrix[2][2]=cos(a1);
+
+	
 	rectify();
 }
 

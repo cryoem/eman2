@@ -108,8 +108,8 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 				continue;
 
 			float xx = x * mx[0][0] + (y - ny / 2) * mx[0][1];
-			float yy = x * mx[0][2] + (y - ny / 2) * mx[1][0];
-			float zz = x * mx[1][1] + (y - ny / 2) * mx[1][2];
+			float yy = x * mx[1][0] + (y - ny / 2) * mx[1][1];
+			float zz = x * mx[2][0] + (y - ny / 2) * mx[2][1];
 			float cc = 1;
 
 			if (xx < 0) {
@@ -596,8 +596,8 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 			float weight = snr[r];
 
 			float xx = x * mx[0][0] + (y - ny / 2) * mx[0][1];
-			float yy = x * mx[0][2] + (y - ny / 2) * mx[1][0];
-			float zz = x * mx[1][1] + (y - ny / 2) * mx[1][2];
+			float yy = x * mx[1][0] + (y - ny / 2) * mx[1][1];
+			float zz = x * mx[2][0] + (y - ny / 2) * mx[2][1];
 			float cc = 1.0;
 
 			if (xx < 0) {

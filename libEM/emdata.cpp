@@ -2524,12 +2524,9 @@ void EMData::translate(const Vec3 < float >&translation)
 	EXITFUNC;
 }
 
-/** slow; need to fix later
- */
 void EMData::rotate(float alt, float az, float phi)
 {
-	Transform t(Rotation(alt, az, phi, Rotation::EMAN));
-	rotate_translate(t);
+	rotate_translate(alt, az, phi, 0, 0, 0);
 }
 
 void EMData::rotate(const Rotation & r)
@@ -2597,13 +2594,16 @@ void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&tr
 	}
 	else {
 		Matrix3f mx = rotation.get_matrix3();
-
-		float x4 = (mx[0][0] * (-nx / 2.0f) + mx[0][1] * (-ny / 2.0f) +
-					mx[0][2] * (-nz / 2.0f)) + nx / 2.0f - translation[0];
-		float y4 = (mx[1][0] * (-nx / 2.0f) + mx[1][1] * (-ny / 2.0f) +
-					mx[1][2] * (-nz / 2.0f)) + ny / 2.0f - translation[1];
-		float z4 = (mx[2][0] * (-nx / 2.0f) + mx[2][1] * (-ny / 2.0f) +
-					mx[2][2] * (-nz / 2.0f)) + nz / 2.0f - translation[2];
+		float half_nx = -nx/2.0f;
+		float half_ny = -ny/2.0f;
+		float half_nz = -nz/2.0f;
+		
+		float x4 = (mx[0][0] * half_nx + mx[0][1] * half_ny +
+					mx[0][2] * half_nz) - half_nx - translation[0];
+		float y4 = (mx[1][0] * half_nx + mx[1][1] * half_ny +
+					mx[1][2] * half_nz) - half_ny - translation[1];
+		float z4 = (mx[2][0] * half_nx + mx[2][1] * half_ny +
+					mx[2][2] * half_nz) - half_nz - translation[2];
 
 		int xy = nx * ny;
 		int mr = 0;
@@ -2814,14 +2814,13 @@ void EMData::rotate_translate(const Transform & xform)
 		Matrix3f mx = rotation.get_matrix3();
 		mx *= inv_scale;
 
-		float x4 = (mx[0][0] * (-nx / 2.0f + dxc) + mx[0][1] * (-ny / 2.0f + dyc) +
-					mx[0][2] * (-nz / 2.0f + dzc)) + nx / 2.0f - dxc - translation[0];
-
-		float y4 = (mx[1][0] * (-nx / 2.0f + dxc) + mx[1][1] * (-ny / 2.0f + dyc) +
-					mx[1][2] * (-nz / 2.0f + dzc)) + ny / 2.0f - dyc - translation[1];
-
-		float z4 = (mx[2][0] * (-nx / 2.0f + dxc) + mx[2][1] * (-ny / 2.0f + dyc) +
-					mx[2][2] * (-nz / 2.0f + dzc)) + nz / 2.0f - dzc - translation[2];
+		float dxc2 = -nx / 2.0f + dxc;
+		float dyc2 = -ny / 2.0f + dyc;
+		float dzc2 = -nz / 2.0f + dzc;
+		
+		float x4 = (mx[0][0] * dxc2 + mx[0][1] * dyc2 + mx[0][2] * dzc2) - dxc2 - translation[0];
+		float y4 = (mx[1][0] * dxc2 + mx[1][1] * dyc2 + mx[1][2] * dzc2) - dyc2 - translation[1];
+		float z4 = (mx[2][0] * dxc2 + mx[2][1] * dyc2 + mx[2][2] * dzc2) - dzc2 - translation[2];
 
 		int nxy = nx * ny;
 		int l = 0;
@@ -2838,7 +2837,8 @@ void EMData::rotate_translate(const Transform & xform)
 
 				for (int i = -nx / 2; i < nx / 2; i++, l++) {
 
-					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx - 1 || y2 >= ny - 1 || z2 >= nz - 1) {
+					if (x2 < 0 || y2 < 0 || z2 < 0 ||
+						x2 >= nx - 1 || y2 >= ny - 1 || z2 >= nz - 1) {
 						des_data[l] = 0;
 					}
 					else {
@@ -2851,13 +2851,16 @@ void EMData::rotate_translate(const Transform & xform)
 						float v = z2 - z;
 						int ii = (int) (x + y * nx + z * nxy);
 
-						des_data[l] = Util::trilinear_interpolate(src_data[ii], src_data[ii + 1],
+						des_data[l] = Util::trilinear_interpolate(src_data[ii],
+																  src_data[ii + 1],
 																  src_data[ii + nx],
 																  src_data[ii + nx + 1],
 																  src_data[ii + nx * ny],
 																  src_data[ii + nxy + 1],
 																  src_data[ii + nxy + nx],
-																  src_data[ii + nxy + nx + 1], t, u,
+																  src_data[ii + nxy + nx + 1],
+																  t,
+																  u,
 																  v);
 					}
 

@@ -73,8 +73,8 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 			}
 			else {
 				float xx = x * mx[0][0] + (y - f_ny / 2) * mx[0][1];
-				float yy = x * mx[0][2] + (y - f_ny / 2) * mx[1][0];
-				float zz = x * mx[1][1] + (y - f_ny / 2) * mx[1][2];
+				float yy = x * mx[1][0] + (y - f_ny / 2) * mx[1][1];
+				float zz = x * mx[2][0] + (y - f_ny / 2) * mx[2][1];
 
 				int cc = 1;
 				if (xx < 0) {
