@@ -6,9 +6,9 @@
 
 #ifdef EM_PNG
 
+#include <png.h>
 #include "imageio.h"
 #include <stdio.h>
-#include <png.h>
 
 
 namespace EMAN
