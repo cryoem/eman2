@@ -17,9 +17,9 @@ for i in range(nx):
 print a.shape
 print a.typecode()
 
-#for x in range(nx):
-#	for y in range(n):
-#		a[y][x] = 0
+for x in range(nx):
+	for y in range(n):
+		a[y][x] = 0
 
 e.write_image("test.mrc")
 

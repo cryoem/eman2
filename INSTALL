@@ -14,7 +14,8 @@
       1. Python (version 2.2+)        (http://www.python.org)
       2. Boost python (version 1.30.2+)    (http://www.boost.org)
          (see "NOTE A" on how to install boost python)
-
+      3. Numerc python numarray (1.1.1 +) (http://www.pfdubois.com/numpy)
+		 
     - To read/write HDF5 image, use hdf5 (http://hdf.ncsa.uiuc.edu/HDF5).
 
     - To read TIFF image, use libtiff (http://www.libtiff.org)
@@ -140,3 +141,15 @@ How to Install Boost Python
 	
     6. cp -df bin-stage/libboost_python.so* /usr/local/lib
        cd ../../..; cp -rf boost /usr/local/include
+
+	   
+How to Install Numeric Python
+-----------------------------
+
+
+
+
+
+
+
+	   
