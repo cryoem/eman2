@@ -156,9 +156,9 @@ int Log::begin(int argc, char *argv[], int ppid)
 	
 	char s[4048];
 #ifndef WIN32
-	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid ? ppid : getppid(), filename.c_str());
+	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, (int)tm, 0, ppid ? ppid : getppid(), filename.c_str());
 #else
-	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid, filename.c_str());
+	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, (int)tm, 0, ppid, filename.c_str());
 #endif
 	for (int i = 1; i < argc; i++) {
 		sprintf(s + strlen(s), " %s", argv[i]);

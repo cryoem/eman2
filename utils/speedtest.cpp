@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
 		}
     }
     pat.done_data();
-    pat.filter("CircleMeanNormalize");
-    pat.filter("SharpMask", Dict("outer_radius", pat.get_xsize()/2));
+    pat.filter("NormalizeCircleMean");
+    pat.filter("MaskSharp", Dict("outer_radius", pat.get_xsize()/2));
 
     EMData *data[5000];
     
@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
 			d[j] += Util::get_gauss_rand(0, 1.0);
 		}
 		data[i]->done_data();
-		data[i]->filter("CircleMeanNormalize");
-		data[i]->filter("SharpMask", Dict("outer_radius", data[i]->get_xsize()/2));
+		data[i]->filter("NormalizeCircleMean");
+		data[i]->filter("MaskSharp", Dict("outer_radius", data[i]->get_xsize()/2));
 	
 		if (i < 5) {
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
