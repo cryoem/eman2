@@ -16,6 +16,12 @@ using std::string;
 using std::vector;
 using std::map;
 
+/*
+ * pixel may not be square. so 'pixel_size' won't be used.
+ * instead, use 3 float numbers to describe a pixel:
+ * (spacing_row, spacing_col, and spacing_sec)
+ */
+
 namespace EMAN
 {
     class ImageIO;
@@ -244,8 +250,6 @@ namespace EMAN
 	string get_name() const;
 	void set_name(const string & name);
 
-	void set_pixel_size(float pixel_size);
-	float get_pixel_size() const;
 
 	float get_value_at(int x, int y, int z) const;
 	float get_value_at(int x, int y) const;
@@ -311,7 +315,8 @@ namespace EMAN
 
 	int update_stat();
 	void set_xyz_origin(float origin_x, float origin_y, float origin_z);
-
+	void scale_pixel(float scale_factor) const;
+	
     private:
 	mutable Dict attr_dict;
 	float *rdata;
@@ -321,7 +326,7 @@ namespace EMAN
 	EMData *fft;
 	EMData *rfp;
 	int flags;
-	float pixel_size;
+
 	int nx;
 	int ny;
 	int nz;
@@ -455,19 +460,12 @@ namespace EMAN
 	flags |= EMDATA_CHANGED;
     }
 
-    inline void EMData::set_pixel_size(float new_pixel_size)
-    {
-	pixel_size = new_pixel_size;
-    }
-    inline float EMData::get_pixel_size() const
-    {
-	return pixel_size;
-    }
 
     inline bool EMData::is_complex() const
     {
 	return (flags & EMDATA_COMPLEX);
     }
+    
     inline bool EMData::is_complex_x() const
     {
 	return (flags & EMDATA_COMPLEXX);
@@ -588,11 +586,20 @@ namespace EMAN
     {
 	return rotation;
     }
+
     inline Vec3<float> EMData::get_trans_align() const
     {
 	return trans_align;
     }
+    
+    inline void EMData::scale_pixel(float scale) const
+    {	
+	attr_dict["spacing_row"] = EMObject(attr_dict["spacing_row"].get_float() * scale);
+	attr_dict["spacing_col"] = EMObject(attr_dict["spacing_col"].get_float() * scale);
+	attr_dict["spacing_sec"] = EMObject(attr_dict["spacing_sec"].get_float() * scale);
 
+	
+    }
 
 }
 

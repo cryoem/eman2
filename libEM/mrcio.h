@@ -24,7 +24,7 @@ namespace EMAN
 	static bool is_valid(const void *first_block, off_t file_size = 0);
 	static int get_mode_size(int mm);
 	static int to_em_datatype(int mrcmode);
-	static int to_mrcmode(int em_datatype);
+	static int to_mrcmode(int em_datatype, bool is_complex);
 
     private:
 	enum MrcMode {
@@ -59,7 +59,8 @@ namespace EMAN
 	    int mx;		/* Number of intervals along X. */
 	    int my;		/* Number of intervals along Y. */
 	    int mz;		/* Number of intervals along Z. */
-
+	    
+	    /* Cell: treat a whole 2D image as a cell */
 	    float xlen;		/* Cell dimensions (Angstroms). */
 	    float ylen;		/* Cell dimensions (Angstroms). */
 	    float zlen;		/* Cell dimensions (Angstroms). */

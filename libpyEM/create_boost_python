@@ -1,1 +1,4 @@
+#!/bin/sh -v
+
+touch *pyste
 make -f Makefile.pyste

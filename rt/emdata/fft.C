@@ -57,9 +57,17 @@ int main(int argc, char* argv[])
     err = e1.read_image(filename);
 
     if (!err) {
-	e1.do_fft();
-	err = e1.write_image("lattice_fft.mrc", 0, EMUtil::IMAGE_MRC);
+	EMData* fft1 = e1.do_fft();
+	err = fft1->write_image("lattice_fft.mrc", 0, EMUtil::IMAGE_MRC);
+	e1.gimme_fft();
+	
+	if (!err) {
+	    EMData* ift1 = fft1->do_ift();
+	    fft1->gimme_fft();
+	    
+	    err = ift1->write_image("lattice_fft_ift.mrc", 0, EMUtil::IMAGE_MRC);
+	}
     }
-        
+    
     return err;
 }
