@@ -234,7 +234,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
     for (int i = 0; i < mrch.nlabels; i++) {
 	char label[32];
 	sprintf(label, "MRC.label%d", i);
-	dict[string(label)] = mrch.labels[0];
+	dict[string(label)] = mrch.labels[i];
     }
     
     return 0;
@@ -247,11 +247,11 @@ int MrcIO::write_header(const Dict & dict, int image_index)
 	return 1;
     }
     
-    int new_mode = to_mrcmode(dict["datatype"], dict["is_complex"]);
+    int new_mode = to_mrcmode(dict["datatype"], (int)dict["is_complex"]);
     int nx = dict["nx"];
     int ny = dict["ny"];
     int nz = dict["nz"];
-    is_ri = (bool) dict["is_ri"];
+    is_ri = (int)dict["is_ri"];
     
     if (!is_new_file) {
 	if (is_big_endian != ByteOrder::is_machine_big_endian()) {
@@ -270,12 +270,6 @@ int MrcIO::write_header(const Dict & dict, int image_index)
 	    return 1;
 	}
 
-	if (mrch.nlabels < (MRC_NUM_LABELS - 1)) {
-	    sprintf(&mrch.labels[mrch.nlabels][0], "EMAN %s", Util::get_time_label().c_str());
-	    mrch.labels[mrch.nlabels][MRC_LABEL_SIZE - 1] = 0;
-	    mrch.nlabels++;
-	}
-
 	portable_fseek(mrcfile, 0, SEEK_SET);
     }
     else {
@@ -284,12 +278,27 @@ int MrcIO::write_header(const Dict & dict, int image_index)
 	mrch.mapr = 2;
 	mrch.maps = 3;
 	mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
-	mrch.nlabels = 1;
-	sprintf(&mrch.labels[0][0], "EMAN %s", Util::get_time_label().c_str());
-	mrch.labels[0][MRC_LABEL_SIZE - 1] = '\0';
-	mrch.labels[1][0] = '\0';
+    }
+	
+    if (dict.has_key("MRC.nlabels")) {
+	mrch.nlabels = dict["MRC.nlabels"];
+    }
+    
+    for (int i = 0; i < mrch.nlabels; i++) {
+	char label[32];
+	sprintf(label, "MRC.label%d", i);
+	if (dict.has_key(label)) {
+	    sprintf(&mrch.labels[i][0], "%s", (const char*)dict[label]);
+	}
     }
 
+    if (mrch.nlabels < (MRC_NUM_LABELS - 1)) {
+	sprintf(&mrch.labels[mrch.nlabels][0], "EMAN %s", Util::get_time_label().c_str());
+	mrch.nlabels++;
+    }
+    
+    mrch.labels[mrch.nlabels][0] = '\0';
+    
     mrch.mode = new_mode;
  
     if (is_complex_mode()) {

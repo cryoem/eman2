@@ -49,7 +49,6 @@ namespace EMAN
     {
     public:
 	enum ObjectType {
-	    BOOL,
 	    INT,
 	    FLOAT,
 	    DOUBLE,
@@ -94,15 +93,10 @@ namespace EMAN
 	EMObject(const vector<float> & v) : farray(v), type(FLOATARRAY)
 	{
 	}
-
-	EMObject(bool bb) : n(bb), type(BOOL)
-	{
-	}
 	
 	~EMObject() {
 	}
 
-	operator bool() const;	
 	operator int() const;
 	operator float() const;
 	operator double() const;

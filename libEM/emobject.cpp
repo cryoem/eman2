@@ -2,20 +2,6 @@
 
 using namespace EMAN;
 
-EMObject::operator bool() const
-{
-    if (type == BOOL || type == INT) {
-	return (bool)n;
-    }
-    else {
-	if (type != UNKNOWN) {
-	    Log::logger()->error("type error. Cannot convert to bool from data type '%s'",
-				 get_object_type_name(type));
-	}
-    }
-    return false;
-}
-	
 EMObject::operator int() const
 {
     if (type == INT) {
@@ -138,7 +124,7 @@ string EMObject::to_str() const
     else {
 	char tmp_str[32];
 
-	if (type == BOOL || type == INT) {
+	if (type == INT) {
 	    sprintf(tmp_str, "%d", n);
 	}
 	else if (type == FLOAT) {
@@ -163,8 +149,6 @@ string EMObject::to_str() const
 const char *EMObject::get_object_type_name(ObjectType t)
 {
     switch (t) {
-    case BOOL:
-	return "BOOLEAN";
     case INT:
 	return "INT";
     case FLOAT:
