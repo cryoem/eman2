@@ -2,32 +2,19 @@
 
 using namespace EMAN;
 
-void test_2d()
+
+void test_clip(const IntSize & size0, const Region & region, const string & id)
 {
-	EMData * image = new EMData();
-	image->set_size(64,64,1);
-	image->to_one();
+	string old_file = "old" + id + ".img";
+	string new_file = "new" + id + ".img";
 	
-	image->write_image("test2d1.img", 0, EMUtil::IMAGE_IMAGIC);
-	EMData * image2 = image->get_clip(Region(-32,-32,128,128));
-	image2->write_image("test2d2.img", 0, EMUtil::IMAGE_IMAGIC);
-
-	delete image;
-	image = 0;
-	delete image2;
-	image2 = 0;
-
-}
-
-void test_3d()
-{
 	EMData * image = new EMData();
-	image->set_size(64,64,64);
+	image->set_size(size0.x, size0.y, size0.z);
 	image->to_one();
+	image->write_image(old_file, 0, EMUtil::IMAGE_IMAGIC);
 	
-	image->write_image("test3d1.img", 0, EMUtil::IMAGE_IMAGIC);
-	EMData * image2 = image->get_clip(Region(-32,-32,-32,128,128,128));
-	image2->write_image("test3d2.img", 0, EMUtil::IMAGE_IMAGIC);
+	EMData * image2 = image->get_clip(region);
+	image2->write_image(new_file, 0, EMUtil::IMAGE_IMAGIC);
 
 	delete image;
 	image = 0;
@@ -39,7 +26,16 @@ void test_3d()
 
 int main()
 {
-	test_2d();
-	test_3d();
+	test_clip(IntSize(64,64,1), Region(-32,-32,128,128), "2do");
+	test_clip(IntSize(64,64,64), Region(-32,-32,-32,128,128,128), "3do");
+	test_clip(IntSize(164,164,1), Region(32,32,68,68), "2di");
+	test_clip(IntSize(164,164,164), Region(32,32,32,68,68,68), "3di");
+
 	return 0;
 }
+
+
+
+
+
+

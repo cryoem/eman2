@@ -325,7 +325,7 @@ EMData *EMData::get_clip(const Region & area)
 	int yd0 = (int) (area.origin.y < 0 ? -area.origin.y : 0);
 	int zd0 = (int) (area.origin.z < 0 ? -area.origin.z : 0);
 
-	int clipped_row_size = x1 * sizeof(float);
+	int clipped_row_size = (x1-x0) * sizeof(float);
 	int src_secsize = nx * ny;
 	int dst_secsize = (int)(area.size.x * area.size.y);
 
@@ -1817,25 +1817,10 @@ void EMData::update_stat()
 	float sigma = sqrt(tmp1);
 	float sigma_nonzero = square_sum * step / n_nonzero - mean_nonzero * mean_nonzero;
 
-	double kurtosis_sum = 0;
-	double skewness_sum = 0;
-	
-	for (size_t k = 0; k < size; k++) {
-		float t = (rdata[k] - mean) / sigma;
-		kurtosis_sum += pow(t, 4.0f);
-		skewness_sum +=  pow(t, 3.0f);
-	}
-
-	float kurtosis = (float)(kurtosis_sum / size - 3.0);
-	float skewness = (float)(skewness_sum / size);
-	
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
 	attr_dict["mean"] = mean;
 	attr_dict["sigma"] = sigma;
-	attr_dict["kurtosis"] = kurtosis;
-	attr_dict["skewness"] = skewness;
-	
 	attr_dict["square_sum"] = square_sum;
 	attr_dict["mean_nonzero"] = mean_nonzero;
 	attr_dict["sigma_nonzero"] = sigma_nonzero;
@@ -1845,6 +1830,42 @@ void EMData::update_stat()
 	flags &= ~EMDATA_NEEDUPD;
 }
 
+
+EMObject EMData::get_attr(string key)
+{	
+	update_stat();
+
+	float mean = attr_dict["mean"];
+	float sigma = attr_dict["sigma"];
+	size_t size = nx * ny * nz;
+	
+	if (key == "kurtosis") {
+		double kurtosis_sum = 0;
+
+		for (size_t k = 0; k < size; k++) {
+			float t = (rdata[k] - mean) / sigma;
+			float tt = t * t;	
+			kurtosis_sum += tt * tt;
+		}
+		
+		float kurtosis = (float)(kurtosis_sum / size - 3.0);
+		attr_dict["kurtosis"] = kurtosis;
+		return attr_dict["kurtosis"];
+	}
+	else if (key == "skewness") {
+		double skewness_sum = 0;		
+		for (size_t k = 0; k < size; k++) {
+			float t = (rdata[k] - mean) / sigma;
+			skewness_sum +=  t * t * t;
+		}
+		float skewness = (float)(skewness_sum / size);
+		attr_dict["skewness"] = skewness;
+		return attr_dict["skewness"];
+	}
+	
+	
+	return attr_dict[key];
+}
 
 void EMData::set_size(int x, int y, int z)
 {

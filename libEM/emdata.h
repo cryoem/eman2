@@ -779,12 +779,6 @@ namespace EMAN
 		attr_dict["apix_z"] = ((float) attr_dict["apix_z"]) * scale;
 	}
 
-	inline EMObject EMData::get_attr(string key)
-	{
-		update_stat();
-		return attr_dict[key];
-	}
-	
 	inline void EMData::set_attr(string key, EMObject val)
 	{
 		attr_dict[key] = val;

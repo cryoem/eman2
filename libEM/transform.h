@@ -665,6 +665,7 @@ namespace EMAN
 	  public:
 		Transform()
 		{
+			matrix.make_identity();
 		}
 
 		Transform(const Matrix4f & m)
