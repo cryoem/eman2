@@ -314,7 +314,28 @@ namespace EMAN
 	Transform operator/(const Transform & t, float s);
 	Transform operator/(float s, const Transform & t);
 
+	inline Vec3f operator*(const Transform & t, const Vec3i & v)
+	{
+		return (v * t.get_matrix());
+	}
+	
+	inline Vec3f operator*(const Vec3i & v, const Transform & t)
+	{
+		return (v * t.get_matrix());
+	}
+	
+	inline Vec3f operator*(const Transform & t, const Vec3f & v)
+	{
+		return (v * t.get_matrix());
+	}
+	
+	inline Vec3f operator*(const Vec3f & v, const Transform & t)
+	{
+		return (v * t.get_matrix());
+	}
+	
 }
+
 
 
 #endif
