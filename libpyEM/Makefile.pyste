@@ -1,4 +1,4 @@
-PYSTE = python /usr/bin/pyste.py -I../libEM -I/usr/include/python2.4
+PYSTE = python /usr/bin/pyste.py -I../libEM -I/usr/include/python2.3 
 
 all: libpyAligner2.cpp \
 	 libpyAverager2.cpp \
