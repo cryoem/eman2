@@ -197,11 +197,8 @@ namespace EMAN {
 			data->convertible = storage;
 			map<std::string, T>& result = *((map<std::string, T>*) storage);
 
-			python::handle<> obj_handle(obj_ptr);
-			python::object dict_obj(obj_handle);
-	    
-			python::dict d(dict_obj);
-		       
+			python::dict d = python::extract<python::dict>(obj_ptr);
+			
 			python::list k = d.keys();
 			python::list v = d.values();
 			long l = python::len(k);
@@ -214,7 +211,48 @@ namespace EMAN {
 
 		}
     };
+#if 0	
+    struct map_from_python_int
+    {
+		map_from_python_int()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<map<std::string, int> >());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			if (!(PyDict_Check(obj_ptr))) {
+				return 0;
+			}
+	
+			return obj_ptr;
+		}
 
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage = ((python::converter::rvalue_from_python_storage<map<std::string, int> >*)
+							 data)->storage.bytes;
+			new (storage) map<std::string, int>();
+			data->convertible = storage;			
+			map<std::string, int>& result = *((map<std::string, int>*) storage);
+
+			python::dict d = python::extract<python::dict>(obj_ptr);
+		       
+			python::list k = d.keys();
+			python::list v = d.values();
+			long l = python::len(k);
+
+			for(long i = 0; i < l; i++) {
+				std::string key = python::extract<std::string>(k[i]);
+				int val = python::extract<int>(v[i]);
+				result[key] = val;
+			}
+		}
+    };
+#endif
     struct Dict_from_python
     {
 		Dict_from_python()

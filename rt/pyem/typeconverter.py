@@ -39,18 +39,14 @@ def get_dict(typename):
 		s = str(i+1) + str(i+1)
 		
 		if typename == "int":
-			#n = TestUtil.get_debug_int(i)
-			n = i
+			n = TestUtil.get_debug_int(i)
 		elif typename == "long":
-			#n1 = TestUtil.get_debug_int(i)
-			n1 = long(i)
+			n1 = TestUtil.get_debug_int(i)
 			n = long(n1)
 		elif typename == "float":
-			#n = TestUtil.get_debug_float(i)
-			n = float(i)
+			n = TestUtil.get_debug_float(i)
 		elif typename == "string":
-			#n = TestUtil.get_debug_string(i)
-			n = s
+			n = TestUtil.get_debug_string(i)
 		d[s] = n
 		
 	return d
@@ -80,32 +76,21 @@ def test_point_size():
 
 def test_map():
 
-	smap = get_dict("string")
-	print "before: ", smap
-	smap2 = TestUtil.test_map_string(smap)
-	print "after: ", smap
-	print "result: ", smap2
-
+	imap = get_dict("int")
+	imap2 = TestUtil.test_map_int(imap)
+	assertdict(imap, imap2)
 
 	lmap = get_dict("long")
-	print "before: ", lmap
 	lmap2 = TestUtil.test_map_long(lmap)
-	print "after: ", lmap
-	print "result: ", lmap2
+	assertdict(lmap, lmap2)
 
 	fmap = get_dict("float")
-	print "before: ", fmap
 	fmap2 = TestUtil.test_map_float(fmap)
-	#print "after: ", fmap
-	print "result: ", fmap2
-	sys.exit(1)
+	assertdict(fmap, fmap2)
 
-	imap = get_dict("int")
-	print "before: ", imap
-	imap2 = TestUtil.test_map_int(imap)
-	print "after: ", imap
-	print "result: ", imap2
-	#assertdict(imap, imap2)
+	smap = get_dict("string")
+	smap2 = TestUtil.test_map_string(smap)
+	assertdict(smap, smap2)
 
 def test_vector():
 	nlist = get_list("int")
@@ -124,7 +109,6 @@ def test_vector():
 
 	slist2 = TestUtil.test_vector_string(slist)
 	assertlist(slist, slist2)
-
 
 test_map()
 test_vector()

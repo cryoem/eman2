@@ -49,7 +49,7 @@ namespace EMAN
 		static vector<string> test_vector_string(const vector<string> & v);
 		static vector<EMData*> test_vector_emdata(const vector<EMData*> & v);
 		static vector<Pixel> test_vector_pixel(const vector<Pixel> & v);
-		
+
 		static map<string, int> test_map_int(const map<string, int>& d);
 		static map<string, long> test_map_long(const map<string, long>& d);
 		static map<string, float> test_map_float(const map<string, float>& d);
@@ -57,7 +57,13 @@ namespace EMAN
 		static map<string, EMObject> test_map_emobject(const map<string, EMObject>& d);
 		static map<string, vector<string> > test_map_vecstring(const map<string,
 															   vector<string> >& d);
-		
+
+#if 0
+		static void test_map_int(const map<string, int>& d);
+		static void test_map_long(const map<string, long>& d);
+		static void test_map_float(const map<string, float>& d);
+		static void test_map_string(const map<string, string>& d);
+#endif
 		
 	private:
 		static float tf[10];
