@@ -8,6 +8,36 @@ import sys
 import testlib
 import os
 
+class TestHdfIO(unittest.TestCase):
+
+	def test_write_image(self):
+		imgfile1 = "test_write_image_1.mrc"
+		imgfile2 = "test_write_image_2.mrc"
+		imgfile3 = "test_write_image_3.mrc"
+
+		TestUtil.make_image_file(imgfile1, MRC)
+		TestUtil.make_image_file(imgfile2, MRC)
+		TestUtil.make_image_file(imgfile3, MRC)
+
+		e1 = EMData()
+		e1.read_image(imgfile1)
+
+		e2 = EMData()
+		e2.read_image(imgfile2)
+
+		e3 = EMData()
+		e3.read_image(imgfile3)
+
+		outfile = "test_write_image_out.hdf"
+		e1.write_image(outfile, 0)
+		e2.write_image(outfile, 1)
+		e3.write_image(outfile, 2)
+		
+		os.unlink(imgfile1)
+		os.unlink(imgfile2)
+		os.unlink(imgfile3)
+		
+
 class TestMrcIO(unittest.TestCase):
     
     def test_overwrite(self):
@@ -363,7 +393,7 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestMrcIO, TestImagicIO)
+    test_support.run_unittest(TestHdfIO)
 
 if __name__ == '__main__':
     test_main()

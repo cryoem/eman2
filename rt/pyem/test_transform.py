@@ -3,17 +3,9 @@
 from EMAN2 import *
 import unittest
 from test import test_support
-import math
+import testlib
 
 class TestTransform(unittest.TestCase):
-
-    def setUp(self):
-        self.delta =  0.0001
-
-    def assertfloat(self, f1, f2):
-        diff = f1 - f2
-        if math.fabs(diff) > self.delta:
-            self.assertEqual(f1, f2)
         
     def test_get_rotation(self):
         alt = 1.45232928554
@@ -23,9 +15,9 @@ class TestTransform(unittest.TestCase):
         t = Transform(EULER_EMAN, az, alt, phi)
         rot = t.get_rotation(EULER_EMAN)
 
-        self.assertfloat(az, float(rot["az"]))
-        self.assertfloat(alt, float(rot["alt"]))
-        self.assertfloat(phi, float(rot["phi"]))
+        testlib.assertfloat(self, az, float(rot["az"]))
+        testlib.assertfloat(self, alt, float(rot["alt"]))
+        testlib.assertfloat(self, phi, float(rot["phi"]))
 
 
 def test_main():
