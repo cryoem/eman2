@@ -1,6 +1,5 @@
 
 // Boost Includes ==============================================================
-#include <Python.h>
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
 
@@ -528,6 +527,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("hypot3", &EMAN::Util::hypot3)
         .def("fast_floor", &EMAN::Util::fast_floor)
         .def("agauss", &EMAN::Util::agauss)
+        .def("min", (int (*)(int, int))&EMAN::Util::min)
+        .def("min", (int (*)(int, int, int))&EMAN::Util::min)
         .def("min", (float (*)(float, float))&EMAN::Util::min)
         .def("min", (float (*)(float, float, float))&EMAN::Util::min)
         .def("min", (float (*)(float, float, float, float))&EMAN::Util::min)

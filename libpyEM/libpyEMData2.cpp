@@ -1,6 +1,5 @@
 
 // Boost Includes ==============================================================
-#include <Python.h>
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
 
@@ -37,6 +36,10 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_1_3, align, 1
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, project, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_1, copy, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_rotated_clip_overloads_3_4, get_rotated_clip, 3, 4)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
 
@@ -93,6 +96,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
         .def("insert_clip", &EMAN::EMData::insert_clip)
         .def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
+        .def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, return_value_policy< manage_new_object >(), EMAN_EMData_get_rotated_clip_overloads_3_4())
+        .def("insert_scaled_sum", &EMAN::EMData::insert_scaled_sum, EMAN_EMData_insert_scaled_sum_overloads_2_4())
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
         .def("normalize_slice", &EMAN::EMData::normalize_slice)

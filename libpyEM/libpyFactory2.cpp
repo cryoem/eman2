@@ -1,6 +1,5 @@
 
 // Boost Includes ==============================================================
-#include <Python.h>
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
 
@@ -75,6 +74,14 @@ struct EMAN_Exception_Wrapper: EMAN::Exception
 
     int default_get_line_num() const {
         return EMAN::Exception::get_line_num();
+    }
+
+    void set_objname(const std::string& p0) {
+        call_method< void >(self, "set_objname", p0);
+    }
+
+    void default_set_objname(const std::string& p0) {
+        EMAN::Exception::set_objname(p0);
     }
 
     const char* get_objname() const {
@@ -371,6 +378,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("get_file", &EMAN::Exception::get_file, &EMAN_Exception_Wrapper::default_get_file)
         .def("get_desc", &EMAN::Exception::get_desc, &EMAN_Exception_Wrapper::default_get_desc)
         .def("get_line_num", &EMAN::Exception::get_line_num, &EMAN_Exception_Wrapper::default_get_line_num)
+        .def("set_objname", &EMAN::Exception::set_objname, &EMAN_Exception_Wrapper::default_set_objname)
         .def("get_objname", &EMAN::Exception::get_objname, &EMAN_Exception_Wrapper::default_get_objname)
         .def("what", (const char* (std::exception::*)() const throw())&std::exception::what, (const char* (EMAN_Exception_Wrapper::*)() const)&EMAN_Exception_Wrapper::default_what)
         .def("dump", &EMAN::Exception::dump)
@@ -411,10 +419,6 @@ BOOST_PYTHON_MODULE(libpyFactory2)
     ;
 
     delete EMAN_EMObject_scope;
-
-    class_< EMAN::NotExistingObjectError, bases< EMAN::Exception >  >("NotExistingObjectError", init< const EMAN::NotExistingObjectError& >())
-        .def(init< const std::string&, optional< const std::string&, int, const std::string& > >())
-    ;
 
     class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("Aligner", init<  >())
         .def("align", pure_virtual(&EMAN::Aligner::align), return_value_policy< manage_new_object >())
