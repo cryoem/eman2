@@ -2817,11 +2817,11 @@ void EMData::rotate_translate(const Transform & xform)
 		float x4 = (mx[0][0] * (-nx / 2.0f + dxc) + mx[0][1] * (-ny / 2.0f + dyc) +
 					mx[0][2] * (-nz / 2.0f + dzc)) + nx / 2.0f - dxc - translation[0];
 
-		float y4 = (mx[1][3] * (-nx / 2.0f + dxc) + mx[1][4] * (-ny / 2.0f + dyc) +
-					mx[1][5] * (-nz / 2.0f + dzc)) + ny / 2.0f - dyc - translation[1];
+		float y4 = (mx[1][0] * (-nx / 2.0f + dxc) + mx[1][1] * (-ny / 2.0f + dyc) +
+					mx[1][2] * (-nz / 2.0f + dzc)) + ny / 2.0f - dyc - translation[1];
 
-		float z4 = (mx[2][6] * (-nx / 2.0f + dxc) + mx[2][7] * (-ny / 2.0f + dyc) +
-					mx[2][8] * (-nz / 2.0f + dzc)) + nz / 2.0f - dzc - translation[2];
+		float z4 = (mx[2][0] * (-nx / 2.0f + dxc) + mx[2][1] * (-ny / 2.0f + dyc) +
+					mx[2][2] * (-nz / 2.0f + dzc)) + nz / 2.0f - dzc - translation[2];
 
 		int nxy = nx * ny;
 		int l = 0;
@@ -2862,7 +2862,7 @@ void EMData::rotate_translate(const Transform & xform)
 					}
 
 					x2 += mx[0][0];
-					y2 += mx[1][1];
+					y2 += mx[1][0];
 					z2 += mx[2][0];
 				}
 

@@ -9,9 +9,9 @@ using namespace EMAN;
 bool EMAN::operator<(const Pixel& p1, const Pixel& p2)
 {
 	if (p1.value < p2.value) {
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool Region::inside_region() const
