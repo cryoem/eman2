@@ -3724,11 +3724,13 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, float acen, fl
     float *yc2 = new float[n];
     float *d = new float[n];
     float *d2 = new float[n];
-    
-    memset(yc, 0, sizeof(float) * n);
-    memset(yc2, 0, sizeof(float) * n);
-    memset(d, 0, sizeof(float) * n);
-    memset(d2, 0, sizeof(float) * n);
+
+    for (int i = 0; i < n; i++) {
+	yc[i] = 0;
+	yc2[i] = 0;
+	d[i] = 0;
+	d2[i] = 0;
+    }
     
     int step = 1;
     if (is_complex()) {

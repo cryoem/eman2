@@ -244,7 +244,6 @@ BOOST_PYTHON_MODULE(libpyFactory2)
         .def("__int__", &EMAN::EMObject::operator int)
         .def("__float__", &EMAN::EMObject::operator float)
         .def("__float__", &EMAN::EMObject::operator double)
-        .def("__str__", &EMAN::EMObject::operator const char*)
         .def("to_EMAN_EMData", &EMAN::EMObject::operator EMAN::EMData*, return_internal_reference< 1 >())
         .def("to_EMAN_XYData", &EMAN::EMObject::operator EMAN::XYData*, return_internal_reference< 1 >())
     );

@@ -14,7 +14,6 @@
 #include <time.h>
 #include <process.h>
 #include <direct.h>
-#define mkdir(a,b) _mkdir(a)
 #else
 #include <unistd.h>
 #endif
@@ -27,13 +26,15 @@ Log::Log()
     out = 0;
     log_level = ERROR_LOG;
 #ifdef WIN32
-    char c = getenv("WINDIR")[0];
-    default_emandir = string(c) + string(":\.eman");
+    char c[2];
+    c[0] = getenv("WINDIR")[0];
+    c[1] = '\0';
+    default_emandir = string(c) + string(":\\.eman");
 #else
     default_emandir = string(getenv("HOME")) + "/.eman";
+    mkdir(default_emandir.c_str(), 0xffff);
 #endif
     default_emanlog = ".emanlog";
-    mkdir(default_emandir.c_str(), 0xffff);
 }
 
 Log::Log(const Log &)
@@ -134,7 +135,6 @@ void Log::set_logfile(const char *filename)
 
 int Log::begin(int argc, char *argv[], int ppid)
 {
-    time_t tm = time(0);
     const char *pwd = getenv("PWD");
     int ref = getpid();
 
@@ -146,6 +146,8 @@ int Log::begin(int argc, char *argv[], int ppid)
     char s[4048];
 #ifndef WIN32
     sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid ? ppid : getppid(), t);
+#else
+    sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid, t);
 #endif
     for (int i = 1; i < argc; i++) {
 	sprintf(s + strlen(s), " %s", argv[i]);

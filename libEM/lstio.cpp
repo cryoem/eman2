@@ -15,7 +15,6 @@
 #include <direct.h>
 #define M_PI 3.14159265358979323846
 #define MAXPATHLEN 1024
-#define getcwd _getcwd 
 #endif
 
 #include <assert.h>
@@ -138,7 +137,11 @@ int LstIO::calc_ref_image_index(int image_index)
 		strcpy(fullpath, filename.c_str());
 	    }
 	    else {
+#ifndef WIN32
 		getcwd(fullpath, MAXPATHLEN);
+#else
+		//GetCurrentDirectory(MAXPATHLEN, fullpath);
+#endif
 	    }
 
 	    char *p_basename = strrchr(fullpath, '/');

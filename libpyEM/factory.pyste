@@ -8,6 +8,7 @@ Include("interp.h")
 EMObject = Class("EMAN::EMObject", "emobject.h")
 set_policy(EMObject.operator['EMAN::EMData*'], return_internal_reference())
 set_policy(EMObject.operator['EMAN::XYData*'], return_internal_reference())
+exclude(EMObject.operator['const char*'])
 
 Factory = Template("EMAN::Factory", "emobject.h")
 
