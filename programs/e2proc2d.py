@@ -335,42 +335,19 @@ def main():
                 if options.outtype in ["mrc", "pif", "png", "pgm"]:
                     if n1 != 0:
                         outfile = "%03d." % (i + 100) + outfile
-                    
-                if options.outtype == "mrc":
-                    d.write_image(outfile, 0, MRC)
-                
                 elif options.outtype == "spidersingle":
                     if n1 != 0:
                         spiderformat = "%s%%0%dd.spi" % (outfile, int(log10(i))+1)
                         outfile = spiderformat % i
-                    d.write_image(outfile, 0, SINGLE_SPIDER)
 
-                elif options.outtype == "hdf":
-                    d.append_image(outfile,  HDF)
-                
-                elif options.outtype == "em":
-                    d.write_image(outfile, 0, EM)
-                
-                elif options.outtype == "pif":
-                    d.write_image(outfile, 0, PIF)
-                
-                elif options.outtype == "png":
-                    d.write_image(outfile, 0, PNG)
-                
-                elif options.outtype == "pgm":
-                    d.write_image(outfile, 0, PGM)
-
-                elif options.outtype == "spider":
-                    d.write_image(outfile, 0, SPIDER)
-                
-                else:
-                    if options.inplace:
+                if options.inplace:
                         d.write_image(outfile, i)
-                    elif options.mraprep:
-                        nf = outfile + "%04d" % i + ".lst"
-                        d.write_image(nf, 0, LST)
-                    else:
-                        d.append_image(outfile, IMAGIC)
+                elif options.mraprep:
+                        outfile = outfile + "%04d" % i + ".lst"
+                        options.outtype = "lst"
+                
+                d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype))
+                
     #end of image loop
 
     if average:
