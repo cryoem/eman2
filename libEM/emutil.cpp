@@ -328,7 +328,7 @@ int EMUtil::get_image_count(string filename)
 ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 {
     Log::logger()->log("EMUtil::get_imageio()");
-    ImageIO *imageio = GlobalCache::instance()->get_imageio(filename);
+    ImageIO *imageio = GlobalCache::instance()->get_imageio(filename, rw);
     if (imageio) {
 	return imageio;
     }
@@ -404,7 +404,7 @@ ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
 	break;
     }
 
-    GlobalCache::instance()->add_imageio(filename, imageio);
+    GlobalCache::instance()->add_imageio(filename, rw, imageio);
     return imageio;
 }
 

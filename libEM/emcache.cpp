@@ -35,15 +35,25 @@ GlobalCache *GlobalCache::instance()
 
 
 
-ImageIO *GlobalCache::get_imageio(string filename)
+ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
 {
-    return imageio_cache->get(filename);
+    ImageIO *io = imageio_cache->get(filename);
+    if (io) {
+	if (file_rw_dict[filename] == ImageIO::READ_ONLY &&
+	    rw_mode == ImageIO::READ_WRITE) {
+	    imageio_cache->remove(filename);
+	    io = 0;
+	}
+    }
+
+    return io;
 }
 
 
-void GlobalCache::add_imageio(string filename, ImageIO * io)
+void GlobalCache::add_imageio(string filename, int rw_mode, ImageIO * io)
 {
     if (io) {
+	file_rw_dict[filename] = rw_mode;
 	imageio_cache->add(filename, io);
     }
 }

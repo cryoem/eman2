@@ -7,8 +7,10 @@
 #include <stdlib.h>
 #include <string>
 #include <assert.h>
+#include <map>
 
 using std::string;
+using std::map;
 
 namespace EMAN
 {
@@ -80,6 +82,22 @@ namespace EMAN
 	    }
 	}
 
+	void remove(string itemname)
+	{
+	    int r = -1;
+	    for (int i = 0; i < nitems; i++) {
+		if (name_cache[i] == itemname) {
+		    r = i;
+		    break;
+		}
+	    }
+	    if (r >= 0) {
+		delete item_cache[r];
+		item_cache[r] = 0;
+		name_cache[r] = "";
+	    }
+	}
+		    
 	int get_size() const
 	{
 	    return size;
@@ -103,17 +121,19 @@ namespace EMAN
     public:
 	static GlobalCache *instance();
 
-	ImageIO *get_imageio(string filename);
-	void add_imageio(string filename, ImageIO * io);
-
+	ImageIO *get_imageio(string filename, int rw_mode);
+	void add_imageio(string filename, int rw_mode, ImageIO * io);
 
     private:
 	EMCache<ImageIO> *imageio_cache;
 	static GlobalCache *global_cache;
+	map<string, int> file_rw_dict;
 
+	
 	GlobalCache();
 	GlobalCache(const GlobalCache & gc);
 	~GlobalCache();
+
     };
 
 }

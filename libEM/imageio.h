@@ -31,7 +31,7 @@ namespace EMAN
     class ImageIO
     {
     public:
-	enum IOMode { READ_ONLY, READ_WRITE };
+	enum IOMode { READ_ONLY=1, READ_WRITE=2 };
     public:
 	virtual ~ImageIO();
 

@@ -18,3 +18,8 @@ nlabels = nlabels + 1
 e.set_attr_dict("MRC.nlabels", EMObject(nlabels))
 
 e.write_image("a.mrc", 0, MRC)
+
+e2 = EMData()
+e2.read_image("a.mrc")
+d = e2.get_attr_dict()
+EMUtil.dump_dict(d)
