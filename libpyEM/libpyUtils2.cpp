@@ -25,6 +25,14 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_process_region_io_overloads_7_13, EM
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_check_image_overloads_1_2, EMAN::TestUtil::check_image, 1, 2)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_make_image_file_overloads_2_6, EMAN::TestUtil::make_image_file, 2, 6)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file_overloads_2_6, EMAN::TestUtil::verify_image_file, 2, 6)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_make_image_file2_overloads_2_6, EMAN::TestUtil::make_image_file2, 2, 6)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, EMAN::TestUtil::verify_image_file2, 2, 6)
+
 
 }// namespace 
 
@@ -149,6 +157,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("dump_dict", &EMAN::EMUtil::dump_dict)
         .def("is_same_size", &EMAN::EMUtil::is_same_size)
         .def("is_same_ctf", &EMAN::EMUtil::is_same_ctf)
+        .def("is_complex_type", &EMAN::EMUtil::is_complex_type)
         .def("jump_lines", &EMAN::EMUtil::jump_lines)
         .staticmethod("vertical_acf")
         .staticmethod("get_datatype_string")
@@ -164,6 +173,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("is_same_ctf")
         .staticmethod("get_image_ext_type")
         .staticmethod("process_ascii_region_io")
+        .staticmethod("is_complex_type")
     );
 
     enum_< EMAN::EMUtil::EMDataType >("EMDataType")
@@ -249,10 +259,16 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("dump_emdata", &EMAN::TestUtil::dump_emdata)
         .def("check_image", &EMAN::TestUtil::check_image, EMAN_TestUtil_check_image_overloads_1_2())
         .def("set_progname", &EMAN::TestUtil::set_progname)
+        .def("make_image_file", &EMAN::TestUtil::make_image_file, EMAN_TestUtil_make_image_file_overloads_2_6())
+        .def("verify_image_file", &EMAN::TestUtil::verify_image_file, EMAN_TestUtil_verify_image_file_overloads_2_6())
+        .def("make_image_file2", &EMAN::TestUtil::make_image_file2, EMAN_TestUtil_make_image_file2_overloads_2_6())
+        .def("verify_image_file2", &EMAN::TestUtil::verify_image_file2, EMAN_TestUtil_verify_image_file2_overloads_2_6())
         .staticmethod("test_Vec3f")
+        .staticmethod("verify_image_file2")
         .staticmethod("test_vector_float")
         .staticmethod("test_Vec3i")
         .staticmethod("test_map_int")
+        .staticmethod("make_image_file")
         .staticmethod("test_map_vecstring")
         .staticmethod("get_debug_int")
         .staticmethod("test_vector_long")
@@ -262,8 +278,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("set_progname")
         .staticmethod("test_IntSize")
         .staticmethod("test_FloatSize")
+        .staticmethod("verify_image_file")
         .staticmethod("test_map_long")
         .staticmethod("to_emobject")
+        .staticmethod("make_image_file2")
         .staticmethod("get_golden_image")
         .staticmethod("test_map_string")
         .staticmethod("test_vector_int")

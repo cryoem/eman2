@@ -319,7 +319,9 @@ string Util::change_filename_ext(const string & old_filename,
 
 string Util::remove_filename_ext(const string& filename)
 {
-	Assert(filename != "");
+    if (filename == "") {
+        return "";
+    }
 	
 	char *buf = new char[filename.size()+1];
 	strcpy(buf, filename.c_str());
@@ -335,7 +337,9 @@ string Util::remove_filename_ext(const string& filename)
 
 string Util::sbasename(const string & filename)
 {
-	Assert(filename != "");
+    if (filename == "") {
+        return "";
+    }
 	
 	char s = '/';	
 #ifdef WIN32
@@ -354,7 +358,10 @@ string Util::sbasename(const string & filename)
 
 string Util::get_filename_ext(const string& filename)
 {
-	Assert(filename != "");
+    if (filename == "") {
+        return "";
+    }
+
 	string result = "";
 	char *ext = strrchr(filename.c_str(), '.');
 	if (ext) {

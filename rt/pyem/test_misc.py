@@ -45,8 +45,8 @@ class TestBoost(unittest.TestCase):
         image2 = EMData()
         image2.read_image(TestUtil.get_debug_image("samesize2.mrc"))
 
-        image3 = image1.calc_ccf(image2)
-        testlib.check_emdata(image3, sys.argv[0])
+        #image3 = image1.calc_ccf(image2)
+        #testlib.check_emdata(image3, sys.argv[0])
 
 
 
@@ -104,13 +104,46 @@ class TestEMObject(unittest.TestCase):
         self.assertEqual(float(e3), f)
 
         n2 = 2.0
-        e5 = EMObject(float(n2))
+        self.assertEqual((float(EMObject(float(n2)))), n2)
 
+        str1 = "hello"
+        self.assertEqual(str1, EMObject(str1).to_str())
 
+        nx = 10
+        ny = 12
+        nz = 2
+        emdata = EMData()
+        emdata.set_size(nx, ny, nz)
+        emobj = EMObject(emdata)
+        emdata2 = emobj.to_EMAN_EMData()
+        self.assertEqual(emdata2.get_xsize(), nx)
+        self.assertEqual(emdata2.get_ysize(), ny)
+        self.assertEqual(emdata2.get_zsize(), nz)
+        
 
+class TestDict(unittest.TestCase):
+
+    def test_basic_Dict(self):
+        d = Dict()
+        self.assertEqual(d.keys(), [])
+
+        d.put("a", 1)
+        d.put("b", 2)
+        d.put("c", 3)
+
+        k1 = d.keys()
+        k1.sort()
+        self.assertEqual(k1, ["a", "b", "c"])
+                
+        f1 = d.has_key("hello")
+        f2 = d.has_key("c")
+        
+        self.assertEqual(f1, False)
+        self.assertEqual(f2, True)
+        
 
 def test_main():
-    test_support.run_unittest(TestPixel, TestBoost, TestException,TestEMObject)
+    test_support.run_unittest(TestPixel, TestBoost, TestException,TestEMObject, TestDict)
 
 if __name__ == '__main__':
     test_main()

@@ -64,6 +64,21 @@ BOOST_PYTHON_MODULE(libpyEMObject2)
 
     delete EMAN_EMObject_scope;
 
+    class_< EMAN::Dict >("Dict", init<  >())
+        .def(init< const EMAN::Dict& >())
+        .def(init< const std::string&, EMAN::EMObject >())
+        .def(init< const std::string&, EMAN::EMObject, const std::string&, EMAN::EMObject >())
+        .def(init< const std::string&, EMAN::EMObject, const std::string&, EMAN::EMObject, const std::string&, EMAN::EMObject >())
+        .def(init< const std::string&, EMAN::EMObject, const std::string&, EMAN::EMObject, const std::string&, EMAN::EMObject, const std::string&, EMAN::EMObject >())
+        .def(init< const std::map<std::basic_string<char, std::char_traits<char>, std::allocator<char> >,EMAN::EMObject,std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > >,std::allocator<std::pair<const std::basic_string<char, std::char_traits<char>, std::allocator<char> >, EMAN::EMObject> > >& >())
+        .def("keys", &EMAN::Dict::keys)
+        .def("values", &EMAN::Dict::values)
+        .def("has_key", &EMAN::Dict::has_key)
+        .def("size", &EMAN::Dict::size)
+        .def("get", &EMAN::Dict::get)
+        .def("put", &EMAN::Dict::put)
+    ;
+
     class_< EMAN::TypeDict >("TypeDict", init<  >())
         .def(init< const EMAN::TypeDict& >())
         .def("keys", &EMAN::TypeDict::keys)

@@ -67,13 +67,124 @@ namespace EMAN
 		static void dump_image_from_file(const string & filename);
 		static void dump_emdata(EMData * image, const string & filename);
 		static int check_image(const string& imagefile, EMData * image = 0);
+        static void set_progname(const string & cur_progname);
+        
+        static void make_image_file(const string & filename,
+									EMUtil::ImageType image_type,
+									EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
+									int nx = 16, int ny = 16, int nz = 1)
+        {
+            make_image_file_by_mode(filename, image_type, 1, datatype, nx, ny, nz);
+        }
+
+		static int verify_image_file(const string & filename,
+									 EMUtil::ImageType image_type,
+									 EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
+									 int nx = 16, int ny = 16, int nz = 1)
+        {
+            return verify_image_file_by_mode(filename, image_type, 1, datatype, nx, ny, nz);
+        }
+
+        static void make_image_file2(const string & filename,
+									 EMUtil::ImageType image_type,
+									 EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
+									 int nx = 16, int ny = 16, int nz = 1)
+        {
+            make_image_file_by_mode(filename, image_type, 2, datatype,nx, ny, nz);
+        }
+
+		static int verify_image_file2(const string & filename,
+									  EMUtil::ImageType image_type,
+									  EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
+									  int nx = 16, int ny = 16, int nz = 1)
+        {            
+            return verify_image_file_by_mode(filename, image_type, 2,
+											 datatype, nx, ny, nz);
+        }
+
+        
+        
 		
-		static void set_progname(const string & cur_progname);
 	private:
 		static float tf[10];
 		static int ti[10];
 		static string progname;
+        
+        static void make_image_file_by_mode(const string & filename,
+											EMUtil::ImageType image_type, int mode,
+											EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
+											int nx = 16, int ny = 16, int nz = 1);
+        
+		static int verify_image_file_by_mode(const string & filename,
+											 EMUtil::ImageType image_type, int mode,
+											 EMUtil::EMDataType datatype = EMUtil::EM_FLOAT,
+											 int nx = 16, int ny = 16, int nz = 1);
+        
+        
+		static float get_pixel_value_by_dist1(int nx, int ny, int nz, int x, int y, int z)
+		{
+            int x2 = x;
+            int y2 = y;
+            int z2 = z;
+
+            x2 = abs(nx/2-x);
+            y2 = abs(ny/2-y);
+
+            if (z > nz/2) {
+                z2 = nz-z;
+            }
+            
+            if (nz == 1) {
+                return (x2*x2 + y2*y2);
+            }
+            else {
+                int areax = (int)((float)nx * z2 / nz);
+                int areay = (int)((float)ny * z2 / nz);
+                if ((abs(x-nx/2) <= areax) && (abs(y-ny/2) <= areay)) {
+                    return (x2*x2 + y2*y2);
+                }
+                else {
+                    return 0;
+                }
+            }
+		}
+
+        static float get_pixel_value_by_dist2(int nx, int ny, int nz, int x, int y, int z)
+		{
+            int x2 = x;
+            int y2 = y;
+            int z2 = z;
+
+
+            if (x > nx/2) {
+                x2 = nx-x;
+            }
+            if (y > ny/2) {
+                y2 = ny-y;
+            }
+
+            if (z > nz/2) {
+                z2 = nz-z;
+            }
+            
+            if (nz == 1) {
+                return (x2*x2 + y2*y2);
+            }
+            else {
+                int areax = (int)((float)nx * z2 / nz);
+                int areay = (int)((float)ny * z2 / nz);
+                if ((abs(x-nx/2) <= areax) && (abs(y-ny/2) <= areay)) {
+                    return (x2*x2 + y2*y2);
+                }
+                else {
+                    return 0;
+                }
+            }
+        }
 	};
+
+
+    
 }
 
 #endif

@@ -7,4 +7,8 @@ set_policy(EMObject.operator['EMAN::EMData*'], return_internal_reference())
 set_policy(EMObject.operator['EMAN::XYData*'], return_internal_reference())
 exclude(EMObject.operator['const char*'])
 
+Dict  = Class("EMAN::Dict", "emobject.h")
+exclude(Dict.set_default)
+exclude(Dict.get_dict)
+
 TypeDict = Class("EMAN::TypeDict", "emobject.h")

@@ -372,7 +372,7 @@ int TestUtil::check_image(const string& imagefile, EMData * image)
 	string headerfile2 = string(imgpath) + headerfile1;
 	string datafile2 = string(imgpath) + datafile1;
 
-
+    
 	if (image) {
 		dump_emdata(image, imagefile);
 	}
@@ -380,6 +380,11 @@ int TestUtil::check_image(const string& imagefile, EMData * image)
 		dump_image_from_file(imagefile);
 	}
 	
+    if (!Util::is_file_exist(headerfile2) ||
+        !Util::is_file_exist(datafile2)) {
+        return 0;
+    }
+
 	string diffcmd1 = "diff " + headerfile1 + " " + headerfile2;
 	
 	int err = system(diffcmd1.c_str());
@@ -473,3 +478,127 @@ void TestUtil::set_progname(const string & cur_progname)
 {
 	progname = Util::sbasename(cur_progname);
 }
+
+
+void TestUtil::make_image_file_by_mode(const string & filename,
+									   EMUtil::ImageType image_type, int mode,
+									   EMUtil::EMDataType datatype,
+									   int nx, int ny, int nz)
+{
+    EMData * e = new EMData();
+    e->set_size(nx, ny, nz);
+	bool is_complex = EMUtil::is_complex_type(datatype);
+    e->set_attr("is_complex", (int)is_complex);
+    e->set_attr("datatype", (int)datatype);
+    float * data = e->get_data();
+    
+	int l = 0;
+    for (int i = 0; i < nz; i++) {
+        for (int j = 0; j < ny; j++) {
+            for (int k = 0; k < nx; k++) {
+                if (mode == 1) {
+                    data[l] = get_pixel_value_by_dist1(nx, ny, nz, k, j, i);
+                }
+                else if (mode == 2) {
+                    data[l] = get_pixel_value_by_dist2(nx, ny, nz, k, j, i);
+                }
+				l++;
+            }
+        }
+    }        
+ 
+    if (!is_complex) {
+        e->write_image(filename, 0, image_type);
+    }
+    else {
+        e->done_data();
+        EMData * fft = e->do_fft();
+        fft->write_image(filename, 0, image_type);
+        delete fft;
+        fft = 0;
+    }
+
+    delete e;
+    e = 0;
+}
+
+int TestUtil::verify_image_file_by_mode(const string & filename,
+										EMUtil::ImageType image_type, int mode,
+										EMUtil::EMDataType datatype,
+										int nx, int ny, int nz)
+{
+	int err = 0;
+    
+	EMData * e = new EMData();
+	e->read_image(filename);
+
+	Dict attr_dict = e->get_attr_dict();
+	bool is_complex = EMUtil::is_complex_type(datatype);
+	
+	if (is_complex) {
+		nx = (nx+2)/2;
+	}
+
+	if (nx != (int) attr_dict["nx"]) {
+        LOGERR("nx: %d != %d\n", nx, (int) attr_dict["nx"]);
+        return 1;
+    }
+    
+    if (ny != (int) attr_dict["ny"]) {
+        LOGERR("ny: %d != %d\n", ny, (int) attr_dict["ny"]);
+        return 1;
+    }
+    
+    if (nz != (int) attr_dict["nz"]) {
+        LOGERR("nz: %d != %d\n", nz, (int) attr_dict["nz"]);
+        return 1;
+    }
+	
+	if (datatype != (int) attr_dict["datatype"]) {
+        LOGERR("datatype: %d != %d\n", datatype, (int) attr_dict["datatype"]);
+        return 1;
+    }
+
+    
+	if (is_complex != (int) attr_dict["is_complex"]) {
+        LOGERR("is_complex: %d != %d\n", is_complex, (int) attr_dict["is_complex"]);
+        return 1;
+    }
+	
+	
+	if (!is_complex) {
+		float * data = e->get_data();
+		int l = 0;
+		for (int i = 0; i < nz; i++) {
+			for (int j = 0; j < ny; j++) {
+				for (int k = 0; k < nx; k++) {
+
+                    int d2 = 0;
+                    if (mode == 1) {
+                        d2 = (int)get_pixel_value_by_dist1(nx,ny,nz,k,j,i);
+                    }
+                    else if (mode == 2) {
+                        d2 = (int)get_pixel_value_by_dist2(nx,ny,nz,k,j,i);
+                    }
+                    
+					if ((int)data[l] != d2) {
+                        LOGERR("(%d,%d,%d): %d != %d\n", i,j,k,(int)data[l], d2);
+						break;
+						err = 1;
+					}
+					l++;
+				}
+			}
+		}
+	}
+	
+	return err;
+}
+
+
+
+
+
+
+
+

@@ -8,6 +8,7 @@
 #include "emutil.h"
 #include "geometry.h"
 #include "ctf.h"
+#include "Assert.h"
 
 #include <time.h>
 
@@ -158,6 +159,8 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 	check_region(area, FloatSize(hed.nx, hed.ny, nimg), is_new_hed);
 
+    datatype = get_datatype_from_name(imagich.type);
+    
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
 
@@ -227,16 +230,20 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 		
 
 	if (!is_new_hed) {
+        datatype = get_datatype_from_name(imagich.type);
+        
 		if (imagich.nx != nx || imagich.ny != ny) {
 			char desc[256];
 			sprintf(desc, "new IMAGIC size %dx%d is not equal to existing size %dx%d",
 					nx, ny, imagich.nx, imagich.ny);
 			throw ImageWriteException(filename, desc);
 		}
-		if (datatype!=IMAGIC_FLOAT) {
+
+        if (datatype!=IMAGIC_FLOAT) {
 			throw ImageWriteException(filename, "Attempted write to non REAL Imagic file");
 		}
-		rewind(hed_file);
+
+        rewind(hed_file);
 		nimg=imagich.count+1;
 	}
 	
@@ -355,7 +362,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	ENTERFUNC;
 
 	check_read_access(image_index, data);
-
+    Assert(datatype != IMAGIC_UNKNOWN_TYPE);
 	int nimg = 1;
 	if (is_3d) {
 		nimg = imagich.count + 1;

@@ -43,22 +43,32 @@ GlobalCache *GlobalCache::instance()
 
 ImageIO *GlobalCache::get_imageio(const string & filename, int rw_mode)
 {
-	ImageIO *io = imageio_cache->get(filename);
-	if (io) {
-		if (rw_mode == ImageIO::WRITE_ONLY || rw_mode == ImageIO::READ_WRITE) {
-			imageio_cache->remove(filename);
-			io = 0;
-		}
-		else {
-			if (!Util::is_file_exist(filename)) {
-				printf("Warning: %s was removed\n", filename.c_str());
-				imageio_cache->remove(filename);
-				io = 0;
-			}
-		}
-	}
-
-	return io;
+    ImageIO *io = imageio_cache->get(filename);
+    if (io) {
+        bool need_remove = false;
+        
+        int old_rw = file_rw_dict[filename];
+        
+        if (rw_mode == ImageIO::READ_ONLY) {
+            if (old_rw == ImageIO::WRITE_ONLY) {
+                need_remove = true;
+            }
+        }
+        else if (rw_mode != old_rw) {
+            need_remove = true;
+        }
+	else {
+	    if (!Util::is_file_exist(filename)) {
+		need_remove = true;
+            }
+        }
+        if (need_remove) {
+            imageio_cache->remove(filename);
+            io = 0;
+        }        
+    }
+    
+    return io;
 }
 
 

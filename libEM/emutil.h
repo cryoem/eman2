@@ -178,33 +178,39 @@ namespace EMAN
 		 * @return whether two EMData images have the same CTF.
 		 */
 		static bool is_same_ctf(const EMData * image1, const EMData * image2);
-		static void EMUtil::jump_lines(FILE * file, int nlines);
+		
+
+		static bool is_complex_type(EMDataType datatype);
+		
+		static void jump_lines(FILE * file, int nlines);
 		
 	  private:
 		static ImageType fast_get_image_type(const string & filename,
 											 const void *first_block,
 											 off_t file_size);
 
-		static void EMUtil::jump_lines_by_items(FILE * file, int nitems, int nitems_per_line);
+		static void jump_lines_by_items(FILE * file, int nitems, int nitems_per_line);
 		
 		
 
-		static void EMUtil::process_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
-											   int nitems_per_line,
-											   size_t mode_size, int start, int end,
-											   float *data, int *p_i,
-											   const char *outformat);
+		static void process_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+									   int nitems_per_line,
+									   size_t mode_size, int start, int end,
+									   float *data, int *p_i,
+									   const char *outformat);
 		
-		static void EMUtil::exclude_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
-											   int nitems_per_line,
-											   size_t mode_size, int start, int end,
-											   float * data, int *p_i,
-											   const char *outformat);
+		static void exclude_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+									   int nitems_per_line,
+									   size_t mode_size, int start, int end,
+									   float * data, int *p_i,
+									   const char *outformat);
 		
-		static void EMUtil::process_lines_io(FILE * file, ImageIO::IOMode rw_mode,
-											 int nitems_per_line, size_t mode_size,
-											 int nitems, float *data, int *p_i,
-											 const char *outformat);
+		static void process_lines_io(FILE * file, ImageIO::IOMode rw_mode,
+									 int nitems_per_line, size_t mode_size,
+									 int nitems, float *data, int *p_i,
+									 const char *outformat);
+
+        
 	};
 
 	struct ImageScore {

@@ -5,10 +5,33 @@ import os.path
 import math
 import os
 
+IMAGIC_IMG_EXT = "img"
+IMAGIC_HED_EXT = "hed"
+
+def get_imagic_filename_pair(infile):
+    base = Util.sbasename(infile)
+    hedfile = Util.change_filename_ext(base, IMAGIC_HED_EXT)
+    imgfile = Util.change_filename_ext(base, IMAGIC_IMG_EXT)
+    return (hedfile, imgfile)
+
+
 def safe_unlink(filename):
 	if os.access(filename, os.F_OK):
 		os.unlink(filename)
 
+def unlink_data_header_files(filename):
+    base = Util.sbasename(filename)
+    safe_unlink(base + TestUtil.EMDATA_HEADER_EXT)
+    safe_unlink(base + TestUtil.EMDATA_DATA_EXT)
+
+    ext = Util.get_filename_ext(base)
+    if ext == IMAGIC_HED_EXT:
+        datafile = Util.change_filename_ext(base, IMAGIC_IMG_EXT)
+        safe_unlink(datafile)
+    elif ext == IMAGIC_IMG_EXT:
+        hedfile = Util.change_filename_ext(base, IMAGIC_HED_EXT)
+        safe_unlink(hedfile)
+        
 
 def get_list(typename):
 	l = []

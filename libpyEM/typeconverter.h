@@ -348,11 +348,15 @@ namespace EMAN {
     
 		static void* convertible(PyObject* obj_ptr)
 		{
+#if 0
 			if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr)
 				  || PyIter_Check(obj_ptr)  || PyRange_Check(obj_ptr))) {
 				return 0;
 			}
-	
+#endif
+            if (!(PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr))) {
+                return 0;
+            }
 			return obj_ptr;
 		}
 

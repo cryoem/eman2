@@ -681,6 +681,8 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			if (rw_mode == ImageIO::READ_ONLY) {
 				if (fread(&cdata[k2 + jj * area_row_size],
 						  area_row_size, 1, file) != 1) {
+                    int a = 1;
+                    a = 1;
 					throw ImageReadException("", "incomplete data read");
 				}
 			}
@@ -735,6 +737,16 @@ bool EMUtil::is_same_size(const EMData * em1, const EMData * em2)
 	if (em1->get_xsize() == em2->get_xsize() &&
 		em1->get_ysize() == em2->get_ysize() &&
 		em1->get_zsize() == em2->get_zsize()) {
+		return true;
+	}
+	return false;
+}
+
+bool EMUtil::is_complex_type(EMDataType datatype)
+{
+	if (datatype == EM_SHORT_COMPLEX ||
+		datatype == EM_USHORT_COMPLEX ||
+		datatype == EM_FLOAT_COMPLEX) {
 		return true;
 	}
 	return false;

@@ -1,4 +1,4 @@
-  #include "emdata.h"
+#include "emdata.h"
 #include <stdio.h>
 
 using namespace EMAN;
