@@ -4667,68 +4667,6 @@ void EMData::setup_insert_slice(int size)
 }
 
 
-void EMData::to_mass_center(bool int_shift_only)
-{
-    filter("StdNormalize");
-    get_data();
-
-    float sigma = get_sigma();
-    float mean = get_mean();
-    float xm = 0;
-    float ym = 0;
-    float zm = 0;
-    float m = 0;
-    int nxy = nx * ny;
-
-    for (int i = 0; i < nx; i++) {
-	for (int j = 0; j < ny; j++) {
-	    int j2 = nx * j;
-	    for (int k = 0; k < nz; k++) {
-		int l = i + j2 + k * nxy;
-		if (rdata[l] >= sigma * .75 + mean) {
-		    xm += i * rdata[l];
-		    ym += j * rdata[l];
-		    zm += k * rdata[l];
-		    m += rdata[l];
-		}
-	    }
-	}
-    }
-
-    done_data();
-    xm /= m;
-    ym /= m;
-    zm /= m;
-
-    printf("%f\t%f\t%f\n", xm, ym, zm);
-
-    float dx = 0;
-    float dy = 0;
-    float dz = 0;
-
-    if (int_shift_only) {
-	dx = -(floor(xm + .5) - nx / 2);
-	dy = -(floor(ym + .5) - ny / 2);
-	dz = 0;
-	if (nz > 1) {
-	    dz = -(floor(zm + .5) - nz / 2);
-	}
-
-    }
-    else {
-	dx = -(xm - nx / 2);
-	dy = -(ym - ny / 2);
-	if (nz > 1) {
-	    dz = -(zm - nz / 2);
-	}
-    }
-
-    set_translation(Vec3<float>(dx, dy, dz));
-    parent = 0;
-    rotate_translate();
-}
-
-
 EMData *EMData::get_row(int row_index) const
 {
     EMData *ret = new EMData();

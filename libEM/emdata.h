@@ -84,8 +84,6 @@ namespace EMAN
 
 	float *setup4slice(bool redo = false);
 
-	void to_mass_center(bool int_shift_only = true);
-
 	void rotate_x(int dx);
 	int rotate_180();
 	int fast_translate(bool inplace = true);

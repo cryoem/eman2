@@ -44,23 +44,29 @@ namespace EMAN
 	int write_file(string filename) const;
 
 	float calc_correlation(XYData * xy, float minx, float maxx) const;
-
+	
+	void update();
+	
 	float get_yatx(float x) const;
 
 	float get_x(size_t i) const
 	{
-	    if (i >= data.size()) {
-		return 0;
-	    }
 	    return data[i].x;
 	}
 
+	void set_x(size_t i, float x) 
+	{
+	    data[i].x = x;
+	}
+	
 	float get_y(size_t i) const
 	{
-	    if (i >= data.size()) {
-		return 0;
-	    }
 	    return data[i].y;
+	}
+	
+	void set_y(size_t i, float y) 
+	{
+	    data[i].y = y;
 	}
 
 	size_t get_size() const
@@ -85,14 +91,14 @@ namespace EMAN
 	    }
 	    return true;
 	}
-
+	
     private:
 	vector<Pair> data;
 	float ymin;
 	float ymax;
 	float mean_x_spacing;
 
-	void update();
+	
     };
 }
 

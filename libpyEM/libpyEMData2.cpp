@@ -32,8 +32,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_3, align, 2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_2, copy, 0, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_to_mass_center_overloads_0_1, to_mass_center, 0, 1)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_fast_translate_overloads_0_1, fast_translate, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rotate_translate_overloads_0_5, rotate_translate, 0, 5)
@@ -103,7 +101,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("render_amp8_wrapper", &EMAN::EMData::render_amp8_wrapper)
         .def("ri2ap", &EMAN::EMData::ri2ap)
         .def("ap2ri", &EMAN::EMData::ap2ri)
-        .def("to_mass_center", &EMAN::EMData::to_mass_center, EMAN_EMData_to_mass_center_overloads_0_1())
         .def("rotate_x", &EMAN::EMData::rotate_x)
         .def("rotate_180", &EMAN::EMData::rotate_180)
         .def("fast_translate", &EMAN::EMData::fast_translate, EMAN_EMData_fast_translate_overloads_0_1())
