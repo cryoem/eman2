@@ -8,6 +8,7 @@
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
+//#include <Numeric/arrayobject.h>
 
 #include <vector>
 #include <map>
@@ -25,6 +26,7 @@ namespace EMAN {
 	class Wrapper {
 	public:
 		static python::numeric::array em2numpy(EMData *image);
+		static python::numeric::array em2numpy2(EMData *image);
 		static void numpy2em(python::numeric::array& array, EMData* image);
 	};
 	

@@ -1,8 +1,8 @@
-
+#define PY_ARRAY_UNIQUE_SYMBOL PyArrayHandle
 // Boost Includes ==============================================================
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
-
+#include <Numeric/arrayobject.h>
 // Includes ====================================================================
 #include <ctf.h>
 #include <emdata.h>
@@ -625,11 +625,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("sbasename")
         .staticmethod("round")
     ;
-
+	import_array();
+	python::numeric::array::set_module_and_type("Numeric", "ArrayType");
     class_< EMAN::Wrapper >("Wrapper", init<  >())
         .def(init< const EMAN::Wrapper& >())
         .def("em2numpy", &EMAN::Wrapper::em2numpy)
+        .def("em2numpy2", &EMAN::Wrapper::em2numpy2)
         .def("numpy2em", &EMAN::Wrapper::numpy2em)
+        .staticmethod("em2numpy2")
         .staticmethod("em2numpy")
         .staticmethod("numpy2em")
     ;
