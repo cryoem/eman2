@@ -32,7 +32,8 @@ for single particle analysis."""
 	refptcl=None
 	if options.refptcl :
 		refptcl=EMData.read_images(options.refptcl)
-		print "%d reference particles read"%len(refptcl)
+		refbox=refptcl[0].get_xsize()
+		print "%d reference particles read (%d x %d)"%(len(refptcl),refbox,refbox)
 	
 	if options.box<5 :
 		if options.refptcl : options.box=refptcl[0].get_xsize()
@@ -57,12 +58,23 @@ for single particle analysis."""
 	if shrink.get_xsize()&1 or shrink.get_ysize()&1 :
 		shrink=shrink.get_clip(Region(0,0,(shrink.get_xsize()|1)^1,(shrink.get_ysize()|1)^1))
 
+	# now we try to clean up long range density variations in the image
+	flt=shrink.copy_head()
+	flt.to_one()
+	flt.filter("mask.sharp",{"outer_radius":options.box*2/shrinkfactor})
+	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
+	flt.filter("xform.phaseorigin")
+	a=shrink.convolute(flt)
+	a*=a.get_xsize()*a.get_ysize()
+	shrink-=a
+	a=None
+	
 	shrink2=shrink.copy(0)
 	shrink2.filter("math.squared")
 #	image=EMData()
 #	image.read_image(args[0])
-	shrink.write_image("e.mrc")
-	shrink2.write_image("f.mrc")
+#	shrink.write_image("e.mrc")
+#	shrink2.write_image("f.mrc")
 		
 	print "Autobox mode ",options.auto
 	
@@ -87,21 +99,54 @@ for single particle analysis."""
 		circle=shrink.copy_head()
 		circle.to_one()
 		circle.filter("mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
+		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
 		ccfmean=shrink.calc_ccf(circle,True,None)
 		ccfsig=shrink2.calc_ccf(circle,True,None)
 		ccfmean.filter("math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
+		ccfsig.filter("math.sqrt")
+#		shrink.write_image("z0.mrc")
+#		ccfsig.write_image("z1.mrc")
 		
+		xs=shrink.get_xsize()
+		ys=shrink.get_ysize()
+		pks=[]
 		for n,i in enumerate(refptcls):
-			j=i.copy(
-			ccfone=shrink.calc_ccf(i,True,None)
-			ccfone.write_image("a.%0d.mrc"%n)
+			print n
+			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
+#			j.write_image("0.%0d.mrc"%n)
+			ccfone=shrink.calc_ccf(j,True,None)
+#			ccfone.write_image("a.%0d.mrc"%n)
 			ccfone/=ccfsig
-			ccfone.write_image("b.%0d.mrc"%n)
+#			ccfone.write_image("b.%0d.mrc"%n)
+			sig=float(ccfone.get_attr("sigma"))
 			ccfone.filter("mask.onlypeaks",{"npeaks":0})
-			ccfone.write_image("c.%0d.mrc"%n)
-	
+#			ccfone.write_image("c.%0d.mrc"%n)
+			pk=ccfone.calc_highest_locations(sig*4.0)
+			for m,p in enumerate(pk):
+				pk[m]=(-p.value,n,p.x,p.y)
+			pks+=pk
+			
+		pks.sort()		# an ordered list of the best particle locations
+		
+		# ok, you could do this with clever syntax, but this is more readable
+		# this will produce a new list excluding any lower valued boxes within
+		# 1/2 a box size of a higher one
+		goodpks=[]
+		bf=options.box/(shrinkfactor*2)
+		for n,i in enumerate(pks):
+			for nn,ii in enumerate(pks[:n]):
+				if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : break
+				if hypot(i[2]-ii[2],i[3]-ii[3])<bf : break
+			else: goodpks.append(i)
+		
+		out=open(args[0][:-3]+"box","w")
+		for i in goodpks[:500]:
+			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2,options.box,options.box))
+		
+		out.close()
+		
 	if "circle" in options.auto:
 		shrinksq=shrink.copy(0)
 		shrinksq*=shrinksq			# shrunken original image squared
