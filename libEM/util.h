@@ -20,11 +20,12 @@ namespace EMAN {
 	static bool is_sub_string(const char* s1, const char* s2);
 	static string get_filename_by_ext(string old_filename, string ext);
 
-	static void calc_least_square_fit(int nitems, float* data_x, float* data_y, float* slope, float* intercept, bool ignore_zero);
+	static void calc_least_square_fit(int nitems, const float* data_x, const float* data_y,
+					  float* slope, float* intercept, bool ignore_zero);
 
-	static void save_data_to_file(vector<float> x_array, vector<float> y_array, const char* filename);
-	static void save_data_to_file(float x0, float dx, vector<float> y_array, const char* filename);
-	static void save_data_to_file(float x0, float dx, float* y_array, int array_size, const char* filename);
+	static void save_data_to_file(const vector<float>& x_array, const vector<float>& y_array, string filename);
+	static void save_data_to_file(float x0, float dx, const vector<float>& y_array, string filename);
+	static void save_data_to_file(float x0, float dx, float* y_array, int array_size, string filename);
 
 	static float get_frand(float low, float high);
 	static float get_gaussian_rand(float avg, float std);
@@ -66,8 +67,6 @@ namespace EMAN {
 	    
 	static inline double hypot3(double x, double y, double z) { return sqrt(x*x + y*y + z*z); }
 	
-	static float calc_angle_sub(float angle1, float angle2);
-
 	static inline int fast_floor(float x)
 	{
 	    if (x < 0) {

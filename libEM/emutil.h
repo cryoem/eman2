@@ -54,6 +54,8 @@ namespace EMAN {
 	    IMAGE_UNKNOWN
 	};
 	
+	static EMData* vertical_acf(const EMData& image, int maxdy);
+	
 	static ImageType get_image_type(string filename);
 	static int get_image_count(string filename);
 	static ImageIO* get_imageio(string filename, int rw_mode, ImageType image_type = IMAGE_UNKNOWN);

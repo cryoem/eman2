@@ -108,7 +108,6 @@ namespace EMAN {
 	int rotate_180();
 	
 	EMData* do_radon();
-	EMData* vertical_acf(int maxdy);
 	
 	void vertical_flip();
 	void horizontal_flip();
@@ -269,6 +268,20 @@ namespace EMAN {
 	void normalize_max();
 	void row_normalize();
 	
+	
+	Point<float> normalize_to(EMData* noisy, bool keepzero = false, bool invert = false,
+				  float mult = 0, float add = 0);
+	Point<float> normalize_slice(EMData* slice, float alt, float az, float phi);
+
+	void radial_average();
+	void radial_subtract();
+	
+	int sub_noise();
+	void setup_insert_slice(int size);
+	
+	void to_mass_center(bool int_shift_only = true);
+
+	
 #if 0
 	float get_ali_peak() const;	
 	EMData* get_row(int row_index) const;
@@ -278,16 +291,6 @@ namespace EMAN {
 	int get_dim() const;
 	bool is_flipped();
 	
-	
-	Point<float> normalize_to(EMData* noisy, bool keepzero = false, bool invert = false);
-	Point<float> normalize_slice(EMData* slice, float alt, float az, float phi);
-	void radial_average();
-
-	void radial_subtract();
-	void sub_noise();
-	void setup_insert_slice(int size);
-	void to_mass_center(bool int_shift_only = true);
-	EMData* vert_acf(int maxdy);
 #endif
 	
 	
@@ -381,7 +384,6 @@ namespace EMAN {
     inline Vec3f EMData::get_translation() const { return translation; }
     
     inline void EMData::set_translation(const Vec3f& t) { translation = t; }
-    
     
     inline float EMData::get_value_at(int x, int y, int z) const
     {

@@ -71,8 +71,6 @@ namespace EMAN {
 	    
 	    return d;
 	}
-    private:
-	enum { CTFOS = 5 };
     };
 
     class FSCCmp : public Cmp {
@@ -88,8 +86,6 @@ namespace EMAN {
 	    d.put("snr", EMObject::FLOATARRAY);
 	    return d;
 	}
-    private:
-	enum { CTFOS = 5 };
     };
 
     

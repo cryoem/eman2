@@ -17,8 +17,7 @@ namespace EMAN {
 #define I4G	(8.8/(M_PI*M_PI))	// used for 4 interpolation
 #define I3G	(6.4/(M_PI*M_PI))	// used for 3 and 5x5x5 interpolation
 #define I2G	(4.0/(M_PI*M_PI))	// 2 interpolation
-#define CTFOS	5			// curve oversampling,
-					// generates ny*CTFOS/2 points
+
     
     class EMData;
     class Rotation;

@@ -24,6 +24,8 @@ namespace EMAN {
 	virtual int to_dict(map<string, EMObject>& dict) const = 0;
 
     public:
+	enum { CTFOS = 5 };
+	
 	enum CtfMapType {
 	    CTF_MAP_CTF,	// the true ctf with B decay and with positive and negative peaks, 
 	    // NOTE: ctf is positive for the first peak, instead of negative
@@ -85,8 +87,7 @@ namespace EMAN {
 	bool cmp() const;
 	Ctf::CtfMapType get_maptype();
 	void compute_map(Ctf::CtfMapType maptype, EMData* power_spectrum = 0);
-	void compute_curve(Ctf::CtfCurveType type, XYData* xy);
-    
+	
 	bool is_changed() const;
     
 	//void compute_bg(EMData* power_spectrum);
@@ -98,7 +99,7 @@ namespace EMAN {
 	int from_dict(map<string, EMObject>& dict);
 	int to_dict(map<string, EMObject>& dict) const;
 
-	static float* calc_ctf_curve(EMData* image, CtfCurveType type, XYData *sf);
+	static vector<float> compute_curve(EMData* image, CtfCurveType type, XYData *sf = 0);
 
     private:
 	static inline float calc_gamma(float g1, float g2, float s)
