@@ -12,6 +12,8 @@ using std::vector;
 
 namespace EMAN
 {
+    /** XYData defines a 1D (x,y) data set.
+     */
     class XYData
     {
     public:

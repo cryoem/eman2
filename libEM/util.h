@@ -17,6 +17,9 @@ using std::vector;
 
 namespace EMAN
 {
+    /** Util is a collection of utility functions.
+     * Each function is a public static function.
+     */
     class Util
     {
     public:

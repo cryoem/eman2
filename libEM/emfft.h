@@ -20,6 +20,16 @@ namespace EMAN
 	UNKNOWN_DIRECTION
     };
 
+    /** FftwPlan wraps 1d/nd fftw plan operation.
+     *
+     *  Typical usage:
+     *
+     *  FftwPlan *plan_1d = new FftwPlan(12, REAL_TO_COMPLEX, FFTW_ESTIMATE);
+     *  rfftw_plan plan1 = plan_1d->get_plan_1d();
+     * 
+     *  FftwPlan *plan_nd = new FftwPlan(rank, nx, ny, nz, REAL_TO_COMPLEX, FFTW_ESTIMATE);
+     *  rfftwnd_plan *plan2 = plan_nd->get_plan_nd()
+     */
     class FftwPlan
     {
     public:
@@ -56,6 +66,8 @@ namespace EMAN
     
     bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
 
+    /** EMfft converts 1d/nd data from real to complex or from complex to real.
+     */
     class EMfft
     {
     public:
@@ -81,6 +93,8 @@ namespace EMAN
 
 namespace EMAN
 {
+    /** EMfft converts 1d/nd data from real to complex or from complex to real.
+     */
     class EMfft
     {
     public:

@@ -9,9 +9,9 @@
 namespace EMAN
 {
 
-    // This defines the interpolation function used to generate
-    // a e^-x^4 function in real space. Used for Fourier interpolation
-
+    /** Interp defines the interpolation function used to generate
+     * a e^-x^4 function in real space. Used for Fourier interpolation
+     */
     class Interp
     {
     public:

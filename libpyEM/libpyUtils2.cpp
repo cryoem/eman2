@@ -7,7 +7,6 @@
 #include <ctf.h>
 #include <emdata.h>
 #include <emutil.h>
-#include <floatstat.h>
 #include <imageio.h>
 #include <log.h>
 #include <pyem.h>
@@ -283,18 +282,6 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_find_min_and_max_overloads_4_6, EMAN::
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
-    class_< EMAN::FloatStat >("FloatStat", init< const EMAN::FloatStat& >())
-        .def(init< int >())
-        .def("clear", &EMAN::FloatStat::clear)
-        .def("add", &EMAN::FloatStat::add)
-        .def("mean", &EMAN::FloatStat::mean)
-        .def("sigma", &EMAN::FloatStat::sigma)
-        .def("min", &EMAN::FloatStat::min)
-        .def("max", &EMAN::FloatStat::max)
-        .def("median", &EMAN::FloatStat::median)
-        .def("num_greater", &EMAN::FloatStat::num_greater)
-    ;
-
     scope* EMAN_Log_scope = new scope(
     class_< EMAN::Log, boost::noncopyable >("Log", no_init)
         .def("logger", &EMAN::Log::logger, return_value_policy< reference_existing_object >())

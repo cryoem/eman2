@@ -12,6 +12,11 @@ using std::string;
 
 namespace EMAN
 {
+    /** EMCache is a generic cache that can cache anything defined by 'T'.
+     * Item in the cache is identified by its name. Use add() to add
+     * an item to the cache, and get() to return the item. If the item
+     * is not in the cache, a 0 pointer will be returned.
+     */
     template <class T> class EMCache
     {
     public:
@@ -90,6 +95,9 @@ namespace EMAN
 
     class ImageIO;
 
+    /** GlobalCache is a Singleton class that handles cache across EMAN.
+     * It uses EMCache template in its internal implementation.
+     */
     class GlobalCache
     {
     public:

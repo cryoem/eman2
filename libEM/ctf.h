@@ -19,6 +19,8 @@ namespace EMAN
     class EMData;
     class XYData;
 
+    /** Ctf is the base class for all CTF model.
+     */
     class Ctf
     {
     public:	
@@ -69,7 +71,8 @@ namespace EMAN
 
     };
 
-
+    /** SimpleCtf is the CTF model used in EMAN1.
+     */
     class SimpleCtf: public Ctf
     {
     public:

@@ -3,8 +3,6 @@ Include("pyem.h")
 Include("emdata.h")
 Include("log.h")
 
-FloatStat = Class("EMAN::FloatStat", "floatstat.h")
-
 Log = Class("EMAN::Log", "log.h")
 set_policy(Log.logger, return_value_policy(reference_existing_object))
 exclude(Log.variable)

@@ -1,5 +1,4 @@
 Include("emdata.h")
-Include("floatstat.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 

@@ -4,7 +4,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     imageio.cpp
     util.cpp
     emutil.cpp
-    floatstat.cpp
     interp.cpp
     transform.cpp
     geometry.cpp

@@ -7,7 +7,6 @@
 #include <emdata.h>
 #include <emobject.h>
 #include <filter.h>
-#include <floatstat.h>
 
 // Using =======================================================================
 using namespace boost::python;
