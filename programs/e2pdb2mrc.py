@@ -147,9 +147,9 @@ using 1/2 width of Gaussian in Fourier space."""
 			options.res/(pi*12.0*options.apix),elec)
 		
 	if not options.quiet: print '\r   %d\nConversion complete'%len(atoms)
-	outmap.set_attr("spacing_row",options.apix)
-	outmap.set_attr("spacing_col",options.apix)
-	outmap.set_attr("spacing_sec",options.apix)
+	outmap.set_attr("apix_x",options.apix)
+	outmap.set_attr("apix_y",options.apix)
+	outmap.set_attr("apix_z",options.apix)
 	outmap.write_image(args[1])
 				
 if __name__ == "__main__":
