@@ -74,8 +74,8 @@ namespace EMAN {
 	void set_params(const Dict& new_params)
 	{
 	    params = new_params;
-	    curves = params["curves"].get_EMData();
-	    sf = params["sf"].get_XYData();
+	    curves = params["curves"].get_emdata();
+	    sf = params["sf"].get_xydata();
 	}
 	
 	TypeDict get_param_types() const

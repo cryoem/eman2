@@ -122,22 +122,22 @@ namespace EMAN {
 	}
 
 	    
-	EMData* get_EMData() const
+	EMData* get_emdata() const
 	{
 	    if (type != EMDATA) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_EMData() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_emdata() for data type '%s'", get_object_type_name(type));
 		}
 		return 0;
 	    }    
 	    return emdata;
 	}
 
-	XYData* get_XYData() const
+	XYData* get_xydata() const
 	{
 	    if (type != XYDATA) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_XYData() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_xydata() for data type '%s'", get_object_type_name(type));
 		}
 		return 0;
 	    }

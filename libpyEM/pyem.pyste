@@ -6,7 +6,7 @@ exclude(Log.warn)
 exclude(Log.error)		       
 
 EMObject = Class("EMAN::EMObject", "emobject.h")
-set_policy(EMObject.get_EMData, return_internal_reference())
+set_policy(EMObject.get_emdata, return_internal_reference())
 
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
