@@ -25,8 +25,9 @@ namespace EMAN
      * DEFINE_IMAGEIO_FUNC macro.
      *
      * Image header I/O is separated from image data I/O.
-     * 
-     * valid image_index = [0, n]
+     * valid image_index = [0, n].
+	 *
+	 * The typical way to use an ImageIO instance is:
      */
 	class ImageIO
 	{
@@ -36,6 +37,8 @@ namespace EMAN
 	  public:
 		virtual ~ ImageIO();
 
+		/** read the header from an image.
+		 */
 		virtual int read_header(Dict & dict, int image_index = 0,
 								const Region * area = 0, bool is_3d = false) = 0;
 

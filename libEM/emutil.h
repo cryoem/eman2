@@ -92,6 +92,65 @@ namespace EMAN
 		static ImageType fast_get_image_type(string filename, const void *first_block,
 											 off_t file_size);
 	};
+
+
+	class UnknownImageFormat : public Exception
+	{
+	public:
+		UnknownImageFormat(const string& imagename, const string& file = "unknown",
+						   int line = 0, const string& desc = "")
+			: Exception(file, line, desc, imagename) {}
+	};
+
+	class ImageHeaderReadError : public Exception
+	{
+	public:
+		ImageHeaderReadError(const string& imagename, const string& file = "unknown",
+							 int line = 0, const string& desc = "")
+			: Exception(file, line, desc, imagename) {}
+	};
+	
+	class ImageDataReadError : public Exception
+	{
+	public:
+		ImageDataReadError(const string& imagename, const string& file = "unknown",
+						   int line = 0, const string& desc = "")
+			: Exception(file, line, desc, imagename) {}
+	};
+
+
+	class ImageHeaderWriteError : public Exception
+	{
+	public:
+		ImageHeaderWriteError(const string& imagename, const string& file = "unknown",
+							 int line = 0, const string& desc = "")
+			: Exception(file, line, desc, imagename) {}
+	};
+	
+	class ImageDataWriteError : public Exception
+	{
+	public:
+		ImageDataWriteError(const string& imagename, const string& file = "unknown",
+						   int line = 0, const string& desc = "")
+			: Exception(file, line, desc, imagename) {}
+	};
+
+	class NotSameImageSizeError : public Exception
+	{
+	public:
+		NotSameImageSizeError(const string& file = "unknown",
+							  int line = 0, const string& desc = "")
+			: Exception(file, line, desc) {}
+	};
+
+	class NotSquareImageError : public Exception
+	{
+	public:
+		NotSquareImageError(const string& file = "unknown",
+							int line = 0, const string& desc = "")
+			: Exception(file, line, desc) {}
+	};
+	
 }
 
 #endif

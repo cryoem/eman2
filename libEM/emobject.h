@@ -339,11 +339,12 @@ namespace EMAN
 		map < string, string > dict;
 	};
 
-	class NotExistingObjectError : public Exception {
+	class NotExistingObjectError : public Exception
+	{
 	public:
-		NotExistingObjectError(const string& file = "unknown", int line = 0,
-							   const string& desc = "none")
-			: Exception(file, line, desc) {}
+		NotExistingObjectError(const string& objname, const string& file = "unknown",
+							   int line = 0, const string& desc = "none")
+			: Exception(file, line, desc, objname) {}
 	};
 	
 	/** Factory is used to store objects to create new instances.
@@ -364,13 +365,14 @@ namespace EMAN
      *	    Filter *f = Factory<Filter>.get("AbsoluateValue");
      *      Filter *f2 = Factory<Filter>.get("GaussLowpass", Dict("lowpass", EMObject(12));
      */
-	template < class T > class Factory {
+	template < class T > class Factory
+	{
 	public:
 		typedef T *(*InstanceType) ();
 
 		static void add(InstanceType i);
-		static T *get(string instance_name) throw (NotExistingObjectError);
-		static T *get(string instance_name, const Dict & params) throw (NotExistingObjectError);
+		static T *get(string instance_name);
+		static T *get(string instance_name, const Dict & params);
 		static vector < string > get_list();
 
 	private:
@@ -418,7 +420,8 @@ namespace EMAN
 		i = 0;
 	}
 
-	template < class T > T * Factory < T >::get(string instancename) throw(NotExistingObjectError){
+	template < class T > T * Factory < T >::get(string instancename)
+	{
 		init();
 		typename map < string, InstanceType >::iterator fi =
 			my_instance->my_dict.find(instancename);
@@ -426,12 +429,12 @@ namespace EMAN
 			return my_instance->my_dict[instancename] ();
 		}
 		
-		string desc = string("No such an instance existing: ") + instancename;
-		throw NotExistingObjectError(__FILE__, __LINE__, desc);
+		throw NotExistingObjectError(instancename, __FILE__, __LINE__,
+									 "No such an instance existing");
 	}
 
 	template < class T > T * Factory < T >::get(string instancename, const Dict & params)
-		throw(NotExistingObjectError) {
+	{
 		init();
 
 		typename map < string, InstanceType >::iterator fi =
@@ -443,8 +446,8 @@ namespace EMAN
 			return i;
 		}		
 
-		string desc = string("No such an instance existing: ") + instancename;
-		throw NotExistingObjectError(__FILE__, __LINE__, desc);
+		throw NotExistingObjectError(instancename, __FILE__, __LINE__,
+									 "No such an instance existing");
 	}
 
 	template < class T > vector < string > Factory < T >::get_list() {

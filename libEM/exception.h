@@ -9,9 +9,9 @@ namespace EMAN {
     
     class Exception : public std::exception {
     public:
-		Exception(const string& file = "unknown", int line_num = 0,
-				  const string& desc1 = "none") : filename(file), line(line_num),
-												 desc(desc1) {}
+		Exception(const string& file = "", int line_num = 0,
+				  const string& desc1 = "", const string& objname1 = "")
+			: filename(file), line(line_num), desc(desc1), objname(objname1) {}
 	
 		virtual ~Exception() throw() {}
 
@@ -34,12 +34,19 @@ namespace EMAN {
 		{
 			return line;
 		}
+
+		virtual const char* get_objname() const
+		{
+			return objname.c_str();
+		}
+
+		void dump() const;
 		
-	
     private:
 		string filename;
 		int line;
 		string desc;
+		string objname;
     };
 }
     

@@ -41,10 +41,9 @@ namespace EMAN
 		 * @param header_only To read only the header or both header and data.
 		 * @param region To read only a region of the image.
 		 * @param is_3d  To read a stack of images as a 3D image or not.
-		 * @return 0 if OK; 1 if any error.
 		 */
-		 int read_image(string filename, int img_index = 0, bool header_only = false,
-					   const Region * region = 0, bool is_3d = false);
+		void read_image(string filename, int img_index = 0, bool header_only = false,
+						const Region * region = 0, bool is_3d = false);
 
 		/** write the data out to an image.
 		 * @param filename The image file name.
@@ -53,21 +52,19 @@ namespace EMAN
 		 *        specified, use the 'filename' extension to decide.
 		 * @param header_only To write only the header or both header and data.
 		 * @param use_host_endian To write in the host computer byte order.
-		 * @return 0 if OK; 1 if any error.
 		 */
-		int write_image(string filename, int img_index = 0,
-						EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false,
-						bool use_host_endian = true);
+		void write_image(string filename, int img_index = 0,
+						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false,
+						 bool use_host_endian = true);
 
 		/** append to image file. If the file doesn't exist, create one.
 		 * @param filename The image file name.
 		 * @param imgtype Write to the given image format type. if not
 		 *        specified, use the 'filename' extension to decide.
 		 * @param header_only To write only the header or both header and data.
-		 * @return 0 if OK; 1 if any error.
 		 */
-		int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
-						 bool header_only = false);
+		void append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+						  bool header_only = false);
 
 		/** Apply a filter with its parameters on this image.
 		 * @param filtername Filter Name.
@@ -125,16 +122,16 @@ namespace EMAN
 
 		Point < float >normalize_slice(EMData * slice, float alt, float az, float phi);
 
-		int render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
-						int bpl, float scale, int min_gray, int max_gray,
-						float min_render, float max_render);
-		int render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
-								int bpl, float scale, int min_gray, int max_gray,
-								float min_render, float max_render);
-		int render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
+		void render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
-						 float min_render, float max_render,
-						 void *ref, void cmap(void *, int coord, unsigned char *tri));
+						 float min_render, float max_render);
+		void render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
+								 int bpl, float scale, int min_gray, int max_gray,
+								 float min_render, float max_render);
+		void render_amp24(unsigned char *data, int x, int y, int xsize, int ysize,
+						  int bpl, float scale, int min_gray, int max_gray,
+						  float min_render, float max_render,
+						  void *ref, void cmap(void *, int coord, unsigned char *tri));
 
 		/** convert the complex image from real/imaginary to amplitude/phase */
 		void ri2ap();
@@ -156,7 +153,7 @@ namespace EMAN
 		void rotate_translate(const Transform & xform);
 
 		void rotate_x(int dx);
-		int rotate_180();
+		void rotate_180();
 
 		double dot_rotate_translate(EMData * data, float dx, float dy, float da);
 
@@ -244,17 +241,17 @@ namespace EMAN
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
-		int add(float f);
-		int add(const EMData & em);
+		void add(float f);
+		void add(const EMData & em);
 
-		int sub(float f);
-		int sub(const EMData & em);
+		void sub(float f);
+		void sub(const EMData & em);
 
-		int mult(float f);
-		int mult(const EMData & em);
+		void mult(float f);
+		void mult(const EMData & em);
 
-		int div(float f);
-		int div(const EMData & em);
+		void div(float f);
+		void div(const EMData & em);
 
 		float *get_data() const;
 		void done_data();
@@ -786,15 +783,15 @@ namespace EMAN
 		all_rotation = Vec3 < float >(alt, az, phi);
 	}
 
-	inline int EMData::render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
-										   int bpl, float scale, int min_gray, int max_gray,
-										   float min_render, float max_render)
+	inline void EMData::render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,
+											int bpl, float scale, int min_gray, int max_gray,
+											float min_render, float max_render)
 	{
 
-		return render_amp8((unsigned char *) data, x, y, xsize, ysize, bpl,
-						   scale, min_gray, max_gray, min_render, max_render);
+		render_amp8((unsigned char *) data, x, y, xsize, ysize, bpl,
+					scale, min_gray, max_gray, min_render, max_render);
 	}
-
+	
 	inline void EMData::scale_pixel(float scale) const
 	{
 		attr_dict["spacing_row"] = EMObject((float) attr_dict["spacing_row"] * scale);

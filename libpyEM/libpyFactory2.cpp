@@ -41,6 +41,9 @@ struct EMAN_Exception_Wrapper: EMAN::Exception
     EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1, const std::string& p2):
         EMAN::Exception(p0, p1, p2), self(self_) {}
 
+    EMAN_Exception_Wrapper(PyObject* self_, const std::string& p0, int p1, const std::string& p2, const std::string& p3):
+        EMAN::Exception(p0, p1, p2, p3), self(self_) {}
+
     void set_desc(const std::string& p0) {
         call_method< void >(self, "set_desc", p0);
     }
@@ -71,6 +74,14 @@ struct EMAN_Exception_Wrapper: EMAN::Exception
 
     int default_get_line_num() const {
         return EMAN::Exception::get_line_num();
+    }
+
+    const char* get_objname() const {
+        return call_method< const char* >(self, "get_objname");
+    }
+
+    const char* default_get_objname() const {
+        return EMAN::Exception::get_objname();
     }
 
     const char* what() const throw() {
@@ -354,12 +365,14 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
 BOOST_PYTHON_MODULE(libpyFactory2)
 {
     class_< EMAN::Exception, EMAN_Exception_Wrapper >("Exception", init< const EMAN::Exception& >())
-        .def(init< optional< const std::string&, int, const std::string& > >())
+        .def(init< optional< const std::string&, int, const std::string&, const std::string& > >())
         .def("set_desc", &EMAN::Exception::set_desc, &EMAN_Exception_Wrapper::default_set_desc)
         .def("get_file", &EMAN::Exception::get_file, &EMAN_Exception_Wrapper::default_get_file)
         .def("get_desc", &EMAN::Exception::get_desc, &EMAN_Exception_Wrapper::default_get_desc)
         .def("get_line_num", &EMAN::Exception::get_line_num, &EMAN_Exception_Wrapper::default_get_line_num)
+        .def("get_objname", &EMAN::Exception::get_objname, &EMAN_Exception_Wrapper::default_get_objname)
         .def("what", (const char* (std::exception::*)() const throw())&std::exception::what, (const char* (EMAN_Exception_Wrapper::*)() const)&EMAN_Exception_Wrapper::default_what)
+        .def("dump", &EMAN::Exception::dump)
     ;
 
     scope* EMAN_EMObject_scope = new scope(
@@ -399,7 +412,7 @@ BOOST_PYTHON_MODULE(libpyFactory2)
     delete EMAN_EMObject_scope;
 
     class_< EMAN::NotExistingObjectError, bases< EMAN::Exception >  >("NotExistingObjectError", init< const EMAN::NotExistingObjectError& >())
-        .def(init< optional< const std::string&, int, const std::string& > >())
+        .def(init< const std::string&, optional< const std::string&, int, const std::string& > >())
     ;
 
     class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("Aligner", init<  >())

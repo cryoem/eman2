@@ -67,20 +67,21 @@ EMData::~EMData()
 	}
 }
 
-int EMData::read_image(string filename, int img_index, bool nodata, const Region * r, bool is_3d)
+void EMData::read_image(string filename, int img_index, bool nodata,
+						const Region * r, bool is_3d)
 {
 	Log::logger()->log("\n\nEMData::read_image() on file '%s'", filename.c_str());
 
-	int err = 0;
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
-
+	
 	if (!imageio) {
-		err = 1;
+		throw UnknownImageFormat(filename, __FILE__, __LINE__, "cannot create an image io");
 	}
 	else {
-		err = imageio->read_header(attr_dict, img_index, r, is_3d);
+		int err = imageio->read_header(attr_dict, img_index, r, is_3d);
 		if (err) {
-			Log::logger()->error("read image header failed on file '%s'", filename.c_str());
+			throw ImageHeaderReadError(filename, __FILE__, __LINE__,
+									   "imageio read header failed");
 		}
 		else {
 			if (imageio->is_complex_mode()) {
@@ -105,10 +106,10 @@ int EMData::read_image(string filename, int img_index, bool nodata, const Region
 
 			if (!nodata) {
 				set_size(nx, ny, nz);
-				err = imageio->read_data(rdata, img_index, r, is_3d);
-
+				int err = imageio->read_data(rdata, img_index, r, is_3d);
 				if (err) {
-					Log::logger()->error("read image data failed on file '%s'", filename.c_str());
+					throw ImageDataReadError(filename, __FILE__, __LINE__,
+											 "imageio read data failed");
 				}
 				else {
 					flags |= EMDATA_NEEDUPD;
@@ -120,17 +121,13 @@ int EMData::read_image(string filename, int img_index, bool nodata, const Region
 	if (nodata) {
 		flags |= EMDATA_NODATA;
 	}
-
-	return err;
 }
 
 
-int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
-						bool header_only, bool use_host_endian)
+void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
+						 bool header_only, bool use_host_endian) 
 {
 	Log::logger()->log("\n\nEMData::write_image() on file '%s'", filename.c_str());
-
-	int err = 0;
 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		char *ext = strrchr(filename.c_str(), '.');
@@ -141,18 +138,18 @@ int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtyp
 	}
 
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_WRITE, imgtype);
-
 	if (!imageio) {
-		err = 1;
+		throw UnknownImageFormat(filename, __FILE__, __LINE__, "cannot create an image io");
 	}
 	else {
 		update_stat();
 		if (img_index < 0) {
 			img_index = imageio->get_nimg();
 		}
-		err = imageio->write_header(attr_dict, img_index, use_host_endian);
+		int err = imageio->write_header(attr_dict, img_index, use_host_endian);
 		if (err) {
-			Log::logger()->error("write image header failed on file '%s'", filename.c_str());
+			throw ImageHeaderWriteError(filename, __FILE__, __LINE__,
+										"imageio write header failed");
 		}
 		else {
 			if (ctf) {
@@ -162,16 +159,15 @@ int EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtyp
 			if (!header_only) {
 				err = imageio->write_data(rdata, img_index, use_host_endian);
 				if (err) {
-					Log::logger()->error("write image data failed on file '%s'", filename.c_str());
+					throw ImageDataWriteError(filename, __FILE__, __LINE__,
+											  "imageio write data failed");
 				}
 			}
 		}
 	}
-
-	return err;
 }
 
-int EMData::append_image(string filename, EMUtil::ImageType imgtype, bool header_only)
+void EMData::append_image(string filename, EMUtil::ImageType imgtype, bool header_only)
 {
 	return write_image(filename, -1, imgtype, header_only);
 }
@@ -854,9 +850,9 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 	return ret;
 }
 
-int EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iysize,
-						int bpl, float scale, int mingray, int maxgray,
-						float render_min, float render_max)
+void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iysize,
+						 int bpl, float scale, int mingray, int maxgray,
+						 float render_min, float render_max)
 {
 	if (is_complex()) {
 		ri2ap();
@@ -1090,15 +1086,13 @@ int EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iys
 	}
 
 	done_data();
-	return 0;
-
 }
 
 
-int EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int iysize,
-						 int bpl, float scale, int mingray, int maxgray,
-						 float render_min, float render_max, void *ref,
-						 void cmap(void *, int coord, unsigned char *tri))
+void EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int iysize,
+						  int bpl, float scale, int mingray, int maxgray,
+						  float render_min, float render_max, void *ref,
+						  void cmap(void *, int coord, unsigned char *tri))
 {
 	if (is_complex()) {
 		ri2ap();
@@ -1343,7 +1337,6 @@ int EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int iy
 	}
 
 	done_data();
-	return 0;
 }
 
 
@@ -1567,7 +1560,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 }
 
 
-int EMData::add(float f)
+void EMData::add(float f)
 {
 	if (f != 0) {
 		flags |= EMDATA_NEEDUPD;
@@ -1576,17 +1569,13 @@ int EMData::add(float f)
 			rdata[i] += f;
 		}
 	}
-
-	return 0;
 }
 
-int EMData::add(const EMData & em)
+void EMData::add(const EMData & em) 
 {
-	int err = 0;
-
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		Log::logger()->warn("cannot add 2 images with different sizes");
-		err = 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__,
+									"cannot add 2 images with different sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -1597,47 +1586,39 @@ int EMData::add(const EMData & em)
 			rdata[i] += src_data[i];
 		}
 	}
-
-	return err;
 }
 
-int EMData::sub(float f)
+void EMData::sub(float f)
 {
 	if (f != 0) {
 		flags |= EMDATA_NEEDUPD;
-		int size = nx * ny * nz;
-		for (int i = 0; i < size; i++) {
+		size_t size = nx * ny * nz;
+		for (size_t i = 0; i < size; i++) {
 			rdata[i] -= f;
 		}
 	}
-
-	return 0;
 }
 
-int EMData::sub(const EMData & em)
+void EMData::sub(const EMData & em) 
 {
-	int err = 0;
-
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		Log::logger()->warn("cannot substract 2 images with different sizes");
-		err = 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__,
+									"cannot substract 2 images with different sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
 		const float *src_data = em.get_data();
-		int size = nx * ny * nz;
-
-		for (int i = 0; i < size; i++) {
+		size_t size = nx * ny * nz;
+		
+		for (size_t i = 0; i < size; i++) {
 			rdata[i] -= src_data[i];
 		}
 	}
-
-	return err;
 }
 
 
 
-int EMData::mult(float f)
+void EMData::mult(float f)
 {
 	if (is_complex()) {
 		ap2ri();
@@ -1649,17 +1630,13 @@ int EMData::mult(float f)
 			rdata[i] *= f;
 		}
 	}
-
-	return 0;
 }
 
-int EMData::mult(const EMData & em)
+void EMData::mult(const EMData & em) 
 {
-	int err = 0;
-
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		Log::logger()->warn("cannot multiply 2 images with different sizes");
-		err = 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__,
+									"cannot multiply 2 images with different sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -1670,11 +1647,9 @@ int EMData::mult(const EMData & em)
 			rdata[i] *= src_data[i];
 		}
 	}
-
-	return err;
 }
 
-int EMData::div(float f)
+void EMData::div(float f)
 {
 	if (f != 0) {
 		flags |= EMDATA_NEEDUPD;
@@ -1683,17 +1658,13 @@ int EMData::div(float f)
 			rdata[i] *= f;
 		}
 	}
-
-	return 0;
 }
 
-int EMData::div(const EMData & em)
+void EMData::div(const EMData & em) 
 {
-	int err = 0;
-
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
-		Log::logger()->warn("cannot divide 2 images with different sizes");
-		err = 1;
+		throw NotSameImageSizeError(__FILE__, __LINE__,
+									"cannot divide 2 images with different sizes");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -1704,8 +1675,6 @@ int EMData::div(const EMData & em)
 			rdata[i] /= src_data[i];
 		}
 	}
-
-	return err;
 }
 
 
@@ -1903,7 +1872,8 @@ void EMData::set_ctf(Ctf * new_ctf)
 }
 
 
-vector < EMData * >EMData::read_images(string filename, vector < int >img_indices, bool header_only)
+vector < EMData * >EMData::read_images(string filename, vector < int >img_indices,
+									   bool header_only) 
 {
 	int total_img = EMUtil::get_image_count(filename);
 	size_t num_img = img_indices.size();
@@ -1918,21 +1888,24 @@ vector < EMData * >EMData::read_images(string filename, vector < int >img_indice
 	for (size_t j = 0; j < n; j++) {
 		EMData *d = new EMData();
 		size_t k = num_img == 0 ? j : img_indices[j];
-		int err = d->read_image(filename, k, header_only);
-		if (err) {
+		try {
+			d->read_image(filename, k, header_only);
+		}
+		catch(...) {
 			delete d;
 			d = 0;
+			throw;
 		}
-		else {
-			v.push_back(d);
-		}
+
+		v.push_back(d);
 	}
 	return v;
 }
 
 
 vector < EMData * >EMData::read_images_ext(string filename, int img_index_start,
-										   int img_index_end, bool header_only, string ext)
+										   int img_index_end, bool header_only,
+										   string ext) 
 {
 	assert(img_index_end >= img_index_start);
 
@@ -1953,14 +1926,15 @@ vector < EMData * >EMData::read_images_ext(string filename, int img_index_start,
 
 	for (int i = img_index_start; i < img_index_end; i++) {
 		EMData *d = new EMData();
-		int err = d->read_image(new_filename, i, header_only);
-		if (err) {
+		try {
+			d->read_image(new_filename, i, header_only);
+		}
+		catch(...) {
 			delete d;
 			d = 0;
+			throw;
 		}
-		else {
-			v.push_back(d);
-		}
+		v.push_back(d);
 	}
 	return v;
 }
@@ -1998,33 +1972,29 @@ EMData & EMData::operator/=(float n)
 
 EMData & EMData::operator+=(const EMData & em)
 {
-	if (add(em) == 0) {
-		update_stat();
-	}
+	add(em);
+	update_stat();	
 	return *this;
 }
 
 EMData & EMData::operator-=(const EMData & em)
 {
-	if (sub(em) == 0) {
-		update_stat();
-	}
+	sub(em);
+	update_stat();	
 	return *this;
 }
 
 EMData & EMData::operator*=(const EMData & em)
 {
-	if (mult(em) == 0) {
-		update_stat();
-	}
+	mult(em);
+	update_stat();
 	return *this;
 }
 
 EMData & EMData::operator/=(const EMData & em)
 {
-	if (div(em) == 0) {
-		update_stat();
-	}
+	div(em);
+	update_stat();	
 	return *this;
 }
 
@@ -2710,11 +2680,11 @@ void EMData::rotate_translate(const Transform & xform)
 }
 
 
-int EMData::rotate_180()
+void EMData::rotate_180()
 {
 	if (nx != ny) {
-		Log::logger()->error("Rot180 on non-square image poorly defined.");
-		return 1;
+		throw NotSquareImageError(__FILE__, __LINE__, 
+								  "Rot180 on non-square image poorly defined.");
 	}
 
 	float *d = get_data();
@@ -2738,10 +2708,7 @@ int EMData::rotate_180()
 	}
 
 	done_data();
-
 	all_rotation[0] += M_PI;
-
-	return 0;
 }
 
 EMData *EMData::do_radon()

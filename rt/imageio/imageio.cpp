@@ -13,28 +13,33 @@ static int fail_ntests = 0;
 static int err_code = 0;
 
 int write_image(EMData* em, const char* infile, char* outfile,
-		int r_image_index, EMUtil::ImageType image_type,
-		int w_image_index = 0)
+				int r_image_index, EMUtil::ImageType image_type,
+				int w_image_index = 0)
 {
     const char* imgext = EMUtil::get_imagetype_name(image_type);
     bool is_new_file = false;
     int err = 0;
     
     if (outfile == 0) {
-	is_new_file = true;
-	outfile = new char[256];
-	strcpy(outfile, infile);
-	char* ext = strrchr(infile, '.');
-	outfile[strlen(infile) - strlen(ext)] = '\0';
-	sprintf(outfile, "%s_%d.%s", outfile, r_image_index, imgext);
+		is_new_file = true;
+		outfile = new char[256];
+		strcpy(outfile, infile);
+		char* ext = strrchr(infile, '.');
+		outfile[strlen(infile) - strlen(ext)] = '\0';
+		sprintf(outfile, "%s_%d.%s", outfile, r_image_index, imgext);
     }
 
     em->dump_data(outfile);
-    err = em->write_image(outfile, w_image_index, image_type);
-
+	try {
+		em->write_image(outfile, w_image_index, image_type);
+	}
+	catch(...) {
+		err = 1;
+	}
+	
     if (is_new_file) {
-	delete [] outfile;
-	outfile = 0;
+		delete [] outfile;
+		outfile = 0;
     }
     
     return err;
@@ -42,61 +47,60 @@ int write_image(EMData* em, const char* infile, char* outfile,
 
 
 int test_image(const char* base_filename, int r_image_index = 0,
-	       Region* area=0, bool is_3d = false,
-	       int expected_err = 0, char* outfile = 0, 
-	       EMUtil::ImageType image_type = EMUtil::IMAGE_UNKNOWN,
-	       int w_image_index = 0)
+			   Region* area=0, bool is_3d = false,
+			   int expected_err = 0, char* outfile = 0, 
+			   EMUtil::ImageType image_type = EMUtil::IMAGE_UNKNOWN,
+			   int w_image_index = 0)
 {
     char home[128];
     sprintf(home, getenv("HOME"));
     char filename[256];
     sprintf(filename, "%s/images/%s", home, base_filename);
     int err = 0;
-    
-    EMData* em = new EMData();
-    err = em->read_image(filename, r_image_index, false, area, is_3d);
-    if (err) {
-	Log::logger()->error("EMData read_image() failed on '%s'\n", base_filename);
-    }
-    else {
-	if (image_type ==  EMUtil::IMAGE_UNKNOWN) {
-	    image_type = EMUtil::IMAGE_MRC;
-	}
 
-	err = write_image(em, base_filename, outfile, r_image_index, image_type, w_image_index);    
-	if (err) {
-	    Log::logger()->error("EMData write_image() failed on '%s'\n", base_filename);
-	}
-    }
-    
-    delete em;
-    em = 0;
+	try {
+		EMData* em = new EMData();
+		em->read_image(filename, r_image_index, false, area, is_3d);
 
+		if (image_type ==  EMUtil::IMAGE_UNKNOWN) {
+			image_type = EMUtil::IMAGE_MRC;
+		}
+		
+		write_image(em, base_filename, outfile, r_image_index, image_type, w_image_index);    
+		
+		delete em;
+		em = 0;
+	}
+	catch(...) {
+		err = 1;
+		Log::logger()->error("image read/write error: %s\n", base_filename);
+	}
+	
     total_ntests++;
     if (err != expected_err) {
-	fail_ntests++;
-	err_code = 1;
+		fail_ntests++;
+		err_code = 1;
     }
     
     return err;
 }
 
 int fail_test(const char* base_filename, int r_image_index = 0,
-	      Region* area=0, bool is_3d = false, char* outfile = 0, 
-	      EMUtil::ImageType image_type = EMUtil::IMAGE_UNKNOWN,
-	      int w_image_index = 0)
+			  Region* area=0, bool is_3d = false, char* outfile = 0, 
+			  EMUtil::ImageType image_type = EMUtil::IMAGE_UNKNOWN,
+			  int w_image_index = 0)
 {
     return test_image(base_filename, r_image_index, area, is_3d, 1,
-		      outfile, image_type, w_image_index);
+					  outfile, image_type, w_image_index);
 }
 
 int pass_test(const char* base_filename, int r_image_index = 0,
-	      Region* area=0, bool is_3d = false, char* outfile = 0, 
-	      EMUtil::ImageType image_type = EMUtil::IMAGE_UNKNOWN,
-	      int w_image_index = 0)
+			  Region* area=0, bool is_3d = false, char* outfile = 0, 
+			  EMUtil::ImageType image_type = EMUtil::IMAGE_UNKNOWN,
+			  int w_image_index = 0)
 {
     return test_image(base_filename, r_image_index, area, is_3d, 0,
-		      outfile, image_type, w_image_index);
+					  outfile, image_type, w_image_index);
 }
 
 
@@ -115,9 +119,9 @@ int test_mrc()
     int n_ids = sizeof(ids) / sizeof(int);
 
     for (int i = 0; i < n_ids; i++) {
-	Region d3_d2(0, 0, ids[i], 100, 100, 1);
-	sprintf(filename1, "3d_each_%d.mrc", ids[i]);
-	pass_test(file3d, 0, &d3_d2, false, filename1);
+		Region d3_d2(0, 0, ids[i], 100, 100, 1);
+		sprintf(filename1, "3d_each_%d.mrc", ids[i]);
+		pass_test(file3d, 0, &d3_d2, false, filename1);
     }
 
     const char* file1d = "tablet.mrc";
@@ -172,8 +176,8 @@ int test_spider()
     pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_SINGLE_SPIDER);
 
     for (int i = 0; i < 20; i++) {
-	Region d32(0, 0, i, 100, 100, 1);
-	pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, i);
+		Region d32(0, 0, i, 100, 100, 1);
+		pass_test("3d.mrc", 0, &d32, false, "3d_all.spi", EMUtil::IMAGE_SPIDER, i);
     }
 
     return err_code;
@@ -281,7 +285,7 @@ int test_pgm()
 int test_lst()
 {
     for (int k = 0; k < 5; k++) {
-	pass_test("lst1.lst", k);
+		pass_test("lst1.lst", k);
     }
 
     pass_test("cls0000.lst", 0);
@@ -356,7 +360,7 @@ int test_imagic()
     e->read_image("/home/lpeng/images/tablet.mrc");
 
     for (int i = 0; i < 2; i++) {
-	e->write_image("tablet1.img", -1, EMUtil::IMAGE_IMAGIC);
+		e->write_image("tablet1.img", -1, EMUtil::IMAGE_IMAGIC);
     }
     
     delete  e;
@@ -386,10 +390,10 @@ int test_performance()
     double x_sum = 0;
     
     for (int i = 0; i < nimg; i++) {
-	d->read_image(imagefile, i, true);
-	Dict dict = d->get_attr_dict();
-	int nx = dict.get("nx");
-	x_sum += nx;
+		d->read_image(imagefile, i, true);
+		Dict dict = d->get_attr_dict();
+		int nx = dict.get("nx");
+		x_sum += nx;
     }
     printf("nimg = %d, nx sum = %f\n", nimg, x_sum);
     
@@ -409,8 +413,8 @@ void usage()
 int main(int argc, char* argv[])
 {
     if (argc == 1) {
-	usage();
-	exit(1);
+		usage();
+		exit(1);
     }
 
     Util::set_log_level(argc, argv);
@@ -420,53 +424,53 @@ int main(int argc, char* argv[])
     printf("Testing '%s' imageio\n\n", imageformat);
     
     if (strcmp(imageformat, "dm3") == 0) {
-	test_dm3();
+		test_dm3();
     }
     else if (strcmp(imageformat, "tiff") == 0) {
-	test_tiff();
+		test_tiff();
     }
     else if (strcmp(imageformat, "hdf") == 0) {
-	test_hdf();
+		test_hdf();
     }
     else if (strcmp(imageformat, "pif") == 0) {
-	test_pif();
+		test_pif();
     }
     else if (strcmp(imageformat, "mrc") == 0) {
-	test_mrc();
+		test_mrc();
     }
     else if (strcmp(imageformat, "spider") == 0) {
-	test_spider();
+		test_spider();
     }
     else if (strcmp(imageformat, "pgm") == 0) {
-	test_pgm();
+		test_pgm();
     }
     else if (strcmp(imageformat, "lst") == 0) {
-	test_lst();
+		test_lst();
     }
     else if (strcmp(imageformat, "icos") == 0) {
-	test_icos();
+		test_icos();
     }
     else if (strcmp(imageformat, "png") == 0) {
-	test_png();
+		test_png();
     }
     else if (strcmp(imageformat, "sal") == 0) {
-	test_sal();
+		test_sal();
     }
     else if (strcmp(imageformat, "amira") == 0) {
-	pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_AMIRA);
+		pass_test("tablet.mrc", 0, 0, false, 0, EMUtil::IMAGE_AMIRA);
     }
     else if (strcmp(imageformat, "gatan2") == 0) {
-	pass_test("gatan2.dm2");
+		pass_test("gatan2.dm2");
     }
     else if (strcmp(imageformat, "imagic") == 0) {
-	test_imagic();
+		test_imagic();
     }
     else if (strcmp(imageformat, "perf") == 0) {
-	test_performance();
+		test_performance();
     }
     else {
-	usage();
-	exit(1);
+		usage();
+		exit(1);
     }
     
     printf("Total # Tests: %d. Failed # Tests: %d\n", total_ntests, fail_ntests);
