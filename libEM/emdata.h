@@ -25,6 +25,9 @@ namespace EMAN {
 	static bool HEADER_AND_DATA;
 	static bool IS_3D;
 	static bool NOT_3D;
+	static bool DATA_READ_ONLY;
+	static bool DATA_READ_WRITE;
+
 	
     public:
 	EMData();
@@ -34,30 +37,46 @@ namespace EMAN {
 		       Region* r = 0, bool is_3d = NOT_3D);
 	int write_image(string filename, int img_index = 0,
 			EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN, bool header_only = false);
+	
+	int add(float f);
+	int add(const EMData& em);
+	int sub(const EMData& em);
+	
+	int mult(float f);
+	int mult(const EMData& em);
 
-	Dict get_attr_dict() const;
+	int div(float f);
+	int div(const EMData& em);
+	
+	
 	float* get_data() const;
-
+	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
-	
-	float get_value_at(int x, int y, int z);
-	float get_value_at(int x, int y);
-	
-	float sget_value_at(int x, int y, int z);
-	float sget_value_at(int x, int y);
 
-	float get_value_at_interp(float x, float y);
+	Dict get_attr_dict() const;
+	
+	float get_value_at(int x, int y, int z) const;
+	float get_value_at(int x, int y) const;
+	
+	float sget_value_at(int x, int y, int z) const;
+	float sget_value_at(int x, int y) const;
+
+	float get_value_at_interp(float x, float y) const;
 	
 	void set_value_at(int x, int y, int z, float v);
 	void set_value_at(int x, int y, float v);
 
+	int get_x() const;
+	int get_y() const;
+	int get_z() const;
+	
 	void dump_data(string filename);
 
 	static vector<EMData*> read_images_by_index(string filename, vector<int> img_indices, bool header_only=false);
 	static vector<EMData*> read_images_by_ext(string filename, int img_index_start, int img_index_end,
 						  bool header_only = false, string ext="");
-#if 0
+
 	EMData& operator+=(float n);
         EMData& operator-=(float n);
         EMData& operator*=(float n);
@@ -68,21 +87,21 @@ namespace EMAN {
         EMData& operator*=(const EMData& em);
         EMData& operator/=(const EMData& em);
 
-        friend EMData& operator+(const EMData& em, float n);
-        friend EMData& operator-(const EMData& em, float n);
-        friend EMData& operator*(const EMData& em, float n);
-        friend EMData& operator/(const EMData& em, float n);
+        friend EMData operator+(const EMData& em, float n);
+        friend EMData operator-(const EMData& em, float n);
+        friend EMData operator*(const EMData& em, float n);
+        friend EMData operator/(const EMData& em, float n);
 
-        friend EMData& operator+(float n, const EMData& em);
-        friend EMData& operator-(float n, const EMData& em);
-        friend EMData& operator*(float n, const EMData& em);
-        friend EMData& operator/(float n, const EMData& em);
+        friend EMData operator+(float n, const EMData& em);
+        friend EMData operator-(float n, const EMData& em);
+        friend EMData operator*(float n, const EMData& em);
+        friend EMData operator/(float n, const EMData& em);
 
-        friend EMData& operator+(const EMData& a, const EMData& b);
-        friend EMData& operator-(const EMData& a, const EMData& b);
-        friend EMData& operator*(const EMData& a, const EMData& b);
-        friend EMData& operator/(const EMData& a, const EMData& b);
-#endif
+        friend EMData operator+(const EMData& a, const EMData& b);
+        friend EMData operator-(const EMData& a, const EMData& b);
+        friend EMData operator*(const EMData& a, const EMData& b);
+        friend EMData operator/(const EMData& a, const EMData& b);
+
 	
     private:
 	enum EMDataFlags {
@@ -102,35 +121,35 @@ namespace EMAN {
 
 	int update_stat();
 	void set_size(int nx, int ny, int nz);
-	
+
     private:
-	map<string, EMObject> attr_dict;
+	mutable map<string, EMObject> attr_dict;
 	float* rdata;
 	SimpleCtf* ctf;
 	int flags;
+	int rocount;
     };
 
-    
-    inline float EMData::get_value_at(int x, int y, int z)
+    inline float EMData::get_value_at(int x, int y, int z) const
     {
-	int nx = attr_dict["nx"].get_int();
-	int ny = attr_dict["ny"].get_int();
+	int nx = get_x();
+	int ny = get_y();
 	return rdata[x+y*nx+z*nx*ny]; 
     }
 
 
-    inline float EMData::get_value_at(int x, int y)
+    inline float EMData::get_value_at(int x, int y) const
     {
-	int nx = attr_dict["nx"].get_int();
+	int nx = get_x();
 	return rdata[x+y*nx];
     }
 
 	
-    inline float EMData::sget_value_at(int x, int y, int z)
+    inline float EMData::sget_value_at(int x, int y, int z) const
     {
-	int nx = attr_dict["nx"].get_int();
-	int ny = attr_dict["ny"].get_int();
-	int nz = attr_dict["nz"].get_int();
+	int nx = get_x();
+	int ny = get_y();
+	int nz = get_z();
     
 	if (x < 0 || y < 0 || z < 0 || x >= nx || y >= ny || z >= nz) {
 	    return 0;
@@ -138,10 +157,10 @@ namespace EMAN {
 	return rdata[x+y*nx+z*nx*ny];
     }
 
-    inline float EMData::sget_value_at(int x, int y)
+    inline float EMData::sget_value_at(int x, int y) const
     {
-	int nx = attr_dict["nx"].get_int();
-	int ny = attr_dict["ny"].get_int();
+	int nx = get_x();
+	int ny = get_y();
     
 	if (x < 0 || y < 0 || x >= nx || y >= ny) {
 	    return 0;
@@ -150,7 +169,7 @@ namespace EMAN {
     }
 
 
-    inline float EMData::get_value_at_interp(float xx, float yy)
+    inline float EMData::get_value_at_interp(float xx, float yy) const
     {
 	int x = static_cast<int>(floor(xx));
 	int y = static_cast<int>(floor(yy));
@@ -166,10 +185,9 @@ namespace EMAN {
 
 	
     inline void EMData::set_value_at(int x, int y, int z, float v)
-    {
-	int nx = attr_dict["nx"].get_int();
-	int ny = attr_dict["ny"].get_int();
-	
+    {	
+	int nx = get_x();
+	int ny = get_y();
 	rdata[x+y*nx+z*nx*ny] = v;
 	flags |= EMDATA_NEEDUPD;
     }
@@ -177,12 +195,32 @@ namespace EMAN {
 
     inline void EMData::set_value_at(int x, int y, float v)
     {
-	int nx = attr_dict["nx"].get_int();
-	
+	int nx = get_x();	
 	rdata[x+y*nx] = v;
 	flags |= EMDATA_NEEDUPD;
+    }
+
+
+    inline int EMData::get_x() const
+    {
+	return attr_dict["nx"].get_int();
+    }
+    
+    inline int EMData::get_y() const
+    {	
+	return attr_dict["ny"].get_int();
+    }    
+
+    inline int EMData::get_z() const
+    {
+	return attr_dict["nz"].get_int();
     }
     
 }
 
 #endif
+
+
+
+
+

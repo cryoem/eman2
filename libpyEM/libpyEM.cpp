@@ -36,15 +36,17 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_ext_overloads_3_5, py
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEM)
 {
+    
     EMAN::vector_to_python<EMAN::EMData*>();
     EMAN::vector_from_python<int>();
-    
+
     EMAN::map_to_python<EMAN::EMObject>();
     EMAN::map_from_python<EMAN::EMObject>();
-    
+
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
-    
+
+
     class_< EMAN::EMObject >("EMObject", init<  >())
         .def(init< const EMAN::EMObject & >())
         .def(init< int >())
@@ -124,26 +126,66 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def(init< const EMAN::EMData & >())
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_4())
-        .def("get_attr_dict", &EMAN::EMData::get_attr_dict)
+        .def("add", (int (EMAN::EMData::*)(float) )&EMAN::EMData::add)
+        .def("add", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::add)
+        .def("sub", &EMAN::EMData::sub)
+        .def("mult", (int (EMAN::EMData::*)(float) )&EMAN::EMData::mult)
+        .def("mult", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::mult)
+        .def("div", (int (EMAN::EMData::*)(float) )&EMAN::EMData::div)
+        .def("div", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::div)
         .def("get_ctf", &EMAN::EMData::get_ctf, return_internal_reference< 1 >())
         .def("set_ctf", &EMAN::EMData::set_ctf)
-        .def("get_value_at", (float (EMAN::EMData::*)(int, int, int) )&EMAN::EMData::get_value_at)
-        .def("get_value_at", (float (EMAN::EMData::*)(int, int) )&EMAN::EMData::get_value_at)
-        .def("sget_value_at", (float (EMAN::EMData::*)(int, int, int) )&EMAN::EMData::sget_value_at)
-        .def("sget_value_at", (float (EMAN::EMData::*)(int, int) )&EMAN::EMData::sget_value_at)
+        .def("get_attr_dict", &EMAN::EMData::get_attr_dict)
+        .def("get_value_at", (float (EMAN::EMData::*)(int, int, int) const)&EMAN::EMData::get_value_at)
+        .def("get_value_at", (float (EMAN::EMData::*)(int, int) const)&EMAN::EMData::get_value_at)
+        .def("sget_value_at", (float (EMAN::EMData::*)(int, int, int) const)&EMAN::EMData::sget_value_at)
+        .def("sget_value_at", (float (EMAN::EMData::*)(int, int) const)&EMAN::EMData::sget_value_at)
         .def("get_value_at_interp", &EMAN::EMData::get_value_at_interp)
         .def("set_value_at", (void (EMAN::EMData::*)(int, int, int, float) )&EMAN::EMData::set_value_at)
         .def("set_value_at", (void (EMAN::EMData::*)(int, int, float) )&EMAN::EMData::set_value_at)
+        .def("get_x", &EMAN::EMData::get_x)
+        .def("get_y", &EMAN::EMData::get_y)
+        .def("get_z", &EMAN::EMData::get_z)
         .def("dump_data", &EMAN::EMData::dump_data)
         .def("read_images_by_index", &py_read_images_by_index, EMAN_EMData_read_images_by_index_overloads_2_3())
         .staticmethod("read_images_by_index")
         .def("read_images_by_ext", &py_read_images_by_ext, EMAN_EMData_read_images_by_ext_overloads_3_5())
         .staticmethod("read_images_by_ext")
+
+    .def( self += other< float >() )
+    .def( self -= other< float >() )
+    .def( self *= other< float >() )
+    .def( self /= other< float >() )
+        
+    .def( self += self )
+    .def( self -= self )
+    .def( self *= self )
+    .def( self /= self )
+
+    .def( self + other< float >() )
+
+    .def( self - other< float >() )
+    .def( self * other< float >() )
+    .def( self / other< float >() )
+    
+    .def( other< float >() + self )
+    .def( other< float >() - self )
+    .def( other< float >() * self )
+    .def( other< float >() / self )
+    
+    .def( self + self )
+    .def( self - self )
+    .def( self / self )
+    .def( self * self )
+
+
     );
     EMAN_EMData_scope->attr("HEADER_ONLY") = EMAN::EMData::HEADER_ONLY;
     EMAN_EMData_scope->attr("HEADER_AND_DATA") = EMAN::EMData::HEADER_AND_DATA;
     EMAN_EMData_scope->attr("IS_3D") = EMAN::EMData::IS_3D;
     EMAN_EMData_scope->attr("NOT_3D") = EMAN::EMData::NOT_3D;
+    EMAN_EMData_scope->attr("DATA_READ_ONLY") = EMAN::EMData::DATA_READ_ONLY;
+    EMAN_EMData_scope->attr("DATA_READ_WRITE") = EMAN::EMData::DATA_READ_WRITE;
     delete EMAN_EMData_scope;
 
     scope* EMAN_Log_scope = new scope(
