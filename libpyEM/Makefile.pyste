@@ -19,3 +19,6 @@ libpyEMData2.cpp: emdata.pyste
 
 libpyUtils2.cpp: utils.pyste
 	$(PYSTE) --module=libpyUtils2 utils.pyste
+
+libpyPointArray2.cpp: pointarray.pyste
+	$(PYSTE) --module=libpyPointArray2 pointarray.pyste

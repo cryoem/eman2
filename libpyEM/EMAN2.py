@@ -2,6 +2,7 @@ from libpyEMData2 import *
 from libpyFactory2 import *
 from libpyGeometry2 import *
 from libpyUtils2 import *
+from libpyPointArray import *
 from bisect import bisect_left
 
 EMANVERSION="EMAN2 v1.90"
