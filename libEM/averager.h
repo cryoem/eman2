@@ -1,9 +1,15 @@
 #ifndef eman_averager_h__
 #define eman_averager_h__ 1
 
+#include <vector>
+using std::vector;
+
+#include "emobject.h"
+
 namespace EMAN {
 
     class EMData;
+    class XYData;
     
     class Averager {
     public:
@@ -22,11 +28,13 @@ namespace EMAN {
     public:
 	EMData* average(const vector<EMData*>& image_list) const;
 	string get_name() const { return "Image"; }
-	static Cmp* NEW() { return new Averager(); }
+	static Averager* NEW() { return new ImageAverager(); }
 
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
+	    d.put("sigma", EMObject::EMDATA);
+	    d.put("ignore0", EMObject::INT);
 	    return d;
 	}
     };
@@ -35,7 +43,7 @@ namespace EMAN {
     public:
 	EMData* average(const vector<EMData*>& image_list) const;
 	string get_name() const { return "Iteration"; }
-	static Cmp* NEW() { return new Averager(); }
+	static Averager* NEW() { return new IterationAverager(); }
 
 	TypeDict get_param_types() const
 	{
@@ -50,7 +58,7 @@ namespace EMAN {
 	EMData* average(const vector<EMData*>& image_list) const;
     protected:
 	CtfAverager() : sf(0), curves(0) {}
-	EMData* sf;
+	XYData* sf;
 	EMData* curves;
 	vector<float> snr;
 	string outfile;
@@ -61,7 +69,7 @@ namespace EMAN {
     public:
 	
 	string get_name() const { return "Weighting"; }
-	static Cmp* NEW() { return new WeightingAverager(); }
+	static Averager* NEW() { return new WeightingAverager(); }
 
 	void set_params(const Dict& new_params)
 	{
@@ -73,6 +81,8 @@ namespace EMAN {
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
+	    d.put("curves", EMObject::EMDATA);
+	    d.put("sf", EMObject::XYDATA);
 	    return d;
 	}
     };
@@ -82,7 +92,7 @@ namespace EMAN {
     class CtfCAverager : public CtfAverager {
     public:
 	string get_name() const { return "CtfC"; }
-	static Cmp* NEW() { return new Averager(); }
+	static Averager* NEW() { return new CtfCAverager(); }
 
 	TypeDict get_param_types() const
 	{
@@ -96,7 +106,7 @@ namespace EMAN {
     class CtfCWAverager : public CtfAverager {
     public:
 	string get_name() const { return "CtfCW"; }
-	static Cmp* NEW() { return new CtfCWAverager(); }
+	static Averager* NEW() { return new CtfCWAverager(); }
 	
 	void set_params(const Dict& new_params)
 	{
@@ -115,7 +125,7 @@ namespace EMAN {
     class CtfCWautoAverager : public CtfAverager {
     public:
 	string get_name() const { return "CtfCWauto"; }
-	static Cmp* NEW() { return new CtfCWautoAverager(); }
+	static Averager* NEW() { return new CtfCWautoAverager(); }
 
 	void set_params(const Dict& new_params)
 	{

@@ -4,7 +4,8 @@ SET(LIB_EM_SOURCE byteorder.C
 		  filter.C
 		  aligner.C
 		  projector.C
-		  cmp.C	  
+		  cmp.C
+		  averager.C
 		  log.C
 		  imageio.C
 		  util.C
