@@ -7,8 +7,6 @@ Required libraries
 
      2. gsl, version >= 1.3,    (http://www.gnu.org/software/gsl/)
 
-	
-
 Optional Libraries
 ------------------
   
@@ -19,21 +17,18 @@ Optional Libraries
 Basic Installation
 ------------------
 
-       1) download CMake from our web site: http://ncmi.bcm.tmc.edu/ncmi/software/,
-	  select 'EMAN', then select version "Compilation Libraries and External 
-	  Software". Then download cmake.tar.gz.
-	  
-       2) install CMake:
-	  % tar zxf cmake.tar.gz
-	  % cd CMake
-	  % ./configure && make && make install
+       1) install CMake (http://www.cmake.org)
 
-       3) % cd EMAN/src; mkdir build; cd build
-       4) % ccmake ../eman2
-            make necessary changes here
+       2) % cd EMAN/src
+	  % mkdir build
+	  % cd build
+       
+       3) % ccmake ../eman2
+            make changes if necessary
 	    Then type 'c', and type 'g'.
-       5) % make
-       6) % make install
+	    
+       4) % make
+	  % make install
 
        
 For Developers Only:
