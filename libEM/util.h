@@ -141,20 +141,20 @@ namespace EMAN {
 	    }
 	    return m;
 	}
-#if 0
-	static inline float angle_sub(float x, float y)
+
+	static inline float angle_sub_2pi(float x, float y)
 	{
-	    float r = fabs(x-y);
+	    float r = fmod(fabs(x-y), 2 * M_PI);
 	    if (r > M_PI) {
-		r = 2.0*M_PI - r;
+		r = 2.0 * M_PI - r;
 	    }
 	    
 	    return r;
 	}
-#endif
-	static inline float angle_sub(float x, float y)
+
+	static inline float angle_sub_pi(float x, float y)
 	{
-	    float r = fmod(fabs(x-y), (float)M_PI);
+	    float r = fmod(fabs(x-y), M_PI);
 	    if (r > M_PI / 2.0) {
 		r = M_PI - r;
 	    }

@@ -222,7 +222,7 @@ namespace EMAN {
 	void calc_radial_dist(int n, float x0, float dx, float* d);
 	void calc_radial_dist(int n, float x0, float dx, float* d, float acen, float amwid);
 
-	EMData* convolute(EMData* with) { return 0; }
+	EMData* convolute(EMData* with);
 
 
 #if 0
@@ -231,13 +231,14 @@ namespace EMAN {
 	void create_ctf_map(CtfMapType type, XYData* sf = 0);
 	bool has_ctf() const;
 	bool has_ctff() const;
+#endif
 
-	void common_lines(EMData* d1, EMData* d2, int mode = 0,
-			  int steps = 180, bool horiz = false);	
-    
-	void common_lines_real(EMData* data1, EMData* data2,
-			       int steps = 180, bool horiz = false);
-	EMData* convolute(EMData* with);
+	int common_lines(EMData* d1, EMData* d2, int mode = 0,
+			 int steps = 180, bool horiz = false);	
+	
+	int common_lines_real(EMData* data1, EMData* data2,
+			      int steps = 180, bool horiz = false);
+	
 	
 	void cut_slice(EMData* map, float z, Rotation* r = 0,
 		       bool interpolate = true, float x = 0, float y = 0);
@@ -248,6 +249,7 @@ namespace EMAN {
 	void do_iwt(int basis, int level);
 	void dwt_filt(int basis, int level, float thresh);
 
+#if 0
 	void edge_normalize(bool circular = false);
 	EMData* fft_slice(float alt, float az, float phi, int mode = 5);
 	void fourier_shell_correlation(EMData* with, XYData& result);
@@ -470,7 +472,6 @@ namespace EMAN {
 
     inline void EMData::set_pixel_size(float new_pixel_size) { pixel_size = new_pixel_size; }
     inline float EMData::get_pixel_size() const { return pixel_size; }
-
 
     inline bool EMData::is_complex() const { return (flags & EMDATA_COMPLEX); }
     inline bool EMData::is_complex_x() const { return (flags & EMDATA_COMPLEXX); }
