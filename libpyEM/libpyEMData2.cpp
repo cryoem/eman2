@@ -23,15 +23,19 @@ namespace  {
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_5, read_image, 1, 5)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_image_overloads_1_4, write_image, 1, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_image_overloads_1_5, write_image, 1, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_append_image_overloads_1_3, append_image, 1, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_filter_overloads_1_2, filter, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_3, align, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cmp_overloads_1_2, cmp, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_2, copy, 0, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_1_3, align, 1, 3)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, project, 1, 2)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_1, copy, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
 
@@ -83,13 +87,13 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def_readwrite("DATA_READ_ONLY", &EMAN::EMData::DATA_READ_ONLY)
         .def_readwrite("DATA_READ_WRITE", &EMAN::EMData::DATA_READ_WRITE)
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
-        .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_4())
+        .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_5())
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
         .def("filter", &EMAN::EMData::filter, EMAN_EMData_filter_overloads_1_2())
-        .def("cmp", &EMAN::EMData::cmp)
-        .def("align", &EMAN::EMData::align, return_value_policy< manage_new_object >(), EMAN_EMData_align_overloads_2_3())
-        .def("project", &EMAN::EMData::project, return_value_policy< manage_new_object >())
-        .def("copy", &EMAN::EMData::copy, return_value_policy< manage_new_object >(), EMAN_EMData_copy_overloads_0_2())
+        .def("cmp", &EMAN::EMData::cmp, EMAN_EMData_cmp_overloads_1_2())
+        .def("align", &EMAN::EMData::align, return_value_policy< manage_new_object >(), EMAN_EMData_align_overloads_1_3())
+        .def("project", &EMAN::EMData::project, return_value_policy< manage_new_object >(), EMAN_EMData_project_overloads_1_2())
+        .def("copy", &EMAN::EMData::copy, return_value_policy< manage_new_object >(), EMAN_EMData_copy_overloads_0_1())
         .def("copy_head", &EMAN::EMData::copy_head, return_value_policy< manage_new_object >())
         .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
         .def("insert_clip", &EMAN::EMData::insert_clip)
