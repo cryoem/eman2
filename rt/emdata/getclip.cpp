@@ -9,7 +9,7 @@ void test_clip(const IntSize & size0, const Region & region, const string & id)
 	string new_file = "new" + id + ".img";
 	
 	EMData * image = new EMData();
-	image->set_size(size0.x, size0.y, size0.z);
+	image->set_size(size0[0], size0[1], size0[2]);
 	image->to_one();
 	image->write_image(old_file, 0, EMUtil::IMAGE_IMAGIC);
 	

@@ -34,7 +34,7 @@ int main()
 	int ny = image->get_ysize();
 	//int nz = image->get_zsize();
 	
-	int max_index2 = max_location.z * nx * ny + max_location.y * nx + max_location.x;
+	int max_index2 = max_location[2] * nx * ny + max_location[1] * nx + max_location[0];
 
 	if (max_index2 != max_index) {
 		LOGERR(" calc_max_index() and calc_max_location() have diff results: %d!=%d\n",
@@ -44,8 +44,8 @@ int main()
 	
 	LOGDEBUG("%s:  max index = %d\n", imagefile, max_index);
 	LOGDEBUG("%s:  max location = (%d,%d,%d)\n",
-			 imagefile, max_location.x,
-			 max_location.y, max_location.z);
+			 imagefile, max_location[0],
+			 max_location[1], max_location[2]);
 
 	float max = (float) image->get_attr("maximum");
 	float max_loc_val = data[max_index];

@@ -371,7 +371,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	}
 
 	mode_size = get_mode_size(mrch.mode);
-
+	//is_new_file = false;
 	return 0;
 }
 

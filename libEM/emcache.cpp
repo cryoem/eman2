@@ -5,6 +5,14 @@
 #include "imageio.h"
 #include <assert.h>
 
+#ifdef WIN32
+#define access _access
+#define F_OK 00
+#else
+#include <unistd.h>
+#endif
+
+
 using namespace EMAN;
 
 GlobalCache *GlobalCache::global_cache = 0;
@@ -39,9 +47,16 @@ ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
 {
 	ImageIO *io = imageio_cache->get(filename);
 	if (io) {
-		if (file_rw_dict[filename] == ImageIO::READ_ONLY && rw_mode != ImageIO::READ_ONLY) {
+		if (rw_mode != ImageIO::READ_ONLY) {
 			imageio_cache->remove(filename);
 			io = 0;
+		}		
+		else {
+			if (access(filename.c_str(), F_OK) != 0) {
+				printf("%s was removed\n", filename.c_str());
+				imageio_cache->remove(filename);
+				io = 0;
+			}
 		}
 	}
 
