@@ -38,13 +38,13 @@ namespace EMAN {
 	class _ImageFormatException : public Exception
 	{
 	public:
-		_ImageFormatException(const string& imagename, const string& file = "unknown",
-							 int line = 0, const string& desc = "")
-			: Exception(file, line, desc, imagename) {}
+		_ImageFormatException(const string& desc, const string& file = "unknown",
+							 int line = 0)
+			: Exception(file, line, desc) {}
 	};
 
-#define ImageFormatException(imagename, desc) _ImageFormatException(imagename, __FILE__, __LINE__, desc)
-	
+#define ImageFormatException(desc) _ImageFormatException(desc, __FILE__, __LINE__)
+
 	class _ImageReadException : public Exception
 	{
 	public:

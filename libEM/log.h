@@ -13,10 +13,16 @@ using std::string;
 namespace EMAN
 {
 
-#define LOGERR Log::logger()->error
-#define LOGWARN Log::logger()->warn
-#define LOGDEBUG Log::logger()->debug
-#define LOGVAR Log::logger()->variable
+#define ENTERFUNC  LOGDEBUG("Enter ")
+#define EXITFUNC   LOGDEBUG("Exit ")
+	
+#define LOGERR Log::logger()->loc(Log::ERROR_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->error
+
+#define LOGWARN Log::logger()->loc(Log::WARNING_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->warn
+
+#define LOGDEBUG Log::logger()->loc(Log::DEBUG_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->debug
+
+#define LOGVAR Log::logger()->loc(Log::VARIABLE_LOG, __FILE__, __LINE__, __PRETTY_FUNCTION__); Log::logger()->variable
 	
 	/** todo:
      * redesign begin() and end() methods
@@ -71,6 +77,8 @@ namespace EMAN
 		 */
 		void set_logfile(const char *filename);
 
+		void loc(LogLevel level, const string & file, int linenum, const string & func);
+		
 	  private:
 		Log();
 		Log(const Log &);
@@ -83,6 +91,7 @@ namespace EMAN
 		LogLevel log_level;
 		string default_emandir;
 		string default_emanlog;
+		string location;
 	};
 }
 

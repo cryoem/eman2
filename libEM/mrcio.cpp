@@ -107,7 +107,7 @@ bool MrcIO::is_image_big_endian()
 
 bool MrcIO::is_valid(const void *first_block, off_t file_size)
 {
-	LOGDEBUG("MrcIO::is_valid");
+	ENTERFUNC;
 
 	if (!first_block) {
 		return false;

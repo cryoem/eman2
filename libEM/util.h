@@ -54,7 +54,8 @@ namespace EMAN
 		static void flip_image(float *data, size_t nx, size_t ny);
 
 		static bool sstrncmp(const char *s1, const char *s2);
-
+		static string int2str(int n);
+		
 		static bool get_str_float(const char *s, const char *float_var, float *p_val);
 		static bool get_str_float(const char *s, const char *float_var, float *p_v1, float *p_v2);
 		static bool get_str_float(const char *s, const char *float_var, int *p_v0, float *p_v1,
@@ -67,6 +68,8 @@ namespace EMAN
 
 		static string get_filename_by_ext(string old_filename, string ext);
 
+		static string sbasename(const string & filename);
+		
 		static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 										  float *slope, float *intercept, bool ignore_zero);
 

@@ -35,6 +35,7 @@ Log::Log()
 	mkdir(default_emandir.c_str(), 0xffff);
 #endif
 	default_emanlog = ".emanlog";
+	location = "";
 }
 
 Log::Log(const Log &)
@@ -57,6 +58,15 @@ Log *Log::logger()
 		instance = new Log();
 	}
 	return instance;
+}
+
+void Log::loc(LogLevel level, const string & filename, int linenum, const string & func)
+{
+	if (log_level < level) {
+		return;
+	}
+
+	location = Util::sbasename(filename) + ":" + Util::int2str(linenum) + " " + func;
 }
 
 void Log::vlog(const char *format, LogLevel level, va_list arg)
@@ -85,6 +95,9 @@ void Log::vlog(const char *format, LogLevel level, va_list arg)
 
 	fprintf(file, "%s", key);
 	vfprintf(file, format, arg);
+	if (location != "") {
+		fprintf(file, " at %s", location.c_str());
+	}
 	fprintf(file, "\n");
 }
 
@@ -139,16 +152,13 @@ int Log::begin(int argc, char *argv[], int ppid)
 	const char *pwd = getenv("PWD");
 	int ref = getpid();
 
-	char *t = argv[0];
-	if (strrchr(argv[0], '/')) {
-		t = strrchr(argv[0], '/') + 1;
-	}
-
+	string filename = Util::sbasename(argv[0]);
+	
 	char s[4048];
 #ifndef WIN32
-	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid ? ppid : getppid(), t);
+	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid ? ppid : getppid(), filename.c_str());
 #else
-	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid, t);
+	sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid, filename.c_str());
 #endif
 	for (int i = 1; i < argc; i++) {
 		sprintf(s + strlen(s), " %s", argv[i]);

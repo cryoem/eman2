@@ -147,6 +147,13 @@ bool Util::sstrncmp(const char *s1, const char *s2)
 	return false;
 }
 
+string Util::int2str(int n)
+{
+	char s[32];
+	sprintf(s, "%s", n);
+	return string(s);
+}
+
 bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
 {
 	size_t n = strlen(float_var);
@@ -230,6 +237,23 @@ string Util::get_filename_by_ext(string old_filename, string ext)
 	strcat(buf, ext.c_str());
 	return string(buf);
 }
+
+string Util::sbasename(const string & filename)
+{
+	char s = '/';	
+#ifdef WIN32
+	s = '\\';
+#endif
+	char * c = strrchr(filename.c_str(), s);
+    if (!c) {
+        return filename;
+    }
+	else {
+		c++;
+	}
+    return string(c);
+}
+
 
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
 								 float *slope, float *intercept, bool ignore_zero)

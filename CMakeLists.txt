@@ -144,11 +144,16 @@ MACRO(CHECK_OPTIONAL_LIB upper lower header)
         ENDIF(${upper}_LIBRARY)
 	
     ELSE(${upper}_INCLUDE_PATH)
-#	MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
+#	    MESSAGE("WARNING: ${upper} not found, ENABLE_${upper} is set back to OFF")
         OPTION(ENABLE_${upper} "if enable ${upper} support" OFF)
     ENDIF(${upper}_INCLUDE_PATH)
 ENDMACRO(CHECK_OPTIONAL_LIB)
 
+MACRO(CHECK_LIB_ONLY upper lower)
+    FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
+ENDMACRO(CHECK_LIB_ONLY)
+
+	
 IF(ENABLE_FFTW2)
 	OPTION(ENABLE_NFFT "enable nfft support" OFF)
     CHECK_REQUIRED_LIB2(FFTW2 sfftw sfftw.h fftw fftw.h)
@@ -197,10 +202,12 @@ INCLUDE_DIRECTORIES(. ${EMAN_SOURCE_DIR} ${EMAN_SOURCE_DIR}/libEM ${GSL_INCLUDE_
 
 IF(ENABLE_TIFF)
     CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
+	CHECK_LIB_ONLY(JPEG jpeg)
 ENDIF(ENABLE_TIFF)
 
 IF(ENABLE_HDF5)
     CHECK_OPTIONAL_LIB(HDF5 hdf5 hdf5.h)
+	CHECK_LIB_ONLY(Z z)
 ENDIF(ENABLE_HDF5)
 
 IF(ENABLE_PNG)

@@ -1,4 +1,5 @@
 #include "exception.h"
+#include "util.h"
 
 
 using namespace EMAN;
@@ -9,9 +10,7 @@ const char* Exception::what() const throw()
 	if (objname != "") {
 		err1 = "error with '" + objname + "': ";
 	}
-	string msg = filename + ":";
-	char sline[32];
-	sprintf(sline, "%d", line);
-	msg += string(sline) + ": " + err1 + desc;
+
+	string msg = filename + ":" + Util::int2str(line) + ": " + err1 + desc;
 	return msg.c_str();
 }
