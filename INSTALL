@@ -149,7 +149,7 @@ How to Install Numeric Python
     - download Numarray release version 1.1.1 or above
     - for windows, run the binary installer. that's it.
     - for other platforms, assuming you are installing ver 1.1.1, do:
-        - get source code numarray-1.1.1.tar.gz
+    - get source code numarray-1.1.1.tar.gz
 	- gunzip numarray-1.1.1.tar.gz; tar xf numarray-1.1.1.tar
 	- login as root
 	- cd numarray-1.1.1; python setup.py install

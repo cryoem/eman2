@@ -51,6 +51,7 @@ ENDIF (ENABLE_DEBUG)
 
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
+	SET(PLATFORMLIB "/usr/lib32" CACHE INTERNAL "IRIX lib32")  
     #SET(EMAN_CXX_FLAGS "-n32 -LANG:std -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
     SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:std -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
@@ -66,7 +67,7 @@ ENDIF(CMAKE_SYSTEM MATCHES "OSF1-V*")
 IF(CMAKE_COMPILER_IS_GNUCXX)
     #SET(EMAN_CXX_FLAGS "-Wall -Werror" CACHE INTERNAL "EMAN CXX FLAGS")
     SET(EMAN_CXX_FLAGS "-Wall" CACHE INTERNAL "EMAN CXX FLAGS")
-    SET(LIB64 "/usr/lib64" CACHE INTERNAL "lib64")
+    SET(PLATFORMLIB "/usr/lib64" CACHE INTERNAL "lib64")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 SET(CMAKE_C_COMPILER ${CMAKE_CXX_COMPILER})
@@ -105,7 +106,8 @@ IF(ENABLE_RT)
 ENDIF(ENABLE_RT)
 
 SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/local/include/boost-1_31 /usr/include /sw/include)
-SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${LIB64} $ENV{FFTWDIR}/lib $ENV{GSLDIR}/lib /usr/local/lib /usr/lib /sw/lib)
+
+SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${PLATFORMLIB} $ENV{FFTWDIR}/lib $ENV{GSLDIR}/lib /usr/local/lib /usr/lib /sw/lib)
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
@@ -153,6 +155,46 @@ ENDMACRO(CHECK_OPTIONAL_LIB)
 MACRO(CHECK_LIB_ONLY upper lower)
     FIND_LIBRARY(${upper}_LIBRARY NAMES ${lower} PATHS $ENV{${upper}DIR}/lib ${LIB_DIRS})
 ENDMACRO(CHECK_LIB_ONLY)
+
+
+MACRO(CHECK_PYTHON_WIN32)
+	FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+		$ENV{PYTHON_ROOT}/include C:/Python23/include)
+	
+	FIND_LIBRARY(PYTHON_LIBRARY NAMES python23
+		PATHS $ENV{PYTHON_ROOT}/libs C:/Python23/libs)
+	
+	
+ENDMACRO(CHECK_PYTHON_WIN32)
+
+
+MACRO(CHECK_PYTHON)
+	SET(PYTHON_FOUND FALSE)
+	
+	FOREACH(PYI RANGE 0 ARGC)
+		IF(NOT PYTHON_FOUND)
+			SET(PYVER "${ARGV${PYI}")
+		
+			FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+				$ENV{PYTHON_ROOT}/include/python${PYVER}
+				/usr/local/include/python${PYVER}
+				/usr/include/python${PYVER})
+			
+			FIND_LIBRARY(PYTHON_LIBRARY NAMES python${PYVER}
+				PATHS
+				$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
+				/usr/local/lib/python${PYVER}/config
+				/usr/lib/python${PYVER}/config)
+			
+			IF(PYTHON_INCLUDE_PATH)
+				IF(PYTHON_LIBRARY)
+					SET(PYTHON_FOUND TRUE)
+				ENDIF(PYTHON_LIBRARY)
+			ENDIF(PYTHON_INCLUDE_PATH)
+			
+		ENDIF(NOT PYTHON_FOUND)
+    ENDFOREACH(PYI)
+ENDMACRO(CHECK_PYTHON)
 
 
 IF(ENABLE_FFTW2)
@@ -245,14 +287,17 @@ IF(ENABLE_PYTHON)
 		FIND_LIBRARY(PYTHON_LIBRARY NAMES python23 python22 python
 			PATHS $ENV{PYTHON_ROOT}/libs C:/Python23/libs C:/Python22/libs)
     ELSE(WIN32)
-		FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-			$ENV{PYTHON_ROOT}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3
-			$ENV{PYTHON_ROOT}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
+		CHECK_PYTHON(2.4 2.3 2.2)
+		
+		#FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+		#	$ENV{PYTHON_ROOT}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3
+		#	$ENV{PYTHON_ROOT}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
 
-		FIND_LIBRARY(PYTHON_LIBRARY NAMES python2.3 python2.2 
-            PATHS $ENV{PYTHON_ROOT}/lib/python2.3/config /usr/local/lib/python2.3/config
-			/usr/lib/python2.3/config $ENV{PYTHON_ROOT}/lib/python2.2/config
-			/usr/local/lib/python2.2/config /usr/lib/python2.2/config)		
+		#FIND_LIBRARY(PYTHON_LIBRARY NAMES python2.4 python2.3 python2.2 
+        #    PATHS
+		#	$ENV{PYTHON_ROOT}/lib/python2.4/config /usr/local/lib/python2.4/config /usr/lib/python2.4/config 
+		#	$ENV{PYTHON_ROOT}/lib/python2.3/config /usr/local/lib/python2.3/config /usr/lib/python2.3/config 
+		#	$ENV{PYTHON_ROOT}/lib/python2.2/config /usr/local/lib/python2.2/config /usr/lib/python2.2/config)		
     ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)
