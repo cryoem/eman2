@@ -124,9 +124,9 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
-			  d.put("evenonly", EMObject::INT);
-			  return d;
+			d.put("with", EMObject::EMDATA);
+			d.put("evenonly", EMObject::INT);
+			return d;
 		}
 
 	};
@@ -143,6 +143,8 @@ namespace EMAN
 	class VarianceCmp:public Cmp
 	{
 	  public:
+		VarianceCmp() : scale(0), shift(0) {}
+		
 		float cmp(EMData * image, Transform * transform = 0) const;
 
 		string get_name() const
@@ -162,6 +164,20 @@ namespace EMAN
 			  d.put("keepzero", EMObject::INT);
 			  return d;
 		}
+
+		float get_scale() const
+		{
+			return scale;
+		}
+
+		float get_shift() const
+		{
+			return shift;
+		}
+		
+	private:
+		mutable float scale;
+		mutable float shift;
 	};
 
 	/** Amplitude weighted mean phase difference (radians) with optional
@@ -192,9 +208,8 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
-
-			  return d;
+			d.put("with", EMObject::EMDATA);
+			return d;
 		}
 	};
 
@@ -222,9 +237,9 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
-			  d.put("snr", EMObject::FLOATARRAY);
-			  return d;
+			d.put("with", EMObject::EMDATA);
+			d.put("snr", EMObject::FLOATARRAY);
+			return d;
 		}
 	};
 

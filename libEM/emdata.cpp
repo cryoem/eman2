@@ -194,7 +194,7 @@ void EMData::filter(string filtername, const Dict & params)
 	EXITFUNC;
 }
 
-float EMData::cmp(string cmpname, Dict & params)
+float EMData::cmp(string cmpname, const Dict & params)
 {
 	ENTERFUNC;
 	float result = 0;
@@ -202,7 +202,6 @@ float EMData::cmp(string cmpname, Dict & params)
 	if (c) {
 		result = c->cmp(this);
 	}
-	params = c->get_params();
 	
 	EXITFUNC;
 	return result;
@@ -2292,7 +2291,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 		throw ImageFormatException("images not same size");
 	}
 
-	if (nz != 1) {
+	if (get_ndim() != 2) {
 		LOGERR("2D Images only");
 		throw ImageDimensionException("2D only");
 	}
@@ -2371,14 +2370,14 @@ void EMData::rotate_x(int dx)
 	ENTERFUNC;
 	
 	float *tmp = new float[nx];
-	size_t float_size = sizeof(float);
+	size_t row_size = nx * sizeof(float);
 
 	for (int y = 0; y < ny; y++) {
 		int y_nx = y * nx;
 		for (int x = 0; x < nx; x++) {
 			tmp[x] = rdata[y_nx + (x + dx) % nx];
 		}
-		memcpy(&rdata[y * nx], tmp, nx * float_size);
+		memcpy(&rdata[y_nx], tmp, row_size);
 	}
 
 	done_data();
@@ -5087,21 +5086,6 @@ float EMData::calc_sigma_diff()
 	EXITFUNC;
 	return sig_diff;
 
-}
-
-int EMData::get_ndim() const
-{
-	
-	if (nz == 1) {
-		if (ny == 1) {
-			return 1;
-		}
-		else {
-			return 2;
-		}
-	}
-
-	return 3;
 }
 
 

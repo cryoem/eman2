@@ -18,20 +18,20 @@ template <> Factory < Cmp >::Factory()
 }
 
 
-float DotCmp::cmp(EMData * em, Transform *) const
+float DotCmp::cmp(EMData * image, Transform *) const
 {
 	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(em, with)) {
+	if (!with || !EMUtil::is_same_size(image, with)) {
 		return 0;
 	}
 
-	float *d1 = em->get_data();
+	float *d1 = image->get_data();
 	float *d2 = with->get_data();
 
 	int evenonly = params.set_default("evenonly", 0);
 
 	double result = 0;
-	size_t size = em->get_xsize() * em->get_ysize() * em->get_zsize();
+	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 	int step = 1;
 
 	if (evenonly) {
@@ -44,7 +44,7 @@ float DotCmp::cmp(EMData * em, Transform *) const
 		d2 += step;
 	}
 #if 0
-	double square_sum1 = em->get_attr_dict().get("square_sum");
+	double square_sum1 = image->get_attr_dict().get("square_sum");
 	double square_sum2 = with->get_attr_dict().get("square_sum");
 
 	result = 2 * result / (square_sum1 + square_sum2);
@@ -52,18 +52,18 @@ float DotCmp::cmp(EMData * em, Transform *) const
 	return (float) result;
 }
 
-// scale and shift cannot be returned
-float VarianceCmp::cmp(EMData * em, Transform *) const
+
+float VarianceCmp::cmp(EMData * image, Transform *) const
 {
 	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(em, with)) {
+	if (!with || !EMUtil::is_same_size(image, with)) {
 		return 0;
 	}
 
 	float *x_data = with->get_data();
-	float *y_data = em->get_data();
+	float *y_data = image->get_data();
 
-	size_t size = em->get_xsize() * em->get_ysize() * em->get_zsize();
+	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 	float m = 0;
 	float b = 0;
 
@@ -95,26 +95,26 @@ float VarianceCmp::cmp(EMData * em, Transform *) const
 	else {
 		result = result / size;
 	}
-	params["scale"] = m;
-	params["shift"] = b;
+	scale = m;
+	shift = b;
 #if 0
 	return (1 - result);
 #endif
 	return result;
 }
 
-float PhaseCmp::cmp(EMData * em, Transform *) const
+float PhaseCmp::cmp(EMData * image, Transform *) const
 {
 	static float *dfsnr = 0;
 	static int nsnr = 0;
 
 	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(em, with) || em->get_zsize() > 1) {
+	if (!with || !EMUtil::is_same_size(image, with) || image->get_zsize() > 1) {
 		return 0;
 	}
 
-	int nx = em->get_xsize();
-	int ny = em->get_ysize();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 
 	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
@@ -132,12 +132,12 @@ float PhaseCmp::cmp(EMData * em, Transform *) const
 		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
 	}
 
-	EMData *em_fft = em->do_fft();
-	em_fft->ri2ap();
+	EMData *image_fft = image->do_fft();
+	image_fft->ri2ap();
 	EMData *with_fft = with->do_fft();
 	with_fft->ri2ap();
 
-	float *em_fft_data = em_fft->get_data();
+	float *image_fft_data = image_fft->get_data();
 	float *with_fft_data = with_fft->get_data();
 	double sum = 0;
 	double norm = FLT_MIN;
@@ -148,7 +148,7 @@ float PhaseCmp::cmp(EMData * em, Transform *) const
 			int r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
 			float a = dfsnr[r] * with_fft_data[i];
 
-			sum += Util::angle_sub_2pi(em_fft_data[i + 1], with_fft_data[i + 1]) * a;
+			sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
 			norm += a;
 			i += 2;
 		}
@@ -160,17 +160,17 @@ float PhaseCmp::cmp(EMData * em, Transform *) const
 }
 
 
-float FRCCmp::cmp(EMData * em, Transform *) const
+float FRCCmp::cmp(EMData * image, Transform *) const
 {
 	static vector < float >default_snr;
 
 	EMData *with = params["with"];
-	if (!with || !EMUtil::is_same_size(em, with) || em->get_zsize() > 1) {
+	if (!with || !EMUtil::is_same_size(image, with) || image->get_zsize() > 1) {
 		return 0;
 	}
 
-	int nx = em->get_xsize();
-	int ny = em->get_ysize();
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 
 	vector < float >snr = params["snr"].get_farray();
 	vector < float >fsc_array;
@@ -178,7 +178,7 @@ float FRCCmp::cmp(EMData * em, Transform *) const
 	if (snr.size() == 0) {
 		int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
-		fsc_array = em->calc_fourier_shell_correlation(with);
+		fsc_array = image->calc_fourier_shell_correlation(with);
 
 		if (default_snr.size() != (unsigned int) np) {
 			default_snr = vector < float >(np);

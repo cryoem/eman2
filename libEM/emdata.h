@@ -93,7 +93,7 @@ namespace EMAN
 		 * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
 		 * @return comparison score. The bigger, the better.
 		 */
-		float cmp(string cmpname, Dict & params);
+		float cmp(string cmpname, const Dict & params);
 
 		/** Align this image with another image and return the result image.
 		 *
@@ -154,15 +154,22 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */ 
-		EMData *get_rotated_clip(FloatPoint &center, Rotation &orient, IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(FloatPoint &center, Rotation & orient,
+								 IntSize &size, float scale=1.0);
 				
-		/** Add a scaled image into another image at a specified location
+		/** Add a scaled image into another image at a specified location.
 		 *  This is used, for example, to accumulate gaussians in
 		 *  programs like pdb2mrc.py. The center of 'block' will be positioned at
-		 *  'center' with scale factor 'scale. Densities will be interpolated in
-		 *  'block' and multiplied by 'mult'
+		 *  'center' with scale factor 'scale'. Densities will be interpolated in
+		 *  'block' and multiplied by 'mult'.
+		 *
+		 * @param block The image to inserted.
+		 * @param center The center of the inserted block in 'this'.
+		 * @param scale  Scale factor.
+		 * @param mult Number used to multiply the block's densities.
 		 */
-		void insert_scaled_sum(EMData *block, const FloatPoint&center, float scale=1.0, float mult=1.0);
+		void insert_scaled_sum(EMData *block, const FloatPoint & center,
+							   float scale=1.0, float mult=1.0);
 
 		/** return the fast fourier transform image of the current
 		 * image. the current image is not changed. The result is in
@@ -174,6 +181,7 @@ namespace EMAN
 
 		/** return the inverse fourier transform image of the current
 		 * image. the current image is not changed.
+		 *
 		 * @exception ImageFormatException If the image is not a complex image.
 		 * @return The current image's inverse fourier transform image.
 		 */
@@ -198,9 +206,9 @@ namespace EMAN
 		 * slice image and this image must be in complex image format.
 		 *
 		 * @param slice An slice image to be normalized.
-		 * @param alt Orientation angle alt (in EMAN convention).
-		 * @param az Orientation angle  az (in EMAN convention).
-		 * @param phi Orientation angle phi (in EMAN convention).
+		 * @param alt Orientation euler angle alt (in EMAN convention).
+		 * @param az  Orientation euler angle az  (in EMAN convention).
+		 * @param phi Orientation euler angle phi (in EMAN convention).
 		 * @exception ImageFormatException If the images are not complex.
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
@@ -264,21 +272,83 @@ namespace EMAN
 		 */
 		void scale(float scale_factor);
 
+		/** Translate this image.
+		 * @param dx Translation distance in x direction.
+		 * @param dy Translation distance in y direction.
+		 * @param dz Translation distance in z direction.
+		 */
 		void translate(float dx, float dy, float dz);
+
+		/** Translate this image.
+		 * @param translation The translation distance vector.
+		 */
 		void translate(const Vec3 < float >&translation);
 
-		void rotate(float alt, float az, float phi);
-		void rotate(const Rotation & r);
+		/** Rotate this image.
+		 * @param rotation Rotation angles
+		 */
+		void rotate(const Rotation & rotation);
 
-		void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz);
-		void rotate_translate(const Rotation & rotation, const Vec3 < float >&translation);
+		/** Rotate this image.
+		 * @param alt Rotation euler angle alt in EMAN convention.
+		 * @param az  Rotation euler angle az  in EMAN convention.
+		 * @param phi Rotation euler angle phi in EMAN convention.
+		 */
+		void rotate(float alt, float az, float phi);
+
+		/** Rotate then translate the image.
+		 * @param xform The rotation and translation transformation to be done.
+		 */
 		void rotate_translate(const Transform & xform);
 
+		/** Rotate then translate the image.
+		 * @param rotation The rotation angles
+		 * @param translation The translation distance vector
+		 */
+		void rotate_translate(const Rotation & rotation, const Vec3 < float >&translation);
+
+		/** Rotate then translate the image.
+		 * @param alt Rotation euler angle alt in EMAN convention.
+		 * @param az  Rotation euler angle az  in EMAN convention.
+		 * @param phi Rotation euler angle phi in EMAN convention.
+		 * @param dx Translation distance in x direction.
+		 * @param dy Translation distance in y direction.
+		 * @param dz Translation distance in z direction.
+		 */
+		void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz);
+		
+		/** This performs a translation of each line along x with wraparound.
+		 *  This is equivalent to a rotation when performed on 'unwrapped' maps.
+		 *  @param dx Translation distance align x direction.
+		 */
 		void rotate_x(int dx);
+
+		/** Fast rotation by 180 degrees.
+		 */
 		void rotate_180();
 
+		/** dot product of 2 images. Then 'this' image is rotated/translated.
+		 * It is much faster than Rotate/Translate then dot product. 
+		 * 2D images only.
+		 *
+		 * @param data
+		 * @param dx Translation distance in x direction.
+		 * @param dy Translation distance in y direction.
+		 * @param da Rotation euler angle.
+		 * @return
+		 */
 		double dot_rotate_translate(EMData * data, float dx, float dy, float da);
 
+		/** This does a normalized dot product of a little image with a big image 
+		 * using real-space methods. The result is the same size as 'this', 
+		 * but a border 1/2 the size of 'little_img' will be zero. 
+		 * This routine is only efficient when 'little_img' is fairly small.
+		 * 2D only.
+		 *
+		 * @param little_img A small image.
+		 * @param do_sigma Calculate sigma or not.
+		 * @return normalized dot product image.
+		 */
 		EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
 
 		/** Radon Transform: an algorithm that transforms an original
@@ -310,8 +380,8 @@ namespace EMAN
 		 */
 		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = NULL);
 
-		/** Calculate Cross-Correlation Function (CCF) in the
-		 * x-direction and adds them up, result in 1D.
+		/** Calculate Cross-Correlation Function (CCF) in the x-direction 
+		 * and adds them up, result in 1D.
 		 * WARNING: this routine will modify the 'this' and 'with' to contain
 		 * 1D fft's without setting some flags. This is an optimization
 		 * for rotational alignment.
@@ -322,48 +392,72 @@ namespace EMAN
 		 *        end of the row.
 		 * @param nosum If true, returns an image y1-y0+1 pixels high.
 		 * @see #calc_ccf()
+		 * @return The result image containing the CCF.
 		 */
 		EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
 
 		/** Makes a 'rotational footprint', which is an 'unwound'
 		 * autocorrelation function. generally the image should be
-		 * edgenormalized and masked before using this.
+		 * edge-normalized and masked before using this.
 		 *
 		 * @param unwrap To cache the rfp or not. false means not cached.
-		 * @param premasked
+		 * @param premasked Is the image pre-masked?
+		 * @return The rotaional footprint image.
 		 */
 		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
 
-		/** Calculate mutual correlation function (MCF) between 2 images.
+		/** Calculates mutual correlation function (MCF) between 2 images.
+		 * If 'with' is NULL, this does mirror ACF.
 		 *
 		 * @param with The image used to calculate MCF.
 		 * @param tocorner Set whether to translate the result image
 		 *        to the corner.
 		 * @param filter The filter image used in calculating MCF.
+		 * @return Mutual correlation function image.
 		 */
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
 
-		/** maps polar coordinates to Cartesian coordinates */
+		/** maps polar coordinates to Cartesian coordinates. radially weighted.
+		 * When used with RFP, this provides 1 pixel accuracy at 75% radius.
+		 * 2D only.
+		 *
+		 * @param r1
+		 * @param r2
+		 * @param xs
+		 * @param dx
+		 * @param dy
+		 * @param do360  If true, do 0-360 degree mapping. Otherwise,
+		 * do 0-180 degree mapping.
+		 * @return The image in Cartesian coordinates.
+		 */		 
 		EMData *unwrap(int r1 = -1, int r2 = -1, int xs = -1, int dx = 0,
 					   int dy = 0, bool do360 = false);
 
-		/** Reduces the size of the image by a factor of 'shrink_factor'
+		/** Reduces the size of the image by a factor 
 		 * using the average value of the pixels in a block.
+		 * @param shrink_factor Image shrink factor.
 		 */
 		void mean_shrink(int shrink_factor);
 		
-		/* Reduces the size of the image by a factor of 'shrink_factor'
-		 * using a local median filter.
+		/* Reduces the size of the image by a factor using a local median filter.
+		 *
+		 * @param shrink_factor Image shrink factor.
 		 */
 		void median_shrink(int shrink_factor);
 
-		/** multiplies by a radial function in fourier space */
+		/** multiplies by a radial function in fourier space.
+		 *
+		 * @param x0  starting point x coordinate.
+		 * @param dx  step of x.
+		 * @param array radial function data array.
+		 * @interp Do the interpolation or not.
+		 */
 		void apply_radial_func(float x0, float dx, vector < float >array, bool interp = true);
 
 		/** calculates radial distribution. works for real and imaginary images. 
 		 * 
 		 * @param n number of points.
-		 * @param x0 starting x coordinate.
+		 * @param x0 starting point x coordinate.
 		 * @param dx step of x.
 		 * @return The radial distribution in an array.
 		 */					
@@ -379,37 +473,80 @@ namespace EMAN
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
-		/** add a number to each pixel value of the image */
+		/** add a number to each pixel value of the image.
+		 * @param f The number added to 'this' image.
+		 */
 		void add(float f);
-		/** add a same-size image to this image */
+		
+		/** add a same-size image to this image pixel by pixel.
+		 * @param image The image added to 'this' image.
+		 */
 		void add(const EMData & image);
-		/** sub a number to each pixel value of the image */
+		
+		/** subtract a number to each pixel value of the image.
+		 * @param f The number subtracted from 'this' image.
+		 */
 		void sub(float f);
-		/** sub a same-size image from this image */
+		
+		/** subtract a same-size image from this image pixel by pixel.
+		 * @param image The image subtracted  from 'this' image.
+		 */
 		void sub(const EMData & image);
-		/** multiply a number to each pixel value of the image */
+		
+		/** multiply a number to each pixel value of the image.
+		 * @param f The number multiplied to 'this' image.
+		 */
 		void mult(float f);
+		
 		/** multiply each pixel of this image with each pixel of some
-			other same-size image*/
+		 * other same-size image.
+		 *
+		 * @param image The image multiplied to 'this' image.
+		 */
 		void mult(const EMData & image);
 
-		/** make each pixel value divided by a number */
+		/** make each pixel value divided by a number.
+		 * @param f The number 'this' image divided by.
+		 */
 		void div(float f);
+
+		/** make each pixel value divided by pixel value of another
+		 * same-size image.
+		 * @param image The image 'this' image divided by.
+		 */
 		void div(const EMData & image);
 
+		/** Get the image pixel density data in a 1D float array.
+		 * @return The image pixel density data.
+		 */
 		float *get_data() const;
+
+		/** Done with data manipulation. It mark EMData as changed.
+		 *
+		 * This function is used together with 'get_data()'.
+		 * A typical case is 1) call
+		 * get_data(); 2) work on the data. 3) if data is changed, then
+		 * call done_data. If not changed, no need to call done_data.
+		 */
 		void done_data();
 
 		/** Mark EMData as changed, and it needs to be updated.*/
 		void update();
+
 		/** Make all the pixel value = 0. */
 		void to_zero();
+		
 		/** Make all the pixel value = 1. */
 		void to_one();
 
-		/** Dump the image data to a binary file. Used for debugging purpose. */
+		/** Dump the image pixel data to a binary file. Used for debugging purpose.
+		 * @param filename The file to dump the data to.
+		 */
 		void dump_data(string filename);
-		
+
+		/**
+		 * @param obj
+		 */
 		void add_incoherent(EMData * obj);
 
 		vector < float >calc_fourier_shell_correlation(EMData * with);
@@ -650,6 +787,20 @@ namespace EMAN
 	inline int EMData::get_zsize() const
 	{
 		return nz;
+	}
+
+	inline int EMData::get_ndim() const
+	{
+		if (nz <= 1) {
+			if (ny <= 1) {
+				return 1;
+			}
+			else {
+				return 2;
+			}
+		}
+
+		return 3;
 	}
 
 

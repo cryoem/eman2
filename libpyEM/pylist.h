@@ -234,11 +234,6 @@ namespace EMAN {
 
 		}
     };
-
-	
-	
-
-	
 }
 
 

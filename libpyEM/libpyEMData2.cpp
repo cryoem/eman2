@@ -106,11 +106,11 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("scale", &EMAN::EMData::scale)
         .def("translate", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::translate)
         .def("translate", (void (EMAN::EMData::*)(const EMAN::Vec3<float>&) )&EMAN::EMData::translate)
-        .def("rotate", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::rotate)
         .def("rotate", (void (EMAN::EMData::*)(const EMAN::Rotation&) )&EMAN::EMData::rotate)
-        .def("rotate_translate", (void (EMAN::EMData::*)(float, float, float, float, float, float) )&EMAN::EMData::rotate_translate)
-        .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Rotation&, const EMAN::Vec3<float>&) )&EMAN::EMData::rotate_translate)
+        .def("rotate", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::rotate)
         .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Transform&) )&EMAN::EMData::rotate_translate)
+        .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Rotation&, const EMAN::Vec3<float>&) )&EMAN::EMData::rotate_translate)
+        .def("rotate_translate", (void (EMAN::EMData::*)(float, float, float, float, float, float) )&EMAN::EMData::rotate_translate)
         .def("rotate_x", &EMAN::EMData::rotate_x)
         .def("rotate_180", &EMAN::EMData::rotate_180)
         .def("dot_rotate_translate", &EMAN::EMData::dot_rotate_translate)
@@ -250,6 +250,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
+
     implicitly_convertible<int, EMAN::EMObject>();
     implicitly_convertible<float, EMAN::EMObject>();
     implicitly_convertible<double, EMAN::EMObject>();
