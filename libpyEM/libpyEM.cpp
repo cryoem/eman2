@@ -1,10 +1,11 @@
 
 // Includes ====================================================================
 #include <boost/python.hpp>
-#include <ctf.h>
 #include <emobject.h>
-#include <pylist.h>
+#include <ctf.h>
 #include <pyem.h>
+#include <filter.h>
+#include <pylist.h>
 #include <log.h>
 #include <imageio.h>
 #include <emdata.h>
@@ -20,13 +21,45 @@ namespace  {
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, get_imageio, 2, 3)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_2, copy, 0, 2)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_read_image_overloads_1_5, read_image, 1, 5)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_image_overloads_1_4, write_image, 1, 4)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_index_overloads_2_3, py_read_images_by_index, 2, 3)
+struct EMAN_Filter_Wrapper: EMAN::Filter
+{
+    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Filter & p0):
+        EMAN::Filter(p0), self(self_) {}
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_ext_overloads_3_5, py_read_images_by_ext, 3, 5)
+    EMAN_Filter_Wrapper(PyObject* self_):
+        EMAN::Filter(), self(self_) {}
+
+    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Dict & p0):
+        EMAN::Filter(p0), self(self_) {}
+
+    void process(EMAN::EMData * p0) const {
+        call_method< void >(self, "process", p0);
+    }
+
+    void default_process(EMAN::EMData * p0) const {
+        EMAN::Filter::process(p0);
+    }
+
+    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > & p0) const {
+        call_method< void >(self, "process_list", p0);
+    }
+
+    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > & p0) const {
+        EMAN::Filter::process_list(p0);
+    }
+
+    std::basic_string<char,std::char_traits<char>,std::allocator<char> > get_name() const {
+        return call_method< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >(self, "get_name");
+    }
+
+    PyObject* self;
+};
 
 
 
@@ -36,32 +69,16 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_by_ext_overloads_3_5, py
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEM)
 {
-    
+        
     EMAN::vector_to_python<EMAN::EMData*>();
     EMAN::vector_from_python<int>();
-
+    EMAN::vector_to_python<std::string>();
+ 
     EMAN::map_to_python<EMAN::EMObject>();
     EMAN::map_from_python<EMAN::EMObject>();
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
-
-
-    class_< EMAN::EMObject >("EMObject", init<  >())
-        .def(init< const EMAN::EMObject & >())
-        .def(init< int >())
-        .def(init< float >())
-        .def(init< double >())
-        .def(init< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >())
-        .def(init< EMAN::EMData * >())
-        .def("get_int", &EMAN::EMObject::get_int)
-        .def("get_float", &EMAN::EMObject::get_float)
-        .def("get_double", &EMAN::EMObject::get_double)
-        .def("get_string", &EMAN::EMObject::get_string)
-        .def("get_EMData", &EMAN::EMObject::get_EMData, return_internal_reference< 1 >())
-        .def("is_null", &EMAN::EMObject::is_null)
-        .def("to_str", &EMAN::EMObject::to_str)
-    ;
 
     scope* EMAN_EMUtil_scope = new scope(
     class_< EMAN::EMUtil >("EMUtil", init<  >())
@@ -121,11 +138,35 @@ BOOST_PYTHON_MODULE(libpyEM)
 
     delete EMAN_EMUtil_scope;
 
+    class_< EMAN::EMObject >("EMObject", init<  >())
+        .def(init< const EMAN::EMObject & >())
+        .def(init< int >())
+        .def(init< float >())
+        .def(init< double >())
+        .def(init< std::basic_string<char,std::char_traits<char>,std::allocator<char> > >())
+        .def(init< EMAN::EMData * >())
+        .def("get_int", &EMAN::EMObject::get_int)
+        .def("get_float", &EMAN::EMObject::get_float)
+        .def("get_double", &EMAN::EMObject::get_double)
+        .def("get_string", &EMAN::EMObject::get_string)
+        .def("get_EMData", &EMAN::EMObject::get_EMData, return_internal_reference< 1 >())
+        .def("is_null", &EMAN::EMObject::is_null)
+        .def("to_str", &EMAN::EMObject::to_str)
+    ;
+
     scope* EMAN_EMData_scope = new scope(
     class_< EMAN::EMData >("EMData", init<  >())
         .def(init< const EMAN::EMData & >())
+        .def("copy", &EMAN::EMData::copy, return_value_policy< manage_new_object >(), EMAN_EMData_copy_overloads_0_2())
+        .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
+        .def("insert_clip", &EMAN::EMData::insert_clip)
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_4())
+        .def("normalize", &EMAN::EMData::normalize)
+        .def("is_complex", &EMAN::EMData::is_complex)
+        .def("ri2ap", &EMAN::EMData::ri2ap)
+        .def("ap2ri", &EMAN::EMData::ap2ri)
+        .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("add", (int (EMAN::EMData::*)(float) )&EMAN::EMData::add)
         .def("add", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::add)
         .def("sub", &EMAN::EMData::sub)
@@ -133,8 +174,10 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("mult", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::mult)
         .def("div", (int (EMAN::EMData::*)(float) )&EMAN::EMData::div)
         .def("div", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::div)
+        .def("done_data", &EMAN::EMData::done_data)
         .def("get_ctf", &EMAN::EMData::get_ctf, return_internal_reference< 1 >())
         .def("set_ctf", &EMAN::EMData::set_ctf)
+        .def("set_size", &EMAN::EMData::set_size)
         .def("get_attr_dict", &EMAN::EMData::get_attr_dict)
         .def("get_value_at", (float (EMAN::EMData::*)(int, int, int) const)&EMAN::EMData::get_value_at)
         .def("get_value_at", (float (EMAN::EMData::*)(int, int) const)&EMAN::EMData::get_value_at)
@@ -147,38 +190,22 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("get_y", &EMAN::EMData::get_y)
         .def("get_z", &EMAN::EMData::get_z)
         .def("dump_data", &EMAN::EMData::dump_data)
-        .def("read_images_by_index", &py_read_images_by_index, EMAN_EMData_read_images_by_index_overloads_2_3())
-        .staticmethod("read_images_by_index")
-        .def("read_images_by_ext", &py_read_images_by_ext, EMAN_EMData_read_images_by_ext_overloads_3_5())
-        .staticmethod("read_images_by_ext")
-
-    .def( self += other< float >() )
-    .def( self -= other< float >() )
-    .def( self *= other< float >() )
-    .def( self /= other< float >() )
-        
-    .def( self += self )
-    .def( self -= self )
-    .def( self *= self )
-    .def( self /= self )
-
-    .def( self + other< float >() )
-
-    .def( self - other< float >() )
-    .def( self * other< float >() )
-    .def( self / other< float >() )
-    
-    .def( other< float >() + self )
-    .def( other< float >() - self )
-    .def( other< float >() * self )
-    .def( other< float >() / self )
-    
-    .def( self + self )
-    .def( self - self )
-    .def( self / self )
-    .def( self * self )
-
-
+        .def( self * self )
+        .def( self / self )
+        .def( other< float >() * self )
+        .def( other< float >() - self )
+        .def( self + self )
+        .def( other< float >() / self )
+        .def( self - other< float >() )
+        .def( self * other< float >() )
+        .def( self + other< float >() )
+        .def( self - self )
+        .def( other< float >() + self )
+        .def( self / other< float >() )
+        .def( self += other< float >() )
+        .def( self /= other< float >() )
+        .def( self += self )
+        .def( self /= self )
     );
     EMAN_EMData_scope->attr("HEADER_ONLY") = EMAN::EMData::HEADER_ONLY;
     EMAN_EMData_scope->attr("HEADER_AND_DATA") = EMAN::EMData::HEADER_AND_DATA;
@@ -188,9 +215,25 @@ BOOST_PYTHON_MODULE(libpyEM)
     EMAN_EMData_scope->attr("DATA_READ_WRITE") = EMAN::EMData::DATA_READ_WRITE;
     delete EMAN_EMData_scope;
 
+    class_< EMAN::FilterFactory, boost::noncopyable >("FilterFactory", no_init)
+        .def("instance", &EMAN::FilterFactory::instance, return_value_policy< reference_existing_object >())
+        .staticmethod("instance")
+        .def("get", (EMAN::Filter * (EMAN::FilterFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Filter * (EMAN::FilterFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict &) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
+        .def("get_list", &EMAN::FilterFactory::get_list)
+    ;
+
+    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
+        .def(init< const EMAN::Dict & >())
+        .def("get_params", &EMAN::Filter::get_params)
+        .def("set_params", &EMAN::Filter::set_params)
+        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
+    ;
+
     scope* EMAN_Log_scope = new scope(
     class_< EMAN::Log, boost::noncopyable >("Log", no_init)
-        .def("logger", &EMAN::Log::logger, return_internal_reference< 1 >())
+        .def("logger", &EMAN::Log::logger, return_value_policy< reference_existing_object >())
         .staticmethod("logger")
         .def("set_level", &EMAN::Log::set_level)
         .def("set_logfile", &EMAN::Log::set_logfile)

@@ -1,5 +1,5 @@
 Log = Class("EMAN::Log", "log.h")
-set_policy(Log.logger, return_internal_reference())
+set_policy(Log.logger, return_value_policy(reference_existing_object))
 exclude(Log.variable)
 exclude(Log.log)
 exclude(Log.warn)
@@ -16,7 +16,14 @@ exclude(EMUtil.get_region_data)
 
 EMData = Class("EMAN::EMData", "emdata.h")
 set_policy(EMData.get_ctf, return_internal_reference())
+set_policy(EMData.copy, return_value_policy(manage_new_object))
+set_policy(EMData.get_clip, return_value_policy(manage_new_object))
+set_policy(EMData.do_fft, return_value_policy(manage_new_object))
 exclude(EMData.get_data)
+exclude(EMData.read_images_by_index)
+exclude(EMData.read_images_by_ext)
+
+
 Include("pyem.h")
 set_wrapper(EMData.read_images_by_index, "py_read_images_by_index")
 set_wrapper(EMData.read_images_by_ext, "py_read_images_by_ext")
@@ -25,3 +32,10 @@ Include("ctf.h")
 Include("imageio.h")
 Include("transform.h")
 Include("pylist.h")
+
+FilterFactory = Class("EMAN::FilterFactory", "filter.h")
+set_policy(FilterFactory.instance, return_value_policy(reference_existing_object))
+set_policy(FilterFactory.get, return_value_policy(manage_new_object))
+exclude(FilterFactory.add)
+
+Filter = Class("EMAN::Filter", "filter.h")

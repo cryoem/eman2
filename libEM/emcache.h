@@ -55,7 +55,7 @@ namespace EMAN {
 		nitems++;
 	    }
 	    else {
-		int r = (int) (1.0 * rand() / RAND_MAX * size);
+		int r = (int) (1.0 * size * rand() / (RAND_MAX + 1.0));
 		delete item_cache[r];
 		item_cache[r] = 0;
 		

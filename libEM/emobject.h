@@ -86,6 +86,7 @@ namespace EMAN {
 	void put(string key, EMObject val);
 	
 	map<string, EMObject>& get_dict();
+	map<string, EMObject> get_dict() const;
 
 	EMObject& operator[](const string& key);
 	

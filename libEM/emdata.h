@@ -50,7 +50,10 @@ namespace EMAN {
 	void ap2ri();
 
 	EMData* do_fft();
-	
+	EMData* do_ift() { return 0; }
+	void gimme_fft() {}
+
+	void apply_radial_func(int, float, vector<float> array) {}
 	
 	int add(float f);
 	int add(const EMData& em);
