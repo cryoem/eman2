@@ -467,110 +467,130 @@ EMData *PawelProjector::project3d(EMData * image) const
 	IPCube* ipcube = new IPCube[nn];
 	prepcubes(dim, ri, origin, nn, ipcube);
 
+	// Do we have a list of angles?
+	vector<float> anglelist = params["anglelist"];
+	int nangles = anglelist.size() / 3;
+
 	// For the moment, let's assume the user wants to use either
 	// EMAN or SPIDER Euler angles, but nothing else.
 	string angletype = params["angletype"].to_str();
-	float phi=0, theta=0, psi=0, alt=0, az=0;
-	Transform* rotationptr = NULL;
+	Transform::EulerType eulertype;
 	if (angletype == "SPIDER") {
-		phi = params["phi"];
-		theta = params["theta"];
-		psi = params["psi"];
-		rotationptr = new Transform(Transform::SPIDER, phi, theta, psi);
+		eulertype = Transform::SPIDER;
+		if (nangles == 0) {
+			// a single SPIDER angle was passed in
+			float phi = params["phi"];
+			float theta = params["theta"];
+			float psi = params["psi"];
+			anglelist.push_back(phi);
+			anglelist.push_back(theta);
+			anglelist.push_back(psi);
+			nangles = 1;
+		}
 	} else if (angletype == "EMAN") {
-		 alt = params["alt"];
-		 az = params["az"];
-		 phi = params["phi"];
-		 rotationptr = new Transform(Transform::EMAN, alt, az, phi);
+		eulertype = Transform::EMAN;
+		if (nangles == 0) {
+			// a single EMAN angle was passed in
+			float alt = params["alt"];
+			float az = params["az"];
+			float phi = params["phi"];
+			anglelist.push_back(alt);
+			anglelist.push_back(az);
+			anglelist.push_back(phi);
+			nangles = 1;
+		}
 	} else {
 		LOGERR("Only SPIDER and EMAN Euler angles supported");
 		return 0;
 	}
-	Transform& rotation = *rotationptr;
-
-
-	// initialize return projection
+	// initialize return object
 	EMData* ret = new EMData();
-	ret->set_size(nx, ny, 1);
+	ret->set_size(nx, ny, nangles);
 	ret->to_zero();
-	MArray2D b = ret->get_2dview();
+	MArray3D b = ret->get_3dview();
 	MArray3D cube = image->get_3dview();
 
-	if (2*(ri+1)+1 > dim) {
-		// Must check x and y boundaries
-		for (int i = 0 ; i < nn; i++) {
-			int k = ipcube[i].loc[1] + origin[1];
-			Vec3f vb = ipcube[i].loc*rotation + origin;
-			for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
-				// check for pixels out-of-bounds
-				int iox = int(vb[0]);
-				if ((iox < 0) || (iox >= nx-1)) {
+	// loop over sets of angles
+	for (int ia = 0; ia < nangles; ia++) {
+		int indx = 3*ia;
+		Transform rotation(eulertype, anglelist[indx],
+				           anglelist[indx+1], anglelist[indx+2]);
+		if (2*(ri+1)+1 > dim) {
+			// Must check x and y boundaries
+			for (int i = 0 ; i < nn; i++) {
+				int k = ipcube[i].loc[1] + origin[1];
+				Vec3f vb = ipcube[i].loc*rotation + origin;
+				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
+					// check for pixels out-of-bounds
+					int iox = int(vb[0]);
+					if ((iox < 0) || (iox >= nx-1)) {
+						vb += rotation.get_matrix3_row(0);
+						continue;
+					}
+					int ioy = int(vb[1]);
+					if ((ioy < 0) || (ioy >= ny-1)) {
+						vb += rotation.get_matrix3_row(0);
+						continue;
+					}
+					int ioz = int(vb[2]);
+					if ((ioz < 0) || (ioz >= nz-1)) {
+						vb += rotation.get_matrix3_row(0);
+						continue;
+					}
+					// real work for pixels in bounds
+					float dx = vb[0] - iox;
+					float dy = vb[1] - ioy;
+					float dz = vb[2] - ioz;
+					float a1 = cube[iox][ioy][ioz];
+					float a2 = cube[iox+1][ioy][ioz] - a1;
+					float a3 = cube[iox][ioy+1][ioz] - a1;
+					float a4 = cube[iox][ioy][ioz+1] - a1;
+					float a5 = -a2 -cube[iox][ioy+1][ioz] 
+						+ cube[iox+1][ioy+1][ioz];
+					float a61 = -cube[iox][ioy][ioz+1] 
+						+ cube[iox+1][ioy][ioz+1];
+					float a6 = -a2 + a61;
+					float a7 = -a3 - cube[iox][ioy][ioz+1]
+						+ cube[iox][ioy+1][ioz+1];
+					float a8 = -a5 - a61 - cube[iox][ioy+1][ioz+1]
+						+ cube[iox+1][ioy+1][ioz+1];
+					b[j][k][ia] += a1 + dz*(a4 + a6*dx  
+							+ (a7 + a8*dx)*dy)
+						+ a3*dy + dx*(a2 + a5*dy);
 					vb += rotation.get_matrix3_row(0);
-					continue;
 				}
-				int ioy = int(vb[1]);
-				if ((ioy < 0) || (ioy >= ny-1)) {
-					vb += rotation.get_matrix3_row(0);
-					continue;
-				}
-				int ioz = int(vb[2]);
-				if ((ioz < 0) || (ioz >= nz-1)) {
-					vb += rotation.get_matrix3_row(0);
-					continue;
-				}
-				// real work for pixels in bounds
-				float dx = vb[0] - iox;
-				float dy = vb[1] - ioy;
-				float dz = vb[2] - ioz;
-				float a1 = cube[iox][ioy][ioz];
-				float a2 = cube[iox+1][ioy][ioz] - a1;
-				float a3 = cube[iox][ioy+1][ioz] - a1;
-				float a4 = cube[iox][ioy][ioz+1] - a1;
-				float a5 = -a2 -cube[iox][ioy+1][ioz] 
-					     + cube[iox+1][ioy+1][ioz];
-				float a61 = -cube[iox][ioy][ioz+1] 
-					      + cube[iox+1][ioy][ioz+1];
-				float a6 = -a2 + a61;
-				float a7 = -a3 - cube[iox][ioy][ioz+1]
-					     + cube[iox][ioy+1][ioz+1];
-				float a8 = -a5 - a61 - cube[iox][ioy+1][ioz+1]
-					     + cube[iox+1][ioy+1][ioz+1];
-				b[j][k] += a1 + dz*(a4 + a6*dx  
-						            + (a7 + a8*dx)*dy)
-					       + a3*dy + dx*(a2 + a5*dy);
-				vb += rotation.get_matrix3_row(0);
 			}
-		}
 
-	} else {
-		// No need to check x and y boundaries
-		for (int i = 0 ; i < nn; i++) {
-			int k = ipcube[i].loc[1] + origin[1];
-			Vec3f vb = ipcube[i].loc*rotation + origin;
-			for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
-				int iox = int(vb[0]);
-				int ioy = int(vb[1]);
-				int ioz = int(vb[2]);
-				float dx = vb[0] - iox;
-				float dy = vb[1] - ioy;
-				float dz = vb[2] - ioz;
-				float a1 = cube[iox][ioy][ioz];
-				float a2 = cube[iox+1][ioy][ioz] - a1;
-				float a3 = cube[iox][ioy+1][ioz] - a1;
-				float a4 = cube[iox][ioy][ioz+1] - a1;
-				float a5 = -a2 -cube[iox][ioy+1][ioz] 
-					     + cube[iox+1][ioy+1][ioz];
-				float a61 = -cube[iox][ioy][ioz+1] 
-					      + cube[iox+1][ioy][ioz+1];
-				float a6 = -a2 + a61;
-				float a7 = -a3 - cube[iox][ioy][ioz+1]
-					     + cube[iox][ioy+1][ioz+1];
-				float a8 = -a5 - a61 - cube[iox][ioy+1][ioz+1]
-					     + cube[iox+1][ioy+1][ioz+1];
-				b[j][k] += a1 + dz*(a4 + a6*dx  
-						            + (a7 + a8*dx)*dy)
-					       + a3*dy + dx*(a2 + a5*dy);
-				vb += rotation.get_matrix3_row(0);
+		} else {
+			// No need to check x and y boundaries
+			for (int i = 0 ; i < nn; i++) {
+				int k = ipcube[i].loc[1] + origin[1];
+				Vec3f vb = ipcube[i].loc*rotation + origin;
+				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
+					int iox = int(vb[0]);
+					int ioy = int(vb[1]);
+					int ioz = int(vb[2]);
+					float dx = vb[0] - iox;
+					float dy = vb[1] - ioy;
+					float dz = vb[2] - ioz;
+					float a1 = cube[iox][ioy][ioz];
+					float a2 = cube[iox+1][ioy][ioz] - a1;
+					float a3 = cube[iox][ioy+1][ioz] - a1;
+					float a4 = cube[iox][ioy][ioz+1] - a1;
+					float a5 = -a2 -cube[iox][ioy+1][ioz] 
+						+ cube[iox+1][ioy+1][ioz];
+					float a61 = -cube[iox][ioy][ioz+1] 
+						+ cube[iox+1][ioy][ioz+1];
+					float a6 = -a2 + a61;
+					float a7 = -a3 - cube[iox][ioy][ioz+1]
+						+ cube[iox][ioy+1][ioz+1];
+					float a8 = -a5 - a61 - cube[iox][ioy+1][ioz+1]
+						+ cube[iox+1][ioy+1][ioz+1];
+					b[j][k][ia] += a1 + dz*(a4 + a6*dx  
+							+ (a7 + a8*dx)*dy)
+						+ a3*dy + dx*(a2 + a5*dy);
+					vb += rotation.get_matrix3_row(0);
+				}
 			}
 		}
 	}

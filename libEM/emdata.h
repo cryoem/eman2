@@ -30,9 +30,11 @@ namespace EMAN
 	class XYData;
 	class Transform;
 	
-#define MArray2D boost::multi_array_ref<float, 2>
-#define MArray3D boost::multi_array_ref<float, 3>
-	
+//#define MArray2D boost::multi_array_ref<float, 2>
+//#define MArray3D boost::multi_array_ref<float, 3>
+	typedef boost::multi_array_ref<float, 2> MArray2D;
+	typedef boost::multi_array_ref<float, 3> MArray3D;
+
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
 	 *
