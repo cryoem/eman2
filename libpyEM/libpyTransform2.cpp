@@ -4,6 +4,7 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
+#include <emdata.h>
 #include <quaternion.h>
 #include <transform.h>
 #include <vec3.h>

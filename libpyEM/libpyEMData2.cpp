@@ -12,7 +12,6 @@
 #include <emfft.h>
 #include <filter.h>
 #include <transform.h>
-#include <typeconverter.h>
 #include <xydata.h>
 
 // Using =======================================================================
@@ -237,51 +236,5 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def( self /= self )
     ;
 
-
-	EMAN::vector_to_python<int>();
-	EMAN::vector_to_python<float>();
-	EMAN::vector_to_python<double>();
-	EMAN::vector_to_python<std::string>();
-	EMAN::vector_to_python<EMAN::EMData*>();
-	EMAN::vector_to_python<EMAN::Pixel>();
-
-	EMAN::vector_from_python<int>();
-	EMAN::vector_from_python<float>();
-	EMAN::vector_from_python<double>();
-	EMAN::vector_from_python<std::string>();
-	EMAN::vector_from_python<EMAN::EMData*>();
-	EMAN::vector_from_python<EMAN::Pixel>();
-
-	EMAN::map_to_python<EMAN::EMObject>();
-	EMAN::map_from_python<EMAN::EMObject>();
-	EMAN::map_to_python<vector<string> >();
-
-	EMAN::Dict_to_python();
-	EMAN::Dict_from_python();
-
-	EMAN::tuple3_to_python<EMAN::IntPoint>();
-	EMAN::tuple3_to_python<EMAN::FloatPoint>();
-
-	EMAN::tuple3_to_python<EMAN::IntSize>();
-	EMAN::tuple3_to_python<EMAN::FloatSize>();
-
-	EMAN::tuple3_from_python<EMAN::IntPoint, int>();
-	EMAN::tuple3_from_python<EMAN::FloatPoint, float>();
-
-	EMAN::tuple3_from_python<EMAN::IntSize, int>();
-	EMAN::tuple3_from_python<EMAN::FloatSize, float>();
-
-	EMAN::tuple3_from_python<EMAN::Vec3i, int>();
-	EMAN::tuple3_from_python<EMAN::Vec3f, float>();
-
-	EMAN::emobject_farray_from_python();
-	EMAN::emobject_emdata_from_python();
-
-	implicitly_convertible<int, EMAN::EMObject>();
-	implicitly_convertible<float, EMAN::EMObject>();
-	implicitly_convertible<double, EMAN::EMObject>();
-	implicitly_convertible<const char*, EMAN::EMObject>();
-	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
-	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
 }
 

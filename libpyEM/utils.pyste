@@ -1,12 +1,5 @@
 Include("emdata.h")
-Include("log.h")
-
-Log = Class("EMAN::Log", "log.h")
-set_policy(Log.logger, return_value_policy(reference_existing_object))
-exclude(Log.variable)
-exclude(Log.debug)
-exclude(Log.warn)
-exclude(Log.error)		       
+Util = Class("EMAN::Util", "util.h")
 
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
@@ -17,17 +10,3 @@ exclude(EMUtil.get_region_origins)
 exclude(EMUtil.get_region_data)
 
 ImageSort = Class("EMAN::ImageSort", "emutil.h")
-
-Ctf = Class("EMAN::Ctf", "ctf.h")
-SimpleCtf = Class("EMAN::SimpleCtf", "ctf.h")
-
-ImageIO = Class("EMAN::ImageIO", "imageio.h")
-
-XYData = Class("EMAN::XYData", "xydata.h")
-
-Util = Class("EMAN::Util", "util.h")
-
-Wrapper = Class("EMAN::Wrapper", "typeconverter.h")
-
-module_code("\n	import_array();\n        python::numeric::array::set_module_and_type(\"Numeric\", \"ArrayType\");\n\n")
-

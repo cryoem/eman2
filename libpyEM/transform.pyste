@@ -1,3 +1,4 @@
+Include("emdata.h")
 Vec3f = Class("EMAN::Vec3f", "vec3.h")
 Vec3i = Class("EMAN::Vec3i", "vec3.h")
 

@@ -367,13 +367,21 @@ namespace EMAN {
     
 		static void* convertible(PyObject* obj_ptr)
 		{
+			if (PyInt_Check(obj_ptr) || PyLong_Check(obj_ptr) || PyFloat_Check(obj_ptr) ||
+				PyString_Check(obj_ptr) || PyDict_Check(obj_ptr) || PyMapping_Check(obj_ptr) ||
+				PyNumber_Check(obj_ptr) || PyType_Check(obj_ptr) || PySequence_Check(obj_ptr) ||
+				PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr) || PyIter_Check(obj_ptr)) {
+				return 0;
+			}
 			return obj_ptr;
 		}
     
 		static void construct(PyObject* obj_ptr,
 							  python::converter::rvalue_from_python_stage1_data* data)
 		{
-			void* storage = ((python::converter::rvalue_from_python_storage<EMObject>*) data)->storage.bytes;
+			void* storage =
+				((python::converter::rvalue_from_python_storage<EMObject>*)
+				 data)->storage.bytes;
 			new (storage) EMObject();
 
 			data->convertible = storage;

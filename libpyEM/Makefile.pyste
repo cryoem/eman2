@@ -11,14 +11,15 @@ all: libpyAligner2.cpp \
 	 libpyEMData2.cpp \
 	 libpyUtils2.cpp \
 	 libpyPointArray2.cpp \
-	 libpyTransform2.cpp
-
+	 libpyTransform2.cpp \
+	 libpyTypeConverter2.cpp
 
 libpyGeometry2.cpp: geometry.pyste ../libEM/geometry.h
 	rm -f libpyGeometry2.cpp
 	$(PYSTE) --module=libpyGeometry2 geometry.pyste
 
-libpyTransform2.cpp: transform.pyste ../libEM/transform.h ../libEM/vec3.h	../libEM/matrix.h ../libEM/quaternion.h ../libEM/rotation.h
+libpyTransform2.cpp: transform.pyste ../libEM/transform.h ../libEM/vec3.h \
+ ../libEM/quaternion.h 
 	rm -f libpyTransform2.cpp
 	$(PYSTE) --module=libpyTransform2 transform.pyste
 
@@ -30,7 +31,7 @@ libpyEMData2.cpp: emdata.pyste ../libEM/emdata.h
 	rm -f libpyEMData2.cpp
 	$(PYSTE) --module=libpyEMData2  emdata.pyste
 
-libpyUtils2.cpp: utils.pyste ../libEM/log.h ../libEM/emutil.h ../libEM/ctf.h ../libEM/imageio.h ../libEM/xydata.h ../libEM/util.h typeconverter.h
+libpyUtils2.cpp: utils.pyste ../libEM/util.h ../libEM/emutil.h
 	rm -f libpyUtils2.cpp
 	$(PYSTE) --module=libpyUtils2 utils.pyste
 
@@ -38,7 +39,7 @@ libpyPointArray2.cpp: pointarray.pyste ../libEM/pointarray.h
 	rm -f libpyPointArray2.cpp
 	$(PYSTE) --module=libpyPointArray2 pointarray.pyste
 
-libpyAligner2.cpp: aligner.pyste ../libEM/aligner.h
+libpyAligner2.cpp: aligner.pyste ../libEM/aligner.h  ../libEM/ctf.h ../libEM/imageio.h 
 	rm -f libpyAligner2.cpp
 	$(PYSTE) --module=libpyAligner2 aligner.pyste
 
@@ -46,7 +47,7 @@ libpyAverager2.cpp: averager.pyste ../libEM/averager.h
 	rm -f libpyAverager2.cpp
 	$(PYSTE) --module=libpyAverager2 averager.pyste
 
-libpyCmp2.cpp: cmp.pyste ../libEM/cmp.h
+libpyCmp2.cpp: cmp.pyste ../libEM/cmp.h ../libEM/log.h ../libEM/xydata.h 
 	rm -f libpyCmp2.cpp
 	$(PYSTE) --module=libpyCmp2 cmp.pyste
 
@@ -61,3 +62,9 @@ libpyProjector2.cpp: projector.pyste ../libEM/projector.h
 libpyReconstructor2.cpp: reconstructor.pyste ../libEM/reconstructor.h
 	rm -f libpyReconstructor2.cpp
 	$(PYSTE) --module=libpyReconstructor2 reconstructor.pyste
+
+libpyTypeConverter2.cpp: typeconverter.pyste typeconverter.h
+	rm -f libpyTypeConverter2.cpp
+	$(PYSTE) --module=libpyTypeConverter2 typeconverter.pyste
+
+	

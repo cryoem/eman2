@@ -827,15 +827,34 @@ bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 
 void EMUtil::test_pyem_emobject(const Dict& d)
 {
-	vector<float> array = d["farray"].get_farray();
-	for (size_t i = 0; i < array.size(); i++) {
-		printf("farray[%d] = %f\n", i, array[i]);
+	if (d.has_key("farray")) {
+		vector<float> array = d["farray"].get_farray();
+		for (size_t i = 0; i < array.size(); i++) {
+			printf("farray[%d] = %f\n", i, array[i]);
+		}
 	}
-
-	EMData * img = d["emdata"];
-	if (img) {
-		printf("image size = (%d, %d, %d)\n",
-			   img->get_xsize(), img->get_ysize(), img->get_zsize());
+	
+	if (d.has_key("emdata")) {
+		EMData * img = d["emdata"];
+		if (img) {
+			printf("image size = (%d, %d, %d)\n",
+				   img->get_xsize(), img->get_ysize(), img->get_zsize());
+		}
+	}
+	
+	if (d.has_key("int")) {
+		int n = d["int"];
+		printf("int n = %d\n", n);
+	}
+	
+	if (d.has_key("float")) {
+		float f = d["float"];
+		printf("float f = %f\n", f);
+	}
+	
+	if (d.has_key("long")) {
+		int l = (int)d["long"];
+		printf("long l = %d\n", l);
 	}
 	
 }

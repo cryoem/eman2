@@ -2,6 +2,16 @@
 
 from EMAN2 import *
 
+num = 100
+EMUtil.test_pyem_emobject({"int": num})
+
+fnum = 1.234
+EMUtil.test_pyem_emobject({"float": fnum})
+
+lnum = 1000l
+EMUtil.test_pyem_emobject({"long": lnum})
+
+
 fl = [1.0, 2.0, 3.0]
 nl = range(5)
 

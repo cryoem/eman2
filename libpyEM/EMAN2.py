@@ -10,6 +10,7 @@ from libpyGeometry2 import *
 from libpyTransform2 import *
 from libpyUtils2 import * 
 from libpyPointArray2 import *
+from libpyTypeConverter2 import *
 from bisect import bisect_left
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
