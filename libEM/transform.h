@@ -86,7 +86,7 @@ namespace EMAN
 			return (*this);
 		}
 
-		vector < T > get_value()const
+		vector < T > get_as_list()const
 		{
 			vector < T > v(3);
 			v[0] = vec[0];
@@ -239,7 +239,7 @@ namespace EMAN
 		Matrix3f & mult_left(const Matrix3f & m);
 
 		void set_value(const vector < float >&m);
-		vector < float >get_value() const;
+		vector < float >get_as_list() const;
 
 		/** inverse this matrix and return it.
 		 */
@@ -399,7 +399,7 @@ namespace EMAN
 		void make_identity();
 
 		void set_value(const vector < float >&m);
-		vector < float >get_value() const;
+		vector < float >get_as_list() const;
 		Matrix3f get_matrix3() const;
 
 		/** inverse this matrix and return it.
@@ -515,7 +515,7 @@ namespace EMAN
 		float real() const;
 		Vec3 < float >unreal() const;
 
-		vector < float >get_value() const;
+		vector < float >get_as_list() const;
 
 		Quaternion & operator+=(const Quaternion & q);
 		Quaternion & operator-=(const Quaternion & q);

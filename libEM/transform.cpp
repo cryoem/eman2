@@ -111,7 +111,7 @@ void Matrix3f::set_value(const vector < float >&m)
 	}
 }
 
-vector < float >Matrix3f::get_value() const
+vector < float >Matrix3f::get_as_list() const
 {
 	const int n = 3;
 	vector < float >m(n * n);
@@ -438,7 +438,7 @@ void Matrix4f::set_value(const vector < float >&m)
 }
 
 
-vector < float >Matrix4f::get_value() const
+vector < float >Matrix4f::get_as_list() const
 {
 	const int n = 4;
 	vector < float >m(n * n);
@@ -943,7 +943,7 @@ Vec3 < float >Quaternion::unreal() const
 	return Vec3 < float >(e1, e2, e3);
 }
 
-vector < float >Quaternion::get_value() const
+vector < float >Quaternion::get_as_list() const
 {
 	vector < float >v(4);
 	v[0] = e0;
@@ -1076,8 +1076,8 @@ Quaternion EMAN::operator/(const Quaternion & q1, const Quaternion & q2)
 bool EMAN::operator==(const Quaternion & q1, const Quaternion & q2)
 {
 	bool result = true;
-	vector < float >v1 = q1.get_value();
-	vector < float >v2 = q2.get_value();
+	vector < float >v1 = q1.get_as_list();
+	vector < float >v2 = q2.get_as_list();
 
 	for (size_t i = 0; i < v1.size(); i++) {
 		if (v1[i] != v2[i]) {

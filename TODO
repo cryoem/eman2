@@ -63,6 +63,10 @@
 	   file, but the file is missing one 32x32k slice at the end. ie - the file
 	   is 131072 bytes.
 
+  038. convert named classes including IntSize, FloatSize, IntPoint,
+       FloatPoint to python list in boost python part.
+
+	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -85,6 +89,8 @@
 
   032. add actual implementation of region write to ImageIO. 
 
+  039. make classes Vec3, Matrix3f, Matrix4f as python container classes.  
+	   refer indexing_suite in boost python.
 
 --- Items Done ----
 
