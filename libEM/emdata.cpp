@@ -781,7 +781,7 @@ EMData* EMData::window_padded(int l) {
 		throw ImageFormatException(
 			"Need cubic real-space image.");
 	}
-	EMData* ret = new EMData;
+	EMData* ret = copy_head();
 	ret->set_size(l, l, l);
 	float* retdata = ret->get_data();
 	windum(rdata, retdata, l, nx, n);
@@ -904,7 +904,7 @@ EMData* EMData::pad_fft() {
 	return newimg;
 }
 
-EMData *EMData::do_fft(FFTPLACE fftplace)
+EMData *EMData::do_fft()
 {
 	ENTERFUNC;
 	
@@ -912,69 +912,55 @@ EMData *EMData::do_fft(FFTPLACE fftplace)
 		return this;
 	}
 
-	EMData* dat = NULL;
-	int nxreal;
-	int nx2;
-	if (fftplace == FFT_OUT_OF_PLACE) {
-		nxreal = nx;
-		int offset = 2 - nx%2;
-		nx2 = nx + offset;
-		dat = copy_head();
-		dat->set_size(nx2, ny, nz);
-		if (offset == 1) 
-			dat->set_fftodd(true);
-	} else {
-		int offset = is_fftodd() ? 1 : 2;
-		nxreal = nx - offset;
-		nx2 = nx;
-		dat = this;
-	}
+	int nxreal = nx;
+	int offset = 2 - nx%2;
+	int nx2 = nx + offset;
+	EMData* dat = copy_head();
+	dat->set_size(nx2, ny, nz);
+	if (offset == 1) 
+		dat->set_fftodd(true);
 
 	float *d = dat->get_data();
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
-	// if we do this in-place, we do _not_ want to shuffle the results
-	// to change the origin. -G2-
-	if (fftplace == FFT_OUT_OF_PLACE) {
-		if (nz == 1) {
-			int l = ny / 2 * nx2;
+	if (nz == 1) {
+		int l = ny / 2 * nx2;
 
-			for (int i = 0; i < ny / 2; i++) {
-				int inx2 = i * nx2;
-				for (int j = 0; j < nx2; j++) {
-					int k = j + inx2;
-					float f = d[k];
-					d[k] = d[k + l];
-					d[k + l] = f;
-				}
+		for (int i = 0; i < ny / 2; i++) {
+			int inx2 = i * nx2;
+			for (int j = 0; j < nx2; j++) {
+				int k = j + inx2;
+				float f = d[k];
+				d[k] = d[k + l];
+				d[k + l] = f;
 			}
 		}
-		else if (ny != 1) {
-			char *t = new char[nx2 * sizeof(float)];
+	}
+	else if (ny != 1) {
+		char *t = new char[nx2 * sizeof(float)];
 
-			int k = nx2 * ny * (nz + 1) / 2;
-			int l = nx2 * ny * (nz - 1) / 2;
-			size_t jj = nx2 * sizeof(float);
-			int ii = 0;
+		int k = nx2 * ny * (nz + 1) / 2;
+		int l = nx2 * ny * (nz - 1) / 2;
+		size_t jj = nx2 * sizeof(float);
+		int ii = 0;
 
-			for (int j = 0; j < nz / 2; j++) {
-				for (int i = 0; i < ny; i++) {
-					memcpy(t, d + ii, jj);
+		for (int j = 0; j < nz / 2; j++) {
+			for (int i = 0; i < ny; i++) {
+				memcpy(t, d + ii, jj);
 
-					if (i < ny / 2) {
-						memcpy(d + ii, d + ii + k, jj);
-						memcpy(d + ii + k, t, jj);
-					}
-					else {
-						memcpy(d + ii, d + ii + l, jj);
-						memcpy(d + ii + l, t, jj);
-					}
-					ii += nx2;
+				if (i < ny / 2) {
+					memcpy(d + ii, d + ii + k, jj);
+					memcpy(d + ii + k, t, jj);
 				}
+				else {
+					memcpy(d + ii, d + ii + l, jj);
+					memcpy(d + ii + l, t, jj);
+				}
+				ii += nx2;
 			}
-			delete[]t;
-			t = 0;
 		}
+		delete[]t;
+		t = 0;
 	}
 
 
@@ -991,6 +977,28 @@ EMData *EMData::do_fft(FFTPLACE fftplace)
 
 	EXITFUNC;
 	return dat;
+}
+
+EMData *EMData::do_fft_inplace()
+{
+	ENTERFUNC;
+	
+	if (flags & EMDATA_COMPLEX) {
+		return this;
+	}
+	int offset = is_fftodd() ? 1 : 2;
+	int nxreal = nx - offset;
+	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
+	float scale = 1.0f / (nxreal * ny * nz);
+	mult(scale);
+	done_data();
+	set_complex(true);
+	set_ri(true);
+	int i = flags;
+	done_data();
+	flags = i & ~EMDATA_BUSY;
+	EXITFUNC;
+	return this;
 }
 
 EMData *EMData::do_ift(FFTPLACE fftplace)

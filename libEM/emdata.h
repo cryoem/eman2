@@ -279,7 +279,8 @@ namespace EMAN
 		 *
 		 * @return The FFT of the current image in real/imaginary format.
 		 */
-		EMData *do_fft(FFTPLACE fftplace = FFT_OUT_OF_PLACE);
+		EMData *do_fft();
+		EMData *do_fft_inplace();
 
 		/** return the inverse fourier transform image of the current
 		 * image. the current image is not changed.
