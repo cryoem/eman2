@@ -636,6 +636,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 
 
 	import_array();
+        python::numeric::array::set_module_and_type("Numeric", "ArrayType");
 
 }
 

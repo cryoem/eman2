@@ -54,7 +54,13 @@
        support insert/append to a new file, insert/append beyond the end of
        the file. The gap will be filled with zero. Check imagic format as
        an example.
-	   	   
+
+  067. boost python part: compilation failed with python 2.4, boost 1.32.0
+	   on IRIX 6.5 with CC MIPSpro Compilers: Version 7.3.1.3m
+
+  068. Windows support. windows file system uses '\' as path separator while
+	   unix/linux uses '/'. Need a generic way to make the code portable.
+	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.

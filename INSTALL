@@ -14,7 +14,7 @@
       1. Python (version 2.2+)        (http://www.python.org)
       2. Boost python (version 1.30.2+)    (http://www.boost.org)
          (see "NOTE A" on how to install boost python)
-      3. Numerc python numarray (1.1.1 +) (http://www.pfdubois.com/numpy)
+      3. Numerc python Numeric numpy (22.0 +) (http://www.pfdubois.com/numpy)
          
     - To read/write HDF5 image, use hdf5 (http://hdf.ncsa.uiuc.edu/HDF5).
 
@@ -74,8 +74,8 @@ Platform Dependent Optimization
 
     In CMake Configuration, enable the following option for your platform:
         - Athlon:  ENABLE_ATHLON
-    - Opteron: ENABLE_OPTERON
-    - Mac G5:  ENABLE_G5
+        - Opteron: ENABLE_OPTERON
+        - Mac G5:  ENABLE_G5
 
           
 How to Generate Latest Documentation
@@ -147,27 +147,23 @@ How to use your own python version
 ----------------------------------
 
     If the python you want to use in your computer is not found by CMake,
-	you may set up environment variables "PYTHON_ROOT" and "PYTHON_VERSION".
-	For example, if your python is at /usr/local/python2.4/bin/python.
-	PYTHON_ROOT is "/usr/local/python2.4". if your python is 2.4.X,
-	PYTHON_VERSION is '2.4'.
-	   
+    you may set up environment variables "PYTHON_ROOT" and "PYTHON_VERSION".
+    For example, if your python is at /usr/local/python2.4/bin/python.
+    PYTHON_ROOT is "/usr/local/python2.4". if your python is 2.4.X,
+    PYTHON_VERSION is '2.4'.
+       
 How to Install Numeric Python
 -----------------------------
     - go to web site http://www.pfdubois.com/numpy
-    - download Numarray release version 1.1.1 or above
+    - download Numeric numpy release version 22.0 or above
     - for windows, run the binary installer. that's it.
-    - for other platforms, assuming you are installing ver 1.1.1, do:
-    - get source code numarray-1.1.1.tar.gz
-	- gunzip numarray-1.1.1.tar.gz; tar xf numarray-1.1.1.tar
-	- login as root
-	- cd numarray-1.1.1; python setup.py install
-	
-	
-
-
-
-
+    - for other platforms, assuming to install Numeric-23.6.tar.gz
+    - get source code Numeric-23.6.tar.gz
+    - gunzip Numeric-23.6.tar.gz; tar xf Numeric-23.6.tar
+    - login as root
+    - cd Numeric-23.6; python setup.py install
+    
+    
 
 
        
