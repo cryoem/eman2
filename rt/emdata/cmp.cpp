@@ -6,9 +6,9 @@ using namespace EMAN;
 
 void mycmp(string cmpname, EMData& e1, EMData& e2)
 {
-	Dict params("with", EMObject(&e1));
-    float cmp1 = e1.cmp(cmpname, params);
-    float cmp2 = e1.cmp(cmpname, params);
+	Dict params;
+    float cmp1 = e1.cmp(cmpname, &e1, params);
+    float cmp2 = e1.cmp(cmpname, &e1, params);
     
     printf("%12s: cmp(a, a) = %f; cmp(a, b) = %f\n", cmpname.c_str(), cmp1, cmp2);
 }
