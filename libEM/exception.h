@@ -10,7 +10,8 @@ using std::string;
  * E2Exception class is a subclass of std::exception; All EMAN2
  * E2Exception classes are subclass of E2Exception class.
  *
- * A XYZ E2Exception class is defined in the following way:
+ * A XYZ Exception class is defined in the following way:
+ *   0) It will extend E2Exception class.
  *   1) The class is named _XYZException.
  *   2) The class has a function to return its name "XYZException".
  *   3) A macro called "XYZException" is defined to simplify the usage
