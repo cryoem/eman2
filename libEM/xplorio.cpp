@@ -3,6 +3,9 @@
  */
 #include "xplorio.h"
 #include "log.h"
+#ifdef WIN32
+#include <time.h>
+#endif
 
 
 using namespace EMAN;

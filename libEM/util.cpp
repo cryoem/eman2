@@ -9,7 +9,9 @@
 #include <string.h>
 #include <math.h>
 #include <sys/types.h>
+#ifndef WIN32
 #include <sys/param.h>
+#endif
 
 #include <fcntl.h>
 #include <float.h>
@@ -45,7 +47,7 @@ int Util::file_lock_wait(FILE * file)
 {
 #ifdef _WIN32
     return 1;
-#endif
+#else
 
     if (!file) {
 	Log::logger()->error("Tried to lock NULL file");
@@ -93,6 +95,7 @@ int Util::file_lock_wait(FILE * file)
     }
 
     return 0;
+#endif
 }
 
 void Util::file_unlock(FILE *file)

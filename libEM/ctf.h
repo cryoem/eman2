@@ -8,7 +8,9 @@
 #include <map>
 #include <math.h>
 #include "emobject.h"
-
+#ifdef WIN32
+#define M_PI 3.14159265358979323846
+#endif
 using std::string;
 using std::map;
 

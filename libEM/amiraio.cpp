@@ -4,7 +4,11 @@
 #include "amiraio.h"
 #include "log.h"
 #include "util.h"
+#ifndef WIN32
 #include <sys/param.h>
+#else
+#define MAXPATHLEN 1024
+#endif
 
 using namespace EMAN;
 

@@ -7,6 +7,15 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef WIN32
+#include <windows.h>
+#include <io.h>
+#define F_OK 0
+#include <time.h>
+#include <process.h>
+#include <direct.h>
+#define mkdir(a,b) _mkdir(a)
+#endif
 
 using namespace EMAN;
 using std::string;
@@ -130,7 +139,9 @@ int Log::begin(int argc, char *argv[], int ppid)
     }
 
     char s[4048];
+#ifndef WIN32
     sprintf(s, "%d\t%d\t%d\t%d\t%s", ref, tm, 0, ppid ? ppid : getppid(), t);
+#endif
     for (int i = 1; i < argc; i++) {
 	sprintf(s + strlen(s), " %s", argv[i]);
     }

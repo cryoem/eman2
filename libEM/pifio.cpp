@@ -7,6 +7,9 @@
 #include "portable_fileio.h"
 #include "geometry.h"
 #include <assert.h>
+#ifdef WIN32
+#include <time.h>
+#endif
 
 using namespace EMAN;
 

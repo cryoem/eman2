@@ -9,6 +9,7 @@
 #include "geometry.h"
 #include "ctf.h"
 #include <assert.h>
+#include <time.h>
 
 using namespace EMAN;
 

@@ -3,7 +3,11 @@
  */
 #include "xydata.h"
 #include <algorithm>
+#ifndef WIN32
 #include <sys/param.h>
+#else
+#define MAXPATHLEN 1024
+#endif
 #include <float.h>
 #include <math.h>
 #include "log.h"

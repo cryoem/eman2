@@ -5,7 +5,9 @@
 #include "log.h"
 #include <math.h>
 #include <ctype.h>
-
+#ifdef WIN32
+#define M_PI 3.14159265358979323846
+#endif
 using namespace EMAN;
 
 Matrix3f::Matrix3f(float m0, float m1, float m2, float m3, float m4, float m5, float m6, float m7,
