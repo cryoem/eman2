@@ -171,9 +171,6 @@ namespace EMAN
 		 */
 		static bool is_same_ctf(const EMData * image1, const EMData * image2);
 
-
-		static void test_pyem_emobject(const Dict & d);
-		
 	  private:
 		static ImageType fast_get_image_type(string filename, const void *first_block,
 											 off_t file_size);

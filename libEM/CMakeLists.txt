@@ -40,6 +40,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     averager.cpp
     reconstructor.cpp
     exception.cpp
+	testutil.cpp
     )
 
 IF(WIN32)

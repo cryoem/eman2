@@ -31,7 +31,7 @@ libpyEMData2.cpp: emdata.pyste ../libEM/emdata.h
 	rm -f libpyEMData2.cpp
 	$(PYSTE) --module=libpyEMData2  emdata.pyste
 
-libpyUtils2.cpp: utils.pyste ../libEM/util.h ../libEM/emutil.h
+libpyUtils2.cpp: utils.pyste ../libEM/util.h ../libEM/emutil.h ../libEM/testutil.h
 	rm -f libpyUtils2.cpp
 	$(PYSTE) --module=libpyUtils2 utils.pyste
 

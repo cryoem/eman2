@@ -573,23 +573,6 @@ string Util::get_time_label()
 	return string(label);
 }
 
-const char* Util::get_debug_image(const char* imagename)
-{
-	if (!imagename) {
-		return "";
-	}
-	
-	string fullpath = "";
-	char * imgpath = getenv("DEBUG_IMAGE_PATH");
-	if (imgpath) {
-		fullpath = string(imgpath);
-	}
-	else {
-		fullpath = string(getenv("HOME")) + "/images";
-	}
-	fullpath = fullpath + "/" + string(imagename);
-	return fullpath.c_str();
-}
 
 void Util::set_log_level(int argc, char *argv[])
 {

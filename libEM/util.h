@@ -293,8 +293,6 @@ namespace EMAN
 
 		static string get_time_label();
 
-		static const char* get_debug_image(const char* imagename);
-		
 		static void set_log_level(int argc, char *argv[]);
 
 		static inline float eman_copysign(float a, float b)

@@ -1,4 +1,5 @@
 from libpyUtils2 import *
+from libpyTransform2 import *
 
 MRC = EMUtil.ImageType.IMAGE_MRC
 SPIDER = EMUtil.ImageType.IMAGE_SPIDER
@@ -20,3 +21,12 @@ AMIRA = EMUtil.ImageType.IMAGE_AMIRA
 XPLOR = EMUtil.ImageType.IMAGE_XPLOR
 EM = EMUtil.ImageType.IMAGE_EM
 IMAGE_UNKNOWN = EMUtil.ImageType.IMAGE_UNKNOWN
+
+
+EULER_EMAN = Transform.EulerType.EMAN
+EULER_IMAGIC = Transform.EulerType.IMAGIC
+EULER_SPIN = Transform.EulerType.SPIN
+EULER_QUATERNION = Transform.EulerType.QUATERNION
+EULER_SGIROT = Transform.EulerType.SGIROT
+EULER_SPIDER = Transform.EulerType.SPIDER
+EULER_MRC = Transform.EulerType.MRC

@@ -10,3 +10,5 @@ exclude(EMUtil.get_region_origins)
 exclude(EMUtil.get_region_data)
 
 ImageSort = Class("EMAN::ImageSort", "emutil.h")
+
+TestUtil = Class("EMAN::TestUtil", "testutil.h")
