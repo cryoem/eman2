@@ -3,6 +3,16 @@ EMAN2 README
 How to install EMAN2
     see instructions in INSTALL.
 
+What is the file structure for EMAN2 source code
+
+  - libEM       core libEM library
+  - libpyEM	boost python wrapper of libEM
+  - programs	command-line programs
+  - utils	utility-level programs
+  - pyemtbx	python library modules toolbox
+  - plugins	templates and sample code for EMAN2 developments
+  - doc		documentation
+  
 Where is the documentation
 
     EMAN2 has 2 levels of documentations:
