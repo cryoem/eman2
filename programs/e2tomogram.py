@@ -171,7 +171,7 @@ Processes a tomographic tilt series"""
 			
 			best=(mode(dxs),mode(dys))
 		elif options.mode[:6]=="region":
-			if i==nimg/2 : 
+			if i[0]==nimg/2 :
 				cen=(rgnp[0],rgnp[1])
 
 			ref=im1.copy()
@@ -183,21 +183,26 @@ Processes a tomographic tilt series"""
 			ref-=float(ref.get_attr("mean_nonzero"))
 			ref*=mask
 			
-			im1.filter("NormalizeStd")
-			im1s=im1.copy(0)
-			im1s.filter("ValueSquared")
+			im2.filter("NormalizeStd")
+			im2s=im2.copy(0)
+			im2s.filter("ValueSquared")
 			
-			ccf=ref.calc_ccf(im1,1,None)
-			ccfs=mask.calc_ccf(im1s,1,None)	# this is the sum of the masked values^2 for each pixel center
+#			ref.write_image("dbug.hed",-1)
+#			im2.write_image("dbug.hed",-1)
+			ccf=ref.calc_ccf(im2,1,None)
+			ccfs=mask.calc_ccf(im2s,1,None)	# this is the sum of the masked values^2 for each pixel center
 			ccfs.filter("ValueSqrt")
 			ccf/=ccfs
-	
+			ccf.filter("MaskSharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
+
 			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
-			ccf.write_image("dbug.hed",-1)
+#			ccf.write_image("dbug.hed",-1)
 			maxloc=ccf.calc_max_location()
+			maxloc=(maxloc[0]-im1.get_xsize()/2,maxloc[1]-im1.get_ysize()/2)
+#			print maxloc
 			
-			out=im2.get_clip(Region(cen[0]+maxloc[0]-rgnp[2]/2,cen[1]+maxloc[1]-rgnp[2]/2,rgnp[2],rgnp[2]))
-			cen=(cen[0]+maxloc[0]-im2.get_xsize()/2,cen[1]+maxloc[1]-im2.get_ysize()/2)
+			out=im2.get_clip(Region(cen[0]-maxloc[0]-rgnp[2]/2+im2.get_xsize()/2,cen[1]-maxloc[1]-rgnp[2]/2+im2.get_ysize()/2,rgnp[2],rgnp[2]))
+			cen=(cen[0]-maxloc[0],cen[1]-maxloc[1])
 			out.write_image(args[1],i[1])
 			print "%d.\t%d\t%d"%(i[1],cen[0],cen[1])
 			continue			
@@ -248,6 +253,7 @@ Processes a tomographic tilt series"""
 	print "Begin tilt axis search"
 	
 	# now we look for the common-line in the aligned images
+	im1.read_image(args[1],0)
 	sum=im1.do_fft()
 	sum.to_zero()
 	for i in range(nimg):

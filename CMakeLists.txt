@@ -105,7 +105,7 @@ IF(ENABLE_RT)
     SUBDIRS(rt)
 ENDIF(ENABLE_RT)
 
-SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/local/include/boost-1_31 /usr/include /sw/include)
+SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/local/include/boost-1_31 /usr/local/include/boost-1_32 /usr/include /sw/include)
 
 SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${PLATFORMLIB} $ENV{FFTWDIR}/lib $ENV{GSLDIR}/lib /usr/local/lib /usr/lib /sw/lib)
 
@@ -180,6 +180,7 @@ MACRO(CHECK_PYTHON)
 					$ENV{PYTHON_ROOT}/lib/python${PYVER}/config
 					/usr/local/lib/python${PYVER}/config
 					/usr/lib/python${PYVER}/config
+					/usr/lib64/python${PYVER}/config
 					$ENV{PYTHON_ROOT}/lib /usr/local/lib /usr/lib)
 
 			ENDIF (WIN32)
