@@ -288,7 +288,8 @@ namespace EMAN
 		 * @exception ImageFormatException If the image is not a complex image.
 		 * @return The current image's inverse fourier transform image.
 		 */
-		EMData *do_ift(FFTPLACE fftplace = FFT_OUT_OF_PLACE);
+		EMData *do_ift();
+		EMData *do_ift_inplace();
 
 		/** return the amplitudes of the FFT including the left half
 		 *

@@ -1001,7 +1001,7 @@ EMData *EMData::do_fft_inplace()
 	return this;
 }
 
-EMData *EMData::do_ift(FFTPLACE fftplace)
+EMData *EMData::do_ift()
 {
 	ENTERFUNC;
 	
@@ -1014,13 +1014,8 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 		LOGWARN("run IFT on AP data, only RI should be used. ");
 	}
 
-	EMData* dat = NULL;
-	if (fftplace == FFT_OUT_OF_PLACE) {
-		dat = copy_head();
-		dat->set_size(nx, ny, nz);
-	} else {
-		dat = this;
-	}
+	EMData* dat = copy_head();
+	dat->set_size(nx, ny, nz);
 	ap2ri();
 
 	float *d = dat->get_data();
@@ -1031,12 +1026,11 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 	}
 
 
-	// turn off data shuffling if we're doing an in-place transform
 	int offset = is_fftodd() ? 1 : 2;
 	if (ndim == 1) {
 		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 	}
-	else if (ndim == 2 && (fftplace == FFT_OUT_OF_PLACE)) {
+	else if (ndim == 2 ) {
 		int l = ny / 2 * nx;
 		for (int i = 0; i < ny / 2; i++) {
 			for (int j = 0; j < nx; j++) {
@@ -1047,7 +1041,7 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 			}
 		}
 	}
-	else if (fftplace == FFT_OUT_OF_PLACE) {
+	else {
 		char *t = new char[(nx + offset) * sizeof(float)];
 		int k = nx * ny * (nz + 1) / 2;
 		int l = nx * ny * (nz - 1) / 2;
@@ -1078,18 +1072,15 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 	if (ndim >= 2) {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
-		if (fftplace == FFT_OUT_OF_PLACE) {
-			size_t row_size = (nx - offset) * sizeof(float);
-			for (int i = 1; i < ny * nz; i++) {
-				memcpy((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
-			}
+		size_t row_size = (nx - offset) * sizeof(float);
+		for (int i = 1; i < ny * nz; i++) {
+			memcpy((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
 		}
 	}
 
 	dat->done_data();
 #if 1
-	if (fftplace == FFT_OUT_OF_PLACE)
-		dat->set_size(nx - offset, ny, nz);
+	dat->set_size(nx - offset, ny, nz);
 #endif
 	dat->update();
 	dat->set_complex(false);
@@ -1101,6 +1092,51 @@ EMData *EMData::do_ift(FFTPLACE fftplace)
 
 	EXITFUNC;
 	return dat;
+}
+
+EMData *EMData::do_ift_inplace()
+{
+	ENTERFUNC;
+	
+	if (!is_complex()) {
+		LOGERR("complex image expected. Input image is real image.");
+		throw ImageFormatException("complex image expected. Input image is real image.");
+	}
+
+	if (!is_ri()) {
+		LOGWARN("run IFT on AP data, only RI should be used. ");
+	}
+
+	ap2ri();
+
+	int ndim = get_ndim();
+
+	if (ndim >= 2) {
+		memcpy((char *) rdata, (char *) rdata, nx * ny * nz * sizeof(float));
+	}
+
+
+	// turn off data shuffling if we're doing an in-place transform
+	int offset = is_fftodd() ? 1 : 2;
+	if (ndim == 1) {
+		EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
+	}
+
+	if (ndim >= 2) {
+		EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
+	}
+
+	done_data();
+	update();
+	set_complex(false);
+	set_ri(false);
+
+	int i = flags;
+	done_data();
+	flags = i & ~EMDATA_BUSY;
+
+	EXITFUNC;
+	return this;
 }
 
 EMData* EMData::get_fft_amplitude()
