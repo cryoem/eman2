@@ -33,6 +33,7 @@ for single particle analysis."""
 	
 	refptcl=None
 	if options.refptcl :
+		print options.refptcl
 		refptcl=EMData.read_images(options.refptcl)
 		refbox=refptcl[0].get_xsize()
 		print "%d reference particles read (%d x %d)"%(len(refptcl),refbox,refbox)
@@ -154,7 +155,7 @@ for single particle analysis."""
 			print n
 			b=EMData()
 			b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
-			ba=refptcl[i[1]].align("RotateTranslateFlip",b)
+			ba=refptcl[i[1]].align("RotateTranslateFlip",b,{},"phase")
 			
 			
 		# Write EMAN1 style box database

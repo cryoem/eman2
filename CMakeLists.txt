@@ -23,13 +23,18 @@ OPTION(ENABLE_HDF5 "enable HDF5 support" ON)
 OPTION(ENABLE_PNG "enable PNG support" ON)
 OPTION(ENABLE_PYTHON "enable boost python support" ON)
 
-OPTION(ENABLE_DEBUG "enable debug support" ON)
+OPTION(ENABLE_DEBUG "enable debug support" OFF)
+OPTION(ENABLE_MEMDEBUG "enable memory debug support" OFF)
 OPTION(ENABLE_RT "enable RT support" OFF)
 OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
 OPTION(ENABLE_ATHLON "if enable ATHLON specific support" OFF)
 OPTION(ENABLE_OPTERON "if enable OPTERON/Ath64 specific support" OFF)
 OPTION(ENABLE_G5 "if enable G5 CPU specific support" OFF)
+
+IF (ENABLE_MEMDEBUG)
+	ADD_DEFINITIONS(-DMEMDEBUG)
+ENDIF (ENABLE_MEMDEBUG)
 
 IF (ENABLE_DEBUG)
     SET (OPT_FLAGS "-DDEBUG")

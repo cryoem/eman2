@@ -54,7 +54,9 @@ EMData::EMData()
 	nz = 0;
 
 	EMData::totalalloc++;
-//	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#ifdef MEMDEBUG
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
+#endif
 	EXITFUNC;
 }
 
@@ -84,7 +86,9 @@ EMData::~EMData()
 	}
 	
 	EMData::totalalloc--;
-//	printf("EMDATA-  %4d %p\n",EMData::totalalloc,this);
+#ifdef MEMDEBUG
+	printf("EMDATA-  %4d    %p\n",EMData::totalalloc,this);
+#endif
 	EXITFUNC;
 }
 
@@ -4398,12 +4402,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		LOGERR("even image xsize only");
 		throw ImageFormatException("even image xsize only");
 	}
-	/*
-	if (rfp) {
-		delete rfp;
-		rfp = 0;
-	}
-	*/
+	
 	if (!filt) {
 		filt = new EMData();
 		filt->set_complex(true);
@@ -4481,12 +4480,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	}
 
 	EMData *this_fft = 0;
-	if (filter) {
-		this_fft = do_fft()->copy();
-	}
-	else {
-		this_fft = do_fft();
-	}
+	this_fft = do_fft();
 
 	if (!this_fft) {
 		LOGERR("FFT returns NULL image");
@@ -4497,12 +4491,11 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	EMData *cf = 0;
 
 	if (with) {
-		EMData *cf1 = with->do_fft();
-		if (!cf1) {
+		cf = with->do_fft();
+		if (!cf) {
 			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");
 		}
-		cf = cf1->copy(false);
 		cf->ap2ri();
 	}
 	else {
@@ -4562,10 +4555,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	delete cf;
 	cf = 0;
 
-	if (filter) {
-		delete this_fft;
-		this_fft = 0;
-	}
+	delete this_fft;
 
 	f2->set_attr("label", "MCF");
 	f2->set_path("/tmp/eman.mcf");
@@ -5092,18 +5082,19 @@ EMData *EMData::convolute(EMData * with)
 
 	EMData *cf = 0;
 	if (with) {
-		EMData *cf1 = with->do_fft();
-		if (!cf1) {
+		cf = with->do_fft();
+		if (!cf) {
 			LOGERR("FFT returns NULL image");
 			throw NullPointerException("FFT returns NULL image");
 		}
-		cf = cf1->copy(false);
 		cf->ap2ri();
 	}
 	else {
 		cf = f1->copy(false);
 	}
 
+	printf("%p  %p\n",f1,cf);
+	
 	if (with && !EMUtil::is_same_size(f1, cf)) {
 		LOGERR("images not same size");
 		throw ImageFormatException("images not same size");
@@ -5124,6 +5115,9 @@ EMData *EMData::convolute(EMData * with)
 	delete cf;
 	cf = 0;
 
+	delete f1;
+	f1=0;
+	
 	EXITFUNC;
 	return f2;
 }
@@ -5369,6 +5363,8 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 
 	image1->done_data();
 	image2->done_data();
+	delete image1;
+	delete image2;
 	done_data();
 	update();
 	EXITFUNC;
