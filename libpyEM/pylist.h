@@ -28,7 +28,14 @@ namespace EMAN {
 
 	class Wrapper {
 	public:
+		/** Get an EMData image's pixel data as a numeric numpy array.
+		 * The array and EMData image share the same memory block.
+		 */
 		static python::numeric::array em2numpy(EMData *image);
+
+		/** Create an EMData image from a numeric numpy array.
+		 * The image and the array share the same memory block.
+		 */
 		static void numpy2em(python::numeric::array& array, EMData* image);
 	};
 	

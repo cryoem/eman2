@@ -12,9 +12,10 @@
 <big>EMAN2: Developer's FAQ</big></span></big><br>
 </div>
 <br>
-As a redesign based on EMAN1, EMAN2 is more object-oriented, and is
+<big>As a redesign based on EMAN1, EMAN2 is more object-oriented, and
+is
 more modular, and is designed to be easier to use for both regular
-users and developers. <br>
+users and developers. </big><br>
 <ol>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 read/write an image in python?</big></li>
@@ -176,7 +177,8 @@ return_internal_reference())</span></li>
         </span></li>
     </ol>
   </ul>
-  <li style="color: rgb(51, 51, 255);"><big>How to use Factory classes
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+use Factory classes
 like Filter, Aligner, Averager, Cmp, Projector, Reconstructor?</big></li>
   <ul>
     <li>EMAN has many functions that implement specific algorithms to
@@ -325,6 +327,66 @@ Rotation(alt, az, phi, Rotation::EMAN);</span><br
     </li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+use Numeric Python?</big></li>
+  <ul>
+    <li style="font-weight: bold; color: rgb(0, 0, 0);">In EMAN2,&nbsp;
+Numeric array and the corresponding EMData object shares the same
+memory block.</li>
+    <li
+ style="color: rgb(51, 51, 255); font-weight: bold; background-color: rgb(255, 255, 204);">From
+EMData object to Numeric numpy array:&nbsp;&nbsp; <br>
+      <span
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">from
+EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">
+      <span
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">e
+= EMData()</span><br
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">
+      <span
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">e.read_image("e.mrc"))</span><br
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">
+      <span
+ style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">array
+= Wrapper.em2numpy(e)</span><br>
+    </li>
+    <li
+ style="color: rgb(51, 51, 255); font-weight: bold; background-color: rgb(255, 255, 204);">From
+Numerc numpy array to EMData object:<br>
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">from
+EMAN2 import *</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">import
+Numeric</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">n
+= 100</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">numbers
+= range(2*n*n)</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">array
+= Numeric.reshape(Numeric.array(numbers, Numeric.Float32), (2*n, n))</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">e
+= EMData()</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">Wrapper.numpy2em(array,
+e)</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+      <span
+ style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">e.write_image("numpy.mrc")</span><br>
+      <br>
+    </li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 use
 Exception handling in EMAN2?</big></li>
   <ul style="background-color: rgb(255, 255, 204);">
@@ -338,7 +400,7 @@ exception:</li>
     <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; if (!with)
 {</span><br style="font-family: monospace;">
     <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp; throw NullPointerException("NULL
+&nbsp;&nbsp;&nbsp; throw <span style="font-weight: bold;">NullPointerException</span>("NULL
 input image");</span><br style="font-family: monospace;">
     <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
  style="font-family: monospace;">
@@ -350,46 +412,57 @@ input image");</span><br style="font-family: monospace;">
 &nbsp;&nbsp;&nbsp; LOGERR("images not same size");</span><br
  style="font-family: monospace;">
     <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp; throw ImageFormatException(
+&nbsp;&nbsp;&nbsp; throw <span style="font-weight: bold;">ImageFormatException</span>(
 "images not same size");</span><br style="font-family: monospace;">
     <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }&nbsp; </span><br
  style="font-family: monospace;">
     <span style="font-family: monospace;">//...</span><br
  style="font-family: monospace;">
     <span style="font-family: monospace;">}</span><br>
-    <li><span style="font-weight: bold;">Here is an example on catching
+    <><span style="font-weight: bold;">Here is an example on catching
 the exceptions:</span><br>
-      <span style="font-family: monospace;">void foo()</span><br
+    <span style="font-family: monospace;">void foo()</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">{</span><br
+    <span style="font-family: monospace;">{</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; EMData*
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; EMData*
 e1 = new EMData();</span><br style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; EMData*
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; EMData*
 e2 = new EMData();</span><br style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; try {</span><br
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; try {</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; e1-&gt;read_image("test1.mrc");</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; e2-&gt;read_image("test2.mrc");</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; vector&lt;float&gt; v =
 e1-&gt;calc_fourier_shell_correlation(e2);</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; catch
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; catch (<span
+ style="font-weight: bold;">_NullPointerException</span> &amp;
+null_excp) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%s\n",
+null_excp.what());<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // do something<br>
+&nbsp;&nbsp;&nbsp; }<br>
+&nbsp;&nbsp;&nbsp; catch
 (E2Exception &amp; exception) {</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; printf("%s\n", exception.what());</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
+    <span style="font-family: monospace;">&nbsp;&nbsp;&nbsp; }</span><br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">}</span><br>
+    <span style="font-family: monospace;">}</span><br>
+    </> <li style="font-weight: bold;"><span
+ style="color: rgb(51, 51, 255);">NOTE:</span> A XYZ exception is
+thrown as XYZException, but caught as _XYZException. Be aware of the
+"_".<br>
     </li>
     <li style="font-weight: bold;">For the possible Exception types.
 please refer the EMAN2 code
@@ -457,8 +530,8 @@ point, use EXITFUNC.<br>
 </ol>
 <br>
 <hr>
-<!-- hhmts start -->
-Last modified on <big><span style="font-weight: bold;">11/30/2004</span></big>&nbsp;
+<!-- hhmts start -->Last modified on <big><span
+ style="font-weight: bold;">11/30/2004</span></big>&nbsp;
 by&nbsp; <big><span style="font-weight: bold;">Liwei Peng&nbsp;</span></big>
 (lpeng@bcm.tmc.edu)<!-- hhmts end -->
 </body>
