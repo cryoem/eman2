@@ -26,7 +26,7 @@ using std::map;
 
 namespace EMAN {
 
-	class Wrapper {
+	class EMNumPy {
 	public:
 		/** Get an EMData image's pixel data as a numeric numpy array.
 		 * The array and EMData image share the same memory block.
@@ -37,28 +37,6 @@ namespace EMAN {
 		 * The image and the array share the same memory block.
 		 */
 		static void numpy2em(python::numeric::array& array, EMData* image);
-	
-
-		template <class T>
-		static vector<T> list2vector(const python::list& l)
-		{
-			vector<T> v;
-			for (int i = 0; i < python::len(l); i++) {
-				v.push_back(python::extract<T>(l[i]));
-		
-			}
-			return v;
-		}
-
-		template <class T>
-		static python::list vector2list(const vector<T>& v)
-		{
-			python::list l;
-			for (unsigned int i = 0; i < v.size(); i++) {
-				l.append(v[i]);
-			}
-			return l;
-		}
     };
     
     template <class T>

@@ -29,7 +29,7 @@ static python::numeric::array make_numeric_array(float * data, vector<int> dims)
 }
 
 
-python::numeric::array Wrapper::em2numpy(EMData *image)
+python::numeric::array EMNumPy::em2numpy(EMData *image)
 {
 	float * data = image->get_data();
 	int nx = image->get_xsize();
@@ -51,7 +51,7 @@ python::numeric::array Wrapper::em2numpy(EMData *image)
 	return make_numeric_array(data, dims);
 }
 
-void Wrapper::numpy2em(python::numeric::array& array, EMData* image)
+void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 {
 	if (!PyArray_Check(array.ptr())) {
 		PyErr_SetString(PyExc_ValueError, "expected a PyArrayObject");

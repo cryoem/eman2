@@ -12,6 +12,4 @@ AlignerFactory = Factory("EMAN::Aligner", "Aligners")
 set_policy(AlignerFactory.get, return_value_policy(manage_new_object))
 exclude(AlignerFactory.add)
 
-Ctf = Class("EMAN::Ctf", "ctf.h")
 SimpleCtf = Class("EMAN::SimpleCtf", "ctf.h")
-ImageIO = Class("EMAN::ImageIO", "imageio.h")

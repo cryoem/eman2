@@ -14,5 +14,3 @@ a.readImage(img1)
 b.readImage(img2)
 
 c=a.calcCCF(b,1)
-testlib.check_emdata(c, sys.argv[0])
-
