@@ -1852,14 +1852,12 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 		n2[i] = 0;
 	}
 
-	int nsec = nx * ny;
-
 	for (int k = 0; k < nz; k++) {
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < f1_nx; i += 2) {
 				int r = Util::round(Util::hypot3(i / 2, j - ny / 2, k - nz / 2));
 				if (r >= 1 && r < ny / 2) {
-					int ii = i + j * f1_nx + k * nsec;
+					int ii = i + j * f1_nx + k * f1_nx * ny;
 					ret[r] += d1[ii] * d2[ii] + d1[ii + 1] * d2[ii + 1];
 					n1[r] += d1[ii] * d1[ii] + d1[ii + 1] * d1[ii + 1];
 					n2[r] += d2[ii] * d2[ii] + d2[ii + 1] * d2[ii + 1];
