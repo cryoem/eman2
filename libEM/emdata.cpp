@@ -481,7 +481,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	int ny1 = block->get_ysize();
 	int nz1 = block->get_zsize();
 
-	Region area(nx1, ny1, nz1, origin[0], origin[1], origin[2]);
+	Region area(origin[0], origin[1], origin[2],nx1, ny1, nz1);
 
 	if (area.inside_region((float)nx, (float)ny, (float)nz)) {
 		throw ImageFormatException("outside of destination image not supported.");
@@ -503,14 +503,14 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	float *dst = rdata + y0 * nx + x0;
 
 	for (int i = z0; i < z1; i++) {
-		src += inserted_nxy;
-		dst += nxy;
 
 		for (int j = y0; j < y1; j++) {
 			memcpy(dst, src, inserted_row_size);
 			src += nx1;
-			dst += nx;;
+			dst += nx;
 		}
+		src += inserted_nxy;
+		dst += nxy;
 	}
 
 	flags |= EMDATA_NEEDUPD;

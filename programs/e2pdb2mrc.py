@@ -143,8 +143,7 @@ using 1/2 width of Gaussian in Fourier space."""
 			print '\r   %d'%i,
 			sys.stdout.flush()
 		elec=atomdefs[a[0].upper()][0]
-		outmap.insert_scaled_sum(gaus,(a[1]/options.apix+box[0]/2,a[2]/options.apix+box[1]/2,a[3]/options.apix+box[2]/2),
-			options.res/(pi*12.0*options.apix),elec)
+		outmap.insert_scaled_sum(gaus,(a[1]/options.apix+box[0]/2,a[2]/options.apix+box[1]/2,a[3]/options.apix+box[2]/2),options.res/(pi*12.0*options.apix),elec)
 		
 	if not options.quiet: print '\r   %d\nConversion complete'%len(atoms)
 	outmap.set_attr("apix_x",options.apix)
