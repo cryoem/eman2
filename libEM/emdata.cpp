@@ -30,9 +30,9 @@ EMData::EMData()
 	rfp = 0;
 	flags = 0;
 	// used to replace cube 'pixel'
-	attr_dict["spacing_row"] = 1.0f;
-	attr_dict["spacing_col"] = 1.0f;
-	attr_dict["spacing_sec"] = 1.0f;
+	attr_dict["apix_x"] = 1.0f;
+	attr_dict["apix_y"] = 1.0f;
+	attr_dict["apix_z"] = 1.0f;
 
 	attr_dict["is_complex"] = 0;
 	attr_dict["is_ri"] = 0;
@@ -341,21 +341,21 @@ EMData *EMData::get_clip(const Region & area)
 	done_data();
 	result->done_data();
 
-	result->attr_dict["spacing_row"] = attr_dict["spacing_row"];
-	result->attr_dict["spacing_col"] = attr_dict["spacing_col"];
-	result->attr_dict["spacing_sec"] = attr_dict["spacing_sec"];
+	result->attr_dict["apix_x"] = attr_dict["apix_x"];
+	result->attr_dict["apix_y"] = attr_dict["apix_y"];
+	result->attr_dict["apix_z"] = attr_dict["apix_z"];
 
 	float xorigin = attr_dict["origin_row"];
 	float yorigin = attr_dict["origin_col"];
 	float zorigin = attr_dict["origin_sec"];
 
-	float spacing_row = attr_dict["spacing_row"];
-	float spacing_col = attr_dict["spacing_col"];
-	float spacing_sec = attr_dict["spacing_sec"];
+	float apix_x = attr_dict["apix_x"];
+	float apix_y = attr_dict["apix_y"];
+	float apix_z = attr_dict["apix_z"];
 
-	result->set_xyz_origin(xorigin + spacing_row * area.origin.x,
-						   yorigin + spacing_col * area.origin.y,
-						   zorigin + spacing_sec * area.origin.z);
+	result->set_xyz_origin(xorigin + apix_x * area.origin.x,
+						   yorigin + apix_y * area.origin.y,
+						   zorigin + apix_z * area.origin.z);
 
 	result->update();
 	result->set_parent(0);
@@ -366,7 +366,7 @@ EMData *EMData::get_clip(const Region & area)
 	return result;
 }
 
-void EMData::insert_clip(EMData * block, const Point < int >&origin)
+void EMData::insert_clip(EMData * block, const IntPoint &origin)
 {
 	int nx1 = block->get_xsize();
 	int ny1 = block->get_ysize();
@@ -408,9 +408,12 @@ void EMData::insert_clip(EMData * block, const Point < int >&origin)
 	flags |= EMDATA_NEEDUPD;
 }
 
-EMData *EMData::get_rotated_clip(Point <float>&center, Rotation &orient, Size &size, float scale) { return NULL; }
+EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient, Size &size, float scale)
+{
+	return NULL;
+}
 
-void EMData::insert_scaled_sum(EMData *block, const Point <float>&center, float scale, float mult) 
+void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center, float scale, float mult) 
 {
 
 if (get_ndim()==3) {
@@ -463,9 +466,9 @@ EMData *EMData::get_top_half() const
 	memcpy(half_data, &rdata[nz / 2 * nx * ny], sizeof(float) * nx * ny * nz / 2);
 	half->done_data();
 
-	float spacing_sec = attr_dict["spacing_sec"];
+	float apix_z = attr_dict["apix_z"];
 	float origin_sec = attr_dict["origin_sec"];
-	origin_sec += spacing_sec * nz / 2;
+	origin_sec += apix_z * nz / 2;
 	half->attr_dict["origin_sec"] = origin_sec;
 	half->update();
 
@@ -643,11 +646,11 @@ EMData *EMData::do_ift()
 }
 
 
-Point < float >EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
+FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
 {
 	if (!is_complex() || !slice->is_complex() || !parent) {
 		LOGERR("normalize slice only works on complex images");
-		return Point < float >();
+		return FloatPoint();
 	}
 
 	slice->ap2ri();
@@ -733,7 +736,7 @@ Point < float >EMData::normalize_slice(EMData * slice, float alt, float az, floa
 	slice->done_data();
 	slice->update();
 
-	return Point < float >(r, phaseres);
+	return FloatPoint(r, phaseres);
 }
 
 
@@ -2941,7 +2944,7 @@ void EMData::median_shrink(int shrink_factor)
 	mbuf = 0;
 }
 
-Point < int >EMData::calc_min_location() const
+IntPoint EMData::calc_min_location() const
 {
 	int di = 1;
 	if (is_complex() && !is_ri()) {
@@ -2972,10 +2975,10 @@ Point < int >EMData::calc_min_location() const
 		}
 	}
 
-	return Point < int >(min_x, min_y, min_z);
+	return IntPoint(min_x, min_y, min_z);
 }
 
-Point < int >EMData::calc_max_location() const
+IntPoint EMData::calc_max_location() const
 {
 	int di = 1;
 	if (is_complex() && !is_ri()) {
@@ -3006,14 +3009,14 @@ Point < int >EMData::calc_max_location() const
 		}
 	}
 
-	return Point < int >(max_x, max_y, max_z);
+	return IntPoint(max_x, max_y, max_z);
 }
 
 
 
 int EMData::calc_min_index() const
 {
-	Point < int >min_location = calc_min_location();
+	IntPoint min_location = calc_min_location();
 	int i = min_location.x + min_location.y * nx + min_location.z * nx * ny;
 	return i;
 }
@@ -3021,7 +3024,7 @@ int EMData::calc_min_index() const
 
 int EMData::calc_max_index() const
 {
-	Point < int >max_location = calc_max_location();
+	IntPoint max_location = calc_max_location();
 	int i = max_location.x + max_location.y * nx + max_location.z * nx * ny;
 	return i;
 }

@@ -211,9 +211,9 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	dict["datatype"] = to_em_datatype(pih.mode);
 
-	dict["spacing_row"] = static_cast < float >(pih.xlen);
-	dict["spacing_col"] = static_cast < float >(pih.ylen);
-	dict["spacing_sec"] = static_cast < float >(pih.zlen);
+	dict["apix_x"] = static_cast < float >(pih.xlen);
+	dict["apix_y"] = static_cast < float >(pih.ylen);
+	dict["apix_z"] = static_cast < float >(pih.zlen);
 
 	dict["minimum"] = static_cast < float >(pih.min);
 	dict["maximum"] = static_cast < float >(pih.max);
@@ -287,9 +287,9 @@ int PifIO::write_header(const Dict & dict, int image_index, bool)
 	pih.nz = dict["nz"];
 
 	pih.mode = PIF_FLOAT;
-	pih.xlen = dict["spacing_row"];
-	pih.ylen = dict["spacing_col"];
-	pih.zlen = dict["spacing_sec"];
+	pih.xlen = dict["apix_x"];
+	pih.ylen = dict["apix_y"];
+	pih.zlen = dict["apix_z"];
 	pih.alpha = 90;
 	pih.beta = 90;
 	pih.gamma = 90;

@@ -146,9 +146,9 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
 
-	dict["spacing_row"] = read_float_attr(image_index, "spacing_row");
-	dict["spacing_col"] = read_float_attr(image_index, "spacing_col");
-	dict["spacing_sec"] = read_float_attr(image_index, "spacing_sec");
+	dict["apix_x"] = read_float_attr(image_index, "apix_x");
+	dict["apix_y"] = read_float_attr(image_index, "apix_y");
+	dict["apix_z"] = read_float_attr(image_index, "apix_z");
 
 	dict["origin_row"] = read_float_attr(image_index, "origin_row");
 	dict["origin_col"] = read_float_attr(image_index, "origin_col");
@@ -298,9 +298,9 @@ int HdfIO::write_header(const Dict & dict, int image_index, bool)
 	write_int_attr(image_index, "ny", ny);
 	write_int_attr(image_index, "nz", nz);
 
-	write_float_attr_from_dict(image_index, "spacing_row", dict);
-	write_float_attr_from_dict(image_index, "spacing_col", dict);
-	write_float_attr_from_dict(image_index, "spacing_sec", dict);
+	write_float_attr_from_dict(image_index, "apix_x", dict);
+	write_float_attr_from_dict(image_index, "apix_y", dict);
+	write_float_attr_from_dict(image_index, "apix_z", dict);
 
 	write_float_attr_from_dict(image_index, "origin_row", dict);
 	write_float_attr_from_dict(image_index, "origin_col", dict);

@@ -37,17 +37,15 @@ namespace EMAN
 		int z;
 	};
 
-	/** Template Point defines a point in a 2D/3D space. It stores the
-     * point's coordinates. The coordinates can be in any native
-     * numerical type: int, float, double, etc. 
-     */
-	template < class T > class Point {
+
+	/** IntPoint defines a integer-coordinate point in a 2D/3D space. */
+	class IntPoint {
 	public:
-		Point():x(0), y(0), z(0), ndim(0) {
+		IntPoint():x(0), y(0), z(0), ndim(0) {
 		}
-		Point(T xx, T yy):x(xx), y(yy), z(0), ndim(2) {
+		IntPoint(int xx, int yy):x(xx), y(yy), z(0), ndim(2) {
 		}
-		Point(T xx, T yy, T zz):x(xx), y(yy), z(zz), ndim(3) {
+		IntPoint(int xx, int yy, int zz):x(xx), y(yy), z(zz), ndim(3) {
 		}
 		
 		int get_ndim() const
@@ -55,17 +53,51 @@ namespace EMAN
 			return ndim;
 		}
 
-		T x;
-		T y;
-		T z;
+		int x;
+		int y;
+		int z;
 		
 	private:
 		int ndim;
 	};
 
+	/** FloatPoint defines a float-coordinate point in a 2D/3D space. */
+	class FloatPoint {
+	public:
+		FloatPoint():x(0), y(0), z(0), ndim(0) {
+		}
+		FloatPoint(float xx, float yy):x(xx), y(yy), z(0), ndim(2) {
+		}
+		FloatPoint(float xx, float yy, float zz):x(xx), y(yy), z(zz), ndim(3) {
+		}
+		
+		int get_ndim() const
+		{
+			return ndim;
+		}
+
+		float x;
+		float y;
+		float z;
+	private:
+		int ndim;
+	};
+
+	
 	class Pixel {
 	public:
-		Pixel(int xx, int yy, int zz, float vv) : x(xx), y(yy), z(zz), value(vv) { }	
+		Pixel(int xx, int yy, int zz, float vv) : x(xx), y(yy), z(zz), value(vv) { }
+
+		IntPoint get_point() const
+		{
+			return IntPoint(x, y, z);
+		}
+
+		float get_value() const
+		{
+			return value;
+		}
+		
 		int x;
 		int y;
 		int z;
@@ -84,23 +116,23 @@ namespace EMAN
 	public:
 		Region()
 		{
-			origin = Point < float >(0, 0);
+			origin = FloatPoint (0, 0);
 			size = Size(0, 0);
 		}
 
 		Region(float x, float y, int xsize, int ysize)
 		{
-			origin = Point < float >(x, y);
+			origin = FloatPoint (x, y);
 			size = Size(xsize, ysize);
 		}
 
 		Region(float x, float y, float z, int xsize, int ysize, int zsize)
 		{
-			origin = Point < float >(x, y, z);
+			origin = FloatPoint (x, y, z);
 			size = Size(xsize, ysize, zsize);
 		}
 
-		Region(const Point < float >&o, const Size & s):origin(o), size(s)
+		Region(const FloatPoint &o, const Size & s):origin(o), size(s)
 		{
 		}
 
@@ -110,7 +142,7 @@ namespace EMAN
 		/** to check whether a point is inside this region
 		 */
 		bool inside_region() const;
-		bool inside_region(const Point < float >&p) const;
+		bool inside_region(const FloatPoint &p) const;
 		bool inside_region(float x, float y) const;
 		bool inside_region(float x, float y, float z) const;
 
@@ -120,7 +152,7 @@ namespace EMAN
 		}
 		string get_string() const;
 
-		Point < float >origin;
+		FloatPoint origin;
 		Size size;
 	};
 }

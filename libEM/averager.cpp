@@ -546,8 +546,8 @@ void CtfAverager::add_image(EMData * image)
 			if (filter == 0) {
 				filter = 22.0f;
 			}
-			float spacing_col = image->get_attr_dict().get("spacing_col");
-			float ds = 1.0f / (spacing_col * ny * Ctf::CTFOS);
+			float apix_y = image->get_attr_dict().get("apix_y");
+			float ds = 1.0f / (apix_y * ny * Ctf::CTFOS);
 			filter = 1.0f / (filter * ds);
 		}
 		
@@ -857,8 +857,8 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		if (filter == 0) {
 			filter = 22.0f;
 		}
-		float spacing_col = image0->get_attr_dict().get("spacing_col");
-		float ds = 1.0f / (spacing_col * ny * Ctf::CTFOS);
+		float apix_y = image0->get_attr_dict().get("apix_y");
+		float ds = 1.0f / (apix_y * ny * Ctf::CTFOS);
 		filter = 1.0f / (filter * ds);
 	}
 

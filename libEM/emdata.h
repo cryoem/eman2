@@ -112,21 +112,21 @@ namespace EMAN
 
 		/** Inclusive clip. Pads 0 if larger than this image. */
 		EMData *get_clip(const Region & area);
-		void insert_clip(EMData * block, const Point < int >&originn);
+		void insert_clip(EMData * block, const IntPoint & originn);
 		EMData *get_top_half() const;
 		
 		/** This will exctract an arbitrarily oriented and sized region from the
 		 *  image. The orientation is defined by rotating the target image into
 		 *  the source image ('this'). 'center' defines the location of the
 		 *  center of the returned image in 'this' */ 
-		EMData *get_rotated_clip(Point <float>&center, Rotation &orient, Size &size, float scale=1.0);
+		EMData *get_rotated_clip(FloatPoint &center, Rotation &orient, Size &size, float scale=1.0);
 				
 		/** Add a scaled image into another image at a specified location
 		 *  This is used, for example, to accumulate gaussians in
 		 *  programs like pdb2mrc.py. The center of 'block' will be positioned at
 		 *  'center' with scale factor 'scale. Densities will be interpolated in
 		 *  'block' and multiplied by 'mult' */
-		void insert_scaled_sum(EMData *block, const Point <float>&center, float scale=1.0, float mult=1.0);
+		void insert_scaled_sum(EMData *block, const FloatPoint&center, float scale=1.0, float mult=1.0);
 
 		/** return the fast fourier transform image of the current
 		 * image. the current image is not changed.
@@ -139,7 +139,7 @@ namespace EMAN
 		 */
 		EMData *do_ift();
 
-		Point < float >normalize_slice(EMData * slice, float alt, float az, float phi);
+		FloatPoint normalize_slice(EMData * slice, float alt, float az, float phi);
 
 		void render_amp8(unsigned char *data, int x, int y, int xsize, int ysize,
 						 int bpl, float scale, int min_gray, int max_gray,
@@ -276,23 +276,32 @@ namespace EMAN
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
+		/** add a number to each pixel value of the image */
 		void add(float f);
-		void add(const EMData & em);
-
+		/** add a same-size image to this image */
+		void add(const EMData & image);
+		/** sub a number to each pixel value of the image */
 		void sub(float f);
-		void sub(const EMData & em);
-
+		/** sub a same-size image from this image */
+		void sub(const EMData & image);
+		/** multiply a number to each pixel value of the image */
 		void mult(float f);
-		void mult(const EMData & em);
+		/** multiply each pixel of this image with each pixel of some
+			other same-size image*/
+		void mult(const EMData & image);
 
+		/** make each pixel value divided by a number */
 		void div(float f);
-		void div(const EMData & em);
+		void div(const EMData & image);
 
 		float *get_data() const;
 		void done_data();
 
+		/** Mark EMData as changed, and it needs to be updated.*/
 		void update();
+		/** Make all the pixel value = 0. */
 		void to_zero();
+		/** Make all the pixel value = 1. */
 		void to_one();
 
 		void dump_data(string filename);
@@ -359,8 +368,8 @@ namespace EMAN
 		float calc_density_center();
 		float calc_sigma_diff();
 		
-		Point < int >calc_min_location() const;
-		Point < int >calc_max_location() const;
+		IntPoint calc_min_location() const;
+		IntPoint calc_max_location() const;
 
 		int calc_min_index() const;
 		int calc_max_index() const;
@@ -763,9 +772,9 @@ namespace EMAN
 	
 	inline void EMData::scale_pixel(float scale) const
 	{
-		attr_dict["spacing_row"] = EMObject((float) attr_dict["spacing_row"] * scale);
-		attr_dict["spacing_col"] = EMObject((float) attr_dict["spacing_col"] * scale);
-		attr_dict["spacing_sec"] = EMObject((float) attr_dict["spacing_sec"] * scale);
+		attr_dict["apix_x"] = ((float) attr_dict["apix_x"]) * scale;
+		attr_dict["apix_y"] = ((float) attr_dict["apix_y"]) * scale;
+		attr_dict["apix_z"] = ((float) attr_dict["apix_z"]) * scale;
 	}
 
 	inline EMObject EMData::get_attr(string key)

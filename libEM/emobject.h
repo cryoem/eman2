@@ -309,12 +309,12 @@ namespace EMAN
 		{
 		}
 
-		vector < string > keys()const
+		vector < string > keys() const
 		{
 			vector < string > result;
 			map < string, string >::const_iterator p;
 
-			for (p = dict.begin(); p != dict.end(); p++) {
+			for (p = type_dict.begin(); p != type_dict.end(); p++) {
 				result.push_back(p->first);
 			}
 
@@ -323,28 +323,35 @@ namespace EMAN
 
 		size_t size() const
 		{
-			return dict.size();
+			return type_dict.size();
 		}
 
-		void put(string key, EMObject::ObjectType o)
+		void put(const string& key, EMObject::ObjectType o, const string& desc = "")
 		{
-			dict[key] = EMObject::get_object_type_name(o);
+			type_dict[key] = EMObject::get_object_type_name(o);
+			desc_dict[key] = desc;
 		}
 
-		string get(string key)
+		string get_type(const string& key)
 		{
-			return dict[key];
+			return type_dict[key];
 		}
 
+		string get_desc(const string& key)
+		{
+			return desc_dict[key];
+		}
+		
 		string operator[] (const string & key)
 		{
-			return dict[key];
+			return type_dict[key];
 		}
 
-		void dump() const;
+		void dump();
 
 	private:
-		map < string, string > dict;
+		map < string, string > type_dict;
+		map < string, string > desc_dict;
 	};
 
 	class NotExistingObjectError : public Exception

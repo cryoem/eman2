@@ -181,10 +181,11 @@ const char *EMObject::get_object_type_name(ObjectType t)
 }
 
 
-void TypeDict::dump() const
+void TypeDict::dump() 
 {
-	map < string, string >::const_iterator p;
-	for (p = dict.begin(); p != dict.end(); p++) {
-		printf("%20s    %s\n", p->first.c_str(), p->second.c_str());
+	map < string, string >::iterator p;
+	for (p = type_dict.begin(); p != type_dict.end(); p++) {
+		printf("%20s    %s  %s\n",
+			   p->first.c_str(), p->second.c_str(), desc_dict[p->first].c_str());
 	}
 }

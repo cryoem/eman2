@@ -168,15 +168,15 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 	assert(is_3d == false);
 
-	dict["spacing_row"] = mrch.xlen / (mrch.nx - 1);
-	dict["spacing_col"] = mrch.ylen / (mrch.ny - 1);
+	dict["apix_x"] = mrch.xlen / (mrch.nx - 1);
+	dict["apix_y"] = mrch.ylen / (mrch.ny - 1);
 
 	int nz2 = mrch.nz - 1;
 	if (mrch.nz == 1) {
 		nz2 = 1;
 	}
 
-	dict["spacing_sec"] = mrch.zlen / nz2;
+	dict["apix_z"] = mrch.zlen / nz2;
 
 	dict["minimum"] = mrch.amin;
 	dict["maximum"] = mrch.amax;
@@ -328,9 +328,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 	mrch.my = ny - 1;
 	mrch.mz = nz - 1;
 
-	mrch.xlen = (nx - 1) * (float) dict["spacing_row"];
-	mrch.ylen = (ny - 1) * (float) dict["spacing_col"];
-	mrch.zlen = (nz - 1) * (float) dict["spacing_sec"];
+	mrch.xlen = (nx - 1) * (float) dict["apix_x"];
+	mrch.ylen = (ny - 1) * (float) dict["apix_y"];
+	mrch.zlen = (nz - 1) * (float) dict["apix_z"];
 
 	mrch.nxstart = -nx / 2;
 	mrch.nystart = -ny / 2;
@@ -343,7 +343,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 		mrch.zorigin = dict["origin_sec"];
 	}
 	else {
-		mrch.zorigin = (float) dict["origin_sec"] - (float) dict["spacing_sec"] * image_index;
+		mrch.zorigin = (float) dict["origin_sec"] - (float) dict["apix_z"] * image_index;
 	}
 
 	sprintf(mrch.map, "MAP");

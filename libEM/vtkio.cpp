@@ -153,9 +153,9 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	dict["datatype"] = to_em_datatype(datatype);
 
-	dict["spacing_row"] = spacingx;
-	dict["spacing_col"] = spacingy;
-	dict["spacing_sec"] = spacingz;
+	dict["apix_x"] = spacingx;
+	dict["apix_y"] = spacingy;
+	dict["apix_z"] = spacingz;
 
 	dict["origin_row"] = originx;
 	dict["origin_col"] = originy;
@@ -179,9 +179,9 @@ int VtkIO::write_header(const Dict & dict, int image_index, bool)
 	originy = dict["origin_col"];
 	originz = dict["origin_sec"];
 
-	spacingx = dict["spacing_row"];
-	spacingy = dict["spacing_col"];
-	spacingz = dict["spacing_sec"];
+	spacingx = dict["apix_x"];
+	spacingy = dict["apix_y"];
+	spacingz = dict["apix_z"];
 
 	fprintf(vtk_file, "# vtk DataFile Version 2.0\n");
 	fprintf(vtk_file, "EMAN\n");

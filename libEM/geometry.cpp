@@ -23,7 +23,7 @@ bool Region::inside_region() const
 	return false;
 }
 
-bool Region::inside_region(const Point < float >&p) const
+bool Region::inside_region(const FloatPoint & p) const
 {
 	if (p.get_ndim() == 2) {
 		return inside_region(p.x, p.y);
