@@ -177,17 +177,12 @@ int EMData::append_image(string filename, EMUtil::ImageType imgtype, bool header
 }
 
 
-int EMData::filter(string filtername, const Dict & params)
+void EMData::filter(string filtername, const Dict & params)
 {
-	int err = 1;
-
 	Filter *f = Factory < Filter >::get(filtername, params);
 	if (f) {
 		f->process(this);
-		err = 0;
 	}
-
-	return err;
 }
 
 float EMData::cmp(string cmpname, const Dict & params)

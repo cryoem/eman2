@@ -64,17 +64,47 @@ namespace EMAN
 		 * @param imgtype Write to the given image format type. if not
 		 *        specified, use the 'filename' extension to decide.
 		 * @param header_only To write only the header or both header and data.
+		 * @return 0 if OK; 1 if any error.
 		 */
 		int append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						 bool header_only = false);
 
-		/** apply a filter with its parameters on this image */
-		int filter(string filtername, const Dict & params = Dict());
+		/** Apply a filter with its parameters on this image.
+		 * @param filtername Filter Name.
+		 * @param params Filter parameters in a keyed dictionary.
+		 * @exception NotExistingObjectError If the filter doesn't exist.
+		 */
+		void filter(string filtername, const Dict & params = Dict());
+
+		/** Compare this image with other image.
+		 * @param cmpname Comparison algorithm name.
+		 * @param params Comparison parameters in a keyed dictionary.
+		 * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
+		 * @return comparison score. The bigger, the better.
+		 */
 		float cmp(string cmpname, const Dict & params = Dict());
+
+		/** Align this image with other image and return the result image.
+		 * @param aligner_name Alignment algorithm name.
+		 * @param params  Alignment algorithm parameters in a keyed dictionary.
+		 * @param comp_name Comparison algorithm used in alighment.
+		 * @exception NotExistingObjectError If the alignment algorithm doesn't exist.
+		 * @return The result image.
+		 */
 		EMData *align(string aligner_name, const Dict & params = Dict(), string comp_name = "");
+
+		/** Calculate the projection of this image and return the result.
+		 * @param projector_name Projection algorithm name.
+		 * @param params Projection Algorithm parameters.
+		 * @exception NotExistingObjectError If the projection algorithm doesn't exist.
+		 * @return The result image.
+		 */
 		EMData *project(string projector_name, const Dict & params = Dict());
 
+		/** Return a copy of this image including both data and header*/
 		EMData *copy(bool withparent = true);
+		
+		/** Return a image with only a copy of the header */
 		EMData *copy_head();
 
 		/** Inclusive clip. Pads 0 if larger than this image. */
@@ -131,9 +161,19 @@ namespace EMAN
 		double dot_rotate_translate(EMData * data, float dx, float dy, float da);
 
 		EMData *little_big_dot(EMData * little_img, bool do_sigma = false);
+
+		/** Radon Transform: an algorithm that transforms an original
+		 * image into a series of equiangular projections. When
+		 * applied to a 2D object, the output of the Radon transform is a
+		 * series of 1D lines.
+		 *
+		 * Do radon transformation on this image. This image must be
+		 * 2D square.
+		 * @return Radon transform image in square.
+		 */
 		EMData *do_radon();
 
-		/** calculate Cross-correlation function (CCF).
+		/** Calculate Cross-Correlation Function (CCF).
 		 *
 		 * CCF is a 2D function that is obtained by forming the scalar
 		 * cross-product of two images (i.e., the sum of products of
@@ -141,8 +181,24 @@ namespace EMAN
 		 * CCF is often used to achieve alignment between two images,
 		 * since it displays a high value (a peak) at the place where
 		 * a motif contained in both images come into register.
+		 * @param with The image used to calculate CCF. If 'with' is
+		 * NULL, does mirror ACF.
+		 * @param tocorner Set whether to translate the result image
+		 * to the corner.
+		 * @param filter The filter image used in calculating CCF.
+		 * @return The result image containing the CCF.
 		 */
 		EMData *calc_ccf(EMData * with, bool tocorner = false, EMData * filter = 0);
+
+		/** Calculate Cross-Correlation Function (CCF) in the
+		 * x-direction and adds them up, result in 1D.
+		 * WARNING: this routine will modify the 'this' and 'with' to contain
+		 * 1D fft's without setting some flags. This is an optimization
+		 * for rotational alignment.
+		 * @param nosum If true, returns an image y1-y0+1 pixels high.
+		 * @see #calc_ccf()
+		 */
+		EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
 
 		/** Makes a 'rotational footprint', which is an 'unwound'
 		 * autocorrelation function. generally the image should be
@@ -152,8 +208,11 @@ namespace EMAN
 		 */
 		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
 
-		EMData *calc_ccfx(EMData * with, int y0 = 0, int y1 = -1, bool nosum = false);
-
+		/** Calculate mutual correlation function (MCF) between 2 images.
+		 * @param tocorner Set whether to translate the result image
+		 * to the corner.
+		 * @param filter The filter image used in calculating MCF.
+		 */
 		EMData *calc_mutual_correlation(EMData * with, bool tocorner = false, EMData * filter = 0);
 
 		/** maps polar coordinates to Cartesian coordinates */
@@ -357,22 +416,21 @@ namespace EMAN
 
 
 	private:
-		enum EMDataFlags
-			{
-				EMDATA_COMPLEX = 1 << 0,
-				EMDATA_RI = 1 << 1,	// real/imaginary or amp/phase
-				EMDATA_BUSY = 1 << 2,	// someone is modifying data
-				EMDATA_SHARED = 1 << 3,	// Stored in shared memory
-				EMDATA_SWAPPED = 1 << 4,	// Data is swapped = may be offloaded if memory is tight,
-				EMDATA_HASCTF = 1 << 6,	// has CTF info
-				EMDATA_NEEDUPD = 1 << 7,	// needs a realupdate= ,
-				EMDATA_NEEDHIST = 1 << 8,	// histogram needs update
-				EMDATA_NEWRFP = 1 << 9,	// needs new rotational footprint
-				EMDATA_NODATA = 1 << 10,	// no actual data
-				EMDATA_COMPLEXX = 1 << 11,	// 1D fft's in X
-				EMDATA_FLIP = 1 << 12,	// a flag only
-				EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
-			};
+		enum EMDataFlags {
+			EMDATA_COMPLEX = 1 << 0,
+			EMDATA_RI = 1 << 1,	       // real/imaginary or amp/phase
+			EMDATA_BUSY = 1 << 2,	   // someone is modifying data
+			EMDATA_SHARED = 1 << 3,	   // Stored in shared memory
+			EMDATA_SWAPPED = 1 << 4,   // Data is swapped = may be offloaded if memory is tight,
+			EMDATA_HASCTF = 1 << 6,	   // has CTF info
+			EMDATA_NEEDUPD = 1 << 7,   // needs a realupdate= ,
+			EMDATA_NEEDHIST = 1 << 8,  // histogram needs update
+			EMDATA_NEWRFP = 1 << 9,	   // needs new rotational footprint
+			EMDATA_NODATA = 1 << 10,   // no actual data
+			EMDATA_COMPLEXX = 1 << 11, // 1D fft's in X
+			EMDATA_FLIP = 1 << 12,	   // a flag only
+			EMDATA_CHANGED = (EMDATA_NEEDUPD + EMDATA_NEEDHIST + EMDATA_NEWRFP)
+		};
 
 		int update_stat();
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
