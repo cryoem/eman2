@@ -101,8 +101,15 @@ EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
 
 		initialized = true;
 	}
+	
+	ImageType result = IMAGE_UNKNOWN;
+	
+	if (imagetypes.find(file_ext) != imagetypes.end()) {
+		result = imagetypes[file_ext];
+	}
+	
 	EXITFUNC;
-	return imagetypes[file_ext];
+	return result;
 }
 
 

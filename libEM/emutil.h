@@ -21,6 +21,7 @@ namespace EMAN
 	  public:
 		enum EMDataType
 		{
+			EM_UNKNOWN,
 			EM_CHAR,
 			EM_UCHAR,
 			EM_SHORT,
@@ -31,12 +32,12 @@ namespace EMAN
 			EM_DOUBLE,
 			EM_SHORT_COMPLEX,
 			EM_USHORT_COMPLEX,
-			EM_FLOAT_COMPLEX,
-			EM_UNKNOWN
+			EM_FLOAT_COMPLEX
 		};
 
 		enum ImageType
 		{
+			IMAGE_UNKNOWN,
 			IMAGE_MRC,
 			IMAGE_SPIDER,
 			IMAGE_SINGLE_SPIDER,
@@ -55,8 +56,7 @@ namespace EMAN
 			IMAGE_GATAN2,
 			IMAGE_AMIRA,
 			IMAGE_XPLOR,
-			IMAGE_EM,
-			IMAGE_UNKNOWN
+			IMAGE_EM
 		};
 
 		static EMData *vertical_acf(const EMData * image, int maxdy);

@@ -222,16 +222,20 @@ ENDIF(ENABLE_PNG)
 IF(ENABLE_PYTHON)
     IF(WIN32)
 		FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-			C:/Python23/include C:/Python22/include)
+			$ENV{PYTHON_ROOT}/include C:/Python23/include C:/Python22/include)
 	
-		FIND_LIBRARY(PYTHON_LIBRARY
-			NAMES python23 python22 python
-			PATHS C:/Python23/libs C:/Python22/libs)
+		FIND_LIBRARY(PYTHON_LIBRARY NAMES python23 python22 python
+			PATHS $ENV{PYTHON_ROOT}/libs C:/Python23/libs C:/Python22/libs)
 	ELSE(WIN32)
 		FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-			$ENV{HOME}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3
-			$ENV{HOME}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
-    ENDIF(WIN32)
+			$ENV{PYTHON_ROOT}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3
+			$ENV{PYTHON_ROOT}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
+
+		FIND_LIBRARY(PYTHON_LIBRARY NAMES python2.3 python2.2 
+            PATHS $ENV{PYTHON_ROOT}/lib/python2.3/config /usr/local/lib/python2.3/config
+			/usr/lib/python2.3/config $ENV{PYTHON_ROOT}/lib/python2.2/config
+			/usr/local/lib/python2.2/config /usr/lib/python2.2/config)		
+	ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)
 		CHECK_OPTIONAL_LIB(BOOST boost_python boost/python.hpp)
