@@ -1,8 +1,42 @@
 #!/bin/env python
 
 from EMAN2 import *
-import sys
 from testlib import *
+import os
+import sys
+
+def test_emobject():
+	num = TestUtil.get_debug_int(0)
+	TestUtil.to_emobject({"int": num})
+
+	fnum = TestUtil.get_debug_float(0)
+	TestUtil.to_emobject({"float": fnum})
+
+	lnum = long(num)
+	TestUtil.to_emobject({"long": lnum})
+
+	fl = get_list("float")
+	TestUtil.to_emobject({"farray": fl})
+
+	e = EMData()
+	nx = TestUtil.get_debug_int(0)
+	ny = TestUtil.get_debug_int(1)
+	nz = TestUtil.get_debug_int(2)
+	e.set_size(nx, ny, nz)
+	TestUtil.to_emobject({"emdata": e})
+
+	xyd = XYData()
+	testfile = "xydata.txt"
+	out = open(testfile, "wb")
+	for f in fl:
+		out.write(str(f) + " " + str(f) + "\n")
+	out.close()
+
+	xyd.read_file(testfile)
+	TestUtil.to_emobject({"xydata" : xyd})
+	os.unlink(testfile)
+
+
 
 def test_Dict():
 	edict = get_dict("emobject")
@@ -100,6 +134,7 @@ test_Dict()
 test_map()
 test_vector()
 test_point_size()
+test_emobject()
 
 
 

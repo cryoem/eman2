@@ -2,6 +2,7 @@
 #include "emdata.h"
 #include "emobject.h"
 #include "log.h"
+#include "xydata.h"
 
 #include <algorithm>
 #include <vector>
@@ -93,7 +94,18 @@ void TestUtil::to_emobject(const Dict& d)
 		assert(l == ti[0]);
 		LOGDEBUG("long l = %d\n", l);
 	}
-	
+
+	if (d.has_key("xydata")) {
+		XYData *xyd = d["xydata"];
+		size_t nitems = xyd->get_size();
+		for (size_t i = 0; i < nitems; i++) {
+			float xi = xyd->get_x(i);
+			float yi = xyd->get_y(i);
+			LOGDEBUG("xydata[%d] = (%f,%f)\n", i, xi, yi);
+			assert(xi == tf[i]);
+			assert(yi == tf[i]);
+		}
+	}
 }
 
 

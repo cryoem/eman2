@@ -7,6 +7,7 @@
 #include "transform.h"
 #include "geometry.h"
 #include "emdata.h"
+#include "xydata.h"
 
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
@@ -419,10 +420,8 @@ namespace EMAN {
     
 		static void* convertible(PyObject* obj_ptr)
 		{
-			if (PyInt_Check(obj_ptr) || PyLong_Check(obj_ptr) || PyFloat_Check(obj_ptr) ||
-				PyString_Check(obj_ptr) || PyDict_Check(obj_ptr) || PyMapping_Check(obj_ptr) ||
-				PyNumber_Check(obj_ptr) || PyType_Check(obj_ptr) || PySequence_Check(obj_ptr) ||
-				PyList_Check(obj_ptr) || PyTuple_Check(obj_ptr) || PyIter_Check(obj_ptr)) {
+			char * type_name = obj_ptr->ob_type->tp_name;
+			if (type_name == 0 || strcmp(type_name, "EMData") != 0) {
 				return 0;
 			}
 			return obj_ptr;
@@ -438,8 +437,40 @@ namespace EMAN {
 
 			data->convertible = storage;
 			EMObject& result = *((EMObject*) storage);
-			EMData * emdata = python::extract<EMData*>(obj_ptr);	   
+			EMData * emdata = python::extract<EMData*>(obj_ptr);   
 			result = EMObject(emdata);
+		}
+    };
+	
+	struct emobject_xydata_from_python
+    {
+		emobject_xydata_from_python()
+		{
+			python::converter::registry::push_back(&convertible, &construct,
+												   python::type_id<EMObject>());
+		}
+    
+		static void* convertible(PyObject* obj_ptr)
+		{
+			char * type_name = obj_ptr->ob_type->tp_name;
+			if (type_name == 0 || strcmp(type_name, "XYData") != 0) {
+				return 0;
+			}
+			return obj_ptr;
+		}
+    
+		static void construct(PyObject* obj_ptr,
+							  python::converter::rvalue_from_python_stage1_data* data)
+		{
+			void* storage =
+				((python::converter::rvalue_from_python_storage<EMObject>*)
+				 data)->storage.bytes;
+			new (storage) EMObject();
+
+			data->convertible = storage;
+			EMObject& result = *((EMObject*) storage);
+			XYData * xydata = python::extract<XYData*>(obj_ptr);	   
+			result = EMObject(xydata);
 		}
     };
 }

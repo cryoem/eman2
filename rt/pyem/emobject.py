@@ -1,25 +1,24 @@
 #!/bin/env python
 
 from EMAN2 import *
-from testlib import *
 
-num = TestUtil.get_debug_int(0)
-TestUtil.to_emobject({"int": num})
+n = 2
+f = 3.5
 
-fnum = TestUtil.get_debug_float(0)
-TestUtil.to_emobject({"float": fnum})
+e1 = EMObject(n)
+e2 = EMObject(n)
 
-lnum = long(num)
-TestUtil.to_emobject({"long": lnum})
+assert(e1 == e2)
 
+e3 = EMObject(f)
+e4 = EMObject(f)
 
-fl = get_list("float")
-TestUtil.to_emobject({"farray": fl})
+assert(e3 == e4)
 
-e = EMData()
-nx = TestUtil.get_debug_int(0)
-ny = TestUtil.get_debug_int(1)
-nz = TestUtil.get_debug_int(2)
-e.set_size(nx, ny, nz)
-TestUtil.to_emobject({"emdata": e})
+assert(int(e1) == n)
+assert(float(e3) == f)
 
+n2 = 2.0
+e5 = EMObject(float(n2))
+
+assert(e1 == e5)

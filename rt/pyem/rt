@@ -19,4 +19,3 @@ run_cmd vec2.py
 run_cmd vec3.py
 run_cmd emobject.py
 run_cmd pixel2.py
-run_cmd emobject2.py
