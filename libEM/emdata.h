@@ -251,37 +251,26 @@ namespace EMAN {
 	float get_circle_mean();
 	float edge_normalize(int mode = 0);
 
-	
+	void make_average(const vector<EMData*>& image_list, EMData* sigma = 0, int ignore0 = 0);
+	void make_average_iter(const vector<EMData*>& image_list);
+	void make_average_WT(const vector<EMData*>& in, EMData* curves, XYData* sf);
+	void make_average_CTFC(const vector<EMData*>& in, float filter);
+	void make_average_CTFCWauto(const vector<EMData*>& in, string outfile = "");
+	float make_average_CTFCW(const vector<EMData*>& in, XYData* sf, XYData* snr = 0);	
+	void make_image_median(const vector<EMData*>& image_list);
 	
 #if 0
 	Point<float> least_square_normalize_to(EMData* to, float low_thresh, float high_thresh);
 	EMData* little_big_dot(EMData* little_img, bool do_sigma = false);
-
 	
-	float get_ali_peak() const;
-
-	
+	float get_ali_peak() const;	
 	EMData* get_row(int row_index) const;
 	EMData* get_col(int col_index) const;
 	float get_density_center() const;
 	float get_sigma_diff() const;
 	int get_dim() const;
-	
-
 	bool is_flipped();
 	
-
-	void make_image_average(const vector<EMData*>& image_list, EMData* sigma = 0);
-	void make_average_iter(const vector<EMData*>& image_list);
-	void make_average_WT(const vector<EMData*>& in, EMData* curves, XYData* sf);
-
-	void make_average_CTFC(const vector<EMData*>& in, float filtr);
-	void make_average_CTFCWauto(const vector<EMData*>& in, string outfile = "");
-
-	float make_average_CTFCW(const vector<EMData*>& in, XYData* sf, XYData* SNR = NULL);
-	
-	void make_image_median(const vector<EMData*>& image_list);
-
 	EMData* make_rfp(bool premasked = false, bool unwrap = true);
 	void mask_normalize(EMData* mask, bool sigmatoo = true);
 	void normalize_max();
