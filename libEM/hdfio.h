@@ -1,6 +1,8 @@
 #ifndef __hdfio_h__
 #define __hdfio_h__
 
+#ifdef EM_HDF5
+
 #include "imageio.h"
 #include <stdio.h>
 #include <hdf5.h>
@@ -99,5 +101,4 @@ namespace EMAN {
 
 #endif
 
-    
-    
+#endif

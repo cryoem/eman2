@@ -1,6 +1,7 @@
 #ifndef __pngio_h__
 #define __pngio_h__
 
+#ifdef EM_PNG
 
 #include "imageio.h"
 #include <stdio.h>
@@ -38,5 +39,7 @@ namespace EMAN {
     };
 
 }
+
+#endif
 
 #endif

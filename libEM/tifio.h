@@ -1,8 +1,9 @@
 #ifndef __tiffio_h__
 #define __tiffio_h__
 
-#include "imageio.h"
+#ifdef EM_TIFF
 
+#include "imageio.h"
 
 typedef struct tiff TIFF;
 
@@ -27,5 +28,6 @@ namespace EMAN {
     };
 }
 
+#endif
 
 #endif
