@@ -331,6 +331,12 @@ EMData *CtfAverager::average(const vector<EMData*>& image_list) const
     if (alg_name == "CtfCWauto") {
 	snri = new float[ny / 2];
 	snrn = new float[ny / 2];
+
+	for (int i = 0; i < ny/2; i++) {
+	    snri[i] = 0;
+	    snrn[i] = 0;
+	}
+	
 	int j = 0;
 	for (int y = 0; y < ny; y++) {
 	    for (int x = 0; x < nx / 2; x++, j += 2) {

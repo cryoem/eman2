@@ -3124,8 +3124,9 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 	return cf;
     }
     else {
-	float *f1 = new float[nx];
-	float *f2 = new float[nx];
+	float *f1 = (float *)calloc(nx * sizeof(float), 1);
+	float *f2 = (float *)calloc(nx * sizeof(float), 1);
+	
 	float *cfd = cf->get_data();
 	float *d1 = get_data();
 	float *d2 = with->get_data();
@@ -3179,9 +3180,9 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 	    }
 	}
 
-	delete [] f1;
+	free(f1);
 	f1 = 0;
-	delete [] f2;
+	free(f2);
 	f2 = 0;
     }
 
@@ -4101,7 +4102,11 @@ int EMData::common_lines(EMData * image1, EMData * image2, int mode, int steps, 
     int array_size = steps * rmax * 2;
     float *im1 = new float[array_size];
     float *im2 = new float[array_size];
-
+    for (int i = 0; i < array_size; i++) {
+	im1[i] = 0;
+	im2[i] = 0;
+    }
+	
     set_size(steps * 2, steps * 2, 1);
 
     float *image1_data = image1->get_data();

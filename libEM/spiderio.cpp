@@ -330,10 +330,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool )
 	    Log::logger()->error("cannot write a new header to Spider file '%s'", filename.c_str());
 	    return 1;
 	}
-
     }
-
-
 
     if (!cur_h) {
 	cur_h = (SpiderHeader *) calloc(header_size, 1);
