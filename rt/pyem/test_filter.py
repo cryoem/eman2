@@ -55,7 +55,7 @@ class TestFilter(unittest.TestCase):
 
         outfile1 = "test_RangeThreshold_out.mrc"
         
-        e.filter("threshold.binary", {"value": 200})
+        e.filter("eman1.threshold.binary", {"value": 200})
         e.write_image(outfile1)
 
         os.unlink(imgfile1)

@@ -4356,7 +4356,7 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 	cf->done_data();
 	
 	if (tocorner) {
-		cf->filter("xform.phaseorigin");
+		cf->filter("eman1.xform.phaseorigin");
 	}
 
 	EMData *f2 = cf->do_ift();
@@ -4409,7 +4409,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	tmp2 = get_clip(r1);
 
 	if (!premasked) {
-		tmp2->filter("mask.sharp", Dict("outer_radius", nx / 2, "value", 0));
+		tmp2->filter("eman1.mask.sharp", Dict("outer_radius", nx / 2, "value", 0));
 	}
 
 	if (filt->get_xsize() != tmp2->get_xsize() + 2 || filt->get_ysize() != tmp2->get_ysize() ||
@@ -4417,7 +4417,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
 		filt->to_one();
 
-		filt->filter("filter.highpass.gaussian", Dict("highpass", 3));
+		filt->filter("eman1.filter.highpass.gaussian", Dict("highpass", 3));
 	}
 
 	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
@@ -4441,7 +4441,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	
 	if (nz == 1) {
 		if (!unwrap) {
-			tmp2->filter("mask.sharp", Dict("outer_radius", -1, "value", 0));
+			tmp2->filter("eman1.mask.sharp", Dict("outer_radius", -1, "value", 0));
 			rfp = 0;
 			result = tmp2;
 		}
@@ -4541,7 +4541,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	}
 
 	if (tocorner) {
-		cf->filter("xform.phaseorigin");
+		cf->filter("eman1.xform.phaseorigin");
 	}
 
 	EMData *f2 = cf->do_ift();
@@ -4948,7 +4948,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	EMData *img1_copy = img1->copy(false);
 	img1_copy->to_one();
 	img1_copy->filter(mask_filter, filter_dict);
-	img1_copy->filter("xform.phaseorigin");
+	img1_copy->filter("eman1.xform.phaseorigin");
 
 	int num = 0;
 	float *img1_copy_data = img1_copy->get_data();
@@ -4998,14 +4998,14 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	img2 = 0;
 
 	img2_copy->filter(mask_filter, filter_dict);
-	img2_copy->filter("xform.phaseorigin");
+	img2_copy->filter("eman1.xform.phaseorigin");
 
 	delete img1_copy;
 	img1_copy = 0;
 
 	EMData *img1_copy2 = img1->copy(false);
 
-	img1_copy2->filter("Square");
+	img1_copy2->filter("eman1.Square");
 
 	EMData *ccf = img1->calc_ccf(img2_copy);
 	delete img2_copy;
@@ -5025,7 +5025,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	img1_copy2 = 0;
 
 	conv2->mult(img1_size);
-	conv1->filter("Square");
+	conv1->filter("eman1.Square");
 	conv1->mult(1.0f / (num * num));
 
 	EMData *conv2_copy = conv2->copy(false);
@@ -5037,7 +5037,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	conv1 = 0;
 
 	conv2_copy->mult(1.0f / num);
-	conv2_copy->filter("Sqrt");
+	conv2_copy->filter("eman1.Sqrt");
 
 	EMData *ccf_copy = ccf->copy(false);
 	delete ccf;
@@ -5703,7 +5703,7 @@ float EMData::get_circle_mean()
 		mask->set_size(nx, ny, nz);
 
 		float radius = (float)(ny / 2 - 2);
-		mask->filter("mask.sharp", Dict("inner_radius", radius - 1,
+		mask->filter("eman1.mask.sharp", Dict("inner_radius", radius - 1,
 									   "outer_radius", radius + 1));
 
 		int n = 0;

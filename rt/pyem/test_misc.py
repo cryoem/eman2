@@ -75,7 +75,7 @@ class TestException(unittest.TestCase):
         e.set_size(100, 100, 1)
 
         try:
-            e.filter("NotExistintFilter_kfjda")
+            e.filter("eman1.NotExistintFilter_kfjda")
         except RuntimeError, runtime_err:
             err_type = exception_type(runtime_err)
             self.assertEqual(err_type, "NotExistingObjectException")

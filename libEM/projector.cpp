@@ -96,13 +96,13 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->done_data();
 	tmp->update();
 
-	tmp->filter("Phase180");
+	tmp->filter("eman1.Phase180");
 	EMData *ret = tmp->do_ift();
 
 	Dict filter_d;
 	filter_d["gauss_width"] = gauss_width;
 	filter_d["ring_width"] = ret->get_xsize() / 2;
-	ret->filter("MaskGaussInvFilter", filter_d);
+	ret->filter("eman1.MaskGaussInvFilter", filter_d);
 
 	ret->set_rotation(az, alt, phi);
 

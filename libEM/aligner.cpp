@@ -756,7 +756,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  const string&) 
 	EMData *this_copy2 = this_img->copy();
 
 	if (!flip) {
-		this_copy2->filter("xform.flip", Dict("axis", "y"));
+		this_copy2->filter("eman1.xform.flip", Dict("axis", "y"));
 	}
 
 	this_copy2->align("Rotational", to, params);
@@ -808,7 +808,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		this_copy2 = flip->align("RotateTranslate", to, params);
 	}
 	else {
-		this_img->filter("xform.flip", Dict("axis", "x"));
+		this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		this_copy2 = this_img->align("RotateTranslate", to, params);
 	}
 
@@ -855,7 +855,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		this_copy2->set_attr("flipped",0);
 
 		if (!flip) {
-			this_img->filter("xform.flip", Dict("axis", "x"));
+			this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		}
 
 		delete this_copy2;
@@ -904,7 +904,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 	}
 	else {
 		df = this_img->copy(false);
-		df->filter("xform.flip", Dict("axis", "x"));
+		df->filter("eman1.xform.flip", Dict("axis", "x"));
 	}
 
 	EMData *dns = this_img->copy(false);
@@ -1066,7 +1066,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 	}
 	else {
 		df = this_img->copy();
-		df->filter("xform.flip", Dict("axis", "x"));
+		df->filter("eman1.xform.flip", Dict("axis", "x"));
 		df = df->copy();
 	}
 
@@ -1220,7 +1220,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,  const string & cmp
 	EMData *flip_copy = 0;
 
 	if (!flip) {
-		this_img->filter("xform.flip", Dict("axis", "x"));
+		this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		flip_copy = this_img->align("RotateTranslateBest", to, params);
 	}
 	else {
@@ -1245,7 +1245,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,  const string & cmp
 	if (this_cmp > flip_cmp) {
 		this_copy->set_flipped(0);
 		if (!flip) {
-			this_img->filter("xform.flip", Dict("axis", "x"));
+			this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		}
 		delete flip_copy;
 		flip_copy = 0;
@@ -1282,9 +1282,9 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,  const string&) co
 	EMData *r2 = 0;
 
 	if (!thisf) {
-		this_img->filter("xform.flip", Dict("axis", "x"));
+		this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		r2 = this_img->align("RTFRadon", to, params);
-		this_img->filter("xform.flip", Dict("axis", "x"));
+		this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 	}
 	else {
 		r2 = thisf->align("RTFRadon", to, params);
@@ -1304,7 +1304,7 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,  const string&) co
 		r1 = 0;
 
 		if (!thisf) {
-			this_img->filter("xform.flip", Dict("axis", "x"));
+			this_img->filter("eman1.xform.flip", Dict("axis", "x"));
 		}
 		result = r2;
 	}
