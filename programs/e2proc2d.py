@@ -10,7 +10,7 @@ import math
 import random
 import pyemtbx.options
 
-# usage: e2proc2d.py --clip 200 200 --outtype mrc input.mrc output.mrc
+# usage: e2proc2d.py [options] input output
 
 def read_listfile(listfile, excludefile, nimg):
     imagelist = None

@@ -575,16 +575,16 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			dcen = sqrt(dcen / get_number_points());
 			//swap pointter, faster but risky
 #ifdef DEBUG
-			printf("before swap: points = %d\ttmp_points = %d\n", get_points_array(),
-				   tmp_pa.get_points_array());
+			printf("before swap: points = %ld\ttmp_points = %ld\n", (long)get_points_array(),
+				   (long)tmp_pa.get_points_array());
 #endif
 			double *tp = get_points_array();
 			set_points_array(tmp_points);
 			tmp_pa.set_points_array(tp);
 			tmp_pa.zero();
 #ifdef DEBUG
-			printf("after  swap: points = %d\ttmp_points = %d\n", get_points_array(),
-				   tmp_pa.get_points_array());
+			printf("after  swap: points = %ld\ttmp_points = %ld\n", (long)get_points_array(),
+				   (long)tmp_pa.get_points_array());
 			printf("Iteration %3d, finished updating segment centers with dcen = %g pixels\n", iter,
 				   dcen);
 #endif

@@ -793,3 +793,52 @@ bool EMUtil::is_same_ctf(const EMData * image1, const EMData * image2)
 	}
 	return false;
 }
+
+
+
+static int imgscore_cmp(const void *imgscore1, const void *imgscore2)
+{
+	float c = ((ImageScore *)imgscore1)->score - ((ImageScore *)imgscore2)->score;
+	if (c<0) {
+		return 1;
+	}
+	else if (c>0) {
+		return -1;
+	}
+	return 0;
+}
+
+ImageSort::ImageSort(int nn)
+{
+	n = nn;
+	image_scores = new ImageScore[n];
+}
+
+ImageSort::~ImageSort()
+{
+	delete [] image_scores;
+	image_scores = 0;
+}
+
+void ImageSort::sort()
+{
+	qsort(image_scores, n, sizeof(ImageScore), imgscore_cmp);
+
+}
+
+void ImageSort::set(int i, float score)
+{
+	image_scores[i] = ImageScore(i, score);
+}
+
+ImageScore ImageSort::get(int i) const
+{
+	return image_scores[i];
+}
+
+int ImageSort::size() const
+{
+	return n;
+}
+
+

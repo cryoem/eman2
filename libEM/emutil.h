@@ -93,8 +93,29 @@ namespace EMAN
 											 off_t file_size);
 	};
 
+	struct ImageScore {
+		int index;
+		float score;
+		ImageScore(int i=0, float s=0) : index(i), score(s) {}
+	};
 
-	
+	class ImageSort {
+	public:
+		ImageSort(int n);
+		~ImageSort();
+
+		void sort();
+		
+		void set(int i, float score);
+		ImageScore get(int i) const;
+
+		int size() const;
+	private:
+		ImageScore* image_scores;
+		int n;
+
+	};
+		
 }
 
 #endif
