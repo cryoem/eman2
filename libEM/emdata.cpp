@@ -2735,6 +2735,13 @@ void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy
 	rotate_translate(t);
 }
 
+void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy, float dz, float pdx, float pdy, float pdz)
+{
+	Transform t(Rotation(alt, az, phi, Rotation::EMAN), Vec3 < float >(dx, dy, dz));
+	t.set_post_translate(Vec3<float>(pdx,pdy,pdz));
+	rotate_translate(t);
+}
+
 void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&translation)
 {
 	Transform t(rotation, translation);

@@ -360,6 +360,19 @@ namespace EMAN
 		 */
 		void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz);
 		
+		/** Rotate then translate the image.
+		 * @param alt Rotation euler angle alt in EMAN convention.
+		 * @param az  Rotation euler angle az  in EMAN convention.
+		 * @param phi Rotation euler angle phi in EMAN convention.
+		 * @param dx Translation distance in x direction.
+		 * @param dy Translation distance in y direction.
+		 * @param dz Translation distance in z direction.
+		 * @param pdx Pretranslation distance in x direction.
+		 * @param pdy Pretranslation distance in y direction.
+		 * @param pdz Pretranslation distance in z direction.
+		 */
+		void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz, float pdx, float pdy, float pdz);
+		
 		/** This performs a translation of each line along x with wraparound.
 		 *  This is equivalent to a rotation when performed on 'unwrapped' maps.
 		 *  @param dx Translation distance align x direction.

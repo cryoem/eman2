@@ -159,7 +159,30 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	best2.reverse()
 	print len(best2)," final candidtates"
 	for i in best2: print i
-	
+
+	"""print "Preoptimize:"
+	cmp_target=target
+	cmp_probe=probe
+	if options.csym :
+		for j in range(len(best2)):
+			c2alt=best2[j][1]
+			sm=Simplex(compare2,[best2[j][3],best2[j][6]],[1,2.])
+			bt=sm.minimize()
+			b=bt[0]
+			print "\n",j,"\t%5.2f,%5.2f  %5.1f"%(c2alt/degrad,b[0]/degrad,b[1])
+			best2[j][3]=b[0]
+			best2[j][6]=b[1]
+			
+	else :
+		for j in range(len(best2)):
+			sm=Simplex(compare,best2[j][1:7],[1,1,1,2.,2.,2.])
+			bt=sm.minimize()
+			b=bt[0]
+			print "\n",j,"\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f"%(b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
+			best2[j][1:7]=b"""
+			
+
+		
 	# reread the original images
 	target.read_image(args[0])
 	probe.read_image(args[1])
@@ -171,6 +194,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #		c.rotate_translate(*i[1:7])
 #		c.write_image("z.%02d.mrc"%best2.index(i))
 	
+	print "Optimize:"
 	if options.csym :
 		for j in range(len(best2)):
 			c2alt=best2[j][1]
@@ -182,10 +206,10 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #			a.write_image("clip.%02d.mrc"%j)
 			pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 	#		pc.write_image("finala.mrc")
-			pc.rotate_translate(c2alt,0,b[0],0,0,b[1])
+			pc.rotate_translate(c2alt,0,-b[0],0,0,b[1])
 			pc.write_image("final.%02d.mrc"%j)
 			
-			return
+		return
 			
 	for j in range(len(best2)):
 		sm=Simplex(compare,best2[j][1:7],[1,1,1,2.,2.,2.])

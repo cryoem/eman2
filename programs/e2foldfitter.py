@@ -12,36 +12,47 @@ cmp_probe=None
 cmp_target=None
 tdim=None
 pdim=None
+tdim2=None
+pdim2=None
+sfac=None
 degrad=pi/180.0
+ncmp=0
 
 def compare(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
 	of the probe to the map"""
-	global cmp_probe,cmp_target
+	global cmp_probe,cmp_target,ncmp
 	
 #	print vec,pdim
 #	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
-	a=cmp_target.get_rotated_clip((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),Rotation(*vec[0:3]+[Rotation.Type.EMAN]),pdim,1.0)
+	a=cmp_target.get_rotated_clip((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),Rotation(*vec[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
+	ncmp+=1
 	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
 	
+def compares(vec):
+	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
+	of the probe to the map"""
+	global cmp_probe,cmp_target,sfac
+	
+	a=cmp_target.get_rotated_clip((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),Rotation(*vec[0:3]+[Rotation.EulerType.EMAN]),pdim2,1.0)
+	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
+
 def main():
-	global tdim,pdim
+	global tdim,pdim,tdim2,pdim2,sfac
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
 	usage = """Usage: %prog [options] target.mrc probe.mrc
 	
-Locates the best 'docking' locations for a small probe in a large target map."""
+Locates the best 'docking' locations for a small probe in a large target map. Note that the probe
+should be in a box barely large enough for it. The target may be arbitrarily padded. For best speed
+both box sizes should be multiples of 8."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)
-	parser.add_option("--res", "-R", type="float", help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
-	parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
-	parser.add_option("--chains",type="string",help="String list of chain identifiers to include, eg 'ABEFG'")
-	parser.add_option("--quiet",action="store_true",default=False,help="Verbose is the default")
+	parser.add_option("--shrink", "-S", type="int", help="shrink factor for initial search, default=auto", default=0)
+	parser.add_option("--epsilon","-E", type="float",help="final target accuracy, default=.01",default=.01)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -68,7 +79,8 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	# shrink both by some factor which keeps the smallest axis of the probe at least 10 pixels
 	# we'll have to reread the files if we want to recover the unscaled images
 #	sfac=int(floor(min(pdim)/10.0))
-	sfac=int(floor(min(pdim)/12.0))
+	if options.shrink>0 : sfac=options.shrink
+	else : sfac=int(floor(min(pdim)/12.0))
 	print "Shrink by %d"%sfac
 	target.mean_shrink(sfac)
 	probe.mean_shrink(sfac)
@@ -79,16 +91,20 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	probeclip=probe.get_clip(Region((pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]))
 	
 	roughang=[(0,0),(45,0),(45,90),(45,180),(45,270),(90,0),(90,60),(90,120),(90,180),(90,240),(90,300),(135,0),(135,90),(135,180),(135,270),(180,0)]
+#	roughang=[(0,0),(30,0),(30,90),(30,180),(30,270),(60,0),(60,45),(60,90),(60,135),(60,180),(60,225),(60,270),(60,315),
+#	(90,0),(90,30),(90,60),(90,90),(90,120),(90,150),(90,180),(90,210),(90,240),(90,270),(90,300),(90,330),
+#	(180,0),(150,0),(150,90),(150,180),(150,270),(120,0),(120,45),(120,90),(120,135),(120,180),(120,225),(120,270),(120,315)]
 
 #	Log.logger().set_level(Log.LogLevel.DEBUG_LOG)
 	
+	print "Searching for candidate locations in reduced map"
 	edge=max(pdim2)/2		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
 	print "edge ",edge
 	best=[]
 	sum=probeclip.copy_head()
 	sum.to_zero()
 	for a1,a2 in roughang:
-		for a3 in range(0,360,45):
+		for a3 in range(0,360,30):
 			prr=probeclip.copy(0)
 			prr.rotate(a1*degrad,a2*degrad,a3*degrad)
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
@@ -109,7 +125,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	best.sort()		# this is a list of all reasonable candidate locations
 	best.reverse()
 	
-	print len(best)
+	print len(best)," possible candidates"
 	
 	# this is designed to eliminate angular redundancies in peak location
 #	print best[0]
@@ -139,8 +155,32 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	best2.sort()
 	best2.reverse()
 	print len(best2), " final candidates"
-	for i in best2: print i
-	
+	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
+	for i in best2: 
+		print "%1.5f  \t%1.3f\t%1.3f\t%1.3f\t%1.1f\t%1.1f\t%1.1f"%(-i[0],i[1]/degrad,i[2]/degrad,i[3]/degrad,i[4],i[5],i[6])
+
+
+	# try to improve the angles for each position
+	print "\nOptimize each candidate in the reduced map with multiple angle trials"
+	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
+	cmp_target=target
+	cmp_probe=probe
+	for j in range(len(best2)):
+		print j," --------"
+		tries=[[0,0],[0,0],[0,0],[0,0]]
+		testang=((0,0),(pi,0),(0,pi),(pi,pi))	# modify the 'best' angle a few times to try to find a better minimum
+		for k in range(4):
+			guess=best2[j][1:7]
+			guess[0]+=testang[k][0]
+			guess[1]+=testang[k][1]
+			sm=Simplex(compares,guess,[1,1,1,.1,.1,.1])
+			m=sm.minimize(monitor=0,epsilon=.01)
+			tries[k][0]=m[1]
+			tries[k][1]=m[0]
+			print "%1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(-tries[k][0],tries[k][1][0]/degrad,tries[k][1][1]/degrad,tries[k][1][2]/degrad,
+				tries[k][1][3],tries[k][1][4],tries[k][1][5])
+		best2[j][1:7]=min(tries)[1]		# best of the 4 angles we started with
+		
 	# reread the original images
 	target.read_image(args[0])
 	probe.read_image(args[1])
@@ -152,18 +192,33 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #		c.rotate_translate(*i[1:7])
 #		c.write_image("z.%02d.mrc"%best2.index(i))
 	
+	print "Final optimization of each candidate"
+	final=[]
 	for j in range(len(best2)):
-		sm=Simplex(compare,best2[j][1:7],[1,1,1,2.,2.,2.])
-		bt=sm.minimize()
+		sm=Simplex(compare,best2[j][1:7],[.5,.5,.5,2.,2.,2.])
+		bt=sm.minimize(epsilon=options.epsilon)
 		b=bt[0]
-		print "\n",j,"\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f"%(b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
-		a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.Type.EMAN]),pdim,1.0)
-		a.write_image("clip.%02d.mrc"%j)
+		print "\n%1.2f\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f)"%(-bt[1],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
+		final.append((bt[1],b))
+	
+	print "\n\nFinal Results"
+	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
+	out=open("foldfitter.out","w")
+	final.sort()
+	for i,j in enumerate(final):
+		b=j[1]
+		print "%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,j[0],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
+		out.write("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f\n"%(i,j[0],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5]))
+		a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
+		a.write_image("clip.%02d.mrc"%i)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
-#		pc.write_image("finala.mrc")
-		pc.rotate_translate(*b)
-		pc.write_image("final.%02d.mrc"%j)
+#		pc.rotate(-b[0],-b[2],-b[1])
+#		pc.rotate_translate(0,0,0,b[3],b[4],b[5])		# FIXME, when rotate_translate with post-translate works
+		pc.rotate_translate(-b[0],-b[2],-b[1],0,0,0,b[3],b[4],b[5])
+		pc.write_image("final.%02d.mrc"%i)
 
+	print ncmp," total comparisons"
+	out.close()
 	
 #	print compare(best2[0][1:7])
 	
