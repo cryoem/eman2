@@ -20,6 +20,7 @@ def compare(vec):
 	global cmp_target
 	
 	a=cmp_target.get_rotated_clip((x,y,z),(alt,az,phi),pdim,1.0)
+	a.write_image("clip.mrc")
 	return cmp_probe.cmp("Dot",{"with":EMObject(a)})
 	
 def main():
@@ -68,7 +69,8 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	probe.mean_shrink(sfac)
 	tdim2=(target.get_xsize(),target.get_ysize(),target.get_zsize())
 	pdim2=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
-	probe.filter("NormalizeEdgeMean")
+#	print (pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]
+#	probe.filter("NormalizeEdgeMean")
 	probeclip=probe.get_clip(Region((pdim2[0]-tdim2[0])/2,(pdim2[1]-tdim2[1])/2,(pdim2[2]-tdim2[2])/2,tdim2[0],tdim2[1],tdim2[2]))
 	
 	roughang=[(0,0),(45,0),(45,90),(45,180),(45,270),(90,0),(90,60),(90,120),(90,180),(90,240),(90,300),(135,0),(135,90),(135,180),(135,270),(180,0)]
@@ -78,7 +80,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	edge=max(pdim2)/2		# technically this should be max(pdim), but generally there is some padding in the probe model, and this is relatively harmless
 	print "edge ",edge
 	best=[]
-	sum=probeclib.copy_head()
+	sum=probeclip*.copy_head()
 	sum.to_zero()
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
