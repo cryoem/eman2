@@ -402,7 +402,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int ImagicIO::write_data(float *data, int image_index, const Region* , bool)
+int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
@@ -428,19 +428,27 @@ int ImagicIO::write_data(float *data, int image_index, const Region* , bool)
 		n_pad_imgs = image_index - old_num_imgs;
 	}
 #endif
-	
+
+#if 1
+	EMUtil::process_region_io(data, img_file, WRITE_ONLY, image_index,
+							  sizeof(float), imagich.nx, imagich.ny,
+							  nz, area, true);
+#endif
+
+#if 0
 	size_t row_size = imagich.nx * sizeof(float);
-	int sec_dim = imagich.nx * imagich.ny;
+	int nxy = imagich.nx * imagich.ny;
 
 	for (int i = 0; i < nz; i++) {
 		for (int j = imagich.ny - 1; j >= 0; j--) {
-			fwrite(&data[i * sec_dim + j * imagich.nx], row_size, 1, img_file);
+			fwrite(&data[i * nxy + j * imagich.nx], row_size, 1, img_file);
+		}
+
+		if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
+			ByteOrder::swap_bytes(data, imagich.nx * imagich.ny);
 		}
 	}
-
-	if (!is_new_img && (is_big_endian != ByteOrder::is_host_big_endian())) {
-		ByteOrder::swap_bytes(data, imagich.nx * imagich.ny);
-	}
+#endif
 	EXITFUNC;
 	return 0;
 }

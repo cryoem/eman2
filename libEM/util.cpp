@@ -123,7 +123,7 @@ bool Util::check_file_by_magic(const void *first_block, const char *magic)
 	return false;
 }
 
-bool Util::is_file_exist(string filename)
+bool Util::is_file_exist(const string & filename)
 {
 	if (access(filename.c_str(), F_OK) == 0) {
 		return true;
@@ -296,7 +296,8 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_v0, int *p_v1,
 	return false;
 }
 
-string Util::get_filename_by_ext(string old_filename, string ext)
+string Util::get_filename_by_ext(const string & old_filename,
+								 const string & ext)
 {
 	char buf[MAXPATHLEN];
 	strcpy(buf, old_filename.c_str());
@@ -305,6 +306,17 @@ string Util::get_filename_by_ext(string old_filename, string ext)
 		buf[strlen(buf) - strlen(old_ext)] = '\0';
 	}
 	strcat(buf, ext.c_str());
+	return string(buf);
+}
+
+string Util::remove_filename_ext(const string& filename)
+{
+	char buf[MAXPATHLEN];
+	strcpy(buf, filename.c_str());
+	char *old_ext = strrchr(buf, '.');
+	if (old_ext) {
+		buf[strlen(buf) - strlen(old_ext)] = '\0';
+	}
 	return string(buf);
 }
 
@@ -323,6 +335,19 @@ string Util::sbasename(const string & filename)
 	}
     return string(c);
 }
+
+
+string Util::get_filename_ext(const string& filename)
+{
+	string result = "";
+	char *ext = strrchr(filename.c_str(), '.');
+	if (ext) {
+		ext++;
+		result = string(ext);
+	}
+	return result;
+}
+
 
 
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
@@ -363,7 +388,7 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 }
 
 void Util::save_data(const vector < float >&x_array, const vector < float >&y_array,
-					 string filename)
+					 const string & filename)
 {
 	if (x_array.size() != y_array.size()) {
 		LOGERR("array x and array y have different size: %d != %d\n",
@@ -382,7 +407,8 @@ void Util::save_data(const vector < float >&x_array, const vector < float >&y_ar
 	fclose(out);
 }
 
-void Util::save_data(float x0, float dx, const vector < float >&y_array, string filename)
+void Util::save_data(float x0, float dx, const vector < float >&y_array,
+					 const string & filename)
 {
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
@@ -396,7 +422,8 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array, string 
 }
 
 
-void Util::save_data(float x0, float dx, float *y_array, size_t array_size, string filename)
+void Util::save_data(float x0, float dx, float *y_array, 
+					 size_t array_size, const string & filename)
 {
 	if (!y_array) {
 		throw NullPointerException("y array");

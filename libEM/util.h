@@ -47,7 +47,7 @@ namespace EMAN
 		static bool check_file_by_magic(const void *first_block, const char *magic);
 
 		/** check whether a file exists or not */
-		static bool is_file_exist(string filename);
+		static bool is_file_exist(const string & filename);
 
 		
 		/** Vertically flip the data of a 2D real image.
@@ -62,27 +62,37 @@ namespace EMAN
 		static string get_line_from_string(char **str);
 		
 		static bool get_str_float(const char *s, const char *float_var, float *p_val);
-		static bool get_str_float(const char *s, const char *float_var, float *p_v1, float *p_v2);
-		static bool get_str_float(const char *s, const char *float_var, int *p_v0, float *p_v1,
-								  float *p_v2);
+		static bool get_str_float(const char *s, const char *float_var,
+								  float *p_v1, float *p_v2);
+		static bool get_str_float(const char *s, const char *float_var, 
+								  int *p_v0, float *p_v1, float *p_v2);
 
 		static bool get_str_int(const char *s, const char *int_var, int *p_val);
 		static bool get_str_int(const char *s, const char *int_var, int *p_v1, int *p_v2);
-		static bool get_str_int(const char *s, const char *int_var, int *p_v0, int *p_v1,
-								int *p_v2);
-
-		static string get_filename_by_ext(string old_filename, string ext);
-
-		static string sbasename(const string & filename);
+		static bool get_str_int(const char *s, const char *int_var, 
+								int *p_v0, int *p_v1, int *p_v2);
 		
-		static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
-										  float *slope, float *intercept, bool ignore_zero);
+		static string get_filename_by_ext(const string& old_filename,
+										  const string & ext);
+		static string remove_filename_ext(const string& filename);
+		
+		static string sbasename(const string & filename);
+		static string get_filename_ext(const string& filename);
+		
+		static void calc_least_square_fit(size_t nitems, const float *data_x,
+										  const float *data_y, float *slope, 
+										  float *intercept, bool ignore_zero);
 
-		static void save_data(const vector < float >&x_array, const vector < float >&y_array,
-							  string filename);
-		static void save_data(float x0, float dx, const vector < float >&y_array, string filename);
-		static void save_data(float x0, float dx, float *y_array, size_t array_size,
-							  string filename);
+		static void save_data(const vector < float >&x_array, 
+							  const vector < float >&y_array,
+							  const string & filename);
+		
+		static void save_data(float x0, float dx,
+							  const vector < float >&y_array,
+							  const string & filename);
+		
+		static void save_data(float x0, float dx, float *y_array, 
+							  size_t array_size, const string & filename);
 
 		static float get_frand(int low, int high);
 		static float get_frand(float low, float high);
@@ -106,17 +116,18 @@ namespace EMAN
 			return (int) (x + 0.5);
 		}
 		// p1=x0,y0, p2=x1,y0; p3=x1,y1; p4=x0,y1 
-		static inline float bilinear_interpolate(float p1, float p2, float p3, float p4, float t,
-												 float u)
+		static inline float bilinear_interpolate(float p1, float p2, float p3,
+												 float p4, float t, float u)
 		{
-			return (1 - t) * (1 - u) * p1 + t * (1 - u) * p2 + t * u * p3 + (1 - t) * u * p4;
+			return (1-t) * (1-u) * p1 + t * (1-u) * p2 + t * u * p3 + (1-t) * u * p4;
 		}
 
 		// p1=x0,y0,z0; p2=x1,y0,z0; p3=x0,y1,z0, p4=x1,y1,z0
 		// p5=x0,y0,z1; p6=x1,y0,z1; p7=x0,y1,z1, p8=x1,y1,z1
-		static inline float trilinear_interpolate(float p1, float p2, float p3, float p4, float p5,
-												  float p6, float p7, float p8, float t, float u,
-												  float v)
+		static inline float trilinear_interpolate(float p1, float p2, float p3,
+												  float p4, float p5, float p6, 
+												  float p7, float p8, float t,
+												  float u, float v)
 		{
 			return ((1 - t) * (1 - u) * (1 - v) * p1 + t * (1 - u) * (1 - v) * p2
 					+ (1 - t) * u * (1 - v) * p3 + t * u * (1 - v) * p4
@@ -285,7 +296,8 @@ namespace EMAN
 		static inline int goodf(float *f)
 		{
 			// the first is abnormal zero the second is +-inf or NaN 
-			if ((((int *) f)[0] & 0x7f800000) == 0 || (((int *) f)[0] & 0x7f800000) == 255) {
+			if ((((int *) f)[0] & 0x7f800000) == 0 ||
+				(((int *) f)[0] & 0x7f800000) == 255) {
 				return 0;
 			}
 			return 1;
@@ -324,8 +336,8 @@ namespace EMAN
 			double z = fabs(x);
 			if (z > 0) {
 				double t = 1 / (1 + 0.5 * z);
-				double f1 =
-					t * (a[4] + t * (a[5] + t * (a[6] + t * (a[7] + t * (a[8] + t * a[9])))));
+				double f1 = t * (a[4] + t * (a[5] + t * (a[6] +
+							t * (a[7] + t * (a[8] + t * a[9])))));
 				result = t * exp((-z * z) + a[0] + t * (a[1] + t * (a[2] + t * (a[3] + f1))));
 
 				if (x < 0) {

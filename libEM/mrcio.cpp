@@ -409,8 +409,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	int ny = mrch.ny;
 	int nz = mrch.nz;
 
-	//	Util::file_lock_wait(mrcfile);
-
 	if (is_complex_mode()) {
 		nx *= 2;
 		size_t size = nx * ny * nz;

@@ -9,6 +9,8 @@
 #include <map>
 #include <math.h>
 #include <float.h>
+#include <boost/multi_array.hpp>
+
 
 #include "emobject.h"
 #include "emutil.h"
@@ -947,6 +949,14 @@ namespace EMAN
 		 */
 		void set_pathnum(int n);
 
+		boost::multi_array_ref<float, 3> get_view() const;
+		boost::multi_array_ref<float, 2> get_view(int x0, int y0) const;
+		boost::multi_array_ref<float, 3> get_view(int x0, int y0, int z0) const;
+		boost::multi_array_ref<float, 2> get_view(int x0, int y0,
+												  int xsize, int ysize) const;
+		boost::multi_array_ref<float, 3> get_view(int x0, int y0, int z0,
+												  int xsize, int ysize, int zsize) const;
+		
 		/** Get one row of a 1D/2D image.
 		 *
 		 * @param row_index Index of the row.

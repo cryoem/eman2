@@ -16,6 +16,7 @@
 #include <float.h>
 #include <math.h>
 #include <algorithm>
+#include <boost/array.hpp>
 
 #ifdef WIN32
 #define M_PI 3.14159265358979323846f
@@ -2090,6 +2091,50 @@ void EMData::update_stat()
 	flags &= ~EMDATA_NEEDUPD;
 	EXITFUNC;
 }
+
+boost::multi_array_ref<float, 3> EMData::get_view() const
+{
+	const int ndims = 3;
+	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
+	boost::multi_array_ref<float, ndims> marray(rdata, dims);
+	return marray;	
+}
+
+boost::multi_array_ref<float, 2> EMData::get_view(int x0, int y0) const
+{
+	const int ndims = 2;
+	boost::array<std::size_t,ndims> dims = {{nx, ny}};
+	boost::multi_array_ref<float, ndims> marray(rdata, dims);
+	boost::array<std::size_t,ndims> bases={{x0, y0}};
+	marray.reindex(bases);
+	return marray;
+}
+
+boost::multi_array_ref<float, 3> EMData::get_view(int x0, int y0, int z0) const
+{
+	const int ndims = 3;
+	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
+	boost::multi_array_ref<float, ndims> marray(rdata, dims);
+	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
+	marray.reindex(bases);
+	return marray;
+}
+#if 0
+boost::multi_array_ref<float, 2> EMData::get_view(int x0, int y0,
+												  int xsize, int ysize) const
+{
+	
+
+}
+
+boost::multi_array_ref<float, 3> EMData::get_view(int x0, int y0, int z0,
+												  int xsize, int ysize, int zsize) const
+{
+
+
+}
+
+#endif
 
 EMData *EMData::get_row(int row_index) const
 {
