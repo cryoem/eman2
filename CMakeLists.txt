@@ -24,24 +24,47 @@ OPTION(ENABLE_HDF "if enable HDF support" ON)
 OPTION(ENABLE_PNG "if enable PNG support" ON)
 OPTION(ENABLE_PYTHON "if enable boost python support" ON)
 
+OPTION(ENABLE_DEBUG "if enable debug support" ON)
+
+OPTION(ENABLE_ATHLON "if enable ATHLON specific support" OFF)
+OPTION(ENABLE_OPTERON "if enable OPTERON/Ath64 specific support" OFF)
+OPTION(ENABLE_G5 "if enable G5 CPU specific support" OFF)
+
+IF (ENABLE_DEBUG)
+    SET (OPT_FLAGS "-g -DDEBUG")
+ELSE (ENABLE_DEBUG)
+    IF (ENABLE_ATHLON)
+	SET (OPT_FLAGS "-O3 -march=athlon-xp -mfpmath=sse -msse -funroll-loops -pipe")
+    ELSE(ENABLE_ATHLON)
+	IF (ENABLE_OPTERON)
+	    SET (OPT_FLAGS "-O3 -march=k8 -m64 -mfpmath=sse -ffast-math -msse2 -funroll-loops -pipe")
+	ELSE (ENABLE_OPTERON)
+	    SET (OPT_FLAGS "-O2")
+	ENDIF(ENABLE_OPTERON)
+    ENDIF(ENABLE_ATHLON)
+
+    IF(ENABLE_G5)
+	SET(OPT_FLAGS "-fast -fPIC -mcpu=970 -mtune=970 -mpowerpc64 -O5" CACHE INTERNAL "C++ compiler flags")
+    ENDIF(ENABLE_G5)
+    
+ENDIF (ENABLE_DEBUG)
+
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
-    #SET(EMAN_CXX_FLAGS "-g -n32 -w2 -fullwarn  -LANG:ansi-for-init-scope=ON")
-    SET(EMAN_CXX_FLAGS "-O2 -n32 -woffall -LANG:ansi-for-init-scope=ON")
+    SET(EMAN_CXX_FLAGS "-n32 -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
+    #SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "IRIX.*")
 
-
 IF(CMAKE_SYSTEM MATCHES "AIX*")
-    SET(EMAN_CXX_FLAGS " -g " CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "AIX*")
 
-
 IF(CMAKE_SYSTEM MATCHES "OSF1-V*")
-    SET(EMAN_CXX_FLAGS " -g -w0" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "-w0" CACHE INTERNAL "C++ compiler flags")
 ENDIF(CMAKE_SYSTEM MATCHES "OSF1-V*")
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(EMAN_CXX_FLAGS " -g -Wall -Werror" CACHE INTERNAL "EMAN CXX FLAGS")
+    SET(EMAN_CXX_FLAGS "-Wall -Werror" CACHE INTERNAL "EMAN CXX FLAGS")
     #SET(EMAN_CXX_FLAGS "-O2 -w" CACHE INTERNAL "EMAN CXX FLAGS")
     SET(LIB64 "/usr/lib64" CACHE INTERNAL "lib64")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
