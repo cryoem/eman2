@@ -166,7 +166,7 @@ Matrix3f Matrix3f::create_inverse() const
 	return Matrix3f(inverse);
 }
 
-Vec3 < float >Matrix3f::get_vector(int i) const
+Vec3 < float >Matrix3f::get_row(int i) const
 {
 	return Vec3 < float >(gsl_matrix_get(matrix, i, 0),
 						  gsl_matrix_get(matrix, i, 1),
@@ -174,6 +174,14 @@ Vec3 < float >Matrix3f::get_vector(int i) const
 
 }
 
+
+Vec3 < float >Matrix3f::get_col(int i) const
+{
+	return Vec3 < float >(gsl_matrix_get(matrix, 0, i),
+						  gsl_matrix_get(matrix, 1, i),
+						  gsl_matrix_get(matrix, 2, i));
+
+}
 
 
 Matrix3f EMAN::operator+(float f, const Matrix3f & m2)

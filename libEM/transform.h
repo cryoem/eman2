@@ -119,9 +119,9 @@ namespace EMAN
 		}
 
 		Vec3 < T > &operator +=(const Vec3 < T > &v) {
-			vec[0] += v[0];
-			vec[1] += v[1];
-			vec[2] += v[2];
+			vec[0] +=  v[0];
+			vec[1] +=  v[1];
+			vec[2] +=  v[2];
 			return *this;
 		}
 
@@ -166,33 +166,31 @@ namespace EMAN
 	}
 
 
-	template < class T > Vec3 < T > operator *(T d, const Vec3 < T > v)
+	template < class T > Vec3 < T > operator *(T d, const Vec3 < T >& v)
 	{
 		Vec3 < T > v1 = v;
 		v1 *= d;
 		return v1;
 	}
 
-	template < class T > Vec3 < T > operator /(T d, const Vec3 < T > v) {
+	template < class T > Vec3 < T > operator /(T d, const Vec3 < T >& v) {
 		Vec3 < T > v1 = v;
 		if (d != 0) {
-			Vec3 < T > v1 = v;
 			v1 /= d;
 		}
 		return v1;
 	}
 
 
-	template < class T > Vec3 < T > operator *(const Vec3 < T > v, T d) {
+	template < class T > Vec3 < T > operator *(const Vec3 < T >& v, T d) {
 		Vec3 < T > v1 = v;
 		v1 *= d;
 		return v1;
 	}
 
-	template < class T > Vec3 < T > operator /(const Vec3 < T > v, T d) {
+	template < class T > Vec3 < T > operator /(const Vec3 < T >& v, T d) {
 		Vec3 < T > v1 = v;
 		if (d != 0) {
-			Vec3 < T > v1 = v;
 			v1 /= d;
 		}
 		return v1;
@@ -250,7 +248,8 @@ namespace EMAN
 		 */
 		Matrix3f create_inverse() const;
 
-		Vec3 < float >get_vector(int i) const;
+		Vec3 < float > get_row(int i) const;
+		Vec3 <float> get_col(int i) const;
 
 		double *operator[] (int i);
 		const double *operator[] (int i) const;
