@@ -390,11 +390,14 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 		   rw == ImageIO::READ_WRITE ||
 		   rw == ImageIO::WRITE_ONLY);
 	
-	ImageIO *imageio = GlobalCache::instance()->get_imageio(filename, rw);
+	ImageIO *imageio = 0;
+#ifdef IMAGEIO_CACHE
+	imageio = GlobalCache::instance()->get_imageio(filename, rw);
 	if (imageio) {
 		return imageio;
 	}
-
+#endif
+	
 	ImageIO::IOMode rw_mode = static_cast < ImageIO::IOMode > (rw);
 	
 	if (image_type == IMAGE_UNKNOWN) {
@@ -468,8 +471,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	default:
 		break;
 	}
-
+#ifdef IMAGEIO_CACHE
 	GlobalCache::instance()->add_imageio(filename, rw, imageio);
+#endif
 	EXITFUNC;
 	return imageio;
 }

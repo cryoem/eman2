@@ -58,8 +58,8 @@
   086. file extension somewhere is "img"/"hed". but somewhere it is ".img"/
        ".hed". make them consistent.
 	     
-  087. add [in] [out] or [inout] to params in documentation.
-
+  090. ImageIO caching causes memory leak or memory not freed. Need a
+       better way to handle this.
   
 --- Low Priority ---
 
@@ -120,6 +120,8 @@
   077. In ImageIO region writing, if the region data is in different endian
        order from the original image, the region data needs to be converted
        into the proper endian order.
+
+  087. add [in] [out] or [inout] to params in documentation.
 
 --- Items Done ----
 

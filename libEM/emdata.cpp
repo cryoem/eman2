@@ -136,6 +136,12 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			}
 		}
 	}
+
+#ifndef IMAGEIO_CACHE
+	delete imageio;
+	imageio = 0;
+#endif
+	
 	EXITFUNC;
 }
 
@@ -146,7 +152,6 @@ void EMData::write_image(const string & filename, int img_index,
 						 bool use_host_endian) 
 {
 	ENTERFUNC;
-	LOGDEBUG("write to file '%s'", filename.c_str());
 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		char *ext = strrchr(filename.c_str(), '.');
@@ -166,6 +171,10 @@ void EMData::write_image(const string & filename, int img_index,
 			if (tmp_imageio->is_single_image_format()) {
 				rwmode = ImageIO::WRITE_ONLY;
 			}
+#ifndef IMAGEIO_CACHE
+			delete tmp_imageio;
+			tmp_imageio = 0;
+#endif
 		}
 	}
 	
@@ -228,6 +237,14 @@ void EMData::write_image(const string & filename, int img_index,
 		}
 	}
 	imageio->flush();
+
+#ifndef IMAGEIO_CACHE
+	delete imageio;
+	imageio = 0;
+#endif
+		
+
+	
 	EXITFUNC;
 }
 

@@ -25,6 +25,7 @@ OPTION(ENABLE_PYTHON "enable boost python support" ON)
 
 OPTION(ENABLE_DEBUG "enable debug support" ON)
 OPTION(ENABLE_RT "enable RT support" OFF)
+OPTION(ENABLE_IOCACHE "enable ImageIO caching" OFF)
 
 OPTION(ENABLE_ATHLON "if enable ATHLON specific support" OFF)
 OPTION(ENABLE_OPTERON "if enable OPTERON/Ath64 specific support" OFF)
@@ -104,6 +105,11 @@ SUBDIRS(libEM plugins programs utils)
 IF(ENABLE_RT)
     SUBDIRS(rt)
 ENDIF(ENABLE_RT)
+
+IF(ENABLE_IOCACHE)
+	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
+ENDIF(ENABLE_IOCACHE)
+
 
 SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/local/include/boost-1_31 /usr/local/include/boost-1_32 /usr/include /sw/include)
 
