@@ -32,7 +32,8 @@ namespace EMAN
 	
 	static bool get_str_int(const char *s, const char *int_var, int *p_val);
 	static bool get_str_int(const char *s, const char *int_var, int *p_v1, int *p_v2);
-
+	static bool get_str_int(const char *s, const char *int_var, int *p_v0, int *p_v1, int *p_v2);
+	
 	static string get_filename_by_ext(string old_filename, string ext);
 
 	static void calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
