@@ -48,11 +48,22 @@ for single particle analysis."""
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
 	
-	shrink=image.copy(0)
+	image.filter("normalize")
+	shrink=image
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
+	
+	# This confusing line insures the shrunken images has even dimensions
+	# since odd FFTs haven't been fixed yet
+	if shrink.get_xsize()&1 or shrink.get_ysize()&1 :
+		shrink=shrink.get_clip(Region(0,0,(shrink.get_xsize()|1)^1,(shrink.get_ysize()|1)^1))
+
 	shrink2=shrink.copy(0)
 	shrink2.filter("math.squared")
-	
+#	image=EMData()
+#	image.read_image(args[0])
+	shrink.write_image("e.mrc")
+	shrink2.write_image("f.mrc")
+		
 	print "Autobox mode ",options.auto
 	
 	if "ref" in options.auto:
@@ -73,13 +84,23 @@ for single particle analysis."""
 #			ic.write_image("scaled_refs.hdf",-1)
 
 		# prepare a mask to use for local sigma calculaton
-		circle=refptcls[0].copy_head()
+		circle=shrink.copy_head()
 		circle.to_one()
-		circle.filter("mask.sharp",{"outer_radius":circle.get_xsize()/2-1})
+		circle.filter("mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
 		
 		ccfmean=shrink.calc_ccf(circle,True,None)
 		ccfsig=shrink2.calc_ccf(circle,True,None)
+		ccfmean.filter("math.squared")
+		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
 		
+		for n,i in enumerate(refptcls):
+			j=i.copy(
+			ccfone=shrink.calc_ccf(i,True,None)
+			ccfone.write_image("a.%0d.mrc"%n)
+			ccfone/=ccfsig
+			ccfone.write_image("b.%0d.mrc"%n)
+			ccfone.filter("mask.onlypeaks",{"npeaks":0})
+			ccfone.write_image("c.%0d.mrc"%n)
 	
 	if "circle" in options.auto:
 		shrinksq=shrink.copy(0)

@@ -4254,7 +4254,7 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 	cf->done_data();
 	
 	if (tocorner) {
-		cf->filter("Phase180");
+		cf->filter("xform.phaseorigin");
 	}
 
 	EMData *f2 = cf->do_ift();
@@ -4440,7 +4440,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	}
 
 	if (tocorner) {
-		cf->filter("Phase180");
+		cf->filter("xform.phaseorigin");
 	}
 
 	EMData *f2 = cf->do_ift();
@@ -4847,7 +4847,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	EMData *img1_copy = img1->copy(false);
 	img1_copy->to_one();
 	img1_copy->filter(mask_filter, filter_dict);
-	img1_copy->filter("Phase180");
+	img1_copy->filter("xform.phaseorigin");
 
 	int num = 0;
 	float *img1_copy_data = img1_copy->get_data();
@@ -4897,7 +4897,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	img2 = 0;
 
 	img2_copy->filter(mask_filter, filter_dict);
-	img2_copy->filter("Phase180");
+	img2_copy->filter("xform.phaseorigin");
 
 	delete img1_copy;
 	img1_copy = 0;
