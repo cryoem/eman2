@@ -1,6 +1,7 @@
 #ifndef eman__transform_h__
 #define eman__transform_h__ 1
 
+#include <gsl/gsl_linalg.h>
 #include <string>
 using std::string;
 
@@ -111,7 +112,6 @@ namespace EMAN {
 	float vec[3];
     };
 
-    class gsl_matrix;
     
     class  Matrix3f {
     public:
@@ -122,19 +122,39 @@ namespace EMAN {
 	Matrix3f& mult_right(const Matrix3f& m);
 	Matrix3f& mult_left(const Matrix3f& m);
 	
-	void set_value(int dim, float m[]);
-	void set_element(int i, int j, float v);
-	
 	void make_identity();
 	
-	void get_value(float m[]) const;
-
+	void set_values(float m[]);
+	void set_element(int i, int j, float v);
+	
+	void get_values(float m[]) const;
+	float get_element(int i, int j) const;
+	
 	void inverse();
 	Matrix3f create_inverse();
+
+	Matrix3f& operator+=(float f);
+	Matrix3f& operator-=(float f);
+	Matrix3f& operator*=(float scale);
+	Matrix3f& operator/=(float scale);
 	
+	Matrix3f& operator+=(const Matrix3f& m);
+	Matrix3f& operator-=(const Matrix3f& m);
 	Matrix3f& operator*=(const Matrix3f& m);
 	Matrix3f& operator/=(const Matrix3f& m);
+
+	friend Matrix3f operator+(float f, const Matrix3f& m2);
+	friend Matrix3f operator-(float f, const Matrix3f& m2);
+	friend Matrix3f operator*(float scale, const Matrix3f& m2);
+	friend Matrix3f operator/(float scale, const Matrix3f& m2);
 	
+	friend Matrix3f operator+(const Matrix3f& m1, float f);
+	friend Matrix3f operator-(const Matrix3f& m1, float f);
+	friend Matrix3f operator*(const Matrix3f& m1, float scale);
+	friend Matrix3f operator/(const Matrix3f& m1, float scale);
+
+	friend Matrix3f operator+(const Matrix3f& m1, const Matrix3f& m2);
+	friend Matrix3f operator-(const Matrix3f& m1, const Matrix3f& m2);
 	friend Matrix3f operator*(const Matrix3f& m1, const Matrix3f& m2);
 	friend Matrix3f operator/(const Matrix3f& m1, const Matrix3f& m2);
 
@@ -142,6 +162,9 @@ namespace EMAN {
 	friend bool operator!=(const Matrix3f& m1, const Matrix3f& m2);
 	
     private:
+	Matrix3f(gsl_matrix* m);
+	gsl_matrix* get_gsl_matrix() const;
+	
 	gsl_matrix* matrix;
     };
 
@@ -155,19 +178,39 @@ namespace EMAN {
 	Matrix4f& mult_right(const Matrix4f& m);
 	Matrix4f& mult_left(const Matrix4f& m);
 	
-	void set_value(int dim, float m[]);
-	void set_element(int i, int j, float v);
-	
 	void make_identity();
 	
-	void get_value(float m[]) const;
-
+	void set_values(float m[]);
+	void set_element(int i, int j, float v);
+	
+	void get_values(float m[]) const;
+	float get_element(int i, int j) const;
+	
 	void inverse();
 	Matrix4f create_inverse();
+
+	Matrix4f& operator+=(float f);
+	Matrix4f& operator-=(float f);
+	Matrix4f& operator*=(float scale);
+	Matrix4f& operator/=(float scale);
 	
+	Matrix4f& operator+=(const Matrix4f& m);
+	Matrix4f& operator-=(const Matrix4f& m);
 	Matrix4f& operator*=(const Matrix4f& m);
 	Matrix4f& operator/=(const Matrix4f& m);
+
+	friend Matrix4f operator+(float f, const Matrix4f& m2);
+	friend Matrix4f operator-(float f, const Matrix4f& m2);
+	friend Matrix4f operator*(float scale, const Matrix4f& m2);
+	friend Matrix4f operator/(float scale, const Matrix4f& m2);
 	
+	friend Matrix4f operator+(const Matrix4f& m1, float f);
+	friend Matrix4f operator-(const Matrix4f& m1, float f);
+	friend Matrix4f operator*(const Matrix4f& m1, float scale);
+	friend Matrix4f operator/(const Matrix4f& m1, float scale);
+
+	friend Matrix4f operator+(const Matrix4f& m1, const Matrix4f& m2);
+	friend Matrix4f operator-(const Matrix4f& m1, const Matrix4f& m2);
 	friend Matrix4f operator*(const Matrix4f& m1, const Matrix4f& m2);
 	friend Matrix4f operator/(const Matrix4f& m1, const Matrix4f& m2);
 
@@ -175,6 +218,9 @@ namespace EMAN {
 	friend bool operator!=(const Matrix4f& m1, const Matrix4f& m2);
 	
     private:
+	Matrix4f(gsl_matrix* m);
+	gsl_matrix* get_gsl_matrix() const;
+	
 	gsl_matrix* matrix;
     };
     
