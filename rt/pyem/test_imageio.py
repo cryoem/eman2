@@ -10,6 +10,12 @@ import os
 
 class TestHdfIO(unittest.TestCase):
 
+    def test_read_image(self):
+        imgfile = "test_read_image.h5"
+        TestUtil.make_image_file(imgfile, HDF)
+		
+
+
 	def test_write_image(self):
 		imgfile1 = "test_write_image_1.mrc"
 		imgfile2 = "test_write_image_2.mrc"
@@ -28,7 +34,7 @@ class TestHdfIO(unittest.TestCase):
 		e3 = EMData()
 		e3.read_image(imgfile3)
 
-		outfile = "test_write_image_out.hdf"
+		outfile = "test_write_image_out.h5"
 		e1.write_image(outfile, 0)
 		e2.write_image(outfile, 1)
 		e3.write_image(outfile, 2)
@@ -36,7 +42,9 @@ class TestHdfIO(unittest.TestCase):
 		os.unlink(imgfile1)
 		os.unlink(imgfile2)
 		os.unlink(imgfile3)
-		
+
+		os.unlink(outfile)
+        
 
 class TestMrcIO(unittest.TestCase):
     
@@ -111,9 +119,10 @@ class TestMrcIO(unittest.TestCase):
         fft = e.do_fft()
         fft.write_image(imgfile2)
 
+
         self.assertEqual(TestUtil.verify_image_file(imgfile2, MRC, EM_FLOAT_COMPLEX,
-                                                 e.get_xsize(), e.get_ysize(),
-                                                 e.get_zsize()), 0)
+                                                    e.get_xsize(), e.get_ysize(),
+                                                    e.get_zsize()), 0)
         
         os.unlink(imgfile1)
         os.unlink(imgfile2)
@@ -283,11 +292,8 @@ class TestImagicIO(unittest.TestCase):
         os.unlink(imgfile1)
         os.unlink(insertfile)
 
-        
 
-class TestImageIO(unittest.TestCase):
-
-
+class TestEmIO(unittest.TestCase):        
 
     def test_emio_write(self):
         infile = "test_emio_write_in.mrc"
@@ -301,13 +307,18 @@ class TestImageIO(unittest.TestCase):
 
         os.unlink(infile)
         os.unlink(outfile)
+        testlib.unlink_data_header_files(outfile)
         
+
+class TestImageIO(unittest.TestCase):
+
+
         
     def test_emdata_overwriting(self):
         imgfile1 = "test_emdata_overwriting_1.mrc"
         imgfile2 = "test_emdata_overwriting_2.mrc"
-        TestUtil.make_image_file(imgfile1, MRC, 16,32,2)
-        TestUtil.make_image_file(imgfile2, MRC, 32, 24)
+        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, 16,32,2)
+        TestUtil.make_image_file(imgfile2, MRC, EM_FLOAT, 32, 24)
 
         a=EMData()
         b=EMData()
@@ -328,9 +339,6 @@ class TestImageIO(unittest.TestCase):
         e.write_image(outfile)
         os.unlink(outfile)
         
-    def test_badregion(self):
-        pass
-         
     def create_dummy_region(self,e):
         nx = e.get_xsize()
         ny = e.get_ysize()
@@ -375,9 +383,10 @@ class TestImageIO(unittest.TestCase):
 
          e = EMData()
          e.read_image(imgfile, 0, False, None, is_3d)
-         
+     
          TestUtil.check_image(imgfile, e)
-         testlib.unlink_data_header_files(imgfile)    
+         
+         #testlib.unlink_data_header_files(imgfile)    
          
          (region_2d, region_3d) = self.create_dummy_region(e)
 
@@ -392,13 +401,14 @@ class TestImageIO(unittest.TestCase):
              e4.read_image(imgfile, 0, False, region_3d, is_3d)
              e4.write_image(readfile_3d, 0, outtype)
              TestUtil.check_image(readfile_3d, e4)
-         
+
+         # check for imagic file type, which need to remove the pairs
          testlib.safe_unlink(readfile_2d)
          testlib.unlink_data_header_files(readfile_2d)
          testlib.safe_unlink(readfile_3d)
          testlib.unlink_data_header_files(readfile_3d)
 
-            
+
     def region_write_test(self, imgtype, imgfile, outtype = None):
         if not outtype:
             outtype = imgtype
@@ -407,7 +417,6 @@ class TestImageIO(unittest.TestCase):
         if imgtype == IMAGIC:
             is_3d = True
 
-        imgfile = imgfile
         imgbase = Util.remove_filename_ext(imgfile)
         ext = Util.get_filename_ext(imgfile)
         writefile_2d = imgbase + "_write_region_2d." + ext
@@ -456,19 +465,28 @@ class TestImageIO(unittest.TestCase):
         self.region_read_test(imgtype, imgfile, outtype)
         self.region_write_test(imgtype, imgfile, outtype)
         
+        
     def test_mrcio_region(self):
         mrc2d = "test_mrcio_region_2d.mrc"
         mrc3d = "test_mrcio_region_3d.mrc"
-        TestUtil.make_image_file(mrc2d, 32,64)
-        TestUtil.make_image_file(mrc3d, 32,32,24)        
+        TestUtil.make_image_file(mrc2d, MRC, EM_FLOAT, 32,64)
+        TestUtil.make_image_file(mrc3d, MRC, EM_FLOAT, 32,32,12)        
         self.region_read_write_test(MRC, mrc2d)
         self.region_read_write_test(MRC, mrc3d)
         os.unlink(mrc2d)
         os.unlink(mrc3d)
 
     def test_imagicio_region(self):
-        self.region_read_write_test(IMAGIC, "start.hed")
+        infile = "test_imagicio_region_11.hed"
+        TestUtil.make_image_file(infile, IMAGIC, EM_FLOAT, 32,32,64)
+        self.region_read_write_test(IMAGIC, infile)
 
+        (hedfile1, imgfile1) = testlib.get_imagic_filename_pair(infile)
+        os.unlink(hedfile1)
+        os.unlink(imgfile1)
+        
+        
+"""
     def test_spiderio_region(self):
         self.region_read_write_test(SINGLE_SPIDER, "spider-single.spi")
         self.region_read_write_test(SPIDER, "spider-stack.spi")
@@ -487,11 +505,12 @@ class TestImageIO(unittest.TestCase):
 
     def test_xplorio_region(self):
         self.region_read_write_test(XPLOR, "2f.xplor")
-
+"""
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestHdfIO, TestMrcIO, TestImagicIO, TestImageIO)
+    #test_support.run_unittest(TestHdfIO, TestMrcIO, TestImagicIO, TestImageIO)
+    test_support.run_unittest(TestImageIO)
 
 if __name__ == '__main__':
     test_main()

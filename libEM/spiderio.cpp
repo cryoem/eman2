@@ -7,6 +7,7 @@
 #include "portable_fileio.h"
 #include "emutil.h"
 #include "Assert.h"
+#include "util.h"
 
 using namespace EMAN;
 
@@ -61,8 +62,15 @@ void SpiderIO::init()
 			throw ImageReadException(filename, "invalid SPIDER");
 		}
 
-		int nslice = static_cast < int >(first_h->nslice);
-		is_big_endian = ByteOrder::is_data_big_endian(&nslice);
+		float nslice = first_h->nslice;
+		
+		if (Util::goodf(&nslice) && nslice > 0 && nslice < 10000 && nslice == floor(nslice)) {
+			is_big_endian = ByteOrder::is_host_big_endian();
+		}
+		else {
+			is_big_endian = ! ByteOrder::is_host_big_endian();
+		}
+		
 		become_host_endian((float *) first_h, NUM_FLOATS_IN_HEADER);
 		
 		if (first_h->istack == SINGLE_IMAGE_HEADER && rw_mode == WRITE_ONLY) {
@@ -74,7 +82,6 @@ void SpiderIO::init()
 	}
 
 	EXITFUNC;
-
 }
 
 bool SpiderIO::is_valid_spider(const void *first_block)
@@ -92,14 +99,17 @@ bool SpiderIO::is_valid(const void *first_block)
 	}
 	else {
 		const float *data = static_cast < const float *>(first_block);
-		int nslice = static_cast < int >(data[0]);
-		int type = static_cast < int >(data[4]);
-		int ny = static_cast < int >(data[1]);
-		int istack = static_cast < int >(data[23]);
-
-		bool data_big_endian = ByteOrder::is_data_big_endian(&nslice);
-
-		if (data_big_endian != ByteOrder::is_host_big_endian()) {
+		float nslice = data[0];
+		float type = data[4];
+		float ny = data[1];
+		float istack = data[23];
+		bool swap = true;
+		
+		if (Util::goodf(&nslice) && nslice > 0 && nslice < 10000.0 && nslice == floor(nslice)) {
+			swap = false;
+		}
+		
+		if (swap) {
 			ByteOrder::swap_bytes(&nslice);
 			ByteOrder::swap_bytes(&type);
 			ByteOrder::swap_bytes(&ny);

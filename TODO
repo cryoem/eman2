@@ -55,11 +55,6 @@
 
   085. e2proc2d seems not working.
 
-  086. file extension somewhere is "img"/"hed". but somewhere it is ".img"/
-       ".hed". make them consistent.
-	     
-  090. ImageIO caching causes memory leak or memory not freed. Need a
-       better way to handle this.
   
 --- Low Priority ---
 
@@ -332,6 +327,10 @@
   1/10/05 083. 
        add a new EMObject wrapper around vector<string> type.
 
+  2/10/05 086
+       file extension somewhere is "img"/"hed". but somewhere it is ".img"/
+       ".hed". make them consistent.
+	     
   2/20/05 088. 
        add typeconverter method to convert multi_array from c++ to python.
 
@@ -339,7 +338,9 @@
        convert EMObject to its native type in python side. so a C++
        EMObject(100) will be integer 100 in python.
 
-	   
+  2/24/05 090	   
+       ImageIO caching causes memory leak or memory not freed. Need a
+       better way to handle this.
   
   	   
 	   

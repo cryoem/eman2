@@ -27,10 +27,10 @@ def unlink_data_header_files(filename):
     ext = Util.get_filename_ext(base)
     if ext == IMAGIC_HED_EXT:
         datafile = Util.change_filename_ext(base, IMAGIC_IMG_EXT)
-        safe_unlink(datafile)
+        #safe_unlink(datafile)
     elif ext == IMAGIC_IMG_EXT:
         hedfile = Util.change_filename_ext(base, IMAGIC_HED_EXT)
-        safe_unlink(hedfile)
+        #safe_unlink(hedfile)
         
 
 def get_list(typename):
