@@ -348,15 +348,15 @@ namespace EMAN {
 	
     public:
 	Transform() { }
-
+	
 	Transform(const Matrix4f& m) {  matrix = m; }
 
-	Transform(const Rotation& r) { matrix = r.get_matrix4(); }
+	Transform(const Rotation& rotation) { matrix = rotation.get_matrix4(); }
 
-	Transform(const Matrix3f& m) { matrix = Matrix4f(m); }
-
-	Transform(const Matrix3f& rotate_m, const Vec3f& t)
+	Transform(const Rotation& rotation, const Vec3f& post_translation)
 	{
+	    Matrix3f rotate_m = rotation.get_matrix3();
+	    
 	    for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 		    matrix[i][j] = rotate_m[i][j];
@@ -364,7 +364,7 @@ namespace EMAN {
 	    }
 	    
 	    for (int i = 0; i < 3; i++) {
-		matrix[i][3] = t[i];
+		matrix[i][3] = post_translation[i];
 	    }
 	}
 	
@@ -459,6 +459,23 @@ namespace EMAN {
 	    return (*this);
 	}
 
+	Transform& rotate_center(const Rotation& r, const Vec3f center)
+	{
+	    translate(-1.0 * center);
+	    rotate(r);
+	    translate(center);
+	    return (*this);
+	}
+
+	Transform& rotate_scale(const Rotation& rotation,
+				const Vec3f& scale_factor,
+				const Vec3f& center)
+	{
+	    scale(scale_factor);
+	    rotate_center(rotation, center);
+	    return (*this);
+	}
+	
 	Transform& pre_translate_rotate(const Vec3f t, const Rotation& r)
 	{
 	    translate(t);
@@ -473,30 +490,14 @@ namespace EMAN {
 	    return (*this);
 	}
 
-	Transform& translate_rotate_translate(const Rotation& r, const Vec3f t)
-	{
-	    translate(-1.0 * t);
-	    rotate(r);
-	    translate(t);
-	    return (*this);
-	}
-
-	// pre-translate, rotate, scale on post-translate
-	Transform& rotate_scale(const Rotation& r, const Vec3f& t,  const Vec3f& s)
-	{
-	    translate_rotate_translate(r, t);
-	    scale(s);
-	    return (*this);
-	}
-	
 	// Concatenates this transform with a scaling transformation.
-	Transform& scale(const Vec3f& scales)
+	Transform& scale(const Vec3f& scale_factor)
 	{
-	    if (scales != Vec3f(1, 1, 1)) {
+	    if (scale_factor != Vec3f(1, 1, 1)) {
 		Matrix4f m;
 		m.make_identity();
 		for (int i = 0; i < 3; i++) {
-		    m[i][i] = scales[i];
+		    m[i][i] = scale_factor[i];
 		}
 		matrix *= m;
 	    }
