@@ -51,11 +51,10 @@ namespace EMAN
 			 bool header_only = false);
 
 	int filter(string filtername, const Dict & params = Dict());
-
 	float cmp(string cmpname, const Dict & params);
-
 	EMData *align(string aligner_name, const Dict & params, string comp_name = "");
-
+	EMData *project(string projector_name, const Dict & params);
+	
 	EMData *copy(bool withfft = false, bool withparent = true);
 	EMData *copy_head();
 
