@@ -66,8 +66,18 @@ namespace EMAN
 	virtual ~Reconstructor()
 	{
 	}
+
+	/** initialize the reconstructor
+	 */
 	virtual int setup() = 0;
+	
+	/** insert each image slice to the reconstructor. You may call
+	 * this function multiple times.
+	 */
 	virtual int insert_slice(EMData * slice, const Rotation & euler) = 0;
+
+	/** finish reconstruction and return the complete model.
+	 */
 	virtual EMData *finish() = 0;
 
 	virtual string get_name() const = 0;

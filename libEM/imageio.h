@@ -24,7 +24,7 @@ namespace EMAN
      * A subclass should implement functions declared in
      * DEFINE_IMAGEIO_FUNC macro.
      *
-     * Image header and data read/write are separated.
+     * Image header I/O is separated from image data I/O.
      * 
      * valid image_index = [0, n]
      */
