@@ -90,12 +90,20 @@ Processes a tomographic tilt series"""
 	nimg=EMUtil.get_image_count(args[0])
 	if (nimg<3) : parser.error("Input file must contain at least 3 images")
 	
+	# copy the file with possible format conversion
+	Log.logger().set_level(Log.LogLevel.VARIABLE_LOG)
+	for i in range(nimg):
+		a=EMData()
+		a.read_image(args[0],i)
+		a.write_image(args[1],i)
+		
+	
 	cmplist=[(x,x+1) for x in range(nimg/2,nimg-1)]+[(x,x-1) for x in range(nimg/2,0,-1)]
 	for i in cmplist:
 		im1=EMData()
-		im1.read_image(args[0],i[0])
+		im1.read_image(args[1],i[0])
 		im2=EMData()
-		im2.read_image(args[0],i[1])
+		im2.read_image(args[1],i[1])
 		
 		vec=matrixalign(im1,im2,64,64+options.maxshift*2)
 		
@@ -110,10 +118,6 @@ Processes a tomographic tilt series"""
 		print i,best
 		im2.rotate_translate(0,0,0,best[0],best[1],0)
 		im2.write_image(args[1],i[1])
-		
-	im1=EMData()
-	im1.read_image(args[0],nimg/2)
-	im1.write_image(args[1],nimg/2)
-	
+			
 if __name__ == "__main__":
     main()
