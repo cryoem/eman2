@@ -15,8 +15,6 @@ using namespace EMAN;
 
 int TestUtil::ti[] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
 float TestUtil::tf[] = {1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5};
-const char *TestUtil::ts[] = {"aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh", "ii", "jj"};
-
 
 int TestUtil::get_debug_int(int i)
 {
@@ -28,9 +26,11 @@ float TestUtil::get_debug_float(int i)
 	return tf[i];
 }
 
-const char* TestUtil::get_debug_string(int i)
+string TestUtil::get_debug_string(int i)
 {
-	return ts[i];
+	char a[32];
+	sprintf(a, "%d%d", i+1, i+1);
+	return string(a);
 }
 
 const char* TestUtil::get_debug_image(const char* imagename)
@@ -142,3 +142,147 @@ Vec3f TestUtil::test_Vec3f(const Vec3f & p)
 	printf("Vec3f p = (%f, %f, %f)\n", p[0], p[1], p[2]);
 	return Vec3f(tf[0], tf[1], tf[2]);
 }
+
+
+map<string, int> TestUtil::test_map_int(const map<string, int>& d)
+{
+	map<string, int> r;
+	map<string, int>::const_iterator p;
+	for (p = d.begin(); p != d.end(); p++) {
+		printf("map[\"%s\"] = %d; ", p->first.c_str(), p->second);
+		r[p->first] = p->second;
+	}
+	printf("\n");
+	return r;
+}
+
+map<string, long> TestUtil::test_map_long(const map<string, long>& d)
+{
+	map<string, long> r;
+	map<string, long>::const_iterator p;
+	for (p = d.begin(); p != d.end(); p++) {
+		printf("map[\"%s\"] = %d; ", p->first.c_str(), p->second);
+		r[p->first] = p->second;
+	}
+	printf("\n");
+	return r;
+}
+
+map<string, float> TestUtil::test_map_float(const map<string, float>& d)
+{
+	map<string, float> r;
+	map<string, float>::const_iterator p;
+	for (p = d.begin(); p != d.end(); p++) {
+		printf("map[\"%s\"] = %f; ", p->first.c_str(), p->second);
+		r[p->first] = p->second;
+	}
+	printf("\n");
+	return r;
+}
+
+map<string, string> TestUtil::test_map_string(const map<string, string>& d)
+{
+	map<string, string> r;
+	map<string, string>::const_iterator p;
+	for (p = d.begin(); p != d.end(); p++) {
+		printf("map[\"%s\"] = %s; ", p->first.c_str(), p->second.c_str());
+		r[p->first] = p->second;
+	}
+	printf("\n");
+	return r;
+}
+
+map<string, EMObject> TestUtil::test_map_emobject(const map<string, EMObject>& d)
+{
+	map<string, EMObject> r;
+	map<string, EMObject>::const_iterator p;
+	for (p = d.begin(); p != d.end(); p++) {
+		printf("map[\"%s\"] = %f; ", p->first.c_str(), (float)(p->second));
+		r[p->first] = EMObject((float)p->second);
+	}
+	printf("\n");
+	return r;
+}
+
+map<string, vector<string> > TestUtil::test_map_vecstring(const map<string,
+														  vector<string> >& d)
+{
+	map<string, vector<string> > r;
+	return r;
+}
+
+
+vector<int> TestUtil::test_vector_int(const vector<int> & v)
+{
+	vector<int> r;
+	for (size_t i = 0; i < v.size(); i++) {
+		printf("v[%d]=%d; ", i, v[i]);
+		assert(v[i] == ti[i]);
+		r.push_back(v[i]);
+	}
+	printf("\n");
+	return r;
+}
+
+vector<float> TestUtil::test_vector_float(const vector<float> & v)
+{
+	vector<float> r;
+	for (size_t i = 0; i < v.size(); i++) {
+		printf("v[%d]=%f; ", i, v[i]);
+		assert(v[i] == tf[i]);
+		r.push_back(v[i]);
+	}
+	printf("\n");
+	return r;
+}
+
+vector<long> TestUtil::test_vector_long(const vector<long> & v)
+{
+	vector<long> r;
+	for (size_t i = 0; i < v.size(); i++) {
+		printf("v[%d]=%d; ", i, (int)v[i]);
+		assert((int)v[i] == ti[i]);
+		r.push_back(v[i]);
+	}
+	printf("\n");
+	return r;
+}
+
+vector<string> TestUtil::test_vector_string(const vector<string> & v)
+{
+	vector<string> r;
+	for (size_t i = 0; i < v.size(); i++) {
+		printf("v[%d]=%s; ", i, v[i].c_str());
+		r.push_back(v[i]);
+	}
+	printf("\n");
+	return r;
+}
+
+vector<EMData*> TestUtil::test_vector_emdata(const vector<EMData*> & v)
+{
+	vector<EMData*> r;
+	for (size_t i = 0; i < v.size(); i++) {
+		EMData * e = v[i];
+		printf("Image(%d,%d,%d);", e->get_xsize(), e->get_ysize(), e->get_zsize());
+		r.push_back(v[i]);
+	}
+	printf("\n");
+	return r;
+}
+
+vector<Pixel> TestUtil::test_vector_pixel(const vector<Pixel> & v)
+{
+	vector<Pixel> r;
+	return r;
+}
+
+
+
+
+
+
+
+
+
+
