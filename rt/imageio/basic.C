@@ -48,7 +48,7 @@ int test_emcache()
 	sprintf(name, "name%d", i);
 
 	float* f = new float(i);
-	em->add(name, f);
+	em->add(string(name), f);
 
 	float* f1 = em->get(name);
 	assert(f == f1);

@@ -303,8 +303,8 @@ int test_lst()
     delete d;
     d = 0;
 
-    for (int i = 0; i < 5; i++) {
-	pass_test("lst1.lst", i);
+    for (int k = 0; k < 5; k++) {
+	pass_test("lst1.lst", k);
     }
 
     pass_test("cls0000.lst", 0);
