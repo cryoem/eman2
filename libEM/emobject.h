@@ -69,9 +69,6 @@ namespace EMAN
 	    xydata = 0;
 	}
 
-	EMObject(bool bb) : b(bb), type(BOOL)
-	{
-	}
 	EMObject(int num) : n(num), type(INT)
 	{
 	}
@@ -97,208 +94,29 @@ namespace EMAN
 	{
 	}
 
+	EMObject(bool bb) : n(bb), type(BOOL)
+	{
+	}
+	
 	~EMObject() {
 	}
 
-	operator bool() const
-	{
-	    if (type == BOOL) {
-		return b;
-	    }
-	    else if (type == INT) {
-		return (bool)n;
-	    }
-	    else {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot convert to bool from data type '%s'",
-					 get_object_type_name(type));
-		}
-	    }
-	    return false;
-	}
+	operator bool() const;	
+	operator int() const;
+	operator float() const;
+	operator double() const;
+	operator const char*() const;
+	operator EMData*() const;
+	operator XYData*() const;
+
+	vector<float> get_farray() const;
+	bool is_null() const;
+	string to_str() const;
+	static const char *get_object_type_name(ObjectType t);
 	
-	operator int() const
-	{
-	    if (type == INT) {
-		return n;
-	    }
-	    else if (type == FLOAT) {
-		return (int) f;
-	    }
-	    else if (type == DOUBLE) {
-		return (int) d;
-	    }
-	    else {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot convert to int from data type '%s'",
-					 get_object_type_name(type));
-		}
-	    }
-	    return 0;
-	}
-
-	operator float() const
-	{
-	    if (type == FLOAT) {
-		return f;
-	    }
-	    else if (type == INT) {
-		return (float) n;
-	    }
-	    else if (type == DOUBLE) {
-		return (float) d;
-	    }
-	    else {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot convert to float from data type '%s'",
-					 get_object_type_name(type));
-		}
-	    }
-
-	    return 0;
-	}
-
-	operator double() const
-	{
-	    if (type == DOUBLE) {
-		return d;
-	    }
-	    else if (type == INT) {
-		return (double) n;
-	    }
-	    else if (type == FLOAT) {
-		return (double) f;
-	    }
-	    else {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot convert to double from data type '%s'",
-					 get_object_type_name(type));
-		}
-	    }
-	    return 0;
-	}
-
-	operator const char*() const
-	{
-	    if (type != STRING) {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot conver to string from data type '%s'",
-					 get_object_type_name(type));
-		}
-		return "";
-	    }
-	    return str.c_str();
-	}
-
-	operator EMData*() const
-	{
-	    if (type != EMDATA) {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot convert to EMData* from data type '%s'",
-					 get_object_type_name(type));
-		}
-		return 0;
-	    }
-	    return emdata;
-	}
-
-	operator XYData*() const
-	{
-	    if (type != XYDATA) {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot convert to XYData* data type '%s'",
-					 get_object_type_name(type));
-		}
-		return 0;
-	    }
-	    return xydata;
-	}
-
-	vector<float> get_farray() const
-	{
-	    if (type != FLOATARRAY) {
-		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_farray for data type '%s'",
-					 get_object_type_name(type));
-		}
-		return vector<float> ();
-	    }
-	    return farray;
-	}
-
-	bool is_null() const
-	{
-	    return (type == UNKNOWN);
-	}
-
-	string to_str() const
-	{
-	    if (type == STRING) {
-		return str;
-	    }
-	    else {
-		char tmp_str[32];
-
-		if (type == BOOL) {
-		    if (b == false) {
-			sprintf(tmp_str, "false");
-		    }
-		    else {
-			sprintf(tmp_str, "true");
-		    }
-		}
-		else if (type == INT) {
-		    sprintf(tmp_str, "%d", n);
-		}
-		else if (type == FLOAT) {
-		    sprintf(tmp_str, "%f", f);
-		}
-		else if (type == DOUBLE) {
-		    sprintf(tmp_str, "%f", d);
-		}
-		else if (type == EMDATA) {
-		    sprintf(tmp_str, "EMDATA");
-		}
-		else if (type == XYDATA) {
-		    sprintf(tmp_str, "XYDATA");
-		}
-		else {
-		    sprintf(tmp_str, "Unknown");
-		}
-		return string(tmp_str);
-	    }
-	}
-	
-	static const char *get_object_type_name(ObjectType t)
-	{
-	    switch (t) {
-	    case BOOL:
-		return "BOOLEAN";
-	    case INT:
-		return "INT";
-	    case FLOAT:
-		return "FLOAT";
-	    case DOUBLE:
-		return "DOUBLE";
-	    case STRING:
-		return "STRING";
-	    case EMDATA:
-		return "EMDATA";
-	    case XYDATA:
-		return "XYDATA";
-	    case FLOATARRAY:
-		return "FLOATARRAY";
-	    case UNKNOWN:
-		return "UNKNOWN";
-	    }
-
-	    return "UNKNOWN";
-	}
-
     private:
 	union
 	{
-	    bool b;
 	    int n;
 	    float f;
 	    double d;

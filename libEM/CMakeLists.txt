@@ -1,4 +1,5 @@
 SET(LIB_EM_SOURCE byteorder.cpp
+    emobject.cpp
     emfft.cpp
     log.cpp
     imageio.cpp
