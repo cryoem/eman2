@@ -36,6 +36,8 @@ namespace EMAN
 	typedef boost::multi_array_ref<float, 3> MArray3D;
 	typedef boost::multi_array_ref<complex<float>, 2> MCArray2D;
 	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
+	typedef boost::multi_array_ref<int, 2> MIArray2D;
+	typedef boost::multi_array_ref<int, 3> MIArray3D;
 	enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
 	enum WINDOWPLACE { WINDOW_OUT_OF_PLACE, WINDOW_IN_PLACE };
 
@@ -1301,6 +1303,37 @@ namespace EMAN
 												  int img_index_end,
 												  bool header_only = false,
 												  const string & ext = "");
+
+
+		/** Helper function for method nn.
+		 *
+		 * @param j y fourier index (frequency)
+		 * @param n number of real elements.
+		 * @param n2 Number of complex elements.
+		 * @param x  Complex matrix of [0:n2][1:n][1:n]
+		 * @param nr Normalization matrix [0:n2][1:n][1:n]
+		 * @param bi Fourier transform matrix [0:n2][1:n]
+		 * @param dm0 Transform array.
+		 * @return The set of images read from filename.
+		 */
+		static void onelinenn(int j, int n, int n2, MCArray3D& x,
+				              MIArray3D& nr, MCArray2D& bi, float* dm0);
+
+		/** Nearest Neighbor interpolation.
+		 *  Modifies the current object.
+		 *
+		 * @param norm Normalization data.
+		 * @param myfft FFT data.
+		 * @param dms Transformation matrix
+		 */
+		void nn(MIArray3D& norm, EMData* myfft, float* dms);
+
+		/** Symmetrize plane 0
+		 *  Modifies the current object.
+		 *
+		 * @param norm Normalization data.
+		 */
+		void symplane0(MIArray3D& norm);
 
 
 	private:

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <boost/array.hpp>
 #include <iostream>
+#include <complex>
 
 #ifdef WIN32
 #define M_PI 3.14159265358979323846f
@@ -631,6 +632,116 @@ EMData *EMData::get_top_half() const
 	return half;
 }
 
+void
+EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
+		          MIArray3D& nr, MCArray2D& bi, float* dm0) {
+	int jp = (j >= 0) ? j+1 : n+j+1;
+	// want dm to start at index 1
+	float* dm = dm0 - 1;
+	// loop over x
+	for (int i = 0; i <= n2; i++) {
+		if (((i*i+j*j) < n*n/4) && !((0 == i) and (j < 0))) {
+			float xnew = i*dm[1] + j*dm[4];
+			float ynew = i*dm[2] + j*dm[5];
+			float znew = i*dm[3] + j*dm[6];
+			complex<float> btq;
+			if (xnew < 0.) {
+				xnew = -xnew;
+				ynew = -ynew;
+				znew = -znew;
+				btq = conj(bi[i][jp]);
+			} else {
+				btq = bi[i][jp];
+			}
+			int ixn = int(xnew + 0.5 + n) - n;
+			int iyn = int(ynew + 0.5 + n) - n;
+			int izn = int(znew + 0.5 + n) - n;
+			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)
+				            && (izn >= -n2) && (izn <= n2)) {
+				if (ixn >= 0) {
+					int iza, iya;
+					if (izn >= 0) {
+						iza = izn + 1;
+					} else {
+						iza = n + izn + 1;
+					}
+					if (iyn >= 0) {
+						iya = iyn + 1;
+					} else {
+						iya = n + iyn + 1;
+					}
+					x[ixn][iya][iza] += btq;
+					nr[ixn][iya][iza]++;
+				} else {
+					int izt, iyt;
+					if (izn > 0) {
+						izt = n - izn + 1;
+					} else {
+						izt = -izn + 1;
+					}
+					if (iyn > 0) {
+						iyt = n - iyn + 1;
+					} else {
+						iyt = -iyn + 1;
+					}
+					x[-ixn][iyt][izt] += conj(btq);
+					nr[-ixn][iyt][izt]++;
+				}
+			}
+
+		}
+	}
+}
+
+void
+EMData::nn(MIArray3D& nr, EMData* myfft, float* dms) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"];
+	int n = nxc*2;
+	// let's treat nr, bi, and local data as matrices
+	MCArray3D x = get_3dcview(0,1,1);
+	MCArray2D bi = myfft->get_2dcview(0,1);
+	// loop over frequencies in y
+	for (int iy = -nxc + 1; iy <= nxc; iy++) {
+		onelinenn(iy, n, nxc, x, nr, bi, dms);
+	}
+	EXITFUNC;
+}
+
+void
+EMData::symplane0(MIArray3D& w) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"];
+	int n = nxc*2;
+	// let's treat the local data as a matrix
+	MCArray3D x = get_3dcview(0,1,1);
+	for (int iza = 2; iza <= nxc; iza++) {
+		for (int iya = 2; iya <= nxc; iya++) {
+			x[0][iya][iza] += conj(x[0][n-iya+2][n-iza+2]);
+			w[0][iya][iza] += w[0][n-iya+2][n-iza+2];
+			x[0][n-iya+2][n-iza+2] = conj(x[0][iya][iza]);
+			w[0][n-iya+2][n-iza+2] = w[0][iya][iza];
+			x[0][n-iya+2][iza] += conj(x[0][iya][n-iza+2]);
+			w[0][n-iya+2][iza] += w[0][iya][n-iza+2];
+			x[0][iya][n-iza+2] = conj(x[0][n-iya+2][iza]);
+			w[0][iya][n-iza+2] = w[0][n-iya+2][iza];
+		}
+	}
+	for (int iya = 2; iya <= nxc; iya++) {
+		x[0][iya][1] += conj(x[0][n-iya+2][1]);
+		w[0][iya][1] += w[0][n-iya+2][1];
+		x[0][n-iya+2][1] = conj(x[0][iya][1]);
+		w[0][n-iya+2][1] = w[0][iya][1];
+	}
+	for (int iza = 2; iza <= nxc; iza++) {
+		x[0][1][iza] += conj(x[0][1][n-iza+2]);
+		w[0][1][iza] += w[0][1][n-iza+2];
+		x[0][1][n-iza+2] = conj(x[0][1][iza]);
+		w[0][1][n-iza+2] = w[0][1][iza];
+	}
+	EXITFUNC;
+}
+
 EMData* EMData::windum(int l, int lsd, int n, WINDOWPLACE windowplace) {
 	ENTERFUNC;
 	typedef MArray3D::index_range range;
@@ -706,7 +817,6 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	int start = (nxpad - nx)/2 + nx%2;
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
-			//memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
 			memcpy(&dest[start][iy+start][iz], &src[0][iy][iz], bytes);
 		}
 	}
