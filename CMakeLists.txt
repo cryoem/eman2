@@ -56,11 +56,11 @@ IF (ENABLE_FFTW2)
 
   FIND_LIBRARY(FFTW_LIBRARY
              NAMES sfftw 
-             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib64 /usr/lib /usr/local/lib)
 
   FIND_LIBRARY(RFFTW_LIBRARY
              NAMES srfftw
-             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib64 /usr/lib /usr/local/lib)
 
   IF(FFTW_LIBRARY AND RFFTW_LIBRARY)
   ELSE(FFTW_LIBRARY AND RFFTW_LIBRARY)
@@ -72,7 +72,7 @@ ELSE (ENABLE_FFTW2)
 
   FIND_LIBRARY(FFTW_LIBRARY
              NAMES fftw3f
-             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+             PATHS $ENV{FFTWDIR}/lib $ENV{EMANDIR}/lib $ENV{HOME}/lib /usr/lib64 /usr/lib /usr/local/lib)
 
   IF(FFTW_LIBRARY)
   ELSE(FFTW_LIBRARY)
@@ -92,12 +92,12 @@ FIND_PATH(GSL_INCLUDE_PATH gsl/gsl_linalg.h
 FIND_LIBRARY(GSL_LIBRARY
   NAMES gsl
   PATHS $ENV{EMAN2_PREFIX}/lib
-  $ENV{GSLDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+  $ENV{GSLDIR}/lib $ENV{HOME}/lib /usr/lib64 /usr/lib /usr/local/lib)
 
 FIND_LIBRARY(GSL_CBLAS_LIBRARY
   NAMES gslcblas
   PATHS $ENV{EMAN2_PREFIX}/lib
-  $ENV{GSLDIR}/lib $ENV{HOME}/lib /usr/lib /usr/local/lib)
+  $ENV{GSLDIR}/lib $ENV{HOME}/lib /usr/lib64 /usr/lib /usr/local/lib)
 
 IF(GSL_LIBRARY)
 ELSE(GSL_LIBRARY)
@@ -116,7 +116,7 @@ IF (ENABLE_TIFF)
   IF(TIFF_INCLUDE_PATH)
     FIND_LIBRARY(TIFF_LIBRARY
       NAMES tiff
-      PATHS $ENV{HOME}/lib $ENV{HOME}/EMAN/lib /usr/lib /usr/local/lib)
+      PATHS $ENV{HOME}/lib $ENV{HOME}/EMAN/lib /usr/lib64 /usr/lib /usr/local/lib)
     IF(TIFF_LIBRARY)
       ADD_DEFINITIONS(-DEM_TIFF)
       INCLUDE_DIRECTORIES(${TIFF_INCLUDE_PATH})
@@ -136,7 +136,7 @@ IF (ENABLE_HDF)
   IF(HDF_INCLUDE_PATH)
     FIND_LIBRARY(HDF_LIBRARY
       NAMES hdf5
-      PATHS $ENV{HOME}/lib $ENV{HOME}/EMAN/lib /usr/lib /usr/local/lib)
+      PATHS $ENV{HOME}/lib $ENV{HOME}/EMAN/lib /usr/lib64 /usr/lib /usr/local/lib)
     IF(HDF_LIBRARY)
       ADD_DEFINITIONS(-DEM_HDF5)
       INCLUDE_DIRECTORIES(${HDF_INCLUDE_PATH})
@@ -159,7 +159,7 @@ IF (ENABLE_PNG)
   IF(PNG_INCLUDE_PATH)
     FIND_LIBRARY(PNG_LIBRARY
       NAMES png
-      PATHS $ENV{PNGDIR}/lib $ENV{HOME}/lib $ENV{HOME}/EMAN/lib /usr/lib /usr/local/lib)
+      PATHS $ENV{PNGDIR}/lib $ENV{HOME}/lib $ENV{HOME}/EMAN/lib /usr/lib64 /usr/lib /usr/local/lib)
     IF(PNG_LIBRARY)
       ADD_DEFINITIONS(-DEM_PNG)
       INCLUDE_DIRECTORIES(${PNG_INCLUDE_PATH})
@@ -186,7 +186,7 @@ IF(ENABLE_PYTHON)
     NAMES boost_python
     PATHS     $ENV{EMAN2_BOOST_DIST} 
     $ENV{EMAN2_PREFIX}/lib
-    $ENV{HOME}/lib /usr/lib /usr/local/lib)
+    $ENV{HOME}/lib /usr/lib64 /usr/lib /usr/local/lib)
 
   IF(PYTHON_INCLUDE_PATH)
     IF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
