@@ -1,3 +1,7 @@
+/**
+ * $Id
+ */
+
 #ifndef eman__byteorder_h__
 #define eman__byteorder_h__ 1
 
