@@ -15,7 +15,7 @@
       2. Boost python (version 1.30.2+)    (http://www.boost.org)
          (see "NOTE A" on how to install boost python)
       3. Numerc python numarray (1.1.1 +) (http://www.pfdubois.com/numpy)
-		 
+         
     - To read/write HDF5 image, use hdf5 (http://hdf.ncsa.uiuc.edu/HDF5).
 
     - To read TIFF image, use libtiff (http://www.libtiff.org)
@@ -37,11 +37,11 @@
        3) % mkdir build
           % cd build
 
-	   4) % cmake ../eman2
-		  % make
-		  % make install
+       4) % cmake ../eman2
+          % make
+          % make install
 
-		  
+          
 4. Advanced Installation
 ------------------------
 
@@ -50,25 +50,25 @@
    the following steps help:
 
        1) follow the first 3 steps in Quick Installation.
-	   
-	   2) If your libraries are not installed at the default places,
+       
+       2) If your libraries are not installed at the default places,
           set up the related environment variables:
-		    - fftw -> FFTWDIR
-			- gsl  -> GSLDIR
-			- tiff -> TIFFDIR
-			- png  -> PNGDIR
-			- hdf5 -> HDF5DIR
-			- python -> PYTHON_ROOT
-			
+            - fftw -> FFTWDIR
+            - gsl  -> GSLDIR
+            - tiff -> TIFFDIR
+            - png  -> PNGDIR
+            - hdf5 -> HDF5DIR
+            - python -> PYTHON_ROOT
+            
        3) % ccmake ../eman2
-		  - type 'c' if it asks about "CMAKE_BACKWARDS_COMPATIBILITY".
+          - type 'c' if it asks about "CMAKE_BACKWARDS_COMPATIBILITY".
           - make necessary changes for compilation flags.
           - Then type 'c', and type 'g'.
         
        4) % make
-		  % make install
-		  
-		        
+          % make install
+          
+                
 Platform Dependent Optimization 
 -------------------------------
 
@@ -77,7 +77,7 @@ Platform Dependent Optimization
     - Opteron: ENABLE_OPTERON
     - Mac G5:  ENABLE_G5
 
-		  
+          
 How to Generate Latest Documentation
 ------------------------------------
 
@@ -108,7 +108,7 @@ For Developers Only:
        to generate the windows installer.
        It also uses "HM NIS Edit" (http://hmne.sourceforge.net/) as the editor.
 
-	   
+       
 How to Install Boost Python
 ---------------------------
    
@@ -137,19 +137,28 @@ How to Install Boost Python
        1) linux-x86: % bjam
        2) SGI Irix:  % bjam "-sTOOLS=mipspro"
 
-	5. login as root
-	
+    5. login as root
+    
     6. cp -df bin-stage/libboost_python.so* /usr/local/lib
        cd ../../..; cp -rf boost /usr/local/include
 
-	   
+       
 How to Install Numeric Python
 -----------------------------
+    - go to web site http://www.pfdubois.com/numpy
+    - download Numarray release version 1.1.1 or above
+    - for windows, run the binary installer. that's it.
+    - for other platforms, assuming you are installing ver 1.1.1, do:
+        - get source code numarray-1.1.1.tar.gz
+	- gunzip numarray-1.1.1.tar.gz; tar xf numarray-1.1.1.tar
+	- login as root
+	- cd numarray-1.1.1; python setup.py install
+	
+	
 
 
 
 
 
 
-
-	   
+       
