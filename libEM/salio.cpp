@@ -38,13 +38,12 @@ SalIO::~SalIO()
 	}
 }
 
-int SalIO::init()
+void SalIO::init()
 {
 	ENTERFUNC;
 	
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 
 	initialized = true;
@@ -54,23 +53,15 @@ int SalIO::init()
 
 	bool is_new_file = false;
 	sal_file = sfopen(hdr_filename, rw_mode, &is_new_file);
-	if (!sal_file) {
-		err = 1;
-		return err;
-	}
-
 
 	char scan_type[MAXPATHLEN];
-
 	ScanAxis axis = X_SCAN_AXIS;
 
 	if (!is_new_file) {
 		char buf[MAXPATHLEN];
 		if (fgets(buf, MAXPATHLEN, sal_file)) {
 			if (!is_valid(buf)) {
-				LOGERR("'%s' is not a valid SAL file", filename.c_str());
-				err = 1;
-				return err;
+				throw ImageReadException(filename, "ivalid SAL");
 			}
 		}
 
@@ -113,12 +104,8 @@ int SalIO::init()
 	}
 	fclose(sal_file);
 	sal_file = sfopen(img_filename, rw_mode);
-	if (!sal_file) {
-		err = 1;
-		return err;
-	}
+
 	EXITFUNC;
-	return 0;
 }
 
 bool SalIO::is_valid(const void *first_block)
@@ -137,31 +124,24 @@ bool SalIO::is_valid(const void *first_block)
 int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
 	
-	if (check_read_access(image_index) != 0) {
-		err = 1;
-	}
-	else {
-		if (check_region(area, IntSize(nx, ny)) != 0) {
-			err = 1;
-		}
-		else {
-			int xlen = 0, ylen = 0;
-			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
+	check_read_access(image_index);
+	check_region(area, IntSize(nx, ny));
+	
+	int xlen = 0, ylen = 0;
+	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-			dict["nx"] = xlen;
-			dict["ny"] = ylen;
-			dict["nz"] = 1;
-			dict["datatype"] = EMUtil::EM_SHORT;
-			dict["pixel"] = pixel;
-		}
-	}
+	dict["nx"] = xlen;
+	dict["ny"] = ylen;
+	dict["nz"] = 1;
+	dict["datatype"] = EMUtil::EM_SHORT;
+	dict["pixel"] = pixel;
+	
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
-int SalIO::write_header(const Dict &, int, const Region* area, bool)
+int SalIO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("SAL write is not supported.");
@@ -173,12 +153,8 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
-	}
+	check_read_access(image_index, data);
+	check_region(area, IntSize(nx, ny));
 
 	if (scan_mode != NON_RASTER_SCAN) {
 		LOGERR("only NON_RASTER_SCAN scan mode is supported in a SAL image");
@@ -187,7 +163,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	
 	rewind(sal_file);
 
-	size_t mode_size = sizeof(short);
+	int mode_size = (int)sizeof(short);
 	unsigned char *cdata = (unsigned char *) data;
 	short *sdata = (short *) data;
 	size_t row_size = nx * mode_size;
@@ -231,7 +207,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int SalIO::write_data(float *, int, const Region* area, bool)
+int SalIO::write_data(float *, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("SAL write is not supported.");

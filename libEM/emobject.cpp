@@ -2,7 +2,7 @@
 #include "exception.h"
 #include <math.h>
 #ifdef WIN32
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #endif
 
 using namespace EMAN;

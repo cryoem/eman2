@@ -28,7 +28,7 @@ namespace EMAN
 			float r = v / 0.001f;
 			int a = (int) floor(r);
 			r -= a;
-			return -(HYPERGEOM[a] * (1.0 - r) + HYPERGEOM[a + 1] * r);
+			return (float)(-(HYPERGEOM[a] * (1.0 - r) + HYPERGEOM[a + 1] * r));
 		}
 
 		static float *get_gimx()

@@ -26,39 +26,28 @@ IcosIO::~IcosIO()
 	}
 }
 
-int IcosIO::init()
+void IcosIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return ;
 	}
 	
 	initialized = true;
-
 	icos_file = sfopen(filename, rw_mode, &is_new_file);
-	if (!icos_file) {
-		err = 1;
-		return err;
-	}
-
+	
 	if (!is_new_file) {
 		if (fread(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
-			LOGERR("cannot read ICOS file '%s'", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "ICOS header");
 		}
 
 		if (!is_valid(&icosh)) {
-			LOGERR("invalid ICOS file");
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid ICOS file");
 		}
 		is_big_endian = ByteOrder::is_data_big_endian(&icosh.stamp);
 		become_host_endian((int *) &icosh, sizeof(IcosHeader) / sizeof(int));
 	}
 	EXITFUNC;
-	return 0;
 }
 
 bool IcosIO::is_valid(const void *first_block)
@@ -95,63 +84,54 @@ bool IcosIO::is_valid(const void *first_block)
 int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
-	if (check_read_access(image_index) != 0) {
-		err = 1;
-	}
-	else {
-		if (check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz)) != 0) {
-			err = 1;
-		}
-		else {
-			int xlen = 0, ylen = 0, zlen = 0;
-			EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
+	
+	check_read_access(image_index);
+	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz));
+
+	int xlen = 0, ylen = 0, zlen = 0;
+	EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
 			
-			dict["nx"] = xlen;
-			dict["ny"] = ylen;
-			dict["nz"] = zlen;
-			dict["datatype"] = EMUtil::EM_FLOAT;
-			dict["minimum"] = icosh.min;
-			dict["maximum"] = icosh.max;
-		}
-	}
+	dict["nx"] = xlen;
+	dict["ny"] = ylen;
+	dict["nz"] = zlen;
+	dict["datatype"] = EMUtil::EM_FLOAT;
+	dict["minimum"] = icosh.min;
+	dict["maximum"] = icosh.max;
+	
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 int IcosIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 	int err = 0;
-	if (check_write_access(rw_mode, image_index, 1) != 0) {
+	check_write_access(rw_mode, image_index, 1);
+	if (area) {
+		LOGERR("region write is not supported yet");
 		err = 1;
 	}
 	else {
-		if (area) {
-			LOGERR("region write is not supported yet");
+		icosh.stamp = STAMP;
+		icosh.stamp1 = STAMP1;
+		icosh.stamp2 = STAMP2;
+		icosh.stamp3 = STAMP3;
+
+		icosh.nx = dict["nx"];
+		icosh.ny = dict["ny"];
+		icosh.nz = dict["nz"];
+
+		icosh.min = dict["minimum"];
+		icosh.max = dict["maximum"];
+		
+		rewind(icos_file);
+		
+		if (fwrite(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
+			LOGERR("cannot write header to file '%s'", filename.c_str());
 			err = 1;
 		}
-		else {
-			icosh.stamp = STAMP;
-			icosh.stamp1 = STAMP1;
-			icosh.stamp2 = STAMP2;
-			icosh.stamp3 = STAMP3;
-
-			icosh.nx = dict["nx"];
-			icosh.ny = dict["ny"];
-			icosh.nz = dict["nz"];
-
-			icosh.min = dict["minimum"];
-			icosh.max = dict["maximum"];
-		
-			rewind(icos_file);
-		
-			if (fwrite(&icosh, sizeof(IcosHeader), 1, icos_file) != 1) {
-				LOGERR("cannot write header to file '%s'", filename.c_str());
-				err = 1;
-			}
-		}
 	}
+
 	EXITFUNC;
 	return err;
 }
@@ -159,71 +139,53 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* area,
 int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
 	
-	if (check_read_access(image_index, data) != 0) {
-		err = 1;
-	}
-	else {
-		if (check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz)) != 0) {
-			err = 1;
-		}
-		else {
-			portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
+	check_read_access(image_index, data);
+	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz));
+
+	portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
 			
-			EMUtil::process_region_io((unsigned char *) data, icos_file,
-									  READ_ONLY, image_index,
-									  sizeof(float), icosh.nx, icosh.ny, icosh.nz, 
-									  area,false, sizeof(int), sizeof(int));
+	EMUtil::process_region_io((unsigned char *) data, icos_file,
+							  READ_ONLY, image_index,
+							  sizeof(float), icosh.nx, icosh.ny, icosh.nz, 
+							  area,false, sizeof(int), sizeof(int));
 			
-			int xlen = 0, ylen = 0, zlen = 0;
-			EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
-			become_host_endian(data, xlen * ylen * zlen);
-		}
-	}
+	int xlen = 0, ylen = 0, zlen = 0;
+	EMUtil::get_region_dims(area, icosh.nx, &xlen, icosh.ny, &ylen, icosh.nz, &zlen);
+	become_host_endian(data, xlen * ylen * zlen);
+
+
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 int IcosIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
+	check_write_access(rw_mode, image_index, 1, data);
 	
-	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
-		err = 1;
-	}
-	else {
-		if (area) {
-			LOGERR("region write is not supported yet");
-			err = 1;
-		}
-		else {
-			int float_size = sizeof(float);
-			int nx = icosh.nx;
-			float *buf = new float[nx + 2];
-			buf[0] = float_size * nx;
-			buf[nx + 1] = buf[0];
-			int nrows = icosh.ny * icosh.nz;
+	int float_size = sizeof(float);
+	int nx = icosh.nx;
+	float *buf = new float[nx + 2];
+	buf[0] = (float)float_size * nx;
+	buf[nx + 1] = buf[0];
+	int nrows = icosh.ny * icosh.nz;
 
-			int row_size = (nx + 2) * float_size;
-			portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
+	int row_size = (nx + 2) * float_size;
+	portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
 
-			for (int j = 0; j < nrows; j++) {
-				memcpy(&buf[1], &data[nx * j], nx * float_size);
-				if (fwrite(buf, row_size, 1, icos_file) != 1) {
-					LOGERR("writing ICOS data out failed");
-					err = 1;
-					break;
-				}
-			}
-
-			delete[]buf;
-			buf = 0;
+	for (int j = 0; j < nrows; j++) {
+		memcpy(&buf[1], &data[nx * j], nx * float_size);
+		if (fwrite(buf, row_size, 1, icos_file) != 1) {
+			throw ImageWriteException(filename, "ICOS data");
 		}
 	}
+
+	delete[]buf;
+	buf = 0;
+
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 void IcosIO::flush()

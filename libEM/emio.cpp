@@ -27,13 +27,12 @@ EmIO::~EmIO()
 	}
 }
 
-int EmIO::init()
+void EmIO::init()
 {
 	ENTERFUNC;
 	
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 
 	
@@ -42,21 +41,12 @@ int EmIO::init()
 	bool is_new_file = false;
 	em_file = sfopen(filename, rw_mode, &is_new_file);
 
-	if (!em_file) {
-		err = 1;
-		return err;
-	}
-
 	if (!is_new_file) {
 		if (fread(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-			LOGERR("cannot read EM image file '%s'", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "EM header");
 		}
 		if (!is_valid(&emh)) {
-			LOGERR("'%s' is not a valid EM image", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid EM image");
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&emh.nz);
@@ -67,9 +57,7 @@ int EmIO::init()
 		mode = (DataType) emh.data_type;
 
 		if (mode == EM_EM_DOUBLE) {
-			LOGERR("DOUBLE data type is not supported for EM image");
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "DOUBLE data type not supported for EM image");
 		}
 
 		mode_size = get_mode_size(emh.data_type);
@@ -77,8 +65,7 @@ int EmIO::init()
 			emh.nx *= 2;
 		}
 	}
-
-	return 0;
+	EXITFUNC;
 }
 
 bool EmIO::is_valid(const void *first_block, off_t file_size)
@@ -130,12 +117,8 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-	if (check_region(area, IntSize(emh.nx, emh.ny, emh.nz)) != 0) {
-		return 1;
-	}
+	check_read_access(image_index);	
+	check_region(area, IntSize(emh.nx, emh.ny, emh.nz));
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, emh.nz, &zlen);
@@ -148,44 +131,33 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int EmIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int EmIO::write_header(const Dict & dict, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
-	int err = 0;
-	
-	if (check_write_access(rw_mode, image_index, 1) != 0) {
-		err = 1;
-	}
-	else {
-		emh.machine = static_cast < char >(get_machine_type());
-		emh.nx = dict["nx"];
-		emh.ny = dict["ny"];
-		emh.nz = dict["nz"];
-		emh.data_type = EM_EM_FLOAT;
+	check_write_access(rw_mode, image_index, 1);
+
+	emh.machine = static_cast < char >(get_machine_type());
+	emh.nx = dict["nx"];
+	emh.ny = dict["ny"];
+	emh.nz = dict["nz"];
+	emh.data_type = EM_EM_FLOAT;
 			
-		rewind(em_file);
-		if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-			LOGERR("cannot write header to file '%s'", filename.c_str());
-			err = 1;
-		}
+	rewind(em_file);
+	if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
+		throw ImageWriteException(filename, "EM Header");
 	}
 
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
-
-	if (check_region(area, IntSize(emh.nx, emh.ny, emh.nz)) != 0) {
-		return 1;
-	}
-
+	check_read_access(image_index, data);
+	check_region(area, IntSize(emh.nx, emh.ny, emh.nz));
+	
 	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
 
 	unsigned char *cdata = (unsigned char *) data;
@@ -204,8 +176,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 		become_host_endian((int *) cdata, total_sz);
 	}
 	else if (mode_size == sizeof(double)) {
-		LOGERR("double type image is not supported");
-		return 1;
+		throw ImageReadException(filename, "double type image is not supported");
 	}
 
 	for (int k = total_sz - 1; k >= 0; k--) {
@@ -224,8 +195,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 			curr_data = ((float *) cdata)[k];
 		}
 		else if (mode_size == sizeof(double)) {
-			LOGERR("double type image is not supported");
-			return 1;
+			throw ImageReadException(filename, "double type image is not supported");
 		}
 
 		data[k] = curr_data;
@@ -238,32 +208,26 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 int EmIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
-	
-	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
-		err = 1;
-	}
-	else {		
-		portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
+	check_write_access(rw_mode, image_index, 1, data);
+	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
 
-		EMUtil::process_region_io(data, em_file, WRITE_ONLY,
-								  image_index, sizeof(float), 
-								  emh.nx, emh.ny, emh.nz, area);
+	EMUtil::process_region_io(data, em_file, WRITE_ONLY,
+							  image_index, sizeof(float), 
+							  emh.nx, emh.ny, emh.nz, area);
 #if 0
-		int sec_size = emh.nx * emh.ny;
-		int row_size = sizeof(float) * emh.nx;
+	int sec_size = emh.nx * emh.ny;
+	int row_size = sizeof(float) * emh.nx;
 		
-		for (int i = 0; i < emh.nz; i++) {
-			int k = i * sec_size;
-			for (int j = 0; j < emh.ny; j++) {
-				fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
-			}
+	for (int i = 0; i < emh.nz; i++) {
+		int k = i * sec_size;
+		for (int j = 0; j < emh.ny; j++) {
+			fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
 		}
-#endif
 	}
+#endif
 
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 void EmIO::flush()

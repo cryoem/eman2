@@ -27,52 +27,36 @@ TiffIO::~TiffIO()
 	}
 }
 
-int TiffIO::init()
+void TiffIO::init()
 {
-	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
-	//initialized = true;
-
-	if (rw_mode != READ_ONLY) {
-		LOGERR("wrong rw mode. Only reading is supported for TIFF.");
-		err = 1;
-		return err;
-	}
+	
+	ENTERFUNC;
+	initialized = true;
 
 	FILE *tmp_in = fopen(filename.c_str(), "rb");
 	if (!tmp_in) {
-		LOGERR("cannot open TIFF image '%s'", filename.c_str());
-		err = 1;
-		return err;
+		throw ImageReadException(filename, "open TIFF");
 	}
 	char buf[64];
 	if (fread(buf, sizeof(buf), 1, tmp_in) != 1) {
-		LOGERR("cannot read TIFF image '%s'", filename.c_str());
-		err = 1;
+		throw ImageReadException(filename, "first block");
 	}
 
-	if (!err && !is_valid(&buf)) {
-		LOGERR("'%s' is an invalid TIFF image", filename.c_str());
-		err = 1;
+	if (!is_valid(&buf)) {
+		throw ImageReadException(filename, "invalid TIFF");
 	}
 
 	fclose(tmp_in);
 	tmp_in = 0;
 
-	if (err) {
-		return err;
-	}
-
 	TIFFSetWarningHandler(0);
 
 	tiff_file = TIFFOpen(filename.c_str(), "r");
 	if (!tiff_file) {
-		LOGERR("cannot open TIFF image '%s'", filename.c_str());
-		err = 1;
-		return err;
+		throw ImageReadException(filename, "open TIFF");
 	}
 
 	if (buf[0] == TIFF_BIG_ENDIAN) {
@@ -85,12 +69,13 @@ int TiffIO::init()
 	TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
 
 	if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
-		LOGERR("invalid %d bits. only %d-bit and %d-bit TIFF are supported",
-							 bitspersample, CHAR_BIT, (CHAR_BIT * sizeof(short)));
-		err = 1;
+		char desc[256];
+		sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",
+				bitspersample, CHAR_BIT, (CHAR_BIT * sizeof(short)));
+		throw ImageReadException(filename, desc);
 	}
 	EXITFUNC;
-	return err;
+
 }
 
 bool TiffIO::is_valid(const void *first_block)
@@ -116,18 +101,13 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(img_index) != 0) {
-		return 1;
-	}
-
+	check_read_access(img_index);
 	int nx = 0;
 	int ny = 0;
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
-	}
+	check_region(area, IntSize(nx, ny));
 
 	float min = 0;
 	float max = 0;
@@ -170,18 +150,14 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(img_index, rdata) != 0) {
-		return 1;
-	}
+	check_read_access(img_index, rdata);
 
 	int nx = 0;
 	int ny = 0;
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
-	}
+	check_region(area, IntSize(nx, ny));
 
 	int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);

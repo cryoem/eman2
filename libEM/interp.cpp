@@ -1684,12 +1684,12 @@ void Interp::init_gimx()
 {
 	const int size = 100;
 	gimx = new float[size * size * size];
-	const float g = (float) 10.4 / (M_PI * M_PI);	// magic number here
+	const float g = (float) (10.4 / (M_PI * M_PI));	// magic number here
 
 	for (int k = 0; k < size; k++) {
 		for (int j = 0; j < size; j++) {
 			for (int i = 0; i < size; i++) {
-				float r = Util::hypot3(i / 39.0, j / 39.0, k / 39.0);
+				float r = Util::hypot3(i / 39.0f, j / 39.0f, k / 39.0f);
 				gimx[i + j * size + k * size * size] = exp(-r / g);
 			}
 		}

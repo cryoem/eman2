@@ -49,32 +49,25 @@ static int samestr(const char *s1, const char *s2)
 }
 
 
-int VtkIO::init()
+void VtkIO::init()
 {
-	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
-	
+	ENTERFUNC;
 	initialized = true;
 
 	vtk_file = sfopen(filename, rw_mode, &is_new_file);
-	if (!vtk_file) {
-		err = 1;
-		return 1;
-	}
-	
+
 	if (!is_new_file) {
 		char buf[1024];
 		int bufsz = sizeof(buf);
 		if (fgets(buf, bufsz, vtk_file) == 0) {
-			throw ImageReadException(filename, "read VTK file failed");
+			throw ImageReadException(filename, "first block");
 		}
 
 		if (!is_valid(&buf)) {
-			LOGERR("not a valid VTK file");
-			return 1;
+			throw ImageReadException(filename, "invalid VTK");
 		}
 		
 		if (fgets(buf, bufsz, vtk_file) == 0) {
@@ -136,7 +129,6 @@ int VtkIO::init()
 		file_offset = portable_ftell(vtk_file);
 	}
 	EXITFUNC;
-	return 0;
 }
 
 
@@ -152,12 +144,8 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-	if (check_region(area, IntSize(nx, ny, nz)) != 0) {
-		return 1;
-	}
+	check_read_access(image_index);	
+	check_region(area, IntSize(nx, ny, nz));
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
@@ -184,9 +172,7 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index);
 
 	nx = dict["nx"];
 	ny = dict["ny"];
@@ -218,9 +204,7 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
+	check_read_access(image_index, data);
 
 	if (area) {
 		LOGWARN("read VTK region is not supported yet. Read whole image instead.");
@@ -277,13 +261,11 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int VtkIO::write_data(float *data, int image_index, const Region* area, bool)
+int VtkIO::write_data(float *data, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
 	
-	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index, 1, data);
 
 	bool swapped = false;
 	if (!ByteOrder::is_host_big_endian()) {

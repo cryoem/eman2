@@ -9,11 +9,8 @@
 #include <sys/types.h>
 
 #ifdef WIN32
-#include <windows.h>
-#include <io.h>
 #include <time.h>
 #include <process.h>
-#include <direct.h>
 #else
 #include <unistd.h>
 #endif

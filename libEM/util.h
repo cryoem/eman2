@@ -10,7 +10,7 @@
 #include <math.h>
 
 #ifdef WIN32
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #define MAXPATHLEN 1024
 #endif
 
@@ -84,7 +84,10 @@ namespace EMAN
 		static void save_data(float x0, float dx, float *y_array, size_t array_size,
 							  string filename);
 
+		static float get_frand(int low, int high);
 		static float get_frand(float low, float high);
+		static float get_frand(double low, double high);
+		
 		static float get_gauss_rand(float mean, float sigma);
 
 		static inline int round(float x)
@@ -95,6 +98,13 @@ namespace EMAN
 			return (int) (x + 0.5f);
 		}
 
+	    static inline int round(double x)
+		{
+			if (x < 0) {
+				return (int) (x - 0.5);
+			}
+			return (int) (x + 0.5);
+		}
 		// p1=x0,y0, p2=x1,y0; p3=x1,y1; p4=x0,y1 
 		static inline float bilinear_interpolate(float p1, float p2, float p3, float p4, float t,
 												 float u)
@@ -120,30 +130,41 @@ namespace EMAN
 									 int *max_i = 0, int *min_i = 0);
 		static int calc_best_fft_size(int low);
 
-		static inline int square(int n)
+		static int square(int n)
 		{
 			return n * n;
 		}
 
-		static inline float square(float x)
+		static float square(float x)
 		{
 			return x * x;
 		}
-		static double square(double x)
+		static float square(double x)
 		{
-			return x * x;
+			return (float)(x * x);
 		}
 
 		/** result = (x*x + y*y); */
-		static double square_sum(double x, double y)
+		static float square_sum(float x, float y)
 		{
-			return (x * x + y * y);
+			return (float)(x * x + y * y);
 		}
 
 		/** result = sqrt(x*x + y*y + z*z); */
-		static inline double hypot3(double x, double y, double z)
+		static inline float hypot3(int x, int y, int z)
 		{
-			return sqrt(x * x + y * y + z * z);
+			return (float) sqrt((float)(x * x + y * y + z * z));
+		}
+
+		/** result = sqrt(x*x + y*y + z*z); */
+		static inline float hypot3(float x, float y, float z)
+		{
+			return (float) sqrt(x * x + y * y + z * z);
+		}
+		/** result = sqrt(x*x + y*y + z*z); */
+		static inline float hypot3(double x, double y, double z)
+		{
+			return (float) sqrt(x * x + y * y + z * z);
 		}
 
 		static inline int fast_floor(float x)
@@ -289,10 +310,10 @@ namespace EMAN
 #endif
 		}
 
-		static inline double eman_erfc(double x)
+		static inline float eman_erfc(float x)
 		{
 #ifndef WIN32
-			return erfc(x);
+			return (float)erfc(x);
 #else
 			static double a[] = { -1.26551223, 1.00002368,
 								  0.37409196, 0.09678418,
@@ -313,7 +334,7 @@ namespace EMAN
 					result = 2 - result;
 				}
 			}
-			return result;
+			return (float)result;
 #endif
 		}
 

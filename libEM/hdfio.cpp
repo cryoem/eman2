@@ -14,8 +14,12 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <sys/param.h>
 #include <assert.h>
+
+#ifndef WIN32
+#include <sys/param.h>
+#endif
+
 
 using namespace EMAN;
 
@@ -43,43 +47,31 @@ HdfIO::~HdfIO()
 	H5Fclose(file);
 }
 
-int HdfIO::init()
+void HdfIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 
 	initialized = true;
-
 	bool is_new_file = false;
 	FILE *tmp_file = sfopen(filename, rw_mode, &is_new_file);
-	if (!tmp_file) {
-		err = 1;
-		return err;
-	}
 
 	if (!is_new_file) {
 		char buf[128];
 		if (fread(buf, sizeof(buf), 1, tmp_file) != 1) {
-			LOGERR("cannot read file '%s'", filename.c_str());
-			err = 1;
+			throw ImageReadException(filename, "read HDF5 first block");
 		}
 		else {
 			if (!is_valid(&buf)) {
-				LOGERR("'%s' is not a valid HDF5 file", filename.c_str());
-				err = 1;
+				throw ImageReadException(filename, "invalid HDF5 file");
 			}
 		}
 	}
 
 	fclose(tmp_file);
 	tmp_file = 0;
-
-	if (err) {
-		return err;
-	}
 
 	if (rw_mode == READ_ONLY) {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -95,7 +87,6 @@ int HdfIO::init()
 		}
 	}
 	
-	
 	string root_group_str = get_item_name(ROOT_GROUP);
 	group = H5Gopen(file, root_group_str.c_str());
 	cur_dataset = -1;
@@ -103,7 +94,7 @@ int HdfIO::init()
 	H5Giterate(file, root_group_str.c_str(), NULL, file_info, &image_indices);
 	create_enum_types();
 	EXITFUNC;
-	return err;
+
 }
 
 
@@ -134,16 +125,14 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
+	check_read_access(image_index);
+	
 	int nx = 0, ny = 0, nz = 0;
 	if (get_hdf_dims(image_index, &nx, &ny, &nz) != 0) {
-		return 1;
+		throw ImageReadException(filename, "invalid image dimensions");
 	}
-	if (check_region(area, IntSize(nx, ny, nz)) != 0) {
-		return 1;
-	}
+	
+	check_region(area, IntSize(nx, ny, nz));
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
@@ -186,11 +175,8 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
-
+	
+	check_read_access(image_index, data);
 	set_dataset(image_index);
 
 	if (cur_dataset < 0) {
@@ -199,8 +185,9 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 		cur_dataset = H5Dopen(file, cur_dataset_name);
 
 		if (cur_dataset < 0) {
-			LOGERR("hdf file has no image with id = %d", image_index);
-			return 1;
+			char desc[256];
+			sprintf(desc, "no image with id = %d", image_index);
+			throw ImageReadException(filename, desc);
 		}
 	}
 
@@ -208,19 +195,18 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	H5T_class_t t_class = H5Tget_class(datatype);
 
 	if (t_class != H5T_FLOAT) {
-		LOGERR("unknown data type '%d'. Can only read FLOAT data in HDF",
-							 (int) t_class);
+		char desc[256];
+		sprintf(desc, "unsupported HDF5 data type '%d'", (int) t_class);
 		H5Tclose(datatype);
-		return 1;
+		throw ImageReadException(filename, desc);
 	}
 
 	int nx = 0, ny = 0, nz = 0;
 	if (get_hdf_dims(image_index, &nx, &ny, &nz) != 0) {
-		return 1;
+		throw ImageReadException(filename, "invalid image dimensions");
 	}
-	if (check_region(area, IntSize(nx, ny, nz)) != 0) {
-		return 1;
-	}
+	
+	check_region(area, IntSize(nx, ny, nz));
 
 	int err = 0;
 	if (!area) {
@@ -249,7 +235,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 		err = H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, offset, NULL, count, NULL);
 		if (err < 0) {
 			LOGERR("failed to create dataspace hyperslab when reading '%s'",
-								 filename.c_str());
+				   filename.c_str());
 		}
 		else {
 			hid_t memspace = H5Screate_simple(3, count, NULL);
@@ -258,14 +244,15 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 			offset_out[1] = 0;
 			offset_out[2] = 0;
 
-			err = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, offset_out, NULL, count, NULL);
+			err = H5Sselect_hyperslab(memspace, H5S_SELECT_SET,
+									  offset_out, NULL, count, NULL);
 			if (err < 0) {
 				LOGERR("failed to create memspace hyperslab when reading '%s'",
-									 filename.c_str());
+					   filename.c_str());
 			}
 			else {
-				err =
-					H5Dread(cur_dataset, H5T_NATIVE_FLOAT, memspace, dataspace, H5P_DEFAULT, data);
+				err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, memspace,
+							  dataspace, H5P_DEFAULT, data);
 			}
 
 			H5Sclose(dataspace);
@@ -274,8 +261,9 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	}
 
 	if (err < 0) {
-		LOGERR("reading %dth hdf image failed", image_index);
-		return 1;
+		char desc[256];
+		sprintf(desc, "reading %dth hdf image failed", image_index);
+		throw ImageReadException(filename, desc);
 	}
 
 	H5Tclose(datatype);
@@ -284,13 +272,10 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 
-int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int HdfIO::write_header(const Dict & dict, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
-
-	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index);
 
 	int nx = dict["nx"];
 	int ny = dict["ny"];
@@ -298,9 +283,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 
 	cur_dataset = create_dataset(image_index, nx, ny, nz);
 	if (cur_dataset < 0) {
-		LOGERR("create dataset failed in hdf write header on file '%s'",
-							 filename.c_str());
-		return 1;
+		throw ImageWriteException(filename, "create dataset failed");
 	}
 
 	write_int_attr(image_index, "nx", nx);
@@ -321,7 +304,8 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	write_float_attr_from_dict(image_index, "sigma", dict);
 
 	if (dict.has_key("micrograph_id")) {
-		write_string_attr(image_index, "micrograph_id", (const char *) dict["micrograph_id"]);
+		write_string_attr(image_index, "micrograph_id",
+						  (const char *) dict["micrograph_id"]);
 	}
 
 	write_float_attr_from_dict(image_index, "particle_center_x", dict);
@@ -336,19 +320,18 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	}
 
 	if (dict.has_key("orientation_convention")) {
-		write_euler_attr(image_index, "orientation_convention", dict["orientation_convention"]);
+		write_euler_attr(image_index, "orientation_convention",
+						 dict["orientation_convention"]);
 	}
 	EXITFUNC;
 	return 0;
 }
 
-int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
+int HdfIO::write_data(float *data, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index, 0, data);
 
 	int nx = read_int_attr(image_index, "nx");
 	int ny = read_int_attr(image_index, "ny");
@@ -356,17 +339,20 @@ int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
 
 	cur_dataset = create_dataset(image_index, nx, ny, nz);
 
-	int err = 1;
 	if (cur_dataset >= 0) {
-		err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+		int err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
+						   H5S_ALL, H5P_DEFAULT, data);
 		if (err >= 0) {
 			increase_num_dataset();
 			image_indices.push_back(image_index);
 			err = 0;
 		}
+		else {
+			throw ImageWriteException(filename, "HDF data write");
+		}
 	}
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 void HdfIO::flush()
@@ -435,10 +421,7 @@ float HdfIO::read_global_float_attr(string attr_name)
 
 int HdfIO::get_nimg()
 {
-	if (init() != 0) {
-		return 0;
-	}
-
+	init();
 	hdf_err_off();
 	int n = read_global_int_attr(get_item_name(NUMDATASET));
 	hdf_err_on();
@@ -868,10 +851,7 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 int HdfIO::read_ctf(Ctf & ctf, int image_index)
 {
 	ENTERFUNC;
-
-	if (init() != 0) {
-		return 1;
-	}
+	init();
 
 	int err = 0;
 	set_dataset(image_index);
@@ -902,10 +882,7 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 int HdfIO::write_ctf(const Ctf & ctf, int image_index)
 {
 	ENTERFUNC;
-
-	if (init() != 0) {
-		return 1;
-	}
+	init();
 
 	set_dataset(image_index);
 

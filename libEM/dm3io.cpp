@@ -611,38 +611,27 @@ DM3IO::~DM3IO()
 	}
 }
 
-int DM3IO::init()
+void DM3IO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 	initialized = true;
 
 	if (rw_mode != READ_ONLY) {
-		LOGERR("wrong rw mode. Only reading is supported for DM3.");
-		err = 1;
-		return err;
+		throw ImageReadException(filename, "only support DM3 read-only");
 	}
 
 	dm3file = sfopen(filename, READ_ONLY);
-	if (!dm3file) {
-		err = 1;
-		return err;
-	}
 
 	int buf[NUM_ID_INT];
 	if (fread(buf, sizeof(buf), 1, dm3file) != 1) {
-		LOGERR("cannot read first block of DM3 file: '%s'", filename.c_str());
-		err = 1;
-		return err;
+		throw ImageReadException(filename, "read first block of DM3 file");
 	}
 
 	if (!is_valid(&buf)) {
-		LOGERR("'%s' is not a invalid DM3 file", filename.c_str());
-		err = 1;
-		return err;
+		throw ImageReadException(filename, "invalid DM3 file");
 	}
 
 	int byte_order = buf[2];
@@ -661,7 +650,6 @@ int DM3IO::init()
 			 buf[0], buf[1], (int) is_big_endian);
 
 	EXITFUNC;
-	return 0;
 }
 
 
@@ -707,42 +695,36 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 	int err = 0;
 	
-	if (check_read_access(image_index) != 0) {
-		err = 1;
-	}
-	else {
-		portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
-		TagGroup root_group(dm3file, tagtable, "");
-		root_group.read(true);
+	check_read_access(image_index);
+
+	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	TagGroup root_group(dm3file, tagtable, "");
+	root_group.read(true);
 		
-		int nx = tagtable->get_xsize();
-		int ny = tagtable->get_ysize();
+	int nx = tagtable->get_xsize();
+	int ny = tagtable->get_ysize();
 		
-		if (check_region(area, IntSize(nx, ny)) != 0) {
-			err = 1;
-		}
-		else {
-			int xlen = 0, ylen = 0;
-			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
+	check_region(area, IntSize(nx, ny));
+	int xlen = 0, ylen = 0;
+	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 			
-			dict["nx"] = xlen;
-			dict["ny"] = ylen;
-			dict["nz"] = 1;
+	dict["nx"] = xlen;
+	dict["ny"] = ylen;
+	dict["nz"] = 1;
 			
-			dict["DM3.exposure_number"] = tagtable->get_int("Exposure Number");
-			dict["DM3.exposure_time"] = tagtable->get_double("Exposure (s)");
-			dict["DM3.zoom"] = tagtable->get_double("Zoom");
-			dict["DM3.antiblooming"] = tagtable->get_int("Antiblooming");
-			dict["DM3.magnification"] = tagtable->get_double("Indicated Magnification");
+	dict["DM3.exposure_number"] = tagtable->get_int("Exposure Number");
+	dict["DM3.exposure_time"] = tagtable->get_double("Exposure (s)");
+	dict["DM3.zoom"] = tagtable->get_double("Zoom");
+	dict["DM3.antiblooming"] = tagtable->get_int("Antiblooming");
+	dict["DM3.magnification"] = tagtable->get_double("Indicated Magnification");
 			
-			dict["DM3.frame_type"] = tagtable->get_string("Processing");
-			dict["DM3.camera_x"] = tagtable->get_int("Active Size (pixels) #0");
-			dict["DM3.camera_y"] = tagtable->get_int("Active Size (pixels) #1");
-			dict["DM3.binning_x"] = tagtable->get_int("Binning #0");
-			dict["DM3.binning_y"] = tagtable->get_int("Binning #1");
-			dict["datatype"] = to_em_datatype(tagtable->get_datatype());
-		}
-	}
+	dict["DM3.frame_type"] = tagtable->get_string("Processing");
+	dict["DM3.camera_x"] = tagtable->get_int("Active Size (pixels) #0");
+	dict["DM3.camera_y"] = tagtable->get_int("Active Size (pixels) #1");
+	dict["DM3.binning_x"] = tagtable->get_int("Binning #0");
+	dict["DM3.binning_y"] = tagtable->get_int("Binning #1");
+	dict["datatype"] = to_em_datatype(tagtable->get_datatype());
+
 	EXITFUNC;
 	return err;
 }
@@ -750,11 +732,8 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
-	if (check_read_access(image_index, rdata) != 0) {
-		return 1;
-	}
-		
+	check_read_access(image_index, rdata);
+	
 	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
 
 	TagGroup root_group(dm3file, tagtable, "");
@@ -763,9 +742,8 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
 
-	if (check_region(area, IntSize(nx, ny)) != 0) {
-		return 1;
-	}
+	check_region(area, IntSize(nx, ny));
+
 	int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 	EMUtil::get_region_origins(area, &x0, &y0);
@@ -796,9 +774,9 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 				rdata[k] = (float) ((unsigned int *) data)[i * nx + j];
 				break;
 			default:
-				LOGERR("DM3IO cannot handle data type '%s'\n",
-					   Gatan::to_str((Gatan::DataType::GatanDataType) data_type));
-				return 1;
+				string desc = string("unsupported DM3 data type") +
+					string(Gatan::to_str((Gatan::DataType::GatanDataType) data_type));
+				throw ImageReadException(filename, desc);
 			}
 			k++;
 		}

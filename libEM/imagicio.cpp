@@ -46,12 +46,12 @@ ImagicIO::~ImagicIO()
 	}
 }
 
-int ImagicIO::init()
+void ImagicIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
+	
 	if (initialized) {
-		return err;
+		return;
 	}
 
 	initialized = true;
@@ -62,34 +62,24 @@ int ImagicIO::init()
 	hed_file = sfopen(hed_filename, rw_mode, &is_new_hed);
 	img_file = sfopen(img_filename, rw_mode, &is_new_img);
 
-	if (!hed_file) {
-		err = 1;
-		return err;
-	}
-
 	if (is_new_hed != is_new_img) {
 		LOGWARN("IMAGIC header file and data file should both exist or both not exist");
 	}
 
 	if (!is_new_hed) {
 		if (fread(&imagich, sizeof(ImagicHeader), 1, hed_file) != 1) {
-			LOGERR("cannot read IMAGIC header from file '%s'", hed_filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(hed_filename, "IMAGIC header");
 		}
 
 		if (!is_valid(&imagich)) {
-			LOGERR("file '%s' is not a valid IMAGIC file", hed_filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(hed_filename, "invalid IMAGIC file");
 		}
 
 		datatype = get_datatype_from_name(imagich.type);
 
 		if (datatype != IMAGIC_USHORT && datatype != IMAGIC_FLOAT) {
 			LOGERR("unsupported imagic data type: %s", imagich.type);
-			err = 1;
-			return err;
+			throw ImageReadException(hed_filename, "unsupported imagic data type");
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&imagich.nx);
@@ -97,7 +87,6 @@ int ImagicIO::init()
 		rewind(hed_file);
 	}
 	EXITFUNC;
-	return 0;
 }
 
 bool ImagicIO::is_valid(const void *first_block)
@@ -145,9 +134,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
+	check_read_access(image_index);
 
 	int nimg = 1;
 
@@ -169,9 +156,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		make_header_host_endian(hed);
 	}
 
-	if (check_region(area, IntSize(hed.nx, hed.ny, nimg)) != 0) {
-		return 1;
-	}
+	check_region(area, IntSize(hed.nx, hed.ny, nimg));
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, hed.nx, &xlen, hed.ny, &ylen, nimg, &zlen);
@@ -214,19 +199,16 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	return 0;
 }
 
-int ImagicIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int ImagicIO::write_header(const Dict & dict, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index);
 
 	nz = dict["nz"];
 	int n_new_img = nz;
 	if (n_new_img > 1 && image_index != 0) {
-		LOGERR("to write 3D IMAGIC image, image index must be 0");
-		return 1;
+		throw ImageWriteException(filename, "to write 3D IMAGIC image, image index must be 0");
 	}
 
 	int nx = dict["nx"];
@@ -235,9 +217,10 @@ int ImagicIO::write_header(const Dict & dict, int image_index, const Region* are
 	if (!is_new_hed) {
 		make_header_host_endian(imagich);
 		if (imagich.nx != nx || imagich.ny != ny) {
-			LOGERR("new IMAGIC size %dx%d is not equal to existing size %dx%d",
-								 nx, ny, imagich.nx, imagich.ny);
-			return 1;
+			char desc[256];
+			sprintf(desc, "new IMAGIC size %dx%d is not equal to existing size %dx%d",
+					nx, ny, imagich.nx, imagich.ny);
+			throw ImageWriteException(filename, desc);
 		}
 		rewind(hed_file);
 	}
@@ -356,9 +339,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
+	check_read_access(image_index, data);
 
 	int nimg = 1;
 	if (is_3d) {
@@ -369,9 +350,8 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 		LOGWARN("this is not a 3D IMAGIC. Read as a 2D");
 		is_3d = false;
 	}
-	if (check_region(area, IntSize(imagich.nx, imagich.ny, nimg)) != 0) {
-		return 1;
-	}
+	
+	check_region(area, IntSize(imagich.nx, imagich.ny, nimg));
 
 	rewind(img_file);
 
@@ -410,21 +390,19 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 		}
 	}
 	else {
-		LOGERR("unknown imagic data type");
-		return 1;
+		throw ImageReadException(filename, "unknown imagic data type");
 	}
+	
 	EXITFUNC;
 	return 0;
 }
 
-int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
+int ImagicIO::write_data(float *data, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
-		return 1;
-	}
-
+	check_write_access(rw_mode, image_index, 0, data);
+	
 	if (nz == 1) {
 		if (image_index == -1) {
 			portable_fseek(img_file, 0, SEEK_END);
@@ -450,7 +428,7 @@ int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 		nimg = nz;
 	}
 
-	int row_size = imagich.nx * sizeof(float);
+	size_t row_size = imagich.nx * sizeof(float);
 	int sec_dim = imagich.nx * imagich.ny;
 
 	for (int i = 0; i < nimg; i++) {
@@ -475,10 +453,8 @@ void ImagicIO::flush()
 int ImagicIO::read_ctf(Ctf & ctf, int)
 {
 	ENTERFUNC;
+	init();
 
-	if (init() != 0) {
-		return 1;
-	}
 	size_t n = strlen(CTF_MAGIC);
 	int err = 1;
 	if (strncmp(imagich.label, CTF_MAGIC, n) == 0) {
@@ -491,10 +467,7 @@ int ImagicIO::read_ctf(Ctf & ctf, int)
 int ImagicIO::write_ctf(const Ctf & ctf, int)
 {
 	ENTERFUNC;
-
-	if (init() != 0) {
-		return 1;
-	}
+	init();
 
 	size_t n = strlen(CTF_MAGIC);
 	strcpy(imagich.label, CTF_MAGIC);
@@ -502,9 +475,9 @@ int ImagicIO::write_ctf(const Ctf & ctf, int)
 
 	rewind(hed_file);
 	if (fwrite(&imagich, sizeof(ImagicHeader), 1, hed_file) != 1) {
-		LOGERR("cannot write Imagic header to file '%s'", hed_filename.c_str());
-		return 1;
+		throw ImageWriteException(hed_filename, "Imagic Header");
 	}
+	
 	EXITFUNC;
 	return 0;
 }
@@ -524,10 +497,7 @@ bool ImagicIO::is_image_big_endian()
 
 int ImagicIO::get_nimg()
 {
-	if (init() != 0) {
-		return 0;
-	}
-
+	init();
 	return (imagich.count + 1);
 }
 

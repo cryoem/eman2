@@ -3,7 +3,7 @@
  */
 #include "emutil.h"
 #include "log.h"
-#include "io.h"
+#include "all_imageio.h"
 
 #include "portable_fileio.h"
 #include "emcache.h"
@@ -619,7 +619,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		if (area) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
-		int k2 = k * area_sec_size;
+		int k2 = k * (int)area_sec_size;
 		
 		for (int j = 0; j < ylen; j++) {
 			if (pre_row > 0) {
@@ -779,7 +779,7 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 			dest[i] = srt[l];
 		}
 		else {
-			dest[i] = (srt[l] + srt[l + 1] + srt[l - 1]) / 3.0;
+			dest[i] = (srt[l] + srt[l + 1] + srt[l - 1]) / 3.0f;
 		}
 	}
 

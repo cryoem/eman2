@@ -28,7 +28,7 @@ namespace EMAN
 		static bool is_valid(const void *first_block, off_t file_size = 0);
 		static int get_mode_size(int mm);
 		static int to_em_datatype(int mrcmode);
-		static int to_mrcmode(int em_datatype, bool is_complex);
+		static int to_mrcmode(int em_datatype, int is_complex);
 
 	private:
 		enum MrcMode {
@@ -113,7 +113,7 @@ namespace EMAN
 		MrcHeader mrch;
 		int mode_size;
 
-		bool is_ri;
+		int is_ri;
 		bool is_big_endian;
 		bool is_new_file;
 		bool initialized;

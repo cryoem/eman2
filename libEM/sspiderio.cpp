@@ -19,12 +19,12 @@ SingleSpiderIO::~SingleSpiderIO()
 }
 
 
-int SingleSpiderIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int SingleSpiderIO::write_header(const Dict & dict, int , const Region* , bool)
 {
 	return write_single_header(dict);
 }
 
-int SingleSpiderIO::write_data(float *data, int image_index, const Region* area, bool)
+int SingleSpiderIO::write_data(float *data, int , const Region* , bool)
 {
 	return write_single_data(data);
 }

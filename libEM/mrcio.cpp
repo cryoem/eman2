@@ -14,15 +14,6 @@
 #include <string.h>
 
 
-#if 0
-
-#ifndef WIN32
-#include <unistd.h>
-#include <sys/types.h>
-#endif
-
-#endif
-
 using namespace EMAN;
 
 const char *MrcIO::CTF_MAGIC = "!-";
@@ -32,7 +23,7 @@ MrcIO::MrcIO(string mrc_filename, IOMode rw)
 :	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
-	is_ri = false;
+	is_ri = 0;
 	is_big_endian = ByteOrder::is_host_big_endian();
 	is_new_file = false;
 	initialized = false;
@@ -46,35 +37,24 @@ MrcIO::~MrcIO()
 	}
 }
 
-int MrcIO::init()
+void MrcIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	
 	if (initialized) {
-		return err;
+		return;
 	}
 	
 	initialized = true;
-
 	mrcfile = sfopen(filename, rw_mode, &is_new_file);
-
-	if (!mrcfile) {
-		err = 1;
-		return err;
-	}
 
 	if (!is_new_file) {
 		if (fread(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
-			LOGERR("read header failed on file: '%s'", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "MRC header");
 		}
 
 		if (!is_valid(&mrch)) {
-			LOGERR("'%s' is not a valid MRC file", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid MRC");
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
@@ -106,7 +86,6 @@ int MrcIO::init()
 		}
 	}
 	EXITFUNC;
-	return 0;
 }
 
 
@@ -165,13 +144,8 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-
-	if (check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz)) != 0) {
-		return 1;
-	}
+	check_read_access(image_index);
+	check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz));
 
 	dict["apix_x"] = mrch.xlen / (mrch.nx - 1);
 	dict["apix_y"] = mrch.ylen / (mrch.ny - 1);
@@ -256,15 +230,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* , bool
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 1) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index, 1);
 
 	int new_mode = to_mrcmode(dict["datatype"], (int) dict["is_complex"]);
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nz = dict["nz"];
-	is_ri = (int) dict["is_ri"];
+	is_ri =  dict["is_ri"];
 
 	bool opposite_endian = false;
 	
@@ -362,8 +334,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* , bool
 	}
 	
 	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
-		LOGERR("cannot write mrc header to file '%s'", filename.c_str());
-		return 1;
+		throw ImageWriteException(filename, "MRC header");
 	}
 
 	mode_size = get_mode_size(mrch.mode);
@@ -376,18 +347,14 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, rdata) != 0) {
-		return 1;
-	}
+	check_read_access(image_index, rdata);
 
 	if (area && is_complex_mode()) {
 		LOGERR("Error: cannot read a region of a complex image.");
 		return 1;
 	}
 
-	if (check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz)) != 0) {
-		return 1;
-	}
+	check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz));
 
 	unsigned char *cdata = (unsigned char *) rdata;
 	short *sdata = (short *) rdata;
@@ -436,9 +403,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index, 1, data);
 
 	int nx = mrch.nx;
 	int ny = mrch.ny;
@@ -451,7 +416,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 		size_t size = nx * ny * nz;
 		if (!is_ri) {
 			Util::ap2ri(data, size);
-			is_ri = true;
+			is_ri = 1;
 		}
 		Util::flip_complex_phase(data, size);
 	}
@@ -476,7 +441,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	short *sdata = (short *) data;
 	
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 	int size = xlen * ylen * zlen;
 	void * ptr_data = data;
 
@@ -495,7 +460,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 	}
 	
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
-							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
+							  mode_size, nx, mrch.ny, mrch.nz, area);
 	
 	
 #if 0
@@ -548,7 +513,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 		size_t size = nx * ny * nz;
 		if (!is_ri) {
 			Util::ap2ri(data, size);
-			is_ri = true;
+			is_ri = 1;
 		}
 		Util::flip_complex_phase(data, size);
 	}
@@ -572,11 +537,7 @@ bool MrcIO::is_complex_mode()
 int MrcIO::read_ctf(Ctf & ctf, int)
 {
 	ENTERFUNC;
-
-	if (init() != 0) {
-		return 1;
-	}
-
+	init();
 	size_t n = strlen(CTF_MAGIC);
 
 	int err = 1;
@@ -590,11 +551,8 @@ int MrcIO::read_ctf(Ctf & ctf, int)
 int MrcIO::write_ctf(const Ctf & ctf, int)
 {
 	ENTERFUNC;
-
-	if (init() != 0) {
-		return 1;
-	}
-
+	init();
+	
 	string ctf_str = ctf.to_string();
 	sprintf(&mrch.labels[0][0], "%s%s", CTF_MAGIC, ctf_str.c_str());
 	rewind(mrcfile);
@@ -664,7 +622,7 @@ int MrcIO::to_em_datatype(int m)
 }
 
 
-int MrcIO::to_mrcmode(int e, bool is_complex)
+int MrcIO::to_mrcmode(int e, int is_complex)
 {
 	MrcMode m = MRC_UNKNOWN;
 	EMUtil::EMDataType em_type = static_cast < EMUtil::EMDataType > (e);

@@ -25,34 +25,24 @@ EmimIO::~EmimIO()
 	}
 }
 
-int EmimIO::init()
+void EmimIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 	
 	initialized = true;
-
 	bool is_new_file = false;
 	emim_file = sfopen(filename, rw_mode, &is_new_file);
-	if (!emim_file) {
-		err = 1;
-		return err;
-	}
 
 	if (!is_new_file) {
 		if (fread(&efh, sizeof(EmimFileHeader), 1, emim_file) != 1) {
-			LOGERR("cannot read EMIM file: '%s'", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "EMIM header");
 		}
 
 		if (!is_valid(&efh)) {
-			LOGERR("invalid EMIM file");
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid EMIM file");
 		}
 
 		become_host_endian((int *) &efh, NUM_INT_IN_FILE_HEADER);
@@ -60,7 +50,6 @@ int EmimIO::init()
 	}
 
 	EXITFUNC;
-	return 0;
 }
 
 bool EmimIO::is_valid(const void *first_block)
@@ -94,9 +83,7 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
+	check_read_access(image_index);
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, efh.nx, &xlen, efh.ny, &ylen, efh.nz, &zlen);
@@ -128,7 +115,7 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 }
 
-int EmimIO::write_header(const Dict &, int, const Region* area, bool)
+int EmimIO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("EMIM write header is not supported.");
@@ -140,26 +127,24 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	int err = 0;
-	if (check_read_access(image_index, data) != 0) {
-		err = 1;
-	}
-	else {
-		off_t imgsize = efh.nx * efh.ny * efh.nz * sizeof(float) + sizeof(EmimImageHeader);
-		off_t offset = sizeof(EmimFileHeader) + imgsize * (image_index+1);
-		portable_fseek(emim_file, offset, SEEK_SET);
+	check_read_access(image_index, data);
+	
+	off_t imgsize = efh.nx * efh.ny * efh.nz * sizeof(float) + sizeof(EmimImageHeader);
+	off_t offset = sizeof(EmimFileHeader) + imgsize * (image_index+1);
+	portable_fseek(emim_file, offset, SEEK_SET);
 		
-		unsigned char *cdata = (unsigned char *) data;
-		EMUtil::process_region_io(cdata, emim_file, READ_ONLY, 0, sizeof(float),
-								  efh.nx, efh.ny, efh.nz, area);
+	unsigned char *cdata = (unsigned char *) data;
+	EMUtil::process_region_io(cdata, emim_file, READ_ONLY, 0, sizeof(float),
+							  efh.nx, efh.ny, efh.nz, area);
 		
-		become_host_endian(data, efh.nx * efh.ny * efh.nz);
+	become_host_endian(data, efh.nx * efh.ny * efh.nz);
 		
-	}
+	
 	EXITFUNC;
 	return err;
 }
 
-int EmimIO::write_data(float *, int, const Region* area, bool)
+int EmimIO::write_data(float *, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("EMIM write data is not supported.");
@@ -186,9 +171,6 @@ bool EmimIO::is_image_big_endian()
 
 int EmimIO::get_nimg()
 {
-	if (init() != 0) {
-		return 0;
-	}
-
+	init();
 	return efh.count;
 }

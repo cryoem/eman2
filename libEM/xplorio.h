@@ -61,9 +61,9 @@ namespace EMAN
 		float cell_gama;
 		
 		static string SECTION_MODE;
-		static size_t NFLOAT_PER_LINE;
-		static size_t INTEGER_SIZE;
-		static size_t FLOAT_SIZE;
+		static int NFLOAT_PER_LINE;
+		static int INTEGER_SIZE;
+		static int FLOAT_SIZE;
 	};
 
 }

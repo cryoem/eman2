@@ -156,7 +156,7 @@ float PhaseCmp::cmp(EMData * image, Transform *) const
 #if 0
 	return (1.0f - sum / norm);
 #endif
-	return (sum / norm);
+	return (float)(sum / norm);
 }
 
 
@@ -200,7 +200,7 @@ float FRCCmp::cmp(EMData * image, Transform *) const
 		norm += i * default_snr[i * n + n / 2];
 	}
 
-	return (sum / norm);
+	return (float)(sum / norm);
 }
 
 void EMAN::dump_cmps()

@@ -609,7 +609,7 @@ void CtfAverager::add_image(EMData * image)
 		int j = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx / 2; x++, j += 2) {
-				float r = hypot(x, y - ny / 2.0f);
+				float r = (float)hypot((float)x, (float)(y - ny / 2.0f));
 				int l = static_cast < int >(Util::fast_floor(r));
 
 				if (l >= 0 && l < ny / 2) {

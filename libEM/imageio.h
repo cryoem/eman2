@@ -168,12 +168,12 @@ namespace EMAN
 		}
 
 	protected:
-		virtual int init() = 0;
-		int check_read_access(int image_index);
-		int check_read_access(int image_index, float *data);
-		int check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0);
-		int check_write_access(IOMode rw_mode, int image_index, int max_nimg, float *data);
-		int check_region(const Region * area, const IntSize & max_size);
+		virtual void init() = 0;
+		void check_read_access(int image_index);
+		void check_read_access(int image_index, float *data);
+		void check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0);
+		void check_write_access(IOMode rw_mode, int image_index, int max_nimg, float *data);
+		void check_region(const Region * area, const IntSize & max_size);
 
 		FILE *sfopen(string filename, IOMode mode, bool * is_new = 0, bool overwrite = false);
 	};
@@ -189,7 +189,7 @@ namespace EMAN
 		void flush(); \
 		bool is_complex_mode(); \
 		bool is_image_big_endian(); \
-		int init()
+		void init()
 
 }
 

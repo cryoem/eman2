@@ -56,6 +56,19 @@ namespace EMAN {
 
 #define ImageDimensionException(desc) _ImageDimensionException(desc, __FILE__, __LINE__)
 
+	class _FileAccessException : public Exception
+	{
+	public:
+		_FileAccessException(const string& filename, const string& file = "unknown",
+							 int line = 0)
+			: Exception(file, line, desc, filename)
+		{
+			desc = "cannot access file '" + filename + "'";
+		}
+	};
+#define FileAccessException(filename) _FileAccessException(filename, __FILE__, __LINE__)
+	
+	
 	
 	class _ImageReadException : public Exception
 	{
@@ -64,7 +77,7 @@ namespace EMAN {
 						   int line = 0, const string& desc = "")
 			: Exception(file, line, desc, imagename) {}
 	};
-#define ImageReadException(imagename, desc) _ImageReadException(imagename, __FILE__, __LINE__, desc)
+#define ImageReadException(filename, desc) _ImageReadException(filename, __FILE__, __LINE__, desc)
 	
 	
 	class _ImageWriteException : public Exception

@@ -1,0 +1,42 @@
+/**
+ * $Id$
+ */
+#ifndef eman__ioioio_h__
+#define eman__ioioio_h__ 1
+
+// NOTE: for some reason unknown, hdfio.h must be behind pngio.h. 
+
+#include "imageio.h"
+#include "mrcio.h"
+
+#ifdef EM_PNG
+#include "pngio.h"
+#endif
+
+#include "dm3io.h"
+
+#ifdef EM_TIFF
+#include "tifio.h"
+#endif
+
+#include "pifio.h"
+#include "vtkio.h"
+#include "spiderio.h"
+#include "sspiderio.h"
+#include "pgmio.h"
+#include "emimio.h"
+#include "icosio.h"
+#include "lstio.h"
+
+#ifdef EM_HDF5
+#include "hdfio.h"
+#endif
+
+#include "salio.h"
+#include "amiraio.h"
+#include "xplorio.h"
+#include "gatan2io.h"
+#include "emio.h"
+#include "imagicio.h"
+
+#endif

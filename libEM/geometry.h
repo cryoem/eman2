@@ -59,6 +59,20 @@ namespace EMAN
 			data[2] = zz;
 		}
 
+		FloatSize(int xx, int yy=0, int zz=0)
+		{
+			data[0] = (float)xx;
+			data[1] = (float)yy;
+			data[2] = (float)zz;
+		}
+
+		FloatSize(double xx, double yy=0, double zz=0)
+		{
+			data[0] = (float)xx;
+			data[1] = (float)yy;
+			data[2] = (float)zz;
+		}
+
 		int get_ndim() const
 		{
 			if (data[2] > 1) {
@@ -168,6 +182,51 @@ namespace EMAN
 			ndim = 3;
 		}
 		
+		FloatPoint(int xx)
+		{
+			data[0] = (float)xx;
+			data[1] = 0;
+			data[2] = 0;
+			ndim = 1;
+		}
+		FloatPoint(int xx, int yy)
+		{
+			data[0] = (float)xx;
+			data[1] = (float)yy;
+			data[2] = 0;
+			ndim = 2;
+		}
+		FloatPoint(int xx, int yy, int zz)
+		{
+			data[0] = (float)xx;
+			data[1] = (float)yy;
+			data[2] = (float)zz;
+			ndim = 3;
+		}
+
+			
+		FloatPoint(double xx)
+		{
+			data[0] = (float)xx;
+			data[1] = 0;
+			data[2] = 0;
+			ndim = 1;
+		}
+		FloatPoint(double xx, double yy)
+		{
+			data[0] = (float)xx;
+			data[1] = (float)yy;
+			data[2] = 0;
+			ndim = 2;
+		}
+		FloatPoint(double xx, double yy, double zz)
+		{
+			data[0] = (float)xx;
+			data[1] = (float)yy;
+			data[2] = (float)zz;
+			ndim = 3;
+		}
+
 		int get_ndim() const
 		{
 			return ndim;
@@ -221,8 +280,19 @@ namespace EMAN
 	public:
 		Region()
 		{
-			origin = FloatPoint (0, 0);
-			size = FloatSize(0, 0);
+			origin = FloatPoint ();
+			size = FloatSize();
+		}
+		Region(int x, int y, int xsize, int ysize)
+		{
+			origin = FloatPoint (x, y);
+			size = FloatSize(xsize, ysize);
+		}
+
+		Region(int x, int y, int z, int xsize, int ysize, int zsize)
+		{
+			origin = FloatPoint(x, y, z);
+			size = FloatSize(xsize, ysize, zsize);
 		}
 
 		Region(float x, float y, float xsize, float ysize)
@@ -232,6 +302,18 @@ namespace EMAN
 		}
 
 		Region(float x, float y, float z, float xsize, float ysize, float zsize)
+		{
+			origin = FloatPoint(x, y, z);
+			size = FloatSize(xsize, ysize, zsize);
+		}
+		
+		Region(double x, double y, double xsize, double ysize)
+		{
+			origin = FloatPoint (x, y);
+			size = FloatSize(xsize, ysize);
+		}
+
+		Region(double x, double y, double z, double xsize, double ysize, double zsize)
 		{
 			origin = FloatPoint(x, y, z);
 			size = FloatSize(xsize, ysize, zsize);

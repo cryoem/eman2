@@ -12,9 +12,9 @@
 using namespace EMAN;
 
 string XplorIO::SECTION_MODE = "ZYX";
-size_t XplorIO::NFLOAT_PER_LINE = 6;
-size_t XplorIO::INTEGER_SIZE = 8;
-size_t XplorIO::FLOAT_SIZE = 12;
+int XplorIO::NFLOAT_PER_LINE = 6;
+int XplorIO::INTEGER_SIZE = 8;
+int XplorIO::FLOAT_SIZE = 12;
 
 XplorIO::XplorIO(string file, IOMode rw)
 :	filename(file), rw_mode(rw), xplor_file(0), initialized(false)
@@ -41,30 +41,23 @@ XplorIO::~XplorIO()
 	}
 }
 
-int XplorIO::init()
+void XplorIO::init()
 {
-	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
+
+	ENTERFUNC;
 	initialized = true;
 
 	bool is_new_file = false;
 	xplor_file = sfopen(filename, rw_mode, &is_new_file);
 
-	if (!xplor_file) {
-		err = 1;
-		return err;
-	}
-
 	if (!is_new_file) {
 		char first_block[1024];
 		fread(&first_block, sizeof(char), sizeof(first_block), xplor_file);
 		if (!is_valid(&first_block)) {
-			LOGERR("'%s' is not a valid XPLOR image", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid XPLOR");
 		}
 		portable_fseek(xplor_file, 0, SEEK_SET);
 		char line[1024];
@@ -90,17 +83,13 @@ int XplorIO::init()
 			else if (i == (ntitle+3)) {
 				if (sscanf(line, "%8d%8d%8d%8d%8d%8d%8d%8d%8d", &nx, &xmin, &xmax,
 						   &ny, &ymin, &ymax, &nz, &zmin, &zmax) != 9) {
-					LOGERR("'%s' is not a valid XPLOR image", filename.c_str());
-					err = 1;
-					return err;
+					throw ImageReadException(filename, "invalid XPLOR");
 				}
 			}
 			else if (i == (ntitle+4)) {
 				if(sscanf(line, "%f %f %f %f %f %f",
 						  &cellx, &celly, &cellz, &cell_alpha, &cell_beta, &cell_gama) != 6) {
-					LOGERR("'%s' is not a valid XPLOR image", filename.c_str());
-					err = 1;
-					return err;
+					throw ImageReadException(filename, "invalid XPLOR");
 				}
 			}
 			else if (i == (ntitle+5)) {
@@ -113,10 +102,8 @@ int XplorIO::init()
 		apix_y = celly / ny;
 		apix_z = cellz / nz;
 	}
-	
 			
 	EXITFUNC;
-	return err;
 }
 
 bool XplorIO::is_valid(const void *first_block)
@@ -133,7 +120,7 @@ bool XplorIO::is_valid(const void *first_block)
 		string line2 = Util::get_line_from_string(&buf);
 		int ntitle = 0;
 	
-		if (line2.size() != INTEGER_SIZE) {
+		if ((int)line2.size() != INTEGER_SIZE) {
 			result = false;
 		}
 		else {
@@ -179,13 +166,10 @@ int XplorIO::read_header(Dict &dict, int, const Region *, bool)
 	return 0;
 }
 
-int XplorIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int XplorIO::write_header(const Dict & dict, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
-	if (check_write_access(rw_mode, image_index) != 0) {
-		EXITFUNC;
-		return 1;
-	}
+	check_write_access(rw_mode, image_index);
 
 	nx = dict["nx"];
 	ny = dict["ny"];
@@ -252,13 +236,10 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 	return 0;
 }
 
-int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
+int XplorIO::write_data(float *data, int image_index, const Region* , bool)
 {
 	ENTERFUNC;
-	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
-		EXITFUNC;
-		return 1;
-	}
+	check_write_access(rw_mode, image_index, 1, data);
 
 	int nsecs = nx * ny;
 	int step = NFLOAT_PER_LINE;

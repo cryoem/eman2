@@ -39,23 +39,17 @@ PngIO::~PngIO()
 
 }
 
-int PngIO::init()
+void PngIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 
 	initialized = true;
 
 	bool is_new_file = false;
 	png_file = sfopen(filename, rw_mode, &is_new_file, true);
-
-	if (!png_file) {
-		err = 1;
-		return err;
-	}
 
 	if (!is_new_file) {
 		png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
@@ -65,30 +59,21 @@ int PngIO::init()
 	}
 
 	if (!png_ptr) {
-		LOGERR("cannot initialize libpng data structure");
-		err = 1;
-		return 1;
+		throw ImageReadException(filename, "cannot initialize libpng data structure");
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr) {
-		LOGERR("cannot create png info data structure");
-		err = 1;
-		return 1;
+		throw ImageReadException(filename, "cannot create png info data structure");
 	}
-
 
 	end_info = png_create_info_struct(png_ptr);
 	if (!end_info) {
-		LOGERR("cannot create png end info structure");
-		err = 1;
-		return 1;
+		throw ImageReadException(filename, "cannot create png end info structure");
 	}
 
 	if (setjmp(png_ptr->jmpbuf)) {
-		LOGERR("an error occurs within png");
-		err = 1;
-		return 1;
+		throw ImageReadException(filename, "an error occurs within png");
 	}
 
 	png_init_io(png_ptr, png_file);
@@ -97,9 +82,7 @@ int PngIO::init()
 		unsigned char header[PNG_BYTES_TO_CHECK];
 		fread(header, sizeof(unsigned char), PNG_BYTES_TO_CHECK, png_file);
 		if (!is_valid(header)) {
-			LOGERR("Image '%s' not in png format.", filename.c_str());
-			err = 1;
-			return 1;
+			throw ImageReadException(filename, "invalid PNG format");
 		}
 
 		png_set_sig_bytes(png_ptr, PNG_BYTES_TO_CHECK);
@@ -112,9 +95,7 @@ int PngIO::init()
 		int color_type = png_get_color_type(png_ptr, info_ptr);
 
 		if (nx == 0 || ny == 0) {
-			LOGERR("not a valid PNG file. width = %d, height = %d", nx, ny);
-			err = 1;
-			return 1;
+			throw ImageReadException(filename, "PNG file size = 0");
 		}
 
 		if (bit_depth == CHAR_BIT) {
@@ -125,10 +106,9 @@ int PngIO::init()
 		}
 		else {
 			depth_type = PNG_INVALID_DEPTH;
-			LOGERR("sorry, I don't know how to handle png with depth = %d bit",
-								 bit_depth);
-			err = 1;
-			return 1;
+			char desc[256];
+			sprintf(desc, "not support png with depth = %d bit", bit_depth);
+			throw ImageReadException(filename, desc);
 		}
 
 		png_set_packing(png_ptr);
@@ -146,7 +126,6 @@ int PngIO::init()
 		png_read_update_info(png_ptr, info_ptr);
 	}
 	EXITFUNC;
-	return 0;
 }
 
 bool PngIO::is_valid(const void *first_block)
@@ -169,48 +148,38 @@ bool PngIO::is_valid(const void *first_block)
 int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
+	
+	check_read_access(image_index);
 
-	if (check_read_access(image_index) != 0) {
-		err = 1;
+	int nx1 = static_cast < int >(nx);
+	int ny1 = static_cast < int >(ny);
+	check_region(area, IntSize(nx1, ny1));
+	int xlen = 0, ylen = 0;
+	EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
+			
+	dict["nx"] = xlen;
+	dict["ny"] = ylen;
+	dict["nz"] = 1;
+			
+	if (depth_type == PNG_CHAR_DEPTH) {
+		dict["datatype"] = EMUtil::EM_UCHAR;
+	}
+	else if (depth_type == PNG_SHORT_DEPTH) {
+		dict["datatype"] = EMUtil::EM_USHORT;
 	}
 	else {
-		int nx1 = static_cast < int >(nx);
-		int ny1 = static_cast < int >(ny);
-		if (check_region(area, IntSize(nx1, ny1)) != 0) {
-			err = 1;
-		}
-		else {
-			int xlen = 0, ylen = 0;
-			EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
-			
-			dict["nx"] = xlen;
-			dict["ny"] = ylen;
-			dict["nz"] = 1;
-			
-			if (depth_type == PNG_CHAR_DEPTH) {
-				dict["datatype"] = EMUtil::EM_UCHAR;
-			}
-			else if (depth_type == PNG_SHORT_DEPTH) {
-				dict["datatype"] = EMUtil::EM_USHORT;
-			}
-			else {
-				LOGERR("invalid PNG bit depth. don't know how to handle this png type");
-				err = 1;
-			}
-		}
+		throw ImageReadException(filename, "unsupported PNG bit depth");
 	}
+
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
 int PngIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index);
 
 	nx = (png_uint_32) (int) dict["nx"];
 	ny = (png_uint_32) (int) dict["ny"];
@@ -253,16 +222,12 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
+	check_read_access(image_index, data);
 
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
 
-	if (check_region(area, IntSize(nx1, ny1)) != 0) {
-		return 1;
-	}
+	check_region(area, IntSize(nx1, ny1));
 
 	png_init_io(png_ptr, png_file);
 	png_set_sig_bytes(png_ptr, PNG_BYTES_TO_CHECK);
@@ -309,9 +274,7 @@ int PngIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
-	if (check_write_access(rw_mode, image_index, 1, data) != 0) {
-		return 1;
-	}
+	check_write_access(rw_mode, image_index, 1, data);
 
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];

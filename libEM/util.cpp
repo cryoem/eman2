@@ -11,6 +11,10 @@
 #ifndef WIN32
 #include <unistd.h>
 #include <sys/param.h>
+#else
+#include <io.h>
+#define access _access
+#define F_OK 00
 #endif
 
 #include <fcntl.h>
@@ -314,8 +318,8 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 		div = 0.0000001f;
 	}
 
-	*intercept = (float) (sum_xx * sum_y - sum_x * sum_xy) / div;
-	*slope = (float) (sum * sum_xy - sum_x * sum_y) / div;
+	*intercept = (float) ((sum_xx * sum_y - sum_x * sum_xy) / div);
+	*slope = (float) ((sum * sum_xy - sum_x * sum_y) / div);
 }
 
 void Util::save_data(const vector < float >&x_array, const vector < float >&y_array,
@@ -372,6 +376,11 @@ void Util::save_data(float x0, float dx, float *y_array, size_t array_size, stri
 	fclose(out);
 }
 
+float Util::get_frand(int lo, int hi)
+{
+	return get_frand((float)lo, (float)hi);
+}
+
 float Util::get_frand(float lo, float hi)
 {
 	static bool inited = false;
@@ -384,6 +393,18 @@ float Util::get_frand(float lo, float hi)
 	return r;
 }
 
+float Util::get_frand(double lo, double hi)
+{
+	static bool inited = false;
+	if (!inited) {
+		srand(time(0));
+		inited = true;
+	}
+
+	double r = (hi - lo) * rand() / (RAND_MAX + 1.0) + lo;
+	return (float)r;
+}
+
 float Util::get_gauss_rand(float mean, float sigma)
 {
 	float x = 0;
@@ -391,8 +412,8 @@ float Util::get_gauss_rand(float mean, float sigma)
 	bool valid = true;
 
 	while (valid) {
-		x = get_frand(-1, 1);
-		float y = get_frand(-1, 1);
+		x = get_frand(-1.0, 1.0);
+		float y = get_frand(-1.0, 1.0);
 		r = x * x + y * y;
 
 		if (r <= 1.0 && r > 0) {
@@ -416,7 +437,7 @@ void Util::find_max(float *data, size_t nitems, float *max_val, int *max_index)
 	for (size_t i = 0; i < nitems; i++) {
 		if (data[i] > max) {
 			max = data[i];
-			m = i;
+			m = (int)i;
 		}
 	}
 
@@ -441,11 +462,11 @@ void Util::find_min_and_max(float *data, size_t nitems, float *max_val, float *m
 	for (size_t i = 0; i < nitems; i++) {
 		if (data[i] > max) {
 			max = data[i];
-			max_i = i;
+			max_i = (int)i;
 		}
 		if (data[i] < min) {
 			min = data[i];
-			min_i = i;
+			min_i = (int)i;
 		}
 	}
 

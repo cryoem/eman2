@@ -4,13 +4,19 @@
 #ifndef eman__pifio_h__
 #define eman__pifio_h__ 1
 
-
 #include "imageio.h"
 #include <stdio.h>
 
 namespace EMAN
 {
-	/** PIF (Purdue image format)
+	/** PIF(Portable Image Format for EM Data) is an image format from
+	 * Purdue University.
+	 *
+	 * A PIF file = file header + (image header + image data) + (image header + image data) ...
+	 *
+	 * A PIF file has a overall file header followed by n images. Each
+	 * image has a header and data block.
+	 *
 	 */
 	class PifIO:public ImageIO
 	{

@@ -25,13 +25,12 @@ Gatan2IO::~Gatan2IO()
 	}
 }
 
-int Gatan2IO::init()
+void Gatan2IO::init()
 {
 	ENTERFUNC;
 	
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return;
 	}
 	
 	initialized = true;
@@ -39,29 +38,19 @@ int Gatan2IO::init()
 	bool is_new_file = false;
 	gatan2_file = sfopen(filename, rw_mode, &is_new_file);
 
-	if (!gatan2_file) {
-		err = 1;
-		return err;
-	}
-
 	if (!is_new_file) {
 		if (fread(&gatanh, sizeof(Gatan2Header), 1, gatan2_file) != 1) {
-			LOGERR("cannot read header from Gatan2 file '%s'", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "Gatan2 Header");
 		}
 
 		if (!is_valid(&gatanh)) {
-			LOGERR("'%s' is not a valid Gatan2 file", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid Gatan2 file");
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&gatanh.len);
 		become_host_endian((short *) &gatanh, sizeof(Gatan2Header) / sizeof(short));
 	}
 	EXITFUNC;
-	return 0;
 }
 
 bool Gatan2IO::is_valid(const void *first_block)
@@ -96,35 +85,28 @@ bool Gatan2IO::is_valid(const void *first_block)
 int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	int err = 0;
-	if (check_read_access(image_index) != 0) {
-		err = 1;
+	check_read_access(image_index);
+	
+	if (is_complex_mode()) {
+		throw ImageReadException(filename, "Cannot read complex Gatan2 files");
 	}
 	else {
-		if (is_complex_mode()) {
-			LOGERR("Cannot read complex Gatan2 files");
-			err = 1;
-		}
-		else {
-			if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
-				err = 1;
-			}
-			else {
-				int xlen = 0, ylen = 0;
-				EMUtil::get_region_dims(area, gatanh.nx, &xlen, gatanh.ny, &ylen);
+		check_region(area, IntSize(gatanh.nx, gatanh.ny));
+
+		int xlen = 0, ylen = 0;
+		EMUtil::get_region_dims(area, gatanh.nx, &xlen, gatanh.ny, &ylen);
 				
-				dict["nx"] = xlen;
-				dict["ny"] = ylen;
-				dict["nz"] = 1;
-				dict["datatype"] = to_em_datatype(gatanh.type);
-			}
-		}
+		dict["nx"] = xlen;
+		dict["ny"] = ylen;
+		dict["nz"] = 1;
+		dict["datatype"] = to_em_datatype(gatanh.type);	
 	}
+	
 	EXITFUNC;
-	return err;
+	return 0;
 }
 
-int Gatan2IO::write_header(const Dict &, int, const Region* area, bool)
+int Gatan2IO::write_header(const Dict &, int, const Region* , bool)
 {
 	ENTERFUNC;
 	LOGWARN("Gatan2 write is not supported.");
@@ -135,17 +117,13 @@ int Gatan2IO::write_header(const Dict &, int, const Region* area, bool)
 int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
+	check_read_access(image_index, data);
 
 	if (is_complex_mode()) {
-		LOGERR("Cannot read complex Gatan2 files");
-		return 1;
+		throw ImageReadException(filename, "Cannot read complex Gatan2 files");
 	}
-	if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
-		return 1;
-	}
+	
+	check_region(area, IntSize(gatanh.nx, gatanh.ny));
 	
 	portable_fseek(gatan2_file, sizeof(Gatan2Header), SEEK_SET);
 
@@ -164,12 +142,10 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	EMUtil::process_region_io(cdata, gatan2_file, READ_ONLY, image_index, gatanh.len,
 							  gatanh.nx, gatanh.ny, 1, area);
 
-	int i = 0;
-
 	switch (gatanh.type) {
 	case GATAN2_SHORT:
 		become_host_endian((short *) data, size);
-		for (i = size - 1; i >= 0; i--) {
+		for (int i = size - 1; i >= 0; i--) {
 			data[i] = static_cast < float >(sdata[i]);
 		}
 		break;
@@ -177,19 +153,18 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 		become_host_endian(data, size);
 		break;
 	case GATAN2_CHAR:
-		for (i = size - 1; i >= 0; i--) {
+		for (int i = size - 1; i >= 0; i--) {
 			data[i] = static_cast < float >(cdata[i]);
 		}
 		break;
 	case GATAN2_INT:
 		become_host_endian((int *) data, size);
-		for (i = size - 1; i >= 0; i--) {
+		for (int i = size - 1; i >= 0; i--) {
 			data[i] = static_cast < float >(ldata[i]);
 		}
 		break;
 	default:
-		LOGERR("don't know how to handle this type");
-		return 1;
+		throw ImageReadException(filename, "unsupported Gatan2 data type");
 	}
 	EXITFUNC;
 	return 0;

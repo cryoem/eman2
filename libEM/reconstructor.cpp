@@ -45,9 +45,9 @@ void FourierReconstructor::setup()
 	float *rdata = image->get_data();
 
 	for (int i = 0; i < n; i += 2) {
-		float f = Util::get_frand(0, 2.0 * M_PI);
-		rdata[i] = 1.0e-10 * sin(f);
-		rdata[i + 1] = 1.0e-10 * cos(f);
+		float f = Util::get_frand(0.0, 2.0 * M_PI);
+		rdata[i] = 1.0e-10f * sin(f);
+		rdata[i + 1] = 1.0e-10f * cos(f);
 	}
 	image->done_data();
 
@@ -107,9 +107,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Rotation & euler)
 			if ((x * x + Util::square(y - ny / 2)) >= rl)
 				continue;
 
-			float xx = x * mx[0][0] + (y - ny / 2) * mx[0][1];
-			float yy = x * mx[1][0] + (y - ny / 2) * mx[1][1];
-			float zz = x * mx[2][0] + (y - ny / 2) * mx[2][1];
+			float xx = (float) (x * mx[0][0] + (y - ny / 2) * mx[0][1]);
+			float yy = (float) (x * mx[1][0] + (y - ny / 2) * mx[1][1]);
+			float zz = (float) (x * mx[2][0] + (y - ny / 2) * mx[2][1]);
 			float cc = 1;
 
 			if (xx < 0) {
@@ -502,9 +502,9 @@ void WienerFourierReconstructor::setup()
 	float *rdata = image->get_data();
 
 	for (int i = 0; i < n; i += 2) {
-		float f = Util::get_frand(0, 2.0 * M_PI);
-		rdata[i] = 1.0e-10 * sin(f);
-		rdata[i + 1] = 1.0e-10 * cos(f);
+		float f = Util::get_frand(0.0, 2.0 * M_PI);
+		rdata[i] = 1.0e-10f * sin(f);
+		rdata[i + 1] = 1.0e-10f * cos(f);
 	}
 	image->done_data();
 
@@ -588,17 +588,17 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				continue;
 			}
 
-			int r = Util::round(hypot(x, (float) y - ny / 2) * Ctf::CTFOS / padratio);
+			int r = Util::round((float)hypot(x, (float) y - ny / 2) * Ctf::CTFOS / padratio);
 			if (r >= Ctf::CTFOS * ny / 2) {
 				r = Ctf::CTFOS * ny / 2 - 1;
 			}
 
 			float weight = snr[r];
 
-			float xx = x * mx[0][0] + (y - ny / 2) * mx[0][1];
-			float yy = x * mx[1][0] + (y - ny / 2) * mx[1][1];
-			float zz = x * mx[2][0] + (y - ny / 2) * mx[2][1];
-			float cc = 1.0;
+			float xx = (x * mx[0][0] + (y - ny / 2) * mx[0][1]);
+			float yy = (x * mx[1][0] + (y - ny / 2) * mx[1][1]);
+			float zz = (x * mx[2][0] + (y - ny / 2) * mx[2][1]);
+			float cc = 1;
 
 			if (xx < 0) {
 				xx = -xx;
@@ -610,8 +610,8 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 			yy += ny / 2;
 			zz += nz / 2;
 
-			dt[0] = dat[x * 2 + y * nx] * (1 + 1.0 / weight);
-			dt[1] = cc * dat[x * 2 + 1 + y * nx] * (1 + 1.0 / weight);
+			dt[0] = dat[x * 2 + y * nx] * (1 + 1.0f / weight);
+			dt[1] = cc * dat[x * 2 + 1 + y * nx] * (1 + 1.0f / weight);
 
 			int x0 = 0;
 			int y0 = 0;
@@ -646,7 +646,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				dy = yy - y0;
 				dz = zz - z0;
 
-				weight /= pow(EMConsts::I2G * M_PI, 1.5);
+				weight /= (float)pow(EMConsts::I2G * M_PI, 1.5f);
 
 				if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
 					break;
@@ -677,7 +677,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + 0.5f);
 				z0 = (int) floor(zz + 0.5f);
 
-				weight /= pow(EMConsts::I3G * M_PI, 1.5);
+				weight /= (float)pow(EMConsts::I3G * M_PI, 1.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -706,7 +706,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy);
 				z0 = (int) floor(zz);
 
-				weight /= pow(EMConsts::I4G * M_PI, 1.5);
+				weight /= (float)pow(EMConsts::I4G * M_PI, 1.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -735,11 +735,11 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + .5);
 				z0 = (int) floor(zz + .5);
 
-				weight /= pow(EMConsts::I5G * M_PI, 1.5);
+				weight /= (float)pow(EMConsts::I5G * M_PI, 1.5f);
 
-				mx0 = -(int) floor((xx - x0) * 39.0f + .5) - 78;
-				my0 = -(int) floor((yy - y0) * 39.0f + .5) - 78;
-				mz0 = -(int) floor((zz - z0) * 39.0f + .5) - 78;
+				mx0 = -(int) floor((xx - x0) * 39.0f + 0.5) - 78;
+				my0 = -(int) floor((yy - y0) * 39.0f + 0.5) - 78;
+				mz0 = -(int) floor((zz - z0) * 39.0f + 0.5) - 78;
 				x0 *= 2;
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
@@ -802,7 +802,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + .5);
 				z0 = (int) floor(zz + .5);
 
-				weight /= pow(EMConsts::I5G * M_PI, 1.5);
+				weight /= (float)pow(EMConsts::I5G * M_PI, 1.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 					break;
@@ -815,8 +815,8 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							int ii = i + j * nx + k * nxy;
-							float r =
-								Util::hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz);
+							float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
+												   (float) k - zz);
 							float gg = weight * exp(-r / EMConsts::I5G);
 
 							rdata[ii] += gg * dt[0];
@@ -830,9 +830,9 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 					xx = -xx;
 					yy = -(yy - ny / 2) + ny / 2;
 					zz = -(zz - nz / 2) + nz / 2;
-					x0 = 2 * (int) floor(xx + .5);
-					y0 = (int) floor(yy + .5);
-					z0 = (int) floor(zz + .5);
+					x0 = 2 * (int) floor(xx + 0.5f);
+					y0 = (int) floor(yy + 0.5f);
+					z0 = (int) floor(zz + 0.5f);
 
 					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 						break;
@@ -870,9 +870,9 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 					for (int j = y0 - 2; j <= y0 + 2; j++) {
 						for (int i = l; i <= x0 + 4; i += 2) {
 							int ii = i + j * nx + k * nxy;
-							float r =
-								sqrt(Util::
-									 hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
+							float r = (float)sqrt(Util::hypot3((float) i / 2 - xx,
+															   (float) j - yy,
+															   (float) k - zz));
 							float gg = weight * Interp::hyperg(r);
 
 							rdata[ii] += gg * dt[0];
@@ -971,7 +971,7 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Rotation &)
 	float *slice_data = slice_copy->get_data();
 	float *tmp_data = tmp->get_data();
 	int nxy = nx * ny;
-	int nxy_size = nxy * sizeof(float);
+	size_t nxy_size = nxy * sizeof(float);
 
 	for (int i = 0; i < nz; i++) {
 		memcpy(&tmp_data[nxy * i], slice_data, nxy_size);

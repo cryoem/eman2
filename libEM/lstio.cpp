@@ -13,7 +13,7 @@
 #include <unistd.h>
 #else
 #include <direct.h>
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #define MAXPATHLEN 1024
 #endif
 
@@ -43,12 +43,11 @@ LstIO::~LstIO()
 	ref_filename = "";
 }
 
-int LstIO::init()
+void LstIO::init()
 {
 	ENTERFUNC;
-	static int err = 0;
 	if (initialized) {
-		return err;
+		return ;
 	}
 
 	initialized = true;
@@ -56,25 +55,16 @@ int LstIO::init()
 	bool is_new_file = false;
 	lst_file = sfopen(filename, rw_mode, &is_new_file);
 
-	if (!lst_file) {
-		err = 1;
-		return err;
-	}
-
 	if (!is_new_file) {
 
 		char buf[MAXPATHLEN];
 
 		if (!fgets(buf, MAXPATHLEN, lst_file)) {
-			LOGERR("cannot open LST file '%s'", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "first block");
 		}
 
 		if (!is_valid(&buf)) {
-			LOGERR("%s is not a valid LST file", filename.c_str());
-			err = 1;
-			return err;
+			throw ImageReadException(filename, "invalid LST file");
 		}
 
 		for (nimg = 0; fgets(buf, MAXPATHLEN, lst_file) != 0; nimg++) {
@@ -85,7 +75,6 @@ int LstIO::init()
 		rewind(lst_file);
 	}
 	EXITFUNC;
-	return 0;
 }
 
 bool LstIO::is_valid(const void *first_block)
@@ -181,13 +170,8 @@ int LstIO::calc_ref_image_index(int image_index)
 int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
 	ENTERFUNC;
-
-	if (check_read_access(image_index) != 0) {
-		return 1;
-	}
-
+	check_read_access(image_index);
 	int ref_image_index = calc_ref_image_index(image_index);
-	
 	int err = imageio->read_header(dict, ref_image_index, area, is_3d);
 	EXITFUNC;
 	return err;
@@ -204,13 +188,8 @@ int LstIO::write_header(const Dict &, int, const Region* , bool)
 int LstIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
 	ENTERFUNC;
-
-	if (check_read_access(image_index, data) != 0) {
-		return 1;
-	}
-
+	check_read_access(image_index, data);
 	int ref_image_index = calc_ref_image_index(image_index);
-	
 	int err = imageio->read_data(data, ref_image_index, area, is_3d);
 	EXITFUNC;
 	return err;
@@ -241,9 +220,6 @@ bool LstIO::is_image_big_endian()
 
 int LstIO::get_nimg()
 {
-	if (init() != 0) {
-		return 0;
-	}
-
+	init();
 	return nimg;
 }
