@@ -22,7 +22,7 @@ using namespace EMAN;
 
 const char *LstIO::MAGIC = "#LST";
 
-LstIO::LstIO(string file, IOMode rw)
+LstIO::LstIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), lst_file(0)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

@@ -60,7 +60,8 @@ namespace EMAN
 		 * @exception ImageFormatException
 		 * @exception ImageReadException
 		 */
-		void read_image(string filename, int img_index = 0, bool header_only = false,
+		void read_image(const string & filename, int img_index = 0,
+						bool header_only = false,
 						const Region * region = 0, bool is_3d = false);
 
 		/** write the header and data out to an image.
@@ -85,7 +86,7 @@ namespace EMAN
 		 * @exception ImageFormatException
 		 * @exception ImageWriteException
 		 */
-		void write_image(string filename, int img_index = 0,
+		void write_image(const string & filename, int img_index = 0,
 						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						 bool header_only = false,
 						 const Region * region = 0,
@@ -98,11 +99,13 @@ namespace EMAN
 		 *        specified, use the 'filename' extension to decide.
 		 * @param header_only To write only the header or both header and data.
 		 */
-		void append_image(string filename, EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
+		void append_image(const string & filename,
+						  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						  bool header_only = false);
 
-		void write_lst(string filename, int filenum, string reffile="",
-					   int refn=-1, string comment="");
+		void write_lst(const string & filename, int filenum,
+					   const string & reffile="", int refn=-1,
+					   const string & comment="");
 
 		
 		/** Apply a filter with its parameters on this image.
@@ -110,7 +113,7 @@ namespace EMAN
 		 * @param params Filter parameters in a keyed dictionary.
 		 * @exception NotExistingObjectError If the filter doesn't exist.
 		 */
-		void filter(string filtername, const Dict & params = Dict());
+		void filter(const string & filtername, const Dict & params = Dict());
 
 		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.
@@ -119,7 +122,7 @@ namespace EMAN
 		 * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
 		 * @return comparison score. The bigger, the better.
 		 */
-		float cmp(string cmpname, EMData * with, const Dict & params);
+		float cmp(const string & cmpname, EMData * with, const Dict & params);
 
 		/** Align this image with another image and return the result image.
 		 *
@@ -129,7 +132,8 @@ namespace EMAN
 		 * @exception NotExistingObjectError If the alignment algorithm doesn't exist.
 		 * @return The result image.
 		 */
-		EMData *align(string aligner_name, const Dict & params = Dict(), string comp_name = "");
+		EMData *align(const string & aligner_name, const Dict & params = Dict(),
+					  const string & comp_name = "");
 
 		/** Calculate the projection of this image and return the result.
 		 * @param projector_name Projection algorithm name.
@@ -137,7 +141,7 @@ namespace EMAN
 		 * @exception NotExistingObjectError If the projection algorithm doesn't exist.
 		 * @return The result image.
 		 */
-		EMData *project(string projector_name, const Dict & params = Dict());
+		EMData *project(const string & projector_name, const Dict & params = Dict());
 
 		/** Make a copy of this image including both data and header.
 		 * @param withparent Copy the parent or not.
@@ -640,7 +644,7 @@ namespace EMAN
 		/** Dump the image pixel data to a binary file. Used for debugging purpose.
 		 * @param filename The file to dump the data to.
 		 */
-		void dump_data(string filename);
+		void dump_data(const string & filename);
 
 		/** Adds 'obj' to 'this' incoherently. 'obj' and 'this' should
 		 * be same size. Both images should be complex images.
@@ -731,7 +735,7 @@ namespace EMAN
 		 * @return the cross correlation image.
 		 */
 		EMData *calc_flcf(EMData * with, int radius = 50,
-						  string maskfilter = "MaskSharp");
+						  const string & maskfilter = "MaskSharp");
 
 		/** Convolutes 2 data sets. The 2 images must be of the same size.
 		 * @param with One data set. 'this' image is the other data set.
@@ -952,10 +956,6 @@ namespace EMAN
 		boost::multi_array_ref<float, 3> get_view() const;
 		boost::multi_array_ref<float, 2> get_view(int x0, int y0) const;
 		boost::multi_array_ref<float, 3> get_view(int x0, int y0, int z0) const;
-		boost::multi_array_ref<float, 2> get_view(int x0, int y0,
-												  int xsize, int ysize) const;
-		boost::multi_array_ref<float, 3> get_view(int x0, int y0, int z0,
-												  int xsize, int ysize, int zsize) const;
 		
 		/** Get one row of a 1D/2D image.
 		 *
@@ -995,14 +995,14 @@ namespace EMAN
 		 * @param attr_name The header attribute name.
 		 * @return The attribute value.
 		 */
-		EMObject get_attr(string attr_name);
+		EMObject get_attr(const string & attr_name);
 		
 		/** Set a header attribute's value.
 		 *
 		 * @param attr_name The header attribute name.
 		 * @param val The attribute value.
 		 */
-		void set_attr(string attr_name, EMObject val);
+		void set_attr(const string & attr_name, EMObject val);
 
 		/** Get the image attribute dictionary containing all the
 		 * image attribute names and attribute values.
@@ -1213,7 +1213,7 @@ namespace EMAN
 		 *     false, read both data and header.
 		 * @return The set of images read from filename.
 		 */
-		static vector < EMData * >read_images(string filename,
+		static vector < EMData * >read_images(const string & filename,
 											  vector < int >img_indices = vector < int >(),
 											  bool header_only = false);
 
@@ -1229,9 +1229,11 @@ namespace EMAN
 		 * @param ext The new image filename extension.
 		 * @return The set of images read from filename.
 		 */
-		static vector < EMData * >read_images_ext(string filename, int img_index_start,
-												  int img_index_end, bool header_only =
-												  false, string ext = "");
+		static vector < EMData * >read_images_ext(const string & filename,
+												  int img_index_start,
+												  int img_index_end,
+												  bool header_only = false,
+												  const string & ext = "");
 
 
 	private:
@@ -1501,7 +1503,7 @@ namespace EMAN
 		attr_dict["apix_z"] = ((float) attr_dict["apix_z"]) * scale;
 	}
 
-	inline void EMData::set_attr(string key, EMObject val)
+	inline void EMData::set_attr(const string & key, EMObject val)
 	{
 		attr_dict[key] = val;
 	}

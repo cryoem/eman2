@@ -253,7 +253,7 @@ void PointArray::mask(double rmax, double rmin)
 }
 
 
-void PointArray::mask_asymmetric_unit(string sym)
+void PointArray::mask_asymmetric_unit(const string & sym)
 {
 	if (sym == "c1" || sym == "C1")
 		return;					// do nothing for C1 symmetry
@@ -310,13 +310,13 @@ void PointArray::mask_asymmetric_unit(string sym)
 }
 
 
-void PointArray::set_from(PointArray * source, string sym, Transform *transform)
+void PointArray::set_from(PointArray * source, const string & sym, Transform *transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
 
 }
 
-void PointArray::set_from(double *src, unsigned int num, string sym, Transform *xform)
+void PointArray::set_from(double *src, unsigned int num, const string & sym, Transform *xform)
 {
 	unsigned int nsym = xform->get_nsym(sym);
 

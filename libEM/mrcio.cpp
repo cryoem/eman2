@@ -19,7 +19,7 @@ using namespace EMAN;
 const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 
-MrcIO::MrcIO(string mrc_filename, IOMode rw)
+MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 :	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
@@ -226,10 +226,19 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	return 0;
 }
 
-int MrcIO::write_header(const Dict & dict, int image_index, const Region* , bool)
+int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 
+	if (area) {
+		if (is_new_file) {
+			throw ImageWriteException(filename,
+									  "file must exist before writing a region to it");
+		}
+		EXITFUNC;
+		return 0;
+	}
+	
 	check_write_access(rw_mode, image_index, 1);
 
 	int new_mode = to_mrcmode(dict["datatype"], (int) dict["is_complex"]);
@@ -368,7 +377,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 
-	int size = xlen * ylen * zlen;
+	size_t size = xlen * ylen * zlen;
 
 	if (mrch.mode != MRC_UCHAR) {
 		if (mode_size == sizeof(short)) {
@@ -380,14 +389,16 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	}
 
 	if (mrch.mode == MRC_UCHAR) {
-		for (int i = size - 1; i >= 0; i--) {
+		for (size_t i = 0; i < size; i++) {
+			size_t j = size - 1 - i;
 			//rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
-			rdata[i] = static_cast < float >(cdata[i]);
+			rdata[j] = static_cast < float >(cdata[j]);
 		}
 	}
 	else if (mrch.mode == MRC_USHORT) {
-		for (int i = size - 1; i >= 0; i--) {
-			rdata[i] = static_cast < float >(sdata[i]);		
+		for (size_t i = 0; i < size; i++) {
+			size_t j = size - 1 - i;
+			rdata[j] = static_cast < float >(sdata[j]);		
 		}
 	}
 
@@ -399,6 +410,11 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	return 0;
 }
 
+/** for region write, we must check the following things:
+	1. The region is in the range of the image.
+	2. the data type is the same. If not, cast.
+	3. The endian must be the same. If not, swap.
+*/
 int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
@@ -456,7 +472,10 @@ int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 		}
 		ptr_data = sdata;
 	}
-	
+
+	// New way to write data which includes region writing.
+	// If it is tested to be OK, remove the old code in the
+	// #if 0  ... #endif block.
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
 							  mode_size, nx, mrch.ny, mrch.nz, area);
 	

@@ -16,7 +16,7 @@ namespace EMAN
 	class XYZAligner:public Aligner
 	{
 	  public:
-		EMData * align(EMData * this_img, string cmp_name = "") const;
+		EMData * align(EMData * this_img, const string & cmp_name = "") const;
 
 		string get_name() const
 		{

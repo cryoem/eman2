@@ -586,8 +586,8 @@ BOOST_PYTHON_MODULE(libpyFilter2)
     def("multi_filters", &EMAN::multi_filters);
     def("group_filters", &EMAN::group_filters);
     class_< EMAN::Factory<EMAN::Filter>, boost::noncopyable >("Filters", no_init)
-        .def("get", (EMAN::Filter* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Filter* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Filter* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Filter* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Filter>::get_list)
         .staticmethod("get_list")
         .staticmethod("get")

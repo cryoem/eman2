@@ -10,7 +10,7 @@ using namespace EMAN;
 
 const char *EmimIO::MAGIC = "EMIM";
 
-EmimIO::EmimIO(string file, IOMode rw)
+EmimIO::EmimIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), emim_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

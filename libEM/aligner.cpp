@@ -33,7 +33,7 @@ template <> Factory < Aligner >::Factory()
 }
 
 
-EMData *TranslationalAligner::align(EMData * this_img, string) const
+EMData *TranslationalAligner::align(EMData * this_img, const string&) const
 {
 	if (!this_img) {
 		return 0;
@@ -143,7 +143,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 
 
 
-EMData *Translational3DAligner::align(EMData * this_img, string) const
+EMData *Translational3DAligner::align(EMData * this_img, const string&) const
 {
 	if (!this_img) {
 		return 0;
@@ -240,7 +240,7 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 }
 
 
-EMData *RotationalAligner::align(EMData * this_img, string) const
+EMData *RotationalAligner::align(EMData * this_img, const string&) const
 {
 	EMData *to = params["to"];
 
@@ -270,7 +270,7 @@ EMData *RotationalAligner::align(EMData * this_img, string) const
 }
 
 
-EMData *RotatePrecenterAligner::align(EMData * this_img, string) const
+EMData *RotatePrecenterAligner::align(EMData * this_img, const string&) const
 {
 	EMData *to = params["to"];
 	if (!to) {
@@ -304,7 +304,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, string) const
 }
 
 
-EMData *RotateCHAligner::align(EMData * this_img, string) const
+EMData *RotateCHAligner::align(EMData * this_img, const string&) const
 {
 	static vector < EMData * >ralfp;
 	static int rali = 0;
@@ -451,18 +451,15 @@ EMData *RotateCHAligner::align(EMData * this_img, string) const
 }
 
 
-EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
+EMData *RotateTranslateAligner::align(EMData * this_img, const string & cmp_name) const
 {
 	params.set_default("maxshift", -1);
-
+#if 0
 	int usedot = params.set_default("usedot", 0);
 	if (usedot) {
 		cmp_name = "Dot";
 	}
-	else if (cmp_name == "") {
-		cmp_name = "FRC";
-	}
-
+#endif
 	EMData *this_copy = this_img->copy();
 	this_img->align("Rotational", params);
 
@@ -506,16 +503,12 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
 }
 
 
-EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) const
+EMData *RotateTranslateBestAligner::align(EMData * this_img, const string & cmp_name) const
 {
 	params.set_default("maxshift", -1);
 
 	EMData *this_copy = this_img->copy();
 	this_img->align("Rotational", params);
-
-	if (cmp_name == "") {
-		cmp_name = "FRC";
-	}
 	
 	Dict rotation = this_img->get_transform().get_rotation(Transform::EMAN);
 	float cda = rotation["alt"];
@@ -577,7 +570,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 
 
 
-EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
+EMData *RotateTranslateRadonAligner::align(EMData * this_img, const string&) const
 {
 	EMData *to = params["to"];
 	int maxshift = params.set_default("maxshift", -1);
@@ -737,7 +730,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 
 
 
-EMData *RotateFlipAligner::align(EMData * this_img, string) const
+EMData *RotateFlipAligner::align(EMData * this_img, const string&) const
 {
 	EMData *to = params["to"];
 	EMData *flip = params.set_default("to", (EMData *) 0);
@@ -784,18 +777,17 @@ EMData *RotateFlipAligner::align(EMData * this_img, string) const
 	return result;
 }
 
-EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) const
+EMData *RotateTranslateFlipAligner::align(EMData * this_img,
+										  const string & given_cmp_name) const
 {
 	EMData *with = params.set_default("to", (EMData *) 0);
 	EMData *flip = params.set_default("flip", (EMData *) 0);
-	int usedot = params.set_default("usedot", 1);
+	
 	params.set_default("maxshift", -1);
-
+	string cmp_name = given_cmp_name;
+	int usedot = params.set_default("usedot", 1);
 	if (usedot) {
 		cmp_name = "Dot";
-	}
-	else if (cmp_name == "") {
-		cmp_name = "Variance";
 	}
 
 	EMData *this_copy = this_img->align("RotateTranslate", params);
@@ -871,15 +863,11 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 
 
 
-EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
+EMData *RTFSlowAligner::align(EMData * this_img, const string & cmp_name) const
 {
 	EMData *to = params["to"];
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
-
-	if (cmp_name == "") {
-		cmp_name = "Variance";
-	}
 
 	EMData *to_copy = to->copy(false);
 	int ny = this_img->get_ysize();
@@ -1053,15 +1041,11 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 }
 
 
-EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
+EMData *RTFSlowestAligner::align(EMData * this_img, const string & cmp_name) const
 {
 	EMData *to = params["to"];
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
-
-	if (cmp_name == "") {
-		cmp_name = "Variance";
-	}
 
 	EMData *dn = this_img->copy();
 	EMData *df = 0;
@@ -1215,14 +1199,11 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 	return dn;
 }
 
-EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
+EMData *RTFBestAligner::align(EMData * this_img, const string & cmp_name) const
 {
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	params.set_default("maxshift", -1);
 
-	if (cmp_name == "") {
-		cmp_name = "FRC";
-	}
 
 	EMData *this_copy = this_img->align("RotateTranslateBest", params);
 	EMData *flip_copy = 0;
@@ -1270,7 +1251,7 @@ EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
 }
 
 
-EMData *RTFRadonAligner::align(EMData * this_img, string) const
+EMData *RTFRadonAligner::align(EMData * this_img, const string&) const
 {
 	EMData *to = params["to"];
 	params.set_default("maxshift", -1);
@@ -1359,16 +1340,13 @@ static double refalifnfast(const gsl_vector * v, void *params)
 }
 
 
-EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
+EMData *RefineAligner::align(EMData * this_img, const string & cmp_name) const
 {
 	EMData *to = params["to"];
 	if (!to) {
 		return 0;
 	}
 
-	if (cmp_name == "") {
-		cmp_name = "FRC";
-	}
 	EMData *result = 0;
 
 	int ny = this_img->get_ysize();

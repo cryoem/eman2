@@ -59,7 +59,7 @@ namespace EMAN
 		{
 		}
 
-		virtual int from_string(string ctf) = 0;
+		virtual int from_string(const string & ctf) = 0;
 		virtual string to_string() const = 0;
 
 		virtual void from_dict(const Dict & dict) = 0;
@@ -106,7 +106,7 @@ namespace EMAN
 		void compute_2d_real(EMData * image, CtfType type, XYData * struct_factor = 0);
 		void compute_2d_complex(EMData * image, CtfType type, XYData * struct_factor = 0);
 
-		int from_string(string ctf);
+		int from_string(const string & ctf);
 		string to_string() const;
 
 		void from_dict(const Dict & dict);

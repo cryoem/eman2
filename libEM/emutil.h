@@ -73,19 +73,19 @@ namespace EMAN
 		 * @param file_ext File extension.
 		 * @return image format type.
 		 */
-		static ImageType get_image_ext_type(string file_ext);
+		static ImageType get_image_ext_type(const string & file_ext);
 		
 		/** Get an image's format type by processing the first 1K of the image.
 		 * @param filename Image file name.
 		 * @return image format type.
 		 */
-		static ImageType get_image_type(string filename);
+		static ImageType get_image_type(const string & filename);
 
 		/** Get the number of images in an image file.
 		 * @param filename Image file name.
 		 * @return Number of images in the given file.
 		 */
-		static int get_image_count(string filename);
+		static int get_image_count(const string & filename);
 
 		/** Get an ImageIO object. It may be a newly created
 		 * object. Or an object stored in the cache.
@@ -94,7 +94,7 @@ namespace EMAN
 		 * @param image_type Image format type.
 		 * @return An ImageIO object.
 		 */
-		static ImageIO *get_imageio(string filename, int rw_mode, 
+		static ImageIO *get_imageio(const string & filename, int rw_mode, 
 									ImageType image_type = IMAGE_UNKNOWN);
 
 		/** Give each image type a meaningful name.
@@ -172,7 +172,8 @@ namespace EMAN
 		static bool is_same_ctf(const EMData * image1, const EMData * image2);
 
 	  private:
-		static ImageType fast_get_image_type(string filename, const void *first_block,
+		static ImageType fast_get_image_type(const string & filename,
+											 const void *first_block,
 											 off_t file_size);
 	};
 

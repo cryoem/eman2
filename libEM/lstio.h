@@ -18,7 +18,7 @@ namespace EMAN
 	class LstIO:public ImageIO
 	{
 	  public:
-		LstIO(string filename, IOMode rw_mode = READ_ONLY);
+		LstIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~LstIO();
 
 		DEFINE_IMAGEIO_FUNC;

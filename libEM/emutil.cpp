@@ -14,7 +14,7 @@
 
 using namespace EMAN;
 
-EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
+EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 {
 	ENTERFUNC;
 	static bool initialized = false;
@@ -125,7 +125,8 @@ EMUtil::ImageType EMUtil::get_image_ext_type(string file_ext)
 }
 
 
-EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first_block,
+EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
+											  const void *first_block,
 											  off_t file_size)
 {
 	ENTERFUNC;
@@ -245,10 +246,11 @@ EMUtil::ImageType EMUtil::fast_get_image_type(string filename, const void *first
 }
 
 
-EMUtil::ImageType EMUtil::get_image_type(string filename)
+EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 {
 	ENTERFUNC;
-
+	
+	string filename = in_filename;
 	size_t ext_pos = filename.find(".img");
 	if (ext_pos != string::npos) {
 		filename.replace(ext_pos, 4, ".hed");
@@ -349,7 +351,7 @@ EMUtil::ImageType EMUtil::get_image_type(string filename)
 }
 
 
-int EMUtil::get_image_count(string filename)
+int EMUtil::get_image_count(const string & filename)
 {
 	ENTERFUNC;
 	int nimg = 0;
@@ -363,7 +365,8 @@ int EMUtil::get_image_count(string filename)
 }
 
 
-ImageIO *EMUtil::get_imageio(string filename, int rw, ImageType image_type)
+ImageIO *EMUtil::get_imageio(const string & filename, int rw,
+							 ImageType image_type)
 {
 	ENTERFUNC;
 	ImageIO *imageio = GlobalCache::instance()->get_imageio(filename, rw);

@@ -13,7 +13,7 @@ namespace EMAN
 	class XYZIO:public ImageIO
 	{
 	  public:
-		XYZIO(string filename, IOMode rw_mode = READ_ONLY);
+		XYZIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~XYZIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -21,7 +21,7 @@ namespace EMAN
 		int get_nimg();
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *xyz_file;
 

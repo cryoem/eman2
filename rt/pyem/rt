@@ -35,6 +35,7 @@ run_cmd filter1.py
 run_cmd imageio1.py
 run_cmd imageio_caching.py
 run_cmd namedclass.py
+run_cmd overloads.py
 run_cmd pixel2.py
 run_cmd pixel.py
 run_cmd project1.py

@@ -22,13 +22,13 @@ namespace EMAN
 			TagTable();
 			~TagTable();
 
-			void add(string name, string value);
+			void add(const string & name, const string & value);
 			void add_data(char *data);
 
-			string get_string(string name);
-			int get_int(string name);
-			float get_float(string name);
-			double get_double(string name);
+			string get_string(const string & name);
+			int get_int(const string & name);
+			float get_float(const string & name);
+			double get_double(const string & name);
 
 			int get_xsize() const;
 			int get_ysize() const;
@@ -85,7 +85,7 @@ namespace EMAN
 				ARRAY = 20
 			};
 
-			TagData(FILE * data_file, TagTable * tagtable, string tagname);
+			TagData(FILE * data_file, TagTable * tagtable, const string & tagname);
 			~TagData();
 
 			int read(bool nodata = false);
@@ -112,7 +112,7 @@ namespace EMAN
 		class TagGroup
 		{
 		  public:
-			TagGroup(FILE * data_file, TagTable * tagtable, string groupname);
+			TagGroup(FILE * data_file, TagTable * tagtable, const string & groupname);
 			~TagGroup();
 
 			int read(bool nodata = false);
@@ -217,7 +217,7 @@ namespace EMAN
 	class DM3IO:public ImageIO
 	{
 	  public:
-		DM3IO(string filename, IOMode rw_mode = READ_ONLY);
+		DM3IO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~DM3IO();
 
 		DEFINE_IMAGEIO_FUNC;

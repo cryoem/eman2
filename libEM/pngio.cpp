@@ -12,7 +12,7 @@
 
 using namespace EMAN;
 
-PngIO::PngIO(string file, IOMode rw)
+PngIO::PngIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), png_file(0), initialized(false)
 {
 	png_ptr = 0;

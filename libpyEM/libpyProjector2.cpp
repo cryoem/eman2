@@ -66,8 +66,8 @@ BOOST_PYTHON_MODULE(libpyProjector2)
     ;
 
     class_< EMAN::Factory<EMAN::Projector>, boost::noncopyable >("Projectors", no_init)
-        .def("get", (EMAN::Projector* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Projector* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Projector* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Projector* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Projector>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Projector>::get_list)
         .staticmethod("get_list")
         .staticmethod("get")

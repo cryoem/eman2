@@ -27,7 +27,7 @@ namespace EMAN
 		{ INT, FLOAT, STRING };
 
 	  public:
-		HdfIO(string filename, IOMode rw_mode = READ_ONLY);
+		HdfIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~HdfIO();
 
 		DEFINE_IMAGEIO_FUNC;
@@ -36,9 +36,9 @@ namespace EMAN
 		int read_ctf(Ctf & ctf, int image_index = 0);
 		int write_ctf(const Ctf & ctf, int image_index = 0);
 
-		int read_array_attr(int image_index, string attr_name, void *value);
-		int write_array_attr(int image_index, string attr_name, int nitems, void *data,
-							 DataType type);
+		int read_array_attr(int image_index, const string & attr_name, void *value);
+		int write_array_attr(int image_index, const string & attr_name,
+							 int nitems, void *data, DataType type);
 
 		bool is_single_image_format() const
 		{
@@ -49,28 +49,30 @@ namespace EMAN
 	  private:
 		hid_t create_dataset(int image_index, int nx, int ny, int nz);
 
-		int read_int_attr(int image_index, string attr_name);
-		float read_float_attr(int image_index, string attr_name);
-		string read_string_attr(int image_index, string attr_name);
-		int read_global_int_attr(string attr_name);
-		float read_global_float_attr(string attr_name);
+		int read_int_attr(int image_index, const string & attr_name);
+		float read_float_attr(int image_index, const string & attr_name);
+		string read_string_attr(int image_index, const string & attr_name);
+		int read_global_int_attr(const string & attr_name);
+		float read_global_float_attr(const string & attr_name);
 
 		int *read_dims(int image_index, int *p_ndim);
-		int read_euler_attr(int image_index, string attr_name);
-		int read_mapinfo_attr(int image_index, string attr_name);
+		int read_euler_attr(int image_index, const string & attr_name);
+		int read_mapinfo_attr(int image_index, const string & attr_name);
 
-		int write_int_attr(int image_index, string attr_name, int value);
-		int write_float_attr(int image_index, string attr_name, float value);
-		int write_string_attr(int image_index, string attr_name, string value);
+		int write_int_attr(int image_index, const string & attr_name, int value);
+		int write_float_attr(int image_index, const string & attr_name, float value);
+		int write_string_attr(int image_index, const string & attr_name,
+							  const string & value);
 
-		int write_float_attr_from_dict(int image_index, string attr_name, const Dict & dict);
+		int write_float_attr_from_dict(int image_index, const string & attr_name,
+									   const Dict & dict);
 
-		int write_global_int_attr(string attr_name, int value);
+		int write_global_int_attr(const string & attr_name, int value);
 
-		int write_euler_attr(int image_index, string attr_name, int value);
-		int write_mapinfo_attr(int image_index, string attr_name, int value);
+		int write_euler_attr(int image_index, const string & attr_name, int value);
+		int write_mapinfo_attr(int image_index, const string & attr_name, int value);
 
-		int delete_attr(int image_index, string attr_name);
+		int delete_attr(int image_index, const string & attr_name);
 
 		int get_num_dataset();
 		vector < int >get_image_indices();
@@ -102,20 +104,20 @@ namespace EMAN
 		void hdf_err_off();
 		void hdf_err_on();
 
-		int delete_attr(string attr_name);
+		int delete_attr(const string & attr_name);
 
 		void set_dataset(int image_index);
-		int create_compound_attr(int image_index, string attr_name);
+		int create_compound_attr(int image_index, const string & attr_name);
 		void close_dataset(hid_t dataset);
 		static string get_item_name(Nametype type);
 		void increase_num_dataset();
 
 		static void create_enum_types();
-		string get_compound_name(int id, string name);
+		string get_compound_name(int id, const string & name);
 
-		float read_float_attr(string attr_name);
-		int write_int_attr(string attr_name, int value);
-		int write_float_attr(string attr_name, float value);
+		float read_float_attr(const string & attr_name);
+		int write_int_attr(const string & attr_name, int value);
+		int write_float_attr(const string & attr_name, float value);
 
 		int get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz);
 

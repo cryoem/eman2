@@ -4,7 +4,7 @@
 
 using namespace EMAN;
 
-XYZIO::XYZIO(string file, IOMode rw)
+XYZIO::XYZIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), xyz_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

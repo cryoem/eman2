@@ -10,7 +10,7 @@
 using namespace EMAN;
 
 
-IcosIO::IcosIO(string file, IOMode rw)
+IcosIO::IcosIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), icos_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

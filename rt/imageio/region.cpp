@@ -17,19 +17,12 @@ void test_em()
 }
 
 
-void test_region(EMUtil::ImageType imgtype, int ndims)
-{
-	const char * testfile = "";
+void test_region(EMUtil::ImageType imgtype, const char * testfile)
+{	
 	bool is_3d = false;
-	
-	if (imgtype == EMUtil::IMAGE_MRC) {
-		testfile = "groel3d.mrc";
-	}
-	else if (imgtype == EMUtil::IMAGE_IMAGIC) {
-		testfile = "start.hed";
+	if (imgtype == EMUtil::IMAGE_IMAGIC) {
 		is_3d = true;
 	}
-		
 		
 	const char * imgfile = TestUtil::get_debug_image(testfile);
 	string imgbase = Util::remove_filename_ext(testfile);
@@ -54,16 +47,17 @@ void test_region(EMUtil::ImageType imgtype, int ndims)
 	if (zsize == 0) {
 		zsize = 1;
 	}
-
-	int image_index = 0;
+	int ndims = e.get_ndim();
+	
 	Region region;
 	if (ndims == 2) {
 		region = Region(x0, y0, xsize, ysize);
-		image_index = nz / 2;
 	}
 	else if (ndims == 3) {
 		region = Region(x0, y0, z0, xsize, ysize, zsize);
 	}
+	
+	int image_index = 0;
 	
 	EMData e2;
 	e2.read_image(imgfile, image_index, false, &region);
@@ -81,12 +75,19 @@ void test_region(EMUtil::ImageType imgtype, int ndims)
 int main(int argc, char *argv[])
 {
 	try {
-		test_region(EMUtil::IMAGE_MRC, 2);
+		test_region(EMUtil::IMAGE_MRC, "groel3d.mrc");
+		test_region(EMUtil::IMAGE_MRC, "samesize1.mrc");
+		test_region(EMUtil::IMAGE_MRC, "tablet.mrc");
+#if 0
 		test_region(EMUtil::IMAGE_IMAGIC, 2);
-					  
+
+		test_region(EMUtil::IMAGE_MRC, 3);
+		test_region(EMUtil::IMAGE_IMAGIC, 3);
+#endif
+		
 	}
 	catch(E2Exception &e) {
-		e.what();
+		printf("%s\n", e.what());
 	}
 	return 0;
 }

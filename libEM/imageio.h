@@ -66,6 +66,24 @@ namespace EMAN
 	 *
 	 *   - The gap from insertion or appending should be filled with zero.
 	 *
+	 * Image region writing follows the following princeples:
+	 *
+	 *   - The file must exist before writing a region to it.
+	 *
+	 *   - The image header usually won't be changed except the
+	 *     statistics fields and timestamp.
+	 *
+	 *   - The region must be inside the original image.
+	 *
+	 *   - If the new data are in different endian from the endian of 
+	 *     the original image, swap the new data.
+	 *
+	 *   - If the new data are of different data type from the data
+     *     type of the original image, convert the new data. This may
+     *     lose information when converting from longer data type to
+     *     shorter data type.
+	 *
+	 *   
 	 *
 	 * The typical way to use an ImageIO instance is:
 	 * a) To read:
@@ -192,7 +210,8 @@ namespace EMAN
 		void check_write_access(IOMode rw_mode, int image_index, int max_nimg, float *data);
 		void check_region(const Region * area, const IntSize & max_size);
 
-		FILE *sfopen(string filename, IOMode mode, bool * is_new = 0, bool overwrite = false);
+		FILE *sfopen(const string & filename, IOMode mode,
+					 bool * is_new = 0, bool overwrite = false);
 	};
 
 	/** DEFINE_IMAGEIO_FUNC declares the functions that needs to

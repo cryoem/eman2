@@ -79,7 +79,7 @@ EMData::~EMData()
 	EXITFUNC;
 }
 
-void EMData::read_image(string filename, int img_index, bool nodata,
+void EMData::read_image(const string & filename, int img_index, bool nodata,
 						const Region * region, bool is_3d)
 {
 	ENTERFUNC;
@@ -135,8 +135,10 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 }
 
 
-void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
-						 bool header_only, const Region * region, bool use_host_endian) 
+void EMData::write_image(const string & filename, int img_index,
+						 EMUtil::ImageType imgtype,
+						 bool header_only, const Region * region,
+						 bool use_host_endian) 
 {
 	ENTERFUNC;
 	LOGDEBUG("write to file '%s'", filename.c_str());
@@ -154,7 +156,8 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 	if (Util::is_file_exist(filename)) {
 		LOGVAR("file exists");
 		if (!header_only && region == 0) {
-			ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
+			ImageIO * tmp_imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY,
+														imgtype);
 			if (tmp_imageio->is_single_image_format()) {
 				rwmode = ImageIO::WRITE_ONLY;
 			}
@@ -204,7 +207,8 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 					else {
 						strcat(lstdata, "\n");
 					}
-					err = imageio->write_data((float*)lstdata, img_index, region, use_host_endian);
+					err = imageio->write_data((float*)lstdata, img_index,
+											  region, use_host_endian);
 					delete [] lstdata;
 					lstdata = 0;
 				}
@@ -222,14 +226,16 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 	EXITFUNC;
 }
 
-void EMData::append_image(string filename, EMUtil::ImageType imgtype, bool header_only)
+void EMData::append_image(const string & filename,
+						  EMUtil::ImageType imgtype, bool header_only)
 {
 	ENTERFUNC;
 	write_image(filename, -1, imgtype, header_only, 0);
 	EXITFUNC;
 }
 
-void EMData::write_lst(string filename, int filenum, string reffile, int refn, string comment)
+void EMData::write_lst(const string & filename, int filenum,
+					   const string & reffile, int refn, const string & comment)
 {
 	ENTERFUNC;
 	attr_dict["LST.filenum"] = filenum;
@@ -241,7 +247,7 @@ void EMData::write_lst(string filename, int filenum, string reffile, int refn, s
 }
 
 
-void EMData::filter(string filtername, const Dict & params)
+void EMData::filter(const string & filtername, const Dict & params)
 {
 	ENTERFUNC;
 	Filter *f = Factory < Filter >::get(filtername, params);
@@ -251,7 +257,7 @@ void EMData::filter(string filtername, const Dict & params)
 	EXITFUNC;
 }
 
-float EMData::cmp(string cmpname, EMData * with, const Dict & params)
+float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 {
 	ENTERFUNC;
 	float result = 0;
@@ -264,7 +270,8 @@ float EMData::cmp(string cmpname, EMData * with, const Dict & params)
 	return result;
 }
 
-EMData *EMData::align(string aligner_name, const Dict & params, string cmp_name)
+EMData *EMData::align(const string & aligner_name, const Dict & params,
+					  const string & cmp_name)
 {
 	ENTERFUNC;
 	EMData *result = 0;
@@ -282,7 +289,7 @@ EMData *EMData::align(string aligner_name, const Dict & params, string cmp_name)
 	return result;
 }
 
-EMData *EMData::project(string projector_name, const Dict & params)
+EMData *EMData::project(const string & projector_name, const Dict & params)
 {
 	ENTERFUNC;
 	EMData *result = 0;
@@ -361,7 +368,8 @@ EMData *EMData::copy_head()
 	return ret;
 }
 
-EMData *EMData::get_rotated_clip(const Transform &xform, const IntSize &size, float scale)
+EMData *EMData::get_rotated_clip(const Transform &xform,
+								 const IntSize &size, float scale)
 {
 	EMData *result = new EMData();
 	result->set_size(size[0],size[1],size[2]);
@@ -2119,22 +2127,7 @@ boost::multi_array_ref<float, 3> EMData::get_view(int x0, int y0, int z0) const
 	marray.reindex(bases);
 	return marray;
 }
-#if 0
-boost::multi_array_ref<float, 2> EMData::get_view(int x0, int y0,
-												  int xsize, int ysize) const
-{
-	
 
-}
-
-boost::multi_array_ref<float, 3> EMData::get_view(int x0, int y0, int z0,
-												  int xsize, int ysize, int zsize) const
-{
-
-
-}
-
-#endif
 
 EMData *EMData::get_row(int row_index) const
 {
@@ -2217,7 +2210,7 @@ void EMData::set_col(const EMData * d, int n)
 }
 
 
-EMObject EMData::get_attr(string key)
+EMObject EMData::get_attr(const string & key)
 {	
 	ENTERFUNC;
 	
@@ -2362,7 +2355,7 @@ void EMData::set_attr_dict(const Dict & new_dict)
 	attr_dict = new_dict;
 }
 
-void EMData::dump_data(string filename)
+void EMData::dump_data(const string & filename)
 {
 	ENTERFUNC;
 	
@@ -2415,7 +2408,7 @@ void EMData::set_ctf(Ctf * new_ctf)
 }
 
 
-vector < EMData * >EMData::read_images(string filename, vector < int >img_indices,
+vector < EMData * >EMData::read_images(const string & filename, vector < int >img_indices,
 									   bool header_only) 
 {
 	ENTERFUNC;
@@ -2451,17 +2444,17 @@ vector < EMData * >EMData::read_images(string filename, vector < int >img_indice
 }
 
 
-vector < EMData * >EMData::read_images_ext(string filename, int img_index_start,
+vector < EMData * >EMData::read_images_ext(const string & filename, int img_index_start,
 										   int img_index_end, bool header_only,
-										   string ext) 
+										   const string & ext) 
 {
 	ENTERFUNC;
 
 	if (img_index_end < img_index_start) {
 		throw InvalidValueException(img_index_end, "image index end < image index start");
 	}
-	
-	string new_filename = filename.insert(filename.rfind("."), ext);
+	string new_filename = filename;
+	new_filename = new_filename.insert(new_filename.rfind("."), ext);
 	int num_img = EMUtil::get_image_count(new_filename);
 
 	if (img_index_start < 0 || img_index_start >= num_img) {
@@ -4487,7 +4480,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 
 
 
-EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
+EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 {
 	ENTERFUNC;
 	

@@ -28,7 +28,7 @@ hid_t HdfIO::mapinfo_type = -1;
 const char *HdfIO::HDF5_SIGNATURE = "\211HDF\r\n\032\n";
 
 
-HdfIO::HdfIO(string hdf_filename, IOMode rw)
+HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
 {
 	initialized = false;
@@ -393,7 +393,7 @@ int *HdfIO::read_dims(int image_index, int *p_ndim)
 	return dims1;
 }
 
-int HdfIO::read_global_int_attr(string attr_name)
+int HdfIO::read_global_int_attr(const string & attr_name)
 {
 	int value = 0;
 	hid_t attr = H5Aopen_name(group, attr_name.c_str());
@@ -408,7 +408,7 @@ int HdfIO::read_global_int_attr(string attr_name)
 	return value;
 }
 
-float HdfIO::read_global_float_attr(string attr_name)
+float HdfIO::read_global_float_attr(const string & attr_name)
 {
 	float value = 0;
 	hid_t attr = H5Aopen_name(group, attr_name.c_str());
@@ -463,7 +463,7 @@ void HdfIO::set_dataset(int image_index)
 
 
 
-int HdfIO::read_int_attr(int image_index, string attr_name)
+int HdfIO::read_int_attr(int image_index, const string & attr_name)
 {
 	set_dataset(image_index);
 
@@ -481,14 +481,14 @@ int HdfIO::read_int_attr(int image_index, string attr_name)
 }
 
 
-float HdfIO::read_float_attr(int image_index, string attr_name)
+float HdfIO::read_float_attr(int image_index, const string & attr_name)
 {
 	set_dataset(image_index);
 	return read_float_attr(attr_name);
 }
 
 
-float HdfIO::read_float_attr(string attr_name)
+float HdfIO::read_float_attr(const string & attr_name)
 {
 	float value = 0;
 	hid_t attr = H5Aopen_name(cur_dataset, attr_name.c_str());
@@ -505,7 +505,7 @@ float HdfIO::read_float_attr(string attr_name)
 
 
 
-string HdfIO::read_string_attr(int image_index, string attr_name)
+string HdfIO::read_string_attr(int image_index, const string & attr_name)
 {
 	set_dataset(image_index);
 	hid_t attr = H5Aopen_name(cur_dataset, attr_name.c_str());
@@ -532,7 +532,7 @@ string HdfIO::read_string_attr(int image_index, string attr_name)
 	return value;
 }
 
-int HdfIO::read_array_attr(int image_index, string attr_name, void *value)
+int HdfIO::read_array_attr(int image_index, const string & attr_name, void *value)
 {
 	set_dataset(image_index);
 	int err = 0;
@@ -551,7 +551,7 @@ int HdfIO::read_array_attr(int image_index, string attr_name, void *value)
 	return err;
 }
 
-int HdfIO::read_euler_attr(int image_index, string)
+int HdfIO::read_euler_attr(int image_index, const string &)
 {
 	set_dataset(image_index);
 	/*
@@ -570,7 +570,7 @@ int HdfIO::read_euler_attr(int image_index, string)
 }
 
 
-int HdfIO::read_mapinfo_attr(int image_index, string attr_name)
+int HdfIO::read_mapinfo_attr(int image_index, const string & attr_name)
 {
 	set_dataset(image_index);
 
@@ -586,13 +586,13 @@ int HdfIO::read_mapinfo_attr(int image_index, string attr_name)
 	return static_cast < int >(val);
 }
 
-int HdfIO::write_int_attr(int image_index, string attr_name, int value)
+int HdfIO::write_int_attr(int image_index, const string & attr_name, int value)
 {
 	set_dataset(image_index);
 	return write_int_attr(attr_name, value);
 }
 
-int HdfIO::write_int_attr(string attr_name, int value)
+int HdfIO::write_int_attr(const string & attr_name, int value)
 {
 	int err = -1;
 	delete_attr(attr_name);
@@ -614,7 +614,8 @@ int HdfIO::write_int_attr(string attr_name, int value)
 	return 0;
 }
 
-int HdfIO::write_float_attr_from_dict(int image_index, string attr_name, const Dict & dict)
+int HdfIO::write_float_attr_from_dict(int image_index, const string & attr_name,
+									  const Dict & dict)
 {
 	if (dict.has_key(attr_name)) {
 		return write_float_attr(image_index, attr_name, dict[attr_name]);
@@ -622,13 +623,13 @@ int HdfIO::write_float_attr_from_dict(int image_index, string attr_name, const D
 	return 0;
 }
 
-int HdfIO::write_float_attr(int image_index, string attr_name, float value)
+int HdfIO::write_float_attr(int image_index, const string & attr_name, float value)
 {
 	set_dataset(image_index);
 	return write_float_attr(attr_name, value);
 }
 
-int HdfIO::write_float_attr(string attr_name, float value)
+int HdfIO::write_float_attr(const string & attr_name, float value)
 {
 	int err = -1;
 	delete_attr(attr_name);
@@ -650,7 +651,8 @@ int HdfIO::write_float_attr(string attr_name, float value)
 	return 0;
 }
 
-int HdfIO::write_string_attr(int image_index, string attr_name, string value)
+int HdfIO::write_string_attr(int image_index, const string & attr_name,
+							 const string & value)
 {
 	set_dataset(image_index);
 
@@ -677,7 +679,7 @@ int HdfIO::write_string_attr(int image_index, string attr_name, string value)
 	return 0;
 }
 
-int HdfIO::write_array_attr(int image_index, string attr_name,
+int HdfIO::write_array_attr(int image_index, const string & attr_name,
 							int nitems, void *data, DataType type)
 {
 	if (nitems <= 0) {
@@ -728,7 +730,7 @@ int HdfIO::write_array_attr(int image_index, string attr_name,
 }
 
 
-int HdfIO::write_global_int_attr(string attr_name, int value)
+int HdfIO::write_global_int_attr(const string & attr_name, int value)
 {
 	hid_t tmp_dataset = cur_dataset;
 	cur_dataset = group;
@@ -738,7 +740,7 @@ int HdfIO::write_global_int_attr(string attr_name, int value)
 }
 
 
-int HdfIO::write_euler_attr(int image_index, string attr_name, int value)
+int HdfIO::write_euler_attr(int image_index, const string & attr_name, int value)
 {
 	set_dataset(image_index);
 	delete_attr(attr_name);
@@ -753,7 +755,7 @@ int HdfIO::write_euler_attr(int image_index, string attr_name, int value)
 }
 
 
-int HdfIO::write_mapinfo_attr(int image_index, string attr_name, int value)
+int HdfIO::write_mapinfo_attr(int image_index, const string & attr_name, int value)
 {
 	set_dataset(image_index);
 	delete_attr(attr_name);
@@ -768,7 +770,7 @@ int HdfIO::write_mapinfo_attr(int image_index, string attr_name, int value)
 }
 
 
-int HdfIO::delete_attr(int image_index, string attr_name)
+int HdfIO::delete_attr(int image_index, const string & attr_name)
 {
 	set_dataset(image_index);
 
@@ -784,7 +786,7 @@ int HdfIO::delete_attr(int image_index, string attr_name)
 	}
 }
 
-int HdfIO::delete_attr(string attr_name)
+int HdfIO::delete_attr(const string & attr_name)
 {
 	hdf_err_off();
 	int err = H5Adelete(cur_dataset, attr_name.c_str());
@@ -798,7 +800,7 @@ int HdfIO::delete_attr(string attr_name)
 	}
 }
 
-string HdfIO::get_compound_name(int id, string name)
+string HdfIO::get_compound_name(int id, const string & name)
 {
 	string magic = get_item_name(COMPOUND_DATA_MAGIC);
 	char id_str[32];
@@ -808,7 +810,7 @@ string HdfIO::get_compound_name(int id, string name)
 }
 
 
-int HdfIO::create_compound_attr(int image_index, string attr_name)
+int HdfIO::create_compound_attr(int image_index, const string & attr_name)
 {
 	string cur_dataset_name = get_compound_name(image_index, attr_name);
 	cur_image_index = -1;

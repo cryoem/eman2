@@ -9,7 +9,7 @@
 
 using namespace EMAN;
 
-SingleSpiderIO::SingleSpiderIO(string file, IOMode rw)
+SingleSpiderIO::SingleSpiderIO(const string & file, IOMode rw)
 :	SpiderIO(file, rw)
 {
 }

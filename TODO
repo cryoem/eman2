@@ -45,6 +45,15 @@
        the file. The gap will be filled with zero. Check imagic format as
        an example.
 
+  075. ImageIO::write_data(), float* data should be changed to 'const
+       float* data'. 
+
+  076. boost python function overloading doesn't work at certain situation.
+	   e.g. on mdk9.2, gcc 3.3.1, python 2.3, boost 1.31.0.
+	   But the function overloading works at other situations. Need to 
+	   figure out why.
+	   
+	   
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
@@ -283,3 +292,5 @@
 		  1.45232928554 0.601708292961
 		  0.0 -1.45232927799
 
+  1/2/04 074. 
+     Change 'string' to 'const string &' in functions whenever possible.

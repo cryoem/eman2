@@ -45,7 +45,7 @@ namespace EMAN
 	class VtkIO:public ImageIO
 	{
 	  public:
-		VtkIO(string filename, IOMode rw_mode = READ_ONLY);
+		VtkIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~VtkIO();
 
 		DEFINE_IMAGEIO_FUNC;

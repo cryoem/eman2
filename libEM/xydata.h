@@ -39,9 +39,9 @@ namespace EMAN
 		{
 		}
 
-		int read_file(string filename);
+		int read_file(const string & filename);
 
-		int write_file(string filename) const;
+		int write_file(const string & filename) const;
 
 		float calc_correlation(XYData * xy, float minx, float maxx) const;
 

@@ -41,7 +41,7 @@ GlobalCache *GlobalCache::instance()
 	return global_cache;
 }
 
-ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
+ImageIO *GlobalCache::get_imageio(const string & filename, int rw_mode)
 {
 	ImageIO *io = imageio_cache->get(filename);
 	if (io) {
@@ -62,7 +62,7 @@ ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
 }
 
 
-void GlobalCache::add_imageio(string filename, int rw_mode, ImageIO * io)
+void GlobalCache::add_imageio(const string & filename, int rw_mode, ImageIO * io)
 {
 	if (io) {
 		file_rw_dict[filename] = rw_mode;

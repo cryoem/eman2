@@ -14,7 +14,7 @@ using namespace EMAN;
 
 const char *AmiraIO::MAGIC = "# AmiraMesh";
 
-AmiraIO::AmiraIO(string file, IOMode rw)
+AmiraIO::AmiraIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), amira_file(0), initialized(false)
 {
 	is_big_endian = true;

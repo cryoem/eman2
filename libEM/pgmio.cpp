@@ -15,7 +15,7 @@ using namespace EMAN;
 const char *PgmIO::MAGIC_BINARY = "P5";
 const char *PgmIO::MAGIC_ASCII = "P2";
 
-PgmIO::PgmIO(string file, IOMode rw)
+PgmIO::PgmIO(const string & file, IOMode rw)
 :	filename(file), pgm_file(0), initialized(false)
 {
 	rw_mode = rw;

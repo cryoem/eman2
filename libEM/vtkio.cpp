@@ -15,7 +15,7 @@ using namespace EMAN;
 
 const char *VtkIO::MAGIC = "# vtk DataFile Version";
 
-VtkIO::VtkIO(string vtk_filename, IOMode rw)
+VtkIO::VtkIO(const string & vtk_filename, IOMode rw)
 :	filename(vtk_filename), rw_mode(rw), vtk_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

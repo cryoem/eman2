@@ -39,27 +39,27 @@ libpyPointArray2.cpp: pointarray.pyste ../libEM/pointarray.h
 	rm -f libpyPointArray2.cpp
 	$(PYSTE) --module=libpyPointArray2 pointarray.pyste
 
-libpyAligner2.cpp: aligner.pyste ../libEM/aligner.h  ../libEM/ctf.h ../libEM/imageio.h 
+libpyAligner2.cpp: aligner.pyste ../libEM/aligner.h  ../libEM/ctf.h ../libEM/imageio.h ../libEM/emobject.h
 	rm -f libpyAligner2.cpp
 	$(PYSTE) --module=libpyAligner2 aligner.pyste
 
-libpyAverager2.cpp: averager.pyste ../libEM/averager.h
+libpyAverager2.cpp: averager.pyste ../libEM/averager.h ../libEM/emobject.h
 	rm -f libpyAverager2.cpp
 	$(PYSTE) --module=libpyAverager2 averager.pyste
 
-libpyCmp2.cpp: cmp.pyste ../libEM/cmp.h ../libEM/log.h ../libEM/xydata.h 
+libpyCmp2.cpp: cmp.pyste ../libEM/cmp.h ../libEM/log.h ../libEM/xydata.h  ../libEM/emobject.h
 	rm -f libpyCmp2.cpp
 	$(PYSTE) --module=libpyCmp2 cmp.pyste
 
-libpyFilter2.cpp: filter.pyste ../libEM/filter.h
+libpyFilter2.cpp: filter.pyste ../libEM/filter.h ../libEM/emobject.h
 	rm -f libpyFilter2.cpp
 	$(PYSTE) --module=libpyFilter2 filter.pyste
 
-libpyProjector2.cpp: projector.pyste ../libEM/projector.h
+libpyProjector2.cpp: projector.pyste ../libEM/projector.h ../libEM/emobject.h
 	rm -f libpyProjector2.cpp
 	$(PYSTE) --module=libpyProjector2 projector.pyste
 
-libpyReconstructor2.cpp: reconstructor.pyste ../libEM/reconstructor.h
+libpyReconstructor2.cpp: reconstructor.pyste ../libEM/reconstructor.h ../libEM/emobject.h
 	rm -f libpyReconstructor2.cpp
 	$(PYSTE) --module=libpyReconstructor2 reconstructor.pyste
 

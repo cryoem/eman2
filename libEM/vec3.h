@@ -10,7 +10,6 @@ using std::vector;
 
 #include <math.h>
 
-#define SQR(X) ((X)*(X))
 
 namespace EMAN
 {
@@ -28,12 +27,21 @@ namespace EMAN
 	class Vec3i
 	{
 	public:
+
+		/** contruct a Vec3i object with all elements equal to 0.
+		 */
 		Vec3i() {
 			vec[0] = 0;
 			vec[1] = 0;
 			vec[2] = 0;
 		}
-
+		
+		/** contruct a Vec3i object given (x,y) or (x,y,z) values.
+		 * @param x  Value of the first item.
+		 * @param y  Value of the second item.
+		 * @param z  Value of the third item. If not specified,
+		 * default to 0.
+		 */
 		Vec3i(int x, int y, int z = 0)
 		{
 			vec[0] = x;
@@ -41,6 +49,10 @@ namespace EMAN
 			vec[2] = z;
 		}
 
+		/** Construct a Vec3i object given a std::vector object. The
+		 * std::vector object should have at least 3 items.
+		 * @param v The std::vector object. It should have at least 3 items.
+		 */
 		Vec3i(const vector < int > &v)
 		{
 			vec[0] = v[0];
@@ -52,6 +64,10 @@ namespace EMAN
 		virtual ~ Vec3i() {
 		}
 
+		/** Normalize the vector and return its length before the
+		 * normalization.
+		 * @return The length of the Vec before normalization.
+		 */
 		float normalize()
 		{
 			float len = length();
@@ -65,19 +81,31 @@ namespace EMAN
 			}
 			return len;
 		}
-
+		
+		/** Calculate its length.
+		 * @return The vector's length.
+		 */
 		float length() const
 		{
 			float t = (float)(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 			return (float)sqrt(t);
 		}
-
+		
+		/** Calculate the dot product of 'this' vector with a second
+		 * vector.
+		 * @param v  The second vector to do the dot product.
+		 * @return The dot product.
+		 */
 		int dot(const Vec3i & v) const
 		{
 			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
 		}
-
-
+		
+		/** Calculate the cross product of 'this' vector with a second
+		 * vector.
+		 * @param v  The second vector to do the cross product.
+		 * @return The cross product.
+		 */
 		Vec3i cross(const Vec3i  & v) const
 		{
 			return Vec3i((vec[1] * v[2] - vec[2] * v[1]),
@@ -85,6 +113,9 @@ namespace EMAN
 						 (vec[0] * v[1] - vec[1] * v[0]));
 		}
 
+		/** Return the values of this vector as a std::vector.
+		 * @return The std::vector version of this vector.
+		 */
 		vector < int > as_list()const
 		{
 			vector < int > v(3);
@@ -94,13 +125,22 @@ namespace EMAN
 			return v;
 		}
 		
+		/** Set new values using a std::vector object.
+		 * @param v A std::vector object used to set 'this' vector's value.
+		 *  It should have at least 3 items.
+		 */
 		void set_value(const vector < int > &v)
 		{
 			vec[0] =  v[0];
 			vec[1] =  v[1];
 			vec[2] =  v[2];
 		}
-		
+
+		/** Set new values to this vector object.
+		 * @param x Value of the first item.
+		 * @param y Value of the second item.
+		 * @param z Value of the third item.
+		 */
 		void set_value(int x, int y, int z)
 		{
 			vec[0] =  x;
@@ -108,30 +148,56 @@ namespace EMAN
 			vec[2] =  z;
 		}
 
+		/** Get the ith item of the vector. Used in the right side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
 		int operator[] (int i) const
 		{
 			return vec[i];
 		}
-		
+
+		/** Get the ith item of the vector. Used in the left side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
 		int & operator[] (int i)
 		{
 			return vec[i];
 		}
-		
+
+		/** 'this' += v; Add the 2 vectors by adding item by item.
+		 * @param v The vector used to be added to 'this' vector.
+		 * @return The new 'this' as a result of add.
+		 */
 		Vec3i &operator +=(const Vec3i &v) {
 			vec[0] += v[0];
 			vec[1] += v[1];
 			vec[2] += v[2];
 			return *this;
 		}
-		
+
+		/** 'this' += d. Add d to each item of this vector.
+		 * @param d The number used to be added to this vector.
+		 * @return The new 'this' as a result of add.
+		 */
 		Vec3i  &operator +=(int d) {
 			vec[0] +=   d;
 			vec[1] +=   d;
 			vec[2] +=   d;
 			return *this;
 		}
-
+		
+		/** 'this' -= v; Minus the 2 vectors item by item.
+		 * @param v The vector used to be substracted from 'this' vector.
+		 * @return The new 'this' as a result of substraction.
+		 */
 		Vec3i  &operator -=(const Vec3i &v) {
 			vec[0] -=  v[0];
 			vec[1] -=  v[1];
@@ -139,13 +205,21 @@ namespace EMAN
 			return *this;
 		}
 		
+		/** 'this' -= d; Minus a number from each item of 'this' vector.
+		 * @param d The number used to be substracted from 'this' vector.
+		 * @return The new 'this' as a result of substraction.
+		 */
 		Vec3i  &operator -=(int d) {
 			vec[0] -=  d;
 			vec[1] -=  d;
 			vec[2] -=  d;
 			return *this;
 		}
-		
+
+		/** 'this' *= d; Multiply a number on each item of 'this' vector.
+		 * @param d The number to multiply.
+		 * @return The new 'this' as a result of multiplication.
+		 */
 		Vec3i  &operator *=(int d) {
 			vec[0] *=  d;
 			vec[1] *=  d;
@@ -153,7 +227,10 @@ namespace EMAN
 			return *this;
 		}
 		
-		
+		/** 'this' /= d; Divide a number on each item of 'this' vector.
+		 * @param d The number to divide.
+		 * @return The new 'this' as a result of division.
+		 */
 		Vec3i &operator /=(int d) {
 			if (d != 0) {
 				vec[0] /=  d;
@@ -263,13 +340,21 @@ namespace EMAN
 	class Vec3f
 	{
 	public:
+		/** contruct a Vec3f object with all elements equal to 0.
+		 */
 		Vec3f() {
 			vec[0] = 0;
 			vec[1] = 0;
 			vec[2] = 0;
 		}
 
-		
+			
+		/** contruct a Vec3f object given (x,y) or (x,y,z) values.
+		 * @param x  Value of the first item.
+		 * @param y  Value of the second item.
+		 * @param z  Value of the third item. If not specified,
+		 * default to 0.
+		 */
 		Vec3f(float x, float y, float z = 0)
 		{
 			vec[0] = x;
@@ -277,13 +362,19 @@ namespace EMAN
 			vec[2] = z;
 		}
 
+		/** Construct a Vec3f object given a std::vector object. The
+		 * std::vector object should have at least 3 items.
+		 * @param v The std::vector object. It should have at least 3 items.
+		 */
 		Vec3f(const vector < float > &v)
 		{
 			vec[0] = v[0];
 			vec[1] = v[1];
 			vec[2] = v[2];
 		}
-		
+
+		/** convert a Vec3i vector to a Vec3f vector.
+		 */
 		Vec3f(const Vec3i &v)
 		{
 			vec[0] = (float)v[0];
@@ -293,7 +384,11 @@ namespace EMAN
 
 		virtual ~ Vec3f() {
 		}
-
+		
+		/** Normalize the vector and return its length before the
+		 * normalization.
+		 * @return The length of the Vec before normalization.
+		 */
 		float normalize()
 		{
 			float len = length();
@@ -306,37 +401,40 @@ namespace EMAN
 			return len;
 		}
 
+		/** Calculate its length.
+		 * @return The vector's length.
+		 */
 		float length() const
 		{
 			float t = vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
 			return (float)sqrt(t);
 		}
 
+		/** Calculate the dot product of 'this' vector with a second
+		 * vector.
+		 * @param v  The second vector to do the dot product.
+		 * @return The dot product.
+		 */
 		float dot(const Vec3f & v) const
 		{
 			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
 		}
-#if 0
-		float dot(const Vec3i & v) const
-		{
-			return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]);
-		}
-		
-		Vec3f cross(const Vec3i & v) const
-		{
-			return Vec3f((vec[1] * v[2] - vec[2] * v[1]),
-						(vec[2] * v[0] - vec[0] * v[2]),
-						(vec[0] * v[1] - vec[1] * v[0]));
-		}
-		
-#endif
+
+		/** Calculate the cross product of 'this' vector with a second
+		 * vector.
+		 * @param v  The second vector to do the cross product.
+		 * @return The cross product.
+		 */
 		Vec3f cross(const Vec3f & v) const
 		{
 			return Vec3f((vec[1] * v[2] - vec[2] * v[1]),
-						(vec[2] * v[0] - vec[0] * v[2]),
-						(vec[0] * v[1] - vec[1] * v[0]));
+						 (vec[2] * v[0] - vec[0] * v[2]),
+						 (vec[0] * v[1] - vec[1] * v[0]));
 		}
 		
+		/** Return the values of this vector as a std::vector.
+		 * @return The std::vector version of this vector.
+		 */
 		vector < float > as_list()const
 		{
 			vector < float > v(3);
@@ -346,6 +444,10 @@ namespace EMAN
 			return v;
 		}
 		
+		/** Set new values using a std::vector object.
+		 * @param v A std::vector object used to set 'this' vector's value.
+		 *  It should have at least 3 items.
+		 */
 		void set_value(const vector < float > &v)
 		{
 			vec[0] =  v[0];
@@ -353,20 +455,41 @@ namespace EMAN
 			vec[2] =  v[2];
 		}
 		
+		/** Set new values to this vector object.
+		 * @param x Value of the first item.
+		 * @param y Value of the second item.
+		 * @param z Value of the third item.
+		 */
 		void set_value(float x, float y, float z)
 		{
 			vec[0] =  x;
 			vec[1] =  y;
 			vec[2] =  z;
 		}
-
+		
+		/** Get the ith item of the vector.
+		 */
 		inline float at(int i) { return vec[i]; }
 		
+		/** Get the ith item of the vector. Used in the right side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
 		float operator[] (int i) const
 		{
 			return vec[i];
 		}
 		
+		/** Get the ith item of the vector. Used in the left side of
+		 * the assignment.
+		 *
+		 * @param i The index of the item to get. Its validality is
+		 * not checked.
+		 * @return The ith item of the vector.
+		 */
 		float & operator[] (int i)
 		{
 			return vec[i];

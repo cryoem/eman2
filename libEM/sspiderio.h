@@ -12,7 +12,7 @@ namespace EMAN
 	class SingleSpiderIO:public SpiderIO
 	{
 	  public:
-		SingleSpiderIO(string filename, IOMode rw_mode = READ_ONLY);
+		SingleSpiderIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~SingleSpiderIO();
 
 		int write_header(const Dict & dict, int image_index = 0, const Region* area = 0,

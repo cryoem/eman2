@@ -24,7 +24,7 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
     EMAN_Aligner_Wrapper(PyObject* self_):
         EMAN::Aligner(), self(self_) {}
 
-    EMAN::EMData* align(EMAN::EMData* p0, std::string p1) const {
+    EMAN::EMData* align(EMAN::EMData* p0, const std::string& p1) const {
         return call_method< EMAN::EMData* >(self, "align", p0, p1);
     }
 
@@ -99,11 +99,11 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
         EMAN::SimpleCtf::compute_2d_complex(p0, p1, p2);
     }
 
-    int from_string(std::string p0) {
+    int from_string(const std::string& p0) {
         return call_method< int >(self, "from_string", p0);
     }
 
-    int default_from_string(std::string p0) {
+    int default_from_string(const std::string& p0) {
         return EMAN::SimpleCtf::from_string(p0);
     }
 
@@ -197,8 +197,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
     class_< EMAN::Factory<EMAN::Aligner>, boost::noncopyable >("Aligners", no_init)
-        .def("get", (EMAN::Aligner* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Aligner* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Aligner* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Aligner* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Aligner>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Aligner>::get_list)
         .staticmethod("get_list")
         .staticmethod("get")
@@ -224,7 +224,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("compute_2d_real", (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_2d_real_2)
         .def("compute_2d_complex", (void (EMAN::SimpleCtf::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*) )&EMAN::SimpleCtf::compute_2d_complex, (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType, EMAN::XYData*))&EMAN_SimpleCtf_Wrapper::default_compute_2d_complex_3)
         .def("compute_2d_complex", (void (EMAN_SimpleCtf_Wrapper::*)(EMAN::EMData*, EMAN::Ctf::CtfType))&EMAN_SimpleCtf_Wrapper::default_compute_2d_complex_2)
-        .def("from_string", (int (EMAN::SimpleCtf::*)(std::string) )&EMAN::SimpleCtf::from_string, (int (EMAN_SimpleCtf_Wrapper::*)(std::string))&EMAN_SimpleCtf_Wrapper::default_from_string)
+        .def("from_string", (int (EMAN::SimpleCtf::*)(const std::string&) )&EMAN::SimpleCtf::from_string, (int (EMAN_SimpleCtf_Wrapper::*)(const std::string&))&EMAN_SimpleCtf_Wrapper::default_from_string)
         .def("to_string", (std::string (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_string, (std::string (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_string)
         .def("from_dict", (void (EMAN::SimpleCtf::*)(const EMAN::Dict&) )&EMAN::SimpleCtf::from_dict, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Dict&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
         .def("to_dict", (EMAN::Dict (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_dict, (EMAN::Dict (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_dict)

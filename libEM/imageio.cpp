@@ -84,7 +84,8 @@ void ImageIO::check_write_access(IOMode iomode, int image_index,
 	}
 }
 
-FILE *ImageIO::sfopen(string filename, IOMode mode, bool * is_new, bool overwrite)
+FILE *ImageIO::sfopen(const string & filename, IOMode mode,
+					  bool * is_new, bool overwrite)
 {
 	FILE *f = 0;
 	if (mode == READ_ONLY) {

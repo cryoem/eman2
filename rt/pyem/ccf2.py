@@ -7,9 +7,10 @@ def test1(img1, img2):
 	b=EMData()
 	a.read_image(img1)
 	b.read_image(img2)
-	c=a.calc_ccf(b,1)
+	c=a.calc_ccf(b)
 	c.write_image("test1_ccf2.mrc")
-
+	c2=a.calc_ccf(b,1)
+	
 
 def test2(img1):
 	a=EMData()

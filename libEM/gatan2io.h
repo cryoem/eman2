@@ -18,7 +18,7 @@ namespace EMAN
 	class Gatan2IO:public ImageIO
 	{
 	  public:
-		Gatan2IO(string filename, IOMode rw_mode = READ_ONLY);
+		Gatan2IO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~Gatan2IO();
 
 		DEFINE_IMAGEIO_FUNC;

@@ -30,7 +30,7 @@ SimpleCtf::~SimpleCtf()
 }
 
 
-int SimpleCtf::from_string(string ctf)
+int SimpleCtf::from_string(const string & ctf)
 {
 	int i = sscanf(ctf.c_str(), "%f %f %f %f %f %f %f %f %f %f %f",
 				   &defocus, &bfactor, &amplitude, &ampcont, &noise1,

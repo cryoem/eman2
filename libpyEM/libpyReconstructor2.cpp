@@ -80,8 +80,8 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
     ;
 
     class_< EMAN::Factory<EMAN::Reconstructor>, boost::noncopyable >("Reconstructors", no_init)
-        .def("get", (EMAN::Reconstructor* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >))&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Reconstructor* (*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict&))&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Reconstructor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Reconstructor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Reconstructor>::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::Factory<EMAN::Reconstructor>::get_list)
         .staticmethod("get_list")
         .staticmethod("get")

@@ -51,9 +51,9 @@ namespace EMAN
 		void set_vector_at(int i,vector<double>); 
 		void set_points_array(double *p);
 		void mask(double rmax, double rmin = 0.0);
-		void mask_asymmetric_unit(string sym);
-		void set_from(PointArray * source, string sym = "", Transform *transform=0);
-		void set_from(double *source, unsigned int num, string sym = "", Transform *transform=0);
+		void mask_asymmetric_unit(const string & sym);
+		void set_from(PointArray * source, const string & sym = "", Transform *transform=0);
+		void set_from(double *source, unsigned int num, const string & sym = "", Transform *transform=0);
 		void set_from_density_map(EMData * map, int num, float thresh, float apix,
 								  Density2PointsArrayAlgorithm mode = PEAKS_DIV);
 		void sort_by_axis(int axis = 1);	// x,y,z axes = 0, 1, 2

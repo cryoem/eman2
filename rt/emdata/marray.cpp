@@ -12,7 +12,7 @@ void test_get_view_raw(EMData * image)
 
 	float * data = image->get_data();
 
-	assert(marray.num_dimensions() == ndims);
+	assert((int)marray.num_dimensions() == ndims);
 	
 	const size_t* shape = marray.shape();
 
@@ -45,13 +45,12 @@ void test_get_view_trans_2d(EMData * image)
 
 	float * data = image->get_data();
 
-	assert(marray.num_dimensions() == ndims);
+	assert((int)marray.num_dimensions() == ndims);
 	
 	const size_t* shape = marray.shape();
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	int nz = image->get_zsize();
 
 	assert((int)shape[0] == nx);
 	assert((int)shape[1] == ny);

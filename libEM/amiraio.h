@@ -22,7 +22,7 @@ namespace EMAN
 	class AmiraIO:public ImageIO
 	{
 	  public:
-		AmiraIO(string filename, IOMode rw_mode = READ_ONLY);
+		AmiraIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~AmiraIO();
 
 		DEFINE_IMAGEIO_FUNC;

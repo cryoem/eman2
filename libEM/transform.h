@@ -107,8 +107,20 @@ namespace EMAN
 		Transform get_sym(const string & sym, int n);
 		
 		// A few utilities used for matrix operations
-		inline void row_mult(int n,float f) { matrix[n][0]*=f; matrix[n][1]*=f; matrix[n][2]*=f; }
-		inline void row_add(int n,float a,float b,float c) { matrix[n][0]+=a; matrix[n][1]+=b; matrix[n][2]+=c; }
+		inline void row_mult(int n,float f)
+		{
+			matrix[n][0]*=f;
+			matrix[n][1]*=f;
+			matrix[n][2]*=f;
+		}
+		
+		inline void row_add(int n,float a,float b,float c)
+		{
+			matrix[n][0]+=a;
+			matrix[n][1]+=b;
+			matrix[n][2]+=c;
+		}
+
 		void row_exch(int n1,int n2) { 
 			float t; 
 			t=matrix[n1][0]; matrix[n1][0]=matrix[n2][0]; matrix[n2][0]=t; 
@@ -116,7 +128,10 @@ namespace EMAN
 			t=matrix[n1][2]; matrix[n1][2]=matrix[n2][2]; matrix[n2][2]=t; 
 		}
 		void print() {
-			for (int i=0; i<3; i++) printf("%6.3f\t%6.3f\t%6.3f\n",matrix[i][0],matrix[i][1],matrix[i][2]);
+			for (int i=0; i<3; i++) {
+				printf("%6.3f\t%6.3f\t%6.3f\n",
+					   matrix[i][0],matrix[i][1],matrix[i][2]);
+			}
 			printf("\n");
 		}
 				

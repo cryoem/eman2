@@ -11,7 +11,7 @@
 using namespace EMAN;
 
 
-SpiderIO::SpiderIO(string spider_filename, IOMode rw)
+SpiderIO::SpiderIO(const string & spider_filename, IOMode rw)
 :	filename(spider_filename), rw_mode(rw)
 {
 	spider_file = 0;

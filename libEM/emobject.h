@@ -91,13 +91,14 @@ namespace EMAN
 		EMObject(const char *s): n(0), emdata(0), xydata(0), str(string(s)), type(STRING)
 		{
 		}
-		EMObject(string s):n(0), emdata(0), xydata(0), str(s), type(STRING) {
+		EMObject(const string & s):n(0), emdata(0), xydata(0), str(s), type(STRING) {
 		}
 		EMObject(EMData * em):n(0), emdata(em), xydata(0), type(EMDATA) {
 		}
 		EMObject(XYData * xy):n(0),  emdata(0), xydata(xy),type(XYDATA) {
 		}
-		EMObject(const vector < float >&v):n(0), emdata(0), xydata(0), farray(v),type(FLOATARRAY)
+		EMObject(const vector < float >&v)
+			:n(0), emdata(0), xydata(0), farray(v),type(FLOATARRAY)
 		{
 		}
 
@@ -154,24 +155,32 @@ namespace EMAN
 		{
 		}
 
-		Dict(string key1, EMObject val1)
+		Dict(const string & key1, EMObject val1)
 		{
 			dict[key1] = val1;
 		}
 
-		Dict(string key1, EMObject val1, string key2, EMObject val2) {
+		Dict(const string & key1, EMObject val1,
+			 const string & key2, EMObject val2)
+		{
 			dict[key1] = val1;
 			dict[key2] = val2;
 		}
 
-		Dict(string key1, EMObject val1, string key2, EMObject val2, string key3, EMObject val3) {
+		Dict(const string & key1, EMObject val1,
+			 const string & key2, EMObject val2,
+			 const string & key3, EMObject val3)
+		{
 			dict[key1] = val1;
 			dict[key2] = val2;
 			dict[key3] = val3;
 		}
 
-		Dict(string key1, EMObject val1, string key2, EMObject val2,
-			 string key3, EMObject val3, string key4, EMObject val4) {
+		Dict(const string & key1, EMObject val1,
+			 const string & key2, EMObject val2,
+			 const string & key3, EMObject val3,
+			 const string & key4, EMObject val4)
+		{			
 			dict[key1] = val1;
 			dict[key2] = val2;
 			dict[key3] = val3;
@@ -233,7 +242,7 @@ namespace EMAN
 			return dict[key];
 		}
 
-		void put(string key, EMObject val)
+		void put(const string & key, EMObject val)
 		{
 			dict[key] = val;
 		}
@@ -383,8 +392,8 @@ namespace EMAN
 		typedef T *(*InstanceType) ();
 
 		static void add(InstanceType i);
-		static T *get(string instance_name);
-		static T *get(string instance_name, const Dict & params);
+		static T *get(const string & instance_name);
+		static T *get(const string & instance_name, const Dict & params);
 		static vector < string > get_list();
 
 	private:
@@ -423,7 +432,8 @@ namespace EMAN
 
 		T *i = new_instance();
 		string name = i->get_name();
-		typename map < string, InstanceType >::iterator fi = my_instance->my_dict.find(name);
+		typename map < string, InstanceType >::iterator fi =
+			my_instance->my_dict.find(name);
 
 		if (fi == my_instance->my_dict.end()) {
 			my_instance->my_dict[name] = new_instance;
@@ -432,7 +442,7 @@ namespace EMAN
 		i = 0;
 	}
 
-	template < class T > T * Factory < T >::get(string instancename)
+	template < class T > T * Factory < T >::get(const string & instancename)
 	{
 		init();
 		typename map < string, InstanceType >::iterator fi =
@@ -444,7 +454,8 @@ namespace EMAN
 		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}
 
-	template < class T > T * Factory < T >::get(string instancename, const Dict & params)
+	template < class T > T * Factory < T >::get(const string & instancename,
+												const Dict & params)
 	{
 		init();
 

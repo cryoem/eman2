@@ -43,7 +43,7 @@ void XYData::update()
 }
 
 
-int XYData::read_file(string filename)
+int XYData::read_file(const string & filename)
 {
 	FILE *in = fopen(filename.c_str(), "rb");
 	if (!in) {
@@ -74,7 +74,7 @@ int XYData::read_file(string filename)
 	return 0;
 }
 
-int XYData::write_file(string filename) const
+int XYData::write_file(const string & filename) const
 {
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {

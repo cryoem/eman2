@@ -16,7 +16,7 @@ int XplorIO::NFLOAT_PER_LINE = 6;
 int XplorIO::INTEGER_SIZE = 8;
 int XplorIO::FLOAT_SIZE = 12;
 
-XplorIO::XplorIO(string file, IOMode rw)
+XplorIO::XplorIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), xplor_file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

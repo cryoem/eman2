@@ -10,7 +10,7 @@
 
 using namespace EMAN;
 
-EmIO::EmIO(string file, IOMode rw)
+EmIO::EmIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), em_file(0), initialized(false)
 {
 	mode_size = 0;

@@ -36,7 +36,7 @@ TagTable::~TagTable()
 }
 
 
-void TagTable::add(string name, string value)
+void TagTable::add(const string & name, const string & value)
 {
 	const char *value_str = value.c_str();
 
@@ -67,22 +67,22 @@ void TagTable::add_data(char *data)
 	}
 }
 
-string TagTable::get_string(string name)
+string TagTable::get_string(const string & name)
 {
 	return tags[name];
 }
 
-int TagTable::get_int(string name)
+int TagTable::get_int(const string & name)
 {
 	return atoi(tags[name].c_str());
 }
 
-float TagTable::get_float(string name)
+float TagTable::get_float(const string & name)
 {
 	return static_cast < float >(atof(tags[name].c_str()));
 }
 
-double TagTable::get_double(string name)
+double TagTable::get_double(const string & name)
 {
 	return atof(tags[name].c_str());
 }
@@ -132,7 +132,7 @@ void TagTable::set_thumb_index(int i)
 }
 
 
-TagData::TagData(FILE * data_file, TagTable * table, string tagname)
+TagData::TagData(FILE * data_file, TagTable * table, const string & tagname)
 	:	in(data_file), tagtable(table), name(tagname), tag_type(UNKNOWN)
 {
 }
@@ -481,7 +481,7 @@ size_t TagData::typesize(int t) const
 
 /////////////////////////////////////////////
 
-TagGroup::TagGroup(FILE * data_file, TagTable * table, string groupname)
+TagGroup::TagGroup(FILE * data_file, TagTable * table, const string & groupname)
 	:	in(data_file), tagtable(table), name(groupname), entry_id(0)
 {
 }
@@ -592,7 +592,7 @@ int TagEntry::read(bool nodata)
 
 ////////////////////////////////////////////
 
-DM3IO::DM3IO(string dm3_filename, IOMode rw)
+DM3IO::DM3IO(const string & dm3_filename, IOMode rw)
 	:	filename(dm3_filename), rw_mode(rw), dm3file(0), initialized(false)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();

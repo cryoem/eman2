@@ -45,7 +45,7 @@ namespace EMAN
 		}
 
 
-		T *get(string itemname) const
+		T *get(const string & itemname) const
 		{
 			T *result = 0;
 
@@ -60,7 +60,7 @@ namespace EMAN
 			return result;
 		}
 
-		void add(string itemname, T * item)
+		void add(const string & itemname, T * item)
 		{
 			if (!item) {
 				return;
@@ -81,7 +81,7 @@ namespace EMAN
 			}
 		}
 
-		void remove(string itemname)
+		void remove(const string & itemname)
 		{
 			int r = -1;
 			for (int i = 0; i < nitems; i++) {
@@ -120,8 +120,8 @@ namespace EMAN
 	  public:
 		static GlobalCache *instance();
 
-		ImageIO *get_imageio(string filename, int rw_mode);
-		void add_imageio(string filename, int rw_mode, ImageIO * io);
+		ImageIO *get_imageio(const string & filename, int rw_mode);
+		void add_imageio(const string & filename, int rw_mode, ImageIO * io);
 
 	  private:
 		EMCache < ImageIO > *imageio_cache;
