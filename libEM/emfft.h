@@ -1,7 +1,9 @@
 #ifndef eman_emfft_h__
 #define eman_emfft_h__
 
-
+/*
+ * todo: add 'const' to some of the array
+ */
 
 #ifdef FFTW2
     
