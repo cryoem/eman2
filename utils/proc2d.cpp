@@ -437,7 +437,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		map<string, float> rr = d->get_rotation().get_rotation(Transform::EMAN);
+		Dict rr = d->get_rotation().get_rotation(Transform::EMAN);
 		//int nimg = d->get_nimg();
 
 		if (scale < 1.0) {
@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
 			d->rotate_translate(t);
 		}
 
-		d->set_rotation(rr["alt"], rr["az"], rr["phi"]);
+		d->set_rotation((float)rr["alt"], (float)rr["az"], (float)rr["phi"]);
 		//d->setNImg(nimg);
 
 		if (fabs((float)shrink) > 1) {
