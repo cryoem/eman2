@@ -1,3 +1,5 @@
+
+
 LINK_LIBRARIES(EM2)
 
 ADD_EXECUTABLE(blankimg blankimg.cpp)
@@ -5,3 +7,10 @@ ADD_EXECUTABLE(setvalue setvalue.cpp)
 ADD_EXECUTABLE(fft fft.cpp)
 ADD_EXECUTABLE(cmp cmp.cpp)
 ADD_EXECUTABLE(radial_dist radial_dist.cpp)
+
+FIND_LIBRARY(EM_LIBRARY NAMES EM PATHS $ENV{EMANDIR}/lib $ENV{HOME}/EMAN/lib)
+IF(EM_LIBRARY)
+	ADD_EXECUTABLE(emdata_api emdata_api.cpp)
+	TARGET_LINK_LIBRARIES(emdata_api ${EM_LIBRARY})
+	INCLUDE_DIRECTORIES($ENV{EMANDIR}/include)
+ENDIF(EM_LIBRARY)
