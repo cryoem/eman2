@@ -646,7 +646,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				dy = yy - y0;
 				dz = zz - z0;
 
-				weight /= (float)pow(EMConsts::I2G * M_PI, 1.5f);
+				weight /= (float)pow((float)(EMConsts::I2G * M_PI), 1.5f);
 
 				if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
 					break;
@@ -677,7 +677,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + 0.5f);
 				z0 = (int) floor(zz + 0.5f);
 
-				weight /= (float)pow(EMConsts::I3G * M_PI, 1.5f);
+				weight /= (float)pow((float)(EMConsts::I3G * M_PI), 1.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -706,7 +706,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy);
 				z0 = (int) floor(zz);
 
-				weight /= (float)pow(EMConsts::I4G * M_PI, 1.5f);
+				weight /= (float)pow((float)(EMConsts::I4G * M_PI), 1.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
 					break;
@@ -735,7 +735,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + .5);
 				z0 = (int) floor(zz + .5);
 
-				weight /= (float)pow(EMConsts::I5G * M_PI, 1.5f);
+				weight /= (float)pow((float)(EMConsts::I5G * M_PI), 1.5f);
 
 				mx0 = -(int) floor((xx - x0) * 39.0f + 0.5) - 78;
 				my0 = -(int) floor((yy - y0) * 39.0f + 0.5) - 78;
@@ -802,7 +802,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Rotation & eu
 				y0 = (int) floor(yy + .5);
 				z0 = (int) floor(zz + .5);
 
-				weight /= (float)pow(EMConsts::I5G * M_PI, 1.5f);
+				weight /= (float)pow((float)(EMConsts::I5G * M_PI), 1.5f);
 
 				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
 					break;
