@@ -2759,7 +2759,7 @@ void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&tr
 				float y2 = y3;
 				float z2 = z3;
 				for (int i = -nx / 2; i < nx / 2; i++) {
-					if (i * i + j * j + k * k >= mr) {
+					if (x2<0||y2<0||z2<0|| x2>=nx-1||y2>=ny-1||z2>=nz-1) {
 						des_data[l] = 0;
 					}
 					else {

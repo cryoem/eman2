@@ -62,15 +62,23 @@
 	   Also, in several cases I've written a (for example) 32x32x32 pixel MRC
 	   file, but the file is missing one 32x32k slice at the end. ie - the file
 	   is 131072 bytes.
+	   
   041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
-       produced a core dump.
+       produced a core dump. these exceptions are usually caused by invalid
+       memory usage.
+	   
   042. imageio caching caused problems in some imageio subclasses such that
        the header/data writing are not started from the proper locations. this
        need to be verified and tested on all image formats. one test is:
           - write an image to a file
           - write a new header to this file.
           - write new data to this file.
-	   
+
+  043. EMData rotate_translate() does not work. it has segmentation fault
+       and any substantial translation seems to cause garbage to appear in
+       the data.
+
+		  
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
