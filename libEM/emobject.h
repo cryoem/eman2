@@ -10,7 +10,10 @@ using std::vector;
 using std::string;
 using std::map;
 
-namespace EMAN {
+namespace EMAN
+{    
+    class EMData;
+    class XYData;
 
     enum MapInfoType {
 	NORMAL,
@@ -24,10 +27,8 @@ namespace EMAN {
 	ICOS_UNKNOWN
     };
 
-    class EMData;
-    class XYData;
-    
-    class EMObject {
+    class EMObject
+    {
     public:
 	enum ObjectType {
 	    INT,
@@ -41,16 +42,33 @@ namespace EMAN {
 	};
 
     public:
-	EMObject() : type(UNKNOWN) {}
-	EMObject(int num) : n(num), type(INT) {}
-	EMObject(float ff) : f(ff), type(FLOAT) {}
-	EMObject(double dd) : d(dd), type(DOUBLE) {}
-	EMObject(string s) : str(s), type(STRING) {}
-	EMObject(EMData* em) : emdata(em), type(EMDATA) {}
-	EMObject(XYData* xy) : xydata(xy), type(XYDATA) {}
-	EMObject(const vector<float>& v) : farray(v), type(FLOATARRAY) {}
+	EMObject() : type(UNKNOWN)
+	{
+	}
+	EMObject(int num) : n(num), type(INT)
+	{
+	}
+	EMObject(float ff) : f(ff), type(FLOAT)
+	{
+	}
+	EMObject(double dd) : d(dd), type(DOUBLE)
+	{
+	}
+	EMObject(string s) : str(s), type(STRING)
+	{
+	}
+	EMObject(EMData * em) : emdata(em), type(EMDATA)
+	{
+	}
+	EMObject(XYData * xy) : xydata(xy), type(XYDATA)
+	{
+	}
+	EMObject(const vector<float> & v) : farray(v), type(FLOATARRAY)
+	{
+	}
 
-	~EMObject() { }
+	~EMObject() {
+	}
 
 	int get_int() const
 	{
@@ -65,12 +83,13 @@ namespace EMAN {
 	    }
 	    else {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_int() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_int() for data type '%s'",
+					 get_object_type_name(type));
 		}
 	    }
 	    return 0;
 	}
-	
+
 	float get_float() const
 	{
 	    if (type == FLOAT) {
@@ -84,84 +103,93 @@ namespace EMAN {
 	    }
 	    else {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_float() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_float() for data type '%s'",
+					 get_object_type_name(type));
 		}
 	    }
-    
+
 	    return 0;
 	}
-	
+
 	double get_double() const
 	{
 	    if (type == DOUBLE) {
 		return d;
 	    }
 	    else if (type == INT) {
-		return (double)n;
+		return (double) n;
 	    }
 	    else if (type == FLOAT) {
 		return (double) f;
 	    }
 	    else {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_double() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_double() for data type '%s'",
+					 get_object_type_name(type));
 		}
-	    }    
+	    }
 	    return 0;
 	}
-	
+
 	string get_string() const
 	{
 	    if (type != STRING) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_string() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_string() for data type '%s'",
+					 get_object_type_name(type));
 		}
 		return "";
-	    }    
+	    }
 	    return str;
 	}
 
-	    
-	EMData* get_emdata() const
+
+	EMData *get_emdata() const
 	{
 	    if (type != EMDATA) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_emdata() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_emdata() for data type '%s'",
+					 get_object_type_name(type));
 		}
 		return 0;
-	    }    
+	    }
 	    return emdata;
 	}
 
-	XYData* get_xydata() const
+	XYData *get_xydata() const
 	{
 	    if (type != XYDATA) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_xydata() for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_xydata() for data type '%s'",
+					 get_object_type_name(type));
 		}
 		return 0;
 	    }
 	    return xydata;
 	}
-	
+
 	vector<float> get_farray() const
 	{
 	    if (type != FLOATARRAY) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_farray for data type '%s'", get_object_type_name(type));
+		    Log::logger()->error("type error. Cannot call get_farray for data type '%s'",
+					 get_object_type_name(type));
 		}
-		return vector<float>();
+		return vector<float> ();
 	    }
 	    return farray;
 	}
-	
-	bool is_null() const { return (type == UNKNOWN); }
-	
-	string to_str() const;
- 
-	static const char* get_object_type_name(ObjectType t) 
+
+	bool is_null() const
 	{
-	    switch(t) {
+	    return (type == UNKNOWN);
+	}
+
+	string to_str() const;
+
+	static const char *get_object_type_name(ObjectType t)
+	{
+	    switch (t) {
 	    case INT:
 		return "INT";
 	    case FLOAT:
@@ -179,64 +207,69 @@ namespace EMAN {
 	    case UNKNOWN:
 		return "UNKNOWN";
 	    }
-    
+
 	    return "UNKNOWN";
 	}
-	
+
     private:
-	union {
+	union
+	{
 	    int n;
 	    float f;
 	    double d;
 	};
-	
-	EMData* emdata;
-	XYData* xydata;
+
+	EMData *emdata;
+	XYData *xydata;
 	string str;
 	vector<float> farray;
 	ObjectType type;
     };
 
 
-    class Dict {
+    class Dict
+    {
     public:
-	Dict() {}
-	
-	Dict(const map<string, EMObject>& d)
+	Dict()
+	{
+	}
+
+	Dict(const map<string, EMObject> & d)
 	{
 	    map<string, EMObject>::const_iterator p;
 	    for (p = d.begin(); p != d.end(); p++) {
 		dict[p->first] = p->second;
 	    }
 	}
-	
-	~Dict() {}
 
-	vector<string> keys() const
+	~Dict() {
+	}
+
+	vector<string> keys()const
 	{
 	    vector<string> result;
-    
+
 	    map<string, EMObject>::const_iterator p;
 	    for (p = dict.begin(); p != dict.end(); p++) {
 		result.push_back(p->first);
 	    }
-    
+
 	    return result;
 	}
-	
-	vector<EMObject> values() const
+
+	vector<EMObject> values()const
 	{
 	    vector<EMObject> result;
-    
+
 	    map<string, EMObject>::const_iterator p;
 	    for (p = dict.begin(); p != dict.end(); p++) {
 		result.push_back(p->second);
 	    }
-    
+
 	    return result;
 	}
 
-	bool has_key(const string& key) const
+	bool has_key(const string & key) const
 	{
 	    map<string, EMObject>::const_iterator p = dict.find(key);
 	    if (p != dict.end()) {
@@ -245,56 +278,91 @@ namespace EMAN {
 	    return false;
 	}
 
-	int size() const { return dict.size(); }
-	
-	EMObject get(const string& key) { return dict[key]; }
-	
-	void put(string key, EMObject val) { dict[key] = val; }
-	
-	map<string, EMObject>& get_dict() { return dict; }
-	
-	map<string, EMObject> get_dict() const { return dict; }
+	int size() const
+	{
+	    return dict.size();
+	}
 
-	EMObject& operator[](const string& key) { return dict[key]; }
+	EMObject get(const string & key)
+	{
+	    return dict[key];
+	}
 
-	EMObject operator[](const string& key) const { return dict[key]; }
-	
+	void put(string key, EMObject val)
+	{
+	    dict[key] = val;
+	}
+
+	map<string, EMObject> & get_dict() {
+	    return dict;
+	}
+
+	map<string, EMObject> get_dict()const
+	{
+	    return dict;
+	}
+
+	EMObject & operator[] (const string & key)
+	{
+	    return dict[key];
+	}
+
+	EMObject operator[] (const string & key) const
+	{
+	    return dict[key];
+	}
+
     private:
 	mutable map<string, EMObject> dict;
     };
 
-    class TypeDict {
+    class TypeDict
+    {
     public:
-	TypeDict() {}
-	~TypeDict() {}
+	TypeDict()
+	{
+	}
+	
+	~TypeDict()
+	{
+	}
 
-	vector<string> keys() const
+	vector<string> keys()const
 	{
 	    vector<string> result;
-    
 	    map<string, string>::const_iterator p;
+	    
 	    for (p = dict.begin(); p != dict.end(); p++) {
 		result.push_back(p->first);
 	    }
-    
+
 	    return result;
 	}
-	
-	int size() const { return dict.size(); }
+
+	int size() const
+	{
+	    return dict.size();
+	}
 
 	void put(string key, EMObject::ObjectType o)
 	{
 	    dict[key] = EMObject::get_object_type_name(o);
 	}
-	
-	string get(string key) { return dict[key]; }
-	
-	string operator[](const string& key) { return dict[key]; }
+
+	string get(string key)
+	{
+	    return dict[key];
+	}
+
+	string operator[] (const string & key)
+	{
+	    return dict[key];
+	}
 
     private:
 	map<string, string> dict;
     };
-    
+
 }
 
 #endif

@@ -4,17 +4,17 @@
 #include "emobject.h"
 #include <string>
 #include <vector>
-#include <map>
 
 using std::string;
 using std::vector;
-using std::map;
 
-namespace EMAN {
+namespace EMAN
+{
     class ImageIO;
     class Region;
 
-    class EMUtil {
+    class EMUtil
+    {
     public:
 	enum EMDataType {
 	    EM_CHAR,
@@ -30,7 +30,7 @@ namespace EMAN {
 	    EM_FLOAT_COMPLEX,
 	    EM_UNKNOWN
 	};
-	
+
 	enum ImageType {
 	    IMAGE_MRC,
 	    IMAGE_SPIDER,
@@ -44,7 +44,7 @@ namespace EMAN {
 	    IMAGE_PIF,
 	    IMAGE_VTK,
 	    IMAGE_PNG,
-	    IMAGE_SAL,    
+	    IMAGE_SAL,
 	    IMAGE_ICOS,
 	    IMAGE_EMIM,
 	    IMAGE_GATAN2,
@@ -53,41 +53,41 @@ namespace EMAN {
 	    IMAGE_EM,
 	    IMAGE_UNKNOWN
 	};
-	
-	static EMData* vertical_acf(const EMData* image, int maxdy);
 
-	static EMData* make_image_median(const vector<EMData*>& image_list);
+	static EMData *vertical_acf(const EMData * image, int maxdy);
 
-	
+	static EMData *make_image_median(const vector<EMData *> & image_list);
+
+
 	static ImageType get_image_type(string filename);
 	static int get_image_count(string filename);
-	static ImageIO* get_imageio(string filename, int rw_mode, ImageType image_type = IMAGE_UNKNOWN);
+	static ImageIO *get_imageio(string filename, int rw_mode, ImageType image_type =
+				    IMAGE_UNKNOWN);
 
-	static const char* get_imagetype_name(EMUtil::ImageType type);
-	static const char* get_datatype_string(EMDataType type);
-	
-	static void get_region_dims(const Region* area, int nx, int* area_x, int ny, 
-				    int* area_y, int nz = 1, int* area_z = 0);
+	static const char *get_imagetype_name(EMUtil::ImageType type);
+	static const char *get_datatype_string(EMDataType type);
 
-	static void get_region_origins(const Region* area, int* p_x0, int* p_y0, int* p_z0 = 0, 
+	static void get_region_dims(const Region * area, int nx, int *area_x, int ny,
+				    int *area_y, int nz = 1, int *area_z = 0);
+
+	static void get_region_origins(const Region * area, int *p_x0, int *p_y0, int *p_z0 = 0,
 				       int nz = 1, int image_index = 0);
-	
-	static int get_region_data(unsigned char* cdata, FILE* in, int image_index, 
+
+	static int get_region_data(unsigned char *cdata, FILE * in, int image_index,
 				   int mode_size, int nx, int ny, int nz = 1,
-				   const Region* area = 0, bool need_flip = false,
+				   const Region * area = 0, bool need_flip = false,
 				   int pre_row = 0, int post_row = 0);
 
-	static void dump_dict(const Dict& dict);
+	static void dump_dict(const Dict & dict);
 
-	static bool is_same_size(const EMData* em1, const EMData* em2);
-	
-	
-	
+	static bool is_same_size(const EMData * em1, const EMData * em2);
+
+
+
     private:
-	static ImageType fast_get_image_type(string filename, const void* first_block, long file_size);
+	static ImageType fast_get_image_type(string filename, const void *first_block,
+					     long file_size);
     };
 }
 
 #endif
-
-    
