@@ -24,9 +24,9 @@ int main()
 		image->set_size(2*image->get_xsize(), image->get_ysize(), image->get_zsize());
 		image->write_image(test_imagename, 0, EMUtil::IMAGE_MRC);
 	}
-	catch(Exception *e) {
+	catch(E2Exception & e) {
 		err = 1;
-		printf("%s\n", e->what());
+		printf("%s\n", e.what());
 	} 
 		 
 	return err;

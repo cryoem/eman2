@@ -66,7 +66,7 @@ int main()
 		rt1();
 		rt2();
 	}
-	catch (Exception & e) {
+	catch (E2Exception & e) {
 		e.what();
 	}
 	

@@ -10,7 +10,7 @@ int main()
 		e1.set_size(10,10,10);
 		e1.dot(0, false);
 	}
-	catch (Exception & e) {
+	catch (E2Exception & e) {
 		LOGERR("%s", e.what());
 	}
 	

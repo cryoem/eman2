@@ -4,13 +4,13 @@ using namespace EMAN;
 
 const char* get_test_image()
 {
-        static char filename[256];
-        static bool done = false;
-        if (!done) {
-                sprintf(filename, "%s/images/tablet.mrc", getenv("HOME"));
-                done = true;
-        }
-        return filename;
+	static char filename[256];
+	static bool done = false;
+	if (!done) {
+		sprintf(filename, "%s/images/tablet.mrc", getenv("HOME"));
+		done = true;
+	}
+	return filename;
 }
 
 void test_em()
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 		
 					  
 	}
-	catch(Exception &e) {
+	catch(E2Exception &e) {
 		e.what();
 	}
 	return 0;

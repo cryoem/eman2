@@ -12,14 +12,17 @@ a = Wrapper.em2numpy(e)
 n = ny/2
 
 for i in range(nx):
-	print e.get_value_at(i, n), a[n][i]
-
+	assert(e.get_value_at(i, n) == a[n][i])
 
 print a.shape
+print a.typecode()
 
-for x in range(nx):
-	for y in range(n):
-		a[y][x] = 0
+#for x in range(nx):
+#	for y in range(n):
+#		a[y][x] = 0
 
 e.write_image("test.mrc")
 
+e2 = EMData()
+Wrapper.numpy2em(a, e2)
+e2.write_image("test2.mrc")

@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 		insert_beyond_existing_file();
 		insert_inside_existing_file();
 	}
-	catch(Exception &e) {
+	catch(E2Exception &e) {
 		printf("%s", e.what());
 	}
 	return 0;

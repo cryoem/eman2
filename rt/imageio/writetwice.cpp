@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 		e.write_image("test.mrc");
 		e.write_image("test.mrc", 0, EMUtil::IMAGE_MRC, true);
 	}
-	catch(Exception &e) {
+	catch(E2Exception &e) {
 		printf("%s", e.what());
 	}
 	return 0;
