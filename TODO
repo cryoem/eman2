@@ -19,12 +19,6 @@
 
   020: investigate EMAN2 GUI tools: QT PyQT WxPython etc
 
-  023. calc_ccf isn't working properly. It's producing
-	   the wrong results, and even more troubling, it seems that it is modifying
-	   one of the input images.  a=b.calc_ccf(c,True,None)  modifies c in some
-	   way. The result seems to be phase shifted vertically, but not
-	   horizontally. Needs a careful look...
-
   042. imageio caching caused problems in some imageio subclasses such that
        the header/data writing are not started from the proper locations. this
        need to be verified and tested on all image formats. one test is:
@@ -33,15 +27,9 @@
           - write new data to this file.
 		  
   045. ImageIO region writing are not supported in some imageio classes,
-       This includes EM, ICOS, IMAGIC, HDF, AMRIRA, SPIDER,
+       This includes ICOS, IMAGIC, HDF, AMRIRA, SPIDER,
        SINGLE_SPIDER, PIF, VTK, XPLOR.
 	   
-  049. Use exception to replace ImageIO init() error code.
-
-  050. EMData::rotate(alt,az,phi) still doesn't work properly. For odd
-	   image sizes it produces bad results.  When phi is nonzero, it
-	   produces funny scaling operations.
-
   051. Transform may has a confusion about post translation and
        pre-translation. Need to verify it.
 
@@ -125,7 +113,14 @@
 
   8/7/04:  022. cannot call calc_ccf with 2 args. has to pass the 3rd one				
 				as None
-				
+
+  11/14/04 	023. 			
+       calc_ccf isn't working properly. It's producing
+	   the wrong results, and even more troubling, it seems that it is modifying
+	   one of the input images.  a=b.calc_ccf(c,True,None)  modifies c in some
+	   way. The result seems to be phase shifted vertically, but not
+	   horizontally. Needs a careful look...
+
   8/3/04:  024: Matrix3f: multiply and division have wrong
 				implementation. It shouldn't do element-to-element mult/div.
 
@@ -195,6 +190,14 @@
 
   11/1/04 034. in ImageIO classes, add a way to label images using EMAN1 'name'
 			   and set_name().
+
+  11/16/04 049.
+      Use exception to replace ImageIO init() error code.
+
+  11/10/04. 050
+       EMData::rotate(alt,az,phi) still doesn't work properly. For odd
+	   image sizes it produces bad results.  When phi is nonzero, it
+	   produces funny scaling operations.
 
   11/12/04 052
       Write unit tests for basic Vec and Matrix operations. It should
