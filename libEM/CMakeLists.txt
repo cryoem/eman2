@@ -6,12 +6,12 @@ SET(LIB_EM_SOURCE byteorder.cpp
     util.cpp
     emutil.cpp
     interp.cpp
-	matrix.cpp
-	quaternion.cpp
-	rotation.cpp
+    matrix.cpp
+    quaternion.cpp
+    rotation.cpp
     transform.cpp
     geometry.cpp
-	pointarray.cpp
+    pointarray.cpp
     mrcio.cpp
     dm3io.cpp
     tifio.cpp
@@ -41,7 +41,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     cmp.cpp
     averager.cpp
     reconstructor.cpp
-	exception.cpp
+    exception.cpp
     )
 
 IF(WIN32)
@@ -55,15 +55,19 @@ ENDIF(WIN32)
 
 IF (ENABLE_TIFF)
     TARGET_LINK_LIBRARIES(EM2 ${TIFF_LIBRARY})
+    #TARGET_LINK_LIBRARIES(EM2 ${JPEG_LIBRARY})
 ENDIF(ENABLE_TIFF)
 
 IF (ENABLE_HDF5)
     TARGET_LINK_LIBRARIES(EM2 ${HDF5_LIBRARY})
+    TARGET_LINK_LIBRARIES(EM2 ${ZLIB_LIBRARY})
+	IF (WIN32)
+		TARGET_LINK_LIBRARIES(EM2 ${SZLIB_LIBRARY})
+	ENDIF(WIN32)
 ENDIF(ENABLE_HDF5)
 
 IF (ENABLE_PNG)
     TARGET_LINK_LIBRARIES(EM2 ${PNG_LIBRARY})
-    TARGET_LINK_LIBRARIES(EM2 z)
 ENDIF(ENABLE_PNG)
 
 IF(ENABLE_NFFT)
