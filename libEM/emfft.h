@@ -43,7 +43,6 @@ namespace EMAN
 	}
 
 	friend bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
-
     private:
 	enum { NDIMS = 3 };
 
@@ -53,7 +52,8 @@ namespace EMAN
 	rfftwnd_plan plan_nd;
 	rfftw_plan plan_1d;
     };
-
+    
+    bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
 
     class EMfft
     {

@@ -186,8 +186,7 @@ namespace EMAN
 	}
     };
 
-    
-    
+    template<> Factory<Averager>::Factory();    
 }
 
 

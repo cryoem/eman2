@@ -157,6 +157,8 @@ namespace EMAN
 	int ny;
 	int nz;
     };
+
+    template<> Factory<Reconstructor>::Factory();
 }
 
 #endif

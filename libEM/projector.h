@@ -347,6 +347,7 @@ namespace EMAN
 	}
     };
 
+    template<> Factory<Projector>::Factory();
 }
 
 #endif

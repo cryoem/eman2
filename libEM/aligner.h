@@ -416,6 +416,7 @@ namespace EMAN
 	}
     };
     
+    template<> Factory<Aligner>::Factory();
 }
 
 #endif

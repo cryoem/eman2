@@ -134,6 +134,7 @@ namespace EMAN
 	}
     };
 
+    template<> Factory<Cmp>::Factory();
 }
 
 
