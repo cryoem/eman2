@@ -47,15 +47,14 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::map_to_python<double>();
 	EMAN::map_to_python<std::string>();
 	EMAN::map_to_python<vector<string> >();
-	EMAN::map_to_python<EMAN::EMObject>();
 
 	EMAN::map_from_python<int>();
 	EMAN::map_from_python<long>();
 	EMAN::map_from_python<float>();
 	EMAN::map_from_python<std::string>();
 	EMAN::map_from_python<vector<string> >();
-	EMAN::map_from_python<EMAN::EMObject>();
 
+    EMAN::EMObject_to_python();
 	EMAN::Dict_to_python();
 	EMAN::Dict_from_python();
 

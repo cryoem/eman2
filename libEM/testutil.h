@@ -46,8 +46,8 @@ namespace EMAN
 		static EMObject emobject_to_py(const string& str);
 		static EMObject emobject_to_py(EMData * emdata);
 		static EMObject emobject_to_py(XYData * xydata);
-		static EMObject emobject_to_py(const vector<float> & farray);
-		static EMObject emobject_to_py(const vector<string> & strarray);
+		static EMObject emobject_farray_to_py();
+		static EMObject emobject_strarray_to_py();
 		
 		static IntPoint test_IntPoint(const IntPoint & p);
 		static FloatPoint test_FloatPoint(const FloatPoint & p);

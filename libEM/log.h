@@ -12,10 +12,12 @@ using std::string;
 
 namespace EMAN
 {
+#if 0
 #ifndef __func__
 #define __func__ ""
 #endif
-
+#endif
+	
 #define ENTERFUNC  LOGDEBUG("Enter ")
 #define EXITFUNC   LOGDEBUG("Exit ")
 	

@@ -64,8 +64,8 @@ def get_dict(typename):
 			n = TestUtil.get_debug_float(i)
 		elif typename == "string":
 			n = TestUtil.get_debug_string(i)
-		elif typename == "emobject":
-			n = EMObject(TestUtil.get_debug_float(i))
+#		elif typename == "emobject":
+#			n = EMObject(TestUtil.get_debug_float(i))
 		d[s] = n
 		
 	return d

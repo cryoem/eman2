@@ -39,18 +39,7 @@ namespace EMAN {
 		 */
 		static void numpy2em(python::numeric::array& array, EMData* image);
     };
-#if 0
-	struct PyEMDataObject
-	{
-		PyObject_HEAD
-		EMData * emdata;
-	};
-	
-	struct extract_EMData_object
-	{
-		static EMData * & execute(PyEMDataObject & o) { return o.emdata; }
-	};
-#endif
+
 	
     template <class T>
     struct vector_to_python : python::to_python_converter<vector<T>,
@@ -111,13 +100,12 @@ namespace EMAN {
 		}
     };
 
-#if 0
+
 	struct EMObject_to_python : python::to_python_converter<EMObject,
 							   EMObject_to_python>
 	{
 		static PyObject* convert(EMObject const& emobj);
 	};
-#endif
 	
     template <class T>
     struct vector_from_python

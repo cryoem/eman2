@@ -85,8 +85,6 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	
 }
 
-#if 0
-// need further investigation to make it work
 PyObject* EMObject_to_python::convert(EMObject const& emobj)
 {
 
@@ -107,18 +105,32 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 	}
 	else if (t == EMObject::EMDATA) {
 		EMData * img = (EMData*) emobj;
-		result = python::object(img).ptr();
+		result = python::incref(python::object(img).ptr());
 	}
 	else if (t == EMObject::XYDATA) {
-		XYData * xyd = (XYData*) xyd;
-		result = python::object(xyd).ptr();
+		XYData * xyd = (XYData*) emobj;
+		result = python::incref(python::object(xyd).ptr());
 	}
-			
-	if (result) {
-		return python::incref(result);
+	else if (t == EMObject::FLOATARRAY) {
+		vector<float> farray = emobj;
+		python::list flist;
+	    
+		for (size_t i = 0; i < farray.size(); i++) {
+			flist.append(farray[i]);
+		}
+
+		result = python::incref(python::list(flist).ptr());
 	}
-	return 0;
+	else if (t == EMObject::STRINGARRAY) {
+		vector<string> strarray = emobj;
+		python::list flist;
+	    
+		for (size_t i = 0; i < strarray.size(); i++) {
+			flist.append(strarray[i]);
+		}
+		
+		result = python::incref(python::list(flist).ptr());
+	}
+
+	return result;
 }
-
-
-#endif

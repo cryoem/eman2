@@ -64,8 +64,8 @@ void Log::loc(LogLevel level, const string & filename, int linenum, const string
 	}
 
 	location = Util::sbasename(filename) + ":" + Util::int2str(linenum);
-        if (func != "") {
-	      location +=" " + func + "()";
+	if (func != "") {
+		location +=" " + func + "()";
 	}
 }
 

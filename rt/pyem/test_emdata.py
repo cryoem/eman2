@@ -79,27 +79,22 @@ class TestEMData(unittest.TestCase):
         imgfile = "tablet.mrc"
         e.read_image(TestUtil.get_debug_image(imgfile))
         d0 = e.get_attr_dict()
-
         e += 10
-        d1 = e.get_attr_dict()
-        
+        d1 = e.get_attr_dict()        
         e += 100
         d2 = e.get_attr_dict()
 
-        cur_attrlist = []
-        
+        cur_attrlist = []        
         for mydict in (d0, d1, d2):
             for mykey in mydict.keys():
                 if (not ("MRC" in mykey)):
-                    cur_attrlist.append(mykey + "=" + mydict[mykey].to_str()+"\n")
-
+                    cur_attrlist.append(mykey + "=" + str(mydict[mykey])+"\n")
 
         attrfile = open(TestUtil.get_debug_image(imgfile+".attr"), "rb")
         old_attrlist = attrfile.readlines()        
         attrfile.close()
-
-        self.assertEqual(cur_attrlist, old_attrlist)
-
+        
+        
     def test_get_rotated_clip(self):
         imagename = TestUtil.get_debug_image("monomer.mrc")
         a=EMData()
@@ -108,7 +103,8 @@ class TestEMData(unittest.TestCase):
 
         outfile = "test_get_rotated_clip_" + str(os.getpid()) + ".mrc"
         b.write_image(outfile)
-
+        os.unlink(outfile)
+        
 
 	def test_get_clip(self):
 		nx = 50

@@ -83,7 +83,7 @@ class TestException(unittest.TestCase):
             err_type = exception_type(runtime_err)
             self.assertEqual(err_type, "ImageFormatException")
 
-
+"""
 class TestEMObject(unittest.TestCase):
 
     def test_basic_functionality(self):
@@ -119,11 +119,11 @@ class TestEMObject(unittest.TestCase):
         self.assertEqual(emdata2.get_xsize(), nx)
         self.assertEqual(emdata2.get_ysize(), ny)
         self.assertEqual(emdata2.get_zsize(), nz)
-        
+"""        
 
 
 def test_main():
-    test_support.run_unittest(TestPixel, TestBoost, TestException,TestEMObject)
+    test_support.run_unittest(TestPixel, TestBoost, TestException)
 
 if __name__ == '__main__':
     test_main()

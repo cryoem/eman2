@@ -13,37 +13,57 @@ import testlib
 class TestTypeConverter(unittest.TestCase):
 
 
-	def test_emobject_to_py(self):
-		n1 = 100
-		n2 = TestUtil.emobject_to_py(n1)
-		self.assertEqual(n1, n2)
+    def test_emobject_to_py(self):
+        
+        nx = 10
+        ny = 12
+        nz = 2
+        img1 = EMData()
+        img1.set_size(nx, ny, nz)        
+        img2 = TestUtil.emobject_to_py(img1)
+        self.assertEqual(img2.get_xsize(), nx)
+        self.assertEqual(img2.get_ysize(), ny)
+        self.assertEqual(img2.get_zsize(), nz)
 
-		f1 = 3.14
-		f2 = TestUtil.emobject_to_py(f1)
-		self.assertEqual(f1, f2)
+        attr_dict = img2.get_attr_dict()
+        self.assertEqual(type(attr_dict["minimum"]), type(2.2))
+        self.assertEqual(type(attr_dict["nx"]), type(nx))
+        
+        n1 = 100
+        n2 = TestUtil.emobject_to_py(n1)
+        self.assertEqual(n1, n2)
 
-		str1 = "helloworld"
-		str2 = TestUtil.emobject_to_py(str1)
-		self.assertEqual(str1, str2)
+        f1 = 3.14
+        f2 = TestUtil.emobject_to_py(f1)
+        self.assertEqual(f1, f2)
 
-		nx = 10
-		ny = 12
-		nz = 2
-		img1 = EMData()
-		img1.set_size(nx, ny, nz)
-		img2 = TestUtil.emobject_to_py(img1)
-		print type(img2)
-		
-		img2.write_image("a.mrc")
-		#print img1.get_xsize()
-"""		
-		self.assertEqual(img2.get_xsize(), nx)
-		self.assertEqual(img2.get_ysize(), ny)
-		self.assertEqual(img2.get_zsize(), nz)
+        str1 = "helloworld"
+        str2 = TestUtil.emobject_to_py(str1)
+        self.assertEqual(str1, str2)
 
-		
-		
+        farray = TestUtil.emobject_farray_to_py()
+        farray2 = testlib.get_list("float")
+        self.assertEqual(farray, farray2)
 
+        strarray = TestUtil.emobject_strarray_to_py()
+        strarray2 = testlib.get_list("string")
+        self.assertEqual(strarray, strarray2)
+
+        testfile = "test_emobject_to_py_xydata.txt"
+        out = open(testfile, "wb")
+        for f in farray2:
+            out.write(str(f) + " " + str(f) + "\n")
+        out.close()
+        xyd = XYData()
+        xyd.read_file(testfile)
+        xyd2 = TestUtil.emobject_to_py(xyd)
+        self.assertEqual(xyd2.get_size(), len(farray2))
+        for i in range(len(farray2)):
+            self.assertEqual(xyd2.get_x(i), farray2[i])
+            self.assertEqual(xyd2.get_y(i), farray2[i])
+        os.unlink(testfile)
+        
+   
     def test_emobject(self):
         num = TestUtil.get_debug_int(0)
         TestUtil.to_emobject({"int": num})
@@ -80,8 +100,8 @@ class TestTypeConverter(unittest.TestCase):
 
 
     def test_Dict(self):
-        edict = get_dict("emobject")
-        edict2 = TestUtil.test_dict(edict)
+        edict = get_dict("float")
+        edict2 = TestUtil.test_dict(edict)        
         self.assertEqual(edict, edict2)
 
 
@@ -125,9 +145,9 @@ class TestTypeConverter(unittest.TestCase):
         smap2 = TestUtil.test_map_string(smap)
         self.assertEqual(smap, smap2)
 
-        emobjectmap = get_dict("emobject")
-        emobjectmap2 = TestUtil.test_map_emobject(emobjectmap)
-        self.assertEqual(emobjectmap, emobjectmap2)
+        # emobjectmap = get_dict("emobject")
+        # emobjectmap2 = TestUtil.test_map_emobject(emobjectmap)
+        # self.assertEqual(emobjectmap, emobjectmap2)
 
 
     def test_vector(self):
@@ -225,7 +245,6 @@ class TestTypeConverter(unittest.TestCase):
         
         testlib.check_emdata(img2, sys.argv[0])
         testlib.check_emdata(img3, sys.argv[0])
-"""
 
 
 def test_main():

@@ -628,15 +628,23 @@ EMObject TestUtil::emobject_to_py(XYData * xydata)
 }
 
 
-EMObject TestUtil::emobject_to_py(const vector<float> & farray)
+EMObject TestUtil::emobject_farray_to_py()
 {
-	return EMObject(farray);
+	vector<float> v(3);
+	for (int i = 0; i < 3; i++) {
+		v[i] = tf[i];
+	}
+	return EMObject(v);
 }
 
 
-EMObject TestUtil::emobject_to_py(const vector<string> & strarray)
+EMObject TestUtil::emobject_strarray_to_py()
 {
-	return EMObject(strarray);
+	vector<string> v(3);
+	for (int i = 0; i < 3; i++) {
+		v[i] = get_debug_string(i);
+	}
+	return EMObject(v);
 }
 
 
