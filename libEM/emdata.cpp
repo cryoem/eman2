@@ -493,7 +493,7 @@ EMData *EMData::do_fft()
 	}
 
 
-	float scale = 1.0 / (nx * ny * nz);
+	float scale = 1.0f / (nx * ny * nz);
 	dat->mult(scale);
 
 	dat->done_data();
@@ -637,20 +637,20 @@ Point < float >EMData::normalize_slice(EMData * slice, float alt, float az, floa
 				float xx = x * mx[0] + (y - ny / 2) * mx[1];
 				float yy = x * mx[2] + (y - ny / 2) * mx[3];
 				float zz = x * mx[4] + (y - ny / 2) * mx[5];
-				float cc = 1.0;
+				float cc = 1.0f;
 				if (xx < 0) {
 					xx = -xx;
 					yy = -yy;
 					zz = -zz;
-					cc = -1.0;
+					cc = -1.0f;
 				}
 
 				yy += ny / 2;
 				zz += nz / 2;
 
-				int x0 = 2 * (int) floor(xx + 0.5);
-				int y0 = (int) floor(yy + 0.5);
-				int z0 = (int) floor(zz + 0.5);
+				int x0 = 2 * (int) floor(xx + 0.5f);
+				int y0 = (int) floor(yy + 0.5f);
+				int z0 = (int) floor(zz + 0.5f);
 				int i = x0 + y0 * nx + z0 * nxy;
 
 				if (rdata[i] != 0 && rdata[i + 1] != 0) {
@@ -670,7 +670,7 @@ Point < float >EMData::normalize_slice(EMData * slice, float alt, float az, floa
 						p2 = atan2(dat[x * 2 + 1 + y * nx], dat[x * 2 + y * nx]);
 					}
 
-					if (rad > 3.0) {
+					if (rad > 3.0f) {
 						pr += Util::angle_sub_2pi(p1, p2) * dt0 * dt1 * norm[i];
 						prn += dt0 * dt1 * norm[i];
 					}
@@ -685,7 +685,7 @@ Point < float >EMData::normalize_slice(EMData * slice, float alt, float az, floa
 		r = r / rn;
 	}
 	else {
-		r = 1.0;
+		r = 1.0f;
 	}
 
 	done_data();
@@ -799,7 +799,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 						k++;
 					}
 				}
-				float tmp_f1 = (sum1 / 2.0 - sum) / (nx2 * ny2);
+				float tmp_f1 = (sum1 / 2.0f - sum) / (nx2 * ny2);
 				float tmp_f2 = Util::square(with->get_mean() - summ / (nx2 * ny2));
 				ret_data[i + j * nx] = sum2 + tmp_f1 - tmp_f2;
 			}
@@ -820,7 +820,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 					eml += data[i - nx2 / 2 + jj * nx] + data[i + nx2 / 2 - 1 + jj * nx];
 				}
 
-				eml /= (nx2 + ny2) * 2.0;
+				eml /= (nx2 + ny2) * 2.0f;
 				int k = 0;
 
 				for (int jj = j - ny2 / 2; jj < j + ny2 / 2; jj++) {
@@ -859,11 +859,11 @@ void EMData::render_amp8(unsigned char *data, int x0, int y0, int ixsize, int iy
 	}
 
 	if (render_max <= render_min) {
-		render_max = render_min + 0.01;
+		render_max = render_min + 0.01f;
 	}
 
 	float rm = render_min;
-	float inv_scale = 1.0 / scale;
+	float inv_scale = 1.0f / scale;
 	int ysize = iysize;
 	int xsize = ixsize;
 
@@ -1099,11 +1099,11 @@ void EMData::render_amp24(unsigned char *data, int x0, int y0, int ixsize, int i
 	}
 
 	if (render_max <= render_min) {
-		render_max = render_min + 0.01;
+		render_max = render_min + 0.01f;
 	}
 
 	float rm = render_min;
-	float inv_scale = 1.0 / scale;
+	float inv_scale = 1.0f / scale;
 	int ysize = iysize;
 	int xsize = ixsize;
 	const int scale_n = 100000;
@@ -1353,15 +1353,15 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 
 	for (int i = 0; i < n; i++) {
 		d[i] = 0;
-		yc[i] = 0.00001;
+		yc[i] = 0.00001f;
 	}
 
 	if (is_complex()) {
 		int c = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x += 2, c += 2) {
-				float x1 = x / 2.0;
-				float y1 = y - ny / 2.0;
+				float x1 = x / 2.0f;
+				float y1 = y - ny / 2.0f;
 				float r = hypot(x1, y1);
 
 				if (r >= rmin && r <= rmax) {
@@ -1375,8 +1375,8 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 					a -= i;
 
 					if (i == 0) {
-						d[0] += rdata[c] * (1.0 - a);
-						yc[0] += (1.0 - a);
+						d[0] += rdata[c] * (1.0f - a);
+						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
 						d[n - 1] += rdata[c] * a;
@@ -1391,8 +1391,8 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 							h = rdata[c];
 						}
 
-						d[i] += h * (1.0 - a);
-						yc[i] += (1.0 - a);
+						d[i] += h * (1.0f - a);
+						yc[i] += (1.0f - a);
 						d[i + 1] += h * a;
 						yc[i + 1] += a;
 					}
@@ -1404,8 +1404,8 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 		int c = 0;
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
-				float y1 = y - (ny - 1) / 2.0;
-				float x1 = x - (nx - 1) / 2.0;
+				float y1 = y - (ny - 1) / 2.0f;
+				float x1 = x - (nx - 1) / 2.0f;
 				float r = hypot(x1, y1);
 
 				if (r >= rmin && r <= rmax) {
@@ -1413,7 +1413,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 					if (x1 != 0 || y1 != 0) {
 						a = atan2(y1, x1);
 						if (a < 0) {
-							a += M_PI * 2.0;
+							a += M_PI * 2.0f;
 						}
 					}
 
@@ -1422,16 +1422,16 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 					a -= i;
 
 					if (i == 0) {
-						d[0] += rdata[c] * (1.0 - a);
-						yc[0] += (1.0 - a);
+						d[0] += rdata[c] * (1.0f - a);
+						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
 						d[n - 1] += rdata[c] * a;
 						yc[n - 1] += (a);
 					}
 					else if (i > 0 && i < (n - 1)) {
-						d[i] += rdata[c] * (1.0 - a);
-						yc[i] += (1.0 - a);
+						d[i] += rdata[c] * (1.0f - a);
+						yc[i] += (1.0f - a);
 						d[i + 1] += rdata[c] * a;
 						yc[i + 1] += a;
 					}
@@ -1718,7 +1718,7 @@ void EMData::update_stat()
 		}
 	}
 
-	double size = 1.0 * nx * ny * nz;
+	double size = 1.0f * nx * ny * nz;
 	float mean = sum * step / size;
 
 	if (n_nonzero == 0) {
@@ -1802,7 +1802,7 @@ float EMData::get_skewness()
 	double k = 0;
 	int size = nx * ny * nz;
 	for (int i = 0; i < size; i++) {
-		k += pow((double) (rdata[i] - mean) / sigma, (double) 3.0);
+		k += pow((rdata[i] - mean) / sigma, 3.0f);
 	}
 	return (k / size);
 }
@@ -1815,9 +1815,9 @@ float EMData::get_kurtosis()
 	double k = 0;
 	int size = nx * ny * nz;
 	for (int i = 0; i < size; i++) {
-		k += pow((double) (rdata[i] - mean) / sigma, (double) 4.0);
+		k += pow((rdata[i] - mean) / sigma, 4.0f);
 	}
-	return (k / size - 3.0);
+	return (k / size - 3.0f);
 }
 
 
@@ -1961,7 +1961,7 @@ EMData & EMData::operator/=(float n)
 		Log::logger()->error("divided by zero");
 		return *this;
 	}
-	*this *= (1.0 / n);
+	*this *= (1.0f / n);
 	return *this;
 }
 
@@ -2104,9 +2104,9 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 	float *with_data = with->get_data();
 	float mx0 = cos(da);
 	float mx1 = sin(da);
-	float y = -ny / 2.0;
-	float my0 = mx0 * (-nx / 2.0 - 1.0) + nx / 2.0 - dx;
-	float my1 = -mx1 * (-nx / 2.0 - 1.0) + ny / 2.0 - dy;
+	float y = -ny / 2.0f;
+	float my0 = mx0 * (-nx / 2.0f - 1.0f) + nx / 2.0f - dx;
+	float my1 = -mx1 * (-nx / 2.0f - 1.0f) + ny / 2.0f - dy;
 	double result = 0;
 
 	for (int j = 0; j < ny; j++) {
@@ -2122,24 +2122,24 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 			t += mx0;
 			u -= mx1;
 
-			if (t >= 1.0) {
+			if (t >= 1.0f) {
 				ii++;
-				t -= 1.0;
+				t -= 1.0f;
 			}
 
-			if (u >= 1.0) {
+			if (u >= 1.0f) {
 				jj++;
-				u -= 1.0;
+				u -= 1.0f;
 			}
 
 			if (t < 0) {
 				ii--;
-				t += 1.0;
+				t += 1.0f;
 			}
 
 			if (u < 0) {
 				jj--;
-				u += 1.0;
+				u += 1.0f;
 			}
 
 			if (ii >= 0 && ii <= nx - 2 && jj >= 0 && jj <= ny - 2) {
@@ -2155,7 +2155,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 						   this_data[k2] * t * u + this_data[k3] * tt * u) * with_data[i + j * nx];
 			}
 		}
-		y += 1.0;
+		y += 1.0f;
 	}
 
 	return result;
@@ -2349,20 +2349,20 @@ void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&tr
 		float dyy = mx[0];
 
 		int k = 0;
-		float x = -mx[1] * ny / 2.0 + nx / 2.0 - translation[0];
-		float y = -mx[0] * ny / 2.0 + ny / 2.0 - translation[1];
+		float x = -mx[1] * ny / 2.0f + nx / 2.0f - translation[0];
+		float y = -mx[0] * ny / 2.0f + ny / 2.0f - translation[1];
 
 		for (int j = 0; j < ny; j++) {
-			float x2 = x - mx[0] * nx / 2.0;
-			float y2 = y + mx[1] * nx / 2.0;
+			float x2 = x - mx[0] * nx / 2.0f;
+			float y2 = y + mx[1] * nx / 2.0f;
 
 			for (int i = 0; i < nx; i++) {
-				if (x2 < 0 || x2 > nx - 2.0 || y2 < 0 || y2 > ny - 2.0) {
+				if (x2 < 0 || x2 > nx - 2.0f || y2 < 0 || y2 > ny - 2.0f) {
 					des_data[k] = 0;
 				}
 				else {
-					int ii = (int) floor(x2 + 0.5);
-					int jj = (int) floor(y2 + 0.5);
+					int ii = (int) floor(x2 + 0.5f);
+					int jj = (int) floor(y2 + 0.5f);
 					des_data[k] = src_data[ii + jj * nx];
 				}
 				k++;
@@ -2377,12 +2377,12 @@ void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&tr
 	else {
 		Matrix3f mx = rotation.get_matrix3();
 
-		float x4 = (mx[0][0] * (-nx / 2.0) + mx[0][1] * (-ny / 2.0) +
-					mx[0][2] * (-nz / 2.0)) + nx / 2.0 - translation[0];
-		float y4 = (mx[1][0] * (-nx / 2.0) + mx[1][1] * (-ny / 2.0) +
-					mx[1][2] * (-nz / 2.0)) + ny / 2.0 - translation[1];
-		float z4 = (mx[2][0] * (-nx / 2.0) + mx[2][1] * (-ny / 2.0) +
-					mx[2][2] * (-nz / 2.0)) + nz / 2.0 - translation[2];
+		float x4 = (mx[0][0] * (-nx / 2.0f) + mx[0][1] * (-ny / 2.0f) +
+					mx[0][2] * (-nz / 2.0f)) + nx / 2.0f - translation[0];
+		float y4 = (mx[1][0] * (-nx / 2.0f) + mx[1][1] * (-ny / 2.0f) +
+					mx[1][2] * (-nz / 2.0f)) + ny / 2.0f - translation[1];
+		float z4 = (mx[2][0] * (-nx / 2.0f) + mx[2][1] * (-ny / 2.0f) +
+					mx[2][2] * (-nz / 2.0f)) + nz / 2.0f - translation[2];
 
 		int xy = nx * ny;
 		int mr = 0;
@@ -2412,9 +2412,9 @@ void EMData::rotate_translate(const Rotation & rotation, const Vec3 < float >&tr
 						des_data[l] = 0;
 					}
 					else {
-						float x = floor(x2 + 0.5);
-						float y = floor(y2 + 0.5);
-						float z = floor(z2 + 0.5);
+						float x = floor(x2 + 0.5f);
+						float y = floor(y2 + 0.5f);
+						float z = floor(z2 + 0.5f);
 
 						int ii = (int) (x + y * nx + z * xy);
 						des_data[l] = src_data[ii];
@@ -2471,10 +2471,10 @@ void EMData::rotate_translate(const Transform & xform)
 
 	int nx2 = nx;
 	int ny2 = ny;
-	float inv_scale = 1.0;
+	float inv_scale = 1.0f;
 
 	if (scale != 0) {
-		inv_scale = 1.0 / scale;
+		inv_scale = 1.0f / scale;
 	}
 
 	float *src_data = 0;
@@ -2495,14 +2495,14 @@ void EMData::rotate_translate(const Transform & xform)
 		float mx0 = inv_scale * cos(rotation.eman_alt());
 		float mx1 = inv_scale * sin(rotation.eman_alt());
 
-		float x2c = nx / 2.0 - dxc - translation[0];
-		float y2c = ny / 2.0 - dyc - translation[1];
-		float y = -ny / 2.0 + dxc;
+		float x2c = nx / 2.0f - dxc - translation[0];
+		float y2c = ny / 2.0f - dyc - translation[1];
+		float y = -ny / 2.0f + dxc;
 
-		for (int j = 0; j < ny; j++, y += 1.0) {
-			float x = -nx / 2.0 + dyc;
+		for (int j = 0; j < ny; j++, y += 1.0f) {
+			float x = -nx / 2.0f + dyc;
 
-			for (int i = 0; i < nx; i++, x += 1.0) {
+			for (int i = 0; i < nx; i++, x += 1.0f) {
 				float x2 = (mx0 * x + mx1 * y) + x2c;
 				float y2 = (-mx1 * x + mx0 * y) + y2c;
 
@@ -2589,14 +2589,14 @@ void EMData::rotate_translate(const Transform & xform)
 		Matrix3f mx = rotation.get_matrix3();
 		mx *= inv_scale;
 
-		float x4 = (mx[0][0] * (-nx / 2.0 + dxc) + mx[0][1] * (-ny / 2.0 + dyc) +
-					mx[0][2] * (-nz / 2.0 + dzc)) + nx / 2.0 - dxc - translation[0];
+		float x4 = (mx[0][0] * (-nx / 2.0f + dxc) + mx[0][1] * (-ny / 2.0f + dyc) +
+					mx[0][2] * (-nz / 2.0f + dzc)) + nx / 2.0f - dxc - translation[0];
 
-		float y4 = (mx[1][3] * (-nx / 2.0 + dxc) + mx[1][4] * (-ny / 2.0 + dyc) +
-					mx[1][5] * (-nz / 2.0 + dzc)) + ny / 2.0 - dyc - translation[1];
+		float y4 = (mx[1][3] * (-nx / 2.0f + dxc) + mx[1][4] * (-ny / 2.0f + dyc) +
+					mx[1][5] * (-nz / 2.0f + dzc)) + ny / 2.0f - dyc - translation[1];
 
-		float z4 = (mx[2][6] * (-nx / 2.0 + dxc) + mx[2][7] * (-ny / 2.0 + dyc) +
-					mx[2][8] * (-nz / 2.0 + dzc)) + nz / 2.0 - dzc - translation[2];
+		float z4 = (mx[2][6] * (-nx / 2.0f + dxc) + mx[2][7] * (-ny / 2.0f + dyc) +
+					mx[2][8] * (-nz / 2.0f + dzc)) + nz / 2.0f - dzc - translation[2];
 
 		int nxy = nx * ny;
 		int l = 0;
@@ -2725,7 +2725,7 @@ EMData *EMData::do_radon()
 	}
 
 	for (int i = 0; i < nx; i++) {
-		this_copy->rotate(M_PI * 2.0 * i / nx, 0, 0);
+		this_copy->rotate(M_PI * 2.0f * i / nx, 0, 0);
 
 		float *copy_data = this_copy->get_data();
 
@@ -3169,7 +3169,7 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 		}
 
 		EMfft::complex_to_real_1d(dat, dat, array_size);
-		float norm = array_size * array_size * (4.0 * sigma) * (4.0 * with_sigma);
+		float norm = array_size * array_size * (4.0f * sigma) * (4.0f * with_sigma);
 
 		for (int j = 0; j < array_size; j++) {
 			sum_array[j] += dat[j] * (float) i / norm;
@@ -3193,7 +3193,7 @@ void EMData::to_one()
 	}
 
 	for (int i = 0; i < nx * ny * nz; i++) {
-		rdata[i] = 1.0;
+		rdata[i] = 1.0f;
 	}
 
 	done_data();
@@ -3568,7 +3568,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 	int c = 0;
 	float half_nz = 0;
 	if (nz > 1) {
-		half_nz = nz / 2.0;
+		half_nz = nz / 2.0f;
 	}
 
 	int step = 1;
@@ -3581,10 +3581,10 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 			for (int x = 0; x < nx; x += step, c += step) {
 				float r = 0;
 				if (is_complex()) {
-					r = (Util::hypot3(x / 2.0, y - ny / 2.0, z - half_nz) - x0) / dx;
+					r = (Util::hypot3(x / 2.0f, y - ny / 2.0f, z - half_nz) - x0) / dx;
 				}
 				else {
-					r = (Util::hypot3(x - nx / 2.0, y - ny / 2.0, z - half_nz) - x0) / dx;
+					r = (Util::hypot3(x - nx / 2.0f, y - ny / 2.0f, z - half_nz) - x0) / dx;
 				}
 
 				int i = (int) floor(r);
@@ -3628,7 +3628,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 
 	for (int i = 1; i < n - 1; i++) {
 		if (yc[i] < 0.1) {
-			d[i] = (d[i - 1] + d[i + 1]) / 2.0;
+			d[i] = (d[i - 1] + d[i + 1]) / 2.0f;
 		}
 	}
 
@@ -3674,22 +3674,22 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx; x += step, c += step) {
 			float a = 0;
-			if (y != ny / 2.0 || x != 0) {
+			if (y != ny / 2.0f || x != 0) {
 				if (is_complex()) {
-					a = atan2(y - ny / 2.0, x / 2.0);
+					a = atan2(y - ny / 2.0f, x / 2.0f);
 				}
 				else {
-					a = atan2(y - ny / 2.0, x - nx / 2.0);
+					a = atan2(y - ny / 2.0f, x - nx / 2.0f);
 				}
 			}
 
 			if (fabs(Util::angle_sub_pi(a, acen)) <= awid) {
 				float r = 0;
 				if (is_complex()) {
-					r = (hypot(x / 2.0, y - ny / 2.0) - x0) / dx;
+					r = (hypot(x / 2.0f, y - ny / 2.0f) - x0) / dx;
 				}
 				else {
-					r = (hypot(x - (nx - 1) / 2.0, y - (ny - 1) / 2.0) - x0) / dx;
+					r = (hypot(x - (nx - 1) / 2.0f, y - (ny - 1) / 2.0f) - x0) / dx;
 				}
 
 				int i = (int) floor(r);
@@ -3726,8 +3726,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 		}
 	}
 
-	const float scale1 = 0.57;
-	const float scale2 = 0.105;
+	const float scale1 = 0.57f;
+	const float scale2 = 0.105f;
 
 	for (int i = 0; i < n; i++) {
 		d2[i] = d[i];
@@ -3867,7 +3867,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 
 	float mean = lsum / num;
 	float sigma = sqrt(sq);
-	float th = 0.00001;
+	float th = 0.00001f;
 
 	if (sq > th) {
 		for (int i = 0; i < img1_size; i++) {
@@ -3907,7 +3907,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 	img1 = 0;
 
 	conv1->mult(img1_size);
-	conv1->mult(1.0 / num);
+	conv1->mult(1.0f / num);
 
 	EMData *conv2 = img1_copy2->convolute(img1_copy2);
 	delete img1_copy2;
@@ -3915,7 +3915,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 
 	conv2->mult(img1_size);
 	conv1->filter("Square");
-	conv1->mult(1.0 / (num * num));
+	conv1->mult(1.0f / (num * num));
 
 	EMData *conv2_copy = conv2->copy(false);
 	delete conv2;
@@ -3925,14 +3925,14 @@ EMData *EMData::calc_flcf(EMData * with, int radius, string mask_filter)
 	delete conv1;
 	conv1 = 0;
 
-	conv2_copy->mult(1.0 / num);
+	conv2_copy->mult(1.0f / num);
 	conv2_copy->filter("Sqrt");
 
 	EMData *ccf_copy = ccf->copy(false);
 	delete ccf;
 	ccf = 0;
 
-	ccf_copy->mult(1.0 / num);
+	ccf_copy->mult(1.0f / num);
 
 	float *lcfd = ccf_copy->get_data();
 	float *vdd = conv2_copy->get_data();
@@ -4045,7 +4045,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 	float *image2_data = image2->get_data();
 
 	float da = M_PI / steps;
-	float a = -M_PI / 2.0 + da / 2.0;
+	float a = -M_PI / 2.0f + da / 2.0f;
 	int jmax = 0;
 
 	for (int i = 0; i < steps * 2; i += 2, a += da) {
@@ -4054,7 +4054,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 		int i2 = i * rmax;
 		int j = 0;
 
-		for (float r = 3.0; r < rmax - 3.0; j += 2, r += 1.0) {
+		for (float r = 3.0f; r < rmax - 3.0f; j += 2, r += 1.0f) {
 			float x = r * cos(a);
 			float y = r * sin(a);
 
@@ -4100,7 +4100,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 		float sqrt_s2 = sqrt(s2);
 
 		int l = 0;
-		for (float r = 1; r < rmax; r += 1.0) {
+		for (float r = 1; r < rmax; r += 1.0f) {
 			int i3 = i2 + l;
 			im1[i3] /= sqrt_s1;
 			im1[i3 + 1] /= sqrt_s1;
@@ -4182,7 +4182,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 							a += a1;
 						}
 
-						rdata[l] /= a * M_PI / 180.0;
+						rdata[l] /= (float)(a * M_PI / 180.0f);
 					}
 				}
 			}
@@ -4555,7 +4555,7 @@ float EMData::get_circle_mean()
 			}
 		}
 		mask->done_data();
-		mask->mult(1.0 / n);
+		mask->mult(1.0f / n);
 	}
 
 	float result = dot(mask);
@@ -4587,7 +4587,7 @@ void EMData::setup_insert_slice(int size)
 
 	get_data();
 	for (int i = 0; i < nx * ny * nz; i += 2) {
-		float f = Util::get_frand(0, 2.0 * M_PI);
+		float f = Util::get_frand(0, 2.0f * M_PI);
 		rdata[i] = scale * sin(f);
 		rdata[i + 1] = scale * cos(f);
 	}
@@ -4672,7 +4672,7 @@ float EMData::get_density_center()
 		}
 		double mean = sum / norm;
 		if (fabs(mean - center) < sigma2) {
-			ds *= 0.5;
+			ds *= 0.5f;
 		}
 		center = mean;
 	}
@@ -4743,7 +4743,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 		int k = 0;
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
-				float r = hypot((float) i / 2.0, (float) (j - ny / 2.0));
+				float r = hypot(i / 2.0f, (j - ny / 2.0f));
 				r = (r - x0) / step;
 
 				int l = 0;
@@ -4762,7 +4762,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 				}
 				else {
 					if (interp) {
-						f = (array[l] * (1.0 - r) + array[l + 1] * r);
+						f = (array[l] * (1.0f - r) + array[l + 1] * r);
 					}
 					else {
 						f = array[l];
@@ -4777,11 +4777,11 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	else if (ndims == 3) {
 		int k = 0;
 		for (int m = 0; m < nz; m++) {
-			float mnz = (m - nz / 2.0) * (m - nz / 2.0);
+			float mnz = (m - nz / 2.0f) * (m - nz / 2.0f);
 			for (int j = 0; j < ny; j++) {
-				float jny = (j - ny / 2.0) * (j - ny / 2.0);
+				float jny = (j - ny / 2.0f) * (j - ny / 2.0f);
 				for (int i = 0; i < nx; i += 2, k += 2) {
-					float r = sqrt((i * i / 4.0) + jny + mnz);
+					float r = sqrt((i * i / 4.0f) + jny + mnz);
 					r = (r - x0) / step;
 
 					int l = 0;
@@ -4800,7 +4800,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 					}
 					else {
 						if (interp) {
-							f = (array[l] * (1.0 - r) + array[l + 1] * r);
+							f = (array[l] * (1.0f - r) + array[l + 1] * r);
 						}
 						else {
 							f = array[l];
