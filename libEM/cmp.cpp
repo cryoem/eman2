@@ -20,7 +20,7 @@ template<> Factory<Cmp>::Factory()
 
 float DotCmp::cmp(EMData * em, Transform * ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (!with || !EMUtil::is_same_size(em, with)) {
 	return 0;
     }
@@ -55,7 +55,7 @@ float DotCmp::cmp(EMData * em, Transform * ) const
 // scale and shift cannot be returned
 float VarianceCmp::cmp(EMData * em, Transform * ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (!with || !EMUtil::is_same_size(em, with)) {
 	return 0;
     }
@@ -108,7 +108,7 @@ float PhaseCmp::cmp(EMData * em, Transform * ) const
     static float *dfsnr = 0;
     static int nsnr = 0;
 
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (!with || !EMUtil::is_same_size(em, with) || em->get_zsize() > 1) {
 	return 0;
     }
@@ -164,7 +164,7 @@ float FRCCmp::cmp(EMData * em, Transform * ) const
 {
     static vector<float> default_snr;
 
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (!with || !EMUtil::is_same_size(em, with) || em->get_zsize() > 1) {
 	return 0;
     }

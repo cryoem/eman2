@@ -311,7 +311,7 @@ int HdfIO::write_header(const Dict & dict, int image_index)
     write_float_attr_from_dict(image_index, "sigma", dict);
 
     if (dict.has_key("micrograph_id")) {
-	write_string_attr(image_index, "micrograph_id", dict["micrograph_id"].get_string());
+	write_string_attr(image_index, "micrograph_id", (const char*)dict["micrograph_id"]);
     }
     
     write_float_attr_from_dict(image_index, "particle_center_x", dict);

@@ -178,24 +178,23 @@ namespace EMAN
 	    return 0;
 	}
 
-	string get_string() const
+	operator const char*() const
 	{
 	    if (type != STRING) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_string() for data type '%s'",
+		    Log::logger()->error("type error. Cannot conver to string from data type '%s'",
 					 get_object_type_name(type));
 		}
 		return "";
 	    }
-	    return str;
+	    return str.c_str();
 	}
 
-
-	EMData *get_emdata() const
+	operator EMData*() const
 	{
 	    if (type != EMDATA) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_emdata() for data type '%s'",
+		    Log::logger()->error("type error. Cannot convert to EMData* from data type '%s'",
 					 get_object_type_name(type));
 		}
 		return 0;
@@ -203,11 +202,11 @@ namespace EMAN
 	    return emdata;
 	}
 
-	XYData *get_xydata() const
+	operator XYData*() const
 	{
 	    if (type != XYDATA) {
 		if (type != UNKNOWN) {
-		    Log::logger()->error("type error. Cannot call get_xydata() for data type '%s'",
+		    Log::logger()->error("type error. Cannot convert to XYData* data type '%s'",
 					 get_object_type_name(type));
 		}
 		return 0;
@@ -422,7 +421,7 @@ namespace EMAN
 	    if (!has_key(key)) {
 		dict[key] = EMObject(val);
 	    }
-	    return dict[key].get_emdata();
+	    return dict[key];
 	}
 
 	int set_default(const string & key, int val)

@@ -1,6 +1,9 @@
 #include "emobject.h"
 #include "emcache.h"
 #include "emutil.h"
+#include "emdata.h"
+#include "xydata.h"
+#include <assert.h>
 
 using namespace EMAN;
 
@@ -14,7 +17,21 @@ int test_emobject()
     n = e2;
     float f = e2;
     f = 2;
-    e2.get_string();
+    const char *s1 = e2;
+    assert(strcmp(s1, "") == 0);
+
+    EMData * image1 = new EMData();
+    EMObject e3(image1);
+    EMData * image2 = e3;
+    assert(image1 == image2);
+
+    XYData * xy1 = new XYData();
+    EMObject e4(xy1);
+    XYData * xy2 = e4;
+    assert(xy1 == xy2);
+    
+    delete image1;
+    image1 = 0;
     
     return 0;
 }

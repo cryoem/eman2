@@ -24,7 +24,7 @@ template<> Factory<Averager>::Factory()
 
 EMData *ImageAverager::average(const vector<EMData*>& image_list) const
 {
-    EMData *sigma_image = params["sigma"].get_emdata();
+    EMData *sigma_image = params["sigma"];
     int ignore0 = params["ignore0"];
 
     if (image_list.size() == 0) {

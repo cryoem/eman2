@@ -45,7 +45,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string ) const
 	return 0;
     }
 
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (with && !EMUtil::is_same_size(this_img, with)) {
 	Log::logger()->error("%s: images must be the same size", get_name().c_str());
 	return 0;
@@ -149,7 +149,7 @@ EMData *Translational3DAligner::align(EMData * this_img, string ) const
 	return 0;
     }
 
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     int useparent = params.set_default("useparent", 0);
     params.set_default("intonly", 0);
     
@@ -242,7 +242,7 @@ EMData *Translational3DAligner::align(EMData * this_img, string ) const
 
 EMData *RotationalAligner::align(EMData * this_img, string ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
 
     if (!with) {
 	return 0;
@@ -272,7 +272,7 @@ EMData *RotationalAligner::align(EMData * this_img, string ) const
 
 EMData *RotatePrecenterAligner::align(EMData * this_img, string ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (!with) {
 	return 0;
     }
@@ -315,7 +315,7 @@ EMData *RotateCHAligner::align(EMData * this_img, string ) const
 	return 0;
     }
 
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     int irad = params.set_default("irad", 8);
     int orad = params.set_default("orad", 0);
 
@@ -481,7 +481,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
     this_copy2->align("Translational", trans_params);
     Vec3<float> trans2 = this_copy2->get_translation();
     
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
 
     float dot1 = 0;
     float dot2 = 0;
@@ -579,7 +579,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 
 EMData *RotateTranslateRadonAligner::align(EMData * this_img, string ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     int maxshift = params.set_default("maxshift", -1);
     EMData *radonwith = params.set_default("radonwith", (EMData*)0);
     EMData *radonthis = params.set_default("radonthis", (EMData*)0);
@@ -739,7 +739,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string ) const
 
 EMData *RotateFlipAligner::align(EMData * this_img, string ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     EMData *flip = params.set_default("with", (EMData*)0);
     params.set_default("imask", 0);
     
@@ -873,7 +873,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 
 EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     EMData *flip = params.set_default("flip", (EMData*)0);
     int maxshift = params.set_default("maxshift", -1);
 
@@ -1058,7 +1058,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     EMData *flip = params.set_default("flip", (EMData*)0);
     int maxshift = params.set_default("maxshift", -1);
 
@@ -1279,7 +1279,7 @@ EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
 
 EMData *RTFRadonAligner::align(EMData * this_img, string ) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     params.set_default("maxshift", -1);    
     EMData *thisf = params.set_default("thisf", (EMData*)0);   
     EMData *radonwith = params.set_default("radonwith", (EMData*)0);
@@ -1341,7 +1341,7 @@ static double refalifn(const gsl_vector * v, void *params)
     double y = gsl_vector_get(v, 1);
     double a = gsl_vector_get(v, 2);
 
-    EMData *this_img = (*dict)["this"].get_emdata();
+    EMData *this_img = (*dict)["this"];
     this_img->rotate_translate(a, 0, 0, x, y, 0);
 
     return this_img->cmp("FRC", *dict);
@@ -1350,8 +1350,8 @@ static double refalifn(const gsl_vector * v, void *params)
 static double refalifnfast(const gsl_vector * v, void *params)
 {
     Dict *dict = (Dict *) params;
-    EMData *this_img = (*dict)["this"].get_emdata();
-    EMData *img_with = (*dict)["with"].get_emdata();
+    EMData *this_img = (*dict)["this"];
+    EMData *img_with = (*dict)["with"];
 
     double x = gsl_vector_get(v, 0);
     double y = gsl_vector_get(v, 1);
@@ -1367,7 +1367,7 @@ static double refalifnfast(const gsl_vector * v, void *params)
 
 EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 {
-    EMData *with = params["with"].get_emdata();
+    EMData *with = params["with"];
     if (!with) {
 	return 0;
     }

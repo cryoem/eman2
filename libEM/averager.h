@@ -132,7 +132,7 @@ namespace EMAN
 	XYData *sf;
 	EMData *curves;
 	bool need_snr;
-	string outfile;
+	const char *outfile;
     private:
 	mutable vector<float> snr;
     };
@@ -155,8 +155,8 @@ namespace EMAN
 	void set_params(const Dict & new_params)
 	{
 	    params = new_params;
-	    curves = params["curves"].get_emdata();
-	    sf = params["sf"].get_xydata();
+	    curves = params["curves"];
+	    sf = params["sf"];
 	}
 
 	TypeDict get_param_types() const
@@ -225,7 +225,7 @@ namespace EMAN
 	void set_params(const Dict & new_params)
 	{
 	    params = new_params;
-	    outfile = params["outfile"].get_string();
+	    outfile = params["outfile"];
 	}
     };
 
