@@ -195,7 +195,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If 'this' image is not 2D/3D.
 		 */
 		void insert_scaled_sum(EMData *block, const FloatPoint & center,
-							   float scale=1.0, float mult=1.0);
+							   float scale=1.0, float mult_factor=1.0);
 
 		/** return the fast fourier transform image of the current
 		 * image. the current image is not changed. The result is in
@@ -562,7 +562,15 @@ namespace EMAN
 		 * @exception ImageFormatException If the 2 images are not same size.
 		 */
 		void sub(const EMData & image);
-		
+
+		/** multiply a number to each pixel value of the image.
+		 * @param f The number multiplied to 'this' image.
+		 */
+		void mult(int n)
+		{
+			mult((float)n);
+		}
+
 		/** multiply a number to each pixel value of the image.
 		 * @param f The number multiplied to 'this' image.
 		 */
@@ -1207,13 +1215,13 @@ namespace EMAN
 
 	private:
 		enum EMDataFlags {
-			EMDATA_COMPLEX = 1 << 0,
-			EMDATA_RI = 1 << 1,	       // real/imaginary or amp/phase
-			EMDATA_BUSY = 1 << 2,	   // someone is modifying data
-			EMDATA_HASCTFF = 1 << 3,   // has CTF info in the image file		  
-			EMDATA_NEEDUPD = 1 << 4,   // needs a real update			
-			EMDATA_COMPLEXX = 1 << 5,  // 1D fft's in X
-			EMDATA_FLIP = 1 << 6	   // is the image flipped
+			EMDATA_COMPLEX = 1 << 1,
+			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
+			EMDATA_BUSY = 1 << 3,	   // someone is modifying data
+			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file		  
+			EMDATA_NEEDUPD = 1 << 5,   // needs a real update			
+			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
+			EMDATA_FLIP = 1 << 7	   // is the image flipped
 		};
 
 		void update_stat();
@@ -1322,16 +1330,31 @@ namespace EMAN
 
 	inline bool EMData::is_complex() const
 	{
-		return (flags & EMDATA_COMPLEX);
+		if (flags & EMDATA_COMPLEX) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 	inline bool EMData::is_complex_x() const
 	{
-		return (flags & EMDATA_COMPLEXX);
+		if (flags & EMDATA_COMPLEXX) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 	inline bool EMData::is_ri() const
 	{
-		return (flags & EMDATA_RI);
+		if (flags & EMDATA_RI) {
+			return true;	
+		}
+		else {
+			return false;
+		}
 	}
 
 
@@ -1368,7 +1391,12 @@ namespace EMAN
 
 	inline bool EMData::is_flipped() const
 	{
-		return (flags & EMDATA_FLIP);
+		if (flags & EMDATA_FLIP) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 	inline void EMData::set_flipped(bool is_flipped)
