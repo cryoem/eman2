@@ -45,8 +45,8 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 		return 0;
 	}
 
-	EMData *with = params["with"];
-	if (with && !EMUtil::is_same_size(this_img, with)) {
+	EMData *to = params["to"];
+	if (to && !EMUtil::is_same_size(this_img, to)) {
 		Log::logger()->error("%s: images must be the same size", get_name().c_str());
 		return 0;
 	}
@@ -57,10 +57,10 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 	EMData *parent = this_img->get_parent();
 
 	if (useparent && parent != 0) {
-		cf = parent->calc_ccf(with, true);
+		cf = parent->calc_ccf(to, true);
 	}
 	else {
-		cf = this_img->calc_ccf(with, true);
+		cf = this_img->calc_ccf(to, true);
 	}
 
 	int nx = this_img->get_xsize();
@@ -121,7 +121,7 @@ EMData *TranslationalAligner::align(EMData * this_img, string) const
 		result = cur_trans;
 	}
 
-	if (!with) {
+	if (!to) {
 		cur_trans /= 2.0;
 	}
 
@@ -149,16 +149,16 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 		return 0;
 	}
 
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 	int useparent = params.set_default("useparent", 0);
 	params.set_default("intonly", 0);
 
-	if (with && !EMUtil::is_same_size(this_img, with)) {
+	if (to && !EMUtil::is_same_size(this_img, to)) {
 		Log::logger()->error("%s: images must be same size", get_name().c_str());
 		return 0;
 	}
 
-	if (!with) {
+	if (!to) {
 		Log::logger()->warn("%s: ACF", get_name().c_str());
 	}
 
@@ -166,10 +166,10 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 	EMData *parent = this_img->get_parent();
 
 	if (useparent && parent != 0) {
-		cf = parent->calc_ccf(with, true);
+		cf = parent->calc_ccf(to, true);
 	}
 	else {
-		cf = this_img->calc_ccf(with, true);
+		cf = this_img->calc_ccf(to, true);
 	}
 
 	float *cf_data = cf->get_data();
@@ -226,7 +226,7 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 	}
 	cf->set_align_score(score);
 
-	if (!with) {
+	if (!to) {
 		tx /= 2;
 		ty /= 2;
 		tz /= 2;
@@ -242,19 +242,19 @@ EMData *Translational3DAligner::align(EMData * this_img, string) const
 
 EMData *RotationalAligner::align(EMData * this_img, string) const
 {
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 
-	if (!with) {
+	if (!to) {
 		return 0;
 	}
 
 	bool premasked = true;
 	EMData *this_img2 = this_img->make_rotational_footprint(premasked);
-	EMData *with2 = with->make_rotational_footprint(premasked);
+	EMData *to2 = to->make_rotational_footprint(premasked);
 
 	int this_img2_nx = this_img2->get_xsize();
 
-	EMData *cf = this_img2->calc_ccfx(with2, 0, this_img->get_ysize());
+	EMData *cf = this_img2->calc_ccfx(to2, 0, this_img->get_ysize());
 
 	float *data = cf->get_data();
 	float peak = 0;
@@ -272,15 +272,15 @@ EMData *RotationalAligner::align(EMData * this_img, string) const
 
 EMData *RotatePrecenterAligner::align(EMData * this_img, string) const
 {
-	EMData *with = params["with"];
-	if (!with) {
+	EMData *to = params["to"];
+	if (!to) {
 		return 0;
 	}
 
 	int ny = this_img->get_ysize();
 	int size = Util::calc_best_fft_size((int) (M_PI * ny * 1.5));
 	EMData *e1 = this_img->unwrap(4, ny * 7 / 16, size, 0, 0, 1);
-	EMData *e2 = with->unwrap(4, ny * 7 / 16, size, 0, 0, 1);
+	EMData *e2 = to->unwrap(4, ny * 7 / 16, size, 0, 0, 1);
 	EMData *cf = e1->calc_ccfx(e2, 0, ny);
 
 	float *data = cf->get_data();
@@ -315,7 +315,7 @@ EMData *RotateCHAligner::align(EMData * this_img, string) const
 		return 0;
 	}
 
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 	int irad = params.set_default("irad", 8);
 	int orad = params.set_default("orad", 0);
 
@@ -408,8 +408,8 @@ EMData *RotateCHAligner::align(EMData * this_img, string) const
 			p1 = atan2(ta, tb);
 		}
 
-		ta = with->dot(d1);
-		tb = with->dot(d2);
+		ta = to->dot(d1);
+		tb = to->dot(d2);
 
 		float a2 = hypot(ta, tb);
 		float p2 = 0;
@@ -470,7 +470,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
 	this_copy2->set_parent(this_copy->get_parent());
 
 	Dict trans_params;
-	trans_params["with"] = params["with"];
+	trans_params["to"] = params["to"];
 	trans_params["useparent"] = 0;
 	trans_params["intonly"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
@@ -480,13 +480,13 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
 
 	this_copy2->align("Translational", trans_params);
 
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 
 	float dot1 = 0;
 	float dot2 = 0;
 
-	dot1 = this_copy->cmp(cmp_name, Dict("with", with));
-	dot2 = this_copy2->cmp(cmp_name, Dict("with", with));
+	dot1 = this_copy->cmp(cmp_name, Dict("to", to));
+	dot2 = this_copy2->cmp(cmp_name, Dict("to", to));
 
 	EMData *result = 0;
 	if (dot1 > dot2) {
@@ -523,7 +523,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 	this_copy2->set_parent(this_copy->get_parent());
 
 	Dict trans_params;
-	trans_params["with"] = params["with"];
+	trans_params["to"] = params["to"];
 	trans_params["intonly"] = 0;
 	trans_params["useparent"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
@@ -578,7 +578,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 
 EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 {
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 	int maxshift = params.set_default("maxshift", -1);
 	EMData *radonwith = params.set_default("radonwith", (EMData *) 0);
 	EMData *radonthis = params.set_default("radonthis", (EMData *) 0);
@@ -592,7 +592,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 		return 0;
 	}
 
-	if (with && EMUtil::is_same_size(this_img, with)) {
+	if (to && EMUtil::is_same_size(this_img, to)) {
 		Log::logger()->error("%s: images must be same size", get_name().c_str());
 		return 0;
 	}
@@ -603,7 +603,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 
 	if (!radonwith) {
 		drw = 1;
-		radonwith = with->do_radon();
+		radonwith = to->do_radon();
 	}
 	if (!radonthis) {
 		drt = 1;
@@ -738,14 +738,14 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, string) const
 
 EMData *RotateFlipAligner::align(EMData * this_img, string) const
 {
-	EMData *with = params["with"];
-	EMData *flip = params.set_default("with", (EMData *) 0);
+	EMData *to = params["to"];
+	EMData *flip = params.set_default("to", (EMData *) 0);
 	params.set_default("imask", 0);
 
 	EMData *this_copy = this_img->copy();
 	this_copy->align("Rotational", params);
 
-	float dot1 = this_copy->dot(with);
+	float dot1 = this_copy->dot(to);
 	float dot2 = 0;
 
 	EMData *this_copy2 = this_img->copy();
@@ -755,7 +755,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, string) const
 	}
 
 	this_copy2->align("Rotational", params);
-	dot2 = this_copy2->dot(with);
+	dot2 = this_copy2->dot(to);
 
 	EMData *result = 0;
 
@@ -785,7 +785,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, string) const
 
 EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) const
 {
-	EMData *with = params.set_default("with", (EMData *) 0);
+	EMData *to = params.set_default("to", (EMData *) 0);
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int usedot = params.set_default("usedot", 1);
 	params.set_default("maxshift", -1);
@@ -821,8 +821,8 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 	float dot2 = 0;
 
 	if (usedot) {
-		dot1 = this_copy->cmp(cmp_name, Dict("with", with));
-		dot2 = this_copy2->cmp(cmp_name, Dict("with", with));
+		dot1 = this_copy->cmp(cmp_name, Dict("to", to));
+		dot2 = this_copy2->cmp(cmp_name, Dict("to", to));
 
 		if (usedot == 2) {
 			Vec3 < float >trans = this_copy->get_translation();
@@ -838,7 +838,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 	}
 	else {
 		Dict cmp_params;
-		cmp_params["with"] = params["with"];
+		cmp_params["to"] = params["to"];
 		cmp_params["keepzero"] = 1;
 
 		dot1 = this_copy->cmp(cmp_name, cmp_params);
@@ -872,7 +872,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 
 EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 {
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
@@ -880,23 +880,23 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 		cmp_name = "Variance";
 	}
 
-	EMData *with_copy = with->copy(false);
+	EMData *to_copy = to->copy(false);
 	int ny = this_img->get_ysize();
 
 	int xst = (int) floor(2 * M_PI * ny);
 	xst = Util::calc_best_fft_size(xst);
 
-	with_copy->median_shrink(2);
+	to_copy->median_shrink(2);
 
-	int with_copy_r2 = with_copy->get_ysize() / 2 - 2 - maxshift / 2;
-	EMData *tmp = with_copy->unwrap(4, with_copy_r2, xst / 2, 0, 0, true);
-	delete with_copy;
-	with_copy = 0;
-	with_copy = tmp;
+	int to_copy_r2 = to_copy->get_ysize() / 2 - 2 - maxshift / 2;
+	EMData *tmp = to_copy->unwrap(4, to_copy_r2, xst / 2, 0, 0, true);
+	delete to_copy;
+	to_copy = 0;
+	to_copy = tmp;
 
-	EMData *wsc = with_copy->copy(false);
-	with = with->unwrap(4, with->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
-	EMData *with_copy2 = with->copy(false);
+	EMData *wsc = to_copy->copy(false);
+	to = to->unwrap(4, to->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
+	EMData *to_copy2 = to->copy(false);
 
 	EMData *df = 0;
 	if (flip) {
@@ -937,12 +937,12 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 				if (hypot(dx, dy) <= half_maxshift) {
 					EMData *uw = u->unwrap(4, ur2, xst / 2, dx, dy, true);
 					EMData *uwc = uw->copy(false);
-					EMData *a = uw->calc_ccfx(with_copy);
+					EMData *a = uw->calc_ccfx(to_copy);
 
 					uwc->rotate_x(a->get_max_index());
 
 					Dict cmp_params;
-					cmp_params["with"] = wsc;
+					cmp_params["to"] = wsc;
 					cmp_params["keepzero"] = 1;
 
 					float cm = uwc->cmp(cmp_name, cmp_params);
@@ -969,8 +969,8 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 	dns = 0;
 	delete dfs;
 	dfs = 0;
-	delete with_copy;
-	with_copy = 0;
+	delete to_copy;
+	to_copy = 0;
 	delete wsc;
 	wsc = 0;
 
@@ -1000,11 +1000,11 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 				if (hypot(dx, dy) <= maxshift) {
 					EMData *uw = u->unwrap(4, u->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
 					EMData *uwc = uw->copy(false);
-					EMData *a = uw->calc_ccfx(with);
+					EMData *a = uw->calc_ccfx(to);
 
 					uwc->rotate_x(a->get_max_index());
 					Dict cmp_params;
-					cmp_params["with"] = with_copy2;
+					cmp_params["to"] = to_copy2;
 					cmp_params["keepzero"] = 1;
 
 					float cm = uwc->cmp(cmp_name, cmp_params);
@@ -1027,10 +1027,10 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 		}
 	}
 
-	delete with;
-	with = 0;
-	delete with_copy;
-	with_copy = 0;
+	delete to;
+	to = 0;
+	delete to_copy;
+	to_copy = 0;
 
 	if (bestflip) {
 		df->rotate_translate(bestang, 0, 0, -bestdx, -bestdy, 0);
@@ -1057,7 +1057,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, string cmp_name) const
 
 EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 {
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
@@ -1087,11 +1087,11 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 
 	EMData *dns = dn->copy(false);
 	EMData *dfs = df->copy(false);
-	EMData *with_copy = with->copy(false);
+	EMData *to_copy = to->copy(false);
 
 	dns->median_shrink(2);
 	dfs->median_shrink(2);
-	with_copy->median_shrink(2);
+	to_copy->median_shrink(2);
 	dns = dns->copy();
 	dfs = dfs->copy();
 
@@ -1122,7 +1122,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 						u->rotate_translate(ang, 0, 0, dx, dy, 0);
 
 						Dict cmp_params;
-						cmp_params["with"] = with_copy;
+						cmp_params["to"] = to_copy;
 						cmp_params["keepzero"] = 1;
 
 						float lc = u->cmp(cmp_name, cmp_params);
@@ -1146,8 +1146,8 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 	dns = 0;
 	delete dfs;
 	dfs = 0;
-	delete with_copy;
-	with_copy = 0;
+	delete to_copy;
+	to_copy = 0;
 
 	bestdx *= 2;
 	bestdy *= 2;
@@ -1178,7 +1178,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, string cmp_name) const
 						u->rotate_translate(ang, 0, 0, dx, dy, 0);
 
 						Dict cmp_params;
-						cmp_params["with"] = with_copy;
+						cmp_params["to"] = to_copy;
 						cmp_params["keepzero"] = 1;
 
 						float lc = u->cmp(cmp_name, cmp_params);
@@ -1278,7 +1278,7 @@ EMData *RTFBestAligner::align(EMData * this_img, string cmp_name) const
 
 EMData *RTFRadonAligner::align(EMData * this_img, string) const
 {
-	EMData *with = params["with"];
+	EMData *to = params["to"];
 	params.set_default("maxshift", -1);
 	EMData *thisf = params.set_default("thisf", (EMData *) 0);
 	EMData *radonwith = params.set_default("radonwith", (EMData *) 0);
@@ -1288,7 +1288,7 @@ EMData *RTFRadonAligner::align(EMData * this_img, string) const
 	int drw = 0;
 	if (!radonwith) {
 		drw = 1;
-		radonwith = with->do_radon();
+		radonwith = to->do_radon();
 		params["radonwith"] = radonwith;
 	}
 
@@ -1304,8 +1304,8 @@ EMData *RTFRadonAligner::align(EMData * this_img, string) const
 		r2 = thisf->align("RTFRadon", params);
 	}
 
-	float r1_score = r1->dot(with);
-	float r2_score = r2->dot(with);
+	float r1_score = r1->dot(to);
+	float r2_score = r2->dot(to);
 
 	if (drw) {
 		delete radonwith;
@@ -1350,13 +1350,13 @@ static double refalifnfast(const gsl_vector * v, void *params)
 {
 	Dict *dict = (Dict *) params;
 	EMData *this_img = (*dict)["this"];
-	EMData *img_with = (*dict)["with"];
+	EMData *img_to = (*dict)["to"];
 
 	double x = gsl_vector_get(v, 0);
 	double y = gsl_vector_get(v, 1);
 	double a = gsl_vector_get(v, 2);
 
-	double r = this_img->dot_rotate_translate(img_with, x, y, a);
+	double r = this_img->dot_rotate_translate(img_to, x, y, a);
 	int nsec = this_img->get_xsize() * this_img->get_ysize();
 	double result = 1.0 - r / nsec;
 
@@ -1366,8 +1366,8 @@ static double refalifnfast(const gsl_vector * v, void *params)
 
 EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 {
-	EMData *with = params["with"];
-	if (!with) {
+	EMData *to = params["to"];
+	if (!to) {
 		return 0;
 	}
 
@@ -1395,7 +1395,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 		int np = 3;
 		Dict gsl_params;
 		gsl_params["this"] = this_img;
-		gsl_params["with"] = with;
+		gsl_params["to"] = to;
 		gsl_params["snr"] = params["snr"];
 
 		const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
@@ -1448,7 +1448,7 @@ EMData *RefineAligner::align(EMData * this_img, string cmp_name) const
 	else {
 		float best = 0;
 		Dict cmp_params;
-		cmp_params["with"] = with;
+		cmp_params["to"] = to;
 
 		if (mode == 0) {
 			best = this_img->cmp(cmp_name, cmp_params);

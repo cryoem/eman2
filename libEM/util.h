@@ -20,17 +20,37 @@ using std::vector;
 namespace EMAN
 {
 	/** Util is a collection of utility functions.
-     * Each function is a public static function.
      */
 	class Util
 	{
 	  public:
+		/** convert complex data array from Amplitude/Phase format
+		 * into Real/Imaginary format.
+		 * @param data complex data array.
+		 * @param n array size.
+		 */
 		static void ap2ri(float *data, size_t n);
+
+		/** flip the phase of a complex data array.
+		 * @param data complex data array.
+		 * @param n array size.
+		 */
 		static void flip_complex_phase(float *data, size_t n);
 		static int file_lock_wait(FILE * file);
 		static void file_unlock(FILE * file);
-		static int generate_machine_stamp();
+
+		/** check whether a file starts with certain magic string.
+		 * @param first_block The first block of the file.
+		 * @param magic The magic string to identify a file format.
+		 * @return True if file matches magic. Otherwise, false.
+		 */
 		static bool check_file_by_magic(const void *first_block, const char *magic);
+
+		/** Vertically flip the data of a 2D real image.
+		 * @param data Data array of the 2D real image.
+		 * @param nx Image Width.
+		 * @param ny Image Height.
+		 */
 		static void flip_image(float *data, size_t nx, size_t ny);
 
 		static bool sstrncmp(const char *s1, const char *s2);
@@ -106,11 +126,13 @@ namespace EMAN
 			return x * x;
 		}
 
+		/** result = (x*x + y*y); */
 		static double square_sum(double x, double y)
 		{
 			return (x * x + y * y);
 		}
 
+		/** result = sqrt(x*x + y*y + z*z); */
 		static inline double hypot3(double x, double y, double z)
 		{
 			return sqrt(x * x + y * y + z * z);
@@ -129,12 +151,12 @@ namespace EMAN
 			return (a * exp(-(dx * dx + dy * dy + dz * dz) / d));
 		}
 
-
+		/** Get the minimum of 2 float numbers */
 		static inline float min(float f1, float f2)
 		{
 			return (f1 < f2 ? f1 : f2);
 		}
-
+		/** Get the minimum of 3 float numbers */
 		static inline float min(float f1, float f2, float f3)
 		{
 			if (f1 <= f2 && f1 <= f3) {
@@ -145,7 +167,7 @@ namespace EMAN
 			}
 			return f3;
 		}
-
+		/** Get the minimum of 4 float numbers */
 		static inline float min(float f1, float f2, float f3, float f4)
 		{
 			float m = f1;
@@ -160,12 +182,14 @@ namespace EMAN
 			}
 			return m;
 		}
-
+		
+		/** Get the maximum of 2 float numbers */
 		static inline float max(float f1, float f2)
 		{
 			return (f1 < f2 ? f2 : f1);
 		}
-
+		
+		/** Get the maximum of 3 float numbers */
 		static inline float max(float f1, float f2, float f3)
 		{
 			if (f1 >= f2 && f1 >= f3) {
@@ -176,7 +200,8 @@ namespace EMAN
 			}
 			return f3;
 		}
-
+		
+		/** Get the maximum of 4 float numbers */
 		static inline float max(float f1, float f2, float f3, float f4)
 		{
 			float m = f1;

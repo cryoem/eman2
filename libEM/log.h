@@ -16,8 +16,7 @@ namespace EMAN
      * redesign begin() and end() methods
      */
 
-	/** 
-     * class Log defines a way to output logging information.
+	/** Log defines a way to output logging information.
      * 1) The logs can either go to standard output (default), or go to a
      *    user-given file. 
      * 2) 4 verbose log levels are defined. by default, ERROR_LOG is used.
@@ -30,25 +29,40 @@ namespace EMAN
 	  public:
 		enum LogLevel
 		{
-			ERROR_LOG,
-			WARNING_LOG,
-			NORMAL_LOG,
-			VARIABLE_LOG
+			ERROR_LOG,        // error message
+			WARNING_LOG,      // warning message
+			NORMAL_LOG,       // high-level debug message
+			VARIABLE_LOG      // very-detailed-level debug message
 		};
 
 	  public:
 		static Log *logger();
 
+		/** begin() and start() are used by command-line programs*/
 		int begin(int argc, char *argv[], int ppid);
 		void end(int ref, char *file = "-", char *text = "");
 
-
-		void variable(const char *format, ...);
-		void log(const char *format, ...);
-		void warn(const char *format, ...);
+		/** log an error message. log level = ERROR_LOG.
+		 * Its args are the same as printf().*/
 		void error(const char *format, ...);
 
+		/** log a warning message. log level = WARNING_LOG.
+		 * Its args are the same as printf().*/
+		void warn(const char *format, ...);
+
+		/** log a high-level debug message. log level = NORMAL_LOG.
+		 * Its args are the same as printf().*/
+		void log(const char *format, ...);
+
+		/** log a very-detailed-level debug message. log level = VARIABLE_LOG.
+		 * Its args are the same as printf().*/
+		void variable(const char *format, ...);
+		
 		void set_level(LogLevel level);
+
+		/** set log output file. If this function is not called,
+		 * output is standart output.
+		 */
 		void set_logfile(const char *filename);
 
 	  private:

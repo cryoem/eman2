@@ -27,7 +27,7 @@ namespace EMAN
      *
      *    EMData *img = ...;
      *    EMData *with = ...;
-     *    img->align("ALIGNER_NAME", Dict("with", image1));
+     *    img->align("ALIGNER_NAME", Dict("to", image1));
      *
      * 3. How to define a new Aligner class
      *
@@ -86,7 +86,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("intonly", EMObject::INT);
 			  d.put("maxshift", EMObject::INT);
 			  d.put("useparent", EMObject::INT);
@@ -116,7 +116,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("useparent", EMObject::INT);
 			  return d;
 		}
@@ -143,7 +143,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  return d;
 		}
 	};
@@ -168,7 +168,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  return d;
 		}
 	};
@@ -193,7 +193,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("irad", EMObject::INT);
 			  d.put("orad", EMObject::INT);
 			  return d;
@@ -220,7 +220,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("usedot", EMObject::INT);
 			  d.put("maxshift", EMObject::INT);
 			  return d;
@@ -247,7 +247,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("maxshift", EMObject::INT);
 			  d.put("snr", EMObject::FLOATARRAY);
 			  return d;
@@ -274,7 +274,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("maxshift", EMObject::INT);
 			  d.put("radonwith", EMObject::EMDATA);
 			  d.put("radonthis", EMObject::EMDATA);
@@ -302,7 +302,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("flip", EMObject::EMDATA);
 			  d.put("imask", EMObject::INT);
 			  return d;
@@ -329,7 +329,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("flip", EMObject::EMDATA);
 			  d.put("usedot", EMObject::INT);
 			  d.put("maxshift", EMObject::INT);
@@ -357,7 +357,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("flip", EMObject::EMDATA);
 			  d.put("maxshift", EMObject::INT);
 			  return d;
@@ -383,7 +383,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("flip", EMObject::EMDATA);
 			  d.put("maxshift", EMObject::INT);
 			  return d;
@@ -411,7 +411,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("flip", EMObject::EMDATA);
 			  d.put("maxshift", EMObject::INT);
 			  d.put("snr", EMObject::FLOATARRAY);
@@ -439,7 +439,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("maxshift", EMObject::INT);
 			  d.put("thisf", EMObject::EMDATA);
 			  d.put("radonwith", EMObject::EMDATA);
@@ -469,7 +469,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("with", EMObject::EMDATA);
+			  d.put("to", EMObject::EMDATA);
 			  d.put("mode", EMObject::INT);
 			  d.put("snr", EMObject::FLOATARRAY);
 			  d.put("alot", EMObject::FLOAT);

@@ -104,27 +104,6 @@ void Util::file_unlock(FILE *)
 
 }
 
-int Util::generate_machine_stamp()
-{
-	int stamp = 0;
-	char *p = (char *) (&stamp);
-
-	if (ByteOrder::is_host_big_endian()) {
-		p[0] = 0x44;
-		p[1] = 0x44;
-		p[2] = 0;
-		p[3] = 0;
-	}
-	else {
-		p[0] = 0x11;
-		p[1] = 0x11;
-		p[2] = 0;
-		p[3] = 0;
-	}
-
-	return stamp;
-
-}
 
 bool Util::check_file_by_magic(const void *first_block, const char *magic)
 {

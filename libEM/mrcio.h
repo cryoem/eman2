@@ -15,7 +15,7 @@ namespace EMAN
 {
 	class MrcIO:public ImageIO
 	{
-	  public:
+	public:
 		MrcIO(string filename, IOMode rw_mode = READ_ONLY);
 		~MrcIO();
 
@@ -29,24 +29,24 @@ namespace EMAN
 		static int to_em_datatype(int mrcmode);
 		static int to_mrcmode(int em_datatype, bool is_complex);
 
-	  private:
+	private:
 		enum MrcMode
-		{
-			MRC_UCHAR = 0,
-			MRC_USHORT,
-			MRC_FLOAT,
-			MRC_USHORT_COMPLEX,
-			MRC_FLOAT_COMPLEX,
-			MRC_UNKNOWN
-		};
+			{
+				MRC_UCHAR = 0,
+				MRC_USHORT,
+				MRC_FLOAT,
+				MRC_USHORT_COMPLEX,
+				MRC_FLOAT_COMPLEX,
+				MRC_UNKNOWN
+			};
 
 		enum
-		{
-			MRC_NUM_LABELS = 10,
-			MRC_LABEL_SIZE = 80,
-			NUM_4BYTES_PRE_MAP = 52,
-			NUM_4BYTES_AFTER_MAP = 3
-		};
+			{
+				MRC_NUM_LABELS = 10,
+				MRC_LABEL_SIZE = 80,
+				NUM_4BYTES_PRE_MAP = 52,
+				NUM_4BYTES_AFTER_MAP = 3
+			};
 
 		/* updated to MRC Image2000 format which is compatible with CCP4 format */
 		struct MrcHeader
@@ -106,8 +106,8 @@ namespace EMAN
 		static const char *SHORT_CTF_MAGIC;
 
 
-	  private:
-		  string filename;
+	private:
+		string filename;
 		IOMode rw_mode;
 		FILE *mrcfile;
 		MrcHeader mrch;
@@ -117,6 +117,9 @@ namespace EMAN
 		bool is_big_endian;
 		bool is_new_file;
 		bool initialized;
+		
+		/** generate the machine stamp used in MRC image format. */
+		static int generate_machine_stamp();
 	};
 }
 

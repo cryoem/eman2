@@ -345,8 +345,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 	}
 
 	sprintf(mrch.map, "MAP");
-	mrch.machinestamp = Util::generate_machine_stamp();
-
+	mrch.machinestamp = generate_machine_stamp();
 
 	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
 		Log::logger()->error("cannot write mrc header to file '%s'", filename.c_str());
@@ -655,4 +654,26 @@ int MrcIO::to_mrcmode(int e, bool is_complex)
 	}
 
 	return m;
+}
+
+
+
+int MrcIO::generate_machine_stamp()
+{
+	int stamp = 0;
+	char *p = (char *) (&stamp);
+
+	if (ByteOrder::is_host_big_endian()) {
+		p[0] = 0x44;
+		p[1] = 0x44;
+		p[2] = 0;
+		p[3] = 0;
+	}
+	else {
+		p[0] = 0x11;
+		p[1] = 0x11;
+		p[2] = 0;
+		p[3] = 0;
+	}
+	return stamp;
 }
