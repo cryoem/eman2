@@ -51,7 +51,7 @@ for single particle analysis."""
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
 	
-	image.filter("normalize")
+	image.filter("eman1.normalize")
 	shrink=image
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
@@ -63,16 +63,16 @@ for single particle analysis."""
 	# now we try to clean up long range density variations in the image
 	flt=shrink.copy_head()
 	flt.to_one()
-	flt.filter("mask.sharp",{"outer_radius":options.box*2/shrinkfactor})
+	flt.filter("eman1.mask.sharp",{"outer_radius":options.box*2/shrinkfactor})
 	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
-	flt.filter("xform.phaseorigin")
+	flt.filter("eman1.xform.phaseorigin")
 	a=shrink.convolute(flt)
 	a*=a.get_xsize()*a.get_ysize()
 	shrink-=a
 	a=None
 	
 	shrink2=shrink.copy(0)
-	shrink2.filter("math.squared")
+	shrink2.filter("eman1.math.squared")
 #	image=EMData()
 #	image.read_image(args[0])
 #	shrink.write_image("e.mrc")
@@ -90,24 +90,24 @@ for single particle analysis."""
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
 			# first a circular mask
-			ic.filter("mask.sharp",{"outer_radius":ic.get_xsize()/2-1})
+			ic.filter("eman1.mask.sharp",{"outer_radius":ic.get_xsize()/2-1})
 			
 			# make the unmasked portion mean -> 0
 			ic.add(-float(ic.get_attr("mean_nonzero")),1)
-			ic.filter("normalize.unitlen")
+			ic.filter("eman1.normalize.unitlen")
 #			ic.write_image("scaled_refs.hdf",-1)
 
 		# prepare a mask to use for local sigma calculaton
 		circle=shrink.copy_head()
 		circle.to_one()
-		circle.filter("mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
+		circle.filter("eman1.mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
 		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
 		ccfmean=shrink.calc_ccf(circle,True,None)
 		ccfsig=shrink2.calc_ccf(circle,True,None)
-		ccfmean.filter("math.squared")
+		ccfmean.filter("eman1.math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
-		ccfsig.filter("math.sqrt")
+		ccfsig.filter("eman1.math.sqrt")
 #		shrink.write_image("z0.mrc")
 #		ccfsig.write_image("z1.mrc")
 		
@@ -123,7 +123,7 @@ for single particle analysis."""
 			ccfone/=ccfsig
 #			ccfone.write_image("b.%0d.mrc"%n)
 			sig=float(ccfone.get_attr("sigma"))
-			ccfone.filter("mask.onlypeaks",{"npeaks":0})
+			ccfone.filter("eman1.mask.onlypeaks",{"npeaks":0})
 #			ccfone.write_image("c.%0d.mrc"%n)
 			pk=ccfone.calc_highest_locations(sig*4.0)
 			for m,p in enumerate(pk):
@@ -169,8 +169,8 @@ for single particle analysis."""
 		outer.to_one()
 		inner=outer.copy(0)
 		
-		outer.filter("mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
-		inner.filter("mask.sharp",{"outer_radius":sbox*2/5})
+		outer.filter("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
+		inner.filter("eman1.mask.sharp",{"outer_radius":sbox*2/5})
 		
 		outer.write_image("b_outer.mrc")
 		inner.write_image("b_inner.mrc")

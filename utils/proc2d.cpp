@@ -287,11 +287,11 @@ int main(int argc, char *argv[])
 			}
 #endif
 			if (argdict[edgenorm]) {
-				d->filter("CircleMeanNormalize");
+				d->filter("eman1.CircleMeanNormalize");
 			}
 
 			if (norm == 1) {
-				d->filter("StdNormalize");
+				d->filter("eman1.StdNormalize");
 			}
 			else if (norm == 2) {
 				(*d) *= nsig / sigma;
@@ -299,7 +299,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[flip]) {
-				d->filter("Flip", Dict("axis", "y"));
+				d->filter("eman1.Flip", Dict("axis", "y"));
 			}
 
 			if (argdict[invert]) {
@@ -307,7 +307,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (ramp) {
-				d->filter("LinearRamp", Dict("intercept", 1, "slope", ramp));	    
+				d->filter("eman1.LinearRamp", Dict("intercept", 1, "slope", ramp));	    
 			}
 
 			int y = d->get_ysize();
@@ -367,18 +367,18 @@ int main(int argc, char *argv[])
 			}
 
 			if (Xlp || Xhp) {
-				d->filter("Guasslowpass", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
-				d->filter("TanhHighpass", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
+				d->filter("eman1.Guasslowpass", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
+				d->filter("eman1.TanhHighpass", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
 			}
 
 			if (Xtlp) {
-				d->filter("Tanhlowpass", Dict("lowpass", -10.0));
-				d->filter("TanhHighpass", Dict("highpass", Xtlp));
+				d->filter("eman1.Tanhlowpass", Dict("lowpass", -10.0));
+				d->filter("eman1.TanhHighpass", Dict("highpass", Xtlp));
 			}
 
 			if (Xsharphp) {
-				d->filter("SharpCutoffLowpass", Dict("lowpass", Xsharphp));
-				d->filter("SharpCutoffHighpass", Dict("highpass", 100000.0));
+				d->filter("eman1.SharpCutoffLowpass", Dict("lowpass", Xsharphp));
+				d->filter("eman1.SharpCutoffHighpass", Dict("highpass", 100000.0));
 			}
 
 			if (mask) {
@@ -386,11 +386,11 @@ int main(int argc, char *argv[])
 			}
 
 			if (imask > 0) {
-				d->filter("SharpMask", Dict("inner_radius", imask, "value", 0));
+				d->filter("eman1.SharpMask", Dict("inner_radius", imask, "value", 0));
 			}
 
 			if (automask) {
-				d->filter("AutoMask", Dict("threshold", automask));
+				d->filter("eman1.AutoMask", Dict("threshold", automask));
 			}
 
 			// uses correlation with 180 deg rot for centering
@@ -404,15 +404,15 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[center]) {
-				d->filter("ToMassCenter", Dict("int_shift_only", 1));
+				d->filter("eman1.ToMassCenter", Dict("int_shift_only", 1));
 			}
 
 			if (argdict[phot]) {
-				d->filter("Phase180");
+				d->filter("eman1.Phase180");
 			}
 
 			if (anoise) {
-				d->filter("AddNoise");
+				d->filter("eman1.AddNoise");
 			}
 
 			if (argdict[rfp]) {
@@ -429,7 +429,7 @@ int main(int argc, char *argv[])
 				}
 				else {
 					if (rizef && rand() % 2) {
-						d->filter("Flip", Dict("axis", "y"));
+						d->filter("eman1.Flip", Dict("axis", "y"));
 					}
 
 					if (rizeda > 0) {
@@ -474,7 +474,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rotav]) {
-				d->filter("RadialAverage");
+				d->filter("eman1.RadialAverage");
 			}
 
 			if (csym > 1) {
@@ -496,7 +496,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rsub]) {
-				d->filter("RadialSubstract");
+				d->filter("eman1.RadialSubstract");
 			}
 
 			if (scl) {
@@ -506,11 +506,11 @@ int main(int argc, char *argv[])
 				}
 				else {
 					EMData *e = d->copy();
-					e->filter("Phase180");
+					e->filter("eman1.Phase180");
 
 					if (sclmd == 1) {
 						sc->common_lines(e, e, sclmd, scl, true);
-						sc->filter("LinearXform", Dict("shift", -90.0, "scale", -1.0));
+						sc->filter("eman1.LinearXform", Dict("shift", -90.0, "scale", -1.0));
 					}
 					else if (sclmd == 2) {
 						sc->common_lines(e, e, sclmd, scl, true);
@@ -543,7 +543,7 @@ int main(int argc, char *argv[])
 				p["niter"] = bliter;
 				p["half_width"] = blwidth;
 
-				d->filter("Bilateral", p);
+				d->filter("eman1.Bilateral", p);
 			}
 
 #if 0
@@ -703,7 +703,7 @@ int main(int argc, char *argv[])
 	
     if (average) {
 		//average->setNImg(n1-n0+1);
-		average->filter("StdNormalize");
+		average->filter("eman1.StdNormalize");
 		average->write_image(outfile, -1);
     }
 #if 0

@@ -272,11 +272,11 @@ def main():
                     sc.common_lines_real(d, d, scl, true)
                 else:
                     e = d.copy()
-                    e.filter("xform.phaseorigin")
+                    e.filter("eman1.xform.phaseorigin")
                 
                     if sclmd == 1:
                         sc.common_lines(e, e, sclmd, scl, true)
-                        sc.filter("math.linear", Dict("shift", EMObject(-90.0), "scale", EMObject(-1.0)))		
+                        sc.filter("eman1.math.linear", Dict("shift", EMObject(-90.0), "scale", EMObject(-1.0)))		
                     elif sclmd == 2:
                         sc.common_lines(e, e, sclmd, scl, true)
                     else:
@@ -300,9 +300,8 @@ def main():
                     fftavg.set_size(nx+2, ny)
                     fftavg.set_complex(1)
                     fftavg.to_zero()
-                d.filter("mask.edgemean
-				")
-                d.filter("normalize")
+                d.filter("eman1.mask.edgemean")
+                d.filter("eman1.normalize")
                 df = d.do_fft()
                 df.mult(df.get_ysize())
                 fftavg.add_incoherent(df)
@@ -362,7 +361,7 @@ def main():
 
     if average:
         average.set_average_nimg(n1-n0+1)
-        average.filter("normalize");
+        average.filter("eman1.normalize");
 	average.append_image(outfile);
 
     if options.fftavg:

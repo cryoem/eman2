@@ -110,7 +110,7 @@ using 1/2 width of Gaussian in Fourier space."""
 	gaus=EMData()
 	gaus.set_size(64,64,64)
 	gaus.to_one()
-	gaus.filter("mask.gaussian",{"outer_radius":12.0})
+	gaus.filter("eman1.mask.gaussian",{"outer_radius":12.0})
 
 	# find the output box size, either user specified or from bounding box
 	box=[0,0,0]
