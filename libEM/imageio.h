@@ -17,7 +17,7 @@ using std::string;
 namespace EMAN
 {
 	class Region;
-	class Size;
+	class IntSize;
 	class Ctf;
 
 	/** ImageIO is the  base class for any image io class.
@@ -139,7 +139,7 @@ namespace EMAN
 		int check_write_access(IOMode rw_mode, int image_index, bool check_data = false,
 							   float *data = 0);
 
-		int check_region(const Region * area, const Size & max_size);
+		int check_region(const Region * area, const IntSize & max_size);
 
 		FILE *sfopen(string filename, IOMode mode, bool * is_new = 0, bool overwrite = false);
 	};

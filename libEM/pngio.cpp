@@ -171,7 +171,7 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	assert(is_3d == false);
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
-	if (check_region(area, Size(nx1, ny1)) != 0) {
+	if (check_region(area, IntSize(nx1, ny1)) != 0) {
 		return 1;
 	}
 
@@ -248,7 +248,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool is_
 	int nx1 = static_cast < int >(nx);
 	int ny1 = static_cast < int >(ny);
 
-	if (check_region(area, Size(nx1, ny1)) != 0) {
+	if (check_region(area, IntSize(nx1, ny1)) != 0) {
 		return 1;
 	}
 

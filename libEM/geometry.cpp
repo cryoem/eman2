@@ -59,10 +59,11 @@ string Region::get_string() const
 	int ndim = origin.get_ndim();
 
 	if (ndim == 2) {
-		sprintf(str, "(%2.1f, %2.1f; %d, %d)", origin.x, origin.y, size.x, size.y);
+		sprintf(str, "(%2.1f, %2.1f; %2.1f, %2.1f)",
+				origin.x, origin.y, size.x, size.y);
 	}
 	else if (ndim == 3) {
-		sprintf(str, "(%2.1f, %2.1f, %2.1f; %d, %d, %d)",
+		sprintf(str, "(%2.1f, %2.1f, %2.1f; %2.1f, %2.1f, %2.1f)",
 				origin.x, origin.y, origin.z, size.x, size.y, size.z);
 	}
 

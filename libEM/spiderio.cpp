@@ -141,7 +141,8 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		return 1;
 	}
 
-	if (check_region(area, Size((int) first_h->nx, (int) first_h->ny, (int) first_h->nslice)) != 0) {
+	if (check_region(area, IntSize((int) first_h->nx, (int) first_h->ny,
+								   (int) first_h->nslice)) != 0) {
 		return 1;
 	}
 
@@ -441,7 +442,8 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 		return 1;
 	}
 
-	if (check_region(area, Size((int) first_h->nx, (int) first_h->ny, (int) first_h->nslice)) != 0) {
+	if (check_region(area, IntSize((int) first_h->nx, (int) first_h->ny,
+								   (int) first_h->nslice)) != 0) {
 		return 1;
 	}
 

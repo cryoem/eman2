@@ -118,14 +118,16 @@ namespace EMAN
 		/** This will exctract an arbitrarily oriented and sized region from the
 		 *  image. The orientation is defined by rotating the target image into
 		 *  the source image ('this'). 'center' defines the location of the
-		 *  center of the returned image in 'this' */ 
-		EMData *get_rotated_clip(FloatPoint &center, Rotation &orient, Size &size, float scale=1.0);
+		 *  center of the returned image in 'this'
+		 */ 
+		EMData *get_rotated_clip(FloatPoint &center, Rotation &orient, IntSize &size, float scale=1.0);
 				
 		/** Add a scaled image into another image at a specified location
 		 *  This is used, for example, to accumulate gaussians in
 		 *  programs like pdb2mrc.py. The center of 'block' will be positioned at
 		 *  'center' with scale factor 'scale. Densities will be interpolated in
-		 *  'block' and multiplied by 'mult' */
+		 *  'block' and multiplied by 'mult'
+		 */
 		void insert_scaled_sum(EMData *block, const FloatPoint&center, float scale=1.0, float mult=1.0);
 
 		/** return the fast fourier transform image of the current

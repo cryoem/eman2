@@ -98,7 +98,7 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
 		LOGERR("Cannot read complex Gatan2 files");
 		return 1;
 	}
-	if (check_region(area, Size(gatanh.nx, gatanh.ny)) != 0) {
+	if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
 		return 1;
 	}
 	int xlen = 0, ylen = 0;
@@ -131,7 +131,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 		LOGERR("Cannot read complex Gatan2 files");
 		return 1;
 	}
-	if (check_region(area, Size(gatanh.nx, gatanh.ny)) != 0) {
+	if (check_region(area, IntSize(gatanh.nx, gatanh.ny)) != 0) {
 		return 1;
 	}
 

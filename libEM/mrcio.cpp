@@ -158,7 +158,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 		return 1;
 	}
 
-	if (check_region(area, Size(mrch.nx, mrch.ny, mrch.nz)) != 0) {
+	if (check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz)) != 0) {
 		return 1;
 	}
 	if (area && area->get_ndim() > 2 && image_index > 0) {
@@ -384,7 +384,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 		image_index = 0;
 	}
 
-	if (check_region(area, Size(mrch.nx, mrch.ny, mrch.nz)) != 0) {
+	if (check_region(area, IntSize(mrch.nx, mrch.ny, mrch.nz)) != 0) {
 		return 1;
 	}
 

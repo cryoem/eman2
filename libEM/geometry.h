@@ -9,18 +9,19 @@ using std::string;
 
 namespace EMAN
 {
-	/** Size is used to describe a 2D or 3D rectangular size.
+
+	/** IntSize is used to describe a 2D or 3D rectangular size.
      */
-	class Size
+	class IntSize
 	{
 	public:
-		Size():x(0), y(0), z(0)
+		IntSize():x(0), y(0), z(0)
 		{
 		}
-		Size(int xx, int yy):x(xx), y(yy), z(0)
+		IntSize(int xx, int yy):x(xx), y(yy), z(0)
 		{
 		}
-		Size(int xx, int yy, int zz):x(xx), y(yy), z(zz)
+		IntSize(int xx, int yy, int zz):x(xx), y(yy), z(zz)
 		{
 		}
 
@@ -37,7 +38,34 @@ namespace EMAN
 		int z;
 	};
 
+	/** FloatSize is used to describe a 2D or 3D rectangular size.
+     */
+	class FloatSize
+	{
+	public:
+		FloatSize():x(0), y(0), z(0)
+		{
+		}
+		FloatSize(float xx, float yy):x(xx), y(yy), z(0)
+		{
+		}
+		FloatSize(float xx, float yy, float zz):x(xx), y(yy), z(zz)
+		{
+		}
 
+		int get_ndim() const
+		{
+			if (z > 1) {
+				return 3;
+			}
+			return 2;
+		}
+
+		float x;
+		float y;
+		float z;
+	};
+	
 	/** IntPoint defines a integer-coordinate point in a 2D/3D space. */
 	class IntPoint {
 	public:
@@ -117,22 +145,22 @@ namespace EMAN
 		Region()
 		{
 			origin = FloatPoint (0, 0);
-			size = Size(0, 0);
+			size = FloatSize(0, 0);
 		}
 
-		Region(float x, float y, int xsize, int ysize)
+		Region(float x, float y, float xsize, float ysize)
 		{
 			origin = FloatPoint (x, y);
-			size = Size(xsize, ysize);
+			size = FloatSize(xsize, ysize);
 		}
 
-		Region(float x, float y, float z, int xsize, int ysize, int zsize)
+		Region(float x, float y, float z, float xsize, float ysize, float zsize)
 		{
-			origin = FloatPoint (x, y, z);
-			size = Size(xsize, ysize, zsize);
+			origin = FloatPoint(x, y, z);
+			size = FloatSize(xsize, ysize, zsize);
 		}
 
-		Region(const FloatPoint &o, const Size & s):origin(o), size(s)
+		Region(const FloatPoint &o, const FloatSize & s):origin(o), size(s)
 		{
 		}
 
@@ -150,10 +178,11 @@ namespace EMAN
 		{
 			return origin.get_ndim();
 		}
+		
 		string get_string() const;
 
 		FloatPoint origin;
-		Size size;
+		FloatSize size;
 	};
 }
 

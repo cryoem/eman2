@@ -101,7 +101,7 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 		nimg = icosh.nz;
 	}
 
-	if (check_region(area, Size(icosh.nx, icosh.ny, nimg)) != 0) {
+	if (check_region(area, IntSize(icosh.nx, icosh.ny, nimg)) != 0) {
 		return 1;
 	}
 
@@ -170,7 +170,7 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool is
 		nimg = icosh.nz;
 	}
 
-	if (check_region(area, Size(icosh.nx, icosh.ny, nimg)) != 0) {
+	if (check_region(area, IntSize(icosh.nx, icosh.ny, nimg)) != 0) {
 		return 1;
 	}
 

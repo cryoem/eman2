@@ -132,7 +132,7 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 		return 1;
 	}
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 
@@ -188,7 +188,7 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 		return 1;
 	}
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 

@@ -498,12 +498,12 @@ void EMUtil::get_region_dims(const Region * area, int nx, int *area_x,
 		}
 	}
 	else {
-		*area_x = area->size.x;
-		*area_y = area->size.y;
+		*area_x = (int)area->size.x;
+		*area_y = (int)area->size.y;
 
 		if (area_z) {
 			if (area->get_ndim() > 2 && nz > 1) {
-				*area_z = area->size.z;
+				*area_z = (int)area->size.z;
 			}
 			else {
 				*area_z = 1;

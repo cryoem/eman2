@@ -702,7 +702,7 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 
@@ -744,7 +744,7 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool is
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 	int xlen = 0, ylen = 0, x0 = 0, y0 = 0;

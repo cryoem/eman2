@@ -293,12 +293,12 @@ EMData *EMData::get_clip(const Region & area)
 	}
 
 	EMData *result = new EMData();
-	int zsize = area.size.z;
+	int zsize = (int)area.size.z;
 	if (zsize == 0 || nz <= 1) {
 		zsize = 1;
 	}
 
-	result->set_size(area.size.x, area.size.y, zsize);
+	result->set_size((int)area.size.x, (int)area.size.y, zsize);
 
 	int x0 = (int) area.origin.x;
 	x0 = x0 < 0 ? 0 : x0;
@@ -327,20 +327,20 @@ EMData *EMData::get_clip(const Region & area)
 
 	int clipped_row_size = x1 * sizeof(float);
 	int src_secsize = nx * ny;
-	int dst_secsize = area.size.x * area.size.y;
+	int dst_secsize = (int)(area.size.x * area.size.y);
 
 	float *src = rdata + z0 * src_secsize + y0 * nx + x0;
 	float *dst = result->get_data();
-	dst += zd0 * dst_secsize + yd0 * area.size.x + xd0;
+	dst += zd0 * dst_secsize + yd0 * (int)area.size.x + xd0;
 
 	int src_gap = src_secsize - (y1-y0) * nx;
-	int dst_gap = dst_secsize - (y1-y0) * area.size.x;
+	int dst_gap = dst_secsize - (y1-y0) * (int)area.size.x;
 	
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
 			memcpy(dst, src, clipped_row_size);
 			src += nx;
-			dst += area.size.x;
+			dst += (int)area.size.x;
 		}
 		src += src_gap;
 		dst += dst_gap;
@@ -382,7 +382,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 
 	Region area(nx1, ny1, nz1, origin.x, origin.y, origin.z);
 #if 0
-	if (area.inside_region(Size(nx, ny, nz))) {
+	if (area.inside_region(IntSize(nx, ny, nz))) {
 		LOGERR("outside of destination image not supported.");
 		return;
 	}
@@ -416,7 +416,8 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	flags |= EMDATA_NEEDUPD;
 }
 
-EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient, Size &size, float scale)
+EMData *EMData::get_rotated_clip(FloatPoint &center, Rotation &orient,
+								 IntSize &size, float scale)
 {
 	return NULL;
 }

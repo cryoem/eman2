@@ -123,7 +123,7 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 
@@ -178,7 +178,7 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 

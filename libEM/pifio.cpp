@@ -199,7 +199,7 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 		LOGERR("read pif file '%s' failed", filename.c_str());
 		return 1;
 	}
-	if (check_region(area, Size(pih.nx, pih.ny, pih.nz)) != 0) {
+	if (check_region(area, IntSize(pih.nx, pih.ny, pih.nz)) != 0) {
 		return 1;
 	}
 	int xlen = 0, ylen = 0, zlen = 0;

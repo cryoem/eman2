@@ -48,7 +48,8 @@ set_policy(Transform.post_translate_rotate, return_internal_reference())
 set_policy(Transform.scale, return_internal_reference())
 
 
-Size = Class("EMAN::Size", "geometry.h")
+IntSize = Class("EMAN::IntSize", "geometry.h")
+FloatSize = Class("EMAN::FloatSize", "geometry.h")
 
 IntPoint = Class("EMAN::IntPoint", "geometry.h")
 FloatPoint = Class("EMAN::FloatPoint", "geometry.h")

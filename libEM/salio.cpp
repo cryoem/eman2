@@ -139,7 +139,7 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 
 	assert(!is_3d);
 
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 	int xlen = 0, ylen = 0;
@@ -168,7 +168,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
-	if (check_region(area, Size(nx, ny)) != 0) {
+	if (check_region(area, IntSize(nx, ny)) != 0) {
 		return 1;
 	}
 

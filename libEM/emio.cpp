@@ -129,7 +129,7 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is
 	if (check_read_access(image_index, area) != 0) {
 		return 1;
 	}
-	if (check_region(area, Size(emh.nx, emh.ny, emh.nz)) != 0) {
+	if (check_region(area, IntSize(emh.nx, emh.ny, emh.nz)) != 0) {
 		return 1;
 	}
 
@@ -176,7 +176,7 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 		return 1;
 	}
 
-	if (check_region(area, Size(emh.nx, emh.ny, emh.nz)) != 0) {
+	if (check_region(area, IntSize(emh.nx, emh.ny, emh.nz)) != 0) {
 		return 1;
 	}
 

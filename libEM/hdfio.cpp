@@ -135,7 +135,7 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	if (get_hdf_dims(image_index, &nx, &ny, &nz) != 0) {
 		return 1;
 	}
-	if (check_region(area, Size(nx, ny, nz)) != 0) {
+	if (check_region(area, IntSize(nx, ny, nz)) != 0) {
 		return 1;
 	}
 
@@ -211,7 +211,7 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 	if (get_hdf_dims(image_index, &nx, &ny, &nz) != 0) {
 		return 1;
 	}
-	if (check_region(area, Size(nx, ny, nz)) != 0) {
+	if (check_region(area, IntSize(nx, ny, nz)) != 0) {
 		return 1;
 	}
 

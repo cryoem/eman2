@@ -164,7 +164,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		make_header_host_endian(hed);
 	}
 
-	if (check_region(area, Size(hed.nx, hed.ny, nimg)) != 0) {
+	if (check_region(area, IntSize(hed.nx, hed.ny, nimg)) != 0) {
 		return 1;
 	}
 
@@ -363,7 +363,7 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 		LOGWARN("this is not a 3D IMAGIC. Read as a 2D");
 		is_3d = false;
 	}
-	if (check_region(area, Size(imagich.nx, imagich.ny, nimg)) != 0) {
+	if (check_region(area, IntSize(imagich.nx, imagich.ny, nimg)) != 0) {
 		return 1;
 	}
 

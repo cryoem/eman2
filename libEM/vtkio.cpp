@@ -140,7 +140,7 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
-	if (check_region(area, Size(nx, ny, nz)) != 0) {
+	if (check_region(area, IntSize(nx, ny, nz)) != 0) {
 		return 1;
 	}
 

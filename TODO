@@ -17,7 +17,6 @@
        routine will handle the logfile thing, and we may use for other tasks
        later on...
 
-
   005: fix place where assuming EMData is only 2D or 3D. 1D is also OK. 4D?
 
   009: build a regression test system to call all the unit tests.
@@ -35,6 +34,9 @@
 	   way. The result seems to be phase shifted vertically, but not
 	   horizontally. Needs a careful look...
 
+  026. EMData: do_ift() has a strange problem. first run works. second run
+       fails. both runs are identical. possible reason: fftw cache.
+	   
  
 --- Low Priority ---
 
@@ -76,7 +78,15 @@
 				'spacing_sec' to 'apix_z'.
 
   7/30/04: 019: when writing to an existing single-image like mrc, simply overwrite
-		   it instead of checking its image size to be the same.
+				it instead of checking its image size to be the same.
 	   
   7/31/04: 021: python part doesn't compile sometimes on mandrake 10
-  
+
+  8/3/04:  024: Matrix3f: multiply and division have wrong
+				implementation. It shouldn't do element-to-element mult/div.
+
+  8/5/04:  025: EMData get_clip() won't work sometimes.
+
+  8/5/04:  027. Geometry: change class Size from only int to IntSize and FloatSize.
+				In Region, use float origins and float sizes.
+	   

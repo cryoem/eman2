@@ -22,7 +22,7 @@ int ImageIO::write_ctf(const Ctf &, int)
 	return 1;
 }
 
-int ImageIO::check_region(const Region * area, const Size & max_size)
+int ImageIO::check_region(const Region * area, const IntSize & max_size)
 {
 	int img_ndim = max_size.get_ndim();
 	if (area) {
