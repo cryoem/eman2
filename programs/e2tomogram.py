@@ -60,6 +60,7 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
 			if bigpad*2>padbox/2 : ccf.filter("MaskSharp",{"outer_radius":padbox/2-1})
 			else : ccf.filter("MaskSharp",{"outer_radius":bigpad*2})		# max translation
+			ccf.set_value_at(int(padbox/2),int(padbox/2),0,0)		# remove 0 shift artifacts
 			
 			if (debug):
 				clip1.write_image("dbug.hed",-1)
@@ -105,7 +106,7 @@ Processes a tomographic tilt series"""
 	parser.add_option("--box","-B", type="int", help="Box size for alignment probe (pixels), default=96",default=96.0)
 	parser.add_option("--highpass",type="float",help="Highpass Gaussian filter radius (pixels), default none", default=-1.0)
 	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian filter radius (pixels), default none",default=-1.0)
-	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region=<x>,<y>,<clipsize>,<alisize>",default="censym")
+	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	
 	(options, args) = parser.parse_args()
@@ -194,6 +195,7 @@ Processes a tomographic tilt series"""
 			ccfs.filter("ValueSqrt")
 			ccf/=ccfs
 			ccf.filter("MaskSharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
+			ccf.set_value_at(ccf.get_xsize()/2,ccf.get_ysize()/2,0,0)
 
 			ccf.filter("NormalizeStd")		# peaks relative to 1 std-dev
 #			ccf.write_image("dbug.hed",-1)
@@ -207,7 +209,7 @@ Processes a tomographic tilt series"""
 			print "%d.\t%d\t%d"%(i[1],cen[0],cen[1])
 			continue			
 		elif options.mode=="censym" :
-			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2)
+			dct=matrixalign(im1,im2,options.box,options.box+options.maxshift,2,debug=(i[0]==71))
 			pairs=[]
 			for x in range(3):
 				for y in range(-2,3):
