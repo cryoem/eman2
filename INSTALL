@@ -20,6 +20,7 @@ Basic Installation
 
        3) % cd EMAN/src; mkdir build; cd build
        4) % ccmake ../eman2
+            make necessary changes here
 	    Then type 'c', and type 'g'.
        5) % make
        6) % make install
