@@ -19,13 +19,20 @@ namespace EMAN {
 	virtual ~Vec3f() {}
 	
 	float normalize();
-	float dot(const Vec3f& v) { return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]); }	
+	float dot(const Vec3f& v) const { return (vec[0] * v[0] + vec[1] * v[1] + vec[2] * v[2]); }	
+
+	Vec3f cross(const Vec3f& v) const
+	{
+	    return Vec3f(vec[1] * v.vec[2] - vec[2] * v.vec[1],
+			 vec[2] * v.vec[0] - vec[0] * v.vec[2],
+			 vec[0] * v.vec[1] - vec[1] * v.vec[0]);
+	}
 	
 	float length() const;
 	void negate() {  vec[0] = -vec[0]; vec[1] = -vec[1]; vec[2] = -vec[2]; }
 	
-	void get_value(float* v) { v[0] = vec[0]; v[1] = vec[1]; v[2] = vec[2]; }
-	void get_value(float &x, float &y, float &z) { x = vec[0]; y = vec[1]; z = vec[2]; }
+	void get_value(float* v) const { v[0] = vec[0]; v[1] = vec[1]; v[2] = vec[2]; }
+	void get_value(float &x, float &y, float &z) const { x = vec[0]; y = vec[1]; z = vec[2]; }
 
 	void set_value(const float v[3]) { vec[0] = v[0]; vec[1] = v[1]; vec[2] = v[2]; }
 	void set_value(float x, float y, float z) { vec[0] = x; vec[1] = y; vec[2] = z; }
@@ -172,84 +179,6 @@ namespace EMAN {
 	
 	gsl_matrix* matrix;
     };
-    
-
-    class Rotation {
-    public:
-	enum Type { EMAN, IMAGIC, SPIN, QUAT, MATRIX, SGIROT, SPIDER, MRC };
-    public:
-	Rotation() {}
-	Rotation(float a1, float a2, float a3, Type type);
-	Rotation(float e1, float e2, float e3, float e0, Type type);
-	Rotation(const Matrix3f& m);
-	
-	~Rotation();
-
-	void inverse();
-	Rotation create_inverse();
-	
-	float diff(Rotation* euler1, bool no_phi = true);
-	void rotate_from_left(Rotation left_euler);
-	void rotate_from_left(float alt, float az, float phi);
-
-	void set_sym(string symname);
-	int get_max_nsym() const;
-	Rotation get_sym(int sym_index);
-
-	void set_angle(float a1, float a2, float a3, Type type);
-	void set_angle(float e1, float e2, float e3, float e0, Type type);
-	void set_angle(const Matrix3f& m); 
-	void set_type(Type type);
-	
-	bool is_valid() const;
-	
-	float eman_alt() const;
-	float eman_az() const;
-	float eman_phi() const;
-	
-	float mrc_theta() const;
-	float mrc_phi() const;
-	float mrc_omega() const;
-    
-	float imagic_alpha() const;
-	float imagic_beta() const;
-	float imagic_gamma() const;
-
-	float spider_phi() const;
-	float spider_theta() const;
-	float spider_gamma() const;
-    
-	float spin_q() const;      
-	float spin_n1() const;
-	float spin_n2() const;
-	float spin_n3() const;
-
-	float sgi_q() const;      
-	float sgi_n1() const;
-	float sgi_n2() const;
-	float sgi_n3() const;
-
-	float quat_e0() const;
-	float quat_e1() const;
-	float quat_e2() const;
-	float quat_e3() const;
-	
-	void get_matrix(Matrix3f& m) const;
-	
-	Rotation& operator*(const Rotation& e);
-	Rotation& operator/(const Rotation& e);
-
-	friend Rotation operator*(const Rotation& e1, const Rotation& e2);
-	friend Rotation operator/(const Rotation& e1, const Rotation& e2);
-	
-	friend bool operator==(const Rotation& e1, const Rotation& e2);
-	friend bool operator!=(const Rotation& e1, const Rotation& e2);
-
-    private:
-	Matrix3f matrix;
-	Type type;
-	string symname;
-    };
     /*
       Euler angles have the disadvantage of being
       susceptible to "Gimbal lock" where attempts to rotate an
@@ -274,6 +203,7 @@ namespace EMAN {
 	Quaternion(float radians, const Vec3f& axis);
 	Quaternion(const Vec3f& axis, float radians);
 	Quaternion(float e0, float e1, float e2, float e3);
+	Quaternion(const Matrix3f& m);
 	Quaternion(const Matrix4f& m);
 	~Quaternion();
 
@@ -285,11 +215,13 @@ namespace EMAN {
 	Quaternion& inverse();
 	Quaternion create_inverse() const;
 	
-	Vec3f apply(const Vec3f& axis) const;
+	Vec3f rotate(const Vec3f& v) const;
+
+	float to_angle() const;
+	Vec3f to_axis() const;
 	
-	float to_axis_angle(Vec3f& axis) const;
-	Rotation to_euler() const;
-	Matrix4f to_matrix() const;
+	Matrix3f to_matrix3() const;
+	Matrix4f to_matrix4() const;
 
 	float real() const;
 	Vec3f unreal() const;
@@ -321,6 +253,79 @@ namespace EMAN {
 	float e3;		
     };
 
+
+    class Rotation {
+    public:
+	static const float ERR_LIMIT;
+	enum Type { EMAN, IMAGIC, SPIN, QUATERNION, MATRIX, SGIROT, SPIDER, MRC, UNKNOWN };
+    public:
+	Rotation();
+	Rotation(float a1, float a2, float a3, Type type);
+	Rotation(float e1, float e2, float e3, float e0, Type type);
+	Rotation(const Quaternion& q);
+	Rotation(const Matrix3f& m);
+	
+	~Rotation();
+
+	Rotation& inverse();
+	Rotation create_inverse();
+	
+	float diff(const Rotation& r);
+	Rotation& rotate_from_left(const Rotation& left_rotate);
+
+	void set_sym(string symname);
+	int get_max_nsym() const;
+	Rotation get_sym(int sym_index);
+
+	void set_angle(float a1, float a2, float a3, Type type);
+	void set_angle(float e1, float e2, float e3, float e0, Type type);
+	void set_angle(const Matrix3f& m); 
+	void set_angle(const Quaternion& q);
+	
+	bool is_valid() const;
+	void rectify();
+	
+	float eman_alt() const;
+	float eman_az() const;
+	float eman_phi() const;
+	
+	float mrc_theta() const;
+	float mrc_phi() const;
+	float mrc_omega() const;
+    
+	float imagic_alpha() const;
+	float imagic_beta() const;
+	float imagic_gamma() const;
+
+	float spider_phi() const;
+	float spider_theta() const;
+	float spider_psi() const;
+
+	vector<float> get_spin_axis() const;
+	void get_spin_axis(float* q, float* n1, float* n2, float* n3) const;
+
+	vector<float> get_sgi() const;
+	void get_sgi(float* q, float* n1, float* n2, float* n3) const;
+
+	Quaternion get_quaternion() const;
+	Matrix3f get_matrix() const;
+	
+	Rotation& operator*=(const Rotation& e);
+	Rotation& operator/=(const Rotation& e);
+
+	friend Rotation operator*(const Rotation& e1, const Rotation& e2);
+	friend Rotation operator/(const Rotation& e1, const Rotation& e2);
+	
+	friend bool operator==(const Rotation& e1, const Rotation& e2);
+	friend bool operator!=(const Rotation& e1, const Rotation& e2);
+
+    private:
+	Matrix3f matrix;
+	Type type;
+	string symname;
+    };
+    
+    
     class Transform {
     public:
 	enum TransformType {
@@ -331,7 +336,7 @@ namespace EMAN {
 	    IDENTITY = 1 << 5,
 	    TRANSFORM = 1 << 6
 	};
-	
+
 	
     public:
 	Transform(); // create an identity matrix
