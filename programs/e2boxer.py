@@ -78,11 +78,12 @@ for single particle analysis."""
 #	shrink.write_image("e.mrc")
 #	shrink2.write_image("f.mrc")
 		
-	print "Autobox mode ",options.auto
+	print "Autobox mode ",options.auto[0]
 	
 	if "ref" in options.auto:
 		if not refptcl: error_exit("Reference particles required")
 		
+		print "Prepare references"
 		# refptcls will contain shrunken normalized reference particles
 		refptcls=[]
 		for n,i in enumerate(refptcl):
@@ -111,11 +112,11 @@ for single particle analysis."""
 #		shrink.write_image("z0.mrc")
 #		ccfsig.write_image("z1.mrc")
 		
+		print "Locating possible particles"
 		xs=shrink.get_xsize()
 		ys=shrink.get_ysize()
 		pks=[]
 		for n,i in enumerate(refptcls):
-			print n
 			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
 #			j.write_image("0.%0d.mrc"%n)
 			ccfone=shrink.calc_ccf(j,True,None)
@@ -131,7 +132,8 @@ for single particle analysis."""
 			pks+=pk
 			
 		pks.sort()		# an ordered list of the best particle locations
-		
+		print "%d putative particles located"%len(pks)
+				
 		# this will produce a new list excluding any lower valued boxes within
 		# 1/2 a box size of a higher one. It also rescales the boxes.
 		# (ok, you could do this with clever syntax, but this is more readable)
@@ -143,12 +145,16 @@ for single particle analysis."""
 				if hypot(i[2]-ii[2],i[3]-ii[3])<bf : break
 			else: goodpks.append((i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2))
 		
+		print "%d putative particles after local exclusion"%len(goodpks)
+		
+		print "refine particle locations"
 		# This will optimize the center location of each particle and improve
 		# the similarity calculation
 		for n,i in enumerate(goodpks):
+			print n
 			b=EMData()
 			b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
-			ba=refptcl[i[1].align("RotateTranslateFlip",{"to":b})]
+			ba=refptcl[i[1]].align("RotateTranslateFlip",b)
 			
 			
 		# Write EMAN1 style box database

@@ -46,6 +46,7 @@ namespace EMAN
 	*/
 	class EMData
 	{
+	static int totalalloc;
 	public:
 		
 		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };

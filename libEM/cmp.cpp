@@ -182,6 +182,9 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		}
 	}
 	EXITFUNC;
+	
+	delete image_fft;
+	delete with_fft;
 #if 0
 	return (1.0f - sum / norm);
 #endif

@@ -27,6 +27,8 @@
 
 using namespace EMAN;
 
+int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
+
 EMData::EMData() 
 {
 	ENTERFUNC;
@@ -51,6 +53,8 @@ EMData::EMData()
 	ny = 0;
 	nz = 0;
 
+	EMData::totalalloc++;
+	printf("EMDATA+  %4d    %p\n",EMData::totalalloc,this);
 	EXITFUNC;
 }
 
@@ -79,6 +83,8 @@ EMData::~EMData()
 		rfp = 0;
 	}
 	
+	EMData::totalalloc--;
+	printf("EMDATA-  %4d %p\n",EMData::totalalloc,this);
 	EXITFUNC;
 }
 
@@ -2152,6 +2158,8 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 {
 	ENTERFUNC;
 	
+	int needfree=0;
+	
 	if (!with) {
 		throw NullPointerException("NULL input image");
 	}
@@ -2163,6 +2171,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 	EMData *f1 = this;
 	if (!is_complex()) {
 		f1 = do_fft();
+		needfree|=1;
 	}
 
 	f1->ap2ri();
@@ -2170,6 +2179,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 	EMData *f2 = with;
 	if (!with->is_complex()) {
 		f2 = with->do_fft();
+		needfree|=2;
 	}
 	f2->ap2ri();
 
@@ -2216,6 +2226,9 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 	delete[]n2;
 	n2 = 0;
 
+	if (needfree&1) delete f1;
+	if (needfree&2) delete f2;
+	
 	EXITFUNC;
 	return result;
 }

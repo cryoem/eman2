@@ -290,7 +290,7 @@ namespace EMAN
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "FRC");
+			return align(this_img, to_img, "Phase");
 		}
 		
 		string get_name() const
@@ -541,7 +541,7 @@ namespace EMAN
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "FRC");
+			return align(this_img, to_img, "Phase");
 		}
 
 		string get_name() const
@@ -617,7 +617,7 @@ namespace EMAN
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "FRC");
+			return align(this_img, to_img, "Phase");
 		}
 		
 		string get_name() const
