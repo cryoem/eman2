@@ -13,6 +13,7 @@
 #include <io.h>
 #include <pylist.h>
 #include <transform.h>
+#include <xydata.h>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -246,5 +247,12 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
     EMAN::Dict_to_python();
     EMAN::Dict_from_python();
+    implicitly_convertible<bool, EMAN::EMObject>();
+    implicitly_convertible<int, EMAN::EMObject>();
+    implicitly_convertible<float, EMAN::EMObject>();
+    implicitly_convertible<double, EMAN::EMObject>();
+    implicitly_convertible<const char*, EMAN::EMObject>();
+    implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
+    implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
 }
 

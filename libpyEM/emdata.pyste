@@ -6,7 +6,8 @@ Include("aligner.h")
 Include("cmp.h")
 Include("emfft.h")
 Include("pylist.h")
-	
+Include("xydata.h")
+
 EMData = Class("EMAN::EMData", "emdata.h")
 set_policy(EMData.get_ctf, return_internal_reference())
 set_policy(EMData.copy, return_value_policy(manage_new_object))
@@ -48,3 +49,5 @@ set_wrapper(EMData.read_images_by_index, "py_read_images_by_index")
 set_wrapper(EMData.read_images_by_ext, "py_read_images_by_ext")
 
 module_code("\n    EMAN::vector_to_python<int>();\n    EMAN::vector_to_python<float>();\n    EMAN::vector_to_python<std::string>();\n    EMAN::vector_to_python<EMAN::EMData*>();\n\n    EMAN::vector_from_python<int>();\n    EMAN::vector_from_python<float>();\n    EMAN::vector_from_python<std::string>();\n    EMAN::vector_from_python<EMAN::EMData*>();\n\n    EMAN::map_to_python<EMAN::EMObject>();\n    EMAN::map_from_python<EMAN::EMObject>();\n\n    EMAN::Dict_to_python();\n    EMAN::Dict_from_python();\n")
+
+module_code("    implicitly_convertible<bool, EMAN::EMObject>();\n    implicitly_convertible<int, EMAN::EMObject>();\n    implicitly_convertible<float, EMAN::EMObject>();\n    implicitly_convertible<double, EMAN::EMObject>();\n    implicitly_convertible<const char*, EMAN::EMObject>();\n    implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();\n    implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();\n")
