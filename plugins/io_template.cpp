@@ -76,7 +76,7 @@ int XYZIO::read_data(float *data, int image_index, const Region * area, bool is_
 {
 	LOGDEBUG("XYZIO::read_data() from file '%s'", filename.c_str());
 
-	if (check_read_access(image_index, true, data) != 0) {
+	if (check_read_access(image_index, data) != 0) {
 		return 1;
 	}
 
@@ -86,7 +86,7 @@ int XYZIO::read_data(float *data, int image_index, const Region * area, bool is_
 int XYZIO::write_data(float *data, int image_index, const Region *region, bool)
 {
 	LOGDEBUG("XYZIO::write_data() to file '%s'", filename.c_str());
-	if (check_write_access(rw_mode, image_index, true, data) != 0) {
+	if (check_write_access(rw_mode, image_index, 0, data) != 0) {
 		return 1;
 	}
 	return 0;

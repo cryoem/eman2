@@ -18,7 +18,7 @@ libpyGeometry2.cpp: geometry.pyste ../libEM/geometry.h
 	rm -f libpyGeometry2.cpp
 	$(PYSTE) --module=libpyGeometry2 geometry.pyste
 
-libpyTransform2.cpp: transform.pyste ../libEM/transform.h
+libpyTransform2.cpp: transform.pyste ../libEM/transform.h ../libEM/vec3.h	../libEM/matrix.h ../libEM/quaternion.h ../libEM/rotation.h
 	rm -f libpyTransform2.cpp
 	$(PYSTE) --module=libpyTransform2 transform.pyste
 

@@ -3,6 +3,7 @@
 
 #include "emobject.h"
 #include "transform.h"
+#include "geometry.h"
 
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>

@@ -23,6 +23,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Log_end_overloads_1_3, end, 1, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_process_region_io_overloads_7_12, EMAN::EMUtil::process_region_io, 7, 12)
+
 struct EMAN_Ctf_Wrapper: EMAN::Ctf
 {
     EMAN_Ctf_Wrapper(PyObject* self_, const EMAN::Ctf& p0):
@@ -259,12 +261,24 @@ struct EMAN_ImageIO_Wrapper: EMAN::ImageIO
         return call_method< int >(self, "get_nimg");
     }
 
+    int default_get_nimg() {
+        return EMAN::ImageIO::get_nimg();
+    }
+
     bool is_complex_mode() {
         return call_method< bool >(self, "is_complex_mode");
     }
 
     bool is_image_big_endian() {
         return call_method< bool >(self, "is_image_big_endian");
+    }
+
+    bool is_single_image_format() const {
+        return call_method< bool >(self, "is_single_image_format");
+    }
+
+    bool default_is_single_image_format() const {
+        return EMAN::ImageIO::is_single_image_format();
     }
 
     int init() {
@@ -316,6 +330,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_imageio", &EMAN::EMUtil::get_imageio, EMAN_EMUtil_get_imageio_overloads_2_3()[ return_internal_reference< 1 >() ])
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
+        .def("process_region_io", &EMAN::EMUtil::process_region_io, EMAN_EMUtil_process_region_io_overloads_7_12())
         .def("dump_dict", &EMAN::EMUtil::dump_dict)
         .def("is_same_size", &EMAN::EMUtil::is_same_size)
         .def("is_same_ctf", &EMAN::EMUtil::is_same_ctf)
@@ -328,6 +343,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_image_type")
         .staticmethod("is_same_size")
         .staticmethod("make_image_median")
+        .staticmethod("process_region_io")
         .staticmethod("is_same_ctf")
         .staticmethod("get_image_ext_type")
     );
@@ -468,9 +484,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("write_ctf", &EMAN::ImageIO::write_ctf, &EMAN_ImageIO_Wrapper::default_write_ctf_2)
         .def("write_ctf", &EMAN_ImageIO_Wrapper::default_write_ctf_1)
         .def("flush", pure_virtual(&EMAN::ImageIO::flush))
-        .def("get_nimg", pure_virtual(&EMAN::ImageIO::get_nimg))
+        .def("get_nimg", &EMAN::ImageIO::get_nimg, &EMAN_ImageIO_Wrapper::default_get_nimg)
         .def("is_complex_mode", pure_virtual(&EMAN::ImageIO::is_complex_mode))
         .def("is_image_big_endian", pure_virtual(&EMAN::ImageIO::is_image_big_endian))
+        .def("is_single_image_format", &EMAN::ImageIO::is_single_image_format, &EMAN_ImageIO_Wrapper::default_is_single_image_format)
     );
 
     enum_< EMAN::ImageIO::IOMode >("IOMode")
@@ -515,6 +532,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("file_lock_wait", &EMAN::Util::file_lock_wait)
         .def("file_unlock", &EMAN::Util::file_unlock)
         .def("check_file_by_magic", &EMAN::Util::check_file_by_magic)
+        .def("is_file_exist", &EMAN::Util::is_file_exist)
         .def("flip_image", &EMAN::Util::flip_image)
         .def("sstrncmp", &EMAN::Util::sstrncmp)
         .def("int2str", &EMAN::Util::int2str)
@@ -558,6 +576,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("angle_sub_pi", &EMAN::Util::angle_sub_pi)
         .def("goodf", &EMAN::Util::goodf)
         .def("get_time_label", &EMAN::Util::get_time_label)
+        .def("get_debug_image", &EMAN::Util::get_debug_image)
         .def("set_log_level", &EMAN::Util::set_log_level)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
@@ -572,6 +591,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("trilinear_interpolate")
         .staticmethod("file_lock_wait")
         .staticmethod("min")
+        .staticmethod("is_file_exist")
         .staticmethod("save_data")
         .staticmethod("set_log_level")
         .staticmethod("get_str_float")
@@ -586,16 +606,17 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("check_file_by_magic")
         .staticmethod("agauss")
         .staticmethod("eman_erfc")
+        .staticmethod("eman_copysign")
         .staticmethod("bilinear_interpolate")
-        .staticmethod("get_line_from_string")
+        .staticmethod("calc_least_square_fit")
         .staticmethod("find_min_and_max")
         .staticmethod("get_filename_by_ext")
-        .staticmethod("calc_least_square_fit")
+        .staticmethod("get_line_from_string")
         .staticmethod("square_sum")
         .staticmethod("goodf")
         .staticmethod("hypot3")
         .staticmethod("flip_image")
-        .staticmethod("eman_copysign")
+        .staticmethod("get_debug_image")
         .staticmethod("sbasename")
         .staticmethod("round")
     ;

@@ -7,6 +7,7 @@
 #include <cmp.h>
 #include <emdata.h>
 #include <emobject.h>
+#include <transform.h>
 
 // Using =======================================================================
 using namespace boost::python;

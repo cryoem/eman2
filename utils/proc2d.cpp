@@ -4,14 +4,14 @@
 #include "util.h"
 #include "ctf.h"
 #include <ctype.h>
-
+#include "transform.h"
 
 using namespace EMAN;
 using std::map;
 
 void usage(const char *progname)
 {
-    printf("\n%s inputfile outputfile [-vN] [first=<n>] [last=<n>] [inplace] [edgenorm] [norm[=<mean>,<sigma>]] [invert] [flip] [rot=<angle>] [trans=<dx>,<dy>] [center] [acfcenter] [scale=<sca>] [clip=<x,y>] [shrink=<n>] [meanshrink=<n>] [apix=<A/pix>] [lp=<filt r>] [hp=<filt r>]  [blfilt=<sigma1,sigma2,iter,localwidth>] [mask=<radius>] [imask=<radius>] [noisemask]  [mrc]  [automask=x] [pif] [hdf] [png] [em] [spider] [spider-single] [pgm[=<low>,<hi>]] [sharphp=<pixels>] [norefs] [rotav] [average]  [split=n] [ctfsplit] [interlv=<file 2 interleave>] [sym=<Cn>] [plt[=<plt file>]] [setsfpairs] [addnoise=<level>] [randomize=<dr>,<da>,<flip>]  [selfcl[=<steps>][,<mode>]] [radon] [rfp] [mraprep] [phot] [rsub] rfilt=<filtername><:param1=value1><...>\n", progname);
+    printf("\n%s inputfile outputfile [-vN] [first=<n>] [last=<n>] [inplace] [edgenorm] [norm[=<mean>,<sigma>]] [invert] [flip] [rot=<angle>] [trans=<dx>,<dy>] [center] [acfcenter] [scale=<sca>] [clip=<x,y>] [shrink=<n>] [meanshrink=<n>] [apix=<A/pix>] [lp=<filt r>] [hp=<filt r>]  [blfilt=<sigma1,sigma2,iter,localwidth>] [mask=<radius>] [imask=<radius>] [noisemask]  [mrc]  [automask=x] [pif] [hdf] [png] [em] [spider] [spider-single] [pgm[=<low>,<hi>]] [vtk] [sharphp=<pixels>] [norefs] [rotav] [average]  [split=n] [ctfsplit] [interlv=<file 2 interleave>] [sym=<Cn>] [plt[=<plt file>]] [setsfpairs] [addnoise=<level>] [randomize=<dr>,<da>,<flip>]  [selfcl[=<steps>][,<mode>]] [radon] [rfp] [mraprep] [phot] [rsub] rfilt=<filtername><:param1=value1><...>\n", progname);
 }
 
 int main(int argc, char *argv[])
@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
     string pif = "pif";
     string png = "png";
     string hdf = "hdf";
-
+	string vtk = "vtk";
+	
     string em = "em";
     string spidersingle = "spider-single";
 
@@ -242,7 +243,7 @@ int main(int argc, char *argv[])
 
     EMData *ld = new EMData();
     vector < float >sfcurve1;
-    
+    try {
     for (int i = n0; i <= n1; i++) {
 		d->read_image(argv[1], i);
 		int nx = d->get_xsize();
@@ -271,10 +272,8 @@ int main(int argc, char *argv[])
 
 		float sigma = d->get_attr("sigma");
 		if (!Util::goodf(&sigma)) {
+			LOGWARN("Warning! bad Sigma for image %d in file '%s'", i, argv[1]);
 			continue;
-		}
-		if (sigma == 0) {
-			LOGWARN("Warning! Sigma=0 for image %d", i);
 		}
 #if 0
 		if (argdict[norefs] && d->get_nimg() < 0) {
@@ -667,6 +666,9 @@ int main(int argc, char *argv[])
 		else if (argdict[spider]) {
 			d->write_image(outfile, 0, EMUtil::IMAGE_SPIDER);
 		}
+		else if (argdict[vtk]) {
+			d->write_image(outfile, 0, EMUtil::IMAGE_VTK);
+		}
 		else {
 			if (argdict[inplace]) {
 				d->write_image(outfile, i);
@@ -687,7 +689,11 @@ int main(int argc, char *argv[])
 		}
 
     }
-
+	}
+	catch(Exception &e ) {
+		e.what();
+	}
+	
     if (average) {
 		//average->setNImg(n1-n0+1);
 		average->filter("StdNormalize");

@@ -1,4 +1,4 @@
-Vec3 = Template("EMAN::Vec3", "transform.h")
+Vec3 = Template("EMAN::Vec3", "vec3.h")
 
 Vec3f = Vec3("float", "Vec3f")
 set_policy(Vec3f.negate, return_internal_reference())
@@ -6,23 +6,22 @@ set_policy(Vec3f.negate, return_internal_reference())
 Vec3i = Vec3("int", "Vec3i")
 set_policy(Vec3i.negate, return_internal_reference())
 
-
-Matrix3f = Class("EMAN::Matrix3f", "transform.h")
+Matrix3f = Class("EMAN::Matrix3f", "matrix.h")
 set_policy(Matrix3f.mult_right, return_internal_reference())
 set_policy(Matrix3f.mult_left, return_internal_reference())
 set_policy(Matrix3f.inverse, return_internal_reference())
 set_policy(Matrix3f.transpose, return_internal_reference())
 
-Matrix4f = Class("EMAN::Matrix4f", "transform.h")
+Matrix4f = Class("EMAN::Matrix4f", "matrix.h")
 set_policy(Matrix4f.mult_right, return_internal_reference())
 set_policy(Matrix4f.mult_left, return_internal_reference())
 set_policy(Matrix4f.inverse, return_internal_reference())
 set_policy(Matrix4f.transpose, return_internal_reference())
 
-Quaternion = Class("EMAN::Quaternion", "transform.h")
+Quaternion = Class("EMAN::Quaternion", "quaternion.h")
 set_policy(Quaternion.inverse, return_internal_reference())
 
-Rotation = Class("EMAN::Rotation", "transform.h")
+Rotation = Class("EMAN::Rotation", "rotation.h")
 set_policy(Rotation.inverse, return_internal_reference())
 set_policy(Rotation.rotate_from_left, return_internal_reference())
 

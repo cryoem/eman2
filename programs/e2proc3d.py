@@ -16,7 +16,8 @@ import pyemtbx.options
 def print_iminfo(data, label):
     print "%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
     (label, data.get_xsize(), data.get_ysize(), data.get_zsize(),
-     data.get_mean(), data.get_sigma(), data.get_min(), data.get_max())
+     data.get_attr("mean"), data.get_attr("sigma"),
+	 data.get_attr("minimum"), data.get_attr("maximum"))
 
 
 def main():
