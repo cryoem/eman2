@@ -5,25 +5,27 @@
 #include "imageio.h"
 #include <stdio.h>
 
-namespace EMAN {
-
-    class EmIO: public ImageIO {
+namespace EMAN
+{
+    class EmIO : public ImageIO
+    {
     public:
 	EmIO(string filename, IOMode rw_mode = READ_ONLY);
 	~EmIO();
-	
+
 	DEFINE_IMAGEIO_FUNC;
-	static bool is_valid(const void* first_block, long file_size = -1);
+	static bool is_valid(const void *first_block, long file_size = -1);
 	static int get_mode_size(char data_type);
 	static int get_machine_type();
 	static int to_em_datatype(char t);
-	
+
     private:
-	struct EMHeader {
-	    char machine;     // 0=OS-8, 1=VAX; 2=Convex; 3=SGI; 5=Mac; 6=PC
-	    char is_new_ver;  // OS-9 only
+	struct EMHeader
+	{
+	    char machine;	// 0=OS-8, 1=VAX; 2=Convex; 3=SGI; 5=Mac; 6=PC
+	    char is_new_ver;	// OS-9 only
 	    char not_used1;
-	    char data_type;  // 1=byte, 2=short; 4=int; 5=float; 8=complex; 9=double
+	    char data_type;	// 1=byte, 2=short; 4=int; 5=float; 8=complex; 9=double
 	    int nx;
 	    int ny;
 	    int nz;
@@ -43,7 +45,7 @@ namespace EMAN {
 	    EM_EM_DOUBLE = 9,
 	    EM_EM_UNKNOWN
 	};
-	
+
 	enum MachineType {
 	    EM_OS8 = 0,
 	    EM_VAX = 1,
@@ -53,11 +55,11 @@ namespace EMAN {
 	    EM_PC = 6,
 	    EM_UNKNOWN_MACHINE
 	};
-	
+
     private:
 	string filename;
 	IOMode rw_mode;
-	FILE* em_file;
+	FILE *em_file;
 	EMHeader emh;
 
 	int mode_size;
@@ -65,7 +67,7 @@ namespace EMAN {
 	bool is_big_endian;
 	bool initialized;
     };
-    
+
 }
 
 
