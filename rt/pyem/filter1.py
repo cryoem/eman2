@@ -6,7 +6,7 @@ filternames = Filters.get_list()
 print "all filters: ", filternames
 
 e = EMData()
-e.read_image(Util.get_debug_image("search.dm3")
+e.read_image(TestUtil.get_debug_image("search.dm3")
 
 f1 = Filters.get("Binarize", {'value': 1000})
 

@@ -3,8 +3,8 @@
 from EMAN import *
 import EMAN2
 
-img1 = EMAN2.Util.get_debug_image("3d86_1.mrc")
-img2 = EMAN2.Util.get_debug_image("3d86_2.mrc")
+img1 = EMAN2.TestUtil.get_debug_image("3d86_1.mrc")
+img2 = EMAN2.TestUtil.get_debug_image("3d86_2.mrc")
 
 a=EMData()
 b=EMData()

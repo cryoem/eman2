@@ -3,7 +3,7 @@
 from EMAN2 import *
 
 e = EMData()
-e.read_image(Util.get_debug_image("tablet.mrc"))
+e.read_image(TestUtil.get_debug_image("tablet.mrc"))
 nx = e.get_xsize()
 ny = e.get_ysize()
 

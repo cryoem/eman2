@@ -1,11 +1,12 @@
 #include "emdata.h"
+#include "testutil.h"
 
 using namespace EMAN;
 
 int main()
 {
-	const char* img1 = Util::get_debug_image("3d86_1.mrc");
-	const char* img2 = Util::get_debug_image("3d86_2.mrc");
+	const char* img1 = TestUtil::get_debug_image("3d86_1.mrc");
+	const char* img2 = TestUtil::get_debug_image("3d86_2.mrc");
 	
 	EMData *a = new EMData();
 	a->read_image(img1);

@@ -1,12 +1,12 @@
 #include "emdata.h"
-
+#include "testutil.h"
 using namespace EMAN;
 
 
 int main()
 {
 	EMData * image = new EMData();
-	const char* test_imagename = Util::get_debug_image("groel2d.mrc");
+	const char* test_imagename = TestUtil::get_debug_image("groel2d.mrc");
 
 	int err = 0;
 	try {

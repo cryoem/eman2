@@ -22,8 +22,8 @@ def test2(img1):
 	c=a.calc_ccf(b,1,b)
 	c.write_image("test22_ccf2.mrc")
 
-img1 = Util.get_debug_image("3d86_1.mrc")
-img2 = Util.get_debug_image("3d86_2.mrc")
+img1 = TestUtil.get_debug_image("3d86_1.mrc")
+img2 = TestUtil.get_debug_image("3d86_2.mrc")
 
 test1(img1, img2)
 test2(img1)

@@ -1,5 +1,5 @@
 #include "emdata.h"
-
+#include "testutil.h"
 using namespace EMAN;
 
 int main()
@@ -7,7 +7,7 @@ int main()
 	EMData * image = new EMData();
 	EMData * image2 = new EMData();
 	
-	const char* test_imagename = Util::get_debug_image("search.dm3");
+	const char* test_imagename = TestUtil::get_debug_image("search.dm3");
 	int err = 0;
 	
 	try {

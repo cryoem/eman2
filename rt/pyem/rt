@@ -1,0 +1,15 @@
+#!/bin/sh
+
+run_cmd()
+{
+    local cmd=$1
+	echo "========== running $cmd =========="
+	$cmd
+	echo
+}
+
+run_cmd typeconverter.py
+run_cmd vec1.py
+run_cmd vec2.py
+run_cmd vec3.py
+run_cmd emobject.py

@@ -1,13 +1,13 @@
 #include "emdata.h"
 #include "log.h"
-
+#include "testutil.h"
 using namespace EMAN;
 
 void test1()
 {
 	try {
 		EMData * e1 = new EMData();
-		const char *img1 = Util::get_debug_image("square288.mrc");
+		const char *img1 = TestUtil::get_debug_image("square288.mrc");
 		e1->read_image(img1);
 
 		e1->calc_fourier_shell_correlation(0);

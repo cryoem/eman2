@@ -4,7 +4,7 @@ from EMAN2 import *
 import math
 
 volume = EMData()
-volume.read_image(Util.get_debug_image("groel3d.mrc"))
+volume.read_image(TestUtil.get_debug_image("groel3d.mrc"))
 pi = math.pi
 
 proj = volume.project("Standard", { "alt" : pi/3, "az" : pi/5, "phi" : 1})

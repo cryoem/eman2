@@ -4,11 +4,12 @@
 from EMAN2 import *
 
 def run():
-	imagename = Util.get_debug_image("monomer.mrc")
+	imagename = TestUtil.get_debug_image("monomer.mrc")
 	
 	a=EMData()
 	a.read_image(imagename)
-	b=a.get_rotated_clip([24,24,24],Rotation(0,0,0,Rotation.Type.EMAN),[32,32,32],1.0)
+	b=a.get_rotated_clip([24,24,24], Transform(Transform.EulerType.EMAN,0,0,0),
+						 [32,32,32],1.0)
 	b.write_image("z.mrc")
 	b.write_image("z.mrc")
 	

@@ -3,9 +3,9 @@
 from EMAN2 import *
 
 # 479x479x240
-img1 = Util.get_debug_image("3f-avg.mrc")
+img1 = TestUtil.get_debug_image("3f-avg.mrc")
 # 100x100x100
-img2 = Util.get_debug_image("3d.mrc")
+img2 = TestUtil.get_debug_image("3d.mrc")
 
 a=EMData()
 b=EMData()

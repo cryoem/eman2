@@ -3,10 +3,7 @@
 from EMAN2 import *
 
 v = Vec3i(1,2,3)
-print v.get_as_list()
-
-m = Matrix3f()
-print m.get_as_list()
+print v.as_list()
 
 e = EMData()
 e.set_size(32,32,1)
