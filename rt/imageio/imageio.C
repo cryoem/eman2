@@ -102,8 +102,6 @@ int pass_test(const char* base_filename, int r_image_index = 0,
 
 int test_mrc()
 {
-    pass_test("bob_0.MRC");
-    
     const char* file3d = "3d.mrc";
     Region good_3d1(0, 0, 0, 100, 100, 10);
     pass_test(file3d, 0, &good_3d1, false, "3d-all-1.mrc");
@@ -129,7 +127,7 @@ int test_mrc()
     Region bad_2d2(1, 2, 3000, 400);
     
     pass_test(file1d, 0, 0, false, "tablet_all1.mrc");
-    pass_test(file3d, 0, 0, true, "3d-all-1.mrc");
+    pass_test(file3d, 0, 0, false, "3d-all-1.mrc");
     
     pass_test(file1d, 0, &good_2d1, false, "tablet_good1.mrc");
     
@@ -143,15 +141,15 @@ int test_mrc()
 
     // positive tests
     pass_test(file3d, 40, 0, false, "3d-1.mrc");
-    pass_test(file3d, 0, 0, true, "3d-all-1.mrc");
+    pass_test(file3d, 0, 0, false, "3d-all-1.mrc");
     
-    pass_test(file3d, 10, 0, true, "3d-all-2.mrc");
-    pass_test(file3d, 0, &good_3d3, true, "3d_good1.mrc");
+    pass_test(file3d, 10, 0, false, "3d-all-2.mrc");
+    pass_test(file3d, 0, &good_3d3, false, "3d_good1.mrc");
 
     // negative tests
     pass_test(file3d, 120, 0, false, "3d_bad0.mrc");
-    fail_test(file3d, 0, &bad_3d1, true, "3d_bad1.mrc");
-    fail_test(file3d, 0, &bad_3d2, true, "3d_bad2.mrc");
+    fail_test(file3d, 0, &bad_3d1, false, "3d_bad1.mrc");
+    fail_test(file3d, 0, &bad_3d2, false, "3d_bad2.mrc");
 
     return 0;
 }

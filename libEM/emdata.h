@@ -48,12 +48,13 @@ namespace EMAN {
 	int div(float f);
 	int div(const EMData& em);
 	
-	
 	float* get_data() const;
 	
 	SimpleCtf* get_ctf();
 	void set_ctf(const SimpleCtf& ctf);
 
+	void set_size(int nx, int ny, int nz);
+	
 	Dict get_attr_dict();
 	
 	float get_value_at(int x, int y, int z) const;
@@ -120,7 +121,6 @@ namespace EMAN {
 	};
 
 	int update_stat();
-	void set_size(int nx, int ny, int nz);
 
     private:
 	mutable map<string, EMObject> attr_dict;
