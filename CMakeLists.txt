@@ -163,14 +163,17 @@ IF(ENABLE_PNG)
 ENDIF(ENABLE_PNG)
     
 IF(ENABLE_PYTHON)
-    FIND_PATH(PYTHON_INCLUDE_PATH Python.h
-	$ENV{HOME}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2
-	$ENV{HOME}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3)
-
     IF(WIN32)
-	FIND_LIBRARY(PYTHON_LIBRARY
-	    NAMES python23 python22 python
-	    PATHS C:/Python23/libs C:/Python22/libs)
+		FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+			C:/Python23/include C:/Python22/include)
+	
+		FIND_LIBRARY(PYTHON_LIBRARY
+			NAMES python23 python22 python
+			PATHS C:/Python23/libs C:/Python22/libs)
+	ELSE(WIN32)
+		FIND_PATH(PYTHON_INCLUDE_PATH Python.h
+			$ENV{HOME}/include/python2.3 /usr/local/include/python2.3 /usr/include/python2.3
+			$ENV{HOME}/include/python2.2 /usr/local/include/python2.2 /usr/include/python2.2)
     ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)
