@@ -368,9 +368,8 @@ namespace EMAN
      *
      *   2. How to use a Factory (e.g. Filter Factory):
      *
-     *      Factory<Filter> *factory = Factory<Filter>::instance();
-     *	    Filter *f = Factory<Filter>.get("AbsoluateValue");
-     *      Filter *f2 = Factory<Filter>.get("GaussLowpass", Dict("lowpass", EMObject(12));
+     *	    Filter *f1 = Factory<Filter>::get("AbsoluateValue");
+     *      Filter *f2 = Factory<Filter>::get("LowpassGauss", Dict("lowpass", EMObject(12));
      */
 	template < class T > class Factory
 	{

@@ -40,11 +40,13 @@ SalIO::~SalIO()
 
 int SalIO::init()
 {
+	ENTERFUNC;
+	
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("SalIO::init()");
+
 	initialized = true;
 
 	string hdr_filename = Util::get_filename_by_ext(filename, HDR_EXT);
@@ -121,7 +123,8 @@ int SalIO::init()
 
 bool SalIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("SalIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -131,7 +134,7 @@ bool SalIO::is_valid(const void *first_block)
 
 int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("SalIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -154,16 +157,17 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	return 0;
 }
 
-int SalIO::write_header(const Dict &, int, bool)
+int SalIO::write_header(const Dict &, int, const Region* area, bool)
 {
-	LOGDEBUG("SalIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	LOGWARN("SAL write is not supported.");
 	return 1;
 }
 
 int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("SalIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -222,9 +226,9 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int SalIO::write_data(float *, int, bool)
+int SalIO::write_data(float *, int, const Region* area, bool)
 {
-	LOGDEBUG("SalIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("SAL write is not supported.");
 	return 1;
 }

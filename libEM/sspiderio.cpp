@@ -19,23 +19,23 @@ SingleSpiderIO::~SingleSpiderIO()
 }
 
 
-int SingleSpiderIO::write_header(const Dict & dict, int image_index, bool)
+int SingleSpiderIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("SingleSpiderIO::write_header()");
+	ENTERFUNC;
 	assert(image_index == 0);
 	return write_single_header(dict);
 }
 
-int SingleSpiderIO::write_data(float *data, int image_index, bool)
+int SingleSpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("SingleSpiderIO::write_data()");
+	ENTERFUNC;
 	assert(image_index == 0);
 	return write_single_data(data);
 }
 
 bool SingleSpiderIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("SingleSpiderIO::is_valid()");
+	ENTERFUNC;
 	if (!first_block) {
 		return false;
 	}

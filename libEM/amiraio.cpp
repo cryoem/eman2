@@ -33,11 +33,12 @@ AmiraIO::~AmiraIO()
 
 int AmiraIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("AmiraIO::init()");
+	
 	initialized = true;
 
 	bool is_new_file = false;
@@ -61,13 +62,13 @@ int AmiraIO::init()
 			return err;
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
 bool AmiraIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("AmiraIO::is_valid()");
+	ENTERFUNC;
 	if (!first_block) {
 		return false;
 	}
@@ -76,15 +77,16 @@ bool AmiraIO::is_valid(const void *first_block)
 
 int AmiraIO::read_header(Dict &, int, const Region *, bool)
 {
-	LOGDEBUG("AmiraIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("Amira read header is not supported.");
+	EXITFUNC;
 	return 1;
 
 }
 
-int AmiraIO::write_header(const Dict & dict, int image_index, bool)
+int AmiraIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("AmiraIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -118,14 +120,15 @@ int AmiraIO::write_header(const Dict & dict, int image_index, bool)
 
 int AmiraIO::read_data(float *, int, const Region *, bool)
 {
-	LOGDEBUG("AmiraIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("Amira read data is not supported.");
+	EXITFUNC;
 	return 1;
 }
 
-int AmiraIO::write_data(float *data, int image_index, bool)
+int AmiraIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("AmiraIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -137,6 +140,7 @@ int AmiraIO::write_data(float *data, int image_index, bool)
 		return 1;
 	}
 
+	EXITFUNC;
 	return 0;
 }
 

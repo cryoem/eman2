@@ -62,7 +62,7 @@ int XYZIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	return 0;
 }
 
-int XYZIO::write_header(const Dict & dict, int image_index, bool)
+int XYZIO::write_header(const Dict & dict, int image_index, const Region *region, bool)
 {
 	LOGDEBUG("XYZIO::write_header() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index) != 0) {
@@ -83,7 +83,7 @@ int XYZIO::read_data(float *data, int image_index, const Region * area, bool is_
 	return 0;
 }
 
-int XYZIO::write_data(float *data, int image_index, bool)
+int XYZIO::write_data(float *data, int image_index, const Region *region, bool)
 {
 	LOGDEBUG("XYZIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {

@@ -50,11 +50,12 @@ static int samestr(const char *s1, const char *s2)
 
 int VtkIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("VtkIO::init()");
+	
 	initialized = true;
 
 	vtk_file = sfopen(filename, rw_mode);
@@ -129,13 +130,12 @@ int VtkIO::init()
 
 bool VtkIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("VtkIO::is_valid()");
 	return Util::check_file_by_magic(first_block, MAGIC);
 }
 
 int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("VtkIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -161,12 +161,14 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["origin_col"] = originy;
 	dict["origin_sec"] = originz;
 
+	EXITFUNC;
 	return 0;
 }
 
-int VtkIO::write_header(const Dict & dict, int image_index, bool)
+int VtkIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("VtkIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -193,12 +195,14 @@ int VtkIO::write_header(const Dict & dict, int image_index, bool)
 
 	fprintf(vtk_file, "POINT_DATA %0d\nSCALARS density float 1\nLOOKUP_TABLE default\n",
 			nx * ny * nz);
+	EXITFUNC;
 	return 0;
 }
 
 int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("VtkIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
@@ -240,9 +244,10 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int VtkIO::write_data(float *data, int image_index, bool)
+int VtkIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("VtkIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+	
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

@@ -15,8 +15,10 @@ namespace EMAN
 		SingleSpiderIO(string filename, IOMode rw_mode = READ_ONLY);
 		~SingleSpiderIO();
 
-		int write_header(const Dict & dict, int image_index = 0, bool use_host_endian = true);
-		int write_data(float *data, int image_index = 0, bool use_host_endian = true);
+		int write_header(const Dict & dict, int image_index = 0, const Region* area = 0,
+						 bool use_host_endian = true);
+		int write_data(float *data, int image_index = 0, const Region* area = 0,
+					   bool use_host_endian = true);
 
 		static bool is_valid(const void *first_block);
 

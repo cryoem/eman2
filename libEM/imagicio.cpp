@@ -48,11 +48,12 @@ ImagicIO::~ImagicIO()
 
 int ImagicIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("ImagicIO::init()");
+
 	initialized = true;
 
 	is_new_hed = false;
@@ -101,7 +102,8 @@ int ImagicIO::init()
 
 bool ImagicIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("ImagicIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -138,7 +140,7 @@ bool ImagicIO::is_valid(const void *first_block)
 
 int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("ImagicIO::read_header() from file '%s'", hed_filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -209,9 +211,10 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	return 0;
 }
 
-int ImagicIO::write_header(const Dict & dict, int image_index, bool)
+int ImagicIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("ImagicIO::write_header() to file '%s'", hed_filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -348,7 +351,7 @@ int ImagicIO::write_header(const Dict & dict, int image_index, bool)
 
 int ImagicIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("ImagicIO::read_data() from file '%s'", img_filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -414,9 +417,10 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int ImagicIO::write_data(float *data, int image_index, bool)
+int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("ImagicIO::write_data() to file '%s'", img_filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -464,7 +468,8 @@ int ImagicIO::write_data(float *data, int image_index, bool)
 
 int ImagicIO::read_ctf(Ctf & ctf, int)
 {
-	LOGDEBUG("ImagicIO::read_ctfit()");
+	ENTERFUNC;
+
 	if (init() != 0) {
 		return 1;
 	}
@@ -479,7 +484,8 @@ int ImagicIO::read_ctf(Ctf & ctf, int)
 
 int ImagicIO::write_ctf(const Ctf & ctf, int)
 {
-	LOGDEBUG("ImagicIO::write_ctfit()");
+	ENTERFUNC;
+
 	if (init() != 0) {
 		return 1;
 	}

@@ -28,12 +28,14 @@ EmIO::~EmIO()
 
 int EmIO::init()
 {
+	ENTERFUNC;
+	
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
 
-	LOGDEBUG("EmIO::init()");
+	
 	initialized = true;
 
 	bool is_new_file = false;
@@ -80,7 +82,8 @@ int EmIO::init()
 
 bool EmIO::is_valid(const void *first_block, off_t file_size)
 {
-	LOGDEBUG("EmIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -124,7 +127,7 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 
 int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("EmIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, area) != 0) {
 		return 1;
@@ -145,32 +148,37 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool is
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 	dict["datatype"] = to_em_datatype(emh.data_type);
+	EXITFUNC;
 	return 0;
 }
 
-int EmIO::write_header(const Dict & dict, int image_index, bool)
+int EmIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("EmIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+	int err = 0;
+	
 	if (check_write_access(rw_mode, image_index) != 0) {
-		return 1;
+		err = 1;
 	}
+	else {
+		emh.machine = static_cast < char >(get_machine_type());
+		emh.nx = dict["nx"];
+		emh.ny = dict["ny"];
+		emh.nz = dict["nz"];
+		emh.data_type = EM_EM_FLOAT;
 
-	emh.machine = static_cast < char >(get_machine_type());
-	emh.nx = dict["nx"];
-	emh.ny = dict["ny"];
-	emh.nz = dict["nz"];
-	emh.data_type = EM_EM_FLOAT;
-
-	if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
-		LOGERR("cannot write header to file '%s'", filename.c_str());
-		return 1;
+		if (fwrite(&emh, sizeof(EMHeader), 1, em_file) != 1) {
+			LOGERR("cannot write header to file '%s'", filename.c_str());
+			err = 1;
+		}
 	}
-	return 0;
+	EXITFUNC;
+	return err;
 }
 
 int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("EmIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -236,13 +244,14 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool is_3
 		data[k] = curr_data;
 	}
 
-
+	EXITFUNC;
 	return 0;
 }
 
-int EmIO::write_data(float *data, int image_index, bool)
+int EmIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("EmIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -256,7 +265,7 @@ int EmIO::write_data(float *data, int image_index, bool)
 			fwrite(&data[k + j * emh.nx], row_size, 1, em_file);
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 

@@ -62,7 +62,8 @@ int IcosIO::init()
 
 bool IcosIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("IcosIO::is_valid()");
+	ENTERFUNC;
+	
 	if (!first_block) {
 		return false;
 	}
@@ -90,7 +91,7 @@ bool IcosIO::is_valid(const void *first_block)
 
 int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("IcosIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -119,9 +120,10 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int IcosIO::write_header(const Dict & dict, int image_index, bool)
+int IcosIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("IcosIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -154,7 +156,7 @@ int IcosIO::write_header(const Dict & dict, int image_index, bool)
 
 int IcosIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("IcosIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -212,9 +214,10 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool is
 	return 0;
 }
 
-int IcosIO::write_data(float *data, int image_index, bool)
+int IcosIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("IcosIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

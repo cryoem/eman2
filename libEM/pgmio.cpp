@@ -53,11 +53,13 @@ static int read_int_and_space(FILE * in)
 
 int PgmIO::init()
 {
+	ENTERFUNC;
+	
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("PgmIO::init()");
+
 	initialized = true;
 
 	bool is_new_file = false;
@@ -120,13 +122,14 @@ int PgmIO::init()
 
 bool PgmIO::is_valid(const void *first_block)
 {
+	ENTERFUNC;
 	LOGDEBUG("PgmIO::is_valid()");
 	return Util::check_file_by_magic(first_block, MAGIC_BINARY);
 }
 
 int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("PgmIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -156,9 +159,10 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PgmIO::write_header(const Dict & dict, int image_index, bool)
+int PgmIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("PgmIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -182,7 +186,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, bool)
 
 int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("PgmIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -249,9 +253,10 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PgmIO::write_data(float *data, int image_index, bool)
+int PgmIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("PgmIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

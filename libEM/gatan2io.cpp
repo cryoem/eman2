@@ -26,11 +26,13 @@ Gatan2IO::~Gatan2IO()
 
 int Gatan2IO::init()
 {
+	ENTERFUNC;
+	
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("Gatan2IO::init()");
+	
 	initialized = true;
 
 	bool is_new_file = false;
@@ -63,7 +65,8 @@ int Gatan2IO::init()
 
 bool Gatan2IO::is_valid(const void *first_block)
 {
-	LOGDEBUG("Gatan2IO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -88,7 +91,7 @@ bool Gatan2IO::is_valid(const void *first_block)
 
 int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("Gatan2IO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -108,21 +111,21 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 	dict["datatype"] = to_em_datatype(gatanh.type);
-
+	EXITFUNC;
 	return 0;
 }
 
-int Gatan2IO::write_header(const Dict &, int, bool)
+int Gatan2IO::write_header(const Dict &, int, const Region* area, bool)
 {
-	LOGDEBUG("Gatan2IO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("Gatan2 write is not supported.");
+	EXITFUNC;
 	return 1;
 }
 
 int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("Gatan2IO::read_data() from file '%s'", filename.c_str());
-
+	ENTERFUNC;
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
@@ -182,13 +185,15 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool)
 		LOGERR("don't know how to handle this type");
 		return 1;
 	}
+	EXITFUNC;
 	return 0;
 }
 
-int Gatan2IO::write_data(float *, int, bool)
+int Gatan2IO::write_data(float *, int, const Region* area, bool)
 {
-	LOGDEBUG("Gatan2IO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("Gatan2 write is not supported.");
+	EXITFUNC;
 	return 1;
 }
 

@@ -42,11 +42,13 @@ SpiderIO::~SpiderIO()
 
 int SpiderIO::init()
 {
+	ENTERFUNC;
+
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("SpiderIO::init()");
+
 	initialized = true;
 
 	spider_file = sfopen(filename, rw_mode, &is_new_file);
@@ -93,7 +95,8 @@ bool SpiderIO::is_valid_spider(const void *first_block)
 
 bool SpiderIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("SpiderIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -130,7 +133,7 @@ bool SpiderIO::is_valid(const void *first_block)
 
 int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("SpiderIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -225,9 +228,10 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 }
 
 
-int SpiderIO::write_header(const Dict & dict, int image_index, bool)
+int SpiderIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("SpiderIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+	
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -370,7 +374,8 @@ int SpiderIO::write_header(const Dict & dict, int image_index, bool)
 
 int SpiderIO::write_single_header(const Dict & dict)
 {
-	LOGDEBUG("SpiderIO::write_single_header");
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, 0) != 0) {
 		return 1;
 	}
@@ -436,7 +441,7 @@ int SpiderIO::write_single_header(const Dict & dict)
 
 int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("SpiderIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -490,9 +495,10 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int SpiderIO::write_data(float *data, int image_index, bool)
+int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("SpiderIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -554,7 +560,8 @@ int SpiderIO::write_data(float *data, int image_index, bool)
 
 int SpiderIO::write_single_data(float *data)
 {
-	LOGDEBUG("SpiderIO::write_single_data()");
+	ENTERFUNC;
+	
 	if (check_write_access(rw_mode, 0, true, data) != 0) {
 		return 1;
 	}

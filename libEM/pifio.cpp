@@ -84,11 +84,12 @@ bool PifIO::is_float(int m)
 
 int PifIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("PifIO::init()");
+
 	initialized = true;
 
 	pif_file = sfopen(filename, rw_mode, &is_new_file);
@@ -141,7 +142,8 @@ int PifIO::init()
 
 bool PifIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("PifIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -185,7 +187,8 @@ void PifIO::fseek_to(int image_index)
 
 int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("PifIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -226,9 +229,9 @@ int PifIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PifIO::write_header(const Dict & dict, int image_index, bool)
+int PifIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("PifIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
@@ -313,7 +316,7 @@ int PifIO::write_header(const Dict & dict, int image_index, bool)
 
 int PifIO::read_data(float *data, int image_index, const Region *, bool)
 {
-	LOGDEBUG("PifIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -373,10 +376,10 @@ int PifIO::read_data(float *data, int image_index, const Region *, bool)
 }
 
 
-int PifIO::write_data(float *data, int image_index, bool)
+int PifIO::write_data(float *data, int image_index, const Region* area, bool)
 {
+	ENTERFUNC;
 
-	LOGDEBUG("PifIO::write_data() to file '%s'", filename.c_str());
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

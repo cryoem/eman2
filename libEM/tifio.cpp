@@ -30,13 +30,12 @@ TiffIO::~TiffIO()
 
 int TiffIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
 	//initialized = true;
-
-	LOGDEBUG("TiffIO::init()");
 
 	if (rw_mode != READ_ONLY) {
 		LOGERR("wrong rw mode. Only reading is supported for TIFF.");
@@ -97,7 +96,7 @@ int TiffIO::init()
 
 bool TiffIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("TiffIO::is_valid()");
+	ENTERFUNC;
 
 	if (!first_block) {
 		return false;
@@ -113,7 +112,8 @@ bool TiffIO::is_valid(const void *first_block)
 
 int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 {
-	LOGDEBUG("TiffIO::read_header() on file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_read_access(img_index) != 0) {
 		return 1;
 	}
@@ -160,13 +160,13 @@ int TiffIO::read_header(Dict & dict, int img_index, const Region * area, bool)
 	dict["bitspersample"] = bitspersample;
 	dict["resolution_x"] = resolution_x;
 	dict["resolution_y"] = resolution_y;
-
+	EXITFUNC;
 	return 0;
 }
 
 int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("TiffIO::read_data() on file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(img_index, true, rdata) != 0) {
 		return 1;
@@ -240,22 +240,24 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool is_
 	Util::flip_image(rdata, xlen, ylen);
 
 	_TIFFfree(cdata);
-
+	EXITFUNC;
 	return err;
 }
 
 
-int TiffIO::write_header(const Dict &, int, bool)
+int TiffIO::write_header(const Dict &, int, const Region* area, bool)
 {
-	LOGDEBUG("TiffIO::write_header()");
+	ENTERFUNC;
 	LOGERR("TIFF write is not supported");
+	EXITFUNC;
 	return 0;
 }
 
-int TiffIO::write_data(float *, int, bool)
+int TiffIO::write_data(float *, int, const Region* area, bool)
 {
-	LOGDEBUG("TiffIO::write_data()");
+	ENTERFUNC;
 	LOGERR("TIFF write is not supported");
+	EXITFUNC;
 	return 0;
 }
 

@@ -58,7 +58,6 @@ void TagTable::add(string name, string value)
 
 void TagTable::add_data(char *data)
 {
-	LOGDEBUG("TagTable::add_data()");
 	assert(data != 0);
 	data_list.push_back(data);
 }
@@ -85,7 +84,6 @@ double TagTable::get_double(string name)
 
 void TagTable::dump() const
 {
-	LOGDEBUG("TagTable::dump()");
 	map < string, string >::const_iterator p;
 
 	for (p = tags.begin(); p != tags.end(); p++) {
@@ -587,7 +585,6 @@ DM3IO::DM3IO(string dm3_filename, IOMode rw)
 
 DM3IO::~DM3IO()
 {
-	LOGDEBUG("DM3IO::~DM3IO()");
 	if (dm3file) {
 		fclose(dm3file);
 		dm3file = 0;
@@ -600,13 +597,12 @@ DM3IO::~DM3IO()
 
 int DM3IO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
 	initialized = true;
-	LOGDEBUG("DM3IO::init()");
-
 
 	if (rw_mode != READ_ONLY) {
 		LOGERR("wrong rw mode. Only reading is supported for DM3.");
@@ -648,6 +644,7 @@ int DM3IO::init()
 	LOGDEBUG("dm3 ver = %d, image size = %d, is_big_endian = %d",
 			 buf[0], buf[1], (int) is_big_endian);
 
+	EXITFUNC;
 	return 0;
 }
 
@@ -655,7 +652,7 @@ int DM3IO::init()
 
 bool DM3IO::is_valid(const void *first_block)
 {
-	LOGDEBUG("DM3IO::is_valid()");
+	ENTERFUNC;
 
 	if (!first_block) {
 		return false;
@@ -691,7 +688,8 @@ bool DM3IO::is_image_big_endian()
 
 int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("DM3IO::read_header() on file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -725,13 +723,14 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["binning_x"] = tagtable->get_int("Binning #0");
 	dict["binning_y"] = tagtable->get_int("Binning #1");
 	dict["datatype"] = to_em_datatype(tagtable->get_datatype());
-
+	EXITFUNC;
 	return 0;
 }
 
 int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("DM3IO::read_data() on file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_read_access(image_index, true, rdata) != 0) {
 		return 1;
 	}
@@ -784,7 +783,7 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool is
 			k++;
 		}
 	}
-
+	EXITFUNC;
 	return 0;
 }
 
@@ -794,17 +793,19 @@ bool DM3IO::is_complex_mode()
 	return false;
 }
 
-int DM3IO::write_header(const Dict &, int, bool)
+int DM3IO::write_header(const Dict &, int, const Region* area, bool)
 {
-	LOGDEBUG("DM3IO::write_header()");
+	ENTERFUNC;
 	LOGWARN("DM3 write is not supported.");
+	EXITFUNC;
 	return 1;
 }
 
-int DM3IO::write_data(float *, int, bool)
+int DM3IO::write_data(float *, int, const Region* area, bool)
 {
-	LOGDEBUG("DM3IO::write_data()");
+	ENTERFUNC;
 	LOGWARN("DM3 write is not supported.");
+	EXITFUNC;
 	return 1;
 }
 

@@ -46,11 +46,12 @@ LstIO::~LstIO()
 
 int LstIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("LstIO::init()");
+
 	initialized = true;
 
 	bool is_new_file = false;
@@ -90,7 +91,8 @@ int LstIO::init()
 
 bool LstIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("LstIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -174,7 +176,7 @@ int LstIO::calc_ref_image_index(int image_index)
 
 int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("LstIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -183,20 +185,21 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	int ref_image_index = calc_ref_image_index(image_index);
 	assert(imageio != 0);
 	int err = imageio->read_header(dict, ref_image_index, area, is_3d);
-
+	EXITFUNC;
 	return err;
 }
 
-int LstIO::write_header(const Dict &, int, bool)
+int LstIO::write_header(const Dict &, int, const Region* area, bool)
 {
-	LOGDEBUG("LstIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("LST write header is not supported.");
+	EXITFUNC;
 	return 1;
 }
 
 int LstIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("LstIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -205,13 +208,15 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 	int ref_image_index = calc_ref_image_index(image_index);
 	assert(imageio != 0);
 	int err = imageio->read_data(data, ref_image_index, area, is_3d);
+	EXITFUNC;
 	return err;
 }
 
-int LstIO::write_data(float *, int, bool)
+int LstIO::write_data(float *, int, const Region* area, bool)
 {
-	LOGDEBUG("LstIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("LST write data is not supported.");
+	EXITFUNC;
 	return 1;
 }
 

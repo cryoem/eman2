@@ -179,7 +179,7 @@ int XplorIO::read_header(Dict &dict, int, const Region *, bool)
 	return 0;
 }
 
-int XplorIO::write_header(const Dict & dict, int image_index, bool)
+int XplorIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 	if (check_write_access(rw_mode, image_index) != 0) {
@@ -252,7 +252,7 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 	return 0;
 }
 
-int XplorIO::write_data(float *data, int image_index, bool)
+int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
 {
 	ENTERFUNC;
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {

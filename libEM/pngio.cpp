@@ -41,11 +41,12 @@ PngIO::~PngIO()
 
 int PngIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("PngIO::init()");
+
 	initialized = true;
 
 	bool is_new_file = false;
@@ -150,7 +151,8 @@ int PngIO::init()
 
 bool PngIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("PngIO::is_valid()");
+	ENTERFUNC;
+
 	if (!first_block) {
 		return false;
 	}
@@ -163,7 +165,8 @@ bool PngIO::is_valid(const void *first_block)
 
 int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("PngIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
+
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -195,9 +198,10 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	return 0;
 }
 
-int PngIO::write_header(const Dict & dict, int image_index, bool)
+int PngIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("PngIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -239,7 +243,7 @@ int PngIO::write_header(const Dict & dict, int image_index, bool)
 
 int PngIO::read_data(float *data, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("PngIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
@@ -293,9 +297,10 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool is_
 	return 0;
 }
 
-int PngIO::write_data(float *data, int image_index, bool)
+int PngIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("PngIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}

@@ -129,7 +129,7 @@ void EMData::read_image(string filename, int img_index, bool nodata,
 
 
 void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgtype,
-						 bool header_only, bool use_host_endian) 
+						 bool header_only, const Region * region, bool use_host_endian) 
 {
 	ENTERFUNC;	
 	LOGDEBUG("write to file '%s'", filename.c_str());
@@ -156,7 +156,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 		if (img_index < 0) {
 			img_index = imageio->get_nimg();
 		}
-		int err = imageio->write_header(attr_dict, img_index, use_host_endian);
+		int err = imageio->write_header(attr_dict, img_index, region, use_host_endian);
 		if (err) {
 			throw ImageWriteException(filename, "imageio write header failed");
 		}
@@ -166,7 +166,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 			}
 
 			if (!header_only) {
-				err = imageio->write_data(rdata, img_index, use_host_endian);
+				err = imageio->write_data(rdata, img_index, region, use_host_endian);
 				if (err) {
 					throw ImageWriteException(filename, "imageio write data failed");
 				}
@@ -179,7 +179,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 void EMData::append_image(string filename, EMUtil::ImageType imgtype, bool header_only)
 {
 	ENTERFUNC;
-	write_image(filename, -1, imgtype, header_only);
+	write_image(filename, -1, imgtype, header_only, 0);
 	EXITFUNC;
 }
 
@@ -3605,8 +3605,8 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
 		filt->to_one();
 
-		filt->filter("GaussLowpass", Dict("lowpass", 3));
-		filt->filter("GaussHighpass", Dict("highpass", 9999));
+		filt->filter("LowpassGauss", Dict("lowpass", 3));
+		filt->filter("HighpassGauss", Dict("highpass", 9999));
 	}
 
 	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);

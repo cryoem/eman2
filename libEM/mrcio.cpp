@@ -161,7 +161,7 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
 int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("MrcIO::read_header() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index) != 0) {
 		return 1;
@@ -256,9 +256,10 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	return 0;
 }
 
-int MrcIO::write_header(const Dict & dict, int image_index, bool)
+int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("MrcIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -376,7 +377,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, bool)
 
 int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is_3d)
 {
-	LOGDEBUG("MrcIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
 
 	if (check_read_access(image_index, true, rdata) != 0) {
 		return 1;
@@ -442,9 +443,10 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool is
 	return 0;
 }
 
-int MrcIO::write_data(float *data, int image_index, bool)
+int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("MrcIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -571,7 +573,8 @@ bool MrcIO::is_complex_mode()
 
 int MrcIO::read_ctf(Ctf & ctf, int)
 {
-	LOGDEBUG("MrcIO::read_ctfit()");
+	ENTERFUNC;
+
 	if (init() != 0) {
 		return 1;
 	}
@@ -588,7 +591,8 @@ int MrcIO::read_ctf(Ctf & ctf, int)
 
 int MrcIO::write_ctf(const Ctf & ctf, int)
 {
-	LOGDEBUG("MrcIO::write_ctfit()");
+	ENTERFUNC;
+
 	if (init() != 0) {
 		return 1;
 	}
@@ -667,8 +671,6 @@ int MrcIO::to_em_datatype(int m)
 
 int MrcIO::to_mrcmode(int e, bool is_complex)
 {
-	LOGDEBUG("MrcIO::to_mrcmode");
-
 	MrcMode m = MRC_UNKNOWN;
 	EMUtil::EMDataType em_type = static_cast < EMUtil::EMDataType > (e);
 

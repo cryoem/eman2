@@ -60,6 +60,7 @@ namespace EMAN
 		void write_image(string filename, int img_index = 0,
 						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						 bool header_only = false,
+						 const Region * region = 0,
 						 bool use_host_endian = true);
 
 		/** append to an image file; If the file doesn't exist, create one.

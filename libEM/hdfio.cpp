@@ -44,11 +44,12 @@ HdfIO::~HdfIO()
 
 int HdfIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("HdfIO::init()");
+
 	initialized = true;
 
 	bool is_new_file = false;
@@ -107,7 +108,8 @@ int HdfIO::init()
 
 bool HdfIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("HdfIO::is_valid()");
+	ENTERFUNC;
+
 	bool valid = false;
 
 	if (first_block) {
@@ -128,7 +130,8 @@ bool HdfIO::is_valid(const void *first_block)
 
 int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("HdfIO::read_header()");
+	ENTERFUNC;
+
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -180,7 +183,8 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("HdfIO::read_data() from file '%s'", filename.c_str());
+	ENTERFUNC;
+
 	if (check_read_access(image_index, true, data) != 0) {
 		return 1;
 	}
@@ -277,9 +281,10 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 
-int HdfIO::write_header(const Dict & dict, int image_index, bool)
+int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("HdfIO::write_header()");
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index) != 0) {
 		return 1;
 	}
@@ -334,9 +339,10 @@ int HdfIO::write_header(const Dict & dict, int image_index, bool)
 	return 0;
 }
 
-int HdfIO::write_data(float *data, int image_index, bool)
+int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
 {
-	LOGDEBUG("HdfIO::write_data()");
+	ENTERFUNC;
+
 	if (check_write_access(rw_mode, image_index, true, data) != 0) {
 		return 1;
 	}
@@ -849,7 +855,8 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 // assume all ctf fields are floats.
 int HdfIO::read_ctf(Ctf & ctf, int image_index)
 {
-	LOGDEBUG("HdfIO::read_ctfit()");
+	ENTERFUNC;
+
 	if (init() != 0) {
 		return 1;
 	}
@@ -881,7 +888,8 @@ int HdfIO::read_ctf(Ctf & ctf, int image_index)
 // assume all ctf fields are floats.
 int HdfIO::write_ctf(const Ctf & ctf, int image_index)
 {
-	LOGDEBUG("HdfIO::write_ctfit()");
+	ENTERFUNC;
+
 	if (init() != 0) {
 		return 1;
 	}

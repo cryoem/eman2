@@ -26,11 +26,12 @@ EmimIO::~EmimIO()
 
 int EmimIO::init()
 {
+	ENTERFUNC;
 	static int err = 0;
 	if (initialized) {
 		return err;
 	}
-	LOGDEBUG("EmimIO::init()");
+	
 	initialized = true;
 
 	bool is_new_file = false;
@@ -57,13 +58,14 @@ int EmimIO::init()
 		is_big_endian = ByteOrder::is_data_big_endian(&efh.count);
 	}
 
-
+	EXITFUNC;
 	return 0;
 }
 
 bool EmimIO::is_valid(const void *first_block)
 {
-	LOGDEBUG("EmimIO::is_valid()");
+	ENTERFUNC;
+	
 	if (!first_block) {
 		return false;
 	}
@@ -83,14 +85,14 @@ bool EmimIO::is_valid(const void *first_block)
 			return true;
 		}
 	}
-
+	EXITFUNC;
 	return false;
 }
 
 int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("EmimIO::read_header() from file '%s'", filename.c_str());
-
+	ENTERFUNC;
+	
 	if (check_read_access(image_index) != 0) {
 		return 1;
 	}
@@ -120,42 +122,46 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	sprintf(mgnum, "%d", n);
 
 	dict["micrograph_id"] = mgnum;
-
+	EXITFUNC;
 	return 0;
 
 }
 
-int EmimIO::write_header(const Dict &, int, bool)
+int EmimIO::write_header(const Dict &, int, const Region* area, bool)
 {
-	LOGDEBUG("EmimIO::write_header() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("EMIM write header is not supported.");
+	EXITFUNC;
 	return 1;
 }
 
 int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 {
-	LOGDEBUG("EmimIO::read_data() from file '%s'", filename.c_str());
-
+	ENTERFUNC;
+	int err = 0;
 	if (check_read_access(image_index, true, data) != 0) {
-		return 1;
+		err = 1;
 	}
-
-	unsigned char *cdata = (unsigned char *) data;
-	int err = EMUtil::get_region_data(cdata, emim_file, image_index, sizeof(float),
+	else {
+		unsigned char *cdata = (unsigned char *) data;
+		err = EMUtil::get_region_data(cdata, emim_file, image_index, sizeof(float),
 									  efh.nx, efh.ny, efh.nz, area);
-	if (err) {
-		return 1;
+		if (err) {
+			err = 1;
+		}
+		else {
+			become_host_endian(data, efh.nx * efh.ny * efh.nz);
+		}
 	}
-
-	become_host_endian(data, efh.nx * efh.ny * efh.nz);
-
-	return 0;
+	EXITFUNC;
+	return err;
 }
 
-int EmimIO::write_data(float *, int, bool)
+int EmimIO::write_data(float *, int, const Region* area, bool)
 {
-	LOGDEBUG("EmimIO::write_data() to file '%s'", filename.c_str());
+	ENTERFUNC;
 	LOGWARN("EMIM write data is not supported.");
+	EXITFUNC;
 	return 1;
 }
 

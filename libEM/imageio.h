@@ -68,7 +68,7 @@ namespace EMAN
 		 * @return 0 if OK; 1 if error.
 		 */
 		virtual int write_header(const Dict & dict, int image_index = 0,
-								 bool use_host_endian = true) = 0;
+								 const Region * area = 0, bool use_host_endian = true) = 0;
 
 		/** Read the data from an image.
 		 *
@@ -94,7 +94,7 @@ namespace EMAN
 		 * @return 0 if OK; 1 if error.
 		 */
 		virtual int write_data(float *data, int image_index = 0,
-							   bool use_host_endian = true) = 0;
+							   const Region * area = 0, bool use_host_endian = true) = 0;
 
 		/** Read CTF data from this image.
 		 *
@@ -150,9 +150,9 @@ namespace EMAN
      */
 #define DEFINE_IMAGEIO_FUNC \
 		int read_header(Dict & dict, int image_index = 0, const Region* area = 0, bool is_3d = false); \
-		int write_header(const Dict & dict, int image_index = 0, bool use_host_endian = true); \
+		int write_header(const Dict & dict, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
 		int read_data(float* data, int image_index = 0, const Region* area = 0, bool is_3d = false); \
-		int write_data(float* data, int image_index = 0, bool use_host_endian = true); \
+		int write_data(float* data, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
 		bool is_complex_mode(); \
 		bool is_image_big_endian(); \
 		int get_nimg(); \
