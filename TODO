@@ -60,11 +60,6 @@
 	     
   087. add [in] [out] or [inout] to params in documentation.
 
-  088. add typeconverter method to convert multi_array from c++ to python.
-
-  089. convert EMObject to its native type in python side. so a C++
-       EMObject(100) will be integer 100 in python.
-
   
 --- Low Priority ---
 
@@ -335,7 +330,12 @@
   1/10/05 083. 
        add a new EMObject wrapper around vector<string> type.
 
-  	   
+  2/20/05 088. 
+       add typeconverter method to convert multi_array from c++ to python.
+
+  2/18/05 089.	   
+       convert EMObject to its native type in python side. so a C++
+       EMObject(100) will be integer 100 in python.
 
 	   
   

@@ -84,5 +84,11 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	implicitly_convertible<const char*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();
 	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();
+
+	EMAN::MArrayND_to_python<2>();
+	EMAN::MArrayND_to_python<3>();
+	EMAN::MCArrayND_to_python<2>();
+	EMAN::MCArrayND_to_python<3>();
+
 }
 

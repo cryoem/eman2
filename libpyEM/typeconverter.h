@@ -102,11 +102,57 @@ namespace EMAN {
 
 
 	struct EMObject_to_python : python::to_python_converter<EMObject,
-							   EMObject_to_python>
+                                EMObject_to_python>
 	{
 		static PyObject* convert(EMObject const& emobj);
 	};
-	
+
+    template<std::size_t NumDims>
+    struct MArrayND_to_python : python::to_python_converter<
+        boost::multi_array_ref<float, NumDims>, 
+        MArrayND_to_python<NumDims> >
+    {
+        static PyObject* convert(boost::multi_array_ref<float, NumDims> const & marray)
+        {
+            vector<int> dims; 
+            const size_t * shape = marray.shape();
+            int ndim = marray.num_dimensions();
+            for (int i = ndim-1; i >= 0; i--) {
+                dims.push_back(shape[i]);
+            }
+
+            float * data = (float*)marray.data();
+            python::numeric::array numarray = make_numeric_array(data, dims);
+    
+            return python::incref(numarray.ptr());
+        }
+    };
+    
+    
+    template<std::size_t NumDims>
+    struct MCArrayND_to_python : python::to_python_converter<
+        boost::multi_array_ref<complex<float>, NumDims>, 
+        MCArrayND_to_python<NumDims> >
+    {
+        static PyObject* convert(boost::multi_array_ref<complex<float>, NumDims> const & mcarray)
+        {
+            vector<int> dims;
+            const size_t * shape = mcarray.shape();
+            int ndim = mcarray.num_dimensions();
+            for (int i = ndim-1; i >= 0; i--) {
+                dims.push_back(shape[i]);
+            }
+            
+            complex<float> * data = (complex<float>*)mcarray.data();
+            python::numeric::array numarray = make_numeric_complex_array(data, dims);
+    
+            return python::incref(numarray.ptr());
+        }
+    };
+    
+    
+
+    
     template <class T>
     struct vector_from_python
     {
@@ -477,6 +523,9 @@ namespace EMAN {
 		}
     };
 
+    python::numeric::array make_numeric_array(float * data, vector<int> dims);
+    python::numeric::array make_numeric_complex_array(complex<float> * data,
+                                                      vector<int> dims);
 }
 
 

@@ -491,7 +491,7 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestImagicIO)
+    test_support.run_unittest(TestHdfIO, TestMrcIO, TestImagicIO, TestImageIO)
 
 if __name__ == '__main__':
     test_main()

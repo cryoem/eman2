@@ -2440,7 +2440,7 @@ MArray3D EMData::get_3dview() const
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx, ny, nz}};
 	MArray3D marray(rdata, dims, boost::fortran_storage_order());
-	return marray;	
+	return marray;
 }
 
 MCArray2D EMData::get_2dcview() const

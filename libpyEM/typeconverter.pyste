@@ -12,4 +12,7 @@ module_code("	EMAN::map_to_python<int>();\n	EMAN::map_to_python<long>();\n	EMAN:
 module_code("    EMAN::EMObject_to_python();\n	EMAN::Dict_to_python();\n	EMAN::Dict_from_python();\n\n	EMAN::tuple3_to_python<EMAN::IntPoint>();\n	EMAN::tuple3_to_python<EMAN::FloatPoint>();\n\n	EMAN::tuple3_to_python<EMAN::IntSize>();\n	EMAN::tuple3_to_python<EMAN::FloatSize>();\n\n	EMAN::tuple3_from_python<EMAN::IntPoint, int>();\n	EMAN::tuple3_from_python<EMAN::FloatPoint, float>();\n\n	EMAN::tuple3_from_python<EMAN::IntSize, int>();\n	EMAN::tuple3_from_python<EMAN::FloatSize, float>();\n\n	EMAN::tuple3_from_python<EMAN::Vec3i, int>();\n	EMAN::tuple3_from_python<EMAN::Vec3f, float>();\n\n	EMAN::emobject_array_from_python();\n	EMAN::emobject_emdata_from_python();\n	EMAN::emobject_string_from_python();\n	EMAN::emobject_xydata_from_python();\n\n")
 
 
-module_code("	implicitly_convertible<int, EMAN::EMObject>();\n	implicitly_convertible<float, EMAN::EMObject>();\n	implicitly_convertible<double, EMAN::EMObject>();\n	implicitly_convertible<const char*, EMAN::EMObject>();\n	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();\n	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();\n")
+module_code("	implicitly_convertible<int, EMAN::EMObject>();\n	implicitly_convertible<float, EMAN::EMObject>();\n	implicitly_convertible<double, EMAN::EMObject>();\n	implicitly_convertible<const char*, EMAN::EMObject>();\n	implicitly_convertible<EMAN::EMData*, EMAN::EMObject>();\n	implicitly_convertible<EMAN::XYData*, EMAN::EMObject>();\n\n")
+
+module_code("	EMAN::MArrayND_to_python<2>();\n	EMAN::MArrayND_to_python<3>();\n	EMAN::MCArrayND_to_python<2>();\n	EMAN::MCArrayND_to_python<3>();\n\n")
+

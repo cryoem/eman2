@@ -138,7 +138,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 	cf->translate(cur_trans);
 
 	
-	float score = (float)hypot(result[0], result[1]);
+	//float score = (float)hypot(result[0], result[1]);
 	cf->set_attr("align_score", max_value);
 	cf->set_attr("translational.dx",result[0]); 
 	cf->set_attr("translational.dy",result[1]); 

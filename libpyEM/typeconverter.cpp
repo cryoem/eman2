@@ -8,7 +8,7 @@
 using namespace EMAN;
 
 
-static python::numeric::array make_numeric_array(float * data, vector<int> dims)
+python::numeric::array EMAN::make_numeric_array(float * data, vector<int> dims)
 {
 	size_t total = 1;
 	vector<int>::iterator iter = dims.begin();
@@ -24,6 +24,22 @@ static python::numeric::array make_numeric_array(float * data, vector<int> dims)
 	return python::extract<python::numeric::array>(obj);
 }
 
+python::numeric::array EMAN::make_numeric_complex_array(complex<float> * data,
+                                                        vector<int> dims)
+{
+	size_t total = 1;
+	vector<int>::iterator iter = dims.begin();
+	while(iter != dims.end()){
+		total *= *iter;
+		++iter;
+	}    
+
+	python::object obj(python::handle<>(PyArray_FromDimsAndData(dims.size(),&dims[0],
+																PyArray_CFLOAT, (char*)data)));
+
+
+	return python::extract<python::numeric::array>(obj);
+}
 
 python::numeric::array EMNumPy::em2numpy(EMData *image)
 {
@@ -134,3 +150,20 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 
 	return result;
 }
+#if 0
+
+PyObject* MArray2D_to_python::convert(MArray2D const & marray2d)
+{
+    vector<int> dims;
+    const size_t * shape = marray2d.shape();
+    int ndim = marray2d.num_dimensions();
+    for (int i = ndim-1; i >= 0; i--) {
+        dims.push_back(shape[i]);
+    }
+
+    float * data = (float*)marray2d.data();
+    python::numeric::array numarray = make_numeric_array(data, dims);
+    
+    return python::incref(numarray.ptr());
+}
+#endif
