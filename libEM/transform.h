@@ -151,9 +151,12 @@ namespace EMAN
 	Matrix3f();
 	Matrix3f(float m0, float m1, float m2, float m3, float m4, float m5, float m6, float m7,
 		 float m8);
-	Matrix3f(const vector<float> &m);
+	Matrix3f(const vector<float> & m);
+	Matrix3f(const Matrix3f & m);
 	virtual ~Matrix3f();
-
+	
+	Matrix3f& operator=(const Matrix3f & m);
+	
 	void make_identity();
 
 	Matrix3f & mult_right(const Matrix3f & m);
@@ -214,8 +217,11 @@ namespace EMAN
 	Matrix4f();
 	Matrix4f(const vector<float> &m);
 	Matrix4f(const Matrix3f & m3);
+	Matrix4f(const Matrix4f & m);
 	virtual ~Matrix4f();
-
+	
+	Matrix4f& operator=(const Matrix4f & m);
+	
 	Matrix4f & mult_right(const Matrix4f & m);
 	Matrix4f & mult_left(const Matrix4f & m);
 
