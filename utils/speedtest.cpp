@@ -120,7 +120,8 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
-				data[i]->cmp("Phase", Dict("with", data[i + NTT / 2]));
+				Dict params("with", data[i + NTT / 2]);
+				data[i]->cmp("Phase", params);
 			}
 		}
 		t2 = (float) clock();
@@ -130,8 +131,10 @@ int main(int argc, char *argv[])
 
 		t1 = (float) clock();
 		for (int j = 0; j < 100; j++) {
-			for (int i = 0; i < NTT / 2; i++)
-				data[i]->cmp("FRC", Dict("with", data[i + NTT / 2]));
+			for (int i = 0; i < NTT / 2; i++) {
+				Dict params("with", data[i + NTT / 2]);
+				data[i]->cmp("FRC", params);
+			}
 		}
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;

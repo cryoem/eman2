@@ -175,7 +175,7 @@ void EMData::filter(string filtername, const Dict & params)
 	}
 }
 
-float EMData::cmp(string cmpname, const Dict & params)
+float EMData::cmp(string cmpname, Dict & params)
 {
 	float result = 0;
 
@@ -183,6 +183,7 @@ float EMData::cmp(string cmpname, const Dict & params)
 	if (c) {
 		result = c->cmp(this);
 	}
+	params = c->get_params();
 	return result;
 }
 

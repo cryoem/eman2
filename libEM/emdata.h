@@ -84,7 +84,7 @@ namespace EMAN
 		 * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
 		 * @return comparison score. The bigger, the better.
 		 */
-		float cmp(string cmpname, const Dict & params = Dict());
+		float cmp(string cmpname, Dict & params);
 
 		/** Align this image with another image and return the result image.
 		 *

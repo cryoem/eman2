@@ -485,8 +485,10 @@ EMData *RotateTranslateAligner::align(EMData * this_img, string cmp_name) const
 	float dot1 = 0;
 	float dot2 = 0;
 
-	dot1 = this_copy->cmp(cmp_name, Dict("to", to));
-	dot2 = this_copy2->cmp(cmp_name, Dict("to", to));
+	Dict params("to", to);
+	
+	dot1 = this_copy->cmp(cmp_name, params);
+	dot2 = this_copy2->cmp(cmp_name, params);
 
 	EMData *result = 0;
 	if (dot1 > dot2) {
@@ -821,8 +823,10 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 	float dot2 = 0;
 
 	if (usedot) {
-		dot1 = this_copy->cmp(cmp_name, Dict("to", to));
-		dot2 = this_copy2->cmp(cmp_name, Dict("to", to));
+		
+		Dict params("to", to);
+		dot1 = this_copy->cmp(cmp_name, params);
+		dot2 = this_copy2->cmp(cmp_name, params);
 
 		if (usedot == 2) {
 			Vec3 < float >trans = this_copy->get_translation();
