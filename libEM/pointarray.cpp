@@ -310,15 +310,15 @@ void PointArray::mask_asymmetric_unit(string sym)
 }
 
 
-void PointArray::set_from(PointArray * source, string sym, Transform &transform)
+void PointArray::set_from(PointArray * source, string sym, Transform *transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
 
 }
 
-void PointArray::set_from(double *src, unsigned int num, string sym, Transform &xform)
+void PointArray::set_from(double *src, unsigned int num, string sym, Transform *xform)
 {
-	unsigned int nsym = xform.get_nsym(sym);
+	unsigned int nsym = xform->get_nsym(sym);
 
 	if (get_number_points() != nsym * num)
 		set_number_points(nsym * num);
@@ -329,7 +329,7 @@ void PointArray::set_from(double *src, unsigned int num, string sym, Transform &
 		int index = s * 4 * num;
 		for (unsigned int i = 0; i < 4 * num; i += 4, index += 4) {
 			Vec3f v(src[i],src[i+1],src[i+2]);
-			v=v*xform.get_sym(sym,s);
+			v=v*xform->get_sym(sym,s);
 			target[index]  =v[0];
 			target[index+1]=v[1];
 			target[index+2]=v[2];

@@ -60,6 +60,9 @@
 
   068. Windows support. windows file system uses '\' as path separator while
 	   unix/linux uses '/'. Need a generic way to make the code portable.
+
+  069. rename Transform EMData::get_rotation() const;
+	   to get_transform().
 	   
 --- Low Priority ---
 

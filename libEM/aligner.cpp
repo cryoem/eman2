@@ -516,8 +516,9 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, string cmp_name) co
 	if (cmp_name == "") {
 		cmp_name = "FRC";
 	}
-
-	float cda = this_img->get_rotation().eman_alt();
+	
+	map<string, float> rotation = this_img->get_rotation().get_rotation(Transform::EMAN);
+	float cda = rotation["alt"];
 
 	EMData *this_copy2 = this_copy->copy();
 	this_copy2->set_parent(this_copy->get_parent());
@@ -827,14 +828,14 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, string cmp_name) co
 
 		if (usedot == 2) {
 			Vec3f trans = this_copy->get_translation();
-			Rotation rot = this_copy->get_rotation();
+			map<string, float> rot = this_copy->get_rotation().get_rotation(Transform::EMAN);
 
 			Vec3f trans2 = this_copy2->get_translation();
-			Rotation rot2 = this_copy2->get_rotation();
+			map<string,float> rot2 = this_copy2->get_rotation().get_rotation(Transform::EMAN);
 
 			printf("%f vs %f  (%1.1f, %1.1f  %1.2f) (%1.1f, %1.1f  %1.2f)\n",
-				   dot1, dot2, trans[0], trans[1], rot.eman_alt() * 180. / M_PI,
-				   trans2[0], trans2[1], rot2.eman_alt() * 180. / M_PI);
+				   dot1, dot2, trans[0], trans[1], rot["alt"] * 180. / M_PI,
+				   trans2[0], trans2[1], rot2["alt"] * 180. / M_PI);
 		}
 	}
 	else {

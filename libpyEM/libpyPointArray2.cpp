@@ -59,6 +59,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("pdb2mrc_by_summation", &EMAN::PointArray::pdb2mrc_by_summation, return_value_policy< manage_new_object >())
         .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, EMAN_PointArray_projection_by_nfft_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("projection_by_summation", &EMAN::PointArray::projection_by_summation, return_value_policy< manage_new_object >())
+        .def("replace_by_summation", &EMAN::PointArray::replace_by_summation)
         .def("opt_from_proj", &EMAN::PointArray::opt_from_proj)
     );
 

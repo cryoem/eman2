@@ -365,14 +365,13 @@ EMData *EMData::get_rotated_clip(const Transform &xform, const IntSize &size, fl
 	EMData *result = new EMData();
 	result->set_size(size[0],size[1],size[2]);
 
-	Matrix3f mx=orient.get_matrix3();
-	
-	int x,y,z;
-	for (z=-size[2]/2; z<size[2]/2; z++) {
-		for (y=-size[1]/2; y<size[1]/2; y++) {
-			for (x=-size[0]/2; x<size[0]/2; x++) {
+	for (int z=-size[2]/2; z<size[2]/2; z++) {
+		for (int y=-size[1]/2; y<size[1]/2; y++) {
+			for (int x=-size[0]/2; x<size[0]/2; x++) {
 				Vec3f xv=Vec3f(x,y,z)*xform;
-				if (xx<0||yy<0||zz<0||xx>nx-2||yy>ny-2||zz>nz-2) v=0.;
+				float v = 0;
+				
+				if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
 				else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
 				result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
 			}
@@ -986,7 +985,7 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Transform &xform)
 
 FloatPoint EMData::normalize_slice(EMData * slice, float alt, float az, float phi)
 {
-	return normalize_slice(slice, Transform(Rotation::EMAN, alt, az, phi ));
+	return normalize_slice(slice, Transform(Transform::EMAN, alt, az, phi));
 }
 
 
@@ -2847,12 +2846,7 @@ void EMData::translate(const Vec3f &translation)
 
 void EMData::rotate(float alt, float az, float phi)
 {
-	vector<float> v(3);
-	v[0] = alt;
-	v[1] = az;
-	v[2] = phi;
-	
-	Transform t(v, Transform::EMAN, Vec3f(0, 0, 0));
+	Transform t(Transform::EMAN, alt, az, phi);
 	rotate_translate(t);
 }
 
@@ -2863,11 +2857,7 @@ void EMData::rotate(const Transform & t)
 
 void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy, float dz)
 {
-	vector<float> v(3);
-	v[0] = alt;
-	v[1] = az;
-	v[2] = phi;
-	Transform t(v, Transform::EMAN, Vec3f(dx, dy, dz));
+	Transform t(Vec3f(dx, dy, dz), Transform::EMAN, alt, az, phi);
 	rotate_translate(t);
 }
 
@@ -2875,155 +2865,10 @@ void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy
 void EMData::rotate_translate(float alt, float az, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
-	vector<float> v(3);
-	v[0] = alt;
-	v[1] = az;
-	v[2] = phi;
-	Transform t(v, Transform::EMAN, Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz));
+	Transform t(Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz), Transform::EMAN, alt, az, phi);
 	rotate_translate(t);
 }
 
-
-#if 0
-void EMData::rotate_translate_fast(const Rotation & rotation, const Vec3f &translation)
-{
-	ENTERFUNC;
-	
-	float *src_data = 0;
-	float *des_data = 0;
-
-	if (parent) {
-		src_data = parent->get_data();
-		des_data = get_data();
-	}
-	else {
-		src_data = get_data();
-		des_data = (float *) malloc(nx * ny * nz * sizeof(float));
-	}
-
-	if (nz == 1) {
-		float mx[2];
-
-		mx[0] = cos(rotation.eman_alt());
-		mx[1] = sin(rotation.eman_alt());
-		float dxx = mx[0];
-		float dyx = -mx[1];
-		float dxy = mx[1];
-		float dyy = mx[0];
-
-		int k = 0;
-		float x = -mx[1] * ny / 2.0f + nx / 2.0f - translation[0];
-		float y = -mx[0] * ny / 2.0f + ny / 2.0f - translation[1];
-
-		for (int j = 0; j < ny; j++) {
-			float x2 = x - mx[0] * nx / 2.0f;
-			float y2 = y + mx[1] * nx / 2.0f;
-
-			for (int i = 0; i < nx; i++) {
-				if (x2 < 0 || x2 > nx - 2.0f || y2 < 0 || y2 > ny - 2.0f) {
-					des_data[k] = 0;
-				}
-				else {
-					int ii = (int) floor(x2 + 0.5f);
-					int jj = (int) floor(y2 + 0.5f);
-					des_data[k] = src_data[ii + jj * nx];
-				}
-				k++;
-				x2 += dxx;
-				y2 += dyx;
-			}
-
-			x += dxy;
-			y += dyy;
-		}
-	}
-	else {
-		Matrix3f mx = rotation.get_matrix3();
-		float half_nx = -nx/2.0f;
-		float half_ny = -ny/2.0f;
-		float half_nz = -nz/2.0f;
-		
-		float x4 = (mx[0][0] * half_nx + mx[0][1] * half_ny +
-					mx[0][2] * half_nz) - half_nx - translation[0];
-		float y4 = (mx[1][0] * half_nx + mx[1][1] * half_ny +
-					mx[1][2] * half_nz) - half_ny - translation[1];
-		float z4 = (mx[2][0] * half_nx + mx[2][1] * half_ny +
-					mx[2][2] * half_nz) - half_nz - translation[2];
-
-		int xy = nx * ny;
-		int mr = 0;
-
-		if (nx < ny && nx < nz) {
-			mr = (nx - 2) * (nx - 2) / 4;
-		}
-		else if (ny < nz) {
-			mr = (ny - 2) * (ny - 2) / 4;
-		}
-		else {
-			mr = (nz - 2) * (nz - 2) / 4;
-		}
-
-		int l = 0;
-		for (int k = -nz / 2; k < nz / 2; k++) {
-			float x3 = x4;
-			float y3 = y4;
-			float z3 = z4;
-
-			for (int j = -ny / 2; j < ny / 2; j++) {
-				float x2 = x3;
-				float y2 = y3;
-				float z2 = z3;
-				for (int i = -nx / 2; i < nx / 2; i++) {
-					if (x2<0||y2<0||z2<0|| x2>=nx-1||y2>=ny-1||z2>=nz-1) {
-						des_data[l] = 0;
-					}
-					else {
-						float x = floor(x2 + 0.5f);
-						float y = floor(y2 + 0.5f);
-						float z = floor(z2 + 0.5f);
-
-						int ii = (int) (x + y * nx + z * xy);
-						des_data[l] = src_data[ii];
-					}
-					l++;
-					x2 += mx[0][0];
-					y2 += mx[1][0];
-					z2 += mx[2][0];
-				}
-
-				x3 += mx[0][1];
-				y3 += mx[1][1];
-				z3 += mx[2][1];
-			}
-
-			x4 += mx[0][2];
-			y4 += mx[1][2];
-			z4 += mx[2][2];
-		}
-	}
-
-	if (parent) {
-		parent->done_data();
-	}
-	else {
-		free(rdata);
-		rdata = des_data;
-	}
-
-	done_data();
-
-	attr_dict["origin_row"] = attr_dict["origin_row"];
-	attr_dict["origin_col"] = attr_dict["origin_col"];
-	attr_dict["origin_sec"] = attr_dict["origin_sec"];
-
-	update();
-
-	all_rotation += Vec3f(rotation.eman_alt(), rotation.eman_az(), rotation.eman_phi());
-	all_translation += translation;
-
-	EXITFUNC;
-}
-#endif
 
 
 void EMData::rotate_translate(const Transform & xform)
@@ -3033,7 +2878,6 @@ void EMData::rotate_translate(const Transform & xform)
 	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
 	Vec3f translation = xform.get_posttrans();
-	Rotation rotation = xform.get_rotation();
 	map<string, float> rotation = xform.get_rotation(Transform::EMAN);
 	
 	int nx2 = nx;
@@ -3112,7 +2956,7 @@ void EMData::rotate_translate(const Transform & xform)
 	else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) {
 		// make sure this is right
 		Transform mx = xform;
-		mx *= inv_scale;
+		mx.set_scale(inv_scale);
 		int nxy = nx * ny;
 		int l = 0;
 
@@ -3153,11 +2997,11 @@ void EMData::rotate_translate(const Transform & xform)
 		}
 	}
 	else {
-		Matrix3f mx = rotation.get_matrix3();
-		mx *= inv_scale;
+		Transform mx = xform;
+		mx.set_scale(inv_scale);
 
 		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
-		Vec3f v4 = mx * dcenter2 - dcenter2 - translation;
+		Vec3f v4 = dcenter2 * mx  - dcenter2 - translation; // verify this
 		
 		int nxy = nx * ny;
 		int l = 0;
@@ -3196,11 +3040,11 @@ void EMData::rotate_translate(const Transform & xform)
 
 					}
 
-					v2 += mx.get_col(0);
+					v2 += mx.get_matrix3_col(0);
 				}
-				v3 += mx.get_col(1);
+				v3 += mx.get_matrix3_col(1);
 			}
-			v4 += mx.get_col(2);
+			v4 += mx.get_matrix3_col(2);
 		}
 		
 	}
@@ -5151,7 +4995,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 }
 
 
-void EMData::cut_slice(const EMData * map, float dz, Rotation * ort,
+void EMData::cut_slice(const EMData * map, float dz, Transform * ort,
 					   bool interpolate, float dx, float dy)
 {
 	ENTERFUNC;
@@ -5160,7 +5004,7 @@ void EMData::cut_slice(const EMData * map, float dz, Rotation * ort,
 		throw NullPointerException("NULL image");
 	}
 
-	Rotation r(0, 0, 0, Transform::EMAN);
+	Transform r(Transform::EMAN, 0, 0, 0);
 	if (!ort) {
 		ort = &r;
 	}
@@ -5168,28 +5012,26 @@ void EMData::cut_slice(const EMData * map, float dz, Rotation * ort,
 	float *sdata = map->get_data();
 	float *ddata = get_data();
 
-	Matrix3f mx = ort->get_matrix3();
-
 	int map_nx = map->get_xsize();
 	int map_ny = map->get_ysize();
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
 
-	float mdz0 = dz * mx[0][2] + map_nx / 2;
-	float mdz1 = dz * mx[1][2] + map_ny / 2;
-	float mdz2 = dz * mx[2][2] + map_nz / 2;
+	float mdz0 = dz * (*ort)[0][2] + map_nx / 2;
+	float mdz1 = dz * (*ort)[1][2] + map_ny / 2;
+	float mdz2 = dz * (*ort)[2][2] + map_nz / 2;
 
 	for (int y = 0; y < ny; y++) {
 		int y2 = (int) (y - ny / 2 - dy);
-		float my2_0 = y2 * mx[0][1] + mdz0;
-		float my2_1 = y2 * mx[1][1] + mdz1;
-		float my2_2 = y2 * mx[2][1] + mdz2;
+		float my2_0 = y2 * (*ort)[0][1] * y2 + mdz0;
+		float my2_1 = y2 * (*ort)[1][1] * y2 + mdz1;
+		float my2_2 = y2 * (*ort)[2][1] * y2 + mdz2;
 
 		for (int x = 0; x < nx; x++) {
 			int x2 = (int) (x - nx / 2 - dx);
-			float xx = x2 * mx[0][0] + my2_0;
-			float yy = x2 * mx[1][0] + my2_1;
-			float zz = x2 * mx[2][0] + my2_2;
+			float xx = x2 * (*ort)[0][0] + my2_0;
+			float yy = x2 * (*ort)[1][0] + my2_1;
+			float zz = x2 * (*ort)[2][0] + my2_2;
 			int l = x + y * nx;
 
 			if (xx < 0 || yy < 0 || zz < 0 || xx > map_nx - 2 ||
@@ -5228,7 +5070,7 @@ void EMData::cut_slice(const EMData * map, float dz, Rotation * ort,
 }
 
 
-void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float dy)
+void EMData::uncut_slice(EMData * map, float dz, Transform * ort, float dx, float dy)
 {
 	ENTERFUNC;
 	
@@ -5236,7 +5078,7 @@ void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float
 		throw NullPointerException("NULL image");
 	}
 
-	Rotation r(0, 0, 0, Transform::EMAN);
+	Transform r(Transform::EMAN, 0, 0, 0);
 	if (!ort) {
 		ort = &r;
 	}
@@ -5244,30 +5086,28 @@ void EMData::uncut_slice(EMData * map, float dz, Rotation * ort, float dx, float
 	float *ddata = map->get_data();
 	float *sdata = get_data();
 
-	Matrix3f mx = ort->get_matrix3();
-
 	int map_nx = map->get_xsize();
 	int map_ny = map->get_ysize();
 	int map_nz = map->get_zsize();
 	int map_nxy = map_nx * map_ny;
 
-	float mdz0 = dz * mx[0][2] + map_nx / 2;
-	float mdz1 = dz * mx[1][2] + map_ny / 2;
-	float mdz2 = dz * mx[2][2] + map_nz / 2;
+	float mdz0 = dz * (*ort)[0][2] + map_nx / 2;
+	float mdz1 = dz * (*ort)[1][2] + map_ny / 2;
+	float mdz2 = dz * (*ort)[2][2] + map_nz / 2;
 
 	for (int y = 0; y < ny; y++) {
 		int y2 = (int) (y - ny / 2 - dy);
 
-		float my2_0 = y2 * mx[0][1] + mdz0;
-		float my2_1 = y2 * mx[1][1] + mdz1;
-		float my2_2 = y2 * mx[2][1] + mdz2;
+		float my2_0 = y2 * (*ort)[0][1] + mdz0;
+		float my2_1 = y2 * (*ort)[1][1] + mdz1;
+		float my2_2 = y2 * (*ort)[2][1] + mdz2;
 
 		for (int x = 0; x < nx; x++) {
 			int x2 = (int) (x - nx / 2 - dx);
 
-			float xx = x2 * mx[0][0] + my2_0;
-			float yy = x2 * mx[1][0] + my2_1;
-			float zz = x2 * mx[2][0] + my2_2;
+			float xx = x2 * (*ort)[0][0] + my2_0;
+			float yy = x2 * (*ort)[1][0] + my2_1;
+			float zz = x2 * (*ort)[2][0] + my2_2;
 
 			if (xx >= 0 && yy >= 0 && zz >= 0 && xx <= map_nx - 2 && yy <= map_ny - 2
 				&& zz <= map_nz - 2) {

@@ -431,35 +431,36 @@ int main(int argc, char *argv[])
 				}
 		
 				if (rizedx > 0) {
-					d->translate(Util::get_gauss_rand(0, rizedx), Util::get_gauss_rand(0, rizedx), 0);
+					d->translate(Util::get_gauss_rand(0, rizedx),
+								 Util::get_gauss_rand(0, rizedx), 0);
 				}
 			}
 		}
 
-		Rotation rr = d->get_rotation();
+		map<string, float> rr = d->get_rotation().get_rotation(Transform::EMAN);
 		//int nimg = d->get_nimg();
 
 		if (scale < 1.0) {
 			Transform t;
-			t.set_scale_instance(Vec3f(scale, 1, 1));
+			t.set_scale(scale);
 			d->rotate_translate(t);
 		}
 
 		if (clipx > 0) {
-			EMData *e =
-				d->get_clip(Region((d->get_xsize() - clipx) / 2, (d->get_ysize() - clipy) / 2,
-								   clipx, clipy));
+			EMData *e = d->get_clip(Region((d->get_xsize() - clipx) / 2,
+										   (d->get_ysize() - clipy) / 2,
+										   clipx, clipy));
 			delete d;
 			d = e;
 		}
 
 		if (scale > 1.0) {
 			Transform t;
-			t.set_scale_instance(Vec3f(scale, 1, 1));
+			t.set_scale(scale);
 			d->rotate_translate(t);
 		}
 
-		d->set_rotation(rr.eman_alt(), rr.eman_az(), rr.eman_phi());
+		d->set_rotation(rr["alt"], rr["az"], rr["phi"]);
 		//d->setNImg(nimg);
 
 		if (fabs((float)shrink) > 1) {

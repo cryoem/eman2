@@ -95,9 +95,10 @@ namespace EMAN
 		Vec3f get_posttrans() const;
 		Vec3f get_center() const;
 		map<string, float> get_rotation(EulerType euler_type) const;
-		
+		Vec3f get_matrix3_col(int i) const;
+		Vec3f get_matrix3_row(int i) const;
 		float get_scale() const;
-		
+
 		// returns orthogonality coefficient 0-1 range;
 		float orthogonality() const;
 		
@@ -108,6 +109,7 @@ namespace EMAN
 		const float * operator[] (int i) const;
 
 		Transform operator*=(const Transform& t);
+	
 		
 	  private:
 		enum SymType
@@ -137,7 +139,7 @@ namespace EMAN
 		static map<string, int> symmetry_map;
 	};
 
-	Transform operator*(const Vec3f & v, const Transform & t);
+	Vec3f operator*(const Vec3f & v, const Transform & t);
 	Transform operator*(const Transform & t1, const Transform & t2);
 	
 #if 0

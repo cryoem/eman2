@@ -16,6 +16,7 @@
 #include "vec3.h"
 #include "geometry.h"
 #include "rotation.h"
+#include "transform.h"
 
 using std::string;
 using std::vector;
@@ -179,8 +180,7 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */ 
-		EMData *get_rotated_clip(const FloatPoint &center, const Rotation & orient,
-								 const IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, float scale=1.0);
 				
 		/** Add a scaled image into another image at a specified location.
 		 *  This is used, for example, to accumulate gaussians in
@@ -238,7 +238,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
 		 */
-		FloatPoint normalize_slice(EMData * slice, const Rotation & orient);
+		FloatPoint normalize_slice(EMData * slice, const Transform & orient);
 
 		/** Caclulates normalization and phase residual for a slice in
 		 * an already existing volume. phase residual is calculated
@@ -806,7 +806,7 @@ namespace EMAN
 		 * @param dx
 		 * @param dy
 		 */
-		void cut_slice(const EMData * map, float dz, Rotation * orientation = 0,
+		void cut_slice(const EMData * map, float dz, Transform * orientation = 0,
 					   bool interpolate = true, float dx = 0, float dy = 0);
 
 		/** Opposite of the cut_slice(). It will take a slice and insert
@@ -819,7 +819,7 @@ namespace EMAN
 		 * @param dx
 		 * @param dy
 		 */		 
-		void uncut_slice(EMData * map, float dz, Rotation * orientation = 0,
+		void uncut_slice(EMData * map, float dz, Transform * orientation = 0,
 						 float dx = 0, float dy = 0);
 
 		/** Calculates the density value at the peak of the
@@ -921,7 +921,7 @@ namespace EMAN
 
 		/** Get the 3D orientation of 'this' image
 		 */
-		Rotation get_rotation() const;
+		Transform get_rotation() const; // rename this to get_transform().
 
 		/** Define the 3D orientation of this particle, also
 		 * used to indicate relative rotations for reconstructions
@@ -1470,9 +1470,12 @@ namespace EMAN
 		all_translation = Vec3f(dx, dy, dz);
 	}
 
-	inline Rotation EMData::get_rotation() const
+	inline Transform EMData::get_rotation() const
 	{
-		return Rotation((float)attr_dict["rot_alt"],(float)attr_dict["rot_az"],(float)attr_dict["rot_phi"], Rotation::EMAN);
+		return Transform(Transform::EMAN,
+						 (float)attr_dict["rot_alt"],
+						 (float)attr_dict["rot_az"],
+						 (float)attr_dict["rot_phi"]);
 	}
 
 	inline void EMData::set_rotation(float alt, float az, float phi)

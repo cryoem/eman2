@@ -37,7 +37,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, projec
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_copy_overloads_0_1, copy, 0, 1)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_rotated_clip_overloads_3_4, get_rotated_clip, 3, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_rotated_clip_overloads_2_3, get_rotated_clip, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
 
@@ -97,13 +97,13 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
         .def("insert_clip", &EMAN::EMData::insert_clip)
         .def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
-        .def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_3_4()[ return_value_policy< manage_new_object >() ])
+        .def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("insert_scaled_sum", &EMAN::EMData::insert_scaled_sum, EMAN_EMData_insert_scaled_sum_overloads_2_4())
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
         .def("get_fft_amplitude", &EMAN::EMData::get_fft_amplitude, return_value_policy< manage_new_object >())
         .def("get_fft_phase", &EMAN::EMData::get_fft_phase, return_value_policy< manage_new_object >())
-        .def("normalize_slice", (EMAN::FloatPoint (EMAN::EMData::*)(EMAN::EMData*, const EMAN::Rotation&) )&EMAN::EMData::normalize_slice)
+        .def("normalize_slice", (EMAN::FloatPoint (EMAN::EMData::*)(EMAN::EMData*, const EMAN::Transform&) )&EMAN::EMData::normalize_slice)
         .def("normalize_slice", (EMAN::FloatPoint (EMAN::EMData::*)(EMAN::EMData*, float, float, float) )&EMAN::EMData::normalize_slice)
         .def("render_amp8", &EMAN::EMData::render_amp8)
         .def("ri2ap", &EMAN::EMData::ri2ap)
@@ -111,10 +111,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("scale", &EMAN::EMData::scale)
         .def("translate", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::translate)
         .def("translate", (void (EMAN::EMData::*)(const EMAN::Vec3f&) )&EMAN::EMData::translate)
-        .def("rotate", (void (EMAN::EMData::*)(const EMAN::Rotation&) )&EMAN::EMData::rotate)
+        .def("rotate", (void (EMAN::EMData::*)(const EMAN::Transform&) )&EMAN::EMData::rotate)
         .def("rotate", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::rotate)
         .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Transform&) )&EMAN::EMData::rotate_translate)
-        .def("rotate_translate", (void (EMAN::EMData::*)(const EMAN::Rotation&, const EMAN::Vec3f&) )&EMAN::EMData::rotate_translate)
         .def("rotate_translate", (void (EMAN::EMData::*)(float, float, float, float, float, float) )&EMAN::EMData::rotate_translate)
         .def("rotate_translate", (void (EMAN::EMData::*)(float, float, float, float, float, float, float, float, float) )&EMAN::EMData::rotate_translate)
         .def("rotate_x", &EMAN::EMData::rotate_x)
@@ -277,7 +276,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 
 	EMAN::emobject_farray_from_python();
 	EMAN::emobject_emdata_from_python();
-	
+
 	implicitly_convertible<int, EMAN::EMObject>();
 	implicitly_convertible<float, EMAN::EMObject>();
 	implicitly_convertible<double, EMAN::EMObject>();

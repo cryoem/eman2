@@ -67,6 +67,10 @@ Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans,
 	set_posttrans(posttrans);
 }
 
+Transform::~Transform()
+{
+}
+
 void Transform::init()
 {
 	for (int i=0; i<4; i++) {
@@ -400,6 +404,18 @@ map<string,float> Transform::get_rotation(EulerType euler_type) const
 	return result;
 }
 
+Vec3f Transform::get_matrix3_col(int i) const
+{
+	return Vec3f(matrix[0][i], matrix[1][i], matrix[2][i]);
+}
+
+
+Vec3f Transform::get_matrix3_row(int i) const
+{
+	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
+}
+
+
 float Transform::get_scale() const
 {
 	// Assumes uniform scaling, calculation uses Z only.
@@ -670,9 +686,12 @@ Transform::SymType Transform::get_sym_type(const string & name)
 }
 
 
-Transform EMAN::operator*(const Vec3f & v, const Transform & t)
+Vec3f EMAN::operator*(const Vec3f & v, const Transform & t)
 {
-	return Transform();
+	float x = v[0] * t[0][0] + v[1] * t[1][0] + v[2] * t[2][0];
+	float y = v[0] * t[0][1] + v[1] * t[1][1] + v[2] * t[2][1];
+	float z = v[0] * t[0][2] + v[1] * t[1][2] + v[2] * t[2][2];
+	return Vec3f(x, y, z);
 }
 
 Transform EMAN::operator*(const Transform & t1, const Transform & t2)
