@@ -325,7 +325,7 @@ namespace EMAN
 		/** Translate this image.
 		 * @param translation The translation distance vector.
 		 */
-		void translate(const Vec3 < float >&translation);
+		void translate(const Vec3f &translation);
 
 		/** Rotate this image.
 		 * @param rotation Rotation angles
@@ -348,7 +348,7 @@ namespace EMAN
 		 * @param rotation The rotation angles
 		 * @param translation The translation distance vector
 		 */
-		void rotate_translate(const Rotation & rotation, const Vec3 < float >&translation);
+		void rotate_translate(const Rotation & rotation, const Vec3f &translation);
 
 		/** Rotate then translate the image.
 		 * @param alt Rotation euler angle alt in EMAN convention.
@@ -371,7 +371,8 @@ namespace EMAN
 		 * @param pdy Pretranslation distance in y direction.
 		 * @param pdz Pretranslation distance in z direction.
 		 */
-		void rotate_translate(float alt, float az, float phi, float dx, float dy, float dz, float pdx, float pdy, float pdz);
+		void rotate_translate(float alt, float az, float phi, float dx, float dy,
+							  float dz, float pdx, float pdy, float pdz);
 		
 		/** This performs a translation of each line along x with wraparound.
 		 *  This is equivalent to a rotation when performed on 'unwrapped' maps.
@@ -899,13 +900,13 @@ namespace EMAN
 		 * @return 'this' image's translation vector from the original
 		 * location.
 		 */
-		Vec3 < float >get_translation() const;
+		Vec3f get_translation() const;
 
 		/** Set 'this' images' translation vector from the original
 		 * location.
 		 * @param new_translation The new translation vector.
 		 */
-		void set_translation(const Vec3 < float >&new_translation);
+		void set_translation(const Vec3f &new_translation);
 
 		/** Set 'this' images' translation vector from the original
 		 * location.
@@ -1252,8 +1253,8 @@ namespace EMAN
 		int flags;              /** flags */
 		int nx, ny, nz;	        /** image size */
 
-		Vec3 < float >all_translation; /** translation from the original location */
-		Vec3 < float >all_rotation;    /** rotation (alt, az, phi) from the original locaton*/
+		Vec3f all_translation; /** translation from the original location */
+		Vec3f all_rotation;    /** rotation (alt, az, phi) from the original locaton*/
 
 		string path;
 		int pathnum;
@@ -1456,19 +1457,19 @@ namespace EMAN
 	}
 
 
-	inline Vec3 < float >EMData::get_translation() const
+	inline Vec3f EMData::get_translation() const
 	{
 		return all_translation;
 	}
 
-	inline void EMData::set_translation(const Vec3 < float >&t)
+	inline void EMData::set_translation(const Vec3f &t)
 	{
 		all_translation = t;
 	}
 
 	inline void EMData::set_translation(float dx, float dy, float dz)
 	{
-		all_translation = Vec3 < float >(dx, dy, dz);
+		all_translation = Vec3f(dx, dy, dz);
 	}
 
 	inline Rotation EMData::get_rotation() const
@@ -1478,7 +1479,7 @@ namespace EMAN
 
 	inline void EMData::set_rotation(float alt, float az, float phi)
 	{
-		all_rotation = Vec3 < float >(alt, az, phi);
+		all_rotation = Vec3f(alt, az, phi);
 	}
 
 	inline void EMData::render_amp8_wrapper(long data, int x, int y, int xsize, int ysize,

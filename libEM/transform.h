@@ -52,9 +52,7 @@ namespace EMAN
 
 		Transform(const Vec3f &translation)
 		{
-			for (int i = 0; i < 3; i++) {
-				matrix[i][3] = translation[i];
-			}
+			set_post_translate(translation);
 		}
 
 		Transform(const Rotation & rotation)
@@ -72,9 +70,7 @@ namespace EMAN
 				}
 			}
 
-			for (int i = 0; i < 3; i++) {
-				matrix[i][3] = post_translation[i];
-			}
+			set_post_translate(post_translation);
 		}
 
 		virtual ~ Transform() {
@@ -121,7 +117,7 @@ namespace EMAN
 
 		Transform & set_center(const Vec3f &c)
 		{
-			pre_trans = (float) -1.0 * c;
+			pre_trans = -1.0f * c;
 
 			for (int i = 0; i < 3; i++) {
 				matrix[3][i] += c[i];
@@ -157,15 +153,15 @@ namespace EMAN
 			return (*this);
 		}
 
-	/** [this] = [this] x [t]
-	 */
+		/** [this] = [this] x [t]
+		 */
 		Transform & post_concatenate(const Transform & t) {
 			(*this) *= t;
 			return (*this);
 		}
 
-	/** [this] = [t] x [this]
-	 */
+		/** [this] = [t] x [this]
+		 */
 		Transform & pre_concatenate(const Transform & t) {
 			Transform t1 = t;
 			t1 *= (*this);
@@ -173,8 +169,8 @@ namespace EMAN
 			return (*this);
 		}
 
-	/** Concatenates this transform with a translation transformation.
-	*/
+		/** Concatenates this transform with a translation transformation.
+		 */
 		Transform & translate(const Vec3f &v) {
 			if (v != Vec3f (0, 0, 0)) {
 				Matrix4f m;
@@ -187,8 +183,8 @@ namespace EMAN
 		}
 
 
-	/** Concatenates this transform with a rotation transformation.
-	 */
+		/** Concatenates this transform with a rotation transformation.
+		 */
 		Transform & rotate(const Rotation & r) {
 			if (r != Rotation(1, 0, 0, 0, Rotation::QUATERNION)) {
 				Matrix4f m = r.get_matrix4();
@@ -223,8 +219,8 @@ namespace EMAN
 			return (*this);
 		}
 
-	/** Concatenates this transform with a scaling transformation.
-	 */
+		/** Concatenates this transform with a scaling transformation.
+		 */
 		Transform & scale(const Vec3f &scale_factor) {
 			if (scale_factor != Vec3f (1, 1, 1)) {
 				Matrix4f m;
@@ -251,7 +247,7 @@ namespace EMAN
 		
 		Vec3f get_center() const
 		{
-			return pre_trans;
+			return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
 		}
 
 		Matrix4f get_matrix() const
