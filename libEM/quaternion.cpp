@@ -89,53 +89,6 @@ Quaternion::Quaternion(const vector<float> & m)
 }
 
 
-Quaternion::Quaternion(const Matrix3f & m)
-{
-	int i = 0;
-
-	if (m[0][0] > m[1][1]) {
-		if (m[0][0] > m[2][2]) {
-			i = 0;
-		}
-		else {
-			i = 2;
-		}
-	}
-	else {
-		if (m[1][1] > m[2][2]) {
-			i = 1;
-		}
-		else {
-			i = 2;
-		}
-	}
-
-	if (m[0][0] + m[1][1] + m[2][2] > m[i][i]) {
-		e0 = (float) (sqrt(m[0][0] + m[1][1] + m[2][2] + 1) / 2.0);
-		e1 = (float) ((m[1][2] - m[2][1]) / (4 * e0));
-		e2 = (float) ((m[2][0] - m[0][2]) / (4 * e0));
-		e3 = (float) ((m[0][1] - m[1][0]) / (4 * e0));
-	}
-	else {
-		float quat[3];
-		int j = (i + 1) % 3;
-		int k = (i + 2) % 3;
-
-		quat[i] = (float) (sqrt(m[i][i] - m[j][j] - m[k][k] + 1) / 2.0);
-		quat[j] = (float) ((m[i][j] + m[j][i]) / (4 * quat[i]));
-		quat[k] = (float) ((m[i][k] + m[k][i]) / (4 * quat[i]));
-
-		e0 = (float) ((m[j][k] - m[k][j]) / (4 * quat[i]));
-		e1 = quat[0];
-		e2 = quat[1];
-		e3 = quat[2];
-	}
-
-	//normalize();
-}
-
-
-
 void Quaternion::normalize()
 {
 	float dist = 1.0f / sqrt(norm());

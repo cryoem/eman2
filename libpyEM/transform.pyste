@@ -4,5 +4,4 @@ Vec3i = Class("EMAN::Vec3i", "vec3.h")
 
 Quaternion = Class("EMAN::Quaternion", "quaternion.h")
 set_policy(Quaternion.inverse, return_internal_reference())
-
 Transform = Class("EMAN::Transform", "transform.h")

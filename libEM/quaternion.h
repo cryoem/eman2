@@ -6,7 +6,6 @@
 #define eman__quaternion_h__ 1
 
 #include "vec3.h"
-#include "matrix.h"
 #include <math.h>
 
 namespace EMAN
@@ -41,7 +40,6 @@ namespace EMAN
 		Quaternion(float radians, const Vec3f &axis);
 		Quaternion(const Vec3f &axis, float radians);
 		Quaternion(const vector<float> & matrix3);
-		Quaternion(const Matrix3f & matrix3);
 		
 		~Quaternion()
 		{

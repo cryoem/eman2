@@ -6,7 +6,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     util.cpp
     emutil.cpp
     interp.cpp
-    matrix.cpp
     quaternion.cpp
     transform.cpp
     geometry.cpp
