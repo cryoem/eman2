@@ -18,10 +18,23 @@ namespace EMAN {
     };
 
 
+    class ImageAverager : public Averager {
+    public:
+	EMData* average(const vector<EMData*>& image_list) const;
+	string get_name() const { return "Image"; }
+	static Cmp* NEW() { return new Averager(); }
+
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    return d;
+	}
+    };
+
     class IterationAverager : public Averager {
     public:
 	EMData* average(const vector<EMData*>& image_list) const;
-	string get_name() const { return "Averager"; }
+	string get_name() const { return "Iteration"; }
 	static Cmp* NEW() { return new Averager(); }
 
 	TypeDict get_param_types() const
@@ -31,28 +44,32 @@ namespace EMAN {
 	}
     };
 
-    
-    class WeightingAverager : public Averager {
+
+    class CtfAverager : public Averager {
     public:
 	EMData* average(const vector<EMData*>& image_list) const;
-	string get_name() const { return "Averager"; }
-	static Cmp* NEW() { return new Averager(); }
-
-	TypeDict get_param_types() const
-	{
-	    TypeDict d;
-	    return d;
-	}
+    protected:
+	CtfAverager() : sf(0), curves(0) {}
+	EMData* sf;
+	EMData* curves;
+	vector<float> snr;
+	string outfile;
     };
 
     
-
-    class CtfCAverager : public Averager {
+    class WeightingAverager : public CtfAverager {
     public:
-	EMData* average(const vector<EMData*>& image_list) const;
-	string get_name() const { return "Averager"; }
-	static Cmp* NEW() { return new Averager(); }
+	
+	string get_name() const { return "Weighting"; }
+	static Cmp* NEW() { return new WeightingAverager(); }
 
+	void set_params(const Dict& new_params)
+	{
+	    params = new_params;
+	    curves = params["curves"].get_EMData();
+	    sf = params["sf"].get_XYData();
+	}
+	
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -62,10 +79,9 @@ namespace EMAN {
 
     
 
-    class CtfCWautoAverager : public Averager {
+    class CtfCAverager : public CtfAverager {
     public:
-	EMData* average(const vector<EMData*>& image_list) const;
-	string get_name() const { return "Averager"; }
+	string get_name() const { return "CtfC"; }
 	static Cmp* NEW() { return new Averager(); }
 
 	TypeDict get_param_types() const
@@ -74,15 +90,20 @@ namespace EMAN {
 	    return d;
 	}
     };
-
     
 
-    class CtfCWAverager : public Averager {
+
+    class CtfCWAverager : public CtfAverager {
     public:
-	EMData* average(const vector<EMData*>& image_list) const;
-	string get_name() const { return "Averager"; }
-	static Cmp* NEW() { return new Averager(); }
-
+	string get_name() const { return "CtfCW"; }
+	static Cmp* NEW() { return new CtfCWAverager(); }
+	
+	void set_params(const Dict& new_params)
+	{
+	    params = new_params;
+	    snr = params["snr"].get_farray();
+	}
+	
 	TypeDict get_param_types() const
 	{
 	    TypeDict d;
@@ -91,6 +112,23 @@ namespace EMAN {
     };
 
     
+    class CtfCWautoAverager : public CtfAverager {
+    public:
+	string get_name() const { return "CtfCWauto"; }
+	static Cmp* NEW() { return new CtfCWautoAverager(); }
+
+	void set_params(const Dict& new_params)
+	{
+	    params = new_params;
+	    outfile = params["outfile"].get_string();
+	}
+	
+	TypeDict get_param_types() const
+	{
+	    TypeDict d;
+	    return d;
+	}
+    };
     
 }
 
