@@ -16,8 +16,14 @@ namespace  {
 
 struct EMAN_Filter_Wrapper: EMAN::Filter
 {
+    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Filter& p0):
+        EMAN::Filter(p0), self(self_) {}
+
+    EMAN_Filter_Wrapper(PyObject* self_):
+        EMAN::Filter(), self(self_) {}
+
     void process(EMAN::EMData* p0) {
-        call_method< void >(py_self, "process", p0);
+        call_method< void >(self, "process", p0);
     }
 
     void default_process(EMAN::EMData* p0) {
@@ -25,7 +31,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        call_method< void >(py_self, "process_list", p0);
+        call_method< void >(self, "process_list", p0);
     }
 
     void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
@@ -33,11 +39,11 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     std::string get_name() const {
-        return call_method< std::string >(py_self, "get_name");
+        return call_method< std::string >(self, "get_name");
     }
 
     EMAN::Dict get_params() const {
-        return call_method< EMAN::Dict >(py_self, "get_params");
+        return call_method< EMAN::Dict >(self, "get_params");
     }
 
     EMAN::Dict default_get_params() const {
@@ -45,7 +51,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     void set_params(const EMAN::Dict& p0) {
-        call_method< void >(py_self, "set_params", p0);
+        call_method< void >(self, "set_params", p0);
     }
 
     void default_set_params(const EMAN::Dict& p0) {
@@ -53,7 +59,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(py_self, "get_param_types");
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
     }
 
     EMAN::TypeDict default_get_param_types() const {
@@ -61,10 +67,10 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     std::string get_desc() const {
-        return call_method< std::string >(py_self, "get_desc");
+        return call_method< std::string >(self, "get_desc");
     }
 
-    PyObject* py_self;
+    PyObject* self;
 };
 
 
@@ -74,7 +80,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyFilter2)
 {
-    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("__Filter", no_init)
+    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("__Filter", init<  >())
         .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
         .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
         .def("get_name", pure_virtual(&EMAN::Filter::get_name))
