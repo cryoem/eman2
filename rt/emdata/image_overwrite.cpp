@@ -26,7 +26,7 @@ int main()
 	}
 	catch(Exception *e) {
 		err = 1;
-		e->dump();
+		printf("%s\n", e->what());
 	} 
 		 
 	return err;
