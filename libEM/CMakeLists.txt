@@ -9,6 +9,7 @@ SET(LIB_EM_SOURCE byteorder.C
 		  emutil.C
 		  floatstat.C
 		  transform.C
+		  geometry.C
 		  mrcio.C
 		  dm3io.C
 		  tifio.C
