@@ -35,23 +35,28 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     EMAN_Filter_Wrapper(PyObject* self_):
         EMAN::Filter(), self(self_) {}
 
-    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Dict & p0):
-        EMAN::Filter(p0), self(self_) {}
-
-    void process(EMAN::EMData * p0) const {
+    void process(EMAN::EMData * p0) {
         call_method< void >(self, "process", p0);
     }
 
-    void default_process(EMAN::EMData * p0) const {
+    void default_process(EMAN::EMData * p0) {
         EMAN::Filter::process(p0);
     }
 
-    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > & p0) const {
+    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > & p0) {
         call_method< void >(self, "process_list", p0);
     }
 
-    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > & p0) const {
+    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > & p0) {
         EMAN::Filter::process_list(p0);
+    }
+
+    void set_params(const EMAN::Dict & p0) {
+        call_method< void >(self, "set_params", p0);
+    }
+
+    void default_set_params(const EMAN::Dict & p0) {
+        EMAN::Filter::set_params(p0);
     }
 
     std::basic_string<char,std::char_traits<char>,std::allocator<char> > get_name() const {
@@ -167,6 +172,9 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("ri2ap", &EMAN::EMData::ri2ap)
         .def("ap2ri", &EMAN::EMData::ap2ri)
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
+        .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
+        .def("gimme_fft", &EMAN::EMData::gimme_fft)
+        .def("apply_radial_func", &EMAN::EMData::apply_radial_func)
         .def("add", (int (EMAN::EMData::*)(float) )&EMAN::EMData::add)
         .def("add", (int (EMAN::EMData::*)(const EMAN::EMData &) )&EMAN::EMData::add)
         .def("sub", &EMAN::EMData::sub)
@@ -190,18 +198,18 @@ BOOST_PYTHON_MODULE(libpyEM)
         .def("get_y", &EMAN::EMData::get_y)
         .def("get_z", &EMAN::EMData::get_z)
         .def("dump_data", &EMAN::EMData::dump_data)
-        .def( self * self )
-        .def( self / self )
-        .def( other< float >() * self )
-        .def( other< float >() - self )
-        .def( self + self )
-        .def( other< float >() / self )
         .def( self - other< float >() )
-        .def( self * other< float >() )
         .def( self + other< float >() )
+        .def( self * other< float >() )
         .def( self - self )
-        .def( other< float >() + self )
+        .def( self + self )
+        .def( other< float >() - self )
+        .def( other< float >() * self )
         .def( self / other< float >() )
+        .def( other< float >() + self )
+        .def( self / self )
+        .def( self * self )
+        .def( other< float >() / self )
         .def( self += other< float >() )
         .def( self /= other< float >() )
         .def( self += self )
@@ -215,20 +223,19 @@ BOOST_PYTHON_MODULE(libpyEM)
     EMAN_EMData_scope->attr("DATA_READ_WRITE") = EMAN::EMData::DATA_READ_WRITE;
     delete EMAN_EMData_scope;
 
+    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
+        .def("get_params", &EMAN::Filter::get_params)
+        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
+        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
+        .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
+    ;
+
     class_< EMAN::FilterFactory, boost::noncopyable >("FilterFactory", no_init)
         .def("instance", &EMAN::FilterFactory::instance, return_value_policy< reference_existing_object >())
         .staticmethod("instance")
         .def("get", (EMAN::Filter * (EMAN::FilterFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Filter * (EMAN::FilterFactory::*)(std::basic_string<char,std::char_traits<char>,std::allocator<char> >, const EMAN::Dict &) )&EMAN::FilterFactory::get, return_value_policy< manage_new_object >())
         .def("get_list", &EMAN::FilterFactory::get_list)
-    ;
-
-    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("Filter", init<  >())
-        .def(init< const EMAN::Dict & >())
-        .def("get_params", &EMAN::Filter::get_params)
-        .def("set_params", &EMAN::Filter::set_params)
-        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
-        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
     ;
 
     scope* EMAN_Log_scope = new scope(
