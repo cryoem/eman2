@@ -62,13 +62,14 @@
 	   Also, in several cases I've written a (for example) 32x32x32 pixel MRC
 	   file, but the file is missing one 32x32k slice at the end. ie - the file
 	   is 131072 bytes.
-
-  038. convert named classes including IntSize, FloatSize, IntPoint,
-       FloatPoint to python list in boost python part.
-
-  040. convert named classes including IntSize, FloatSize, IntPoint,
-       FloatPoint to python tuple in boost python part.
-
+  041. many exceptions are not handled properly. e.g., e2iminfo a bad mrc file
+       produced a core dump.
+  042. imageio caching caused problems in some imageio subclasses such that
+       the header/data writing are not started from the proper locations. this
+       need to be verified and tested on all image formats. one test is:
+          - write an image to a file
+          - write a new header to this file.
+          - write new data to this file.
 	   
 --- Low Priority ---
 
@@ -167,3 +168,9 @@
 				The output image file size is too small.
 
 				solution: this error couldn't be reproduced.
+
+  10/13/04 038. convert named classes including IntSize, FloatSize, IntPoint,
+				FloatPoint to python list in boost python part.
+
+  10/15/04 040. convert named classes including IntSize, FloatSize, IntPoint,
+				FloatPoint to python tuple in boost python part.

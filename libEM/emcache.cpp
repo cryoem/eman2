@@ -41,19 +41,17 @@ GlobalCache *GlobalCache::instance()
 	return global_cache;
 }
 
-
-
 ImageIO *GlobalCache::get_imageio(string filename, int rw_mode)
 {
 	ImageIO *io = imageio_cache->get(filename);
 	if (io) {
-		if (rw_mode != ImageIO::READ_ONLY) {
+		if (rw_mode == ImageIO::WRITE_ONLY) {
 			imageio_cache->remove(filename);
 			io = 0;
-		}		
+		}
 		else {
 			if (access(filename.c_str(), F_OK) != 0) {
-				printf("%s was removed\n", filename.c_str());
+				printf("Warning: %s was removed\n", filename.c_str());
 				imageio_cache->remove(filename);
 				io = 0;
 			}

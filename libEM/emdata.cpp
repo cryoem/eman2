@@ -143,7 +143,7 @@ void EMData::write_image(string filename, int img_index, EMUtil::ImageType imgty
 	}
 
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
-	if (!header_only) {
+	if (!header_only && img_index == 0) {
 		rwmode = ImageIO::WRITE_ONLY;
 	}
 	
