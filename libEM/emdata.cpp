@@ -5092,9 +5092,12 @@ EMData *EMData::convolute(EMData * with)
 	float *rdata2 = cf->get_data();
 	int cf_size = cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
 
+	float re,im;
 	for (int i = 0; i < cf_size; i += 2) {
-		rdata2[i] = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
-		rdata2[i + 1] = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
+		re = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
+		im = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
+		rdata2[i]=re;
+		rdata2[i+1]=im;
 	}
 
 	cf->done_data();
