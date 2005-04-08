@@ -41,6 +41,9 @@ SET(LIB_EM_SOURCE byteorder.cpp
     reconstructor.cpp
     exception.cpp
 	testutil.cpp
+    fourierproduct.cpp
+    normpadft.cpp
+    periodogram.cpp
     )
 
 IF(WIN32)

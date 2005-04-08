@@ -1325,6 +1325,11 @@ namespace EMAN
 		 */
 		bool is_complex() const;
 
+		/** Is this a real image?
+		 * @return Whether this is image is real (not complex) or not.
+		 */
+		bool is_real() const;
+
 		/** Mark this image as a complex image.
 		 * @param is_complex If true, a complex image. If false, a real
 		 * image.
@@ -1593,6 +1598,11 @@ namespace EMAN
 		else {
 			return false;
 		}
+	}
+
+	inline bool EMData::is_real() const
+	{
+		return !is_complex();
 	}
 
 	inline bool EMData::is_complex_x() const
