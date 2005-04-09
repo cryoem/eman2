@@ -33,6 +33,7 @@ for single particle analysis."""
 
 	image=EMData()
 	image.read_image(args[0])
+	image.set_attr("datatype",7)
 	
 	refptcl=None
 	if options.refptcl :
@@ -65,14 +66,25 @@ for single particle analysis."""
 		shrink=shrink.get_clip(Region(0,0,(shrink.get_xsize()|1)^1,(shrink.get_ysize()|1)^1))
 
 	# now we try to clean up long range density variations in the image
-	flt=shrink.copy_head()
+	filtrad=options.box*2/shrinkfactor
+	flt=EMData()
+	flt.set_size(shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4,1)
 	flt.to_one()
-	flt.filter("eman1.mask.sharp",{"outer_radius":options.box*2/shrinkfactor})
+	flt.filter("eman1.mask.sharp",{"outer_radius":filtrad})
 	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
 	flt.filter("eman1.xform.phaseorigin")
-	a=shrink.convolute(flt)
+	a=shrink.get_clip(Region(-filtrad*2,-filtrad*2,shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4))
+	a.filter("eman1.mask.zeroedgefill")
+#	a.write_image("z0.hdf",0)
+#	flt.write_image("z0.hdf",1)
+	a=a.convolute(flt)
 	a*=a.get_xsize()*a.get_ysize()
+#	a.write_image("z0.hdf",2)
+	a=a.get_clip(Region(filtrad*2,filtrad*2,shrink.get_xsize(),shrink.get_ysize()))
+#	shrink.write_image("z1.hdf",0)
+#	a.write_image("z1.hdf",1)
 	shrink-=a
+#	shrink.write_image("z1.hdf",2)
 	a=None
 	
 	shrink2=shrink.copy(0)
@@ -113,8 +125,8 @@ for single particle analysis."""
 		ccfmean.filter("eman1.math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
 		ccfsig.filter("eman1.math.sqrt")
-		shrink.write_image("z0.mrc")
-		ccfsig.write_image("z1.mrc")
+#		shrink.write_image("z0.hdf")
+#		ccfsig.write_image("z1.hdf")
 		
 		print "Locating possible particles"
 		xs=shrink.get_xsize()
@@ -122,14 +134,14 @@ for single particle analysis."""
 		pks=[]
 		for n,i in enumerate(refptcls):
 			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
-			j.write_image("0.%0d.mrc"%n)
+#			j.write_image("0.%0d.hdf"%n)
 			ccfone=shrink.calc_ccf(j,True,None)
-			ccfone.write_image("a.%0d.mrc"%n)
+#			ccfone.write_image("a.%0d.hdf"%n)
 			ccfone/=ccfsig
-			ccfone.write_image("b.%0d.mrc"%n)
+#			ccfone.write_image("b.%0d.hdf"%n)
 			sig=float(ccfone.get_attr("sigma"))
 			ccfone.filter("eman1.mask.onlypeaks",{"npeaks":0})
-			ccfone.write_image("c.%0d.mrc"%n)
+#			ccfone.write_image("c.%0d.hdf"%n)
 			pk=ccfone.calc_highest_locations(sig*4.0)
 			for m,p in enumerate(pk):
 				pk[m]=(-p.value,n,p.x,p.y)
@@ -144,9 +156,9 @@ for single particle analysis."""
 		goodpks=[]
 		bf=options.box/(shrinkfactor*2)
 		for n,i in enumerate(pks):
+			if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : continue
 			for nn,ii in enumerate(pks[:n]):
-				if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : break
-				if hypot(i[2]-ii[2],i[3]-ii[3])<bf : break
+				if hypot(i[2]-ii[2],i[3]-ii[3])<bf*3/2 : break
 			else: goodpks.append((i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2))
 		
 		print "%d putative particles after local exclusion"%len(goodpks)
@@ -214,18 +226,18 @@ for single particle analysis."""
 		outer.filter("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
 		inner.filter("eman1.mask.sharp",{"outer_radius":sbox*2/5})
 		
-		outer.write_image("b_outer.mrc")
-		inner.write_image("b_inner.mrc")
+#		outer.write_image("b_outer.hdf")
+#		inner.write_image("b_inner.hdf")
 
 		ccf1=shrinksq.calc_ccf(inner,True,None)
 		ccf2=shrinksq.calc_ccf(outer,True,None)
 		
-		ccf1.write_image("b_ccf1.mrc")
-		ccf2.write_image("b_ccf2.mrc")
+#		ccf1.write_image("b_ccf1.hdf")
+#		ccf2.write_image("b_ccf2.hdf")
 		
 		ccf1/=ccf2
 		
-		ccf1.write_image("b_result.mrc")
+#		ccf1.write_image("b_result.hdf")
 
 		
 if __name__ == "__main__":
