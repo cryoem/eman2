@@ -120,6 +120,7 @@ BOOST_PYTHON_MODULE(libpyFilter2)
 		.value("TANH_BAND_PASS", EMAN::Filter::TANH_BAND_PASS)
 		;
 	def("EMFourierFilter", &EMAN::Filter::EMFourierFilter, return_value_policy< manage_new_object >() );
+	def("EMFourierFilterInPlace", &EMAN::Filter::EMFourierFilterInPlace);
 
 }
 
