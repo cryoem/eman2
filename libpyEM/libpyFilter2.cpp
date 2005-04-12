@@ -102,6 +102,24 @@ BOOST_PYTHON_MODULE(libpyFilter2)
         .staticmethod("get_list")
         .staticmethod("get")
     ;
+	enum_<EMAN::Filter::fourier_filter_types>("fourier_filter_types")
+		.value("TOP_HAT_LOW_PASS", EMAN::Filter::TOP_HAT_LOW_PASS)
+		.value("TOP_HAT_HIGH_PASS", EMAN::Filter::TOP_HAT_HIGH_PASS)
+		.value("TOP_HAT_BAND_PASS", EMAN::Filter::TOP_HAT_BAND_PASS)
+		.value("TOP_HOMOMORPHIC", EMAN::Filter::TOP_HOMOMORPHIC)
+		.value("GAUSS_LOW_PASS", EMAN::Filter::GAUSS_LOW_PASS)
+		.value("GAUSS_HIGH_PASS", EMAN::Filter::GAUSS_HIGH_PASS)
+		.value("GAUSS_BAND_PASS", EMAN::Filter::GAUSS_BAND_PASS)
+		.value("GAUSS_HOMOMORPHIC", EMAN::Filter::GAUSS_HOMOMORPHIC)
+		.value("BUTTERWORTH_LOW_PASS", EMAN::Filter::BUTTERWORTH_LOW_PASS)
+		.value("BUTTERWORTH_HIGH_PASS", EMAN::Filter::BUTTERWORTH_HIGH_PASS)
+		.value("BUTTERWORTH_HOMOMORPHIC", EMAN::Filter::BUTTERWORTH_HOMOMORPHIC)
+		.value("TANH_LOW_PASS", EMAN::Filter::TANH_LOW_PASS)
+		.value("TANH_HIGH_PASS", EMAN::Filter::TANH_HIGH_PASS)
+		.value("TANH_HOMOMORPHIC", EMAN::Filter::TANH_HOMOMORPHIC)
+		.value("TANH_BAND_PASS", EMAN::Filter::TANH_BAND_PASS)
+		;
+	def("EMFourierFilter", &EMAN::Filter::EMFourierFilter, return_value_policy< manage_new_object >() );
 
 }
 

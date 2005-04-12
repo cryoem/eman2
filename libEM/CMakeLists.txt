@@ -44,6 +44,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     fourierproduct.cpp
     normpadft.cpp
     periodogram.cpp
+    fourierfilter.cpp
     )
 
 IF(WIN32)
