@@ -6,6 +6,7 @@
 
 #include "emobject.h"
 #include "byteorder.h"
+#include "emutil.h"
 
 #include <vector>
 #include <string>
@@ -122,13 +123,17 @@ namespace EMAN
 		 * @param dict A keyed-dictionary storing the header information.
 		 * @param image_index The index of the image to write.
 		 * @param area The region to write data to.
+		 * @param filestoragetype The image data type used in the output file.
 		 * @param use_host_endian Whether to use the host machine
 		 *        endian to write out or not. If false, use the
 		 *        endian opposite to the host machine's endian.
 		 * @return 0 if OK; 1 if error.
 		 */
-		virtual int write_header(const Dict & dict, int image_index = 0,
-								 const Region * area = 0, bool use_host_endian = true) = 0;
+		virtual int write_header(const Dict & dict,
+								 int image_index = 0,
+								 const Region * area = 0,
+								 EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+								 bool use_host_endian = true) = 0;
 
 		/** Read the data from an image.
 		 *
@@ -149,13 +154,17 @@ namespace EMAN
 		 * @param data An array storing the data.
 		 * @param image_index The index of the image to write.
 		 * @param area The region to write data to.
+		 * @param filestoragetype The image data type used in the output file.
 		 * @param use_host_endian Whether to use the host machine
 		 *        endian to write out or not. If false, use the
 		 *        endian opposite to the host machine's endian.
 		 * @return 0 if OK; 1 if error.
 		 */
-		virtual int write_data(float *data, int image_index = 0,
-							   const Region * area = 0, bool use_host_endian = true) = 0;
+		virtual int write_data(float *data,
+							   int image_index = 0,
+							   const Region * area = 0,
+							   EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
+							   bool use_host_endian = true) = 0;
 
 		/** Read CTF data from this image.
 		 *
@@ -224,9 +233,9 @@ namespace EMAN
 	 */
 #define DEFINE_IMAGEIO_FUNC \
 		int read_header(Dict & dict, int image_index = 0, const Region* area = 0, bool is_3d = false); \
-		int write_header(const Dict & dict, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
+		int write_header(const Dict & dict, int image_index = 0, const Region * area = 0, EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT, bool use_host_endian = true); \
 		int read_data(float* data, int image_index = 0, const Region* area = 0, bool is_3d = false); \
-		int write_data(float* data, int image_index = 0, const Region * area = 0, bool use_host_endian = true); \
+		int write_data(float* data, int image_index = 0, const Region * area = 0, EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT, bool use_host_endian = true); \
 		void flush(); \
 		bool is_complex_mode(); \
 		bool is_image_big_endian(); \

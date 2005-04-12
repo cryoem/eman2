@@ -78,7 +78,7 @@ int AmiraIO::read_header(Dict &, int, const Region *, bool)
 
 }
 
-int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, bool)
+int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	int err = 0;
@@ -125,7 +125,7 @@ int AmiraIO::read_data(float *, int, const Region *, bool)
 	return 1;
 }
 
-int AmiraIO::write_data(float *data, int image_index, const Region*, bool)
+int AmiraIO::write_data(float *data, int image_index, const Region*, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	

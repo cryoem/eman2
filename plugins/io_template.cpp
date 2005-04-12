@@ -62,7 +62,8 @@ int XYZIO::read_header(Dict & , int image_index, const Region * , bool )
 	return 0;
 }
 
-int XYZIO::write_header(const Dict & , int image_index, const Region *, bool)
+int XYZIO::write_header(const Dict & , int image_index, const Region *,
+						EMUtil::EMDataType , bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index);
@@ -82,7 +83,8 @@ int XYZIO::read_data(float *data, int image_index, const Region * , bool )
 	return 0;
 }
 
-int XYZIO::write_data(float *data, int image_index, const Region *, bool)
+int XYZIO::write_data(float *data, int image_index, const Region *,
+					  EMUtil::EMDataType , bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index, 0, data);

@@ -171,7 +171,8 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int VtkIO::write_header(const Dict & dict, int image_index, const Region*, bool)
+int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
+						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
@@ -264,7 +265,8 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int VtkIO::write_data(float *data, int image_index, const Region* , bool)
+int VtkIO::write_data(float *data, int image_index, const Region* ,
+					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	

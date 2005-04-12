@@ -790,7 +790,7 @@ bool DM3IO::is_complex_mode()
 	return false;
 }
 
-int DM3IO::write_header(const Dict &, int, const Region* , bool)
+int DM3IO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("DM3 write is not supported.");
@@ -798,7 +798,7 @@ int DM3IO::write_header(const Dict &, int, const Region* , bool)
 	return 1;
 }
 
-int DM3IO::write_data(float *, int, const Region* , bool)
+int DM3IO::write_data(float *, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("DM3 write is not supported.");

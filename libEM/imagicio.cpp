@@ -208,7 +208,7 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 }
 
 int ImagicIO::write_header(const Dict & dict, int image_index,
-						   const Region * area, bool)
+						   const Region * area, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
@@ -420,7 +420,8 @@ int ImagicIO::read_data(float *data, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int ImagicIO::write_data(float *data, int image_index, const Region* area, bool)
+int ImagicIO::write_data(float *data, int image_index, const Region* area,
+						 EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 

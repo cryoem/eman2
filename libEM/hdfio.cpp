@@ -265,7 +265,8 @@ int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
 }
 
 
-int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int HdfIO::write_header(const Dict & dict, int image_index, const Region* area,
+						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index);
@@ -346,7 +347,8 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area, 
 	return 0;
 }
 
-int HdfIO::write_data(float *data, int image_index, const Region* area, bool)
+int HdfIO::write_data(float *data, int image_index, const Region* area,
+					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 

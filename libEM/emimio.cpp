@@ -115,7 +115,7 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 }
 
-int EmimIO::write_header(const Dict &, int, const Region* , bool)
+int EmimIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("EMIM write header is not supported.");
@@ -144,7 +144,7 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 	return err;
 }
 
-int EmimIO::write_data(float *, int, const Region* , bool)
+int EmimIO::write_data(float *, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("EMIM write data is not supported.");

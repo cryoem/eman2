@@ -102,7 +102,8 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int IcosIO::write_header(const Dict & dict, int image_index, const Region* , bool)
+int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
+						 EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	int err = 0;
@@ -153,7 +154,8 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int IcosIO::write_data(float *data, int image_index, const Region* area, bool)
+int IcosIO::write_data(float *data, int image_index, const Region* area,
+					   EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index, 1, data);

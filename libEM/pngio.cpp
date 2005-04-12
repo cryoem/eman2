@@ -175,7 +175,8 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PngIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int PngIO::write_header(const Dict & dict, int image_index, const Region* area,
+						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
@@ -270,7 +271,8 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PngIO::write_data(float *data, int image_index, const Region* area, bool)
+int PngIO::write_data(float *data, int image_index, const Region* area,
+					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 

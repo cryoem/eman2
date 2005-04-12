@@ -106,7 +106,7 @@ int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, boo
 	return 0;
 }
 
-int Gatan2IO::write_header(const Dict &, int, const Region* , bool)
+int Gatan2IO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("Gatan2 write is not supported.");
@@ -170,7 +170,7 @@ int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int Gatan2IO::write_data(float *, int, const Region*, bool)
+int Gatan2IO::write_data(float *, int, const Region*, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("Gatan2 write is not supported.");

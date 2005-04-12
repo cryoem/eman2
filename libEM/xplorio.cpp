@@ -187,7 +187,8 @@ int XplorIO::read_header(Dict &dict, int image_index, const Region *area, bool)
 	return 0;
 }
 
-int XplorIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int XplorIO::write_header(const Dict & dict, int image_index, const Region* area,
+						  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index);
@@ -303,7 +304,8 @@ int XplorIO::read_data(float *data, int, const Region *, bool)
 #endif
 
 
-int XplorIO::write_data(float *data, int image_index, const Region* area, bool)
+int XplorIO::write_data(float *data, int image_index, const Region* area,
+						EMUtil::EMDataType, bool)
 {
 
 	ENTERFUNC;

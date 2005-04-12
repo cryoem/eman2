@@ -230,7 +230,8 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 	return 0;
 }
 
-int MrcIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
+						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	check_write_access(rw_mode, image_index, 1);
@@ -409,7 +410,8 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	return 0;
 }
 
-int MrcIO::write_data(float *data, int image_index, const Region* area, bool)
+int MrcIO::write_data(float *data, int image_index, const Region* area,
+					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 

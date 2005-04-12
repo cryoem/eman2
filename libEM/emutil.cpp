@@ -9,6 +9,7 @@
 #include "emdata.h"
 #include "ctf.h"
 #include "Assert.h"
+#include "imageio.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -615,7 +616,7 @@ void EMUtil::get_region_origins(const Region * area, int *p_x0, int *p_y0, int *
 
 
 void EMUtil::process_region_io(void *vdata, FILE * file,
-							   ImageIO::IOMode rw_mode, int image_index,
+							   int rw_mode, int image_index,
 							   size_t mode_size, int nx, int ny, int nz,
 							   const Region * area, bool need_flip, 
 							   ImageType imgtype, int pre_row, int post_row)
@@ -939,7 +940,7 @@ int ImageSort::size() const
 }
 
 
-void EMUtil::process_ascii_region_io(float *data, FILE * file, ImageIO::IOMode rw_mode,
+void EMUtil::process_ascii_region_io(float *data, FILE * file, int rw_mode,
 									 int , size_t mode_size, int nx, int ny, int nz,
 									 const Region * area, bool has_index_line,
 									 int nitems_per_line, const char *outformat)
@@ -1081,7 +1082,7 @@ void EMUtil::jump_lines(FILE * file, int nlines)
 	}
 }
 
-void EMUtil::process_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+void EMUtil::process_numbers_io(FILE * file, int rw_mode,
 								int nitems_per_line, size_t mode_size, int start,
 								int end, float *data, int *p_i, const char * outformat)
 {
@@ -1128,7 +1129,7 @@ void EMUtil::process_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
 }
 
 
-void EMUtil::exclude_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
+void EMUtil::exclude_numbers_io(FILE * file, int rw_mode,
 								int nitems_per_line, size_t mode_size, int start,
 								int end, float * data, int *p_i, const char * outformat)
 {
@@ -1186,7 +1187,7 @@ void EMUtil::exclude_numbers_io(FILE * file, ImageIO::IOMode rw_mode,
 	}
 }
 
-void EMUtil::process_lines_io(FILE * file, ImageIO::IOMode rw_mode,
+void EMUtil::process_lines_io(FILE * file, int rw_mode,
 							  int nitems_per_line, size_t mode_size,
 							  int nitems, float *data, int *p_i,
 							  const char * outformat)

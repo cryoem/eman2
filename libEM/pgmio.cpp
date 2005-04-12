@@ -147,7 +147,8 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PgmIO::write_header(const Dict & dict, int image_index, const Region*, bool)
+int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
+						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	int err = 0;
@@ -234,7 +235,8 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PgmIO::write_data(float *data, int image_index, const Region* , bool)
+int PgmIO::write_data(float *data, int image_index, const Region* ,
+					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 

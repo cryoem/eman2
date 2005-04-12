@@ -159,6 +159,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 void EMData::write_image(const string & filename, int img_index,
 						 EMUtil::ImageType imgtype,
 						 bool header_only, const Region * region,
+						 EMUtil::EMDataType filestoragetype,
 						 bool use_host_endian) 
 {
 	ENTERFUNC;
@@ -199,7 +200,8 @@ void EMData::write_image(const string & filename, int img_index,
 			img_index = imageio->get_nimg();
 		}
 		LOGVAR("header write %d",img_index);
-		int err = imageio->write_header(attr_dict, img_index, region, use_host_endian);
+		int err = imageio->write_header(attr_dict, img_index, region, filestoragetype,
+										use_host_endian);
 		if (err) {
 			throw ImageWriteException(filename, "imageio write header failed");
 		}
@@ -230,12 +232,13 @@ void EMData::write_image(const string & filename, int img_index,
 						strcat(lstdata, "\n");
 					}
 					err = imageio->write_data((float*)lstdata, img_index,
-											  region, use_host_endian);
+											  region, filestoragetype, use_host_endian);
 					delete [] lstdata;
 					lstdata = 0;
 				}
 				else {
-					err = imageio->write_data(rdata, img_index, region, use_host_endian);
+					err = imageio->write_data(rdata, img_index, region, filestoragetype,
+											  use_host_endian);
 				}
 				if (err) {
 					imageio->flush();

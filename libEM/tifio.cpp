@@ -221,7 +221,7 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 }
 
 
-int TiffIO::write_header(const Dict &, int, const Region* , bool)
+int TiffIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGERR("TIFF writing is not supported");
@@ -229,7 +229,7 @@ int TiffIO::write_header(const Dict &, int, const Region* , bool)
 	return 0;
 }
 
-int TiffIO::write_data(float *, int, const Region* , bool)
+int TiffIO::write_data(float *, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGERR("TIFF writing is not supported");

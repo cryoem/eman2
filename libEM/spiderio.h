@@ -155,8 +155,9 @@ namespace EMAN
 		};
 
 		int write_single_header(const Dict & dict, const Region* area,
-								bool use_host_endian);
-		int write_single_data(float *data, const Region * area, bool use_host_endian);
+								EMUtil::EMDataType filestoragetype, bool use_host_endian);
+		int write_single_data(float *data, const Region * area,
+							  EMUtil::EMDataType filestoragetype, bool use_host_endian);
 		virtual bool is_valid_spider(const void *first_block);
 
 	  private:

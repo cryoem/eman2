@@ -6,6 +6,7 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <emutil.h>
+#include <imageio.h>
 #include <testutil.h>
 #include <util.h>
 #include <xydata.h>
@@ -150,7 +151,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_image_ext_type", &EMAN::EMUtil::get_image_ext_type)
         .def("get_image_type", &EMAN::EMUtil::get_image_type)
         .def("get_image_count", &EMAN::EMUtil::get_image_count)
-        .def("get_imageio", &EMAN::EMUtil::get_imageio, return_internal_reference< 1 >(), EMAN_EMUtil_get_imageio_overloads_2_3())
+        .def("get_imageio", &EMAN::EMUtil::get_imageio, EMAN_EMUtil_get_imageio_overloads_2_3()[ return_internal_reference< 1 >() ])
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
         .def("process_region_io", &EMAN::EMUtil::process_region_io, EMAN_EMUtil_process_region_io_overloads_7_13())

@@ -235,7 +235,8 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 }
 
 
-int SpiderIO::write_header(const Dict & dict, int image_index, const Region* area, bool)
+int SpiderIO::write_header(const Dict & dict, int image_index, const Region* area,
+						   EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	
@@ -428,7 +429,8 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 
 }
 
-int SpiderIO::write_single_header(const Dict & dict, const Region *area, bool)
+int SpiderIO::write_single_header(const Dict & dict, const Region *area,
+								  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
@@ -554,7 +556,8 @@ int SpiderIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int SpiderIO::write_data(float *data, int image_index, const Region* area, bool)
+int SpiderIO::write_data(float *data, int image_index, const Region* area,
+						 EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
@@ -627,7 +630,7 @@ void SpiderIO::flush()
 	fflush(spider_file);
 }
 
-int SpiderIO::write_single_data(float *data, const Region * area, bool)
+int SpiderIO::write_single_data(float *data, const Region * area, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	

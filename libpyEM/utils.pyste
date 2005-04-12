@@ -1,5 +1,7 @@
 Include("emdata.h")
 Include("xydata.h")
+Include("imageio.h")
+
 Util = Class("EMAN::Util", "util.h")
 
 EMUtil = Class("EMAN::EMUtil", "emutil.h")

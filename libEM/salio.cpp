@@ -141,7 +141,7 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int SalIO::write_header(const Dict &, int, const Region* , bool)
+int SalIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("SAL write is not supported.");
@@ -208,7 +208,7 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int SalIO::write_data(float *, int, const Region* , bool)
+int SalIO::write_data(float *, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	LOGWARN("SAL write is not supported.");

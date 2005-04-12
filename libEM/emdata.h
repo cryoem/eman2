@@ -95,15 +95,18 @@ namespace EMAN
 		 *        specified, use the 'filename' extension to decide.
 		 * @param header_only To write only the header or both header and data.
 		 * @param region Define the region to write to.
+		 * @param filestoragetype The image data type used in the output file.
 		 * @param use_host_endian To write in the host computer byte order.
 		 * 
 		 * @exception ImageFormatException
 		 * @exception ImageWriteException
 		 */
-		void write_image(const string & filename, int img_index = 0,
+		void write_image(const string & filename,
+						 int img_index = 0,
 						 EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 						 bool header_only = false,
 						 const Region * region = 0,
+						 EMUtil::EMDataType filestoragetype = EMUtil::EM_FLOAT,
 						 bool use_host_endian = true);
 
 		/** append to an image file; If the file doesn't exist, create one.

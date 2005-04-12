@@ -178,7 +178,7 @@ int LstIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	return err;
 }
 
-int LstIO::write_header(const Dict &, int, const Region* , bool)
+int LstIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	fprintf(lst_file, "%s\n", MAGIC);
@@ -196,7 +196,7 @@ int LstIO::read_data(float *data, int image_index, const Region * area, bool is_
 	return err;
 }
 
-int LstIO::write_data(float *data, int, const Region* , bool)
+int LstIO::write_data(float *data, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 	fprintf(lst_file, "%s\n", (char*)data);	
