@@ -15,6 +15,7 @@ from libpyFundamentals import *
 from bisect import bisect_left
 from pyemtbx.imagetypes import *
 from pyemtbx.box import *
+from Sparx import *
 from sys import exit
 import os
 
