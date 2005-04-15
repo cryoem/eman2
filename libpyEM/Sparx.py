@@ -3,7 +3,15 @@
 
 from EMAN2 import *
 
-def fs(image):
+def descriptive_statistics(image):
+	"""Calculate the statistics of an image.
+
+	Usage: [mean,sigma,xmin,xmax =] descriptive_statistics(image object)
+	       or
+	       [mean,sigma,xmin,xmax =] descriptive_statistics(image filename)
+
+	Purpose: calculate basic statistical characteristics of an image
+	"""
 	try:
 		mean = image.get_attr("mean")
 		sigma = image.get_attr("sigma")
@@ -18,5 +26,5 @@ def fs(image):
 		imin = e.get_attr("minimum")
 		imax = e.get_attr("maximum")
 	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
-	
+	return mean,sigma,imin,imax
 	
