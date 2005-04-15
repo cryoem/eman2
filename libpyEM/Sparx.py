@@ -18,8 +18,8 @@ def descriptive_statistics(image):
 		imin = image.get_attr("minimum")
 		imax = image.get_attr("maximum")
 		nx = image.get_xsize()
-		ny = image.get_xsize()
-		nz = image.get_xsize()
+		ny = image.get_ysize()
+		nz = image.get_zsize()
 	except:
 		# hopefully the "image" is actually a filename
 		e = EMData()
@@ -29,8 +29,8 @@ def descriptive_statistics(image):
 		imin = e.get_attr("minimum")
 		imax = e.get_attr("maximum")
 		nx = e.get_xsize()
-		ny = e.get_xsize()
-		nz = e.get_xsize()
+		ny = e.get_ysize()
+		nz = e.get_zsize()
 	print "Image size: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
 	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
 	return mean,sigma,imin,imax, nx, ny, nz
