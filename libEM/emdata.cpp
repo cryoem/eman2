@@ -335,7 +335,7 @@ EMData *EMData::project(const string & projector_name, const Dict & params)
 }
 
 
-EMData *EMData::copy(bool with_parent)
+EMData *EMData::copy(bool with_parent) const
 {
 	ENTERFUNC;
 	EMData *ret = new EMData();
@@ -352,7 +352,7 @@ EMData *EMData::copy(bool with_parent)
 	}
 
 	if (with_parent) {
-		ret->parent = this;
+		ret->parent = const_cast<EMData*>(this);
 	}
 	else {
 		ret->parent = 0;
@@ -372,7 +372,7 @@ EMData *EMData::copy(bool with_parent)
 	return ret;
 }
 
-EMData *EMData::copy_head()
+EMData *EMData::copy_head() const
 {
 	ENTERFUNC;
 	EMData *ret = new EMData();
@@ -384,7 +384,7 @@ EMData *EMData::copy_head()
 		ret->ctf->copy_from(ctf);
 	}
 
-	ret->parent = this;
+	ret->parent = const_cast<EMData*>(this);
 	ret->rfp = 0;
 
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
@@ -2928,89 +2928,89 @@ EMData & EMData::operator/=(const EMData & em)
 }
 
 
-EMData EMAN::operator+(const EMData & em, float n)
+EMData * EMAN::operator+(const EMData & em, float n)
 {
-	EMData r = em;
-	r += n;
+	EMData * r = em.copy();
+	r->add(n);
 	return r;
 }
 
-EMData EMAN::operator-(const EMData & em, float n)
+EMData * EMAN::operator-(const EMData & em, float n)
 {
-	EMData r = em;
-	r -= n;
+	EMData* r = em.copy();
+	r->sub(n);
 	return r;
 }
 
-EMData EMAN::operator*(const EMData & em, float n)
+EMData * EMAN::operator*(const EMData & em, float n)
 {
-	EMData r = em;
-	r *= n;
+	EMData* r = em.copy();
+	r ->mult(n);
 	return r;
 }
 
-EMData EMAN::operator/(const EMData & em, float n)
+EMData * EMAN::operator/(const EMData & em, float n)
 {
-	EMData r = em;
-	r /= n;
-	return r;
-}
-
-
-EMData EMAN::operator+(float n, const EMData & em)
-{
-	EMData r = em;
-	r += n;
-	return r;
-}
-
-EMData EMAN::operator-(float n, const EMData & em)
-{
-	EMData r = em;
-	r -= n;
-	return r;
-}
-
-EMData EMAN::operator*(float n, const EMData & em)
-{
-	EMData r = em;
-	r *= n;
-	return r;
-}
-
-EMData EMAN::operator/(float n, const EMData & em)
-{
-	EMData r = em;
-	r /= n;
+	EMData * r = em.copy();
+	r->div(n);
 	return r;
 }
 
 
-EMData EMAN::operator+(const EMData & a, const EMData & b)
+EMData * EMAN::operator+(float n, const EMData & em)
 {
-	EMData r = a;
-	r += b;
+	EMData * r = em.copy();
+	r->add(n);
 	return r;
 }
 
-EMData EMAN::operator-(const EMData & a, const EMData & b)
+EMData * EMAN::operator-(float n, const EMData & em)
 {
-	EMData r = a;
-	r -= b;
+	EMData * r = em.copy();
+	r->sub(n);
 	return r;
 }
 
-EMData EMAN::operator*(const EMData & a, const EMData & b)
+EMData * EMAN::operator*(float n, const EMData & em)
 {
-	EMData r = a;
-	r *= b;
+	EMData * r = em.copy();
+	r->mult(n);
 	return r;
 }
 
-EMData EMAN::operator/(const EMData & a, const EMData & b)
+EMData * EMAN::operator/(float n, const EMData & em)
 {
-	EMData r = a;
-	r /= b;
+	EMData * r = em.copy();
+	r->div(n);
+	return r;
+}
+
+
+EMData * EMAN::operator+(const EMData & a, const EMData & b)
+{
+	EMData * r = a.copy();
+	r->add(b);
+	return r;
+}
+
+EMData * EMAN::operator-(const EMData & a, const EMData & b)
+{
+	EMData * r = a.copy();
+	r->sub(b);
+	return r;
+}
+
+EMData * EMAN::operator*(const EMData & a, const EMData & b)
+{
+	EMData * r = a.copy();
+	r->mult(b);
+	return r;
+}
+
+EMData * EMAN::operator/(const EMData & a, const EMData & b)
+{
+	EMData * r = a.copy();
+	r->div(b);
 	return r;
 }
 

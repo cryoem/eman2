@@ -172,12 +172,12 @@ namespace EMAN
 		 * @param withparent Copy the parent or not.
 		 * @return A copy of this image including both data and header.
 		 */
-		EMData *copy(bool withparent = true);
+		EMData *copy(bool withparent = true) const;
 		
 		/** Make an image with a copy of the current image's header.
 		 * @return An image with a copy of the current image's header.
 		 */
-		EMData *copy_head();
+		EMData *copy_head() const;
 
 		/** Get an inclusive clip. Pads 0 if larger than this image.
 		 * area can be 2D/3D.
@@ -1512,20 +1512,20 @@ namespace EMAN
 	};
 
 
-	EMData operator+(const EMData & em, float n);
-	EMData operator-(const EMData & em, float n);
-	EMData operator*(const EMData & em, float n);
-	EMData operator/(const EMData & em, float n);
+	EMData * operator+(const EMData & em, float n);
+	EMData * operator-(const EMData & em, float n);
+	EMData * operator*(const EMData & em, float n);
+	EMData * operator/(const EMData & em, float n);
 
-	EMData operator+(float n, const EMData & em);
-	EMData operator-(float n, const EMData & em);
-	EMData operator*(float n, const EMData & em);
-	EMData operator/(float n, const EMData & em);
+	EMData * operator+(float n, const EMData & em);
+	EMData * operator-(float n, const EMData & em);
+	EMData * operator*(float n, const EMData & em);
+	EMData * operator/(float n, const EMData & em);
 
-	EMData operator+(const EMData & a, const EMData & b);
-	EMData operator-(const EMData & a, const EMData & b);
-	EMData operator*(const EMData & a, const EMData & b);
-	EMData operator/(const EMData & a, const EMData & b);
+	EMData * operator+(const EMData & a, const EMData & b);
+	EMData * operator-(const EMData & a, const EMData & b);
+	EMData * operator*(const EMData & a, const EMData & b);
+	EMData * operator/(const EMData & a, const EMData & b);
 
 	inline int EMData::get_xsize() const
 	{
