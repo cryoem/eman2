@@ -100,7 +100,7 @@ def check_emdata_list(elist, progname):
 		check_emdata(e, progname)
 		
 def assertfloat(self, f1, f2):
-    delta = 0.0001
+    delta = 0.001
     diff = f1 - f2
     if math.fabs(diff) > delta:
         self.assertEqual(f1, f2)

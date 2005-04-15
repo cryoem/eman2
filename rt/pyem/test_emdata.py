@@ -10,6 +10,32 @@ import os
 
 class TestEMData(unittest.TestCase):
 
+    def test_operator_unary(self):
+        file1 = "test_operator_unary_1.mrc"
+        e = EMData()
+        e.set_size(100,200,1)
+        e.to_one()
+        e + 0.5
+        e - 0.5
+        e * 2
+        e / 2.4
+        12 + e
+        12 - e
+        4 * e
+        4 / e
+
+        e2 = EMData()
+        e2.set_size(100,200,1)
+        e2.to_one()
+
+        e + e2
+        e - e2
+        e * e2
+        e / e2
+        
+        e.write_image(file1)
+
+
     def test_multi_array_2d(self):
         nx = 16
         ny = 32
@@ -182,7 +208,7 @@ class TestEMData(unittest.TestCase):
 
         os.unlink(infile)
         
-		
+        
     def test_rotate_2d(self):
         infile = "test_rotate_2d.mrc"
         TestUtil.make_image_file(infile, MRC, EM_FLOAT, 24, 32)
@@ -480,7 +506,6 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(ctfstr, "1 2 3 4 5 6 7 8 9 10 11")
         os.unlink(infile)
         os.unlink(outfile)
-        
         
 
         
