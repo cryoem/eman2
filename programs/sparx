@@ -4,7 +4,10 @@
 from EMAN2 import *
 from IPython.Shell import IPShellEmbed
 banner = "Welcome to Sparx."
-ipshell = IPShellEmbed(banner="Welcome to Sparx.\n")
-ipshell()
+try:
+	ipshell = IPShellEmbed(banner="Welcome to Sparx.\n")
+	ipshell()
+except:
+	print 'Please install "ipython".'
 
 
