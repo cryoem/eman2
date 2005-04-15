@@ -934,6 +934,7 @@ EMData *EMData::do_fft()
 	float *d = dat->get_data();
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
+#if 0 // Remove funky reordering
 	if (nz == 1) {
 		int l = ny / 2 * nx2;
 
@@ -973,6 +974,7 @@ EMData *EMData::do_fft()
 		delete[]t;
 		t = 0;
 	}
+#endif // 0
 
 
 	float scale = 1.0f / (nxreal * ny * nz);
@@ -1071,6 +1073,7 @@ EMData *EMData::do_ift()
 	if (ndim == 1) {
 		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 	}
+#if 0 // remove funky reordering
 	else if (ndim == 2 ) {
 		int l = ny / 2 * nx;
 		for (int i = 0; i < ny / 2; i++) {
@@ -1109,6 +1112,7 @@ EMData *EMData::do_ift()
 		delete[]t;
 		t = 0;
 	}
+#endif // 0
 
 	if (ndim >= 2) {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
