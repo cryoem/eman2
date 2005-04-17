@@ -137,7 +137,7 @@ namespace EMAN
 		 * @param params Filter parameters in a keyed dictionary.
 		 * @exception NotExistingObjectError If the filter doesn't exist.
 		 */
-		void filter(const string & filtername, const Dict & params = Dict());
+		void process(const string & filtername, const Dict & params = Dict());
 
 		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.

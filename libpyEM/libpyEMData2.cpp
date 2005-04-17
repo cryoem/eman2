@@ -28,7 +28,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_append_image_overloads_1_3, a
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, write_lst, 1, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_filter_overloads_1_2, filter, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_filter_overloads_1_2, process, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_4, align, 2, 4)
 
@@ -94,7 +94,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7())
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
         .def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4())
-        .def("filter", &EMAN::EMData::filter, EMAN_EMData_filter_overloads_1_2())
+        .def("process", &EMAN::EMData::process, EMAN_EMData_filter_overloads_1_2())
         .def("cmp", &EMAN::EMData::cmp)
         .def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_4()[ return_value_policy< manage_new_object >() ])
         .def("project", &EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])

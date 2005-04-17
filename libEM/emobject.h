@@ -30,7 +30,7 @@ namespace EMAN
 	class Aligner;
 	class Averager;
 	class Cmp;
-	class Filter;
+	class Processor;
 	class Projector;
 	class Reconstructor;
 

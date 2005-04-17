@@ -14,20 +14,20 @@ using namespace boost::python;
 // Declarations ================================================================
 namespace  {
 
-struct EMAN_Filter_Wrapper: EMAN::Filter
+struct EMAN_Processor_Wrapper: EMAN::Processor
 {
-    EMAN_Filter_Wrapper(PyObject* self_, const EMAN::Filter& p0):
-        EMAN::Filter(p0), self(self_) {}
+    EMAN_Processor_Wrapper(PyObject* self_, const EMAN::Processor& p0):
+        EMAN::Processor(p0), self(self_) {}
 
-    EMAN_Filter_Wrapper(PyObject* self_):
-        EMAN::Filter(), self(self_) {}
+    EMAN_Processor_Wrapper(PyObject* self_):
+        EMAN::Processor(), self(self_) {}
 
     void process(EMAN::EMData* p0) {
         call_method< void >(self, "process", p0);
     }
 
     void default_process(EMAN::EMData* p0) {
-        EMAN::Filter::process(p0);
+        EMAN::Processor::process(p0);
     }
 
     void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
@@ -35,7 +35,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        EMAN::Filter::process_list(p0);
+        EMAN::Processor::process_list(p0);
     }
 
     std::string get_name() const {
@@ -47,7 +47,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     EMAN::Dict default_get_params() const {
-        return EMAN::Filter::get_params();
+        return EMAN::Processor::get_params();
     }
 
     void set_params(const EMAN::Dict& p0) {
@@ -55,7 +55,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     void default_set_params(const EMAN::Dict& p0) {
-        EMAN::Filter::set_params(p0);
+        EMAN::Processor::set_params(p0);
     }
 
     EMAN::TypeDict get_param_types() const {
@@ -63,7 +63,7 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
     }
 
     EMAN::TypeDict default_get_param_types() const {
-        return EMAN::Filter::get_param_types();
+        return EMAN::Processor::get_param_types();
     }
 
     std::string get_desc() const {
@@ -80,47 +80,47 @@ struct EMAN_Filter_Wrapper: EMAN::Filter
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyFilter2)
 {
-    class_< EMAN::Filter, boost::noncopyable, EMAN_Filter_Wrapper >("__Filter", init<  >())
-        .def("process", &EMAN::Filter::process, &EMAN_Filter_Wrapper::default_process)
-        .def("process_list", &EMAN::Filter::process_list, &EMAN_Filter_Wrapper::default_process_list)
-        .def("get_name", pure_virtual(&EMAN::Filter::get_name))
-        .def("get_params", &EMAN::Filter::get_params, &EMAN_Filter_Wrapper::default_get_params)
-        .def("set_params", &EMAN::Filter::set_params, &EMAN_Filter_Wrapper::default_set_params)
-        .def("get_param_types", &EMAN::Filter::get_param_types, &EMAN_Filter_Wrapper::default_get_param_types)
-        .def("get_desc", pure_virtual(&EMAN::Filter::get_desc))
-        .def("get_group_desc", &EMAN::Filter::get_group_desc)
+    class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("__Processor", init<  >())
+        .def("process", &EMAN::Processor::process, &EMAN_Processor_Wrapper::default_process)
+        .def("process_list", &EMAN::Processor::process_list, &EMAN_Processor_Wrapper::default_process_list)
+        .def("get_name", pure_virtual(&EMAN::Processor::get_name))
+        .def("get_params", &EMAN::Processor::get_params, &EMAN_Processor_Wrapper::default_get_params)
+        .def("set_params", &EMAN::Processor::set_params, &EMAN_Processor_Wrapper::default_set_params)
+        .def("get_param_types", &EMAN::Processor::get_param_types, &EMAN_Processor_Wrapper::default_get_param_types)
+        .def("get_desc", pure_virtual(&EMAN::Processor::get_desc))
+        .def("get_group_desc", &EMAN::Processor::get_group_desc)
         .staticmethod("get_group_desc")
     ;
 
     def("dump_filters", &EMAN::dump_filters);
     def("multi_filters", &EMAN::multi_filters);
     def("group_filters", &EMAN::group_filters);
-    class_< EMAN::Factory<EMAN::Filter>, boost::noncopyable >("Filters", no_init)
-        .def("get", (EMAN::Filter* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
-        .def("get", (EMAN::Filter* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Filter>::get, return_value_policy< manage_new_object >())
-        .def("get_list", &EMAN::Factory<EMAN::Filter>::get_list)
+    class_< EMAN::Factory<EMAN::Processor>, boost::noncopyable >("Processors", no_init)
+        .def("get", (EMAN::Processor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Processor>::get, return_value_policy< manage_new_object >())
+        .def("get", (EMAN::Processor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Processor>::get, return_value_policy< manage_new_object >())
+        .def("get_list", &EMAN::Factory<EMAN::Processor>::get_list)
         .staticmethod("get_list")
         .staticmethod("get")
     ;
-	enum_<EMAN::Filter::fourier_filter_types>("fourier_filter_types")
-		.value("TOP_HAT_LOW_PASS", EMAN::Filter::TOP_HAT_LOW_PASS)
-		.value("TOP_HAT_HIGH_PASS", EMAN::Filter::TOP_HAT_HIGH_PASS)
-		.value("TOP_HAT_BAND_PASS", EMAN::Filter::TOP_HAT_BAND_PASS)
-		.value("TOP_HOMOMORPHIC", EMAN::Filter::TOP_HOMOMORPHIC)
-		.value("GAUSS_LOW_PASS", EMAN::Filter::GAUSS_LOW_PASS)
-		.value("GAUSS_HIGH_PASS", EMAN::Filter::GAUSS_HIGH_PASS)
-		.value("GAUSS_BAND_PASS", EMAN::Filter::GAUSS_BAND_PASS)
-		.value("GAUSS_HOMOMORPHIC", EMAN::Filter::GAUSS_HOMOMORPHIC)
-		.value("BUTTERWORTH_LOW_PASS", EMAN::Filter::BUTTERWORTH_LOW_PASS)
-		.value("BUTTERWORTH_HIGH_PASS", EMAN::Filter::BUTTERWORTH_HIGH_PASS)
-		.value("BUTTERWORTH_HOMOMORPHIC", EMAN::Filter::BUTTERWORTH_HOMOMORPHIC)
-		.value("TANH_LOW_PASS", EMAN::Filter::TANH_LOW_PASS)
-		.value("TANH_HIGH_PASS", EMAN::Filter::TANH_HIGH_PASS)
-		.value("TANH_HOMOMORPHIC", EMAN::Filter::TANH_HOMOMORPHIC)
-		.value("TANH_BAND_PASS", EMAN::Filter::TANH_BAND_PASS)
+	enum_<EMAN::Processor::fourier_filter_types>("fourier_filter_types")
+		.value("TOP_HAT_LOW_PASS", EMAN::Processor::TOP_HAT_LOW_PASS)
+		.value("TOP_HAT_HIGH_PASS", EMAN::Processor::TOP_HAT_HIGH_PASS)
+		.value("TOP_HAT_BAND_PASS", EMAN::Processor::TOP_HAT_BAND_PASS)
+		.value("TOP_HOMOMORPHIC", EMAN::Processor::TOP_HOMOMORPHIC)
+		.value("GAUSS_LOW_PASS", EMAN::Processor::GAUSS_LOW_PASS)
+		.value("GAUSS_HIGH_PASS", EMAN::Processor::GAUSS_HIGH_PASS)
+		.value("GAUSS_BAND_PASS", EMAN::Processor::GAUSS_BAND_PASS)
+		.value("GAUSS_HOMOMORPHIC", EMAN::Processor::GAUSS_HOMOMORPHIC)
+		.value("BUTTERWORTH_LOW_PASS", EMAN::Processor::BUTTERWORTH_LOW_PASS)
+		.value("BUTTERWORTH_HIGH_PASS", EMAN::Processor::BUTTERWORTH_HIGH_PASS)
+		.value("BUTTERWORTH_HOMOMORPHIC", EMAN::Processor::BUTTERWORTH_HOMOMORPHIC)
+		.value("TANH_LOW_PASS", EMAN::Processor::TANH_LOW_PASS)
+		.value("TANH_HIGH_PASS", EMAN::Processor::TANH_HIGH_PASS)
+		.value("TANH_HOMOMORPHIC", EMAN::Processor::TANH_HOMOMORPHIC)
+		.value("TANH_BAND_PASS", EMAN::Processor::TANH_BAND_PASS)
 		;
-	def("EMFourierFilter", &EMAN::Filter::EMFourierFilter, return_value_policy< manage_new_object >() );
-	def("EMFourierFilterInPlace", &EMAN::Filter::EMFourierFilterInPlace);
+	def("EMFourierFilter", &EMAN::Processor::EMFourierFilter, return_value_policy< manage_new_object >() );
+	def("EMFourierFilterInPlace", &EMAN::Processor::EMFourierFilterInPlace);
 
 }
 

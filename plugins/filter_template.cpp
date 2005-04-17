@@ -3,9 +3,9 @@
 using namespace EMAN;
 
 
-/** define your filter operation
+/** define your Processor operation
  */
-void XYZFilter::process(EMData * image)
+void XYZProcessor::process(EMData * image)
 {
 	if (!image) {
 		return;

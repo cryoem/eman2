@@ -13,7 +13,7 @@ namespace EMAN
      * 2) Define the filter parameter names and types in get_param_types().
      * 3) Implement the filter in XYZFilter::process().
      */
-	class XYZFilter:public Filter
+	class XYZProcessor:public Processor
 	{
 	public:
 		void process(EMData * image);
@@ -23,9 +23,9 @@ namespace EMAN
 			return "XYZ";
 		}
 
-		static Filter *NEW()
+		static Processor *NEW()
 		{
-			return new XYZFilter();
+			return new XYZProcessor();
 		}
 
 		string get_desc() const
@@ -58,7 +58,7 @@ namespace EMAN
 	public:
 		FilterFactoryExt()
 		{
-			//Factory < Filter >::add(&XYZFilter::NEW);
+			//Factory < Processor >::add(&XYZProcessor::NEW);
 		}
 	};
 
