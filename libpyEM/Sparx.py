@@ -3,6 +3,15 @@
 
 from EMAN2 import *
 
+def readImage(filename):
+	"""Read an image from the disk.
+
+	Usage: myimage = readImage("path/to/image")
+	"""
+	image = EMData()
+	image.read_image(filename)
+	return image
+
 def descriptive_statistics(image):
 	"""Calculate the descriptive statistics of an image.
 
@@ -35,3 +44,32 @@ def descriptive_statistics(image):
 	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
 	return mean,sigma,imin,imax, nx, ny, nz
 	
+
+def printImage(image):
+	"""Print the data in an image to standard out.
+
+	Usage: printImage(image)
+	   or
+	       printImage("path/to/image")
+	"""
+	try:
+		nx = image.get_xsize()
+	except: # homefully a filename
+		image = readImage(image)
+		nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	for iz in xrange(nz):
+		print "(z = %d slice)" % (iz)
+		line = []
+		for ix in xrange(nx):
+			for iy in xrange(ny):
+				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+				if ((iy + 1) % 5 == 0):
+					line.append("\n   ")
+			line.append("\n")
+		print "".join(line)
+
+
+
+
