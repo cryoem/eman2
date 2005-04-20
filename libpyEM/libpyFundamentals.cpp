@@ -17,4 +17,5 @@ BOOST_PYTHON_MODULE(libpyFundamentals) {
 	def("autocorrelation", &EMAN::autocorrelation, return_value_policy< manage_new_object >() );
 	def("self_correlation", &EMAN::self_correlation, return_value_policy< manage_new_object >() );
 	def("periodogram", &EMAN::periodogram, return_value_policy< manage_new_object >() );
+	def("norm_pad_ft", &EMAN::norm_pad_ft, return_value_policy< manage_new_object >() );
 }
