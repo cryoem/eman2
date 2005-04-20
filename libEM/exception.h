@@ -233,6 +233,26 @@ namespace EMAN {
 #define InvalidValueException(val, desc) \
  _InvalidValueException(val, __FILE__, __LINE__, desc)
 
+	/** Used when an invalid (format) string is given.
+	 * Parameters:
+	 *  1. str  The invalid integer value.
+	 *  2. desc Description of the situation.
+	 */
+	class _InvalidStringException : public E2Exception
+	{
+	public:
+		_InvalidStringException(const string& str, const string& file = "unknown",
+							   int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str)
+		{
+			objname = str;
+		}		
+		const char *name() const { return "InvalidStringException"; }
+		
+	};
+#define InvalidStringException(str, desc) \
+ _InvalidStringException(str, __FILE__, __LINE__, desc)
+
 
 	/** Used when the given value is out of range.
 	 * parameters:

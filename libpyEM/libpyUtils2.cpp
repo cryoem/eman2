@@ -102,6 +102,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("set_log_level", &EMAN::Util::set_log_level)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
+		.def("parse_spider_fname", &EMAN::Util::parse_spider_fname)
         .staticmethod("flip_complex_phase")
         .staticmethod("square")
         .staticmethod("int2str")
@@ -141,6 +142,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("eman_copysign")
         .staticmethod("sbasename")
         .staticmethod("round")
+		.staticmethod("parse_spider_fname")
     ;
 
     scope* EMAN_EMUtil_scope = new scope(

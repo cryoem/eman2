@@ -755,7 +755,34 @@ namespace EMAN
 #endif
 		}
 
-		
+		/** Parse a Spider filename string and insert parameters.
+		 *
+		 * Example input: "foo{***}/img{****}.mrc"
+		 * This string has two fields that should be replaced by 
+		 * integers, and the number of *'s determines how "wide" 
+		 * that field should be.  So, if the parameters to be
+		 * inserted are 10 and 3, then the resulting filename
+		 * should be "foo010/img0003.mrc".
+		 *
+		 * Note: If the image is a stack file, the last character in the string
+		 * must be a '@' (except for possible leading or trailing whitespace,
+		 * which is ignored).  This stack symbol will be stripped in the
+		 * output filename.
+		 *
+		 * Usage: 
+		 * #include "util.h"
+		 * string str1(" foo{***}/img{**}@    ");
+		 * vector<int> vals;
+		 * vals.push_back(10); vals.push_back(3);
+		 * string newstr = EMAN::Util::parse_spider_fname(str1, vals);
+		 *
+		 * @param s [in] Spider filename string to be parsed.
+		 * @param fieldvals [in] Integer values to place into the fields. 
+		 *
+		 * @return Parsed filename.
+		 */
+		static string
+		parse_spider_fname(string s, vector<int> fieldvals);
 	};
 }
 
