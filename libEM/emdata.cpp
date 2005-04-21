@@ -1170,7 +1170,7 @@ EMData *EMData::do_ift_inplace(bool shrink_after_ift)
 	if (shrink_after_ift) {
 		int npad = attr_dict["npad"];
 		if (0 == npad) npad = 1;
-		int nxold = (nx - 2 + offset)/npad;
+		int nxold = (nx - offset)/npad;
 		int nyold = std::max(ny/npad, 1);
 		int nzold = std::max(nz/npad, 1);
 		int bytes = nxold*sizeof(float);
