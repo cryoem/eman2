@@ -1017,7 +1017,7 @@ namespace EMAN
 		 * @param ny  y size of this image.
 		 * @param nz  z size of this image.
 		 */
-		void set_size(int nx, int ny, int nz);
+		void set_size(int nx, int ny=1, int nz=1);
 
 		/** Resize 'this' complex image.
 		 *
@@ -1025,7 +1025,7 @@ namespace EMAN
 		 * @param ny  y size of this image.
 		 * @param nz  z size of this image.
 		 */
-		void set_complex_size(int nx, int ny, int nz) {
+		void set_complex_size(int nx, int ny=1, int nz=1) {
 			set_size(nx*2, ny, nz); 
 		}
 
