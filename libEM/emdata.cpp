@@ -2410,7 +2410,7 @@ void EMData::div(float f)
 		flags |= EMDATA_NEEDUPD;
 		size_t size = nx * ny * nz;
 		for (size_t i = 0; i < size; i++) {
-			rdata[i] *= f;
+			rdata[i] /= f;
 		}
 	}
 	EXITFUNC;
