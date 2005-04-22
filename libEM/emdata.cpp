@@ -4320,6 +4320,7 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 	EMData *f1 = 0;
 
 	f1 = do_fft();
+	f1->process("eman1.xform.fourierorigin");
 
 	if (!f1) {
 		throw NullPointerException("FFT returns NULL image");
@@ -4331,6 +4332,7 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 
 	if (with) {
 		cf = with->do_fft();
+		cf->process("eman1.xform.fourierorigin");
 		if (!cf) {
 			throw NullPointerException("FFT returns NULL image");
 		}
@@ -4392,6 +4394,7 @@ EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
 		cf->process("eman1.xform.phaseorigin");
 	}
 
+	cf->process("eman1.xform.fourierorigin");
 	EMData *f2 = cf->do_ift();
 	delete cf;
 	delete f1;
