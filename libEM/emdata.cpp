@@ -885,6 +885,7 @@ EMData* EMData::pad_fft(int npad) {
 		bytes = nxpad*sizeof(float);
 		newimg->set_size(nxpad+offset, nypad, nzpad);
 		newimg->set_fftpad(true);
+		newimg->set_attr("npad", npad);
 		if (offset == 1)
 			newimg->set_fftodd(true);
 		//FIXME Store npad*nx in the image!!!!
@@ -897,6 +898,8 @@ EMData* EMData::pad_fft(int npad) {
 		}
 	} else {
 		// Image already padded, so we want to remove the padding
+		npad = get_attr("npad");
+		if (0 == npad) npad = 1;
 		int nxold = (nx - 2 + is_fftodd())/npad; // using the value of is_fftodd() <- FIXME
 		int nyold = std::max(ny/npad, 1);
 		int nzold = std::max(nz/npad, 1);

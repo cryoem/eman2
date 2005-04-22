@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include "emdata.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -783,6 +784,13 @@ namespace EMAN
 		 */
 		static string
 		parse_spider_fname(string s, vector<int> fieldvals);
+#if 0
+		/** Return an image if given a file stack (in memory) */
+		static EMData*
+		parse_spider_fname(vector<EMData*> stack, vector<int> fieldvals) {
+			return stack[fieldvals[0]];
+		}
+#endif // 0
 	};
 }
 
