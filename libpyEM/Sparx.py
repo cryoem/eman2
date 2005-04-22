@@ -2,15 +2,38 @@
 # Please do not alter this file without permision from the author.
 
 from EMAN2 import *
+from math import *
+from time import *
+from random import *
 
-def readImage(filename):
-	"""Read an image from the disk.
+def getImage(imagename, nx = 0, ny = 1, nz = 1):
+	"""Read an image from the disk or assign existing object to the output.
 
 	Usage: myimage = readImage("path/to/image")
+	or     myimage = readImage(name_of_existing_image)
 	"""
-	image = EMData()
-	image.read_image(filename)
-	return image
+	if type(imagename) == type(""):
+		e = EMData()
+		e.read_image(imagename)
+	elif not imagename:
+		e = EMData()
+		if (nx > 0):
+			e.set_size(nx, ny, nz)
+	else:
+		e = imagename
+	return e
+
+def dropImage(imagename,destination):
+	"""Write an image to the disk or assign to an output object.
+
+	Usage:  dropImage(name_of_existing_image,"path/to/image")
+	or      dropImage(name_of_existing_image,myimage)
+	"""
+	if type(destination) == type(""):
+		imagename.write_image(destination,0,SINGLE_SPIDER)
+	else:
+		destination = EMData()
+		destination = imagename
 
 def descriptive_statistics(image):
 	"""Calculate the descriptive statistics of an image.
@@ -21,42 +44,28 @@ def descriptive_statistics(image):
 
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
-	try:
-		mean = image.get_attr("mean")
-		sigma = image.get_attr("sigma")
-		imin = image.get_attr("minimum")
-		imax = image.get_attr("maximum")
-		nx = image.get_xsize()
-		ny = image.get_ysize()
-		nz = image.get_zsize()
-	except:
-		# hopefully the "image" is actually a filename
-		e = EMData()
-		e.read_image(image)
-		mean = e.get_attr("mean")
-		sigma = e.get_attr("sigma")
-		imin = e.get_attr("minimum")
-		imax = e.get_attr("maximum")
-		nx = e.get_xsize()
-		ny = e.get_ysize()
-		nz = e.get_zsize()
+	e = getImage(image)
+	mean = e.get_attr("mean")
+	sigma = e.get_attr("sigma")
+	imin = e.get_attr("minimum")
+	imax = e.get_attr("maximum")
+	nx = e.get_xsize()
+	ny = e.get_ysize()
+	nz = e.get_zsize()
 	print "Image size: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
 	print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
 	return mean,sigma,imin,imax, nx, ny, nz
 	
 
-def printImage(image):
+def printImage(input):
 	"""Print the data in an image to standard out.
 
 	Usage: printImage(image)
 	   or
 	       printImage("path/to/image")
 	"""
-	try:
-		nx = image.get_xsize()
-	except: # homefully a filename
-		image = readImage(image)
-		nx = image.get_xsize()
+	image=getImage(input)
+	nx = image.get_xsize()
 	ny = image.get_ysize()
 	nz = image.get_zsize()
 	for iz in xrange(nz):
@@ -70,6 +79,41 @@ def printImage(image):
 			line.append("\n")
 		print "".join(line)
 
+
+def add_series(file_pattern,i1,i2,average,variance):
+	""" Calculate average and variance files for an image series
+	
+	Usage:  add_series("img****.ext",i1,i2,average,variance)
+	  i1 - first file in image series
+	  i2 - last file in image series
+	  average and variance are output objects, or, if written as "a", are output disk files
+	  
+	"""
+	fname = Util.parse_spider_fname(file_pattern,[i1]) #f=file_pattern[i1]
+	ave = getImage(fname)
+	var = ave*ave  #pow(ave,2.0)
+	descriptive_statistics(ave)
+
+	# process the remaining files
+	for index in range(i1+1,i2+1):
+		fname = Util.parse_spider_fname(file_pattern,[index])
+		e = getImage(fname)
+		ave = ave + e
+		var = var + e*e  #pow(e,2.0)
+	
+	print "sum"
+	descriptive_statistics(ave)
+	ii=i2-i1+1
+	ave = ave/ii
+	print "average"
+	descriptive_statistics(ave)
+	#var = (var - pow(ave,2)/ii)/(ii-1)
+	var = (var - ave*ave*ii)/(ii-1)
+	print "variance"
+	descriptive_statistics(var)
+
+	dropImage(ave,average)
+	dropImage(var,variance)
 
 
 
