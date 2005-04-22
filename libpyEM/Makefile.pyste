@@ -1,4 +1,4 @@
-PYVER= $(shell python -c 'import sys; print sys.version' | head -1 | cut -c -3)
+PYVER= $(shell python -c 'import sys; print sys.version' | head -n 1 | cut -c -3)
 PYSTE = python /usr/bin/pyste.py -I../libEM -I/usr/include/python${PYVER}
 
 all: libpyAligner2.cpp \
