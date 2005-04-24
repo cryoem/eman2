@@ -85,7 +85,10 @@ namespace EMAN
      *     lose information when converting from longer data type to
      *     shorter data type.
 	 *
-	 *   
+	 * Each ImageIO subclass XYZ must define a static function to determine
+	 * whether a given image is a valid XYZ image or not. It looks like: 
+	 *     static bool is_valid(const void *first_block);
+	 * 'first_block' is the first block of binary data in that image file.
 	 *
 	 * The typical way to use an ImageIO instance is:
 	 * a) To read:
