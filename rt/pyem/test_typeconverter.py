@@ -247,6 +247,23 @@ class TestTypeConverter(unittest.TestCase):
             self.assertEqual(e.get_value_at(i, 0), i)
 
 
+    def test_em2numpy2(self):
+        imgfile1 = "test_em2numpy2_1.mrc"
+        nx0 = 100
+        ny0 = 200
+        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, nx0, ny0)
+        
+        e = EMData()
+        e.read_image(imgfile1)
+        nx = e.get_xsize()
+        ny = e.get_ysize()
+
+        a = EMNumPy.em2numpy(e)
+        print a[-1, 0:4]
+        print a
+        print a[-1, 0:4]
+
+
     def test_Point_and_Size_class(self):
         imgfile1 = "test_Point_and_Size_class_1.mrc"
         TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, 32,32,32)
