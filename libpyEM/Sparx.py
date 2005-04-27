@@ -73,7 +73,7 @@ def printImage(input):
 		line = []
 		for ix in xrange(nx):
 			for iy in xrange(ny):
-				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+				line.append("%012.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((iy + 1) % 5 == 0):
 					line.append("\n   ")
 			line.append("\n")
