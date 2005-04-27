@@ -865,6 +865,7 @@ Output: real image that may have been zero-padded and has been extended along x 
 EMData* EMData::pad_fft(int npad) {
 	ENTERFUNC;
 	EMData* newimg = copy_head();
+	newimg->to_zero();
 	if (is_fftpadded() == false) {
 		int nxpad = npad*nx;
 		int nypad = npad*ny;
@@ -882,13 +883,12 @@ EMData* EMData::pad_fft(int npad) {
 		size_t offset;
 		// Not currently padded, so we want to pad for ffts
 		offset = 2 - nxpad%2;
-		bytes = nxpad*sizeof(float);
+		bytes = nx*sizeof(float);
 		newimg->set_size(nxpad+offset, nypad, nzpad);
 		newimg->set_fftpad(true);
 		newimg->set_attr("npad", npad);
 		if (offset == 1)
 			newimg->set_fftodd(true);
-		//FIXME Store npad*nx in the image!!!!
 		MArray3D dest = newimg->get_3dview();
 		MArray3D src = this->get_3dview();
 		for (int iz = 0; iz < nz; iz++) {
@@ -898,6 +898,8 @@ EMData* EMData::pad_fft(int npad) {
 		}
 	} else {
 		// Image already padded, so we want to remove the padding
+		// (Note: The npad passed in is ignored in favor of the one
+		//  stored in the image.)
 		npad = get_attr("npad");
 		if (0 == npad) npad = 1;
 		int nxold = (nx - 2 + is_fftodd())/npad; // using the value of is_fftodd() <- FIXME
