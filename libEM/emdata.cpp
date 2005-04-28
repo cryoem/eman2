@@ -2,7 +2,6 @@
  * $Id$
  */
 
-#include <efencepp.h>
 #include "emdata.h"
 #include "log.h"
 #include "transform.h"
