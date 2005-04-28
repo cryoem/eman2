@@ -2,6 +2,7 @@
  * $Id$
  */
 
+#include <efencepp.h>
 #include "emdata.h"
 #include "log.h"
 #include "transform.h"
@@ -890,7 +891,7 @@ EMData* EMData::pad_fft(int npad) {
 		if (offset == 1)
 			newimg->set_fftodd(true);
 		MArray3D dest = newimg->get_3dview();
-		MArray3D src = this->get_3dview();
+		MArray3D src = get_3dview();
 		for (int iz = 0; iz < nz; iz++) {
 			for (int iy = 0; iy < ny; iy++) {
 				memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
