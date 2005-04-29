@@ -30,7 +30,7 @@ namespace EMAN
 	class ImageIO;
 	class Ctf;
 	class XYData;
-	class Transform;
+	class Transform3D;
 	
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
@@ -208,7 +208,7 @@ namespace EMAN
 		 *  @param scale Scaling put on the returned image.
 		 *  @return The clip image.
 		 */ 
-		EMData *get_rotated_clip(const Transform & xform, const IntSize &size, float scale=1.0);
+		EMData *get_rotated_clip(const Transform3D & xform, const IntSize &size, float scale=1.0);
 				
 		/** Add a scaled image into another image at a specified location.
 		 *  This is used, for example, to accumulate gaussians in
@@ -313,7 +313,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
 		 */
-		FloatPoint normalize_slice(EMData * slice, const Transform & orient);
+		FloatPoint normalize_slice(EMData * slice, const Transform3D & orient);
 
 		/** Caclulates normalization and phase residual for a slice in
 		 * an already existing volume. phase residual is calculated
@@ -411,7 +411,7 @@ namespace EMAN
 		/** Rotate this image.
 		 * @param t Transformation rotation.
 		 */
-		void rotate(const Transform & t);
+		void rotate(const Transform3D & t);
 
 		/** Rotate this image.
 		 * @param az  Rotation euler angle az  in EMAN convention.
@@ -423,7 +423,7 @@ namespace EMAN
 		/** Rotate then translate the image.
 		 * @param t The rotation and translation transformation to be done.
 		 */
-		void rotate_translate(const Transform & t);
+		void rotate_translate(const Transform3D & t);
 
 		/** Rotate then translate the image.
 		 * @param alt Rotation euler angle alt in EMAN convention.
@@ -884,7 +884,7 @@ namespace EMAN
 		 * @param dx
 		 * @param dy
 		 */
-		void cut_slice(const EMData * map, float dz, Transform * orientation = 0,
+		void cut_slice(const EMData * map, float dz, Transform3D * orientation = 0,
 					   bool interpolate = true, float dx = 0, float dy = 0);
 
 		/** Opposite of the cut_slice(). It will take a slice and insert
@@ -897,7 +897,7 @@ namespace EMAN
 		 * @param dx
 		 * @param dy
 		 */		 
-		void uncut_slice(EMData * map, float dz, Transform * orientation = 0,
+		void uncut_slice(EMData * map, float dz, Transform3D * orientation = 0,
 						 float dx = 0, float dy = 0);
 
 		/** Calculates the density value at the peak of the
@@ -1000,7 +1000,7 @@ namespace EMAN
 		/** Get the 3D orientation of 'this' image.
 		 * @return The 3D orientation of 'this' image.
 		 */
-		Transform get_transform() const; 
+		Transform3D get_transform() const; 
 
 		/** Define the 3D orientation of this particle, also
 		 * used to indicate relative rotations for reconstructions
@@ -1452,7 +1452,7 @@ namespace EMAN
 		 * @param x  Complex matrix of [0:n2][1:n][1:n]
 		 * @param nr Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
-		 * @param dm0 Transform array.
+		 * @param dm0 Transform3D array.
 		 * @return The set of images read from filename.
 		 */
 		static void onelinenn(int j, int n, int n2, MCArray3D& x,
@@ -1771,14 +1771,20 @@ namespace EMAN
 		all_translation = Vec3f(dx, dy, dz);
 	}
 
-	inline Transform EMData::get_transform() const
+	inline Transform3D EMData::get_transform() const
 	{
-		return Transform(Transform::EMAN,
-						 (float)attr_dict["euler_alt"],
-						 (float)attr_dict["euler_az"],
-						 (float)attr_dict["euler_phi"]);
+		return Transform3D( (float)attr_dict["euler_alt"],
+				    (float)attr_dict["euler_az"],
+				    (float)attr_dict["euler_phi"]);
 	}
-
+/*   Next  is Modified by PRB      Transform3D::EMAN,
+	inline Transform3D EMData::get_transform() const 
+	{
+		return Transform3D((float)attr_dict["euler_alt"],
+				   (float)attr_dict["euler_az"],
+				   (float)attr_dict["euler_phi"]);
+	}
+*/
 	inline void EMData::set_rotation(float az, float alt, float phi)
 	{
         attr_dict["orientation_convention"] = "EMAN";

@@ -23,7 +23,7 @@ EMANVERSION="EMAN2 v1.90"
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
-Transform.__str__=lambda x:"Transform(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
+Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 def display(img):
 	"""This will use 'v2', and EMAN1 program to view an image
@@ -52,7 +52,7 @@ The following classes are defined: \n\
  \n\
   Quaternion - implements mathematical quaternion. \n\
   Region - defines a rectangular 2D/3D region. \n\
-  Transform - defines a transformation including rotation, translation, and different Euler angles. \n\
+  Transform3D - defines a transformation including rotation, translation, and different Euler angles. \n\
   Vec3i - a 3-element integer vector. \n\
   Vec3f - a 3-element floating number vector. \n\
 \n\

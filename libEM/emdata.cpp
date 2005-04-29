@@ -400,7 +400,7 @@ EMData *EMData::copy_head() const
 	return ret;
 }
 
-EMData *EMData::get_rotated_clip(const Transform &xform,
+EMData *EMData::get_rotated_clip(const Transform3D &xform,
 								 const IntSize &size, float scale)
 {
 	EMData *result = new EMData();
@@ -1302,7 +1302,7 @@ EMData* EMData::get_fft_phase()
 	return dat;
 }
 
-FloatPoint EMData::normalize_slice(EMData * slice, const Transform &xform)
+FloatPoint EMData::normalize_slice(EMData * slice, const Transform3D &xform)
 {
 	ENTERFUNC;
 	
@@ -1396,7 +1396,7 @@ FloatPoint EMData::normalize_slice(EMData * slice, const Transform &xform)
 
 FloatPoint EMData::normalize_slice(EMData * slice, float az, float alt, float phi)
 {
-	return normalize_slice(slice, Transform(Transform::EMAN, az, alt, phi));
+	return normalize_slice(slice, Transform3D(az, alt, phi)); // EMAN
 }
 
 
@@ -3230,7 +3230,7 @@ void EMData::to_zero()
 void EMData::scale(float s)
 {
 	ENTERFUNC;
-	Transform t;
+	Transform3D t;
 	t.set_scale(s);
 	rotate_translate(t);
 	EXITFUNC;
@@ -3297,18 +3297,18 @@ void EMData::translate(const Vec3f &translation)
 
 void EMData::rotate(float az, float alt, float phi)
 {
-	Transform t(Transform::EMAN, az, alt, phi);
+	Transform3D t(az, alt, phi);
 	rotate_translate(t);
 }
 
-void EMData::rotate(const Transform & t)
+void EMData::rotate(const Transform3D & t)
 {
 	rotate_translate(t);
 }
 
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy, float dz)
 {
-	Transform t(Vec3f(dx, dy, dz), Transform::EMAN, az, alt, phi);
+	Transform3D t(Vec3f(dx, dy, dz),  az, alt, phi);
 	rotate_translate(t);
 }
 
@@ -3316,20 +3316,20 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
-	Transform t(Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz), Transform::EMAN, az, alt, phi);
+	Transform3D t(Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz), az, alt, phi);
 	rotate_translate(t);
 }
 
 
 
-void EMData::rotate_translate(const Transform & xform)
+void EMData::rotate_translate(const Transform3D & xform)
 {
 	ENTERFUNC;
 	
 	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
 	Vec3f translation = xform.get_posttrans();
-	Dict rotation = xform.get_rotation(Transform::EMAN);
+	Dict rotation = xform.get_rotation(Transform3D::EMAN);
 	
 	int nx2 = nx;
 	int ny2 = ny;
@@ -3406,7 +3406,7 @@ void EMData::rotate_translate(const Transform & xform)
 
 	else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) {
 		// make sure this is right
-		Transform mx = xform;
+		Transform3D mx = xform;
 		mx.set_scale(inv_scale);
 		int nxy = nx * ny;
 		int l = 0;
@@ -3448,7 +3448,7 @@ void EMData::rotate_translate(const Transform & xform)
 		}
 	}
 	else {
-		Transform mx = xform;
+		Transform3D mx = xform;
 		mx.set_scale(inv_scale);
 
 		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
@@ -3491,11 +3491,11 @@ void EMData::rotate_translate(const Transform & xform)
 
 					}
 
-					v2 += mx.get_matrix3_col(0);
+					v2 += mx.get_matrix3_col(0); 
 				}
 				v3 += mx.get_matrix3_col(1);
 			}
-			v4 += mx.get_matrix3_col(2);
+			v4 += mx.get_matrix3_col(2); //  or should it be row?   PRB April 2005
 		}
 		
 	}
@@ -5505,7 +5505,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 }
 
 
-void EMData::cut_slice(const EMData * map, float dz, Transform * ort,
+void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 					   bool interpolate, float dx, float dy)
 {
 	ENTERFUNC;
@@ -5514,7 +5514,7 @@ void EMData::cut_slice(const EMData * map, float dz, Transform * ort,
 		throw NullPointerException("NULL image");
 	}
 
-	Transform r(Transform::EMAN, 0, 0, 0);
+	Transform3D r(0, 0, 0); // EMAN by default
 	if (!ort) {
 		ort = &r;
 	}
@@ -5580,7 +5580,7 @@ void EMData::cut_slice(const EMData * map, float dz, Transform * ort,
 }
 
 
-void EMData::uncut_slice(EMData * map, float dz, Transform * ort, float dx, float dy)
+void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, float dy)
 {
 	ENTERFUNC;
 	
@@ -5588,7 +5588,7 @@ void EMData::uncut_slice(EMData * map, float dz, Transform * ort, float dx, floa
 		throw NullPointerException("NULL image");
 	}
 
-	Transform r(Transform::EMAN, 0, 0, 0);
+	Transform3D r( 0, 0, 0); // EMAN by default
 	if (!ort) {
 		ort = &r;
 	}

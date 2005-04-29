@@ -47,7 +47,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Transform r(Transform::EMAN, az, alt, phi);
+	Transform3D r(az, alt, phi); // EMAN by default
 
 	int mode = params["mode"];
 	float gauss_width = 0;
@@ -474,9 +474,9 @@ EMData *PawelProjector::project3d(EMData * image) const
 	// For the moment, let's assume the user wants to use either
 	// EMAN or SPIDER Euler angles, but nothing else.
 	string angletype = params["angletype"].to_str();
-	Transform::EulerType eulertype;
+	Transform3D::EulerType eulertype;
 	if (angletype == "SPIDER") {
-		eulertype = Transform::SPIDER;
+		eulertype = Transform3D::SPIDER;
 		if (nangles == 0) {
 			// a single SPIDER angle was passed in
 			float phi = params["phi"];
@@ -488,11 +488,11 @@ EMData *PawelProjector::project3d(EMData * image) const
 			nangles = 1;
 		}
 	} else if (angletype == "EMAN") {
-		eulertype = Transform::EMAN;
+		eulertype = Transform3D::EMAN;
 		if (nangles == 0) {
 			// a single EMAN angle was passed in
-			float alt = params["alt"];
 			float az = params["az"];
+			float alt = params["alt"];
 			float phi = params["phi"];
 			anglelist.push_back(az);
 			anglelist.push_back(alt);
@@ -513,7 +513,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform rotation(eulertype, anglelist[indx],
+		Transform3D rotation(eulertype, anglelist[indx],
 				           anglelist[indx+1], anglelist[indx+2]);
 		if (2*(ri+1)+1 > dim) {
 			// Must check x and y boundaries
@@ -734,7 +734,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	Transform r(Transform::EMAN, az, alt, phi);
+	Transform3D r(Transform3D::EMAN, az, alt, phi);
 	int xy = nx * ny;
 
 	EMData *proj = new EMData();

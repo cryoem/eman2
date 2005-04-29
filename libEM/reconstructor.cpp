@@ -59,7 +59,7 @@ void FourierReconstructor::setup()
 	image->set_parent(parent);
 }
 
-int FourierReconstructor::insert_slice(EMData * slice, const Transform & euler)
+int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -539,7 +539,7 @@ EMData *WienerFourierReconstructor::finish()
 }
 
 
-int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform & euler)
+int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -946,7 +946,7 @@ void BackProjectionReconstructor::setup()
 	nz = size;
 }
 
-int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform &)
+int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform3D &)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -977,7 +977,7 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform &)
 
 	tmp->done_data();
 
-	Dict slice_euler = slice->get_transform().get_rotation(Transform::EMAN);
+	Dict slice_euler = slice->get_transform().get_rotation(Transform3D::EMAN);
 	tmp->rotate(-(float)slice_euler["alt"], -(float)slice_euler["az"], -(float)slice_euler["phi"]);
 
 	image->add(*tmp);

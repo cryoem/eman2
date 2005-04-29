@@ -522,7 +522,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  const 
 	EMData *this_copy = this_img->copy();
 	this_img->align("Rotational", to, params);
 	
-	Dict rotation = this_img->get_transform().get_rotation(Transform::EMAN);
+	Dict rotation = this_img->get_transform().get_rotation(Transform3D::EMAN);
 	float cda = rotation["alt"];
 
 	EMData *this_copy2 = this_copy->copy();
@@ -831,10 +831,10 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 
 		if (usedot == 2) {
 			Vec3f trans = this_copy->get_translation();
-			Dict rot = this_copy->get_transform().get_rotation(Transform::EMAN);
+			Dict rot = this_copy->get_transform().get_rotation(Transform3D::EMAN);
 
 			Vec3f trans2 = this_copy2->get_translation();
-			Dict rot2 = this_copy2->get_transform().get_rotation(Transform::EMAN);
+			Dict rot2 = this_copy2->get_transform().get_rotation(Transform3D::EMAN);
 
 			printf("%f vs %f  (%1.1f, %1.1f  %1.2f) (%1.1f, %1.1f  %1.2f)\n",
 				   dot1, dot2, trans[0], trans[1], (float)rot["alt"] * 180. / M_PI,

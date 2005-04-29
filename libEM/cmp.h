@@ -11,7 +11,7 @@ namespace EMAN
 {
 
 	class EMData;
-	class Transform;
+	class Transform3D;
 
 	/** Cmp class defines image comparison method. Before doing the
 	 * comparison, an optional transformation may be used to

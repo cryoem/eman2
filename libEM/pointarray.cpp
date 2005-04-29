@@ -310,13 +310,13 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 }
 
 
-void PointArray::set_from(PointArray * source, const string & sym, Transform *transform)
+void PointArray::set_from(PointArray * source, const string & sym, Transform3D *transform)
 {
 	set_from(source->get_points_array(), source->get_number_points(), sym, transform);
 
 }
 
-void PointArray::set_from(double *src, unsigned int num, const string & sym, Transform *xform)
+void PointArray::set_from(double *src, unsigned int num, const string & sym, Transform3D *xform)
 {
 	unsigned int nsym = xform->get_nsym(sym);
 
@@ -1230,7 +1230,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 {
 	int i;
 	PointArray pa;
-	Transform xform;
+	Transform3D xform;
 	int size=optdata[0]->get_xsize();
 	fx=0;
 	

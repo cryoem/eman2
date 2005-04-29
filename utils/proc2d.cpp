@@ -443,11 +443,11 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			Dict rr = d->get_transform().get_rotation(Transform::EMAN);
+			Dict rr = d->get_transform().get_rotation(Transform3D::EMAN);
 			//int nimg = d->get_nimg();
 
 			if (scale < 1.0) {
-				Transform t;
+				Transform3D t;
 				t.set_scale(scale);
 				d->rotate_translate(t);
 			}
@@ -461,7 +461,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (scale > 1.0) {
-				Transform t;
+				Transform3D t;
 				t.set_scale(scale);
 				d->rotate_translate(t);
 			}

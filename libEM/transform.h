@@ -16,35 +16,49 @@ using std::vector;
 
 namespace EMAN
 {
-	/** Transform defines a transformation, which can be rotation,
-     * translation, scale, and their combinations.
+	/** @file transform.h
+	 *   These are  a collection of transformation tools: rotation, translation,
+	 *            and construction of symmetric objects
+         *  @author Philip Baldwin and Steve Ludtke
+	 *    <Philip.Baldwin@uth.tmc.edu>
+	 *	Transform defines a transformation, which can be rotation,
+         *         translation, scale, and their combinations.
 	 *
-	 * Internally a transformation is stored in a 4x3 matrix.
-	 *    a b c
-	 *    e f g
-	 *    i j k
-	 *    m n o
+	 *  @date $Date: 2005/04/04 17:41pm
+	 *
+	 *  @see Phil's article
+	 *
+	 * Internally a transformation is stored in a 4x4 matrix.
+	 *         a b c d
+	 *         e f g h           R     v
+	 *  M=     j k m n    =      0     1    , where R is 3by3, v is 3by1
+	 *         0 0 0 1
+	 *  This is a standard computer graphics convention and can be found in many
+	 *    references including Frackowiak et al; Human Brain Function
+	 *
 	 *
 	 * The left-top 3x3 submatrix
-	 *	  a b c
-	 *    e f g
-	 *    i j k
-	 * provides rotation, scaling and skewing.
 	 *
-	 * post translation is stored in (m,n,o).
+	 *        a b c
+	 *   R =  e f g
+	 *        j k m
 	 *
-	 * a separate vector containing the pretranslation, with an implicit
-	 * column [0 0 0 1] at the end when 4x4 multiplies are required.
+	 * provides rotation, scaling and skewing (not yet implimented).
 	 *
-	 * The 'center of rotation' is NOT implemented as a separate vector, 
-	 * but as a combination of pre and post translations.
+	 * The (post) translation is stored in (d, h, n).
 	 *
-	 * a matrix  M is called orthogonal M * transpose(M) = 1. All
-	 * Orthogonal Matrices have determinants of 1
 	 *
+	 * If rotations need to be found
+	 *    around alternate origins, then brief calculations need to be performed
+	 * Pre and Post Translations should be kept as separate vectors
+	 *
+	 * a matrix  R is called orthogonal if
+	 *           R * transpose(R) = 1.
+	 * All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant
+	 *  therefore equal to  \pm 1
 	 *
      */
-	class Transform
+	class Transform3D
 	{
 	public:
 		static const float ERR_LIMIT;
@@ -59,94 +73,79 @@ namespace EMAN
 			SPIDER,
 			MRC
 		};
-	public:
-		Transform();
 		
-		Transform(EulerType euler_type, float a1,float a2,float a3, float a4=0);
-		
-		Transform(const Vec3f& posttrans, EulerType euler_type,
-				  float a1,float a2, float a3, float a4=0);
-		
-		Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType euler_type, 
-				  float a1,float a2, float a3, float a4=0);
-		
-		Transform(EulerType euler_type, Dict& rotation);
+	     // C1
+		Transform3D();
 
-		Transform(const Vec3f& posttrans, EulerType euler_type, Dict& rotation);
-		
-		Transform(const Vec3f & pretrans, const Vec3f& posttrans,   
-				  EulerType euler_type, Dict& rotation);
-		
-		virtual ~ Transform();
+	     // C2   
+		Transform3D(float az,float alt, float phi); // EMAN by default
 
-		void to_identity();
-		bool is_identity();
+
+             //  C3  Usual Constructor: Post Trans, after appying Rot
+		Transform3D(const Vec3f& posttrans, float az,float alt, float phi);
+                
+
+ 	     // C4
+	     	Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
+									      // SPIDER     phi theta psi
 		
-		void orthogonalize();	// reorthogonalize the matrix
-		Transform inverse();
-	
-		void set_pretrans(const Vec3f & pretrans);
+	     // C5   First apply pretrans: Then rotation
+		Transform3D(EulerType euler_type, Dict& rotation);
+		
+
+	     // C6   First apply pretrans: Then rotation: Then posttrans
+		Transform3D(const Vec3f & pretrans, const Vec3f& posttrans, float az, float alt, float phi);
+
+              
+		virtual ~ Transform3D();  // COmega   Deconstructor
+
 		void set_posttrans(const Vec3f & posttrans);
-		void set_center(const Vec3f & center);
-		void set_rotation(EulerType euler_type, float a0, float a1,float a2, float a3=0);
-		void set_rotation(EulerType euler_type, Dict &rotation );
+		void apply_scale(float scale);
 		void set_scale(float scale);
+		void orthogonalize();	// reorthogonalize the matrix
 
-		Vec3f get_pretrans() const;
+		void set_rotation(float az, float alt,float phi);
+		void set_rotation(EulerType euler_type, float a1, float a2, float a3); // just SPIDER and EMAN
+		void set_rotation(EulerType euler_type, Dict &rotation );
+
+		Vec3f get_posttrans(Vec3f &pretrans) const;
 		Vec3f get_posttrans() const;
 		Vec3f get_center() const;
-		Dict get_rotation(EulerType euler_type) const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;
-		float get_scale() const;
+		
+		Dict get_rotation(EulerType euler_type=EMAN) const;
 
-		// returns orthogonality coefficient 0-1 range;
-		float orthogonality() const;
-		
-		static int get_nsym(const string & sym);
-		Transform get_sym(const string & sym, int n);
-		
-		// A few utilities used for matrix operations
-		inline void row_mult(int n,float f)
-		{
-			matrix[n][0]*=f;
-			matrix[n][1]*=f;
-			matrix[n][2]*=f;
-		}
-		
-		inline void row_add(int n,float a,float b,float c)
-		{
-			matrix[n][0]+=a;
-			matrix[n][1]+=b;
-			matrix[n][2]+=c;
-		}
-
-		void row_exch(int n1,int n2) { 
-			float t; 
-			t=matrix[n1][0]; matrix[n1][0]=matrix[n2][0]; matrix[n2][0]=t; 
-			t=matrix[n1][1]; matrix[n1][1]=matrix[n2][1]; matrix[n2][1]=t; 
-			t=matrix[n1][2]; matrix[n1][2]=matrix[n2][2]; matrix[n2][2]=t; 
-		}
 		void print() {
-			for (int i=0; i<3; i++) {
-				printf("%6.3f\t%6.3f\t%6.3f\n",
-					   matrix[i][0],matrix[i][1],matrix[i][2]);
+			for (int i=0; i<4; i++) {
+				printf("%6.3f\t%6.3f\t%6.3f\t%6.3f\n",
+					   matrix[i][0],matrix[i][1],matrix[i][2],matrix[i][3]);
 			}
 			printf("\n");
 		}
-				
+
 		inline float at(int r,int c) { return matrix[r][c]; }
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
 
-		Transform operator*=(const Transform& t);
-	
-		
+//
+		static int get_nsym(const string & sym);
+		Transform3D get_sym(const string & sym, int n);
+		void set_center(const Vec3f & center);
+		void set_pretrans(const Vec3f & pretrans);
+//
+		float get_scale() const;   
+
+		void to_identity();
+		bool is_identity();
+
+
 	  private:
 		enum SymType
 		{
 			CSYM,
 			DSYM,
+			TET_SYM,
 			ICOS_SYM,
 			OCT_SYM,
 			ISYM,
@@ -155,38 +154,22 @@ namespace EMAN
 
 		void init();
 
-		float eman_alt() const;
-		float eman_az() const;
-		float eman_phi() const;
-		
-		vector<float> matrix2quaternion() const;
-		vector<float> matrix2sgi() const;
-		void quaternion2matrix(float e0, float e1, float e2, float e3);
 		static SymType get_sym_type(const string & symname);
-		
-		float matrix[4][3];
-		Vec3f pre_trans;
+
+		float matrix[4][4];
 
 		static map<string, int> symmetry_map;
-	};
+	}; // ends Class
 
-	Vec3f operator*(const Vec3f & v, const Transform & t);
-	Transform operator*(const Transform & t1, const Transform & t2);
-	
-#if 0
-	Transform operator+(const Transform & t1, const Transform & t2);
-	Transform operator-(const Transform & t1, const Transform & t2);
+	Transform3D operator*(const Transform3D & M1, const Transform3D & M2);
+	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
+	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
 
-	Transform operator*(const Transform & t1, const Transform & t2);
-	Transform operator*(const Transform & t, float s);
-	Transform operator*(float s, const Transform & t);
 
-	Transform operator/(const Transform & t1, const Transform & t2);
-	Transform operator/(const Transform & t, float s);
-	Transform operator/(float s, const Transform & t);
-#endif
-}
-
+}  // ends NameSpace EMAN
 
 
 #endif
+
+
+

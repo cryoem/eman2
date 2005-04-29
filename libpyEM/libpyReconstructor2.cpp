@@ -26,7 +26,7 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
         call_method< void >(self, "setup");
     }
 
-    int insert_slice(EMAN::EMData* p0, const EMAN::Transform& p1) {
+    int insert_slice(EMAN::EMData* p0, const EMAN::Transform3D& p1) {
         return call_method< int >(self, "insert_slice", p0, p1);
     }
 

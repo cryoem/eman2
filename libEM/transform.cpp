@@ -12,82 +12,83 @@ using namespace EMAN;
 #endif
 #endif
 
-const float Transform::ERR_LIMIT = 0.000001f;
+const float Transform3D::ERR_LIMIT = 0.000001f;
 
-
-Transform::Transform()
+//  C1
+Transform3D::Transform3D()  //    C1
 {
 	init();
-	to_identity();
 }
 
 
-
-Transform::Transform(EulerType euler_type, float a1,float a2,float a3, float a4)
+// C2
+Transform3D::Transform3D(float az, float alt, float phi) 
 {
 	init();
-	set_rotation(euler_type,a1,a2,a3,a4);
+	set_rotation(az,alt,phi);
 }
 
 
-Transform::Transform(const Vec3f& posttrans, EulerType euler_type,
-					 float a1,float a2, float a3, float a4)
+//  C3  Usual Constructor: Post Trans, after appying Rot
+Transform3D::Transform3D(const Vec3f& posttrans, float az, float alt, float phi)
 {
 	init();
-	set_rotation(euler_type,a1,a2,a3,a4);
+	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
 
-		
-Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans, EulerType euler_type, 
-					 float a1,float a2, float a3, float a4)
+
+// C4
+Transform3D::Transform3D(EulerType euler_type, float a1, float a2, float a3)  // usually az, alt, phi
+						      // only SPIDER and EMAN supported
 {
 	init();
-	set_rotation(euler_type,a1,a2,a3,a4);
-	set_pretrans(pretrans);
-	set_posttrans(posttrans);
+	Dict rot;
+	switch(euler_type) {
+	case EMAN:
+		rot["az"]  = a1;
+		rot["alt"] = a2;
+		rot["phi"] = a3;
+		break;
+	case SPIDER:
+		rot["phi"]   = a1;
+		rot["theta"] = a2;
+		rot["psi"]   = a3;
+		break;
+	default:
+		throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+  	}  // ends switch euler_type
+	set_rotation(euler_type, rot);  // Or should it be &rot ?
 }
 
-Transform::Transform(EulerType euler_type, Dict& rotation)
+// C5
+Transform3D::Transform3D(EulerType euler_type, Dict& rotation)  //YYY
 {
 	init();
 	set_rotation(euler_type,rotation);
 }
 
 
-Transform::Transform(const Vec3f& posttrans, EulerType euler_type,
-					 Dict& rotation)
+// C6
+Transform3D::Transform3D(const Vec3f& pretrans, const Vec3f& posttrans,
+					 float az, float alt, float phi) //YYY  by default EMAN
 {
 	init();
-	set_rotation(euler_type, rotation);
+	set_posttrans(pretrans);   // Fix this
+	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
 
-		
-Transform::Transform(const Vec3f & pretrans, const Vec3f& posttrans,   
-					 EulerType euler_type, Dict& rotation)
-{
-	init();
-	set_rotation(euler_type,rotation);
-	set_pretrans(pretrans);
-	set_posttrans(posttrans);
-}
 
-Transform::~Transform()
+
+
+Transform3D::~Transform3D()
 {
 }
 
-void Transform::init()
-{
-	for (int i=0; i<4; i++) {
-		for (int j=0; j<3; j++) {
-			matrix[i][j]=0;
-		}
-	}
-}
 
 
-void Transform::to_identity()
+void Transform3D::to_identity()
 {
 	for (int i = 0; i < 3; i++) {
 		matrix[i][i] = 1;
@@ -95,378 +96,510 @@ void Transform::to_identity()
 	set_center(Vec3f(0,0,0));
 }
 
-bool Transform::is_identity()
+
+
+bool Transform3D::is_identity()  // YYY
 {
 	for (int i=0; i<4; i++) {
-		for (int j=0; j<3; j++) {
-			if (i==j && matrix[i][j]!=1.0) return 0; 
-			if (i!=j && matrix[i][j]!=0.0) return 0; 
+		for (int j=0; j<4; j++) {
+			if (i==j && matrix[i][j]!=1.0) return 0;
+			if (i!=j && matrix[i][j]!=0.0) return 0;
 		}
 	}
-	if (pre_trans[0]!=0 || pre_trans[1]!=0 ||pre_trans[2]!=0) return 0;
 	return 1;
 }
 
-void Transform::orthogonalize()	
-{
 
+void Transform3D::set_center(const Vec3f & center) //YYN
+{
+	set_pretrans( Vec3f(0,0,0)-center);
+	for (int i = 0; i < 3; i++) {
+		matrix[i][3]=center[i];
+	}
 }
 
-Transform Transform::inverse()
+
+void Transform3D::set_pretrans(const Vec3f & pretrans)  // YYN
 {
-	print();
-	
-	// we use unrolled Gauss-Jordan elimination to invert the rotation matrix
-	// this could be slightly more efficient if the function calls were also unrolled
-	Transform ret;	// start with the identity matrix
-	Transform id2=*this;
-	
-	// start by making 00 -> 1.0
-	if (fabs(id2[1][0])>fabs(id2[0][0])) { id2.row_exch(0,1); ret.row_exch(0,1); }
-	if (fabs(id2[2][0])>fabs(id2[0][0])) { id2.row_exch(0,2); ret.row_exch(0,2); }
-	if (id2[0][0]==0) throw InvalidValueException(0,"Singular matrix inversion");
-	
-	ret.row_mult(0,1.0f/id2[0][0]);
-	id2.row_mult(0,1.0f/id2[0][0]);
+/*
+	float oldMatrix[4][4] = matrix;
+	Transform preMatrix;  // remember by default preMatrix is identity
+	preMatrix.set_postTrans(pretrans);
 
-	// now make 10 and 20 -> 0.0 by subtracting a multiple of row 0
-	ret.row_add(1,-id2[1][0]*ret[0][0],-id2[1][0]*ret[0][1],-id2[1][0]*ret[0][2]);
-	id2.row_add(1,-id2[1][0]*id2[0][0],-id2[1][0]*id2[0][1],-id2[1][0]*id2[0][2]);
-	ret.row_add(2,-id2[2][0]*ret[0][0],-id2[2][0]*ret[0][1],-id2[2][0]*ret[0][2]);
-	id2.row_add(2,-id2[2][0]*id2[0][0],-id2[2][0]*id2[0][1],-id2[2][0]*id2[0][2]);
-	id2.print();
-	
-	// now make 11 -> 1.0
-	if (fabs(id2[2][1])>fabs(id2[1][1])) { row_exch(1,2); ret.row_exch(1,2); }
-	if (id2[1][1]==0) throw InvalidValueException(0,"Singular matrix inversion");
-	
-	ret.row_mult(1,1.0f/id2[1][1]);
-	id2.row_mult(1,1.0f/id2[1][1]);
-	
-	// subtract to make 01 and 21 -> 0
-	ret.row_add(0,-id2[0][1]*ret[1][0],-id2[0][1]*ret[1][1],-id2[0][1]*ret[1][2]);
-	id2.row_add(0,-id2[0][1]*id2[1][0],-id2[0][1]*id2[1][1],-id2[0][1]*id2[1][2]);
-	ret.row_add(2,-id2[2][1]*ret[1][0],-id2[2][1]*ret[1][1],-id2[2][1]*ret[1][2]);
-	id2.row_add(2,-id2[2][1]*id2[1][0],-id2[2][1]*id2[1][1],-id2[2][1]*id2[1][2]);
-	id2.print();
-	
-	// now make 22 -> 1.0
-	if (id2[2][2]==0) throw InvalidValueException(2,"Singular matrix inversion");
-	ret.row_mult(2,1.0f/id2[2][2]);
-	id2.row_mult(2,1.0f/id2[2][2]);
-	
-	// subtract to make 02 and 12 -> 0
-	ret.row_add(0,-id2[0][2]*ret[2][0],-id2[0][2]*ret[2][1],-id2[0][2]*ret[2][2]);
-	id2.row_add(0,-id2[0][2]*id2[2][0],-id2[0][2]*id2[2][1],-id2[0][2]*id2[2][2]);
-	ret.row_add(1,-id2[1][2]*ret[2][0],-id2[1][2]*ret[2][1],-id2[1][2]*ret[2][2]);
-	id2.row_add(1,-id2[1][2]*id2[2][0],-id2[1][2]*id2[2][1],-id2[1][2]*id2[2][2]);
-	
-	id2.print();
-	ret.print();
-
-	ret.set_pretrans(get_posttrans()*-1.0);
-	ret.set_posttrans(get_pretrans()*-1.0);
-	
-	return ret;
+	matrix=oldMatrix*preMatrix;
+	*/
 }
 
-void Transform::set_pretrans(const Vec3f & pretrans)
+
+
+float * Transform3D::operator[] (int i)
 {
-	pre_trans = pretrans;
+	return matrix[i];
 }
 
-void Transform::set_posttrans(const Vec3f & posttrans)
+const float * Transform3D::operator[] (int i) const
+{
+	return matrix[i];
+}
+
+
+
+
+
+//            METHODS
+//   Note Transform3Ds are initialized as identities
+void Transform3D::init()  // M1
+{
+	for (int i=0; i<4; i++) {
+		for (int j=0; j<4; j++) {
+			matrix[i][j]=0;
+		}
+		matrix[i][i]=1;
+	}
+}
+
+
+//      Set Methods
+
+
+void Transform3D::set_posttrans(const Vec3f & posttrans) // YYN
 {
 	for (int i = 0; i < 3; i++) {
-		matrix[3][i] = posttrans[i];
+		matrix[i][3] = posttrans[i];
 	}
 }
 
-void Transform::set_center(const Vec3f & center)
+
+
+
+void Transform3D::apply_scale(float scale)    // YYY
 {
-	pre_trans = Vec3f(0,0,0)-center;
 	for (int i = 0; i < 3; i++) {
-		matrix[3][i]=center[i];
-	}
-}
-
-void Transform::set_rotation(EulerType euler_type, float a1, float a2, float a3,float a4)
-{
-	
-	bool is_quaternion = 0;
-
-	float tm=a1;
-	switch(euler_type) {
-	case EMAN:
-		a1=a2;
-		a2=tm;	// This swap is a fix for the new az,alt,phi convention
-		break;
-	case IMAGIC:
-		break;
-		
-	case SPIDER:
-		a1 = a1 - 1.5f * M_PI;
-		a2 = a2 - 0.5f * M_PI;
-		break;
-		
-	case MRC:
-		a1 = fmod(-a1 + 2.5f * M_PI, 2 * M_PI);
-		a2 = fmod(a2 + 0.5f * M_PI, 2.0f * M_PI);
-		break;
-		
-	case QUATERNION:
-		is_quaternion = 1;
-		break;
-		
-	case SPIN:
-	case SGIROT:
-		{
-			is_quaternion = 1;
-			float f = sin(a1 / 2.0f);
-			a2 *= f;
-			a3 *= f;
-			a4 *= f;
-			a1 = cos(a1 / 2.0f);
-		}
-		break;
-				
-	default:
-		throw InvalidValueException(euler_type, "unknown Euler Type");
-	}
-	
-	if (is_quaternion) {
-		quaternion2matrix( a1, a2, a3, a4);
-	}
-	
-	matrix[0][0] = cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
-	matrix[0][1] = -(sin(a3)*cos(a2) + cos(a1)*sin(a2)*cos(a3));
-	matrix[0][2] = sin(a1)*sin(a2);
-	matrix[1][0] = cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
-	matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
-	matrix[1][2] = -sin(a1)*cos(a2);
-	matrix[2][0] = sin(a1)*sin(a3);
-	matrix[2][1] = sin(a1)*cos(a3);
-	matrix[2][2] = cos(a1);
-}
-
-
-void Transform::set_rotation(EulerType euler_type, Dict& rotation)
-{
-	float a0 = 0;
-	float a1 = 0;
-	float a2 = 0;
-	float a3 = 0;
-	bool is_quaternion = 0;
-
-	switch(euler_type) {
-	case EMAN:
-		a1 = (float)rotation["alt"];	// despite the new az,alt,phi convention, this assignment is correct
-		a2 = (float)rotation["az"];
-		a3 = (float)rotation["phi"];
-		break;
-	case IMAGIC:
-		a1 = (float)rotation["alpha"];
-		a2 = (float)rotation["beta"];
-		a3 = (float)rotation["gamma"];
-		break;
-		
-	case SPIDER:
-		a1 = (float)rotation["phi"];
-		a2 = (float)rotation["theta"] - 1.5f * M_PI;
-		a3 = (float)rotation["gamma"] - 0.5f * M_PI;
-		break;
-		
-	case MRC:
-		a1 = (float)rotation["theta"];
-		a2 = fmod(-(float)rotation["phi"] + 2.5f * M_PI, 2.0f * M_PI);
-		a3 = fmod((float)rotation["omega"] + 0.5f * M_PI, 2.0f * M_PI);
-		break;
-		
-	case QUATERNION:
-		a0 = (float)rotation["e0"];
-		a1 = (float)rotation["e1"];
-		a2 = (float)rotation["e2"];
-		a3 = (float)rotation["e3"];
-		
-		is_quaternion = 1;
-		break;
-		
-	case SPIN:
-	case SGIROT:
-		{
-			a0 = (float)rotation["q"];
-			a1 = (float)rotation["n1"];
-			a2 = (float)rotation["n2"];
-			a3 = (float)rotation["n3"];
-		
-			is_quaternion = 1;
-			float f = sin(a0 / 2.0f);
-			a1 *= f;
-			a2 *= f;
-			a3 *= f;
-			a0 = cos(a0 / 2.0f);
-		}
-		break;
-		
-	default:
-		throw InvalidValueException(euler_type, "unknown Euler Type");
-	}
-	
-	if (is_quaternion) {
-		quaternion2matrix(a0, a1, a2, a3);
-	}
-	else {
-		matrix[0][0] =  cos(a3)*cos(a2) - cos(a1)*sin(a2)*sin(a3);
-		matrix[0][1] = -sin(a3)*cos(a2) - cos(a1)*sin(a2)*cos(a3);
-		matrix[0][2] =  sin(a1)*sin(a2);
-		matrix[1][0] =  cos(a3)*sin(a2) + cos(a1)*cos(a2)*sin(a3);
-		matrix[1][1] = -sin(a3)*sin(a2) + cos(a1)*cos(a2)*cos(a3);
-		matrix[1][2] = -sin(a1)*cos(a2);
-		matrix[2][0] =  sin(a1)*sin(a3);
-		matrix[2][1] =  sin(a1)*cos(a3);
-		matrix[2][2] =  cos(a1);
-	}
-	
-}
-
-void Transform::set_scale(float scale)
-{
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 3; j++) {
+		for (int j = 0; j < 4; j++) {
 			matrix[i][j] *= scale;
 		}
 	}
 }
 
-Vec3f Transform::get_center() const
+
+
+void Transform3D::orthogonalize()  // YYY
+{
+	EulerType EMAN;
+	float scale = get_scale() ;
+	float inverseScale= 1/scale ;
+	apply_scale(inverseScale);
+//	Dict angs = get_rotation(EMAN);
+//	set_Rotation(EMAN,angs);
+}
+
+
+
+
+
+void Transform3D::set_scale(float scale)    // YYY
+{
+	float OldScale= get_scale();
+	float Scale2Apply = scale/OldScale;
+	apply_scale(Scale2Apply);
+}
+
+
+
+Vec3f Transform3D::get_posttrans() const    // 
+{
+	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
+}
+
+
+
+Vec3f Transform3D::get_posttrans(Vec3f &pretrans) const    // Fix Me
+{
+	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
+}
+
+
+Vec3f Transform3D::get_center() const  // YYY
 {
 	return Vec3f();
 }
 
-Vec3f Transform::get_pretrans() const
-{
-	return pre_trans;
-}
 
-Vec3f Transform::get_posttrans() const
+
+Vec3f Transform3D::get_matrix3_col(int i) const     // YYY
 {
-	return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
+	return Vec3f(matrix[0][i], matrix[1][i], matrix[2][i]);
 }
 
 
-float Transform::eman_alt() const
+Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
 {
-	float alt = 0;
-	float max = 1 - ERR_LIMIT;
-	float sca=get_scale();
-	float mx=matrix[2][2]/sca;
-	
-	if (mx > max) {
-		alt = 0;
-	}
-	else if (mx < -max) {
-		alt = M_PI;
-	}
-	else {
-		alt = (float) acos(mx);
-		float phi=eman_phi();
-		if (fabs(matrix[2][0])>fabs(matrix[2][1])) {
-			if (matrix[2][0]/sin(phi)<0) alt=-alt;
+	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
+}
+
+
+
+
+Transform3D EMAN::operator*(const Transform3D & M1, const Transform3D & M2)     // YYY
+{
+//       This is the  left multiplication of a matrix M2 by a matrix M1; that is M1*M2
+//       It returns a new matrix
+	Transform3D resultant;
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<4; j++) {
+			resultant[i][j] = M1[i][0] * M2[0][j] +  M1[i][1] * M2[1][j] + M1[i][2] * M2[2][j];
 		}
-		else {
-			if (matrix[2][1]/cos(phi)<0) alt=-alt;
-		} 
-		printf("%f %f %f\n",matrix[2][0],matrix[2][1],cos(phi));
+		resultant[i][3] += M1[i][3];  // add on the new translation (not included above)
 	}
-	return alt;
+	return resultant;
 }
 
-float Transform::eman_az() const
+
+
+
+
+Vec3f EMAN::operator*(const Vec3f & v, const Transform3D & M)   // YYY
 {
-	float az = 0;
-	float max = 1 - ERR_LIMIT;
-	float sca=get_scale();
-	float mx=matrix[2][2]/sca;
-	if (fabs(mx) > max) {
-		az = (float)atan2(matrix[1][0], matrix[0][0]);
-	}
-	else {
-		az = (float)atan2(matrix[0][2], -matrix[1][2]);
-	}
-	return az;
+//               This is the right multiplication of a row vector, v by a matrix M
+	float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0];
+	float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
+	float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
+	return Vec3f(x, y, z);
 }
 
-float Transform::eman_phi() const
+
+Vec3f EMAN::operator*( const Transform3D & M, const Vec3f & v)      // YYY
 {
-	float phi = 0;
-	float sca=get_scale();
-
-	if (fabs(matrix[2][2]/sca) > (1 - ERR_LIMIT)) {
-		phi = 0;
-	}
-	else {
-		phi = (float)atan2(matrix[2][0], matrix[2][1]);
-	}
-
-	return phi;
+//               This is the  left multiplication of a vector, v by a matrix M
+	float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] ;
+	float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] ;
+	float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2];
+	return Vec3f(x, y, z);
 }
 
-	
 
-Dict Transform::get_rotation(EulerType euler_type) const
+
+
+
+
+
+
+
+
+/*             Here starts the pure rotation stuff */
+
+/**  A rotation is given by
+
+EMAN
+  | cos phi   sin phi    0 |  |  1       0     0      | |  cos az  sin az   0 |
+  |-sin phi   cos phi    0 |  |  0   cos alt  sin alt | | -sin az  cos az   0 |
+  |   0          0       1 |  |  0  -sin alt  cos alt | |     0       0     1 |
+
+---------------------------------------------------------------------------
+
+SPIDER, FREEALIGN  (th == theta)
+| cos psi   sin psi    0 |  |  cos th  0   -sin th   | |  cos phi  sin phi   0 |
+|-sin psi   cos psi    0 |  |  0       1       0     | | -sin phi  cos phi   0 |
+|   0          0       1 |  |  sin th  0    cos th   | |     0        0      1 |
+
+
+Now this middle matrix is equal to
+
+                 | 0 -1 0|  |1     0    0     | | 0  1  0 |
+                 | 1  0 0|  |0  cos th sin th | |-1  0  0 |
+                 | 0  0 1|  |0 -sin th cos th | | 0  0  1 |
+
+
+ So we have
+
+  | sin psi  -cos psi    0 |  |  1       0     0    | | -sin phi  cos phi   0 |
+  | cos psi   sin psi    0 |  |  0   cos th  sin th | | -cos phi -sin phi   0 |
+  |   0          0       1 |  |  0  -sin th  cos th | |     0       0     1 |
+
+
+        so az = phi_SPIDER + pi/2
+          alt = theta
+          phi = psi        - pi/2
+
+---------------------------------------------------------------------------
+
+MRC  th=theta; om=omega ;
+
+| cos om   sin om    0 |  |  cos th  0   -sin th   | |  cos phi  sin phi   0 |
+|-sin om   cos om    0 |  |  0       1       0     | | -sin phi  cos phi   0 |
+|   0        0       1 |  |  sin th  0    cos th   | |     0        0      1 |
+
+        so az = phi     + pi/2
+          alt = theta
+          phi = omega   - pi/2
+
+---------------------------------------------------------------------------
+For the quaternion type operations, we can start with
+
+R = (1-nhat nhat) cos(Omega) - sin(Omega)nhat cross + nhat nhat
+Notice that this is a clockwise rotation( the xy component, for nhat=zhat,
+ is calculated as - sin(Omega) xhat dot zhat cross yhat= sin(Omega): this is the
+ correct sign for clockwise rotations).
+Now we develop
+
+R =  cos(Omega) one + nhat nhat (1-cos(Omega)) - sin(Omega) nhat cross
+  = (cos^2(Omega/2) - sin^2(Omega/2)) one  + 2 ((sin(Omega/2)nhat ) ((sin(Omega/2)nhat )
+                                    - 2 cos(Omega/2) ((sin(Omega/2)nhat )  cross
+  = (e0^2 - evec^2) one  + 2 (evec evec )  - 2 e0 evec  cross
+
+  e0 = cos(Omega/2)
+  vec{e} = sin(Omega/2) nhat
+
+
+SGIrot is the same as SPIN (see paper)
+The update of rotations for quaternions is very easy.
+
+
+*/
+
+
+
+
+
+
+void Transform3D::set_rotation(float az, float alt, float phi )
 {
-	Dict result;
-	
-	float alt = eman_alt();
-	float az = eman_az();
-	float phi = eman_phi();
-	
-	switch (euler_type) {
+	EulerType euler_type=EMAN;
+	Dict rot;
+	rot["az"]  = az;
+	rot["alt"] = alt;
+	rot["phi"] = phi;
+        set_rotation(euler_type, rot);  // Or should it be &rot ?
+
+}
+
+// This is where it all happens;
+void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a3)  // EMAN: az, alt, phi 
+										// SPIDER: phi, theta, psi 
+{
+	init();
+	Dict rot;
+	switch(euler_type) {
 	case EMAN:
-		result["alt"] = alt;
-		result["az"] = az;
-		result["phi"] = phi;
+		rot["az"]  = a1;
+		rot["alt"] = a2;
+		rot["phi"] = a3;
 		break;
-
-	case MRC:
-		result["theta"] = alt;
-		result["phi"] = fmod(-az + 2.5f * M_PI, 2 * M_PI);
-		result["omega"] = fmod(phi + 1.5f * M_PI, 2 * M_PI);
+	case SPIDER:
+		rot["phi"]   = a1;
+		rot["theta"] = a2;
+		rot["psi"]   = a3;
 		break;
+	default:
+		throw InvalidValueException(euler_type, "cannot instantiate this Euler Type");
+  	}  // ends switch euler_type
+	set_rotation(euler_type, rot);  // Or should it be &rot ?
+}
 
+
+void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
+{
+	float e0  = 0;float e1=0; float e2=0; float e3=0;
+	float Omega=0;
+	float az  = 0;
+	float alt = 0;
+	float phi = 0;
+	bool is_not_quaternion = 1;
+
+	switch(euler_type) {
+	case EMAN:
+		az  = (float)rotation["az"] ;
+		alt = (float)rotation["alt"]  ;
+		phi = (float)rotation["phi"] ;
+		break;
 	case IMAGIC:
-		result["alpha"] = phi;
-		result["beta"] = alt;
-		result["gamma"] = az;
+		az  = (float)rotation["alpha"] ;
+		alt = (float)rotation["beta"]  ;
+		phi = (float)rotation["gamma"] ;
 		break;
 
 	case SPIDER:
-		result["phi"] = fmod((az + 1.5f * M_PI), 2 * M_PI);
-		result["theta"] = alt;
-		result["gamma"] = fmod((phi + M_PI/2), 2 * M_PI);	
+		az =  (float)rotation["phi"]    + 0.5f * M_PI;              ;
+		alt = (float)rotation["theta"]  ;
+		phi = (float)rotation["psi"]    - 0.5f * M_PI ;
+		break;
+
+	case MRC:
+		az  = (float)rotation["phi"]   + 0.5f * M_PI  ;
+		alt = (float)rotation["theta"] ;
+		phi = (float)rotation["omega"] - 0.5f * M_PI ;
+		break;
+
+	case QUATERNION:
+		is_not_quaternion = 0;
+		e0 = (float)rotation["e0"] ;
+		e1 = (float)rotation["e1"] ;
+		e2 = (float)rotation["e2"] ;
+		e3 = (float)rotation["e3"] ;
 		break;
 
 	case SPIN:
+		is_not_quaternion = 0;
+		Omega = (float)rotation["Omega"];
+		e0 = cos(Omega/2.0f);
+		e1 = sin(Omega/2.0f)* (float)rotation["n1"];
+		e2 = sin(Omega/2.0f)* (float)rotation["n2"];
+		e3 = sin(Omega/2.0f)* (float)rotation["n3"];
+		break;
+
 	case SGIROT:
-		{
-			vector<float> sgivec = matrix2sgi();
-			result["q"] = sgivec[0];
-			result["n1"] = sgivec[1];
-			result["n2"] = sgivec[2];
-			result["n3"] = sgivec[3];
-		}
+		is_not_quaternion = 0;
+		Omega = (float)rotation["q"]  ;
+		e0 = cos(Omega/2.0f);
+		e1 = sin(Omega/2.0f)* (float)rotation["n1"];
+		e2 = sin(Omega/2.0f)* (float)rotation["n2"];
+		e3 = sin(Omega/2.0f)* (float)rotation["n3"];
 		break;
-		
+
+	default:
+		throw InvalidValueException(euler_type, "unknown Euler Type");
+	}  // ends switch euler_type
+
+
+	if (is_not_quaternion) {
+		matrix[0][0] =  cos(phi)*cos(az) - cos(alt)*sin(az)*sin(phi);
+		matrix[0][1] =  cos(phi)*sin(az) + cos(alt)*cos(az)*sin(phi);
+		matrix[0][2] =  sin(alt)*sin(phi);
+		matrix[1][0] = -sin(phi)*cos(az) - cos(alt)*sin(az)*cos(phi);
+		matrix[1][1] = -sin(phi)*sin(az) + cos(alt)*cos(az)*cos(phi);
+		matrix[1][2] =  sin(alt)*cos(phi);
+		matrix[2][0] =  sin(alt)*sin(az);
+		matrix[2][1] = -sin(alt)*cos(az);
+		matrix[2][2] =  cos(alt);
+	}	else {
+		matrix[0][0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
+		matrix[0][1] = 2.0f * (e1 * e2 + e0 * e3);
+		matrix[0][2] = 2.0f * (e1 * e3 - e0 * e2);
+		matrix[1][0] = 2.0f * (e2 * e1 - e0 * e3);
+		matrix[1][1] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
+		matrix[1][2] = 2.0f * (e2 * e3 + e0 * e1);
+		matrix[2][0] = 2.0f * (e3 * e1 + e0 * e2);
+		matrix[2][1] = 2.0f * (e3 * e2 - e0 * e1);
+		matrix[2][2] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
+		// keep in mind matrix[0][2] is M13 gives an e0 e2 piece, etc
+	}
+}
+
+float Transform3D::get_scale() const     // YYY
+{
+	// Assumes uniform scaling, calculation uses Z only.
+	float scale =0;
+	for (int i=0; i<3; i++) {
+		for (int j=0; j<3; j++) {
+			scale = scale + matrix[i][j]*matrix[i][j];
+		}
+	}
+
+	return sqrt(scale/3);
+}
+
+
+
+Dict Transform3D::get_rotation(EulerType euler_type) const
+{
+	Dict result;
+
+	float max = 1 - ERR_LIMIT;
+	float sca=get_scale();
+	float cosalt=matrix[2][2]/sca;
+
+
+// get phi
+	float phi=0;
+
+	if (fabs(cosalt) > max) {
+		phi = 0;
+	}
+	else {
+		phi = (float)atan2(matrix[0][2], matrix[1][2]);
+	}
+
+
+// get alt
+	float alt = 0;
+
+	if (cosalt > max) {  // that is, alt close to 0
+		alt = 0;
+	}
+	else if (cosalt < -max) {
+		alt = M_PI;
+	}
+	else {
+		alt = (float) acos(cosalt);
+	}
+
+// get az
+	float az = 0;
+	if (fabs(cosalt) > max) {
+		az = (float)atan2(matrix[0][1], matrix[0][0]);
+	}
+	else {
+		az = (float)atan2(matrix[2][0], -matrix[2][1]);
+	}
+//   do some quaternionic stuff here
+
+	float nphi = (az-phi)/2.0f;
+    // The next is also e0
+	float cosOover2 = fabs( cos((az+phi)/2) * cos(alt/2.) );
+	float sinOover2 = sqrt(1 -cosOover2*cosOover2);
+	float cosnTheta = sin((az+phi)/2.) * cos(alt/2.) / sqrt(1-cosOover2*cosOover2) ;
+	float sinnTheta = sqrt(1-cosnTheta*cosnTheta);
+	float n1 = sinnTheta*cos(nphi);
+	float n2 = sinnTheta*sin(nphi);
+	float n3 = cosnTheta;
+
+
+	switch (euler_type) {
+	case EMAN:
+		result["az"]  = az;
+		result["alt"] = alt;
+		result["phi"] = phi;
+		break;
+
+	case IMAGIC:
+		result["alpha"] = az;
+		result["beta"] = alt;
+		result["gamma"] = phi;
+		break;
+
+	case SPIDER:
+		result["phi"] = fmod((az  - 0.5f * M_PI), 2 * M_PI);
+		result["theta"] = alt;
+		result["psi"] = fmod((phi + 0.5f * M_PI), 2 * M_PI);
+		break;
+
+	case MRC:
+		result["phi"]   = fmod( az - 0.5f * M_PI, 2 * M_PI);
+		result["theta"] = alt;
+		result["omega"] = fmod(phi + 0.5f * M_PI, 2 * M_PI);
+		break;
+
 	case QUATERNION:
-		{
-			vector<float> quatvec = matrix2quaternion();
-			result["e0"] = quatvec[0];
-			result["e1"] = quatvec[1];
-			result["e2"] = quatvec[2];
-			result["e3"] = quatvec[3];
-		}
+		result["e0"] = cosOover2 ;
+		result["e1"] = sinOover2 * n1 ;
+		result["e2"] = sinOover2 * n2;
+		result["e3"] = sinOover2 * n3;
 		break;
-		
+
+	case SPIN:
+		result["Omega"] = acos(cosOover2) ;
+		result["n1"] = n1;
+		result["n2"] = n2;
+		result["n3"] = n3;
+		break;
+
+	case SGIROT:
+		result["q"] = acos(cosOover2) ;
+		result["n1"] = n1;
+		result["n2"] = n2;
+		result["n3"] = n3;
+		break;
+
 	default:
 		throw InvalidValueException(euler_type, "unknown Euler Type");
 	}
@@ -474,31 +607,145 @@ Dict Transform::get_rotation(EulerType euler_type) const
 	return result;
 }
 
-Vec3f Transform::get_matrix3_col(int i) const
+
+
+map<string, int> Transform3D::symmetry_map = map<string, int>();
+
+
+
+
+
+
+
+
+//
+// Symmetry Stuff
+
+Transform3D Transform3D::get_sym(const string & symname, int n)
 {
-	return Vec3f(matrix[0][i], matrix[1][i], matrix[2][i]);
+	int nsym = get_nsym(symname);
+
+	Transform3D invalid;
+	invalid.set_rotation( -0.1f, -0.1f, -0.1f);
+
+	if (n >= nsym) {
+		return invalid;
+	}
+	// see www.math.utah.edu/~alfeld/math/polyhedra/polyhedra.html for pictures
+	// By default we will put largest symmetry along z-axis.
+
+	// Each Platonic Solid has 2E symmetry elements.
+
+
+	// An icosahedron has   m=5, n=3, F=20 E=30=nF/2, V=12=nF/m,since vertices shared by 5 triangles;
+	// It is composed of 20 triangles. E=3*20/2;
+
+
+	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
+	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3;
+
+
+
+    // The ICOS symmetry group has the face along z-axis
+
+	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
+	float lvl1= 63.4349; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+	float lvl2=116.5651; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+	float lvl3=180.;                           // there is one pentagon on the bottom
+             // Notice that 63.439 is the angle between two faces of the dual object
+
+	static double ICOS[180] = { // This is with a pentagon normal to z 
+		  0,lvl0,0,    0,lvl0,288,   0,lvl0,216,   0,lvl0,144,  0,lvl0,72,
+		  0,lvl1,36,   0,lvl1,324,   0,lvl1,252,   0,lvl1,180,  0,lvl1,108,
+		 72,lvl1,36,  72,lvl1,324,  72,lvl1,252,  72,lvl1,180,  72,lvl1,108,
+		144,lvl1,36, 144,lvl1,324, 144,lvl1,252, 144,lvl1,180, 144,lvl1,108,
+		216,lvl1,36, 216,lvl1,324, 216,lvl1,252, 216,lvl1,180, 216,lvl1,108,
+		288,lvl1,36, 288,lvl1,324, 288,lvl1,252, 288,lvl1,180, 288,lvl1,108,
+		 36,lvl2,0,   36,lvl2,288,  36,lvl2,216,  36,lvl2,144,  36,lvl2,72,
+		108,lvl2,0,  108,lvl2,288, 108,lvl2,216, 108,lvl2,144, 108,lvl2,72,
+		180,lvl2,0,  180,lvl2,288, 180,lvl2,216, 180,lvl2,144, 180,lvl2,72,
+		252,lvl2,0,  252,lvl2,288, 252,lvl2,216, 252,lvl2,144, 252,lvl2,72,
+		324,lvl2,0,  324,lvl2,288, 324,lvl2,216, 324,lvl2,144, 324,lvl2,72,
+   		  0,lvl3,0,    0,lvl3,288,   0,lvl3,216,   0,lvl3,144,   0,lvl3,72
+	};
+
+
+	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 4 triangles;
+	// It is composed of 20 triangles. E=3*20/2;
+
+
+    // We have placed the OCT symmetry group with a face along the z-axis
+        lvl0=0;
+	lvl1=90;
+	lvl2=180;
+
+	static float OCT[72] = {// This is with a face of a cube along z 
+		      0,lvl0,0,   0,lvl0,90,    0,lvl0,180,    0,lvl0,270,
+		      0,lvl1,0,   0,lvl1,90,    0,lvl1,180,    0,lvl1,270,
+		     90,lvl1,0,  90,lvl1,90,   90,lvl1,180,   90,lvl1,270,
+		    180,lvl1,0, 180,lvl1,90,  180,lvl1,180,  180,lvl1,270,
+		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
+		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
+	};
+
+    // The TET symmetry group has a face along the z-axis
+    // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
+        lvl0=0;         // There is a face along z
+	lvl1=109.4712;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+
+	static float TET[36] = {// This is with the face along z 
+	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
+	      0,lvl1,0,   0,lvl1,120,    0,lvl1,240,
+	    120,lvl1,0, 120,lvl1,120,  120,lvl1,240,
+	    240,lvl1,0, 240,lvl1,120,  240,lvl1,240
+	};
+
+
+	Transform3D ret;
+	SymType type = get_sym_type(symname);
+
+	switch (type) {
+	case CSYM:
+		ret.set_rotation( n * 2.0f * M_PI / nsym, 0, 0);
+		break;
+	case DSYM:
+		if (n >= nsym / 2) {
+			ret.set_rotation((n - nsym/2) * 2.0f * M_PI / (nsym / 2),M_PI, 0);
+		}
+		else {
+			ret.set_rotation( n * 2.0f * M_PI / (nsym / 2),0, 0);
+		}
+		break;
+	case ICOS_SYM:
+		ret.set_rotation((float)ICOS[n * 3 ]    * M_PI / 180,
+				 (float)ICOS[n * 3 + 1] * M_PI / 180 ,
+				 (float)ICOS[n * 3 + 2] * M_PI / 180 );
+		break;
+	case OCT_SYM:
+		ret.set_rotation((float)OCT[n * 3]     * M_PI / 180,
+				 (float)OCT[n * 3 + 1] * M_PI / 180, 
+				 (float)OCT[n * 3 + 2] * M_PI / 180);
+		break;
+	case TET_SYM:
+		ret.set_rotation((float)TET[n * 3 ]    * M_PI / 180,
+				 (float)TET[n * 3 + 1] * M_PI / 180 ,
+				 (float)TET[n * 3 + 2] * M_PI / 180 );
+		break;
+	case ISYM:
+		ret.set_rotation(0, 0, 0);
+	default:
+		throw InvalidValueException(type, symname);
+	}
+
+	ret = (*this) * ret;
+
+	return ret;
 }
 
 
-Vec3f Transform::get_matrix3_row(int i) const
+
+int Transform3D::get_nsym(const string & name)
 {
-	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
-}
-
-
-float Transform::get_scale() const
-{
-	// Assumes uniform scaling, calculation uses Z only.
-	float ksq = matrix[0][2] * matrix[0][2] +
-		matrix[1][2] * matrix[1][2] + matrix[2][2] * matrix[2][2];	// should be 1.0 if no scaling
-	
-	return sqrt(ksq);
-}
-
-map<string, int> Transform::symmetry_map = map<string, int>();
-
-int Transform::get_nsym(const string & name) 
-{	
 	if (name == "") {
 		return 0;
 	}
@@ -506,22 +753,22 @@ int Transform::get_nsym(const string & name)
 	if (symmetry_map.find(name) != symmetry_map.end()) {
 		return symmetry_map[name];
 	}
-	
+
 	string symname = name;
-	
+
 	for (size_t i = 0; i < name.size(); i++) {
 		if (isalpha(name[i])) {
 			symname[i] = (char)tolower(name[i]);
 		}
 	}
-	
+
 	if (symmetry_map.find(name) != symmetry_map.end()) {
 		return symmetry_map[symname];
 	}
 
 	SymType type = get_sym_type(symname);
 	int nsym = 0;
-	
+
 	switch (type) {
 	case CSYM:
 		nsym = atoi(symname.c_str() + 1);
@@ -544,196 +791,13 @@ int Transform::get_nsym(const string & name)
 	}
 
 	symmetry_map[symname] = nsym;
-	
+
 	return nsym;
 }
 
-Transform Transform::get_sym(const string & symname, int n)
-{
-	int nsym = get_nsym(symname);
-	
-	Transform invalid;
-	invalid.set_rotation(Transform::EMAN, -0.1f, -0.1f, -0.1f);
-	
-	if (n >= nsym) {
-		return invalid;
-	}
-	
-	static double ICOS[180] = {
-		0, 0, 0, 0, 0, 288, 0, 0, 216, 0, 0, 144, 0, 0, 72,
-		0, 63.4349, 36, 0, 63.4349, 324, 0, 63.4349, 252, 0, 63.4349, 180, 0, 63.4349, 108,
-		72, 63.4349, 36, 72, 63.4349, 324, 72, 63.4349, 252, 72, 63.4349, 180, 72, 63.4349, 108,
-		144, 63.4349, 36, 144, 63.4349, 324, 144, 63.4349, 252, 144, 63.4349, 180, 144, 63.4349,
-		108,
-		216, 63.4349, 36, 216, 63.4349, 324, 216, 63.4349, 252, 216, 63.4349, 180, 216, 63.4349,
-		108,
-		288, 63.4349, 36, 288, 63.4349, 324, 288, 63.4349, 252, 288, 63.4349, 180, 288, 63.4349,
-		108,
-		36, 116.5651, 0, 36, 116.5651, 288, 36, 116.5651, 216, 36, 116.5651, 144, 36, 116.5651, 72,
-		108, 116.5651, 0, 108, 116.5651, 288, 108, 116.5651, 216, 108, 116.5651, 144, 108, 116.5651,
-		72,
-		180, 116.5651, 0, 180, 116.5651, 288, 180, 116.5651, 216, 180, 116.5651, 144, 180, 116.5651,
-		72,
-		252, 116.5651, 0, 252, 116.5651, 288, 252, 116.5651, 216, 252, 116.5651, 144, 252, 116.5651,
-		72,
-		324, 116.5651, 0, 324, 116.5651, 288, 324, 116.5651, 216, 324, 116.5651, 144, 324, 116.5651,
-		72,
-		0, 180, 0, 0, 180, 288, 0, 180, 216, 0, 180, 144, 0, 180, 72
-	};
-
-	static float OCT[72] = {
-		0, 0, 0, 90, 0, 0, 180, 0, 0, 270, 0, 0, 90, 90, 0, 90, 270, 0,
-		0, 0, 90, 90, 0, 90, 180, 0, 90, 270, 0, 90, 90, 90, 90, 90, 270, 90,
-		0, 0, 180, 90, 0, 180, 180, 0, 180, 270, 0, 180, 90, 90, 180, 90, 270, 180,
-		0, 0, 270, 90, 0, 270, 180, 0, 270, 270, 0, 270, 90, 90, 270, 90, 270, 270
-	};
 
 
-	Transform ret;	
-	SymType type = get_sym_type(symname);
-
-	switch (type) {
-	case CSYM:
-		ret.set_rotation(Transform::EMAN, 0, n * 2.0f * M_PI / nsym, 0);
-		break;
-	case DSYM:
-		if (n >= nsym / 2) {
-			ret.set_rotation(Transform::EMAN, M_PI, (n - nsym/2) * 2.0f * M_PI / (nsym / 2),0);
-		}
-		else {
-			ret.set_rotation(Transform::EMAN, 0, n * 2.0f * M_PI / (nsym / 2), 0);
-		}
-		break;
-	case ICOS_SYM:
-		ret.set_rotation(Transform::EMAN, (float)ICOS[n * 3 + 1] * M_PI / 180, 
-						 (float)ICOS[n * 3 + 2] * M_PI / 180 - M_PI / 2,
-						 (float)ICOS[n * 3] * M_PI / 180 + M_PI / 2);
-		break;
-	case OCT_SYM:
-		ret.set_rotation(Transform::EMAN, OCT[n * 3] * M_PI / 180, 
-						 OCT[n * 3 + 1] * M_PI / 180, OCT[n * 3 + 2] * M_PI / 180);
-		break;
-	case ISYM:
-		ret.set_rotation(Transform::EMAN, 0, 0, 0);
-	default:
-		throw InvalidValueException(type, symname);		
-	}
-
-	ret = (*this) * ret;
-
-	return ret;
-}
-
-float Transform::orthogonality() const
-{
-	return 0;
-}
-
-Transform Transform::operator*=(const Transform& t)
-{
-	return Transform();
-}
-
-float * Transform::operator[] (int i)
-{
-	return matrix[i];
-}
-
-const float * Transform::operator[] (int i) const
-{
-	return matrix[i];
-}
-
-vector<float> Transform::matrix2quaternion() const
-{
-	vector<float> result(4);
-	int i = 0;
-
-	if (matrix[0][0] > matrix[1][1]) {
-		if (matrix[0][0] > matrix[2][2]) {
-			i = 0;
-		}
-		else {
-			i = 2;
-		}
-	}
-	else {
-		if (matrix[1][1] > matrix[2][2]) {
-			i = 1;
-		}
-		else {
-			i = 2;
-		}
-	}
-
-	if (matrix[0][0] + matrix[1][1] + matrix[2][2] > matrix[i][i]) {
-		result[0] = (float) (sqrt(matrix[0][0] + matrix[1][1] + matrix[2][2] + 1) / 2.0);
-		result[1] = (float) ((matrix[1][2] - matrix[2][1]) / (4 * result[0]));
-		result[2] = (float) ((matrix[2][0] - matrix[0][2]) / (4 * result[0]));
-		result[3] = (float) ((matrix[0][1] - matrix[1][0]) / (4 * result[0]));
-	}
-	else {
-		float quat[3];
-		int j = (i + 1) % 3;
-		int k = (i + 2) % 3;
-
-		quat[i] = (float) (sqrt(matrix[i][i] - matrix[j][j] - matrix[k][k] + 1) / 2.0);
-		quat[j] = (float) ((matrix[i][j] + matrix[j][i]) / (4 * quat[i]));
-		quat[k] = (float) ((matrix[i][k] + matrix[k][i]) / (4 * quat[i]));
-
-		result[0] = (float) ((matrix[j][k] - matrix[k][j]) / (4 * quat[i]));
-		result[1] = quat[0];
-		result[2] = quat[1];
-		result[3] = quat[2];
-	}
-							 
-	return result;
-}
-
-
-vector<float> Transform::matrix2sgi() const
-{
-	vector<float> q = matrix2quaternion();
-	Vec3f vec(q[1], q[2], q[3]);
-	float len = vec.length();
-	float radians = 0;
-	Vec3f axis;
-	
-	if (len > 0.00001f) {
-		radians = 2.0f * acos(q[0]);
-		axis = vec * ((float) (1.0f / len));
-	}
-	else {
-		radians = 0;
-		axis.set_value(0.0f, 0.0f, 1.0f);
-	}
-
-	vector<float> result(4);
-	result[0] = radians;
-	result[1] = axis[0];
-	result[2] = axis[1];
-	result[3] = axis[2];
-	
-	return result;
-}
-
-void Transform::quaternion2matrix(float e0, float e1, float e2, float e3)
-{
-	matrix[0][0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
-	matrix[0][1] = 2.0f * (e1 * e2 + e0 * e3);
-	matrix[0][2] = 2.0f * (e1 * e3 - e0 * e2);
-
-	matrix[1][0] = 2.0f * (e1 * e2 - e0 * e3);
-	matrix[1][1] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
-	matrix[1][2] = 2.0f * (e2 * e3 + e0 * e1);
-
-	matrix[2][0] = 2.0f * (e1 * e3 + e0 * e2);
-	matrix[2][1] = 2.0f * (e2 * e3 - e0 * e1);
-	matrix[2][2] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
-}
-
-
-Transform::SymType Transform::get_sym_type(const string & name)
+Transform3D::SymType Transform3D::get_sym_type(const string & name)
 {
 	SymType t = UNKNOWN_SYM;
 
@@ -755,19 +819,7 @@ Transform::SymType Transform::get_sym_type(const string & name)
 	return t;
 }
 
-
-Vec3f EMAN::operator*(const Vec3f & v, const Transform & t)
-{
-	float x = v[0] * t[0][0] + v[1] * t[1][0] + v[2] * t[2][0];
-	float y = v[0] * t[0][1] + v[1] * t[1][1] + v[2] * t[2][1];
-	float z = v[0] * t[0][2] + v[1] * t[1][2] + v[2] * t[2][2];
-	return Vec3f(x, y, z);
-}
-
-Transform EMAN::operator*(const Transform & t1, const Transform & t2)
-{
-	return Transform();
-}
+//
 
 
 

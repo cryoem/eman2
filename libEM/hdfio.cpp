@@ -1053,16 +1053,16 @@ void HdfIO::create_enum_types()
 
 	if (!enum_types_created) {
 #if 0
-        Transform::EulerType e;
-		euler_type = H5Tcreate(H5T_ENUM, sizeof(Transform::EulerType));
+        Transform3D::EulerType e;
+		euler_type = H5Tcreate(H5T_ENUM, sizeof(Transform3D::EulerType));
         
-		H5Tenum_insert(euler_type, "EMAN", (e = Transform::EMAN, &e));
-		H5Tenum_insert(euler_type, "IMAGIC", (e = Transform::IMAGIC, &e));
-		H5Tenum_insert(euler_type, "SPIN", (e = Transform::SPIN, &e));
-		H5Tenum_insert(euler_type, "QUATERNION", (e = Transform::QUATERNION, &e));
-		H5Tenum_insert(euler_type, "SGIROT", (e = Transform::SGIROT, &e));
-		H5Tenum_insert(euler_type, "SPIDER", (e = Transform::SPIDER, &e));
-		H5Tenum_insert(euler_type, "MRC", (e = Transform::MRC, &e));
+		H5Tenum_insert(euler_type, "EMAN", (e = Transform3D::EMAN, &e));
+		H5Tenum_insert(euler_type, "IMAGIC", (e = Transform3D::IMAGIC, &e));
+		H5Tenum_insert(euler_type, "SPIN", (e = Transform3D::SPIN, &e));
+		H5Tenum_insert(euler_type, "QUATERNION", (e = Transform3D::QUATERNION, &e));
+		H5Tenum_insert(euler_type, "SGIROT", (e = Transform3D::SGIROT, &e));
+		H5Tenum_insert(euler_type, "SPIDER", (e = Transform3D::SPIDER, &e));
+		H5Tenum_insert(euler_type, "MRC", (e = Transform3D::MRC, &e));
 
 		MapInfoType m;
 		mapinfo_type = H5Tcreate(H5T_ENUM, sizeof(MapInfoType));

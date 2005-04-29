@@ -23,13 +23,13 @@ EM = EMUtil.ImageType.IMAGE_EM
 IMAGE_UNKNOWN = EMUtil.ImageType.IMAGE_UNKNOWN
 
 
-EULER_EMAN = Transform.EulerType.EMAN
-EULER_IMAGIC = Transform.EulerType.IMAGIC
-EULER_SPIN = Transform.EulerType.SPIN
-EULER_QUATERNION = Transform.EulerType.QUATERNION
-EULER_SGIROT = Transform.EulerType.SGIROT
-EULER_SPIDER = Transform.EulerType.SPIDER
-EULER_MRC = Transform.EulerType.MRC
+EULER_EMAN = Transform3D.EulerType.EMAN
+EULER_IMAGIC = Transform3D.EulerType.IMAGIC
+EULER_SPIN = Transform3D.EulerType.SPIN
+EULER_QUATERNION = Transform3D.EulerType.QUATERNION
+EULER_SGIROT = Transform3D.EulerType.SGIROT
+EULER_SPIDER = Transform3D.EulerType.SPIDER
+EULER_MRC = Transform3D.EulerType.MRC
 
 
 EM_UNKNOWN = EMUtil.EMDataType.EM_UNKNOWN

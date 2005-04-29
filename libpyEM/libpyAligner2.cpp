@@ -18,30 +18,24 @@ namespace  {
 
 struct EMAN_Aligner_Wrapper: EMAN::Aligner
 {
-    EMAN_Aligner_Wrapper(PyObject* self_, const EMAN::Aligner& p0):
-        EMAN::Aligner(p0), self(self_) {}
-
-    EMAN_Aligner_Wrapper(PyObject* self_):
-        EMAN::Aligner(), self(self_) {}
-
     EMAN::EMData* align(EMAN::EMData* p0, EMAN::EMData* p1) const {
-        return call_method< EMAN::EMData* >(self, "align", p0, p1);
+        return call_method< EMAN::EMData* >(py_self, "align", p0, p1);
     }
 
     EMAN::EMData* align(EMAN::EMData* p0, EMAN::EMData* p1, const std::string& p2) const {
-        return call_method< EMAN::EMData* >(self, "align", p0, p1, p2);
+        return call_method< EMAN::EMData* >(py_self, "align", p0, p1, p2);
     }
 
     std::string get_name() const {
-        return call_method< std::string >(self, "get_name");
+        return call_method< std::string >(py_self, "get_name");
     }
 
     std::string get_desc() const {
-        return call_method< std::string >(self, "get_desc");
+        return call_method< std::string >(py_self, "get_desc");
     }
 
     EMAN::Dict get_params() const {
-        return call_method< EMAN::Dict >(self, "get_params");
+        return call_method< EMAN::Dict >(py_self, "get_params");
     }
 
     EMAN::Dict default_get_params() const {
@@ -49,7 +43,7 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
     }
 
     void set_params(const EMAN::Dict& p0) {
-        call_method< void >(self, "set_params", p0);
+        call_method< void >(py_self, "set_params", p0);
     }
 
     void default_set_params(const EMAN::Dict& p0) {
@@ -57,91 +51,68 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
     }
 
     EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(self, "get_param_types");
+        return call_method< EMAN::TypeDict >(py_self, "get_param_types");
     }
 
-    PyObject* self;
+    PyObject* py_self;
 };
 
 struct EMAN_Ctf_Wrapper: EMAN::Ctf
 {
-    EMAN_Ctf_Wrapper(PyObject* self_, const EMAN::Ctf& p0):
-        EMAN::Ctf(p0), self(self_) {}
-
-    EMAN_Ctf_Wrapper(PyObject* self_):
-        EMAN::Ctf(), self(self_) {}
-
     int from_string(const std::string& p0) {
-        return call_method< int >(self, "from_string", p0);
+        return call_method< int >(py_self, "from_string", p0);
     }
 
     std::string to_string() const {
-        return call_method< std::string >(self, "to_string");
+        return call_method< std::string >(py_self, "to_string");
     }
 
     void from_dict(const EMAN::Dict& p0) {
-        call_method< void >(self, "from_dict", p0);
+        call_method< void >(py_self, "from_dict", p0);
     }
 
     EMAN::Dict to_dict() const {
-        return call_method< EMAN::Dict >(self, "to_dict");
+        return call_method< EMAN::Dict >(py_self, "to_dict");
     }
 
     std::vector<float,std::allocator<float> > compute_1d(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
-        return call_method< std::vector<float,std::allocator<float> > >(self, "compute_1d", p0, p1, p2);
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d", p0, p1, p2);
     }
 
     void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
-        call_method< void >(self, "compute_2d_real", p0, p1, p2);
+        call_method< void >(py_self, "compute_2d_real", p0, p1, p2);
     }
 
     void compute_2d_complex(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
-        call_method< void >(self, "compute_2d_complex", p0, p1, p2);
+        call_method< void >(py_self, "compute_2d_complex", p0, p1, p2);
     }
 
     void copy_from(const EMAN::Ctf* p0) {
-        call_method< void >(self, "copy_from", p0);
+        call_method< void >(py_self, "copy_from", p0);
     }
 
     bool equal(const EMAN::Ctf* p0) const {
-        return call_method< bool >(self, "equal", p0);
+        return call_method< bool >(py_self, "equal", p0);
     }
 
     float get_defocus() const {
-        return call_method< float >(self, "get_defocus");
+        return call_method< float >(py_self, "get_defocus");
     }
 
     float get_bfactor() const {
-        return call_method< float >(self, "get_bfactor");
+        return call_method< float >(py_self, "get_bfactor");
     }
 
-    PyObject* self;
+    PyObject* py_self;
 };
-// Unique type for unnamed enums
-#ifndef PYSTE_UNIQUE_INT_DEFINED
-#define PYSTE_UNIQUE_INT_DEFINED
-template<int num>
-struct UniqueInt {
-   int v;
-   enum { value=num };
-   UniqueInt(int v_):
-       v(v_)
-   {}
-   operator int() const
-   { return v; }
-};
-#endif // PYSTE_UNIQUE_INT_DEFINED 
 
 struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
 {
-    EMAN_SimpleCtf_Wrapper(PyObject* self_, const EMAN::SimpleCtf& p0):
-        EMAN::SimpleCtf(p0), self(self_) {}
-
-    EMAN_SimpleCtf_Wrapper(PyObject* self_):
-        EMAN::SimpleCtf(), self(self_) {}
+    EMAN_SimpleCtf_Wrapper(PyObject* py_self_):
+        EMAN::SimpleCtf(), py_self(py_self_) {}
 
     std::vector<float,std::allocator<float> > compute_1d(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
-        return call_method< std::vector<float,std::allocator<float> > >(self, "compute_1d", p0, p1, p2);
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d", p0, p1, p2);
     }
 
     std::vector<float,std::allocator<float> > default_compute_1d_2(int p0, EMAN::Ctf::CtfType p1) {
@@ -153,7 +124,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     void compute_2d_real(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
-        call_method< void >(self, "compute_2d_real", p0, p1, p2);
+        call_method< void >(py_self, "compute_2d_real", p0, p1, p2);
     }
 
     void default_compute_2d_real_2(EMAN::EMData* p0, EMAN::Ctf::CtfType p1) {
@@ -165,7 +136,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     void compute_2d_complex(EMAN::EMData* p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
-        call_method< void >(self, "compute_2d_complex", p0, p1, p2);
+        call_method< void >(py_self, "compute_2d_complex", p0, p1, p2);
     }
 
     void default_compute_2d_complex_2(EMAN::EMData* p0, EMAN::Ctf::CtfType p1) {
@@ -177,7 +148,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     int from_string(const std::string& p0) {
-        return call_method< int >(self, "from_string", p0);
+        return call_method< int >(py_self, "from_string", p0);
     }
 
     int default_from_string(const std::string& p0) {
@@ -185,7 +156,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     std::string to_string() const {
-        return call_method< std::string >(self, "to_string");
+        return call_method< std::string >(py_self, "to_string");
     }
 
     std::string default_to_string() const {
@@ -193,7 +164,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     void from_dict(const EMAN::Dict& p0) {
-        call_method< void >(self, "from_dict", p0);
+        call_method< void >(py_self, "from_dict", p0);
     }
 
     void default_from_dict(const EMAN::Dict& p0) {
@@ -201,7 +172,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     EMAN::Dict to_dict() const {
-        return call_method< EMAN::Dict >(self, "to_dict");
+        return call_method< EMAN::Dict >(py_self, "to_dict");
     }
 
     EMAN::Dict default_to_dict() const {
@@ -209,7 +180,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     void copy_from(const EMAN::Ctf* p0) {
-        call_method< void >(self, "copy_from", p0);
+        call_method< void >(py_self, "copy_from", p0);
     }
 
     void default_copy_from(const EMAN::Ctf* p0) {
@@ -217,7 +188,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     bool equal(const EMAN::Ctf* p0) const {
-        return call_method< bool >(self, "equal", p0);
+        return call_method< bool >(py_self, "equal", p0);
     }
 
     bool default_equal(const EMAN::Ctf* p0) const {
@@ -225,7 +196,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     float get_defocus() const {
-        return call_method< float >(self, "get_defocus");
+        return call_method< float >(py_self, "get_defocus");
     }
 
     float default_get_defocus() const {
@@ -233,14 +204,14 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
     }
 
     float get_bfactor() const {
-        return call_method< float >(self, "get_bfactor");
+        return call_method< float >(py_self, "get_bfactor");
     }
 
     float default_get_bfactor() const {
         return EMAN::SimpleCtf::get_bfactor();
     }
 
-    PyObject* self;
+    PyObject* py_self;
 };
 
 
@@ -251,7 +222,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
 BOOST_PYTHON_MODULE(libpyAligner2)
 {
     def("dump_aligners", &EMAN::dump_aligners);
-    class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("__Aligner", init<  >())
+    class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("__Aligner", no_init)
         .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
         .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*, const std::string&) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Aligner::get_name))
@@ -270,7 +241,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
     scope* EMAN_Ctf_scope = new scope(
-    class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", init<  >())
+    class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", no_init)
         .def("from_string", pure_virtual(&EMAN::Ctf::from_string))
         .def("to_string", pure_virtual(&EMAN::Ctf::to_string))
         .def("from_dict", pure_virtual(&EMAN::Ctf::from_dict))
@@ -308,15 +279,11 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
 
-    enum_< UniqueInt<0> >("unnamed")
-        .value("CTFOS", EMAN::Ctf::CTFOS)
-        .export_values()
-    ;
+    scope().attr("CTFOS") = (int)EMAN::Ctf::CTFOS;
 
     delete EMAN_Ctf_scope;
 
-    class_< EMAN::SimpleCtf, bases< EMAN::Ctf > , EMAN_SimpleCtf_Wrapper >("SimpleCtf", init<  >())
-        .def(init< const EMAN::SimpleCtf& >())
+    class_< EMAN::SimpleCtf, bases< EMAN::Ctf > , boost::noncopyable, EMAN_SimpleCtf_Wrapper >("SimpleCtf", init<  >())
         .def_readwrite("defocus", &EMAN::SimpleCtf::defocus)
         .def_readwrite("bfactor", &EMAN::SimpleCtf::bfactor)
         .def_readwrite("amplitude", &EMAN::SimpleCtf::amplitude)
