@@ -28,7 +28,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_append_image_overloads_1_3, a
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, write_lst, 1, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_filter_overloads_1_2, process, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, process, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_4, align, 2, 4)
 
@@ -43,6 +43,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_pad_fft_overloads_0_1, pad_fft, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_do_ift_inplace_overloads_0_1, do_ift_inplace, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
 
@@ -76,6 +78,10 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cut_slice_overloads_2_6, cut_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_2_5, uncut_slice, 2, 5)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_3, set_size, 1, 3)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_complex_size_overloads_1_3, set_complex_size, 1, 3)
+
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMData::read_images, 1, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
@@ -94,7 +100,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7())
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
         .def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4())
-        .def("process", &EMAN::EMData::process, EMAN_EMData_filter_overloads_1_2())
+        .def("process", &EMAN::EMData::process, EMAN_EMData_process_overloads_1_2())
         .def("cmp", &EMAN::EMData::cmp)
         .def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_4()[ return_value_policy< manage_new_object >() ])
         .def("project", &EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])
@@ -112,7 +118,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
-        .def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, return_value_policy< reference_existing_object >())
+        .def("do_ift_inplace", &EMAN::EMData::do_ift_inplace, EMAN_EMData_do_ift_inplace_overloads_0_1()[ return_value_policy< reference_existing_object >() ])
         .def("get_fft_amplitude", &EMAN::EMData::get_fft_amplitude, return_value_policy< manage_new_object >())
         .def("get_fft_phase", &EMAN::EMData::get_fft_phase, return_value_policy< manage_new_object >())
         .def("normalize_slice", (EMAN::FloatPoint (EMAN::EMData::*)(EMAN::EMData*, const EMAN::Transform3D&) )&EMAN::EMData::normalize_slice)
@@ -187,8 +193,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("set_translation", (void (EMAN::EMData::*)(float, float, float) )&EMAN::EMData::set_translation)
         .def("get_transform", &EMAN::EMData::get_transform)
         .def("set_rotation", &EMAN::EMData::set_rotation)
-        .def("set_size", &EMAN::EMData::set_size)
-        .def("set_complex_size", &EMAN::EMData::set_complex_size)
+        .def("set_size", &EMAN::EMData::set_size, EMAN_EMData_set_size_overloads_1_3())
+        .def("set_complex_size", &EMAN::EMData::set_complex_size, EMAN_EMData_set_complex_size_overloads_1_3())
         .def("set_path", &EMAN::EMData::set_path)
         .def("set_pathnum", &EMAN::EMData::set_pathnum)
         .def("get_2dview", (EMAN::MArray2D (EMAN::EMData::*)() const)&EMAN::EMData::get_2dview)
@@ -245,18 +251,18 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
         .staticmethod("onelinenn")
-        .def( self + other< float >() )
-        .def( self * other< float >() )
         .def( self - other< float >() )
-        .def( other< float >() + self )
+        .def( self + other< float >() )
         .def( self / other< float >() )
-        .def( other< float >() * self )
+        .def( self * other< float >() )
         .def( other< float >() - self )
+        .def( other< float >() + self )
+        .def( other< float >() / self )
+        .def( other< float >() * self )
+        .def( self / self )
         .def( self * self )
         .def( self - self )
-        .def( self / self )
         .def( self + self )
-        .def( other< float >() / self )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )

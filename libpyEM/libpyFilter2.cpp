@@ -80,6 +80,7 @@ struct EMAN_Processor_Wrapper: EMAN::Processor
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyFilter2)
 {
+    scope* EMAN_Processor_scope = new scope(
     class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("__Processor", init<  >())
         .def("process", &EMAN::Processor::process, &EMAN_Processor_Wrapper::default_process)
         .def("process_list", &EMAN::Processor::process_list, &EMAN_Processor_Wrapper::default_process_list)
@@ -89,8 +90,32 @@ BOOST_PYTHON_MODULE(libpyFilter2)
         .def("get_param_types", &EMAN::Processor::get_param_types, &EMAN_Processor_Wrapper::default_get_param_types)
         .def("get_desc", pure_virtual(&EMAN::Processor::get_desc))
         .def("get_group_desc", &EMAN::Processor::get_group_desc)
+        .def("EMFourierFilterInPlace", &EMAN::Processor::EMFourierFilterInPlace)
+        .def("EMFourierFilter", &EMAN::Processor::EMFourierFilter, return_value_policy< manage_new_object >())
+        .staticmethod("EMFourierFilterInPlace")
         .staticmethod("get_group_desc")
+        .staticmethod("EMFourierFilter")
+    );
+
+    enum_< EMAN::Processor::fourier_filter_types >("fourier_filter_types")
+        .value("GAUSS_HIGH_PASS", EMAN::Processor::GAUSS_HIGH_PASS)
+        .value("TANH_LOW_PASS", EMAN::Processor::TANH_LOW_PASS)
+        .value("GAUSS_BAND_PASS", EMAN::Processor::GAUSS_BAND_PASS)
+        .value("BUTTERWORTH_LOW_PASS", EMAN::Processor::BUTTERWORTH_LOW_PASS)
+        .value("TOP_HAT_LOW_PASS", EMAN::Processor::TOP_HAT_LOW_PASS)
+        .value("GAUSS_HOMOMORPHIC", EMAN::Processor::GAUSS_HOMOMORPHIC)
+        .value("GAUSS_LOW_PASS", EMAN::Processor::GAUSS_LOW_PASS)
+        .value("TOP_HAT_BAND_PASS", EMAN::Processor::TOP_HAT_BAND_PASS)
+        .value("BUTTERWORTH_HOMOMORPHIC", EMAN::Processor::BUTTERWORTH_HOMOMORPHIC)
+        .value("TOP_HOMOMORPHIC", EMAN::Processor::TOP_HOMOMORPHIC)
+        .value("TANH_HOMOMORPHIC", EMAN::Processor::TANH_HOMOMORPHIC)
+        .value("TOP_HAT_HIGH_PASS", EMAN::Processor::TOP_HAT_HIGH_PASS)
+        .value("TANH_HIGH_PASS", EMAN::Processor::TANH_HIGH_PASS)
+        .value("BUTTERWORTH_HIGH_PASS", EMAN::Processor::BUTTERWORTH_HIGH_PASS)
+        .value("TANH_BAND_PASS", EMAN::Processor::TANH_BAND_PASS)
     ;
+
+    delete EMAN_Processor_scope;
 
     def("dump_filters", &EMAN::dump_filters);
     def("multi_filters", &EMAN::multi_filters);
@@ -102,25 +127,6 @@ BOOST_PYTHON_MODULE(libpyFilter2)
         .staticmethod("get_list")
         .staticmethod("get")
     ;
-	enum_<EMAN::Processor::fourier_filter_types>("fourier_filter_types")
-		.value("TOP_HAT_LOW_PASS", EMAN::Processor::TOP_HAT_LOW_PASS)
-		.value("TOP_HAT_HIGH_PASS", EMAN::Processor::TOP_HAT_HIGH_PASS)
-		.value("TOP_HAT_BAND_PASS", EMAN::Processor::TOP_HAT_BAND_PASS)
-		.value("TOP_HOMOMORPHIC", EMAN::Processor::TOP_HOMOMORPHIC)
-		.value("GAUSS_LOW_PASS", EMAN::Processor::GAUSS_LOW_PASS)
-		.value("GAUSS_HIGH_PASS", EMAN::Processor::GAUSS_HIGH_PASS)
-		.value("GAUSS_BAND_PASS", EMAN::Processor::GAUSS_BAND_PASS)
-		.value("GAUSS_HOMOMORPHIC", EMAN::Processor::GAUSS_HOMOMORPHIC)
-		.value("BUTTERWORTH_LOW_PASS", EMAN::Processor::BUTTERWORTH_LOW_PASS)
-		.value("BUTTERWORTH_HIGH_PASS", EMAN::Processor::BUTTERWORTH_HIGH_PASS)
-		.value("BUTTERWORTH_HOMOMORPHIC", EMAN::Processor::BUTTERWORTH_HOMOMORPHIC)
-		.value("TANH_LOW_PASS", EMAN::Processor::TANH_LOW_PASS)
-		.value("TANH_HIGH_PASS", EMAN::Processor::TANH_HIGH_PASS)
-		.value("TANH_HOMOMORPHIC", EMAN::Processor::TANH_HOMOMORPHIC)
-		.value("TANH_BAND_PASS", EMAN::Processor::TANH_BAND_PASS)
-		;
-	def("EMFourierFilter", &EMAN::Processor::EMFourierFilter, return_value_policy< manage_new_object >() );
-	def("EMFourierFilterInPlace", &EMAN::Processor::EMFourierFilterInPlace);
 
 }
 
