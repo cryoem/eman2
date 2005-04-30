@@ -328,7 +328,7 @@ class TestEMData(unittest.TestCase):
         imagename = TestUtil.get_debug_image("monomer.mrc")
         a=EMData()
         a.read_image(imagename)
-        b=a.get_rotated_clip(Transform([24,24,24], EULER_EMAN,0,0,0),[32,32,32],1.0)
+        b=a.get_rotated_clip(Transform3D([24,24,24], 0,0,0),[32,32,32],1.0)
 
         outfile = "test_get_rotated_clip_" + str(os.getpid()) + ".mrc"
         b.write_image(outfile)

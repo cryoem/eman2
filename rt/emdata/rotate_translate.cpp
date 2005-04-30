@@ -46,7 +46,7 @@ void rt2()
 	EMData *image = new EMData();
 
 	image->read_image(get_test_image());
-	Transform r = Transform(Vec3f(16,16,16), Transform::EMAN, 1.0329837512591338,3.7260642381912579,
+	Transform3D r = Transform3D(Vec3f(16,16,16), 1.0329837512591338,3.7260642381912579,
 							5.7671541529246966);
 	image->rotate_translate(r);
 	image->write_image("rt2.mrc");

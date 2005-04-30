@@ -259,9 +259,9 @@ class TestTypeConverter(unittest.TestCase):
         ny = e.get_ysize()
 
         a = EMNumPy.em2numpy(e)
-        print a[-1, 0:4]
-        print a
-        print a[-1, 0:4]
+        #print a[-1, 0:4]
+        #print a
+        #print a[-1, 0:4]
 
 
     def test_Point_and_Size_class(self):
@@ -274,8 +274,8 @@ class TestTypeConverter(unittest.TestCase):
         ptuple1 = (16,16,16)
         plist1 = list(ptuple1)
         
-        img2=img1.get_rotated_clip(Transform(plist1, EULER_EMAN, 0,0,0), plist1, 1.0)
-        img3=img1.get_rotated_clip(Transform(ptuple1, EULER_EMAN, 0,0,0), ptuple1, 1.0)
+        img2=img1.get_rotated_clip(Transform3D(plist1, 0,0,0), plist1, 1.0)
+        img3=img1.get_rotated_clip(Transform3D(ptuple1, 0,0,0), ptuple1, 1.0)
         
         testlib.check_emdata(img2, sys.argv[0])
         testlib.check_emdata(img3, sys.argv[0])

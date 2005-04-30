@@ -94,10 +94,10 @@ class TestCmp(unittest.TestCase):
         self.assertEqual(variance_score, 0)
         
         phase_score = e2.cmp("Phase", e1, {})
-        testlib.assertfloat(self, phase_score, 1.6295)
+        testlib.assertfloat(self, phase_score, 1.6488)
         
         frc_score = e2.cmp("FRC", e1, {})
-        testlib.assertfloat(self, frc_score, -0.4818)
+        testlib.assertfloat(self, frc_score, -0.4011)
 
 
         (hed1,img1) = testlib.get_imagic_filename_pair(imgfile1)

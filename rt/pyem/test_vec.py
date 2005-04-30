@@ -32,7 +32,7 @@ class TestVec(unittest.TestCase):
         e2.translate([1,2,3])
 
     def test_vec_transform_op(self):
-        m1 = Transform()
+        m1 = Transform3D()
         v1 = Vec3f(1.5, 2.5, 3.5)
         v2 = v1 * m1
         self.assertEqual(v2, v1)

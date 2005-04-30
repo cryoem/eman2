@@ -643,8 +643,8 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestSpiderIO)
-    #test_support.run_unittest(TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
+    #test_support.run_unittest(TestSpiderIO)
+    test_support.run_unittest(TestSpiderIO, TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
 
 if __name__ == '__main__':
     test_main()

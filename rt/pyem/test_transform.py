@@ -12,7 +12,7 @@ class TestTransform(unittest.TestCase):
         az = -0.60170830102
         phi = 0
 
-        t = Transform(EULER_EMAN, az, alt, phi)
+        t = Transform3D(az, alt, phi)
         rot = t.get_rotation(EULER_EMAN)
 
         testlib.assertfloat(self, az, float(rot["az"]))
