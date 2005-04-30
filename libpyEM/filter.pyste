@@ -1,25 +1,26 @@
 Include("emdata.h")
 
-Filter = Class("EMAN::Filter", "filter.h")
-rename(Filter, "__Filter")
+Processor = Class("EMAN::Processor", "filter.h")
+rename(Processor, "__Processor")
+set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 
-#RealPixelFilter = Class("EMAN::RealPixelFilter", "filter.h")
-#rename(RealPixelFilter, "__RealPixelFilter")
+#RealPixelProcessor = Class("EMAN::RealPixelProcessor", "filter.h")
+#rename(RealPixelProcessor, "__RealPixelProcessor")
 
-#BoxStatFilter = Class("EMAN::BoxStatFilter", "filter.h")
-#rename(BoxStatFilter, "__BoxStatFilter")
+#BoxStatProcessor = Class("EMAN::BoxStatProcessor", "filter.h")
+#rename(BoxStatProcessor, "__BoxStatProcessor")
 
-#ComplexPixelFilter = Class("EMAN::ComplexPixelFilter", "filter.h")
-#rename(ComplexPixelFilter, "__ComplexPixelFilter")
+#ComplexPixelProcessor = Class("EMAN::ComplexPixelProcessor", "filter.h")
+#rename(ComplexPixelProcessor, "__ComplexPixelProcessor")
 
-#CoordinateFilter = Class("EMAN::CoordinateFilter", "filter.h")
-#rename(CoordinateFilter, "__CoordinateFilter")
+#CoordinateProcessor = Class("EMAN::CoordinateProcessor", "filter.h")
+#rename(CoordinateProcessor, "__CoordinateProcessor")
 
-#FourierFilter = Class("EMAN::FourierFilter", "filter.h")
-#rename(FourierFilter, "__FourierFilter")
+#FourierProcessor = Class("EMAN::FourierProcessor", "filter.h")
+#rename(FourierProcessor, "__FourierProcessor")
 
-#NormalizeFilter = Class("EMAN::NormalizeFilter", "filter.h")
-#rename(NormalizeFilter, "__NormalizeFilter")
+#NormalizeProcessor = Class("EMAN::NormalizeProcessor", "filter.h")
+#rename(NormalizeProcessor, "__NormalizeProcessor")
 
 Function("EMAN::dump_filters", "filter.h")
 Function("EMAN::multi_filters", "filter.h")
@@ -27,6 +28,6 @@ Function("EMAN::group_filters", "filter.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 
-FilterFactory = Factory("EMAN::Filter", "Filters")
-set_policy(FilterFactory.get, return_value_policy(manage_new_object))
-exclude(FilterFactory.add)
+ProcessorFactory = Factory("EMAN::Processor", "Processors")
+set_policy(ProcessorFactory.get, return_value_policy(manage_new_object))
+exclude(ProcessorFactory.add)
