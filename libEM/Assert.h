@@ -1,6 +1,9 @@
 #ifndef __em_assert_h_
 #define __em_assert_h_
 
+/** Define Assert() function that is effective only when -DDEBUG is used.
+ */
+
 #ifdef DEBUG
 #include <assert.h>
 #define Assert(s) assert(s)

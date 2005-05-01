@@ -185,6 +185,8 @@ namespace EMAN
 		 */
 		virtual void write_ctf(const Ctf & ctf, int image_index = 0);
 
+		/** Flush the IO buffer.
+		 */
 		virtual void flush() = 0;
 		
 		/** Return the number of images in this image file. */
@@ -196,7 +198,12 @@ namespace EMAN
 		/** Is this image in big endian or not. */
 		virtual bool is_image_big_endian() = 0;
 
-		/** Is this image format only storing 1 image or not.*/
+		/** Is this image format only storing 1 image or not.
+		 * Some image formats like MRC only store 1 image in a file,
+		 * so this function returns 'true' for them.		 
+		 * Other image formats like IMAGIC/HDF5 may store mutliple
+		 * images, so this function returns 'false' for them.
+		 */
 		virtual bool is_single_image_format() const
 		{
 			return true;
@@ -216,17 +223,81 @@ namespace EMAN
 		}
 
 	protected:
+		/** Do some initialization beforing doing the read/write.
+		 */
 		virtual void init() = 0;
+		
+		/** Validate 'image_index' in file reading.
+		 * @param image_index  The 'image_index'th image. Valid value
+		 * = [0, nimg-1].
+		 * @exception OutofRangeException If image_index is out of range.
+		 */
 		void check_read_access(int image_index);
+
+		/** Validate 'image_index' and 'data' in file reading.
+		 * @param image_index  The 'image_index'th image. Valid value
+		 * = [0, nimg-1].
+		 * @param data The array used to store the image data in reading.
+		 * @exception NullPointerException If 'data' is NULL.
+		 * @exception OutofRangeException If image_index is out of range.
+		 */
 		void check_read_access(int image_index, const float *data);
+
+		/** Validate rw_mode and image_index in file writing.
+		 * @param rw_mode File Read/Write mode.
+		 * @param image_index The 'image_index'th image. Valid value =
+		 * [0, max_nimg].
+		 * @param max_nimg Maximum number of images in the file. If
+		 * its value <= 0, don't check image_index againt max_nimg.
+		 * @exception ImageWriteException Image is not opened for writing.
+		 * @exception OutofRangeException If image_index is out of range.
+		 */
 		void check_write_access(IOMode rw_mode, int image_index, int max_nimg = 0);
+
+		/** Validate rw_mode, image_index, and data pointer in file writing.
+		 * @param rw_mode File Read/Write mode.
+		 * @param image_index The 'image_index'th image. Valid value =
+		 * [0, max_nimg].
+		 * @param max_nimg Maximum number of images in the file. If
+		 * its value <= 0, don't check image_index againt max_nimg.
+		 * @param data The data array to be writting to the image file.
+		 * @exception ImageWriteException Image is not opened for writing.
+		 * @exception OutofRangeException If image_index is out of range.
+		 */
 		void check_write_access(IOMode rw_mode, int image_index, int max_nimg,
 								const float *data);
+
+		/** Validate image I/O region.
+		 *
+		 * @param area The image I/O region.
+		 * @param max_size The upper limit of the region's size. The region
+		 * must be within 'max_size'.
+		 * @param is_new_file Whether it is on a new file or not.
+		 * @exception ImageReadException Any image reading problem.
+		 */
 		void check_region(const Region * area, const FloatSize & max_size,
 						  bool is_new_file = false);
+
+		/** Validate image I/O region.
+		 *
+		 * @param area The image I/O region.
+		 * @param max_size The upper limit of the region's size. The region
+		 * must be within 'max_size'.
+		 * @param is_new_file Whether it is on a new file or not.
+		 * @exception ImageReadException Any image reading problem.
+		 */
 		void check_region(const Region * area, const IntSize & max_size,
 						  bool is_new_file = false);
-		
+
+		/** Run fopen safely.
+		 *
+		 * @param filename The file name to be opened.
+		 * @param mode File open mode.
+		 * @param is_new Is this a new file?
+		 * @param overwrite If the file exists, should we truncate it?
+		 * @exception FileAccessException The file has access error.
+		 * @return The opened file pointer.		 
+		 */
 		FILE *sfopen(const string & filename, IOMode mode,
 					 bool * is_new = 0, bool overwrite = false);
 	};

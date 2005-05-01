@@ -6,7 +6,7 @@
 
 
 #include "emobject.h"
-#include "transform.h"
+
 
 namespace EMAN
 {
