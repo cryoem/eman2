@@ -12,12 +12,14 @@
   
     - To enable python support, use
       1. Python (version 2.2+)        (http://www.python.org)
-      2. Boost python (version 1.30.2+)    (http://www.boost.org)
+      2. Boost python (version 1.32.0+)    (http://www.boost.org)
          (see "NOTE A" on how to install boost python)
       3. Numerc python Numeric numpy (22.0 +) (http://www.pfdubois.com/numpy)
          
     - To read/write HDF5 image, use hdf5 (http://hdf.ncsa.uiuc.edu/HDF5).
-
+	  NOTE: HDF5 1.6.4 has some API compatility issue and it doesn't work
+	        with EMAN2 yet.
+	  
     - To read TIFF image, use libtiff (http://www.libtiff.org)
 
     - To read PNG image, use PNG (http://www.libpng.org)
