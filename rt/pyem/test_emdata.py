@@ -508,7 +508,18 @@ class TestEMData(unittest.TestCase):
         os.unlink(outfile)
         
 
-        
+    def test_statistics(self):
+        e = EMData()
+        e.set_size(10,10,1)
+        e.process("testimage.circlesphere",{"radius":4})
+        descriptive_statistics(e)
+        f = norm_pad_ft(e, False, True)
+        descriptive_statistics(f)
+        f.do_ift_inplace(True)
+        descriptive_statistics(f)
+        g = f*10
+        descriptive_statistics(g)
+
 def test_main():
     test_support.run_unittest(TestEMData)
 
