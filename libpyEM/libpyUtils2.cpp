@@ -42,8 +42,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
-    class_< EMAN::Util >("Util", init<  >())
-        .def(init< const EMAN::Util& >())
+    class_< EMAN::Util, boost::noncopyable >("Util", no_init)
         .def("ap2ri", &EMAN::Util::ap2ri)
         .def("flip_complex_phase", &EMAN::Util::flip_complex_phase)
         .def("file_lock_wait", &EMAN::Util::file_lock_wait)
@@ -146,14 +145,13 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     ;
 
     scope* EMAN_EMUtil_scope = new scope(
-    class_< EMAN::EMUtil >("EMUtil", init<  >())
-        .def(init< const EMAN::EMUtil& >())
+    class_< EMAN::EMUtil, boost::noncopyable >("EMUtil", no_init)
         .def("vertical_acf", &EMAN::EMUtil::vertical_acf, return_value_policy< manage_new_object >())
         .def("make_image_median", &EMAN::EMUtil::make_image_median, return_value_policy< manage_new_object >())
         .def("get_image_ext_type", &EMAN::EMUtil::get_image_ext_type)
         .def("get_image_type", &EMAN::EMUtil::get_image_type)
         .def("get_image_count", &EMAN::EMUtil::get_image_count)
-        .def("get_imageio", &EMAN::EMUtil::get_imageio, EMAN_EMUtil_get_imageio_overloads_2_3()[ return_internal_reference< 1 >() ])
+        .def("get_imageio", &EMAN::EMUtil::get_imageio, return_internal_reference< 1 >(), EMAN_EMUtil_get_imageio_overloads_2_3())
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
         .def("process_region_io", &EMAN::EMUtil::process_region_io, EMAN_EMUtil_process_region_io_overloads_7_13())
@@ -223,8 +221,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 
     delete EMAN_EMUtil_scope;
 
-    class_< EMAN::ImageSort >("ImageSort", init< const EMAN::ImageSort& >())
-        .def(init< int >())
+    class_< EMAN::ImageSort, boost::noncopyable >("ImageSort", init< int >())
         .def("sort", &EMAN::ImageSort::sort)
         .def("set", &EMAN::ImageSort::set)
         .def("get_index", &EMAN::ImageSort::get_index)
@@ -232,8 +229,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("size", &EMAN::ImageSort::size)
     ;
 
-    class_< EMAN::TestUtil >("TestUtil", init<  >())
-        .def(init< const EMAN::TestUtil& >())
+    class_< EMAN::TestUtil, boost::noncopyable >("TestUtil", no_init)
         .def_readonly("EMDATA_HEADER_EXT", &EMAN::TestUtil::EMDATA_HEADER_EXT)
         .def_readonly("EMDATA_DATA_EXT", &EMAN::TestUtil::EMDATA_DATA_EXT)
         .def("get_debug_int", &EMAN::TestUtil::get_debug_int)

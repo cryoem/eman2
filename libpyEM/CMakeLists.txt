@@ -43,7 +43,7 @@ ADD_PYSTE_LIB(pyGeometry2)
 ADD_PYSTE_LIB(pyTransform2)
 ADD_PYSTE_LIB(pyPointArray2)
 ADD_PYSTE_LIB(pyUtils2)
-ADD_PYSTE_LIB(pyFundamentals)
+ADD_PYSTE_LIB(pyFundamentals2)
 ADD_PYSTE_LIB_WITH_SRC(pyTypeConverter2 typeconverter.cpp)
 
 
