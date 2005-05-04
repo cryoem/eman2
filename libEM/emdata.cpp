@@ -20,6 +20,7 @@
 #include <boost/array.hpp>
 #include <iostream>
 #include <complex>
+#include <iomanip>
 
 #ifdef WIN32
 #define M_PI 3.14159265358979323846f
@@ -5885,3 +5886,24 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 	}
 }
 	
+void EMData::print_image(const string str, ostream& out) {
+	out << "Printing EMData object: " << str << std::endl;
+	MArray3D mat = get_3dview();
+	int nx = get_xsize();
+	int ny = get_ysize();
+	int nz = get_zsize();
+	for (int iz = 0; iz < nz; iz++) {
+		out << "(z = " << iz << " slice)" << std::endl;
+		for (int ix = 0; ix < nx; ix++) {
+			for (int iy = 0; iy < ny; iy++) {
+				out << setiosflags(std::ios::fixed) << std::setw(12) 
+					 << std::setprecision(5) << mat[ix][iy][iz] << "  ";
+				if (((iy+1) % 6) == 0) {
+					out << std::endl << "   ";
+				}
+			}
+			out << std::endl;
+		}
+	}
+}
+

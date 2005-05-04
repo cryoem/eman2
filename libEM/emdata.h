@@ -19,11 +19,14 @@
 #include "vec3.h"
 #include "geometry.h"
 #include "transform.h"
+#include <fstream>
+#include <iostream>
 
 using std::string;
 using std::vector;
 using std::map;
 using std::complex;
+using std::ostream;
 
 namespace EMAN
 {
@@ -132,6 +135,13 @@ namespace EMAN
 					   const string & comment="");
 
 		
+		/** Print the image data to a file stream (standard out by default).
+		 * @param out Output stream; cout by default.
+		 * @param str Message string to be printed.
+		 */
+		void print_image(const string str = string(""), 
+				ostream& out = std::cout);
+
 		/** Apply a filter with its parameters on this image.
 		 * @param filtername Filter Name.
 		 * @param params Filter parameters in a keyed dictionary.
