@@ -2531,6 +2531,16 @@ MCArray3D EMData::get_3dcview() const
 	return marray;	
 }
 
+MCArray3D* EMData::get_3dcviewptr() const
+{
+	const int ndims = 3;
+	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
+	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	MCArray3D* marray = new MCArray3D(cdata, dims, 
+									  boost::fortran_storage_order());
+	return marray;	
+}
+
 MArray2D EMData::get_2dview(int x0, int y0) const
 {
 	const int ndims = 2;

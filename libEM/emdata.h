@@ -1085,6 +1085,15 @@ namespace EMAN
 		 */
 		MCArray3D get_3dcview() const;
 		
+		/** Get pointer to a complex image raw pixel data in a 3D multi-array format. 
+		 * The array shares the memory space with the image data.
+		 *
+		 * It should be used on 3D image only.
+		 *
+		 * @return Pointer to a 3D multi-array format of the raw data.
+		 */
+		MCArray3D* get_3dcviewptr() const;
+		
 		/** Get image raw pixel data in a 2D multi-array format. The
 		 * data coordinates is translated by (x0,y0) such that
 		 * array[y0][x0] points to the pixel at the origin location.

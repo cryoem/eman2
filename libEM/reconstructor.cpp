@@ -2,10 +2,10 @@
  * $Id$
  */
 #include "reconstructor.h"
-#include "emdata.h"
 #include "transform.h"
 #include "interp.h"
 #include "ctf.h"
+#include "emdata.h"
 
 using namespace EMAN;
 
@@ -14,6 +14,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&FourierReconstructor::NEW);
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
+	force_add(&PawelBackProjectionReconstructor::NEW);
 }
 
 FourierReconstructor::FourierReconstructor()
@@ -993,6 +994,87 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform3D 
 EMData *BackProjectionReconstructor::finish()
 {
 	return image;
+}
+
+PawelBackProjectionReconstructor::PawelBackProjectionReconstructor()
+:	image(0), nx(0), ny(0), nz(0)
+{
+}
+
+PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
+{
+	if (image) {
+		delete image;
+		image = NULL;
+	}
+}
+
+void PawelBackProjectionReconstructor::setup() {
+}
+
+EMData* PawelBackProjectionReconstructor::finish() {
+	MIArray3D& nr = *nrptr;
+	MCArray3D& v3d = *v3dptr;
+	v->symplane0(nr);
+	// normalize
+	for (int iz = 1; iz <= nzp; iz++) {
+		for (int iy = 1; iy <= nyp; iy++) {
+			for (int ix = 0; ix <= ncx; ix++) {
+				if (nr[ix][iy][iz] > 0) {
+					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)/nr[ix][iy][iz];
+				}
+			}
+		}
+	}
+	// back fft
+	v->do_ift_inplace(true);
+	return v;
+}
+
+int PawelBackProjectionReconstructor::insert_slice(EMData* e, 
+												   const Transform3D& t) {
+	return 0;
+}
+
+
+void PawelBackProjectionReconstructor::cang(float phi, float theta, 
+											float psi, float dm[]) {
+	const long double quadpi = 3.141592653589793238462643383279502884197;
+	const long double dgr_to_rad = (quadpi/180);
+	double cphi = cos(double(phi)*dgr_to_rad);
+	double sphi = sin(double(phi)*dgr_to_rad);
+	double cthe = cos(double(theta)*dgr_to_rad);
+	double sthe = sin(double(theta)*dgr_to_rad);
+	double cpsi = cos(double(psi)*dgr_to_rad);
+	double spsi = sin(double(psi)*dgr_to_rad);
+	dm[0] = cphi*cthe*cpsi-sphi*spsi;
+	dm[1] = sphi*cthe*cpsi+cphi*spsi;
+	dm[2] = -sthe*cpsi;
+	dm[3] = -cphi*cthe*spsi-sphi*cpsi;
+	dm[4] = -sphi*cthe*spsi+cphi*cpsi;
+	dm[5] = sthe*spsi;
+	dm[6] = sthe*cphi;
+	dm[7] = sthe*sphi;
+	dm[8] = cthe;
+}
+
+void
+PawelBackProjectionReconstructor::buildFFTVolume(int nsize, int npad) {
+	v = new EMData;
+	int nxp = nsize*npad;
+	int nyp = nsize*npad;
+	int nzp = nsize*npad;
+	int offset = 2 - nxp%2;
+	v->set_size(nxp+offset,nyp,nzp);
+	v->set_nxc(nxp/2);
+	v->set_complex(true);
+	v->set_ri(true);
+	v->set_fftpad(true);
+	v->set_attr("npad", npad);
+	v->to_zero();
+	v3dptr = v->get_3dcviewptr();
+	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
+	v3dptr->reindex(bases);
 }
 
 void EMAN::dump_reconstructors()

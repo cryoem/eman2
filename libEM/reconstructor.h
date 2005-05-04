@@ -5,6 +5,7 @@
 #define eman_reconstructor_h__ 1
 
 #include "emobject.h"
+#include "emdata.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -17,8 +18,9 @@ using std::string;
 namespace EMAN
 {
 
-	class EMData;
 	class Transform3D;
+	class EMData;
+	
 	
 	/** Reconstructor class defines a way to do 3D recontruction.
 	 * A reconstruction is done by 3 steps:
@@ -253,12 +255,61 @@ namespace EMAN
 			d.put("weight", EMObject::FLOAT);
 			return d;
 		}
-
 	  private:
 		EMData * image;
 		int nx;
 		int ny;
 		int nz;
+	};
+
+
+	/** Pawel Back Projection Reconstructor
+     * 
+     */
+	class PawelBackProjectionReconstructor:public Reconstructor
+	{
+	  public:
+		PawelBackProjectionReconstructor();
+		~PawelBackProjectionReconstructor();
+
+		void setup();
+		int insert_slice(EMData * slice, const Transform3D & euler);
+		EMData *finish();
+
+		string get_name() const
+		{
+			return "PawelBackProjection";
+		}
+		
+		string get_desc() const
+		{
+			return "Fourier back-projection reconstruction routine";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new PawelBackProjectionReconstructor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INT);
+			d.put("weight", EMObject::FLOAT);
+			return d;
+		}
+
+	  private:
+		EMData * image;
+		EMData* v;
+		MCArray3D* v3dptr;
+		MIArray3D* nrptr;
+		int nx;
+		int ny;
+		int nz;
+		int nzp, nyp, nxp, ncx;
+		void cang(float phi, float theta, float psi, float dm[]);
+		void buildFFTVolume(int size, int npad);
 	};
 
 	template <> Factory < Reconstructor >::Factory();
