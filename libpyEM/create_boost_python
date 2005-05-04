@@ -1,3 +1,39 @@
-#!/bin/sh -v
+#!/bin/sh
+
+# purpose: create the boost python wrapper C++ code using PYSTE.
+# NOTE: usually you only need to run this script when you change
+#       EMAN2 public API or any *.pyste file.
+#
+# usage: create_boost_python [-f]
+#        -f: force to regenerate all boost python C++ code
+#
+
+usage()
+{
+    echo "usage: `basename $0` [-f]"
+    echo "       -f: force to regenerate all boost python C++ code"
+    exit 0
+}
+
+is_redo=no
+while [ $# -gt 0 ]; do
+    case $1 in
+        -f)
+            is_redo=yes
+            ;;
+		-h)
+		    usage
+			;;
+        *)
+            echo "unrecognized argument: " $1
+			usage
+            ;;
+    esac
+    shift
+done
+
+if test ${is_redo} = "yes"; then
+    touch *.pyste
+fi
 
 make -f Makefile.pyste
