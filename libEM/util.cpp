@@ -743,3 +743,18 @@ string EMAN::Util::parse_spider_fname(string s, vector<int> fieldvals) {
 	return news.str();
 }
 
+void Util::printMatI3D(MIArray3D& mat, int nx, int ny, int nz,
+					   const string str, ostream& out) {
+	out << "Printing 3D Integer data: " << str << std::endl;
+	for (int iz = 1; iz <= nz; iz++) {
+		cout << "(z = " << iz << " slice)" << endl;
+		for (int ix = 0; ix <= nx; ix++) {
+			for (int iy = 1; iy <= ny; iy++) {
+				cout << setiosflags(ios::fixed) << setw(5) 
+					 << mat[ix][iy][iz] << "  ";
+			}
+			cout << endl;
+		}
+	}
+}
+

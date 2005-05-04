@@ -9,6 +9,8 @@
 #include <vector>
 #include <math.h>
 #include "emdata.h"
+#include <iostream>
+#include <boost/multi_array.hpp>
 
 #ifdef WIN32
 #include <windows.h>
@@ -18,9 +20,12 @@
 
 using std::string;
 using std::vector;
+using std::ostream;
 
 namespace EMAN
 {
+	typedef boost::multi_array_ref<int, 3> MIArray3D;
+
 	/** Util is a collection of utility functions.
      */
 	class Util
@@ -784,13 +789,16 @@ namespace EMAN
 		 */
 		static string
 		parse_spider_fname(string s, vector<int> fieldvals);
-#if 0
-		/** Return an image if given a file stack (in memory) */
-		static EMData*
-		parse_spider_fname(vector<EMData*> stack, vector<int> fieldvals) {
-			return stack[fieldvals[0]];
-		}
-#endif // 0
+
+		/** Print a 3D integer matrix to a file stream (std out by default).
+		 *
+		 * @param out Output stream; cout by default.
+		 * @param str Message string to be printed.
+		 */
+		static void printMatI3D(MIArray3D& mat, 
+								int nx, int ny, int nz,
+								const string str = string(""),
+								ostream& out = std::cout);
 	};
 }
 
