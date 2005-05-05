@@ -116,4 +116,23 @@ def add_series(file_pattern,i1,i2,average,variance):
 	dropImage(var,variance)
 
 
+def do_reconstruction(filepattern, start, end, npad, rotations):
+	# read first image to determine the size to use
+	fname = Util.parse_spider_fname(filepattern,[start]) 
+	first = getImage(fname)
+	size = first.get_xsize()
+	# sanity check -- image must be square
+	if first.get_xsize != first.get_ysize:
+		print "Image projections must be square!"
+		# FIXME: throw exception instead
+		return None
+	r = ReconstructorFactory.get("PawelBackProjection")
+	r.set_params({"size":size, "npad":npad})
+	r.setup()
+	for i in range(start, end+1):
+		fname = Util.parse_spider_fname(filepattern,[i])
+		projection = getImage(fname)
+		r.insert_slice(projection, rotations[i])
+	v = r.finish()
+	return v
 
