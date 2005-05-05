@@ -300,16 +300,15 @@ namespace EMAN
 		}
 
 	  private:
-		EMData * image;
 		EMData* v;
 		MCArray3D* v3dptr;
 		MIArray3D* nrptr;
-		int nx;
-		int ny;
-		int nz;
-		int nzp, nyp, nxp, ncx;
+		int vnx, vny, vnz;
+		int npad;
+		int vnzp, vnyp, vnxp, vnxc;
 		void cang(float phi, float theta, float psi, float dm[]);
-		void buildFFTVolume(int size, int npad);
+		void buildFFTVolume();
+		void buildNormVolume();
 	};
 
 	template <> Factory < Reconstructor >::Factory();

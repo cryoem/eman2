@@ -6,6 +6,7 @@
 #include "interp.h"
 #include "ctf.h"
 #include "emdata.h"
+#include "fundamentals.h"
 
 using namespace EMAN;
 
@@ -996,20 +997,82 @@ EMData *BackProjectionReconstructor::finish()
 	return image;
 }
 
-PawelBackProjectionReconstructor::PawelBackProjectionReconstructor()
-:	image(0), nx(0), ny(0), nz(0)
-{
-}
+PawelBackProjectionReconstructor::PawelBackProjectionReconstructor() {}
 
 PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
 {
-	if (image) {
-		delete image;
-		image = NULL;
+	if (v) {
+		delete v;
+		v = NULL;
 	}
 }
 
 void PawelBackProjectionReconstructor::setup() {
+	int nsize = params["size"];
+	npad = params["npad"];
+	vnxp = nsize*npad;
+	vnyp = nsize*npad;
+	vnzp = nsize*npad;
+	vnxc = vnxp/2;
+	buildFFTVolume();
+	buildNormVolume();
+}
+
+void
+PawelBackProjectionReconstructor::buildFFTVolume() {
+	v = new EMData;
+	int offset = 2 - vnxp%2;
+	v->set_size(vnxp+offset,vnyp,vnzp);
+	v->set_nxc(vnxp/2);
+	v->set_complex(true);
+	v->set_ri(true);
+	v->set_fftpad(true);
+	v->set_attr("npad", npad);
+	v->to_zero();
+	v3dptr = v->get_3dcviewptr();
+	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
+	v3dptr->reindex(bases);
+}
+
+void
+PawelBackProjectionReconstructor::buildNormVolume() {
+	boost::array<std::size_t,3> dims = {{vnxc+1, vnyp, vnzp}};
+	nrptr = new MIArray3D(dims, boost::fortran_storage_order());
+	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
+	nrptr->reindex(bases);
+	for (int iz = 1; iz <= vnzp; iz++) 
+		for (int iy = 1; iy <= vnyp; iy++) 
+			for (int ix = 0; ix <= vnxc; ix++) 
+				(*nrptr)[ix][iy][iz] = 0;
+}
+
+int PawelBackProjectionReconstructor::insert_slice(EMData* slice, 
+												   const Transform3D& t) {
+	// sanity checks
+	if (!slice) {
+		LOGERR("try to insert NULL slice");
+		return 1;
+	}
+	if (slice->get_xsize() != slice->get_ysize() 
+		|| slice->get_xsize() != vnx) {
+		// FIXME: Why doesn't this throw an exception?
+		LOGERR("Tried to insert a slice that is the wrong size.");
+		return 1;
+	}
+	// Ugly kludge: just get phi, theta, psi from the Transform3D
+	// and use the existing cang func to get the rotation matrix.  FIXME
+	Dict angleparams = t.get_rotation(Transform3D::SPIDER);
+	float phi = angleparams["phi"];
+	float psi = angleparams["psi"];
+	float theta = angleparams["theta"];
+	float dm[9];
+	cang(phi, theta, psi, dm);
+	// process 2-d slice
+	EMData* padfftslice = norm_pad_ft(slice, false, true, npad);
+	padfftslice->center_origin_fft();
+	// insert slice
+	v->nn(*nrptr, padfftslice, dm);
+	return 0;
 }
 
 EMData* PawelBackProjectionReconstructor::finish() {
@@ -1017,9 +1080,9 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	MCArray3D& v3d = *v3dptr;
 	v->symplane0(nr);
 	// normalize
-	for (int iz = 1; iz <= nzp; iz++) {
-		for (int iy = 1; iy <= nyp; iy++) {
-			for (int ix = 0; ix <= ncx; ix++) {
+	for (int iz = 1; iz <= vnzp; iz++) {
+		for (int iy = 1; iy <= vnyp; iy++) {
+			for (int ix = 0; ix <= vnxc; ix++) {
 				if (nr[ix][iy][iz] > 0) {
 					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)/nr[ix][iy][iz];
 				}
@@ -1029,11 +1092,6 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	// back fft
 	v->do_ift_inplace(true);
 	return v;
-}
-
-int PawelBackProjectionReconstructor::insert_slice(EMData* e, 
-												   const Transform3D& t) {
-	return 0;
 }
 
 
@@ -1056,25 +1114,6 @@ void PawelBackProjectionReconstructor::cang(float phi, float theta,
 	dm[6] = sthe*cphi;
 	dm[7] = sthe*sphi;
 	dm[8] = cthe;
-}
-
-void
-PawelBackProjectionReconstructor::buildFFTVolume(int nsize, int npad) {
-	v = new EMData;
-	int nxp = nsize*npad;
-	int nyp = nsize*npad;
-	int nzp = nsize*npad;
-	int offset = 2 - nxp%2;
-	v->set_size(nxp+offset,nyp,nzp);
-	v->set_nxc(nxp/2);
-	v->set_complex(true);
-	v->set_ri(true);
-	v->set_fftpad(true);
-	v->set_attr("npad", npad);
-	v->to_zero();
-	v3dptr = v->get_3dcviewptr();
-	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
-	v3dptr->reindex(bases);
 }
 
 void EMAN::dump_reconstructors()
