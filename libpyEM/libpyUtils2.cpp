@@ -21,6 +21,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_find_max_overloads_3_4, EMAN::Util::fi
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_find_min_and_max_overloads_4_6, EMAN::Util::find_min_and_max, 4, 6)
 
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_printMatI3D_overloads_4_6, EMAN::Util::printMatI3D, 4, 6)
+
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_process_region_io_overloads_7_13, EMAN::EMUtil::process_region_io, 7, 13)
@@ -102,10 +104,12 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
         .def("parse_spider_fname", &EMAN::Util::parse_spider_fname)
+        .def("printMatI3D", &EMAN::Util::printMatI3D, EMAN_Util_printMatI3D_overloads_4_6())
         .staticmethod("flip_complex_phase")
         .staticmethod("square")
         .staticmethod("int2str")
         .staticmethod("get_str_int")
+        .staticmethod("printMatI3D")
         .staticmethod("calc_best_fft_size")
         .staticmethod("get_frand")
         .staticmethod("angle_sub_pi")
