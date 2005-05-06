@@ -16,28 +16,34 @@ namespace  {
 
 struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 {
+    EMAN_Reconstructor_Wrapper(PyObject* self_, const EMAN::Reconstructor& p0):
+        EMAN::Reconstructor(p0), self(self_) {}
+
+    EMAN_Reconstructor_Wrapper(PyObject* self_):
+        EMAN::Reconstructor(), self(self_) {}
+
     void setup() {
-        call_method< void >(py_self, "setup");
+        call_method< void >(self, "setup");
     }
 
     int insert_slice(EMAN::EMData* p0, const EMAN::Transform3D& p1) {
-        return call_method< int >(py_self, "insert_slice", p0, p1);
+        return call_method< int >(self, "insert_slice", p0, p1);
     }
 
     EMAN::EMData* finish() {
-        return call_method< EMAN::EMData* >(py_self, "finish");
+        return call_method< EMAN::EMData* >(self, "finish");
     }
 
     std::string get_name() const {
-        return call_method< std::string >(py_self, "get_name");
+        return call_method< std::string >(self, "get_name");
     }
 
     std::string get_desc() const {
-        return call_method< std::string >(py_self, "get_desc");
+        return call_method< std::string >(self, "get_desc");
     }
 
     EMAN::Dict get_params() const {
-        return call_method< EMAN::Dict >(py_self, "get_params");
+        return call_method< EMAN::Dict >(self, "get_params");
     }
 
     EMAN::Dict default_get_params() const {
@@ -45,7 +51,7 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     }
 
     void set_params(const EMAN::Dict& p0) {
-        call_method< void >(py_self, "set_params", p0);
+        call_method< void >(self, "set_params", p0);
     }
 
     void default_set_params(const EMAN::Dict& p0) {
@@ -53,10 +59,10 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     }
 
     EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(py_self, "get_param_types");
+        return call_method< EMAN::TypeDict >(self, "get_param_types");
     }
 
-    PyObject* py_self;
+    PyObject* self;
 };
 
 
@@ -67,7 +73,7 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 BOOST_PYTHON_MODULE(libpyReconstructor2)
 {
     def("dump_reconstructors", &EMAN::dump_reconstructors);
-    class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", no_init)
+    class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
         .def("insert_slice", pure_virtual(&EMAN::Reconstructor::insert_slice))
         .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())

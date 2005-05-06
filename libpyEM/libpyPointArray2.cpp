@@ -32,7 +32,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_projection_by_nfft_overlo
 BOOST_PYTHON_MODULE(libpyPointArray2)
 {
     scope* EMAN_PointArray_scope = new scope(
-    class_< EMAN::PointArray, boost::noncopyable >("PointArray", init<  >())
+    class_< EMAN::PointArray >("PointArray", init<  >())
+        .def(init< const EMAN::PointArray& >())
         .def(init< unsigned int >())
         .def("zero", &EMAN::PointArray::zero)
         .def("copy", &EMAN::PointArray::copy, return_value_policy< manage_new_object >())

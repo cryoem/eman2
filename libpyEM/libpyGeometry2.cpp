@@ -12,7 +12,8 @@ using namespace boost::python;
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyGeometry2)
 {
-    class_< EMAN::Region, boost::noncopyable >("Region", init<  >())
+    class_< EMAN::Region >("Region", init<  >())
+        .def(init< const EMAN::Region& >())
         .def(init< int, int, int, int >())
         .def(init< int, int, int, int, int, int >())
         .def(init< float, float, float, float >())
@@ -31,16 +32,17 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
         .def("get_string", &EMAN::Region::get_string)
     ;
 
-    class_< EMAN::Pixel, boost::noncopyable >("Pixel", init< int, int, int, float >())
+    class_< EMAN::Pixel >("Pixel", init< const EMAN::Pixel& >())
+        .def(init< int, int, int, float >())
         .def_readwrite("x", &EMAN::Pixel::x)
         .def_readwrite("y", &EMAN::Pixel::y)
         .def_readwrite("z", &EMAN::Pixel::z)
         .def_readwrite("value", &EMAN::Pixel::value)
         .def("get_point", &EMAN::Pixel::get_point)
         .def("get_value", &EMAN::Pixel::get_value)
-        .def( self < self )
-        .def( self == self )
         .def( self != self )
+        .def( self == self )
+        .def( self < self )
     ;
 
 }
