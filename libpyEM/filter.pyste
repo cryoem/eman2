@@ -1,7 +1,7 @@
 Include("emdata.h")
 
 Processor = Class("EMAN::Processor", "filter.h")
-rename(Processor, "__Processor")
+#rename(Processor, "__Processor")
 set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 
 #RealPixelProcessor = Class("EMAN::RealPixelProcessor", "filter.h")
@@ -21,6 +21,7 @@ set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 
 #NormalizeProcessor = Class("EMAN::NormalizeProcessor", "filter.h")
 #rename(NormalizeProcessor, "__NormalizeProcessor")
+
 
 Function("EMAN::dump_filters", "filter.h")
 Function("EMAN::multi_filters", "filter.h")
