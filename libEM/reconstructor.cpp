@@ -997,7 +997,8 @@ EMData *BackProjectionReconstructor::finish()
 	return image;
 }
 
-PawelBackProjectionReconstructor::PawelBackProjectionReconstructor() {}
+PawelBackProjectionReconstructor::PawelBackProjectionReconstructor() 
+: v(NULL) {}
 
 PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
 {
