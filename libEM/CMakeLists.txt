@@ -41,7 +41,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     reconstructor.cpp
     exception.cpp
 	testutil.cpp
-    fourierproduct.cpp
+    fundamentals.cpp
     normpadft.cpp
     periodogram.cpp
     fourierfilter.cpp

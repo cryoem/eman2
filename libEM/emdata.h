@@ -14,6 +14,7 @@
 
 
 #include "emobject.h"
+#include "fundamentals.h"
 #include "emutil.h"
 #include "util.h"
 #include "vec3.h"
@@ -515,24 +516,18 @@ namespace EMAN
 
 		/** Calculate Cross-Correlation Function (CCF).
 		 *
-		 * CCF is a 2D function that is obtained by forming the scalar
-		 * cross-product of two images (i.e., the sum of products of
-		 * equivalent pixels) as a function of a 2D shift vector. The
-		 * CCF is often used to achieve alignment between two images,
-		 * since it displays a high value (a peak) at the place where
-		 * a motif contained in both images come into register.
+		 * Calculate the correlation of two 1-, 2-, or 3-dimensional
+		 * images.  Note: this method internally just calls the
+		 * correlation function from fundamentals.h.
 		 *
-		 * @param with The image used to calculate CCF. If 'with' is
-		 *   NULL, does mirror ACF.
-		 * @param tocorner Set whether to translate the result image
-		 *   to the center.
-		 * @param filter optional filter to apply to both images before CCF.
-		 * @exception NullPointerException If FFT returns NULL image.
-		 * @exception ImageFormatException If filter has improper size.
-		 *
-		 * @return The result image containing the CCF.
+		 * @param[in] with The image used to calculate the CCF. If 'with' is
+		 * NULL, the autocorrelation function is computed instead.
+		 * @param[in] fpflag Specify how periodicity (or normalization) should
+		 * be handled.  See fundamentals.h  The default is "CIRCULANT".  for
+		 * specific flags.
+		 * @return Real-space image.
 		 */
-		EMData *calc_ccf(EMData * with, int tocorner = 0, EMData * filter = NULL);
+		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT);
 
 		/** Calculate Cross-Correlation Function (CCF) in the x-direction 
 		 * and adds them up, result in 1D.

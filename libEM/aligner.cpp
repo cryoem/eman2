@@ -57,10 +57,12 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 	EMData *parent = this_img->get_parent();
 
 	if (useparent && parent != 0) {
-		cf = parent->calc_ccf(to, true);
+		cf = parent->calc_ccf(to);
+		cf->process("eman1.xform.phaseorigin");
 	}
 	else {
-		cf = this_img->calc_ccf(to, true);
+		cf = this_img->calc_ccf(to);
+		cf->process("eman1.xform.phaseorigin");
 	}
 
 	int nx = this_img->get_xsize();
@@ -172,10 +174,12 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  const stri
 	EMData *parent = this_img->get_parent();
 
 	if (useparent && parent != 0) {
-		cf = parent->calc_ccf(to, true);
+		cf = parent->calc_ccf(to);
+		cf->process("eman1.xform.phaseorigin");
 	}
 	else {
-		cf = this_img->calc_ccf(to, true);
+		cf = this_img->calc_ccf(to);
+		cf->process("eman1.xform.phaseorigin");
 	}
 
 	float *cf_data = cf->get_data();

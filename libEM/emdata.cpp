@@ -13,6 +13,7 @@
 #include "emfft.h"
 #include "projector.h"
 #include "byteorder.h"
+#include "fundamentals.h"
 
 #include <float.h>
 #include <math.h>
@@ -4329,99 +4330,14 @@ void EMData::to_one()
 
 
 
-EMData *EMData::calc_ccf(EMData * with, int tocorner, EMData * filter)
-{
-	ENTERFUNC;
-#if 1
-	EMData *f1 = 0;
-
-	f1 = do_fft();
-	f1->process("eman1.xform.fourierorigin");
-
-	if (!f1) {
-		throw NullPointerException("FFT returns NULL image");
-	}
-	f1->ap2ri();
-#endif
-	
-	EMData *cf = 0;
-
+inline EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 	if (with) {
-		cf = with->do_fft();
-		cf->process("eman1.xform.fourierorigin");
-		if (!cf) {
-			throw NullPointerException("FFT returns NULL image");
-		}
-		
-		cf->ap2ri();
+		return correlation(this, with, fpflag);
+	} else {
+		return autocorrelation(this, fpflag);
 	}
-	else {
-		cf = f1->copy(false);
-	}
-	
-
-	if (filter) {
-		if (!EMUtil::is_same_size(filter, cf)) {
-			throw ImageFormatException("improperly sized filter");
-		}
-
-		cf->mult(*filter);
-		f1->mult(*filter);
-	}
-
-	if (with && !EMUtil::is_same_size(f1, cf)) {
-		throw ImageFormatException( "images not same size");
-	}
-	
-
-	float *rdata1 = f1->get_data();
-	float *rdata2 = cf->get_data();
-
-	int cf_size = cf->get_xsize() * cf->get_ysize() * cf->get_zsize();
-
-	if (with == this) {
-		for (int i = 0; i < cf_size; i += 2) {
-			rdata2[i] = rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1];
-		}
-	}
-	else if (with) {
-
-		for (int i = 0; i < cf_size; i += 2) {
-			float re = rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1];
-			float im = rdata1[i + 1] * rdata2[i] - rdata1[i] * rdata2[i + 1];
-			rdata2[i] = re;
-			rdata2[i + 1] = im;
-		}
-	}
-	else {
-
-		for (int i = 0; i < cf_size; i += 2) {
-			float re = rdata1[i] * rdata2[i] - rdata1[i + 1] * rdata2[i + 1];
-			float im = rdata1[i + 1] * rdata2[i] + rdata1[i] * rdata2[i + 1];
-			rdata2[i] = re;
-			rdata2[i + 1] = im;
-		}
-	}
-
-	f1->done_data();
-	cf->done_data();
-	
-	if (tocorner) {
-		cf->process("eman1.xform.phaseorigin");
-	}
-
-	cf->process("eman1.xform.fourierorigin");
-	EMData *f2 = cf->do_ift();
-	delete cf;
-	delete f1;
-
-	f2->set_attr("label", "CCF");
-	f2->set_path("/tmp/eman.ccf");
-
-	
-	EXITFUNC;
-	return f2;
 }
+
 
 EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 {
