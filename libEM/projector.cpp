@@ -5,10 +5,19 @@
 #include "log.h"
 #include "emdata.h"
 #include "interp.h"
+#include  "emconstants.h"
 #include <string>
+
+
+
 #ifdef WIN32
 #define M_PI 3.14159265358979323846f
 #endif
+
+#include <iostream>
+
+using namespace std;
+
 
 using namespace EMAN;
 
@@ -392,28 +401,26 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 	}
 }
 
-void PawelProjector::prepcubes(int n, int ri, Vec3i origin, 
+void PawelProjector::prepcubes(int nx, int ny, int nz, int ri, Vec3i origin, 
 		                       int& nn, IPCube* ipcube) const {
 	const float r = ri*ri;
 	const int ldpx = origin[0];
 	const int ldpy = origin[1];
 	const int ldpz = origin[2];
 	float t;
-	nn = 0;
-	for (int i1 = 0; i1 < n; i1++) {
-		t = i1 - ldpz;
-		const float xx = t*t;
-		for (int i2 = 0; i2 < n; i2++) {
-			t = i2 - ldpy;
-			const float yy = t*t + xx;
+	nn = -1;
+	for (int i1 = 0; i1 < nz; i1++) {
+		t = i1 - ldpz; const float xx = t*t;
+		for (int i2 = 0; i2 < ny; i2++) {
+			t = i2 - ldpy; const float yy = t*t + xx;
 			bool first = true;
-			for (int i3 = 0; i3 < n; i3++) {
-				t = i3 - ldpx;
-				const float rc = t*t + yy;
+			for (int i3 = 0; i3 < nz; i3++) {
+				t = i3 - ldpx; const float rc = t*t + yy;
 				if (first) {
 					// first pixel on this line
 					if (rc > r) continue;
 					first = false;
+					nn++;
 					if (ipcube != NULL) {
 						ipcube[nn].start = i3;
 						ipcube[nn].end = i3;
@@ -421,7 +428,6 @@ void PawelProjector::prepcubes(int n, int ri, Vec3i origin,
 						ipcube[nn].loc[1] = i2 - ldpy;
 						ipcube[nn].loc[2] = i1 - ldpz;
 					}
-					nn++;
 				} else {
 					// second or later pixel on this line
 					if (ipcube != NULL) {
@@ -438,7 +444,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	if (!image) {
 		return 0;
 	}
-
+	int ri;
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
@@ -447,25 +453,22 @@ EMData *PawelProjector::project3d(EMData * image) const
 		LOGERR("The PawelProjector needs a volume!");
 		return 0;
 	}
-	int new_origin_x = params["origin_x"];
-	int new_origin_y = params["origin_y"];
-	int new_origin_z = params["origin_z"];
-	Vec3i origin(new_origin_x,new_origin_y,new_origin_z);
+	Vec3i origin(0,0,0);
 	// If a sensible origin isn't passed in, choose the middle of
 	// the cube.
-	if (origin[0] == 0) origin[0] = nx/2 + 1;
-	if (origin[1] == 0) origin[1] = ny/2 + 1;
-	if (origin[2] == 0) origin[2] = nz/2 + 1;
-	int ri = params["radius"];
-	if (ri == 0) 
-		ri = dim/2 - 1;
+	if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} else {origin[0] = nx/2;}
+	if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} else {origin[1] = ny/2;}
+	if (params.has_key("origin_z")) {origin[2] = params["origin_z"];} else {origin[2] = nz/2;}
+
+	if (params.has_key("radius")) {ri = params["radius"];} else {ri = dim/2 - 1;}
+
 	// Determine the number of rows (x-lines) within the radius
-	int nn = 0;
-	prepcubes(dim, ri, origin, nn); 
-	// nn is now the number of rows within the radius
+	int nn = -1;
+	prepcubes(nx, ny, nz, ri, origin, nn); 
+	// nn is now the number of rows-1 within the radius
 	// so we can create and fill the ipcubes
-	IPCube* ipcube = new IPCube[nn];
-	prepcubes(dim, ri, origin, nn, ipcube);
+	IPCube* ipcube = new IPCube[nn+1];
+	prepcubes(nx, ny, nz, ri, origin, nn, ipcube);
 
 	// Do we have a list of angles?
 	vector<float> anglelist = params["anglelist"];
@@ -507,36 +510,27 @@ EMData *PawelProjector::project3d(EMData * image) const
 	EMData* ret = new EMData();
 	ret->set_size(nx, ny, nangles);
 	ret->to_zero();
-	MArray3D b = ret->get_3dview();
-	MArray3D cube = image->get_3dview();
+	MArray3D b = ret->get_3dview(0,0,0);
+	MArray3D cube = image->get_3dview(0,0,0);
 
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform3D rotation(eulertype, anglelist[indx],
-				           anglelist[indx+1], anglelist[indx+2]);
+		Transform3D rotation(eulertype, anglelist[indx]*dgr_to_rad,
+				           anglelist[indx+1]*dgr_to_rad, anglelist[indx+2]*dgr_to_rad);
 		if (2*(ri+1)+1 > dim) {
 			// Must check x and y boundaries
-			for (int i = 0 ; i < nn; i++) {
+			for (int i = 0 ; i <= nn; i++) {
 				int k = ipcube[i].loc[1] + origin[1];
 				Vec3f vb = ipcube[i].loc*rotation + origin;
 				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
 					// check for pixels out-of-bounds
 					int iox = int(vb[0]);
-					if ((iox < 0) || (iox >= nx-1)) {
-						vb += rotation.get_matrix3_row(0);
-						continue;
-					}
-					int ioy = int(vb[1]);
-					if ((ioy < 0) || (ioy >= ny-1)) {
-						vb += rotation.get_matrix3_row(0);
-						continue;
-					}
-					int ioz = int(vb[2]);
-					if ((ioz < 0) || (ioz >= nz-1)) {
-						vb += rotation.get_matrix3_row(0);
-						continue;
-					}
+					if ((iox >= 0) & (iox < nx-1)) {
+						int ioy = int(vb[1]);
+						if ((ioy >= 0) & (ioy < ny-1)) {
+							int ioz = int(vb[2]);
+							if ((ioz >= 0) & (ioz < nz-1)) {
 					// real work for pixels in bounds
 					float dx = vb[0] - iox;
 					float dy = vb[1] - ioy;
@@ -557,13 +551,16 @@ EMData *PawelProjector::project3d(EMData * image) const
 					b[j][k][ia] += a1 + dz*(a4 + a6*dx  
 							+ (a7 + a8*dx)*dy)
 						+ a3*dy + dx*(a2 + a5*dy);
+							}
+						}
+					}
 					vb += rotation.get_matrix3_row(0);
 				}
 			}
 
 		} else {
 			// No need to check x and y boundaries
-			for (int i = 0 ; i < nn; i++) {
+			for (int i = 0 ; i <= nn; i++) {
 				int k = ipcube[i].loc[1] + origin[1];
 				Vec3f vb = ipcube[i].loc*rotation + origin;
 				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {

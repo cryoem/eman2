@@ -164,7 +164,6 @@ namespace EMAN
 
 
 	/** Pawel Penczek's optimized projection routine.
-     * Subject to some small artifacts due to interpolation scheme used.
      */
 	class PawelProjector:public Projector
 	{
@@ -196,7 +195,7 @@ namespace EMAN
 		};
 		// Process the number of valid x-lines (rows)
 		// within the radius
-		void prepcubes(int n, int ri, Vec3i origin, 
+		void prepcubes(int nx, int ny, int nz, int ri, Vec3i origin, 
 				       int& nn, IPCube* ipcube=NULL) const;
 	};
 
