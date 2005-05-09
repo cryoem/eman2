@@ -50,7 +50,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_do_ift_inplace_overloads_0_1,
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_little_big_dot_overloads_1_2, little_big_dot, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccf_overloads_1_3, calc_ccf, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccf_overloads_1_2, calc_ccf, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccfx_overloads_1_4, calc_ccfx, 1, 4)
 
@@ -142,7 +142,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("dot_rotate_translate", &EMAN::EMData::dot_rotate_translate)
         .def("little_big_dot", &EMAN::EMData::little_big_dot, return_value_policy< manage_new_object >(), EMAN_EMData_little_big_dot_overloads_1_2())
         .def("do_radon", &EMAN::EMData::do_radon, return_value_policy< manage_new_object >())
-        .def("calc_ccf", &EMAN::EMData::calc_ccf, return_value_policy< manage_new_object >(), EMAN_EMData_calc_ccf_overloads_1_3())
+        .def("calc_ccf", &EMAN::EMData::calc_ccf, return_value_policy< manage_new_object >(), EMAN_EMData_calc_ccf_overloads_1_2())
         .def("calc_ccfx", &EMAN::EMData::calc_ccfx, return_value_policy< manage_new_object >(), EMAN_EMData_calc_ccfx_overloads_1_4())
         .def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, return_internal_reference< 1 >(), EMAN_EMData_make_rotational_footprint_overloads_0_2())
         .def("calc_mutual_correlation", &EMAN::EMData::calc_mutual_correlation, return_value_policy< manage_new_object >(), EMAN_EMData_calc_mutual_correlation_overloads_1_3())
