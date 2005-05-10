@@ -805,13 +805,15 @@ namespace EMAN
 		 * Note: We use the Spider construction for Euler angles here.
 		 *
 		 * @param[in] delta  Delta theta (spacing in theta).
-		 * @param[in] t1  Starting (min) value of theta.
-		 * @param[in] t2  Ending (max) value of theta.
-		 * @param[in] p1  Starting (min) value of phi.
-		 * @param[in] p2  Ending (max) value of phi.
+		 * @param[in] t1  Starting (min) value of theta in degrees, default = 0.
+		 * @param[in] t2  Ending (max) value of theta in degrees, default = 90.
+		 * @param[in] p1  Starting (min) value of phi in degrees, default = 0.
+		 * @param[in] p2  Ending (max) value of phi in degrees, default = 359.9.
+		 * @return Vector of angles as a flat list of phi_0, theta_0, psi_0, ..., phi_N, theta_N, psi_N.
 		 */
 		static vector<float>
-		voea(float delta, float t1, float t2, float p1, float p2);
+		voea(float delta, float t1=0, float t2=90, 
+			 float p1=0, float p2=359.9);
 	};
 }
 
