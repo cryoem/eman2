@@ -799,17 +799,19 @@ namespace EMAN
 								const string str = string(""),
 								ostream& out = std::cout);
 
-		/** Write a file containing evenly-spaced euler angles
+		/** Compute a vector containing evenly-spaced euler angles
 		 *
-		 * @param filename [in] Filename of the file to be written.
-		 * @param delta [in] Delta theta (spacing in theta).
-		 * @param t1 [in] Starting (min) value of theta.
-		 * @param t2 [in] Ending (max) value of theta.
-		 * @param p1 [in] Starting (min) value of phi.
-		 * @param p2 [in] Ending (max) value of phi.
+		 * The order of angles in the vector is psi, theta, phi.
+		 * Note: We use the Spider construction for Euler angles here.
+		 *
+		 * @param[in] delta  Delta theta (spacing in theta).
+		 * @param[in] t1  Starting (min) value of theta.
+		 * @param[in] t2  Ending (max) value of theta.
+		 * @param[in] p1  Starting (min) value of phi.
+		 * @param[in] p2  Ending (max) value of phi.
 		 */
-		static void voea(string filename, float delta, float t1, float t2,
-				float p1, float p2);
+		static vector<float>&
+		voea(float delta, float t1, float t2, float p1, float p2);
 	};
 }
 

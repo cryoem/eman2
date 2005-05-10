@@ -3,6 +3,7 @@ Include("xydata.h")
 Include("imageio.h")
 
 Util = Class("EMAN::Util", "util.h")
+set_policy(Util.voea, return_value_policy(manage_new_object))
 
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
