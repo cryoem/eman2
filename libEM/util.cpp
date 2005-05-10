@@ -758,12 +758,12 @@ void Util::printMatI3D(MIArray3D& mat, int nx, int ny, int nz,
 	}
 }
 
-vector<float>&
+vector<float>
 Util::voea(float delta, float t1, float t2, float p1, float p2)
 {
 	const float QUADPI = 3.141592653589793238462643383279502884197;
 	const float DGR_TO_RAD = QUADPI/180.;
-	vector<float>& angles = *(new vector<float>);
+	vector<float> angles;
 	float psi = 0.0;
 	if ((0.0 == t1)&&(0.0 == t2)||(t1 >= t2)) {
 		t1 = 0.0;

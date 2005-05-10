@@ -810,7 +810,7 @@ namespace EMAN
 		 * @param[in] p1  Starting (min) value of phi.
 		 * @param[in] p2  Ending (max) value of phi.
 		 */
-		static vector<float>&
+		static vector<float>
 		voea(float delta, float t1, float t2, float p1, float p2);
 	};
 }

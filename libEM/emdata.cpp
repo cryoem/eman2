@@ -4330,7 +4330,7 @@ void EMData::to_one()
 
 
 
-inline EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
+EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 	if (with) {
 		return correlation(this, with, fpflag);
 	} else {
