@@ -798,6 +798,18 @@ namespace EMAN
 								int nx, int ny, int nz,
 								const string str = string(""),
 								ostream& out = std::cout);
+
+		/** Write a file containing evenly-spaced euler angles
+		 *
+		 * @param filename [in] Filename of the file to be written.
+		 * @param delta [in] Delta theta (spacing in theta).
+		 * @param t1 [in] Starting (min) value of theta.
+		 * @param t2 [in] Ending (max) value of theta.
+		 * @param p1 [in] Starting (min) value of phi.
+		 * @param p2 [in] Ending (max) value of phi.
+		 */
+		static void voea(string filename, float delta, float t1, float t2,
+				float p1, float p2);
 	};
 }
 

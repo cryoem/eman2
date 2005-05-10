@@ -758,3 +758,43 @@ void Util::printMatI3D(MIArray3D& mat, int nx, int ny, int nz,
 	}
 }
 
+void Util::voea(string filename, float delta, float t1, float t2,
+		float p1, float p2)
+{
+	const float QUADPI = 3.141592653589793238462643383279502884197;
+	const float DGR_TO_RAD = QUADPI/180.;
+	std::ofstream fout(filename.c_str());
+	if (!fout.good()) {
+		LOGERR("Cannot write angles output file");
+		return;
+	}
+	float psi = 0.0;
+	if ((0.0 == t1)&&(0.0 == t2)||(t1 >= t2)) {
+		t1 = 0.0;
+		t2 = 90.0;
+	}
+	if ((0.0 == p1)&&(0.0 == p2)||(p1 >= p2)) {
+		p1 = 0.0;
+		p2 = 359.9;
+	}
+	bool skip = ((t1 < 90.0)&&(90.0 == t2)&&(0.0 == p1)&&(p2 > 180.0));
+	for (float theta = t1; theta <= t2; theta += delta) {
+		float detphi;
+		int lt;
+		if ((0.0 == theta)||(180.0 == theta)) {
+			detphi = 360.0;
+			lt = 1;
+		} else {
+			detphi = delta/sin(theta*DGR_TO_RAD);
+			lt = int((p2 - p1)/detphi)-1;
+			if (lt < 1) lt = 1;
+			detphi = (p2 - p1)/lt;
+		}
+		for (int i = 0; i < lt; i++) {
+			float phi = p1 + i*detphi;
+			if (skip&&(90.0 == theta)&&(phi > 180.0)) continue;
+			fout << psi << '\t' << theta << '\t' << phi << std::endl;
+		}
+	}
+	fout.close();
+}
