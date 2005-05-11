@@ -287,6 +287,8 @@ void EMData::process(const string & filtername, const Dict & params)
 	Processor *f = Factory < Processor >::get(filtername, params);
 	if (f) {
 		f->process(this);
+		delete f;
+		f = 0;
 	}
 	EXITFUNC;
 }
@@ -298,6 +300,8 @@ float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 	Cmp *c = Factory < Cmp >::get(cmpname, params);
 	if (c) {
 		result = c->cmp(this, with);
+		delete c;
+		c = 0;
 	}
 	
 	EXITFUNC;
@@ -317,6 +321,8 @@ EMData *EMData::align(const string & aligner_name, EMData * to_img,
 		else {
 			result = a->align(this, to_img, cmp_name);
 		}
+		delete a;
+		a = 0;
 	}
 
 	EXITFUNC;
@@ -330,6 +336,8 @@ EMData *EMData::project(const string & projector_name, const Dict & params)
 	Projector *p = Factory < Projector >::get(projector_name, params);
 	if (p) {
 		result = p->project3d(this);
+		delete p;
+		p = 0;
 	}
 
 	EXITFUNC;
