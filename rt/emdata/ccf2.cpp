@@ -11,7 +11,7 @@ int main()
 	EMData *b = new EMData();
 	b->read_image(TestUtil::get_debug_image("3d86_2.mrc"));
 #if 1
-	EMData *c = a->calc_ccf(b, 0);
+	EMData *c = a->calc_ccf(b);
 	delete b;
 	b = 0;
 #endif
