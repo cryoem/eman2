@@ -1010,6 +1010,7 @@ PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
 
 void PawelBackProjectionReconstructor::setup() {
 	int nsize = params["size"];
+	vnx = vny = vnz = nsize;
 	npad = params["npad"];
 	vnxp = nsize*npad;
 	vnyp = nsize*npad;
@@ -1054,7 +1055,7 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
-	if (slice->get_xsize() != slice->get_ysize() 
+	if ((slice->get_xsize() != slice->get_ysize()) 
 		|| slice->get_xsize() != vnx) {
 		// FIXME: Why doesn't this throw an exception?
 		LOGERR("Tried to insert a slice that is the wrong size.");

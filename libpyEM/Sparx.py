@@ -116,22 +116,29 @@ def add_series(file_pattern,i1,i2,average,variance):
 	dropImage(var,variance)
 
 
-def do_reconstruction(filepattern, start, end, npad, rotations):
+def do_reconstruction(filepattern, start, end, npad, anglelist):
+	# convert angles to transform (rotation) objects
+	nangles = len(anglelist) / 3
+	rotations = []
+	for i in range(nangles):
+		rotations.append(Transform3D(Transform3D.EulerType.SPIDER,
+						 anglelist[3*i], anglelist[3*i+1], anglelist[3*i+2]))
 	# read first image to determine the size to use
-	fname = Util.parse_spider_fname(filepattern,[start]) 
-	first = getImage(fname)
+	projname = Util.parse_spider_fname(filepattern,[start]) 
+	first = getImage(projname)
 	size = first.get_xsize()
 	# sanity check -- image must be square
-	if first.get_xsize != first.get_ysize:
+	if first.get_xsize() != first.get_ysize():
 		print "Image projections must be square!"
 		# FIXME: throw exception instead
 		return None
-	r = ReconstructorFactory.get("PawelBackProjection")
-	r.set_params({"size":size, "npad":npad})
+	del first # don't need it any longer
+	# reconstructor
+	r = Reconstructors.get("PawelBackProjection", {"size":size, "npad":npad})
 	r.setup()
 	for i in range(start, end+1):
-		fname = Util.parse_spider_fname(filepattern,[i])
-		projection = getImage(fname)
+		projname = Util.parse_spider_fname(filepattern,[i])
+		projection = getImage(projname)
 		r.insert_slice(projection, rotations[i])
 	v = r.finish()
 	return v
