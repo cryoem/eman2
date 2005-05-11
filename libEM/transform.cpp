@@ -185,7 +185,7 @@ void Transform3D::apply_scale(float scale)    // YYY
 
 void Transform3D::orthogonalize()  // YYY
 {
-	EulerType EMAN;
+	//EulerType EMAN;
 	float scale = get_scale() ;
 	float inverseScale= 1/scale ;
 	apply_scale(inverseScale);
