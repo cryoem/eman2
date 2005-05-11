@@ -1499,7 +1499,7 @@ namespace EMAN
 			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
 			EMDATA_FLIP = 1 << 7,	   // is the image flipped
 			EMDATA_PAD = 1 << 8,       // is the image fft padded 
-			EMDATA_FFTODD = 1 << 9,	   // is the (real-space) nx odd
+			EMDATA_FFTODD = 1 << 9	   // is the (real-space) nx odd
 		};
 
 		void update_stat();

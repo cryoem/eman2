@@ -1103,7 +1103,7 @@ void EMUtil::process_numbers_io(FILE * file, int rw_mode,
 		
 		int nitems_in_line = (int) (strlen(line) / mode_size);
 		Assert(end <= nitems_in_line);
-		float d[nitems_in_line];
+		vector<float> d(nitems_in_line);
 		char * pline = line;
 		
 		for (int i = 0; i < nitems_in_line; i++) {
@@ -1152,7 +1152,7 @@ void EMUtil::exclude_numbers_io(FILE * file, int rw_mode,
 		int nitems_in_line =  (int) (strlen(line) / mode_size);
 		Assert(end <= nitems_in_line);
 		
-		float d[nitems_in_line];
+		vector<float> d(nitems_in_line);
 		char *pline = line;
 		
 		for (int i = 0; i < nitems_in_line; i++) {
