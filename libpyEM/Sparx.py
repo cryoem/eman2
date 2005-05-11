@@ -143,3 +143,15 @@ def do_reconstruction(filepattern, start, end, npad, anglelist):
 	v = r.finish()
 	return v
 
+def create_write_projections(volume, filepattern, anglelist, radius):
+	nangles = len(anglelist) / 3
+	for i in range(nangles):
+		myangles = anglelist[3*i:3*(i+1)] # just a single slice of phi, theta, psi
+		myparams = {"angletype":"SPIDER",
+				 	"anglelist":myangles,
+					"radius":radius}
+		proj = volume.project("Pawel",myparams)
+		projname = Util.parse_spider_fname(filepattern, [i])
+		proj.write_image(projname, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+
+
