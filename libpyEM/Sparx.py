@@ -117,12 +117,39 @@ def add_series(file_pattern,i1,i2,average,variance):
 
 
 def do_reconstruction(filepattern, start, end, npad, anglelist):
+	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
+	   
+	   Input:
+	     filepattern -- string such as "foo{****}.ext" that will be
+		                used to determine the filenames of the 
+						projections to be read in.
+		start        -- initial integer value to put in the field
+		end          -- final integer value to put in the field
+		npad         -- zero-padding factor (npad == 1 is no extra padding)
+		anglelist    -- flat list of euler angels (in degrees), with the
+		                number of euler angles equal to the number of 
+						projections to be read in.
+	
+	   Return:  3d reconstructed volume image
+
+	   Usage:
+	   	 
+		 anglelist = getAngles("myangles.txt") # not yet written
+		 filepattern = "proj{****}.hrs"
+		 start = 0
+		 end = 5087
+		 vol = do_reconstruction(filepattern, start, end, anglelist)
+	"""
+	from math import radians
 	# convert angles to transform (rotation) objects
 	nangles = len(anglelist) / 3
 	rotations = []
 	for i in range(nangles):
+		phi = radians(anglelist[3*i])
+		theta = radians(anglelist[3*i+1])
+		psi = radians(anglelist[3*i+2])
 		rotations.append(Transform3D(Transform3D.EulerType.SPIDER,
-						 anglelist[3*i], anglelist[3*i+1], anglelist[3*i+2]))
+						 phi, theta, psi))
 	# read first image to determine the size to use
 	projname = Util.parse_spider_fname(filepattern,[start]) 
 	first = getImage(projname)
@@ -154,4 +181,22 @@ def create_write_projections(volume, filepattern, anglelist, radius):
 		projname = Util.parse_spider_fname(filepattern, [i])
 		proj.write_image(projname, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 
+def do_alignment(exptpattern, start, end, refpattern, alipattern, anglelist):
+	newangles = []
+	for i in range(start, end+1):
+		exptname = Util.parse_spider_fname(exptpattern, [i])
+		aliname  = Util.parse_spider_fname(alipattern, [i])
+		exptimage = getImage(exptname)
+		nangles = len(anglelist) / 3
+		for ref in range(nangles):
+			refname = Util.parse_spider_fname(refpattern, [ref])
+			refimage = getImage(refname)
+			#  do something real here
+		# this next bit is utter rubbish just so the code "works"
+		aliimage = exptimage 
+		aliimage.write_image(aliname, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+		newangles.append(1.0)
+		newangles.append(2.0)
+		newangles.append(3.0)
+	return newangles
 

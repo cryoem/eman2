@@ -456,11 +456,15 @@ EMData *PawelProjector::project3d(EMData * image) const
 	Vec3i origin(0,0,0);
 	// If a sensible origin isn't passed in, choose the middle of
 	// the cube.
-	if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} else {origin[0] = nx/2;}
-	if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} else {origin[1] = ny/2;}
-	if (params.has_key("origin_z")) {origin[2] = params["origin_z"];} else {origin[2] = nz/2;}
+	if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
+	else {origin[0] = nx/2;}
+	if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
+	else {origin[1] = ny/2;}
+	if (params.has_key("origin_z")) {origin[2] = params["origin_z"];} 
+	else {origin[2] = nz/2;}
 
-	if (params.has_key("radius")) {ri = params["radius"];} else {ri = dim/2 - 1;}
+	if (params.has_key("radius")) {ri = params["radius"];} 
+	else {ri = dim/2 - 1;}
 
 	// Determine the number of rows (x-lines) within the radius
 	int nn = -1;
@@ -593,6 +597,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	}
 	ret->done_data();
 	ret->update();
+	delete [] ipcube;
 	return ret;
 }
 
