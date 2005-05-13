@@ -509,38 +509,41 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	float cosalt=matrix[2][2]/sca;
 
 
-// get phi
-	float phi=0;
-
-	if (fabs(cosalt) > max) {
-		phi = 0;
-	}
-	else {
-		phi = (float)atan2(matrix[0][2], matrix[1][2]);
-	}
-
-
-// get alt
+	float az=0;
 	float alt = 0;
+	float phi=0;
+	float phiS = 0; // like az   (but in SPIDER ZXZ)
+	float psiS =0;  // like phi  (but in SPIDER ZYZ)
+
+
+// get alt, az, phi;  EMAN
 
 	if (cosalt > max) {  // that is, alt close to 0
 		alt = 0;
+		az=0;
+		phi =(float)atan2(matrix[0][1], matrix[0][0]); 
 	}
-	else if (cosalt < -max) {
+	else if (cosalt < -max) { // alt close to pi
 		alt = M_PI;
+		az=0; 
+		phi=-(float)atan2(matrix[0][1], matrix[0][0]);
 	}
 	else {
 		alt = (float) acos(cosalt);
+		az  = (float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = (float)atan2(matrix[0][2], matrix[1][2]);
 	}
 
-// get az
-	float az = 0;
-	if (fabs(cosalt) > max) {
-		az = (float)atan2(matrix[0][1], matrix[0][0]);
+//   get phiS, psiS ; SPIDER
+	if (fabs(cosalt) > max) {  // that is, alt close to 0
+		phiS=0;
+		psiS = phi;
 	}
 	else {
-		az = (float)atan2(matrix[2][0], -matrix[2][1]);
+		phiS = fmod((az   - 0.5f * M_PI),  2 * M_PI);
+		psiS = fmod((phi  + 0.5f * M_PI), 2 * M_PI);
 	}
+
 //   do some quaternionic stuff here
 
 	float nphi = (az-phi)/2.0f;
@@ -552,6 +555,7 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	float n1 = sinnTheta*cos(nphi);
 	float n2 = sinnTheta*sin(nphi);
 	float n3 = cosnTheta;
+	
 
 
 	switch (euler_type) {
@@ -568,15 +572,15 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		break;
 
 	case SPIDER:
-		result["phi"] = fmod((az  - 0.5f * M_PI), 2 * M_PI);
+		result["phi"]   = phiS;  // The first Euler like az
 		result["theta"] = alt;
-		result["psi"] = fmod((phi + 0.5f * M_PI), 2 * M_PI);
+		result["psi"]   = psiS;
 		break;
 
 	case MRC:
-		result["phi"]   = fmod( az - 0.5f * M_PI, 2 * M_PI);
+		result["phi"]   = phiS;
 		result["theta"] = alt;
-		result["omega"] = fmod(phi + 0.5f * M_PI, 2 * M_PI);
+		result["omega"] = psiS;
 		break;
 
 	case QUATERNION:
@@ -613,12 +617,6 @@ map<string, int> Transform3D::symmetry_map = map<string, int>();
 
 
 
-
-
-
-
-
-//
 // Symmetry Stuff
 
 Transform3D Transform3D::get_sym(const string & symname, int n)
