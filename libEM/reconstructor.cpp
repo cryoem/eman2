@@ -7,6 +7,7 @@
 #include "ctf.h"
 #include "emdata.h"
 #include "fundamentals.h"
+#include "iostream"
 
 using namespace EMAN;
 
@@ -1069,11 +1070,18 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 	float theta = angleparams["theta"];
 	float dm[9];
 	cang(phi, theta, psi, dm);
-	// process 2-d slice
-	EMData* padfftslice = norm_pad_ft(slice, false, true, npad);
+	// process 2-d slice -- zero-pad, fft extend, and fft
+	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
+	// because only the former centers the original image in the 
+	// larger area.  FIXME!
+	EMData* zeropadded = slice->zeropad_ntimes(npad);
+	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
+	delete zeropadded;
+	padfftslice->do_fft_inplace();
 	padfftslice->center_origin_fft();
 	// insert slice
 	v->nn(*nrptr, padfftslice, dm);
+	delete padfftslice;
 	return 0;
 }
 
@@ -1092,8 +1100,11 @@ EMData* PawelBackProjectionReconstructor::finish() {
 		}
 	}
 	// back fft
-	v->do_ift_inplace(true);
-	return v;
+	v->do_ift_inplace(false);
+	EMData* w = v->window_padded(vnx);
+	//EMData* w = v->copy();
+	delete v;
+	return w;
 }
 
 
