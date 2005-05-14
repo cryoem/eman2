@@ -634,7 +634,7 @@ namespace EMAN
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
-		/** add a number to each pixel value of the image.
+		/** add a number to each pixel value of the image. Image may be real or complex.
 		 * @param f The number added to 'this' image.
 		 * @param keepzero If set will not modify pixels that are exactly zero
 		 */
@@ -1424,7 +1424,22 @@ namespace EMAN
 		EMData & operator-=(const EMData & em);
 		EMData & operator*=(const EMData & em);
 		EMData & operator/=(const EMData & em);
-
+		
+		/** return a image to the power of n
+		 * @param n
+		 */
+		EMData & power(int n);		
+		
+		/** return real and imaginary part of a complex image as a real image format
+		 */
+		EMData & real();
+		EMData & imag();
+		
+		/** create a complex image from a real image, this complex image is in real/imaginary format
+		 * @param img give an artificial imaginary part
+		 */
+		EMData & real2complex(float img = 0.0f);
+		
 		/** Read a set of images from file specified by 'filename'.
 		 * Which images are read is set by 'img_indices'.
 		 * @param filename The image file name.

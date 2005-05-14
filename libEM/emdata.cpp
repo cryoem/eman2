@@ -2310,29 +2310,64 @@ void EMData::add(float f,int keepzero)
 {
 	ENTERFUNC;
 	
-	if (f != 0) {
-		flags |= EMDATA_NEEDUPD;
-		int size = nx * ny * nz;
-		if (keepzero) {
-			for (int i = 0; i < size; i++) {
-				if (rdata[i]) rdata[i] += f;
-			}		
-		}
-		else {
-			for (int i = 0; i < size; i++) {
-				rdata[i] += f;
+	if( is_real() )
+	{
+		if (f != 0) {
+			flags |= EMDATA_NEEDUPD;
+			size_t size = nx * ny * nz;
+			if (keepzero) {
+				for (size_t i = 0; i < size; i++) {
+					if (rdata[i]) rdata[i] += f;
+				}		
+			}
+			else {
+				for (size_t i = 0; i < size; i++) {
+					rdata[i] += f;
+				}
 			}
 		}
 	}
+	else if( is_complex() )
+	{
+		if( f!=0 )
+		{
+			flags |= EMDATA_NEEDUPD;
+			size_t size = nx*ny*nz; //size of data
+			if( keepzero )
+			{
+				for(size_t i=0; i<size; i+=2)
+				{
+					if (rdata[i]) rdata[i] += f;
+				}
+			}
+			else
+			{
+				for(size_t i=0; i<size; i+=2)
+				{
+					rdata[i] += f;
+				}
+			}
+		}
+	}
+	else
+	{
+		throw ImageFormatException("This image is neither a real nor a complex image.");
+	}
+	
 	EXITFUNC;
 }
 
+//for add operation, real and complex image is the same
 void EMData::add(const EMData & image) 
 {
 	ENTERFUNC;
 	
 	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
+	}
+	else if( is_real()^image.is_real() == true ) 
+	{
+		throw ImageFormatException( "not support add between real image and complex image");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -2350,22 +2385,47 @@ void EMData::sub(float f)
 {
 	ENTERFUNC;
 	
-	if (f != 0) {
-		flags |= EMDATA_NEEDUPD;
-		size_t size = nx * ny * nz;
-		for (size_t i = 0; i < size; i++) {
-			rdata[i] -= f;
+	if( is_real() )
+	{
+		if (f != 0) {
+			flags |= EMDATA_NEEDUPD;
+			size_t size = nx * ny * nz;
+			for (size_t i = 0; i < size; i++) {
+				rdata[i] -= f;
+			}
 		}
 	}
+	if( is_complex() )
+	{
+		if( f != 0 )
+		{
+			flags |= EMDATA_NEEDUPD;
+			size_t size = nx * ny * nz;
+			for( size_t i=0; i<size; i+=2 )
+			{
+				rdata[i] -= f;
+			}
+		}
+	}
+	else
+	{
+		throw ImageFormatException("This image is neither a real nor a complex image.");
+	}
+	
 	EXITFUNC;
 }
 
+//for sub operation, real and complex image is the same
 void EMData::sub(const EMData & em) 
 {
 	ENTERFUNC;
 	
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException("images not same sizes");
+	}
+	else if( is_real()^em.is_real() == true ) 
+	{
+		throw ImageFormatException( "not support sub between real image and complex image");
 	}
 	else {
 		flags |= EMDATA_NEEDUPD;
@@ -2405,15 +2465,35 @@ void EMData::mult(const EMData & em)
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else {
+	else if( is_real()^em.is_real() == true ) 
+	{
+		throw ImageFormatException( "not support multiply between real image and complex image");
+	}
+	else 
+	{
 		flags |= EMDATA_NEEDUPD;
 		const float *src_data = em.get_data();
 		size_t size = nx * ny * nz;
-
-		for (size_t i = 0; i < size; i++) {
-			rdata[i] *= src_data[i];
+		if( is_real() )
+		{
+			for (size_t i = 0; i < size; i++) {
+				rdata[i] *= src_data[i];
+			}
+		}
+		else
+		{
+			typedef complex<float> comp;
+			for( size_t i = 0; i < size; i+=2 )
+			{
+				comp c_src( src_data[i], src_data[i+1] );
+				comp c_rdat( rdata[i], rdata[i+1] );
+				comp c_result = c_src * c_rdat;
+				rdata[i] = c_result.real();
+				rdata[i+1] = c_result.imag();
+			}
 		}
 	}
+	
 	EXITFUNC;
 }
 
@@ -2421,6 +2501,9 @@ void EMData::div(float f)
 {
 	ENTERFUNC;
 	
+	if (is_complex()) {
+		ap2ri();
+	}
 	if (f != 0) {
 		flags |= EMDATA_NEEDUPD;
 		size_t size = nx * ny * nz;
@@ -2438,15 +2521,35 @@ void EMData::div(const EMData & em)
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
+	else if( is_real()^em.is_real() == true ) 
+	{
+		throw ImageFormatException( "not support division between real image and complex image");
+	}
 	else {
 		flags |= EMDATA_NEEDUPD;
 		const float *src_data = em.get_data();
 		size_t size = nx * ny * nz;
 
-		for (size_t i = 0; i < size; i++) {
-			rdata[i] /= src_data[i];
+		if( is_real() )
+		{
+			for (size_t i = 0; i < size; i++) {
+				rdata[i] /= src_data[i];
+			}
+		}
+		else
+		{
+			typedef complex<float> comp;
+			for( size_t i = 0; i < size; i+=2 )
+			{
+				comp c_src( src_data[i], src_data[i+1] );
+				comp c_rdat( rdata[i], rdata[i+1] );
+				comp c_result = c_src / c_rdat;
+				rdata[i] = c_result.real();
+				rdata[i+1] = c_result.imag();
+			}
 		}
 	}
+	
 	EXITFUNC;
 }
 
@@ -2975,6 +3078,25 @@ EMData & EMData::operator/=(const EMData & em)
 	return *this;
 }
 
+EMData & EMData::power(int n)
+{
+	if( n == 0 )
+	{
+		to_one();
+	}
+	else if( n>1 )
+	{
+		EMData * r = this->copy();
+		for( int i=1; i<n; i++ )
+		{
+			*this *= *r;
+		}
+		delete r;
+		r = 0;
+	}
+	
+	return *this;
+}
 
 EMData * EMAN::operator+(const EMData & em, float n)
 {
@@ -5843,3 +5965,133 @@ void EMData::print_image(const string str, ostream& out) {
 	}
 }
 
+EMData & EMData::real() //real part has half of x dimension
+{
+	ENTERFUNC;
+	
+	if( is_real() ) // a real image, return a copy of itself
+	{
+		return *(this->copy());
+	}
+	else if( is_complex() ) //for a complex image
+	{
+		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
+		{
+			ap2ri();
+		} 
+		EMData * e = new EMData();		
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		e->set_size(nx/2, ny, nz);
+		float * edata = e->get_data();
+		for( int i=0; i<nx; i++ )
+		{
+			for( int j=0; j<ny; j++ )
+			{
+				for( int k=0; k<nz; k++ )
+				{
+					if( i%2 == 0 )
+					{
+						//complex data in format [real, complex, real, complex...]
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny]; 
+					}
+				}
+			}
+		}
+
+		e->set_complex(false);
+		return *e;
+	}
+	else //should not be here, image is neither real nor complex 
+	{
+		throw ImageFormatException("This image is neither a real nor a complex image.");
+	}
+	
+	EXITFUNC;
+}
+
+EMData & EMData::imag()
+{
+	ENTERFUNC;
+	
+	if( is_real() ) //a real image has no imaginary part, throw exception
+	{
+		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
+	}
+	else if( is_complex() )
+	{
+		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
+		{
+			ap2ri();
+		} 
+		EMData * e = new EMData();		
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		e->set_size(nx/2, ny, nz);
+		float * edata = e->get_data();
+		for( int i=0; i<nx; i++ )
+		{
+			for( int j=0; j<ny; j++ )
+			{
+				for( int k=0; k<nz; k++ )
+				{
+					if( i%2 == 1 )
+					{
+						//complex data in format [real, complex, real, complex...]
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny]; 
+					}
+				}
+			}
+		}
+
+		e->set_complex(false);
+		return *e;
+		
+	}
+	else //should not be here, image is neither real nor complex
+	{
+		throw ImageFormatException("This image is neither a real nor a complex image.");
+	}
+	
+	EXITFUNC;
+}
+
+EMData & EMData::real2complex(const float img)
+{
+	ENTERFUNC;
+	
+	if( is_real() )
+	{
+		EMData * e = new EMData();		
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		e->set_size(nx*2, ny, nz);	
+		float * edata = e->get_data();
+		for( int i=0; i<nx; i++ )
+		{
+			for( int j=0; j<ny; j++ )
+			{
+				for( int k=0; k<nz; k++ )
+				{
+					edata[i*2+j*nx+k*nx*ny] = rdata[i+j*nx+k*nx*ny];
+					edata[(i*2+1)+j*nx+k*nx*ny] = img;
+				}
+			}
+		}
+		e->set_complex(true);
+		return *e;
+	}
+	else if( is_complex() )
+	{
+		throw InvalidCallException("This function call only apply to real image");
+	}
+	else
+	{
+		throw ImageFormatException("This image is neither a real nor a complex image.");
+	}
+	
+	EXITFUNC;		
+}

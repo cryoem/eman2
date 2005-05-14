@@ -261,6 +261,7 @@ namespace EMAN {
 	 *  3. input  The given, out-of-range value.
 	 *  4. objname The name of the variable holding the value.
 	 */
+	 
 	class _OutofRangeException : public E2Exception
 	{
 	public:
@@ -281,6 +282,19 @@ namespace EMAN {
 	};
 #define OutofRangeException(low, high, input, objname) \
  _OutofRangeException(low, high, input,  __FILE__, __LINE__, objname)
+ 
+ 	class _InvalidCallException : public E2Exception
+ 	{
+ 	public:
+ 		_InvalidCallException(const string& file = "unknown",
+							  int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str) {}
+		
+		const char *name() const { return "Invalid function call for this type"; }
+		
+	};
+#define InvalidCallException(desc) _InvalidCallException(__FILE__, __LINE__, desc)
+ 		
 
 }
     
