@@ -895,6 +895,7 @@ EMData* EMData::pad_fft(int npad) {
 		offset = 2 - nxpad%2;
 		bytes = nx*sizeof(float);
 		newimg->set_size(nxpad+offset, nypad, nzpad);
+		newimg->to_zero();
 		newimg->set_fftpad(true);
 		newimg->set_attr("npad", npad);
 		if (offset == 1)
@@ -917,6 +918,7 @@ EMData* EMData::pad_fft(int npad) {
 		int nzold = std::max(nz/npad, 1);
 		int bytes = nxold*sizeof(float);
 		newimg->set_size(nxold, nyold, nzold);
+		newimg->to_zero();
 		newimg->set_fftpad(false);
 		MArray3D dest = newimg->get_3dview();
 		MArray3D src = this->get_3dview();
