@@ -172,9 +172,9 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def("to_identity", &EMAN::Transform3D::to_identity)
         .def("is_identity", &EMAN::Transform3D::is_identity)
         .staticmethod("get_nsym")
-        .def( other< EMAN::Vec3f >() * self )
         .def( self * self )
         .def( self * other< EMAN::Vec3f >() )
+        .def( other< EMAN::Vec3f >() * self )
     );
 
     enum_< EMAN::Transform3D::EulerType >("EulerType")
