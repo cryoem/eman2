@@ -3077,6 +3077,7 @@ EMData & EMData::power(int n)
 		r = 0;
 	}
 	
+	update_stat();
 	return *this;
 }
 
@@ -5983,6 +5984,7 @@ EMData & EMData::real() //real part has half of x dimension
 		}
 
 		e->set_complex(false);
+		e->update_stat();
 		return *e;
 	}
 	else //should not be here, image is neither real nor complex 
@@ -6029,6 +6031,7 @@ EMData & EMData::imag()
 		}
 
 		e->set_complex(false);
+		e->update_stat();
 		return *e;
 		
 	}
@@ -6064,6 +6067,7 @@ EMData & EMData::real2complex(const float img)
 			}
 		}
 		e->set_complex(true);
+		e->update_stat();
 		return *e;
 	}
 	else if( is_complex() )
