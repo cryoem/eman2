@@ -676,9 +676,9 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 		if (((i*i+j*j) < n*n/4) && !((0 == i) and (j < 0))) {
-			float xnew = i*tf[0][1] + j*tf[1][1];
-			float ynew = i*tf[0][2] + j*tf[1][2];
-			float znew = i*tf[1][0] + j*tf[2][0];
+			float xnew = i*tf[0][0] + j*tf[1][0];
+			float ynew = i*tf[0][1] + j*tf[1][1];
+			float znew = i*tf[0][2] + j*tf[1][2];
 			complex<float> btq;
 			if (xnew < 0.) {
 				xnew = -xnew;
