@@ -57,6 +57,67 @@ def descriptive_statistics(image):
 	return mean,sigma,imin,imax, nx, ny, nz
 	
 
+def printRow(input, ix=0, iz=0):
+	"""Print the data in slice iz, row ix of an image to standard out.
+
+	Usage: printRow(image, ix, iz)
+	   or
+	       printRow("path/to/image", ix, iz)
+	"""
+	image=getImage(input)
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	print "(z = %d slice, x = %d row)" % (iz, ix)
+	line = []
+	for iy in xrange(ny):
+		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+		if ((iy + 1) % 5 == 0):
+			line.append("\n   ")
+	line.append("\n")
+	print "".join(line)
+
+def printCol(input, iy=0, iz=0):
+	"""Print the data in slice iz, column iy of an image to standard out.
+
+	   Usage: printCol(image, iy, iz)
+	      or
+	          printCol("path/to/image", iy, iz)
+	"""
+	image=getImage(input)
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	print "(z = %d slice, y = %d col)" % (iz, iy)
+	line = []
+	for ix in xrange(ny):
+		line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+		if ((ix + 1) % 5 == 0):
+			line.append("\n   ")
+	line.append("\n")
+	print "".join(line)
+
+def printSlice(input, iz=0):
+	"""Print the data in slice iz of an image to standard out.
+
+	Usage: printImage(image, int)
+	   or
+	       printImage("path/to/image", int)
+	"""
+	image=getImage(input)
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	print "(z = %d slice)" % (iz)
+	line = []
+	for ix in xrange(nx):
+		for iy in xrange(ny):
+			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
+			if ((iy + 1) % 5 == 0):
+				line.append("\n   ")
+		line.append("\n")
+	print "".join(line)
+
 def printImage(input):
 	"""Print the data in an image to standard out.
 
@@ -65,19 +126,9 @@ def printImage(input):
 	       printImage("path/to/image")
 	"""
 	image=getImage(input)
-	nx = image.get_xsize()
-	ny = image.get_ysize()
 	nz = image.get_zsize()
 	for iz in xrange(nz):
-		print "(z = %d slice)" % (iz)
-		line = []
-		for ix in xrange(nx):
-			for iy in xrange(ny):
-				line.append("%012.5g  " % (image.get_value_at(ix,iy,iz)))
-				if ((iy + 1) % 5 == 0):
-					line.append("\n   ")
-			line.append("\n")
-		print "".join(line)
+		printSlice(input, iz)
 
 
 def add_series(file_pattern,i1,i2,average,variance):
@@ -148,8 +199,9 @@ def do_reconstruction(filepattern, start, end, npad, anglelist):
 		phi = radians(anglelist[3*i])
 		theta = radians(anglelist[3*i+1])
 		psi = radians(anglelist[3*i+2])
-		rotations.append(Transform3D(Transform3D.EulerType.SPIDER,
-						 phi, theta, psi))
+		Ttype = Transform3D.EulerType.SPIDER
+		rotations.append(Transform3D(Ttype, phi, theta, psi))
+		
 	# read first image to determine the size to use
 	projname = Util.parse_spider_fname(filepattern,[start]) 
 	first = getImage(projname)
