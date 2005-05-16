@@ -1156,7 +1156,7 @@ EMData *EMData::do_ift()
 	return dat;
 }
 
-EMData *EMData::do_ift_inplace(bool shrink_after_ift)
+EMData *EMData::do_ift_inplace()
 {
 	ENTERFUNC;
 	
@@ -1182,25 +1182,6 @@ EMData *EMData::do_ift_inplace(bool shrink_after_ift)
 
 	if (ndim >= 2) {
 		EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
-	}
-
-	if (shrink_after_ift) {
-		int npad = attr_dict["npad"];
-		if (0 == npad) npad = 1;// npad = 1;
-		int nxold = (nx - offset)/npad;
-		int nyold = std::max(ny/npad, 1);
-		int nzold = std::max(nz/npad, 1);
-		int bytes = nxold*sizeof(float);
-		MArray3D src = get_3dview();
-		float* dest = get_data();
-		for (int iz = 0; iz < nzold; iz++) {
-			for (int iy = 0; iy < nyold; iy++) {
-				memmove(dest, &src[0][iy][iz], bytes);
-				dest += nxold;
-			}
-		}
-		set_size(nxold, nyold, nzold);
-		set_fftpad(false);
 	}
 
 	done_data();

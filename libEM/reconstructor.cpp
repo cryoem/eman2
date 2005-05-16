@@ -1100,7 +1100,7 @@ EMData* PawelBackProjectionReconstructor::finish() {
 		}
 	}
 	// back fft
-	v->do_ift_inplace(false);
+	v->do_ift_inplace();
 	EMData* w = v->window_padded(vnx);
 	//EMData* w = v->copy();
 	delete v;
@@ -1223,7 +1223,8 @@ EMData* ReverseGriddingReconstructor::finish() {
 		}
 	}
 	// back fft
-	v->do_ift_inplace(true);
+	v->do_ift_inplace();
+	// need windowing!
 	return v;
 }
 

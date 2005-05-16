@@ -297,7 +297,7 @@ namespace EMAN
 		/* Do IFT inplace. And return the IFT image.
 		 * @return The IFT image.
 		 */
-		EMData* do_ift_inplace(bool shrink_after_ift = true);
+		EMData* do_ift_inplace();
 
 		/** return the amplitudes of the FFT including the left half
 		 *
