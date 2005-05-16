@@ -671,15 +671,14 @@ EMData *EMData::get_top_half() const
 
 void
 EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
-		          MIArray3D& nr, MCArray2D& bi, float* dm) {
+		          MIArray3D& nr, MCArray2D& bi, const Transform3D& tf) {
 	int jp = (j >= 0) ? j+1 : n+j+1;
-	dm--; // want dm to start at index 1
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 		if (((i*i+j*j) < n*n/4) && !((0 == i) and (j < 0))) {
-			float xnew = i*dm[1] + j*dm[4];
-			float ynew = i*dm[2] + j*dm[5];
-			float znew = i*dm[3] + j*dm[6];
+			float xnew = i*tf[0][1] + j*tf[1][1];
+			float ynew = i*tf[0][2] + j*tf[1][2];
+			float znew = i*tf[1][0] + j*tf[2][0];
 			complex<float> btq;
 			if (xnew < 0.) {
 				xnew = -xnew;
@@ -730,7 +729,7 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 }
 
 void
-EMData::nn(MIArray3D& nr, EMData* myfft, float* dms) {
+EMData::nn(MIArray3D& nr, EMData* myfft, const Transform3D& tf) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -738,7 +737,7 @@ EMData::nn(MIArray3D& nr, EMData* myfft, float* dms) {
 	MCArray2D bi = myfft->get_2dcview(0,1);
 	// loop over frequencies in y
 	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) {
-		onelinenn(iy, ny, nxc, x, nr, bi, dms);
+		onelinenn(iy, ny, nxc, x, nr, bi, tf);
 	}
 	EXITFUNC;
 }

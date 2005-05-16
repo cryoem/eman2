@@ -1062,14 +1062,15 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			std::cout << t[i][j] << " ";
+		}
+		std::cout << std::endl;
+	}
 	// Ugly kludge: just get phi, theta, psi from the Transform3D
 	// and use the existing cang func to get the rotation matrix.  FIXME
 	Dict angleparams = t.get_rotation(Transform3D::SPIDER);
-	float phi = angleparams["phi"];
-	float psi = angleparams["psi"];
-	float theta = angleparams["theta"];
-	float dm[9];
-	cang(phi, theta, psi, dm);
 	// process 2-d slice -- zero-pad, fft extend, and fft
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
@@ -1080,7 +1081,7 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 	padfftslice->do_fft_inplace();
 	padfftslice->center_origin_fft();
 	// insert slice
-	v->nn(*nrptr, padfftslice, dm);
+	v->nn(*nrptr, padfftslice, t);
 	delete padfftslice;
 	return 0;
 }
@@ -1107,27 +1108,6 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	return w;
 }
 
-
-void PawelBackProjectionReconstructor::cang(float phi, float theta, 
-											float psi, float dm[]) {
-	const long double quadpi = 3.141592653589793238462643383279502884197;
-	const long double dgr_to_rad = (quadpi/180);
-	double cphi = cos(double(phi)*dgr_to_rad);
-	double sphi = sin(double(phi)*dgr_to_rad);
-	double cthe = cos(double(theta)*dgr_to_rad);
-	double sthe = sin(double(theta)*dgr_to_rad);
-	double cpsi = cos(double(psi)*dgr_to_rad);
-	double spsi = sin(double(psi)*dgr_to_rad);
-	dm[0] = cphi*cthe*cpsi-sphi*spsi;
-	dm[1] = sphi*cthe*cpsi+cphi*spsi;
-	dm[2] = -sthe*cpsi;
-	dm[3] = -cphi*cthe*spsi-sphi*cpsi;
-	dm[4] = -sphi*cthe*spsi+cphi*cpsi;
-	dm[5] = sthe*spsi;
-	dm[6] = sthe*cphi;
-	dm[7] = sthe*sphi;
-	dm[8] = cthe;
-}
 
 ReverseGriddingReconstructor::ReverseGriddingReconstructor() 
 : v(NULL) {}
@@ -1204,7 +1184,7 @@ int ReverseGriddingReconstructor::insert_slice(EMData* slice,
 	EMData* padfftslice = norm_pad_ft(slice, false, true, npad);
 	padfftslice->center_origin_fft();
 	// insert slice
-	v->nn(*nrptr, padfftslice, dm);
+	v->nn(*nrptr, padfftslice, t);
 	return 0;
 }
 

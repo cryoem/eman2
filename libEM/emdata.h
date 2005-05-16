@@ -1481,20 +1481,21 @@ namespace EMAN
 		 * @param x  Complex matrix of [0:n2][1:n][1:n]
 		 * @param nr Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
-		 * @param dm0 Transform3D array.
+		 * @param tf Transform3D reference
 		 * @return The set of images read from filename.
 		 */
 		static void onelinenn(int j, int n, int n2, MCArray3D& x,
-				              MIArray3D& nr, MCArray2D& bi, float* dm0);
+				              MIArray3D& nr, MCArray2D& bi, 
+							  const Transform3D& tf);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
 		 *
 		 * @param norm Normalization data.
 		 * @param myfft FFT data.
-		 * @param dms Transformation matrix
+		 * @param tf Transform3D reference
 		 */
-		void nn(MIArray3D& norm, EMData* myfft, float* dms);
+		void nn(MIArray3D& norm, EMData* myfft, const Transform3D& tf);
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.

@@ -306,7 +306,6 @@ namespace EMAN
 		int vnx, vny, vnz;
 		int npad;
 		int vnzp, vnyp, vnxp, vnxc;
-		void cang(float phi, float theta, float psi, float dm[]);
 		void buildFFTVolume();
 		void buildNormVolume();
 	};

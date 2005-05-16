@@ -116,7 +116,7 @@ namespace EMAN
 		
 		Dict get_rotation(EulerType euler_type=EMAN) const;
 
-		void printme() {
+		void printme() const {
 			for (int i=0; i<4; i++) {
 				printf("%6.3f\t%6.3f\t%6.3f\t%6.3f\n",
 					   matrix[i][0],matrix[i][1],matrix[i][2],matrix[i][3]);
