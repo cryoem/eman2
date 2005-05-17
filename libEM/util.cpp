@@ -789,9 +789,9 @@ Util::voea(float delta, float t1, float t2, float p1, float p2)
 		for (int i = 0; i < lt; i++) {
 			float phi = p1 + i*detphi;
 			if (skip&&(90.0 == theta)&&(phi > 180.0)) continue;
-			angles.push_back(psi);
-			angles.push_back(theta);
 			angles.push_back(phi);
+			angles.push_back(theta);
+			angles.push_back(psi);
 		}
 	}
 	return angles;
