@@ -33,8 +33,8 @@ FftwPlan::FftwPlan()
 }
 
 
-FftwPlan::FftwPlan(int n, FftwDirection dir, int flags)
-:rank(1), direction(dir)
+FftwPlan::FftwPlan(int n, FftwDirection dir, int f)
+	:rank(1), direction(dir), flags(f)
 {
 	dims[NDIMS - 1] = n;
 	for (int i = 0; i < NDIMS - 1; i++) {
@@ -50,8 +50,8 @@ FftwPlan::FftwPlan(int n, FftwDirection dir, int flags)
 }
 
 
-FftwPlan::FftwPlan(int ndim, int nx, int ny, int nz, FftwDirection dir, int flags)
-:rank(ndim), direction(dir)
+FftwPlan::FftwPlan(int ndim, int nx, int ny, int nz, FftwDirection dir, int f)
+	:rank(ndim), direction(dir), flags(f)
 {
 	dims[0] = nz;
 	dims[1] = ny;
@@ -85,7 +85,7 @@ FftwPlan::~FftwPlan()
 
 bool EMAN::operator==(const FftwPlan & p1, const FftwPlan & p2)
 {
-	if (p1.rank == p2.rank && p1.direction == p2.direction) {
+	if (p1.rank == p2.rank && p1.direction == p2.direction && p1.flags == p2.flags) {
 		for (int i = 0; i < FftwPlan::NDIMS; i++) {
 			if (p1.dims[i] != p2.dims[i]) {
 				return false;
@@ -164,7 +164,7 @@ FftwPlan *EMfft::make_plan(int nx, int ny, int nz,
 	// has the wrong flags)
 	list < FftwPlan * >::iterator qi = fwplans.begin();
 	for (; qi != fwplans.end(); qi++) {
-		if (**qi == FftwPlan(rank, nx, ny, nz, dir, 0)) {
+		if (**qi == FftwPlan(rank, nx, ny, nz, dir, flags)) {
 			break;
 		}
 	}

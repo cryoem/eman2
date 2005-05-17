@@ -64,6 +64,7 @@ namespace EMAN
 		FftwDirection direction;
 		rfftwnd_plan plan_nd;
 		rfftw_plan plan_1d;
+		int flags;
 	};
 
 	bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);

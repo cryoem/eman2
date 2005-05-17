@@ -944,6 +944,7 @@ EMData *EMData::do_fft()
 	int nx2 = nx + offset;
 	EMData* dat = copy_head();
 	dat->set_size(nx2, ny, nz);
+	dat->to_zero();
 	if (offset == 1) 
 		dat->set_fftodd(true);
 

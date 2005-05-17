@@ -57,7 +57,9 @@ int main(int argc, char* argv[])
 		EMData e1;
 		e1.read_image(filename);
 
-		EMData* fft1 = e1.do_fft();
+		//EMData* fft1 = e1.do_fft();
+		e1.do_fft_inplace();
+		EMData *fft1 = &e1;
 		fft1->write_image("lattice_fft.mrc", 0, EMUtil::IMAGE_MRC);
 
 		EMData* fft1_copy = fft1->copy();

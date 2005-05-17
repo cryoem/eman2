@@ -12,13 +12,9 @@ int main()
 	
 	try {
 		image->read_image(test_imagename);
-		float * data = image->get_data();
-		int nx = image->get_xsize();
-		int ny = image->get_ysize();
-		int nz = image->get_zsize();
+		image2->read_image(test_imagename);
 
-		image2->set_shared_data(nx,ny,nz, data);
-		image2->write_image("search2.mrc");
+		image->align("RotateTranslateFlip", image2, Dict());
 
 	}
 	catch(E2Exception & e) {
