@@ -167,7 +167,7 @@ def add_series(file_pattern,i1,i2,average,variance):
 	dropImage(var,variance)
 
 
-def do_reconstruction(filepattern, start, end, npad, anglelist):
+def do_reconstruction(filepattern, start, end, anglelist):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
 	   Input:
@@ -192,6 +192,7 @@ def do_reconstruction(filepattern, start, end, npad, anglelist):
 		 vol = do_reconstruction(filepattern, start, end, anglelist)
 	"""
 	from math import radians
+	npad = 4
 	# convert angles to transform (rotation) objects
 	nangles = len(anglelist) / 3
 	rotations = []
