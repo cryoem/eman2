@@ -1062,15 +1062,6 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
-	/*for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			std::cout << t[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}*/
-	// Ugly kludge: just get phi, theta, psi from the Transform3D
-	// and use the existing cang func to get the rotation matrix.  FIXME
-	Dict angleparams = t.get_rotation(Transform3D::SPIDER);
 	// process 2-d slice -- zero-pad, fft extend, and fft
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
@@ -1095,7 +1086,8 @@ EMData* PawelBackProjectionReconstructor::finish() {
 		for (int iy = 1; iy <= vnyp; iy++) {
 			for (int ix = 0; ix <= vnxc; ix++) {
 				if (nr[ix][iy][iz] > 0) {
-					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)/(float) nr[ix][iy][iz];
+					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)
+						                /static_cast<float>(nr[ix][iy][iz]);
 				}
 			}
 		}
