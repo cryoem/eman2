@@ -1019,6 +1019,8 @@ void PawelBackProjectionReconstructor::setup() {
 	vnxc = vnxp/2;
 	buildFFTVolume();
 	buildNormVolume();
+    vector<float> symangs = params["symangs"];
+    symtfs = Transform3D::angles2tfvec(Transform3D::SPIDER, symangs);
 }
 
 void
@@ -1066,14 +1068,17 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
-	EMData* zeropadded = slice->zeropad_ntimes(npad);
-	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-	delete zeropadded;
-	padfftslice->do_fft_inplace();
-	padfftslice->center_origin_fft();
-	// insert slice
-	v->nn(*nrptr, padfftslice, t);
-	delete padfftslice;
+    for (vector<Transform3D*>::size_type isym=0; isym<symtfs.size(); isym++) {
+        Transform3D tsym = (*symtfs[isym])*t;
+        EMData* zeropadded = slice->zeropad_ntimes(npad);
+        EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
+        delete zeropadded;
+        padfftslice->do_fft_inplace();
+        padfftslice->center_origin_fft();
+        // insert slice
+        v->nn(*nrptr, padfftslice, tsym);
+        delete padfftslice;
+    }
 	return 0;
 }
 
@@ -1095,9 +1100,15 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	// back fft
 	v->do_ift_inplace();
 	EMData* w = v->window_padded(vnx);
-	//EMData* w = v->copy();
+    // real-space symmetrization
+    EMData* wsym = w->symvol(symtfs);
+    // clean up
 	delete v;
-	return w;
+    delete w;
+    // clear out the Transform3Ds pointed to in symtfs
+    for (vector<float>::size_type i = 0; i < symtfs.size(); i++) 
+        delete symtfs[i];
+	return wsym;
 }
 
 

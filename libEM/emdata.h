@@ -1504,6 +1504,14 @@ namespace EMAN
 		 */
 		void symplane0(MIArray3D& norm);
 
+        /** Symmetrize volume in real space.
+         *  
+         *  @param[in] rm Vector of rotation matrices
+         *  
+         *  @return New symmetrized volume object.
+         */
+        EMData* symvol(vector<Transform3D*> rmvec);
+
 
 	private:
 		enum EMDataFlags {

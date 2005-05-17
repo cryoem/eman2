@@ -6082,3 +6082,97 @@ EMData & EMData::real2complex(const float img)
 	
 	EXITFUNC;		
 }
+
+EMData* EMData::symvol(vector<Transform3D*> rmvec) {
+    ENTERFUNC;
+    int nsym = rmvec.size(); // number of symmetries
+    int llim = -nx/2;
+    int ulim = (nx/2) -1 + (nx % 2);
+    // set up output volume
+    EMData* svol = new EMData;
+    svol->set_size(nx, ny, nz);
+    svol->to_zero();
+    // set up coord grid
+    const int nsize = 27;
+    int x[nsize], y[nsize], z[nsize];
+    float f[nsize];
+    for (int i = 0; i < nsize; i+=3) {
+        x[i] = -1;
+        x[i+1] = 0;
+        x[i+2] = 1;
+        int imod = (i/3) % 3;
+        y[i] = imod - 1;
+        y[i+1] = imod - 1;
+        y[i+2] = imod - 1;
+    }
+    for (int i = 0; i < nsize; i++) z[i] = (i/9) - 1;
+    // calc radius within which the rotation is valid
+    int iradrt = (0 == nx % 2) ? nx/2 - 1 : nx / 2;
+    int iradi = iradrt*iradrt;
+    // actual work -- loop over symmetries and symmetrize
+    MArray3D q1 = get_3dview();
+    MArray3D q2 = svol->get_3dview();
+    for (int isym = 0; isym < nsym; isym++) {
+        Transform3D& rm = *rmvec[isym];
+        if ((1.0 == rm[0][0]) && (1.0 == rm[1][1]) && (1.0 == rm[2][2])) {
+            // symmetry is the identity matrix
+            for (int iz = 0; iz < nz; iz++)
+                for (int iy = 0; iy < ny; iy++)
+                    for (int ix = 0; ix < nx; ix++)
+                        q2[ix][iy][iz] += q1[ix][iy][iz];
+        } else {
+            // symmetry is something interesting
+            Vec3f qrt, qr;
+            for (int iz = llim; iz <= ulim; iz++) {
+                for (int iy = llim; iy <= ulim; iy++) {
+                    qrt[0] = rm[0][1]*iy + rm[0][2]*iz;
+                    qrt[1] = rm[1][1]*iy + rm[1][2]*iz;
+                    qrt[2] = rm[2][1]*iy + rm[2][2]*iz;
+                    for (int ix = llim; ix <= ulim; ix++) {
+                        int icrd = ix*ix + iy*iy + iz*iz;
+                        if (icrd <= iradi) {
+                            qr[0] = qrt[0] + rm[0][0]*ix;
+                            qr[1] = qrt[1] + rm[1][0]*ix;
+                            qr[2] = qrt[2] + rm[2][0]*ix;
+                            // iox -- integer location in -nx/2...nx/2
+                            int iox = static_cast<int>(floorf(qr[0]));
+                            int ioy = static_cast<int>(floorf(qr[1]));
+                            int ioz = static_cast<int>(floorf(qr[2]));
+                            // dx -- offset from integer array
+                            float dx = qr[0] - iox;
+                            float dy = qr[1] - ioy;
+                            float dz = qr[2] - ioz;
+                            // find intensities on 3x3x3 grid
+                            for (int i = 0; i < nsize; i++) {
+                                int jx = iox + x[i] + llim;
+                                int jy = ioy + y[i] + llim;
+                                int jz = ioz + z[i] + llim;
+                                f[i] = q1[jx][jy][jz];
+                            }
+                            // eval intensity at px, py, pz
+                            int jx = ix + llim;
+                            int jy = iy + llim;
+                            int jz = iz + llim;
+                            q2[jx][jy][jz] += Util::triquad(dx,dy,dz,f);
+                        } else {
+                            // rotated position is outside volume
+                            int jx = ix + llim;
+                            int jy = iy + llim;
+                            int jz = iz + llim;
+                            q2[jx][jy][jz] += q1[jx][jy][jz];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // normalize
+    for (int iz = 0; iz < nz; iz++)
+        for (int iy = 0; iy < ny; iy++)
+            for (int ix = 0; ix < nx; ix++)
+                q2[ix][iy][iz] /= nsym;
+    svol->done_data();
+    svol->update();
+    EXITFUNC;
+    return svol;
+}

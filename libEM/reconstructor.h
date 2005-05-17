@@ -308,6 +308,7 @@ namespace EMAN
 		int vnzp, vnyp, vnxp, vnxc;
 		void buildFFTVolume();
 		void buildNormVolume();
+        vector<Transform3D*> symtfs;
 	};
 
 	/** Reverse Gridding Reconstructor

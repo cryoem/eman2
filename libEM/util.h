@@ -814,6 +814,17 @@ namespace EMAN
 		static vector<float>
 		voea(float delta, float t1=0, float t2=90, 
 			 float p1=0, float p2=359.9);
+
+        /** Tri-Quadratic interpolation.
+         *
+         *  @param[in] r x-coord value
+         *  @param[in] s y-coord value
+         *  @param[in] t z-coord value
+         *  @param[in] f 3x3x3 grid of measured values
+         *
+         *  @return Interpolated value
+         */
+        static float triquad(double r, double s, double t, float f[]);
 	};
 }
 

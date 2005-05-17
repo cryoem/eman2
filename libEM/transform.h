@@ -137,12 +137,22 @@ namespace EMAN
 		float get_scale() const;   
 
 		void to_identity();
-		bool is_identity();
+        bool is_identity();
+
+        /** Convert a list of euler angles to a vector of Transform3D objects.
+         *
+         *  @param[in] eulertype The type of Euler angles that is being passed in.
+         *  @param[in] angles A flat vector of angles.
+         *
+         *  @return Vector of pointers to Transform3D objects.
+         */
+        static vector<Transform3D*>
+            angles2tfvec(EulerType eulertype, const vector<float> angles);
 
 
-	  private:
-		enum SymType
-		{
+    private:
+        enum SymType
+        {
 			CSYM,
 			DSYM,
 			TET_SYM,

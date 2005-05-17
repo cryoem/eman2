@@ -817,9 +817,15 @@ Transform3D::SymType Transform3D::get_sym_type(const string & name)
 	return t;
 }
 
-//
-
-
+vector<Transform3D*>
+Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
+    int nangles = ang.size() / 3;
+    vector<Transform3D*> tfvec;
+    for (int i = 0; i < nangles; i+=3) {
+        tfvec.push_back(new Transform3D(eulertype,ang[i],ang[i+1],ang[i+2]));
+    }
+    return tfvec;
+}
 
 
 
