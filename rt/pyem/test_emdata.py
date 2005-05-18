@@ -513,9 +513,9 @@ class TestEMData(unittest.TestCase):
         e.set_size(10,10,1)
         e.process("testimage.circlesphere",{"radius":4})
         descriptive_statistics(e)
-        f = norm_pad_ft(e, False, True)
+        f = norm_pad_ft(e, False, True, 2)
         descriptive_statistics(f)
-        f.do_ift_inplace(True)
+        f.do_ift_inplace()
         descriptive_statistics(f)
         g = f*10
         descriptive_statistics(g)
