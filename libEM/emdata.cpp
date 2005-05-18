@@ -2378,7 +2378,7 @@ void EMData::sub(float f)
 			}
 		}
 	}
-	if( is_complex() )
+	else if( is_complex() )
 	{
 		if( f != 0 )
 		{
