@@ -205,6 +205,9 @@ def do_reconstruction(filepattern, start, end, anglelist, symangs=[0.,0.,0.]):
         Ttype = Transform3D.EulerType.SPIDER
         rotations.append(Transform3D(Ttype, phi, theta, psi))
         
+    # convert symmetry angles to radians
+    for i in range(len(symangs)):
+        symangs[i] = radians(symangs[i])
     # read first image to determine the size to use
     projname = Util.parse_spider_fname(filepattern,[start]) 
     first = getImage(projname)
@@ -216,7 +219,8 @@ def do_reconstruction(filepattern, start, end, anglelist, symangs=[0.,0.,0.]):
         return None
     del first # don't need it any longer
     # reconstructor
-    r = Reconstructors.get("PawelBackProjection", {"size":size, "npad":npad})
+    params = {"size":size, "npad":npad, "symangs":symangs}
+    r = Reconstructors.get("PawelBackProjection", params)
     r.setup()
     for i in range(start, end+1):
         projname = Util.parse_spider_fname(filepattern,[i])
