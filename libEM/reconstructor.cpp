@@ -1234,8 +1234,8 @@ void ReverseGriddingReconstructor::cang(float phi, float theta,
 }
 
 void ReverseGriddingReconstructor::divkb3() {
-	MCArray3D& x = *v3dptr;
-	const int m = vnx;
+	//MCArray3D& x = *v3dptr;
+	//const int m = vnx;
 }
 
 void EMAN::dump_reconstructors()
