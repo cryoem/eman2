@@ -8,15 +8,22 @@ using std::string;
 /** E2Exception class
  *
  * E2Exception class is a subclass of std::exception; All EMAN2
- * E2Exception classes are subclass of E2Exception class.
+ * exception classes are subclass of E2Exception class.
  *
  * A XYZ Exception class is defined in the following way:
  *   0) It will extend E2Exception class.
  *   1) The class is named _XYZException.
  *   2) The class has a function to return its name "XYZException".
  *   3) A macro called "XYZException" is defined to simplify the usage
- *      of _XYZException class. 
+ *      of _XYZException class. So that filename, function name, and
+ *      line number can be handled automatically.
+ *
+ * How to use XYZException:
+ *
+ *   1) To throw exception, use "throw XYZException(...)";
+ *   2) To catch exception, use "catch (_XYZException & e) ...".
  */
+
 namespace EMAN {
 
 	/** E2Exception class is the parent class of all EMAN2 E2Exceptions.
