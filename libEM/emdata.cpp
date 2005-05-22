@@ -4445,10 +4445,10 @@ void EMData::to_one()
 
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
-	if (with) {
-		return correlation(this, with, fpflag);
-	} else {
-		return autocorrelation(this, fpflag);
+	if (with==this) return self_correlation(this,fpflag);
+	else { 
+		if (with) return correlation(this, with, fpflag); 
+		else return autocorrelation(this, fpflag);
 	}
 }
 
