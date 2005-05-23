@@ -815,17 +815,63 @@ namespace EMAN
 		voea(float delta, float t1=0, float t2=90, 
 			 float p1=0, float p2=359.9);
 
-        /** Tri-Quadratic interpolation.
-         *
-         *  @param[in] r x-coord value
-         *  @param[in] s y-coord value
-         *  @param[in] t z-coord value
-         *  @param[in] f 3x3x3 grid of measured values
-         *
-         *  @return Interpolated value
-         */
-        static float triquad(double r, double s, double t, float f[]);
+		/** Tri-Quadratic interpolation.
+		 *
+		 *	@param[in] r x-coord value
+		 *	@param[in] s y-coord value
+		 *	@param[in] t z-coord value
+		 *	@param[in] f 3x3x3 grid of measured values
+		 *
+		 *	@return Interpolated value
+		 */
+		static float triquad(double r, double s, double t, float f[]);
+
+			/** Quadratic interpolation (2D).
+			 *
+			 *	This routine uses six image points for interpolation:
+			 *
+			 *		   f3	 fc
+			 *		   |
+			 *		   | x
+			 *	f2-----f0----f1
+			 *		   |
+			 *		   |
+			 *		   f4
+			 *
+			 *	f0 - f4 are image values near the interpolated point X.
+			 *	f0 is the interior mesh point nearest x.
+			 *
+			 *	Coords:  f0 = (x0, y0)
+			 *			 f1 = (xb, y0)
+			 *			 f2 = (xa, y0)
+			 *			 f3 = (x0, yb)
+			 *			 f4 = (x0, ya)
+			 *			 fc = (xc, yc)
+			 *
+			 *	Mesh spacings: hxa -- x- mesh spacing to the left of f0
+			 *				   hxb -- x- mesh spacing to the right of f0
+			 *				   hyb -- y- mesh spacing above f0
+			 *				   hya -- y- mesh spacing below f0
+			 *
+			 *	Interpolant:
+			 *	  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)
+			 *			 + c3*(y-y0) + c4*(y-y0)*(y-y1)
+			 *			 + c5*(x-x0)*(y-y0)
+			 *
+			 *	@param[in] x x-coord value
+			 *	@param[in] y y-coord value
+			 *	@param[in] nxdata Size of image along x.
+			 *	@param[in] nydata Size of image along y.
+			 *	@param[in] image Image object (pointer)
+			 *	@param[in] zslice Which z slice to interpolate (counting starts at 1)
+			 *
+			 *	@return Interpolated value
+			 */
+			static float quadri(float x, float y, int nxdata, 
+								int nydata, EMData* image, int zslice = 1);
 	};
 }
 
 #endif
+
+/* vim: set ts=4 noet: */

@@ -403,19 +403,22 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 
 void PawelProjector::prepcubes(int nx, int ny, int nz, int ri, Vec3i origin, 
 		                       int& nn, IPCube* ipcube) const {
-	const float r = ri*ri;
+	const float r = float(ri*ri);
 	const int ldpx = origin[0];
 	const int ldpy = origin[1];
 	const int ldpz = origin[2];
 	float t;
 	nn = -1;
 	for (int i1 = 0; i1 < nz; i1++) {
-		t = i1 - ldpz; const float xx = t*t;
+		t = float(i1 - ldpz); 
+		const float xx = t*t;
 		for (int i2 = 0; i2 < ny; i2++) {
-			t = i2 - ldpy; const float yy = t*t + xx;
+			t = float(i2 - ldpy); 
+			const float yy = t*t + xx;
 			bool first = true;
 			for (int i3 = 0; i3 < nz; i3++) {
-				t = i3 - ldpx; const float rc = t*t + yy;
+				t = float(i3 - ldpx); 
+				const float rc = t*t + yy;
 				if (first) {
 					// first pixel on this line
 					if (rc > r) continue;
@@ -520,8 +523,8 @@ EMData *PawelProjector::project3d(EMData * image) const
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform3D rotation(eulertype, anglelist[indx]*dgr_to_rad,
-				           anglelist[indx+1]*dgr_to_rad, anglelist[indx+2]*dgr_to_rad);
+		Transform3D rotation(eulertype, float(anglelist[indx]*dgr_to_rad),
+				           float(anglelist[indx+1]*dgr_to_rad), float(anglelist[indx+2]*dgr_to_rad));
 		if (2*(ri+1)+1 > dim) {
 			// Must check x and y boundaries
 			for (int i = 0 ; i <= nn; i++) {
@@ -786,3 +789,5 @@ void EMAN::dump_projectors()
 {
 	dump_factory < Projector > ();
 }
+
+/* vim: set ts=4 noet: */

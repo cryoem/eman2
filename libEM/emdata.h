@@ -273,6 +273,22 @@ namespace EMAN
 		 */
 		EMData *pad_fft(int npad = 1);
 
+		/** Remove padding, leaving a single corner of the image.
+		 *  The current image is changed in place.
+		 *
+		 *  The assumption is that after an in-place inverse fft
+		 *  the real-space image contains too much information 
+		 *  because it may have been zero-padded some integer factor
+		 *  of times and it has also been extended slightly along x
+		 *  for the fft.  Here we keep only the data corresponding 
+		 *  to ix=0,...,nxold-1, iy=0,...,nyold-1, iz=0,...,nzold-1,
+		 *  where nxold, nyold, nzold are the sizes of the original
+		 *  image.
+		 *
+		 * @return Pointer to the depadded image.
+		 */
+		EMData* postift_depad_corner_inplace();
+
 		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
 		 * real/imaginary format.
@@ -1506,11 +1522,11 @@ namespace EMAN
 
         /** Symmetrize volume in real space.
          *  
-         *  @param[in] rm Vector of rotation matrices
+         *  @param[in] symmetry Point group of the target volume.
          *  
          *  @return New symmetrized volume object.
          */
-        EMData* symvol(vector<Transform3D*> rmvec);
+        EMData* symvol(string symmetry);
 
 
 	private:
@@ -1848,3 +1864,5 @@ namespace EMAN
 
 			
 #endif
+
+/* vim: set ts=4 noet: */

@@ -308,7 +308,8 @@ namespace EMAN
 		int vnzp, vnyp, vnxp, vnxc;
 		void buildFFTVolume();
 		void buildNormVolume();
-        vector<Transform3D*> symtfs;
+            string symmetry;
+            int nsym;
 	};
 
 	/** Reverse Gridding Reconstructor
@@ -367,3 +368,5 @@ namespace EMAN
 }
 
 #endif
+
+/* vim: set ts=4 noet: */

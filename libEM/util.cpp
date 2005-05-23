@@ -799,51 +799,97 @@ Util::voea(float delta, float t1, float t2, float p1, float p2)
 
 
 float Util::triquad(double r, double s, double t, float f[]) {
-    const float c2 = 1.0 / 2.0;
-    const float c4 = 1.0 / 4.0;
-    const float c8 = 1.0 / 8.0;
-    float rs = r*s;
-    float st = s*t;
-    float rt = r*t;
-    float rst = r*st;
-    float rsq = 1 - r*r;
-    float ssq = 1 - s*s;
-    float tsq = 1 - t*t;
-    float rm1 = 1 - r;
-    float sm1 = 1 - s;
-    float tm1 = 1 - t;
-    float rp1 = 1 + r;
-    float sp1 = 1 + s;
-    float tp1 = 1 + t;
+	const float c2 = 1.0 / 2.0;
+	const float c4 = 1.0 / 4.0;
+	const float c8 = 1.0 / 8.0;
+	float rs = r*s;
+	float st = s*t;
+	float rt = r*t;
+	float rst = r*st;
+	float rsq = 1 - r*r;
+	float ssq = 1 - s*s;
+	float tsq = 1 - t*t;
+	float rm1 = 1 - r;
+	float sm1 = 1 - s;
+	float tm1 = 1 - t;
+	float rp1 = 1 + r;
+	float sp1 = 1 + s;
+	float tp1 = 1 + t;
 
-    return 
-        (-c8) * rst * rm1  * sm1  * tm1 * f[ 0] +
-        ( c4) * st  * rsq  * sm1  * tm1 * f[ 1] +
-        ( c8) * rst * rp1  * sm1  * tm1 * f[ 2] +
-        ( c4) * rt  * rm1  * ssq  * tm1 * f[ 3] +
-        (-c2) * t   * rsq  * ssq  * tm1 * f[ 4] +
-        (-c4) * rt  * rp1  * ssq  * tm1 * f[ 5] +
-        ( c8) * rst * rm1  * sp1  * tm1 * f[ 6] +
-        (-c4) * st  * rsq  * sp1  * tm1 * f[ 7] +
-        (-c8) * rst * rp1  * sp1  * tm1 * f[ 8] +
+	return 
+		(-c8) * rst * rm1  * sm1  * tm1 * f[ 0] +
+		( c4) * st	* rsq  * sm1  * tm1 * f[ 1] +
+		( c8) * rst * rp1  * sm1  * tm1 * f[ 2] +
+		( c4) * rt	* rm1  * ssq  * tm1 * f[ 3] +
+		(-c2) * t	* rsq  * ssq  * tm1 * f[ 4] +
+		(-c4) * rt	* rp1  * ssq  * tm1 * f[ 5] +
+		( c8) * rst * rm1  * sp1  * tm1 * f[ 6] +
+		(-c4) * st	* rsq  * sp1  * tm1 * f[ 7] +
+		(-c8) * rst * rp1  * sp1  * tm1 * f[ 8] +
 
-        ( c4) * rs  * rm1  * sm1  * tsq * f[ 9] +
-        (-c2) * s   * rsq  * sm1  * tsq * f[10] +
-        (-c4) * rs  * rp1  * sm1  * tsq * f[11] +
-        (-c2) * r   * rm1  * ssq  * tsq * f[12] +
-                      rsq  * ssq  * tsq * f[13] +
-        ( c2) * r   * rp1  * ssq  * tsq * f[14] +
-        (-c4) * rs  * rm1  * sp1  * tsq * f[15] +
-        ( c2) * s   * rsq  * sp1  * tsq * f[16] +
-        ( c4) * rs  * rp1  * sp1  * tsq * f[17] +
+		( c4) * rs	* rm1  * sm1  * tsq * f[ 9] +
+		(-c2) * s	* rsq  * sm1  * tsq * f[10] +
+		(-c4) * rs	* rp1  * sm1  * tsq * f[11] +
+		(-c2) * r	* rm1  * ssq  * tsq * f[12] +
+					  rsq  * ssq  * tsq * f[13] +
+		( c2) * r	* rp1  * ssq  * tsq * f[14] +
+		(-c4) * rs	* rm1  * sp1  * tsq * f[15] +
+		( c2) * s	* rsq  * sp1  * tsq * f[16] +
+		( c4) * rs	* rp1  * sp1  * tsq * f[17] +
 
-        ( c8) * rst * rm1  * sm1  * tp1 * f[18] +
-        (-c4) * st  * rsq  * sm1  * tp1 * f[19] +
-        (-c8) * rst * rp1  * sm1  * tp1 * f[20] +
-        (-c4) * rt  * rm1  * ssq  * tp1 * f[21] +
-        ( c2) * t   * rsq  * ssq  * tp1 * f[22] +
-        ( c4) * rt  * rp1  * ssq  * tp1 * f[23] +
-        (-c8) * rst * rm1  * sp1  * tp1 * f[24] +
-        ( c4) * st  * rsq  * sp1  * tp1 * f[25] +
-        ( c8) * rst * rp1  * sp1  * tp1 * f[26];
+		( c8) * rst * rm1  * sm1  * tp1 * f[18] +
+		(-c4) * st	* rsq  * sm1  * tp1 * f[19] +
+		(-c8) * rst * rp1  * sm1  * tp1 * f[20] +
+		(-c4) * rt	* rm1  * ssq  * tp1 * f[21] +
+		( c2) * t	* rsq  * ssq  * tp1 * f[22] +
+		( c4) * rt	* rp1  * ssq  * tp1 * f[23] +
+		(-c8) * rst * rm1  * sp1  * tp1 * f[24] +
+		( c4) * st	* rsq  * sp1  * tp1 * f[25] +
+		( c8) * rst * rp1  * sp1  * tp1 * f[26];
 }
+
+float quadri(float x, float y, int nxdata, int nydata, 
+			 EMData* image, int zslice) {
+	// sanity check
+	if (image->get_ysize() <= 1) {
+		throw ImageDimensionException("Interpolated image must be at least 2D");
+	}
+	MArray3D fdata = image->get_3dview(1,1,1);
+	// periodic boundary conditions
+	if (x < 1.0) 
+		x += (1-int(x)/nxdata)*nxdata;
+	if (x > float(nxdata) + 0.5)
+		x = fmodf(x - 1.0, nxdata) + 1.0;
+	if (y < 1.0)
+		y += (1 - int(y)/nydata)*nydata;
+	if (y > float(nydata) + 0.5)
+		y = fmodf(y - 1.0, nydata) + 1.0;
+	int i = int(x);
+	int j = int(y);
+	float dx0 = x - i;
+	float dy0 = y - j;
+	int ip1 = (i + 1) % nxdata + 1; // enforce ip1 in [1, nxdata]
+	int im1 = (i - 1) % nxdata + 1;
+	int jp1 = (j + 1) % nydata + 1;
+	int jm1 = (j - 1) % nydata + 1;
+	float f0 = fdata[i][j][zslice];
+	float c1 = fdata[ip1][j][zslice] - f0;
+	float c2 = (c1 - f0 + fdata[im1][j][zslice])*.5;
+	float c3 = fdata[i][jp1][zslice] - f0;
+	float c4 = (c3 - f0 + fdata[i][jm1][zslice])*.5;
+	float dxb = dx0 - 1;
+	float dyb = dy0 - 1;
+	// hxc and hyc are either +1 or -1
+	float hxc = (dx0 >= 0) ? 1 : -1;
+	float hyc = (dy0 >= 0) ? 1 : -1;
+	int ic = int(fmodf(i + hxc, float(nxdata)) + 1);
+	int jc = int(fmodf(j + hyc, float(nydata)) + 1);
+	float c5 = (fdata[ic][jc][zslice] - f0 - hxc*c1
+				- (hxc*(hxc - 1.0))*c2 - hyc*c3
+				- (hyc*(hyc - 1.0))*c4) * (hxc*hyc);
+	float result = f0 + dx0*(c1 + dxb*c2 + dy0*c5)
+				 + dy0*(c3 + dyb*c4);
+	return result;
+}
+
+/* vim: set ts=4 noet: */

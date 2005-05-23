@@ -7,6 +7,7 @@
 #include "ctf.h"
 #include "emdata.h"
 #include "fundamentals.h"
+#include "emconstants.h"
 #include "iostream"
 
 using namespace EMAN;
@@ -999,7 +1000,7 @@ EMData *BackProjectionReconstructor::finish()
 }
 
 PawelBackProjectionReconstructor::PawelBackProjectionReconstructor() 
-: v(NULL) {}
+	: v(NULL) {}
 
 PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
 {
@@ -1019,8 +1020,9 @@ void PawelBackProjectionReconstructor::setup() {
 	vnxc = vnxp/2;
 	buildFFTVolume();
 	buildNormVolume();
-    vector<float> symangs = params["symangs"];
-    symtfs = Transform3D::angles2tfvec(Transform3D::SPIDER, symangs);
+	symmetry = params["symmetry"].to_str();
+	if ("" == symmetry) symmetry = "c1";
+	nsym = Transform3D::get_nsym(symmetry);
 }
 
 void
@@ -1068,17 +1070,17 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
-    for (vector<Transform3D*>::size_type isym=0; isym<symtfs.size(); isym++) {
-        Transform3D tsym = (*symtfs[isym])*t;
-        EMData* zeropadded = slice->zeropad_ntimes(npad);
-        EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-        delete zeropadded;
-        padfftslice->do_fft_inplace();
-        padfftslice->center_origin_fft();
-        // insert slice
-        v->nn(*nrptr, padfftslice, tsym);
-        delete padfftslice;
-    }
+	for (int isym=0; isym < nsym; isym++) {
+		Transform3D tsym = t.get_sym(symmetry, isym);
+		EMData* zeropadded = slice->zeropad_ntimes(npad);
+		EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
+		delete zeropadded;
+		padfftslice->do_fft_inplace();
+		padfftslice->center_origin_fft();
+		// insert slice
+		v->nn(*nrptr, padfftslice, tsym);
+		delete padfftslice;
+	}
 	return 0;
 }
 
@@ -1092,7 +1094,7 @@ EMData* PawelBackProjectionReconstructor::finish() {
 			for (int ix = 0; ix <= vnxc; ix++) {
 				if (nr[ix][iy][iz] > 0) {
 					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)
-						                /static_cast<float>(nr[ix][iy][iz]);
+										/static_cast<float>(nr[ix][iy][iz]);
 				}
 			}
 		}
@@ -1100,15 +1102,11 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	// back fft
 	v->do_ift_inplace();
 	EMData* w = v->window_padded(vnx);
-    // real-space symmetrization
-    EMData* wsym = w->symvol(symtfs);
-    // clean up
+	// clean up
 	delete v;
-    delete w;
-    // clear out the Transform3Ds pointed to in symtfs
-    for (vector<float>::size_type i = 0; i < symtfs.size(); i++) 
-        delete symtfs[i];
-	return wsym;
+	delete nrptr;
+	delete v3dptr;
+	return w;
 }
 
 
@@ -1200,7 +1198,7 @@ EMData* ReverseGriddingReconstructor::finish() {
 		for (int iy = 1; iy <= vnyp; iy++) {
 			for (int ix = 0; ix <= vnxc; ix++) {
 				if (nr[ix][iy][iz] > 0) {
-					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)/nr[ix][iy][iz];
+					v3d[ix][iy][iz] *= (float)((-2*((ix+iy+iz)%2)+1)/nr[ix][iy][iz]);
 				}
 			}
 		}
@@ -1214,23 +1212,21 @@ EMData* ReverseGriddingReconstructor::finish() {
 
 void ReverseGriddingReconstructor::cang(float phi, float theta, 
 											float psi, float dm[]) {
-	const long double quadpi = 3.141592653589793238462643383279502884197;
-	const long double dgr_to_rad = (quadpi/180);
 	double cphi = cos(double(phi)*dgr_to_rad);
 	double sphi = sin(double(phi)*dgr_to_rad);
 	double cthe = cos(double(theta)*dgr_to_rad);
 	double sthe = sin(double(theta)*dgr_to_rad);
 	double cpsi = cos(double(psi)*dgr_to_rad);
 	double spsi = sin(double(psi)*dgr_to_rad);
-	dm[0] = cphi*cthe*cpsi-sphi*spsi;
-	dm[1] = sphi*cthe*cpsi+cphi*spsi;
-	dm[2] = -sthe*cpsi;
-	dm[3] = -cphi*cthe*spsi-sphi*cpsi;
-	dm[4] = -sphi*cthe*spsi+cphi*cpsi;
-	dm[5] = sthe*spsi;
-	dm[6] = sthe*cphi;
-	dm[7] = sthe*sphi;
-	dm[8] = cthe;
+	dm[0] = (float)(cphi*cthe*cpsi-sphi*spsi);
+	dm[1] = (float)(sphi*cthe*cpsi+cphi*spsi);
+	dm[2] = (float)(-sthe*cpsi);
+	dm[3] = (float)(-cphi*cthe*spsi-sphi*cpsi);
+	dm[4] = (float)(-sphi*cthe*spsi+cphi*cpsi);
+	dm[5] = (float)(sthe*spsi);
+	dm[6] = (float)(sthe*cphi);
+	dm[7] = (float)(sthe*sphi);
+	dm[8] = (float)(cthe);
 }
 
 void ReverseGriddingReconstructor::divkb3() {
@@ -1242,3 +1238,5 @@ void EMAN::dump_reconstructors()
 {
 	dump_factory < Reconstructor > ();
 }
+
+/* vim: set ts=4 noet: */

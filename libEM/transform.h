@@ -128,31 +128,31 @@ namespace EMAN
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
 
-//
+            //
 		static int get_nsym(const string & sym);
-		Transform3D get_sym(const string & sym, int n);
+            Transform3D get_sym(const string & sym, int n) const;
 		void set_center(const Vec3f & center);
 		void set_pretrans(const Vec3f & pretrans);
-//
+            //
 		float get_scale() const;   
 
 		void to_identity();
         bool is_identity();
 
-        /** Convert a list of euler angles to a vector of Transform3D objects.
-         *
-         *  @param[in] eulertype The type of Euler angles that is being passed in.
-         *  @param[in] angles A flat vector of angles.
-         *
-         *  @return Vector of pointers to Transform3D objects.
-         */
-        static vector<Transform3D*>
-            angles2tfvec(EulerType eulertype, const vector<float> angles);
+		/** Convert a list of euler angles to a vector of Transform3D objects.
+		 *
+		 *	@param[in] eulertype The type of Euler angles that is being passed in.
+		 *	@param[in] angles A flat vector of angles.
+		 *
+		 *	@return Vector of pointers to Transform3D objects.
+		 */
+		static vector<Transform3D*>
+			angles2tfvec(EulerType eulertype, const vector<float> angles);
 
 
-    private:
-        enum SymType
-        {
+	private:
+		enum SymType
+		{
 			CSYM,
 			DSYM,
 			TET_SYM,
@@ -182,4 +182,4 @@ namespace EMAN
 #endif
 
 
-
+/* vim: ts=4 noet: */
