@@ -167,7 +167,7 @@ def add_series(file_pattern,i1,i2,average,variance):
     dropImage(var,variance)
 
 
-def do_reconstruction(filepattern, start, end, anglelist, symangs=[0.,0.,0.]):
+def do_reconstruction(filepattern, start, end, anglelist, symmetry="c1"):
     """Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
        
        Input:
@@ -179,19 +179,17 @@ def do_reconstruction(filepattern, start, end, anglelist, symangs=[0.,0.,0.]):
         anglelist    -- flat list of euler angles (in degrees), with the
                         number of euler angles equal to the number of 
                         projections to be read in.
-        symangs      -- flat list of euler angles (in degrees)
-                        corresponding to symmetries.
+        symmetry     -- Point group of the target molecule (defaults to "C1")
     
        Return:  3d reconstructed volume image
 
        Usage:
          
          anglelist = getAngles("myangles.txt") # not yet written
-         symangs = getSymmetries("mysyms.txt") # not yet written
          filepattern = "proj{****}.hrs"
          start = 0
          end = 5087
-         vol = do_reconstruction(filepattern, start, end, anglelist, symangs)
+         vol = do_reconstruction(filepattern, start, end, anglelist, symmetry)
     """
     from math import radians
     npad = 4
@@ -205,9 +203,6 @@ def do_reconstruction(filepattern, start, end, anglelist, symangs=[0.,0.,0.]):
         Ttype = Transform3D.EulerType.SPIDER
         rotations.append(Transform3D(Ttype, phi, theta, psi))
         
-    # convert symmetry angles to radians
-    for i in range(len(symangs)):
-        symangs[i] = radians(symangs[i])
     # read first image to determine the size to use
     projname = Util.parse_spider_fname(filepattern,[start]) 
     first = getImage(projname)
@@ -219,7 +214,7 @@ def do_reconstruction(filepattern, start, end, anglelist, symangs=[0.,0.,0.]):
         return None
     del first # don't need it any longer
     # reconstructor
-    params = {"size":size, "npad":npad, "symangs":symangs}
+    params = {"size":size, "npad":npad, "symmetry":symmetry}
     r = Reconstructors.get("PawelBackProjection", params)
     r.setup()
     for i in range(start, end+1):
