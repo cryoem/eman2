@@ -41,7 +41,7 @@ set_policy(EMData.ift_slice, return_value_policy(manage_new_object))
 
 set_policy(EMData.get_row, return_value_policy(manage_new_object))
 set_policy(EMData.get_col, return_value_policy(manage_new_object))
-set_policy(EMData.power, return_value_policy(manage_new_object))
+#set_policy(EMData.power, return_value_policy(manage_new_object))
 #set_policy(EMData.real, return_value_policy(manage_new_object))
 #set_policy(EMData.imag, return_value_policy(manage_new_object))
 #set_policy(EMData.real2complex, return_value_policy(manage_new_object))
@@ -57,5 +57,6 @@ exclude(EMData.setup4slice)
 
 # need to fix, but excluding for now
 exclude(EMData.real)
+exclude(EMData.power)
 exclude(EMData.imag)
 exclude(EMData.real2complex)
