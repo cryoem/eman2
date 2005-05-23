@@ -801,7 +801,7 @@ EMData* EMData::window_padded(int l) {
 	EXITFUNC;
 }
 
-EMData* EMData::postift_depad_corner_inplace() {
+void EMData::postift_depad_corner_inplace() {
 	ENTERFUNC;
 	int npad = attr_dict["npad"];
 	if (0 == npad) npad = 1;
@@ -823,7 +823,6 @@ EMData* EMData::postift_depad_corner_inplace() {
 	done_data();
 	update();
 	set_complex(false);
-	return this;
 	EXITFUNC;
 }
 

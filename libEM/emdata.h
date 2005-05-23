@@ -287,13 +287,12 @@ namespace EMAN
 		 *
 		 * @return Pointer to the depadded image.
 		 */
-		EMData* postift_depad_corner_inplace();
+		void postift_depad_corner_inplace();
 
 		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
 		 * real/imaginary format.
 		 *
-		 * @return The FFT of the current image in real/imaginary format.
 		 */
 		EMData *do_fft();
 
