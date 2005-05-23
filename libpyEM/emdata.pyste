@@ -48,7 +48,6 @@ set_policy(EMData.power, return_value_policy(manage_new_object))
 set_policy(EMData.zeropad_ntimes, return_value_policy(manage_new_object))
 set_policy(EMData.get_3dcviewptr, return_value_policy(reference_existing_object))
 set_policy(EMData.symvol, return_value_policy(manage_new_object))
-set_policy(EMData.postift_depad_corner_inplace, return_value_policy(reference_existing_object))
 
 exclude(EMData.get_data)
 exclude(EMData.fft_slice)
