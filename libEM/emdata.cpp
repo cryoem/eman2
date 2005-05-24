@@ -14,6 +14,7 @@
 #include "projector.h"
 #include "byteorder.h"
 #include "fundamentals.h"
+#include "emconstants.h"
 
 #include <float.h>
 #include <math.h>
@@ -6204,6 +6205,45 @@ EMData* EMData::symvol(string symmetry) {
 	svol->update();
 	EXITFUNC;
 	return svol;
+}
+
+EMData* 
+EMData::rot_trans_scale2D(float ang, float scale, float delx, 
+		                  float dely, int zslice) {
+	if (1 >= ny) 
+		throw ImageDimensionException("Can't rotate 1D image");
+	EMData* ret = copy_head();
+	delx = fmod(delx, float(nx));
+	dely = fmod(dely, float(ny));
+	int icent = nx/2 + 1;
+	int kcent = ny/2 + 1;
+	float rn2 = -ny/2;
+	float sn2 = -nx/2;
+	float rw2 = -rn2;
+	float rs2 = -sn2;
+	if (0 == nx%2) rw2--;
+	if (0 == ny%2) rs2--;
+	float cod = cos(ang*dgr_to_rad);
+	float sid = sin(ang*dgr_to_rad);
+	MArray3D x = get_3dview(1,1,1);
+	MArray3D out = ret->get_3dview(1,1,1);
+	for (int i = 1; i <= ny; i++) {
+		float yi = i - icent - dely;
+		if (yi < rn2) yi = std::min(rw2+yi-rn2+1.0f,rw2);
+		if (yi > rw2) yi = std::max(rn2+yi-rw2-1.0f,rn2);
+		float ycod = yi*cod/scale + icent;
+		float ysid = -yi*sid/scale + kcent;
+		for (int k = 1; k <= nx; k++) {
+			float xi = k - kcent - delx;
+			if (xi < sn2) xi = std::min(rs2+xi-sn2+1.0f,rs2);
+			if (xi > rs2) xi = std::max(sn2+xi-rs2-1.0f,sn2);
+			float yold = xi*sid/scale + ycod;
+			float xold = xi*cod/scale + ysid;
+			out[i][k][zslice] = 
+				Util::quadri(xold, yold, nx, ny, this, zslice);
+		}
+	}
+	return ret;
 }
 
 /* vim: set ts=4 noet: */

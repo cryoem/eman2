@@ -1519,14 +1519,30 @@ namespace EMAN
 		 */
 		void symplane0(MIArray3D& norm);
 
-        /** Symmetrize volume in real space.
-         *  
-         *  @param[in] symmetry Point group of the target volume.
-         *  
-         *  @return New symmetrized volume object.
-         */
-        EMData* symvol(string symmetry);
+		/** Symmetrize volume in real space.
+		 *  
+		 *  @param[in] symmetry Point group of the target volume.
+		 *  
+		 *  @return New symmetrized volume object.
+		 */
+		EMData* symvol(string symmetry);
 
+		/** Generate Rotated-Translated-Scaled image (or image slice)
+		 *
+		 *  If the image is a volume, then only the specified slice
+		 *  is rotated/translated/scaled.
+		 *  
+		 *  @param[in] ang Rotation angle in degrees.
+		 *  @param[in] scale Scaling factor
+		 *  @param[in] delx Translation along x
+		 *  @param[in] dely Translation along y
+		 *  @param[in] zslice Slice to transform (defaults to 1, counting starts at 1)
+		 *  
+		 *  @return New rotated/translated/scaled image
+		 */
+		EMData* 
+		rot_trans_scale2D(float ang, float scale, float delx, 
+						  float dely, int zslice = 1);
 
 	private:
 		enum EMDataFlags {

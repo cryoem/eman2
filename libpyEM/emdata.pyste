@@ -48,6 +48,7 @@ set_policy(EMData.get_col, return_value_policy(manage_new_object))
 set_policy(EMData.zeropad_ntimes, return_value_policy(manage_new_object))
 set_policy(EMData.get_3dcviewptr, return_value_policy(reference_existing_object))
 set_policy(EMData.symvol, return_value_policy(manage_new_object))
+set_policy(EMData.rot_trans_scale2D, return_value_policy(manage_new_object))
 
 exclude(EMData.get_data)
 exclude(EMData.fft_slice)
