@@ -6,6 +6,7 @@
 #include "log.h"
 #include "exception.h"
 #include "Assert.h"
+#include "emconstants.h"
 
 #include <string.h>
 #include <string>
@@ -761,8 +762,6 @@ void Util::printMatI3D(MIArray3D& mat, int nx, int ny, int nz,
 vector<float>
 Util::voea(float delta, float t1, float t2, float p1, float p2)
 {
-	const float QUADPI = 3.141592653589793238462643383279502884197f;
-	const float DGR_TO_RAD = QUADPI/180;
 	vector<float> angles;
 	float psi = 0.0;
 	if ((0.0 == t1)&&(0.0 == t2)||(t1 >= t2)) {
@@ -781,7 +780,7 @@ Util::voea(float delta, float t1, float t2, float p1, float p2)
 			detphi = 360.0f;
 			lt = 1;
 		} else {
-			detphi = delta/sin(theta*DGR_TO_RAD);
+			detphi = delta/sin(theta*dgr_to_rad);
 			lt = int((p2 - p1)/detphi)-1;
 			if (lt < 1) lt = 1;
 			detphi = (p2 - p1)/lt;
@@ -848,7 +847,7 @@ float Util::triquad(double r, double s, double t, float f[]) {
 		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
 }
 
-float quadri(float x, float y, int nxdata, int nydata, 
+float Util::quadri(float x, float y, int nxdata, int nydata, 
 			 EMData* image, int zslice) {
 	// sanity check
 	if (image->get_ysize() <= 1) {

@@ -828,30 +828,36 @@ namespace EMAN
 
 			/** Quadratic interpolation (2D).
 			 *
+			 *  Note:  This routine starts counting from 1, not 0!
+			 *
 			 *	This routine uses six image points for interpolation:
 			 *
-			 *		   f3	 fc
-			 *		   |
-			 *		   | x
-			 *	f2-----f0----f1
-			 *		   |
-			 *		   |
-			 *		   f4
+			 @verbatim
+			           f3    fc
+			           |
+			           | x
+			    f2-----f0----f1
+			           |
+			           |
+			           f4
+			 @endverbatim
 			 *
 			 *	f0 - f4 are image values near the interpolated point X.
 			 *	f0 is the interior mesh point nearest x.
 			 *
-			 *	Coords:  f0 = (x0, y0)
-			 *			 f1 = (xb, y0)
-			 *			 f2 = (xa, y0)
-			 *			 f3 = (x0, yb)
-			 *			 f4 = (x0, ya)
-			 *			 fc = (xc, yc)
+			 *	Coords:  
+			 *@li        f0 = (x0, y0)
+			 *@li        f1 = (xb, y0)
+			 *@li        f2 = (xa, y0)
+			 *@li        f3 = (x0, yb)
+			 *@li        f4 = (x0, ya)
+			 *@li        fc = (xc, yc)
 			 *
-			 *	Mesh spacings: hxa -- x- mesh spacing to the left of f0
-			 *				   hxb -- x- mesh spacing to the right of f0
-			 *				   hyb -- y- mesh spacing above f0
-			 *				   hya -- y- mesh spacing below f0
+			 *	Mesh spacings: 
+			 *@li              hxa -- x- mesh spacing to the left of f0
+			 *@li              hxb -- x- mesh spacing to the right of f0
+			 *@li              hyb -- y- mesh spacing above f0
+			 *@li              hya -- y- mesh spacing below f0
 			 *
 			 *	Interpolant:
 			 *	  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)
