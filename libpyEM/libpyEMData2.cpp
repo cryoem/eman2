@@ -86,6 +86,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMD
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_trans_scale2D_overloads_4_5, rot_trans_scale2D, 4, 5)
+
 
 }// namespace 
 
@@ -252,6 +254,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("nn", &EMAN::EMData::nn)
         .def("symplane0", &EMAN::EMData::symplane0)
         .def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >())
+        .def("rot_trans_scale2D", &EMAN::EMData::rot_trans_scale2D, return_value_policy< manage_new_object >(), EMAN_EMData_rot_trans_scale2D_overloads_4_5())
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
         .staticmethod("onelinenn")
