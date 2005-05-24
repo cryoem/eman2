@@ -451,7 +451,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	int dim = Util::min(nx,ny,nz);
+	int dim = Util::get_min(nx,ny,nz);
 	if (nz == 1) {
 		LOGERR("The PawelProjector needs a volume!");
 		return 0;

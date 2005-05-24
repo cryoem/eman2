@@ -14,7 +14,7 @@
 #ifdef WIN32
 #include <windows.h>
 #define M_PI 3.14159265358979323846f
-#define MAXPATHLEN (MAX_PATH * 4)
+//#define MAXPATHLEN (MAX_PATH * 4)
 #endif
 
 using std::string;
@@ -514,7 +514,7 @@ namespace EMAN
 		 * @param f2 [in] The second number.
 		 * @return The minimum of 2 numbers.
 		 */
-		static inline int min(int f1, int f2)
+		static inline int get_min(int f1, int f2)
 		{
 			return (f1 < f2 ? f1 : f2);
 		}
@@ -525,7 +525,7 @@ namespace EMAN
 		 * @param f3 [in] The third number.
 		 * @return The minimum of 3 numbers.
 		 */
-		static inline int min(int f1, int f2, int f3)
+		static inline int get_min(int f1, int f2, int f3)
 		{
 			if (f1 <= f2 && f1 <= f3) {
 				return f1;
@@ -541,7 +541,7 @@ namespace EMAN
 		 * @param f2 [in] The second number.
 		 * @return The minimum of 2 numbers.
 		 */
-		static inline float min(float f1, float f2)
+		static inline float get_min(float f1, float f2)
 		{
 			return (f1 < f2 ? f1 : f2);
 		}
@@ -552,7 +552,7 @@ namespace EMAN
 		 * @param f3 [in] The third number.
 		 * @return The minimum of 3 numbers.
 		 */
-		static inline float min(float f1, float f2, float f3)
+		static inline float get_min(float f1, float f2, float f3)
 		{
 			if (f1 <= f2 && f1 <= f3) {
 				return f1;
@@ -571,7 +571,7 @@ namespace EMAN
 		 * @param f4 [in] The fourth number.
 		 * @return The minimum of 4 numbers.
 		 */
-		static inline float min(float f1, float f2, float f3, float f4)
+		static inline float get_min(float f1, float f2, float f3, float f4)
 		{
 			float m = f1;
 			if (f2 < m) {
@@ -591,7 +591,7 @@ namespace EMAN
 		 * @param f2 [in] The second number.
 		 * @return The maximum of 2 numbers.
 		 */
-		static inline float max(float f1, float f2)
+		static inline float get_max(float f1, float f2)
 		{
 			return (f1 < f2 ? f2 : f1);
 		}
@@ -602,7 +602,7 @@ namespace EMAN
 		 * @param f3 [in] The third number.
 		 * @return The maximum of 3 numbers.
 		 */
-		static inline float max(float f1, float f2, float f3)
+		static inline float get_max(float f1, float f2, float f3)
 		{
 			if (f1 >= f2 && f1 >= f3) {
 				return f1;
@@ -620,7 +620,7 @@ namespace EMAN
 		 * @param f4 [in] The fourth number.
 		 * @return The maximum of 4 numbers.
 		 */
-		static inline float max(float f1, float f2, float f3, float f4)
+		static inline float get_max(float f1, float f2, float f3, float f4)
 		{
 			float m = f1;
 			if (f2 > m) {

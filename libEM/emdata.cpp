@@ -807,8 +807,8 @@ void EMData::postift_depad_corner_inplace() {
 	if (0 == npad) npad = 1;
 	int offset = is_fftodd() ? 1 : 2;
 	int nxold = (nx - offset)/npad;
-	int nyold = std::max(ny/npad, 1);
-	int nzold = std::max(nz/npad, 1);
+	int nyold = std::max<int>(ny/npad, 1);
+	int nzold = std::max<int>(nz/npad, 1);
 	int bytes = nxold*sizeof(float);
 	MArray3D src = get_3dview();
 	float* dest = get_data();
@@ -938,8 +938,8 @@ EMData* EMData::pad_fft(int npad) {
 		npad = get_attr("npad");
 		if (0 == npad) npad = 1;
 		int nxold = (nx - 2 + is_fftodd())/npad; // using the value of is_fftodd() <- FIXME
-		int nyold = std::max(ny/npad, 1);
-		int nzold = std::max(nz/npad, 1);
+		int nyold = std::max<int>(ny/npad, 1);
+		int nzold = std::max<int>(nz/npad, 1);
 		int bytes = nxold*sizeof(float);
 		newimg->set_size(nxold, nyold, nzold);
 		newimg->to_zero();
@@ -2373,7 +2373,7 @@ void EMData::add(const EMData & image)
 	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else if( is_real()^image.is_real() == true ) 
+	else if( (is_real()^image.is_real()) == true ) 
 	{
 		throw ImageFormatException( "not support add between real image and complex image");
 	}
@@ -2431,7 +2431,7 @@ void EMData::sub(const EMData & em)
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException("images not same sizes");
 	}
-	else if( is_real()^em.is_real() == true ) 
+	else if( (is_real()^em.is_real()) == true ) 
 	{
 		throw ImageFormatException( "not support sub between real image and complex image");
 	}
@@ -2473,7 +2473,7 @@ void EMData::mult(const EMData & em)
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else if( is_real()^em.is_real() == true ) 
+	else if( (is_real()^em.is_real()) == true ) 
 	{
 		throw ImageFormatException( "not support multiply between real image and complex image");
 	}
@@ -2529,7 +2529,7 @@ void EMData::div(const EMData & em)
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else if( is_real()^em.is_real() == true ) 
+	else if( (is_real()^em.is_real()) == true ) 
 	{
 		throw ImageFormatException( "not support division between real image and complex image");
 	}
@@ -2585,17 +2585,20 @@ void EMData::update_stat()
 
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
-		max=Util::max(max,v);  min=Util::min(min,v); sum += v; square_sum += v * (double)(v);
+		max=std::max<float>(max,v);  
+		min=std::min<float>(min,v); 
+		sum += v; 
+		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
 
 	int n = nx * ny * nz / step;
 	double mean = sum / n;
-	float sigma = sqrt(Util::max(0,(square_sum - sum*sum / n)/(n-1)));
+	float sigma = (float)sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
 
-	n_nonzero = std::max(1,n_nonzero);
+	n_nonzero = std::max<int>(1,n_nonzero);
 	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
-	double sigma_nonzero = sqrt(Util::max(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
+	double sigma_nonzero = sqrt(std::max<double>(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;

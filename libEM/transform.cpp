@@ -548,9 +548,9 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 
 	float nphi = (az-phi)/2.0f;
     // The next is also e0
-	float cosOover2 = fabs( cos((az+phi)/2) * cos(alt/2.) );
+	float cosOover2 = fabs( cos((az+phi)/2) * cos(alt/2) );
 	float sinOover2 = sqrt(1 -cosOover2*cosOover2);
-	float cosnTheta = sin((az+phi)/2.) * cos(alt/2.) / sqrt(1-cosOover2*cosOover2) ;
+	float cosnTheta = sin((az+phi)/2) * cos(alt/2) / sqrt(1-cosOover2*cosOover2) ;
 	float sinnTheta = sqrt(1-cosnTheta*cosnTheta);
 	float n1 = sinnTheta*cos(nphi);
 	float n2 = sinnTheta*sin(nphi);
@@ -647,9 +647,9 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
     // The ICOS symmetry group has the face along z-axis
 
 	float lvl0=0;                             //  there is one pentagon on top; five-fold along z
-	float lvl1= 63.4349; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
-	float lvl2=116.5651; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
-	float lvl3=180.;                           // there is one pentagon on the bottom
+	float lvl1= 63.4349f; // that is atan(2)  // there are 5 pentagons with centers at this height (angle)
+	float lvl2=116.5651f; //that is 180-lvl1  // there are 5 pentagons with centers at this height (angle)
+	float lvl3=180.f;                           // there is one pentagon on the bottom
              // Notice that 63.439 is the angle between two faces of the dual object
 
 	static double ICOS[180] = { // This is with a pentagon normal to z 
@@ -689,7 +689,7 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
     // The TET symmetry group has a face along the z-axis
     // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
         lvl0=0;         // There is a face along z
-	lvl1=109.4712;  //  that is acos(-1/3)  // There  are 3 faces at this angle
+	lvl1=109.4712f;  //  that is acos(-1/3)  // There  are 3 faces at this angle
 
 	static float TET[36] = {// This is with the face along z 
 	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,

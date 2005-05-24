@@ -761,24 +761,24 @@ void Util::printMatI3D(MIArray3D& mat, int nx, int ny, int nz,
 vector<float>
 Util::voea(float delta, float t1, float t2, float p1, float p2)
 {
-	const float QUADPI = 3.141592653589793238462643383279502884197;
-	const float DGR_TO_RAD = QUADPI/180.;
+	const float QUADPI = 3.141592653589793238462643383279502884197f;
+	const float DGR_TO_RAD = QUADPI/180;
 	vector<float> angles;
 	float psi = 0.0;
 	if ((0.0 == t1)&&(0.0 == t2)||(t1 >= t2)) {
-		t1 = 0.0;
-		t2 = 90.0;
+		t1 = 0.0f;
+		t2 = 90.0f;
 	}
 	if ((0.0 == p1)&&(0.0 == p2)||(p1 >= p2)) {
-		p1 = 0.0;
-		p2 = 359.9;
+		p1 = 0.0f;
+		p2 = 359.9f;
 	}
 	bool skip = ((t1 < 90.0)&&(90.0 == t2)&&(0.0 == p1)&&(p2 > 180.0));
 	for (float theta = t1; theta <= t2; theta += delta) {
 		float detphi;
 		int lt;
 		if ((0.0 == theta)||(180.0 == theta)) {
-			detphi = 360.0;
+			detphi = 360.0f;
 			lt = 1;
 		} else {
 			detphi = delta/sin(theta*DGR_TO_RAD);
@@ -799,24 +799,24 @@ Util::voea(float delta, float t1, float t2, float p1, float p2)
 
 
 float Util::triquad(double r, double s, double t, float f[]) {
-	const float c2 = 1.0 / 2.0;
-	const float c4 = 1.0 / 4.0;
-	const float c8 = 1.0 / 8.0;
-	float rs = r*s;
-	float st = s*t;
-	float rt = r*t;
-	float rst = r*st;
-	float rsq = 1 - r*r;
-	float ssq = 1 - s*s;
-	float tsq = 1 - t*t;
-	float rm1 = 1 - r;
-	float sm1 = 1 - s;
-	float tm1 = 1 - t;
-	float rp1 = 1 + r;
-	float sp1 = 1 + s;
-	float tp1 = 1 + t;
+	const float c2 = 1.0f / 2.0f;
+	const float c4 = 1.0f / 4.0f;
+	const float c8 = 1.0f / 8.0f;
+	float rs = (float)(r*s);
+	float st = (float)(s*t);
+	float rt = (float)(r*t);
+	float rst = (float)(r*st);
+	float rsq = (float)(1 - r*r);
+	float ssq = (float)(1 - s*s);
+	float tsq = (float)(1 - t*t);
+	float rm1 = (float)(1 - r);
+	float sm1 = (float)(1 - s);
+	float tm1 = (float)(1 - t);
+	float rp1 = (float)(1 + r);
+	float sp1 = (float)(1 + s);
+	float tp1 = (float)(1 + t);
 
-	return 
+	return (float)(
 		(-c8) * rst * rm1  * sm1  * tm1 * f[ 0] +
 		( c4) * st	* rsq  * sm1  * tm1 * f[ 1] +
 		( c8) * rst * rp1  * sm1  * tm1 * f[ 2] +
@@ -845,7 +845,7 @@ float Util::triquad(double r, double s, double t, float f[]) {
 		( c4) * rt	* rp1  * ssq  * tp1 * f[23] +
 		(-c8) * rst * rm1  * sp1  * tp1 * f[24] +
 		( c4) * st	* rsq  * sp1  * tp1 * f[25] +
-		( c8) * rst * rp1  * sp1  * tp1 * f[26];
+		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
 }
 
 float quadri(float x, float y, int nxdata, int nydata, 
@@ -859,11 +859,11 @@ float quadri(float x, float y, int nxdata, int nydata,
 	if (x < 1.0) 
 		x += (1-int(x)/nxdata)*nxdata;
 	if (x > float(nxdata) + 0.5)
-		x = fmodf(x - 1.0, nxdata) + 1.0;
+		x = fmodf(x - 1.0f, (float)nxdata) + 1.0f;
 	if (y < 1.0)
 		y += (1 - int(y)/nydata)*nydata;
-	if (y > float(nydata) + 0.5)
-		y = fmodf(y - 1.0, nydata) + 1.0;
+	if (y > float(nydata) + 0.5f)
+		y = fmodf(y - 1.0f, (float)nydata) + 1.0f;
 	int i = int(x);
 	int j = int(y);
 	float dx0 = x - i;
@@ -874,19 +874,19 @@ float quadri(float x, float y, int nxdata, int nydata,
 	int jm1 = (j - 1) % nydata + 1;
 	float f0 = fdata[i][j][zslice];
 	float c1 = fdata[ip1][j][zslice] - f0;
-	float c2 = (c1 - f0 + fdata[im1][j][zslice])*.5;
+	float c2 = (c1 - f0 + fdata[im1][j][zslice])*.5f;
 	float c3 = fdata[i][jp1][zslice] - f0;
-	float c4 = (c3 - f0 + fdata[i][jm1][zslice])*.5;
+	float c4 = (c3 - f0 + fdata[i][jm1][zslice])*.5f;
 	float dxb = dx0 - 1;
 	float dyb = dy0 - 1;
 	// hxc and hyc are either +1 or -1
-	float hxc = (dx0 >= 0) ? 1 : -1;
-	float hyc = (dy0 >= 0) ? 1 : -1;
+	float hxc = (float)((dx0 >= 0) ? 1 : -1);
+	float hyc = (float)((dy0 >= 0) ? 1 : -1);
 	int ic = int(fmodf(i + hxc, float(nxdata)) + 1);
 	int jc = int(fmodf(j + hyc, float(nydata)) + 1);
 	float c5 = (fdata[ic][jc][zslice] - f0 - hxc*c1
-				- (hxc*(hxc - 1.0))*c2 - hyc*c3
-				- (hyc*(hyc - 1.0))*c4) * (hxc*hyc);
+				- (hxc*(hxc - 1.0f))*c2 - hyc*c3
+				- (hyc*(hyc - 1.0f))*c4) * (hxc*hyc);
 	float result = f0 + dx0*(c1 + dxb*c2 + dy0*c5)
 				 + dy0*(c3 + dyb*c4);
 	return result;

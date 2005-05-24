@@ -144,13 +144,13 @@ namespace EMAN
             }
             
             if (nz == 1) {
-                return (x2*x2 + y2*y2);
+                return (float)(x2*x2 + y2*y2);
             }
             else {
                 int areax = (int)((float)nx * z2 / nz);
                 int areay = (int)((float)ny * z2 / nz);
                 if ((abs(x-nx/2) <= areax) && (abs(y-ny/2) <= areay)) {
-                    return (x2*x2 + y2*y2);
+                    return (float)(x2*x2 + y2*y2);
                 }
                 else {
                     return 0;
@@ -177,13 +177,13 @@ namespace EMAN
             }
             
             if (nz == 1) {
-                return (x2*x2 + y2*y2);
+                return (float)(x2*x2 + y2*y2);
             }
             else {
                 int areax = (int)((float)nx * z2 / nz);
                 int areay = (int)((float)ny * z2 / nz);
                 if ((abs(x-nx/2) <= areax) && (abs(y-ny/2) <= areay)) {
-                    return (x2*x2 + y2*y2);
+                    return (float)(x2*x2 + y2*y2);
                 }
                 else {
                     return 0;

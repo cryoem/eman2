@@ -12,7 +12,7 @@ using std::string;
 
 namespace EMAN
 {
-#if 0
+#if 1
 #ifndef __func__
 #define __func__ ""
 #endif

@@ -293,9 +293,9 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
         // if there is only 1 image in the file and image_index = 0,
         // file overwriting is permitted for different-size image.
         if ( ((int) first_h->maxim <= 1) && (image_index == 0)) {
-            first_h->nx = nx1;
-            first_h->ny = ny1;
-            first_h->nslice = nz1;
+            first_h->nx = (float)nx1;
+            first_h->ny = (float)ny1;
+            first_h->nslice = (float)nz1;
         }
         else {        
             if (nx1 != first_h->nx || ny1 != first_h->ny || nz1 != first_h->nslice) {
