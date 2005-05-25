@@ -211,7 +211,7 @@ void Log::end(int ref, char *file, char *text)
 	if (out) {
 		time_t tm = time(0);
 		//Util::file_lock_wait(out);
-		fprintf(out, "%d\t%d\t%s\t%s\n", ref, tm, file, text);
+		fprintf(out, "%d\t%ld\t%s\t%s\n", ref, tm, file, text);
 		fclose(out);
 	}
 }
