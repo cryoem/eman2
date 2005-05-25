@@ -6226,19 +6226,19 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	float cod = cos(ang*dgr_to_rad);
 	float sid = sin(ang*dgr_to_rad);
 	MArray3D out = ret->get_3dview(1,1,1);
-	for (int i = 1; i <= ny; i++) {
-		float yi = i - yc - dely;
+	for (int iy = 1; iy <= ny; iy++) {
+		float yi = iy - yc - dely;
 		if (yi < ymin) yi = std::min(ymax+yi-ymin+1.0f,ymax);
 		if (yi > ymax) yi = std::max(ymin+yi-ymax-1.0f,ymin);
 		float ycod = yi*cod/scale + yc;
 		float ysid = -yi*sid/scale + xc;
-		for (int k = 1; k <= nx; k++) {
-			float xi = k - xc - delx;
+		for (int ix = 1; ix <= nx; ix++) {
+			float xi = ix - xc - delx;
 			if (xi < xmin) xi = std::min(xmax+xi-xmin+1.0f,xmax);
 			if (xi > xmax) xi = std::max(xmin+xi-xmax-1.0f,xmin);
 			float yold = xi*sid/scale + ycod;
 			float xold = xi*cod/scale + ysid;
-			out[i][k][zslice] = 
+			out[ix][iy][zslice] = 
 				Util::quadri(xold, yold, nx, ny, this, zslice);
 		}
 	}
