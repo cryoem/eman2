@@ -6208,35 +6208,34 @@ EMData* EMData::symvol(string symmetry) {
 }
 
 EMData* 
-EMData::rot_trans_scale2D(float ang, float scale, float delx, 
+EMData::rot_scale_trans2D(float ang, float scale, float delx, 
 		                  float dely, int zslice) {
 	if (1 >= ny) 
 		throw ImageDimensionException("Can't rotate 1D image");
 	EMData* ret = copy_head();
 	delx = fmod(delx, float(nx));
 	dely = fmod(dely, float(ny));
-	int icent = nx/2 + 1;
-	int kcent = ny/2 + 1;
-	float rn2 = -ny/2;
-	float sn2 = -nx/2;
-	float rw2 = -rn2;
-	float rs2 = -sn2;
-	if (0 == nx%2) rw2--;
-	if (0 == ny%2) rs2--;
+	int xc = nx/2 + 1;
+	int yc = ny/2 + 1;
+	float ymin = -ny/2;
+	float xmin = -nx/2;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
 	float cod = cos(ang*dgr_to_rad);
 	float sid = sin(ang*dgr_to_rad);
-	MArray3D x = get_3dview(1,1,1);
 	MArray3D out = ret->get_3dview(1,1,1);
 	for (int i = 1; i <= ny; i++) {
-		float yi = i - icent - dely;
-		if (yi < rn2) yi = std::min(rw2+yi-rn2+1.0f,rw2);
-		if (yi > rw2) yi = std::max(rn2+yi-rw2-1.0f,rn2);
-		float ycod = yi*cod/scale + icent;
-		float ysid = -yi*sid/scale + kcent;
+		float yi = i - yc - dely;
+		if (yi < ymin) yi = std::min(ymax+yi-ymin+1.0f,ymax);
+		if (yi > ymax) yi = std::max(ymin+yi-ymax-1.0f,ymin);
+		float ycod = yi*cod/scale + yc;
+		float ysid = -yi*sid/scale + xc;
 		for (int k = 1; k <= nx; k++) {
-			float xi = k - kcent - delx;
-			if (xi < sn2) xi = std::min(rs2+xi-sn2+1.0f,rs2);
-			if (xi > rs2) xi = std::max(sn2+xi-rs2-1.0f,sn2);
+			float xi = k - xc - delx;
+			if (xi < xmin) xi = std::min(xmax+xi-xmin+1.0f,xmax);
+			if (xi > xmax) xi = std::max(xmin+xi-xmax-1.0f,xmin);
 			float yold = xi*sid/scale + ycod;
 			float xold = xi*cod/scale + ysid;
 			out[i][k][zslice] = 

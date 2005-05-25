@@ -1527,7 +1527,8 @@ namespace EMAN
 		 */
 		EMData* symvol(string symmetry);
 
-		/** Generate Rotated-Translated-Scaled image (or image slice)
+		/** Generate Rotated-Scaled-Circulantly-Translated image 
+		 *  (or image slice).
 		 *
 		 *  If the image is a volume, then only the specified slice
 		 *  is rotated/translated/scaled.
@@ -1541,7 +1542,7 @@ namespace EMAN
 		 *  @return New rotated/translated/scaled image
 		 */
 		EMData* 
-		rot_trans_scale2D(float ang, float scale, float delx, 
+		rot_scale_trans2D(float ang, float scale, float delx, 
 						  float dely, int zslice = 1);
 
 	private:
