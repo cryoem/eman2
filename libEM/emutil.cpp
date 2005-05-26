@@ -277,7 +277,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	}
 
 	char first_block[1024];
-	size_t n = fread(&first_block, sizeof(char), sizeof(first_block), in);
+	size_t n = fread(first_block, sizeof(char), sizeof(first_block), in);
 	portable_fseek(in, 0, SEEK_END);
 	off_t file_size = portable_ftell(in);
 
@@ -293,67 +293,67 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 		return image_type;
 	}
 
-	if (MrcIO::is_valid(&first_block, file_size)) {
+	if (MrcIO::is_valid(first_block, file_size)) {
 		image_type = IMAGE_MRC;
 	}
-	else if (DM3IO::is_valid(&first_block)) {
+	else if (DM3IO::is_valid(first_block)) {
 		image_type = IMAGE_DM3;
 	}
 #ifdef EM_HDF5
-	else if (HdfIO::is_valid(&first_block)) {
+	else if (HdfIO::is_valid(first_block)) {
 		image_type = IMAGE_HDF;
 	}
 #endif
-	else if (LstIO::is_valid(&first_block)) {
+	else if (LstIO::is_valid(first_block)) {
 		image_type = IMAGE_LST;
 	}
 #ifdef EM_TIFF
-	else if (TiffIO::is_valid(&first_block)) {
+	else if (TiffIO::is_valid(first_block)) {
 		image_type = IMAGE_TIFF;
 	}
 #endif
-	else if (SpiderIO::is_valid(&first_block)) {
+	else if (SpiderIO::is_valid(first_block)) {
 		image_type = IMAGE_SPIDER;
 	}
-	else if (SingleSpiderIO::is_valid(&first_block)) {
+	else if (SingleSpiderIO::is_valid(first_block)) {
 		image_type = IMAGE_SINGLE_SPIDER;
 	}
-	else if (PifIO::is_valid(&first_block)) {
+	else if (PifIO::is_valid(first_block)) {
 		image_type = IMAGE_PIF;
 	}
 #ifdef EM_PNG
-	else if (PngIO::is_valid(&first_block)) {
+	else if (PngIO::is_valid(first_block)) {
 		image_type = IMAGE_PNG;
 	}
 #endif
-	else if (VtkIO::is_valid(&first_block)) {
+	else if (VtkIO::is_valid(first_block)) {
 		image_type = IMAGE_VTK;
 	}
-	else if (PgmIO::is_valid(&first_block)) {
+	else if (PgmIO::is_valid(first_block)) {
 		image_type = IMAGE_PGM;
 	}
-	else if (EmimIO::is_valid(&first_block)) {
+	else if (EmimIO::is_valid(first_block)) {
 		image_type = IMAGE_EMIM;
 	}
-	else if (IcosIO::is_valid(&first_block)) {
+	else if (IcosIO::is_valid(first_block)) {
 		image_type = IMAGE_ICOS;
 	}
-	else if (SalIO::is_valid(&first_block)) {
+	else if (SalIO::is_valid(first_block)) {
 		image_type = IMAGE_SAL;
 	}
-	else if (AmiraIO::is_valid(&first_block)) {
+	else if (AmiraIO::is_valid(first_block)) {
 		image_type = IMAGE_AMIRA;
 	}
-	else if (XplorIO::is_valid(&first_block)) {
+	else if (XplorIO::is_valid(first_block)) {
 		image_type = IMAGE_XPLOR;
 	}
-	else if (Gatan2IO::is_valid(&first_block)) {
+	else if (Gatan2IO::is_valid(first_block)) {
 		image_type = IMAGE_GATAN2;
 	}
-	else if (EmIO::is_valid(&first_block, file_size)) {
+	else if (EmIO::is_valid(first_block, file_size)) {
 		image_type = IMAGE_EM;
 	}
-	else if (ImagicIO::is_valid(&first_block)) {
+	else if (ImagicIO::is_valid(first_block)) {
 		image_type = IMAGE_IMAGIC;
 	}
 	else {

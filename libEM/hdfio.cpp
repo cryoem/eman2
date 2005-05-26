@@ -51,7 +51,8 @@ HdfIO::~HdfIO()
         H5Gclose(group);
     }
     if (file >= 0) {
-        H5Fclose(file);
+		H5Fflush(file,H5F_SCOPE_GLOBAL);	// If there were no resource leaks, this wouldn't be necessary...
+		H5Fclose(file);
     }
 }
 
@@ -73,7 +74,7 @@ void HdfIO::init()
 			throw ImageReadException(filename, "read HDF5 first block");
 		}
 		else {
-			if (!is_valid(&buf)) {
+			if (!is_valid(buf)) {
 				fclose(tmp_file);
 				throw ImageReadException(filename, "invalid HDF5 file");
 			}
@@ -116,23 +117,15 @@ bool HdfIO::is_valid(const void *first_block)
 {
 	ENTERFUNC;
 
-	bool valid = false;
-
 	if (first_block) {
-		const char *data = static_cast < const char *>(first_block);
-		size_t hdf5_sig_len = strlen(HDF5_SIGNATURE);
-		char *signature = new char[hdf5_sig_len + 1];
-		strncpy(signature, data, hdf5_sig_len);
-		signature[hdf5_sig_len] = '\0';
-
-		if (strcmp(signature, HDF5_SIGNATURE) == 0) {
-			valid = true;
-		}
-		delete[]signature;
-		signature = 0;
+		char signature[8] = { 137,72,68,70,13,10,26,10 };
+		if (strncmp((const char *)first_block,signature,8)==0) return true;
+		const char* f=(const char *)first_block;
+//		printf("bad hdf signature %d %d %d %d %d %d %d %d",f[0],f[1],f[2],f[3],f[4],f[5],f[6],f[7]);
+		return false;
 	}
 	EXITFUNC;
-	return valid;
+	return false;
 }
 
 int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
@@ -801,8 +794,8 @@ int HdfIO::write_mapinfo_attr(int image_index, const string & attr_name, int val
 	hid_t dataspace = H5Screate_simple(1, dim, NULL);
 	hid_t attr = H5Acreate(cur_dataset, attr_name.c_str(), mapinfo_type, dataspace, H5P_DEFAULT);
 	H5Awrite(attr, mapinfo_type, &value);
-	H5Sclose(dataspace);
 	H5Aclose(attr);
+	H5Sclose(dataspace);
 	return 0;
 }
 
@@ -881,6 +874,7 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 			LOGERR("can only handle float parameters in HDF attr_info()");
 			exit(1);
 		}
+		H5Tclose(atype);
 		H5Aclose(attr);
 	}
 
@@ -1121,7 +1115,7 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 
 herr_t HdfIO::file_info(hid_t loc_id, const char *name, void *opdata)
 {
-	loc_id = loc_id;
+//	loc_id = loc_id;
 	vector < int >*image_indices = static_cast < vector < int >*>(opdata);
 	string magic = HdfIO::get_item_name(HdfIO::COMPOUND_DATA_MAGIC);
 	const char *magic_str = magic.c_str();
