@@ -1334,7 +1334,8 @@ namespace EMAN
 
 		/** Set the pixel density value at coordinates (x,y,z).
 		 * The validity of x, y, and z is not checked.
-		 *
+		 * This implementation does bounds checking.
+		 * 
 		 * @param x The x cooridinate.
 		 * @param y The y cooridinate.
 		 * @param z The z cooridinate.
@@ -1342,6 +1343,16 @@ namespace EMAN
 		 */
 		void set_value_at(int x, int y, int z, float v);
 		
+		/** Set the pixel density value at coordinates (x,y,z).
+		 * The validity of x, y, and z is not checked.
+		 * This implementation has no bounds checking.
+		 * 
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param z The z cooridinate.
+		 * @param v The pixel density value at coordinates (x,y,z).
+		 */
+		void set_value_at_fast(int x, int y, int z, float v);
 		
 		/** Set the pixel density value at coordinates (x,y).
 		 * 2D image only. The validity of x, y, and z is not checked.
@@ -1351,6 +1362,15 @@ namespace EMAN
 		 * @param v The pixel density value at coordinates (x,y).
 		 */
 		void set_value_at(int x, int y, float v);
+		
+		/** Set the pixel density value at coordinates (x,y).
+		 * 2D image only. The validity of x, y, and z is not checked.
+		 *
+		 * @param x The x cooridinate.
+		 * @param y The y cooridinate.
+		 * @param v The pixel density value at coordinates (x,y).
+		 */
+		void set_value_at_fast(int x, int y, float v);
 
 		/** Is this a complex image?
 		 * @return Whether this is a complex image or not.
@@ -1646,12 +1666,49 @@ namespace EMAN
 
 	inline void EMData::set_value_at(int x, int y, int z, float v)
 	{
+		if( x>=nx && x<0 )
+		{
+			throw OutofRangeException(0, nx-1, x, "x dimension index");
+		}
+		else if( y>=ny && y<0 )
+		{
+			throw OutofRangeException(0, ny-1, y, "y dimension index");
+		}
+		else if( z>=nz && z<0 )
+		{
+			throw OutofRangeException(0, nz-1, z, "z dimension index");
+		}
+		else
+		{
+			rdata[x + y * nx + z * nx * ny] = v;
+			flags |= EMDATA_NEEDUPD;
+		}
+	}
+
+	inline void EMData::set_value_at_fast(int x, int y, int z, float v)
+	{
 		rdata[x + y * nx + z * nx * ny] = v;
 		flags |= EMDATA_NEEDUPD;
 	}
-
-
+	
 	inline void EMData::set_value_at(int x, int y, float v)
+	{
+		if( x>=nx && x<0 )
+		{
+			throw OutofRangeException(0, nx-1, x, "x dimension index");
+		}
+		else if( y>=ny && y<0 )
+		{
+			throw OutofRangeException(0, ny-1, y, "y dimension index");
+		}
+		else
+		{
+			rdata[x + y * nx] = v;
+			flags |= EMDATA_NEEDUPD;
+		}
+	}
+
+	inline void EMData::set_value_at_fast(int x, int y, float v)
 	{
 		rdata[x + y * nx] = v;
 		flags |= EMDATA_NEEDUPD;
