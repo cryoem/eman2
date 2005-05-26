@@ -120,10 +120,10 @@ for single particle analysis."""
 		circle.process("eman1.mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
 		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
-		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT_NORMALIZED)
+		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT)
 		circle.write_image("z0a.hdf")
 		shrink2.write_image("z0b.hdf")
-		ccfsig=shrink2.calc_ccf(circle,fp_flag.CIRCULANT_NORMALIZED)
+		ccfsig=shrink2.calc_ccf(circle,fp_flag.CIRCULANT)
 		ccfmean.process("eman1.math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
 		ccfsig.process("eman1.math.sqrt")
@@ -137,7 +137,7 @@ for single particle analysis."""
 		for n,i in enumerate(refptcls):
 			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
 #			j.write_image("0.%0d.hdf"%n)
-			ccfone=shrink.calc_ccf(j,fp_flag.CIRCULANT_NORMALIZED)
+			ccfone=shrink.calc_ccf(j,fp_flag.CIRCULANT)
 			ccfone.write_image("a.%0d.hdf"%n)
 			ccfone/=ccfsig
 			ccfone.write_image("b.%0d.hdf"%n)
@@ -231,8 +231,8 @@ for single particle analysis."""
 #		outer.write_image("b_outer.hdf")
 #		inner.write_image("b_inner.hdf")
 
-		ccf1=shrinksq.calc_ccf(inner,fp_flag.CIRCULANT_NORMALIZED)
-		ccf2=shrinksq.calc_ccf(outer,fp_flag.CIRCULANT_NORMALIZED)
+		ccf1=shrinksq.calc_ccf(inner,fp_flag.CIRCULANT)
+		ccf2=shrinksq.calc_ccf(outer,fp_flag.CIRCULANT)
 		
 #		ccf1.write_image("b_ccf1.hdf")
 #		ccf2.write_image("b_ccf2.hdf")
