@@ -6213,6 +6213,7 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 		                  float dely, int zslice) {
 	if (1 >= ny) 
 		throw ImageDimensionException("Can't rotate 1D image");
+	if (0.f == scale) scale = 1.f; // silently fix common user error
 	EMData* ret = copy_head();
 	delx = fmod(delx, float(nx));
 	dely = fmod(dely, float(ny));
