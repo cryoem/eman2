@@ -1019,10 +1019,6 @@ EMData *EMData::do_fft()
 	}
 #endif // 0
 
-
-	float scale = 1.0f / (nxreal * ny * nz);
-	dat->mult(scale);
-
 	dat->done_data();
 	dat->set_complex(true);
 	dat->set_ri(true);
@@ -1075,8 +1071,6 @@ EMData *EMData::do_fft_inplace()
 	}
 #endif // 0
 	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
-	float scale = 1.0f / (nxreal * ny * nz);
-	mult(scale);
 	done_data();
 	set_complex(true);
 	set_ri(true);
@@ -1166,6 +1160,10 @@ EMData *EMData::do_ift()
 		}
 	}
 
+
+	// SCALE the inverse FFT
+	float scale = 1.0f / ((nx - offset) * ny * nz);
+	dat->mult(scale);
 	dat->done_data();
 #if 1
 	dat->set_size(nx - offset, ny, nz);
@@ -1210,6 +1208,9 @@ EMData *EMData::do_ift_inplace()
 		EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
 	}
 
+	// SCALE the inverse FFT
+	float scale = 1.0f / ((nx - offset) * ny * nz);
+	mult(scale);
 	done_data();
 	update();
 	set_complex(false);
