@@ -52,7 +52,7 @@ void SpiderIO::init()
 	spider_file = sfopen(filename, rw_mode, &is_new_file);
 
 	if (!is_new_file) {
-		first_h = static_cast < SpiderHeader * >(calloc(sizeof(SpiderHeader), 1));
+		first_h = static_cast < SpiderHeader * >(calloc(1, sizeof(SpiderHeader)));
 
 		if (fread(first_h, sizeof(SpiderHeader), 1, spider_file) != 1) {
 			throw ImageReadException(filename, "SPIDER header");
@@ -171,7 +171,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		cur_image_hed = first_h;
 	}
 	else {
-		cur_image_hed = static_cast < SpiderHeader * >(calloc(sizeof(SpiderHeader), 1));
+		cur_image_hed = static_cast < SpiderHeader * >(calloc(1, sizeof(SpiderHeader)));
 		portable_fseek(spider_file, offset, SEEK_SET);
 
 		if (fread(cur_image_hed, sizeof(SpiderHeader), 1, spider_file) != 1) {
@@ -244,11 +244,11 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	if (area) {
 		if (!cur_h) {
 			if (image_index == 0) {
-				cur_h = static_cast < SpiderHeader * >(calloc(sizeof(SpiderHeader), 1));
+				cur_h = static_cast < SpiderHeader * >(calloc(1, sizeof(SpiderHeader)));
 				memcpy(cur_h, first_h, sizeof(SpiderHeader));
 			}
 			else {
-				cur_h = static_cast < SpiderHeader * >(calloc(sizeof(SpiderHeader), 1));
+				cur_h = static_cast < SpiderHeader * >(calloc(1, sizeof(SpiderHeader)));
 				float size = first_h->nx * first_h->ny * first_h->nslice;
 				size_t single_image_size = (int) (first_h->headlen + size * sizeof(float));
 				size_t offset = (int) first_h->headlen + single_image_size * image_index;
@@ -337,7 +337,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	}
 	else {
 		if (!first_h) {
-			first_h = (SpiderHeader *) calloc(header_length, 1);
+			first_h = (SpiderHeader *) calloc(1, header_length);
 			first_h->mmvalid = 0;
 			first_h->sigma = -1.0;
 			first_h->angvalid = 0;
@@ -379,7 +379,7 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	}
 
 	if (!cur_h) {
-		cur_h = (SpiderHeader *) calloc(header_size, 1);
+		cur_h = (SpiderHeader *) calloc(1, header_size);
 	}
 
 	cur_h->scale = 1.0;
@@ -458,7 +458,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area,
 	size_t header_length = num_records * record_size;
 
 	if (!first_h) {
-		first_h = static_cast < SpiderHeader * >(calloc(header_size, 1));
+		first_h = static_cast < SpiderHeader * >(calloc(1, header_size));
 	}
 
 	first_h->mmvalid = 0;

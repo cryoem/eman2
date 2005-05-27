@@ -3339,7 +3339,7 @@ float *EMData::setup4slice(bool redo)
 	const int SUPP_ROW_OFFSET = 4;
 	const int supp_size = SUPP_ROW_SIZE + SUPP_ROW_OFFSET;
 
-	supp = (float *) calloc(supp_size, ny * nz * sizeof(float));
+	supp = (float *) calloc(supp_size * ny * nz, sizeof(float));
 	int nxy = nx * ny;
 	int supp_xy = supp_size * ny;
 
@@ -4323,8 +4323,8 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		return cf;
 	}
 	else {
-		float *f1 = (float *) calloc(nx * sizeof(float), 1);
-		float *f2 = (float *) calloc(nx * sizeof(float), 1);
+		float *f1 = (float *) calloc(nx, sizeof(float));
+		float *f2 = (float *) calloc(nx, sizeof(float));
 
 		float *cfd = cf->get_data();
 		float *d1 = get_data();
