@@ -3510,8 +3510,8 @@ void EMData::rotate_translate(const Transform3D & xform)
 	}
 
 	if (nz == 1) {
-		float mx0 = inv_scale * cos((float)rotation["az"]);
-		float mx1 = inv_scale * sin((float)rotation["az"]);
+		float mx0 = inv_scale * cos((float)rotation["phi"]);
+		float mx1 = inv_scale * sin((float)rotation["phi"]);
 
 		float x2c = nx / 2.0f - dcenter[0] - translation[0];
 		float y2c = ny / 2.0f - dcenter[1] - translation[1];
