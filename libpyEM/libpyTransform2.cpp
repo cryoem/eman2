@@ -24,8 +24,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTransform2)
 {
-    class_< EMAN::Vec3f >("Vec3f", init<  >())
-        .def(init< const EMAN::Vec3f& >())
+    class_< EMAN::Vec3f, boost::noncopyable >("Vec3f", init<  >())
         .def(init< float, float, optional< float > >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
         .def(init< const EMAN::Vec3i& >())
@@ -66,8 +65,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def( self /= other< float >() )
     ;
 
-    class_< EMAN::Vec3i >("Vec3i", init<  >())
-        .def(init< const EMAN::Vec3i& >())
+    class_< EMAN::Vec3i, boost::noncopyable >("Vec3i", init<  >())
         .def(init< int, int, optional< int > >())
         .def(init< const std::vector<int,std::allocator<int> >& >())
         .def("normalize", &EMAN::Vec3i::normalize)
@@ -103,8 +101,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def( self /= other< int >() )
     ;
 
-    class_< EMAN::Quaternion >("Quaternion", init<  >())
-        .def(init< const EMAN::Quaternion& >())
+    class_< EMAN::Quaternion, boost::noncopyable >("Quaternion", init<  >())
         .def(init< float, float, float, float >())
         .def(init< float, const EMAN::Vec3f& >())
         .def(init< const EMAN::Vec3f&, float >())
@@ -141,8 +138,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
     ;
 
     scope* EMAN_Transform3D_scope = new scope(
-    class_< EMAN::Transform3D >("Transform3D", init<  >())
-        .def(init< const EMAN::Transform3D& >())
+    class_< EMAN::Transform3D, boost::noncopyable >("Transform3D", init<  >())
         .def(init< float, float, float >())
         .def(init< const EMAN::Vec3f&, float, float, float >())
         .def(init< EMAN::Transform3D::EulerType, float, float, float >())
