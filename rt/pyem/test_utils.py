@@ -149,16 +149,16 @@ class TestUtils(unittest.TestCase):
             r1 = random.randint(1,100)
             r2 = random.randint(1,100)
             r3 = random.randint(1,100)
-            self.assertEqual(Util.min(r1, r2), min(r1, r2))
-            self.assertEqual(Util.min(r1, r2, r3), min(r1, r2, r3))
+            self.assertEqual(Util.get_min(r1, r2), min(r1, r2))
+            self.assertEqual(Util.get_min(r1, r2, r3), min(r1, r2, r3))
 
     def test_max(self):
         for i in range(10):
             r1 = random.randint(1,100)
             r2 = random.randint(1,100)
             r3 = random.randint(1,100)
-            self.assertEqual(Util.max(r1, r2), max(r1, r2))
-            self.assertEqual(Util.max(r1, r2, r3), max(r1, r2, r3))
+            self.assertEqual(Util.get_max(r1, r2), max(r1, r2))
+            self.assertEqual(Util.get_max(r1, r2, r3), max(r1, r2, r3))
 
     def test_angle_sub_2pi(self):
         self.assertEqual(Util.angle_sub_2pi(3,1), 2)

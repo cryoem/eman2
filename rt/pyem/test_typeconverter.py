@@ -114,10 +114,10 @@ class TestTypeConverter(unittest.TestCase):
         flist = get_list("float")
 
         vec3i = TestUtil.test_Vec3i(nlist)
-        self.assertEqual(vec3i.as_list(), nlist)
+        self.assertEqual(list(vec3i), nlist)
 
         vec3f = TestUtil.test_Vec3f(flist)
-        self.assertEqual(vec3f.as_list(), flist)
+        self.assertEqual(list(vec3f), flist)
 
         ip1 = TestUtil.test_IntPoint(nlist)
         self.assertEqual(list(ip1), nlist)
