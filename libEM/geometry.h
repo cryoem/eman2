@@ -27,7 +27,8 @@ namespace EMAN
 			data[1] = yy;
 			data[2] = zz;
 		}
-
+		
+		
 		/** Get its dimension, 1D, 2D, or 3D.
 		 * @return The dimension.
 		 */
@@ -347,6 +348,14 @@ namespace EMAN
 			ndim = 3;
 		}
 
+		FloatPoint(const FloatPoint & fp)
+		{
+			data[0] = fp.data[0];
+			data[1] = fp.data[1];
+			data[2] = fp.data[2];
+			ndim = fp.ndim;
+		}
+		
 		/** Get the dimension of the point, 1D/2D/3D.
 		 * @return The dimension of the point.
 		 */
@@ -390,6 +399,8 @@ namespace EMAN
 		 */
 		Pixel(int xx, int yy, int zz, float vv) : x(xx), y(yy), z(zz), value(vv) { }
 
+		Pixel(const Pixel & p) : x(p.x), y(p.y), z(p.z), value(p.value) {}
+		
 		/** Get the pixel's coordinates as an integer point.
 		 * @return An integer point containing the pixel's coordinates.
 		*/
@@ -488,6 +499,13 @@ namespace EMAN
 		{
 		}
 
+		Region(const Region & r)
+		{
+			origin = r.origin;
+			size = r.size;
+		}
+
+		
 		~Region() {
 		}
 

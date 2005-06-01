@@ -59,6 +59,13 @@ namespace EMAN
 			vec[1] = v[1];
 			vec[2] = v[2];
 		}
+
+		Vec3i(const Vec3i &v)
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+			vec[2] = v[2];
+		}
 		
 		
 		virtual ~ Vec3i() {
@@ -380,6 +387,15 @@ namespace EMAN
 			vec[0] = (float)v[0];
 			vec[1] = (float)v[1];
 			vec[2] = (float)v[2];
+		}
+
+		/** copy constructor
+		 */
+		Vec3f(const Vec3f &v)
+		{
+			vec[0] = v[0];
+			vec[1] = v[1];
+			vec[2] = v[2];
 		}
 
 		virtual ~ Vec3f() {
