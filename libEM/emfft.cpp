@@ -2,6 +2,11 @@
  * $Id$
  */
 #include "emfft.h"
+#ifdef DJBFFT
+extern "C" {
+	#include <fftr4.h>
+}
+#endif	//DJBFFT
 
 using namespace EMAN;
 
@@ -102,7 +107,63 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 	if (planf_1d.get_dim(0) != n) {
 		planf_1d = FftwPlan(n, REAL_TO_COMPLEX, FFTW_ESTIMATE);
 	}
+
+#ifdef DJBFFT
+	switch(n)
+	{
+		printf("I am here now!\n");
+		if ( n==2 || n==4 || n==8 || n==16 || n==32 || n==64 || n==128
+			|| n==256 || n==512 || n==1024 || n==2048 || n==4096 || n==8192 )
+		{
+			memcpy( complex_data, real_data, n * sizeof(float) );		
+		}
+		
+		case 2:
+			fftr4_2( (real4 *)complex_data );
+			
+		case 4: 
+			fftr4_4( (real4 *)complex_data );
+			
+		case 8:
+			fftr4_8( (real4 *)complex_data );
+			 
+		case 16:
+			fftr4_16( (real4 *)complex_data ); 
+			
+		case 32:
+			fftr4_32( (real4 *)complex_data ); 
+			
+		case 64:
+			fftr4_64( (real4 *)complex_data ); 
+			
+		case 128: 
+			fftr4_128( (real4 *)complex_data );
+			
+		case 256:
+			fftr4_256( (real4 *)complex_data ); 
+			
+		case 512: 
+			fftr4_512( (real4 *)complex_data );
+			
+		case 1024: 
+			fftr4_1024( (real4 *)complex_data );
+			
+		case 2048: 
+			fftr4_2048( (real4 *)complex_data );
+			
+		case 4096: 
+			fftr4_4096( (real4 *)complex_data );
+			
+		case 8192:
+			fftr4_8192( (real4 *)complex_data );
+			
+		default:
+			rfftw_one(planf_1d.get_plan_1d(), (fftw_real *) real_data, (fftw_real *) complex_data);
+	}	
+#else
 	rfftw_one(planf_1d.get_plan_1d(), (fftw_real *) real_data, (fftw_real *) complex_data);
+#endif	//DJBFFT	
+
 	return 0;
 }
 
@@ -112,8 +173,76 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 		planr_1d = FftwPlan(n, COMPLEX_TO_REAL, FFTW_ESTIMATE);
 	}
 
+#ifdef DJBFFT
+	switch(n)
+	{
+		if ( n==2 || n==4 || n==8 || n==16 || n==32 || n==64 || n==128
+			|| n==256 || n==512 || n==1024 || n==2048 || n==4096 || n==8192 )
+		{
+			memcpy( real_data, complex_data, n * sizeof(float) );		
+		}
+		
+		case 2:	
+			fftr4_scale2( (real4 *)real_data );
+     		fftr4_un2( (real4 *)real_data );
+			
+		case 4: 
+			fftr4_scale4( (real4 *)real_data );
+     		fftr4_un4( (real4 *)real_data );
+			
+		case 8:
+			fftr4_scale8( (real4 *)real_data );
+     		fftr4_un8( (real4 *)real_data );
+			 
+		case 16:
+			fftr4_scale16( (real4 *)real_data );
+     		fftr4_un16( (real4 *)real_data );
+			
+		case 32:
+			fftr4_scale32( (real4 *)real_data );
+     		fftr4_un32( (real4 *)real_data );
+			
+		case 64:
+			fftr4_scale64( (real4 *)real_data );
+     		fftr4_un64( (real4 *)real_data );
+			
+		case 128: 
+			fftr4_scale128( (real4 *)real_data );
+     		fftr4_un128( (real4 *)real_data );
+			
+		case 256:
+			fftr4_scale256( (real4 *)real_data );
+     		fftr4_un256( (real4 *)real_data );
+			
+		case 512: 
+			fftr4_scale512( (real4 *)real_data );
+     		fftr4_un512( (real4 *)real_data );
+			
+		case 1024: 
+			fftr4_scale1024( (real4 *)real_data );
+     		fftr4_un1024( (real4 *)real_data );
+			
+		case 2048: 
+			fftr4_scale2048( (real4 *)real_data );
+     		fftr4_un2048( (real4 *)real_data );
+			
+		case 4096: 
+			fftr4_scale4096( (real4 *)real_data );
+     		fftr4_un4096( (real4 *)real_data );
+			
+		case 8192:
+			fftr4_scale8192( (real4 *)real_data );
+     		fftr4_un8192( (real4 *)real_data );
+			
+		default:
+			rfftw_one(planr_1d.get_plan_1d(), (fftw_real *) complex_data, (fftw_real *) real_data);
+	}
+#else
 	rfftw_one(planr_1d.get_plan_1d(), (fftw_real *) complex_data, (fftw_real *) real_data);
+#endif	//DJBFFT
+	
 	return 0;
+	
 }
 
 
