@@ -96,7 +96,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_4
 BOOST_PYTHON_MODULE(libpyEMData2)
 {
     scope* EMAN_EMData_scope = new scope(
-    class_< EMAN::EMData, boost::noncopyable >("EMData", init<  >())
+    class_< EMAN::EMData>("EMData", init<  >())
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7())
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
