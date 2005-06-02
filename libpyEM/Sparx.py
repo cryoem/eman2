@@ -35,12 +35,12 @@ def dropImage(imagename,destination):
         destination = EMData()
         destination = imagename
 
-def descriptive_statistics(image):
-    """Calculate the descriptive statistics of an image.
+def info(image):
+    """Calculate and print the descriptive statistics of an image.
 
-    Usage: [mean, sigma, xmin, xmax, nx, ny, nz =] descriptive_statistics(image object)
+    Usage: [mean, sigma, xmin, xmax, nx, ny, nz =] info(image object)
            or
-           [mean, sigma, xmin, xmax, nx, ny, nz =] descriptive_statistics(image filename)
+           [mean, sigma, xmin, xmax, nx, ny, nz =] info("path/image")
 
     Purpose: calculate basic statistical characteristics of an image.
     """
