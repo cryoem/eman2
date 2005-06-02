@@ -254,3 +254,107 @@ def do_alignment(exptpattern, start, end, refpattern, alipattern, anglelist):
         newangles.append(3.0)
     return newangles
 
+# shortcuts to Fourier product functions
+# Correlation functions
+def ccf(e, f):
+    o = correlation(e,f,fp_flag.CIRCULANT)
+    return o
+
+def ccfn(e, f):
+    o = correlation(e,f,fp_flag.CIRCULANT_NORMALIZED)
+    return o
+
+def ccfp(e, f):
+    o = correlation(e,f,fp_flag.PADDED)
+    return o
+
+def ccfnp(e, f):
+    o = correlation(e,f,fp_flag.PADDED_NORMALIZED)
+    return o
+
+def ccfpl(e, f):
+    o = correlation(e,f,fp_flag.PADDED_LAG)
+    return o
+
+def ccfnpl(e, f):
+    o = correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG)
+    return o
+    
+# Convolution functions
+def cnv(e, f):
+    o = convolution(e,f,fp_flag.CIRCULANT)
+    return o
+
+def cnvn(e, f):
+    o = convolution(e,f,fp_flag.CIRCULANT_NORMALIZED)
+    return o
+
+def cnvp(e, f):
+    o = convolution(e,f,fp_flag.PADDED)
+    return o
+
+def cnvnp(e, f):
+    o = convolution(e,f,fp_flag.PADDED_NORMALIZED)
+    return o
+
+def cnvpl(e, f):
+    o = convolution(e,f,fp_flag.PADDED_LAG)
+    return o
+
+def cnvnpl(e, f):
+    o = convolution(e,f,fp_flag.PADDED_NORMALIZED_LAG)
+    return o
+    
+# Autocorrelation functions
+def acf(e, f):
+    o = autocorrelation(e,f,fp_flag.CIRCULANT)
+    return o
+
+def acfn(e, f):
+    o = autocorrelation(e,f,fp_flag.CIRCULANT_NORMALIZED)
+    return o
+
+def acfp(e, f):
+    o = autocorrelation(e,f,fp_flag.PADDED)
+    return o
+
+def acfnp(e, f):
+    o = autocorrelation(e,f,fp_flag.PADDED_NORMALIZED)
+    return o
+
+def acfpl(e, f):
+    o = autocorrelation(e,f,fp_flag.PADDED_LAG)
+    return o
+
+def acfnpl(e, f):
+    o = autocorrelation(e,f,fp_flag.PADDED_NORMALIZED_LAG)
+    return o
+   
+    
+# Selfcorrelation functions
+def scf(e, f):
+    o = self_correlation(e,f,fp_flag.CIRCULANT)
+    return o
+
+def scfn(e, f):
+    o = self_correlation(e,f,fp_flag.CIRCULANT_NORMALIZED)
+    return o
+
+def scfp(e, f):
+    o = self_correlation(e,f,fp_flag.PADDED)
+    return o
+
+def scfnp(e, f):
+    o = self_correlation(e,f,fp_flag.PADDED_NORMALIZED)
+    return o
+
+def scfpl(e, f):
+    o = self_correlation(e,f,fp_flag.PADDED_LAG)
+    return o
+
+def scfnpl(e, f):
+    o = self_correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG)
+    return o
+   
+
+
