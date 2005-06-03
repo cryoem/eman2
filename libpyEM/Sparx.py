@@ -355,6 +355,35 @@ def scfpl(e, f):
 def scfnpl(e, f):
     o = self_correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG)
     return o
-   
+# FFT functions
+def fft(e):
+    """Out-of-place fft / ift
+       No padding performed, and fft-extension along x removed after ift.
+    """
+    if (e.is_complex()):
+        # inverse fft
+        f = e.copy()
+        f.do_ift_inplace()
+        f.postift_depad_corner_inplace()
+        return f
+    else:
+        # forward fft
+        return norm_pad_ft(e, False, False, 1)
 
+def fftip(e):
+    """In-place fft / ift
+       No padding performed, and fft-extension along x removed after ift.
+    """
+    if (e.is_complex()):
+        # inverse fft
+        e.do_ift_inplace()
+        e.postift_depad_corner_inplace()
+    else:
+        # forward fft
+        e.do_fft_inplace()
 
+# Fourier filters
+def tophatl(e, freq):
+    params = {"FilterType" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
+              "Cutoff_frequency" : freq}
+    return Processor.EMFourierFilter(e, params)
