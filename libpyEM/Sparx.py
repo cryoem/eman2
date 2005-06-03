@@ -52,7 +52,15 @@ def info(image):
     nx = e.get_xsize()
     ny = e.get_ysize()
     nz = e.get_zsize()
-    print "Image size: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
+    if (e.is_complex()):
+    	if (e.is_fftodd()):
+    		print "Complex odd image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
+	else:
+    		print "Complex even image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
+
+    else:
+    	print "Real image: nx = %i, ny = %i, nz = %i" % (nx, ny, nz)
+
     print "avg = %g, std dev = %g, min = %g, max = %g" % (mean, sigma, imin, imax)
     return mean,sigma,imin,imax, nx, ny, nz
     
@@ -355,6 +363,7 @@ def scfpl(e, f):
 def scfnpl(e, f):
     o = self_correlation(e,f,fp_flag.PADDED_NORMALIZED_LAG)
     return o
+    
 # FFT functions
 def fft(e):
     """Out-of-place fft / ift
@@ -383,7 +392,24 @@ def fftip(e):
         e.do_fft_inplace()
 
 # Fourier filters
-def tophatl(e, freq):
+def filt_tophatl(e, freq):
     params = {"FilterType" : Processor.fourier_filter_types.TOP_HAT_LOW_PASS,
               "Cutoff_frequency" : freq}
     return Processor.EMFourierFilter(e, params)
+    
+def filt_tophath(e, freq):
+    params = {"FilterType" : Processor.fourier_filter_types.TOP_HAT_HIGH_PASS,
+              "Cutoff_frequency" : freq}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_tophatb(e, freql, freqh):
+    params = {"FilterType" : Processor.fourier_filter_types.TOP_HAT_BAND_PASS,
+              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_tophato(e, freql, freqh, value):
+    params = {"FilterType" : Processor.fourier_filter_types.TOP_HOMOMORPHIC,
+              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh, "Value_at_zero" : value}
+    return Processor.EMFourierFilter(e, params)
+    
+
