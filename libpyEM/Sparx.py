@@ -409,7 +409,70 @@ def filt_tophatb(e, freql, freqh):
     
 def filt_tophato(e, freql, freqh, value):
     params = {"FilterType" : Processor.fourier_filter_types.TOP_HOMOMORPHIC,
-              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh, "Value_at_zero" : value}
+              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh, "Value_at_zero_frequency" : value}
     return Processor.EMFourierFilter(e, params)
+
     
 
+def filt_gaussl(e, sigma):
+    params = {"FilterType" : Processor.fourier_filter_types.GAUSS_LOW_PASS,
+              "Sigma" : sigma}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_gaussh(e, sigma):
+    params = {"FilterType" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
+              "Sigma" : freq}
+    return Processor.EMFourierFilter(e, sigma)
+    
+def filt_gaussb(e, sigma, center):
+    params = {"FilterType" : Processor.fourier_filter_types.GAUSS_BAND_PASS,
+              "Sigma" : sigma, "Center" : center}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_gausso(e, sigma, value):
+    params = {"FilterType" : Processor.fourier_filter_types.GAUSS_HOMOMORPHIC,
+              "Sigma" : sigma, "Value_at_zero_frequency" : value}
+    return Processor.EMFourierFilter(e, params)
+
+
+
+def filt_btwl(e, freql, freqh):
+    params = {"FilterType" : Processor.fourier_filter_types.BUTTERWORTH_LOW_PASS,
+              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_btwh(e, freql, freqh):
+    params = {"FilterType" : Processor.fourier_filter_types.BUTTERWORTH_HIGH_PASS,
+              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_btwh(e, freql, freqh, value):
+    params = {"FilterType" : Processor.fourier_filter_types.BUTTERWORTH_HOMOMORPHIC,
+              "Low_cutoff_frequency" : freql, "High_cutoff_frequency" : freqh,
+	      "Value_at_zero_frequency" : value}
+    return Processor.EMFourierFilter(e, params)
+   
+    
+
+def filt_tanl(e, freq, fall_off):
+    params = {"FilterType" : Processor.fourier_filter_types.TANH_LOW_PASS,
+              "Cutoff_frequency" : freq, "Fall_off": fall_off}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_tanh(e, freq, fall_off):
+    params = {"FilterType" : Processor.fourier_filter_types.TANH_HIGH_PASS,
+              "Cutoff_frequency" : freq, "Fall_off": fall_off}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_tanb(e, freql, low_fall_off, freqh, high_fall_off):
+    params = {"FilterType" : Processor.fourier_filter_types.TANH_BAND_PASS,
+              "Low_cutoff_frequency" : freql, "Low_fall_off": low_fall_off,
+	      "High_cutoff_frequency" : freqh, "High_fall_off": high_fall_off}
+    return Processor.EMFourierFilter(e, params)
+    
+def filt_tano(e, freq, fall_off, value):
+    params = {"FilterType" : Processor.fourier_filter_types.TANH_HOMOMORPHIC,
+              "Cutoff_frequency" : freq, "Fall_off": fall_off,
+	      "Value_at_zero_frequency" : value}
+    return Processor.EMFourierFilter(e, params)
+    
