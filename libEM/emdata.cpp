@@ -1040,15 +1040,14 @@ EMData *EMData::do_fft_inplace()
 	}
 	size_t offset;
 	int nxreal;
-#if 0 // not at all tested
 	if (!is_fftpadded()) {
 		// need to extend the matrix along x
 		// meaning nx is the un-fftpadded size
 		offset = 2 - nx%2;
 		if (1 == offset) set_fftodd(true);
 		size_t bytes = (nx+offset)*ny*nz*sizeof(float);
-		realloc(rdata, bytes);
 		nx += offset;
+		set_size(nx, ny, nz);
 		nxreal = nx - offset;
 		// now need to relocate the data in rdata
 		float* srccol = rdata + nxreal*ny*nz - nxreal;
@@ -1064,12 +1063,9 @@ EMData *EMData::do_fft_inplace()
 		}
 		set_fftpad(true);
 	} else {
-#endif // 0
 		offset = is_fftodd() ? 1 : 2;
 		nxreal = nx - offset;
-#if 0 // part of above stuff that needs to be tested
 	}
-#endif // 0
 	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
 	done_data();
 	set_complex(true);
@@ -6245,6 +6241,55 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 		}
 	}
 	return ret;
+}
+
+void EMData::divkb2() {
+	const float alpha = 1.;
+	const float rrr = 1.;
+	const float v = 1.;
+	// sanity checks
+	if (1 != nz)
+		throw ImageDimensionException("Must have a 2D image");
+	if (nx != ny)
+		throw ImageDimensionException("Must have a square image");
+	MArray2D x = get_2dview(1,1);
+	int icent = int(nx/2) + 1;
+	float wkb0 = sinh(twopi*alpha*rrr*v)/(twopi*alpha*rrr*v);
+	for (int j = 1; j <= nx; j++) {
+		float ttt = float(abs(j - icent)) / rrr;
+		float wkbj;
+		if (0.0 == ttt) {
+			wkbj = 1.0;
+		} else if (ttt < alpha) {
+			float xx = sqrt(1.0 - pow((ttt/alpha), 2));
+			float wkbj = sinh(twopi*alpha*rrr*v*xx)
+					   / (twopi*alpha*rrr*v*xx)/wkb0;
+		} else if (ttt == alpha) {
+			wkbj = 1.0/wkb0;
+		} else {
+			float xx = sqrt(pow(ttt/alpha, 2) - 1.0f);
+			wkbj = sin(twopi*alpha*rrr*v*xx)
+				 / (twopi*alpha*rrr*v*xx)/wkb0;
+		}
+		for (int i = 1; i <=nx; i++) {
+			ttt = float(abs(i-icent))/rrr;
+			float wkbi;
+			if (0.0f == ttt) {
+				wkbi = 1.0;
+			} else if (ttt < alpha) {
+				float xx = sqrt(1.0 - pow(ttt/alpha, 2));
+				wkbi = sinh(twopi*alpha*rrr*v*xx)
+					 / (twopi*alpha*rrr*v*xx)/wkb0;
+			} else if (ttt == alpha) {
+				wkbi = 1.0f/wkb0;
+			} else {
+				float xx = sqrt(pow(ttt/alpha,2) - 1.0f);
+				wkbi = sin(twopi*alpha*rrr*v*xx)
+					 / (twopi*alpha*rrr*v*xx)/wkb0;
+			}
+			x[i][j] /= fabs(wkbi*wkbj);
+		}
+	}
 }
 
 /* vim: set ts=4 noet: */
