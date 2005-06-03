@@ -5,6 +5,7 @@
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
+import time
 import os
 import sys
 
@@ -60,7 +61,7 @@ for single particle analysis."""
 	shrink=image
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
-	# This confusing line insures the shrunken images has even dimensions
+	# This confusing line insures the shrunken images have even dimensions
 	# since odd FFTs haven't been fixed yet
 	if shrink.get_xsize()&1 or shrink.get_ysize()&1 :
 		shrink=shrink.get_clip(Region(0,0,(shrink.get_xsize()|1)^1,(shrink.get_ysize()|1)^1))
@@ -75,16 +76,15 @@ for single particle analysis."""
 	flt.process("eman1.xform.phaseorigin")
 	a=shrink.get_clip(Region(-filtrad*2,-filtrad*2,shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4))
 	a.process("eman1.mask.zeroedgefill")
-#	a.write_image("z0.hdf",0)
-#	flt.write_image("z0.hdf",1)
+#	a.write_image("q0.hdf",0)
+#	flt.write_image("q0.hdf",1)
 	a=a.convolute(flt)
-	a*=a.get_xsize()*a.get_ysize()
-#	a.write_image("z0.hdf",2)
+#	a.write_image("q0.hdf",2)
 	a=a.get_clip(Region(filtrad*2,filtrad*2,shrink.get_xsize(),shrink.get_ysize()))
-#	shrink.write_image("z1.hdf",0)
-#	a.write_image("z1.hdf",1)
+#	shrink.write_image("q1.hdf",0)
+#	a.write_image("q1.hdf",1)
 	shrink-=a
-#	shrink.write_image("z1.hdf",2)
+#	shrink.write_image("q1.hdf",2)
 	a=None
 	
 	shrink2=shrink.copy(0)
@@ -121,14 +121,14 @@ for single particle analysis."""
 		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
 		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT)
-		circle.write_image("z0a.hdf")
-		shrink2.write_image("z0b.hdf")
+#		circle.write_image("z0a.hdf")
+#		shrink2.write_image("z0b.hdf")
 		ccfsig=shrink2.calc_ccf(circle,fp_flag.CIRCULANT)
 		ccfmean.process("eman1.math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
 		ccfsig.process("eman1.math.sqrt")
-		shrink.write_image("z0.hdf")
-		ccfsig.write_image("z1.hdf")
+#		shrink.write_image("z0.hdf")
+#		ccfsig.write_image("z1.hdf")
 		
 		print "Locating possible particles"
 		xs=shrink.get_xsize()
@@ -138,13 +138,13 @@ for single particle analysis."""
 			j=i.get_clip(Region(-(xs-i.get_xsize())/2,-(ys-i.get_ysize())/2,xs,ys))
 #			j.write_image("0.%0d.hdf"%n)
 			ccfone=shrink.calc_ccf(j,fp_flag.CIRCULANT)
-			ccfone.write_image("a.%0d.hdf"%n)
+#			ccfone.write_image("a.%0d.hdf"%n)
 			ccfone/=ccfsig
-			ccfone.write_image("b.%0d.hdf"%n)
+#			ccfone.write_image("b.%0d.hdf"%n)
 			sig=float(ccfone.get_attr("sigma"))
 			ccfone.process("eman1.mask.onlypeaks",{"npeaks":0})
-			ccfone.write_image("c.%0d.hdf"%n)
-			pk=ccfone.calc_highest_locations(sig*4.0)
+#			ccfone.write_image("c.%0d.hdf"%n)
+			pk=ccfone.calc_highest_locations(sig*3.5)
 			for m,p in enumerate(pk):
 				pk[m]=(-p.value,n,p.x,p.y)
 			pks+=pk
@@ -161,7 +161,7 @@ for single particle analysis."""
 			if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : continue
 			for nn,ii in enumerate(pks[:n]):
 				if hypot(i[2]-ii[2],i[3]-ii[3])<bf*3/2 : break
-			else: goodpks.append((i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2))
+			else: goodpks.append([i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2])
 		
 		print "%d putative particles after local exclusion"%len(goodpks)
 		
@@ -171,11 +171,35 @@ for single particle analysis."""
 		goodpks2=[]
 		for n,i in enumerate(goodpks):
 			b=EMData()
-			b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			# read in the area where we think a particle exists
+			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			except: continue
 			b.process("eman1.normalize.edgemean")
 #			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Phase")
 			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Phase")
-			goodpks2.append((ba.get_attr("align_score"),i[2]-ba.get_attr("translational.dx"),i[3]-ba.get_attr("translational.dy")))
+			dx=ba.get_attr("translational.dx")
+			dy=ba.get_attr("translational.dy")
+			da=ba.get_attr("rotational")
+			i[2]+= cos(da)*dx+sin(da)*dy
+			i[3]+=-sin(da)*dx+cos(da)*dy
+			
+			# now we refine this by doing a second pass
+#			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+#			except: continue
+#			b.process("eman1.normalize.edgemean")
+#			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Phase")
+			
+#			refptcl[i[1]].write_image("at.hdf",-1)
+#			ba.write_image("at.hdf",-1)
+			
+#			dx=ba.get_attr("translational.dx")
+#			dy=ba.get_attr("translational.dy")
+#			da=ba.get_attr("rotational")
+#			i[2]+=cos(da)*dx +sin(da)*dy
+#			i[3]+=-sin(da)*dx+cos(da)*dy
+			
+			# now record the fixed up location
+			goodpks2.append((ba.get_attr("align_score"),i[2],i[3]))
 			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"))
 #			display([b,ba,refptcl[i[1]]])
 						
@@ -209,7 +233,17 @@ for single particle analysis."""
 			if i[0]>thr : break
 			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[1],i[2],options.box,options.box))		
 		out.close()
-		
+
+		# write boxed particles
+		if args[0][-3:]=="hdf" : outn=args[0][:-3]+"box.hdf"
+		else: outn=args[0][:-3]+"hdf"
+		for i in goodpks2:
+			if i[0]>thr : break
+			try: b.read_image(args[0],0,0,Region(i[1],i[2],options.box,options.box))
+			except: continue
+			b.write_image(outn,-1)
+			
+				
 		out=open("box.stats","w")
 		for i in goodpks2: out.write("%f\n"%i[0])
 		out.close()

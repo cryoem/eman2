@@ -502,7 +502,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  const stri
 	dot2 = this_copy2->cmp(cmp_name, tmp, cmp_params);
 
 	EMData *result = 0;
-	if (dot1 > dot2) {
+	if (dot1 < dot2) {			// assumes smaller is better, won't work with Dot !!!
 		this_copy->set_attr("align_score", dot1);
 		delete this_copy2;
 		this_copy2 = 0;
@@ -568,7 +568,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  const 
 	float dot2 = this_copy2->cmp(cmp_name, with, params);
 
 	EMData *result = 0;
-	if (dot1 > dot2) {
+	if (dot1 < dot2) {
 		this_copy->set_attr("align_score", dot1);
 		delete this_copy2;
 		this_copy2 = 0;
@@ -775,7 +775,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  const string&) 
 		result = this_copy;
 	}
 	else {
-		if (dot1 > dot2) {
+		if (dot1 < dot2) {
 			this_copy->set_flipped(0);
 			delete this_copy2;
 			this_copy2 = 0;
@@ -855,7 +855,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 
 	EMData *result = 0;
 
-	if (dot1 > dot2) {
+	if (dot1 < dot2) {
 		this_copy->set_attr("flipped",0);
 		this_copy->set_attr("align_score",dot1);
 		if (!flip) {
