@@ -16,18 +16,18 @@ namespace  {
 
 struct EMAN_Averager_Wrapper: EMAN::Averager
 {
-    EMAN_Averager_Wrapper(PyObject* self_, const EMAN::Averager& p0):
-        EMAN::Averager(p0), self(self_) {}
+    EMAN_Averager_Wrapper(PyObject* py_self_, const EMAN::Averager& p0):
+        EMAN::Averager(p0), py_self(py_self_) {}
 
-    EMAN_Averager_Wrapper(PyObject* self_):
-        EMAN::Averager(), self(self_) {}
+    EMAN_Averager_Wrapper(PyObject* py_self_):
+        EMAN::Averager(), py_self(py_self_) {}
 
     void add_image(EMAN::EMData* p0) {
-        call_method< void >(self, "add_image", p0);
+        call_method< void >(py_self, "add_image", p0);
     }
 
     void add_image_list(const std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        call_method< void >(self, "add_image_list", p0);
+        call_method< void >(py_self, "add_image_list", p0);
     }
 
     void default_add_image_list(const std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
@@ -35,19 +35,19 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
     }
 
     EMAN::EMData* finish() {
-        return call_method< EMAN::EMData* >(self, "finish");
+        return call_method< EMAN::EMData* >(py_self, "finish");
     }
 
     std::string get_name() const {
-        return call_method< std::string >(self, "get_name");
+        return call_method< std::string >(py_self, "get_name");
     }
 
     std::string get_desc() const {
-        return call_method< std::string >(self, "get_desc");
+        return call_method< std::string >(py_self, "get_desc");
     }
 
     void set_params(const EMAN::Dict& p0) {
-        call_method< void >(self, "set_params", p0);
+        call_method< void >(py_self, "set_params", p0);
     }
 
     void default_set_params(const EMAN::Dict& p0) {
@@ -55,14 +55,14 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
     }
 
     EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(self, "get_param_types");
+        return call_method< EMAN::TypeDict >(py_self, "get_param_types");
     }
 
     EMAN::TypeDict default_get_param_types() const {
         return EMAN::Averager::get_param_types();
     }
 
-    PyObject* self;
+    PyObject* py_self;
 };
 
 

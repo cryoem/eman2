@@ -16,6 +16,12 @@ namespace  {
 
 struct EMAN_Projector_Wrapper: EMAN::Projector
 {
+    EMAN_Projector_Wrapper(PyObject* py_self_, const EMAN::Projector& p0):
+        EMAN::Projector(p0), py_self(py_self_) {}
+
+    EMAN_Projector_Wrapper(PyObject* py_self_):
+        EMAN::Projector(), py_self(py_self_) {}
+
     EMAN::EMData* project3d(EMAN::EMData* p0) const {
         return call_method< EMAN::EMData* >(py_self, "project3d", p0);
     }
@@ -55,7 +61,7 @@ struct EMAN_Projector_Wrapper: EMAN::Projector
 BOOST_PYTHON_MODULE(libpyProjector2)
 {
     def("dump_projectors", &EMAN::dump_projectors);
-    class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("__Projector", no_init)
+    class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("__Projector", init<  >())
         .def("project3d", pure_virtual(&EMAN::Projector::project3d), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Projector::get_name))
         .def("get_desc", pure_virtual(&EMAN::Projector::get_desc))

@@ -96,7 +96,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_4
 BOOST_PYTHON_MODULE(libpyEMData2)
 {
     scope* EMAN_EMData_scope = new scope(
-    class_< EMAN::EMData>("EMData", init<  >())
+    class_< EMAN::EMData >("EMData", init<  >())
+        .def(init< const EMAN::EMData& >())
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7())
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
@@ -253,6 +254,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5())
         .def("onelinenn", &EMAN::EMData::onelinenn)
         .def("nn", &EMAN::EMData::nn)
+        .def("divkb2", &EMAN::EMData::divkb2)
         .def("symplane0", &EMAN::EMData::symplane0)
         .def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >())
         .def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, EMAN_EMData_rot_scale_trans2D_overloads_4_5()[ return_value_policy< manage_new_object >() ])

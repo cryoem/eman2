@@ -16,6 +16,12 @@ namespace  {
 
 struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 {
+    EMAN_Reconstructor_Wrapper(PyObject* py_self_, const EMAN::Reconstructor& p0):
+        EMAN::Reconstructor(p0), py_self(py_self_) {}
+
+    EMAN_Reconstructor_Wrapper(PyObject* py_self_):
+        EMAN::Reconstructor(), py_self(py_self_) {}
+
     void setup() {
         call_method< void >(py_self, "setup");
     }
@@ -67,7 +73,7 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 BOOST_PYTHON_MODULE(libpyReconstructor2)
 {
     def("dump_reconstructors", &EMAN::dump_reconstructors);
-    class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", no_init)
+    class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
         .def("insert_slice", pure_virtual(&EMAN::Reconstructor::insert_slice))
         .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())

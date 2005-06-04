@@ -24,10 +24,11 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTransform2)
 {
-    class_< EMAN::Vec3f, boost::noncopyable >("Vec3f", init<  >())
+    class_< EMAN::Vec3f >("Vec3f", init<  >())
         .def(init< float, float, optional< float > >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
         .def(init< const EMAN::Vec3i& >())
+        .def(init< const EMAN::Vec3f& >())
         .def("normalize", &EMAN::Vec3f::normalize)
         .def("length", &EMAN::Vec3f::length)
         .def("dot", &EMAN::Vec3f::dot)
@@ -65,9 +66,10 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def( self /= other< float >() )
     ;
 
-    class_< EMAN::Vec3i, boost::noncopyable >("Vec3i", init<  >())
+    class_< EMAN::Vec3i >("Vec3i", init<  >())
         .def(init< int, int, optional< int > >())
         .def(init< const std::vector<int,std::allocator<int> >& >())
+        .def(init< const EMAN::Vec3i& >())
         .def("normalize", &EMAN::Vec3i::normalize)
         .def("length", &EMAN::Vec3i::length)
         .def("dot", &EMAN::Vec3i::dot)
@@ -101,7 +103,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .def( self /= other< int >() )
     ;
 
-    class_< EMAN::Quaternion, boost::noncopyable >("Quaternion", init<  >())
+    class_< EMAN::Quaternion >("Quaternion", init<  >())
+        .def(init< const EMAN::Quaternion& >())
         .def(init< float, float, float, float >())
         .def(init< float, const EMAN::Vec3f& >())
         .def(init< const EMAN::Vec3f&, float >())
@@ -138,7 +141,8 @@ BOOST_PYTHON_MODULE(libpyTransform2)
     ;
 
     scope* EMAN_Transform3D_scope = new scope(
-    class_< EMAN::Transform3D, boost::noncopyable >("Transform3D", init<  >())
+    class_< EMAN::Transform3D >("Transform3D", init<  >())
+        .def(init< const EMAN::Transform3D& >())
         .def(init< float, float, float >())
         .def(init< const EMAN::Vec3f&, float, float, float >())
         .def(init< EMAN::Transform3D::EulerType, float, float, float >())
