@@ -170,6 +170,7 @@ class TestUtils(unittest.TestCase):
         
     def test_get_time_label(self):
         s = Util.get_time_label()
+        print s
         self.assertEqual(len(s), 15)
         
         

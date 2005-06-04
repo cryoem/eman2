@@ -279,7 +279,8 @@ class TestEMData(unittest.TestCase):
 
         os.unlink(infile)
 
-    def test_get_attr_dict(self):
+    # need some fix to remove file dependency
+    def no_test_get_attr_dict(self):
         e = EMData()
         imgfile = "tablet.mrc"
         e.read_image(TestUtil.get_debug_image(imgfile))
