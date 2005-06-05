@@ -84,7 +84,7 @@ namespace EMAN
 		static bool sstrncmp(const char *s1, const char *s2);
 
 		/** Get a string format of an integer, e.g. 123 will be "123".
-		 * @param n [in] The input integer.
+		 * @param[in] n The input integer.
 		 * @return The string format of the given integer.
 		 */
 		static string int2str(int n);
@@ -94,7 +94,7 @@ namespace EMAN
 		 * line. If it is the last line, move to the end of the
 		 * string.
 		 *
-		 * @param str [inout] A multiple-line string.
+		 * @param[in,out] str  A multiple-line string.
 		 * @return A single line. 
 		 */
 		static string get_line_from_string(char **str);
@@ -104,9 +104,9 @@ namespace EMAN
 		 * where 'str' is "XYZ=1.1"; 'float_var' is "XYZ=";
 		 * 'p_val' points to float number 1.1.
 		 *
-		 * @param str [in] A string like "XYZ=1.1";
-		 * @param float_var [in] The variable name "XYZ=".
-		 * @param p_val [out] The pointer to the float number.
+		 * @param[in] str A string like "XYZ=1.1";
+		 * @param[in] float_var The variable name "XYZ=".
+		 * @param[out] p_val The pointer to the float number.
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
@@ -118,10 +118,10 @@ namespace EMAN
 		 * where 'str' is "XYZ=1.1,1.2"; 'float_var' is "XYZ=";
 		 * 'p_v1' points to  1.1; 'p_v2' points to  1.2.
 		 *
-		 * @param str [in] A string like "XYZ=1.1,1.2";
-		 * @param float_var [in] The variable name "XYZ=".
-		 * @param p_v1 [out] The pointer to the first float.
-		 * @param p_v2 [out] The pointer to the second float.
+		 * @param[in] str A string like "XYZ=1.1,1.2";
+		 * @param[in] float_var The variable name "XYZ=".
+		 * @param[out] p_v1 The pointer to the first float.
+		 * @param[out] p_v2 The pointer to the second float.
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
@@ -138,11 +138,11 @@ namespace EMAN
 		 * If the string is "XYZ", then 'str' is "XYZ"; 'float_var' is "XYZ".
 		 * 'p_nvalues' points to 0. 'p_v1' and 'p_v2' unchanged.
 		 * 
-		 * @param str [in] A string like "XYZ=1.1,1.2" or "XYZ".
-		 * @param float_var [in] The variable name "XYZ".
-		 * @param p_nvalues [out] Number of values in the string.
-		 * @param p_v1 [out] The pointer to the first float, if any.
-		 * @param p_v2 [out] The pointer to the second float, if any.
+		 * @param[in] str A string like "XYZ=1.1,1.2" or "XYZ".
+		 * @param[in] float_var The variable name "XYZ".
+		 * @param[out] p_nvalues Number of values in the string.
+		 * @param[out] p_v1 The pointer to the first float, if any.
+		 * @param[out] p_v2 The pointer to the second float, if any.
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
@@ -154,9 +154,9 @@ namespace EMAN
 		 * where 'str' is "XYZ=1"; 'int_var' is "XYZ=";
 		 * 'p_val' points to float number 1.
 		 *
-		 * @param str [in] A string like "XYZ=1";
-		 * @param int_var [in] The variable name "XYZ=".
-		 * @param p_val [out] The pointer to the int number.
+		 * @param[in] str A string like "XYZ=1";
+		 * @param[in] int_var The variable name "XYZ=".
+		 * @param[out] p_val The pointer to the int number.
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
@@ -167,10 +167,10 @@ namespace EMAN
 		 * where 'str' is "XYZ=1,2"; 'int_var' is "XYZ=";
 		 * 'p_val' points to float number 1.
 		 *
-		 * @param str [in] A string like "XYZ=1";
-		 * @param int_var [in] The variable name "XYZ=".
-		 * @param p_v1 [out] The pointer to the first int.
-		 * @param p_v2 [out] The pointer to the second int.
+		 * @param[in] str A string like "XYZ=1";
+		 * @param[in] int_var The variable name "XYZ=".
+		 * @param[out] p_v1 The pointer to the first int.
+		 * @param[out] p_v2 The pointer to the second int.
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
@@ -187,11 +187,11 @@ namespace EMAN
 		 * If the string is "XYZ", then 'str' is "XYZ"; 'int_var' is "XYZ".
 		 * 'p_nvalues' points to 0. 'p_v1' and 'p_v2' unchanged.
 		 * 
-		 * @param str [in] A string like "XYZ=1,2" or "XYZ".
-		 * @param int_var [in] The variable name "XYZ".
-		 * @param p_nvalues [out] Number of values in the string.
-		 * @param p_v1 [out] The pointer to the first int, if any.
-		 * @param p_v2 [out] The pointer to the second int, if any.
+		 * @param[in] str A string like "XYZ=1,2" or "XYZ".
+		 * @param[in] int_var The variable name "XYZ".
+		 * @param[out] p_nvalues Number of values in the string.
+		 * @param[out] p_v1 The pointer to the first int, if any.
+		 * @param[out] p_v2 The pointer to the second int, if any.
 		 * @return True if the extraction succeeds; False if
 		 *         extraction fails.
 		 */
@@ -203,8 +203,8 @@ namespace EMAN
 		 * not changed. If the old filename has no extension, add the
 		 * new extension to it.
 		 *
-		 * @param old_filename [in] Old filename.
-		 * @param new_ext  [in] The new extension. It shouldn't have
+		 * @param[in] old_filename Old filename.
+		 * @param[in] new_ext  The new extension. It shouldn't have
 		 * ".". e.g., for MRC file, it will be "mrc", not ".mrc".
 		 * @return The new filename with the new extension.
 		 */
@@ -213,14 +213,14 @@ namespace EMAN
 
 		/** Remove a filename's extension and return the new filename.
 		 *
-		 * @param filename [in] The old filename whose extension is
+		 * @param[in] filename The old filename whose extension is
 		 * going to be removed.
 		 * @return The new filename without extension.
 		 */
 		static string remove_filename_ext(const string& filename);
 		
 		/** Get a filename's extension.
-		 * @param filename [in] A given filename.
+		 * @param[in] filename A given filename.
 		 * @return The filename's extension, or empty string if the
 		 * file has no extension.
 		 */
@@ -229,20 +229,20 @@ namespace EMAN
 		/** Get a filename's basename. For example, the basename of
 		 * "hello.c" is still "hello.c"; The basename of
 		 * "/tmp/abc/hello.c" is "hello.c".
-		 * @param filename The given filename, full path or relative path.
+		 * @param[in] filename The given filename, full path or relative path.
 		 * @return The basename of the filename.
 		 */
 		static string sbasename(const string & filename);
 		
 		/** calculate the least square fit value.
 		 *
-		 * @param nitems [in] Number of items in array data_x and data_y.
-		 * @param data_x [in] x data array.
-		 * @param data_y [in] y data array. It should have the same
+		 * @param[in] nitems Number of items in array data_x and data_y.
+		 * @param[in] data_x x data array.
+		 * @param[in] data_y y data array. It should have the same
 		 *        number of items to data_x.
-		 * @param p_slope [out] pointer to the result slope.
-		 * @param p_intercept [out] pointer to the result intercept.
-		 * @param ignore_zero [in] If true, ignore data where either x
+		 * @param[out] p_slope pointer to the result slope.
+		 * @param[out] p_intercept pointer to the result intercept.
+		 * @param[in] ignore_zero If true, ignore data where either x
 		 *        or y is 0. If false, includes all 0.
 		 */
 		static void calc_least_square_fit(size_t nitems, const float *data_x,
@@ -254,9 +254,9 @@ namespace EMAN
 		 * array and y array. The x, y arrays must have the same 
 		 * number of items.
 		 *
-		 * @param x_array [in] The x array.
-		 * @param y_array [in] The y array.
-		 * @param filename [in] The output filename.
+		 * @param[in] x_array The x array.
+		 * @param[in] y_array The y array.
+		 * @param[in] filename The output filename.
 		 */
 		 
 		static void save_data(const vector < float >&x_array, 
@@ -266,10 +266,10 @@ namespace EMAN
 		/** Save x, y data into a file. Each line of the file have the
 		 * format "x1TABy1", where x1 = x0 + dx*i; y1 = y_array[i].
 		 *
-		 * @param x0 [in] The starting point of x.
-		 * @param dx [in] delta x. The increase step of x data.
-		 * @param y_array [in] The y data array.
-		 * @param filename [in] The output filename.
+		 * @param[in] x0 The starting point of x.
+		 * @param[in] dx delta x. The increase step of x data.
+		 * @param[in] y_array The y data array.
+		 * @param[in] filename The output filename.
 		 */
 		static void save_data(float x0, float dx,
 							  const vector < float >&y_array,
@@ -278,46 +278,46 @@ namespace EMAN
 		/** Save x, y data into a file. Each line of the file have the
 		 * format "x1TABy1", where x1 = x0 + dx*i; y1 = y_array[i].
 		 *
-		 * @param x0 [in] The starting point of x.
-		 * @param dx [in] delta x. The increase step of x data.
-		 * @param y_array [in] The y data array.
-		 * @param array_size [in] The y data array size.
-		 * @param filename [in] The output filename.
+		 * @param[in] x0 The starting point of x.
+		 * @param[in] dx delta x. The increase step of x data.
+		 * @param[in] y_array The y data array.
+		 * @param[in] array_size The y data array size.
+		 * @param[in] filename The output filename.
 		 */
 		static void save_data(float x0, float dx, float *y_array, 
 							  size_t array_size, const string & filename);
 
 		/** Get a float random number between low and high.
-		 * @param low [in] The lower bound of the random number.
-		 * @param high [in] The upper bound of the random number.
+		 * @param[in] low The lower bound of the random number.
+		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
 		 */
 		static float get_frand(int low, int high);
 		
 		/** Get a float random number between low and high.
-		 * @param low [in] The lower bound of the random number.
-		 * @param high [in] The upper bound of the random number.
+		 * @param[in] low The lower bound of the random number.
+		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
 		 */
 		static float get_frand(float low, float high);
 
 		/** Get a float random number between low and high.
-		 * @param low [in] The lower bound of the random number.
-		 * @param high [in] The upper bound of the random number.
+		 * @param[in] low The lower bound of the random number.
+		 * @param[in] high The upper bound of the random number.
 		 * @return The random number between low and high.
 		 */
 		static float get_frand(double low, double high);
 
 		/** Get a Gaussian random number.
 		 *
-		 * @param mean [in] The gaussian mean
-		 * @param sigma [in] The gaussian sigma
+		 * @param[in] mean The gaussian mean
+		 * @param[in] sigma The gaussian sigma
 		 * @return the gaussian random number.
 		 */
 		static float get_gauss_rand(float mean, float sigma);
 
 		/** Get ceiling round of a float number x.
-		 * @param x [in] Given float number.
+		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.
 		 */
 		static inline int round(float x)
@@ -329,7 +329,7 @@ namespace EMAN
 		}
 
 		/** Get ceiling round of a float number x.
-		 * @param x [in] Given float number.
+		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.
 		 */
 	    static inline int round(double x)
@@ -341,12 +341,12 @@ namespace EMAN
 		}
 
 		/** Calculate bilinear interpolation.
-		 * @param p1 [in] The first number. corresponding to (x0,y0).
-		 * @param p2 [in] The second number. corresponding to (x1,y0).
-		 * @param p3 [in] The third number. corresponding to (x1,y1).
-		 * @param p4 [in] The fourth number. corresponding to (x0,y1).
-		 * @param t [in] t
-		 * @param u [in] u
+		 * @param[in] p1 The first number. corresponding to (x0,y0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0).
+		 * @param[in] p3 The third number. corresponding to (x1,y1).
+		 * @param[in] p4 The fourth number. corresponding to (x0,y1).
+		 * @param[in]  t t
+		 * @param[in]  u u
 		 * @return The bilinear interpolation value.
 		 */
 		static inline float bilinear_interpolate(float p1, float p2, float p3,
@@ -357,17 +357,17 @@ namespace EMAN
 
 		/** Calculate trilinear interpolation.
 		 *
-		 * @param p1 [in] The first number. corresponding to (x0,y0,z0).
-		 * @param p2 [in] The second number. corresponding to (x1,y0,z0).
-		 * @param p3 [in] The third number. corresponding to (x0,y1, z0).
-		 * @param p4 [in] The fourth number. corresponding to (x1,y1,z0).
-		 * @param p5 [in] The fifth number. corresponding to (x0,y0,z1).
-		 * @param p6 [in] The sixth number. corresponding to (x1,y0,z1).
-		 * @param p7 [in] The seventh number. corresponding to (x0,y1,z1).
-		 * @param p8 [in] The eighth number. corresponding to (x1,y1,z1).
-		 * @param t [in] t
-		 * @param u [in] u
-		 * @param v [in] v
+		 * @param[in] p1 The first number. corresponding to (x0,y0,z0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0,z0).
+		 * @param[in] p3 The third number. corresponding to (x0,y1, z0).
+		 * @param[in] p4 The fourth number. corresponding to (x1,y1,z0).
+		 * @param[in] p5 The fifth number. corresponding to (x0,y0,z1).
+		 * @param[in] p6 The sixth number. corresponding to (x1,y0,z1).
+		 * @param[in] p7 The seventh number. corresponding to (x0,y1,z1).
+		 * @param[in] p8 The eighth number. corresponding to (x1,y1,z1).
+		 * @param[in] t t
+		 * @param[in] u u
+		 * @param[in] v v
 		 * @return The trilinear interpolation value.
 		 */
 		static inline float trilinear_interpolate(float p1, float p2, float p3,
@@ -382,10 +382,10 @@ namespace EMAN
 		}
 
 		/** Find the maximum value and (optional) its index in an array.
-		 * @param data [in] data array.
-		 * @param nitems [in] number of items in the data array.
-		 * @param p_max_val [out] pointer to the maximum value.
-		 * @param p_max_index [out] pointer to index of the maximum value.
+		 * @param[in] data data array.
+		 * @param[in] nitems number of items in the data array.
+		 * @param[out] p_max_val pointer to the maximum value.
+		 * @param[out] p_max_index pointer to index of the maximum value.
 		 */
 		static void find_max(const float *data, size_t nitems,
 							 float *p_max_val, int *p_max_index = 0);
@@ -393,12 +393,12 @@ namespace EMAN
 		/** Find the maximum value and (optional) its index, minimum
 		 * value and (optional) its index in an array.
 		 *
-		 * @param data [in] data array.
-		 * @param nitems [in] number of items in the data array.
-		 * @param p_max_val [out]  pointer to the maximum value.
-		 * @param p_min_val [out]  pointer to the minimum value.
-		 * @param p_max_index [out] pointer to index of the maximum value.
-		 * @param p_min_index [out] pointer to index of the minimum value.
+		 * @param[in] data data array.
+		 * @param[in] nitems number of items in the data array.
+		 * @param[out] p_max_val  pointer to the maximum value.
+		 * @param[out] p_min_val  pointer to the minimum value.
+		 * @param[out] p_max_index pointer to index of the maximum value.
+		 * @param[out] p_min_index pointer to index of the minimum value.
 		 */
 		static void find_min_and_max(const float *data, size_t nitems,
 									 float *p_max_val, float *p_min_val,
@@ -407,13 +407,13 @@ namespace EMAN
 		/** Search the best FFT size with good primes. It supports
 		 * FFT size up to 4096 now.
 		 *
-		 * @param low [in] low size the search starts with.
+		 * @param[in] low low size the search starts with.
 		 * @return The best FFT size.
 		 */
 		static int calc_best_fft_size(int low);
 
 		/** Calculate a number's square.
-		 * @param n [in] Given number.
+		 * @param[in] n Given number.
 		 * @return (n*n).
 		 */
 		static int square(int n)
@@ -422,7 +422,7 @@ namespace EMAN
 		}
 		
 		/** Calculate a number's square.
-		 * @param x [in] Given number.
+		 * @param[in] x Given number.
 		 * @return (x*x).
 		 */
 		static float square(float x)
@@ -431,7 +431,7 @@ namespace EMAN
 		}
 
 		/** Calculate a number's square.
-		 * @param x [in] Given number.
+		 * @param[in] x Given number.
 		 * @return (x*x).
 		 */
 		static float square(double x)
@@ -440,8 +440,8 @@ namespace EMAN
 		}
 
 		/** Calcuate (x*x + y*y).
-		 * @param x [in] The first number.
-		 * @param y [in] The second number.
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
 		 * @return (x*x + y*y).
 		 */
 		static float square_sum(float x, float y)
@@ -450,9 +450,9 @@ namespace EMAN
 		}
 
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
-		 * @param x [in] The first number.
-		 * @param y [in] The second number.
-		 * @param z [in] The third number.
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @param[in] z The third number.
 		 * @return sqrt(x*x + y*y + z*z);
 		 */
 		static inline float hypot3(int x, int y, int z)
@@ -461,9 +461,9 @@ namespace EMAN
 		}
 		
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
-		 * @param x [in] The first number.
-		 * @param y [in] The second number.
-		 * @param z [in] The third number.
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @param[in] z The third number.
 		 * @return sqrt(x*x + y*y + z*z);
 		 */
 		static inline float hypot3(float x, float y, float z)
@@ -472,9 +472,9 @@ namespace EMAN
 		}
 		
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
-		 * @param x [in] The first number.
-		 * @param y [in] The second number.
-		 * @param z [in] The third number.
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @param[in] z The third number.
 		 * @return sqrt(x*x + y*y + z*z);
 		 */
 		static inline float hypot3(double x, double y, double z)
@@ -485,7 +485,7 @@ namespace EMAN
 		/** A fast way to calculate a floor, which is largest integral
 		 * value not greater than argument.
 		 *
-		 * @param x [in] A float point number.
+		 * @param[in] x A float point number.
 		 * @return floor of x.
 		 */
 		static inline int fast_floor(float x)
@@ -497,11 +497,11 @@ namespace EMAN
 		}
 
 		/** Calculate Gaussian value.
-		 * @param a [in] 
-		 * @param dx [in] 
-		 * @param dy [in] 
-		 * @param dz [in] 
-		 * @param d [in]
+		 * @param[in] a 
+		 * @param[in] dx 
+		 * @param[in] dy 
+		 * @param[in] dz 
+		 * @param[in] d
 		 * @return The Gaussian value.
 		 */
 		static inline float agauss(float a, float dx, float dy, float dz, float d)
@@ -510,8 +510,8 @@ namespace EMAN
 		}
 
 		/** Get the minimum of 2 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
 		 * @return The minimum of 2 numbers.
 		 */
 		static inline int get_min(int f1, int f2)
@@ -520,9 +520,9 @@ namespace EMAN
 		}
 		
 		/** Get the minimum of 3 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
-		 * @param f3 [in] The third number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
+		 * @param[in] f3 The third number.
 		 * @return The minimum of 3 numbers.
 		 */
 		static inline int get_min(int f1, int f2, int f3)
@@ -537,8 +537,8 @@ namespace EMAN
 		}
 
 		/** Get the minimum of 2 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
 		 * @return The minimum of 2 numbers.
 		 */
 		static inline float get_min(float f1, float f2)
@@ -547,9 +547,9 @@ namespace EMAN
 		}
 		
 		/** Get the minimum of 3 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
-		 * @param f3 [in] The third number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
+		 * @param[in] f3 The third number.
 		 * @return The minimum of 3 numbers.
 		 */
 		static inline float get_min(float f1, float f2, float f3)
@@ -565,10 +565,10 @@ namespace EMAN
 
 		
 		/** Get the minimum of 4 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
-		 * @param f3 [in] The third number.
-		 * @param f4 [in] The fourth number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
+		 * @param[in] f3 The third number.
+		 * @param[in] f4 The fourth number.
 		 * @return The minimum of 4 numbers.
 		 */
 		static inline float get_min(float f1, float f2, float f3, float f4)
@@ -587,8 +587,8 @@ namespace EMAN
 		}
 		
 		/** Get the maximum of 2 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
 		 * @return The maximum of 2 numbers.
 		 */
 		static inline float get_max(float f1, float f2)
@@ -597,9 +597,9 @@ namespace EMAN
 		}
 		
 		/** Get the maximum of 3 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
-		 * @param f3 [in] The third number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
+		 * @param[in] f3 The third number.
 		 * @return The maximum of 3 numbers.
 		 */
 		static inline float get_max(float f1, float f2, float f3)
@@ -614,10 +614,10 @@ namespace EMAN
 		}
 		
 		/** Get the maximum of 4 numbers.
-		 * @param f1 [in] The first number.
-		 * @param f2 [in] The second number.
-		 * @param f3 [in] The third number.
-		 * @param f4 [in] The fourth number.
+		 * @param[in] f1 The first number.
+		 * @param[in] f2 The second number.
+		 * @param[in] f3 The third number.
+		 * @param[in] f4 The fourth number.
 		 * @return The maximum of 4 numbers.
 		 */
 		static inline float get_max(float f1, float f2, float f3, float f4)
@@ -638,8 +638,8 @@ namespace EMAN
 		/** Calculate the difference of 2 angles and makes the
 		 * equivalent result to be less than Pi.
 		 *
-		 * @param x [in] The first angle.
-		 * @param y [in] The second angle.
+		 * @param[in] x The first angle.
+		 * @param[in] y The second angle.
 		 * @return The difference of 2 angles.
 		 */
 		static inline float angle_sub_2pi(float x, float y)
@@ -655,8 +655,8 @@ namespace EMAN
 		/** Calculate the difference of 2 angles and makes the
 		 * equivalent result to be less than Pi/2.
 		 *
-		 * @param x [in] The first angle.
-		 * @param y [in] The second angle.
+		 * @param[in] x The first angle.
+		 * @param[in] y The second angle.
 		 * @return The difference of 2 angles.
 		 */
 		static inline float angle_sub_pi(float x, float y)
@@ -671,7 +671,7 @@ namespace EMAN
 		/** Check whether a number is a good float. A number is a good
 		 * float if it is not abnormal zero, and not inf, -inf or NaN
 		 *
-		 * @param p_f [in] Pointer to the given float number.
+		 * @param[in] p_f Pointer to the given float number.
 		 * @return 1 if it is a good float; 0 if it's not good float.
 		 */
 		static inline int goodf(const float *p_f)
@@ -692,8 +692,8 @@ namespace EMAN
 		/** Set program logging level through command line option "-v N",
 		 * where N is the level. 
 		 *
-		 * @param argc [in] Number of arguments.
-		 * @param argv [in] Argument arrays.		 
+		 * @param[in] argc Number of arguments.
+		 * @param[in] argv Argument arrays.		 
 		 */
 		static void set_log_level(int argc, char *argv[]);
 		
@@ -703,8 +703,8 @@ namespace EMAN
 		 *
 		 * It is exactly copysign() on non-Windows system.		 
 		 *
-		 * @param a [in] The first number.
-		 * @param b [in] The second number.
+		 * @param[in] a The first number.
+		 * @param[in] b The second number.
 		 * @return Copy sign of a number.
 		 */
 		static inline float eman_copysign(float a, float b)
@@ -729,7 +729,7 @@ namespace EMAN
 		 * The erfc() function returns the complementary error function of x, that
 		 * is 1.0 - erf(x).
 		 *
-		 * @param x [in] A float number.
+		 * @param[in] x A float number.
 		 * @return The complementary error function of x.
 		 */
 		static inline float eman_erfc(float x)
@@ -781,8 +781,8 @@ namespace EMAN
 		 * vals.push_back(10); vals.push_back(3);
 		 * string newstr = EMAN::Util::parse_spider_fname(str1, vals);
 		 *
-		 * @param s [in] Spider filename string to be parsed.
-		 * @param fieldvals [in] Integer values to place into the fields. 
+		 * @param[in] s Spider filename string to be parsed.
+		 * @param[in] fieldvals Integer values to place into the fields. 
 		 *
 		 * @return Parsed filename.
 		 */
