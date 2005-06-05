@@ -63,36 +63,10 @@ C++ code. Read your new source and fix the following possible errors:</li>
     </ol>
   </ol>
   <p> </p>
-  <><big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
-  <>Use JavaDoc style: <><br>
-  <br>
-/** Brief description which ends at this dot. Details follow<br>
-* here.<br>
-*/<br>
-class Test<br>
-{<br>
-public: <br>
-/** The constructor's brief description in one line.<br>
-* A more elaborate description of the constructor.<br>
-*/<br>
-Test();<br>
-  <br>
-/** do some test.<br>
-* @author Liwei Peng &lt;lpeng@bcm.tmc.edu&gt;<br>
-* @date 1/20/2005<span style="font-family: monospace;"></span></><><span
- style="font-family: monospace;"></span><br>
-* @param low the low threshold.<br>
-* @param high the high threshold.<br>
-* @return 0 if do_test succeeds; 1 if do_test fails.</></><br>
-  <><> */<br>
-int do_test(float low, float high);<br>
-}<br>
-  </></></><li><br>
+  <li> <big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
   </li>
-  <li>
-    <ul>
-    </ul>
-  </li>
+Use <b>Doxygen</b> JavaDoc style: <br>
+  <pre>/** Brief description which ends at this dot. Details follow here.<br> */<br>class Test<br>{<br>public:<br>	/** The constructor's brief description in one line.<br>	 * A more elaborate description of the constructor.<br>	 */<br>	Test();<br><br>	/** do some test.<br>	 * @author Liwei Peng &lt;lpeng@bcm.tmc.edu&gt;<br>	 * @date 1/20/2005<br>	 * @param low the low threshold.<br>	 * @param high the high threshold.<br>	 * @return 0 if do_test succeeds; 1 if do_test fails.<br>	 */<br>	int do_test(float low, float high);<br><br>	/** Calculate the sum of an array.<br>	 * @param[in] data Data array<br>	 * @param[in] nitems Number of items in the array.<br>	 * @param[out] sum The sum of the array.<br>	 */<br>	void calc_sum(int[] data, int nitems, int *sum);<br>	<br>}<br></pre>
   <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Samples</big><br>
     <ol>
       <li> <a href="./html/emdata_8h-source.html">emdata.h </a> </li>
@@ -102,12 +76,15 @@ int do_test(float low, float high);<br>
   <div style="margin-left: 40px;"><br>
   <br>
   </div>
-  <li>References</li>
+  <li style="color: rgb(51, 102, 255); font-weight: bold;"><big>References</big></li>
 </ol>
-<br>
+<ul>
+  <li>Doxygen: <a href="http://www.stack.nl/%7Edimitri/doxygen/">http://www.stack.nl/~dimitri/doxygen/</a><br>
+  </li>
+</ul>
 <br>
 <hr style="width: 100%; height: 2px;">Last modified on <big><span
- style="font-weight: bold;">11/27/2004</span></big> by <big><span
+ style="font-weight: bold;">6/4/2004</span></big> by <big><span
  style="font-weight: bold;">Liwei Peng</span></big> (lpeng@bcm.tmc.edu)<br>
 <br>
 <ol>

@@ -20,8 +20,8 @@ Where is the documentation
     1) The basic documentation. It is under 'doc' directory.
     
     2) The code-based documentation.
-       EMAN2 use Doxygen to maintain its code-embedded documentations. To
-       generate the Doxygen-based documentation, run:
+       EMAN2 uses Doxygen (ver 1.4.3+ prefered) to maintain its code-embedded 
+       documentations. To generate the Doxygen-based documentation, run:
          % sh makedoc.sh
 
 What's the coding style of EMAN2
