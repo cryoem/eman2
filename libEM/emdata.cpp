@@ -877,10 +877,12 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	size_t bytes = nx*sizeof(float);
 	MArray3D dest = newimg->get_3dview();
 	MArray3D src = this->get_3dview();
-	int start = (nxpad - nx)/2 + nx%2;
+	int xstart = (nx != 1) ? (nxpad - nx)/2 + nx%2 : 0;
+	int ystart = (ny != 1) ? (nypad - ny)/2 + ny%2 : 0;
+	int zstart = (nz != 1) ? (nzpad - nz)/2 + nz%2 : 0;
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
-			memcpy(&dest[start][iy+start][iz], &src[0][iy][iz], bytes);
+			memcpy(&dest[xstart][iy+ystart][iz+zstart], &src[0][iy][iz], bytes);
 		}
 	}
 	newimg->done_data();
