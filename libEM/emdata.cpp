@@ -3995,16 +3995,19 @@ void EMData::median_shrink(int shrink_factor)
 	EXITFUNC;
 }
 
+// NOTE : x axis is from 0 to 0.5  (Nyquist), and thus properly handles non-square images
 void EMData::apply_radial_func(float x0, float step, vector < float >array, bool interp)
 {
 	ENTERFUNC;
 	
-	if (is_complex()) {
+	if (!is_complex()) {
 		return;
 	}
 
 	int n = static_cast < int >(array.size());
 
+//	printf("%f %f %f\n",array[0],array[25],array[50]);
+	
 	ap2ri();
 
 	size_t ndims = get_ndim();
@@ -4013,7 +4016,9 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 		int k = 0;
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i += 2, k += 2) {
-				float r = (float)hypot(i / 2.0f, (j - ny / 2.0f));
+				float r;
+				if (j<ny/2) r = (float)hypot(i/(float)(nx*2), j/(float)ny);
+				else r = (float)hypot(i/(float)(nx*2), (ny-j)/(float)ny);
 				r = (r - x0) / step;
 
 				int l = 0;
@@ -4024,7 +4029,6 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 					l = (int) floor(r + 1);
 				}
 
-				r -= l;
 
 				float f = 0;
 				if (l >= n - 2) {
@@ -4032,6 +4036,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 				}
 				else {
 					if (interp) {
+						r -= l;
 						f = (array[l] * (1.0f - r) + array[l + 1] * r);
 					}
 					else {
@@ -4047,11 +4052,17 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	else if (ndims == 3) {
 		int k = 0;
 		for (int m = 0; m < nz; m++) {
-			float mnz = (m - nz / 2.0f) * (m - nz / 2.0f);
+			float mnz;
+			if (m<nz/2) mnz=m*m/(float)(nz*nz);
+			else { mnz=(nz-m)/(float)nz; mnz*=mnz; }
+			
 			for (int j = 0; j < ny; j++) {
-				float jny = (j - ny / 2.0f) * (j - ny / 2.0f);
+				float jny;
+				if (j<ny/2) jny= j*j/(float)(ny*ny);
+				else { jny=(ny-j)/(float)ny; jny*=jny; }
+				
 				for (int i = 0; i < nx; i += 2, k += 2) {
-					float r = sqrt((i * i / 4.0f) + jny + mnz);
+					float r = sqrt((i * i / (nx*nx*4.0)) + jny + mnz);
 					r = (r - x0) / step;
 
 					int l = 0;
@@ -4062,7 +4073,6 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 						l = (int) floor(r + 1);
 					}
 
-					r -= l;
 
 					float f = 0;
 					if (l >= n - 2) {
@@ -4070,6 +4080,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 					}
 					else {
 						if (interp) {
+							r -= l;
 							f = (array[l] * (1.0f - r) + array[l + 1] * r);
 						}
 						else {
