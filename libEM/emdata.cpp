@@ -1047,7 +1047,7 @@ EMData *EMData::do_fft_inplace()
 		// meaning nx is the un-fftpadded size
 		offset = 2 - nx%2;
 		if (1 == offset) set_fftodd(true);
-		size_t bytes = (nx+offset)*ny*nz*sizeof(float);
+		//size_t bytes = (nx+offset)*ny*nz*sizeof(float);
 		nx += offset;
 		set_size(nx, ny, nz);
 		nxreal = nx - offset;
