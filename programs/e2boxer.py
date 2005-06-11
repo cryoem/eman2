@@ -180,8 +180,17 @@ for single particle analysis."""
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
-			i[2]+= cos(da)*dx+sin(da)*dy
-			i[3]+=-sin(da)*dx+cos(da)*dy
+			i[2]-= cos(da)*dx+sin(da)*dy
+			i[3]-=-sin(da)*dx+cos(da)*dy
+
+# this code can be used to test alignment
+#			b.write_image("cmp.hdf",-1)
+#			refptcl[i[1]].write_image("cmp.hdf",-1)
+#			ba.write_image("cmp.hdf",-1)
+#			try: 
+#				b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+#				b.write_image("cmp.hdf",-1)
+#			except: pass
 			
 			# now we refine this by doing a second pass
 #			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))

@@ -4533,7 +4533,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
 		filt->to_one();
 
-		filt->process("eman1.filter.highpass.gaussian", Dict("highpass", 3));
+		filt->process("eman1.filter.highpass.gaussian", Dict("highpass", 1.5/nx));
 	}
 
 	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
