@@ -79,7 +79,7 @@ The following classes are defined: \n\
   dump_aligners() - Print out all Aligners and their parameters. \n\
   dump_averagers() - Print out all Averagers and their parameters. \n\
   dump_cmps() - Print out all Cmps and their parameters. \n\
-  dump_filters() - Print out all Filters and their parameters. \n\
+  dump_processors() - Print out all Filters and their parameters. \n\
   dump_projectors() - Print out all Projectors and their parameters. \n\
   dump_reconstructors() - Print out all Reconstructors and their parameters. \n\
 "

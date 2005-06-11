@@ -23,7 +23,7 @@ set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 #rename(NormalizeProcessor, "__NormalizeProcessor")
 
 
-Function("EMAN::dump_filters", "filter.h")
+Function("EMAN::dump_processors", "filter.h")
 Function("EMAN::multi_filters", "filter.h")
 Function("EMAN::group_filters", "filter.h")
 
