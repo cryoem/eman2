@@ -61,11 +61,17 @@ int test_rfilter(EMData *em1, int type, float v1, float v2, float v3,
 
 		err = cmp_data(em1copy, em2copy);
 
-		delete em1copy;
-		em1copy = 0;
+		if( em1copy )
+		{
+			delete em1copy;
+			em1copy = 0;
+		}
 
-		delete em2copy;
-		em2copy = 0;
+		if( em2copy )
+		{
+			delete em2copy;
+			em2copy = 0;
+		}
 		
 		if (err) {
 			fprintf(stderr, "FAILED\n", type, filtername.c_str());
@@ -131,11 +137,16 @@ void test_filters()
 				 em2, "");
 #endif
 
-	
-	delete em1;
-	em1 = 0;
-	delete em2;
-	em2 = 0;
+	if( em1 )
+	{
+		delete em1;
+		em1 = 0;
+	}
+	if( em2 )
+	{
+		delete em2;
+		em2 = 0;
+	}
 }
 
 #endif

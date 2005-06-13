@@ -69,9 +69,9 @@ EMData::~EMData()
 	if ((int)attr_dict["is_shared_memory"] == 0) {
 		if (rdata) {
 			free(rdata);
+			rdata = 0;
 		}
 	}
-	rdata = 0;
 
 	if (supp) {
 		free(supp);
@@ -129,8 +129,11 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			}
 			err = imageio->read_ctf(*ctf, img_index);
 			if (err) {
-				delete ctf;
-				ctf = 0;
+				if( ctf )
+				{
+					delete ctf;
+					ctf = 0;
+				}
 				flags &= ~EMDATA_HASCTFF;
 			}
 			else {
@@ -151,8 +154,11 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 	}
 
 #ifndef IMAGEIO_CACHE
-	delete imageio;
-	imageio = 0;
+	if( imageio )
+	{
+		delete imageio;
+		imageio = 0;
+	}
 #endif
 	
 	EXITFUNC;
@@ -186,8 +192,11 @@ void EMData::write_image(const string & filename, int img_index,
 				rwmode = ImageIO::WRITE_ONLY;
 			}
 #ifndef IMAGEIO_CACHE
-			delete tmp_imageio;
-			tmp_imageio = 0;
+			if( tmp_imageio )
+			{
+				delete tmp_imageio;
+				tmp_imageio = 0;
+			}
 #endif
 		}
 	}
@@ -236,8 +245,11 @@ void EMData::write_image(const string & filename, int img_index,
 					}
 					err = imageio->write_data((float*)lstdata, img_index,
 											  region, filestoragetype, use_host_endian);
-					delete [] lstdata;
-					lstdata = 0;
+					if( lstdata )
+					{
+						delete [] lstdata;
+						lstdata = 0;
+					}
 				}
 				else {
 					err = imageio->write_data(rdata, img_index, region, filestoragetype,
@@ -253,8 +265,11 @@ void EMData::write_image(const string & filename, int img_index,
 	imageio->flush();
 
 #ifndef IMAGEIO_CACHE
-	delete imageio;
-	imageio = 0;
+	if( imageio )
+	{
+		delete imageio;
+		imageio = 0;
+	}
 #endif
 		
 
@@ -288,8 +303,11 @@ void EMData::process(const string & filtername, const Dict & params)
 	Processor *f = Factory < Processor >::get(filtername, params);
 	if (f) {
 		f->process(this);
-		delete f;
-		f = 0;
+		if( f )
+		{
+			delete f;
+			f = 0;
+		}
 	}
 	EXITFUNC;
 }
@@ -301,8 +319,11 @@ float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 	Cmp *c = Factory < Cmp >::get(cmpname, params);
 	if (c) {
 		result = c->cmp(this, with);
-		delete c;
-		c = 0;
+		if( c )
+		{
+			delete c;
+			c = 0;
+		}
 	}
 	
 	EXITFUNC;
@@ -322,8 +343,11 @@ EMData *EMData::align(const string & aligner_name, EMData * to_img,
 		else {
 			result = a->align(this, to_img, cmp_name);
 		}
-		delete a;
-		a = 0;
+		if( a )
+		{
+			delete a;
+			a = 0;
+		}
 	}
 
 	EXITFUNC;
@@ -337,8 +361,11 @@ EMData *EMData::project(const string & projector_name, const Dict & params)
 	Projector *p = Factory < Projector >::get(projector_name, params);
 	if (p) {
 		result = p->project3d(this);
-		delete p;
-		p = 0;
+		if( p )
+		{
+			delete p;
+			p = 0;
+		}
 	}
 
 	EXITFUNC;
@@ -1016,8 +1043,11 @@ EMData *EMData::do_fft()
 				ii += nx2;
 			}
 		}
-		delete[]t;
-		t = 0;
+		if( t )
+		{
+			delete[]t;
+			t = 0;
+		}
 	}
 #endif // 0
 
@@ -1143,9 +1173,12 @@ EMData *EMData::do_ift()
 				ii += nx;
 			}
 		}
-
-		delete[]t;
-		t = 0;
+		
+		if( t )
+		{
+			delete[]t;
+			t = 0;
+		}
 	}
 #endif // 0
 
@@ -2186,10 +2219,12 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 	}
 
 	done_data();
-	delete[]yc;
-	yc = 0;
-	
-	
+	if( yc )
+	{
+		delete[]yc;
+		yc = 0;
+	}
+
 	EXITFUNC;
 }
 
@@ -2298,16 +2333,39 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 		result[i] = ret[i] / (sqrt(n1[i] * n2[i]));
 	}
 
-	delete[]ret;
-	ret = 0;
+	if( ret )
+	{
+		delete[]ret;
+		ret = 0;
+	}
 
-	delete[]n1;
-	n1 = 0;
-	delete[]n2;
-	n2 = 0;
+	if( n1 )
+	{
+		delete[]n1;
+		n1 = 0;
+	}
+	if( n2 )
+	{
+		delete[]n2;
+		n2 = 0;
+	}
 
-	if (needfree&1) delete f1;
-	if (needfree&2) delete f2;
+	if (needfree&1) 
+	{
+		if( f1 )
+		{
+			delete f1;
+			f1 = 0;
+		}
+	}
+	if (needfree&2) 
+	{
+		if( f2 )
+		{
+			delete f2;
+			f2 = 0;
+		}
+	}
 	
 	EXITFUNC;
 	return result;
@@ -2898,6 +2956,7 @@ void EMData::set_shared_data(int xsize, int ysize, int zsize, float *data)
 	if ((int)attr_dict["is_shared_memory"] == 0) {
 		if (rdata) {
 			free(rdata);
+			rdata = 0;
 		}
 	}
 	
@@ -2979,8 +3038,11 @@ vector < EMData * >EMData::read_images(const string & filename, vector < int >im
 			d->read_image(filename, (int)k, header_only);
 		}
 		catch(E2Exception &e) {
-			delete d;
-			d = 0;
+			if( d )
+			{
+				delete d;
+				d = 0;
+			}
 			throw(e);
 		}
 
@@ -3020,8 +3082,11 @@ vector < EMData * >EMData::read_images_ext(const string & filename, int img_inde
 			d->read_image(new_filename, i, header_only);
 		}
 		catch(E2Exception &e) {
-			delete d;
-			d = 0;
+			if( d )
+			{
+				delete d;
+				d = 0;
+			}
 			throw(e);
 		}
 		v.push_back(d);
@@ -3102,8 +3167,11 @@ EMData & EMData::power(int n)
 		{
 			*this *= *r;
 		}
-		delete r;
-		r = 0;
+		if( r )
+		{
+			delete r;
+			r = 0;
+		}
 	}
 	
 	update_stat();
@@ -3299,8 +3367,11 @@ void EMData::rotate_x(int dx)
 	}
 
 	done_data();
-	delete[]tmp;
-	tmp = 0;
+	if( tmp )
+	{
+		delete[]tmp;
+		tmp = 0;
+	}
 	EXITFUNC;
 }
 
@@ -3326,6 +3397,7 @@ float *EMData::setup4slice(bool redo)
 	if (supp) {
 		if (redo) {
 			free(supp);
+			supp = 0;
 		}
 		else {
 			EXITFUNC;
@@ -3659,7 +3731,11 @@ void EMData::rotate_translate(const Transform3D & xform)
 	}
 	else {
 		if ((int)attr_dict["is_shared_memory"] == 0) {
-			free(rdata);
+			if( rdata )
+			{
+				free(rdata);
+				rdata = 0;
+			}
 		}
 		rdata = des_data;
 		attr_dict["is_shared_memory"] = 0;
@@ -3757,8 +3833,11 @@ EMData *EMData::do_radon()
 	result->done_data();
 
 	if (!parent) {
-		delete this_copy;
-		this_copy = 0;
+		if( this_copy )
+		{
+			delete this_copy;
+			this_copy = 0;
+		}
 	}
 
 	EXITFUNC;
@@ -3836,7 +3915,11 @@ void EMData::mean_shrink(float shrink_factor0)
 			}
 		}
 		orig->done_data();
-		delete orig;
+		if( orig )
+		{
+			delete orig;
+			orig = 0;
+		}
 		done_data();
 		update();
 		
@@ -3987,11 +4070,17 @@ void EMData::median_shrink(int shrink_factor)
 
 	done_data();
 
-	delete[]data_copy;
-	data_copy = 0;
+	if( data_copy )
+	{
+		delete[]data_copy;
+		data_copy = 0;
+	}
 
-	delete[]mbuf;
-	mbuf = 0;
+	if( mbuf )
+	{
+		delete[]mbuf;
+		mbuf = 0;
+	}
 	EXITFUNC;
 }
 
@@ -4388,10 +4477,16 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 			}
 		}
 
-		free(f1);
-		f1 = 0;
-		free(f2);
-		f2 = 0;
+		if( f1 )
+		{
+			free(f1);
+			f1 = 0;
+		}
+		if( f2 )
+		{
+			free(f2);
+			f2 = 0;
+		}
 	}
 
 	cf->done_data();
@@ -4453,11 +4548,17 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 		}
 	}
 
-	delete[]dat;
-	dat = 0;
+	if( dat )
+	{
+		delete[]dat;
+		dat = 0;
+	}
 
-	delete[]dat2;
-	dat2 = 0;
+	if( dat2 )
+	{
+		delete[]dat2;
+		dat2 = 0;
+	}
 	EXITFUNC;
 }
 
@@ -4537,8 +4638,11 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	}
 
 	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
-	delete tmp2;
-	tmp2 = 0;
+	if( tmp2 )
+	{
+		delete tmp2;
+		tmp2 = 0;
+	}
 
 	Region r2;
 	if (nz == 1) {
@@ -4550,8 +4654,11 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	tmp2 = tmp->get_clip(r2);
 	rfp = tmp2;
 
-	delete tmp;
-	tmp = 0;
+	if( tmp )
+	{
+		delete tmp;
+		tmp = 0;
+	}
 
 	EMData * result = rfp;
 	
@@ -4563,8 +4670,11 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		}
 		else {
 			rfp = tmp2->unwrap();
-			delete tmp2;
-			tmp2 = 0;
+			if( tmp2 )
+			{
+				delete tmp2;
+				tmp2 = 0;
+			}
 			result = rfp;
 		}
 	}
@@ -4656,10 +4766,17 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 
 	EMData *f2 = cf->do_ift();
 
-	delete cf;
-	cf = 0;
+	if( cf )
+	{
+		delete cf;
+		cf = 0;
+	}
 
-	delete this_fft;
+	if( this_fft )
+	{
+		delete this_fft;
+		this_fft = 0;
+	}
 
 	f2->set_attr("label", "MCF");
 	f2->set_path("/tmp/eman.mcf");
@@ -4836,17 +4953,23 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 			d[i] = (d[i - 1] + d[i + 1]) / 2.0f;
 		}
 	}
-
-	delete[]yc;
-	yc = 0;
+	
+	if( yc )
+	{
+		delete[]yc;
+		yc = 0;
+	}
 
 	vector < float >dv(n);
 	for (int i = 0; i < n; i++) {
 		dv[i] = d[i];
 	}
 
-	delete[]d;
-	d = 0;
+	if( d )
+	{
+		delete[]d;
+		d = 0;
+	}
 
 	EXITFUNC;
 	return dv;
@@ -4976,17 +5099,29 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 		dv[i] = d[i];
 	}
 
-	delete[]yc;
-	yc = 0;
+	if( yc )
+	{
+		delete[]yc;
+		yc = 0;
+	}
 
-	delete[]yc2;
-	yc2 = 0;
+	if( yc2 )
+	{
+		delete[]yc2;
+		yc2 = 0;
+	}
 
-	delete[]d2;
-	d2 = 0;
+	if( d2 )
+	{
+		delete[]d2;
+		d2 = 0;
+	}
 
-	delete[]d;
-	d = 0;
+	if( d )
+	{
+		delete[]d;
+		d = 0;
+	}
 
 	EXITFUNC;
 	return dv;
@@ -5101,54 +5236,78 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	img2->done_data();
 
 	EMData *img2_copy = img2->copy(false);
-	delete img2;
-	img2 = 0;
+	if( img2 )
+	{
+		delete img2;
+		img2 = 0;
+	}
 
 	img2_copy->process(mask_filter, filter_dict);
 	img2_copy->process("eman1.xform.phaseorigin");
 
-	delete img1_copy;
-	img1_copy = 0;
+	if( img1_copy )
+	{
+		delete img1_copy;
+		img1_copy = 0;
+	}
 
 	EMData *img1_copy2 = img1->copy(false);
 
 	img1_copy2->process("eman1.Square");
 
 	EMData *ccf = img1->calc_ccf(img2_copy);
-	delete img2_copy;
-	img2_copy = 0;
+	if( img2_copy )
+	{
+		delete img2_copy;
+		img2_copy = 0;
+	}
 
 	ccf->mult(img1_size);
 
 	EMData *conv1 = img1->convolute(img1_copy2);
-	delete img1;
-	img1 = 0;
+	if( img1 )
+	{
+		delete img1;
+		img1 = 0;
+	}
 
 	conv1->mult(img1_size);
 	conv1->mult(1.0f / num);
 
 	EMData *conv2 = img1_copy2->convolute(img1_copy2);
-	delete img1_copy2;
-	img1_copy2 = 0;
+	if( img1_copy2 )
+	{
+		delete img1_copy2;
+		img1_copy2 = 0;
+	}
 
 	conv2->mult(img1_size);
 	conv1->process("eman1.Square");
 	conv1->mult(1.0f / (num * num));
 
 	EMData *conv2_copy = conv2->copy(false);
-	delete conv2;
-	conv2 = 0;
+	if( conv2 )
+	{
+		delete conv2;
+		conv2 = 0;
+	}
 
 	conv2_copy->sub(*conv1);
-	delete conv1;
-	conv1 = 0;
+	if( conv1 )
+	{
+		delete conv1;
+		conv1 = 0;
+	}
 
 	conv2_copy->mult(1.0f / num);
 	conv2_copy->process("eman1.Sqrt");
 
 	EMData *ccf_copy = ccf->copy(false);
-	delete ccf;
-	ccf = 0;
+	if( ccf )
+	{
+		delete ccf;
+		ccf = 0;
+	}
 
 	ccf_copy->mult(1.0f / num);
 
@@ -5160,13 +5319,19 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 			lcfd[i] /= vdd[i];
 		}
 	}
-	delete conv2_copy;
-	conv2_copy = 0;
+	if( conv2_copy )
+	{
+		delete conv2_copy;
+		conv2_copy = 0;
+	}
 
 	ccf_copy->done_data();
 	EMData *lcf = ccf_copy->copy(false);
-	delete ccf_copy;
-	ccf_copy = 0;
+	if( ccf_copy )
+	{
+		delete ccf_copy;
+		ccf_copy = 0;
+	}
 
 	EXITFUNC;
 	return lcf;
@@ -5217,11 +5382,17 @@ EMData *EMData::convolute(EMData * with)
 	cf->done_data();
 	EMData *f2 = cf->do_ift();
 
-	delete cf;
-	cf = 0;
+	if( cf )
+	{
+		delete cf;
+		cf = 0;
+	}
 
-	delete f1;
-	f1=0;
+	if( f1 )
+	{
+		delete f1;
+		f1=0;
+	}
 	
 	EXITFUNC;
 	return f2;
@@ -5455,21 +5626,38 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 				set_value_at(i, j, 0, tmp_array[(j + i) % ny]);
 			}
 		}
-		delete[]tmp_array;
-		tmp_array = 0;
+		if( tmp_array )
+		{
+			delete[]tmp_array;
+			tmp_array = 0;
+		}
 	}
 
-	delete[]im1;
-	im1 = 0;
+	if( im1 )
+	{
+		delete[]im1;
+		im1 = 0;
+	}
 
-	delete im2;
-	im2 = 0;
+	if( im2 )
+	{
+		delete im2;
+		im2 = 0;
+	}
 
 
 	image1->done_data();
 	image2->done_data();
-	delete image1;
-	delete image2;
+	if( image1 )
+	{
+		delete image1;
+		image1 = 0;
+	}
+	if( image2 )
+	{
+		delete image2;
+		image2 = 0;
+	}
 	done_data();
 	update();
 	EXITFUNC;
@@ -5570,17 +5758,29 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 
 	done_data();
 
-	delete image1_copy;
-	image1_copy = 0;
+	if( image1_copy )
+	{
+		delete image1_copy;
+		image1_copy = 0;
+	}
 
-	delete image2_copy;
-	image2_copy = 0;
+	if( image2_copy )
+	{
+		delete image2_copy;
+		image2_copy = 0;
+	}
 
-	delete[]im1;
-	im1 = 0;
+	if( im1 )
+	{
+		delete[]im1;
+		im1 = 0;
+	}
 
-	delete[]im2;
-	im2 = 0;
+	if( im2 )
+	{
+		delete[]im2;
+		im2 = 0;
+	}
 	EXITFUNC;
 }
 

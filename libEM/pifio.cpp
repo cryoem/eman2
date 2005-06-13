@@ -385,8 +385,11 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 		int offset1 = l * pfh.nx * pfh.ny;
 		for (int j = 0; j < pfh.ny; j++) {
 			if (fread(buf, mode_size, pfh.nx, pif_file) != (unsigned int) pfh.nx) {
-				delete[]buf;
-				buf = 0;
+				if( buf )
+				{
+					delete[]buf;
+					buf = 0;
+				}
 				throw ImageReadException(filename, "incomplete PIF read");
 			}
 
@@ -415,9 +418,11 @@ int PifIO::read_data(float *data, int image_index, const Region *area, bool)
 			}
 		}
 	}
-	
-	delete[]buf;
-	buf = 0;
+	if( buf )
+	{
+		delete[]buf;
+		buf = 0;
+	}
 #endif
 	EXITFUNC;
 	return 0;
@@ -453,9 +458,11 @@ int PifIO::write_data(float *data, int image_index, const Region* area,
 			fwrite(buf, sizeof(int) * nx, 1, pif_file);
 		}
 	}
-
-	delete[]buf;
-	buf = 0;
+	if( buf )
+	{
+		delete[]buf;
+		buf = 0;
+	}
 #endif
 	
 	EXITFUNC;

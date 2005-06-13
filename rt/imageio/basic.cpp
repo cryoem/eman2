@@ -31,8 +31,11 @@ int test_emobject()
     XYData * xy2 = e4;
     assert(xy1 == xy2);
     
-    delete image1;
-    image1 = 0;
+    if( image1 )
+    {
+    	delete image1;
+   	 	image1 = 0;
+    }
     
     return 0;
 }

@@ -272,7 +272,11 @@ int main(int argc, char *argv[])
 				outfile[strlen(outfile) - 4] = 0;
 				sprintf(outfile + strlen(outfile), ".%02d.img", j);
 
-				delete ld;
+				if( ld )
+				{
+					delete ld;
+					ld = 0;
+				}
 				ld = d->copy(false);
 			}
 
@@ -337,12 +341,19 @@ int main(int argc, char *argv[])
 					}
 
 					dataf->apply_radial_func(x0, step, sfcurve2);
-					delete d;
+					if( d )
+					{
+						delete d;
+						d = 0;
+					}
 					d = dataf->do_ift();
 				}
-
-				delete dataf;
-				dataf = 0;
+				
+				if( dataf )
+				{
+					delete dataf;
+					dataf = 0;
+				}
 			}
 
 			float Xlp = lp;
@@ -456,7 +467,11 @@ int main(int argc, char *argv[])
 				EMData *e = d->get_clip(Region((d->get_xsize() - clipx) / 2,
 											   (d->get_ysize() - clipy) / 2,
 											   clipx, clipy));
-				delete d;
+				if( d )
+				{
+					delete d;
+					d = 0;
+				}
 				d = e;
 			}
 
@@ -489,10 +504,16 @@ int main(int argc, char *argv[])
 
 				*d *= (1.0f / csym);
 
-				delete e;
-				e = 0;
-				delete f;
-				f = 0;
+				if( e )
+				{
+					delete e;
+					e = 0;
+				}
+				if( f )
+				{
+					delete f;
+					f = 0;
+				}
 			}
 
 			if (argdict[rsub]) {
@@ -519,16 +540,28 @@ int main(int argc, char *argv[])
 						LOGERR("Invalid common-lines mode");
 						exit(1);
 					}
-					delete e;
-					e = 0;
+					if( e )
+					{
+						delete e;
+						e = 0;
+					}
 				}
-				delete d;
-				d = sc;
+				if( d )
+				{
+					delete d;
+					d = 0;
+				}
+					d = sc;
+				
 			}
 
 			if (argdict[radon]) {
 				EMData *r = d->do_radon();
-				delete d;
+				if( d )
+				{
+					delete d;
+					d = 0;
+				}
 				d = r;
 			}
 
@@ -549,8 +582,11 @@ int main(int argc, char *argv[])
 #if 0
 			if (filefilt) {
 				EMData *d2 = d->do_fft();
-				delete d;
-				d = 0;
+				if( d )
+				{
+					delete d;
+					d = 0;
+				}
 
 				d2->apply_radial_func(nxyd, xd[0], xd[1] - xd[0], yd, true);
 				d = d2->do_ift();
@@ -580,7 +616,11 @@ int main(int argc, char *argv[])
 				df->multConst(df->get_ysize());	// just for scaling of the intensity level
 				fftavg->addIncoherent(df);
 
-				delete df;
+				if( df )
+				{
+					delete df;
+					df = 0;
+				}
 				continue;		// no writing yet
 			}
 #endif
@@ -725,11 +765,17 @@ int main(int argc, char *argv[])
 		ld = 0;
     }
 
-    delete [] defocus_val;
-    defocus_val = 0;
+	if( defocus_val )
+	{
+    	delete [] defocus_val;
+    	defocus_val = 0;
+	}
 
-    delete [] bfactor_val;
-    bfactor_val = 0;
+	if( bfactor_val )
+	{
+    	delete [] bfactor_val;
+    	bfactor_val = 0;
+	}
     
     return 0;
 }

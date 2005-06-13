@@ -28,8 +28,11 @@ GlobalCache::GlobalCache(const GlobalCache &)
 
 GlobalCache::~GlobalCache()
 {
-	delete imageio_cache;
-	imageio_cache = 0;
+	if(imageio_cache)
+	{
+		delete imageio_cache;
+		imageio_cache = 0;
+	}
 }
 
 

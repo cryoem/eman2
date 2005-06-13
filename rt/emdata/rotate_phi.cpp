@@ -38,8 +38,11 @@ int main()
 	//test_rotate(image, "lattice.mrc");
 	//test_rotate(image, "3d.mrc");
 	test_rotate(image, "3d99.hed");
-	delete image;
-	image = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
 
 	return 0;
 }

@@ -15,8 +15,11 @@ void r1()
 	image->read_image(get_test_image());
 	image->rotate(1.0329837512591338,3.7260642381912579,5.7671541529246966);
 	image->write_image("r1.mrc");
-	delete image;
-	image = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
 }
 
 void t1()
@@ -26,8 +29,11 @@ void t1()
 	image->read_image(get_test_image());
 	image->rotate_translate(0,0,0,16,16,16);
 	image->write_image("t1.mrc");
-	delete image;
-	image = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
 }
 
 void rt1()
@@ -37,8 +43,11 @@ void rt1()
 	image->read_image(get_test_image());
 	image->rotate_translate(1.0329837512591338,3.7260642381912579,5.7671541529246966,16,16,16);
 	image->write_image("rt1.mrc");
-	delete image;
-	image = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
 }
 
 void rt2()
@@ -50,8 +59,11 @@ void rt2()
 							5.7671541529246966);
 	image->rotate_translate(r);
 	image->write_image("rt2.mrc");
-	delete image;
-	image = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
 }
 
 int main()

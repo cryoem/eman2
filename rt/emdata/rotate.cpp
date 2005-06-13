@@ -61,8 +61,11 @@ int main()
 
 	rotate(image, 135, 0, 0);
 
-	delete image;
-	image = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
 	
 	return  err;
 }

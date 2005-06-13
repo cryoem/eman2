@@ -115,8 +115,11 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 
 	ret->set_rotation(az, alt, phi);
 
-	delete tmp;
-	tmp = 0;
+	if( tmp )
+	{ 
+		delete tmp;
+		tmp = 0;
+	}
 
 	ret->update();
 	return ret;
@@ -600,7 +603,11 @@ EMData *PawelProjector::project3d(EMData * image) const
 	}
 	ret->done_data();
 	ret->update();
-	delete [] ipcube;
+	if( ipcube )
+	{
+		delete [] ipcube;
+		ipcube = 0;
+	}
 	return ret;
 }
 

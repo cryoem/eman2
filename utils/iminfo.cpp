@@ -79,8 +79,11 @@ int main(int argc, char* argv[])
 		}
 		printf("\n");
     
-		delete d;
-		d = 0;
+    	if( d )
+    	{
+			delete d;
+			d = 0;
+    	}
 	}
 	catch(E2Exception  & e) {
 		if (d) {

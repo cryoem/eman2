@@ -22,10 +22,16 @@ int main()
 		printf("%s\n", e.what());
 	}
 
-	delete image;
-	image = 0;
-	delete image2;
-	image2 = 0;
+	if( image )
+	{
+		delete image;
+		image = 0;
+	}
+	if( image2 )
+	{
+		delete image2;
+		image2 = 0;
+	}
 	
 	return err;
 }

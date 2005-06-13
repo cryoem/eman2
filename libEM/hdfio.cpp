@@ -430,8 +430,11 @@ int *HdfIO::read_dims(int image_index, int *p_ndim)
 	}
 
 	H5Sclose(dataspace);
-	delete[]dims;
-	dims = 0;
+	if( dims )
+	{
+		delete[]dims;
+		dims = 0;
+	}
 
 	(*p_ndim) = rank;
 	return dims1;
@@ -575,8 +578,11 @@ string HdfIO::read_string_attr(int image_index, const string & attr_name)
 
 		value = tmp_value;
 
-		delete[]tmp_value;
-		tmp_value = 0;
+		if( tmp_value )
+		{
+			delete[]tmp_value;
+			tmp_value = 0;
+		}
 	}
 
 	return value;
@@ -1093,8 +1099,11 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 
 		if (ndim != 2 && ndim != 3) {
 			LOGERR("only handle 2D/3D HDF5. Your file is %dD.", ndim);
-			delete [] dims;
-			dims = 0;
+			if( dims )
+			{
+				delete [] dims;
+				dims = 0;
+			}
 			return 1;
 		}
 		else {
@@ -1107,8 +1116,11 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 				*p_nz = 1;
 			}
 		}
-		delete [] dims;
-		dims = 0;
+		if( dims )
+		{
+			delete [] dims;
+			dims = 0;
+		}
 	}
 	return 0;
 }
@@ -1160,8 +1172,11 @@ void HdfIO::create_cur_dataset(int image_index, int nx, int ny, int nz)
 		for (int i = 0; i < ndim; i++) {
 			Assert(dims[i] == dims1[i]);
 		}
-		delete [] dims1;
-		dims1 = 0;
+		if( dims1 )
+		{
+			delete [] dims1;
+			dims1 = 0;
+		}
 	}
 	else {		
 		hsize_t *sdims = new hsize_t[ndim];
@@ -1177,8 +1192,11 @@ void HdfIO::create_cur_dataset(int image_index, int nx, int ny, int nz)
 		H5Tclose(datatype);
 		H5Sclose(dataspace);
 
-		delete[]sdims;
-		sdims = 0;
+		if( sdims )
+		{
+			delete[]sdims;
+			sdims = 0;
+		}
 		
 		if (cur_dataset < 0) {
 			throw ImageWriteException(filename, "create dataset failed");

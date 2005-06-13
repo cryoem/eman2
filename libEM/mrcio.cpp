@@ -519,8 +519,11 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		}
 	}
 
-	delete[]cbuf;
-	cbuf = 0;
+	if(cbuf)
+	{
+		delete[]cbuf;
+		cbuf = 0;
+	}
 #endif
 	
 	if (is_complex_mode()) {

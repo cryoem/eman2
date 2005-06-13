@@ -38,8 +38,11 @@ int write_image(EMData* em, const char* infile, char* outfile,
 	}
 	
     if (is_new_file) {
-		delete [] outfile;
-		outfile = 0;
+    	if( outfile )
+    	{
+			delete [] outfile;
+			outfile = 0;
+    	}
     }
     
     return err;
@@ -68,8 +71,11 @@ int test_image(const char* base_filename, int r_image_index = 0,
 		
 		write_image(em, base_filename, outfile, r_image_index, image_type, w_image_index);    
 		
-		delete em;
-		em = 0;
+		if( em )
+		{
+			delete em;
+			em = 0;
+		}
 	}
 	catch(...) {
 		err = 1;
@@ -363,7 +369,11 @@ int test_imagic()
 		e->write_image("tablet1.img", -1, EMUtil::IMAGE_IMAGIC);
     }
     
-    delete  e;
+    if( e )
+    {
+    	delete  e;
+    	e = 0;
+    }
     
     return err_code;
 }
@@ -397,8 +407,11 @@ int test_performance()
     }
     printf("nimg = %d, nx sum = %f\n", nimg, x_sum);
     
-    delete d;
-    d = 0;
+    if( d )
+    {
+    	delete d;
+    	d = 0;
+    }
 
     return 0;
 }

@@ -263,8 +263,11 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 
 	//Util::flip_image(data, nx, ny);
 
-	delete[]cdata;
-	cdata = 0;
+	if( cdata )
+	{
+		delete[]cdata;
+		cdata = 0;
+	}
 
 	png_read_end(png_ptr, end_info);
 	EXITFUNC;
@@ -288,8 +291,11 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 			png_write_row(png_ptr, (png_byte *) cdata);
 		}
 
-		delete[]cdata;
-		cdata = 0;
+		if( cdata )
+		{
+			delete[]cdata;
+			cdata = 0;
+		}
 	}
 	else if (depth_type == PNG_SHORT_DEPTH) {
 		unsigned short *sdata = new unsigned short[nx];
@@ -301,8 +307,11 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 			png_write_row(png_ptr, (png_byte *) sdata);
 		}
 
-		delete[]sdata;
-		sdata = 0;
+		if( sdata )
+		{
+			delete[]sdata;
+			sdata = 0;
+		}
 	}
 
 	png_write_end(png_ptr, info_ptr);

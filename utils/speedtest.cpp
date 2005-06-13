@@ -274,8 +274,11 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < NTT * 100; i++) {
 			EMData *cp = data[i % NTT]->copy(false);
 			cp->mean_shrink(2);
-			delete cp;
-			cp = 0;
+			if( cp )
+			{
+				delete cp;
+				cp = 0;
+			}
 		}
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;
@@ -333,8 +336,11 @@ int main(int argc, char *argv[])
 			else {
 				tmp = data[i]->align("RotateTranslateFlip", data[j], Dict());
 			}
-	    
-			delete tmp;
+	    	if( tmp )
+	    	{
+				delete tmp;
+				tmp = 0;
+	    	}
 			if (j % 10 == 0) {
 				putchar('.');
 				fflush(stdout);

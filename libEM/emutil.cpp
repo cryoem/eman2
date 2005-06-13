@@ -378,8 +378,11 @@ int EMUtil::get_image_count(const string & filename)
 		nimg = imageio->get_nimg();
 	}
 #ifndef IMAGEIO_CACHE
-	delete imageio;
-	imageio = 0;
+	if( imageio )
+	{
+		delete imageio;
+		imageio = 0;
+	}
 #endif
 	EXITFUNC;
 	return nimg;
@@ -848,10 +851,16 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 	}
 
 	result->done_data();
-	delete[]srt;
-	srt = 0;
-	delete[]src;
-	src = 0;
+	if( srt )
+	{
+		delete[]srt;
+		srt = 0;
+	}
+	if( src )
+	{
+		delete[]src;
+		src = 0;
+	}
 
 	result->update();
 
@@ -904,8 +913,11 @@ ImageSort::ImageSort(int nn)
 
 ImageSort::~ImageSort()
 {
-	delete [] image_scores;
-	image_scores = 0;
+	if( image_scores )
+	{
+		delete [] image_scores;
+		image_scores = 0;
+	}
 }
 
 void ImageSort::sort()

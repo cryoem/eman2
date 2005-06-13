@@ -143,8 +143,11 @@ EMData * ImageAverager::finish()
 		result->update();
 	}
 
-	delete [] nimg_n0;
-	nimg_n0 = 0;
+	if( nimg_n0 )
+	{ 
+		delete [] nimg_n0;
+		nimg_n0 = 0;
+	}
 	
 	return result;
 }
@@ -350,14 +353,20 @@ EMData * IterationAverager::finish()
 		memcpy(d2, result_data2, sec_size);
 	}
 
-	delete[]d2;
-	d2 = 0;
+	if( d2 )
+	{
+		delete[]d2;
+		d2 = 0;
+	}
 
 	result->done_data();
 	sigma_image->done_data();
 
-	delete sigma_image;
-	sigma_image = 0;
+	if( sigma_image )
+	{
+		delete sigma_image;
+		sigma_image = 0;
+	}
 
 	result->update();
 	result->append_image("iter.hed");
@@ -460,14 +469,20 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 		memcpy(d2, result_data2, sec_size);
 	}
 
-	delete[]d2;
-	d2 = 0;
+	if( d2 )
+	{
+		delete[]d2;
+		d2 = 0;
+	}
 
 	result->done_data();
 	sigma_image->done_data();
 
-	delete sigma_image;
-	sigma_image = 0;
+	if( sigma_image )
+	{
+		delete sigma_image;
+		sigma_image = 0;
+	}
 
 	result->update();
 	result->append_image("iter.hed");
@@ -744,8 +759,11 @@ EMData * CtfAverager::finish()
 	result->done_data();
 	tmp_ift->done_data();
 
-	delete image0_copy;
-	image0_copy = 0;
+	if( image0_copy )
+	{
+		delete image0_copy;
+		image0_copy = 0;
+	}
 
 	if (snri) {
 		delete[]snri;
@@ -759,16 +777,31 @@ EMData * CtfAverager::finish()
 
 	result->update();
 
-	delete [] snri;
-	snri = 0;
-	delete [] snrn;
-	snrn = 0;
-	delete [] tdr;
-	tdr = 0;
-	delete [] tdi;
-	tdi = 0;
-	delete [] tn;
-	tn = 0;
+	if( snri )
+	{
+		delete [] snri;
+		snri = 0;
+	}
+	if( snrn )
+	{
+		delete [] snrn;
+		snrn = 0;
+	}
+	if( tdr )
+	{
+		delete [] tdr;
+		tdr = 0;
+	}
+	if( tdi )
+	{
+		delete [] tdi;
+		tdi = 0;
+	}
+	if( tn )
+	{
+		delete [] tn;
+		tn = 0;
+	}
 	
 	return result;
 }
@@ -999,22 +1032,34 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 	result->done_data();
 	tmp_ift->done_data();
 
-	delete image0_copy;
-	image0_copy = 0;
+	if( image0_copy )
+	{
+		delete image0_copy;
+		image0_copy = 0;
+	}
 
 	for (size_t i = 0; i < num_images; i++) {
 		EMData *img = image_list[i]->do_fft();
 		img->done_data();
 	}
 
-	delete[]src;
-	src = 0;
+	if( src )
+	{
+		delete[]src;
+		src = 0;
+	}
 
-	delete[]ctf;
-	ctf = 0;
+	if( ctf )
+	{
+		delete[]ctf;
+		ctf = 0;
+	}
 
-	delete[]ctfn;
-	ctfn = 0;
+	if( ctfn )
+	{
+		delete[]ctfn;
+		ctfn = 0;
+	}
 
 	if (snri) {
 		delete[]snri;

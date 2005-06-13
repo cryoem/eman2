@@ -242,8 +242,11 @@ int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 				}
 			}
 		}
-		delete[]buf;
-		buf = 0;
+		if( buf )
+		{
+			delete[]buf;
+			buf = 0;
+		}
 	}
 	else if (filetype == VTK_BINARY) {
 		int nxy = nx * ny;

@@ -33,15 +33,24 @@ namespace EMAN
 		~EMCache()
 		{
 			for (int i = 0; i < nitems; i++) {
-				delete item_cache[i];
-				item_cache[i] = 0;
+				if( item_cache[i] )
+				{
+					delete item_cache[i];
+					item_cache[i] = 0;
+				}
 			}
 
-			delete[]item_cache;
-			item_cache = 0;
+			if( item_cache )
+			{
+				delete[]item_cache;
+				item_cache = 0;
+			}
 
-			delete[]name_cache;
-			name_cache = 0;
+			if( name_cache )
+			{
+				delete[]name_cache;
+				name_cache = 0;
+			}
 		}
 
 
@@ -73,8 +82,11 @@ namespace EMAN
 			}
 			else {
 				int r = (int) (1.0 * size * rand() / (RAND_MAX + 1.0));
-				delete item_cache[r];
-				item_cache[r] = 0;
+				if( item_cache[r] )
+				{
+					delete item_cache[r];
+					item_cache[r] = 0;
+				}
 
 				item_cache[r] = item;
 				name_cache[r] = itemname;
@@ -91,8 +103,11 @@ namespace EMAN
 				}
 			}
 			if (r >= 0) {
-				delete item_cache[r];
-				item_cache[r] = 0;
+				if( item_cache[r] )
+				{
+					delete item_cache[r];
+					item_cache[r] = 0;
+				}
 				name_cache[r] = "";
 			}
 		}

@@ -227,8 +227,11 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.imgnum"] = (int)cur_image_hed->imgnum;
 
 	if (offset != 0) {
-		free(cur_image_hed);
-		cur_image_hed = 0;
+		if( cur_image_hed )
+		{
+			free(cur_image_hed);
+			cur_image_hed = 0;
+		}
 	}
 	EXITFUNC;
 	return 0;
@@ -420,8 +423,11 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	if (pad_size > 0) {
 		char *pad = static_cast < char *>(calloc(pad_size, 1));
 		fwrite(pad, pad_size, 1, spider_file);
-        free(pad);
-        pad = 0;
+        if( pad )
+        {
+        	free(pad);
+        	pad = 0;
+        }
 	}
 	
 	EXITFUNC;
@@ -495,7 +501,11 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area,
 	size_t pad_size = header_length - header_size;
 	char *pad = static_cast < char *>(calloc(pad_size, 1));
 	fwrite(pad, pad_size, 1, spider_file);
-	free(pad);
+	if( pad )
+	{
+		free(pad);
+		pad = 0;
+	}
 	
 	EXITFUNC;
 	return 0;
@@ -619,7 +629,11 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area,
 	swap_header(cur_h);
 	swap_data(data, data_size);
 
-	free(pad);
+	if( pad )
+	{
+		free(pad);
+		pad = 0;
+	}
 	EXITFUNC;
 	return 0;
 }

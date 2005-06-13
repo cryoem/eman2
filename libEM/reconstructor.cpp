@@ -985,11 +985,17 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform3D 
 	tmp->rotate(-(float)slice_euler["alt"], -(float)slice_euler["az"], -(float)slice_euler["phi"]);
 
 	image->add(*tmp);
-	delete slice_copy;
-	slice_copy = 0;
+	if( slice_copy )
+	{
+		delete slice_copy;
+		slice_copy = 0;
+	}
 
-	delete tmp;
-	tmp = 0;
+	if( tmp )
+	{
+		delete tmp;
+		tmp = 0;
+	}
 	
 	return 0;
 }
@@ -1074,12 +1080,20 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 		Transform3D tsym = t.get_sym(symmetry, isym);
 		EMData* zeropadded = slice->zeropad_ntimes(npad);
 		EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-		delete zeropadded;
+		if( zeropadded )
+		{
+			delete zeropadded;
+			zeropadded = 0;
+		}
 		padfftslice->do_fft_inplace();
 		padfftslice->center_origin_fft();
 		// insert slice
 		v->nn(*nrptr, padfftslice, tsym);
-		delete padfftslice;
+		if( padfftslice )
+		{
+			delete padfftslice;
+			padfftslice = 0;
+		}
 	}
 	return 0;
 }
@@ -1103,9 +1117,21 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	v->do_ift_inplace();
 	EMData* w = v->window_padded(vnx);
 	// clean up
-	delete v;
-	delete nrptr;
-	delete v3dptr;
+	if( v )
+	{
+		delete v;
+		v = 0;
+	}
+	if( nrptr )
+	{
+		delete nrptr;
+		nrptr = 0;
+	}
+	if( v3dptr )
+	{
+		delete v3dptr;
+		v3dptr = 0;
+	}
 	return w;
 }
 

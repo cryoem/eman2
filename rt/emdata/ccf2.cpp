@@ -12,8 +12,11 @@ int main()
 	b->read_image(TestUtil::get_debug_image("3d86_2.mrc"));
 #if 1
 	EMData *c = a->calc_ccf(b);
-	delete b;
-	b = 0;
+	if( b )
+	{
+		delete b;
+		b = 0;
+	}
 #endif
 	
 #if 0
@@ -23,9 +26,11 @@ int main()
 	
 	c->write_image("aatest2.mrc");
 
-	delete a;
-	a = 0;
+	if( a )
+	{ 
+		delete a;
+		a = 0;
+	}
 
-	
 	return 0;
 }

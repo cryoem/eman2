@@ -434,8 +434,11 @@ namespace EMAN
 		T *i = new_instance();
 		string name = i->get_name();
 		my_dict[name] = new_instance;
-		delete i;
-		i = 0;
+		if( i )
+		{
+			delete i;
+			i = 0;
+		}
 	}
 
 
@@ -451,8 +454,11 @@ namespace EMAN
 		if (fi == my_instance->my_dict.end()) {
 			my_instance->my_dict[name] = new_instance;
 		}
-		delete i;
-		i = 0;
+		if( i )
+		{
+			delete i;
+			i = 0;
+		}
 	}
 
 	template < class T > T * Factory < T >::get(const string & instancename)

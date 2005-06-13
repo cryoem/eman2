@@ -183,8 +183,11 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 		}
 	}
 
-	delete[]buf;
-	buf = 0;
+	if( buf )
+	{
+		delete[]buf;
+		buf = 0;
+	}
 #endif
 	EXITFUNC;
 	return 0;

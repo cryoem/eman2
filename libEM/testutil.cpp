@@ -413,8 +413,11 @@ void TestUtil::dump_image_from_file(const string & filename)
 	EMData * e = new EMData();
 	e->read_image(filename);
 	dump_emdata(e, filename);
-	delete e;
-	e = 0;
+	if( e )
+	{
+		delete e;
+		e = 0;
+	}
 }
 
 void TestUtil::dump_emdata(EMData * image, const string & filename)
@@ -523,12 +526,18 @@ void TestUtil::make_image_file_by_mode(const string & filename,
         e->done_data();
         EMData * fft = e->do_fft();
         fft->write_image(filename, 0, image_type);
-        delete fft;
-        fft = 0;
+        if( fft )
+        {
+        	delete fft;
+        	fft = 0;
+        }
     }
 
-    delete e;
-    e = 0;
+	if( e )
+	{
+    	delete e;
+    	e = 0;
+	}
 }
 
 int TestUtil::verify_image_file_by_mode(const string & filename,

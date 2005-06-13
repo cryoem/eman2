@@ -20,7 +20,11 @@ PointArray::PointArray(unsigned int nn)
 
 PointArray::~PointArray()
 {
-	free(points);
+	if( points )
+	{
+		free(points);
+		points = 0;
+	}
 }
 
 void PointArray::zero()
@@ -249,7 +253,11 @@ void PointArray::mask(double rmax, double rmin)
 		}
 	}
 	set_number_points(count);
-	delete tmp;
+	if( tmp )
+	{
+		delete tmp;
+		tmp = 0;
+	}
 }
 
 
@@ -306,7 +314,11 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 		}
 	}
 	set_number_points(count);
-	delete tmp;
+	if( tmp )
+	{
+		delete tmp;
+		tmp = 0;
+	}
 }
 
 
@@ -436,7 +448,11 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		}
 		set_number_points(num);
 		tmp_map->done_data();
-		delete tmp_map;
+		if( tmp_map )
+		{
+			delete tmp_map;
+			tmp_map = 0;
+		}
 	}
 	else if (mode == KMEANS) {
 		set_number_points(num);
@@ -975,7 +991,11 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	map->set_attr("origin_row", -map_size/2*apix);
 	map->set_attr("origin_col", -map_size/2*apix);
 	map->set_attr("origin_sec", -map_size/2*apix);
-	delete fft;
+	if( fft )
+	{
+		delete fft;
+		fft = 0;
+	}
 	return map;
 #elif defined NFFT2
 	nfft_plan my_plan;			// plan for the nfft
@@ -1053,7 +1073,11 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	map->set_attr("origin_row", -map_size / 2 * apix);
 	map->set_attr("origin_col", -map_size / 2 * apix);
 	map->set_attr("origin_sec", -map_size / 2 * apix);
-	delete fft;
+	if( fft )
+	{
+		delete fft;
+		fft = 0;
+	}
 	return map;
 #else
 	LOGWARN("nfft support is not enabled. please recompile with nfft support enabled\n");

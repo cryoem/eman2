@@ -256,10 +256,16 @@ string TagData::read_string(int size)
 	str[size] = '\0';
 	string str1 = string(str);
 
-	delete[]str;
-	str = 0;
-	delete[]buf;
-	buf = 0;
+	if( str )
+	{
+		delete[]str;
+		str = 0;
+	}
+	if( buf )
+	{
+		delete[]buf;
+		buf = 0;
+	}
 
 	return str1;
 }
@@ -391,8 +397,11 @@ int TagData::read_any(bool nodata)
 		fread(val, str_sz, 1, in);
 		val[str_sz] = '\0';
 		string val_str = string(val);
-		delete[]val;
-		val = 0;
+		if( val )
+		{
+			delete[]val;
+			val = 0;
+		}
 
 		tagtable->add(name, val_str);
 	}
@@ -420,8 +429,11 @@ int TagData::read(bool nodata)
 		return 1;
 	}
 
-	delete[]mark;
-	mark = 0;
+	if( mark )
+	{
+		delete[]mark;
+		mark = 0;
+	}
 
 	int encoded_types_size = 0;
 	fread(&encoded_types_size, sizeof(int), 1, in);
@@ -571,8 +583,11 @@ int TagEntry::read(bool nodata)
 	}
 
 	name = string(tmp_name);
-	delete[]tmp_name;
-	tmp_name = 0;
+	if( tmp_name )
+	{
+		delete[]tmp_name;
+		tmp_name = 0;
+	}
 
 	LOGVAR("\ntag name: '%s', len: %d, type: '%s'",
 		   name.c_str(), name_len, Gatan::to_str((EntryType) tag_type));

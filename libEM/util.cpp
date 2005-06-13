@@ -160,8 +160,11 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 		memcpy(&data[(ny - 1 - i) * nx], buf, row_size);
 	}
 
-	delete[]buf;
-	buf = 0;
+	if( buf )
+	{ 
+		delete[]buf;
+		buf = 0;
+	}
 }
 
 bool Util::sstrncmp(const char *s1, const char *s2)
@@ -340,8 +343,11 @@ string Util::remove_filename_ext(const string& filename)
 		buf[strlen(buf) - strlen(old_ext)] = '\0';
 	}
 	string result = string(buf);
-	delete [] buf;
-	buf = 0;
+	if( buf )
+	{
+		delete [] buf;
+		buf = 0;
+	}
 	return result;
 }
 

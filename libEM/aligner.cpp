@@ -135,7 +135,11 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 	}
 
 	cf->done_data();
-	delete cf;
+	if( cf )
+	{
+		delete cf;
+		cf = 0;
+	}
 	cf=this_img->copy(0);
 	cf->translate(cur_trans);
 
@@ -272,7 +276,11 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,  const string&) 
 	Util::find_max(data, this_img2_nx, &peak, &peak_index);
 	
 	cf->done_data();
-	delete cf;
+	if( cf )
+	{
+		delete cf;
+		cf = 0;
+	}
 	cf=this_img->copy(0);
 	cf->rotate((float)(-peak_index * M_PI / this_img2_nx), 0, 0);
 	cf->set_attr("align_score", peak);
@@ -307,11 +315,17 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,  const stri
 	cf->set_attr("rotational",a);
 	cf->done_data();
 
-	delete e1;
-	e1 = 0;
+	if( e1 )
+	{
+		delete e1;
+		e1 = 0;
+	}
 
-	delete e2;
-	e2 = 0;
+	if( e2 )
+	{
+		delete e2;
+		e2 = 0;
+	}
 
 	return cf;
 }
@@ -355,8 +369,11 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,  const string&) co
 
 	if (nx != rals || irad != rali || orad != ralo) {
 		for (size_t i = 0; i < ralfp.size(); i++) {
-			delete ralfp[i];
-			ralfp[i] = 0;
+			if( ralfp[i] )
+			{
+				delete ralfp[i];
+				ralfp[i] = 0;
+			}
 		}
 		ralfp.clear();
 
@@ -487,11 +504,19 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  const stri
 
 	EMData *tmp = this_copy;
 	this_copy=tmp->align("Translational", to, trans_params);
-	delete tmp;
+	if( tmp )
+	{
+		delete tmp;
+		tmp = 0;
+	}
 	
 	tmp=this_copy2;
 	this_copy2=tmp->align("Translational", to, trans_params);
-	delete tmp;
+	if( tmp )
+	{
+		delete tmp;
+		tmp = 0;
+	}
 	
 	tmp = to;
 
@@ -504,14 +529,20 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  const stri
 	EMData *result = 0;
 	if (dot1 < dot2) {			// assumes smaller is better, won't work with Dot !!!
 		this_copy->set_attr("align_score", dot1);
-		delete this_copy2;
-		this_copy2 = 0;
+		if( this_copy2 )
+		{
+			delete this_copy2;
+			this_copy2 = 0;
+		}
 		result = this_copy;
 	}
 	else {
 		this_copy2->set_attr("align_score", dot2);
-		delete this_copy;
-		this_copy = 0;
+		if( this_copy )
+		{
+			delete this_copy;
+			this_copy = 0;
+		}
 		result = this_copy2;
 	}
 
@@ -570,14 +601,20 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  const 
 	EMData *result = 0;
 	if (dot1 < dot2) {
 		this_copy->set_attr("align_score", dot1);
-		delete this_copy2;
-		this_copy2 = 0;
+		if( this_copy2 )
+		{
+			delete this_copy2;
+			this_copy2 = 0;
+		}
 		result = this_copy;
 	}
 	else {
 		this_copy2->set_attr("align_score", dot2);
-		delete this_copy;
-		this_copy = 0;
+		if( this_copy )
+		{
+			delete this_copy;
+			this_copy = 0;
+		}
 		result = this_copy2;
 	}
 
@@ -653,10 +690,16 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,  const
 		r1->write_image("racf.hed", 0, EMUtil::IMAGE_IMAGIC);
 		r2->write_image("racf.hed", 1, EMUtil::IMAGE_IMAGIC);
 
-		delete r1;
-		r1 = 0;
-		delete r2;
-		r2 = 0;
+		if( r1 )
+		{
+			delete r1;
+			r1 = 0;
+		}
+		if( r2 )
+		{
+			delete r2;
+			r2 = 0;
+		}
 
 		float *d = ccf->get_data();
 		float peak_value = 0;
@@ -668,9 +711,12 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,  const
 				peak_x = i % size;
 			}
 		}
-
-		delete ccf;
-		ccf = 0;
+		
+		if( ccf )
+		{
+			delete ccf;
+			ccf = 0;
+		}
 
 		lda = peak_x;
 		if (peak_x > size / 2) {
@@ -721,25 +767,37 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,  const
 		radonwith->done_data();
 	}
 
-	delete t1;
-	t1 = 0;
+	if( t1 )
+	{
+		delete t1;
+		t1 = 0;
+	}
 
 	t1 = this_img->copy();
 
 	t1->rotate_translate(-lda * (float)M_PI * 2.0f / size, 0, 0, -max * cos(ta), -max * sin(ta), 0);
 
 	if (drt) {
-		delete radonthis;
-		radonthis = 0;
+		if( radonthis )
+		{
+			delete radonthis;
+			radonthis = 0;
+		}
 	}
 
 	if (drw) {
-		delete radonwith;
-		radonwith = 0;
+		if( radonwith )
+		{
+			delete radonwith;
+			radonwith = 0;
+		}
 	}
 
-	delete[]vert;
-	vert = 0;
+	if( vert )
+	{
+		delete[]vert;
+		vert = 0;
+	}
 
 	return t1;
 }
@@ -777,14 +835,20 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  const string&) 
 	else {
 		if (dot1 < dot2) {
 			this_copy->set_flipped(0);
-			delete this_copy2;
-			this_copy2 = 0;
+			if( this_copy2 )
+			{
+				delete this_copy2;
+				this_copy2 = 0;
+			}
 			result = this_copy;
 		}
 		else {
 			this_copy2->set_flipped(1);
-			delete this_copy;
-			this_copy = 0;
+			if( this_copy )
+			{
+				delete this_copy;
+				this_copy = 0;
+			}
 			result = this_copy2;
 		}
 	}
@@ -862,15 +926,21 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 			this_img->process("eman1.xform.flip", Dict("axis", "x"));
 		}
 
-		delete this_copy2;
-		this_copy2 = 0;
+		if( this_copy2 )
+		{
+			delete this_copy2;
+			this_copy2 = 0;
+		}
 		result = this_copy;
 	}
 	else {
 		this_copy2->set_attr("flipped",1);
 		this_copy2->set_attr("align_score",dot2);
-		delete this_copy;
-		this_copy = 0;
+		if( this_copy )
+		{
+			delete this_copy;
+			this_copy = 0;
+		}
 		result = this_copy2;
 	}
 
@@ -895,8 +965,11 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 
 	int to_copy_r2 = to_copy->get_ysize() / 2 - 2 - maxshift / 2;
 	EMData *tmp = to_copy->unwrap(4, to_copy_r2, xst / 2, 0, 0, true);
-	delete to_copy;
-	to_copy = 0;
+	if( to_copy )
+	{
+		delete to_copy;
+		to_copy = 0;
+	}
 	to_copy = tmp;
 
 	EMData *wsc = to_copy->copy(false);
@@ -958,25 +1031,46 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 						bestdy = dy;
 						bestflip = dflip;
 					}
-
-					delete a;
-					a = 0;
-					delete uw;
-					uw = 0;
-					delete uwc;
-					uwc = 0;
+					
+					if( a )
+					{
+						delete a;
+						a = 0;
+					}
+					if( uw )
+					{
+						delete uw;
+						uw = 0;
+					}
+					if( uwc )
+					{
+						delete uwc;
+						uwc = 0;
+					}
 				}
 			}
 		}
 	}
-	delete dns;
-	dns = 0;
-	delete dfs;
-	dfs = 0;
-	delete to_copy;
-	to_copy = 0;
-	delete wsc;
-	wsc = 0;
+	if( dns )
+	{
+		delete dns;
+		dns = 0;
+	}
+	if( dfs )
+	{
+		delete dfs;
+		dfs = 0;
+	}
+	if( to_copy )
+	{
+		delete to_copy;
+		to_copy = 0;
+	}
+	if( wsc )
+	{
+		delete wsc;
+		wsc = 0;
+	}
 
 	bestdx *= 2;
 	bestdy *= 2;
@@ -1018,21 +1112,36 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 						bestdy = dy;
 						bestflip = dflip;
 					}
-					delete a;
-					a = 0;
-					delete uw;
-					uw = 0;
-					delete uwc;
-					uwc = 0;
+					if( a )
+					{
+						delete a;
+						a = 0;
+					}
+					if( uw )
+					{
+						delete uw;
+						uw = 0;
+					}
+					if( uwc )
+					{
+						delete uwc;
+						uwc = 0;
+					}
 				}
 			}
 		}
 	}
-
-	delete to;
-	to = 0;
-	delete to_copy;
-	to_copy = 0;
+	
+	if( to )
+	{
+		delete to;
+		to = 0;
+	}
+	if( to_copy )
+	{
+		delete to_copy;
+		to_copy = 0;
+	}
 
 	if (bestflip) {
 		df->rotate_translate((float)bestang, 0.0f, 0.0f, (float)-bestdx, (float)-bestdy, 0.0f);
@@ -1040,8 +1149,11 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 		return df;
 	}
 
-	delete df;
-	df = 0;
+	if( df )
+	{
+		delete df;
+		df = 0;
+	}
 
 	EMData *dn = 0;
 	if (dflip) {
@@ -1137,12 +1249,21 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 
 	delete dns->get_parent();
 	delete dfs->get_parent();
-	delete dns;
-	dns = 0;
-	delete dfs;
-	dfs = 0;
-	delete to_copy;
-	to_copy = 0;
+	if( dns )
+	{
+		delete dns;
+		dns = 0;
+	}
+	if( dfs )
+	{
+		delete dfs;
+		dfs = 0;
+	}
+	if( to_copy )
+	{
+		delete to_copy;
+		to_copy = 0;
+	}
 
 	bestdx *= 2;
 	bestdy *= 2;
@@ -1190,8 +1311,11 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 	}
 
 	if (bestflip) {
-		delete dn;
-		dn = 0;
+		if( dn )
+		{
+			delete dn;
+			dn = 0;
+		}
 
 		df->rotate_translate(bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
 
@@ -1209,8 +1333,11 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 		delete df->get_parent();
 	}
 
-	delete df;
-	df = 0;
+	if( df )
+	{
+		delete df;
+		df = 0;
+	}
 
 	return dn;
 }
@@ -1252,14 +1379,20 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,  const string & cmp
 		if (!flip) {
 			this_img->process("eman1.xform.flip", Dict("axis", "x"));
 		}
-		delete flip_copy;
-		flip_copy = 0;
+		if( flip_copy )
+		{
+			delete flip_copy;
+			flip_copy = 0;
+		}
 		result = this_copy;
 	}
 	else {
 		flip_copy->set_flipped(1);
-		delete this_copy;
-		this_copy = 0;
+		if( this_copy )
+		{
+			delete this_copy;
+			this_copy = 0;
+		}
 		result = flip_copy;
 	}
 
@@ -1299,14 +1432,20 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,  const string&) co
 	float r2_score = r2->dot(to);
 
 	if (drw) {
-		delete radonwith;
-		radonwith = 0;
+		if(radonwith)
+		{
+			delete radonwith;
+			radonwith = 0;
+		}
 	}
 
 	EMData *result = 0;
 	if (r1_score < r2_score) {
-		delete r1;
-		r1 = 0;
+		if(r1)
+		{
+			delete r1;
+			r1 = 0;
+		}
 
 		if (!thisf) {
 			this_img->process("eman1.xform.flip", Dict("axis", "x"));
@@ -1314,8 +1453,11 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,  const string&) co
 		result = r2;
 	}
 	else {
-		delete r2;
-		r2 = 0;
+		if( r2 )
+		{
+			delete r2;
+			r2 = 0;
+		}
 		result = r1;
 	}
 

@@ -30,11 +30,17 @@ int main()
 	
 	c->writeImage("aaatest1.mrc", -1);
 
-	delete a;
-	a = 0;
+	if( a )
+	{
+		delete a;
+		a = 0;
+	}
 
-	delete b;
-	b = 0;
+	if( b )
+	{
+		delete b;
+		b = 0;
+	}
 	
 	return 0;
 }
