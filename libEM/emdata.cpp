@@ -72,6 +72,7 @@ EMData::~EMData()
 			rdata = 0;
 		}
 	}
+	rdata = 0;
 
 	if (supp) {
 		free(supp);
