@@ -40,11 +40,12 @@ SET(LIB_EM_SOURCE byteorder.cpp
     averager.cpp
     reconstructor.cpp
     exception.cpp
-	testutil.cpp
+    testutil.cpp
     fundamentals.cpp
     normpadft.cpp
     periodogram.cpp
     fourierfilter.cpp
+    rsconvolution.cpp
     )
 
 IF(WIN32)

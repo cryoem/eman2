@@ -6476,8 +6476,8 @@ void EMData::divkb2() {
 			wkbj = 1.0;
 		} else if (ttt < alpha) {
 			float xx = sqrt(1.0 - pow((ttt/alpha), 2));
-			float wkbj = sinh(twopi*alpha*rrr*v*xx)
-					   / (twopi*alpha*rrr*v*xx)/wkb0;
+			wkbj = sinh(twopi*alpha*rrr*v*xx)
+				   / (twopi*alpha*rrr*v*xx)/wkb0;
 		} else if (ttt == alpha) {
 			wkbj = 1.0/wkb0;
 		} else {
