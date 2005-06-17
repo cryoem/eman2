@@ -576,7 +576,7 @@ int main(int argc, char *argv[])
 				p["niter"] = bliter;
 				p["half_width"] = blwidth;
 
-				d->process("eman1.Bilateral", p);
+				d->process("eman1.bilateral", p);
 			}
 
 #if 0
