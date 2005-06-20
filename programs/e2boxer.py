@@ -28,6 +28,8 @@ for single particle analysis."""
 	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
 	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
+	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -52,7 +54,7 @@ for single particle analysis."""
 		if not options.box in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
 	
-	shrinkfactor=int(ceil(options.box/16))
+	shrinkfactor=int(ceil(options.box/24))
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
@@ -155,11 +157,33 @@ for single particle analysis."""
 		# this will produce a new list excluding any lower valued boxes within
 		# 1/2 a box size of a higher one. It also rescales the boxes.
 		# (ok, you could do this with clever syntax, but this is more readable)
+
+		# first we prepare a grid table of putative box locations for speed
+		grid={}
+		for n,i in enumerate(pks):
+			x=int(floor(i[2]*shrinkfactor/options.box))
+			y=int(floor(i[3]*shrinkfactor/options.box))
+			try: grid[(x,y)].append(n)
+			except: grid[(x,y)]=[n]
+
+		
 		goodpks=[]
 		bf=options.box/(shrinkfactor*2)
 		for n,i in enumerate(pks):
 			if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : continue
-			for nn,ii in enumerate(pks[:n]):
+
+			# local is a list of putative peaks near the current peak
+                        x=int(floor(i[2]*shrinkfactor/options.box))
+                        y=int(floor(i[3]*shrinkfactor/options.box))
+			local=[]
+			for xx in range(x-1,x+2):
+				for yy in range(y-1,y+2):
+					try: local+=grid[(xx,yy)]
+					except: pass
+			local=filter(lambda x: x>n,local)
+
+			for nn in local:
+				ii=pks[nn]
 				if hypot(i[2]-ii[2],i[3]-ii[3])<bf*3/2 : break
 			else: goodpks.append([i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2])
 		
@@ -175,8 +199,9 @@ for single particle analysis."""
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
-#			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Phase")
-			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Phase")
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+#			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Variance")
+			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Variance")
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
@@ -193,22 +218,23 @@ for single particle analysis."""
 #			except: pass
 			
 			# now we refine this by doing a second pass
-#			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
-#			except: continue
-#			b.process("eman1.normalize.edgemean")
-#			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Phase")
-			
-#			refptcl[i[1]].write_image("at.hdf",-1)
-#			ba.write_image("at.hdf",-1)
-			
-#			dx=ba.get_attr("translational.dx")
-#			dy=ba.get_attr("translational.dy")
-#			da=ba.get_attr("rotational")
-#			i[2]+=cos(da)*dx +sin(da)*dy
-#			i[3]+=-sin(da)*dx+cos(da)*dy
-			
+			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			except: continue
+			b.process("eman1.normalize.edgemean")
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+#			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Variance")
+			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Variance")
+			dx=ba.get_attr("translational.dx")
+			dy=ba.get_attr("translational.dy")
+			da=ba.get_attr("rotational")
+			i[2]-= cos(da)*dx+sin(da)*dy
+			i[3]-=-sin(da)*dx+cos(da)*dy
+
+			refptcl[i[1]].write_image("at.hdf",-1)
+			ba.write_image("at.hdf",-1)
+
 			# now record the fixed up location
-			goodpks2.append((ba.get_attr("align_score"),i[2],i[3]))
+			goodpks2.append((ba.get_attr("align_score"),i[2],i[3],i[1]))
 			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"))
 #			display([b,ba,refptcl[i[1]]])
 						
@@ -238,10 +264,13 @@ for single particle analysis."""
 		print "Threshold : ",thr
 		# Write EMAN1 style box database
 		out=open(args[0][:-3]+"box","w")
+		n=0
 		for i in goodpks2:
 			if i[0]>thr : break
+			n+=1
 			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[1],i[2],options.box,options.box))		
 		out.close()
+		print n," particles found"
 
 		# write boxed particles
 		if args[0][-3:]=="hdf" : outn=args[0][:-3]+"box.hdf"
@@ -250,8 +279,11 @@ for single particle analysis."""
 			if i[0]>thr : break
 			try: b.read_image(args[0],0,0,Region(i[1],i[2],options.box,options.box))
 			except: continue
+			if options.norm: b.process("eman1.normalize.edgemean")
 			b.write_image(outn,-1)
-			
+			if options.savealiref:
+				refptcl[i[3]].write_image("boxali.hdf",-1)
+				b.write_image("boxali.hdf",-1)
 				
 		out=open("box.stats","w")
 		for i in goodpks2: out.write("%f\n"%i[0])

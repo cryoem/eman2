@@ -82,8 +82,8 @@ float VarianceCmp::cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	float *x_data = with->get_data();
-	float *y_data = image->get_data();
+	float *y_data = with->get_data();
+	float *x_data = image->get_data();
 
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 	float m = 0;
