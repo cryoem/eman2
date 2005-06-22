@@ -476,3 +476,94 @@ def filt_tano(e, freq, fall_off, value):
 	      "Value_at_zero_frequency" : value}
     return Processor.EMFourierFilter(e, params)
     
+
+def parse_spider_fname(mystr, *fieldvals):
+    """
+    Parse a Spider filename string and insert parameters.
+
+    Example input: "foo{***}/img{****}.mrc"
+    This string has two fields that should be replaced by integers,
+    and the number of '*'s determines how "wide" that field should be.
+    So, if the parameters to be inserted are 10 and 3, then the resulting
+    filename should be "foo010/img0003.mrc".
+
+    Note: If the image is a stack file, the last character in the string
+    must be a '@' (except for possible extraneous whitespace, which is
+    ignored).  This stack symbol will be stripped in the output filename.
+
+    Example:
+
+       In [1]: mystr = "foo{***}/img{****}.mrc
+       In [2]: parse_spider_fname(mystr, 10, 3)
+       Out[2]: 'foo010/img0003.mrc'
+
+    @param mystr Spider filename string to be parsed
+    @param fieldvals Integer values to be placed into the fields
+
+    @return Parsed filename
+    """
+    # helper functions and classes
+    def rm_stack_char(mystr):
+        "Helper function to remove a stack character if it exists"
+        stackloc = mystr.find("@")
+        if stackloc != -1: 
+            # there's an '@' somewhere
+            if len(mystr) - 1 == stackloc:
+                # It's at the end of the string
+                return mystr[:-1]
+            else:
+                # '@' not at the end, so it's an error
+                raise ValueError, "Invalid format: misplaced '@'."
+        else:
+            # no '@' at all
+            return mystr
+    class Fieldloc:
+        "Helper class to store description of a field"
+        def __init__(self, begin, end):
+            self.begin = begin
+            self.end = end
+        def count(self):
+            "Size of the field (including braces)"
+            return self.end - self.begin + 1
+    def find_fields(mystr):
+        "Helper function to identify and validate fields in a string"
+        fields = []
+        loc = 0
+        while True:
+            begin = mystr.find('{', loc)
+            if begin == -1: break
+            end = mystr.find('}', begin)
+            field = Fieldloc(begin, end)
+            # check validity
+            asterisks = mystr[begin+1:end]
+            if asterisks.strip("*") != "":
+                raise ValueError, "Malformed {*...*} field: %s" % \
+                    mystr[begin:end+1]
+            fields.append(Fieldloc(begin, end))
+            loc = end
+        return fields
+    # remove leading whitespace
+    mystr.strip()
+    # remove stack character (if it exists)
+    mystr = rm_stack_char(mystr)
+    # locate fields to replace
+    fields = find_fields(mystr)
+    if len(fields) != len(fieldvals):
+        # wrong number of fields?
+        raise ValueError, "Number of field values provided differs from" \
+                          "the number of {*...*} fields."
+    newstrfrags = []
+    loc = 0
+    for i, field in enumerate(fields):
+        # text before the field
+        newstrfrags.append(mystr[loc:field.begin])
+        # replace the field with the field value
+        fieldsize = field.count() - 2
+        fielddesc = "%0" + str(fieldsize) + "d"
+        newstrfrags.append(fielddesc % fieldvals[i])
+        loc = field.end + 1
+    newstrfrags.append(mystr[loc:])
+    return "".join(newstrfrags)
+
+
+
