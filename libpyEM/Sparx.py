@@ -148,14 +148,14 @@ def add_series(file_pattern,i1,i2,average,variance):
       average and variance are output objects, or, if written as "a", are output disk files
       
     """
-    fname = Util.parse_spider_fname(file_pattern,[i1]) #f=file_pattern[i1]
+    fname = parse_spider_fname(file_pattern,i1) #f=file_pattern[i1]
     ave = getImage(fname)
     var = ave*ave  #pow(ave,2.0)
     descriptive_statistics(ave)
 
     # process the remaining files
     for index in range(i1+1,i2+1):
-        fname = Util.parse_spider_fname(file_pattern,[index])
+        fname = parse_spider_fname(file_pattern,index)
         e = getImage(fname)
         ave = ave + e
         var = var + e*e  #pow(e,2.0)
@@ -212,7 +212,7 @@ def do_reconstruction(filepattern, start, end, anglelist, symmetry="c1"):
         rotations.append(Transform3D(Ttype, phi, theta, psi))
         
     # read first image to determine the size to use
-    projname = Util.parse_spider_fname(filepattern,[start]) 
+    projname = parse_spider_fname(filepattern,start) 
     first = getImage(projname)
     size = first.get_xsize()
     # sanity check -- image must be square
@@ -226,7 +226,7 @@ def do_reconstruction(filepattern, start, end, anglelist, symmetry="c1"):
     r = Reconstructors.get("PawelBackProjection", params)
     r.setup()
     for i in range(start, end+1):
-        projname = Util.parse_spider_fname(filepattern,[i])
+        projname = parse_spider_fname(filepattern,i)
         projection = getImage(projname)
         r.insert_slice(projection, rotations[i])
     v = r.finish()
@@ -240,18 +240,18 @@ def create_write_projections(volume, filepattern, anglelist, radius):
                     "anglelist":myangles,
                     "radius":radius}
         proj = volume.project("Pawel",myparams)
-        projname = Util.parse_spider_fname(filepattern, [i])
+        projname = parse_spider_fname(filepattern, i)
         proj.write_image(projname, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 
 def do_alignment(exptpattern, start, end, refpattern, alipattern, anglelist):
     newangles = []
     for i in range(start, end+1):
-        exptname = Util.parse_spider_fname(exptpattern, [i])
-        aliname  = Util.parse_spider_fname(alipattern, [i])
+        exptname = parse_spider_fname(exptpattern, i)
+        aliname  = parse_spider_fname(alipattern, i)
         exptimage = getImage(exptname)
         nangles = len(anglelist) / 3
         for ref in range(nangles):
-            refname = Util.parse_spider_fname(refpattern, [ref])
+            refname = parse_spider_fname(refpattern, ref)
             refimage = getImage(refname)
             #  do something real here
         # this next bit is utter rubbish just so the code "works"
