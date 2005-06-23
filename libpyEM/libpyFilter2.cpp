@@ -119,7 +119,7 @@ BOOST_PYTHON_MODULE(libpyFilter2)
 
     def("dump_processors", &EMAN::dump_processors);
     def("multi_filters", &EMAN::multi_filters);
-    def("group_filters", &EMAN::group_filters);
+    def("group_processors", &EMAN::group_processors);
     class_< EMAN::Factory<EMAN::Processor>, boost::noncopyable >("Processors", no_init)
         .def("get", (EMAN::Processor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Processor>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Processor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Processor>::get, return_value_policy< manage_new_object >())

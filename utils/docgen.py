@@ -105,7 +105,7 @@ def write_single_filters():
 def write_group_filters():
 	gout = open("filter_groups.html", "wb")
 	write_header(gout)
-	filtergroups = group_filters()
+	filtergroups = group_processors()
 	groupnames = filtergroups.keys()
 	bgcolor1 = 'f0f0fa'
 	bgcolor2 = 'fafaf0'
