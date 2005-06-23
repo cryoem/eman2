@@ -720,7 +720,7 @@ namespace EMAN
          */
 		void set_shared_data(int xsize, int ysize, int zsize, float *data);
 		
-		/** Done with data manipulation. It mark EMData as changed.
+		/** Done with data manipulation. It marks EMData as changed.
 		 *
 		 * This function is used together with 'get_data()'.
 		 * A typical case is 1) call
@@ -729,7 +729,7 @@ namespace EMAN
 		 */
 		void done_data();
 
-		/** Mark EMData as changed, and it needs to be updated.*/
+		/** Mark EMData as changed, statistics, etc will be updated at need.*/
 		void update();
 
 		/** Make all the pixel value = 0. */

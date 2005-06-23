@@ -77,13 +77,23 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 }
 
 
-float VarianceCmp::cmp(EMData * image, EMData *with) const
+float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
 	validate_input_args(image, with);
 
+	int matchfilt = params.set_default("matchfilt",0);
+	
 	float *y_data = with->get_data();
 	float *x_data = image->get_data();
+	
+	EMData *with2=NULL;
+	if (matchfilt) {
+		with2=with->copy();
+//		with2->process("matchfilt",Dict("to",this));
+		y_data = with2->get_data();
+	}
+		
 
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 	float m = 0;
@@ -101,24 +111,52 @@ float VarianceCmp::cmp(EMData * image, EMData *with) const
 	}
 
 	int keepzero = params.set_default("keepzero", 0);
-	float result = 0;
+	double  result = 0;
 	int count = 0;
 
-	for (size_t i = 0; i < size; i++) {
-		if (y_data[i] && x_data[i]) {
-			result += Util::square((x_data[i] * m) + b - y_data[i]);
-			count++;
-		}
-	}
 
 	if (keepzero) {
-		result = result / count;
+		for (size_t i = 0; i < size; i++) {
+			if (y_data[i] && x_data[i]) {
+				result += Util::square((x_data[i] * m) + b - y_data[i]);
+				count++;
+			}
+		}
+		result/=count;
 	}
 	else {
+		for (size_t i = 0; i < size; i++) {
+			result += Util::square((x_data[i] * m) + b - y_data[i]);
+		}
 		result = result / size;
 	}
 	scale = m;
 	shift = b;
+	
+	EXITFUNC;
+	
+#if 0
+	return (1 - result);
+#endif
+	
+	return result;
+}
+
+float VarianceCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+	float *y_data = with->get_data();
+	float *x_data = image->get_data();
+	double result = 0;
+	
+	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	
+	for (size_t i = 0; i < size; i++) {
+		result += Util::square(x_data[i]- y_data[i]);
+	}
+	result/=size;
 	
 	EXITFUNC;
 	

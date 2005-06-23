@@ -13,10 +13,8 @@ namespace EMAN
 	class EMData;
 	class Transform3D;
 
-	/** Cmp class defines image comparison method. Before doing the
-	 * comparison, an optional transformation may be used to
-	 * transform the 2 images. The bigger the comparison result, the
-	 * more similar of the 2 images.
+	/** Cmp class defines image comparison method. Using default
+	 * arguments, smaller values indicate more similar images.
 	 *
 	 * Cmp class is the base comparison class. Each specific
      * comparison class is a subclass of Cmp, and must have a unique
@@ -67,7 +65,7 @@ namespace EMAN
 		 *
 		 * @param image The first image to be compared.
 		 * @param with The second image to be comppared.
-		 * @return The comparison result. The bigger, the better.
+		 * @return The comparison result. Smaller better by default
 		 */			
 		virtual float cmp(EMData * image, EMData * with) const = 0;
 		
@@ -118,12 +116,12 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "Dot";
+			return "dot";
 		}
 
 		string get_desc() const
 		{
-			return "Dot product";
+			return "Dot product * -1";
 		}
 
 		static Cmp *NEW()
@@ -134,31 +132,32 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("evenonly", EMObject::INT);
+			d.put("negative", EMObject::INT, "If set, returns -1 * dot product. Set by default so smaller is better");
+			d.put("evenonly", EMObject::INT, "If set, consider only even numbered pixels.");
 			return d;
 		}
 
 	};
 
-	/** Linear comparison of 2 data sets. 'image' should be noisy and
-     * 'with' should be less noisy. Scaling of 'this' is determined to
-     * make the density histogram of the difference between the data
-     * sets as symmetric as possible scale will optionally return
-     * the scale factor which would be multiplied by 'this' to achieve
-     * this normalization shift will return the corresponding shift.
-     * If modifying 'this', scale should be applied first, then b
-     * should be added
-     */
-	class VarianceCmp:public Cmp
+	/** Linear comparison of 2 data sets. 'this' should be noisy and
+	* 'with' should be less noisy. linear scaling (mx + b) of the
+	* densities in this is performed to produce the smallest possible
+	* variance between images. 
+	* If keepzero is set, then zero pixels are left at zero (b is not added).
+	* if matchfilt is set, then 'with' is filtered so its radial power spectrum matches 'this'
+	* To modify 'this' to match the operation performed here, scale 
+	* should be applied first, then b should be added
+	*/
+	class OptVarianceCmp:public Cmp
 	{
 	  public:
-		VarianceCmp() : scale(0), shift(0) {}
+		OptVarianceCmp() : scale(0), shift(0) {}
 		
 		float cmp(EMData * image, EMData * with) const;
 
 		string get_name() const
 		{
-			return "Variance";
+			return "optvariance";
 		}
 
 		string get_desc() const
@@ -168,13 +167,14 @@ namespace EMAN
 
 		static Cmp *NEW()
 		{
-			return new VarianceCmp();
+			return new OptVarianceCmp();
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("keepzero", EMObject::INT);
+			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization");
+			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this");
 			return d;
 		}
 
@@ -191,6 +191,37 @@ namespace EMAN
 	private:
 		mutable float scale;
 		mutable float shift;
+	};
+	
+	/** Variance between 'this' and 'with' (no sqrt)*/
+	class VarianceCmp:public Cmp
+	{
+	  public:
+		VarianceCmp() {}
+		
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return "variance";
+		}
+
+		string get_desc() const
+		{
+			return "Real-space variance sum(a^2 - b^2)/n.";
+		}
+
+		static Cmp *NEW()
+		{
+			return new VarianceCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
 	};
 
 	/** Amplitude weighted mean phase difference (radians) with optional
@@ -210,7 +241,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "Phase";
+			return "phase";
 		}
 
 		string get_desc() const
@@ -243,7 +274,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "FRC";
+			return "frc";
 		}
 
 		string get_desc() const
