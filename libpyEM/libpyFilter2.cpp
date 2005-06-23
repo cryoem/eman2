@@ -118,7 +118,7 @@ BOOST_PYTHON_MODULE(libpyFilter2)
     delete EMAN_Processor_scope;
 
     def("dump_processors", &EMAN::dump_processors);
-    def("multi_filters", &EMAN::multi_filters);
+    def("multi_processors", &EMAN::multi_processors);
     def("group_processors", &EMAN::group_processors);
     class_< EMAN::Factory<EMAN::Processor>, boost::noncopyable >("Processors", no_init)
         .def("get", (EMAN::Processor* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Processor>::get, return_value_policy< manage_new_object >())

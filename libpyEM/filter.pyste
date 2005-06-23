@@ -24,7 +24,7 @@ set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 
 
 Function("EMAN::dump_processors", "filter.h")
-Function("EMAN::multi_filters", "filter.h")
+Function("EMAN::multi_processors", "filter.h")
 Function("EMAN::group_processors", "filter.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
