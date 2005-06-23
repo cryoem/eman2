@@ -803,7 +803,9 @@ namespace EMAN
 			 *
 			 *	This routine uses six image points for interpolation:
 			 *
-			 @verbatim
+			 *@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf
+			 *
+			 *@verbatim
 			           f3    fc
 			           |
 			           | x
@@ -811,7 +813,7 @@ namespace EMAN
 			           |
 			           |
 			           f4
-			 @endverbatim
+			 *@endverbatim
 			 *
 			 *	f0 - f4 are image values near the interpolated point X.
 			 *	f0 is the interior mesh point nearest x.
