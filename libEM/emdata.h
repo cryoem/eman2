@@ -143,10 +143,10 @@ namespace EMAN
 		void print_image(const string str = string(""), 
 				ostream& out = std::cout);
 
-		/** Apply a filter with its parameters on this image.
-		 * @param filtername Filter Name.
+		/** Apply a processor with its parameters on this image.
+		 * @param processorname Processor Name.
 		 * @param params Filter parameters in a keyed dictionary.
-		 * @exception NotExistingObjectError If the filter doesn't exist.
+		 * @exception NotExistingObjectError If the processor doesn't exist.
 		 */
 		void process(const string & filtername, const Dict & params = Dict());
 
@@ -613,7 +613,7 @@ namespace EMAN
 		 */
 		void mean_shrink(float shrink_factor);
 		
-		/* Reduces the size of the image by a factor using a local median filter.
+		/* Reduces the size of the image by a factor using a local median processor.
 		 *
 		 * @param shrink_factor Image shrink factor.
 		 * @exception InvalidValueException If shrink factor is invalid.

@@ -188,7 +188,7 @@ def main():
             if option1 == "filter":
                 fi = index_d[option1]
                 (filtername, param_dict) = pyemtbx.options.parse_filter_params(options.filter[fi])
-                d.filter(filtername, param_dict)
+                d.process(filtername, param_dict)
                 index_d[option1] += 1
 
             elif option1 == "norefs" and d.get_average_nimg() <= 0:
@@ -272,11 +272,11 @@ def main():
                     sc.common_lines_real(d, d, scl, true)
                 else:
                     e = d.copy()
-                    e.filter("eman1.xform.phaseorigin")
+                    e.process("eman1.xform.phaseorigin")
                 
                     if sclmd == 1:
                         sc.common_lines(e, e, sclmd, scl, true)
-                        sc.filter("eman1.math.linear", Dict("shift", EMObject(-90.0), "scale", EMObject(-1.0)))		
+                        sc.process("eman1.math.linear", Dict("shift", EMObject(-90.0), "scale", EMObject(-1.0)))		
                     elif sclmd == 2:
                         sc.common_lines(e, e, sclmd, scl, true)
                     else:
@@ -300,8 +300,8 @@ def main():
                     fftavg.set_size(nx+2, ny)
                     fftavg.set_complex(1)
                     fftavg.to_zero()
-                d.filter("eman1.mask.edgemean")
-                d.filter("eman1.normalize")
+                d.process("eman1.mask.edgemean")
+                d.process("eman1.normalize")
                 df = d.do_fft()
                 df.mult(df.get_ysize())
                 fftavg.add_incoherent(df)
@@ -361,7 +361,7 @@ def main():
 
     if average:
         average.set_average_nimg(n1-n0+1)
-        average.filter("eman1.normalize");
+        average.process("eman1.normalize");
 	average.append_image(outfile);
 
     if options.fftavg:

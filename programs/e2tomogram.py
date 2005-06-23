@@ -104,8 +104,8 @@ Processes a tomographic tilt series"""
 	parser.add_option("--tilt", "-T", type="float", help="Angular spacing between tilts (fixed)",default=0.0)
 	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
 	parser.add_option("--box","-B", type="int", help="Box size for alignment probe (pixels), default=96",default=96.0)
-	parser.add_option("--highpass",type="float",help="Highpass Gaussian filter radius (pixels), default none", default=-1.0)
-	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian filter radius (pixels), default none",default=-1.0)
+	parser.add_option("--highpass",type="float",help="Highpass Gaussian processor radius (pixels), default none", default=-1.0)
+	parser.add_option("--lowpass",type="float",help="Lowpass Gaussian processor radius (pixels), default none",default=-1.0)
 	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 	parser.add_option("--localavg",type="int",help="Average several images for the alignment",default=1)
 	parser.add_option("--tiltaxis",type="float",help="Skip automatic tilt axis location, use fixed angle from x",default=400.0)
@@ -210,7 +210,7 @@ Processes a tomographic tilt series"""
 			ccfs=mask.calc_ccf(im2s,fp_flag.CIRCULANT)	# this is the sum of the masked values^2 for each pixel center
 			ccfs.process("eman1.math.sqrt")
 			ccf/=ccfs
-#			ccf.filter("eman1.mask.sharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
+#			ccf.process("eman1.mask.sharp",{"outer_radius":(im1.get_xsize()-rgnp[2])/2})
 			ccf.process("eman1.normalize")		# peaks relative to 1 std-dev
 			ccf.process("eman1.mask.onlypeaks",{"npeaks":0})
 			ccf.process("eman1.mask.sharp",{"outer_radius":options.maxshift})

@@ -13,8 +13,8 @@ import time
 
 	
 def write_header(output):
-	output.write("<head><title>EMAN2 Filter Manual</title></head><body>\n")
-	output.write("<h1> <center> <font color=\"blue\">EMAN2 Filter Manual </font></center></h1>\n")
+	output.write("<head><title>EMAN2 Processor Manual</title></head><body>\n")
+	output.write("<h1> <center> <font color=\"blue\">EMAN2 Processor Manual </font></center></h1>\n")
 	output.write("<br>")
 	output.write("<i>Last modified on " + time.strftime('%a, %d %b %Y %H:%M:%S %Z'))
 	output.write("<br>")
@@ -23,7 +23,7 @@ def write_header(output):
 	output.write("<br><br>")
 	output.write("<table border=1 cellspacing=4 cellpadding=4>")
 	output.write("<tr>\n")
-	output.write("  <td align=center> <font size='+1'><b>Filter Name </b></font></td>\n")
+	output.write("  <td align=center> <font size='+1'><b>Processor Name </b></font></td>\n")
 	output.write("  <td align=center> <font size='+1'><b>Parameters </b></font></td>\n")
 	output.write("  <td align=center> <font size='+1'><b>Description </b></font> </td>\n")
 	output.write("</tr>\n")

@@ -83,7 +83,7 @@ namespace EMAN
 		{
 			params = new_params;
 		}
-		/** Get filter parameter information in a dictionary. Each
+		/** Get processor parameter information in a dictionary. Each
 		 * parameter has one record in the dictionary. Each record
 		 * contains its name, data-type, and description.
 		 *

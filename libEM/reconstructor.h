@@ -172,7 +172,7 @@ namespace EMAN
 		int nz;
 	};
 
-	/** Fourier space 3D reconstruction with slices already Wiener filtered.
+	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
      */
 	class WienerFourierReconstructor:public Reconstructor
 	{

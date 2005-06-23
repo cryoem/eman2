@@ -64,7 +64,7 @@ The following classes are defined: \n\
   Aligners - Aligner factory. Each Aligner alignes 2D/3D images. \n\
   Averagers - Averager factory. Each Averager averages a set of images. \n\
   Cmps  - Cmp factory. Each Cmp defines a way to do image comparison. \n\
-  Filters - Filter factory. Each filter implements an image-filtering algorithm. \n\
+  Filters - Filter factory. Each processor implements an image-processing algorithm. \n\
   Projectors - Projector factory. Each Projector implements an algorithm for 3D image projection. \n\
   Reconstructors - Reconstructor factory. Each Reconstructor implements an algorithm for image reconstruction. \n\
 \n\

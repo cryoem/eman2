@@ -966,7 +966,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	/** finalise the nfft plan */
 	nfft_3D_finalize(&my_plan);
 
-	// low pass filter
+	// low pass processor
 	double sigma2 = (map_size * apix / res) * (map_size * apix / res);
 	int index = 0;
 	for (int k = 0; k < map_size; k++) {
@@ -981,9 +981,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->filter("eman1.LowpassGauss",Dict("lowpass", map_size*apix/res));
+	//fft->process("eman1.LowpassGauss",Dict("lowpass", map_size*apix/res));
 
-	fft->filter("eman1.Phase180");	// move phase origin to center of image map_size, instead of at corner
+	fft->process("eman1.Phase180");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1048,7 +1048,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	/** finalise the nfft plan */
 	nfft_finalize(&my_plan);
 
-	// low pass filter
+	// low pass processor
 	double sigma2 = (map_size * apix / res) * (map_size * apix / res);
 	int index = 0;
 	for (int k = 0; k < map_size; k++) {
@@ -1063,9 +1063,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->filter("eman1.LowpassGauss",Dict("lowpass", map_size*apix/res));
+	//fft->process("eman1.LowpassGauss",Dict("lowpass", map_size*apix/res));
 
-	fft->filter("eman1.Phase180");	// move phase origin to center of image map_size, instead of at corner
+	fft->process("eman1.Phase180");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1137,7 +1137,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 	nfft_2D_finalize(&my_plan);
 
 	if (res > 0) {
-		// Gaussian low pass filter
+		// Gaussian low pass processor
 		double sigma2 = (image_size * apix / res) * (image_size * apix / res);
 		int index = 0;
 		for (int j = 0; j < image_size; j++) {
@@ -1150,9 +1150,9 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->filter("eman1.LowpassGauss",Dict("lowpass", box*apix/res));
+	//fft->process("eman1.LowpassGauss",Dict("lowpass", box*apix/res));
 
-	fft->filter("eman1.Phase180");	// move phase origin to center of image box, instead of at corner
+	fft->process("eman1.Phase180");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #elif defined NFFT2
@@ -1207,7 +1207,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 	nfft_finalize(&my_plan);
 
 	if (res > 0) {
-		// Gaussian low pass filter
+		// Gaussian low pass process
 		double sigma2 = (image_size * apix / res) * (image_size * apix / res);
 		int index = 0;
 		for (int j = 0; j < image_size; j++) {
@@ -1220,9 +1220,9 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->filter("eman1.LowpassGauss",Dict("lowpass", box*apix/res));
+	//fft->process("eman1.LowpassGauss",Dict("lowpass", box*apix/res));
 
-	fft->filter("eman1.Phase180");	// move phase origin to center of image box, instead of at corner
+	fft->process("eman1.Phase180");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #else
@@ -1262,7 +1262,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 		xform=(optdata[i]->get_transform());
 		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
 		EMData *p=pa.projection_by_summation(size,1.0,optpixres);
-		p->filter("eman1.NormalizeUnit");
+		p->process("eman1.NormalizeUnit");
 		fx-=sqrt(p->cmp("Dot",EMObject(optdata[i]),Dict()));
 	}
 			

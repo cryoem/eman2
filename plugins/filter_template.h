@@ -6,12 +6,12 @@
 namespace EMAN
 {
 
-	/** XYZFilter is a filter template for defining new
-     * filters. Please add your own code at the proper place.
+	/** XYZProcessor is a processor template for defining new
+     * processors. Please add your own code at the proper place.
      *
-     * 1) Replace all 'XYZ' with your new filter name.
-     * 2) Define the filter parameter names and types in get_param_types().
-     * 3) Implement the filter in XYZFilter::process().
+     * 1) Replace all 'XYZ' with your new processor name.
+     * 2) Define the processor parameter names and types in get_param_types().
+     * 3) Implement the processor in XYZProcessor::process().
      */
 	class XYZProcessor:public Processor
 	{
@@ -33,11 +33,11 @@ namespace EMAN
 			return "add your documentation here.";
 		}
 		
-		/** Add your filter parameter names and types in
+		/** Add your processor parameter names and types in
 		 * get_param_types(). For available parameter types, please
 		 * refer class EMObject.
 		 * 
-		 * As an example, XYZFilter has 2 parameters:
+		 * As an example, XYZProcessor has 2 parameters:
 		 *    int value1;
 		 *    float value2;
 		 */
@@ -51,7 +51,7 @@ namespace EMAN
 	};
 
 
-	/** Add your new filter to FilterFactoryExt().
+	/** Add your new processor to FilterFactoryExt().
      */
 	class FilterFactoryExt
 	{

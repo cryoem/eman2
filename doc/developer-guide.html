@@ -47,28 +47,28 @@ define a&nbsp; XYZFilter?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">&nbsp;
-Filter naming convention: more generic word goes first. e.g.
-LowpassGaussFilter, HighpassGaussFilter.<br>
+Processor naming convention: more generic word goes first. e.g.
+LowpassGaussProcessor, HighpassGaussProcessor.<br>
     </li>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
       <span style="color: rgb(0, 0, 0); font-family: monospace;">/* 1)
 Replace all 'XYZ' with
-your new filter name.</span><br
+your new processor name.</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;*
-2) Define the filter
+2) Define the processor
 parameter names and types in get_param_types().</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;*
 3) Implement the
-filter in XYZFilter::process().</span><br
+processor in XYZProcessor::process().</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;*/</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">class
-XYZFilter : public
-Filter {</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+XYZProcessor : public
+Processor {</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">public:</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
@@ -81,7 +81,7 @@ get_name() const { return "XYZ"; }</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
 static
-Filter *NEW() { return new XYZFilter(); }</span><br
+Processor *NEW() { return new XYZProcessor(); }</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
 TypeDict
@@ -108,7 +108,7 @@ d.put("value1", EMObject::INT);</span><br
     </li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
-use a Filter in python?</big></li>
+use a Processor in python?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
@@ -120,9 +120,9 @@ EMAN2 import *</span><br
 EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">e.read_image("test1.mrc")</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
-      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.filter("ValueSqrt")</span><br
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.process("ValueSqrt")</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
-      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.filter("RangeMask",
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.process("RangeMask",
 {"low" :
 5.2, "high" : 10})</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
@@ -168,14 +168,14 @@ Transform(EULER_EMAN, math.pi/2,0,0))</span><br
     </li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
-show all Filters?</big></li>
+show all Processors?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);"><br>
       <span style="color: rgb(0, 0, 0); font-family: monospace;">from
 EMAN2 import *</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
-      <span style="color: rgb(0, 0, 0); font-family: monospace;">dump_filters()</span><br
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">dump_processors()</span><br
  style="font-family: monospace;">
       <br>
     </li>
@@ -218,7 +218,7 @@ return_internal_reference())</span></li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 use Factory classes
-like Filter, Aligner, Averager, Cmp, Projector, Reconstructor?</big></li>
+like Processor, Aligner, Averager, Cmp, Projector, Reconstructor?</big></li>
   <ul>
     <li>EMAN has many functions that implement specific algorithms to
 do image processing.&nbsp; These algorithms are relatively independent
@@ -227,7 +227,7 @@ and a user chooses which one to use. In EMAN2, we define a <span
 class to manage these algorithms, including <br>
     </li>
     <ul>
-      <li><span style="font-weight: bold;">Filter</span> (image filter)</li>
+      <li><span style="font-weight: bold;">Filter</span> (image processor)</li>
       <li><span style="font-weight: bold;">Aligner</span> (2D/3D image
 alignment)</li>
       <li><span style="font-weight: bold;">Averager</span> (averaging a
@@ -240,12 +240,12 @@ projection)</li>
 image reconstruction)</li>
     </ul>
     <li style="color: rgb(51, 51, 255);"><big>How to define/use a
-XYZFilter</big></li>
+XYZProcessor</big></li>
     <ul>
       <li>Filter is the base class. <span style="font-weight: bold;">XYZFilter</span>
 should extend Filter or a
 subclass of Filter.</li>
-      <li>filters are identified by names. <span
+      <li>processors are identified by names. <span
  style="font-weight: bold;">XYZFilter</span>'s name should be
 "XYZ" for consistency.</li>
       <li><span style="font-weight: bold;">XYZFilter</span> must define
@@ -255,28 +255,28 @@ Factory.<br>
       </li>
       <li>To use <span style="font-weight: bold;">XYZFilter</span>: <span
  style="color: rgb(0, 153, 0);">EMData* img1 = ...;
-img1-&gt;filter("XYZ");</span></li>
+img1-&gt;processor("XYZ");</span></li>
     </ul>
     <li style="color: rgb(51, 51, 255);"><big>How to use the <span
  style="font-weight: bold;">Factory</span>
 template</big></li>
     <ul style="font-family: monospace;">
       <li style="background-color: rgb(255, 255, 204);">template&lt;&gt;
-Factory&lt;Filter&gt;::Factory()<br>
+Factory&lt;Processor&gt;::Factory()<br>
 {<br>
-&nbsp;&nbsp;&nbsp; add(&amp;AbsoluateValueFilter::NEW);<br>
-&nbsp;&nbsp;&nbsp; add(&amp;GaussLowpassFilter::NEW);<br>
+&nbsp;&nbsp;&nbsp; add(&amp;AbsoluateValueProcessor::NEW);<br>
+&nbsp;&nbsp;&nbsp; add(&amp;GaussLowpassProcessor::NEW);<br>
 }<br>
         <br>
       </li>
     </ul>
     <ul style="background-color: rgb(255, 255, 204);">
-Filter *abs_filter =
+Processor *abs_processor =
 Factory&lt;Filter&gt;::get("AbsoluateValue");<br
  style="font-family: monospace;">
       <span style="font-family: monospace;">Filter
-*gauss_lowpass_filter =
-Factory&lt;Filter&gt;::get("LowpassGauss", <br>
+*gauss_lowpass_processor =
+Factory&lt;Processor&gt;::get("LowpassGauss", <br>
 Dict("lowpass", 12); </span>
     </ul>
   </ul>

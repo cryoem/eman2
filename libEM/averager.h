@@ -276,7 +276,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "CTF amplitude corrected average, including SNR weight, but result is unfiltered.";
+			return "CTF amplitude corrected average, including SNR weight, but result is unprocessed.";
 		}
 
 		static Averager *NEW()

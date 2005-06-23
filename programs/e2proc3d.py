@@ -2,7 +2,7 @@
 
 # $Id$
 
-# todo: verify the filters who have the same names in proc3d
+# todo: verify the processors who have the same names in proc3d
 #       and proc2d have the same implementation
 #
 # todo: lp, hp, tlp vs apix
@@ -116,7 +116,7 @@ def main():
         elif option1 == "filter":
             fi = index_d[option1]
             (filtername, param_dict) = parse_filter_params(options.filter[fi])
-            d.filter(filtername, param_dict)
+            d.process(filtername, param_dict)
             index_d[option1] += 1
 
         elif option1 == "mult":

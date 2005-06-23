@@ -48,7 +48,7 @@ int test_rfilter(EMData *em1, int type, float v1, float v2, float v3,
 				 EMAN::EMData *em2, string filtername,
 				 const EMAN::Dict& params = EMAN::Dict())
 {
-	fprintf(stdout, "testing real filter EMAN1:%d vs EMAN2:%s :   ",
+	fprintf(stdout, "testing real processor EMAN1:%d vs EMAN2:%s :   ",
 			type, filtername.c_str());
 	int err = cmp_data(em1, em2);
 	

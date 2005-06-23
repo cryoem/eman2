@@ -316,7 +316,7 @@ namespace EMAN
 	};
 
 	/** TypeDict is a dictionary to store <string, EMObject::ObjectType> pair.
-     * It is mainly used to store filter-like class's parameter
+     * It is mainly used to store processor-like class's parameter
      * information: <parameter-name, parameter-type>.
      * Typical usage of this class:
      *
@@ -385,19 +385,19 @@ namespace EMAN
 	/** Factory is used to store objects to create new instances.
      * It is a singleton template. Typical usages are as follows:
      *
-     *   1. How to define a new factory (e.g. Filter Factory):
+     *   1. How to define a new factory (e.g. Processor Factory):
      *   
-     *      template<> Factory<Filter>::Factory()
+     *      template<> Factory<Processor>::Factory()
      *      {
-     *         force_add(&AbsoluateValueFilter::NEW);
-     *         force_add(&BooleanFilter::NEW);
+     *         force_add(&AbsoluateValueProcessor::NEW);
+     *         force_add(&BooleanProcessor::NEW);
      *      }
      *
      *
-     *   2. How to use a Factory (e.g. Filter Factory):
+     *   2. How to use a Factory (e.g. Processor Factory):
      *
-     *	    Filter *f1 = Factory<Filter>::get("AbsoluateValue");
-     *      Filter *f2 = Factory<Filter>::get("LowpassGauss", Dict("lowpass", EMObject(12));
+     *	    Filter *f1 = Factory<Processor>::get("AbsoluateValue");
+     *      Filter *f2 = Factory<Processor>::get("LowpassGauss", Dict("lowpass", EMObject(12));
      */
 	template < class T > class Factory
 	{

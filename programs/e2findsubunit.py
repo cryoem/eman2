@@ -24,7 +24,7 @@ def main() :
 
 	data=EMData()
 	data.read_image(args[0])
-	data.filter("eman1.threshold.belowtozero",{"minval":options.thr})
+	data.process("eman1.threshold.belowtozero",{"minval":options.thr})
 	
 	totest=[]
 	for x in range(-1,2):
@@ -82,7 +82,7 @@ def main() :
 		if nvox%100==0 : print nvox,len(plist)
 		
 	data*=-1.0
-	data.filter("eman1.threshold.belowtozero",{"minval":options.thr})
+	data.process("eman1.threshold.belowtozero",{"minval":options.thr})
 	data.update()
 	data.write_image(args[1])
 		
