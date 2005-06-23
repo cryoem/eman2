@@ -244,7 +244,8 @@ def create_write_projections(volume, filepattern, anglelist, radius):
         proj.write_image(projname, 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
 
 def do_alignment(exptpattern, start, end, refpattern, alipattern, anglelist):
-    newangles = []
+    newangles = []  
+
     for i in range(start, end+1):
         exptname = parse_spider_fname(exptpattern, i)
         aliname  = parse_spider_fname(alipattern, i)
@@ -421,8 +422,8 @@ def filt_gaussl(e, sigma):
     
 def filt_gaussh(e, sigma):
     params = {"FilterType" : Processor.fourier_filter_types.GAUSS_HIGH_PASS,
-              "Sigma" : freq}
-    return Processor.EMFourierFilter(e, sigma)
+              "Sigma" : sigma}
+    return Processor.EMFourierFilter(e, params)
     
 def filt_gaussb(e, sigma, center):
     params = {"FilterType" : Processor.fourier_filter_types.GAUSS_BAND_PASS,
@@ -476,6 +477,47 @@ def filt_tano(e, freq, fall_off, value):
 	      "Value_at_zero_frequency" : value}
     return Processor.EMFourierFilter(e, params)
     
+def window2d(inputimage,ix,iy,isize_x,isize_y):    
+    e=getImage(inputimage)		      
+    reg = Region(ix, iy, isize_x, isize_y)
+    wi = e.get_clip(reg)
+    return wi 
+	
+def ramp(inputimage):
+    e=getImage(inputimage)
+    e.process("filter.ramp")
+    return e		    
+
+def welch_pw2(inputimage,win_size,overlp_x,overlp_y,edge_x,edge_y):	
+    e=getImage(inputimage)
+    nx=e.get_xsize()
+    ny=e.get_ysize()
+    x_gaussian_hi=1./win_size    	
+    e_fil=filt_gaussh(e, x_gaussian_hi)  
+#   e_fil = e.process("filter.highpass.gauss",x_gaussian_hi)
+    x38=100/(100-overlp_x) # normalization of % of the overlap in x 
+    x39=100/(100-overlp_y) # normalization of % of the overlap in y
+
+    x26=int(x38*((nx-2*edge_x)/win_size-1)+1)  # number of pieces horizontal dim.(X)
+    x29=int(x39*((ny-2*edge_y)/win_size-1)+1)  # number of pieces vertical dim.(Y)
+ 
+    iz=0       			
+    for iy in xrange(1, x29+1):    
+        x21 = (win_size/x39)*(iy-1) + edge_y+1  #  y-direction it should start from 1 if edge_y=0	      
+        for ix in xrange(1, x26+1):	 	 	 
+           x22=(win_size/x38)*(ix-1) + edge_x+1  # x-direction it should start from 1 if edge_x	=0
+           wi=window2d(e_fil,x21-1, x22-1, win_size, win_size)
+           e1=ramp(wi)
+	   iz=iz+1	
+           if (iz == 1):
+#              info(wi)  		     
+#              dropImage(wi,'./check.hrs')    
+	      pw2=periodogram(e1)	     
+	   else:      
+              pw2=pw2+periodogram(e1)
+	       	        
+    pw2=pw2/iz	        
+    return pw2
 
 def parse_spider_fname(mystr, *fieldvals):
     """
