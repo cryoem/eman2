@@ -55,12 +55,8 @@ void FourierReconstructor::setup()
 	}
 	image->done_data();
 
-	EMData *parent = image->get_parent();
-	if (!parent) {
-		parent = new EMData();
-	}
-	parent->set_size(size + 1, size, size);
-	image->set_parent(parent);
+	tmp_data = new EMData();
+	tmp_data->set_size(size + 1, size, size);
 }
 
 int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
@@ -97,7 +93,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler
 		off[7] = nxy + nx + 2;
 	}
 
-	float *norm = image->get_parent()->get_data();
+	float *norm = tmp_data->get_data();
 	float *dat = slice->get_data();
 	float *rdata = image->get_data();
 	
@@ -430,7 +426,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler
 	}
 
 	image->done_data();
-	image->get_parent()->done_data();
+	tmp_data->done_data();
 	slice->done_data();
 	slice->update();
 
@@ -440,7 +436,7 @@ int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler
 EMData *FourierReconstructor::finish()
 {
 	int dlog = params["dlog"];
-	float *norm = image->get_parent()->get_data();
+	float *norm = tmp_data->get_data();
 	float *rdata = image->get_data();
 
 	if (dlog) {
@@ -472,6 +468,10 @@ EMData *FourierReconstructor::finish()
 		}
 	}
 
+	if( tmp_data ) {
+		delete tmp_data;
+		norm = 0;
+	}
 	image->done_data();
 	return image;
 }
@@ -511,18 +511,14 @@ void WienerFourierReconstructor::setup()
 	}
 	image->done_data();
 
-	EMData *parent = image->get_parent();
-	if (!parent) {
-		parent = new EMData();
-	}
-	parent->set_size(size + 1, size, size);
-	image->set_parent(parent);
+	tmp_data = new EMData();
+	tmp_data->set_size(size + 1, size, size);
 }
 
 
 EMData *WienerFourierReconstructor::finish()
 {
-	float *norm = image->get_parent()->get_data();
+	float *norm = tmp_data->get_data();
 	float *rdata = image->get_data();
 
 	for (int i = 0; i < nx * ny * nz; i += 2) {
@@ -538,6 +534,10 @@ EMData *WienerFourierReconstructor::finish()
 		}
 	}
 
+	if( tmp_data ) {
+		delete tmp_data;
+		tmp_data = 0;
+	}
 	image->done_data();
 	return image;
 }
@@ -576,7 +576,7 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform3D &
 		off[7] = nxy + nx + 2;
 	}
 
-	float *norm = image->get_parent()->get_data();
+	float *norm = tmp_data->get_data();
 	float *dat = slice->get_data();
 	float *rdata = image->get_data();
 
@@ -916,11 +916,8 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform3D &
 		}
 	}
 
-
-
-
 	image->done_data();
-	image->get_parent()->done_data();
+	tmp_data->done_data();
 	slice->done_data();
 	slice->update();
 

@@ -126,6 +126,9 @@ namespace EMAN
 
 	  protected:
 		mutable Dict params;
+		//tmp_data is the substitute of misused parent in reconstruction
+		//the memory will be allocated in setup() and released in finish()
+		EMData*		tmp_data;
 	};
 
 	/** Fourier space 3D reconstruction

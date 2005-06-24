@@ -51,19 +51,10 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 		return 0;
 	}
 
-	int useparent = params["useparent"];
-
 	EMData *cf = 0;
-	EMData *parent = this_img->get_parent();
 
-	if (useparent && parent != 0) {
-		cf = parent->calc_ccf(to);
-//		cf->process("eman1.xform.phaseorigin");
-	}
-	else {
-		cf = this_img->calc_ccf(to);
-//		cf->process("eman1.xform.phaseorigin");
-	}
+	cf = this_img->calc_ccf(to);
+
 
 	int nx = this_img->get_xsize();
 	int ny = this_img->get_ysize();
@@ -115,13 +106,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 	Vec3f pre_trans = this_img->get_translation();
 	Vec3f cur_trans = Vec3f ((float)(nx / 2 - peak_x), (float)(ny / 2 - peak_y), 0);
 
-	Vec3f result;
-	if (useparent && parent) {
-		result = cur_trans - pre_trans;
-	}
-	else {
-		result = cur_trans;
-	}
+	Vec3f result;	
+	result = cur_trans;
 
 	if (!to) {
 		cur_trans /= 2.0f;
@@ -140,7 +126,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,  const string
 		delete cf;
 		cf = 0;
 	}
-	cf=this_img->copy(0);
+	cf=this_img->copy();
 	cf->translate(cur_trans);
 
 	
@@ -161,8 +147,6 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  const stri
 		return 0;
 	}
 
-	
-	int useparent = params.set_default("useparent", 0);
 	params.set_default("intonly", 0);
 
 	if (to && !EMUtil::is_same_size(this_img, to)) {
@@ -175,16 +159,7 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  const stri
 	}
 
 	EMData *cf = 0;
-	EMData *parent = this_img->get_parent();
-
-	if (useparent && parent != 0) {
-		cf = parent->calc_ccf(to);
-//		cf->process("eman1.xform.phaseorigin");
-	}
-	else {
-		cf = this_img->calc_ccf(to);
-//		cf->process("eman1.xform.phaseorigin");
-	}
+	cf = this_img->calc_ccf(to);
 
 	float *cf_data = cf->get_data();
 
@@ -231,13 +206,8 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  const stri
 	float tz = (float)(nz / 2 - peak_z);
 
 	float score = 0;
-	if (useparent && parent) {
-		Vec3f trans_v = this_img->get_translation();
-		score = Util::hypot3(tx - trans_v[0], ty - trans_v[1], tz - trans_v[2]);
-	}
-	else {
-		score = Util::hypot3(tx, ty, tz);
-	}
+	score = Util::hypot3(tx, ty, tz);
+
 	cf->set_attr("align_score", score);
 
 	if (!to) {
@@ -281,7 +251,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,  const string&) 
 		delete cf;
 		cf = 0;
 	}
-	cf=this_img->copy(0);
+	cf=this_img->copy();
 	cf->rotate((float)(-peak_index * M_PI / this_img2_nx), 0, 0);
 	cf->set_attr("align_score", peak);
 	cf->set_attr("rotational",-peak_index * M_PI / this_img2_nx);
@@ -492,13 +462,12 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,  const stri
 #endif
 	EMData *this_copy = this_img->align("Rotational", to, params);
 	
-	EMData *this_copy2 = this_copy->copy(0);
+	EMData *this_copy2 = this_copy->copy();
 	this_copy2->rotate_180();
 	this_copy2->set_attr("rotational",(float)this_copy2->get_attr("rotational")+M_PI);
 
 	Dict trans_params;
 	
-	trans_params["useparent"] = 0;
 	trans_params["intonly"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
 
@@ -561,12 +530,10 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,  const 
 	float cda = rotation["alt"];
 
 	EMData *this_copy2 = this_copy->copy();
-	this_copy2->set_parent(this_copy->get_parent());
 
 	Dict trans_params;
 	
 	trans_params["intonly"] = 0;
-	trans_params["useparent"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
 	this_copy->align("Translational", to, trans_params);
 
@@ -660,7 +627,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,  const
 		maxshift = size / 8;
 	}
 
-	EMData *t1 = radonthis->copy(false);
+	EMData *t1 = radonthis->copy();
 	radonthis->write_image("radon.hed", 0, EMUtil::IMAGE_IMAGIC);
 
 	float si = 0;
@@ -955,7 +922,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	int maxshift = params.set_default("maxshift", -1);
 
-	EMData *to_copy = to->copy(false);
+	EMData *to_copy = to->copy();
 	int ny = this_img->get_ysize();
 
 	int xst = (int) floor(2 * M_PI * ny);
@@ -972,21 +939,21 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 	}
 	to_copy = tmp;
 
-	EMData *wsc = to_copy->copy(false);
+	EMData *wsc = to_copy->copy();
 	to = to->unwrap(4, to->get_ysize() / 2 - 2 - maxshift, xst, 0, 0, true);
-	EMData *to_copy2 = to->copy(false);
+	EMData *to_copy2 = to->copy();
 
 	EMData *df = 0;
 	if (flip) {
 		df = flip->copy();
 	}
 	else {
-		df = this_img->copy(false);
+		df = this_img->copy();
 		df->process("eman1.xform.flip", Dict("axis", "x"));
 	}
 
-	EMData *dns = this_img->copy(false);
-	EMData *dfs = df->copy(false);
+	EMData *dns = this_img->copy();
+	EMData *dfs = df->copy();
 	dns->median_shrink(2);
 	dfs->median_shrink(2);
 
@@ -1017,7 +984,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 			for (int dx = -half_maxshift; dx <= half_maxshift; dx++) {
 				if (hypot(dx, dy) <= half_maxshift) {
 					EMData *uw = u->unwrap(4, ur2, xst / 2, dx, dy, true);
-					EMData *uwc = uw->copy(false);
+					EMData *uwc = uw->copy();
 					EMData *a = uw->calc_ccfx(to_copy);
 
 					uwc->rotate_x(a->calc_max_index());
@@ -1097,7 +1064,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 			for (int dx = bestdx2 - 3; dx <= bestdx2 + 3; dx++) {
 				if (hypot(dx, dy) <= maxshift) {
 					EMData *uw = u->unwrap(4, u->get_ysize() / 2 - 2 - maxshift, xst, dx, dy, true);
-					EMData *uwc = uw->copy(false);
+					EMData *uwc = uw->copy();
 					EMData *a = uw->calc_ccfx(to);
 
 					uwc->rotate_x(a->calc_max_index());
@@ -1160,7 +1127,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,  const string & cmp
 		dn = this_img->copy();
 	}
 	else {
-		dn = this_img->copy(false);
+		dn = this_img->copy();
 	}
 
 	dn->rotate_translate((float)bestang, 0.0f, 0.0f, (float)-bestdx, (float)-bestdy, 0.0f);
@@ -1195,9 +1162,9 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 
 	float astep = atan2(2.0f, (float)nx);
 
-	EMData *dns = dn->copy(false);
-	EMData *dfs = df->copy(false);
-	EMData *to_copy = to->copy(false);
+	EMData *dns = dn->copy();
+	EMData *dfs = df->copy();
+	EMData *to_copy = to->copy();
 
 	dns->median_shrink(2);
 	dfs->median_shrink(2);
@@ -1247,8 +1214,6 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 		}
 	}
 
-	delete dns->get_parent();
-	delete dfs->get_parent();
 	if( dns )
 	{
 		delete dns;
@@ -1318,20 +1283,11 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  const string & 
 		}
 
 		df->rotate_translate(bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
-
-		if (!dflip) {
-			delete df->get_parent();
-			df->set_parent(0);
-		}
 		df->set_flipped(1);
 		return df;
 	}
 
 	dn->rotate_translate(bestang, 0.0f, 0.0f, (float)bestdx, (float)bestdy, 0.0f);
-
-	if (!dflip) {
-		delete df->get_parent();
-	}
 
 	if( df )
 	{
@@ -1517,10 +1473,6 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to, const string & cmp_n
 	float dda = atan(2.0f / ny);
 
 	int mode = params.set_default("mode", 0);
-
-	if (this_img->get_parent() == 0) {
-		LOGWARN("%s: no parent", get_name().c_str());
-	}
 
 	if (mode == 1 || mode == 2) {
 		int np = 3;

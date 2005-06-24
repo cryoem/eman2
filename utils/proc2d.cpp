@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
 					delete ld;
 					ld = 0;
 				}
-				ld = d->copy(false);
+				ld = d->copy();
 			}
 
 			float sigma = d->get_attr("sigma");
@@ -407,7 +407,6 @@ int main(int argc, char *argv[])
 			// uses correlation with 180 deg rot for centering
 			if (argdict[acfcenter]) {
 				Dict params;
-				params["useparent"] = 0;
 				params["intonly"] = 1;
 				params["maxshift"] = d->get_xsize() / 4;
 				d->align("Translate", 0, params);
@@ -433,8 +432,6 @@ int main(int argc, char *argv[])
 
 
 			if (rot || dx || dy || rize) {
-				d->set_parent(0);
-
 				if (!rize) {
 					d->rotate_translate(rot * M_PI / 180.0f, 0, 0, dx, dy, 0);
 				}
@@ -494,7 +491,6 @@ int main(int argc, char *argv[])
 
 			if (csym > 1) {
 				EMData *f = d->copy();
-				f->set_parent(0);
 
 				EMData *e = f->copy();
 				for (int j = 1; j < csym; j++) {
@@ -595,7 +591,7 @@ int main(int argc, char *argv[])
 
 			if (argdict[avgonly]) {
 				if (!average) {
-					average = d->copy(false);
+					average = d->copy();
 				}
 				else {
 					(*average) += (*d);

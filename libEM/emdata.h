@@ -180,10 +180,9 @@ namespace EMAN
 		EMData *project(const string & projector_name, const Dict & params = Dict());
 
 		/** Make a copy of this image including both data and header.
-		 * @param withparent Copy the parent or not.
 		 * @return A copy of this image including both data and header.
 		 */
-		EMData *copy(bool withparent = true) const;
+		EMData *copy() const;
 		
 		/** Make an image with a copy of the current image's header.
 		 * @return An image with a copy of the current image's header.
@@ -339,7 +338,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
 		 */
-		FloatPoint normalize_slice(EMData * slice, const Transform3D & orient);
+//		FloatPoint normalize_slice(EMData * slice, const Transform3D & orient);
 
 		/** Caclulates normalization and phase residual for a slice in
 		 * an already existing volume. phase residual is calculated
@@ -354,7 +353,7 @@ namespace EMAN
 		 * @exception ImageDimensionException If the image is 3D.
 		 * @return A float number pair (result, phase-residual).
 		 */
-		FloatPoint normalize_slice(EMData * slice, float az, float alt, float phi);
+//		FloatPoint normalize_slice(EMData * slice, float az, float alt, float phi);
 
 		/** Render the image into an 8-bit image. 2D image only.
 		 *
@@ -978,14 +977,6 @@ namespace EMAN
 		 */
 		float get_circle_mean();
 
-		/** this initializes a new image to receive 'insertSlice' operations
-		 * for fourier volume inversion. If the image has a parent, it will also
-		 * be affected. WARNING: will use 8*size^3 bytes of memory.
-		 *
-		 * @param size The volume's size.
-		 */
-		void setup_insert_slice(int size);
-
 		/** Get ctf parameter of this image.
 		 * @return The ctf parameter.
 		 */
@@ -1242,16 +1233,6 @@ namespace EMAN
 		 * @return image dimension.
 		 */
 		int get_ndim() const;
-
-		/** Get this image's parent image.
-		 * @return this image's parent image.
-		 */
-		EMData *get_parent() const;
-		
-		/** Set this image's parent image.
-		 * @param new_parent This image's parent image.
-		 */
-		void set_parent(EMData * new_parent);
 
 		/** Get the pixel density value at coordinates (x,y,z).
 		 * The validity of x, y, and z is not checked.
@@ -1595,7 +1576,6 @@ namespace EMAN
 		float *rdata;	        /** image real data */
 		float *supp;            /** supplementary data array */
 		Ctf *ctf;		        /** CTF data */
-		EMData *parent;         /** this image's parent */
 		EMData *rfp;            /** rotational foot print */
 		int flags;              /** flags */
 		int nx, ny, nz;	        /** image size */
@@ -1878,16 +1858,6 @@ namespace EMAN
 	{
 		return ctf;
 	}
-
-	inline EMData *EMData::get_parent() const
-	{
-		return parent;
-	}
-	inline void EMData::set_parent(EMData * new_parent)
-	{
-		parent = new_parent;
-	}
-
 
 	inline Vec3f EMData::get_translation() const
 	{

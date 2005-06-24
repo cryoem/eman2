@@ -623,13 +623,6 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	EMData *parent = 0;
-	if (image->get_parent() == 0) {
-		parent = image->copy();
-		parent->set_parent(0);
-		image->set_parent(parent);
-	}
-
 	image->rotate(az, alt, phi);
 
 	EMData *ret = new EMData();
@@ -704,14 +697,7 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-
-	EMData *parent = 0;
-	if (image->get_parent() == 0) {
-		parent = image->copy();
-		parent->set_parent(0);
-		image->set_parent(parent);
-	}
-
+	
 	image->rotate(az, alt, phi);
 
 	EMData *ret = new EMData();

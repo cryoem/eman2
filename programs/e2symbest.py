@@ -56,7 +56,7 @@ def main(args):
 		d2 = d1
 
 	msk = d2.copy()
-	msk.set_parent(None)
+	#msk.set_parent(None)  #no parent for EMAData any more 
 	msk.to_one()
 	#msk->applyMask(mask,4);
 	#msk->applyMask(imask,5);

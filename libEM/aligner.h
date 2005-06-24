@@ -133,7 +133,6 @@ namespace EMAN
 			TypeDict d;
 			d.put("intonly", EMObject::INT);
 			d.put("maxshift", EMObject::INT);
-			d.put("useparent", EMObject::INT);
 			return d;
 		}
 	};
@@ -170,8 +169,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			  d.put("useparent", EMObject::INT);
-			  return d;
+			return d;
 		}
 
 	};

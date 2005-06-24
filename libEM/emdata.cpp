@@ -39,7 +39,6 @@ EMData::EMData()
 	rdata = 0;
 	supp = 0;
 	ctf = 0;
-	parent = 0;
 
 	rfp = 0;
 	flags = 0;
@@ -373,8 +372,7 @@ EMData *EMData::project(const string & projector_name, const Dict & params)
 	return result;
 }
 
-
-EMData *EMData::copy(bool with_parent) const
+EMData *EMData::copy() const
 {
 	ENTERFUNC;
 	EMData *ret = new EMData();
@@ -388,13 +386,6 @@ EMData *EMData::copy(bool with_parent) const
 	if (ctf) {
 		ret->ctf = new SimpleCtf();
 		ret->ctf->copy_from(ctf);
-	}
-
-	if (with_parent) {
-		ret->parent = const_cast<EMData*>(this);
-	}
-	else {
-		ret->parent = 0;
 	}
 
 	ret->rfp = 0;
@@ -423,7 +414,6 @@ EMData *EMData::copy_head() const
 		ret->ctf->copy_from(ctf);
 	}
 
-	ret->parent = const_cast<EMData*>(this);
 	ret->rfp = 0;
 
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
@@ -544,7 +534,6 @@ EMData *EMData::get_clip(const Region & area)
 						   zorigin + apix_z * area.origin[2]);
 
 	result->update();
-	result->set_parent(0);
 
 	result->set_path(path);
 	result->set_pathnum(pathnum);
@@ -1353,104 +1342,6 @@ EMData* EMData::get_fft_phase()
 	EXITFUNC;
 	return dat;
 }
-
-FloatPoint EMData::normalize_slice(EMData * slice, const Transform3D &xform)
-{
-	ENTERFUNC;
-	
-	if (!is_complex() || !slice->is_complex() || !parent) {
-		throw ImageFormatException("complex images only");
-	}
-
-	if (get_ndim() != slice->get_ndim() ||
-		get_ndim() > 2) {
-		throw ImageDimensionException("2D only");
-	}
-	
-	slice->ap2ri();
-
-	float *norm = parent->get_data();
-	float *dat = slice->get_data();
-	
-	float r = 0;
-	float rn = 0;
-	float pr = 0;
-	float prn = 0;
-	int nxy = nx * ny;
-
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx / 2; x++) {
-			float rad = (float)hypot(x, y - ny / 2);
-
-			if (rad < ny / 2 - 1) {
-				float xx =  x * xform[0][0] + (y - ny / 2) * xform[1][0];
-				float yy =  x * xform[0][1] + (y - ny / 2) * xform[1][1];
-				float zz =  x * xform[0][2] + (y - ny / 2) * xform[1][2];
-				float cc = 1;
-				if (xx < 0) {
-					xx = -xx;
-					yy = -yy;
-					zz = -zz;
-					cc = -1.0f;
-				}
-
-				yy += ny / 2;
-				zz += nz / 2;
-
-				int x0 = 2 * (int) floor(xx + 0.5f);
-				int y0 = (int) floor(yy + 0.5f);
-				int z0 = (int) floor(zz + 0.5f);
-				int i = x0 + y0 * nx + z0 * nxy;
-
-				if (rdata[i] != 0 && rdata[i + 1] != 0) {
-					float dt0 = (float) hypot(rdata[i], rdata[i + 1]);
-					float dt1 = (float) hypot(dat[x * 2 + y * nx], dat[x * 2 + 1 + y * nx]);
-					r += norm[i] * dt1;
-					rn += dt0;
-
-					float p1 = 0;
-					float p2 = 0;
-
-					if (rdata[i + 1] != 0 || rdata[i] != 0) {
-						p1 = atan2(cc * rdata[i + 1], rdata[i]);
-					}
-
-					if (dat[x * 2 + 1 + y * nx] != 0 || dat[x * 2 + y * nx] != 0) {
-						p2 = atan2(dat[x * 2 + 1 + y * nx], dat[x * 2 + y * nx]);
-					}
-
-					if (rad > 3.0f) {
-						pr += Util::angle_sub_2pi(p1, p2) * dt0 * dt1 * norm[i];
-						prn += dt0 * dt1 * norm[i];
-					}
-				}
-			}
-		}
-	}
-
-	float phaseres = (prn == 0) ? 0 : pr / prn;
-
-	if (rn != 0) {
-		r = r / rn;
-	}
-	else {
-		r = 1.0f;
-	}
-
-	done_data();
-	parent->done_data();
-	slice->done_data();
-	slice->update();
-
-	EXITFUNC;
-	return FloatPoint(r, phaseres);
-}
-
-FloatPoint EMData::normalize_slice(EMData * slice, float az, float alt, float phi)
-{
-	return normalize_slice(slice, Transform3D(az, alt, phi)); // EMAN
-}
-
 
 void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool add)
 {
@@ -3280,12 +3171,8 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 	}
 
 	float *this_data = 0;
-	if (parent) {
-		this_data = parent->get_data();
-	}
-	else {
-		this_data = get_data();
-	}
+
+	this_data = get_data();
 
 	float *with_data = with->get_data();
 	float mx0 = cos(da);
@@ -3569,16 +3456,8 @@ void EMData::rotate_translate(const Transform3D & xform)
 	float *src_data = 0;
 	float *des_data = 0;
 
-	if (parent) {
-		src_data = parent->get_data();
-		des_data = get_data();
-		nx2 = parent->get_xsize();
-		ny2 = parent->get_ysize();
-	}
-	else {
-		src_data = get_data();
-		des_data = (float *) malloc(nx * ny * nz * sizeof(float));
-	}
+	src_data = get_data();
+	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
 
 	if (nz == 1) {
 		float mx0 = inv_scale * cos((float)rotation["phi"]);
@@ -3727,20 +3606,15 @@ void EMData::rotate_translate(const Transform3D & xform)
 		
 	}
 
-	if (parent) {
-		parent->done_data();
-	}
-	else {
-		if ((int)attr_dict["is_shared_memory"] == 0) {
-			if( rdata )
-			{
-				free(rdata);
-				rdata = 0;
-			}
+	if ((int)attr_dict["is_shared_memory"] == 0) {
+		if( rdata )
+		{
+			free(rdata);
+			rdata = 0;
 		}
-		rdata = des_data;
-		attr_dict["is_shared_memory"] = 0;
 	}
+	rdata = des_data;
+	attr_dict["is_shared_memory"] = 0;
 
 	scale_pixel(inv_scale);
 
@@ -3811,9 +3685,7 @@ EMData *EMData::do_radon()
 	float *result_data = result->get_data();
 
 	EMData *this_copy = this;
-	if (!parent) {
-		this_copy = copy();
-	}
+	this_copy = copy();
 
 	for (int i = 0; i < nx; i++) {
 		this_copy->rotate(M_PI * 2.0f * i / nx, 0, 0);
@@ -3833,12 +3705,10 @@ EMData *EMData::do_radon()
 
 	result->done_data();
 
-	if (!parent) {
-		if( this_copy )
-		{
-			delete this_copy;
-			this_copy = 0;
-		}
+	if( this_copy )
+	{
+		delete this_copy;
+		this_copy = 0;
 	}
 
 	EXITFUNC;
@@ -3870,7 +3740,7 @@ void EMData::mean_shrink(float shrink_factor0)
 		int shrinked_ny = (int(ny / 1.5)+1)/2*2;
 		int nx0 = nx, ny0 = ny;	// the original size
 		
-		EMData* orig = copy(0);
+		EMData* orig = copy();
 		set_size(shrinked_nx, shrinked_ny, 1);	// now nx = shrinked_nx, ny = shrinked_ny
 		to_zero();
 		
@@ -4714,7 +4584,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 		cf->ap2ri();
 	}
 	else {
-		cf = this_fft->copy(false);
+		cf = this_fft->copy();
 	}
 
 	if (filter) {
@@ -5172,8 +5042,8 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 		filter_dict["value"] = 0;
 	}
 
-	EMData *img1 = this->copy(false);
-	EMData *img2 = with->copy(false);
+	EMData *img1 = this->copy();
+	EMData *img2 = with->copy();
 
 	int img1_nx = img1->get_xsize();
 	int img1_ny = img1->get_ysize();
@@ -5188,7 +5058,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 
 	filter_dict["outer_radius"] = radius;
 
-	EMData *img1_copy = img1->copy(false);
+	EMData *img1_copy = img1->copy();
 	img1_copy->to_one();
 	img1_copy->process(mask_filter, filter_dict);
 	img1_copy->process("eman1.xform.phaseorigin");
@@ -5236,7 +5106,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 
 	img2->done_data();
 
-	EMData *img2_copy = img2->copy(false);
+	EMData *img2_copy = img2->copy();
 	if( img2 )
 	{
 		delete img2;
@@ -5252,7 +5122,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 		img1_copy = 0;
 	}
 
-	EMData *img1_copy2 = img1->copy(false);
+	EMData *img1_copy2 = img1->copy();
 
 	img1_copy2->process("eman1.Square");
 
@@ -5286,7 +5156,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	conv1->process("eman1.Square");
 	conv1->mult(1.0f / (num * num));
 
-	EMData *conv2_copy = conv2->copy(false);
+	EMData *conv2_copy = conv2->copy();
 	if( conv2 )
 	{
 		delete conv2;
@@ -5303,7 +5173,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	conv2_copy->mult(1.0f / num);
 	conv2_copy->process("eman1.Sqrt");
 
-	EMData *ccf_copy = ccf->copy(false);
+	EMData *ccf_copy = ccf->copy();
 	if( ccf )
 	{
 		delete ccf;
@@ -5327,7 +5197,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	ccf_copy->done_data();
-	EMData *lcf = ccf_copy->copy(false);
+	EMData *lcf = ccf_copy->copy();
 	if( ccf_copy )
 	{
 		delete ccf_copy;
@@ -5360,7 +5230,7 @@ EMData *EMData::convolute(EMData * with)
 		cf->ap2ri();
 	}
 	else {
-		cf = f1->copy(false);
+		cf = f1->copy();
 	}
 
 	if (with && !EMUtil::is_same_size(f1, cf)) {
@@ -6055,34 +5925,6 @@ float EMData::dot(EMData * with, bool evenonly)
 	EXITFUNC;
 	return r;
 }
-
-
-void EMData::setup_insert_slice(int size)
-{
-	ENTERFUNC;
-	
-	const float scale = 1.0e-10f;
-	set_size(size + 2, size, size);
-	set_complex(true);
-	set_ri(true);
-	to_zero();
-
-
-	for (int i = 0; i < nx * ny * nz; i += 2) {
-		float f = Util::get_frand(0.0f, (float)(2 * M_PI));
-		rdata[i] = scale * sin(f);
-		rdata[i + 1] = scale * cos(f);
-	}
-
-	done_data();
-
-	if (!parent) {
-		parent = new EMData();
-	}
-	parent->set_size(size + 2, size, size);
-	EXITFUNC;
-}
-
 
 float EMData::sget_value_at(int x, int y, int z) const
 {
