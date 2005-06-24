@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     EMData *data[5000];
     
     for (int i = 0; i < NTT; i++) {
-		data[i] = pat.copy(false);
+		data[i] = pat.copy();
 		float *d = data[i]->get_data();
 
 		for (int j = 0; j < SIZE * SIZE; j++) {
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 	
 		for (int i = 0; i < NTT * 100; i++) {
-			EMData *cp = data[i % NTT]->copy(false);
+			EMData *cp = data[i % NTT]->copy();
 			cp->mean_shrink(2);
 			if( cp )
 			{
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 6:  %1.1f sec %f meanshrink x 2/sec\n", ti, NTT * 100.0 / ti);
 
-		EMData *d1a = data[0]->copy(false);
+		EMData *d1a = data[0]->copy();
 		t1 = (float) clock();
 
 		for (int i = 0; i < NTT * 1000; i++) {
