@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Purpose: to generate Filter manuals automatically
+# Purpose: to generate Processor manuals automatically
 #
 # Usage:
 #    1. ./docgen.py
@@ -31,13 +31,13 @@ def write_header(output):
 def write_tail(output):
 	output.write("</table>\n</body>\n")
 
-def write_filter(filtername, output, bgcolor):
+def write_processor(processorname, output, bgcolor):
 	output.write("<tr bgcolor=" + bgcolor + ">\n")
-	output.write("  <td> <font color='0000a0'> <b>"  + filtername + " </b></font> </td>\n")
+	output.write("  <td> <font color='0000a0'> <b>"  + processorname + " </b></font> </td>\n")
 
-	filter = Filters.get(filtername)
+	processor = Processors.get(processorname)
 
-	typedict = filter.get_param_types()
+	typedict = processor.get_param_types()
 	output.write("  <td>")
 	typekeys = typedict.keys()
 
@@ -48,12 +48,12 @@ def write_filter(filtername, output, bgcolor):
 		output.write("<br>")
 
 	output.write("</td>\n")
-	output.write("  <td>" + filter.get_desc() + "</td>\n")
+	output.write("  <td>" + processor.get_desc() + "</td>\n")
 	output.write("</tr>\n")
 
 def write_group(groupname, output):
 	groupclass = None
-	filter_names = Filters.get_list()
+	processor_names = Processors.get_list()
 	
 	if groupname == "Filter":
 		groupclass = Filter
@@ -83,35 +83,35 @@ def write_group(groupname, output):
 		
 
 
-def write_single_filters():
-	out = open("filters.html", "wb")
+def write_single_processors():
+	out = open("processors.html", "wb")
 	write_header(out)
-	filter_names = Filters.get_list()
+	processor_names = Processors.get_list()
 	bgcolor1 = 'f0f0fa'
 	bgcolor2 = 'fafaf0'
 	bgcolor = bgcolor1
 	
-	for filtername in filter_names:
+	for processorname in processor_names:
 		if bgcolor == bgcolor1:
 			bgcolor = bgcolor2
 		else:
 			bgcolor = bgcolor1
 
-		write_filter(filtername, out, bgcolor)
+		write_processor(processorname, out, bgcolor)
 	write_tail(out)
 	
 	
 
-def write_group_filters():
-	gout = open("filter_groups.html", "wb")
+def write_group_processors():
+	gout = open("processor_groups.html", "wb")
 	write_header(gout)
-	filtergroups = group_processors()
-	groupnames = filtergroups.keys()
+	processorgroups = group_processors()
+	groupnames = processorgroups.keys()
 	bgcolor1 = 'f0f0fa'
 	bgcolor2 = 'fafaf0'
 	bgcolor = bgcolor1
 
-	write_group("Filter", gout)
+	write_group("Processor", gout)
 
 	sorted_groupnames = []
 	for groupname in groupnames:
@@ -122,21 +122,21 @@ def write_group_filters():
 	sorted_groupnames.append("Others")
 
 	for groupname in sorted_groupnames:
-		groupitems = filtergroups[groupname]
+		groupitems = processorgroups[groupname]
 		write_group(groupname, gout)
 		
-		for filtername in groupitems:
+		for processorname in groupitems:
 			if bgcolor == bgcolor1:
 				bgcolor = bgcolor2
 			else:
 				bgcolor = bgcolor1
 
-			write_filter(filtername, gout, bgcolor)
+			write_processor(processorname, gout, bgcolor)
 			
 		
 def main():	
-	write_single_filters()
-	write_group_filters()
+	write_single_processors()
+	write_group_processors()
 	
 if __name__ == '__main__':
     main()
