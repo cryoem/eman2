@@ -4,7 +4,7 @@
 #
 # Usage:
 #    1. ./docgen.py
-#    2. copy filters.html, filter_groups.html to ../doc
+#    2. copy processors.html, processor_groups.html to ../doc
 #
 
 from EMAN2 import *
@@ -55,8 +55,8 @@ def write_group(groupname, output):
 	groupclass = None
 	processor_names = Processors.get_list()
 	
-	if groupname == "Filter":
-		groupclass = Filter
+	if groupname == "Processor":
+		groupclass = Processor
 	if groupname == "RealPixelFilter":
 		groupclass = RealPixelFilter
 	elif groupname == "BoxStatFilter":
