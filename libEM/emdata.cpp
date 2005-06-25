@@ -297,10 +297,10 @@ void EMData::write_lst(const string & filename, const string & reffile,
 }
 
 
-void EMData::process(const string & filtername, const Dict & params)
+void EMData::process(const string & processorname, const Dict & params)
 {
 	ENTERFUNC;
-	Processor *f = Factory < Processor >::get(filtername, params);
+	Processor *f = Factory < Processor >::get(processorname, params);
 	if (f) {
 		f->process(this);
 		if( f )

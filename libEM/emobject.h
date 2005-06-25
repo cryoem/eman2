@@ -396,8 +396,8 @@ namespace EMAN
      *
      *   2. How to use a Factory (e.g. Processor Factory):
      *
-     *	    Filter *f1 = Factory<Processor>::get("AbsoluateValue");
-     *      Filter *f2 = Factory<Processor>::get("LowpassGauss", Dict("lowpass", EMObject(12));
+     *	    Processor *f1 = Factory<Processor>::get("AbsoluateValue");
+     *      Processor *f2 = Factory<Processor>::get("LowpassGauss", Dict("lowpass", EMObject(12));
      */
 	template < class T > class Factory
 	{

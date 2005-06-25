@@ -145,10 +145,10 @@ namespace EMAN
 
 		/** Apply a processor with its parameters on this image.
 		 * @param processorname Processor Name.
-		 * @param params Filter parameters in a keyed dictionary.
+		 * @param params Processor parameters in a keyed dictionary.
 		 * @exception NotExistingObjectError If the processor doesn't exist.
 		 */
-		void process(const string & filtername, const Dict & params = Dict());
+		void process(const string & processorname, const Dict & params = Dict());
 
 		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.
