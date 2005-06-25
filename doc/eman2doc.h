@@ -15,8 +15,8 @@
  *
  * \section manual_sec Manuals
  *  <ul>
- *    <li> <a href="../filters.html"> Manual of Individual Filters</a>
- *    <li> <a href="../filter_groups.html"> Manual of Grouped Filters</a>
+ *    <li> <a href="../filters.html"> Manual of Individual Processor</a>
+ *    <li> <a href="../filter_groups.html"> Manual of Grouped Processors</a>
  *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
  *  </ul>
  */

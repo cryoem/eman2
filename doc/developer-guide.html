@@ -43,7 +43,7 @@ format</span><br>
     </li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
-define a&nbsp; XYZFilter?</big></li>
+define a&nbsp; XYZProcessor?</big></li>
   <ul>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">&nbsp;
@@ -227,7 +227,7 @@ and a user chooses which one to use. In EMAN2, we define a <span
 class to manage these algorithms, including <br>
     </li>
     <ul>
-      <li><span style="font-weight: bold;">Filter</span> (image processor)</li>
+      <li><span style="font-weight: bold;">Processor</span> (image processor)</li>
       <li><span style="font-weight: bold;">Aligner</span> (2D/3D image
 alignment)</li>
       <li><span style="font-weight: bold;">Averager</span> (averaging a
@@ -242,18 +242,18 @@ image reconstruction)</li>
     <li style="color: rgb(51, 51, 255);"><big>How to define/use a
 XYZProcessor</big></li>
     <ul>
-      <li>Filter is the base class. <span style="font-weight: bold;">XYZFilter</span>
-should extend Filter or a
-subclass of Filter.</li>
+      <li>Processor is the base class. <span style="font-weight: bold;">XYZProcessor</span>
+should extend Processor or a
+subclass of Processor.</li>
       <li>processors are identified by names. <span
- style="font-weight: bold;">XYZFilter</span>'s name should be
+ style="font-weight: bold;">XYZProcessor</span>'s name should be
 "XYZ" for consistency.</li>
-      <li><span style="font-weight: bold;">XYZFilter</span> must define
+      <li><span style="font-weight: bold;">XYZProcessor</span> must define
 a static function to construct a new
-XYZFilter instance. This function is going to be stored in the Filter
+XYZProcessor instance. This function is going to be stored in the Processor
 Factory.<br>
       </li>
-      <li>To use <span style="font-weight: bold;">XYZFilter</span>: <span
+      <li>To use <span style="font-weight: bold;">XYZProcessor</span>: <span
  style="color: rgb(0, 153, 0);">EMData* img1 = ...;
 img1-&gt;processor("XYZ");</span></li>
     </ul>
@@ -272,9 +272,9 @@ Factory&lt;Processor&gt;::Factory()<br>
     </ul>
     <ul style="background-color: rgb(255, 255, 204);">
 Processor *abs_processor =
-Factory&lt;Filter&gt;::get("AbsoluateValue");<br
+Factory&lt;Processor&gt;::get("AbsoluateValue");<br
  style="font-family: monospace;">
-      <span style="font-family: monospace;">Filter
+      <span style="font-family: monospace;">Processor
 *gauss_lowpass_processor =
 Factory&lt;Processor&gt;::get("LowpassGauss", <br>
 Dict("lowpass", 12); </span>
