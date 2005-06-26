@@ -10,5 +10,5 @@ e.read_image(sys.argv[1])
 m = EMData()
 m = e.copy(False, False)
 
-e.process("eman1.MaskNormalize", {"mask" : EMObject(m), "no_sigma" : 1})
+e.process("eman1.normalize.mask", {"mask" : EMObject(m), "no_sigma" : 1})
 e.write_image(sys.argv[2], 0, MRC)

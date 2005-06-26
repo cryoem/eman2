@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 500; j++) {
 			for (int i = 0; i < NTT / 2; i++)
-				data[i]->process("eman1.AbsoluateValue");
+				data[i]->process("eman1.math.absvalue");
 		}
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++)
-				data[i]->process("eman1.ValueSqrt");
+				data[i]->process("eman1.math.sqrt");
 		}
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;

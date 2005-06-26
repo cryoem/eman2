@@ -291,11 +291,11 @@ int main(int argc, char *argv[])
 			}
 #endif
 			if (argdict[edgenorm]) {
-				d->process("eman1.CircleMeanNormalize");
+				d->process("eman1.normalize.circlemean");
 			}
 
 			if (norm == 1) {
-				d->process("eman1.StdNormalize");
+				d->process("eman1.normalize");
 			}
 			else if (norm == 2) {
 				(*d) *= nsig / sigma;
@@ -303,7 +303,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[flip]) {
-				d->process("eman1.Flip", Dict("axis", "y"));
+				d->process("eman1.xform.flip", Dict("axis", "y"));
 			}
 
 			if (argdict[invert]) {
@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (ramp) {
-				d->process("eman1.LinearRamp", Dict("intercept", 1, "slope", ramp));	    
+				d->process("eman1.filter.ramp", Dict("intercept", 1, "slope", ramp));	    
 			}
 
 			int y = d->get_ysize();
@@ -378,18 +378,18 @@ int main(int argc, char *argv[])
 			}
 
 			if (Xlp || Xhp) {
-				d->process("eman1.Guasslowpass", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
-				d->process("eman1.TanhHighpass", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
+				d->process("eman1.filter.lowpass.gaussian", Dict("lowpass", Xhp == 0 ? -10.0 : Xhp));
+				d->process("eman1.filter.highpass.tanh", Dict("highpass", Xlp == 0 ? 100000.0 : Xlp));
 			}
 
 			if (Xtlp) {
-				d->process("eman1.Tanhlowpass", Dict("lowpass", -10.0));
-				d->process("eman1.TanhHighpass", Dict("highpass", Xtlp));
+				d->process("eman1.filter.lowpass.tanh", Dict("lowpass", -10.0));
+				d->process("eman1.filter.highpass.tanh", Dict("highpass", Xtlp));
 			}
 
 			if (Xsharphp) {
-				d->process("eman1.SharpCutoffLowpass", Dict("lowpass", Xsharphp));
-				d->process("eman1.SharpCutoffHighpass", Dict("highpass", 100000.0));
+				d->process("eman1.filter.lowpass.sharp", Dict("lowpass", Xsharphp));
+				d->process("eman1.filter.highpass.sharp", Dict("highpass", 100000.0));
 			}
 
 			if (mask) {
@@ -397,11 +397,11 @@ int main(int argc, char *argv[])
 			}
 
 			if (imask > 0) {
-				d->process("eman1.SharpMask", Dict("inner_radius", imask, "value", 0));
+				d->process("eman1.mask.sharp", Dict("inner_radius", imask, "value", 0));
 			}
 
 			if (automask) {
-				d->process("eman1.AutoMask", Dict("threshold", automask));
+				d->process("eman1.mask.auto2d", Dict("threshold", automask));
 			}
 
 			// uses correlation with 180 deg rot for centering
@@ -414,15 +414,15 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[center]) {
-				d->process("eman1.ToMassCenter", Dict("int_shift_only", 1));
+				d->process("eman1.xform.centerofmass", Dict("int_shift_only", 1));
 			}
 
 			if (argdict[phot]) {
-				d->process("eman1.Phase180");
+				d->process("eman1.xform.phaseorigin");
 			}
 
 			if (anoise) {
-				d->process("eman1.AddNoise");
+				d->process("eman1.math.addnoise");
 			}
 
 			if (argdict[rfp]) {
@@ -437,7 +437,7 @@ int main(int argc, char *argv[])
 				}
 				else {
 					if (rizef && rand() % 2) {
-						d->process("eman1.Flip", Dict("axis", "y"));
+						d->process("eman1.xform.flip", Dict("axis", "y"));
 					}
 
 					if (rizeda > 0) {
@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rotav]) {
-				d->process("eman1.RadialAverage");
+				d->process("eman1.math.radialaverage");
 			}
 
 			if (csym > 1) {
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rsub]) {
-				d->process("eman1.RadialSubstract");
+				d->process("eman1.math.radialsubtract");
 			}
 
 			if (scl) {
@@ -523,11 +523,11 @@ int main(int argc, char *argv[])
 				}
 				else {
 					EMData *e = d->copy();
-					e->process("eman1.Phase180");
+					e->process("eman1.xform.phaseorigin");
 
 					if (sclmd == 1) {
 						sc->common_lines(e, e, sclmd, scl, true);
-						sc->process("eman1.LinearXform", Dict("shift", -90.0, "scale", -1.0));
+						sc->process("eman1.math.linear", Dict("shift", -90.0, "scale", -1.0));
 					}
 					else if (sclmd == 2) {
 						sc->common_lines(e, e, sclmd, scl, true);
@@ -739,7 +739,7 @@ int main(int argc, char *argv[])
 	
     if (average) {
 		//average->setNImg(n1-n0+1);
-		average->process("eman1.StdNormalize");
+		average->process("eman1.normalize");
 		average->write_image(outfile, -1);
     }
 #if 0

@@ -981,9 +981,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.LowpassGauss",Dict("lowpass", map_size*apix/res));
+	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process("eman1.Phase180");	// move phase origin to center of image map_size, instead of at corner
+	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1063,9 +1063,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.LowpassGauss",Dict("lowpass", map_size*apix/res));
+	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process("eman1.Phase180");	// move phase origin to center of image map_size, instead of at corner
+	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1150,9 +1150,9 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.LowpassGauss",Dict("lowpass", box*apix/res));
+	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process("eman1.Phase180");	// move phase origin to center of image box, instead of at corner
+	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #elif defined NFFT2
@@ -1220,9 +1220,9 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.LowpassGauss",Dict("lowpass", box*apix/res));
+	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process("eman1.Phase180");	// move phase origin to center of image box, instead of at corner
+	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #else

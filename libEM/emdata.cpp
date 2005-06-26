@@ -5124,7 +5124,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 
 	EMData *img1_copy2 = img1->copy();
 
-	img1_copy2->process("eman1.Square");
+	img1_copy2->process("eman1.math.squared");
 
 	EMData *ccf = img1->calc_ccf(img2_copy);
 	if( img2_copy )
@@ -5153,7 +5153,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	conv2->mult(img1_size);
-	conv1->process("eman1.Square");
+	conv1->process("eman1.math.squared");
 	conv1->mult(1.0f / (num * num));
 
 	EMData *conv2_copy = conv2->copy();
@@ -5171,7 +5171,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	conv2_copy->mult(1.0f / num);
-	conv2_copy->process("eman1.Sqrt");
+	conv2_copy->process("eman1.math.sqrt");
 
 	EMData *ccf_copy = ccf->copy();
 	if( ccf )
