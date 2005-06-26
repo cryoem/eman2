@@ -1,430 +1,515 @@
 <head><title>EMAN2 Processor Manual</title></head><body>
 <h1> <center> <font color="blue">EMAN2 Processor Manual </font></center></h1>
-<br><i>Last modified on Tue, 21 Sep 2004 10:42:41 CDT<br><i>This document is automatically generated. Please don't edit it.</i>
+<br><i>Last modified on Sun, 26 Jun 2005 14:35:39 CDT<br><i>This document is automatically generated. Please don't edit it.</i>
 <br><br><table border=1 cellspacing=4 cellpadding=4><tr>
   <td align=center> <font size='+1'><b>Processor Name </b></font></td>
   <td align=center> <font size='+1'><b>Parameters </b></font></td>
   <td align=center> <font size='+1'><b>Description </b></font> </td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>ACFCenter </b></font> </td>
-  <td>int <font color=green> <b>is3d</b></font>: <br></td>
-  <td>Center image using CCF with 180 degree rotation.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>AbsoluateValue </b></font> </td>
-  <td></td>
-  <td>f(x) = |x|</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>AddMaskShell </b></font> </td>
-  <td>int <font color=green> <b>nshells</b></font>: number of shells to add<br></td>
-  <td>Add additional shells/rings to an existing 1/0 mask image</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>AddNoise </b></font> </td>
-  <td>float <font color=green> <b>noise</b></font>: <br></td>
-  <td>add noise to an image</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>AddRandomNoise </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.addspectralnoise </b></font> </td>
   <td>float <font color=green> <b>dx</b></font>: <br>int <font color=green> <b>interpolation</b></font>: <br>int <font color=green> <b>n</b></font>: <br>float <font color=green> <b>x0</b></font>: <br>floatarray <font color=green> <b>y</b></font>: <br></td>
   <td>add random noise.</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>AutoMask2D </b></font> </td>
-  <td>float <font color=green> <b>processor</b></font>: is expressed as a fraction of the fourier radius.<br>float <font color=green> <b>threshold</b></font>: runs from ~ -2 to 2, negative numbers for dark protein and positive numbers for light protein (stain).<br></td>
-  <td>Attempts to automatically mask out the particle, excluding other particles in the box, etc.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>AutoMask3D </b></font> </td>
-  <td>float <font color=green> <b>threshold1</b></font>: <br>float <font color=green> <b>threshold2</b></font>: <br></td>
-  <td>Tries to mask out only interesting density</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>AverageX </b></font> </td>
-  <td></td>
-  <td>f(x) = average of x</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Axial </b></font> </td>
-  <td>float <font color=green> <b>apix</b></font>: <br>float <font color=green> <b>axial</b></font>: <br></td>
-  <td>This processor applies a correction for cases where reconstructions with many 'side' views have produced an asymmetric resolution. Specify the gaussian resolution in the z direction.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Beamstop </b></font> </td>
-  <td>float <font color=green> <b>value1</b></font>: <br>float <font color=green> <b>value2</b></font>: <br>float <font color=green> <b>value3</b></font>: <br></td>
-  <td>Try to eliminate beamstop in electron diffraction patterns. value1=sig multiplier; value2,value3 are x,y of center, if value1<0 also does radial subtract.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Bilateral </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.bilateral </b></font> </td>
   <td>float <font color=green> <b>distance_sigma</b></font>: means how large the voxel has impact on its neighbors in spatial domain. The larger it is, the more blurry the resulting image.<br>int <font color=green> <b>half_width</b></font>: processing window size = (2 * half_widthh + 1) ^ 3.<br>int <font color=green> <b>niter</b></font>: how many times to apply this processing on your data.<br>float <font color=green> <b>value_sigma</b></font>: means how large the voxel has impact on its in  range domain. The larger it is, the more blurry the resulting image.<br></td>
-  <td>Bilateral processing on 3D volume data. Bilateral processing does non-lineaer weighted averaging processing within a certain window. </td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>BinThreshold </b></font> </td>
-  <td>float <font color=green> <b>max</b></font>: <br>float <font color=green> <b>threshold</b></font>: <br></td>
-  <td>f(x) = 0 if x < T; else f(x) = density max;</td>
+  <td>Bilateral processing on 3D volume data. Bilateral processing does non-linear weighted averaging processing within a certain window. </td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Binarize </b></font> </td>
-  <td>float <font color=green> <b>value</b></font>: <br></td>
-  <td>f(x) = 0 if x < value; f(x) = 1 if x >= value.</td>
+  <td> <font color='0000a0'> <b>eman1.complex.normpixels </b></font> </td>
+  <td></td>
+  <td>Each Fourier pixel will be normalized. ie - amp=1, phase=unmodified. Useful for performing phase-residual-like computations with dot products.</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Boolean </b></font> </td>
-  <td></td>
-  <td>f(x) = 0 if x = 0; f(x) = 1 if x != 0;</td>
+  <td> <font color='0000a0'> <b>eman1.filter.blockcutoff </b></font> </td>
+  <td>float <font color=green> <b>value1</b></font>: <br>float <font color=green> <b>value2</b></font>: <br></td>
+  <td>Block processor, val1 is dx/dy, val2 is lp freq cutoff in pixels. Mystery processor.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>BoxMax </b></font> </td>
-  <td></td>
-  <td>peak processor: pixel = max of values surrounding pixel.</td>
+  <td> <font color='0000a0'> <b>eman1.filter.blockrange </b></font> </td>
+  <td>float <font color=green> <b>cal_half_width</b></font>: <br>float <font color=green> <b>fill_half_width</b></font>: <br></td>
+  <td>averages over cal_half_width, then sets the value in a local block</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>BoxMedian </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.filter.byfile </b></font> </td>
+  <td>string <font color=green> <b>filename</b></font>: <br></td>
+  <td>A fourier processor specified in a 2 column text file.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.filter.highpass.butterworth </b></font> </td>
+  <td>float <font color=green> <b>highpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: f(x) = 1/(1+t*t);</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.filter.highpass.gaussian </b></font> </td>
+  <td>float <font color=green> <b>highpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: f(x) = 1.0-exp(-x*x/(highpass*highpass);</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.filter.highpass.sharp </b></font> </td>
+  <td>float <font color=green> <b>highpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: if x >= highpass, f(x) = 1; else f(x) = 0;</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.filter.highpass.tanh </b></font> </td>
+  <td>float <font color=green> <b>highpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: f(x)=tanh(x-highpass)/2.0+0.5;</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.filter.lowpass.gaussian </b></font> </td>
+  <td>float <font color=green> <b>lowpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass));</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.filter.lowpass.sharp </b></font> </td>
+  <td>float <font color=green> <b>lowpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.filter.lowpass.tanh </b></font> </td>
+  <td>float <font color=green> <b>lowpass</b></font>: Processor radius in terms of Nyquist (0-.5)<br></td>
+  <td>processor radial function: f(x)=tanh(lowpass-x)/2.0 + 0.5;</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.filter.median </b></font> </td>
   <td></td>
   <td>A processor for noise reduction. pixel = median of values surrounding pixel.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>BoxSigma </b></font> </td>
-  <td></td>
-  <td>pixel = standard deviation of values surrounding pixel.</td>
+  <td> <font color='0000a0'> <b>eman1.filter.ramp </b></font> </td>
+  <td>float <font color=green> <b>intercept</b></font>: <br>float <font color=green> <b>slope</b></font>: <br></td>
+  <td>processor radial function: f(x) = slope * x + intercept;</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Collapse </b></font> </td>
-  <td>float <font color=green> <b>bottom</b></font>: <br>float <font color=green> <b>value</b></font>: <br></td>
-  <td>f(x) = b if (b-v)<x<(b+v) ; else f(x) = x.</td>
+  <td> <font color='0000a0'> <b>eman1.filter.snr </b></font> </td>
+  <td>string <font color=green> <b>snrfile</b></font>: <br>int <font color=green> <b>wiener</b></font>: <br></td>
+  <td>Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>ComplexExp </b></font> </td>
-  <td></td>
-  <td>f(x) = 10 ^ (x-6.1);</td>
+  <td> <font color='0000a0'> <b>eman1.mask.addshells </b></font> </td>
+  <td>int <font color=green> <b>nshells</b></font>: number of shells to add<br></td>
+  <td>Add additional shells/rings to an existing 1/0 mask image</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>ComplexLog </b></font> </td>
-  <td></td>
-  <td>f(x) = log10(x) + 6.1;</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>CoordinateMaskFile </b></font> </td>
-  <td>string <font color=green> <b>filename</b></font>: <br></td>
-  <td>Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>CutoffBlock </b></font> </td>
-  <td>float <font color=green> <b>value1</b></font>: <br>float <font color=green> <b>value2</b></font>: <br></td>
-  <td>Block processor, val1 is dx/dy, val2 is lp freq cutoff in pixels.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>DiffBlock </b></font> </td>
-  <td>float <font color=green> <b>cal_half_width</b></font>: <br>float <font color=green> <b>fill_half_width</b></font>: <br></td>
-  <td>block processor: val1 is dx/dy for calculating an average, val2 is dx/dy for fill/step.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Exp </b></font> </td>
-  <td>float <font color=green> <b>high</b></font>: <br>float <font color=green> <b>low</b></font>: <br></td>
-  <td>f(x) = exp( x / low - high)</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>FileFourier </b></font> </td>
-  <td>string <font color=green> <b>filename</b></font>: <br></td>
-  <td>A fourier processor specified in a 2 column text file.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Flip </b></font> </td>
-  <td>string <font color=green> <b>axis</b></font>: 'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;<br></td>
-  <td>flip an image around an axis.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>GradientRemover </b></font> </td>
-  <td></td>
-  <td>Gradient remover, does a rough plane fit to find linear gradients.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>HighpassButterworth </b></font> </td>
-  <td>float <font color=green> <b>highpass</b></font>: <br></td>
-  <td>processor radial function: f(x) = 1/(1+t*t);</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>HighpassGauss </b></font> </td>
-  <td>float <font color=green> <b>highpass</b></font>: <br></td>
-  <td>processor radial function: f(x) = 1.0-exp(-x*x/(highpass*highpass);</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>HighpassSharpCutoff </b></font> </td>
-  <td>float <font color=green> <b>highpass</b></font>: <br></td>
-  <td>processor radial function: if x >= highpass, f(x) = 1; else f(x) = 0;</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>HighpassTanh </b></font> </td>
-  <td>float <font color=green> <b>highpass</b></font>: <br></td>
-  <td>processor radial function: f(x)=tanh(x-highpass)/2.0+0.5;</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>IndexMaskFile </b></font> </td>
-  <td>string <font color=green> <b>filename</b></font>: <br>int <font color=green> <b>ismaskset</b></font>: <br></td>
-  <td>Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Invert </b></font> </td>
-  <td></td>
-  <td>invert the pixel density of an image.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>IterBinMask </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.mask.addshells.gauss </b></font> </td>
   <td></td>
   <td>Iterative expansion of a binary mask, val1 is number of pixels to expand, if val2!=0 will make a soft Gaussian edge starting after val2 pixels.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Laplacian </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.mask.auto2d </b></font> </td>
+  <td>float <font color=green> <b>filter</b></font>: is expressed as a fraction of the fourier radius.<br>float <font color=green> <b>threshold</b></font>: runs from ~ -2 to 2, negative numbers for dark protein and positive numbers for light protein (stain).<br></td>
+  <td>Attempts to automatically mask out the particle, excluding other particles in the box, etc.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.mask.auto3d.thresh </b></font> </td>
+  <td>float <font color=green> <b>threshold1</b></font>: <br>float <font color=green> <b>threshold2</b></font>: <br></td>
+  <td>Tries to mask out only interesting density</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.mask.beamstop </b></font> </td>
+  <td>float <font color=green> <b>value1</b></font>: <br>float <font color=green> <b>value2</b></font>: <br>float <font color=green> <b>value3</b></font>: <br></td>
+  <td>Try to eliminate beamstop in electron diffraction patterns. value1=sig multiplier; value2,value3 are x,y of center, if value1<0 also does radial subtract.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.mask.contract </b></font> </td>
   <td>int <font color=green> <b>areasize</b></font>: <br></td>
-  <td>A second derivative method of enhancement. Particularly good at finding the fine detail in an image. Any feature with a sharp discontinuity (like noise) will be enhanced by a Laplacian processor. Laplacian processor (x -> d^2/dx^2 + d^2/dy^2 + d^2/dz^2).</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>LinearRamp </b></font> </td>
-  <td>float <font color=green> <b>intercept</b></font>: <br>float <font color=green> <b>slope</b></font>: <br></td>
-  <td>processor radial function: f(x) = a + bx;</td>
+  <td>Contraction of data, if any nearest neighbor is 0, value -> 0, generally used iteratively</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>LinearXform </b></font> </td>
-  <td>float <font color=green> <b>scale</b></font>: <br>float <font color=green> <b>shift</b></font>: <br></td>
-  <td>linear transform processor: f(x) = x * SCALE * SHIFT.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>LocalNorm </b></font> </td>
-  <td>float <font color=green> <b>apix</b></font>: <br>float <font color=green> <b>radius</b></font>: <br>float <font color=green> <b>threshold</b></font>: <br></td>
-  <td>This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Log </b></font> </td>
-  <td></td>
-  <td>f(x) = log10(x/max_pixel) if x > 0; else f(x) = 0;</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>LowpassGauss </b></font> </td>
-  <td>float <font color=green> <b>lowpass</b></font>: <br></td>
-  <td>processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass));</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>LowpassSharpCutoff </b></font> </td>
-  <td>float <font color=green> <b>lowpass</b></font>: <br></td>
-  <td>processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>LowpassTanh </b></font> </td>
-  <td>float <font color=green> <b>lowpass</b></font>: <br></td>
-  <td>processor radial function: f(x)=tanh(lowpass-x)/2.0 + 0.5;</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>MakeRadius </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
-  <td>f(x) = radius;</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>MakeRadiusSquared </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
-  <td>f(x) = radius * radius;</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>MaskEdgeMean </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br>int <font color=green> <b>ring_width</b></font>: The width of the mask ring.<br></td>
-  <td>A cutoff to the circular edgemean value</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>MaskGauss </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
-  <td>a gaussian falloff, radius is the 1/e of the width.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>MaskGaussInv </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>float <font color=green> <b>gauss_width</b></font>: <br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
-  <td>f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>MaskNoise </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
-  <td>fills in with flatband random noise</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>MaskSharp </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br>float <font color=green> <b>value</b></font>: step cutoff to this value.<br></td>
-  <td>step cutoff to a user-given value in both inner and outer circles.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>MeanZeroEdge </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.mask.dampedzeroedgefill </b></font> </td>
   <td></td>
   <td>Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.</td>
 </tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>MinusPeak </b></font> </td>
-  <td></td>
-  <td>peak processor: pixel = pixel - max of values surrounding pixel. This is a sort of positive peak-finding algorithm.</td>
-</tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>NormalizeCircleMean </b></font> </td>
-  <td></td>
-  <td>normalizes an image, edge value equals to mean of 2 pixel circular border.</td>
+  <td> <font color='0000a0'> <b>eman1.mask.fromfile </b></font> </td>
+  <td>string <font color=green> <b>filename</b></font>: <br>int <font color=green> <b>ismaskset</b></font>: <br></td>
+  <td>Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>NormalizeEdgeMean </b></font> </td>
-  <td></td>
-  <td>normalizes an image, edge value equals to edge mean.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>NormalizeLREdgeMean </b></font> </td>
-  <td></td>
-  <td>normalizes an image, uses 2 pixels on left and right edge</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>NormalizeMask </b></font> </td>
-  <td>emdata <font color=green> <b>mask</b></font>: <br>int <font color=green> <b>no_sigma</b></font>: <br></td>
-  <td>Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>NormalizeMaxMin </b></font> </td>
-  <td></td>
-  <td>normalizes an image. mean -> (max-min)/2; std dev = (max+min)/2;</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>NormalizeRow </b></font> </td>
-  <td></td>
-  <td>normalizes each row in the image individually</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>NormalizeStd </b></font> </td>
-  <td></td>
-  <td>do a standard normalization on an image.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>NormalizeToFile </b></font> </td>
-  <td>float <font color=green> <b>add</b></font>: <br>int <font color=green> <b>invert</b></font>: <br>int <font color=green> <b>keepzero</b></font>: exclude zero values<br>float <font color=green> <b>mult</b></font>: <br>string <font color=green> <b>noisyfile</b></font>: <br></td>
-  <td>Multiply this image by a constant so it is scaled to the signal in 'noisyfile'</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>NormalizeToLeastSquare </b></font> </td>
-  <td>float <font color=green> <b>high_threshold</b></font>: <br>float <font color=green> <b>low_threshold</b></font>: <br>emdata <font color=green> <b>to</b></font>: <br></td>
-  <td>use least square method to normalize</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>NormalizeToStd </b></font> </td>
-  <td>float <font color=green> <b>add</b></font>: <br>int <font color=green> <b>invert</b></font>: <br>int <font color=green> <b>keepzero</b></font>: <br>float <font color=green> <b>mult</b></font>: <br>emdata <font color=green> <b>noisy</b></font>: <br></td>
-  <td>multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>PeakOnly </b></font> </td>
-  <td>int <font color=green> <b>npeaks</b></font>: <br></td>
-  <td>peak processor -> if more than npeaks surrounding peaks greater than value, value->0</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Phase180 </b></font> </td>
-  <td></td>
-  <td>Translates a centered image to the corner</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>RadialAverage </b></font> </td>
-  <td></td>
-  <td>makes image circularly symmetric.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>RadialSubstract </b></font> </td>
-  <td></td>
-  <td>subtracts circularly symmetric part of an image.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>RandRotateTranslate </b></font> </td>
-  <td>float <font color=green> <b>angle</b></font>: <br>float <font color=green> <b>dx</b></font>: <br>int <font color=green> <b>flip</b></font>: <br></td>
-  <td>random rotate and translate processor</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>RangeThreshold </b></font> </td>
-  <td>float <font color=green> <b>high</b></font>: <br>float <font color=green> <b>low</b></font>: <br></td>
-  <td>f(x) = 1 if (low <= x <= high); else f(x) = 0;</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Rotate </b></font> </td>
-  <td>float <font color=green> <b>alt</b></font>: <br>float <font color=green> <b>az</b></font>: <br>float <font color=green> <b>phi</b></font>: <br></td>
-  <td>rotate the image by an euler angle (alt, az, phi)</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>SNR </b></font> </td>
-  <td>string <font color=green> <b>snrfile</b></font>: <br>int <font color=green> <b>wiener</b></font>: <br></td>
-  <td>Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>SetSF </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.mask.fromfile.sizediff </b></font> </td>
   <td>string <font color=green> <b>filename</b></font>: <br></td>
-  <td>Sets the structure factor based on a 1D x/y text file.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Sigma </b></font> </td>
-  <td>float <font color=green> <b>value1</b></font>: <br>float <font color=green> <b>value2</b></font>: <br></td>
-  <td>f(x) = mean if x<(mean-v2*sigma) or x>(mean+v1*sigma); else f(x) = x;</td>
+  <td>Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>SigmaZeroEdge </b></font> </td>
-  <td></td>
-  <td>Fill zeroes at edges with nearest horizontal/vertical value.</td>
+  <td> <font color='0000a0'> <b>eman1.mask.gaussian </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
+  <td>a gaussian falloff to zero, radius is the 1/e of the width.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>SmartMask </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.mask.noise </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
+  <td>fills masked region</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.mask.onlypeaks </b></font> </td>
+  <td>int <font color=green> <b>npeaks</b></font>: <br></td>
+  <td>peak processor -> if npeaks or more surrounding values >= value, value->0</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.mask.ringmean </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br>int <font color=green> <b>ring_width</b></font>: The width of the mask ring.<br></td>
+  <td>A step cutoff to the the mean value in a ring centered on the outer radius</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.mask.sharp </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br>float <font color=green> <b>value</b></font>: step cutoff to this value.<br></td>
+  <td>step cutoff to a user-given value in both inner and outer circles.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.mask.smart </b></font> </td>
   <td>float <font color=green> <b>mask</b></font>: <br></td>
   <td>Smart mask processor.</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>SubNoise </b></font> </td>
-  <td></td>
-  <td>substract noise from an image</td>
+  <td> <font color='0000a0'> <b>eman1.mask.zeroedge2d </b></font> </td>
+  <td>int <font color=green> <b>x0</b></font>: <br>int <font color=green> <b>x1</b></font>: <br>int <font color=green> <b>y0</b></font>: <br>int <font color=green> <b>y1</b></font>: <br></td>
+  <td>zero edges of image on top and bottom, and on left and right.</td>
 </tr>
 <tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>Sym </b></font> </td>
-  <td>string <font color=green> <b>sym</b></font>: <br></td>
-  <td>Applies the specified symmetry to the image.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>ToMassCenter </b></font> </td>
-  <td>int <font color=green> <b>int_shift_only</b></font>: <br></td>
-  <td>ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>ToZero </b></font> </td>
-  <td>float <font color=green> <b>minval</b></font>: <br></td>
-  <td>f(x) = x if x >= minval; f(x) = 0 if x < minval.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>Translate </b></font> </td>
-  <td>float <font color=green> <b>dx</b></font>: <br>float <font color=green> <b>dy</b></font>: <br></td>
-  <td>translate an image by (dx, dy)</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>ValueSqrt </b></font> </td>
-  <td></td>
-  <td>f(x) = sqrt(x)</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>ValueSquared </b></font> </td>
-  <td></td>
-  <td>f(x) = x * x;</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>VerticalStripe </b></font> </td>
-  <td></td>
-  <td>Tries to fix images scanned on the zeiss for poor ccd normalization.</td>
-</tr>
-<tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>ZeroConstant </b></font> </td>
-  <td>int <font color=green> <b>areasize</b></font>: <br></td>
-  <td>Iterative contraction of data, if any nearest neighbor is 0, value -> 0</td>
-</tr>
-<tr bgcolor=fafaf0>
-  <td> <font color='0000a0'> <b>ZeroEdgePlane </b></font> </td>
+  <td> <font color='0000a0'> <b>eman1.mask.zeroedge3d </b></font> </td>
   <td>int <font color=green> <b>x0</b></font>: <br>int <font color=green> <b>x1</b></font>: <br>int <font color=green> <b>y0</b></font>: <br>int <font color=green> <b>y1</b></font>: <br>int <font color=green> <b>z0</b></font>: <br>int <font color=green> <b>z1</b></font>: <br></td>
   <td>zero edges of volume on all sides</td>
 </tr>
 <tr bgcolor=f0f0fa>
-  <td> <font color='0000a0'> <b>ZeroEdgeRow </b></font> </td>
-  <td>int <font color=green> <b>bottom_nrows</b></font>: <br>int <font color=green> <b>left_ncols</b></font>: <br>int <font color=green> <b>right_ncols</b></font>: <br>int <font color=green> <b>top_nrows</b></font>: <br></td>
-  <td>zero edges of image on top and bottom, and on left and right.</td>
+  <td> <font color='0000a0'> <b>eman1.mask.zeroedgefill </b></font> </td>
+  <td></td>
+  <td>Fill zeroes at edges with nearest horizontal/vertical value.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.absvalue </b></font> </td>
+  <td></td>
+  <td>f(x) = |x|</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.addnoise </b></font> </td>
+  <td>float <font color=green> <b>noise</b></font>: <br></td>
+  <td>add noise to an image</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.averageovery </b></font> </td>
+  <td></td>
+  <td>Average along Y and replace with average</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.exp </b></font> </td>
+  <td>float <font color=green> <b>high</b></font>: <br>float <font color=green> <b>low</b></font>: <br></td>
+  <td>f(x) = exp( x / low - high)</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.gausskernelfix </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>float <font color=green> <b>gauss_width</b></font>: <br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
+  <td>f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.laplacian </b></font> </td>
+  <td>int <font color=green> <b>areasize</b></font>: <br></td>
+  <td>Discrete approximation to Laplacian. Edge enchancement, but works poorly in the presence of noise. Laplacian processor (x -> d^2/dx^2 + d^2/dy^2 + d^2/dz^2).</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.linear </b></font> </td>
+  <td>float <font color=green> <b>scale</b></font>: <br>float <font color=green> <b>shift</b></font>: <br></td>
+  <td>linear transform processor: f(x) = x * scale + shift</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.lineargradientfix </b></font> </td>
+  <td></td>
+  <td>Gradient remover, does a rough plane fit to find linear gradients.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.localmax </b></font> </td>
+  <td></td>
+  <td>peak processor: pixel = max of values surrounding pixel.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.localsigma </b></font> </td>
+  <td></td>
+  <td>pixel = standard deviation of values surrounding pixel.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.log </b></font> </td>
+  <td></td>
+  <td>f(x) = log10(x/max_pixel) if x > 0; else f(x) = 0;</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.radialaverage </b></font> </td>
+  <td></td>
+  <td>makes image circularly symmetric.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.radialsubtract </b></font> </td>
+  <td></td>
+  <td>subtracts circularly symmetric part of an image.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.realtofft </b></font> </td>
+  <td></td>
+  <td>This will replace the image with a full-circle 2D fft amplitude rendering.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.sigma </b></font> </td>
+  <td>float <font color=green> <b>value1</b></font>: <br>float <font color=green> <b>value2</b></font>: <br></td>
+  <td>f(x) = mean if x<(mean-v2*sigma) or x>(mean+v1*sigma); else f(x) = x;</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.sqrt </b></font> </td>
+  <td></td>
+  <td>f(x) = sqrt(x)</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.squared </b></font> </td>
+  <td></td>
+  <td>f(x) = x * x;</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.submax </b></font> </td>
+  <td></td>
+  <td>peak processor: pixel = pixel - max of values surrounding pixel. This is a sort of positive peak-finding algorithm.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.toradius </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
+  <td>overwrites input, f(x) = radius;</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.math.toradiussqr </b></font> </td>
+  <td>float <font color=green> <b>dx</b></font>: Modify mask center by dx relative to the default center nx/2<br>float <font color=green> <b>dy</b></font>: Modify mask center by dy relative to the default center ny/2<br>float <font color=green> <b>dz</b></font>: Modify mask center by dz relative to the default center nz/2<br>int <font color=green> <b>inner_radius</b></font>: inner mask radius. optional, default=-1<br>int <font color=green> <b>outer_radius</b></font>: outer mask radius<br></td>
+  <td>overwrites input, f(x) = radius * radius</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.math.verticalstripefix </b></font> </td>
+  <td></td>
+  <td>Tries to fix images scanned on the zeiss for poor ccd normalization.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.misc.localnorm </b></font> </td>
+  <td>float <font color=green> <b>apix</b></font>: <br>float <font color=green> <b>radius</b></font>: <br>float <font color=green> <b>threshold</b></font>: <br></td>
+  <td>This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.misc.setpowspec </b></font> </td>
+  <td>string <font color=green> <b>filename</b></font>: <br></td>
+  <td>Sets the structure factor based on a 1D x/y text file.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.misc.symsearch </b></font> </td>
+  <td>int <font color=green> <b>output_symlabel</b></font>: if output the symmetry label map in which the pixel value is the index of symmetry in the symmetry list<br>stringarray <font color=green> <b>sym</b></font>: the list of symmetries to search<br>emdata <font color=green> <b>symlabel_map</b></font>: the optional return map when output_symlabel=1<br>float <font color=green> <b>thresh</b></font>: the minimal level of symmetry to be accepted (0-1)<br></td>
+  <td>Identifiy the best symmetry in the given symmetry list for each pixel and then apply the best symmetry to each pixel.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.normalize </b></font> </td>
+  <td></td>
+  <td>do a standard normalization on an image.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.normalize.circlemean </b></font> </td>
+  <td></td>
+  <td>normalizes an image, mean value equals to mean of 2 pixel circular border.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.normalize.edgemean </b></font> </td>
+  <td></td>
+  <td>normalizes an image, mean value equals to edge mean.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.normalize.lredge </b></font> </td>
+  <td></td>
+  <td>normalizes an image, uses 2 pixels on left and right edge</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.normalize.mask </b></font> </td>
+  <td>emdata <font color=green> <b>mask</b></font>: <br>int <font color=green> <b>no_sigma</b></font>: <br></td>
+  <td>Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.normalize.maxmin </b></font> </td>
+  <td></td>
+  <td>normalizes an image. mean -> (maxval-minval)/2; std dev = (maxval+minval)/2;</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.normalize.rows </b></font> </td>
+  <td></td>
+  <td>normalizes each row in the image individually</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.normalize.tofile </b></font> </td>
+  <td>float <font color=green> <b>add</b></font>: <br>int <font color=green> <b>invert</b></font>: <br>int <font color=green> <b>keepzero</b></font>: exclude zero values<br>float <font color=green> <b>mult</b></font>: <br>string <font color=green> <b>noisyfile</b></font>: <br></td>
+  <td>Multiply this image by a constant so it is scaled to the signal in 'noisyfile'</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.normalize.toimage </b></font> </td>
+  <td>float <font color=green> <b>add</b></font>: <br>int <font color=green> <b>invert</b></font>: <br>int <font color=green> <b>keepzero</b></font>: <br>float <font color=green> <b>mult</b></font>: <br>emdata <font color=green> <b>noisy</b></font>: <br></td>
+  <td>multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.normalize.toimage.lsq </b></font> </td>
+  <td>float <font color=green> <b>high_threshold</b></font>: <br>float <font color=green> <b>low_threshold</b></font>: <br>emdata <font color=green> <b>to</b></font>: <br></td>
+  <td>use least square method to normalize</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.normalize.unitlen </b></font> </td>
+  <td></td>
+  <td>Normalize an image so its vector length is 1.0.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.threshold.belowtozero </b></font> </td>
+  <td>float <font color=green> <b>minval</b></font>: <br></td>
+  <td>f(x) = x if x >= minval; f(x) = 0 if x < minval.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.threshold.binary </b></font> </td>
+  <td>float <font color=green> <b>value</b></font>: <br></td>
+  <td>f(x) = 0 if x < value; f(x) = 1 if x >= value.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.threshold.binaryrange </b></font> </td>
+  <td>float <font color=green> <b>high</b></font>: <br>float <font color=green> <b>low</b></font>: <br></td>
+  <td>f(x) = 1 if (low <= x <= high); else f(x) = 0;</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.threshold.compress </b></font> </td>
+  <td>float <font color=green> <b>range</b></font>: <br>float <font color=green> <b>value</b></font>: <br></td>
+  <td>f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.threshold.notzero </b></font> </td>
+  <td></td>
+  <td>f(x) = 0 if x = 0; f(x) = 1 if x != 0;</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.xform.centeracf </b></font> </td>
+  <td>int <font color=green> <b>is3d</b></font>: <br></td>
+  <td>Center image using CCF with 180 degree rotation.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.xform.centerofmass </b></font> </td>
+  <td>int <font color=green> <b>int_shift_only</b></font>: <br></td>
+  <td>ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.xform.flip </b></font> </td>
+  <td>string <font color=green> <b>axis</b></font>: 'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;<br></td>
+  <td>flip an image around an axis.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>eman1.xform.fourierorigin </b></font> </td>
+  <td></td>
+  <td>Translates the origin in Fourier space from the corner to the center in Y</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>eman1.xform.phaseorigin </b></font> </td>
+  <td></td>
+  <td>Translates a centered image to the corner</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.bandpass.gauss </b></font> </td>
+  <td>float <font color=green> <b>Center</b></font>: Gaussian center.<br>float <font color=green> <b>Sigma</b></font>: Gaussian sigma.<br></td>
+  <td>Bandpass Gauss filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.bandpass.tanh </b></font> </td>
+  <td>float <font color=green> <b>Fall_off</b></font>: Tanh decay rate.<br>float <font color=green> <b>High_cutoff_frequency</b></font>: Absolute [0,0.5] high cut-off frequency.<br>float <font color=green> <b>High_fall_off</b></font>: Tanh high decay rate.<br>float <font color=green> <b>Low_cutoff_frequency</b></font>: Absolute [0,0.5] low cut-off frequency.<br>float <font color=green> <b>Low_fall_off</b></font>: Tanh low decay rate.<br></td>
+  <td>Bandpass tanh processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.bandpass.tophat </b></font> </td>
+  <td>float <font color=green> <b>High_cutoff_frequency</b></font>: Absolute [0,0.5] high cut-off frequency.<br>float <font color=green> <b>Low_cutoff_frequency</b></font>: Absolute [0,0.5] low cut-off frequency.<br></td>
+  <td>Bandpass top-hat filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.highpass.butterworth </b></font> </td>
+  <td>float <font color=green> <b>High_cutoff_frequency</b></font>: Absolute [0,0.5] high cut-off frequency.<br>float <font color=green> <b>Low_cutoff_frequency</b></font>: Absolute [0,0.5] low cut-off frequency.<br></td>
+  <td>Highpass Butterworth filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.highpass.gauss </b></font> </td>
+  <td>float <font color=green> <b>Sigma</b></font>: Gaussian sigma.<br></td>
+  <td>Highpass Gauss filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.highpass.tanh </b></font> </td>
+  <td>float <font color=green> <b>Cutoff_frequency</b></font>: Absolute [0,0.5] cut-off frequency.<br>float <font color=green> <b>Fall_off</b></font>: Tanh decay rate.<br></td>
+  <td>Highpass tanh filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.highpass.tophat </b></font> </td>
+  <td>float <font color=green> <b>Cutoff_frequency</b></font>: Absolute [0,0.5] cut-off frequency.<br></td>
+  <td>Highpass top-hat filter applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.homomorphic.butterworth </b></font> </td>
+  <td>float <font color=green> <b>High_cutoff_frequency</b></font>: Absolute [0,0.5] high cut-off frequency.<br>float <font color=green> <b>Low_cutoff_frequency</b></font>: Absolute [0,0.5] low cut-off frequency.<br>float <font color=green> <b>Value_at_zero_frequency</b></font>: Value at zero frequency.<br></td>
+  <td>Homomorphic Butterworth filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.homomorphic.gauss </b></font> </td>
+  <td>float <font color=green> <b>Sigma</b></font>: Gaussian sigma.<br>float <font color=green> <b>Value_at_zero_frequency</b></font>: Value at zero frequency.<br></td>
+  <td>Homomorphic Gauss filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.homomorphic.tanh </b></font> </td>
+  <td>float <font color=green> <b>Cutoff_frequency</b></font>: Absolute [0,0.5] cut-off frequency.<br>float <font color=green> <b>Fall_off</b></font>: Tanh decay rate.<br>float <font color=green> <b>Value_at_zero_frequency</b></font>: Value at zero frequency.<br></td>
+  <td>Homomorphic Tanh processor applied in Fourier space</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.homomorphic.tophat </b></font> </td>
+  <td>float <font color=green> <b>High_cutoff_frequency</b></font>: Absolute [0,0.5] high cut-off frequency.<br>float <font color=green> <b>Low_cutoff_frequency</b></font>: Absolute [0,0.5] low cut-off frequency.<br>float <font color=green> <b>Value_at_zero_frequency</b></font>: Value at zero frequency.<br></td>
+  <td>Homomorphic top-hat filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.lowpass.butterworth </b></font> </td>
+  <td>float <font color=green> <b>High_cutoff_frequency</b></font>: Absolute [0,0.5] high cut-off frequency.<br>float <font color=green> <b>Low_cutoff_frequency</b></font>: Absolute [0,0.5] low cut-off frequency.<br></td>
+  <td>Lowpass Butterworth filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.lowpass.gauss </b></font> </td>
+  <td>float <font color=green> <b>Sigma</b></font>: Gaussian sigma.<br></td>
+  <td>Lowpass Gauss filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.lowpass.tanh </b></font> </td>
+  <td>float <font color=green> <b>Cutoff_frequency</b></font>: Absolute [0,0.5] cut-off frequency.<br>float <font color=green> <b>Fall_off</b></font>: Tanh decay rate.<br></td>
+  <td>Lowpass tanh filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>filter.lowpass.tophat </b></font> </td>
+  <td>float <font color=green> <b>Cutoff_frequency</b></font>: Absolute [0,0.5] cut-off frequency.<br></td>
+  <td>Lowpass top-hat filter processor applied in Fourier space.</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>filter.ramp </b></font> </td>
+  <td></td>
+  <td>Ramp processor -- Fits a least-squares plane to the picture, and subtracts the plane from the picture.  A wedge-shaped overall density profile can thus be removed from the picture.</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>testimage.circlesphere </b></font> </td>
+  <td>string <font color=green> <b>axis</b></font>: specify a major axis for asymmetric features<br>float <font color=green> <b>c</b></font>: distance between focus and the center of an ellipse<br>string <font color=green> <b>fill</b></font>: answer 'yes' or 'no' to specify if it's filled or hollow, default filled<br>float <font color=green> <b>radius</b></font>: radius of circle or sphere<br></td>
+  <td>Replace a source image as a circle or sphere depends on 2D or 3D of the source image</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>testimage.gaussian </b></font> </td>
+  <td>string <font color=green> <b>axis</b></font>: specify a major axis for asymmetric features<br>float <font color=green> <b>c</b></font>: distance between focus and the center of an ellipse<br>float <font color=green> <b>sigma</b></font>: sigma value for this Gaussian blob<br></td>
+  <td>Replace a source image as a Gaussian Blob</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>testimage.noise.gauss </b></font> </td>
+  <td>float <font color=green> <b>noise_level</b></font>: sigma value of gausian distributed noise, this parameter is optional default is 0.5<br></td>
+  <td>Replace a source image as a random noise, the random value is gaussian distributed</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>testimage.noise.uniform.rand </b></font> </td>
+  <td></td>
+  <td>Replace a source image as a uniform random noise, random number generated from rand(), the pixel value is from 0 to 1</td>
+</tr>
+<tr bgcolor=f0f0fa>
+  <td> <font color='0000a0'> <b>testimage.sinewave </b></font> </td>
+  <td>string <font color=green> <b>axis</b></font>: specify a major axis for asymmetric features<br>float <font color=green> <b>c</b></font>: distance between focus and the center of an ellipse<br>float <font color=green> <b>phase</b></font>: (optional)phase for sine wave, default is 0<br>float <font color=green> <b>wave_length</b></font>: this value is the d in function |sin(x/d)|<br></td>
+  <td>Replace a source image as a sine wave in specified wave length</td>
+</tr>
+<tr bgcolor=fafaf0>
+  <td> <font color='0000a0'> <b>testimage.squarecube </b></font> </td>
+  <td>string <font color=green> <b>axis</b></font>: specify a major axis for asymmetric features<br>float <font color=green> <b>edge_length</b></font>: edge length of the square or cube<br>string <font color=green> <b>fill</b></font>: answer 'yes' or 'no' to specify if it's filled or hollow, default filled<br>float <font color=green> <b>odd_edge</b></font>: edge length for the asymmetric axis<br></td>
+  <td>Replace a source image as a square or cube depends on 2D or 3D of the source image</td>
 </tr>
 </table>
 </body>
