@@ -300,7 +300,7 @@ def main():
                     fftavg.set_size(nx+2, ny)
                     fftavg.set_complex(1)
                     fftavg.to_zero()
-                d.process("eman1.mask.edgemean")
+                d.process("eman1.mask.ringmean")
                 d.process("eman1.normalize")
                 df = d.do_fft()
                 df.mult(df.get_ysize())
