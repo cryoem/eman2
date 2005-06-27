@@ -671,13 +671,18 @@ void Util::set_log_level(int argc, char *argv[])
 	}
 }
 
-void Util::printMatI3D(MIArray3D& mat, int nx, int ny, int nz,
-					   const string str, ostream& out) {
+void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
+	// Note: Don't need to check if 3-D because 3D is part of 
+	//       the MIArray3D typedef.
 	out << "Printing 3D Integer data: " << str << std::endl;
-	for (int iz = 1; iz <= nz; iz++) {
+	const multi_array_types::size_type* sizes = mat.shape();
+	int nx = sizes[0], ny = sizes[1], nz = sizes[2];
+	const multi_array_types::index* indices = mat.index_bases();
+	int bx = indices[0], by = indices[1], bz = indices[2];
+	for (int iz = bz; iz < nz+bz; iz++) {
 		cout << "(z = " << iz << " slice)" << endl;
-		for (int ix = 0; ix <= nx; ix++) {
-			for (int iy = 1; iy <= ny; iy++) {
+		for (int ix = bx; ix < nx+bx; ix++) {
+			for (int iy = by; iy < ny+by; iy++) {
 				cout << setiosflags(ios::fixed) << setw(5) 
 					 << mat[ix][iy][iz] << "  ";
 			}

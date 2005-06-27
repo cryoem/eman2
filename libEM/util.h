@@ -762,11 +762,11 @@ namespace EMAN
 
 		/** Print a 3D integer matrix to a file stream (std out by default).
 		 *
+		 * @param[in] mat integer 3-d multi_array reference
 		 * @param out Output stream; cout by default.
-		 * @param str Message string to be printed.
+		 * @param[in] str Message string to be printed.
 		 */
 		static void printMatI3D(MIArray3D& mat, 
-								int nx, int ny, int nz,
 								const string str = string(""),
 								ostream& out = std::cout);
 

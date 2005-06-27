@@ -21,7 +21,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_find_max_overloads_3_4, EMAN::Util::fi
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_find_min_and_max_overloads_4_6, EMAN::Util::find_min_and_max, 4, 6)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_printMatI3D_overloads_4_6, EMAN::Util::printMatI3D, 4, 6)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_printMatI3D_overloads_1_3, EMAN::Util::printMatI3D, 1, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_voea_overloads_1_5, EMAN::Util::voea, 1, 5)
 
@@ -108,7 +108,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("set_log_level", &EMAN::Util::set_log_level)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
-        .def("printMatI3D", &EMAN::Util::printMatI3D, EMAN_Util_printMatI3D_overloads_4_6())
+        .def("printMatI3D", &EMAN::Util::printMatI3D, EMAN_Util_printMatI3D_overloads_1_3())
         .def("voea", &EMAN::Util::voea, EMAN_Util_voea_overloads_1_5())
         .def("triquad", &EMAN::Util::triquad)
         .def("quadri", &EMAN::Util::quadri, EMAN_Util_quadri_overloads_5_6())
