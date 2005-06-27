@@ -128,7 +128,7 @@ namespace EMAN
 		 * @param filename The LST image file name.
 		 * @param reffile Reference file name.
 		 * @param refn The reference file number.
-		 * @param comment. The comment to the added reference file.
+		 * @param comment The comment to the added reference file.
 		 * @see lstio.h
 		 */
 		void write_lst(const string & filename, 
@@ -1571,16 +1571,23 @@ namespace EMAN
 		void save_byteorder_to_dict(ImageIO * imageio);
 		
 	private:
-		
-		mutable Dict attr_dict; /** to store all image header info */
-		float *rdata;	        /** image real data */
-		float *supp;            /** supplementary data array */
-		Ctf *ctf;		        /** CTF data */
-		EMData *rfp;            /** rotational foot print */
-		int flags;              /** flags */
-		int nx, ny, nz;	        /** image size */
+		/** to store all image header info */
+		mutable Dict attr_dict; 
+		/** image real data */
+		float *rdata;	 
+		/** supplementary data array */       
+		float *supp;    
+		/** CTF data */        
+		Ctf *ctf;		   
+		/** rotational foot print */     
+		EMData *rfp;          
+		/** flags */  
+		int flags;       
+		/** image size */       
+		int nx, ny, nz;	        
 
-		Vec3f all_translation; /** translation from the original location */
+		/** translation from the original location */
+		Vec3f all_translation; 
 //		Vec3f all_rotation;    /** rotation (az, alt, phi) from the original locaton*/
 
 		string path;

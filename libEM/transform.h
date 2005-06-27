@@ -55,7 +55,7 @@ namespace EMAN
 	 * a matrix  R is called orthogonal if
 	 *           R * transpose(R) = 1.
 	 * All Real Orthogonal Matrices have eigenvalues with unit modulus and determinant
-	 *  therefore equal to  \pm 1
+	 *  therefore equal to  "\pm 1"
 	 *
      */
 	class Transform3D
