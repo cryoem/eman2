@@ -95,10 +95,6 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 		ny = dims_ptr[1];
 		nx = dims_ptr[2];
 	}
-
-	char* array_data = ((PyArrayObject*) array.ptr())->data;
-	image->set_shared_data(nx, ny, nz, (float*)array_data);
-	
 }
 
 PyObject* EMObject_to_python::convert(EMObject const& emobj)
