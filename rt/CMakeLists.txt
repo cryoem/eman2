@@ -1,1 +1,1 @@
-SUBDIRS(imageio filter emdata)
+SUBDIRS(demo emdata imageio)
