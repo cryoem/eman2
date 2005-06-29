@@ -83,7 +83,7 @@ int test_emcache()
 void test_factory()
 {
     //Factory<Processor>::instance()->dump();
-    EMAN::dump_filters();
+    EMAN::dump_processors();
 }
 
 
