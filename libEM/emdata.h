@@ -432,6 +432,20 @@ namespace EMAN
 		 * @param translation The translation distance vector.
 		 */
 		void translate(const Vec3f &translation);
+		
+		/** Translate this image. integer only translation
+		 *  could be done faster, without interpolation.
+		 * @param dx Translation distance in x direction.
+		 * @param dy Translation distance in y direction.
+		 * @param dz Translation distance in z direction.
+		 */
+		void translate(int dx, int dy, int dz);
+		
+		/** Translate this image. integer only translation 
+		 *  could be done faster, without interpolation.
+		 * @param translation The translation distance vector.
+		 */
+		void translate(const Vec3i &translation);
 
 		/** Rotate this image.
 		 * @param t Transformation rotation.

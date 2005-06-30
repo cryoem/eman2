@@ -3298,61 +3298,218 @@ void EMData::scale(float s)
 	EXITFUNC;
 }
 
-void EMData::translate(float dx, float dy, float dz)
+void EMData::translate(int dx, int dy, int dz)
 {
 	ENTERFUNC;
-	translate(Vec3f(dx, dy, dz));
+	translate(Vec3i(dx, dy, dz));
 	EXITFUNC;
 }
 
+void EMData::translate(float dx, float dy, float dz)
+{
+	ENTERFUNC;
+	int dx_ = Util::round(dx);
+	int dy_ = Util::round(dy);
+	int dz_ = Util::round(dz);
+	if( ( (dx-dx_) == 0 ) && ( (dy-dy_) == 0 ) && ( (dz-dz_) == 0 )) {
+		translate(dx_, dy_, dz_);
+	}
+	else {
+		translate(Vec3f(dx, dy, dz));
+	}
+	EXITFUNC;
+}
+
+void EMData::translate(const Vec3i &translation)
+{
+	ENTERFUNC;
+	
+	//if traslation is 0, do nothing
+	if( translation[0] == 0 && translation[1] == 0 && translation[2] == 0) {
+		EXITFUNC;
+		return;
+	}
+	
+	float *this_data = get_data();
+	int data_size = sizeof(float)*get_xsize()*get_ysize()*get_zsize();
+	float *tmp_data = (float *)malloc(data_size);
+	memcpy(tmp_data, this_data, data_size);	
+	
+	int x0, x1, x2;
+	if( translation[0] < 0 ) {
+		x0 = 0;
+		x1 = nx;
+		x2 = 1;
+	}
+	else {
+		x0 = nx-1;
+		x1 = -1;
+		x2 = -1;
+	}
+	
+	int y0, y1, y2;
+	if( translation[1] < 0 ) {
+		y0 = 0;
+		y1 = ny;
+		y2 = 1;
+	}
+	else {
+		y0 = ny-1;
+		y1 = -1;
+		y2 = -1;
+	}
+	
+	int z0, z1, z2;
+	if( translation[2] < 0 ) {
+		z0 = 0;
+		z1 = nz;
+		z2 = 1;
+	}
+	else {
+		z0 = nz-1;
+		z1 = -1;
+		z2 = -1;
+	}
+	
+	int xp, yp, zp;
+	int tx = translation[0];
+	int ty = translation[1];
+	int tz = translation[2];
+	for (int y = y0; y != y1; y += y2) {
+		for (int x = x0; x != x1; x += x2) {	
+			for (int z = z0; z != z1; z+=z2) {	
+				xp = x - tx;
+				yp = y - ty;
+				zp = z - tz;
+				if (xp < 0 || yp < 0 || zp<0 || xp >= nx || yp >= ny || zp >= nz) {
+					this_data[x + y * nx + z * nx * ny] = 0;
+				}
+				else {
+					this_data[x + y * nx + z * nx * ny] = tmp_data[xp + yp * nx + zp * nx * ny];
+				}
+			}
+		}
+	}
+	
+	if( tmp_data ) {
+		free(tmp_data);
+		tmp_data = 0;
+	}
+	
+	done_data();
+	all_translation += translation;
+	
+	EXITFUNC;
+}
 
 void EMData::translate(const Vec3f &translation)
 {
 	ENTERFUNC;
 	
-	if (nz != 1) {
-		LOGERR("3D translation not supported yet");
+	//if traslation is 0, do nothing
+	if( translation[0] == 0.0f && translation[1] == 0.0f && translation[2] == 0.0f ) {
+		EXITFUNC;
 		return;
 	}
-
-	float *parent_data = get_data();
+	
 	float *this_data = get_data();
-
-	int x0 = nx - 1;
-	int x1 = -1;
-	int x2 = -1;
-
-	if (translation[0] < 0) {
+	EMData *tmp_emdata = copy(); 
+	
+	int x0, x1, x2;
+	if( translation[0] < 0 ) {
 		x0 = 0;
 		x1 = nx;
 		x2 = 1;
 	}
-
-	int y0 = ny - 1;
-	int y1 = -1;
-	int y2 = -1;
-
-	if (translation[1] < 0) {
+	else {
+		x0 = nx-1;
+		x1 = -1;
+		x2 = -1;
+	}
+	
+	int y0, y1, y2;
+	if( translation[1] < 0 ) {
 		y0 = 0;
 		y1 = ny;
 		y2 = 1;
 	}
-
-	for (int x = x0; x != x1; x += x2) {
+	else {
+		y0 = ny-1;
+		y1 = -1;
+		y2 = -1;
+	}
+	
+	int z0, z1, z2;
+	if( translation[2] < 0 ) {
+		z0 = 0;
+		z1 = nz;
+		z2 = 1;
+	}
+	else {
+		z0 = nz-1;
+		z1 = -1;
+		z2 = -1;
+	}
+	
+	if( nz == 1 ) 	//2D translation
+	{
+		int tx = Util::round(translation[0]);
+		int ty = Util::round(translation[1]);
+		float ftx = translation[0];
+		float fty = translation[1];
+		int xp, yp;
 		for (int y = y0; y != y1; y += y2) {
-			int xp = static_cast < int >(x - translation[0]);
-			int yp = static_cast < int >(y - translation[1]);
-
-			if (xp < 0 || yp < 0 || xp >= nx || yp >= ny) {
-				this_data[x + y * nx] = 0;
-			}
-			else {
-				this_data[x + y * nx] = parent_data[xp + yp * nx];
+			for (int x = x0; x != x1; x += x2) {
+				xp = x - tx;
+				yp = y - ty;
+	
+				if (xp < 0 || yp < 0 || xp >= nx || yp >= ny) {
+					this_data[x + y * nx] = 0;
+				}
+				else {
+					float fxp = static_cast<float>(x) - ftx;
+					float fyp = static_cast<float>(y) - fty;
+					this_data[x + y * nx] = tmp_emdata->sget_value_at_interp(fxp, fyp);
+				}
 			}
 		}
 	}
-
+	else 	//3D translation
+	{
+		int tx = Util::round(translation[0]);
+		int ty = Util::round(translation[1]);
+		int tz = Util::round(translation[2]);
+		float ftx = translation[0];
+		float fty = translation[1];
+		float ftz = translation[2];
+		int xp, yp, zp;
+		for (int z = z0; z != z1; z += z2) {
+			for (int y = y0; y != y1; y += y2) {
+				for (int x = x0; x != x1; x += x2) {
+					xp = x - tx;
+					yp = y - ty;
+					zp = z - tz;
+					if (xp < 0 || yp < 0 || zp<0 || xp >= nx || yp >= ny || zp >= nz) {
+						this_data[x + y * nx] = 0;
+					}
+					else {
+						float fxp = static_cast<float>(x) - ftx;
+						float fyp = static_cast<float>(y) - fty;
+						float fzp = static_cast<float>(z) - ftz;
+						this_data[x + y * nx + z * nx * ny] = tmp_emdata->sget_value_at_interp(fxp, fyp, fzp);
+					}
+				}
+			}
+		}
+		
+	}
+	
+	if( tmp_emdata ) {
+		delete tmp_emdata;
+		tmp_emdata = 0;
+	}
 	done_data();
+	update();
 	all_translation += translation;
 	EXITFUNC;
 }
@@ -5910,7 +6067,7 @@ float EMData::sget_value_at_interp(float xx, float yy) const
 	float result = Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);	
 	return result;
 }
-
+ 
 float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 {
 	int x = (int) floor(xx);
