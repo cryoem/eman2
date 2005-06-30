@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
 		
 					if (rizedx > 0) {
 						d->translate(Util::get_gauss_rand(0, rizedx),
-									 Util::get_gauss_rand(0, rizedx), 0);
+									 Util::get_gauss_rand(0, rizedx), 0.0f);
 					}
 				}
 			}
