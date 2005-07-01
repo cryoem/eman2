@@ -249,8 +249,13 @@ namespace EMAN
 
 
 		
-		/** return an image object that has the origin centered
-		 *  in the middle of the box.
+		/** Multiply a real image by (-1)**(ix+iy+iz) to center
+		 *  the fft version.
+		 *
+		 */
+		void center_origin();
+
+		/** Multiply a Fourier image by (-1)**(ix+iy+iz) to center it.
 		 *
 		 */
 		void center_origin_fft();

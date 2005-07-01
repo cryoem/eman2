@@ -7,6 +7,7 @@
 #include "exception.h"
 #include "Assert.h"
 #include "emconstants.h"
+#include <gsl/gsl_sf_bessel.h>
 
 #include <string.h>
 #include <string>
@@ -822,5 +823,13 @@ float Util::quadri(float x, float y, int nxdata, int nydata,
 				 + dy0*(c3 + dyb*c4);
 	return result;
 }
+
+#if 0 // not done yet
+	float kaiser_bessel_tf(float k, float kmax) 
+{
+	return 0;
+
+}
+#endif // 0 - not done yet
 
 /* vim: set ts=4 noet: */

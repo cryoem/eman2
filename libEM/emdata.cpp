@@ -840,6 +840,27 @@ void EMData::postift_depad_corner_inplace() {
 	EXITFUNC;
 }
 
+void EMData::center_origin()
+{
+	ENTERFUNC;
+	if (is_complex()) {
+		LOGERR("Real image expected. Input image is complex.");
+		throw ImageFormatException("Real image expected. Input image is complex.");
+	}
+	MArray3D dat = get_3dview();
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = 0; iy < ny; iy++) {
+			for (int ix = 0; ix < nx; ix++) {
+				// next line multiplies by +/- 1
+				dat[ix][iy][iz] *= -2*((ix+iy+iz)%2) + 1;
+			}
+		}
+	}
+	done_data();
+	update();
+	EXITFUNC;
+}
+
 void EMData::center_origin_fft()
 {
 	ENTERFUNC;
@@ -866,6 +887,8 @@ void EMData::center_origin_fft()
 			}
 		}
 	}
+	done_data();
+	update();
 	EXITFUNC;
 }
 

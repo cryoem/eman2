@@ -797,57 +797,73 @@ namespace EMAN
 		 */
 		static float triquad(double r, double s, double t, float f[]);
 
-			/** Quadratic interpolation (2D).
-			 *
-			 *  Note:  This routine starts counting from 1, not 0!
-			 *
-			 *	This routine uses six image points for interpolation:
-			 *
-			 *@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf
-			 *
-			 *@verbatim
-			           f3    fc
-			           |
-			           | x
-			    f2-----f0----f1
-			           |
-			           |
-			           f4
-			 *@endverbatim
-			 *
-			 *	f0 - f4 are image values near the interpolated point X.
-			 *	f0 is the interior mesh point nearest x.
-			 *
-			 *	Coords:  
-			 *@li        f0 = (x0, y0)
-			 *@li        f1 = (xb, y0)
-			 *@li        f2 = (xa, y0)
-			 *@li        f3 = (x0, yb)
-			 *@li        f4 = (x0, ya)
-			 *@li        fc = (xc, yc)
-			 *
-			 *	Mesh spacings: 
-			 *@li              hxa -- x- mesh spacing to the left of f0
-			 *@li              hxb -- x- mesh spacing to the right of f0
-			 *@li              hyb -- y- mesh spacing above f0
-			 *@li              hya -- y- mesh spacing below f0
-			 *
-			 *	Interpolant:
-			 *	  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)
-			 *			 + c3*(y-y0) + c4*(y-y0)*(y-y1)
-			 *			 + c5*(x-x0)*(y-y0)
-			 *
-			 *	@param[in] x x-coord value
-			 *	@param[in] y y-coord value
-			 *	@param[in] nxdata Size of image along x.
-			 *	@param[in] nydata Size of image along y.
-			 *	@param[in] image Image object (pointer)
-			 *	@param[in] zslice Which z slice to interpolate (counting starts at 1)
-			 *
-			 *	@return Interpolated value
-			 */
-			static float quadri(float x, float y, int nxdata, 
-								int nydata, EMData* image, int zslice = 1);
+		/** Quadratic interpolation (2D).
+		 *
+		 *  Note:  This routine starts counting from 1, not 0!
+		 *
+		 *	This routine uses six image points for interpolation:
+		 *
+		 *@see M. Abramowitz & I.E. Stegun, Handbook of Mathematical
+		 *     Functions (Dover, New York, 1964), Sec. 25.2.67.
+		 *     http://www.math.sfu.ca/~cbm/aands/page_882.htm.
+		 *
+		 *@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf
+		 *
+		 *@verbatim
+                f3    fc
+                |
+                | x
+         f2-----f0----f1
+                |
+                |
+                f4
+		 *@endverbatim
+		 *
+		 *	f0 - f4 are image values near the interpolated point X.
+		 *	f0 is the interior mesh point nearest x.
+		 *
+		 *	Coords:  
+		 *@li        f0 = (x0, y0)
+		 *@li        f1 = (xb, y0)
+		 *@li        f2 = (xa, y0)
+		 *@li        f3 = (x0, yb)
+		 *@li        f4 = (x0, ya)
+		 *@li        fc = (xc, yc)
+		 *
+		 *	Mesh spacings: 
+		 *@li              hxa -- x- mesh spacing to the left of f0
+		 *@li              hxb -- x- mesh spacing to the right of f0
+		 *@li              hyb -- y- mesh spacing above f0
+		 *@li              hya -- y- mesh spacing below f0
+		 *
+		 *	Interpolant:
+		 *	  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)
+		 *			 + c3*(y-y0) + c4*(y-y0)*(y-y1)
+		 *			 + c5*(x-x0)*(y-y0)
+		 *
+		 *	@param[in] x x-coord value
+		 *	@param[in] y y-coord value
+		 *	@param[in] nxdata Size of image along x.
+		 *	@param[in] nydata Size of image along y.
+		 *	@param[in] image Image object (pointer)
+		 *	@param[in] zslice Which z slice to interpolate (counting starts at 1)
+		 *
+		 *	@return Interpolated value
+		 */
+		static float quadri(float x, float y, int nxdata, 
+				int nydata, EMData* image, int zslice = 1);
+
+#if 0 // not done yet
+		/** Kaiser-Bessel window function (in k-space).
+		 *
+		 * @see P. A. Penczek, R. Renka, and H. Schomberg,
+		 *      J. Opt. Soc. Am. _21_, 449 (2004)
+		 * 
+		 * param[in] k Point in k-space
+		 * param[in] kmax Maximal value of k.
+		 */
+		static float kaiser_bessel_tf(float k, float kmax);
+#endif // 0 - not done yet
 	};
 }
 
