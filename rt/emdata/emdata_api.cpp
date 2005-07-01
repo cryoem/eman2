@@ -34,7 +34,7 @@ int cmp_data(EMData *em1, EMAN::EMData *em2)
 	
 	for (size_t i = 0; i < n; i++) {
 		if (data1[i] != data2[i]) {
-			fprintf(stderr, "Error: data difference at %d in comp_data()\n");
+			fprintf(stderr, "Error: data difference at %d in comp_data()\n", i);
 			return 1;
 		}
 	}
