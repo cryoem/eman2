@@ -260,7 +260,7 @@ class TestEMData(unittest.TestCase):
         volume = EMData()
         volume.read_image(infile)
         pi = math.pi
-        proj = volume.project("Standard", { "alt" : pi/3, "az" : pi/5, "phi" : 1})
+        proj = volume.project("standard", { "alt" : pi/3, "az" : pi/5, "phi" : 1})
         self.assertEqual(proj.get_xsize(), n)
         self.assertEqual(proj.get_ysize(), n)
         self.assertEqual(proj.get_zsize(), 1)

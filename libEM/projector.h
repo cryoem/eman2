@@ -45,7 +45,7 @@ namespace EMAN
      *    least the following 3 functions:
      @code
      *        EMData *project3d(EMData * em) const;
-     *        string get_name() const { return "XYZ"; }
+     *        string get_name() const { return "xyz"; }
      *        static Projector* NEW() { return new XYZProjector(); }
 	 @endcode
 	*/
@@ -133,7 +133,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "GaussFFT";
+			return "gauss_fft";
 		}
 
 		string get_desc() const
@@ -172,7 +172,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "Pawel";
+			return "pawel";
 		}
 
 		string get_desc() const
@@ -208,7 +208,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "SimpleIsoSurface";
+			return "simple_iso_surface";
 		}
 
 		string get_desc() const
@@ -231,7 +231,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "Standard";
+			return "standard";
 		}
 
 		string get_desc() const
@@ -258,7 +258,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "StandardFast";
+			return "standardfast";
 		}
 
 		string get_desc() const

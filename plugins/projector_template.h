@@ -21,7 +21,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "XYZ";
+			return "xyz";
 		}
 
 		string get_desc() const
