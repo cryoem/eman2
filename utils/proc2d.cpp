@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
 				Dict params;
 				params["intonly"] = 1;
 				params["maxshift"] = d->get_xsize() / 4;
-				d->align("Translate", 0, params);
+				d->align("translate", 0, params);
 				//d->rotate_translate();
 			}
 

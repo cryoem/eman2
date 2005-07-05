@@ -24,7 +24,7 @@ ref.read_image(reffile)
 e = EMData()
 e.read_image(inputfile)
 
-e.align("RTFBest", {"to": ref, "maxshift": 8})
+e.align("rtf_best", {"to": ref, "maxshift": 8})
 
 e.write_image(outputfile)
 

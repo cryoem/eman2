@@ -14,7 +14,7 @@ int main()
 		image->read_image(test_imagename);
 		image2->read_image(test_imagename);
 
-		image->align("RotateTranslateFlip", image2, Dict());
+		image->align("rotate_translate_flip", image2, Dict());
 
 	}
 	catch(E2Exception & e) {

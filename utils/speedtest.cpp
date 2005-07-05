@@ -317,24 +317,24 @@ int main(int argc, char *argv[])
 				Dict d;
 				d["flip"] = (EMData*)0;
 				d["maxshift"] = SIZE/8;
-				tmp = data[i]->align("RTFSlowest", data[j], d);
+				tmp = data[i]->align("rtf_slowest", data[j], d);
 			}
 			else if (slow == 3) {
-				tmp = data[i]->align("RTFBest", data[j],
+				tmp = data[i]->align("rtf_best", data[j],
 									 Dict("flip", (EMData*)0,"maxshift", SIZE/8));
 			}
 			else if (slow == 1) {
 				Dict d;
 				d["flip"] = (EMData*)0;
 				d["maxshift"] = SIZE/8;
-				tmp = data[i]->align("RTFSlow", data[j], d);
+				tmp = data[i]->align("rtf_slow", data[j], d);
 			}
 			else if (newali == 1) {
-				tmp = data[i]->align("RotateTranslateFlip", data[j], Dict());
-				tmp->align("Refine", data[j], Dict());
+				tmp = data[i]->align("rotate_translate_flip", data[j], Dict());
+				tmp->align("refine", data[j], Dict());
 			}
 			else {
-				tmp = data[i]->align("RotateTranslateFlip", data[j], Dict());
+				tmp = data[i]->align("rotate_translate_flip", data[j], Dict());
 			}
 	    	if( tmp )
 	    	{

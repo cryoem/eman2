@@ -115,7 +115,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "Translational";
+			return "translational";
 		}
 		
 		string get_desc() const
@@ -153,7 +153,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "Translational3D";
+			return "translational3d";
 		}
 		
 		string get_desc() const
@@ -188,7 +188,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "Rotational";
+			return "rotational";
 		}
 		
 		string get_desc() const
@@ -222,7 +222,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "RotatePrecenter";
+			return "rotate_precenter";
 		}
 		
 		string get_desc() const
@@ -256,7 +256,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "RotateCH";
+			return "rotate_ch";
 		}
 		
 		string get_desc() const
@@ -293,7 +293,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "RotateTranslate";
+			return "rotate_translate";
 		}
 		
 		string get_desc() const
@@ -329,7 +329,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "RotateTranslateBest";
+			return "rotate_translate_best";
 		}
 		
 		string get_desc() const
@@ -363,7 +363,7 @@ namespace EMAN
 		}
 		string get_name() const
 		{
-			return "RotateTranslateRadon";
+			return "rotate_translate_radon";
 		}
 
 		string get_desc() const
@@ -399,7 +399,7 @@ namespace EMAN
 		}
 		string get_name() const
 		{
-			return "RotateFlip";
+			return "rotate_flip";
 		}
 
 		string get_desc() const
@@ -435,7 +435,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "RotateTranslateFlip";
+			return "rotate_translate_flip";
 		}
 
 		string get_desc() const
@@ -472,7 +472,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "RTFSlow";
+			return "rtf_slow";
 		}
 
 		string get_desc() const
@@ -506,7 +506,7 @@ namespace EMAN
 		}
 		string get_name() const
 		{
-			return "RTFSlowest";
+			return "rtf_slowest";
 		}
 
 		string get_desc() const
@@ -544,7 +544,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "RTFBest";
+			return "rtf_best";
 		}
 
 		string get_desc() const
@@ -580,7 +580,7 @@ namespace EMAN
 		}
 		string get_name() const
 		{
-			return "RTFRadon";
+			return "rtf_radon";
 		}
 
 		string get_desc() const
@@ -620,7 +620,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "Refine";
+			return "refine";
 		}
 
 		string get_desc() const

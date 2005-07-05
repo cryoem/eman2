@@ -200,8 +200,8 @@ for single particle analysis."""
 			except: continue
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
-#			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Variance")
-			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Variance")
+#			ba=refptcl[i[1]].align("rotate_translate",b,{},"Variance")
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"Variance")
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
@@ -222,8 +222,8 @@ for single particle analysis."""
 			except: continue
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
-#			ba=refptcl[i[1]].align("RotateTranslate",b,{},"Variance")
-			ba=b.align("RotateTranslate",refptcl[i[1]],{},"Variance")
+#			ba=refptcl[i[1]].align("rotate_translate",b,{},"Variance")
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"Variance")
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
