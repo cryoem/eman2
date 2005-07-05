@@ -1433,7 +1433,7 @@ static double refalifn(const gsl_vector * v, void *params)
 	EMData * with = (*dict)["with"];
 	this_img->rotate_translate((float)a, 0.0f, 0.0f, (float)x, (float)y, 0.0f);
 
-	return this_img->cmp("FRC", with, *dict);
+	return this_img->cmp("frc", with, *dict);
 }
 
 static double refalifnfast(const gsl_vector * v, void *params)

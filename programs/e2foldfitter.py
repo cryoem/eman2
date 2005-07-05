@@ -29,7 +29,7 @@ def compare(vec):
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
 	ncmp+=1
-	return -cmp_probe.cmp("Dot",a,{})
+	return -cmp_probe.cmp("dot",a,{})
 	
 def compares(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
@@ -37,7 +37,7 @@ def compares(vec):
 	global cmp_probe,cmp_target,sfac
 	
 	a=cmp_target.get_rotated_clip(Transform3D((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),(0,0,0),vec[0],vec[1],vec[2]),pdim2,1.0)
-	return -cmp_probe.cmp("Dot",a,{})
+	return -cmp_probe.cmp("dot",a,{})
 
 def main():
 	global tdim,pdim,tdim2,pdim2,sfac

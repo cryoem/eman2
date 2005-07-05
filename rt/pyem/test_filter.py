@@ -70,7 +70,7 @@ class TestCmp(unittest.TestCase):
         e1.read_image(imgfile1)
 
         e2 = e1.copy(True)
-        score = e2.cmp("Variance", e1, {"keepzero": 0})
+        score = e2.cmp("variance", e1, {"keepzero": 0})
         self.assertEqual(score, 0)
         os.unlink(imgfile1)
         
@@ -87,16 +87,16 @@ class TestCmp(unittest.TestCase):
         #e1.write_image("test_basic_cmp_out_1.mrc")
         #e2.write_image("test_basic_cmp_out_2.mrc")
 
-        dot_score = e2.cmp("Dot", e1, {"evenonly":0})
+        dot_score = e2.cmp("dot", e1, {"evenonly":0})
         self.assertEqual(dot_score, 19944.0)
 
-        variance_score = e2.cmp("Variance", e1, {"keepzero":1})
+        variance_score = e2.cmp("variance", e1, {"keepzero":1})
         self.assertEqual(variance_score, 0)
         
-        phase_score = e2.cmp("Phase", e1, {})
+        phase_score = e2.cmp("phase", e1, {})
         testlib.assertfloat(self, phase_score, 1.6488)
         
-        frc_score = e2.cmp("FRC", e1, {})
+        frc_score = e2.cmp("frc", e1, {})
         testlib.assertfloat(self, frc_score, -0.4011)
 
 

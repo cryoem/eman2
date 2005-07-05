@@ -20,7 +20,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "xYZ";
+			return "xyz";
 		}
 
 		string get_desc() const

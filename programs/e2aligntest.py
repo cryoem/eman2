@@ -59,7 +59,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 				i2a=i2.copy(0)
 				i2a.rotate_translate(alt,az,phi,dx,dy,dz)
 				
-				dot=i1.cmp("Dot",{"with":EMObject(i2a)})
+				dot=i1.cmp("dot",{"with":EMObject(i2a)})
 				result.set_value_at(v[0],v[1],v[2],dot)
 	
 	result.update()

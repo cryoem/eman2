@@ -1263,7 +1263,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
 		EMData *p=pa.projection_by_summation(size,1.0,optpixres);
 		p->process("eman1.NormalizeUnit");
-		fx-=sqrt(p->cmp("Dot",EMObject(optdata[i]),Dict()));
+		fx-=sqrt(p->cmp("dot",EMObject(optdata[i]),Dict()));
 	}
 			
 	result=NLPFunction;

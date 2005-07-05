@@ -29,7 +29,7 @@ def compare(vec):
 	a=cmp_target.get_rotated_clip((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),Rotation(*vec[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
-	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
+	return -cmp_probe.cmp("dot",{"with":EMObject(a)})
 
 def compare2(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
@@ -41,7 +41,7 @@ def compare2(vec):
 	a=cmp_target.get_rotated_clip((tdim[0]/2,tdim[1]/2,vec[1]+tdim[2]/2),Rotation(c2alt,0,vec[0],Rotation.EulerType.EMAN),pdim,1.0)
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
-	return -cmp_probe.cmp("Dot",{"with":EMObject(a)})
+	return -cmp_probe.cmp("dot",{"with":EMObject(a)})
 	
 def main():
 	global tdim,pdim
