@@ -20,7 +20,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "XYZ";
+			return "xyz";
 		}
 
 		static Processor *NEW()
