@@ -327,7 +327,7 @@ float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 }
 
 EMData *EMData::align(const string & aligner_name, EMData * to_img, 
-					  const Dict & params, const string & cmp_name)
+					  const Dict & params, const string & cmp_name, const Dict& cmp_params)
 {
 	ENTERFUNC;
 	EMData *result = 0;
@@ -337,7 +337,7 @@ EMData *EMData::align(const string & aligner_name, EMData * to_img,
 			result = a->align(this, to_img);
 		}
 		else {
-			result = a->align(this, to_img, cmp_name);
+			result = a->align(this, to_img, cmp_name, cmp_params);
 		}
 		if( a )
 		{

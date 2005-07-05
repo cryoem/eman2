@@ -169,7 +169,8 @@ namespace EMAN
 		 * @return The result image.
 		 */
 		EMData *align(const string & aligner_name, EMData * to_img,
-					  const Dict & params = Dict(), const string & comp_name = "");
+					  const Dict & params = Dict(), const string & comp_name = "", 
+					  const Dict& cmp_params = Dict());
 
 		/** Calculate the projection of this image and return the result.
 		 * @param projector_name Projection algorithm name.

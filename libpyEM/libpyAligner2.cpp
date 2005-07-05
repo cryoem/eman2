@@ -28,8 +28,8 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
         return call_method< EMAN::EMData* >(py_self, "align", p0, p1);
     }
 
-    EMAN::EMData* align(EMAN::EMData* p0, EMAN::EMData* p1, const std::string& p2) const {
-        return call_method< EMAN::EMData* >(py_self, "align", p0, p1, p2);
+    EMAN::EMData* align(EMAN::EMData* p0, EMAN::EMData* p1, const std::string& p2, const EMAN::Dict& p3) const {
+        return call_method< EMAN::EMData* >(py_self, "align", p0, p1, p2, p3);
     }
 
     std::string get_name() const {
@@ -239,7 +239,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     def("dump_aligners", &EMAN::dump_aligners);
     class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("__Aligner", init<  >())
         .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
-        .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*, const std::string&) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
+        .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*, const std::string&, const EMAN::Dict&) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Aligner::get_name))
         .def("get_desc", pure_virtual(&EMAN::Aligner::get_desc))
         .def("get_params", &EMAN::Aligner::get_params, &EMAN_Aligner_Wrapper::default_get_params)
