@@ -13,6 +13,7 @@ template <> Factory < Cmp >::Factory()
 {
 	force_add(&DotCmp::NEW);
 	force_add(&VarianceCmp::NEW);
+	force_add(&OptVarianceCmp::NEW);
 	force_add(&PhaseCmp::NEW);
 	force_add(&FRCCmp::NEW);
 }
