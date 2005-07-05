@@ -46,7 +46,7 @@ namespace EMAN
 	 *
      *  - How to use a Reconstructor
      *@code 
-     *    Reconstructor* r = Factory<Reconstructor>::get("Fourier");
+     *    Reconstructor* r = Factory<Reconstructor>::get("fourier");
      *    r->setup();
      *    r->insert_slice(slice1, euler1);
      *    insert more
@@ -60,7 +60,7 @@ namespace EMAN
      *        void setup();
      *        int insert_slice(EMData * slice, const Transform3D & t);
      *        EMData * finish();
-     *        string get_name() const { return "XYZ"; }
+     *        string get_name() const { return "xyz"; }
      *        static Reconstructor *NEW() { return new XYZReconstructor(); }
      *        TypeDict get_param_types() const;
 	 @endcode
@@ -145,7 +145,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "Fourier";
+			return "fourier";
 		}
 		
 		string get_desc() const
@@ -189,7 +189,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "WienerFourier";
+			return "wiener_fourier";
 		}
 		
 		string get_desc() const
@@ -238,7 +238,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "BackProjection";
+			return "back_projection";
 		}
 		
 		string get_desc() const
@@ -281,7 +281,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "PawelBackProjection";
+			return "pawel_back_projection";
 		}
 		
 		string get_desc() const
@@ -332,7 +332,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "ReverseGridding";
+			return "reverse_gridding";
 		}
 		
 		string get_desc() const

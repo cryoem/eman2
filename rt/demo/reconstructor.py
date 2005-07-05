@@ -9,7 +9,7 @@ e1.read_image(TestUtil.get_debug_image("samesize1.mrc"))
 e2 = EMData()
 e2.read_image(TestUtil.get_debug_image("samesize2.mrc"))
 
-r = Reconstructors.get("BackProjection")
+r = Reconstructors.get("back_projection")
 r.set_params({"size":100, "weight":1})
 r.setup()
 r.insert_slice(e1, Transform(EULER_EMAN, 0,0,0))
