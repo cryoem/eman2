@@ -36,7 +36,7 @@ namespace EMAN
      *  - How to use a Projector
      @code
      *    EMData* img = ...;
-     *    Projector* proj = Factory<Projector>::get("FFT");
+     *    Projector* proj = Factory<Projector>::get("fft");
      *    EMData* result = proj->project3d(img);
      @endcode
 	 *

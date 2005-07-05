@@ -38,7 +38,7 @@ namespace EMAN
 	 *
      *  - How to use an Averager
      @code
-     *    Averager *imgavg = Factory<Averager>::get("Image");
+     *    Averager *imgavg = Factory<Averager>::get("image");
      *    vector<EMData *> images(2);
      *    EMData *image1 = ...;
      *    EMData *image2 = ...;
@@ -129,7 +129,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "Image";
+			return "image";
 		}
 
 		string get_desc() const
@@ -169,7 +169,7 @@ namespace EMAN
 		
 		string get_name() const
 		{
-			return "Iteration";
+			return "iteration";
 		}
 
 		string get_desc() const
@@ -235,7 +235,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "SNRWeight";
+			return "snr_weight";
 		}
 
 		string get_desc() const
@@ -271,7 +271,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "CTFC";
+			return "ctfc";
 		}
 
 		string get_desc() const
@@ -292,7 +292,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "CTFCW";
+			return "ctfcw";
 		}
 
 		string get_desc() const
@@ -325,7 +325,7 @@ namespace EMAN
 	  public:
 		string get_name() const
 		{
-			return "CTFCWauto";
+			return "ctfcw_auto";
 		}
 
 		string get_desc() const

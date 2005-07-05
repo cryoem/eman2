@@ -6,6 +6,6 @@ import sys
 
 
 images = EMData.read_images(sys.argv[1])
-averager = Averagers.get("Image")
+averager = Averagers.get("image")
 avg_image = averager.average(images)
 avg_image.write_image(sys.argv[2])
