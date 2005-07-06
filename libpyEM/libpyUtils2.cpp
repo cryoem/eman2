@@ -48,6 +48,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
+    scope* EMAN_Util_scope = new scope(
     class_< EMAN::Util >("Util", init<  >())
         .def(init< const EMAN::Util& >())
         .def("ap2ri", &EMAN::Util::ap2ri)
@@ -155,7 +156,15 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("eman_copysign")
         .staticmethod("sbasename")
         .staticmethod("round")
+    );
+
+    class_< EMAN::Util::KaiserBessel >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
+        .def(init< optional< float, float, float > >())
+        .def("kb1d", &EMAN::Util::KaiserBessel::kb1d)
+        .def("kbtf1d", &EMAN::Util::KaiserBessel::kbtf1d)
     ;
+
+    delete EMAN_Util_scope;
 
     scope* EMAN_EMUtil_scope = new scope(
     class_< EMAN::EMUtil >("EMUtil", init<  >())

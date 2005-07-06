@@ -30,6 +30,7 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <sstream>
+#include <gsl/gsl_sf_bessel.h>
 
 using namespace std;
 using namespace boost;
@@ -821,6 +822,32 @@ float Util::quadri(float x, float y, int nxdata, int nydata,
 				- (hyc*(hyc - 1.0f))*c4) * (hxc*hyc);
 	float result = f0 + dx0*(c1 + dxb*c2 + dy0*c5)
 				 + dy0*(c3 + dyb*c4);
+	return result;
+}
+
+float Util::KaiserBessel::kb1d(float x) {
+	float fac = twopi*alpha*rrr*v;
+	float kb_0 = sinh(fac)/(fac);
+	float xscale = x/rrr;
+	float kb_x = 0;
+	if (0.0 == xscale) {
+		kb_x = kb_0;
+	} else if (xscale < alpha) {
+		float xx = sqrt(1.0 - pow((xscale/alpha), 2));
+		kb_x = sinh(fac*xx)/(fac*xx);
+	} else if (xscale == alpha) {
+		kb_x = 1.0;
+	} else {
+		float xx = sqrt(pow(xscale/alpha, 2) - 1.0f);
+		kb_x = sin(fac*xx)/(fac*xx);
+	}
+	return kb_x;
+}
+
+float Util::KaiserBessel::kbtf1d(float k) {
+	float fac = twopi*alpha*rrr*v;
+	float kk = sqrt(1.0 - pow(k/v, 2));
+	float result = gsl_sf_bessel_I0(fac*kk)/(2*v);
 	return result;
 }
 

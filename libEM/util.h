@@ -853,17 +853,25 @@ namespace EMAN
 		static float quadri(float x, float y, int nxdata, 
 				int nydata, EMData* image, int zslice = 1);
 
-#if 0 // not done yet
-		/** Kaiser-Bessel window function (in k-space).
+		/** Kaiser-Bessel window function class.
+		 *  (It's a class so that the windowing parameters may be
+		 *   instantiated and held in the instance object.)
 		 *
-		 * @see P. A. Penczek, R. Renka, and H. Schomberg,
+		 *  @see P. A. Penczek, R. Renka, and H. Schomberg,
 		 *      J. Opt. Soc. Am. _21_, 449 (2004)
 		 * 
-		 * param[in] k Point in k-space
-		 * param[in] kmax Maximal value of k.
 		 */
-		static float kaiser_bessel_tf(float k, float kmax);
-#endif // 0 - not done yet
+		class KaiserBessel 
+		{
+			float alpha, rrr, v;
+			public:
+				KaiserBessel(float alpha_=1., float rrr_=1., float v_=1.)
+					: alpha(alpha_), rrr(rrr_), v(v_) {}
+				/** 1-D Real-space Kaiser-Bessel window function */
+				float kb1d(float x);
+				/** 1-D Fourier-space Kaiser-Bessel window function */
+				float kbtf1d(float k);
+		};
 	};
 }
 

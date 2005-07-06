@@ -1196,7 +1196,7 @@ EMData *EMData::do_ift()
 
 		size_t row_size = (nx - offset) * sizeof(float);
 		for (int i = 1; i < ny * nz; i++) {
-			memcpy((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
+			memmove((char *) &d[i * (nx - offset)], (char *) &d[i * nx], row_size);
 		}
 	}
 
