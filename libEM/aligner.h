@@ -182,7 +182,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name = "", const Dict& cmp_params = new Dict()) const;
+						const string & cmp_name = "", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -217,7 +217,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name = "", const Dict& cmp_params = new Dict()) const;
+						const string & cmp_name = "", const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
@@ -252,7 +252,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params = new Dict()) const;
+						const string & cmp_name, const Dict& cmp_params = Dict()) const;
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
