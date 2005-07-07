@@ -66,6 +66,7 @@ namespace EMAN
 		 * @param this_img The image to be compared.
 		 * @param to_img 'this_img" is aligned with 'to_img'.
 		 * @param cmp_name The comparison method to compare the two images.
+		 * @param cmp_params The parameter dictionary for comparison method.
 		 * @return The aligned image.
 		 */
 		virtual EMData *align(EMData * this_img, EMData * to_img, 

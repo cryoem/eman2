@@ -164,7 +164,8 @@ namespace EMAN
 		 * @param aligner_name Alignment algorithm name.
 		 * @param to_img The image 'this' image aligns to.
 		 * @param params  Alignment algorithm parameters in a keyed dictionary.
-		 * @param comp_name Comparison algorithm used in alighment.
+		 * @param comp_name Comparison algorithm used in alignment.
+		 * @param cmp_params Parameter dictionary for comparison algorithm.
 		 * @exception NotExistingObjectError If the alignment algorithm doesn't exist.
 		 * @return The result image.
 		 */
