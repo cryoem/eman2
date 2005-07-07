@@ -141,7 +141,7 @@ namespace EMAN
 
 	/** Linear comparison of 2 data sets. 'this' should be noisy and
 	* 'with' should be less noisy. linear scaling (mx + b) of the
-	* densities in this is performed to produce the smallest possible
+	* densities in 'this' is performed to produce the smallest possible
 	* variance between images. 
 	* If keepzero is set, then zero pixels are left at zero (b is not added).
 	* if matchfilt is set, then 'with' is filtered so its radial power spectrum matches 'this'
