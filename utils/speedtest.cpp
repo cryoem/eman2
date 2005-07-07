@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 	EMData *d = b->align("rotate_translate",a,Dict(),"variance");
 	Dict r=b->get_attr_dict();
 	printf("%p\n",&r);
+	printf("%d\n",(int)r["nx"]);
 	delete a;
 	delete b;
 	delete d;

@@ -89,7 +89,7 @@ for single particle analysis."""
 #	shrink.write_image("q1.hdf",2)
 	a=None
 	
-	shrink2=shrink.copy(0)
+	shrink2=shrink.copy()
 	shrink2.process("eman1.math.squared")
 #	image=EMData()
 #	image.read_image(args[0])
@@ -105,7 +105,7 @@ for single particle analysis."""
 		# refptcls will contain shrunken normalized reference particles
 		refptcls=[]
 		for n,i in enumerate(refptcl):
-			ic=i.copy(0)
+			ic=i.copy()
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
 			# first a circular mask
@@ -290,7 +290,7 @@ for single particle analysis."""
 		out.close()
 		
 	if "circle" in options.auto:
-		shrinksq=shrink.copy(0)
+		shrinksq=shrink.copy()
 		shrinksq*=shrinksq			# shrunken original image squared
 		
 		# outer and inner ring mask
@@ -298,7 +298,7 @@ for single particle analysis."""
 		sbox=int(options.box/shrinkfactor)
 		outer.set_size(shrink.get_xsize(),shrink.get_ysize(),1)
 		outer.to_one()
-		inner=outer.copy(0)
+		inner=outer.copy()
 		
 		outer.process("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
 		inner.process("eman1.mask.sharp",{"outer_radius":sbox*2/5})
