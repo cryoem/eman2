@@ -54,7 +54,7 @@ for single particle analysis."""
 		if not options.box in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
 	
-	shrinkfactor=int(ceil(options.box/24))
+	shrinkfactor=int(ceil(options.box/16))
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
