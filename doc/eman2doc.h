@@ -20,3 +20,16 @@
  *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
  *  </ul>
  */
+ 
+/** @defgroup tested0 code not yet complete  */
+/** @defgroup tested1 code complete but untested */
+/** @defgroup tested2 code complete but contains bugs */
+/** @defgroup tested3 tested */
+/** @defgroup tested3a manual testing
+ *  	@ingroup tested3 */
+/** @defgroup tested3b unit test in C++
+ * 		@ingroup tested3 */
+/** @defgroup tested3c unit test in Python
+ *  	@ingroup tested3 */
+/** @defgroup tested3d incorporated into successful regression test
+ * 		@ingroup tested3 */
