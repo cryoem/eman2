@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
     int low = 0;
     int big = 0;
     int newali = 0;
+    int vg = 1;
 
     if (argc > 1) {
 		if (Util::sstrncmp(argv[1], "slowest"))
@@ -33,6 +34,25 @@ int main(int argc, char *argv[])
 			newali = 1;
 		else if (Util::sstrncmp(argv[1], "big"))
 			big = 1;
+		else if (Util::sstrncmp(argv[1], "valgrind"))
+			vg=1;
+    }
+
+    // This is some testing code used to run valgrind tests on
+    // parts of the core library. It is not for benchmarking
+    // purposes.
+    if (vg) {
+	EMData *a = new EMData();
+	a->set_size(128,128,1);
+	a->process("testimage.scurve");
+	EMData *b = a->rot_scale_trans2D(0.0,1.0,1.0,0.0);
+	EMData *d = b->align("rotate_translate",a,Dict(),"variance");
+	Dict r=b->get_attr_dict();
+	printf("%p\n",&r);
+	delete a;
+	delete b;
+	delete d;
+	exit(0);
     }
 
     printf("This could take a few minutes. Please be patient.\n");
