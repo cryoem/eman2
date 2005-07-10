@@ -2,9 +2,7 @@
  * $Id$
  */
 #include "imageio.h"
-#include "log.h"
 #include "geometry.h"
-
 
 using namespace EMAN;
 

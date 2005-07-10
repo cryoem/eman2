@@ -6,9 +6,9 @@
 
 #include "vec3.h"
 #include "emobject.h"
-#include <vector>
-#include <map>
-#include <string>
+//#include <vector>
+//#include <map>
+//#include <string>
 
 using std::string;
 using std::map;

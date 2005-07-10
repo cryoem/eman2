@@ -4,13 +4,9 @@
 #ifndef eman__projector_h__
 #define eman__projector_h__ 1
 
-#include "emobject.h"
 #include "transform.h"
-#include <string>
-#include <math.h>
 
 using std::string;
-
 
 namespace EMAN
 {
@@ -277,4 +273,4 @@ namespace EMAN
 	void dump_projectors();
 }
 
-#endif
+#endif	//eman__projector_h__

@@ -1,41 +1,34 @@
 /**
  * $Id$
  */
-#include "util.h"
 #include "byteorder.h"
-#include "log.h"
-#include "exception.h"
 #include "Assert.h"
 #include "emconstants.h"
-#include <gsl/gsl_sf_bessel.h>
+#include "emdata.h"
 
 #include <string.h>
-#include <string>
-#include <math.h>
-#include <sys/types.h>
-#ifndef WIN32
-#include <unistd.h>
-#include <sys/param.h>
-#else
-#include <io.h>
-#define access _access
-#define F_OK 00
-#endif
-
 #include <fcntl.h>
-#include <float.h>
 #include <time.h>
-#include <iostream>
 #include <iomanip>
-#include <vector>
-#include <boost/algorithm/string.hpp>
 #include <sstream>
+
 #include <gsl/gsl_sf_bessel.h>
+#include <sys/types.h>
+#include <boost/algorithm/string.hpp>
+#include <gsl/gsl_sf_bessel.h>
+
+#ifndef WIN32
+	#include <unistd.h>
+	#include <sys/param.h>
+#else
+	#include <io.h>
+	#define access _access
+	#define F_OK 00
+#endif  //WIN32
 
 using namespace std;
 using namespace boost;
 using namespace EMAN;
-
 
 void Util::ap2ri(float *data, size_t n)
 {

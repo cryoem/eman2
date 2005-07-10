@@ -5,7 +5,6 @@
 #define eman__mrcio_h__ 1
 
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -124,4 +123,4 @@ namespace EMAN
 	};
 }
 
-#endif
+#endif	//eman__mrcio_h__

@@ -2,8 +2,6 @@
  * $Id$
  */
 #include "salio.h"
-#include "log.h"
-#include "emutil.h"
 #include "util.h"
 #include "geometry.h"
 

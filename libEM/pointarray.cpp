@@ -2,7 +2,6 @@
  * $Id$
  */
 #include "pointarray.h"
-#include "util.h"
 
 using namespace EMAN;
 

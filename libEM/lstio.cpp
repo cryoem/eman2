@@ -2,8 +2,6 @@
  * $Id$
  */
 #include "lstio.h"
-#include "log.h"
-#include "emutil.h"
 #include "util.h"
 
 #include <string.h>

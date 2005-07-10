@@ -4,7 +4,6 @@
 #ifdef EM_TIFF
 
 #include "tifio.h"
-#include "log.h"
 #include "emutil.h"
 #include "util.h"
 #include "geometry.h"
@@ -253,4 +252,4 @@ bool TiffIO::is_image_big_endian()
 }
 
 
-#endif
+#endif	//EM_TIFF

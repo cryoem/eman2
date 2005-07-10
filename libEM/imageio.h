@@ -4,13 +4,8 @@
 #ifndef eman__imageio_h__
 #define eman__imageio_h__ 1
 
-#include "emobject.h"
 #include "byteorder.h"
 #include "emutil.h"
-
-#include <vector>
-#include <string>
-#include <stdio.h>
 
 using std::vector;
 using std::string;
@@ -318,4 +313,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman__imageio_h__

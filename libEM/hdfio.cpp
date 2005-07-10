@@ -4,26 +4,21 @@
 #ifdef EM_HDF5
 
 #include "hdfio.h"
-#include "log.h"
-#include "emobject.h"
 #include "util.h"
 #include "emutil.h"
 #include "geometry.h"
 #include "ctf.h"
-#include "exception.h"
 #include "Assert.h"
 #include "transform.h"
 
 #include <string.h>
 #include <stdlib.h>
 
-
 #ifndef WIN32
-#include <sys/param.h>
+	#include <sys/param.h>
 #else
-#define  MAXPATHLEN (MAX_PATH * 4)
-#endif
-
+	#define  MAXPATHLEN (MAX_PATH * 4)
+#endif	//WIN32
 
 using namespace EMAN;
 
@@ -1261,4 +1256,4 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 
 
 
-#endif
+#endif	//EM_HDF5

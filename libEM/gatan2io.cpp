@@ -2,8 +2,6 @@
  * $Id$
  */
 #include "gatan2io.h"
-#include "log.h"
-#include "emutil.h"
 #include "geometry.h"
 #include "portable_fileio.h"
 

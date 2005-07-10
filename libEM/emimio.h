@@ -4,9 +4,7 @@
 #ifndef eman__emimio_h__
 #define eman__emimio_h__ 1
 
-
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -83,4 +81,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman__emimio_h__

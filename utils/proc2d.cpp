@@ -1,10 +1,7 @@
 #include "emdata.h"
-#include "log.h"
-#include <map>
-#include "util.h"
 #include "ctf.h"
+
 #include <ctype.h>
-#include "transform.h"
 
 using namespace EMAN;
 using std::map;

@@ -1,7 +1,6 @@
 /**
  * $Id$
  */
-#include "emutil.h"
 #include "log.h"
 #include "all_imageio.h"
 #include "portable_fileio.h"
@@ -12,14 +11,11 @@
 #include "imageio.h"
 
 #ifdef WIN32
-#include <windows.h>
-#define MAXPATHLEN (MAX_PATH*4)
+	#include <windows.h>
+	#define MAXPATHLEN (MAX_PATH*4)
 #else
-#include <sys/param.h>
-#endif
-
-
-
+	#include <sys/param.h>
+#endif	//WIN32
 
 using namespace EMAN;
 

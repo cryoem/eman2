@@ -5,7 +5,6 @@
 #define eman__vtkio_h__ 1
 
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -118,4 +117,4 @@ namespace EMAN
 
 }
 
-#endif
+#endif	//eman__vtkio_h__

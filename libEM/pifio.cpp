@@ -2,8 +2,6 @@
  * $Id$
  */
 #include "pifio.h"
-#include "log.h"
-#include "emutil.h"
 #include "portable_fileio.h"
 #include "geometry.h"
 

@@ -5,7 +5,6 @@
 #define eman__gatan2io_h__ 1
 
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -61,4 +60,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman__gatan2io_h__

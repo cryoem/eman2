@@ -1,5 +1,4 @@
 #include "io_template.h"
-#include "log.h"
 #include "portable_fileio.h"
 
 using namespace EMAN;

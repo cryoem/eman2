@@ -2,12 +2,10 @@
  * $Id$
  */
 #include "xplorio.h"
-#include "log.h"
 #include "util.h"
 #include "Assert.h"
 #include "portable_fileio.h"
 #include "geometry.h"
-#include "emutil.h"
 
 #ifdef WIN32
 #include <time.h>

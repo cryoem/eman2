@@ -2,14 +2,14 @@
  * $Id$
  */
 #include "amiraio.h"
-#include "log.h"
 #include "util.h"
+
 #ifndef WIN32
-#include <sys/param.h>
+	#include <sys/param.h>
 #else
-#include <windows.h>
-#define MAXPATHLEN (MAX_PATH*4)
-#endif
+	#include <windows.h>
+	#define MAXPATHLEN (MAX_PATH*4)
+#endif	//WIN32
 
 using namespace EMAN;
 

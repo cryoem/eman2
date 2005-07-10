@@ -6,7 +6,6 @@
 #define eman__quaternion_h__ 1
 
 #include "vec3.h"
-#include <math.h>
 
 namespace EMAN
 {
@@ -104,4 +103,4 @@ namespace EMAN
 	bool operator!=(const Quaternion & q1, const Quaternion & q2);
 }
 
-#endif
+#endif	//eman__quaternion_h__

@@ -42,6 +42,6 @@ namespace EMAN
 	};
 }
 
-#endif
+#endif	//EM_TIFF
 
-#endif
+#endif	//eman__tiffio_h__

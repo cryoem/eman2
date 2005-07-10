@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 #include <math.h>
-#include "emdata.h"
 #include <iostream>
+#include <boost/multi_array.hpp>
 
 #ifdef WIN32
 #include <windows.h>
@@ -23,6 +23,8 @@ using std::ostream;
 
 namespace EMAN
 {
+	class EMData;
+	
 	typedef boost::multi_array<int, 3> MIArray3D;
 
 	/** Util is a collection of utility functions.

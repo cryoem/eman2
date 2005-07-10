@@ -1,9 +1,6 @@
-#include <stdio.h>
-#include <math.h>
 #include <time.h>
+
 #include "emdata.h"
-#include "util.h"
-#include "exception.h"
 
 using namespace EMAN;
 

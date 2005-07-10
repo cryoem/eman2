@@ -4,7 +4,6 @@
 #ifdef EM_PNG
 
 #include "pngio.h"
-#include "log.h"
 #include "geometry.h"
 #include "emutil.h"
 #include "util.h"
@@ -335,4 +334,4 @@ bool PngIO::is_image_big_endian()
 }
 
 
-#endif
+#endif	//EM_PNG

@@ -2,7 +2,6 @@
  * $Id$
  */
 #include "sspiderio.h"
-#include "log.h"
 #include "geometry.h"
 #include "portable_fileio.h"
 

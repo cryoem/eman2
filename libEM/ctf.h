@@ -4,15 +4,16 @@
 #ifndef eman__ctf__h__
 #define eman__ctf__h__ 1
 
-#include <string>
-#include <map>
 #include <math.h>
+
 #include "emobject.h"
+
 #ifdef WIN32
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
-#endif
-#endif
+	#ifndef M_PI
+		#define M_PI 3.14159265358979323846f
+	#endif	//M_PI
+#endif	//WIN32
+
 using std::string;
 using std::map;
 
@@ -191,4 +192,4 @@ namespace EMAN
 
 
 
-#endif
+#endif	//eman__ctf__h__

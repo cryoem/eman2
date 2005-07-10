@@ -5,14 +5,7 @@
 #ifndef eman__testutil_h__
 #define eman__testutil_h__
 
-#include "geometry.h"
-#include "vec3.h"
-#include "emobject.h"
 #include "emdata.h"
-
-#include <map>
-#include <vector>
-#include <string>
 
 using std::map;
 using std::vector;
@@ -198,6 +191,6 @@ namespace EMAN
     
 }
 
-#endif
+#endif	//eman__testutil_h__
 
 

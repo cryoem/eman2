@@ -4,10 +4,9 @@
 #ifndef eman_averager_h__
 #define eman_averager_h__ 1
 
-#include <vector>
-using std::vector;
-
 #include "emobject.h"
+
+using std::vector;
 
 namespace EMAN
 {

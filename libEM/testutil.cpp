@@ -1,22 +1,16 @@
 #include "testutil.h"
-#include "emdata.h"
-#include "emobject.h"
-#include "log.h"
 #include "xydata.h"
 
 #include <algorithm>
-#include <vector>
-#include <string>
-#include <map>
 #include <Assert.h>
 #include <stdlib.h>
 
 #ifdef _WIN32
-#include <windows.h>
-#define MAXPATHLEN MAX_PATH
+	#include <windows.h>
+	#define MAXPATHLEN MAX_PATH
 #else
-#include <sys/param.h>
-#endif
+	#include <sys/param.h>
+#endif	//_WIN32
 
 using std::vector;
 using std::string;

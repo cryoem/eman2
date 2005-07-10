@@ -4,10 +4,9 @@
 #ifndef eman__object__h__
 #define eman__object__h__ 1
 
-#include <string>
 #include <map>
 #include <vector>
-#include <stdio.h>
+
 #include "log.h"
 #include "exception.h"
 

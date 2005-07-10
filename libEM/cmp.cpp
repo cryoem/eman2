@@ -3,8 +3,6 @@
  */
 #include "cmp.h"
 #include "emdata.h"
-#include "log.h"
-#include "util.h"
 #include "ctf.h"
 
 using namespace EMAN;

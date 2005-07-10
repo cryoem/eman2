@@ -5,7 +5,6 @@
 #define eman__pifio_h__ 1
 
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -144,4 +143,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman__pifio_h__

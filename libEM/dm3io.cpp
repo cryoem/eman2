@@ -3,11 +3,7 @@
  */
 #include "dm3io.h"
 #include "portable_fileio.h"
-#include "log.h"
 #include "geometry.h"
-#include "emutil.h"
-#include "exception.h"
-
 
 #include <string.h>
 #include <stdlib.h>

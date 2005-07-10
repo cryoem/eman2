@@ -2,17 +2,12 @@
  * $Id$
  */
 #include "mrcio.h"
-#include "byteorder.h"
 #include "portable_fileio.h"
 #include "geometry.h"
-#include "log.h"
 #include "util.h"
-#include "emutil.h"
 #include "ctf.h"
 
-#include <math.h>
 #include <string.h>
-
 
 using namespace EMAN;
 

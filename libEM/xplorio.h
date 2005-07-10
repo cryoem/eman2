@@ -4,9 +4,7 @@
 #ifndef eman__xplorio_h__
 #define eman__xplorio_h__ 1
 
-
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -72,4 +70,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman__xplorio_h__

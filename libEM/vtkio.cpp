@@ -2,11 +2,10 @@
  * $Id$
  */
 #include "vtkio.h"
-#include "emutil.h"
-#include "log.h"
 #include "util.h"
 #include "geometry.h"
 #include "portable_fileio.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>

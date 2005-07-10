@@ -2,23 +2,15 @@
  * $Id$
  */
 #include "projector.h"
-#include "log.h"
 #include "emdata.h"
 #include "interp.h"
 #include  "emconstants.h"
-#include <string>
-
-
 
 #ifdef WIN32
-#define M_PI 3.14159265358979323846f
-#endif
-
-#include <iostream>
+	#define M_PI 3.14159265358979323846f
+#endif	//WIN32
 
 using namespace std;
-
-
 using namespace EMAN;
 
 template <> Factory < Projector >::Factory()

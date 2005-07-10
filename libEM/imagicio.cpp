@@ -2,10 +2,8 @@
  * $Id$
  */
 #include "imagicio.h"
-#include "log.h"
 #include "portable_fileio.h"
 #include "util.h"
-#include "emutil.h"
 #include "geometry.h"
 #include "ctf.h"
 #include "Assert.h"

@@ -2,13 +2,9 @@
  * $Id$
  */
 #include "reconstructor.h"
-#include "transform.h"
 #include "interp.h"
 #include "ctf.h"
-#include "emdata.h"
-#include "fundamentals.h"
 #include "emconstants.h"
-#include "iostream"
 
 using namespace EMAN;
 

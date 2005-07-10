@@ -2,10 +2,8 @@
  * $Id$
  */
 #include "pgmio.h"
-#include "log.h"
 #include "geometry.h"
 #include "util.h"
-#include "emutil.h"
 #include "portable_fileio.h"
 #include <limits.h>
 #include <ctype.h>

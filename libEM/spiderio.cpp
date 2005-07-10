@@ -2,15 +2,11 @@
  * $Id$
  */
 #include "spiderio.h"
-#include "log.h"
 #include "geometry.h"
 #include "portable_fileio.h"
-#include "emutil.h"
 #include "Assert.h"
 
-
 using namespace EMAN;
-
 
 SpiderIO::SpiderIO(const string & spider_filename, IOMode rw)
 :	filename(spider_filename), rw_mode(rw)

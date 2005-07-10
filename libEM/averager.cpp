@@ -3,8 +3,6 @@
  */
 #include "averager.h"
 #include "emdata.h"
-#include "log.h"
-#include "util.h"
 #include "xydata.h"
 #include "ctf.h"
 

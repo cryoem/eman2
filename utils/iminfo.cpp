@@ -1,6 +1,4 @@
 #include "emdata.h"
-#include <stdio.h>
-#include "log.h"
 #include "ctf.h"
 
 using namespace EMAN;

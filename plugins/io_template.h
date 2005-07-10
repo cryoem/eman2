@@ -2,7 +2,6 @@
 #define eman__xyzio_h__1
 
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {

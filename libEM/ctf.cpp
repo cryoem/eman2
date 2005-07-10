@@ -2,7 +2,6 @@
  * $Id$
  */
 #include "ctf.h"
-#include "log.h"
 #include "emdata.h"
 #include "xydata.h"
 #include "Assert.h"

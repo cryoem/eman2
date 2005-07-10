@@ -4,24 +4,17 @@
 #ifndef eman__emdata_h__
 #define eman__emdata_h__ 1
 
-#include <string>
-#include <vector>
-#include <map>
-#include <math.h>
 #include <float.h>
-#include <boost/multi_array.hpp>
+//#include <boost/multi_array.hpp>
 #include <complex>
+#include <fstream>
 
-
-#include "emobject.h"
 #include "fundamentals.h"
 #include "emutil.h"
 #include "util.h"
-#include "vec3.h"
+//#include "vec3.h"
 #include "geometry.h"
 #include "transform.h"
-#include <fstream>
-#include <iostream>
 
 using std::string;
 using std::vector;

@@ -5,9 +5,6 @@
 #define __dm3io_h__
 
 #include "imageio.h"
-#include <map>
-#include <vector>
-#include <stdio.h>
 
 using std::vector;
 using std::map;
@@ -241,4 +238,4 @@ namespace EMAN
 
 
 
-#endif
+#endif	//__dm3io_h__

@@ -4,9 +4,7 @@
 #ifndef eman__lstio_h__
 #define eman__lstio_h__ 1
 
-
 #include "imageio.h"
-#include <stdio.h>
 
 namespace EMAN
 {
@@ -52,4 +50,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman__lstio_h__

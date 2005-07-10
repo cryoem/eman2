@@ -6,22 +6,20 @@
 
 // NOTE: for some reason unknown, hdfio.h must be behind pngio.h. 
 
-#include "imageio.h"
 #include "mrcio.h"
 
 #ifdef EM_PNG
-#include "pngio.h"
-#endif
+	#include "pngio.h"
+#endif	//EM_PNG
 
 #include "dm3io.h"
 
 #ifdef EM_TIFF
-#include "tifio.h"
-#endif
+	#include "tifio.h"
+#endif	//EM_TIFF
 
 #include "pifio.h"
 #include "vtkio.h"
-#include "spiderio.h"
 #include "sspiderio.h"
 #include "pgmio.h"
 #include "emimio.h"
@@ -29,8 +27,8 @@
 #include "lstio.h"
 
 #ifdef EM_HDF5
-#include "hdfio.h"
-#endif
+	#include "hdfio.h"
+#endif	//EM_HDF5
 
 #include "salio.h"
 #include "amiraio.h"
@@ -39,4 +37,4 @@
 #include "emio.h"
 #include "imagicio.h"
 
-#endif
+#endif	//eman__ioioio_h__

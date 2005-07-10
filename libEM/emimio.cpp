@@ -2,8 +2,6 @@
  * $Id$
  */
 #include "emimio.h"
-#include "log.h"
-#include "emutil.h"
 #include "portable_fileio.h"
 
 using namespace EMAN;

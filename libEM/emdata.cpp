@@ -4,7 +4,6 @@
 
 #include "emdata.h"
 #include "log.h"
-#include "transform.h"
 #include "all_imageio.h"
 #include "ctf.h"
 #include "filter.h"
@@ -13,20 +12,16 @@
 #include "emfft.h"
 #include "projector.h"
 #include "byteorder.h"
-#include "fundamentals.h"
 #include "emconstants.h"
 
-#include <float.h>
-#include <math.h>
 #include <algorithm>
 #include <boost/array.hpp>
 #include <iostream>
-#include <complex>
 #include <iomanip>
 
 #ifdef WIN32
-#define M_PI 3.14159265358979323846f
-#endif
+	#define M_PI 3.14159265358979323846f
+#endif	//WIN32
 
 using namespace EMAN;
 

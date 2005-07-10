@@ -6,9 +6,6 @@
 
 #include "emobject.h"
 
-#include <string>
-#include <vector>
-
 using std::string;
 using std::vector;
 
@@ -243,4 +240,4 @@ namespace EMAN
 	};		
 }
 
-#endif
+#endif	//eman__emutil__h__

@@ -2,13 +2,9 @@
  * $Id$
  */
 
-
 #include "aligner.h"
-#include "log.h"
 #include "emdata.h"
 #include "filter.h"
-#include "util.h"
-#include <float.h>
 #include <gsl/gsl_multimin.h>
 
 using namespace EMAN;

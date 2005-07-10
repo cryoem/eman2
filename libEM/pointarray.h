@@ -4,8 +4,6 @@
 #ifndef eman_pointarray_h_
 #define eman_pointarray_h_
 
-#include "transform.h"
-#include "geometry.h"
 #include "ctf.h"
 #include "emdata.h"
 

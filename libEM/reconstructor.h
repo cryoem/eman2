@@ -4,12 +4,7 @@
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 
-#include "emobject.h"
 #include "emdata.h"
-#include <vector>
-#include <map>
-#include <string>
-#include <math.h>
 
 using std::vector;
 using std::map;
