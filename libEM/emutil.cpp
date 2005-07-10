@@ -1,14 +1,12 @@
 /**
  * $Id$
  */
-#include "log.h"
 #include "all_imageio.h"
 #include "portable_fileio.h"
 #include "emcache.h"
 #include "emdata.h"
 #include "ctf.h"
 #include "Assert.h"
-#include "imageio.h"
 
 #ifdef WIN32
 	#include <windows.h>
