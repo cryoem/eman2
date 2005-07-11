@@ -380,7 +380,7 @@ EMData *EMData::copy() const
 	}
 
 	ret->rfp = 0;
-	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
+	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_PAD | EMDATA_FFTODD);
 
 	ret->all_translation = all_translation;
 
@@ -407,7 +407,7 @@ EMData *EMData::copy_head() const
 
 	ret->rfp = 0;
 
-	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI);
+	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_PAD | EMDATA_FFTODD);
 
 	ret->all_translation = all_translation;
 

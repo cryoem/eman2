@@ -2,6 +2,7 @@
 # Launch ipython with an appropriate profile
 
 from EMAN2 import *
+from Sparx import *
 try:
 	from IPython.Shell import IPShellEmbed
 	banner = "Welcome to Sparx."
