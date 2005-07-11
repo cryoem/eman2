@@ -139,12 +139,15 @@ namespace EMAN
 
 	};
 
-	/** Linear comparison of 2 data sets. 'this' should be noisy and
-	* 'with' should be less noisy. linear scaling (mx + b) of the
-	* densities in 'this' is performed to produce the smallest possible
-	* variance between images. 
+	/** Variance between two data sets after various modifications. 
+	* Generally, 'this' should be noisy and 'with' should be less noisy. 
+	* linear scaling (mx + b) of the densities in 'this' is performed 
+	* to produce the smallest possible variance between images. 
+	*
 	* If keepzero is set, then zero pixels are left at zero (b is not added).
 	* if matchfilt is set, then 'with' is filtered so its radial power spectrum matches 'this'
+	* If invert is set, then (y-b)/m is applied to the second image rather than mx+b to the first.
+	*
 	* To modify 'this' to match the operation performed here, scale 
 	* should be applied first, then b should be added
 	*/
@@ -173,6 +176,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("invert", EMObject::INT, "If set, 'with' is rescaled rather than 'this'. 'this' should still be the noisier image.");
 			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization");
 			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this");
 			return d;

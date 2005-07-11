@@ -201,7 +201,7 @@ for single particle analysis."""
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance")
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"invert":1,"keepzero":1})
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
@@ -223,19 +223,23 @@ for single particle analysis."""
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance")
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"invert":1,"keepzero":1})
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
 			i[2]-= cos(da)*dx+sin(da)*dy
 			i[3]-=-sin(da)*dx+cos(da)*dy
-
-			refptcl[i[1]].write_image("at.hdf",-1)
-			ba.write_image("at.hdf",-1)
+			if hypot(dx,dy)>8.0 : 
+				print '****'
+				continue
+			
+#			refptcl[i[1]].write_image("at.hdf",-1)
+#			ba.write_image("at.hdf",-1)
 
 			# now record the fixed up location
-			goodpks2.append((ba.get_attr("align_score"),i[2],i[3],i[1]))
-			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"))
+			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
+			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.4f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"),ba.get_attr("ovcmp_m"),goodpks2[-1][0])
+			ba.write_image("ttt.hdf",-1)
 #			display([b,ba,refptcl[i[1]]])
 						
 		goodpks2.sort()
@@ -275,11 +279,14 @@ for single particle analysis."""
 		# write boxed particles
 		if args[0][-3:]=="hdf" : outn=args[0][:-3]+"box.hdf"
 		else: outn=args[0][:-3]+"hdf"
+		n=0
 		for i in goodpks2:
 			if i[0]>thr : break
 			try: b.read_image(args[0],0,0,Region(i[1],i[2],options.box,options.box))
 			except: continue
 			if options.norm: b.process("eman1.normalize.edgemean")
+			print n,i
+			n+=1
 			b.write_image(outn,-1)
 			if options.savealiref:
 				refptcl[i[3]].write_image("boxali.hdf",-1)

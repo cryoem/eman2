@@ -81,6 +81,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	ENTERFUNC;
 	validate_input_args(image, with);
 
+	int keepzero = params.set_default("keepzero", 0);
+	int invert = params.set_default("invert",0);
 	int matchfilt = params.set_default("matchfilt",0);
 	
 	float *y_data = with->get_data();
@@ -106,10 +108,9 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	m = 1.0f / m;
 	if (m < 0) {
 		b = 0;
-		m = 1.0f;
+		m = 10.0f;
 	}
 
-	int keepzero = params.set_default("keepzero", 0);
 	double  result = 0;
 	int count = 0;
 
@@ -117,7 +118,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	if (keepzero) {
 		for (size_t i = 0; i < size; i++) {
 			if (y_data[i] && x_data[i]) {
-				result += Util::square((x_data[i] * m) + b - y_data[i]);
+				if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m);
+				else result += Util::square((x_data[i] * m) + b - y_data[i]);
 				count++;
 			}
 		}
@@ -125,13 +127,16 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	}
 	else {
 		for (size_t i = 0; i < size; i++) {
-			result += Util::square((x_data[i] * m) + b - y_data[i]);
+			if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m);
+			else result += Util::square((x_data[i] * m) + b - y_data[i]);
 		}
 		result = result / size;
 	}
 	scale = m;
 	shift = b;
 	
+	image->set_attr("ovcmp_m",m);
+	image->set_attr("ovcmp_b",b);
 	EXITFUNC;
 	
 #if 0
