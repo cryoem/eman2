@@ -179,6 +179,7 @@ namespace EMAN
 			d.put("invert", EMObject::INT, "If set, 'with' is rescaled rather than 'this'. 'this' should still be the noisier image.");
 			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization");
 			d.put("matchfilt", EMObject::INT, "If set, with will be filtered so its radial power spectrum matches 'this' before density optimization of this");
+			d.put("debug", EMObject::INT, "Performs various debugging actions if set.");
 			return d;
 		}
 

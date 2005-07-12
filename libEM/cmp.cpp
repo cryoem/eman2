@@ -84,21 +84,34 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	int keepzero = params.set_default("keepzero", 0);
 	int invert = params.set_default("invert",0);
 	int matchfilt = params.set_default("matchfilt",0);
+	int dbug = params.set_default("debug",0);
 	
-	float *y_data = with->get_data();
-	float *x_data = image->get_data();
+	float *x_data = with->get_data();
+	float *y_data = image->get_data();
 	
 	EMData *with2=NULL;
 	if (matchfilt) {
 		with2=with->copy();
 //		with2->process("matchfilt",Dict("to",this));
-		y_data = with2->get_data();
+		x_data = with2->get_data();
 	}
-		
 
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
 	float m = 0;
 	float b = 0;
+	
+	// This will write the x vs y file used to calculate the density
+	// optimization. This behavior may change in the future
+	if (dbug) {
+		FILE *out=fopen("dbug.optvar.txt","w");
+		if (out) {
+			for (size_t i=0; i<size; i++) {
+				if ( !keepzero || (x_data[i] && y_data[i])) fprintf(out,"%g\t%g\n",x_data[i],y_data[i]);
+			}
+			fclose(out);
+		}
+	}
+
 
 	Util::calc_least_square_fit(size, x_data, y_data, &m, &b, 1);
 	if (m == 0) {
@@ -108,7 +121,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	m = 1.0f / m;
 	if (m < 0) {
 		b = 0;
-		m = 10.0f;
+		m = 1000.0;
 	}
 
 	double  result = 0;

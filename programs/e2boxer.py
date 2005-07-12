@@ -202,7 +202,7 @@ for single particle analysis."""
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"invert":1,"keepzero":1})
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"keepzero":1})
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
@@ -224,13 +224,13 @@ for single particle analysis."""
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"invert":1,"keepzero":1})
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"keepzero":1})
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
 			i[2]-= cos(da)*dx+sin(da)*dy
 			i[3]-=-sin(da)*dx+cos(da)*dy
-			if hypot(dx,dy)>8.0 : 
+			if hypot(dx,dy)>12.0 : 
 				print '****'
 				continue
 			
@@ -249,8 +249,9 @@ for single particle analysis."""
 			
 			# now record the fixed up location
 			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
+#			goodpks2.append((ba.get_attr("align_score"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
 			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.4f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"),ba.get_attr("ovcmp_m"),goodpks2[-1][0])
-			ba.write_image("ttt.hdf",-1)
+#			ba.write_image("ttt.hdf",-1)
 			n+=1
 #			display([b,ba,refptcl[i[1]]])
 						
@@ -298,6 +299,7 @@ for single particle analysis."""
 			except: continue
 			if options.norm: b.process("eman1.normalize.edgemean")
 			print n,i
+#			print i[4]
 			b.write_image(outn,n)
 			n+=1
 			if options.savealiref:
