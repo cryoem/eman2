@@ -51,6 +51,7 @@ Designed for use on scanned micrographs. Overlays image with a grid of
 	for x in range(nbx):
 		for y in range(nby):
 			cl=target.get_clip(Region(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,options.box,options.box))
+			cl.process("eman1.normalize.edgemean")
 			cl.process("eman1.math.realtofft")
 			cl.process("eman1.normalize.edgemean")
 			cl*=(float(sig)/float(cl.get_attr("sigma")))
