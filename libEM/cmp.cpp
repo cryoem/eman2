@@ -119,10 +119,13 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	}
 	b = -b / m;
 	m = 1.0f / m;
-	if (m < 0) {
+
+	// While negative slopes are really not a valid comparison in most cases, we
+	// still want to detect these instances, so this if is removed
+/*	if (m < 0) {
 		b = 0;
 		m = 1000.0;
-	}
+	}*/
 
 	double  result = 0;
 	int count = 0;
@@ -212,7 +215,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
 		}
 
-		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
+//		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
 	}
 
 	EMData *image_fft = image->do_fft();
@@ -226,9 +229,11 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	double norm = FLT_MIN;
 	int i = 0;
 
-	for (float y = -ny / 2.0f; y < ny / 2.0f; y++) {
+	for (float y = 0; y < ny; y++) {
 		for (int x = 0; x < nx + 2; x += 2) {
-			int r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
+			int r;
+			if (y<ny/2) r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
+			else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
 			float a = dfsnr[r] * with_fft_data[i];
 
 			sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
