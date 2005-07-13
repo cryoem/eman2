@@ -6031,16 +6031,14 @@ float EMData::get_circle_mean()
 }
 
 
-
-float EMData::dot(EMData * with, bool evenonly)
+// just a shortcut for cmp("dot")
+float EMData::dot(EMData * with)
 {
 	ENTERFUNC;
 	if (!with) {
 		throw NullPointerException("Null EMData Image");
 	}
 	DotCmp dot_cmp;
-	Dict cmp_params;
-	cmp_params["evenonly"] = (int) evenonly;
 	float r = dot_cmp.cmp(this, with);
 	EXITFUNC;
 	return r;

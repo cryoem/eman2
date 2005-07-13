@@ -107,7 +107,11 @@ namespace EMAN
 	};
 
 	/** Use dot product of 2 same-size images to do the comparison.
-     * For complex images, it does not check r/i vs a/p.
+	* For complex images, it does not check r/i vs a/p.
+	* @author Steve Ludtke (sludtke@bcm.tmc.edu) 
+	* @date 2005-07-13
+	* @param negative Returns -1 * dot product, default true
+	* @param normalize Returns normalized dot product -1.0 - 1.0
     */
 	class DotCmp:public Cmp
 	{
@@ -121,7 +125,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Dot product * -1";
+			return "Dot product (default -1 * dot product)";
 		}
 
 		static Cmp *NEW()
@@ -133,12 +137,50 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("negative", EMObject::INT, "If set, returns -1 * dot product. Set by default so smaller is better");
-			d.put("evenonly", EMObject::INT, "If set, consider only even numbered pixels.");
+			d.put("normalize", EMObject::INT, "If set, returns normalized dot product -1.0 - 1.0.");
 			return d;
 		}
 
 	};
 
+	/** This will calculate the dot product for each quadrant of the image and
+	* return the worst value
+	* @author Steve Ludtke (sludtke@bcm.tmc.edu) 
+	* @date 2005-07-13
+	* @param negative Returns -1 * dot product, default true
+	* @param normalize Returns normalized dot product -1.0 - 1.0
+	*/
+	class QuadMinDotCmp:public Cmp
+	{
+	  public:
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return "quadmindot";
+		}
+
+		string get_desc() const
+		{
+			return "Caclultes dot product for each quadrant and returns worst value (default -1 * dot product)";
+		}
+
+		static Cmp *NEW()
+		{
+			return new QuadMinDotCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("negative", EMObject::INT, "If set, returns -1 * dot product. Default = true (smaller is better)");
+			d.put("normalize", EMObject::INT, "If set, returns normalized dot product -1.0 - 1.0.");
+			return d;
+		}
+
+	};
+
+	
 	/** Variance between two data sets after various modifications. 
 	* Generally, 'this' should be noisy and 'with' should be less noisy. 
 	* linear scaling (mx + b) of the densities in 'this' is performed 

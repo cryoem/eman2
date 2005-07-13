@@ -10,6 +10,7 @@ using namespace EMAN;
 template <> Factory < Cmp >::Factory()
 {
 	force_add(&DotCmp::NEW);
+	force_add(&QuadMinDotCmp::NEW);
 	force_add(&VarianceCmp::NEW);
 	force_add(&OptVarianceCmp::NEW);
 	force_add(&PhaseCmp::NEW);
@@ -41,6 +42,8 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 }
 
 
+// Even though this uses doubles, it might be wise to recode it row-wise
+// to avoid numerical errors on large images
 float DotCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
@@ -49,30 +52,75 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	float *d1 = image->get_data();
 	float *d2 = with->get_data();
 
-	int evenonly = params.set_default("evenonly", 0);
+	int normalize = params.set_default("normalize", 0);
+	float negative = (float)params.set_default("negative", 1);
+	
+	if (negative) negative=-1.0; else negative=1.0;
 
 	double result = 0;
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
-	int step = 1;
 
-	if (evenonly) {
-		step = 2;
+	for (size_t i = 0; i < size; i++) {
+		result += d1[i]*d2[i];
 	}
+	
+	if (normalize) {
+		double square_sum1 = image->get_attr_dict().get("square_sum");
+		double square_sum2 = with->get_attr_dict().get("square_sum");
 
-	for (size_t i = 0; i < size; i += step) {
-		result += (*d1) * (*d2);
-		d1 += step;
-		d2 += step;
+		result = result / (sqrt(square_sum1*square_sum2));
 	}
-#if 0
-	double square_sum1 = image->get_attr_dict().get("square_sum");
-	double square_sum2 = with->get_attr_dict().get("square_sum");
+	else result/=size;
+			
+	EXITFUNC;
+	return (float) (negative*result);
+}
 
-	result = 2 * result / (square_sum1 + square_sum2);
-#endif
+// Even though this uses doubles, it might be wise to recode it row-wise
+// to avoid numerical errors on large images
+float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+	if (image->get_zsize()!=1) throw InvalidValueException(0, "QuadMinDotCmp supports 2D only");
+	
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	MArray2D d1=image->get_2dview(nx/2,ny/2);
+	MArray2D d2=with ->get_2dview(nx/2,ny/2);
+	
+	int normalize = params.set_default("normalize", 0);
+	float negative = (float)params.set_default("negative", 1);
+	
+	if (negative) negative=-1.0; else negative=1.0;
+
+	double result[4] = { 0,0,0,0 }, sq1[4] = { 0,0,0,0 }, sq2[4] = { 0,0,0,0 } ;
+
+	int i,x,y;
+	for (y=-ny/2; y<ny/2; y++) {
+		for (x=-nx/2; x<nx/2; x++) {
+			int quad=(nx<0?0:1) + (ny<0?0:2);
+			result[quad]+=d1[x][y]*d2[x][y];
+			if (normalize) {
+				sq1[quad]+=d1[x][y]*d1[x][y];
+				sq2[quad]+=d2[x][y]*d2[x][y];
+			}
+		}
+	}
+	
+	if (normalize) {
+		for (i=0; i<4; i++) result[i]/=sqrt(sq1[i]*sq2[i]);
+	}
+	else {
+		for (i=0; i<4; i++) result[i]/=nx*ny/4;
+	}
+	
+	float worst=result[0];
+	for (i=1; i<4; i++) if (result[i]<worst) worst=result[i];
 	
 	EXITFUNC;
-	return (float) result;
+	return (float) (negative*worst);
 }
 
 

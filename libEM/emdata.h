@@ -853,15 +853,13 @@ namespace EMAN
 		/** Dot product 2 images. The 2 images must be of same size.
 		 * If 'evenonly' is true, only calculates pixels with even
 		 * positions assuming all pixels are in a single array. If
-		 * 'evenonly' is false, calculates all pixels.
+		 * 'evenonly' is false, calculates all pixels. Shortcut for
+		 * cmp("dot")
 		 *
 		 * @param with The image to do dot product with.
-		 * @param evenonly If true,  only calculate pixels with even
-		 * positions assuming all pixels are in a single array. If
-		 * 'evenonly' is false, calculates all pixels.
 		 * @return The dot product result.
 		 */
-		float dot(EMData * with, bool evenonly = false);
+		float dot(EMData * with);
 
 		/** Finds common lines between 2 complex images.
 		 * 

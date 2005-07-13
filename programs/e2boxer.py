@@ -105,14 +105,18 @@ for single particle analysis."""
 		# refptcls will contain shrunken normalized reference particles
 		refptcls=[]
 		for n,i in enumerate(refptcl):
+			# first a circular mask
+			display(i)
+			i.process("eman1.normalize.circlemean")
+			display(i)
+			i.process("eman1.mask.sharp",{"outer_radius":i.get_xsize()/2-1})
+			display(i)
+						
 			ic=i.copy()
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
-			# first a circular mask
-			ic.process("eman1.mask.sharp",{"outer_radius":ic.get_xsize()/2-1})
-			
 			# make the unmasked portion mean -> 0
-			ic.add(-float(ic.get_attr("mean_nonzero")),1)
+			ic-=float(ic.get_attr("mean_nonzero"))
 			ic.process("eman1.normalize.unitlen")
 #			ic.write_image("scaled_refs.hdf",-1)
 
@@ -230,27 +234,39 @@ for single particle analysis."""
 			da=ba.get_attr("rotational")
 			i[2]-= cos(da)*dx+sin(da)*dy
 			i[3]-=-sin(da)*dx+cos(da)*dy
-			if hypot(dx,dy)>12.0 : 
+			if hypot(dx,dy)>12.0 or ba.get_attr("ovcmp_m")<=0: 
 				print '****'
 				continue
 			
 #			refptcl[i[1]].write_image("at.hdf",-1)
 #			ba.write_image("at.hdf",-1)
 
-			# for testing
-			b.write_image("t2.hdf",-1)
-			cc=refptcl[i[1]].rot_scale_trans2D(-da,1.0,-(cos(da)*dx+sin(da)*dy),-(-sin(da)*dx+cos(da)*dy))
-			cc-=ba.get_attr("ovcmp_b")
-			cc/=ba.get_attr("ovcmp_m")
-			cc.write_image("t2.hdf",-1)
-			b-=cc
-			b.write_image("t2.hdf",-1)
+			# for testing, write out intermediate images 
+#			b.write_image("t2.hdf",-1)
+#			cc=refptcl[i[1]].rot_scale_trans2D(-da,1.0,-(cos(da)*dx+sin(da)*dy),-(-sin(da)*dx+cos(da)*dy))
+#			cc-=ba.get_attr("ovcmp_b")
+#			cc/=ba.get_attr("ovcmp_m")
+#			cc.write_image("t2.hdf",-1)
+#			b-=cc
+#			b.write_image("t2.hdf",-1)
 			
+			# now we use phase error as a similarity measure
+			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			except: continue
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+			rr=refptcl[i[1]].rot_scale_trans2D(-da,1.0,0,0)
+			rr.process("eman1.normalize")
+			b.cmp("optvariance",rr,{"keepzero":1})
+			b*=b.get_attr("ovcmp_m")
+			b+=b.get_attr("ovcmp_b")
+			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
+			rr.write_image("a.hdf",-1)
+			b.write_image("a.hdf",-1)
 			
 			# now record the fixed up location
-			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
-#			goodpks2.append((ba.get_attr("align_score"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
-			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.4f\t%1.4f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("align_score"),ba.get_attr("ovcmp_m"),goodpks2[-1][0])
+#			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
+			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n))
+			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.6f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("ovcmp_m"),goodpks2[-1][0])
 #			ba.write_image("ttt.hdf",-1)
 			n+=1
 #			display([b,ba,refptcl[i[1]]])
@@ -261,15 +277,21 @@ for single particle analysis."""
 		pl=[(goodpks2[0][0],0),((goodpks2[0][0]+goodpks2[-1][0])/2.0,0),(goodpks2[-1][0],0)]
 		
 		for i in range(10):
-			pl2=[(0,0.1),(0,0.1),(0,0.1)]
+			pl2=[(0,0),(0,0),(0,0)]
 			for j in goodpks2:
 				if j[0]<(pl[0][0]+pl[1][0])/2.0 : pl2[0]=(pl2[0][0]+j[0],pl2[0][1]+1.0)
 				elif j[0]>(pl[1][0]+pl[2][0])/2.0 : pl2[2]=(pl2[2][0]+j[0],pl2[2][1]+1.0)
 				else : pl2[1]=(pl2[1][0]+j[0],pl2[1][1]+1.0)
+#			pl=[(pl2[0][0]/pl2[0][1],pl2[0][1]),(pl2[1][0]/pl2[1][1],pl2[1][1]),(pl2[2][0]/pl2[2][1],pl2[2][1])]
+			# complexity here is necessary to deal with empty sets in the k-means
+			if pl2[0][1]==0 : pl[0]=(goodpks2[0][0],0)
+			else : pl[0]=(pl2[0][0]/pl2[0][1],pl2[0][1])
+			if pl2[1][1]==0 : pl[1]=((goodpks2[0][0]+goodpks2[-1][0])/2.0,0)
+			else : pl[1]=(pl2[1][0]/pl2[1][1],pl2[1][1])
+			if pl2[2][1]==0 : pl[2]=(goodpks2[-1][0],0)
+			else : (pl2[2][0]/pl2[2][1],pl2[2][1])
+			print pl
 		
-			pl=[(pl2[0][0]/pl2[0][1],pl2[0][1]),(pl2[1][0]/pl2[1][1],pl2[1][1]),(pl2[2][0]/pl2[2][1],pl2[2][1])]
-		
-		print pl
 		
 		
 		if   (options.threshold<1.0) : thr=pl[0][0]*options.threshold+goodpks2[0][0]*(1.0-options.threshold)
