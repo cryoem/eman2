@@ -731,7 +731,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	catch(E2Exception &e ) {
-		e.what();
+		printf("%s\n", e.what());
 	}
 	
     if (average) {
