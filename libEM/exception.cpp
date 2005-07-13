@@ -12,6 +12,6 @@ const char* E2Exception::what() const throw()
 	}
 
 	string msg = string(name()) + " at " + filename + ":" + Util::int2str(linenum);
-	msg += ": " + err1 + "'" + desc + "' caught";
+	msg += ": " + err1 + "'" + desc + "' caught\n";
 	return msg.c_str();
 }
