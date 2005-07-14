@@ -6006,7 +6006,8 @@ float EMData::get_circle_mean()
 			mask = new EMData();
 		}
 		mask->set_size(nx, ny, nz);
-
+		mask->to_one();
+		
 		float radius = (float)(ny / 2 - 2);
 		mask->process("eman1.mask.sharp", Dict("inner_radius", radius - 1,
 									   "outer_radius", radius + 1));
@@ -6019,7 +6020,6 @@ float EMData::get_circle_mean()
 				n++;
 			}
 		}
-		mask->done_data();
 		mask->mult(1.0f / n);
 	}
 
@@ -6039,7 +6039,7 @@ float EMData::dot(EMData * with)
 		throw NullPointerException("Null EMData Image");
 	}
 	DotCmp dot_cmp;
-	float r = dot_cmp.cmp(this, with);
+	float r = -dot_cmp.cmp(this, with);
 	EXITFUNC;
 	return r;
 }

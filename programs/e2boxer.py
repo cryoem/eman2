@@ -106,11 +106,8 @@ for single particle analysis."""
 		refptcls=[]
 		for n,i in enumerate(refptcl):
 			# first a circular mask
-			display(i)
 			i.process("eman1.normalize.circlemean")
-			display(i)
 			i.process("eman1.mask.sharp",{"outer_radius":i.get_xsize()/2-1})
-			display(i)
 						
 			ic=i.copy()
 			refptcls.append(ic)
@@ -259,13 +256,14 @@ for single particle analysis."""
 			b.cmp("optvariance",rr,{"keepzero":1})
 			b*=b.get_attr("ovcmp_m")
 			b+=b.get_attr("ovcmp_b")
-			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
-			rr.write_image("a.hdf",-1)
-			b.write_image("a.hdf",-1)
+#			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
+			score=rr.cmp("phase",b,{})
+#			rr.write_image("a.hdf",-1)
+#			b.write_image("a.hdf",-1)
 			
 			# now record the fixed up location
 #			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
-			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n))
+			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n,score,rr.cmp("dot",b,{"normalize":1})+1.0,rr.cmp("phase",b,{}), rr.cmp("optvariance",b,{"keepzero":1})))
 			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.6f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("ovcmp_m"),goodpks2[-1][0])
 #			ba.write_image("ttt.hdf",-1)
 			n+=1

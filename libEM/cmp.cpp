@@ -87,8 +87,8 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
-	MArray2D d1=image->get_2dview(nx/2,ny/2);
-	MArray2D d2=with ->get_2dview(nx/2,ny/2);
+	MArray2D d1=image->get_2dview(-nx/2,-ny/2);
+	MArray2D d2=with ->get_2dview(-nx/2,-ny/2);
 	
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
@@ -100,7 +100,7 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	int i,x,y;
 	for (y=-ny/2; y<ny/2; y++) {
 		for (x=-nx/2; x<nx/2; x++) {
-			int quad=(nx<0?0:1) + (ny<0?0:2);
+			int quad=(x<0?0:1) + (y<0?0:2);
 			result[quad]+=d1[x][y]*d2[x][y];
 			if (normalize) {
 				sq1[quad]+=d1[x][y]*d1[x][y];
