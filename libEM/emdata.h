@@ -128,6 +128,17 @@ namespace EMAN
 					   const string & reffile="", int refn=-1,
 					   const string & comment="");
 
+		/** shuffle        PRB
+		 *  if the image is complex, square 
+		 *  and the length of a side is odd,
+		 *  it will return the shuffled version.
+		 *  That is with the Fourier Origin in the apparent center.
+		 *  If it has already been shuffled, then shuffle does an unshuffling.
+		 * Changes the EMDATA_SHUFFLE switch
+		 * @return  the shuffled or unshuffled fft
+		 */
+		 EMData *shuffle();
+		   
 		
 		/** Print the image data to a file stream (standard out by default).
 		 * @param out Output stream; cout by default.
@@ -312,6 +323,21 @@ namespace EMAN
 		 * @return The IFT image.
 		 */
 		EMData* do_ift_inplace();
+		
+		/**  Do the Fourier Harmonic Transform  PRB
+		 * Takes a real image, returns the FH
+		 * Sets the EMDATA_FH switch to indicate that it is an FH image
+		 * @exception ImageFormatException If the image is not a square real odd image.
+		 * @return the FH image.
+		 */
+//		EMData* do_FH();
+		
+		/**   Do the Inverse Fourier Harmonic Transform   PRB
+		 * Takes an FH image, returns a square  complex image with odd sides
+		 * @exception ImageFormatException If the image is not the FH of something
+		 * @return a square complex image with odd sides
+		 */
+//		EMData* do_FH2F();
 
 		/** return the amplitudes of the FFT including the left half
 		 *
@@ -319,6 +345,13 @@ namespace EMAN
 		 * @return The current FFT image's amplitude image.
 		 */
 		EMData *get_fft_amplitude();
+
+		/** return the amplitudes of the 2D FFT including the left half
+		 *     PRB
+		 * @exception ImageFormatException If the image is not a complex image.
+		 * @return The current FFT image's amplitude image.
+		 */
+		EMData *get_fft_amplitude2D();
 
 		/** return the phases of the FFT including the left half
 		 *
@@ -1356,6 +1389,16 @@ namespace EMAN
 		 */
 		void set_value_at_fast(int x, int y, float v);
 
+		/** Has this image been shuffled?
+		 * @return Whether this image has been shuffled to put origin in the center.
+		 */
+		bool is_shuffle() const;
+		
+		/** Is this a FH image?
+		 * @return Whether this is a FH image or not.
+		 */
+		bool is_FH() const;
+		
 		/** Is this a complex image?
 		 * @return Whether this is a complex image or not.
 		 */
@@ -1365,6 +1408,18 @@ namespace EMAN
 		 * @return Whether this is image is real (not complex) or not.
 		 */
 		bool is_real() const;
+
+		/** Mark this image as a shuffled image.
+		 * @param is_shuffle If true, a shuffled image. If false, not 
+		 *          a shuffled image.
+		 */
+		void set_shuffle(bool is_shuffle);
+
+		/** Mark this complex image as a FH image.
+		 * @param is_FH If true, a FH image. If false, 
+		 *        not a FH image.
+		 */
+		void set_FH(bool is_FH);
 
 		/** Mark this image as a complex image.
 		 * @param is_complex If true, a complex image. If false, a real
@@ -1565,7 +1620,9 @@ namespace EMAN
 			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
 			EMDATA_FLIP = 1 << 7,	   // is the image flipped
 			EMDATA_PAD = 1 << 8,       // is the image fft padded 
-			EMDATA_FFTODD = 1 << 9	   // is the (real-space) nx odd
+			EMDATA_FFTODD = 1 << 9,	   // is the (real-space) nx odd
+			EMDATA_SHUFFLE = 1 << 10,  // fft been shuffled? (so O is centered) PRB
+			EMDATA_FH = 1 << 11        // is the complex image a FH image
 		};
 
 		void update_stat();
@@ -1716,6 +1773,27 @@ namespace EMAN
 	}
 
 
+	inline bool EMData::is_shuffle() const
+	{  //     PRB
+		if (flags & EMDATA_SHUFFLE) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	inline bool EMData::is_FH() const
+	{  //     PRB
+		if (flags & EMDATA_FH) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+
 	inline bool EMData::is_complex() const
 	{
 		if (flags & EMDATA_COMPLEX) {
@@ -1772,6 +1850,27 @@ namespace EMAN
 	inline void EMData::set_nxc(int nxc)
 	{
 		attr_dict["nxc"] = nxc;
+	}
+
+	inline void EMData::set_shuffle(bool is_shuffle)
+	{ // PRB
+		if (is_shuffle) {
+			printf("entered correct part of set_shuffle \n");
+			flags |=  EMDATA_SHUFFLE;
+		}
+		else {
+			flags &= ~EMDATA_SHUFFLE;
+		}
+	}
+
+	inline void EMData::set_FH(bool is_FH)
+	{ // PRB
+		if (is_FH) {
+			flags |=  EMDATA_FH;
+		}
+		else {
+			flags &= ~EMDATA_FH;
+		}
 	}
 
 	inline void EMData::set_complex(bool is_complex)
