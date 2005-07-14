@@ -254,16 +254,18 @@ for single particle analysis."""
 			rr=refptcl[i[1]].rot_scale_trans2D(-da,1.0,0,0)
 			rr.process("eman1.normalize")
 			b.cmp("optvariance",rr,{"keepzero":1})
-			b*=b.get_attr("ovcmp_m")
-			b+=b.get_attr("ovcmp_b")
+#			b*=b.get_attr("ovcmp_m")
+#			b+=b.get_attr("ovcmp_b")
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
-			score=rr.cmp("phase",b,{})
+#			score=rr.cmp("phase",b,{})
 #			rr.write_image("a.hdf",-1)
 #			b.write_image("a.hdf",-1)
-			
+			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
+			if (score<=0) : continue
+
 			# now record the fixed up location
 #			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
-			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n,score,rr.cmp("dot",b,{"normalize":1})+1.0,rr.cmp("phase",b,{}), rr.cmp("optvariance",b,{"keepzero":1})))
+			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n,score,rr.cmp("dot",b,{"normalize":1})+1.0))
 			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.6f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("ovcmp_m"),goodpks2[-1][0])
 #			ba.write_image("ttt.hdf",-1)
 			n+=1
