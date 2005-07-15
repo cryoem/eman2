@@ -163,7 +163,7 @@ void EMData::write_image(const string & filename, int img_index,
 						 bool use_host_endian) 
 {
 	ENTERFUNC;
-
+ 
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		char *ext = strrchr(filename.c_str(), '.');
 		if (ext) {
@@ -508,21 +508,29 @@ EMData *EMData::get_clip(const Region & area)
 	done_data();
 	result->done_data();
 
-	result->attr_dict["apix_x"] = attr_dict["apix_x"];
-	result->attr_dict["apix_y"] = attr_dict["apix_y"];
-	result->attr_dict["apix_z"] = attr_dict["apix_z"];
+	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") && 
+		attr_dict.has_key("apix_z") )
+	{
+		result->attr_dict["apix_x"] = attr_dict["apix_x"];
+		result->attr_dict["apix_y"] = attr_dict["apix_y"];
+		result->attr_dict["apix_z"] = attr_dict["apix_z"];
 
-	float xorigin = attr_dict["origin_row"];
-	float yorigin = attr_dict["origin_col"];
-	float zorigin = attr_dict["origin_sec"];
-
-	float apix_x = attr_dict["apix_x"];
-	float apix_y = attr_dict["apix_y"];
-	float apix_z = attr_dict["apix_z"];
-
-	result->set_xyz_origin(xorigin + apix_x * area.origin[0],
-						   yorigin + apix_y * area.origin[1],
-						   zorigin + apix_z * area.origin[2]);
+		if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") && 
+		    attr_dict.has_key("origin_sec") )
+		{
+			float xorigin = attr_dict["origin_row"];
+			float yorigin = attr_dict["origin_col"];
+			float zorigin = attr_dict["origin_sec"];
+	
+			float apix_x = attr_dict["apix_x"];
+			float apix_y = attr_dict["apix_y"];
+			float apix_z = attr_dict["apix_z"];
+	
+			result->set_xyz_origin(xorigin + apix_x * area.origin[0],
+							   	   yorigin + apix_y * area.origin[1],
+							       zorigin + apix_z * area.origin[2]);
+		}
+	}
 
 	result->update();
 
@@ -4768,8 +4776,10 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 {
 	ENTERFUNC;
 	
-	static EMData *filt = 0;
-
+	static EMData obj_filt;
+	EMData* filt = &obj_filt;
+	filt->set_complex(true);
+	
 	if (rfp) {
 		return rfp;
 	}
@@ -4777,11 +4787,6 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	if (nx & 1) {
 		LOGERR("even image xsize only");
 		throw ImageFormatException("even image xsize only");
-	}
-	
-	if (!filt) {
-		filt = new EMData();
-		filt->set_complex(true);
 	}
 
 	int cs = (((nx * 7 / 4) & 0xfffff8) - nx) / 2;
@@ -4849,7 +4854,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 			result = rfp;
 		}
 	}
-
+	
 	EXITFUNC;
 	return result;
 }
