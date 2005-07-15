@@ -250,16 +250,16 @@ for single particle analysis."""
 			# now we use phase error as a similarity measure
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+#			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
 			rr=refptcl[i[1]].rot_scale_trans2D(-da,1.0,0,0)
 			rr.process("eman1.normalize")
 			b.cmp("optvariance",rr,{"keepzero":1})
-#			b*=b.get_attr("ovcmp_m")
-#			b+=b.get_attr("ovcmp_b")
+			b*=b.get_attr("ovcmp_m")
+			b+=b.get_attr("ovcmp_b")
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
 #			score=rr.cmp("phase",b,{})
-#			rr.write_image("a.hdf",-1)
-#			b.write_image("a.hdf",-1)
+			rr.write_image("a.hdf",-1)
+			b.write_image("a.hdf",-1)
 			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
 			if (score<=0) : continue
 
