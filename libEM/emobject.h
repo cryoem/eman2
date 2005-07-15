@@ -308,24 +308,24 @@ namespace EMAN
 
 		EMObject & operator[] (const string & key)
 		{
-			if( has_key(key) ) {
+//			if( has_key(key) ) {
 				return dict[key];
-			}
-			else {
-				LOGERR("No such key exist in this Dict");
-				throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
-			}
+//			}
+//			else {
+//				LOGERR("No such key exist in this Dict");
+//				throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
+//			}
 		}
 
 		EMObject operator[] (const string & key) const
 		{
-			if( has_key(key) ) {
+//			if( has_key(key) ) {
 				return dict[key];
-			}
-			else {
-				LOGERR("No such key exist in this Dict");
-				throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
-			}
+//			}
+//			else {
+//				LOGERR("No such key exist in this Dict");
+//				throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");
+//			}
 		}
 
 	private:
