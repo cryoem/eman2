@@ -33,7 +33,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     emcache.cpp
     ctf.cpp
     xydata.cpp
-    filter.cpp
+    processor.cpp
     aligner.cpp
     projector.cpp
     cmp.cpp

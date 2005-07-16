@@ -1,6 +1,6 @@
 Include("emdata.h")
 
-Processor = Class("EMAN::Processor", "filter.h")
+Processor = Class("EMAN::Processor", "processor.h")
 #rename(Processor, "__Processor")
 set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 

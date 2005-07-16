@@ -1,7 +1,7 @@
 Include("transform.h")
 Include("all_imageio.h")
 Include("ctf.h")
-Include("filter.h")
+Include("processor.h")
 Include("aligner.h")
 Include("cmp.h")
 Include("emfft.h")

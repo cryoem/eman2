@@ -53,9 +53,9 @@ libpyCmp2.cpp: cmp.pyste ../libEM/cmp.h ../libEM/log.h ../libEM/xydata.h  ../lib
 	rm -f libpyCmp2.cpp
 	$(PYSTE) --module=libpyCmp2 cmp.pyste
 
-libpyFilter2.cpp: filter.pyste ../libEM/filter.h ../libEM/emobject.h
+libpyFilter2.cpp: processor.pyste ../libEM/processor.h ../libEM/emobject.h
 	rm -f libpyFilter2.cpp
-	$(PYSTE) --module=libpyFilter2 filter.pyste
+	$(PYSTE) --module=libpyFilter2 processor.pyste
 
 libpyFundamentals2.cpp: fundamentals.pyste ../libEM/fundamentals.h ../libEM/emdata.h
 	rm -f libpyFundamentals2.cpp

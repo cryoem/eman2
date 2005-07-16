@@ -6,7 +6,7 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <emobject.h>
-#include <filter.h>
+#include <processor.h>
 
 // Using =======================================================================
 using namespace boost::python;

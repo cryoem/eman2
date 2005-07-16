@@ -6,7 +6,7 @@
 #include "log.h"
 #include "all_imageio.h"
 #include "ctf.h"
-#include "filter.h"
+#include "processor.h"
 #include "aligner.h"
 #include "cmp.h"
 #include "emfft.h"

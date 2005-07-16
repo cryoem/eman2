@@ -10,7 +10,7 @@
 #include <ctf.h>
 #include <emdata.h>
 #include <emfft.h>
-#include <filter.h>
+#include <processor.h>
 #include <transform.h>
 #include <xydata.h>
 

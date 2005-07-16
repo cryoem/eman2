@@ -4,7 +4,7 @@
 #include "emdata.h"
 #include "xydata.h"
 #include <assert.h>
-#include "filter.h"
+#include "processor.h"
 
 using namespace EMAN;
 

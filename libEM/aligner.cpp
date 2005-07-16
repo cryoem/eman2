@@ -4,7 +4,7 @@
 
 #include "aligner.h"
 #include "emdata.h"
-#include "filter.h"
+#include "processor.h"
 #include <gsl/gsl_multimin.h>
 
 using namespace EMAN;
