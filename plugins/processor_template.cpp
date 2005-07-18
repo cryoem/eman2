@@ -1,4 +1,4 @@
-#include "filter_template.h"
+#include "processor_template.h"
 
 using namespace EMAN;
 

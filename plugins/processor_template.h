@@ -1,5 +1,5 @@
-#ifndef eman_filter_template_h__
-#define eman_filter_template_h__ 1
+#ifndef eman_processor_template_h__
+#define eman_processor_template_h__ 1
 
 #include "processor.h"
 
@@ -67,4 +67,4 @@ namespace EMAN
 }
 
 
-#endif
+#endif	//eman_processor_template_h__

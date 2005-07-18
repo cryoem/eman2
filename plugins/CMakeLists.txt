@@ -3,7 +3,7 @@ SET(LIB_EXT_SOURCE
     aligner_template.cpp
     averager_template.cpp
     cmp_template.cpp
-    filter_template.cpp
+    processor_template.cpp
     projector_template.cpp
     reconstructor_template.cpp
    )
