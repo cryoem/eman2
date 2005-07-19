@@ -2703,7 +2703,7 @@ void EMData::div(const EMData & em)
 			{
 				comp c_src( src_data[i], src_data[i+1] );
 				comp c_rdat( rdata[i], rdata[i+1] );
-				comp c_result = c_src / c_rdat;
+				comp c_result = c_rdat / c_src;
 				rdata[i] = c_result.real();
 				rdata[i+1] = c_result.imag();
 			}
