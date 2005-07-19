@@ -727,13 +727,15 @@ void EMUtil::dump_dict(const Dict & dict)
 
 	for (unsigned int i = 0; i < keys.size(); i++) {
 		EMObject obj = values[i];
-		string val = obj.to_str();
-
-		if (keys[i] == "datatype") {
-			val = get_datatype_string((EMDataType) (int) obj);
+		if( !obj.is_null() ) {
+			string val = obj.to_str();
+	
+			if (keys[i] == "datatype") {
+				val = get_datatype_string((EMDataType) (int) obj);
+			}
+	
+			fprintf(stdout, "%25s\t%s\n", keys[i].c_str(), val.c_str());
 		}
-
-		fprintf(stdout, "%25s\t%s\n", keys[i].c_str(), val.c_str());
 	}
 }
 
