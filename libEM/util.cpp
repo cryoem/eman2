@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <boost/algorithm/string.hpp>
 #include <gsl/gsl_sf_bessel.h>
+#include <algorithm>
 
 #ifndef WIN32
 	#include <unistd.h>
@@ -818,38 +819,47 @@ float Util::quadri(float x, float y, int nxdata, int nydata,
 	return result;
 }
 
+void Util::KaiserBessel::build_table()  {
+	int lnb = -ln/2;
+	int lne = -lnb;
+	int n = 2*m;
+	v = float(ln)/(2.0*float(n));
+	rrr = float(m/2);
+	// Adjust "v" to ensure that it is not zero at the window border
+	float vadjust = 1.1*v;
+	int ltab = int(float(ltabi)/1.25 + 0.5);
+	if (ltabi > ltab) fill(tabi+ltab+1, tabi+ltabi+1, 0.f);
+	float fac = twopi*alpha*rrr*vadjust;
+	float b0 = sqrt(fac)*gsl_sf_bessel_I0(fac);
+	float fltb = float(ltab)/float(lne);
+	for (int i = 0; i <=ltab; i++) {
+		float s = float(i)/(fltb*n);
+		if (s < vadjust) {
+			float xx = sqrt(1.0f - pow(s/vadjust, 2));
+			tabi[i] = sqrt(fac*xx)*gsl_sf_bessel_I0(fac*xx)/b0;
+		} else {
+			tabi[i] = 0.0f;
+		}
+	}
+}
+
 float Util::KaiserBessel::kb1d(float x) {
 	float fac = twopi*alpha*rrr*v;
 	float kb_0 = sinh(fac)/(fac);
 	float xscale = x/rrr;
 	float kb_x = 0;
 	if (0.0 == xscale) {
-		kb_x = kb_0;
+		kb_x = 1.0f;
 	} else if (xscale < alpha) {
-		float xx = sqrt(1.0 - pow((xscale/alpha), 2));
-		kb_x = sinh(fac*xx)/(fac*xx);
+		float xx = sqrt(1.0f - pow((xscale/alpha), 2));
+		kb_x = (sinh(fac*xx)/(fac*xx))/kb_0;
 	} else if (xscale == alpha) {
-		kb_x = 1.0;
+		kb_x = 1.0f/kb_0;
 	} else {
 		float xx = sqrt(pow(xscale/alpha, 2) - 1.0f);
-		kb_x = sin(fac*xx)/(fac*xx);
+		kb_x = (sin(fac*xx)/(fac*xx))/kb_0;
 	}
 	return kb_x;
 }
-
-float Util::KaiserBessel::kbtf1d(float k) {
-	float fac = twopi*alpha*rrr*v;
-	float kk = sqrt(1.0 - pow(k/v, 2));
-	float result = gsl_sf_bessel_I0(fac*kk)/(2*v);
-	return result;
-}
-
-#if 0 // not done yet
-	float kaiser_bessel_tf(float k, float kmax) 
-{
-	return 0;
-
-}
-#endif // 0 - not done yet
 
 /* vim: set ts=4 noet: */

@@ -159,7 +159,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     );
 
     class_< EMAN::Util::KaiserBessel >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
-        .def(init< optional< float, float, float > >())
+        .def(init< int >())
         .def("kb1d", &EMAN::Util::KaiserBessel::kb1d)
         .def("kbtf1d", &EMAN::Util::KaiserBessel::kbtf1d)
     ;

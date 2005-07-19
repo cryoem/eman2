@@ -4,28 +4,28 @@ Processor = Class("EMAN::Processor", "processor.h")
 #rename(Processor, "__Processor")
 set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
 
-#RealPixelProcessor = Class("EMAN::RealPixelProcessor", "filter.h")
+#RealPixelProcessor = Class("EMAN::RealPixelProcessor", "processor.h")
 #rename(RealPixelProcessor, "__RealPixelProcessor")
 
-#BoxStatProcessor = Class("EMAN::BoxStatProcessor", "filter.h")
+#BoxStatProcessor = Class("EMAN::BoxStatProcessor", "processor.h")
 #rename(BoxStatProcessor, "__BoxStatProcessor")
 
-#ComplexPixelProcessor = Class("EMAN::ComplexPixelProcessor", "filter.h")
+#ComplexPixelProcessor = Class("EMAN::ComplexPixelProcessor", "processor.h")
 #rename(ComplexPixelProcessor, "__ComplexPixelProcessor")
 
-#CoordinateProcessor = Class("EMAN::CoordinateProcessor", "filter.h")
+#CoordinateProcessor = Class("EMAN::CoordinateProcessor", "processor.h")
 #rename(CoordinateProcessor, "__CoordinateProcessor")
 
-#FourierProcessor = Class("EMAN::FourierProcessor", "filter.h")
+#FourierProcessor = Class("EMAN::FourierProcessor", "processor.h")
 #rename(FourierProcessor, "__FourierProcessor")
 
-#NormalizeProcessor = Class("EMAN::NormalizeProcessor", "filter.h")
+#NormalizeProcessor = Class("EMAN::NormalizeProcessor", "processor.h")
 #rename(NormalizeProcessor, "__NormalizeProcessor")
 
 
-Function("EMAN::dump_processors", "filter.h")
-Function("EMAN::multi_processors", "filter.h")
-Function("EMAN::group_processors", "filter.h")
+Function("EMAN::dump_processors", "processor.h")
+Function("EMAN::multi_processors", "processor.h")
+Function("EMAN::group_processors", "processor.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 

@@ -6602,10 +6602,7 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	return ret;
 }
 
-void EMData::divkb2() {
-	const float alpha = 1.;
-	const float rrr = 1.;
-	const float v = 1.;
+void EMData::divkb2(Util::KaiserBessel& kb) {
 	// sanity checks
 	if (1 != nz)
 		throw ImageDimensionException("Must have a 2D image");
@@ -6613,39 +6610,12 @@ void EMData::divkb2() {
 		throw ImageDimensionException("Must have a square image");
 	MArray2D x = get_2dview(1,1);
 	int icent = int(nx/2) + 1;
-	float wkb0 = sinh(twopi*alpha*rrr*v)/(twopi*alpha*rrr*v);
 	for (int j = 1; j <= nx; j++) {
-		float ttt = float(abs(j - icent)) / rrr;
-		float wkbj;
-		if (0.0 == ttt) {
-			wkbj = 1.0;
-		} else if (ttt < alpha) {
-			float xx = sqrt(1.0 - pow((ttt/alpha), 2));
-			wkbj = sinh(twopi*alpha*rrr*v*xx)
-				   / (twopi*alpha*rrr*v*xx)/wkb0;
-		} else if (ttt == alpha) {
-			wkbj = 1.0/wkb0;
-		} else {
-			float xx = sqrt(pow(ttt/alpha, 2) - 1.0f);
-			wkbj = sin(twopi*alpha*rrr*v*xx)
-				 / (twopi*alpha*rrr*v*xx)/wkb0;
-		}
+		float ttt = float(abs(j - icent));
+		float wkbj = kb.kb1d(ttt);
 		for (int i = 1; i <=nx; i++) {
-			ttt = float(abs(i-icent))/rrr;
-			float wkbi;
-			if (0.0f == ttt) {
-				wkbi = 1.0;
-			} else if (ttt < alpha) {
-				float xx = sqrt(1.0 - pow(ttt/alpha, 2));
-				wkbi = sinh(twopi*alpha*rrr*v*xx)
-					 / (twopi*alpha*rrr*v*xx)/wkb0;
-			} else if (ttt == alpha) {
-				wkbi = 1.0f/wkb0;
-			} else {
-				float xx = sqrt(pow(ttt/alpha,2) - 1.0f);
-				wkbi = sin(twopi*alpha*rrr*v*xx)
-					 / (twopi*alpha*rrr*v*xx)/wkb0;
-			}
+			ttt = float(abs(i-icent));
+			float wkbi = kb.kb1d(ttt);
 			x[i][j] /= fabs(wkbi*wkbj);
 		}
 	}

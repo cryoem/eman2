@@ -855,9 +855,12 @@ namespace EMAN
 		static float quadri(float x, float y, int nxdata, 
 				int nydata, EMData* image, int zslice = 1);
 
-		/** Kaiser-Bessel window function class.
+		/** 1-D Kaiser-Bessel window function class.
 		 *  (It's a class so that the windowing parameters may be
 		 *   instantiated and held in the instance object.)
+		 *
+		 *  The Fourier version is tabulated and interpolated upon
+		 *  demand.  (Max error < 1.e-7)
 		 *
 		 *  @see P. A. Penczek, R. Renka, and H. Schomberg,
 		 *      J. Opt. Soc. Am. _21_, 449 (2004)
@@ -865,14 +868,25 @@ namespace EMAN
 		 */
 		class KaiserBessel 
 		{
-			float alpha, rrr, v;
+			static const int ltabi = 5999; /** fixed table size */
+			static const int ln = 6; /** fixed interpolation size */
+			float alpha, v, rrr;
+			int m; /** window extent (nx) in real space */
+			/** Build a table of Kaiser-Bessel values */
+			void build_table();
+			float tabi[ltabi+1]; // tabi[0:ltabi]
+			float fltb; /** table scaling */
 			public:
-				KaiserBessel(float alpha_=1., float rrr_=1., float v_=1.)
-					: alpha(alpha_), rrr(rrr_), v(v_) {}
+				KaiserBessel(int m_) : alpha(1.25f), m(m_) { 
+					build_table(); 
+				}
 				/** 1-D Real-space Kaiser-Bessel window function */
 				float kb1d(float x);
 				/** 1-D Fourier-space Kaiser-Bessel window function */
-				float kbtf1d(float k);
+				float kbtf1d(float nu) {
+					float pos = fabs(nu)*fltb;
+					return tabi[int(pos + 0.5f)];
+				}
 		};
 	};
 }
