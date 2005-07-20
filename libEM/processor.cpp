@@ -878,7 +878,7 @@ for (x=1; x<nx/2; x++) {
 		float y2;
 		if (y<ny/2) y2=y+ny/2;
 		else y2=y-ny/2;
-		image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2));
+		image->set_value_at(x,y,ff->get_value_at(nx-x*2,static_cast<int>(ny-y2)));
 	}
 }
 
@@ -887,7 +887,7 @@ for (x=nx/2; x<nx; x++) {
 		float y2;
 		if (y<ny/2) y2=y+ny/2;
 		else y2=y-ny/2;
-		image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2));
+		image->set_value_at(x,y,ff->get_value_at(x*2-nx,static_cast<int>(y2)));
 	}
 }
 
