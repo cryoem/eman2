@@ -4,6 +4,7 @@
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
+#include "exception.h"
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -876,9 +877,11 @@ namespace EMAN
 			void build_table();
 			float tabi[ltabi+1]; // tabi[0:ltabi]
 			float fltb; /** table scaling */
+			float tfmaxnu; /** Transform (I_0) max input value */
 			public:
 				KaiserBessel(int m_) : alpha(1.25f), m(m_) { 
 					build_table(); 
+					tfmaxnu = ltabi/fltb;
 				}
 				/** 1-D Real-space Kaiser-Bessel window function */
 				float kb1d(float x);
@@ -886,6 +889,12 @@ namespace EMAN
 				float kbtf1d(float nu) {
 					float pos = fabs(nu)*fltb;
 					return tabi[int(pos + 0.5f)];
+				}
+				float get_tfmaxinput() { return tfmaxnu; }
+				float get_table_entry(int i) { 
+					if (i <= ltabi ) 
+						return tabi[i];
+					throw InvalidValueException(i, "Value out of range");
 				}
 				void dump_table() {
 					for (int i = 0; i < ltabi; i++)

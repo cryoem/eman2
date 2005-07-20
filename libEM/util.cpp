@@ -831,7 +831,7 @@ void Util::KaiserBessel::build_table()  {
 	if (ltabi > ltab) fill(tabi+ltab+1, tabi+ltabi+1, 0.f);
 	float fac = twopi*alpha*rrr*vadjust;
 	float b0 = sqrt(fac)*gsl_sf_bessel_I0(fac);
-	float fltb = float(ltab)/float(lne);
+	fltb = float(ltab)/float(lne);
 	for (int i = 0; i <=ltab; i++) {
 		float s = float(i)/(fltb*n);
 		if (s < vadjust) {
