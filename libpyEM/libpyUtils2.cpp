@@ -162,6 +162,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def(init< int >())
         .def("kb1d", &EMAN::Util::KaiserBessel::kb1d)
         .def("kbtf1d", &EMAN::Util::KaiserBessel::kbtf1d)
+        .def("dump_table", &EMAN::Util::KaiserBessel::dump_table)
     ;
 
     delete EMAN_Util_scope;

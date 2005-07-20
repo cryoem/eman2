@@ -887,7 +887,22 @@ namespace EMAN
 					float pos = fabs(nu)*fltb;
 					return tabi[int(pos + 0.5f)];
 				}
+				void dump_table() {
+					for (int i = 0; i < ltabi; i++)
+						std::cout << tabi[i] << std::endl;
+				}
 		};
+
+		/** Sign function
+		 *
+		 *	@param[in] val value who's sign is to be checked
+		 *
+		 *	@return +1 if the value is positive, -1 if the value is negative.
+		 */
+		template<class T> static inline T sgn(T& val) {
+			return (val > 0) ? T(+1) : T(-1);
+		}
+
 	};
 }
 
