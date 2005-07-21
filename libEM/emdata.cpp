@@ -6602,21 +6602,46 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	return ret;
 }
 
-void EMData::divkb2(Util::KaiserBessel& kb) {
+void EMData::divkb2(const Util::KaiserBessel& kb) {
 	// sanity checks
 	if (1 != nz)
 		throw ImageDimensionException("Must have a 2D image");
-	if (nx != ny)
+	int nxreal = nx;
+	if (is_complex()) {
+		if (is_fftodd()) {
+			nxreal -= 1;
+		} else {
+			nxreal -= 2;
+		}
+	}
+	if (nxreal != ny)
 		throw ImageDimensionException("Must have a square image");
-	MArray2D x = get_2dview(1,1);
-	int icent = int(nx/2) + 1;
-	for (int j = 1; j <= nx; j++) {
-		float ttt = float(abs(j - icent));
-		float wkbj = kb.kb1d(ttt);
-		for (int i = 1; i <=nx; i++) {
-			ttt = float(abs(i-icent));
-			float wkbi = kb.kb1d(ttt);
-			x[i][j] /= fabs(wkbi*wkbj);
+	if (is_complex()) {
+		// Division in Fourier space
+		int nxc = nx/2;
+		int nyc = ny;
+		MCArray2D img = get_2dcview(0,0);
+		for (int iy = 0; iy < nyc; iy++) {
+			float nuy = (iy < nyc/2) ? float(iy)/float(ny) 
+				                     : float(nyc-iy)/float(ny);
+			float wkby = kb.kb1d(nuy);
+			for (int ix = 0; ix < nxc; ix++) {
+				float nux = float(ix)/float(nxreal);
+				float wkbx = kb.kb1d(nux);
+				img[ix][iy] /= fabs(wkbx*wkby);
+			}
+		}
+	} else {
+		// real space division
+		int nxhalf = nx/2;
+		int nyhalf = ny/2;
+		MArray2D img = get_2dview(-nxhalf,-nyhalf);
+		for (int iy = -nyhalf; iy < nyhalf + ny%2; iy++) {
+			float wkby = kb.kb1d(iy);
+			for (int ix = -nxhalf; ix < nxhalf + nx%2; ix++) {
+				float wkbx = kb.kb1d(ix);
+				img[ix][iy] /= fabs(wkbx*wkby);
+			}
 		}
 	}
 }

@@ -1574,7 +1574,7 @@ namespace EMAN
 		/** Divide image by Kaiser-Bessel weights
 		 *  Modifies the current object.
 		 */
-		void divkb2(Util::KaiserBessel& kb);
+		void divkb2(const Util::KaiserBessel& kb);
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.

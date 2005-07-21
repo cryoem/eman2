@@ -876,27 +876,33 @@ namespace EMAN
 			/** Build a table of Kaiser-Bessel values */
 			void build_table();
 			float tabi[ltabi+1]; // tabi[0:ltabi]
+			int ltab; // reduced table range
 			float fltb; /** table scaling */
 			float tfmaxnu; /** Transform (I_0) max input value */
 			public:
 				KaiserBessel(int m_) : alpha(1.25f), m(m_) { 
+					v = float(ln)/(2*float(2*m));
+					rrr = float(m/2);
+					ltab = int(float(ltabi)/1.25f + 0.5f);
+					fltb = float(ltab)/float(ln/2);
 					build_table(); 
 					tfmaxnu = ltabi/fltb;
 				}
 				/** 1-D Real-space Kaiser-Bessel window function */
-				float kb1d(float x);
+				float kb1d(float x) const;
 				/** 1-D Fourier-space Kaiser-Bessel window function */
-				float kbtf1d(float nu) {
+				float kbtf1d(float nu) const {
 					float pos = fabs(nu)*fltb;
 					return tabi[int(pos + 0.5f)];
 				}
-				float get_tfmaxinput() { return tfmaxnu; }
-				float get_table_entry(int i) { 
+				float get_tfmaxinput() const { return tfmaxnu; }
+				float get_window_size() const { return ln+1; }
+				float get_table_entry(int i) const { 
 					if (i <= ltabi ) 
 						return tabi[i];
 					throw InvalidValueException(i, "Value out of range");
 				}
-				void dump_table() {
+				void dump_table() const {
 					for (int i = 0; i < ltabi; i++)
 						std::cout << tabi[i] << std::endl;
 				}

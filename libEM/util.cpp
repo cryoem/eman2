@@ -820,18 +820,12 @@ float Util::quadri(float x, float y, int nxdata, int nydata,
 }
 
 void Util::KaiserBessel::build_table()  {
-	int lnb = -ln/2;
-	int lne = -lnb;
 	int n = 2*m;
-	v = float(ln)/(2.0*float(n));
-	rrr = float(m/2);
 	// Adjust "v" to ensure that it is not zero at the window border
 	float vadjust = 1.1*v;
-	int ltab = int(float(ltabi)/1.25 + 0.5);
 	if (ltabi > ltab) fill(tabi+ltab+1, tabi+ltabi+1, 0.f);
 	float fac = twopi*alpha*rrr*vadjust;
 	float b0 = sqrt(fac)*gsl_sf_bessel_I0(fac);
-	fltb = float(ltab)/float(lne);
 	for (int i = 0; i <=ltab; i++) {
 		float s = float(i)/(fltb*n);
 		if (s < vadjust) {
@@ -843,7 +837,7 @@ void Util::KaiserBessel::build_table()  {
 	}
 }
 
-float Util::KaiserBessel::kb1d(float x) {
+float Util::KaiserBessel::kb1d(float x) const {
 	float fac = twopi*alpha*rrr*v;
 	float kb_0 = sinh(fac)/(fac);
 	float xscale = x/rrr;

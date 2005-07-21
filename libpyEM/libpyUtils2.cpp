@@ -163,6 +163,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("kb1d", &EMAN::Util::KaiserBessel::kb1d)
         .def("kbtf1d", &EMAN::Util::KaiserBessel::kbtf1d)
         .def("get_tfmaxinput", &EMAN::Util::KaiserBessel::get_tfmaxinput)
+        .def("get_window_size", &EMAN::Util::KaiserBessel::get_window_size)
         .def("get_table_entry", &EMAN::Util::KaiserBessel::get_table_entry)
         .def("dump_table", &EMAN::Util::KaiserBessel::dump_table)
     ;
