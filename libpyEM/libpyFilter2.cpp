@@ -110,10 +110,12 @@ BOOST_PYTHON_MODULE(libpyFilter2)
         .value("BUTTERWORTH_HOMOMORPHIC", EMAN::Processor::BUTTERWORTH_HOMOMORPHIC)
         .value("TOP_HOMOMORPHIC", EMAN::Processor::TOP_HOMOMORPHIC)
         .value("TANH_HOMOMORPHIC", EMAN::Processor::TANH_HOMOMORPHIC)
+        .value("KAISER_I0_INVERSE", EMAN::Processor::KAISER_I0_INVERSE)
         .value("TOP_HAT_HIGH_PASS", EMAN::Processor::TOP_HAT_HIGH_PASS)
         .value("TANH_HIGH_PASS", EMAN::Processor::TANH_HIGH_PASS)
         .value("RADIAL_TABLE", EMAN::Processor::RADIAL_TABLE)
         .value("BUTTERWORTH_HIGH_PASS", EMAN::Processor::BUTTERWORTH_HIGH_PASS)
+        .value("KAISER_SINH_INVERSE", EMAN::Processor::KAISER_SINH_INVERSE)
         .value("TANH_BAND_PASS", EMAN::Processor::TANH_BAND_PASS)
     ;
 

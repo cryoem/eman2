@@ -5303,6 +5303,42 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 	return dv;
 }
 
+EMData* EMData::rotavg()
+{
+	ENTERFUNC;
+	
+	if (nz > 1) {
+		LOGERR("2D images only.");
+		throw ImageDimensionException("2D images only");
+	}
+	MArray2D arr = get_2dview(-nx/2, -ny/2);
+	int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
+	EMData* ret = new EMData();
+	ret->set_size(rmax+1, 1, 1);
+	ret->to_zero();
+	float* retarr = ret->get_data();
+	vector<float> count(rmax+1);
+	for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+		if (abs(j) > rmax) continue;
+		for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+			float r = sqrt(float(j*j) + float(i*i));
+			int ir = int(r);
+			if (ir >= rmax) continue;
+			float frac = r - float(ir);
+			retarr[ir] += arr[i][j]*(1.0f - frac);
+			retarr[ir+1] += arr[i][j]*frac;
+			count[ir] += 1.0f - frac;
+			count[ir+1] += frac;
+		}
+	}
+	for (int ir = 0; ir <= rmax; ir++) 
+		retarr[ir] /= std::max(count[ir],1.0f);
+
+	ret->update();
+	ret->done_data();
+	EXITFUNC;
+	return ret;
+}
 
 float EMData::calc_dist(EMData * second_img, int y_index) const
 {

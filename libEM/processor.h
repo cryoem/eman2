@@ -152,6 +152,8 @@ The basic design of EMAN Processors: <br>\
 			BUTTERWORTH_LOW_PASS,
 			BUTTERWORTH_HIGH_PASS,
 			BUTTERWORTH_HOMOMORPHIC,
+			KAISER_I0_INVERSE,
+			KAISER_SINH_INVERSE,
 			TANH_LOW_PASS,
 			TANH_HIGH_PASS,
 			TANH_HOMOMORPHIC,
@@ -500,6 +502,40 @@ The basic design of EMAN Processors: <br>\
 			TypeDict d;
 			d.put("Sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
+		}
+	};
+
+	class InverseKaiserI0Processor:public NewFourierProcessor
+	{
+	  public:
+		string get_name() const
+		{ return "filter.kaiserI0inverse"; }
+		static Processor *NEW()
+		{ return new InverseKaiserI0Processor(); }
+		string get_desc() const
+		{
+			return "Divide by a Kaiser-Bessel I0 func in Fourier space.";
+		}
+		void process(EMData* image) {
+			params["filter_type"] = KAISER_I0_INVERSE;
+			EMFourierFilterInPlace(image, params); 
+		}
+	};
+
+	class InverseKaiserSinhProcessor:public NewFourierProcessor
+	{
+	  public:
+		string get_name() const
+		{ return "filter.kaisersinhinverse"; }
+		static Processor *NEW()
+		{ return new InverseKaiserSinhProcessor(); }
+		string get_desc() const
+		{
+			return "Divide by a Kaiser-Bessel Sinh func in Fourier space.";
+		}
+		void process(EMData* image) {
+			params["filter_type"] = KAISER_SINH_INVERSE;
+			EMFourierFilterInPlace(image, params); 
 		}
 	};
 

@@ -146,6 +146,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&NewBandpassTanhProcessor::NEW);
 	force_add(&NewHomomorphicTanhProcessor::NEW);
 	force_add(&NewRadialTableProcessor::NEW);
+	force_add(&InverseKaiserI0Processor::NEW);
+	force_add(&InverseKaiserSinhProcessor::NEW);
 
 }
 

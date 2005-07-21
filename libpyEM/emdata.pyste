@@ -23,6 +23,7 @@ set_policy(EMData.get_fft_amplitude, return_value_policy(manage_new_object))
 set_policy(EMData.get_fft_amplitude2D, return_value_policy(manage_new_object))
 set_policy(EMData.get_fft_phase, return_value_policy(manage_new_object))
 set_policy(EMData.shuffle, return_value_policy(manage_new_object))
+set_policy(EMData.rotavg, return_value_policy(manage_new_object))
 
 set_policy(EMData.align, return_value_policy(manage_new_object))
 set_policy(EMData.project, return_value_policy(manage_new_object))

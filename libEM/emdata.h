@@ -695,6 +695,12 @@ namespace EMAN
 		 */
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
+		/** Create a (1-D) rotationally averaged image.
+		 * 
+		 * @return 1-D rotationally-averaged image
+		 */					
+		EMData* rotavg();
+
 		/** add a number to each pixel value of the image. Image may be real or complex.
 		 * @param f The number added to 'this' image.
 		 * @param keepzero If set will not modify pixels that are exactly zero
