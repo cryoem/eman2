@@ -175,6 +175,7 @@ void debug_align()
 	try {
 		printf("Dic of b is: \n");
 		Dict dic2 = b->get_attr_dict();
+		cout << "prepare to dump" << endl;
 		EMUtil::dump_dict(dic2);
 		
 		printf("Dic of a is: \n");
@@ -346,6 +347,144 @@ void debug_get_clip()
 	cout << "end debug_get_clip()" << endl;
 }
 
+void debug_write_image()
+{
+	EMData *a = new EMData();
+	a->set_size(128, 128, 1);
+	a->process("testimage.noise.uniform.rand");
+	a->write_image("rand3.mrc");
+	Dict dic = a->get_attr_dict();
+	
+	try {
+		printf("Dic of a is: \n");
+		EMUtil::dump_dict(dic);
+	}
+	catch(_NotExistingObjectException& e) {
+		cout << "catch an _NotExistingObjectException in dump_dict()..." << endl;
+		cout << e.what();
+	}
+	catch(E2Exception& e) {
+		cout << "catch an E2Exception in dump_dict()..." << endl;
+		cout << e.what();
+	}
+	catch(...) {
+		cout << "catch unknown exception in dump_dict()..." << endl;
+	}
+}
+
+void debeg_dict()
+{
+	cout << "Enter debug_dict()..." << endl;
+	
+	Dict dict;
+	cout << "try LHS []..." << endl;
+	dict["first"] = "one";
+	
+	cout << "try RHS []..." << endl;
+	float tt = (float)(EMObject)dict["second"];
+	
+	cout << "Undifined dict['second'] = " << tt << endl; 
+	
+	const Dict dict2("first", "one", "second", 1.1f);
+	float ttt = dict2["second"];
+	dict2["forth"] = 4;
+	cout << "const dict2['second'] = " << ttt << endl;
+	
+	float tttt = dict2["third"];
+	cout << "undifined const dict2['third'] = " << tttt << endl;
+	
+	cout << "Leave debug_dict()..." << endl;
+}
+
+void debug_complex_image_arithmetic()
+{
+	cout << "start to test debug_complex_image_arithmetic()..." << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(75,75,1);
+	e->process("testimage.circlesphere", Dict("radius",20,"fill","yes"));
+	e->write_image("origin.mrc");
+	EMData * eft = e->do_fft();
+	
+	float * data1 = eft->get_data();
+	cout << "------------------------------------------------------------------" << endl;
+	cout << "eft's data is: " << endl;
+	for(int i=0; i<10; i++)
+	{
+ 		cout << data1[i] << "\t";
+	}
+	cout << endl << "------------------------------------------------------------------" << endl;
+	
+	EMData * delta = new EMData();
+	delta->set_size(75,75,1);
+	delta->to_zero();
+	delta->set_value_at(0,0,1.0);
+	EMData * deltaft = delta->do_fft();
+	
+	float * data = deltaft->get_data();
+	cout << "------------------------------------------------------------------" << endl;
+	cout << "deltaft's data is: " << endl;
+	for(int i=0; i<10; i++)
+	{
+ 		cout << data[i] << "\t";
+	}
+	cout << endl << "------------------------------------------------------------------" << endl;
+	
+	EMData * divft = (*eft) / (*deltaft);
+	
+	float * data2 = divft->get_data();
+	cout << "------------------------------------------------------------------" << endl;
+	cout << "div's data is: " << endl;
+	for(int i=0; i<10; i++)
+	{
+ 		cout << data2[i] << "\t";
+	}
+	cout << endl << "------------------------------------------------------------------" << endl;
+	
+	EMData * div = divft->do_ift();
+	div->write_image("div.mrc");
+	
+	if( e != 0 )
+	{
+		cout << "Delete e ..." << endl;
+		delete e;
+		e = 0;
+	}
+	if( eft != 0 )
+	{
+		cout << "Delete eft ..." << endl;
+		delete eft;
+		eft = 0;
+	}
+	if( delta != 0 )
+	{
+		cout << "Delete delta ..." << endl;
+		delete delta;
+		delta = 0;
+	}
+	if( deltaft != 0 )
+	{
+		cout << "Delete deltaft ..." << endl;
+		delete deltaft;
+		deltaft = 0;
+	}
+	
+	cout << "Leave test debug_complex_image_arithmetic()..." << endl;
+}
+
+void debug_big_file()
+{
+	cout << "Start debug_big_file()..." << endl << endl;
+	
+	const string filename = "big_file.mrc";
+	const Region* reg = new Region(0,0,0,10,10,10);
+	
+	EMData * e = new EMData();
+	e->read_image(filename, 0, true, reg);
+	
+	cout << "End debug_big_file()..." << endl << endl;
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -357,16 +496,19 @@ int main()
 		//rt2();
 		//t2();
 		//compare_image();
-		debug_align();
+		//debug_align();
 		//debug_log();
 		//debug_set_size();
 		//debug_footprint();
 		//debug_get_clip();
+		//debug_write_image();
+		//debeg_dict();
+		//debug_complex_image_arithmetic();
+		debug_big_file();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
 	}
-	
 	
 	return 0;
 }
