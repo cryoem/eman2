@@ -68,7 +68,6 @@ namespace EMAN
 		 */
 		static bool is_file_exist(const string & filename);
 
-		
 		/** Vertically flip the data of a 2D real image.
 		 * @param data Data array of the 2D real image.
 		 * @param nx Image Width.
@@ -290,6 +289,27 @@ namespace EMAN
 		static void save_data(float x0, float dx, float *y_array, 
 							  size_t array_size, const string & filename);
 
+		/** does a sort as in Matlab. Carries along the Permutation
+		 * matrix
+		 * @param[in] The array [left .. right] is sorted
+		 * @param[in] The array [leftPerm rightPerm] is shuffled due to the sorting
+		 * @param[out] Both arrays  are reshuffled.
+		 */
+		static void sort_mat(float *left, float *right, int *leftPerm, int
+ 				*rightPerm);
+
+
+		/** list the sorted lengths of the  integer lattice 
+		 * sites of a square sided image of  size Size. PRB
+		 * @param[in] Size The length of the image 
+		 * @param[out] PermMatTr  The matrix telling the ordering of the lattice 
+		 *                        sites wrt the array
+		 * @param[out] weightofkvalsSorted the number of sites at that distance
+		 */
+		 static void Radialize(int *PermMatTr,  float * kValsSorted,
+		            float *weightofkvalsSorted, int Size);
+				     
+		
 		/** Get a float random number between low and high.
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.
@@ -335,7 +355,7 @@ namespace EMAN
 		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.
 		 */
-	    static inline int round(double x)
+	   	static inline int round(double x)
 		{
 			if (x < 0) {
 				return (int) (x - 0.5);

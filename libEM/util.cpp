@@ -489,6 +489,119 @@ void Util::save_data(float x0, float dx, float *y_array,
 	fclose(out);
 }
 
+
+void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
+// Adapted by PRB from a macro definition posted on SourceForge by evildave
+{
+	float *pivot ; int *pivotPerm;
+
+	{
+		float *pLeft  =   left; int *pLeftPerm  =  leftPerm;
+		float *pRight =  right; int *pRightPerm = rightPerm;
+		float scratch =  *left; int scratchPerm = *leftPerm;
+
+		while (pLeft < pRight) {
+			while ((*pRight > scratch) && (pLeft < pRight)) {
+				pRight--; pRightPerm--;
+			}
+			if (pLeft != pRight) {
+				*pLeft = *pRight; *pLeftPerm = *pRightPerm;
+				pLeft++; pLeftPerm++;
+			}
+			while ((*pLeft < scratch) && (pLeft < pRight)) {
+				pLeft++; pLeftPerm++;
+			}
+			if (pLeft != pRight) {
+				*pRight = *pLeft; *pRightPerm = *pLeftPerm;
+				pRight--; pRightPerm--;
+			}
+		}
+		*pLeft = scratch; *pLeftPerm = scratchPerm;
+		pivot = pLeft; pivotPerm= pLeftPerm;
+	}
+	if (left < pivot) {
+		sort_mat(left, pivot - 1,leftPerm,pivotPerm-1);
+	}
+	if (right > pivot) {
+		sort_mat(pivot + 1, right,pivotPerm+1,rightPerm);
+	}
+}
+
+
+
+void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
+               float *weightofkValsSorted, int Size)
+{
+	int iMax = (int) floor( (Size-1.0)/2 +.01);
+	int CountMax = (iMax+2)*(iMax+1)/2;
+	int Count=-1;
+	float *kVals     = new float[CountMax];
+	float *weightMat = new float[CountMax];
+	int *PermMat     = new   int[CountMax];
+	
+	printf("Aa \n");
+	fflush(stdout);
+	for (int jkx=0; jkx< iMax+1; jkx++) {
+		for (int jky=0; jky< jkx+1; jky++) {
+			Count++;
+			kVals[Count] = sqrtf((float) (jkx*jkx +jky*jky));
+			weightMat[Count]=  1.0;
+			if (jkx!=0)  { weightMat[Count] *=2;}
+			if (jky!=0)  { weightMat[Count] *=2;}
+			if (jkx!=jky){ weightMat[Count] *=2;}
+			PermMat[Count]=Count+1;
+	}}
+	
+	int lkVals = Count+1;
+	printf("Cc \n");
+	fflush(stdout);
+
+	sort_mat(&kVals[0],&kVals[Count], 
+	     &PermMat[0],  &PermMat[Count]);  //PermMat is 
+				//also returned as well as kValsSorted
+	printf("Dd \n");
+	fflush(stdout);
+	
+	int newInd;
+
+        for (int iP=0; iP < lkVals ; iP++ ) {
+		newInd =  PermMat[iP];
+		PermMatTr[newInd-1] = iP+1; 
+	} 
+	
+	printf("Ee \n");
+	fflush(stdout);
+
+	int CountA=-1;
+	int CountB=-1;
+	
+	while (CountB< (CountMax-1)) {
+		CountA++;
+		CountB++;
+		printf("CountA=%d ; CountB=%d \n", CountA,CountB);fflush(stdout);
+		kValsSorted[CountA] = kVals[CountB] ;
+		if (CountB<(CountMax-1) ) {
+			while (fabs(kVals[CountB] -kVals[CountB+1])<.0000001  ) {
+				for (int iP=0; iP < lkVals; iP++){
+					printf("iP=%d \n", iP);fflush(stdout);
+					if  (PermMatTr[iP]>CountB+1) {
+						PermMatTr[iP]--;
+		    			}
+		 		}
+				CountB++;
+	    		}	 
+		}
+	}
+	printf("Ff \n");
+	fflush(stdout);
+	
+	for (int CountD=0; CountD < CountMax; CountD++) {
+	    newInd = PermMatTr[CountD];
+	    weightofkValsSorted[newInd-1] += weightMat[CountD];
+        }
+	
+}
+
 float Util::get_frand(int lo, int hi)
 {
 	return get_frand((float)lo, (float)hi);

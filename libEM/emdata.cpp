@@ -998,6 +998,7 @@ EMData* EMData::pad_fft(int npad) {
 	return newimg;
 }
 
+
 EMData *EMData::shuffle()   // shuffles or unshuffles FFT image,
 {                //   if real image was odd and square
 	if (!is_complex()) {
