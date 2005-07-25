@@ -96,7 +96,7 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 		(data_type >= EM_EM_CHAR && data_type <= EM_EM_DOUBLE) &&
 		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim) && (nz > 0 && nz < max_dim)) {
 		if (file_size > 0) {
-			off_t file_size1 = nx * ny * nz * get_mode_size(data_type) + sizeof(EMHeader);
+			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(data_type) + (off_t)sizeof(EMHeader);
 			if (file_size == file_size1) {
 				return true;
 			}

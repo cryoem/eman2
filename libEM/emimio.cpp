@@ -93,8 +93,8 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["datatype"] = EMUtil::EM_FLOAT;
 	dict["pixel"] = efh.pixel;
 
-	off_t imgsize = efh.nx * efh.ny * efh.nz * sizeof(float) + sizeof(EmimImageHeader);
-	off_t offset = sizeof(EmimFileHeader) + imgsize * image_index;
+	off_t imgsize = (off_t)efh.nx * (off_t)efh.ny * (off_t)efh.nz * (off_t)sizeof(float) + (off_t)sizeof(EmimImageHeader);
+	off_t offset = (off_t)sizeof(EmimFileHeader) + imgsize * (off_t)image_index;
 
 	portable_fseek(emim_file, offset, SEEK_SET);
 
@@ -127,8 +127,8 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 	int err = 0;
 	check_read_access(image_index, data);
 	
-	off_t imgsize = efh.nx * efh.ny * efh.nz * sizeof(float) + sizeof(EmimImageHeader);
-	off_t offset = sizeof(EmimFileHeader) + imgsize * (image_index+1);
+	off_t imgsize = (off_t)efh.nx * (off_t)efh.ny * (off_t)efh.nz * (off_t)sizeof(float) + (off_t)sizeof(EmimImageHeader);
+	off_t offset = (off_t)sizeof(EmimFileHeader) + imgsize * (off_t)(image_index+1);
 	portable_fseek(emim_file, offset, SEEK_SET);
 		
 	unsigned char *cdata = (unsigned char *) data;
