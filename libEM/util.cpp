@@ -490,6 +490,65 @@ void Util::save_data(float x0, float dx, float *y_array,
 }
 
 
+void Util::spline(float *x, float *y, int n, float yp1, float ypn, float *y2) //PRB
+{
+	int i,k;
+	float p, qn, sig, un, *u;
+	u=new float[n-1];
+	
+	if (yp1 > .99e30){
+		y2[0]=u[0]=0.0;
+	}else{
+		y2[0]=-.5;
+		u[0] =(3./ (x[1] -x[0]))*( (y[1]-y[0])/(x[1]-x[0]) -yp1);
+	}
+	
+	for (i=1; i < n-1; i++) {
+		sig= (x[i] - x[i-1])/(x[i+1] - x[i-1]);
+		p = sig*y2[i-1] + 2.0;
+		y2[i]  = (sig-1.)/p;
+		u[i] = (y[i+1] - y[i] )/(x[i+1]-x[i] ) -  (y[i] - y[i-1] )/(x[i] -x[i-1]);
+		u[i] = (6.0*u[i]/ (x[i+1]-x[i-1]) - sig*u[i-1])/p;
+	}
+	
+	if (ypn>.99e30){
+		qn=0; un=0;
+	} else {
+		qn= .5;
+		un= (3./(x[n-1] -x[n-2])) * (ypn -  (y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
+	}
+	y2[n-1]= (un - qn*u[n-2])/(qn*y2[n-2]+1.0);
+	for (k=n-2; k>=0; k--){
+		y2[k]=y2[k]*y2[k+1]+u[k];
+	}
+	delete [] u;
+}
+
+void Util::splint( float *xa, float *ya, float *y2a, int n,  float *xq, float *yq, int m) //PRB
+{
+	int klo, khi, k;
+	float h, b, a;
+
+	for (int j=0; j<m;j++){
+		klo=0;
+		khi=n-1;
+		while (khi-klo >1) {
+			k=(khi+klo) >>1;
+			if  (xa[k]>xq[j]){ khi=k;}
+			else { klo=k;}
+		}
+		h=xa[khi]- xa[klo];
+		if (h==0.0) printf("Bad XA input to routine SPLINT \n");
+		a =(xa[khi]-xq[j])/h;
+		b=(xq[j]-xa[klo])/h;
+		yq[j]=a*ya[klo] + b*ya[khi]
+			+ ((a*a*a-a)*y2a[klo] 
+			     +(b*b*b-b)*y2a[khi]) *(h*h)/6.;
+	}
+	printf("h=%f, a = %f, b=%f, ya[klo]=%f, ya[khi]=%f , yq=%f\n",h, a, b, ya[klo], ya[khi],yq[0]);		     
+}
+
+
 void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 // Adapted by PRB from a macro definition posted on SourceForge by evildave
 {
@@ -526,8 +585,6 @@ void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 		sort_mat(pivot + 1, right,pivotPerm+1,rightPerm);
 	}
 }
-
-
 
 void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
                float *weightofkValsSorted, int Size)

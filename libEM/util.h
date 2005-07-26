@@ -289,6 +289,28 @@ namespace EMAN
 		static void save_data(float x0, float dx, float *y_array, 
 							  size_t array_size, const string & filename);
 
+		/** Given a tabulated function y of x (ordered), and
+		 * Given the values of the first derivatives at the end points
+		 * This routine returns an array y2, that contains the second derivatives
+		 * of the function at the tabulated points.   PRB
+		 * This function is called by splint 
+		 * @param[in] y of x is the tabulated function of length n
+		 * @param[in] yp1, ypn : the derivatives of the first and last point.
+		 * @param[out]  y2 is the value of the second derivatives
+		*/
+		static void spline(float *x, float *y, int n, float yp1, float ypn, float *y2);
+
+		/** Given the arrays xa(ordered, ya of length n, which tabulate a function 
+		 *  and given the array y2a which is the output of spline and an unordered array xq,
+		 *  this routine returns a cubic-spline interpolated array yq.
+		 * @param[in] y of x is the tabulated function of length n
+		 * @param[in] y2a is returned from spline: second derivs
+		 * @param[in] xq is the x values to be splined: has m points.
+		 * @param[out]  yq are the splined values
+		*/  // PRB
+		static void splint( float *xa, float *ya, float *y2a, int n,  
+		                                     float *xq, float *yq, int m);
+		
 		/** does a sort as in Matlab. Carries along the Permutation
 		 * matrix
 		 * @param[in] The array [left .. right] is sorted
@@ -297,7 +319,6 @@ namespace EMAN
 		 */
 		static void sort_mat(float *left, float *right, int *leftPerm, int
  				*rightPerm);
-
 
 		/** list the sorted lengths of the  integer lattice 
 		 * sites of a square sided image of  size Size. PRB

@@ -999,7 +999,7 @@ EMData* EMData::pad_fft(int npad) {
 }
 
 
-EMData *EMData::shuffle()   // shuffles or unshuffles FFT image,
+EMData *EMData::shuffle()   // shuffles or unshuffles FFT image, PRB
 {                //   if real image was odd and square
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
