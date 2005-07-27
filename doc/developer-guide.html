@@ -193,7 +193,7 @@ boost python wrapper. To use Pyste, <br>
  style="font-weight: bold;">elementtree</span> c) <span
  style="font-weight: bold;">gccxml</span></li>
       <li>Create or modify the pyste file. e.g., <span
- style="font-style: italic;">eman2/libpyEM/filter.pyste</span>.
+ style="font-style: italic;">eman2/libpyEM/processor.pyste</span>.
 For a function that return a pointer, a return-policy
 must be defined in the pyste file. The typical cases
 are: <br>
@@ -592,6 +592,32 @@ size = (%d, %d, %d)\n", nx, ny, nz);</span><br>
 point, use EXITFUNC.<br>
     </ul>
   </ul>
+</ol>
+<big style="color: rgb(51, 51, 255);">15. How to add testing group tag for file/class/function?</big>
+<ol>
+	<ul>
+		<li><span style="font-weight: bold;">These group tags are already defined 
+			in file, "eman2doc.h":</span></li>
+		<ul>
+			<li>tested0 : code not yet complete</li>
+			<li>tested1 : code complete but untested</li>
+			<li>tested2 : code complete but contains bugs</li>
+			<li>tested3 : tested</li>
+			<li>tested3a : manual testing</li>
+			<li>tested3b : unit test in C++</li>
+			<li>tested3c : unit test in Python</li>
+			<li>tested3d : incorporated into sucessful regression test</li>
+		</ul>
+	</ul>
+	<ul>
+		<li><span style="font-weight: bold;">How to use these tag to label testing group:</span></li>
+		<ul>
+			<li>add /**@ingroup tested3c*/ to the beginnig of a class tested in Python, 
+				then the corresponding class will be labeled "unit test in Python" in doxygen generated documet.</li>
+			<li>you can also define other grouping tag, just follow the testing group example in "eman2doc.h"</li>
+			<li>a single unit can be labeled for multiple group</li>
+		</ul>
+	</ul>
 </ol>
 <br>
 <hr>
