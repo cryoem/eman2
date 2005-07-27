@@ -545,7 +545,7 @@ void Util::splint( float *xa, float *ya, float *y2a, int n,  float *xq, float *y
 			+ ((a*a*a-a)*y2a[klo] 
 			     +(b*b*b-b)*y2a[khi]) *(h*h)/6.;
 	}
-	printf("h=%f, a = %f, b=%f, ya[klo]=%f, ya[khi]=%f , yq=%f\n",h, a, b, ya[klo], ya[khi],yq[0]);		     
+//	printf("h=%f, a = %f, b=%f, ya[klo]=%f, ya[khi]=%f , yq=%f\n",h, a, b, ya[klo], ya[khi],yq[0]);		     
 }
 
 
@@ -596,8 +596,7 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 	float *weightMat = new float[CountMax];
 	int *PermMat     = new   int[CountMax];
 	
-	printf("Aa \n");
-	fflush(stdout);
+//	printf("Aa \n");	fflush(stdout);
 	for (int jkx=0; jkx< iMax+1; jkx++) {
 		for (int jky=0; jky< jkx+1; jky++) {
 			Count++;
@@ -610,13 +609,11 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 	}}
 	
 	int lkVals = Count+1;
-	printf("Cc \n");
-	fflush(stdout);
+//	printf("Cc \n");fflush(stdout);
 
 	sort_mat(&kVals[0],&kVals[Count], 
 	     &PermMat[0],  &PermMat[Count]);  //PermMat is 
 				//also returned as well as kValsSorted
-	printf("Dd \n");
 	fflush(stdout);
 	
 	int newInd;
@@ -626,8 +623,7 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 		PermMatTr[newInd-1] = iP+1; 
 	} 
 	
-	printf("Ee \n");
-	fflush(stdout);
+//	printf("Ee \n"); fflush(stdout);
 
 	int CountA=-1;
 	int CountB=-1;
@@ -635,12 +631,12 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 	while (CountB< (CountMax-1)) {
 		CountA++;
 		CountB++;
-		printf("CountA=%d ; CountB=%d \n", CountA,CountB);fflush(stdout);
+//		printf("CountA=%d ; CountB=%d \n", CountA,CountB);fflush(stdout);
 		kValsSorted[CountA] = kVals[CountB] ;
 		if (CountB<(CountMax-1) ) {
 			while (fabs(kVals[CountB] -kVals[CountB+1])<.0000001  ) {
 				for (int iP=0; iP < lkVals; iP++){
-					printf("iP=%d \n", iP);fflush(stdout);
+//					printf("iP=%d \n", iP);fflush(stdout);
 					if  (PermMatTr[iP]>CountB+1) {
 						PermMatTr[iP]--;
 		    			}
@@ -649,8 +645,6 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 	    		}	 
 		}
 	}
-	printf("Ff \n");
-	fflush(stdout);
 	
 	for (int CountD=0; CountD < CountMax; CountD++) {
 	    newInd = PermMatTr[CountD];

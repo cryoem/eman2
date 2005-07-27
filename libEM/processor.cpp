@@ -2046,54 +2046,169 @@ float AddSigmaNoiseProcessor::get_sigma(EMData * image)
 
 void FourierOriginShiftProcessor::process(EMData * image)
 {
-
 // To quote Pawel "funky reordering"
 	float *d = image->get_data();
 	int nx2=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	
-	
-	if (nz == 1) {
-		int l = ny / 2 * nx2;
+	printf("nx2=%d, ny=%d, nz=%d \n", nx2,ny,nz);
 
-		for (int i = 0; i < ny / 2; i++) {
-			int inx2 = i * nx2;
-			for (int j = 0; j < nx2; j++) {
-				int k = j + inx2;
-				float f = d[k];
-				d[k] = d[k + l];
-				d[k + l] = f;
+	if ( (nz==1) && ((nx2-1)==ny) && (image->is_complex())  // if odd, square FFT
+		&& (image->is_fftodd()) && (!(image->is_shuffle()) )){ // PRB
+	     int out_nx=2*(nx2-1);
+	     int out_ny=ny;
+	     EMData* dat = image->copy_head();
+	     printf("entered shuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
+
+	     dat ->set_size(out_nx, out_ny, 1);
+	     dat->to_zero();
+//	     float *d = dat->get_data(); 
+	     MArray2D rnewdata = image-> get_2dview();
+	     MArray2D dout = dat->get_2dview(); // pointer to an emData object
+	     
+	     //  if nx2=6, nx_orig=5, out_nx=10, ny=5, ny_orig=5, out_ny=5
+	     // center is at nx=5,6, ny=3
+	     dout[nx2-2][(ny-1)/2] = rnewdata[0][0]; 
+	     dout[nx2-1][(ny-1)/2] = rnewdata[1][0]; // A block
+            for (int iy = 1; iy < (ny+1)/2; iy++) { // B and C blocks
+		dout[nx2-2][ iy+(ny-1)/2] =  rnewdata[0][iy];
+		dout[nx2-1][ iy+(ny-1)/2] =  rnewdata[1][iy];
+		dout[nx2-2][-iy+(ny-1)/2] =  rnewdata[0][iy];
+		dout[nx2-1][-iy+(ny-1)/2] = -rnewdata[1][iy];
+	     }
+            for (int ix = 2; ix < nx2; ix=ix+2) { // D blocks
+		dout[ ix+nx2-2][(ny-1)/2]=  rnewdata[ix  ][0];
+		dout[ ix+nx2-1][(ny-1)/2]=  rnewdata[ix+1][0];
+		dout[-ix+nx2-2][(ny-1)/2]=  rnewdata[ix  ][0];
+		dout[-ix+nx2-1][(ny-1)/2]= -rnewdata[ix+1][0];
+	     }
+            for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
+		for (int iy= 1 ; iy <(ny+1)/2 ; iy++){ 
+		    dout[ ix+nx2-2][ iy+(ny-1)/2] =  rnewdata[ix  ][iy];  // E
+		    dout[ ix+nx2-1][ iy+(ny-1)/2] =  rnewdata[ix+1][iy];  // E
+		    dout[-ix+nx2-2][-iy+(ny-1)/2] =  rnewdata[ix  ][iy];  // E*
+		    dout[-ix+nx2-1][-iy+(ny-1)/2] = -rnewdata[ix+1][iy];  // E*
+		 }
+	     }
+            for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
+		for (int iy= (ny+1)/2 ; iy <ny ; iy++){ 
+		    dout[ ix+nx2-2][ iy-(ny+1)/2]  =  rnewdata[ix  ][iy];  // F
+		    dout[ ix+nx2-1][ iy-(ny+1)/2]  =  rnewdata[ix+1][iy];  // F
+		    dout[-ix+nx2-2][-iy+ ny+2]     =  rnewdata[ix  ][iy];  // F*
+ 		    dout[-ix+nx2-1][-iy+ ny+2]     = -rnewdata[ix+1][iy];  // F*
+		 }
+	     }
+	     image->done_data();
+	     dat->done_data();
+	     dat->set_complex(true);
+	     dat->set_ri(true);
+	     dat->set_shuffle(true);
+	     dat->set_fftodd(true);
+	     printf(" A \n");fflush(stdout);
+	     image->set_size(out_nx, out_ny, 1);
+	     MArray2D snewdata = image-> get_2dview();
+	     for (int ix=0; ix < out_nx; ix++){
+		for (int iy=0; iy < out_ny; iy++){ 
+//		printf("%d %d \n",ix,iy);fflush(stdout);
+		snewdata[ix][iy]= dout[ix][iy];}}
+	     image->done_data();
+	     image->set_shuffle(true);
+	} else if  ((nz==1) && (image->is_complex())  // already shuffled
+		&& (image->is_fftodd()) && (image->is_shuffle() )){ // PRB
+	     int out_nx= 1 + nx2/2;
+	     int out_ny=ny;
+	     printf("entered unshuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
+	     EMData* dat = image->copy_head();
+	     dat ->set_size(out_nx, out_ny, 1);
+//	     float *d = dat->get_data(); 
+	     MArray2D rnewdata = image-> get_2dview();
+	     MArray2D dout = dat->get_2dview(); // pointer to an emData object
+	     
+	     //  if onx=10, nx_orig=5, out_nx=6, onxv=6;
+	     //     ony=5,  ny_orig=5, out_ny=5, onyv=5;
+	     int onxv = nx2/2+1;
+	     int onyv = ny;
+	     // center is at nx=5,6, ny=3
+	     dout[0][0] = rnewdata[onxv-2][(onyv-1)/2]; 
+	     dout[1][0] = rnewdata[onxv-1][(onyv-1)/2]; // A block
+            for (int iy = 1; iy < (onyv+1)/2; iy++) { // B and C blocks
+		dout[0][iy] =  rnewdata[onxv-2][ iy+(onyv-1)/2];
+		dout[1][iy] =  rnewdata[onxv-1][ iy+(onyv-1)/2];
+		dout[0][onyv-iy] =  rnewdata[onxv-2][-iy+(onyv-1)/2];
+		dout[1][onyv-iy] = -rnewdata[onxv-1][-iy+(onyv-1)/2];
+	     }
+            for (int ix = 2; ix < onxv; ix=ix+2) { // D blocks
+		dout[ix  ][0]=  rnewdata[ ix+onxv-2][(onyv-1)/2];
+		dout[ix+1][0]=  rnewdata[ ix+onxv-1][(onyv-1)/2];
+	     }
+            for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
+		for (int iy= 1 ; iy <(onyv+1)/2 ; iy++){ 
+		    dout[ix  ][iy] =  rnewdata[ ix+onxv-2][iy+(onyv-1)/2];  // E
+		    dout[ix+1][iy] =  rnewdata[ ix+onxv-1][iy+(onyv-1)/2];  // E
+		 }
+	     }
+            for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
+		for (int iy= (onyv+1)/2 ; iy <onyv ; iy++){ 
+		    dout[ix  ][iy]  =  rnewdata[ ix+onxv-2][ iy-(onyv+1)/2];  // F
+		    dout[ix+1][iy]  =  rnewdata[ ix+onxv-1][ iy-(onyv+1)/2];  // F
+		 }
+	     }
+	     image->done_data();
+	     dat->done_data();
+	     dat->set_complex(true);
+	     dat->set_ri(true);
+	     dat->set_shuffle(false);
+	     dat->set_fftodd(true);
+	     image->set_size(out_nx, out_ny, 1);
+	     MArray2D snewdata = image-> get_2dview();
+	     for (int ix=0; ix < out_nx; ix++){
+		for (int iy=0; iy < out_ny; iy++){ 
+//		printf("%d %d \n",ix,iy);fflush(stdout);
+		snewdata[ix][iy]= dout[ix][iy];}}
+	     image->done_data();
+	     image->set_shuffle(false);
+	} else {
+		if (nz == 1) {
+			int l = ny / 2 * nx2;
+	
+			for (int i = 0; i < ny / 2; i++) {
+				int inx2 = i * nx2;
+				for (int j = 0; j < nx2; j++) {
+					int k = j + inx2;
+					float f = d[k];
+					d[k] = d[k + l];
+					d[k + l] = f;
+				}
 			}
 		}
-	}
-	else if (ny != 1) {
-		char *t = new char[nx2 * sizeof(float)];
+		else if (ny != 1) {
+			char *t = new char[nx2 * sizeof(float)];
 
-		int k = nx2 * ny * (nz + 1) / 2;
-		int l = nx2 * ny * (nz - 1) / 2;
-		size_t jj = nx2 * sizeof(float);
-		int ii = 0;
+			int k = nx2 * ny * (nz + 1) / 2;
+			int l = nx2 * ny * (nz - 1) / 2;
+			size_t jj = nx2 * sizeof(float);
+			int ii = 0;
 
-		for (int j = 0; j < nz / 2; j++) {
-			for (int i = 0; i < ny; i++) {
-				memcpy(t, d + ii, jj);
+			for (int j = 0; j < nz / 2; j++) {
+				for (int i = 0; i < ny; i++) {
+					memcpy(t, d + ii, jj);
 
-				if (i < ny / 2) {
-					memcpy(d + ii, d + ii + k, jj);
-					memcpy(d + ii + k, t, jj);
+					if (i < ny / 2) {
+						memcpy(d + ii, d + ii + k, jj);
+						memcpy(d + ii + k, t, jj);
+					}
+					else {
+						memcpy(d + ii, d + ii + l, jj);
+						memcpy(d + ii + l, t, jj);
+					}
+					ii += nx2;
 				}
-				else {
-					memcpy(d + ii, d + ii + l, jj);
-					memcpy(d + ii + l, t, jj);
-				}
-				ii += nx2;
 			}
-		}
-		if( t )
-		{
-			delete[]t;
-			t = 0;
+			if( t )
+			{
+				delete[]t;
+				t = 0;
+			}
 		}
 	}
 }

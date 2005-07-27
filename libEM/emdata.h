@@ -127,17 +127,6 @@ namespace EMAN
 		void write_lst(const string & filename, 
 					   const string & reffile="", int refn=-1,
 					   const string & comment="");
-
-		/** shuffle        PRB
-		 *  if the image is complex, square 
-		 *  and the length of a side is odd,
-		 *  it will return the shuffled version.
-		 *  That is with the Fourier Origin in the apparent center.
-		 *  If it has already been shuffled, then shuffle does an unshuffling.
-		 * Changes the EMDATA_SHUFFLE switch
-		 * @return  the shuffled or unshuffled fft
-		 */
-		 EMData *shuffle();
 		   
 		
 		/** Print the image data to a file stream (standard out by default).
@@ -1860,7 +1849,7 @@ namespace EMAN
 	inline void EMData::set_shuffle(bool is_shuffle)
 	{ // PRB
 		if (is_shuffle) {
-			printf("entered correct part of set_shuffle \n");
+//			printf("entered correct part of set_shuffle \n");
 			flags |=  EMDATA_SHUFFLE;
 		}
 		else {
