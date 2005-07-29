@@ -11,12 +11,15 @@ import os
 class TestEMData(unittest.TestCase):
 
     def test_default_args(self):
+        """test default argument of EMData"""
         e = EMData()
-        e.set_size(100,100,1)
+        e.set_size(100,100,100)
         e.to_zero()
+        e.to_one()
         e.make_rotational_footprint()
 
     def test_operator_unary(self):
+        """test unary operator of EMData"""
         file1 = "test_operator_unary_1.mrc"
         e = EMData()
         e.set_size(100,200,1)
@@ -43,6 +46,7 @@ class TestEMData(unittest.TestCase):
 
 
     def test_multi_array_2d(self):
+        """test multi_array_2d"""
         nx = 16
         ny = 32
         infile = "test_multi_array_2d.mrc"
@@ -75,6 +79,7 @@ class TestEMData(unittest.TestCase):
 
 
     def test_multi_array_3d(self):
+        """test multi_array_3d for EMData"""
         nx = 8
         ny = 16
         nz = 4
@@ -224,13 +229,13 @@ class TestEMData(unittest.TestCase):
         
         a = EMData()
         a.read_image(infile)
-        b=a.copy(0)
+        b=a.copy()
         b.rotate(0, 0, math.pi/4)
         b.write_image(outfile1)
         
         # verify b
         
-        b=a.copy(0)
+        b=a.copy()
         b.rotate(0, 0, math.pi/2)
         b.write_image(outfile2)
 
@@ -241,15 +246,16 @@ class TestEMData(unittest.TestCase):
         os.unlink(outfile2)
         
     def test_rotate_3d(self):
-        img = TestUtil.get_debug_image("3d.mrc")
-
+        """test EMData::rotate() function"""
         a = EMData()
-        a.read_image(img)
-        b=a.copy(0)
+        a.set_size(72,72,72)
+        a.to_one()
+        
+        b=a.copy()
         b.rotate(0,0,math.pi/4)
         testlib.check_emdata(b, sys.argv[0])
-
-        b=a.copy(0)
+    
+        b=a.copy()
         b.rotate(0,0,math.pi/2)
         testlib.check_emdata(b, sys.argv[0])
 
@@ -332,15 +338,11 @@ class TestEMData(unittest.TestCase):
 
         
     def test_get_rotated_clip(self):
-        imagename = TestUtil.get_debug_image("monomer.mrc")
+        """test EMData::get_rotated_clip() function"""
         a=EMData()
-        a.read_image(imagename)
+        a.set_size(100,100,100)
+        a.to_one()
         b=a.get_rotated_clip(Transform3D([24,24,24], 0,0,0),[32,32,32],1.0)
-
-        outfile = "test_get_rotated_clip_" + str(os.getpid()) + ".mrc"
-        b.write_image(outfile)
-        os.unlink(outfile)
-
 
     def test_complex_image(self):
         nx = 16
