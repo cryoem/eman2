@@ -11,49 +11,114 @@ import os
 class TestEMData(unittest.TestCase):
 
     def test_default_args(self):
-        """test default argument of EMData"""
+        """test default constructor of EMData ..............."""
         e = EMData()
-        e.set_size(100,100,100)
+        self.assertEqual(e.get_attr("apix_x"), 1.0)
+        self.assertEqual(e.get_attr("apix_y"), 1.0)
+        self.assertEqual(e.get_attr("apix_z"), 1.0)
+        self.assertEqual(e.get_attr("is_complex"), 0)
+        self.assertEqual(e.get_attr("is_ri"), 0)
+        self.assertEqual(e.get_xsize(), 0)
+        self.assertEqual(e.get_ysize(), 0)
+        self.assertEqual(e.get_zsize(), 0)
+#        e.make_rotational_footprint()
+
+    def test_to_zero(self):
+        """test to_zero() function .........................."""
+        from random import randint
+        nx = randint(1,100)
+        ny = randint(1,100)
+        nz = randint(1,100)
+        e = EMData()
+        e.set_size(nx,ny,nz)
         e.to_zero()
-        e.to_one()
-        e.make_rotational_footprint()
-
-    def test_operator_unary(self):
-        """test unary operator of EMData"""
-        file1 = "test_operator_unary_1.mrc"
+        for k in range(nz):
+            for j in range(ny):
+                for i in range(nx):
+                    self.assertEqual(e.get_value_at(i, j, k), 0.0)
+    
+    def test_to_one(self):
+        """test to_one() function ..........................."""
+        from random import randint
+        nx = randint(1,100)
+        ny = randint(1,100)
+        nz = randint(1,100)
         e = EMData()
-        e.set_size(100,200,1)
+        e.set_size(nx,ny,nz)
         e.to_one()
-        e + 0.5
-        e - 0.5
-        e * 2
-        e / 2.4
-        12 + e
-        12 - e
-        4 * e
-        4 / e
-
+        for k in range(nz):
+            for j in range(ny):
+                for i in range(nx):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.0)
+        
+        
+    def test_real_operator_unary(self):
+        """test real unary operator of EMData ..............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_one()
+        
+        e += 0.5
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.5)
+        
+        e -= 0.5
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.0)
+        
+        e *= 2.0
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
+        
+        e /= 2.0
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.0)
+ 
         e2 = EMData()
-        e2.set_size(100,200,1)
+        e2.set_size(32,32,32)
         e2.to_one()
 
-        e + e2
-        e - e2
-        e * e2
-        e / e2
+        e += e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
         
-        e.write_image(file1)
-
+        e -= e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 1.0)
+        
+        e *= 2.0
+        e2 *= 3.0
+        e *= e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 6.0)
+        
+        e /= e2
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e.get_value_at(i, j, k), 2.0)
 
     def test_multi_array_2d(self):
-        """test multi_array_2d"""
+        """test multi_array_2d real.........................."""
         nx = 16
         ny = 32
-        infile = "test_multi_array_2d.mrc"
-        TestUtil.make_image_file(infile, MRC, EM_FLOAT, nx, ny)
 
         e = EMData()
-        e.read_image(infile)
+        e.set_size(nx, ny)
         array = e.get_2dview()
         self.assertEqual(type(array).__name__, 'array')
         self.assertEqual(array.typecode(), "f")
@@ -75,19 +140,14 @@ class TestEMData(unittest.TestCase):
             for j in range(nx):
                 self.assertEqual(e.get_value_at(j,i), array[i][j])
 
-        os.unlink(infile)
-
-
     def test_multi_array_3d(self):
-        """test multi_array_3d for EMData"""
+        """test multi_array_3d real.........................."""
         nx = 8
         ny = 16
         nz = 4
-        infile = "test_multi_array_3d.mrc"
-        TestUtil.make_image_file(infile, MRC, EM_FLOAT, nx, ny, nz)
 
         e = EMData()
-        e.read_image(infile)
+        e.set_size(nx, ny, nz)
         array = e.get_3dview()
         self.assertEqual(type(array).__name__, 'array')
         self.assertEqual(array.typecode(), "f")
@@ -110,11 +170,9 @@ class TestEMData(unittest.TestCase):
             for j in range(ny):
                 for k in range(nx):
                     self.assertEqual(e.get_value_at(k,j,i), array[i][j][k])
-
-
-        os.unlink(infile)
       
     def test_multi_array_c2d(self):
+        """test multi_array 2d complex ......................"""
         nx = 16
         ny = 16
         infile = "test_multi_array_c2d.mrc"
@@ -155,6 +213,7 @@ class TestEMData(unittest.TestCase):
         os.unlink(infile)
 
     def test_multi_array_c3d(self):
+        """test multi_array 3d complex ......................"""
         nx = 8
         ny = 16
         nz = 4
@@ -201,6 +260,7 @@ class TestEMData(unittest.TestCase):
 
 
     def test_rotate_translate(self):
+        """test rotate_translate ............................"""
         infile = "test_rotate_translate.mrc"
         TestUtil.make_image_file(infile, MRC, EM_FLOAT, 16,16,16)
         
@@ -221,6 +281,7 @@ class TestEMData(unittest.TestCase):
         
         
     def test_rotate_2d(self):
+        """test rotate_2d ..................................."""
         infile = "test_rotate_2d.mrc"
         TestUtil.make_image_file(infile, MRC, EM_FLOAT, 24, 32)
 
@@ -246,7 +307,7 @@ class TestEMData(unittest.TestCase):
         os.unlink(outfile2)
         
     def test_rotate_3d(self):
-        """test EMData::rotate() function"""
+        """test rotate_2d ..................................."""
         a = EMData()
         a.set_size(72,72,72)
         a.to_one()
@@ -260,6 +321,7 @@ class TestEMData(unittest.TestCase):
         testlib.check_emdata(b, sys.argv[0])
 
     def test_project(self):
+        """test image projection ............................"""
         n = 20
         infile = "test_project.mrc"
         TestUtil.make_image_file(infile, MRC, EM_FLOAT, n, n, n)
@@ -274,6 +336,7 @@ class TestEMData(unittest.TestCase):
         os.unlink(infile)
 
     def test_calc_highest_locations(self):
+        """test calculation of highest location ............."""
         infile = "test_calc_highest_locations.mrc"
         TestUtil.make_image_file(infile, MRC, EM_FLOAT, 40, 60)
         
@@ -307,6 +370,7 @@ class TestEMData(unittest.TestCase):
         attrfile.close()
         
     def test_get_clip(self):
+        """test get_clip() function ........................."""
         nx = 32
         ny = 48
         filebase = "test_get_clip_" + str(os.getpid())
@@ -335,16 +399,16 @@ class TestEMData(unittest.TestCase):
         os.unlink(infile)
         os.unlink(outfile1)
         os.unlink(outfile2)
-
         
     def test_get_rotated_clip(self):
-        """test EMData::get_rotated_clip() function"""
+        """test get_rotated_clip() function ................."""
         a=EMData()
         a.set_size(100,100,100)
         a.to_one()
         b=a.get_rotated_clip(Transform3D([24,24,24], 0,0,0),[32,32,32],1.0)
 
     def test_complex_image(self):
+        """test complex image ..............................."""
         nx = 16
         ny = 32
         infile = "test_complex_image_1.mrc"
@@ -363,6 +427,7 @@ class TestEMData(unittest.TestCase):
 
         
     def test_set_value_at(self):
+        """test set_value_at() .............................."""
         nx = 10
         ny = 20
         nz = 2
@@ -385,44 +450,9 @@ class TestEMData(unittest.TestCase):
                 for k in range(nx):
                     self.assertEqual(e.get_value_at(k,j,i), 1)
                     self.assertEqual(narray[i][j][k], 1)
-        
-    def test_to_one(self):
-        nx = 12
-        ny = 24
-        nz = 2
-        file1 = "test_to_one.mrc"
-        TestUtil.make_image_file(file1, MRC, EM_FLOAT, nx, ny, nz)
-
-        e1 = EMData()
-        e1.read_image(file1)
-        e1.to_one()
-
-        for i in range(nz):
-            for j in range(ny):
-                for k in range(nx):
-                    self.assertEqual(e1.get_value_at(k,j,i), 1)
-        
-        os.unlink(file1)
-        
-    def test_to_zero(self):
-        nx = 12
-        ny = 24
-        nz = 2
-        file1 = "test_to_zero.mrc"
-        TestUtil.make_image_file(file1, MRC, EM_FLOAT, nx, ny, nz)
-
-        e1 = EMData()
-        e1.read_image(file1)
-        e1.to_zero()
-
-        for i in range(nz):
-            for j in range(ny):
-                for k in range(nx):
-                    self.assertEqual(e1.get_value_at(k,j,i), 0)
-        
-        os.unlink(file1)
-
+                    
     def test_calc_radial_dist(self):
+        """test calc_radial_dist() .........................."""
         file1 = "test_calc_radial_dist.mrc"
         TestUtil.make_image_file(file1, MRC)
         
@@ -440,6 +470,7 @@ class TestEMData(unittest.TestCase):
 
 
     def test_stat_locations(self):
+        """test locational stats ............................"""
         nx = 16
         ny = 24
         file1 = "test_stat_locations.mrc"
@@ -468,6 +499,7 @@ class TestEMData(unittest.TestCase):
 
 
     def test_image_overwrite(self):
+        """test overwriting a image ........................."""
         file1 = "test_image_overwrite.mrc"
         nx = 16
         ny = 18
@@ -493,6 +525,7 @@ class TestEMData(unittest.TestCase):
 
 
     def test_ctf(self):
+        """test ctf ........................................."""
         infile = "test_ctf_in.mrc"
         TestUtil.make_image_file(infile, MRC)
         ctf = SimpleCtf()
@@ -518,6 +551,7 @@ class TestEMData(unittest.TestCase):
         
 
     def no_test_statistics(self):
+        """test statistics of EMData ........................"""
         e = EMData()
         e.set_size(10,10,1)
         e.process("testimage.circlesphere",{"radius":4})
