@@ -152,6 +152,8 @@ The basic design of EMAN Processors: <br>\
 			BUTTERWORTH_LOW_PASS,
 			BUTTERWORTH_HIGH_PASS,
 			BUTTERWORTH_HOMOMORPHIC,
+			KAISER_I0,
+			KAISER_SINH,
 			KAISER_I0_INVERSE,
 			KAISER_SINH_INVERSE,
 			TANH_LOW_PASS,
@@ -304,7 +306,7 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass top-hat filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TOP_HAT_LOW_PASS;
+			params["FilterType"] = TOP_HAT_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -328,7 +330,7 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass top-hat filter applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TOP_HAT_HIGH_PASS;
+			params["FilterType"] = TOP_HAT_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -351,7 +353,7 @@ The basic design of EMAN Processors: <br>\
 			return "Bandpass top-hat filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TOP_HAT_BAND_PASS;
+			params["FilterType"] = TOP_HAT_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -375,7 +377,7 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic top-hat filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TOP_HOMOMORPHIC;
+			params["FilterType"] = TOP_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -400,7 +402,7 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = GAUSS_LOW_PASS;
+			params["FilterType"] = GAUSS_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -423,7 +425,7 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = GAUSS_HIGH_PASS;
+			params["FilterType"] = GAUSS_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -446,7 +448,7 @@ The basic design of EMAN Processors: <br>\
 			return "Bandpass Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = GAUSS_BAND_PASS;
+			params["FilterType"] = GAUSS_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -470,7 +472,7 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = GAUSS_HOMOMORPHIC;
+			params["FilterType"] = GAUSS_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -494,7 +496,7 @@ The basic design of EMAN Processors: <br>\
 			return "Divide by a Gaussian in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = GAUSS_INVERSE;
+			params["FilterType"] = GAUSS_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -517,7 +519,7 @@ The basic design of EMAN Processors: <br>\
 			return "Divide by a Kaiser-Bessel I0 func in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = KAISER_I0_INVERSE;
+			params["FilterType"] = KAISER_I0_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
 	};
@@ -534,7 +536,7 @@ The basic design of EMAN Processors: <br>\
 			return "Divide by a Kaiser-Bessel Sinh func in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = KAISER_SINH_INVERSE;
+			params["FilterType"] = KAISER_SINH_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
 	};
@@ -551,7 +553,7 @@ The basic design of EMAN Processors: <br>\
 			return "Filter with tabulated data in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = RADIAL_TABLE;
+			params["FilterType"] = RADIAL_TABLE;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -574,7 +576,7 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass Butterworth filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = BUTTERWORTH_LOW_PASS;
+			params["FilterType"] = BUTTERWORTH_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -598,7 +600,7 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass Butterworth filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = BUTTERWORTH_HIGH_PASS;
+			params["FilterType"] = BUTTERWORTH_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -622,7 +624,7 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic Butterworth filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = BUTTERWORTH_HOMOMORPHIC;
+			params["FilterType"] = BUTTERWORTH_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -647,7 +649,7 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass tanh filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TANH_LOW_PASS;
+			params["FilterType"] = TANH_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -671,7 +673,7 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass tanh filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TANH_HIGH_PASS;
+			params["FilterType"] = TANH_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -695,7 +697,7 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic Tanh processor applied in Fourier space";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TANH_HOMOMORPHIC;
+			params["FilterType"] = TANH_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
@@ -720,7 +722,7 @@ The basic design of EMAN Processors: <br>\
 			return "Bandpass tanh processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["filter_type"] = TANH_BAND_PASS;
+			params["FilterType"] = TANH_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
