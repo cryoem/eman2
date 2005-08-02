@@ -561,13 +561,9 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 	int z1 = origin[2] + nz1;
 
 	size_t inserted_row_size = nx1 * sizeof(float);
-	int nxy = nx * ny;
-	int inserted_nxy = nx1 * ny1;
-
 	float *inserted_data = block->get_data();
-
 	float *src = inserted_data;
-	float *dst = rdata + y0 * nx + x0;
+	float *dst = rdata + z0 * nx * ny + y0 * nx + x0;
 
 	for (int i = z0; i < z1; i++) {
 
@@ -576,8 +572,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 			src += nx1;
 			dst += nx;
 		}
-		src += inserted_nxy;
-		dst += nxy;
+		dst += nx * (ny - ny1);
 	}
 
 	flags |= EMDATA_NEEDUPD;
