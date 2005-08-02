@@ -1,6 +1,8 @@
 #!/bin/env python
 
+import EMAN2
 from EMAN2 import *
+from pyemtbx.exceptions import *
 import unittest
 from test import test_support
 import testlib
@@ -20,8 +22,107 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e.get_attr("is_ri"), 0)
         self.assertEqual(e.get_xsize(), 0)
         self.assertEqual(e.get_ysize(), 0)
-        self.assertEqual(e.get_zsize(), 0)
-#        e.make_rotational_footprint()
+        self.assertEqual(e.get_zsize(), 0) 
+
+    def test_copy(self):
+        """test copy() function ............................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_zero()
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.copy()
+        
+        self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
+        for k in range(32):
+            for j in range(32):
+                for i in range(32):
+                    self.assertEqual(e.get_3dview()[i][j][k], e2.get_3dview()[i][j][k])
+
+    def test_copy_head(self):
+        """test copy_head() function ........................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_zero()
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.copy_head()
+        
+        dict1 = e.get_attr_dict()
+        dict2 = e2.get_attr_dict()
+        self.assertEqual(dict1['nx'], dict2['nx'])
+        self.assertEqual(dict1['ny'], dict2['ny'])
+        self.assertEqual(dict1['nz'], dict2['nz'])
+        self.assertEqual(dict1.keys(), dict2.keys())
+    
+    def test_get_clip(self):
+        """test get_clip() function ........................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_zero()
+        e.process("testimage.noise.uniform.rand")
+        
+        #test inclusive clip
+        e2 = e.get_clip(Region(10,10,10, 20,20,20))
+        d1 = e.get_3dview()
+        d2 = e2.get_3dview()
+        for k in range(10):
+            for j in range(10):
+                for i in range(10):
+                    self.assertEqual(d1[i+10][j+10][k+10], d2[i][j][k])
+        
+        #test padding zero for clip larger than original image
+        e3 = e.get_clip(Region(30,30,30, 35,35,35))
+        d3 = e3.get_3d_view()
+        for k in range(2):
+            for j in range(2):
+                for i in range(2):
+                    self.assertEqual(d1[i+30][j+30][k+30], d3[i][j][k])
+        for k in range(3):
+            for j in range(3):
+                for i in range(3):
+                    self.assertEqual(d3[i+2][j+2][k+2], 0)
+
+    def test_insert_clip(self):
+        """test insert_clip() function ......................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_zero()
+        e.process("testimage.noise.uniform.rand")
+        
+        e2 = EMData()
+        e2.set_size(10,10,10)
+        e2.to_zero()
+        e2.process("testimage.noise.uniform.rand")
+        
+        #test exception if the clip is out side of the image
+        self.assertRaises( RuntimeError, e.insert_clip, e2, (30,30,30) )
+        try:
+            e.insert_clip( e2,(30,30,30) )
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        e.insert_clip(e2, (16,16,16))
+        d1 = e.get_3dview()
+        d2 = e2.get_3dview()
+        for k in range(10):
+            for j in range(10):
+                for i in range(10):
+                    self.assertEqual(d1[k+16][j+16][i+16], d2[k][j][i])
+        
+    def test_make_rotational_footprint(self):
+        """test make_rotational_footprint() function ........"""
+        e = EMData()
+        e.set_size(64,64,64)
+        e.to_one()
+        e.make_rotational_footprint()
+        
+        #test for bad input, only even sized image accepted, ImageFormatException raised 
+        e2 = EMData()
+        e.set_size(31,31,31)
+        e.to_one()
+        try:
+            e.make_rotational_footprint()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
 
     def test_to_zero(self):
         """test to_zero() function .........................."""
@@ -111,7 +212,7 @@ class TestEMData(unittest.TestCase):
             for j in range(32):
                 for k in range(32):
                     self.assertEqual(e.get_value_at(i, j, k), 2.0)
-
+  
     def test_multi_array_2d(self):
         """test multi_array_2d real.........................."""
         nx = 16
@@ -349,10 +450,13 @@ class TestEMData(unittest.TestCase):
         os.unlink(infile)
 
     # need some fix to remove file dependency
-    def no_test_get_attr_dict(self):
-        e = EMData()
+    def test_get_attr_dict(self):
+        """test get_attr_dict() function ...................."""
         imgfile = "tablet.mrc"
-        e.read_image(TestUtil.get_debug_image(imgfile))
+        TestUtil.make_image_file(imgfile, MRC, EM_FLOAT, 40, 60)
+        
+        e = EMData()
+        e.read_image(imgfile)
         d0 = e.get_attr_dict()
         e += 10
         d1 = e.get_attr_dict()        
@@ -364,10 +468,8 @@ class TestEMData(unittest.TestCase):
             for mykey in mydict.keys():
                 if (not ("MRC" in mykey)):
                     cur_attrlist.append(mykey + "=" + str(mydict[mykey])+"\n")
-
-        attrfile = open(TestUtil.get_debug_image(imgfile+".attr"), "rb")
-        old_attrlist = attrfile.readlines()        
-        attrfile.close()
+        
+        os.unlink(imgfile)
         
     def test_get_clip(self):
         """test get_clip() function ........................."""
@@ -561,8 +663,7 @@ class TestEMData(unittest.TestCase):
         f.do_ift_inplace()
         descriptive_statistics(f)
         g = f*10
-        descriptive_statistics(g)
-
+        descriptive_statistic        
 def test_main():
     test_support.run_unittest(TestEMData)
 

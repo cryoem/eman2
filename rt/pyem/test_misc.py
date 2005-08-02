@@ -87,7 +87,7 @@ class TestException(unittest.TestCase):
             e.read_image(fake_img)
         except RuntimeError, runtime_err:
             err_type = exception_type(runtime_err)
-            self.assertEqual(err_type, "ImageFormatException")
+            self.assertEqual(err_type, "FileAccessException")
 
 """
 class TestEMObject(unittest.TestCase):
