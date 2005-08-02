@@ -485,6 +485,34 @@ void debug_big_file()
 	cout << "End debug_big_file()..." << endl << endl;
 }
 
+void debug_insert_clip()
+{
+	cout << "Starting debug_insert_clip() ... " << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(4,4,4);
+	e->to_zero();
+	
+	EMData * e2 = new EMData();
+	e2->set_size(2,2,2);
+	e2->to_one();
+	
+	e->insert_clip(e2, IntPoint(1,1,1));
+	MArray3D data3 = e->get_3dview();
+	for(int k=0; k<4; ++k)
+	{
+		for(int j=0; j<4; ++j)
+		{
+			for(int i=0; i<4; ++i)
+			{
+				cout << data3[i][j][k] << " ";
+			}
+			cout << endl;
+		}
+		cout << endl << endl;
+	}
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -504,7 +532,8 @@ int main()
 		//debug_write_image();
 		//debeg_dict();
 		//debug_complex_image_arithmetic();
-		debug_big_file();
+		//debug_big_file();
+		debug_insert_clip();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
