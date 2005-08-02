@@ -4,6 +4,7 @@
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
+#include "emconstants.h"
 #include "exception.h"
 #include <stdio.h>
 #include <string>
@@ -901,8 +902,12 @@ namespace EMAN
 		 *  (It's a class so that the windowing parameters may be
 		 *   instantiated and held in the instance object.)
 		 *
-		 *  The Fourier version is tabulated and interpolated upon
-		 *  demand.  (Max error < 1.e-7)
+		 *  The I0 version can be tabulated and interpolated upon
+		 *  demand, but the max error needs to be checked.
+		 *
+		 *  The get_kbsinh_win and get_kbi0_win functions return
+		 *  single-argument function objects, which is what a 
+		 *  generic routine is likely to want.
 		 *
 		 *  @see P. A. Penczek, R. Renka, and H. Schomberg,
 		 *      J. Opt. Soc. Am. _21_, 449 (2004)
@@ -910,43 +915,81 @@ namespace EMAN
 		 */
 		class KaiserBessel 
 		{
-			static const int ltabi = 5999; /** fixed table size */
-			static const int ln = 6; /** fixed interpolation size */
-			float alpha, v, rrr;
-			int m; /** window extent (nx) in real space */
-			/** Build a table of Kaiser-Bessel values */
-			void build_table();
-			float tabi[ltabi+1]; // tabi[0:ltabi]
-			int ltab; // reduced table range
-			float fltb; /** table scaling */
-			float tfmaxnu; /** Transform (I_0) max input value */
+			float alpha, v, r; /** Kaiser-Bessel parameters */
+			int K; /** I0 window size */
+			int ntable;
+			vector<float> i0table;
+			float dtable; /** table spacing */
+			float alphar; /** alpha*r */
+			float fac; /** 2*pi*alpha*r*v */
+			void build_I0table(); /** Tabulate I0 window for speed */
 			public:
-				KaiserBessel(int m_) : alpha(1.25f), m(m_) { 
-					v = float(ln)/(2*float(2*m));
-					rrr = float(m/2);
-					ltab = int(float(ltabi)/1.25f + 0.5f);
-					fltb = float(ltab)/float(ln/2);
-					build_table(); 
-					tfmaxnu = ltabi/fltb;
+				KaiserBessel(float alpha_ = 1.0f, 
+						     int K_ = 6, int ntable_ = 5999);
+				/** Compute the maximum error in the table */
+				float I0table_maxerror();
+				/** Kaiser-Bessel Sinh window function */
+				float sinhwin(float x) const;
+				/** Kaiser-Bessel I0 window function */
+				float i0win(float x) const;
+				/** Kaiser-Bessel I0 window function (uses table lookup) */
+				float i0win_tab(float x) const {
+					float absx = fabs(x);
+					if (absx > v) return 0.f;
+					float loc = absx/dtable;
+					return i0table[int(loc + 0.5f)];
 				}
-				/** 1-D Real-space Kaiser-Bessel window function */
-				float kb1d(float x) const;
-				/** 1-D Fourier-space Kaiser-Bessel window function */
-				float kbtf1d(float nu) const {
-					float pos = fabs(nu)*fltb;
-					return tabi[int(pos + 0.5f)];
+				/** Return the size of the I0 window */
+				int get_window_size() const { return K; }
+				/** Sinh window function object */
+				class kbsinh_win {
+					KaiserBessel& kb;
+					public:
+					kbsinh_win(KaiserBessel& kb_) : kb(kb_) {}
+					float operator()(float x) const {
+						return kb.sinhwin(x);
+					}
+					int get_window_size() const {return kb.get_window_size();}
+				};
+				/** Sinh window function object factory */
+				kbsinh_win get_kbsinh_win() { 
+					return kbsinh_win(*this);
 				}
-				float get_tfmaxinput() const { return tfmaxnu; }
-				float get_window_size() const { return ln+1; }
-				float get_table_entry(int i) const { 
-					if (i <= ltabi ) 
-						return tabi[i];
-					throw InvalidValueException(i, "Value out of range");
+				/** I0 window function object */
+				class kbi0_win {
+					KaiserBessel& kb;
+					public:
+					kbi0_win(KaiserBessel& kb_) : kb(kb_) {}
+					float operator()(float x) const {
+						return kb.i0win(x);
+					}
+					int get_window_size() const {return kb.get_window_size();}
+				};
+				/** I0 window function object factory */
+				kbi0_win get_kbi0_win() { 
+					return kbi0_win(*this);
 				}
-				void dump_table() const {
-					for (int i = 0; i < ltabi; i++)
-						std::cout << tabi[i] << std::endl;
-				}
+		};
+
+		/** Gaussian function class.
+		 *
+		 *  Usage:
+		 *
+		 *     Gaussian gauss(sigma);
+		 *     float g = gauss(x);
+		 */
+		class Gaussian {
+			float sigma;
+			float rttwopisigma;
+			float twosigma2;
+			public:
+			Gaussian(float sigma_ = 1.0) : sigma(sigma_) {
+				rttwopisigma = sqrt(twopi*sigma);
+				twosigma2 = 2*sigma*sigma;
+			}
+			inline float operator()(float x) const {
+				return exp(-x*x/(twosigma2))/rttwopisigma;
+			}
 		};
 
 		/** Sign function

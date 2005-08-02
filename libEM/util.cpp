@@ -983,41 +983,63 @@ float Util::quadri(float x, float y, int nxdata, int nydata,
 	return result;
 }
 
-void Util::KaiserBessel::build_table()  {
-	int n = 2*m;
-	// Adjust "v" to ensure that it is not zero at the window border
-	float vadjust = 1.1*v;
-	if (ltabi > ltab) fill(tabi+ltab+1, tabi+ltabi+1, 0.f);
-	float fac = twopi*alpha*rrr*vadjust;
-	float b0 = sqrt(fac)*gsl_sf_bessel_I0(fac);
-	for (int i = 0; i <=ltab; i++) {
-		float s = float(i)/(fltb*n);
-		if (s < vadjust) {
-			float xx = sqrt(1.0f - pow(s/vadjust, 2));
-			tabi[i] = sqrt(fac*xx)*gsl_sf_bessel_I0(fac*xx)/b0;
-		} else {
-			tabi[i] = 0.0f;
-		}
+Util::KaiserBessel::KaiserBessel(float alpha_, 
+		                              int K_, int ntable_) 
+		: alpha(alpha_), K(K_), ntable(ntable_) {
+	// Implicitly assumes that dx is 1 pixel
+	r = 1.f/2.f; 
+	v = float(K/2);
+	fac = twopi*alpha*r*v;
+	//fac = .5f*twopi*alpha*r*v;
+	alphar = alpha*r;
+	build_I0table();
+}
+
+float Util::KaiserBessel::i0win(float x) const {
+	float val0 = gsl_sf_bessel_I0(fac)/(2*v);
+	float absx = fabs(x);
+	if (absx > v) return 0.f;
+	float rt = sqrt(1.f - pow(x/v,2));
+	return gsl_sf_bessel_I0(fac*rt)/(2*v)/val0;
+}
+
+void Util::KaiserBessel::build_I0table() {
+	i0table.resize(ntable+1); // i0table[0:ntable]
+	dtable = v / ntable;
+	for (int i=0; i <= ntable; i++) {
+		float x = i*dtable;
+		i0table[i] = i0win(x);
 	}
 }
 
-float Util::KaiserBessel::kb1d(float x) const {
-	float fac = twopi*alpha*rrr*v;
-	float kb_0 = sinh(fac)/(fac);
-	float xscale = x/rrr;
-	float kb_x = 0;
-	if (0.0 == xscale) {
-		kb_x = 1.0f;
-	} else if (xscale < alpha) {
-		float xx = sqrt(1.0f - pow((xscale/alpha), 2));
-		kb_x = (sinh(fac*xx)/(fac*xx))/kb_0;
-	} else if (xscale == alpha) {
-		kb_x = 1.0f/kb_0;
-	} else {
-		float xx = sqrt(pow(xscale/alpha, 2) - 1.0f);
-		kb_x = (sin(fac*xx)/(fac*xx))/kb_0;
+float Util::KaiserBessel::I0table_maxerror() {
+	float maxdiff = 0.f;
+	for (int i = 1; i <= ntable; i++) {
+		float diff = fabs(i0table[i] - i0table[i-1]);
+		if (diff > maxdiff) maxdiff = diff;
 	}
-	return kb_x;
+	return maxdiff;
+}
+
+float Util::KaiserBessel::sinhwin(float x) const {
+	float val0 = sinh(fac)/fac;
+	float absx = fabs(x);
+	if (0.0 == x) {
+		float res = 1.0f;
+		return res;
+	} else if (absx == alphar) {
+		return 1.0f/val0;
+	} else if (absx < alphar) {
+		float rt = sqrt(1.0f - pow((x/alphar), 2));
+		float facrt = fac*rt;
+		float res = (sinh(facrt)/facrt)/val0;
+		return res;
+	} else {
+		float rt = sqrt(pow((x/alphar) - 1.f, 2));
+		float facrt = fac*rt;
+		float res = (sin(facrt)/facrt)/val0;
+		return res;
+	}
 }
 
 /* vim: set ts=4 noet: */
