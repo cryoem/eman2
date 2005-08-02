@@ -1566,11 +1566,6 @@ namespace EMAN
 		 */
 		void nn(MIArray3D& norm, EMData* myfft, const Transform3D& tf);
 
-		/** Divide image by Kaiser-Bessel weights
-		 *  Modifies the current object.
-		 */
-		void divkb2(const Util::KaiserBessel& kb);
-
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
 		 *
