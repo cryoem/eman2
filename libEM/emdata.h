@@ -1597,7 +1597,46 @@ namespace EMAN
 		 */
 		EMData* 
 		rot_scale_trans2D(float ang, float scale, float delx, 
-						  float dely, int zslice = 1);
+			 			float dely, int zslice = 1);
+		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
+		 *  
+		 *  The only requirement for the window function object is that
+		 *  it overload operator()(const float) and return a float.
+		 *
+		 *  @param[in] x x-value of the desired (potentially off-grid) point
+		 *  @param[in] y y-value of the desired (potentially off-grid) point
+		 *  @param[in] win Window (mask/kernel) function object.
+		 *  @param[in] size Size of real-space kernel/mask.
+		 *
+		 *  @return Value of masked/convolved image at (x,y)
+		 */
+		//template<class Win>
+		//float getconvpt2d(float x, float y, Win win, int size = 7);
+		float getconvpt2d_kbi0(float x, float y, 
+				Util::KaiserBessel::kbi0_win win, int size = 7);
+		/** 2-D rotation using gridding convolution.
+		 *  
+		 *  The only requirement for the window function object is that
+		 *  it overload operator()(const float) and return a float.
+		 *
+		 *  This routine does _not_ deconvolve out the window function
+		 *  after rotation.
+		 *
+		 *  @param[in] x x-value of the desired (potentially off-grid) point
+		 *  @param[in] y y-value of the desired (potentially off-grid) point
+		 *  @param[in] win Window (mask/kernel) function object.
+		 *  @param[in] size Size of real-space kernel/mask.
+		 *
+		 *  @return Rotated/convolved EMData image.
+		 */
+		//template<class Win>
+		//EMData* rotconvtrunc2d(float ang, Win win, int size = 7);
+		//EMData* rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
+		//	Util::KaiserBessel kb(alpha, size-1);
+		//	return rotconvtrunc2d(ang, kb.get_kbi0_win(), size);
+		//}
+		EMData* rotconvtrunc2d_kbi0(float ang, float alpha, int size);
+
 
 	private:
 		enum EMDataFlags {

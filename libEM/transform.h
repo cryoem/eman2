@@ -176,6 +176,7 @@ namespace EMAN
 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
 
 
+
 }  // ends NameSpace EMAN
 
 

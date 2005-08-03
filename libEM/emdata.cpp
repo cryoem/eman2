@@ -6504,4 +6504,149 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	return ret;
 }
 
+#if 0
+template<class Win>
+float EMData::getconvpt2d(float x, float y, Win win, int size) {
+	const int nxhalf = nx/2;
+	const int nyhalf = ny/2;
+	const int bd = size/2;
+	float* wxarr = new float[size];
+	float* wyarr = new float[size];
+	float* wx = wxarr + bd; // wx[-bd] = wxarr[0]
+	float* wy = wyarr + bd;
+	int ixc = int(x + 0.5f*Util::sgn(x));
+	int iyc = int(y + 0.5f*Util::sgn(y));
+	if (abs(ixc) > nxhalf)
+		throw InvalidValueException(ixc, "getconv: X value out of range");
+	if (abs(iyc) > nyhalf)
+		throw InvalidValueException(ixc, "getconv: Y value out of range");
+	for (int i = -bd; i <= bd; i++) {
+		int iyp = iyc + i;
+		wy[i] = win(y - iyp);
+		int ixp = ixc + i;
+		wx[i] = win(x - ixp);
+	}
+	MArray2D imgarr = get_2dview(-nxhalf, -nyhalf);
+	float conv = 0.f, wsum = 0.f;
+	for (int iy = -bd; iy <= bd; iy++) {
+		int iyp = iyc + iy;
+		for (int ix = -bd; ix <= bd; ix++) {
+			int ixp = ixc + ix;
+			float wg = wx[ix]*wy[iy];
+			conv += imgarr[ixp][iyp]*wg;
+			wsum += wg;
+		}
+	}
+	delete [] wxarr;
+	delete [] wyarr;
+	//return conv/wsum;
+	return conv;
+}
+
+template<class Win>
+EMData* EMData::rotconvtrunc2d(float ang, Win win, int size) {
+    // truncate anything outside r=min(nx/2,ny/x)-window
+    int nx = get_xsize();
+    int ny = get_ysize();
+    int nxhalf = nx/2;
+    int nyhalf = ny/2;
+    float rmax = float(std::min(nxhalf,nyhalf))
+               - float(size/2);
+    float rmax2 = rmax*rmax;
+    if (1 >= ny) 
+        throw ImageDimensionException("Can't rotate 1D image");
+	EMData* ret = copy_head();
+    float cod = cos(ang*dgr_to_rad);
+    float sid = sin(ang*dgr_to_rad);
+    MArray2D out = ret->get_2dview(-nxhalf,-nyhalf);
+    MArray2D in  = get_2dview(-nxhalf,-nyhalf);
+    for (int iy = -nyhalf; iy < nyhalf + ny%2; iy++) {
+        float ycod = iy*cod;
+        float ysid = -iy*sid;
+        for (int ix = -nxhalf; ix < nxhalf + nx%2; ix++) {
+            if (ix*ix + iy*iy <= rmax2) {
+                float yold = ix*sid + ycod;
+                float xold = ix*cod + ysid;
+                out[ix][iy] =  getconvpt2d(xold, yold, win);
+            } else {
+                out[ix][iy] = in[ix][iy];
+            }
+        }
+    }
+	ret->done_data();
+    return ret;
+}
+#endif // 0
+
+float EMData::getconvpt2d_kbi0(float x, float y, 
+		Util::KaiserBessel::kbi0_win win, int size) {
+	const int nxhalf = nx/2;
+	const int nyhalf = ny/2;
+	const int bd = size/2;
+	float* wxarr = new float[size];
+	float* wyarr = new float[size];
+	float* wx = wxarr + bd; // wx[-bd] = wxarr[0]
+	float* wy = wyarr + bd;
+	int ixc = int(x + 0.5f*Util::sgn(x));
+	int iyc = int(y + 0.5f*Util::sgn(y));
+	if (abs(ixc) > nxhalf)
+		throw InvalidValueException(ixc, "getconv: X value out of range");
+	if (abs(iyc) > nyhalf)
+		throw InvalidValueException(ixc, "getconv: Y value out of range");
+	for (int i = -bd; i <= bd; i++) {
+		int iyp = iyc + i;
+		wy[i] = win(y - iyp);
+		int ixp = ixc + i;
+		wx[i] = win(x - ixp);
+	}
+	MArray2D imgarr = get_2dview(-nxhalf, -nyhalf);
+	float conv = 0.f, wsum = 0.f;
+	for (int iy = -bd; iy <= bd; iy++) {
+		int iyp = iyc + iy;
+		for (int ix = -bd; ix <= bd; ix++) {
+			int ixp = ixc + ix;
+			float wg = wx[ix]*wy[iy];
+			conv += imgarr[ixp][iyp]*wg;
+			wsum += wg;
+		}
+	}
+	delete [] wxarr;
+	delete [] wyarr;
+	//return conv/wsum;
+	return conv;
+}
+
+EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
+    // truncate anything outside r=min(nx/2,ny/x)-window
+    int nx = get_xsize();
+    int ny = get_ysize();
+    int nxhalf = nx/2;
+    int nyhalf = ny/2;
+    float rmax = float(std::min(nxhalf,nyhalf))
+               - float(size/2);
+    float rmax2 = rmax*rmax;
+	Util::KaiserBessel kb(alpha, size-1);
+    if (1 >= ny) 
+        throw ImageDimensionException("Can't rotate 1D image");
+	EMData* ret = copy_head();
+    float cod = cos(ang*dgr_to_rad);
+    float sid = sin(ang*dgr_to_rad);
+    MArray2D out = ret->get_2dview(-nxhalf,-nyhalf);
+    MArray2D in  = get_2dview(-nxhalf,-nyhalf);
+    for (int iy = -nyhalf; iy < nyhalf + ny%2; iy++) {
+        float ycod = iy*cod;
+        float ysid = -iy*sid;
+        for (int ix = -nxhalf; ix < nxhalf + nx%2; ix++) {
+            if (ix*ix + iy*iy <= rmax2) {
+                float yold = ix*sid + ycod;
+                float xold = ix*cod + ysid;
+                out[ix][iy] =  getconvpt2d_kbi0(xold, yold, kb.get_kbi0_win());
+            } else {
+                out[ix][iy] = in[ix][iy];
+            }
+        }
+    }
+	ret->done_data();
+    return ret;
+}
 /* vim: set ts=4 noet: */
