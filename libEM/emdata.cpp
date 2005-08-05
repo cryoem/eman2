@@ -1076,7 +1076,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 			kIntm1= kInt-1;
 			Count++;
 
-			kValue =sqrt( jkx^2 +  jky^2  ) ;
+			kValue =sqrt( float(jkx^2 +  jky^2 ) ) ;
 //        		mMaxR= floor(ScalFactor*kValue +10);
 
  //                   How many copies

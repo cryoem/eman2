@@ -492,14 +492,21 @@ void Util::save_data(float x0, float dx, float *y_array,
 
 void Util::spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m) //PRB
 {
+
+	float x0= x[0];
+	float x1= x[1];
+	float x2= x[2];
 	float y0= y[0];
 	float y1= y[1];
 	float y2= y[2];
-	float yp1 =  (y1-y0) + .5*(2*y1-y0-y2);
+	float yp1 =  (y1-y0)/(x1-x0) +  (y2-y0)/(x2-x0) - (y2-y1)/(x2-x1)  ;
+	float xn  = x[n];
+	float xnm1= x[n-1];
+	float xnm2= x[n-2];
 	float yn  = y[n];
 	float ynm1= y[n-1];
 	float ynm2= y[n-2];
-	float ypn=  (yn-ynm1) + .5*(2*ynm1-yn-ynm2);
+	float ypn=  (yn-ynm1)/(xn-xnm1) +  (yn-ynm2)/(xn-xnm2) - (ynm1-ynm2)/(xnm1-xnm2) ;
 	float *y2d = new float[n];
 	Util::spline(x,y,n,yp1,ypn,y2d);
 	Util::splint(x,y,y2d,n,xq,yq,m); //PRB
