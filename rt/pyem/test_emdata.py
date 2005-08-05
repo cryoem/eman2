@@ -106,7 +106,54 @@ class TestEMData(unittest.TestCase):
         for k in range(10):
             for j in range(10):
                 for i in range(10):
-                    self.assertEqual(d1[k+16][j+16][i+16], d2[k][j][i])
+                    self.assertEqual(d1[i+16][j+16][k+16], d2[i][j][k])
+
+    def test_get_top_half(self):
+        """test get_top_half() function ....................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_zero()
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.get_top_half()
+        d = e.get_3dview()
+        d2 = e2.get_3dview()
+        for k in range(16):
+            for j in range(32):
+                for i in range(32):
+                    self.assertEqual(d[i][j][k], d2[i][j][k])
+        
+        e3 = EMData()
+        e3.set_size(32,32,1)
+        e3.to_one()
+        #get_top_half() should raise exception when apply to 2D image
+        self.assertRaises( RuntimeError, e3.get_top_half, )
+        try:
+            e3.get_top_half()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+
+    def test_insert_scaled_sum(self):
+        """test insert_scaled_sum() function ................"""
+        e = EMData()
+        e.set_size(64,64,64)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.to_one()
+        e.insert_scaled_sum(e2, (32,32,32))
+        
+        e3 = EMData()
+        e3.set_size(32,1,1)
+        e3.to_zero()
+        e4 = EMData()
+        e4.set_size(12,1,1)
+        e4.to_one()
+        #insert_scaled_sum() will raise exception for 1D image
+        #self.assertRaises( RuntimeError, e3.insert_scaled_sum, e4, (0,0,0))
+        try:
+            e3.insert_scaled_sum(e4, (0,0,0))
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
     def test_make_rotational_footprint(self):
         """test make_rotational_footprint() function ........"""
@@ -151,8 +198,7 @@ class TestEMData(unittest.TestCase):
             for j in range(ny):
                 for i in range(nx):
                     self.assertEqual(e.get_value_at(i, j, k), 1.0)
-        
-        
+           
     def test_real_operator_unary(self):
         """test real unary operator of EMData ..............."""
         e = EMData()
@@ -359,7 +405,6 @@ class TestEMData(unittest.TestCase):
 
         os.unlink(infile)
 
-
     def test_rotate_translate(self):
         """test rotate_translate ............................"""
         infile = "test_rotate_translate.mrc"
@@ -379,8 +424,7 @@ class TestEMData(unittest.TestCase):
         testlib.check_emdata(x, sys.argv[0])
 
         os.unlink(infile)
-        
-        
+                
     def test_rotate_2d(self):
         """test rotate_2d ..................................."""
         infile = "test_rotate_2d.mrc"
@@ -449,7 +493,6 @@ class TestEMData(unittest.TestCase):
 
         os.unlink(infile)
 
-    # need some fix to remove file dependency
     def test_get_attr_dict(self):
         """test get_attr_dict() function ...................."""
         imgfile = "tablet.mrc"
@@ -526,7 +569,6 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(attrd["datatype"], EM_FLOAT_COMPLEX)
 
         os.unlink(infile)
-
         
     def test_set_value_at(self):
         """test set_value_at() .............................."""
@@ -570,7 +612,6 @@ class TestEMData(unittest.TestCase):
 
         os.unlink(file1)
 
-
     def test_stat_locations(self):
         """test locational stats ............................"""
         nx = 16
@@ -599,7 +640,6 @@ class TestEMData(unittest.TestCase):
         
         os.unlink(file1)
 
-
     def test_image_overwrite(self):
         """test overwriting a image ........................."""
         file1 = "test_image_overwrite.mrc"
@@ -624,8 +664,6 @@ class TestEMData(unittest.TestCase):
 
         os.unlink(file1)
         
-
-
     def test_ctf(self):
         """test ctf ........................................."""
         infile = "test_ctf_in.mrc"
@@ -651,7 +689,6 @@ class TestEMData(unittest.TestCase):
         os.unlink(infile)
         os.unlink(outfile)
         
-
     def no_test_statistics(self):
         """test statistics of EMData ........................"""
         e = EMData()
@@ -663,7 +700,8 @@ class TestEMData(unittest.TestCase):
         f.do_ift_inplace()
         descriptive_statistics(f)
         g = f*10
-        descriptive_statistic        
+        descriptive_statistic   
+             
 def test_main():
     test_support.run_unittest(TestEMData)
 
