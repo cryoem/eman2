@@ -2,11 +2,11 @@
 # Launch ipython with an appropriate profile
 
 from EMAN2 import *
-from Sparx import *
+from Golem import *
 try:
 	from IPython.Shell import IPShellEmbed
-	banner = "Welcome to Sparx."
-	ipshell = IPShellEmbed(banner="Welcome to Sparx.\n")
+	banner = "Welcome to Golem."
+	ipshell = IPShellEmbed(banner="Welcome to Golem.\n")
 	ipshell()
 except:
 	print 'Please install "ipython".'

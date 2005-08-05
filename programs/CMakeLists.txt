@@ -1,3 +1,3 @@
 LINK_LIBRARIES(EM2)
 INSTALL_PROGRAMS(/bin "^.+\\.py$")
-INSTALL_PROGRAMS(/bin sparx)
+INSTALL_PROGRAMS(/bin golem)
