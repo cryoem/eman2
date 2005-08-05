@@ -288,6 +288,22 @@ namespace EMAN
 		 */
 		void postift_depad_corner_inplace();
 
+
+
+		/** returns the fourier harmonic transform (FH) image of the current
+		 * image (in real space). The current image is not changed. The result is in
+		 * real/imaginary format. The FH switch is set on.
+		 *
+		 */
+		EMData *real2FH(float OverSamplekB);
+
+		/** returns the fourier version of the image 
+		 * from the FH version. The current image is not changed. The result is in
+		 * real/imaginary format. The FH switch is set off.
+		 *
+		 */
+		EMData *FH2F(int Size, float OverSamplekB);
+
 		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
 		 * real/imaginary format.

@@ -290,7 +290,17 @@ namespace EMAN
 		static void save_data(float x0, float dx, float *y_array, 
 							  size_t array_size, const string & filename);
 
-		/** Given a tabulated function y of x (ordered), and
+		/** Given a tabulated function y of x (n unordered points), and
+		 * Given the values of the m values xq to be interpolated
+		 * This routine returns the interpolated array yq, PRB
+		 * This function is called by splint 
+		 * @param[in] y of x is the tabulated function of length n
+		 * @param[in] xq is the x values to be splined: has m points.
+		 * @param[out]  yq are the splined values
+		*/
+		static void spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m); //PRB
+
+		/** Given a tabulated function y of x (unordered), and
 		 * Given the values of the first derivatives at the end points
 		 * This routine returns an array y2, that contains the second derivatives
 		 * of the function at the tabulated points.   PRB
@@ -329,7 +339,7 @@ namespace EMAN
 		 * @param[out] weightofkvalsSorted the number of sites at that distance
 		 */
 		 static void Radialize(int *PermMatTr,  float * kValsSorted,
-		            float *weightofkvalsSorted, int Size);
+		            float *weightofkvalsSorted, int Size, int *SizeReturned);
 				     
 		
 		/** Get a float random number between low and high.

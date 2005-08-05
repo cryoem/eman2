@@ -14,6 +14,9 @@
 #include "byteorder.h"
 #include "emconstants.h"
 
+#include "gsl_sf_bessel.h"
+#include "gsl_errno.h"
+#include <complex>
 #include <algorithm>
 #include <boost/array.hpp>
 #include <iostream>
@@ -24,13 +27,14 @@
 #endif	//WIN32
 
 using namespace EMAN;
+using namespace std;
 
 int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
 
-EMData::EMData() 
+EMData::EMData()
 {
 	ENTERFUNC;
-	
+
 	rdata = 0;
 	supp = 0;
 	ctf = 0;
@@ -44,7 +48,7 @@ EMData::EMData()
 
 	attr_dict["is_complex"] = 0;
 	attr_dict["is_ri"] = 0;
-	
+
 	nx = 0;
 	ny = 0;
 	nz = 0;
@@ -78,7 +82,7 @@ EMData::~EMData()
 		delete rfp;
 		rfp = 0;
 	}
-	
+
 	EMData::totalalloc--;
 #ifdef MEMDEBUG
 	printf("EMDATA-  %4d    %p\n",EMData::totalalloc,this);
@@ -90,9 +94,9 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 						const Region * region, bool is_3d)
 {
 	ENTERFUNC;
-	
+
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
-	
+
 	if (!imageio) {
 		throw ImageFormatException("cannot create an image io");
 	}
@@ -110,7 +114,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			}
 
 			save_byteorder_to_dict(imageio);
-			
+
 			nx = attr_dict["nx"];
 			ny = attr_dict["ny"];
 			nz = attr_dict["nz"];
@@ -130,7 +134,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			else {
 				flags |= EMDATA_HASCTFF;
 			}
-			
+
 			if (!nodata) {
 				set_size(nx, ny, nz);
 				int err = imageio->read_data(rdata, img_index, region, is_3d);
@@ -151,7 +155,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		imageio = 0;
 	}
 #endif
-	
+
 	EXITFUNC;
 }
 
@@ -160,10 +164,10 @@ void EMData::write_image(const string & filename, int img_index,
 						 EMUtil::ImageType imgtype,
 						 bool header_only, const Region * region,
 						 EMUtil::EMDataType filestoragetype,
-						 bool use_host_endian) 
+						 bool use_host_endian)
 {
 	ENTERFUNC;
- 
+
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		char *ext = strrchr(filename.c_str(), '.');
 		if (ext) {
@@ -191,7 +195,7 @@ void EMData::write_image(const string & filename, int img_index,
 #endif
 		}
 	}
-	
+
 	LOGVAR("getimageio %d",rwmode);
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
 	if (!imageio) {
@@ -224,7 +228,7 @@ void EMData::write_image(const string & filename, int img_index,
 					if (refn < 0) {
 						refn = pathnum;
 					}
-					
+
 					const char *comment = attr_dict["LST.comment"];
 					char *lstdata = new char[1024];
 					sprintf(lstdata, "%d\t%s", refn, reffile);
@@ -249,7 +253,7 @@ void EMData::write_image(const string & filename, int img_index,
 				if (err) {
 					imageio->flush();
 					throw ImageWriteException(filename, "imageio write data failed");
-				}			
+				}
 			}
 		}
 	}
@@ -262,9 +266,9 @@ void EMData::write_image(const string & filename, int img_index,
 		imageio = 0;
 	}
 #endif
-		
 
-	
+
+
 	EXITFUNC;
 }
 
@@ -276,7 +280,7 @@ void EMData::append_image(const string & filename,
 	EXITFUNC;
 }
 
-void EMData::write_lst(const string & filename, const string & reffile, 
+void EMData::write_lst(const string & filename, const string & reffile,
 					   int refn, const string & comment)
 {
 	ENTERFUNC;
@@ -316,12 +320,12 @@ float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 			c = 0;
 		}
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
 
-EMData *EMData::align(const string & aligner_name, EMData * to_img, 
+EMData *EMData::align(const string & aligner_name, EMData * to_img,
 					  const Dict & params, const string & cmp_name, const Dict& cmp_params)
 {
 	ENTERFUNC;
@@ -367,12 +371,12 @@ EMData *EMData::copy() const
 {
 	ENTERFUNC;
 	EMData *ret = new EMData();
-	
+
 	ret->set_size(nx, ny, nz);
 	float *data = ret->get_data();
 	memcpy(data, rdata, nx * ny * nz * sizeof(float));
 	ret->done_data();
-	
+
 
 	if (ctf) {
 		ret->ctf = new SimpleCtf();
@@ -388,7 +392,7 @@ EMData *EMData::copy() const
 	ret->pathnum = pathnum;
 	ret->attr_dict = attr_dict;
 	ret->update();
-	
+
 	EXITFUNC;
 	return ret;
 }
@@ -431,7 +435,7 @@ EMData *EMData::get_rotated_clip(const Transform3D &xform,
 			for (int x=-size[0]/2; x<size[0]/2; x++) {
 				Vec3f xv=Vec3f((float)x,(float)y,(float)z)*xform;
 				float v = 0;
-				
+
 				if (xv[0]<0||xv[1]<0||xv[2]<0||xv[0]>nx-2||xv[1]>ny-2||xv[2]>nz-2) v=0.;
 				else v=sget_value_at_interp(xv[0],xv[1],xv[2]);
 				result->set_value_at(x+size[0]/2,y+size[1]/2,z+size[2]/2,v);
@@ -439,7 +443,7 @@ EMData *EMData::get_rotated_clip(const Transform3D &xform,
 		}
 	}
 	result->update();
-	
+
 	return result;
 }
 
@@ -467,10 +471,10 @@ EMData *EMData::get_clip(const Region & area)
 
 	int z0 = (int) area.origin[2];
 	z0 = z0 < 0 ? 0 : z0;
-								
+
 	int x1 = (int) (area.origin[0] + area.size[0]);
 	x1 = x1 > nx ? nx : x1;
-										
+
 	int y1 = (int) (area.origin[1] + area.size[1]);
 	y1 = y1 > ny ? ny : y1;
 
@@ -479,7 +483,7 @@ EMData *EMData::get_clip(const Region & area)
 	if (z1 <= 0) {
 		z1 = 1;
 	}
-	
+
 	int xd0 = (int) (area.origin[0] < 0 ? -area.origin[0] : 0);
 	int yd0 = (int) (area.origin[1] < 0 ? -area.origin[1] : 0);
 	int zd0 = (int) (area.origin[2] < 0 ? -area.origin[2] : 0);
@@ -494,7 +498,7 @@ EMData *EMData::get_clip(const Region & area)
 
 	int src_gap = src_secsize - (y1-y0) * nx;
 	int dst_gap = dst_secsize - (y1-y0) * (int)area.size[0];
-	
+
 	for (int i = z0; i < z1; i++) {
 		for (int j = y0; j < y1; j++) {
 			memcpy(dst, src, clipped_row_size);
@@ -508,24 +512,24 @@ EMData *EMData::get_clip(const Region & area)
 	done_data();
 	result->done_data();
 
-	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") && 
+	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
 		attr_dict.has_key("apix_z") )
 	{
 		result->attr_dict["apix_x"] = attr_dict["apix_x"];
 		result->attr_dict["apix_y"] = attr_dict["apix_y"];
 		result->attr_dict["apix_z"] = attr_dict["apix_z"];
 
-		if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") && 
+		if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") &&
 		    attr_dict.has_key("origin_sec") )
 		{
 			float xorigin = attr_dict["origin_row"];
 			float yorigin = attr_dict["origin_col"];
 			float zorigin = attr_dict["origin_sec"];
-	
+
 			float apix_x = attr_dict["apix_x"];
 			float apix_y = attr_dict["apix_y"];
 			float apix_z = attr_dict["apix_z"];
-	
+
 			result->set_xyz_origin(xorigin + apix_x * area.origin[0],
 							   	   yorigin + apix_y * area.origin[1],
 							       zorigin + apix_z * area.origin[2]);
@@ -580,7 +584,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 }
 
 void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
-							   float scale, float) 
+							   float scale, float)
 {
 	ENTERFUNC;
 if (get_ndim()==3) {
@@ -594,9 +598,9 @@ if (get_ndim()==3) {
 	int y1=(int)center[1]+ys;
 	int z0=(int)center[2]-zs;
 	int z1=(int)center[2]+zs;
-	
+
 	if (x1<0||y1<0||z1<0||x0>get_xsize()||y0>get_ysize()||z0>get_zsize()) return;	// object is completely outside the target volume
-	
+
 	// make sure we stay inside the volume
 	if (x0<0) x0=0;
 	if (y0<0) y0=0;
@@ -604,15 +608,15 @@ if (get_ndim()==3) {
 	if (x1>get_xsize()) x1=get_xsize();
 	if (y1>get_ysize()) y1=get_ysize();
 	if (z1>get_zsize()) z1=get_zsize();
-	
+
 	float bx=block->get_xsize()/2.0f;
 	float by=block->get_ysize()/2.0f;
 	float bz=block->get_zsize()/2.0f;
-	
+
 	for (int x=x0; x<x1; x++) {
 		for (int y=y0; y<y1; y++) {
 			for (int z=z0; z<z1; z++) {
-				rdata[x + y * nx + z * nx * ny] += 
+				rdata[x + y * nx + z * nx * ny] +=
 					block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
 			}
 		}
@@ -627,21 +631,21 @@ else if (get_ndim()==2) {
 	int x1=(int)center[0]+xs;
 	int y0=(int)center[1]-ys;
 	int y1=(int)center[1]+ys;
-	
+
 	if (x1<0||y1<0||x0>get_xsize()||y0>get_ysize()) return;	// object is completely outside the target volume
-	
+
 	// make sure we stay inside the volume
 	if (x0<0) x0=0;
 	if (y0<0) y0=0;
 	if (x1>get_xsize()) x1=get_xsize();
 	if (y1>get_ysize()) y1=get_ysize();
-	
+
 	float bx=block->get_xsize()/2.0f;
 	float by=block->get_ysize()/2.0f;
-	
+
 	for (int x=x0; x<x1; x++) {
 		for (int y=y0; y<y1; y++) {
-			rdata[x + y * nx] += 
+			rdata[x + y * nx] +=
 				block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by);
 		}
 	}
@@ -662,7 +666,7 @@ EMData *EMData::get_top_half() const
 	if (get_ndim() != 3) {
 		throw ImageDimensionException("3D only");
 	}
-	
+
 	EMData *half = new EMData();
 	half->attr_dict = attr_dict;
 	half->set_size(nx, ny, nz / 2);
@@ -874,7 +878,7 @@ void EMData::center_origin_fft()
 	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2]
 	boost::array<MCArray3D::index,3> bases = {{0, 1, 1}};
 	dat.reindex(bases);
-	int xmax = (is_fftodd()) 
+	int xmax = (is_fftodd())
 		? (nx-1)/2 + 1
 		: (nx-2)/2;
 	for (int iz = 1; iz <= nz; iz++) {
@@ -925,9 +929,9 @@ EMData* EMData::zeropad_ntimes(int npad) {
 }
 
 /** #G2#
-Purpose: Create a new [npad-times zero-padded] fft-extended real image.  
+Purpose: Create a new [npad-times zero-padded] fft-extended real image.
 Method: Pad with zeros npad-times (npad may be 1, which is the default) and extend for fft,
-return new real image.  
+return new real image.
 Input: f real n-dimensional image
 npad specify number of times to extend the image with zeros (default npad = 1, meaning no
 padding)
@@ -994,11 +998,368 @@ EMData* EMData::pad_fft(int npad) {
 }
 
 
+EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
+{
+	int nx=get_xsize();
+	int ny=get_ysize();
+	int nz=get_zsize();
+	float ScalFactor=4.1;
+	int Center = (int) floor((Size+1.0)/2.0 +.1);
+	int CenterM= Center-1;
+	int CountMax = (Center+1)*Center/2;
+
+	int   *PermMatTr           = new int[CountMax];
+	float *RValsSorted         = new float[CountMax];
+	float *weightofkValsSorted = new float[CountMax];
+	int *SizeReturned = new int[1];
+	Util::Radialize(PermMatTr, RValsSorted,weightofkValsSorted,Size, SizeReturned);
+	int RIntMax= SizeReturned[0];  // replaces CountMax; the latter should now never be used.
+//	kVec2Use = (0:1/OverSamplek:RValsSorted(RIntMax)+1/OverSamplek); %   in pixels  (otherwise need *2*pi/Size)
+
+	int mMax = (int) floor( ScalFactor*RValsSorted[RIntMax-1]+10.0);
+
+	int    kIntMax  = 2+ (int) floor( RValsSorted[RIntMax-1]*OverSamplekB);
+	float *kVec2Use = new float[kIntMax];
+	for (int kk=0; kk<kIntMax; kk++){
+		kVec2Use[kk]= ((float) kk)/OverSamplekB;}
+
+
+
+
+	printf("nx=%d, ny=%d, nz=%d Center=%d mMax=%d CountMax=%d kIntMax=%d Centerm1=%d  Size=%d\n\n",
+	    nx,ny,nz, Center, mMax, CountMax, kIntMax,  CenterM, Size);
+
+
+	MArray2D rhoOfkmB = get_2dview();
+
+//     check mMax's are equal
+//     check kIntMax's are equal
+
+	if ( (nx==2*(mMax+1)) && (ny==kIntMax) &&(nz==1) ) {
+
+
+
+	EMData* tempCopy = copy();
+	tempCopy->set_size(2*(mMax+1),RIntMax);
+	tempCopy->to_zero();
+	MArray2D rhoOfkandm = tempCopy->get_2dview();
+//	float rhoOfkandm = new MArray2D
+//	printf("rhoOfkandm \n");
+	for (int mr=0; mr <2*(mMax+1); mr++){
+		float *Row= new float[kIntMax];
+		float *RowOut= new float[RIntMax];
+		for (int ii=0; ii<kIntMax; ii++){ Row[ii]=rhoOfkmB[mr][ii];}
+		Util::spline_mat(kVec2Use, Row, kIntMax,  RValsSorted, RowOut, RIntMax ); 
+		for (int ii=0; ii<RIntMax; ii++){
+			rhoOfkandm[mr][ii] = RowOut[ii];
+//			printf("%3.3f  ",RowOut[ii]);
+		}
+//		printf(" \n");
+//		rhoOfkandm(m+1,:) = spline(kVec2Use,rhoOfkmBReIm(m+1,1:kIntMax),kIntMax,RValsSorted);
+	}
+	tempCopy->done_data();
+
+//          So far so good PRB ....
+
+	EMData* outCopy = tempCopy -> copy();
+	outCopy->set_size(2*Size,Size,1);
+	outCopy->to_zero();
+	MArray2D ImBWfftRm = outCopy->get_2dview();
+
+	int Count =0, kInt, kIntm1;
+	complex <float> ImfTemp;
+	float kValue, thetak;
+	
+	for (int jkx=0; jkx <Center; jkx++) { // These index the outputted picture
+		for (int jky=0; jky<=jkx; jky++){
+			kInt = PermMatTr[Count];
+			kIntm1= kInt-1;
+			Count++;
+
+			kValue =sqrt( jkx^2 +  jky^2  ) ;
+//        		mMaxR= floor(ScalFactor*kValue +10);
+
+ //                   How many copies
+
+			thetak = atan2(jky,jkx);
+			ImfTemp = rhoOfkandm[0][kIntm1];
+        		for (int mm= 1; mm <mMax;mm++) {  // The index for m
+				complex <float> fact(0,-mm*thetak);
+				complex <float> expfact= exp(fact);
+				complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+				ImfTemp +=   expfact * tempRho + float(1-2*(mm%2))  *conj(expfact*tempRho);//pow(float(-1),mm)
+        		}
+ 			ImBWfftRm[2*(CenterM+jkx)][CenterM+jky]   = ImfTemp.real();
+			ImBWfftRm[2*(CenterM+jkx)+1][CenterM+jky] = ImfTemp.imag();
+//			printf("jkx=%d, jky=%d; %f + %f i \n",jkx,jky,ImfTemp.real(), ImfTemp.imag());
+
+			if (jky>0) {
+				thetak = atan2(-jky,jkx);
+				ImfTemp = rhoOfkandm[0][kIntm1];
+				for (int mm= 1; mm<mMax; mm++) { // The index for m
+					complex <float> fact(0,-mm*thetak);
+					complex <float> expfact= exp(fact);
+					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2))  *conj(expfact*tempRho);
+				}
+				ImBWfftRm[2*(CenterM+jkx)][CenterM-jky]   = ImfTemp.real();
+				ImBWfftRm[2*(CenterM+jkx)+1][CenterM-jky] = ImfTemp.imag();
+			}
+
+			if (jkx>0) {
+            			thetak = atan2(jky,-jkx);
+				ImfTemp = rhoOfkandm[0][kIntm1];
+				for (int mm= 1; mm<mMax; mm++) { // The index for m
+					complex <float> fact(0,-mm*thetak);
+					complex <float> expfact= exp(fact);
+					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+				}
+				ImBWfftRm[2*(CenterM-jkx)  ][CenterM+jky] = ImfTemp.real();
+				ImBWfftRm[2*(CenterM-jkx)+1][CenterM+jky] = ImfTemp.imag();
+			}
+
+ 			if (jkx>0 && jky>0) {
+				thetak = atan2(-jky,-jkx);
+				ImfTemp = rhoOfkandm[0][kIntm1];
+				for (int mm= 1; mm<mMax; mm++) {  // The index for m
+					complex <float> fact(0,-mm*thetak);
+					complex <float> expfact= exp(fact);
+					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+				}
+				ImBWfftRm[2*(CenterM-jkx)  ][CenterM-jky] = ImfTemp.real();
+				ImBWfftRm[2*(CenterM-jkx)+1][CenterM-jky] = ImfTemp.imag();
+			}
+
+			if (jky< jkx) {
+				thetak = atan2(jkx,jky);
+				ImfTemp = rhoOfkandm[0][kIntm1];
+				for (int mm= 1; mm<mMax; mm++){ // The index for m
+					complex <float> fact(0,-mm*thetak);
+					complex <float> expfact= exp(fact);
+					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+				}
+				ImBWfftRm[2*(CenterM+jky)  ][CenterM+jkx] = ImfTemp.real();
+				ImBWfftRm[2*(CenterM+jky)+1][CenterM+jkx] = ImfTemp.imag();
+
+				if (jky>0){
+					thetak = atan2(jkx,-jky);
+					ImfTemp = rhoOfkandm[0][kIntm1];
+					for (int mm= 1; mm <mMax; mm++) { // The index for m
+						complex <float> fact(0,-mm*thetak);
+						complex <float> expfact= exp(fact);
+						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+						ImfTemp +=  expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+					}
+					ImBWfftRm[2*(CenterM-jky)  ][CenterM+jkx] = ImfTemp.real();
+					ImBWfftRm[2*(CenterM-jky)+1][CenterM+jkx] = ImfTemp.imag();
+				}
+
+				 if (jkx>0) {
+					 thetak = atan2(-jkx,jky);
+					 ImfTemp = rhoOfkandm[0][kIntm1];
+					for (int mm= 1; mm <mMax; mm++) { // The index for m
+						complex <float> fact(0,-mm*thetak);
+						complex <float> expfact= exp(fact);
+						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+						ImfTemp +=  expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+ 					}
+					ImBWfftRm[2*(CenterM+jky)  ][CenterM-jkx] = ImfTemp.real();
+					ImBWfftRm[2*(CenterM+jky)+1][CenterM-jkx] = ImfTemp.imag();
+ 				}
+
+	 			if (jkx>0 && jky>0) {
+					thetak = atan2(-jkx,-jky);
+					ImfTemp = rhoOfkandm[0][kIntm1];
+					for (int mm= 1; mm <mMax; mm++) { // The index for m
+						complex <float> fact(0,-mm*thetak);
+						complex <float> expfact= exp(fact);
+						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+						ImfTemp +=  expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+					}
+					ImBWfftRm[2*(CenterM-jky)  ][CenterM-jkx] = ImfTemp.real();
+					ImBWfftRm[2*(CenterM-jky)+1][CenterM-jkx] = ImfTemp.imag();
+ 				}
+ 			} // ends jky <jkx
+
+
+		} // ends jky
+	} // ends jkx
+	outCopy->done_data();
+	outCopy->set_complex(true);
+	outCopy->set_ri(true);
+	outCopy->set_FH(false);
+	outCopy->set_fftodd(true);
+	outCopy->set_shuffle(true);
+	return outCopy;
+	} else {
+		LOGERR("can't be an FH image not this size");
+		throw ImageFormatException("something strange about this image: not a FH");
+
+	}
+}  // ends FH2F
+
+
+EMData *EMData::real2FH(float OverSamplekB) // PRB
+{
+	int nx=get_xsize();
+	int ny=get_ysize();
+	int nz=get_zsize();
+	int Center = (int) floor( (nx+1.0)/2.0 +.01);
+	printf("nx=%d, ny=%d, nz=%d Center=%d\n", nx,ny,nz, Center);
+	float ScalFactor=4.1;
+	gsl_set_error_handler_off();
+
+	if ( (nz==1) && (nx==ny) && (!is_complex())  && (Center*2)==(nx+1)){
+		printf("entered if \n");fflush(stdout);
+		MArray2D ImBW = this ->get_2dview();
+		int Size=nx;
+		int iMax = (int) floor( (Size-1.0)/2 +.01);
+		int CountMax = (iMax+2)*(iMax+1)/2;
+		int *PermMatTr  = new int[CountMax];
+		float *RValsSorted  = new float[CountMax];
+		float *weightofkValsSorted = new float[CountMax];
+		int *SizeReturned = new int[1];
+		Util::Radialize(PermMatTr, RValsSorted,weightofkValsSorted,Size, SizeReturned);
+	  	int RIntMax= SizeReturned[0];
+
+		int mMax = (int) floor( ScalFactor*RValsSorted[RIntMax-1]+10.0);
+
+		int kIntMax=2+ (int) floor( RValsSorted[RIntMax-1]*OverSamplekB);
+		float *kVec2Use= new float[kIntMax];
+		for (int kk=0; kk<kIntMax; kk++){
+			kVec2Use[kk]= ((float) kk)/OverSamplekB;}
+
+		float *krVec= new float[kIntMax*RIntMax];
+		int Count=0;
+		for (int jk=0; jk<kIntMax; jk++ ){
+			for (int jR=0; jR<RIntMax; jR++ ){
+				krVec[Count]=2.*M_PI*RValsSorted[jR]
+					*kVec2Use[jk]/( (float) Size);
+				Count++;
+//				printf("krVec[%d]=%f \n",Count,krVec[Count-1]);fflush(stdout);
+		}} // end building up krVec
+		float krVecMin= kVec2Use[1]*RValsSorted[1];
+		float krVecMax = krVec[kIntMax*RIntMax-1]+krVecMin;
+		int Number2Use = (int) floor(OverSamplekB*krVecMax+1.0);
+		float *krVec2Use      = new float[Number2Use+1];
+		float *sampledBesselJ = new float[Number2Use+1];
+		printf("Size=%d, iMax=%d, SizeReturned=%d, RIntMax=%d, \n"
+		      "mMax=%d, kIntMax=%d, krVecMin=%f, krVecMax=%f,  Number2Use=%d  \n\n",
+			Size, iMax, SizeReturned[0], RIntMax, mMax, kIntMax,
+			       krVecMin,krVecMax,Number2Use);fflush(stdout);
+		for (int jkr=0; jkr<= Number2Use; jkr++) {
+			krVec2Use[jkr] =((float)jkr)*krVecMax/
+			            ((float)Number2Use);
+//			printf("krVec2Use[%d]=%f \n",jkr+1,krVec2Use[jkr]);fflush(stdout);
+		}
+
+
+		EMData* FH = copy(); // glibc detected ** malloc(); memory corruption
+//		printf("finished O \n");fflush(stdout);
+		FH->set_size(2*(mMax+1),kIntMax);
+		FH->to_zero();
+		MArray2D rhoOfkmB = FH->get_2dview();
+
+		int CenterM= Center-1; // to convert from Matlab to C++
+		complex <float> *rhoOfRandmTemp = new complex <float>[RIntMax];
+		complex <float> rhoTemp;
+		int PCount=0;
+
+
+		for (int m=0; m <=mMax; m++){
+		//    if m==mMax, tic, end
+			complex <float> tempF(0,-1);
+			complex <float> overallFactor = pow(tempF,m);  //(-i)^m ;  % I dropped off the 2 pi
+			complex <float> mI(0,m);
+			for (int ii=0; ii< RIntMax; ii++){ rhoOfRandmTemp[ii]=0;}
+			for (int jx=0; jx <Center ; jx++) {
+				for (int jy=0; jy <=jx; jy++){
+          				Count = (jx*jx+jx)/2 +1 +jy;
+					PCount = PermMatTr[Count-1];
+//					printf("PCount=%d, Count=%d \n", PCount, Count);
+  				        rhoTemp =  complex <float> (ImBW[CenterM+jx][CenterM+jy]) *exp(mI* complex <float> (atan2(+jy,+jx)))
+				         +   complex <float> (ImBW[CenterM+jx][CenterM-jy]) * exp(mI*complex <float>(atan2(-jy,+jx)))
+				         +   complex <float> (ImBW[CenterM-jx][CenterM+jy]) * exp(mI*complex <float>(atan2(+jy,-jx)))
+				         +   complex <float> (ImBW[CenterM-jx][CenterM-jy]) * exp(mI*complex <float>(atan2(-jy,-jx)))
+			               	 +   complex <float> (ImBW[CenterM+jy][CenterM+jx]) * exp(mI*complex <float>(atan2(+jx,+jy)))
+					 +   complex <float> (ImBW[CenterM+jy][CenterM-jx]) * exp(mI*complex <float>(atan2(-jx,+jy)))
+					 +   complex <float> (ImBW[CenterM-jy][CenterM+jx]) * exp(mI*complex <float>(atan2(+jx,-jy)))
+					 +   complex <float> (ImBW[CenterM-jy][CenterM-jx]) * exp(mI*complex <float>(atan2(-jx,-jy)));
+            				if (((jx+jy)==0)&&(m>0) ){
+						rhoTemp=0;}
+//			printf("m=%d, jx=%d, jy=%d, rhoTemp= %f+ %f i\n", m,jx,jy,(rhoTemp.real()), (rhoTemp.imag()) );fflush(stdout);
+//			{" %f,%f %f,%f %f,%f %f,%f \n",
+//			       ImBW[CenterM+jx][CenterM+jy] ,ImBW[CenterM+jx][CenterM-jy]  , ImBW[CenterM-jx][CenterM+jy] ,ImBW[CenterM-jx][CenterM-jy],
+//			       ImBW[CenterM+jy][CenterM+jx] ,ImBW[CenterM+jy][CenterM-jx]  , ImBW[CenterM-jy][CenterM+jx] ,ImBW[CenterM-jy][CenterM-jx]);
+            				rhoOfRandmTemp[PCount-1] +=
+				            rhoTemp/((float)pow(2.,(int)( (jx==0)  +(jy==0)+ (jy==jx))));
+
+			}} // end walk through lattice
+//			printf("\n m=%d rhoOfRandmTemp" ,m  );fflush(stdout);
+//			for (int ss=0; ss< RIntMax; ss++){
+//				printf(" %3.1f+ %3.1fi \t",(rhoOfRandmTemp[ss].real()), (rhoOfRandmTemp[ss].imag())   );fflush(stdout);}
+
+// calculate product
+			float tempp;
+//			printf("\n m=%d sampledBesselJ" ,m  );fflush(stdout);
+			for (int st=0; st<= Number2Use; st++){
+				tempp=krVec2Use[st];
+				sampledBesselJ[st] = gsl_sf_bessel_Jn(m,tempp);
+//				printf(" %3.2f  \t",sampledBesselJ[st]   );fflush(stdout);
+			} // good so far
+//			sampledBesselJ  = BesselJ(m,krVec2Use);
+			float *tempMB = new float [kIntMax*RIntMax];
+			Util::spline_mat(krVec2Use, sampledBesselJ, Number2Use+1,krVec,tempMB,kIntMax*RIntMax ); 
+//			printf("\n tempMB m=%d y2" ,m  );fflush(stdout);
+			complex <float> *rowV = new complex <float> [kIntMax];
+
+//			for (int st=0; st< kIntMax*RIntMax; st++){printf(" %3.2f  \t",tempMB[st]   );fflush(stdout);} // good so far
+
+//   tempMB,krVec is in blocks of RIntMax
+//			printf("\n rowV m=%d \t" ,m  );fflush(stdout);
+			for (int st=0; st < kIntMax; st++) {
+					rowV[st]=0;
+					for (int sv=0; sv < RIntMax; sv++) {
+						rowV[st]+=  rhoOfRandmTemp[sv] *tempMB[sv+st*RIntMax];
+					}
+					 rowV[st] *= overallFactor;
+//					printf(" %1.3f +%1.3fi \t" , rowV[st].real(), rowV[st].imag() );fflush(stdout);
+			}
+			for (int st=0; st < kIntMax; st++) {
+					rhoOfkmB[2*m  ][st] = rowV[st].real();
+					rhoOfkmB[2*m+1][st] = rowV[st].imag();
+			}
+// 			rowV = overallFactor*rhoOfRandmTemp*tempMBB;
+//			rhoOfkmB(m+1,1:kIntMax) = rowV ;
+
+//			if m==mMax, toc, end
+
+// %'final interpolation'
+// %     rhoOfkm(m+1,:) = spline(kVec2Use,rowV,RValsSorted); ;
+
+
+		} // ends m loop
+		done_data();
+		FH-> done_data();
+		FH->set_complex(true);
+	    	FH->set_ri(true);
+	    	FH->set_FH(true);
+	    	FH->set_fftodd(true);
+		return FH;
+	} else {
+		LOGERR("2D real square odd image expected.");
+		throw ImageFormatException("2D real square odd image expected.");
+	}
+}
+
 
 EMData *EMData::do_fft()
 {
 	ENTERFUNC;
-	
+
 	if (flags & EMDATA_COMPLEX) {
 		return this;
 	}
@@ -1009,7 +1370,7 @@ EMData *EMData::do_fft()
 	EMData* dat = copy_head();
 	dat->set_size(nx2, ny, nz);
 	dat->to_zero();
-	if (offset == 1) 
+	if (offset == 1)
 		dat->set_fftodd(true);
 
 	float *d = dat->get_data();
@@ -1075,7 +1436,7 @@ EMData *EMData::do_fft()
 EMData *EMData::do_fft_inplace()
 {
 	ENTERFUNC;
-	
+
 	if (flags & EMDATA_COMPLEX) {
 		return this;
 	}
@@ -1121,7 +1482,7 @@ EMData *EMData::do_fft_inplace()
 EMData *EMData::do_ift()
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
 		throw ImageFormatException("complex image expected. Input image is real image.");
@@ -1182,7 +1543,7 @@ EMData *EMData::do_ift()
 				ii += nx;
 			}
 		}
-		
+
 		if( t )
 		{
 			delete[]t;
@@ -1223,7 +1584,7 @@ EMData *EMData::do_ift()
 EMData *EMData::do_ift_inplace()
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
 		throw ImageFormatException("complex image expected. Input image is real image.");
@@ -1267,7 +1628,7 @@ EMData *EMData::do_ift_inplace()
 EMData* EMData::get_fft_amplitude2D()
 {
 	ENTERFUNC;
-	
+
 //	int ndim = get_ndim();
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
@@ -1290,7 +1651,7 @@ EMData* EMData::get_fft_amplitude2D()
 	MArray2D d        = dat -> get_2dview(); // pointer to an emData object
 
 	float temp=0;
-	
+
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx2; i++) {
 			temp  = rnewdata[2*i  ][j] *rnewdata[2*i  ][j] ;
@@ -1316,7 +1677,7 @@ EMData* EMData::get_fft_amplitude2D()
 EMData* EMData::get_fft_amplitude()
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
 		throw ImageFormatException("complex image expected. Input image is a real image.");
@@ -1332,7 +1693,7 @@ EMData* EMData::get_fft_amplitude()
 	float *d = dat->get_data();
 
 	int ndim = get_ndim();
-	
+
 	if (ndim == 3) {
 		for (int k = 1; k < nz; k++) {
 			for (int j = 1; j < ny; j++) {
@@ -1366,7 +1727,7 @@ EMData* EMData::get_fft_amplitude()
 EMData* EMData::get_fft_phase()
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex()) {
 		LOGERR("complex image expected. Input image is real image.");
 		throw ImageFormatException("complex image expected. Input image is a real image.");
@@ -1414,7 +1775,7 @@ EMData* EMData::get_fft_phase()
 void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool add)
 {
 	ENTERFUNC;
-	
+
 	static int prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
 
 	if (histmin == histmax) {
@@ -1477,7 +1838,7 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 	}
 
 	for (size_t i = 0; i < hist.size(); i++) {
-		if (norm != 0) {	
+		if (norm != 0) {
 			hist[i] = hist[i] / norm;
 		}
 	}
@@ -1493,7 +1854,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 	if (get_ndim() > 2) {
 		throw ImageDimensionException("1D/2D only");
 	}
-	
+
 	EMData *ret = copy_head();
 	ret->to_zero();
 
@@ -1587,7 +1948,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D only");
 	}
-	
+
 	if (is_complex()) {
 		ri2ap();
 	}
@@ -1598,12 +1959,12 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 
 	if (asrgb) asrgb=3;
 	else asrgb=1;
-	
+
 	std::string ret=std::string();
 	ret.resize(iysize*bpl);
 	ret.assign(iysize*bpl,char(mingray));
 	unsigned char *data=(unsigned char *)ret.data();
-	
+
 	float rm = render_min;
 	float inv_scale = 1.0f / scale;
 	int ysize = iysize;
@@ -1668,7 +2029,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 				int ll = x0;
 				for (int i = xmin; i < xsize; i++) {
 					if (l + ll > lmax || ll >= nx - 2) break;
-					
+
 					int k = 0;
 					if (ll >= nx / 2) {
 						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
@@ -1789,7 +2150,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 			}
 		}
 	}
-	
+
 	// this replicates r -> g,b
 	if (asrgb==3) {
 		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
@@ -1801,7 +2162,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 
 	done_data();
 	EXITFUNC;
-	
+
     //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
 	return ret;
 }
@@ -1813,11 +2174,11 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 						  void cmap(void *, int coord, unsigned char *tri))
 {
 	ENTERFUNC;
-	
+
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D only");
 	}
-	
+
 	if (is_complex()) {
 		ri2ap();
 	}
@@ -2073,7 +2434,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax)
 {
 	ENTERFUNC;
-	
+
 	if (get_ndim() > 2) {
 		throw ImageDimensionException("no 3D image");
 	}
@@ -2134,7 +2495,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 		int c = 0;
 		float half_nx = (nx - 1) / 2.0f;
 		float half_ny = (ny - 1) / 2.0f;
-		
+
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
 				float y1 = y - half_ny;
@@ -2192,7 +2553,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 void EMData::ri2ap()
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex() || !is_ri()) {
 		return;
 	}
@@ -2217,7 +2578,7 @@ void EMData::ri2ap()
 void EMData::ap2ri()
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex() || is_ri()) {
 		return;
 	}
@@ -2232,9 +2593,9 @@ void EMData::ap2ri()
 vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 {
 	ENTERFUNC;
-	
+
 	int needfree=0;
-	
+
 	if (!with) {
 		throw NullPointerException("NULL input image");
 	}
@@ -2310,7 +2671,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 		n2 = 0;
 	}
 
-	if (needfree&1) 
+	if (needfree&1)
 	{
 		if( f1 )
 		{
@@ -2318,7 +2679,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 			f1 = 0;
 		}
 	}
-	if (needfree&2) 
+	if (needfree&2)
 	{
 		if( f2 )
 		{
@@ -2326,7 +2687,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 			f2 = 0;
 		}
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -2335,7 +2696,7 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 void EMData::add(float f,int keepzero)
 {
 	ENTERFUNC;
-	
+
 	if( is_real() )
 	{
 		if (f != 0) {
@@ -2344,7 +2705,7 @@ void EMData::add(float f,int keepzero)
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {
 					if (rdata[i]) rdata[i] += f;
-				}		
+				}
 			}
 			else {
 				for (size_t i = 0; i < size; i++) {
@@ -2379,19 +2740,19 @@ void EMData::add(float f,int keepzero)
 	{
 		throw ImageFormatException("This image is neither a real nor a complex image.");
 	}
-	
+
 	EXITFUNC;
 }
 
 //for add operation, real and complex image is the same
-void EMData::add(const EMData & image) 
+void EMData::add(const EMData & image)
 {
 	ENTERFUNC;
-	
+
 	if (nx != image.get_xsize() || ny != image.get_ysize() || nz != image.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else if( (is_real()^image.is_real()) == true ) 
+	else if( (is_real()^image.is_real()) == true )
 	{
 		throw ImageFormatException( "not support add between real image and complex image");
 	}
@@ -2410,7 +2771,7 @@ void EMData::add(const EMData & image)
 void EMData::sub(float f)
 {
 	ENTERFUNC;
-	
+
 	if( is_real() )
 	{
 		if (f != 0) {
@@ -2437,19 +2798,19 @@ void EMData::sub(float f)
 	{
 		throw ImageFormatException("This image is neither a real nor a complex image.");
 	}
-	
+
 	EXITFUNC;
 }
 
 //for sub operation, real and complex image is the same
-void EMData::sub(const EMData & em) 
+void EMData::sub(const EMData & em)
 {
 	ENTERFUNC;
-	
+
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException("images not same sizes");
 	}
-	else if( (is_real()^em.is_real()) == true ) 
+	else if( (is_real()^em.is_real()) == true )
 	{
 		throw ImageFormatException( "not support sub between real image and complex image");
 	}
@@ -2457,7 +2818,7 @@ void EMData::sub(const EMData & em)
 		flags |= EMDATA_NEEDUPD;
 		const float *src_data = em.get_data();
 		size_t size = nx * ny * nz;
-		
+
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] -= src_data[i];
 		}
@@ -2470,7 +2831,7 @@ void EMData::sub(const EMData & em)
 void EMData::mult(float f)
 {
 	ENTERFUNC;
-	
+
 	if (is_complex()) {
 		ap2ri();
 	}
@@ -2484,18 +2845,18 @@ void EMData::mult(float f)
 	EXITFUNC;
 }
 
-void EMData::mult(const EMData & em) 
+void EMData::mult(const EMData & em)
 {
 	ENTERFUNC;
-	
+
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else if( (is_real()^em.is_real()) == true ) 
+	else if( (is_real()^em.is_real()) == true )
 	{
 		throw ImageFormatException( "not support multiply between real image and complex image");
 	}
-	else 
+	else
 	{
 		flags |= EMDATA_NEEDUPD;
 		const float *src_data = em.get_data();
@@ -2519,14 +2880,14 @@ void EMData::mult(const EMData & em)
 			}
 		}
 	}
-	
+
 	EXITFUNC;
 }
 
 void EMData::div(float f)
 {
 	ENTERFUNC;
-	
+
 	if (is_complex()) {
 		ap2ri();
 	}
@@ -2540,14 +2901,14 @@ void EMData::div(float f)
 	EXITFUNC;
 }
 
-void EMData::div(const EMData & em) 
+void EMData::div(const EMData & em)
 {
 	ENTERFUNC;
-	
+
 	if (nx != em.get_xsize() || ny != em.get_ysize() || nz != em.get_zsize()) {
 		throw ImageFormatException( "images not same sizes");
 	}
-	else if( (is_real()^em.is_real()) == true ) 
+	else if( (is_real()^em.is_real()) == true )
 	{
 		throw ImageFormatException( "not support division between real image and complex image");
 	}
@@ -2575,7 +2936,7 @@ void EMData::div(const EMData & em)
 			}
 		}
 	}
-	
+
 	EXITFUNC;
 }
 
@@ -2583,7 +2944,7 @@ void EMData::div(const EMData & em)
 void EMData::update_stat()
 {
 	ENTERFUNC;
-	
+
 	if (!(flags & EMDATA_NEEDUPD)) {
 		return;
 	}
@@ -2603,9 +2964,9 @@ void EMData::update_stat()
 
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
-		max=std::max<float>(max,v);  
-		min=std::min<float>(min,v); 
-		sum += v; 
+		max=std::max<float>(max,v);
+		min=std::min<float>(min,v);
+		sum += v;
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
@@ -2640,7 +3001,7 @@ MArray2D EMData::get_2dview() const
 	}
 	boost::array<std::size_t,ndims> dims = {{nx, ny}};
 	MArray2D marray(rdata, dims, boost::fortran_storage_order());
-	return marray;	
+	return marray;
 }
 
 MArray3D EMData::get_3dview() const
@@ -2660,7 +3021,7 @@ MCArray2D EMData::get_2dcview() const
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
-	return marray;	
+	return marray;
 }
 
 MCArray3D EMData::get_3dcview() const
@@ -2669,7 +3030,7 @@ MCArray3D EMData::get_3dcview() const
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
-	return marray;	
+	return marray;
 }
 
 MCArray3D* EMData::get_3dcviewptr() const
@@ -2677,9 +3038,9 @@ MCArray3D* EMData::get_3dcviewptr() const
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
 	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
-	MCArray3D* marray = new MCArray3D(cdata, dims, 
+	MCArray3D* marray = new MCArray3D(cdata, dims,
 									  boost::fortran_storage_order());
-	return marray;	
+	return marray;
 }
 
 MArray2D EMData::get_2dview(int x0, int y0) const
@@ -2716,7 +3077,7 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
 	marray.reindex(bases);
-	return marray;	
+	return marray;
 }
 
 MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
@@ -2727,7 +3088,7 @@ MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
-	return marray;	
+	return marray;
 }
 
 
@@ -2738,7 +3099,7 @@ EMData *EMData::get_row(int row_index) const
 	if (get_ndim() > 2) {
 		throw ImageDimensionException("1D/2D image only");
 	}
-	
+
 	EMData *ret = new EMData();
 	ret->set_size(nx, 1, 1);
 	memcpy(ret->get_data(), get_data() + nx * row_index, nx * sizeof(float));
@@ -2758,7 +3119,7 @@ void EMData::set_row(const EMData * d, int row_index)
 	if (d->get_ndim() != 1) {
 		throw ImageDimensionException("1D image only");
 	}
-	
+
 	float *dst = get_data();
 	float *src = d->get_data();
 	memcpy(dst + nx * row_index, src, nx * sizeof(float));
@@ -2773,7 +3134,7 @@ EMData *EMData::get_col(int col_index) const
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D image only");
 	}
-	
+
 	EMData *ret = new EMData();
 	ret->set_size(ny, 1, 1);
 	float *dst = ret->get_data();
@@ -2792,14 +3153,14 @@ EMData *EMData::get_col(int col_index) const
 void EMData::set_col(const EMData * d, int n)
 {
 	ENTERFUNC;
-	
+
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D image only");
 	}
 	if (d->get_ndim() != 1) {
 		throw ImageDimensionException("1D image only");
 	}
-	
+
 	float *dst = get_data();
 	float *src = d->get_data();
 
@@ -2813,30 +3174,30 @@ void EMData::set_col(const EMData * d, int n)
 
 
 EMObject EMData::get_attr(const string & key)
-{	
+{
 	ENTERFUNC;
-	
+
 	update_stat();
 
 	float mean = attr_dict["mean"];
 	float sigma = attr_dict["sigma"];
 	size_t size = nx * ny * nz;
-	
+
 	if (key == "kurtosis") {
 		double kurtosis_sum = 0;
 
 		for (size_t k = 0; k < size; k++) {
 			float t = (rdata[k] - mean) / sigma;
-			float tt = t * t;	
+			float tt = t * t;
 			kurtosis_sum += tt * tt;
 		}
-		
+
 		float kurtosis = (float)(kurtosis_sum / size - 3.0);
 		attr_dict["kurtosis"] = kurtosis;
 		return attr_dict["kurtosis"];
 	}
 	else if (key == "skewness") {
-		double skewness_sum = 0;		
+		double skewness_sum = 0;
 		for (size_t k = 0; k < size; k++) {
 			float t = (rdata[k] - mean) / sigma;
 			skewness_sum +=  t * t * t;
@@ -2845,8 +3206,8 @@ EMObject EMData::get_attr(const string & key)
 		attr_dict["skewness"] = skewness;
 		return attr_dict["skewness"];
 	}
-	
-	
+
+
 	EXITFUNC;
 	return attr_dict[key];
 }
@@ -2864,7 +3225,7 @@ void EMData::set_size(int x, int y, int z)
 	else if (z <= 0) {
 		throw InvalidValueException(z, "z size <= 0");
 	}
-	
+
 	int old_nx = nx;
 	nx = x;
 	ny = y;
@@ -2877,7 +3238,7 @@ void EMData::set_size(int x, int y, int z)
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
-	
+
 	if (old_nx == 0) {
 		memset(rdata, 0, size);
 	}
@@ -2916,7 +3277,7 @@ void EMData::set_attr_dict(const Dict & new_dict)
 void EMData::set_ctf(Ctf * new_ctf)
 {
 	ENTERFUNC;
-	
+
 	if (!ctf) {
 		ctf = new SimpleCtf();
 	}
@@ -2927,10 +3288,10 @@ void EMData::set_ctf(Ctf * new_ctf)
 
 
 vector < EMData * >EMData::read_images(const string & filename, vector < int >img_indices,
-									   bool header_only) 
+									   bool header_only)
 {
 	ENTERFUNC;
-	
+
 	int total_img = EMUtil::get_image_count(filename);
 	size_t num_img = img_indices.size();
 
@@ -2967,7 +3328,7 @@ vector < EMData * >EMData::read_images(const string & filename, vector < int >im
 
 vector < EMData * >EMData::read_images_ext(const string & filename, int img_index_start,
 										   int img_index_end, bool header_only,
-										   const string & ext) 
+										   const string & ext)
 {
 	ENTERFUNC;
 
@@ -3041,14 +3402,14 @@ EMData & EMData::operator/=(float n)
 EMData & EMData::operator+=(const EMData & em)
 {
 	add(em);
-	update_stat();	
+	update_stat();
 	return *this;
 }
 
 EMData & EMData::operator-=(const EMData & em)
 {
 	sub(em);
-	update_stat();	
+	update_stat();
 	return *this;
 }
 
@@ -3062,7 +3423,7 @@ EMData & EMData::operator*=(const EMData & em)
 EMData & EMData::operator/=(const EMData & em)
 {
 	div(em);
-	update_stat();	
+	update_stat();
 	return *this;
 }
 
@@ -3085,7 +3446,7 @@ EMData & EMData::power(int n)
 			r = 0;
 		}
 	}
-	
+
 	update_stat();
 	return *this;
 }
@@ -3179,7 +3540,7 @@ EMData * EMAN::operator/(const EMData & a, const EMData & b)
 double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 {
 	ENTERFUNC;
-	
+
 	if (!EMUtil::is_same_size(this, with)) {
 		LOGERR("images not same size");
 		throw ImageFormatException("images not same size");
@@ -3262,7 +3623,7 @@ void EMData::rotate_x(int dx)
 	if (get_ndim() > 2) {
 		throw ImageDimensionException("no 3D image");
 	}
-	
+
 	float *tmp = new float[nx];
 	size_t row_size = nx * sizeof(float);
 
@@ -3293,11 +3654,11 @@ void EMData::set_xyz_origin(float origin_x, float origin_y, float origin_z)
 float *EMData::setup4slice(bool redo)
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex()) {
 		throw ImageFormatException("complex image only");
 	}
-	
+
 	if (get_ndim() != 3) {
 		throw ImageDimensionException("3D only");
 	}
@@ -3355,7 +3716,7 @@ float *EMData::setup4slice(bool redo)
 void EMData::to_zero()
 {
 	ENTERFUNC;
-	
+
 	memset(rdata, 0, nx * ny * nz * sizeof(float));
 	done_data();
 	EXITFUNC;
@@ -3395,18 +3756,18 @@ void EMData::translate(float dx, float dy, float dz)
 void EMData::translate(const Vec3i &translation)
 {
 	ENTERFUNC;
-	
+
 	//if traslation is 0, do nothing
 	if( translation[0] == 0 && translation[1] == 0 && translation[2] == 0) {
 		EXITFUNC;
 		return;
 	}
-	
+
 	float *this_data = get_data();
 	int data_size = sizeof(float)*get_xsize()*get_ysize()*get_zsize();
 	float *tmp_data = (float *)malloc(data_size);
-	memcpy(tmp_data, this_data, data_size);	
-	
+	memcpy(tmp_data, this_data, data_size);
+
 	int x0, x1, x2;
 	if( translation[0] < 0 ) {
 		x0 = 0;
@@ -3418,7 +3779,7 @@ void EMData::translate(const Vec3i &translation)
 		x1 = -1;
 		x2 = -1;
 	}
-	
+
 	int y0, y1, y2;
 	if( translation[1] < 0 ) {
 		y0 = 0;
@@ -3430,7 +3791,7 @@ void EMData::translate(const Vec3i &translation)
 		y1 = -1;
 		y2 = -1;
 	}
-	
+
 	int z0, z1, z2;
 	if( translation[2] < 0 ) {
 		z0 = 0;
@@ -3442,14 +3803,14 @@ void EMData::translate(const Vec3i &translation)
 		z1 = -1;
 		z2 = -1;
 	}
-	
+
 	int xp, yp, zp;
 	int tx = translation[0];
 	int ty = translation[1];
 	int tz = translation[2];
 	for (int y = y0; y != y1; y += y2) {
-		for (int x = x0; x != x1; x += x2) {	
-			for (int z = z0; z != z1; z+=z2) {	
+		for (int x = x0; x != x1; x += x2) {
+			for (int z = z0; z != z1; z+=z2) {
 				xp = x - tx;
 				yp = y - ty;
 				zp = z - tz;
@@ -3462,31 +3823,31 @@ void EMData::translate(const Vec3i &translation)
 			}
 		}
 	}
-	
+
 	if( tmp_data ) {
 		free(tmp_data);
 		tmp_data = 0;
 	}
-	
+
 	done_data();
 	all_translation += translation;
-	
+
 	EXITFUNC;
 }
 
 void EMData::translate(const Vec3f &translation)
 {
 	ENTERFUNC;
-	
+
 	//if traslation is 0, do nothing
 	if( translation[0] == 0.0f && translation[1] == 0.0f && translation[2] == 0.0f ) {
 		EXITFUNC;
 		return;
 	}
-	
+
 	float *this_data = get_data();
-	EMData *tmp_emdata = copy(); 
-	
+	EMData *tmp_emdata = copy();
+
 	int x0, x1, x2;
 	if( translation[0] < 0 ) {
 		x0 = 0;
@@ -3498,7 +3859,7 @@ void EMData::translate(const Vec3f &translation)
 		x1 = -1;
 		x2 = -1;
 	}
-	
+
 	int y0, y1, y2;
 	if( translation[1] < 0 ) {
 		y0 = 0;
@@ -3510,7 +3871,7 @@ void EMData::translate(const Vec3f &translation)
 		y1 = -1;
 		y2 = -1;
 	}
-	
+
 	int z0, z1, z2;
 	if( translation[2] < 0 ) {
 		z0 = 0;
@@ -3522,7 +3883,7 @@ void EMData::translate(const Vec3f &translation)
 		z1 = -1;
 		z2 = -1;
 	}
-	
+
 	if( nz == 1 ) 	//2D translation
 	{
 		int tx = Util::round(translation[0]);
@@ -3534,7 +3895,7 @@ void EMData::translate(const Vec3f &translation)
 			for (int x = x0; x != x1; x += x2) {
 				xp = x - tx;
 				yp = y - ty;
-	
+
 				if (xp < 0 || yp < 0 || xp >= nx || yp >= ny) {
 					this_data[x + y * nx] = 0;
 				}
@@ -3573,9 +3934,9 @@ void EMData::translate(const Vec3f &translation)
 				}
 			}
 		}
-		
+
 	}
-	
+
 	if( tmp_emdata ) {
 		delete tmp_emdata;
 		tmp_emdata = 0;
@@ -3616,12 +3977,12 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 void EMData::rotate_translate(const Transform3D & xform)
 {
 	ENTERFUNC;
-	
+
 	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
 	Vec3f translation = xform.get_posttrans();
 	Dict rotation = xform.get_rotation(Transform3D::EMAN);
-	
+
 	int nx2 = nx;
 	int ny2 = ny;
 	float inv_scale = 1.0f;
@@ -3736,7 +4097,7 @@ void EMData::rotate_translate(const Transform3D & xform)
 
 		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
 		Vec3f v4 = dcenter2 * mx  - dcenter2 - translation; // verify this
-		
+
 		int nxy = nx * ny;
 		int l = 0;
 
@@ -3745,9 +4106,9 @@ void EMData::rotate_translate(const Transform3D & xform)
 
 			for (int j = 0; j < ny; j++) {
 				Vec3f v2 = v3;
-			
+
 				for (int i = 0; i < nx; i++, l++) {
-					
+
 					if (v2[0] < 0 || v2[1] < 0 || v2[2] < 0 ||
 						v2[0] >= nx - 1 || v2[1] >= ny - 1 || v2[2] >= nz - 1) {
 						des_data[l] = 0;
@@ -3758,7 +4119,7 @@ void EMData::rotate_translate(const Transform3D & xform)
 						int z = Util::fast_floor(v2[2]);
 						Vec3f tuv = v2 - Vec3f((float)x,(float)y,(float)z);
 						int ii = x + y * nx + z * nxy;
-						
+
 						des_data[l] = Util::trilinear_interpolate(src_data[ii],
 																  src_data[ii + 1],
 																  src_data[ii + nx],
@@ -3774,13 +4135,13 @@ void EMData::rotate_translate(const Transform3D & xform)
 
 					}
 
-					v2 += mx.get_matrix3_col(0); 
+					v2 += mx.get_matrix3_col(0);
 				}
 				v3 += mx.get_matrix3_col(1);
 			}
 			v4 += mx.get_matrix3_col(2); //  or should it be row?   PRB April 2005
 		}
-		
+
 	}
 
 	if( rdata )
@@ -3808,7 +4169,7 @@ void EMData::rotate_translate(const Transform3D & xform)
 void EMData::rotate_180()
 {
 	ENTERFUNC;
-	
+
 	if (nx != ny) {
 		throw ImageFormatException("non-square image");
 	}
@@ -3816,7 +4177,7 @@ void EMData::rotate_180()
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D only");
 	}
-	
+
 	float *d = get_data();
 
 	for (int x = 1; x < nx; x++) {
@@ -3896,45 +4257,45 @@ void EMData::mean_shrink(float shrink_factor0)
 	int shrink_factor = int(shrink_factor0);
 
 	if (shrink_factor0 <= 1.0F || ((shrink_factor0 != shrink_factor) && (shrink_factor0 != 1.5F) ) ) {
-		throw InvalidValueException(shrink_factor0, 
+		throw InvalidValueException(shrink_factor0,
 									"mean shrink: shrink factor must be >1 integer or 1.5");
 	}
 
 /*	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
-		throw InvalidValueException(shrink_factor, 
+		throw InvalidValueException(shrink_factor,
 									"Image size not divisible by shrink factor");
 	}*/
 
 	// here handle the special averaging by 1.5 for 2D case
 	if (shrink_factor0==1.5 ) {
 		if (nz > 1 ) throw InvalidValueException(shrink_factor0, "mean shrink: only support 2D images for shrink factor = 1.5");
-		
+
 		int shrinked_nx = (int(nx / 1.5)+1)/2*2;	// make sure the output size is even
 		int shrinked_ny = (int(ny / 1.5)+1)/2*2;
 		int nx0 = nx, ny0 = ny;	// the original size
-		
+
 		EMData* orig = copy();
 		set_size(shrinked_nx, shrinked_ny, 1);	// now nx = shrinked_nx, ny = shrinked_ny
 		to_zero();
-		
+
 		float *data = get_data(), *data0 = orig->get_data();
-		
+
 		for (int j = 0; j < ny; j++) {
 			int jj = int(j * 1.5);
 			float jw0 = 1.0F, jw1 = 0.5F;	// 3x3 -> 2x2, so each new pixel should have 2.25 of the old pixels
-			if ( j%2 ) { 
+			if ( j%2 ) {
 				jw0 = 0.5F;
-				jw1 = 1.0F; 
+				jw1 = 1.0F;
 			}
 			for (int i = 0; i < nx; i++) {
 				int ii = int(i * 1.5);
 				float iw0 = 1.0F, iw1 = 0.5F;
 				float w = 0.0F;
-				
-				if ( i%2 ) { 
+
+				if ( i%2 ) {
 					iw0 = 0.5F;
-					iw1 = 1.0F; 
+					iw1 = 1.0F;
 				}
 				if ( jj < ny0 ) {
 					if ( ii < nx0 ) {
@@ -3967,16 +4328,16 @@ void EMData::mean_shrink(float shrink_factor0)
 		}
 		done_data();
 		update();
-		
+
 		return;
 	}
-				
-		
+
+
 	int shrinked_nx = nx / shrink_factor;
 	int shrinked_ny = ny / shrink_factor;
 	int shrinked_nz = 1;
-	
-	
+
+
 	int threed_shrink_factor = shrink_factor * shrink_factor;
 	int z_shrink_factor = 1;
 
@@ -4029,15 +4390,15 @@ void EMData::mean_shrink(float shrink_factor0)
 void EMData::median_shrink(int shrink_factor)
 {
 	ENTERFUNC;
-	
+
 	if (shrink_factor <= 1) {
-		throw InvalidValueException(shrink_factor, 
+		throw InvalidValueException(shrink_factor,
 									"median shrink: shrink factor must > 1");
 	}
 
 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) ||
 		(nz > 1 && (nz % shrink_factor != 0))) {
-		throw InvalidValueException(shrink_factor, 
+		throw InvalidValueException(shrink_factor,
 									"Image size not divisible by shrink factor");
 	}
 
@@ -4133,7 +4494,7 @@ void EMData::median_shrink(int shrink_factor)
 void EMData::apply_radial_func(float x0, float step, vector < float >array, bool interp)
 {
 	ENTERFUNC;
-	
+
 	if (!is_complex()) {
 		return;
 	}
@@ -4141,7 +4502,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	int n = static_cast < int >(array.size());
 
 //	printf("%f %f %f\n",array[0],array[25],array[50]);
-	
+
 	ap2ri();
 
 	size_t ndims = get_ndim();
@@ -4189,12 +4550,12 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 			float mnz;
 			if (m<nz/2) mnz=m*m/(float)(nz*nz);
 			else { mnz=(nz-m)/(float)nz; mnz*=mnz; }
-			
+
 			for (int j = 0; j < ny; j++) {
 				float jny;
 				if (j<ny/2) jny= j*j/(float)(ny*ny);
 				else { jny=(ny-j)/(float)ny; jny*=jny; }
-				
+
 				for (int i = 0; i < nx; i += 2, k += 2) {
 					float r = sqrt((i * i / (nx*nx*4.0)) + jny + mnz);
 					r = (r - x0) / step;
@@ -4238,7 +4599,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 float EMData::calc_center_density()
 {
 	ENTERFUNC;
-	
+
 	float center = get_attr("mean");
 	float sigma = get_attr("sigma");
 	float ds = sigma / 2;
@@ -4274,11 +4635,11 @@ float EMData::calc_center_density()
 float EMData::calc_sigma_diff()
 {
 	ENTERFUNC;
-	
+
 	float *d = get_data();
 	float mean = get_attr("mean");
 	float sigma = get_attr("sigma");
-	
+
 	double sum_up = 0;
 	double sum_down = 0;
 	int nup = 0;
@@ -4300,7 +4661,7 @@ float EMData::calc_sigma_diff()
 	float sigup = sqrt((float)sum_up / nup);
 	float sigdown = sqrt((float)sum_down / ndown);
 	float sig_diff = fabs(sigup - sigdown) / sigma;
-	
+
 
 	EXITFUNC;
 	return sig_diff;
@@ -4311,7 +4672,7 @@ float EMData::calc_sigma_diff()
 IntPoint EMData::calc_min_location() const
 {
 	ENTERFUNC;
-	
+
 	int di = 1;
 	if (is_complex() && !is_ri()) {
 		di = 2;
@@ -4347,7 +4708,7 @@ IntPoint EMData::calc_min_location() const
 IntPoint EMData::calc_max_location() const
 {
 	ENTERFUNC;
-	
+
 	int di = 1;
 	if (is_complex() && !is_ri()) {
 		di = 2;
@@ -4401,7 +4762,7 @@ int EMData::calc_max_index() const
 EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 {
 	ENTERFUNC;
-	
+
 	if (!with) {
 		LOGERR("NULL 'with' image. ");
 		throw NullPointerException("NULL input image");
@@ -4547,7 +4908,7 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 {
 	ENTERFUNC;
-	
+
 	int array_size = sum_array.size();
 	float da = 2 * M_PI / array_size;
 	float *dat = new float[array_size + 2];
@@ -4613,7 +4974,7 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 void EMData::to_one()
 {
 	ENTERFUNC;
-	
+
 	if (is_complex()) {
 		set_ri(true);
 	}
@@ -4631,8 +4992,8 @@ void EMData::to_one()
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 	if (with==this) return self_correlation(this,fpflag);
-	else { 
-		if (with) return correlation(this, with, fpflag); 
+	else {
+		if (with) return correlation(this, with, fpflag);
 		else return autocorrelation(this, fpflag);
 	}
 }
@@ -4641,11 +5002,11 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 {
 	ENTERFUNC;
-	
+
 	static EMData obj_filt;
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
-	
+
 	if (rfp) {
 		return rfp;
 	}
@@ -4703,7 +5064,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	}
 
 	EMData * result = rfp;
-	
+
 	if (nz == 1) {
 		if (!unwrap) {
 			tmp2->process("eman1.mask.sharp", Dict("outer_radius", -1, "value", 0));
@@ -4720,7 +5081,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 			result = rfp;
 		}
 	}
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -4729,7 +5090,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * filter)
 {
 	ENTERFUNC;
-	
+
 	if (with && !EMUtil::is_same_size(this, with)) {
 		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
@@ -4834,7 +5195,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D image only");
 	}
-	
+
 	int p = 1;
 	if (do360) {
 		p = 2;
@@ -4886,7 +5247,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 void EMData::add_incoherent(EMData * obj)
 {
 	ENTERFUNC;
-	
+
 	if (!obj) {
 		LOGERR("NULL image");
 		throw NullPointerException("NULL image");
@@ -4921,7 +5282,7 @@ void EMData::add_incoherent(EMData * obj)
 vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 {
 	ENTERFUNC;
-	
+
 	float *yc = new float[n];
 	float *d = new float[n];
 	for (int i = 0; i < n; i++) {
@@ -4995,7 +5356,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 			d[i] = (d[i - 1] + d[i + 1]) / 2.0f;
 		}
 	}
-	
+
 	if( yc )
 	{
 		delete[]yc;
@@ -5020,7 +5381,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, float awid)
 {
 	ENTERFUNC;
-	
+
 	if (nz > 1) {
 		LOGERR("2D images only.");
 		throw ImageDimensionException("2D images only");
@@ -5172,7 +5533,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 EMData* EMData::rotavg()
 {
 	ENTERFUNC;
-	
+
 	if (nz > 1) {
 		LOGERR("2D images only.");
 		throw ImageDimensionException("2D images only");
@@ -5197,7 +5558,7 @@ EMData* EMData::rotavg()
 			count[ir+1] += frac;
 		}
 	}
-	for (int ir = 0; ir <= rmax; ir++) 
+	for (int ir = 0; ir <= rmax; ir++)
 		retarr[ir] /= std::max(count[ir],1.0f);
 
 	ret->update();
@@ -5213,7 +5574,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 	if (get_ndim() != 1) {
 		throw ImageDimensionException("'this' image is 1D only");
 	}
-	
+
 	if (second_img->get_xsize() != nx || ny != 1) {
 		throw ImageFormatException("image xsize not same");
 	}
@@ -5238,7 +5599,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 {
 	ENTERFUNC;
-	
+
 	if (!with) {
 		LOGERR("input image is NULL");
 		throw NullPointerException("input image is NULL");
@@ -5418,7 +5779,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 EMData *EMData::convolute(EMData * with)
 {
 	ENTERFUNC;
-	
+
 	EMData *f1 = do_fft();
 	if (!f1) {
 		LOGERR("FFT returns NULL image");
@@ -5471,7 +5832,7 @@ EMData *EMData::convolute(EMData * with)
 		delete f1;
 		f1=0;
 	}
-	
+
 	EXITFUNC;
 	return f2;
 }
@@ -5481,7 +5842,7 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 						  int mode, int steps, bool horizontal)
 {
 	ENTERFUNC;
-	
+
 	if (!image1 || !image2) {
 		throw NullPointerException("NULL image");
 	}
@@ -5747,7 +6108,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 							   int steps, bool horiz)
 {
 	ENTERFUNC;
-	
+
 	if (!image1 || !image2) {
 		throw NullPointerException("NULL image");
 	}
@@ -5867,7 +6228,7 @@ void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 					   bool interpolate, float dx, float dy)
 {
 	ENTERFUNC;
-	
+
 	if (!map) {
 		throw NullPointerException("NULL image");
 	}
@@ -5933,7 +6294,7 @@ void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 	}
 
 	done_data();
-	
+
 	EXITFUNC;
 }
 
@@ -5941,7 +6302,7 @@ void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, float dy)
 {
 	ENTERFUNC;
-	
+
 	if (!map) {
 		throw NullPointerException("NULL image");
 	}
@@ -5993,9 +6354,9 @@ void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, fl
 vector<Pixel> EMData::calc_highest_locations(float threshold)
 {
 	ENTERFUNC;
-	
+
 	vector<Pixel> result;
-	
+
 	int di = 1;
 	if (is_complex() && !is_ri()) {
 		di = 2;
@@ -6019,7 +6380,7 @@ vector<Pixel> EMData::calc_highest_locations(float threshold)
 	}
 
 	std::sort(result.begin(), result.end());
-	
+
 	EXITFUNC;
 	return result;
 }
@@ -6028,7 +6389,7 @@ vector<Pixel> EMData::calc_highest_locations(float threshold)
 float EMData::get_edge_mean() const
 {
 	ENTERFUNC;
-	
+
 	int di = 0;
 	double edge_sum = 0;
 	float edge_mean = 0;
@@ -6081,7 +6442,7 @@ float EMData::get_edge_mean() const
 float EMData::get_circle_mean()
 {
 	ENTERFUNC;
-	
+
 	static bool busy = false;
 	static EMData *mask = 0;
 
@@ -6094,7 +6455,7 @@ float EMData::get_circle_mean()
 		}
 		mask->set_size(nx, ny, nz);
 		mask->to_one();
-		
+
 		float radius = (float)(ny / 2 - 2);
 		mask->process("eman1.mask.sharp", Dict("inner_radius", radius - 1,
 									   "outer_radius", radius + 1));
@@ -6161,22 +6522,22 @@ float EMData::sget_value_at_interp(float xx, float yy) const
 {
 	int x = static_cast < int >(floor(xx));
 	int y = static_cast < int >(floor(yy));
-	
+
 	float p1 = sget_value_at(x, y);
 	float p2 = sget_value_at(x + 1, y);
 	float p3 = sget_value_at(x + 1, y + 1);
 	float p4 = sget_value_at(x, y + 1);
 
-	float result = Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);	
+	float result = Util::bilinear_interpolate(p1, p2, p3, p4, xx - x, yy - y);
 	return result;
 }
- 
+
 float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 {
 	int x = (int) floor(xx);
 	int y = (int) floor(yy);
 	int z = (int) floor(zz);
-	
+
 	float p1 = sget_value_at(x, y, z);
 	float p2 = sget_value_at(x + 1, y, z);
 	float p3 = sget_value_at(x, y + 1, z);
@@ -6189,7 +6550,7 @@ float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 
 	float result = Util::trilinear_interpolate(p1, p2, p3, p4, p5, p6, p7, p8,
 											   xx - x, yy - y, zz - z);
-	
+
 	return result;
 }
 
@@ -6197,7 +6558,7 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 {
 	string image_endian = "ImageEndian";
 	string host_endian = "HostEndian";
-	
+
 	if (imageio->is_image_big_endian()) {
 		attr_dict[image_endian] = "big";
 	}
@@ -6212,7 +6573,7 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 		attr_dict[host_endian] = "little";
 	}
 }
-	
+
 void EMData::print_image(const string str, ostream& out) {
 	out << "Printing EMData object: " << str << std::endl;
 	MArray3D mat = get_3dview();
@@ -6223,9 +6584,9 @@ void EMData::print_image(const string str, ostream& out) {
 		out << "(z = " << iz << " slice)" << std::endl;
 		for (int ix = 0; ix < nx; ix++) {
 			for (int iy = 0; iy < ny; iy++) {
-				out << setiosflags(std::ios::fixed) 
+				out << setiosflags(std::ios::fixed)
 					<< setiosflags(std::ios_base::scientific)
-					<< std::setw(12) 
+					<< std::setw(12)
 					 << std::setprecision(5) << mat[ix][iy][iz] << "  ";
 				if (((iy+1) % 6) == 0) {
 					out << std::endl << "   ";
@@ -6239,7 +6600,7 @@ void EMData::print_image(const string str, ostream& out) {
 EMData & EMData::real() //real part has half of x dimension
 {
 	ENTERFUNC;
-	
+
 	if( is_real() ) // a real image, return a copy of itself
 	{
 		return *(this->copy());
@@ -6249,8 +6610,8 @@ EMData & EMData::real() //real part has half of x dimension
 		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
 		{
 			ap2ri();
-		} 
-		EMData * e = new EMData();		
+		}
+		EMData * e = new EMData();
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
@@ -6265,7 +6626,7 @@ EMData & EMData::real() //real part has half of x dimension
 					if( i%2 == 0 )
 					{
 						//complex data in format [real, complex, real, complex...]
-						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny]; 
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny];
 					}
 				}
 			}
@@ -6275,18 +6636,18 @@ EMData & EMData::real() //real part has half of x dimension
 		e->update_stat();
 		return *e;
 	}
-	else //should not be here, image is neither real nor complex 
+	else //should not be here, image is neither real nor complex
 	{
 		throw ImageFormatException("This image is neither a real nor a complex image.");
 	}
-	
+
 	EXITFUNC;
 }
 
 EMData & EMData::imag()
 {
 	ENTERFUNC;
-	
+
 	if( is_real() ) //a real image has no imaginary part, throw exception
 	{
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
@@ -6296,8 +6657,8 @@ EMData & EMData::imag()
 		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
 		{
 			ap2ri();
-		} 
-		EMData * e = new EMData();		
+		}
+		EMData * e = new EMData();
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
@@ -6312,7 +6673,7 @@ EMData & EMData::imag()
 					if( i%2 == 1 )
 					{
 						//complex data in format [real, complex, real, complex...]
-						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny]; 
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny];
 					}
 				}
 			}
@@ -6321,27 +6682,27 @@ EMData & EMData::imag()
 		e->set_complex(false);
 		e->update_stat();
 		return *e;
-		
+
 	}
 	else //should not be here, image is neither real nor complex
 	{
 		throw ImageFormatException("This image is neither a real nor a complex image.");
 	}
-	
+
 	EXITFUNC;
 }
 
 EMData & EMData::real2complex(const float img)
 {
 	ENTERFUNC;
-	
+
 	if( is_real() )
 	{
-		EMData * e = new EMData();		
+		EMData * e = new EMData();
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
-		e->set_size(nx*2, ny, nz);	
+		e->set_size(nx*2, ny, nz);
 		float * edata = e->get_data();
 		for( int i=0; i<nx; i++ )
 		{
@@ -6366,8 +6727,8 @@ EMData & EMData::real2complex(const float img)
 	{
 		throw ImageFormatException("This image is neither a real nor a complex image.");
 	}
-	
-	EXITFUNC;		
+
+	EXITFUNC;
 }
 
 EMData* EMData::symvol(string symmetry) {
@@ -6465,10 +6826,10 @@ EMData* EMData::symvol(string symmetry) {
 	return svol;
 }
 
-EMData* 
-EMData::rot_scale_trans2D(float ang, float scale, float delx, 
+EMData*
+EMData::rot_scale_trans2D(float ang, float scale, float delx,
 		                  float dely, int zslice) {
-	if (1 >= ny) 
+	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (0.f == scale) scale = 1.f; // silently fix common user error
 	EMData* ret = copy_head();
@@ -6497,86 +6858,12 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 			if (xi > xmax) xi = std::max(xmin+xi-xmax-1.0f,xmin);
 			float yold = xi*sid/scale + ycod;
 			float xold = xi*cod/scale + ysid;
-			out[ix][iy][zslice] = 
+			out[ix][iy][zslice] =
 				Util::quadri(xold, yold, nx, ny, this, zslice);
 		}
 	}
 	return ret;
 }
-
-#if 0
-template<class Win>
-float EMData::getconvpt2d(float x, float y, Win win, int size) {
-	const int nxhalf = nx/2;
-	const int nyhalf = ny/2;
-	const int bd = size/2;
-	float* wxarr = new float[size];
-	float* wyarr = new float[size];
-	float* wx = wxarr + bd; // wx[-bd] = wxarr[0]
-	float* wy = wyarr + bd;
-	int ixc = int(x + 0.5f*Util::sgn(x));
-	int iyc = int(y + 0.5f*Util::sgn(y));
-	if (abs(ixc) > nxhalf)
-		throw InvalidValueException(ixc, "getconv: X value out of range");
-	if (abs(iyc) > nyhalf)
-		throw InvalidValueException(ixc, "getconv: Y value out of range");
-	for (int i = -bd; i <= bd; i++) {
-		int iyp = iyc + i;
-		wy[i] = win(y - iyp);
-		int ixp = ixc + i;
-		wx[i] = win(x - ixp);
-	}
-	MArray2D imgarr = get_2dview(-nxhalf, -nyhalf);
-	float conv = 0.f, wsum = 0.f;
-	for (int iy = -bd; iy <= bd; iy++) {
-		int iyp = iyc + iy;
-		for (int ix = -bd; ix <= bd; ix++) {
-			int ixp = ixc + ix;
-			float wg = wx[ix]*wy[iy];
-			conv += imgarr[ixp][iyp]*wg;
-			wsum += wg;
-		}
-	}
-	delete [] wxarr;
-	delete [] wyarr;
-	//return conv/wsum;
-	return conv;
-}
-
-template<class Win>
-EMData* EMData::rotconvtrunc2d(float ang, Win win, int size) {
-    // truncate anything outside r=min(nx/2,ny/x)-window
-    int nx = get_xsize();
-    int ny = get_ysize();
-    int nxhalf = nx/2;
-    int nyhalf = ny/2;
-    float rmax = float(std::min(nxhalf,nyhalf))
-               - float(size/2);
-    float rmax2 = rmax*rmax;
-    if (1 >= ny) 
-        throw ImageDimensionException("Can't rotate 1D image");
-	EMData* ret = copy_head();
-    float cod = cos(ang*dgr_to_rad);
-    float sid = sin(ang*dgr_to_rad);
-    MArray2D out = ret->get_2dview(-nxhalf,-nyhalf);
-    MArray2D in  = get_2dview(-nxhalf,-nyhalf);
-    for (int iy = -nyhalf; iy < nyhalf + ny%2; iy++) {
-        float ycod = iy*cod;
-        float ysid = -iy*sid;
-        for (int ix = -nxhalf; ix < nxhalf + nx%2; ix++) {
-            if (ix*ix + iy*iy <= rmax2) {
-                float yold = ix*sid + ycod;
-                float xold = ix*cod + ysid;
-                out[ix][iy] =  getconvpt2d(xold, yold, win);
-            } else {
-                out[ix][iy] = in[ix][iy];
-            }
-        }
-    }
-	ret->done_data();
-    return ret;
-}
-#endif // 0
 
 float EMData::getconvpt2d_kbi0(float x, float y, 
 		Util::KaiserBessel::kbi0_win win, int size) {

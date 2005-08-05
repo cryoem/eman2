@@ -34,7 +34,7 @@ using namespace EMAN;
 void Util::ap2ri(float *data, size_t n)
 {
 	Assert(n > 0);
-	
+
 	if (!data) {
 		throw NullPointerException("pixel data array");
 	}
@@ -49,7 +49,7 @@ void Util::ap2ri(float *data, size_t n)
 void Util::flip_complex_phase(float *data, size_t n)
 {
 	Assert(n > 0);
-	
+
 	if (!data) {
 		throw NullPointerException("pixel data array");
 	}
@@ -146,7 +146,7 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 	}
 	Assert(nx > 0);
 	Assert(ny > 0);
-	
+
 	float *buf = new float[nx];
 	size_t row_size = nx * sizeof(float);
 
@@ -157,7 +157,7 @@ void Util::flip_image(float *data, size_t nx, size_t ny)
 	}
 
 	if( buf )
-	{ 
+	{
 		delete[]buf;
 		buf = 0;
 	}
@@ -172,7 +172,7 @@ bool Util::sstrncmp(const char *s1, const char *s2)
 	if (strncmp(s1, s2, strlen(s2)) == 0) {
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -188,7 +188,7 @@ string Util::get_line_from_string(char **slines)
 	if (!slines || !(*slines)) {
 		throw NullPointerException("Null string");
 	}
-	
+
 	string result = "";
 	char *str = *slines;
 
@@ -200,10 +200,10 @@ string Util::get_line_from_string(char **slines)
 		str++;
 	}
 	*slines = str;
-	
+
 	return result;
 }
-		
+
 
 
 bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
@@ -216,7 +216,7 @@ bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
 		*p_val = (float) atof(&s[n]);
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -241,7 +241,7 @@ bool Util::get_str_float(const char *s, const char *float_var,
 	if (!s || !float_var || !p_v0 || !p_v1 || !p_v2) {
 		throw NullPointerException("string float");
 	}
-	
+
 	size_t n = strlen(float_var);
 	*p_v0 = 0;
 	if (strncmp(s, float_var, n) == 0) {
@@ -262,7 +262,7 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_val)
 	if (!s || !int_var || !p_val) {
 		throw NullPointerException("string int");
 	}
-	
+
 	size_t n = strlen(int_var);
 	if (strncmp(s, int_var, n) == 0) {
 		*p_val = atoi(&s[n]);
@@ -276,7 +276,7 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_v1, int *p_v2)
 	if (!s || !int_var || !p_v1 || !p_v2) {
 		throw NullPointerException("string int");
 	}
-	
+
 	size_t n = strlen(int_var);
 	if (strncmp(s, int_var, n) == 0) {
 		sscanf(&s[n], "%d,%d", p_v1, p_v2);
@@ -290,7 +290,7 @@ bool Util::get_str_int(const char *s, const char *int_var, int *p_v0, int *p_v1,
 	if (!s || !int_var || !p_v0 || !p_v1 || !p_v2) {
 		throw NullPointerException("string int");
 	}
-	
+
 	size_t n = strlen(int_var);
 	*p_v0 = 0;
 	if (strncmp(s, int_var, n) == 0) {
@@ -313,7 +313,7 @@ string Util::change_filename_ext(const string & old_filename,
 	if (ext == "") {
 		return old_filename;
 	}
-	
+
 	string filename = old_filename;
 	size_t dot_pos = filename.rfind(".");
 	if (dot_pos != string::npos) {
@@ -331,7 +331,7 @@ string Util::remove_filename_ext(const string& filename)
     if (filename == "") {
         return "";
     }
-	
+
 	char *buf = new char[filename.size()+1];
 	strcpy(buf, filename.c_str());
 	char *old_ext = strrchr(buf, '.');
@@ -352,8 +352,8 @@ string Util::sbasename(const string & filename)
     if (filename == "") {
         return "";
     }
-	
-	char s = '/';	
+
+	char s = '/';
 #ifdef WIN32
 	s = '\\';
 #endif
@@ -389,7 +389,7 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 								 float *slope, float *intercept, bool ignore_zero)
 {
 	Assert(nitems > 0);
-	
+
 	if (!data_x || !data_y || !slope || !intercept) {
 		throw NullPointerException("null float pointer");
 	}
@@ -430,7 +430,7 @@ void Util::save_data(const vector < float >&x_array, const vector < float >&y_ar
 	Assert(x_array.size() > 0);
 	Assert(y_array.size() > 0);
 	Assert(filename != "");
-	
+
 	if (x_array.size() != y_array.size()) {
 		LOGERR("array x and array y have different size: %d != %d\n",
 			   x_array.size(), y_array.size());
@@ -454,7 +454,7 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array,
 	Assert(dx != 0);
 	Assert(y_array.size() > 0);
 	Assert(filename != "");
-	
+
 	FILE *out = fopen(filename.c_str(), "wb");
 	if (!out) {
 		throw FileAccessException(filename);
@@ -467,13 +467,13 @@ void Util::save_data(float x0, float dx, const vector < float >&y_array,
 }
 
 
-void Util::save_data(float x0, float dx, float *y_array, 
+void Util::save_data(float x0, float dx, float *y_array,
 					 size_t array_size, const string & filename)
 {
 	Assert(dx > 0);
 	Assert(array_size > 0);
 	Assert(filename != "");
-	
+
 	if (!y_array) {
 		throw NullPointerException("y array");
 	}
@@ -490,19 +490,37 @@ void Util::save_data(float x0, float dx, float *y_array,
 }
 
 
+void Util::spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m) //PRB
+{
+	float y0= y[0];
+	float y1= y[1];
+	float y2= y[2];
+	float yp1 =  (y1-y0) + .5*(2*y1-y0-y2);
+	float yn  = y[n];
+	float ynm1= y[n-1];
+	float ynm2= y[n-2];
+	float ypn=  (yn-ynm1) + .5*(2*ynm1-yn-ynm2);
+	float *y2d = new float[n];
+	Util::spline(x,y,n,yp1,ypn,y2d);
+	Util::splint(x,y,y2d,n,xq,yq,m); //PRB
+	delete [] y2d;
+	return;
+}
+
+
 void Util::spline(float *x, float *y, int n, float yp1, float ypn, float *y2) //PRB
 {
 	int i,k;
 	float p, qn, sig, un, *u;
 	u=new float[n-1];
-	
+
 	if (yp1 > .99e30){
 		y2[0]=u[0]=0.0;
 	}else{
 		y2[0]=-.5;
 		u[0] =(3./ (x[1] -x[0]))*( (y[1]-y[0])/(x[1]-x[0]) -yp1);
 	}
-	
+
 	for (i=1; i < n-1; i++) {
 		sig= (x[i] - x[i-1])/(x[i+1] - x[i-1]);
 		p = sig*y2[i-1] + 2.0;
@@ -510,7 +528,7 @@ void Util::spline(float *x, float *y, int n, float yp1, float ypn, float *y2) //
 		u[i] = (y[i+1] - y[i] )/(x[i+1]-x[i] ) -  (y[i] - y[i-1] )/(x[i] -x[i-1]);
 		u[i] = (6.0*u[i]/ (x[i+1]-x[i-1]) - sig*u[i-1])/p;
 	}
-	
+
 	if (ypn>.99e30){
 		qn=0; un=0;
 	} else {
@@ -529,6 +547,7 @@ void Util::splint( float *xa, float *ya, float *y2a, int n,  float *xq, float *y
 	int klo, khi, k;
 	float h, b, a;
 
+//	klo=0; // can try to put here
 	for (int j=0; j<m;j++){
 		klo=0;
 		khi=n-1;
@@ -542,10 +561,10 @@ void Util::splint( float *xa, float *ya, float *y2a, int n,  float *xq, float *y
 		a =(xa[khi]-xq[j])/h;
 		b=(xq[j]-xa[klo])/h;
 		yq[j]=a*ya[klo] + b*ya[khi]
-			+ ((a*a*a-a)*y2a[klo] 
+			+ ((a*a*a-a)*y2a[klo]
 			     +(b*b*b-b)*y2a[khi]) *(h*h)/6.;
 	}
-//	printf("h=%f, a = %f, b=%f, ya[klo]=%f, ya[khi]=%f , yq=%f\n",h, a, b, ya[klo], ya[khi],yq[0]);		     
+//	printf("h=%f, a = %f, b=%f, ya[klo]=%f, ya[khi]=%f , yq=%f\n",h, a, b, ya[klo], ya[khi],yq[0]);
 }
 
 
@@ -587,7 +606,7 @@ void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 }
 
 void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
-               float *weightofkValsSorted, int Size)
+               float *weightofkValsSorted, int Size, int *SizeReturned)
 {
 	int iMax = (int) floor( (Size-1.0)/2 +.01);
 	int CountMax = (iMax+2)*(iMax+1)/2;
@@ -595,7 +614,8 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 	float *kVals     = new float[CountMax];
 	float *weightMat = new float[CountMax];
 	int *PermMat     = new   int[CountMax];
-	
+	SizeReturned[0] = CountMax;
+
 //	printf("Aa \n");	fflush(stdout);
 	for (int jkx=0; jkx< iMax+1; jkx++) {
 		for (int jky=0; jky< jkx+1; jky++) {
@@ -607,27 +627,27 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 			if (jkx!=jky){ weightMat[Count] *=2;}
 			PermMat[Count]=Count+1;
 	}}
-	
+
 	int lkVals = Count+1;
 //	printf("Cc \n");fflush(stdout);
 
-	sort_mat(&kVals[0],&kVals[Count], 
-	     &PermMat[0],  &PermMat[Count]);  //PermMat is 
+	sort_mat(&kVals[0],&kVals[Count],
+	     &PermMat[0],  &PermMat[Count]);  //PermMat is
 				//also returned as well as kValsSorted
 	fflush(stdout);
-	
+
 	int newInd;
 
         for (int iP=0; iP < lkVals ; iP++ ) {
 		newInd =  PermMat[iP];
-		PermMatTr[newInd-1] = iP+1; 
-	} 
-	
+		PermMatTr[newInd-1] = iP+1;
+	}
+
 //	printf("Ee \n"); fflush(stdout);
 
 	int CountA=-1;
 	int CountB=-1;
-	
+
 	while (CountB< (CountMax-1)) {
 		CountA++;
 		CountB++;
@@ -635,22 +655,24 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 		kValsSorted[CountA] = kVals[CountB] ;
 		if (CountB<(CountMax-1) ) {
 			while (fabs(kVals[CountB] -kVals[CountB+1])<.0000001  ) {
+				SizeReturned[0]--;
 				for (int iP=0; iP < lkVals; iP++){
 //					printf("iP=%d \n", iP);fflush(stdout);
-					if  (PermMatTr[iP]>CountB+1) {
+					if  (PermMatTr[iP]>CountA+1) {
 						PermMatTr[iP]--;
 		    			}
 		 		}
 				CountB++;
-	    		}	 
+	    		}
 		}
 	}
 	
+
 	for (int CountD=0; CountD < CountMax; CountD++) {
 	    newInd = PermMatTr[CountD];
 	    weightofkValsSorted[newInd-1] += weightMat[CountD];
         }
-	
+
 }
 
 float Util::get_frand(int lo, int hi)
@@ -706,7 +728,7 @@ float Util::get_gauss_rand(float mean, float sigma)
 void Util::find_max(const float *data, size_t nitems, float *max_val, int *max_index)
 {
 	Assert(nitems > 0);
-	
+
 	if (!data || !max_val || !max_index) {
 		throw NullPointerException("data/max_val/max_index");
 	}
@@ -732,7 +754,7 @@ void Util::find_min_and_max(const float *data, size_t nitems,
 							int *max_index, int *min_index)
 {
 	Assert(nitems > 0);
-	
+
 	if (!data || !max_val || !min_val || !max_index || !min_index) {
 		throw NullPointerException("data/max_val/min_val/max_index/min_index");
 	}
@@ -770,7 +792,7 @@ void Util::find_min_and_max(const float *data, size_t nitems,
 int Util::calc_best_fft_size(int low)
 {
 	Assert(low >= 0);
-	
+
 	//array containing valid sizes <1024 for speed
 	static char *valid = NULL;
 
@@ -816,7 +838,7 @@ string Util::get_time_label()
 	struct tm *t = localtime(&t0);
 	char label[32];
 	sprintf(label, "%d/%02d/%04d %d:%02d",
-			t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour, t->tm_min);	
+			t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour, t->tm_min);
 	return string(label);
 }
 
@@ -832,7 +854,7 @@ void Util::set_log_level(int argc, char *argv[])
 }
 
 void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
-	// Note: Don't need to check if 3-D because 3D is part of 
+	// Note: Don't need to check if 3-D because 3D is part of
 	//       the MIArray3D typedef.
 	out << "Printing 3D Integer data: " << str << std::endl;
 	const multi_array_types::size_type* sizes = mat.shape();
@@ -843,7 +865,7 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 		cout << "(z = " << iz << " slice)" << endl;
 		for (int ix = bx; ix < nx+bx; ix++) {
 			for (int iy = by; iy < ny+by; iy++) {
-				cout << setiosflags(ios::fixed) << setw(5) 
+				cout << setiosflags(ios::fixed) << setw(5)
 					 << mat[ix][iy][iz] << "  ";
 			}
 			cout << endl;
@@ -939,7 +961,7 @@ float Util::triquad(double r, double s, double t, float f[]) {
 		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
 }
 
-float Util::quadri(float x, float y, int nxdata, int nydata, 
+float Util::quadri(float x, float y, int nxdata, int nydata,
 			 EMData* image, int zslice) {
 	// sanity check
 	if (image->get_ysize() <= 1) {
@@ -947,7 +969,7 @@ float Util::quadri(float x, float y, int nxdata, int nydata,
 	}
 	MArray3D fdata = image->get_3dview(1,1,1);
 	// periodic boundary conditions
-	if (x < 1.0) 
+	if (x < 1.0)
 		x += (1-int(x)/nxdata)*nxdata;
 	if (x > float(nxdata) + 0.5)
 		x = fmodf(x - 1.0f, (float)nxdata) + 1.0f;
