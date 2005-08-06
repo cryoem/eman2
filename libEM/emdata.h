@@ -1099,6 +1099,7 @@ namespace EMAN
 
 		/** Get image raw pixel data in a 2D multi-array format. The
 		 * array shares the memory space with the image data.
+		 * Notice: the subscription order is d[y][x]
 		 *
 		 * It should be used on 2D image only.
 		 *
@@ -1108,6 +1109,7 @@ namespace EMAN
 		
 		/** Get image raw pixel data in a 3D multi-array format. The
 		 * array shares the memory space with the image data.
+		 * Notice: the subscription order is d[z][y][x]
 		 *
 		 * It should be used on 3D image only.
 		 *
