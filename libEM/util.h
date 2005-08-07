@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <boost/multi_array.hpp>
 
@@ -374,7 +374,7 @@ namespace EMAN
 
 		static inline float atan2(int i, int j) //PRB
 		{ 
-			return atan2((float) i, (float) j);
+			return std::atan2((float) i, (float) j);
 		}
 		
 		/** Get ceiling round of a float number x.
