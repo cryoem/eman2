@@ -120,7 +120,7 @@ class TestEMData(unittest.TestCase):
         for k in range(16):
             for j in range(32):
                 for i in range(32):
-                    self.assertEqual(d[i][j][k], d2[i][j][k])
+                    self.assertEqual(d[k+16][j][i], d2[k][j][i]) #(nz/2, nz] is the top half
         
         e3 = EMData()
         e3.set_size(32,32,1)
@@ -149,11 +149,208 @@ class TestEMData(unittest.TestCase):
         e4.set_size(12,1,1)
         e4.to_one()
         #insert_scaled_sum() will raise exception for 1D image
-        #self.assertRaises( RuntimeError, e3.insert_scaled_sum, e4, (0,0,0))
+        Log.logger().set_level(-1)    #perfect solution for quenching the Log error information, thank Liwei
+        self.assertRaises( RuntimeError, e3.insert_scaled_sum, e4, (0,0,0))
         try:
             e3.insert_scaled_sum(e4, (0,0,0))
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_window_padded(self):
+        """test window_padded() function ...................."""
+        e = EMData()
+        e.set_size(64,64,64)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.window_padded(32)
+        
+        #window_padded() only work for real data, raise exception for complex
+        e.set_complex(True)
+        self.assertRaises( RuntimeError, e.window_padded, 32 )
+        try:
+            e2 = e.window_padded(32)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+        #window_padded() apply to cubic real space image only
+        e3 = EMData()
+        e3.set_size(64,64,62)
+        e3.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e3.window_padded, 32 )
+        try:
+            e4 = e3.window_padded(32)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+    def test_center_origin(self):
+        """test center_origin() function ...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e.center_origin()
+        
+        #center_origin() only apply to real image
+        e.set_complex(True)
+        Log.logger().set_level(-1)
+        self.assertRaises( RuntimeError, e.center_origin, )
+        try:
+            e.center_origin()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    
+    def test_center_origin_fft(self):
+        """test center_origin_fft() function ................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e.set_complex(True)
+        e.center_origin_fft()
+        
+        #center_origin_fft() apply to complex image only
+        e.set_complex(False)
+        self.assertRaises( RuntimeError, e.center_origin_fft, )
+        try:
+            e.center_origin_fft()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+    def test_zeropad_ntimes(self):
+        """test zeropad_ntimes() function ..................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        
+        #test default argument npad=4
+        e2 = e.zeropad_ntimes()
+        d = e.get_3dview()
+        d2 = e2.get_3dview()
+        for z in range(32):
+            for y in range(32):
+                for x in range(32):
+                    self.assertEqual( d[z][y][x], d2[z+48][y+48][x+48])
+        
+        #test argument npad=3
+        e3 = e.zeropad_ntimes(3)
+        d3 = e3.get_3dview()
+        for z in range(32):
+            for y in range(32):
+                for x in range(32):
+                    self.assertEqual( d[z][y][x], d3[z+32][y+32][x+32])
+                    
+    def test_pad_fft(self):
+        """test pad_fft() function .........................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        
+        #test default argument
+        e2 = e.pad_fft()
+        
+        #test arbitrary argument
+        e3 = e.pad_fft(3)
+        
+    def test_postift_depad_corner_inplace(self):
+        """test postift_depad_corner_inplace() .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.do_fft()
+        e3 = e2.do_ift()
+        e3.postift_depad_corner_inplace()
+        
+        #test the correctness for this function, something I don't quite understand
+        #d = e.get_3dview()
+        #d3 = e3.get_3dview()
+        #import math
+        #for z in range(31):
+        #    for y in range(31):
+        #        for x in range(31):
+        #            self.assertEqual( math.ceil((d[z][y][x]-d3[z][y][x])*1000), 0 )
+
+    def test_real2FH(self):
+        """test real2FH() function .........................."""
+        e = EMData()
+        e.set_size(31,31,1)
+        e.process("testimage.noise.uniform.rand")
+        #Log.logger().set_level(-1)
+        #import sys
+        #outfile = "out.txt" 
+        #sys.stdout = open(outfile,"w")
+        e3 = e.real2FH(1.0)
+        
+        #real2FH apply to 2D/Square/Real/odd image
+        e2 = EMData()
+        e2.set_size(31,31,31)
+        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+        try:
+            e3 = e2.real2FH(1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        e2.set_size(31,21,1)
+        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+        try:
+            e3 = e2.real2FH(1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+        e2.set_size(32,32,1)
+        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+        try:
+            e3 = e2.real2FH(1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        e2.set_size(31,31,1)
+        e2.set_complex(True)
+        self.assertRaises( RuntimeError, e2.real2FH, 1.0)
+        try:
+            e2.real2FH(1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+        #os.unlink(outfile)
+        
+    def test_FH2F(self):
+        """test FH2F() function ............................."""
+        e = EMData()
+        e.set_size(31,31,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.real2FH(1.0)
+        e3 = e2.FH2F(31, 1.0)
+        
+        #for image not FH, should raise exception
+        self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
+        try:
+            e.FH2F(31, 1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+
+    def test_do_fft(self):
+        """test do_fft()/do_ift() function .................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.do_fft()
+        e3 = e2.do_ift()
+        
+        #do_fft() only apply to real image
+        #e4 = e2.do_fft()    #segmentation fault, need to be fixed 
+        
+        #do_ift() only apply to complex image
+        self.assertRaises( RuntimeError, e3.do_ift, )
+        try:
+            e3.do_ift()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+    def test_do_fft_inplace(self):
+        """test do_fft_inplace()/do_ift_inplace ............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        #e2 = e.do_fft_inplace()    #segmentation fault, need to be fixed
+        e.set_complex(True)
+        e.do_ift_inplace()
         
     def test_make_rotational_footprint(self):
         """test make_rotational_footprint() function ........"""
