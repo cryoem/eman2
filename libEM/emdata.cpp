@@ -897,6 +897,8 @@ void EMData::center_origin_fft()
 // #G2#
 EMData* EMData::zeropad_ntimes(int npad) {
 	ENTERFUNC;
+	if (is_complex()) 
+		throw ImageFormatException("Zero padding complex images not supported");
 	EMData* newimg = copy_head();
 	int nxpad = npad*nx;
 	int nypad = npad*ny;
@@ -939,6 +941,8 @@ Output: real image that may have been zero-padded and has been extended along x 
  */
 EMData* EMData::pad_fft(int npad) {
 	ENTERFUNC;
+	if (is_complex()) 
+		throw ImageFormatException("Padding of complex images not supported");
 	EMData* newimg = copy_head();
 	newimg->to_zero();
 	if (is_fftpadded() == false) {

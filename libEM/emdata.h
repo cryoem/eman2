@@ -256,7 +256,7 @@ namespace EMAN
 		void center_origin_fft();
 
 		/** return an image object that has been padded with zeros to
-		 *  an integral (npad) factor (e.g., npad=4 means the new 
+		 *  an integral (npad) factor (e.g., npad=2 means the new 
 		 *  image will be 2x larger in each direction).  The default
 		 *  is to pad 4x.
 		 * The current image is not changed.
