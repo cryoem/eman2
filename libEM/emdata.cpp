@@ -1075,13 +1075,15 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 			kInt = PermMatTr[Count];
 			kIntm1= kInt-1;
 			Count++;
+			float fjkx = float(jkx);
+			float fjky = float(jky);
 
-			kValue =sqrt( float(jkx^2 +  jky^2 ) ) ;
+			kValue =sqrt(fjkx*fjkx +  fjky*fjky )  ;
 //        		mMaxR= floor(ScalFactor*kValue +10);
 
  //                   How many copies
 
-			thetak = Util::atan2(jky,jkx);
+			thetak = atan2(fjky,fjkx);
 			ImfTemp = rhoOfkandm[0][kIntm1];
         		for (int mm= 1; mm <mMax;mm++) {  // The index for m
 				complex <float> fact(0,-mm*thetak);
@@ -1094,7 +1096,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 //			printf("jkx=%d, jky=%d; %f + %f i \n",jkx,jky,ImfTemp.real(), ImfTemp.imag());
 
 			if (jky>0) {
-				thetak = Util::atan2(-jky,jkx);
+				thetak = atan2(-fjky,fjkx);
 				ImfTemp = rhoOfkandm[0][kIntm1];
 				for (int mm= 1; mm<mMax; mm++) { // The index for m
 					complex <float> fact(0,-mm*thetak);
@@ -1107,7 +1109,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 			}
 
 			if (jkx>0) {
-            			thetak = Util::atan2(jky,-jkx);
+            			thetak = atan2(fjky,-fjkx);
 				ImfTemp = rhoOfkandm[0][kIntm1];
 				for (int mm= 1; mm<mMax; mm++) { // The index for m
 					complex <float> fact(0,-mm*thetak);
@@ -1120,7 +1122,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 			}
 
  			if (jkx>0 && jky>0) {
-				thetak = Util::atan2(-jky,-jkx);
+				thetak = atan2(-fjky,-fjkx);
 				ImfTemp = rhoOfkandm[0][kIntm1];
 				for (int mm= 1; mm<mMax; mm++) {  // The index for m
 					complex <float> fact(0,-mm*thetak);
@@ -1133,7 +1135,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 			}
 
 			if (jky< jkx) {
-				thetak = Util::atan2(jkx,jky);
+				thetak = atan2(fjkx,fjky);
 				ImfTemp = rhoOfkandm[0][kIntm1];
 				for (int mm= 1; mm<mMax; mm++){ // The index for m
 					complex <float> fact(0,-mm*thetak);
@@ -1145,7 +1147,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 				ImBWfftRm[2*(CenterM+jky)+1][CenterM+jkx] = ImfTemp.imag();
 
 				if (jky>0){
-					thetak = Util::atan2(jkx,-jky);
+					thetak = atan2(fjkx,-fjky);
 					ImfTemp = rhoOfkandm[0][kIntm1];
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
 						complex <float> fact(0,-mm*thetak);
@@ -1158,7 +1160,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 				}
 
 				 if (jkx>0) {
-					 thetak = Util::atan2(-jkx,jky);
+					 thetak = atan2(-fjkx,fjky);
 					 ImfTemp = rhoOfkandm[0][kIntm1];
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
 						complex <float> fact(0,-mm*thetak);
@@ -1171,7 +1173,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
  				}
 
 	 			if (jkx>0 && jky>0) {
-					thetak = Util::atan2(-jkx,-jky);
+					thetak = atan2(-fjkx,-fjky);
 					ImfTemp = rhoOfkandm[0][kIntm1];
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
 						complex <float> fact(0,-mm*thetak);
@@ -1277,17 +1279,19 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 			for (int ii=0; ii< RIntMax; ii++){ rhoOfRandmTemp[ii]=0;}
 			for (int jx=0; jx <Center ; jx++) {
 				for (int jy=0; jy <=jx; jy++){
+					float fjx=float(jx);
+					float fjy= float(jy);
           				Count = (jx*jx+jx)/2 +1 +jy;
 					PCount = PermMatTr[Count-1];
 //					printf("PCount=%d, Count=%d \n", PCount, Count);
-  				        rhoTemp =  complex <float> (ImBW[CenterM+jx][CenterM+jy]) *exp(mI* complex <float> (Util::atan2(+jy,+jx)))
-				         +   complex <float> (ImBW[CenterM+jx][CenterM-jy]) * exp(mI*complex <float>(Util::atan2(-jy,+jx)))
-				         +   complex <float> (ImBW[CenterM-jx][CenterM+jy]) * exp(mI*complex <float>(Util::atan2(+jy,-jx)))
-				         +   complex <float> (ImBW[CenterM-jx][CenterM-jy]) * exp(mI*complex <float>(Util::atan2(-jy,-jx)))
-			               	 +   complex <float> (ImBW[CenterM+jy][CenterM+jx]) * exp(mI*complex <float>(Util::atan2(+jx,+jy)))
-					 +   complex <float> (ImBW[CenterM+jy][CenterM-jx]) * exp(mI*complex <float>(Util::atan2(-jx,+jy)))
-					 +   complex <float> (ImBW[CenterM-jy][CenterM+jx]) * exp(mI*complex <float>(Util::atan2(+jx,-jy)))
-					 +   complex <float> (ImBW[CenterM-jy][CenterM-jx]) * exp(mI*complex <float>(Util::atan2(-jx,-jy)));
+  				        rhoTemp =  complex <float> (ImBW[CenterM+jx][CenterM+jy]) *exp(mI* complex <float> (atan2(+fjy,+fjx)))
+				         +   complex <float> (ImBW[CenterM+jx][CenterM-jy]) * exp(mI*complex <float>(atan2(-fjy,+fjx)))
+				         +   complex <float> (ImBW[CenterM-jx][CenterM+jy]) * exp(mI*complex <float>(atan2(+fjy,-fjx)))
+				         +   complex <float> (ImBW[CenterM-jx][CenterM-jy]) * exp(mI*complex <float>(atan2(-fjy,-fjx)))
+			               	 +   complex <float> (ImBW[CenterM+jy][CenterM+jx]) * exp(mI*complex <float>(atan2(+fjx,+fjy)))
+					 +   complex <float> (ImBW[CenterM+jy][CenterM-jx]) * exp(mI*complex <float>(atan2(-fjx,+fjy)))
+					 +   complex <float> (ImBW[CenterM-jy][CenterM+jx]) * exp(mI*complex <float>(atan2(+fjx,-fjy)))
+					 +   complex <float> (ImBW[CenterM-jy][CenterM-jx]) * exp(mI*complex <float>(atan2(-fjx,-fjy)));
             				if (((jx+jy)==0)&&(m>0) ){
 						rhoTemp=0;}
 //			printf("m=%d, jx=%d, jy=%d, rhoTemp= %f+ %f i\n", m,jx,jy,(rhoTemp.real()), (rhoTemp.imag()) );fflush(stdout);

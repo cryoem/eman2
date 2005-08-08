@@ -372,11 +372,6 @@ namespace EMAN
 		static float get_gauss_rand(float mean, float sigma);
 
 
-		static inline float atan2(int i, int j) //PRB
-		{ 
-			return std::atan2((float) i, (float) j);
-		}
-		
 		/** Get ceiling round of a float number x.
 		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.
