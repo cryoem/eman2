@@ -1599,6 +1599,16 @@ namespace EMAN
 		 */
 		EMData* symvol(string symmetry);
 
+		/** Generate Rotated-Circulantly-Translated image 
+		 *
+		 *  @param[in] ang Rotation angle in degrees.
+		 *  @param[in] delx Translation along x
+		 *  @param[in] dely Translation along y
+		 *  
+		 *  @return New rotated/translated/scaled image
+		 */
+		EMData* 
+		rot_trans2D(float ang, float delx=0.f, float dely=0.f);
 		/** Generate Rotated-Scaled-Circulantly-Translated image 
 		 *  (or image slice).
 		 *
@@ -1607,9 +1617,8 @@ namespace EMAN
 		 *  
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] scale Scaling factor
-		 *  @param[in] delx Translation along x
-		 *  @param[in] dely Translation along y
-		 *  @param[in] zslice Slice to transform (defaults to 1, counting starts at 1)
+		 *  @param[in] delx Amount to translate rotation origin along x
+		 *  @param[in] dely Amount to translate rotation origin along y
 		 *  
 		 *  @return New rotated/translated/scaled image
 		 */

@@ -52,6 +52,7 @@ set_policy(EMData.zeropad_ntimes, return_value_policy(manage_new_object))
 set_policy(EMData.get_3dcviewptr, return_value_policy(reference_existing_object))
 set_policy(EMData.symvol, return_value_policy(manage_new_object))
 set_policy(EMData.rot_scale_trans2D, return_value_policy(manage_new_object))
+set_policy(EMData.rot_trans2D, return_value_policy(manage_new_object))
 
 #rotconvtrunc2d = Template("EMAN::EMData::rotconvtrunc2d", "emdata.h")
 #rotconvtrunc2d("EMAN::Util::KaiserBessel::kbi0_win")

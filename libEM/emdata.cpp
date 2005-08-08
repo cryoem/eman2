@@ -6831,6 +6831,62 @@ EMData* EMData::symvol(string symmetry) {
 }
 
 EMData*
+EMData::rot_trans2D(float ang, float delx, float dely) {
+	if (1 >= ny) 
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+	if (0.f == ang) {
+		EMData* ret = copy();
+		return ret;
+	}
+	update();
+	float background = get_attr("mean");
+	if (ang > pi) ang -= twopi;
+	if (ang < -pi) ang += twopi;
+	float cang = cos(ang);
+	float sang = sin(ang);
+	EMData* ret = copy_head();
+	// center of the image
+	int xc = nx/2;
+	int yc = ny/2;
+	// shift center for rotation (if desired)
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	MArray2D in = get_2dview();
+	MArray2D out = ret->get_2dview();
+	for (int iy = 0; iy < ny; iy++) {
+		float y = float(iy) - shiftyc;
+		float ycang = y*cang + shiftyc;
+		float ysang = -y*sang + shiftxc;
+		for (int ix = 0; ix < nx; ix++) {
+			out[ix][iy] = background;
+			float x = float(ix) - shiftxc;
+			float xold = x*cang + ysang;
+			float yold = x*sang + ycang;
+			int iyold = int(yold);
+			float q = yold - float(iyold);
+			float qcomp = 1.f - q;
+			int ixold = int(xold);
+			// Note: nx-1 or ny-1 below because need room for
+			// (forward) interpolation
+			if ((iyold>=0 && iyold<=ny-2) && (ixold>=0 && ixold<=nx-2)) {
+				// inside boundaries of input image
+				float p = xold - ixold;
+				float pcomp = 1.f - p;
+				out[ix][iy] = q*(pcomp*in[ixold][iyold+1]
+						         + p*in[ixold+1][iyold+1])
+					        + qcomp*(pcomp*in[ixold][iyold]
+									 + p*in[ixold+1][iyold]);
+			}
+		}
+	}
+	ret->done_data();
+	ret->update();
+	return ret;
+}
+
+EMData*
 EMData::rot_scale_trans2D(float ang, float scale, float delx,
 		                  float dely, int zslice) {
 	if (1 >= ny)
