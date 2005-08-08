@@ -28,12 +28,15 @@ for single particle analysis."""
 	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
 	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=10)
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
+	logid=E2init(sys.argv)
+	
 	image=EMData()
 	image.read_image(args[0])
 	image.set_attr("datatype",7)
@@ -54,7 +57,7 @@ for single particle analysis."""
 		if not options.box in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
 	
-	shrinkfactor=int(ceil(options.box/16))
+	shrinkfactor=int(ceil(options.box/20))
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
@@ -197,18 +200,24 @@ for single particle analysis."""
 		n=0
 		for i in goodpks:
 			b=EMData()
+			
+			refns=[i[1]]+range(options.nretest)	# list of the ref numbers of the particles to use in the realignment
+			
 			# read in the area where we think a particle exists
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"keepzero":1})
-			dx=ba.get_attr("translational.dx")
-			dy=ba.get_attr("translational.dy")
-			da=ba.get_attr("rotational")
-			i[2]-= cos(da)*dx+sin(da)*dy
-			i[3]-=-sin(da)*dx+cos(da)*dy
+			tsts=[]
+			for j in refns: 
+				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"keepzero":1})
+				tsts.append([ba.get_attr("align_score"),j,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")])
+			tsts.sort()
+			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1]
+			i[1]=tsts[0][1]
+			i[2]-= cos(tsts[0][4])*tsts[0][2]+sin(tsts[0][4])*tsts[0][3]
+			i[3]-=-sin(tsts[0][4])*tsts[0][2]+cos(tsts[0][4])*tsts[0][3]
 
 # this code can be used to test alignment
 #			b.write_image("cmp.hdf",-1)
@@ -358,6 +367,8 @@ for single particle analysis."""
 		ccf1/=ccf2
 		
 #		ccf1.write_image("b_result.hdf")
+	
+	E2end(logid)
 
 		
 if __name__ == "__main__":

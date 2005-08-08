@@ -5,12 +5,45 @@ from pyemtbx.box import *
 #from Sparx import *
 from sys import exit
 import os
+import time
+import shelve
 
 EMANVERSION="EMAN2 v1.90"
 
 Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
 Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
+
+def E2init(argv) :
+	"""E2init(argv)
+This function is called to log information about the current job to the local logfile"""
+	try:
+		db=shelve.open(".eman2log")
+	except:
+		return -1
+		
+	try:
+		n=db["count"]
+		db["count"]=n+1
+	except:
+		n=1
+		db["count"]=n
+	db[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv}
+	db.close()
+	
+	return n
+
+def E2end(n):
+	"""E2end(n)
+This function is called to log the end of the current job. n is returned by E2init"""
+	db=shelve.open(".eman2log")
+	d=db[str(n)]
+	d["end"]=time.time()
+	db[str(n)]=d
+	db.close()
+	
+	return n
+
 
 def display(img):
 	"""This will use 'v2', and EMAN1 program to view an image
