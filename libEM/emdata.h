@@ -1601,6 +1601,9 @@ namespace EMAN
 
 		/** Generate Rotated-Circulantly-Translated image 
 		 *
+		 *  Method uses bilinear (4-point) interpolation:
+		 *  @see Abramowitz & Stegun, Handbook of Mathematical Functions 25.2.6
+		 *
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Translation along x
 		 *  @param[in] dely Translation along y

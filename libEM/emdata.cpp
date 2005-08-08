@@ -6868,9 +6868,9 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 			float q = yold - float(iyold);
 			float qcomp = 1.f - q;
 			int ixold = int(xold);
-			// Note: nx-1 or ny-1 below because need room for
+			// Note: nx-2 or ny-2 below because need room for
 			// (forward) interpolation
-			if ((iyold>=0 && iyold<=ny-2) && (ixold>=0 && ixold<=nx-2)) {
+			if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
 				// inside boundaries of input image
 				float p = xold - ixold;
 				float pcomp = 1.f - p;
