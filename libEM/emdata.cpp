@@ -28,6 +28,7 @@
 
 using namespace EMAN;
 using namespace std;
+using namespace boost;
 
 int EMData::totalalloc=0;		// mainly used for debugging/memory leak purposes
 
@@ -1456,24 +1457,20 @@ EMData *EMData::do_fft_inplace()
 	if (!is_fftpadded()) {
 		// need to extend the matrix along x
 		// meaning nx is the un-fftpadded size
+		nxreal = nx;
+		MArray3D arr = get_3dview();
 		offset = 2 - nx%2;
 		if (1 == offset) set_fftodd(true);
-		//size_t bytes = (nx+offset)*ny*nz*sizeof(float);
-		nx += offset;
-		set_size(nx, ny, nz);
-		nxreal = nx - offset;
+		int nxnew = nx + offset;
+		set_size(nxnew, ny, nz);
 		// now need to relocate the data in rdata
-		float* srccol = rdata + nxreal*ny*nz - nxreal;
-		float* destcol = rdata + nx*ny*nz - nx;
-		for (int iz = nz - 1; iz >= 0; iz--) {
-			for (int iy = ny - 1; iy >= 0; iy--) {
-				for (int ix = 0; ix < nxreal; ix++) {
-					destcol[ix] = srccol[ix];
-				}
-				srccol -= nx;
-				destcol -= nx+offset;
-			}
-		}
+		MArray3D dest = get_3dview();
+		array<std::size_t,3> dims = {{nxreal, ny, nz}};
+		MArray3D src(get_data(), dims, boost::fortran_storage_order());
+		for (int iz = nz-1; iz >= 0; iz--)
+			for (int iy = ny-1; iy >= 0; iy--)
+				for (int ix = nxreal-1; ix >= 0; ix--)
+					dest[ix][iy][iz] = src[ix][iy][iz];
 		set_fftpad(true);
 	} else {
 		offset = is_fftodd() ? 1 : 2;
