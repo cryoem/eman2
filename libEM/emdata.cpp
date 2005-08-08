@@ -1364,8 +1364,9 @@ EMData *EMData::do_fft()
 {
 	ENTERFUNC;
 
-	if (flags & EMDATA_COMPLEX) {
-		return this;
+	if ( is_complex() ) {
+		LOGERR("real image expected. Input image is complex image.");
+		throw ImageFormatException("real image expected. Input image is complex image.");
 	}
 
 	int nxreal = nx;
@@ -1441,9 +1442,11 @@ EMData *EMData::do_fft_inplace()
 {
 	ENTERFUNC;
 
-	if (flags & EMDATA_COMPLEX) {
-		return this;
+	if ( is_complex() ) {
+		LOGERR("real image expected. Input image is complex image.");
+		throw ImageFormatException("real image expected. Input image is complex image.");
 	}
+	
 	size_t offset;
 	int nxreal;
 	if (!is_fftpadded()) {
