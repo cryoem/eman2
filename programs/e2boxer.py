@@ -28,7 +28,8 @@ for single particle analysis."""
 	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
 	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
-	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=10)
+	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
+	parser.add_option("--retestlist",type="string",help="Comma separated list of image numbers for retest cycle",default="")
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	
@@ -57,7 +58,9 @@ for single particle analysis."""
 		if not options.box in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
 	
-	shrinkfactor=int(ceil(options.box/20))
+	options.retestlist=[int(i) for i in options.retestlist.split(',')]
+			
+	shrinkfactor=int(ceil(options.box/16))
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
@@ -201,7 +204,10 @@ for single particle analysis."""
 		for i in goodpks:
 			b=EMData()
 			
-			refns=[i[1]]+range(options.nretest)	# list of the ref numbers of the particles to use in the realignment
+			if options.nretest>0 :
+				refns=[i[1]]+range(options.nretest)	# list of the ref numbers of the particles to use in the realignment
+			else :
+				refns=[i[1]]+options.retestlist
 			
 			# read in the area where we think a particle exists
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
@@ -214,7 +220,7 @@ for single particle analysis."""
 				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"keepzero":1})
 				tsts.append([ba.get_attr("align_score"),j,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")])
 			tsts.sort()
-			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1]
+			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1],"    %f,%f  %f"%(tsts[0][2],tsts[0][3],tsts[0][4])
 			i[1]=tsts[0][1]
 			i[2]-= cos(tsts[0][4])*tsts[0][2]+sin(tsts[0][4])*tsts[0][3]
 			i[3]-=-sin(tsts[0][4])*tsts[0][2]+cos(tsts[0][4])*tsts[0][3]
@@ -259,17 +265,19 @@ for single particle analysis."""
 			# now we use phase error as a similarity measure
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
-#			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+			b.process("eman1.normalize.edgemean")
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+			print "%d ROT %f"%(n*2,da)
 			rr=refptcl[i[1]].rot_scale_trans2D(-da,1.0,0,0)
 			rr.process("eman1.normalize")
 			b.cmp("optvariance",rr,{"keepzero":1})
 			b*=b.get_attr("ovcmp_m")
 			b+=b.get_attr("ovcmp_b")
-#			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
-#			score=rr.cmp("phase",b,{})
 			rr.write_image("a.hdf",-1)
 			b.write_image("a.hdf",-1)
-			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
+#			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
+			score=rr.cmp("phase",b,{})
+#			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
 			if (score<=0) : continue
 
 			# now record the fixed up location

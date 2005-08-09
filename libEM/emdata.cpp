@@ -6907,8 +6907,8 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	float xmax = -xmin;
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
-	float cod = cos(ang*dgr_to_rad);
-	float sid = sin(ang*dgr_to_rad);
+	float cod = cos(ang);	// Fixed this to use EMAN convention. Angles passed in radians.
+	float sid = sin(ang);
 	MArray3D out = ret->get_3dview(1,1,1);
 	for (int iy = 1; iy <= ny; iy++) {
 		float yi = iy - yc - dely;
