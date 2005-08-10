@@ -37,5 +37,6 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("periodogram", &EMAN::periodogram, return_value_policy< manage_new_object >());
     def("norm_pad_ft", &EMAN::norm_pad_ft, return_value_policy< manage_new_object >(), norm_pad_ft_overloads_3_4());
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
+    def("equalsize", &EMAN::equalsize);
 }
 
