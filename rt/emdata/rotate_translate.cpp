@@ -513,6 +513,33 @@ void debug_insert_clip()
 	}
 }
 
+void debug_do_fft()
+{
+	cout << "Starting debug_do_fft() ... " << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(32, 32, 32);
+	e->process("testimage.noise.uniform.rand");
+	
+	EMData * e2 = e->do_fft();
+	EMData * e3 = e2->do_fft();
+	EMData * e4 = e3->do_fft();
+	cout << "e2 = " << e2 << endl
+		 << "e3 = " << e3 << endl
+		 << "e4 = " << e4 << endl;
+}
+
+void debug_do_fft_inplace()
+{
+	cout << "Starting debug_do_fft_inplace() ... " << endl;
+
+	EMData * e = new EMData();
+	e->set_size(32, 32, 32);
+	e->process("testimage.noise.uniform.rand");
+
+	EMData * e2 = e->do_fft_inplace();
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -533,7 +560,9 @@ int main()
 		//debeg_dict();
 		//debug_complex_image_arithmetic();
 		//debug_big_file();
-		debug_insert_clip();
+		//debug_insert_clip();
+		//debug_do_fft();
+		debug_do_fft_inplace();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
