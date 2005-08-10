@@ -255,8 +255,7 @@ class TestEMData(unittest.TestCase):
         e.process("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e3 = e2.do_ift()
-        e3.postift_depad_corner_inplace()
-        
+        e3.postift_depad_corner_inplace()        
         #test the correctness for this function, something I don't quite understand
         #d = e.get_3dview()
         #d3 = e3.get_3dview()
@@ -307,7 +306,6 @@ class TestEMData(unittest.TestCase):
             e2.real2FH(1.0)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-            
         #os.unlink(outfile)
         
     def test_FH2F(self):
@@ -334,7 +332,11 @@ class TestEMData(unittest.TestCase):
         e3 = e2.do_ift()
         
         #do_fft() only apply to real image
-        #e4 = e2.do_fft()    #segmentation fault, need to be fixed 
+        self.assertRaises( RuntimeError, e2.do_fft, )
+        try:
+            e2.do_fft()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
         #do_ift() only apply to complex image
         self.assertRaises( RuntimeError, e3.do_ift, )
@@ -348,10 +350,134 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process("testimage.noise.uniform.rand")
-        #e2 = e.do_fft_inplace()    #segmentation fault, need to be fixed
+        
+        #test unpadded real image
+        e2 = e.do_fft_inplace()    
+        
+        #test padded real image
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.pad_fft()
+        e3 = e2.do_fft_inplace()
+        
         e.set_complex(True)
         e.do_ift_inplace()
         
+        #do_ift_inplace() only apply to complex image
+        e4 = EMData()
+        e4.set_size(32,32,32)
+        e4.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e4.do_ift_inplace, )
+        try:
+            e4.do_ift_inplace()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        #do_fft_inplace() only apply to real image
+        e5 = EMData()
+        e5.set_size(32,32,32)
+        e5.process("testimage.noise.uniform.rand")
+        e6 = e5.do_fft()
+        self.assertRaises( RuntimeError, e6.do_fft_inplace, )
+        try:
+            e6.do_fft_inplace()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+
+    def test_get_fft_amplitude(self):
+        """test get_fft_amplitude() function ................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.do_fft()
+        e3 = e2.get_fft_amplitude()
+        self.assertEqual( e3.is_complex(), False)
+        
+        #this function only apply to complex image
+        self.assertRaises( RuntimeError, e.get_fft_amplitude, )
+        try:
+            e.get_fft_amplitude()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+
+    def test_get_fft_phase(self):
+        """test get_fft_phase() function ...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.do_fft()
+        e3 = e2.get_fft_phase()
+        self.assertEqual( e3.is_complex(), False)
+        
+        #this function only apply to complex image
+        self.assertRaises( RuntimeError, e.get_fft_phase, )
+        try:
+            e.get_fft_phase()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+    def test_get_fft_amplitude2D(self):
+        """test get_fft_amplitude2D() function .............."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.do_fft()
+        e3 = e2.get_fft_amplitude2D()
+        self.assertEqual( e3.is_complex(), False)
+        
+        #this function only apply to 2D image
+        e4 = EMData()
+        e4.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e4.get_fft_amplitude2D, )
+        try:
+            e4.get_fft_amplitude2D()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        #this function only apply to complex image
+        self.assertRaises( RuntimeError, e.get_fft_amplitude2D, )
+        try:
+            e.get_fft_amplitude2D()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+    
+    def test_render_amp8(self):
+        """test render_amp8() function ......................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100, 200, 3)
+        
+        #only apply to 2D image
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100, 200, 3)
+        try:
+            str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100, 200, 3)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_ri2ap_ap2ri(self):
+        """test ri2ap()/ap2ri() function ...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.do_fft()
+        e2.ri2ap()
+        e2.ap2ri()
+         
+    def test_scale(self):
+        """test scale() function ............................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        d = e.get_3dview()
+        
+        e2 = e.scale(2.0)
+        self.assertEqual(e2, None) #this function return None(void in C++)    
+
     def test_make_rotational_footprint(self):
         """test make_rotational_footprint() function ........"""
         e = EMData()
@@ -601,6 +727,24 @@ class TestEMData(unittest.TestCase):
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
         os.unlink(infile)
+        
+    def test_translate(self):
+        """test translate() function ........................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        
+        #integer translation, no interpolation involved
+        e.translate(2,2,2)
+        
+        #float translation, interpolation involved
+        e.translate(1.2, 2.1, 3.3)
+        
+        #Vec3i is tuple 3 of int in Python
+        e.translate((1,2,3))
+        
+        #Vec3f is tuple 3 of float in Python
+        #e.translate((1.1,2.1,3.1))     #problem here, Vec3f not reconized from flaot tuple 3
 
     def test_rotate_translate(self):
         """test rotate_translate ............................"""
@@ -661,6 +805,10 @@ class TestEMData(unittest.TestCase):
         b=a.copy()
         b.rotate(0,0,math.pi/2)
         testlib.check_emdata(b, sys.argv[0])
+
+    def test_rotate_x(self):
+        """test rotate_x() function ........................."""
+        pass
 
     def test_project(self):
         """test image projection ............................"""
