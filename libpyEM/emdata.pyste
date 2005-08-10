@@ -59,6 +59,7 @@ set_policy(EMData.rot_trans2D, return_value_policy(manage_new_object))
 #exclude(EMData.rotconvtrunc2d)
 #exclude(EMData.getconvpt2d)
 set_policy(EMData.rotconvtrunc2d_kbi0, return_value_policy(manage_new_object))
+set_policy(EMData.gridrot2d_kbi0, return_value_policy(manage_new_object))
 
 set_policy(EMData.real2FH, return_value_policy(manage_new_object))
 set_policy(EMData.FH2F, return_value_policy(manage_new_object))

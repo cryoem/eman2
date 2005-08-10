@@ -6988,8 +6988,8 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
     if (1 >= ny) 
         throw ImageDimensionException("Can't rotate 1D image");
 	EMData* ret = copy_head();
-    float cod = cos(ang*dgr_to_rad);
-    float sid = sin(ang*dgr_to_rad);
+    float cod = cos(ang);
+    float sid = sin(ang);
     MArray2D out = ret->get_2dview(-nxhalf,-nyhalf);
     MArray2D in  = get_2dview(-nxhalf,-nyhalf);
     for (int iy = -nyhalf; iy < nyhalf + ny%2; iy++) {

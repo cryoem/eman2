@@ -1666,6 +1666,32 @@ namespace EMAN
 		//	return rotconvtrunc2d(ang, kb.get_kbi0_win(), size);
 		//}
 		EMData* rotconvtrunc2d_kbi0(float ang, float alpha, int size);
+		/** 2-D rotation using gridding convolution and deconvolution.
+		 *  
+		 *  This routine does deconvolve out the window function
+		 *  after rotation.
+		 *
+		 *  @param[in] x x-value of the desired (potentially off-grid) point
+		 *  @param[in] y y-value of the desired (potentially off-grid) point
+		 *  @param[in] win Window (mask/kernel) function object.
+		 *  @param[in] size Size of real-space kernel/mask.
+		 *
+		 *  @return Rotated/convolved EMData image.
+		 */
+		//template<class Win>
+		//EMData* rotconvtrunc2d(float ang, Win win, int size = 7);
+		//EMData* rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
+		//	Util::KaiserBessel kb(alpha, size-1);
+		//	return rotconvtrunc2d(ang, kb.get_kbi0_win(), size);
+		//}
+		EMData* gridrot2d_kbi0(float ang, float alpha = 1., int size = 7) {
+			EMData* rot = rotconvtrunc2d_kbi0(ang, alpha, size);
+			Dict params;
+			params["dopad"] = 1;
+			params["Alpha"] = alpha;
+			rot->process("filter.kaisersinhinverse", params);
+			return rot;
+		}
 
 
 	private:
