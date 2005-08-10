@@ -6874,7 +6874,8 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 			int ixold = int(xold);
 			// Note: nx-2 or ny-2 below because need room for
 			// (forward) interpolation
-			if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
+			//if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
+			if ((yold>=1 && iyold<=(ny-2)) && (xold>=1 && ixold<=(nx-2))) {
 				// inside boundaries of input image
 				float p = xold - ixold;
 				float pcomp = 1.f - p;
@@ -6882,6 +6883,7 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 						         + p*in[ixold+1][iyold+1])
 					        + qcomp*(pcomp*in[ixold][iyold]
 									 + p*in[ixold+1][iyold]);
+				out[ix][iy] = Util::quadri(this, xold, yold);
 			}
 		}
 	}
@@ -6899,31 +6901,37 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	EMData* ret = copy_head();
 	delx = fmod(delx, float(nx));
 	dely = fmod(dely, float(ny));
-	int xc = nx/2 + 1;
-	int yc = ny/2 + 1;
+	// center of image
+	int xc = nx/2;
+	int yc = ny/2;
+	// shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	// bounds if origin at center
 	float ymin = -ny/2;
 	float xmin = -nx/2;
 	float ymax = -ymin;
 	float xmax = -xmin;
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
-	float cod = cos(ang);	// Fixed this to use EMAN convention. Angles passed in radians.
-	float sid = sin(ang);
-	MArray3D out = ret->get_3dview(1,1,1);
-	for (int iy = 1; iy <= ny; iy++) {
-		float yi = iy - yc - dely;
-		if (yi < ymin) yi = std::min(ymax+yi-ymin+1.0f,ymax);
-		if (yi > ymax) yi = std::max(ymin+yi-ymax-1.0f,ymin);
-		float ycod = yi*cod/scale + yc;
-		float ysid = -yi*sid/scale + xc;
-		for (int ix = 1; ix <= nx; ix++) {
-			float xi = ix - xc - delx;
-			if (xi < xmin) xi = std::min(xmax+xi-xmin+1.0f,xmax);
-			if (xi > xmax) xi = std::max(xmin+xi-xmax-1.0f,xmin);
-			float yold = xi*sid/scale + ycod;
-			float xold = xi*cod/scale + ysid;
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+	MArray3D out = ret->get_3dview();
+	for (int iy = 0; iy < ny; iy++) {
+		float y = float(iy) - shiftyc;
+		if (y < ymin) y = std::min(y+ny,ymax);
+		if (y > ymax) y = std::max(y-ny,ymin);
+		float ycang = y*cang/scale + yc;
+		float ysang = -y*sang/scale + xc;
+		for (int ix = 0; ix < nx; ix++) {
+			float x = float(ix) - shiftxc;
+			if (x < xmin) x = std::min(x+nx,xmax);
+			if (x > xmax) x = std::max(x-nx,xmin);
+			float xold = x*cang/scale + ysang;
+			float yold = x*sang/scale + ycang;
 			out[ix][iy][zslice] =
-				Util::quadri(xold, yold, nx, ny, this, zslice);
+				Util::quadri(this, xold, yold, zslice);
 		}
 	}
 	return ret;

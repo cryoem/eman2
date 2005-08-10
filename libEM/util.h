@@ -906,8 +906,7 @@ namespace EMAN
 		 *
 		 *	@return Interpolated value
 		 */
-		static float quadri(float x, float y, int nxdata, 
-				int nydata, EMData* image, int zslice = 1);
+		static float quadri(EMData* image, float x, float y, int zslice = 0);
 
 		/** 1-D Kaiser-Bessel window function class.
 		 *  (It's a class so that the windowing parameters may be

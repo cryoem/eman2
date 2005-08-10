@@ -1626,8 +1626,8 @@ namespace EMAN
 		 *  @return New rotated/translated/scaled image
 		 */
 		EMData* 
-		rot_scale_trans2D(float ang, float scale, float delx, 
-			 			float dely, int zslice = 1);
+		rot_scale_trans2D(float ang, float scale = 1.f, float delx = 0.f, 
+			 			float dely = 0.f, int zslice = 0);
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
 		 *  
 		 *  The only requirement for the window function object is that

@@ -25,7 +25,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_printMatI3D_overloads_1_3, EMAN::Util:
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_voea_overloads_1_5, EMAN::Util::voea, 1, 5)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_quadri_overloads_5_6, EMAN::Util::quadri, 5, 6)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_quadri_overloads_3_4, EMAN::Util::quadri, 3, 4)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
@@ -117,7 +117,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("printMatI3D", &EMAN::Util::printMatI3D, EMAN_Util_printMatI3D_overloads_1_3())
         .def("voea", &EMAN::Util::voea, EMAN_Util_voea_overloads_1_5())
         .def("triquad", &EMAN::Util::triquad)
-        .def("quadri", &EMAN::Util::quadri, EMAN_Util_quadri_overloads_5_6())
+        .def("quadri", &EMAN::Util::quadri, EMAN_Util_quadri_overloads_3_4())
         .staticmethod("flip_complex_phase")
         .staticmethod("sort_mat")
         .staticmethod("get_min")

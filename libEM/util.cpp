@@ -968,47 +968,46 @@ float Util::triquad(double r, double s, double t, float f[]) {
 		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
 }
 
-float Util::quadri(float x, float y, int nxdata, int nydata,
-			 EMData* image, int zslice) {
+float Util::quadri(EMData* image, float x, float y, int zslice) {
 	// sanity check
 	if (image->get_ysize() <= 1) {
 		throw ImageDimensionException("Interpolated image must be at least 2D");
 	}
-	MArray3D fdata = image->get_3dview(1,1,1);
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	MArray3D fdata = image->get_3dview();
 	// periodic boundary conditions
-	if (x < 1.0)
-		x += (1-int(x)/nxdata)*nxdata;
-	if (x > float(nxdata) + 0.5)
-		x = fmodf(x - 1.0f, (float)nxdata) + 1.0f;
-	if (y < 1.0)
-		y += (1 - int(y)/nydata)*nydata;
-	if (y > float(nydata) + 0.5f)
-		y = fmodf(y - 1.0f, (float)nydata) + 1.0f;
-	int i = int(x);
-	int j = int(y);
-	float dx0 = x - i;
-	float dy0 = y - j;
-	int ip1 = (i + 1) % nxdata + 1; // enforce ip1 in [1, nxdata]
-	int im1 = (i - 1) % nxdata + 1;
-	int jp1 = (j + 1) % nydata + 1;
-	int jm1 = (j - 1) % nydata + 1;
-	float f0 = fdata[i][j][zslice];
-	float c1 = fdata[ip1][j][zslice] - f0;
-	float c2 = (c1 - f0 + fdata[im1][j][zslice])*.5f;
-	float c3 = fdata[i][jp1][zslice] - f0;
-	float c4 = (c3 - f0 + fdata[i][jm1][zslice])*.5f;
-	float dxb = dx0 - 1;
-	float dyb = dy0 - 1;
-	// hxc and hyc are either +1 or -1
-	float hxc = (float)((dx0 >= 0) ? 1 : -1);
-	float hyc = (float)((dy0 >= 0) ? 1 : -1);
-	int ic = int(fmodf(i + hxc, float(nxdata)) + 1);
-	int jc = int(fmodf(j + hyc, float(nydata)) + 1);
-	float c5 = (fdata[ic][jc][zslice] - f0 - hxc*c1
-				- (hxc*(hxc - 1.0f))*c2 - hyc*c3
-				- (hyc*(hyc - 1.0f))*c4) * (hxc*hyc);
-	float result = f0 + dx0*(c1 + dxb*c2 + dy0*c5)
-				 + dy0*(c3 + dyb*c4);
+	x -= roundf((x/float(nx))-0.5f)*nx; // x in [0,nx-1]
+	// zero is a bit of a problem
+	if (x == nx) x = 0.f;
+	y -= roundf((y/float(ny))-0.5f)*ny; // y in [0,ny-1]
+	if (y == ny) y = 0.f;
+	int ix = int(x);
+	int ixp = ix + 1;
+	if (ixp > nx-1) ixp -= nx;
+	int ixm = ix - 1;
+	if (ixm < 0) ixm += nx;
+	float p = x - float(ix);
+	int iy = int(y);
+	int iyp = iy + 1;
+	if (iyp > ny-1) iyp -= ny;
+	int iym = iy - 1;
+	if (iym < 0) iym += ny;
+	float q = y - float(iy);
+	float f00 = fdata[ix][iy][zslice];
+	float f0p = fdata[ix][iyp][zslice];
+	float fp0 = fdata[ixp][iy][zslice];
+	float f0m = fdata[ix][iym][zslice];
+	float fm0 = fdata[ixm][iy][zslice];
+	float fpp = fdata[ixp][iyp][zslice];
+	float c1 = fp0 - f00;
+	float c2 = 0.5f*(c1 - f00 + fm0);
+	float c3 = f0p - f00;
+	float c4 = 0.5f*(c3 - f00 + f0m);
+	float c5 = fpp - f00 - c1 - c3;
+	float result = f00 
+		         + p*(c1 + (p-1)*c2 + q*c5)
+				 + q*(c3 + (q-1)*c4);
 	return result;
 }
 
