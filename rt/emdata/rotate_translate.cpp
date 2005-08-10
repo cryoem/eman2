@@ -540,6 +540,27 @@ void debug_do_fft_inplace()
 	EMData * e2 = e->do_fft_inplace();
 }
 
+void debug_calc_radial_dist()
+{
+	cout << "Starting debug_calc_radial_dist() ... " << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(32, 32, 1);
+	e->process("testimage.noise.uniform.rand");
+	
+	int ny = e->get_ysize();
+	vector<float> v;
+	v = e->calc_radial_dist(ny, 0, 0.5);
+	
+	vector<float>::iterator iter;
+	for(iter=v.begin(); iter!=v.end(); iter++)
+	{
+		cout << *iter << endl;
+	}
+	
+	cout << "Finish debug_calc_radial_dist() ... " << endl;
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -562,7 +583,8 @@ int main()
 		//debug_big_file();
 		//debug_insert_clip();
 		//debug_do_fft();
-		debug_do_fft_inplace();
+		//debug_do_fft_inplace();
+		debug_calc_radial_dist();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
