@@ -6874,8 +6874,7 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 			int ixold = int(xold);
 			// Note: nx-2 or ny-2 below because need room for
 			// (forward) interpolation
-			//if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
-			if ((yold>=1 && iyold<=(ny-2)) && (xold>=1 && ixold<=(nx-2))) {
+			if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
 				// inside boundaries of input image
 				float p = xold - ixold;
 				float pcomp = 1.f - p;
@@ -6883,7 +6882,6 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 						         + p*in[ixold+1][iyold+1])
 					        + qcomp*(pcomp*in[ixold][iyold]
 									 + p*in[ixold+1][iyold]);
-				out[ix][iy] = Util::quadri(this, xold, yold);
 			}
 		}
 	}
