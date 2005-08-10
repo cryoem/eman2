@@ -204,6 +204,9 @@ for single particle analysis."""
 		for i in goodpks:
 			b=EMData()
 			
+			# on the first pass, rather than just using the best reference determined using the shrunken images
+			# we also try a subset of the references to see which gives the best alignment/match
+			# refns is the list of ref image #'s to test against
 			if options.nretest>0 :
 				refns=[i[1]]+range(options.nretest)	# list of the ref numbers of the particles to use in the realignment
 			else :
@@ -213,14 +216,17 @@ for single particle analysis."""
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
+			
+			# we iterate over each reference then find the best, eventually recentering ( i[2-3] ) and
+			# updating the reference number for the second pass ( i[1] )
 			tsts=[]
 			for j in refns: 
 				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"keepzero":1})
 				tsts.append([ba.get_attr("align_score"),j,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")])
 			tsts.sort()
-			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1],"    %f,%f  %f"%(tsts[0][2],tsts[0][3],tsts[0][4])
+#			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1],"    %f,%f  %f"%(tsts[0][2],tsts[0][3],tsts[0][4])
 			i[1]=tsts[0][1]
 			i[2]-= cos(tsts[0][4])*tsts[0][2]+sin(tsts[0][4])*tsts[0][3]
 			i[3]-=-sin(tsts[0][4])*tsts[0][2]+cos(tsts[0][4])*tsts[0][3]
@@ -234,11 +240,11 @@ for single particle analysis."""
 #				b.write_image("cmp.hdf",-1)
 #			except: pass
 			
-			# now we refine this by doing a second pass
+			# now we refine this by doing a second pass with the best reference
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
 			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"keepzero":1})
 			dx=ba.get_attr("translational.dx")
@@ -262,23 +268,25 @@ for single particle analysis."""
 #			b-=cc
 #			b.write_image("t2.hdf",-1)
 			
-			# now we use phase error as a similarity measure
+			# now we calculate the particle quality using the final
+			# alignment parameters
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.15})
-			print "%d ROT %f"%(n*2,da)
-			rr=refptcl[i[1]].rot_scale_trans2D(-da,1.0,0,0)
+			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
+#			print "%d ROT %f"%(n*2,da)
+			rr=refptcl[i[1]].rot_scale_trans2D(da,1.0,0,0)
 			rr.process("eman1.normalize")
 			b.cmp("optvariance",rr,{"keepzero":1})
 			b*=b.get_attr("ovcmp_m")
 			b+=b.get_attr("ovcmp_b")
 			rr.write_image("a.hdf",-1)
 			b.write_image("a.hdf",-1)
+
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
 			score=rr.cmp("phase",b,{})
 #			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
-			if (score<=0) : continue
+#			if (score<=0) : continue
 
 			# now record the fixed up location
 #			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
