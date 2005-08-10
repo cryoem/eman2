@@ -6894,7 +6894,7 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 
 EMData*
 EMData::rot_scale_trans2D(float ang, float scale, float delx,
-		                  float dely, int zslice) {
+		                  float dely) {
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (0.f == scale) scale = 1.f; // silently fix common user error
@@ -6918,20 +6918,22 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	float cang = cos(ang);
 	float sang = sin(ang);
 	MArray3D out = ret->get_3dview();
-	for (int iy = 0; iy < ny; iy++) {
-		float y = float(iy) - shiftyc;
-		if (y < ymin) y = std::min(y+ny,ymax);
-		if (y > ymax) y = std::max(y-ny,ymin);
-		float ycang = y*cang/scale + yc;
-		float ysang = -y*sang/scale + xc;
-		for (int ix = 0; ix < nx; ix++) {
-			float x = float(ix) - shiftxc;
-			if (x < xmin) x = std::min(x+nx,xmax);
-			if (x > xmax) x = std::max(x-nx,xmin);
-			float xold = x*cang/scale + ysang;
-			float yold = x*sang/scale + ycang;
-			out[ix][iy][zslice] =
-				Util::quadri(this, xold, yold, zslice);
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = 0; iy < ny; iy++) {
+			float y = float(iy) - shiftyc;
+			if (y < ymin) y = std::min(y+ny,ymax);
+			if (y > ymax) y = std::max(y-ny,ymin);
+			float ycang = y*cang/scale + yc;
+			float ysang = -y*sang/scale + xc;
+			for (int ix = 0; ix < nx; ix++) {
+				float x = float(ix) - shiftxc;
+				if (x < xmin) x = std::min(x+nx,xmax);
+				if (x > xmax) x = std::max(x-nx,xmin);
+				float xold = x*cang/scale + ysang;
+				float yold = x*sang/scale + ycang;
+				out[ix][iy][iz] =
+					Util::quadri(this, xold, yold, iz);
+			}
 		}
 	}
 	return ret;

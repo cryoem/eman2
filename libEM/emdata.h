@@ -1615,8 +1615,8 @@ namespace EMAN
 		/** Generate Rotated-Scaled-Circulantly-Translated image 
 		 *  (or image slice).
 		 *
-		 *  If the image is a volume, then only the specified slice
-		 *  is rotated/translated/scaled.
+		 *  If the image is a volume, then all slices are
+		 *  rotated/translated/scaled.
 		 *  
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] scale Scaling factor
@@ -1627,7 +1627,7 @@ namespace EMAN
 		 */
 		EMData* 
 		rot_scale_trans2D(float ang, float scale = 1.f, float delx = 0.f, 
-			 			float dely = 0.f, int zslice = 0);
+			 			float dely = 0.f);
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
 		 *  
 		 *  The only requirement for the window function object is that
