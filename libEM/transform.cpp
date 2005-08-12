@@ -484,6 +484,52 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 	}
 }
 
+
+void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
+                                    const Vec3f & eAhat, const Vec3f & eBhat)
+{// this rotation rotates unit vectors a,b into A,B; 
+//    The program assumes a dot b must equal A dot B
+	Vec3f eahatcp(eahat);
+	Vec3f ebhatcp(ebhat);
+	Vec3f eAhatcp(eAhat);
+	Vec3f eAhatcpp(eAhat); // we'll need an extra copy later
+	Vec3f eBhatcp(eBhat);
+	
+	eahatcp.normalize();
+	ebhatcp.normalize();
+	eAhatcp.normalize();
+	eBhatcp.normalize();
+	
+	Vec3f aMinusA(eahatcp);
+	aMinusA  -= eAhatcp;
+	Vec3f bMinusB(ebhatcp);
+	bMinusB  -= eBhatcp;
+
+
+	aMinusA.cross(bMinusB);
+	Vec3f  nhat(aMinusA);
+	eahatcp.cross(nhat);
+	ebhatcp.cross(nhat);
+	eAhatcp.cross(nhat);
+	eahatcp.cross(nhat);
+	
+	float cosOmegaA = (eahatcp.dot(eAhatcp))  / (eahatcp.dot(eahatcp));
+//	float cosOmegaB = (ebhatcp.dot(eBhatcp))  / (ebhatcp.dot(ebhat));
+	float sinOmegaA = (eahatcp.dot(eAhatcpp)) / (eahatcp.dot(eahatcp));
+
+	float OmegaA = atan2(sinOmegaA,cosOmegaA);
+	
+	EulerType euler_type=SPIN;
+	Dict rotation;
+	Vec3f nhatB(nhat);
+	rotation["n1"]= nhat[0];
+	rotation["n2"]= nhat[1];
+	rotation["n3"]= nhat[2];
+	rotation["Omega"] =OmegaA;
+	set_rotation(euler_type,  rotation);
+}
+
+
 float Transform3D::get_scale() const     // YYY
 {
 	// Assumes uniform scaling, calculation uses Z only.

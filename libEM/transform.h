@@ -107,6 +107,16 @@ namespace EMAN
 		void set_rotation(float az, float alt,float phi);
 		void set_rotation(EulerType euler_type, float a1, float a2, float a3); // just SPIDER and EMAN
 		void set_rotation(EulerType euler_type, Dict &rotation );
+		
+
+		/** returns a rotation that maps a pair of unit vectors, a,b to a second  pair A,B
+		 * @param eahat, ebhat, eAhat, eBhat are all unit vectors
+		 * @return a transform3D rotation
+		 */
+		void set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
+		                                    const Vec3f & eAhat, const Vec3f & eBhat); 
+
+
 
 		Vec3f get_posttrans(Vec3f &pretrans) const;
 		Vec3f get_posttrans() const;
