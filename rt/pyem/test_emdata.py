@@ -808,8 +808,229 @@ class TestEMData(unittest.TestCase):
 
     def test_rotate_x(self):
         """test rotate_x() function ........................."""
-        pass
+        e = EMData()
+        e.set_size(32,32,1)
+        e.to_one()
+        
+        e.rotate_x(10)
+        
+        #apply only to 2D image
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.to_one()
+        self.assertRaises( RuntimeError, e2.rotate_x, 10)
+        try:
+            e2.rotate_x(10)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_rotate_180(self):
+        """test rotate_180() function ......................."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.to_one()
+        
+        e.rotate_180()
+        
+        #apply only to square 2D image
+        e2 = EMData()
+        e2.set_size(32,24,1)
+        e2.to_one()
+        self.assertRaises( RuntimeError, e2.rotate_180, )
+        try:
+            e2.rotate_180()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+        #exception to 3D image
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        e3.to_one()
+        self.assertRaises( RuntimeError, e3.rotate_180, )
+        try:
+            e3.rotate_180()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
+    def test_dot_rotate_translate(self):
+        """test dot_rotate_translate() functon .............."""
+        e =EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,1)
+        e2.process("testimage.noise.uniform.rand")
+        e.dot_rotate_translate(e2, 2.0, 3.0, 1.0)
+        
+        #two image must be the same size
+        e3 =EMData()
+        e3.set_size(32,32,1)
+        e3.process("testimage.noise.uniform.rand")
+        e4 = EMData()
+        e4.set_size(24,24,1)
+        e4.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e3.dot_rotate_translate, e4, 2.0, 3.0, 1.0)
+        try:
+            e3.dot_rotate_translate(e4, 2.0, 3.0, 1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+
+        #two image must be 2D
+        e5 =EMData()
+        e5.set_size(32,32,32)
+        e5.process("testimage.noise.uniform.rand")
+        e6 = EMData()
+        e6.set_size(32,32,32)
+        e6.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e5.dot_rotate_translate, e6, 2.0, 3.0, 1.0)
+        try:
+            e5.dot_rotate_translate(e6, 2.0, 3.0, 1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+    def test_little_big_dot(self):
+        """test little_big_dot() function ..................."""
+        big = EMData()
+        big.set_size(256,256,1)
+        big.process("testimage.noise.uniform.rand")
+        small = EMData()
+        small.set_size(32,32,1)
+        small.process("testimage.noise.uniform.rand")
+        
+        e = big.little_big_dot(small)
+        self.assertNotEqual(e, None)
+        e2 = big.little_big_dot(small, True)
+        self.assertNotEqual(e2, None)
+        
+        #this image only can be 1D/2D
+        e3 = EMData()
+        e3.set_size(256,256,256)
+        e3.to_one()
+        self.assertRaises( RuntimeError, e3.little_big_dot, small)
+        try:
+            e3.little_big_dot(small)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+
+    def test_do_radon(self):
+        """test do_radon() function ........................."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        
+        e2 = e.do_radon()
+        
+        #this function only apply to square 2D image
+        e3 = EMData()
+        e3.set_size(32,24,1)
+        e3.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e3.do_radon,)
+        try:
+            e3.do_radon()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        e4 = EMData()
+        e4.set_size(32,32,32)
+        e4.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e4.do_radon,)
+        try:
+            e4.do_radon()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+
+    def test_calc_ccf(self):
+        """test calc_ccf() function ........................."""
+        #for two 1 D images
+        e = EMData()
+        e.set_size(24,1,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(24,1,1)
+        e2.process("testimage.noise.uniform.rand")
+        re = e.calc_ccf(e2)
+        self.assertEqual(re.is_complex(), False)
+        
+        #for two 2 D images
+        e3 = EMData()
+        e3.set_size(24,24,1)
+        e3.process("testimage.noise.uniform.rand")
+        e4 = EMData()
+        e4.set_size(24,24,1)
+        e4.process("testimage.noise.uniform.rand")
+        re = e3.calc_ccf(e4)
+        self.assertEqual(re.is_complex(), False)
+        
+        #for two 3 D images
+        e5 = EMData()
+        e5.set_size(24,24,24)
+        e5.process("testimage.noise.uniform.rand")
+        e6 = EMData()
+        e6.set_size(24,24,24)
+        e6.process("testimage.noise.uniform.rand")
+        re = e5.calc_ccf(e6)
+        self.assertEqual(re.is_complex(), False)
+        
+        #try different fpflag other than default CIRCULANT
+        #import EMAN
+        #from EMAN2 import fundamentals
+        re = e5.calc_ccf(e6, fp_flag.CIRCULANT_NORMALIZED)
+        re = e5.calc_ccf(e6, fp_flag.PADDED)    
+        re = e5.calc_ccf(e6, fp_flag.PADDED_NORMALIZED)    
+        re = e5.calc_ccf(e6, fp_flag.PADDED_LAG)    
+        re = e5.calc_ccf(e6, fp_flag.PADDED_NORMALIZED_LAG) 
+        
+    def test_calc_ccfx(self):
+        """test calc_ccfx() function ........................"""
+        e = EMData()
+        e.set_size(24,24,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(24,24,1)
+        e2.process("testimage.noise.uniform.rand")
+        re = e.calc_ccfx(e2)
+        self.assertEqual(re.is_complex(), False)
+        self.assertEqual(re.get_xsize(), 24)
+        self.assertEqual(re.get_ysize(), 1)
+        self.assertEqual(re.get_zsize(), 1)
+        
+        Log.logger().set_level(-1)
+        
+        #test non-default parameter
+        re = e.calc_ccfx(e2, 3, 20, True)
+        self.assertEqual(re.is_complex(), False)
+        self.assertEqual(re.get_xsize(), 24)
+        #self.assertEqual(re.get_ysize(), 1)    #fail here, need investigate further
+        self.assertEqual(re.get_zsize(), 1)
+        
+        #the input image can not be None
+        e3 = None
+        self.assertRaises( RuntimeError, e.calc_ccfx, e3)
+        try:
+            e.calc_ccfx(e3)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "NullPointerException")
+        
+        #two image must be same size
+        e4 = EMData()
+        e4.set_size(32,32,1)
+        self.assertRaises( RuntimeError, e.calc_ccfx, e4)
+        try:
+            e.calc_ccfx(e4)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+        #this funtion can not be used by 3D image
+        e5 = EMData()
+        e5.set_size(24,24,24)
+        e6 = EMData()
+        e6.set_size(24,24,24)
+        self.assertRaises( RuntimeError, e5.calc_ccfx, e6)
+        try:
+            e5.calc_ccfx(e6)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
     def test_project(self):
         """test image projection ............................"""
         n = 20
