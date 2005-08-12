@@ -804,6 +804,7 @@ namespace EMAN
 		 * correlation together with 'this' image.
 		 * @exception ImageFormatException If the 2 images are not
 		 * same size.
+		 * @exception NullPointerException if the input image is null
 		 * @return The fourier shell correlation coefficients array.
 		 */
 		vector < float >calc_fourier_shell_correlation(EMData * with);
