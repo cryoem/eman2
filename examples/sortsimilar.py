@@ -16,7 +16,8 @@ for i in range(0,n,2):
 	l=EMData.read_images(sys.argv[1],(i,i+1))
 	l[1].process("eman1.normalize.edgemean")
 	l[1].process("eman1.filter.lowpass.gaussian",{"lowpass":.08})
-	cmps.append((l[0].cmp("phase",l[1],{}),i))
+	cmps.append((l[0].cmp("phase",l[1],{})+l[0].cmp("optvariance",l[1],{"radweight":1}),i))
+
 
 #	cmps.append((l[0].cmp("dot",l[1],{"normalize":1}),
 #		l[0].cmp("frc",l[1],{}),

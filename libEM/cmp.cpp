@@ -132,6 +132,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	int keepzero = params.set_default("keepzero", 0);
 	int invert = params.set_default("invert",0);
 	int matchfilt = params.set_default("matchfilt",0);
+	int radweight = params.set_default("radweight",0);
 	int dbug = params.set_default("debug",0);
 	
 	float *x_data = with->get_data();
@@ -145,6 +146,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	}
 
 	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	size_t nx = image->get_xsize();
 	float m = 0;
 	float b = 0;
 	
@@ -178,23 +180,48 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	double  result = 0;
 	int count = 0;
 
-
-	if (keepzero) {
-		for (size_t i = 0; i < size; i++) {
-			if (y_data[i] && x_data[i]) {
-				if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m);
-				else result += Util::square((x_data[i] * m) + b - y_data[i]);
-				count++;
+	if (radweight) {
+		if (image->get_zsize()!=1) throw ImageDimensionException("radweight option is 2D only");
+		if (keepzero) {
+			for (size_t i = 0,y=0; i < size; y++) {
+				for (size_t x=0; x<nx; i++,x++) {
+					if (y_data[i] && x_data[i]) {
+						if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
+						else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
+						count++;
+					}
+				}
 			}
+			result/=count;
 		}
-		result/=count;
+		else {
+			for (size_t i = 0,y=0; i < size; y++) {
+				for (size_t x=0; x<nx; i++,x++) {
+					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m)*(hypot((float)x,(float)y)+nx/4.0);
+					else result += Util::square((x_data[i] * m) + b - y_data[i])*(hypot((float)x,(float)y)+nx/4.0);
+				}
+			}
+			result = result / size;
+		}
 	}
 	else {
-		for (size_t i = 0; i < size; i++) {
-			if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m);
-			else result += Util::square((x_data[i] * m) + b - y_data[i]);
+		if (keepzero) {
+			for (size_t i = 0; i < size; i++) {
+				if (y_data[i] && x_data[i]) {
+					if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m);
+					else result += Util::square((x_data[i] * m) + b - y_data[i]);
+					count++;
+				}
+			}
+			result/=count;
 		}
-		result = result / size;
+		else {
+			for (size_t i = 0; i < size; i++) {
+				if (invert) result += Util::square(x_data[i] - (y_data[i]-b)/m);
+				else result += Util::square((x_data[i] * m) + b - y_data[i]);
+			}
+			result = result / size;
+		}
 	}
 	scale = m;
 	shift = b;
@@ -256,14 +283,14 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		nsnr = np;
 		dfsnr = (float *) realloc(dfsnr, np * sizeof(float));
 
-		float w = Util::square(nx / 4.0f);
+		float w = Util::square(nx / 8.0f);
 
 		for (int i = 0; i < np; i++) {
 			float x2 = Util::square(i / (float) Ctf::CTFOS);
 			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
 		}
 
-//		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
+#		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
 	}
 
 	EMData *image_fft = image->do_fft();
