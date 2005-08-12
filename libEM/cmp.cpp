@@ -286,11 +286,13 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		float w = Util::square(nx / 8.0f);
 
 		for (int i = 0; i < np; i++) {
-			float x2 = Util::square(i / (float) Ctf::CTFOS);
-			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
+//			float x2 = Util::square(i / (float) Ctf::CTFOS);
+//			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
+			float x2 = 10.0*i/np;
+			dfsnr[i] = x2 * exp(-x2);
 		}
 
-#		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
+//		Util::save_data(0, 1.0f / Ctf::CTFOS, dfsnr, np, "filt.txt");
 	}
 
 	EMData *image_fft = image->do_fft();
@@ -362,8 +364,10 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 			float w = Util::square(nx / 8.0f);
 
 			for (int i = 0; i < np; i++) {
-				float x2 = Util::square(i / (float) Ctf::CTFOS);
-				default_snr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
+//				float x2 = Util::square(i / (float) Ctf::CTFOS);
+//				default_snr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
+				float x2 = 10.0*i/np;
+				default_snr[i] = x2 * exp(-x2);
 			}
 		}
 	}
