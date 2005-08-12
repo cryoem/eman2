@@ -701,7 +701,7 @@ namespace EMAN
 		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
 
 		/** Create a (1-D) rotationally averaged image.
-		 * 
+		 * @exception ImageDimensionException If 'this' image is not 2D.
 		 * @return 1-D rotationally-averaged image
 		 */					
 		EMData* rotavg();
