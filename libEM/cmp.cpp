@@ -132,20 +132,47 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	int keepzero = params.set_default("keepzero", 0);
 	int invert = params.set_default("invert",0);
 	int matchfilt = params.set_default("matchfilt",0);
+	int matchamp = params.set_default("matchamp",0);
 	int radweight = params.set_default("radweight",0);
 	int dbug = params.set_default("debug",0);
 	
-	float *x_data = with->get_data();
-	float *y_data = image->get_data();
+	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	
 	
 	EMData *with2=NULL;
 	if (matchfilt) {
+		throw ImageDimensionException("matchfilt has not been implemented yet");
 		with2=with->copy();
 //		with2->process("matchfilt",Dict("to",this));
-		x_data = with2->get_data();
+//		x_data = with2->get_data();
 	}
 
-	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	// This applies the individual Fourier amplitudes from 'image' and 
+	// applies them to 'with'
+	if (matchamp) {
+		EMData *a = image->do_fft();
+		EMData *b = with->do_fft();
+		
+		a->ri2ap();
+		b->ri2ap();
+		
+		float *ad=a->get_data();
+		float *bd=b->get_data();
+		
+		for (size_t i=0; i<size; i+=2) bd[i]=ad[i];
+		b->update();
+	
+		with2=b->do_ift();
+	
+		delete a;
+		delete b;
+	}
+	
+	float *x_data;
+	if (with2) x_data=with2->get_data();
+	else x_data = with->get_data();
+	float *y_data = image->get_data();
+	
 	size_t nx = image->get_xsize();
 	float m = 0;
 	float b = 0;
@@ -228,6 +255,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	
 	image->set_attr("ovcmp_m",m);
 	image->set_attr("ovcmp_b",b);
+	if (with2) delete with2;
 	EXITFUNC;
 	
 #if 0
