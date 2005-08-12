@@ -13,5 +13,5 @@ except:
 	print "no logfile"
 	sys.exit(0)
 
-for i in range(n):
+for i in range(n-1):
 	print " ".join(db[str(i+1)]["args"])
