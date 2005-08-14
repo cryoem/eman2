@@ -1780,7 +1780,7 @@ EMData* EMData::get_fft_phase()
 	return dat;
 }
 
-void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool add)
+vector < float > EMData::calc_hist(float histmin, float histmax)
 {
 	ENTERFUNC;
 
@@ -1791,11 +1791,10 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 		histmax = get_attr("maximum");
 	}
 
-	if (!add) {
-		for (size_t i = 0; i < hist.size(); i++) {
-			hist[i] = 0;
-		}
-	}
+	vector <float> hist;
+//	for (size_t i = 0; i < hist.size(); i++) {
+//		hist[i] = 0;
+//	}
 
 	int p0 = 0;
 	int p1 = 0;
@@ -1850,6 +1849,9 @@ void EMData::calc_hist(vector < float >&hist, float histmin, float histmax, bool
 			hist[i] = hist[i] / norm;
 		}
 	}
+	
+	return hist;
+	
 	EXITFUNC;
 }
 

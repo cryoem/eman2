@@ -824,8 +824,7 @@ namespace EMAN
 		 * @param add If true, the new histogram data will be added to
 		 * existing 'hist' array.
 		 */
-		void calc_hist(vector < float >&hist, float hist_min = 0, float hist_max = 0,
-					   bool add = false);
+		vector < float > calc_hist(float hist_min = 0, float hist_max = 0);
 
 		/** Caculates the azimuthal distributions.
 		 * works for real or complex images, 2D only.
