@@ -152,6 +152,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	if (matchamp) {
 		EMData *a = image->do_fft();
 		EMData *b = with->do_fft();
+		size_t size2 = a->get_xsize() * a->get_ysize() * a->get_zsize();
 		
 		a->ri2ap();
 		b->ri2ap();
@@ -159,11 +160,12 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		float *ad=a->get_data();
 		float *bd=b->get_data();
 		
-		for (size_t i=0; i<size; i+=2) bd[i]=ad[i];
+		for (size_t i=0; i<size2; i+=2) bd[i]=ad[i];
 		b->update();
 	
+		b->ap2ri();
 		with2=b->do_ift();
-	
+//with2->write_image("a.hdf",-1);
 		delete a;
 		delete b;
 	}

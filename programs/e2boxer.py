@@ -273,18 +273,19 @@ for single particle analysis."""
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.05})
+#			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.05})
 #			print "%d ROT %f"%(n*2,da)
 			rr=refptcl[i[1]].rot_scale_trans2D(da,1.0,0,0)
 			rr.process("eman1.normalize")
-			b.cmp("optvariance",rr,{"keepzero":1})
-			b*=b.get_attr("ovcmp_m")
-			b+=b.get_attr("ovcmp_b")
-			rr.write_image("a.hdf",-1)
-			b.write_image("a.hdf",-1)
+#			b.cmp("optvariance",rr,{"keepzero":1})
+#			b*=b.get_attr("ovcmp_m")
+#			b+=b.get_attr("ovcmp_b")
+#			rr.write_image("a.hdf",-1)
+#			b.write_image("a.hdf",-1)
 
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
-			score=rr.cmp("phase",b,{})+rr.cmp("optvariance",b,{"radweight":1})/rr.get_xsize()
+#			score=rr.cmp("phase",b,{})+rr.cmp("optvariance",b,{"radweight":1,"matchamp":1})/rr.get_xsize()
+			score=sqrt(rr.cmp("optvariance",b,{"matchamp":1}))
 #			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
 #			if (score<=0) : continue
 
