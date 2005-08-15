@@ -475,7 +475,7 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 		matrix[0][1] = 2.0f * (e1 * e2 + e0 * e3);
 		matrix[0][2] = 2.0f * (e1 * e3 - e0 * e2);
 		matrix[1][0] = 2.0f * (e2 * e1 - e0 * e3);
-		matrix[1][1] = e0 * e0 + e1 * e1 + e2 * e2 - e3 * e3;
+		matrix[1][1] = e0 * e0 - e1 * e1 + e2 * e2 - e3 * e3;
 		matrix[1][2] = 2.0f * (e2 * e3 + e0 * e1);
 		matrix[2][0] = 2.0f * (e3 * e1 + e0 * e2);
 		matrix[2][1] = 2.0f * (e3 * e2 - e0 * e1);
@@ -492,7 +492,6 @@ void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
 	Vec3f eahatcp(eahat);
 	Vec3f ebhatcp(ebhat);
 	Vec3f eAhatcp(eAhat);
-	Vec3f eAhatcpp(eAhat); // we'll need an extra copy later
 	Vec3f eBhatcp(eBhat);
 	
 	eahatcp.normalize();
@@ -506,22 +505,35 @@ void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
 	bMinusB  -= eBhatcp;
 
 
-	aMinusA.cross(bMinusB);
-	Vec3f  nhat(aMinusA);
-	eahatcp.cross(nhat);
-	ebhatcp.cross(nhat);
-	eAhatcp.cross(nhat);
-	eahatcp.cross(nhat);
+	Vec3f  nhat;
+	float aAlength = aMinusA.length();
+	float bBlength = bMinusB.length();
+	if (aAlength==0){
+		nhat=eahatcp;
+	}else if (bBlength==0){
+		nhat=ebhatcp;
+	}else{
+		nhat= aMinusA.cross(bMinusB);
+		nhat.normalize();
+	}
+
+//		printf("nhat=%f,%f,%f \n",nhat[0],nhat[1],nhat[2]);
+
+	Vec3f neahat  = eahatcp.cross(nhat);
+	Vec3f nebhat  = ebhatcp.cross(nhat);
+	Vec3f neAhat  = eAhatcp.cross(nhat);
+	Vec3f neBhat  = eBhatcp.cross(nhat);
 	
-	float cosOmegaA = (eahatcp.dot(eAhatcp))  / (eahatcp.dot(eahatcp));
-//	float cosOmegaB = (ebhatcp.dot(eBhatcp))  / (ebhatcp.dot(ebhat));
-	float sinOmegaA = (eahatcp.dot(eAhatcpp)) / (eahatcp.dot(eahatcp));
+	float cosOmegaA = (neahat.dot(neAhat))  / (neahat.dot(neahat));
+//	float cosOmegaB = (nebhat.dot(neBhat))  / (nebhat.dot(nebhat));
+	float sinOmegaA = (neahat.dot(eAhatcp)) / (neahat.dot(neahat));
+//	printf("cosOmegaA=%f \n",cosOmegaA); 	printf("sinOmegaA=%f \n",sinOmegaA);
 
 	float OmegaA = atan2(sinOmegaA,cosOmegaA);
+//	printf("OmegaA=%f \n",OmegaA*180/M_PI);
 	
 	EulerType euler_type=SPIN;
 	Dict rotation;
-	Vec3f nhatB(nhat);
 	rotation["n1"]= nhat[0];
 	rotation["n2"]= nhat[1];
 	rotation["n3"]= nhat[2];
