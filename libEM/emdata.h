@@ -799,18 +799,25 @@ namespace EMAN
 		 */
 		void add_incoherent(EMData * obj);
 
-		/** Caculates the fourier ring/shell correlation coefficients
-		 * as an array with ysize/2 elements (corners not calculated).
+		/** Calculate CCF in Fourier space as a function of spatial frequency
+                 * between a pair of 2-3D images (corners not included).
 		 * The input image 'with' must have the same size to 'this' image.
+		 * Input images can be either real or Fourier in arbitrary combination.
 		 *
 		 * @param with The image used to caculate the fourier shell
-		 * correlation together with 'this' image.
+		 * @param w Ring/shell width in Fourier space.
 		 * @exception ImageFormatException If the 2 images are not
 		 * same size.
 		 * @exception NullPointerException if the input image is null
-		 * @return The fourier shell correlation coefficients array.
+		 * @exception Cannot calculate FSC for 1D images
+		 * @return  2D 3xk real image.
+		 * k - length of FSC curve, depends on dimensions of the image and ring width
+		 * 1 column - FSC,
+		 * 2 column - normalized frequency [0,0.5]
+		 * 3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier
+		 *            coefficients within given shell.
 		 */
-		vector < float >calc_fourier_shell_correlation(EMData * with);
+		vector < float >calc_fourier_shell_correlation(EMData * with, float w = 1.0f);
 
 		/** Calculates the histogram of 'this' image. The result is
 		 * stored in float array 'hist'. If 'add' is true, the new

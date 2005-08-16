@@ -2600,68 +2600,125 @@ void EMData::ap2ri()
 }
 
 
-vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
+vector < float >EMData::calc_fourier_shell_correlation(EMData * with, float w)
 {
 	ENTERFUNC;
 
-	int needfree=0;
+/*
+ ******************************************************
+ *DISCLAIMER
+ * 08/16/05 P.A.Penczek
+ * The University of Texas
+ * Pawel.A.Penczek@uth.tmc.edu
+ * Please do not modify the content of calc_fourier_shell_correlation
+ ******************************************************/
+/*
+Fourier Ring/Shell Correlation
+Purpose: Calculate CCF in Fourier space as a function of spatial frequency
+         between a pair of 2-3D images. 
+Method: Calculate FFT (if needed), calculate FSC.
+Input:  f - real or complex 2-3D image
+	g - real or complex 2-3D image
+        w - float ring width
+Output: 2D 3xk real image.
+        k - length of FSC curve, depends on dimensions of the image and ring width
+	1 column - FSC,
+	2 column - normalized frequency [0,0.5]
+	3 column - currently n /error of the FSC = 1/sqrt(n), where n is the number of Fourier
+	           coefficients within given shell.
+*/  
+	int needfree=0, nx, ny, nz, nx2, ny2, nz2, ix, iy, iz, kz, ky;
+	float  dx2, dy2, dz2, argx, argy, argz;
 
 	if (!with) {
 		throw NullPointerException("NULL input image");
 	}
 
-	if (!EMUtil::is_same_size(this, with)) {
-		throw ImageFormatException( "images not same size");
+	
+	EMData *f = this;
+	EMData *g = with;
+	
+	nx  = f->get_xsize();
+	ny  = f->get_ysize();
+	nz  = f->get_zsize();
+
+	if (ny==0 && nz==0) {
+		throw ImageFormatException( "Cannot calculate FSC for 1D images");
 	}
 
-	EMData *f1 = this;
-	if (!is_complex()) {
-		f1 = do_fft();
-		needfree|=1;
+	if (!equalsize(f, g)) {
+		LOGERR("FSC requires congruent images");
+		throw ImageDimensionException("FSC requires congruent images");
 	}
 
-	f1->ap2ri();
+	if (f->is_complex()) nx = (nx - 2 + f->is_fftodd()); // nx is the real-space size of the input image
+	int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 
-	EMData *f2 = with;
-	if (!with->is_complex()) {
-		f2 = with->do_fft();
-		needfree|=2;
+//  Process f if real
+	EMData* fpimage = NULL;
+	if(f->is_complex()) fpimage = f;
+	else {fpimage= norm_pad_ft(f, false, false); needfree|=1;} // Extend and do the FFT if f is real
+
+
+//  Process g if real
+	EMData* gpimage = NULL;
+	if(g->is_complex()) gpimage = g; 
+	else {gpimage= norm_pad_ft(g, false, false); needfree|=2;} // Extend and do the FFT if f is real
+
+
+	float *d1 = fpimage->get_data();
+	float *d2 = gpimage->get_data();
+
+	nx2=nx/2; ny2 = ny/2; nz2 = nz/2;
+	dx2 = 1.0f/float(nx2)/float(nx2); 
+	dy2 = 1.0f/float(ny2)/float(ny2);
+	dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
+	
+	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
+	
+	double *ret = new double[inc+1];
+	double *n1  = new double[inc+1];
+	double *n2  = new double[inc+1];
+	float  *lr  = new float[inc+1];
+	for (int i = 0; i <= inc; i++) {
+		ret[i] = 0; n1[i] = 0; n2[i] = 0; lr[i]=0;
 	}
-	f2->ap2ri();
 
-	float *d1 = f1->get_data();
-	float *d2 = f2->get_data();
-
-	int f1_nx = f1->get_xsize();
-
-	float *ret = new float[ny / 2];
-	float *n1 = new float[ny / 2];
-	float *n2 = new float[ny / 2];
-	for (int i = 0; i < ny / 2; i++) {
-		ret[i] = 0;
-		n1[i] = 0;
-		n2[i] = 0;
-	}
-
-	for (int k = 0; k < nz; k++) {
-		for (int j = 0; j < ny; j++) {
-			for (int i = 0; i < f1_nx; i += 2) {
-				int r = Util::round(Util::hypot3(i / 2, j - ny / 2, k - nz / 2));
-				if (r >= 1 && r < ny / 2) {
-					int ii = i + j * f1_nx + k * f1_nx * ny;
-					ret[r] += d1[ii] * d2[ii] + d1[ii + 1] * d2[ii + 1];
-					n1[r] += d1[ii] * d1[ii] + d1[ii + 1] * d1[ii + 1];
-					n2[r] += d2[ii] * d2[ii] + d2[ii + 1] * d2[ii + 1];
+	for ( iz = 0; iz <= nz-1; iz++) {
+		if(iz>nz2) kz=iz-nz; else kz=iz; argz = float(kz*kz)*dz2;
+		for ( iy = 0; iy <= ny-1; iy++) {
+			if(iy>ny2) ky=iy-ny; else ky=iy; argy = argz + float(ky*ky)*dy2;
+			for ( ix = 0; ix <= lsd2-1; ix+=2) {
+			// Skip Friedel related values
+			   if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+				argx = 0.5*sqrt(argy + float(ix*ix)*0.25f*dx2);
+				int r = Util::round(inc*2*argx);
+				if(r <= inc) {
+					int ii = ix + (iy  + iz * ny)* lsd2;
+					ret[r] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
+					n1[r]  += d1[ii] * double(d1[ii]) + d1[ii + 1] * double(d1[ii + 1]);
+					n2[r]  += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
+					lr[r]  +=1;
 				}
+			   }
 			}
 		}
 	}
 
-	vector < float >result(ny / 2);
+	vector < float >result((inc+1)*3);
 
-	result[0] = 1;
-	for (int i = 1; i < ny / 2; i++) {
-		result[i] = ret[i] / (sqrt(n1[i] * n2[i]));
+	result[0] = 1.0f;
+	result[1+inc] = 0.0f;
+	result[1+2*inc] = 1.0f/sqrt(float(lr[0]));
+	for (int i = 1; i <= inc; i++) {
+		if(lr[i]>0) {
+			result[i]           = float(ret[i] / (sqrt(n1[i] * n2[i])));
+			result[i+inc+1]     = float(i)/float(2*inc);
+			result[i+2*(inc+1)] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
+		else {
+			result[i]           = 0.0f;
+			result[i+inc+1]     = 0.0f;
+			result[i+2*(inc+1)] = 0.0f;}
 	}
 
 	if( ret )
@@ -2683,18 +2740,18 @@ vector < float >EMData::calc_fourier_shell_correlation(EMData * with)
 
 	if (needfree&1)
 	{
-		if( f1 )
+		if( fpimage )
 		{
-			delete f1;
-			f1 = 0;
+			delete fpimage;
+			fpimage = 0;
 		}
 	}
 	if (needfree&2)
 	{
-		if( f2 )
+		if( gpimage )
 		{
-			delete f2;
-			f2 = 0;
+			delete gpimage;
+			gpimage = 0;
 		}
 	}
 
