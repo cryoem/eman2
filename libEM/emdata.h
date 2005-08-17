@@ -820,18 +820,15 @@ namespace EMAN
 		vector < float >calc_fourier_shell_correlation(EMData * with, float w = 1.0f);
 
 		/** Calculates the histogram of 'this' image. The result is
-		 * stored in float array 'hist'. If 'add' is true, the new
-		 * histogram data will be added to existing 'hist' array.
-		 * If hist_min = hist_max, use image data min as hist_min; use
-		 * image data max as hist_max.
+		 * stored in float array 'hist'. If hist_min = hist_max, use 
+		 * image data min as hist_min; use image data max as hist_max.
 		 *
-		 * @param hist Float array storing histogram data.
+		 * @param hist_size Histogram array's size.
 		 * @param hist_min Minimum histogram value.
 		 * @param hist_max Maximum histogram value.
-		 * @param add If true, the new histogram data will be added to
-		 * existing 'hist' array.
+		 * @return histogram array of this image.
 		 */
-		vector < float > calc_hist(float hist_min = 0, float hist_max = 0);
+		vector < float > calc_hist(int hist_size = 256, float hist_min = 0, float hist_max = 0);
 
 		/** Caculates the azimuthal distributions.
 		 * works for real or complex images, 2D only.

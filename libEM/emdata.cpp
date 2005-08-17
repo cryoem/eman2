@@ -1780,21 +1780,18 @@ EMData* EMData::get_fft_phase()
 	return dat;
 }
 
-vector < float > EMData::calc_hist(float histmin, float histmax)
+vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 {
 	ENTERFUNC;
 
-	static int prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
+	static size_t prime[] = { 1, 3, 7, 11, 17, 23, 37, 59, 127, 253, 511 };
 
 	if (histmin == histmax) {
 		histmin = get_attr("minimum");
 		histmax = get_attr("maximum");
 	}
 
-	vector <float> hist;
-//	for (size_t i = 0; i < hist.size(); i++) {
-//		hist[i] = 0;
-//	}
+	vector <float> hist(256, 0.0);
 
 	int p0 = 0;
 	int p1 = 0;
@@ -1821,11 +1818,11 @@ vector < float > EMData::calc_hist(float histmin, float histmax)
 		p1++;
 	}
 
-	int di = 0;
+	size_t di = 0;
 	float norm = 0;
 	size_t n = hist.size();
 
-	for (int k = p0; k <= p1; k++) {
+	for (int k = p0; k <= p1; ++k) {
 		if (flags & EMDATA_COMPLEX) {
 			di = prime[k] * 2;
 		}
@@ -1833,10 +1830,10 @@ vector < float > EMData::calc_hist(float histmin, float histmax)
 			di = prime[k];
 		}
 
-		norm += size / (float) di;
-		float w = n / (histmax - histmin);
+		norm += (float)size / (float) di;
+		float w = (float)n / (histmax - histmin);
 
-		for (size_t i = size - di; i >= 0; i -= di) {
+		for(size_t i=0; i<=size-di; i += di) {
 			int j = Util::round((rdata[i] - histmin) * w);
 			if (j >= 0 && j < (int) n) {
 				hist[j] += 1;
@@ -1844,7 +1841,7 @@ vector < float > EMData::calc_hist(float histmin, float histmax)
 		}
 	}
 
-	for (size_t i = 0; i < hist.size(); i++) {
+	for (size_t i = 0; i < hist.size(); ++i) {
 		if (norm != 0) {
 			hist[i] = hist[i] / norm;
 		}
