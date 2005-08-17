@@ -908,6 +908,7 @@ namespace EMAN
 		 * cmp("dot")
 		 *
 		 * @param with The image to do dot product with.
+		 * @exception NullPointerException if with is a NULL image.
 		 * @return The dot product result.
 		 */
 		float dot(EMData * with);
