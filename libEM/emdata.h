@@ -804,16 +804,16 @@ namespace EMAN
 		 * The input image 'with' must have the same size to 'this' image.
 		 * Input images can be either real or Fourier in arbitrary combination.
 		 *
-		 * @param with The image used to caculate the fourier shell
-		 * @param w Ring/shell width in Fourier space.
+		 * @param[in] with The image used to caculate the fourier shell
+		 * @param[in] w Ring/shell width in Fourier space.
 		 * @exception ImageFormatException If the 2 images are not
 		 * same size.
 		 * @exception NullPointerException if the input image is null
 		 * @exception Cannot calculate FSC for 1D images
-		 * @return  2D 3xk real image.
+		 * @return  Vector of 3*k FSC results (frequencies, FSC values, error)
 		 * k - length of FSC curve, depends on dimensions of the image and ring width
-		 * 1 column - FSC,
-		 * 2 column - normalized frequency [0,0.5]
+		 * 1 column - normalized frequency [0,0.5]
+		 * 2 column - FSC,
 		 * 3 column - error of the FSC = 1/sqrt(n), where n is the number of Fourier
 		 *            coefficients within given shell.
 		 */

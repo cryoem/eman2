@@ -2709,8 +2709,8 @@ Output: 2D 3xk real image.
 
 	for (int i = 0; i <= inc; i++) {
 		if(lr[i]>0) {
-			result[i]           = float(ret[i] / (sqrt(n1[i] * n2[i])));
-			result[i+inc+1]     = float(i)/float(2*inc);
+			result[i]     = float(i)/float(2*inc);
+			result[i+inc+1]           = float(ret[i] / (sqrt(n1[i] * n2[i])));
 			result[i+2*(inc+1)] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
 		else {
 			result[i]           = 0.0f;
