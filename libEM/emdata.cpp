@@ -2707,10 +2707,7 @@ Output: 2D 3xk real image.
 
 	vector < float >result((inc+1)*3);
 
-	result[0] = 1.0f;
-	result[1+inc] = 0.0f;
-	result[1+2*inc] = 1.0f/sqrt(float(lr[0]));
-	for (int i = 1; i <= inc; i++) {
+	for (int i = 0; i <= inc; i++) {
 		if(lr[i]>0) {
 			result[i]           = float(ret[i] / (sqrt(n1[i] * n2[i])));
 			result[i+inc+1]     = float(i)/float(2*inc);
