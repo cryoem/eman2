@@ -5667,7 +5667,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	Dict filter_dict;
-	if (mask_filter == "mask.sharp") {
+	if (mask_filter == "eman1.mask.sharp") {
 		filter_dict["value"] = 0;
 	}
 
