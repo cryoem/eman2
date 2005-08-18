@@ -1211,7 +1211,6 @@ class TestEMData(unittest.TestCase):
         e.set_size(32,32,32)
         e.process("testimage.noise.uniform.rand")
         hist = e.calc_hist()
-        self.
         
     def test_calc_az_dist(self):
         """test calc_az_dist() function ....................."""
