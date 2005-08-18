@@ -1203,19 +1203,163 @@ class TestEMData(unittest.TestCase):
         try:
             e.calc_fourier_shell_correlation(e4)
         except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
     def test_calc_hist(self):
         """test calc_hist() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process("testimage.noise.uniform.rand")
-        #hist = e.calc_hist()
+        hist = e.calc_hist()
+        self.
         
     def test_calc_az_dist(self):
         """test calc_az_dist() function ....................."""
-        pass
+        e = EMData()
+        e.set_size(32,32,1)    #this function apply to 2D only
+        e.process("testimage.noise.uniform.rand")
+        data = e.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
         
+        #this function not apply to 3D image
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e2.calc_az_dist, 32, 0.0, 0.1, 0.0, 2.0)
+        try:
+            e2.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
+    def test_calc_dist(self):
+        """test calc_dist() function ........................"""
+        e = EMData()
+        e.set_size(32,1,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,32)     #second image must be the same x size as this image
+        e2.process("testimage.noise.uniform.rand")
+        dist = e.calc_dist(e2)
+        #test for non-default argument
+        dist2 = e.calc_dist(e2, 10)
+        
+        e3 = EMData()
+        e3.set_size(32,32,1)
+        self.assertRaises( RuntimeError, e3.calc_dist, e2)
+        try:
+            e3.calc_dist(e2)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+        e4 = EMData()
+        e4.set_size(24,1,1)
+        self.assertRaises( RuntimeError, e4.calc_dist, e2)
+        try:
+            e4.calc_dist(e2)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+            
+    def test_calc_flcf(self):
+        """test calc_flcf() function ........................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,32)     
+        e2.process("testimage.noise.uniform.rand")
+        e3 = e.calc_flcf(e2)
+        e3 = e.calc_flcf(e2, 60)
+        
+        e4 = None
+        self.assertRaises( RuntimeError, e.calc_flcf, e4)
+        try:
+            e.calc_flcf(e4)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "NullPointerException")
+            
+    def test_convolute(self):
+        """test convolute() function ........................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,32)     
+        e2.process("testimage.noise.uniform.rand")
+        e3 = e.convolute(e2)        
+    
+    def test_has_ctff(self):
+        """test has_ctff() function ........................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        result = e.has_ctff()
+        self.assertEqual(result, False)
+        
+    def test_dot(self):
+        """test dot() function .............................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,32)     
+        e2.process("testimage.noise.uniform.rand")
+        f = e.dot(e2)
+        
+    def test_common_lines(self):
+        """test common_lines() function ....................."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,1)     
+        e2.process("testimage.noise.uniform.rand")
+        e3 = e2.do_fft()
+        e4 = EMData()
+        e4.set_size(32,32,1)     
+        e4.process("testimage.noise.uniform.rand")
+        e5 = e4.do_fft()
+        #e.common_lines(e3, e5)
+        
+    def test_common_lines_real(self):
+        """test common_lines_real() function ................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,1)     
+        e2.process("testimage.noise.uniform.rand")
+        e3 = EMData()
+        e3.set_size(32,32,1)     
+        e3.process("testimage.noise.uniform.rand")
+        #e.common_lines_real(e2,e3)
+        
+    def test_cut_slice(self):
+        """test cut_slice() function ........................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e2 = EMData()
+        e2.set_size(32,32,32)     
+        e2.process("testimage.noise.uniform.rand")
+        e.cut_slice(e2, 10.5)    #default argument
+        e.cut_slice(e2, 11.6, None, False, 1, 1)
+        
+        e3 = None
+        self.assertRaises( RuntimeError, e.cut_slice, e3, 5.1)
+        try:
+            e.cut_slice(e3, 5.1)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "NullPointerException")
+            
+    def test_uncut_slice(self):
+        """test uncut_slice() function ......................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,32,32)     
+        e2.process("testimage.noise.uniform.rand")
+        e.uncut_slice(e2, 10.0)
+        e.uncut_slice(e2, 10.0, None, 2, 3) #non-default argument
+    
     def test_project(self):
         """test image projection ............................"""
         n = 20
