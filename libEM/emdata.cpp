@@ -2436,9 +2436,7 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 	EXITFUNC;
 }
 
-
-
-void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float rmax)
+vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float rmax)
 {
 	ENTERFUNC;
 
@@ -2446,11 +2444,10 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 		throw ImageDimensionException("no 3D image");
 	}
 
-
 	float *yc = new float[n];
 
+	vector<float>	vd(n);
 	for (int i = 0; i < n; i++) {
-		d[i] = 0;
 		yc[i] = 0.00001f;
 	}
 
@@ -2473,11 +2470,11 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 					a -= i;
 
 					if (i == 0) {
-						d[0] += rdata[c] * (1.0f - a);
+						vd[0] += rdata[c] * (1.0f - a);
 						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
-						d[n - 1] += rdata[c] * a;
+						vd[n - 1] += rdata[c] * a;
 						yc[n - 1] += a;
 					}
 					else if (i > 0 && i < (n - 1)) {
@@ -2489,9 +2486,9 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 							h = rdata[c];
 						}
 
-						d[i] += h * (1.0f - a);
+						vd[i] += h * (1.0f - a);
 						yc[i] += (1.0f - a);
-						d[i + 1] += h * a;
+						vd[i + 1] += h * a;
 						yc[i + 1] += a;
 					}
 				}
@@ -2523,17 +2520,17 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 					a -= i;
 
 					if (i == 0) {
-						d[0] += rdata[c] * (1.0f - a);
+						vd[0] += rdata[c] * (1.0f - a);
 						yc[0] += (1.0f - a);
 					}
 					else if (i == n - 1) {
-						d[n - 1] += rdata[c] * a;
+						vd[n - 1] += rdata[c] * a;
 						yc[n - 1] += (a);
 					}
 					else if (i > 0 && i < (n - 1)) {
-						d[i] += rdata[c] * (1.0f - a);
+						vd[i] += rdata[c] * (1.0f - a);
 						yc[i] += (1.0f - a);
-						d[i + 1] += rdata[c] * a;
+						vd[i + 1] += rdata[c] * a;
 						yc[i + 1] += a;
 					}
 				}
@@ -2543,7 +2540,7 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 
 
 	for (int i = 0; i < n; i++) {
-		d[i] /= yc[i];
+		vd[i] /= yc[i];
 	}
 
 	done_data();
@@ -2552,6 +2549,8 @@ void EMData::calc_az_dist(int n, float a0, float da, float *d, float rmin, float
 		delete[]yc;
 		yc = 0;
 	}
+	
+	return vd;
 
 	EXITFUNC;
 }
@@ -4993,9 +4992,14 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 	float sigma = attr_dict["sigma"];
 	float with_sigma = with->get_attr_dict().get("sigma");
 
+	vector<float> vdata, vdata2;
 	for (int i = 8; i < nx2; i += 6) {
-		calc_az_dist(array_size, 0, da, dat, i, i + 6);
-		with->calc_az_dist(array_size, 0, da, dat2, i, i + 6);
+		vdata = calc_az_dist(array_size, 0, da, i, i + 6);
+		vdata2 = with->calc_az_dist(array_size, 0, da, i, i + 6);
+		assert(vdata.size() <= array_size + 2);
+		assert(cdata2.size() <= array_size + 2);
+		std::copy(vdata.begin(), vdata.end(), dat);
+		std::copy(vdata2.begin(), vdata2.end(), dat2);
 
 		EMfft::real_to_complex_1d(dat, dat, array_size);
 		EMfft::real_to_complex_1d(dat2, dat2, array_size);

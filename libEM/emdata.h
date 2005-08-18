@@ -828,7 +828,8 @@ namespace EMAN
 		 * @param hist_max Maximum histogram value.
 		 * @return histogram array of this image.
 		 */
-		vector < float > calc_hist(int hist_size = 256, float hist_min = 0, float hist_max = 0);
+		vector < float > calc_hist(int hist_size = 256, float hist_min = 0, 
+								   float hist_max = 0);
 
 		/** Caculates the azimuthal distributions.
 		 * works for real or complex images, 2D only.
@@ -836,13 +837,13 @@ namespace EMAN
 		 * @param n  Number of elements.
 		 * @param a0 Starting angle.
 		 * @param da Angle step.
-		 * @param data Float array to store the data.
 		 * @param rmin Minimum radius.
 		 * @param rmax  Maximum radius.
 		 * @exception ImageDimensionException If image is 3D.
+		 * @return Float array to store the data.
 		 */
-		void calc_az_dist(int n, float a0, float da, float *data,
-						  float rmin, float rmax);
+		vector<float> calc_az_dist(int n, float a0, float da, float rmin, 
+								   float rmax);
 #if 0
 		void calc_rcf(EMData * with, vector < float >&sum_array);
 #endif
