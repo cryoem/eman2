@@ -957,6 +957,7 @@ namespace EMAN
 		 * @param interpolate Do interpolation or not.
 		 * @param dx
 		 * @param dy
+		 * @exception NullPointerException If map is NULL.
 		 */
 		void cut_slice(const EMData * map, float dz, Transform3D * orientation = 0,
 					   bool interpolate = true, float dx = 0, float dy = 0);
