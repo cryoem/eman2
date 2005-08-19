@@ -306,7 +306,6 @@ class TestEMData(unittest.TestCase):
             e2.real2FH(1.0)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        #os.unlink(outfile)
         
     def test_FH2F(self):
         """test FH2F() function ............................."""
@@ -1358,6 +1357,49 @@ class TestEMData(unittest.TestCase):
         e2.process("testimage.noise.uniform.rand")
         e.uncut_slice(e2, 10.0)
         e.uncut_slice(e2, 10.0, None, 2, 3) #non-default argument
+        
+    def test_calc_center_density(self):
+        """test calc_center_density() function .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        d = e.calc_center_density()
+        self.assertNotEqual(d, None)
+        
+        e2 = EMData()
+        e2.set_size(24,24,24)
+        d2 = e2.calc_center_density()
+        self.assertEqual(d2, 0)
+        
+    def test_calc_sigma_diff(self):
+        """test calc_sigma_diff() function .................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        s = e.calc_sigma_diff()
+        self.assertNotEqual(s, None)
+        
+    def test_calc_min_location(self):
+        """test calc_min/max_location() function ............"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        loc = e.calc_min_location()
+        self.assertNotEqual(loc, None)
+        loc2 = e.calc_max_location()
+        self.assertNotEqual(loc2, None)
+        index = e.calc_min_index()
+        self.assertEqual(index, loc[0]+loc[1]*32+loc[2]*32*32)
+        index2 = e.calc_max_index()
+        self.assertEqual(index2, loc2[0]+loc2[1]*32+loc2[2]*32*32)
+        
+    def test_get_edge_mean(self):
+        """test get_edge/circle_mean() function ............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        em = e.get_edge_mean()
+        cm = e.get_circle_mean()
     
     def test_project(self):
         """test image projection ............................"""
@@ -1404,9 +1446,21 @@ class TestEMData(unittest.TestCase):
         for mydict in (d0, d1, d2):
             for mykey in mydict.keys():
                 if (not ("MRC" in mykey)):
-                    cur_attrlist.append(mykey + "=" + str(mydict[mykey])+"\n")
+                    cur_attrlist.append(mykey + "=" + str(mydict[mykey])+"\n")        
         
         os.unlink(imgfile)        
+
+    def test_set_attr_dict(self):
+        """test set_attr_dict() function ...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        d = e.get_attr_dict()
+        self.assertEqual(d['is_complex'], False)
+        d['is_complex'] = True
+        e.set_attr_dict(d)
+        d2 = e.get_attr_dict()
+        self.assertEqual(d2['is_complex'], True)
         
     def test_get_clip(self):
         """test get_clip() function ........................."""
@@ -1488,6 +1542,11 @@ class TestEMData(unittest.TestCase):
                 for k in range(nx):
                     self.assertEqual(e.get_value_at(k,j,i), 1)
                     self.assertEqual(narray[i][j][k], 1)      
+                    
+        #test exception, if set value out of range
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
                                   
     def test_calc_radial_dist(self):
         """test calc_radial_dist() function.................."""
@@ -1702,6 +1761,188 @@ class TestEMData(unittest.TestCase):
         os.unlink(infile)
         os.unlink(outfile)
         
+    def test_get_translation(self):
+        """test get/set_translation() function .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e.set_translation(1.0,2.0,3.0)
+        t = e.get_translation()
+        self.assertEqual(t.at(0), 1.0)
+        self.assertEqual(t.at(1), 2.0)
+        self.assertEqual(t.at(2), 3.0)
+        
+        e.set_translation(Vec3f(2.0,3.0,4.0))
+        t1 = e.get_translation()
+        self.assertEqual(t1.at(0), 2.0)
+        self.assertEqual(t1.at(1), 3.0)
+        self.assertEqual(t1.at(2), 4.0)
+    
+    def test_get_transform(self):
+        """test get_transform() function ...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        t = e.get_transform()    
+    
+    def test_set_rotation(self):
+        """test set_rotation() function ....................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process("testimage.noise.uniform.rand")
+        e.set_rotation(0.23, 0.45, 0.67)
+    
+    def test_set_size(self):
+        """test set_size() function ........................."""
+        e = EMData()
+        e.set_size(32)    #test default argument
+        self.assertEqual(e.get_xsize(), 32)
+        self.assertEqual(e.get_ysize(), 1)
+        self.assertEqual(e.get_zsize(), 1)
+        e.set_size(23,34,56)    #test non-default argument
+        self.assertEqual(e.get_xsize(), 23)
+        self.assertEqual(e.get_ysize(), 34)
+        self.assertEqual(e.get_zsize(), 56)
+        
+        #test for exception
+        self.assertRaises( RuntimeError, e.set_size, 0, 32, 32)
+        try:
+            e.set_size(0, 32, 32)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+            
+        self.assertRaises( RuntimeError, e.set_size, 32, -32, 32)
+        try:
+            e.set_size(32, -32, 32)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+            
+        self.assertRaises( RuntimeError, e.set_size, 32, 32, -32)
+        try:
+            e.set_size(32, -32, 32)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+            
+        #test set_complex_size()
+        e2 = EMData()
+        e2.set_size(32)
+        e2.process("testimage.noise.uniform.rand")
+        e3 = e2.do_fft()
+        e3.set_complex_size(32)
+        self.assertEqual(e3.get_xsize(), 64)
+        self.assertEqual(e3.get_ysize(), 1)
+        self.assertEqual(e3.get_zsize(), 1)
+        
+    def test_set_path(self):
+        """test set_path() function ........................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.set_path("new_path")
+        e.set_pathnum(10) 
+        
+    def test_get_row(self):
+        """test get_row() function .........................."""
+        e = EMData()
+        e.set_size(32, 32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.get_row(1)
+        self.assertEqual(e2.get_xsize(), 32)
+        self.assertEqual(e2.get_ysize(), 1)
+        self.assertEqual(e2.get_zsize(), 1)
+        d = e.get_2dview()
+        d2 = e2.get_3dview()
+        for x in range(32):
+            self.assertEqual(d[1][x], d2[0][0][x])
+            
+        #this function only apply to 1D/2D image
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e3.get_row, 1) 
+        try:
+            e3.get_row(1)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_set_row(self):
+        """test set_row() function .........................."""
+        e = EMData()
+        e.set_size(32, 32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,1)
+        e.set_row(e2, 1)
+        self.assertEqual(e.get_xsize(), 32)
+        self.assertEqual(e.get_ysize(), 32)
+        
+        d = e.get_2dview()
+        d2 = e2.get_3dview()
+        for x in range(32):
+            self.assertEqual(d[1][x], d2[0][0][x])
+            
+        #this function only apply to 1D/2D image
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e3.set_row, e2, 1)
+        try:
+            e3.set_row(e2, 1)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_get_col(self):
+        """test get_col() function .........................."""
+        e = EMData()
+        e.set_size(32, 32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = e.get_col(1)
+        self.assertEqual(e2.get_xsize(), 32)
+        self.assertEqual(e2.get_ysize(), 1)
+        self.assertEqual(e2.get_zsize(), 1)
+        d = e.get_2dview()
+        d2 = e2.get_3dview()
+        for y in range(32):
+            self.assertEqual(d[y][1], d2[0][0][y])
+            
+        #this function only apply to 2D image
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e3.get_col, 1) 
+        try:
+            e3.get_col(1)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_set_col(self):
+        """test set_col() function .........................."""
+        e = EMData()
+        e.set_size(32, 32)
+        e.process("testimage.noise.uniform.rand")
+        e2 = EMData()
+        e2.set_size(32,1)
+        e.set_col(e2, 1)
+        
+        d = e.get_2dview()
+        d2 = e2.get_3dview()
+        for y in range(32):
+            self.assertEqual(d[y][1], d2[0][0][y])
+            
+        #this function only apply to 2D image
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e3.set_col, e2, 1) 
+        try:
+            e3.set_col(e2, 1)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+    
+    def test_set_attr(self):
+        """test set/get_attr() function ....................."""
+        e = EMData()
+        e.set_size(32, 32, 32)
+        e.process("testimage.noise.uniform.rand")
+        self.assertEqual(e.get_attr("is_complex"), False)
+        e.set_attr("is_complex", True)
+        self.assertEqual(e.get_attr("is_complex"), True)
+    
     def no_test_statistics(self):
         """test statistics of EMData ........................"""
         e = EMData()
@@ -1715,7 +1956,6 @@ class TestEMData(unittest.TestCase):
         g = f*10
         descriptive_statistic   
         
- 
 def test_main():
     test_support.run_unittest(TestEMData)
 
