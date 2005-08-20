@@ -1541,12 +1541,40 @@ class TestEMData(unittest.TestCase):
             for j in range(ny):
                 for k in range(nx):
                     self.assertEqual(e.get_value_at(k,j,i), 1)
+                    self.assertEqual(e.sget_value_at(k,j,i), 1)
                     self.assertEqual(narray[i][j][k], 1)      
                     
         #test exception, if set value out of range
         e2 = EMData()
         e2.set_size(32,32,32)
+        e2.process("testimage.noise.uniform.rand")
+        self.assertRaises( RuntimeError, e2.set_value_at, 32, 1, 1, 1.0)
+        try:
+            e2.set_value_at(32, 1, 1, 1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "OutofRangeException")
+        self.assertRaises( RuntimeError, e2.set_value_at, 31, 45, 1, 1.0)
+        try:
+            e2.set_value_at(31, 45, 1, 1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "OutofRangeException")
+        self.assertRaises( RuntimeError, e2.set_value_at, 31, 1, 1000, 1.0)
+        try:
+            e2.set_value_at(31, 1, 1000, 1.0)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "OutofRangeException")
+            
+    def test_sget_value_at_interp(self):
+        """test sget_value_at_interp() function ............."""
+        e = EMData()
+        e.set_size(32,32,32)
         e.process("testimage.noise.uniform.rand")
+        d = e.sget_value_at_interp(1.5, 1.5, 1.5)
+        
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.process("testimage.noise.uniform.rand")
+        d2 = e2.sget_value_at_interp(1.5, 1.5)
                                   
     def test_calc_radial_dist(self):
         """test calc_radial_dist() function.................."""
@@ -1942,6 +1970,60 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e.get_attr("is_complex"), False)
         e.set_attr("is_complex", True)
         self.assertEqual(e.get_attr("is_complex"), True)
+        
+    def test_boolean_check(self):
+        """test some boolean check in EMData ................"""
+        e = EMData()
+        e.set_size(32, 32, 32)
+        e.process("testimage.noise.uniform.rand")
+
+        self.assertEqual(e.is_shuffle(), False)
+        e.set_shuffle(True)
+        self.assertEqual(e.is_shuffle(), True)
+        
+        self.assertEqual(e.is_FH(), False)
+        e.set_FH(True)
+        self.assertEqual(e.is_FH(), True)
+        
+        self.assertEqual(e.is_complex(), False)
+        e.set_complex(True)
+        self.assertEqual(e.is_complex(), True)
+        
+        self.assertEqual(e.is_real(), False)
+        e.set_complex(False)
+        self.assertEqual(e.is_real(), True)
+        
+        self.assertEqual(e.is_complex_x(), False)
+        e2 = EMData()
+        e2.set_size(32, 1, 1)
+        e2.process("testimage.noise.uniform.rand")
+        self.assertEqual(e2.is_complex_x(), False)
+        e3 = e2.do_fft()
+        self.assertEqual(e3.is_complex_x(), True)
+        
+        self.assertEqual(e.is_flipped(), False)
+        e.set_flipped(True)
+        self.assertEqual(e.is_flipped(), True)
+        
+        self.assertEqual(e.is_ri(), False)
+        e4 = e.do_fft()
+        self.assertEqual(e4.is_ri(), True)
+        e4.set_ri(False)
+        self.assertEqual(e4.is_ri(), False)
+        
+        self.assertEqual(e.is_fftpadded(), False)
+        e.set_fftpad(True)
+        self.assertEqual(e.is_fftpadded(), True)
+        
+        e5 = EMData()
+        e5.set_size(31,31,31)
+        e6 = e5.do_fft()
+        self.assertEqual(e6.is_fftodd(), True)
+        e7 = EMData()
+        e7.set_size(32,32,32)
+        e8 = e7.do_fft()
+        self.assertEqual(e8.is_fftodd(), False)
+        
     
     def no_test_statistics(self):
         """test statistics of EMData ........................"""
