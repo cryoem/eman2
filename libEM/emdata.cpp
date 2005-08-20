@@ -840,6 +840,9 @@ void EMData::postift_depad_corner_inplace() {
 	done_data();
 	update();
 	set_complex(false);
+	if(ny==1 && nz==1) {
+		set_complex_x(false);
+	}
 	EXITFUNC;
 }
 
@@ -1196,6 +1199,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 	} // ends jkx
 	outCopy->done_data();
 	outCopy->set_complex(true);
+	if(outCopy->get_ysize()==1 && outCopy->get_zsize()==1) {
+		outCopy->set_complex_x(true);
+	}
 	outCopy->set_ri(true);
 	outCopy->set_FH(false);
 	outCopy->set_fftodd(true);
@@ -1354,6 +1360,9 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		done_data();
 		FH-> done_data();
 		FH->set_complex(true);
+		if(FH->get_ysize()==1 && FH->get_zsize()==1) {
+			FH->set_complex_x(true);
+		}
 	    	FH->set_ri(true);
 	    	FH->set_FH(true);
 	    	FH->set_fftodd(true);
@@ -1433,6 +1442,9 @@ EMData *EMData::do_fft()
 
 	dat->done_data();
 	dat->set_complex(true);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
+		dat->set_complex_x(true);
+	}
 	dat->set_ri(true);
 
 	int i = flags;
@@ -1479,6 +1491,9 @@ EMData *EMData::do_fft_inplace()
 	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
 	done_data();
 	set_complex(true);
+	if(ny==1 && nz==1) {
+		set_complex_x(true);
+	}
 	set_ri(true);
 	int i = flags;
 	done_data();
@@ -1579,6 +1594,9 @@ EMData *EMData::do_ift()
 #endif
 	dat->update();
 	dat->set_complex(false);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
+		dat->set_complex_x(false);
+	}
 	dat->set_ri(false);
 
 	int i = flags;
@@ -1623,6 +1641,9 @@ EMData *EMData::do_ift_inplace()
 	done_data();
 	update();
 	set_complex(false);
+	if(ny==1 && nz==1) {
+		set_complex_x(false);
+	}
 	set_ri(false);
 
 	int i = flags;
@@ -1726,6 +1747,9 @@ EMData* EMData::get_fft_amplitude()
 	dat->done_data();
 	dat->update();
 	dat->set_complex(false);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
+		dat->set_complex_x(false);
+	}
 	dat->set_ri(false);
 
 	EXITFUNC;
@@ -1774,6 +1798,9 @@ EMData* EMData::get_fft_phase()
 	dat->done_data();
 	dat->update();
 	dat->set_complex(false);
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
+		dat->set_complex_x(false);
+	}
 	dat->set_ri(false);
 
 	EXITFUNC;
@@ -6698,6 +6725,9 @@ EMData & EMData::real() //real part has half of x dimension
 		}
 
 		e->set_complex(false);
+		if(e->get_ysize()==1 && e->get_zsize()==1) {
+			e->set_complex_x(false);
+		}
 		e->update_stat();
 		return *e;
 	}
@@ -6745,6 +6775,9 @@ EMData & EMData::imag()
 		}
 
 		e->set_complex(false);
+		if(e->get_ysize()==1 && e->get_zsize()==1) {
+			e->set_complex_x(false);
+		}
 		e->update_stat();
 		return *e;
 
@@ -6781,6 +6814,9 @@ EMData & EMData::real2complex(const float img)
 			}
 		}
 		e->set_complex(true);
+		if(e->get_ysize()==1 && e->get_zsize()==1) {
+			e->set_complex_x(true);
+		}
 		e->update_stat();
 		return *e;
 	}
