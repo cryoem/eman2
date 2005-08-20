@@ -1380,6 +1380,7 @@ namespace EMAN
 		 * @param y The y cooridinate.
 		 * @param z The z cooridinate.
 		 * @param v The pixel density value at coordinates (x,y,z).
+		 * @exception OutofRangeException wehn index out of image data's range.
 		 */
 		void set_value_at(int x, int y, int z, float v);
 		
@@ -1400,6 +1401,7 @@ namespace EMAN
 		 * @param x The x cooridinate.
 		 * @param y The y cooridinate.
 		 * @param v The pixel density value at coordinates (x,y).
+		 * @exception OutofRangeException wehn index out of image data's range.
 		 */
 		void set_value_at(int x, int y, float v);
 		
@@ -1813,15 +1815,15 @@ namespace EMAN
 
 	inline void EMData::set_value_at(int x, int y, int z, float v)
 	{
-		if( x>=nx && x<0 )
+		if( x>=nx || x<0 )
 		{
 			throw OutofRangeException(0, nx-1, x, "x dimension index");
 		}
-		else if( y>=ny && y<0 )
+		else if( y>=ny || y<0 )
 		{
 			throw OutofRangeException(0, ny-1, y, "y dimension index");
 		}
-		else if( z>=nz && z<0 )
+		else if( z>=nz || z<0 )
 		{
 			throw OutofRangeException(0, nz-1, z, "z dimension index");
 		}
@@ -1840,11 +1842,11 @@ namespace EMAN
 	
 	inline void EMData::set_value_at(int x, int y, float v)
 	{
-		if( x>=nx && x<0 )
+		if( x>=nx || x<0 )
 		{
 			throw OutofRangeException(0, nx-1, x, "x dimension index");
 		}
-		else if( y>=ny && y<0 )
+		else if( y>=ny || y<0 )
 		{
 			throw OutofRangeException(0, ny-1, y, "y dimension index");
 		}
