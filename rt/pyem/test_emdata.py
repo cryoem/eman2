@@ -2038,6 +2038,55 @@ class TestEMData(unittest.TestCase):
         g = f*10
         descriptive_statistic   
         
+    def test_more_image_arithmetic(self):
+        """test some more image arithmetics ................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        d = e.get_3dview() 
+        e2 = e.power(2)
+        d2 = e2.get_3dview()
+        dd = e.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertEqual( d[z][y][x], dd[z][y][x] )
+                    self.assertAlmostEqual( dd[z][y][x]**2, d2[z][y][x], 3 ) 
+        
+        c = e.do_fft()
+        c2 = c.real()
+        c3 = c.imag()
+        self.assertEqual( c2.get_xsize()*2, c.get_xsize() )
+        self.assertEqual( c3.get_xsize()*2, c.get_xsize() )
+        d = c.get_3dview()
+        d2 = c2.get_3dview()
+        d3 = c3.get_3dview()
+        for x in range(16):
+            for y in range(32):
+                for z in range(32):
+                    self.assertEqual( d2[z][y][x], d[z][y][x*2] )
+                    self.assertEqual( d3[z][y][x], d[z][y][x*2+1] )
+        self.assertRaises( RuntimeError, e.imag, )
+        try:
+            ee = e.imag()
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "Invalid")
+                    
+        e5 = e.real2complex()    #test default argument
+        e6 = e.real2complex(1.0)    #test non-default argument
+        self.assertEqual(e5.get_xsize(), e.get_xsize()*2)
+        self.assertEqual(e6.get_xsize(), e.get_xsize()*2)
+        d = e.get_3dview()
+        d5 = e5.get_3dview()
+        d6 = e6.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertEqual( d5[z][y][x*2+1], 0 )
+                    self.assertEqual( d6[z][y][x*2+1], 1.0 )
+                    self.assertEqual( d5[z][y][x*2], d[z][y][x] )
+                    self.assertEqual( d5[z][y][x*2], d[z][y][x] )
+        
 def test_main():
     test_support.run_unittest(TestEMData)
 
