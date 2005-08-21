@@ -1109,7 +1109,7 @@ namespace EMAN
 
 		/** Get image raw pixel data in a 2D multi-array format. The
 		 * array shares the memory space with the image data.
-		 * Notice: the subscription order is d[y][x]
+		 * Notice: the subscription order is d[y][x] in Python, it's d[x][y] in C++
 		 *
 		 * It should be used on 2D image only.
 		 *
@@ -1119,7 +1119,7 @@ namespace EMAN
 		
 		/** Get image raw pixel data in a 3D multi-array format. The
 		 * array shares the memory space with the image data.
-		 * Notice: the subscription order is d[z][y][x]
+		 * Notice: the subscription order is d[z][y][x] in Python, it's d[x][y][z] in C++ --grant Tang
 		 *
 		 * It should be used on 3D image only.
 		 *
@@ -1527,6 +1527,7 @@ namespace EMAN
 		/** return a image to the power of n
 		 * @param n	the power of this simage
 		 * @return a image which is the nth power of thi simage
+		 * @exception InvalidValueException n must be >= 0
 		 */
 		EMData * power(int n);		
 		

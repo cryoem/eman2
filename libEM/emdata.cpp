@@ -3516,6 +3516,10 @@ EMData & EMData::operator/=(const EMData & em)
 
 EMData * EMData::power(int n)
 {
+	if( n<0 ) {
+		throw InvalidValueException(n, "the power of negative integer not supported.");
+	}
+	
 	EMData * r = this->copy();
 	if( n == 0 ) {
 		r->to_one();
@@ -6781,22 +6785,24 @@ EMData * EMData::real2complex(const float img)
 	int ny = get_ysize();
 	int nz = get_zsize();
 	e->set_size(nx*2, ny, nz);
-	float * edata = e->get_data();
-	for( int i=0; i<nx; i++ )
-	{
-		for( int j=0; j<ny; j++ )
-		{
-			for( int k=0; k<nz; k++ )
-			{
-				edata[i*2+j*nx+k*nx*ny] = rdata[i+j*nx+k*nx*ny];
-				edata[(i*2+1)+j*nx+k*nx*ny] = img;
+	
+	MArray3D edata = e->get_3dview();
+	MArray3D data  = this->get_3dview();
+
+	for( int k=0; k<nz; k++ ) {
+		for( int j=0; j<ny; j++ ) {
+			for( int i=0; i<nx; i++ ) {			
+				edata[i*2][j][k] = data[i][j][k];
+				edata[i*2+1][j][k] = img;
 			}
 		}
 	}
+	
 	e->set_complex(true);
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(true);
 	}
+	e->set_ri(true);
 	e->update_stat();
 	return e;
 
