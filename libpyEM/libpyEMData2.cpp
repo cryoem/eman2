@@ -81,6 +81,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_size_overloads_1_3, set_s
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_set_complex_size_overloads_1_3, set_complex_size, 1, 3)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_real2complex_overloads_0_1, real2complex, 0, 1)
+
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_overloads_1_3, EMAN::EMData::read_images, 1, 3)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_read_images_ext_overloads_3_5, EMAN::EMData::read_images_ext, 3, 5)
@@ -260,6 +262,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("is_fftodd", &EMAN::EMData::is_fftodd)
         .def("set_fftodd", &EMAN::EMData::set_fftodd)
         .def("set_nxc", &EMAN::EMData::set_nxc)
+        .def("power", &EMAN::EMData::power, return_value_policy< manage_new_object >())
+        .def("real", &EMAN::EMData::real, return_value_policy< manage_new_object >())
+        .def("imag", &EMAN::EMData::imag, return_value_policy< manage_new_object >())
+        .def("real2complex", &EMAN::EMData::real2complex, EMAN_EMData_real2complex_overloads_0_1()[ return_value_policy< manage_new_object >() ])
         .def("read_images", &EMAN::EMData::read_images, EMAN_EMData_read_images_overloads_1_3())
         .def("read_images_ext", &EMAN::EMData::read_images_ext, EMAN_EMData_read_images_ext_overloads_3_5())
         .def("onelinenn", &EMAN::EMData::onelinenn)
