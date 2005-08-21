@@ -537,7 +537,13 @@ void debug_do_fft_inplace()
 	e->set_size(32, 32, 32);
 	e->process("testimage.noise.uniform.rand");
 
-	EMData * e2 = e->do_fft_inplace();
+	e->do_fft_inplace();
+	
+	if(e) {
+		delete e;
+		e = 0;
+	}
+	
 }
 
 void debug_calc_radial_dist()
@@ -559,6 +565,34 @@ void debug_calc_radial_dist()
 	}
 	
 	cout << "Finish debug_calc_radial_dist() ... " << endl;
+}
+
+void debug_calc_hist()
+{
+	cout << "Starting debug_calc_hist() ... " << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(32, 32, 1);
+	e->process("testimage.noise.uniform.rand");
+	
+	vector<float> v;
+	v = e->calc_hist();	
+}
+
+void debug_set_value_at()
+{
+	cout << "Starting debug_set_value_at() ... " << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(32, 32, 32);
+	e->process("testimage.noise.uniform.rand");
+	
+	e->set_value_at(1, 1, 1, 1.0);
+	float f = e->get_value_at(1, 1, 1);
+	cout << "f = " << f << endl;
+	
+	e->set_value_at(1000000,2,2,122.0);
+	cout << e->get_value_at(1000000, 2, 2) << endl;
 }
 
 int main()
@@ -584,11 +618,17 @@ int main()
 		//debug_insert_clip();
 		//debug_do_fft();
 		//debug_do_fft_inplace();
-		debug_calc_radial_dist();
+		//debug_calc_radial_dist();
+		//debug_calc_hist();
+		debug_set_value_at();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
 	}
+	catch (...) {
+		cout << "Unknown exception ???" << endl;
+	}
+	
 	
 	return 0;
 }
