@@ -70,8 +70,3 @@ exclude(EMData.render_amp24)
 exclude(EMData.render_pha24)
 exclude(EMData.setup4slice)
 
-# need to fix, but excluding for now
-#exclude(EMData.real)
-#exclude(EMData.power)
-#exclude(EMData.imag)
-#exclude(EMData.real2complex)
