@@ -6681,7 +6681,7 @@ void EMData::print_image(const string str, ostream& out) {
 	}
 }
 
-EMData & EMData::real() //real part has half of x dimension
+EMData * EMData::real() //real part has half of x dimension
 {
 	ENTERFUNC;
 	
