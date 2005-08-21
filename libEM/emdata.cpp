@@ -3514,28 +3514,20 @@ EMData & EMData::operator/=(const EMData & em)
 	return *this;
 }
 
-EMData & EMData::power(int n)
+EMData * EMData::power(int n)
 {
-	if( n == 0 )
-	{
-		to_one();
+	EMData * r = this->copy();
+	if( n == 0 ) {
+		r->to_one();
 	}
-	else if( n>1 )
-	{
-		EMData * r = this->copy();
-		for( int i=1; i<n; i++ )
-		{
-			*this *= *r;
-		}
-		if( r )
-		{
-			delete r;
-			r = 0;
+	else if( n>1 ) {
+		for( int i=1; i<n; i++ ) {
+			*r *= *this;
 		}
 	}
 
-	update_stat();
-	return *this;
+	r->update_stat();
+	return r;
 }
 
 EMData * EMAN::operator+(const EMData & em, float n)
@@ -6692,18 +6684,19 @@ void EMData::print_image(const string str, ostream& out) {
 EMData & EMData::real() //real part has half of x dimension
 {
 	ENTERFUNC;
+	
+	EMData * e = new EMData();
 
 	if( is_real() ) // a real image, return a copy of itself
 	{
-		return *(this->copy());
+		e = this->copy();
 	}
-	else if( is_complex() ) //for a complex image
+	else //for a complex image
 	{
 		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
 		{
 			ap2ri();
 		}
-		EMData * e = new EMData();
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
@@ -6723,111 +6716,89 @@ EMData & EMData::real() //real part has half of x dimension
 				}
 			}
 		}
-
-		e->set_complex(false);
-		if(e->get_ysize()==1 && e->get_zsize()==1) {
-			e->set_complex_x(false);
-		}
-		e->update_stat();
-		return *e;
 	}
-	else //should not be here, image is neither real nor complex
-	{
-		throw ImageFormatException("This image is neither a real nor a complex image.");
+	
+	e->set_complex(false);
+	if(e->get_ysize()==1 && e->get_zsize()==1) {
+		e->set_complex_x(false);
 	}
+	e->update_stat();
+	return e;
 
 	EXITFUNC;
 }
 
-EMData & EMData::imag()
+EMData * EMData::imag()
 {
 	ENTERFUNC;
 
-	if( is_real() ) //a real image has no imaginary part, throw exception
-	{
+	EMData * e = new EMData();
+
+	if( is_real() ) {	//a real image has no imaginary part, throw exception
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
 	}
-	else if( is_complex() )
-	{
-		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
-		{
+	else {	//for complex image
+		if( !is_ri() ) {	//complex image in amplitude/phase foramt, convert it to real/imaginary first
 			ap2ri();
 		}
-		EMData * e = new EMData();
 		int nx = get_xsize();
 		int ny = get_ysize();
 		int nz = get_zsize();
 		e->set_size(nx/2, ny, nz);
 		float * edata = e->get_data();
-		for( int i=0; i<nx; i++ )
-		{
-			for( int j=0; j<ny; j++ )
-			{
-				for( int k=0; k<nz; k++ )
-				{
-					if( i%2 == 1 )
-					{
+		for( int i=0; i<nx; i++ ) {
+			for( int j=0; j<ny; j++ ) {
+				for( int k=0; k<nz; k++ ) {
+					if( i%2 == 1 ) {
 						//complex data in format [real, complex, real, complex...]
 						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny];
 					}
 				}
 			}
 		}
-
-		e->set_complex(false);
-		if(e->get_ysize()==1 && e->get_zsize()==1) {
-			e->set_complex_x(false);
-		}
-		e->update_stat();
-		return *e;
-
 	}
-	else //should not be here, image is neither real nor complex
-	{
-		throw ImageFormatException("This image is neither a real nor a complex image.");
+	
+	e->set_complex(false);
+	if(e->get_ysize()==1 && e->get_zsize()==1) {
+		e->set_complex_x(false);
 	}
+	e->update_stat();
+	return e;
 
 	EXITFUNC;
 }
 
-EMData & EMData::real2complex(const float img)
+EMData * EMData::real2complex(const float img)
 {
 	ENTERFUNC;
 
-	if( is_real() )
-	{
-		EMData * e = new EMData();
-		int nx = get_xsize();
-		int ny = get_ysize();
-		int nz = get_zsize();
-		e->set_size(nx*2, ny, nz);
-		float * edata = e->get_data();
-		for( int i=0; i<nx; i++ )
-		{
-			for( int j=0; j<ny; j++ )
-			{
-				for( int k=0; k<nz; k++ )
-				{
-					edata[i*2+j*nx+k*nx*ny] = rdata[i+j*nx+k*nx*ny];
-					edata[(i*2+1)+j*nx+k*nx*ny] = img;
-				}
-			}
-		}
-		e->set_complex(true);
-		if(e->get_ysize()==1 && e->get_zsize()==1) {
-			e->set_complex_x(true);
-		}
-		e->update_stat();
-		return *e;
-	}
-	else if( is_complex() )
-	{
+	if( is_complex() ) {
 		throw InvalidCallException("This function call only apply to real image");
 	}
-	else
+	
+	EMData * e = new EMData();
+	int nx = get_xsize();
+	int ny = get_ysize();
+	int nz = get_zsize();
+	e->set_size(nx*2, ny, nz);
+	float * edata = e->get_data();
+	for( int i=0; i<nx; i++ )
 	{
-		throw ImageFormatException("This image is neither a real nor a complex image.");
+		for( int j=0; j<ny; j++ )
+		{
+			for( int k=0; k<nz; k++ )
+			{
+				edata[i*2+j*nx+k*nx*ny] = rdata[i+j*nx+k*nx*ny];
+				edata[(i*2+1)+j*nx+k*nx*ny] = img;
+			}
+		}
 	}
+	e->set_complex(true);
+	if(e->get_ysize()==1 && e->get_zsize()==1) {
+		e->set_complex_x(true);
+	}
+	e->update_stat();
+	return e;
 
 	EXITFUNC;
 }

@@ -1525,19 +1525,29 @@ namespace EMAN
 		EMData & operator/=(const EMData & em);
 		
 		/** return a image to the power of n
-		 * @param n
+		 * @param n	the power of this simage
+		 * @return a image which is the nth power of thi simage
 		 */
-		EMData & power(int n);		
+		EMData * power(int n);		
 		
-		/** return real and imaginary part of a complex image as a real image format
+		/** return real part of a complex image as a real image format,
+		 * if this image is a real image, return a copy of this image.
+		 * @return a real image which is the real part of this image.
 		 */
-		EMData & real();
-		EMData & imag();
+		EMData * real();
+		
+		/** return imaginary part of a complex image as a real image format.
+		 * @return a real image which is the imaginary part of this image.
+		 * @exception InvalidCallException if this image is a real image
+		 */
+		EMData * imag();
 		
 		/** create a complex image from a real image, this complex image is in real/imaginary format
 		 * @param img give an artificial imaginary part
+		 * @return a complex image which is generated from a real image
+		 * @exception InvalidCallException this function can not be called by complex image 
 		 */
-		EMData & real2complex(float img = 0.0f);
+		EMData * real2complex(float img = 0.0f);
 		
 		/** Read a set of images from file specified by 'filename'.
 		 * Which images are read is set by 'img_indices'.
