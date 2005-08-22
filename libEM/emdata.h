@@ -1630,7 +1630,7 @@ namespace EMAN
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Translation along x
 		 *  @param[in] dely Translation along y
-		 *  
+		 *  @exception ImageDimensionException only support 2D image
 		 *  @return New rotated/translated/scaled image
 		 */
 		EMData* 
