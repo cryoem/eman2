@@ -2086,7 +2086,104 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual( d6[z][y][x*2+1], 1.0 )
                     self.assertEqual( d5[z][y][x*2], d[z][y][x] )
                     self.assertEqual( d5[z][y][x*2], d[z][y][x] )
+
+    def test_read_images(self):
+        """test read_images() function ......................"""
+        e = EMData()
+        e.set_size(32,32,32)
         
+        e.process('testimage.noise.uniform.rand')
+        file1 = 'uniformrand.mrc'
+        e.write_image(file1)
+        im = EMData.read_images(file1)
+        
+        os.unlink(file1)
+        
+    def test_rot_trans2D(self):
+        """test rot_trans2D() function ......................"""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process('testimage.noise.uniform.rand')
+        e2 = e.rot_trans2D(0.12)    #default argument
+        e3 = e.rot_trans2D(0.12, 0.2, 0.3)    #non-default argument
+        
+        #this functin only apply to 2D image
+        e4 = EMData()
+        e4.set_size(32,1,1)
+        self.assertRaises( RuntimeError, e4.rot_trans2D, 0.12)
+        try:
+            e4.rot_trans2D(0.12)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+        e5 = EMData()
+        e5.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e5.rot_trans2D, 0.12)
+        try:
+            e5.rot_trans2D(0.12)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+    
+    def test_rot_scale_trans2D(self):
+        """test rot_scale_trans2D() function ................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        e2 = e.rot_scale_trans2D(0.12)    #test default argument
+        e3 = e.rot_scale_trans2D(0.12, 2.0, 0.2, 0.3)    #test non-default argument
+        
+        #this function not apply to 1D image
+        e4 = EMData()
+        e4.set_size(32,1,1)
+        self.assertRaises( RuntimeError, e4.rot_scale_trans2D, 0.12)
+        try:
+            e4.rot_scale_trans2D(0.12)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_rotconvtrunc2d_kbi0(self):
+        """test rotconvtrunc2d_kbi0() function .............."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process('testimage.noise.uniform.rand')
+        e2 = e.rotconvtrunc2d_kbi0(0.1,0.2,10)
+        
+        #this function only apply to 2D image
+        e3 = EMData()
+        e3.set_size(32,1,1)
+        self.assertRaises( RuntimeError, e3.rotconvtrunc2d_kbi0, 0.1, 0.2, 10)
+        try:
+            e3.rotconvtrunc2d_kbi0(0.1, 0.2, 10)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+        e4 = EMData()
+        e4.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e4.rotconvtrunc2d_kbi0, 0.1, 0.2, 10)
+        try:
+            e4.rotconvtrunc2d_kbi0(0.1, 0.2, 10)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_gridrot2d_kbi0(self):
+        """test gridrot2d_kbi0() function ..................."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process('testimage.noise.uniform.rand')
+        e2 = e.gridrot2d_kbi0(0.1)    #default argument
+        e3 = e.gridrot2d_kbi0(0.1, 1.5, 10)
+        
+    def test_symvol(self):
+        """test symvol() function ..........................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        e2 = e.symvol('CSYM')
+        e3 = e.symvol('DSYM')
+        #e4 = e.symvol('ICOS_SYM')    #!!! problem here, need investigate
+        #e5 = e.symvol('OCT_SYM')
+        #e6 = e.symvol('ISYM')
+    
 def test_main():
     test_support.run_unittest(TestEMData)
 
