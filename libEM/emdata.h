@@ -1645,7 +1645,7 @@ namespace EMAN
 		 *  @param[in] scale Scaling factor
 		 *  @param[in] delx Amount to translate rotation origin along x
 		 *  @param[in] dely Amount to translate rotation origin along y
-		 *  
+		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/translated/scaled image
 		 */
 		EMData* 
@@ -1679,7 +1679,7 @@ namespace EMAN
 		 *  @param[in] y y-value of the desired (potentially off-grid) point
 		 *  @param[in] win Window (mask/kernel) function object.
 		 *  @param[in] size Size of real-space kernel/mask.
-		 *
+		 *  @exception ImageDimensionException only support 2D image
 		 *  @return Rotated/convolved EMData image.
 		 */
 		//template<class Win>
