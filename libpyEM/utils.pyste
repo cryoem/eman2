@@ -4,6 +4,9 @@ Include("imageio.h")
 
 Util = Class("EMAN::Util", "util.h")
 
+#exclude this function to make EMAN2 compile with boost 1.33.0
+exclude(Util.check_file_by_magic)
+
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
 set_policy(EMUtil.vertical_acf, return_value_policy(manage_new_object))
@@ -11,6 +14,9 @@ set_policy(EMUtil.make_image_median, return_value_policy(manage_new_object))
 exclude(EMUtil.get_region_dims)
 exclude(EMUtil.get_region_origins)
 exclude(EMUtil.get_region_data)
+
+#exclude this function to make EMAN2 compile with boost 1.33.0
+exclude(EMUtil.process_region_io)
 
 ImageSort = Class("EMAN::ImageSort", "emutil.h")
 
