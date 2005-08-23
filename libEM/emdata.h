@@ -36,6 +36,7 @@ namespace EMAN
 	typedef boost::multi_array<int, 2> MIArray2D;
 	typedef boost::multi_array<int, 3> MIArray3D;
 	
+	/** @ingroup tested3c */
 	/** EMData stores an image's data and defines core image processing routines.
      * The image is 1D, 2D or 3D, in real space or fourier space (complex image).
 	 *
@@ -912,6 +913,7 @@ namespace EMAN
 		 */
 		float dot(EMData * with);
 
+		/** @ingroup tested2 */
 		/** Finds common lines between 2 complex images.
 		 * 
 		 * This function does not assume any symmetry, just blindly
@@ -935,6 +937,7 @@ namespace EMAN
 		void common_lines(EMData * image1, EMData * image2, int mode = 0,
 						  int steps = 180, bool horizontal = false);
 
+		/** @ingroup tested2 */
 		/** Finds common lines between 2 real images.
 		 *
 		 * @param image1 The first image.
