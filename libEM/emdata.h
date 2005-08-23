@@ -283,8 +283,6 @@ namespace EMAN
 		 *  to ix=0,...,nxold-1, iy=0,...,nyold-1, iz=0,...,nzold-1,
 		 *  where nxold, nyold, nzold are the sizes of the original
 		 *  image.
-		 *
-		 * @return Pointer to the depadded image.
 		 */
 		void postift_depad_corner_inplace();
 
