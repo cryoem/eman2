@@ -6,6 +6,7 @@ from test import test_support
 import testlib
 
 class TestTransform(unittest.TestCase):
+    """this is the unit test for Transform3D class"""
         
     def test_get_rotation(self):
         """test rotation ...................................."""
