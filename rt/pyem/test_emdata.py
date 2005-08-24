@@ -11,6 +11,7 @@ import math
 import os
 
 class TestEMData(unittest.TestCase):
+    """this is the unit test for EMData class"""
 
     def test_default_args(self):
         """test default constructor of EMData ..............."""
