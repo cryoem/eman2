@@ -43,13 +43,20 @@ format</span><br>
     </li>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
+add a&nbsp; processor?</big></li>
+  <ul>
+    <li
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">See
+      <a href="adding_filter.txt">adding_filter.txt</a> for more
+information<span style="text-decoration: underline;"></span></li>
+  </ul>
+  <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 define a&nbsp; XYZProcessor?</big></li>
   <ul>
     <li
- style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">&nbsp;
-Processor naming convention: more generic word goes first. e.g.
-LowpassGaussProcessor, HighpassGaussProcessor.
-    </li>
+ style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">Processor
+naming convention: more generic word goes first. e.g.
+LowpassGaussProcessor, HighpassGaussProcessor. </li>
     <li
  style="color: rgb(51, 51, 255); background-color: rgb(255, 255, 204);">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">/* 1)
@@ -68,7 +75,8 @@ processor in XYZProcessor::process().</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">class
 XYZProcessor : public
-Processor {</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+Processor {</span><br
+ style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">public:</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">&nbsp;&nbsp;&nbsp;
@@ -227,7 +235,8 @@ and a user chooses which one to use. In EMAN2, we define a <span
 class to manage these algorithms, including <br>
     </li>
     <ul>
-      <li><span style="font-weight: bold;">Processor</span> (image processor)</li>
+      <li><span style="font-weight: bold;">Processor</span> (image
+processor)</li>
       <li><span style="font-weight: bold;">Aligner</span> (2D/3D image
 alignment)</li>
       <li><span style="font-weight: bold;">Averager</span> (averaging a
@@ -248,13 +257,15 @@ subclass of Processor.</li>
       <li>processors are identified by names. <span
  style="font-weight: bold;">XYZProcessor</span>'s name should be
 "XYZ" for consistency.</li>
-      <li><span style="font-weight: bold;">XYZProcessor</span> must define
+      <li><span style="font-weight: bold;">XYZProcessor</span> must
+define
 a static function to construct a new
-XYZProcessor instance. This function is going to be stored in the Processor
+XYZProcessor instance. This function is going to be stored in the
+Processor
 Factory.<br>
       </li>
-      <li>To use <span style="font-weight: bold;">XYZProcessor</span>: <span
- style="color: rgb(0, 153, 0);">EMData* img1 = ...;
+      <li>To use <span style="font-weight: bold;">XYZProcessor</span>:
+        <span style="color: rgb(0, 153, 0);">EMData* img1 = ...;
 img1-&gt;processor("XYZ");</span></li>
     </ul>
     <li style="color: rgb(51, 51, 255);"><big>How to use the <span
@@ -337,7 +348,8 @@ handle large-file
     <li><span style="font-weight: bold;">portable_fseek()</span> should
 be used for fseek.</li>
     <li><span style="font-weight: bold;">portable_ftell()</span> should
-be used for ftell.</li> <br>
+be used for ftell.</li>
+    <br>
   </ul>
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
 use Euler Angles?</big></li>
@@ -593,31 +605,35 @@ point, use EXITFUNC.<br>
     </ul>
   </ul>
 </ol>
-<big style="color: rgb(51, 51, 255);">15. How to add testing group tag for file/class/function?</big>
+<big style="color: rgb(51, 51, 255);">15. How to add testing group tag
+for file/class/function?</big>
 <ol>
-	<ul>
-		<li><span style="font-weight: bold;">These group tags are already defined 
-			in file, "eman2doc.h":</span></li>
-		<ul>
-			<li>tested0 : code not yet complete</li>
-			<li>tested1 : code complete but untested</li>
-			<li>tested2 : code complete but contains bugs</li>
-			<li>tested3 : tested</li>
-			<li>tested3a : manual testing</li>
-			<li>tested3b : unit test in C++</li>
-			<li>tested3c : unit test in Python</li>
-			<li>tested3d : incorporated into sucessful regression test</li>
-		</ul>
-	</ul>
-	<ul>
-		<li><span style="font-weight: bold;">How to use these tag to label testing group:</span></li>
-		<ul>
-			<li>add /**@ingroup tested3c*/ to the beginnig of a class tested in Python, 
-				then the corresponding class will be labeled "unit test in Python" in doxygen generated documet.</li>
-			<li>you can also define other grouping tag, just follow the testing group example in "eman2doc.h"</li>
-			<li>a single unit can be labeled for multiple group</li>
-		</ul>
-	</ul>
+  <ul>
+    <li><span style="font-weight: bold;">These group tags are already
+defined in file, "eman2doc.h":</span></li>
+    <ul>
+      <li>tested0 : code not yet complete</li>
+      <li>tested1 : code complete but untested</li>
+      <li>tested2 : code complete but contains bugs</li>
+      <li>tested3 : tested</li>
+      <li>tested3a : manual testing</li>
+      <li>tested3b : unit test in C++</li>
+      <li>tested3c : unit test in Python</li>
+      <li>tested3d : incorporated into sucessful regression test</li>
+    </ul>
+  </ul>
+  <ul>
+    <li><span style="font-weight: bold;">How to use these tag to label
+testing group:</span></li>
+    <ul>
+      <li>add /**@ingroup tested3c*/ to the beginnig of a class tested
+in Python, then the corresponding class will be labeled "unit test in
+Python" in doxygen generated documet.</li>
+      <li>you can also define other grouping tag, just follow the
+testing group example in "eman2doc.h"</li>
+      <li>a single unit can be labeled for multiple group</li>
+    </ul>
+  </ul>
 </ol>
 <br>
 <hr>
