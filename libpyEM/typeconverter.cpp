@@ -1,7 +1,7 @@
 #define NO_IMPORT_ARRAY
 
 #include <Python.h>
-
+#include <boost/python/tuple.hpp>
 #include "typeconverter.h"
 #include "emdata.h"
 
@@ -95,6 +95,14 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 		ny = dims_ptr[1];
 		nx = dims_ptr[2];
 	}
+	
+	image->set_size(nx, ny, nz);
+
+	char* array_data = array_ptr->data;
+    float* data = image->get_data();
+	
+	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
+	image->done_data();
 }
 
 PyObject* EMObject_to_python::convert(EMObject const& emobj)
