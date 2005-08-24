@@ -6,6 +6,7 @@ from libpyReconstructor2 import *
 from libpyProjector2 import *
 from libpyEMObject2 import * 
 from libpyEMData2 import *
+from emdata_wrapitems import *
 from libpyGeometry2 import *
 from libpyTransform2 import *
 from libpyUtils2 import * 

@@ -1415,6 +1415,15 @@ namespace EMAN
 		 */
 		void set_value_at_fast(int x, int y, float v);
 
+		/** Set the pixel density value at coordinate (x).
+		 * 1D image only. 
+		 *
+		 * @param x The x cooridinate.
+		 * @param v The pixel density value at coordinate (x).
+		 * @exception OutofRangeException wehn index out of image data's range.
+		 */
+		void set_value_at(int x, float v);
+		
 		/** Has this image been shuffled?
 		 * @return Whether this image has been shuffled to put origin in the center.
 		 */
@@ -1524,6 +1533,42 @@ namespace EMAN
 		EMData & operator-=(const EMData & em);
 		EMData & operator*=(const EMData & em);
 		EMData & operator/=(const EMData & em);
+
+		/** Overload operator() for array indexing. */
+		float& operator()(const int ix, const int iy, const int iz) {
+			return *(rdata + (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx);
+		}
+		float& operator()(const int ix, const int iy) {
+			return *(rdata + (ix-xoff) + (iy-yoff)*nx);
+		}
+		float& operator()(const int ix) {
+			return *(rdata + (ix-xoff));
+		}
+		/** Set the array offsets */
+		void set_array_offsets(const int xoff_=0, const int yoff_=0, 
+				               const int zoff_=0) {
+			xoff=xoff_; yoff=yoff_; zoff=zoff_;
+		}
+		vector<int> get_array_offsets() {
+			vector<int> offsets;
+			offsets.push_back(xoff); 
+			offsets.push_back(yoff); 
+			offsets.push_back(zoff);
+			return offsets;
+		}
+		/** Return reference to complex elements */
+		complex<float>& cmplx(const int ix, const int iy, const int iz) {
+			float* begin = rdata + 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nx;
+			return *(reinterpret_cast<complex<float>* >(begin));
+		}
+		complex<float>& cmplx(const int ix, const int iy) {
+			float* begin = rdata + 2*(ix-xoff)+(iy-yoff)*nx;
+			return *(reinterpret_cast<complex<float>* >(begin));
+		}
+		complex<float>& cmplx(const int ix) {
+			float* begin = rdata + 2*(ix-xoff);
+			return *(reinterpret_cast<complex<float>* >(begin));
+		}
 		
 		/** return a image to the power of n
 		 * @param n	the power of this simage
@@ -1753,6 +1798,8 @@ namespace EMAN
 		int flags;       
 		/** image size */       
 		int nx, ny, nz;	        
+		/** array index offsets */
+		int xoff, yoff, zoff;
 
 		/** translation from the original location */
 		Vec3f all_translation; 
@@ -1865,6 +1912,19 @@ namespace EMAN
 		else
 		{
 			rdata[x + y * nx] = v;
+			flags |= EMDATA_NEEDUPD;
+		}
+	}
+
+	inline void EMData::set_value_at(int x, float v)
+	{
+		if( x>=nx || x<0 )
+		{
+			throw OutofRangeException(0, nx-1, x, "x dimension index");
+		}
+		else
+		{
+			rdata[x] = v;
 			flags |= EMDATA_NEEDUPD;
 		}
 	}

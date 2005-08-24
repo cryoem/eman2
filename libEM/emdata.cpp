@@ -53,6 +53,7 @@ EMData::EMData()
 	nx = 0;
 	ny = 0;
 	nz = 0;
+	xoff = yoff = zoff = 0;
 
 	EMData::totalalloc++;
 #ifdef MEMDEBUG
