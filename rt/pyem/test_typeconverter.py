@@ -258,7 +258,8 @@ class TestTypeConverter(unittest.TestCase):
         ny = e.get_ysize()
 
         a = EMNumPy.em2numpy(e)
-
+        os.unlink(imgfile1)
+        
     def test_Point_and_Size_class(self):
         """test point ans Size class ........................"""
         imgfile1 = "test_Point_and_Size_class_1.mrc"

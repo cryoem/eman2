@@ -9,8 +9,10 @@ import math
 import testlib
 
 class TestUtils(unittest.TestCase):
-
+    """test Util class"""
+    
     def test_is_file_exist(self):
+        """test is_file_exist() function ...................."""
         imgfile1 = "test_is_file_exist.mrc"
         TestUtil.make_image_file(imgfile1, MRC)
         result1 = Util.is_file_exist(imgfile1)
@@ -24,8 +26,8 @@ class TestUtils(unittest.TestCase):
 
         os.unlink(imgfile1)
 
-
     def test_sstrcmp(self):
+        """test sstrcmp() function .........................."""
         e1 = Util.sstrncmp("helloworld", "hello");
         self.assertEqual(e1, True);
 
@@ -42,14 +44,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(e5, True);
 
     def test_int2str(self):
+        """test int2str() function .........................."""
         s1 = Util.int2str(123)
         self.assertEqual(s1, "123")
 
         s2 = Util.int2str(-1)
         self.assertEqual(s2, "-1")
 
-        
     def test_change_filename_ext(self):
+        """test change_filename_ext() function .............."""
         file1 = Util.change_filename_ext("hello.c", "cpp")
         file2 = Util.change_filename_ext("hello.", "mrc")
         file3 = Util.change_filename_ext("hello", "cpp")
@@ -64,7 +67,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(file4, "hello.c")
         self.assertEqual(file5, "hello.")
         self.assertEqual(file6, "hello")
-
 
     def test_remove_filename_ext(self):
         s1 = Util.remove_filename_ext("hello.cpp")
