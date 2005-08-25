@@ -133,7 +133,7 @@ class TestTransform(unittest.TestCase):
         t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
         
         t.to_identity()
-        #self.assertEqual(t.is_identity(), True)    #problem here, need fix
+        self.assertEqual(t.is_identity(), True)
         for i in range(3):
             col = t.get_matrix3_col(i)
             for j in range(3):
