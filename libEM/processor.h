@@ -1247,8 +1247,8 @@ The basic design of EMAN Processors: <br>\
 	  protected:
 		void process_pixel(float *x) const
 		{
-			if (*x>range+value) *x-=range;
-			else if (*x<range-value) *x+=range;
+			if (*x>value+range) *x-=range;
+			else if (*x<value-range) *x+=range;
 			else *x=value;
 		}
 		float range;
