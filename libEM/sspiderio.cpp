@@ -59,7 +59,13 @@ bool SingleSpiderIO::is_valid(const void *first_block)
 	const int max_dim = 1 << 20;
 	int itype = static_cast < int >(type);
 
-	if ((itype == IMAGE_2D || itype == IMAGE_3D) && (istack == SINGLE_IMAGE_HEADER) &&
+	if ((itype == IMAGE_2D 
+                    || itype == IMAGE_3D
+                    || itype == IMAGE_2D_FFT_ODD
+                    || itype == IMAGE_2D_FFT_EVEN
+                    || itype == IMAGE_3D_FFT_ODD
+                    || itype == IMAGE_3D_FFT_EVEN
+                    ) && (istack == SINGLE_IMAGE_HEADER) &&
 		(nslice > 0 && nslice < max_dim) && (ny > 0 && ny < max_dim)) {
 		result = true;
 	}

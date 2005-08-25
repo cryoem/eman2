@@ -221,6 +221,14 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["SPIDER.name"] = cur_image_hed->name;
 	dict["SPIDER.maxim"] = (int)cur_image_hed->maxim;
 	dict["SPIDER.imgnum"] = (int)cur_image_hed->imgnum;
+	// complex check is in is_complex_mode, but even/odd check needs to be here
+	int type = dict["SPIDER.type"];
+	if ( type == IMAGE_2D_FFT_ODD
+			|| type == IMAGE_3D_FFT_ODD ) 
+		dict["is_fftodd"] = 1;
+	else dict["is_fftodd"] = 0;
+	// complex spider files are always ri, so we just set it unconditionally
+	dict["is_ri"] = 1;
 
 	if (offset != 0) {
 		if( cur_image_hed )
@@ -345,11 +353,27 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 			first_h->nx = (float) nx1;
 			first_h->ny = (float) ny1;
 
-			if (nz1 == 1) {
-				first_h->type = IMAGE_2D;
-			}
-			else {
-				first_h->type = IMAGE_3D;
+			if (1 == int(dict["is_complex"])) {
+				if (1 == int(dict["is_fftodd"])) {
+					if (1 == nz1) {
+						first_h->type = IMAGE_2D_FFT_ODD;
+					} else {
+						first_h->type = IMAGE_3D_FFT_ODD;
+					}
+				} else {
+					if (1 == nz1) {
+						first_h->type = IMAGE_2D_FFT_EVEN;
+					} else {
+						first_h->type = IMAGE_3D_FFT_EVEN;
+					}
+				}
+			} else {
+				if (nz1 == 1) {
+					first_h->type = IMAGE_2D;
+				}
+				else {
+					first_h->type = IMAGE_3D;
+				}
 			}
 
 			first_h->reclen = (float)record_size;
@@ -386,11 +410,27 @@ int SpiderIO::write_header(const Dict & dict, int image_index, const Region* are
 	cur_h->nx = (float)nx1;
 	cur_h->ny = (float)ny1;
 
-	if (nz1 == 1) {
-		cur_h->type = IMAGE_2D;
-	}
-	else {
-		cur_h->type = IMAGE_3D;
+	if (1 == int(dict["is_complex"])) {
+		if (1 == int(dict["is_fftodd"])) {
+			if (1 == nz1) {
+				cur_h->type = IMAGE_2D_FFT_ODD;
+			} else {
+				cur_h->type = IMAGE_3D_FFT_ODD;
+			}
+		} else {
+			if (1 == nz1) {
+				cur_h->type = IMAGE_2D_FFT_EVEN;
+			} else {
+				cur_h->type = IMAGE_3D_FFT_EVEN;
+			}
+		}
+	} else {
+		if (nz1 == 1) {
+			cur_h->type = IMAGE_2D;
+		}
+		else {
+			cur_h->type = IMAGE_3D;
+		}
 	}
 
 	cur_h->mmvalid = 1;
@@ -478,11 +518,27 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area,
 	first_h->sigma = dict["sigma"];
 
 
-	if (nz == 1) {
-		first_h->type = IMAGE_2D;
-	}
-	else {
-		first_h->type = IMAGE_3D;
+	if (1 == int(dict["is_complex"])) {
+		if (1 == int(dict["is_fftodd"])) {
+			if (1 == nz) {
+				first_h->type = IMAGE_2D_FFT_ODD;
+			} else {
+				first_h->type = IMAGE_3D_FFT_ODD;
+			}
+		} else {
+			if (1 == nz) {
+				first_h->type = IMAGE_2D_FFT_EVEN;
+			} else {
+				first_h->type = IMAGE_3D_FFT_EVEN;
+			}
+		}
+	} else {
+		if (nz == 1) {
+			first_h->type = IMAGE_2D;
+		}
+		else {
+			first_h->type = IMAGE_3D;
+		}
 	}
 
 	first_h->reclen = (float)record_size;
@@ -695,6 +751,12 @@ void SpiderIO::swap_header(SpiderHeader * header)
 
 bool SpiderIO::is_complex_mode()
 {
+	int type = static_cast<int>(first_h->type);
+	if (type == IMAGE_2D_FFT_ODD
+		|| type == IMAGE_2D_FFT_EVEN
+		|| type == IMAGE_3D_FFT_ODD
+		|| type == IMAGE_3D_FFT_EVEN
+	   ) return true;
 	return false;
 }
 
@@ -726,3 +788,4 @@ bool SpiderIO::need_swap() const
 	}
 	return false;
 }
+/* vim: set ts=4 noet: */

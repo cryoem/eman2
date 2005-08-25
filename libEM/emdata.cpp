@@ -110,7 +110,10 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		else {
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
+				set_fftpad(true);
 			}
+			if (1 == int(attr_dict["is_fftodd"]))
+				set_fftodd(true);
 			if ((int) attr_dict["is_ri"] == 1) {
 				set_ri(true);
 			}

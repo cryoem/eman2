@@ -2045,9 +2045,11 @@ namespace EMAN
 	{
 		if (is_complex) {
 			flags |= EMDATA_COMPLEX;
+			set_attr("iscomplex", 1);
 		}
 		else {
 			flags &= ~EMDATA_COMPLEX;
+			set_attr("iscomplex", 0);
 		}
 	}
 
@@ -2076,9 +2078,11 @@ namespace EMAN
 	{
 		if (is_fftpadded) {
 			flags |= EMDATA_PAD;
+			set_attr("is_fftpad", 1);
 		}
 		else {
 			flags &= ~EMDATA_PAD;
+			set_attr("is_fftpad", 0);
 		}
 	}
 
@@ -2086,9 +2090,11 @@ namespace EMAN
 	{
 		if (is_fftodd) {
 			flags |= EMDATA_FFTODD;
+			set_attr("is_fftodd", 1);
 		}
 		else {
 			flags &= ~EMDATA_FFTODD;
+			set_attr("is_fftodd", 0);
 		}
 	}
 

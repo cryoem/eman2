@@ -140,8 +140,10 @@ namespace EMAN
 		{
 			IMAGE_2D = 1,
 			IMAGE_3D = 3,
-			IMAGE_2D_FFT = -1,
-			IMAGE_3D_FFT = -3
+			IMAGE_2D_FFT_ODD = -11,
+			IMAGE_2D_FFT_EVEN = -12,
+			IMAGE_3D_FFT_ODD = -21,
+			IMAGE_3D_FFT_EVEN = -21
 		};
 
 		enum
