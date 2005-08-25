@@ -8,8 +8,10 @@ import testlib
 import sys
 
 class TestPixel(unittest.TestCase):
+    """miscellaneous tests"""
     
     def test_pixel(self):
+        """test Pixel class ................................."""
         x = 1
         y = 2
         z = 3
@@ -28,17 +30,11 @@ class TestPixel(unittest.TestCase):
         self.assertEqual(p1.z, z)
         self.assertEqual(p1.value, v)
 
-
-
 class TestBoost(unittest.TestCase):
+    """some boost related test .............................."""
     
-    def test_overloads(self):
-        e = EMData()
-        e.set_size(10,10,1)
-        # The following core dump
-        #e.make_rotational_footprint()
-
     def test_defaultargs(self):
+        """test default arguments ..........................."""
         imgfile1 = "test_defaultargs_1.mrc"
         imgfile2 = "test_defaultargs_2.mrc"
         TestUtil.make_image_file(imgfile1, MRC)
@@ -50,16 +46,17 @@ class TestBoost(unittest.TestCase):
         image2 = EMData()
         image2.read_image(imgfile2)
 
-        #image3 = image1.calc_ccf(image2)
-        #testlib.check_emdata(image3, sys.argv[0])
+        image3 = image1.calc_ccf(image2)
+        testlib.check_emdata(image3, sys.argv[0])
 
         os.unlink(imgfile1)
         os.unlink(imgfile2)
 
-
 class TestException(unittest.TestCase):
+    """exception related tests"""
     
     def test_FileAccessException(self):
+        """test file access exception ......................."""
         e = EMData()
         e.set_size(10, 10, 1)
 
@@ -68,9 +65,9 @@ class TestException(unittest.TestCase):
         except RuntimeError, runtime_err:
             err_type = exception_type(runtime_err)
             self.assertEqual(err_type, "FileAccessException")
-            
 
     def test_NotExistingObjectException(self):
+        """test not existing object exception ..............."""
         e = EMData()
         e.set_size(100, 100, 1)
 
@@ -81,6 +78,7 @@ class TestException(unittest.TestCase):
             self.assertEqual(err_type, "NotExistingObjectException")
 
     def test_ImageFormatException(self):
+        """test image format exception ......................"""
         fake_img = TestUtil.get_debug_image("fake.mrc")
         e = EMData()
         try:
@@ -88,45 +86,6 @@ class TestException(unittest.TestCase):
         except RuntimeError, runtime_err:
             err_type = exception_type(runtime_err)
             self.assertEqual(err_type, "FileAccessException")
-
-"""
-class TestEMObject(unittest.TestCase):
-
-    def test_basic_functionality(self):
-        n = 2
-        f = 3.5
-
-        e1 = EMObject(n)
-        e2 = EMObject(n)
-
-        self.assertEqual(e1, e2)
-
-        e3 = EMObject(f)
-        e4 = EMObject(f)
-
-        self.assertEqual(e3, e4)
-
-        self.assertEqual(int(e1), n)
-        self.assertEqual(float(e3), f)
-
-        n2 = 2.0
-        self.assertEqual((float(EMObject(float(n2)))), n2)
-
-        str1 = "hello"
-        self.assertEqual(str1, EMObject(str1).to_str())
-
-        nx = 10
-        ny = 12
-        nz = 2
-        emdata = EMData()
-        emdata.set_size(nx, ny, nz)
-        emobj = EMObject(emdata)
-        emdata2 = emobj.to_EMAN_EMData()
-        self.assertEqual(emdata2.get_xsize(), nx)
-        self.assertEqual(emdata2.get_ysize(), ny)
-        self.assertEqual(emdata2.get_zsize(), nz)
-"""        
-
 
 def test_main():
     test_support.run_unittest(TestPixel, TestBoost, TestException)
