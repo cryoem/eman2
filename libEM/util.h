@@ -934,8 +934,8 @@ namespace EMAN
 			float fac; /** 2*pi*alpha*r*v */
 			void build_I0table(); /** Tabulate I0 window for speed */
 			public:
-				KaiserBessel(float alpha_ = 1.0f, 
-						     int K_ = 6, int ntable_ = 5999);
+				KaiserBessel(float alpha_ = 1.0f, int K_=6, float r_=0.5f,
+						     float v_=0.f, int ntable_ = 5999);
 				/** Compute the maximum error in the table */
 				float I0table_maxerror();
 				/** Kaiser-Bessel Sinh window function */
