@@ -28,7 +28,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.highpass.tophat', {'Cutoff_frequency':0.3})
+        e.process('filter.highpass.tophat', {'cutoff_frequency':0.3})
         
     def test_filter_highpass_tophat(self):
         """test filter.lowpass.tophat processor ............."""
@@ -38,7 +38,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.lowpass.tophat', {'Cutoff_frequency':0.3})
+        e.process('filter.lowpass.tophat', {'cutoff_frequency':0.3})
         
     def test_filter_bandpass_tophat(self):
         """test filter.bandpass.tophat processor ............"""
@@ -49,7 +49,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.bandpass.tophat', \
-            {'Low_cutoff_frequency':0.1, 'High_cutoff_frequency':0.45})
+            {'low_cutoff_frequency':0.1, 'high_cutoff_frequency':0.45})
             
     def test_filter_homomorphic_tophat(self):
         """test filter.homomorphic.tophat processor ........."""
@@ -60,7 +60,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.homomorphic.tophat', \
-            {'Low_cutoff_frequency':0.05, 'High_cutoff_frequency':0.45, 'Value_at_zero_frequency':1.0})
+            {'low_cutoff_frequency':0.05, 'high_cutoff_frequency':0.45, 'value_at_zero_frequency':1.0})
 
     def test_filter_lowpass_gauss(self):
         """test filter.lowpass.gauss processor .............."""
@@ -70,7 +70,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.lowpass.gauss', {'Sigma':0.5})
+        e.process('filter.lowpass.gauss', {'sigma':0.5})
         
     def test_filter_highpass_gauss(self):
         """test filter.highpass.gauss processor ............."""
@@ -80,7 +80,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.highpass.gauss', {'Sigma':0.5})
+        e.process('filter.highpass.gauss', {'sigma':0.5})
         
     def test_filter_bandpass_gauss(self):
         """test filter.bandpass.gauss processor ............."""
@@ -90,7 +90,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.bandpass.gauss', {'Sigma':0.5, 'Center':0.1})
+        e.process('filter.bandpass.gauss', {'sigma':0.5, 'center':0.1})
         
     def test_filter_homomorphic_gauss(self):
         """test filter.homomorphic.gauss processor .........."""
@@ -100,7 +100,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.homomorphic.gauss', {'Sigma':0.5, 'Value_at_zero_frequency':1.0})
+        e.process('filter.homomorphic.gauss', {'sigma':0.5, 'value_at_zero_frequency':1.0})
         
     def test_filter_gaussinverse(self):
         """test filter.gaussinverse processor ..............."""
@@ -110,17 +110,17 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.gaussinverse', {'Sigma':0.5})
+        e.process('filter.gaussinverse', {'sigma':0.5})
         
     def test_filter_kaiserI0inverse(self):
-        """test filter.kaiserI0inverse processor ............"""
+        """test filter.kaiser_io_inverse processor .........."""
         e = EMData()
         e.set_size(32,32,32)
         e.process('testimage.noise.uniform.rand')
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.kaiserI0inverse')
+        e.process('filter.kaiser_io_inverse')
         
     def test_filter_kaisersinhinverse(self):
         """test filter.kaisersinhinverse processor .........."""
@@ -140,7 +140,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.radialtable', {'Table':(0.2,0.2,0.3)})
+        e.process('filter.radialtable', {'table':(0.2,0.2,0.3)})
         
     def test_filter_lowpass_butterworth(self):
         """test filter.lowpass.butterworth processor ........"""
@@ -151,7 +151,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.lowpass.butterworth', \
-            {'Low_cutoff_frequency':0.1, 'High_cutoff_frequency':0.45})
+            {'low_cutoff_frequency':0.1, 'high_cutoff_frequency':0.45})
             
     def test_filter_highpass_butterworth(self):
         """test filter.highpass.butterworth processor ......."""
@@ -162,7 +162,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.highpass.butterworth', \
-            {'Low_cutoff_frequency':0.1, 'High_cutoff_frequency':0.45})
+            {'low_cutoff_frequency':0.1, 'high_cutoff_frequency':0.45})
             
     def test_filter_homomorphic_butterworth(self):
         """test filter.homomorphic.butterworth processor ...."""
@@ -173,7 +173,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.homomorphic.butterworth', \
-            {'Low_cutoff_frequency':0.1, 'High_cutoff_frequency':0.45, 'Value_at_zero_frequency':1.0})
+            {'low_cutoff_frequency':0.1, 'high_cutoff_frequency':0.45, 'value_at_zero_frequency':1.0})
             
     def test_filter_lowpass_tanh(self):
         """test filter.lowpass.tanh processor ..............."""
@@ -183,7 +183,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.lowpass.tanh', {'Cutoff_frequency':0.25, 'Fall_off':0.1})
+        e.process('filter.lowpass.tanh', {'cutoff_frequency':0.25, 'fall_off':0.1})
         
     def test_filter_highpass_tanh(self):
         """test filter.highpass.tanh processor .............."""
@@ -193,7 +193,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process('filter.highpass.tanh', {'Cutoff_frequency':0.25, 'Fall_off':0.1})
+        e.process('filter.highpass.tanh', {'cutoff_frequency':0.25, 'fall_off':0.1})
         
     def test_filter_homomorphic_tanh(self):
         """test filter.homomorphic.tanh processor ..........."""
@@ -204,7 +204,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.homomorphic.tanh', \
-            {'Cutoff_frequency':0.25, 'Fall_off':0.1, 'Value_at_zero_frequency':1.0})
+            {'cutoff_frequency':0.25, 'fall_off':0.1, 'value_at_zero_frequency':1.0})
             
     def test_filter_bandpass_tanh(self):
         """test filter.bandpass.tanh processor .............."""
@@ -215,8 +215,8 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), True)
         
         e.process('filter.bandpass.tanh', \
-            {'Low_cutoff_frequency':0.1, 'Low_fall_off':0.15, 'High_cutoff_frequency':0.45, \
-             'High_fall_off':0.15, 'Fall_off':1.25})
+            {'low_cutoff_frequency':0.1, 'Low_fall_off':0.15, 'high_cutoff_frequency':0.45, \
+             'high_fall_off':0.15, 'fall_off':1.25})
              
     def test_eman1_filter_lowpass_sharp(self):
         """test eman1.filter.lowpass.sharp processor ........"""

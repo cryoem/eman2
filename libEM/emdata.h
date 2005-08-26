@@ -1757,7 +1757,7 @@ namespace EMAN
 			EMData* rot = rotconvtrunc2d_kbi0(ang, alpha, size);
 			Dict params;
 			params["dopad"] = 1;
-			params["Alpha"] = alpha;
+			params["alpha"] = alpha;
 			rot->process("filter.kaisersinhinverse", params);
 			return rot;
 		}

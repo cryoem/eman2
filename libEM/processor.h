@@ -306,13 +306,13 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass top-hat filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TOP_HAT_LOW_PASS;
+			params["filter_type"] = TOP_HAT_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			return d;
 		}
 		
@@ -330,13 +330,13 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass top-hat filter applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TOP_HAT_HIGH_PASS;
+			params["filter_type"] = TOP_HAT_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			return d;
 		}
 	};
@@ -353,14 +353,14 @@ The basic design of EMAN Processors: <br>\
 			return "Bandpass top-hat filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TOP_HAT_BAND_PASS;
+			params["filter_type"] = TOP_HAT_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
-			d.put("High_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
 		}
 	};
@@ -377,15 +377,15 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic top-hat filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TOP_HOMOMORPHIC;
+			params["filter_type"] = TOP_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
-			d.put("High_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
-			d.put("Value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
+			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
 	};
@@ -402,13 +402,13 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = GAUSS_LOW_PASS;
+			params["filter_type"] = GAUSS_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Sigma", EMObject::FLOAT, "Gaussian sigma.");
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
 		}
 	};
@@ -425,13 +425,13 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = GAUSS_HIGH_PASS;
+			params["filter_type"] = GAUSS_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Sigma", EMObject::FLOAT, "Gaussian sigma.");
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
 		}
 	};
@@ -448,14 +448,14 @@ The basic design of EMAN Processors: <br>\
 			return "Bandpass Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = GAUSS_BAND_PASS;
+			params["filter_type"] = GAUSS_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Sigma", EMObject::FLOAT, "Gaussian sigma.");
-			d.put("Center", EMObject::FLOAT, "Gaussian center.");
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+			d.put("center", EMObject::FLOAT, "Gaussian center.");
 			return d;
 		}
 	};
@@ -472,14 +472,14 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic Gauss filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = GAUSS_HOMOMORPHIC;
+			params["filter_type"] = GAUSS_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Sigma", EMObject::FLOAT, "Gaussian sigma.");
-			d.put("Value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
+			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
 	};
@@ -496,13 +496,13 @@ The basic design of EMAN Processors: <br>\
 			return "Divide by a Gaussian in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = GAUSS_INVERSE;
+			params["filter_type"] = GAUSS_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Sigma", EMObject::FLOAT, "Gaussian sigma.");
+			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
 		}
 	};
@@ -511,7 +511,7 @@ The basic design of EMAN Processors: <br>\
 	{
 	  public:
 		string get_name() const
-		{ return "filter.kaiserI0inverse"; }
+		{ return "filter.kaiser_io_inverse"; }
 		static Processor *NEW()
 		{ return new InverseKaiserI0Processor(); }
 		string get_desc() const
@@ -519,7 +519,7 @@ The basic design of EMAN Processors: <br>\
 			return "Divide by a Kaiser-Bessel I0 func in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = KAISER_I0_INVERSE;
+			params["filter_type"] = KAISER_I0_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
 	};
@@ -536,7 +536,7 @@ The basic design of EMAN Processors: <br>\
 			return "Divide by a Kaiser-Bessel Sinh func in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = KAISER_SINH_INVERSE;
+			params["filter_type"] = KAISER_SINH_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
 	};
@@ -553,13 +553,13 @@ The basic design of EMAN Processors: <br>\
 			return "Filter with tabulated data in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = RADIAL_TABLE;
+			params["filter_type"] = RADIAL_TABLE;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Table", EMObject::FLOATARRAY, "Tabulated filter data.");
+			d.put("table", EMObject::FLOATARRAY, "Tabulated filter data.");
 			return d;
 		}
 	};
@@ -576,14 +576,14 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass Butterworth filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = BUTTERWORTH_LOW_PASS;
+			params["filter_type"] = BUTTERWORTH_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
-			d.put("High_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
 		}
 	};
@@ -600,14 +600,14 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass Butterworth filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = BUTTERWORTH_HIGH_PASS;
+			params["filter_type"] = BUTTERWORTH_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
-			d.put("High_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
 		}
 	};
@@ -624,15 +624,15 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic Butterworth filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = BUTTERWORTH_HOMOMORPHIC;
+			params["filter_type"] = BUTTERWORTH_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
-			d.put("High_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
-			d.put("Value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
+			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
 	};
@@ -649,14 +649,14 @@ The basic design of EMAN Processors: <br>\
 			return "Lowpass tanh filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TANH_LOW_PASS;
+			params["filter_type"] = TANH_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
-			d.put("Fall_off", EMObject::FLOAT, "Tanh decay rate.");
+			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
 	};
@@ -673,14 +673,14 @@ The basic design of EMAN Processors: <br>\
 			return "Highpass tanh filter processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TANH_HIGH_PASS;
+			params["filter_type"] = TANH_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
-			d.put("Fall_off", EMObject::FLOAT, "Tanh decay rate.");
+			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
 	};
@@ -697,15 +697,15 @@ The basic design of EMAN Processors: <br>\
 			return "Homomorphic Tanh processor applied in Fourier space";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TANH_HOMOMORPHIC;
+			params["filter_type"] = TANH_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
-			d.put("Fall_off", EMObject::FLOAT, "Tanh decay rate.");
-			d.put("Value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
+			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
+			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
+			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
 		}
 	};
@@ -722,17 +722,17 @@ The basic design of EMAN Processors: <br>\
 			return "Bandpass tanh processor applied in Fourier space.";
 		}
 		void process(EMData* image) {
-			params["FilterType"] = TANH_BAND_PASS;
+			params["filter_type"] = TANH_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("Low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("Low_fall_off", EMObject::FLOAT, "Tanh low decay rate.");
-			d.put("High_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
-			d.put("High_fall_off", EMObject::FLOAT, "Tanh high decay rate.");
-			d.put("Fall_off", EMObject::FLOAT, "Tanh decay rate.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
+			d.put("high_fall_off", EMObject::FLOAT, "Tanh high decay rate.");
+			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
 		}
 	};
