@@ -313,7 +313,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		nsnr = np;
 		dfsnr = (float *) realloc(dfsnr, np * sizeof(float));
 
-		float w = Util::square(nx / 8.0f);
+		//float w = Util::square(nx / 8.0f); // unused
 
 		for (int i = 0; i < np; i++) {
 //			float x2 = Util::square(i / (float) Ctf::CTFOS);
@@ -378,7 +378,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		throw ImageDimensionException("2D only");
 	}
 
-	int nx = image->get_xsize();
+	//int nx = image->get_xsize(); // unused
 	int ny = image->get_ysize();
 
 	vector < float >snr = params["snr"];
@@ -391,7 +391,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 		if (default_snr.size() != (unsigned int) np) {
 			default_snr = vector < float >(np);
-			float w = Util::square(nx / 8.0f);
+			//float w = Util::square(nx / 8.0f); // unused
 
 			for (int i = 0; i < np; i++) {
 //				float x2 = Util::square(i / (float) Ctf::CTFOS);
