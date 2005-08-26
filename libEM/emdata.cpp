@@ -110,10 +110,10 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		else {
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
-				set_fftpad(true);
+			//	set_fftpad(true);
 			}
-			if (1 == int(attr_dict["is_fftodd"]))
-				set_fftodd(true);
+			//if (1 == int(attr_dict["is_fftodd"]))
+			//	set_fftodd(true);
 			if ((int) attr_dict["is_ri"] == 1) {
 				set_ri(true);
 			}
@@ -7083,17 +7083,26 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
     return ret;
 }
 
-vector<complex<float> > EMData::extractline(float xin, float yin,
+#if 0
+complex<float> EMData::extractpoint(float xnew, float ynew,
 		Util::KaiserBessel& kb) {
-	int nhalf = nx/2;
+	if (2 != get_ndim())
+		throw ImageDimensionException("extractpoint needs a 2-D image.");
+	if (!is_complex()) 
+		throw ImageFormatException("extractpoint requires a fourier image");
+	int nxreal = nx - 2 + is_fftodd();
+	if (nxreal > ny)
+		throw ImageDimensionException("extractpoint requires ny <= nx");
+	int nhalf = nxreal/2; 
 	int kbsize = kb.get_window_size();
 	int kbmin = -kbsize/2;
 	int kbmax = -kbmin;
-	vector<complex<float> > line(nhalf+1);
+	complex<float> result;
 	set_array_offsets(0, -nhalf);
+#if 0
 	bool flip = (xin < 0.f);
 	int count = 0;
-	for (int i = 0; i <= nhalf; i++) {
+	float wsum = 0.f;
 		complex<float> sum(0.f,0.f);
 		float xnew = i*xin;
 		float ynew = i*yin;
@@ -7115,7 +7124,8 @@ vector<complex<float> > EMData::extractline(float xin, float yin,
 			}
 		}
 		line[i] = sum;
-	}
-	return line;
+#endif // 0
+	return result;
 }
+#endif // 0
 /* vim: set ts=4 noet: */

@@ -1761,9 +1761,11 @@ namespace EMAN
 			rot->process("filter.kaisersinhinverse", params);
 			return rot;
 		}
-		/** extractline, not yet finished */
-		vector<complex<float> > extractline(float xin, float yin, 
-				Util::KaiserBessel& kb);
+		/** extractpoint, not yet finished */
+#if 0
+		complex<float> extractpoint(float xin, float yin, 
+		                            Util::KaiserBessel& kb);
+#endif // 0
 
 
 	private:
@@ -2048,11 +2050,11 @@ namespace EMAN
 	{
 		if (is_complex) {
 			flags |= EMDATA_COMPLEX;
-			set_attr("iscomplex", 1);
+			set_attr("is_complex", int(1));
 		}
 		else {
 			flags &= ~EMDATA_COMPLEX;
-			set_attr("iscomplex", 0);
+			set_attr("is_complex", int(0));
 		}
 	}
 
@@ -2060,9 +2062,11 @@ namespace EMAN
 	{
 		if (is_complex_x) {
 			flags |= EMDATA_COMPLEXX;
+			set_attr("is_complex", int(1));
 		}
 		else {
 			flags &= ~EMDATA_COMPLEXX;
+			set_attr("is_complex", int(0));
 		}
 	}
 
@@ -2081,11 +2085,11 @@ namespace EMAN
 	{
 		if (is_fftpadded) {
 			flags |= EMDATA_PAD;
-			set_attr("is_fftpad", 1);
+			set_attr("is_fftpad", int(1));
 		}
 		else {
 			flags &= ~EMDATA_PAD;
-			set_attr("is_fftpad", 0);
+			set_attr("is_fftpad", int(0));
 		}
 	}
 
@@ -2093,11 +2097,11 @@ namespace EMAN
 	{
 		if (is_fftodd) {
 			flags |= EMDATA_FFTODD;
-			set_attr("is_fftodd", 1);
+			set_attr("is_fftodd", int(1));
 		}
 		else {
 			flags &= ~EMDATA_FFTODD;
-			set_attr("is_fftodd", 0);
+			set_attr("is_fftodd", int(0));
 		}
 	}
 
