@@ -1761,6 +1761,9 @@ namespace EMAN
 			rot->process("filter.kaisersinhinverse", params);
 			return rot;
 		}
+		/** extractline, not yet finished */
+		vector<complex<float> > extractline(float xin, float yin, 
+				Util::KaiserBessel& kb);
 
 
 	private:

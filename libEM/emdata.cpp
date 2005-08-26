@@ -7082,4 +7082,40 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
 	ret->done_data();
     return ret;
 }
+
+vector<complex<float> > EMData::extractline(float xin, float yin,
+		Util::KaiserBessel& kb) {
+	int nhalf = nx/2;
+	int kbsize = kb.get_window_size();
+	int kbmin = -kbsize/2;
+	int kbmax = -kbmin;
+	vector<complex<float> > line(nhalf+1);
+	set_array_offsets(0, -nhalf);
+	bool flip = (xin < 0.f);
+	int count = 0;
+	for (int i = 0; i <= nhalf; i++) {
+		complex<float> sum(0.f,0.f);
+		float xnew = i*xin;
+		float ynew = i*yin;
+		if (flip) {
+			xnew *= -1;
+			ynew *= -1;
+		}
+		int ixn = int(xnew + 0.5f);
+		int iyn = int(ynew + 0.5f*Util::sgn(ynew));
+		if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
+			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
+			count++;
+			for (int iy = kbmin; iy <= kbmax; iy++) {
+				int iyp = iyn - iy;
+				for (int ix = kbmin; ix <= kbmax; ix++) {
+					int ixp = ixn - ix;
+					sum += this->cmplx(ixp,iyp);
+				}
+			}
+		}
+		line[i] = sum;
+	}
+	return line;
+}
 /* vim: set ts=4 noet: */
