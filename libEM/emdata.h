@@ -2062,11 +2062,11 @@ namespace EMAN
 	{
 		if (is_complex_x) {
 			flags |= EMDATA_COMPLEXX;
-			set_attr("is_complex", int(1));
+			set_attr("is_complex_x", int(1));
 		}
 		else {
 			flags &= ~EMDATA_COMPLEXX;
-			set_attr("is_complex", int(0));
+			set_attr("is_complex_x", int(0));
 		}
 	}
 
