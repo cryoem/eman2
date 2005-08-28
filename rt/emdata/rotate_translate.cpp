@@ -595,6 +595,69 @@ void debug_set_value_at()
 	cout << e->get_value_at(1000000, 2, 2) << endl;
 }
 
+void debug_common_lines()
+{
+	cout << "Starting debug_common_lines() ..." << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(32,32,1);
+	e->process("testimage.noise.uniform.rand");
+	
+	EMData * e2 = new EMData();
+	e2->set_size(32,32,1);
+	e2->process("testimage.noise.uniform.rand");
+	
+	EMData * e3 = new EMData();
+	e3->set_size(32,32,1);
+	e3->process("testimage.noise.uniform.rand");
+	
+//	EMData * e4 = e2->do_fft();
+//	EMData * e5 = e3->do_fft();
+	
+//	cout << "before common_lines() call ..." << endl;
+//	e->common_lines(e4, e5);
+//	cout << "after common_lines() call ..." << endl;
+	
+	cout << "before common_lines_real() call ..." << endl;
+	e->common_lines_real(e2, e3);
+	cout << "after common_lines_real() call ..." << endl;
+}
+
+void debug_sigma_processor()
+{
+	cout << "Start debug_sigma_processor function ..." << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(2,2,1);
+	e->set_value_at(0, 0, 1.0);
+	e->set_value_at(0, 1, 2.0);
+	e->set_value_at(1, 0, 3.0);
+	e->set_value_at(1, 1, 4.0);
+	
+	float mean = e->get_attr("mean");
+	float sigma = e->get_attr("sigma");
+	
+	cout << "mean = " << mean << endl;
+	cout << "sigma = " << sigma << endl;
+	
+	MArray2D data0 = e->get_2dview();
+	for(int i=0; i<2; i++) {
+		for(int j=0; j<2; j++) {
+			cout << data0[i][j] << " ";
+		}
+		cout << endl;
+	}	
+	
+	e->process("eman1.math.sigma", Dict("value1", 1.0, "value2", 1.0));
+	MArray2D data = e->get_2dview();
+	for(int i=0; i<2; i++) {
+		for(int j=0; j<2; j++) {
+			cout << data[i][j] << " ";
+		}
+		cout << endl;
+	}	
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -620,7 +683,9 @@ int main()
 		//debug_do_fft_inplace();
 		//debug_calc_radial_dist();
 		//debug_calc_hist();
-		debug_set_value_at();
+		//debug_set_value_at();
+		//debug_common_lines();
+		debug_sigma_processor();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
