@@ -488,7 +488,51 @@ class TestProcessor(unittest.TestCase):
         os.unlink(imgfile1)
         os.unlink(outfile1)
 
-
+    def test_eman1_math_sigma(self):
+        """test eman1.math.sigma processor .................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        d = e.get_3dview()
+        
+        e2 = e.copy()
+        mean = e2.get_attr('mean')
+        sigma = e2.get_attr('sigma')
+        v1 = 1
+        v2 = 1
+        e2.process('eman1.math.sigma', {'value1':v1, 'value2':v2})
+        d2 = e2.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    if(d[z][y][x] < (mean - v2 * sigma) or d[z][y][x] > (mean + v1 * sigma)):
+                        self.assertAlmostEqual(d2[z][y][x], mean, 3)
+                    else:
+                        self.assertAlmostEqual(d2[z][y][x], d[z][y][x], 3)
+                        
+    def test_eman1_math_log(self):
+        """test eman1.math.log processor ...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        e -= 0.5
+        d = e.get_3dview()
+        
+        e2 = e.copy()
+        max = e2.get_attr('maximum')
+        e2.process('eman1.math.log')
+        d2 = e2.get_3dview()
+        from math import log10
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    if( d[z][y][x] > 0 ):
+                        self.assertAlmostEqual(d2[z][y][x], log10(d[z][y][x]/max), 3)
+                    else:
+                        self.assertAlmostEqual(d2[z][y][x], 0.0, 3)
+        
         
 class TestCmp(unittest.TestCase):
     """cmp test"""
