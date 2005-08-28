@@ -1443,22 +1443,15 @@ The basic design of EMAN Processors: <br>\
 	  protected:
 		void process_pixel(float *x) const
 		{
-			if (*x < th1 || *x > th2)
+			if (*x < (mean - value2 * sigma) || *x > (mean + value1 * sigma))
 			{
 				*x = mean;
 			}
-		}
-		void calc_locsl()
-		{
-			th1 = mean - value2 * sigma;
-			th2 = mean + value1 * sigma;
 		}
 
 	  private:
 		float value1;
 		float value2;
-		float th1;
-		float th2;
 	};
 
 	class LogProcessor:public RealPixelProcessor
