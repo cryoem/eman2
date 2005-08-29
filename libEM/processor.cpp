@@ -80,6 +80,7 @@ template <> Factory < Processor >::Factory()
 	
 	force_add(&NormalizeStdProcessor::NEW);
 	force_add(&NormalizeUnitProcessor::NEW);
+	force_add(&NormalizeUnitSumProcessor::NEW);
 	force_add(&NormalizeMaskProcessor::NEW);
 	force_add(&NormalizeEdgeMeanProcessor::NEW);
 	force_add(&NormalizeCircleMeanProcessor::NEW);
@@ -96,12 +97,14 @@ template <> Factory < Processor >::Factory()
 	force_add(&FlipProcessor::NEW);
 
 	force_add(&AddNoiseProcessor::NEW);
+	force_add(&AddSigmaNoiseProcessor::NEW);
 	force_add(&AddRandomNoiseProcessor::NEW);
 
 	force_add(&Phase180Processor::NEW);
 	force_add(&FourierOriginShiftProcessor::NEW);
 	force_add(&AutoMask2DProcessor::NEW);
 	force_add(&AutoMask3DProcessor::NEW);
+	force_add(&AutoMask3D2Processor::NEW);
 	force_add(&AddMaskShellProcessor::NEW);
 
 	force_add(&ToMassCenterProcessor::NEW);
@@ -665,7 +668,7 @@ void DiffBlockProcessor::process(EMData * image)
 
 	if (nz > 1) {
 		LOGERR("%s Processor doesn't support 3D", get_name().c_str());
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	int nx = image->get_xsize();
@@ -715,7 +718,7 @@ void CutoffBlockProcessor::process(EMData * image)
 
 	if (nz > 1) {
 		LOGERR("%s Processor doesn't support 3D", get_name().c_str());
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	int nx = image->get_xsize();
@@ -797,7 +800,7 @@ void GradientRemoverProcessor::process(EMData * image)
 	int nz = image->get_zsize();
 	if (nz > 1) {
 		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	int nx = image->get_xsize();
@@ -862,43 +865,58 @@ void VerticalStripeProcessor::process(EMData * image)
 
 void RealToFFTProcessor::process(EMData *image)
 {
-// Note : 2D only!
-if (!image || image->is_complex() || image->get_zsize()>1) return;
-
-EMData *ff=image->do_fft();
-ff->ri2ap();
-
-int nx=image->get_xsize();
-int ny=image->get_ysize();
-
-int x,y;
-
-for (y=0; y<ny; y++) image->set_value_at(0,y,0);
-
-for (x=1; x<nx/2; x++) {
-	for (y=0; y<ny; y++) {
-		float y2;
-		if (y<ny/2) y2=y+ny/2;
-		else y2=y-ny/2;
-		image->set_value_at(x,y,ff->get_value_at(nx-x*2,static_cast<int>(ny-y2)));
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
 	}
-}
-
-for (x=nx/2; x<nx; x++) {
-	for (y=0; y<ny; y++) {
-		float y2;
-		if (y<ny/2) y2=y+ny/2;
-		else y2=y-ny/2;
-		image->set_value_at(x,y,ff->get_value_at(x*2-nx,static_cast<int>(y2)));
+	
+	//Note : real image only!
+	if(image->is_complex()) {
+		LOGERR("%s Processor only apply to real image", get_name().c_str());
+		throw ImageFormatException("apply to real image only");
 	}
-}
 
-image->update();
-if( ff )
-{
-	delete ff;
-	ff = 0;
-}
+	// Note : 2D only!	
+	int nz = image->get_zsize();
+	if (nz > 1) {
+		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
+		throw ImageDimensionException("3D model not supported");
+	}
+	
+	EMData *ff=image->do_fft();
+	ff->ri2ap();
+	
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	
+	int x,y;
+	
+	for (y=0; y<ny; y++) image->set_value_at(0,y,0);
+	
+	for (x=1; x<nx/2; x++) {
+		for (y=0; y<ny; y++) {
+			float y2;
+			if (y<ny/2) y2=y+ny/2;
+			else y2=y-ny/2;
+			image->set_value_at(x,y,ff->get_value_at(nx-x*2,static_cast<int>(ny-y2)));
+		}
+	}
+	
+	for (x=nx/2; x<nx; x++) {
+		for (y=0; y<ny; y++) {
+			float y2;
+			if (y<ny/2) y2=y+ny/2;
+			else y2=y-ny/2;
+			image->set_value_at(x,y,ff->get_value_at(x*2-nx,static_cast<int>(y2)));
+		}
+	}
+	
+	image->update();
+	if( ff )
+	{
+		delete ff;
+		ff = 0;
+	}
 }
 
 void SigmaZeroEdgeProcessor::process(EMData * image)
@@ -910,7 +928,7 @@ void SigmaZeroEdgeProcessor::process(EMData * image)
 
 	if (image->get_zsize() > 1) {
 		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 	float *d = image->get_data();
 	int i = 0;
@@ -980,7 +998,7 @@ void BeamstopProcessor::process(EMData * image)
 	}
 	if (image->get_zsize() > 1) {
 		LOGERR("BeamstopProcessor doesn't support 3D model");
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	float value1 = params["value1"];
@@ -1112,7 +1130,7 @@ void MeanZeroEdgeProcessor::process(EMData * image)
 	}
 	if (image->get_zsize() > 1) {
 		LOGERR("MeanZeroEdgeProcessor doesn't support 3D model");
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	int nx = image->get_xsize();
@@ -1237,7 +1255,7 @@ void ZeroEdgeRowProcessor::process(EMData * image)
 
 	if (image->get_zsize() > 1) {
 		LOGERR("ZeroEdgeRowProcessor is not supported in 3D models");
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	int nx = image->get_xsize();
@@ -1270,8 +1288,8 @@ void ZeroEdgePlaneProcessor::process(EMData * image)
 	}
 
 	if (image->get_zsize() <= 1) {
-		LOGERR("Use ZeroEdgeRowProcessor for 2D images");
-		return;
+		LOGERR("ZeroEdgePlaneProcessor only support 3D models");
+		throw ImageDimensionException("3D model only");
 	}
 
 	int nx = image->get_xsize();
@@ -2404,6 +2422,13 @@ void AutoMask2DProcessor::process(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
+	
+	int nz = image->get_zsize();
+	if (nz > 1) {
+		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
+		throw ImageDimensionException("3D model not supported");
+	}
+	
 	float threshold = params["threshold"];
 	float filter = 0.1f;
 	if (params.has_key("filter")) {
@@ -2605,7 +2630,7 @@ void AddRandomNoiseProcessor::process(EMData * image)
 	
 	if (!image->is_complex()) {
 		LOGERR("AddRandomNoise Processor only works for complex image");
-		return;
+		throw ImageFormatException("only work for complex image");
 	}
 
 	int n = params["n"];
@@ -4098,7 +4123,7 @@ void RampProcessor::process(EMData * image)
 	int nz = image->get_zsize();
 	if (nz > 1) {
 		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
-		return;
+		throw ImageDimensionException("3D model not supported");
 	}
 
 	int nsam = image->get_xsize();
