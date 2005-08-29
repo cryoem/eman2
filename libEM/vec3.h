@@ -13,6 +13,7 @@ using std::vector;
 
 namespace EMAN
 {
+	/** @ingroup tested3c */
 	/** Vec3i defines a 3-element integer vector and various vector
      * operations. 
      *
@@ -333,6 +334,7 @@ namespace EMAN
 		return false;
 	}
 
+	/** @ingroup tested3c */
 	/** Vec3f defines a 3-element float vector and various vector
      * operations. 
      *

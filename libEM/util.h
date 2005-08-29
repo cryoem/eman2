@@ -29,6 +29,7 @@ namespace EMAN
 	
 	typedef boost::multi_array<int, 3> MIArray3D;
 
+	/** @ingroup tested3c */
 	/** Util is a collection of utility functions.
      */
 	class Util

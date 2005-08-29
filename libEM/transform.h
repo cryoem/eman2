@@ -58,6 +58,7 @@ namespace EMAN
 	 *  therefore equal to  "\pm 1"
 	 *
      */
+     /** @ingroup tested3c */
 	class Transform3D
 	{
 	public:
