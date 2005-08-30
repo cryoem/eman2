@@ -1187,6 +1187,8 @@ class TestProcessor(unittest.TestCase):
         
         e.process('eman1.mask.auto3d', {'radius':16, 'threshold':0.5, 'nshells':3})
         
+        os.unlink('mask.mrc')
+        
     def test_eman1_mask_addshells(self):
         """test eman1.mask.addshells processor .............."""
         e = EMData()
@@ -1225,8 +1227,165 @@ class TestProcessor(unittest.TestCase):
         snr_file = 'snrfile.txt'
         e.process('eman1.filter.snr', {'wiener':3, 'snrfile':snr_file})
         
-    def test_eman1_filter_byfile(self):
+    def no_test_eman1_filter_byfile(self):
         """test eman1.filter.byfile processor ..............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        filter_file = 'filter.txt'
+        e.process('eman1.filter.byfile', {'filename':filter_file})
+        
+    def no_test_eman1_misc_symsearch(self):
+        """test eman1.misc.symsearch processor .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.process('testimage.noise.uniform.rand')
+        self.assertEqual(e2.is_complex(), False)
+        
+        e.process('eman1.misc.symsearch', {'sym':['CSYM'], 'thresh':0.5, 'output_symlabel':1, 'symlabel_map':e2})
+        
+    def test_eman1_misc_localnorm(self):
+        """test eman1.misc.localnorm processor .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e.process('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
+        
+        os.unlink('norm.mrc')
+        
+    def test_eman1_mask_fromfile(self):
+        """test eman1.mask.fromfile processor ..............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        e2.process('testimage.noise.uniform.rand')
+        self.assertEqual(e2.is_complex(), False)
+        filename = 'maskfile.mrc'
+        e2.write_image(filename)
+        
+        e.process('eman1.mask.fromfile', {'filename':filename, 'ismaskset':1})
+        
+        os.unlink(filename)
+        
+    def test_eman1_mask_fromfile_sizediff(self):
+        """test eman1.mask.fromfile.sizediff processor ......"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e2 = EMData()
+        e2.set_size(64,48,32)
+        e2.process('testimage.noise.uniform.rand')
+        self.assertEqual(e2.is_complex(), False)
+        filename = 'maskfile.mrc'
+        e2.write_image(filename)
+        
+        e.process('eman1.mask.fromfile.sizediff', {'filename':filename})
+        
+        os.unlink(filename)
+        
+    def no_test_eman1_misc_setpowspec(self):
+        """test eman1.misc.setpowspec processor ............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        filename = 'powerspec.txt'
+        
+        e.process('eman1.misc.setpowspec', {'filename':filename})
+        
+    def test_eman1_mask_smart(self):
+        """test eman1.mask.smart processor .................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e.process('eman1.mask.smart', {'mask':1.1})
+        
+    def test_eman1_mask_addshells_gauss(self):
+        """test eman1.mask.addshells.gauss processor ........"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        self.assertEqual(e.is_complex(), False)
+        
+        e.process('eman1.mask.addshells.gauss')
+        
+    def test_testimage_puregaussian(self):
+        """test testimage.puregaussian processor ............"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.puregaussian', {'sigma':12})
+        
+    def test_testimage_gaussian(self):
+        """test testimage.gaussian processor ................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.puregaussian', {'sigma':12, 'axis':'y', 'c':6})
+        
+    def test_testimage_scurve(self):
+        """test testimage.scurve processor .................."""
+        e = EMData()
+        e.set_size(32,32,1)
+        e.process('testimage.scurve')
+        
+        #only for 2D image
+        e2 = EMData()
+        e2.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e2.process, 'testimage.scurve')
+        try:
+            e2.process('testimage.scurve')
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+    def test_testimage_sinewave(self):
+        """test testimage.sinewave processor ................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.sinewave', {'wave_length':10})
+        e.process('testimage.sinewave', {'wave_length':10, 'axis':'z', 'c':7, 'phase':3})
+        
+    def test_testimage_squarecube(self):
+        """test testimage.squarecube processor .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.squarecube', {'edge_length':22})
+        e.process('testimage.squarecube', {'edge_length':22, 'axis':'y', 'odd_edge':18, 'fill':'yes'})
+        
+    def test_testimage_circlesphere(self):
+        """test testimage.circlesphere processor ............"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.circlesphere', {'radius':20})
+        e.process('testimage.circlesphere', {'radius':20, 'axis':'z', 'c':15, 'fill':'yes'})
+        
+    def test_testimage_noise_uniform_rand(self):
+        """test testimage.noise.uniform.rand processor ......"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        
+    def test_testimage_noise_gauss(self):
+        """test testimage.noise.gauss processor ............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.gauss', {'noise_level':0.3})
         
 class TestCmp(unittest.TestCase):
     """cmp test"""
