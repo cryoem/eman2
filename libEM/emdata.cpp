@@ -7083,49 +7083,150 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
     return ret;
 }
 
-#if 0
 complex<float> EMData::extractpoint(float xnew, float ynew,
 		Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("extractpoint needs a 2-D image.");
 	if (!is_complex()) 
 		throw ImageFormatException("extractpoint requires a fourier image");
-	int nxreal = nx - 2 + is_fftodd();
+	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal > ny)
 		throw ImageDimensionException("extractpoint requires ny <= nx");
+	float dnux = 1.0f/float(nxreal);
+	float dnuy = 1.0f/float(ny);
 	int nhalf = nxreal/2; 
 	int kbsize = kb.get_window_size();
 	int kbmin = -kbsize/2;
 	int kbmax = -kbmin;
-	complex<float> result;
 	set_array_offsets(0, -nhalf);
-#if 0
-	bool flip = (xin < 0.f);
-	int count = 0;
-	float wsum = 0.f;
-		complex<float> sum(0.f,0.f);
-		float xnew = i*xin;
-		float ynew = i*yin;
-		if (flip) {
-			xnew *= -1;
-			ynew *= -1;
+	bool flip = (xnew < 0.f);
+	if (flip) {
+		xnew *= -1;
+		ynew *= -1;
+	}
+	int ixn = int(round(xnew));
+	int iyn = int(round(ynew));
+	// set up some temporary weighting arrays
+	float* wy0 = new float[kbmax - kbmin + 1];
+	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
+	float* wx0 = new float[kbmax - kbmin + 1];
+	float* wx = wx0 - kbmin;
+	for (int i = kbmin; i <= kbmax; i++) {
+		int iyp = iyn + i;
+		wy[i] = kb.i0win((ynew - iyp)*dnuy);
+		int ixp = ixn + i;
+		wx[i] = kb.i0win((xnew - ixp)*dnux);
+	}
+	// restrict loops
+	int iymin = 0;
+	for (int iy = kbmin; iy <= -1; iy++) {
+		if (wy[iy] != 0.f) {
+			iymin = iy;
+			break;
 		}
-		int ixn = int(xnew + 0.5f);
-		int iyn = int(ynew + 0.5f*Util::sgn(ynew));
-		if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
+	}
+	int iymax = 0;
+	for (int iy = kbmax; iy >= 1; iy--) {
+		if (wy[iy] != 0.f) {
+			iymax = iy;
+			break;
+		}
+	}
+	int ixmin = 0;
+	for (int ix = kbmin; ix <= -1; ix++) {
+		if (wx[ix] != 0.f) {
+			ixmin = ix;
+			break;
+		}
+	}
+	int ixmax = 0;
+	for (int ix = kbmax; ix >= 1; ix--) {
+		if (wx[ix] != 0.f) {
+			ixmax = ix;
+			break;
+		}
+	}
+	double count = 0.;
+	double wsum = 0.f;
+	complex<float> result = complex<float>(0.f,0.f);
+	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
 			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
-			count++;
-			for (int iy = kbmin; iy <= kbmax; iy++) {
-				int iyp = iyn - iy;
-				for (int ix = kbmin; ix <= kbmax; ix++) {
-					int ixp = ixn - ix;
-					sum += this->cmplx(ixp,iyp);
-				}
+		// (xin,yin) not within window border from the edge
+		count++;
+		for (int iy = iymin; iy <= iymax; iy++) {
+			int iyp = iyn + iy;
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				int ixp = ixn + ix;
+				float w = wx[ix]*wy[iy];
+				complex<float> val = this->cmplx(ixp,iyp);
+				result += val*w;
+				wsum += w;
 			}
 		}
-		line[i] = sum;
-#endif // 0
+	} else {
+		// points that "stick out"
+		count++;
+		for (int iy = iymin; iy <= iymax; iy++) {
+			int iyp = iyn + iy;
+			for (int ix = ixmin; ix <= ixmax; ix++) {
+				int ixp = ixn + ix;
+				bool mirror = false;
+				int ixt= ixp, iyt= iyp;
+				if ((ixt > nhalf) || (ixt < -nhalf)) {
+					ixt = Util::sgn(ixt)*(nxreal - abs(ixt));
+					iyt *= -1;
+					mirror = !mirror;
+				}
+				if ((iyt >= nhalf) || (iyt < -nhalf)) {
+					if (ixt != 0) {
+						ixt = -ixt;
+						iyt = Util::sgn(iyt)*(nxreal-iyt);
+						mirror = !mirror;
+					} else {
+						iyt -= Util::sgn(iyt)*nxreal;
+					}
+				}
+				if (ixt < 0) {
+					ixt = -ixt;
+					iyt = -iyt;
+					mirror = !mirror;
+				}
+				if (iyt == nhalf) iyt = -nhalf;
+				float w = wx[ix]*wy[iy];
+				wsum += w;
+				complex<float> val = this->cmplx(ixt,iyt);
+				if (mirror) 
+					result += conj(val)*w;
+				else
+					result += val*w;
+			}
+		}
+	}
+	if (flip) 
+		result = conj(result)/(static_cast<float>(wsum)*
+				               static_cast<float>(count));
+	else
+		result /= static_cast<float>(wsum)*
+			      static_cast<float>(count);
+	delete [] wx0;
+	delete [] wy0;
 	return result;
 }
-#endif // 0
+
+EMData* EMData::fouriergrid(Util::KaiserBessel& kb) {
+	int nxreal = nx - 2 + int(is_fftodd());
+	int nhalf = nxreal/2;
+	float dnu = 1.0f/float(nxreal);
+	EMData* result = copy();
+	result->set_array_offsets(0, -nhalf);
+	for (int iy = -nhalf; iy <= nhalf - 1 + int(is_fftodd()); iy++) {
+		float y = iy*dnu;
+		for (int ix = 0; ix <= nhalf; ix++) {
+			float x = ix*dnu;
+			result->cmplx(ix,iy) = extractpoint(x, y, kb);
+		}
+	}
+	return result;
+}
+
 /* vim: set ts=4 noet: */

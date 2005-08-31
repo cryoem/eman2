@@ -1762,10 +1762,9 @@ namespace EMAN
 			return rot;
 		}
 		/** extractpoint, not yet finished */
-#if 0
 		complex<float> extractpoint(float xin, float yin, 
 		                            Util::KaiserBessel& kb);
-#endif // 0
+		EMData* fouriergrid(Util::KaiserBessel& kb);
 
 
 	private:
