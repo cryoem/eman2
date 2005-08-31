@@ -4578,13 +4578,12 @@ void EMData::median_shrink(int shrink_factor)
 }
 
 // NOTE : x axis is from 0 to 0.5  (Nyquist), and thus properly handles non-square images
+// complex only
 void EMData::apply_radial_func(float x0, float step, vector < float >array, bool interp)
 {
 	ENTERFUNC;
 
-	if (!is_complex()) {
-		return;
-	}
+	if (!is_complex()) throw ImageFormatException("apply_radial_func requires a complex image");
 
 	int n = static_cast < int >(array.size());
 
@@ -5398,7 +5397,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
 			for (int x = 0; x < nx; x += step, c += step) {
 				float r = 0;
 				if (is_complex()) {
-					r = (Util::hypot3(x / 2.0f, y - ny / 2.0f, z - half_nz) - x0) / dx;
+					r = (Util::hypot3(x / 2.0f, (float)(y<ny/2?y:ny-y), (float)(z<half_nz?z:nz-z)) - x0) / dx;
 				}
 				else {
 					r = (Util::hypot3(x - nx / 2.0f, y - ny / 2.0f, z - half_nz) - x0) / dx;
@@ -5502,7 +5501,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 			float a = 0;
 			if (y != ny / 2.0f || x != 0) {
 				if (is_complex()) {
-					a = atan2(y - ny / 2.0f, x / 2.0f);
+					a = atan2(y<ny/2?y:ny-y, x / 2.0f);
 				}
 				else {
 					a = atan2(y - ny / 2.0f, x - nx / 2.0f);

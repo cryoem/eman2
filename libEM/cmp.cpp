@@ -141,8 +141,22 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	
 	EMData *with2=NULL;
 	if (matchfilt) {
-		throw ImageDimensionException("matchfilt has not been implemented yet");
-		with2=with->copy();
+//		throw ImageDimensionException("matchfilt has not been implemented yet");
+		EMData *a = image->do_fft();
+		EMData *b = with->do_fft();
+		
+		vector <float> rfa=a->calc_radial_dist(a->get_ysize()/2.0,0,1);
+		vector <float> rfb=b->calc_radial_dist(b->get_ysize()/2.0,0,1);
+		
+		for (size_t i=0; i<a->get_ysize()/2.0; i++) rfa[i]/=(rfb[i]==0?1.0:rfb[i]);
+		
+		b->apply_radial_func(0.0,1.0/a->get_ysize(),rfa);
+		with2=b->do_ift();
+
+		delete a;
+		delete b;	
+		if (dbug) with2->write_image("a.hdf",-1);
+
 //		with2->process("matchfilt",Dict("to",this));
 //		x_data = with2->get_data();
 	}
@@ -313,7 +327,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		nsnr = np;
 		dfsnr = (float *) realloc(dfsnr, np * sizeof(float));
 
-		//float w = Util::square(nx / 8.0f); // unused
+		float w = Util::square(nx / 8.0f);
 
 		for (int i = 0; i < np; i++) {
 //			float x2 = Util::square(i / (float) Ctf::CTFOS);
@@ -378,7 +392,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		throw ImageDimensionException("2D only");
 	}
 
-	//int nx = image->get_xsize(); // unused
+	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
 	vector < float >snr = params["snr"];
@@ -391,7 +405,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 		if (default_snr.size() != (unsigned int) np) {
 			default_snr = vector < float >(np);
-			//float w = Util::square(nx / 8.0f); // unused
+			float w = Util::square(nx / 8.0f);
 
 			for (int i = 0; i < np; i++) {
 //				float x2 = Util::square(i / (float) Ctf::CTFOS);
