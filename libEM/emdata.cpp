@@ -110,10 +110,12 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		else {
 			if (imageio->is_complex_mode()) {
 				set_complex(true);
-			//	set_fftpad(true);
+				set_fftpad(true);
 			}
-			//if (1 == int(attr_dict["is_fftodd"]))
-			//	set_fftodd(true);
+			if (attr_dict.has_key("is_fftodd")) {
+				if (1 == int(attr_dict["is_fftodd"]))
+					set_fftodd(true);
+			}
 			if ((int) attr_dict["is_ri"] == 1) {
 				set_ri(true);
 			}
@@ -7103,8 +7105,8 @@ complex<float> EMData::extractpoint(float xnew, float ynew,
 		xnew *= -1;
 		ynew *= -1;
 	}
-	int ixn = int(round(xnew));
-	int iyn = int(round(ynew));
+	int ixn = int(round(xnew/dnux));
+	int iyn = int(round(ynew/dnuy));
 	// set up some temporary weighting arrays
 	float* wy0 = new float[kbmax - kbmin + 1];
 	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
