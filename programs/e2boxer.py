@@ -223,7 +223,7 @@ for single particle analysis."""
 			# updating the reference number for the second pass ( i[1] )
 			tsts=[]
 			for j in refns: 
-				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"keepzero":1})
+				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"matchfilt":1})
 				tsts.append([ba.get_attr("align_score"),j,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")])
 			tsts.sort()
 #			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1],"    %f,%f  %f"%(tsts[0][2],tsts[0][3],tsts[0][4])
@@ -246,7 +246,7 @@ for single particle analysis."""
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
-			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"keepzero":1})
+			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"matchfilt":1})
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")
 			da=ba.get_attr("rotational")
@@ -277,6 +277,7 @@ for single particle analysis."""
 #			print "%d ROT %f"%(n*2,da)
 			rr=refptcl[i[1]].rot_scale_trans2D(da,1.0,0,0)
 			rr.process("eman1.normalize")
+			
 #			b.cmp("optvariance",rr,{"keepzero":1})
 #			b*=b.get_attr("ovcmp_m")
 #			b+=b.get_attr("ovcmp_b")
@@ -285,7 +286,7 @@ for single particle analysis."""
 
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
 #			score=rr.cmp("phase",b,{})+rr.cmp("optvariance",b,{"radweight":1,"matchamp":1})/rr.get_xsize()
-			score=sqrt(rr.cmp("optvariance",b,{"matchamp":1}))
+			score=sqrt(rr.cmp("optvariance",b,{"matchfilt":1}))
 #			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
 #			if (score<=0) : continue
 
@@ -302,7 +303,7 @@ for single particle analysis."""
 		# now we do 1-D k-means to split the data into 3 groups
 		pl=[(goodpks2[0][0],0),((goodpks2[0][0]+goodpks2[-1][0])/2.0,0),(goodpks2[-1][0],0)]
 		
-		for i in range(10):
+		for i in range(20):
 			pl2=[(0,0),(0,0),(0,0)]
 			for j in goodpks2:
 				if j[0]<(pl[0][0]+pl[1][0])/2.0 : pl2[0]=(pl2[0][0]+j[0],pl2[0][1]+1.0)
