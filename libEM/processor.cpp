@@ -3008,7 +3008,7 @@ void LocalNormProcessor::process(EMData * image)
 	if (apix > 0) {
 		int ny = image->get_ysize();
 		radius = ny * apix / radius;
-		printf("Norm filter radius=%1.1f\n", radius);
+		//printf("Norm filter radius=%1.1f\n", radius);
 	}
 
 	EMData *blur = image->copy();
