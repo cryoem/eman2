@@ -1144,7 +1144,9 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process("testimage.noise.uniform.rand")
-        e.do_fft()
+        self.assertEqual(e.is_complex(), False)
+        e.do_fft_inplace()
+        self.assertEqual(e.is_complex(), True)
         e.apply_radial_func(0, 2, (1.0,2.0,3.0))
         e.apply_radial_func(0, 2, (1.0,2.0,3.0), False)
         
