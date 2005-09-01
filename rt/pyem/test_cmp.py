@@ -77,6 +77,9 @@ class TestCmp(unittest.TestCase):
         score  = e.cmp('optvariance', e2, {})    #default argument
         score2 = e.cmp('optvariance', e2, {'invert':1, 'keepzero':1, 'matchfilt':2, 'radweight':2, 'debug':1})
         
+        os.unlink('a.hdf')
+        os.unlink('dbug.optvar.txt')
+        
     def test_FRCCmp(self):
         """test FRCCmp ......................................"""
         e = EMData()
