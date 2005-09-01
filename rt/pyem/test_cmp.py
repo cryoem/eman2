@@ -50,7 +50,82 @@ class TestCmp(unittest.TestCase):
         (hed1,img1) = testlib.get_imagic_filename_pair(imgfile1)
         os.unlink(hed1)
         os.unlink(img1)
-
+    
+    def test_QuadMinDotCmp(self):
+        """test QuadMinDotCmp ..............................."""
+        e = EMData()
+        e.set_size(64,64,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.process('testimage.noise.uniform.rand')
+        
+        score  = e.cmp('quadmindot', e2, {})    #default argument
+        score2 = e.cmp('quadmindot', e2, {'negative':0, 'normalize':1})
+        
+    def test_OptVarianceCmp(self):
+        """test OptVarianceCmp .............................."""
+        e = EMData()
+        e.set_size(64,64,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.process('testimage.noise.uniform.rand')
+        
+        score  = e.cmp('optvariance', e2, {})    #default argument
+        score2 = e.cmp('optvariance', e2, {'invert':1, 'keepzero':1, 'matchfilt':2, 'radweight':2, 'debug':1})
+        
+    def test_FRCCmp(self):
+        """test FRCCmp ......................................"""
+        e = EMData()
+        e.set_size(64,64,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.process('testimage.noise.uniform.rand')
+        
+        score  = e.cmp('frc', e2, {})
+        #score2 = e.cmp('frc', e2, {'snr':(1.0, 2.0)})    #todo: segmentation fault
+        
+    def test_PhaseCmp(self):
+        """test PhaseCmp ...................................."""
+        e = EMData()
+        e.set_size(64,64,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.process('testimage.noise.uniform.rand')
+        
+        score  = e.cmp('phase', e2, {})
+        
+    def test_VarianceCmp(self):
+        """test VarianceCmp ................................."""
+        e = EMData()
+        e.set_size(64,64,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.process('testimage.noise.uniform.rand')
+        
+        score  = e.cmp('variance', e2, {})
+        
+    def test_DotCmp(self):
+        """test DotCmp ......................................"""
+        e = EMData()
+        e.set_size(64,64,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.process('testimage.noise.uniform.rand')
+        
+        score  = e.cmp('dot', e2, {})
+        score  = e.cmp('dot', e2, {'negative':1, 'normalize':1})
 def test_main():
     test_support.run_unittest(TestCmp)
 
