@@ -281,12 +281,13 @@ for single particle analysis."""
 #			b.cmp("optvariance",rr,{"keepzero":1})
 #			b*=b.get_attr("ovcmp_m")
 #			b+=b.get_attr("ovcmp_b")
-#			rr.write_image("a.hdf",-1)
-#			b.write_image("a.hdf",-1)
+			rr.write_image("a.hdf",-1)
+			b.write_image("a.hdf",-1)
 
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
 #			score=rr.cmp("phase",b,{})+rr.cmp("optvariance",b,{"radweight":1,"matchamp":1})/rr.get_xsize()
-			score=sqrt(rr.cmp("optvariance",b,{"matchfilt":1}))
+#			score=sqrt(rr.cmp("optvariance",b,{"matchfilt":1}))
+			score=sqrt(b.cmp("optvariance",rr,{"matchfilt":1}))
 #			score=b.get_attr("ovcmp_m")*b.get_attr("sigma")
 #			if (score<=0) : continue
 
