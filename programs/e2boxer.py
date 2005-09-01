@@ -32,14 +32,24 @@ for single particle analysis."""
 	parser.add_option("--retestlist",type="string",help="Comma separated list of image numbers for retest cycle",default="")
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
-	
+	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
+		
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
 	logid=E2init(sys.argv)
 	
+	if (options.farfocus==None): initial=args[0]
+	elif (options.farfocus=="next") : 
+		initial=str(int(args[0].split('.')[0])+1)+'.'+args[0].split('.')[1]
+		if not os.access(initial,os.R_OK) :
+			print "No such file: ",initial
+			sys.exit(1)
+		print "Using initial file: ",initial
+	else: initial=options.farfocus
+	
 	image=EMData()
-	image.read_image(args[0])
+	image.read_image(initial)
 	image.set_attr("datatype",7)
 	
 	refptcl=None
@@ -213,7 +223,7 @@ for single particle analysis."""
 				refns=[i[1]]+options.retestlist
 			
 			# read in the area where we think a particle exists
-			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			try: b.read_image(initial,0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
 			b.process("eman1.normalize.edgemean")
 			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
@@ -281,8 +291,8 @@ for single particle analysis."""
 #			b.cmp("optvariance",rr,{"keepzero":1})
 #			b*=b.get_attr("ovcmp_m")
 #			b+=b.get_attr("ovcmp_b")
-			rr.write_image("a.hdf",-1)
-			b.write_image("a.hdf",-1)
+#			rr.write_image("a.hdf",-1)
+#			b.write_image("a.hdf",-1)
 
 #			score=rr.cmp("quadmindot",b,{"normalize":1})+1.0			# This is 1.0-normalized dot product, ie 0 is best 2 is worst
 #			score=rr.cmp("phase",b,{})+rr.cmp("optvariance",b,{"radweight":1,"matchamp":1})/rr.get_xsize()
