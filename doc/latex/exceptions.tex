@@ -1,0 +1,74 @@
+%\documentclass[10pt]{manual}
+%\usepackage{fullpage, graphicx, url}
+%\setlength{\parskip}{1ex}
+%\setlength{\parindent}{0ex}
+%\title{EMAN2 Exception FAQ}
+%\begin{document}
+
+%\section{Exceptions}
+
+\label{EXCEPTIONS} 
+\index{Exceptions}
+
+1. How to use an exception in general?
+\begin{itemize}
+\item  Here is an example on throwing an exception:
+\begin{verbatim}vector $<$ float $>$EMData::calc\_fourier\_shell\_correlation(EMData * with) {   
+    if (!with) {
+        throw NullPointerException("NULL input image");
+    }
+
+    if (!EMUtil::is_same_size(this, with)) {
+        LOGERR("images not same size");
+        throw ImageFormatException( "images not same size");
+    }  
+//...
+}\end{verbatim}
+
+\item Here is an example on catching all possible exception
+\begin{verbatim}void foo()
+{
+    EMData* e1 = new EMData();
+    EMData* e2 = new EMData();
+    try {
+        e1->read_image("test1.mrc");
+        e2->read_image("test2.mrc");
+        vector<float> v = e1->calc_fourier_shell_correlation(e2);
+    }
+    catch (E2Exception & exception) {
+        printf("%s\n", exception.what());
+    }
+}\end{verbatim}
+
+\item Here is an example on catching a specific exception:
+\begin{verbatim}void foo()
+{
+    EMData* e1 = new EMData();
+    EMData* e2 = new EMData();
+    try {
+        e1->read_image("test1.mrc");
+        e2->read_image("test2.mrc");
+        vector<float> v = e1->calc_fourier_shell_correlation(e2);
+    }
+    catch (_NullPointerException & exception) {
+        printf("%s\n", exception.what());
+    }
+}\end{verbatim}
+
+
+ 
+ 
+Note the ``\_'' before \_NullPointerException.
+
+
+\end{itemize}
+
+2. What are the existing Exception types in EMAN2?
+\begin{itemize}
+  \item
+    See the complete EMAN2 Reference Guide
+\end{itemize}
+
+3. How to define a new XYZ Exception class?
+
+%\end{document}
