@@ -2183,7 +2183,7 @@ class TestEMData(unittest.TestCase):
         e.process('testimage.noise.uniform.rand')
         e2 = e.symvol('CSYM')
         e3 = e.symvol('DSYM')
-        #e4 = e.symvol('ICOS_SYM')    #!!! problem here, need investigate
+        #e4 = e.symvol('ICOS_SYM')    #todo problem here, need investigate
         #e5 = e.symvol('OCT_SYM')
         #e6 = e.symvol('ISYM')
     
