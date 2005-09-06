@@ -5,12 +5,14 @@
 %\title{EMAN2 Exception FAQ}
 %\begin{document}
 
-%\section{Exceptions}
+\section{Exceptions}
 
 \label{EXCEPTIONS} 
 \index{Exceptions}
 
-1. How to use an exception in general?
+\subsection{Using Exceptions}
+\index{Exceptions!Usage}
+
 \begin{itemize}
 \item  Here is an example on throwing an exception:
 \begin{verbatim}vector $<$ float $>$EMData::calc\_fourier\_shell\_correlation(EMData * with) {   
@@ -63,12 +65,48 @@ Note the ``\_'' before \_NullPointerException.
 
 \end{itemize}
 
-2. What are the existing Exception types in EMAN2?
+\subsection{Existing Exception Types}
 \begin{itemize}
   \item
     See the complete EMAN2 Reference Guide
 \end{itemize}
 
-3. How to define a new XYZ Exception class?
+\subsection{Defining New Exception Classes}
+\index{Exceptions!Adding New}
+\begin{itemize}
+  \item
+    A XYZ Exception class is defined in the following way:
+    \begin{itemize}
+     \item
+     It will extend E2Exception class.
+     \item
+     The class is named _XYZException.
+     \item
+     The class has a function to return its name "XYZException".
+     \item
+     A macro called "XYZException" is defined to simplify the usage of
+    _XYZException class.
+    \end{itemize}
+  \item
+     Here is the code for NullPointerException.
+     \begin{verbatim}class _NullPointerException : public E2Exception
+  {
+  public:
+        _NullPointerException(const string& file = "unknown",
+                              int line = 0, const string& desc_str = "")
+            : E2Exception(file, line, desc_str) {}
+       
+        const char *name() const { return "NullPointerException"; }
+       
+  };
+
+  #define NullPointerException(desc) _NullPointerException(__FILE__, __LINE__,desc)     \end{verbatim} 
+
+\end{itemize}
+
+
+
+    
+
 
 %\end{document}

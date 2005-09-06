@@ -1,0 +1,146 @@
+\section {Image Header Attribute Naming Conventions}
+\label{IMAGE-HEADER-ATTRIBUTES}
+\index{Images!Attrib. Naming}
+
+EMAN2 uses a unique name to reference each image header attribute. The
+following table lists the conventions:
+
+\begin{longtable}{|l|l|p{4in}|}
+
+%\caption[Image Attribute Naming]{Image Attribute Namimg} \\
+
+\hline 
+\textbf{Attribute Name} &
+\textbf{Data Type} & 
+\textbf{Attribute Description} \\ \hline 
+%\endfirsthead
+\endhead
+
+\hline \multicolumn{3}{r}{{Continued on next page}} \\
+\endfoot
+\hline \hline
+\caption[Image Attribute Naming]{Image Attribute Namimg}
+\endlastfoot
+
+apix_x &	float & 	pixel x size in Å \\ \hline 
+apix_y &	float & 	pixel y size in Å \\ \hline
+apix_z &	float &	pixel z size in Å \\ \hline
+nx &	int &	image x-direction size in number of pixels \\ \hline
+ny & 	int &	image y-direction size in number of pixels \\ \hline
+nz &	int & 	image z-direction size in number of pixels \\ \hline
+origin_row &	float & 	origin location along row (x) in
+number of pixels \\ \hline
+origin_col &	float &	origin location along column (y) in number of
+pixels \\ \hline
+origin_sec &	float &	origin location along section (z) in number of
+pixels \\ \hline
+minimum&
+	float&	minimum pixel density value in the image \\ \hline
+maximum&
+	float&	maximum pixel density value in the image\\ \hline
+mean&
+	float&	mean pixel density value in the image\\ \hline
+sigma&
+	float&
+	sigma  pixel density value in the image\\ \hline
+square_sum&
+	float&	sum of the squares of each pixel density value in the image\\ \hline
+mean_nonzero&
+	float&	mean pixel density value in the image, ignoring pixel whose value =0.\\ \hline
+sigma_nonzero&
+	float&	sigma  pixel density value in the image, ignoring pixel whose value =0.\\ \hline
+kurtosis&
+	float&	kurtosis pixel density value in the image\\ \hline
+skewness&
+	float&	skewness pixel density value in the image\\ \hline
+orentation_convention&
+	string&
+	Euler orientation Convention, "EMAN", "MRC", etc\\ \hline
+rot_alt&
+	float&
+	EMAN convention: alt\\ \hline
+rot_az&
+	float&
+	EMAN convention: az\\ \hline
+rot_phi&
+	float&
+	EMAN convention: phi\\ \hline
+datatype&	int&
+	pixel data type in the image physical file (e.g., float, int, double, etc). This is an enumeration type.\\ \hline
+is_complex&	int&
+	1 if this image is a complex image. 0 if it is a real image.\\ \hline
+is_ri&	int&
+	1 if this is a complex image and is in real/imaginary format; 0 otherwise.\\ \hline
+avgnimg&
+	int&
+	If the image is the result of averaging, avgnimg is the number of images used in averaging. Otherwise, avgnimg is 0.\\ \hline
+label&
+	string&
+	user-defined label for this image. It is like 'name' in EMAN1.\\ \hline
+image_filename&
+	string&
+	the physical image filename where this image comes from.\\ \hline
+image_index&
+	int&
+	image number in file pointed to by path.\\ \hline
+DM3.exposure_number&
+	int&
+	DM3 image only. exposure number.\\ \hline
+DM3.exposure_time&
+	double&
+	DM3 image only. exposure time in seconds.\\ \hline
+DM3.zoom&
+	double&
+	zoom\\ \hline
+DM3.antiblooming&
+	int&
+	antiblooming\\ \hline
+DM3.magnification&
+	double&
+	Indicated magnification\\ \hline
+DM3.frame_type&
+	string&
+	frame_type\\ \hline
+DM3.camera_x&
+	int& 	DM3 image only. camera size  along x direction in number of pixels.\\ \hline
+DM3.camera_y&
+	int& 	DM3 image only. camera size along y direction in number of pixels.\\ \hline
+DM3.binning_x&
+	int& 	DM3 image only. Binning \#0\\ \hline
+DM3.binning_y&
+	int&
+	DM3 image only. Binning \#1\\ \hline
+MRC.nlabels&
+	int&
+	MRC image only.  Number of comment labels in a MRC image.\\ \hline
+MRC.labelN&
+	string&
+	MRC image only. The Nth label, where N is an integer from 1 to 10.\\ \hline
+LST.filenum&
+	int&
+	LIST image only, file number in FileSystem server\\ \hline
+LST.reffile&
+	string&
+	LIST image only, reference file\\ \hline
+LST.refn&
+	int&
+	LIST image only, reference image number\\ \hline
+LST.comment&
+	string&
+	LIST image only,  comment\\ \hline
+micrograph_id&
+	string&
+	Micrograph ID.\\ \hline
+particle_center_x&
+	float&
+	x coordinate of particle location in the micrograph\\ \hline
+partcle_center_y&
+	float&
+	y coordinate of particle location in the micrograph\\ \hline
+ctf_dimension&
+	int&
+	CTF dimension, nD, where n is 1, 2, or 3.\\ \hline
+
+
+
+\end{longtable}

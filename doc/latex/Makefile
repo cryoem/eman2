@@ -1,5 +1,3 @@
-temp: EMAN2.dvi
-
 all: pdf html
 	cp EMAN2.pdf ../
 	cp EMAN2.ps ../
@@ -9,6 +7,8 @@ html: index.html
 ps: EMAN2.ps
 
 pdf: EMAN2.pdf
+
+dvi: EMAN2.dvi
 
 index.html: EMAN2.tex *.tex
 	latex2html EMAN2.tex
