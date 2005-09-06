@@ -14,4 +14,11 @@ fi
 echo -n "Start to generate Doxygen documentation. Be patient ... "
 doxygen  doc/Doxyfile
 echo "Done"
+# echo "Documentation is at $PWD/doc/html/index.html"
+
+echo "Creating pdf and ps documentation files"
+cd doc/latex
+make
+cd ../../
+
 echo "Documentation is at $PWD/doc/html/index.html"

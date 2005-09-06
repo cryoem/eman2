@@ -18,6 +18,7 @@
  *    <li> <a href="../processors.html"> Manual of Individual Processor</a>
  *    <li> <a href="../processor_groups.html"> Manual of Grouped Processors</a>
  *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
+ *    <li> Documentation (<a href="../EMAN2.dvi"> dvi</a>, <a href="../EMAN2.ps"> ps</a>, <a href="../EMAN2.pdf"> pdf</a>, <a href="../latex/EMAN2/index.html"> html</a>)
  *  </ul>
  */
  
