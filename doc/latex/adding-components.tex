@@ -32,9 +32,9 @@ faster if templates are used.
       \subsubsection{Using Templates:}
       Located in the plugin directory of the EMAN2 source
       (i.e. EMAN2/src/eman2/plugins) are various template files including
-      processor_template.h and processor_template.cpp.  These are the files
+      processor\_template.h and processor\_template.cpp.  These are the files
       that will be used for new processor installation.  Begin by editing
-      processor_template.h. 
+      processor\_template.h. 
 
       \begin{enumerate}
 	\item
@@ -42,17 +42,17 @@ faster if templates are used.
 	  the new processor
 	  \begin{itemize}
 	    \item
-	      Don't forget to change the string in get_name() to the name of
+	      Don't forget to change the string in get\_name() to the name of
 	      the processor (this is the name that will be used to
 	      call the processor)
 	  \end{itemize}
 	\item
-	  Edit the string in get_desc() with a brief description of the
+	  Edit the string in get\_desc() with a brief description of the
 	  processor.  Place a more detailed descriptions elsewhere such as
           before the class or before the functions (see
 	  \ref{CODING-STYLE} for coding style information)
 	\item
-	  Define the processor's parameters in get_param_types()
+	  Define the processor's parameters in get\_param\_types()
 	  \begin{itemize}
 	    \item
 	      A description string can be added as a third param to the
@@ -63,7 +63,7 @@ faster if templates are used.
 	  "Factory $<$Processor$>$ ::add(\&dProcessor::NEW);"
       \end{enumerate}
 
-      Now edit processor_template.cpp
+      Now edit processor\_template.cpp
       
       \begin{itemize}
 	\item
@@ -72,7 +72,7 @@ faster if templates are used.
 	  \begin{itemize}
 	    \item
 	      The existing template has sample code showing how to access the
-	      variables that where defined in get_para_types()
+	      variables that where defined in get\_para\_types()
 	    \item
 	      Note that the sample code included in the template is enclosed in
 	      a conditional statement that essentially causes all of
@@ -87,7 +87,7 @@ faster if templates are used.
       \end{itemize}
 
       The new processor should now be available using the name that was
-      specified in get_name().
+      specified in get\_name().
 
 
 
@@ -99,16 +99,16 @@ faster if templates are used.
     \item
       Open processor.h in src/eman2/libEM
     \item
-      Copy the class you defined in processor_template.h and paste it
+      Copy the class you defined in processor\_template.h and paste it
       in the file
     \item
       Open processor.cpp (also located in src/eman2/libEM)
     \item
-      Copy and paste the class from processor_template.cpp to
+      Copy and paste the class from processor\_template.cpp to
       processor.cpp
     \item \label{REPEAT-STEP1}
       In the template class Factory located in the begining of
-      processor.cpp add a line "force_add(\&newProcessor::NEW)" where
+      processor.cpp add a line "force\_add(\&newProcessor::NEW)" where
       "newProcessor" is the name of the processor class that is being
       added 
    \item \label {REPEAT-STEP2}
@@ -139,7 +139,7 @@ faster if templates are used.
 
   The instructions are the same as those for adding a new processor
   (\ref{ADDING-PROCESSORS}) except the files of interest are
-  aligner_template.h and aligner_template.cpp.
+  aligner\_template.h and aligner\_template.cpp.
 
   Also, when adding to the core, aligner.h and aligner.cpp should be altered.
 
@@ -150,7 +150,7 @@ faster if templates are used.
 
   The instructions are the same as those for adding a new processor
   (\ref{ADDING-PROCESSORS}) except the files of interest are
-  averager_template.h and averager_template.cpp.
+  averager\_template.h and averager\_template.cpp.
 
   Also, when adding to the core, averager.h and averager.cpp should be altered.
 
@@ -161,7 +161,7 @@ faster if templates are used.
 
   The instructions are the same as those for adding a new processor
   (\ref{ADDING-PROCESSORS}) except the files of interest are
-  cmp_template.h and cmp_template.cpp.
+  cmp\_template.h and cmp\_template.cpp.
 
   Also, when adding to the core, cmp.h and cmp.cpp should be altered.
 
@@ -173,7 +173,7 @@ faster if templates are used.
 
   The instructions are the same as those for adding a new processor
   (\ref{ADDING-PROCESSORS}) except the files of interest are
-  io_template.h and io_template.cpp.
+  io\_template.h and io\_template.cpp.
 
   Also, when adding to the core, *****NEED TO CHECK THIS***** should be altered.
 
@@ -185,6 +185,6 @@ faster if templates are used.
   
   The instructions are the same as those for adding a new processor
   (\ref{ADDING-PROCESSORS}) except the files of interest are
-  reconstructor_template.h and reconstructor_template.cpp.
+  reconstructor\_template.h and reconstructor\_template.cpp.
 
   Also, when adding to the core, reconstructor.h and reconstructor.cpp should be altered.

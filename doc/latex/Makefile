@@ -1,4 +1,4 @@
-all: pdf html
+all: pdf
 	cp EMAN2.pdf ../
 	cp EMAN2.ps ../
 

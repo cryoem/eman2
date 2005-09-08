@@ -22,17 +22,17 @@ following table lists the conventions:
 \caption[Image Attribute Naming]{Image Attribute Namimg}
 \endlastfoot
 
-apix_x &	float & 	pixel x size in Å \\ \hline 
-apix_y &	float & 	pixel y size in Å \\ \hline
-apix_z &	float &	pixel z size in Å \\ \hline
+apix\_x &	float & 	pixel x size in Å \\ \hline 
+apix\_y &	float & 	pixel y size in Å \\ \hline
+apix\_z &	float &	pixel z size in Å \\ \hline
 nx &	int &	image x-direction size in number of pixels \\ \hline
 ny & 	int &	image y-direction size in number of pixels \\ \hline
 nz &	int & 	image z-direction size in number of pixels \\ \hline
-origin_row &	float & 	origin location along row (x) in
+origin\_row &	float & 	origin location along row (x) in
 number of pixels \\ \hline
-origin_col &	float &	origin location along column (y) in number of
+origin\_col &	float &	origin location along column (y) in number of
 pixels \\ \hline
-origin_sec &	float &	origin location along section (z) in number of
+origin\_sec &	float &	origin location along section (z) in number of
 pixels \\ \hline
 minimum&
 	float&	minimum pixel density value in the image \\ \hline
@@ -43,33 +43,33 @@ mean&
 sigma&
 	float&
 	sigma  pixel density value in the image\\ \hline
-square_sum&
+square\_sum&
 	float&	sum of the squares of each pixel density value in the image\\ \hline
-mean_nonzero&
+mean\_nonzero&
 	float&	mean pixel density value in the image, ignoring pixel whose value =0.\\ \hline
-sigma_nonzero&
+sigma\_nonzero&
 	float&	sigma  pixel density value in the image, ignoring pixel whose value =0.\\ \hline
 kurtosis&
 	float&	kurtosis pixel density value in the image\\ \hline
 skewness&
 	float&	skewness pixel density value in the image\\ \hline
-orentation_convention&
+orentation\_convention&
 	string&
 	Euler orientation Convention, "EMAN", "MRC", etc\\ \hline
-rot_alt&
+rot\_alt&
 	float&
 	EMAN convention: alt\\ \hline
-rot_az&
+rot\_az&
 	float&
 	EMAN convention: az\\ \hline
-rot_phi&
+rot\_phi&
 	float&
 	EMAN convention: phi\\ \hline
 datatype&	int&
 	pixel data type in the image physical file (e.g., float, int, double, etc). This is an enumeration type.\\ \hline
-is_complex&	int&
+is\_complex&	int&
 	1 if this image is a complex image. 0 if it is a real image.\\ \hline
-is_ri&	int&
+is\_ri&	int&
 	1 if this is a complex image and is in real/imaginary format; 0 otherwise.\\ \hline
 avgnimg&
 	int&
@@ -77,16 +77,16 @@ avgnimg&
 label&
 	string&
 	user-defined label for this image. It is like 'name' in EMAN1.\\ \hline
-image_filename&
+image\_filename&
 	string&
 	the physical image filename where this image comes from.\\ \hline
-image_index&
+image\_index&
 	int&
 	image number in file pointed to by path.\\ \hline
-DM3.exposure_number&
+DM3.exposure\_number&
 	int&
 	DM3 image only. exposure number.\\ \hline
-DM3.exposure_time&
+DM3.exposure\_time&
 	double&
 	DM3 image only. exposure time in seconds.\\ \hline
 DM3.zoom&
@@ -98,16 +98,16 @@ DM3.antiblooming&
 DM3.magnification&
 	double&
 	Indicated magnification\\ \hline
-DM3.frame_type&
+DM3.frame\_type&
 	string&
-	frame_type\\ \hline
-DM3.camera_x&
+	frame\_type\\ \hline
+DM3.camera\_x&
 	int& 	DM3 image only. camera size  along x direction in number of pixels.\\ \hline
-DM3.camera_y&
+DM3.camera\_y&
 	int& 	DM3 image only. camera size along y direction in number of pixels.\\ \hline
-DM3.binning_x&
+DM3.binning\_x&
 	int& 	DM3 image only. Binning \#0\\ \hline
-DM3.binning_y&
+DM3.binning\_y&
 	int&
 	DM3 image only. Binning \#1\\ \hline
 MRC.nlabels&
@@ -128,16 +128,16 @@ LST.refn&
 LST.comment&
 	string&
 	LIST image only,  comment\\ \hline
-micrograph_id&
+micrograph\_id&
 	string&
 	Micrograph ID.\\ \hline
-particle_center_x&
+particle\_center\_x&
 	float&
 	x coordinate of particle location in the micrograph\\ \hline
-partcle_center_y&
+partcle\_center\_y&
 	float&
 	y coordinate of particle location in the micrograph\\ \hline
-ctf_dimension&
+ctf\_dimension&
 	int&
 	CTF dimension, nD, where n is 1, 2, or 3.\\ \hline
 

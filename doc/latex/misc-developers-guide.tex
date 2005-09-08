@@ -70,13 +70,13 @@ result.write_image("reconstructor.mrc")\end{verbatim}
       \begin{enumerate}
       \item If the function returns a pointer allocated in this
 	function, do: \\	    
-	set_policy(YOUR_FUNCTION, return_value_policy(manage_new_object))
+	set\_policy(YOUR\_FUNCTION, return\_value\_policy(manage\_new\_object))
       \item If the function returns a static pointer , do: \\
-	set_policy(YOUR_FUNCTION, return_value_policy(reference_existing_object))
-      \item For other cases, do: \\set_policy(YOUR_FUNCTION, return_internal_reference())
+	set\_policy(YOUR\_FUNCTION, return\_value\_policy(reference\_existing\_object))
+      \item For other cases, do: \\set\_policy(YOUR\_FUNCTION, return\_internal\_reference())
       \end{enumerate}
     \item
-      Run script: eman2/libpyEM/create_boost_python
+      Run script: eman2/libpyEM/create\_boost\_python
     \end{enumerate}
     
     \subsection{Using FFTW} \index{Misc.!FFTW} \index{FFTW!Usage}
@@ -95,9 +95,9 @@ public:
     \subsection{Large File I/O} \index{Misc.!Large File I/O}
     \begin{enumerate}
       \item 
-	\textbf{portable_fseek()} should be used for fseek.
+	\textbf{portable\_fseek()} should be used for fseek.
       \item
-	\textbf{portable_ftell()} should be used for ftell.
+	\textbf{portable\_ftell()} should be used for ftell.
     \end{enumerate}
 
     \subsection{Euler Angles} \index{Misc.!Euler Angles}
