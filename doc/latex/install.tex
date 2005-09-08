@@ -38,11 +38,14 @@ libraries should be installed as shared-object libraries where applicable):
    \% make
    
 \subsection{Boost}
-  Version: 1.32 or lower\\
+  Version: 1.32+ (see note below)\\
   Available at: \href{http://www.boost.org}{http://www.boost.org}
   \index{Installation!Required Libraries!Boost} \index{Boost}
        
-  (NOTE:  EMAN2 does not currently support Boost versions above 1.32.)  
+  
+  (NOTE:  EMAN2 only supports Boost versions about 1.32 on 64 bit
+  architectures currently.  Versions 1.32 or lower should be used on
+  32 bit machines.)  
 
   \begin{enumerate}
     \item
@@ -69,7 +72,7 @@ libraries should be installed as shared-object libraries where applicable):
       
   
 \subsection{CMake}
-  Version: 2.0.6+\\
+  Version: 2.0.5+\\
   Available at: \href{http://www.cmake.org}{http://www.cmake.org}
    \index{Installation!Required Libraries!CMake} \index{CMake}
 
@@ -242,7 +245,7 @@ libraries should be installed as shared-object libraries where applicable):
     \item
       To generate new boost python wrapper, run
       \begin{itemize}
-        \item[\%] cd eman2/libpyEm
+        \item[\%] cd eman2/libpyEM
         \item[\%] ./create\_boost\_python
       \end{itemize}
 
