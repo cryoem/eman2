@@ -15,6 +15,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&PawelBackProjectionReconstructor::NEW);
+	force_add(&ReverseGriddingReconstructor::NEW);
 }
 
 FourierReconstructor::FourierReconstructor()
