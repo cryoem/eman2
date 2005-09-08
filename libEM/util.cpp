@@ -14,7 +14,6 @@
 
 #include <gsl/gsl_sf_bessel.h>
 #include <sys/types.h>
-#include <boost/algorithm/string.hpp>
 #include <gsl/gsl_sf_bessel.h>
 #include <algorithm>
 
