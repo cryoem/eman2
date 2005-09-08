@@ -5,6 +5,7 @@
 #include "interp.h"
 #include "ctf.h"
 #include "emconstants.h"
+#include "exception.h"
 
 using namespace EMAN;
 
@@ -1019,8 +1020,13 @@ void PawelBackProjectionReconstructor::setup() {
 	vnxc = vnxp/2;
 	buildFFTVolume();
 	buildNormVolume();
-	symmetry = params["symmetry"].to_str();
-	if ("" == symmetry) symmetry = "c1";
+	try {
+		symmetry = params["symmetry"].to_str();
+		if ("" == symmetry) symmetry = "c1";
+	}
+	catch(_NotExistingObjectException) {
+		symmetry = "c1";
+	}
 	nsym = Transform3D::get_nsym(symmetry);
 }
 
