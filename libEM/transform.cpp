@@ -36,6 +36,13 @@ Transform3D::Transform3D(const Vec3f& posttrans, float az, float alt, float phi)
 	set_posttrans(posttrans);
 }
 
+Transform3D::Transform3D(float m11, float m12, float m13,
+                               float m21, float m22, float m23,
+			       float m31, float m32, float m33)
+{
+	init();
+	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
+}
 
 // C4
 Transform3D::Transform3D(EulerType euler_type, float a1, float a2, float a3)  // usually az, alt, phi
@@ -328,8 +335,7 @@ Now this middle matrix is equal to
   |   0          0       1 |  |  0  -sin th  cos th | |     0       0     1 |
 
 
-        so az = phi_SPIDER + pi/2
-          alt = theta
+        so az = phi_SPIDER + pi/2  
           phi = psi        - pi/2
 
 ---------------------------------------------------------------------------
@@ -386,7 +392,7 @@ void Transform3D::set_rotation(float az, float alt, float phi )
 
 // This is where it all happens;
 void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a3)  // EMAN: az, alt, phi 
-										// SPIDER: phi, theta, psi 
+ 									            // SPIDER: phi, theta, psi 
 {
 	init();
 	Dict rot;
@@ -496,6 +502,21 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 	}
 }
 
+
+void Transform3D::set_rotation(float m11, float m12, float m13,
+                               float m21, float m22, float m23,
+			       float m31, float m32, float m33)
+{
+	matrix[0][0] =  m11;
+	matrix[0][1] =  m12;
+	matrix[0][2] =  m13;
+	matrix[1][0] =  m21;
+	matrix[1][1] =  m22;
+	matrix[1][2] =  m23;
+	matrix[2][0] =  m31;
+	matrix[2][1] =  m32;
+	matrix[2][2] =  m33;
+}
 
 void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
                                     const Vec3f & eAhat, const Vec3f & eBhat)
