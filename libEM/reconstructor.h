@@ -293,7 +293,8 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("size", EMObject::INT);
-			d.put("weight", EMObject::FLOAT);
+			d.put("npad", EMObject::INT);
+			d.put("symmetry", EMObject::STRING);
 			return d;
 		}
 

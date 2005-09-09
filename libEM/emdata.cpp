@@ -7084,7 +7084,7 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
     return ret;
 }
 
-complex<float> EMData::extractpoint(float xnew, float ynew,
+complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 		Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("extractpoint needs a 2-D image.");
@@ -7099,28 +7099,31 @@ complex<float> EMData::extractpoint(float xnew, float ynew,
 	int kbsize = kb.get_window_size();
 	int kbmin = -kbsize/2;
 	int kbmax = -kbmin;
-	set_array_offsets(0, -nhalf);
-	bool flip = (xnew < 0.f);
+	bool flip = (nuxnew < 0.f);
 	if (flip) {
-		xnew *= -1;
-		ynew *= -1;
+		nuxnew *= -1;
+		nuynew *= -1;
 	}
-	int ixn = int(round(xnew/dnux));
-	int iyn = int(round(ynew/dnuy));
+	// put (xnew,ynew) on a grid.  The indices will be wrong for
+	// the Fourier elements in the image, but the grid sizing will
+	// be correct.
+	int ixn = int(round(nuxnew/dnux));
+	int iyn = int(round(nuynew/dnuy));
+	// displacements of (xnew,ynew) from the grid
+	float nuxdispl = nuxnew - ixn*dnux;
+	float nuydispl = nuynew - iyn*dnuy;
 	// set up some temporary weighting arrays
 	float* wy0 = new float[kbmax - kbmin + 1];
 	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
 	float* wx0 = new float[kbmax - kbmin + 1];
 	float* wx = wx0 - kbmin;
 	for (int i = kbmin; i <= kbmax; i++) {
-		int iyp = iyn + i;
-		wy[i] = kb.i0win(ynew - iyp*dnuy);
+		wy[i] = kb.i0win(nuydispl - i*dnuy);
 		wy[i] = (0 == i) ? 1.f : 0.f;
-		int ixp = ixn + i;
-		wx[i] = kb.i0win(xnew - ixp*dnux);
+		wx[i] = kb.i0win(nuxdispl - i*dnux);
 		wx[i] = (0 == i) ? 1.f : 0.f;
 	}
-	// restrict loops
+	// restrict loops to non-zero elements
 	int iymin = 0;
 	for (int iy = kbmin; iy <= -1; iy++) {
 		if (wy[iy] != 0.f) {
@@ -7154,8 +7157,10 @@ complex<float> EMData::extractpoint(float xnew, float ynew,
 	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
 			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
 		// (xin,yin) not within window border from the edge
+		int kyn = iyn;
+		if (kyn < 0) kyn += ny; // correct for Fourier index ordering
 		for (int iy = iymin; iy <= iymax; iy++) {
-			int iyp = iyn + iy;
+			int iyp = kyn + iy;
 			for (int ix = ixmin; ix <= ixmax; ix++) {
 				int ixp = ixn + ix;
 				float w = wx[ix]*wy[iy];
@@ -7206,7 +7211,6 @@ complex<float> EMData::extractpoint(float xnew, float ynew,
 		result = conj(result)/static_cast<float>(wsum);
 	else
 		result /= static_cast<float>(wsum);
-	set_array_offsets(0, 0);
 	delete [] wx0;
 	delete [] wy0;
 	return result;
@@ -7226,17 +7230,19 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	int nyhalf = ny/2;
 	float rmax2 = nxhalf*nxhalf;
 	EMData* result = copy();
-	result->set_array_offsets(0,-nyhalf);
 	float cang = cos(ang);
 	float sang = sin(ang);
 	float dnux = 1.0f/float(nxreal);
 	float dnuy = 1.0f/float(ny);
-	for (int iy = -nxhalf; iy <= nxhalf - 1; iy++) {
-		float nuy = iy*dnuy;
+	for (int iy = 0; iy <= ny - 1; iy++) {
+		int ky = iy;
+		if (iy > nyhalf)
+			ky -= ny;
+		float nuy = ky*dnuy;
 		float ycang = nuy*cang;
 		float ysang = -nuy*sang;
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			if (ix*ix + iy*iy > rmax2) break;
+			if (ix*ix + ky*ky > rmax2) break;
 			float nux = ix*dnux;
 			float nuyold = nux*sang + ycang;
 			float nuxold = nux*cang + ysang;
@@ -7244,7 +7250,6 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		}
 	}
 	result->done_data();
-	result->set_array_offsets(0,0); // be polite
 	return result;
 }
 
