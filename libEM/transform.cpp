@@ -37,8 +37,8 @@ Transform3D::Transform3D(const Vec3f& posttrans, float az, float alt, float phi)
 }
 
 Transform3D::Transform3D(float m11, float m12, float m13,
-                               float m21, float m22, float m23,
-			       float m31, float m32, float m33)
+                         float m21, float m22, float m23,
+			 float m31, float m32, float m33)
 {
 	init();
 	set_rotation(m11,m12,m13,m21,m22,m23,m31,m32,m33);
@@ -421,7 +421,8 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 	float az  = 0;
 	float alt = 0;
 	float phi = 0;
-	bool is_not_quaternion = 1;
+	bool is_quaternion = 0;
+	bool is_matrix = 0;
 
 	switch(euler_type) {
 	case EMAN:
@@ -448,7 +449,7 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 		break;
 
 	case QUATERNION:
-		is_not_quaternion = 0;
+		is_quaternion = 0;
 		e0 = (float)rotation["e0"] ;
 		e1 = (float)rotation["e1"] ;
 		e2 = (float)rotation["e2"] ;
@@ -456,7 +457,7 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 		break;
 
 	case SPIN:
-		is_not_quaternion = 0;
+		is_quaternion = 1;
 		Omega = (float)rotation["Omega"];
 		e0 = cos(Omega/2.0f);
 		e1 = sin(Omega/2.0f)* (float)rotation["n1"];
@@ -465,7 +466,7 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 		break;
 
 	case SGIROT:
-		is_not_quaternion = 0;
+		is_quaternion = 1;
 		Omega = (float)rotation["q"]  ;
 		e0 = cos(Omega/2.0f);
 		e1 = sin(Omega/2.0f)* (float)rotation["n1"];
@@ -473,12 +474,25 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 		e3 = sin(Omega/2.0f)* (float)rotation["n3"];
 		break;
 
+	case MATRIX:
+		is_matrix = 1;
+		matrix[0][0] = (float)rotation["m11"]  ;
+		matrix[0][1] = (float)rotation["m12"]  ;
+		matrix[0][2] = (float)rotation["m13"]  ;
+		matrix[1][0] = (float)rotation["m21"]  ;
+		matrix[1][1] = (float)rotation["m22"]  ;
+		matrix[1][2] = (float)rotation["m23"]  ;
+		matrix[2][0] = (float)rotation["m31"]  ;
+		matrix[2][1] = (float)rotation["m32"]  ;
+		matrix[2][2] = (float)rotation["m33"]  ;
+		break;
+
 	default:
 		throw InvalidValueException(euler_type, "unknown Euler Type");
 	}  // ends switch euler_type
 
 
-	if (is_not_quaternion) {
+	if (!is_quaternion && !is_matrix) {
 		matrix[0][0] =  cos(phi)*cos(az) - cos(alt)*sin(az)*sin(phi);
 		matrix[0][1] =  cos(phi)*sin(az) + cos(alt)*cos(az)*sin(phi);
 		matrix[0][2] =  sin(alt)*sin(phi);
@@ -488,7 +502,8 @@ void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
 		matrix[2][0] =  sin(alt)*sin(az);
 		matrix[2][1] = -sin(alt)*cos(az);
 		matrix[2][2] =  cos(alt);
-	}	else {
+	}	
+	if (is_quaternion){
 		matrix[0][0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
 		matrix[0][1] = 2.0f * (e1 * e2 + e0 * e3);
 		matrix[0][2] = 2.0f * (e1 * e3 - e0 * e2);
@@ -692,6 +707,18 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
+		break;
+
+	case MATRIX:
+		result["m11"] = matrix[0][0] ;
+		result["m12"] = matrix[0][1] ;
+		result["m13"] = matrix[0][2] ;
+		result["m21"] = matrix[1][0] ;
+		result["m22"] = matrix[1][1] ;
+		result["m23"] = matrix[1][2] ;
+		result["m31"] = matrix[2][0] ;
+		result["m32"] = matrix[2][1] ;
+		result["m33"] = matrix[2][2] ;
 		break;
 
 	default:

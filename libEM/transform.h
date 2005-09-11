@@ -72,7 +72,8 @@ namespace EMAN
 			QUATERNION,
 			SGIROT,
 			SPIDER,
-			MRC
+			MRC,
+			MATRIX
 		};
 		
 	     // C1
