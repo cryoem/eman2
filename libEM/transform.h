@@ -99,10 +99,10 @@ namespace EMAN
 		Transform3D(const Vec3f & pretrans, const Vec3f& posttrans, float az, float alt, float phi);
 
               
-		Transform3D::Transform3D(float m11, float m12, float m13,
-                               float m21, float m22, float m23,
-			       float m31, float m32, float m33);
-			       
+		Transform3D(float m11, float m12, float m13,
+					float m21, float m22, float m23,
+					float m31, float m32, float m33);
+
 		virtual ~ Transform3D();  // COmega   Deconstructor
 
 		void set_posttrans(const Vec3f & posttrans);
