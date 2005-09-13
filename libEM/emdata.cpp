@@ -7119,9 +7119,9 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	float* wx = wx0 - kbmin;
 	for (int i = kbmin; i <= kbmax; i++) {
 		wy[i] = kb.i0win(nuydispl - i*dnuy);
-		wy[i] = (0 == i) ? 1.f : 0.f;
+		wy[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
 		wx[i] = kb.i0win(nuxdispl - i*dnux);
-		wx[i] = (0 == i) ? 1.f : 0.f;
+		wx[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
 	}
 	// restrict loops to non-zero elements
 	int iymin = 0;
@@ -7197,6 +7197,7 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 					mirror = !mirror;
 				}
 				if (iyt == nhalf) iyt = -nhalf;
+				if (iyt < 0) iyt += ny; // correct for Fourier index ordering
 				float w = wx[ix]*wy[iy];
 				wsum += w;
 				complex<float> val = this->cmplx(ixt,iyt);
@@ -7242,7 +7243,7 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		float ycang = nuy*cang;
 		float ysang = -nuy*sang;
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			if (ix*ix + ky*ky > rmax2) break;
+			//if (ix*ix + ky*ky > rmax2) break;
 			float nux = ix*dnux;
 			float nuyold = nux*sang + ycang;
 			float nuxold = nux*cang + ysang;
