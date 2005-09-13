@@ -15,7 +15,7 @@
 
 \begin{itemize}
 \item  Here is an example on throwing an exception:
-\begin{verbatim}vector $<$ float $>$EMData::calc\_fourier\_shell\_correlation(EMData * with) {   
+\begin{verbatim}vector <float>EMData::calc_fourier_shell_correlation(EMData * with){
     if (!with) {
         throw NullPointerException("NULL input image");
     }
@@ -89,18 +89,19 @@ Note the ``\_'' before \_NullPointerException.
     \end{itemize}
   \item
      Here is the code for NullPointerException.
-     \begin{verbatim}class _NullPointerException : public E2Exception
-  {
+     \begin{verbatim}class _NullPointerException : public E2Exception {
   public:
         _NullPointerException(const string& file = "unknown",
-                              int line = 0, const string& desc_str = "")
+                              int line = 0, 
+                              const string& desc_str = "")
             : E2Exception(file, line, desc_str) {}
        
-        const char *name() const { return "NullPointerException"; }
+        const char *name() const{ return "NullPointerException"; }
        
   };
 
-  #define NullPointerException(desc) _NullPointerException(__FILE__, __LINE__,desc)\end{verbatim} 
+#define NullPointerException(desc) _NullPointerException(__FILE__,\
+__LINE__,desc)\end{verbatim} 
 
 \end{itemize}
 

@@ -294,6 +294,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Lowpass top-hat filter processor applied in Fourier space.
+	 * @param cutoff_frequency Absolute [0,0.5] cut-off frequency.
+	 */
 	class NewLowpassTopHatProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -318,6 +321,9 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/** Highpass top-hat filter applied in Fourier space.
+	 * @param cutoff_frequency Absolute [0,0.5] cut-off frequency.
+	 */
 	class NewHighpassTopHatProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -341,6 +347,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Bandpass top-hat filter processor applied in Fourier space.
+	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
+	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
+	 */
 	class NewBandpassTopHatProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -365,6 +375,11 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Homomorphic top-hat filter processor applied in Fourier space.
+	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
+	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
+	 *@param value_at_zero_frequency Value at zero frequency.
+	 */
 	class NewHomomorphicTopHatProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -390,6 +405,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Lowpass Gauss filter processor applied in Fourier space.
+	 * @param sigma Gaussian sigma.
+	 */
 	class NewLowpassGaussProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -413,6 +431,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Highpass Gauss filter processor applied in Fourier space.
+	 * @param sigma Gaussian sigma.	
+	 */
 	class NewHighpassGaussProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -436,6 +457,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Bandpass Gauss filter processor applied in Fourier space.
+	 * @param sigma Gaussian sigma.
+	 * @param center Gaussian center.
+	 */
 	class NewBandpassGaussProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -460,6 +485,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Homomorphic Gauss filter processor applied in Fourier space.
+	 * @param sigma Gaussian sigma.
+	 * @param value_at_zero_frequency Value at zero frequency.
+	 */
 	class NewHomomorphicGaussProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -484,6 +513,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Divide by a Gaussian in Fourier space.
+	 * @param sigma Gaussian sigma.
+	 */
 	class NewInverseGaussProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -507,6 +539,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Divide by a Kaiser-Bessel I0 func in Fourier space.
+	 */
 	class InverseKaiserI0Processor:public NewFourierProcessor
 	{
 	  public:
@@ -524,6 +558,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Divide by a Kaiser-Bessel Sinh func in Fourier space.
+	 */
 	class InverseKaiserSinhProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -541,6 +577,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Filter with tabulated data in Fourier space.
+	 *@param table Tabulated filter data.
+	 */
 	class NewRadialTableProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -564,6 +603,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Lowpass Butterworth filter processor applied in Fourier space.
+	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
+	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
+	 */
 	class NewLowpassButterworthProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -588,6 +631,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Highpass Butterworth filter processor applied in Fourier space.
+	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
+	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
+	 */
 	class NewHighpassButterworthProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -612,6 +659,11 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Homomorphic Butterworth filter processor applied in Fourier space.
+	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
+	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
+	 *@param value_at_zero_frequency Value at zero frequency.
+	 */
 	class NewHomomorphicButterworthProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -637,6 +689,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Lowpass tanh filter processor applied in Fourier space.
+	 *@param cutoff_frequency Absolute [0,0.5] cut-off frequency.
+	 *@param fall_off Tanh decay rate.
+	 */
 	class NewLowpassTanhProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -661,6 +717,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Highpass tanh filter processor applied in Fourier space.
+	 *@param cutoff_frequency Absolute [0,0.5] cut-off frequency.
+	 *@param fall_off Tanh decay rate.
+	 */
 	class NewHighpassTanhProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -685,6 +745,11 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Homomorphic Tanh processor applied in Fourier space
+	 *@param cutoff_frequency Absolute [0,0.5] cut-off frequency.
+	 *@param fall_off Tanh decay rate.
+	 *@param value_at_zero_frequency Value at zero frequency.
+	 */
 	class NewHomomorphicTanhProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -710,6 +775,13 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Bandpass tanh processor applied in Fourier space.
+	 *@param low_cutoff_frequency Absolute [0,0.5] low cut-off frequency.
+	 *@param Low_fall_off Tanh low decay rate.	 
+	 *@param high_cutoff_frequency Absolute [0,0.5] high cut-off frequency.
+	 *@param high_fall_off Tanh high decay rate.
+	 *@param fall_off Tanh decay rate.
+	 */
 	class NewBandpassTanhProcessor:public NewFourierProcessor
 	{
 	  public:
@@ -737,6 +809,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**
+	 */
 	class FourierProcessor:public Processor
 	{
 	  public:
@@ -751,6 +825,9 @@ The basic design of EMAN Processors: <br>\
 		virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
+	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.
+	 *@param lowpass Processor radius in terms of Nyquist (0-.5)
+	 */
 	class LowpassFourierProcessor:public FourierProcessor
 	{
 	  public:
@@ -781,6 +858,9 @@ The basic design of EMAN Processors: <br>\
 		float lowpass;
 	};
 
+	/**High-pass processor is rotationally symmetric 2D function. It attenuates amplitudes at low spatial frequencies, and increases amplitudes for high spatial frequencies. It has the result of enhancing the edges in the image while suppressing all slow-moving variations.	<br> HighpassFourierProcessor class is the base class for all high pass fourier processors.
+	 *@param highpass Processor radius in terms of Nyquist (0-.5)
+	 */
 	class HighpassFourierProcessor:public FourierProcessor
 	{
 	  public:
@@ -810,6 +890,8 @@ The basic design of EMAN Processors: <br>\
 		float highpass;
 	};
 
+	/**processor radial function: if x <= lowpass, f(x) = 1; else f(x) = 0;
+	 */
 	class LowpassSharpCutoffProcessor:public LowpassFourierProcessor
 	{
 	  public:
@@ -832,6 +914,8 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
+	/**processor radial function: if x >= highpass, f(x) = 1; else f(x) = 0;
+	 */
 	class HighpassSharpCutoffProcessor:public HighpassFourierProcessor
 	{
 	  public:
@@ -855,6 +939,8 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
+	/**processor radial function: if lowpass > 0, f(x) = exp(-x*x/(lowpass*lowpass)); else f(x) = exp(x*x/(lowpass*lowpass))
+	 */
 	class LowpassGaussProcessor:public LowpassFourierProcessor
 	{
 	  public:
@@ -877,6 +963,8 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
+	/**processor radial function: f(x) = 1.0-exp(-x*x/(highpass*highpass))
+	 */
 	class HighpassGaussProcessor:public HighpassFourierProcessor
 	{
 	  public:
@@ -898,6 +986,8 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
+	/**processor radial function: f(x)=tanh(lowpass-x)/2.0 + 0.5;
+	 */
 	class LowpassTanhProcessor:public LowpassFourierProcessor
 	{
 	  public:
@@ -920,6 +1010,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**processor radial function: f(x)=tanh(x-highpass)/2.0+0.5;
+	 */
 	class HighpassTanhProcessor:public HighpassFourierProcessor
 	{
 	  public:
@@ -941,6 +1033,8 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
+	/**processor radial function: f(x) = 1/(1+t*t)
+	 */
 	class HighpassButterworthProcessor:public HighpassFourierProcessor
 	{
 	  public:
@@ -962,6 +1056,8 @@ The basic design of EMAN Processors: <br>\
 		void create_radial_func(vector < float >&radial_mask) const;
 	};
 
+	/**processor radial function: f(x) = slope * x + intercept
+	 */
 	class LinearRampProcessor:public FourierProcessor
 	{
 	  public:
@@ -1006,6 +1102,8 @@ The basic design of EMAN Processors: <br>\
 		float slope;
 	};
 
+	/**he base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.
+	 */
 	class RealPixelProcessor:public Processor
 	{
 	  public:
@@ -1043,6 +1141,8 @@ The basic design of EMAN Processors: <br>\
 		float sigma;
 	};
 
+	/**f(x) = |x|
+	 */
 	class AbsoluateValueProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1067,6 +1167,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**f(x) = 0 if x = 0; f(x) = 1 if x != 0
+	 */
 	class BooleanProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1094,6 +1196,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x) = x * x
+	 */
 	class ValueSquaredProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1119,6 +1223,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x) = sqrt(x)
+	 */
 	class ValueSqrtProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1143,6 +1249,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x) = x if x >= minval; f(x) = 0 if x < minval
+	 *@param minval
+	 */
 	class ToZeroProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1175,6 +1284,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x) = 0 if x < value; f(x) = 1 if x >= value.
+	 *@param value
+	 */
 	class BinarizeProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1212,6 +1324,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x): if v-r<x<v+r -> v; if x>v+r -> x-r; if x<v-r -> x+r
+	 *@param range
+	 *@param value
+	 */
 	class CollapseProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1254,6 +1370,10 @@ The basic design of EMAN Processors: <br>\
 		float range;
 	};
 
+	/**linear transform processor: f(x) = x * scale + shift
+	 *@param shift
+	 *@param scale
+	 */
 	class LinearXformProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1301,6 +1421,10 @@ The basic design of EMAN Processors: <br>\
 		float scale;
 	};
 
+	/**f(x) = exp( x / low - high)
+	 *@param low
+	 *@param high
+	 */
 	class ExpProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1356,6 +1480,10 @@ The basic design of EMAN Processors: <br>\
 		float high;
 	};
 
+	/**f(x) = 1 if (low <= x <= high); else f(x) = 0
+	 *@param low
+	 *@param high
+	 */
 	class RangeThresholdProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1408,6 +1536,10 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/**f(x) = mean if x<(mean-v2*sigma) or x>(mean+v1*sigma); else f(x) = x;
+	 *@param value1
+	 *@param value2
+	 */
 	class SigmaProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1454,6 +1586,8 @@ The basic design of EMAN Processors: <br>\
 		float value2;
 	};
 
+	/**f(x) = log10(x/max_pixel) if x > 0; else f(x) = 0
+	 */
 	class LogProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -1485,6 +1619,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**CoordinateProcessor applies processing based on a pixel's value and it coordinates. This is the base class. Specific coordinate processor should implement process_pixel().
+	 */
 	class CoordinateProcessor:public Processor
 	{
 	  public:
@@ -1518,6 +1654,13 @@ The basic design of EMAN Processors: <br>\
 		bool is_complex;
 	};
 
+	/**CircularMaskProcessor applies a circular mask to the data.This is the base class for specific circular mask processors.Its subclass must implement process_dist_pixel().
+	 *@param inner_radius inner mask radius. optional, default=-1
+	 *@param outer_radius outer mask radius
+	 *@param dx Modify mask center by dx relative to the default center nx/2
+	 *@param dy Modify mask center by dy relative to the default center ny/2
+	 *@param dz Modify mask center by dz relative to the default center nz/2
+	 */
 	class CircularMaskProcessor:public CoordinateProcessor
 	{
 	  public:
@@ -1601,6 +1744,9 @@ The basic design of EMAN Processors: <br>\
 		float xc, yc, zc;
 	};
 
+	/**step cutoff to a user-given value in both inner and outer circles.
+	 *@param value step cutoff to this value
+	 */
 	class MaskSharpProcessor:public CircularMaskProcessor
 	{
 	  public:
@@ -1648,6 +1794,9 @@ The basic design of EMAN Processors: <br>\
 	};
 
 	
+	/**A step cutoff to the the mean value in a ring centered on the outer radius
+	 *@param ring_width The width of the mask ring.
+	 */
 	class MaskEdgeMeanProcessor:public CircularMaskProcessor
 	{							// 6
 	  public:
@@ -1697,6 +1846,8 @@ The basic design of EMAN Processors: <br>\
 		float ring_avg;
 	};
 
+	/**fills masked region
+	 */
 	class MaskNoiseProcessor:public CircularMaskProcessor
 	{
 	  public:
@@ -1724,6 +1875,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**a gaussian falloff to zero, radius is the 1/e of the width.
+	 */
 	class MaskGaussProcessor:public CircularMaskProcessor
 	{
 	  public:
@@ -1748,6 +1901,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))
+	 *@param gauss_width
+	 */
 	class MaskGaussInvProcessor:public CircularMaskProcessor
 	{
 	  public:
@@ -1789,6 +1945,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**overwrites input, f(x) = radius * radius
+	 */
 	class MakeRadiusSquaredProcessor:public CircularMaskProcessor
 	{
 	  public:
@@ -1813,6 +1971,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**overwrites input, f(x) = radius
+	 */
 	class MakeRadiusProcessor:public CircularMaskProcessor
 	{
 	  public:
@@ -1837,6 +1997,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**The base class for fourier space processor working on individual pixels. ri2ap() is called before processing, so individual pixels will be A/P rather than R/I. The processor won't consider the pixel's coordinates and neighbors.
+	 */
 	class ComplexPixelProcessor:public Processor
 	{
 	  public:
@@ -1851,6 +2013,8 @@ The basic design of EMAN Processors: <br>\
 		virtual void process_pixel(float *x) const = 0;
 	};
 
+	/**Each Fourier pixel will be normalized. ie - amp=1, phase=unmodified. Useful for performing phase-residual-like computations with dot products.
+	 */
 	class ComplexNormPixel:public ComplexPixelProcessor
 	{
 	  public:
@@ -1875,6 +2039,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**AreaProcessor use pixel values and coordinates of a real-space square area. This is the base class. Specific AreaProcessor needs to implement function create_kernel().
+	 *@param areasize
+	 */
 	class AreaProcessor:public Processor
 	{
 	  public:
@@ -1921,6 +2088,8 @@ The basic design of EMAN Processors: <br>\
 		int nz;
 	};
 
+	/**Discrete approximation to Laplacian. Edge enchancement, but works poorly in the presence of noise. Laplacian processor (x -> d^2/dx^2 + d^2/dy^2 + d^2/dz^2).
+	 */
 	class LaplacianProcessor:public AreaProcessor
 	{
 	  public:
@@ -1943,6 +2112,8 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/**Contraction of data, if any nearest neighbor is 0, value -> 0, generally used iteratively
+	 */
 	class ZeroConstantProcessor:public AreaProcessor
 	{
 	  public:
@@ -1978,6 +2149,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**BoxStatProcessor files are a kind of neighborhood processors. These processors compute every output pixel using information from a reduced region on the neighborhood of the input pixel. The classical form are the 3x3 processors. BoxStatProcessors could perform diverse tasks ranging from noise reduction, to differential , to mathematical morphology. BoxStatProcessor class is the base class. Specific BoxStatProcessor needs to define process_pixel(float *pixel, const float *array, int n).
+	 */
 	class BoxStatProcessor:public Processor
 	{
 	  public:
@@ -1993,6 +2166,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**A processor for noise reduction. pixel = median of values surrounding pixel.
+	 */
 	class BoxMedianProcessor:public BoxStatProcessor
 	{
 	  public:
@@ -2044,6 +2219,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**pixel = standard deviation of values surrounding pixel.
+	 */
 	class BoxSigmaProcessor:public BoxStatProcessor
 	{
 	  public:
@@ -2077,6 +2254,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**peak processor: pixel = max of values surrounding pixel.
+	 */
 	class BoxMaxProcessor:public BoxStatProcessor
 	{
 	  public:
@@ -2108,6 +2287,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**peak processor: pixel = pixel - max of values surrounding pixel. This is a sort of positive peak-finding algorithm.
+	 */
 	class MinusPeakProcessor:public BoxStatProcessor
 	{
 	  public:
@@ -2139,6 +2320,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**peak processor -> if npeaks or more surrounding values >= value, value->0
+	 *@param npeaks
+	 */
 	class PeakOnlyProcessor:public BoxStatProcessor
 	{
 	  public:
@@ -2192,6 +2376,8 @@ The basic design of EMAN Processors: <br>\
 		int npeaks;
 	};
 
+	/**
+	 */
 	class DiffBlockProcessor:public Processor
 	{
 	  public:
@@ -2220,6 +2406,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Block processor, val1 is dx/dy, val2 is lp freq cutoff in pixels. Mystery processor.
+	 *@param value1
+	 *@param value2
+	 */
 	class CutoffBlockProcessor:public Processor
 	{
 	  public:
@@ -2249,6 +2439,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**Gradient remover, does a rough plane fit to find linear gradients.
+	 */
 	class GradientRemoverProcessor:public Processor
 	{
 	  public:
@@ -2270,6 +2462,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**Ramp processor -- Fits a least-squares plane to the picture, and subtracts the plane from the picture.  A wedge-shaped overall density profile can thus be removed from the picture.
+	 */
 	class RampProcessor:public Processor
     {
 	  public:
@@ -2294,6 +2488,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**Tries to fix images scanned on the zeiss for poor ccd normalization.
+	 */
 	class VerticalStripeProcessor:public Processor
 	{
 	  public:
@@ -2316,6 +2512,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 	
+	/**This will replace the image with a full-circle 2D fft amplitude rendering.
+	 */
 	class RealToFFTProcessor:public Processor
 	{
 		public:
@@ -2338,6 +2536,8 @@ The basic design of EMAN Processors: <br>\
 	};
 			
 
+	/**Fill zeroes at edges with nearest horizontal/vertical value.
+	 */
 	class SigmaZeroEdgeProcessor:public Processor
 	{
 	  public:
@@ -2359,6 +2559,11 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**Try to eliminate beamstop in electron diffraction patterns. If value1<0 also does radial subtract.
+	 *@param value1 sig multiplier
+	 *@param value2 x of center
+	 *@param value3 y of center
+	 */
 	class BeamstopProcessor:public Processor
 	{
 	  public:
@@ -2389,6 +2594,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.
+	 */
 	class MeanZeroEdgeProcessor:public Processor
 	{
 	  public:
@@ -2412,6 +2619,8 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**Average along Y and replace with average
+	 */
 	class AverageXProcessor:public Processor
 	{
 	  public:
@@ -2434,6 +2643,12 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**zero edges of image on top and bottom, and on left and right.
+	 *@param x0
+	 *@param x1
+	 *@param y0
+	 *@param y1
+	 */
 	class ZeroEdgeRowProcessor:public Processor
 	{
 	  public:
@@ -2464,6 +2679,14 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**zero edges of volume on all sides
+	 *@param x0
+	 *@param x1
+	 *@param y0
+	 *@param y1
+	 *@param z0
+	 *@param z1
+	 */
 	class ZeroEdgePlaneProcessor:public Processor
 	{
 	  public:
@@ -2497,6 +2720,12 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**Bilateral processing on 3D volume data. Bilateral processing does non-linear weighted averaging processing within a certain window.
+	 *@param distance_sigma means how large the voxel has impact on its neighbors in spatial domain. The larger it is, the more blurry the resulting image.
+	 *@param value_sigma eans how large the voxel has impact on its in  range domain. The larger it is, the more blurry the resulting image.
+	 *@param niter how many times to apply this processing on your data.
+	 *@param half_width processing window size = (2 * half_widthh + 1) ^ 3.
+	 */
 	class BilateralProcessor:public Processor
 	{
 	  public:
@@ -2527,6 +2756,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Base class for normalization processors. Each specific normalization processor needs to define how to calculate mean and how to calculate sigma.
+	 */
 	class NormalizeProcessor:public Processor
 	{
 	  public:
@@ -2542,6 +2773,8 @@ The basic design of EMAN Processors: <br>\
 		virtual float calc_mean(EMData * image) const = 0;
 	};
 
+	/**Normalize an image so its vector length is 1.0.
+	 */
 	class NormalizeUnitProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2567,6 +2800,8 @@ The basic design of EMAN Processors: <br>\
 	
 	inline float NormalizeUnitProcessor::calc_mean(EMData *image) const { return 0; }
 
+	/**Normalize an image so its elements sum to 1.0 (fails if mean=0)
+	 */
 	class NormalizeUnitSumProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2593,6 +2828,8 @@ The basic design of EMAN Processors: <br>\
 	inline float NormalizeUnitSumProcessor::calc_mean(EMData *image) const { return 0; }
 
 		
+	/**do a standard normalization on an image.
+	 */
 	class NormalizeStdProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2615,6 +2852,10 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**Uses a 1/0 mask defining a region to use for the zero-normalization.if no_sigma is 1, standard deviation not modified.
+	 *@param mask
+	 *@param no_sigma
+	 */
 	class NormalizeMaskProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2646,6 +2887,8 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**normalizes an image, mean value equals to edge mean.
+	 */
 	class NormalizeEdgeMeanProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2668,6 +2911,8 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**normalizes an image, mean value equals to mean of 2 pixel circular border.
+	 */
 	class NormalizeCircleMeanProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2690,6 +2935,8 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**normalizes an image, uses 2 pixels on left and right edge
+	 */
 	class NormalizeLREdgeMeanProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2712,6 +2959,8 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**normalizes an image. mean -> (maxval-minval)/2; std dev = (maxval+minval)/2;
+	 */
 	class NormalizeMaxMinProcessor:public NormalizeProcessor
 	{
 	  public:
@@ -2735,6 +2984,8 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 
+	/**normalizes each row in the image individually
+	 */
 	class NormalizeRowProcessor:public Processor
 	{
 	  public:
@@ -2756,6 +3007,13 @@ The basic design of EMAN Processors: <br>\
 		void process(EMData * image);
 	};
 
+	/**multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.
+	 *@param noisy
+	 *@param keepzero
+	 *@param invert
+	 *@param mult
+	 *@param add
+	 */
 	class NormalizeToStdProcessor:public Processor
 	{
 	  public:
@@ -2788,6 +3046,13 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Multiply this image by a constant so it is scaled to the signal in 'noisyfile'
+	 * @param noisyfile 
+	 * @param keepzero  exclude zero values
+	 *@param invert
+	 *@param mult
+	 *@param add dfgd
+	 */
 	class NormalizeToFileProcessor:public NormalizeToStdProcessor
 	{
 	  public:
@@ -2819,7 +3084,11 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
-
+	/**use least square method to normalize
+	 * @param to 
+	 * @param low_threshold 
+	 * @param high_threshold 
+	 */
 	class NormalizeToLeastSquareProcessor:public Processor
 	{
 	  public:
@@ -2851,6 +3120,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**makes image circularly symmetric.
+	 */
 	class RadialAverageProcessor:public Processor
 	{
 	  public:
@@ -2873,6 +3144,8 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**subtracts circularly symmetric part of an image.
+	 */
 	class RadialSubstractProcessor:public Processor
 	{
 	  public:
@@ -2896,6 +3169,9 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/** flip an image around an axis
+	 * @param axis  'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;
+	 */
 	class FlipProcessor:public Processor
 	{
 	  public:
@@ -2925,6 +3201,9 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/** add noise to an image
+	 * @param noise 
+	 */
 	class AddNoiseProcessor:public Processor
 	{
 	  public:
@@ -2959,6 +3238,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** add sigma noise
+	 */
 	class AddSigmaNoiseProcessor:public AddNoiseProcessor
 	{
 	  public:
@@ -2981,7 +3262,13 @@ The basic design of EMAN Processors: <br>\
 		float get_sigma(EMData * image);
 	};
 
-
+	/**add random noise
+	 *@param n 
+	 *@param x0 
+	 *@param dx 
+	 *@param y 
+	 *@param interpolation 
+	 */
 	class AddRandomNoiseProcessor:public Processor
 	{
 	  public:
@@ -3015,6 +3302,8 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/** Translates the origin in Fourier space from the corner to the center in Y
+	 */
 	class FourierOriginShiftProcessor:public Processor
 	{
 	  public:
@@ -3037,6 +3326,8 @@ The basic design of EMAN Processors: <br>\
 
 	};
 	
+	/** Translates a centered image to the corner
+	 */
 	class Phase180Processor:public Processor
 	{
 	  public:
@@ -3059,6 +3350,10 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/**Attempts to automatically mask out the particle, excluding other particles in the box, etc.
+	 * @param threshold  runs from ~ -2 to 2, negative numbers for dark protein and positive numbers for light protein (stain).
+	 * @param filter  is expressed as a fraction of the fourier radius.
+	 */
 	class AutoMask2DProcessor:public Processor
 	{
 	  public:
@@ -3089,6 +3384,10 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/**Tries to mask out only interesting density
+	 * @param threshold1 
+	 * @param threshold2 
+	 */
 	class AutoMask3DProcessor:public Processor
 	{
 	  public:
@@ -3121,6 +3420,11 @@ The basic design of EMAN Processors: <br>\
 		static void fill_nearby(float *dat2, int nx, int ny, int nz);
 	};
 
+	/** Tries to mask out only interesting density
+	 * @param radius 
+	 * @param threshold 
+	 * @param nshells 
+	 */
 	class AutoMask3D2Processor:public Processor
 	{
 	  public:
@@ -3151,6 +3455,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Add additional shells/rings to an existing 1/0 mask image
+	 * @param nshells   number of shells to add
+	*/
 	class AddMaskShellProcessor:public Processor
 	{
 	  public:
@@ -3179,6 +3486,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
+	 * @param int_shift_only 
+	 */
 	class ToMassCenterProcessor:public Processor
 	{
 	  public:
@@ -3207,6 +3517,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Center image using CCF with 180 degree rotation.
+	 * @param is3d 
+	 */
 	class ACFCenterProcessor:public Processor
 	{
 	  public:
@@ -3235,6 +3548,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
+	 * @param wiener 
+	 * @param snrfile 
+	 */
 	class SNRProcessor:public Processor
 	{
 	  public:
@@ -3264,6 +3581,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** A fourier processor specified in a 2 column text file.
+	 * @param filename 
+	*/
 	class FileFourierProcessor:public Processor
 	{
 	  public:
@@ -3333,6 +3653,11 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**This processor attempts to perform a 'local normalization' so low density and high density features will be on a more even playing field in an isosurface display. threshold is an isosurface threshold at which all desired features are visible, radius is a normalization size similar to an lp= value.
+	 *@param threshold
+	 *@param radius
+	 *@param apix
+	 */
 	class LocalNormProcessor:public Processor
 	{
 	  public:
@@ -3363,6 +3688,10 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Multiplies the image by the specified file using pixel indices. The images must be same size. If 'ismaskset=' is 1, it will take a file containing a set of masks and apply the first mask to the image.
+	 *@param filename
+	 *@param ismaskset
+	 */
 	class IndexMaskFileProcessor:public Processor
 	{
 	  public:
@@ -3393,6 +3722,9 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	/**Multiplies the image by the specified file using pixel coordinates instead of pixel indices. The images can be different size.
+	 *@param filename
+	 */
 	class CoordinateMaskFileProcessor:public Processor
 	{
 	  public:
@@ -3421,6 +3753,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Sets the structure factor based on a 1D x/y text file.
+	 *@param filename
+	 */
 	class SetSFProcessor:public Processor
 	{
 	  public:
@@ -3449,6 +3784,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Smart mask processor
+	 *@param mask
+	 */
 	class SmartMaskProcessor:public Processor
 	{
 	  public:
@@ -3477,6 +3815,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**Iterative expansion of a binary mask, val1 is number of pixels to expand, if val2!=0 will make a soft Gaussian edge starting after val2 pixels.
+	 */
 	class IterBinMaskProcessor:public Processor
 	{
 	  public:
@@ -3504,6 +3844,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**This is a group of 'processor' used to create test image.
+	 */
 	class TestImageProcessor : public Processor
 	{
 	public:
@@ -3517,6 +3859,9 @@ The basic design of EMAN Processors: <br>\
 		int nx, ny, nz; //this is the size of the source image
 	};
 	
+	/**Replace a source image as a strict Gaussian 
+	 *@param sigma sigma value for this Gaussian blob
+	 */
 	class TestImagePureGaussian : public TestImageProcessor
 	{
 	public:
@@ -3545,6 +3890,11 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/** Replace a source image as a Gaussian Blob
+	 *@param sigma sigma value for this Gaussian blob
+	 *@param axis specify a major axis for asymmetric features
+	 *@param c distance between focus and the center of an ellipse
+	 */
 	class TestImageGaussian : public TestImageProcessor
 	{
 	public:
@@ -3575,6 +3925,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/**Replace a source image with a lumpy S-curve used for alignment testing
+	 */
 	class TestImageScurve : public TestImageProcessor
 	{
 	public:
@@ -3602,6 +3954,12 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/**Replace a source image as a sine wave in specified wave length
+	 *@param wave_length this value is the d in function |sin(x/d)|
+	 *@param axis specify a major axis for asymmetric features
+	 *@param c distance between focus and the center of an ellipse
+	 *@param phase (optional)phase for sine wave, default is 0
+	 */
 	class TestImageSinewave : public TestImageProcessor
 	{
 	public:
@@ -3633,6 +3991,12 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/**Replace a source image as a square or cube depends on 2D or 3D of the source image
+	 *@param edge_length edge length of the square or cube
+	 *@param axis specify a major axis for asymmetric features
+	 *@param odd_edge edge length for the asymmetric axis
+	 *@param fill answer 'yes' or 'no' to specify if it's filled or hollow, default filled
+	 */
 	class TestImageSquarecube : public TestImageProcessor
 	{
 	public:
@@ -3664,6 +4028,12 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/**Replace a source image as a circle or sphere depends on 2D or 3D of the source image
+	 *@param radius radius of circle or sphere
+	 *@param axis specify a major axis for asymmetric features
+	 *@param c distance between focus and the center of an ellipse
+	 *@param fill answer 'yes' or 'no' to specify if it's filled or hollow, default filled
+	 */
 	class TestImageCirclesphere : public TestImageProcessor
 	{
 	public:
@@ -3695,6 +4065,8 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/**Replace a source image as a uniform random noise, random number generated from rand(), the pixel value is from 0 to 1
+	 */
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
 	public:
@@ -3716,6 +4088,9 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+	/**Replace a source image as a random noise, the random value is gaussian distributed
+	 *@param noise_level sigma value of gausian distributed noise, this parameter is optional default is 0.5
+	 */
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
 	public:
