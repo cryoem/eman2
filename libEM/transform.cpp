@@ -212,6 +212,19 @@ void Transform3D::orthogonalize()  // YYY
 }
 
 
+void Transform3D::transpose()  // YYY
+{
+	float tempij;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < i; j++) {
+			tempij= matrix[i][j];
+			matrix[i][j] = matrix[j][i];
+			matrix[j][i] = tempij;
+		}
+	}
+}
+
+
 
 
 
@@ -696,14 +709,14 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		break;
 
 	case SPIN:
-		result["Omega"] = acos(cosOover2) ;
+		result["Omega"] =2* acos(cosOover2) ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
 		break;
 
 	case SGIROT:
-		result["q"] = acos(cosOover2) ;
+		result["q"] = 2*acos(cosOover2) ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;

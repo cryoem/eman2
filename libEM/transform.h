@@ -109,6 +109,7 @@ namespace EMAN
 		void apply_scale(float scale);
 		void set_scale(float scale);
 		void orthogonalize();	// reorthogonalize the matrix
+		void transpose();	// create the transpose in place
 
 		void set_rotation(float az, float alt,float phi);
 		void set_rotation(EulerType euler_type, float a1, float a2, float a3); // just SPIDER and EMAN
