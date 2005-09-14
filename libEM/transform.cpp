@@ -746,6 +746,41 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 map<string, int> Transform3D::symmetry_map = map<string, int>();
 
 
+Transform3D Transform3D::inverse()     //   YYN need to test it for sure
+{
+	// First Find the scale
+	EulerType eE=EMAN;
+
+
+	float scale        = get_scale();
+	Vec3f postT  = get_posttrans( ) ;
+	Dict angs        = get_rotation(eE);
+	Dict invAngs  ;
+
+	invAngs["phi"]   = 1.0f*M_PI - (float) angs["az"] ;
+	invAngs["az"]    = 1.0f*M_PI- (float) angs["phi"] ;
+	invAngs["alt"]   = angs["alt"] ;
+
+//    The inverse result
+//
+//           Z_phi   X_alt     Z_az
+//                 is
+//       Z_{pi-az}   X_alt  Z_{pi-phi}
+//      The reason for the extra pi's, is because one would like to keep alt positive
+
+	float inverseScale= 1/scale ;
+
+	Transform3D invM;
+
+	invM.set_rotation(EMAN, invAngs);
+	invM.apply_scale(inverseScale);
+	invM.set_pretrans(postT );
+
+
+	return invM;
+
+}
+
 
 // Symmetry Stuff
 
