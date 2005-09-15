@@ -12,6 +12,7 @@
 	#include "pngio.h"
 #endif	//EM_PNG
 
+
 #include "dm3io.h"
 
 #ifdef EM_TIFF

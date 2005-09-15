@@ -7091,8 +7091,8 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	if (!is_complex()) 
 		throw ImageFormatException("extractpoint requires a fourier image");
 	int nxreal = nx - 2;
-	if (nxreal > ny)
-		throw ImageDimensionException("extractpoint requires ny <= nx");
+	if (nxreal != ny)
+		throw ImageDimensionException("extractpoint requires ny == nx");
 	float dnux = 1.0f/float(nxreal);
 	float dnuy = 1.0f/float(ny);
 	int nhalf = nxreal/2; 
@@ -7107,20 +7107,20 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
 	// be correct.
-	int ixn = int(round(nuxnew/dnux));
-	int iyn = int(round(nuynew/dnuy));
+	int ixn = int(round(nuxnew));
+	int iyn = int(round(nuynew));
 	// displacements of (xnew,ynew) from the grid
-	float nuxdispl = nuxnew - ixn*dnux;
-	float nuydispl = nuynew - iyn*dnuy;
+	float nuxdispl = nuxnew - ixn;
+	float nuydispl = nuynew - iyn;
 	// set up some temporary weighting arrays
 	float* wy0 = new float[kbmax - kbmin + 1];
 	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
 	float* wx0 = new float[kbmax - kbmin + 1];
 	float* wx = wx0 - kbmin;
 	for (int i = kbmin; i <= kbmax; i++) {
-		wy[i] = kb.i0win(nuydispl - i*dnuy);
+		wy[i] = kb.i0win((nuydispl - i)*dnuy);
 		wy[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
-		wx[i] = kb.i0win(nuxdispl - i*dnux);
+		wx[i] = kb.i0win((nuxdispl - i)*dnux);
 		wx[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
 	}
 	// restrict loops to non-zero elements
@@ -7197,7 +7197,7 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 					mirror = !mirror;
 				}
 				if (iyt == nhalf) iyt = -nhalf;
-				if (iyt < 0) iyt += ny; // correct for Fourier index ordering
+				//if (iyt < 0) iyt += ny; // correct for Fourier index ordering
 				float w = wx[ix]*wy[iy];
 				wsum += w;
 				complex<float> val = this->cmplx(ixt,iyt);
@@ -7218,8 +7218,10 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 }
 
 void EMData::center_padded() {
-	EMData& self = *this;
 	int npad = get_attr("npad");
+	if (1 == npad) return;
+	EMData& self = *this;
+	self.set_array_offsets();
 	int nxorig = nx/npad;
 	int nyorig = ny/npad;
 	int nxcorner = (nx - nxorig)/2;
@@ -7227,6 +7229,20 @@ void EMData::center_padded() {
 	for (int iy = nyorig-1; iy >= 0; iy--) 
 		for (int ix = nxorig-1; ix >= 0; ix--)
 			std::swap(self(nxcorner+ix,nycorner+iy),self(ix,iy));
+}
+
+void EMData::fft_shuffle() {
+	if (!is_complex()) 
+		throw ImageFormatException("fouriergridrot2d requires a fourier image");
+	EMData& self = *this;
+	float* temp = new float[nx];
+	int nyhalf = ny/2;
+	for (int iy = 0; iy < nyhalf-1; iy++) 
+		// swap column iy and nhalf + iy + 1
+		for (int ix = 0; ix < nx; ix++)
+			std::swap(self(ix,iy),self(ix,iy+nyhalf+1));
+	done_data();
+	delete [] temp;
 }
 
 EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
@@ -7241,25 +7257,23 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		throw ImageDimensionException("fouriergridrot2d needs an even image.");
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
-	float rmax2 = nxhalf*nxhalf;
 	EMData* result = copy();
 	float cang = cos(ang);
 	float sang = sin(ang);
-	float dnux = 1.0f/float(nxreal);
-	float dnuy = 1.0f/float(ny);
 	for (int iy = 0; iy <= ny - 1; iy++) {
 		int ky = iy;
 		if (iy > nyhalf)
 			ky -= ny;
-		float nuy = ky*dnuy;
-		float ycang = nuy*cang;
-		float ysang = -nuy*sang;
+		float ycang = ky*cang;
+		float ysang = -ky*sang;
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			//if (ix*ix + ky*ky > rmax2) break;
-			float nux = ix*dnux;
-			float nuyold = nux*sang + ycang;
-			float nuxold = nux*cang + ysang;
+			float nuyold = ix*sang + ycang;
+			float nuxold = ix*cang + ysang;
 			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
+			//FIXME: debugging
+			result->cmplx(ix,iy) = complex<float>(0.f,0.f);
+			if (0 == round(nuyold) && 0 == round(nuxold))
+				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 		}
 	}
 	result->done_data();

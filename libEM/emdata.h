@@ -1761,6 +1761,15 @@ namespace EMAN
 			rot->process("filter.kaisersinhinverse", params);
 			return rot;
 		}
+		/** fft_shuffle -- Shuffle a Fourier image to put the origin at (0,ny/2)
+		 *  
+		 *  Our usual FFT convention puts the origin at (0,0), but then
+		 *  grid points corresponding to iy > ny/2 correspond to 
+		 *  (unnormalized) frequencies iy-ny.  This routine rearranges
+		 *  the columns of the Fourier image so that iy varies from
+		 *  -ny/2 to ny/2 (or ny/2 - 1 for ny even).  
+		 */
+		void fft_shuffle();
 		/** center_padded -- Center a padded image
 		 *  
 		 *  Image padding leaves the image in the corner.  This method
