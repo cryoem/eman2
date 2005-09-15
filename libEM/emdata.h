@@ -1761,6 +1761,12 @@ namespace EMAN
 			rot->process("filter.kaisersinhinverse", params);
 			return rot;
 		}
+		/** center_padded -- Center a padded image
+		 *  
+		 *  Image padding leaves the image in the corner.  This method
+		 *  moves that original image so that it is centered.
+		 */
+		void center_padded();
 		/** extractpoint, not yet finished */
 		complex<float> extractpoint(float xin, float yin, 
 		                            Util::KaiserBessel& kb);

@@ -7217,6 +7217,18 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	return result;
 }
 
+void EMData::center_padded() {
+	EMData& self = *this;
+	int npad = get_attr("npad");
+	int nxorig = nx/npad;
+	int nyorig = ny/npad;
+	int nxcorner = (nx - nxorig)/2;
+	int nycorner = (ny - nyorig)/2;
+	for (int iy = nyorig-1; iy >= 0; iy--) 
+		for (int ix = nxorig-1; ix >= 0; ix--)
+			std::swap(self(nxcorner+ix,nycorner+iy),self(ix,iy));
+}
+
 EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
