@@ -114,7 +114,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
     class_< EMAN::Util::KaiserBessel >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
-        .def(init< optional< float, int, float, float, int > >())
+        .def(init< optional< float, int, float, float, float, int > >())
         .def("I0table_maxerror", &EMAN::Util::KaiserBessel::I0table_maxerror)
         .def("sinhwin", &EMAN::Util::KaiserBessel::sinhwin)
         .def("i0win", &EMAN::Util::KaiserBessel::i0win)

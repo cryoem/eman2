@@ -914,7 +914,14 @@ namespace EMAN
 		 *   instantiated and held in the instance object.)
 		 *
 		 *  The I0 version can be tabulated and interpolated upon
-		 *  demand, but the max error needs to be checked.
+		 *  demand, but the max error needs to be checked.  The 
+		 *  "vtable" parameter corresponds to the maximum value of x
+		 *  for which the I0 window is non-zero.  Setting "vtable"
+		 *  different from "v" corresponds to a change in units of x.
+		 *  In practice, it is often handy to replace x in some sort
+		 *  of absolute units with x described in terms of grid
+		 *  intervals.
+		
 		 *
 		 *  The get_kbsinh_win and get_kbi0_win functions return
 		 *  single-argument function objects, which is what a 
@@ -928,6 +935,7 @@ namespace EMAN
 		{
 			float alpha, v, r; /** Kaiser-Bessel parameters */
 			int K; /** I0 window size */
+			float vtable; /** table I0 non-zero domain maximum */
 			int ntable;
 			vector<float> i0table;
 			float dtable; /** table spacing */
@@ -936,7 +944,8 @@ namespace EMAN
 			void build_I0table(); /** Tabulate I0 window for speed */
 			public:
 				KaiserBessel(float alpha_ = 1.0f, int K_=6, float r_=0.5f,
-						     float v_=0.f, int ntable_ = 5999);
+						     float v_=0.f, float vtable_=0.f, 
+							 int ntable_ = 5999);
 				/** Compute the maximum error in the table */
 				float I0table_maxerror();
 				/** Kaiser-Bessel Sinh window function */
@@ -946,7 +955,7 @@ namespace EMAN
 				/** Kaiser-Bessel I0 window function (uses table lookup) */
 				float i0win_tab(float x) const {
 					float absx = fabs(x);
-					if (absx > v) return 0.f;
+					if (absx > vtable) return 0.f;
 					float loc = absx/dtable;
 					return i0table[int(loc + 0.5f)];
 				}

@@ -1011,10 +1011,12 @@ float Util::quadri(EMData* image, float x, float y, int zslice) {
 }
 
 Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_,
-		                         float v_, int ntable_) 
-		: alpha(alpha_), v(v_), r(r_), K(K_), ntable(ntable_) {
+		                         float v_, float vtable_, int ntable_) 
+		: alpha(alpha_), v(v_), r(r_), K(K_), vtable(vtable_), 
+		  ntable(ntable_) {
 	// Default values are alpha=1.25, K=6, r=0.5, v = K/2
 	if (0.f == v) v = float(K/2);
+	if (0.f == vtable) vtable = v;
 	fac = twopi*alpha*r*v;
 	alphar = alpha*r;
 	build_I0table();
@@ -1030,10 +1032,11 @@ float Util::KaiserBessel::i0win(float x) const {
 
 void Util::KaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
-	dtable = v / ntable;
+	dtable = vtable / ntable;
+	float vratio = v/vtable;
 	for (int i=0; i <= ntable; i++) {
 		float x = i*dtable;
-		i0table[i] = i0win(x);
+		i0table[i] = i0win(x*vratio);
 	}
 }
 
