@@ -7096,8 +7096,6 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	int nxreal = nx - 2;
 	if (nxreal != ny)
 		throw ImageDimensionException("extractpoint requires ny == nx");
-	float dnux = 1.0f/float(nxreal);
-	float dnuy = 1.0f/float(ny);
 	int nhalf = nxreal/2; 
 	int kbsize = kb.get_window_size();
 	int kbmin = -kbsize/2;
@@ -7121,9 +7119,9 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	float* wx0 = new float[kbmax - kbmin + 1];
 	float* wx = wx0 - kbmin;
 	for (int i = kbmin; i <= kbmax; i++) {
-		wy[i] = kb.i0win((nuydispl - i)*dnuy);
+		wy[i] = kb.i0win_tab(nuydispl - i);
 		wy[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
-		wx[i] = kb.i0win((nuxdispl - i)*dnux);
+		wx[i] = kb.i0win_tab(nuxdispl - i);
 		wx[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
 	}
 	// restrict loops to non-zero elements
@@ -7200,7 +7198,6 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 					mirror = !mirror;
 				}
 				if (iyt == nhalf) iyt = -nhalf;
-				//if (iyt < 0) iyt += ny; // correct for Fourier index ordering
 				float w = wx[ix]*wy[iy];
 				wsum += w;
 				complex<float> val = this->cmplx(ixt,iyt);
@@ -7265,22 +7262,23 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
 	if (!is_complex()) 
 		throw ImageFormatException("fouriergridrot2d requires a fourier image");
+	if (!is_shuffled())
+		throw ImageFormatException("fouriergridrot2d requires shuffled Fourier data");
 	int nxreal = nx - 2 + int(is_fftodd());
-	if (nxreal > ny)
-		throw ImageDimensionException("fouriergridrot2d requires ny >= nx");
+	if (nxreal != ny)
+		throw ImageDimensionException("fouriergridrot2d requires ny == nx(real)");
 	if (0 != nxreal%2)
 		throw ImageDimensionException("fouriergridrot2d needs an even image.");
 	int nxhalf = nxreal/2;
 	int nyhalf = ny/2;
 	EMData* result = copy();
+	set_array_offsets(0,-nyhalf);
+	result->set_array_offsets(0,-nyhalf);
 	float cang = cos(ang);
 	float sang = sin(ang);
-	for (int iy = 0; iy <= ny - 1; iy++) {
-		int ky = iy;
-		if (iy > nyhalf)
-			ky -= ny;
-		float ycang = ky*cang;
-		float ysang = -ky*sang;
+	for (int iy = -nyhalf; iy < nyhalf; iy++) {
+		float ycang = iy*cang;
+		float ysang = -iy*sang;
 		for (int ix = 0; ix <= nxhalf; ix++) {
 			float nuyold = ix*sang + ycang;
 			float nuxold = ix*cang + ysang;
@@ -7291,6 +7289,8 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 		}
 	}
+	result->set_array_offsets(0,0);
+	set_array_offsets(0,0);
 	result->done_data();
 	return result;
 }
