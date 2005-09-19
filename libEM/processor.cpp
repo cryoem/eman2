@@ -2072,7 +2072,7 @@ void FourierOriginShiftProcessor::process(EMData * image)
 	//	printf("nx2=%d, ny=%d, nz=%d \n", nx2,ny,nz);
 
 	if ( (nz==1) && ((nx2-1)==ny) && (image->is_complex())  // if odd, square FFT
-		&& (image->is_fftodd()) && (!(image->is_shuffle()) )){ // PRB
+		&& (image->is_fftodd()) && (!(image->is_shuffled()) )){ // PRB
 	     int out_nx=2*(nx2-1);
 	     int nx_orig=nx2-1, ny_orig=nx_orig;
 	     int Center= (nx_orig+1)/2;
@@ -2136,9 +2136,9 @@ void FourierOriginShiftProcessor::process(EMData * image)
 	     image->set_ri(true);
 	     image->set_fftodd(true);
 	     image->done_data();
-	     image->set_shuffle(true);
+	     image->set_shuffled(true);
 	} else if  ((nz==1) && (image->is_complex())  // already shuffled
-		&& (image->is_fftodd()) && (image->is_shuffle() )){ // PRB
+		&& (image->is_fftodd()) && (image->is_shuffled() )){ // PRB
 	     int out_nx= 1 + nx2/2;
 	     int out_ny=ny;
 	     int nx_orig= out_nx-1;
@@ -2210,7 +2210,7 @@ void FourierOriginShiftProcessor::process(EMData * image)
 	     }}
 	     image->set_complex(true);
 	     image->set_ri(true);
-	     image->set_shuffle(false);
+	     image->set_shuffled(false);
 	     image->set_fftodd(true);
 	     image->done_data();
 	} else {

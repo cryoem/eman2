@@ -1427,7 +1427,7 @@ namespace EMAN
 		/** Has this image been shuffled?
 		 * @return Whether this image has been shuffled to put origin in the center.
 		 */
-		bool is_shuffle() const;
+		bool is_shuffled() const;
 		
 		/** Is this a FH image?
 		 * @return Whether this is a FH image or not.
@@ -1445,10 +1445,10 @@ namespace EMAN
 		bool is_real() const;
 
 		/** Mark this image as a shuffled image.
-		 * @param is_shuffle If true, a shuffled image. If false, not 
+		 * @param is_shuffled If true, a shuffled image. If false, not 
 		 *          a shuffled image.
 		 */
-		void set_shuffle(bool is_shuffle);
+		void set_shuffled(bool is_shuffled);
 
 		/** Mark this complex image as a FH image.
 		 * @param is_FH If true, a FH image. If false, 
@@ -1767,7 +1767,9 @@ namespace EMAN
 		 *  grid points corresponding to iy > ny/2 correspond to 
 		 *  (unnormalized) frequencies iy-ny.  This routine rearranges
 		 *  the columns of the Fourier image so that iy varies from
-		 *  -ny/2 to ny/2 (or ny/2 - 1 for ny even).  
+		 *  -ny/2 to ny/2 (or ny/2 - 1 for ny even).  This method acts
+		 *  as a toggle, so to unshuffle a Fourier image just call
+		 *  this method a second time.
 		 */
 		void fft_shuffle();
 		/** center_padded -- Center a padded image
@@ -1960,7 +1962,7 @@ namespace EMAN
 	}
 
 
-	inline bool EMData::is_shuffle() const
+	inline bool EMData::is_shuffled() const
 	{  //     PRB
 		if (flags & EMDATA_SHUFFLE) {
 			return true;
@@ -2039,10 +2041,10 @@ namespace EMAN
 		attr_dict["nxc"] = nxc;
 	}
 
-	inline void EMData::set_shuffle(bool is_shuffle)
+	inline void EMData::set_shuffled(bool is_shuffled)
 	{ // PRB
-		if (is_shuffle) {
-//			printf("entered correct part of set_shuffle \n");
+		if (is_shuffled) {
+//			printf("entered correct part of set_shuffled \n");
 			flags |=  EMDATA_SHUFFLE;
 		}
 		else {

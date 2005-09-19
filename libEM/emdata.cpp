@@ -175,6 +175,9 @@ void EMData::write_image(const string & filename, int img_index,
 {
 	ENTERFUNC;
 
+	if (is_complex() && is_shuffled())
+		fft_shuffle();
+
 	if (imgtype == EMUtil::IMAGE_UNKNOWN) {
 		char *ext = strrchr(filename.c_str(), '.');
 		if (ext) {
@@ -1211,7 +1214,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 	outCopy->set_ri(true);
 	outCopy->set_FH(false);
 	outCopy->set_fftodd(true);
-	outCopy->set_shuffle(true);
+	outCopy->set_shuffled(true);
 	return outCopy;
 	} else {
 		LOGERR("can't be an FH image not this size");
@@ -7233,16 +7236,28 @@ void EMData::center_padded() {
 
 void EMData::fft_shuffle() {
 	if (!is_complex()) 
-		throw ImageFormatException("fouriergridrot2d requires a fourier image");
+		throw ImageFormatException("fft_shuffle requires a fourier image");
 	EMData& self = *this;
-	float* temp = new float[nx];
-	int nyhalf = ny/2;
-	for (int iy = 0; iy < nyhalf-1; iy++) 
-		// swap column iy and nhalf + iy + 1
-		for (int ix = 0; ix < nx; ix++)
-			std::swap(self(ix,iy),self(ix,iy+nyhalf+1));
+	if (0 == ny%2) {
+		int offset = ny/2;
+		for (int iy = 0; iy < ny/2; iy++) 
+			// swap column iy and iy + offset
+			for (int ix = 0; ix < nx; ix++)
+				std::swap(self(ix,iy),self(ix,iy+offset));
+	} else {
+		//stupid algorithm; too lazy to find better
+		int shifts = ny/2 + int(is_shuffled());
+		for (int ix = 0; ix < nx; ix++) {
+			for (int shift = 0; shift < shifts; shift++) {
+				float temp = self(ix,0);
+				for (int iy = 1; iy < ny; iy++) 
+					self(ix,iy-1) = self(ix,iy);
+				self(ix,ny-1) = temp;
+			}
+		}
+	}
+	set_shuffled(!is_shuffled()); // toggle
 	done_data();
-	delete [] temp;
 }
 
 EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {

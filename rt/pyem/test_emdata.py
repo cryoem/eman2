@@ -1980,9 +1980,9 @@ class TestEMData(unittest.TestCase):
         e.set_size(32, 32, 32)
         e.process("testimage.noise.uniform.rand")
 
-        self.assertEqual(e.is_shuffle(), False)
-        e.set_shuffle(True)
-        self.assertEqual(e.is_shuffle(), True)
+        self.assertEqual(e.is_shuffled(), False)
+        e.set_shuffled(True)
+        self.assertEqual(e.is_shuffled(), True)
         
         self.assertEqual(e.is_FH(), False)
         e.set_FH(True)
@@ -2187,6 +2187,53 @@ class TestEMData(unittest.TestCase):
         #e5 = e.symvol('OCT_SYM')
         #e6 = e.symvol('ISYM')
     
+    def test_fft_shuffle_is_shuffled(self):
+        """test fft_shuffle correctly sets is_shuffled......."""
+        e = EMData()
+        e.set_size(4,4,1)
+        e.to_zero()
+        e[3,3] = 1.
+        eft = e.do_fft()
+        self.assertEqual(eft.is_shuffled(), False)
+        eft.fft_shuffle()
+        self.assertEqual(eft.is_shuffled(), True)
+        eft.fft_shuffle()
+        self.assertEqual(eft.is_shuffled(), False)
+
+    def test_fft_shuffle_exact_toggle_odd(self):
+        """test fft_shuffle() toggles for odd images........."""
+        e_odd = EMData()
+        e_odd.set_size(3,3,1)
+        e_odd.to_zero()
+        e_odd[1,1] = 1.
+        e_oddft = e_odd.do_fft()
+        e_oddft_copy = e_oddft.copy()
+        e_oddft_copy.fft_shuffle()
+        e_oddft_copy.fft_shuffle()
+        diff = e_oddft_copy - e_oddft
+        diff2 = diff*diff
+        error = False
+        if diff2.get_attr("maximum") > 1.e-10:
+            error = True
+        self.assertEqual(error, False)
+
+    def test_fft_shuffle_exact_toggle_even(self):
+        """test fft_shuffle() toggles for even images........"""
+        e_even = EMData()
+        e_even.set_size(4,4,1)
+        e_even.to_zero()
+        e_even[1,1] = 1.
+        e_evenft = e_even.do_fft()
+        e_evenft_copy = e_evenft.copy()
+        e_evenft_copy.fft_shuffle()
+        e_evenft_copy.fft_shuffle()
+        diff = e_evenft_copy - e_evenft
+        diff2 = diff*diff
+        error = False
+        if diff2.get_attr("maximum") > 1.e-10:
+            error = True
+        self.assertEqual(error, False)
+
 def test_main():
     test_support.run_unittest(TestEMData)
 
