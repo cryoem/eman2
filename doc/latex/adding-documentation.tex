@@ -28,9 +28,9 @@ The recommended steps for adding new documentation go as follows:
 Please do not include the following sections/commands in new documentation:
 \begin{itemize}
   \item
-    $\backslash$title, $\backslash$maketitle
+    {\color[named]{BurntOrange} $\backslash$title,$\backslash$maketitle}
   \item
-    $\backslash$tableofcontents
+    {\color[named]{BurntOrange} $\backslash$tableofcontents}
 \end{itemize}
 Edit the existing title and table of content information instead.
 
@@ -39,8 +39,8 @@ Edit the existing title and table of content information instead.
 
 The preamble of a \LaTeX ~document is used to specify various global
 parameters of the document.  In a stand alone document, all commands
-coming before and including $\backslash$begin\{document\} are part of the
-preamble.  There is also a $\backslash$end\{document\} at the very end
+coming before and including {\color[named]{BurntOrange}$\backslash$begin\{document\}} are part of the
+preamble.  There is also a {\color[named]{BurntOrange}$\backslash$end\{document\}} at the very end
 of the document that should be removed.
 
 Use the ``\%'' character at the  start of a line to comment it out.
@@ -48,7 +48,8 @@ Use the ``\%'' character at the  start of a line to comment it out.
 The python script rm\_preamble.py can usually be used to automatically remove
 the preamble and other tags that should not be used.
 \begin {itemize}
-  \item[\%] python rm\_preamble.py \textit{file1 file2 ...}
+  {\color[named]{Blue} 
+  \item[\%] python rm\_preamble.py \textit{file1 file2 ...}}
 \end{itemize}
 The output will be placed in the \textit{file1}.tex,
 \textit{file2}.tex, ...
@@ -56,14 +57,14 @@ The output will be placed in the \textit{file1}.tex,
 \subsection{Editing TOC.tex} \label{ADDING-DOC-TOC}
 
 TOC.tex contains the table of contents information for this document.
-Add ``$\backslash$input\{\textit{new file name}\}'' in the appropriate
+Add ``{\color[named]{BurntOrange}$\backslash$input\{\textit{new file name}\}}'' in the appropriate
 chapter to insert a new documentation file.
 Of course a new chapter can always be added using the
-``$\backslash$chapter\{\textit{new chapter name}\}'' command.
+``{\color[named]{BurntOrange}$\backslash$chapter\{\textit{new chapter name}\}}'' command.
 
 
 \subsection{Adding \LaTeX ~Packages}
 
 The package inclusion tag for the documentation is located in
 EMAN2.tex.  Add the package that is needed to the
-$\backslash$usepackage command.
+{\color[named]{BurntOrange}$\backslash$usepackage} command.

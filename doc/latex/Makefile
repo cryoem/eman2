@@ -21,7 +21,7 @@ EMAN2.pdf: EMAN2.ps
 
 EMAN2.dvi: EMAN2.tex *.tex
 	latex EMAN2
-	makeindex EMAN2
+	makeindex EMAN2.idx
 	latex EMAN2
 
 clean:

@@ -15,17 +15,18 @@ libraries should be installed as shared-object libraries where applicable):
    \index{Installation!Required Libraries!FFTW} \index{FFTW}
 
    To install fftw from source use either configure option:
-   
-   \% ./configure --enable-static=no --enable-shared=yes --enable-float --enable-type-prefix
+
+   {\color{blue}
+   \% ./configure --enable-static=no --enable-shared=yes --enable-float --enable-type-prefix}
 
    OR
 
-   \% ./configure --enable-shared=yes --enable-float 
+   {\color{blue}\% ./configure --enable-shared=yes --enable-float }
    
    
    Followed by:
    
-   \% make
+   {\color{blue}\% make}
 
 \subsection{GSL - GNU Scientific Library} 
   Version: 1.3+\\
@@ -33,19 +34,18 @@ libraries should be installed as shared-object libraries where applicable):
    
   Installation is very straight forward:
 
+  \color{blue}
    \% ./configure
    
    \% make
-   
+   \normalcolor
+
 \subsection{Boost}
-  Version: 1.32+ (see note below)\\
+  Version: 1.32 or lower\\
   Available at: \href{http://www.boost.org}{http://www.boost.org}
   \index{Installation!Required Libraries!Boost} \index{Boost}
        
-  
-  (NOTE:  EMAN2 only supports Boost versions about 1.32 on 64 bit
-  architectures currently.  Versions 1.32 or lower should be used on
-  32 bit machines.)  
+  (NOTE:  EMAN2 does not currently support Boost versions above 1.32.)  
 
   \begin{enumerate}
     \item
@@ -59,7 +59,7 @@ libraries should be installed as shared-object libraries where applicable):
   \href{http://www.boost.org/more/getting\_started.html\#Tools}{http://www.boost.org/more/getting\_started.html\#Tools}
   for a complete listing.        
 
-  \% bjam "-sTOOLS=gcc" install 
+  {\color{blue}\% bjam "-sTOOLS=gcc" install }
 
   Header files from the Boost installation (located in the
   "boost" subdirectory of the Boost installation
@@ -68,11 +68,11 @@ libraries should be installed as shared-object libraries where applicable):
   in a subdirectory /boost.
 
   One possibility for this might be:
-  \% cp -r boost /usr/include/boost
+  {\color{blue}\% cp -r boost /usr/include/boost}
       
   
 \subsection{CMake}
-  Version: 2.0.5+\\
+  Version: 2.0.6+\\
   Available at: \href{http://www.cmake.org}{http://www.cmake.org}
    \index{Installation!Required Libraries!CMake} \index{CMake}
 
@@ -109,6 +109,7 @@ libraries should be installed as shared-object libraries where applicable):
 
 \begin{enumerate}
     \item
+      \color{blue}
       \begin{itemize}
           \item[\%] cd \$HOME
           \item[\%] mkdir -p EMAN2/src
@@ -116,35 +117,43 @@ libraries should be installed as shared-object libraries where applicable):
           \item[\%] gunzip eman2.tar.gz
           \item[\%] tar xf eman2.tar \\
       \end{itemize}
-
+      \normalcolor
     \item
+      \color{blue}
       \begin{itemize}
 	  \item[\%]mkdir build
 	  \item[\%]cd build \\
        \end{itemize}
+      \normalcolor
 
      \item       
+       \color{blue}
        \begin{itemize}
 	 \item[\%]cmake ../eman2
          \item[\%]make
          \item[\%]make install \\
        \end{itemize}
+       \normalcolor
 
      \item
           set up login shell\\
-          for csh/tcsh, put the following to your .cshrc or .tcshrc file:\\
-          
+          for csh/tcsh, put the following to your .cshrc or .tcshrc file:
+	  
+          \color{blue}
           setenv EMAN2DIR \$HOME/EMAN2\\
           setenv PATH \$EMAN2DIR/bin:\$\{PATH\}\\
           setenv LD\_LIBRARY\_PATH  \$EMAN2DIR/lib\\
           setenv PYTHONPATH .:\$HOME/EMAN2/lib\\
+	  \normalcolor
 
-	  for bash in .bashrc add:\\
+	  for bash in .bashrc add:
 	
+	  \color{blue}
           export EMAN2DIR=\$HOME/EMAN2\\
           export PATH=\$PATH:\$EMAN2DIR/bin\\
           export LD\_LIBRARY\_PATH=\$EMAN2DIR/lib\\
           export PYTHONPATH=\$PYTHONPATH:\$HOME/EMAN2/lib
+	  \normalcolor
 \end{enumerate}
 
 
@@ -172,7 +181,7 @@ libraries should be installed as shared-object libraries where applicable):
           \end{itemize}
 	
 	\item
-        \% ccmake ../eman2
+        {\color{blue}\% ccmake ../eman2}
 	\begin{itemize}
           \item[-] type 'c' if it asks about "CMAKE\_BACKWARDS\_COMPATIBILITY".
           \item[-] make necessary changes for compilation flags.
@@ -185,10 +194,12 @@ libraries should be installed as shared-object libraries where applicable):
 	\end{itemize}
 
 	\item
+	  \color{blue}
 	  \begin{itemize}
           \item[\%] make
           \item[\%] make install          
 	  \end{itemize}
+	  \normalcolor
    \end{enumerate}
                 
 \subsection{Platform Dependent Optimization}
@@ -208,7 +219,7 @@ libraries should be installed as shared-object libraries where applicable):
       Install doxygen (version 1.4.3+, \href{http://www.doxygen.org}{http://www.doxygen.org})
 
     \item
-      Run ``sh ./makedoc.sh'' from the ``EMAN2/src/eman2/'' directory to
+      Run {\color{blue}``sh ./makedoc.sh''} from the ``EMAN2/src/eman2/'' directory to
    generate the documentation in the ``EMAN2/src/eman2/doc/''.
   \end{enumerate}
 
@@ -230,9 +241,9 @@ libraries should be installed as shared-object libraries where applicable):
 
     \begin{enumerate}
       \item
-        get boost python.\\
+        get boost python.\\\color{blue}
         \% cd libs/python/pyste/install \\
-        \% python setup.py install \\
+        \% python setup.py install \\\normalcolor
 	\item
           install elementtree
 	\item
@@ -244,10 +255,12 @@ libraries should be installed as shared-object libraries where applicable):
     
     \item
       To generate new boost python wrapper, run
+      \color{blue}
       \begin{itemize}
-        \item[\%] cd eman2/libpyEM
+        \item[\%] cd eman2/libpyEm
         \item[\%] ./create\_boost\_python
       \end{itemize}
+      \normalcolor
 
       \item
 	Windows Installer

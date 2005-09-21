@@ -5,6 +5,7 @@
 
 
     Example: Converting from IMAGIC to MRC or SPIDER:
+    \color[named]{OliveGreen}
     \begin{verbatim}from EMAN2 import *
 e = EMData()
 e.read_image(\u201cproj.img\u201d)
@@ -12,11 +13,12 @@ e.write_image(\u201cproj.mrc\u201d)
     # output image format is determined by file extension
 e.write_image(\u201cproj.spi\u201d, 1, SPIDER)  
     # explicitly specifiy the output image format   \end{verbatim}
-
+    \normalcolor
 
     \subsection{Processors Usage} \index{Processors!Usage}
     
     Example: Using Processors in Python
+    \color[named]{OliveGreen}
     \begin{verbatim}from EMAN2 import
       
 e = EMData()
@@ -24,11 +26,12 @@ e.read_image("test1.mrc")
 e.process("eman1.math.sqrt")
 e.process("eman1.threshold.binaryrange", {"low" : 5.2, "high" : 10})
 e.write_image("output.mrc")     \end{verbatim}
-
+    \normalcolor
 
     \subsection{Reconstructors Usage} \index{Reconstructors!Usage}
 
     Example: Using Reconstructors in Python
+    \color[named]{OliveGreen}
     \begin{verbatim}from EMAN2 import *
 import math
 
@@ -46,6 +49,7 @@ r.insert_slice(e2, Transform(EULER_EMAN, math.pi/2,0,0))
 
 result = r.finish()
 result.write_image("reconstructor.mrc")\end{verbatim}
+    \normalcolor
 
     \subsection{Using Pyste} \index{Misc.!Pyste}
     EMAN2 uses Pyste to automatically parse C++ code to generate boost
@@ -70,10 +74,11 @@ result.write_image("reconstructor.mrc")\end{verbatim}
       \begin{enumerate}
       \item If the function returns a pointer allocated in this
 	function, do: \\	    
-	set\_policy(YOUR\_FUNCTION, return\_value\_policy(manage\_new\_object))
+	{\color[named]{Blue} set\_policy(YOUR\_FUNCTION, return\_value\_policy(manage\_new\_object))}
       \item If the function returns a static pointer , do: \\
-	set\_policy(YOUR\_FUNCTION, return\_value\_policy(reference\_existing\_object))
-      \item For other cases, do: \\set\_policy(YOUR\_FUNCTION, return\_internal\_reference())
+	{\color[named]{Blue} set\_policy(YOUR\_FUNCTION, return\_value\_policy(reference\_existing\_object))}
+      \item For other cases, do: \\
+	{\color[named]{Blue}set\_policy(YOUR\_FUNCTION, return\_internal\_reference())}
       \end{enumerate}
     \item
       Run script: eman2/libpyEM/create\_boost\_python
@@ -84,6 +89,7 @@ result.write_image("reconstructor.mrc")\end{verbatim}
     EMAN2 works with both fftw2 and fftw3. A user makes the choice at
     compile time.  A standard interface is defined to do fft:
     
+    {\color[named]{BrickRed}
     \begin{verbatim}class EMfft {
 public:
     static int real_to_complex_1d(float *real_data, float *complex_data, 
@@ -95,7 +101,8 @@ public:
     static int complex_to_real_nd(float *complex_data, float *real_data, 
                                   int nx, int ny, int nz);
  };\end{verbatim}
-
+    }
+ 
     \subsection{Large File I/O} \index{Misc.!Large File I/O}
     \begin{enumerate}
       \item 
@@ -109,6 +116,7 @@ public:
       \item
 	Euler angles are implemented in \textbf{Rotation} class.
       \item
+	{\color[named]{OliveGreen}
 	\begin{verbatim}Rotation r = Rotation(alt, az, phi, Rotation::EMAN);
 float alt2 = r.eman_alt();
 float az2 = r.eman_az();
@@ -116,7 +124,7 @@ float phi2 = r.eman_phi();
 
 float theta = r.mrc_theta();
 float phi = r.mrc_phi();
-float omega = r.mrc_omega();\end{verbatim}
+float omega = r.mrc_omega();\end{verbatim}}
     \end{itemize}
 
     \subsection{Using Numeric Python} \index{Numeric Python!Usage}
@@ -125,12 +133,14 @@ float omega = r.mrc_omega();\end{verbatim}
 	In EMAN2,  Numeric array and the corresponding EMData object shares the same memory block.
       \item
 	Example: Converting EMData object to Numeric numpy array
+	{\color[named]{OliveGreen}
 	\begin {verbatim}from EMAN2 import *
 e = EMData()
 e.read_image("e.mrc"))
-array = EMNumPy.em2numpy(e)\end{verbatim}
+array = EMNumPy.em2numpy(e)\end{verbatim}}
       \item
 	Example: Converting Numerc numpy array to EMData object
+	{\color[named]{OliveGreen}
 	\begin{verbatim}from EMAN2 import *
 import Numeric
 n= 100
@@ -138,7 +148,7 @@ numbers= range(2*n*n)
 array= Numeric.reshape(Numeric.array(numbers,Numeric.Float32),(2*n,n))
 e= EMData()
 Wrapper.numpy2em(array, e)
-e.write_image("numpy.mrc")\end{verbatim}
+e.write_image("numpy.mrc")\end{verbatim}}
     \end{itemize}
 
     \subsection{Using Transformations} \index{Transformations}

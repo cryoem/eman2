@@ -12,11 +12,13 @@
     \item
       Download boost source from http://www.boost.org. Assume the
       version is boost\_1\_32\_0.
-      \begin{itemize}
+      \color[named]{Blue}
+      \begin{itemize} 
         \item[\%] cd /usr/local/src
 	\item[\%] tar zxf boost\_1\_32\_0.tar.gz
 	\item[\%] cd boost\_1\_32\_0.
       \end{itemize}
+      \normalcolor
 
     \item
       Set up environment variables ''PYTHON\_ROOT'' and ''PYTHON\_VERSION''.
@@ -25,39 +27,46 @@
        is '2.2'.
        \begin{enumerate}
        \item 
-	 check your shell: \% echo \$SHELL
+	 check your shell: {\color[named]{Blue}\% echo \$SHELL}
        
        \item
 	 if you are using bash/zsh, do
+	 \color[named]{Blue}
 	 \begin{itemize}
            \item[\%] export PYTHON\_VERSION=2.2
            \item[\%] export PYTHON\_ROOT=/usr
 	 \end{itemize}
+	 \normalcolor
 
           if you are using csh/tcsh, do
+	  \color[named]{Blue}
 	  \begin{itemize}
             \item[\%] setenv PYTHON\_VERSION 2.2
             \item[\%] setenv PYTHON\_ROOT /usr
 	  \end{itemize}
+	  \normalcolor
        \end{enumerate}
 
      \item
-       cd libs/python/build
+	  {\color[named]{Blue} cd libs/python/build}
     
      \item
        run 'bjam' with your options:
        \begin{itemize}
-	 \item[-] linux-x86: \% bjam
-	 \item[-] SGI Irix:  \% bjam ''-sTOOLS=mipspro''
+	 \item[-] linux-x86: {\color[named]{Blue}\% bjam}
+	 \item[-] SGI Irix: {\color[named]{Blue}\% bjam ''-sTOOLS=mipspro''}
        \end{itemize}
 
      \item
        login as root
     
      \item
-       cp -df bin-stage/libboost\_python.so* /usr/local/lib
-
-       cd ../../..; cp -rf boost /usr/local/include
+       \color[named]{Blue}
+       \begin{itemize}
+	 \item[\%] cp -df bin-stage/libboost\_python.so* /usr/local/lib
+	 \item[\%] cd ../../..; cp -rf boost /usr/local/include
+       \end{itemize}
+       \normalcolor
 
   \end{enumerate}
 
@@ -83,12 +92,16 @@
     manually as follows:
 
     \begin{itemize}
-    \item[-] get source code Numeric-XX.Y.tar.gz
-    \item[-] \% gunzip Numeric-XX.Y.tar.gz \\
-      \% tar xf Numeric-XX.Y.tar
-    \item[-] login as root
-    \item[-] \% cd Numeric-XX.Y; \\
-      \% python setup.py install
+      \item[-] get source code Numeric-XX.Y.tar.gz
+      \color[named]{Blue}
+      \item[-] \% gunzip Numeric-XX.Y.tar.gz \\
+	\% tar xf Numeric-XX.Y.tar
+      \normalcolor
+      \item[-] login as root
+      \color[named]{Blue}
+      \item[-] \% cd Numeric-XX.Y; \\
+	\% python setup.py install
+      \normalcolor
     \end{itemize}
 
 

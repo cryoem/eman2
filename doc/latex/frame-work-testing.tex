@@ -24,6 +24,7 @@ python, they will be tested in C++.
 
   \item
     Example of a unit test and a regression test:
+    \color[named]{OliveGreen}
     \begin{verbatim}import unittest
 from test import test_support
 
@@ -61,10 +62,11 @@ def test\_main():
 if __name__ == '__main__':
     test_main()
     \end{verbatim}
+    \normalcolor
 
-  \item
-    Here is a more detailed example:    \begin{verbatim}
-import random
+  \item Here is a more detailed example:    
+    \color[named]{OliveGreen}
+    \begin{verbatim}import random
 import unittest
 
 class TestSequenceFunctions(unittest.TestCase):
@@ -92,6 +94,7 @@ class TestSequenceFunctions(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()\end{verbatim}
+    \normalcolor
 
   \item
     Asserting Values and Conditions

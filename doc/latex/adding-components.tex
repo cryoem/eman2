@@ -16,11 +16,12 @@ faster if templates are used.
     General Overview for Using Templates:
     \begin{enumerate}
     \item
-      Edit the template.h and template.cpp files for the type of
+      Edit the \textbf{\color[named]{Brown}template.h} and
+      \textbf{\color[named]{Brown}template.cpp} files for the type of 
       component that is being added
     \item
       From EMAN2/src/build run:\\
-      \% make
+      {\color[named]{Blue} \% make}
     \end{enumerate}
 \end{itemize}
 
@@ -32,9 +33,9 @@ faster if templates are used.
       \subsubsection{Using Templates:}
       Located in the plugin directory of the EMAN2 source
       (i.e. EMAN2/src/eman2/plugins) are various template files including
-      processor\_template.h and processor\_template.cpp.  These are the files
+      \textbf{\color[named]{Brown}processor\_template.h} and \textbf{\color[named]{Brown}processor\_template.cpp}.  These are the files
       that will be used for new processor installation.  Begin by editing
-      processor\_template.h. 
+      \textbf{\color[named]{Brown}processor\_template.h}. 
 
       \begin{enumerate}
 	\item
@@ -63,7 +64,7 @@ faster if templates are used.
 	  "Factory $<$Processor$>$ ::add(\&dProcessor::NEW);"
       \end{enumerate}
 
-      Now edit processor\_template.cpp
+      Now edit \textbf{\color[named]{Brown}processor\_template.cpp}
       
       \begin{itemize}
 	\item
@@ -81,11 +82,12 @@ faster if templates are used.
       \end{itemize}
 
       Finally rebuild EMAN:
+      \color[named]{Blue}
       \begin{itemize}
 	\item[\%] cd ../../build
 	\item[\%] make
       \end{itemize}
-
+      \normalcolor
       The new processor should now be available using the name that was
       specified in get\_name().
 
@@ -105,7 +107,8 @@ faster if templates are used.
       Open processor.cpp (also located in src/eman2/libEM)
     \item
       Copy and paste the class from processor\_template.cpp to
-      processor.cpp
+      processor.cpp.  Header file include statements may also need to
+      be copied.
     \item \label{REPEAT-STEP1}
       In the template class Factory located in the begining of
       processor.cpp add a line "force\_add(\&newProcessor::NEW)" where
@@ -154,7 +157,7 @@ faster if templates are used.
 
   Also, when adding to the core, averager.h and averager.cpp should be altered.
 
-\subsection{cmp}
+\subsection{Image Comparator}
   \label{ADDING-CMP} 
   \index{CMP!Adding New} 
   \index{Adding Components!CMP}

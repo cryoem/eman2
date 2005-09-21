@@ -15,7 +15,8 @@
 
 \begin{itemize}
 \item  Here is an example on throwing an exception:
-\begin{verbatim}vector <float>EMData::calc_fourier_shell_correlation(EMData * with){
+{\color[named]{BrickRed}
+  \begin{verbatim}vector <float>EMData::calc_fourier_shell_correlation(EMData * with){
     if (!with) {
         throw NullPointerException("NULL input image");
     }
@@ -25,10 +26,11 @@
         throw ImageFormatException( "images not same size");
     }  
 //...
-}\end{verbatim}
+}\end{verbatim}}
 
 \item Here is an example on catching all possible exception
-\begin{verbatim}void foo()
+{\color[named]{BrickRed}
+  \begin{verbatim}void foo()
 {
     EMData* e1 = new EMData();
     EMData* e2 = new EMData();
@@ -40,9 +42,10 @@
     catch (E2Exception & exception) {
         printf("%s\n", exception.what());
     }
-}\end{verbatim}
+}\end{verbatim}}
 
 \item Here is an example on catching a specific exception:
+{\color[named]{BrickRed}
 \begin{verbatim}void foo()
 {
     EMData* e1 = new EMData();
@@ -55,7 +58,7 @@
     catch (_NullPointerException & exception) {
         printf("%s\n", exception.what());
     }
-}\end{verbatim}
+}\end{verbatim}}
 
 
  
@@ -89,6 +92,7 @@ Note the ``\_'' before \_NullPointerException.
     \end{itemize}
   \item
      Here is the code for NullPointerException.
+     {\color[named]{BrickRed}
      \begin{verbatim}class _NullPointerException : public E2Exception {
   public:
         _NullPointerException(const string& file = "unknown",
@@ -101,7 +105,7 @@ Note the ``\_'' before \_NullPointerException.
   };
 
 #define NullPointerException(desc) _NullPointerException(__FILE__,\
-__LINE__,desc)\end{verbatim} 
+__LINE__,desc)\end{verbatim} }
 
 \end{itemize}
 
