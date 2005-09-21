@@ -51,7 +51,7 @@ ELSE (ENABLE_DEBUG)
     ENDIF(ENABLE_ATHLON)
 
     IF(ENABLE_G5)
-		SET(OPT_FLAGS "-fast -fPIC -mcpu=970 -mtune=970 -mpowerpc64 -O5" CACHE INTERNAL "C++ compiler flags")
+		SET(OPT_FLAGS "-fast -fPIC -mcpu=970 -mtune=970 -mpowerpc64 -O5 -Wno-long-double" CACHE INTERNAL "C++ compiler flags")
     ENDIF(ENABLE_G5)
     
 ENDIF (ENABLE_DEBUG)
