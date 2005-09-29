@@ -432,7 +432,7 @@ namespace EMAN
 	/** Region defines a 2D or 3D rectangular region specified by its
 	 * origin coordinates and all edges' sizes. The coordinates and
 	 * edge sizes can be integer or floating numbers.
-     */
+	 */
 	class Region
 	{
 	public:
@@ -443,6 +443,14 @@ namespace EMAN
 		{
 			origin = FloatPoint ();
 			size = FloatSize();
+		}
+
+		/** Construct a 1D integer region
+		 */
+		Region(int x, int xsize)
+		{
+			origin = FloatPoint (x);
+			size = FloatSize(xsize);
 		}
 
 		/** Construct a 2D integer region.
@@ -461,6 +469,14 @@ namespace EMAN
 			size = FloatSize(xsize, ysize, zsize);
 		}
 		
+		/** Construct a 1D floating-number region.
+		 */
+		Region(float x, float xsize)
+		{
+			origin = FloatPoint (x);
+			size = FloatSize(xsize);
+		}
+
 		/** Construct a 2D floating-number region.
 		 */
 		Region(float x, float y, float xsize, float ysize)
@@ -475,6 +491,14 @@ namespace EMAN
 		{
 			origin = FloatPoint(x, y, z);
 			size = FloatSize(xsize, ysize, zsize);
+		}
+
+		/** Construct a 1D floating-number region.
+		 */
+		Region(double x, double xsize)
+		{
+			origin = FloatPoint (x);
+			size = FloatSize(xsize);
 		}
 
 		/** Construct a 2D floating-number region.
@@ -513,6 +537,7 @@ namespace EMAN
 		 */
 		bool inside_region() const;
 		bool inside_region(const FloatPoint &p) const;
+		bool inside_region(float x) const;
 		bool inside_region(float x, float y) const;
 		bool inside_region(float x, float y, float z) const;
 

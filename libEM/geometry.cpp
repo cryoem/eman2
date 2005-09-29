@@ -39,12 +39,27 @@ bool Region::inside_region() const
 
 bool Region::inside_region(const FloatPoint & p) const
 {
+	if (p.get_ndim() == 1) {
+		return inside_region(p[0]);
+	}
+  
+
 	if (p.get_ndim() == 2) {
 		return inside_region(p[0], p[1]);
 	}
 
 	return inside_region(p[0], p[1], p[2]);
 }
+
+bool Region::inside_region(float x) const
+{
+	if (size[0] >= 0 && origin[0] <= x && 
+		(origin[0] + size[0]) >= x ) {
+		return true;
+	}
+	return false;
+}
+
 
 bool Region::inside_region(float x, float y) const
 {
