@@ -157,18 +157,18 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_window_padded(self):
-        """test window_padded() function ...................."""
+    def test_window_center(self):
+        """test window_center() function ...................."""
         e = EMData()
         e.set_size(64,64,64)
         e.process("testimage.noise.uniform.rand")
-        e2 = e.window_padded(32)
+        e2 = e.window_center(32)
         
         #window_padded() only work for real data, raise exception for complex
         e.set_complex(True)
-        self.assertRaises( RuntimeError, e.window_padded, 32 )
+        self.assertRaises( RuntimeError, e.window_center, 32 )
         try:
-            e2 = e.window_padded(32)
+            e2 = e.window_center(32)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
@@ -176,11 +176,23 @@ class TestEMData(unittest.TestCase):
         e3 = EMData()
         e3.set_size(64,64,62)
         e3.process("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e3.window_padded, 32 )
+        self.assertRaises( RuntimeError, e3.window_center, 32 )
         try:
-            e4 = e3.window_padded(32)
+            e4 = e3.window_center(32)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        #test 2-D support
+        e7 = EMData()
+        e7.set_size(64,64,1)
+        e7.process("testimage.noise.uniform.rand")
+        e8 = e7.window_center(32)
+            
+        #test 1-D support 
+        e5 = EMData()
+        e5.set_size(64,1,1)
+        e5.process("testimage.noise.uniform.rand")
+        e6 = e5.window_center(32)   
             
     def test_center_origin(self):
         """test center_origin() function ...................."""
