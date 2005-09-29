@@ -5,7 +5,7 @@
 
 
     Example: Converting from IMAGIC to MRC or SPIDER:
-    \color[named]{OliveGreen}
+
     \begin{verbatim}from EMAN2 import *
 e = EMData()
 e.read_image(\u201cproj.img\u201d)
@@ -18,7 +18,7 @@ e.write_image(\u201cproj.spi\u201d, 1, SPIDER)
     \subsection{Processors Usage} \index{Processors!Usage}
     
     Example: Using Processors in Python
-    \color[named]{OliveGreen}
+
     \begin{verbatim}from EMAN2 import
       
 e = EMData()
@@ -31,7 +31,7 @@ e.write_image("output.mrc")     \end{verbatim}
     \subsection{Reconstructors Usage} \index{Reconstructors!Usage}
 
     Example: Using Reconstructors in Python
-    \color[named]{OliveGreen}
+
     \begin{verbatim}from EMAN2 import *
 import math
 
@@ -74,11 +74,11 @@ result.write_image("reconstructor.mrc")\end{verbatim}
       \begin{enumerate}
       \item If the function returns a pointer allocated in this
 	function, do: \\	    
-	{\color[named]{Blue} set\_policy(YOUR\_FUNCTION, return\_value\_policy(manage\_new\_object))}
+	{ set\_policy(YOUR\_FUNCTION, return\_value\_policy(manage\_new\_object))}
       \item If the function returns a static pointer , do: \\
-	{\color[named]{Blue} set\_policy(YOUR\_FUNCTION, return\_value\_policy(reference\_existing\_object))}
+	{ set\_policy(YOUR\_FUNCTION, return\_value\_policy(reference\_existing\_object))}
       \item For other cases, do: \\
-	{\color[named]{Blue}set\_policy(YOUR\_FUNCTION, return\_internal\_reference())}
+	{set\_policy(YOUR\_FUNCTION, return\_internal\_reference())}
       \end{enumerate}
     \item
       Run script: eman2/libpyEM/create\_boost\_python
@@ -89,7 +89,7 @@ result.write_image("reconstructor.mrc")\end{verbatim}
     EMAN2 works with both fftw2 and fftw3. A user makes the choice at
     compile time.  A standard interface is defined to do fft:
     
-    {\color[named]{BrickRed}
+    {
     \begin{verbatim}class EMfft {
 public:
     static int real_to_complex_1d(float *real_data, float *complex_data, 
@@ -116,7 +116,7 @@ public:
       \item
 	Euler angles are implemented in \textbf{Rotation} class.
       \item
-	{\color[named]{OliveGreen}
+	{
 	\begin{verbatim}Rotation r = Rotation(alt, az, phi, Rotation::EMAN);
 float alt2 = r.eman_alt();
 float az2 = r.eman_az();
@@ -133,14 +133,14 @@ float omega = r.mrc_omega();\end{verbatim}}
 	In EMAN2,  Numeric array and the corresponding EMData object shares the same memory block.
       \item
 	Example: Converting EMData object to Numeric numpy array
-	{\color[named]{OliveGreen}
+	{
 	\begin {verbatim}from EMAN2 import *
 e = EMData()
 e.read_image("e.mrc"))
 array = EMNumPy.em2numpy(e)\end{verbatim}}
       \item
 	Example: Converting Numerc numpy array to EMData object
-	{\color[named]{OliveGreen}
+	{
 	\begin{verbatim}from EMAN2 import *
 import Numeric
 n= 100

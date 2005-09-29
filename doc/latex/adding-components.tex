@@ -16,12 +16,12 @@ faster if templates are used.
     General Overview for Using Templates:
     \begin{enumerate}
     \item
-      Edit the \textbf{\color[named]{Brown}template.h} and
-      \textbf{\color[named]{Brown}template.cpp} files for the type of 
+      Edit the \textbf{template.h} and
+      \textbf{template.cpp} files for the type of 
       component that is being added
     \item
       From EMAN2/src/build run:\\
-      {\color[named]{Blue} \% make}
+      { \% make}
     \end{enumerate}
 \end{itemize}
 
@@ -33,9 +33,9 @@ faster if templates are used.
       \subsubsection{Using Templates:}
       Located in the plugin directory of the EMAN2 source
       (i.e. EMAN2/src/eman2/plugins) are various template files including
-      \textbf{\color[named]{Brown}processor\_template.h} and \textbf{\color[named]{Brown}processor\_template.cpp}.  These are the files
+      \textbf{processor\_template.h} and \textbf{processor\_template.cpp}.  These are the files
       that will be used for new processor installation.  Begin by editing
-      \textbf{\color[named]{Brown}processor\_template.h}. 
+      \textbf{processor\_template.h}. 
 
       \begin{enumerate}
 	\item
@@ -64,7 +64,7 @@ faster if templates are used.
 	  "Factory $<$Processor$>$ ::add(\&dProcessor::NEW);"
       \end{enumerate}
 
-      Now edit \textbf{\color[named]{Brown}processor\_template.cpp}
+      Now edit \textbf{processor\_template.cpp}
       
       \begin{itemize}
 	\item
@@ -82,7 +82,7 @@ faster if templates are used.
       \end{itemize}
 
       Finally rebuild EMAN:
-      \color[named]{Blue}
+%      \color[named]{Blue}
       \begin{itemize}
 	\item[\%] cd ../../build
 	\item[\%] make

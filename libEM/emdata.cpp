@@ -476,8 +476,9 @@ EMData *EMData::get_clip(const Region & area)
 	if (zsize == 0 || nz <= 1) {
 		zsize = 1;
 	}
+	int ysize = (ny<=1 && (int)area.size[1]==0 ? 1 : (int)area.size[1]);
 
-	result->set_size((int)area.size[0], (int)area.size[1], zsize);
+	result->set_size((int)area.size[0], ysize, zsize);
 
 	int x0 = (int) area.origin[0];
 	x0 = x0 < 0 ? 0 : x0;

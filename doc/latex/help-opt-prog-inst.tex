@@ -12,7 +12,7 @@
     \item
       Download boost source from http://www.boost.org. Assume the
       version is boost\_1\_32\_0.
-      \color[named]{Blue}
+
       \begin{itemize} 
         \item[\%] cd /usr/local/src
 	\item[\%] tar zxf boost\_1\_32\_0.tar.gz
@@ -27,11 +27,11 @@
        is '2.2'.
        \begin{enumerate}
        \item 
-	 check your shell: {\color[named]{Blue}\% echo \$SHELL}
+	 check your shell: {\% echo \$SHELL}
        
        \item
 	 if you are using bash/zsh, do
-	 \color[named]{Blue}
+
 	 \begin{itemize}
            \item[\%] export PYTHON\_VERSION=2.2
            \item[\%] export PYTHON\_ROOT=/usr
@@ -39,7 +39,7 @@
 	 \normalcolor
 
           if you are using csh/tcsh, do
-	  \color[named]{Blue}
+
 	  \begin{itemize}
             \item[\%] setenv PYTHON\_VERSION 2.2
             \item[\%] setenv PYTHON\_ROOT /usr
@@ -48,20 +48,20 @@
        \end{enumerate}
 
      \item
-	  {\color[named]{Blue} cd libs/python/build}
+	  { cd libs/python/build}
     
      \item
        run 'bjam' with your options:
        \begin{itemize}
-	 \item[-] linux-x86: {\color[named]{Blue}\% bjam}
-	 \item[-] SGI Irix: {\color[named]{Blue}\% bjam ''-sTOOLS=mipspro''}
+	 \item[-] linux-x86: {\% bjam}
+	 \item[-] SGI Irix: {\% bjam ''-sTOOLS=mipspro''}
        \end{itemize}
 
      \item
        login as root
     
      \item
-       \color[named]{Blue}
+
        \begin{itemize}
 	 \item[\%] cp -df bin-stage/libboost\_python.so* /usr/local/lib
 	 \item[\%] cd ../../..; cp -rf boost /usr/local/include
@@ -93,12 +93,12 @@
 
     \begin{itemize}
       \item[-] get source code Numeric-XX.Y.tar.gz
-      \color[named]{Blue}
+
       \item[-] \% gunzip Numeric-XX.Y.tar.gz \\
 	\% tar xf Numeric-XX.Y.tar
       \normalcolor
       \item[-] login as root
-      \color[named]{Blue}
+
       \item[-] \% cd Numeric-XX.Y; \\
 	\% python setup.py install
       \normalcolor

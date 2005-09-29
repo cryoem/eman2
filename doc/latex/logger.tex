@@ -13,9 +13,11 @@ There are 4 log levels to choose from
   \item \textit{VARIABLE\_LOG} - highly detailed debugging messages
 \end{itemize}
 The default value used is \textit{ERROR\_LOG}; to change the level use:
-{\color[named]{BrickRed}\begin{verbatim} Log::logger()->set_level(Log::NEW_LOG_LEVEL); \end{verbatim}}
+%{\color[named]{BrickRed}
+\begin{verbatim} Log::logger()->set_level(Log::NEW_LOG_LEVEL); \end{verbatim}%}
 Next, output the log message using:
-{\color[named]{BrickRed}\begin{verbatim} Log::logger()->OUTPUT_FUNC;\end{verbatim}}
+%{\color[named]{BrickRed}
+\begin{verbatim} Log::logger()->OUTPUT_FUNC;\end{verbatim}%}
 where OUTPUT\_FUNC is one of the following:
 \begin{itemize}
   \item \textit{\textbf{error}(string)} - log an error message
