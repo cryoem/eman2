@@ -232,16 +232,17 @@ namespace EMAN
 							   float scale=1.0, float mult_factor=1.0);
 
 
-		/** During image reconstruction the image may have been
-		 *  padded with zeros for fourier interpolation.  In that
-		 *  case the desired lxlxl image lies in the center of a larger
-		 *  volume.  This routine creates a new
-		 *  object that contains only the desired lxlxl volume.
-		 *  (This routine is a thin wrapper around get_clip.)
+		/** Window the center of an image.
+		 *  Often an image is padded with zeros for fourier interpolation.  In
+		 *  that case the desired lxlxl volume (or lxl area) lies in the center
+		 *  of a larger volume (or area).  This routine creates a new object
+		 *  that contains only the desired window.  (This routine is a thin
+		 *  wrapper around get_clip.)
 		 *
+		 * @param l Length of the window.
 		 * @return An image object that has been windowed.
 		 */
-		EMData* window_padded(int l);
+		EMData* window_center(int l);
 
 
 		
@@ -1548,6 +1549,9 @@ namespace EMAN
 		void set_array_offsets(const int xoff_=0, const int yoff_=0, 
 				               const int zoff_=0) {
 			xoff=xoff_; yoff=yoff_; zoff=zoff_;
+		}
+		void set_array_offsets(vector<int> offsets) {
+			set_array_offsets(offsets[0],offsets[1],offsets[2]);
 		}
 		vector<int> get_array_offsets() {
 			vector<int> offsets;

@@ -1115,7 +1115,7 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	}
 	// back fft
 	v->do_ift_inplace();
-	EMData* w = v->window_padded(vnx);
+	EMData* w = v->window_center(vnx);
 	// clean up
 	if( v )
 	{

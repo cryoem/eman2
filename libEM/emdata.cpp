@@ -394,7 +394,13 @@ EMData *EMData::copy() const
 	}
 
 	ret->rfp = 0;
-	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_PAD | EMDATA_FFTODD);
+	ret->flags = flags & (EMDATA_COMPLEX 
+							| EMDATA_RI 
+							| EMDATA_PAD 
+							| EMDATA_SHUFFLE
+							| EMDATA_FLIP
+							| EMDATA_FH
+							| EMDATA_FFTODD);
 
 	ret->all_translation = all_translation;
 
@@ -802,12 +808,12 @@ EMData::symplane0(MIArray3D& w) {
 	EXITFUNC;
 }
 
-EMData* EMData::window_padded(int l) {
+EMData* EMData::window_center(int l) {
 	ENTERFUNC;
 	// sanity checks
 	int n = nx;
 	if (is_complex()) {
-		LOGERR("Need real-space data for windum");
+		LOGERR("Need real-space data for window_center()");
 		throw ImageFormatException(
 			"Complex input image; real-space expected.");
 	}
@@ -815,14 +821,33 @@ EMData* EMData::window_padded(int l) {
 		// image has been fft-padded, compute the real-space size
 		n = (flags & EMDATA_FFTODD) ? nx - 1 : nx - 2;
 	}
-	if ((n != ny) || (n != nz)) {
-		LOGERR("Need the real-space image to be cubic.");
-		throw ImageFormatException(
-			"Need cubic real-space image.");
-	}
 	int center = (n-l)/2 + l%2;
-	Region r(center, center, center, l, l, l);
-	EMData* ret = get_clip(r);
+	int ndim = get_ndim();
+	EMData* ret;
+	switch (ndim) {
+		case 3:
+			if ((n != ny) || (n != nz)) {
+				LOGERR("Need the real-space image to be cubic.");
+				throw ImageFormatException(
+						"Need cubic real-space image.");
+			}
+			ret = get_clip(Region(center, center, center, l, l, l));
+			break;
+		case 2:
+			if (n != ny) {
+				LOGERR("Need the real-space image to be square.");
+				throw ImageFormatException(
+						"Need square real-space image.");
+			}
+			ret = get_clip(Region(center, center, l, l));
+			break;
+		case 1:
+			ret = get_clip(Region(center, l));
+			break;
+		default:
+			throw ImageDimensionException(
+					"window_center only supports 1-d, 2-d, and 3-d images");
+	}
 	return ret;
 	EXITFUNC;
 }
@@ -7120,9 +7145,9 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	float* wx = wx0 - kbmin;
 	for (int i = kbmin; i <= kbmax; i++) {
 		wy[i] = kb.i0win_tab(nuydispl - i);
-		wy[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
+		//wy[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
 		wx[i] = kb.i0win_tab(nuxdispl - i);
-		wx[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
+		//wx[i] = (0 == i) ? 1.f : 0.f; // FIXME: remove after debugging
 	}
 	// restrict loops to non-zero elements
 	int iymin = 0;
@@ -7158,10 +7183,8 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
 			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
 		// (xin,yin) not within window border from the edge
-		int kyn = iyn;
-		if (kyn < 0) kyn += ny; // correct for Fourier index ordering
 		for (int iy = iymin; iy <= iymax; iy++) {
-			int iyp = kyn + iy;
+			int iyp = iyn + iy;
 			for (int ix = ixmin; ix <= ixmax; ix++) {
 				int ixp = ixn + ix;
 				float w = wx[ix]*wy[iy];
@@ -7234,6 +7257,8 @@ void EMData::center_padded() {
 void EMData::fft_shuffle() {
 	if (!is_complex()) 
 		throw ImageFormatException("fft_shuffle requires a fourier image");
+	vector<int> offsets = get_array_offsets();
+	set_array_offsets(); // clear offsets before shuffling
 	EMData& self = *this;
 	if (0 == ny%2) {
 		int offset = ny/2;
@@ -7254,6 +7279,7 @@ void EMData::fft_shuffle() {
 		}
 	}
 	set_shuffled(!is_shuffled()); // toggle
+	set_array_offsets(offsets); // reset offsets
 	done_data();
 }
 
@@ -7262,8 +7288,9 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
 	if (!is_complex()) 
 		throw ImageFormatException("fouriergridrot2d requires a fourier image");
-	if (!is_shuffled())
-		throw ImageFormatException("fouriergridrot2d requires shuffled Fourier data");
+	if (!is_shuffled()) 
+		fft_shuffle();
+
 	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal != ny)
 		throw ImageDimensionException("fouriergridrot2d requires ny == nx(real)");
@@ -7283,15 +7310,13 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 			float nuyold = ix*sang + ycang;
 			float nuxold = ix*cang + ysang;
 			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
-			//FIXME: debugging
-			result->cmplx(ix,iy) = complex<float>(0.f,0.f);
-			if (0 == round(nuyold) && 0 == round(nuxold))
-				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 		}
 	}
-	result->set_array_offsets(0,0);
-	set_array_offsets(0,0);
+	result->set_array_offsets();
+	result->fft_shuffle(); // reset to an unshuffled result
 	result->done_data();
+	set_array_offsets();
+	fft_shuffle(); // reset to an unshuffled complex image
 	return result;
 }
 
