@@ -54,7 +54,7 @@ void FourierReconstructor::setup()
 	image->done_data();
 
 	tmp_data = new EMData();
-	tmp_data->set_size(size + 1, size, size);
+	tmp_data->set_size(size + 2, size, size);
 }
 
 int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
