@@ -1786,6 +1786,17 @@ namespace EMAN
 		complex<float> extractpoint(float xin, float yin, 
 		                            Util::KaiserBessel& kb);
 		EMData* fouriergridrot2d(float ang, Util::KaiserBessel& kb);
+		/** masked_stats -- Compute image statistics under a mask
+		 *
+		 *  Specifically, compute the average and standard deviation
+		 *  under the mask.  Return the average, the standard deviation,
+		 *  and the number of pixels under the mask.
+		 *
+		 *  @param[in] mask Mask image
+		 *
+		 *  @return dictionary containing "avg", "sigma", and "nmask" keys
+		 */
+		Dict masked_stats(const EMData* mask);
 
 
 	private:

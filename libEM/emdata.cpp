@@ -7298,6 +7298,7 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	if (0 != nxreal%2)
 		throw ImageDimensionException("fouriergridrot2d needs an even image.");
 	int nxhalf = nxreal/2;
+	float nxhalf2 = nxhalf*float(nxhalf);
 	int nyhalf = ny/2;
 	EMData* result = copy();
 	set_array_offsets(0,-nyhalf);
@@ -7307,10 +7308,16 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
 		float ycang = iy*cang;
 		float ysang = -iy*sang;
+		float iy2 = iy*float(iy);
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			float nuyold = ix*sang + ycang;
-			float nuxold = ix*cang + ysang;
-			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
+			float ix2 = ix*float(ix);
+			if (ix2 + iy2 <= nxhalf2) {
+				float nuyold = ix*sang + ycang;
+				float nuxold = ix*cang + ysang;
+				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
+			} else {
+				result->cmplx(ix,iy) = complex<float>(0.f,0.f);
+			}
 		}
 	}
 	result->set_array_offsets();
@@ -7322,6 +7329,28 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 }
 
 
-
+Dict EMData::masked_stats(const EMData* mask) {
+	if (is_complex())
+		throw ImageFormatException(
+				"Complex images not supported by EMData::masked_stats");
+	float* ptr = get_data();
+	float* mptr = mask->get_data();
+	long double sum1 = 0.L;
+	long double sum2 = 0.L;
+	long nmask = 0L;
+	for (long i = 0; i < nx*ny*nz; i++,ptr++,mptr++) {
+		if (*mptr > 0.5f) {
+			nmask++;
+			sum1 += *ptr;
+			sum2 += (*ptr)*(*ptr);
+		}
+	}
+	float avg = sum1/nmask;
+	float sig2 = sum2/nmask - avg*avg;
+	float sig = sqrt(sig2);
+	Dict mydict;
+	mydict["avg"] = avg; mydict["sigma"] = sig; mydict["nmask"] = int(nmask);
+	return mydict;
+}
 
 /* vim: set ts=4 noet: */

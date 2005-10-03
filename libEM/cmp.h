@@ -106,6 +106,51 @@ namespace EMAN
 		mutable Dict params;
 	};
 
+	/** Compute the cross-correlation coefficient between two images.
+	 *
+	 * The cross-correlation coefficient is defined as:
+	 *       <AB> - <A><B>
+	 * CCC = -------------
+	 *       sig(A)sig(B)
+	 *
+	 * where the angle brackets denote averages and "sig" is the 
+	 * standard deviation.  In the case of a mask, only pixels under 
+	 * the mask are included in the calculation of averages.
+	 *
+	 * For complex images, this routine currently bails.
+	 * @author Grant Goodyear (grant.goodyear@uth.tmc.edu) 
+	 * @date 2005-10-03
+	 * @param mask Image mask
+	 */
+	class CccCmp:public Cmp
+	{
+	  public:
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return "ccc";
+		}
+
+		string get_desc() const
+		{
+			return "Cross-correlation coefficient";
+		}
+
+		static Cmp *NEW()
+		{
+			return new CccCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mask", EMObject::EMDATA, "image mask");
+			return d;
+		}
+
+	};
+
 	/** Use dot product of 2 same-size images to do the comparison.
 	* For complex images, it does not check r/i vs a/p.
 	* @author Steve Ludtke (sludtke@bcm.tmc.edu) 
@@ -350,3 +395,6 @@ namespace EMAN
 
 
 #endif
+
+/* vim: set ts=4 noet: */
+/* vim: set ts=4 noet: */

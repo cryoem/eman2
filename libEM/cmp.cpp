@@ -9,6 +9,7 @@ using namespace EMAN;
 
 template <> Factory < Cmp >::Factory()
 {
+	force_add(&CccCmp::NEW);
 	force_add(&DotCmp::NEW);
 	force_add(&QuadMinDotCmp::NEW);
 	force_add(&VarianceCmp::NEW);
@@ -41,6 +42,52 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 	}
 }
 
+
+// Even though this uses doubles, it might be wise to recode it row-wise
+// to avoid numerical errors on large images
+float CccCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	if (image->is_complex() || with->is_complex())
+		throw ImageFormatException(
+				"Complex images not supported by CMP::CccCmp");
+	validate_input_args(image, with);
+
+	float *d1 = image->get_data();
+	float *d2 = with->get_data();
+
+	EMData* mask;
+	if (params.has_key("mask")) {
+		mask = params["mask"];
+	} else {
+		mask = image->copy_head();
+		mask->to_zero();
+		*mask += 1.f;
+	}
+	float* dm = mask->get_data();
+
+	double avg1 = 0., var1 = 0., avg2 = 0., var2 = 0., ccc = 0.;
+	long n = 0;
+	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	for (long i = 0; i < totsize; i++) {
+		if (dm[i] > 0.5) {
+			avg1 += double(d1[i]);
+			var1 += d1[i]*double(d1[i]);
+			avg2 += double(d2[i]);
+			var2 += d2[i]*double(d2[i]);
+			ccc += d1[i]*double(d2[i]);
+			n++;
+		}
+	}
+	avg1 /= double(n);
+	var1 = var1/double(n) - avg1*avg1;
+	avg2 /= double(n);
+	var2 = var2/double(n) - avg2*avg2;
+	ccc = ccc/double(n) - avg1*avg2;
+	ccc /= sqrt(var1*var2);
+	return ccc;
+	EXITFUNC;
+}
 
 // Even though this uses doubles, it might be wise to recode it row-wise
 // to avoid numerical errors on large images
@@ -327,7 +374,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		nsnr = np;
 		dfsnr = (float *) realloc(dfsnr, np * sizeof(float));
 
-		float w = Util::square(nx / 8.0f);
+		//float w = Util::square(nx / 8.0f); // <- Not used currently
 
 		for (int i = 0; i < np; i++) {
 //			float x2 = Util::square(i / (float) Ctf::CTFOS);
@@ -392,7 +439,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 		throw ImageDimensionException("2D only");
 	}
 
-	int nx = image->get_xsize();
+	//int nx = image->get_xsize(); // <- not currently used
 	int ny = image->get_ysize();
 
 	vector < float >snr = params["snr"];
@@ -405,7 +452,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 
 		if (default_snr.size() != (unsigned int) np) {
 			default_snr = vector < float >(np);
-			float w = Util::square(nx / 8.0f);
+			// float w = Util::square(nx / 8.0f); // <- Not currently used
 
 			for (int i = 0; i < np; i++) {
 //				float x2 = Util::square(i / (float) Ctf::CTFOS);
@@ -434,3 +481,5 @@ void EMAN::dump_cmps()
 {
 	dump_factory < Cmp > ();
 }
+
+/* vim: set ts=4 noet: */
