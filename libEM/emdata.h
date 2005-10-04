@@ -766,6 +766,11 @@ namespace EMAN
 		 */
 		void div(const EMData & image);
 
+		/** Replace the image its complex conjugate.
+		 * @exception ImageFormatException Image must be complex (and RI)
+		 */
+		void cconj();
+
 		/** Get the image pixel density data in a 1D float array.
 		 * @return The image pixel density data.
 		 */

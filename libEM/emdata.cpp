@@ -3062,6 +3062,19 @@ void EMData::div(const EMData & em)
 	EXITFUNC;
 }
 
+void EMData::cconj() {
+	ENTERFUNC;
+	if (!is_complex() || !is_ri())
+		throw ImageFormatException("EMData::conj requires a complex, ri image");
+	int nxreal = nx -2 + int(is_fftodd());
+	int nxhalf = nxreal/2;
+	for (int iz = 0; iz < nz; iz++)
+		for (int iy = 0; iy < ny; iy++)
+			for (int ix = 0; ix <= nxhalf; ix++)
+				cmplx(ix,iy,iz) = conj(cmplx(ix,iy,iz));
+	EXITFUNC;
+}
+
 
 void EMData::update_stat()
 {

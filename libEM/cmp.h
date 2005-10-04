@@ -397,4 +397,3 @@ namespace EMAN
 #endif
 
 /* vim: set ts=4 noet: */
-/* vim: set ts=4 noet: */
