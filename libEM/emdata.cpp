@@ -818,11 +818,11 @@ EMData* EMData::window_center(int l) {
 		throw ImageFormatException(
 			"Complex input image; real-space expected.");
 	}
-	if ( flags & EMDATA_PAD ) {
+	if (is_fftpadded()) {
 		// image has been fft-padded, compute the real-space size
-		n = (flags & EMDATA_FFTODD) ? nx - 1 : nx - 2;
+		n -= (2 - int(is_fftodd()));
 	}
-	int center = (n-l)/2 + l%2;
+	int corner = (n-l)/2;
 	int ndim = get_ndim();
 	EMData* ret;
 	switch (ndim) {
@@ -832,7 +832,7 @@ EMData* EMData::window_center(int l) {
 				throw ImageFormatException(
 						"Need cubic real-space image.");
 			}
-			ret = get_clip(Region(center, center, center, l, l, l));
+			ret = get_clip(Region(corner, corner, corner, l, l, l));
 			break;
 		case 2:
 			if (n != ny) {
@@ -840,10 +840,10 @@ EMData* EMData::window_center(int l) {
 				throw ImageFormatException(
 						"Need square real-space image.");
 			}
-			ret = get_clip(Region(center, center, l, l));
+			ret = get_clip(Region(corner, corner, l, l));
 			break;
 		case 1:
-			ret = get_clip(Region(center, l));
+			ret = get_clip(Region(corner, l));
 			break;
 		default:
 			throw ImageDimensionException(
