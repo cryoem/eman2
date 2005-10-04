@@ -733,11 +733,15 @@ namespace EMAN
 		 */
 		static inline int goodf(const float *p_f)
 		{
+			//This is the old way to judge a good float, which cause problem on 
+			//Fedora Core 64 bit system. Now use isinff() and isnanf().
 			// the first is abnormal zero the second is +-inf or NaN 
-			if ((((int *) p_f)[0] & 0x7f800000) == 0 ||
-				(((int *) p_f)[0] & 0x7f800000) == 255) {
-				return 0;
-			}
+			//if ((((int *) p_f)[0] & 0x7f800000) == 0 ||
+			//	(((int *) p_f)[0] & 0x7f800000) == 255) {
+			//	return 0;
+			//}
+			
+			if(isinff(*p_f) || isnanf(*p_f)) return 0;
 			return 1;
 		}
 
