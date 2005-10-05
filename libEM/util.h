@@ -514,7 +514,7 @@ namespace EMAN
 		 */
 		static inline float hypot3(int x, int y, int z)
 		{
-			return (float) sqrt((float)(x * x + y * y + z * z));
+			return sqrtf((float)(x * x + y * y + z * z));
 		}
 		
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
@@ -525,7 +525,7 @@ namespace EMAN
 		 */
 		static inline float hypot3(float x, float y, float z)
 		{
-			return (float) sqrt(x * x + y * y + z * z);
+			return sqrtf(x * x + y * y + z * z);
 		}
 		
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
@@ -536,7 +536,7 @@ namespace EMAN
 		 */
 		static inline float hypot3(double x, double y, double z)
 		{
-			return (float) sqrt(x * x + y * y + z * z);
+			return sqrtf(x * x + y * y + z * z);
 		}
 
 		/** A fast way to calculate a floor, which is largest integral
@@ -1011,7 +1011,7 @@ namespace EMAN
 			float twosigma2;
 			public:
 			Gaussian(float sigma_ = 1.0) : sigma(sigma_) {
-				rttwopisigma = sqrt(twopi*sigma);
+				rttwopisigma = sqrtf(static_cast<float>(twopi)*sigma);
 				twosigma2 = 2*sigma*sigma;
 			}
 			inline float operator()(float x) const {
