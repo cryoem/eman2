@@ -21,6 +21,7 @@
 #include <boost/array.hpp>
 #include <iostream>
 #include <iomanip>
+#include <cstdlib>
 
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
@@ -859,8 +860,13 @@ void EMData::postift_depad_corner_inplace() {
 	if (0 == npad) npad = 1;
 	int offset = is_fftodd() ? 1 : 2;
 	int nxold = (nx - offset)/npad;
+#ifdef _WIN32
+	int nyold = _MAX(ny/npad, 1);
+	int nzold = _MAX(nz/npad, 1);
+#else
 	int nyold = std::max<int>(ny/npad, 1);
 	int nzold = std::max<int>(nz/npad, 1);
+#endif	//_WIN32
 	int bytes = nxold*sizeof(float);
 	MArray3D src = get_3dview();
 	float* dest = get_data();
@@ -1022,8 +1028,13 @@ EMData* EMData::pad_fft(int npad) {
 		npad = get_attr("npad");
 		if (0 == npad) npad = 1;
 		int nxold = (nx - 2 + is_fftodd())/npad; // using the value of is_fftodd() <- FIXME
+	#ifdef _WIN32
+		int nyold = _MAX(ny/npad, 1);
+		int nzold = _MAX(nz/npad, 1);
+	#else
 		int nyold = std::max<int>(ny/npad, 1);
 		int nzold = std::max<int>(nz/npad, 1);
+	#endif	//_WIN32
 		int bytes = nxold*sizeof(float);
 		newimg->set_size(nxold, nyold, nzold);
 		newimg->to_zero();
@@ -2730,10 +2741,17 @@ Output: 2D 3xk real image.
 	nx2=nx/2; ny2 = ny/2; nz2 = nz/2;
 	dx2 = 1.0f/float(nx2)/float(nx2); 
 	dy2 = 1.0f/float(ny2)/float(ny2);
+
+#ifdef _WIN32
+	dz2 = 1.0f/_MAX(float(nz2),1.0f)/_MAX(float(nz2),1.0f);
+	
+	int inc = Util::round(float(_MAX(_MAX(nx2,ny2),nz2))/w);
+#else
 	dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
 	
 	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2))/w);
-	
+#endif	//_WIN32
+
 	double *ret = new double[inc+1];
 	double *n1  = new double[inc+1];
 	double *n2  = new double[inc+1];
@@ -3099,8 +3117,13 @@ void EMData::update_stat()
 
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
+	#ifdef _WIN32
+		max=_MAX(max,v);
+		min=_MIN(min,v);
+	#else
 		max=std::max<float>(max,v);
 		min=std::min<float>(min,v);
+	#endif	//_WIN32
 		sum += v;
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
@@ -3108,12 +3131,18 @@ void EMData::update_stat()
 
 	int n = nx * ny * nz / step;
 	double mean = sum / n;
+
+#ifdef _WIN32
+	float sigma = (float)sqrt(_MAX(0.0,(square_sum - sum*sum / n)/(n-1)));
+	n_nonzero = _MAX(1,n_nonzero);
+	double sigma_nonzero = sqrt(_MAX(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
+#else
 	float sigma = (float)sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
-
 	n_nonzero = std::max<int>(1,n_nonzero);
-	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
 	double sigma_nonzero = sqrt(std::max<double>(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
-
+#endif	//_WIN32
+	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
+	
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
 	attr_dict["mean"] = (float)(mean);
@@ -5674,7 +5703,11 @@ EMData* EMData::rotavg()
 		throw ImageDimensionException("2D images only");
 	}
 	MArray2D arr = get_2dview(-nx/2, -ny/2);
+#ifdef _WIN32
+	int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
+#else
 	int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
+#endif	//_WIN32
 	EMData* ret = new EMData();
 	ret->set_size(rmax+1, 1, 1);
 	ret->to_zero();
@@ -5693,8 +5726,13 @@ EMData* EMData::rotavg()
 			count[ir+1] += frac;
 		}
 	}
-	for (int ir = 0; ir <= rmax; ir++)
+	for (int ir = 0; ir <= rmax; ir++) {
+	#ifdef _WIN32
+		retarr[ir] /= _MAX(count[ir],1.0f);
+	#else
 		retarr[ir] /= std::max(count[ir],1.0f);
+	#endif	//_WIN32
+	}
 
 	ret->update();
 	ret->done_data();
@@ -7036,14 +7074,24 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
 			float y = float(iy) - shiftyc;
+		#ifdef _WIN32
+			if (y < ymin) y = _MIN(y+ny,ymax);
+			if (y > ymax) y = _MAX(y-ny,ymin);
+		#else
 			if (y < ymin) y = std::min(y+ny,ymax);
 			if (y > ymax) y = std::max(y-ny,ymin);
+		#endif	//_WIN32
 			float ycang = y*cang/scale + yc;
 			float ysang = -y*sang/scale + xc;
 			for (int ix = 0; ix < nx; ix++) {
 				float x = float(ix) - shiftxc;
+			#ifdef _WIN32
+				if (x < xmin) x = _MIN(x+nx,xmax);
+				if (x > xmax) x = _MAX(x-nx,xmin);
+			#else
 				if (x < xmin) x = std::min(x+nx,xmax);
 				if (x > xmax) x = std::max(x-nx,xmin);
+			#endif	//_WIN32
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
 				out[ix][iy][iz] =
@@ -7098,8 +7146,11 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
     int ny = get_ysize();
     int nxhalf = nx/2;
     int nyhalf = ny/2;
-    float rmax = float(std::min(nxhalf,nyhalf))
-               - float(size/2);
+#ifdef _WIN32
+	float rmax = float(_MIN(nxhalf,nyhalf)) - float(size/2);
+#else
+    float rmax = float(std::min(nxhalf,nyhalf)) - float(size/2);
+#endif	//_WIN32
     float rmax2 = rmax*rmax;
 	Util::KaiserBessel kb(alpha, size-1);
     if (1 >= ny) 
