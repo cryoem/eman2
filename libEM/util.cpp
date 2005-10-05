@@ -523,25 +523,25 @@ void Util::spline(float *x, float *y, int n, float yp1, float ypn, float *y2) //
 	if (yp1 > .99e30){
 		y2[0]=u[0]=0.0;
 	}else{
-		y2[0]=-.5;
-		u[0] =(3./ (x[1] -x[0]))*( (y[1]-y[0])/(x[1]-x[0]) -yp1);
+		y2[0]=-.5f;
+		u[0] =(3.0f/ (x[1] -x[0]))*( (y[1]-y[0])/(x[1]-x[0]) -yp1);
 	}
 
 	for (i=1; i < n-1; i++) {
 		sig= (x[i] - x[i-1])/(x[i+1] - x[i-1]);
-		p = sig*y2[i-1] + 2.0;
-		y2[i]  = (sig-1.)/p;
+		p = sig*y2[i-1] + 2.0f;
+		y2[i]  = (sig-1.0f)/p;
 		u[i] = (y[i+1] - y[i] )/(x[i+1]-x[i] ) -  (y[i] - y[i-1] )/(x[i] -x[i-1]);
-		u[i] = (6.0*u[i]/ (x[i+1]-x[i-1]) - sig*u[i-1])/p;
+		u[i] = (6.0f*u[i]/ (x[i+1]-x[i-1]) - sig*u[i-1])/p;
 	}
 
 	if (ypn>.99e30){
 		qn=0; un=0;
 	} else {
-		qn= .5;
-		un= (3./(x[n-1] -x[n-2])) * (ypn -  (y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
+		qn= .5f;
+		un= (3.0f/(x[n-1] -x[n-2])) * (ypn -  (y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
 	}
-	y2[n-1]= (un - qn*u[n-2])/(qn*y2[n-2]+1.0);
+	y2[n-1]= (un - qn*u[n-2])/(qn*y2[n-2]+1.0f);
 	for (k=n-2; k>=0; k--){
 		y2[k]=y2[k]*y2[k+1]+u[k];
 	}
@@ -568,7 +568,7 @@ void Util::splint( float *xa, float *ya, float *y2a, int n,  float *xq, float *y
 		b=(xq[j]-xa[klo])/h;
 		yq[j]=a*ya[klo] + b*ya[khi]
 			+ ((a*a*a-a)*y2a[klo]
-			     +(b*b*b-b)*y2a[khi]) *(h*h)/6.;
+			     +(b*b*b-b)*y2a[khi]) *(h*h)/6.0f;
 	}
 //	printf("h=%f, a = %f, b=%f, ya[klo]=%f, ya[khi]=%f , yq=%f\n",h, a, b, ya[klo], ya[khi],yq[0]);
 }
@@ -900,7 +900,7 @@ Util::voea(float delta, float t1, float t2, float p1, float p2)
 			detphi = 360.0f;
 			lt = 1;
 		} else {
-			detphi = delta/sin(theta*dgr_to_rad);
+			detphi = delta/sin(theta*static_cast<float>(dgr_to_rad));
 			lt = int((p2 - p1)/detphi)-1;
 			if (lt < 1) lt = 1;
 			detphi = (p2 - p1)/lt;
@@ -1017,17 +1017,17 @@ Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_,
 	// Default values are alpha=1.25, K=6, r=0.5, v = K/2
 	if (0.f == v) v = float(K/2);
 	if (0.f == vtable) vtable = v;
-	fac = twopi*alpha*r*v;
+	fac = static_cast<float>(twopi)*alpha*r*v;
 	alphar = alpha*r;
 	build_I0table();
 }
 
 float Util::KaiserBessel::i0win(float x) const {
-	float val0 = gsl_sf_bessel_I0(fac)/(2*v);
+	float val0 = static_cast<float>(gsl_sf_bessel_I0(fac))/(2.0f*v);
 	float absx = fabs(x);
 	if (absx > v) return 0.f;
 	float rt = sqrt(1.f - pow(x/v,2));
-	return gsl_sf_bessel_I0(fac*rt)/(2*v)/val0;
+	return static_cast<float>(gsl_sf_bessel_I0(fac*rt))/(2.0f*v)/val0;
 }
 
 void Util::KaiserBessel::build_I0table() {
