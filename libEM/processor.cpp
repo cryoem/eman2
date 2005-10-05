@@ -206,7 +206,7 @@ void FourierProcessor::process(EMData * image)
 	}
 
 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
-	float step=0.5/array_size;
+	float step=0.5f/array_size;
 	
 	vector < float >yarray(array_size);
 
@@ -243,7 +243,7 @@ void FourierProcessor::process(EMData * image)
 void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		if (x <= lowpass) {
 			radial_mask[i] = 1.0f;
@@ -259,7 +259,7 @@ void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mas
 void HighpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		if (x >= highpass) {
 			radial_mask[i] = 1.0f;
@@ -276,7 +276,7 @@ void LowpassGaussProcessor::create_radial_func(vector < float >&radial_mask) con
 {
 //	printf("rms = %d  lp = %f\n",radial_mask.size(),lowpass);
 //	Assert(radial_mask.size() > 0);		// not true, negative numbers do inverse filter processing
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	float sig = 1;
 	if (lowpass > 0) {
 		sig = -1;
@@ -292,7 +292,7 @@ void LowpassGaussProcessor::create_radial_func(vector < float >&radial_mask) con
 void HighpassGaussProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		radial_mask[i] = 1.0f - exp(-x * x / (highpass * highpass));
 		x += step;
@@ -313,7 +313,7 @@ void LowpassTanhProcessor::create_radial_func(vector < float >&radial_mask) cons
 void HighpassTanhProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		radial_mask[i] = tanh(x - highpass) / 2.0f + 0.5f;
 		x += step;
@@ -324,7 +324,7 @@ void HighpassTanhProcessor::create_radial_func(vector < float >&radial_mask) con
 void HighpassButterworthProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		float t = highpass / 1.5f / (x + 0.001f);
 		radial_mask[i] = 1.0f / (1.0f + t * t);
@@ -336,8 +336,8 @@ void HighpassButterworthProcessor::create_radial_func(vector < float >&radial_ma
 void LinearRampProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
-	float size=radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
+	size_t size=radial_mask.size();
 	for (size_t i = 0; i < size; i++) {
 		radial_mask[i] = intercept + ((slope - intercept) * i) / (size - 1.0f);
 		x += step;
@@ -895,19 +895,19 @@ void RealToFFTProcessor::process(EMData *image)
 	
 	for (x=1; x<nx/2; x++) {
 		for (y=0; y<ny; y++) {
-			float y2;
+			int y2;
 			if (y<ny/2) y2=y+ny/2;
 			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(nx-x*2,static_cast<int>(ny-y2)));
+			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2));
 		}
 	}
 	
 	for (x=nx/2; x<nx; x++) {
 		for (y=0; y<ny; y++) {
-			float y2;
+			int y2;
 			if (y<ny/2) y2=y+ny/2;
 			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(x*2-nx,static_cast<int>(y2)));
+			image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2));
 		}
 	}
 	
@@ -3850,7 +3850,7 @@ void TestImageScurve::process(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-				imdat[xx][yy]+=exp(-pow(hypot(xx-x,yy-y)*30.0/nx,2.0))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5);
+				imdat[xx][yy]+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5);
 			}
 		}
 	}
@@ -3872,11 +3872,11 @@ void TestImagePureGaussian::process(EMData * image)
 	float norm = pow(twosig2*static_cast<float>(pi),-float(d)/2);
 	MArray3D imdat = image->get_3dview();
 	for (int iz=0; iz < nz; iz++) {
-		float z = iz - zc;
+		float z = static_cast<float>(iz - zc);
 		for (int iy=0; iy < ny; iy++) {
-			float y = iy - yc;
+			float y = static_cast<float>(iy - yc);
 			for (int ix=0; ix < nx; ix++) {
-				float x = ix - xc;
+				float x = static_cast<float>(ix - xc);
 				float r2 = x*x + y*y + z*z;
 				float val = norm*exp(-r2/twosig2);
 				imdat[ix][iy][iz] = val;
