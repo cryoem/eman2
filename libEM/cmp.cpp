@@ -85,7 +85,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	var2 = var2/double(n) - avg2*avg2;
 	ccc = ccc/double(n) - avg1*avg2;
 	ccc /= sqrt(var1*var2);
-	return ccc;
+	return static_cast<float>(ccc);
 	EXITFUNC;
 }
 
@@ -163,8 +163,8 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 		for (i=0; i<4; i++) result[i]/=nx*ny/4;
 	}
 	
-	float worst=result[0];
-	for (i=1; i<4; i++) if (result[i]<worst) worst=result[i];
+	float worst=static_cast<float>(result[0]);
+	for (i=1; i<4; i++) if (static_cast<float>(result[i])<worst) worst=static_cast<float>(result[i]);
 	
 	EXITFUNC;
 	return (float) (negative*worst);
@@ -195,9 +195,9 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		vector <float> rfa=a->calc_radial_dist(a->get_ysize()/2,0.0f,1.0f);
 		vector <float> rfb=b->calc_radial_dist(b->get_ysize()/2,0.0f,1.0f);
 		
-		for (size_t i=0; i<a->get_ysize()/2.0; i++) rfa[i]/=(rfb[i]==0?1.0:rfb[i]);
+		for (size_t i=0; i<a->get_ysize()/2.0f; i++) rfa[i]/=(rfb[i]==0?1.0f:rfb[i]);
 		
-		b->apply_radial_func(0.0,1.0/a->get_ysize(),rfa);
+		b->apply_radial_func(0.0f,1.0f/a->get_ysize(),rfa);
 		with2=b->do_ift();
 
 		delete a;
@@ -325,7 +325,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	return (1 - result);
 #endif
 	
-	return result;
+	return static_cast<float>(result);
 }
 
 float VarianceCmp::cmp(EMData * image, EMData *with) const
@@ -350,7 +350,7 @@ float VarianceCmp::cmp(EMData * image, EMData *with) const
 	return (1 - result);
 #endif
 	
-	return result;
+	return static_cast<float>(result);
 }
 
 float PhaseCmp::cmp(EMData * image, EMData *with) const
@@ -379,7 +379,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 		for (int i = 0; i < np; i++) {
 //			float x2 = Util::square(i / (float) Ctf::CTFOS);
 //			dfsnr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
-			float x2 = 10.0*i/np;
+			float x2 = 10.0f*i/np;
 			dfsnr[i] = x2 * exp(-x2);
 		}
 
@@ -457,7 +457,7 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 			for (int i = 0; i < np; i++) {
 //				float x2 = Util::square(i / (float) Ctf::CTFOS);
 //				default_snr[i] = (1.0f - exp(-x2 / 4.0f)) * exp(-x2 / w);
-				float x2 = 10.0*i/np;
+				float x2 = 10.0f*i/np;
 				default_snr[i] = x2 * exp(-x2);
 			}
 		}
