@@ -930,7 +930,7 @@ void EMData::center_origin_fft()
 		for (int iy = 1; iy <= ny; iy++) {
 			for (int ix = 0; ix <= xmax; ix++) {
 				// next line multiplies by +/- 1
-				dat[ix][iy][iz] *= -2*((ix+iy+iz)%2) + 1;
+				dat[ix][iy][iz] *= static_cast<float>(-2*((ix+iy+iz)%2) + 1);
 			}
 		}
 	}
@@ -1057,7 +1057,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 	int nx=get_xsize();
 	int ny=get_ysize();
 	int nz=get_zsize();
-	float ScalFactor=4.1;
+	float ScalFactor=4.1f;
 	int Center = (int) floor((Size+1.0)/2.0 +.1);
 	int CenterM= Center-1;
 	int CountMax = (Center+1)*Center/2;
@@ -1268,7 +1268,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 	int nz=get_zsize();
 	int Center = (int) floor( (nx+1.0)/2.0 +.01);
 	printf("nx=%d, ny=%d, nz=%d Center=%d\n", nx,ny,nz, Center);
-	float ScalFactor=4.1;
+	float ScalFactor=4.1f;
 	gsl_set_error_handler_off();
 
 	if ( (nz==1) && (nx==ny) && (!is_complex())  && (Center*2)==(nx+1)){
@@ -1295,7 +1295,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		int Count=0;
 		for (int jk=0; jk<kIntMax; jk++ ){
 			for (int jR=0; jR<RIntMax; jR++ ){
-				krVec[Count]=2.*M_PI*RValsSorted[jR]
+				krVec[Count]=2.0f*M_PI*RValsSorted[jR]
 					*kVec2Use[jk]/( (float) Size);
 				Count++;
 //				printf("krVec[%d]=%f \n",Count,krVec[Count-1]);fflush(stdout);
@@ -1330,9 +1330,9 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 
 		for (int m=0; m <=mMax; m++){
 		//    if m==mMax, tic, end
-			complex <float> tempF(0,-1);
+			complex <float> tempF(0.0f,-1.0f);
 			complex <float> overallFactor = pow(tempF,m);  //(-i)^m ;  % I dropped off the 2 pi
-			complex <float> mI(0,m);
+			complex <float> mI(0.0f,static_cast<float>(m));
 			for (int ii=0; ii< RIntMax; ii++){ rhoOfRandmTemp[ii]=0;}
 			for (int jx=0; jx <Center ; jx++) {
 				for (int jy=0; jy <=jx; jy++){
@@ -1368,7 +1368,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 //			printf("\n m=%d sampledBesselJ" ,m  );fflush(stdout);
 			for (int st=0; st<= Number2Use; st++){
 				tempp=krVec2Use[st];
-				sampledBesselJ[st] = gsl_sf_bessel_Jn(m,tempp);
+				sampledBesselJ[st] = static_cast<float>(gsl_sf_bessel_Jn(m,tempp));
 //				printf(" %3.2f  \t",sampledBesselJ[st]   );fflush(stdout);
 			} // good so far
 //			sampledBesselJ  = BesselJ(m,krVec2Use);
@@ -2767,7 +2767,7 @@ Output: 2D 3xk real image.
 			for ( ix = 0; ix <= lsd2-1; ix+=2) {
 			// Skip Friedel related values
 			   if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-				argx = 0.5*sqrt(argy + float(ix*ix)*0.25f*dx2);
+				argx = 0.5f*sqrt(argy + float(ix*ix)*0.25f*dx2);
 				int r = Util::round(inc*2*argx);
 				if(r <= inc) {
 					int ii = ix + (iy  + iz * ny)* lsd2;
@@ -4716,7 +4716,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 				else { jny=(ny-j)/(float)ny; jny*=jny; }
 
 				for (int i = 0; i < nx; i += 2, k += 2) {
-					float r = sqrt((i * i / (nx*nx*4.0)) + jny + mnz);
+					float r = sqrt((i * i / (nx*nx*4.0f)) + jny + mnz);
 					r = (r - x0) / step;
 
 					int l = 0;
@@ -5574,7 +5574,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 			float a = 0;
 			if (y != ny / 2.0f || x != 0) {
 				if (is_complex()) {
-					a = atan2(y<ny/2?y:ny-y, x / 2.0f);
+					a = atan2(y<ny/2.0f?y:ny-y, x / 2.0f);
 				}
 				else {
 					a = atan2(y - ny / 2.0f, x - nx / 2.0f);
@@ -7001,8 +7001,8 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 	}
 	update();
 	float background = get_attr("mean");
-	if (ang > pi) ang -= twopi;
-	if (ang < -pi) ang += twopi;
+	if (ang > pi) ang -= static_cast<float>(twopi);
+	if (ang < -pi) ang += static_cast<float>(twopi);
 	float cang = cos(ang);
 	float sang = sin(ang);
 	EMData* ret = copy_head();
@@ -7061,8 +7061,8 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	float shiftxc = xc + delx;
 	float shiftyc = yc + dely;
 	// bounds if origin at center
-	float ymin = -ny/2;
-	float xmin = -nx/2;
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
 	float ymax = -ymin;
 	float xmax = -xmin;
 	if (0 == nx%2) xmax--;
@@ -7409,8 +7409,8 @@ Dict EMData::masked_stats(const EMData* mask) {
 			sum2 += (*ptr)*(*ptr);
 		}
 	}
-	float avg = sum1/nmask;
-	float sig2 = sum2/nmask - avg*avg;
+	float avg = static_cast<float>(sum1/nmask);
+	float sig2 = static_cast<float>(sum2/nmask - avg*avg);
 	float sig = sqrt(sig2);
 	Dict mydict;
 	mydict["avg"] = avg; mydict["sigma"] = sig; mydict["nmask"] = int(nmask);
