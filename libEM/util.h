@@ -536,7 +536,7 @@ namespace EMAN
 		 */
 		static inline float hypot3(double x, double y, double z)
 		{
-			return sqrtf(x * x + y * y + z * z);
+			return (float) sqrt(x * x + y * y + z * z);
 		}
 
 		/** A fast way to calculate a floor, which is largest integral
