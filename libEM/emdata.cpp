@@ -3118,8 +3118,8 @@ void EMData::update_stat()
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
 	#ifdef _WIN32
-		max = _MAX(max,v);
-		min = _MIN(min,v);
+		max = _cpp_max(max,v);
+		min = _cpp_min(min,v);
 	#else
 		max=std::max<float>(max,v);
 		min=std::min<float>(min,v);
@@ -3133,8 +3133,8 @@ void EMData::update_stat()
 	double mean = sum / n;
 
 #ifdef _WIN32
-	float sigma = (float)sqrt( _MAX(0.0,(square_sum - sum*sum / n)/(n-1)));
-	n_nonzero = _MAX(1,n_nonzero);
+	float sigma = (float)sqrt( _cpp_max(0.0,(square_sum - sum*sum / n)/(n-1)));
+	n_nonzero = _cpp_max(1,n_nonzero);
 	double sigma_nonzero = sqrt( _MAX(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 #else
 	float sigma = (float)sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
