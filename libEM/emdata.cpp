@@ -3135,7 +3135,7 @@ void EMData::update_stat()
 #ifdef _WIN32
 	float sigma = (float)sqrt( _cpp_max(0.0,(square_sum - sum*sum / n)/(n-1)));
 	n_nonzero = _cpp_max(1,n_nonzero);
-	double sigma_nonzero = sqrt( _MAX(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
+	double sigma_nonzero = sqrt( _cpp_max(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 #else
 	float sigma = (float)sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
 	n_nonzero = std::max<int>(1,n_nonzero);
@@ -7198,8 +7198,8 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	// put (xnew,ynew) on a grid.  The indices will be wrong for
 	// the Fourier elements in the image, but the grid sizing will
 	// be correct.
-	int ixn = int(round(nuxnew));
-	int iyn = int(round(nuynew));
+	int ixn = int(Util::round(nuxnew));
+	int iyn = int(Util::round(nuynew));
 	// displacements of (xnew,ynew) from the grid
 	float nuxdispl = nuxnew - ixn;
 	float nuydispl = nuynew - iyn;
