@@ -303,7 +303,7 @@ void HighpassGaussProcessor::create_radial_func(vector < float >&radial_mask) co
 void LowpassTanhProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
-	float x = 0 , step = 0.5/radial_mask.size();
+	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
 		radial_mask[i] = tanh(lowpass - x) / 2.0f + 0.5f;
 		x += step;
@@ -3850,7 +3850,7 @@ void TestImageScurve::process(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-				imdat[xx][yy]+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5);
+				imdat[xx][yy]+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
 			}
 		}
 	}
@@ -4171,7 +4171,7 @@ void RampProcessor::process(EMData * image)
 			qy = d;
 			row = data + (i-1)*nsam - 1;
 			for (int k=1; k<=nsam; k++) {
-				row[k] -= qy;
+				row[k] -= static_cast<float>(qy);
 				qy += b1;
 			}
 			d += b2;
