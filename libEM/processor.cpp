@@ -3850,7 +3850,7 @@ void TestImageScurve::process(EMData * image)
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-				imdat[xx][yy]+=exp(-pow(hypot(xx-x,yy-y)*30.0/nx,2.0))*(sin((xx-x)*(yy-y))+.5);
+				imdat[xx][yy]+=exp(-pow(hypot(xx-x,yy-y)*30.0/nx,2.0))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5);
 			}
 		}
 	}
@@ -3869,7 +3869,7 @@ void TestImagePureGaussian::process(EMData * image)
 	int xc = nx/2, yc = ny/2, zc = nz/2;
 	float twosig2 = 2*sigma*sigma;
 	int d = image->get_ndim();
-	float norm = pow(twosig2*pi,-float(d)/2);
+	float norm = pow(twosig2*static_cast<float>(pi),-float(d)/2);
 	MArray3D imdat = image->get_3dview();
 	for (int iz=0; iz < nz; iz++) {
 		float z = iz - zc;
