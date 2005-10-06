@@ -11,6 +11,7 @@
 #include <time.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_statistics.h>
 
 using namespace EMAN;
 
@@ -151,7 +152,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&NewRadialTableProcessor::NEW);
 	force_add(&InverseKaiserI0Processor::NEW);
 	force_add(&InverseKaiserSinhProcessor::NEW);
-
+	
+	force_add(&CCDNormProcessor::NEW);
 }
 
 
@@ -4179,6 +4181,114 @@ void RampProcessor::process(EMData * image)
 	} // image not altered if c is zero
 
 	image->done_data();
+}
+
+
+void CCDNormProcessor::process(EMData * image)
+{
+	if (!image) {
+	  Log::logger()->set_level(Log::ERROR_LOG);
+	  Log::logger()->error("Null image during call to CCDNorm\n");
+	  return;
+	}
+	if (image->get_zsize() > 1) {
+	  Log::logger()->set_level(Log::ERROR_LOG);
+	  Log::logger()->error("CCDNorm does not support 3d images\n");	  
+	  return;
+	}
+
+	int xs = image->get_xsize();
+	int ys = image->get_ysize();
+
+	// width of sample area on either side of the seams
+	int width = params["width"];
+
+	width%=(xs > ys ? xs/2 : ys/2);  // make sure width is a valid value
+	if (width==0) {
+	  width=1;
+	}
+
+	// get the 4 "seams" of the image
+	float *left, *right, *top, *bottom;
+
+	double *temp;
+	temp= (double*)malloc((xs > ys ? xs*width : ys*width)*sizeof(double));
+	if (temp==NULL) {
+	  Log::logger()->set_level(Log::ERROR_LOG);
+	  Log::logger()->error("Could not allocate enough memory during call to CCDNorm\n");
+	  return;
+	}
+
+	int x, y, z;
+
+	// the mean values of each seam and the average
+	double mL,mR,mT,mB;
+
+	// how much to shift each seam
+	double nl,nr,nt,nb;
+
+	// quad. shifting amount
+	double q1,q2,q3,q4;
+
+	// calc. the mean for each quadrant
+	for (z=0; z<width; z++) {
+	  left = image->get_col(xs/2 -1-z)->get_data();
+	  for (y=0; y<ys; y++)
+	    temp[z*ys+y]=left[y];
+	}
+	mL=gsl_stats_mean(temp,1,ys*width);
+
+	for (z=0; z<width; z++) {
+	  right = image->get_col(xs/2 +z)->get_data();
+	  for (y=0; y<ys; y++)
+	    temp[z*ys+y]=right[y];
+	}
+	mR=gsl_stats_mean(temp,1,ys*width);
+
+	for (z=0; z<width; z++) {
+	  top = image->get_row(ys/2 -1-z)->get_data();
+	  for (x=0; x<xs; x++)
+	    temp[z*xs+x]=top[x];
+	}
+	mT=gsl_stats_mean(temp,1,xs*width);
+
+	for (z=0; z<width; z++) {
+	  bottom = image->get_row(ys/2 +z)->get_data();
+	  for (x=0; x<xs; x++)
+	    temp[z*xs+x]=bottom[x];
+	}
+	mB=gsl_stats_mean(temp,1,xs*width);
+
+	free(temp);
+
+	nl=(mL+mR)/2-mL;
+	nr=(mL+mR)/2-mR;
+	nt=(mT+mB)/2-mT;
+	nb=(mT+mB)/2-mB;
+
+	q1=nl+nt;
+	q2=nr+nt;
+	q3=nr+nb;
+	q4=nl+nb;
+
+	// change the pixel values
+	for (x = 0; x < xs / 2; x++)
+	  for (y = 0; y < ys / 2; y++) {
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q1);
+	  }
+	for (x = xs / 2; x < xs; x++)
+	  for (y = 0; y < ys / 2; y++) {
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q2);
+	  }
+	for (x = xs / 2; x < xs; x++)
+	  for (y = ys / 2; y < ys; y++) {
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q3);
+	  }
+	for (x = 0; x < xs / 2; x++)
+	  for (y = ys / 2; y < ys; y++) {
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q4);
+	  }
+
 }
 
 

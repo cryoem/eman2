@@ -4119,6 +4119,40 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** Try to normalize the 4 quadrants of a CCD image
+	 * @author Deepy Mann <dsmann@bcm.tmc.edu> 
+	 * @date 9-2005
+	 * @param width number of pixels on either side of the seam to sample
+	 */
+	class CCDNormProcessor:public Processor
+	{
+	  public:
+		void process(EMData * image);
+
+		string get_name() const
+		{
+			return "filter.ccdnorm";
+		}
+
+		static Processor *NEW()
+		{
+			return new CCDNormProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "normalize the 4 quadrants of a CCD image";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("width", EMObject::INT, "number of pixels on either side of the seam to sample");
+			return d;
+		}
+	};
+
+
 #if 0
 
 	class XYZProcessor:public Processor
