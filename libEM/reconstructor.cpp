@@ -55,6 +55,7 @@ void FourierReconstructor::setup()
 
 	tmp_data = new EMData();
 	tmp_data->set_size(size + 2, size, size);
+	tmp_data->to_zero();
 }
 
 int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
@@ -104,9 +105,9 @@ int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler
 			if ((x * x + Util::square(y - ny / 2)) >= rl)
 				continue;
 
-			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[0][1]);
-			float yy = (float) (x * euler[1][0] + (y - ny / 2) * euler[1][1]);
-			float zz = (float) (x * euler[2][0] + (y - ny / 2) * euler[2][1]);
+			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+			float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+			float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
 			float cc = 1;
 
 			if (xx < 0) {
