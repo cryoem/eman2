@@ -95,8 +95,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_1
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, getconvpt2d_kbi0, 3, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_gridrot2d_kbi0_overloads_1_3, gridrot2d_kbi0, 1, 3)
-
 
 }// namespace 
 
@@ -282,8 +280,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("rot_trans2D", &EMAN::EMData::rot_trans2D, EMAN_EMData_rot_trans2D_overloads_1_3()[ return_value_policy< manage_new_object >() ])
         .def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, EMAN_EMData_rot_scale_trans2D_overloads_1_4()[ return_value_policy< manage_new_object >() ])
         .def("getconvpt2d_kbi0", &EMAN::EMData::getconvpt2d_kbi0, EMAN_EMData_getconvpt2d_kbi0_overloads_3_4())
-        .def("rotconvtrunc2d_kbi0", &EMAN::EMData::rotconvtrunc2d_kbi0, return_value_policy< manage_new_object >())
-        .def("gridrot2d_kbi0", &EMAN::EMData::gridrot2d_kbi0, EMAN_EMData_gridrot2d_kbi0_overloads_1_3()[ return_value_policy< manage_new_object >() ])
         .def("fft_shuffle", &EMAN::EMData::fft_shuffle)
         .def("center_padded", &EMAN::EMData::center_padded)
         .def("extractpoint", &EMAN::EMData::extractpoint)

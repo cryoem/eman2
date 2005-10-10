@@ -941,6 +941,7 @@ namespace EMAN
 		class KaiserBessel 
 		{
 			float alpha, v, r; /** Kaiser-Bessel parameters */
+			int N; /** size in Ix-space */
 			int K; /** I0 window size */
 			float vtable; /** table I0 non-zero domain maximum */
 			int ntable;
@@ -948,10 +949,13 @@ namespace EMAN
 			float dtable; /** table spacing */
 			float alphar; /** alpha*r */
 			float fac; /** 2*pi*alpha*r*v */
+			float vadjust; 
+			float facadj; /** 2*pi*alpha*r*vadjust */
 			void build_I0table(); /** Tabulate I0 window for speed */
+			float fltb;
 			public:
-				KaiserBessel(float alpha_ = 1.0f, int K_=6, float r_=0.5f,
-						     float v_=0.f, float vtable_=0.f, 
+				KaiserBessel(float alpha_, int K, float r_,
+						     float v_, int N_, float vtable_=0.f, 
 							 int ntable_ = 5999);
 				/** Compute the maximum error in the table */
 				float I0table_maxerror();
@@ -962,9 +966,13 @@ namespace EMAN
 				/** Kaiser-Bessel I0 window function (uses table lookup) */
 				float i0win_tab(float x) const {
 					float absx = fabs(x);
+					int loc = int(round(absx*fltb));
+					return i0table[loc];
+#if 0 // old version
 					if (absx > vtable) return 0.f;
 					float loc = absx/dtable;
 					return i0table[int(loc + 0.5f)];
+#endif // 0
 				}
 				/** Return the size of the I0 window */
 				int get_window_size() const { return K; }

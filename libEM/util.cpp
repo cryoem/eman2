@@ -1010,9 +1010,9 @@ float Util::quadri(EMData* image, float x, float y, int zslice) {
 	return result;
 }
 
-Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_,
-		                         float v_, float vtable_, int ntable_) 
-		: alpha(alpha_), v(v_), r(r_), K(K_), vtable(vtable_), 
+Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
+		                         int N_, float vtable_, int ntable_) 
+		: alpha(alpha_), v(v_), r(r_), N(N_), K(K_), vtable(vtable_), 
 		  ntable(ntable_) {
 	// Default values are alpha=1.25, K=6, r=0.5, v = K/2
 	if (0.f == v) v = float(K/2);
@@ -1020,23 +1020,45 @@ Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_,
 	fac = static_cast<float>(twopi)*alpha*r*v;
 	alphar = alpha*r;
 	build_I0table();
+	vadjust = 1.1f*v;
+	facadj = twopi*alpha*r*vadjust;
 }
 
 float Util::KaiserBessel::i0win(float x) const {
+#if 0 // comment out I0-based in favor of I1-based
 	float val0 = static_cast<float>(gsl_sf_bessel_I0(fac))/(2.0f*v);
 	float absx = fabs(x);
 	if (absx > v) return 0.f;
 	float rt = sqrt(1.f - pow(x/v,2));
-	return static_cast<float>(gsl_sf_bessel_I0(fac*rt))/(2.0f*v)/val0;
+	return gsl_sf_bessel_I0(fac*rt)/(2*v)/val0;
+#endif // 0
+	float val0 = sqrt(facadj)*float(gsl_sf_bessel_I1(facadj));
+	float absx = fabs(x);
+	if (absx > vadjust) return 0.f;
+	float rt = sqrt(1.f - pow(absx/vadjust, 2));
+	float res = sqrt(facadj*rt)*float(gsl_sf_bessel_I1(facadj*rt))/val0;
+	return res;
 }
 
 void Util::KaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
+	int ltab = int(round(float(ntable)/1.1f));
+	fltb = float(ltab)/(K/2);
+	for (int i=0; i < ntable; i++) {
+		float s = float(i)/fltb/N;
+		if (s < vadjust) {
+			float rt = sqrt(1.f - pow(s/vadjust, 2));
+			i0table[i] = sqrt(facadj*rt)*gsl_sf_bessel_I1(facadj*rt);
+		} else {
+			i0table[i] = 0.f;
+		}
+#if 0 // old version
 	dtable = vtable / ntable;
 	float vratio = v/vtable;
 	for (int i=0; i <= ntable; i++) {
 		float x = i*dtable;
 		i0table[i] = i0win(x*vratio);
+#endif // 0
 	}
 }
 
@@ -1063,7 +1085,7 @@ float Util::KaiserBessel::sinhwin(float x) const {
 		float res = (sinh(facrt)/facrt)/val0;
 		return res;
 	} else {
-		float rt = sqrt(pow((x/alphar) - 1.f, 2));
+		float rt = sqrt(pow((x/alphar),2) - 1.f);
 		float facrt = fac*rt;
 		float res = (sin(facrt)/facrt)/val0;
 		return res;

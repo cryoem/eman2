@@ -1737,6 +1737,7 @@ namespace EMAN
 		 *  @exception ImageDimensionException only support 2D image
 		 *  @return Rotated/convolved EMData image.
 		 */
+#if 0 // broken
 		//template<class Win>
 		//EMData* rotconvtrunc2d(float ang, Win win, int size = 7);
 		//EMData* rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
@@ -1770,6 +1771,7 @@ namespace EMAN
 			rot->process("filter.kaisersinhinverse", params);
 			return rot;
 		}
+#endif // 0
 		/** fft_shuffle -- Shuffle a Fourier image to put the origin at (0,ny/2)
 		 *  
 		 *  Our usual FFT convention puts the origin at (0,0), but then

@@ -7140,6 +7140,7 @@ float EMData::getconvpt2d_kbi0(float x, float y,
 	return conv;
 }
 
+#if 0 // FIXME: broken
 EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
     // truncate anything outside r=min(nx/2,ny/x)-window
     int nx = get_xsize();
@@ -7176,6 +7177,7 @@ EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
 	ret->done_data();
     return ret;
 }
+#endif // 0
 
 complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 		Util::KaiserBessel& kb) {
