@@ -823,7 +823,7 @@ EMData* EMData::window_center(int l) {
 		// image has been fft-padded, compute the real-space size
 		n -= (2 - int(is_fftodd()));
 	}
-	int corner = (n-l)/2;
+	int corner = n/2 - l/2;
 	int ndim = get_ndim();
 	EMData* ret;
 	switch (ndim) {
@@ -7316,12 +7316,15 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 void EMData::center_padded() {
 	int npad = get_attr("npad");
 	if (1 == npad) return;
+	int nxreal = nx;
+	if (is_fftpadded())
+		nxreal = nx - 2 + int(is_fftodd());
 	EMData& self = *this;
 	self.set_array_offsets();
-	int nxorig = nx/npad;
+	int nxorig = nxreal/npad;
 	int nyorig = ny/npad;
-	int nxcorner = (nx - nxorig)/2;
-	int nycorner = (ny - nyorig)/2;
+	int nxcorner = (nxreal - nxorig)/2 + nxorig%2;
+	int nycorner = (ny - nyorig)/2 + nyorig%2;
 	for (int iy = nyorig-1; iy >= 0; iy--) 
 		for (int ix = nxorig-1; ix >= 0; ix--)
 			std::swap(self(nxcorner+ix,nycorner+iy),self(ix,iy));
@@ -7361,16 +7364,16 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 		throw ImageDimensionException("fouriergridrot2d needs a 2-D image.");
 	if (!is_complex()) 
 		throw ImageFormatException("fouriergridrot2d requires a fourier image");
-	if (!is_shuffled()) 
-		fft_shuffle();
-
 	int nxreal = nx - 2 + int(is_fftodd());
 	if (nxreal != ny)
 		throw ImageDimensionException("fouriergridrot2d requires ny == nx(real)");
 	if (0 != nxreal%2)
 		throw ImageDimensionException("fouriergridrot2d needs an even image.");
 	int nxhalf = nxreal/2;
-	float nxhalf2 = nxhalf*float(nxhalf);
+	if (!is_shuffled()) 
+		fft_shuffle();
+
+	//float nxhalf2 = nxhalf*float(nxhalf);
 	int nyhalf = ny/2;
 	EMData* result = copy();
 	set_array_offsets(0,-nyhalf);
@@ -7379,17 +7382,23 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	float sang = sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
 		float ycang = iy*cang;
-		float ysang = -iy*sang;
-		float iy2 = iy*float(iy);
+		//float ysang = -iy*sang;
+		float ysang = iy*sang;
+		//float iy2 = iy*float(iy);
 		for (int ix = 0; ix <= nxhalf; ix++) {
-			float ix2 = ix*float(ix);
+			//float ix2 = ix*float(ix);
+#if 0 // old version
 			if (ix2 + iy2 <= nxhalf2) {
 				float nuyold = ix*sang + ycang;
 				float nuxold = ix*cang + ysang;
-				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
+//				result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 			} else {
-				result->cmplx(ix,iy) = complex<float>(0.f,0.f);
+//				result->cmplx(ix,iy) = complex<float>(0.f,0.f);
 			}
+#endif // 0
+			float nuyold = -ix*sang + ycang;
+			float nuxold = ix*cang + ysang;
+			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 		}
 	}
 	result->set_array_offsets();

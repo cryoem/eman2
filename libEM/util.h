@@ -959,6 +959,9 @@ namespace EMAN
 							 int ntable_ = 5999);
 				/** Compute the maximum error in the table */
 				float I0table_maxerror();
+				vector<float> dump_table() {
+					return i0table;
+				}
 				/** Kaiser-Bessel Sinh window function */
 				float sinhwin(float x) const;
 				/** Kaiser-Bessel I0 window function */
