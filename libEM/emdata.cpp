@@ -1079,10 +1079,10 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 
 
 
-
+#ifdef DEBUG
 	printf("nx=%d, ny=%d, nz=%d Center=%d mMax=%d CountMax=%d kIntMax=%d Centerm1=%d  Size=%d\n\n",
 	    nx,ny,nz, Center, mMax, CountMax, kIntMax,  CenterM, Size);
-
+#endif
 
 	MArray2D rhoOfkmB = get_2dview();
 
@@ -1267,12 +1267,16 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 	int ny=get_ysize();
 	int nz=get_zsize();
 	int Center = (int) floor( (nx+1.0)/2.0 +.01);
+#ifdef DEBUG
 	printf("nx=%d, ny=%d, nz=%d Center=%d\n", nx,ny,nz, Center);
+#endif	//DEBUG
 	float ScalFactor=4.1f;
 	gsl_set_error_handler_off();
 
 	if ( (nz==1) && (nx==ny) && (!is_complex())  && (Center*2)==(nx+1)){
+#ifdef DEBUG
 		printf("entered if \n");fflush(stdout);
+#endif	//DEBUG
 		MArray2D ImBW = this ->get_2dview();
 		int Size=nx;
 		int iMax = (int) floor( (Size-1.0)/2 +.01);
@@ -1305,10 +1309,12 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		int Number2Use = (int) floor(OverSamplekB*krVecMax+1.0);
 		float *krVec2Use      = new float[Number2Use+1];
 		float *sampledBesselJ = new float[Number2Use+1];
+#ifdef DEBUG
 		printf("Size=%d, iMax=%d, SizeReturned=%d, RIntMax=%d, \n"
 		      "mMax=%d, kIntMax=%d, krVecMin=%f, krVecMax=%f,  Number2Use=%d  \n\n",
 			Size, iMax, SizeReturned[0], RIntMax, mMax, kIntMax,
 			       krVecMin,krVecMax,Number2Use);fflush(stdout);
+#endif	//DEBUG
 		for (int jkr=0; jkr<= Number2Use; jkr++) {
 			krVec2Use[jkr] =((float)jkr)*krVecMax/
 			            ((float)Number2Use);

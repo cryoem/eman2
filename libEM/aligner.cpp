@@ -441,11 +441,15 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 
 		aa += ca * center * a2;
 		ndot += center * a2;
-
+#ifdef DEBUG
 		printf("%f\t%d\n", ca * 180.0 / M_PI, i);
+#endif
 	}
 
+#ifdef DEBUG
 	printf("%f\t%d\n", aa / ndot * 180.0 / M_PI, i + 5);
+#endif
+
 	this_img->rotate(aa / ndot, 0, 0);
 	this_img->set_attr("align_score", aa / ndot);
 	return 0;
