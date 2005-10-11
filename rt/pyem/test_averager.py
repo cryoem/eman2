@@ -116,9 +116,21 @@ class TestConstructor(unittest.TestCase):
         r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
         r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
         result = r.finish()
-   
+
+class TestProjector(unittest.TestCase):
+    """test Projector"""
+    
+    def test_GaussFFTProjector(self):
+        """test GaussFFTProjector ..........................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process('testimage.noise.uniform.rand')
+        
+        e.project('gauss_fft', {'alt':1.234, 'az':1.345, 'phi':1.54, 'mode':1})
+
+        
 def test_main():
-    test_support.run_unittest(TestAverager, TestConstructor)
+    test_support.run_unittest(TestAverager, TestConstructor, TestProjector)
 
 if __name__ == '__main__':
     test_main()

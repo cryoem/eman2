@@ -329,6 +329,7 @@ class TestEMData(unittest.TestCase):
         e3 = e2.FH2F(31, 1.0)
         
         #for image not FH, should raise exception
+        Log.logger().set_level(-1)
         self.assertRaises( RuntimeError, e.FH2F, 31, 1.0)
         try:
             e.FH2F(31, 1.0)
