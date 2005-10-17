@@ -7252,6 +7252,10 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 		}
 	}
 	double wsum = 0.f;
+	for (int iy = iymin; iy <= iymax; iy++)
+		for (int ix = ixmin; ix <= ixmax; ix++)
+			wsum += wx[ix]*wy[iy];
+	float w00 = wx[0]*wy[0];
 	complex<float> result(0.f,0.f);
 	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
 			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
@@ -7263,7 +7267,6 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 				float w = wx[ix]*wy[iy];
 				complex<float> val = cmplx(ixp,iyp);
 				result += val*w;
-				wsum += w;
 			}
 		}
 	} else {
@@ -7295,7 +7298,6 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 				}
 				if (iyt == nhalf) iyt = -nhalf;
 				float w = wx[ix]*wy[iy];
-				wsum += w;
 				complex<float> val = this->cmplx(ixt,iyt);
 				if (mirror) 
 					result += conj(val)*w;
@@ -7370,6 +7372,7 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	if (0 != nxreal%2)
 		throw ImageDimensionException("fouriergridrot2d needs an even image.");
 	int nxhalf = nxreal/2;
+	//cmplx(0,0) = 0.;
 	if (!is_shuffled()) 
 		fft_shuffle();
 
@@ -7401,11 +7404,16 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 		}
 	}
+	cout << "Fourier (0,0) in fouriergrid: "
+		<< cmplx(0,0) << endl;
+	cout << "Fourier (1,0) in fouriergrid: "
+		<< cmplx(1,0) << endl;
 	result->set_array_offsets();
 	result->fft_shuffle(); // reset to an unshuffled result
 	result->done_data();
 	set_array_offsets();
 	fft_shuffle(); // reset to an unshuffled complex image
+	//result->cmplx(0,0) = 0.;
 	return result;
 }
 

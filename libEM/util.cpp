@@ -1032,11 +1032,15 @@ float Util::KaiserBessel::i0win(float x) const {
 	float rt = sqrt(1.f - pow(x/v,2));
 	return gsl_sf_bessel_I0(fac*rt)/(2*v)/val0;
 #endif // 0
-	float val0 = sqrt(facadj)*float(gsl_sf_bessel_I1(facadj));
+	//float val0 = sqrt(facadj)*float(gsl_sf_bessel_I1(facadj));
+	float val0 = float(gsl_sf_bessel_I0(facadj));
+	//float val0 = gsl_sf_bessel_I1(facadj);
 	float absx = fabs(x);
 	if (absx > vadjust) return 0.f;
 	float rt = sqrt(1.f - pow(absx/vadjust, 2));
-	float res = sqrt(facadj*rt)*float(gsl_sf_bessel_I1(facadj*rt))/val0;
+	//float res = sqrt(facadj*rt)*float(gsl_sf_bessel_I1(facadj*rt))/val0;
+	float res = float(gsl_sf_bessel_I0(facadj*rt))/val0;
+	//float res = rt*float(gsl_sf_bessel_I1(facadj*rt))/val0;
 	return res;
 }
 
@@ -1045,12 +1049,16 @@ void Util::KaiserBessel::build_I0table() {
 	int ltab = int(round(float(ntable)/1.1f));
 	fltb = float(ltab)/(K/2);
 	float val0 = sqrt(facadj)*gsl_sf_bessel_I1(facadj);
+	//float val0 = gsl_sf_bessel_I0(facadj);
+	//float val0 = gsl_sf_bessel_I1(facadj);
 	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
 	for (int i=0; i <= ltab; i++) {
 		float s = float(i)/fltb/N;
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
 			i0table[i] = sqrt(facadj*rt)*gsl_sf_bessel_I1(facadj*rt)/val0;
+			//i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
+			//i0table[i] = rt*gsl_sf_bessel_I1(facadj*rt)/val0;
 		} else {
 			i0table[i] = 0.f;
 		}
@@ -1093,5 +1101,37 @@ float Util::KaiserBessel::sinhwin(float x) const {
 		return res;
 	}
 }
+
+#if 0 // 1-st order KB window
+float Util::KaiserBessel::sinhwin(float x) const {
+	//float val0 = sinh(fac)/fac;
+	float prefix = 2*facadj*vadjust/float(gsl_sf_bessel_I1(facadj));
+	float val0 = prefix*(cosh(facadj) - sinh(facadj)/facadj);
+	float absx = fabs(x);
+	if (0.0 == x) {
+		//float res = 1.0f;
+		float res = val0;
+		return res;
+	} else if (absx == alphar) {
+		//return 1.0f/val0;
+		return prefix;
+	} else if (absx < alphar) {
+		float rt = sqrt(1.0f - pow((x/alphar), 2));
+		//float facrt = fac*rt;
+		float facrt = facadj*rt;
+		//float res = (sinh(facrt)/facrt)/val0;
+		float res = prefix*(cosh(facrt) - sinh(facrt)/facrt);
+		return res;
+	} else {
+		float rt = sqrt(pow((x/alphar),2) - 1.f);
+		//float facrt = fac*rt;
+		float facrt = facadj*rt;
+		//float res = (sin(facrt)/facrt)/val0;
+		float res = prefix*(sin(facrt)/facrt - cos(facrt));
+		return res;
+	}
+}
+
+#endif // 0
 
 /* vim: set ts=4 noet: */
