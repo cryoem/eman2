@@ -2780,7 +2780,7 @@ Output: 2D 3xk real image.
 					ret[r] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
 					n1[r]  += d1[ii] * double(d1[ii]) + d1[ii + 1] * double(d1[ii + 1]);
 					n2[r]  += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
-					lr[r]  +=1;
+					lr[r]  +=2;
 				}
 			   }
 			}
