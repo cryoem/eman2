@@ -5,6 +5,7 @@ import unittest,os,sys
 from test import test_support
 import testlib
 from pyemtbx.exceptions import *
+import Numeric
 
 class TestProcessor(unittest.TestCase):
     """Processor test"""
@@ -12,7 +13,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 111)
+        self.assertEqual(len(processor_names), 112)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -1386,6 +1387,46 @@ class TestProcessor(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process('testimage.noise.gauss', {'noise_level':0.3})
+        
+    def test_IntegerCyclicShift2DProcessor(self):
+        """test filter.integercyclicshift2d processor........"""
+        e = EMData()
+        e.set_size(50,50,1)
+        e.process('testimage.noise.uniform.rand')
+        
+        d1 = e.get_2dview()
+        d3 = Numeric.array(d1)    #make a copy of d1, since d1 and d2 share the same memory
+        e.process('filter.integercyclicshift2d', {'dx':10, 'dy':20})
+        d2 = e.get_2dview()
+        for x in range(50):
+            if x+10 > 49:
+                x2 = x+10-50
+            else:
+                x2 = x+10
+            for y in range(50):
+                if y+20 > 49:
+                    y2 = y+20-50
+                else:
+                    y2 = y+20
+                self.assertEqual(d3[y][x], d2[y2][x2])
+                
+        #this filter apply to 2D real image only
+        e2 = e.do_fft()
+        self.assertEqual(e2.is_complex(), True)
+        self.assertRaises( RuntimeError, e2.process, 'filter.integercyclicshift2d', {'dx':10, 'dy':20})
+        try:
+            e2.process('filter.integercyclicshift2d', {'dx':10, 'dy':20})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        
+        e3 = EMData()
+        e3.set_size(1,50,50)
+        e.process('testimage.noise.uniform.rand')
+        self.assertRaises( RuntimeError, e3.process, 'filter.integercyclicshift2d', {'dx':10, 'dy':20})
+        try:
+            e3.process('filter.integercyclicshift2d', {'dx':10, 'dy':20})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
 def test_main():
     test_support.run_unittest(TestProcessor)
