@@ -4311,7 +4311,7 @@ void IntegerCyclicShift2DProcessor::process(EMData * image) {
 	if (image->is_complex())
 		throw ImageFormatException("Real image required for "
 				                   "IntegerCyclicShift2DProcessor");
-	if (2 != image->get_ndim())
+	if (2 != image->get_ndim() || 1 != image->get_zsize())
 		throw ImageFormatException("2-D image needed for "
 				                   "IntegerCyclicShift2DProcessor");
 	int dx = params["dx"];
@@ -4320,11 +4320,13 @@ void IntegerCyclicShift2DProcessor::process(EMData * image) {
 	int nx = image->get_xsize();
 	dx %= nx;
 	if (dx < 0) dx += nx;
-	std::cout << dx << std::endl;
 	int ny = image->get_ysize();
 	dy %= ny;
 	if (dy < 0) dy += ny;
+#ifdef DEBUG
+	std::cout << dx << std::endl;
 	std::cout << dy << std::endl;
+#endif
 	int mx = -(dx - nx);
 	int my = -(dy - ny);
 	float* data = image->get_data();
