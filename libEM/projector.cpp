@@ -716,15 +716,16 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 
 EMData *StandardProjector::project3d(EMData * image) const
 {
-	float alt = params["alt"];
-	float az = params["az"];
-	float phi = params["phi"];
+	float alt = float(params["alt"]) * dgr_to_rad;
+	float az = float(params["az"]) * dgr_to_rad;
+	float phi = float(params["phi"]) * dgr_to_rad;
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
 	Transform3D r(Transform3D::EMAN, az, alt, phi);
+	r.transpose();
 	int xy = nx * ny;
 
 	EMData *proj = new EMData();
