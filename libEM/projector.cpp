@@ -27,13 +27,17 @@ template <> Factory < Projector >::Factory()
 EMData *GaussFFTProjector::project3d(EMData * image) const
 {
 	EMData *f = image;
-	if (image->is_complex()) {
+	if (!image->is_complex()) {
+		f->process("eman1.xform.phaseorigin");
 		f = image->do_fft();
+		image->process("eman1.xform.phaseorigin");
+		f->process("eman1.xform.fourierorigin");
 	}
 
 	int f_nx = f->get_xsize();
 	int f_ny = f->get_ysize();
 	int f_nz = f->get_zsize();
+	float alt2=params["alt"], az2=params["az"], phi2=params["phi"]; //fix this
 
 	if (!f->is_complex() || f_nz != f_ny || f_nx != f_ny + 2) {
 		LOGERR("Cannot project this image");
@@ -48,7 +52,8 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Transform3D r(az, alt, phi); // EMAN by default
+	Transform3D r(az2*dgr_to_rad, alt2*dgr_to_rad, phi2*dgr_to_rad); // EMAN by default
+	r.transpose();
 
 	int mode = params["mode"];
 	float gauss_width = 0;
@@ -97,15 +102,16 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->done_data();
 	tmp->update();
 
-	tmp->process("eman1.xform.phaseorigin");
+	tmp->process("eman1.xform.fourierorigin");
 	EMData *ret = tmp->do_ift();
+	ret->process("eman1.xform.phaseorigin");
 
 	Dict filter_d;
 	filter_d["gauss_width"] = gauss_width;
 	filter_d["ring_width"] = ret->get_xsize() / 2;
 	ret->process("eman1.math.gausskernelfix", filter_d);
 
-	ret->set_rotation(az, alt, phi);
+	ret->set_rotation(az2*dgr_to_rad, alt2*dgr_to_rad, phi2*dgr_to_rad);
 
 	if( tmp )
 	{ 

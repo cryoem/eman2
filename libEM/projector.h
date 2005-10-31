@@ -223,6 +223,15 @@ namespace EMAN
 	class StandardProjector:public Projector
 	{
 	  public:
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("alt", EMObject::FLOAT);
+			d.put("az", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			return d;
+		}
+
 		EMData * project3d(EMData * image) const;
 
 		string get_name() const
