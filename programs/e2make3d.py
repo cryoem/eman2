@@ -1,13 +1,6 @@
 #!/usr/bin/python
 
-# how to deal with unknown symmetry?
-# transform3d doesn't support tetra in all its funcs
-# deal with thr, hard, keep and not including some slices?
-# should pad be a multiplier or should it be in pixels?
-# resmap doesn't work
-# need to see about SNR
-# how can you save the norms? need to access tmp_data in Reconstructor class
-# reverse_gridding uses complex images?
+# initial version of make3d
 
 from EMAN2 import *
 from optparse import OptionParser
@@ -19,6 +12,9 @@ def main():
 
     (options, files) = load_args()
     options.input_file = files[0]
+
+    logger=E2init(sys.argv)
+
     if (options.goodbad):
         try:
             os.unlink("3dgood.hed")
@@ -59,6 +55,8 @@ def main():
         output.write_image(options.filename)
         if not(options.quite):
             print "Output File: "+options.filename
+
+    E2end(logger)
 
 #-----------------------------------------
 def load_args():
