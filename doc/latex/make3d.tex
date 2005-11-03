@@ -1,0 +1,28 @@
+\section{e2make3d} \index{Program Manuals!e2make3d} \label{E2MAKE3D}
+
+\subsection{Usage}
+e2make3d.py \it{input\_file [arg1] [arg2] ... [argn]} \\ 
+
+\subsection{Options}
+\begin{tabular}{|c||p{3.5in}|}
+  \hline \bf{Argument} & \bf{Description} \\
+  \hline --out= \it{file name} 
+    & Set the output 3D MRC file name; the default is ``threed.mrc''\\
+  \hline --lowmem 
+    & Read in images only when needed instead of preloading all in memory.\\
+  \hline --sym=\it{symmetry} 
+    & desc\\
+  \hline --pad=\it{pad} 
+    & \\
+  \hline --mode=\it{mode} 
+    & Sets the mode value for use in some reconstructors\\
+  \hline --recon=\it{reconstructor} 
+    & Select the reconstructor to use; for a complete list of
+  available choices run ``e2make3d.py --recon=?''\\
+  \hline --quiet 
+    & Reduce the amount of data printed to stdout\\
+  \hline
+
+\end{tabular}
+
+\subsection{Description}
