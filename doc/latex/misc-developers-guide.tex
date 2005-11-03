@@ -51,6 +51,19 @@ result = r.finish()
 result.write_image("reconstructor.mrc")\end{verbatim}
     \normalcolor
 
+    \subsection{Using Aligner, Comparators, and Projectors}
+    \index{Aligners!Usage} \index{CMP!Usage} \index{Projectors!Usage}
+    Using any of these objects is very similar to the process described in
+    Reconstructor Usage above. The general process is
+    \begin{verbatim}
+obj = CLASS.get(OBJECT_TYPE, {arg1:value1,
+  arg2:value2, ...})
+data = obj.OBJECT_COMMAND(args)
+\end{verbatim}
+    Use the EMAN2 html documentation or use the ``dump'' command in
+    python to see a list of the available object types for each class
+    and their corresponding argument lists.
+
     \subsection{Using Pyste} \index{Misc.!Pyste}
     EMAN2 uses Pyste to automatically parse C++ code to generate boost
     python wrappers. To use Pyste:
