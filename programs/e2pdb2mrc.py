@@ -24,7 +24,7 @@ atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.006
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] input.pdb output.mrc
+	usage = """%prog [options] input.pdb output.mrc
 	
 Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
 map to the center of the volume. Use e2procpdb.py to adjust coordinates,

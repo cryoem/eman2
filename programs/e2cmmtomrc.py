@@ -21,7 +21,7 @@ class myhandler(ContentHandler):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] input.cmm output.mrc
+	usage = """%prog [options] input.cmm output.mrc
 	"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)

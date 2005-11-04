@@ -95,7 +95,7 @@ def mode(vals):
 	
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] input_stack.hed output.hed
+	usage = """%prog [options] input_stack.hed output.hed
 	
 Processes a tomographic tilt series"""
 

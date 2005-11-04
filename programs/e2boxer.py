@@ -13,7 +13,7 @@ pl=()
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] <image>
+	usage = """%prog [options] <image>
 	
 Automatic and manual particle selection. This version is specifically aimed at square boxes
 for single particle analysis."""

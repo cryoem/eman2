@@ -43,7 +43,7 @@ def main():
 	global tdim,pdim,tdim2,pdim2,sfac
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] target.mrc probe.mrc
+	usage = """%prog [options] target.mrc probe.mrc
 	
 Locates the best 'docking' locations for a small probe in a large target map. Note that the probe
 should be in a box barely large enough for it. The target may be arbitrarily padded. For best speed

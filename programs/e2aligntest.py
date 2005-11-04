@@ -14,7 +14,7 @@ from bisect import insort
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] input1 input2
+	usage = """%prog [options] input1 input2
 	
 Locates the best 'docking' locations for a small probe in a large target map."""
 

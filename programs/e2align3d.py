@@ -47,7 +47,7 @@ def main():
 	global tdim,pdim
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] fixed.mrc input.mrc output.mrc
+	usage = """%prog [options] fixed.mrc input.mrc output.mrc
 	
 Locates the best 'docking' locations for a small probe in a large target map."""
 

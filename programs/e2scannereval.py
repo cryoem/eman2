@@ -23,7 +23,7 @@ def main():
 	global tdim,pdim
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage: %prog [options] input.mrc
+	usage = """%prog [options] input.mrc
 	
 Designed for use on scanned micrographs. Overlays image with a grid of
 2D power spectra."""
