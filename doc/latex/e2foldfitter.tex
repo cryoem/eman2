@@ -1,0 +1,28 @@
+\section{e2foldfitter.py} \index{Program Manuals!e2foldfitter.py} \label{e2foldfitter.py}
+\subsection{Usage}
+usage: e2foldfitter.py [options] target.mrc probe.mrc
+
+
+\subsection{Description}
+Locates the best 'docking' locations for a small probe in a large target map. Note that the probe
+
+should be in a box barely large enough for it. The target may be arbitrarily padded. For best speed
+
+both box sizes should be multiples of 8.
+
+
+
+
+\subsection{Options}
+
+\begin{longtable}{|c||p{3.5in}|}
+\hline \bf{Argument} & \bf{Description}\endhead
+\hline \multicolumn{2}{r}{{Continued on next page}} \endfoot
+\hline \hline \caption[e2foldfitter.py Options]{e2foldfitter.py Options}\endlastfoot
+\\\hline   --version  &  show program's version number and exit
+\\\hline   -h, --help  &  show this help message and exit
+\\\hline   -S  &  SHRINK, --shrink=SHRINK shrink factor for initial search, default=auto
+\\\hline
+ -E  &  EPSILON, --epsilon=EPSILON final target accuracy, default=.01
+\\\hline
+\end{longtable}

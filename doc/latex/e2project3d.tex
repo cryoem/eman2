@@ -1,0 +1,36 @@
+\section{e2project3d.py} \index{Program Manuals!e2project3d.py} \label{e2project3d.py}
+\subsection{Usage}
+usage: e2project3d.py $<$input file$>$ [options]
+
+
+\subsection{Description}
+
+\subsection{Options}
+
+\begin{longtable}{|c||p{3.5in}|}
+\hline \bf{Argument} & \bf{Description}\endhead
+\hline \multicolumn{2}{r}{{Continued on next page}} \endfoot
+\hline \hline \caption[e2project3d.py Options]{e2project3d.py Options}\endlastfoot
+\\\hline   --version  &  show program's version number and exit
+\\\hline   -h, --help  &  show this help message and exit
+\\\hline   --out=OUTFILE  &  Output file. Default is 'e2proj.img'
+\\\hline   --projector=PROJECTOR  &  Projector to use
+\\\hline   --prop=PROP  &  Generates projections with a relatively uniform projection density in the unit triangle.
+\\\hline   --prop\_start=PROP\_START  &  Start projections at the specified alt (in degrees). Default=0.0
+\\\hline   --prop\_end=PROP\_END  &  Create projections up to the specified alt (in degrees). Default=90.0
+\\\hline   --euler=$<$az$>$  &  $<$alt$>$ $<$phi$>$ Generate a single projection with the given orientation
+\\\hline   --sym=SYM  &  Set the symmetry; choices are: c$<$n$>$, d$<$n$>$, h$<$n$>$, i, t, icos, or oct
+\\\hline   --mode=MODE  &  Default is real-space projection, this specifies various Fourier modes
+\\\hline   --angletype=ANGLETYPE  &  Angle convention to use: [EMAN, SPIDER].  EMAN is the default
+\\\hline   --dump\_angles  &  Dumps Euler angles to a text file
+\\\hline   --mask=MASK  &  Specify a circular mask radius for the projections
+\\\hline   --randomphi  &  Randomize phi
+\\\hline   --phicomp  &  Roughly compensate for in-plane rotation from az with phi
+\\\hline   --phitoo=PHITOO  &  This will also vary phi in the final file. Warning: This works only with '--prop=' and generates a LOT of projections.
+\\\hline   --smear  &  Used in conjunction with '--phitoo=', this will rotationally smear between phi steps.
+\\\hline   --grid=GRID  &  Generate projections on an rectangular alt/az mesh, nonuniform projection density
+\\\hline   --angle\_input\_file=FILE\_NAME  &  Us an input file to specify what angles to project
+\\\hline
+ --pad=PAD  &  Pad image
+\\\hline
+\end{longtable}
