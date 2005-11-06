@@ -129,7 +129,12 @@ namespace EMAN
 		                                    const Vec3f & eAhat, const Vec3f & eBhat); 
 
 
-
+		/** returns the magnitude of the rotation
+		*/
+		float get_mag() const;
+		/** returns the spin-axis (or finger) of the rotation
+		*/
+		Vec3f get_finger() const;
 		Vec3f get_posttrans(Vec3f &pretrans) const;
 		Vec3f get_posttrans() const;
 		Vec3f get_center() const;

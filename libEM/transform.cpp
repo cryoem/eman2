@@ -235,7 +235,19 @@ void Transform3D::set_scale(float scale)    // YYY
 	apply_scale(Scale2Apply);
 }
 
+float Transform3D::get_mag() const //
+{
+	EulerType eulertype= SPIN ;
+	Dict AA= get_rotation(eulertype);
+	return AA["Omega"];
+}
 
+Vec3f Transform3D::get_finger() const //
+{
+	EulerType eulertype= SPIN ;
+	Dict AA= get_rotation(eulertype);
+	return Vec3f(AA["n1"],AA["n2"],AA["n3"]);
+}
 
 Vec3f Transform3D::get_posttrans() const    // 
 {

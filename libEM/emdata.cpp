@@ -1052,7 +1052,7 @@ EMData* EMData::pad_fft(int npad) {
 }
 
 
-EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
+EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 {
 	int nx=get_xsize();
 	int ny=get_ysize();
@@ -1065,7 +1065,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 	int   *PermMatTr           = new int[CountMax];
 	float *RValsSorted         = new float[CountMax];
 	float *weightofkValsSorted = new float[CountMax];
-	int *SizeReturned = new int[1];
+	int   *SizeReturned        = new int[1];
 	Util::Radialize(PermMatTr, RValsSorted,weightofkValsSorted,Size, SizeReturned);
 	int RIntMax= SizeReturned[0];  // replaces CountMax; the latter should now never be used.
 //	kVec2Use = (0:1/OverSamplek:RValsSorted(RIntMax)+1/OverSamplek); %   in pixels  (otherwise need *2*pi/Size)
@@ -1090,8 +1090,6 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 //     check kIntMax's are equal
 
 	if ( (nx==2*(mMax+1)) && (ny==kIntMax) &&(nz==1) ) {
-
-
 
 	EMData* tempCopy = copy();
 	tempCopy->set_size(2*(mMax+1),RIntMax);
@@ -1143,7 +1141,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 				complex <float> fact(0,-mm*thetak);
 				complex <float> expfact= exp(fact);
 				complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-				ImfTemp +=   expfact * tempRho + float(1-2*(mm%2))  *conj(expfact*tempRho);//pow(float(-1),mm)
+				float mmFac = float(1-2*(mm%2));
+				if (IntensityFlag==1){ mmFac=1;}
+				ImfTemp +=   expfact * tempRho + mmFac  *conj(expfact*tempRho);//pow(float(-1),mm)
         		}
  			ImBWfftRm[2*(CenterM+jkx)][CenterM+jky]   = ImfTemp.real();
 			ImBWfftRm[2*(CenterM+jkx)+1][CenterM+jky] = ImfTemp.imag();
@@ -1156,9 +1156,12 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
 					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2))  *conj(expfact*tempRho);
+					float mmFac = float(1-2*(mm%2));
+					if (IntensityFlag==1){ mmFac=1;}
+					ImfTemp +=   expfact * tempRho +  mmFac  *conj(expfact*tempRho);
 				}
 				ImBWfftRm[2*(CenterM+jkx)][CenterM-jky]   = ImfTemp.real();
+
 				ImBWfftRm[2*(CenterM+jkx)+1][CenterM-jky] = ImfTemp.imag();
 			}
 
@@ -1169,7 +1172,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
 					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+					float mmFac = float(1-2*(mm%2));
+					if (IntensityFlag==1){ mmFac=1;}
+					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
 				}
 				ImBWfftRm[2*(CenterM-jkx)  ][CenterM+jky] = ImfTemp.real();
 				ImBWfftRm[2*(CenterM-jkx)+1][CenterM+jky] = ImfTemp.imag();
@@ -1182,7 +1187,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
 					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+					float mmFac = float(1-2*(mm%2));
+					if (IntensityFlag==1){ mmFac=1;}
+					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
 				}
 				ImBWfftRm[2*(CenterM-jkx)  ][CenterM-jky] = ImfTemp.real();
 				ImBWfftRm[2*(CenterM-jkx)+1][CenterM-jky] = ImfTemp.imag();
@@ -1195,7 +1202,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
 					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-					ImfTemp +=   expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+					float mmFac = float(1-2*(mm%2));
+					if (IntensityFlag==1){ mmFac=1;}
+					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
 				}
 				ImBWfftRm[2*(CenterM+jky)  ][CenterM+jkx] = ImfTemp.real();
 				ImBWfftRm[2*(CenterM+jky)+1][CenterM+jkx] = ImfTemp.imag();
@@ -1207,7 +1216,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 						complex <float> fact(0,-mm*thetak);
 						complex <float> expfact= exp(fact);
 						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-						ImfTemp +=  expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+					float mmFac = float(1-2*(mm%2));
+					if (IntensityFlag==1){ mmFac=1;}
+						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
 					}
 					ImBWfftRm[2*(CenterM-jky)  ][CenterM+jkx] = ImfTemp.real();
 					ImBWfftRm[2*(CenterM-jky)+1][CenterM+jkx] = ImfTemp.imag();
@@ -1220,7 +1231,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 						complex <float> fact(0,-mm*thetak);
 						complex <float> expfact= exp(fact);
 						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-						ImfTemp +=  expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+						float mmFac = float(1-2*(mm%2));
+						if (IntensityFlag==1){ mmFac=1;}
+						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
  					}
 					ImBWfftRm[2*(CenterM+jky)  ][CenterM-jkx] = ImfTemp.real();
 					ImBWfftRm[2*(CenterM+jky)+1][CenterM-jkx] = ImfTemp.imag();
@@ -1233,7 +1246,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB)  // PRB
 						complex <float> fact(0,-mm*thetak);
 						complex <float> expfact= exp(fact);
 						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
-						ImfTemp +=  expfact * tempRho +  float(1-2*(mm%2)) *conj(expfact*tempRho);
+						float mmFac = mmFac;
+						if (IntensityFlag==1){ mmFac=1;}
+						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
 					}
 					ImBWfftRm[2*(CenterM-jky)  ][CenterM-jkx] = ImfTemp.real();
 					ImBWfftRm[2*(CenterM-jky)+1][CenterM-jkx] = ImfTemp.imag();

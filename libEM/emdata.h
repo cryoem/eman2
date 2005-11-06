@@ -303,9 +303,10 @@ namespace EMAN
 		 * real/imaginary format. The FH switch is set off.
 		 * @param Size is the size of the image to be returned
 		 * @param OverSamplekB is a parameter controlling the fineness of the Fourier sampling
+		 * @param IntensityFlag=0 is the usual; =1 means that the input was an intensity
 		 * @return the shuffled version of the FFT
 		 */
-		EMData *FH2F(int Size, float OverSamplekB);
+		EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
 
 		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
