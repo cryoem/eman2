@@ -86,9 +86,39 @@ class TestException(unittest.TestCase):
         except RuntimeError, runtime_err:
             err_type = exception_type(runtime_err)
             self.assertEqual(err_type, "FileAccessException")
+            
+class TestRegion(unittest.TestCase):
+    """tests for class Region"""
+    
+    def test_region(self):
+        """test region construction ........................."""
+        e = Region()
+        self.assertEqual(e.get_ndim(), 0)
+        
+        e2 = Region(5, 32)
+        self.assertEqual(e2.get_ndim(), 1)
+        
+        e3 = Region(5, 6, 32, 32)
+        self.assertEqual(e3.get_ndim(), 2)
+        
+        e4 = Region(5, 6, 7, 32, 32, 32)
+        self.assertEqual(e4.get_ndim(), 3)
+        
+        e5 = Region(5.1, 32.2)
+        self.assertEqual(e5.get_ndim(), 1)
+        
+        e6 = Region(5.2, 6.4, 32.5, 32.6)
+        self.assertEqual(e6.get_ndim(), 2)
+        
+        e7 = Region(5.1, 6.2, 7.3, 32.4, 32.5, 32.6)
+        self.assertEqual(e7.get_ndim(), 3)
+        
+        e8 = Region(e7)
+        self.assertEqual(e8.get_ndim(), 3)
+        
 
 def test_main():
-    test_support.run_unittest(TestPixel, TestBoost, TestException)
+    test_support.run_unittest(TestPixel, TestBoost, TestException, TestRegion)
 
 if __name__ == '__main__':
     test_main()
