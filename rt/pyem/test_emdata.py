@@ -2157,7 +2157,7 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_rotconvtrunc2d_kbi0(self):
+    def no_test_rotconvtrunc2d_kbi0(self):
         """test rotconvtrunc2d_kbi0() function .............."""
         e = EMData()
         e.set_size(32,32,1)
@@ -2181,7 +2181,7 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_gridrot2d_kbi0(self):
+    def no_test_gridrot2d_kbi0(self):
         """test gridrot2d_kbi0() function ..................."""
         e = EMData()
         e.set_size(32,32,1)
