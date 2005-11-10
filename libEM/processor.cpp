@@ -4276,19 +4276,19 @@ void CCDNormProcessor::process(EMData * image)
 	// change the pixel values
 	for (x = 0; x < xs / 2; x++)
 	  for (y = 0; y < ys / 2; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q1);
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q1));
 	  }
 	for (x = xs / 2; x < xs; x++)
 	  for (y = 0; y < ys / 2; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q2);
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q2));
 	  }
 	for (x = xs / 2; x < xs; x++)
 	  for (y = ys / 2; y < ys; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q3);
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q3));
 	  }
 	for (x = 0; x < xs / 2; x++)
 	  for (y = ys / 2; y < ys; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + q4);
+	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q4));
 	  }
 
 }

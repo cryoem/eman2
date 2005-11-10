@@ -52,7 +52,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Transform3D r(az2*dgr_to_rad, alt2*dgr_to_rad, phi2*dgr_to_rad); // EMAN by default
+	Transform3D r( az2*static_cast<float>(dgr_to_rad), 
+					alt2*static_cast<float>(dgr_to_rad), 
+					phi2*static_cast<float>(dgr_to_rad) ); // EMAN by default
 	r.transpose();
 
 	int mode = params["mode"];
@@ -111,7 +113,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	filter_d["ring_width"] = ret->get_xsize() / 2;
 	ret->process("eman1.math.gausskernelfix", filter_d);
 
-	ret->set_rotation(az2*dgr_to_rad, alt2*dgr_to_rad, phi2*dgr_to_rad);
+	ret->set_rotation( az2*static_cast<float>(dgr_to_rad), 
+						alt2*static_cast<float>(dgr_to_rad), 
+						phi2*static_cast<float>(dgr_to_rad) );
 
 	if( tmp )
 	{ 
@@ -722,9 +726,9 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 
 EMData *StandardProjector::project3d(EMData * image) const
 {
-	float alt = float(params["alt"]) * dgr_to_rad;
-	float az = float(params["az"]) * dgr_to_rad;
-	float phi = float(params["phi"]) * dgr_to_rad;
+	float alt = float(params["alt"]) * static_cast<float>(dgr_to_rad);
+	float az = float(params["az"]) * static_cast<float>(dgr_to_rad);
+	float phi = float(params["phi"]) * static_cast<float>(dgr_to_rad);
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();

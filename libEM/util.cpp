@@ -1020,7 +1020,7 @@ Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
 	fac = static_cast<float>(twopi)*alpha*r*v;
 	alphar = alpha*r;
 	vadjust = 1.1f*v;
-	facadj = twopi*alpha*r*vadjust;
+	facadj = static_cast<float>(twopi)*alpha*r*vadjust;
 	build_I0table();
 }
 
@@ -1048,7 +1048,7 @@ void Util::KaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
 	int ltab = int(round(float(ntable)/1.1f));
 	fltb = float(ltab)/(K/2);
-	float val0 = sqrt(facadj)*gsl_sf_bessel_I1(facadj);
+	float val0 = sqrt(facadj)*static_cast<float>(gsl_sf_bessel_I1(facadj));
 	//float val0 = gsl_sf_bessel_I0(facadj);
 	//float val0 = gsl_sf_bessel_I1(facadj);
 	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
@@ -1056,7 +1056,7 @@ void Util::KaiserBessel::build_I0table() {
 		float s = float(i)/fltb/N;
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
-			i0table[i] = sqrt(facadj*rt)*gsl_sf_bessel_I1(facadj*rt)/val0;
+			i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
 			//i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
 			//i0table[i] = rt*gsl_sf_bessel_I1(facadj*rt)/val0;
 		} else {
