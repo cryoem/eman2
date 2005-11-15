@@ -15,6 +15,7 @@
 //#include "vec3.h"
 #include "geometry.h"
 #include "transform.h"
+#include <iostream>
 
 using std::string;
 using std::vector;
@@ -1543,13 +1544,28 @@ namespace EMAN
 
 		/** Overload operator() for array indexing. */
 		float& operator()(const int ix, const int iy, const int iz) {
-			return *(rdata + (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx);
+			ptrdiff_t pos = (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx;
+#ifdef BOUNDS_CHECKING
+			if (pos < 0 || pos >= nx*ny*nz)
+				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+#endif // BOUNDS_CHECKING
+			return *(rdata + pos);
 		}
 		float& operator()(const int ix, const int iy) {
-			return *(rdata + (ix-xoff) + (iy-yoff)*nx);
+			ptrdiff_t pos = (ix - xoff) + (iy-yoff)*nx;
+#ifdef BOUNDS_CHECKING
+			if (pos < 0 || pos >= nx*ny*nz)
+				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+#endif // BOUNDS_CHECKING
+			return *(rdata + pos);
 		}
 		float& operator()(const int ix) {
-			return *(rdata + (ix-xoff));
+			ptrdiff_t pos = ix - xoff;
+#ifdef BOUNDS_CHECKING
+			if (pos < 0 || pos >= nx*ny*nz)
+				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+#endif // BOUNDS_CHECKING
+			return *(rdata + pos);
 		}
 		/** Set the array offsets */
 		void set_array_offsets(const int xoff_=0, const int yoff_=0, 
@@ -1568,15 +1584,30 @@ namespace EMAN
 		}
 		/** Return reference to complex elements */
 		complex<float>& cmplx(const int ix, const int iy, const int iz) {
-			float* begin = rdata + 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nx;
+			ptrdiff_t pos = 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nz;
+#ifdef BOUNDS_CHECKING
+			if (pos < 0 || pos >= nx*ny*nz)
+				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+#endif // BOUNDS_CHECKING
+			float* begin = rdata + pos;
 			return *(reinterpret_cast<complex<float>* >(begin));
 		}
 		complex<float>& cmplx(const int ix, const int iy) {
-			float* begin = rdata + 2*(ix-xoff)+(iy-yoff)*nx;
+			ptrdiff_t pos = 2*(ix-xoff)+(iy-yoff)*nx;
+#ifdef BOUNDS_CHECKING
+			if (pos < 0 || pos >= nx*ny*nz)
+				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+#endif // BOUNDS_CHECKING
+			float* begin = rdata + pos;
 			return *(reinterpret_cast<complex<float>* >(begin));
 		}
 		complex<float>& cmplx(const int ix) {
-			float* begin = rdata + 2*(ix-xoff);
+			ptrdiff_t pos = 2*(ix-xoff);
+#ifdef BOUNDS_CHECKING
+			if (pos < 0 || pos >= nx*ny*nz)
+				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+#endif // BOUNDS_CHECKING
+			float* begin = rdata + pos;
 			return *(reinterpret_cast<complex<float>* >(begin));
 		}
 		
