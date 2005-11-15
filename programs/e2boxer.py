@@ -68,7 +68,8 @@ for single particle analysis."""
 		if not options.box in good_box_sizes:
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
 	
-	options.retestlist=[int(i) for i in options.retestlist.split(',')]
+	try: options.retestlist=[int(i) for i in options.retestlist.split(',')]
+	except: pass
 			
 	shrinkfactor=int(ceil(options.box/16))
 	print "Shrink factor = ",shrinkfactor
