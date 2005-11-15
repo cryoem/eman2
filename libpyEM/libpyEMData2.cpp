@@ -8,7 +8,7 @@
 #include <all_imageio.h>
 #include <cmp.h>
 #include <ctf.h>
-#include <emdata.h>
+#include <emdata_wrapitems.h>
 #include <emfft.h>
 #include <processor.h>
 #include <transform.h>
@@ -105,7 +105,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_
 BOOST_PYTHON_MODULE(libpyEMData2)
 {
     scope* EMAN_EMData_scope = new scope(
-    class_< EMAN::EMData >("EMData_cpp", init<  >())
+    class_< EMAN::EMData >("EMData", init<  >())
         .def(init< const EMAN::EMData& >())
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
         .def("write_image", &EMAN::EMData::write_image, EMAN_EMData_write_image_overloads_1_7())
@@ -287,21 +287,23 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("extractpoint", &EMAN::EMData::extractpoint)
         .def("fouriergridrot2d", &EMAN::EMData::fouriergridrot2d, return_value_policy< manage_new_object >())
         .def("masked_stats", &EMAN::EMData::masked_stats)
+        .def("__getitem__", &emdata_getitem)
+        .def("__setitem__", &emdata_setitem)
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
         .staticmethod("onelinenn")
-        .def( self * self )
-        .def( self + self )
-        .def( other< float >() - self )
-        .def( other< float >() + self )
-        .def( self / self )
-        .def( self - self )
-        .def( other< float >() / self )
-        .def( other< float >() * self )
-        .def( self * other< float >() )
         .def( self / other< float >() )
-        .def( self + other< float >() )
+        .def( other< float >() + self )
+        .def( other< float >() - self )
+        .def( other< float >() * self )
+        .def( other< float >() / self )
+        .def( self + self )
+        .def( self - self )
+        .def( self * self )
+        .def( self / self )
+        .def( self * other< float >() )
         .def( self - other< float >() )
+        .def( self + other< float >() )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )

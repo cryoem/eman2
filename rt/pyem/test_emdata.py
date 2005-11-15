@@ -2247,6 +2247,104 @@ class TestEMData(unittest.TestCase):
             error = True
         self.assertEqual(error, False)
 
+    def test_getitem_real1d(self):
+        """Test __getitem__ on a real 1-D image.............."""
+        e = EMData()
+        e.set_size(4,1,1)
+        e.to_zero()
+        e += 1.
+        val = e[1]
+        self.assertEqual(val, 1.)
+    def test_getitem_real2d(self):
+        """Test __getitem__ on a real 2-D image.............."""
+        e = EMData()
+        e.set_size(4,4,1)
+        e.to_zero()
+        e += 1.
+        val = e[1,1]
+        self.assertEqual(val, 1.)
+    def test_getitem_real3d(self):
+        """Test __getitem__ on a real 2-D image.............."""
+        e = EMData()
+        e.set_size(4,4,4)
+        e.to_zero()
+        e += 1.
+        val = e[1,1,1]
+        self.assertEqual(val, 1.)
+    def test_setitem_real1d(self):
+        """Test __setitem__ on a real 1-D image.............."""
+        e = EMData()
+        e.set_size(4,1,1)
+        e.to_zero()
+        e[1] = 3.
+        val = e[1]
+        self.assertEqual(val, 3.)
+    def test_setitem_real2d(self):
+        """Test __setitem__ on a real 2-D image.............."""
+        e = EMData()
+        e.set_size(4,4,1)
+        e.to_zero()
+        e[1,1] = 3.
+        val = e[1,1]
+        self.assertEqual(val, 3.)
+    def test_setitem_real3d(self):
+        """Test __setitem__ on a real 3-D image.............."""
+        e = EMData()
+        e.set_size(4,4,4)
+        e.to_zero()
+        e[1,1,1] = 3.
+        val = e[1,1,1]
+        self.assertEqual(val, 3.)
+    def test_getitem_complex1d(self):
+        """Test __getitem__ on a complex 1-D image..........."""
+        e = EMData()
+        e.set_size(4,1,1)
+        e[3] = 1.
+        e.set_complex(True)
+        val = e[1]
+        self.assertEqual(val, 1j)
+    def test_getitem_complex2d(self):
+        """Test __getitem__ on a complex 2-D image..........."""
+        e = EMData()
+        e.set_size(4,4,1)
+        e[3,0] = 1.
+        e.set_complex(True)
+        val = e[1,0]
+        self.assertEqual(val, 1j)
+    def test_getitem_complex3d(self):
+        """Test __getitem__ on a complex 3-D image..........."""
+        e = EMData()
+        e.set_size(4,4,4)
+        e[3,0,0] = 1.
+        e.set_complex(True)
+        val = e[1,0,0]
+        self.assertEqual(val, 1j)
+    def test_setitem_complex1d(self):
+        """Test __setitem__ on a complex 1-D image..........."""
+        e = EMData()
+        e.set_size(4,1,1)
+        e.set_complex(True)
+        e[1] = complex(1.,1.)
+        val = e[1]
+        self.assertEqual(val, 1+1j)
+    def test_setitem_complex2d(self):
+        """Test __setitem__ on a complex 2-D image..........."""
+        e = EMData()
+        e.set_size(4,4,1)
+        e.set_complex(True)
+        e[1,0] = complex(1.,1.)
+        val = e[1,0]
+        self.assertEqual(val, 1+1j)
+    def test_setitem_complex3d(self):
+        """Test __setitem__ on a complex 3-D image..........."""
+        e = EMData()
+        e.set_size(4,4,4)
+        e.set_complex(True)
+        e[1,0,0] = complex(1.,1.)
+        val = e[1,0,0]
+        self.assertEqual(val, 1+1j)
+
+
 def test_main():
     test_support.run_unittest(TestEMData)
 
