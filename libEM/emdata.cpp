@@ -704,8 +704,8 @@ EMData *EMData::get_top_half() const
 }
 
 void
-EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
-		          MIArray3D& nr, MCArray2D& bi, const Transform3D& tf) {
+EMData::onelinenn(int j, int n, int n2, 
+		          EMArray<int>& nr, EMData* bi, const Transform3D& tf) {
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
@@ -718,9 +718,9 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 				xnew = -xnew;
 				ynew = -ynew;
 				znew = -znew;
-				btq = conj(bi[i][jp]);
+				btq = conj(bi->cmplx(i,jp));
 			} else {
-				btq = bi[i][jp];
+				btq = bi->cmplx(i,jp);
 			}
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
@@ -739,8 +739,8 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 					} else {
 						iya = n + iyn + 1;
 					}
-					x[ixn][iya][iza] += btq;
-					nr[ixn][iya][iza]++;
+					cmplx(ixn,iya,iza) += btq;
+					nr(ixn,iya,iza)++;
 				} else {
 					int izt, iyt;
 					if (izn > 0) {
@@ -753,8 +753,8 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 					} else {
 						iyt = -iyn + 1;
 					}
-					x[-ixn][iyt][izt] += conj(btq);
-					nr[-ixn][iyt][izt]++;
+					cmplx(-ixn,iyt,izt) += conj(btq);
+					nr(-ixn,iyt,izt)++;
 				}
 			}
 
@@ -763,49 +763,54 @@ EMData::onelinenn(int j, int n, int n2, MCArray3D& x,
 }
 
 void
-EMData::nn(MIArray3D& nr, EMData* myfft, const Transform3D& tf) {
+EMData::nn(EMArray<int>& nr, EMData* myfft, const Transform3D& tf) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
-	MCArray3D x = get_3dcview(0,1,1);
-	MCArray2D bi = myfft->get_2dcview(0,1);
+	vector<int> saved_offsets = get_array_offsets();
+	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
+	set_array_offsets(0,1,1);
+	myfft->set_array_offsets(0,1);
 	// loop over frequencies in y
 	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) {
-		onelinenn(iy, ny, nxc, x, nr, bi, tf);
+		onelinenn(iy, ny, nxc, nr, myfft, tf);
 	}
+	set_array_offsets(saved_offsets);
+	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
 }
 
 void
-EMData::symplane0(MIArray3D& w) {
+EMData::symplane0(EMArray<int>& w) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;
 	// let's treat the local data as a matrix
-	MCArray3D x = get_3dcview(0,1,1);
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,1,1);
 	for (int iza = 2; iza <= nxc; iza++) {
 		for (int iya = 2; iya <= nxc; iya++) {
-			x[0][iya][iza] += conj(x[0][n-iya+2][n-iza+2]);
-			w[0][iya][iza] += w[0][n-iya+2][n-iza+2];
-			x[0][n-iya+2][n-iza+2] = conj(x[0][iya][iza]);
-			w[0][n-iya+2][n-iza+2] = w[0][iya][iza];
-			x[0][n-iya+2][iza] += conj(x[0][iya][n-iza+2]);
-			w[0][n-iya+2][iza] += w[0][iya][n-iza+2];
-			x[0][iya][n-iza+2] = conj(x[0][n-iya+2][iza]);
-			w[0][iya][n-iza+2] = w[0][n-iya+2][iza];
+			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
+			w(0,iya,iza) += w(0,n-iya+2,n-iza+2);
+			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
+			w(0,n-iya+2,n-iza+2) = w(0,iya,iza);
+			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
+			w(0,n-iya+2,iza) += w(0,iya,n-iza+2);
+			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
+			w(0,iya,n-iza+2) = w(0,n-iya+2,iza);
 		}
 	}
 	for (int iya = 2; iya <= nxc; iya++) {
-		x[0][iya][1] += conj(x[0][n-iya+2][1]);
-		w[0][iya][1] += w[0][n-iya+2][1];
-		x[0][n-iya+2][1] = conj(x[0][iya][1]);
-		w[0][n-iya+2][1] = w[0][iya][1];
+		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
+		w(0,iya,1) += w(0,n-iya+2,1);
+		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
+		w(0,n-iya+2,1) = w(0,iya,1);
 	}
 	for (int iza = 2; iza <= nxc; iza++) {
-		x[0][1][iza] += conj(x[0][1][n-iza+2]);
-		w[0][1][iza] += w[0][1][n-iza+2];
-		x[0][1][n-iza+2] = conj(x[0][1][iza]);
-		w[0][1][n-iza+2] = w[0][1][iza];
+		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
+		w(0,1,iza) += w(0,1,n-iza+2);
+		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
+		w(0,1,n-iza+2) = w(0,1,iza);
 	}
 	EXITFUNC;
 }
@@ -868,11 +873,10 @@ void EMData::postift_depad_corner_inplace() {
 	int nzold = std::max<int>(nz/npad, 1);
 #endif	//_WIN32
 	int bytes = nxold*sizeof(float);
-	MArray3D src = get_3dview();
 	float* dest = get_data();
 	for (int iz=0; iz < nzold; iz++) {
 		for (int iy = 0; iy < nyold; iy++) {
-			memmove(dest, &src[0][iy][iz], bytes);
+			memmove(dest, &(*this)(0,iy,iz), bytes);
 			dest += nxold;
 		}
 	}
@@ -894,12 +898,11 @@ void EMData::center_origin()
 		LOGERR("Real image expected. Input image is complex.");
 		throw ImageFormatException("Real image expected. Input image is complex.");
 	}
-	MArray3D dat = get_3dview();
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
 			for (int ix = 0; ix < nx; ix++) {
 				// next line multiplies by +/- 1
-				dat[ix][iy][iz] *= -2*((ix+iy+iz)%2) + 1;
+				(*this)(ix,iy,iz) *= -2*((ix+iy+iz)%2) + 1;
 			}
 		}
 	}
@@ -919,10 +922,9 @@ void EMData::center_origin_fft()
 	if (!is_ri()) {
 		LOGWARN("Only RI should be used. ");
 	}
-	MCArray3D dat = get_3dcview();
+	vector<int> saved_offsets = get_array_offsets();
 	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2]
-	boost::array<MCArray3D::index,3> bases = {{0, 1, 1}};
-	dat.reindex(bases);
+	set_array_offsets(0,1,1);
 	int xmax = (is_fftodd())
 		? (nx-1)/2 + 1
 		: (nx-2)/2;
@@ -930,10 +932,11 @@ void EMData::center_origin_fft()
 		for (int iy = 1; iy <= ny; iy++) {
 			for (int ix = 0; ix <= xmax; ix++) {
 				// next line multiplies by +/- 1
-				dat[ix][iy][iz] *= static_cast<float>(-2*((ix+iy+iz)%2) + 1);
+				cmplx(ix,iy,iz) *= static_cast<float>(-2*((ix+iy+iz)%2) + 1);
 			}
 		}
 	}
+	set_array_offsets(saved_offsets);
 	done_data();
 	update();
 	EXITFUNC;
@@ -960,14 +963,13 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	newimg->set_size(nxpad,nypad,nzpad);
 	newimg->to_zero();
 	size_t bytes = nx*sizeof(float);
-	MArray3D dest = newimg->get_3dview();
-	MArray3D src = this->get_3dview();
 	int xstart = (nx != 1) ? (nxpad - nx)/2 + nx%2 : 0;
 	int ystart = (ny != 1) ? (nypad - ny)/2 + ny%2 : 0;
 	int zstart = (nz != 1) ? (nzpad - nz)/2 + nz%2 : 0;
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
-			memcpy(&dest[xstart][iy+ystart][iz+zstart], &src[0][iy][iz], bytes);
+			memcpy(&(*newimg)(xstart,iy+ystart,iz+zstart),
+				   &(*this)(0,iy,iz), bytes);
 		}
 	}
 	newimg->done_data();
@@ -1014,11 +1016,9 @@ EMData* EMData::pad_fft(int npad) {
 		newimg->set_attr("npad", npad);
 		if (offset == 1)
 			newimg->set_fftodd(true);
-		MArray3D dest = newimg->get_3dview();
-		MArray3D src = get_3dview();
 		for (int iz = 0; iz < nz; iz++) {
 			for (int iy = 0; iy < ny; iy++) {
-				memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+				memcpy(&(*newimg)(0,iy,iz), &(*this)(0,iy,iz), bytes);
 			}
 		}
 	} else {
@@ -1027,7 +1027,7 @@ EMData* EMData::pad_fft(int npad) {
 		//  stored in the image.)
 		npad = get_attr("npad");
 		if (0 == npad) npad = 1;
-		int nxold = (nx - 2 + is_fftodd())/npad; // using the value of is_fftodd() <- FIXME
+		int nxold = (nx - 2 + int(is_fftodd()))/npad; 
 	#ifdef _WIN32
 		int nyold = _MAX(ny/npad, 1);
 		int nzold = _MAX(nz/npad, 1);
@@ -1039,11 +1039,9 @@ EMData* EMData::pad_fft(int npad) {
 		newimg->set_size(nxold, nyold, nzold);
 		newimg->to_zero();
 		newimg->set_fftpad(false);
-		MArray3D dest = newimg->get_3dview();
-		MArray3D src = this->get_3dview();
 		for (int iz = 0; iz < nzold; iz++) {
 			for (int iy = 0; iy < nyold; iy++) {
-				memcpy(&dest[0][iy][iz], &src[0][iy][iz], bytes);
+				memcpy(&(*newimg)(0,iy,iz), &(*this)(0,iy,iz), bytes);
 			}
 		}
 	}
@@ -1537,19 +1535,25 @@ EMData *EMData::do_fft_inplace()
 		// need to extend the matrix along x
 		// meaning nx is the un-fftpadded size
 		nxreal = nx;
-		MArray3D arr = get_3dview();
 		offset = 2 - nx%2;
 		if (1 == offset) set_fftodd(true);
 		int nxnew = nx + offset;
 		set_size(nxnew, ny, nz);
-		// now need to relocate the data in rdata
-		MArray3D dest = get_3dview();
-		array<std::size_t,3> dims = {{nxreal, ny, nz}};
-		MArray3D src(get_data(), dims, boost::fortran_storage_order());
-		for (int iz = nz-1; iz >= 0; iz--)
-			for (int iy = ny-1; iy >= 0; iy--)
-				for (int ix = nxreal-1; ix >= 0; ix--)
-					dest[ix][iy][iz] = src[ix][iy][iz];
+		size_t xbytes = nxreal*sizeof(float);
+		for (int iz = nz-1; iz >= 0; iz--) {
+			for (int iy = ny-1; iy >= 0; iy--) {
+				for (int ix = nxreal-1; ix >= 0; ix--) {
+					size_t oldxpos = ix + (iy + iz*ny)*nxreal;
+					size_t newxpos = ix + (iy + iz*ny)*nx;
+					(*this)(newxpos) = (*this)(oldxpos);
+				}
+			}
+		}
+		// zero out padding
+		for (int iz=0; iz < nz; iz++)
+			for (int iy=0; iy < ny; iy++)
+				for (int ix=nxreal; ix < nx; ix++)
+					(*this)(ix,iy,iz) = 0.f;
 		set_fftpad(true);
 	} else {
 		offset = is_fftodd() ? 1 : 2;
@@ -1743,17 +1747,14 @@ EMData* EMData::get_fft_amplitude2D()
 
 	dat->set_size(nx2, ny, nz);
 	dat->to_zero();
-	MArray2D rnewdata = this-> get_2dview();
-	MArray2D d        = dat -> get_2dview(); // pointer to an emData object
 
 	float temp=0;
 
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx2; i++) {
-			temp  = rnewdata[2*i  ][j] *rnewdata[2*i  ][j] ;
-			temp += rnewdata[2*i+1][j] *rnewdata[2*i+1][j] ;
-//			printf("i= %d, j=%d, temp=%f",i,j,temp);
-			d[i][j] = sqrt(temp);
+			temp = (*this)(2*i,j)*(*this)(2*i,j);
+			temp += (*this)(2*i+1,j)*(*this)(2*i+1,j);
+			(*dat)(i,j) = sqrt(temp);
 		}
 	}
 
@@ -5723,7 +5724,8 @@ EMData* EMData::rotavg()
 		LOGERR("2D images only.");
 		throw ImageDimensionException("2D images only");
 	}
-	MArray2D arr = get_2dview(-nx/2, -ny/2);
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(-nx/2,-ny/2);
 #ifdef _WIN32
 	int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
 #else
@@ -5732,7 +5734,6 @@ EMData* EMData::rotavg()
 	EMData* ret = new EMData();
 	ret->set_size(rmax+1, 1, 1);
 	ret->to_zero();
-	float* retarr = ret->get_data();
 	vector<float> count(rmax+1);
 	for (int j = -ny/2; j < ny/2 + ny%2; j++) {
 		if (abs(j) > rmax) continue;
@@ -5741,20 +5742,21 @@ EMData* EMData::rotavg()
 			int ir = int(r);
 			if (ir >= rmax) continue;
 			float frac = r - float(ir);
-			retarr[ir] += arr[i][j]*(1.0f - frac);
-			retarr[ir+1] += arr[i][j]*frac;
+			(*ret)(ir) += (*this)(i,j)*(1.0f - frac);
+			(*ret)(ir+1) += (*this)(i,j)*frac;
 			count[ir] += 1.0f - frac;
 			count[ir+1] += frac;
 		}
 	}
 	for (int ir = 0; ir <= rmax; ir++) {
 	#ifdef _WIN32
-		retarr[ir] /= _MAX(count[ir],1.0f);
+		(*ret)(ir) /= _MAX(count[ir],1.0f);
 	#else
-		retarr[ir] /= std::max(count[ir],1.0f);
+		(*ret)(ir) /= std::max(count[ir],1.0f);
 	#endif	//_WIN32
 	}
 
+	set_array_offsets(saved_offsets);
 	ret->update();
 	ret->done_data();
 	EXITFUNC;
@@ -6770,7 +6772,6 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 
 void EMData::print_image(const string str, ostream& out) {
 	out << "Printing EMData object: " << str << std::endl;
-	MArray3D mat = get_3dview();
 	int nx = get_xsize();
 	int ny = get_ysize();
 	int nz = get_zsize();
@@ -6781,7 +6782,7 @@ void EMData::print_image(const string str, ostream& out) {
 				out << setiosflags(std::ios::fixed)
 					<< setiosflags(std::ios_base::scientific)
 					<< std::setw(12)
-					 << std::setprecision(5) << mat[ix][iy][iz] << "  ";
+					 << std::setprecision(5) << (*this)(ix,iy,iz) << "  ";
 				if (((iy+1) % 6) == 0) {
 					out << std::endl << "   ";
 				}
@@ -6892,14 +6893,11 @@ EMData * EMData::real2complex(const float img)
 	int nz = get_zsize();
 	e->set_size(nx*2, ny, nz);
 	
-	MArray3D edata = e->get_3dview();
-	MArray3D data  = this->get_3dview();
-
 	for( int k=0; k<nz; k++ ) {
 		for( int j=0; j<ny; j++ ) {
 			for( int i=0; i<nx; i++ ) {			
-				edata[i*2][j][k] = data[i][j][k];
-				edata[i*2+1][j][k] = img;
+				(*e)(i*2,j,k) = (*this)(i,j,k);
+				(*e)(i*2+1,j,k) = img;
 			}
 		}
 	}
@@ -6943,8 +6941,6 @@ EMData* EMData::symvol(string symmetry) {
 	int iradrt = (0 == nx % 2) ? nx/2 - 1 : nx / 2;
 	int iradi = (iradrt-1)*(iradrt-1);
 	// actual work -- loop over symmetries and symmetrize
-	MArray3D q1 = get_3dview();
-	MArray3D q2 = svol->get_3dview();
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform3D rm = sym.get_sym(symmetry, isym);
 		if ((1.0 == rm[0][0]) && (1.0 == rm[1][1]) && (1.0 == rm[2][2])) {
@@ -6952,7 +6948,7 @@ EMData* EMData::symvol(string symmetry) {
 			for (int iz = 0; iz < nz; iz++)
 				for (int iy = 0; iy < ny; iy++)
 					for (int ix = 0; ix < nx; ix++)
-						q2[ix][iy][iz] += q1[ix][iy][iz];
+						(*svol)(ix,iy,iz) += (*this)(ix,iy,iz);
 		} else {
 			// symmetry is something interesting
 			Vec3f qrt, qr;
@@ -6980,19 +6976,19 @@ EMData* EMData::symvol(string symmetry) {
 								int jx = iox + x[i] - llim;
 								int jy = ioy + y[i] - llim;
 								int jz = ioz + z[i] - llim;
-								f[i] = q1[jx][jy][jz];
+								f[i] = (*this)(jx,jy,jz);
 							}
 							// eval intensity at px, py, pz
 							int jx = ix - llim;
 							int jy = iy - llim;
 							int jz = iz - llim;
-							q2[jx][jy][jz] += Util::triquad(dx,dy,dz,f);
+							(*svol)(jx,jy,jz) += Util::triquad(dx,dy,dz,f);
 						} else {
 							// rotated position is outside volume
 							int jx = ix - llim;
 							int jy = iy - llim;
 							int jz = iz - llim;
-							q2[jx][jy][jz] += q1[jx][jy][jz];
+							(*svol)(jx,jy,jz) += (*this)(jx,jy,jz);
 						}
 					}
 				}
@@ -7003,7 +6999,7 @@ EMData* EMData::symvol(string symmetry) {
 	for (int iz = 0; iz < nz; iz++)
 		for (int iy = 0; iy < ny; iy++)
 			for (int ix = 0; ix < nx; ix++)
-				q2[ix][iy][iz] /= nsym;
+				(*svol)(ix,iy,iz) /= nsym;
 	svol->done_data();
 	svol->update();
 	EXITFUNC;
@@ -7033,14 +7029,12 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 	// shift center for rotation (if desired)
 	float shiftxc = xc + delx;
 	float shiftyc = yc + dely;
-	MArray2D in = get_2dview();
-	MArray2D out = ret->get_2dview();
 	for (int iy = 0; iy < ny; iy++) {
 		float y = float(iy) - shiftyc;
 		float ycang = y*cang + shiftyc;
 		float ysang = -y*sang + shiftxc;
 		for (int ix = 0; ix < nx; ix++) {
-			out[ix][iy] = background;
+			(*ret)(ix,iy) = background;
 			float x = float(ix) - shiftxc;
 			float xold = x*cang + ysang;
 			float yold = x*sang + ycang;
@@ -7054,10 +7048,10 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 				// inside boundaries of input image
 				float p = xold - ixold;
 				float pcomp = 1.f - p;
-				out[ix][iy] = q*(pcomp*in[ixold][iyold+1]
-						         + p*in[ixold+1][iyold+1])
-					        + qcomp*(pcomp*in[ixold][iyold]
-									 + p*in[ixold+1][iyold]);
+				(*ret)(ix,iy) = q*(pcomp*(*this)(ixold,iyold+1)
+						         + p*(*this)(ixold+1,iyold+1))
+					        + qcomp*(pcomp*(*this)(ixold,iyold)
+									 + p*(*this)(ixold+1,iyold));
 			}
 		}
 	}
@@ -7091,7 +7085,6 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	// trig
 	float cang = cos(ang);
 	float sang = sin(ang);
-	MArray3D out = ret->get_3dview();
 	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
 			float y = float(iy) - shiftyc;
@@ -7115,7 +7108,7 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 			#endif	//_WIN32
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
-				out[ix][iy][iz] =
+				(*ret)(ix,iy,iz) = 
 					Util::quadri(this, xold, yold, iz);
 			}
 		}
@@ -7144,61 +7137,24 @@ float EMData::getconvpt2d_kbi0(float x, float y,
 		int ixp = ixc + i;
 		wx[i] = win(x - ixp);
 	}
-	MArray2D imgarr = get_2dview(-nxhalf, -nyhalf);
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(-nxhalf, -nyhalf);
 	float conv = 0.f, wsum = 0.f;
 	for (int iy = -bd; iy <= bd; iy++) {
 		int iyp = iyc + iy;
 		for (int ix = -bd; ix <= bd; ix++) {
 			int ixp = ixc + ix;
 			float wg = wx[ix]*wy[iy];
-			conv += imgarr[ixp][iyp]*wg;
+			conv += (*this)(ixp,iyp)*wg;
 			wsum += wg;
 		}
 	}
+	set_array_offsets(saved_offsets);
 	delete [] wxarr;
 	delete [] wyarr;
 	//return conv/wsum;
 	return conv;
 }
-
-#if 0 // FIXME: broken
-EMData* EMData::rotconvtrunc2d_kbi0(float ang, float alpha, int size) {
-    // truncate anything outside r=min(nx/2,ny/x)-window
-    int nx = get_xsize();
-    int ny = get_ysize();
-    int nxhalf = nx/2;
-    int nyhalf = ny/2;
-#ifdef _WIN32
-	float rmax = float(_MIN(nxhalf,nyhalf)) - float(size/2);
-#else
-    float rmax = float(std::min(nxhalf,nyhalf)) - float(size/2);
-#endif	//_WIN32
-    float rmax2 = rmax*rmax;
-	Util::KaiserBessel kb(alpha, size-1);
-    if (1 >= ny) 
-        throw ImageDimensionException("Can't rotate 1D image");
-	EMData* ret = copy_head();
-    float cod = cos(ang);
-    float sid = sin(ang);
-    MArray2D out = ret->get_2dview(-nxhalf,-nyhalf);
-    MArray2D in  = get_2dview(-nxhalf,-nyhalf);
-    for (int iy = -nyhalf; iy < nyhalf + ny%2; iy++) {
-        float ycod = iy*cod;
-        float ysid = -iy*sid;
-        for (int ix = -nxhalf; ix < nxhalf + nx%2; ix++) {
-            if (ix*ix + iy*iy <= rmax2) {
-                float yold = ix*sid + ycod;
-                float xold = ix*cod + ysid;
-                out[ix][iy] =  getconvpt2d_kbi0(xold, yold, kb.get_kbi0_win());
-            } else {
-                out[ix][iy] = in[ix][iy];
-            }
-        }
-    }
-	ret->done_data();
-    return ret;
-}
-#endif // 0
 
 complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 		Util::KaiserBessel& kb) {
@@ -7270,7 +7226,6 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	for (int iy = iymin; iy <= iymax; iy++)
 		for (int ix = ixmin; ix <= ixmax; ix++)
 			wsum += wx[ix]*wy[iy];
-	float w00 = wx[0]*wy[0];
 	complex<float> result(0.f,0.f);
 	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
 			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {

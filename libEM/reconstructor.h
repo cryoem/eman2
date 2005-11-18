@@ -300,67 +300,16 @@ namespace EMAN
 
 	  private:
 		EMData* v;
-		MCArray3D* v3dptr;
-		MIArray3D* nrptr;
+		EMArray<int>* nrptr;
 		int vnx, vny, vnz;
 		int npad;
 		int vnzp, vnyp, vnxp, vnxc;
 		void buildFFTVolume();
 		void buildNormVolume();
-            string symmetry;
-            int nsym;
+		string symmetry;
+		int nsym;
 	};
 
-	/** Reverse Gridding Reconstructor
-	 *
-	 * @see P. A. Penczek, R. Renka, and H. Schomberg, JOSA _21_, 499 (2004).
-     * 
-     */
-	class ReverseGriddingReconstructor:public Reconstructor
-	{
-	  public:
-		ReverseGriddingReconstructor();
-		~ReverseGriddingReconstructor();
-
-		void setup();
-		int insert_slice(EMData * slice, const Transform3D & euler);
-		EMData *finish();
-
-		string get_name() const
-		{
-			return "reverse_gridding";
-		}
-		
-		string get_desc() const
-		{
-			return "Reverse gridding reconstruction routine";
-		}
-
-		static Reconstructor *NEW()
-		{
-			return new ReverseGriddingReconstructor();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("size", EMObject::INT);
-			d.put("weight", EMObject::FLOAT);
-			return d;
-		}
-
-	  private:
-		EMData* v;
-		MCArray3D* v3dptr;
-		MIArray3D* nrptr;
-		int vnx, vny, vnz;
-		int npad;
-		int vnzp, vnyp, vnxp, vnxc;
-		void cang(float phi, float theta, float psi, float dm[]);
-		void buildFFTVolume();
-		void buildNormVolume();
-		void divkb3();
-	};
 	template <> Factory < Reconstructor >::Factory();
 
 	void dump_reconstructors();

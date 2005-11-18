@@ -2089,39 +2089,37 @@ void FourierOriginShiftProcessor::process(EMData * image)
 
 	     imcp ->set_size(out_nx, out_ny, 1);
 	     imcp->to_zero();
-	     MArray2D imageData = image-> get_2dview();
-	     MArray2D imcpData = imcp->get_2dview(); // pointer to an emData object
 	     
 	     //  if nx2=6, nx_orig=5, out_nx=10, ny=5, ny_orig=5, out_ny=5
 	     // center is at nx=5,6, ny=3
-	     imcpData[nx2-2][(ny-1)/2] = imageData[0][0]; 
-	     imcpData[nx2-1][(ny-1)/2] = imageData[1][0]; // A block
+	     (*imcp)(nx2-2,(ny-1)/2) = (*image)(0,0);
+	     (*imcp)(nx2-1,(ny-1)/2) = (*image)(1,0); // A block
             for (int iy = 1; iy < (ny+1)/2; iy++) { // B and C blocks
-		imcpData[nx2-2][ iy+(ny-1)/2] =  imageData[0][iy];
-		imcpData[nx2-1][ iy+(ny-1)/2] =  imageData[1][iy];
-		imcpData[nx2-2][-iy+(ny-1)/2] =  imageData[0][iy];
-		imcpData[nx2-1][-iy+(ny-1)/2] = -imageData[1][iy];
+		(*imcp)(nx2-2, iy+(ny-1)/2) =  (*image)(0,iy);
+		(*imcp)(nx2-1, iy+(ny-1)/2) =  (*image)(1,iy);
+		(*imcp)(nx2-2,-iy+(ny-1)/2) =  (*image)(0,iy);
+		(*imcp)(nx2-1,-iy+(ny-1)/2) = -(*image)(1,iy);
 	     }
             for (int ix = 2; ix < nx2; ix=ix+2) { // D blocks
-		imcpData[ ix+nx2-2][(ny-1)/2]=  imageData[ix  ][0];
-		imcpData[ ix+nx2-1][(ny-1)/2]=  imageData[ix+1][0];
-		imcpData[-ix+nx2-2][(ny-1)/2]=  imageData[ix  ][0];
-		imcpData[-ix+nx2-1][(ny-1)/2]= -imageData[ix+1][0];
+		(*imcp)( ix+nx2-2,(ny-1)/2)=  (*image)(ix  ,0);
+		(*imcp)( ix+nx2-1,(ny-1)/2)=  (*image)(ix+1,0);
+		(*imcp)(-ix+nx2-2,(ny-1)/2)=  (*image)(ix  ,0);
+		(*imcp)(-ix+nx2-1,(ny-1)/2)= -(*image)(ix+1,0);
 	     }
             for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
 		for (int iy= 1 ; iy <(ny+1)/2 ; iy++){ 
-		    imcpData[ ix+nx2-2][ iy+(ny-1)/2] =  imageData[ix  ][iy];  // E
-		    imcpData[ ix+nx2-1][ iy+(ny-1)/2] =  imageData[ix+1][iy];  // E
-		    imcpData[-ix+nx2-2][-iy+(ny-1)/2] =  imageData[ix  ][iy];  // E*
-		    imcpData[-ix+nx2-1][-iy+(ny-1)/2] = -imageData[ix+1][iy];  // E*
+		    (*imcp)( ix+nx2-2, iy+(ny-1)/2) =  (*image)(ix  ,iy);  // e
+		    (*imcp)( ix+nx2-1, iy+(ny-1)/2) =  (*image)(ix+1,iy);  // E
+		    (*imcp)(-ix+nx2-2,-iy+(ny-1)/2) =  (*image)(ix  ,iy);  // E*
+		    (*imcp)(-ix+nx2-1,-iy+(ny-1)/2) = -(*image)(ix+1,iy);  // E*
 		 }
 	     }
             for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
 		for (int iy= (ny+1)/2 ; iy <ny ; iy++){ 
-		    imcpData[ ix+nx2-2][ iy-(ny+1)/2]  =  imageData[ix  ][iy];  // F
-		    imcpData[ ix+nx2-1][ iy-(ny+1)/2]  =  imageData[ix+1][iy];  // F
-		    imcpData[-ix+nx2-2][-iy+ ny+2]     =  imageData[ix  ][iy];  // F*
- 		    imcpData[-ix+nx2-1][-iy+ ny+2]     = -imageData[ix+1][iy];  // F*
+		    (*imcp)( ix+nx2-2, iy-(ny+1)/2)  =  (*image)(ix  ,iy);  // F
+		    (*imcp)( ix+nx2-1, iy-(ny+1)/2)  =  (*image)(ix+1,iy);  // F
+		    (*imcp)(-ix+nx2-2,-iy+ ny+2)     =  (*image)(ix  ,iy);  // F*
+ 		    (*imcp)(-ix+nx2-1,-iy+ ny+2)     = -(*image)(ix+1,iy);  // F*
 		 }
 	     }
 	     image->done_data();
@@ -2129,12 +2127,11 @@ void FourierOriginShiftProcessor::process(EMData * image)
 //	     
 //             We need to recenter and put the data back to the original array
 	     image->set_size(out_nx, out_ny, 1);
-	     MArray2D imageDataB = image-> get_2dview();   
 	     for (int ix=0; ix < nx_orig; ix++){
 		for (int iy=0; iy < ny_orig; iy++){ 
 		phase = M_PI*(ix+iy-2*CenterM)*(fSize-1)/fSize;
-		imageDataB[2*ix][iy]  = cos(phase) *imcpData[2*ix][iy]   - sin(phase) *imcpData[2*ix+1][iy] ;
-		imageDataB[2*ix+1][iy]= cos(phase) *imcpData[2*ix+1][iy] + sin(phase) *imcpData[2*ix][iy] ;
+		(*image)(2*ix,iy)  = cos(phase) *(*imcp)(2*ix,iy)   - sin(phase) *(*imcp)(2*ix+1,iy) ;
+		(*image)(2*ix+1,iy)= cos(phase) *(*imcp)(2*ix+1,iy) + sin(phase) *(*imcp)(2*ix,iy) ;
 	     }}
 	     image->set_complex(true);
 	     image->set_ri(true);
@@ -2153,16 +2150,14 @@ void FourierOriginShiftProcessor::process(EMData * image)
 //	     printf("entered unshuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
 
 
-	     MArray2D imageData = image-> get_2dview();
 
 	     EMData* imageA = image->copy();
-	     MArray2D imageAData = imageA-> get_2dview();
 	     float phase;
 	     for (int ix=0; ix < nx_orig; ix++){
 		for (int iy=0; iy < ny_orig; iy++){ 
 			phase = -M_PI*(ix+iy-2*CenterM)*(fSize-1)/fSize;
-			imageData[2*ix][iy]  = cos(phase) *imageAData[2*ix][iy]   - sin(phase) *imageAData[2*ix+1][iy] ;
-			imageData[2*ix+1][iy]= cos(phase) *imageAData[2*ix+1][iy] + sin(phase) *imageAData[2*ix][iy] ;
+			(*image)(2*ix,iy)  = cos(phase) *(*imageA)(2*ix,iy)   - sin(phase) *(*imageA)(2*ix+1,iy) ;
+			(*image)(2*ix+1,iy)= cos(phase) *(*imageA)(2*ix+1,iy) + sin(phase) *(*imageA)(2*ix,iy) ;
 	     }}
 	     imageA->done_data();
 	     
@@ -2171,46 +2166,44 @@ void FourierOriginShiftProcessor::process(EMData * image)
 
 	     EMData* imcp = image->copy_head();
 	     imcp ->set_size(out_nx, out_ny, 1);
-	     MArray2D imcpData = imcp->get_2dview(); // pointer to an emData object
 	     
 	     //  if onx=10, nx_orig=5, out_nx=6, onxv=6;
 	     //     ony=5,  ny_orig=5, out_ny=5, onyv=5;
 	     int onxv = nx2/2+1;
 	     int onyv = ny;
 	     // center is at nx=5,6, ny=3
-	     imcpData[0][0] = imageData[onxv-2][(onyv-1)/2]; 
-	     imcpData[1][0] = imageData[onxv-1][(onyv-1)/2]; // A block
+	     (*imcp)(0,0) = (*image)(onxv-2,(onyv-1)/2); 
+	     (*imcp)(1,0) = (*image)(onxv-1,(onyv-1)/2); // A block
             for (int iy = 1; iy < (onyv+1)/2; iy++) { // B and C blocks
-		imcpData[0][iy] =  imageData[onxv-2][ iy+(onyv-1)/2];
-		imcpData[1][iy] =  imageData[onxv-1][ iy+(onyv-1)/2];
-		imcpData[0][onyv-iy] =  imageData[onxv-2][-iy+(onyv-1)/2];
-		imcpData[1][onyv-iy] = imageData[onxv-1][-iy+(onyv-1)/2];
+		(*imcp)(0,iy) =  (*image)(onxv-2, iy+(onyv-1)/2);
+		(*imcp)(1,iy) =  (*image)(onxv-1, iy+(onyv-1)/2);
+		(*imcp)(0,onyv-iy) =  (*image)(onxv-2,-iy+(onyv-1)/2);
+		(*imcp)(1,onyv-iy) = (*image)(onxv-1,-iy+(onyv-1)/2);
 	     }
             for (int ix = 2; ix < onxv; ix=ix+2) { // D blocks
-		imcpData[ix  ][0]=  imageData[ ix+onxv-2][(onyv-1)/2];
-		imcpData[ix+1][0]=  imageData[ ix+onxv-1][(onyv-1)/2];
+		(*imcp)(ix  ,0)=  (*image)( ix+onxv-2,(onyv-1)/2);
+		(*imcp)(ix+1,0)=  (*image)( ix+onxv-1,(onyv-1)/2);
 	     }
             for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
 		for (int iy= 1 ; iy <(onyv+1)/2 ; iy++){ 
-		    imcpData[ix  ][iy] =  imageData[ ix+onxv-2][iy+(onyv-1)/2];  // E
-		    imcpData[ix+1][iy] =  imageData[ ix+onxv-1][iy+(onyv-1)/2];  // E
+		    (*imcp)(ix  ,iy) =  (*image)( ix+onxv-2,iy+(onyv-1)/2);  // E
+		    (*imcp)(ix+1,iy) =  (*image)( ix+onxv-1,iy+(onyv-1)/2);  // E
 		 }
 	     }
             for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
 		for (int iy= (onyv+1)/2 ; iy <onyv ; iy++){ 
-		    imcpData[ix  ][iy]  =  imageData[ ix+onxv-2][ iy-(onyv+1)/2];  // F
-		    imcpData[ix+1][iy]  =  imageData[ ix+onxv-1][ iy-(onyv+1)/2];  // F
+		    (*imcp)(ix  ,iy)  =  (*image)( ix+onxv-2, iy-(onyv+1)/2);  // F
+		    (*imcp)(ix+1,iy)  =  (*image)( ix+onxv-1, iy-(onyv+1)/2);  // F
 		 }
 	     }
 	     image->done_data();
 	     imcp->done_data();
 	     image->set_size(out_nx, out_ny, 1);
 	     
-	     MArray2D imageDataB = image-> get_2dview();
 	     for (int ix=0; ix < out_nx; ix++){
 		for (int iy=0; iy < out_ny; iy++){ 
 //		printf("%d %d \n",ix,iy);fflush(stdout);
-		imageDataB[ix][iy]= imcpData[ix][iy];
+		(*image)(ix,iy)= (*imcp)(ix,iy);
 	     }}
 	     image->set_complex(true);
 	     image->set_ri(true);
@@ -3847,14 +3840,13 @@ void TestImageScurve::process(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	image->to_zero();
-	MArray2D imdat = image->get_2dview();
 	
 	for (int i=0; i<100; i++) {
 		int x=static_cast<int>( nx/2+nx/6.0*sin(i*2.0*3.14159/100.0) );
 		int y=ny/4+i*ny/200;
 		for (int xx=x-nx/10; xx<x+nx/10; xx++) {
 			for (int yy=y-ny/10; yy<y+ny/10; yy++) {
-				imdat[xx][yy]+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
+				(*image)(xx,yy)+=exp(-pow(static_cast<float>(hypot(xx-x,yy-y))*30.0f/nx,2.0f))*(sin(static_cast<float>((xx-x)*(yy-y)))+.5f);
 			}
 		}
 	}
@@ -3874,7 +3866,6 @@ void TestImagePureGaussian::process(EMData * image)
 	float twosig2 = 2*sigma*sigma;
 	int d = image->get_ndim();
 	float norm = pow(twosig2*static_cast<float>(pi),-float(d)/2);
-	MArray3D imdat = image->get_3dview();
 	for (int iz=0; iz < nz; iz++) {
 		float z = static_cast<float>(iz - zc);
 		for (int iy=0; iy < ny; iy++) {
@@ -3883,7 +3874,7 @@ void TestImagePureGaussian::process(EMData * image)
 				float x = static_cast<float>(ix - xc);
 				float r2 = x*x + y*y + z*z;
 				float val = norm*exp(-r2/twosig2);
-				imdat[ix][iy][iz] = val;
+				(*image)(ix,iy,iz) = val;
 			}
 		}
 	}

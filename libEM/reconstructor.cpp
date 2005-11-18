@@ -15,7 +15,6 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&PawelBackProjectionReconstructor::NEW);
-	force_add(&ReverseGriddingReconstructor::NEW);
 }
 
 FourierReconstructor::FourierReconstructor()
@@ -1043,21 +1042,17 @@ PawelBackProjectionReconstructor::buildFFTVolume() {
 	v->set_fftpad(true);
 	v->set_attr("npad", npad);
 	v->to_zero();
-	v3dptr = v->get_3dcviewptr();
-	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
-	v3dptr->reindex(bases);
+	v->set_array_offsets(0,1,1);
 }
 
 void
 PawelBackProjectionReconstructor::buildNormVolume() {
-	boost::array<std::size_t,3> dims = {{vnxc+1, vnyp, vnzp}};
-	nrptr = new MIArray3D(dims, boost::fortran_storage_order());
-	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
-	nrptr->reindex(bases);
+	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
+	nrptr->set_array_offsets(0,1,1);
 	for (int iz = 1; iz <= vnzp; iz++) 
 		for (int iy = 1; iy <= vnyp; iy++) 
 			for (int ix = 0; ix <= vnxc; ix++) 
-				(*nrptr)[ix][iy][iz] = 0;
+				(*nrptr)(ix,iy,iz) = 0;
 }
 
 int PawelBackProjectionReconstructor::insert_slice(EMData* slice, 
@@ -1100,16 +1095,15 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 }
 
 EMData* PawelBackProjectionReconstructor::finish() {
-	MIArray3D& nr = *nrptr;
-	MCArray3D& v3d = *v3dptr;
+	EMArray<int>& nr = *nrptr;
 	v->symplane0(nr);
 	// normalize
 	for (int iz = 1; iz <= vnzp; iz++) {
 		for (int iy = 1; iy <= vnyp; iy++) {
 			for (int ix = 0; ix <= vnxc; ix++) {
-				if (nr[ix][iy][iz] > 0) {
-					v3d[ix][iy][iz] *= (-2*((ix+iy+iz)%2)+1)
-										/static_cast<float>(nr[ix][iy][iz]);
+				if (nr(ix,iy,iz) > 0) {
+					(*v)(ix,iy,iz) *= (-2*((ix+iy+iz)%2)+1)
+										/float(nr(ix,iy,iz));
 				}
 			}
 		}
@@ -1128,137 +1122,7 @@ EMData* PawelBackProjectionReconstructor::finish() {
 		delete nrptr;
 		nrptr = 0;
 	}
-	if( v3dptr )
-	{
-		delete v3dptr;
-		v3dptr = 0;
-	}
 	return w;
-}
-
-
-ReverseGriddingReconstructor::ReverseGriddingReconstructor() 
-: v(NULL) {}
-
-ReverseGriddingReconstructor::~ReverseGriddingReconstructor()
-{
-	if (v) {
-		delete v;
-		v = NULL;
-	}
-}
-
-void ReverseGriddingReconstructor::setup() {
-	int nsize = params["size"];
-	npad = params["npad"];
-	vnxp = nsize*npad;
-	vnyp = nsize*npad;
-	vnzp = nsize*npad;
-	vnxc = vnxp/2;
-	buildFFTVolume();
-	buildNormVolume();
-}
-
-void
-ReverseGriddingReconstructor::buildFFTVolume() {
-	v = new EMData;
-	int offset = 2 - vnxp%2;
-	v->set_size(vnxp+offset,vnyp,vnzp);
-	v->set_nxc(vnxp/2);
-	v->set_complex(true);
-	v->set_ri(true);
-	v->set_fftpad(true);
-	v->set_attr("npad", npad);
-	v->to_zero();
-	v3dptr = v->get_3dcviewptr();
-	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
-	v3dptr->reindex(bases);
-}
-
-void
-ReverseGriddingReconstructor::buildNormVolume() {
-	boost::array<std::size_t,3> dims = {{vnxc+1, vnyp, vnzp}};
-	nrptr = new MIArray3D(dims, boost::fortran_storage_order());
-	boost::array<MCArray3D::index, 3> bases = {{0,1,1}};
-	nrptr->reindex(bases);
-	for (int iz = 1; iz <= vnzp; iz++) 
-		for (int iy = 1; iy <= vnyp; iy++) 
-			for (int ix = 0; ix <= vnxc; ix++) 
-				(*nrptr)[ix][iy][iz] = 0;
-}
-
-int ReverseGriddingReconstructor::insert_slice(EMData* slice, 
-												   const Transform3D& t) {
-	// sanity checks
-	if (!slice) {
-		LOGERR("try to insert NULL slice");
-		return 1;
-	}
-	if (slice->get_xsize() != slice->get_ysize() 
-		|| slice->get_xsize() != vnx) {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
-	}
-	// Ugly kludge: just get phi, theta, psi from the Transform3D
-	// and use the existing cang func to get the rotation matrix.  FIXME
-	Dict angleparams = t.get_rotation(Transform3D::SPIDER);
-	float phi = angleparams["phi"];
-	float psi = angleparams["psi"];
-	float theta = angleparams["theta"];
-	float dm[9];
-	cang(phi, theta, psi, dm);
-	// process 2-d slice
-	EMData* padfftslice = norm_pad_ft(slice, false, true, npad);
-	padfftslice->center_origin_fft();
-	// insert slice
-	v->nn(*nrptr, padfftslice, t);
-	return 0;
-}
-
-EMData* ReverseGriddingReconstructor::finish() {
-	MIArray3D& nr = *nrptr;
-	MCArray3D& v3d = *v3dptr;
-	v->symplane0(nr);
-	// normalize
-	for (int iz = 1; iz <= vnzp; iz++) {
-		for (int iy = 1; iy <= vnyp; iy++) {
-			for (int ix = 0; ix <= vnxc; ix++) {
-				if (nr[ix][iy][iz] > 0) {
-					v3d[ix][iy][iz] *= (float)((-2*((ix+iy+iz)%2)+1)/nr[ix][iy][iz]);
-				}
-			}
-		}
-	}
-	// back fft
-	v->do_ift_inplace();
-	// need windowing!
-	return v;
-}
-
-
-void ReverseGriddingReconstructor::cang(float phi, float theta, 
-											float psi, float dm[]) {
-	double cphi = cos(double(phi)*dgr_to_rad);
-	double sphi = sin(double(phi)*dgr_to_rad);
-	double cthe = cos(double(theta)*dgr_to_rad);
-	double sthe = sin(double(theta)*dgr_to_rad);
-	double cpsi = cos(double(psi)*dgr_to_rad);
-	double spsi = sin(double(psi)*dgr_to_rad);
-	dm[0] = (float)(cphi*cthe*cpsi-sphi*spsi);
-	dm[1] = (float)(sphi*cthe*cpsi+cphi*spsi);
-	dm[2] = (float)(-sthe*cpsi);
-	dm[3] = (float)(-cphi*cthe*spsi-sphi*cpsi);
-	dm[4] = (float)(-sphi*cthe*spsi+cphi*cpsi);
-	dm[5] = (float)(sthe*spsi);
-	dm[6] = (float)(sthe*cphi);
-	dm[7] = (float)(sthe*sphi);
-	dm[8] = (float)(cthe);
-}
-
-void ReverseGriddingReconstructor::divkb3() {
-	//MCArray3D& x = *v3dptr;
-	//const int m = vnx;
 }
 
 void EMAN::dump_reconstructors()

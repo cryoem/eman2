@@ -522,8 +522,6 @@ EMData *PawelProjector::project3d(EMData * image) const
 	EMData* ret = new EMData();
 	ret->set_size(nx, ny, nangles);
 	ret->to_zero();
-	MArray3D b = ret->get_3dview(0,0,0);
-	MArray3D cube = image->get_3dview(0,0,0);
 
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
@@ -543,26 +541,26 @@ EMData *PawelProjector::project3d(EMData * image) const
 						if ((ioy >= 0) & (ioy < ny-1)) {
 							int ioz = int(vb[2]);
 							if ((ioz >= 0) & (ioz < nz-1)) {
-					// real work for pixels in bounds
-					float dx = vb[0] - iox;
-					float dy = vb[1] - ioy;
-					float dz = vb[2] - ioz;
-					float a1 = cube[iox][ioy][ioz];
-					float a2 = cube[iox+1][ioy][ioz] - a1;
-					float a3 = cube[iox][ioy+1][ioz] - a1;
-					float a4 = cube[iox][ioy][ioz+1] - a1;
-					float a5 = -a2 -cube[iox][ioy+1][ioz] 
-						+ cube[iox+1][ioy+1][ioz];
-					float a61 = -cube[iox][ioy][ioz+1] 
-						+ cube[iox+1][ioy][ioz+1];
-					float a6 = -a2 + a61;
-					float a7 = -a3 - cube[iox][ioy][ioz+1]
-						+ cube[iox][ioy+1][ioz+1];
-					float a8 = -a5 - a61 - cube[iox][ioy+1][ioz+1]
-						+ cube[iox+1][ioy+1][ioz+1];
-					b[j][k][ia] += a1 + dz*(a4 + a6*dx  
-							+ (a7 + a8*dx)*dy)
-						+ a3*dy + dx*(a2 + a5*dy);
+								// real work for pixels in bounds
+								float dx = vb[0] - iox;
+								float dy = vb[1] - ioy;
+								float dz = vb[2] - ioz;
+								float a1 = (*image)(iox,ioy,ioz);
+								float a2 = (*image)(iox+1,ioy,ioz) - a1;
+								float a3 = (*image)(iox,ioy+1,ioz) - a1;
+								float a4 = (*image)(iox,ioy,ioz+1) - a1;
+								float a5 = -a2 -(*image)(iox,ioy+1,ioz) 
+									+ (*image)(iox+1,ioy+1,ioz);
+								float a61 = -(*image)(iox,ioy,ioz+1) 
+									+ (*image)(iox+1,ioy,ioz+1);
+								float a6 = -a2 + a61;
+								float a7 = -a3 - (*image)(iox,ioy,ioz+1)
+									+ (*image)(iox,ioy+1,ioz+1);
+								float a8 = -a5 - a61 - (*image)(iox,ioy+1,ioz+1)
+									+ (*image)(iox+1,ioy+1,ioz+1);
+								(*ret)(j,k,ia) += a1 + dz*(a4 + a6*dx  
+														   + (a7 + a8*dx)*dy)
+									+ a3*dy + dx*(a2 + a5*dy);
 							}
 						}
 					}
@@ -582,20 +580,20 @@ EMData *PawelProjector::project3d(EMData * image) const
 					float dx = vb[0] - iox;
 					float dy = vb[1] - ioy;
 					float dz = vb[2] - ioz;
-					float a1 = cube[iox][ioy][ioz];
-					float a2 = cube[iox+1][ioy][ioz] - a1;
-					float a3 = cube[iox][ioy+1][ioz] - a1;
-					float a4 = cube[iox][ioy][ioz+1] - a1;
-					float a5 = -a2 -cube[iox][ioy+1][ioz] 
-						+ cube[iox+1][ioy+1][ioz];
-					float a61 = -cube[iox][ioy][ioz+1] 
-						+ cube[iox+1][ioy][ioz+1];
+					float a1 = (*image)(iox,ioy,ioz);
+					float a2 = (*image)(iox+1,ioy,ioz) - a1;
+					float a3 = (*image)(iox,ioy+1,ioz) - a1;
+					float a4 = (*image)(iox,ioy,ioz+1) - a1;
+					float a5 = -a2 -(*image)(iox,ioy+1,ioz) 
+						+ (*image)(iox+1,ioy+1,ioz);
+					float a61 = -(*image)(iox,ioy,ioz+1) 
+						+ (*image)(iox+1,ioy,ioz+1);
 					float a6 = -a2 + a61;
-					float a7 = -a3 - cube[iox][ioy][ioz+1]
-						+ cube[iox][ioy+1][ioz+1];
-					float a8 = -a5 - a61 - cube[iox][ioy+1][ioz+1]
-						+ cube[iox+1][ioy+1][ioz+1];
-					b[j][k][ia] += a1 + dz*(a4 + a6*dx  
+					float a7 = -a3 - (*image)(iox,ioy,ioz+1)
+						+ (*image)(iox,ioy+1,ioz+1);
+					float a8 = -a5 - a61 - (*image)(iox,ioy+1,ioz+1)
+						+ (*image)(iox+1,ioy+1,ioz+1);
+					(*ret)(j,k,ia) += a1 + dz*(a4 + a6*dx  
 							+ (a7 + a8*dx)*dy)
 						+ a3*dy + dx*(a2 + a5*dy);
 					vb += rotation.get_matrix3_row(0);

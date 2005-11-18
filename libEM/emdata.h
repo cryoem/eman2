@@ -12,6 +12,7 @@
 #include "fundamentals.h"
 #include "emutil.h"
 #include "util.h"
+#include "emarray.h"
 //#include "vec3.h"
 #include "geometry.h"
 #include "transform.h"
@@ -1681,8 +1682,8 @@ namespace EMAN
 		 * @param tf Transform3D reference
 		 * @return The set of images read from filename.
 		 */
-		static void onelinenn(int j, int n, int n2, MCArray3D& x,
-				              MIArray3D& nr, MCArray2D& bi, 
+		void onelinenn(int j, int n, int n2, 
+				              EMArray<int>& nr, EMData* bi, 
 							  const Transform3D& tf);
 
 		/** Nearest Neighbor interpolation.
@@ -1692,14 +1693,14 @@ namespace EMAN
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
 		 */
-		void nn(MIArray3D& norm, EMData* myfft, const Transform3D& tf);
+		void nn(EMArray<int>& norm, EMData* myfft, const Transform3D& tf);
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
 		 *
 		 * @param norm Normalization data.
 		 */
-		void symplane0(MIArray3D& norm);
+		void symplane0(EMArray<int>& norm);
 
 		/** Symmetrize volume in real space.
 		 *  

@@ -974,7 +974,6 @@ float Util::quadri(EMData* image, float x, float y, int zslice) {
 	}
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
-	MArray3D fdata = image->get_3dview();
 	// periodic boundary conditions
 	x -= Util::round((x/float(nx))-0.5f)*nx; // x in [0,nx-1]
 	// zero is a bit of a problem
@@ -993,12 +992,12 @@ float Util::quadri(EMData* image, float x, float y, int zslice) {
 	int iym = iy - 1;
 	if (iym < 0) iym += ny;
 	float q = y - float(iy);
-	float f00 = fdata[ix][iy][zslice];
-	float f0p = fdata[ix][iyp][zslice];
-	float fp0 = fdata[ixp][iy][zslice];
-	float f0m = fdata[ix][iym][zslice];
-	float fm0 = fdata[ixm][iy][zslice];
-	float fpp = fdata[ixp][iyp][zslice];
+	float f00 = (*image)(ix,iy,zslice);
+	float f0p = (*image)(ix,iyp,zslice);
+	float fp0 = (*image)(ixp,iy,zslice);
+	float f0m = (*image)(ix,iym,zslice);
+	float fm0 = (*image)(ixm,iy,zslice);
+	float fpp = (*image)(ixp,iyp,zslice);
 	float c1 = fp0 - f00;
 	float c2 = 0.5f*(c1 - f00 + fm0);
 	float c3 = f0p - f00;

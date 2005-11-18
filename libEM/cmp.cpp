@@ -134,9 +134,7 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
-	MArray2D d1=image->get_2dview(-nx/2,-ny/2);
-	MArray2D d2=with ->get_2dview(-nx/2,-ny/2);
-	
+
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
 	
@@ -144,17 +142,23 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 
 	double result[4] = { 0,0,0,0 }, sq1[4] = { 0,0,0,0 }, sq2[4] = { 0,0,0,0 } ;
 
+	vector<int> image_saved_offsets = image->get_array_offsets();
+	vector<int> with_saved_offsets = with->get_array_offsets();
+	image->set_array_offsets(-nx/2,-ny/2);
+	with->set_array_offsets(-nx/2,-ny/2);
 	int i,x,y;
 	for (y=-ny/2; y<ny/2; y++) {
 		for (x=-nx/2; x<nx/2; x++) {
 			int quad=(x<0?0:1) + (y<0?0:2);
-			result[quad]+=d1[x][y]*d2[x][y];
+			result[quad]+=(*image)(x,y)*(*with)(x,y);
 			if (normalize) {
-				sq1[quad]+=d1[x][y]*d1[x][y];
-				sq2[quad]+=d2[x][y]*d2[x][y];
+				sq1[quad]+=(*image)(x,y)*(*image)(x,y);
+				sq2[quad]+=(*with)(x,y)*(*with)(x,y);
 			}
 		}
 	}
+	image->set_array_offsets(image_saved_offsets);
+	with->set_array_offsets(with_saved_offsets);
 	
 	if (normalize) {
 		for (i=0; i<4; i++) result[i]/=sqrt(sq1[i]*sq2[i]);
