@@ -98,7 +98,7 @@ class TestConstructor(unittest.TestCase):
         r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
         result = r.finish()
    
-    def test_ReverseGriddingReconstructor(self):
+    def no_test_ReverseGriddingReconstructor(self):
         """test ReverseGriddingReconstructor ................"""
         e1 = EMData()
         e1.set_size(32,32,1)
