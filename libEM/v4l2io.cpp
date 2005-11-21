@@ -70,12 +70,21 @@ void V4L2IO::init()
 	
 	if (-1 == xioctl (v4l_file, VIDIOC_QUERYCAP, &cap)) {
 			if (EINVAL == errno) {
-					fprintf (stderr, "%s is not a V4L2 device\n",filename);
+					fprintf (stderr, "%s is not a V4L2 device, try /dev/vbi*\n",filename);
 					exit (-1);
 			} else {
 					errno_exit ("VIDIOC_QUERYCAP");
 			}
 	}
+	
+	printf("driver: %s\ncard %s\n",cap.driver,cap.card);
+	
+	int input=1;
+	if (-1 == xioctl (v4l_file, VIDIOC_S_INPUT, &input)) errno_exit ("VIDIOC_S_INPUT");
+	
+	int std=V4L2_STD_NTSC_M;
+	if (-1 == xioctl (v4l_file, VIDIOC_S_STD, &std)) errno_exit ("VIDIOC_S_STD");
+	
 	
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
 			fprintf (stderr, "%s is not a video capture device\n",filename);
@@ -87,8 +96,11 @@ void V4L2IO::init()
 			exit (EXIT_FAILURE);
 	}
 	
-	cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (-1 == xioctl (v4l_file, VIDIOC_CROPCAP, &cropcap)) exit (EXIT_FAILURE);
+/*	cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (-1 == xioctl (v4l_file, VIDIOC_CROPCAP, &cropcap)) {
+		fprintf(stderr,"VIDIOC_CROPCAP failed %d %d %d %d\n",cropcap.bounds.left,cropcap.bounds.top,cropcap.bounds.width,cropcap.bounds.height);
+//		exit(EXIT_FAILURE);
+	}
 	
 	crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	crop.c = cropcap.defrect;
@@ -96,16 +108,27 @@ void V4L2IO::init()
 	if (-1 == xioctl (v4l_file, VIDIOC_S_CROP, &crop)) {
 			switch (errno) {
 			case EINVAL:
-					/* Cropping not supported. */
+					//Cropping not supported.
 					break;
 			default:
-					/* Errors ignored. */
+					// Errors ignored.
 					break;
 			}
 	}
-	
+*/
+
+	printf("Supported formats:\n");
+	struct v4l2_fmtdesc fdq;
+	fdq.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	for (int idx=0; idx<100; idx++) {
+		fdq.index=idx;
+		if (xioctl(v4l_file,VIDIOC_ENUM_FMT,&fdq)==-1) break;
+		printf("%4s %s\n",&fdq.pixelformat,fdq.description);
+	}
+
 //	memset(&fmt,0,sizeof(fmt));
-	if (-1 == xioctl (v4l_file, VIDIOC_S_FMT, &fmt)) errno_exit ("VIDIOC_G_FMT");
+	fmt.type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	if (-1 == xioctl (v4l_file, VIDIOC_G_FMT, &fmt)) errno_exit ("VIDIOC_G_FMT");
 	
 	fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 //	fmt.fmt.pix.width       = 640; 
@@ -128,7 +151,7 @@ void V4L2IO::init()
 	
 	printf("fmt.fmt.pix.width = %d\n",fmt.fmt.pix.width);
 	printf("fmt.fmt.pix.height = %d\n",fmt.fmt.pix.height);
-	printf("fmt.fmt.pix.pixelformat = %d\n",fmt.fmt.pix.pixelformat);
+	printf("fmt.fmt.pix.pixelformat = %4s\n",&fmt.fmt.pix.pixelformat);
 	printf("fmt.fmt.pix.bytesperline = %d\n",fmt.fmt.pix.bytesperline);
 	printf("fmt.fmt.pix.sizeimage = %d\n",fmt.fmt.pix.sizeimage);
 			
@@ -168,6 +191,9 @@ int V4L2IO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	if (!initialized) init();
 	
+	Region tmp(0,0,fmt.fmt.pix.width,fmt.fmt.pix.height);
+	if (!area) area=&tmp;
+	
 	int x,y;
 	ENTERFUNC;
 	unsigned char *dbuf = (unsigned char *)malloc(fmt.fmt.pix.sizeimage);
@@ -177,10 +203,14 @@ int V4L2IO::read_data(float *data, int image_index, const Region * area, bool)
 	
 	for (y=0; y<area->size[1]; y++) {
 		for (x=0; x<area->size[0]; x++) {
-			data[(int)area->size[0]*y+x]=dbuf[fmt.fmt.pix.width*y+x]/256.0;
+			data[(int)area->size[0]*y+x]=dbuf[fmt.fmt.pix.bytesperline*y+x+1]/256.0;
 		}
 	}
 
+	int sum=0;
+	for (x=0; x<fmt.fmt.pix.sizeimage; x++) sum+=dbuf[x];
+	printf("%d\n",sum);
+	
 	free(dbuf);
 	EXITFUNC;
 	return 0;
