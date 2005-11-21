@@ -38,7 +38,7 @@
 #include "emio.h"
 #include "imagicio.h"
 
-#ifdef EM_V4L2
+#ifdef ENABLE_V4L2
 	#include "v4l2io.h"
 #endif
 

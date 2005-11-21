@@ -114,6 +114,9 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["dm2"] = IMAGE_GATAN2;
 		imagetypes["DM2"] = IMAGE_GATAN2;
 
+		imagetypes["v4l"] = IMAGE_V4L;
+		imagetypes["V4L"] = IMAGE_V4L;
+		
 		initialized = true;
 	}
 	
@@ -261,6 +264,10 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 {
 	ENTERFUNC;
 	Assert(in_filename != "");
+	
+#ifdef ENABLE_V4L2
+	if (in_filename.compare(0,5,"/dev/")==0) return IMAGE_V4L;
+#endif
 	
 	string filename = in_filename;
 

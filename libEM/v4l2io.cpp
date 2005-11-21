@@ -126,6 +126,12 @@ void V4L2IO::init()
 	if (fmt.fmt.pix.sizeimage < min)
 			fmt.fmt.pix.sizeimage = min;
 	
+	printf("fmt.fmt.pix.width = %d\n",fmt.fmt.pix.width);
+	printf("fmt.fmt.pix.height = %d\n",fmt.fmt.pix.height);
+	printf("fmt.fmt.pix.pixelformat = %d\n",fmt.fmt.pix.pixelformat);
+	printf("fmt.fmt.pix.bytesperline = %d\n",fmt.fmt.pix.bytesperline);
+	printf("fmt.fmt.pix.sizeimage = %d\n",fmt.fmt.pix.sizeimage);
+			
 	EXITFUNC;
 }
 
@@ -138,6 +144,7 @@ bool V4L2IO::is_valid(const void *first_block)
 int V4L2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+	if (!initialized) init();
 	
 	dict["nx"] = (int)(fmt.fmt.pix.width);
 	dict["ny"] = (int)(fmt.fmt.pix.height);
@@ -159,6 +166,8 @@ int V4L2IO::write_header(const Dict & dict, int image_index, const Region*,
 
 int V4L2IO::read_data(float *data, int image_index, const Region * area, bool)
 {
+	if (!initialized) init();
+	
 	int x,y;
 	ENTERFUNC;
 	unsigned char *dbuf = (unsigned char *)malloc(fmt.fmt.pix.sizeimage);
