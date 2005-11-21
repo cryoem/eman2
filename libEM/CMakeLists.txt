@@ -16,6 +16,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     hdfio.cpp
     emdata.cpp
     pifio.cpp
+    v4l2io.cpp
     vtkio.cpp
     spiderio.cpp
     sspiderio.cpp

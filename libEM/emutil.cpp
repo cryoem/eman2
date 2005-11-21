@@ -137,6 +137,10 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 	Assert(first_block != 0);
 	Assert(file_size > 0);
 	
+#ifdef ENABLE_V4L2
+	if (filename.compare(0,5,"/dev/")==0) return IMAGE_V4L;
+#endif
+
 	string ext = Util::get_filename_ext(filename);
 	if (ext == "") {
 		return IMAGE_UNKNOWN;
@@ -407,6 +411,11 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	}
 
 	switch (image_type) {
+#ifdef ENABLE_V4L2
+	case IMAGE_V4L:
+		imageio = new V4L2IO(filename, rw_mode);
+		break;
+#endif
 	case IMAGE_MRC:
 		imageio = new MrcIO(filename, rw_mode);
 		break;
@@ -485,6 +494,8 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 const char *EMUtil::get_imagetype_name(ImageType t)
 {
 	switch (t) {
+	case IMAGE_V4L:
+		return "V4L2";
 	case IMAGE_MRC:
 		return "MRC";
 	case IMAGE_SPIDER:
