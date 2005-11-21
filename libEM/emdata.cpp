@@ -1082,39 +1082,38 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	    nx,ny,nz, Center, mMax, CountMax, kIntMax,  CenterM, Size);
 #endif
 
-	MArray2D rhoOfkmB = get_2dview();
+	EMData * rhoOfkmB = this;
 
 //     check mMax's are equal
 //     check kIntMax's are equal
 
 	if ( (nx==2*(mMax+1)) && (ny==kIntMax) &&(nz==1) ) {
 
-	EMData* tempCopy = copy();
-	tempCopy->set_size(2*(mMax+1),RIntMax);
-	tempCopy->to_zero();
-	MArray2D rhoOfkandm = tempCopy->get_2dview();
-//	float rhoOfkandm = new MArray2D
+	EMData *rhoOfkandm = copy();
+	rhoOfkandm ->set_size(2*(mMax+1),RIntMax);
+	rhoOfkandm ->to_zero();
+//	MArray2D rhoOfkandm = tempCopy->get_2dview();  % Just changed Nov 20 2005
 //	printf("rhoOfkandm \n");
 	for (int mr=0; mr <2*(mMax+1); mr++){
 		float *Row= new float[kIntMax];
 		float *RowOut= new float[RIntMax];
-		for (int ii=0; ii<kIntMax; ii++){ Row[ii]=rhoOfkmB[mr][ii];}
+		for (int ii=0; ii<kIntMax; ii++){ Row[ii]=(*rhoOfkmB)(mr,ii);}
 		Util::spline_mat(kVec2Use, Row, kIntMax,  RValsSorted, RowOut, RIntMax ); 
 		for (int ii=0; ii<RIntMax; ii++){
-			rhoOfkandm[mr][ii] = RowOut[ii];
+			(*rhoOfkandm)(mr,ii) = RowOut[ii];
 //			printf("%3.3f  ",RowOut[ii]);
 		}
 //		printf(" \n");
 //		rhoOfkandm(m+1,:) = spline(kVec2Use,rhoOfkmBReIm(m+1,1:kIntMax),kIntMax,RValsSorted);
 	}
-	tempCopy->done_data();
+	rhoOfkandm ->done_data();
 
 //          So far so good PRB ....
 
-	EMData* outCopy = tempCopy -> copy();
+	EMData* outCopy = rhoOfkandm ->copy();
 	outCopy->set_size(2*Size,Size,1);
 	outCopy->to_zero();
-	MArray2D ImBWfftRm = outCopy->get_2dview();
+//	MArray2D ImBWfftRm = outCopy->get_2dview();
 
 	int Count =0, kInt, kIntm1;
 	complex <float> ImfTemp;
@@ -1134,122 +1133,122 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
  //                   How many copies
 
 			thetak = atan2(fjky,fjkx);
-			ImfTemp = rhoOfkandm[0][kIntm1];
+			ImfTemp = (*rhoOfkandm)(0, kIntm1) ;
         		for (int mm= 1; mm <mMax;mm++) {  // The index for m
 				complex <float> fact(0,-mm*thetak);
 				complex <float> expfact= exp(fact);
-				complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+				complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 				float mmFac = float(1-2*(mm%2));
 				if (IntensityFlag==1){ mmFac=1;}
 				ImfTemp +=   expfact * tempRho + mmFac  *conj(expfact*tempRho);//pow(float(-1),mm)
         		}
- 			ImBWfftRm[2*(CenterM+jkx)][CenterM+jky]   = ImfTemp.real();
-			ImBWfftRm[2*(CenterM+jkx)+1][CenterM+jky] = ImfTemp.imag();
+ 			(*outCopy)(2*(CenterM+jkx),CenterM+jky)   = ImfTemp.real();
+			(*outCopy)(2*(CenterM+jkx)+1,CenterM+jky) = ImfTemp.imag();
 //			printf("jkx=%d, jky=%d; %f + %f i \n",jkx,jky,ImfTemp.real(), ImfTemp.imag());
 
 			if (jky>0) {
 				thetak = atan2(-fjky,fjkx);
-				ImfTemp = rhoOfkandm[0][kIntm1];
+				ImfTemp = (*rhoOfkandm)(0,kIntm1);
 				for (int mm= 1; mm<mMax; mm++) { // The index for m
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
-					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1), (*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac  *conj(expfact*tempRho);
 				}
-				ImBWfftRm[2*(CenterM+jkx)][CenterM-jky]   = ImfTemp.real();
+				(*outCopy)(2*(CenterM+jkx),CenterM-jky)  = ImfTemp.real();
 
-				ImBWfftRm[2*(CenterM+jkx)+1][CenterM-jky] = ImfTemp.imag();
+				(*outCopy)(2*(CenterM+jkx)+1,CenterM-jky) = ImfTemp.imag();
 			}
 
 			if (jkx>0) {
             			thetak = atan2(fjky,-fjkx);
-				ImfTemp = rhoOfkandm[0][kIntm1];
+				ImfTemp = (*rhoOfkandm)(0,kIntm1);
 				for (int mm= 1; mm<mMax; mm++) { // The index for m
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
-					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1), (*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
 				}
-				ImBWfftRm[2*(CenterM-jkx)  ][CenterM+jky] = ImfTemp.real();
-				ImBWfftRm[2*(CenterM-jkx)+1][CenterM+jky] = ImfTemp.imag();
+				(*outCopy)(2*(CenterM-jkx)  ,CenterM+jky) = ImfTemp.real();
+				(*outCopy)(2*(CenterM-jkx)+1,CenterM+jky) = ImfTemp.imag();
 			}
 
  			if (jkx>0 && jky>0) {
 				thetak = atan2(-fjky,-fjkx);
-				ImfTemp = rhoOfkandm[0][kIntm1];
+				ImfTemp = (*rhoOfkandm)(0 , kIntm1);
 				for (int mm= 1; mm<mMax; mm++) {  // The index for m
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
-					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					complex <float> tempRho( (*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1) );
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
 				}
-				ImBWfftRm[2*(CenterM-jkx)  ][CenterM-jky] = ImfTemp.real();
-				ImBWfftRm[2*(CenterM-jkx)+1][CenterM-jky] = ImfTemp.imag();
+				(*outCopy)(2*(CenterM-jkx)  ,CenterM-jky) = ImfTemp.real();
+				(*outCopy)(2*(CenterM-jkx)+1,CenterM-jky) = ImfTemp.imag();
 			}
 
 			if (jky< jkx) {
 				thetak = atan2(fjkx,fjky);
-				ImfTemp = rhoOfkandm[0][kIntm1];
+				ImfTemp = (*rhoOfkandm)(0,kIntm1);
 				for (int mm= 1; mm<mMax; mm++){ // The index for m
 					complex <float> fact(0,-mm*thetak);
 					complex <float> expfact= exp(fact);
-					complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+					complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
 				}
-				ImBWfftRm[2*(CenterM+jky)  ][CenterM+jkx] = ImfTemp.real();
-				ImBWfftRm[2*(CenterM+jky)+1][CenterM+jkx] = ImfTemp.imag();
+				(*outCopy)(2*(CenterM+jky)  ,CenterM+jkx) = ImfTemp.real();
+				(*outCopy)(2*(CenterM+jky)+1,CenterM+jkx) = ImfTemp.imag();
 
 				if (jky>0){
 					thetak = atan2(fjkx,-fjky);
-					ImfTemp = rhoOfkandm[0][kIntm1];
+					ImfTemp = (*rhoOfkandm)(0, kIntm1);
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
 						complex <float> fact(0,-mm*thetak);
 						complex <float> expfact= exp(fact);
-						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+						complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
 					}
-					ImBWfftRm[2*(CenterM-jky)  ][CenterM+jkx] = ImfTemp.real();
-					ImBWfftRm[2*(CenterM-jky)+1][CenterM+jkx] = ImfTemp.imag();
+					(*outCopy)(2*(CenterM-jky)  ,CenterM+jkx) = ImfTemp.real();
+					(*outCopy)(2*(CenterM-jky)+1,CenterM+jkx) = ImfTemp.imag();
 				}
 
 				 if (jkx>0) {
 					 thetak = atan2(-fjkx,fjky);
-					 ImfTemp = rhoOfkandm[0][kIntm1];
+					 ImfTemp = (*rhoOfkandm)(0,kIntm1);
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
 						complex <float> fact(0,-mm*thetak);
 						complex <float> expfact= exp(fact);
-						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+						complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 						float mmFac = float(1-2*(mm%2));
 						if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
  					}
-					ImBWfftRm[2*(CenterM+jky)  ][CenterM-jkx] = ImfTemp.real();
-					ImBWfftRm[2*(CenterM+jky)+1][CenterM-jkx] = ImfTemp.imag();
+					(*outCopy)(2*(CenterM+jky)  ,CenterM-jkx) = ImfTemp.real();
+					(*outCopy)(2*(CenterM+jky)+1,CenterM-jkx) = ImfTemp.imag();
  				}
 
 	 			if (jkx>0 && jky>0) {
 					thetak = atan2(-fjkx,-fjky);
-					ImfTemp = rhoOfkandm[0][kIntm1];
+					ImfTemp = (*rhoOfkandm)(0,kIntm1) ;
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
 						complex <float> fact(0,-mm*thetak);
 						complex <float> expfact= exp(fact);
-						complex <float> tempRho(rhoOfkandm[2*mm][kIntm1],rhoOfkandm[2*mm+1][kIntm1]);
+						complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1) ,(*rhoOfkandm)(2*mm+1,kIntm1) );
 						float mmFac = mmFac;
 						if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
 					}
-					ImBWfftRm[2*(CenterM-jky)  ][CenterM-jkx] = ImfTemp.real();
-					ImBWfftRm[2*(CenterM-jky)+1][CenterM-jkx] = ImfTemp.imag();
+					(*outCopy)(2*(CenterM-jky)  ,CenterM-jkx) = ImfTemp.real();
+					(*outCopy)(2*(CenterM-jky)+1,CenterM-jkx) = ImfTemp.imag();
  				}
  			} // ends jky <jkx
 
@@ -1290,7 +1289,8 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 #ifdef DEBUG
 		printf("entered if \n");fflush(stdout);
 #endif	//DEBUG
-		MArray2D ImBW = this ->get_2dview();
+//		MArray2D ImBW = this ->get_2dview();
+		EMData*  ImBW = this ;
 		int Size=nx;
 		int iMax = (int) floor( (Size-1.0)/2 +.01);
 		int CountMax = (iMax+2)*(iMax+1)/2;
@@ -1335,11 +1335,11 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		}
 
 
-		EMData* FH = copy(); // glibc detected ** malloc(); memory corruption
+		EMData* rhoOfkmB = copy(); // glibc detected ** malloc(); memory corruption
 //		printf("finished O \n");fflush(stdout);
-		FH->set_size(2*(mMax+1),kIntMax);
-		FH->to_zero();
-		MArray2D rhoOfkmB = FH->get_2dview();
+		rhoOfkmB->set_size(2*(mMax+1),kIntMax);
+		rhoOfkmB->to_zero();
+//		MArray2D rhoOfkmB = FH->get_2dview();
 
 		int CenterM= Center-1; // to convert from Matlab to C++
 		complex <float> *rhoOfRandmTemp = new complex <float>[RIntMax];
@@ -1360,14 +1360,14 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
           				Count = (jx*jx+jx)/2 +1 +jy;
 					PCount = PermMatTr[Count-1];
 //					printf("PCount=%d, Count=%d \n", PCount, Count);
-  				        rhoTemp =  complex <float> (ImBW[CenterM+jx][CenterM+jy]) *exp(mI* complex <float> (atan2(+fjy,+fjx)))
-				         +   complex <float> (ImBW[CenterM+jx][CenterM-jy]) * exp(mI*complex <float>(atan2(-fjy,+fjx)))
-				         +   complex <float> (ImBW[CenterM-jx][CenterM+jy]) * exp(mI*complex <float>(atan2(+fjy,-fjx)))
-				         +   complex <float> (ImBW[CenterM-jx][CenterM-jy]) * exp(mI*complex <float>(atan2(-fjy,-fjx)))
-			               	 +   complex <float> (ImBW[CenterM+jy][CenterM+jx]) * exp(mI*complex <float>(atan2(+fjx,+fjy)))
-					 +   complex <float> (ImBW[CenterM+jy][CenterM-jx]) * exp(mI*complex <float>(atan2(-fjx,+fjy)))
-					 +   complex <float> (ImBW[CenterM-jy][CenterM+jx]) * exp(mI*complex <float>(atan2(+fjx,-fjy)))
-					 +   complex <float> (ImBW[CenterM-jy][CenterM-jx]) * exp(mI*complex <float>(atan2(-fjx,-fjy)));
+  				        rhoTemp =  complex <float> ((*ImBW)(CenterM+jx,CenterM+jy)) *exp(mI* complex <float> (atan2(+fjy,+fjx)))
+				         +   complex <float> ((*ImBW)(CenterM+jx,CenterM-jy)) * exp(mI*complex <float>(atan2(-fjy,+fjx)))
+				         +   complex <float> ((*ImBW)(CenterM-jx,CenterM+jy)) * exp(mI*complex <float>(atan2(+fjy,-fjx)))
+				         +   complex <float> ((*ImBW)(CenterM-jx,CenterM-jy)) * exp(mI*complex <float>(atan2(-fjy,-fjx)))
+			               	 +   complex <float> ((*ImBW)(CenterM+jy,CenterM+jx)) * exp(mI*complex <float>(atan2(+fjx,+fjy)))
+					 +   complex <float> ((*ImBW)(CenterM+jy,CenterM-jx)) * exp(mI*complex <float>(atan2(-fjx,+fjy)))
+					 +   complex <float> ((*ImBW)(CenterM-jy,CenterM+jx)) * exp(mI*complex <float>(atan2(+fjx,-fjy)))
+					 +   complex <float> ((*ImBW)(CenterM-jy,CenterM-jx)) * exp(mI*complex <float>(atan2(-fjx,-fjy)));
             				if (((jx+jy)==0)&&(m>0) ){
 						rhoTemp=0;}
 //			printf("m=%d, jx=%d, jy=%d, rhoTemp= %f+ %f i\n", m,jx,jy,(rhoTemp.real()), (rhoTemp.imag()) );fflush(stdout);
@@ -1409,8 +1409,8 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 //					printf(" %1.3f +%1.3fi \t" , rowV[st].real(), rowV[st].imag() );fflush(stdout);
 			}
 			for (int st=0; st < kIntMax; st++) {
-					rhoOfkmB[2*m  ][st] = rowV[st].real();
-					rhoOfkmB[2*m+1][st] = rowV[st].imag();
+					(*rhoOfkmB)(2*m  ,st) = rowV[st].real();
+					(*rhoOfkmB)(2*m+1,st) = rowV[st].imag();
 			}
 // 			rowV = overallFactor*rhoOfRandmTemp*tempMBB;
 //			rhoOfkmB(m+1,1:kIntMax) = rowV ;
@@ -1423,15 +1423,15 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 
 		} // ends m loop
 		done_data();
-		FH-> done_data();
-		FH->set_complex(true);
-		if(FH->get_ysize()==1 && FH->get_zsize()==1) {
-			FH->set_complex_x(true);
+		rhoOfkmB-> done_data();
+		rhoOfkmB->set_complex(true);
+		if(rhoOfkmB->get_ysize()==1 && rhoOfkmB->get_zsize()==1) {
+			rhoOfkmB->set_complex_x(true);
 		}
-	    	FH->set_ri(true);
-	    	FH->set_FH(true);
-	    	FH->set_fftodd(true);
-		return FH;
+	    	rhoOfkmB->set_ri(true);
+	    	rhoOfkmB->set_FH(true);
+	    	rhoOfkmB->set_fftodd(true);
+		return rhoOfkmB;
 	} else {
 		LOGERR("2D real square odd image expected.");
 		throw ImageFormatException("2D real square odd image expected.");
@@ -2715,8 +2715,8 @@ Output: 2D 3xk real image.
         k - length of FSC curve, depends on dimensions of the image and ring width
 	1 column - FSC,
 	2 column - normalized frequency [0,0.5]
-	3 column - currently n /error of the FSC = 1/sqrt(n), where n is the number of Fourier
-	           coefficients within given shell.
+	3 column - currently n /error of the FSC = 1/sqrt(n), 
+                     where n is the number of Fourier coefficients within given shell
 */  
 	int needfree=0, nx, ny, nz, nx2, ny2, nz2, ix, iy, iz, kz, ky;
 	float  dx2, dy2, dz2, argx, argy, argz;

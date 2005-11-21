@@ -6,7 +6,7 @@ all: libpyAligner2.cpp \
 	 libpyCmp2.cpp \
 	 libpyFilter2.cpp \
 	 libpyFundamentals2.cpp \
-	 libpyReconstructor2.cpp \
+	 libpyReconstructor2.cpp	\
 	 libpyProjector2.cpp \
 	 libpyGeometry2.cpp \
 	 libpyEMObject2.cpp \
