@@ -3837,6 +3837,11 @@ void TestImageScurve::process(EMData * image)
 {
 	preprocess(image);
 	
+	int dim_size = image->get_ndim();
+	if( 2 != dim_size ) {
+		throw ImageDimensionException("work for 2D image only");
+	} 
+	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	image->to_zero();
