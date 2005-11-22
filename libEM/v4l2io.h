@@ -13,16 +13,19 @@ namespace EMAN
 	/** Read-only. Acquires images from the V4L2 interface in real-time
 		(video4linux). ie - this will read from a framegrabber, etc.
 	 */
+	
 	class V4L2IO:public ImageIO
 	{
-	  public:
+	public:
 		V4L2IO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~V4L2IO();
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
+		static void globalinit(const char *fsp);
 
-	  private:
+	private:
+		
 		char *filename;
 		int v4l_file;
 
@@ -31,10 +34,6 @@ namespace EMAN
 		int nx;
 		int ny;
 
-		struct v4l2_capability cap;
-		struct v4l2_cropcap cropcap;
-		struct v4l2_crop crop;
-		struct v4l2_format fmt;
 	};
 }
 
