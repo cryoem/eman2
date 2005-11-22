@@ -68,8 +68,6 @@ libraries should be installed as shared-object libraries where applicable):
  2.  Optional Libraries / Programs
 ----------------------------------        
     - To read/write HDF5 image, use hdf5 (http://hdf.ncsa.uiuc.edu/HDF5).
-	  NOTE: HDF5 1.6.4 has some API compatility issue and it doesn't work
-	        with EMAN2 yet.
 	  
     - To read TIFF image, use libtiff (http://www.libtiff.org)
 
