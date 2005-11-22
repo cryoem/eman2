@@ -13,10 +13,6 @@
 
 using std::vector;
 
-#define H5_VERS_MAJOR   1       /* For major interface/format changes        */
-#define H5_VERS_MINOR   6       /* For minor interface/format changes        */
-#define H5_VERS_RELEASE 3       /* For tweaks, bug-fixes, or development     */
-
 namespace EMAN
 {
 	/** HDF5 (hiearchical data format version 5) is supported in
