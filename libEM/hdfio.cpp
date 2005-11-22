@@ -1215,7 +1215,12 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 		return -1;
 	}
 	
+#if H5_VERS_RELEASE == 4
 	hsize_t offset[3];
+#else  	
+	hssize_t offset[3];
+#endif
+	
 	hsize_t count[3];
 
 	int x0 = 0, y0 = 0, z0 = 0;
@@ -1238,7 +1243,13 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 								  offset, NULL, count, NULL);
 	if (err >= 0) {	
 		*p_memspace_id = H5Screate_simple(3, count, NULL);
+
+#if H5_VERS_RELEASE == 4
 		hsize_t offset_out[3];
+#else
+		hssize_t offset_out[3];
+#endif
+
 		offset_out[0] = 0;
 		offset_out[1] = 0;
 		offset_out[2] = 0;
