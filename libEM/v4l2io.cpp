@@ -154,7 +154,7 @@ void V4L2IO::globalinit(const char *fsp)
 //	v4l2_fmt.fmt.pix.height      = 480;
 //	v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY;
 	v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-	v4l2_fmt.fmt.pix.field       = V4L2_FIELD_NONE;
+//	v4l2_fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 //	v4l2_fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 	
 	if (-1 == xioctl (vfile, VIDIOC_S_FMT, &v4l2_fmt)) errno_exit ("VIDIOC_S_FMT");
