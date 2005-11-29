@@ -1215,7 +1215,7 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 		return -1;
 	}
 	
-#if H5_VERS_RELEASE >= 4  
+#if H5_VERS_MINOR > 6 || (H5_VERS_MINOR == 6 && H5_VERS_RELEASE >= 4)  
 	hsize_t offset[3];
 #else  	
 	hssize_t offset[3];
@@ -1244,7 +1244,7 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 	if (err >= 0) {	
 		*p_memspace_id = H5Screate_simple(3, count, NULL);
 
-#if H5_VERS_RELEASE >= 4
+#if H5_VERS_MINOR > 6 || (H5_VERS_MINOR == 6 && H5_VERS_RELEASE >= 4)  
 		hsize_t offset_out[3];
 #else
 		hssize_t offset_out[3];
