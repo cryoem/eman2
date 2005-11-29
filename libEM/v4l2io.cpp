@@ -59,7 +59,7 @@ void V4L2IO::init() {
 	ENTERFUNC;
 	static int ginit=0;
 	
-	if (!ginit) globalinit(filename);
+	if (!ginit) globalinit(filename,0,12,-1,60);
 	ginit=1;
 	
 	if (initialized) {
@@ -73,7 +73,7 @@ void V4L2IO::init() {
 	EXITFUNC;
 }
 
-void V4L2IO::globalinit(const char *fsp)
+void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 {
 	ENTERFUNC;
 	
@@ -96,7 +96,6 @@ void V4L2IO::globalinit(const char *fsp)
 	
 	printf("driver: %s\ncard %s\n",cap.driver,cap.card);
 	
-	int input=0;
 	if (-1 == xioctl (vfile, VIDIOC_S_INPUT, &input)) errno_exit ("VIDIOC_S_INPUT");
 	
 	int std=V4L2_STD_NTSC_M;
@@ -169,13 +168,46 @@ void V4L2IO::globalinit(const char *fsp)
 	if (v4l2_fmt.fmt.pix.sizeimage < min)
 			v4l2_fmt.fmt.pix.sizeimage = min;
 	
-/*	printf("fmt.fmt.pix.width = %d\n",v4l2_fmt.fmt.pix.width);
+	printf("fmt.fmt.pix.width = %d\n",v4l2_fmt.fmt.pix.width);
 	printf("fmt.fmt.pix.height = %d\n",v4l2_fmt.fmt.pix.height);
 	printf("fmt.fmt.pix.pixelformat = %4s\n",&v4l2_fmt.fmt.pix.pixelformat);
 	printf("fmt.fmt.pix.bytesperline = %d\n",v4l2_fmt.fmt.pix.bytesperline);
-	printf("fmt.fmt.pix.sizeimage = %d\n",v4l2_fmt.fmt.pix.sizeimage);
-	printf("fmt.fmt.pix.field = %d\n",v4l2_fmt.fmt.pix.field); */
+//	printf("fmt.fmt.pix.sizeimage = %d\n",v4l2_fmt.fmt.pix.sizeimage);
+//	printf("fmt.fmt.pix.field = %d\n",v4l2_fmt.fmt.pix.field); 
 	
+	struct v4l2_queryctrl qc;
+	struct v4l2_control con;
+
+	qc.id=V4L2_CID_BRIGHTNESS;
+	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
+	printf("brightness = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
+
+	qc.id=V4L2_CID_CONTRAST;
+	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
+	printf("contrast = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
+
+	qc.id=V4L2_CID_GAMMA;
+	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
+	printf("gamma = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
+
+	if (brt!=-1) {
+	con.id=V4L2_CID_BRIGHTNESS;
+	con.value=brt;
+	ioctl(vfile,VIDIOC_S_CTRL,&con);
+	}
+
+	if (cont!=-1) {
+	con.id=V4L2_CID_CONTRAST;
+	con.value=cont;
+	ioctl(vfile,VIDIOC_S_CTRL,&con);
+	}
+
+	if (gamma!=-1) {
+	con.id=V4L2_CID_GAMMA;
+	con.value=gamma;
+	ioctl(vfile,VIDIOC_S_CTRL,&con);
+	}
+
 	close(vfile);
 	EXITFUNC;
 }
@@ -220,6 +252,7 @@ int V4L2IO::read_data(float *data, int image_index, const Region * area, bool)
 	ENTERFUNC;
 	unsigned char *dbuf = (unsigned char *)malloc(v4l2_fmt.fmt.pix.sizeimage);
 
+	read(v4l_file,dbuf,v4l2_fmt.fmt.pix.sizeimage);
 	read(v4l_file,dbuf,v4l2_fmt.fmt.pix.sizeimage);
 
 /*	int count=v4l2_fmt.fmt.pix.sizeimage;
