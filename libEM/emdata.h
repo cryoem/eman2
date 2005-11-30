@@ -1547,8 +1547,9 @@ namespace EMAN
 		float& operator()(const int ix, const int iy, const int iz) {
 			ptrdiff_t pos = (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
-			if (pos < 0 || pos >= nx*ny*nz)
+			if (pos < 0 || pos >= nx*ny*nz) {
 				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+			}
 #endif // BOUNDS_CHECKING
 			return *(rdata + pos);
 		}
@@ -1585,7 +1586,7 @@ namespace EMAN
 		}
 		/** Return reference to complex elements */
 		complex<float>& cmplx(const int ix, const int iy, const int iz) {
-			ptrdiff_t pos = 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nz;
+			ptrdiff_t pos = 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
 			if (pos < 0 || pos >= nx*ny*nz)
 				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
@@ -2275,4 +2276,4 @@ namespace EMAN
 			
 #endif
 
-/* vim: set ts=4 noet: */
+/* vim: set ts=4 noet nospell: */

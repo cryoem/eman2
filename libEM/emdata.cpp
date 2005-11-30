@@ -861,6 +861,8 @@ EMData* EMData::window_center(int l) {
 
 void EMData::postift_depad_corner_inplace() {
 	ENTERFUNC;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
 	int npad = attr_dict["npad"];
 	if (0 == npad) npad = 1;
 	int offset = is_fftodd() ? 1 : 2;
@@ -888,6 +890,7 @@ void EMData::postift_depad_corner_inplace() {
 	if(ny==1 && nz==1) {
 		set_complex_x(false);
 	}
+	set_array_offsets(saved_offsets);
 	EXITFUNC;
 }
 
@@ -990,6 +993,8 @@ EMData* EMData::pad_fft(int npad) {
 	ENTERFUNC;
 	if (is_complex()) 
 		throw ImageFormatException("Padding of complex images not supported");
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
 	EMData* newimg = copy_head();
 	newimg->to_zero();
 	if (is_fftpadded() == false) {
@@ -1046,6 +1051,7 @@ EMData* EMData::pad_fft(int npad) {
 		}
 	}
 	newimg->done_data();
+	set_array_offsets(saved_offsets);
 	return newimg;
 }
 
@@ -1539,7 +1545,6 @@ EMData *EMData::do_fft_inplace()
 		if (1 == offset) set_fftodd(true);
 		int nxnew = nx + offset;
 		set_size(nxnew, ny, nz);
-		size_t xbytes = nxreal*sizeof(float);
 		for (int iz = nz-1; iz >= 0; iz--) {
 			for (int iy = ny-1; iy >= 0; iy--) {
 				for (int ix = nxreal-1; ix >= 0; ix--) {
@@ -1693,18 +1698,8 @@ EMData *EMData::do_ift_inplace()
 
 	ap2ri();
 
-	int ndim = get_ndim();
-
-
-	// turn off data shuffling if we're doing an in-place transform
 	int offset = is_fftodd() ? 1 : 2;
-	if (ndim == 1) {
-		EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
-	}
-
-	if (ndim >= 2) {
-		EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
-	}
+	EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
 
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
@@ -7292,14 +7287,44 @@ void EMData::center_padded() {
 	if (is_fftpadded())
 		nxreal = nx - 2 + int(is_fftodd());
 	EMData& self = *this;
-	self.set_array_offsets();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets();
 	int nxorig = nxreal/npad;
 	int nyorig = ny/npad;
+	int nzorig = nz/npad;
 	int nxcorner = (nxreal - nxorig)/2 + nxorig%2;
 	int nycorner = (ny - nyorig)/2 + nyorig%2;
-	for (int iy = nyorig-1; iy >= 0; iy--) 
-		for (int ix = nxorig-1; ix >= 0; ix--)
-			std::swap(self(nxcorner+ix,nycorner+iy),self(ix,iy));
+	int nzcorner = (nz - nzorig)/2 + nzorig%2;
+	switch (get_ndim()) {
+		case 1:
+			// 1-d, so no padding along y or z
+			nyorig = ny; nzorig = nz;
+			nycorner = nzcorner = 0;
+			break;
+		case 2:
+			// 2-d, so no padding along z
+			nzorig = nz;
+			nzcorner = 0;
+			break;
+		case 3:
+			break;
+		default:
+			throw ImageDimensionException("center_padded needs a 1-,"
+					                      "2-, or 3-d image.");
+	}
+	for (int iz = nzorig-1; iz >= 0; iz--)
+		for (int iy = nyorig-1; iy >= 0; iy--) 
+			for (int ix = nxorig-1; ix >= 0; ix--) 
+				std::swap(self(nxcorner+ix,nycorner+iy,nzcorner+iz),
+						  self(ix,iy,iz));
+	set_array_offsets(saved_offsets);
+}
+
+/** Helper function for EMData::fft_shuffle, below */
+inline void swapx(float* a, float* b, float* temp, size_t nbytes) {
+	memcpy(temp, a, nbytes);
+	memcpy(a, b, nbytes);
+	memcpy(b, temp, nbytes);
 }
 
 void EMData::fft_shuffle() {
@@ -7308,27 +7333,22 @@ void EMData::fft_shuffle() {
 	vector<int> offsets = get_array_offsets();
 	set_array_offsets(); // clear offsets before shuffling
 	EMData& self = *this;
-	if (0 == ny%2) {
-		int offset = ny/2;
-		for (int iy = 0; iy < ny/2; iy++) 
-			// swap column iy and iy + offset
-			for (int ix = 0; ix < nx; ix++)
-				std::swap(self(ix,iy),self(ix,iy+offset));
-	} else {
-		//stupid algorithm; too lazy to find better
-		int shifts = ny/2 + int(is_shuffled());
-		for (int ix = 0; ix < nx; ix++) {
-			for (int shift = 0; shift < shifts; shift++) {
-				float temp = self(ix,0);
-				for (int iy = 1; iy < ny; iy++) 
-					self(ix,iy-1) = self(ix,iy);
-				self(ix,ny-1) = temp;
-			}
-		}
+	int nyhalf = ny/2;
+	int nzhalf = nz/2;
+	int nbytes = nx*sizeof(float);
+	float* temp = new float[nx];
+	for (int iz=0; iz < nz; iz++) 
+		for (int iy=0; iy < nyhalf; iy++) 
+			swapx(&self(0,iy,iz),&self(0,iy+nyhalf,iz),temp,nbytes);
+	if (nz > 1) {
+		for (int iy=0; iy < ny; iy++) 
+			for (int iz=0; iz < nzhalf; iz++) 
+				swapx(&self(0,iy,iz),&self(0,iy,iz+nzhalf),temp,nbytes);
 	}
 	set_shuffled(!is_shuffled()); // toggle
 	set_array_offsets(offsets); // reset offsets
 	done_data();
+	delete[] temp;
 }
 
 EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
@@ -7374,10 +7394,6 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 			result->cmplx(ix,iy) = extractpoint(nuxold,nuyold,kb);
 		}
 	}
-	cout << "Fourier (0,0) in fouriergrid: "
-		<< cmplx(0,0) << endl;
-	cout << "Fourier (1,0) in fouriergrid: "
-		<< cmplx(1,0) << endl;
 	result->set_array_offsets();
 	result->fft_shuffle(); // reset to an unshuffled result
 	result->done_data();
