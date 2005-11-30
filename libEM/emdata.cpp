@@ -7408,6 +7408,10 @@ void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 		throw ImageFormatException("divkbsinh requires a real image.");
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
+	// Note that the following loops will work for 1-, 2-, and 3-D
+	// images, since the "extra" weights will be 1.0.  (For example,
+	// for a 2-d image iz=0, nz=1, so iz-nz/2 = 0 - 1/2 = 0, since
+	// the division is an integer division.)
 	for (int iz=0; iz < nz; iz++) {
 		float wz = kb.sinhwin(iz-nz/2);
 		for (int iy=0; iy < ny; iy++) {
