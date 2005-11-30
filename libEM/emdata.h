@@ -1823,10 +1823,49 @@ namespace EMAN
 		 *  moves that original image so that it is centered.
 		 */
 		void center_padded();
-		/** extractpoint, not yet finished */
+		/** extractpoint -- Gridding convolution
+		 *
+		 *  Note: Expected to be used in combination with fouriergridrot2d.
+		 *
+		 *  @param[in] xin x-position
+		 *  @param[in] yin y-position
+		 *  @param[in] kb  Kaiser-Bessel window 
+		 *
+		 *  @return Complex gridding result
+		 *
+		 *  @see P.A. Penczek, R. Renka, and H. Schomberg,
+		 *       J. Opt. Soc. Am. A _21_, (2004)
+		 *
+		 */
 		complex<float> extractpoint(float xin, float yin, 
 		                            Util::KaiserBessel& kb);
+		/** extractplane -- Gridding convolution in 3D along a plane
+		 *
+		 *  Note: Expected to be used in combination with fourier gridding
+		 *        projections.
+		 *
+		 *  @param[in] tf  transform matrix defining the intended plane.
+		 *  @param[in] kb  Kaiser-Bessel window 
+		 *
+		 *  @return Complex gridding plane
+		 *
+		 *  @see P.A. Penczek, R. Renka, and H. Schomberg,
+		 *       J. Opt. Soc. Am. A _21_, 499-509 (2004)
+		 *
+		 */
+		EMData*  extractplane(const Transform3D& tf,
+		                      Util::KaiserBessel& kb);
 		EMData* fouriergridrot2d(float ang, Util::KaiserBessel& kb);
+		/** divkbsinh -- Divide image by a Kaiser-Bessel sinh window.
+		 *
+		 *  @param[in] kb Kaiser-Bessel window object
+		 *
+		 *  Note: Ideally this method really should be a "processor"
+		 *        instead, but at the moment a KaiserBessel object
+		 *        cannot be passed as part of a Dict, making the usual
+		 *        EMData::project() interface rather awkward here.
+		 */
+		void divkbsinh(const Util::KaiserBessel& kb);
 		/** masked_stats -- Compute image statistics under a mask
 		 *
 		 *  Specifically, compute the average and standard deviation

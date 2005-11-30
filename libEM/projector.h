@@ -158,6 +158,47 @@ namespace EMAN
 						  float z, float *data, float gauss_width) const;
 	};
 
+	/** Fourier gridding projection routine.
+	 *  
+	 *  @see P. A. Penczek, R. Renka, and H. Schomberg, 
+	 *       J. Opt. Soc. Am. A _21_, 499-509 (2004)
+     */
+	class FourierGriddingProjector:public Projector
+	{
+	  public:
+		EMData * project3d(EMData * image) const;
+
+		string get_name() const
+		{
+			return "fouriergridding";
+		}
+
+		string get_desc() const
+		{
+			return "Fourier-space projection using gridding.";
+		}
+
+		static Projector *NEW()
+		{
+			return new FourierGriddingProjector();
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("kb_alpha", EMObject::FLOAT);
+			d.put("kb_K", EMObject::FLOAT);
+			d.put("angletype", EMObject::STRING);
+			d.put("anglelist", EMObject::FLOATARRAY);
+			d.put("az", EMObject::FLOAT);
+			d.put("alt", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			d.put("theta", EMObject::FLOAT);
+			d.put("psi", EMObject::FLOAT);
+			d.put("npad", EMObject::INT);
+			return d;
+		}
+	};
+
 
 	/** Pawel Penczek's optimized projection routine.
      */
@@ -283,3 +324,5 @@ namespace EMAN
 }
 
 #endif	//eman__projector_h__
+
+/* vim: set ts=4 noet nospell: */

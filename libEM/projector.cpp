@@ -20,6 +20,7 @@ template <> Factory < Projector >::Factory()
 	force_add(&SimpleIsoSurfaceProjector::NEW);
 	force_add(&StandardProjector::NEW);
 	force_add(&StandardFastProjector::NEW);
+	force_add(&FourierGriddingProjector::NEW);
 }
 
 
@@ -778,10 +779,111 @@ EMData *StandardProjector::project3d(EMData * image) const
 	return proj;
 }
 
+EMData *FourierGriddingProjector::project3d(EMData * image) const
+{
+	if (!image) {
+		return 0;
+	}
+	if (3 != image->get_ndim()) 
+		throw ImageDimensionException(
+				"FourierGriddingProjector needs a 3-D volume");
+	if (image->is_complex())
+		throw ImageFormatException(
+				"FourierGriddingProjector requires a real volume");
+	const int npad = params.has_key("npad") ? int(params["npad"]) : 2;
+	const int nx = image->get_xsize();
+	const int ny = image->get_ysize();
+	const int nz = image->get_zsize();
+	if (nx != ny or nx != nz)
+		throw ImageDimensionException(
+				"FourierGriddingProjector requires nx==ny==nz");
+	const int m = Util::get_min(nx,ny,nz);
+	const int n = m*npad;
+
+	const int K = params["kb_K"];
+	const float alpha = params["kb_alpha"];
+	Util::KaiserBessel kb(alpha, K, m/2,K/(2.*n),n);
+	// divide out gridding weights
+	image->divkbsinh(kb);
+	// pad and center volume, then FFT and multiply by (-1)**(i+j+k)
+	EMData* imgft = image->pad_fft(npad);
+	imgft->center_padded();
+	imgft->do_fft_inplace();
+	imgft->center_origin_fft();
+	imgft->fft_shuffle();
+
+	// Do we have a list of angles?
+	int nangles = 0;
+	vector<float> anglelist;
+	if (params.has_key("anglelist")) {
+		anglelist = params["anglelist"];
+		nangles = anglelist.size() / 3;
+	}
+
+	// For the moment, let's assume the user wants to use either
+	// EMAN or SPIDER Euler angles, but nothing else.
+	string angletype = params["angletype"].to_str();
+	Transform3D::EulerType eulertype;
+	if (angletype == "SPIDER") {
+		eulertype = Transform3D::SPIDER;
+		if (nangles == 0) {
+			// a single SPIDER angle was passed in
+			float phi = params["phi"];
+			float theta = params["theta"];
+			float psi = params["psi"];
+			anglelist.push_back(phi);
+			anglelist.push_back(theta);
+			anglelist.push_back(psi);
+			nangles = 1;
+		}
+	} else if (angletype == "EMAN") {
+		eulertype = Transform3D::EMAN;
+		if (nangles == 0) {
+			// a single EMAN angle was passed in
+			float az = params["az"];
+			float alt = params["alt"];
+			float phi = params["phi"];
+			anglelist.push_back(az);
+			anglelist.push_back(alt);
+			anglelist.push_back(phi);
+			nangles = 1;
+		}
+	} else 
+		throw InvalidValueException(0,
+				"Only SPIDER and EMAN Euler angles currently supported");
+	// initialize return object
+	EMData* ret = new EMData();
+	ret->set_size(nx, ny, nangles);
+	ret->to_zero();
+
+	// loop over sets of angles
+	for (int ia = 0; ia < nangles; ia++) {
+		int indx = 3*ia;
+		Transform3D tf(eulertype, float(anglelist[indx]*dgr_to_rad),
+				float(anglelist[indx+1]*dgr_to_rad), 
+				float(anglelist[indx+2]*dgr_to_rad));
+		EMData* proj = imgft->extractplane(tf, kb);
+		if (proj->is_shuffled()) proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->do_ift_inplace();
+		EMData* winproj = proj->window_center(m);
+		delete proj;
+		for (int iy=0; iy < ny; iy++)
+			for (int ix=0; ix < nx; ix++) 
+				(*ret)(ix,iy,ia) = (*winproj)(ix,iy);
+		delete winproj;
+	}
+	delete imgft;
+	ret->done_data();
+	ret->update();
+	return ret;
+}
+
+
 
 void EMAN::dump_projectors()
 {
 	dump_factory < Projector > ();
 }
 
-/* vim: set ts=4 noet: */
+/* vim: set ts=4 noet nospell: */

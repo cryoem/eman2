@@ -66,6 +66,7 @@ set_policy(EMData.operator['()'], return_value_policy(copy_non_const_reference))
 set_policy(EMData.rotconvtrunc2d_kbi0, return_value_policy(manage_new_object))
 set_policy(EMData.gridrot2d_kbi0, return_value_policy(manage_new_object))
 set_policy(EMData.fouriergridrot2d, return_value_policy(manage_new_object))
+set_policy(EMData.extractplane, return_value_policy(manage_new_object))
 
 set_policy(EMData.real2FH, return_value_policy(manage_new_object))
 set_policy(EMData.FH2F, return_value_policy(manage_new_object))

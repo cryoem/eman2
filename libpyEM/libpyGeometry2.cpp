@@ -13,13 +13,13 @@ using namespace boost::python;
 BOOST_PYTHON_MODULE(libpyGeometry2)
 {
     class_< EMAN::Region >("Region", init<  >())
-        .def(init< int, int>())
+        .def(init< int, int >())
         .def(init< int, int, int, int >())
         .def(init< int, int, int, int, int, int >())
-        .def(init< float, float>())
+        .def(init< float, float >())
         .def(init< float, float, float, float >())
         .def(init< float, float, float, float, float, float >())
-        .def(init< double, double>())
+        .def(init< double, double >())
         .def(init< double, double, double, double >())
         .def(init< double, double, double, double, double, double >())
         .def(init< const EMAN::FloatPoint&, const EMAN::FloatSize& >())
@@ -44,9 +44,9 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
         .def_readwrite("value", &EMAN::Pixel::value)
         .def("get_point", &EMAN::Pixel::get_point)
         .def("get_value", &EMAN::Pixel::get_value)
-        .def( self != self )
-        .def( self == self )
         .def( self < self )
+        .def( self == self )
+        .def( self != self )
     ;
 
 }

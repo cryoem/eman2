@@ -1018,56 +1018,36 @@ Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
 	if (0.f == vtable) vtable = v;
 	fac = static_cast<float>(twopi)*alpha*r*v;
 	alphar = alpha*r;
-	vadjust = 1.1f*v;
+	vadjust = 1.0f*v;
 	facadj = static_cast<float>(twopi)*alpha*r*vadjust;
 	build_I0table();
 }
 
 float Util::KaiserBessel::i0win(float x) const {
-#if 0 // comment out I0-based in favor of I1-based
-	float val0 = static_cast<float>(gsl_sf_bessel_I0(fac))/(2.0f*v);
-	float absx = fabs(x);
-	if (absx > v) return 0.f;
-	float rt = sqrt(1.f - pow(x/v,2));
-	return gsl_sf_bessel_I0(fac*rt)/(2*v)/val0;
-#endif // 0
-	//float val0 = sqrt(facadj)*float(gsl_sf_bessel_I1(facadj));
 	float val0 = float(gsl_sf_bessel_I0(facadj));
-	//float val0 = gsl_sf_bessel_I1(facadj);
 	float absx = fabs(x);
 	if (absx > vadjust) return 0.f;
 	float rt = sqrt(1.f - pow(absx/vadjust, 2));
-	//float res = sqrt(facadj*rt)*float(gsl_sf_bessel_I1(facadj*rt))/val0;
 	float res = float(gsl_sf_bessel_I0(facadj*rt))/val0;
-	//float res = rt*float(gsl_sf_bessel_I1(facadj*rt))/val0;
 	return res;
 }
 
 void Util::KaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
-	int ltab = int(round(float(ntable)/1.1f));
+	int ltab = int(round(float(ntable)/1.25f));
 	fltb = float(ltab)/(K/2);
-	float val0 = sqrt(facadj)*static_cast<float>(gsl_sf_bessel_I1(facadj));
-	//float val0 = gsl_sf_bessel_I0(facadj);
-	//float val0 = gsl_sf_bessel_I1(facadj);
+	//float val0 = sqrt(facadj)*static_cast<float>(gsl_sf_bessel_I1(facadj));
+	float val0 = gsl_sf_bessel_I0(facadj);
 	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
 	for (int i=0; i <= ltab; i++) {
 		float s = float(i)/fltb/N;
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
-			i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
-			//i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
-			//i0table[i] = rt*gsl_sf_bessel_I1(facadj*rt)/val0;
+			//i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
+			i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
 		} else {
 			i0table[i] = 0.f;
 		}
-#if 0 // old version
-	dtable = vtable / ntable;
-	float vratio = v/vtable;
-	for (int i=0; i <= ntable; i++) {
-		float x = i*dtable;
-		i0table[i] = i0win(x*vratio);
-#endif // 0
 	}
 }
 
@@ -1101,8 +1081,55 @@ float Util::KaiserBessel::sinhwin(float x) const {
 	}
 }
 
+float Util::FakeKaiserBessel::i0win(float x) const {
+	float val0 = sqrt(facadj)*float(gsl_sf_bessel_I1(facadj));
+	float absx = fabs(x);
+	if (absx > vadjust) return 0.f;
+	float rt = sqrt(1.f - pow(absx/vadjust, 2));
+	float res = sqrt(facadj*rt)*float(gsl_sf_bessel_I1(facadj*rt))/val0;
+	return res;
+}
+
+void Util::FakeKaiserBessel::build_I0table() {
+	i0table.resize(ntable+1); // i0table[0:ntable]
+	int ltab = int(round(float(ntable)/1.1f));
+	fltb = float(ltab)/(K/2);
+	float val0 = sqrt(facadj)*gsl_sf_bessel_I1(facadj);
+	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
+	for (int i=0; i <= ltab; i++) {
+		float s = float(i)/fltb/N;
+		if (s < vadjust) {
+			float rt = sqrt(1.f - pow(s/vadjust, 2));
+			i0table[i] = sqrt(facadj*rt)*gsl_sf_bessel_I1(facadj*rt)/val0;
+		} else {
+			i0table[i] = 0.f;
+		}
+	}
+}
+
+float Util::FakeKaiserBessel::sinhwin(float x) const {
+	float val0 = sinh(fac)/fac;
+	float absx = fabs(x);
+	if (0.0 == x) {
+		float res = 1.0f;
+		return res;
+	} else if (absx == alphar) {
+		return 1.0f/val0;
+	} else if (absx < alphar) {
+		float rt = sqrt(1.0f - pow((x/alphar), 2));
+		float facrt = fac*rt;
+		float res = (sinh(facrt)/facrt)/val0;
+		return res;
+	} else {
+		float rt = sqrt(pow((x/alphar),2) - 1.f);
+		float facrt = fac*rt;
+		float res = (sin(facrt)/facrt)/val0;
+		return res;
+	}
+}
+
 #if 0 // 1-st order KB window
-float Util::KaiserBessel::sinhwin(float x) const {
+float Util::FakeKaiserBessel::sinhwin(float x) const {
 	//float val0 = sinh(fac)/fac;
 	float prefix = 2*facadj*vadjust/float(gsl_sf_bessel_I1(facadj));
 	float val0 = prefix*(cosh(facadj) - sinh(facadj)/facadj);
@@ -1130,7 +1157,7 @@ float Util::KaiserBessel::sinhwin(float x) const {
 		return res;
 	}
 }
-
 #endif // 0
 
-/* vim: set ts=4 noet: */
+
+/* vim: set ts=4 noet nospell: */

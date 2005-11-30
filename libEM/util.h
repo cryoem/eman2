@@ -940,32 +940,34 @@ namespace EMAN
 		 */
 		class KaiserBessel 
 		{
-			float alpha, v, r; /** Kaiser-Bessel parameters */
-			int N; /** size in Ix-space */
-			int K; /** I0 window size */
-			float vtable; /** table I0 non-zero domain maximum */
-			int ntable;
-			vector<float> i0table;
-			float dtable; /** table spacing */
-			float alphar; /** alpha*r */
-			float fac; /** 2*pi*alpha*r*v */
-			float vadjust; 
-			float facadj; /** 2*pi*alpha*r*vadjust */
-			void build_I0table(); /** Tabulate I0 window for speed */
-			float fltb;
+			protected:
+				float alpha, v, r; /** Kaiser-Bessel parameters */
+				int N; /** size in Ix-space */
+				int K; /** I0 window size */
+				float vtable; /** table I0 non-zero domain maximum */
+				int ntable;
+				vector<float> i0table;
+				float dtable; /** table spacing */
+				float alphar; /** alpha*r */
+				float fac; /** 2*pi*alpha*r*v */
+				float vadjust; 
+				float facadj; /** 2*pi*alpha*r*vadjust */
+				virtual void build_I0table(); /** Tabulate I0 window for speed */
+				float fltb;
 			public:
 				KaiserBessel(float alpha_, int K, float r_,
 						     float v_, int N_, float vtable_=0.f, 
 							 int ntable_ = 5999);
+				virtual ~KaiserBessel() {};
 				/** Compute the maximum error in the table */
 				float I0table_maxerror();
 				vector<float> dump_table() {
 					return i0table;
 				}
 				/** Kaiser-Bessel Sinh window function */
-				float sinhwin(float x) const;
+				virtual float sinhwin(float x) const;
 				/** Kaiser-Bessel I0 window function */
-				float i0win(float x) const;
+				virtual float i0win(float x) const;
 				/** Kaiser-Bessel I0 window function (uses table lookup) */
 				float i0win_tab(float x) const {
 					float absx = fabs(x);
@@ -1009,6 +1011,19 @@ namespace EMAN
 				}
 		};
 
+		class FakeKaiserBessel : public KaiserBessel {
+			public:
+				FakeKaiserBessel(float alpha, int K, float r_,
+						         float v_, int N_, float vtable_=0.f,
+								 int ntable_ = 5999) 
+		        : KaiserBessel(alpha, K, r_, v_, N_, vtable_, ntable_) {
+					build_I0table();
+				}
+				float sinhwin(float x) const;
+				float i0win(float x) const;
+				void build_I0table();
+		};
+
 		/** Gaussian function class.
 		 *
 		 *  Usage:
@@ -1045,4 +1060,4 @@ namespace EMAN
 
 #endif
 
-/* vim: set ts=4 noet: */
+/* vim: set ts=4 noet nospell: */

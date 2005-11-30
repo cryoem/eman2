@@ -20,6 +20,88 @@ namespace  {
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_voea_overloads_1_5, EMAN::Util::voea, 1, 5)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_quadri_overloads_3_4, EMAN::Util::quadri, 3, 4)
+struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
+{
+    EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
+        EMAN::Util::KaiserBessel(p0), py_self(py_self_) {}
+
+    EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4):
+        EMAN::Util::KaiserBessel(p0, p1, p2, p3, p4), py_self(py_self_) {}
+
+    EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4, float p5):
+        EMAN::Util::KaiserBessel(p0, p1, p2, p3, p4, p5), py_self(py_self_) {}
+
+    EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4, float p5, int p6):
+        EMAN::Util::KaiserBessel(p0, p1, p2, p3, p4, p5, p6), py_self(py_self_) {}
+
+    void build_I0table() {
+        call_method< void >(py_self, "build_I0table");
+    }
+
+    void default_build_I0table() {
+        EMAN::Util::KaiserBessel::build_I0table();
+    }
+
+    float sinhwin(float p0) const {
+        return call_method< float >(py_self, "sinhwin", p0);
+    }
+
+    float default_sinhwin(float p0) const {
+        return EMAN::Util::KaiserBessel::sinhwin(p0);
+    }
+
+    float i0win(float p0) const {
+        return call_method< float >(py_self, "i0win", p0);
+    }
+
+    float default_i0win(float p0) const {
+        return EMAN::Util::KaiserBessel::i0win(p0);
+    }
+
+    PyObject* py_self;
+};
+
+struct EMAN_Util_FakeKaiserBessel_Wrapper: EMAN::Util::FakeKaiserBessel
+{
+    EMAN_Util_FakeKaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::FakeKaiserBessel& p0):
+        EMAN::Util::FakeKaiserBessel(p0), py_self(py_self_) {}
+
+    EMAN_Util_FakeKaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4):
+        EMAN::Util::FakeKaiserBessel(p0, p1, p2, p3, p4), py_self(py_self_) {}
+
+    EMAN_Util_FakeKaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4, float p5):
+        EMAN::Util::FakeKaiserBessel(p0, p1, p2, p3, p4, p5), py_self(py_self_) {}
+
+    EMAN_Util_FakeKaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4, float p5, int p6):
+        EMAN::Util::FakeKaiserBessel(p0, p1, p2, p3, p4, p5, p6), py_self(py_self_) {}
+
+    float sinhwin(float p0) const {
+        return call_method< float >(py_self, "sinhwin", p0);
+    }
+
+    float default_sinhwin(float p0) const {
+        return EMAN::Util::FakeKaiserBessel::sinhwin(p0);
+    }
+
+    float i0win(float p0) const {
+        return call_method< float >(py_self, "i0win", p0);
+    }
+
+    float default_i0win(float p0) const {
+        return EMAN::Util::FakeKaiserBessel::i0win(p0);
+    }
+
+    void build_I0table() {
+        call_method< void >(py_self, "build_I0table");
+    }
+
+    void default_build_I0table() {
+        EMAN::Util::FakeKaiserBessel::build_I0table();
+    }
+
+    PyObject* py_self;
+};
+
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMUtil_get_imageio_overloads_2_3, EMAN::EMUtil::get_imageio, 2, 3)
 
@@ -113,12 +195,12 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     );
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
-    class_< EMAN::Util::KaiserBessel >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
+    class_< EMAN::Util::KaiserBessel, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
         .def(init< float, int, float, float, int, optional< float, int > >())
+        .def("sinhwin", &EMAN::Util::KaiserBessel::sinhwin, &EMAN_Util_KaiserBessel_Wrapper::default_sinhwin)
+        .def("i0win", &EMAN::Util::KaiserBessel::i0win, &EMAN_Util_KaiserBessel_Wrapper::default_i0win)
         .def("I0table_maxerror", &EMAN::Util::KaiserBessel::I0table_maxerror)
         .def("dump_table", &EMAN::Util::KaiserBessel::dump_table)
-        .def("sinhwin", &EMAN::Util::KaiserBessel::sinhwin)
-        .def("i0win", &EMAN::Util::KaiserBessel::i0win)
         .def("i0win_tab", &EMAN::Util::KaiserBessel::i0win_tab)
         .def("get_window_size", &EMAN::Util::KaiserBessel::get_window_size)
         .def("get_kbsinh_win", &EMAN::Util::KaiserBessel::get_kbsinh_win)
@@ -139,6 +221,14 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     ;
 
     delete EMAN_Util_KaiserBessel_scope;
+
+
+    class_< EMAN::Util::FakeKaiserBessel, bases< EMAN::Util::KaiserBessel > , EMAN_Util_FakeKaiserBessel_Wrapper >("FakeKaiserBessel", init< const EMAN::Util::FakeKaiserBessel& >())
+        .def(init< float, int, float, float, int, optional< float, int > >())
+        .def("sinhwin", (float (EMAN::Util::FakeKaiserBessel::*)(float) const)&EMAN::Util::FakeKaiserBessel::sinhwin, (float (EMAN_Util_FakeKaiserBessel_Wrapper::*)(float) const)&EMAN_Util_FakeKaiserBessel_Wrapper::default_sinhwin)
+        .def("i0win", (float (EMAN::Util::FakeKaiserBessel::*)(float) const)&EMAN::Util::FakeKaiserBessel::i0win, (float (EMAN_Util_FakeKaiserBessel_Wrapper::*)(float) const)&EMAN_Util_FakeKaiserBessel_Wrapper::default_i0win)
+        .def("build_I0table", (void (EMAN::Util::FakeKaiserBessel::*)() )&EMAN::Util::FakeKaiserBessel::build_I0table, (void (EMAN_Util_FakeKaiserBessel_Wrapper::*)())&EMAN_Util_FakeKaiserBessel_Wrapper::default_build_I0table)
+    ;
 
 
     class_< EMAN::Util::Gaussian >("Gaussian", init< const EMAN::Util::Gaussian& >())
@@ -214,7 +304,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .value("IMAGE_VTK", EMAN::EMUtil::IMAGE_VTK)
         .value("IMAGE_HDF", EMAN::EMUtil::IMAGE_HDF)
         .value("IMAGE_SPIDER", EMAN::EMUtil::IMAGE_SPIDER)
-        .value("IMAGE_V4L", EMAN::EMUtil::IMAGE_V4L)
         .value("IMAGE_EMIM", EMAN::EMUtil::IMAGE_EMIM)
         .value("IMAGE_SINGLE_SPIDER", EMAN::EMUtil::IMAGE_SINGLE_SPIDER)
         .value("IMAGE_PNG", EMAN::EMUtil::IMAGE_PNG)
