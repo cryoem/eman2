@@ -5,7 +5,6 @@
 
 // Includes ====================================================================
 #include <aligner.h>
-#include <all_imageio.h>
 #include <cmp.h>
 #include <ctf.h>
 #include <emdata_wrapitems.h>

@@ -1,4 +1,3 @@
-Include("all_imageio.h")
 Include("transform.h")
 Include("ctf.h")
 Include("processor.h")
