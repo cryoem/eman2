@@ -48,32 +48,27 @@ V4L2IO::V4L2IO(const string & file, IOMode rw)
 
 V4L2IO::~V4L2IO()
 {
-	if (v4l_file) {
-		close(v4l_file);
-		v4l_file = 0;
-	}
+//	if (v4l_file) {
+		//close(v4l_file);
+		//v4l_file = 0;
+	//}
 	if (filename) free(filename);
 }
 
 void V4L2IO::init() {
 	ENTERFUNC;
-	static int ginit=0;
+	static int ginit=-1;
 	
-	if (!ginit) globalinit(filename,0,12,-1,60);
-	ginit=1;
+	if (ginit==-1) ginit=globalinit(filename,0,-1,-1,-1);
+	//if (ginit==-1) ginit=globalinit(filename,0,12,-1,60);
+	v4l_file=ginit;
 	
-	if (initialized) {
-		return;
-	}
-
-	initialized = true;
-
-	v4l_file = open (filename, O_RDWR, 0);
+	initialized=true;
 
 	EXITFUNC;
 }
 
-void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
+int V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 {
 	ENTERFUNC;
 	
@@ -99,7 +94,7 @@ void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	if (-1 == xioctl (vfile, VIDIOC_S_INPUT, &input)) errno_exit ("VIDIOC_S_INPUT");
 	
 	int std=V4L2_STD_NTSC_M;
-	if (-1 == xioctl (vfile, VIDIOC_S_STD, &std)) errno_exit ("VIDIOC_S_STD");
+	if (-1 == xioctl (vfile, VIDIOC_S_STD, &std)) printf("Can't set NTSC standard\n");
 	
 	
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
@@ -149,10 +144,11 @@ void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	if (-1 == xioctl (vfile, VIDIOC_G_FMT, &v4l2_fmt)) errno_exit ("VIDIOC_G_FMT");
 	
 	v4l2_fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-//	v4l2_fmt.fmt.pix.width       = 640; 
-//	v4l2_fmt.fmt.pix.height      = 480;
+	v4l2_fmt.fmt.pix.width       = 640; 
+	v4l2_fmt.fmt.pix.height      = 480;
 //	v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY;
-	v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+	v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+//	v4l2_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 //	v4l2_fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 //	v4l2_fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 	
@@ -172,7 +168,7 @@ void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	printf("fmt.fmt.pix.height = %d\n",v4l2_fmt.fmt.pix.height);
 	printf("fmt.fmt.pix.pixelformat = %4s\n",&v4l2_fmt.fmt.pix.pixelformat);
 	printf("fmt.fmt.pix.bytesperline = %d\n",v4l2_fmt.fmt.pix.bytesperline);
-//	printf("fmt.fmt.pix.sizeimage = %d\n",v4l2_fmt.fmt.pix.sizeimage);
+	printf("fmt.fmt.pix.sizeimage = %d\n",v4l2_fmt.fmt.pix.sizeimage);
 //	printf("fmt.fmt.pix.field = %d\n",v4l2_fmt.fmt.pix.field); 
 	
 	struct v4l2_queryctrl qc;
@@ -189,6 +185,10 @@ void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	qc.id=V4L2_CID_GAMMA;
 	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
 	printf("gamma = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
+
+	qc.id=V4L2_CID_EXPOSURE;
+	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
+	printf("exposure = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
 
 	if (brt!=-1) {
 	con.id=V4L2_CID_BRIGHTNESS;
@@ -208,8 +208,9 @@ void V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	ioctl(vfile,VIDIOC_S_CTRL,&con);
 	}
 
-	close(vfile);
+//	close(vfile);
 	EXITFUNC;
+	return vfile;
 }
 
 bool V4L2IO::is_valid(const void *first_block)
@@ -270,7 +271,11 @@ int V4L2IO::read_data(float *data, int image_index, const Region * area, bool)
 	
 	for (y=0; y<area->size[1]; y++) {
 		for (x=0; x<area->size[0]; x++) {
-			data[(int)(area->size[0]*(area->size[1]-y-1)+x)]=dbuf[v4l2_fmt.fmt.pix.bytesperline*y+x*2]/256.0;
+// This is for YUYV
+//			data[(int)(area->size[0]*(area->size[1]-y-1)+x)]=dbuf[v4l2_fmt.fmt.pix.bytesperline*y+x*2]/256.0;
+// This is for YUV420
+//			data[(int)(area->size[0]*(area->size[1]-y-1)+x)]=dbuf[v4l2_fmt.fmt.pix.bytesperline*y+x]/256.0;
+			data[(int)(area->size[0]*(area->size[1]-y-1)+x)]=dbuf[(int)area->size[0]*y+x]/256.0;
 		}
 	}
 
