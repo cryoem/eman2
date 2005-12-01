@@ -35,8 +35,7 @@ libraries should be installed as shared-object libraries where applicable):
         % ./configure
 	% make
 
-    3. Boost (version 1.32 or lower)    (http://www.boost.org)
-       [NOTE:  EMAN2 does not currently support Boost versions above 1.32.]  
+    3. Boost (version 1.32 or lower)    (http://www.boost.org) 
 
        3.1  Installing Boost requires Boost.Jam.  Executables and
 	    source code for jam can be found at the Boost website.
@@ -59,7 +58,7 @@ libraries should be installed as shared-object libraries where applicable):
        % cp -r boost /usr/include/boost
       
   
-    4. CMake (version 2.0.6+)    (http://www.cmake.org)
+    4. CMake (version 2.0.5+)    (http://www.cmake.org)
        Executables for several platforms are available; source code
        can also be used for custom installations.
 
@@ -76,9 +75,9 @@ libraries should be installed as shared-object libraries where applicable):
     For development the following libraries/programs are required (see
     Appedix A for installation help):
 
-    - Python (version 2.2+)             (http://www.python.org)
+    - Python (version 2.3+)             (http://www.python.org)
     
-    - Boost Python (version 1.32-)	(http://www.boost.org)
+    - Boost Python (version 1.32+)	(http://www.boost.org)
     
     - Numerical Python Numpy (version 22.0+)
                                         (http://www.pfdubois.com/numpy)
