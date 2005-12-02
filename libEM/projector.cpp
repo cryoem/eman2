@@ -794,7 +794,7 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	const int nx = image->get_xsize();
 	const int ny = image->get_ysize();
 	const int nz = image->get_zsize();
-	if (nx != ny or nx != nz)
+	if (nx != ny || nx != nz)
 		throw ImageDimensionException(
 				"FourierGriddingProjector requires nx==ny==nz");
 	const int m = Util::get_min(nx,ny,nz);
