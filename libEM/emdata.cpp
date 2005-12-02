@@ -7457,7 +7457,7 @@ EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
 	int nxreal = nx - 2; 
-	if (nxreal != ny or nxreal != nz)
+	if (nxreal != ny || nxreal != nz)
 		throw ImageDimensionException("extractplane requires ny == nx == nz");
 	// build complex result image
 	EMData* res = new EMData();
@@ -7587,14 +7587,14 @@ EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 								float wg = wx[lx]*ty;
 								bool mirror = false;
 								int ixt(ixp), iyt(iyp), izt(izp);
-								if (ixt > nhalf or ixt < -nhalf) {
+								if (ixt > nhalf || ixt < -nhalf) {
 									ixt = Util::sgn(ixt)
 										  *(n - abs(ixt));
 									iyt = -iyt;
 									izt = -izt;
 									mirror = !mirror;
 								}
-								if (iyt >= nhalf or iyt < -nhalf) {
+								if (iyt >= nhalf || iyt < -nhalf) {
 									if (ixt != 0) {
 										ixt = -ixt;
 										iyt = Util::sgn(iyt)
@@ -7605,7 +7605,7 @@ EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 										iyt -= n*Util::sgn(iyt);
 									}
 								}
-								if (izt >= nhalf or izt < -nhalf) {
+								if (izt >= nhalf || izt < -nhalf) {
 									if (ixt != 0) {
 										ixt = -ixt;
 										iyt = -iyt;
