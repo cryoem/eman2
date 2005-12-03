@@ -59,7 +59,8 @@ void V4L2IO::init() {
 	ENTERFUNC;
 	static int ginit=-1;
 	
-	if (ginit==-1) ginit=globalinit(filename,0,-1,-1,-1);
+	if (ginit==-1) ginit=globalinit(filename,0,90,48,8,200,210); // planets on webcam
+//	if (ginit==-1) ginit=globalinit(filename,0,80,48,0,240,220); // good for deep sky on webcam
 	//if (ginit==-1) ginit=globalinit(filename,0,12,-1,60);
 	v4l_file=ginit;
 	
@@ -68,7 +69,7 @@ void V4L2IO::init() {
 	EXITFUNC;
 }
 
-int V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
+int V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma,int expos,int gain)
 {
 	ENTERFUNC;
 	
@@ -190,6 +191,14 @@ int V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
 	printf("exposure = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
 
+	qc.id=V4L2_CID_GAIN;
+	ioctl(vfile,VIDIOC_QUERYCTRL,&qc);
+	printf("gain = %d - %d by %d %d\n",qc.minimum,qc.maximum,qc.step,qc.default_value);
+
+	con.id=V4L2_CID_AUTOGAIN;
+	con.value=0;
+	ioctl(vfile,VIDIOC_S_CTRL,&con);
+	
 	if (brt!=-1) {
 	con.id=V4L2_CID_BRIGHTNESS;
 	con.value=brt;
@@ -205,6 +214,18 @@ int V4L2IO::globalinit(const char *fsp,int input,int brt,int cont,int gamma)
 	if (gamma!=-1) {
 	con.id=V4L2_CID_GAMMA;
 	con.value=gamma;
+	ioctl(vfile,VIDIOC_S_CTRL,&con);
+	}
+
+	if (expos!=-1) {
+	con.id=V4L2_CID_EXPOSURE;
+	con.value=expos;
+	ioctl(vfile,VIDIOC_S_CTRL,&con);
+	}
+
+	if (gain!=-1) {
+	con.id=V4L2_CID_GAIN;
+	con.value=gain;
 	ioctl(vfile,VIDIOC_S_CTRL,&con);
 	}
 

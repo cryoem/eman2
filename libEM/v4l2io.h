@@ -22,7 +22,7 @@ namespace EMAN
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
-		static int globalinit(const char *fsp,int input=0,int brt=-1,int cont=-1,int gamma=-1);
+		static int globalinit(const char *fsp,int input=0,int brt=-1,int cont=-1,int gamma=-1,int expos=-1,int gain=-1);
 
 	private:
 		
