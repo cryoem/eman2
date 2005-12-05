@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <algorithm>
+#include <iostream>
 
 #ifndef WIN32
 	#include <unistd.h>
@@ -975,10 +976,10 @@ float Util::quadri(EMData* image, float x, float y, int zslice) {
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	// periodic boundary conditions
-	x -= Util::round((x/float(nx))-0.5f)*nx; // x in [0,nx-1]
+	x -= nx*((x>0.f) ? floor(x/nx) : ceil(x/nx - 1));
+	y -= ny*((y>0.f) ? floor(y/ny) : ceil(y/ny - 1));
 	// zero is a bit of a problem
 	if (x == nx) x = 0.f;
-	y -= Util::round((y/float(ny))-0.5f)*ny; // y in [0,ny-1]
 	if (y == ny) y = 0.f;
 	int ix = int(x);
 	int ixp = ix + 1;
