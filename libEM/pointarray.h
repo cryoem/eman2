@@ -4,7 +4,6 @@
 #ifndef eman_pointarray_h_
 #define eman_pointarray_h_
 
-#include "ctf.h"
 #include "emdata.h"
 
 #if defined NFFT || NFFT2

@@ -16,10 +16,8 @@
 
 #include "gsl_sf_bessel.h"
 #include "gsl_errno.h"
-#include <complex>
 #include <algorithm>
 #include <boost/array.hpp>
-#include <iostream>
 #include <iomanip>
 #include <cstdlib>
 

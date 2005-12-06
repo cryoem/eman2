@@ -5,7 +5,6 @@
 
 #include "pngio.h"
 #include "geometry.h"
-#include "emutil.h"
 #include "util.h"
 
 

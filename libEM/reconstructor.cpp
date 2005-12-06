@@ -4,8 +4,6 @@
 #include "reconstructor.h"
 #include "interp.h"
 #include "ctf.h"
-#include "emconstants.h"
-#include "exception.h"
 
 using namespace EMAN;
 

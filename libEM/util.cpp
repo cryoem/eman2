@@ -3,7 +3,6 @@
  */
 #include "byteorder.h"
 #include "Assert.h"
-#include "emconstants.h"
 #include "emdata.h"
 
 #include <string.h>
@@ -16,7 +15,6 @@
 #include <sys/types.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <algorithm>
-#include <iostream>
 
 #ifndef WIN32
 	#include <unistd.h>

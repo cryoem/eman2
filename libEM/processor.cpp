@@ -2,7 +2,6 @@
  * $Id$
  */
 
-#include "emconstants.h"
 #include "processor.h"
 #include "ctf.h"
 #include "xydata.h"

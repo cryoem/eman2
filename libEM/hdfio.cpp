@@ -4,8 +4,6 @@
 #ifdef EM_HDF5
 
 #include "hdfio.h"
-#include "util.h"
-#include "emutil.h"
 #include "geometry.h"
 #include "ctf.h"
 #include "Assert.h"

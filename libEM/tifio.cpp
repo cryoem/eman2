@@ -4,7 +4,6 @@
 #ifdef EM_TIFF
 
 #include "tifio.h"
-#include "emutil.h"
 #include "util.h"
 #include "geometry.h"
 #include <tiffio.h>

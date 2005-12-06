@@ -5,18 +5,14 @@
 #define eman__emdata_h__ 1
 
 #include <float.h>
-//#include <boost/multi_array.hpp>
-#include <complex>
 #include <fstream>
 
 #include "fundamentals.h"
 #include "emutil.h"
 #include "util.h"
 #include "emarray.h"
-//#include "vec3.h"
 #include "geometry.h"
 #include "transform.h"
-#include <iostream>
 
 using std::string;
 using std::vector;

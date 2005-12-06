@@ -4,7 +4,6 @@
 #include "projector.h"
 #include "emdata.h"
 #include "interp.h"
-#include  "emconstants.h"
 
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
