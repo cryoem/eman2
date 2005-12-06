@@ -4,7 +4,7 @@
 #ifndef eman__emdata_h__
 #define eman__emdata_h__ 1
 
-#include <float.h>
+#include <cfloat>
 #include <fstream>
 
 #include "fundamentals.h"

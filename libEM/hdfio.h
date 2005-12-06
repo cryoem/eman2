@@ -7,7 +7,7 @@
 #ifdef EM_HDF5
 
 #include "imageio.h"
-#include <stdio.h>
+
 #include <hdf5.h>
 #include <vector>
 

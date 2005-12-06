@@ -7,7 +7,6 @@
 #include "util.h"
 #include "geometry.h"
 #include <tiffio.h>
-#include <limits.h>
 
 using namespace EMAN;
 

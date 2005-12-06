@@ -1,6 +1,6 @@
 #include "emdata.h"
 #include "testutil.h"
-#include <math.h>
+#include <cmath>
 
 using namespace EMAN;
 

@@ -8,8 +8,6 @@
 #include "ctf.h"
 #include "Assert.h"
 
-#include <time.h>
-
 using namespace EMAN;
 
 const char *ImagicIO::HED_EXT = "hed";

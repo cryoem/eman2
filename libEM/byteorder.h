@@ -5,7 +5,7 @@
 #ifndef eman__byteorder_h__
 #define eman__byteorder_h__ 1
 
-#include <stddef.h>
+#include <cstddef>
 
 namespace EMAN
 {

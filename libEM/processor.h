@@ -7,8 +7,7 @@
 #include "emobject.h"
 #include "util.h"
 
-#include <float.h>
-#include <limits.h>
+#include <cfloat>
 
 using std::vector;
 using std::map;

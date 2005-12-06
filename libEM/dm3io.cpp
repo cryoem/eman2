@@ -5,9 +5,6 @@
 #include "portable_fileio.h"
 #include "geometry.h"
 
-#include <string.h>
-#include <stdlib.h>
-
 using namespace EMAN;
 using namespace EMAN::Gatan;
 

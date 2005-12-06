@@ -9,8 +9,8 @@
 #include <windows.h>
 #define MAXPATHLEN (MAX_PATH*4)
 #endif
-#include <float.h>
-#include <math.h>
+#include <cfloat>
+#include <cmath>
 #include "log.h"
 
 using namespace EMAN;

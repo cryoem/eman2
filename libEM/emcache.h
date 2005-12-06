@@ -4,7 +4,6 @@
 #ifndef eman__emcache__h__
 #define eman__emcache__h__ 1
 
-#include <stdlib.h>
 #include <string>
 #include <map>
 

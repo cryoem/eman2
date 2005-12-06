@@ -1,6 +1,6 @@
 #include "emdata.h"
 #include "util.h"
-#include <stdio.h>
+#include <cstdio>
 
 using namespace EMAN;
 

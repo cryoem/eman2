@@ -4,8 +4,6 @@
 #include "lstio.h"
 #include "util.h"
 
-#include <string.h>
-
 #ifndef WIN32
 #include <sys/param.h>
 #include <unistd.h>

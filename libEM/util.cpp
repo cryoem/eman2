@@ -5,9 +5,7 @@
 #include "Assert.h"
 #include "emdata.h"
 
-#include <string.h>
 #include <fcntl.h>
-#include <time.h>
 #include <iomanip>
 #include <sstream>
 

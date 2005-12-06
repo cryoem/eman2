@@ -4,7 +4,7 @@
 #ifndef eman__interp_h__
 #define eman__interp_h__
 
-#include <math.h>
+#include <cmath>
 
 namespace EMAN
 {

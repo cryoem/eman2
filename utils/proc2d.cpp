@@ -1,7 +1,7 @@
 #include "emdata.h"
 #include "ctf.h"
 
-#include <ctype.h>
+#include <cctype>
 
 using namespace EMAN;
 using std::map;

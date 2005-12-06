@@ -5,8 +5,6 @@
 #include "geometry.h"
 #include "util.h"
 #include "portable_fileio.h"
-#include <limits.h>
-#include <ctype.h>
 
 using namespace EMAN;
 

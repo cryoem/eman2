@@ -4,7 +4,7 @@
 #ifndef __portable_fileio_h__
 #define __portable_fileio_h__
 
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 
 

@@ -6,10 +6,6 @@
 #include "geometry.h"
 #include "portable_fileio.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-
 using namespace EMAN;
 
 const char *VtkIO::MAGIC = "# vtk DataFile Version";

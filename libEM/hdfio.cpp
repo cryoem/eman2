@@ -9,8 +9,6 @@
 #include "Assert.h"
 #include "transform.h"
 
-#include <string.h>
-#include <stdlib.h>
 
 #ifndef WIN32
 	#include <sys/param.h>

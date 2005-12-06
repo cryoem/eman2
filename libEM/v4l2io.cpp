@@ -7,8 +7,8 @@
 #include "util.h"
 #include "portable_fileio.h"
 
-#include <limits.h>
-#include <ctype.h>
+#include <climits>
+#include <cctype>
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/types.h>

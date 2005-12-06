@@ -3,7 +3,7 @@
 #include "emutil.h"
 #include "emdata.h"
 #include "xydata.h"
-#include <assert.h>
+#include <cassert>
 #include "processor.h"
 
 using namespace EMAN;

@@ -1,5 +1,5 @@
 #include "emobject.h"
-#include <math.h>
+#include <cmath>
 #ifdef WIN32
 #define M_PI 3.14159265358979323846f
 #endif

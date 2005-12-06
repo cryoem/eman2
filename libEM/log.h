@@ -4,8 +4,7 @@
 #ifndef eman__log__h__
 #define eman__log__h__ 1
 
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdarg>
 #include <string>
 
 using std::string;

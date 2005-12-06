@@ -3,7 +3,6 @@
  */
 
 #include "emdata.h"
-#include "log.h"
 #include "all_imageio.h"
 #include "ctf.h"
 #include "processor.h"
@@ -11,15 +10,12 @@
 #include "cmp.h"
 #include "emfft.h"
 #include "projector.h"
-#include "byteorder.h"
-#include "emconstants.h"
 
 #include "gsl_sf_bessel.h"
 #include "gsl_errno.h"
-#include <algorithm>
-#include <boost/array.hpp>
+
 #include <iomanip>
-#include <cstdlib>
+
 
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f

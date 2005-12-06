@@ -1,5 +1,5 @@
 #include "emdata.h"
-#include <stdio.h>
+#include <cstdio>
 
 using namespace EMAN;
 

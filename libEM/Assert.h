@@ -5,7 +5,7 @@
  */
 
 #ifdef DEBUG
-#include <assert.h>
+#include <cassert>
 #define Assert(s) assert(s)
 #else
 #define Assert(s) ((void) (0))

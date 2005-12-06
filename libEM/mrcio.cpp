@@ -7,8 +7,6 @@
 #include "util.h"
 #include "ctf.h"
 
-#include <string.h>
-
 using namespace EMAN;
 
 const char *MrcIO::CTF_MAGIC = "!-";

@@ -4,7 +4,7 @@
 #ifndef eman__ctf__h__
 #define eman__ctf__h__ 1
 
-#include <math.h>
+#include <cmath>
 
 #include "emobject.h"
 

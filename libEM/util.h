@@ -6,7 +6,6 @@
 
 #include "emconstants.h"
 #include "exception.h"
-#include <stdio.h>
 #include <vector>
 #include <iostream>
 #include <boost/multi_array.hpp>
