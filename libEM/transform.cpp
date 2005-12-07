@@ -2,6 +2,7 @@
  * $Id$
  */
 #include "transform.h"
+#include <cctype>
 
 using namespace EMAN;
 #ifdef WIN32
