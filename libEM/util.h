@@ -245,10 +245,11 @@ namespace EMAN
 		 * @param[out] p_intercept pointer to the result intercept.
 		 * @param[in] ignore_zero If true, ignore data where either x
 		 *        or y is 0. If false, includes all 0.
+		 * @param[in] absmax Ignores values in y more than absmax from zero
 		 */
 		static void calc_least_square_fit(size_t nitems, const float *data_x,
 										  const float *data_y, float *p_slope, 
-										  float *p_intercept, bool ignore_zero);
+										  float *p_intercept, bool ignore_zero,float absmax=0);
 
 		/** Save (x y) data array into a file. Each line of the file
 		 * have the format "x1TABy1", where x1, y1 are elements of x
@@ -1057,4 +1058,3 @@ namespace EMAN
 
 #endif
 
-/* vim: set ts=4 noet nospell: */

@@ -26,10 +26,12 @@ template <> Factory < Processor >::Factory()
 	force_add(&LowpassTanhProcessor::NEW);
 	force_add(&HighpassTanhProcessor::NEW);
 	force_add(&HighpassButterworthProcessor::NEW);
-	
+	force_add(&AmpweightFourierProcessor::NEW);
+
 	force_add(&LinearRampProcessor::NEW);
 	force_add(&AbsoluateValueProcessor::NEW);
 	force_add(&BooleanProcessor::NEW);
+	force_add(&ValuePowProcessor::NEW);
 	force_add(&ValueSquaredProcessor::NEW);
 	force_add(&ValueSqrtProcessor::NEW);
 
@@ -243,6 +245,47 @@ void FourierProcessor::process(EMData * image)
 	image->done_data();
 }
 
+void AmpweightFourierProcessor::process(EMData * image)
+{
+	EMData *fft;
+	float *fftd;
+	int i,f=0;
+
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	if (!image->is_complex()) {
+		fft = image->do_fft();
+		fftd = image->get_data();
+		f=1;
+	}
+	else {
+		fft=image;
+		fftd=image->get_data();
+	}
+
+	int n = fft->get_xsize()*fft->get_ysize()*fft->get_zsize();
+	for (i=0; i<n; i+=2) {
+		float c = hypot(fftd[i],fftd[i+1]);
+		fftd[i]*=c;
+		fftd[i+1]*=c;
+	}
+
+	if (f) {
+		fft->update();
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),n*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+
+	image->update();
+
+}
+
+
 void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
 {
 	Assert(radial_mask.size() > 0);
@@ -308,7 +351,7 @@ void LowpassTanhProcessor::create_radial_func(vector < float >&radial_mask) cons
 	Assert(radial_mask.size() > 0);
 	float x = 0.0f , step = 0.5f/radial_mask.size();
 	for (size_t i = 0; i < radial_mask.size(); i++) {
-		radial_mask[i] = tanh(lowpass - x) / 2.0f + 0.5f;
+		radial_mask[i] = tanh((lowpass - x)*60.0) / 2.0f + 0.5f;
 		x += step;
 	}
 }
@@ -1581,6 +1624,7 @@ void NormalizeToStdProcessor::process(EMData * image)
 	int invert = params["invert"];
 	float mult_factor = params["mult"];
 	float add_factor = params["add"];
+	float sigmax = params["sigmax"];
 
 	float *this_data = image->get_data();
 	float *noisy_data = noisy->get_data();
@@ -1588,11 +1632,11 @@ void NormalizeToStdProcessor::process(EMData * image)
 	float b = 0;
 
 	if (!invert) {
-		Util::calc_least_square_fit(size, this_data, noisy_data, &m, &b, 1);
+		Util::calc_least_square_fit(size, this_data, noisy_data, &m, &b, keepzero,sigmax*(float)noisy->get_attr("sigma"));
 	}
 
 	if (invert || m < 0) {
-		Util::calc_least_square_fit(size, noisy_data, this_data, &m, &b, 1);
+		Util::calc_least_square_fit(size, noisy_data, this_data, &m, &b, keepzero,sigmax*(float)image->get_attr("sigma"));
 
 		if (m < 0) {
 			b = 0;

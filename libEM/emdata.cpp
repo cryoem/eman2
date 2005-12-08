@@ -45,6 +45,8 @@ EMData::EMData()
 	attr_dict["is_complex"] = 0;
 	attr_dict["is_ri"] = 0;
 
+	changecount=0;
+
 	nx = 0;
 	ny = 0;
 	nz = 0;
@@ -3381,6 +3383,7 @@ EMObject EMData::get_attr(const string & key)
 		attr_dict["skewness"] = skewness;
 		return attr_dict["skewness"];
 	}
+	else if (key == "changecount") return EMObject(changecount);
 
 
 	EXITFUNC;

@@ -1908,6 +1908,8 @@ namespace EMAN
 		EMData *rfp;          
 		/** flags */  
 		int flags;       
+		// Incremented every time the image changes
+		int changecount;
 		/** image size */       
 		int nx, ny, nz;	        
 		/** array index offsets */
@@ -2002,6 +2004,7 @@ namespace EMAN
 		{
 			rdata[x + y * nx + z * nx * ny] = v;
 			flags |= EMDATA_NEEDUPD;
+			changecount++;
 		}
 	}
 
@@ -2009,6 +2012,7 @@ namespace EMAN
 	{
 		rdata[x + y * nx + z * nx * ny] = v;
 		flags |= EMDATA_NEEDUPD;
+		changecount++;
 	}
 	
 	inline void EMData::set_value_at(int x, int y, float v)
@@ -2025,6 +2029,7 @@ namespace EMAN
 		{
 			rdata[x + y * nx] = v;
 			flags |= EMDATA_NEEDUPD;
+			changecount++;
 		}
 	}
 
@@ -2038,6 +2043,7 @@ namespace EMAN
 		{
 			rdata[x] = v;
 			flags |= EMDATA_NEEDUPD;
+ 			changecount++;
 		}
 	}
 
@@ -2045,11 +2051,13 @@ namespace EMAN
 	{
 		rdata[x + y * nx] = v;
 		flags |= EMDATA_NEEDUPD;
+		changecount++;
 	}
 
 	inline void EMData::update()
 	{
 		flags |= EMDATA_NEEDUPD;
+		changecount++;
 	}
 
 

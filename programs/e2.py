@@ -12,6 +12,7 @@ except:
 from optparse import OptionParser
 #from panels import *
 from EMAN2 import *
+from emimage import *
 
 class EMAN2(wx.App):
 	def OnInit(self):
@@ -24,8 +25,19 @@ class EMAN2(wx.App):
 		self.frame.SetSize((800, 600))
 		self.frame.Show()
 		self.SetTopWindow(self.frame)
+		self.timer=E2Timer()
+		self.timer.Start(1000)
+#		wx.EVT_TIMER(self, self.OnTimer)
 		return True
-			
+		
+class E2Timer(wx.Timer):
+	def Notify(self):
+		for i in EMImage.allim:
+#			try: 
+				print i.data.get_attr("changecount"),i.changec
+				if i.data.get_attr("changecount")!=i.changec : i.changed()
+#			except: pass
+	
 if __name__ == "__main__":
 	global options
 	

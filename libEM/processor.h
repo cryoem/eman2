@@ -825,6 +825,27 @@ The basic design of EMAN Processors: <br>\
 		virtual void create_radial_func(vector < float >&radial_mask) const = 0;
 	};
 
+	class AmpweightFourierProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return "filter.ampweight";
+		}
+
+		void process(EMData * image);
+		
+		static Processor *NEW()
+		{
+			return new AmpweightFourierProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Multiplies each Fourier pixel by its amplitude";
+		}
+	};
+
 	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.
 	 *@param lowpass Processor radius in terms of Nyquist (0-.5)
 	 */
@@ -1196,8 +1217,47 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
-	/**f(x) = x * x
-	 */
+	class ValuePowProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return "math.pow";
+		}
+		static Processor *NEW()
+		{
+			return new ValuePowProcessor();
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			pwr = params["pow"];
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("pow", EMObject::FLOAT, "Each pixel is raised to this power");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "f(x) = x ^ pow;";
+		}
+		
+	  protected:
+		void process_pixel(float *x) const
+		{
+			if (*x<0 && pwr!=(int)pwr) *x=0;
+			else (*x) = pow(*x,pwr);
+		}
+	  private:
+		float pwr;
+	};
+
+
 	class ValueSquaredProcessor:public RealPixelProcessor
 	{
 	  public:
@@ -3037,9 +3097,10 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("noisy", EMObject::EMDATA);
-			d.put("keepzero", EMObject::INT);
-			d.put("invert", EMObject::INT);
+			d.put("noisy", EMObject::EMDATA,"Image to normalize to");
+			d.put("keepzero", EMObject::INT,"Ignore zeroes");
+			d.put("invert", EMObject::INT,"Noisy is the less noisy image");
+			d.put("sigmax",EMObject::FLOAT,"Values greater or less than sigma from zero will be excluded from the normalization");
 			d.put("mult", EMObject::FLOAT);
 			d.put("add", EMObject::FLOAT);
 			return d;

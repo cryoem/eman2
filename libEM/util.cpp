@@ -382,7 +382,7 @@ string Util::get_filename_ext(const string& filename)
 
 
 void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float *data_y,
-								 float *slope, float *intercept, bool ignore_zero)
+								 float *slope, float *intercept, bool ignore_zero,float absmax)
 {
 	Assert(nitems > 0);
 
@@ -396,7 +396,7 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 	double sum_xy = 0;
 
 	for (size_t i = 0; i < nitems; i++) {
-		if (!ignore_zero || (data_x[i] != 0 && data_y[i] != 0)) {
+		if ((!ignore_zero || (data_x[i] != 0 && data_y[i] != 0))&&(!absmax ||(data_y[i]<absmax && data_y[i]>-absmax))) {
 			double y = data_y[i];
 			double x = i;
 			if (data_x) {
@@ -1157,4 +1157,3 @@ float Util::FakeKaiserBessel::sinhwin(float x) const {
 #endif // 0
 
 
-/* vim: set ts=4 noet nospell: */
