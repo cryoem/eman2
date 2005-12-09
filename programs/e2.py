@@ -26,17 +26,17 @@ class EMAN2(wx.App):
 		self.frame.Show()
 		self.SetTopWindow(self.frame)
 		self.timer=E2Timer()
-		self.timer.Start(1000)
+		self.timer.Start(500)
 #		wx.EVT_TIMER(self, self.OnTimer)
 		return True
 		
 class E2Timer(wx.Timer):
 	def Notify(self):
 		for i in EMImage.allim:
-#			try: 
-				print i.data.get_attr("changecount"),i.changec
+			try: 
+#				print i.data.get_attr("changecount"),i.changec
 				if i.data.get_attr("changecount")!=i.changec : i.changed()
-#			except: pass
+			except: pass
 	
 if __name__ == "__main__":
 	global options

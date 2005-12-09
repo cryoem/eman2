@@ -146,7 +146,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 					throw ImageReadException(filename, "imageio read data failed");
 				}
 				else {
-					flags |= EMDATA_NEEDUPD;
+					update();
 				}
 			}
 		}
@@ -523,7 +523,6 @@ EMData *EMData::get_clip(const Region & area)
 		dst += dst_gap;
 	}
 
-	done_data();
 	result->done_data();
 
 	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
@@ -593,7 +592,7 @@ void EMData::insert_clip(EMData * block, const IntPoint &origin)
 		dst += nx * (ny - ny1);
 	}
 
-	flags |= EMDATA_NEEDUPD;
+	update();
 	EXITFUNC;
 }
 
@@ -880,7 +879,6 @@ void EMData::postift_depad_corner_inplace() {
 	}
 	set_size(nxold, nyold, nzold);
 	set_fftpad(false);
-	done_data();
 	update();
 	set_complex(false);
 	if(ny==1 && nz==1) {
@@ -1516,7 +1514,6 @@ EMData *EMData::do_fft()
 
 	int i = flags;
 	done_data();
-	flags = i & ~EMDATA_BUSY;
 
 	EXITFUNC;
 	return dat;
@@ -1561,7 +1558,7 @@ EMData *EMData::do_fft_inplace()
 		nxreal = nx - offset;
 	}
 	EMfft::real_to_complex_nd(rdata, rdata, nxreal, ny, nz);
-	done_data();
+
 	set_complex(true);
 	if(ny==1 && nz==1) {
 		set_complex_x(true);
@@ -1569,7 +1566,7 @@ EMData *EMData::do_fft_inplace()
 	set_ri(true);
 	int i = flags;
 	done_data();
-	flags = i & ~EMDATA_BUSY;
+
 	EXITFUNC;
 	return this;
 }
@@ -1673,7 +1670,6 @@ EMData *EMData::do_ift()
 
 	int i = flags;
 	done_data();
-	flags = i & ~EMDATA_BUSY;
 
 	EXITFUNC;
 	return dat;
@@ -1710,7 +1706,6 @@ EMData *EMData::do_ift_inplace()
 
 	int i = flags;
 	done_data();
-	flags = i & ~EMDATA_BUSY;
 
 	EXITFUNC;
 	return this;
@@ -2024,8 +2019,6 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 		}
 	}
 
-	done_data();
-	with->done_data();
 	ret->done_data();
 
 	EXITFUNC;
@@ -2253,7 +2246,6 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 		}
 	}
 
-	done_data();
 	EXITFUNC;
 
     //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
@@ -2518,7 +2510,6 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 		}
 	}
 
-	done_data();
 	EXITFUNC;
 }
 
@@ -2629,7 +2620,6 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 		vd[i] /= yc[i];
 	}
 
-	done_data();
 	if( yc )
 	{
 		delete[]yc;
@@ -2663,7 +2653,7 @@ void EMData::ri2ap()
 	}
 
 	set_ri(false);
-	flags |= EMDATA_NEEDUPD;
+	update();
 	EXITFUNC;
 }
 
@@ -2677,7 +2667,7 @@ void EMData::ap2ri()
 
 	Util::ap2ri(rdata, nx * ny * nz);
 	set_ri(true);
-	flags |= EMDATA_NEEDUPD;
+	update();
 	EXITFUNC;
 }
 
@@ -2853,7 +2843,7 @@ void EMData::add(float f,int keepzero)
 	if( is_real() )
 	{
 		if (f != 0) {
-			flags |= EMDATA_NEEDUPD;
+			update();
 			size_t size = nx * ny * nz;
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {
@@ -2871,7 +2861,7 @@ void EMData::add(float f,int keepzero)
 	{
 		if( f!=0 )
 		{
-			flags |= EMDATA_NEEDUPD;
+			update();
 			size_t size = nx*ny*nz; //size of data
 			if( keepzero )
 			{
@@ -2910,7 +2900,7 @@ void EMData::add(const EMData & image)
 		throw ImageFormatException( "not support add between real image and complex image");
 	}
 	else {
-		flags |= EMDATA_NEEDUPD;
+		update();
 		const float *src_data = image.get_data();
 		int size = nx * ny * nz;
 
@@ -2928,7 +2918,7 @@ void EMData::sub(float f)
 	if( is_real() )
 	{
 		if (f != 0) {
-			flags |= EMDATA_NEEDUPD;
+			update();
 			size_t size = nx * ny * nz;
 			for (size_t i = 0; i < size; i++) {
 				rdata[i] -= f;
@@ -2939,7 +2929,7 @@ void EMData::sub(float f)
 	{
 		if( f != 0 )
 		{
-			flags |= EMDATA_NEEDUPD;
+			update();
 			size_t size = nx * ny * nz;
 			for( size_t i=0; i<size; i+=2 )
 			{
@@ -2968,7 +2958,7 @@ void EMData::sub(const EMData & em)
 		throw ImageFormatException( "not support sub between real image and complex image");
 	}
 	else {
-		flags |= EMDATA_NEEDUPD;
+		update();
 		const float *src_data = em.get_data();
 		size_t size = nx * ny * nz;
 
@@ -2989,7 +2979,7 @@ void EMData::mult(float f)
 		ap2ri();
 	}
 	if (f != 1) {
-		flags |= EMDATA_NEEDUPD;
+		update();
 		size_t size = nx * ny * nz;
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] *= f;
@@ -3011,7 +3001,7 @@ void EMData::mult(const EMData & em)
 	}
 	else
 	{
-		flags |= EMDATA_NEEDUPD;
+		update();
 		const float *src_data = em.get_data();
 		size_t size = nx * ny * nz;
 		if( is_real() )
@@ -3045,7 +3035,7 @@ void EMData::div(float f)
 		ap2ri();
 	}
 	if (f != 0) {
-		flags |= EMDATA_NEEDUPD;
+		update();
 		size_t size = nx * ny * nz;
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] /= f;
@@ -3066,7 +3056,7 @@ void EMData::div(const EMData & em)
 		throw ImageFormatException( "not support division between real image and complex image");
 	}
 	else {
-		flags |= EMDATA_NEEDUPD;
+		update();
 		const float *src_data = em.get_data();
 		size_t size = nx * ny * nz;
 
@@ -3436,8 +3426,7 @@ float *EMData::get_data() const
 
 void EMData::done_data()
 {
-	flags &= (~EMDATA_BUSY);
-	flags |= EMDATA_NEEDUPD;
+	update();
 }
 
 Dict EMData::get_attr_dict()

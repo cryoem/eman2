@@ -1879,7 +1879,7 @@ namespace EMAN
 		enum EMDataFlags {
 			EMDATA_COMPLEX = 1 << 1,
 			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
-			EMDATA_BUSY = 1 << 3,	   // someone is modifying data
+			EMDATA_BUSY = 1 << 3,	   // someone is modifying data, NO LONGER USED
 			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file
 			EMDATA_NEEDUPD = 1 << 5,   // needs a real update			
 			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
