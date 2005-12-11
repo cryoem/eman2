@@ -35,8 +35,9 @@ class E2Timer(wx.Timer):
 		for i in EMImage.allim:
 			try: 
 #				print i.data.get_attr("changecount"),i.changec
-				if i.data.get_attr("changecount")!=i.changec : i.changed()
-			except: pass
+				if i.data.get_attr("changecount")!=i.changec :
+					i.setdata(i.data)
+			except:pass
 	
 if __name__ == "__main__":
 	global options

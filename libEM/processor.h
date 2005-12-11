@@ -835,6 +835,20 @@ The basic design of EMAN Processors: <br>\
 
 		void process(EMData * image);
 		
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			sum = params["sum"];
+//			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("sum", EMObject::EMDATA, "Adds the weights to sum for normalization");
+			return d;
+		}
+
 		static Processor *NEW()
 		{
 			return new AmpweightFourierProcessor();
@@ -844,6 +858,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Multiplies each Fourier pixel by its amplitude";
 		}
+
+		protected:
+		EMData *sum;
 	};
 
 	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.

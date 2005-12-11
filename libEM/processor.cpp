@@ -265,12 +265,16 @@ void AmpweightFourierProcessor::process(EMData * image)
 		fft=image;
 		fftd=image->get_data();
 	}
+	float *sumd = NULL;
+	if (sum) sumd=sum->get_data();
 
 	int n = fft->get_xsize()*fft->get_ysize()*fft->get_zsize();
 	for (i=0; i<n; i+=2) {
 		float c = hypot(fftd[i],fftd[i+1]);
+		if (c==0) c=1.0e-30;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
+		if (sumd) { sumd[i]+=c; sumd[i+1]+=c; }
 	}
 
 	if (f) {
