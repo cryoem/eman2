@@ -952,7 +952,7 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
-    def no_test_calc_ccf(self):
+    def test_calc_ccf(self):
         """test calc_ccf() function ........................."""
         #for two 1 D images
         e = EMData()
@@ -993,7 +993,7 @@ class TestEMData(unittest.TestCase):
         re = e5.calc_ccf(e6, fp_flag.PADDED_LAG)    
         re = e5.calc_ccf(e6, fp_flag.PADDED_NORMALIZED_LAG) 
         
-    def no_test_calc_ccfx(self):
+    def test_calc_ccfx(self):
         """test calc_ccfx() function ........................"""
         e = EMData()
         e.set_size(24,24,1)
