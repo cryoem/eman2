@@ -952,7 +952,7 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
-    def test_calc_ccf(self):
+    def no_test_calc_ccf(self):
         """test calc_ccf() function ........................."""
         #for two 1 D images
         e = EMData()
@@ -993,7 +993,7 @@ class TestEMData(unittest.TestCase):
         re = e5.calc_ccf(e6, fp_flag.PADDED_LAG)    
         re = e5.calc_ccf(e6, fp_flag.PADDED_NORMALIZED_LAG) 
         
-    def test_calc_ccfx(self):
+    def no_test_calc_ccfx(self):
         """test calc_ccfx() function ........................"""
         e = EMData()
         e.set_size(24,24,1)
@@ -1331,7 +1331,7 @@ class TestEMData(unittest.TestCase):
         e4.set_size(32,32,1)     
         e4.process("testimage.noise.uniform.rand")
         e5 = e4.do_fft()
-        #e.common_lines(e3, e5)
+        e.common_lines(e3, e5)
         
     def test_common_lines_real(self):
         """test common_lines_real() function ................"""
@@ -1344,7 +1344,7 @@ class TestEMData(unittest.TestCase):
         e3 = EMData()
         e3.set_size(32,32,1)     
         e3.process("testimage.noise.uniform.rand")
-        #e.common_lines_real(e2,e3)
+        e.common_lines_real(e2,e3)
         
     def test_cut_slice(self):
         """test cut_slice() function ........................"""
