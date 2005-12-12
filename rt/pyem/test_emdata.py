@@ -1318,7 +1318,7 @@ class TestEMData(unittest.TestCase):
         e2.process("testimage.noise.uniform.rand")
         f = e.dot(e2)
         
-    def test_common_lines(self):
+    def no_test_common_lines(self):
         """test common_lines() function ....................."""
         e = EMData()
         e.set_size(32,32,1)
@@ -1333,7 +1333,7 @@ class TestEMData(unittest.TestCase):
         e5 = e4.do_fft()
         e.common_lines(e3, e5)
         
-    def test_common_lines_real(self):
+    def no_test_common_lines_real(self):
         """test common_lines_real() function ................"""
         e = EMData()
         e.set_size(32,32,1)
