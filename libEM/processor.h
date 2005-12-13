@@ -839,6 +839,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			params = new_params;
 			sum = params["sum"];
+			dosqrt = params["sqrt"];
 //			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
 		}
 
@@ -846,6 +847,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("sum", EMObject::EMDATA, "Adds the weights to sum for normalization");
+			d.put("sqrt", EMObject::INT, "Weights using sqrt of the amplitude if set");
 			return d;
 		}
 
@@ -861,6 +863,7 @@ The basic design of EMAN Processors: <br>\
 
 		protected:
 		EMData *sum;
+		int dosqrt;
 	};
 
 	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.

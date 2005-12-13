@@ -258,7 +258,7 @@ void AmpweightFourierProcessor::process(EMData * image)
 
 	if (!image->is_complex()) {
 		fft = image->do_fft();
-		fftd = image->get_data();
+		fftd = fft->get_data();
 		f=1;
 	}
 	else {
@@ -267,14 +267,16 @@ void AmpweightFourierProcessor::process(EMData * image)
 	}
 	float *sumd = NULL;
 	if (sum) sumd=sum->get_data();
-
+//printf("%d %d    %d %d\n",fft->get_xsize(),fft->get_ysize(),sum->get_xsize(),sum->get_ysize());
 	int n = fft->get_xsize()*fft->get_ysize()*fft->get_zsize();
 	for (i=0; i<n; i+=2) {
-		float c = hypot(fftd[i],fftd[i+1]);
+		float c;
+		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25);
+		else c = hypot(fftd[i],fftd[i+1]);
 		if (c==0) c=1.0e-30;	// prevents divide by zero in normalization
 		fftd[i]*=c;
 		fftd[i+1]*=c;
-		if (sumd) { sumd[i]+=c; sumd[i+1]+=c; }
+		if (sumd) { sumd[i]+=c; sumd[i+1]+=0; }
 	}
 
 	if (f) {
@@ -285,6 +287,7 @@ void AmpweightFourierProcessor::process(EMData * image)
 		delete ift;
 	}
 
+	sum->update();
 	image->update();
 
 }
