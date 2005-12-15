@@ -250,6 +250,8 @@ void AmpweightFourierProcessor::process(EMData * image)
 	EMData *fft;
 	float *fftd;
 	int i,f=0;
+//	static float sum1=0,sum1a=0;
+//	static double sum2=0,sum2a=0;
 
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -277,8 +279,20 @@ void AmpweightFourierProcessor::process(EMData * image)
 		fftd[i]*=c;
 		fftd[i+1]*=c;
 		if (sumd) { sumd[i]+=c; sumd[i+1]+=0; }
+		
+		// debugging
+/*		if (i==290*1+12) {
+			sum1+=fftd[i];
+			sum2+=fftd[i];
+			printf("%f\t%f\t%f\t%f\t%f\t%f\n",sum1,sum2,fftd[i],fftd[i+1],sumd[i],c);
+		}
+		if (i==290*50+60) {
+			sum1a+=fftd[i];
+			sum2a+=fftd[i];
+			printf("%f\t%f\t%f\t%f\t%f\t%f\n",sum1a,sum2a,fftd[i],fftd[i+1],sumd[i],c);
+	}*/
 	}
-
+	
 	if (f) {
 		fft->update();
 		EMData *ift=fft->do_ift();
