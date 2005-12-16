@@ -1,4 +1,15 @@
 from EMAN2 import *
+from emimage import *
+import time
+
+def live():
+	b=EMData()
+	b.read_image("/dev/video0",0)
+	c=EMImage(b)
+	for i in range(10):
+		b.read_image("/dev/video0",0)
+		c.setdata(b)
+		time.sleep(1)
 
 def rawavg(noframes):
 	b=EMData()

@@ -21,7 +21,8 @@ class EMAN2(wx.App):
 #		self.paramdialog = ParamDialog(None, -1, "")
 #		self.SetTopWindow(self.paramdialog)
 #		self.paramdialog.Show()
-		self.frame = py.crust.CrustFrame()
+#		self.frame = py.crust.CrustFrame()
+		self.frame = py.shell.ShellFrame()
 		self.frame.SetSize((800, 600))
 		self.frame.Show()
 		self.SetTopWindow(self.frame)
@@ -32,12 +33,12 @@ class EMAN2(wx.App):
 		
 class E2Timer(wx.Timer):
 	def Notify(self):
-		for i in EMImage.allim:
-			try: 
+		for i in EMImage.allim.keys():
+#			try: 
 #				print i.data.get_attr("changecount"),i.changec
-				if i.data.get_attr("changecount")!=i.changec :
-					i.setdata(i.data)
-			except:pass
+				if i.rdata.get_attr("changecount")!=i.changec :
+					i.setdata(i.rdata)
+#			except:pass
 	
 if __name__ == "__main__":
 	global options
