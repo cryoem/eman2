@@ -834,7 +834,7 @@ namespace EMAN
 
 		/** Compute a vector containing evenly-spaced euler angles
 		 *
-		 * The order of angles in the vector is psi, theta, phi.
+		 * The order of angles in the vector is phi, theta, psi.
 		 * Note: We use the Spider construction for Euler angles here.
 		 *
 		 * @param[in] delta  Delta theta (spacing in theta).
