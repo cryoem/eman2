@@ -5701,32 +5701,56 @@ EMData* EMData::rotavg()
 {
 	ENTERFUNC;
 
-	if (nz > 1) {
-		LOGERR("2D images only.");
-		throw ImageDimensionException("2D images only");
+	int ndim = get_ndim();
+	if (ndim < 2 || ndim > 3) {
+		LOGERR("2D or 3D images only.");
+		throw ImageDimensionException("2D or 3D images only");
 	}
 	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(-nx/2,-ny/2);
-#ifdef _WIN32
-	int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
-#else
-	int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
-#endif	//_WIN32
+	int xmax = nx/2 + nx%2;
+	int ymax = ny/2 + ny%2;
+	int zmax = nz/2 + nz%2;
+	int rmax = std::min(xmax, ymax);
+	if (2 == ndim)
+		set_array_offsets(-nx/2,-ny/2);
+	else { // 3D
+		set_array_offsets(-nx/2,-ny/2,-nz/2);
+		rmax = std::min(rmax,zmax);
+	}
 	EMData* ret = new EMData();
 	ret->set_size(rmax+1, 1, 1);
 	ret->to_zero();
 	vector<float> count(rmax+1);
-	for (int j = -ny/2; j < ny/2 + ny%2; j++) {
-		if (abs(j) > rmax) continue;
-		for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-			float r = sqrt(float(j*j) + float(i*i));
-			int ir = int(r);
-			if (ir >= rmax) continue;
-			float frac = r - float(ir);
-			(*ret)(ir) += (*this)(i,j)*(1.0f - frac);
-			(*ret)(ir+1) += (*this)(i,j)*frac;
-			count[ir] += 1.0f - frac;
-			count[ir+1] += frac;
+	if (2 == ndim) {
+		for (int j = -ny/2; j < ymax; j++) {
+			if (abs(j) > rmax) continue;
+			for (int i = -nx/2; i < xmax; i++) {
+				float r = sqrt(float(j*j) + float(i*i));
+				int ir = int(r);
+				if (ir >= rmax) continue;
+				float frac = r - float(ir);
+				(*ret)(ir) += (*this)(i,j)*(1.0f - frac);
+				(*ret)(ir+1) += (*this)(i,j)*frac;
+				count[ir] += 1.0f - frac;
+				count[ir+1] += frac;
+			}
+		}
+	} else {
+		for (int k = -nz/2; k < zmax; k++) {
+			if (abs(k) > rmax) continue;
+			for (int j = -ny/2; j < ymax; j++) {
+				if (abs(j) > rmax) continue;
+				for (int i = -nx/2; i < xmax; i++) {
+					float r = sqrt(float(j*j) + float(i*i)+float(k*k));
+					int ir = int(r);
+					if (ir >= rmax) continue;
+					float frac = r - float(ir);
+					(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
+					(*ret)(ir+1) += (*this)(i,j,k)*frac;
+					count[ir] += 1.0f - frac;
+					count[ir+1] += frac;
+				}
+			}
 		}
 	}
 	for (int ir = 0; ir <= rmax; ir++) {
