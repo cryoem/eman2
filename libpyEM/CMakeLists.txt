@@ -50,5 +50,5 @@ ADD_PYSTE_LIB_WITH_SRC(pyTypeConverter2 typeconverter.cpp)
 
 INSTALL_FILES(/lib "^.+\\.py$")
 INSTALL_FILES(/include "^.+\\.h$")
-INSTALL_FILES(/lib FILES GUI/emimage.py GUI/imagecontrol.py)
+INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py)
 

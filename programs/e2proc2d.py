@@ -87,6 +87,7 @@ def main():
                       help="output the orientations in IMAGIC .plt file format")
     parser.add_option("--radon",  action="store_true", help="Do Radon transform")
     parser.add_option("--rfp",  action="store_true", help="this is an experimental option")
+    parser.add_option("--fp",  action="store_true", help="this is an experimental option")
     parser.add_option("--scale", metavar="f", type="float", action="append",
                       help="Scale by specified scaling factor. Clip must also be specified to change the dimensions of the output map.")
     parser.add_option("--selfcl", metavar="steps mode", type="int", nargs=2,
@@ -233,8 +234,10 @@ def main():
                     dataf.gimme_fft();
                     
             elif option1 == "rfp":
-                e = d.make_rotational_footprint()
-                e.append_image("rfp.hed")
+                d = d.make_rotational_footprint()
+
+            elif option1 == "fp":
+                d = d.make_footprint()
 
             elif option1 == "scale":
                 scale_f = options.scale[index_d[option1]]
@@ -355,7 +358,7 @@ def main():
                         outfile = outfile + "%04d" % i + ".lst"
                         options.outtype = "lst"
                 
-                d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype))
+                d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype))
                 
     #end of image loop
 

@@ -621,12 +621,21 @@ namespace EMAN
 		 * autocorrelation function. generally the image should be
 		 * edge-normalized and masked before using this.
 		 *
-		 * @param unwrap To cache the rfp or not. false means not cached.
+		 * @param unwrap RFP undergoes polar->cartesian x-form
 		 * @param premasked Is the image pre-masked?
 		 * @exception ImageFormatException If image size is not even.
 		 * @return The rotaional footprint image.
 		 */
 		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
+
+		/** Makes a 'footprint' for the current image. This is another
+		 * image constructed from the 'rotational footprint' to produce
+		 * a rotationally and translationally invariant image.
+		 *
+		 * @exception ImageFormatException If image size is not even.
+		 * @return The footprint image.
+		 */
+		EMData *make_footprint();
 
 		/** Calculates mutual correlation function (MCF) between 2 images.
 		 * If 'with' is NULL, this does mirror ACF.
@@ -1904,8 +1913,6 @@ namespace EMAN
 		float *supp;    
 		/** CTF data */        
 		Ctf *ctf;		   
-		/** rotational foot print */     
-		EMData *rfp;          
 		/** flags */  
 		int flags;       
 		// Incremented every time the image changes

@@ -35,7 +35,6 @@ EMData::EMData()
 	supp = 0;
 	ctf = 0;
 
-	rfp = 0;
 	flags = 0;
 	// used to replace cube 'pixel'
 	attr_dict["apix_x"] = 1.0f;
@@ -75,11 +74,6 @@ EMData::~EMData()
 	if (ctf) {
 		delete ctf;
 		ctf = 0;
-	}
-
-	if (rfp) {
-		delete rfp;
-		rfp = 0;
 	}
 
 	EMData::totalalloc--;
@@ -390,7 +384,6 @@ EMData *EMData::copy() const
 		ret->ctf->copy_from(ctf);
 	}
 
-	ret->rfp = 0;
 	ret->flags = flags & (EMDATA_COMPLEX 
 							| EMDATA_RI 
 							| EMDATA_PAD 
@@ -421,8 +414,6 @@ EMData *EMData::copy_head() const
 		ret->ctf = new SimpleCtf();
 		ret->ctf->copy_from(ctf);
 	}
-
-	ret->rfp = 0;
 
 	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_PAD | EMDATA_FFTODD);
 
@@ -4941,17 +4932,6 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		throw ImageDimensionException("2D images only");
 	}
 
-	EMData *cf = new EMData();
-	if (no_sum) {
-		cf->set_size(nx, y1 - y0 + 1, 1);
-	}
-	else {
-		cf->set_size(nx, 1, 1);
-	}
-
-	cf->set_attr("label", "CCFx");
-	cf->set_path("/tmp/eman.ccf");
-
 	if (y1 <= y0) {
 		y1 = ny;
 	}
@@ -4967,6 +4947,18 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 	if (y1 > ny) {
 		y1 = ny;
 	}
+
+	EMData *cf = new EMData();
+	if (no_sum) {
+		cf->set_size(nx, y1 - y0 + 1, 1);
+	}
+	else {
+		cf->set_size(nx, 1, 1);
+	}
+
+	cf->set_attr("label", "CCFx");
+	cf->set_path("/tmp/eman.ccf");
+
 
 	if (no_sum) {
 		float *cfd = cf->get_data();
@@ -5165,18 +5157,25 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 	}
 }
 
+EMData *EMData::make_footprint() {
+	EMData *ccf=calc_ccf(this);
+	EMData *un=ccf->unwrap();
+	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize()/2,un->get_ysize()-6));	// 4 and 6 are empirical
+	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
+	delete ccf;
+	delete un;
+	delete tmp;
+	return cx;
+}
 
 EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 {
 	ENTERFUNC;
 
 	static EMData obj_filt;
+	EMData *rfp=NULL;
 	EMData* filt = &obj_filt;
 	filt->set_complex(true);
-
-	if (rfp) {
-		return rfp;
-	}
 
 	if (nx & 1) {
 		LOGERR("even image xsize only");
@@ -5399,8 +5398,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 			float u = yy - floor(yy);
 			int k = (int) floor(xx) + (int) (floor(yy)) * nx;
 			dd[x + y * xs] =
-				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx + 1], d[k + nx], t,
-										   u) * (y + r1);
+				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx + 1], d[k + nx], t,u) * (y + r1);
 		}
 	}
 	done_data();
@@ -5701,56 +5699,32 @@ EMData* EMData::rotavg()
 {
 	ENTERFUNC;
 
-	int ndim = get_ndim();
-	if (ndim < 2 || ndim > 3) {
-		LOGERR("2D or 3D images only.");
-		throw ImageDimensionException("2D or 3D images only");
+	if (nz > 1) {
+		LOGERR("2D images only.");
+		throw ImageDimensionException("2D images only");
 	}
 	vector<int> saved_offsets = get_array_offsets();
-	int xmax = nx/2 + nx%2;
-	int ymax = ny/2 + ny%2;
-	int zmax = nz/2 + nz%2;
-	int rmax = std::min(xmax, ymax);
-	if (2 == ndim)
-		set_array_offsets(-nx/2,-ny/2);
-	else { // 3D
-		set_array_offsets(-nx/2,-ny/2,-nz/2);
-		rmax = std::min(rmax,zmax);
-	}
+	set_array_offsets(-nx/2,-ny/2);
+#ifdef _WIN32
+	int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
+#else
+	int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
+#endif	//_WIN32
 	EMData* ret = new EMData();
 	ret->set_size(rmax+1, 1, 1);
 	ret->to_zero();
 	vector<float> count(rmax+1);
-	if (2 == ndim) {
-		for (int j = -ny/2; j < ymax; j++) {
-			if (abs(j) > rmax) continue;
-			for (int i = -nx/2; i < xmax; i++) {
-				float r = sqrt(float(j*j) + float(i*i));
-				int ir = int(r);
-				if (ir >= rmax) continue;
-				float frac = r - float(ir);
-				(*ret)(ir) += (*this)(i,j)*(1.0f - frac);
-				(*ret)(ir+1) += (*this)(i,j)*frac;
-				count[ir] += 1.0f - frac;
-				count[ir+1] += frac;
-			}
-		}
-	} else {
-		for (int k = -nz/2; k < zmax; k++) {
-			if (abs(k) > rmax) continue;
-			for (int j = -ny/2; j < ymax; j++) {
-				if (abs(j) > rmax) continue;
-				for (int i = -nx/2; i < xmax; i++) {
-					float r = sqrt(float(j*j) + float(i*i)+float(k*k));
-					int ir = int(r);
-					if (ir >= rmax) continue;
-					float frac = r - float(ir);
-					(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
-					(*ret)(ir+1) += (*this)(i,j,k)*frac;
-					count[ir] += 1.0f - frac;
-					count[ir+1] += frac;
-				}
-			}
+	for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+		if (abs(j) > rmax) continue;
+		for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+			float r = sqrt(float(j*j) + float(i*i));
+			int ir = int(r);
+			if (ir >= rmax) continue;
+			float frac = r - float(ir);
+			(*ret)(ir) += (*this)(i,j)*(1.0f - frac);
+			(*ret)(ir+1) += (*this)(i,j)*frac;
+			count[ir] += 1.0f - frac;
+			count[ir+1] += frac;
 		}
 	}
 	for (int ir = 0; ir <= rmax; ir++) {
