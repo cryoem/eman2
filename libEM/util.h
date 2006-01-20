@@ -1055,6 +1055,19 @@ namespace EMAN
                 static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
                                     int  *numr, float *circ, int lcirc, int  nring, char  mode);
                 static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
+                static void  fftr_q(float  *xcmplx, int nv);
+                static void  fftr_d(double *xcmplx, int nv);
+                static void  fftc_q(float  *br, float  *bi, int ln, int ks);
+                static void  fftc_d(double *br, double *bi, int ln, int ks);
+                static void  Frngs(EMData* circ, vector<int> numr);
+                static void  frngs(float *circ, int *numr, int nring);
+                static void  crosrng_e(float *circ1, float *circ2, int lcirc,
+                                       int    nring, int   maxrin, int *numr,
+                                       double *qn, float *tot, int neg);
+                static void  crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
+                                        int   maxrin, int   *numr , double *qn, float *tot,
+                                        double   *qm, double *tmt);
+                static void  prb1d(double *b, int npoint, float *pos);
 	};
 }
 

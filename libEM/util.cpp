@@ -1416,4 +1416,799 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       } // end for jt
    } //end for it
 }
+#undef  xim
 
+/*
+
+        A set of 1-D power-of-two FFTs
+	Pawel & Chao 01/20/06
+	
+*/
+#define  tab1(i)      tab1[i-1]
+#define  xcmplx(i,j)  xcmplx [((j)-1)*2 + (i)-1]
+#define  br(i)        br     [(i)-1]
+#define  bi(i)        bi     [(i)-1]
+//-----------------------------------------
+void Util::fftc_d(double *br, double *bi, int ln, int ks)
+{
+   double rni,sgn,tr1,tr2,ti1,ti2;
+   double cc,c,ss,s,t,x2,x3,x4,x5;
+   int    b3,b4,b5,b6,b7,b56;
+   int    n, k, l, j, i, ix0, ix1, status=0; 
+
+   const double tab1[] = {
+   9.58737990959775e-5,
+   1.91747597310703e-4,
+   3.83495187571395e-4,
+   7.66990318742704e-4,
+   1.53398018628476e-3,
+   3.06795676296598e-3,
+   6.13588464915449e-3,
+   1.22715382857199e-2,
+   2.45412285229123e-2,
+   4.90676743274181e-2,
+   9.80171403295604e-2,
+   1.95090322016128e-1,
+   3.82683432365090e-1,
+   7.07106781186546e-1,
+   1.00000000000000,
+   };
+
+   n=(int)pow(2.f,ln);
+
+   k=abs(ks);
+   l=16-ln;
+   b3=n*k;
+   b6=b3;
+   b7=k;
+   if (ks > 0) {
+      sgn=1.0;
+   }
+   else {
+      sgn=-1.0;
+      rni=1.0/(float)(n);
+      j=1;
+      for (i=1;i<=n;i++) {
+         br(j)=br(j)*rni;
+         bi(j)=bi(j)*rni;
+         j=j+k;
+      }
+   }
+
+L12:
+   b6=b6/2;
+   b5=b6;
+   b4=2*b6;
+   b56=b5-b6;
+
+L14:
+   tr1=br(b5+1);
+   ti1=bi(b5+1);
+   tr2=br(b56+1);
+   ti2=bi(b56+1);
+
+   br(b5+1)=tr2-tr1;
+   bi(b5+1)=ti2-ti1;
+   br(b56+1)=tr1+tr2;
+   bi(b56+1)=ti1+ti2;
+
+   b5=b5+b4;
+   b56=b5-b6;
+   if ( b5 <= b3 )  goto  L14;
+   if ( b6 == b7 )  goto  L20;
+
+   b4=b7;
+   cc=2.0*pow(tab1(l),2);
+   c=1.0-cc;
+   l++;
+   ss=sgn*tab1(l);
+   s=ss;
+
+L16:
+   b5=b6+b4;
+   b4=2*b6;
+   b56=b5-b6;
+
+L18:
+   tr1=br(b5+1);
+   ti1=bi(b5+1);
+   tr2=br(b56+1);
+   ti2=bi(b56+1);
+   br(b5+1)=c*(tr2-tr1)-s*(ti2-ti1);
+   bi(b5+1)=s*(tr2-tr1)+c*(ti2-ti1);
+   br(b56+1)=tr1+tr2;
+   bi(b56+1)=ti1+ti2;
+
+   b5=b5+b4;
+   b56=b5-b6;
+   if ( b5 <= b3 )  goto  L18;
+   b4=b5-b6;
+   b5=b4-b3;
+   c=-c;
+   b4=b6-b5;
+   if ( b5 < b4 )  goto  L16;
+   b4=b4+b7;
+   if ( b4 >= b5 ) goto  L12;
+
+   t=c-cc*c-ss*s;
+   s=s+ss*c-cc*s;
+   c=t;
+   goto  L16;
+
+L20:
+   ix0=b3/2;
+   b3=b3-b7;
+   b4=0;
+   b5=0;
+   b6=ix0;
+   ix1=0;
+   if (b6 == b7) goto EXIT;
+
+L22:
+   b4=b3-b4;
+   b5=b3-b5;
+   x2=br(b4+1);
+   x3=br(b5+1);
+   x4=bi(b4+1);
+   x5=bi(b5+1);
+   br(b4+1)=x3;
+   br(b5+1)=x2;
+   bi(b4+1)=x5;
+   bi(b5+1)=x4;
+   if(b6 < b4)  goto  L22;
+
+L24:
+   b4=b4+b7;
+   b5=b6+b5;
+   x2=br(b4+1);
+   x3=br(b5+1);
+   x4=bi(b4+1);
+   x5=bi(b5+1);
+   br(b4+1)=x3;
+   br(b5+1)=x2;
+   bi(b4+1)=x5;
+   bi(b5+1)=x4;
+   ix0=b6;
+
+L26:
+   ix0=ix0/2;
+   ix1=ix1-ix0;
+   if( ix1 >= 0)  goto L26;
+
+   ix0=2*ix0;
+   b4=b4+b7;
+   ix1=ix1+ix0;
+   b5=ix1;
+   if ( b5 >= b4)  goto  L22;
+   if ( b4 < b6)   goto  L24;
+
+EXIT:
+   status = 0;
+}
+
+// -----------------------------------------------------------------
+void Util::fftc_q(float *br, float *bi, int ln, int ks)
+{
+   //  dimension  br(1),bi(1)
+
+   int b3,b4,b5,b6,b7,b56;
+   int n, k, l, j, i, ix0, ix1; 
+   float rni, tr1, ti1, tr2, ti2, cc, c, ss, s, t, x2, x3, x4, x5, sgn;
+   int status=0;
+
+   const float tab1[] = {
+   9.58737990959775e-5,
+   1.91747597310703e-4,
+   3.83495187571395e-4,
+   7.66990318742704e-4,
+   1.53398018628476e-3,
+   3.06795676296598e-3,
+   6.13588464915449e-3,
+   1.22715382857199e-2,
+   2.45412285229123e-2,
+   4.90676743274181e-2,
+   9.80171403295604e-2,
+   1.95090322016128e-1,
+   3.82683432365090e-1,
+   7.07106781186546e-1,
+   1.00000000000000,
+   };
+
+   n=(int)pow(2.f,ln);
+
+   k=abs(ks);
+   l=16-ln;
+   b3=n*k;
+   b6=b3;
+   b7=k;
+   if( ks > 0 ) {
+      sgn=1.0;
+   } 
+   else {
+      sgn=-1.0;
+      rni=1.0/(float)n;
+      j=1;
+      for (i=1; i<=n;i++) {
+         br(j)=br(j)*rni;
+         bi(j)=bi(j)*rni;
+         j=j+k;
+      }
+   }
+L12:
+   b6=b6/2;
+   b5=b6;
+   b4=2*b6;
+   b56=b5-b6;
+L14:
+   tr1=br(b5+1);
+   ti1=bi(b5+1);
+   tr2=br(b56+1);
+   ti2=bi(b56+1);
+
+   br(b5+1)=tr2-tr1;
+   bi(b5+1)=ti2-ti1;
+   br(b56+1)=tr1+tr2;
+   bi(b56+1)=ti1+ti2;
+
+   b5=b5+b4;
+   b56=b5-b6;
+   if (b5 <= b3)  goto  L14;
+   if (b6 == b7)  goto  L20;
+
+   b4=b7;
+   cc=2.0*pow(tab1(l),2);
+   c=1.0-cc;
+   l=l+1;
+   ss=sgn*tab1(l);
+   s=ss;
+L16: 
+   b5=b6+b4;
+   b4=2*b6;
+   b56=b5-b6;
+L18:
+   tr1=br(b5+1);
+   ti1=bi(b5+1);
+   tr2=br(b56+1);
+   ti2=bi(b56+1);
+   br(b5+1)=c*(tr2-tr1)-s*(ti2-ti1);
+   bi(b5+1)=s*(tr2-tr1)+c*(ti2-ti1);
+   br(b56+1)=tr1+tr2;
+   bi(b56+1)=ti1+ti2;
+
+   b5=b5+b4;
+   b56=b5-b6;
+   if(b5 <= b3)  goto L18;
+   b4=b5-b6;
+   b5=b4-b3;
+   c=-c;
+   b4=b6-b5;
+   if(b5 < b4)  goto  L16;
+   b4=b4+b7;
+   if(b4 >= b5) goto  L12;
+
+   t=c-cc*c-ss*s;
+   s=s+ss*c-cc*s;
+   c=t;
+   goto  L16;
+L20:
+   ix0=b3/2;
+   b3=b3-b7;
+   b4=0;
+   b5=0;
+   b6=ix0;
+   ix1=0;
+   if ( b6 == b7) goto EXIT;
+L22:
+   b4=b3-b4;
+   b5=b3-b5;
+   x2=br(b4+1);
+   x3=br(b5+1);
+   x4=bi(b4+1);
+   x5=bi(b5+1);
+   br(b4+1)=x3;
+   br(b5+1)=x2;
+   bi(b4+1)=x5;
+   bi(b5+1)=x4;
+   if (b6 < b4) goto  L22;
+L24:
+   b4=b4+b7;
+   b5=b6+b5;
+   x2=br(b4+1);
+   x3=br(b5+1);
+   x4=bi(b4+1);
+   x5=bi(b5+1);
+   br(b4+1)=x3;
+   br(b5+1)=x2;
+   bi(b4+1)=x5;
+   bi(b5+1)=x4;
+   ix0=b6;
+L26:
+   ix0=ix0/2;
+   ix1=ix1-ix0;
+   if(ix1 >= 0)  goto  L26;
+
+   ix0=2*ix0;
+   b4=b4+b7;
+   ix1=ix1+ix0;
+   b5=ix1;
+   if (b5 >= b4)  goto  L22;
+   if (b4 < b6)   goto  L24;
+EXIT:
+   status = 0; 
+}
+
+void  Util::fftr_q(float *xcmplx, int nv) 
+{
+   // dimension xcmplx(2,1); xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
+
+   int nu, inv, nu1, n, isub, n2, i1, i2, i;
+   float ss, cc, c, s, tr, ti, tr1, tr2, ti1, ti2, t;
+
+   const float tab1[] = {
+   9.58737990959775e-5,
+   1.91747597310703e-4,
+   3.83495187571395e-4,
+   7.66990318742704e-4,
+   1.53398018628476e-3,
+   3.06795676296598e-3,
+   6.13588464915449e-3,
+   1.22715382857199e-2,
+   2.45412285229123e-2,
+   4.90676743274181e-2,
+   9.80171403295604e-2,
+   1.95090322016128e-1,
+   3.82683432365090e-1,
+   7.07106781186546e-1,
+   1.00000000000000,
+   };
+
+   nu=abs(nv);
+   inv=nv/nu;
+   nu1=nu-1;
+   n=(int)pow(2.f,nu1);
+   isub=16-nu1;
+
+   ss=-tab1(isub);
+   cc=-2.0*pow(tab1(isub-1),2.f);
+   c=1.0;
+   s=0.0;
+   n2=n/2;
+   if ( inv > 0) {
+      fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
+      tr=xcmplx(1,1);
+      ti=xcmplx(2,1);
+      xcmplx(1,1)=tr+ti;
+      xcmplx(2,1)=tr-ti;
+      for (i=1;i<=n2;i++) {
+         i1=i+1;
+         i2=n-i+1;
+         tr1=xcmplx(1,i1);
+         tr2=xcmplx(1,i2);
+         ti1=xcmplx(2,i1);
+         ti2=xcmplx(2,i2);
+         t=(cc*c-ss*s)+c;
+         s=(cc*s+ss*c)+s;
+         c=t;
+         xcmplx(1,i1)=0.5*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
+         xcmplx(1,i2)=0.5*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
+         xcmplx(2,i1)=0.5*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+         xcmplx(2,i2)=0.5*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+     }
+   }
+   else {
+     tr=xcmplx(1,1);
+     ti=xcmplx(2,1);
+     xcmplx(1,1)=0.5*(tr+ti);
+     xcmplx(2,1)=0.5*(tr-ti);
+     for (i=1; i<=n2; i++) {
+        i1=i+1;
+        i2=n-i+1;
+        tr1=xcmplx(1,i1);
+        tr2=xcmplx(1,i2);
+        ti1=xcmplx(2,i1);
+        ti2=xcmplx(2,i2);
+        t=(cc*c-ss*s)+c;
+        s=(cc*s+ss*c)+s;
+        c=t;
+        xcmplx(1,i1)=0.5*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
+        xcmplx(1,i2)=0.5*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
+        xcmplx(2,i1)=0.5*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+        xcmplx(2,i2)=0.5*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+     }
+     fftc_q(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
+   }
+}
+
+// -------------------------------------------
+void  Util::fftr_d(double *xcmplx, int nv) 
+{
+   // double precision  x(2,1)
+   int    i1, i2,  nu, inv, nu1, n, isub, n2, i;
+   double tr1,tr2,ti1,ti2,tr,ti;
+   double cc,c,ss,s,t;
+   const double tab1[] = {
+   9.58737990959775e-5,
+   1.91747597310703e-4,
+   3.83495187571395e-4,
+   7.66990318742704e-4,
+   1.53398018628476e-3,
+   3.06795676296598e-3,
+   6.13588464915449e-3,
+   1.22715382857199e-2,
+   2.45412285229123e-2,
+   4.90676743274181e-2,
+   9.80171403295604e-2,
+   1.95090322016128e-1,
+   3.82683432365090e-1,
+   7.07106781186546e-1,
+   1.00000000000000,
+   };
+/*
+   tab1(1)=9.58737990959775e-5;
+   tab1(2)=1.91747597310703e-4;
+   tab1(3)=3.83495187571395e-4;
+   tab1(4)=7.66990318742704e-4;
+   tab1(5)=1.53398018628476e-3;
+   tab1(6)=3.06795676296598e-3;
+   tab1(7)=6.13588464915449e-3;
+   tab1(8)=1.22715382857199e-2;
+   tab1(9)=2.45412285229123e-2;
+   tab1(10)=4.90676743274181e-2;
+   tab1(11)=9.80171403295604e-2;
+   tab1(12)=1.95090322016128e-1;
+   tab1(13)=3.82683432365090e-1;
+   tab1(14)=7.07106781186546e-1;
+   tab1(15)=1.00000000000000;
+*/
+   nu=abs(nv);
+   inv=nv/nu;
+   nu1=nu-1;
+   n=(int)pow(2.f,nu1);
+   isub=16-nu1;
+   ss=-tab1(isub);
+   cc=-2.0*pow(tab1(isub-1),2);
+   c=1.0;
+   s=0.0;
+   n2=n/2;
+
+   if ( inv > 0 ) {
+      fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,2);
+      tr=xcmplx(1,1);
+      ti=xcmplx(2,1);
+      xcmplx(1,1)=tr+ti;
+      xcmplx(2,1)=tr-ti;
+      for (i=1;i<=n2;i++) {
+         i1=i+1;
+         i2=n-i+1;
+         tr1=xcmplx(1,i1);
+         tr2=xcmplx(1,i2);
+         ti1=xcmplx(2,i1);
+         ti2=xcmplx(2,i2);
+         t=(cc*c-ss*s)+c;
+         s=(cc*s+ss*c)+s;
+         c=t;
+         xcmplx(1,i1)=0.5*((tr1+tr2)+(ti1+ti2)*c-(tr1-tr2)*s);
+         xcmplx(1,i2)=0.5*((tr1+tr2)-(ti1+ti2)*c+(tr1-tr2)*s);
+         xcmplx(2,i1)=0.5*((ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+         xcmplx(2,i2)=0.5*(-(ti1-ti2)-(ti1+ti2)*s-(tr1-tr2)*c);
+      }
+   }
+   else {
+      tr=xcmplx(1,1);
+      ti=xcmplx(2,1);
+      xcmplx(1,1)=0.5*(tr+ti);
+      xcmplx(2,1)=0.5*(tr-ti);
+      for (i=1;i<=n2;i++) {
+         i1=i+1;
+         i2=n-i+1;
+         tr1=xcmplx(1,i1);
+         tr2=xcmplx(1,i2);
+         ti1=xcmplx(2,i1);
+         ti2=xcmplx(2,i2);
+         t=(cc*c-ss*s)+c;
+         s=(cc*s+ss*c)+s;
+         c=t;
+         xcmplx(1,i1)=0.5*((tr1+tr2)-(tr1-tr2)*s-(ti1+ti2)*c);
+         xcmplx(1,i2)=0.5*((tr1+tr2)+(tr1-tr2)*s+(ti1+ti2)*c);
+         xcmplx(2,i1)=0.5*((ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+         xcmplx(2,i2)=0.5*(-(ti1-ti2)+(tr1-tr2)*c-(ti1+ti2)*s);
+      } 
+      fftc_d(&xcmplx(1,1),&xcmplx(2,1),nu1,-2);
+   } 
+} 
+#undef  tab1
+#undef  xcmplx
+#undef  br
+#undef  bi
+
+void Util::Frngs(EMData* circ, vector<int> numr){
+   int nring = numr.size()/3;
+   frngs(circ->get_data(), &numr[0],  nring);
+}
+void Util::frngs(float *circ, int *numr, int nring){
+   int i, l; 
+   for (i=1; i<=nring;i++) {
+     l=(int)(log2(numr(3,i)));
+     fftr_q(&circ(numr(2,i)),l);
+   }
+}
+#undef  circ
+//---------------------------------------------------
+#define  b(i)            b      [(i)-1]
+void Util::prb1d(double *b, int npoint, float *pos)
+{
+   double  c2,c3;
+   int     nhalf;
+
+   nhalf = npoint/2 + 1;
+   *pos  = 0.0;
+
+   if (npoint == 7) {
+      c2 = 49.*b(1) + 6.*b(2) - 21.*b(3) - 32.*b(4) - 27.*b(5)
+         - 6.*b(6) + 31.*b(7);
+      c3 = 5.*b(1) - 3.*b(3) - 4.*b(4) - 3.*b(5) + 5.*b(7);
+   } 
+   else if (npoint == 5) {
+      c2 = (74.*b(1) - 23.*b(2) - 60.*b(3) - 37.*b(4)
+         + 46.*b(5) ) / (-70.);
+      c3 = (2.*b(1) - b(2) - 2.*b(3) - b(4) + 2.*b(5) ) / 14.0;
+   }
+   else if (npoint == 3) {
+      c2 = (5.*b(1) - 8.*b(2) + 3.*b(3) ) / (-2.0);
+      c3 = (b(1) - 2.*b(2) + b(3) ) / 2.0;
+   }
+   else if (npoint == 9) {
+      c2 = (1708.*b(1) + 581.*b(2) - 246.*b(3) - 773.*b(4)
+         - 1000.*b(5) - 927.*b(6) - 554.*b(7) + 119.*b(8)
+         + 1092.*b(9) ) / (-4620.);
+      c3 = (28.*b(1) + 7.*b(2) - 8.*b(3) - 17.*b(4) - 20.*b(5)
+         - 17.*b(6) - 8.*b(7) + 7.*b(8) + 28.*b(9) ) / 924.0;
+   }
+   if (c3 != 0.0)  *pos = c2/(2.0*c3) - nhalf;
+}
+#undef  b
+
+#define  circ1(i)        circ1  [(i)-1]
+#define  circ2(i)        circ2  [(i)-1]
+#define  t(i)            t      [(i)-1]
+#define  q(i)            q      [(i)-1]
+#define  b(i)            b      [(i)-1]
+#define  t7(i)           t7     [(i)-1]
+
+//-----------------------------------------------
+void Util::crosrng_e(float *circ1, float *circ2, int lcirc,
+                     int    nring, int   maxrin, int *numr,
+                     double *qn, float *tot, int neg)
+{
+/*
+c checks single position, neg is flag for checking mirrored position
+c
+c  input - fourier transforms of rings!
+c  first set is conjugated (mirrored) if neg
+c  circ1 already multiplied by weights!
+c       automatic arrays
+	dimension         t(maxrin+2)
+	double precision  q(maxrin+2)
+	double precision  t7(-3:3)
+*/
+   float *t;
+   double t7[7], *q;
+   int    i, j, k, ip, jc, numr3i, numr2i, jtot;
+   float  pos;
+
+   ip = maxrin;
+   q = (double*)calloc(maxrin+2, sizeof(double));
+   t = (float*)calloc(maxrin+2, sizeof(float));
+     
+   for (i=1;i<=nring;i++) {
+      numr3i = numr(3,i);
+      numr2i = numr(2,i);
+
+      t(1) = (circ1(numr2i)) * circ2(numr2i);
+
+      if (numr3i != maxrin) {
+         // test .ne. first for speed on some compilers
+	 t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
+	 t(2)        = 0.0;
+
+         if (neg) {
+            // first set is conjugated (mirrored)
+	    for (j=3;j<=numr3i;j=j+2) {
+	       jc = j+numr2i-1;
+	       t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
+	       t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+	    } 
+         } 
+         else {
+	    for (j=3;j<=numr3i;j=j+2) {
+	       jc = j+numr2i-1;
+	       t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+	       t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+	    }
+         } 
+         for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
+      }
+      else {
+	 t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+         if (neg) {
+            // first set is conjugated (mirrored)
+	    for (j=3;j<=maxrin;j=j+2) {
+	       jc = j+numr2i-1;
+	       t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+	       t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+	    }
+         }
+         else {
+	    for (j=3;j<=maxrin;j=j+2) {
+	       jc = j+numr2i-1;
+	       t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+	       t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+	    } 
+         }
+         for (j = 1; j <= maxrin+2; j++) q(j) = q(j) + t(j);
+      }
+   }
+
+   fftr_d(q,ip);
+
+   *qn = -1.0e20;
+   for (j=1;j<=maxrin;j++) {
+      if (q(j) >= *qn) {
+         *qn = q(j);
+	 jtot = j;
+      }
+   } 
+
+   for (k=-3;k<=3;k++) {
+      j = (jtot+k+maxrin-1)%maxrin + 1;
+      t7(k+4) = q(j);
+   }
+
+   prb1d(t7,7,&pos);
+
+   *tot = (float)jtot + pos;
+
+   if (q) free(q);
+   if (t) free(t);
+}
+
+//---------------------------------------------------
+void Util::crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
+                      int   maxrin, int   *numr , double *qn, float *tot,
+                      double   *qm, double *tmt)
+{
+/*
+c
+c  checks both straight & mirrored positions
+c
+c  input - fourier transforms of rings!!
+c  circ1 already multiplied by weights!
+c
+c  notes: aug 04 attempted speedup using 
+c       premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+c       various  other attempts  failed to yield improvement
+c       this is a very important compute demand in alignmen & refine.
+c       optional limit on angular search should be added.
+*/
+
+   // dimension         circ1(lcirc),circ2(lcirc)
+
+   // t(maxrin+2), q(maxrin+2), t7(-3:3)
+   double *t, *q, t7[7];
+
+   int   ip, jc, numr3i, numr2i, i, j, k, jtot;
+   float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+
+   *qn  = 0.0;
+   *qm  = 0.0;
+   *tot = 0.0;
+   *tmt = 0.0; 
+
+   ip = -(int)(log2(maxrin));
+
+   //  c - straight  = circ1 * conjg(circ2)
+   //  zero q array
+  
+   q = (double*)calloc(maxrin+2,sizeof(double));  
+
+   //   t - mirrored  = conjg(circ1) * conjg(circ2)
+   //   zero t array
+   t = (double*)calloc(maxrin+2,sizeof(double));
+
+   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+
+   for (i=1;i<=nring;i++) {
+
+      numr3i = numr(3,i);
+      numr2i = numr(2,i);
+
+      t1   = circ1(numr2i) * circ2(numr2i);
+      q(1) = q(1)+t1;
+      t(1) = t(1)+t1;
+
+      if (numr3i == maxrin)  {
+         t1   = circ1(numr2i+1) * circ2(numr2i+1);
+         q(2) = q(2)+t1;
+         t(2) = t(2)+t1;
+      }
+      else {
+	 t1          = circ1(numr2i+1) * circ2(numr2i+1);
+	 q(numr3i+1) = q(numr3i+1)+t1;
+      }
+
+      for (j=3;j<=numr3i;j=j+2) {
+	 jc     = j+numr2i-1;
+
+ 	 c1     = circ1(jc);
+ 	 c2     = circ1(jc+1);
+         d1     = circ2(jc);
+         d2     = circ2(jc+1);
+
+  	 t1     = c1 * d1;
+ 	 t3     = c1 * d2;
+ 	 t2     = c2 * d2;
+ 	 t4     = c2 * d1;
+
+	 q(j)   = q(j)   + t1 + t2;
+	 q(j+1) = q(j+1) - t3 + t4;
+	 t(j)   = t(j)   + t1 - t2;
+	 t(j+1) = t(j+1) - t3 - t4;
+      } 
+  }
+
+  fftr_d(q,ip);
+
+  jtot = 0;
+  *qn  = -1.0e20;
+  for (j=1; j<=maxrin; j++) {
+     if (q(j) >= *qn) {
+        *qn  = q(j);
+        jtot = j;
+     }
+  }
+
+ 
+  for (k=-3;k<=3;k++) {
+    j = ((jtot+k+maxrin-1)%maxrin)+1;
+    t7(k+4) = q(j);
+  }
+
+  // interpolate
+  prb1d(t7,7,&pos);
+  *tot = (float)(jtot)+pos;
+
+  // mirrored
+  fftr_d(t,ip);
+
+  // find angle
+  *qm = -1.0e20;
+  for (j=1; j<=maxrin;j++) {
+     if ( t(j) >= *qm ) {
+        *qm   = t(j);
+        jtot = j;
+     }
+  }
+
+  // find angle
+  for (k=-3;k<=3;k++) {
+    j       = ((jtot+k+maxrin-1)%maxrin) + 1;
+    t7(k+4) = t(j);
+  }
+
+  // interpolate
+
+  prb1d(t7,7,&pos);
+  *tmt = float(jtot) + pos;
+
+  free(t);
+  free(q);
+}
+#undef  circ1
+#undef  circ2
+#undef  t
+#undef  q
+#undef  b
+#undef  t7
+
+
+#undef  numr
