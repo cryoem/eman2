@@ -7090,7 +7090,7 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
 				(*ret)(ix,iy,iz) = 
-					Util::quadri(this, xold, yold, iz);
+					Util::quadri(xold, yold, nx, ny, get_data());
 			}
 		}
 	}

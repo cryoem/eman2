@@ -18,12 +18,6 @@ namespace  {
 
 struct EMAN_Aligner_Wrapper: EMAN::Aligner
 {
-    EMAN_Aligner_Wrapper(PyObject* py_self_, const EMAN::Aligner& p0):
-        EMAN::Aligner(p0), py_self(py_self_) {}
-
-    EMAN_Aligner_Wrapper(PyObject* py_self_):
-        EMAN::Aligner(), py_self(py_self_) {}
-
     EMAN::EMData* align(EMAN::EMData* p0, EMAN::EMData* p1) const {
         return call_method< EMAN::EMData* >(py_self, "align", p0, p1);
     }
@@ -65,12 +59,6 @@ struct EMAN_Aligner_Wrapper: EMAN::Aligner
 
 struct EMAN_Ctf_Wrapper: EMAN::Ctf
 {
-    EMAN_Ctf_Wrapper(PyObject* py_self_, const EMAN::Ctf& p0):
-        EMAN::Ctf(p0), py_self(py_self_) {}
-
-    EMAN_Ctf_Wrapper(PyObject* py_self_):
-        EMAN::Ctf(), py_self(py_self_) {}
-
     int from_string(const std::string& p0) {
         return call_method< int >(py_self, "from_string", p0);
     }
@@ -120,9 +108,6 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
 
 struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
 {
-    EMAN_SimpleCtf_Wrapper(PyObject* py_self_, const EMAN::SimpleCtf& p0):
-        EMAN::SimpleCtf(p0), py_self(py_self_) {}
-
     EMAN_SimpleCtf_Wrapper(PyObject* py_self_):
         EMAN::SimpleCtf(), py_self(py_self_) {}
 
@@ -237,7 +222,7 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
 BOOST_PYTHON_MODULE(libpyAligner2)
 {
     def("dump_aligners", &EMAN::dump_aligners);
-    class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("__Aligner", init<  >())
+    class_< EMAN::Aligner, boost::noncopyable, EMAN_Aligner_Wrapper >("__Aligner", no_init)
         .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
         .def("align", pure_virtual((EMAN::EMData* (EMAN::Aligner::*)(EMAN::EMData*, EMAN::EMData*, const std::string&, const EMAN::Dict&) const)&EMAN::Aligner::align), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Aligner::get_name))
@@ -256,7 +241,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
     scope* EMAN_Ctf_scope = new scope(
-    class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", init<  >())
+    class_< EMAN::Ctf, boost::noncopyable, EMAN_Ctf_Wrapper >("Ctf", no_init)
         .def("from_string", pure_virtual(&EMAN::Ctf::from_string))
         .def("to_string", pure_virtual(&EMAN::Ctf::to_string))
         .def("from_dict", pure_virtual(&EMAN::Ctf::from_dict))
@@ -298,8 +283,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 
     delete EMAN_Ctf_scope;
 
-    class_< EMAN::SimpleCtf, bases< EMAN::Ctf > , EMAN_SimpleCtf_Wrapper >("SimpleCtf", init<  >())
-        .def(init< const EMAN::SimpleCtf& >())
+    class_< EMAN::SimpleCtf, bases< EMAN::Ctf > , boost::noncopyable, EMAN_SimpleCtf_Wrapper >("SimpleCtf", init<  >())
         .def_readwrite("defocus", &EMAN::SimpleCtf::defocus)
         .def_readwrite("bfactor", &EMAN::SimpleCtf::bfactor)
         .def_readwrite("amplitude", &EMAN::SimpleCtf::amplitude)

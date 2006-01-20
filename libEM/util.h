@@ -905,14 +905,11 @@ namespace EMAN
 		 *
 		 *	@param[in] x x-coord value
 		 *	@param[in] y y-coord value
-		 *	@param[in] nxdata Size of image along x.
-		 *	@param[in] nydata Size of image along y.
 		 *	@param[in] image Image object (pointer)
-		 *	@param[in] zslice Which z slice to interpolate (counting starts at 1)
 		 *
 		 *	@return Interpolated value
 		 */
-		static float quadri(EMData* image, float x, float y, int zslice = 0);
+		static float quadri(float x, float y, int nx, int ny, float* image);
 
 		/** 1-D Kaiser-Bessel window function class.
 		 *  (It's a class so that the windowing parameters may be
@@ -1052,9 +1049,12 @@ namespace EMAN
 		template<class T> static inline T sgn(T& val) {
 			return (val > 0) ? T(+1) : T(-1);
 		}
-
+		static void alrq(float *xim,  int nsam , int nrow , int *numr,
+                                 float *circ, int lcirc, int nring, char mode);
+                static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
 	};
 }
 
 #endif
+
 

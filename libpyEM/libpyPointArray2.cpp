@@ -32,8 +32,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_projection_by_nfft_overlo
 BOOST_PYTHON_MODULE(libpyPointArray2)
 {
     scope* EMAN_PointArray_scope = new scope(
-    class_< EMAN::PointArray >("PointArray", init<  >())
-        .def(init< const EMAN::PointArray& >())
+    class_< EMAN::PointArray, boost::noncopyable >("PointArray", init<  >())
         .def(init< unsigned int >())
         .def("zero", &EMAN::PointArray::zero)
         .def("copy", &EMAN::PointArray::copy, return_value_policy< manage_new_object >())
@@ -57,7 +56,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("sort_by_axis", &EMAN::PointArray::sort_by_axis, EMAN_PointArray_sort_by_axis_overloads_0_1())
         .def("pdb2mrc_by_nfft", &EMAN::PointArray::pdb2mrc_by_nfft, return_value_policy< manage_new_object >())
         .def("pdb2mrc_by_summation", &EMAN::PointArray::pdb2mrc_by_summation, return_value_policy< manage_new_object >())
-        .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, EMAN_PointArray_projection_by_nfft_overloads_2_3()[ return_value_policy< manage_new_object >() ])
+        .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, return_value_policy< manage_new_object >(), EMAN_PointArray_projection_by_nfft_overloads_2_3())
         .def("projection_by_summation", &EMAN::PointArray::projection_by_summation, return_value_policy< manage_new_object >())
         .def("replace_by_summation", &EMAN::PointArray::replace_by_summation)
         .def("opt_from_proj", &EMAN::PointArray::opt_from_proj)

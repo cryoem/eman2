@@ -964,47 +964,130 @@ float Util::triquad(double r, double s, double t, float f[]) {
 		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
 }
 
-float Util::quadri(EMData* image, float x, float y, int zslice) {
-	// sanity check
-	if (image->get_ysize() <= 1) {
-		throw ImageDimensionException("Interpolated image must be at least 2D");
-	}
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	// periodic boundary conditions
-	x -= nx*((x>0.f) ? floor(x/nx) : ceil(x/nx - 1));
-	y -= ny*((y>0.f) ? floor(y/ny) : ceil(y/ny - 1));
-	// zero is a bit of a problem
-	if (x == nx) x = 0.f;
-	if (y == ny) y = 0.f;
-	int ix = int(x);
-	int ixp = ix + 1;
-	if (ixp > nx-1) ixp -= nx;
-	int ixm = ix - 1;
-	if (ixm < 0) ixm += nx;
-	float p = x - float(ix);
-	int iy = int(y);
-	int iyp = iy + 1;
-	if (iyp > ny-1) iyp -= ny;
-	int iym = iy - 1;
-	if (iym < 0) iym += ny;
-	float q = y - float(iy);
-	float f00 = (*image)(ix,iy,zslice);
-	float f0p = (*image)(ix,iyp,zslice);
-	float fp0 = (*image)(ixp,iy,zslice);
-	float f0m = (*image)(ix,iym,zslice);
-	float fm0 = (*image)(ixm,iy,zslice);
-	float fpp = (*image)(ixp,iyp,zslice);
-	float c1 = fp0 - f00;
-	float c2 = 0.5f*(c1 - f00 + fm0);
-	float c3 = f0p - f00;
-	float c4 = 0.5f*(c3 - f00 + f0m);
-	float c5 = fpp - f00 - c1 - c3;
-	float result = f00 
-		         + p*(c1 + (p-1)*c2 + q*c5)
-				 + q*(c3 + (q-1)*c4);
-	return result;
+#define  fdata(i,j)      fdata  [((j)-1)*nxdata + (i)-1]
+float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
+{
+/*
+c  purpose: quadratic interpolation 
+c 
+c  parameters:       xx,yy treated as circularly closed.
+c                    fdata - image 1..nxdata, 1..nydata
+c
+c                    f3    fc       f0, f1, f2, f3 are the values
+c                     +             at the grid points.  x is the
+c                     + x           point at which the function
+c              f2++++f0++++f1       is to be estimated. (it need
+c                     +             not be in the first quadrant).
+c                     +             fc - the outer corner point
+c                    f4             nearest x.
+c
+c                                   f0 is the value of the fdata at
+c                                   fdata(i,j), it is the interior mesh
+c                                   point nearest  x.
+c                                   the coordinates of f0 are (x0,y0),
+c                                   the coordinates of f1 are (xb,y0),
+c                                   the coordinates of f2 are (xa,y0),
+c                                   the coordinates of f3 are (x0,yb),
+c                                   the coordinates of f4 are (x0,ya),
+c                                   the coordinates of fc are (xc,yc),
+c
+c                   o               hxa, hxb are the mesh spacings
+c                   +               in the x-direction to the left
+c                  hyb              and right of the center point.
+c                   +
+c            ++hxa++o++hxb++o       hyb, hya are the mesh spacings
+c                   +               in the y-direction.
+c                  hya
+c                   +               hxc equals either  hxb  or  hxa
+c                   o               depending on where the corner
+c                                   point is located.
+c
+c                                   construct the interpolant
+c                                   f = f0 + c1*(x-x0) +
+c                                       c2*(x-x0)*(x-x1) +
+c                                       c3*(y-y0) + c4*(y-y0)*(y-y1)
+c                                       + c5*(x-x0)*(y-y0)
+c
+c
+*/
+    float x, y, dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
+    float quadri;
+    int   i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
+    
+    x = xx;
+    y = yy;
+
+    // circular closure
+    if (x < 1.0)               x = x+(1 - floor(x) / nxdata) * nxdata;
+    if (x > (float)nxdata+0.5) x = fmod(x-1.0f,(float)nxdata) + 1.0f;
+    if (y < 1.0)               y = y+(1 - floor(y) / nydata) * nydata;
+    if (y > (float)nydata+0.5) y = fmod(y-1.0f,(float)nydata) + 1.0f;
+
+
+    i   = (int) floor(x);
+    j   = (int) floor(y);
+
+    dx0 = x - i;
+    dy0 = y - j;
+
+    ip1 = i + 1;
+    im1 = i - 1;
+    jp1 = j + 1;
+    jm1 = j - 1;
+
+    if (ip1 > nxdata) ip1 = ip1 - nxdata;
+    if (im1 < 1)      im1 = im1 + nxdata;
+    if (jp1 > nydata) jp1 = jp1 - nydata;
+    if (jm1 < 1)      jm1 = jm1 + nydata;
+
+    f0  = fdata(i,j);
+    c1  = fdata(ip1,j) - f0;
+    c2  = (c1 - f0 + fdata(im1,j)) * 0.5;
+    c3  = fdata(i,jp1) - f0;
+    c4  = (c3 - f0 + fdata(i,jm1)) * 0.5;
+
+    dxb = dx0 - 1;
+    dyb = dy0 - 1;
+
+    // hxc & hyc are either 1 or -1
+    if (dx0 >= 0) {
+       hxc = 1;
+    }
+    else {
+       hxc = -1;
+    }
+    if (dy0 >= 0) {
+       hyc = 1;
+    }
+    else {
+       hyc = -1;
+    }
+ 
+    ic  = i + hxc;
+    jc  = j + hyc;
+
+    if (ic > nxdata) {
+       ic = ic - nxdata;
+    }
+    else if (ic < 1) {
+       ic = ic + nxdata;
+    }
+
+    if (jc > nydata) {
+       jc = jc - nydata;
+    }
+    else if (jc < 1) {
+       jc = jc + nydata;
+    }
+
+    c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
+            - hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
+
+    quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
+
+    return quadri; 
 }
+#undef fdata
 
 Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
 		                         int N_, float vtable_, int ntable_) 
@@ -1157,3 +1240,93 @@ float Util::FakeKaiserBessel::sinhwin(float x) const {
 #endif // 0
 
 
+EMData* Util::Polar2D(EMData* image, vector<int> numr, string mode){
+   int nsam = image->get_xsize();
+   int nrow = image->get_ysize();
+   int nring = numr.size()/3;
+   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   EMData* out = new EMData();
+   char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
+   out->set_size(lcirc,1,1);
+   alrq(image->get_data(), nsam, nrow, &numr[0], out->get_data(), lcirc, nring, cmode);
+   return out;
+}
+
+#define  circ(i)         circ   [(i)-1]
+#define  numr(i,j)       numr   [((j)-1)*3 + (i)-1]
+#define  xim(i,j)        xim    [((j)-1)*nsam + (i)-1]
+void Util::alrq(float *xim,  int nsam , int nrow , int *numr,
+          float *circ, int lcirc, int nring, char mode)
+{
+/* 
+c                                                                     
+c  purpose:                                                          
+c                                                                   
+c  resmaple to polar coordinates
+c                                                                  
+*/
+   //  dimension         xim(nsam,nrow),circ(lcirc)
+   //  integer           numr(3,nring)
+
+   double dfi, dpi;
+   int    ns2, nr2, i, inr, l, nsim, kcirc, lt, j;
+   float  yq, xold, yold, fi, x, y;
+
+   ns2 = nsam/2+1;
+   nr2 = nrow/2+1;
+   dpi = 2.0*atan(1.0);
+
+   for (i=1;i<=nring;i++) {
+     // radius of the ring
+     inr = numr(1,i);
+     yq  = inr;
+     l   = numr(3,i);
+     if (mode == 'h' || mode == 'H') {
+        lt = l/2;
+     }
+     else  {    //if (mode == 'f' || mode == 'F' )
+        lt = l/4;
+     }
+
+     nsim           = lt-1;
+     dfi            = dpi/(nsim+1);
+     kcirc          = numr(2,i);
+     xold           = 0.0;
+     yold           = inr;
+     circ(kcirc)    = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+     xold           = inr;
+     yold           = 0.0;
+     circ(lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+
+     if (mode == 'f' || mode == 'F') {
+        xold              = 0.0;
+        yold              = -inr;
+        circ(lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+        xold              = -inr;
+        yold              = 0.0;
+        circ(lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+     }
+
+     for (j=1;j<=nsim;j++) {
+        fi               = dfi*j;
+        x                = sin(fi)*yq;
+        y                = cos(fi)*yq;
+        xold             = x;
+        yold             = y;
+        circ(j+kcirc)    = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+        xold             =  y;
+        yold             = -x;
+        circ(j+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+
+        if (mode == 'f' || mode == 'F')  {
+           xold                = -x;
+           yold                = -y;
+           circ(j+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+           xold                = -y;
+           yold                =  x;
+           circ(j+lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
+        };
+     }
+   }
+ 
+}
