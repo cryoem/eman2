@@ -158,6 +158,9 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("quadri", &EMAN::Util::quadri)
         .def("alrq", &EMAN::Util::alrq)
         .def("Polar2D", &EMAN::Util::Polar2D, return_value_policy< manage_new_object >())
+        .def("alrq_ms", &EMAN::Util::alrq_ms)
+        .def("Polar2Dm", &EMAN::Util::Polar2Dm, return_value_policy< manage_new_object >())
+        .staticmethod("alrq_ms")
         .staticmethod("square")
         .staticmethod("sstrncmp")
         .staticmethod("int2str")
@@ -187,6 +190,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("eman_copysign")
         .staticmethod("sbasename")
         .staticmethod("round")
+        .staticmethod("Polar2Dm")
     );
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(

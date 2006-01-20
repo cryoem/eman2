@@ -1330,3 +1330,90 @@ c
    }
  
 }
+
+
+
+EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode){
+   int nsam = image->get_xsize();
+   int nrow = image->get_ysize();
+   int nring = numr.size()/3;
+   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   EMData* out = new EMData();
+   char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
+   out->set_size(lcirc,1,1);
+   alrq_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
+   return out;
+}
+
+void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+             int  *numr, float *circ, int lcirc, int  nring, char  mode)
+{
+   double dpi, dfi;
+   int    it, jt, inr, l, nsim, kcirc, lt;
+   float  yq, xold, yold, fi, x, y;
+
+   //     cns2 and cnr2 are predefined centers
+   //     no need to set to zero, all elements are defined
+
+   dpi = 2*atan(1.0);
+   for (it=1;it<=nring;it++) {
+      // radius of the ring
+      inr = numr(1,it);
+      yq  = inr;
+
+      l = numr(3,it);
+      if ( mode == 'h' || mode == 'H' ) { 
+         lt = l / 2;
+      }
+      else { // if ( mode == 'f' || mode == 'F' )
+         lt = l / 4;
+      } 
+
+      nsim  = lt - 1;
+      dfi   = dpi / (nsim+1);
+      kcirc = numr(2,it);
+      xold  = 0.0;
+      yold  = inr;
+
+      circ(kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+
+      xold  = inr;
+      yold  = 0.0;
+      circ(lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+
+      if ( mode == 'f' || mode == 'F' ) {
+         xold = 0.0;
+         yold = -inr;
+         circ(lt+lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+
+         xold = -inr;
+         yold = 0.0;
+         circ(lt+lt+lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+      }
+      
+      for (jt=1;jt<=nsim;jt++) {
+         fi   = dfi * jt;
+         x    = sin(fi) * yq;
+         y    = cos(fi) * yq;
+
+         xold = x;
+         yold = y;
+         circ(jt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+
+         xold = y;
+         yold = -x;
+         circ(jt+lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+
+         if ( mode == 'f' || mode == 'F' ) {
+            xold = -x;
+            yold = -y;
+            circ(jt+lt+lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+
+            xold = -y;
+            yold = x;
+            circ(jt+lt+lt+lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
+         }
+      } // end for jt
+   } //end for it
+}
+
