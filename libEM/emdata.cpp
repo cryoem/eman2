@@ -5150,10 +5150,14 @@ void EMData::to_one()
 
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
-	if (with==this) return self_correlation(this,fpflag);
+	if( with == 0 ) {
+		return autocorrelation(this,fpflag);
+	}
+	else if ( with == this ){
+		return autocorrelation(this,fpflag);
+	}
 	else {
-		if (with) return correlation(this, with, fpflag);
-		else return autocorrelation(this, fpflag);
+		return correlation(this, with, fpflag);
 	}
 }
 
