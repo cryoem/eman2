@@ -1968,12 +1968,29 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 
+void Util::Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr,
+                      double *qn, float *tot, int neg){
+   int nring = numr.size()/3;
+   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   crosrng_e(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
+		      qn, tot, neg);
+}
+void Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr,
+                      double *qn, float *tot, double   *qm, double *tmt){
+   int nring = numr.size()/3;
+   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
+		      qn, tot, qm, tmt);
+}
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
 #define  t(i)            t      [(i)-1]
 #define  q(i)            q      [(i)-1]
 #define  b(i)            b      [(i)-1]
 #define  t7(i)           t7     [(i)-1]
+
 
 //-----------------------------------------------
 void Util::crosrng_e(float *circ1, float *circ2, int lcirc,
