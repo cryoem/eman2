@@ -14,6 +14,11 @@ Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
 Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
+def timer(fn,n=1):
+	a=time.time()
+	for i in range(n): fn()
+	print time.time()-a
+
 def E2init(argv) :
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile"""

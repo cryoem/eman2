@@ -1503,7 +1503,7 @@ EMData *EMData::do_fft()
 	}
 	dat->set_ri(true);
 
-	int i = flags;
+
 	done_data();
 
 	EXITFUNC;
@@ -1555,7 +1555,7 @@ EMData *EMData::do_fft_inplace()
 		set_complex_x(true);
 	}
 	set_ri(true);
-	int i = flags;
+
 	done_data();
 
 	EXITFUNC;
@@ -1659,7 +1659,7 @@ EMData *EMData::do_ift()
 	}
 	dat->set_ri(false);
 
-	int i = flags;
+
 	done_data();
 
 	EXITFUNC;
@@ -1695,7 +1695,7 @@ EMData *EMData::do_ift_inplace()
 	}
 	set_ri(false);
 
-	int i = flags;
+
 	done_data();
 
 	EXITFUNC;
@@ -4950,7 +4950,7 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 
 	EMData *cf = new EMData();
 	if (no_sum) {
-		cf->set_size(nx, y1 - y0 + 1, 1);
+		cf->set_size(nx, y1 - y0 , 1);
 	}
 	else {
 		cf->set_size(nx, 1, 1);
@@ -5162,7 +5162,10 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 }
 
 EMData *EMData::make_footprint() {
-	EMData *ccf=calc_ccf(this);
+//	EMData *ccf=calc_ccf(this);
+	EMData *ccf=calc_mutual_correlation(this);
+	ccf->process("eman1.xform.phaseorigin");
+	ccf->process("eman1.normalize.edgemean");
 	EMData *un=ccf->unwrap();
 	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize()/2,un->get_ysize()-6));	// 4 and 6 are empirical
 	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
@@ -5375,7 +5378,9 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 
 	if (xs < 1) {
 		xs = (int) floor(p * M_PI * ny / 4);
-		xs = Util::calc_best_fft_size(xs);
+		xs -= xs % 8;
+		if (xs<=8) xs=16;
+//		xs = Util::calc_best_fft_size(xs);
 	}
 
 	if (r1 < 0) {
@@ -5383,6 +5388,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 	}
 
 	int rr = ny / 2 - 2 - (int) floor(hypot(dx, dy));
+	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
 		r2 = rr;
 	}
