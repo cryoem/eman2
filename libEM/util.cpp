@@ -1982,13 +1982,24 @@ boost::tuple<double, float, int> Util::Crosrng_e(EMData*  circ1, EMData* circ2,
 		      &qn, &tot, neg);
    return boost::make_tuple(qn, tot, neg);
 }
-void Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr,
-                      double *qn, float *tot, double   *qm, double *tmt){
+//void Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr,
+//                      double *qn, float *tot, double   *qm, double *tmt){
+Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
-   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
-		      qn, tot, qm, tmt);
+   double qn;
+   float tot;
+   double qm;
+   double tmt;
+   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
+              &numr[0], &qn, &tot, &qm, &tmt);
+   Dict retvals;
+   retvals["qn"] = qn;
+   retvals["tot"] = tot;
+   retvals["qm"] = qm;
+   retvals["tmt"] = tmt;
+   return retvals;
 }
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
