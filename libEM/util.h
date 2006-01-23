@@ -9,6 +9,7 @@
 #include <vector>
 #include <iostream>
 #include <boost/multi_array.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #ifdef WIN32
 #include <windows.h>
@@ -1061,8 +1062,11 @@ namespace EMAN
                 static void  fftc_d(double *br, double *bi, int ln, int ks);
                 static void  Frngs(EMData* circ, vector<int> numr);
                 static void  frngs(float *circ, int *numr, int nring);
-                static void  Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr,
-                                       double *qn, float *tot, int neg);
+				static boost::tuple<double, float, int>
+					Crosrng_e(EMData* circ1, EMData* circ2,
+							  vector<int> numr, int neg);
+                //static void  Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr,
+                //                       double *qn, float *tot, int neg);
                 static void  crosrng_e(float *circ1, float *circ2, int lcirc,
                                        int    nring, int   maxrin, int *numr,
                                        double *qn, float *tot, int neg);
@@ -1077,4 +1081,4 @@ namespace EMAN
 
 #endif
 
-
+/* vim: set ts=4 noet nospell: */

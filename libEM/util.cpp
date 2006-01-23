@@ -4,6 +4,7 @@
 #include "byteorder.h"
 #include "Assert.h"
 #include "emdata.h"
+#include "util.h"
 
 #include <fcntl.h>
 #include <iomanip>
@@ -1968,13 +1969,18 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 
-void Util::Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr,
-                      double *qn, float *tot, int neg){
+//void Util::Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr,
+//                      double *qn, float *tot, int neg){
+boost::tuple<double, float, int> Util::Crosrng_e(EMData*  circ1, EMData* circ2,
+                                                 vector<int> numr, int neg) {
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
+   double qn = 0.;
+   float tot = 0.f;
    crosrng_e(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
-		      qn, tot, neg);
+		      &qn, &tot, neg);
+   return boost::make_tuple(qn, tot, neg);
 }
 void Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr,
                       double *qn, float *tot, double   *qm, double *tmt){
@@ -2008,6 +2014,9 @@ c       automatic arrays
 	double precision  q(maxrin+2)
 	double precision  t7(-3:3)
 */
+   *qn = 2.7;
+   *tot = 3.5f;
+   if (-1 == neg) return;
    float *t;
    double t7[7], *q;
    int    i, j, k, ip, jc, numr3i, numr2i, jtot;

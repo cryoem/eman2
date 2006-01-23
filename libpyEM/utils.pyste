@@ -2,7 +2,11 @@ Include("emdata.h")
 Include("xydata.h")
 Include("imageio.h")
 
-Util = Class("EMAN::Util", "util.h")
+#Util = Class("EMAN::Util", "util.h")
+Util = Class("EMAN::Util", "util_wrapitems.h")
+exclude(Util.Crosrng_e)
+add_method(Util, "util_Crosrng_e")
+rename(Util.util_Crosrng_e, "Crosrng_e")
 
 #exclude this function to make EMAN2 compile with boost 1.33.0
 exclude(Util.check_file_by_magic)
