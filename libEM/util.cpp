@@ -2014,9 +2014,6 @@ c       automatic arrays
 	double precision  q(maxrin+2)
 	double precision  t7(-3:3)
 */
-   *qn = 2.7;
-   *tot = 3.5f;
-   if (-1 == neg) return;
    float *t;
    double t7[7], *q;
    int    i, j, k, ip, jc, numr3i, numr2i, jtot;
