@@ -7369,7 +7369,7 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	set_array_offsets(0,-nyhalf);
 	result->set_array_offsets(0,-nyhalf);
 	float cang = cos(ang);
-	float sang = sin(ang);
+	float sang = -sin(ang);
 	for (int iy = -nyhalf; iy < nyhalf; iy++) {
 		float ycang = iy*cang;
 		//float ysang = -iy*sang;
