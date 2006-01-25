@@ -4,7 +4,6 @@
 #ifndef UTIL_WRAPPER_H
 #define UTIL_WRAPPER_H
 using EMAN::EMData;
-using boost::python::object;
 boost::python::tuple 
 util_Crosrng_e(EMData* circ1, EMData* circ2, 
                vector<int> numr, int neg){
