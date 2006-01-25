@@ -1969,21 +1969,26 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 
-//void Util::Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr,
-//                      double *qn, float *tot, int neg){
-boost::tuple<double, float, int> Util::Crosrng_e(EMData*  circ1, EMData* circ2,
-                                                 vector<int> numr, int neg) {
+boost::tuple<double, float, int> Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
-   double qn = 0.;
-   float tot = 0.f;
+   double qn;   float  tot;
    crosrng_e(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
 		      &qn, &tot, neg);
    return boost::make_tuple(qn, tot, neg);
 }
-//void Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr,
-//                      double *qn, float *tot, double   *qm, double *tmt){
+
+boost::tuple<double, float, double, float> Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
+   int nring = numr.size()/3;
+   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   double qn;   float tot;   double qm;   float tmt;
+   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin,  &numr[0],
+              &qn, &tot, &qm, &tmt);
+   return boost::make_tuple(qn, tot, qm, tmt);
+}
+/*
 Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
@@ -2000,7 +2005,7 @@ Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    retvals["qm"] = qm;
    retvals["tmt"] = tmt;
    return retvals;
-}
+}*/
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
 #define  t(i)            t      [(i)-1]
@@ -2030,10 +2035,11 @@ c       automatic arrays
    int    i, j, k, ip, jc, numr3i, numr2i, jtot;
    float  pos;
 
-   ip = maxrin;
+   ip = -(int) (log2(maxrin));
    q = (double*)calloc(maxrin+2, sizeof(double));
    t = (float*)calloc(maxrin+2, sizeof(float));
      
+//   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
    for (i=1;i<=nring;i++) {
       numr3i = numr(3,i);
       numr2i = numr(2,i);
@@ -2109,7 +2115,7 @@ c       automatic arrays
 //---------------------------------------------------
 void Util::crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
                       int   maxrin, int   *numr , double *qn, float *tot,
-                      double   *qm, double *tmt)
+                      double   *qm, float *tmt)
 {
 /*
 c
