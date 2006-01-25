@@ -1068,10 +1068,8 @@ namespace EMAN
                 static void  crosrng_e(float *circ1, float *circ2, int lcirc,
                                        int    nring, int   maxrin, int *numr,
                                        double *qn, float *tot, int neg);
-//                static void  Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr,
-//                                        double *qn, float *tot, double   *qm, double *tmt);
-		static boost::tuple<double, float, double, float>
-                         Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
+                static Dict Crosrng_ms(EMData* circ1, EMData* circ2,
+						               vector<int> numr);
                 static void  crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
                                         int   maxrin, int   *numr , double *qn, float *tot,
                                         double   *qm, float *tmt);

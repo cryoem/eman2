@@ -1979,24 +1979,11 @@ boost::tuple<double, float, int> Util::Crosrng_e(EMData*  circ1, EMData* circ2, 
    return boost::make_tuple(qn, tot, neg);
 }
 
-boost::tuple<double, float, double, float> Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   double qn;   float tot;   double qm;   float tmt;
-   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin,  &numr[0],
-              &qn, &tot, &qm, &tmt);
-   return boost::make_tuple(qn, tot, qm, tmt);
-}
-/*
 Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
-   double qn;
-   float tot;
-   double qm;
-   double tmt;
+   double qn; float tot; double qm; float tmt;
    crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
               &numr[0], &qn, &tot, &qm, &tmt);
    Dict retvals;
@@ -2005,7 +1992,7 @@ Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    retvals["qm"] = qm;
    retvals["tmt"] = tmt;
    return retvals;
-}*/
+}
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
 #define  t(i)            t      [(i)-1]
