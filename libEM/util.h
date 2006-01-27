@@ -76,6 +76,14 @@ namespace EMAN
 		 */
 		static void flip_image(float *data, size_t nx, size_t ny);
 
+		/** Perform singular value decomposition on a set of images
+		 * @param data A List of data objects to be decomposed
+		 * @param nvec Number of basis vectors to return
+		 * @return A list of images representing basis vectors in the SVD generated subspace
+		**/
+		vector<EMData *> svdcmp(vector<EMData *> data,int nvec=0);
+
+
 		/** Safe string compare. It compares 's2' with the first N
 		 * characters of 's1', where N is the length of 's2'.
 		 * 

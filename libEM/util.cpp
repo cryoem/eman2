@@ -13,6 +13,7 @@
 #include <gsl/gsl_sf_bessel.h>
 #include <sys/types.h>
 #include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_linalg.h>
 #include <algorithm>
 
 #ifndef WIN32
@@ -201,7 +202,47 @@ string Util::get_line_from_string(char **slines)
 	return result;
 }
 
+vector<EMData *> svdcmp(vector<EMData *> data,int nvec) {
+	int nimg=data.size();
+	if (nvec==0) nvec=nimg;
+	vector<EMData *> ret(nvec);
+	if (nimg==0) return ret;
+	int pixels=data[0]->get_xsize()*data[0]->get_ysize()*data[0]->get_zsize();
 
+	// Allocate the working space
+	gsl_vector *work=gsl_vector_alloc(nimg);
+	gsl_vector *S=gsl_vector_alloc(nimg);
+	gsl_matrix *A=gsl_matrix_alloc(pixels,nimg);
+	gsl_matrix *V=gsl_matrix_alloc(nimg,nimg);
+	gsl_matrix *X=gsl_matrix_alloc(nimg,nimg);
+
+	int im,x,y,z,i;
+	for (im=0; im<nimg; im++) {
+		for (z=0,i=0; z<data[0]->get_zsize(); z++) {
+			for (y=0; y<data[0]->get_ysize(); y++) {
+				for (x=0; x<data[0]->get_xsize(); x++,i++) {
+					gsl_matrix_set(A,i,im,data[im]->get_value_at(x,y,z));
+				}
+			}
+		}
+	}
+
+	// This calculates the SVD
+	gsl_linalg_SV_decomp_mod (A,X, V, S, work);
+
+	for (im=0; im<nvec; im++) {
+		EMData *a=data[0]->copy_head();
+		ret[im]=a;
+		for (z=0,i=0; z<data[0]->get_zsize(); z++) {
+			for (y=0; y<data[0]->get_ysize(); y++) {
+				for (x=0; x<data[0]->get_xsize(); x++,i++) {
+					a->set_value_at(x,y,z,gsl_matrix_get(A,i,im));
+				}
+			}
+		}
+	}
+	return ret;
+}
 
 bool Util::get_str_float(const char *s, const char *float_var, float *p_val)
 {
