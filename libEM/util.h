@@ -81,7 +81,7 @@ namespace EMAN
 		 * @param nvec Number of basis vectors to return
 		 * @return A list of images representing basis vectors in the SVD generated subspace
 		**/
-		vector<EMData *> svdcmp(vector<EMData *> data,int nvec=0);
+		vector<EMData *> svdcmp(const vector<EMData *> &data,int nvec);
 
 
 		/** Safe string compare. It compares 's2' with the first N

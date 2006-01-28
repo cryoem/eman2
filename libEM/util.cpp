@@ -202,7 +202,7 @@ string Util::get_line_from_string(char **slines)
 	return result;
 }
 
-vector<EMData *> svdcmp(vector<EMData *> data,int nvec) {
+vector<EMData *> Util::svdcmp(const vector<EMData *> &data,int nvec) {
 	int nimg=data.size();
 	if (nvec==0) nvec=nimg;
 	vector<EMData *> ret(nvec);
