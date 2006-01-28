@@ -78,10 +78,10 @@ namespace EMAN
 
 		/** Perform singular value decomposition on a set of images
 		 * @param data A List of data objects to be decomposed
-		 * @param nvec Number of basis vectors to return
+		 * @param nvec Number of basis vectors to return, 0 returns full decomposition
 		 * @return A list of images representing basis vectors in the SVD generated subspace
 		**/
-		vector<EMData *> svdcmp(const vector<EMData *> &data,int nvec);
+		static vector<EMData *> svdcmp(const vector<EMData *> &data,int nvec);
 
 
 		/** Safe string compare. It compares 's2' with the first N
