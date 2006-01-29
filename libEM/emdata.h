@@ -1235,7 +1235,7 @@ namespace EMAN
 		 */
 		EMData *get_row(int row_index) const;
 
-		/** Set one row of a 1D/2D image.
+		/** Get one row of a 1D/2D image.
 		 *
 		 * @param data The row image data.
 		 * @param row_index Index of the row.
@@ -1243,7 +1243,7 @@ namespace EMAN
 		 */
 		void set_row(const EMData * data, int row_index);
 
-		/** Get one column of a 2D images.
+		/** Set one row of a 2D images.
 		 *
 		 * @param col_index Index of the column.
 		 * @exception ImageDimensionException If this image is not 2D.
@@ -1251,7 +1251,7 @@ namespace EMAN
 		 */
 		EMData *get_col(int col_index) const;
 
-		/** Set one column of a 2D image.
+		/** Get one column of a 2D image.
 		 *
 		 * @param data The column image data.
 		 * @param col_index Index of the column.
