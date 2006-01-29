@@ -7361,7 +7361,7 @@ Dict EMData::masked_stats(const EMData* mask) {
 EMData*  
 EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	if (!is_complex()) 
-		throw ImageFormatException("extractpoint requires a fourier image");
+		throw ImageFormatException("extractplane requires a fourier image");
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
 	int nxreal = nx - 2; 
