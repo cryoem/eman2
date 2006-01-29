@@ -1708,12 +1708,23 @@ namespace EMAN
 		 */
 		void symplane0(EMArray<int>& norm);
 
+		/** Interpolate up image by padding with zeroes its Fourier transfrom.
+		 *  
+		 *  @param[in] nxni new x size (has to be larger/equal than the original x size)
+		 *  @param[in] nyni new y size (has to be larger/equal than the original y size)
+		 *  @param[in] nzni new z size (has to be larger/equal than the original z size)
+		 *  
+		 *  @return New interpolated up image.
+		 */
+	        EMData* FourInterpol(int nxni, int nyni, int nzni);
+		
 		/** Symmetrize volume in real space.
 		 *  
 		 *  @param[in] symmetry Point group of the target volume.
 		 *  
 		 *  @return New symmetrized volume object.
 		 */
+	
 		EMData* symvol(string symmetry);
 
 		/** Generate Rotated-Circulantly-Translated image 
@@ -2319,7 +2330,7 @@ namespace EMAN
 	{
 		attr_dict[key] = val;
 	}
-	
+			 
 	
 }
 
