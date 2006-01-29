@@ -1538,11 +1538,11 @@ EMData *EMData::do_fft_inplace()
 				}
 			}
 		}
-		// zero out padding
+		/*// zero out padding   SHOULD NOT BE NECCESSARY PAP 01/28/06
 		for (int iz=0; iz < nz; iz++)
 			for (int iy=0; iy < ny; iy++)
 				for (int ix=nxreal; ix < nx; ix++)
-					(*this)(ix,iy,iz) = 0.f;
+					(*this)(ix,iy,iz) = 0.f;*/
 		set_fftpad(true);
 	} else {
 		offset = is_fftodd() ? 1 : 2;
