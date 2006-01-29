@@ -1445,56 +1445,10 @@ EMData *EMData::do_fft()
 	EMData* dat = copy_head();
 	dat->set_size(nx2, ny, nz);
 	dat->to_zero();
-	if (offset == 1)
-		dat->set_fftodd(true);
+	if (offset == 1)  dat->set_fftodd(true);
 
 	float *d = dat->get_data();
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
-
-#if 0 // Remove funky reordering
-	if (nz == 1) {
-		int l = ny / 2 * nx2;
-
-		for (int i = 0; i < ny / 2; i++) {
-			int inx2 = i * nx2;
-			for (int j = 0; j < nx2; j++) {
-				int k = j + inx2;
-				float f = d[k];
-				d[k] = d[k + l];
-				d[k + l] = f;
-			}
-		}
-	}
-	else if (ny != 1) {
-		char *t = new char[nx2 * sizeof(float)];
-
-		int k = nx2 * ny * (nz + 1) / 2;
-		int l = nx2 * ny * (nz - 1) / 2;
-		size_t jj = nx2 * sizeof(float);
-		int ii = 0;
-
-		for (int j = 0; j < nz / 2; j++) {
-			for (int i = 0; i < ny; i++) {
-				memcpy(t, d + ii, jj);
-
-				if (i < ny / 2) {
-					memcpy(d + ii, d + ii + k, jj);
-					memcpy(d + ii + k, t, jj);
-				}
-				else {
-					memcpy(d + ii, d + ii + l, jj);
-					memcpy(d + ii + l, t, jj);
-				}
-				ii += nx2;
-			}
-		}
-		if( t )
-		{
-			delete[]t;
-			t = 0;
-		}
-	}
-#endif // 0
 
 	dat->done_data();
 	dat->set_complex(true);
@@ -1591,49 +1545,6 @@ EMData *EMData::do_ift()
 	if (ndim == 1) {
 		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 	}
-#if 0 // remove funky reordering
-	else if (ndim == 2 ) {
-		int l = ny / 2 * nx;
-		for (int i = 0; i < ny / 2; i++) {
-			for (int j = 0; j < nx; j++) {
-				int k = j + i * nx;
-				float f = d[k];
-				d[k] = d[k + l];
-				d[k + l] = f;
-			}
-		}
-	}
-	else {
-		char *t = new char[(nx + offset) * sizeof(float)];
-		int k = nx * ny * (nz + 1) / 2;
-		int l = nx * ny * (nz - 1) / 2;
-		size_t jj = nx * sizeof(float);
-		int ii = 0;
-
-		for (int j = 0; j < nz / 2; j++) {
-			for (int i = 0; i < ny; i++) {
-				memcpy(t, d + ii, jj);
-
-				if (i < ny / 2) {
-					memcpy(d + ii, d + ii + k, jj);
-					memcpy(d + ii + k, t, jj);
-				}
-				else {
-					memcpy(d + ii, d + ii + l, jj);
-					memcpy(d + ii + l, t, jj);
-				}
-
-				ii += nx;
-			}
-		}
-
-		if( t )
-		{
-			delete[]t;
-			t = 0;
-		}
-	}
-#endif // 0
 
 	if (ndim >= 2) {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
