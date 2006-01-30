@@ -1138,10 +1138,10 @@ Util::KaiserBessel::KaiserBessel(float alpha_, int K_, float r_, float v_,
 	// Default values are alpha=1.25, K=6, r=0.5, v = K/2
 	if (0.f == v) v = float(K)/2;
 	if (0.f == vtable) vtable = v;
-	fac = static_cast<float>(twopi)*alpha*r*v;
 	alphar = alpha*r;
+	fac = static_cast<float>(twopi)*alphar*v;
 	vadjust = 1.0f*v;
-	facadj = static_cast<float>(twopi)*alpha*r*vadjust;
+	facadj = static_cast<float>(twopi)*alphar*vadjust;
 	build_I0table();
 }
 
@@ -1165,11 +1165,12 @@ void Util::KaiserBessel::build_I0table() {
 		float s = float(i)/fltb/N;
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
-			//i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
 			i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
+			//i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
 		} else {
 			i0table[i] = 0.f;
 		}
+		cout << "  "<<s*N<<"  "<<i0table[i] <<endl;
 	}
 }
 
