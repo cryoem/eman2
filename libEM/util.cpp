@@ -1150,7 +1150,7 @@ float Util::KaiserBessel::i0win(float x) const {
 	float absx = fabs(x);
 	if (absx > vadjust) return 0.f;
 	float rt = sqrt(1.f - pow(absx/vadjust, 2));
-	float res = float(gsl_sf_bessel_I0(facadj*rt))/val0;
+	float res = gsl_sf_bessel_I0(facadj*rt)/val0;
 	return res;
 }
 
@@ -1158,7 +1158,6 @@ void Util::KaiserBessel::build_I0table() {
 	i0table.resize(ntable+1); // i0table[0:ntable]
 	int ltab = int(round(float(ntable)/1.25f));
 	fltb = float(ltab)/(K/2);
-	//float val0 = sqrt(facadj)*static_cast<float>(gsl_sf_bessel_I1(facadj));
 	float val0 = gsl_sf_bessel_I0(facadj);
 	for (int i=ltab+1; i <= ntable; i++) i0table[i] = 0.f;
 	for (int i=0; i <= ltab; i++) {
@@ -1166,11 +1165,10 @@ void Util::KaiserBessel::build_I0table() {
 		if (s < vadjust) {
 			float rt = sqrt(1.f - pow(s/vadjust, 2));
 			i0table[i] = gsl_sf_bessel_I0(facadj*rt)/val0;
-			//i0table[i] = sqrt(facadj*rt)*static_cast<float>(gsl_sf_bessel_I1(facadj*rt))/val0;
 		} else {
 			i0table[i] = 0.f;
 		}
-		cout << "  "<<s*N<<"  "<<i0table[i] <<endl;
+//		cout << "  "<<s*N<<"  "<<i0table[i] <<endl;
 	}
 }
 
