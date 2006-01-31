@@ -35,14 +35,15 @@ EMData::EMData()
 	supp = 0;
 	ctf = 0;
 
-	flags = 0;
+	flags =0;
 	// used to replace cube 'pixel'
 	attr_dict["apix_x"] = 1.0f;
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
 
-	attr_dict["is_complex"] = 0;
-	attr_dict["is_ri"] = 0;
+	attr_dict["is_complex"] = int(0);
+	attr_dict["is_complex_x"] = int(0);
+	attr_dict["is_ri"] = int(1);
 
 	changecount=0;
 
@@ -384,9 +385,7 @@ EMData *EMData::copy() const
 		ret->ctf->copy_from(ctf);
 	}
 
-	ret->flags = flags & (EMDATA_COMPLEX 
-							| EMDATA_RI 
-							| EMDATA_PAD 
+	ret->flags = flags & ( EMDATA_PAD 
 							| EMDATA_SHUFFLE
 							| EMDATA_FLIP
 							| EMDATA_FH
@@ -415,7 +414,7 @@ EMData *EMData::copy_head() const
 		ret->ctf->copy_from(ctf);
 	}
 
-	ret->flags = flags & (EMDATA_COMPLEX | EMDATA_RI | EMDATA_PAD | EMDATA_FFTODD);
+	ret->flags = flags & ( EMDATA_PAD | EMDATA_FFTODD);
 
 	ret->all_translation = all_translation;
 
@@ -1796,7 +1795,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 		p1 = 9;
 	}
 
-	if (!(flags & EMDATA_COMPLEX) && p0 > 0) {
+	if (is_complex() && p0 > 0) {
 		p0++;
 		p1++;
 	}
@@ -1806,7 +1805,7 @@ vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 	size_t n = hist.size();
 
 	for (int k = p0; k <= p1; ++k) {
-		if (flags & EMDATA_COMPLEX) {
+		if (is_complex()) {
 			di = prime[k] * 2;
 		}
 		else {

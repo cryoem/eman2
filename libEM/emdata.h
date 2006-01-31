@@ -1897,12 +1897,12 @@ namespace EMAN
 
 	private:
 		enum EMDataFlags {
-			EMDATA_COMPLEX = 1 << 1,
-			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
+//			EMDATA_COMPLEX = 1 << 1,
+//			EMDATA_RI = 1 << 2,	       // real/imaginary or amp/phase
 			EMDATA_BUSY = 1 << 3,	   // someone is modifying data, NO LONGER USED
 			EMDATA_HASCTFF = 1 << 4,   // has CTF info in the image file
 			EMDATA_NEEDUPD = 1 << 5,   // needs a real update			
-			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
+//			EMDATA_COMPLEXX = 1 << 6,  // 1D fft's in X
 			EMDATA_FLIP = 1 << 7,	   // is the image flipped
 			EMDATA_PAD = 1 << 8,       // is the image fft padded 
 			EMDATA_FFTODD = 1 << 9,	   // is the (real-space) nx odd
@@ -2102,7 +2102,7 @@ namespace EMAN
 
 	inline bool EMData::is_complex() const
 	{
-		if (flags & EMDATA_COMPLEX) {
+		if (int(attr_dict["is_complex"])) {
 			return true;
 		}
 		else {
@@ -2117,7 +2117,7 @@ namespace EMAN
 
 	inline bool EMData::is_complex_x() const
 	{
-		if (flags & EMDATA_COMPLEXX) {
+		if (int(attr_dict["is_complex_x"])) {
 			return true;
 		}
 		else {
@@ -2126,7 +2126,7 @@ namespace EMAN
 	}
 	inline bool EMData::is_ri() const
 	{
-		if (flags & EMDATA_RI) {
+		if (int(attr_dict["is_complex_ri"])) {
 			return true;	
 		}
 		else {
@@ -2182,11 +2182,9 @@ namespace EMAN
 	inline void EMData::set_complex(bool is_complex)
 	{
 		if (is_complex) {
-			flags |= EMDATA_COMPLEX;
 			set_attr("is_complex", int(1));
 		}
 		else {
-			flags &= ~EMDATA_COMPLEX;
 			set_attr("is_complex", int(0));
 		}
 	}
@@ -2194,11 +2192,9 @@ namespace EMAN
 	inline void EMData::set_complex_x(bool is_complex_x)
 	{
 		if (is_complex_x) {
-			flags |= EMDATA_COMPLEXX;
 			set_attr("is_complex_x", int(1));
 		}
 		else {
-			flags &= ~EMDATA_COMPLEXX;
 			set_attr("is_complex_x", int(0));
 		}
 	}
@@ -2207,10 +2203,10 @@ namespace EMAN
 	inline void EMData::set_ri(bool is_ri)
 	{
 		if (is_ri) {
-			flags |= EMDATA_RI;
+			set_attr("is_complex_ri", int(1));
 		}
 		else {
-			flags &= ~EMDATA_RI;
+			set_attr("is_complex_ri", int(0));
 		}
 	}
 
