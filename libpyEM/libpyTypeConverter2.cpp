@@ -4,7 +4,6 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include <typeconverter.h>
 #include <xydata.h>
 
 // Using =======================================================================
@@ -13,13 +12,6 @@ using namespace boost::python;
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTypeConverter2)
 {
-    class_< EMAN::EMNumPy, boost::noncopyable >("EMNumPy", no_init)
-        .def("em2numpy", &EMAN::EMNumPy::em2numpy)
-        .def("numpy2em", &EMAN::EMNumPy::numpy2em)
-        .staticmethod("em2numpy")
-        .staticmethod("numpy2em")
-    ;
-
 
 	import_array();
         python::numeric::array::set_module_and_type("Numeric", "ArrayType");
