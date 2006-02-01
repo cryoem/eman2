@@ -1770,7 +1770,7 @@ namespace EMAN
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* 
-		rot_scale_conv(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);
+		rot_scale_conv(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);//, Util::KaiserBessel& kb);
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
 		 *  
 		 *  The only requirement for the window function object is that

@@ -7016,7 +7016,7 @@ EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 	return ret;
 }
 EMData*
-EMData::rot_scale_conv(float ang, float delx,float dely, float scale, Util::KaiserBessel& kb) {
+EMData::rot_scale_conv(float ang, float delx, float dely, float scale){//, Util::KaiserBessel& kb) {
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz) 
