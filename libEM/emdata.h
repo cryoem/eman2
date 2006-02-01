@@ -1727,35 +1727,50 @@ namespace EMAN
 	
 		EMData* symvol(string symmetry);
 
-		/** Generate Rotated-Circulantly-Translated image 
+		/** Rotate-Shift-Circulantly image 
 		 *
 		 *  Method uses bilinear (4-point) interpolation:
 		 *  @see Abramowitz & Stegun, Handbook of Mathematical Functions 25.2.6
 		 *
 		 *  @param[in] ang Rotation angle in degrees.
-		 *  @param[in] delx Translation along x
-		 *  @param[in] dely Translation along y
+		 *  @param[in] delx Shift along x
+		 *  @param[in] dely Shift along y
 		 *  @exception ImageDimensionException only support 2D image
-		 *  @return New rotated/translated/scaled image
+		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* 
 		rot_trans2D(float ang, float delx=0.f, float dely=0.f);
-		/** Generate Rotated-Scaled-Circulantly-Translated image 
-		 *  (or image slice).
+		/** Rotate-Shift-Scale-Circulantly image 
 		 *
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
 		 *  
 		 *  @param[in] ang Rotation angle in degrees.
-		 *  @param[in] scale Scaling factor
-		 *  @param[in] delx Amount to translate rotation origin along x
-		 *  @param[in] dely Amount to translate rotation origin along y
+		 *  @param[in] delx Amount to shift rotation origin along x
+		 *  @param[in] dely Amount to shift rotation origin along y
+		 *  @param[in] scale Scaling factor (default=1.0)
 		 *  @exception ImageDimensionException can not rotate 1 D image
-		 *  @return New rotated/translated/scaled image
+		 *  @exception ImageDimensionException can not rotate 3 D image
+		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* 
-		rot_scale_trans2D(float ang, float scale = 1.f, float delx = 0.f, 
-			 			float dely = 0.f);
+		rot_scale_trans2D(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);
+		/** Rotate-Shift-Scale-Circulantly image using convolution 
+		 *
+		 *  If the image is a volume, then all slices are
+		 *  rotated/translated/scaled.
+		 *  
+		 *  @param[in] ang Rotation angle in degrees.
+		 *  @param[in] delx Amount to shift rotation origin along x
+		 *  @param[in] dely Amount to shift rotation origin along y
+		 *  @param[in] scale Scaling factor (default=1.0)
+		 *  @param[in] convolution kernel
+		 *  @exception ImageDimensionException can not rotate 1 D image
+		 *  @exception ImageDimensionException can not rotate 3 D image
+		 *  @return New rotated/shifted/scaled image
+		 */
+		EMData* 
+		rot_scale_conv(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
 		 *  
 		 *  The only requirement for the window function object is that

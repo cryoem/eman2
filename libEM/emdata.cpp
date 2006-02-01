@@ -6960,10 +6960,11 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 }
 
 EMData*
-EMData::rot_scale_trans2D(float ang, float scale, float delx,
-		                  float dely) {
+EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	if (0.f == scale) scale = 1.f; // silently fix common user error
@@ -6986,7 +6987,6 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 	// trig
 	float cang = cos(ang);
 	float sang = sin(ang);
-	for (int iz = 0; iz < nz; iz++) {
 		for (int iy = 0; iy < ny; iy++) {
 			float y = float(iy) - shiftyc;
 		#ifdef _WIN32
@@ -7009,11 +7009,65 @@ EMData::rot_scale_trans2D(float ang, float scale, float delx,
 			#endif	//_WIN32
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
-				(*ret)(ix,iy,iz) = 
-					Util::quadri(xold, yold, nx, ny, get_data());
+				(*ret)(ix,iy) = Util::quadri(xold, yold, nx, ny, get_data());
 			}
 		}
-	}
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+EMData*
+EMData::rot_scale_conv(float ang, float delx,float dely, float scale, Util::KaiserBessel& kb) {
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	if (0.f == scale) scale = 1.f; // silently fix common user error
+	EMData* ret = copy_head();
+	delx = fmod(delx, float(nx));
+	dely = fmod(dely, float(ny));
+	// center of image
+	int xc = nx/2;
+	int yc = ny/2;
+	// shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+	// bounds if origin at center
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+		for (int iy = 0; iy < ny; iy++) {
+			float y = float(iy) - shiftyc;
+		#ifdef _WIN32
+			if (y < ymin) y = _MIN(y+ny,ymax);
+			if (y > ymax) y = _MAX(y-ny,ymin);
+		#else
+			if (y < ymin) y = std::min(y+ny,ymax);
+			if (y > ymax) y = std::max(y-ny,ymin);
+		#endif	//_WIN32
+			float ycang = y*cang/scale + yc;
+			float ysang = -y*sang/scale + xc;
+			for (int ix = 0; ix < nx; ix++) {
+				float x = float(ix) - shiftxc;
+			#ifdef _WIN32
+				if (x < xmin) x = _MIN(x+nx,xmax);
+				if (x > xmax) x = _MAX(x-nx,xmin);
+			#else
+				if (x < xmin) x = std::min(x+nx,xmax);
+				if (x > xmax) x = std::max(x-nx,xmin);
+			#endif	//_WIN32
+				float xold = x*cang/scale + ysang;
+				float yold = x*sang/scale + ycang;
+				(*ret)(ix,iy) = Util::quadri(xold, yold, nx, ny, get_data());
+			}
+		}
 	set_array_offsets(saved_offsets);
 	return ret;
 }
