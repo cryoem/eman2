@@ -1,6 +1,6 @@
 Include("xydata.h")
 
-#EMNumPy = Class("EMAN::EMNumPy", "typeconverter.h")
+EMNumPy = Class("EMAN::EMNumPy", "typeconverter.h")
 
 module_code("\n	import_array();\n        python::numeric::array::set_module_and_type(\"Numeric\", \"ArrayType\");\n\n")
 
