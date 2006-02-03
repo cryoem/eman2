@@ -8,7 +8,7 @@
 #include "ctf.h"
 #include "Assert.h"
 #include "transform.h"
-
+#include <iostream>
 
 #ifndef WIN32
 	#include <sys/param.h>
@@ -21,6 +21,40 @@ using namespace EMAN;
 hid_t HdfIO::mapinfo_type = -1;
 const char *HdfIO::HDF5_SIGNATURE = "\211HDF\r\n\032\n";
 
+herr_t attr_info(hid_t dataset, const char *name, void *opdata)
+{
+	hid_t attr = H5Aopen_name(dataset, name);
+	float value_float = 0.0f;
+	int value_int = 0;
+	string value_string = "";
+	char * tmp_string = new char[1024];
+	Dict *dict = (Dict *) opdata;
+
+	if (attr >= 0) {
+		hid_t atype = H5Aget_type(attr);
+		if (H5Tget_class(atype) == H5T_FLOAT) {
+			H5Aread(attr, atype, &value_float);
+			(*dict)[name] = value_float;
+		}
+		else if(H5Tget_class(atype) == H5T_INTEGER) {
+			H5Aread(attr, atype, &value_int);
+			(*dict)[name] = value_int;
+		}
+		else if(H5Tget_class(atype) == H5T_STRING) {
+			H5Aread(attr, atype, tmp_string);
+			value_string = tmp_string;
+			(*dict)[name] = value_string;
+		}
+		else {
+			LOGERR("can only handle float/int/string parameters in HDF attr_info()");
+			exit(1);
+		}
+		H5Tclose(atype);
+		H5Aclose(attr);
+	}
+	
+	return 0;
+}
 
 HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
@@ -135,36 +169,21 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
+	set_dataset(image_index);
+	int err = 0;
+	if (cur_dataset < 0) {
+		err = 1;
+	}
+	else {
+		err = H5Aiterate(cur_dataset, 0, attr_info, &dict);
+		if (err < 0) {
+			err = 1;
+		}
+	}
+
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;
-
-	dict["apix_x"] = read_float_attr(image_index, "apix_x");
-	dict["apix_y"] = read_float_attr(image_index, "apix_y");
-	dict["apix_z"] = read_float_attr(image_index, "apix_z");
-
-	dict["origin_row"] = read_float_attr(image_index, "origin_row");
-	dict["origin_col"] = read_float_attr(image_index, "origin_col");
-	dict["origin_sec"] = read_float_attr(image_index, "origin_sec");
-
-	dict["minimum"] = read_float_attr(image_index, "minimum");
-	dict["maximum"] = read_float_attr(image_index, "maximum");
-	dict["mean"] = read_float_attr(image_index, "mean");
-	dict["sigma"] = read_float_attr(image_index, "sigma");
-
-	dict["micrograph_id"] = read_string_attr(image_index, "micrograph_id");
-
-	dict["particle_center_x"] = read_float_attr(image_index, "particle_center_x");
-	dict["particle_center_y"] = read_float_attr(image_index, "particle_center_y");
-
-	dict["center_x"] = read_float_attr(image_index, "center_x");
-	dict["center_y"] = read_float_attr(image_index, "center_y");
-
-	dict["score"] = read_float_attr(image_index, "score");
-	dict["good"] = read_int_attr(image_index, "good");
-
-    string eulerstr = read_string_attr(image_index, "orientation_convention");
-    dict["orientation_convention"] = eulerstr;
 
     Dict euler_angles;
     read_euler_angles(euler_angles, image_index);
@@ -173,7 +192,7 @@ int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
     for (size_t i = 0; i < euler_names.size(); i++) {
         dict[euler_names[i]] = euler_angles[euler_names[i]];
     }
-    
+   
 	dict["datatype"] = EMUtil::EM_FLOAT;
 	EXITFUNC;
 	return 0;
@@ -279,52 +298,58 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area,
 	create_cur_dataset(image_index, nx, ny, nz);
 	Assert(cur_dataset >= 0);
 	
-	write_int_attr(image_index, "nx", nx);
-	write_int_attr(image_index, "ny", ny);
-	write_int_attr(image_index, "nz", nz);
+	vector<string> keys = dict.keys();
+	vector<string>::const_iterator iter;
+	for (iter = keys.begin(); iter != keys.end(); iter++) {
+		//handle special case for euler anglers
+		if(*iter == "orientation_convention") {	
+			string eulerstr = (const char*) dict["orientation_convention"];
+        	write_string_attr(image_index, "orientation_convention", eulerstr);
 
-	write_float_attr_from_dict(image_index, "apix_x", dict);
-	write_float_attr_from_dict(image_index, "apix_y", dict);
-	write_float_attr_from_dict(image_index, "apix_z", dict);
+        	vector<string> euler_names = EMUtil::get_euler_names(eulerstr);
+        	Dict euler_dict;
+        	for (size_t i = 0; i < euler_names.size(); i++) {
+            	euler_dict[euler_names[i]] = dict[euler_names[i]];
+        	}
 
-	write_float_attr_from_dict(image_index, "origin_row", dict);
-	write_float_attr_from_dict(image_index, "origin_col", dict);
-	write_float_attr_from_dict(image_index, "origin_sec", dict);
-
-	write_float_attr_from_dict(image_index, "minimum", dict);
-	write_float_attr_from_dict(image_index, "maximum", dict);
-	write_float_attr_from_dict(image_index, "mean", dict);
-	write_float_attr_from_dict(image_index, "sigma", dict);
-
-	if (dict.has_key("micrograph_id")) {
-		write_string_attr(image_index, "micrograph_id",
-						  (const char *) dict["micrograph_id"]);
+        	write_euler_angles(euler_dict, image_index);
+		}
+		//micrograph_id should save as string
+		else if(*iter == "micrograph_id") {	
+			write_string_attr(image_index, "micrograph_id", (const char *) dict["micrograph_id"]);
+		}
+		//handle normal attributes
+		else {
+			EMObject attr_val = dict[*iter];
+			//string val_type = EMObject::get_object_type_name(attr_val.get_type());
+			EMObject::ObjectType t = attr_val.get_type();
+			switch(t) {
+				case EMObject::INT:
+					write_int_attr(image_index, *iter, attr_val);
+					break;
+				case EMObject::FLOAT:
+				case EMObject::DOUBLE:
+					write_float_attr(image_index, *iter, attr_val);
+					break;
+				case EMObject::STRING:
+					write_string_attr(image_index, *iter, attr_val.to_str());
+					break;
+				case EMObject::EMDATA:
+				case EMObject::XYDATA:
+				case EMObject::FLOATARRAY:
+				case EMObject::STRINGARRAY:
+					throw NotExistingObjectException("EMObject", "unsupported type");
+					break;
+				case EMObject::UNKNOWN:
+					std::cout << "Type::UNKNOWN the error attribute is: " << *iter << std::endl;
+					throw NotExistingObjectException("EMObject", "unsupported type");
+					break;
+				default:
+					throw NotExistingObjectException("EMObject", "unsupported type");
+			}
+		}
 	}
-
-	write_float_attr_from_dict(image_index, "particle_center_x", dict);
-	write_float_attr_from_dict(image_index, "particle_center_y", dict);
-
-	write_float_attr_from_dict(image_index, "center_x", dict);
-	write_float_attr_from_dict(image_index, "center_y", dict);
-	write_float_attr_from_dict(image_index, "score", dict);
-
-	if (dict.has_key("good")) {
-		write_int_attr(image_index, "good", dict["good"]);
-	}
-
-	if (dict.has_key("orientation_convention")) {
-        string eulerstr = (const char*) dict["orientation_convention"];
-        write_string_attr(image_index, "orientation_convention", eulerstr);
-
-        vector<string> euler_names = EMUtil::get_euler_names(eulerstr);
-        Dict euler_dict;
-        for (size_t i = 0; i < euler_names.size(); i++) {
-            euler_dict[euler_names[i]] = dict[euler_names[i]];
-        }
-
-        write_euler_angles(euler_dict, image_index);
-    }
-
+	
     
 	//flush();
 	close_cur_dataset();
@@ -852,30 +877,6 @@ int HdfIO::create_compound_attr(int image_index, const string & attr_name)
 
 	H5Tclose(datatype);
 	H5Sclose(dataspace);
-	return 0;
-}
-
-herr_t attr_info(hid_t dataset, const char *name, void *opdata)
-{
-	hid_t attr = H5Aopen_name(dataset, name);
-	float value = 0;
-	Dict *dict = (Dict *) opdata;
-
-	if (attr >= 0) {
-		hid_t atype = H5Aget_type(attr);
-		if (H5Tget_class(atype) == H5T_FLOAT) {
-			H5Aread(attr, H5T_NATIVE_FLOAT, &value);
-			(*dict)[name] = value;
-		}
-		else {
-			LOGERR("can only handle float parameters in HDF attr_info()");
-			exit(1);
-		}
-		H5Tclose(atype);
-		H5Aclose(attr);
-	}
-
-
 	return 0;
 }
 
