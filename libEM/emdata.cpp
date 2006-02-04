@@ -1003,8 +1003,7 @@ EMData* EMData::pad_fft(int npad) {
 		newimg->to_zero();
 		newimg->set_fftpad(true);
 		newimg->set_attr("npad", npad);
-		if (offset == 1)
-			newimg->set_fftodd(true);
+		if (offset == 1) newimg->set_fftodd(true);
 		for (int iz = 0; iz < nz; iz++) {
 			for (int iy = 0; iy < ny; iy++) {
 				memcpy(&(*newimg)(0,iy,iz), &(*this)(0,iy,iz), bytes);
@@ -7621,18 +7620,13 @@ EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	res->set_shuffled(true);
 	return res;
 }
-
 #define  fint(i,j,k)  fint[(i-1) + ((j-1) + (k-1)*ny)*lsd]
 #define  fout(i,j,k)  fout[(i-1) + ((j-1) + (k-1)*nyn)*lsdn]
 EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
 	int i, j, k;
-	/* The following are the sample code to get your parameters. Then
-	// go through the image data pixel.
-	nx  = image->get_xsize();
-	ny  = image->get_ysize();
-	nz  = image->get_zsize();*/
+
 	if(ny > 1) {
 	  nyn = nyni;
 	  if(nz > 1) {
@@ -7643,33 +7637,26 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	} else {
 	  nyn = 1; nzn = 1;
 	}
+	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
 	lsd = nx+ 2 -nx%2;
 	lsdn = nxn+ 2 -nxn%2;
-//  do out of place ft, do not need image anymore
+//  do out of place ft
         EMData *temp_ft = do_fft();
-
 	EMData *ret = new EMData();
-
 	ret->set_size(lsdn, nyn, nzn);
 	ret->to_zero();
 	float *fout = ret->get_data();
 	float *fint = temp_ft->get_data();
-/*	float *data = image->get_data();
-	int size = nx*ny*nz;
-	for (int i = 0; i < size; i++) {
-		if (data[i] <= nxn && data[i] >= nyn) {
-			fout[i] = 0.0;
-		} else {
-		fout[i]=1.0;
-		}
-	}*/
-	//  Now need separate code for 1D, 2D and 3D
 //  TO KEEP THE EXACT VALUES ON THE PREVIOUS GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/sqrt(2.0f);
 	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	for (i = 0; i < lsd*ny*nz; i++)  fout[i] = fint[i];
+/*	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-nx; iny = nyn - ny; inz = nzn - nz;
+	cout << "  " <<nx<<"  " <<ny<<" ol " <<nz<<endl;
+	cout << "  " <<nxn<<"  " <<nyn<<" ne " <<nzn<<endl;
+	cout << "  " <<inx<<"  " <<iny<<" in " <<inz<<endl;
 	for (k=1; k<=nz/2+1; k++) {
 	  for (j=1; j<=ny/2+1; j++) {
 	    for (i=1; i<=lsd; i++) {
@@ -7677,55 +7664,69 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	    }
 	  }
 	}
-	for (k=1; k<=nz/2+1; k++) {
-	  for (j=ny/2+2+iny; j<=nyn; j++) {
-	    for (i=1; i<=lsd; i++) {
-	      fout(i,j,k)=fint(i,j-iny,k);
+	if(nyn>1) {
+	cout << "  " <<nxn<<"  " <<nyn<<" A " <<nzn<<endl;
+	 for (k=1; k<=nz/2+1; k++) {
+	   for (j=ny/2+2+iny; j<=nyn; j++) {
+	     for (i=1; i<=lsd; i++) {
+	       fout(i,j,k)=fint(i,j-iny,k);
+	     }
+	   }
+	 }
+	 if(nzn>1) {
+	cout << "  " <<nxn<<"  " <<nyn<<" B " <<nzn<<endl;
+	  for (k=nz/2+2+inz; k<=nzn; k++) {
+	    for (j=1; j<=ny/2+1; j++) {
+	      for (i=1; i<=lsd; i++) {
+	        fout(i,j,k)=fint(i,j,k-inz);
+	      }
+	    }
+	    for (j=ny/2+2+iny; j<=nyn; j++) {
+	      for (i=1; i<=lsd; i++) {
+	        fout(i,j,k)=fint(i,j-iny,k-inz);
+	      }
 	    }
 	  }
-	}
-	for (k=nz/2+2+inz; k<=nzn; k++) {
-	  for (j=1; j<=ny/2+1; j++) {
-	    for (i=1; i<=lsd; i++) {
-	      fout(i,j,k)=fint(i,j,k-inz);
-	    }
-	  }
-	}
-	for (k=nz/2+2+inz; k<=nzn; k++) {
-	  for (j=ny/2+2+iny; j<=nyn; j++) {
-	    for (i=1; i<=lsd; i++) {
-	      fout(i,j,k)=fint(i,j-iny,k-inz);
-	    }
-	  }
+	 }
 	}
 //       WEIGHTING FACTOR USED FOR EVEN NSAM. REQUIRED SINCE ADDING ZERO FOR
 //       INTERPOLATION WILL INTRODUCE A COMPLEX CONJUGATE FOR NSAM/2'TH
 //       ELEMENT.
+	cout << "  " <<nxn<<"  " <<nyn<<" D " <<inx<<endl;
         if(nx%2 == 0 && inx !=0) {
+	cout << "  " <<nxn<<"  " <<nyn<<" D " <<inx<<endl;
 	  for (k=1; k<=nzn; k++) {
 	    for (j=1; j<=nyn; j++) {
 	      fout(nx+1,j,k) *= sq2;
 	      fout(nx+2,j,k) *= sq2;
 	    }
 	  }
-	  for (k=1; k<=nzn; k++) {
-	    for (i=1; i<=lsd; i++) {
-	      fout(i,ny/2+1+iny,k) *= sq2;
-	      fout(i,ny/2+1,k) *= sq2;
+	  if(nyn>1) {
+	   for (k=1; k<=nzn; k++) {
+	     for (i=1; i<=lsd; i++) {
+	       fout(i,ny/2+1+iny,k) = sq2*fout(i,ny/2+1,k);
+	       fout(i,ny/2+1,k) *= sq2;
+	     }
+	   }
+	   if(nzn>1) {
+	    for (j=1; j<=nyn; j++) {
+	      for (i=1; i<=lsd; i++) {
+	        fout(i,j,nz/2+1+inz) = sq2*fout(i,j,nz/2+1);
+	        fout(i,j,nz/2+1) *= sq2;
+	      }
 	    }
+	   }
 	  }
-	  for (j=1; j<=nyn; j++) {
-	    for (i=1; i<=lsd; i++) {
-	      fout(i,j,nz/2+1+inz) *= sq2;
-	      fout(i,j,nz/2+1) *= sq2;
-	    }
-	  }
-	}
+	}*/
 	ret->set_complex(true);
+	if(nyn==1 && nzn==1) set_complex_x(true);
+	ret->set_fftpad(true);
+	ret->set_attr("npad", 1);
+	if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
 	ret->do_ift_inplace();
 	ret->postift_depad_corner_inplace();
 	ret->done_data();
-	return ret;  
+	return ret;
 }
 #undef fint
 #undef fout
