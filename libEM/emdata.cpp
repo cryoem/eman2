@@ -5047,6 +5047,9 @@ void EMData::to_one()
 	if (is_complex()) {
 		set_ri(true);
 	}
+	else {
+		set_ri(false);
+	}
 
 	for (int i = 0; i < nx * ny * nz; i++) {
 		rdata[i] = 1.0f;
