@@ -3781,6 +3781,13 @@ void EMData::to_zero()
 {
 	ENTERFUNC;
 
+	if (is_complex()) {
+		set_ri(true);
+	}
+	else {
+		set_ri(false);
+	}
+
 	memset(rdata, 0, nx * ny * nz * sizeof(float));
 	done_data();
 	EXITFUNC;
