@@ -2117,8 +2117,13 @@ namespace EMAN
 
 	inline bool EMData::is_complex() const
 	{
-		if (int(attr_dict["is_complex"])) {
-			return true;
+		if(attr_dict.has_key("is_complex")) {
+			if (int(attr_dict["is_complex"])) {
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		else {
 			return false;
@@ -2132,8 +2137,13 @@ namespace EMAN
 
 	inline bool EMData::is_complex_x() const
 	{
-		if (int(attr_dict["is_complex_x"])) {
-			return true;
+		if(attr_dict.has_key("is_complex_x")) {
+			if (int(attr_dict["is_complex_x"])) {
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		else {
 			return false;
@@ -2141,8 +2151,13 @@ namespace EMAN
 	}
 	inline bool EMData::is_ri() const
 	{
-		if (int(attr_dict["is_complex_ri"])) {
-			return true;	
+		if(attr_dict.has_key("is_complex_ri")) {
+			if (int(attr_dict["is_complex_ri"])) {
+				return true;	
+			}
+			else {
+				return false;
+			}
 		}
 		else {
 			return false;
