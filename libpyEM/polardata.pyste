@@ -1,0 +1,4 @@
+Include("polardata.h")
+Include("emdata.h")
+
+PolarData = Class("EMAN::PolarData", "polardata.h")

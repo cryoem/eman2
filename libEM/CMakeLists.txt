@@ -48,6 +48,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     fourierfilter.cpp
     rsconvolution.cpp
     tflm.cpp
+    polardata.cpp
     )
 
 IF(WIN32)
