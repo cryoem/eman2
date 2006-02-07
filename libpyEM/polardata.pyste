@@ -1,4 +1,5 @@
 Include("polardata.h")
 Include("emdata.h")
 
+UnevenMatrix = Class("EMAN::UnevenMatrix", "polardata.h")
 PolarData = Class("EMAN::PolarData", "polardata.h")

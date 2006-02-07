@@ -17,7 +17,7 @@ namespace EMAN
 	class UnevenMatrix
 	{
 	public:
-		UnevenMatrix() {}
+		UnevenMatrix() {printf("Welcome to UnevenMatrix\n");}
 		virtual ~UnevenMatrix() {
 			if(data) {
 				delete data;
@@ -46,6 +46,10 @@ namespace EMAN
 			return desc_data[y].x1 - 1;
 		}
 		
+		void print_UnevenMatrix() {
+			printf("print function in UnevenMatrix\n");
+		} 
+		
 	protected:
 		/** struct to define x dimension size for each y, x0 is inclusive, 
 		 * x1 is one after the maximum, [x0, x1), so the corresponding x dim size is (x1-x0) */
@@ -69,7 +73,7 @@ namespace EMAN
 	class PolarData : public UnevenMatrix
 	{
 	public:
-		PolarData() {}
+		PolarData() {printf("Welcome to PolarData class... \n");}
 		
 		/** Construct a PolarData object from a EMData
 		 * @param em   the EMData object to be converted
@@ -87,7 +91,6 @@ namespace EMAN
 		
 		/** a testing function */
 		void print_polar() {
-			printf("Welcome to PolarData class... \n");
 			printf("PolarData class is a specialized image class for storing the \n");
 			printf("results of a transform from EMData to polar coordinates, currently \n");
 			printf("support 2D only. Data on x dimension may be variable size, which \n");
