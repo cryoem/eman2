@@ -1,6 +1,6 @@
-
- $Id$
-
+/**
+ * $Id$
+ */
  
 #ifndef eman__polardata_h__
 #define eman__polardata_h__
