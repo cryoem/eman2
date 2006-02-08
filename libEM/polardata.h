@@ -1,5 +1,5 @@
 /**
- * $Id$
+ * $Id$, $Revision$, $Date$, $Author$
  */
  
 #ifndef eman__polardata_h__
