@@ -12,4 +12,3 @@ PolarData::PolarData(EMData * em, int xcen, int ycen)
  	xcen = 0;
  	ycen = 0;
 }
-//$Id$
