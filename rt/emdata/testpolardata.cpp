@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 #include "emdata.h"
 #include "polardata.h"
 
@@ -11,6 +14,10 @@ void test_polar_data() {
 	
 	PolarData * pd = new PolarData();
 	pd->print_polar();
+	
+	UnevenMatrix * um = pd;
+	
+	delete um;
 	
 	cout << "Leave test_polar_data() function..." << endl;
 }
