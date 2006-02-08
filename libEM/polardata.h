@@ -17,12 +17,15 @@ namespace EMAN
 	class UnevenMatrix
 	{
 	public:
-		UnevenMatrix() {printf("Welcome to UnevenMatrix\n");}
+		UnevenMatrix() : data(0) {
+			printf("Welcome to UnevenMatrix\n");
+		}
 		virtual ~UnevenMatrix() {
 			if(data) {
 				delete data;
 				data = 0;
 			}
+			printf("Destructor of UnevenMatrix...\n");
 		}
 		
 		/** get the x dim size for a given y 
@@ -83,10 +86,7 @@ namespace EMAN
 		PolarData(EMData * em, int xcen, int ycen);
 		
 		virtual ~PolarData() {
-			if(data) {
-				delete data;
-				data = 0;
-			}
+			printf("Destructor of PolarData...\n");
 		}
 		
 		/** a testing function */
