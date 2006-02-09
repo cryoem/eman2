@@ -7726,6 +7726,14 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	ret->do_ift_inplace();
 	ret->postift_depad_corner_inplace();
 	ret->done_data();
+	
+	Dict d1 = temp_ft->get_attr_dict();
+	Dict d2 = ret->get_attr_dict();
+	printf("-----------------Attribute Dict for temp_ft--------------\n");
+	EMUtil::dump_dict(d1);
+	printf("-----------------Attribute Dict for ret--------------\n");
+	EMUtil::dump_dict(d2);
+	
 	return ret;
 }
 #undef fint
