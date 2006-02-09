@@ -7719,10 +7719,10 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	  }
 	}*/
 	ret->set_complex(true);
-	if(nyn==1 && nzn==1) set_complex_x(true);
+	set_ri(1);
 	ret->set_fftpad(true);
-	ret->set_attr("npad", 1);
-	if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
+	//ret->set_attr("npad", 1);
+	set_fftodd(false);//if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
 	ret->do_ift_inplace();
 	ret->postift_depad_corner_inplace();
 	ret->done_data();
