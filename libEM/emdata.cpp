@@ -7651,12 +7651,9 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/sqrt(2.0f);
 	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	for (i = 0; i < lsd*ny*nz; i++)  fout[i] = fint[i];
-/*	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	//for (i = 0; i < lsd*ny*nz; i++)  fout[i] = fint[i];
+	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-nx; iny = nyn - ny; inz = nzn - nz;
-	cout << "  " <<nx<<"  " <<ny<<" ol " <<nz<<endl;
-	cout << "  " <<nxn<<"  " <<nyn<<" ne " <<nzn<<endl;
-	cout << "  " <<inx<<"  " <<iny<<" in " <<inz<<endl;
 	for (k=1; k<=nz/2+1; k++) {
 	  for (j=1; j<=ny/2+1; j++) {
 	    for (i=1; i<=lsd; i++) {
@@ -7665,7 +7662,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	  }
 	}
 	if(nyn>1) {
-	cout << "  " <<nxn<<"  " <<nyn<<" A " <<nzn<<endl;
+	//cout << "  " <<nxn<<"  " <<nyn<<" A " <<nzn<<endl;
 	 for (k=1; k<=nz/2+1; k++) {
 	   for (j=ny/2+2+iny; j<=nyn; j++) {
 	     for (i=1; i<=lsd; i++) {
@@ -7674,7 +7671,6 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	   }
 	 }
 	 if(nzn>1) {
-	cout << "  " <<nxn<<"  " <<nyn<<" B " <<nzn<<endl;
 	  for (k=nz/2+2+inz; k<=nzn; k++) {
 	    for (j=1; j<=ny/2+1; j++) {
 	      for (i=1; i<=lsd; i++) {
@@ -7692,9 +7688,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 //       WEIGHTING FACTOR USED FOR EVEN NSAM. REQUIRED SINCE ADDING ZERO FOR
 //       INTERPOLATION WILL INTRODUCE A COMPLEX CONJUGATE FOR NSAM/2'TH
 //       ELEMENT.
-	cout << "  " <<nxn<<"  " <<nyn<<" D " <<inx<<endl;
         if(nx%2 == 0 && inx !=0) {
-	cout << "  " <<nxn<<"  " <<nyn<<" D " <<inx<<endl;
 	  for (k=1; k<=nzn; k++) {
 	    for (j=1; j<=nyn; j++) {
 	      fout(nx+1,j,k) *= sq2;
@@ -7717,22 +7711,22 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	    }
 	   }
 	  }
-	}*/
+	}
 	ret->set_complex(true);
-	set_ri(1);
+	ret->set_ri(1);
 	ret->set_fftpad(true);
-	//ret->set_attr("npad", 1);
-	set_fftodd(false);//if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
+	ret->set_attr("npad", 1);
+	if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
 	ret->do_ift_inplace();
 	ret->postift_depad_corner_inplace();
 	ret->done_data();
 	
-	Dict d1 = temp_ft->get_attr_dict();
+	/*Dict d1 = temp_ft->get_attr_dict();
 	Dict d2 = ret->get_attr_dict();
 	printf("-----------------Attribute Dict for temp_ft--------------\n");
 	EMUtil::dump_dict(d1);
 	printf("-----------------Attribute Dict for ret--------------\n");
-	EMUtil::dump_dict(d2);
+	EMUtil::dump_dict(d2);*/
 	
 	return ret;
 }
