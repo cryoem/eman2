@@ -20,7 +20,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e.get_attr("apix_y"), 1.0)
         self.assertEqual(e.get_attr("apix_z"), 1.0)
         self.assertEqual(e.get_attr("is_complex"), 0)
-        self.assertEqual(e.get_attr("is_ri"), 0)
+        self.assertEqual(e.get_attr("is_complex_ri"), 1)
         self.assertEqual(e.get_xsize(), 0)
         self.assertEqual(e.get_ysize(), 0)
         self.assertEqual(e.get_zsize(), 0) 

@@ -161,7 +161,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 
 	if (is_complex_mode()) {
 		dict["is_complex"] = 1;
-		dict["is_ri"] = 1;
+		dict["is_complex_ri"] = 1;
 	}
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -238,7 +238,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nz = dict["nz"];
-	is_ri =  dict["is_ri"];
+	is_ri =  dict["is_complex_ri"];
 
 	bool opposite_endian = false;
 	

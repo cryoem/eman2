@@ -228,7 +228,7 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 		dict["is_fftodd"] = 1;
 	else dict["is_fftodd"] = 0;
 	// complex spider files are always ri, so we just set it unconditionally
-	dict["is_ri"] = 1;
+	dict["is_complex_ri"] = 1;
 
 	if (offset != 0) {
 		if( cur_image_hed )

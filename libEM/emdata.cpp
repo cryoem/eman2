@@ -43,7 +43,7 @@ EMData::EMData()
 
 	attr_dict["is_complex"] = int(0);
 	attr_dict["is_complex_x"] = int(0);
-	attr_dict["is_ri"] = int(1);
+	attr_dict["is_complex_ri"] = int(1);
 
 	changecount=0;
 
@@ -108,7 +108,7 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				if (1 == int(attr_dict["is_fftodd"]))
 					set_fftodd(true);
 			}
-			if ((int) attr_dict["is_ri"] == 1) {
+			if ((int) attr_dict["is_complex_ri"] == 1) {
 				set_ri(true);
 			}
 
@@ -3054,7 +3054,7 @@ void EMData::update_stat()
 	attr_dict["mean_nonzero"] = (float)(mean_nonzero);
 	attr_dict["sigma_nonzero"] = (float)(sigma_nonzero);
 	attr_dict["is_complex"] = (int) is_complex();
-	attr_dict["is_ri"] = (int) is_ri();
+	attr_dict["is_complex_ri"] = (int) is_ri();
 
 	flags &= ~EMDATA_NEEDUPD;
 	EXITFUNC;
