@@ -2021,7 +2021,7 @@ class TestEMData(unittest.TestCase):
         e.set_flipped(True)
         self.assertEqual(e.is_flipped(), True)
         
-        self.assertEqual(e.is_ri(), False)
+        self.assertEqual(e.is_ri(), True)
         e4 = e.do_fft()
         self.assertEqual(e4.is_ri(), True)
         e4.set_ri(False)
@@ -2143,7 +2143,7 @@ class TestEMData(unittest.TestCase):
     def test_rot_scale_trans2D(self):
         """test rot_scale_trans2D() function ................"""
         e = EMData()
-        e.set_size(32,32,32)
+        e.set_size(32,32,1)
         e.process('testimage.noise.uniform.rand')
         e2 = e.rot_scale_trans2D(0.12)    #test default argument
         e3 = e.rot_scale_trans2D(0.12, 2.0, 0.2, 0.3)    #test non-default argument
@@ -2156,6 +2156,16 @@ class TestEMData(unittest.TestCase):
             e4.rot_scale_trans2D(0.12)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+            
+        #this function can not apply to 3D image
+        e5 = EMData()
+        e5.set_size(32,32,32)
+        self.assertRaises( RuntimeError, e5.rot_scale_trans2D, 0.12)
+        try:
+            e5.rot_scale_trans2D(0.12)
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
             
     def no_test_rotconvtrunc2d_kbi0(self):
         """test rotconvtrunc2d_kbi0() function .............."""
