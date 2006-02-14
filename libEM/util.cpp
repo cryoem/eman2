@@ -526,8 +526,6 @@ void Util::save_data(float x0, float dx, float *y_array,
 	}
 	fclose(out);
 }
-
-
 void Util::spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m) //PRB
 {
 
@@ -917,6 +915,130 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 		}
 	}
 }
+
+
+EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b) //PRB
+{
+   EMData* ImBW = new EMData();
+   ImBW->set_size(Size,Size,1);
+   ImBW->to_zero();
+   
+   int Mid= (Size+1)/2;
+   float tempIm;
+   float x,y;
+
+   for (int ix=(1-Mid);  ix<Mid; ix++){
+        for (int iy=(1-Mid);  iy<Mid; iy++){
+	  x = ix;
+	  y = iy;
+       	  tempIm= (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) ;
+	  (*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
+   	}
+   }
+   ImBW->done_data();
+   ImBW->set_complex(false);
+   ImBW->set_ri(true);
+
+
+   return ImBW;
+}
+
+
+
+EMData *Util::TwoDTestFunck(int Size, float p, float q,  float a, float b) //PRB
+{
+   EMData* ImBWFFT = new EMData();
+   ImBWFFT ->set_size(2*Size,Size,1);
+   ImBWFFT ->to_zero();
+   
+   int Mid= (Size+1)/2;
+   float r,s;
+
+   for (int ir=(1-Mid);  ir<Mid; ir++){
+        for (int is=(1-Mid);  is<Mid; is++){
+	   r = ir;
+	   s = is;
+       	   (*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
+	            exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
+   	}
+   }
+   ImBWFFT->done_data();
+   ImBWFFT->set_complex(true);
+   ImBWFFT->set_ri(true);
+   ImBWFFT->set_shuffled(true);
+   ImBWFFT->set_fftodd(true);
+
+
+   return ImBWFFT;
+}
+   
+  
+
+EMData *Util::TwoDTestFuncProj(int Size, float p, float q,  float a, float b, float alphaDeg) //PRB
+{
+   EMData* pofalpha = new EMData();
+   pofalpha ->set_size(Size,1,1);
+   pofalpha ->to_zero();
+   
+   float alpha =alphaDeg*M_PI/180.0;
+   int Mid= (Size+1)/2;
+   float C=cos(alpha);
+   float S=sin(alpha);
+   float D= sqrt(S*S*b*b + C*C*a*a);
+   float D2 = D*D;
+
+   float P = p * C *a*a/D ;
+   float Q = q * S *b*b/D ;
+
+
+   float Norm0 =  D*sqrt(2*pi);
+   float Norm1 =  exp( .5*(P+Q)*(P+Q)) / Norm0 ;
+   float Norm2 =  exp( .5*(P-Q)*(P-Q)) / Norm0 ;
+   float sD;
+
+   for (int is=(1-Mid);  is<Mid; is++){
+	sD = is/D ;
+ 	(*pofalpha)(is+Mid-1) =  Norm1 * exp(-.5*sD*sD)*cos(sD*(P+Q))
+                         + Norm2 * exp(-.5*sD*sD)*cos(sD*(P-Q));
+   }
+   pofalpha-> done_data();
+   pofalpha-> set_complex(false);
+   pofalpha-> set_ri(true);
+
+
+   return pofalpha;
+}
+
+
+EMData *Util::TwoDTestFuncProjk(int Size, float p, float q,  float a, float b, float alphaDeg)
+{
+   EMData* pofalphak = new EMData();
+   pofalphak ->set_size(2*Size,1,1);
+   pofalphak ->to_zero();
+   
+   float alpha =alphaDeg*M_PI/180.0;
+   int Mid= (Size+1)/2;
+   float C=cos(alpha);
+   float S=sin(alpha);
+   float D= sqrt(S*S*b*b + C*C*a*a);
+
+   float P = p * C *a*a/D ;
+   float Q = q * S *b*b/D ;
+   float vD;
+
+   for (int iv=(1-Mid);  iv<Mid; iv++){
+	vD = iv*D ;
+ 	(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
+   }
+   pofalphak-> done_data();
+   pofalphak-> set_complex(false);
+   pofalphak-> set_ri(true);
+
+
+   return pofalphak;
+}
+ 
+
 
 vector<float>
 Util::voea(float delta, float t1, float t2, float p1, float p2)

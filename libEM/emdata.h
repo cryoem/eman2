@@ -1094,6 +1094,7 @@ namespace EMAN
 		 */
 		void set_rotation(float az, float alt, float phi);
 
+
 		/** Resize 'this' image.
 		 *
 		 * @param nx  x size of this image.
