@@ -144,6 +144,7 @@ vector<float> PolarData::ringwe( vector<int> numr, string mode )
 	return wr;
 }
 
+#ifdef DEBUG
 int PolarData::test_init_desc_data()
 {
 	desc_data[0] = Xdim(0, 10);
@@ -159,3 +160,4 @@ int PolarData::test_init_desc_data()
 	
 	return 0;
 }
+#endif	//DEBUG
