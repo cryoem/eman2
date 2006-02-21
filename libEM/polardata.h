@@ -5,13 +5,17 @@
 #ifndef eman__polardata_h__
 #define eman__polardata_h__
 
-
 #include <map>
+#include <vector>
+#include "log.h"
+#include "exception.h"
 
 using std::map;
+using std::vector; 
 
 namespace EMAN
 {
+	static const int MAXFFT=32768;
 	class EMData;
 	
 	/** a general data structure for a matrix with variable x dim size for different y*/
@@ -30,36 +34,61 @@ namespace EMAN
 		}
 		
 		/** get the x dim size for a given y 
-		 *  @param y the y value for which we need the x dim size 
-		 *  @return the x dim size */
+		 *  @param y int the y value for which we need the x dim size 
+		 *  @return in tthe x dim size */
 		inline int get_xsize(int y) {
-			return desc_data[y].x1 - desc_data[y].x0;
+			int xsize = desc_data[y].x1 - desc_data[y].x0;
+			if( xsize <= 0 ) {
+				throw InvalidValueException(xsize, "xsize <= 0");
+			}
+			else {
+				return xsize;
+			}
 		}
 		
 		/** get the minimal x dim value for a given y 
-		 *  @param y the y value for which we need the corresponding minimal x dim value 
-		 *  @return the minimal x dim value for a given y */
+		 *  @param y int the y value for which we need the corresponding minimal x dim value 
+		 *  @return int the minimal x dim value for a given y */
 		inline int get_xmin(int y) {
 			return desc_data[y].x0;
 		}
 		
 		/** get the maximal x dim value for a given y, note: x1 is one out of the max 
-		 *  @param y the y value for which we need the corresponding maximal x dim value 
-		 *  @return the maximal x dim value for a given y */
+		 *  @param y int the y value for which we need the corresponding maximal x dim value 
+		 *  @return int the maximal x dim value for a given y */
 		inline int get_xmax(int y) {
 			return desc_data[y].x1 - 1;
 		}
 		
+		/**	get the total size of the data block
+		 *  @return int the number of float stored in data */
+		inline int get_size() {
+			return tot_size;
+		}
+
+#ifdef DEBUG
 		void print_UnevenMatrix() {
 			printf("print function in UnevenMatrix\n");
 		} 
-		
+#endif 	//DEBUG
+
 	protected:
+		/** allocation memory for data array
+		 * @return int 
+		 * @exception InvalidValueException if the desc_data map size is zero*/
+		void alloc_data();
+		
 		/** struct to define x dimension size for each y, x0 is inclusive, 
 		 * x1 is one after the maximum, [x0, x1), so the corresponding x dim size is (x1-x0) */
 		struct Xdim {
 			int x0;
 			int x1;
+			Xdim() {}
+			Xdim(int i0, int i1) : x0(i0), x1(i1) {
+				if( x1 <= x0 ) {
+					LOGERR("x dimension error ... x0(%d) > x1(%d)", x0, x1);
+				}
+			}
 		};
 		
 		/** store all data in one dimension float array for cache efficiency, 
@@ -68,6 +97,9 @@ namespace EMAN
 		
 		/** describe for each y, the x dimension's size and range */
 		map< int, Xdim >	desc_data;
+		
+		/** the total size of the data*/
+		int tot_size;
 	};
 	
 	/** a specialized image class for storing the results of a transform 
@@ -84,12 +116,15 @@ namespace EMAN
 		 * @param xcen the x dimension of the center
 		 * @param ycen the y dimension of the center
 		 */
-		PolarData(EMData * em, int xcen, int ycen);
+		PolarData(EMData * image, int xcen, int ycen, string mode);
 		
 		virtual ~PolarData() {
 			printf("Destructor of PolarData...\n");
 		}
 		
+		//EMData * calc_ccf(EMData * em);
+
+#ifdef DEBUG		
 		/** a testing function */
 		void print_polar() {
 			printf("PolarData class is a specialized image class for storing the \n");
@@ -97,10 +132,32 @@ namespace EMAN
 			printf("support 2D only. Data on x dimension may be variable size, which \n");
 			printf("is defined in map< int, Xdim > desc_data\n");
 		}
-	
+		
+		int test_init_desc_data();
+#endif	//DEBUG
+
 	private:
-		/** the weight for each y dimension */
+		/** the ring weights for each radius r */
 		map< int, float >	weight;
+		
+		/** calculate the number of element for each ring
+		 * @param first_ring the ring number for the first ring
+		 * @param last_ring the ring number for the last ring
+		 * @param skip step of ring 
+		 * @param mode half mode('H'/'h') or full mode('F'/'f')
+		 * @return the vector for number of elements of each ring */
+		vector<int> Numrinit(int first_ring, int last_ring, int skip, string mode);
+	
+		/**Returns the smallet power by which 2 has to be raised to obtain an integer kess equal n
+	 	* @param n int
+	 	* @return int */
+		int log2(int n);
+		
+		/** calculate ring weights for rotational alignment 
+		 * @param numr number of element for each ring
+		 * @param mode half mode('H'/'h') or full mode('F'/'f')
+		 * @return vector<float> the weight for each ring */
+		vector<float> ringwe( vector<int> numr, string mode );
 	};
 
 }
