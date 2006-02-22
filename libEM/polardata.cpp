@@ -85,14 +85,14 @@ vector<int> PolarData::Numrinit(int first_ring, int last_ring, int skip, string 
 		numr.push_back(k);
 		jp = int(dpi * k + 0.99999999);
 		ip = (int)pow(2, (double)log2(jp));
-		if ( k+skip <= last_ring && jp > ip+std::floor(ip/2) ) {
+		if ( k+skip <= last_ring && jp > ip+std::floor((double)ip/2) ) {
 #ifdef _WIN32
 			ip = _cpp_min(MAXFFT, 2*ip);
 #else
 			ip = std::min<int>(MAXFFT, 2*ip);
 #endif	//_WIN32
 		}
-		if ( k+skip > last_ring && jp > ip+std::floor(ip/5) ) {
+		if ( k+skip > last_ring && jp > ip+std::floor((double)ip/5) ) {
 #ifdef _WIN32
 			ip = _cpp_min(MAXFFT, 2*ip);	
 #else
