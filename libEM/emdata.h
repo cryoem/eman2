@@ -1717,7 +1717,7 @@ namespace EMAN
 		 *  
 		 *  @return New interpolated up image.
 		 */
-	        EMData* FourInterpol(int nxni, int nyni, int nzni);
+	        EMData* FourInterpol(int nxni, int nyni=0, int nzni=0);
 		
 		/** Symmetrize volume in real space.
 		 *  
