@@ -2354,6 +2354,35 @@ class TestEMData(unittest.TestCase):
         val = e[1,0,0]
         self.assertEqual(val, 1+1j)
 
+    def test_log(self):
+        """test log() arithmatica function for image........."""
+        from math import log
+        e = EMData()
+        e.set_size(2,2,2)
+        e.to_one()
+        coefficient = 6.0
+        e = e*coefficient
+        e1 = e.log()
+        d = e1.get_3dview()
+        for z in range(2):
+            for y in range(2):
+                for x in range(2):
+                    self.assertAlmostEqual( d[z][y][x], log(coefficient))
+                    
+    def test_log10(self):
+        """test log10() arithmatica function for image......."""
+        from math import log10
+        e = EMData()
+        e.set_size(2,2,2)
+        e.to_one()
+        coefficient = 6.0
+        e = e*coefficient
+        e1 = e.log10()
+        d = e1.get_3dview()
+        for z in range(2):
+            for y in range(2):
+                for x in range(2):
+                    self.assertAlmostEqual( d[z][y][x], log10(coefficient))
 
 def test_main():
     test_support.run_unittest(TestEMData)
