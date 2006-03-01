@@ -3536,7 +3536,7 @@ EMData * EMData::log()
 			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
 		}
 		else {
-			if(!rdata[i]) {	//do nothing with pixel has value zero 
+			if(rdata[i]) {	//do nothing with pixel has value zero 
 				new_data[i] = std::log(rdata[i]);
 			}
 		}
@@ -3564,7 +3564,7 @@ EMData * EMData::log10()
 			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
 		}
 		else {
-			if(!rdata[i]) {	//do nothing with pixel has value zero 
+			if(rdata[i]) {	//do nothing with pixel has value zero 
 				new_data[i] = std::log10(rdata[i]);
 			}
 		}
