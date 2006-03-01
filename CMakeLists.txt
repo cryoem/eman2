@@ -346,3 +346,55 @@ ENDIF(ENABLE_PYTHON)
 
 
 MARK_AS_ADVANCED(FORCE CMAKE_BACKWARDS_COMPATIBILITY)
+
+
+ADD_CUSTOM_COMMAND(
+	TARGET unittest
+	POST_BUILD
+	COMMAND python 
+	ARGS ${EMAN_INSTALL_PREFIX}/test/rt/rt.py
+)
+
+#set the list of unit test to run
+#
+SET (TESTS 
+	test_vec 
+	test_utils 
+	test_typeconverter 
+	test_transform 
+	test_misc 
+	test_imageio
+	test_emdata
+	test_processor
+	test_cmp
+	test_aligner
+	test_averager
+	)
+
+#add the custom commands for each unit test program
+#
+FOREACH (TEST ${TESTS})
+
+	ADD_CUSTOM_COMMAND(
+        OUTPUT ${TEST}.PRINT_SPACE
+        COMMAND ${CMAKE_COMMAND} ARGS -E echo ""
+	)
+	
+	#this is the trick to make the target run every time, DoUnitTest suppose is a file never been built
+	#
+	ADD_CUSTOM_COMMAND(
+        OUTPUT ${TEST}.DoUnitTest
+		COMMAND ${CMAKE_COMMAND} ARGS -E time ${EMAN_INSTALL_PREFIX}/test/rt/${TEST}.py
+		DEPENDS	${TEST}.PRINT_SPACE
+	)
+	
+	#build a list of all the results
+	SET( TEST_RESULTS ${TEST_RESULTS}
+		${TEST}.DoUnitTest
+	)
+
+ENDFOREACH (TEST)
+
+ADD_CUSTOM_TARGET( test
+	DEPENDS	${TEST_RESULTS}
+)
