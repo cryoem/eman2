@@ -14,9 +14,12 @@ void test_polar_data() {
 	
 	PolarData * pd = new PolarData();
 	//pd->print_polar();
+	
+#ifdef DEBUG
 	pd->test_init_desc_data();
 	cout << "The total size of data block = " << pd->get_size() << endl;
-	
+#endif
+
 	UnevenMatrix * um = pd;
 	
 	delete um;
