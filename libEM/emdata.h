@@ -1621,10 +1621,24 @@ namespace EMAN
 		
 		/** return a image to the power of n
 		 * @param n	the power of this simage
-		 * @return a image which is the nth power of thi simage
+		 * @return a image which is the nth power of this image
 		 * @exception InvalidValueException n must be >= 0
 		 */
 		EMData * power(int n);		
+		
+		/** return natural logarithm image for a image 
+		 * @return a image which is the natural logarithm of this image
+		 * @exception InvalidValueException pixel value must be >= 0
+		 * @exception ImageFormatException real image only
+		 */
+		EMData * log();
+		
+		/** return base 10 logarithm image for a image 
+		 * @return a image which is the base 10 logarithm of this image
+		 * @exception InvalidValueException pixel value must be >= 0
+		 * @exception ImageFormatException real image only
+		 */
+		EMData * log10();
 		
 		/** return real part of a complex image as a real image format,
 		 * if this image is a real image, return a copy of this image.

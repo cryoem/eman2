@@ -3498,6 +3498,8 @@ EMData & EMData::operator/=(const EMData & em)
 
 EMData * EMData::power(int n)
 {
+	ENTERFUNC;
+	
 	if( n<0 ) {
 		throw InvalidValueException(n, "the power of negative integer not supported.");
 	}
@@ -3514,6 +3516,64 @@ EMData * EMData::power(int n)
 
 	r->update_stat();
 	return r;
+	
+	EXITFUNC;
+}
+
+EMData * EMData::log()
+{
+	ENTERFUNC;
+	
+	if (is_complex()) {
+		throw ImageFormatException("real image only");
+	}
+	
+	EMData * r = this->copy();
+	float * new_data = r->get_data();
+	size_t size = nx * ny * nz;
+	for (size_t i = 0; i < size; ++i) {
+		if(rdata[i] < 0) {	
+			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
+		}
+		else {
+			if(!rdata[i]) {	//do nothing with pixel has value zero 
+				new_data[i] = std::log(rdata[i]);
+			}
+		}
+	}
+	
+	r->update_stat();
+	return r;
+	
+	EXITFUNC;
+}
+
+EMData * EMData::log10()
+{
+	ENTERFUNC;
+	
+	if (is_complex()) {
+		throw ImageFormatException("real image only");
+	}
+	
+	EMData * r = this->copy();
+	float * new_data = r->get_data();
+	size_t size = nx * ny * nz;
+	for (size_t i = 0; i < size; ++i) {
+		if(rdata[i] < 0) {	
+			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
+		}
+		else {
+			if(!rdata[i]) {	//do nothing with pixel has value zero 
+				new_data[i] = std::log10(rdata[i]);
+			}
+		}
+	}
+	
+	r->update_stat();
+	return r;
+	
+	EXITFUNC;
 }
 
 EMData * EMAN::operator+(const EMData & em, float n)
