@@ -18,13 +18,12 @@ BOOST_PYTHON_MODULE(libpyPolarData2)
         .def("get_xsize", &EMAN::UnevenMatrix::get_xsize)
         .def("get_xmin", &EMAN::UnevenMatrix::get_xmin)
         .def("get_xmax", &EMAN::UnevenMatrix::get_xmax)
-        //.def("print_UnevenMatrix", &EMAN::UnevenMatrix::print_UnevenMatrix)
+        .def("get_size", &EMAN::UnevenMatrix::get_size)
     ;
 
     class_< EMAN::PolarData, bases< EMAN::UnevenMatrix >  >("PolarData", init<  >())
         .def(init< const EMAN::PolarData& >())
-        .def(init< EMAN::EMData*, int, int, string >())
-        //.def("print_polar", &EMAN::PolarData::print_polar)
+        .def(init< EMAN::EMData*, int, int, std::string >())
     ;
 
 }
