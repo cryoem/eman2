@@ -26,10 +26,10 @@ def compare(vec):
 	
 #	print vec,pdim
 #	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
-	a=cmp_target.get_rotated_clip((vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2),Rotation(*vec[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
+	a=cmp_target.get_rotated_clip(Transform3D([vec[3]+tdim[0]/2,vec[4]+tdim[1]/2,vec[5]+tdim[2]/2],*vec[0:3]),pdim,1.0)
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
-	return -cmp_probe.cmp("dot",{"with":EMObject(a)})
+	return -cmp_probe.cmp("dot",a,{})
 
 def compare2(vec):
 	"""Given an (alt,az,phi,x,y,z) vector, calculate the similarity
@@ -38,10 +38,11 @@ def compare2(vec):
 	
 #	print vec,pdim
 #	print "\n%6.3f %6.3f %6.3f    %5.1f %5.1f %5.1f"%(vec[0],vec[1],vec[2],vec[3],vec[4],vec[5])
-	a=cmp_target.get_rotated_clip((tdim[0]/2,tdim[1]/2,vec[1]+tdim[2]/2),Rotation(c2alt,0,vec[0],Rotation.EulerType.EMAN),pdim,1.0)
+#	a=cmp_target.get_rotated_clip((tdim[0]/2,tdim[1]/2,vec[1]+tdim[2]/2),Rotation(c2alt,0,vec[0],Rotation.EulerType.EMAN),pdim,1.0)
+	a=cmp_target.get_rotated_clip(Transform3D([tdim[0]/2,tdim[1]/2,vec[1]+tdim[2]/2],c2alt,0,vec[0]),pdim,1.0)
 #	a.write_image("clip.mrc")
 #	os.system("v2 clip.mrc")
-	return -cmp_probe.cmp("dot",{"with":EMObject(a)})
+	return -cmp_probe.cmp("dot",a,{})
 	
 def main():
 	global tdim,pdim
@@ -98,7 +99,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	sum.to_zero()
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
-			prr=probeclip.copy(0)
+			prr=probeclip.copy()
 			prr.rotate(a1*degrad,a2*degrad,a3*degrad)
 #			print a1,a2,a3
 #			display(prr)
@@ -106,7 +107,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 			
 			target.write_image("m1.mrc")
 			prr.write_image("m2.mrc")
-			ccf=target.calc_ccf(prr,1,None)
+			ccf=target.calc_ccf(prr,fp_flag.CIRCULANT)
 			mean=float(ccf.get_attr("mean"))
 			sig=float(ccf.get_attr("sigma"))
 #			ccf.write_image('ccf1.%0d%0d%0d.mrc'%(a1,a2,a3))
@@ -202,7 +203,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 			bt=sm.minimize()
 			b=bt[0]
 			print "\n",j,"\t%5.2f,%5.2f  %5.1f"%(c2alt/degrad,b[0]/degrad,b[1])
-#			a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.Type.EMAN]),pdim,1.0)
+#			a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),*b[0:3],EULER_EMAN,pdim,1.0)
 #			a.write_image("clip.%02d.mrc"%j)
 			pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 	#		pc.write_image("finala.mrc")
@@ -216,7 +217,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 		bt=sm.minimize()
 		b=bt[0]
 		print "\n",j,"\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f"%(b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
-		a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),Rotation(*b[0:3]+[Rotation.EulerType.EMAN]),pdim,1.0)
+		a=cmp_target.get_rotated_clip(Transform3D([b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2],*b[0:3]),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%j)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
                 pc.rotate(-b[0],-b[2],-b[1])
