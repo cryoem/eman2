@@ -919,11 +919,12 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 
 EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b) //PRB
 {
+   int Mid= (Size+1)/2;
+
    EMData* ImBW = new EMData();
    ImBW->set_size(Size,Size,1);
    ImBW->to_zero();
    
-   int Mid= (Size+1)/2;
    float tempIm;
    float x,y;
 
@@ -947,11 +948,12 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b) //PRB
 
 EMData *Util::TwoDTestFunck(int Size, float p, float q,  float a, float b) //PRB
 {
+   int Mid= (Size+1)/2;
+
    EMData* ImBWFFT = new EMData();
    ImBWFFT ->set_size(2*Size,Size,1);
    ImBWFFT ->to_zero();
    
-   int Mid= (Size+1)/2;
    float r,s;
 
    for (int ir=(1-Mid);  ir<Mid; ir++){
@@ -976,12 +978,9 @@ EMData *Util::TwoDTestFunck(int Size, float p, float q,  float a, float b) //PRB
 
 EMData *Util::TwoDTestFuncProj(int Size, float p, float q,  float a, float b, float alphaDeg) //PRB
 {
-   EMData* pofalpha = new EMData();
-   pofalpha ->set_size(Size,1,1);
-   pofalpha ->to_zero();
-   
-   float alpha =alphaDeg*M_PI/180.0;
    int Mid= (Size+1)/2;
+
+   float alpha =alphaDeg*M_PI/180.0;
    float C=cos(alpha);
    float S=sin(alpha);
    float D= sqrt(S*S*b*b + C*C*a*a);
@@ -989,6 +988,11 @@ EMData *Util::TwoDTestFuncProj(int Size, float p, float q,  float a, float b, fl
 
    float P = p * C *a*a/D ;
    float Q = q * S *b*b/D ;
+
+
+   EMData* pofalpha = new EMData();
+   pofalpha ->set_size(Size,1,1);
+   pofalpha ->to_zero();
 
 
    float Norm0 =  D*sqrt(2*pi);
@@ -1010,21 +1014,23 @@ EMData *Util::TwoDTestFuncProj(int Size, float p, float q,  float a, float b, fl
 }
 
 
-EMData *Util::TwoDTestFuncProjk(int Size, float p, float q,  float a, float b, float alphaDeg)
+EMData *Util::TwoDTestFuncProjk(int Size, float p, float q,  float a, float b, float alphaDeg) //PRB
 {
-   EMData* pofalphak = new EMData();
-   pofalphak ->set_size(2*Size,1,1);
-   pofalphak ->to_zero();
    
-   float alpha =alphaDeg*M_PI/180.0;
    int Mid= (Size+1)/2;
+   float alpha =alphaDeg*M_PI/180.0;
    float C=cos(alpha);
    float S=sin(alpha);
    float D= sqrt(S*S*b*b + C*C*a*a);
 
    float P = p * C *a*a/D ;
    float Q = q * S *b*b/D ;
+
    float vD;
+
+   EMData* pofalphak = new EMData();
+   pofalphak ->set_size(2*Size,1,1);
+   pofalphak ->to_zero();
 
    for (int iv=(1-Mid);  iv<Mid; iv++){
 	vD = iv*D ;

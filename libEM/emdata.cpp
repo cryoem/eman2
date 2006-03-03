@@ -1261,6 +1261,13 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	}
 }  // ends FH2F
 
+EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
+{
+	EMData* FFT= FH2F(Size,OverSamplekB,0);
+	FFT->process("eman1.xform.fourierorigin");
+	EMData* eguess= FFT ->do_ift();
+	return eguess;
+}  // ends FH2F
 
 EMData *EMData::real2FH(float OverSamplekB) // PRB
 {

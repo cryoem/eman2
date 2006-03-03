@@ -1,1 +1,1 @@
-SUBDIRS(APTEST demo emdata imageio pyem)
+SUBDIRS(APTEST demo imageio pyem)

@@ -262,10 +262,10 @@ Vec3f Transform3D::get_posttrans(Vec3f &pretrans) const    // Fix Me
 }
 
 
-Vec3f Transform3D::get_center() const  // YYY
-{
-	return Vec3f();
-}
+ Vec3f Transform3D::get_center() const  // YYY
+ {
+ 	return Vec3f();
+ }
 
 
 
@@ -817,7 +817,7 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 
 
 	// An dodecahedron has m=3, n=5   F=12 E=30  V=20
-	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3;
+	// It is composed of 12 pentagons. E=5*12/2;   V= 5*12/3, since vertices shared by 3 pentagons;
 
 
 
@@ -845,9 +845,12 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 	};
 
 
-	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 4 triangles;
-	// It is composed of 20 triangles. E=3*20/2;
+	// A cube has   m=3, n=4, F=6 E=12=nF/2, V=8=nF/m,since vertices shared by 3 squares;
+	// It is composed of 6 squares.
 
+
+	// An octahedron has   m=4, n=3, F=8 E=12=nF/2, V=6=nF/m,since vertices shared by 4 triangles;
+	// It is composed of 8 triangles.
 
     // We have placed the OCT symmetry group with a face along the z-axis
         lvl0=0;
@@ -870,10 +873,12 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 
 	static float TET[36] = {// This is with the face along z 
 	      0,lvl0,0,   0,lvl0,120,    0,lvl0,240,
-	      0,lvl1,0,   0,lvl1,120,    0,lvl1,240,
-	    120,lvl1,0, 120,lvl1,120,  120,lvl1,240,
-	    240,lvl1,0, 240,lvl1,120,  240,lvl1,240
+	      0,lvl1,60,   0,lvl1,180,    0,lvl1,300,
+	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
+	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
 	};
+	// B^3=A^3=1;  BABA=1; implies   B^2=ABA, BAB=A^2 , BA^2B = A^2BA^2 and
+	//   12 words with at most a single B
 
 
 	Transform3D ret;
@@ -957,6 +962,9 @@ int Transform3D::get_nsym(const string & name)
 	case OCT_SYM:
 		nsym = 24;
 		break;
+	case TET_SYM:
+		nsym = 12;
+		break;
 	case ISYM:
 		nsym = 1;
 		break;
@@ -987,6 +995,9 @@ Transform3D::SymType Transform3D::get_sym_type(const string & name)
 	}
 	else if (name == "oct") {
 		t = OCT_SYM;
+	}
+	else if (name == "tet") {
+		t = TET_SYM;
 	}
 	else if (name == "i") {
 		t = ISYM;

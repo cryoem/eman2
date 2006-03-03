@@ -137,7 +137,7 @@ namespace EMAN
 		Vec3f get_finger() const;
 		Vec3f get_posttrans(Vec3f &pretrans) const;
 		Vec3f get_posttrans() const;
-		Vec3f get_center() const;
+ 		Vec3f get_center() const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;
 		

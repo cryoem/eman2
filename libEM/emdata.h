@@ -306,6 +306,16 @@ namespace EMAN
 		 */
 		EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
 
+		/** returns the real version of the image 
+		 * from the FH version. The current image is not changed. The result is in
+		 * real format.
+		 * @param Size is the size of the image to be returned
+		 * @param OverSamplekB is a parameter controlling the fineness of the Fourier sampling
+		 * @param IntensityFlag=0 is the usual; =1 means that the input was an intensity
+		 * @return the real version of the data
+		 */
+		EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
+		
 		/** return the fast fourier transform (FFT) image of the current
 		 * image. the current image is not changed. The result is in
 		 * real/imaginary format.
