@@ -305,38 +305,14 @@ namespace EMAN
 		 * @param[in] p the x frequency
 		 * @param[in] q the y frequency
 		 * @param[in] a the x falloff
-		 * @param[out] The 2D test pattern in real space
+		 * @param[in] alpha the projection angle
+		 * @param[out] The 2D test pattern in real space, fourier space,
+		 *               or the projection in real or fourier space 
+		 *               or the FH of the pattern
 		*/
-		static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b); //PRB
+		static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b, 
+		                   int flag=0, float alphaDeg=0); //PRB
 
-		/** Creates a Two D Test Pattern in Fourier Space
-		 * @param[in] Size, must be odd
-		 * @param[in] p the x frequency
-		 * @param[in] q the y frequency
-		 * @param[in] a the x falloff
-		 * @param[out] The 2D test pattern in real space
-		*/
-		static EMData* TwoDTestFunck(int Size, float p, float q,  float a, float b); //PRB
-
-		/** Creates the real space projection of a Two D Test Pattern
-		 * @param[in] Size, must be odd
-		 * @param[in] p the x frequency
-		 * @param[in] q the y frequency
-		 * @param[in] a the x falloff
-		 * @param[in] alpha the projection angle in degrees
-		 * @param[out] The 2D test pattern in real space
-		*/
-		static EMData* TwoDTestFuncProj(int Size, float p, float q,  float a, float b, float alphaDeg); //PRB
-
-		/** Creates the Fourier space projection of a Two D Test Pattern
-		 * @param[in] Size, must be odd
-		 * @param[in] p the x frequency
-		 * @param[in] q the y frequency
-		 * @param[in] a the x falloff
-		 * @param[in] alpha the projection angle in degrees
-		 * @param[out] The 1D projection of the test pattern in Fourier space
-		*/
-		static EMData* TwoDTestFuncProjk(int Size, float p, float q,  float a, float b, float alphaDeg); //PRB
 
 		/** Given a tabulated function y of x (n unordered points), and
 		 * Given the values of the m values xq to be interpolated

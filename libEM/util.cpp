@@ -917,133 +917,112 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 }
 
 
-EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b) //PRB
+EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int flag, float alphaDeg) //PRB
 {
-   int Mid= (Size+1)/2;
+    int Mid= (Size+1)/2;
 
-   EMData* ImBW = new EMData();
-   ImBW->set_size(Size,Size,1);
-   ImBW->to_zero();
-   
-   float tempIm;
-   float x,y;
-
-   for (int ix=(1-Mid);  ix<Mid; ix++){
-        for (int iy=(1-Mid);  iy<Mid; iy++){
-	  x = ix;
-	  y = iy;
-       	  tempIm= (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) ;
-	  (*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
+    if (flag<0 || flag>4) {
+    	cout <<" flat must be 0,1,2,3, or 4";
+    }
+    if (flag==0) { // This is the real function
+	   EMData* ImBW = new EMData();
+	   ImBW->set_size(Size,Size,1);
+	   ImBW->to_zero();
+	   
+	   float tempIm;
+	   float x,y;
+	
+	   for (int ix=(1-Mid);  ix<Mid; ix++){
+	        for (int iy=(1-Mid);  iy<Mid; iy++){
+		  x = ix;
+		  y = iy;
+	       	  tempIm= (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) ;
+		  (*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
+	   	}
+	   }
+	   ImBW->done_data();
+	   ImBW->set_complex(false);
+	   ImBW->set_ri(true);
+	
+	
+	   return ImBW;
    	}
-   }
-   ImBW->done_data();
-   ImBW->set_complex(false);
-   ImBW->set_ri(true);
+   	if (flag==1) {  // This is the Fourier Transform
+	   EMData* ImBWFFT = new EMData();
+	   ImBWFFT ->set_size(2*Size,Size,1);
+	   ImBWFFT ->to_zero();
+	   
+	   float r,s;
+	
+	   for (int ir=(1-Mid);  ir<Mid; ir++){
+	        for (int is=(1-Mid);  is<Mid; is++){
+		   r = ir;
+		   s = is;
+	       	   (*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
+		            exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
+	   	}
+	   }
+	   ImBWFFT->done_data();
+	   ImBWFFT->set_complex(true);
+	   ImBWFFT->set_ri(true);
+	   ImBWFFT->set_shuffled(true);
+	   ImBWFFT->set_fftodd(true);
+	
+	   return ImBWFFT;
+   	}   		
+   	if (flag==2 || flag==3) { //   This is the projection in Real Space
+		float alpha =alphaDeg*M_PI/180.0;
+		float C=cos(alpha);
+		float S=sin(alpha);
+		float D= sqrt(S*S*b*b + C*C*a*a);
+		float D2 = D*D;
+			
+		float P = p * C *a*a/D ;
+		float Q = q * S *b*b/D ;
 
+		if (flag==2) {
+			EMData* pofalpha = new EMData();
+			pofalpha ->set_size(Size,1,1);
+			pofalpha ->to_zero();
 
-   return ImBW;
-}
+			float Norm0 =  D*sqrt(2*pi);
+			float Norm1 =  exp( .5*(P+Q)*(P+Q)) / Norm0 ;
+			float Norm2 =  exp( .5*(P-Q)*(P-Q)) / Norm0 ;
+			float sD;
 
-
-
-EMData *Util::TwoDTestFunck(int Size, float p, float q,  float a, float b) //PRB
-{
-   int Mid= (Size+1)/2;
-
-   EMData* ImBWFFT = new EMData();
-   ImBWFFT ->set_size(2*Size,Size,1);
-   ImBWFFT ->to_zero();
-   
-   float r,s;
-
-   for (int ir=(1-Mid);  ir<Mid; ir++){
-        for (int is=(1-Mid);  is<Mid; is++){
-	   r = ir;
-	   s = is;
-       	   (*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
-	            exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
-   	}
-   }
-   ImBWFFT->done_data();
-   ImBWFFT->set_complex(true);
-   ImBWFFT->set_ri(true);
-   ImBWFFT->set_shuffled(true);
-   ImBWFFT->set_fftodd(true);
-
-
-   return ImBWFFT;
-}
-   
-  
-
-EMData *Util::TwoDTestFuncProj(int Size, float p, float q,  float a, float b, float alphaDeg) //PRB
-{
-   int Mid= (Size+1)/2;
-
-   float alpha =alphaDeg*M_PI/180.0;
-   float C=cos(alpha);
-   float S=sin(alpha);
-   float D= sqrt(S*S*b*b + C*C*a*a);
-   float D2 = D*D;
-
-   float P = p * C *a*a/D ;
-   float Q = q * S *b*b/D ;
-
-
-   EMData* pofalpha = new EMData();
-   pofalpha ->set_size(Size,1,1);
-   pofalpha ->to_zero();
-
-
-   float Norm0 =  D*sqrt(2*pi);
-   float Norm1 =  exp( .5*(P+Q)*(P+Q)) / Norm0 ;
-   float Norm2 =  exp( .5*(P-Q)*(P-Q)) / Norm0 ;
-   float sD;
-
-   for (int is=(1-Mid);  is<Mid; is++){
-	sD = is/D ;
- 	(*pofalpha)(is+Mid-1) =  Norm1 * exp(-.5*sD*sD)*cos(sD*(P+Q))
+			for (int is=(1-Mid);  is<Mid; is++){
+				sD = is/D ;
+				(*pofalpha)(is+Mid-1) =  Norm1 * exp(-.5*sD*sD)*cos(sD*(P+Q))
                          + Norm2 * exp(-.5*sD*sD)*cos(sD*(P-Q));
-   }
-   pofalpha-> done_data();
-   pofalpha-> set_complex(false);
-   pofalpha-> set_ri(true);
+			}
+			pofalpha-> done_data();
+			pofalpha-> set_complex(false);
+			pofalpha-> set_ri(true);
 
-
-   return pofalpha;
+			return pofalpha;
+		}   		
+		if (flag==3) { // This is the projection in Fourier Space
+			float vD;
+		
+			EMData* pofalphak = new EMData();
+			pofalphak ->set_size(2*Size,1,1);
+			pofalphak ->to_zero();
+		
+			for (int iv=(1-Mid);  iv<Mid; iv++){
+				vD = iv*D ;
+		 		(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
+			}
+			pofalphak-> done_data();
+			pofalphak-> set_complex(false);
+			pofalphak-> set_ri(true);
+		
+			return pofalphak;
+   		}
+   	}   		
+    if (flag==4) {
+   	cout <<" FH under construction";
+   	}   			
 }
-
-
-EMData *Util::TwoDTestFuncProjk(int Size, float p, float q,  float a, float b, float alphaDeg) //PRB
-{
-   
-   int Mid= (Size+1)/2;
-   float alpha =alphaDeg*M_PI/180.0;
-   float C=cos(alpha);
-   float S=sin(alpha);
-   float D= sqrt(S*S*b*b + C*C*a*a);
-
-   float P = p * C *a*a/D ;
-   float Q = q * S *b*b/D ;
-
-   float vD;
-
-   EMData* pofalphak = new EMData();
-   pofalphak ->set_size(2*Size,1,1);
-   pofalphak ->to_zero();
-
-   for (int iv=(1-Mid);  iv<Mid; iv++){
-	vD = iv*D ;
- 	(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
-   }
-   pofalphak-> done_data();
-   pofalphak-> set_complex(false);
-   pofalphak-> set_ri(true);
-
-
-   return pofalphak;
-}
- 
 
 
 vector<float>
