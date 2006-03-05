@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 # e2aligntest.py  09/21/2004  Steven Ludtke
 # This program is used to generate various alignment test images
 

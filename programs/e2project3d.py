@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 # initial version of project3d; more features/documentation to come
 # try "e2project3d --help"

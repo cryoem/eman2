@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 # e2pdb2mrc.py  07/23/3004  Steven Ludtke
 # This program will generate an electron density map from an MRC file.
 

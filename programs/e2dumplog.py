@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 # e2dumplog.py   08/08/2005  Steven Ludtke
 # This program will dump the local logfile of all EMAN2 programs run in the current
 # directory. The file is stored as a python 'shelve' file

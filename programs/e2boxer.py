@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 # e2boxer.py  07/27/2004  Steven Ludtke
 # This program is used to box out particles from micrographs/CCD frames
 

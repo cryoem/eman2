@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 # e2tomogram.py  11/21/2004  Steven Ludtke
 # This program is used to analyze tilt series
 
