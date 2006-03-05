@@ -27,6 +27,7 @@ for single particle analysis."""
 	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
 	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
+	parser.add_option("--grid","-G",type="int",help="Box the entire image in a grid pattern with the specified overlap in pixels (can be negative)",default=None)
 	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
 	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	parser.add_option("--retestlist",type="string",help="Comma separated list of image numbers for retest cycle",default="")
@@ -52,6 +53,18 @@ for single particle analysis."""
 	image.read_image(initial)
 	image.set_attr("datatype",7)
 	
+	if options.grid!=None :
+		step=int(options.box)+int(options.grid)
+		print "Grid boxing with box size %d and step %d"%(options.box,step)
+		x0=image.get_xsize()%step
+		y0=image.get_ysize()%step
+		outn=args[0][:-3]+"grid.hed"
+		for y in range(y0,image.get_ysize()-step,step):
+			for x in range(x0,image.get_xsize()-step,step):
+				nim=image.get_clip(Region(x,y,options.box,options.box))
+				nim.write_image(outn,-1)
+		sys.exit(0)
+				
 	refptcl=None
 	if options.refptcl :
 		print options.refptcl
