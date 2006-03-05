@@ -1020,7 +1020,10 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
    		}
    	}   		
     if (flag==4) {
-   	cout <<" FH under construction";
+		cout <<" FH under construction";
+   		EMData* OutFT= TwoDTestFunc(Size, p, q, a, b, 1);
+   		EMData* TryFH= OutFT -> real2FH(4.0);
+   		return TryFH;
    	}   			
 }
 
