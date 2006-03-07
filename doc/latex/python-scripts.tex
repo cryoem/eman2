@@ -1,0 +1,41 @@
+\section{Writing Python Scripts}
+\label{WRITING-PYTHON-SCRIPTS} \index{Python!Writing Scripts}
+
+\subsection{Logging}
+    EMAN2 includes built-in functionality to create a record of
+    what commands are executed, using what parameters.  This
+    information is stored in the file ``.eman2log'' located in the directory
+    the commands are run.  
+
+    In order to include records of new programs into the log, use the functions
+    E2init([\textit{args}]) to initiate an entry and the function
+    E2end() to finalize the entry.
+
+    For example:\begin{verbatim}
+logger = E2init (args)
+.
+. # interesting code here
+.
+E2end (logger)
+\end{verbatim}
+
+\subsection{Command-Line Argument Parsing}
+    For convenience, the OptionParse module is generally used to handle
+    command-line argument parsing.  If another parser is used, it is
+    asked that the input argument format conform to the standards of
+    OptionParser. Generally this means using a ``-'' in front of
+    single letter options such as ``-v'' and using ``--'' in front of
+    longer options names such as ``--verbose'' or ``--limit=15.4''
+
+\subsection{Code Modularity}
+    It is recommended that all program code be separated into
+    1 or more functions rather directly written at the base level.  This allows
+    programs to be run either individually or imported as modules into
+    other programs that wish to use their functionality.
+
+    Normally the base level of the program only includes
+    \begin{verbatim}if __name__=="__main__":
+    main()\end{verbatim}
+    where main() is the function that actually begins completing the
+    program's work.
+    
