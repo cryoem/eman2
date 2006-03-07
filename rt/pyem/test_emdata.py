@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 import EMAN2
 from EMAN2 import *
