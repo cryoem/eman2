@@ -1562,10 +1562,12 @@ EMData *EMData::do_ift()
 		}
 	}
 
-
+#ifndef	NATIVE_FFT	//native fft already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
+#endif	//NATIVE_FFT
+
 	dat->done_data();
 #if 1
 	dat->set_size(nx - offset, ny, nz);
