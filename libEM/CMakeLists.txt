@@ -49,6 +49,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     rsconvolution.cpp
     tflm.cpp
     polardata.cpp
+    native_fft.cpp
     )
 
 IF(WIN32)

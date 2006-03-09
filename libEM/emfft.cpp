@@ -1,7 +1,9 @@
 /**
  * $Id$
  */
+#include <string>
 #include "emfft.h"
+#include "native_fft.h"
 #ifdef DJBFFT
 extern "C" {
 	#include <fftr4.h>
@@ -10,6 +12,7 @@ extern "C" {
 
 using namespace EMAN;
 
+#ifndef NATIVE_FFT
 static int get_rank(int ny, int nz)
 {
 	int rank = 3;
@@ -21,6 +24,7 @@ static int get_rank(int ny, int nz)
 	}
 	return rank;
 }
+#endif	//NOT NATIVE_FFT
 
 #ifdef FFTW2
 
@@ -311,7 +315,7 @@ FftwPlan *EMfft::make_plan(int nx, int ny, int nz,
 	return new_plan;
 }
 
-#endif
+#endif	//FFTW2
 
 #ifdef FFTW3
 
@@ -365,4 +369,120 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 	return 0;
 }
 
-#endif
+#endif	//FFTW3
+
+#ifdef NATIVE_FFT
+int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
+{
+	int complex_size = n + 2 - n%2;
+	
+	memcpy(complex_data, real_data, n * sizeof(float));
+	float * work = (float*) malloc(complex_size*sizeof(float));
+	if (!work) fprintf(stderr,"real_to_complex_1d: failed to allocate work\n");
+	
+	
+	Nativefft::fmrs_1rf(complex_data, work, n);
+	
+	free(work);
+	return 0;
+}
+
+int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
+{
+	int complex_size = n + 2 - n%2;
+	
+	//here, n is the "logical" size of DFT, not the array size, n is the real array size
+	memcpy(real_data, complex_data, complex_size * sizeof(float));
+	float * work = (float*)malloc(complex_size*sizeof(float));
+	
+	Nativefft::fmrs_1rb(real_data, work, n);
+	
+	free(work);
+	return 0;
+}
+
+int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+{
+	if(ny==1 && nz==1) {	//for one dimension, because do_fft() only call this function
+		real_to_complex_1d(real_data, complex_data, nx);
+	}
+	else if(nz==1) {	//2d fft
+		int complex_nx = nx + 2 - nx%2;
+		int j;
+		for (j = 0; j < ny; j++) {
+			memcpy(&complex_data[complex_nx*j], &real_data[nx*j], nx*sizeof(float));	
+		}
+		float * work = (float*) malloc(complex_nx*sizeof(float));
+   		if (!work) fprintf(stderr,"real_to_complex_nd(2df): failed to allocate work\n");
+   		
+   		// 2d inplace fft, overwrite y
+   		int status = Nativefft::fmrs_2rf(complex_data, work, complex_nx, nx, ny);
+   		if (status !=0) {
+      		fprintf(stderr, "real_to_complex_nd(2df): status = %d\n", status);
+   		}
+   		
+   		free(work);
+	}
+	else {	//3d fft
+		int complex_nx = nx + 2 - nx%2;
+		int j, k;
+		for (k = 0; k<nz; k++) {
+      		for (j = 0; j < ny; j++) {
+         		memcpy(&complex_data[complex_nx*ny*k+j*complex_nx], &real_data[nx*ny*k+j*nx], nx*sizeof(float));
+      		}
+		}
+		float * work = (float*) malloc(complex_nx*sizeof(float));
+   		if (!work) fprintf(stderr,"real_to_complex_nd(3df): failed to allocate work\n");
+   		
+   		// 3d inplace fft, overwrite complex_data
+   		int status = Nativefft::fmrs_3rf(complex_data, work, complex_nx, nx, ny, nz);
+   		if (status !=0) {
+      		fprintf(stderr, "real_to_complex_nd(3df): status = %d\n", status);
+   		}
+   		
+   		free(work);
+	}
+	
+	return 0;
+}
+
+int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
+{
+	//for one dimension, because do_ift() only call this function
+	if(ny==1 && nz==1) {
+		complex_to_real_1d(complex_data, real_data, nx);
+	}
+	else if(nz==1) {	//2d ift
+		int complex_nx = nx + 2 - nx%2;
+		memcpy(real_data, complex_data, complex_nx*ny*sizeof(float));
+		
+		float * work = (float*) malloc(complex_nx*sizeof(float));
+		if (!work) fprintf(stderr,"complex_to_real_nd(2db): failed to allocate work\n");
+		
+		// 2d inplace ift, overwrite real_data
+   		int status = Nativefft::fmrs_2rb(real_data, work, complex_nx, nx, ny);
+   		if (status !=0) {
+      		fprintf(stderr, "complex_to_real_nd(2db): status = %d\n", status);
+		}
+		
+		free(work);
+	}
+	else {	//3d ift
+		int complex_nx = nx + 2 - nx%2;
+		memcpy(real_data, complex_data, complex_nx*ny*nz*sizeof(float));
+		
+		float * work = (float*) malloc(complex_nx*sizeof(float));
+   		if (!work) fprintf(stderr,"complex_to_real_nd(3db): failed to allocate work\n");
+   		
+   		// 3d inplace fft, overwrite real_data
+   		int status = Nativefft::fmrs_3rb(real_data, work, complex_nx, nx, ny, nz);
+   		if (status !=0) {
+      		fprintf(stderr, "complex_to_real_nd(3db): status = %d\n", status);
+   		}
+   		
+   		free(work);
+	}
+	
+	return 0;
+}
+#endif	//NATIVE_FFT
