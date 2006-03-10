@@ -1,0 +1,91 @@
+Adding Processors to EMAN2
+
+There are two mechanisms to add processors to EMAN2.  The first option
+involves editing templates in order to integrate the new processor into
+the core while the second option involves directly altering the
+existing processor files.  It is generally recommended that processors
+be added first using templates and later added to existing core if
+desired.  When testing or altering a new processor build time are much
+faster if templates are used.  Add directly to the existing processor
+files when you have code that is completely refined. 
+
+
+
+I.  Using Templates:
+
+General Overview:
+1.  Edit processor_template.h and processor_template.cpp
+    located in EMAN2/src/eman2/plugins
+2.  From EMAN2/src/build run:
+    % make
+
+Located in the plugin directory of the EMAN2 source
+(i.e. EMAN2/src/eman2/plugins) are various template files including
+processor_template.h and processor_template.cpp.  These are the files
+that will be used for new processor installation.  Begin by editing
+processor_template.h. 
+
+1. Change the occurrences of "XYZ" in "XYZProcessor" with the name of
+   the new processor
+     - Don't forget to change the string in get_name() to the name of
+       the processor (this is the name that will be used to call the processor)
+2. Edit the string in get_desc() with a brief description of the
+      processor.  Place a more detailed descriptions elsewhere such as
+      before the class or before the functions (link to coding_style)
+3. Define the processor's parameters in get_param_types()
+   -  A description string can be added as a third param to the TypeDict::put()
+      function to describe the variables
+4.  In the class constructor of FilterFactorExt uncomment the line
+    "Factory < Processor >::add(&dProcessor::NEW);"
+
+Now edit processor_template.cpp
+
+5. In processor() add the implementation code of the new processor.
+   - The existing template has sample code showing how to access the
+     variables that where defined in get_para_types()
+   - Note that the sample code included in the template is enclosed in
+     a conditional statement that essentially causes all of the code to
+     be skipped.
+   - Also note that it may be necessary to add "include "emdata.h" to
+     this file in order to use EMData member functions.
+
+6. % indent processor_template.h processor_template.cpp
+   
+Finally rebuild EMAN2: 
+
+% cd ../../build
+% make
+
+The new processor should now be available using the name that was
+specified in get_name().
+
+
+
+II. Adding directly to the core:
+
+If the new processor code has already been created using the supplied
+templates, then adding to the core can be done as follows:
+
+1. Open processor.h in src/eman2/libEM
+2. Copy the class you defined in processor_template.h and paste
+   it in the file 
+3. Open processor.cpp (also located in src/eman2/libEM)
+4. Copy and paste the class from processor_template.cpp to processor.cpp
+5. In the template class Factory located in the begining of
+   processor.cpp add a line "force_add(&newProcessor::NEW)" where
+     "newProcessor" is the name of the processor class that is being added
+6. Rebuild EMAN2
+
+
+The instructions for adding a new processor without first using
+templates go as follows:
+
+1. In src/eman2/libEM open processor.h
+2. Towards the end of the file there is an example class called
+   XYZProcessor.  Follow the first 3 steps listed in "Using Templates".
+3. Open processor.cpp and write an implementation for the process()
+   function that was just defined in processor.h
+4. In the template class Factory located in the beginning of
+   processor.cpp add a line "force_add(&newProcessor::NEW)" where
+     "newProcessor" is the name of the processor class that is being added
+6. Rebuild EMAN2
