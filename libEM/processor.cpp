@@ -160,7 +160,7 @@ template <> Factory < Processor >::Factory()
 }
 
 
-void ImageProcessor::process(EMData * image)
+void ImageProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL image");
@@ -203,7 +203,7 @@ void ImageProcessor::process(EMData * image)
 }
 
 #define FFTRADIALOVERSAMPLE 4
-void FourierProcessor::process(EMData * image)
+void FourierProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -245,7 +245,7 @@ void FourierProcessor::process(EMData * image)
 	image->done_data();
 }
 
-void AmpweightFourierProcessor::process(EMData * image)
+void AmpweightFourierProcessor::process_inplace(EMData * image)
 {
 	EMData *fft;
 	float *fftd;
@@ -412,7 +412,7 @@ void LinearRampProcessor::create_radial_func(vector < float >&radial_mask) const
 }
 
 
-void RealPixelProcessor::process(EMData * image)
+void RealPixelProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -436,7 +436,7 @@ void RealPixelProcessor::process(EMData * image)
 	image->done_data();
 }
 
-void CoordinateProcessor::process(EMData * image)
+void CoordinateProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -517,7 +517,7 @@ void MaskEdgeMeanProcessor::calc_locals(EMData * image)
 	ring_avg = sum / nitems;
 }
 
-void ComplexPixelProcessor::process(EMData * image)
+void ComplexPixelProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL image");
@@ -546,7 +546,7 @@ void ComplexPixelProcessor::process(EMData * image)
 
 
 
-void AreaProcessor::process(EMData * image)
+void AreaProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -654,7 +654,7 @@ void LaplacianProcessor::create_kernel() const
 	}
 }
 
-void BoxStatProcessor::process(EMData * image)
+void BoxStatProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -674,7 +674,7 @@ void BoxStatProcessor::process(EMData * image)
 	}
 
 	float *array = new float[matrix_size];
-//	image->process("eman1.normalize");
+//	image->process_inplace("eman1.normalize");
 
 	float *data = image->get_data();
 	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
@@ -724,7 +724,7 @@ void BoxStatProcessor::process(EMData * image)
 	}
 }
 
-void DiffBlockProcessor::process(EMData * image)
+void DiffBlockProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -775,7 +775,7 @@ void DiffBlockProcessor::process(EMData * image)
 }
 
 
-void CutoffBlockProcessor::process(EMData * image)
+void CutoffBlockProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -857,7 +857,7 @@ void CutoffBlockProcessor::process(EMData * image)
 }
 
 
-void GradientRemoverProcessor::process(EMData * image)
+void GradientRemoverProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -899,7 +899,7 @@ void GradientRemoverProcessor::process(EMData * image)
 
 
 
-void VerticalStripeProcessor::process(EMData * image)
+void VerticalStripeProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -930,7 +930,7 @@ void VerticalStripeProcessor::process(EMData * image)
 	image->done_data();
 }
 
-void RealToFFTProcessor::process(EMData *image)
+void RealToFFTProcessor::process_inplace(EMData *image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -986,7 +986,7 @@ void RealToFFTProcessor::process(EMData *image)
 	}
 }
 
-void SigmaZeroEdgeProcessor::process(EMData * image)
+void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1057,7 +1057,7 @@ void SigmaZeroEdgeProcessor::process(EMData * image)
 
 
 
-void BeamstopProcessor::process(EMData * image)
+void BeamstopProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1189,7 +1189,7 @@ void BeamstopProcessor::process(EMData * image)
 
 
 
-void MeanZeroEdgeProcessor::process(EMData * image)
+void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1282,7 +1282,7 @@ void MeanZeroEdgeProcessor::process(EMData * image)
 
 
 
-void AverageXProcessor::process(EMData * image)
+void AverageXProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1313,7 +1313,7 @@ void AverageXProcessor::process(EMData * image)
 }
 
 
-void ZeroEdgeRowProcessor::process(EMData * image)
+void ZeroEdgeRowProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1347,7 +1347,7 @@ void ZeroEdgeRowProcessor::process(EMData * image)
 	image->done_data();
 }
 
-void ZeroEdgePlaneProcessor::process(EMData * image)
+void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1406,7 +1406,7 @@ float NormalizeProcessor::calc_sigma(EMData * image) const
 	return image->get_attr("sigma");
 }
 
-void NormalizeProcessor::process(EMData * image)
+void NormalizeProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("cannot do normalization on NULL image");
@@ -1571,7 +1571,7 @@ float NormalizeLREdgeMeanProcessor::calc_mean(EMData * image) const
 	return mean;
 }
 
-void NormalizeRowProcessor::process(EMData * image)
+void NormalizeRowProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1615,7 +1615,7 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
-void NormalizeToStdProcessor::process(EMData * image)
+void NormalizeToStdProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1700,7 +1700,7 @@ void NormalizeToStdProcessor::process(EMData * image)
 }
 
 
-void NormalizeToLeastSquareProcessor::process(EMData * image)
+void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1772,7 +1772,7 @@ void NormalizeToLeastSquareProcessor::process(EMData * image)
 
 
 
-void BilateralProcessor::process(EMData * image)
+void BilateralProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1955,7 +1955,7 @@ void BilateralProcessor::process(EMData * image)
 	image->update();
 }
 
-void RadialAverageProcessor::process(EMData * image)
+void RadialAverageProcessor::process_inplace(EMData * image)
 {
 	if (!image || image->is_complex()) {
 		LOGWARN("only works on real image. do nothing.");
@@ -1993,7 +1993,7 @@ void RadialAverageProcessor::process(EMData * image)
 
 
 
-void RadialSubstractProcessor::process(EMData * image)
+void RadialSubstractProcessor::process_inplace(EMData * image)
 {
 	if (!image || image->is_complex()) {
 		LOGWARN("only works on real image. do nothing.");
@@ -2027,7 +2027,7 @@ void RadialSubstractProcessor::process(EMData * image)
 
 
 
-void FlipProcessor::process(EMData * image)
+void FlipProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2101,7 +2101,7 @@ void FlipProcessor::process(EMData * image)
 
 
 
-void AddNoiseProcessor::process(EMData * image)
+void AddNoiseProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2130,7 +2130,7 @@ float AddSigmaNoiseProcessor::get_sigma(EMData * image)
 	return image->get_attr("sigma");
 }
 
-void FourierOriginShiftProcessor::process(EMData * image)
+void FourierOriginShiftProcessor::process_inplace(EMData * image)
 {
 // To quote Pawel "funky reordering"
 	float *d = image->get_data();
@@ -2320,7 +2320,7 @@ void FourierOriginShiftProcessor::process(EMData * image)
 	}
 }
 
-void Phase180Processor::process(EMData * image)
+void Phase180Processor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2477,7 +2477,7 @@ void Phase180Processor::process(EMData * image)
 	image->done_data();
 }
 
-void AutoMask2DProcessor::process(EMData * image)
+void AutoMask2DProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2505,10 +2505,10 @@ void AutoMask2DProcessor::process(EMData * image)
 
 	int ny = image->get_ysize();
 
-	d->process("eman1.filter.lowpass.gaussian", Dict("lowpass", (filter * ny / 2)));
-	d->process("eman1.filter.highpass.gaussian", Dict("highpass", 0));
+	d->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", (filter * ny / 2)));
+	d->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 0));
 
-	d->process("eman1.normalize");
+	d->process_inplace("eman1.normalize");
 
 	int d_nx = d->get_xsize();
 	int d_ny = d->get_ysize();
@@ -2682,7 +2682,7 @@ void AutoMask2DProcessor::process(EMData * image)
 
 
 
-void AddRandomNoiseProcessor::process(EMData * image)
+void AddRandomNoiseProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2767,7 +2767,7 @@ void AddRandomNoiseProcessor::process(EMData * image)
 
 
 
-void AddMaskShellProcessor::process(EMData * image)
+void AddMaskShellProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2840,7 +2840,7 @@ void AddMaskShellProcessor::process(EMData * image)
 	image->done_data();
 }
 
-void ToMassCenterProcessor::process(EMData * image)
+void ToMassCenterProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2848,7 +2848,7 @@ void ToMassCenterProcessor::process(EMData * image)
 	}
 
 	int int_shift_only = params["int_shift_only"];
-	image->process("eman1.normalize");
+	image->process_inplace("eman1.normalize");
 
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
@@ -2908,7 +2908,7 @@ void ToMassCenterProcessor::process(EMData * image)
 	image->translate(dx, dy, dz);
 }
 
-void ACFCenterProcessor::process(EMData * image)
+void ACFCenterProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -2929,7 +2929,7 @@ void ACFCenterProcessor::process(EMData * image)
 }
 
 
-void SNRProcessor::process(EMData * image)
+void SNRProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		return;
@@ -2966,7 +2966,7 @@ void SNRProcessor::process(EMData * image)
 		ctf = image_ctf->compute_1d(image->get_ysize(), Ctf::CTF_ABS_SNR, &sf);
 	}
 
-	image->process("eman1.normalize.circlemean");
+	image->process_inplace("eman1.normalize.circlemean");
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -3009,7 +3009,7 @@ void SNRProcessor::process(EMData * image)
 	}
 }
 
-void FileFourierProcessor::process(EMData * image)
+void FileFourierProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3056,7 +3056,7 @@ void FileFourierProcessor::process(EMData * image)
 	image = d2->do_ift();
 }
 
-void LocalNormProcessor::process(EMData * image)
+void LocalNormProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3075,16 +3075,16 @@ void LocalNormProcessor::process(EMData * image)
 	EMData *blur = image->copy();
 	EMData *maskblur = image->copy();
 
-	maskblur->process("eman1.threshold.binary", Dict("value", threshold));
-	maskblur->process("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
-	maskblur->process("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
-	maskblur->process("eman1.threshold.belowtozero", Dict("minval", 0.001f));
-	maskblur->process("eman1.threshold.belowtozero", Dict("minval", 0.001f));
+	maskblur->process_inplace("eman1.threshold.binary", Dict("value", threshold));
+	maskblur->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
+	maskblur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
+	maskblur->process_inplace("eman1.threshold.belowtozero", Dict("minval", 0.001f));
+	maskblur->process_inplace("eman1.threshold.belowtozero", Dict("minval", 0.001f));
 
 
-	blur->process("eman1.threshold.belowtozero", Dict("minval", threshold));
-	blur->process("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
-	blur->process("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
+	blur->process_inplace("eman1.threshold.belowtozero", Dict("minval", threshold));
+	blur->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
+	blur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
 
 	maskblur->div(*blur);
 	image->mult(*maskblur);
@@ -3104,7 +3104,7 @@ void LocalNormProcessor::process(EMData * image)
 }
 
 
-void SymSearchProcessor::process(EMData * image)
+void SymSearchProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3227,7 +3227,7 @@ void SymSearchProcessor::process(EMData * image)
 }
 
 
-void IndexMaskFileProcessor::process(EMData * image)
+void IndexMaskFileProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3243,7 +3243,7 @@ void IndexMaskFileProcessor::process(EMData * image)
 	}
 
 	if ((int) params["ismaskset"] != 0) {
-		msk->process("eman1.threshold.binaryrange", Dict("low", 0.5f, "high", 1.5f));
+		msk->process_inplace("eman1.threshold.binaryrange", Dict("low", 0.5f, "high", 1.5f));
 	}
 
 	image->mult(*msk);
@@ -3255,7 +3255,7 @@ void IndexMaskFileProcessor::process(EMData * image)
 }
 
 
-void CoordinateMaskFileProcessor::process(EMData * image)
+void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3333,7 +3333,7 @@ void CoordinateMaskFileProcessor::process(EMData * image)
 }
 
 
-void SetSFProcessor::process(EMData * image)
+void SetSFProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3408,7 +3408,7 @@ void SetSFProcessor::process(EMData * image)
 
 
 
-void SmartMaskProcessor::process(EMData * image)
+void SmartMaskProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3585,7 +3585,7 @@ void AutoMask3DProcessor::fill_nearby(float *dat2, int nx, int ny, int nz)
 
 }
 
-void AutoMask3DProcessor::process(EMData * image)
+void AutoMask3DProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3677,7 +3677,7 @@ void AutoMask3DProcessor::process(EMData * image)
 }
 
 
-void AutoMask3D2Processor::process(EMData * image)
+void AutoMask3D2Processor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3721,7 +3721,7 @@ void AutoMask3D2Processor::process(EMData * image)
 	float val1 = fabs((float)nshells);
 	float val2 = val1 > 2.0f ? 2.0f : 0.0f;
 
-	amask->process("eman1.mask.addshells.gauss", Dict("val1", val1, "val2", val2));
+	amask->process_inplace("eman1.mask.addshells.gauss", Dict("val1", val1, "val2", val2));
 
 	dat2 = amask->get_data();
 
@@ -3733,10 +3733,10 @@ void AutoMask3D2Processor::process(EMData * image)
 	amask->done_data();
 
 	EMData *norm = amask->copy();
-	norm->process("eman1.threshold.binary");
+	norm->process_inplace("eman1.threshold.binary");
 
 	EMData *norm2 = norm->copy();
-	norm->process("eman1.mask.addshells", Dict("nshells", 1));
+	norm->process_inplace("eman1.mask.addshells", Dict("nshells", 1));
 	norm->sub(*norm2);
 	if( norm2 )
 	{
@@ -3744,8 +3744,8 @@ void AutoMask3D2Processor::process(EMData * image)
 		norm2 = 0;
 	}
 
-	norm->process("eman1.mask.addshells", Dict("nshells", 2));
-	image->process("eman1.normalize.mask", Dict("mask", norm, "no_sigma", 0));
+	norm->process_inplace("eman1.mask.addshells", Dict("nshells", 2));
+	image->process_inplace("eman1.normalize.mask", Dict("mask", norm, "no_sigma", 0));
 	
 	if( norm )
 	{
@@ -3757,7 +3757,7 @@ void AutoMask3D2Processor::process(EMData * image)
 	amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
 }
 
-void IterBinMaskProcessor::process(EMData * image)
+void IterBinMaskProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3842,7 +3842,7 @@ void TestImageProcessor::preprocess(const EMData * const image)
 	nz = image->get_zsize();
 }
 
-void TestImageGaussian::process(EMData * image)
+void TestImageGaussian::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -3897,7 +3897,7 @@ void TestImageGaussian::process(EMData * image)
 	image->update();
 }
 
-void TestImageScurve::process(EMData * image)
+void TestImageScurve::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -3923,7 +3923,7 @@ void TestImageScurve::process(EMData * image)
 	image->update();
 }
 
-void TestImagePureGaussian::process(EMData * image)
+void TestImagePureGaussian::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -3951,7 +3951,7 @@ void TestImagePureGaussian::process(EMData * image)
 	image->update();
 }
 
-void TestImageSinewave::process(EMData * image)
+void TestImageSinewave::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -4005,7 +4005,7 @@ void TestImageSinewave::process(EMData * image)
 	image->update();	
 }
 
-void TestImageSquarecube::process(EMData * image)
+void TestImageSquarecube::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -4073,7 +4073,7 @@ void TestImageSquarecube::process(EMData * image)
 	image->update();
 }
 
-void TestImageCirclesphere::process(EMData * image)
+void TestImageCirclesphere::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -4144,7 +4144,7 @@ void TestImageCirclesphere::process(EMData * image)
 	image->update();
 }
 
-void TestImageNoiseUniformRand::process(EMData * image)
+void TestImageNoiseUniformRand::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -4158,7 +4158,7 @@ void TestImageNoiseUniformRand::process(EMData * image)
 	image->update();
 }
 
-void TestImageNoiseGauss::process(EMData * image)
+void TestImageNoiseGauss::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
@@ -4178,7 +4178,7 @@ void TestImageNoiseGauss::process(EMData * image)
 	image->update();
 }
 
-void RampProcessor::process(EMData * image)
+void RampProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		return;
@@ -4246,7 +4246,7 @@ void RampProcessor::process(EMData * image)
 }
 
 
-void CCDNormProcessor::process(EMData * image)
+void CCDNormProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 	  Log::logger()->set_level(Log::ERROR_LOG);
@@ -4367,7 +4367,7 @@ IntegerCyclicShift2DProcessor::colreverse(float* beg, float* end, int nx) {
 	delete[] tmp;
 }
 
-void IntegerCyclicShift2DProcessor::process(EMData * image) {
+void IntegerCyclicShift2DProcessor::process_inplace(EMData * image) {
 	if (image->is_complex())
 		throw ImageFormatException("Real image required for "
 				                   "IntegerCyclicShift2DProcessor");
@@ -4414,7 +4414,7 @@ int EMAN::multi_processors(EMData * image, vector < string > processornames)
 	Assert(processornames.size() > 0);
 	
 	for (size_t i = 0; i < processornames.size(); i++) {
-		image->process(processornames[i]);
+		image->process_inplace(processornames[i]);
 	}
 	return 0;
 }

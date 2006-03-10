@@ -17,16 +17,16 @@ def fixup(i,d,l):
 	"""Takes an image, a dark reference and a light/flat reference and corrects the image in-place"""
 #	i2=i.copy()
 	if d:
-		d.process("eman1.normalize.toimage",{"noisy":i,"sigmax":1})
+		d.process_inplace("eman1.normalize.toimage",{"noisy":i,"sigmax":1})
 		i-=d
 	i/=l
-	i.process("eman1.normalize.edgemean",{})
+	i.process_inplace("eman1.normalize.edgemean",{})
 #	display([i2,i,d,l])
 
 def transalign(i1,i2,m1,m2):
 	c1=i1.calc_ccf(i2)
 	c2=m1.calc_ccf(m2)
-	c2.process("eman1.threshold.belowtozero",{"value":c2.get_attr("sigma")/5.0})
+	c2.process_inplace("eman1.threshold.belowtozero",{"value":c2.get_attr("sigma")/5.0})
 	c2+=c2.get_attr("sigma")/5.0
 #	display(c2)
 	c1/=c2
@@ -111,7 +111,7 @@ def main(argv,app=None) :
 			print " *"
 			continue
 		else : print ""
-	#	b.process("eman1.normalize.toimage",{"noisy":a2,"keepzero":1})
+	#	b.process_inplace("eman1.normalize.toimage",{"noisy":a2,"keepzero":1})
 		avg+=b
 		avgn+=m2
 		if (app) : app.Yield()
@@ -140,7 +140,7 @@ def main(argv,app=None) :
 			print " *"
 			continue
 		else : print ""
-	#	b.process("eman1.normalize.toimage",{"noisy":avg,"keepzero":1})
+	#	b.process_inplace("eman1.normalize.toimage",{"noisy":avg,"keepzero":1})
 		avg2+=b
 		avgn2+=m2
 	avg2/=avgn2

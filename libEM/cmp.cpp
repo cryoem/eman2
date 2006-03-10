@@ -208,7 +208,7 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		delete b;	
 		if (dbug) with2->write_image("a.hdf",-1);
 
-//		with2->process("matchfilt",Dict("to",this));
+//		with2->process_inplace("matchfilt",Dict("to",this));
 //		x_data = with2->get_data();
 	}
 

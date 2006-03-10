@@ -116,7 +116,7 @@ def main():
             
         output = p.project3d(data)
         output.set_rotation(angs[0] * deg2rad, angs[1] * deg2rad, angs[2] * deg2rad)
-        output.process("eman1.mask.sharp", {"outer_radius":options.mask})
+        output.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
 
         try:
             output.write_image(options.outfile, -1)
@@ -150,7 +150,7 @@ def user_angles(data, options):
                                                "mode": options.mode})
         q = p.project3d(data)
         q.set_rotation(az, alt, phi)
-        q.process("eman1.mask.sharp", {"outer_radius":options.mask})
+        q.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
 
         try:
             q.write_image(options.outfile, -1)
@@ -191,7 +191,7 @@ def grid(data, options, az0, alt0, az1, alt1):
                                                    "mode": options.mode})
             q = p.project3d(data)
             q.set_rotation(az, alt, phi)
-            q.process("eman1.mask.sharp", {"outer_radius":options.mask})
+            q.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
 
             if (options.pad > 0.0):
                 q = q.get_clip( Region(q.get_xsize() - options.pad / 2.0,
@@ -321,9 +321,9 @@ def prop(data, options, val, az0, az1):
                                                        az * rad2deg,
                                                        phi * rad2deg))
                         
-                # q.process() #figure this out later
+                # q.process_inplace() #figure this out later
                 q.set_rotation(az, alt, phi)
-                q.process("eman1.mask.sharp", {"outer_radius":options.mask})
+                q.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
 
                 if (options.pad > 0.0):
                     q = q.get_clip( Region(q.get_xsize() - options.pad / 2.0,

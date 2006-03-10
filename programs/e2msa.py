@@ -63,11 +63,11 @@ def main():
 		for i in range(EMAN2.EMUtil.get_image_count(f)):
 			ptcls[count] = (f, i)
 			d.read_image(f,i)
-			d.process("eman1.mask.ringmean",{"xc":d.get_xsize()/2.0, "yc":d.get_ysize()/2.0, "outer_radius":maskrad})
+			d.process_inplace("eman1.mask.ringmean",{"xc":d.get_xsize()/2.0, "yc":d.get_ysize()/2.0, "outer_radius":maskrad})
 			if useamp:
 				fft = d.do_fft()
 				amp = fft.get_fft_amplitude()
-				amp.process("eman1.math.log")
+				amp.process_inplace("eman1.math.log")
 				img = amp
 			else:
 				img = d

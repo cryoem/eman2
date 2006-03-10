@@ -980,9 +980,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
+	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
+	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1062,9 +1062,9 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
+	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
+	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1149,9 +1149,9 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
+	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
+	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #elif defined NFFT2
@@ -1219,9 +1219,9 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 		}
 	}
 	fft->done_data();
-	//fft->process("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
+	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
+	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #else
@@ -1261,7 +1261,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 		xform=(optdata[i]->get_transform());
 		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
 		EMData *p=pa.projection_by_summation(size,1.0,optpixres);
-		p->process("eman1.NormalizeUnit");
+		p->process_inplace("eman1.NormalizeUnit");
 		fx-=sqrt(p->cmp("dot",EMObject(optdata[i]),Dict()));
 	}
 			

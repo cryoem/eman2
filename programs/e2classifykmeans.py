@@ -74,7 +74,7 @@ be classified. """
 				centers[j]=data[classes[j][0][0]].copy()
 				for i in range(1,len(classes[j])):
 					centers[j]+=data[classes[j][i][0]]
-				centers[j].process("eman1.normalize")
+				centers[j].process_inplace("eman1.normalize")
 				
 		if todel!=-1 : del data[todel]
 				

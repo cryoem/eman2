@@ -89,7 +89,7 @@ for single particle analysis."""
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.box/shrinkfactor<12 : shrinkfactor/=2
 	
-	image.process("eman1.normalize")
+	image.process_inplace("eman1.normalize")
 	shrink=image
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
@@ -103,11 +103,11 @@ for single particle analysis."""
 	flt=EMData()
 	flt.set_size(shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4,1)
 	flt.to_one()
-	flt.process("eman1.mask.sharp",{"outer_radius":filtrad})
+	flt.process_inplace("eman1.mask.sharp",{"outer_radius":filtrad})
 	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
-	flt.process("eman1.xform.phaseorigin")
+	flt.process_inplace("eman1.xform.phaseorigin")
 	a=shrink.get_clip(Region(-filtrad*2,-filtrad*2,shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4))
-	a.process("eman1.mask.zeroedgefill")
+	a.process_inplace("eman1.mask.zeroedgefill")
 #	a.write_image("q0.hdf",0)
 #	flt.write_image("q0.hdf",1)
 	a=a.convolute(flt)
@@ -120,7 +120,7 @@ for single particle analysis."""
 	a=None
 	
 	shrink2=shrink.copy()
-	shrink2.process("eman1.math.squared")
+	shrink2.process_inplace("eman1.math.squared")
 #	image=EMData()
 #	image.read_image(args[0])
 #	shrink.write_image("e.mrc")
@@ -136,30 +136,30 @@ for single particle analysis."""
 		refptcls=[]
 		for n,i in enumerate(refptcl):
 			# first a circular mask
-			i.process("eman1.normalize.circlemean")
-			i.process("eman1.mask.sharp",{"outer_radius":i.get_xsize()/2-1})
+			i.process_inplace("eman1.normalize.circlemean")
+			i.process_inplace("eman1.mask.sharp",{"outer_radius":i.get_xsize()/2-1})
 						
 			ic=i.copy()
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
 			# make the unmasked portion mean -> 0
 			ic-=float(ic.get_attr("mean_nonzero"))
-			ic.process("eman1.normalize.unitlen")
+			ic.process_inplace("eman1.normalize.unitlen")
 #			ic.write_image("scaled_refs.hdf",-1)
 
 		# prepare a mask to use for local sigma calculaton
 		circle=shrink.copy_head()
 		circle.to_one()
-		circle.process("eman1.mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
+		circle.process_inplace("eman1.mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
 		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
 		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT)
 #		circle.write_image("z0a.hdf")
 #		shrink2.write_image("z0b.hdf")
 		ccfsig=shrink2.calc_ccf(circle,fp_flag.CIRCULANT)
-		ccfmean.process("eman1.math.squared")
+		ccfmean.process_inplace("eman1.math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
-		ccfsig.process("eman1.math.sqrt")
+		ccfsig.process_inplace("eman1.math.sqrt")
 #		shrink.write_image("z0.hdf")
 #		ccfsig.write_image("z1.hdf")
 		
@@ -175,7 +175,7 @@ for single particle analysis."""
 			ccfone/=ccfsig
 #			ccfone.write_image("b.%0d.hdf"%n)
 			sig=float(ccfone.get_attr("sigma"))
-			ccfone.process("eman1.mask.onlypeaks",{"npeaks":0})
+			ccfone.process_inplace("eman1.mask.onlypeaks",{"npeaks":0})
 #			ccfone.write_image("c.%0d.hdf"%n)
 			pk=ccfone.calc_highest_locations(sig*3.5)
 			for m,p in enumerate(pk):
@@ -239,8 +239,8 @@ for single particle analysis."""
 			# read in the area where we think a particle exists
 			try: b.read_image(initial,0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
-			b.process("eman1.normalize.edgemean")
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
+			b.process_inplace("eman1.normalize.edgemean")
+			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
 			
 			# we iterate over each reference then find the best, eventually recentering ( i[2-3] ) and
@@ -267,8 +267,8 @@ for single particle analysis."""
 			# now we refine this by doing a second pass with the best reference
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
-			b.process("eman1.normalize.edgemean")
-			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.1})
+			b.process_inplace("eman1.normalize.edgemean")
+			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
 			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"matchfilt":1})
 			dx=ba.get_attr("translational.dx")
@@ -296,11 +296,11 @@ for single particle analysis."""
 			# alignment parameters
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
 			except: continue
-			b.process("eman1.normalize.edgemean")
-#			b.process("eman1.filter.lowpass.gaussian",{"lowpass":.05})
+			b.process_inplace("eman1.normalize.edgemean")
+#			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.05})
 #			print "%d ROT %f"%(n*2,da)
 			rr=refptcl[i[1]].rot_scale_trans2D(da,1.0,0,0)
-			rr.process("eman1.normalize")
+			rr.process_inplace("eman1.normalize")
 			
 #			b.cmp("optvariance",rr,{"keepzero":1})
 #			b*=b.get_attr("ovcmp_m")
@@ -371,7 +371,7 @@ for single particle analysis."""
 			if i[0]>thr : break
 			try: b.read_image(args[0],0,0,Region(i[1],i[2],options.box,options.box))
 			except: continue
-			if options.norm: b.process("eman1.normalize.edgemean")
+			if options.norm: b.process_inplace("eman1.normalize.edgemean")
 			print n,i
 #			print i[4]
 			b.write_image(outn,n)
@@ -395,8 +395,8 @@ for single particle analysis."""
 		outer.to_one()
 		inner=outer.copy()
 		
-		outer.process("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
-		inner.process("eman1.mask.sharp",{"outer_radius":sbox*2/5})
+		outer.process_inplace("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
+		inner.process_inplace("eman1.mask.sharp",{"outer_radius":sbox*2/5})
 		
 #		outer.write_image("b_outer.hdf")
 #		inner.write_image("b_inner.hdf")

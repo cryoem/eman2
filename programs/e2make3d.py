@@ -147,7 +147,7 @@ def reverse_gridding_reconstructor(images, options):
 
     for i in xrange(len(images)):
         d=images[i]
-        d.process("eman1.normalize")
+        d.process_inplace("eman1.normalize")
 #        d.do_fft_inplace()
         recon.insert_slice(d, Transform3D(d.get_attr("euler_az"),
                                           d.get_attr("euler_alt"), #**2,
@@ -182,7 +182,7 @@ def pawel_back_projection_reconstruction(images, options):
             d=EMData().read_images(options.input_file, [i])[0]
         else:
             d=images[i]
-        d.process("eman1.normalize")           #is this needed? so other normalization?
+        d.process_inplace("eman1.normalize")           #is this needed? so other normalization?
         recon.insert_slice(d, Transform3D(d.get_attr("euler_az"),
                                           d.get_attr("euler_alt"),
                                           d.get_attr("euler_phi")))
@@ -217,7 +217,7 @@ def back_projection_reconstruction(images, options):
         else:
             d=images[i]
 
-        d.process("eman1.normalize")
+        d.process_inplace("eman1.normalize")
 
 #        t = Transform3D(d.get_attr("euler_az"), d.get_attr("euler_alt"), d.get_attr("euler_phi"))
 #        t.transpose();
@@ -236,8 +236,8 @@ def back_projection_reconstruction(images, options):
                                d.get_attr("maximum"),d.get_attr("minimum")))
         
     output=recon.finish()
-    output.process("eman1.normalize")
-#    output.process("eman1.math.sqrt")  #right processor?
+    output.process_inplace("eman1.normalize")
+#    output.process_inplace("eman1.math.sqrt")  #right processor?
 
     # Apply symmetry
 
@@ -306,20 +306,20 @@ def fourier_reconstruction(images, options):
             d.unum4=i
             dataf=dataf+[d]
         else:
-            d.process("eman1.normalize")
-            d.process("eman1.mask.ringmean",{"ring_width":options.mask})
+            d.process_inplace("eman1.normalize")
+            d.process_inplace("eman1.mask.ringmean",{"ring_width":options.mask})
 
             d.transform=Transform3D(EULER_EMAN,d.get_attr("euler_az"),
                                     d.get_attr("euler_alt"),d.get_attr("euler_phi"))
 
-            d.process("eman1.xform.phaseorigin")
+            d.process_inplace("eman1.xform.phaseorigin")
 
             if options.pad>0:
                 d=d.pad_fft(options.pad)
          
             f=d.do_fft()                                 
 
-            f.process("eman1.xform.fourierorigin")
+            f.process_inplace("eman1.xform.fourierorigin")
             f.transform=d.transform
             f.unum4=i
             dataf=dataf+[f]
@@ -349,20 +349,20 @@ def fourier_reconstruction(images, options):
             if(options.lowmem):
                 d=EMData().read_images(options.input_file, [i])[0]
 
-                d.process("eman1.normalize")
-                d.process("eman1.mask.ringmean",{"ring_width":options.mask})
+                d.process_inplace("eman1.normalize")
+                d.process_inplace("eman1.mask.ringmean",{"ring_width":options.mask})
 
                 d.transform=Transform3D(EULER_EMAN,d.get_attr("euler_az"),
                                         d.get_attr("euler_alt"),d.get_attr("euler_phi"))
 
-                d.process("eman1.xform.phaseorigin")
+                d.process_inplace("eman1.xform.phaseorigin")
                     
                 if options.pad>0:
                     d=d.pad_fft(options.pad)
          
                 f=d.do_fft()                                 
 
-                f.process("eman1.xform.fourierorigin")
+                f.process_inplace("eman1.xform.fourierorigin")
                 f.transform=d.transform
                 f.unum4=i
                     
@@ -375,7 +375,7 @@ def fourier_reconstruction(images, options):
             if (options.noweight):
                 d.set_attr("IMAGIC.imgnum",1)
             if (j==3 and options.log):
-                d.process("eman1.math.log")
+                d.process_inplace("eman1.math.log")
 
             if not(options.quiet):
                 sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f\n" %
@@ -404,10 +404,10 @@ def fourier_reconstruction(images, options):
         print "Starting Reconstruction"
     output=recon.finish()
 
-    output.process("eman1.xform.fourierorigin")
+    output.process_inplace("eman1.xform.fourierorigin")
     output=output.do_ift()
-    output.process("eman1.xform.phaseorigin")
-    output.process("eman1.normalize")
+    output.process_inplace("eman1.xform.phaseorigin")
+    output.process_inplace("eman1.normalize")
     if options.pad:
         output.set_attr("is_fftpad",1)  #why isn't this passed along?
         output=output.pad_fft(options.pad)
@@ -426,7 +426,7 @@ def fourier_reconstruction(images, options):
         nm.write_image("map.mrc")
                     
     if(options.log):
-        output.process("eman1.math.exp")
+        output.process_inplace("eman1.math.exp")
               
     if(options.resmap): #doesn't work
         out=EMData()
@@ -457,7 +457,7 @@ def fourier_reconstruction(images, options):
             out.set_value_at_fast(i+1,temp)
         out.write_image("filter3d.mrc")
 
-    output.process("eman1.mask.ringmean",{"ring_width":options.mask})
+    output.process_inplace("eman1.mask.ringmean",{"ring_width":options.mask})
     return output
 
 

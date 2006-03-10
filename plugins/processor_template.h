@@ -11,12 +11,12 @@ namespace EMAN
      *
      * 1) Replace all 'XYZ' with your new processor name.
      * 2) Define the processor parameter names and types in get_param_types().
-     * 3) Implement the processor in XYZProcessor::process().
+     * 3) Implement the processor in XYZProcessor::process_inplace().
      */
 	class XYZProcessor:public Processor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{

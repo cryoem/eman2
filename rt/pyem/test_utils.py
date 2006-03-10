@@ -254,7 +254,7 @@ class TestUtils(unittest.TestCase):
         """test quadri() function ..........................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         #f = Util.quadri(e, 2.0, 3.0)    #test default argument
         f2 = Util.quadri(e, 2.3, 3.4, 2)    #test non-default argument

@@ -19,15 +19,15 @@ class TestConstructor(unittest.TestCase):
         """test FourierReconstructor ........................"""
         e1 = EMData()
         e1.set_size(32,32,1)
-        e1.process('testimage.noise.uniform.rand')
+        e1.process_inplace('testimage.noise.uniform.rand')
         e1.do_fft_inplace()
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         e2.do_fft_inplace()
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         e3.do_fft_inplace()
         
         r = Reconstructors.get('fourier', {'size':10, 'mode':1, 'weight':0.5, 'dlog':2})
@@ -41,15 +41,15 @@ class TestConstructor(unittest.TestCase):
         """test WienerFourierReconstructor .................."""
         e1 = EMData()
         e1.set_size(32,32,1)
-        e1.process('testimage.noise.uniform.rand')
+        e1.process_inplace('testimage.noise.uniform.rand')
         e1.do_fft_inplace()
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         e2.do_fft_inplace()
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         e3.do_fft_inplace()
         
         r = Reconstructors.get('wiener_fourier', {'size':10, 'mode':1, 'padratio':0.5, 'snr':(0.2, 3.4, 5.6)})
@@ -63,13 +63,13 @@ class TestConstructor(unittest.TestCase):
         """test BackProjectionReconstructor ................."""
         e1 = EMData()
         e1.set_size(32,32,1)
-        e1.process('testimage.noise.uniform.rand')
+        e1.process_inplace('testimage.noise.uniform.rand')
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         r = Reconstructors.get('back_projection', {'size':32, 'weight':0.8})
         r.setup()
@@ -82,13 +82,13 @@ class TestConstructor(unittest.TestCase):
         """test PawelBackProjectionReconstructor ............"""
         e1 = EMData()
         e1.set_size(32,32,1)
-        e1.process('testimage.noise.uniform.rand')
+        e1.process_inplace('testimage.noise.uniform.rand')
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         Log.logger().set_level(-1)    #no log message printed out
         r = Reconstructors.get('pawel_back_projection', {'size':32, 'weight':0.8, 'npad':1})
@@ -102,13 +102,13 @@ class TestConstructor(unittest.TestCase):
         """test ReverseGriddingReconstructor ................"""
         e1 = EMData()
         e1.set_size(32,32,1)
-        e1.process('testimage.noise.uniform.rand')
+        e1.process_inplace('testimage.noise.uniform.rand')
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         r = Reconstructors.get('reverse_gridding', {'size':32, 'weight':0.8, 'npad':1})
         r.setup()
@@ -124,7 +124,7 @@ class TestProjector(unittest.TestCase):
         """test GaussFFTProjector ..........................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e.project('gauss_fft', {'alt':1.234, 'az':1.345, 'phi':1.54, 'mode':1})
 

@@ -22,20 +22,20 @@ struct EMAN_Processor_Wrapper: EMAN::Processor
     EMAN_Processor_Wrapper(PyObject* py_self_):
         EMAN::Processor(), py_self(py_self_) {}
 
-    void process(EMAN::EMData* p0) {
-        call_method< void >(py_self, "process", p0);
+    void process_inplace(EMAN::EMData* p0) {
+        call_method< void >(py_self, "process_inplace", p0);
     }
 
-    void default_process(EMAN::EMData* p0) {
-        EMAN::Processor::process(p0);
+    void default_process_inplace(EMAN::EMData* p0) {
+        EMAN::Processor::process_inplace(p0);
     }
 
-    void process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        call_method< void >(py_self, "process_list", p0);
+    void process_list_inplace(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        call_method< void >(py_self, "process_list_inplace", p0);
     }
 
-    void default_process_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        EMAN::Processor::process_list(p0);
+    void default_process_list_inplace(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
+        EMAN::Processor::process_list_inplace(p0);
     }
 
     std::string get_name() const {
@@ -82,8 +82,8 @@ BOOST_PYTHON_MODULE(libpyFilter2)
 {
     scope* EMAN_Processor_scope = new scope(
     class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("Processor", init<  >())
-        .def("process", &EMAN::Processor::process, &EMAN_Processor_Wrapper::default_process)
-        .def("process_list", &EMAN::Processor::process_list, &EMAN_Processor_Wrapper::default_process_list)
+        .def("process_inplace", &EMAN::Processor::process_inplace, &EMAN_Processor_Wrapper::default_process_inplace)
+        .def("process_list_inplace", &EMAN::Processor::process_list_inplace, &EMAN_Processor_Wrapper::default_process_list_inplace)
         .def("get_name", pure_virtual(&EMAN::Processor::get_name))
         .def("get_params", &EMAN::Processor::get_params, &EMAN_Processor_Wrapper::default_get_params)
         .def("set_params", &EMAN::Processor::set_params, &EMAN_Processor_Wrapper::default_set_params)

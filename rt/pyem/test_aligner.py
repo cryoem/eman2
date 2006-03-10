@@ -13,11 +13,11 @@ class TestAligner(unittest.TestCase):
         """test TranslationalAligner ........................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
    
         e.align('translational', e2, {})
         e.align('translational', e2, {'intonly':1, 'maxshift':2})
@@ -33,11 +33,11 @@ class TestAligner(unittest.TestCase):
         """test Translational3DAligner ......................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
    
         e.align('translational3d', e2)
    
@@ -45,11 +45,11 @@ class TestAligner(unittest.TestCase):
         """test RotationalAligner ..........................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rotational', e2)
 
@@ -57,11 +57,11 @@ class TestAligner(unittest.TestCase):
         """test RotatePrecenterAligner ......................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rotate_precenter', e2)
         
@@ -69,11 +69,11 @@ class TestAligner(unittest.TestCase):
         """test RotateCHAligner ............................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rotate_ch', e2, {'irad':1, 'orad':2})
         
@@ -81,11 +81,11 @@ class TestAligner(unittest.TestCase):
         """test RotateTranslateAligner ......................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rotate_translate', e2, {'maxshift':1})
         
@@ -93,11 +93,11 @@ class TestAligner(unittest.TestCase):
         """test RotateTranslateBestAligner .................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         img = e.align('rotate_translate_best', e2, {'maxshift':1, 'snr':(1.0, 2.0, 3.0)})
         
@@ -105,19 +105,19 @@ class TestAligner(unittest.TestCase):
         """test RotateTranslateRadonAligner ................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e4 = EMData()
         e4.set_size(32,32,1)
-        e4.process('testimage.noise.uniform.rand')
+        e4.process_inplace('testimage.noise.uniform.rand')
         
         img = e.align('rotate_translate_radon', e2, {'maxshift':2, 'radonwith':e3, 'radonthis':e4})
    
@@ -125,15 +125,15 @@ class TestAligner(unittest.TestCase):
         """test RotateFlipAligner ..........................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rotate_flip', e2, {'flip':e3, 'imask':2})
         
@@ -141,15 +141,15 @@ class TestAligner(unittest.TestCase):
         """test RotateTranslateFlipAligner .................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rotate_translate_flip', e2, {'flip':e3, 'usedot':1, 'maxshift':2})
         
@@ -157,15 +157,15 @@ class TestAligner(unittest.TestCase):
         """test RTFSlowAligner .............................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rtf_slow', e2, {'flip':e3, 'maxshift':2})
         
@@ -173,15 +173,15 @@ class TestAligner(unittest.TestCase):
         """test RTFSlowestAligner ..........................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rtf_slowest', e2, {'flip':e3, 'maxshift':2})
         
@@ -189,15 +189,15 @@ class TestAligner(unittest.TestCase):
         """test RTFBestAligner .............................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e.align('rtf_best', e2, {'flip':e3, 'maxshift':2, 'snr':(1.0, 2.0, 3.0)})
         
@@ -205,27 +205,27 @@ class TestAligner(unittest.TestCase):
         """test RTFRadonAligner ............................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e3 = EMData()
         e3.set_size(32,32,1)
-        e3.process('testimage.noise.uniform.rand')
+        e3.process_inplace('testimage.noise.uniform.rand')
         
         e4 = EMData()
         e4.set_size(32,32,1)
-        e4.process('testimage.noise.uniform.rand')
+        e4.process_inplace('testimage.noise.uniform.rand')
         
         e5 = EMData()
         e5.set_size(32,32,1)
-        e5.process('testimage.noise.uniform.rand')
+        e5.process_inplace('testimage.noise.uniform.rand')
         
         e6 = EMData()
         e6.set_size(32,32,1)
-        e6.process('testimage.noise.uniform.rand')
+        e6.process_inplace('testimage.noise.uniform.rand')
    
         e.align('rtf_radon', e2, {'maxshift':2, 'thisf':e3, 'radonwith':e4, \
                 'radonthis':e5, 'radonthisf':e6})
@@ -234,11 +234,11 @@ class TestAligner(unittest.TestCase):
         """test RefineAligner ..............................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         e.align('refine', e2, {'mode':1, 'snr':(1.0, 2.0, 3.0), 'alot':1.2, \
                 'az':1.2, 'phi':2.3, 'dx':2, 'dy':3.4, 'dz':2.6})

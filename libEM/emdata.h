@@ -140,7 +140,7 @@ namespace EMAN
 		 * @param params Processor parameters in a keyed dictionary.
 		 * @exception NotExistingObjectError If the processor doesn't exist.
 		 */
-		void process(const string & processorname, const Dict & params = Dict());
+		void process_inplace(const string & processorname, const Dict & params = Dict());
 
 		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.
@@ -1858,7 +1858,7 @@ namespace EMAN
 			Dict params;
 			params["dopad"] = 1;
 			params["alpha"] = alpha;
-			rot->process("filter.kaisersinhinverse", params);
+			rot->process_inplace("filter.kaisersinhinverse", params);
 			return rot;
 		}
 #endif // 0

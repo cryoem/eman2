@@ -122,7 +122,7 @@ void debug_align()
 	
 	cout << "can we go there?" << endl;
 	a->set_size(128, 128, 1);
-	a->process("testimage.noise.uniform.rand");
+	a->process_inplace("testimage.noise.uniform.rand");
 	//a->write_image("scurve.mrc");
 /*	
 	try {
@@ -234,7 +234,7 @@ void debug_footprint()
 	
 	EMData *a = new EMData();
 	a->set_size(128, 128, 1);
-	a->process("testimage.noise.uniform.rand");
+	a->process_inplace("testimage.noise.uniform.rand");
 	
 	a->make_rotational_footprint(true);
 	
@@ -261,7 +261,7 @@ void debug_get_clip()
 	
 	EMData *a = new EMData();
 	a->set_size(128, 128, 1);
-	a->process("testimage.noise.uniform.rand");
+	a->process_inplace("testimage.noise.uniform.rand");
 //	a->write_image("rand3.mrc");
 /*	
 	try {
@@ -351,7 +351,7 @@ void debug_write_image()
 {
 	EMData *a = new EMData();
 	a->set_size(128, 128, 1);
-	a->process("testimage.noise.uniform.rand");
+	a->process_inplace("testimage.noise.uniform.rand");
 	a->write_image("rand3.mrc");
 	Dict dic = a->get_attr_dict();
 	
@@ -402,7 +402,7 @@ void debug_complex_image_arithmetic()
 	
 	EMData * e = new EMData();
 	e->set_size(75,75,1);
-	e->process("testimage.circlesphere", Dict("radius",20,"fill","yes"));
+	e->process_inplace("testimage.circlesphere", Dict("radius",20,"fill","yes"));
 	e->write_image("origin.mrc");
 	EMData * eft = e->do_fft();
 	
@@ -519,7 +519,7 @@ void debug_do_fft()
 	
 	EMData * e = new EMData();
 	e->set_size(32, 32, 32);
-	e->process("testimage.noise.uniform.rand");
+	e->process_inplace("testimage.noise.uniform.rand");
 	
 	EMData * e2 = e->do_fft();
 	EMData * e3 = e2->do_fft();
@@ -535,7 +535,7 @@ void debug_do_fft_inplace()
 
 	EMData * e = new EMData();
 	e->set_size(32, 32, 32);
-	e->process("testimage.noise.uniform.rand");
+	e->process_inplace("testimage.noise.uniform.rand");
 
 	e->do_fft_inplace();
 	
@@ -552,7 +552,7 @@ void debug_calc_radial_dist()
 	
 	EMData * e = new EMData();
 	e->set_size(32, 32, 1);
-	e->process("testimage.noise.uniform.rand");
+	e->process_inplace("testimage.noise.uniform.rand");
 	
 	int ny = e->get_ysize();
 	vector<float> v;
@@ -573,7 +573,7 @@ void debug_calc_hist()
 	
 	EMData * e = new EMData();
 	e->set_size(32, 32, 1);
-	e->process("testimage.noise.uniform.rand");
+	e->process_inplace("testimage.noise.uniform.rand");
 	
 	vector<float> v;
 	v = e->calc_hist();	
@@ -585,7 +585,7 @@ void debug_set_value_at()
 	
 	EMData * e = new EMData();
 	e->set_size(32, 32, 32);
-	e->process("testimage.noise.uniform.rand");
+	e->process_inplace("testimage.noise.uniform.rand");
 	
 	e->set_value_at(1, 1, 1, 1.0);
 	float f = e->get_value_at(1, 1, 1);
@@ -601,15 +601,15 @@ void debug_common_lines()
 	
 	EMData * e = new EMData();
 	e->set_size(32,32,1);
-	e->process("testimage.noise.uniform.rand");
+	e->process_inplace("testimage.noise.uniform.rand");
 	
 	EMData * e2 = new EMData();
 	e2->set_size(32,32,1);
-	e2->process("testimage.noise.uniform.rand");
+	e2->process_inplace("testimage.noise.uniform.rand");
 	
 	EMData * e3 = new EMData();
 	e3->set_size(32,32,1);
-	e3->process("testimage.noise.uniform.rand");
+	e3->process_inplace("testimage.noise.uniform.rand");
 	
 //	EMData * e4 = e2->do_fft();
 //	EMData * e5 = e3->do_fft();
@@ -648,7 +648,7 @@ void debug_sigma_processor()
 		cout << endl;
 	}	
 	
-	e->process("eman1.math.sigma", Dict("value1", 1.0, "value2", 1.0));
+	e->process_inplace("eman1.math.sigma", Dict("value1", 1.0, "value2", 1.0));
 	MArray2D data = e->get_2dview();
 	for(int i=0; i<2; i++) {
 		for(int j=0; j<2; j++) {

@@ -57,7 +57,7 @@ int test_rfilter(EMData *em1, int type, float v1, float v2, float v3,
 		EMAN::EMData *em2copy = em2->copy();
 		
 		em1copy->realFilter(type, v1, v2, v3);
-		em2copy->process(filtername, params);
+		em2copy->process_inplace(filtername, params);
 
 		err = cmp_data(em1copy, em2copy);
 

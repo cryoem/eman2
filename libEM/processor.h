@@ -27,7 +27,7 @@ namespace EMAN
      *   - How to use a processor
      *@code
      *      EMData *img = ...;
-     *      img->process("PROCESSORNAME", Dict("sigma", 12));
+     *      img->process_inplace("PROCESSORNAME", Dict("sigma", 12));
      @endcode
      *   - How to define a new XYZProcessor \n
      *      XYZProcessor should either extend the base class 'Processor' or a
@@ -63,17 +63,17 @@ namespace EMAN
 		/** To process an image in-place.
 		 * @param image The image to be processed.
 		 */
-		virtual void process(EMData *image)
+		virtual void process_inplace(EMData *image)
 		{
 		}
 
 		/** To process multiple images using the same algorithm.
 		 * @param images Multiple images to be processed.
 		 */
-		virtual void process_list(vector < EMData * > & images)
+		virtual void process_list_inplace(vector < EMData * > & images)
 		{
 			for (size_t i = 0; i < images.size(); i++) {
-				process(images[i]);
+				process_inplace(images[i]);
 			}
 		}
 
@@ -270,7 +270,7 @@ The basic design of EMAN Processors: <br>\
 	class ImageProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		static string get_group_desc()
 		{
@@ -286,7 +286,7 @@ The basic design of EMAN Processors: <br>\
 	class NewFourierProcessor:public Processor
 	{
 	  public:
-		//virtual void process(EMData * image);
+		//virtual void process_inplace(EMData * image);
 		
 		static string get_group_desc()
 		{
@@ -308,7 +308,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Lowpass top-hat filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -335,7 +335,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Highpass top-hat filter applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -362,7 +362,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Bandpass top-hat filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HAT_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -391,7 +391,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Homomorphic top-hat filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TOP_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -419,7 +419,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Lowpass Gauss filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -445,7 +445,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Highpass Gauss filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -472,7 +472,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Bandpass Gauss filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -500,7 +500,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Homomorphic Gauss filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -527,7 +527,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Divide by a Gaussian in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = GAUSS_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -552,7 +552,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Divide by a Kaiser-Bessel I0 func in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = KAISER_I0_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -571,7 +571,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Divide by a Kaiser-Bessel Sinh func in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = KAISER_SINH_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -591,7 +591,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Filter with tabulated data in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = RADIAL_TABLE;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -618,7 +618,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Lowpass Butterworth filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -646,7 +646,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Highpass Butterworth filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -675,7 +675,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Homomorphic Butterworth filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = BUTTERWORTH_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -704,7 +704,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Lowpass tanh filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_LOW_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -732,7 +732,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Highpass tanh filter processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HIGH_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -761,7 +761,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Homomorphic Tanh processor applied in Fourier space";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_HOMOMORPHIC;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -793,7 +793,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "Bandpass tanh processor applied in Fourier space.";
 		}
-		void process(EMData* image) {
+		void process_inplace(EMData* image) {
 			params["filter_type"] = TANH_BAND_PASS;
 			EMFourierFilterInPlace(image, params); 
 		}
@@ -814,7 +814,7 @@ The basic design of EMAN Processors: <br>\
 	class FourierProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		static string get_group_desc()
 		{
@@ -833,7 +833,7 @@ The basic design of EMAN Processors: <br>\
 			return "filter.ampweight";
 		}
 
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		void set_params(const Dict & new_params)
 		{
@@ -1151,7 +1151,7 @@ The basic design of EMAN Processors: <br>\
 		RealPixelProcessor():value(0), maxval(1), mean(0), sigma(0)
 		{
 		}
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		void set_params(const Dict & new_params)
 		{
@@ -1707,7 +1707,7 @@ The basic design of EMAN Processors: <br>\
 		CoordinateProcessor():nx(0), ny(0), nz(0), mean(0), sigma(0), maxval(0), is_complex(false)
 		{
 		}
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		static string get_group_desc()
 		{
@@ -2082,7 +2082,7 @@ The basic design of EMAN Processors: <br>\
 	class ComplexPixelProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		static string get_group_desc()
 		{
@@ -2129,7 +2129,7 @@ The basic design of EMAN Processors: <br>\
 		{
 		}
 
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		void set_params(const Dict & new_params)
 		{
@@ -2234,7 +2234,7 @@ The basic design of EMAN Processors: <br>\
 	class BoxStatProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		static string get_group_desc()
 		{
@@ -2461,7 +2461,7 @@ The basic design of EMAN Processors: <br>\
 	class DiffBlockProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -2493,7 +2493,7 @@ The basic design of EMAN Processors: <br>\
 	class CutoffBlockProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -2524,7 +2524,7 @@ The basic design of EMAN Processors: <br>\
 	class GradientRemoverProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -2547,7 +2547,7 @@ The basic design of EMAN Processors: <br>\
 	class RampProcessor:public Processor
     {
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -2573,7 +2573,7 @@ The basic design of EMAN Processors: <br>\
 	class VerticalStripeProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -2597,7 +2597,7 @@ The basic design of EMAN Processors: <br>\
 	class RealToFFTProcessor:public Processor
 	{
 		public:
-		void process(EMData *image);
+		void process_inplace(EMData *image);
 	
 		string get_name() const
 		{
@@ -2621,7 +2621,7 @@ The basic design of EMAN Processors: <br>\
 	class SigmaZeroEdgeProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -2647,7 +2647,7 @@ The basic design of EMAN Processors: <br>\
 	class BeamstopProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -2679,7 +2679,7 @@ The basic design of EMAN Processors: <br>\
 	class MeanZeroEdgeProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -2704,7 +2704,7 @@ The basic design of EMAN Processors: <br>\
 	class AverageXProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -2732,7 +2732,7 @@ The basic design of EMAN Processors: <br>\
 	class ZeroEdgeRowProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		string get_name() const
 		{
 			return "eman1.mask.zeroedge2d";
@@ -2770,7 +2770,7 @@ The basic design of EMAN Processors: <br>\
 	class ZeroEdgePlaneProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		string get_name() const
 		{
 			return "eman1.mask.zeroedge3d";
@@ -2809,7 +2809,7 @@ The basic design of EMAN Processors: <br>\
 	class BilateralProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		string get_name() const
 		{
 			return "eman1.bilateral";
@@ -2841,7 +2841,7 @@ The basic design of EMAN Processors: <br>\
 	class NormalizeProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		static string get_group_desc()
 		{
@@ -3084,7 +3084,7 @@ The basic design of EMAN Processors: <br>\
 			return "normalizes each row in the image individually";
 		}
 
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 	};
 
 	/**multiply 'this' by a constant so it is scaled to the signal in 'to'.keepzero will exclude zero values, and keep them at zero in the result.
@@ -3097,7 +3097,7 @@ The basic design of EMAN Processors: <br>\
 	class NormalizeToStdProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3173,7 +3173,7 @@ The basic design of EMAN Processors: <br>\
 	class NormalizeToLeastSquareProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3206,7 +3206,7 @@ The basic design of EMAN Processors: <br>\
 	class RadialAverageProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3230,7 +3230,7 @@ The basic design of EMAN Processors: <br>\
 	class RadialSubstractProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3256,7 +3256,7 @@ The basic design of EMAN Processors: <br>\
 	class FlipProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3288,7 +3288,7 @@ The basic design of EMAN Processors: <br>\
 	class AddNoiseProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3353,7 +3353,7 @@ The basic design of EMAN Processors: <br>\
 	class AddRandomNoiseProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3388,7 +3388,7 @@ The basic design of EMAN Processors: <br>\
 	class FourierOriginShiftProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3412,7 +3412,7 @@ The basic design of EMAN Processors: <br>\
 	class Phase180Processor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3438,7 +3438,7 @@ The basic design of EMAN Processors: <br>\
 	class AutoMask2DProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3472,7 +3472,7 @@ The basic design of EMAN Processors: <br>\
 	class AutoMask3DProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3509,7 +3509,7 @@ The basic design of EMAN Processors: <br>\
 	class AutoMask3D2Processor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3542,7 +3542,7 @@ The basic design of EMAN Processors: <br>\
 	class AddMaskShellProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3573,7 +3573,7 @@ The basic design of EMAN Processors: <br>\
 	class ToMassCenterProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3604,7 +3604,7 @@ The basic design of EMAN Processors: <br>\
 	class ACFCenterProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3636,7 +3636,7 @@ The basic design of EMAN Processors: <br>\
 	class SNRProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3668,7 +3668,7 @@ The basic design of EMAN Processors: <br>\
 	class FileFourierProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3706,7 +3706,7 @@ The basic design of EMAN Processors: <br>\
 	class SymSearchProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3742,7 +3742,7 @@ The basic design of EMAN Processors: <br>\
 	class LocalNormProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3776,7 +3776,7 @@ The basic design of EMAN Processors: <br>\
 	class IndexMaskFileProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3809,7 +3809,7 @@ The basic design of EMAN Processors: <br>\
 	class CoordinateMaskFileProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3840,7 +3840,7 @@ The basic design of EMAN Processors: <br>\
 	class SetSFProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3871,7 +3871,7 @@ The basic design of EMAN Processors: <br>\
 	class SmartMaskProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3901,7 +3901,7 @@ The basic design of EMAN Processors: <br>\
 	class IterBinMaskProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -3946,7 +3946,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImagePureGaussian : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -3979,7 +3979,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageGaussian : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4011,7 +4011,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageScurve : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4044,7 +4044,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageSinewave : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4081,7 +4081,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageSquarecube : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4118,7 +4118,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageCirclesphere : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4151,7 +4151,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageNoiseUniformRand : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4175,7 +4175,7 @@ The basic design of EMAN Processors: <br>\
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
 	public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 		
 		string get_name() const
 		{
@@ -4208,7 +4208,7 @@ The basic design of EMAN Processors: <br>\
 	class CCDNormProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -4259,7 +4259,7 @@ The basic design of EMAN Processors: <br>\
 	{
 		void colreverse(float* beg, float* end, int nx);
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{
@@ -4290,7 +4290,7 @@ The basic design of EMAN Processors: <br>\
 	class XYZProcessor:public Processor
 	{
 	  public:
-		void process(EMData * image);
+		void process_inplace(EMData * image);
 
 		string get_name() const
 		{

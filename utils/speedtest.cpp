@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     if (vg) {
 	EMData *a = new EMData();
 	a->set_size(128,128,1);
-	a->process("testimage.scurve");
+	a->process_inplace("testimage.scurve");
 	EMData *b = a->rot_scale_trans2D(0.0,1.0,1.0,0.0);
 	EMData *d = b->align("rotate_translate",a,Dict(),"variance");
 	Dict r=b->get_attr_dict();
@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
 		}
     }
     pat.done_data();
-    pat.process("eman1.normalize.circlemean");
-    pat.process("eman1.mask.sharp", Dict("outer_radius", pat.get_xsize()/2));
+    pat.process_inplace("eman1.normalize.circlemean");
+    pat.process_inplace("eman1.mask.sharp", Dict("outer_radius", pat.get_xsize()/2));
 
     EMData *data[5000];
     
@@ -88,8 +88,8 @@ int main(int argc, char *argv[])
 			d[j] += Util::get_gauss_rand(0, 1.0);
 		}
 		data[i]->done_data();
-		data[i]->process("eman1.normalize.circlemean");
-		data[i]->process("eman1.mask.sharp", Dict("outer_radius", data[i]->get_xsize()/2));
+		data[i]->process_inplace("eman1.normalize.circlemean");
+		data[i]->process_inplace("eman1.mask.sharp", Dict("outer_radius", data[i]->get_xsize()/2));
 	
 		if (i < 5) {
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 500; j++) {
 			for (int i = 0; i < NTT / 2; i++)
-				data[i]->process("eman1.math.absvalue");
+				data[i]->process_inplace("eman1.math.absvalue");
 		}
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 		t1 = (float) clock();
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++)
-				data[i]->process("eman1.math.sqrt");
+				data[i]->process_inplace("eman1.math.sqrt");
 		}
 		t2 = (float) clock();
 		ti = (t2 - t1) / (float) CPS;

@@ -29,7 +29,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_write_lst_overloads_1_4, writ
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_print_image_overloads_0_2, print_image, 0, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_overloads_1_2, process, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_process_inplace_overloads_1_2, process_inplace, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, align, 2, 5)
 
@@ -116,7 +116,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("append_image", &EMAN::EMData::append_image, EMAN_EMData_append_image_overloads_1_3())
         .def("write_lst", &EMAN::EMData::write_lst, EMAN_EMData_write_lst_overloads_1_4())
         .def("print_image", &EMAN::EMData::print_image, EMAN_EMData_print_image_overloads_0_2())
-        .def("process", &EMAN::EMData::process, EMAN_EMData_process_overloads_1_2())
+        .def("process_inplace", &EMAN::EMData::process_inplace, EMAN_EMData_process_inplace_overloads_1_2())
         .def("cmp", &EMAN::EMData::cmp)
         .def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5()[ return_value_policy< manage_new_object >() ])
         .def("project", &EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])
@@ -135,7 +135,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("postift_depad_corner_inplace", &EMAN::EMData::postift_depad_corner_inplace)
         .def("real2FH", &EMAN::EMData::real2FH, return_value_policy< manage_new_object >())
         .def("FH2F", &EMAN::EMData::FH2F, EMAN_EMData_FH2F_overloads_2_3()[ return_value_policy< manage_new_object >() ])
-        .def("FH2Real", &EMAN::EMData::FH2Real,return_value_policy< manage_new_object >())
+        .def("FH2Real", &EMAN::EMData::FH2Real, EMAN_EMData_FH2Real_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())

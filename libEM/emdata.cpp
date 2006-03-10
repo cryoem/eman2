@@ -294,12 +294,12 @@ void EMData::write_lst(const string & filename, const string & reffile,
 }
 
 
-void EMData::process(const string & processorname, const Dict & params)
+void EMData::process_inplace(const string & processorname, const Dict & params)
 {
 	ENTERFUNC;
 	Processor *f = Factory < Processor >::get(processorname, params);
 	if (f) {
-		f->process(this);
+		f->process_inplace(this);
 		if( f )
 		{
 			delete f;
@@ -1264,7 +1264,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 {
 	EMData* FFT= FH2F(Size,OverSamplekB,0);
-	FFT->process("eman1.xform.fourierorigin");
+	FFT->process_inplace("eman1.xform.fourierorigin");
 	EMData* eguess= FFT ->do_ift();
 	return eguess;
 }  // ends FH2F
@@ -5154,8 +5154,8 @@ EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 EMData *EMData::make_footprint() {
 //	EMData *ccf=calc_ccf(this);
 	EMData *ccf=calc_mutual_correlation(this);
-	ccf->process("eman1.xform.phaseorigin");
-	ccf->process("eman1.normalize.edgemean");
+	ccf->process_inplace("eman1.xform.phaseorigin");
+	ccf->process_inplace("eman1.normalize.edgemean");
 	EMData *un=ccf->unwrap();
 	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize()/2,un->get_ysize()-6));	// 4 and 6 are empirical
 	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
@@ -5192,7 +5192,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	tmp2 = get_clip(r1);
 
 	if (!premasked) {
-		tmp2->process("eman1.mask.sharp", Dict("outer_radius", nx / 2, "value", 0));
+		tmp2->process_inplace("eman1.mask.sharp", Dict("outer_radius", nx / 2, "value", 0));
 	}
 
 	if (filt->get_xsize() != tmp2->get_xsize() + 2 || filt->get_ysize() != tmp2->get_ysize() ||
@@ -5200,7 +5200,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 		filt->set_size(tmp2->get_xsize() + 2, tmp2->get_ysize(), tmp2->get_zsize());
 		filt->to_one();
 
-		filt->process("eman1.filter.highpass.gaussian", Dict("highpass", 1.5/nx));
+		filt->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 1.5/nx));
 	}
 
 	EMData *tmp = tmp2->calc_mutual_correlation(tmp2, true, filt);
@@ -5230,7 +5230,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 
 	if (nz == 1) {
 		if (!unwrap) {
-			tmp2->process("eman1.mask.sharp", Dict("outer_radius", -1, "value", 0));
+			tmp2->process_inplace("eman1.mask.sharp", Dict("outer_radius", -1, "value", 0));
 			rfp = 0;
 			result = tmp2;
 		}
@@ -5327,7 +5327,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	}
 
 	if (tocorner) {
-		cf->process("eman1.xform.phaseorigin");
+		cf->process_inplace("eman1.xform.phaseorigin");
 	}
 
 	EMData *f2 = cf->do_ift();
@@ -5803,8 +5803,8 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 
 	EMData *img1_copy = img1->copy();
 	img1_copy->to_one();
-	img1_copy->process(mask_filter, filter_dict);
-	img1_copy->process("eman1.xform.phaseorigin");
+	img1_copy->process_inplace(mask_filter, filter_dict);
+	img1_copy->process_inplace("eman1.xform.phaseorigin");
 
 	int num = 0;
 	float *img1_copy_data = img1_copy->get_data();
@@ -5815,7 +5815,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 		}
 	}
 
-	img2->process(mask_filter, filter_dict);
+	img2->process_inplace(mask_filter, filter_dict);
 
 	float *img2_data = img2->get_data();
 	double lsum = 0;
@@ -5856,8 +5856,8 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 		img2 = 0;
 	}
 
-	img2_copy->process(mask_filter, filter_dict);
-	img2_copy->process("eman1.xform.phaseorigin");
+	img2_copy->process_inplace(mask_filter, filter_dict);
+	img2_copy->process_inplace("eman1.xform.phaseorigin");
 
 	if( img1_copy )
 	{
@@ -5867,7 +5867,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 
 	EMData *img1_copy2 = img1->copy();
 
-	img1_copy2->process("eman1.math.squared");
+	img1_copy2->process_inplace("eman1.math.squared");
 
 	EMData *ccf = img1->calc_ccf(img2_copy);
 	if( img2_copy )
@@ -5896,7 +5896,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	conv2->mult(img1_size);
-	conv1->process("eman1.math.squared");
+	conv1->process_inplace("eman1.math.squared");
 	conv1->mult(1.0f / (num * num));
 
 	EMData *conv2_copy = conv2->copy();
@@ -5914,7 +5914,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	conv2_copy->mult(1.0f / num);
-	conv2_copy->process("eman1.math.sqrt");
+	conv2_copy->process_inplace("eman1.math.sqrt");
 
 	EMData *ccf_copy = ccf->copy();
 	if( ccf )
@@ -6632,7 +6632,7 @@ float EMData::get_circle_mean()
 		mask->to_one();
 
 		float radius = (float)(ny / 2 - 2);
-		mask->process("eman1.mask.sharp", Dict("inner_radius", radius - 1,
+		mask->process_inplace("eman1.mask.sharp", Dict("inner_radius", radius - 1,
 									   "outer_radius", radius + 1));
 
 		int n = 0;

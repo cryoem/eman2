@@ -55,11 +55,11 @@ class TestCmp(unittest.TestCase):
         """test QuadMinDotCmp ..............................."""
         e = EMData()
         e.set_size(64,64,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('quadmindot', e2, {})    #default argument
         score2 = e.cmp('quadmindot', e2, {'negative':0, 'normalize':1})
@@ -68,11 +68,11 @@ class TestCmp(unittest.TestCase):
         """test OptVarianceCmp .............................."""
         e = EMData()
         e.set_size(64,64,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('optvariance', e2, {})    #default argument
         score2 = e.cmp('optvariance', e2, {'invert':1, 'keepzero':1, 'matchfilt':2, 'radweight':2, 'debug':1})
@@ -84,11 +84,11 @@ class TestCmp(unittest.TestCase):
         """test FRCCmp ......................................"""
         e = EMData()
         e.set_size(64,64,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('frc', e2, {})
         #score2 = e.cmp('frc', e2, {'snr':(1.0, 2.0)})    #todo: segmentation fault
@@ -97,11 +97,11 @@ class TestCmp(unittest.TestCase):
         """test PhaseCmp ...................................."""
         e = EMData()
         e.set_size(64,64,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('phase', e2, {})
         
@@ -109,11 +109,11 @@ class TestCmp(unittest.TestCase):
         """test VarianceCmp ................................."""
         e = EMData()
         e.set_size(64,64,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('variance', e2, {})
         
@@ -121,11 +121,11 @@ class TestCmp(unittest.TestCase):
         """test DotCmp ......................................"""
         e = EMData()
         e.set_size(64,64,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.process('testimage.noise.uniform.rand')
+        e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('dot', e2, {})
         score  = e.cmp('dot', e2, {'negative':1, 'normalize':1})

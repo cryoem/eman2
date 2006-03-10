@@ -28,10 +28,10 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 {
 	EMData *f = image;
 	if (!image->is_complex()) {
-		f->process("eman1.xform.phaseorigin");
+		f->process_inplace("eman1.xform.phaseorigin");
 		f = image->do_fft();
-		image->process("eman1.xform.phaseorigin");
-		f->process("eman1.xform.fourierorigin");
+		image->process_inplace("eman1.xform.phaseorigin");
+		f->process_inplace("eman1.xform.fourierorigin");
 	}
 
 	int f_nx = f->get_xsize();
@@ -104,14 +104,14 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->done_data();
 	tmp->update();
 
-	tmp->process("eman1.xform.fourierorigin");
+	tmp->process_inplace("eman1.xform.fourierorigin");
 	EMData *ret = tmp->do_ift();
-	ret->process("eman1.xform.phaseorigin");
+	ret->process_inplace("eman1.xform.phaseorigin");
 
 	Dict filter_d;
 	filter_d["gauss_width"] = gauss_width;
 	filter_d["ring_width"] = ret->get_xsize() / 2;
-	ret->process("eman1.math.gausskernelfix", filter_d);
+	ret->process_inplace("eman1.math.gausskernelfix", filter_d);
 
 	ret->set_rotation( az2*static_cast<float>(dgr_to_rad), 
 						alt2*static_cast<float>(dgr_to_rad), 

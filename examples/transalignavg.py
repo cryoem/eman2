@@ -26,18 +26,18 @@ else : gamma=0
 # Pass 1, sequential alignment to average
 avg=EMData()
 avg.read_image(sys.argv[1],0)
-darkref.process("eman1.normalize.toimage",{"noisy":avg})
+darkref.process_inplace("eman1.normalize.toimage",{"noisy":avg})
 avg-=darkref
 avg-=avg.get_edge_mean()
-#if gamma : avg.process("math.pow",{"pow":gamma})
+#if gamma : avg.process_inplace("math.pow",{"pow":gamma})
 sum=1
 for i in range(1,n):
 	a=EMData()
 	a.read_image(sys.argv[1],i)
-	darkref.process("eman1.normalize.toimage",{"noisy":a})
+	darkref.process_inplace("eman1.normalize.toimage",{"noisy":a})
 	a-=darkref
 	a-=a.get_edge_mean()
-#	if gamma : a.process("math.pow",{"pow":gamma})
+#	if gamma : a.process_inplace("math.pow",{"pow":gamma})
 	b=a.align("translational",avg,{})
 	dot=b.cmp("dot",avg,{"negative":0,"normalize":1})
 	print "%4d. %3d\t%3d\t%1.4f"%(i,b.get_attr("translational.dx"),b.get_attr("translational.dy"),dot)
@@ -48,7 +48,7 @@ for i in range(1,n):
 print "%d/%d used"%(sum,n)
 avg-=avg.get_attr("minimum")
 avg/=avg.get_attr("maximum")
-avg.process("math.pow",{"pow":gamma})
+avg.process_inplace("math.pow",{"pow":gamma})
 avg.write_image("avg.mrc")
 display(avg)
 

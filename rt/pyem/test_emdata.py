@@ -30,7 +30,7 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.copy()
         
         self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
@@ -44,7 +44,7 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.copy_head()
         
         dict1 = e.get_attr_dict()
@@ -59,7 +59,7 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         #test inclusive clip
         e2 = e.get_clip(Region(10,10,10, 20,20,20))
@@ -87,12 +87,12 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         e2 = EMData()
         e2.set_size(10,10,10)
         e2.to_zero()
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         
         #test exception if the clip is out side of the image
         self.assertRaises( RuntimeError, e.insert_clip, e2, (30,30,30) )
@@ -114,7 +114,7 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.to_zero()
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.get_top_half()
         d = e.get_3dview()
         d2 = e2.get_3dview()
@@ -137,7 +137,7 @@ class TestEMData(unittest.TestCase):
         """test insert_scaled_sum() function ................"""
         e = EMData()
         e.set_size(64,64,64)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)
         e2.to_one()
@@ -161,7 +161,7 @@ class TestEMData(unittest.TestCase):
         """test window_center() function ...................."""
         e = EMData()
         e.set_size(64,64,64)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.window_center(32)
         
         #window_padded() only work for real data, raise exception for complex
@@ -175,7 +175,7 @@ class TestEMData(unittest.TestCase):
         #window_padded() apply to cubic real space image only
         e3 = EMData()
         e3.set_size(64,64,62)
-        e3.process("testimage.noise.uniform.rand")
+        e3.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e3.window_center, 32 )
         try:
             e4 = e3.window_center(32)
@@ -185,20 +185,20 @@ class TestEMData(unittest.TestCase):
         #test 2-D support
         e7 = EMData()
         e7.set_size(64,64,1)
-        e7.process("testimage.noise.uniform.rand")
+        e7.process_inplace("testimage.noise.uniform.rand")
         e8 = e7.window_center(32)
             
         #test 1-D support 
         e5 = EMData()
         e5.set_size(64,1,1)
-        e5.process("testimage.noise.uniform.rand")
+        e5.process_inplace("testimage.noise.uniform.rand")
         e6 = e5.window_center(32)   
             
     def test_center_origin(self):
         """test center_origin() function ...................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e.center_origin()
         
         #center_origin() only apply to real image
@@ -214,7 +214,7 @@ class TestEMData(unittest.TestCase):
         """test center_origin_fft() function ................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e.set_complex(True)
         e.center_origin_fft()
         
@@ -230,7 +230,7 @@ class TestEMData(unittest.TestCase):
         """test zeropad_ntimes() function ..................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         #test default argument npad=4
         e2 = e.zeropad_ntimes()
@@ -253,7 +253,7 @@ class TestEMData(unittest.TestCase):
         """test pad_fft() function .........................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         #test default argument
         e2 = e.pad_fft()
@@ -265,7 +265,7 @@ class TestEMData(unittest.TestCase):
         """test postift_depad_corner_inplace() .............."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e3 = e2.do_ift()
         e3.postift_depad_corner_inplace()        
@@ -282,7 +282,7 @@ class TestEMData(unittest.TestCase):
         """test real2FH() function .........................."""
         e = EMData()
         e.set_size(31,31,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         #Log.logger().set_level(-1)
         #import sys
         #outfile = "out.txt" 
@@ -324,7 +324,7 @@ class TestEMData(unittest.TestCase):
         """test FH2F() function ............................."""
         e = EMData()
         e.set_size(31,31,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.real2FH(1.0)
         e3 = e2.FH2F(31, 1.0)
         
@@ -340,7 +340,7 @@ class TestEMData(unittest.TestCase):
         """test do_fft()/do_ift() function .................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e3 = e2.do_ift()
         
@@ -351,7 +351,7 @@ class TestEMData(unittest.TestCase):
         
         e4 = EMData()
         e4.set_size(32,1,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e5 = e4.do_fft()
         e6 = e5.do_ift()
         
@@ -360,7 +360,7 @@ class TestEMData(unittest.TestCase):
                 
         e7 = EMData()
         e7.set_size(32,32,1)
-        e7.process("testimage.noise.uniform.rand")
+        e7.process_inplace("testimage.noise.uniform.rand")
         e8 = e7.do_fft()
         e9 = e8.do_ift()
         
@@ -386,7 +386,7 @@ class TestEMData(unittest.TestCase):
         """test do_fft_inplace()/do_ift_inplace ............."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         #test unpadded real image
         e2 = e.do_fft_inplace()    
@@ -394,7 +394,7 @@ class TestEMData(unittest.TestCase):
         #test padded real image
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.pad_fft()
         e3 = e2.do_fft_inplace()
         
@@ -404,7 +404,7 @@ class TestEMData(unittest.TestCase):
         #do_ift_inplace() only apply to complex image
         e4 = EMData()
         e4.set_size(32,32,32)
-        e4.process("testimage.noise.uniform.rand")
+        e4.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e4.do_ift_inplace, )
         try:
             e4.do_ift_inplace()
@@ -414,7 +414,7 @@ class TestEMData(unittest.TestCase):
         #do_fft_inplace() only apply to real image
         e5 = EMData()
         e5.set_size(32,32,32)
-        e5.process("testimage.noise.uniform.rand")
+        e5.process_inplace("testimage.noise.uniform.rand")
         e6 = e5.do_fft()
         self.assertRaises( RuntimeError, e6.do_fft_inplace, )
         try:
@@ -426,7 +426,7 @@ class TestEMData(unittest.TestCase):
         """test get_fft_amplitude() function ................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e3 = e2.get_fft_amplitude()
         self.assertEqual( e3.is_complex(), False)
@@ -442,7 +442,7 @@ class TestEMData(unittest.TestCase):
         """test get_fft_phase() function ...................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e3 = e2.get_fft_phase()
         self.assertEqual( e3.is_complex(), False)
@@ -458,7 +458,7 @@ class TestEMData(unittest.TestCase):
         """test get_fft_amplitude2D() function .............."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e3 = e2.get_fft_amplitude2D()
         self.assertEqual( e3.is_complex(), False)
@@ -483,13 +483,13 @@ class TestEMData(unittest.TestCase):
         """test render_amp8() function ......................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100, 200, 3)
         
         #only apply to 2D image
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100, 200, 3)
         try:
             str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100, 200, 3)
@@ -500,7 +500,7 @@ class TestEMData(unittest.TestCase):
         """test ri2ap()/ap2ri() function ...................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
         e2.ri2ap()
         e2.ap2ri()
@@ -509,7 +509,7 @@ class TestEMData(unittest.TestCase):
         """test scale() function ............................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         d = e.get_3dview()
         
         e2 = e.scale(2.0)
@@ -769,7 +769,7 @@ class TestEMData(unittest.TestCase):
         """test translate() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         #integer translation, no interpolation involved
         e.translate(2,2,2)
@@ -893,19 +893,19 @@ class TestEMData(unittest.TestCase):
         """test dot_rotate_translate() functon .............."""
         e =EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,1)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e.dot_rotate_translate(e2, 2.0, 3.0, 1.0)
         
         #two image must be the same size
         e3 =EMData()
         e3.set_size(32,32,1)
-        e3.process("testimage.noise.uniform.rand")
+        e3.process_inplace("testimage.noise.uniform.rand")
         e4 = EMData()
         e4.set_size(24,24,1)
-        e4.process("testimage.noise.uniform.rand")
+        e4.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e3.dot_rotate_translate, e4, 2.0, 3.0, 1.0)
         try:
             e3.dot_rotate_translate(e4, 2.0, 3.0, 1.0)
@@ -915,10 +915,10 @@ class TestEMData(unittest.TestCase):
         #two image must be 2D
         e5 =EMData()
         e5.set_size(32,32,32)
-        e5.process("testimage.noise.uniform.rand")
+        e5.process_inplace("testimage.noise.uniform.rand")
         e6 = EMData()
         e6.set_size(32,32,32)
-        e6.process("testimage.noise.uniform.rand")
+        e6.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e5.dot_rotate_translate, e6, 2.0, 3.0, 1.0)
         try:
             e5.dot_rotate_translate(e6, 2.0, 3.0, 1.0)
@@ -929,10 +929,10 @@ class TestEMData(unittest.TestCase):
         """test little_big_dot() function ..................."""
         big = EMData()
         big.set_size(256,256,1)
-        big.process("testimage.noise.uniform.rand")
+        big.process_inplace("testimage.noise.uniform.rand")
         small = EMData()
         small.set_size(32,32,1)
-        small.process("testimage.noise.uniform.rand")
+        small.process_inplace("testimage.noise.uniform.rand")
         
         e = big.little_big_dot(small)
         self.assertNotEqual(e, None)
@@ -953,14 +953,14 @@ class TestEMData(unittest.TestCase):
         """test do_radon() function ........................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         e2 = e.do_radon()
         
         #this function only apply to square 2D image
         e3 = EMData()
         e3.set_size(32,24,1)
-        e3.process("testimage.noise.uniform.rand")
+        e3.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e3.do_radon,)
         try:
             e3.do_radon()
@@ -969,7 +969,7 @@ class TestEMData(unittest.TestCase):
         
         e4 = EMData()
         e4.set_size(32,32,32)
-        e4.process("testimage.noise.uniform.rand")
+        e4.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e4.do_radon,)
         try:
             e4.do_radon()
@@ -981,30 +981,30 @@ class TestEMData(unittest.TestCase):
         #for two 1 D images
         e = EMData()
         e.set_size(24,1,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(24,1,1)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         re = e.calc_ccf(e2)
         self.assertEqual(re.is_complex(), False)
         
         #for two 2 D images
         e3 = EMData()
         e3.set_size(24,24,1)
-        e3.process("testimage.noise.uniform.rand")
+        e3.process_inplace("testimage.noise.uniform.rand")
         e4 = EMData()
         e4.set_size(24,24,1)
-        e4.process("testimage.noise.uniform.rand")
+        e4.process_inplace("testimage.noise.uniform.rand")
         re = e3.calc_ccf(e4)
         self.assertEqual(re.is_complex(), False)
         
         #for two 3 D images
         e5 = EMData()
         e5.set_size(24,24,24)
-        e5.process("testimage.noise.uniform.rand")
+        e5.process_inplace("testimage.noise.uniform.rand")
         e6 = EMData()
         e6.set_size(24,24,24)
-        e6.process("testimage.noise.uniform.rand")
+        e6.process_inplace("testimage.noise.uniform.rand")
         re = e5.calc_ccf(e6)
         self.assertEqual(re.is_complex(), False)
         
@@ -1021,10 +1021,10 @@ class TestEMData(unittest.TestCase):
         """test calc_ccfx() function ........................"""
         e = EMData()
         e.set_size(24,24,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(24,24,1)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         re = e.calc_ccfx(e2)
         self.assertEqual(re.is_complex(), False)
         self.assertEqual(re.get_xsize(), 24)
@@ -1072,10 +1072,10 @@ class TestEMData(unittest.TestCase):
         """test calc_mutual_correlation() function .........."""
         e = EMData()
         e.set_size(24,24,24)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(24,24,24)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         
         #test for default argument
         e3 = e.calc_mutual_correlation(e2)
@@ -1088,10 +1088,10 @@ class TestEMData(unittest.TestCase):
         #two image must be in same size
         e5 = EMData()
         e5.set_size(24,24,24)
-        e5.process("testimage.noise.uniform.rand")
+        e5.process_inplace("testimage.noise.uniform.rand")
         e6 = EMData()
         e6.set_size(32,32,32)
-        e6.process("testimage.noise.uniform.rand")
+        e6.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e5.calc_mutual_correlation, e6)
         try:
             e5.calc_mutual_correlation(e6)
@@ -1102,7 +1102,7 @@ class TestEMData(unittest.TestCase):
         """test unwrap() function ..........................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         #test for default argument
         e2 = e.unwrap()
@@ -1125,7 +1125,7 @@ class TestEMData(unittest.TestCase):
         """test mean_shrink() function ......................"""
         e = EMData()
         e.set_size(64,64,64)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         e.mean_shrink(4)
         self.assertEqual(e.get_xsize(), 16)
@@ -1134,7 +1134,7 @@ class TestEMData(unittest.TestCase):
         
         e2 = EMData()
         e2.set_size(30,30,1)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e2.mean_shrink(1.5)    
         
         #shrink factor 1.5 only support 2D image
@@ -1155,7 +1155,7 @@ class TestEMData(unittest.TestCase):
         """test median_shrink() function ...................."""
         e = EMData()
         e.set_size(64,64,64)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         e.median_shrink(4)
         self.assertEqual(e.get_xsize(), 16)
@@ -1180,7 +1180,7 @@ class TestEMData(unittest.TestCase):
         """test apply_radial_func() functon ................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         self.assertEqual(e.is_complex(), False)
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
@@ -1191,10 +1191,10 @@ class TestEMData(unittest.TestCase):
         """test add_incoherent() function ..................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e3 = e.do_fft()
         e4 = e2.do_fft()
         e3.add_incoherent(e4)
@@ -1202,7 +1202,7 @@ class TestEMData(unittest.TestCase):
         #two images must be the same size
         e5 = EMData()
         e5.set_size(24,24,24)
-        e5.process("testimage.noise.uniform.rand")
+        e5.process_inplace("testimage.noise.uniform.rand")
         e6 = e5.do_fft()
         self.assertRaises( RuntimeError, e3.add_incoherent, e6)
         try:
@@ -1221,10 +1221,10 @@ class TestEMData(unittest.TestCase):
         """test calc_fourier_shell_correlation() ............"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e.calc_fourier_shell_correlation(e2)
         
         #input image can not be null
@@ -1248,20 +1248,20 @@ class TestEMData(unittest.TestCase):
         """test calc_hist() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         hist = e.calc_hist()
         
     def test_calc_az_dist(self):
         """test calc_az_dist() function ....................."""
         e = EMData()
         e.set_size(32,32,1)    #this function apply to 2D only
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         data = e.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
         
         #this function not apply to 3D image
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e2.calc_az_dist, 32, 0.0, 0.1, 0.0, 2.0)
         try:
             e2.calc_az_dist(32, 0.0, 0.1, 0.0, 2.0)
@@ -1272,10 +1272,10 @@ class TestEMData(unittest.TestCase):
         """test calc_dist() function ........................"""
         e = EMData()
         e.set_size(32,1,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)     #second image must be the same x size as this image
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         dist = e.calc_dist(e2)
         #test for non-default argument
         dist2 = e.calc_dist(e2, 10)
@@ -1300,10 +1300,10 @@ class TestEMData(unittest.TestCase):
         """test calc_flcf() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e3 = e.calc_flcf(e2)
         e3 = e.calc_flcf(e2, 60)
         
@@ -1318,17 +1318,17 @@ class TestEMData(unittest.TestCase):
         """test convolute() function ........................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e3 = e.convolute(e2)        
     
     def test_has_ctff(self):
         """test has_ctff() function ........................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         result = e.has_ctff()
         self.assertEqual(result, False)
         
@@ -1336,24 +1336,24 @@ class TestEMData(unittest.TestCase):
         """test dot() function .............................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         f = e.dot(e2)
         
     def no_test_common_lines(self):
         """test common_lines() function ....................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,1)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e3 = e2.do_fft()
         e4 = EMData()
         e4.set_size(32,32,1)     
-        e4.process("testimage.noise.uniform.rand")
+        e4.process_inplace("testimage.noise.uniform.rand")
         e5 = e4.do_fft()
         e.common_lines(e3, e5)
         
@@ -1361,13 +1361,13 @@ class TestEMData(unittest.TestCase):
         """test common_lines_real() function ................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,1)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e3 = EMData()
         e3.set_size(32,32,1)     
-        e3.process("testimage.noise.uniform.rand")
+        e3.process_inplace("testimage.noise.uniform.rand")
         e.common_lines_real(e2,e3)
         
     def test_cut_slice(self):
@@ -1376,7 +1376,7 @@ class TestEMData(unittest.TestCase):
         e.set_size(32,32,1)
         e2 = EMData()
         e2.set_size(32,32,32)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e.cut_slice(e2, 10.5)    #default argument
         e.cut_slice(e2, 11.6, None, False, 1, 1)
         
@@ -1391,10 +1391,10 @@ class TestEMData(unittest.TestCase):
         """test uncut_slice() function ......................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,32,32)     
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e.uncut_slice(e2, 10.0)
         e.uncut_slice(e2, 10.0, None, 2, 3) #non-default argument
         
@@ -1402,7 +1402,7 @@ class TestEMData(unittest.TestCase):
         """test calc_center_density() function .............."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         d = e.calc_center_density()
         self.assertNotEqual(d, None)
         
@@ -1415,7 +1415,7 @@ class TestEMData(unittest.TestCase):
         """test calc_sigma_diff() function .................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         s = e.calc_sigma_diff()
         self.assertNotEqual(s, None)
         
@@ -1423,7 +1423,7 @@ class TestEMData(unittest.TestCase):
         """test calc_min/max_location() function ............"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         loc = e.calc_min_location()
         self.assertNotEqual(loc, None)
         loc2 = e.calc_max_location()
@@ -1437,7 +1437,7 @@ class TestEMData(unittest.TestCase):
         """test get_edge/circle_mean() function ............."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         em = e.get_edge_mean()
         cm = e.get_circle_mean()
     
@@ -1494,7 +1494,7 @@ class TestEMData(unittest.TestCase):
         """test set_attr_dict() function ...................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         d = e.get_attr_dict()
         self.assertEqual(d['is_complex'], False)
         d['is_complex'] = True
@@ -1587,7 +1587,7 @@ class TestEMData(unittest.TestCase):
         #test exception, if set value out of range
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         self.assertRaises( RuntimeError, e2.set_value_at, 32, 1, 1, 1.0)
         try:
             e2.set_value_at(32, 1, 1, 1.0)
@@ -1608,12 +1608,12 @@ class TestEMData(unittest.TestCase):
         """test sget_value_at_interp() function ............."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         d = e.sget_value_at_interp(1.5, 1.5, 1.5)
         
         e2 = EMData()
         e2.set_size(32,32,32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         d2 = e2.sget_value_at_interp(1.5, 1.5)
                                   
     def test_calc_radial_dist(self):
@@ -1637,7 +1637,7 @@ class TestEMData(unittest.TestCase):
         """test rotavg() function ..........................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         
         re = e.rotavg()
         self.assertEqual(re.get_ysize(), 1)
@@ -1657,7 +1657,7 @@ class TestEMData(unittest.TestCase):
         #test add
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e + 2.0
         d = e.get_3dview()
         d2 = e2.get_3dview()
@@ -1833,7 +1833,7 @@ class TestEMData(unittest.TestCase):
         """test get/set_translation() function .............."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e.set_translation(1.0,2.0,3.0)
         t = e.get_translation()
         self.assertEqual(t.at(0), 1.0)
@@ -1850,14 +1850,14 @@ class TestEMData(unittest.TestCase):
         """test get_transform() function ...................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         t = e.get_transform()    
     
     def test_set_rotation(self):
         """test set_rotation() function ....................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e.set_rotation(0.23, 0.45, 0.67)
     
     def test_set_size(self):
@@ -1894,7 +1894,7 @@ class TestEMData(unittest.TestCase):
         #test set_complex_size()
         e2 = EMData()
         e2.set_size(32)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         e3 = e2.do_fft()
         e3.set_complex_size(32)
         self.assertEqual(e3.get_xsize(), 64)
@@ -1912,7 +1912,7 @@ class TestEMData(unittest.TestCase):
         """test get_row() function .........................."""
         e = EMData()
         e.set_size(32, 32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.get_row(1)
         self.assertEqual(e2.get_xsize(), 32)
         self.assertEqual(e2.get_ysize(), 1)
@@ -1935,7 +1935,7 @@ class TestEMData(unittest.TestCase):
         """test set_row() function .........................."""
         e = EMData()
         e.set_size(32, 32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,1)
         e.set_row(e2, 1)
@@ -1960,7 +1960,7 @@ class TestEMData(unittest.TestCase):
         """test get_col() function .........................."""
         e = EMData()
         e.set_size(32, 32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.get_col(1)
         self.assertEqual(e2.get_xsize(), 32)
         self.assertEqual(e2.get_ysize(), 1)
@@ -1983,7 +1983,7 @@ class TestEMData(unittest.TestCase):
         """test set_col() function .........................."""
         e = EMData()
         e.set_size(32, 32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         e2 = EMData()
         e2.set_size(32,1)
         e.set_col(e2, 1)
@@ -2006,7 +2006,7 @@ class TestEMData(unittest.TestCase):
         """test set/get_attr() function ....................."""
         e = EMData()
         e.set_size(32, 32, 32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
         self.assertEqual(e.get_attr("is_complex"), False)
         e.set_attr("is_complex", True)
         self.assertEqual(e.get_attr("is_complex"), True)
@@ -2015,7 +2015,7 @@ class TestEMData(unittest.TestCase):
         """test some boolean check in EMData ................"""
         e = EMData()
         e.set_size(32, 32, 32)
-        e.process("testimage.noise.uniform.rand")
+        e.process_inplace("testimage.noise.uniform.rand")
 
         self.assertEqual(e.is_shuffled(), False)
         e.set_shuffled(True)
@@ -2036,7 +2036,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e.is_complex_x(), False)
         e2 = EMData()
         e2.set_size(32, 1, 1)
-        e2.process("testimage.noise.uniform.rand")
+        e2.process_inplace("testimage.noise.uniform.rand")
         self.assertEqual(e2.is_complex_x(), False)
         e3 = e2.do_fft()
         self.assertEqual(e3.is_complex_x(), True)
@@ -2069,7 +2069,7 @@ class TestEMData(unittest.TestCase):
         """test statistics of EMData ........................"""
         e = EMData()
         e.set_size(10,10,1)
-        e.process("testimage.circlesphere",{"radius":4})
+        e.process_inplace("testimage.circlesphere",{"radius":4})
         descriptive_statistics(e)
         f = norm_pad_ft(e, False, True, 2)
         descriptive_statistics(f)
@@ -2082,7 +2082,7 @@ class TestEMData(unittest.TestCase):
         """test some more image arithmetics ................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         d = e.get_3dview() 
         e2 = e.power(2)
         d2 = e2.get_3dview()
@@ -2132,7 +2132,7 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         file1 = 'uniformrand.mrc'
         e.write_image(file1)
         im = EMData.read_images(file1)
@@ -2143,7 +2143,7 @@ class TestEMData(unittest.TestCase):
         """test rot_trans2D() function ......................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         e2 = e.rot_trans2D(0.12)    #default argument
         e3 = e.rot_trans2D(0.12, 0.2, 0.3)    #non-default argument
         
@@ -2168,7 +2168,7 @@ class TestEMData(unittest.TestCase):
         """test rot_scale_trans2D() function ................"""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         e2 = e.rot_scale_trans2D(0.12)    #test default argument
         e3 = e.rot_scale_trans2D(0.12, 2.0, 0.2, 0.3)    #test non-default argument
         
@@ -2195,7 +2195,7 @@ class TestEMData(unittest.TestCase):
         """test rotconvtrunc2d_kbi0() function .............."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         e2 = e.rotconvtrunc2d_kbi0(0.1,0.2,10)
         
         #this function only apply to 2D image
@@ -2219,7 +2219,7 @@ class TestEMData(unittest.TestCase):
         """test gridrot2d_kbi0() function ..................."""
         e = EMData()
         e.set_size(32,32,1)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         e2 = e.gridrot2d_kbi0(0.1)    #default argument
         e3 = e.gridrot2d_kbi0(0.1, 1.5, 10)
         
@@ -2227,7 +2227,7 @@ class TestEMData(unittest.TestCase):
         """test symvol() function ..........................."""
         e = EMData()
         e.set_size(32,32,32)
-        e.process('testimage.noise.uniform.rand')
+        e.process_inplace('testimage.noise.uniform.rand')
         e2 = e.symvol('CSYM')
         e3 = e.symvol('DSYM')
         #e4 = e.symvol('ICOS_SYM')    #todo problem here, need investigate

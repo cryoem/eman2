@@ -5,7 +5,7 @@ using namespace EMAN;
 
 /** define your Processor operation
  */
-void XYZProcessor::process(EMData * image)
+void XYZProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		return;
