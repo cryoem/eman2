@@ -60,12 +60,20 @@ namespace EMAN
 		{
 		}
 
-		/** To process an image in-place.
+		/** To process an image in-place. 
+		 * For those processors which can only be processed out-of-place, override this function 
+		 * to just print out some error message to remind user call the out-of-place version.
 		 * @param image The image to be processed.
 		 */
-		virtual void process_inplace(EMData *image)
-		{
-		}
+		virtual void process_inplace(EMData *image) = 0;
+		
+		/** To proccess an image out-of-place. 
+		 * For those processors which can only be processed out-of-place, override this function 
+		 * to give the right behavior.
+		 * @param image The image will be copied, actual process happen on copy of image.
+		 * @return the image processing result, may or may not be the same size of the input image  
+		 * */
+		virtual EMData* process(EMData * image);
 
 		/** To process multiple images using the same algorithm.
 		 * @param images Multiple images to be processed.

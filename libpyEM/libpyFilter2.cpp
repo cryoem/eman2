@@ -26,8 +26,12 @@ struct EMAN_Processor_Wrapper: EMAN::Processor
         call_method< void >(py_self, "process_inplace", p0);
     }
 
-    void default_process_inplace(EMAN::EMData* p0) {
-        EMAN::Processor::process_inplace(p0);
+    EMAN::EMData* process(EMAN::EMData* p0) {
+        return call_method< EMAN::EMData* >(py_self, "process", p0);
+    }
+
+    EMAN::EMData* default_process(EMAN::EMData* p0) {
+        return EMAN::Processor::process(p0);
     }
 
     void process_list_inplace(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
@@ -82,7 +86,8 @@ BOOST_PYTHON_MODULE(libpyFilter2)
 {
     scope* EMAN_Processor_scope = new scope(
     class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("Processor", init<  >())
-        .def("process_inplace", &EMAN::Processor::process_inplace, &EMAN_Processor_Wrapper::default_process_inplace)
+        .def("process_inplace", pure_virtual(&EMAN::Processor::process_inplace))
+        .def("process", &EMAN::Processor::process, &EMAN_Processor_Wrapper::default_process, return_value_policy< manage_new_object >())
         .def("process_list_inplace", &EMAN::Processor::process_list_inplace, &EMAN_Processor_Wrapper::default_process_list_inplace)
         .def("get_name", pure_virtual(&EMAN::Processor::get_name))
         .def("get_params", &EMAN::Processor::get_params, &EMAN_Processor_Wrapper::default_get_params)

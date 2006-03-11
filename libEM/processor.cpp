@@ -159,6 +159,12 @@ template <> Factory < Processor >::Factory()
 	force_add(&CCDNormProcessor::NEW);
 }
 
+EMData* Processor::process(EMData * image)
+{
+	EMData * result = image->copy();
+	process_inplace(result);
+	return result;
+}
 
 void ImageProcessor::process_inplace(EMData * image)
 {

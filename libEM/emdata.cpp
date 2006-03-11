@@ -309,6 +309,23 @@ void EMData::process_inplace(const string & processorname, const Dict & params)
 	EXITFUNC;
 }
 
+EMData* EMData::process(const string & processorname, const Dict & params)
+{
+	ENTERFUNC;
+	Processor *f = Factory < Processor >::get(processorname, params);
+	EMData * result = 0;
+	if (f) {
+		result = f->process(this);
+		if( f )
+		{
+			delete f;
+			f = 0;
+		}
+	}
+	return result;
+	EXITFUNC;
+}
+
 float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 {
 	ENTERFUNC;

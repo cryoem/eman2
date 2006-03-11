@@ -3,6 +3,7 @@ Include("emdata.h")
 Processor = Class("EMAN::Processor", "processor.h")
 #rename(Processor, "__Processor")
 set_policy(Processor.EMFourierFilter, return_value_policy(manage_new_object))
+set_policy(Processor.process, return_value_policy(manage_new_object))
 
 #RealPixelProcessor = Class("EMAN::RealPixelProcessor", "processor.h")
 #rename(RealPixelProcessor, "__RealPixelProcessor")

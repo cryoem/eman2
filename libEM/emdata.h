@@ -141,6 +141,15 @@ namespace EMAN
 		 * @exception NotExistingObjectError If the processor doesn't exist.
 		 */
 		void process_inplace(const string & processorname, const Dict & params = Dict());
+		
+		/** Apply a processor with its parameters on a copy of this image, return result 
+		 * as a a new image. The returned image may or may not be the same size as this image.
+		 * @param processorname Processor Name.
+		 * @param params Processor parameters in a keyed dictionary.
+		 * @return the processed result, a new image 
+		 * @exception NotExistingObjectError If the processor doesn't exist.
+		 * */
+		EMData * process(const string & processorname, const Dict & params = Dict());
 
 		/** Compare this image with another image.
 		 * @param cmpname Comparison algorithm name.
