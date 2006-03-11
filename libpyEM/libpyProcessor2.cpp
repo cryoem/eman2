@@ -82,7 +82,7 @@ struct EMAN_Processor_Wrapper: EMAN::Processor
 
 
 // Module ======================================================================
-BOOST_PYTHON_MODULE(libpyFilter2)
+BOOST_PYTHON_MODULE(libpyProcessor2)
 {
     scope* EMAN_Processor_scope = new scope(
     class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("Processor", init<  >())

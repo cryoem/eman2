@@ -89,7 +89,7 @@ The following classes are defined: \n\
   Aligners - Aligner factory. Each Aligner alignes 2D/3D images. \n\
   Averagers - Averager factory. Each Averager averages a set of images. \n\
   Cmps  - Cmp factory. Each Cmp defines a way to do image comparison. \n\
-  Filters - Filter factory. Each processor implements an image-processing algorithm. \n\
+  Processors - Processor factory. Each processor implements an image-processing algorithm. \n\
   Projectors - Projector factory. Each Projector implements an algorithm for 3D image projection. \n\
   Reconstructors - Reconstructor factory. Each Reconstructor implements an algorithm for image reconstruction. \n\
 \n\
@@ -102,9 +102,9 @@ The following classes are defined: \n\
   PointArray - Point array. \n\
 \n\
   dump_aligners() - Print out all Aligners and their parameters. \n\
-  dump_averagers() - Print out all Averagers and their parameters. \n\
+  dump_averagers() - Print out all Averagers and their sparameters. \n\
   dump_cmps() - Print out all Cmps and their parameters. \n\
-  dump_processors() - Print out all Filters and their parameters. \n\
+  dump_processors() - Print out all Processor`s and their parameters. \n\
   dump_projectors() - Print out all Projectors and their parameters. \n\
   dump_reconstructors() - Print out all Reconstructors and their parameters. \n\
 "

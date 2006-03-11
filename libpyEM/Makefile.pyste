@@ -4,7 +4,7 @@ PYSTE = python /usr/bin/pyste.py -I../libEM -I/usr/include/python${PYVER}
 all: libpyAligner2.cpp \
 	 libpyAverager2.cpp \
 	 libpyCmp2.cpp \
-	 libpyFilter2.cpp \
+	 libpyProcessor2.cpp \
 	 libpyFundamentals2.cpp \
 	 libpyReconstructor2.cpp	\
 	 libpyProjector2.cpp \
@@ -55,9 +55,9 @@ libpyCmp2.cpp: cmp.pyste ../libEM/cmp.h ../libEM/log.h ../libEM/xydata.h  ../lib
 	rm -f libpyCmp2.cpp
 	$(PYSTE) --module=libpyCmp2 cmp.pyste
 
-libpyFilter2.cpp: processor.pyste ../libEM/processor.h ../libEM/emobject.h
-	rm -f libpyFilter2.cpp
-	$(PYSTE) --module=libpyFilter2 processor.pyste
+libpyProcessor2.cpp: processor.pyste ../libEM/processor.h ../libEM/emobject.h
+	rm -f libpyProcessor2.cpp
+	$(PYSTE) --module=libpyProcessor2 processor.pyste
 
 libpyFundamentals2.cpp: fundamentals.pyste ../libEM/fundamentals.h ../libEM/emdata.h
 	rm -f libpyFundamentals2.cpp
