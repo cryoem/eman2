@@ -313,6 +313,7 @@ namespace EMAN
 	template <> Factory < Reconstructor >::Factory();
 
 	void dump_reconstructors();
+	map<string, vector<string> > dump_reconstructors_list();
 }
 
 #endif

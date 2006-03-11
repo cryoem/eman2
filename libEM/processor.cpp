@@ -4431,6 +4431,11 @@ void EMAN::dump_processors()
 	dump_factory < Processor > ();
 }
 
+map<string, vector<string> > EMAN::dump_processors_list()
+{
+	return dump_factory_list < Processor > ();
+}
+
 map<string, vector<string> > EMAN::group_processors()
 {
 	map<string, vector<string> > processor_groups;

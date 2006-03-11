@@ -4328,6 +4328,7 @@ The basic design of EMAN Processors: <br>\
 
 	int multi_processors(EMData * image, vector < string > processornames);
 	void dump_processors();
+	map<string, vector<string> > dump_processors_list();
 	map<string, vector<string> > group_processors();
 
 	template <> Factory < Processor >::Factory();

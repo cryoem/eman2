@@ -61,6 +61,7 @@ struct EMAN_Projector_Wrapper: EMAN::Projector
 BOOST_PYTHON_MODULE(libpyProjector2)
 {
     def("dump_projectors", &EMAN::dump_projectors);
+    def("dump_projectors_list", &EMAN::dump_projectors_list);
     class_< EMAN::Projector, boost::noncopyable, EMAN_Projector_Wrapper >("__Projector", init<  >())
         .def("project3d", pure_virtual(&EMAN::Projector::project3d), return_value_policy< manage_new_object >())
         .def("get_name", pure_virtual(&EMAN::Projector::get_name))

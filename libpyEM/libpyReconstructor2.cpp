@@ -73,6 +73,7 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 BOOST_PYTHON_MODULE(libpyReconstructor2)
 {
     def("dump_reconstructors", &EMAN::dump_reconstructors);
+    def("dump_reconstructors_list", &EMAN::dump_reconstructors_list);
     class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
         .def("insert_slice", pure_virtual(&EMAN::Reconstructor::insert_slice))

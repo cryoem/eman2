@@ -25,6 +25,7 @@ set_policy(Processor.process, return_value_policy(manage_new_object))
 
 
 Function("EMAN::dump_processors", "processor.h")
+Function("EMAN::dump_processors_list", "processor.h")
 Function("EMAN::multi_processors", "processor.h")
 Function("EMAN::group_processors", "processor.h")
 

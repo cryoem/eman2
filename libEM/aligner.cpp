@@ -1599,3 +1599,8 @@ void EMAN::dump_aligners()
 {
 	dump_factory < Aligner > ();
 }
+
+map<string, vector<string> > EMAN::dump_aligners_list()
+{
+	return dump_factory_list < Aligner > ();
+}

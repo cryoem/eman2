@@ -3,6 +3,7 @@ Include("xydata.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 Function("EMAN::dump_aligners", "aligner.h")
+Function("EMAN::dump_aligners_list", "aligner.h")
 
 Aligner = Class("EMAN::Aligner", "aligner.h")
 set_policy(Aligner.align, return_value_policy(manage_new_object))

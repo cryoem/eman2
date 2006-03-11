@@ -70,6 +70,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Log_end_overloads_1_3, end, 1, 3)
 BOOST_PYTHON_MODULE(libpyCmp2)
 {
     def("dump_cmps", &EMAN::dump_cmps);
+    def("dump_cmps_list", &EMAN::dump_cmps_list);
     class_< EMAN::Factory<EMAN::Cmp>, boost::noncopyable >("Cmps", no_init)
         .def("get", (EMAN::Cmp* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&))&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())
         .def("get", (EMAN::Cmp* (*)(const std::basic_string<char,std::char_traits<char>,std::allocator<char> >&, const EMAN::Dict&))&EMAN::Factory<EMAN::Cmp>::get, return_value_policy< manage_new_object >())

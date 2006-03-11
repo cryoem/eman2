@@ -1079,3 +1079,8 @@ void EMAN::dump_averagers()
 {
 	dump_factory < Averager > ();
 }
+
+map<string, vector<string> > EMAN::dump_averagers_list()
+{
+	return dump_factory_list < Averager > ();
+}

@@ -91,5 +91,6 @@ BOOST_PYTHON_MODULE(libpyAverager2)
     ;
 
     def("dump_averagers", &EMAN::dump_averagers);
+    def("dump_averagers_list", &EMAN::dump_averagers_list);
 }
 

@@ -391,6 +391,7 @@ namespace EMAN
 	template <> Factory < Cmp >::Factory();
 
 	void dump_cmps();
+	map<string, vector<string> > dump_cmps_list();
 }
 
 

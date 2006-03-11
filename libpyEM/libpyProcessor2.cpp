@@ -130,6 +130,7 @@ BOOST_PYTHON_MODULE(libpyProcessor2)
     delete EMAN_Processor_scope;
 
     def("dump_processors", &EMAN::dump_processors);
+    def("dump_processors_list", &EMAN::dump_processors_list);
     def("multi_processors", &EMAN::multi_processors);
     def("group_processors", &EMAN::group_processors);
     class_< EMAN::Factory<EMAN::Processor>, boost::noncopyable >("Processors", no_init)

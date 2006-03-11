@@ -321,6 +321,7 @@ namespace EMAN
 	template <> Factory < Projector >::Factory();
 
 	void dump_projectors();
+	map<string, vector<string> > dump_projectors_list();
 }
 
 #endif	//eman__projector_h__

@@ -347,7 +347,7 @@ namespace EMAN
 	template <> Factory < Averager >::Factory();
 
 	void dump_averagers();
-
+	map<string, vector<string> > dump_averagers_list();
 }
 
 

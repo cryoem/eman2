@@ -2,6 +2,7 @@ Include("emdata.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 Function("EMAN::dump_projectors", "projector.h")
+Function("EMAN::dump_projectors_list", "projector.h")
 Projector = Class("EMAN::Projector", "projector.h")
 set_policy(Projector.project3d, return_value_policy(manage_new_object))
 rename(Projector, "__Projector")

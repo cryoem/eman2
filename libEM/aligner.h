@@ -669,7 +669,7 @@ namespace EMAN
 	template <> Factory < Aligner >::Factory();
 
 	void dump_aligners();
-
+	map<string, vector<string> > dump_aligners_list();
 }
 
 #endif

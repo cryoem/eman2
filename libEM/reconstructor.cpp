@@ -1128,4 +1128,9 @@ void EMAN::dump_reconstructors()
 	dump_factory < Reconstructor > ();
 }
 
+map<string, vector<string> > EMAN::dump_reconstructors_list()
+{
+	return dump_factory_list < Reconstructor > ();
+}
+
 /* vim: set ts=4 noet: */

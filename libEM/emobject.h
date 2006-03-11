@@ -530,6 +530,31 @@ namespace EMAN
 		}
 	}
 	
+	template < class T > map<string, vector<string> > dump_factory_list()
+	{
+		vector < string > item_names = Factory < T >::get_list();
+		map<string, vector<string> >	factory_list;
+		
+		typename vector<string>::const_iterator p;
+		for(p = item_names.begin(); p !=item_names.end(); ++p) {
+			T *item = Factory<T>::get(*p);
+			
+			string name = item->get_name();
+			
+			vector<string> content;
+			content.push_back(item->get_desc());
+			TypeDict td = item->get_param_types();
+			vector<string> keys = td.keys();
+			for(unsigned int i=0; i<td.size(); ++i) {
+				content.push_back(keys[i]);
+				content.push_back( td.get_type(keys[i]) );
+				content.push_back( td.get_desc(keys[i]) );
+			}
+			factory_list[name] = content;
+		}
+		
+		return factory_list;
+	}
 }
 
 #endif

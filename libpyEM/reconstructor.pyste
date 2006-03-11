@@ -2,6 +2,7 @@ Include("emdata.h")
 
 Factory = Template("EMAN::Factory", "emobject.h")
 Function("EMAN::dump_reconstructors", "reconstructor.h")
+Function("EMAN::dump_reconstructors_list", "reconstructor.h")
 
 Reconstructor = Class("EMAN::Reconstructor", "reconstructor.h")
 set_policy(Reconstructor.finish, return_internal_reference())
