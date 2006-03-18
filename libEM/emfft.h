@@ -156,8 +156,8 @@ namespace EMAN
 			time_sqrt_n(int n) : n_(n), factor(sqrt(float(n_))) {}
 			float operator()(float x) const {return x*factor;}	
 		  private:
-		    int n_;
-		    float factor;
+		    const int n_;
+		    const float factor;
 		};
 		
 		class divide_sqrt_n : public std::unary_function<float, float> {
@@ -165,8 +165,8 @@ namespace EMAN
 			divide_sqrt_n(int n) : n_(n), factor(sqrt(float(n_))) {}
 			float operator()(float x) const {return x/factor;}
 		  private:
-			int n_;
-			float factor;
+			const int n_;
+			const float factor;
 		};
 	};
 }	
