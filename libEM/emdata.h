@@ -17,7 +17,7 @@
 using std::string;
 using std::vector;
 using std::map;
-using std::complex;
+//using std::complex;	//comment this out for conflict with ACML
 using std::ostream;
 
 namespace EMAN
@@ -29,8 +29,8 @@ namespace EMAN
 	
 	typedef boost::multi_array_ref<float, 2> MArray2D;
 	typedef boost::multi_array_ref<float, 3> MArray3D;
-	typedef boost::multi_array_ref<complex<float>, 2> MCArray2D;
-	typedef boost::multi_array_ref<complex<float>, 3> MCArray3D;
+	typedef boost::multi_array_ref<std::complex<float>, 2> MCArray2D;
+	typedef boost::multi_array_ref<std::complex<float>, 3> MCArray3D;
 	typedef boost::multi_array<int, 2> MIArray2D;
 	typedef boost::multi_array<int, 3> MIArray3D;
 	
@@ -1610,32 +1610,32 @@ namespace EMAN
 			return offsets;
 		}
 		/** Return reference to complex elements */
-		complex<float>& cmplx(const int ix, const int iy, const int iz) {
+		std::complex<float>& cmplx(const int ix, const int iy, const int iz) {
 			ptrdiff_t pos = 2*(ix-xoff)+((iy-yoff)+(iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
 			if (pos < 0 || pos >= nx*ny*nz)
 				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 			float* begin = rdata + pos;
-			return *(reinterpret_cast<complex<float>* >(begin));
+			return *(reinterpret_cast<std::complex<float>* >(begin));
 		}
-		complex<float>& cmplx(const int ix, const int iy) {
+		std::complex<float>& cmplx(const int ix, const int iy) {
 			ptrdiff_t pos = 2*(ix-xoff)+(iy-yoff)*nx;
 #ifdef BOUNDS_CHECKING
 			if (pos < 0 || pos >= nx*ny*nz)
 				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 			float* begin = rdata + pos;
-			return *(reinterpret_cast<complex<float>* >(begin));
+			return *(reinterpret_cast<std::complex<float>* >(begin));
 		}
-		complex<float>& cmplx(const int ix) {
+		std::complex<float>& cmplx(const int ix) {
 			ptrdiff_t pos = 2*(ix-xoff);
 #ifdef BOUNDS_CHECKING
 			if (pos < 0 || pos >= nx*ny*nz)
 				throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
 #endif // BOUNDS_CHECKING
 			float* begin = rdata + pos;
-			return *(reinterpret_cast<complex<float>* >(begin));
+			return *(reinterpret_cast<std::complex<float>* >(begin));
 		}
 		
 		/** return a image to the power of n
@@ -1902,7 +1902,7 @@ namespace EMAN
 		 *       J. Opt. Soc. Am. A _21_, (2004)
 		 *
 		 */
-		complex<float> extractpoint(float xin, float yin, 
+		std::complex<float> extractpoint(float xin, float yin, 
 		                            Util::KaiserBessel& kb);
 		/** extractplane -- Gridding convolution in 3D along a plane
 		 *

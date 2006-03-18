@@ -133,5 +133,43 @@ namespace EMAN
 }
 #endif	//NATIVE_FFT
 
+#ifdef	ACML
+#include <acml.h>
+#include <functional>
+
+namespace EMAN
+{
+	/** EMfft converts 1d/nd data from real to complex or from complex to real.
+     */
+	class EMfft
+	{
+	  public:
+		static int real_to_complex_1d(float *real_data, float *complex_data, int n);
+		static int complex_to_real_1d(float *complex_data, float *real_data, int n);
+
+		static int real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz);
+		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz);
+	  
+	  private:
+		class time_sqrt_n : public std::unary_function<float, float> {
+		  public:
+			time_sqrt_n(int n) : n_(n), factor(sqrt(float(n_))) {}
+			float operator()(float x) const {return x*factor;}	
+		  private:
+		    int n_;
+		    float factor;
+		};
+		
+		class divide_sqrt_n : public std::unary_function<float, float> {
+		  public:
+			divide_sqrt_n(int n) : n_(n), factor(sqrt(float(n_))) {}
+			float operator()(float x) const {return x/factor;}
+		  private:
+			int n_;
+			float factor;
+		};
+	};
+}	
+#endif	//ACML
 
 #endif	//eman_emfft_h__

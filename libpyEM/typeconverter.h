@@ -28,7 +28,7 @@ using std::map;
 namespace EMAN {
 
     python::numeric::array make_numeric_array(float * data, vector<int> dims);
-    python::numeric::array make_numeric_complex_array(complex<float> * data,
+    python::numeric::array make_numeric_complex_array(std::complex<float> * data,
                                                       vector<int> dims);
 	class EMNumPy {
 	public:
@@ -134,10 +134,10 @@ namespace EMAN {
     
     template<std::size_t NumDims>
     struct MCArrayND_to_python : python::to_python_converter<
-        boost::multi_array_ref<complex<float>, NumDims>, 
+        boost::multi_array_ref<std::complex<float>, NumDims>, 
         MCArrayND_to_python<NumDims> >
     {
-        static PyObject* convert(boost::multi_array_ref<complex<float>, NumDims> const & mcarray)
+        static PyObject* convert(boost::multi_array_ref<std::complex<float>, NumDims> const & mcarray)
         {
             vector<int> dims;
             const size_t * shape = mcarray.shape();
@@ -146,7 +146,7 @@ namespace EMAN {
                 dims.push_back(shape[i]);
             }
             
-            complex<float> * data = (complex<float>*)mcarray.data();
+            std::complex<float> * data = (std::complex<float>*)mcarray.data();
             python::numeric::array numarray = make_numeric_complex_array(data, dims);
     
             return python::incref(numarray.ptr());

@@ -3,7 +3,6 @@
  */
 #include <string>
 #include "emfft.h"
-#include "native_fft.h"
 #include "log.h"
 
 #ifdef DJBFFT
@@ -14,7 +13,6 @@ extern "C" {
 
 using namespace EMAN;
 
-#ifndef NATIVE_FFT
 static int get_rank(int ny, int nz)
 {
 	int rank = 3;
@@ -26,7 +24,6 @@ static int get_rank(int ny, int nz)
 	}
 	return rank;
 }
-#endif	//NOT NATIVE_FFT
 
 #ifdef FFTW2
 
@@ -374,6 +371,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 #endif	//FFTW3
 
 #ifdef NATIVE_FFT
+#include "native_fft.h"
 int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 {
 	int complex_size = n + 2 - n%2;
@@ -411,102 +409,293 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 
 int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
 {
-	if(ny==1 && nz==1) {	//for one dimension, because do_fft() only call this function
-		real_to_complex_1d(real_data, complex_data, nx);
-	}
-	else if(nz==1) {	//2d fft
-		int complex_nx = nx + 2 - nx%2;
-		int j;
-		for (j = 0; j < ny; j++) {
-			memcpy(&complex_data[complex_nx*j], &real_data[nx*j], nx*sizeof(float));	
-		}
-		float * work = (float*) malloc(complex_nx*sizeof(float));
-   		if (!work) {
-   			fprintf(stderr,"real_to_complex_nd(2df): failed to allocate work\n");
-   			LOGERR("real_to_complex_nd(2df): failed to allocate work\n");
-   		}
-   		
-   		// 2d inplace fft, overwrite y
-   		int status = Nativefft::fmrs_2rf(complex_data, work, complex_nx, nx, ny);
-   		if (status !=0) {
-      		fprintf(stderr, "real_to_complex_nd(2df): status = %d\n", status);
-      		LOGWARN("real_to_complex_nd(2df): status = %d\n", status);
-   		}
-   		
-   		free(work);
-	}
-	else {	//3d fft
-		int complex_nx = nx + 2 - nx%2;
-		int j, k;
-		for (k = 0; k<nz; k++) {
-      		for (j = 0; j < ny; j++) {
-         		memcpy(&complex_data[complex_nx*ny*k+j*complex_nx], &real_data[nx*ny*k+j*nx], nx*sizeof(float));
-      		}
-		}
-		float * work = (float*) malloc(complex_nx*sizeof(float));
-   		if (!work) {
-   			fprintf(stderr,"real_to_complex_nd(3df): failed to allocate work\n");
-   			LOGERR("real_to_complex_nd(3df): failed to allocate work\n");
-   		}
-   		
-   		// 3d inplace fft, overwrite complex_data
-   		int status = Nativefft::fmrs_3rf(complex_data, work, complex_nx, nx, ny, nz);
-   		if (status !=0) {
-      		fprintf(stderr, "real_to_complex_nd(3df): status = %d\n", status);
-      		LOGWARN("real_to_complex_nd(3df): status = %d\n", status);
-   		}
-   		
-   		free(work);
-	}
+	const int rank = get_rank(ny, nz);
+	const int complex_nx = nx + 2 - nx%2;
 	
-	return 0;
+	switch(rank) {
+		case 1:		//for 1D fft
+			real_to_complex_1d(real_data, complex_data, nx);
+			return 0;;
+		case 2:		//for 2D fft
+		{
+			int j;
+			for (j = 0; j < ny; j++) {
+				memcpy(&complex_data[complex_nx*j], &real_data[nx*j], nx*sizeof(float));	
+			}
+			float * work = (float*) malloc(complex_nx*sizeof(float));
+	   		if (!work) {
+	   			fprintf(stderr,"real_to_complex_nd(2df): failed to allocate work\n");
+	   			LOGERR("real_to_complex_nd(2df): failed to allocate work\n");
+	   		}
+	   		
+	   		// 2d inplace fft, overwrite y
+	   		int status = Nativefft::fmrs_2rf(complex_data, work, complex_nx, nx, ny);
+	   		if (status !=0) {
+	      		fprintf(stderr, "real_to_complex_nd(2df): status = %d\n", status);
+	      		LOGWARN("real_to_complex_nd(2df): status = %d\n", status);
+	   		}
+	   		
+	   		free(work);
+	   		return 0;
+		}
+	   	case 3:		//for 3D fft
+	   	{
+			int j, k;
+			for (k = 0; k<nz; k++) {
+	      		for (j = 0; j < ny; j++) {
+	         		memcpy(&complex_data[complex_nx*ny*k+j*complex_nx], &real_data[nx*ny*k+j*nx], nx*sizeof(float));
+	      		}
+			}
+			float * work = (float*) malloc(complex_nx*sizeof(float));
+	   		if (!work) {
+	   			fprintf(stderr,"real_to_complex_nd(3df): failed to allocate work\n");
+	   			LOGERR("real_to_complex_nd(3df): failed to allocate work\n");
+	   		}
+	   		
+	   		// 3d inplace fft, overwrite complex_data
+	   		int status = Nativefft::fmrs_3rf(complex_data, work, complex_nx, nx, ny, nz);
+	   		if (status !=0) {
+	      		fprintf(stderr, "real_to_complex_nd(3df): status = %d\n", status);
+	      		LOGWARN("real_to_complex_nd(3df): status = %d\n", status);
+	   		}
+	   		
+	   		free(work);
+	   		return 0;
+	   	}
+	   	default:
+	   		LOGERR("Never should be here...\n");
+	   		return -1;	
+	}
 }
 
 int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
 {
-	//for one dimension, because do_ift() only call this function
-	if(ny==1 && nz==1) {
-		complex_to_real_1d(complex_data, real_data, nx);
-	}
-	else if(nz==1) {	//2d ift
-		int complex_nx = nx + 2 - nx%2;
-		memcpy(real_data, complex_data, complex_nx*ny*sizeof(float));
-		
-		float * work = (float*) malloc(complex_nx*sizeof(float));
-		if (!work) {
-			fprintf(stderr,"complex_to_real_nd(2db): failed to allocate work\n");
-			LOGERR("complex_to_real_nd(2db): failed to allocate work\n");
-		}
-		
-		// 2d inplace ift, overwrite real_data
-   		int status = Nativefft::fmrs_2rb(real_data, work, complex_nx, nx, ny);
-   		if (status !=0) {
-      		fprintf(stderr, "complex_to_real_nd(2db): status = %d\n", status);
-      		LOGWARN("complex_to_real_nd(2db): status = %d\n", status);
-		}
-		
-		free(work);
-	}
-	else {	//3d ift
-		int complex_nx = nx + 2 - nx%2;
-		memcpy(real_data, complex_data, complex_nx*ny*nz*sizeof(float));
-		
-		float * work = (float*) malloc(complex_nx*sizeof(float));
-   		if (!work) {
-   			fprintf(stderr,"complex_to_real_nd(3db): failed to allocate work\n");
-   			LOGERR("complex_to_real_nd(3db): failed to allocate work\n");
-   		}
-   		
-   		// 3d inplace fft, overwrite real_data
-   		int status = Nativefft::fmrs_3rb(real_data, work, complex_nx, nx, ny, nz);
-   		if (status !=0) {
-      		fprintf(stderr, "complex_to_real_nd(3db): status = %d\n", status);
-      		LOGWARN("complex_to_real_nd(3db): status = %d\n", status);
-   		}
-   		
-   		free(work);
-	}
+	const int rank = get_rank(ny, nz);
+	const int complex_nx = nx + 2 - nx%2;
 	
-	return 0;
+	switch(rank) {
+		case 1:		//for 1D ift
+			complex_to_real_1d(complex_data, real_data, nx);
+			return 0;
+		case 2:		//for 2D ift
+		{
+			memcpy(real_data, complex_data, complex_nx*ny*sizeof(float));
+			
+			float * work = (float*) malloc(complex_nx*sizeof(float));
+			if (!work) {
+				fprintf(stderr,"complex_to_real_nd(2db): failed to allocate work\n");
+				LOGERR("complex_to_real_nd(2db): failed to allocate work\n");
+			}
+			
+			// 2d inplace ift, overwrite real_data
+	   		int status = Nativefft::fmrs_2rb(real_data, work, complex_nx, nx, ny);
+	   		if (status !=0) {
+	      		fprintf(stderr, "complex_to_real_nd(2db): status = %d\n", status);
+	      		LOGWARN("complex_to_real_nd(2db): status = %d\n", status);
+			}
+			
+			free(work);
+			return 0;
+		}
+		case 3:		//for 3D ift
+		{
+			memcpy(real_data, complex_data, complex_nx*ny*nz*sizeof(float));
+			
+			float * work = (float*) malloc(complex_nx*sizeof(float));
+	   		if (!work) {
+	   			fprintf(stderr,"complex_to_real_nd(3db): failed to allocate work\n");
+	   			LOGERR("complex_to_real_nd(3db): failed to allocate work\n");
+	   		}
+	   		
+	   		// 3d inplace fft, overwrite real_data
+	   		int status = Nativefft::fmrs_3rb(real_data, work, complex_nx, nx, ny, nz);
+	   		if (status !=0) {
+	      		fprintf(stderr, "complex_to_real_nd(3db): status = %d\n", status);
+	      		LOGWARN("complex_to_real_nd(3db): status = %d\n", status);
+	   		}
+	   		
+	   		free(work);
+	   		return 0;
+		}
+	   	default:
+	   		LOGERR("Never should be here...\n");
+	   		return -1;
+	}
 }
 #endif	//NATIVE_FFT
+
+#ifdef 	ACML
+#include <iostream>
+using std::cout;
+using std::endl;
+
+int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
+{
+	int complex_n = n + 2 - n%2;	//the size for 1D complex array
+	int info;
+	
+	/* Allocate communication work array */
+	float * comm = (float *)malloc((3*n+100)*sizeof(float));
+	/* Allocate work array to store ACML complex array*/
+	float * fft_data = (float *)malloc(complex_n * sizeof(float));
+	
+	//copy real_data to complex_data then apply inplace FFT on complex data
+	memcpy(fft_data, real_data, n * sizeof(float));
+	
+	/* Initialize communication work array */
+	scfft(0, n, fft_data, comm, &info);
+	if(info != 0) {
+		LOGERR("Error happening in Initialize communication work array: %d", info);
+	}
+	
+	/* Compute a real --> Hermitian transform */
+	scfft(1, n, fft_data, comm, &info);
+	if(info != 0) {
+		LOGERR("Error happening in Initialize communication work array: %d", info);
+	}
+	
+	/**ACML fft real to complex 1D result store as 
+	 * [real1, real2,...realN,imagN, ... imag2, imag1], and all data has been devided by sqrt(N),
+	 * so we need re-organize the data layout and time all data by sqrt(N)
+	 * to make the reault consistent with FFTW  */
+	transform(fft_data, fft_data+complex_n, fft_data, time_sqrt_n(n));
+	for(int i=0; i<complex_n; ++i) {
+		if(i%2==0) {	//copy real part of complex array
+			complex_data[i] = fft_data[i/2];
+		}
+		else {	//copy imaginary part of complex array, notice the sign change
+			complex_data[i] = -fft_data[complex_n-i/2-1];
+		}
+	}
+	
+	free(fft_data);
+	free(comm);
+	return 0;
+}
+
+int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
+{
+	int complex_n = n + 2 - n%2;	//the size for 1D complex array
+	int info;
+	
+	/* Allocate communication work array */
+	float * comm = (float *)malloc((3*n+100)*sizeof(float));
+	
+	/**ACML fft real to complex 1D result store as 
+	 * [real1, real2,...realN,imagN, ... imag2, imag1], and all data has been devided by sqrt(N),
+	 * here the complex_data is by fftw convention, [real1, imag1, ... realN, imagN]
+	 * so we need re-organize the data layout and divide all data by sqrt(N), 
+	 * to make the inverse fft by acml return the original 1D real array  */
+	float * fft_data = (float *)malloc(complex_n * sizeof(float));
+	memcpy(fft_data, complex_data, complex_n * sizeof(float));
+	
+	transform(fft_data, fft_data+complex_n, fft_data, divide_sqrt_n(n));
+	for(int i=0; i<complex_n; ++i) {
+		if(i%2 == 0) {	//copy real part of complex array
+			real_data[i/2] = fft_data[i];
+		}
+		else {	//copy imaginary part of complex array
+			real_data[complex_n-i/2-1] = fft_data[i];
+		}
+	}
+	
+	/* Initialize communication work array */
+	csfft(0, n, real_data, comm, &info);
+	if(info != 0) {
+		LOGERR("Error happening in Initialize communication work array: %d", info);
+	}
+	
+	/* Compute a Hermitian --> real transform */
+	csfft(1, n, real_data, comm, &info);
+	if(info != 0) {
+		LOGERR("Error happening in Initialize communication work array: %d", info);
+	}
+	
+	free(fft_data);
+	free(comm);
+	return 0;
+}
+
+int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
+{
+	const int rank = get_rank(ny, nz);
+	const int complex_nx = nx + 2 - nx%2;
+	
+	switch(rank) {
+		case 1:
+			real_to_complex_1d(real_data, complex_data, nx);
+			return 0;
+		case 2:
+			{
+				int info;
+				/* Allocate communication work array */
+				float * comm = (float *)malloc((3*nx+100)*sizeof(float));
+				
+				/* Allocate work array to store ACML complex array*/
+				float * fft_data = (float *)malloc(complex_nx * ny * sizeof(float));
+				
+				//copy real_data to complex_data then apply inplace FFT on complex data
+				memcpy(fft_data, real_data, nx * ny * sizeof(float));
+				
+				cout << "before acml fft: " << endl;
+				for( int y=0; y<ny; y++ ) {
+					 for( int x=0; x<nx; x++ ) {
+						cout << fft_data[x+y*nx] << "\t";
+					}
+					cout << endl;
+				}
+				
+				scfftm(ny, nx, fft_data, comm, &info);
+				if(info != 0) {
+					LOGERR("Error happening in Initialize communication work array: %d", info);
+				}
+				
+				//transform(fft_data, fft_data+complex_nx*ny, fft_data, time_sqrt_n(nx));
+				
+				cout << "after acml fft: " << endl;
+				
+				for( int y=0; y<ny; y++ ) {
+					for( int x=0; x<complex_nx; x++ ) 
+					{
+						cout << fft_data[x+y*nx] << "\t";
+					}
+					cout << endl;
+				}
+				
+				memcpy(complex_data, fft_data, complex_nx * ny * sizeof(float));
+				
+				return 0;
+			}
+		case 3:
+			{
+				return 0;
+			}			
+		default:
+			LOGERR("Never should be here...\n");
+	   		return -1;
+	}	
+}
+
+int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
+{
+	const int rank = get_rank(ny, nz);
+	const int complex_nx = nx + 2 - nx%2;
+	
+	switch(rank) {
+		case 1:
+			complex_to_real_1d(complex_data, real_data, nx);
+			return 0;
+		case 2:
+			{
+				return 0;
+			}
+		case 3:
+			{
+				return 0;
+			}
+		default:
+			LOGERR("Never should be here...\n");
+	   		return -1;
+	}
+}
+#endif	//ACML

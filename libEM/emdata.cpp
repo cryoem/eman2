@@ -15,7 +15,7 @@
 #include "gsl_errno.h"
 
 #include <iomanip>
-
+#include <complex>
 
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
@@ -715,7 +715,7 @@ EMData::onelinenn(int j, int n, int n2,
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
-			complex<float> btq;
+			std::complex<float> btq;
 			if (xnew < 0.) {
 				xnew = -xnew;
 				ynew = -ynew;
@@ -1122,7 +1122,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 //	MArray2D ImBWfftRm = outCopy->get_2dview();
 
 	int Count =0, kInt, kIntm1;
-	complex <float> ImfTemp;
+	std::complex <float> ImfTemp;
 	float kValue, thetak;
 	
 	for (int jkx=0; jkx <Center; jkx++) { // These index the outputted picture
@@ -1141,9 +1141,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 			thetak = atan2(fjky,fjkx);
 			ImfTemp = (*rhoOfkandm)(0, kIntm1) ;
         		for (int mm= 1; mm <mMax;mm++) {  // The index for m
-				complex <float> fact(0,-mm*thetak);
-				complex <float> expfact= exp(fact);
-				complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
+				std::complex <float> fact(0,-mm*thetak);
+				std::complex <float> expfact= exp(fact);
+				std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 				float mmFac = float(1-2*(mm%2));
 				if (IntensityFlag==1){ mmFac=1;}
 				ImfTemp +=   expfact * tempRho + mmFac  *conj(expfact*tempRho);//pow(float(-1),mm)
@@ -1156,9 +1156,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 				thetak = atan2(-fjky,fjkx);
 				ImfTemp = (*rhoOfkandm)(0,kIntm1);
 				for (int mm= 1; mm<mMax; mm++) { // The index for m
-					complex <float> fact(0,-mm*thetak);
-					complex <float> expfact= exp(fact);
-					complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1), (*rhoOfkandm)(2*mm+1,kIntm1));
+					std::complex <float> fact(0,-mm*thetak);
+					std::complex <float> expfact= exp(fact);
+					std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1), (*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac  *conj(expfact*tempRho);
@@ -1172,9 +1172,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
             			thetak = atan2(fjky,-fjkx);
 				ImfTemp = (*rhoOfkandm)(0,kIntm1);
 				for (int mm= 1; mm<mMax; mm++) { // The index for m
-					complex <float> fact(0,-mm*thetak);
-					complex <float> expfact= exp(fact);
-					complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1), (*rhoOfkandm)(2*mm+1,kIntm1));
+					std::complex <float> fact(0,-mm*thetak);
+					std::complex <float> expfact= exp(fact);
+					std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1), (*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
@@ -1187,9 +1187,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 				thetak = atan2(-fjky,-fjkx);
 				ImfTemp = (*rhoOfkandm)(0 , kIntm1);
 				for (int mm= 1; mm<mMax; mm++) {  // The index for m
-					complex <float> fact(0,-mm*thetak);
-					complex <float> expfact= exp(fact);
-					complex <float> tempRho( (*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1) );
+					std::complex <float> fact(0,-mm*thetak);
+					std::complex <float> expfact= exp(fact);
+					std::complex <float> tempRho( (*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1) );
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
@@ -1202,9 +1202,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 				thetak = atan2(fjkx,fjky);
 				ImfTemp = (*rhoOfkandm)(0,kIntm1);
 				for (int mm= 1; mm<mMax; mm++){ // The index for m
-					complex <float> fact(0,-mm*thetak);
-					complex <float> expfact= exp(fact);
-					complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
+					std::complex <float> fact(0,-mm*thetak);
+					std::complex <float> expfact= exp(fact);
+					std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 					ImfTemp +=   expfact * tempRho +  mmFac *conj(expfact*tempRho);
@@ -1216,9 +1216,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 					thetak = atan2(fjkx,-fjky);
 					ImfTemp = (*rhoOfkandm)(0, kIntm1);
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
-						complex <float> fact(0,-mm*thetak);
-						complex <float> expfact= exp(fact);
-						complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
+						std::complex <float> fact(0,-mm*thetak);
+						std::complex <float> expfact= exp(fact);
+						std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 					float mmFac = float(1-2*(mm%2));
 					if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
@@ -1231,9 +1231,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 					 thetak = atan2(-fjkx,fjky);
 					 ImfTemp = (*rhoOfkandm)(0,kIntm1);
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
-						complex <float> fact(0,-mm*thetak);
-						complex <float> expfact= exp(fact);
-						complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
+						std::complex <float> fact(0,-mm*thetak);
+						std::complex <float> expfact= exp(fact);
+						std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1),(*rhoOfkandm)(2*mm+1,kIntm1));
 						float mmFac = float(1-2*(mm%2));
 						if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
@@ -1246,9 +1246,9 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 					thetak = atan2(-fjkx,-fjky);
 					ImfTemp = (*rhoOfkandm)(0,kIntm1) ;
 					for (int mm= 1; mm <mMax; mm++) { // The index for m
-						complex <float> fact(0,-mm*thetak);
-						complex <float> expfact= exp(fact);
-						complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1) ,(*rhoOfkandm)(2*mm+1,kIntm1) );
+						std::complex <float> fact(0,-mm*thetak);
+						std::complex <float> expfact= exp(fact);
+						std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1) ,(*rhoOfkandm)(2*mm+1,kIntm1) );
 						float mmFac = mmFac;
 						if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
@@ -1355,16 +1355,16 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 //		MArray2D rhoOfkmB = FH->get_2dview();
 
 		int CenterM= Center-1; // to convert from Matlab to C++
-		complex <float> *rhoOfRandmTemp = new complex <float>[RIntMax];
-		complex <float> rhoTemp;
+		std::complex <float> *rhoOfRandmTemp = new std::complex <float>[RIntMax];
+		std::complex <float> rhoTemp;
 		int PCount=0;
 
 
 		for (int m=0; m <=mMax; m++){
 		//    if m==mMax, tic, end
-			complex <float> tempF(0.0f,-1.0f);
-			complex <float> overallFactor = pow(tempF,m);  //(-i)^m ;  % I dropped off the 2 pi
-			complex <float> mI(0.0f,static_cast<float>(m));
+			std::complex <float> tempF(0.0f,-1.0f);
+			std::complex <float> overallFactor = pow(tempF,m);  //(-i)^m ;  % I dropped off the 2 pi
+			std::complex <float> mI(0.0f,static_cast<float>(m));
 			for (int ii=0; ii< RIntMax; ii++){ rhoOfRandmTemp[ii]=0;}
 			for (int jx=0; jx <Center ; jx++) {
 				for (int jy=0; jy <=jx; jy++){
@@ -1373,14 +1373,14 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
           				Count = (jx*jx+jx)/2 +1 +jy;
 					PCount = PermMatTr[Count-1];
 //					printf("PCount=%d, Count=%d \n", PCount, Count);
-  				        rhoTemp =  complex <float> ((*ImBW)(CenterM+jx,CenterM+jy)) *exp(mI* complex <float> (atan2(+fjy,+fjx)))
-				         +   complex <float> ((*ImBW)(CenterM+jx,CenterM-jy)) * exp(mI*complex <float>(atan2(-fjy,+fjx)))
-				         +   complex <float> ((*ImBW)(CenterM-jx,CenterM+jy)) * exp(mI*complex <float>(atan2(+fjy,-fjx)))
-				         +   complex <float> ((*ImBW)(CenterM-jx,CenterM-jy)) * exp(mI*complex <float>(atan2(-fjy,-fjx)))
-			               	 +   complex <float> ((*ImBW)(CenterM+jy,CenterM+jx)) * exp(mI*complex <float>(atan2(+fjx,+fjy)))
-					 +   complex <float> ((*ImBW)(CenterM+jy,CenterM-jx)) * exp(mI*complex <float>(atan2(-fjx,+fjy)))
-					 +   complex <float> ((*ImBW)(CenterM-jy,CenterM+jx)) * exp(mI*complex <float>(atan2(+fjx,-fjy)))
-					 +   complex <float> ((*ImBW)(CenterM-jy,CenterM-jx)) * exp(mI*complex <float>(atan2(-fjx,-fjy)));
+  				        rhoTemp =  std::complex <float> ((*ImBW)(CenterM+jx,CenterM+jy)) *exp(mI* std::complex <float> (atan2(+fjy,+fjx)))
+				         +   std::complex <float> ((*ImBW)(CenterM+jx,CenterM-jy)) * exp(mI*std::complex <float>(atan2(-fjy,+fjx)))
+				         +   std::complex <float> ((*ImBW)(CenterM-jx,CenterM+jy)) * exp(mI*std::complex <float>(atan2(+fjy,-fjx)))
+				         +   std::complex <float> ((*ImBW)(CenterM-jx,CenterM-jy)) * exp(mI*std::complex <float>(atan2(-fjy,-fjx)))
+			               	 +   std::complex <float> ((*ImBW)(CenterM+jy,CenterM+jx)) * exp(mI*std::complex <float>(atan2(+fjx,+fjy)))
+					 +   std::complex <float> ((*ImBW)(CenterM+jy,CenterM-jx)) * exp(mI*std::complex <float>(atan2(-fjx,+fjy)))
+					 +   std::complex <float> ((*ImBW)(CenterM-jy,CenterM+jx)) * exp(mI*std::complex <float>(atan2(+fjx,-fjy)))
+					 +   std::complex <float> ((*ImBW)(CenterM-jy,CenterM-jx)) * exp(mI*std::complex <float>(atan2(-fjx,-fjy)));
             				if (((jx+jy)==0)&&(m>0) ){
 						rhoTemp=0;}
 //			printf("m=%d, jx=%d, jy=%d, rhoTemp= %f+ %f i\n", m,jx,jy,(rhoTemp.real()), (rhoTemp.imag()) );fflush(stdout);
@@ -1407,7 +1407,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 			float *tempMB = new float [kIntMax*RIntMax];
 			Util::spline_mat(krVec2Use, sampledBesselJ, Number2Use+1,krVec,tempMB,kIntMax*RIntMax ); 
 //			printf("\n tempMB m=%d y2" ,m  );fflush(stdout);
-			complex <float> *rowV = new complex <float> [kIntMax];
+			std::complex <float> *rowV = new std::complex <float> [kIntMax];
 
 //			for (int st=0; st< kIntMax*RIntMax; st++){printf(" %3.2f  \t",tempMB[st]   );fflush(stdout);} // good so far
 
@@ -1579,11 +1579,11 @@ EMData *EMData::do_ift()
 		}
 	}
 
-#ifndef	NATIVE_FFT	//native fft already done normalization
+#if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
-#endif	//NATIVE_FFT
+#endif	//NATIVE_FFT || ACML
 
 	dat->done_data();
 #if 1
@@ -2940,7 +2940,7 @@ void EMData::mult(const EMData & em)
 		}
 		else
 		{
-			typedef complex<float> comp;
+			typedef std::complex<float> comp;
 			for( size_t i = 0; i < size; i+=2 )
 			{
 				comp c_src( src_data[i], src_data[i+1] );
@@ -2996,7 +2996,7 @@ void EMData::div(const EMData & em)
 		}
 		else
 		{
-			typedef complex<float> comp;
+			typedef std::complex<float> comp;
 			for( size_t i = 0; i < size; i+=2 )
 			{
 				comp c_src( src_data[i], src_data[i+1] );
@@ -3114,7 +3114,7 @@ MCArray2D EMData::get_2dcview() const
 		throw ImageDimensionException("2D only");
 	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
-	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;
 }
@@ -3123,7 +3123,7 @@ MCArray3D EMData::get_3dcview() const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
-	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	return marray;
 }
@@ -3132,7 +3132,7 @@ MCArray3D* EMData::get_3dcviewptr() const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
-	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
 	MCArray3D* marray = new MCArray3D(cdata, dims,
 									  boost::fortran_storage_order());
 	return marray;
@@ -3168,7 +3168,7 @@ MCArray2D EMData::get_2dcview(int x0, int y0) const
 		throw ImageDimensionException("2D only");
 	}
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny}};
-	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
 	MCArray2D marray(cdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0}};
 	marray.reindex(bases);
@@ -3179,7 +3179,7 @@ MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 {
 	const int ndims = 3;
 	boost::array<std::size_t,ndims> dims = {{nx/2, ny, nz}};
-	complex<float>* cdata = reinterpret_cast<complex<float>*>(rdata);
+	std::complex<float>* cdata = reinterpret_cast<std::complex<float>*>(rdata);
 	MCArray3D marray(cdata, dims, boost::fortran_storage_order());
 	boost::array<std::size_t,ndims> bases={{x0, y0, z0}};
 	marray.reindex(bases);
@@ -7209,7 +7209,7 @@ float EMData::getconvpt2d_kbi0(float x, float y,
 	return conv;
 }
 
-complex<float> EMData::extractpoint(float nuxnew, float nuynew,
+std::complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 		Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("extractpoint needs a 2-D image.");
@@ -7279,7 +7279,7 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 	for (int iy = iymin; iy <= iymax; iy++)
 		for (int ix = ixmin; ix <= ixmax; ix++)
 			wsum += wx[ix]*wy[iy];
-	complex<float> result(0.f,0.f);
+	std::complex<float> result(0.f,0.f);
 	if ((ixn >= -kbmin) && (ixn <= nhalf-1-kbmax)
 			&& (iyn >= -nhalf-kbmin) && (iyn <= nhalf-1-kbmax)) {
 		// (xin,yin) not within window border from the edge
@@ -7288,7 +7288,7 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 			for (int ix = ixmin; ix <= ixmax; ix++) {
 				int ixp = ixn + ix;
 				float w = wx[ix]*wy[iy];
-				complex<float> val = cmplx(ixp,iyp);
+				std::complex<float> val = cmplx(ixp,iyp);
 				result += val*w;
 			}
 		}
@@ -7321,7 +7321,7 @@ complex<float> EMData::extractpoint(float nuxnew, float nuynew,
 				}
 				if (iyt == nhalf) iyt = -nhalf;
 				float w = wx[ix]*wy[iy];
-				complex<float> val = this->cmplx(ixt,iyt);
+				std::complex<float> val = this->cmplx(ixt,iyt);
 				if (mirror) 
 					result += conj(val)*w;
 				else
@@ -7553,7 +7553,7 @@ EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 			float xnew = nunew[0], ynew = nunew[1], znew = nunew[2];
 			if (xnew*xnew+ynew*ynew+znew*znew <= rim) {
 				count++;
-				complex<float> btq(0.f,0.f);
+				std::complex<float> btq(0.f,0.f);
 				bool flip = false;
 				if (xnew < 0.f) {
 					flip = true;

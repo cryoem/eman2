@@ -53,7 +53,7 @@ void emdata_setitem(object self, object key, object val) {
     if (x.check()) {
         int i = x();
         if (s.is_complex()) 
-            s.cmplx(i) = extract<complex<float> >(val);
+            s.cmplx(i) = extract<std::complex<float> >(val);
         else
             s(i) = extract<float>(val);
         return;
@@ -66,7 +66,7 @@ void emdata_setitem(object self, object key, object val) {
             int iy = extract<int>(key[1]);
             int iz = extract<int>(key[2]);
             if (s.is_complex())
-                s.cmplx(ix,iy,iz) = extract<complex<float> >(val);
+                s.cmplx(ix,iy,iz) = extract<std::complex<float> >(val);
             else
                 s(ix,iy,iz) = extract<float>(val);
             return;
@@ -74,14 +74,14 @@ void emdata_setitem(object self, object key, object val) {
             int ix = extract<int>(key[0]);
             int iy = extract<int>(key[1]);
             if (s.is_complex())
-                s.cmplx(ix,iy) = extract<complex<float> >(val);
+                s.cmplx(ix,iy) = extract<std::complex<float> >(val);
             else
                 s(ix,iy) = extract<float>(val);
             return;
         } else if (1 == size) {
             int ix = extract<int>(key[0]);
             if (s.is_complex())
-                s.cmplx(ix) = extract<complex<float> >(val);
+                s.cmplx(ix) = extract<std::complex<float> >(val);
             else
                 s(ix) = extract<float>(val);
             return;

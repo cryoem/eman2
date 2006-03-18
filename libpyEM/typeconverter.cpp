@@ -24,7 +24,7 @@ python::numeric::array EMAN::make_numeric_array(float * data, vector<int> dims)
 	return python::extract<python::numeric::array>(obj);
 }
 
-python::numeric::array EMAN::make_numeric_complex_array(complex<float> * data,
+python::numeric::array EMAN::make_numeric_complex_array(std::complex<float> * data,
                                                         vector<int> dims)
 {
 	size_t total = 1;

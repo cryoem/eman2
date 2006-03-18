@@ -17,8 +17,10 @@ MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
 OPTION(ENABLE_FFTW2 "enable fftw 2 support" ON)
 OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
 OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 OPTION(ENABLE_DJBFFT "enable djbfft support" OFF)
 MARK_AS_ADVANCED(ENABLE_DJBFFT)
+
 OPTION(ENABLE_OPTPP "enable Opt++ support" OFF)
 OPTION(ENABLE_TAO "enable TAO support" OFF)
 OPTION(ENABLE_TIFF "enable TIFF support" ON)
@@ -133,9 +135,30 @@ IF(ENABLE_IOCACHE)
 ENDIF(ENABLE_IOCACHE)
 
 
-SET(INCLUDE_DIRS ${EMAN_SOURCE_DIR}/libEM $ENV{HOME}/include $ENV{FFTWDIR}/include $ENV{GSLDIR}/include /usr/local/include /usr/local/include/boost-1_31 /usr/local/include/boost-1_32 /usr/include /sw/include)
+SET(INCLUDE_DIRS 
+	${EMAN_SOURCE_DIR}/libEM 
+	$ENV{HOME}/include 
+	$ENV{FFTWDIR}/include 
+	$ENV{GSLDIR}/include 
+	/usr/local/include 
+	/usr/local/include/boost-1_31 
+	/usr/local/include/boost-1_32 
+	/usr/local/include/boost-1_33
+	/usr/include 
+	/sw/include
+	)
 
-SET(LIB_DIRS $ENV{EMANDIR}/lib $ENV{HOME}/lib ${PLATFORMLIB} $ENV{FFTWDIR}/lib $ENV{GSLDIR}/lib /usr/local/lib /usr/lib /sw/lib)
+SET(LIB_DIRS 
+	$ENV{EMANDIR}/lib 
+	$ENV{HOME}/lib 
+	${PLATFORMLIB} 
+	$ENV{FFTWDIR}/lib 
+	$ENV{GSLDIR}/lib 
+	/usr/local/lib
+	/usr/lib64 
+	/usr/lib 
+	/sw/lib
+	)
 
 
 MACRO(CHECK_REQUIRED_LIB2 upper lower header lower2 header2)
@@ -223,9 +246,11 @@ MACRO(CHECK_PYTHON)
     ENDFOREACH(PYVER)
 ENDMACRO(CHECK_PYTHON)
 
-
 IF(ENABLE_FFTW2)
     OPTION(ENABLE_NFFT "enable nfft support" OFF)
+    OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF) 
+    OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+    OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 
 	IF (WIN32)
 		CHECK_REQUIRED_LIB2(FFTW2 FFTW2dll sfftw.h fftw fftw.h)
@@ -249,6 +274,10 @@ ENDIF(ENABLE_FFTW2)
 
 IF(ENABLE_FFTW3)
     OPTION(ENABLE_NFFT2 "enable nfft2 support" OFF)
+    OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+    OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+    OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
+    
     CHECK_REQUIRED_LIB(FFTW3 fftw3f fftw3.h)
     ADD_DEFINITIONS(-DFFTW3)
     SET(FFTW_LIBRARIES ${FFTW3_LIBRARY})
@@ -258,16 +287,30 @@ IF(ENABLE_FFTW3)
     	CHECK_REQUIRED_LIB(FFTW3D fftw3 fftw3.h)
     	CHECK_REQUIRED_LIB(NFFT2 nfft nfft.h)
     	ADD_DEFINITIONS(-DNFFT2)
-
 		INCLUDE_DIRECTORIES(${NFFT2_INCLUDE_PATH}) 
     ENDIF(ENABLE_NFFT2)
 ENDIF(ENABLE_FFTW3)
 
+IF(ENABLE_ACML_FFT)
+	CHECK_REQUIRED_LIB(ACML acml acml.h)
+	FIND_LIBRARY(G2C_LIBRARY NAMES g2c PATHS
+		/usr/lib64
+		/usr/lib
+		/usr/local/lib
+		$ENV{HOME}/lib )
+	ADD_DEFINITIONS(-DACML)
+	SET(ACML_LIBRARIES ${ACML_LIBRARY})
+    SET(ACML_INCLUDE_PATH ${ACML_INCLUDE_PATH})
+    OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF) 
+	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
+	OPTION(ENABLE_NATIVE_FFT "enable native fft support" OFF)
+ENDIF(ENABLE_ACML_FFT)
+	
 IF(ENABLE_NATIVE_FFT)
 	ADD_DEFINITIONS(-DNATIVE_FFT)
 	OPTION(ENABLE_FFTW2 "enable fftw 2 support" OFF)
 	OPTION(ENABLE_FFTW3 "enable fftw 3 support" OFF)
-	
+	OPTION(ENABLE_ACML_FFT "enable AMD Core Math Library fft support" OFF)
 ENDIF(ENABLE_NATIVE_FFT)
 
 IF(ENABLE_DJBFFT)
