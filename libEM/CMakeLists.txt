@@ -1,3 +1,5 @@
+SUBDIRS(sparx)
+
 SET(LIB_EM_SOURCE byteorder.cpp
     emobject.cpp
     emfft.cpp
@@ -42,14 +44,14 @@ SET(LIB_EM_SOURCE byteorder.cpp
     reconstructor.cpp
     exception.cpp
     testutil.cpp
-    fundamentals.cpp
-    normpadft.cpp
-    periodogram.cpp
-    fourierfilter.cpp
-    rsconvolution.cpp
-    tflm.cpp
+    ./sparx/fundamentals.cpp
+    ./sparx/normpadft.cpp
+    ./sparx/periodogram.cpp
+    ./sparx/fourierfilter.cpp
+    ./sparx/rsconvolution.cpp
+    ./sparx/tflm.cpp
     polardata.cpp
-    native_fft.cpp
+    ./sparx/native_fft.cpp
     )
 
 IF(WIN32)

@@ -371,7 +371,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 #endif	//FFTW3
 
 #ifdef NATIVE_FFT
-#include "native_fft.h"
+#include "./sparx/native_fft.h"
 int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 {
 	int complex_size = n + 2 - n%2;

@@ -3,6 +3,7 @@
  */
 
 #include "processor.h"
+#include "./sparx/processor_sparx.h"
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"

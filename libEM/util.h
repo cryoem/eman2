@@ -4,7 +4,7 @@
 #ifndef eman__util_h__
 #define eman__util_h__ 1
 
-#include "emconstants.h"
+#include "./sparx/emconstants.h"
 #include "exception.h"
 #include <vector>
 #include <iostream>

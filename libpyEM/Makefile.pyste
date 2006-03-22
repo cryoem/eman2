@@ -59,7 +59,7 @@ libpyProcessor2.cpp: processor.pyste ../libEM/processor.h ../libEM/emobject.h
 	rm -f libpyProcessor2.cpp
 	$(PYSTE) --module=libpyProcessor2 processor.pyste
 
-libpyFundamentals2.cpp: fundamentals.pyste ../libEM/fundamentals.h ../libEM/emdata.h
+libpyFundamentals2.cpp: fundamentals.pyste ../libEM/sparx/fundamentals.h ../libEM/emdata.h
 	rm -f libpyFundamentals2.cpp
 	$(PYSTE) --module=libpyFundamentals2 fundamentals.pyste
 

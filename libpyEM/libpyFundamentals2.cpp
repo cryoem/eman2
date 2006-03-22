@@ -5,7 +5,7 @@
 
 // Includes ====================================================================
 #include <emdata.h>
-#include <fundamentals.h>
+#include <./sparx/fundamentals.h>
 
 // Using =======================================================================
 using namespace boost::python;
