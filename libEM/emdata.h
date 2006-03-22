@@ -7,10 +7,10 @@
 #include <cfloat>
 #include <fstream>
 
-#include "./sparx/fundamentals.h"
+#include "sparx/fundamentals.h"
 #include "emutil.h"
 #include "util.h"
-#include "./sparx/emarray.h"
+#include "sparx/emarray.h"
 #include "geometry.h"
 #include "transform.h"
 

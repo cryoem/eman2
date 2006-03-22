@@ -44,14 +44,14 @@ SET(LIB_EM_SOURCE byteorder.cpp
     reconstructor.cpp
     exception.cpp
     testutil.cpp
-    ./sparx/fundamentals.cpp
-    ./sparx/normpadft.cpp
-    ./sparx/periodogram.cpp
-    ./sparx/fourierfilter.cpp
-    ./sparx/rsconvolution.cpp
-    ./sparx/tflm.cpp
+    sparx/fundamentals.cpp
+    sparx/normpadft.cpp
+    sparx/periodogram.cpp
+    sparx/fourierfilter.cpp
+    sparx/rsconvolution.cpp
+    sparx/tflm.cpp
     polardata.cpp
-    ./sparx/native_fft.cpp
+    sparx/native_fft.cpp
     )
 
 IF(WIN32)
