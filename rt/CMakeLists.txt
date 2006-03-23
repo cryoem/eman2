@@ -1,1 +1,1 @@
-SUBDIRS(APTEST demo imageio pyem)
+SUBDIRS(demo imageio pyem)
