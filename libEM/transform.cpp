@@ -439,7 +439,7 @@ void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a
 }
 
 
-void Transform3D::set_rotation(EulerType euler_type, Dict& rotation)
+void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 {
 	float e0  = 0;float e1=0; float e2=0; float e3=0;
 	float Omega=0;

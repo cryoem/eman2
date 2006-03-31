@@ -118,7 +118,7 @@ namespace EMAN
                                   float m21, float m22, float m23,
 			          float m31, float m32, float m33);
 
-		void set_rotation(EulerType euler_type, Dict &rotation );
+		void set_rotation(EulerType euler_type, const Dict &rotation );
 		
 
 		/** returns a rotation that maps a pair of unit vectors, a,b to a second  pair A,B
