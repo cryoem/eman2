@@ -68,7 +68,7 @@ Transform3D::Transform3D(EulerType euler_type, float a1, float a2, float a3)  //
 }
 
 // C5
-Transform3D::Transform3D(EulerType euler_type, Dict& rotation)  //YYY
+Transform3D::Transform3D(EulerType euler_type, const Dict& rotation)  //YYY
 {
 	init();
 	set_rotation(euler_type,rotation);

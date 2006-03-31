@@ -92,7 +92,7 @@ namespace EMAN
 									      // SPIDER     phi theta psi
 		
 	     // C5   First apply pretrans: Then rotation
-		Transform3D(EulerType euler_type, Dict& rotation);
+		Transform3D(EulerType euler_type, const Dict& rotation);
 		
 
 	     // C6   First apply pretrans: Then rotation: Then posttrans
