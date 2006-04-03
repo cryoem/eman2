@@ -52,7 +52,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/tflm.cpp
     polardata.cpp
     sparx/native_fft.cpp
-    sparx/util.cpp
+    sparx/sparx_util.cpp
     )
 
 IF(WIN32)
