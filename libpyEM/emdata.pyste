@@ -6,6 +6,8 @@ Include("cmp.h")
 Include("emfft.h")
 Include("xydata.h")
 
+SparxUtil = Class("EMAN::SparxUtil", "sparx_util.h")
+
 #EMData = Class("EMAN::EMData", "emdata.h")
 EMData = Class("EMAN::EMData", "emdata_wrapitems.h")
 add_method(EMData, "emdata_getitem")
