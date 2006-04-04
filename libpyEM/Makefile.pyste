@@ -15,7 +15,8 @@ all: libpyAligner2.cpp \
 	 libpyPointArray2.cpp \
 	 libpyTransform2.cpp \
 	 libpyTypeConverter2.cpp \
-	 libpyPolarData2.cpp
+	 libpyPolarData2.cpp	\
+	 libpySparxUtil2.cpp
 
 libpyGeometry2.cpp: geometry.pyste ../libEM/geometry.h
 	rm -f libpyGeometry2.cpp
@@ -78,4 +79,8 @@ libpyTypeConverter2.cpp: typeconverter.pyste typeconverter.h
 libpyPolarData2.cpp: polardata.pyste ../libEM/polardata.h
 	rm -f libpyPolarData2.cpp
 	$(PYSTE) --module=libpyPolarData2 polardata.pyste
+	
+libpySparx2.cpp: sparxutil.pyste ../libEM/sparx/sparx_util.h
+	rm -f libpySparxUtil2.cpp
+	$(PYSTE) --module=libpySparx2.cpp sparxutil.pyste
 	
