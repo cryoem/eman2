@@ -1,5 +1,5 @@
 Include("xydata.h")
-Include("sparx_util.h")
+Include("sparx/sparx_util.h")
 
 EMNumPy = Class("EMAN::EMNumPy", "typeconverter.h")
 

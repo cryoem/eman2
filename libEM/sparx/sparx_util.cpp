@@ -11,7 +11,7 @@ bool SparxUtil::peakcmp(const Peak p1, const Peak p2) {
     return (p1.val > p2.val);
 }
 
-ostream& operator<< (ostream& os, const SparxUtil::Peak& peak) {
+ostream& operator<< (ostream& os, const Peak& peak) {
     os <<  peak.xpos <<  peak.ypos << peak.zpos
        << peak.val;
     return os;

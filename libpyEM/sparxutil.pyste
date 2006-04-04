@@ -1,5 +1,0 @@
-Include("sparx/sparx_util.h")
-
-Peak = Class("EMAN::Peak", "sparx/sparx_util.h")
-SparxUtil = Class("EMAN::SparxUtil", "sparx/sparx_util.h")
-
