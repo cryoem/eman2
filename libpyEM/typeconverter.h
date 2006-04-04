@@ -9,6 +9,7 @@
 #include "emdata.h"
 #include "xydata.h"
 #include "exception.h"
+#include "sparx/sparx_util.h"
 
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>

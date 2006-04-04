@@ -1,10 +1,11 @@
 Include("xydata.h")
+Include("sparx_util.h")
 
 EMNumPy = Class("EMAN::EMNumPy", "typeconverter.h")
 
 module_code("\n	import_array();\n        python::numeric::array::set_module_and_type(\"Numeric\", \"ArrayType\");\n\n")
 
-module_code("\n	EMAN::vector_to_python<int>();\n	EMAN::vector_to_python<long>();\n	EMAN::vector_to_python<float>();\n	EMAN::vector_to_python<double>();\n	EMAN::vector_to_python<std::string>();\n	EMAN::vector_to_python<EMAN::EMData*>();\n	EMAN::vector_to_python<EMAN::Pixel>();\n\n	EMAN::vector_from_python<int>();\n	EMAN::vector_from_python<long>();\n	EMAN::vector_from_python<float>();\n	EMAN::vector_from_python<std::string>();\n	EMAN::vector_from_python<EMAN::EMData*>();\n	EMAN::vector_from_python<EMAN::Pixel>();\n\n")
+module_code("\n	EMAN::vector_to_python<int>();\n	EMAN::vector_to_python<long>();\n	EMAN::vector_to_python<float>();\n	EMAN::vector_to_python<double>();\n	EMAN::vector_to_python<std::string>();\n	EMAN::vector_to_python<EMAN::EMData*>();\n	EMAN::vector_to_python<EMAN::Pixel>();\n  EMAN::vector_to_python<EMAN::Peak>();\n	EMAN::vector_from_python<int>();\n	EMAN::vector_from_python<long>();\n	EMAN::vector_from_python<float>();\n	EMAN::vector_from_python<std::string>();\n	EMAN::vector_from_python<EMAN::EMData*>();\n	EMAN::vector_from_python<EMAN::Pixel>();\n\n")
 
 module_code("	EMAN::map_to_python<int>();\n	EMAN::map_to_python<long>();\n	EMAN::map_to_python<float>();\n	EMAN::map_to_python<double>();\n	EMAN::map_to_python<std::string>();\n	EMAN::map_to_python<vector<string> >();\n\n	EMAN::map_from_python<int>();\n	EMAN::map_from_python<long>();\n	EMAN::map_from_python<float>();\n	EMAN::map_from_python<std::string>();\n	EMAN::map_from_python<vector<string> >();\n\n")
 
