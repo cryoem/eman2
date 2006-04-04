@@ -19,7 +19,9 @@
 {
 	class EMData;
 	
-	struct Peak {
+	class Peak 
+	{
+	public:
 	    float val;
 	    float xpos;
 		float ypos;
