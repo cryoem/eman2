@@ -2,6 +2,7 @@
 #include "testutil.h"
 //#include "exception.h"
 #include <iostream>
+#include "sparx/sparx_util.h"
 
 using namespace EMAN;
 using namespace std;
@@ -658,6 +659,20 @@ void debug_sigma_processor()
 	}	
 }
 
+void debug_peak_search()
+{
+	cout << "Start debug_peak_search function ..." << endl;
+	
+	EMData * e = new EMData();
+	e->set_size(1024, 1024, 1);
+	e->process_inplace("testimage.noise.uniform.rand");
+	
+	SparxUtil * su = new SparxUtil();
+	vector<Peak> vp = su->peak_search(e, 1, 0.5);
+	
+	cout << "End debug_peak_search function ..." << endl;
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -685,7 +700,8 @@ int main()
 		//debug_calc_hist();
 		//debug_set_value_at();
 		//debug_common_lines();
-		debug_sigma_processor();
+		//debug_sigma_processor();
+		debug_peak_search();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
