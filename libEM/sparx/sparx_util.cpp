@@ -1,4 +1,3 @@
-#include "emdata.h"
 #include "sparx_util.h"
 #include <list>
 #include <vector>

@@ -1,6 +1,7 @@
 #ifndef sparx_util_h
 #define sparx_util_h
 #include <cstddef>
+#include "emdata.h"
 
 /** @file util.h
  *  utilities of image proccessing -- 
