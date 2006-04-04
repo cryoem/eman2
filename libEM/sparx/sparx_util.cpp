@@ -17,10 +17,10 @@ ostream& operator<< (ostream& os, const SparxUtil::Peak& peak) {
     return os;
 }
 
-vector<SparxUtil::Peak> SparxUtil::peak_search(EMData* img, int ml, float invert)
+vector<Peak> SparxUtil::peak_search(EMData* img, int ml, float invert)
 {
  	 EMData& buf = *img;
-	 vector<SparxUtil::Peak> peaks;
+	 vector<Peak> peaks;
  	 int img_dim;
  	 int i,j,k,itx,ity,itz;
  	 int i__1,i__2;
