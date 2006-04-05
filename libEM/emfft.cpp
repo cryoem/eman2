@@ -616,60 +616,112 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	return 0;
 }
 
+int EMfft::real_to_complex_2d(float *real_data, float *complex_data, int nx, int ny)
+{
+	const int complex_nx = nx + 2 - nx%2;
+	int info;
+	/* Allocate communication work array */
+	float * comm = (float *)malloc((3*nx+100)*sizeof(float));
+	
+	/*cout << *real_data << endl;
+	cout << *(real_data+1b) << endl;
+	cout << *(real_data+2) << endl;
+	cout << *(real_data+3) << endl;*/
+	/* Allocate work array to store ACML complex array*/
+	float * fft_data = (float *)malloc(complex_nx * ny * sizeof(float));
+	cout << "fft_data after allocation:" << endl;
+	for(int j=0; j<ny; ++j) {
+		for(int i=0; i<complex_nx; ++i) {
+			cout << "data[" << i << "][" << j << "] = " << fft_data[i+j*complex_nx] << "\t";
+		}
+		cout << endl;
+	}
+	
+	/*copy real_data to complex_data then apply inplace FFT on complex data*/
+	for(int i=0; i<ny; ++i) {
+		memcpy(fft_data+i*complex_nx, real_data+i*nx, nx*sizeof(float));
+	}
+	//memcpy(fft_data, real_data, nx * ny * sizeof(float));
+	cout << endl << "real_data array: " << endl;
+	for(int j=0; j<ny; ++j) {
+		for(int i=0; i<nx; ++i) {
+			cout << real_data[i+j*nx] << "\t";
+		}
+		cout << endl;
+	}
+	cout << endl << "the fft_data array: " << endl;
+	for(int j=0; j<ny; ++j) {
+		for(int i=0; i<complex_nx; ++i) {
+			cout << fft_data[i+j*complex_nx] << "\t";
+		}
+		cout << endl;
+	}
+	
+	//do a multiple 1d real-to-complex transform on x direction
+	scfftm(ny, nx, fft_data, comm, &info);
+	
+	cout << endl << "the fft_data array after x dim transform: " << endl;
+	for(int j=0; j<ny; ++j) {
+		for(int i=0; i<complex_nx; ++i) {
+			cout << fft_data[i+j*complex_nx] << "\t";
+		}
+		cout << endl;
+	}
+	
+/*	cout << "original fft array" << endl;
+/	cout << "complex_nx = " << complex_nx << " ny = " << n*(fft_data2+i+j*2*ny+1) << endl;
+	for(int i=0; i<ny; ++i) {
+		for(int j=0; j<complex_nx; ++j) {
+			cout << *(fft_data+j+i*complex_nx) << "\t";
+		}
+		cout << endl;
+	}
+*/	
+	//do a multiple 1d complex to complex transformation on y direction
+	float * fft_data2 = (float *)malloc(complex_nx * ny * sizeof(float));
+/*	cout << "fft array rearranged in y dimension" << endl;
+	for(int i=0; i<complex_nx; ++i) {
+		for(int j=0; j<ny; ++j) {
+			*(fft_data2+i+j*2*ny) = *(fft_data+i+j*complex_nx);
+			*(fft_data2+i+j*2*ny+1) = *(fft_data+i+complex_nx/2+j*complex_nx);
+			cout << *(fft_data2+i+j*2*ny) << "\t" << *(fft_data2+i+j*2*ny+1) << "\t";
+		}
+		cout << endl;
+	}
+*/	
+	if(info != 0) {
+		LOGERR("Error happening in scfftm: %d", info);
+	}
+	
+	return 0;	
+}
+
+int EMfft::complex_to_real_2d(float *complex_data, float *real_data, int nx, int ny)
+{
+	return 0;
+}
+
+int EMfft::real_to_complex_3d(float *real_data, float *complex_data, int nx, int ny, int nz)
+{
+	return 0;
+}
+
+int EMfft::complex_to_real_3d(float *complex_data, float *real_data, int nx, int ny, int nz)
+{
+	return 0;
+}
+
 int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
 {
 	const int rank = get_rank(ny, nz);
-	const int complex_nx = nx + 2 - nx%2;
 	
 	switch(rank) {
 		case 1:
-			real_to_complex_1d(real_data, complex_data, nx);
-			return 0;
+			return real_to_complex_1d(real_data, complex_data, nx);
 		case 2:
-			{
-				int info;
-				/* Allocate communication work array */
-				float * comm = (float *)malloc((3*nx+100)*sizeof(float));
-				
-				/* Allocate work array to store ACML complex array*/
-				float * fft_data = (float *)malloc(complex_nx * ny * sizeof(float));
-				
-				//copy real_data to complex_data then apply inplace FFT on complex data
-				memcpy(fft_data, real_data, nx * ny * sizeof(float));
-				
-				cout << "before acml fft: " << endl;
-				for( int y=0; y<ny; y++ ) {
-					 for( int x=0; x<nx; x++ ) {
-						cout << fft_data[x+y*nx] << "\t";
-					}
-					cout << endl;
-				}
-				
-				scfftm(ny, nx, fft_data, comm, &info);
-				if(info != 0) {
-					LOGERR("Error happening in Initialize communication work array: %d", info);
-				}
-				
-				//transform(fft_data, fft_data+complex_nx*ny, fft_data, time_sqrt_n(nx));
-				
-				cout << "after acml fft: " << endl;
-				
-				for( int y=0; y<ny; y++ ) {
-					for( int x=0; x<complex_nx; x++ ) 
-					{
-						cout << fft_data[x+y*nx] << "\t";
-					}
-					cout << endl;
-				}
-				
-				memcpy(complex_data, fft_data, complex_nx * ny * sizeof(float));
-				
-				return 0;
-			}
+			return real_to_complex_2d(real_data, complex_data, nx, ny);
 		case 3:
-			{
-				return 0;
-			}			
+			return real_to_complex_3d(real_data, complex_data, nx, ny, nz);		
 		default:
 			LOGERR("Never should be here...\n");
 	   		return -1;
@@ -679,23 +731,19 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
 {
 	const int rank = get_rank(ny, nz);
-	const int complex_nx = nx + 2 - nx%2;
 	
 	switch(rank) {
 		case 1:
-			complex_to_real_1d(complex_data, real_data, nx);
-			return 0;
+			return complex_to_real_1d(complex_data, real_data, nx);
 		case 2:
-			{
-				return 0;
-			}
+			return complex_to_real_2d(complex_data, real_data, nx, ny);
 		case 3:
-			{
-				return 0;
-			}
+			return complex_to_real_3d(complex_data, real_data, nx, ny, nz);
 		default:
 			LOGERR("Never should be here...\n");
 	   		return -1;
 	}
 }
+
+
 #endif	//ACML

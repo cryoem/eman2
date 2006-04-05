@@ -151,6 +151,11 @@ namespace EMAN
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz);
 	  
 	  private:
+		static int real_to_complex_2d(float *real_data, float *complex_data, int nx, int ny);
+		static int complex_to_real_2d(float *complex_data, float *real_data, int nx, int ny);
+		static int real_to_complex_3d(float *real_data, float *complex_data, int nx, int ny, int nz);
+		static int complex_to_real_3d(float *complex_data, float *real_data, int nx, int ny, int nz);
+		
 		class time_sqrt_n : public std::unary_function<float, float> {
 		  public:
 			time_sqrt_n(int n) : n_(n), factor(sqrt(float(n_))) {}
