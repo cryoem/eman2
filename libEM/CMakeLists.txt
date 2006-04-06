@@ -17,6 +17,12 @@ SET(LIB_EM_SOURCE byteorder.cpp
     tifio.cpp
     hdfio.cpp
     emdata.cpp
+    emdata_io.cpp
+    emdata_core.cpp
+    emdata_modular.cpp
+    emdata_metadata.cpp
+    emdata_transform.cpp
+    sparx/emdata_sparx.cpp
     pifio.cpp
     v4l2io.cpp
     vtkio.cpp
