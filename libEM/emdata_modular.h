@@ -1,6 +1,11 @@
 /**
  * $Id$
  */
+
+/** This file is a part of "emdata.h", to use functions in this file,
+ * you should "#include "emdata.h",
+ * NEVER directly include this file. */ 
+
 #ifndef emdata__modular_h__
 #define emdata__modular_h__ 
 
