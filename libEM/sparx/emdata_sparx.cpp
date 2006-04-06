@@ -405,3 +405,79 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	return eguess;
 }  // ends FH2F
 
+
+#define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
+vector<float> EMData::center_of_gravity()
+{
+	
+	
+	//float *img = ret->get_data();
+	int ndim = get_ndim();
+	
+	vector<float> opt;
+	float val,sum1=0.f,MX=0.f,RX=0.f,MY=0.f,RY=0.f,MZ=0.f,RZ=0.f;
+	if (ndim == 1)
+	{
+			int j=1,k=1;
+			for ( int i = 1;i = nx; i++)
+			{
+				val=rdata(i,j,k);
+				sum1 += val;
+				MX   += (i*val);
+				RX   += ((i^2)*val);
+			}
+			
+	
+	}
+	opt.push_back(RX);
+	/*else if (ndim == 2)
+	{	
+			int ny = buf.get_ysize();
+			int k =1;
+			for (int j=1;j=ny;j++)
+				{
+					for (int i=1;i=nx;i++)
+					{
+						val = getval(i,j,k);
+						sum1 += val;
+						MX += (i*val);
+						MY += (j*val);
+						RX += ((i^2)*val);
+						RY += ((j^2)*val);
+					}
+				}
+			/*opt[2][2] ={
+				   {MX/sum1,RX/sum1},
+				   {MY/sum1,RY/sum1}
+				   };
+	
+	}
+	else 
+	{		
+			int ny = buf.get_ysize();
+			int nz = buf.get_zsize();
+			for (int k = 1;k = nz;k++)
+			{
+				for (int j=1;j=ny;j++)
+				{
+					for (int i=1;i=nx;i++)
+					{
+						val = getval(i,j,k);
+						sum1 += val;
+						MX += (i*val);
+						MY += (j*val);
+						MZ += (k*val);
+						RX += ((i^2)*val);
+						RY += ((j^2)*val);
+						RZ += ((k^2)*val);
+					}
+				}
+			}
+			//opt[3][3] = {{MX/sum1,RX/sum1},{MY/sum1,RY/sum1},{MZ/sum1,RZ/sum1}};
+	
+	}*/
+	 
+
+	return opt;
+}
+#undef rdata

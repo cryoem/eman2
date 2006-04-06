@@ -4,6 +4,7 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
+#include <sparx/sparx_util.h>
 #include <typeconverter.h>
 #include <xydata.h>
 
@@ -33,7 +34,7 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::vector_to_python<std::string>();
 	EMAN::vector_to_python<EMAN::EMData*>();
 	EMAN::vector_to_python<EMAN::Pixel>();
-
+  EMAN::vector_to_python<EMAN::Peak>();
 	EMAN::vector_from_python<int>();
 	EMAN::vector_from_python<long>();
 	EMAN::vector_from_python<float>();
