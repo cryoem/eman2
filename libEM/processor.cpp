@@ -1785,6 +1785,11 @@ void BilateralProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
+	
+	if (image->get_ndim() != 3) {
+		LOGERR("%s processor only support 3D volume data", get_name().c_str());
+		throw ImageDimensionException("Only support 3D volume data");
+	}
 
 	float distance_sigma = params["distance_sigma"];
 	float value_sigma = params["value_sigma"];
