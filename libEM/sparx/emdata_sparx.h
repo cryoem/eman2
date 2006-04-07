@@ -33,6 +33,11 @@ EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
  */
 EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
 
-vector<float> cog();
-
+/** Calculates the Center of Gravity 
+ *  and the Radius of Gyration of the image.
+ *  @returns the mass and the radius as vectors.
+ *  
+ */
+ vector<float> cog();
+ 
 #endif	//emdata__sparx_h__

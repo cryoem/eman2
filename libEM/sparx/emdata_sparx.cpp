@@ -408,39 +408,36 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 }  // ends FH2F
 
 
+
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
 vector<float> EMData::cog()
 {
-	ENTERFUNC;
 	
-	vector<float> cntog(float MR=0);
+	vector<float> cntog;
 	int ndim = get_ndim();
+	int i=1,j=1,k=1;
 	float val,sum1=0.f,MX=0.f,RX=0.f,MY=0.f,RY=0.f,MZ=0.f,RZ=0.f;
 	
 	if (ndim == 1)
 	{
-			int j=1,k=1;
-			for ( int i = 1;i = nx; i++)
+			for ( i = 1;i <= nx; i++)
 			{
 				val=rdata(i,j,k);
 				sum1 += val;
 				MX   += (i*val);
 				RX   += ((i^2)*val);
 			}
-			
+			cntog.push_back(MX);
+			cntog.push_back(RX);
 	
-	}
-	
-	
-	/*else if (ndim == 2)
+	}	
+	else if (ndim == 2)
 	{	
-			int ny = buf.get_ysize();
-			int k =1;
-			for (int j=1;j=ny;j++)
+			for (j=1;j<=ny;j++)
 				{
-					for (int i=1;i=nx;i++)
+					for (i=1;i<=nx;i++)
 					{
-						val = getval(i,j,k);
+						val = rdata(i,j,k);
 						sum1 += val;
 						MX += (i*val);
 						MY += (j*val);
@@ -448,23 +445,20 @@ vector<float> EMData::cog()
 						RY += ((j^2)*val);
 					}
 				}
-			opt[2][2] ={
-				   {MX/sum1,RX/sum1},
-				   {MY/sum1,RY/sum1}
-				   };
-	
+			cntog.push_back(MX);
+			cntog.push_back(RX);
+			cntog.push_back(MY);
+			cntog.push_back(RY);
 	}
 	else 
 	{		
-			int ny = buf.get_ysize();
-			int nz = buf.get_zsize();
-			for (int k = 1;k = nz;k++)
+			for (k = 1;k <= nz;k++)
 			{
-				for (int j=1;j=ny;j++)
+				for (j=1;j<=ny;j++)
 				{
-					for (int i=1;i=nx;i++)
+					for (i=1;i<=nx;i++)
 					{
-						val = getval(i,j,k);
+						val = rdata(i,j,k);
 						sum1 += val;
 						MX += (i*val);
 						MY += (j*val);
@@ -475,11 +469,13 @@ vector<float> EMData::cog()
 					}
 				}
 			}
-			//opt[3][3] = {{MX/sum1,RX/sum1},{MY/sum1,RY/sum1},{MZ/sum1,RZ/sum1}};
-	
-	}*/
-	 
-	cout << "working" ;
-	//return cntog;
+			cntog.push_back(MX);
+			cntog.push_back(RX);
+			cntog.push_back(MY);
+			cntog.push_back(RY);
+			cntog.push_back(MZ);
+			cntog.push_back(RZ);
+	}	 
+	return cntog;
 }
 #undef rdata
