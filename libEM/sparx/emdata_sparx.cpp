@@ -5,7 +5,9 @@
  
 #include "gsl_sf_bessel.h"
 #include "gsl_errno.h"
-
+#include <vector>
+using std::vector;
+using std::cout;
 using namespace EMAN;
 
 EMData *EMData::real2FH(float OverSamplekB) // PRB
@@ -407,15 +409,14 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 
 
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
-vector<float> EMData::center_of_gravity()
+vector<float> EMData::cog()
 {
+	ENTERFUNC;
 	
-	
-	//float *img = ret->get_data();
+	vector<float> cntog(float MR=0);
 	int ndim = get_ndim();
-	
-	vector<float> opt;
 	float val,sum1=0.f,MX=0.f,RX=0.f,MY=0.f,RY=0.f,MZ=0.f,RZ=0.f;
+	
 	if (ndim == 1)
 	{
 			int j=1,k=1;
@@ -429,7 +430,8 @@ vector<float> EMData::center_of_gravity()
 			
 	
 	}
-	opt.push_back(RX);
+	
+	
 	/*else if (ndim == 2)
 	{	
 			int ny = buf.get_ysize();
@@ -446,7 +448,7 @@ vector<float> EMData::center_of_gravity()
 						RY += ((j^2)*val);
 					}
 				}
-			/*opt[2][2] ={
+			opt[2][2] ={
 				   {MX/sum1,RX/sum1},
 				   {MY/sum1,RY/sum1}
 				   };
@@ -477,7 +479,7 @@ vector<float> EMData::center_of_gravity()
 	
 	}*/
 	 
-
-	return opt;
+	cout << "working" ;
+	//return cntog;
 }
 #undef rdata

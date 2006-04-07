@@ -33,6 +33,6 @@ EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
  */
 EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
 
-vector<float> center_of_gravity();
+vector<float> cog();
 
 #endif	//emdata__sparx_h__
