@@ -277,3 +277,110 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 }
 
 
+EMData *Util:: im_diff(EMData* V1, EMData* V2, EMData* mask)
+{
+	ENTERFUNC;
+	
+	size_t nx = V1->get_xsize();
+	size_t ny = V1->get_ysize();
+	size_t nz = V1->get_zsize();
+	size_t size = nx*ny*nz;	
+	
+	EMData *BD = new EMData();
+	BD->set_size(nx, ny, nz);	 	 
+	
+	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
+	float S1=0,S2=0,S3=0,S4=0; 
+	size_t nvox =0;
+	
+        V1ptr = V1->get_data();
+	V2ptr = V2->get_data();
+	MASKptr = mask->get_data();
+	BDptr = BD->get_data();
+	
+	
+	/* calculation of S1,S2,S3,S3,nvox*/
+			       
+	for (size_t i = 0;i < size; i++)
+	    {
+	      if (MASKptr[i]== 1)
+	      {
+	       S1 += V1ptr[i]*V2ptr[i];	       
+	       S2 += V2ptr[i]*V2ptr[i];	       
+	       S3 += V2ptr[i];	       
+	       S4 += V1ptr[i];	       
+	       nvox ++;
+	      }
+	    } 
+		        
+	A = (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
+	B = (A*S3  -  S4)/nvox;
+	
+	
+	/* calculation of the difference image*/
+	
+	for (size_t i = 0;i < size; i++)
+	    {	     
+	     BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i];
+	     BDptr[i] = BDptr[i]*MASKptr[i];
+	    } 	 
+		 
+	BD->update();
+	return BD;	
+}
+
+
+vector<float> Util :: infomask(EMData* Vol, EMData* mask)
+{
+	ENTERFUNC;
+	vector<float> stats;
+	float *Volptr, *maskptr,MAX,MIN,count,Sum1,Sum2;
+	
+	MAX = FLT_MIN;
+	MIN = FLT_MAX;
+	count = 0;
+	Sum1 = 0;
+	Sum2 = 0;
+		
+	
+	if (mask == NULL)	
+          {
+	   //Vol->update_stat();	
+	   stats[0] = Vol->get_attr("mean");
+	   stats[1] = Vol->get_attr("sigma");
+	   stats[2] = Vol->get_attr("minimum");
+	   stats[3] = Vol->get_attr("maximum");
+	   return stats;
+	  }		
+	
+	/* Check if the sizes of the mask and image are same */
+	
+	size_t nx = Vol->get_xsize();
+	size_t ny = Vol->get_ysize();
+	size_t nz = Vol->get_zsize();		
+	 
+	Volptr = Vol->get_data();
+	maskptr = mask->get_data();		 
+	
+	
+	/* Calculation of the Statistics */
+			       
+	for (size_t i = 0;i < nx*ny*nz; i++)
+	    {
+	      if (maskptr[i]==1)
+	      {
+	       Sum1 += Volptr[i];	       
+	       Sum2 += Volptr[i]*Volptr[i];	       
+	       MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
+	       MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
+	       count++;
+	      }
+	    }                  	 
+
+       stats[0] = Sum1/count;
+       stats[1] = (Sum2 - Sum1*Sum1)/count;
+       stats[2] = MIN;
+       stats[3] = MAX;	     
+        
+       return stats;
+}

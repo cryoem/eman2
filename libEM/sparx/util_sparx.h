@@ -21,6 +21,11 @@ public:
  *               or the projection in real or fourier space 
  *               or the FH of the pattern
 */
+
+static EMData* im_diff(EMData* V1, EMData* V2, EMData* mask);
+static vector<float> infomask(EMData* Vol, EMData* mask);
+
+
 static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b, 
                    int flag=0, float alphaDeg=0); //PRB
 
