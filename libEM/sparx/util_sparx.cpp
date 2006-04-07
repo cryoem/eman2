@@ -9,6 +9,59 @@
 using namespace EMAN;
 using namespace std;
 
+EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
+{
+	ENTERFUNC;
+	
+	size_t nx = V1->get_xsize();
+	size_t ny = V1->get_ysize();
+	size_t nz = V1->get_zsize();
+	size_t size = nx*ny*nz;	
+	
+	EMData *BD = new EMData();
+	BD->set_size(nx, ny, nz);	 	 
+	
+	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
+	float S1=0,S2=0,S3=0,S4=0; 
+	size_t nvox =0;
+	
+        V1ptr = V1->get_data();
+	V2ptr = V2->get_data();
+	MASKptr = mask->get_data();
+	BDptr = BD->get_data();
+	
+	
+	/* calculation of S1,S2,S3,S3,nvox*/
+			       
+	for (size_t i = 0;i < size; i++)
+	    {
+	      if (MASKptr[i]>0.5f)
+	      {
+	       S1 += V1ptr[i]*V2ptr[i];	       
+	       S2 += V2ptr[i]*V2ptr[i];	       
+	       S3 += V2ptr[i]; 
+	       S4 += V1ptr[i];
+	       nvox ++;
+	      }
+	    } 
+		        
+	A = (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
+	B = (A*S3  -  S4)/nvox;
+	
+	
+	/* calculation of the difference image*/
+	
+	for (size_t i = 0;i < size; i++)
+	    {	     
+	     BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i];
+	     BDptr[i] = BDptr[i]*MASKptr[i];
+	    } 	 
+		 
+	BD->update();
+	return BD;	
+}
+
+
 EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int flag, float alphaDeg) //PRB
 {
     int Mid= (Size+1)/2;
@@ -277,60 +330,7 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 }
 
 
-EMData *Util:: im_diff(EMData* V1, EMData* V2, EMData* mask)
-{
-	ENTERFUNC;
-	
-	size_t nx = V1->get_xsize();
-	size_t ny = V1->get_ysize();
-	size_t nz = V1->get_zsize();
-	size_t size = nx*ny*nz;	
-	
-	EMData *BD = new EMData();
-	BD->set_size(nx, ny, nz);	 	 
-	
-	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
-	float S1=0,S2=0,S3=0,S4=0; 
-	size_t nvox =0;
-	
-        V1ptr = V1->get_data();
-	V2ptr = V2->get_data();
-	MASKptr = mask->get_data();
-	BDptr = BD->get_data();
-	
-	
-	/* calculation of S1,S2,S3,S3,nvox*/
-			       
-	for (size_t i = 0;i < size; i++)
-	    {
-	      if (MASKptr[i]== 1)
-	      {
-	       S1 += V1ptr[i]*V2ptr[i];	       
-	       S2 += V2ptr[i]*V2ptr[i];	       
-	       S3 += V2ptr[i];	       
-	       S4 += V1ptr[i];	       
-	       nvox ++;
-	      }
-	    } 
-		        
-	A = (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
-	B = (A*S3  -  S4)/nvox;
-	
-	
-	/* calculation of the difference image*/
-	
-	for (size_t i = 0;i < size; i++)
-	    {	     
-	     BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i];
-	     BDptr[i] = BDptr[i]*MASKptr[i];
-	    } 	 
-		 
-	BD->update();
-	return BD;	
-}
-
-
-vector<float> Util :: infomask(EMData* Vol, EMData* mask)
+vector<float> Util::infomask(EMData* Vol, EMData* mask)
 {
 	ENTERFUNC;
 	vector<float> stats;
