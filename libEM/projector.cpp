@@ -559,7 +559,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 								float a8 = -a5 - a61 - (*image)(iox,ioy+1,ioz+1)
 									+ (*image)(iox+1,ioy+1,ioz+1);
 								(*ret)(j,k,ia) += a1 + dz*(a4 + a6*dx  
-														   + (a7 + a8*dx)*dy)
+				                                        + (a7 + a8*dx)*dy)
 									+ a3*dy + dx*(a2 + a5*dy);
 							}
 						}
