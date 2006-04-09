@@ -35,7 +35,7 @@ EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
 		
 		
 /** Create a (1-D) rotationally averaged image.
- * @exception ImageDimensionException If 'this' image is not 2D.
+ * @exception ImageDimensionException If 'this' image is 1D.
  * @return 1-D rotationally-averaged image
  */					
 EMData* rotavg();

@@ -412,12 +412,12 @@ EMData* EMData::rotavg()
 {
 	ENTERFUNC;
 
-	if (nz > 1) {
-		LOGERR("2D images only.");
-		throw ImageDimensionException("2D images only");
+	if (ny<2 && nz <2) {
+		LOGERR("No 1D images.");
+		throw ImageDimensionException("No 1D images!");
 	}
 	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(-nx/2,-ny/2);
+	set_array_offsets(-nx/2,-ny/2,-nz/2);
 #ifdef _WIN32
 	int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
 #else
@@ -427,18 +427,21 @@ EMData* EMData::rotavg()
 	ret->set_size(rmax+1, 1, 1);
 	ret->to_zero();
 	vector<float> count(rmax+1);
-	for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
+	   if (abs(k) > rmax) continue;
+	   for (int j = -ny/2; j < ny/2 + ny%2; j++) {
 		if (abs(j) > rmax) continue;
 		for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-			float r = sqrt(float(j*j) + float(i*i));
+			float r = sqrt(float(k*k) + float(j*j) + float(i*i));
 			int ir = int(r);
 			if (ir >= rmax) continue;
 			float frac = r - float(ir);
-			(*ret)(ir) += (*this)(i,j)*(1.0f - frac);
-			(*ret)(ir+1) += (*this)(i,j)*frac;
+			(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
+			(*ret)(ir+1) += (*this)(i,j,k)*frac;
 			count[ir] += 1.0f - frac;
 			count[ir+1] += frac;
 		}
+	    }
 	}
 	for (int ir = 0; ir <= rmax; ir++) {
 	#ifdef _WIN32
