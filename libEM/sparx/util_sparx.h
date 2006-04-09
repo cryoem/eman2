@@ -182,4 +182,126 @@ class FakeKaiserBessel : public KaiserBessel {
 		void build_I0table();
 };
 
+		/** Compute a vector containing quais-evenly spaced Euler angles
+		 *
+		 * The order of angles in the vector is phi, theta, psi.
+		 *
+		 * @param[in] delta  Delta theta (spacing in theta).
+		 * @param[in] t1  Starting (min) value of theta in degrees, default = 0.
+		 * @param[in] t2  Ending (max) value of theta in degrees, default = 90.
+		 * @param[in] p1  Starting (min) value of phi in degrees, default = 0.
+		 * @param[in] p2  Ending (max) value of phi in degrees, default = 359.9.
+		 * @return Vector of angles as a flat list of phi_0, theta_0, psi_0, ..., phi_N, theta_N, psi_N.
+		 */
+		static vector<float>
+		voea(float delta, float t1=0, float t2=90, 
+			 float p1=0, float p2=359.9);
+
+		/** Tri-Quadratic interpolation.
+		 *
+		 *	@param[in] r x-coord value
+		 *	@param[in] s y-coord value
+		 *	@param[in] t z-coord value
+		 *	@param[in] f 3x3x3 grid of measured values
+		 *
+		 *	@return Interpolated value
+		 */
+		static float triquad(double r, double s, double t, float f[]);
+
+		/** Quadratic interpolation (2D).
+		 *
+		 *  Note:  This routine starts counting from 1, not 0!
+		 *
+		 *	This routine uses six image points for interpolation:
+		 *
+		 *@see M. Abramowitz & I.E. Stegun, Handbook of Mathematical
+		 *     Functions (Dover, New York, 1964), Sec. 25.2.67.
+		 *     http://www.math.sfu.ca/~cbm/aands/page_882.htm.
+		 *
+		 *@see http://www.cl.cam.ac.uk/users/nad/pubs/quad.pdf
+		 *
+		 *@verbatim
+                f3    fc
+                |
+                | x
+         f2-----f0----f1
+                |
+                |
+                f4
+		 *@endverbatim
+		 *
+		 *	f0 - f4 are image values near the interpolated point X.
+		 *	f0 is the interior mesh point nearest x.
+		 *
+		 *	Coords:  
+		 *@li        f0 = (x0, y0)
+		 *@li        f1 = (xb, y0)
+		 *@li        f2 = (xa, y0)
+		 *@li        f3 = (x0, yb)
+		 *@li        f4 = (x0, ya)
+		 *@li        fc = (xc, yc)
+		 *
+		 *	Mesh spacings: 
+		 *@li              hxa -- x- mesh spacing to the left of f0
+		 *@li              hxb -- x- mesh spacing to the right of f0
+		 *@li              hyb -- y- mesh spacing above f0
+		 *@li              hya -- y- mesh spacing below f0
+		 *
+		 *	Interpolant:
+		 *	  f = f0 + c1*(x-x0) + c2*(x-x0)*(x-x1)
+		 *			 + c3*(y-y0) + c4*(y-y0)*(y-y1)
+		 *			 + c5*(x-x0)*(y-y0)
+		 *
+		 *	@param[in] x x-coord value
+		 *	@param[in] y y-coord value
+		 *	@param[in] image Image object (pointer)
+		 *
+		 *	@return Interpolated value
+		 */
+		static float quadri(float x, float y, int nx, int ny, float* image);
+
+		/** Gaussian function class.
+		 *
+		 *  Usage:
+		 *
+		 *     Gaussian gauss(sigma);
+		 *     float g = gauss(x);
+		 */
+		class Gaussian {
+			float sigma;
+			float rttwopisigma;
+			float twosigma2;
+			public:
+			Gaussian(float sigma_ = 1.0) : sigma(sigma_) {
+				rttwopisigma = sqrtf(static_cast<float>(twopi)*sigma);
+				twosigma2 = 2*sigma*sigma;
+			}
+			inline float operator()(float x) const {
+				return exp(-x*x/(twosigma2))/rttwopisigma;
+			}
+		};
+	static void alrq(float *xim,  int nsam , int nrow , int *numr,
+                                 float *circ, int lcirc, int nring, char mode);
+        static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
+        static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+                            int  *numr, float *circ, int lcirc, int  nring, char  mode);
+        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
+        static void  fftr_q(float  *xcmplx, int nv);
+        static void  fftr_d(double *xcmplx, int nv);
+        static void  fftc_q(float  *br, float  *bi, int ln, int ks);
+        static void  fftc_d(double *br, double *bi, int ln, int ks);
+        static void  Frngs(EMData* circ, vector<int> numr);
+        static void  frngs(float *circ, int *numr, int nring);
+		static boost::tuple<double, float, int>
+			Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
+        static void  crosrng_e(float *circ1, float *circ2, int lcirc,
+                               int    nring, int   maxrin, int *numr,
+                               double *qn, float *tot, int neg);
+        static Dict Crosrng_ms(EMData* circ1, EMData* circ2,
+				               vector<int> numr);
+        static void  crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
+                                int   maxrin, int   *numr , double *qn, float *tot,
+                                double   *qm, float *tmt);
+        static void  prb1d(double *b, int npoint, float *pos);
+
 #endif	//util__sparx_h__

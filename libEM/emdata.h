@@ -59,6 +59,9 @@ namespace EMAN
 	
 		/** This is the header of EMData stay in sparx directory */
 		#include "sparx/emdata_sparx.h"
+	
+		/** This is the header of EMData stay in sparx directory */
+		#include "sparx/normpadft.h"
 		
 	static int totalalloc;
 	public:
