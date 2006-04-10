@@ -315,7 +315,7 @@ EMData* rotavg();
 
 /** Search specified number peaks in 1D, 2D, or 3D real images.
 * and output the peaks in descendent order */
-vector<float> peak_search(EMData* img, int ml, float invert);
+vector<float> peak_search(int ml, float invert);
 
 private:
 //utility function for peak_search()

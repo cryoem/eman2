@@ -1633,9 +1633,9 @@ ostream& operator<< (ostream& os, const Pixel& peak) {
     return os;
 }
 
-vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
+vector<float> SparxUtil::peak_search(int ml, float invert)
 {
- 	 EMData& buf = *img;
+ 	 EMData& buf = *this;
 	 vector<Pixel> peaks;
  	 int img_dim;
  	 int i,j,k,itx,ity,itz;
