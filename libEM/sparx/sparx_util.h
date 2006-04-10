@@ -39,7 +39,7 @@
 	  	vector<float> peak_search(EMData* img, int ml, float invert);
 	  	
 	private:
-		static bool peakcmp(const Peak p1, const Peak p2);  		
+		static bool peakcmp(const Pixel& p1, const Pixel& p2);  		
 	};
 	
 }	 

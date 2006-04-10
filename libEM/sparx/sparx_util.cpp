@@ -6,20 +6,20 @@ using namespace EMAN;
 using std::list;
 using std::vector;
 
-bool SparxUtil::peakcmp(const Peak p1, const Peak p2) {
-    return (p1.val > p2.val);
+bool SparxUtil::peakcmp(const Pixel& p1, const Pixel& p2) {
+    return (p1.value > p2.value);
 }
 
-ostream& operator<< (ostream& os, const Peak& peak) {
-    os <<  peak.xpos <<  peak.ypos << peak.zpos
-       << peak.val;
+ostream& operator<< (ostream& os, const Pixel& peak) {
+    os <<  peak.x <<  peak.y << peak.z
+       << peak.value;
     return os;
 }
 
 vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
 {
  	 EMData& buf = *img;
-	 vector<Peak> peaks;
+	 vector<Pixel> peaks;
  	 int img_dim;
  	 int i,j,k,itx,ity,itz;
  	 int i__1,i__2;
@@ -40,7 +40,7 @@ vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
  	   		i__2=(i+1)%nx;
  	      	peak_check=buf(i)*invert>buf(i__1)*invert && buf(i)*invert>buf(i__2)*invert;
 	 	  	if(peak_check)
-		  		{peaks.push_back(Peak(buf(i)*invert,i));}  
+		  		{peaks.push_back(Pixel(i, 0, 0, buf(i)*invert));}  
 	 	}
  	 break;
  	 case(2):
@@ -57,7 +57,7 @@ vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
 			  	peak_check=peak_check && (buf(i,j)*invert>buf(i__1,j__1)*invert) && ((buf(i,j)*invert)> buf(i__1,j__2)*invert);
 			  	peak_check=peak_check && (buf(i,j)*invert>buf(i__2,j__1)*invert) && (buf(i,j)*invert> buf(i__2,j__2)*invert);
 			  	if(peak_check)
- 			    {peaks.push_back(Peak(buf(i,j)*invert,i,j));}
+ 			    {peaks.push_back(Pixel(i, j, 0, buf(i,j)*invert));}
 			}
  		}
  	 break;
@@ -100,7 +100,7 @@ vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
 					}
 					if(peak_check)
 				    {
-						peaks.push_back(Peak(buf(i,j,k)*invert,float(i),float(j),float(k)));
+						peaks.push_back(Pixel(i, j, k, buf(i,j,k)*invert));
 					} 
 			      }
 			   }
@@ -110,23 +110,23 @@ vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
    	     	    	 
    sort(peaks.begin(),peaks.end(), peakcmp);   
    int count=0;
-   float xval=(*peaks.begin()).val;
-  for (vector<Peak>::iterator it = peaks.begin(); it != peaks.end(); it++)  
+   float xval=(*peaks.begin()).value;
+  for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  
   {count=count+1;
        if(count<=ml)
 	  {
-	  res.push_back((*it).val);
-	  res.push_back((*it).xpos);
+	  res.push_back((*it).value);
+	  res.push_back((*it).x);
 	  if(img_dim!=1)
-	       {res.push_back((*it).ypos);}
+	       {res.push_back((*it).y);}
 	  if(nz!=1)
-		{res.push_back((*it).zpos);}
-	  res.push_back((*it).val/xval);
-	  res.push_back((*it).xpos-float(nx)/2.f);
+		{res.push_back((*it).z);}
+	  res.push_back((*it).value/xval);
+	  res.push_back((*it).x-float(nx)/2.f);
 	  if(img_dim!=1)
-	      {res.push_back((*it).ypos-float(ny)/2.f);}
+	      {res.push_back((*it).y-float(ny)/2.f);}
 	  if(nz!=1)
-	     {res.push_back((*it).zpos-float(nz)/2.f);} 
+	     {res.push_back((*it).z-float(nz)/2.f);} 
 	  
 	}
    }  
