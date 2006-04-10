@@ -17,6 +17,3 @@ rsconvolution = Function("EMAN::rsconvolution", "sparx/fundamentals.h")
 set_policy(rsconvolution, return_value_policy(manage_new_object))
 equalsize = Function("EMAN::equalsize", "sparx/fundamentals.h")
 tflm = Function("EMAN::tflm", "sparx/fundamentals.h")
-
-Peak = Class("EMAN::Peak", "sparx/sparx_util.h")
-SparxUtil = Class("EMAN::SparxUtil", "sparx/sparx_util.h")
