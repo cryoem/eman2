@@ -140,6 +140,7 @@ EMData* rotavg();
 		 */
 		EMData* rot_scale_trans2D(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);
 		
+
 		
 		/** Rotate-Shift-Scale-Circulantly image using convolution 
 		 *
@@ -155,9 +156,10 @@ EMData* rotavg();
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_conv(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);//, Util::KaiserBessel& kb);
-		
-		
+		EMData* rot_scale_conv(float ang, float delx, float dely, float scale, Util::KaiserBessel& kb);
+
+
+	
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
 		 *  
 		 *  The only requirement for the window function object is that
@@ -265,8 +267,7 @@ EMData* rotavg();
 		 *       J. Opt. Soc. Am. A _21_, (2004)
 		 *
 		 */
-		std::complex<float> extractpoint(float xin, float yin, 
-		                            Util::KaiserBessel& kb);
+		std::complex<float> extractpoint(float xin, float yin, Util::KaiserBessel& kb);
 		
 		
 		/** extractplane -- Gridding convolution in 3D along a plane
@@ -283,8 +284,8 @@ EMData* rotavg();
 		 *       J. Opt. Soc. Am. A _21_, 499-509 (2004)
 		 *
 		 */
-		EMData*  extractplane(const Transform3D& tf,
-		                      Util::KaiserBessel& kb);
+		EMData*  extractplane(const Transform3D& tf, Util::KaiserBessel& kb);
+		
 		EMData* fouriergridrot2d(float ang, Util::KaiserBessel& kb);
 		
 		
@@ -310,6 +311,7 @@ EMData* rotavg();
 		 *
 		 *  @return dictionary containing "avg", "sigma", and "nmask" keys
 		 */
+
 		Dict masked_stats(const EMData* mask);
 
 

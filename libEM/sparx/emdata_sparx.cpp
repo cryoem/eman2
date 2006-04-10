@@ -1025,16 +1025,32 @@ EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 	set_array_offsets(saved_offsets);
 	return ret;
 }
+
+
+
 EMData*
-EMData::rot_scale_conv(float ang, float delx, float dely, float scale){//, Util::KaiserBessel& kb) {
+EMData::rot_scale_conv(float ang, float delx, float dely, float scale, Util::KaiserBessel& kb) {
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz) 
 		throw ImageDimensionException("Volume not currently supported");
+
+// KaiserBessel definitions
+	const int npad = 2;
+	const int m = Util::get_min(nx,ny,nz);
+	const int n = m*npad;
+
+	const int K = 6;  //params["kb_K"];
+	const float alpha = 1.75;  //params["kb_alpha"];
+//	Util::KaiserBessel kb(alpha, K, m/2,K/(2.*n),n);
+
+        int nxK = K/2+1; int nyK=nxK; int nzK=nxK;
+
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	if (0.f == scale) scale = 1.f; // silently fix common user error
 	EMData* ret = copy_head();
+	ret->to_zero();  //we will leave margins zeroed.
 	delx = fmod(delx, float(nx));
 	dely = fmod(dely, float(ny));
 	// center of image
@@ -1055,6 +1071,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, float scale){//, Util:
 	float sang = sin(ang);
 		for (int iy = 0; iy < ny; iy++) {
 			float y = float(iy) - shiftyc;
+			/*
 		#ifdef _WIN32
 			if (y < ymin) y = _MIN(y+ny,ymax);
 			if (y > ymax) y = _MAX(y-ny,ymin);
@@ -1062,10 +1079,12 @@ EMData::rot_scale_conv(float ang, float delx, float dely, float scale){//, Util:
 			if (y < ymin) y = std::min(y+ny,ymax);
 			if (y > ymax) y = std::max(y-ny,ymin);
 		#endif	//_WIN32
+		*/
 			float ycang = y*cang/scale + yc;
 			float ysang = -y*sang/scale + xc;
 			for (int ix = 0; ix < nx; ix++) {
 				float x = float(ix) - shiftxc;
+				/*
 			#ifdef _WIN32
 				if (x < xmin) x = _MIN(x+nx,xmax);
 				if (x > xmax) x = _MAX(x-nx,xmin);
@@ -1073,17 +1092,22 @@ EMData::rot_scale_conv(float ang, float delx, float dely, float scale){//, Util:
 				if (x < xmin) x = std::min(x+nx,xmax);
 				if (x > xmax) x = std::max(x-nx,xmin);
 			#endif	//_WIN32
+			*/
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
-				(*ret)(ix,iy) = Util::quadri(xold, yold, nx, ny, get_data());
+				int inxold = floor(xold); int inyold = floor(yold);
+				if(inxold < nxK-1 || inxold >nx-nxK )  continue;
+				if(inyold < nyK-1 || inyold >ny-nyK )  continue;
+				(*ret)(ix,iy) = (*this)(inxold,inyold); //Util::quadri(xold, yold, nx, ny, get_data());
 			}
 		}
 	set_array_offsets(saved_offsets);
 	return ret;
 }
 
-float EMData::getconvpt2d_kbi0(float x, float y, 
-		Util::KaiserBessel::kbi0_win win, int size) {
+
+
+float EMData::getconvpt2d_kbi0(float x, float y, Util::KaiserBessel::kbi0_win win, int size) {
 	const int nxhalf = nx/2;
 	const int nyhalf = ny/2;
 	const int bd = size/2;
@@ -1122,8 +1146,7 @@ float EMData::getconvpt2d_kbi0(float x, float y,
 	return conv;
 }
 
-std::complex<float> EMData::extractpoint(float nuxnew, float nuynew,
-		Util::KaiserBessel& kb) {
+std::complex<float> EMData::extractpoint(float nuxnew, float nuynew, Util::KaiserBessel& kb) {
 	if (2 != get_ndim())
 		throw ImageDimensionException("extractpoint needs a 2-D image.");
 	if (!is_complex()) 
