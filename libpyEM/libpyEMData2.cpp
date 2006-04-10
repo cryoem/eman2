@@ -45,12 +45,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, align, 2
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, project, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_pad_fft_overloads_0_1, pad_fft, 0, 1)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_overloads_1_3, FourInterpol, 1, 3)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_overloads_1_2, add, 1, 2)
@@ -62,6 +56,22 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_real2complex_overloads_0_1, r
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2F_overloads_2_3, FH2F, 2, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FH2Real_overloads_2_3, FH2Real, 2, 3)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, calc_fourier_shell_correlation, 1, 2)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_trans2D_overloads_1_3, rot_trans2D, 1, 3)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_1_4, rot_scale_trans2D, 1, 4)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_overloads_1_4, rot_scale_conv, 1, 4)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, getconvpt2d_kbi0, 3, 4)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_pad_fft_overloads_0_1, pad_fft, 0, 1)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_overloads_1_3, FourInterpol, 1, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_rotated_clip_overloads_2_3, get_rotated_clip, 2, 3)
 
@@ -79,8 +89,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_unwrap_overloads_0_6, unwrap,
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_apply_radial_func_overloads_3_4, apply_radial_func, 3, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2, calc_fourier_shell_correlation, 1, 2)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_hist_overloads_0_3, calc_hist, 0, 3)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_dist_overloads_1_2, calc_dist, 1, 2)
@@ -94,14 +102,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_common_lines_real_overloads_2
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_cut_slice_overloads_2_6, cut_slice, 2, 6)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_uncut_slice_overloads_2_5, uncut_slice, 2, 5)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_trans2D_overloads_1_3, rot_trans2D, 1, 3)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_1_4, rot_scale_trans2D, 1, 4)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_overloads_1_4, rot_scale_conv, 1, 4)
-
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, getconvpt2d_kbi0, 3, 4)
 
 
 }// namespace 
@@ -187,12 +187,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("cmp", &EMAN::EMData::cmp)
         .def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5()[ return_value_policy< manage_new_object >() ])
         .def("project", &EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])
-        .def("center_origin", &EMAN::EMData::center_origin)
-        .def("center_origin_fft", &EMAN::EMData::center_origin_fft)
-        .def("zeropad_ntimes", &EMAN::EMData::zeropad_ntimes, EMAN_EMData_zeropad_ntimes_overloads_0_1()[ return_value_policy< manage_new_object >() ])
-        .def("pad_fft", &EMAN::EMData::pad_fft, EMAN_EMData_pad_fft_overloads_0_1()[ return_value_policy< manage_new_object >() ])
-        .def("postift_depad_corner_inplace", &EMAN::EMData::postift_depad_corner_inplace)
-        .def("FourInterpol", &EMAN::EMData::FourInterpol, EMAN_EMData_FourInterpol_overloads_1_3()[ return_value_policy< manage_new_object >() ])
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())
@@ -245,7 +239,31 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("real2FH", &EMAN::EMData::real2FH, return_value_policy< manage_new_object >())
         .def("FH2F", &EMAN::EMData::FH2F, EMAN_EMData_FH2F_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("FH2Real", &EMAN::EMData::FH2Real, EMAN_EMData_FH2Real_overloads_2_3()[ return_value_policy< manage_new_object >() ])
+        .def("rotavg", &EMAN::EMData::rotavg, return_value_policy< manage_new_object >())
         .def("cog", &EMAN::EMData::cog)
+        .def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation, EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2())
+        .def("onelinenn", &EMAN::EMData::onelinenn)
+        .def("nn", &EMAN::EMData::nn)
+        .def("symplane0", &EMAN::EMData::symplane0)
+        .def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >())
+        .def("rot_trans2D", &EMAN::EMData::rot_trans2D, EMAN_EMData_rot_trans2D_overloads_1_3()[ return_value_policy< manage_new_object >() ])
+        .def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, EMAN_EMData_rot_scale_trans2D_overloads_1_4()[ return_value_policy< manage_new_object >() ])
+        .def("rot_scale_conv", &EMAN::EMData::rot_scale_conv, EMAN_EMData_rot_scale_conv_overloads_1_4()[ return_value_policy< manage_new_object >() ])
+        .def("getconvpt2d_kbi0", &EMAN::EMData::getconvpt2d_kbi0, EMAN_EMData_getconvpt2d_kbi0_overloads_3_4())
+        .def("fft_shuffle", &EMAN::EMData::fft_shuffle)
+        .def("center_padded", &EMAN::EMData::center_padded)
+        .def("extractpoint", &EMAN::EMData::extractpoint)
+        .def("extractplane", &EMAN::EMData::extractplane, return_value_policy< manage_new_object >())
+        .def("fouriergridrot2d", &EMAN::EMData::fouriergridrot2d, return_value_policy< manage_new_object >())
+        .def("divkbsinh", &EMAN::EMData::divkbsinh)
+        .def("masked_stats", &EMAN::EMData::masked_stats)
+        .def("peak_search", &EMAN::EMData::peak_search)
+        .def("center_origin", &EMAN::EMData::center_origin)
+        .def("center_origin_fft", &EMAN::EMData::center_origin_fft)
+        .def("zeropad_ntimes", &EMAN::EMData::zeropad_ntimes, EMAN_EMData_zeropad_ntimes_overloads_0_1()[ return_value_policy< manage_new_object >() ])
+        .def("pad_fft", &EMAN::EMData::pad_fft, EMAN_EMData_pad_fft_overloads_0_1()[ return_value_policy< manage_new_object >() ])
+        .def("postift_depad_corner_inplace", &EMAN::EMData::postift_depad_corner_inplace)
+        .def("FourInterpol", &EMAN::EMData::FourInterpol, EMAN_EMData_FourInterpol_overloads_1_3()[ return_value_policy< manage_new_object >() ])
         .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
         .def("get_top_half", &EMAN::EMData::get_top_half, return_value_policy< manage_new_object >())
         .def("get_rotated_clip", &EMAN::EMData::get_rotated_clip, EMAN_EMData_get_rotated_clip_overloads_2_3()[ return_value_policy< manage_new_object >() ])
@@ -276,10 +294,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("apply_radial_func", &EMAN::EMData::apply_radial_func, EMAN_EMData_apply_radial_func_overloads_3_4())
         .def("calc_radial_dist", (std::vector<float,std::allocator<float> > (EMAN::EMData::*)(int, float, float) )&EMAN::EMData::calc_radial_dist)
         .def("calc_radial_dist", (std::vector<float,std::allocator<float> > (EMAN::EMData::*)(int, float, float, float, float) )&EMAN::EMData::calc_radial_dist)
-        .def("rotavg", &EMAN::EMData::rotavg, return_value_policy< manage_new_object >())
         .def("cconj", &EMAN::EMData::cconj)
         .def("add_incoherent", &EMAN::EMData::add_incoherent)
-        .def("calc_fourier_shell_correlation", &EMAN::EMData::calc_fourier_shell_correlation, EMAN_EMData_calc_fourier_shell_correlation_overloads_1_2())
         .def("calc_hist", &EMAN::EMData::calc_hist, EMAN_EMData_calc_hist_overloads_0_3())
         .def("calc_az_dist", &EMAN::EMData::calc_az_dist)
         .def("calc_dist", &EMAN::EMData::calc_dist, EMAN_EMData_calc_dist_overloads_1_2())
@@ -289,37 +305,22 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("common_lines_real", &EMAN::EMData::common_lines_real, EMAN_EMData_common_lines_real_overloads_2_4())
         .def("cut_slice", &EMAN::EMData::cut_slice, EMAN_EMData_cut_slice_overloads_2_6())
         .def("uncut_slice", &EMAN::EMData::uncut_slice, EMAN_EMData_uncut_slice_overloads_2_5())
-        .def("onelinenn", &EMAN::EMData::onelinenn)
-        .def("nn", &EMAN::EMData::nn)
-        .def("symplane0", &EMAN::EMData::symplane0)
-        .def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >())
-        .def("rot_trans2D", &EMAN::EMData::rot_trans2D, EMAN_EMData_rot_trans2D_overloads_1_3()[ return_value_policy< manage_new_object >() ])
-        .def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, EMAN_EMData_rot_scale_trans2D_overloads_1_4()[ return_value_policy< manage_new_object >() ])
-        .def("rot_scale_conv", &EMAN::EMData::rot_scale_conv, EMAN_EMData_rot_scale_conv_overloads_1_4()[ return_value_policy< manage_new_object >() ])
-        .def("getconvpt2d_kbi0", &EMAN::EMData::getconvpt2d_kbi0, EMAN_EMData_getconvpt2d_kbi0_overloads_3_4())
-        .def("fft_shuffle", &EMAN::EMData::fft_shuffle)
-        .def("center_padded", &EMAN::EMData::center_padded)
-        .def("extractpoint", &EMAN::EMData::extractpoint)
-        .def("extractplane", &EMAN::EMData::extractplane, return_value_policy< manage_new_object >())
-        .def("fouriergridrot2d", &EMAN::EMData::fouriergridrot2d, return_value_policy< manage_new_object >())
-        .def("divkbsinh", &EMAN::EMData::divkbsinh)
-        .def("masked_stats", &EMAN::EMData::masked_stats)
         .def("__getitem__", &emdata_getitem)
         .def("__setitem__", &emdata_setitem)
         .staticmethod("read_images_ext")
         .staticmethod("read_images")
-        .def( other< float >() / self )
-        .def( self + self )
-        .def( self - self )
-        .def( self * self )
+        .def( self + other< float >() )
         .def( self / self )
         .def( other< float >() * self )
         .def( other< float >() - self )
         .def( other< float >() + self )
         .def( self / other< float >() )
+        .def( self * self )
+        .def( self - self )
+        .def( self + self )
+        .def( other< float >() / self )
         .def( self * other< float >() )
         .def( self - other< float >() )
-        .def( self + other< float >() )
         .def( self += other< float >() )
         .def( self -= other< float >() )
         .def( self *= other< float >() )

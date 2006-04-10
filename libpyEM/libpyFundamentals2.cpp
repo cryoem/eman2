@@ -6,7 +6,6 @@
 // Includes ====================================================================
 #include <emdata.h>
 #include <sparx/fundamentals.h>
-#include <sparx/sparx_util.h>
 
 // Using =======================================================================
 using namespace boost::python;
@@ -40,18 +39,5 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
     def("equalsize", &EMAN::equalsize);
     def("tflm", &EMAN::tflm);
-    class_< EMAN::Peak >("Peak", init< const EMAN::Peak& >())
-        .def(init< float, optional< float, float, float > >())
-        .def_readwrite("val", &EMAN::Peak::val)
-        .def_readwrite("xpos", &EMAN::Peak::xpos)
-        .def_readwrite("ypos", &EMAN::Peak::ypos)
-        .def_readwrite("zpos", &EMAN::Peak::zpos)
-    ;
-
-    class_< EMAN::SparxUtil >("SparxUtil", init<  >())
-        .def(init< const EMAN::SparxUtil& >())
-        .def("peak_search", &EMAN::SparxUtil::peak_search)
-    ;
-
 }
 
