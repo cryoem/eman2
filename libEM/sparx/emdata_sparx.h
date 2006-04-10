@@ -311,5 +311,16 @@ EMData* rotavg();
 		 *  @return dictionary containing "avg", "sigma", and "nmask" keys
 		 */
 		Dict masked_stats(const EMData* mask);
- 
+
+
+/** Search specified number peaks in 1D, 2D, or 3D real images.
+* and output the peaks in descendent order */
+vector<float> peak_search(EMData* img, int ml, float invert);
+
+private:
+//utility function for peak_search()
+static bool peakcmp(const Pixel& p1, const Pixel& p2);  
+public:
+
+
 #endif	//emdata__sparx_h__
