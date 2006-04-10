@@ -63,8 +63,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_trans2D_overloads_1_3, ro
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_1_4, rot_scale_trans2D, 1, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_overloads_1_4, rot_scale_conv, 1, 4)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_getconvpt2d_kbi0_overloads_3_4, getconvpt2d_kbi0, 3, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
@@ -248,7 +246,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >())
         .def("rot_trans2D", &EMAN::EMData::rot_trans2D, EMAN_EMData_rot_trans2D_overloads_1_3()[ return_value_policy< manage_new_object >() ])
         .def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, EMAN_EMData_rot_scale_trans2D_overloads_1_4()[ return_value_policy< manage_new_object >() ])
-        .def("rot_scale_conv", &EMAN::EMData::rot_scale_conv, EMAN_EMData_rot_scale_conv_overloads_1_4()[ return_value_policy< manage_new_object >() ])
+        .def("rot_scale_conv", &EMAN::EMData::rot_scale_conv, return_value_policy< manage_new_object >())
         .def("getconvpt2d_kbi0", &EMAN::EMData::getconvpt2d_kbi0, EMAN_EMData_getconvpt2d_kbi0_overloads_3_4())
         .def("fft_shuffle", &EMAN::EMData::fft_shuffle)
         .def("center_padded", &EMAN::EMData::center_padded)
