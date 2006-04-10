@@ -36,10 +36,10 @@
 	public:
 		/** Search specified number peaks in 1D, 2D, or 3D real images.
 	  	* and output the peaks in descendent order */
-	  	vector<Peak> peak_search(EMData* img, int ml, float invert);
+	  	vector<float> peak_search(EMData* img, int ml, float invert);
 	  	
 	private:
-		bool peakcmp(const Peak p1, const Peak p2);  		
+		static bool peakcmp(const Peak p1, const Peak p2);  		
 	};
 	
 }	 

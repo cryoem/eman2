@@ -16,7 +16,7 @@ ostream& operator<< (ostream& os, const Peak& peak) {
     return os;
 }
 
-vector<Peak> SparxUtil::peak_search(EMData* img, int ml, float invert)
+vector<float> SparxUtil::peak_search(EMData* img, int ml, float invert)
 {
  	 EMData& buf = *img;
 	 vector<Peak> peaks;
@@ -106,6 +106,32 @@ vector<Peak> SparxUtil::peak_search(EMData* img, int ml, float invert)
 			   }
 			}
 		break;
-     	}	     	    	 
-}
+     	}
+   	     	    	 
+   sort(peaks.begin(),peaks.end(), peakcmp);   
+   int count=0;
+   float xval=(*peaks.begin()).val;
+  for (vector<Peak>::iterator it = peaks.begin(); it != peaks.end(); it++)  
+  {count=count+1;
+       if(count<=ml)
+	  {
+	  res.push_back((*it).val);
+	  res.push_back((*it).xpos);
+	  if(img_dim!=1)
+	       {res.push_back((*it).ypos);}
+	  if(nz!=1)
+		{res.push_back((*it).zpos);}
+	  res.push_back((*it).val/xval);
+	  res.push_back((*it).xpos-float(nx)/2.f);
+	  if(img_dim!=1)
+	      {res.push_back((*it).ypos-float(ny)/2.f);}
+	  if(nz!=1)
+	     {res.push_back((*it).zpos-float(nz)/2.f);} 
+	  
+	}
+   }  
+  res.insert(res.begin(),1,img_dim);
+  return res;
+ }	
+	  
 
