@@ -2,7 +2,6 @@
 #include "testutil.h"
 //#include "exception.h"
 #include <iostream>
-#include "sparx/sparx_util.h"
 
 using namespace EMAN;
 using namespace std;
@@ -658,7 +657,7 @@ void debug_sigma_processor()
 		cout << endl;
 	}	
 }
-
+/*
 void debug_peak_search()
 {
 	cout << "Start debug_peak_search function ..." << endl;
@@ -672,7 +671,7 @@ void debug_peak_search()
 	
 	cout << "End debug_peak_search function ..." << endl;
 }
-
+*/
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -701,7 +700,7 @@ int main()
 		//debug_set_value_at();
 		//debug_common_lines();
 		//debug_sigma_processor();
-		debug_peak_search();
+		//debug_peak_search();
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
