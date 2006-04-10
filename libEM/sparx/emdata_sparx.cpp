@@ -1623,7 +1623,7 @@ EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 }
 
 
-bool SparxUtil::peakcmp(const Pixel& p1, const Pixel& p2) {
+bool EMData::peakcmp(const Pixel& p1, const Pixel& p2) {
     return (p1.value > p2.value);
 }
 
@@ -1633,7 +1633,7 @@ ostream& operator<< (ostream& os, const Pixel& peak) {
     return os;
 }
 
-vector<float> SparxUtil::peak_search(int ml, float invert)
+vector<float> EMData::peak_search(int ml, float invert)
 {
  	 EMData& buf = *this;
 	 vector<Pixel> peaks;
