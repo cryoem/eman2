@@ -203,6 +203,7 @@ namespace EMAN {
 
 }
 
+/*
 namespace {
 	// K(i,j,k)*f(a-i, b-j, c-k) <-- internal, so no boundary condition issues
 	inline float kmlt_internal(EMData& K, EMData& f, 
@@ -245,34 +246,21 @@ namespace {
 	}
 	// In the future we may want to add other boundary conditions here
 }
-/*
 namespace EMAN {
 
     EMData* rscp(EMData* f) {
 		// Kernel should be the smaller image
 		int nxf=f->get_xsize(); int nyf=f->get_ysize(); int nzf=f->get_zsize();
-		int nxK=K->get_xsize(); int nyK=K->get_ysize(); int nzK=K->get_zsize();
-		const int m = Util::get_min(nx,ny,nz);
+		const int npad = 2;
+		const int m = Util::get_min(nxf,nyf,nzf);
 		const int n = m*npad;
 
 		const int K = 6;  //params["kb_K"];
 		const float alpha = 1.75;  //params["kb_alpha"];
 		Util::KaiserBessel kb(alpha, K, m/2,K/(2.*n),n);
 
-		if ((nxf<nxK)&&(nyf<nyK)&&(nzf<nzK)) {
-			// whoops, f smaller than K
-			swap(f,K); swap(nxf,nxK); swap(nyf,nyK); swap(nzf,nzK);
-		} else if ((nxK<=nxf)&&(nyK<=nyf)&&(nzK<=nzf)) {
-			// that's what it should be, so do nothing
-			;
-		} else {
-			// incommensurate sizes
-			throw ImageDimensionException("input images are incommensurate");
-		}
-		// Kernel needs to be _odd_ in size
-		if ((nxK % 2 != 1) || (nyK % 2 != 1) || (nzK % 2 != 1))
-			throw ImageDimensionException("Real-space convolution kernel"
-				" must have odd nx,ny,nz (so the center is well-defined).");
+                int nxK = K/2+1; nyK=nxK; nzK=nxK;
+
 		EMData* result = new EMData();
 		result->set_size(nxf, nyf, nzf);
 		result->to_zero();
@@ -281,8 +269,6 @@ namespace EMAN {
 		int kxmax = (1 == nxK % 2) ? -kxmin : -kxmin - 1;
 		int kymax = (1 == nyK % 2) ? -kymin : -kymin - 1;
 		int kzmax = (1 == nzK % 2) ? -kzmin : -kzmin - 1;
-		vector<int> K_saved_offsets = K->get_array_offsets();
-		K->set_array_offsets(kxmin,kymin,kzmin);
 		// interior boundaries, need to check for degenerate cases
 		int izmin = 0, izmax = 0, iymin = 0, iymax = 0, ixmin = 0, ixmax = 0;
 		if (1 != nzf) {
@@ -308,7 +294,7 @@ namespace EMAN {
 				}
 			}
 		}
-		// corners
+		//   INITIALLY SKIP IT / corners  
 		// corner sizes, with checking for degenerate cases
 		int sz = (1 == nzK) ? 1 : -kzmin + kzmax;
 		int sy = (1 == nyK) ? 1 : -kymin + kymax;
@@ -401,12 +387,11 @@ namespace EMAN {
 				}
 			}
 		}
-		K->set_array_offsets(K_saved_offsets);
+		//K->set_array_offsets(K_saved_offsets);
 		result->done_data();
 		return result;
 	}
 
 }
-*/
-        
+*/        
 /* vim: set ts=4 noet: */

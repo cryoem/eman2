@@ -476,7 +476,7 @@ float Util::triquad(double r, double s, double t, float f[]) {
 		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
 }
 
-#define  fdata(i,j)      fdata  [(j-1)*nxdata + i-1]
+#define  fdata(i,j)      fdata  [ i-1 + (j-1)*nxdata ]
 float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
 /*
