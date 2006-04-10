@@ -58,7 +58,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/tflm.cpp
     polardata.cpp
     sparx/native_fft.cpp
-    sparx/sparx_util.cpp
     sparx/util_sparx.cpp
     )
 
