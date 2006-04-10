@@ -372,7 +372,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 	    {
 	      if (maskptr[i]==1)
 	      {
-	       Sum1 += Volptr[i];	       
+	       Sum1 += Volptr[i];   
 	       Sum2 += Volptr[i]*Volptr[i];	       
 	       MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
 	       MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
@@ -383,7 +383,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
        stats[0] = Sum1/count;
        stats[1] = (Sum2 - Sum1*Sum1)/count;
        stats[2] = MIN;
-       stats[3] = MAX;	     
+       stats[3] = MAX;
         
        return stats;
 }

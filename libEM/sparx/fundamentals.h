@@ -123,6 +123,19 @@ namespace EMAN
 	 *  @return Real-space convolution image.
 	 */
 	EMData* rsconvolution(EMData* f, EMData* K);
+	/** Real-space convolution with the K-B window.
+	 *
+	 * @par Purpose: Calculate the convolution with the K-B window.
+	 *  
+	 *  @param[in] f First real-space image object.
+	 *               Image may be 1-, 2-, or 3-dimensional.  Image f is not
+	 *               changed.
+	 *  @param[in] K Second real-space image object (the convolution Kernel).
+	 *               Image may be 1-, 2-, or 3-dimensional.  Image K is not changed.
+	 *
+	 *  @return Real-space convolution image.
+	 */
+	EMData* rscp(EMData* f);
 	/** Image autocorrelation.
 	 *
 	 * @par Purpose: Calculate the autocorrelation of a 1-, 2-,
