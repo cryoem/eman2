@@ -1667,7 +1667,8 @@ vector<float> EMData::peak_search(int ml, float invert)
  	 int k__1,k__2;
  	 bool peak_check;
  	 img_dim=buf.get_ndim();
- 	 vector<float>ix,jy,kz,res;
+ 	 vector<int>ix,jy,kz;
+	 vector<float>res;
  	 int nx = buf.get_xsize();
  	 int ny = buf.get_ysize();
  	 int nz = buf.get_zsize();
@@ -1761,7 +1762,10 @@ vector<float> EMData::peak_search(int ml, float invert)
 	       {res.push_back((*it).y);}
 	  if(nz!=1)
 		{res.push_back((*it).z);}
-	  res.push_back((*it).value/xval);
+          if(xval != 0.0)
+	        {res.push_back((*it).value/xval);}
+	  else
+	        {res.push_back((*it).value);}
 	  res.push_back((*it).x-float(nx)/2.f);
 	  if(img_dim!=1)
 	      {res.push_back((*it).y-float(ny)/2.f);}
