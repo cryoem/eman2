@@ -2,6 +2,8 @@
  * $Id$
  */
 #include "emdata.h"
+#include <iostream>
+
  
 #include "gsl_sf_bessel.h"
 #include "gsl_errno.h"
@@ -9,6 +11,7 @@
 using std::vector;
 using std::cout;
 using namespace EMAN;
+using namespace std;
 
 EMData *EMData::real2FH(float OverSamplekB) // PRB
 {
@@ -1029,36 +1032,39 @@ EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 
 
 EMData*
-EMData::rot_scale_conv(float ang, float delx, float dely, float scale, Util::KaiserBessel& kb) {
+EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb) {
+	int nxn, nyn, nzn;
+	const float scale=0.5;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz) 
 		throw ImageDimensionException("Volume not currently supported");
+	nxn=nx/2;nyn=ny/2;nzn=nz/2;
 
-// KaiserBessel definitions
-	const int npad = 2;
-	const int m = Util::get_min(nx,ny,nz);
-	const int n = m*npad;
-
-	const int K = 6;  //params["kb_K"];
-	const float alpha = 1.75;  //params["kb_alpha"];
-//	Util::KaiserBessel kb(alpha, K, m/2,K/(2.*n),n);
-
-        int nxK = K/2+1; int nyK=nxK; int nzK=nxK;
-
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+	int kbc = kbmax+1;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
-	if (0.f == scale) scale = 1.f; // silently fix common user error
-	EMData* ret = copy_head();
+	EMData* ret = new EMData();
+#ifdef _WIN32
+	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32 
 	ret->to_zero();  //we will leave margins zeroed.
-	delx = fmod(delx, float(nx));
-	dely = fmod(dely, float(ny));
-	// center of image
-	int xc = nx/2;
-	int yc = ny/2;
+	delx = fmod(delx, float(nxn));
+	dely = fmod(dely, float(nyn));
+	// center of big image
+	int xc = nxn;
+	int yc = nyn;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
 	// shifted center for rotation
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
 	// bounds if origin at center
 	float ymin = -ny/2.0f;
 	float xmin = -nx/2.0f;
@@ -1069,7 +1075,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, float scale, Util::Kai
 	// trig
 	float cang = cos(ang);
 	float sang = sin(ang);
-		for (int iy = 0; iy < ny; iy++) {
+		for (int iy = 0; iy < nyn; iy++) {
 			float y = float(iy) - shiftyc;
 			/*
 		#ifdef _WIN32
@@ -1082,7 +1088,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, float scale, Util::Kai
 		*/
 			float ycang = y*cang/scale + yc;
 			float ysang = -y*sang/scale + xc;
-			for (int ix = 0; ix < nx; ix++) {
+			for (int ix = 0; ix < nxn; ix++) {
 				float x = float(ix) - shiftxc;
 				/*
 			#ifdef _WIN32
@@ -1095,10 +1101,13 @@ EMData::rot_scale_conv(float ang, float delx, float dely, float scale, Util::Kai
 			*/
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
-				int inxold = floor(xold); int inyold = floor(yold);
-				if(inxold < nxK-1 || inxold >nx-nxK )  continue;
-				if(inyold < nyK-1 || inyold >ny-nyK )  continue;
-				(*ret)(ix,iy) = (*this)(inxold,inyold); //Util::quadri(xold, yold, nx, ny, get_data());
+				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
+				if(inxold <= kbc || inxold >=nx-kbc-2 )  continue;
+				if(inyold <= kbc || inyold >=ny-kbc-2 )  continue;
+//cout <<"  *************%%%%%%%%%%***************       "<<ix<<"   "<<iy<<endl;
+//(*ret)(ix,iy) = (*this)(inxold,inyold);
+                         for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}} //Util::quadri(xold, yold, nx, ny, get_data());
 			}
 		}
 	set_array_offsets(saved_offsets);

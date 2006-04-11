@@ -156,7 +156,7 @@ EMData* rotavg();
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_conv(float ang, float delx, float dely, float scale, Util::KaiserBessel& kb);
+		EMData* rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb);
 
 
 	
