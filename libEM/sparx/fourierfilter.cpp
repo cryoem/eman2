@@ -271,7 +271,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							break;
 						case GAUSS_LOW_PASS :
 							fp->cmplx(ix,iy,iz) *= exp(-argx*omega); break;
-						case GAUSS_HIGH_PASS: 
+						case GAUSS_HIGH_PASS:
 							fp->cmplx(ix,iy,iz) *= 1.0f-exp(-argx*omega); break;
 						case GAUSS_HOMOMORPHIC: 
 							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*exp(-argx*omega); break;
