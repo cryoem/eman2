@@ -80,10 +80,10 @@ namespace EMAN {
 		
 		const char *name() const { return "NotExistingObjectException"; }
 		
-	};
-	
+	};	
 #define NotExistingObjectException(objname, desc)  \
  _NotExistingObjectException(objname, __FILE__, __LINE__, desc)
+
 
 	/** Used when an image is not in the expected format.
 	 */
@@ -98,8 +98,8 @@ namespace EMAN {
 		const char *name() const { return "ImageFormatException"; }
 		
 	};
-
 #define ImageFormatException(desc) _ImageFormatException(desc, __FILE__, __LINE__)
+
 
 	/** Used when an image is not in the expected dimension. For
 	 * example, a 2D image is given when a 3D image is expected.
@@ -116,8 +116,8 @@ namespace EMAN {
 		const char *name() const { return "ImageDimensionException"; }
 		
 	};
-
 #define ImageDimensionException(desc) _ImageDimensionException(desc, __FILE__, __LINE__)
+
 
 	/** Used when a file access error occurs. For example, when you
 	 * try to open a non-existing file or directory.
@@ -156,6 +156,7 @@ namespace EMAN {
 	};
 #define ImageReadException(filename, desc) \
  _ImageReadException(filename, __FILE__, __LINE__, desc)
+
 	
 	/** Used when an error occurs at image writing time.
 	 * Parameters:
@@ -175,6 +176,7 @@ namespace EMAN {
 #define ImageWriteException(imagename, desc) \
  _ImageWriteException(imagename, __FILE__, __LINE__, desc)
 
+
 	/** Used when a NULL is given to a pointer that should not be NULL.
 	 * Parameter:
 	 *   1. desc: The description string.
@@ -190,6 +192,7 @@ namespace EMAN {
 		
 	};
 #define NullPointerException(desc) _NullPointerException(__FILE__, __LINE__, desc)
+
 	
 	/** Used when a type cast error occurs. For example, when casting
 	 * an EMData* type to a float type.
@@ -209,6 +212,7 @@ namespace EMAN {
 		
 	};
 #define TypeException(desc, type) _TypeException(desc, type, __FILE__, __LINE__)
+
 
 	/** Used when an invalid integer value is given.
 	 * Parameters:
@@ -240,6 +244,7 @@ namespace EMAN {
 #define InvalidValueException(val, desc) \
  _InvalidValueException(val, __FILE__, __LINE__, desc)
 
+
 	/** Used when an invalid (format) string is given.
 	 * Parameters:
 	 *  1. str  The invalid integer value.
@@ -267,8 +272,7 @@ namespace EMAN {
 	 *  2. high   The uppper limit of the valid range.
 	 *  3. input  The given, out-of-range value.
 	 *  4. objname The name of the variable holding the value.
-	 */
-	 
+	 */	 
 	class _OutofRangeException : public E2Exception
 	{
 	public:
@@ -290,6 +294,7 @@ namespace EMAN {
 #define OutofRangeException(low, high, input, objname) \
  _OutofRangeException(low, high, input,  __FILE__, __LINE__, objname)
  
+ 
  	class _InvalidCallException : public E2Exception
  	{
  	public:
@@ -302,7 +307,20 @@ namespace EMAN {
 	};
 #define InvalidCallException(desc) _InvalidCallException(__FILE__, __LINE__, desc)
  		
+	
+	/***/
+	class _InvalidParameterException : public E2Exception
+	{
+	public:
+		_InvalidParameterException(const string& file = "unknown",
+									int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str) {}
+		
+		const char *name() const { return "Invalid Parameter"; }
+	};
+#define InvalidParameterException(desc) _InvalidParameterException(__FILE__, __LINE__, desc)
 
 }
+    
     
 #endif

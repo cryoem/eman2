@@ -500,6 +500,16 @@ namespace EMAN
 
 		if (fi != my_instance->my_dict.end()) {
 			T *i = my_instance->my_dict[instancename] ();
+			
+			const vector<string> para_keys = params.keys();
+			const vector<string> valid_keys = i->get_param_types().keys();
+			typename vector<string>::const_iterator it;
+			for(it=para_keys.begin(); it!=para_keys.end(); ++it) {
+				if( find(valid_keys.begin(), valid_keys.end(), *it) == valid_keys.end() ) {
+					throw InvalidParameterException(*it);
+				}
+			}
+			
 			i->set_params(params);
 			return i;
 		}		

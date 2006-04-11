@@ -270,7 +270,7 @@ The basic design of EMAN Processors: <br>\
 		 */
 		static EMData* 
 		EMFourierFilterFunc(EMData* fimage, Dict params, bool doInPlace=true);
-		
+	
 	  protected:
 		mutable Dict params;
 	};
@@ -299,6 +299,15 @@ The basic design of EMAN Processors: <br>\
 		static string get_group_desc()
 		{
 			return "Fourier Filter processors are a group of processor in the frequency domain. Before using such processors on an image, the image must be transformed from real space to the fourier space. FourierProcessor class is the base class of fourier space processors. Each specific processor is either a lowpass filter processor, or a highpass filter processor, or neighter. The unit of lowpass and highpass parameters are in terms of Nyquist, valid range is [0,0.5]. ";
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
+			d.put("cutoff_pixels", EMObject::FLOAT, "0 - get_xsize()/2");
+			d.put("cutoff_freq", EMObject::FLOAT, "0 - 1.0/(get_xsize()*apix_x) same for y and z");
+			return d;
 		}
 		
 	  protected:
