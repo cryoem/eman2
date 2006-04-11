@@ -1643,9 +1643,9 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(re.get_ysize(), 1)
         self.assertEqual(re.get_zsize(), 1)
         
-        #this function apply to 2D image only
+        #this function not apply to 1D image
         e2 = EMData()
-        e2.set_size(32,32,32)
+        e2.set_size(32,1,1)
         self.assertRaises( RuntimeError, e2.rotavg, )
         try:
             e2.rotavg()
