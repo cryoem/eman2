@@ -3516,7 +3516,7 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/**Replace a source image as a sine wave in specified wave length
-	 *@param wave_length this value is the d in function |sin(x/d)|
+	 *@param wavelength this value is the d in function |sin(x/d)|
 	 *@param axis specify a major axis for asymmetric features
 	 *@param c distance between focus and the center of an ellipse
 	 *@param phase (optional)phase for sine wave, default is 0
@@ -3544,7 +3544,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("wave_length", EMObject::FLOAT, "this value is the d in function |sin(x/d)|");
+			d.put("wavelength", EMObject::FLOAT, "this value is the d in function |sin(x/d)|");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
 			d.put("phase", EMObject::FLOAT, "(optional)phase for sine wave, default is 0");

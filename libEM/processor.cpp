@@ -3967,7 +3967,7 @@ void TestImageSinewave::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float wave_length = params["wave_length"];
+	float wave_length = params["wavelength"];
 	string axis = (const char*)params["axis"];
 	float c = params["c"];
 	float phase = params["phase"];

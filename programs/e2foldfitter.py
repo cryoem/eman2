@@ -105,7 +105,7 @@ both box sizes should be multiples of 8."""
 	sum.to_zero()
 	for a1,a2 in roughang:
 		for a3 in range(0,360,30):
-			prr=probeclip.copy(0)
+			prr=probeclip.copy()
 			prr.rotate(a1*degrad,a2*degrad,a3*degrad)
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
 			
