@@ -12,6 +12,72 @@
 using namespace EMAN;
 using namespace std;
 
+vector<float> Util::infomask(EMData* Vol, EMData* mask)
+{
+	ENTERFUNC;
+	vector<float> stats;
+	float *Volptr, *maskptr,MAX,MIN;
+	long double Sum1,Sum2;	
+	long count;
+	
+	MAX = FLT_MIN;
+	MIN = FLT_MAX;
+	count = 0L;
+	Sum1 = 0.L;
+	Sum2 = 0.L;
+		
+	
+	if (mask == NULL)	
+          {
+	   //Vol->update_stat();	
+	   stats.push_back(Vol->get_attr("mean"));
+	   stats.push_back(Vol->get_attr("sigma"));
+	   stats.push_back(Vol->get_attr("minimum"));
+	   stats.push_back(Vol->get_attr("maximum"));
+	   return stats;
+	  }		
+	
+	/* Check if the sizes of the mask and image are same */
+		
+	size_t nx = Vol->get_xsize();
+	size_t ny = Vol->get_ysize();
+	size_t nz = Vol->get_zsize();		
+	 
+	Volptr = Vol->get_data();
+	maskptr = mask->get_data();		 
+	
+	
+	/* Calculation of the Statistics */
+			       
+	for (size_t i = 0;i < nx*ny*nz; i++)
+	    {
+	      if (maskptr[i]>0.5f)
+	      {
+	       Sum1 += Volptr[i];	       
+	       Sum2 += Volptr[i]*Volptr[i];	       
+	       MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
+	       MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
+	       count++;	       
+	      }	
+	    }                  	 
+	
+       if (count==0) count++;
+    
+       float avg = static_cast<float>(Sum1/count);
+       float sig2 = static_cast<float>(Sum2/count - avg*avg);
+       float sig = sqrt(sig2);       
+                     
+       stats.push_back(avg);   
+       stats.push_back(sig);
+       stats.push_back(MIN);  
+       stats.push_back(MAX);	     
+        
+       return stats;
+}
+ 
+ 
+//---------------------------------------------------------------------------------------------------------- 
+ 
 EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 {
 	ENTERFUNC;
@@ -25,8 +91,8 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	BD->set_size(nx, ny, nz);	 	 
 	
 	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
-	float S1=0,S2=0,S3=0,S4=0; 
-	size_t nvox =0;
+	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L; 
+	long nvox = 0L;
 	
         V1ptr = V1->get_data();
 	V2ptr = V2->get_data();
@@ -36,7 +102,7 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	
 	/* calculation of S1,S2,S3,S3,nvox*/
 			       
-	for (size_t i = 0;i < size; i++)
+	for (size_t i = 0L;i < size; i++)
 	    {
 	      if (MASKptr[i]>0.5f)
 	      {
@@ -46,23 +112,28 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	       S4 += V1ptr[i];
 	       nvox ++;
 	      }
-	    } 
-		        
-	A = (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
-	B = (A*S3  -  S4)/nvox;
-	
-	
+	    }       
+	 
+			
+	A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
+	B = static_cast<float> (A*S3  -  S4)/nvox;
+        
 	/* calculation of the difference image*/
 	
-	for (size_t i = 0;i < size; i++)
-	    {	     
-	     BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i];
-	     BDptr[i] = BDptr[i]*MASKptr[i];
-	    } 	 
+	for (size_t i = 0L;i < size; i++)
+	    {
+             BDptr[i] = 0.f; 
+	     if (MASKptr[i]>0.5f) 
+	        BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i]; 		
+	    }  	 
 		 
 	BD->update();
 	return BD;	
 }
+
+
+//----------------------------------------------------------------------------------------------------------
+
 
 
 EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int flag, float alphaDeg) //PRB
@@ -332,61 +403,6 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 
 }
 
-
-vector<float> Util::infomask(EMData* Vol, EMData* mask)
-{
-	ENTERFUNC;
-	vector<float> stats;
-	float *Volptr, *maskptr,MAX,MIN,count,Sum1,Sum2;
-	
-	MAX = FLT_MIN;
-	MIN = FLT_MAX;
-	count = 0;
-	Sum1 = 0;
-	Sum2 = 0;
-		
-	
-	if (mask == NULL)	
-          {
-	   //Vol->update_stat();	
-	   stats[0] = Vol->get_attr("mean");
-	   stats[1] = Vol->get_attr("sigma");
-	   stats[2] = Vol->get_attr("minimum");
-	   stats[3] = Vol->get_attr("maximum");
-	   return stats;
-	  }		
-	
-	/* Check if the sizes of the mask and image are same */
-	
-	size_t nx = Vol->get_xsize();
-	size_t ny = Vol->get_ysize();
-	size_t nz = Vol->get_zsize();		
-	 
-	Volptr = Vol->get_data();
-	maskptr = mask->get_data();		 
-	
-	
-	/* Calculation of the Statistics */
-			       
-	for (size_t i = 0;i < nx*ny*nz; i++)
-	    {
-	      if (maskptr[i]==1)
-	      {
-	       Sum1 += Volptr[i];   
-	       Sum2 += Volptr[i]*Volptr[i];	       
-	       MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
-	       MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
-	       count++;
-	      }
-	    }                  	 
-
-       stats[0] = Sum1/count;
-       stats[1] = (Sum2 - Sum1*Sum1)/count;
-       stats[2] = MIN;
-       stats[3] = MAX;
-        
-       return stats;
-}
 
 vector<float>
 Util::voea(float delta, float t1, float t2, float p1, float p2)
