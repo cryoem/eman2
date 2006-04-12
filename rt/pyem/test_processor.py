@@ -13,7 +13,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 114)
+        self.assertEqual(len(processor_names), 115)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -476,11 +476,12 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(d1["low"], low)
         self.assertEqual(d1["high"], high)
 
-        xc = 12
+        #xc = 12
         rw = 12.5
-        f2 = Processors.get("eman1.mask.ringmean", {"xc":xc, "ring_width":rw})
+        #f2 = Processors.get("eman1.mask.ringmean", {"xc":xc, "ring_width":rw})
+        f2 = Processors.get("eman1.mask.ringmean", {"ring_width":rw})
         d2 = f2.get_params()
-        self.assertEqual(d2["xc"], xc)
+        #self.assertEqual(d2["xc"], xc)
         self.assertEqual(d2["ring_width"], rw)
 
         outfile1 = "test_RangeThreshold_out.mrc"
@@ -1202,8 +1203,6 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.mask.auto3d', {'radius':16, 'threshold':0.5, 'nshells':3})
         
-        os.unlink('mask.mrc')
-        
     def test_eman1_mask_addshells(self):
         """test eman1.mask.addshells processor .............."""
         e = EMData()
@@ -1352,7 +1351,7 @@ class TestProcessor(unittest.TestCase):
         """test testimage.gaussian processor ................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process_inplace('testimage.puregaussian', {'sigma':12, 'axis':'y', 'c':6})
+        e.process_inplace('testimage.puregaussian', {'sigma':12})
         
     def test_testimage_scurve(self):
         """test testimage.scurve processor .................."""
@@ -1373,8 +1372,8 @@ class TestProcessor(unittest.TestCase):
         """test testimage.sinewave processor ................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process_inplace('testimage.sinewave', {'wave_length':10})
-        e.process_inplace('testimage.sinewave', {'wave_length':10, 'axis':'z', 'c':7, 'phase':3})
+        e.process_inplace('testimage.sinewave.circular', {'wave_length':10})
+        e.process_inplace('testimage.sinewave.circular', {'wave_length':10, 'axis':'z', 'c':7, 'phase':3})
         
     def test_testimage_squarecube(self):
         """test testimage.squarecube processor .............."""
