@@ -59,6 +59,8 @@ SET(LIB_EM_SOURCE byteorder.cpp
     polardata.cpp
     sparx/native_fft.cpp
     sparx/util_sparx.cpp
+    sparx/Tokenizer.cpp
+    sparx/SparxIO.cpp
     )
 
 IF(WIN32)
