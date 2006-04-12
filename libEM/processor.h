@@ -3524,6 +3524,7 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
+
 	/**Replace a source image as a sine wave in specified wave length
 	 *@param wavelength this value is the d in function |sin(x/d)|
 	 *@param axis specify a major axis for asymmetric features
@@ -3553,7 +3554,48 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("wavelength", EMObject::FLOAT, "this value is the d in function |sin(x/d)|");
+			d.put("wave_length", EMObject::FLOAT, "wave_length in equation sin(x*2*PI/wave_length - phase*180/PI)");
+			d.put("axis", EMObject::STRING, "(optional) specify a major axis for asymmetric features, default x axis");
+			d.put("phase", EMObject::FLOAT, "(optional) the phase in equation sin(x*2*PI/wave_length - phase*180/PI)");
+			d.put("alpha", EMObject::FLOAT, "(optional) the angle of sinewave with specified axis in 2D image, \
+												in 3D image, this is the angle between sinewave and x-y plane, \
+												default is zero");
+			d.put("beta", EMObject::FLOAT, "(optional) only in 3D case, the angle between sinewave and y-z plane, \
+												default is zero"); 
+			return d;
+		}
+	};
+	
+	/**Replace a source image as a circular sine wave in specified wave length
+	 *@param wave_length float this value is the d in function |sin(x/d)|
+	 *@param axis char (optional) specify a major axis for asymmetric features
+	 *@param c distance (optional) float between focus and the center of an ellipse
+	 *@param phase degree (optional) phase for sine wave, default is 0
+	 */
+	class TestImageSinewaveCircular : public TestImageProcessor
+	{
+	public:
+		void process_inplace(EMData * image);
+		
+		string get_name() const
+		{
+			return "testimage.sinewave.circular";
+		}
+		
+		string get_desc() const
+		{
+			return "Replace a source image as a circular sine wave in specified wave length";
+		}
+		
+		static Processor * NEW()
+		{
+			return new TestImageSinewaveCircular();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("wave_length", EMObject::FLOAT, "this value is the d in function |sin(x/d)|");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
 			d.put("phase", EMObject::FLOAT, "(optional)phase for sine wave, default is 0");

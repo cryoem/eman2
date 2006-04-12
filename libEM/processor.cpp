@@ -131,6 +131,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageGaussian::NEW);
 	force_add(&TestImagePureGaussian::NEW);
 	force_add(&TestImageSinewave::NEW);
+	force_add(&TestImageSinewaveCircular::NEW);
 	force_add(&TestImageSquarecube::NEW);
 	force_add(&TestImageCirclesphere::NEW);
 	force_add(&TestImageNoiseUniformRand::NEW);
@@ -3967,7 +3968,39 @@ void TestImageSinewave::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float wave_length = params["wavelength"];
+	float wave_length = params["wave_length"];
+	string axis = (const char*)params["axis"];
+	float phase = params["phase"];
+	float alpha = params["alpha"];
+	float beta = params["beta"];
+	
+	float * dat = image->get_data();
+	if(ny==1 && nz==1) {	//1D
+		for(int i=0; i<nx; ++i, ++dat) {
+			*dat = sin(i*(2.0f*M_PI/wave_length) - phase*180/M_PI);
+		}
+	}
+	else if(nz==1) {	//2D
+		for(int j=0; j<ny; ++j) {
+			for(int i=0; i<nx; ++i, ++dat) {
+				if(axis.compare("y")==0 || axis.compare("Y")==0) {
+					*dat = sin(j*(2.0f*M_PI/wave_length) - phase*180/M_PI);
+				}
+				else {
+					*dat = sin(i*(2.0f*M_PI/wave_length) - phase*180/M_PI);
+				}
+			} 
+		}
+	}
+	else {	//3D 
+	}
+}
+
+void TestImageSinewaveCircular::process_inplace(EMData * image)
+{
+	preprocess(image);
+	
+	float wave_length = params["wave_length"];
 	string axis = (const char*)params["axis"];
 	float c = params["c"];
 	float phase = params["phase"];
@@ -4008,7 +4041,7 @@ void TestImageSinewave::process_inplace(EMData * image)
 				else{
 					throw InvalidValueException(0, "please specify a valid axis for asymmetric features");
 				}
-				*dat = fabs( sin( r * (1.0f/wave_length) + phase) );
+				*dat = sin( r * (2.0f*M_PI/wave_length) - phase*180/M_PI);
 			}
 		}
 	}
