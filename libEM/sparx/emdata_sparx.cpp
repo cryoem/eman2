@@ -1830,79 +1830,106 @@ vector<float> EMData::peak_search(int ml, float invert)
   return res;
  }	
 	  
-
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
-vector<double> EMData::Phase_cog()
-{
-	
-	vector<double> ph_cntog;
+vector<float> EMData::phase_cog()
+{	
+	vector<float> ph_cntog;
 	int i=1,j=1,k=1;
-	double C=0.0f,S=0.0f,P=0.0f;
-	double F1;
-	
-	switch (get_ndim())
-	{
-		case(1):
-		{
-			P = 8*atan(1.0f)/nx;
-			for (i=1;i<=nx;i++)
-			{
-				C += cos(P * (i-1)) * rdata(i,j,k);
-				S += sin(P * (i-1)) * rdata(i,j,k);
-			}
-			
-			F1 = atan2(S,C);
-			if (F1 < 0.f){
-				F1 += 8 * atan(1.0f);}
-			double SNS = (F1/P) +1.0;
-			ph_cntog.push_back(SNS);
+	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX;
+	if (get_ndim()==1)
+		{P = 8*atan(1.0f)/nx;
+		for (i=1;i<=nx;i++)
+			{C += cos(P * (i-1)) * rdata(i,j,k);
+		         S += sin(P * (i-1)) * rdata(i,j,k);}
+		F1 = atan2(S,C);
+		if (F1 < 0.0){ F1 += 8*atan(1.0f); }
+		SNX = F1/P +1.0;
+		SNX = SNX - ((nx/2)+1);
+		//NX  = abs(SNX);
+		ph_cntog.push_back(SNX);
 		}
-		break;
-		case(2):
-		{
-			/* Calculate the Pixel Density of a 2-D image and store it in an array*/
-			double TX[1][nx+1];
-			TX[0][1]=0.0f,TX[0][2]=0.0f,TX[0][3]=0.0f;
-			
-			double C=0.0f,S=0.0f;
-			double P=8*atan(1.0f)/ny;
-			
-			for (j=1;j<=ny;j++)
-			{
-				double TY = 0.0f;
-				for (i=1;i<=nx;i++)
-				{
-					TY += rdata(i,j,k);
-					TX[0][i] = TX[0][i]+rdata(i,j,k);
-				}
-				C += cos(P*(j-1))*TY;
-				S += sin(P*(j-1))*TY;
-			}
-			
-			F1 = atan2(S,C);
-			if (F1 < 0.f){
-				F1 += 8 * atan(1.0f);}
-			double SNY = (F1/P) +1.0;
-			
-			
-			C=0.0f,S=0.0f;
-			P=8*atan(1.0f)/nx;
-			
-			for (i=1;i<=nx;i++)
-			{
-				C += cos(P*(i-1))*TX[0][i];
-				S += sin(P*(i-1))*TX[0][i];
-			}
-			
-			F1 = atan2(S,C);
-			if (F1 < 0.f){
-				F1 += 8 * atan(1.0f);}
-			double SNX = (F1/P) +1.0;
-			ph_cntog.push_back(SNX);
-			ph_cntog.push_back(SNY);
+	else if (get_ndim()==2)
+		{float SNY,X[nx],T=0.f;
+		 //int NY;
+		 for ( i=1;i<=nx;i++)
+			{X[i-1]=0.0;}			
+                 P = 8*atan(1.0f)/ny;
+		 for(j=1;j<=ny;j++)
+			{T=0.f;
+			 for(i=1;i<=nx;i++)
+				{T += rdata(i,j,k);
+				 X[i-1]+=rdata(i,j,k);}
+			 C += cos(P*(j-1))*T;
+			 S += sin(P*(j-1))*T;}
+		 F1=atan2(S,C);
+		 if(F1<0.0){ F1 += 8*atan(1.0f); }
+		 SNY = F1/P +1.0;
+		 C=0.f;S=0.f;
+		 P = 8*atan(1.0f)/nx;
+		 for(i=1;i<=nx;i++)
+			{C += cos(P*(i-1))*X[i-1];
+			 S += sin(P*(i-1))*X[i-1];}
+	         F1=atan2(S,C);
+		 if(F1<0.0){ F1 += 8*atan(1.0f); }
+		 SNX = F1/P +1.0;
+		 SNX = SNX - ((nx/2)+1);
+		 SNY = SNY - ((ny/2)+1);
+		 //NX  = abs(SNX);
+		 //NY  = abs(SNY);
+		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);		
+		 //ph_cntog.push_back(NX); ph_cntog.push_back(NY);
 		}
-		break;
-	
+	else
+		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ;
+		 //int NY,NZ;
+		 for (i=1;i<=nx;i++)
+			{X[i-1]=0.0;}
+		 for (j=1;j<=ny;j++)
+			{Y[j-1]=0.0;}
+		 for (k=1;k<=nz;k++)
+			{Z[k-1]=0.0;}
+		 for(k=1;k<=nz;k++)
+			{for(j=1;j<=ny;j++)
+				{sum1=0.f;
+				 for(i=1;i<=nx;i++)
+					{val = rdata(i,j,k);
+					 sum1 += val;
+					 X[i-1] += val;}
+				 Y[j-1] += sum1;
+				 Z[k-1] += sum1;}
+			}
+		 P = 8*atan(1.0f)/nx;
+		 for (i=1;i<=nx;i++)
+			{C += cos(P*(i-1))*X[i-1];
+			 S += sin(P*(i-1))*X[i-1];}
+		 F1=atan2(S,C);
+		 if(F1<0.0){ F1 += 8*atan(1.0); }
+		 SNX = F1/P +1.0;
+		 C=0.f;S=0.f;
+		 P = 8*atan(1.0f)/ny;
+		 for(j=1;j<=ny;j++)
+			{C += cos(P*(j-1))*Y[j-1];
+			 S += sin(P*(j-1))*Y[j-1];}
+		 F1=atan2(S,C);
+		 if(F1<0.0){ F1 += 8*atan(1.0f); }
+		 SNY = F1/P +1.0;
+		 C=0.f;S=0.f;
+		 P = 8*atan(1.0f)/nz;
+		 for(k=1;k<=nz;k++)
+			{C += cos(P*(k-1))*Z[k-1];
+		         S += sin(P*(k-1))*Z[k-1];}
+		 F1=atan2(S,C);
+		 if(F1<0.0){ F1 += 8*atan(1.0f); }
+		 SNZ = F1/P +1.0;
+			
+		 SNX = SNX - ((nx/2)+1);
+		 SNY = SNY - ((ny/2)+1);
+		 SNZ = SNZ - ((nz/2)+1);
+		 //NX  = abs(SNX);
+                 //NY  = abs(SNY);
+		 //NZ  = abs(SNZ);		
+		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
+		 //ph_cntog.push_back(NX); ph_cntog.push_back(NY); ph_cntog.push_back(NZ);
 	}
 	return ph_cntog;
 }
