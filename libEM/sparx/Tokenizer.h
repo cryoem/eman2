@@ -1,4 +1,3 @@
-#if 0
 #ifndef __Tokenizer__
 #define  __Tokenizer__
 
@@ -28,4 +27,3 @@ class Tokenizer
      bool delimToken;
 };
 #endif //  __Tokenizer__
-#endif
