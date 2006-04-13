@@ -22,9 +22,6 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_TwoDTestFunc_overloads_5_7, EMAN::Util
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_voea_overloads_1_5, EMAN::Util::voea, 1, 5)
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
-    EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
-        EMAN::Util::KaiserBessel(p0), py_self(py_self_) {}
-
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4):
         EMAN::Util::KaiserBessel(p0, p1, p2, p3, p4), py_self(py_self_) {}
 
@@ -63,9 +60,6 @@ struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 
 struct EMAN_Util_FakeKaiserBessel_Wrapper: EMAN::Util::FakeKaiserBessel
 {
-    EMAN_Util_FakeKaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::FakeKaiserBessel& p0):
-        EMAN::Util::FakeKaiserBessel(p0), py_self(py_self_) {}
-
     EMAN_Util_FakeKaiserBessel_Wrapper(PyObject* py_self_, float p0, int p1, float p2, float p3, int p4):
         EMAN::Util::FakeKaiserBessel(p0, p1, p2, p3, p4), py_self(py_self_) {}
 
@@ -123,11 +117,10 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, 
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
     scope* EMAN_Util_scope = new scope(
-    class_< EMAN::Util >("Util", init<  >())
-        .def(init< const EMAN::Util& >())
+    class_< EMAN::Util, boost::noncopyable >("Util", no_init)
         .def("im_diff", &EMAN::Util::im_diff, return_value_policy< manage_new_object >())
         .def("infomask", &EMAN::Util::infomask)
-        .def("TwoDTestFunc", &EMAN::Util::TwoDTestFunc, EMAN_Util_TwoDTestFunc_overloads_5_7()[ return_value_policy< manage_new_object >() ])
+        .def("TwoDTestFunc", &EMAN::Util::TwoDTestFunc, return_value_policy< manage_new_object >(), EMAN_Util_TwoDTestFunc_overloads_5_7())
         .def("voea", &EMAN::Util::voea, EMAN_Util_voea_overloads_1_5())
         .def("quadri", &EMAN::Util::quadri)
         .def("alrq", &EMAN::Util::alrq)
@@ -233,8 +226,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     );
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
-    class_< EMAN::Util::KaiserBessel, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel", init< const EMAN::Util::KaiserBessel& >())
-        .def(init< float, int, float, float, int, optional< float, int > >())
+    class_< EMAN::Util::KaiserBessel, boost::noncopyable, EMAN_Util_KaiserBessel_Wrapper >("KaiserBessel", init< float, int, float, float, int, optional< float, int > >())
         .def("sinhwin", &EMAN::Util::KaiserBessel::sinhwin, &EMAN_Util_KaiserBessel_Wrapper::default_sinhwin)
         .def("i0win", &EMAN::Util::KaiserBessel::i0win, &EMAN_Util_KaiserBessel_Wrapper::default_i0win)
         .def("I0table_maxerror", &EMAN::Util::KaiserBessel::I0table_maxerror)
@@ -245,15 +237,13 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_kbi0_win", &EMAN::Util::KaiserBessel::get_kbi0_win)
     );
 
-    class_< EMAN::Util::KaiserBessel::kbsinh_win >("kbsinh_win", init< const EMAN::Util::KaiserBessel::kbsinh_win& >())
-        .def(init< EMAN::Util::KaiserBessel& >())
+    class_< EMAN::Util::KaiserBessel::kbsinh_win, boost::noncopyable >("kbsinh_win", init< EMAN::Util::KaiserBessel& >())
         .def("get_window_size", &EMAN::Util::KaiserBessel::kbsinh_win::get_window_size)
         .def("__call__", &EMAN::Util::KaiserBessel::kbsinh_win::operator ())
     ;
 
 
-    class_< EMAN::Util::KaiserBessel::kbi0_win >("kbi0_win", init< const EMAN::Util::KaiserBessel::kbi0_win& >())
-        .def(init< EMAN::Util::KaiserBessel& >())
+    class_< EMAN::Util::KaiserBessel::kbi0_win, boost::noncopyable >("kbi0_win", init< EMAN::Util::KaiserBessel& >())
         .def("get_window_size", &EMAN::Util::KaiserBessel::kbi0_win::get_window_size)
         .def("__call__", &EMAN::Util::KaiserBessel::kbi0_win::operator ())
     ;
@@ -261,30 +251,27 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     delete EMAN_Util_KaiserBessel_scope;
 
 
-    class_< EMAN::Util::FakeKaiserBessel, bases< EMAN::Util::KaiserBessel > , EMAN_Util_FakeKaiserBessel_Wrapper >("FakeKaiserBessel", init< const EMAN::Util::FakeKaiserBessel& >())
-        .def(init< float, int, float, float, int, optional< float, int > >())
+    class_< EMAN::Util::FakeKaiserBessel, bases< EMAN::Util::KaiserBessel > , boost::noncopyable, EMAN_Util_FakeKaiserBessel_Wrapper >("FakeKaiserBessel", init< float, int, float, float, int, optional< float, int > >())
         .def("sinhwin", (float (EMAN::Util::FakeKaiserBessel::*)(float) const)&EMAN::Util::FakeKaiserBessel::sinhwin, (float (EMAN_Util_FakeKaiserBessel_Wrapper::*)(float) const)&EMAN_Util_FakeKaiserBessel_Wrapper::default_sinhwin)
         .def("i0win", (float (EMAN::Util::FakeKaiserBessel::*)(float) const)&EMAN::Util::FakeKaiserBessel::i0win, (float (EMAN_Util_FakeKaiserBessel_Wrapper::*)(float) const)&EMAN_Util_FakeKaiserBessel_Wrapper::default_i0win)
         .def("build_I0table", (void (EMAN::Util::FakeKaiserBessel::*)() )&EMAN::Util::FakeKaiserBessel::build_I0table, (void (EMAN_Util_FakeKaiserBessel_Wrapper::*)())&EMAN_Util_FakeKaiserBessel_Wrapper::default_build_I0table)
     ;
 
 
-    class_< EMAN::Util::Gaussian >("Gaussian", init< const EMAN::Util::Gaussian& >())
-        .def(init< optional< float > >())
+    class_< EMAN::Util::Gaussian, boost::noncopyable >("Gaussian", init< optional< float > >())
         .def("__call__", &EMAN::Util::Gaussian::operator ())
     ;
 
     delete EMAN_Util_scope;
 
     scope* EMAN_EMUtil_scope = new scope(
-    class_< EMAN::EMUtil >("EMUtil", init<  >())
-        .def(init< const EMAN::EMUtil& >())
+    class_< EMAN::EMUtil, boost::noncopyable >("EMUtil", no_init)
         .def("vertical_acf", &EMAN::EMUtil::vertical_acf, return_value_policy< manage_new_object >())
         .def("make_image_median", &EMAN::EMUtil::make_image_median, return_value_policy< manage_new_object >())
         .def("get_image_ext_type", &EMAN::EMUtil::get_image_ext_type)
         .def("get_image_type", &EMAN::EMUtil::get_image_type)
         .def("get_image_count", &EMAN::EMUtil::get_image_count)
-        .def("get_imageio", &EMAN::EMUtil::get_imageio, EMAN_EMUtil_get_imageio_overloads_2_3()[ return_internal_reference< 1 >() ])
+        .def("get_imageio", &EMAN::EMUtil::get_imageio, return_internal_reference< 1 >(), EMAN_EMUtil_get_imageio_overloads_2_3())
         .def("get_imagetype_name", &EMAN::EMUtil::get_imagetype_name)
         .def("get_datatype_string", &EMAN::EMUtil::get_datatype_string)
         .def("process_ascii_region_io", &EMAN::EMUtil::process_ascii_region_io)
@@ -353,8 +340,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
 
     delete EMAN_EMUtil_scope;
 
-    class_< EMAN::ImageSort >("ImageSort", init< const EMAN::ImageSort& >())
-        .def(init< int >())
+    class_< EMAN::ImageSort, boost::noncopyable >("ImageSort", init< int >())
         .def("sort", &EMAN::ImageSort::sort)
         .def("set", &EMAN::ImageSort::set)
         .def("get_index", &EMAN::ImageSort::get_index)
@@ -362,8 +348,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("size", &EMAN::ImageSort::size)
     ;
 
-    class_< EMAN::TestUtil >("TestUtil", init<  >())
-        .def(init< const EMAN::TestUtil& >())
+    class_< EMAN::TestUtil, boost::noncopyable >("TestUtil", no_init)
         .def_readonly("EMDATA_HEADER_EXT", &EMAN::TestUtil::EMDATA_HEADER_EXT)
         .def_readonly("EMDATA_DATA_EXT", &EMAN::TestUtil::EMDATA_DATA_EXT)
         .def("get_debug_int", &EMAN::TestUtil::get_debug_int)

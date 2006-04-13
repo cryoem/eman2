@@ -13,16 +13,14 @@ using namespace boost::python;
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyPolarData2)
 {
-    class_< EMAN::UnevenMatrix >("UnevenMatrix", init<  >())
-        .def(init< const EMAN::UnevenMatrix& >())
+    class_< EMAN::UnevenMatrix, boost::noncopyable >("UnevenMatrix", init<  >())
         .def("get_xsize", &EMAN::UnevenMatrix::get_xsize)
         .def("get_xmin", &EMAN::UnevenMatrix::get_xmin)
         .def("get_xmax", &EMAN::UnevenMatrix::get_xmax)
         .def("get_size", &EMAN::UnevenMatrix::get_size)
     ;
 
-    class_< EMAN::PolarData, bases< EMAN::UnevenMatrix >  >("PolarData", init<  >())
-        .def(init< const EMAN::PolarData& >())
+    class_< EMAN::PolarData, bases< EMAN::UnevenMatrix > , boost::noncopyable >("PolarData", init<  >())
         .def(init< EMAN::EMData*, int, int, std::string >())
     ;
 

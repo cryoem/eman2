@@ -1,3 +1,4 @@
+#if 0
 #ifndef __SparxIO__
 #define  __SparxIO__
 
@@ -32,3 +33,4 @@ class TFList
 };
 
 #endif  __SparxIO__
+#endif

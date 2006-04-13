@@ -203,7 +203,7 @@ void EMData::postift_depad_corner_inplace() {
 
 #define  fint(i,j,k)  fint[(i-1) + ((j-1) + (k-1)*ny)*lsd]
 #define  fout(i,j,k)  fout[(i-1) + ((j-1) + (k-1)*nyn)*lsdn]
-EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
+EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
 	int i, j, k;
@@ -298,8 +298,10 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni) {
 	ret->set_fftpad(true);
 	ret->set_attr("npad", 1);
 	if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
-	ret->do_ift_inplace();
-	ret->postift_depad_corner_inplace();
+	if(RetReal) {
+	 ret->do_ift_inplace();
+	 ret->postift_depad_corner_inplace();
+	}
 	ret->done_data();
 	
 	/*Dict d1 = temp_ft->get_attr_dict();

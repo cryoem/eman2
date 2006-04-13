@@ -19,12 +19,6 @@ namespace  {
 
 struct EMAN_Cmp_Wrapper: EMAN::Cmp
 {
-    EMAN_Cmp_Wrapper(PyObject* py_self_, const EMAN::Cmp& p0):
-        EMAN::Cmp(p0), py_self(py_self_) {}
-
-    EMAN_Cmp_Wrapper(PyObject* py_self_):
-        EMAN::Cmp(), py_self(py_self_) {}
-
     float cmp(EMAN::EMData* p0, EMAN::EMData* p1) const {
         return call_method< float >(py_self, "cmp", p0, p1);
     }
@@ -79,7 +73,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .staticmethod("get")
     ;
 
-    class_< EMAN::Cmp, boost::noncopyable, EMAN_Cmp_Wrapper >("__Cmp", init<  >())
+    class_< EMAN::Cmp, boost::noncopyable, EMAN_Cmp_Wrapper >("__Cmp", no_init)
         .def("cmp", pure_virtual(&EMAN::Cmp::cmp))
         .def("get_name", pure_virtual(&EMAN::Cmp::get_name))
         .def("get_desc", pure_virtual(&EMAN::Cmp::get_desc))
@@ -109,8 +103,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
     delete EMAN_Log_scope;
 
     scope* EMAN_XYData_scope = new scope(
-    class_< EMAN::XYData >("XYData", init<  >())
-        .def(init< const EMAN::XYData& >())
+    class_< EMAN::XYData, boost::noncopyable >("XYData", init<  >())
         .def("read_file", &EMAN::XYData::read_file)
         .def("write_file", &EMAN::XYData::write_file)
         .def("calc_correlation", &EMAN::XYData::calc_correlation)
@@ -126,8 +119,7 @@ BOOST_PYTHON_MODULE(libpyCmp2)
         .def("is_validx", &EMAN::XYData::is_validx)
     );
 
-    class_< EMAN::XYData::Pair >("Pair", init< const EMAN::XYData::Pair& >())
-        .def(init< float, float >())
+    class_< EMAN::XYData::Pair, boost::noncopyable >("Pair", init< float, float >())
         .def_readwrite("x", &EMAN::XYData::Pair::x)
         .def_readwrite("y", &EMAN::XYData::Pair::y)
         .def( self < self )

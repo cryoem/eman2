@@ -1,3 +1,4 @@
+#if 0
 #include "Tokenizer.h"
 
 const string Tokenizer::WHITE=string("\r \n\t");
@@ -66,3 +67,4 @@ int Tokenizer::tokenCount() const
         i1 = target.find_first_of(delimiter, i0);
     }
 }
+#endif

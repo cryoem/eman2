@@ -23,8 +23,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_TypeDict_put_overloads_2_3, put, 2, 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyEMObject2)
 {
-    class_< EMAN::TypeDict >("TypeDict", init<  >())
-        .def(init< const EMAN::TypeDict& >())
+    class_< EMAN::TypeDict, boost::noncopyable >("TypeDict", init<  >())
         .def("keys", &EMAN::TypeDict::keys)
         .def("size", &EMAN::TypeDict::size)
         .def("put", &EMAN::TypeDict::put, EMAN_TypeDict_put_overloads_2_3())
