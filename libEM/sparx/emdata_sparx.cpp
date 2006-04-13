@@ -462,26 +462,34 @@ EMData* EMData::rotavg()
 }
 
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
+#define square(x) ((x)*(x))
 vector<float> EMData::cog()
 {
 	
 	vector<float> cntog;
 	int ndim = get_ndim();
 	int i=1,j=1,k=1;
-	float val,sum1=0.f,MX=0.f,RX=0.f,MY=0.f,RY=0.f,MZ=0.f,RZ=0.f;
+	float val,sum1=0.f,MX=0.f,RG=0.f,MY=0.f,MZ=0.f,r=0.f;
 	
 	if (ndim == 1)
 	{
 			for ( i = 1;i <= nx; i++)
 			{
-				val=rdata(i,j,k);
+				val   = rdata(i,j,k);
 				sum1 += val;
-				MX   += (i*val);
-				RX   += ((i^2)*val);
+				MX   += ((i-1)*val);
 			}
+			MX=(MX/sum1);
+			for ( i = 1;i <= nx; i++)
+			{
+				val   = rdata(i,j,k);
+				sum1 += val;
+				RG   += val*(square(MX - (i-1)));
+			}
+			RG=sqrt(RG/sum1);
+			MX=MX-(nx/2);
 			cntog.push_back(MX);
-			cntog.push_back(RX);
-	
+			cntog.push_back(RG);	
 	}	
 	else if (ndim == 2)
 	{	
@@ -491,16 +499,30 @@ vector<float> EMData::cog()
 					{
 						val = rdata(i,j,k);
 						sum1 += val;
-						MX += (i*val);
-						MY += (j*val);
-						RX += ((i^2)*val);
-						RY += ((j^2)*val);
+						MX   += ((i-1)*val);
+						MY   += ((j-1)*val);
 					}
 				}
+			MX=(MX/sum1);
+			MY=(MY/sum1);
+			sum1=0.f;
+			RG=0.f;
+			for (j=1;j<=ny;j++)
+				{
+					r = (square(MY-(j-1)));
+					for (i=1;i<=nx;i++)
+					{
+						val = rdata(i,j,k);
+						sum1 += val;
+						RG   += val*(square(MX - (i-1)) + r);
+					}
+				}
+			RG = sqrt(RG/sum1);
+			MX = MX - nx/2;
+			MY = MY - ny/2;
 			cntog.push_back(MX);
-			cntog.push_back(RX);
 			cntog.push_back(MY);
-			cntog.push_back(RY);
+			cntog.push_back(RG);
 	}
 	else 
 	{		
@@ -512,24 +534,44 @@ vector<float> EMData::cog()
 					{
 						val = rdata(i,j,k);
 						sum1 += val;
-						MX += (i*val);
-						MY += (j*val);
-						MZ += (k*val);
-						RX += ((i^2)*val);
-						RY += ((j^2)*val);
-						RZ += ((k^2)*val);
+						MX += ((i-1)*val);
+						MY += ((j-1)*val);
+						MZ += ((k-1)*val);
 					}
 				}
 			}
+			MX = MX/sum1;
+			MY = MY/sum1;
+			MZ = MZ/sum1;
+			sum1=0.f;
+			RG=0.f;
+			for (k = 1;k <= nz;k++)
+			{
+				for (j=1;j<=ny;j++)
+				{
+					float r = (square(MY-(j-1)) + square(MZ - (k-1)));
+					for (i=1;i<=nx;i++)
+					{
+						val = rdata(i,j,k);
+						sum1 += val;
+						RG   += val*(square(MX - (i-1)) + r);
+					}
+				}
+			}
+			RG = sqrt(RG/sum1);
+			MX = MX - nx/2;
+			MY = MY - ny/2;
+			MZ = MZ - nz/2;
 			cntog.push_back(MX);
-			cntog.push_back(RX);
 			cntog.push_back(MY);
-			cntog.push_back(RY);
 			cntog.push_back(MZ);
-			cntog.push_back(RZ);
+			cntog.push_back(RG);
+			//cntog.push_back(MZ);
+			//cntog.push_back(RZ);
 	}	 
 	return cntog;
 }
+#undef square
 #undef rdata
 
 
@@ -1788,3 +1830,142 @@ vector<float> EMData::peak_search(int ml, float invert)
  }	
 	  
 
+#define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
+vector<double> EMData::Phase_cog()
+{
+	
+	vector<double> ph_cntog;
+	int i=1,j=1,k=1;
+	double C=0.0f,S=0.0f,P=0.0f;
+	
+	switch (get_ndim())
+	{
+		case(1):
+			P = 8*atan(1.0f)/nx;
+			for (i=1;i<=nx;i++)
+			{
+				C += cos(P * (i-1)) * rdata(i,j,k);
+				S += sin(P * (i-1)) * rdata(i,j,k);
+			}
+			
+			double F1 = atan2(S,C);
+			if (F1 < 0.f){
+				F1 += 8 * atan(1.0f);}
+			double SNS = (F1/P) +1.0;
+			ph_cntog.push_back(SNS);
+		break;
+		case(2):
+			/* Calculate the Pixel Density of a 2-D image and store it in an array*/
+			double TX[1][nx+1];
+			TX[0][1]=0.0f,TX[0][2]=0.0f,TX[0][3]=0.0f;
+			
+			double C=0.0f,S=0.0f;
+			double P=8*atan(1.0f)/ny;
+			
+			for (j=1;j<=ny;j++)
+			{
+				double TY = 0.0f;
+				for (i=1;i<=nx;i++)
+				{
+					TY += rdata(i,j,k);
+					TX[0][i] = TX[0][i]+rdata(i,j,k);
+				}
+				C += cos(P*(j-1))*TY;
+				S += sin(P*(j-1))*TY;
+			}
+			
+			F1 = atan2(S,C);
+			if (F1 < 0.f){
+				F1 += 8 * atan(1.0f);}
+			double SNY = (F1/P) +1.0;
+			
+			
+			C=0.0f,S=0.0f;
+			P=8*atan(1.0f)/nx;
+			
+			for (i=1;i<=nx;i++)
+			{
+				C += cos(P*(i-1))*TX[0][i];
+				S += sin(P*(i-1))*TX[0][i];
+			}
+			
+			F1 = atan2(S,C);
+			if (F1 < 0.f){
+				F1 += 8 * atan(1.0f);}
+			double SNX = (F1/P) +1.0;
+			ph_cntog.push_back(SNX);
+			ph_cntog.push_back(SNY);
+		break;
+	
+	}
+	return ph_cntog;
+}
+#undef rdata	
+		
+/*	if (ndim == 1)
+	{
+			P1 = 8 * atan(1.0)/nx;
+			for ( i = 1;i <= nx; i++)
+			{
+				val=rdata(i,j,k);
+				sum1 += val;
+				C += cos(P * (i-1)) * sum1;
+				S += sin(P * (i-1)) * sum1;
+			}
+			F1 = atan2(S,C);
+			if (F1 < 0.0){
+				F1 += 8 * atan(1.0);
+			}
+			SNS = (F1/P) +1.0;
+			ph_cntog.push_back(SNS);
+	
+	}	
+	else if (ndim == 2)
+	{	
+			for (j=1;j<=ny;j++)
+				{
+					T = 0.0;
+					for (i=1;i<=nx;i++)
+					{
+						T += rdata(i,j,k);
+					}
+					C += cos(P * (j-1))*T;
+					S += sin(P * (j-1))*T;
+				}
+			F1 = atan2(S,C);
+			if
+			cntog.push_back(MX);
+			cntog.push_back(RX);
+			cntog.push_back(MY);
+			cntog.push_back(RY);
+	}
+	else 
+	{		
+			for (k = 1;k <= nz;k++)
+			{
+				for (j=1;j<=ny;j++)
+				{
+					for (i=1;i<=nx;i++)
+					{
+						val = rdata(i,j,k);
+						sum1 += val;
+						MX += (i*val);
+						MY += (j*val);
+						MZ += (k*val);
+						RX += ((i^2)*val);
+						RY += ((j^2)*val);
+						RZ += ((k^2)*val);
+					}
+				}
+			}
+			cntog.push_back(MX);
+			cntog.push_back(RX);
+			cntog.push_back(MY);
+			cntog.push_back(RY);
+			cntog.push_back(MZ);
+			cntog.push_back(RZ);
+	}	 
+	return cntog;
+}
+#undef rdata
+*/
