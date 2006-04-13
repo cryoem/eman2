@@ -172,6 +172,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("intonly", EMObject::INT);
 			return d;
 		}
 
@@ -661,6 +662,7 @@ namespace EMAN
 			d.put("dx", EMObject::FLOAT);
 			d.put("dy", EMObject::FLOAT);
 			d.put("dz", EMObject::FLOAT);
+			d.put("alt", EMObject::FLOAT);
 
 			return d;
 		}

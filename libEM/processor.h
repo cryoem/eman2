@@ -368,7 +368,12 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			lowpass = params["lowpass"];
+			if( params.has_key("cutoff_abs") ) {
+				lowpass = params["cutoff_abs"];
+			}
+			else if( params.has_key("lowpass") ) {
+				lowpass = params["lowpass"];
+			}
 //			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
 		}
 
@@ -401,7 +406,12 @@ The basic design of EMAN Processors: <br>\
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
-			highpass = params["highpass"];
+			if( params.has_key("cutoff_abs") ) {
+				highpass = params["cutoff_abs"];
+			}
+			else if( params.has_key("highpass") ) {
+				highpass = params["highpass"];
+			}
 		}
 
 		TypeDict get_param_types() const
@@ -3410,6 +3420,8 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("val1", EMObject::FLOAT, "number of pixels to expand");
+			d.put("val2", EMObject::FLOAT, "if val2!=0 will make a soft Gaussian edge starting after val2 pixels");
 			return d;
 		}
 	};

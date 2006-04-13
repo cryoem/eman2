@@ -466,7 +466,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		cmp_name = "dot";
 	}
 #endif
-	EMData *this_copy = this_img->align("rotational", to, params);
+	EMData *this_copy = this_img->align("rotational", to);
 	
 	EMData *this_copy2 = this_copy->copy();
 	this_copy2->rotate_180();
@@ -530,7 +530,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 	params.set_default("maxshift", -1);
 
 	EMData *this_copy = this_img->copy();
-	this_img->align("rotational", to, params);
+	this_img->align("rotational", to);
 	
 	Dict rotation = this_img->get_transform().get_rotation(Transform3D::EMAN);
 	float cda = rotation["alt"];
@@ -547,11 +547,18 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 	float cdx = trans_v[0] * cos(cda) + trans_v[1] * sin(cda);
 	float cdy = trans_v[0] * sin(cda) + trans_v[1] * cos(cda);
 
-	params["alt"] = cda;
-	params["dx"] = cdx;
-	params["dy"] = cdy;
+	Dict refine_params;
+	refine_params["alt"] = cda;
+	refine_params["dx"] = cdx;
+	refine_params["dy"] = cdy;
+	if(params.has_key("dz")) {
+		refine_params["dz"] = params["dz"];
+	}
+	if(params.has_key("snr")) {
+		refine_params["snr"] = params["snr"];
+	}
 
-	this_copy->align("refine", to, params);
+	this_copy->align("refine", to, refine_params);
 
 	float cda2 = cda + (float)M_PI;
 	this_copy2->rotate_180();
@@ -562,11 +569,11 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 	cdx = trans_v2[0] * cos(cda2) + trans_v2[1] * sin(cda2);
 	cdy = -trans_v2[0] * sin(cda2) + trans_v2[1] * cos(cda2);
 
-	params["alt"] = cda2;
-	params["dx"] = cdx;
-	params["dy"] = cdy;
+	refine_params["alt"] = cda2;
+	refine_params["dx"] = cdx;
+	refine_params["dy"] = cdy;
 
-	this_copy2->align("refine", to, params);
+	this_copy2->align("refine", to, refine_params);
 	EMData * with = to;
 	float dot1 = this_copy->cmp(cmp_name, with, cmp_params);
 	float dot2 = this_copy2->cmp(cmp_name, with, cmp_params);
@@ -613,7 +620,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 		return 0;
 	}
 
-	if (to && EMUtil::is_same_size(this_img, to)) {
+	if (to && !EMUtil::is_same_size(this_img, to)) {
 		LOGERR("%s: images must be same size", get_name().c_str());
 		return 0;
 	}
@@ -697,7 +704,9 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 			lda = size - peak_x;
 		}
 
+#ifdef DEBUG
 		printf("R Peak %d\t%g\t%1.2f\n", lda, peak_value, lda * 360.0 / size);
+#endif
 
 		d = radonthis->get_data();
 		float *d2 = radonwith->get_data();
@@ -719,7 +728,9 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 			}
 
 			vert[x] = (float)besti;
+#ifdef DEBUG
 			printf("%d\t%d\n", x, besti);
+#endif
 			x2 = (x2 + 1) % size;
 		}
 
@@ -734,7 +745,9 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 
 		float inten = (si * si + co * co) / (size * (float)M_PI);
 		ta = atan2(co, si);
+#ifdef DEBUG
 		printf("x, y = %g, %g\ta, p=%g / %g, %g\n", co, si, sqrt(inten), max, 180.0f / (float)M_PI * ta);
+#endif
 		max = floor(sqrt(inten) + 0.5f);
 
 		t1->done_data();
@@ -785,7 +798,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 	params.set_default("imask", 0);
 
 	EMData *this_copy = this_img->copy();
-	this_copy->align("rotational", to, params);
+	this_copy->align("rotational", to);
 
 	float dot1 = this_copy->dot(to);
 	float dot2 = 0;
@@ -796,7 +809,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 		this_copy2->process_inplace("eman1.xform.flip", Dict("axis", "y"));
 	}
 
-	this_copy2->align("rotational", to, params);
+	this_copy2->align("rotational", to);
 	dot2 = this_copy2->dot(to);
 
 	EMData *result = 0;
@@ -844,15 +857,15 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		cmp_name = "dot";
 	}
 
-	EMData *this_copy = this_img->align("rotate_translate", to, params);
+	EMData *this_copy = this_img->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
 	EMData *this_copy2 = 0;
 
 	if (flip) {
-		this_copy2 = flip->align("rotate_translate", to, params);
+		this_copy2 = flip->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
 	}
 	else {
 		this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
-		this_copy2 = this_img->align("rotate_translate", to, params);
+		this_copy2 = this_img->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
 	}
 
 	if (!this_copy) {
@@ -1308,16 +1321,19 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,
 	EMData *flip = params.set_default("flip", (EMData *) 0);
 	params.set_default("maxshift", -1);
 
-
-	EMData *this_copy = this_img->align("rotate_translate_best", to, params);
+	Dict rtb_params;
+	rtb_params["maxshift"] = params["maxshift"];
+	rtb_params["snr"] = params["snr"];
+	
+	EMData *this_copy = this_img->align("rotate_translate_best", to, rtb_params);
 	EMData *flip_copy = 0;
 
 	if (!flip) {
 		this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
-		flip_copy = this_img->align("rotate_translate_best", to, params);
+		flip_copy = this_img->align("rotate_translate_best", to, rtb_params);
 	}
 	else {
-		flip_copy = flip->align("rotate_translate_best", to, params);
+		flip_copy = flip->align("rotate_translate_best", to, rtb_params);
 	}
 
 	if (!this_copy) {
@@ -1378,7 +1394,11 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,
 		params["radonwith"] = radonwith;
 	}
 
-	EMData *r1 = this_img->align("rotate_translate_radon", to, params);
+	Dict rtr_params;
+	rtr_params["maxshift"] = params["maxshift"];
+	rtr_params["radonthis"] = params["radonthis"];
+	rtr_params["radonwith"] = params["radonwith"];
+	EMData *r1 = this_img->align("rotate_translate_radon", to, rtr_params);
 	EMData *r2 = 0;
 
 	if (!thisf) {

@@ -39,7 +39,7 @@ class TestAligner(unittest.TestCase):
         e2.set_size(32,32,32)
         e2.process_inplace('testimage.noise.uniform.rand')
    
-        e.align('translational3d', e2)
+        e.align('translational3d', e2, {"intonly":1})
    
     def test_RotationalAligner(self):
         """test RotationalAligner ..........................."""
@@ -53,7 +53,7 @@ class TestAligner(unittest.TestCase):
         
         e.align('rotational', e2)
 
-    def test_RotatePrecenterAligner(self):
+    def no_test_RotatePrecenterAligner(self):
         """test RotatePrecenterAligner ......................"""
         e = EMData()
         e.set_size(32,32,1)
@@ -101,8 +101,9 @@ class TestAligner(unittest.TestCase):
         
         img = e.align('rotate_translate_best', e2, {'maxshift':1, 'snr':(1.0, 2.0, 3.0)})
         
-    def no_test_RotateTranslateRadonAligner(self):
+    def test_RotateTranslateRadonAligner(self):
         """test RotateTranslateRadonAligner ................."""
+        Log.logger().set_level(-1)    #no log message printed out
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -230,7 +231,7 @@ class TestAligner(unittest.TestCase):
         e.align('rtf_radon', e2, {'maxshift':2, 'thisf':e3, 'radonwith':e4, \
                 'radonthis':e5, 'radonthisf':e6})
                 
-    def no_test_RefineAligner(self):
+    def test_RefineAligner(self):
         """test RefineAligner ..............................."""
         e = EMData()
         e.set_size(32,32,1)
