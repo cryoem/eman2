@@ -16,6 +16,12 @@ namespace  {
 
 struct EMAN_Averager_Wrapper: EMAN::Averager
 {
+    EMAN_Averager_Wrapper(PyObject* py_self_, const EMAN::Averager& p0):
+        EMAN::Averager(p0), py_self(py_self_) {}
+
+    EMAN_Averager_Wrapper(PyObject* py_self_):
+        EMAN::Averager(), py_self(py_self_) {}
+
     void add_image(EMAN::EMData* p0) {
         call_method< void >(py_self, "add_image", p0);
     }
@@ -66,7 +72,7 @@ struct EMAN_Averager_Wrapper: EMAN::Averager
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyAverager2)
 {
-    class_< EMAN::Averager, boost::noncopyable, EMAN_Averager_Wrapper >("__Averager", no_init)
+    class_< EMAN::Averager, boost::noncopyable, EMAN_Averager_Wrapper >("__Averager", init<  >())
         .def("add_image", pure_virtual(&EMAN::Averager::add_image))
         .def("add_image_list", &EMAN::Averager::add_image_list, &EMAN_Averager_Wrapper::default_add_image_list)
         .def("finish", pure_virtual(&EMAN::Averager::finish), return_value_policy< manage_new_object >())

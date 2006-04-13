@@ -13,7 +13,8 @@ using namespace boost::python;
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyTypeConverter2)
 {
-    class_< EMAN::EMNumPy, boost::noncopyable >("EMNumPy", no_init)
+    class_< EMAN::EMNumPy >("EMNumPy", init<  >())
+        .def(init< const EMAN::EMNumPy& >())
         .def("em2numpy", &EMAN::EMNumPy::em2numpy)
         .def("numpy2em", &EMAN::EMNumPy::numpy2em)
         .staticmethod("em2numpy")

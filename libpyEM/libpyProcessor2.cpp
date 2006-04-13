@@ -16,6 +16,12 @@ namespace  {
 
 struct EMAN_Processor_Wrapper: EMAN::Processor
 {
+    EMAN_Processor_Wrapper(PyObject* py_self_, const EMAN::Processor& p0):
+        EMAN::Processor(p0), py_self(py_self_) {}
+
+    EMAN_Processor_Wrapper(PyObject* py_self_):
+        EMAN::Processor(), py_self(py_self_) {}
+
     void process_inplace(EMAN::EMData* p0) {
         call_method< void >(py_self, "process_inplace", p0);
     }
@@ -79,7 +85,7 @@ struct EMAN_Processor_Wrapper: EMAN::Processor
 BOOST_PYTHON_MODULE(libpyProcessor2)
 {
     scope* EMAN_Processor_scope = new scope(
-    class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("Processor", no_init)
+    class_< EMAN::Processor, boost::noncopyable, EMAN_Processor_Wrapper >("Processor", init<  >())
         .def("process_inplace", pure_virtual(&EMAN::Processor::process_inplace))
         .def("process", &EMAN::Processor::process, &EMAN_Processor_Wrapper::default_process, return_value_policy< manage_new_object >())
         .def("process_list_inplace", &EMAN::Processor::process_list_inplace, &EMAN_Processor_Wrapper::default_process_list_inplace)
