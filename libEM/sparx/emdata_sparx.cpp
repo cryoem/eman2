@@ -1841,6 +1841,7 @@ vector<double> EMData::Phase_cog()
 	switch (get_ndim())
 	{
 		case(1):
+		{
 			P = 8*atan(1.0f)/nx;
 			for (i=1;i<=nx;i++)
 			{
@@ -1853,8 +1854,10 @@ vector<double> EMData::Phase_cog()
 				F1 += 8 * atan(1.0f);}
 			double SNS = (F1/P) +1.0;
 			ph_cntog.push_back(SNS);
+		}
 		break;
 		case(2):
+		{
 			/* Calculate the Pixel Density of a 2-D image and store it in an array*/
 			double TX[1][nx+1];
 			TX[0][1]=0.0f,TX[0][2]=0.0f,TX[0][3]=0.0f;
@@ -1895,6 +1898,7 @@ vector<double> EMData::Phase_cog()
 			double SNX = (F1/P) +1.0;
 			ph_cntog.push_back(SNX);
 			ph_cntog.push_back(SNY);
+		}
 		break;
 	
 	}
