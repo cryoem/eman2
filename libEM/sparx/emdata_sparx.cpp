@@ -1837,6 +1837,7 @@ vector<double> EMData::Phase_cog()
 	vector<double> ph_cntog;
 	int i=1,j=1,k=1;
 	double C=0.0f,S=0.0f,P=0.0f;
+	double F1;
 	
 	switch (get_ndim())
 	{
@@ -1849,7 +1850,7 @@ vector<double> EMData::Phase_cog()
 				S += sin(P * (i-1)) * rdata(i,j,k);
 			}
 			
-			double F1 = atan2(S,C);
+			F1 = atan2(S,C);
 			if (F1 < 0.f){
 				F1 += 8 * atan(1.0f);}
 			double SNS = (F1/P) +1.0;
