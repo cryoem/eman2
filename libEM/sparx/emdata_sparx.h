@@ -318,6 +318,10 @@ EMData* rotavg();
 /** Search specified number peaks in 1D, 2D, or 3D real images.
 * and output the peaks in descendent order */
 vector<float> peak_search(int ml, float invert);
+/** Calculate the Phase approximation to center of gravity
+ *  @returns the phase of the image
+ */
+vector<double> Phase_cog();
 
 private:
 //utility function for peak_search()
