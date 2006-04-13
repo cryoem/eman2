@@ -758,7 +758,7 @@ void EMUtil::dump_dict(const Dict & dict)
 }
 
 
-bool EMUtil::is_same_size(const EMData * em1, const EMData * em2)
+bool EMUtil::is_same_size(const EMData * const em1, const EMData * const em2)
 {
 	if (em1->get_xsize() == em2->get_xsize() &&
 		em1->get_ysize() == em2->get_ysize() &&
