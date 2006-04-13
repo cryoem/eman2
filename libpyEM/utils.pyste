@@ -52,3 +52,5 @@ exclude(EMUtil.process_region_io)
 ImageSort = Class("EMAN::ImageSort", "emutil.h")
 
 TestUtil = Class("EMAN::TestUtil", "testutil.h")
+
+TFList = Class("TFList", "sparx/SparxIO.h")
