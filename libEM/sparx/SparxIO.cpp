@@ -1,4 +1,3 @@
-#if 0
 #include "SparxIO.h"
 #include "Tokenizer.h"
 #include <iostream>
@@ -152,10 +151,14 @@ TFList::TFList()
 // constructor: initialize a TFList object of size nr by nc
 TFList::TFList(int nr, int nc)
 {
+   int i;
+
    nrows  = nr;
    ncols  = nc;
    ndigit = 0;
    data   = (float*)SparxMalloc(nrows*ncols*sizeof(float));
+   // initialize to zeros
+   for (i=0;i<nrows*ncols;i++) data[i]=0.0;
 }
 
 // constructor: initialize a TFList object of size nr by nc. 
@@ -163,10 +166,14 @@ TFList::TFList(int nr, int nc)
 // by ndig
 TFList::TFList(int nr, int nc, int ndig)
 {
+   int i;
+
    nrows  = nr;
    ncols  = nc;
    ndigit = ndig;
    data   = (float*)SparxMalloc(nrows*ncols*sizeof(float));
+   // initialize to zeros
+   for (i=0;i<nrows*ncols;i++) data[i]=0.0;
 }
 
 // Destructor
@@ -228,6 +235,8 @@ int TFList::read(char *filename)
    if (nrows > 0 && ncols >0) {
       if (data != NULL) delete data;
       data = (float*)SparxMalloc(ncols*nrows*sizeof(float));
+      // initialize to zeros
+      for (i=0;i<nrows*ncols;i++) data[i]=0.0;
       TFin2.open(filename);
       for (i = 1; i<=nrows;i++) {
          TFin2.getline(buffer, MAXLEN);
@@ -323,4 +332,3 @@ float TFList::GetVal(int irow, int jcol)
    }
 }
 #undef data
-#endif
