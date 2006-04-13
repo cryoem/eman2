@@ -1119,28 +1119,10 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	float sang = sin(ang);
 		for (int iy = 0; iy < nyn; iy++) {
 			float y = float(iy) - shiftyc;
-			/*
-		#ifdef _WIN32
-			if (y < ymin) y = _MIN(y+ny,ymax);
-			if (y > ymax) y = _MAX(y-ny,ymin);
-		#else
-			if (y < ymin) y = std::min(y+ny,ymax);
-			if (y > ymax) y = std::max(y-ny,ymin);
-		#endif	//_WIN32
-		*/
 			float ycang = y*cang/scale + yc;
 			float ysang = -y*sang/scale + xc;
 			for (int ix = 0; ix < nxn; ix++) {
 				float x = float(ix) - shiftxc;
-				/*
-			#ifdef _WIN32
-				if (x < xmin) x = _MIN(x+nx,xmax);
-				if (x > xmax) x = _MAX(x-nx,xmin);
-			#else
-				if (x < xmin) x = std::min(x+nx,xmax);
-				if (x > xmax) x = std::max(x-nx,xmin);
-			#endif	//_WIN32
-			*/
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
@@ -1148,8 +1130,28 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 				if(inyold <= kbc || inyold >=ny-kbc-2 )  continue;
 //cout <<"  *************%%%%%%%%%%***************       "<<ix<<"   "<<iy<<endl;
 //(*ret)(ix,iy) = (*this)(inxold,inyold);
-                         for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}} //Util::quadri(xold, yold, nx, ny, get_data());
+                                for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
+			}
+		}
+		//  loop for strips
+		for (int iy = 0; iy < nyn; iy++) {
+			float y = float(iy) - shiftyc;
+			float ycang = y*cang/scale + yc;
+			float ysang = -y*sang/scale + xc;
+			for (int ix = 0; ix < nxn; ix++) {
+				float x = float(ix) - shiftxc;
+				float xold = x*cang/scale + ysang;
+				float yold = x*sang/scale + ycang;
+				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
+				if(inxold <= kbc || inxold >=nx-kbc-2 )  {
+				  if(inyold <= kbc || inyold >=ny-kbc-2 )  {
+//cout <<"  *************%%%%%%%%%%***************       "<<ix<<"   "<<iy<<endl;
+//(*ret)(ix,iy) = (*this)(inxold,inyold);
+                                  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		 (*ret)(ix,iy) += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
+		                 }
+				}
 			}
 		}
 	set_array_offsets(saved_offsets);
@@ -1906,71 +1908,3 @@ vector<double> EMData::Phase_cog()
 	return ph_cntog;
 }
 #undef rdata	
-		
-/*	if (ndim == 1)
-	{
-			P1 = 8 * atan(1.0)/nx;
-			for ( i = 1;i <= nx; i++)
-			{
-				val=rdata(i,j,k);
-				sum1 += val;
-				C += cos(P * (i-1)) * sum1;
-				S += sin(P * (i-1)) * sum1;
-			}
-			F1 = atan2(S,C);
-			if (F1 < 0.0){
-				F1 += 8 * atan(1.0);
-			}
-			SNS = (F1/P) +1.0;
-			ph_cntog.push_back(SNS);
-	
-	}	
-	else if (ndim == 2)
-	{	
-			for (j=1;j<=ny;j++)
-				{
-					T = 0.0;
-					for (i=1;i<=nx;i++)
-					{
-						T += rdata(i,j,k);
-					}
-					C += cos(P * (j-1))*T;
-					S += sin(P * (j-1))*T;
-				}
-			F1 = atan2(S,C);
-			if
-			cntog.push_back(MX);
-			cntog.push_back(RX);
-			cntog.push_back(MY);
-			cntog.push_back(RY);
-	}
-	else 
-	{		
-			for (k = 1;k <= nz;k++)
-			{
-				for (j=1;j<=ny;j++)
-				{
-					for (i=1;i<=nx;i++)
-					{
-						val = rdata(i,j,k);
-						sum1 += val;
-						MX += (i*val);
-						MY += (j*val);
-						MZ += (k*val);
-						RX += ((i^2)*val);
-						RY += ((j^2)*val);
-						RZ += ((k^2)*val);
-					}
-				}
-			}
-			cntog.push_back(MX);
-			cntog.push_back(RX);
-			cntog.push_back(MY);
-			cntog.push_back(RY);
-			cntog.push_back(MZ);
-			cntog.push_back(RZ);
-	}	 
-	return cntog;
-}
-#undef rdata
-*/
