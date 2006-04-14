@@ -402,6 +402,8 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
         }
 
 }
+//<<<<<<< util_sparx.cpp
+/*=======*/
 
 
 vector<float>
@@ -1782,3 +1784,4 @@ c       optional limit on angular search should be added.
 
 #undef  numr
 
+//>>>>>>> 1.6
