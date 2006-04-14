@@ -1126,35 +1126,49 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
-				if(inxold <= kbc || inxold >=nx-kbc-2 )  continue;
-				if(inyold <= kbc || inyold >=ny-kbc-2 )  continue;
-//cout <<"  *************AAAAA***************       "<<inxold<<"   "<<inyold<<endl;
-//(*ret)(ix,iy) = (*this)(inxold,inyold);
-                                for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
-			}
-		}
-		//  loop for strips
-		for (int iy = 0; iy < nyn; iy++) {
-			float y = float(iy) - shiftyc;
-			float ycang = y*cang/scale + yc;
-			float ysang = -y*sang/scale + xc;
-			for (int ix = 0; ix < nxn; ix++) {
-				float x = float(ix) - shiftxc;
-				float xold = x*cang/scale + ysang;
-				float yold = x*sang/scale + ycang;
-				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
-//cout <<"  *************CCCCC***************       "<<inxold<<"   "<<inyold<<endl;
 				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+		//  loop for strips
 //cout <<"  *************BBBBB***************       "<<inxold<<"   "<<inyold<<endl;
-//(*ret)(ix,iy) = (*this)(inxold,inyold);
                                   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 		 (*ret)(ix,iy) += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
-				}
+		                }else{
+//cout <<"  *************AAAAA***************       "<<inxold<<"   "<<inyold<<endl;
+                                for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
+		                }
 			}
 		}
 	set_array_offsets(saved_offsets);
 	return ret;
+}
+
+
+
+float  EMData::get_pixel_conv(float delx, float dely, Util::KaiserBessel& kb) {
+	if (1 >= ny)
+		throw ImageDimensionException("Can't process 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+	int kbc = kbmax+1;
+
+	delx = fmod(2*delx, float(nx));
+	dely = fmod(2*dely, float(ny));
+
+	float pixel =0.0f;
+	int inxold = int(Util::round(delx)); int inyold = int(Util::round(dely));
+				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+		//  loop for strips
+                                  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		 pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);}}
+		                }else{
+                                for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		 pixel += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);}}
+		                }
+        return pixel;
 }
 
 
