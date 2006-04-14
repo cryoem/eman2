@@ -1127,12 +1127,9 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 				float yold = x*sang/scale + ycang;
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
-		//  loop for strips
-//cout <<"  *************BBBBB***************       "<<inxold<<"   "<<inyold<<endl;
                                   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 		 (*ret)(ix,iy) += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
 		                }else{
-//cout <<"  *************AAAAA***************       "<<inxold<<"   "<<inyold<<endl;
                                 for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
 		                }
