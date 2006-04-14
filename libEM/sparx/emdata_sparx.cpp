@@ -1835,7 +1835,7 @@ vector<float> EMData::phase_cog()
 {	
 	vector<float> ph_cntog;
 	int i=1,j=1,k=1;
-	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX;
+	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX,NX;
 	if (get_ndim()==1)
 		{P = 8*atan(1.0f)/nx;
 		for (i=1;i<=nx;i++)
@@ -1845,12 +1845,12 @@ vector<float> EMData::phase_cog()
 		if (F1 < 0.0){ F1 += 8*atan(1.0f); }
 		SNX = F1/P +1.0;
 		SNX = SNX - ((nx/2)+1);
-		//NX  = abs(SNX);
+		NX  = floor(SNX);
 		ph_cntog.push_back(SNX);
+		ph_cntog.push_back(NX);
 		}
 	else if (get_ndim()==2)
-		{float SNY,X[nx],T=0.f;
-		 //int NY;
+		{float SNY,NY,X[nx],T=0.f;
 		 for ( i=1;i<=nx;i++)
 			{X[i-1]=0.0;}			
                  P = 8*atan(1.0f)/ny;
@@ -1874,14 +1874,13 @@ vector<float> EMData::phase_cog()
 		 SNX = F1/P +1.0;
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
-		 //NX  = abs(SNX);
-		 //NY  = abs(SNY);
+		 NX  = floor(SNX);
+		 NY  = floor(SNY);
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);		
-		 //ph_cntog.push_back(NX); ph_cntog.push_back(NY);
+		 ph_cntog.push_back(NX); ph_cntog.push_back(NY);
 		}
 	else
-		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ;
-		 //int NY,NZ;
+		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ,NY,NZ;
 		 for (i=1;i<=nx;i++)
 			{X[i-1]=0.0;}
 		 for (j=1;j<=ny;j++)
@@ -1925,11 +1924,11 @@ vector<float> EMData::phase_cog()
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
 		 SNZ = SNZ - ((nz/2)+1);
-		 //NX  = abs(SNX);
-                 //NY  = abs(SNY);
-		 //NZ  = abs(SNZ);		
+		 NX  = floor(SNX);
+                 NY  = floor(SNY);
+		 NZ  = floor(SNZ);		
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
-		 //ph_cntog.push_back(NX); ph_cntog.push_back(NY); ph_cntog.push_back(NZ);
+		 ph_cntog.push_back(NX); ph_cntog.push_back(NY); ph_cntog.push_back(NZ);
 	}
 	return ph_cntog;
 }
