@@ -1490,6 +1490,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d = CircularMaskProcessor::get_param_types();
 			d.put("gauss_width", EMObject::FLOAT);
+			d.put("ring_width", EMObject::INT, "The width of the mask ring.");
 			return d;
 		}
 
@@ -1507,7 +1508,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			return "f(x) = f(x) / exp(-radius*radius * gauss_width / (ny*ny))";
 		}
-
+		
 	  protected:
 		void calc_locals(EMData *)
 		{
