@@ -33,7 +33,7 @@ EMData * process(const string & processorname, const Dict & params = Dict());
  * @exception NotExistingObjectError If the comparison algorithm doesn't exist.
  * @return comparison score. The bigger, the better.
  */
-float cmp(const string & cmpname, EMData * with, const Dict & params);
+float cmp(const string & cmpname, EMData * with, const Dict & params = Dict());
 
 /** Align this image with another image and return the result image.
  *
