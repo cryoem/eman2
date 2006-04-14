@@ -35,10 +35,10 @@ class TestCmp(unittest.TestCase):
         #e1.write_image("test_basic_cmp_out_1.mrc")
         #e2.write_image("test_basic_cmp_out_2.mrc")
 
-        dot_score = e2.cmp("dot", e1, {"evenonly":0})
+        dot_score = e2.cmp("dot", e1, {"negative":0, "normalize":1})
 #        self.assertEqual(dot_score, 19944.0)    #todo: dot score not match, anything wrong?
 
-        variance_score = e2.cmp("variance", e1, {"keepzero":1})
+        variance_score = e2.cmp("variance", e1)
 #        self.assertEqual(variance_score, 0)    #todo: score not match, anything wrong?
         
         phase_score = e2.cmp("phase", e1, {})
