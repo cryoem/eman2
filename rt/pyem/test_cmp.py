@@ -17,7 +17,7 @@ class TestCmp(unittest.TestCase):
         e1.read_image(imgfile1)
 
         e2 = e1.copy()
-        score = e2.cmp("variance", e1, {"keepzero": 0})
+        score = e2.cmp("variance", e1)
         self.assertEqual(score, 0)
         os.unlink(imgfile1)
         
