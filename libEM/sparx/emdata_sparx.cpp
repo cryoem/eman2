@@ -1831,11 +1831,14 @@ vector<float> EMData::peak_search(int ml, float invert)
  }	
 	  
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
+#define X(i) X[i-1]
+#define Y(j) Y[j-1]
+#define Z(k) Z[k-1]
 vector<float> EMData::phase_cog()
 {	
 	vector<float> ph_cntog;
 	int i=1,j=1,k=1;
-	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX,NX;
+	float C=0.f,S=0.f,P=0.f,F1=0.f,SNX;
 	if (get_ndim()==1)
 		{P = 8*atan(1.0f)/nx;
 		for (i=1;i<=nx;i++)
@@ -1845,20 +1848,19 @@ vector<float> EMData::phase_cog()
 		if (F1 < 0.0){ F1 += 8*atan(1.0f); }
 		SNX = F1/P +1.0;
 		SNX = SNX - ((nx/2)+1);
-		NX  = floor(SNX);
 		ph_cntog.push_back(SNX);
-		ph_cntog.push_back(NX);
+		ph_cntog.push_back(fabs(round(SNX)));
 		}
 	else if (get_ndim()==2)
-		{float SNY,NY,X[nx],T=0.f;
+		{float SNY,X[nx],T=0.f;
 		 for ( i=1;i<=nx;i++)
-			{X[i-1]=0.0;}			
+			{X(i)=0.0;}			
                  P = 8*atan(1.0f)/ny;
 		 for(j=1;j<=ny;j++)
 			{T=0.f;
 			 for(i=1;i<=nx;i++)
 				{T += rdata(i,j,k);
-				 X[i-1]+=rdata(i,j,k);}
+				 X(i)+=rdata(i,j,k);}
 			 C += cos(P*(j-1))*T;
 			 S += sin(P*(j-1))*T;}
 		 F1=atan2(S,C);
@@ -1867,69 +1869,66 @@ vector<float> EMData::phase_cog()
 		 C=0.f;S=0.f;
 		 P = 8*atan(1.0f)/nx;
 		 for(i=1;i<=nx;i++)
-			{C += cos(P*(i-1))*X[i-1];
-			 S += sin(P*(i-1))*X[i-1];}
+			{C += cos(P*(i-1))*X(i);
+			 S += sin(P*(i-1))*X(i);}
 	         F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
 		 SNX = F1/P +1.0;
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
-		 NX  = floor(SNX);
-		 NY  = floor(SNY);
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);		
-		 ph_cntog.push_back(NX); ph_cntog.push_back(NY);
+		 ph_cntog.push_back(fabs(round(SNX))); ph_cntog.push_back(fabs(round(SNY)));
 		}
 	else
-		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ,NY,NZ;
+		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ;
 		 for (i=1;i<=nx;i++)
-			{X[i-1]=0.0;}
+			{X(i)=0.0;}
 		 for (j=1;j<=ny;j++)
-			{Y[j-1]=0.0;}
+			{Y(j)=0.0;}
 		 for (k=1;k<=nz;k++)
-			{Z[k-1]=0.0;}
+			{Z(k)=0.0;}
 		 for(k=1;k<=nz;k++)
 			{for(j=1;j<=ny;j++)
 				{sum1=0.f;
 				 for(i=1;i<=nx;i++)
 					{val = rdata(i,j,k);
 					 sum1 += val;
-					 X[i-1] += val;}
-				 Y[j-1] += sum1;
-				 Z[k-1] += sum1;}
+					 X(i) += val;}
+				 Y(j) += sum1;
+				 Z(k) += sum1;}
 			}
 		 P = 8*atan(1.0f)/nx;
 		 for (i=1;i<=nx;i++)
-			{C += cos(P*(i-1))*X[i-1];
-			 S += sin(P*(i-1))*X[i-1];}
+			{C += cos(P*(i-1))*X(i);
+			 S += sin(P*(i-1))*X(i);}
 		 F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0); }
 		 SNX = F1/P +1.0;
 		 C=0.f;S=0.f;
 		 P = 8*atan(1.0f)/ny;
 		 for(j=1;j<=ny;j++)
-			{C += cos(P*(j-1))*Y[j-1];
-			 S += sin(P*(j-1))*Y[j-1];}
+			{C += cos(P*(j-1))*Y(j);
+			 S += sin(P*(j-1))*Y(j);}
 		 F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
 		 SNY = F1/P +1.0;
 		 C=0.f;S=0.f;
 		 P = 8*atan(1.0f)/nz;
 		 for(k=1;k<=nz;k++)
-			{C += cos(P*(k-1))*Z[k-1];
-		         S += sin(P*(k-1))*Z[k-1];}
+			{C += cos(P*(k-1))*Z(k);
+		         S += sin(P*(k-1))*Z(k);}
 		 F1=atan2(S,C);
 		 if(F1<0.0){ F1 += 8*atan(1.0f); }
-		 SNZ = F1/P +1.0;
-			
+		 SNZ = F1/P +1.0;	
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
-		 SNZ = SNZ - ((nz/2)+1);
-		 NX  = floor(SNX);
-                 NY  = floor(SNY);
-		 NZ  = floor(SNZ);		
+		 SNZ = SNZ - ((nz/2)+1);		
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
-		 ph_cntog.push_back(NX); ph_cntog.push_back(NY); ph_cntog.push_back(NZ);
+		 ph_cntog.push_back(fabs(round(SNX))); ph_cntog.push_back(fabs(round(SNY))); ph_cntog.push_back(fabs(round(SNZ)));
 	}
 	return ph_cntog;
 }
-#undef rdata	
+#undef rdata
+#undef X
+#undef Y
+#undef Z
