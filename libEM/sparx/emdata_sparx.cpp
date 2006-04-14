@@ -1142,6 +1142,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 
 
 float  EMData::get_pixel_conv(float delx, float dely, Util::KaiserBessel& kb) {
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
 	if (1 >= ny)
 		throw ImageDimensionException("Can't process 1D image");
 	if (1 < nz) 

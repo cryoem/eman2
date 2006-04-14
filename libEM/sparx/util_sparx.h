@@ -285,6 +285,9 @@ class FakeKaiserBessel : public KaiserBessel {
         static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
         static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
                             int  *numr, float *circ, int lcirc, int  nring, char  mode);
+//        static EMData* alrq_ms(float cns2, float cnr2,
+//                           int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb);
+//        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb);
         static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
         static void  fftr_q(float  *xcmplx, int nv);
         static void  fftr_d(double *xcmplx, int nv);
