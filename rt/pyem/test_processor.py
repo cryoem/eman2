@@ -926,16 +926,11 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
         
-        #this processor only accept 3D volume data
         e2 = EMData()
         e2.set_size(32,32)
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
-        self.assertRaises(RuntimeError, e2.process_inplace, 'eman1.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
-        try:
-            e2.process_inplace('eman1.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        e.process_inplace('eman1.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
             
         
     def test_eman1_normalize_unitlen(self):

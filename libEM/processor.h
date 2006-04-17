@@ -2300,7 +2300,7 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
-	/**Bilateral processing on 3D volume data. Bilateral processing does non-linear weighted averaging processing within a certain window.
+	/**Bilateral processing on 2D or 3D volume data. Bilateral processing does non-linear weighted averaging processing within a certain window.
 	 *@param distance_sigma means how large the voxel has impact on its neighbors in spatial domain. The larger it is, the more blurry the resulting image.
 	 *@param value_sigma eans how large the voxel has impact on its in  range domain. The larger it is, the more blurry the resulting image.
 	 *@param niter how many times to apply this processing on your data.
@@ -2317,7 +2317,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Bilateral processing on 3D volume data. Bilateral processing does non-linear weighted averaging processing within a certain window. ";
+			return "Bilateral processing on 2D or 3D volume data. Bilateral processing does non-linear weighted averaging processing within a certain window. ";
 		}
 
 		static Processor *NEW()

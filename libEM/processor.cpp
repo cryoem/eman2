@@ -1787,11 +1787,6 @@ void BilateralProcessor::process_inplace(EMData * image)
 		return;
 	}
 	
-	if (image->get_ndim() != 3) {
-		LOGERR("%s processor only support 3D volume data", get_name().c_str());
-		throw ImageDimensionException("Only support 3D volume data");
-	}
-
 	float distance_sigma = params["distance_sigma"];
 	float value_sigma = params["value_sigma"];
 	int max_iter = params["niter"];
@@ -1815,156 +1810,231 @@ void BilateralProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	int width = nx;
-	int height = ny;
-	int slicenum = nz;
+	if(nz==1) {	//for 2D image
+		int width=nx, height=ny; 
 
-	int slice_size = width * height;
-	int new_width = width + 2 * half_width;
-	int new_slice_size = (width + 2 * half_width) * (height + 2 * half_width);
-
-	int width1 = 2 * half_width + 1;
-	int mask_size = width1 * width1;
-	int old_img_size = (2 * half_width + width) * (2 * half_width + height);
-
-	int zstart = -half_width;
-	int zend = -half_width;
-	int is_3d = 0;
-	if (nz > 1) {
-		mask_size *= width1;
-		old_img_size *= (2 * half_width + slicenum);
-		zend = half_width;
-		is_3d = 1;
+		int i,j,m,n;
+	
+		float tempfloat1,tempfloat2,tempfloat3;
+		int   index1,index2,index;
+		int   Iter;
+		int   tempint1,tempint3;
+	
+		tempint1=width;
+		tempint3=width+2*half_width;
+	
+		float* mask=(float*)calloc((2*half_width+1)*(2*half_width+1),sizeof(float));
+		float* OrgImg=(float*)calloc((2*half_width+width)*(2*half_width+height),sizeof(float));
+		float* NewImg=image->get_data();
+	
+		for(m=-(half_width);m<=half_width;m++)
+			for(n=-(half_width);n<=half_width;n++) {
+	       	   index=(m+half_width)*(2*half_width+1)+(n+half_width);
+	       	   mask[index]=exp((float)(-(m*m+n*n)/distance_sigma/2.0));
+	  	}
+	
+		//printf("entering bilateral filtering process \n");
+	
+		Iter=0;
+		while(Iter<max_iter) {
+			for(i=0;i<height;i++)
+	    		for(j=0;j<width;j++) {
+		    		index1=(i+half_width)*tempint3+(j+half_width);
+					index2=i*tempint1+j;
+	        		OrgImg[index1]=NewImg[index2];      
+	   		}
+	
+			// Mirror Padding
+			for(i=0;i<height;i++){	
+				for(j=0;j<half_width;j++) OrgImg[(i+half_width)*tempint3+(j)]=OrgImg[(i+half_width)*tempint3+(2*half_width-j)];
+				for(j=0;j<half_width;j++) OrgImg[(i+half_width)*tempint3+(j+width+half_width)]=OrgImg[(i+half_width)*tempint3+(width+half_width-j-2)];
+	   		}
+			for(i=0;i<half_width;i++){	
+				for(j=0;j<(width+2*half_width);j++) OrgImg[i*tempint3+j]=OrgImg[(2*half_width-i)*tempint3+j];
+				for(j=0;j<(width+2*half_width);j++) OrgImg[(i+height+half_width)*tempint3+j]=OrgImg[(height+half_width-2-i)*tempint3+j];
+			}
+	
+			//printf("finish mirror padding process \n");
+			//now mirror padding have been done
+	
+			for(i=0;i<height;i++){
+				//printf("now processing the %d th row \n",i);
+				for(j=0;j<width;j++){
+					tempfloat1=0.0; tempfloat2=0.0;
+					for(m=-(half_width);m<=half_width;m++)
+						for(n=-(half_width);n<=half_width;n++){
+							index =(m+half_width)*(2*half_width+1)+(n+half_width);
+							index1=(i+half_width)*tempint3+(j+half_width);
+							index2=(i+half_width+m)*tempint3+(j+half_width+n);
+							tempfloat3=(OrgImg[index1]-OrgImg[index2])*(OrgImg[index1]-OrgImg[index2]);
+	
+							tempfloat3=mask[index]*(1.0/(1+tempfloat3/value_sigma));	// Lorentz kernel
+							//tempfloat3=mask[index]*exp(tempfloat3/Sigma2/(-2.0));	// Guassian kernel
+							tempfloat1+=tempfloat3;
+	
+							tempfloat2+=tempfloat3*OrgImg[(i+half_width+m)*tempint3+(j+half_width+n)];     
+	        			}
+					NewImg[i*width+j]=tempfloat2/tempfloat1;
+				}
+			}
+	   		Iter++;
+	    }
+	
+	    //printf("have finished %d  th iteration\n ",Iter);
+//		doneData();
+		free(mask); 
+		free(OrgImg);
+		// end of BilaFilter routine
+		
 	}
-
-	float *mask = (float *) calloc(mask_size, sizeof(float));
-	float *old_img = (float *) calloc(old_img_size, sizeof(float));
-
-	float *new_img = image->get_data();
-
-	for (int p = zstart; p <= zend; p++) {
-		int cur_p = (p + half_width) * (2 * half_width + 1) * (2 * half_width + 1);
-
-		for (int m = -half_width; m <= half_width; m++) {
-			int cur_m = (m + half_width) * (2 * half_width + 1) + half_width;
-
-			for (int n = -half_width; n <= half_width; n++) {
-				int l = cur_p + cur_m + n;
-				mask[l] = exp((float) (-(m * m + n * n + p * p * is_3d) / distance_sigma / 2.0f));
-			}
+	else {	//3D case
+		int width = nx;
+		int height = ny;
+		int slicenum = nz;
+	
+		int slice_size = width * height;
+		int new_width = width + 2 * half_width;
+		int new_slice_size = (width + 2 * half_width) * (height + 2 * half_width);
+	
+		int width1 = 2 * half_width + 1;
+		int mask_size = width1 * width1;
+		int old_img_size = (2 * half_width + width) * (2 * half_width + height);
+	
+		int zstart = -half_width;
+		int zend = -half_width;
+		int is_3d = 0;
+		if (nz > 1) {
+			mask_size *= width1;
+			old_img_size *= (2 * half_width + slicenum);
+			zend = half_width;
+			is_3d = 1;
 		}
-	}
-
-	int iter = 0;
-	while (iter < max_iter) {
-		for (int k = 0; k < slicenum; k++) {
-			int cur_k1 = (k + half_width) * new_slice_size * is_3d;
-			int cur_k2 = k * slice_size;
-
-			for (int i = 0; i < height; i++) {
-				int cur_i1 = (i + half_width) * new_width;
-				int cur_i2 = i * width;
-
-				for (int j = 0; j < width; j++) {
-					int k1 = cur_k1 + cur_i1 + (j + half_width);
-					int k2 = cur_k2 + cur_i2 + j;
-					old_img[k1] = new_img[k2];
-				}
-			}
-		}
-
-		for (int k = 0; k < slicenum; k++) {
-			int cur_k = (k + half_width) * new_slice_size * is_3d;
-
-			for (int i = 0; i < height; i++) {
-				int cur_i = (i + half_width) * new_width;
-
-				for (int j = 0; j < half_width; j++) {
-					int k1 = cur_k + cur_i + j;
-					int k2 = cur_k + cur_i + (2 * half_width - j);
-					old_img[k1] = old_img[k2];
-				}
-
-				for (int j = 0; j < half_width; j++) {
-					int k1 = cur_k + cur_i + (width + half_width + j);
-					int k2 = cur_k + cur_i + (width + half_width - j - 2);
-					old_img[k1] = old_img[k2];
-				}
-			}
-
-
-			for (int i = 0; i < half_width; i++) {
-				int i2 = i * new_width;
-				int i3 = (2 * half_width - i) * new_width;
-				for (int j = 0; j < (width + 2 * half_width); j++) {
-					int k1 = cur_k + i2 + j;
-					int k2 = cur_k + i3 + j;
-					old_img[k1] = old_img[k2];
-				}
-
-				i2 = (height + half_width + i) * new_width;
-				i3 = (height + half_width - 2 - i) * new_width;
-				for (int j = 0; j < (width + 2 * half_width); j++) {
-					int k1 = cur_k + i2 + j;
-					int k2 = cur_k + i3 + j;
-					old_img[k1] = old_img[k2];
+	
+		float *mask = (float *) calloc(mask_size, sizeof(float));
+		float *old_img = (float *) calloc(old_img_size, sizeof(float));
+	
+		float *new_img = image->get_data();
+	
+		for (int p = zstart; p <= zend; p++) {
+			int cur_p = (p + half_width) * (2 * half_width + 1) * (2 * half_width + 1);
+	
+			for (int m = -half_width; m <= half_width; m++) {
+				int cur_m = (m + half_width) * (2 * half_width + 1) + half_width;
+	
+				for (int n = -half_width; n <= half_width; n++) {
+					int l = cur_p + cur_m + n;
+					mask[l] = exp((float) (-(m * m + n * n + p * p * is_3d) / distance_sigma / 2.0f));
 				}
 			}
 		}
-
-		for (int k = 0; k < slicenum; k++) {
-			int cur_k = (k + half_width) * new_slice_size;
-
-			for (int i = 0; i < height; i++) {
-				int cur_i = (i + half_width) * new_width;
-
-				for (int j = 0; j < width; j++) {
-					float f1 = 0;
-					float f2 = 0;
-					int k1 = cur_k + cur_i + (j + half_width);
-
-					for (int p = zstart; p <= zend; p++) {
-						int cur_p1 = (p + half_width) * (2 * half_width + 1) * (2 * half_width + 1);
-						int cur_p2 = (k + half_width + p) * new_slice_size;
-
-						for (int m = -half_width; m <= half_width; m++) {
-							int cur_m1 = (m + half_width) * (2 * half_width + 1);
-							int cur_m2 = cur_p2 + cur_i + m * new_width + j + half_width;
-
-							for (int n = -half_width; n <= half_width; n++) {
-								int k = cur_p1 + cur_m1 + (n + half_width);
-								int k2 = cur_m2 + n;
-								float f3 = Util::square(old_img[k1] - old_img[k2]);
-
-								f3 = mask[k] * (1.0f / (1 + f3 / value_sigma));
-								f1 += f3;
-								int l1 = cur_m2 + n;
-								f2 += f3 * old_img[l1];
+	
+		int iter = 0;
+		while (iter < max_iter) {
+			for (int k = 0; k < slicenum; k++) {
+				int cur_k1 = (k + half_width) * new_slice_size * is_3d;
+				int cur_k2 = k * slice_size;
+	
+				for (int i = 0; i < height; i++) {
+					int cur_i1 = (i + half_width) * new_width;
+					int cur_i2 = i * width;
+	
+					for (int j = 0; j < width; j++) {
+						int k1 = cur_k1 + cur_i1 + (j + half_width);
+						int k2 = cur_k2 + cur_i2 + j;
+						old_img[k1] = new_img[k2];
+					}
+				}
+			}
+	
+			for (int k = 0; k < slicenum; k++) {
+				int cur_k = (k + half_width) * new_slice_size * is_3d;
+	
+				for (int i = 0; i < height; i++) {
+					int cur_i = (i + half_width) * new_width;
+	
+					for (int j = 0; j < half_width; j++) {
+						int k1 = cur_k + cur_i + j;
+						int k2 = cur_k + cur_i + (2 * half_width - j);
+						old_img[k1] = old_img[k2];
+					}
+	
+					for (int j = 0; j < half_width; j++) {
+						int k1 = cur_k + cur_i + (width + half_width + j);
+						int k2 = cur_k + cur_i + (width + half_width - j - 2);
+						old_img[k1] = old_img[k2];
+					}
+				}
+	
+	
+				for (int i = 0; i < half_width; i++) {
+					int i2 = i * new_width;
+					int i3 = (2 * half_width - i) * new_width;
+					for (int j = 0; j < (width + 2 * half_width); j++) {
+						int k1 = cur_k + i2 + j;
+						int k2 = cur_k + i3 + j;
+						old_img[k1] = old_img[k2];
+					}
+	
+					i2 = (height + half_width + i) * new_width;
+					i3 = (height + half_width - 2 - i) * new_width;
+					for (int j = 0; j < (width + 2 * half_width); j++) {
+						int k1 = cur_k + i2 + j;
+						int k2 = cur_k + i3 + j;
+						old_img[k1] = old_img[k2];
+					}
+				}
+			}
+	
+			for (int k = 0; k < slicenum; k++) {
+				int cur_k = (k + half_width) * new_slice_size;
+	
+				for (int i = 0; i < height; i++) {
+					int cur_i = (i + half_width) * new_width;
+	
+					for (int j = 0; j < width; j++) {
+						float f1 = 0;
+						float f2 = 0;
+						int k1 = cur_k + cur_i + (j + half_width);
+	
+						for (int p = zstart; p <= zend; p++) {
+							int cur_p1 = (p + half_width) * (2 * half_width + 1) * (2 * half_width + 1);
+							int cur_p2 = (k + half_width + p) * new_slice_size;
+	
+							for (int m = -half_width; m <= half_width; m++) {
+								int cur_m1 = (m + half_width) * (2 * half_width + 1);
+								int cur_m2 = cur_p2 + cur_i + m * new_width + j + half_width;
+	
+								for (int n = -half_width; n <= half_width; n++) {
+									int k = cur_p1 + cur_m1 + (n + half_width);
+									int k2 = cur_m2 + n;
+									float f3 = Util::square(old_img[k1] - old_img[k2]);
+	
+									f3 = mask[k] * (1.0f / (1 + f3 / value_sigma));
+									f1 += f3;
+									int l1 = cur_m2 + n;
+									f2 += f3 * old_img[l1];
+								}
+	
+								new_img[k * height * width + i * width + j] = f2 / f1;
 							}
-
-							new_img[k * height * width + i * width + j] = f2 / f1;
 						}
 					}
 				}
 			}
+			iter++;
 		}
-		iter++;
-	}
-
-	image->done_data();
+		if( mask ) {
+			free(mask);
+			mask = 0;
+		}
 	
-	if( mask )
-	{
-		free(mask);
-		mask = 0;
+		if( old_img ) {
+			free(old_img);
+			old_img = 0;
+		}
 	}
-
-	if( old_img )
-	{
-		free(old_img);
-		old_img = 0;
-	}
-
+	
+	image->done_data();
 	image->update();
 }
 
@@ -3983,16 +4053,20 @@ void TestImageSinewave::process_inplace(EMData * image)
 	else if(nz==1) {	//2D
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i, ++dat) {
-				if(axis.compare("y")==0 || axis.compare("Y")==0) {
-					*dat = sin(j*(2.0f*M_PI/wave_length) - phase*180/M_PI);
+				if(alpha != 0) {
+					*dat = sin((i*sin((180-alpha)*M_PI/180)+j*cos((180-alpha)*M_PI/180))*(2.0f*M_PI/wave_length) - phase*M_PI/180); 
+				}
+				else if(axis.compare("y")==0 || axis.compare("Y")==0) {
+					*dat = sin(j*(2.0f*M_PI/wave_length) - phase*M_PI/180);
 				}
 				else {
-					*dat = sin(i*(2.0f*M_PI/wave_length) - phase*180/M_PI);
+					*dat = sin(i*(2.0f*M_PI/wave_length) - phase*M_PI/180);
 				}
 			} 
 		}
 	}
 	else {	//3D 
+		
 	}
 }
 
