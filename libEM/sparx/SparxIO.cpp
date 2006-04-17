@@ -191,6 +191,7 @@ int TFList::read(char *filename)
    int  ntoken;
    char buffer[MAXLEN];
    int  i, j, imin, imax, lenbuf, ntokens, maxntks = 0, minntks = 100;
+   int  isemi;
    int  status = 0;
    
    TFin1.open(filename);
@@ -200,20 +201,24 @@ int TFList::read(char *filename)
       TFin1.getline(buffer, MAXLEN);
       // turn the buffer into a string
       string s(buffer);
-      // skip an empty line
-      if ( s.length() >  0) {
-         // Tokenize the buffer
-         Tokenizer tk(s);
-         nrows++;
-         ntokens = tk.tokenCount();
-         if (ntokens > maxntks) {
-            maxntks = ntokens;
-            imax    = nrows; 
-         }
-         if (ntokens < minntks) {
-            minntks = ntokens;
-            imin    = nrows;
-         }
+      // check for SPIDER comments
+      isemi = s.find_first_of(';');
+      if ( isemi == string::npos ) {
+         // not a SPIDER comment, check for empty line
+         if ( s.length() >  0) {
+            // Tokenize the buffer
+            Tokenizer tk(s);
+            nrows++;
+            ntokens = tk.tokenCount();
+            if (ntokens > maxntks) {
+               maxntks = ntokens;
+               imax    = nrows; 
+            }
+            if (ntokens < minntks) {
+               minntks = ntokens;
+               imin    = nrows;
+            }
+         } 
       }
    }
    TFin1.close();
@@ -238,21 +243,29 @@ int TFList::read(char *filename)
       // initialize to zeros
       for (i=0;i<nrows*ncols;i++) data[i]=0.0;
       TFin2.open(filename);
-      for (i = 1; i<=nrows;i++) {
+      i = 1;
+      while (i<=nrows) {
          TFin2.getline(buffer, MAXLEN);
          // turn the buffer into a string
          string s(buffer);
-         Tokenizer tk(s);
-         for (j=1; j <=ncols; j++) {
-            data(i,j) = (float)atof((tk.nextToken()).c_str());
+         // check for SPIDER comments
+         isemi = s.find_first_of(';');
+         if ( isemi == string::npos ) {
+            // not a SPIDER comment, check for empty line
+            if ( s.length() >  0) {
+               Tokenizer tk(s);
+               for (j=1; j <=ncols; j++) {
+                  data(i,j) = (float)atof((tk.nextToken()).c_str());
+               }
+               i++;
+            } 
          }
-      }
+      } // end while
       TFin2.close();
    }
    else {
       status = -1;
    }
-
    return status;
 }
 
