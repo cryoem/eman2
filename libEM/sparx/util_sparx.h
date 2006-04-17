@@ -283,12 +283,13 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void alrq(float *xim,  int nsam , int nrow , int *numr,
                                  float *circ, int lcirc, int nring, char mode);
         static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
+        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
         static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
                             int  *numr, float *circ, int lcirc, int  nring, char  mode);
-//        static EMData* alrq_ms(float cns2, float cnr2,
-//                           int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb);
-//        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb);
-        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
+       static EMData* alrq_msi(EMData* image,float cns2, float cnr2,
+                           int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb);
+       static EMData* Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb);
+
         static void  fftr_q(float  *xcmplx, int nv);
         static void  fftr_d(double *xcmplx, int nv);
         static void  fftc_q(float  *br, float  *bi, int ln, int ks);
