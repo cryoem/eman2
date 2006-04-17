@@ -402,8 +402,6 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
         }
 
 }
-//<<<<<<< util_sparx.cpp
-/*=======*/
 
 
 vector<float>
@@ -877,9 +875,9 @@ c
  
 }
 
-/*
 
-EMData* Util::alrq_msi(float cns2, float cnr2,
+
+EMData* Util::alrq_msi(EMData* image,float cns2, float cnr2,
              int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb)
 {
    double dpi, dfi;
@@ -909,8 +907,8 @@ EMData* Util::alrq_msi(float cns2, float cnr2,
       xold  = 0.0;
       yold  = inr;
 
-      circ(kcirc) = get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,Util::kb);
-      xold  = inr;
+      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+      /*xold  = inr;
       yold  = 0.0;
       circ(lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
 
@@ -946,7 +944,7 @@ EMData* Util::alrq_msi(float cns2, float cnr2,
             yold = x;
             circ(jt+lt+lt+lt+kcirc) = quadri(xold+cns2,yold+cnr2,nsam,nrow,xim);
          }
-      } // end for jt
+      } // end for jt*/
    } //end for it
 }
 
@@ -958,10 +956,10 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    EMData* out = new EMData();
    char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
    out->set_size(lcirc,1,1);
-   image->Util::alrq_msi(cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode, kb);
+   Util::alrq_msi(image,cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode,kb);
    return out;
 }
-*/
+
 EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode){
    int nsam = image->get_xsize();
    int nrow = image->get_ysize();
@@ -1865,4 +1863,4 @@ c       optional limit on angular search should be added.
 
 #undef  numr
 
-//>>>>>>> 1.6
+
