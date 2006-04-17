@@ -879,7 +879,7 @@ c
 
 /*
 
-EMData* Util::alrq_ms(float cns2, float cnr2,
+EMData* Util::alrq_msi(float cns2, float cnr2,
              int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb)
 {
    double dpi, dfi;
@@ -951,18 +951,17 @@ EMData* Util::alrq_ms(float cns2, float cnr2,
 }
 
 
-EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb){
+EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb){
 // input image is twice the size of the original image
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    EMData* out = new EMData();
    char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
    out->set_size(lcirc,1,1);
-   image->Util::alrq_ms(cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode, kb);
+   image->Util::alrq_msi(cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode, kb);
    return out;
 }
 */
-
 EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode){
    int nsam = image->get_xsize();
    int nrow = image->get_ysize();
