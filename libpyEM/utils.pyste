@@ -39,6 +39,8 @@ set_policy(EMUtil.vertical_acf, return_value_policy(manage_new_object))
 set_policy(EMUtil.make_image_median, return_value_policy(manage_new_object))
 set_policy(Util.Polar2D, return_value_policy(manage_new_object))
 set_policy(Util.Polar2Dm, return_value_policy(manage_new_object))
+set_policy(Util.Polar2Dmi, return_value_policy(manage_new_object))
+set_policy(Util.alrq_msi, return_value_policy(manage_new_object))
 set_policy(Util.TwoDTestFunc, return_value_policy(manage_new_object))
 set_policy(Util.im_diff, return_value_policy(manage_new_object))
 
