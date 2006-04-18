@@ -307,5 +307,6 @@ class FakeKaiserBessel : public KaiserBessel {
                                 int   maxrin, int   *numr , double *qn, float *tot,
                                 double   *qm, float *tmt);
         static void  prb1d(double *b, int npoint, float *pos);
-
+	
+	static EMData* decimation(EMData* img, int x,int y=1,int z=1);
 #endif	//util__sparx_h__
