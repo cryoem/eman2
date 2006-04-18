@@ -22,7 +22,8 @@ public:
  *               or the FH of the pattern
 */
 
-static EMData* im_diff(EMData* V1, EMData* V2, EMData* mask);
+static Dict im_diff(EMData* V1, EMData* V2, EMData* mask);
+
 static vector<float> infomask(EMData* Vol, EMData* mask);
 
 

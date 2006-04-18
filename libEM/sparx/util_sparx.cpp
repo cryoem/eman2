@@ -78,7 +78,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
  
 //---------------------------------------------------------------------------------------------------------- 
  
-EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
+Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 {
 	ENTERFUNC;
 	
@@ -88,8 +88,10 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	size_t size = nx*ny*nz;
 	
 	EMData *BD = new EMData();
-	BD->set_size(nx, ny, nz);
+ 	BD->set_size(nx, ny, nz);
 	
+	float *params = new float[2];		 	 
+  	
 	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
 	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L; 
 	long nvox = 0L;
@@ -100,7 +102,7 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	BDptr = BD->get_data();
 	
 	
-	/* calculation of S1,S2,S3,S3,nvox*/
+//	 calculation of S1,S2,S3,S3,nvox
 			       
 	for (size_t i = 0L;i < size; i++) {
 	      if (MASKptr[i]>0.5f) {
@@ -116,7 +118,7 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
 	B = static_cast<float> (A*S3  -  S4)/nvox;
         
-	/* calculation of the difference image*/
+	// calculation of the difference image
 	
 	for (size_t i = 0L;i < size; i++) {
 	     if (MASKptr[i]>0.5f) {
@@ -127,9 +129,17 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	}
 	
 	BD->update();
-	return BD;
-}
-
+ 
+	params[0] = A;
+	params[1] = B;
+	
+	Dict BDnParams;
+	BDnParams["imdiff"] = BD;
+	BDnParams["A"] = params[0];
+	BDnParams["B"] = params[1];
+		
+	return BDnParams;	
+ }
 
 //----------------------------------------------------------------------------------------------------------
 
@@ -1267,6 +1277,7 @@ L12:
 L14:
    tr1=br(b5+1);
    ti1=bi(b5+1);
+
    tr2=br(b56+1);
    ti2=bi(b56+1);
 
