@@ -94,7 +94,7 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
   	
 	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
 	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L;
-	long nvox = 0L;
+	int nvox = 0L;
 	
         V1ptr = V1->get_data();
 	V2ptr = V2->get_data();
