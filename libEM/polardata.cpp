@@ -53,8 +53,8 @@ void UnevenMatrix::alloc_data()
 
 PolarData::PolarData(EMData * image, int xcen, int ycen, string mode)
 {
-	int nsam = image->get_xsize();
-	int nrow = image->get_ysize();
+//	int nsam = image->get_xsize();
+//	int nrow = image->get_ysize();
 	
 	
 //	int nring = numr.size()/3; 

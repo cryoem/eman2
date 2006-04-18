@@ -68,7 +68,7 @@ void TiffIO::init()
 	if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
 		char desc[256];
 		sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",
-				bitspersample, CHAR_BIT, (CHAR_BIT * sizeof(short)));
+				bitspersample, CHAR_BIT, (int)(CHAR_BIT * sizeof(short)));
 		throw ImageReadException(filename, desc);
 	}
 	EXITFUNC;
