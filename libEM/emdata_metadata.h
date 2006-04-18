@@ -493,7 +493,7 @@ inline bool is_complex() const
 /** Is this a real image?
  * @return Whether this is image is real (not complex) or not.
  */
-inline bool EMData::is_real() const
+inline bool is_real() const
 {
 	return !is_complex();
 }
