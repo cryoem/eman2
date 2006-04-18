@@ -58,20 +58,20 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 	       MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
 	       MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
 	       count++;	       
-	      }	
-	    }                  	 
+	      }
+	    }
 	
        if (count==0) count++;
     
        float avg = static_cast<float>(Sum1/count);
        float sig2 = static_cast<float>(Sum2/count - avg*avg);
-       float sig = sqrt(sig2);       
-                     
-       stats.push_back(avg);   
+       float sig = sqrt(sig2);
+                            
+       stats.push_back(avg);
        stats.push_back(sig);
-       stats.push_back(MIN);  
-       stats.push_back(MAX);	     
-        
+       stats.push_back(MIN);
+       stats.push_back(MAX);
+
        return stats;
 }
  
@@ -85,10 +85,10 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	size_t nx = V1->get_xsize();
 	size_t ny = V1->get_ysize();
 	size_t nz = V1->get_zsize();
-	size_t size = nx*ny*nz;	
+	size_t size = nx*ny*nz;
 	
 	EMData *BD = new EMData();
-	BD->set_size(nx, ny, nz);	 	 
+	BD->set_size(nx, ny, nz);
 	
 	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
 	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L; 
@@ -102,17 +102,15 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	
 	/* calculation of S1,S2,S3,S3,nvox*/
 			       
-	for (size_t i = 0L;i < size; i++)
-	    {
-	      if (MASKptr[i]>0.5f)
-	      {
-	       S1 += V1ptr[i]*V2ptr[i];	       
-	       S2 += V2ptr[i]*V2ptr[i];	       
+	for (size_t i = 0L;i < size; i++) {
+	      if (MASKptr[i]>0.5f) {
+	       S1 += V1ptr[i]*V2ptr[i];
+	       S2 += V2ptr[i]*V2ptr[i];
 	       S3 += V2ptr[i]; 
 	       S4 += V1ptr[i];
 	       nvox ++;
 	      }
-	    }       
+	}       
 	 
 			
 	A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
@@ -120,15 +118,16 @@ EMData *Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
         
 	/* calculation of the difference image*/
 	
-	for (size_t i = 0L;i < size; i++)
-	    {
-             BDptr[i] = 0.f; 
-	     if (MASKptr[i]>0.5f) 
-	        BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i]; 		
-	    }  	 
-		 
+	for (size_t i = 0L;i < size; i++) {
+	     if (MASKptr[i]>0.5f) {
+	       BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i];
+	     }  else  {
+               BDptr[i] = 0.f;
+	     }
+	}
+	
 	BD->update();
-	return BD;	
+	return BD;
 }
 
 
