@@ -90,10 +90,10 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	EMData *BD = new EMData();
  	BD->set_size(nx, ny, nz);
 	
-	float *params = new float[2];		 	 
+	float *params = new float[2];	 	 
   	
 	float *V1ptr, *V2ptr, *MASKptr, *BDptr, A, B; 
-	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L; 
+	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L;
 	long nvox = 0L;
 	
         V1ptr = V1->get_data();
@@ -138,7 +138,7 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	BDnParams["A"] = params[0];
 	BDnParams["B"] = params[1];
 		
-	return BDnParams;	
+	return BDnParams;
  }
 
 //----------------------------------------------------------------------------------------------------------
@@ -1874,24 +1874,7 @@ c       optional limit on angular search should be added.
 
 #undef  numr
 
-EMData* Util::decimation(EMData* img, int x, int y, int z)
+EMData* Util::decimation(EMData* img, int x, int y_step, int z)
 {
-	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	float ptr;
-	int NX=(nx/2)%x,NY=(ny/2)%y,NZ=(nz/2)%z;
-	EMData* img2 = new EMData();
-	int rnx=round(float (nx/(1.f*x))),rny=round(float (ny/(1.f*y))),rnz=round(float (nz/(1.f*z)));
-	img2->set_size(rnx,rny,rnz);
-	int iptr=0,jptr=0,kptr=0;
-	for (int k=NZ;k<nz;k+=z,kptr++){jptr=0;
-		for (int j=NY;j<ny;j+=y,jptr++){iptr=0;
-			for (int i=NX;i<nx;i+=x,iptr++){
-				ptr=img->get_value_at(i,j,k);
-				img2->set_value_at(iptr,jptr,kptr,ptr);
-			}
-		}
-	}
-	img2->update();
-	return img2;
 }
 
