@@ -308,5 +308,12 @@ class FakeKaiserBessel : public KaiserBessel {
                                 double   *qm, float *tmt);
         static void  prb1d(double *b, int npoint, float *pos);
 	
+	/* Decimates the image with respect to the image center.
+	 * (i.e) the center of the original image is kept the same 
+	 * and then the initial start pixel is calculated with respect to the 
+	 * center of the image
+	 * @params(image, x-pixel, y-pixel,z-pixel)
+	 * works for all 3 dimensions
+	**/
 	static EMData* decimation(EMData* img, int x,int y=1,int z=1);
 #endif	//util__sparx_h__
