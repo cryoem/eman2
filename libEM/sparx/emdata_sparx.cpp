@@ -1077,6 +1077,7 @@ EMData*
 EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb) {
 	int nxn, nyn, nzn;
 	const float scale=0.5;
+	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz) 
@@ -1126,13 +1127,17 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
+				     sum=0.0f;    w=0.0f;
 				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
                                   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-		 (*ret)(ix,iy) += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
+				  float q = kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);
+		                  sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}}
 		                }else{
-                                for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-		 (*ret)(ix,iy) += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);}}
+                                  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+				  float q =kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);
+		                  sum += (*this)(inxold+m1,inyold+m2)*q;w+=q;}}
 		                }
+				(*ret)(ix,iy)=sum/w;
 			}
 		}
 	set_array_offsets(saved_offsets);
@@ -1157,16 +1162,19 @@ float  EMData::get_pixel_conv(float delx, float dely, Util::KaiserBessel& kb) {
 	dely = fmod(2*dely, float(ny));
 
 	float pixel =0.0f;
+	float w=0.0f;
 	int inxold = int(Util::round(delx)); int inyold = int(Util::round(dely));
 				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 		//  loop for strips
                                   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-		 pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);}}
+				    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+		                    pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q;w+=q;}}
 		                }else{
                                 for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-		 pixel += (*this)(inxold+m1,inyold+m2)*kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);}}
+				    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+		                    pixel += (*this)(inxold+m1,inyold+m2)*q;;w+=q;}}
 		                }
-        return pixel;
+        return pixel/w;
 }
 
 
@@ -1483,7 +1491,7 @@ void EMData::divkbsinh(const Util::KaiserBessel& kb) {
 	}
 	set_array_offsets(saved_offsets);
 }
-
+/* OBSOLETED  PAP
 Dict EMData::masked_stats(const EMData* mask) {
 	if (is_complex())
 		throw ImageFormatException(
@@ -1507,6 +1515,7 @@ Dict EMData::masked_stats(const EMData* mask) {
 	mydict["avg"] = avg; mydict["sigma"] = sig; mydict["nmask"] = int(nmask);
 	return mydict;
 }
+*/
 
 EMData*  
 EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {

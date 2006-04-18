@@ -329,7 +329,7 @@ EMData* rotavg();
 		 *  @return dictionary containing "avg", "sigma", and "nmask" keys
 		 */
 
-		Dict masked_stats(const EMData* mask);
+		//  OBSOLETED  Dict masked_stats(const EMData* mask);
 
 
 /** Search specified number peaks in 1D, 2D, or 3D real images.
