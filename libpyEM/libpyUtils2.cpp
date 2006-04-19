@@ -22,7 +22,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_TwoDTestFunc_overloads_5_7, EMAN::Util
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_voea_overloads_1_5, EMAN::Util::voea, 1, 5)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_decimator_overloads_2_4, EMAN::Util::decimator, 2, 4)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_decimate_overloads_2_4, EMAN::Util::decimate, 2, 4)
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
@@ -151,7 +151,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("Crosrng_msg", &EMAN::Util::Crosrng_msg, return_value_policy< manage_new_object >())
         .def("crosrng_msg", &EMAN::Util::crosrng_msg)
         .def("prb1d", &EMAN::Util::prb1d)
-        .def("decimator", &EMAN::Util::decimator, EMAN_Util_decimator_overloads_2_4()[ return_value_policy< manage_new_object >() ])
+        .def("decimate", &EMAN::Util::decimate, EMAN_Util_decimate_overloads_2_4()[ return_value_policy< manage_new_object >() ])
         .def("is_file_exist", &EMAN::Util::is_file_exist)
         .def("svdcmp", &EMAN::Util::svdcmp)
         .def("sstrncmp", &EMAN::Util::sstrncmp)
@@ -211,7 +211,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("is_file_exist")
         .staticmethod("fftc_d")
         .staticmethod("crosrng_e")
-        .staticmethod("decimator")
         .staticmethod("Crosrng_msg")
         .staticmethod("change_filename_ext")
         .staticmethod("alrq_msi")
@@ -236,6 +235,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("alrq")
         .staticmethod("get_filename_ext")
         .staticmethod("frngs")
+        .staticmethod("decimate")
         .staticmethod("square_sum")
         .staticmethod("hypot3")
         .staticmethod("angle_sub_pi")
