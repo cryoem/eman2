@@ -321,5 +321,5 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * @params(image, x-pixel, y-pixel,z-pixel)
 	 * works for all 3 dimensions
 	**/
-	static EMData* decimator(EMData* img, int x_step,int y_step=1,int z_step=1);
+	static EMData* decimate(EMData* img, int x_step,int y_step=1,int z_step=1);
 #endif	//util__sparx_h__

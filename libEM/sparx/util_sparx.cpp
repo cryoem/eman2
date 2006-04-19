@@ -1970,9 +1970,12 @@ c       optional limit on angular search should be added.
 
 
 #undef  numr
+
+
+
 #define old_ptr(i,j,k) old_ptr[(i+(j+(k*ny))*nx)]
 #define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny)*new_nx)]
-EMData* Util::decimator(EMData* img, int x_step, int y_step, int z_step)
+EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 {
 	if (!img) {
 		throw NullPointerException("NULL input image");
@@ -2005,7 +2008,6 @@ EMData* Util::decimator(EMData* img, int x_step, int y_step, int z_step)
 	kptr++;}
 	img2->update();
 	return img2;
-
 }
 #undef old_ptr
 #undef new_ptr
