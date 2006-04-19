@@ -128,7 +128,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
     scope* EMAN_Util_scope = new scope(
     class_< EMAN::Util >("Util", init<  >())
         .def(init< const EMAN::Util& >())
-        .def("im_diff", &EMAN::Util::im_diff, return_value_policy< manage_new_object >())
+        .def("im_diff", &EMAN::Util::im_diff)
         .def("infomask", &EMAN::Util::infomask)
         .def("TwoDTestFunc", &EMAN::Util::TwoDTestFunc, EMAN_Util_TwoDTestFunc_overloads_5_7()[ return_value_policy< manage_new_object >() ])
         .def("voea", &EMAN::Util::voea, EMAN_Util_voea_overloads_1_5())
