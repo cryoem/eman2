@@ -1970,8 +1970,42 @@ c       optional limit on angular search should be added.
 
 
 #undef  numr
-
-EMData* Util::decimation(EMData* img, int x, int y_step, int z)
+#define old_ptr(i,j,k) old_ptr[(i+(j+(k*ny))*nx)]
+#define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny)*new_nx)]
+EMData* Util::decimator(EMData* img, int x_step, int y_step, int z_step)
 {
-}
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	if (0>(x_step-1)>(nx/2) || 0>(y_step-1)>(ny/2) || 0>(z_step-1)>(nz/2))
+	{
+		LOGERR("The Parameters for decimation cannot exceed the center of the image.");
+		throw ImageDimensionException("The Parameters for decimation cannot exceed the center of the image.");	 
+	}
+	int new_st_x=(nx/2)%x_step,new_st_y=(ny/2)%y_step,new_st_z=(nz/2)%z_step;
+	int rx=2*(nx/(2*x_step)),ry=2*(ny/(2*y_step)),rz=2*(nz/(2*z_step));
+	int r1=int(ceil((nx-(x_step*rx))/(1.f*x_step))),r2=int(ceil((ny-(y_step*ry))/(1.f*y_step)));
+	int r3=int(ceil((nz-(z_step*rz))/(1.f*z_step)));
+	if(r1>1){r1=1;}
+	if(r2>1){r2=1;}
+	if(r3>1){r3=1;}
+	EMData* img2 = new EMData();
+	int new_nx=rx+r1,new_ny=ry+r2,new_nz=rz+r3;
+	img2->set_size(new_nx,new_ny,new_nz);
+	float *new_ptr=img2->get_data();
+	float *old_ptr=img->get_data();
+	int iptr,jptr,kptr=0;
+	for (int k=new_st_z;k<nz;k+=z_step){jptr=0;
+		for (int j=new_st_y;j<ny;j+=y_step){iptr=0;
+			for (int i=new_st_x;i<nx;i+=x_step){				
+				new_ptr(iptr,jptr,kptr)=old_ptr(i,j,k);
+			iptr++;}
+		jptr++;}
+	kptr++;}
+	img2->update();
+	return img2;
 
+}
+#undef old_ptr
+#undef new_ptr
