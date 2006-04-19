@@ -1839,11 +1839,11 @@ vector<float> EMData::peak_search(int ml, float invert)
 	        {res.push_back((*it).value/xval);}
 	  else
 	        {res.push_back((*it).value);}
-	  res.push_back((*it).x-float(nx)/2.f);
+	  res.push_back((*it).x-float(int(nx/2)));
 	  if(img_dim!=1)
-	      {res.push_back((*it).y-float(ny)/2.f);}
+	      {res.push_back((*it).y-float(int(ny/2)));}
 	  if(nz!=1)
-	     {res.push_back((*it).z-float(nz)/2.f);} 
+	     {res.push_back((*it).z-float(nz/2));} 
 	  
 	}
    }  
