@@ -43,7 +43,7 @@ set_policy(Util.Polar2Dmi, return_value_policy(manage_new_object))
 set_policy(Util.alrq_msi, return_value_policy(manage_new_object))
 set_policy(Util.Crosrng_msg, return_value_policy(manage_new_object))
 set_policy(Util.TwoDTestFunc, return_value_policy(manage_new_object))
-set_policy(Util.decimation, return_value_policy(manage_new_object))
+set_policy(Util.decimator, return_value_policy(manage_new_object))
 
 
 exclude(EMUtil.get_region_dims)
