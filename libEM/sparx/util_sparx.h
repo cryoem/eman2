@@ -323,5 +323,5 @@ class FakeKaiserBessel : public KaiserBessel {
 	**/
 	static EMData* decimate(EMData* img, int x_step,int y_step=1,int z_step=1);
 	
-	static EMData* window(int new_nx=1,int new_ny=1, int new_nz=1, int shift_x=1, int shift_y=1, int shift_z=1)
+	static EMData* window(int new_nx=1,int new_ny=1, int new_nz=1, int shift_x=1, int shift_y=1, int shift_z=1);
 #endif	//util__sparx_h__

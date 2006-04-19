@@ -2011,3 +2011,13 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 }
 #undef old_ptr
 #undef new_ptr
+
+
+EMData* window(int new_nx,int new_ny, int new_nz, int shift_x, int shift_y, int shift_z)
+{
+	EMData* img=this;
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int new_st_x=(nx/2)%new_nx,new_st_y=(ny/2)%new_ny,new_st_z=(nz/2)%new_nz;
+	cout<<new_st<<'\n';
+//	EMData* win=new EMData();
+}
