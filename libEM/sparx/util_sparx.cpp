@@ -1004,20 +1004,20 @@ EMData* Util::alrq_msi(EMData* image, float cns2, float cnr2,
       kcirc = numr(2,it);
       xold  = 0.0;
       yold  = inr;
-      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       
       xold  = inr;
       yold  = 0.0;
-      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
       if ( mode == 'f' || mode == 'F' ) {
          xold = 0.0;
          yold = -inr;
-         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          xold = -inr;
          yold = 0.0;
-         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       }
       
       for (jt=1;jt<=nsim;jt++) {
@@ -1027,20 +1027,20 @@ EMData* Util::alrq_msi(EMData* image, float cns2, float cnr2,
 
          xold = x;
          yold = y;
-         circ(jt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+         circ(jt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          xold = y;
          yold = -x;
-         circ(jt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+         circ(jt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          if ( mode == 'f' || mode == 'F' ) {
             xold = -x;
             yold = -y;
-            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
             xold = -y;
             yold = x;
-            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,kb);
+            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
          }
       } // end for jt
    } //end for it

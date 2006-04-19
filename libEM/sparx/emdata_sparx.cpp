@@ -1146,34 +1146,46 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 
 
 
-float  EMData::get_pixel_conv(float delx, float dely, Util::KaiserBessel& kb) {
+float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
 	if (1 >= ny)
 		throw ImageDimensionException("Can't process 1D image");
-	if (1 < nz) 
-		throw ImageDimensionException("Volume not currently supported");
 
 	int K = kb.get_window_size();
 	int kbmin = -K/2;
 	int kbmax = -kbmin;
 	int kbc = kbmax+1;
 
-	delx = fmod(2*delx, float(nx));
-	dely = fmod(2*dely, float(ny));
-
 	float pixel =0.0f;
 	float w=0.0f;
+	delx = fmod(2*delx, float(nx));
+	dely = fmod(2*dely, float(ny));
 	int inxold = int(Util::round(delx)); int inyold = int(Util::round(dely));
-				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
-		//  loop for strips
-                                  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-				    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
-		                    pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q;w+=q;}}
-		                }else{
-                                for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-				    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
-		                    pixel += (*this)(inxold+m1,inyold+m2)*q;;w+=q;}}
-		                }
+	if(nz>1) {
+	 		 if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+	 //  loop for strips
+         		   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+	 		     pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q;w+=q;}}
+	 		 }else{
+         		   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+	 		     pixel += (*this)(inxold+m1,inyold+m2)*q;;w+=q;}}
+	 		 }
+	} else {
+	delz = fmod(2*delz, float(nz));
+	int inzold = int(Util::round(delz));
+	 		 if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
+	 //  loop for strips
+         		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+	 		     pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)*q;w+=q;}}}
+	 		 } else {
+         		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+	 		     pixel += (*this)(inxold+m1,inyold+m2,inzold+m2)*q;;w+=q;}}}
+	 		 }
+	}
         return pixel/w;
 }
 

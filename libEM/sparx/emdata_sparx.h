@@ -167,13 +167,13 @@ EMData* rotavg();
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
+		 *  @param[in] delz Amount to shift rotation origin along z
 		 *  @param[in] scale Scaling factor (default=1.0)
 		 *  @param[in] convolution kernel
 		 *  @exception ImageDimensionException can not rotate 1 D image
-		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		float get_pixel_conv(float delx, float dely, Util::KaiserBessel& kb);
+		float get_pixel_conv(float delx, float dely, float dely, Util::KaiserBessel& kb);
 
 
 	
