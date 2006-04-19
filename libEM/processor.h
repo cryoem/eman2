@@ -3570,11 +3570,10 @@ The basic design of EMAN Processors: <br>\
 			d.put("wave_length", EMObject::FLOAT, "wave_length in equation sin(x*2*PI/wave_length - phase*180/PI)");
 			d.put("axis", EMObject::STRING, "(optional) specify a major axis for asymmetric features, default x axis");
 			d.put("phase", EMObject::FLOAT, "(optional) the phase in equation sin(x*2*PI/wave_length - phase*180/PI)");
-			d.put("alpha", EMObject::FLOAT, "(optional) the angle of sinewave with specified axis in 2D image, \
-												in 3D image, this is the angle between sinewave and x-y plane, \
-												default is zero");
-			d.put("beta", EMObject::FLOAT, "(optional) only in 3D case, the angle between sinewave and y-z plane, \
-												default is zero"); 
+			d.put("az", EMObject::FLOAT, "(optional) angle in degree. for 2D image, this is the rotated angle of the image, \
+												in 3D image, it's az for euler angle. default is zero");
+			d.put("alt", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, alt for euler angle, default is zero"); 
+			d.put("phi", EMObject::FLOAT, "(optional) angle in degree. only in 3D case, phi for euler angle, default is zero"); 
 			return d;
 		}
 	};

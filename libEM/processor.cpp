@@ -4038,19 +4038,35 @@ void TestImageSinewave::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
+	if(!params.has_key("wave_length")) {
+		LOGERR("%s wave_length is required parameter", get_name().c_str());
+		throw InvalidParameterException("wave_length parameter is required.");
+	}
 	float wave_length = params["wave_length"];
-	string axis = (const char*)params["axis"];
-	float phase = params["phase"];
-	float alpha = params["alpha"];
-	float beta = params["beta"];
 	
+	string axis = "";
+	if(params.has_key("axis")) {
+		axis = (const char*)params["axis"];
+	}
+	
+	float phase = 0;
+	if(params.has_key("phase")) {
+		phase = params["phase"];
+	}
+	
+	int ndim = image->get_ndim();
 	float * dat = image->get_data();
-	if(ny==1 && nz==1) {	//1D
+	
+	if(ndim==1) {	//1D
 		for(int i=0; i<nx; ++i, ++dat) {
 			*dat = sin(i*(2.0f*M_PI/wave_length) - phase*180/M_PI);
 		}
 	}
-	else if(nz==1) {	//2D
+	else if(ndim==2) {	//2D
+		float alpha = 0;
+		if(params.has_key("az")) {
+			alpha = params["az"];
+		}
 		for(int j=0; j<ny; ++j) {
 			for(int i=0; i<nx; ++i, ++dat) {
 				if(alpha != 0) {
@@ -4066,8 +4082,42 @@ void TestImageSinewave::process_inplace(EMData * image)
 		}
 	}
 	else {	//3D 
+		float az = 0;
+		if(params.has_key("az")) {
+			az = params["az"];
+		}
+		float alt = 0;
+		if(params.has_key("alt")) {
+			alt = params["alt"];
+		}
+		float phi = 0;
+		if(params.has_key("phi")) {
+			phi = params["phi"];
+		}
 		
+		for(int k=0; k<nz; ++k) {
+			for(int j=0; j<ny; ++j) {
+				for(int i=0; i<nx; ++i, ++dat) {
+					if(axis.compare("z")==0 || axis.compare("Z")==0) {
+						*dat = sin(k*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+					}
+					else if(axis.compare("y")==0 || axis.compare("Y")==0) {
+						*dat = sin(j*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+					}
+					else {
+						*dat = sin(i*(2.0f*M_PI/wave_length) - phase*M_PI/180);
+					}
+				}
+			}
+		}
+		
+		if(az != 0 || alt != 0 || phi != 0) {
+			image->rotate(az, alt, phi);
+		}
 	}
+	
+	image->done_data();
+	image->update();	
 }
 
 void TestImageSinewaveCircular::process_inplace(EMData * image)
