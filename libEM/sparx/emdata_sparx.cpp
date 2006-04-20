@@ -1148,8 +1148,6 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 
 float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
-	if (1 >= ny)
-		throw ImageDimensionException("Can't process 1D image");
 
 	int K = kb.get_window_size();
 	int kbmin = -K/2;
@@ -1158,10 +1156,24 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 
 	float pixel =0.0f;
 	float w=0.0f;
+	
 	delx = fmod(2*delx, float(nx));
+	int inxold = int(Util::round(delx));
+	if(ny<2) {  //1D
+	 		 if(inxold <= kbc || inxold >=nx-kbc-2 )  {
+	 //  loop for ends
+         		   for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1);
+	 		     pixel += (*this)((inxold+m1+nx)%nx)*q;w+=q;}
+	 		 }else{
+         		   for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1);
+	 		     pixel += (*this)(inxold+m1)*q;w+=q;}
+	 		 }
+	
+	} else if(nz<2) {  // 2D
 	dely = fmod(2*dely, float(ny));
-	int inxold = int(Util::round(delx)); int inyold = int(Util::round(dely));
-	if(nz<2) {
+	int inyold = int(Util::round(dely));
 	 		 if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
 	 //  loop for strips
          		   for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
@@ -1172,7 +1184,9 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
 	 		     pixel += (*this)(inxold+m1,inyold+m2)*q;w+=q;}}
 	 		 }
-	} else {
+	} else {  //  3D
+	dely = fmod(2*dely, float(ny));
+	int inyold = int(Util::round(dely));
 	delz = fmod(2*delz, float(nz));
 	int inzold = int(Util::round(delz));
 			     //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;

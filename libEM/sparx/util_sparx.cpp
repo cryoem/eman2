@@ -1992,7 +1992,7 @@ c       optional limit on angular search should be added.
         jtot = j;
      }
   }
-
+  
  
   for (k=-3;k<=3;k++) {
     j = ((jtot+k+maxrin-1)%maxrin)+1;
@@ -2032,6 +2032,8 @@ c       optional limit on angular search should be added.
   free(temp);
 }
 #undef temp
+
+
 #define  dout(i,j)   dout[i+maxrin*j]
 EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
    int nring = numr.size()/3;
@@ -2054,6 +2056,9 @@ EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
    out->set_size(maxrin,2,1);
    float *dout = out->get_data();
    for (int i=0; i<maxrin; i++) {dout(i,0)=q[i]; dout(i,1)=t[i];}
+   /*out->set_size(maxrin,1,1);
+   float *dout = out->get_data();
+   for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}*/
    free(t);
    free(q);
    return out;
