@@ -1874,7 +1874,164 @@ c       optional limit on angular search should be added.
   free(t);
   free(q);
 }
+//  Try rotational gridding
 
+Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
+   int nring = numr.size()/3;
+   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   float qn; float tot; float qm; float tmt;
+   crosrng_msr(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
+              &numr[0], &qn, &tot, &qm, &tmt);
+   Dict retvals;
+   retvals["qn"] = qn;
+   retvals["tot"] = tot;
+   retvals["qm"] = qm;
+   retvals["tmt"] = tmt;
+   return retvals;
+}
+#define  temp(i)            temp      [(i)-1]
+
+//---------------------------------------------------
+void Util::crosrng_msr(float *circ1, float *circ2, int  lcirc, int  nring,
+                      int   maxrin, int   *numr , float *qn, float *tot,
+                      float   *qm, float *tmt)
+{
+/*
+c
+c  checks both straight & mirrored positions
+c
+c  input - fourier transforms of rings!!
+c  circ1 already multiplied by weights!
+c
+c  notes: aug 04 attempted speedup using 
+c       premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+c       various  other attempts  failed to yield improvement
+c       this is a very important compute demand in alignmen & refine.
+c       optional limit on angular search should be added.
+*/
+
+   // dimension         circ1(lcirc),circ2(lcirc)
+
+   // t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
+   double *t, *q, t7[7];
+   float *temp;
+
+   int   ip, jc, numr3i, numr2i, i, j, k, jtot;
+   float t1, t2, t3, t4, c1, c2, d1, d2, pos;
+
+   *qn  = 0.0;
+   *qm  = 0.0;
+   *tot = 0.0;
+   *tmt = 0.0; 
+
+   ip = -(int)(log2(maxrin));
+
+   //  c - straight  = circ1 * conjg(circ2)
+   //  zero q array
+  
+   q = (double*)calloc(maxrin,sizeof(double));  
+
+   //   t - mirrored  = conjg(circ1) * conjg(circ2)
+   //   zero t array
+   t = (double*)calloc(maxrin,sizeof(double));
+
+
+   temp = (float*)calloc(maxrin,sizeof(float));
+
+   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
+
+   for (i=1;i<=nring;i++) {
+
+      numr3i = numr(3,i);
+      numr2i = numr(2,i);
+
+      t1   = circ1(numr2i) * circ2(numr2i);
+      q(1) = q(1)+t1;
+      t(1) = t(1)+t1;
+
+      if (numr3i == maxrin)  {
+         t1   = circ1(numr2i+1) * circ2(numr2i+1);
+         q(2) = q(2)+t1;
+         t(2) = t(2)+t1;
+      }
+      else {
+	 t1          = circ1(numr2i+1) * circ2(numr2i+1);
+	 q(numr3i+1) = q(numr3i+1)+t1;
+      }
+
+      for (j=3;j<=numr3i;j=j+2) {
+	 jc     = j+numr2i-1;
+
+ 	 c1     = circ1(jc);
+ 	 c2     = circ1(jc+1);
+         d1     = circ2(jc);
+         d2     = circ2(jc+1);
+
+  	 t1     = c1 * d1;
+ 	 t3     = c1 * d2;
+ 	 t2     = c2 * d2;
+ 	 t4     = c2 * d1;
+
+	 q(j)   = q(j)   + t1 + t2;
+	 q(j+1) = q(j+1) - t3 + t4;
+	 t(j)   = t(j)   + t1 - t2;
+	 t(j+1) = t(j+1) - t3 - t4;
+      } 
+  }
+
+  // straight
+  for (i=1; i<=maxrin; i++) {temp(i)=q(i);}
+  fftr_q(temp,ip);
+
+  jtot = 0;
+  *qn  = -1.0e20;
+  for (j=1; j<=maxrin; j++) {
+     if (temp(j) >= *qn) {
+        *qn  = temp(j);
+        jtot = j;
+     }
+  }
+
+ 
+  for (k=-3;k<=3;k++) {
+    j = ((jtot+k+maxrin-1)%maxrin)+1;
+    t7(k+4) = temp(j);
+  }
+
+  // interpolate
+  prb1d(t7,7,&pos);
+  *tot = (float)(jtot)+pos;
+
+  // mirrored
+  for (i=1; i<=maxrin; i++) {temp(i)=t(i);}
+  fftr_q(temp,ip);
+
+  // find angle
+  *qm = -1.0e20;
+  for (j=1; j<=maxrin;j++) {
+     if ( temp(j) >= *qm ) {
+        *qm   = temp(j);
+        jtot = j;
+     }
+  }
+
+  // find angle
+  for (k=-3;k<=3;k++) {
+    j       = ((jtot+k+maxrin-1)%maxrin) + 1;
+    t7(k+4) = t(j);
+  }
+
+  // interpolate
+
+  prb1d(t7,7,&pos);
+  *tmt = float(jtot) + pos;
+
+  free(t);
+  free(q);
+  free(temp);
+}
+#undef temp
 #define  dout(i,j)   dout[i+maxrin*j]
 EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
    int nring = numr.size()/3;
