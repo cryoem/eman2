@@ -1051,6 +1051,23 @@ EMData* Util::alrq_msi(EMData* image, float cns2, float cnr2,
         A set of 1-D power-of-two FFTs
 	Pawel & Chao 01/20/06
 	
+fftr_q(xcmplx,nv)
+  single precision
+
+ dimension xcmplx(2,iabs(nv)/2);
+ xcmplx(1,1) --- R(0), xcmplx(2,1) --- R(NV/2)
+ xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
+
+
+fftr_d(xcmplx,nv)
+  double precision
+
+ dimension xcmplx(2,iabs(nv)/2);
+ xcmplx(1,1) --- R(0), xcmplx(2,1) --- R(NV/2)
+ xcmplx(1,i) --- real, xcmplx(2,i) --- imaginary
+
+
+
 */
 #define  tab1(i)      tab1[i-1]
 #define  xcmplx(i,j)  xcmplx [((j)-1)*2 + (i)-1]
@@ -1062,7 +1079,7 @@ void Util::fftc_d(double *br, double *bi, int ln, int ks)
    double rni,sgn,tr1,tr2,ti1,ti2;
    double cc,c,ss,s,t,x2,x3,x4,x5;
    int    b3,b4,b5,b6,b7,b56;
-   int    n, k, l, j, i, ix0, ix1, status=0; 
+   int    n, k, l, j, i, ix0, ix1, status=0;
 
    const double tab1[] = {
    9.58737990959775e-5,
@@ -1625,8 +1642,8 @@ c  input - fourier transforms of rings!
 c  first set is conjugated (mirrored) if neg
 c  circ1 already multiplied by weights!
 c       automatic arrays
-	dimension         t(maxrin+2)
-	double precision  q(maxrin+2)
+	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
+	double precision  q(maxrin)
 	double precision  t7(-3:3)
 */
    float *t;
@@ -1635,8 +1652,8 @@ c       automatic arrays
    float  pos;
 
    ip = -(int) (log2(maxrin));
-   q = (double*)calloc(maxrin+2, sizeof(double));
-   t = (float*)calloc(maxrin+2, sizeof(float));
+   q = (double*)calloc(maxrin, sizeof(double));
+   t = (float*)calloc(maxrin, sizeof(float));
      
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
    for (i=1;i<=nring;i++) {
@@ -1684,7 +1701,7 @@ c       automatic arrays
 	       t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 	    } 
          }
-         for (j = 1; j <= maxrin+2; j++) q(j) = q(j) + t(j);
+         for (j = 1; j <= maxrin; j++) q(j) = q(j) + t(j);
       }
    }
 
@@ -1747,7 +1764,7 @@ c       optional limit on angular search should be added.
 
    // dimension         circ1(lcirc),circ2(lcirc)
 
-   // t(maxrin+2), q(maxrin+2), t7(-3:3)
+   // t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
    double *t, *q, t7[7];
 
    int   ip, jc, numr3i, numr2i, i, j, k, jtot;
@@ -1763,11 +1780,11 @@ c       optional limit on angular search should be added.
    //  c - straight  = circ1 * conjg(circ2)
    //  zero q array
   
-   q = (double*)calloc(maxrin+2,sizeof(double));  
+   q = (double*)calloc(maxrin,sizeof(double));  
 
    //   t - mirrored  = conjg(circ1) * conjg(circ2)
    //   zero t array
-   t = (double*)calloc(maxrin+2,sizeof(double));
+   t = (double*)calloc(maxrin,sizeof(double));
 
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 
@@ -1864,16 +1881,16 @@ EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
 
-   // t(maxrin+2), q(maxrin+2)
+   // t(maxrin), q(maxrin)  // removed +2
    double *t, *q;
 
    //  q - straight  = circ1 * conjg(circ2)
    //  zero q array
-   q = (double*)calloc(maxrin+2,sizeof(double));
+   q = (double*)calloc(maxrin,sizeof(double));
 
    //   t - mirrored  = conjg(circ1) * conjg(circ2)
    //   zero t array
-   t = (double*)calloc(maxrin+2,sizeof(double));
+   t = (double*)calloc(maxrin,sizeof(double));
 
    crosrng_msg(circ1->get_data(), circ2->get_data(), &q[0], &t[0], lcirc, nring, maxrin, &numr[0]);
    EMData* out = new EMData();

@@ -306,8 +306,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									break;
 								case 1:
 									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin(jx);
-									float argu = kbptr->sinhwin((float) jx);
-									cout << jx<<"  "<< nux<<"  "<<argu<<endl;
+									//float argu = kbptr->sinhwin((float) jx);
+									//cout << jx<<"  "<< nux<<"  "<<argu<<endl;
 									break;
 							}
 							break;
@@ -340,8 +340,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									break;
 								case 1:
 									fp->cmplx(ix,iy,iz) /= kbptr->sinhwin(jx);
-									float argu = kbptr->sinhwin((float) jx);
-									cout << jx<<"  "<< nux<<"  "<<argu<<endl;
+									//float argu = kbptr->sinhwin((float) jx);
+									//cout << jx<<"  "<< nux<<"  "<<argu<<endl;
 									break;
 							}
 							break;
