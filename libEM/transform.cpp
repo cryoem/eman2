@@ -865,6 +865,15 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 		    270,lvl1,0, 270,lvl1,90,  270,lvl1,180,  270,lvl1,270,
 		      0,lvl2,0,   0,lvl2,90,    0,lvl2,180,    0,lvl2,270
 	};
+	// B^4=A^3=1;  BABA=1; implies   AA=BAB, ABA=B^3 , AB^2A = BBBABBB and
+	//   20 words with at most a single A
+    //   1 B BB BBB A  BA AB BBA BAB ABB BBBA BBAB BABB ABBB BBBAB BBABB BABBB 
+    //                        BBBABB BBABBB BBBABBB 
+     // also     ABBBA is distinct yields 4 more words
+     //    ABBBA   BABBBA BBABBBA BBBABBBA
+     // for a total of 24 words
+     // Note A BBB A BBB A  reduces to BBABB
+     //  and  B A BBB A is the same as A BBB A BBB etc.
 
     // The TET symmetry group has a face along the z-axis
     // It has n=m=3; F=4, E=6=nF/2, V=4=nF/m
@@ -877,9 +886,10 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 	    120,lvl1,60, 120,lvl1,180,  120,lvl1,300,
 	    240,lvl1,60, 240,lvl1,180,  240,lvl1,300
 	};
-	// B^3=A^3=1;  BABA=1; implies   B^2=ABA, BAB=A^2 , BA^2B = A^2BA^2 and
-	//   12 words with at most a single B
-
+	// B^3=A^3=1;  BABA=1; implies   A^2=BAB, ABA=B^2 , AB^2A = B^2AB^2 and
+	//   12 words with at most a single A
+    //   1 B BB  A  BA AB BBA BAB ABB BBAB BABB BBABB
+    // at most one A is necessary
 
 	Transform3D ret;
 	SymType type = get_sym_type(symname);
