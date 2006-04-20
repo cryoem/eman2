@@ -274,6 +274,16 @@ namespace EMAN
 		{
 			return new SimpleIsoSurfaceProjector();
 		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("alt", EMObject::FLOAT);
+			d.put("az", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			d.put("threshold", EMObject::FLOAT);
+			return d;
+		}
 	};
 
 	/** Fast real-space 3D projection.
@@ -332,6 +342,15 @@ namespace EMAN
 		static Projector *NEW()
 		{
 			return new StandardFastProjector();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("az", EMObject::FLOAT);
+			d.put("alt", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			return d;
 		}
 	};
 
