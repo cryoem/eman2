@@ -222,6 +222,23 @@ namespace EMAN
 			return new PawelProjector();
 		}
 
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("origin_x", EMObject::INT);
+			d.put("origin_y", EMObject::INT);
+			d.put("origin_z", EMObject::INT);
+			d.put("radius", EMObject::INT);
+			d.put("anglelist", EMObject::FLOATARRAY);
+			d.put("angletype", EMObject::STRING);
+			d.put("az", EMObject::FLOAT);
+			d.put("alt", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			d.put("theta", EMObject::FLOAT);
+			d.put("psi", EMObject::FLOAT);
+			return d;
+		}
+
 	  private:
 		// Same structure as the IPCUBE structure in Spider
 		struct IPCube
