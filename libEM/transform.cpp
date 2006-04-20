@@ -139,13 +139,14 @@ void Transform3D::set_center(const Vec3f & center) //YYN
 
 void Transform3D::set_pretrans(const Vec3f & pretrans)  // YYN
 {
-/*
-	float oldMatrix[4][4] = matrix;
-	Transform preMatrix;  // remember by default preMatrix is identity
-	preMatrix.set_postTrans(pretrans);
 
-	matrix=oldMatrix*preMatrix;
-	*/
+	for (int j=0; j<3; j++) {
+		matrix[j][3]=0;
+	}
+	Transform3D preMatrix;  // remember by default preMatrix is identity
+	preMatrix.set_posttrans(pretrans);
+
+	*this=(*this)*preMatrix;
 }
 
 
@@ -764,9 +765,9 @@ Transform3D Transform3D::inverse()     //   YYN need to test it for sure
 	EulerType eE=EMAN;
 
 
-	float scale        = get_scale();
-	Vec3f postT  = get_posttrans( ) ;
-	Dict angs        = get_rotation(eE);
+	float scale   = get_scale();
+	Vec3f postT   = get_posttrans( ) ;
+	Dict angs     = get_rotation(eE);
 	Dict invAngs  ;
 
 	invAngs["phi"]   = 1.0f*M_PI - (float) angs["az"] ;
@@ -786,7 +787,7 @@ Transform3D Transform3D::inverse()     //   YYN need to test it for sure
 
 	invM.set_rotation(EMAN, invAngs);
 	invM.apply_scale(inverseScale);
-	invM.set_pretrans(postT );
+	invM.set_pretrans(-postT );
 
 
 	return invM;
