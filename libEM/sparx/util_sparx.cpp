@@ -2191,3 +2191,77 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 #undef old_ptr
 #undef new_ptr
 
+#define inp(i,j,k) inp[i+(j+(k*new_ny))*new_nx]
+#define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
+EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift, int y_shift, int z_shift)
+{
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	if(new_nx+x_shift > nx || new_ny+y_shift > ny || new_nz+z_shift > nz)
+	{
+		throw ImageDimensionException("The size of the window image cannot exceed the input image size.");	 
+	}
+	EMData* wind= new EMData();
+	wind->set_size(new_nx,new_ny,new_nz);
+	float *outp=wind->get_data();
+	float *inp=img->get_data();
+
+	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_shift)),new_st_y=int(ceil((ny-new_ny)/2.f +
+	y_shift)),new_st_z=int(ceil((nz-new_nz)/2.f + z_shift));
+	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
+		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
+	for (int k=0;k<new_nz;k++)
+	    for(int j=0;j<new_ny;j++)
+	        for(int i=0;i<new_nx;i++)
+		     outp(i,j,k)=inp(i+new_st_x,j+new_st_y,k+new_st_z);		    
+	wind->update();
+	return wind;
+}
+#undef inp
+#undef outp
+
+#define inp(i,j,k) inp[i+(j+(k*new_ny))*new_nx]
+#define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
+EMData *Util::PAD(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, int y_shift, int z_shift, int background)
+{
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	if((new_nx+x_shift)<nx || (new_ny+y_shift)<ny || (new_nz+z_shift)<nz)
+	{
+		throw ImageDimensionException("The size of the padded image cannot be below the input image size.");	 
+	}
+	EMData* pading=new EMData();
+	pading->set_size(new_nx,new_ny,new_nz);
+	float *inp=img->get_data();
+	float *outp=pading->get_data();
+	/*if (background=='Average'){
+		for(int k=1;k<nx-1;k++)
+			for(int j=1;j<ny-1;j++)
+				for (int i=1;i<nx-1;i++)
+					sum1+=inp(i,j,k);
+	float Avg=sum1/(nx*ny*nz);
+	float mean=img->get_attr("mean");
+	backgnd = fabs(mean-Avg);
+	}
+	else { backgnd=background;}*/					
+	for (int k=0;k<new_nz;k++)
+		for(int j=0;j<new_ny;j++)
+			for (int i=0;i<new_nx;i++)
+				outp(i,j,k)=background;
+	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_shift)),new_st_y=int(ceil((new_ny-ny)/2.f +
+	y_shift)),new_st_z=int(ceil((new_nz-nz)/2.f + z_shift));
+	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
+		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
+	for (int k=0;k<nz;k++)
+	    for(int j=0;j<ny;j++)
+	        for(int i=0;i<nx;i++)
+			outp(i,j,k)=inp(i+new_st_x,j+new_st_y,k+new_st_z); 
+	pading->update();
+	return pading;
+}
+#undef inp
+#undef outp
