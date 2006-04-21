@@ -5,8 +5,8 @@
 #include <iostream>
 
  
-#include "gsl_sf_bessel.h"
-#include "gsl_errno.h"
+#include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_errno.h>
 #include <vector>
 using std::vector;
 using std::cout;
