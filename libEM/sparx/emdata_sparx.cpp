@@ -1774,6 +1774,10 @@ vector<float> EMData::peak_search(int ml, float invert)
  	 int nx = buf.get_xsize();
  	 int ny = buf.get_ysize();
  	 int nz = buf.get_zsize();
+	 if(invert <= 0) 
+	     { invert=-1.;}
+	 else 
+	     { invert=1. ;}
  	 switch (img_dim)
      {
  	 case(1):
@@ -1850,33 +1854,40 @@ vector<float> EMData::peak_search(int ml, float invert)
 			}
 		break;
      	}
+   if(peaks.begin()!=peaks.end())
    	     	    	 
-   sort(peaks.begin(),peaks.end(), peakcmp);   
-   int count=0;
-   float xval=(*peaks.begin()).value;
-  for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  
-  {count=count+1;
-       if(count<=ml)
-	  {
-	  res.push_back((*it).value);
-	  res.push_back((*it).x);
-	  if(img_dim!=1)
-	       {res.push_back((*it).y);}
-	  if(nz!=1)
-		{res.push_back((*it).z);}
-          if(xval != 0.0)
-	        {res.push_back((*it).value/xval);}
-	  else
-	        {res.push_back((*it).value);}
-	  res.push_back((*it).x-float(int(nx/2)));
-	  if(img_dim!=1)
-	      {res.push_back((*it).y-float(int(ny/2)));}
-	  if(nz!=1)
-	     {res.push_back((*it).z-float(nz/2));} 
-	  
-	}
-   }  
-  res.insert(res.begin(),1,img_dim);
+   { sort(peaks.begin(),peaks.end(), peakcmp);   
+    int count=0;
+    float xval=(*peaks.begin()).value;  
+    	   for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++)  
+    	   {count=count+1;
+    		if(count<=ml)
+    		   {
+    		   res.push_back((*it).value);
+    		   res.push_back((*it).x);
+    		   if(img_dim!=1) res.push_back((*it).y);
+    			 
+    		   if(nz!=1) {res.push_back((*it).z);}   
+    			 
+    		   if(xval != 0.0)
+    			 {res.push_back((*it).value/xval);}
+    		   else
+    			 {res.push_back((*it).value);}
+    		   res.push_back((*it).x-float(int(nx/2)));
+    		   if(img_dim!=1)
+    		       {res.push_back((*it).y-float(int(ny/2)));}
+    		   if(nz!=1)
+    		      {res.push_back((*it).z-float(nz/2));} 
+    		   
+    		 }
+    	    }
+    	    res.insert(res.begin(),1,img_dim);
+	  } 
+ else 
+    {
+    res.push_back(buf(0,0,0));
+    res.insert(res.begin(),1,0.0);     
+	                      }	   
   return res;
  }	
 	  

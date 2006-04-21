@@ -340,6 +340,7 @@ EMData* rotavg();
   2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
   ...
   3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
+  The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is contant.
   ...                   */
 vector<float> peak_search(int ml, float invert);
 /** Calculate the Phase approximation to center of gravity
