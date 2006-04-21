@@ -2153,7 +2153,7 @@ c       optional limit on angular search should be added.
 
 
 #define old_ptr(i,j,k) old_ptr[(i+(j+(k*ny))*nx)]
-#define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny)*new_nx)]
+#define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*new_nx]
 EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 {
 	/* Exception Handle */
