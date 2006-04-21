@@ -2166,8 +2166,9 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	/* ============================== */
 	
+	
 	/* Exception Handle */
-	if (0>(x_step-1)>(nx/2) || 0>(y_step-1)>(ny/2) || 0>(z_step-1)>(nz/2))
+	if ((x_step-1 > nx/2 || y_step-1 > ny/2 || z_step-1 > nz/2) || (x_step-1)<0 || (y_step-1)<0 || (z_step-1)<0)
 	{
 		LOGERR("The Parameters for decimation cannot exceed the center of the image.");
 		throw ImageDimensionException("The Parameters for decimation cannot exceed the center of the image.");	 
@@ -2209,7 +2210,7 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 #undef old_ptr
 #undef new_ptr
 
-#define inp(i,j,k) inp[i+(j+(k*new_ny))*new_nx]
+#define inp(i,j,k) inp[i+(j+(k*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
 EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift, int y_shift, int z_shift)
 {
@@ -2224,7 +2225,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 	/* ============================== */
 	
 	/* Exception Handle */
-	if(new_nx+x_shift > nx || new_ny+y_shift > ny || new_nz+z_shift > nz)
+	if(new_nx+abs(x_shift) > nx || new_ny+abs(y_shift) > ny || new_nz+abs(z_shift) > nz)
 	{
 		throw ImageDimensionException("The size of the window image cannot exceed the input image size.");	
 	}
@@ -2258,7 +2259,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 #undef inp
 #undef outp
 
-#define inp(i,j,k) inp[i+(j+(k*new_ny))*new_nx]
+#define inp(i,j,k) inp[i+(j+(k*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
 EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, int y_shift, int z_shift, int background)
 {
@@ -2273,7 +2274,7 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	/* ============================== */
 	
 	/* Exception Handle */
-	if((new_nx+x_shift)<nx || (new_ny+y_shift)<ny || (new_nz+z_shift)<nz)
+	if(new_nx<(nx+abs(x_shift)) || new_ny<(ny+abs(y_shift)) || new_nz<(nz+abs(z_shift)))
 	{
 		throw ImageDimensionException("The size of the padded image cannot be below the input image size.");	 
 	}
@@ -2284,16 +2285,23 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	pading->set_size(new_nx,new_ny,new_nz);
 	float *inp=img->get_data();
 	float *outp=pading->get_data();
-	/*if (background=='Average'){
+	
+	/* Calculation of the average and the circumference values for background substitution 
+	=======================================================================================*/
+	/*if (background=='Circumference'){
 		for(int k=1;k<nx-1;k++)
 			for(int j=1;j<ny-1;j++)
 				for (int i=1;i<nx-1;i++)
 					sum1+=inp(i,j,k);
 	float Avg=sum1/(nx*ny*nz);
 	float mean=img->get_attr("mean");
-	backgnd = fabs(mean-Avg);
+	background = fabs(mean-Avg);
 	}
-	else { backgnd=background;}*/	
+	else if(background=='Average'){
+	float Avg=img->get_attr("mean");
+	background = Avg;}
+	else {background=background;}*/	
+	/*=====================================================================================*/
 	
 					
 	/* Initial Padding */
