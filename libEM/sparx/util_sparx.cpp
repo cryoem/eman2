@@ -2208,8 +2208,9 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 	float *outp=wind->get_data();
 	float *inp=img->get_data();
 
-	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_shift)),new_st_y=int(ceil((ny-new_ny)/2.f +
-	y_shift)),new_st_z=int(ceil((nz-new_nz)/2.f + z_shift));
+	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_shift)),
+	    new_st_y=int(ceil((ny-new_ny)/2.f + y_shift)),  
+	    new_st_z=int(ceil((nz-new_nz)/2.f + z_shift));
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
 		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
 	for (int k=0;k<new_nz;k++)
@@ -2224,7 +2225,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 
 #define inp(i,j,k) inp[i+(j+(k*new_ny))*new_nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
-EMData *Util::PAD(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, int y_shift, int z_shift, int background)
+EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, int y_shift, int z_shift, int background)
 {
 	if (!img) {
 		throw NullPointerException("NULL input image");
