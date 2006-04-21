@@ -2156,24 +2156,42 @@ c       optional limit on angular search should be added.
 #define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny)*new_nx)]
 EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 {
+	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	/* ============================== */
+	
+	// Get the size of the input image
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	/* ============================== */
+	
+	/* Exception Handle */
 	if (0>(x_step-1)>(nx/2) || 0>(y_step-1)>(ny/2) || 0>(z_step-1)>(nz/2))
 	{
 		LOGERR("The Parameters for decimation cannot exceed the center of the image.");
 		throw ImageDimensionException("The Parameters for decimation cannot exceed the center of the image.");	 
 	}
+	/* ============================== */
+	
+	
+	/*    Calculation of the start point */
 	int new_st_x=(nx/2)%x_step,new_st_y=(ny/2)%y_step,new_st_z=(nz/2)%z_step;
+	/* ============================*/
+	
+	
+	/* Calculation of the size of the decimated image */
 	int rx=2*(nx/(2*x_step)),ry=2*(ny/(2*y_step)),rz=2*(nz/(2*z_step));
 	int r1=int(ceil((nx-(x_step*rx))/(1.f*x_step))),r2=int(ceil((ny-(y_step*ry))/(1.f*y_step)));
 	int r3=int(ceil((nz-(z_step*rz))/(1.f*z_step)));
 	if(r1>1){r1=1;}
 	if(r2>1){r2=1;}
 	if(r3>1){r3=1;}
-	EMData* img2 = new EMData();
 	int new_nx=rx+r1,new_ny=ry+r2,new_nz=rz+r3;
+	/* ===========================================*/
+	
+	
+	EMData* img2 = new EMData();
 	img2->set_size(new_nx,new_ny,new_nz);
 	float *new_ptr=img2->get_data();
 	float *old_ptr=img->get_data();
@@ -2195,24 +2213,41 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
 EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift, int y_shift, int z_shift)
 {
+	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	/* ============================== */
+	
+	// Get the size of the input image
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	/* ============================== */
+	
+	/* Exception Handle */
 	if(new_nx+x_shift > nx || new_ny+y_shift > ny || new_nz+z_shift > nz)
 	{
-		throw ImageDimensionException("The size of the window image cannot exceed the input image size.");	 
+		throw ImageDimensionException("The size of the window image cannot exceed the input image size.");	
 	}
+	/* ============================== */
+	
 	EMData* wind= new EMData();
 	wind->set_size(new_nx,new_ny,new_nz);
 	float *outp=wind->get_data();
 	float *inp=img->get_data();
 
+	
+	/*    Calculation of the start point */
 	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_shift)),
 	    new_st_y=int(ceil((ny-new_ny)/2.f + y_shift)),  
 	    new_st_z=int(ceil((nz-new_nz)/2.f + z_shift));
+	/* ============================== */
+	    
+	/* Exception Handle */
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
 		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
+	/* ============================== */
+	
+	
 	for (int k=0;k<new_nz;k++)
 	    for(int j=0;j<new_ny;j++)
 	        for(int i=0;i<new_nx;i++)
@@ -2227,14 +2262,24 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
 EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, int y_shift, int z_shift, int background)
 {
+	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
+	/* ============================== */
+	
+	// Get the size of the input image
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	/* ============================== */
+	
+	/* Exception Handle */
 	if((new_nx+x_shift)<nx || (new_ny+y_shift)<ny || (new_nz+z_shift)<nz)
 	{
 		throw ImageDimensionException("The size of the padded image cannot be below the input image size.");	 
 	}
+	/* ============================== */
+	
+	
 	EMData* pading=new EMData();
 	pading->set_size(new_nx,new_ny,new_nz);
 	float *inp=img->get_data();
@@ -2248,15 +2293,26 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	float mean=img->get_attr("mean");
 	backgnd = fabs(mean-Avg);
 	}
-	else { backgnd=background;}*/					
+	else { backgnd=background;}*/	
+	
+					
+	/* Initial Padding */
 	for (int k=0;k<new_nz;k++)
 		for(int j=0;j<new_ny;j++)
 			for (int i=0;i<new_nx;i++)
 				outp(i,j,k)=background;
+	/* ============================== */
+	
+	/*    Calculation of the start point */
 	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_shift)),new_st_y=int(ceil((new_ny-ny)/2.f +
 	y_shift)),new_st_z=int(ceil((new_nz-nz)/2.f + z_shift));
+	/* ============================== */
+	
+	/* Exception Handle */
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
 		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
+	/* ============================== */
+	
 	for (int k=0;k<nz;k++)
 	    for(int j=0;j<ny;j++)
 	        for(int i=0;i<nx;i++)
