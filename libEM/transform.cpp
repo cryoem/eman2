@@ -463,15 +463,15 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 		break;
 
 	case SPIDER:
-		az =  (float)rotation["phi"]    + 0.5f * M_PI;              ;
+		az =  (float)rotation["phi"]    + 180.0f ;              ;
 		alt = (float)rotation["theta"]  ;
-		phi = (float)rotation["psi"]    - 0.5f * M_PI ;
+		phi = (float)rotation["psi"]    - 180.0f ;
 		break;
 
 	case MRC:
-		az  = (float)rotation["phi"]   + 0.5f * M_PI  ;
+		az  = (float)rotation["phi"]   + 180.0f ;
 		alt = (float)rotation["theta"] ;
-		phi = (float)rotation["omega"] - 0.5f * M_PI ;
+		phi = (float)rotation["omega"] - 180.0f ;
 		break;
 
 	case QUATERNION:
@@ -485,19 +485,19 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	case SPIN:
 		is_quaternion = 1;
 		Omega = (float)rotation["Omega"];
-		e0 = cos(Omega/2.0f);
-		e1 = sin(Omega/2.0f)* (float)rotation["n1"];
-		e2 = sin(Omega/2.0f)* (float)rotation["n2"];
-		e3 = sin(Omega/2.0f)* (float)rotation["n3"];
+		e0 = cos(Omega*M_PI/360.0f);
+		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
+		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
+		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
 		break;
 
 	case SGIROT:
 		is_quaternion = 1;
 		Omega = (float)rotation["q"]  ;
-		e0 = cos(Omega/2.0f);
-		e1 = sin(Omega/2.0f)* (float)rotation["n1"];
-		e2 = sin(Omega/2.0f)* (float)rotation["n2"];
-		e3 = sin(Omega/2.0f)* (float)rotation["n3"];
+		e0 = cos(Omega*M_PI/360.0f);
+		e1 = sin(Omega*M_PI/360.0f)* (float)rotation["n1"];
+		e2 = sin(Omega*M_PI/360.0f)* (float)rotation["n2"];
+		e3 = sin(Omega*M_PI/360.0f)* (float)rotation["n3"];
 		break;
 
 	case MATRIX:
@@ -518,16 +518,20 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	}  // ends switch euler_type
 
 
+	float azp  = az*M_PI/180;
+	float altp  = alt*M_PI/180;
+	float phip = phi*M_PI/180;
+	
 	if (!is_quaternion && !is_matrix) {
-		matrix[0][0] =  cos(phi)*cos(az) - cos(alt)*sin(az)*sin(phi);
-		matrix[0][1] =  cos(phi)*sin(az) + cos(alt)*cos(az)*sin(phi);
-		matrix[0][2] =  sin(alt)*sin(phi);
-		matrix[1][0] = -sin(phi)*cos(az) - cos(alt)*sin(az)*cos(phi);
-		matrix[1][1] = -sin(phi)*sin(az) + cos(alt)*cos(az)*cos(phi);
-		matrix[1][2] =  sin(alt)*cos(phi);
-		matrix[2][0] =  sin(alt)*sin(az);
-		matrix[2][1] = -sin(alt)*cos(az);
-		matrix[2][2] =  cos(alt);
+		matrix[0][0] =  cos(phip)*cos(azp) - cos(altp)*sin(azp)*sin(phip);
+		matrix[0][1] =  cos(phip)*sin(azp) + cos(altp)*cos(azp)*sin(phip);
+		matrix[0][2] =  sin(altp)*sin(phip);
+		matrix[1][0] = -sin(phip)*cos(azp) - cos(altp)*sin(azp)*cos(phip);
+		matrix[1][1] = -sin(phip)*sin(azp) + cos(altp)*cos(azp)*cos(phip);
+		matrix[1][2] =  sin(altp)*cos(phip);
+		matrix[2][0] =  sin(altp)*sin(azp);
+		matrix[2][1] = -sin(altp)*cos(azp);
+		matrix[2][2] =  cos(altp);
 	}	
 	if (is_quaternion){
 		matrix[0][0] = e0 * e0 + e1 * e1 - e2 * e2 - e3 * e3;
@@ -611,7 +615,7 @@ void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
 	rotation["n1"]= nhat[0];
 	rotation["n2"]= nhat[1];
 	rotation["n3"]= nhat[2];
-	rotation["Omega"] =OmegaA;
+	rotation["Omega"] =OmegaA*180.0/M_PI;
 	set_rotation(euler_type,  rotation);
 }
 
@@ -652,17 +656,17 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	if (cosalt > max) {  // that is, alt close to 0
 		alt = 0;
 		az=0;
-		phi =(float)atan2(matrix[0][1], matrix[0][0]); 
+		phi =(180/M_PI)*(float)atan2(matrix[0][1], matrix[0][0]); 
 	}
 	else if (cosalt < -max) { // alt close to pi
-		alt = M_PI;
+		alt = 180;
 		az=0; 
-		phi=-(float)atan2(matrix[0][1], matrix[0][0]);
+		phi=-(180/M_PI)*(float)atan2(matrix[0][1], matrix[0][0]);
 	}
 	else {
-		alt = (float) acos(cosalt);
-		az  = (float)atan2(matrix[2][0], -matrix[2][1]);
-		phi = (float)atan2(matrix[0][2], matrix[1][2]);
+		alt = (180/M_PI)*(float) acos(cosalt);
+		az  = (180/M_PI)*(float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = (180/M_PI)*(float)atan2(matrix[0][2], matrix[1][2]);
 	}
 
 //   get phiS, psiS ; SPIDER
@@ -671,20 +675,20 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		psiS = phi;
 	}
 	else {
-		phiS = fmod((az   - 0.5f * M_PI),  2 * M_PI);
-		psiS = fmod((phi  + 0.5f * M_PI), 2 * M_PI);
+		phiS = fmod((az   - 90.0f ),  360.0f);
+		psiS = fmod((phi  + 90.0f ), 360.0f);
 	}
 
 //   do some quaternionic stuff here
 
 	float nphi = (az-phi)/2.0f;
     // The next is also e0
-	float cosOover2 = fabs( cos((az+phi)/2) * cos(alt/2) );
+	float cosOover2 = fabs( cos((az+phi*M_PI)/360) * cos(alt*M_PI/360) );
 	float sinOover2 = sqrt(1 -cosOover2*cosOover2);
-	float cosnTheta = sin((az+phi)/2) * cos(alt/2) / sqrt(1-cosOover2*cosOover2) ;
+	float cosnTheta = sin((az+phi)*M_PI/360) * cos(alt*M_PI/360) / sqrt(1-cosOover2*cosOover2) ;
 	float sinnTheta = sqrt(1-cosnTheta*cosnTheta);
-	float n1 = sinnTheta*cos(nphi);
-	float n2 = sinnTheta*sin(nphi);
+	float n1 = sinnTheta*cos(nphi*M_PI/180);
+	float n2 = sinnTheta*sin(nphi*M_PI/180);
 	float n3 = cosnTheta;
 	
 
@@ -722,14 +726,14 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		break;
 
 	case SPIN:
-		result["Omega"] =2* acos(cosOover2) ;
+		result["Omega"] =360* acos(cosOover2)/ M_PI ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
 		break;
 
 	case SGIROT:
-		result["q"] = 2*acos(cosOover2) ;
+		result["q"] = 360*acos(cosOover2)/M_PI ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
@@ -770,8 +774,8 @@ Transform3D Transform3D::inverse()     //   YYN need to test it for sure
 	Dict angs     = get_rotation(eE);
 	Dict invAngs  ;
 
-	invAngs["phi"]   = 1.0f*M_PI - (float) angs["az"] ;
-	invAngs["az"]    = 1.0f*M_PI- (float) angs["phi"] ;
+	invAngs["phi"]   = 180.0f - (float) angs["az"] ;
+	invAngs["az"]    = 180.0f - (float) angs["phi"] ;
 	invAngs["alt"]   = angs["alt"] ;
 
 //    The inverse result
@@ -897,30 +901,30 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 
 	switch (type) {
 	case CSYM:
-		ret.set_rotation( n * 2.0f * M_PI / nsym, 0, 0);
+		ret.set_rotation( n * 360.0f / nsym, 0, 0);
 		break;
 	case DSYM:
 		if (n >= nsym / 2) {
-			ret.set_rotation((n - nsym/2) * 2.0f * M_PI / (nsym / 2),M_PI, 0);
+			ret.set_rotation((n - nsym/2) * 360.0f / (nsym / 2),180.0f, 0);
 		}
 		else {
-			ret.set_rotation( n * 2.0f * M_PI / (nsym / 2),0, 0);
+			ret.set_rotation( n * 360.0f / (nsym / 2),0, 0);
 		}
 		break;
 	case ICOS_SYM:
-		ret.set_rotation((float)ICOS[n * 3 ]    * M_PI / 180,
-				 (float)ICOS[n * 3 + 1] * M_PI / 180 ,
-				 (float)ICOS[n * 3 + 2] * M_PI / 180 );
+		ret.set_rotation((float)ICOS[n * 3 ]    ,
+				 (float)ICOS[n * 3 + 1] ,
+				 (float)ICOS[n * 3 + 2] );
 		break;
 	case OCT_SYM:
-		ret.set_rotation((float)OCT[n * 3]     * M_PI / 180,
-				 (float)OCT[n * 3 + 1] * M_PI / 180, 
-				 (float)OCT[n * 3 + 2] * M_PI / 180);
+		ret.set_rotation((float)OCT[n * 3]     ,
+				 (float)OCT[n * 3 + 1] , 
+				 (float)OCT[n * 3 + 2] );
 		break;
 	case TET_SYM:
-		ret.set_rotation((float)TET[n * 3 ]    * M_PI / 180,
-				 (float)TET[n * 3 + 1] * M_PI / 180 ,
-				 (float)TET[n * 3 + 2] * M_PI / 180 );
+		ret.set_rotation((float)TET[n * 3 ]    ,
+				 (float)TET[n * 3 + 1] ,
+				 (float)TET[n * 3 + 2] );
 		break;
 	case ISYM:
 		ret.set_rotation(0, 0, 0);
