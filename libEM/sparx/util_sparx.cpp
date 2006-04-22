@@ -2227,7 +2227,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 	/* Exception Handle */
 	if(new_nx+abs(x_shift) > nx || new_ny+abs(y_shift) > ny || new_nz+abs(z_shift) > nz)
 	{
-		throw ImageDimensionException("The size of the window image cannot exceed the input image size.");	
+		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size.");	
 	}
 	/* ============================== */
 	
@@ -2244,8 +2244,8 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 	/* ============================== */
 	    
 	/* Exception Handle */
-	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
-		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
+	if (new_st_x<0 || new_st_y<0 || new_st_z<0)   //  WHAT HAPPENS WITH THE END POINT CHECK??  PAP
+		throw ImageDimensionException("The offset inconsistent with the input image size. Solution: Change the offset parameters");
 	/* ============================== */
 	
 	
@@ -2276,7 +2276,7 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	/* Exception Handle */
 	if(new_nx<(nx+abs(x_shift)) || new_ny<(ny+abs(y_shift)) || new_nz<(nz+abs(z_shift)))
 	{
-		throw ImageDimensionException("The size of the padded image cannot be below the input image size.");	 
+		throw ImageDimensionException("The size of the padded image cannot be less than the input image size.");	 
 	}
 	/* ============================== */
 	
@@ -2293,7 +2293,7 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 			for(int j=1;j<ny-1;j++)
 				for (int i=1;i<nx-1;i++)
 					sum1+=inp(i,j,k);
-	float Avg=sum1/(nx*ny*nz);
+	float Avg=sum1/(nx*ny*nz);  // THIS IS NOT CINRCUMFERENCE< THIS IS AVERAGE !! PAP
 	float mean=img->get_attr("mean");
 	background = fabs(mean-Avg);
 	}
@@ -2315,10 +2315,10 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_shift)),new_st_y=int(ceil((new_ny-ny)/2.f +
 	y_shift)),new_st_z=int(ceil((new_nz-nz)/2.f + z_shift));
 	/* ============================== */
-	
+	// WHAT HAPPENS WHEN THE END POINT IS OUTSIDE???  PAP
 	/* Exception Handle */
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
-		throw ImageDimensionException("The image got shifted outside the input image. Solution: Change the shifting parameters");
+		throw ImageDimensionException("The offset parameters inconsistent with the output image size. Solution: Change the offset parameters");
 	/* ============================== */
 	
 	for (int k=0;k<nz;k++)
