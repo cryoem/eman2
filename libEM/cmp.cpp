@@ -10,9 +10,9 @@ using namespace EMAN;
 template <> Factory < Cmp >::Factory()
 {
 	force_add(&CccCmp::NEW);
+	force_add(&SqEuclideanCmp::NEW);
 	force_add(&DotCmp::NEW);
 	force_add(&QuadMinDotCmp::NEW);
-	force_add(&VarianceCmp::NEW);
 	force_add(&OptVarianceCmp::NEW);
 	force_add(&PhaseCmp::NEW);
 	force_add(&FRCCmp::NEW);
@@ -42,9 +42,7 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 	}
 }
 
-
-// Even though this uses doubles, it might be wise to recode it row-wise
-// to avoid numerical errors on large images
+//  It would be good to add code for complex images!  PAP
 float CccCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
@@ -55,29 +53,39 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 
 	float *d1 = image->get_data();
 	float *d2 = with->get_data();
+	bool  mask_exist;
 
 	EMData* mask;
 	if (params.has_key("mask")) {
-		mask = params["mask"];
+		mask = params["mask"];  mask_exist = true;
 	} else {
-		mask = image->copy_head();
-		mask->to_zero();
-		*mask += 1.f;
+		mask_exist = false;
 	}
 	float* dm = mask->get_data();
 
 	double avg1 = 0., var1 = 0., avg2 = 0., var2 = 0., ccc = 0.;
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	for (long i = 0; i < totsize; i++) {
-		if (dm[i] > 0.5) {
-			avg1 += double(d1[i]);
-			var1 += d1[i]*double(d1[i]);
-			avg2 += double(d2[i]);
-			var2 += d2[i]*double(d2[i]);
-			ccc += d1[i]*double(d2[i]);
-			n++;
-		}
+	if(mask_exist) {
+	  for (long i = 0; i < totsize; i++) {
+	  	  if (dm[i] > 0.5) {
+	  		  avg1 += double(d1[i]);
+	  		  var1 += d1[i]*double(d1[i]);
+	  		  avg2 += double(d2[i]);
+	  		  var2 += d2[i]*double(d2[i]);
+	  		  ccc += d1[i]*double(d2[i]);
+	  		  n++;
+	  	  }
+	}
+	} else {
+	  for (long i = 0; i < totsize; i++) {
+	  		  avg1 += double(d1[i]);
+	  		  var1 += d1[i]*double(d1[i]);
+	  		  avg2 += double(d2[i]);
+	  		  var2 += d2[i]*double(d2[i]);
+	  		  ccc += d1[i]*double(d2[i]);
+	  	  }
+	   n = totsize;
 	}
 	avg1 /= double(n);
 	var1 = var1/double(n) - avg1*avg1;
@@ -88,6 +96,51 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	return static_cast<float>(ccc);
 	EXITFUNC;
 }
+
+
+
+float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+	float *y_data = with->get_data();
+	float *x_data = image->get_data();
+	bool  mask_exist;
+
+	EMData* mask;
+	if (params.has_key("mask")) {
+		mask = params["mask"];  mask_exist = true;
+	} else {
+		mask_exist = false;
+	}
+	float* dm = mask->get_data();
+
+	double result = 0.;
+	long n = 0;
+	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+	if(mask_exist) {
+	  for (long i = 0; i < totsize; i++) {
+	       if (dm[i] > 0.5) {
+	        double temp = x_data[i]- y_data[i];
+		result += temp*temp;
+	  		  n++;
+	       }
+	}
+	} else {
+	  for (long i = 0; i < totsize; i++) {
+	        double temp = x_data[i]- y_data[i];
+		result += temp*temp;
+	  	  }
+	   n = totsize;
+	}
+	result/=n;
+	
+	EXITFUNC;
+	
+	return static_cast<float>(result);
+}
+
 
 // Even though this uses doubles, it might be wise to recode it row-wise
 // to avoid numerical errors on large images
@@ -103,21 +156,47 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	float negative = (float)params.set_default("negative", 1);
 	
 	if (negative) negative=-1.0; else negative=1.0;
+	bool  mask_exist;
+	double square_sum1 = 0., square_sum2 = 0.;
 
-	double result = 0;
-	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	EMData* mask;
+	if (params.has_key("mask")) {
+		mask = params["mask"];  mask_exist = true;
+	} else {
+		mask_exist = false;
+	}
+	float* dm = mask->get_data();
 
-	for (size_t i = 0; i < size; i++) {
-		result += d1[i]*d2[i];
+	long n = 0;
+	double result = 0.;
+	long totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
+
+	if(mask_exist) {
+	  for (long i = 0; i < totsize; i++) {
+			if (dm[i] > 0.5) {
+			  square_sum1 += d1[i]*double(d1[i]);
+			  square_sum2 += d2[i]*double(d2[i]);
+			  result += d1[i]*double(d2[i]);
+			  n++;
+			}
+	  }
+	} else {
+	  for (long i = 0; i < totsize; i++) {
+		result += d1[i]*double(d2[i]);
+	  }
+	   n = totsize;
 	}
 	
 	if (normalize) {
-		double square_sum1 = image->get_attr_dict().get("square_sum");
-		double square_sum2 = with->get_attr_dict().get("square_sum");
+	    if(mask_exist) {}
+	    else {
+		square_sum1 = image->get_attr_dict().get("square_sum");
+		square_sum2 = with->get_attr_dict().get("square_sum");
+	    }
 
 		result = result / (sqrt(square_sum1*square_sum2));
 	}
-	else result/=size;
+	else result/=totsize;
 			
 	EXITFUNC;
 	return (float) (negative*result);
@@ -173,7 +252,6 @@ float QuadMinDotCmp::cmp(EMData * image, EMData *with) const
 	EXITFUNC;
 	return (float) (negative*worst);
 }
-
 
 float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 {
@@ -323,31 +401,6 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 	image->set_attr("ovcmp_m",m);
 	image->set_attr("ovcmp_b",b);
 	if (with2) delete with2;
-	EXITFUNC;
-	
-#if 0
-	return (1 - result);
-#endif
-	
-	return static_cast<float>(result);
-}
-
-float VarianceCmp::cmp(EMData * image, EMData *with) const
-{
-	ENTERFUNC;
-	validate_input_args(image, with);
-
-	float *y_data = with->get_data();
-	float *x_data = image->get_data();
-	double result = 0;
-	
-	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
-	
-	for (size_t i = 0; i < size; i++) {
-		result += Util::square(x_data[i]- y_data[i]);
-	}
-	result/=size;
-	
 	EXITFUNC;
 	
 #if 0

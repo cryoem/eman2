@@ -150,8 +150,45 @@ namespace EMAN
 		}
 
 	};
+	
+	/** Squared Euclidean distance normalized by n between 'this' and 'with'*/
+	//  I corrected this as there is no such thing as "variance between two images" 
+	//  I corrected naive coding to avoid square
+	//  Also, the equation in return statement was incorrect, grrrr!!! 
+	//  Finally, I added mask option  PAP 04/23/06
+	class SqEuclideanCmp:public Cmp
+	{
+	  public:
+		SqEuclideanCmp() {}
+		
+		float cmp(EMData * image, EMData * with) const;
 
-	/** Use dot product of 2 same-size images to do the comparison.
+		string get_name() const
+		{
+			return "Squared Euclidean distance";
+		}
+
+		string get_desc() const
+		{
+			return "Squared Euclidean distance (sum(a - b)^2)/n.";
+		}
+
+		static Cmp *NEW()
+		{
+			return new SqEuclideanCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mask", EMObject::EMDATA, "image mask");
+			return d;
+		}
+
+	};
+
+
+	/** Use dot product of 2 same-size images to do the comparison.  // Added mask option PAP 04/23/06
 	* For complex images, it does not check r/i vs a/p.
 	* @author Steve Ludtke (sludtke@bcm.tmc.edu) 
 	* @date 2005-07-13
@@ -182,7 +219,8 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("negative", EMObject::INT, "If set, returns -1 * dot product. Set by default so smaller is better");
-			d.put("normalize", EMObject::INT, "If set, returns normalized dot product -1.0 - 1.0.");
+			d.put("normalize", EMObject::INT, "If set, returns normalized dot product (cosine of the angle) -1.0 - 1.0.");
+			d.put("mask", EMObject::EMDATA, "image mask");
 			return d;
 		}
 
@@ -285,38 +323,6 @@ namespace EMAN
 		mutable float scale;
 		mutable float shift;
 	};
-	
-	/** Variance between 'this' and 'with' (no sqrt)*/
-	class VarianceCmp:public Cmp
-	{
-	  public:
-		VarianceCmp() {}
-		
-		float cmp(EMData * image, EMData * with) const;
-
-		string get_name() const
-		{
-			return "variance";
-		}
-
-		string get_desc() const
-		{
-			return "Real-space variance sum(a^2 - b^2)/n.";
-		}
-
-		static Cmp *NEW()
-		{
-			return new VarianceCmp();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			return d;
-		}
-
-	};
-
 	/** Amplitude weighted mean phase difference (radians) with optional
      * SNR weight. SNR should be an array as returned by ctfcurve()
      * 'data' should be the less noisy image, since it's amplitudes 
