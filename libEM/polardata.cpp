@@ -66,7 +66,7 @@ EMData* PolarData::calc_ccf(EMData * em)
 	em = 0;
 }
 */
-
+/*  I had to block this section, it is in conflict with my python code PAP
 vector<int> PolarData::Numrinit(int first_ring, int last_ring, int skip, string mode)
 {
 	float dpi;
@@ -143,7 +143,7 @@ vector<float> PolarData::ringwe( vector<int> numr, string mode )
 	
 	return wr;
 }
-
+*/
 #ifdef DEBUG
 int PolarData::test_init_desc_data()
 {
