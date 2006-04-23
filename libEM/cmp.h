@@ -165,7 +165,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "Squared Euclidean distance";
+			return "SqEuclidean";
 		}
 
 		string get_desc() const
