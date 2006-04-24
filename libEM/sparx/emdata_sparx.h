@@ -335,7 +335,7 @@ EMData* rotavg();
 /** Search specified number peaks in 1D, 2D, or 3D real images.
 * and output the peaks in descendent order: 
   The numbers coming out are: image dimension, then
-  1D: pixel value,  x coord( NX/2 center)
+  1D: pixel value, x coord, relative peak value, x coord( NX/2 center),
   ...
   2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
   ...
