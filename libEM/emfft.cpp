@@ -385,6 +385,12 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 	
 	Nativefft::fmrs_1rf(complex_data, work, n);
 	
+	//the complex part need negate to be consistent with fftw result
+	int i;
+	for(i=1; i<complex_size; i+=2) {
+		complex_data[i] *= -1;
+	}
+	
 	free(work);
 	return 0;
 }
@@ -392,6 +398,12 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 {
 	int complex_size = n + 2 - n%2;
+	
+	//the complex part need negate to be consistent with fftw result
+	int i;
+	for(i=1; i<complex_size; i+=2) {
+		complex_data[i] *= -1;
+	}
 	
 	//here, n is the "logical" size of DFT, not the array size, n is the real array size
 	memcpy(real_data, complex_data, complex_size * sizeof(float));
@@ -537,7 +549,7 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 	/* Allocate communication work array */
 	float * comm = (float *)malloc((3*n+100)*sizeof(float));
 	/* Allocate work array to store ACML complex array*/
-	float * fft_data = (float *)malloc(complex_n * sizeof(float));
+	float * fft_data = (float *)malloc(n * sizeof(float));
 	
 	//copy real_data to complex_data then apply inplace FFT on complex data
 	memcpy(fft_data, real_data, n * sizeof(float));
