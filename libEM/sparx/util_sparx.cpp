@@ -2329,3 +2329,83 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_offset,
 }
 #undef inp
 #undef outp
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+void Util::colreverse(float* beg, float* end, int nx) {
+	float* tmp = new float[nx];
+	int n = (end - beg)/nx;
+	int nhalf = n/2;
+	for (int i = 0; i < nhalf; i++) {
+		// swap col i and col n-1-i
+		memcpy(tmp, beg+i*nx, nx*sizeof(float));
+		memcpy(beg+i*nx, beg+(n-1-i)*nx, nx*sizeof(float));
+		memcpy(beg+(n-1-i)*nx, tmp, nx*sizeof(float));
+	}
+	delete[] tmp;
+}
+
+void Util::slicereverse(float *beg, float *end, int nx,int ny) 
+{
+        int nxy = nx*ny;
+	colreverse(beg, end, nxy);	 
+}
+
+
+void Util::cyclicshift(EMData *image, Dict params) {
+if (image->is_complex())
+                throw ImageFormatException("Real image required for "
+                                                   "IntegerCyclicShift2DProcessor");
+/*         if (3 != image->get_ndim() || 1 != image->get_zsize())
+                throw ImageFormatException("2-D image needed for "
+                                                   "IntegerCyclicShift2DProcessor");
+*/						   
+         int dx = params["dx"];
+         int dy = params["dy"];
+	 int dz = params["dz"];
+         // The reverse trick we're using shifts to the left (a negative shift)
+         int nx = image->get_xsize();
+         dx %= nx;
+         if (dx < 0) dx += nx;
+         int ny = image->get_ysize();
+         dy %= ny;
+         if (dy < 0) dy += ny;
+	 int nz = image->get_zsize();
+         dz %= nz;
+         if (dz < 0) dz += nz;	 
+	 
+ #ifdef DEBUG
+         std::cout << dx << std::endl;
+         std::cout << dy << std::endl;
+	 std::cout << dz << std::endl;
+ #endif
+         int mx = -(dx - nx);
+         int my = -(dy - ny);
+	 int mz = -(dz - nz);
+	 
+         float* data = image->get_data();
+         // x-reverses
+         if (mx != 0) {
+	         for (int iz = 0; iz < nz; iz++)
+		 	for (int iy = 0; iy < ny; iy++) {
+	                         // reverses for column iy
+        	                 int offset = nx*iy + nx*ny*iz; // starting location for column iy in slice iz
+                	         reverse(&data[offset],&data[offset+mx]);
+                        	 reverse(&data[offset+mx],&data[offset+nx]);
+                         	 reverse(&data[offset],&data[offset+nx]);
+		         }
+         }
+         // y-reverses
+         if (my != 0) {	 
+	         for (int iz = 0; iz < ny; iz++) {
+		 	int offset = nx*ny*iz;
+            	     	colreverse(&data[offset], &data[offset + my*nx], nx);
+                     	colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
+                     	colreverse(&data[offset], &data[offset + ny*nx], nx);
+		}
+         }
+	 if (mz != 0) {
+                 slicereverse(&data[0], &data[mz*ny*nx], nx, ny);
+                 slicereverse(&data[my*ny*nx], &data[nz*ny*nx], nx, ny);
+                 slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
+         }
+}

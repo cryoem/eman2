@@ -22,10 +22,17 @@ public:
  *               or the FH of the pattern
 */
 
-static Dict im_diff(EMData* V1, EMData* V2, EMData* mask);
+
 
 static vector<float> infomask(EMData* Vol, EMData* mask);
 
+static void colreverse(float* beg, float* end, int nx);
+
+static void slicereverse(float* beg, float* end, int nx,int ny);
+
+static  void cyclicshift(EMData* image, Dict params);
+
+static Dict im_diff(EMData* V1, EMData* V2, EMData* mask);
 
 static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b, 
                    int flag=0, float alphaDeg=0); //PRB
