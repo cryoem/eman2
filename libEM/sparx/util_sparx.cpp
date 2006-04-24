@@ -2212,7 +2212,7 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 
 #define inp(i,j,k) inp[i+(j+(k*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
-EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift, int y_shift, int z_shift)
+EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
 	/* Exception Handle */
 	if (!img) {
@@ -2225,10 +2225,12 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 	/* ============================== */
 	
 	/* Exception Handle */
-	if(new_nx+abs(x_shift) > nx || new_ny+abs(y_shift) > ny || new_nz+abs(z_shift) > nz)
-	{
-		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size.");	
-	}
+	if(new_nx>nx || new_ny>ny || new_nz>nz)
+		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size.");
+	if((nx/2)-(new_nx/2)+x_offset<0 || (ny/2)-(new_ny/2)+y_offset<0 || (nz/2)-(new_nz/2)+z_offset<0)
+		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
+	if(x_offset>((nx-(nx/2))-(new_nx-(new_nx/2))) || y_offset>((ny-(ny/2))-(new_ny-(new_ny/2))) || z_offset>((nz-(nz/2))-(new_nz-(new_nz/2))))
+		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
 	/* ============================== */
 	
 	EMData* wind= new EMData();
@@ -2238,9 +2240,9 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 
 	
 	/*    Calculation of the start point */
-	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_shift)),
-	    new_st_y=int(ceil((ny-new_ny)/2.f + y_shift)),  
-	    new_st_z=int(ceil((nz-new_nz)/2.f + z_shift));
+	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_offset)),
+	    new_st_y=int(ceil((ny-new_ny)/2.f + y_offset)),  
+	    new_st_z=int(ceil((nz-new_nz)/2.f + z_offset));
 	/* ============================== */
 	    
 	/* Exception Handle */
@@ -2261,7 +2263,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_shift,
 
 #define inp(i,j,k) inp[i+(j+(k*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
-EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, int y_shift, int z_shift, int background)
+EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset, int background)
 {
 	/* Exception Handle */
 	if (!img) {
@@ -2274,12 +2276,14 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	/* ============================== */
 	
 	/* Exception Handle */
-	if(new_nx<(nx+abs(x_shift)) || new_ny<(ny+abs(y_shift)) || new_nz<(nz+abs(z_shift)))
-	{
-		throw ImageDimensionException("The size of the padded image cannot be less than the input image size.");	 
-	}
+	if(new_nx<nx || new_ny<ny || new_nz<nz)
+		throw ImageDimensionException("The size of the padding image cannot be below the input image size.");
+	if((new_nx/2)-(nx/2)+x_offset<0 || (new_ny/2)-(ny/2)+y_offset<0 || (new_nz/2)-(nz/2)+z_offset<0)
+		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
+	if(x_offset>((new_nx-(new_nx/2))-(nx-(nx/2))) || y_offset>((new_ny-(new_ny/2))-(ny-(ny/2))) || z_offset>((new_nz-(new_nz/2))-(nz-(nz/2))))
+		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
 	/* ============================== */
-	
+
 	
 	EMData* pading=new EMData();
 	pading->set_size(new_nx,new_ny,new_nz);
@@ -2312,15 +2316,10 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_shift, 
 	/* ============================== */
 	
 	/*    Calculation of the start point */
-	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_shift)),new_st_y=int(ceil((new_ny-ny)/2.f +
-	y_shift)),new_st_z=int(ceil((new_nz-nz)/2.f + z_shift));
+	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_offset)),new_st_y=int(ceil((new_ny-ny)/2.f +
+	y_offset)),new_st_z=int(ceil((new_nz-nz)/2.f + z_offset));
 	/* ============================== */
-	// WHAT HAPPENS WHEN THE END POINT IS OUTSIDE???  PAP
-	/* Exception Handle */
-	if (new_st_x<0 || new_st_y<0 || new_st_z<0)
-		throw ImageDimensionException("The offset parameters inconsistent with the output image size. Solution: Change the offset parameters");
-	/* ============================== */
-	
+
 	for (int k=0;k<nz;k++)
 	    for(int j=0;j<ny;j++)
 	        for(int i=0;i<nx;i++)
