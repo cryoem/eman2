@@ -25,7 +25,7 @@ for i in range(0,n,2):
 #		l[0].cmp("optvariance",l[1],{}),
 #		l[0].cmp("phase",l[1],{}),
 #		l[0].cmp("quadmindot",l[1],{"normalize":1}),
-#		l[0].cmp("variance",l[1],{})))
+#		l[0].cmp("SqEuclidean",l[1],{})))
 
 # sort the list in ascending order. Smaller similarity values are better
 cmps.sort()

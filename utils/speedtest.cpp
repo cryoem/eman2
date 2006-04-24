@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	a->set_size(128,128,1);
 	a->process_inplace("testimage.scurve");
 	EMData *b = a->rot_scale_trans2D(0.0,1.0,1.0,0.0);
-	EMData *d = b->align("rotate_translate",a,Dict(),"variance");
+	EMData *d = b->align("rotate_translate",a,Dict(),"SqEuclidean");
 	Dict r=b->get_attr_dict();
 	printf("%p\n",&r);
 	printf("%d\n",(int)r["nx"]);
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 			for (int i = 0; i < NTT / 2; i++) {
 				Dict d;
 				d["keepzero"] = 1;
-				data[i]->cmp("variance", data[i + NTT / 2], d);
+				data[i]->cmp("SqEuclidean", data[i + NTT / 2], d);
 			}
 		}
 		t2 = (float) clock();

@@ -241,7 +241,7 @@ for single particle analysis."""
 			except: continue
 			b.process_inplace("eman1.normalize.edgemean")
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
-#			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
+#			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
 			
 			# we iterate over each reference then find the best, eventually recentering ( i[2-3] ) and
 			# updating the reference number for the second pass ( i[1] )
@@ -269,7 +269,7 @@ for single particle analysis."""
 			except: continue
 			b.process_inplace("eman1.normalize.edgemean")
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
-#			ba=refptcl[i[1]].align("rotate_translate",b,{},"variance")
+#			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
 			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"matchfilt":1})
 			dx=ba.get_attr("translational.dx")
 			dy=ba.get_attr("translational.dy")

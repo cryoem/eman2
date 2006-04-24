@@ -296,7 +296,7 @@ namespace EMAN
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 		
 		string get_name() const
@@ -442,7 +442,7 @@ namespace EMAN
 						const string & cmp_name, const Dict& cmp_params) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 		
 		string get_name() const
@@ -480,7 +480,7 @@ namespace EMAN
 						const string & cmp_name, const Dict& cmp_params) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 		
 		string get_name() const
@@ -516,7 +516,7 @@ namespace EMAN
 						const string & cmp_name, const Dict& cmp_params) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 		string get_name() const
 		{
@@ -554,7 +554,7 @@ namespace EMAN
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 
 		string get_name() const
@@ -592,7 +592,7 @@ namespace EMAN
 						const string & cmp_name, const Dict& cmp_params) const;
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 		string get_name() const
 		{
@@ -632,7 +632,7 @@ namespace EMAN
 
 		EMData * align(EMData * this_img, EMData * to_img) const
 		{
-			return align(this_img, to_img, "variance", Dict());
+			return align(this_img, to_img, "SqEuclidean", Dict());
 		}
 		
 		string get_name() const

@@ -22,7 +22,7 @@ for i in range(0,n,2):
 		sqrt(l[0].cmp("optvariance",l[1],{})),
 		l[0].cmp("dot",l[1],{"normalize":1}),
 		l[0].cmp("frc",l[1],{}),
-		l[0].cmp("variance",l[1],{})))
+		l[0].cmp("SqEuclidean",l[1],{})))
 
 # calculate the mean for each measure
 sm=[0,0,0,0,0,0]
