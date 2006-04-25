@@ -55,7 +55,7 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	float *d2 = with->get_data();
 	bool  mask_exist;
 
-	EMData* mask;
+	EMData* mask = 0;
 	if (params.has_key("mask")) {
 		mask = params["mask"];  mask_exist = true;
 	} else {
@@ -108,7 +108,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	float *x_data = image->get_data();
 	bool  mask_exist;
 
-	EMData* mask;
+	EMData* mask = 0;
 	if (params.has_key("mask")) {
 		mask = params["mask"];  mask_exist = true;
 	} else {
@@ -159,7 +159,7 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	bool  mask_exist;
 	double square_sum1 = 0., square_sum2 = 0.;
 
-	EMData* mask;
+	EMData* mask = 0;
 	if (params.has_key("mask")) {
 		mask = params["mask"];  mask_exist = true;
 	} else {
