@@ -2263,7 +2263,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 #define inp(i,j,k) inp[i+(j+(k*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
-EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset, int background)
+EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
 	/* Exception Handle */
 	if (!img) {
@@ -2290,40 +2290,59 @@ EMData *Util::pad(EMData* img, int new_nx, int new_ny, int new_nz, int x_offset,
 	float *inp=img->get_data();
 	float *outp=pading->get_data();
 	
+	
+	
 	/* Calculation of the average and the circumference values for background substitution 
 	=======================================================================================*/
-	/*if (background=='Circumference'){
-		for(int k=1;k<nx-1;k++)
-			for(int j=1;j<ny-1;j++)
-				for (int i=1;i<nx-1;i++)
-					sum1+=inp(i,j,k);
-	float Avg=sum1/(nx*ny*nz);  // THIS IS NOT CINRCUMFERENCE< THIS IS AVERAGE !! PAP
-	float mean=img->get_attr("mean");
-	background = fabs(mean-Avg);
+	float background =0.f;
+	if (strcmp("average",params["average"])==0){
+		background = img->get_attr("mean");
+		}
+	else if (strcmp("circumference",params["circumference"])==0)
+	{
+		float sum1=0.f;
+		int cnt=0;
+		for(int i=0;i<nx;i++){
+			sum1 += inp(i,0,0) + inp(i,ny-1,nz-1);
+			cnt+=2;}
+		if(nz-1 == 0)
+		{
+			for (int j=1;j<ny-1;j++){
+				sum1 += inp(1,j,0) + inp(nx-1,j,0);
+				cnt+=2;}
+		}
+		else
+		{
+		for (int k=1;k<nz-1;k++){
+			for (int j=1;j<ny-1;j++){
+				sum1 += inp(1,j,0) + inp(nx-1,j,0);
+				cnt+=2;}
+		}
+		}
+		background = sum1/cnt;
+	}		
+	else{
+		background = static_cast<int>(params["background"]);
 	}
-	else if(background=='Average'){
-	float Avg=img->get_attr("mean");
-	background = Avg;}
-	else {background=background;}*/	
+	
 	/*=====================================================================================*/
 	
-					
-	/* Initial Padding */
+						
+	 /*Initial Padding */
 	for (int k=0;k<new_nz;k++)
 		for(int j=0;j<new_ny;j++)
 			for (int i=0;i<new_nx;i++)
 				outp(i,j,k)=background;
-	/* ============================== */
+	/*============================== */
 	
 	/*    Calculation of the start point */
-	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_offset)),new_st_y=int(ceil((new_ny-ny)/2.f +
-	y_offset)),new_st_z=int(ceil((new_nz-nz)/2.f + z_offset));
+	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_offset)),new_st_y=int(ceil((new_ny-ny)/2.f +	y_offset)),new_st_z=int(ceil((new_nz-nz)/2.f + z_offset));
 	/* ============================== */
 
 	for (int k=0;k<nz;k++)
 	    for(int j=0;j<ny;j++)
 	        for(int i=0;i<nx;i++)
-			outp(i,j,k)=inp(i+new_st_x,j+new_st_y,k+new_st_z); 
+			outp(i+new_st_x,j+new_st_y,k+new_st_z)=inp(i,j,k); 
 	pading->update();
 	return pading;
 }
@@ -2409,3 +2428,7 @@ if (image->is_complex())
                  slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
          }
 }
+
+//-----------------------------------------------------------------------------------------------------------------------
+
+

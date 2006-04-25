@@ -338,9 +338,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	/*static EMData* window(EMData* img,int new_nx,int new_ny=1, int new_nz=1, int shift_x=1, int shift_y=1, int
 	shift_z=1);*/
 	static EMData* window(EMData* img,int new_nx ,int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0);
-	
-	
-	static EMData* pad(EMData* img, int new_nx, int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0,int background=0);
+
+	static EMData* pad(EMData* img, Dict params,int new_nx, int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0);
+
 	
 	
 #endif	//util__sparx_h__

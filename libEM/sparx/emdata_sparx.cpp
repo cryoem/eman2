@@ -3,7 +3,7 @@
  */
 #include "emdata.h"
 #include <iostream>
-
+#include "math.h"
  
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
@@ -1993,3 +1993,103 @@ vector<float> EMData::phase_cog()
 #undef X
 #undef Y
 #undef Z
+
+#define avagadro (6.023*(double)pow(10.0,23.0))
+#define density_protein (1.36)
+#define R (0.61803399)
+#define C (1.f-R)
+float EMData::find_3d_threshold(float mass,float pixel_size)
+{
+	/* Exception Handle */
+	if(get_ndim()!=3)
+		throw ImageDimensionException("The image should be 3D");
+	/* ===============================================================*/
+	
+	/* Calculation of the volume of the voxels */
+	float density_1_mole,vol_1_mole,vol_angstrom;
+	int vol_voxels;
+	density_1_mole = (float)mass/avagadro;
+	vol_1_mole = density_1_mole/density_protein;
+	vol_angstrom = vol_1_mole*(double)pow((double)pow(10.0,8),3);
+	vol_voxels = static_cast<int> (vol_angstrom/(double)pow(pixel_size,3));
+	/* ===============================================================*/
+
+	
+	float thr1 = get_attr("maximum");
+	float thr3 = get_attr("minimum");
+	float thr2 = (thr1-thr3)/2 + thr3;
+	int size = nx*ny*nz;
+	float x0 = thr1,x3 = thr3,x1,x2,THR=0;
+	
+	#ifdef _WIN32
+		int ILE = _MIN(nx*ny*nx,_MAX(1,vol_voxels));
+	#else
+		int ILE = std::min(nx*ny*nx,std::max(1,vol_voxels));
+	#endif	//_WIN32
+	
+	if (abs(thr3-thr2)>abs(thr2-thr1))
+	{	x1=thr2;
+		x2=thr2+C*(thr3-thr2);}
+	else
+	{	x2=thr2;
+		x1=thr2-C*(thr2-thr1);	}
+		
+	int cnt1=0,cnt2=0;
+	for (int i=0;i<size;i++)
+	{	if(rdata[i]>=x1)
+			cnt1++;
+		if(rdata[i]>=x2)
+			cnt2++;
+	}
+	float LF1 = cnt1 - ILE;
+	float F1 = LF1*LF1;
+	float LF2 = cnt2 - ILE;
+	float F2 = LF2*LF2;
+	
+	while ((LF1 != 0 || LF2 != 0) && (fabs(LF1-LF2) >= 1.f) && (abs(x1-x2) > (double)pow(10.0,-5) && abs(x1-x3) > (double)pow(10.0,-5) && abs(x2-x3) > (double)pow(10.0,-5)))
+	{
+		if(F2 < F1)
+		{
+			x0=x1;
+			x1=x2;
+			x2 = R*x1 + C*x3;
+			F1=F2;
+			int cnt=0;
+			for(int i=0;i<size;i++)
+				if(rdata[i]>=x2)
+					cnt++;
+			LF2 = cnt - ILE;
+			F2 = LF2*LF2;
+		}
+		else
+		{
+			x3=x2;
+			x2=x1;
+			x1=R*x2 + C*x0;
+			F2=F1;
+			int cnt=0;
+			for(int i=0;i<size;i++)
+				if(rdata[i]>=x1)
+					cnt++;
+			LF1 = cnt - ILE;
+			F1 = LF1*LF1;
+		}
+	}
+	
+	if(F1 < F2)
+	{
+		ILE = static_cast<int> (LF1 + ILE);
+		THR = x1;
+	}
+	else
+	{
+		ILE = static_cast<int> (LF2 + ILE);
+		THR = x2;
+	}
+	return THR;
+	
+}
+#undef avagadro
+#undef density_protein
+#undef R
+#undef C

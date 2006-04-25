@@ -349,6 +349,8 @@ vector<float> peak_search(int ml, float invert);
  */
 vector<float> phase_cog();
 
+float find_3d_threshold(float mass,float pixel_size);
+
 private:
 //utility function for peak_search()
 static bool peakcmp(const Pixel& p1, const Pixel& p2);  
