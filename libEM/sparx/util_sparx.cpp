@@ -2210,7 +2210,7 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 #undef old_ptr
 #undef new_ptr
 
-#define inp(i,j,k) inp[i+(j+(k*ny))*nx]
+#define inp(i,j,k) inp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
 EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
@@ -2240,7 +2240,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 	
 	/*    Calculation of the start point */
-	int new_st_x=int(ceil((nx-new_nx)/2.f  + x_offset)),
+	int new_st_x=int(ceil((nx-new_nx)/2.f + x_offset)),
 	    new_st_y=int(ceil((ny-new_ny)/2.f + y_offset)),  
 	    new_st_z=int(ceil((nz-new_nz)/2.f + z_offset));
 	/* ============================== */
@@ -2254,7 +2254,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 	for (int k=0;k<new_nz;k++)
 	    for(int j=0;j<new_ny;j++)
 	        for(int i=0;i<new_nx;i++)
-		     outp(i,j,k)=inp(i+new_st_x,j+new_st_y,k+new_st_z);		    
+		     outp(i,j,k)=inp(i,j,k);		    
 	wind->update();
 	return wind;
 }
@@ -2262,7 +2262,7 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 #undef outp
 
 #define inp(i,j,k) inp[i+(j+(k*ny))*nx]
-#define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
+#define outp(i,j,k) outp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*new_ny))*new_nx]
 EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
 	/* Exception Handle */
@@ -2289,12 +2289,11 @@ EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, in
 	pading->set_size(new_nx,new_ny,new_nz);
 	float *inp=img->get_data();
 	float *outp=pading->get_data();
-	
-	
+		
 	
 	/* Calculation of the average and the circumference values for background substitution 
 	=======================================================================================*/
-	float background =0.f;
+	float background;
 	if (strcmp("average",params["average"])==0){
 		background = img->get_attr("mean");
 		}
@@ -2327,22 +2326,28 @@ EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, in
 	
 	/*=====================================================================================*/
 	
-						
+	
 	 /*Initial Padding */
+	int new_st_x=0,new_st_y=0,new_st_z=0;
 	for (int k=0;k<new_nz;k++)
 		for(int j=0;j<new_ny;j++)
 			for (int i=0;i<new_nx;i++)
 				outp(i,j,k)=background;
 	/*============================== */
 	
+
 	/*    Calculation of the start point */
-	int new_st_x=int(ceil((new_nx-nx)/2.f  + x_offset)),new_st_y=int(ceil((new_ny-ny)/2.f +	y_offset)),new_st_z=int(ceil((new_nz-nz)/2.f + z_offset));
-	/* ============================== */
+	new_st_x=int(ceil((new_nx-nx)/2.f  + x_offset));
+	new_st_y=int(ceil((new_ny-ny)/2.f  + y_offset));
+	new_st_z=int(ceil((new_nz-nz)/2.f  + z_offset));
+	/* ============================== */					
+
 
 	for (int k=0;k<nz;k++)
 	    for(int j=0;j<ny;j++)
-	        for(int i=0;i<nx;i++)
-			outp(i+new_st_x,j+new_st_y,k+new_st_z)=inp(i,j,k); 
+	        for(int i=0;i<nx;i++){
+			outp(i,j,k)=inp(i,j,k); 
+			}
 	pading->update();
 	return pading;
 }
