@@ -754,3 +754,21 @@ EMData * EMData::real2complex(const float img)
 
 	EXITFUNC;
 }
+
+void EMData::conjugate() 
+{
+	ENTERFUNC;
+	
+	if( !is_complex() || !is_ri()) {
+		throw InvalidCallException("This function call only apply to real/imag complex image");
+	}
+	
+	size_t size = nx * ny * nz;
+	size_t i;
+	for(i=1; i<size; i+=2) {
+		rdata[i] *= -1;
+	}
+	done_data();
+	
+	EXITFUNC;
+}

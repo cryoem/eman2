@@ -497,6 +497,7 @@ EMData * imag();
  */
 EMData * real2complex(float img = 0.0f);
 
-
+/** Do a complex conjugate operation on fourier image*/
+void conjugate();
 
 #endif	//emdata__core_h__
