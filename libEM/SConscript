@@ -111,6 +111,38 @@ cd
 libEM/CMakeFiles/EM2.dir/emcache.o
 -c
 /net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/libEM/emcache.cpp 
+
+
+cd
+/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/libEM
+&&
+/usr/bin/g++
+-fPIC
+-Wl,--export-dynamic
+-L/net/hooknose/scratch1/hohn/gar-sparx/usr/lib
+-shared
+-Wl,-soname,libEM2.so
+-o
+../lib/libEM2.so
+"CMakeFiles/EM2.dir/byteorder.o"
+...
+"CMakeFiles/EM2.dir/sparx/SparxIO.o"
+-L/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib
+-L/net/cci/hohn/tmp/gar-sparx/usr/lib
+-lsrfftw
+-lsfftw
+-lgsl
+-lgslcblas
+-lm
+-ltiff
+-ljpeg
+-lhdf5
+-lz
+-lpng
+-Wl,-rpath,/net/cci/hohn/tmp/active/gar-sparx-installer/sparx/eman2/work/main.d/eman2-20.04.2006/build/lib:/net/cci/hohn/tmp/gar-sparx/usr/lib   
+    
+
+
 """
 
 #*
@@ -122,14 +154,13 @@ env = env_base.Copy(
   CXXFLAGS = cxxflags,
   SHCXXFLAGS = cxxflags,
   SHLINKFLAGS = env_etc.shlinkflags,
-  LIBS = env_etc.libm,
+  LIBS = env_etc.libm + ["srfftw", "sfftw", "gsl", "gslcblas", ],
+  LIBPATH = ["/net/hooknose/scratch1/hohn/gar-sparx/usr/lib"],
   CPPPATH = [".", env_etc.boost_include,
              "/net/hooknose/scratch1/hohn/gar-sparx/usr/include",]
 )
 
-
 #**
-
 lib_em2_sources = [
     "byteorder.cpp", 
     "emobject.cpp", 
