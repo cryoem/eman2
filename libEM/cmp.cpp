@@ -53,40 +53,35 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 
 	float *d1 = image->get_data();
 	float *d2 = with->get_data();
-	bool  mask_exist;
-
-	EMData* mask;
-	if (params.has_key("mask")) {
-		mask = params["mask"];  mask_exist = true;
-	} else {
-		mask_exist = false;
-	}
-	float* dm = mask->get_data();
 
 	double avg1 = 0., var1 = 0., avg2 = 0., var2 = 0., ccc = 0.;
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	if(mask_exist) {
-	  for (long i = 0; i < totsize; i++) {
-	  	  if (dm[i] > 0.5) {
-	  		  avg1 += double(d1[i]);
-	  		  var1 += d1[i]*double(d1[i]);
-	  		  avg2 += double(d2[i]);
-	  		  var2 += d2[i]*double(d2[i]);
-	  		  ccc += d1[i]*double(d2[i]);
-	  		  n++;
-	  	  }
-	}
+	if (params.has_key("mask")) {
+	  EMData* mask;			              
+	  mask = params["mask"];
+	  float* dm = mask->get_data();	              
+	  for (long i = 0; i < totsize; i++) {         
+	   if (dm[i] > 0.5) {		              
+	 	   avg1 += double(d1[i]);             
+	 	   var1 += d1[i]*double(d1[i]);       
+	 	   avg2 += double(d2[i]);             
+	 	   var2 += d2[i]*double(d2[i]);       
+	 	   ccc += d1[i]*double(d2[i]);        
+	 	   n++; 		              
+	   }
+	  }				              
 	} else {
-	  for (long i = 0; i < totsize; i++) {
-	  		  avg1 += double(d1[i]);
-	  		  var1 += d1[i]*double(d1[i]);
-	  		  avg2 += double(d2[i]);
-	  		  var2 += d2[i]*double(d2[i]);
-	  		  ccc += d1[i]*double(d2[i]);
-	  	  }
-	   n = totsize;
+	  for (long i = 0; i < totsize; i++) {        
+	  	   avg1 += double(d1[i]);            
+	  	   var1 += d1[i]*double(d1[i]);      
+	  	   avg2 += double(d2[i]);            
+	  	   var2 += d2[i]*double(d2[i]);      
+	  	   ccc += d1[i]*double(d2[i]);       
+	   }				              
+	   n = totsize; 		              
 	}
+
 	avg1 /= double(n);
 	var1 = var1/double(n) - avg1*avg1;
 	avg2 /= double(n);
@@ -106,32 +101,26 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 
 	float *y_data = with->get_data();
 	float *x_data = image->get_data();
-	bool  mask_exist;
-
-	EMData* mask;
-	if (params.has_key("mask")) {
-		mask = params["mask"];  mask_exist = true;
-	} else {
-		mask_exist = false;
-	}
-	float* dm = mask->get_data();
 
 	double result = 0.;
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	if(mask_exist) {
+	if (params.has_key("mask")) {
+	  EMData* mask;
+	  mask = params["mask"];
+  	  float* dm = mask->get_data();
 	  for (long i = 0; i < totsize; i++) {
 	       if (dm[i] > 0.5) {
 	        double temp = x_data[i]- y_data[i];
 		result += temp*temp;
 	  		  n++;
 	       }
-	}
+	  }
 	} else {
 	  for (long i = 0; i < totsize; i++) {
 	        double temp = x_data[i]- y_data[i];
 		result += temp*temp;
-	  	  }
+	   }
 	   n = totsize;
 	}
 	result/=n;
@@ -156,22 +145,16 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	float negative = (float)params.set_default("negative", 1);
 	
 	if (negative) negative=-1.0; else negative=1.0;
-	bool  mask_exist;
-	double square_sum1 = 0., square_sum2 = 0.;
-
-	EMData* mask;
-	if (params.has_key("mask")) {
-		mask = params["mask"];  mask_exist = true;
-	} else {
-		mask_exist = false;
-	}
-	float* dm = mask->get_data();
-
 	long n = 0;
 	double result = 0.;
 	long totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
-	if(mask_exist) {
+	double square_sum1 = 0., square_sum2 = 0.;
+
+	if (params.has_key("mask")) {
+	  EMData* mask;
+	  mask = params["mask"];
+	  float* dm = mask->get_data();
 	  for (long i = 0; i < totsize; i++) {
 			if (dm[i] > 0.5) {
 			  square_sum1 += d1[i]*double(d1[i]);
@@ -184,19 +167,13 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	  for (long i = 0; i < totsize; i++) {
 		result += d1[i]*double(d2[i]);
 	  }
-	   n = totsize;
+	  if (normalize) {
+	   square_sum1 = image->get_attr_dict().get("square_sum");
+	   square_sum2 = with->get_attr_dict().get("square_sum");
+	  }
 	}
 	
-	if (normalize) {
-	    if(mask_exist) {}
-	    else {
-		square_sum1 = image->get_attr_dict().get("square_sum");
-		square_sum2 = with->get_attr_dict().get("square_sum");
-	    }
-
-		result = result / (sqrt(square_sum1*square_sum2));
-	}
-	else result/=totsize;
+	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= totsize;
 			
 	EXITFUNC;
 	return (float) (negative*result);
