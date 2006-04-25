@@ -26,7 +26,7 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_decimate_overloads_2_4, EMAN::Util::de
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_window_overloads_2_7, EMAN::Util::window, 2, 7)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_2_8, EMAN::Util::pad, 2, 8)
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_3_8, EMAN::Util::pad, 3, 8)
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
@@ -161,7 +161,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("prb1d", &EMAN::Util::prb1d)
         .def("decimate", &EMAN::Util::decimate, EMAN_Util_decimate_overloads_2_4()[ return_value_policy< manage_new_object >() ])
         .def("window", &EMAN::Util::window, EMAN_Util_window_overloads_2_7()[ return_value_policy< manage_new_object >() ])
-        .def("pad", &EMAN::Util::pad, EMAN_Util_pad_overloads_2_8()[ return_value_policy< manage_new_object >() ])
+        .def("pad", &EMAN::Util::pad, EMAN_Util_pad_overloads_3_8()[ return_value_policy< manage_new_object >() ])
         .def("is_file_exist", &EMAN::Util::is_file_exist)
         .def("svdcmp", &EMAN::Util::svdcmp)
         .def("sstrncmp", &EMAN::Util::sstrncmp)
