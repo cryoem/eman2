@@ -155,8 +155,8 @@ int PolarData::test_init_desc_data()
 	
 	cout << "allocation of data success" << endl;
 	
-	int j = 10;
-	cout << "log2(10) = " << log2(j) << endl;
+	//int j = 10;
+	//cout << "log2(10) = " << log2(j) << endl;
 	
 	return 0;
 }
