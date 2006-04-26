@@ -552,7 +552,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 								float a4 = (*image)(iox,ioy,ioz+1) - a1;
 								float a5 = -a2 -(*image)(iox,ioy+1,ioz) 
 									+ (*image)(iox+1,ioy+1,ioz);
-								float a61 = -(*image)(iox,ioy,ioz+1) 
+								float a61 = -(*image)(iox,ioy,ioz+1)
 									+ (*image)(iox+1,ioy,ioz+1);
 								float a6 = -a2 + a61;
 								float a7 = -a3 - (*image)(iox,ioy,ioz+1)
@@ -869,7 +869,7 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 		EMData* winproj = proj->window_center(m);
 		delete proj;
 		for (int iy=0; iy < ny; iy++)
-			for (int ix=0; ix < nx; ix++) 
+			for (int ix=0; ix < nx; ix++)
 				(*ret)(ix,iy,ia) = (*winproj)(ix,iy);
 		delete winproj;
 	}
