@@ -18,6 +18,8 @@ namespace EMAN
 	{
 	  public:
 		EMData * project3d(EMData * em) const;
+// chao added
+		EMData * backproject3d(EMData * em) const;
 
 		string get_name() const
 		{
