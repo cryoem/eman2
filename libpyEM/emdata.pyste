@@ -35,6 +35,7 @@ set_policy(EMData.rot_scale_conv, return_value_policy(manage_new_object))
 
 set_policy(EMData.align, return_value_policy(manage_new_object))
 set_policy(EMData.project, return_value_policy(manage_new_object))
+set_policy(EMData.backproject, return_value_policy(manage_new_object))
 set_policy(EMData.do_radon, return_value_policy(manage_new_object))
 set_policy(EMData.vertical_acf, return_value_policy(manage_new_object))
 set_policy(EMData.calc_ccf, return_value_policy(manage_new_object))
