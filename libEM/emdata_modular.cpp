@@ -105,3 +105,21 @@ EMData *EMData::project(const string & projector_name, const Dict & params)
 	return result;
 }
 
+EMData *EMData::backproject(const string & projector_name, const Dict & params)
+{
+	ENTERFUNC;
+	EMData *result = 0;
+	Projector *p = Factory < Projector >::get(projector_name, params);
+	if (p) {
+		result = p->backproject3d(this);
+		if( p )
+		{
+			delete p;
+			p = 0;
+		}
+	}
+
+	EXITFUNC;
+	return result;
+}
+

@@ -20,6 +20,7 @@ template <> Factory < Projector >::Factory()
 	force_add(&StandardProjector::NEW);
 	force_add(&StandardFastProjector::NEW);
 	force_add(&FourierGriddingProjector::NEW);
+	force_add(&ChaoProjector::NEW);
 }
 
 
@@ -878,7 +879,773 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	return ret;
 }
 
+// BEGIN Chao projectors and backprojector addition (04/25/06)
+int ChaoProjector::getnnz(Vec3i volsize, int ri, Vec3i origin, int *nrays, int *nnz) const
+/*
+   purpose: count the number of voxels within a sphere centered
+            at origin and with a radius ri.
 
+     input:
+     volsize contains the size information (nx,ny,nz) about the volume
+     ri      radius of the object embedded in the cube.
+     origin  coordinates for the center of the volume
+   
+     output:
+     nnz    total number of voxels within the sphere (of radius ri)
+     nrays  number of rays in z-direction. 
+*/
+{
+    int  ix, iy, iz, rs, r2, xs, ys, zs, xx, yy, zz;
+    int  ftm=0, status = 0;
+
+    r2    = ri*ri;
+    *nnz  = 0;
+    *nrays = 0;
+    int nx = (int)volsize[0];
+    int ny = (int)volsize[1];
+    int nz = (int)volsize[2];
+
+    int xcent = (int)origin[0]; 
+    int ycent = (int)origin[1]; 
+    int zcent = (int)origin[2]; 
+
+    // need to add some error checking 
+    for (ix = 1; ix <=nx; ix++) { 
+	xs  = ix-xcent;
+	xx  = xs*xs;
+        for (iy = 1; iy <= ny; iy++) {
+            ys = iy-ycent;
+            yy = ys*ys; 
+            ftm = 1;
+            for (iz = 1; iz <= nz; iz++) {
+		zs = iz-zcent;
+		zz = zs*zs;
+		rs = xx + yy + zz;
+		if (rs <= r2) {
+		    (*nnz)++;
+		    if (ftm) {
+                       (*nrays)++;
+                       ftm = 0;
+                    }
+                }
+            }
+	} // end for iy
+    } // end for ix
+    return status;
+}
+
+#define cube(i,j,k) cube[ ((k)-1)*nx*ny + ((j)-1)*nx + (i)-1 ] 
+#define sphere(i)   sphere[(i)-1]
+#define cord(i,j)   cord[((j)-1)*3 + (i) -1]
+#define ptrs(i)     ptrs[(i)-1]
+#define dm(i)       dm[(i)-1]
+
+int ChaoProjector:: cb2sph(float *cube, Vec3i volsize, int    ri, Vec3i origin, 
+                           int    nnz0, int     *ptrs, int *cord, float *sphere) const
+{
+    int    xs, ys, zs, xx, yy, zz, rs, r2;
+    int    ix, iy, iz, jnz, nnz, nrays;
+    int    ftm = 0, status = 0;  
+
+    int xcent = (int)origin[0];
+    int ycent = (int)origin[1];
+    int zcent = (int)origin[2];
+
+    int nx = (int)volsize[0];
+    int ny = (int)volsize[1];
+    int nz = (int)volsize[2];
+
+    r2      = ri*ri;
+    nnz     = 0;
+    nrays    = 0;
+    ptrs(1) = 1;
+
+    for (ix = 1; ix <= nx; ix++) {
+       xs  = ix-xcent;
+       xx  = xs*xs;
+       for ( iy = 1; iy <= ny; iy++ ) {
+           ys = iy-ycent;
+           yy = ys*ys;
+           jnz = 0;
+
+           ftm = 1;
+           // not the most efficient implementation
+           for (iz = 1; iz <= nz; iz++) {
+               zs = iz-zcent;
+               zz = zs*zs;
+               rs = xx + yy + zz;
+               if (rs <= r2) {
+                  jnz++;
+                  nnz++;
+                  sphere(nnz) = cube(iz, iy, ix); 
+
+                  //  record the coordinates of the first nonzero ===
+                  if (ftm) {
+  		     nrays++;
+                     cord(1,nrays) = iz; 
+                     cord(2,nrays) = iy; 
+                     cord(3,nrays) = ix;
+                     ftm = 0;
+                  }
+               }
+            } // end for (iz..)
+            if (jnz > 0) {
+		ptrs(nrays+1) = ptrs(nrays) + jnz;
+	    }  // endif (jnz)
+       } // end for iy
+    } // end for ix
+    if (nnz != nnz0) status = -1;
+    return status;
+}
+
+// decompress sphere into a cube
+int ChaoProjector::sph2cb(float *sphere, Vec3i volsize, int  nrays, int    ri, 
+                          int      nnz0, int     *ptrs, int  *cord, float *cube) const
+{
+    int       status=0;
+    int       r2, i, j, ix, iy, iz,  nnz;
+
+    int nx = (int)volsize[0];
+    int ny = (int)volsize[1];
+    int nz = (int)volsize[2];
+
+    r2      = ri*ri;
+    nnz     = 0;
+    ptrs(1) = 1;
+
+    for (ix = 0; i<nx*ny*nz; i++) cube[i]=0.0;
+
+    nnz = 0;
+    for (j = 1; j <= nrays; j++) {
+       iz = cord(1,j);
+       iy = cord(2,j);
+       ix = cord(3,j);
+       for (i = ptrs(j); i<=ptrs(j+1)-1; i++, iz++) {
+           nnz++;
+	   cube(iz,iy,ix) = sphere(nnz);
+       }
+    }
+    if (nnz != nnz0) status = -1;
+    return status;
+}
+
+#define x(i)        x[(i)-1]
+#define y(i,j)      y[((j)-1)*nx + (i) - 1]
+
+// project from 3D to 2D (single image)
+int ChaoProjector::fwdpj3(Vec3i volsize, int nrays, int   nnz, float *dm, 
+                          Vec3i  origin, int    ri, int *ptrs, int *cord, 
+                          float      *x, float  *y) const
+{
+    /*
+        purpose:  y <--- proj(x)
+        input  :  volsize  the size (nx,ny,nz) of the volume
+                  nrays    number of rays within the compact spherical 
+                           representation
+                  nnz      number of voxels within the sphere
+                  dm       an array of size 9 storing transformation 
+                           associated with the projection direction
+                  origin   coordinates of the center of the volume
+                  ri       radius of the sphere
+                  ptrs     the beginning address of each ray
+                  cord     the coordinates of the first point in each ray
+                  x        3d input volume
+                  y        2d output image 
+    */
+
+    int    iqx, iqy, i, j, xc, yc, zc;
+    float  ct, dipx, dipy, dipx1m, dipy1m, xb, yb, dm1, dm4;
+    int    status = 0;
+
+    int xcent = origin[0];
+    int ycent = origin[1];
+    int zcent = origin[2];
+
+    int nx = volsize[0];
+
+    dm1 = dm(1);
+    dm4 = dm(4);
+ 
+    if ( nx > 2*ri ) {
+	for (i = 1; i <= nrays; i++) {
+            zc = cord(1,i)-zcent;
+            yc = cord(2,i)-ycent;
+            xc = cord(3,i)-xcent;
+
+            xb = zc*dm(1)+yc*dm(2)+xc*dm(3) + xcent;
+            yb = zc*dm(4)+yc*dm(5)+xc*dm(6) + ycent;
+
+            for (j = ptrs(i); j< ptrs(i+1); j++) {
+               iqx = ifix(xb);
+               iqy = ifix(yb);
+
+  	       ct   = x(j);
+               dipx =  xb - (float)(iqx);
+               dipy = (yb - (float)(iqy)) * ct;
+
+               dipy1m = ct - dipy;
+               dipx1m = 1.0 - dipx;
+
+               y(iqx  ,iqy)   = y(iqx  ,iqy)   + dipx1m*dipy1m;
+               y(iqx+1,iqy)   = y(iqx+1,iqy)   + dipx*dipy1m; 
+               y(iqx+1,iqy+1) = y(iqx+1,iqy+1) + dipx*dipy;         
+               y(iqx  ,iqy+1) = y(iqx  ,iqy+1) + dipx1m*dipy;
+
+               xb += dm1;
+               yb += dm4;
+	   }
+	}
+    }
+    else {
+	fprintf(stderr, " nx must be greater than 2*ri\n");
+        exit(1);
+    }
+    return status;
+}
+#undef x
+#undef y
+
+#define y(i)        y[(i)-1]
+#define x(i,j)      x[((j)-1)*nx + (i) - 1]
+
+// backproject from 2D to 3D for a single image
+int ChaoProjector::bckpj3(Vec3i volsize, int nrays, int   nnz, float *dm, 
+                          Vec3i  origin, int    ri, int *ptrs, int *cord, 
+                          float      *x, float *y) const
+{
+    int       i, j, iqx,iqy, xc, yc, zc;
+    float     xb, yb, dx, dy, dx1m, dy1m, dxdy;
+    int       status = 0; 
+
+    int xcent = origin[0];
+    int ycent = origin[1];
+    int zcent = origin[2];
+
+    int nx = volsize[0];
+
+    if ( nx > 2*ri) {
+	for (i = 1; i <= nrays; i++) {
+	    zc = cord(1,i) - zcent;
+	    yc = cord(2,i) - ycent;
+            xc = cord(3,i) - xcent;
+
+            xb = zc*dm(1)+yc*dm(2)+xc*dm(3) + xcent;
+            yb = zc*dm(4)+yc*dm(5)+xc*dm(6) + ycent;
+
+            for (j = ptrs(i); j <ptrs(i+1); j++) {
+		iqx = ifix((float)(xb));
+		iqy = ifix((float)(yb));
+
+		dx = xb - (float)(iqx);
+		dy = yb - (float)(iqy);
+		dx1m = 1.0 - dx;
+		dy1m = 1.0 - dy;
+		dxdy = dx*dy;
+/*
+c               y(j) = y(j) + dx1m*dy1m*x(iqx  , iqy)
+c     &                     + dx1m*dy  *x(iqx  , iqy+1)
+c     &                     + dx  *dy1m*x(iqx+1, iqy)
+c     &                     + dx  *dy  *x(iqx+1, iqy+1)  
+c
+c              --- faster version of the above commented out
+c                  code (derived by summing the following table 
+c                  of coefficients along  the colunms) ---
+c
+c                        1         dx        dy      dxdy
+c                     ------   --------  --------  -------
+c                      x(i,j)   -x(i,j)   -x(i,j)    x(i,j)  
+c                                        x(i,j+1) -x(i,j+1)
+c                              x(i+1,j)           -x(i+1,j)
+c                                                x(i+1,j+1) 
+c
+*/
+               y(j) += x(iqx,iqy)
+                    +  dx*(-x(iqx,iqy)+x(iqx+1,iqy))
+                    +  dy*(-x(iqx,iqy)+x(iqx,iqy+1))
+                    +  dxdy*( x(iqx,iqy) - x(iqx,iqy+1) 
+                             -x(iqx+1,iqy) + x(iqx+1,iqy+1) );
+
+               xb += dm(1);
+               yb += dm(4);
+	    } // end for j
+	} // end for i
+     }
+    else {
+	fprintf(stderr, "bckpj3: nx must be greater than 2*ri\n");
+    }
+
+    return status;
+}
+
+#undef x
+#undef y
+#undef dm
+
+// funny F90 style strange rounding function
+int ChaoProjector::ifix(float a) const
+{
+    int ia;
+
+    if (a>=0) { 
+       ia = (int)floor(a);
+    }
+    else { 
+       ia = (int)ceil(a);
+    }
+    return ia;
+}
+
+#define dm(i,j)          dm[((j)-1)*9 + (i) -1]
+#define anglelist(i,j)   anglelist[((j)-1)*3 + (i) - 1]
+
+// SPIDER stype transformation
+void ChaoProjector::setdm(vector<float> anglelist, string const angletype, float *dm) const
+{ // convert Euler angles to transformations, dm is an 9 by nangles array
+
+    float  psi, theta, phi;
+    double cthe, sthe, cpsi, spsi, cphi, sphi;
+    int    j;
+
+    int nangles = anglelist.size() / 3;
+
+    // now convert all angles 
+    for (j = 1; j <= nangles; j++) {
+        phi   = (float)anglelist(1,j)*dgr_to_rad;
+        theta = (float)anglelist(2,j)*dgr_to_rad;
+        psi   = (float)anglelist(3,j)*dgr_to_rad;
+
+        cthe  = cos(theta);
+        sthe  = sin(theta);
+        cpsi  = cos(psi);
+        spsi  = sin(psi);
+        cphi  = cos(phi);
+        sphi  = sin(phi);
+
+        dm(1,j)=cphi*cthe*cpsi-sphi*spsi;
+        dm(2,j)=sphi*cthe*cpsi+cphi*spsi;
+        dm(3,j)=-sthe*cpsi;
+        dm(4,j)=-cphi*cthe*spsi-sphi*cpsi;
+        dm(5,j)=-sphi*cthe*spsi+cphi*cpsi;
+        dm(6,j)=sthe*spsi;
+        dm(7,j)=sthe*cphi;
+        dm(8,j)=sthe*sphi;
+        dm(9,j)=cthe;
+    } 
+}
+#undef dm
+#undef anglelist
+
+#define images(i,j,k) images[ ((k)-1)*nxvol*nyvol + ((j)-1)*nxvol + (i)-1 ] 
+
+// project from 3D to 2D (multiple projections)
+EMData *ChaoProjector::project3d(EMData * vol) const
+{
+        int nrays, nnz, status, j;
+        float *dm;
+        string angletype;
+        int   *ptrs, *cord;
+        float *sphere, *images;
+ 
+	int nxvol = vol->get_xsize();
+	int nyvol = vol->get_ysize();
+	int nzvol = vol->get_zsize();
+        Vec3i volsize(nxvol,nyvol,nzvol);
+
+	int dim = Util::get_min(nxvol,nyvol,nzvol);
+	if (nzvol == 1) {
+		LOGERR("The PawelProjector needs a volume!");
+		return 0;
+	}
+	Vec3i origin(0,0,0);
+	// If a sensible origin isn't passed in, choose the middle of
+	// the cube.
+	if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
+	else {origin[0] = nxvol/2+1;}
+	if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
+	else {origin[1] = nyvol/2+1;}
+	if (params.has_key("origin_z")) {origin[2] = params["origin_z"];} 
+	else {origin[2] = nzvol/2+1;}
+
+	int ri;
+	if (params.has_key("radius")) {ri = params["radius"];} 
+	else {ri = dim/2 - 1;}
+
+        // retrieve the voxel values
+        float *cube = vol->get_data(); 
+
+        // count the number of voxels within a sphere centered at icent, 
+        // with radius ri 
+        status = getnnz(volsize, ri, origin, &nrays, &nnz);
+        // need to check status...
+
+        // convert from cube to sphere
+        sphere = (float*)calloc(nnz,sizeof(float));
+        ptrs   = (int*)calloc(nrays+1, sizeof(int));
+        cord   = (int*)calloc(3*nrays, sizeof(int));
+        if (sphere == NULL || ptrs == NULL || cord == NULL) {
+            fprintf(stderr,"ChaoProjector::project3d, failed to allocate!\n");
+            exit(1);
+        }
+        status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
+        // check status
+
+	// Do we have a list of angles?
+	vector<float> anglelist = params["anglelist"];
+	int nangles = anglelist.size() / 3;
+
+	// For the moment, let's assume the user wants to use either
+	// EMAN or SPIDER Euler angles, but nothing else.
+	angletype = params["angletype"].to_str();
+	if (angletype == "SPIDER") {
+            if (nangles == 0) {
+               // a single SPIDER angle was passed in
+               float phi = params["phi"];
+               float theta = params["theta"];
+               float psi = params["psi"];
+               anglelist.push_back(phi);
+               anglelist.push_back(theta);
+               anglelist.push_back(psi);
+               nangles = 1;
+            }
+	} else if (angletype == "EMAN") {
+            if (nangles == 0) {
+               // a single EMAN angle was passed in
+               float az = params["az"];
+               float alt = params["alt"];
+               float phi = params["phi"];
+               anglelist.push_back(az);
+               anglelist.push_back(alt);
+               anglelist.push_back(phi);
+               nangles = 1;
+            }
+        } else {
+            throw InvalidValueException(0,"Only SPIDER and EMAN Euler angles currently supported");
+        } //end if (angletype)
+
+        dm = new float[nangles*9];
+        setdm(anglelist, angletype, dm);
+
+        // return images
+	EMData *ret = new EMData();
+	ret->set_size(nxvol, nyvol, nangles);
+	ret->set_complex(false);
+	ret->set_ri(true);
+
+        images = ret->get_data();
+
+        for (j = 1; j <= nangles; j++) { 
+           status = fwdpj3(volsize, nrays, nnz, dm, origin, ri, ptrs, cord, sphere, 
+                           &images(1,1,j));
+           // check status?
+        }
+
+        // deallocate all temporary work space
+        if (dm)     delete dm;
+        if (ptrs)   delete ptrs;
+        if (cord)   delete cord;
+        if (sphere) delete sphere;
+
+	ret->update();
+	return ret;
+}
+
+#undef images
+
+#define images(i,j,k) images[ ((k)-1)*nximg*nyimg + ((j)-1)*nximg + (i)-1 ] 
+// backproject from 2D to 3D (multiple images)
+EMData *ChaoProjector::backproject3d(EMData * imagestack) const
+{
+    int nrays, nnz, status, j;
+    float *dm;
+    string angletype;
+    int   *ptrs, *cord;
+    float *sphere, *images, *cube;
+
+    int nximg   = imagestack->get_xsize();
+    int nyimg   = imagestack->get_ysize();
+    int nslices = imagestack->get_zsize();
+
+    int dim = Util::get_min(nximg,nyimg);
+    Vec3i volsize(nximg,nyimg,dim);
+
+    Vec3i origin(0,0,0);
+    // If a sensible origin isn't passed in, choose the middle of
+    // the cube.
+    if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
+    else {origin[0] = nximg/2+1;}
+    if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
+    else {origin[1] = nyimg/2+1;}
+    if (params.has_key("origin_z")) {origin[1] = params["origin_z"];} 
+    else {origin[2] = dim/2+1;}
+
+    int ri;
+    if (params.has_key("radius")) {ri = params["radius"];} 
+    else {ri = dim/2 - 1;}
+
+    // retrieve the voxel values
+    images = imagestack->get_data(); 
+
+    // count the number of voxels within a sphere centered at icent, 
+    // with radius ri 
+    status = getnnz(volsize, ri, origin, &nrays, &nnz);
+    // need to check status...
+
+    // convert from cube to sphere
+    sphere = (float*)calloc(nnz,sizeof(float));
+    ptrs   = (int*)calloc(nrays+1, sizeof(int));
+    cord   = (int*)calloc(3*nrays, sizeof(int));
+    if (sphere == NULL || ptrs == NULL || cord == NULL) {
+        fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
+        exit(1);
+    }
+
+    // Do we have a list of angles?
+    vector<float> anglelist = params["anglelist"];
+    int nangles = anglelist.size() / 3;
+
+    // For the moment, let's assume the user wants to use either
+    // EMAN or SPIDER Euler angles, but nothing else.
+    angletype = params["angletype"].to_str();
+    if (angletype == "SPIDER") {
+        if (nangles == 0) {
+           // a single SPIDER angle was passed in
+           float phi = params["phi"];
+           float theta = params["theta"];
+           float psi = params["psi"];
+           anglelist.push_back(phi);
+           anglelist.push_back(theta);
+           anglelist.push_back(psi);
+           nangles = 1;
+       }
+    } else if (angletype == "EMAN") {
+        if (nangles == 0) {
+           // a single EMAN angle was passed in
+           float az = params["az"];
+           float alt = params["alt"];
+           float phi = params["phi"];
+           anglelist.push_back(az);
+           anglelist.push_back(alt);
+           anglelist.push_back(phi);
+           nangles = 1;
+        }
+    } else {
+        throw InvalidValueException(0,"Only SPIDER and EMAN Euler angles currently supported");
+    } //end if (angletype)
+
+    if (nslices != nangles) {
+        LOGERR("the number of images does not match the number of angles");
+        return 0;
+    }
+
+    dm = new float[nangles*9];
+    setdm(anglelist, angletype, dm);
+
+    // return volume
+    EMData *ret = new EMData();
+    ret->set_size(nximg, nyimg, dim);
+    ret->set_complex(false);
+    ret->set_ri(true);
+    ret->to_zero();
+
+    cube = ret->get_data();
+    status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
+    // check status
+
+    for (j = 1; j <= nangles; j++) { 
+       status = bckpj3(volsize, nrays, nnz, dm, origin, ri, ptrs, cord, 
+                       &images(1,1,j), sphere);
+       // check status?
+    }
+
+    sph2cb(sphere, volsize, nrays, ri, nnz, ptrs, cord, cube); 
+
+    // deallocate all temporary work space
+    if (dm)     delete dm;
+    if (ptrs)   delete ptrs;
+    if (cord)   delete cord;
+    if (sphere) delete sphere;
+
+    ret->update();
+    return ret;
+}
+
+#undef images 
+#undef cube
+#undef sphere
+#undef cord
+#undef ptrs
+
+EMData *GaussFFTProjector::backproject3d(EMData * image) const
+{ 
+    // no implementation yet
+    EMData *ret = new EMData();
+    return ret;
+}
+
+#define images(i,j,k) images[ (k)*nx*ny + ((j)-1)*nx + (i)-1 ] 
+
+EMData *PawelProjector::backproject3d(EMData * imagestack) const
+{
+    float *images;
+
+    if (!imagestack) {
+	return 0;
+    }
+    int ri;
+    int nx      = imagestack->get_xsize();
+    int ny      = imagestack->get_ysize();
+    int nslices = imagestack->get_zsize();
+    int dim = Util::get_min(nx,ny);
+    images  = imagestack->get_data();
+
+    Vec3i origin(0,0,0);
+    // If a sensible origin isn't passed in, choose the middle of
+    // the cube.
+    if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
+    else {origin[0] = nx/2+1;}
+    if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
+    else {origin[1] = ny/2+1;}
+    if (params.has_key("origin_z")) {origin[1] = params["origin_z"];} 
+    else {origin[2] = dim/2+1;}
+
+    if (params.has_key("radius")) {ri = params["radius"];} 
+    else {ri = dim/2 - 1;}
+
+    // Determine the number of rows (x-lines) within the radius
+    int nn = -1;
+    prepcubes(nx, ny, dim, ri, origin, nn); 
+    // nn is now the number of rows-1 within the radius
+    // so we can create and fill the ipcubes
+    IPCube* ipcube = new IPCube[nn+1];
+    prepcubes(nx, ny, dim, ri, origin, nn, ipcube);
+
+    // Do we have a list of angles?
+    vector<float> anglelist = params["anglelist"];
+    int nangles = anglelist.size() / 3;
+
+    // For the moment, let's assume the user wants to use either
+    // EMAN or SPIDER Euler angles, but nothing else.
+    string angletype = params["angletype"].to_str();
+    Transform3D::EulerType eulertype;
+    if (angletype == "SPIDER") {
+       eulertype = Transform3D::SPIDER;
+       if (nangles == 0) {
+          // a single SPIDER angle was passed in
+          float phi = params["phi"];
+          float theta = params["theta"];
+          float psi = params["psi"];
+          anglelist.push_back(phi);
+          anglelist.push_back(theta);
+          anglelist.push_back(psi);
+          nangles = 1;
+       }
+    } else if (angletype == "EMAN") {
+       eulertype = Transform3D::EMAN;
+       if (nangles == 0) {
+          // a single EMAN angle was passed in
+          float az = params["az"];
+          float alt = params["alt"];
+          float phi = params["phi"];
+          anglelist.push_back(az);
+          anglelist.push_back(alt);
+          anglelist.push_back(phi);
+          nangles = 1;
+       }
+    } else {
+       LOGERR("Only SPIDER and EMAN Euler angles supported");
+       return 0;
+    }
+
+    if (nslices != nangles) {
+        LOGERR("the number of images does not match the number of angles");
+        return 0;
+    }
+
+    // initialize return object
+    EMData* ret = new EMData();
+    ret->set_size(nx, ny, dim);
+    ret->to_zero();
+
+    // loop over sets of angles
+    for (int ia = 0; ia < nangles; ia++) {
+       int indx = 3*ia;
+       Transform3D rotation(eulertype, float(anglelist[indx]*dgr_to_rad),
+                            float(anglelist[indx+1]*dgr_to_rad), 
+                            float(anglelist[indx+2]*dgr_to_rad));
+       float dm1 = rotation.at(0,0);
+       float dm4 = rotation.at(1,0);
+
+       if (2*(ri+1)+1 > dim) {
+          // Must check x and y boundaries
+          LOGERR("backproject3d, pawel, 2*(ri+1)+1 > dim\n");
+          return 0;
+       } else {
+          // No need to check x and y boundaries
+          for (int i = 0 ; i <= nn; i++) {
+             int iox = (int)ipcube[i].loc[0]+origin[0];
+             int ioy = (int)ipcube[i].loc[1]+origin[1];
+             int ioz = (int)ipcube[i].loc[2]+origin[2];
+
+             Vec3f vb = rotation*ipcube[i].loc + origin;
+             for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
+                float xbb = (j-ipcube[i].start)*dm1 + vb[0];
+                int   iqx = (int)floor(xbb);
+
+                float ybb = (j-ipcube[i].start)*dm4 + vb[1];
+                int   iqy = (int)floor(ybb);
+
+                float dipx = xbb - iqx;
+                float dipy = ybb - iqy;
+
+                (*ret)(iox,ioy,ioz) += images(iqx,iqy,ia)
+                    + dipy*(images(iqx,iqy+1,ia)-images(iqx,iqy,ia)) 
+                    + dipx*(images(iqx+1,iqy,ia)-images(iqx,iqy,ia) 
+                    + dipy*(images(iqx+1,iqy+1,ia)-images(iqx+1,iqy,ia) 
+                    - images(iqx,iqy+1,ia)+images(iqx,iqy,ia)));
+                iox++;
+             } // end for j
+	  } // end for i
+       } // end if
+    } // end for ia
+
+    ret->done_data();
+    ret->update();
+    if( ipcube ) {
+       delete [] ipcube;
+       ipcube = 0;
+    }
+    return ret;
+}
+#undef images
+
+EMData *SimpleIsoSurfaceProjector::backproject3d(EMData * image) const
+{  
+   // no implementation yet
+   EMData *ret = new EMData();
+   return ret;
+}
+
+EMData *StandardProjector::backproject3d(EMData * image) const
+{
+   // no implementation yet
+   EMData *ret = new EMData();
+   return ret;
+}
+
+EMData *StandardFastProjector::backproject3d(EMData * image) const
+{  
+   // no implementation yet
+   EMData *ret = new EMData();
+   return ret;
+}
+
+EMData *FourierGriddingProjector::backproject3d(EMData * image) const
+{  
+   // no implementation yet
+   EMData *ret = new EMData();
+   return ret;
+}
+// End Chao's projector addition 4/25/06
 
 void EMAN::dump_projectors()
 {

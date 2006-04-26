@@ -58,6 +58,11 @@ namespace EMAN
 		 */
 		virtual EMData *project3d(EMData * image) const = 0;
 
+		/** Back-project a 2D image into a 3D image.
+		 * @return A 3D image from the backprojection.
+                 */
+		virtual EMData *backproject3d(EMData * image) const = 0;
+
 		/** Get the projector's name. Each projector is indentified by
 		 * unique name.
 		 * @return The projector's name.
@@ -118,6 +123,9 @@ namespace EMAN
 		}
 
 		EMData *project3d(EMData * image) const;
+                // no implementation yet
+		EMData *backproject3d(EMData * image) const;
+
 
 		void set_params(const Dict & new_params)
 		{
@@ -167,6 +175,9 @@ namespace EMAN
 	{
 	  public:
 		EMData * project3d(EMData * image) const;
+                // no implementation yet
+		EMData * backproject3d(EMData * image) const;
+
 
 		string get_name() const
 		{
@@ -206,6 +217,7 @@ namespace EMAN
 	{
 	  public:
 		EMData * project3d(EMData * image) const;
+		EMData * backproject3d(EMData * image) const;
 
 		string get_name() const
 		{
@@ -259,6 +271,8 @@ namespace EMAN
 	{
 	  public:
 		EMData * project3d(EMData * image) const;
+                // no implementation yet
+		EMData * backproject3d(EMData * image) const;
 
 		string get_name() const
 		{
@@ -301,6 +315,8 @@ namespace EMAN
 		}
 
 		EMData * project3d(EMData * image) const;
+                // no implementation yet
+		EMData * backproject3d(EMData * image) const;
 
 		string get_name() const
 		{
@@ -328,6 +344,8 @@ namespace EMAN
 	{
 	  public:
 		EMData * project3d(EMData * image) const;
+                // no implementation yet
+		EMData * backproject3d(EMData * image) const;
 
 		string get_name() const
 		{
@@ -352,6 +370,63 @@ namespace EMAN
 			d.put("phi", EMObject::FLOAT);
 			return d;
 		}
+	};
+
+	/** Fast real space projection using Bi-Linear interpolation. (C. Yang)
+        */
+	class ChaoProjector:public Projector
+	{
+	  public:
+		EMData * project3d(EMData * vol) const;
+		EMData * backproject3d(EMData * imagestack) const;
+
+		string get_name() const
+		{
+			return "chao";
+		}
+
+		string get_desc() const
+		{
+			return "Fast real space projection generation with Bi-Linear interpolation.";
+		}
+
+		static Projector *NEW()
+		{
+			return new ChaoProjector();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("origin_x", EMObject::INT);
+			d.put("origin_y", EMObject::INT);
+			d.put("origin_z", EMObject::INT);
+			d.put("radius", EMObject::INT);
+			d.put("anglelist", EMObject::FLOATARRAY);
+			d.put("angletype", EMObject::STRING);
+			d.put("az", EMObject::FLOAT);
+			d.put("alt", EMObject::FLOAT);
+			d.put("phi", EMObject::FLOAT);
+			d.put("theta", EMObject::FLOAT);
+			d.put("psi", EMObject::FLOAT);
+			d.put("radius", EMObject::FLOAT);
+			return d;
+		}
+
+	  private:
+                int getnnz(Vec3i volsize, int ri, Vec3i origin, int *nray, int *nnz) const;
+                int cb2sph(float *cube, Vec3i volsize, int ri, Vec3i origin, int nnz0, int *ptrs, 
+                           int *cord  , float *sphere) const;
+                int sph2cb(float *sphere, Vec3i volsize, int nray, int ri, int nnz0,
+                           int   *ptrs  , int *cord, float *cube) const;
+                int fwdpj3(Vec3i volsize, int nray, int nnz  , float *dm, 
+                           Vec3i origin, int ri  , int *ptrs, 
+                           int *cord, float *x, float *y) const;
+                int bckpj3(Vec3i volsize, int nray, int nnz, float *dm, 
+                           Vec3i origin, int ri, int *ptrs, int *cord, 
+                           float *x, float *y) const;
+                int ifix(float a) const;
+                void setdm(vector<float> anglelist, string const angletype, float *dm) const;
 	};
 
 	template <> Factory < Projector >::Factory();

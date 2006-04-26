@@ -57,6 +57,15 @@ EMData *align(const string & aligner_name, EMData * to_img,
  */
 EMData *project(const string & projector_name, const Dict & params = Dict());
 
+/** Calculate the backprojection of this image (stack) and return the result.
+ * @param projector_name Projection algorithm name. 
+ * (Only "pawel" and "chao" have been implemented now). 
+ * @param params Projection Algorithm parameters.
+ * @exception NotExistingObjectError If the projection algorithm doesn't exist.
+ * @return The result image.
+ */
+EMData *backproject(const string & projector_name, const Dict & params = Dict());
+
 
 #endif	//emdata__modular_h__
 
