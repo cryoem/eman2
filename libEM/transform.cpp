@@ -463,15 +463,15 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 		break;
 
 	case SPIDER:
-		az =  (float)rotation["phi"]    + 180.0f ;              ;
+		az =  (float)rotation["phi"]    + 90.0f ;              ;
 		alt = (float)rotation["theta"]  ;
-		phi = (float)rotation["psi"]    - 180.0f ;
+		phi = (float)rotation["psi"]    - 90.0f ;
 		break;
 
 	case MRC:
-		az  = (float)rotation["phi"]   + 180.0f ;
+		az  = (float)rotation["phi"]   + 90.0f ;
 		alt = (float)rotation["theta"] ;
-		phi = (float)rotation["omega"] - 180.0f ;
+		phi = (float)rotation["omega"] - 90.0f ;
 		break;
 
 	case QUATERNION:
@@ -726,14 +726,14 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		break;
 
 	case SPIN:
-		result["Omega"] =360* acos(cosOover2)/ M_PI ;
+		result["Omega"] =360.0f* acos(cosOover2)/ M_PI ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
 		break;
 
 	case SGIROT:
-		result["q"] = 360*acos(cosOover2)/M_PI ;
+		result["q"] = 360.0f*acos(cosOover2)/M_PI ;
 		result["n1"] = n1;
 		result["n2"] = n2;
 		result["n3"] = n3;
