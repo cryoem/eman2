@@ -486,7 +486,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	// Do we have a list of angles?
 	vector<float> anglelist = params["anglelist"];
 	int nangles = anglelist.size() / 3;
-
+	
 	// For the moment, let's assume the user wants to use either
 	// EMAN or SPIDER Euler angles, but nothing else.
 	string angletype = params["angletype"].to_str();
@@ -527,8 +527,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform3D rotation(eulertype, float(anglelist[indx]*dgr_to_rad),
-				           float(anglelist[indx+1]*dgr_to_rad), float(anglelist[indx+2]*dgr_to_rad));
+		Transform3D rotation(eulertype, anglelist[indx],anglelist[indx+1], anglelist[indx+2]);
 		if (2*(ri+1)+1 > dim) {
 			// Must check x and y boundaries
 			for (int i = 0 ; i <= nn; i++) {
@@ -859,9 +858,7 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
-		Transform3D tf(eulertype, float(anglelist[indx]*dgr_to_rad),
-				float(anglelist[indx+1]*dgr_to_rad), 
-				float(anglelist[indx+2]*dgr_to_rad));
+		Transform3D tf(eulertype, anglelist[indx],anglelist[indx+1],anglelist[indx+2]);
 		EMData* proj = imgft->extractplane(tf, kb);
 		if (proj->is_shuffled()) proj->fft_shuffle();
 		proj->center_origin_fft();
