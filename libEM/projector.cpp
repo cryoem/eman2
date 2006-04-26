@@ -53,9 +53,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	tmp->set_ri(true);
 
 	float *data = tmp->get_data();
-	Transform3D r( az2*static_cast<float>(dgr_to_rad), 
-					alt2*static_cast<float>(dgr_to_rad), 
-					phi2*static_cast<float>(dgr_to_rad) ); // EMAN by default
+	Transform3D r( az2, alt2, phi2); // EMAN by default
 	r.transpose();
 
 	int mode = params["mode"];
@@ -114,9 +112,7 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	filter_d["ring_width"] = ret->get_xsize() / 2;
 	ret->process_inplace("eman1.math.gausskernelfix", filter_d);
 
-	ret->set_rotation( az2*static_cast<float>(dgr_to_rad), 
-						alt2*static_cast<float>(dgr_to_rad), 
-						phi2*static_cast<float>(dgr_to_rad) );
+	ret->set_rotation( az2, alt2, phi2 );
 
 	if( tmp )
 	{ 
@@ -724,9 +720,9 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 
 EMData *StandardProjector::project3d(EMData * image) const
 {
-	float alt = float(params["alt"]) * static_cast<float>(dgr_to_rad);
-	float az = float(params["az"]) * static_cast<float>(dgr_to_rad);
-	float phi = float(params["phi"]) * static_cast<float>(dgr_to_rad);
+	float alt = params["alt"];
+	float az = params["az"];
+	float phi = params["phi"];
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -1207,9 +1203,9 @@ void ChaoProjector::setdm(vector<float> anglelist, string const angletype, float
 
     // now convert all angles 
     for (j = 1; j <= nangles; j++) {
-        phi   = (float)anglelist(1,j)*dgr_to_rad;
-        theta = (float)anglelist(2,j)*dgr_to_rad;
-        psi   = (float)anglelist(3,j)*dgr_to_rad;
+        phi   = anglelist(1,j);
+        theta = anglelist(2,j);
+        psi   = anglelist(3,j);
 
         cthe  = cos(theta);
         sthe  = sin(theta);
