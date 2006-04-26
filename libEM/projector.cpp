@@ -1250,7 +1250,7 @@ EMData *ChaoProjector::project3d(EMData * vol) const
 
 	int dim = Util::get_min(nxvol,nyvol,nzvol);
 	if (nzvol == 1) {
-		LOGERR("The PawelProjector needs a volume!");
+		LOGERR("The ChaoProjector needs a volume!");
 		return 0;
 	}
 	Vec3i origin(0,0,0);
@@ -1566,9 +1566,9 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
     // loop over sets of angles
     for (int ia = 0; ia < nangles; ia++) {
        int indx = 3*ia;
-       Transform3D rotation(eulertype, float(anglelist[indx]*dgr_to_rad),
-                            float(anglelist[indx+1]*dgr_to_rad), 
-                            float(anglelist[indx+2]*dgr_to_rad));
+       Transform3D rotation(eulertype, float(anglelist[indx]),
+                            float(anglelist[indx+1]), 
+                            float(anglelist[indx+2]));
        float dm1 = rotation.at(0,0);
        float dm4 = rotation.at(1,0);
 
