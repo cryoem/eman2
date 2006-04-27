@@ -4,6 +4,7 @@
 #include "projector.h"
 #include "emdata.h"
 #include "interp.h"
+#include "emutil.h"
 
 #ifdef WIN32
 	#define M_PI 3.14159265358979323846f
@@ -599,11 +600,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	}
 	ret->done_data();
 	ret->update();
-	if( ipcube )
-	{
-		delete [] ipcube;
-		ipcube = 0;
-	}
+        EMDeleteArray(ipcube);
 	return ret;
 }
 
@@ -1000,13 +997,14 @@ int ChaoProjector::sph2cb(float *sphere, Vec3i volsize, int  nrays, int    ri,
 
     int nx = (int)volsize[0];
     int ny = (int)volsize[1];
-    int nz = (int)volsize[2];
+    // int nz = (int)volsize[2];
 
     r2      = ri*ri;
     nnz     = 0;
     ptrs(1) = 1;
 
-    for (ix = 0; i<nx*ny*nz; i++) cube[i]=0.0;
+    // no need to initialize
+    // for (i = 0; i<nx*ny*nz; i++) cube[i]=0.0;
 
     nnz = 0;
     for (j = 1; j <= nrays; j++) {
@@ -1203,9 +1201,9 @@ void ChaoProjector::setdm(vector<float> anglelist, string const angletype, float
 
     // now convert all angles 
     for (j = 1; j <= nangles; j++) {
-        phi   = anglelist(1,j);
-        theta = anglelist(2,j);
-        psi   = anglelist(3,j);
+        phi   = (float)anglelist(1,j)*dgr_to_rad;
+        theta = (float)anglelist(2,j)*dgr_to_rad;
+        psi   = (float)anglelist(3,j)*dgr_to_rad;
 
         cthe  = cos(theta);
         sthe  = sin(theta);
@@ -1272,13 +1270,17 @@ EMData *ChaoProjector::project3d(EMData * vol) const
         // need to check status...
 
         // convert from cube to sphere
-        sphere = (float*)calloc(nnz,sizeof(float));
-        ptrs   = (int*)calloc(nrays+1, sizeof(int));
-        cord   = (int*)calloc(3*nrays, sizeof(int));
+        sphere = new float[nnz];
+        ptrs   = new int[nrays+1];
+        cord   = new int[3*nrays];
         if (sphere == NULL || ptrs == NULL || cord == NULL) {
-            fprintf(stderr,"ChaoProjector::project3d, failed to allocate!\n");
-            exit(1);
+           fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
+           exit(1);
         }
+        for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
+        for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
+        for (int i = 0; i<3*nrays; i++) cord[i] = 0;
+       
         status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
         // check status
 
@@ -1333,10 +1335,10 @@ EMData *ChaoProjector::project3d(EMData * vol) const
         }
 
         // deallocate all temporary work space
-        if (dm)     delete dm;
-        if (ptrs)   delete ptrs;
-        if (cord)   delete cord;
-        if (sphere) delete sphere;
+        EMDeleteArray(dm);
+        EMDeleteArray(ptrs);
+        EMDeleteArray(cord);
+        EMDeleteArray(sphere);
 
 	ret->update();
 	return ret;
@@ -1384,13 +1386,16 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
     // need to check status...
 
     // convert from cube to sphere
-    sphere = (float*)calloc(nnz,sizeof(float));
-    ptrs   = (int*)calloc(nrays+1, sizeof(int));
-    cord   = (int*)calloc(3*nrays, sizeof(int));
+    sphere = new float[nnz];
+    ptrs   = new int[nrays+1];
+    cord   = new int[3*nrays];
     if (sphere == NULL || ptrs == NULL || cord == NULL) {
-        fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
-        exit(1);
+       fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
+       exit(1);
     }
+    for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
+    for (int i = 0; i<nrays+1; i++) ptrs[i] = 0;
+    for (int i = 0; i<3*nrays; i++) cord[i] = 0;
 
     // Do we have a list of angles?
     vector<float> anglelist = params["anglelist"];
@@ -1441,6 +1446,7 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
     ret->to_zero();
 
     cube = ret->get_data();
+    // cb2sph should be replaced by something that touches only ptrs and cord
     status = cb2sph(cube, volsize, ri, origin, nnz, ptrs, cord, sphere);
     // check status
 
@@ -1450,14 +1456,16 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
        // check status?
     }
 
-    sph2cb(sphere, volsize, nrays, ri, nnz, ptrs, cord, cube); 
+    status = sph2cb(sphere, volsize, nrays, ri, nnz, ptrs, cord, cube); 
+    // check status?
 
     // deallocate all temporary work space
-    if (dm)     delete dm;
-    if (ptrs)   delete ptrs;
-    if (cord)   delete cord;
-    if (sphere) delete sphere;
+    EMDeleteArray(dm);
+    EMDeleteArray(ptrs);
+    EMDeleteArray(cord);
+    EMDeleteArray(sphere);
 
+    ret->done_data();
     ret->update();
     return ret;
 }
@@ -1603,10 +1611,7 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
 
     ret->done_data();
     ret->update();
-    if( ipcube ) {
-       delete [] ipcube;
-       ipcube = 0;
-    }
+    EMDeleteArray(ipcube);
     return ret;
 }
 #undef images
@@ -1638,6 +1643,7 @@ EMData *FourierGriddingProjector::backproject3d(EMData * image) const
    EMData *ret = new EMData();
    return ret;
 }
+
 // End Chao's projector addition 4/25/06
 
 void EMAN::dump_projectors()
