@@ -1340,6 +1340,7 @@ EMData *ChaoProjector::project3d(EMData * vol) const
         EMDeleteArray(cord);
         EMDeleteArray(sphere);
 
+        ret->done_data();
 	ret->update();
 	return ret;
 }
