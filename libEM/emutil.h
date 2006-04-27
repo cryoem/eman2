@@ -5,9 +5,30 @@
 #define eman__emutil__h__ 1
 
 #include "emobject.h"
+#include "assert.h"
 
 using std::string;
 using std::vector;
+
+// Defining EMDelete using templates
+// Use EMDelete instead of delete as this will be very clean.
+// This should perhaps be moved to somewhere else later to make it 
+// more widely accessible. (C. Yang 04/27/06)
+template <class T>
+inline void EMDeletePtr(T & x)
+{
+        {assert(x != NULL);}
+        delete x;
+        x = NULL;
+}
+
+template <class T>
+inline void EMDeleteArray(T & x)
+{
+     {assert(x != NULL);}
+     delete [] x;
+     x = NULL;
+}
 
 namespace EMAN
 {
