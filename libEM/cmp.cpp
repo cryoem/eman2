@@ -155,13 +155,22 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	  EMData* mask;
 	  mask = params["mask"];
 	  float* dm = mask->get_data();
-	  for (long i = 0; i < totsize; i++) {
+	  if (normalize) {
+	   for (long i = 0; i < totsize; i++) {
 			if (dm[i] > 0.5) {
 			  square_sum1 += d1[i]*double(d1[i]);
 			  square_sum2 += d2[i]*double(d2[i]);
 			  result += d1[i]*double(d2[i]);
 			  n++;
 			}
+	   }
+	  } else {
+	   for (long i = 0; i < totsize; i++) {
+			if (dm[i] > 0.5) {
+			  result += d1[i]*double(d2[i]);
+			  n++;
+			}
+	   }
 	  }
 	} else {
 	  for (long i = 0; i < totsize; i++) {
