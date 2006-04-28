@@ -1504,11 +1504,11 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
     // If a sensible origin isn't passed in, choose the middle of
     // the cube.
     if (params.has_key("origin_x")) {origin[0] = params["origin_x"];} 
-    else {origin[0] = nx/2+1;}
+    else {origin[0] = nx/2;}
     if (params.has_key("origin_y")) {origin[1] = params["origin_y"];} 
-    else {origin[1] = ny/2+1;}
+    else {origin[1] = ny/2;}
     if (params.has_key("origin_z")) {origin[1] = params["origin_z"];} 
-    else {origin[2] = dim/2+1;}
+    else {origin[2] = dim/2;}
 
     if (params.has_key("radius")) {ri = params["radius"];} 
     else {ri = dim/2 - 1;}
