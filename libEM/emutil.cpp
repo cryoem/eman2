@@ -414,6 +414,10 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	ImageIO::IOMode rw_mode = static_cast < ImageIO::IOMode > (rw);
 	
 	if (image_type == IMAGE_UNKNOWN) {
+		if(rw == ImageIO::WRITE_ONLY || rw == ImageIO::READ_WRITE) {
+			throw ImageFormatException("writing to this image format not supported.");
+		}
+		
 		image_type = get_image_type(filename);
 	}
 
