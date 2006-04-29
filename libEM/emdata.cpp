@@ -2432,7 +2432,8 @@ EMData * EMAN::operator+(float n, const EMData & em)
 EMData * EMAN::operator-(float n, const EMData & em)
 {
 	EMData * r = em.copy();
-	r->sub(n);
+	r->mult(-1.0f);
+	r->add(n);
 	return r;
 }
 
@@ -2446,7 +2447,10 @@ EMData * EMAN::operator*(float n, const EMData & em)
 EMData * EMAN::operator/(float n, const EMData & em)
 {
 	EMData * r = em.copy();
-	r->div(n);
+	r->to_one();
+	r->mult(n);
+	r->div(em);
+
 	return r;
 }
 
