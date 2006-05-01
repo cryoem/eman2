@@ -44,6 +44,10 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 	size_t ny = Vol->get_ysize();
 	size_t nz = Vol->get_zsize();		
 
+	size_t mask_nx = Vol->get_xsize();
+	size_t mask_ny = Vol->get_ysize();
+	size_t mask_nz = Vol->get_zsize();		
+
         if (nx != mask_nx ||
             ny != mask_ny ||
             nz != mask_nz  ) {
