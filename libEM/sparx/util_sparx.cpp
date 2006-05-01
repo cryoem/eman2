@@ -2659,7 +2659,5 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	for(int i = 0;i < (3*hist_len);i++)
 		freq_hist += (int)pow(((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
 	freq_hist = (-freq_hist);
-
 	return freq_hist;
-
 }
