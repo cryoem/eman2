@@ -2,6 +2,7 @@
  * $Id$
  */
 #include <iostream>
+#include <stdio.h>
 
 #include "emdata.h"
 #include "util.h"
@@ -42,6 +43,17 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 	size_t nx = Vol->get_xsize();
 	size_t ny = Vol->get_ysize();
 	size_t nz = Vol->get_zsize();		
+
+        if (nx != mask_nx ||
+            ny != mask_ny ||
+            nz != mask_nz  ) {
+           // should throw an exception here!!! (will clean it up later CY) 
+           fprintf(stderr, "The dimension of the image does not match the dimension of the mask!\n");
+           fprintf(stderr, " nx = %d, mask_nx = %d\n", nx, mask_nx);
+           fprintf(stderr, " ny = %d, mask_ny = %d\n", ny, mask_ny);
+           fprintf(stderr, " nz = %d, mask_nz = %d\n", nz, mask_nz);
+           exit(1);
+        }    
 	 
 	Volptr = Vol->get_data();
 	maskptr = mask->get_data();		 
