@@ -2437,3 +2437,229 @@ if (image->is_complex())
 //-----------------------------------------------------------------------------------------------------------------------
 
 
+void Util::histogram(EMData* image, EMData* mask)
+{
+	if (image->is_complex())
+                throw ImageFormatException("Cannot do Histogram on Fourier Image");
+	float hmax = image->get_attr("maximum");
+	float hmin = image->get_attr("minimum");
+	float *imageptr,*maskptr;
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	if(mask != NULL){
+		if(nx != mask->get_xsize() || ny != mask->get_ysize() || nz != mask->get_zsize())
+			throw ImageDimensionException("The size of mask image should be of same size as the input image");
+	 }
+	int nbins = 128;
+	float *freq = new float[nbins];
+		
+	for(int i=0;i<nbins;i++)
+		freq[i]=0;
+	imageptr=image->get_data();
+	maskptr =mask->get_data();
+	if(mask!=NULL)
+	{
+		for (int i = 0;i < nx*ny*nz; i++)
+	    	{
+	      		if (maskptr[i]>=0.5f)
+	      		{			              
+			       hmax = (hmax < imageptr[i])?imageptr[i]:hmax;
+			       hmin = (hmin > imageptr[i])?imageptr[i]:hmin;
+			}
+		}
+	}
+	float hdiff = hmax - hmin;
+	float ff = (nbins-1)/hdiff;
+	float fnumel=0.f,hav=0.f,hav2=0.f;
+	
+	if(mask!=NULL)
+	{
+		for(int i = 0;i < nx*ny*nz;i++)
+		{
+			int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
+			if(jbin >= 1 && jbin <= nbins)
+			{
+				freq[jbin-1] += 1.0;
+				fnumel += 1;
+				hav += imageptr[i];
+				hav2 += (double)pow(imageptr[i],2);
+			}
+		}
+	}
+	else
+	{
+		for(int i = 0;i < nx*ny*nz;i++)
+		{
+			float bin_mode;
+			float hist_max = freq[1];
+			int max_bin = 0;
+			for(int j=1;j<nbins;j++)
+			{
+				if(freq[j] >= hist_max)
+				{
+					hist_max = freq[j];
+					max_bin = j;
+				}
+			}
+			if(max_bin == 0)
+				bin_mode = 0.5;
+			else if(max_bin == (nbins-1))
+				bin_mode = static_cast<float>(nbins) - 0.5;
+			else
+			{
+				float YM1 = freq[max_bin - 1];
+				float YP1 = freq[max_bin + 1];
+				bin_mode = static_cast<float>(max_bin-1) + ((YM1 - YP1)*0.5/(YM1 + YP1 - (2.0*hist_max)));
+			}
+			//float hist_mode = hmin + (bin_mode*bin_size);
+			
+			double dtop = hav2 - ((hav*hav)/(fnumel=(fnumel==0.f)?1:fnumel));
+			
+			if(dtop < 0.0)
+				throw ImageFormatException("Cannot be negative");
+			
+			hav = hav/(fnumel=(fnumel==0.f)?1:fnumel);
+			//float hsig = sqrt(dtop/(fnumel-1));
+			
+			if(maskptr[i] >= 0.5)
+			{
+				int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
+				if(jbin >= 1 && jbin <= nbins)
+				{
+					freq[jbin-1] += 1.0;
+					fnumel += 1;
+					hav += imageptr[i];
+					hav2 += (double)pow(imageptr[i],2);
+				}
+			}
+		}
+	}
+	delete[] freq;
+}
+			
+Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
+{
+	/* Exception Handle */
+	if (img->is_complex() || ref->is_complex())
+                throw ImageFormatException("Cannot do Histogram on Fourier Image");
+	
+	if(mask != NULL){
+		if(img->get_xsize() != mask->get_xsize() || img->get_ysize() != mask->get_ysize() || img->get_zsize() != mask->get_zsize())
+			throw ImageDimensionException("The size of mask image should be of same size as the input image"); }
+	/* ===================================================== */
+	
+	/* Image size calculation */
+	int size_ref = ((ref->get_xsize())*(ref->get_ysize())*(ref->get_zsize()));
+	int size_img = ((img->get_xsize())*(img->get_ysize())*(img->get_zsize()));
+	/* ===================================================== */
+	
+	/* The reference image attributes */
+	float *ref_ptr = ref->get_data();
+	float ref_h_min = ref->get_attr("minimum");
+	float ref_h_max = ref->get_attr("maximum");
+	float ref_h_avg = ref->get_attr("mean");
+	float ref_h_sig = ref->get_attr("sigma");
+	/* ===================================================== */
+	
+	/* Input image under mask attributes */
+	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
+	
+	vector<float> img_data = Util::infomask(img,mask);
+	float img_avg = img_data[0];
+	float img_sig = img_data[1];
+	
+	/* The image under mask -- size calculation */
+	int cnt=0;
+	for(int i=0;i<size_img;i++)
+		if (mask_ptr[i]>0.5f)
+				cnt++;
+	/* ===================================================== */
+	
+	/* Histogram of reference image calculation */
+	float ref_h_diff = ref_h_max - ref_h_min;
+		
+	#ifdef _WIN32
+		int hist_len = _MIN((int)size_ref/16,_MIN((int)size_img/16,256));
+	#else
+		int hist_len = std::min((int)size_ref/16,std::min((int)size_img/16,256));
+	#endif	//_WIN32
+	
+	float *ref_freq_bin = new float[3*hist_len];
+
+	//initialize value in each bin to zero 
+	for (int i = 0;i < (3*hist_len);i++)
+		ref_freq_bin[i] = 0.f;
+		
+	for (int i = 0;i < size_ref;i++)
+	{
+		int L = static_cast<int>(((ref_ptr[i] - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
+		ref_freq_bin[L]++;
+	}
+	for (int i = 0;i < (3*hist_len);i++)
+		ref_freq_bin[i] *= static_cast<float>(cnt)/static_cast<float>(size_ref);
+		
+	//Parameters Calculation (i.e) 'A' x + 'B' 
+	float A = ref_h_sig/img_sig;
+	float B = ref_h_avg - (A*img_avg);
+	
+	vector<float> args;
+	args.push_back(A);
+	args.push_back(B);
+	
+	vector<float> scale;
+	scale.push_back(1.e-7*A);
+	scale.push_back(-1.e-7*B);
+	
+	vector<float> ref_freq_hist;
+	for(int i = 0;i < (3*hist_len);i++)
+		ref_freq_hist.push_back((int)ref_freq_bin[i]);
+		
+	vector<float> data;
+	data.push_back(ref_h_diff);
+	data.push_back(ref_h_min);
+	
+	Dict parameter;
+	
+	/* Parameters displaying the arguments A & B, and the scaling function and the data's */
+	parameter["args"] = args;
+	parameter["scale"]= scale;
+	parameter["data"] = data;
+	parameter["ref_freq_bin"] = ref_freq_hist;
+	parameter["size_img"]=size_img;
+	parameter["hist_len"]=hist_len;
+	/* ===================================================== */
+	
+	return parameter;	
+}
+	
+	
+float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min)
+{
+	float *img_ptr = img->get_data();
+	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
+		
+	int *img_freq_bin = new int[3*hist_len];
+	for(int i = 0;i < (3*hist_len);i++)
+		img_freq_bin[i] = 0;
+	for(int i = 0;i < size_img;i++)
+	{
+		if(mask_ptr[i] > 0.5f)
+		{
+			float img_xn = img_ptr[i]*PA + PB;
+			int L = static_cast<int>(((img_xn - ref_h_min)/ref_h_diff) * (hist_len-1) + hist_len+1);
+			if(L >= 0 && L < (3*hist_len))
+				img_freq_bin[L]++;
+			
+		}
+	}; 
+	int freq_hist = 0;
+
+	for(int i = 0;i < (3*hist_len);i++)
+		freq_hist += (int)pow(((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
+	freq_hist = (-freq_hist);
+
+	return freq_hist;
+
+}
