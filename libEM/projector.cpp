@@ -1223,7 +1223,6 @@ void ChaoProjector::setdm(vector<float> anglelist, string const angletype, float
         dm(9,j)=cthe;
     } 
 }
-#undef dm
 #undef anglelist
 
 #define images(i,j,k) images[ ((k)-1)*nxvol*nyvol + ((j)-1)*nxvol + (i)-1 ] 
@@ -1274,7 +1273,7 @@ EMData *ChaoProjector::project3d(EMData * vol) const
         ptrs   = new int[nrays+1];
         cord   = new int[3*nrays];
         if (sphere == NULL || ptrs == NULL || cord == NULL) {
-           fprintf(stderr,"ChaoProjector::backproject3d, failed to allocate!\n");
+           fprintf(stderr,"ChaoProjector::project3d, failed to allocate!\n");
            exit(1);
         }
         for (int i = 0; i<nnz; i++) sphere[i] = 0.0;
@@ -1329,8 +1328,8 @@ EMData *ChaoProjector::project3d(EMData * vol) const
         images = ret->get_data();
 
         for (j = 1; j <= nangles; j++) { 
-           status = fwdpj3(volsize, nrays, nnz, dm, origin, ri, ptrs, cord, sphere, 
-                           &images(1,1,j));
+           status = fwdpj3(volsize, nrays, nnz   , &dm(1,j), origin, ri, 
+                           ptrs   ,  cord, sphere, &images(1,1,j));
            // check status?
         }
 
@@ -1452,8 +1451,8 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
     // check status
 
     for (j = 1; j <= nangles; j++) { 
-       status = bckpj3(volsize, nrays, nnz, dm, origin, ri, ptrs, cord, 
-                       &images(1,1,j), sphere);
+       status = bckpj3(volsize, nrays, nnz, &dm(1,j), origin, ri, 
+                       ptrs   , cord , &images(1,1,j), sphere);
        // check status?
     }
 
@@ -1476,6 +1475,7 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 #undef sphere
 #undef cord
 #undef ptrs
+#undef dm
 
 EMData *GaussFFTProjector::backproject3d(EMData * image) const
 { 
