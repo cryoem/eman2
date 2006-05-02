@@ -11,17 +11,10 @@
 using namespace EMAN;
 
 PngIO::PngIO(const string & file, IOMode rw)
-:	filename(file), rw_mode(rw), png_file(0), initialized(false)
-{
-	png_ptr = 0;
-	info_ptr = 0;
-	end_info = 0;
-
-	nx = 0;
-	ny = 0;
-	depth_type = PNG_INVALID_DEPTH;
-	number_passes = 0;
-}
+:	filename(file), rw_mode(rw), png_file(0), initialized(false),
+	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
+	depth_type(PNG_INVALID_DEPTH), number_passes(0) 
+{}
 
 PngIO::~PngIO()
 {
@@ -29,12 +22,10 @@ PngIO::~PngIO()
 		fclose(png_file);
 		png_file = 0;
 	}
-
-	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+	
 	png_ptr = 0;
 	info_ptr = 0;
 	end_info = 0;
-
 }
 
 void PngIO::init()
@@ -268,6 +259,7 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 	}
 
 	png_read_end(png_ptr, end_info);
+	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 	EXITFUNC;
 	return 0;
 }
@@ -302,6 +294,7 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 			for (unsigned int x = 0; x < nx; x++) {
 				sdata[x] = static_cast < unsigned short >(data[y * nx + x]);
 			}
+			
 			png_write_row(png_ptr, (png_byte *) sdata);
 		}
 
@@ -313,6 +306,8 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 	}
 
 	png_write_end(png_ptr, info_ptr);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	
 	EXITFUNC;
 	return 0;
 }
