@@ -44,11 +44,14 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 	size_t ny = Vol->get_ysize();
 	size_t nz = Vol->get_zsize();		
 
-	size_t mask_nx = Vol->get_xsize();
-	size_t mask_ny = Vol->get_ysize();
-	size_t mask_nz = Vol->get_zsize();		
+	size_t mask_nx = mask->get_xsize();
+	size_t mask_ny = mask->get_ysize();
+	size_t mask_nz = mask->get_zsize();	
+	
+	if  (nx != mask_nx || ny != mask_ny || nz != mask_nz )
+		throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 
-        if (nx != mask_nx ||
+ /*       if (nx != mask_nx ||
             ny != mask_ny ||
             nz != mask_nz  ) {
            // should throw an exception here!!! (will clean it up later CY) 
@@ -58,7 +61,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
            fprintf(stderr, " nz = %d, mask_nz = %d\n", nz, mask_nz);
            exit(1);
         }    
-	 
+ */	 
 	Volptr = Vol->get_data();
 	maskptr = mask->get_data();		 
 	
