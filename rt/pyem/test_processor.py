@@ -1362,9 +1362,26 @@ class TestProcessor(unittest.TestCase):
             e2.process_inplace('testimage.scurve')
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
+    
     def test_testimage_sinewave(self):
         """test testimage.sinewave processor ................"""
+        e = EMData()
+        e.set_size(32,1,1)
+        e.process_inplace('testimage.sinewave', {'wave_length':10})
+        e.process_inplace('testimage.sinewave', {'wave_length':10, 'phase':90})
+        
+        e2 = EMData()
+        e2.set_size(32,32,1)
+        e2.process_inplace('testimage.sinewave', {'wave_length':10})
+        e2.process_inplace('testimage.sinewave', {'wave_length':10, 'axis':'y', 'phase':90, 'az':45})
+        
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        e3.process_inplace('testimage.sinewave', {'wave_length':10})
+        e3.process_inplace('testimage.sinewave', {'wave_length':10, 'axis':'z', 'phase':90, 'az':30, 'alt':45, 'phi':60})
+            
+    def test_testimage_sinewavecircular(self):
+        """test testimage.sinewave.circular processor ......."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.sinewave.circular', {'wave_length':10})
