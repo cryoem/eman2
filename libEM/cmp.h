@@ -182,6 +182,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("mask", EMObject::EMDATA, "image mask");
+			d.put("keepzero", EMObject::INT, "If set, zero pixels will not be adjusted in the linear density optimization");
 			return d;
 		}
 
