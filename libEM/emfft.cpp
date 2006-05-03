@@ -566,17 +566,30 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 		LOGERR("Error happening in Initialize communication work array: %d", info);
 	}
 	
-	/**ACML fft real to complex 1D result store as 
-	 * [real1, real2,...realN,imagN, ... imag2, imag1], and all data has been devided by sqrt(N),
+	/**ACML fft real to complex 1D result store as:
+	 * let X be an array of length N and with first index 0,
+	 * - X(i) contains the real part of Z(i) for i = 0, ..., N/2
+	 * - X(N-i) contains the imaginary part of Z(i) for i=1, ..., (N-1)/2 
 	 * so we need re-organize the data layout and time all data by sqrt(N)
 	 * to make the reault consistent with FFTW  */
-	transform(fft_data, fft_data+complex_n, fft_data, time_sqrt_n(n));
+	transform(fft_data, fft_data+n, fft_data, time_sqrt_n(n));
+	
 	for(int i=0; i<complex_n; ++i) {
 		if(i%2==0) {	//copy real part of complex array
 			complex_data[i] = fft_data[i/2];
 		}
-		else {	//copy imaginary part of complex array, notice the sign change
-			complex_data[i] = -fft_data[complex_n-i/2-1];
+		else {	//copy imaginary part of complex array
+			if(i==1) {
+				complex_data[i] = 0.0f;
+			}
+			else {
+				if(n%2 == 0 && i == complex_n-1 ) {
+					complex_data[i] = 0.0f;
+				}
+				else {
+					complex_data[i] = fft_data[n-i/2];
+				}
+			}
 		}
 	}
 	
@@ -592,29 +605,29 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 	
 	/* Allocate communication work array */
 	float * comm = (float *)malloc((3*n+100)*sizeof(float));
-	
-	/**ACML fft real to complex 1D result store as 
-	 * [real1, real2,...realN,imagN, ... imag2, imag1], and all data has been devided by sqrt(N),
-	 * here the complex_data is by fftw convention, [real1, imag1, ... realN, imagN]
-	 * so we need re-organize the data layout and divide all data by sqrt(N), 
-	 * to make the inverse fft by acml return the original 1D real array  */
-	float * fft_data = (float *)malloc(complex_n * sizeof(float));
-	memcpy(fft_data, complex_data, complex_n * sizeof(float));
-	
-	transform(fft_data, fft_data+complex_n, fft_data, divide_sqrt_n(n));
+		
 	for(int i=0; i<complex_n; ++i) {
 		if(i%2 == 0) {	//copy real part of complex array
-			real_data[i/2] = fft_data[i];
+			real_data[i/2] = complex_data[i];
 		}
 		else {	//copy imaginary part of complex array
-			real_data[complex_n-i/2-1] = fft_data[i];
+			if(i==1) {continue;}
+			if(!(n%2 == 0 && i == complex_n-1)) {
+				real_data[n-i/2] = complex_data[i];
+			}
 		}
 	}
+	transform(real_data, real_data+n, real_data, divide_sqrt_n(n));
 	
 	/* Initialize communication work array */
 	csfft(0, n, real_data, comm, &info);
 	if(info != 0) {
 		LOGERR("Error happening in Initialize communication work array: %d", info);
+	}
+	
+	/* Conjugate the Vector X to simulate inverse transform */
+	for (int j = n/2+1; j < n; j++) {
+    	real_data[j] = -real_data[j];
 	}
 	
 	/* Compute a Hermitian --> real transform */
@@ -623,7 +636,6 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 		LOGERR("Error happening in Initialize communication work array: %d", info);
 	}
 	
-	free(fft_data);
 	free(comm);
 	return 0;
 }
