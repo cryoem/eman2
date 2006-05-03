@@ -507,9 +507,11 @@ namespace EMAN
 			return d;
 		}
 	};
+	
 	/** rotational, translational and flip alignment using exhaustive search. VERY SLOW
      */
-	class RTFSlowestAligner:public Aligner
+     //eliminated -- Grant Tang
+/*	class RTFSlowestAligner:public Aligner
 	{
 	  public:
 		EMData * align(EMData * this_img, EMData * to_img, 
@@ -542,7 +544,7 @@ namespace EMAN
 			return d;
 		}
 	};
-
+*/
 	/** rotational, translational and flip alignment using fscmp at multiple locations, slow
      * but this routine probably produces the best results
      */

@@ -170,7 +170,8 @@ class TestAligner(unittest.TestCase):
         
         e.align('rtf_slow', e2, {'flip':e3, 'maxshift':2})
         
-    def test_RTFSlowestAligner(self):
+        #RTFSlowestAligner eliminated
+    def no_test_RTFSlowestAligner(self):
         """test RTFSlowestAligner ..........................."""
         e = EMData()
         e.set_size(32,32,1)

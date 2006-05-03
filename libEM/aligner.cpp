@@ -22,7 +22,7 @@ template <> Factory < Aligner >::Factory()
 	force_add(&RotateFlipAligner::NEW);
 	force_add(&RotateTranslateFlipAligner::NEW);
 	force_add(&RTFSlowAligner::NEW);
-	force_add(&RTFSlowestAligner::NEW);
+//	force_add(&RTFSlowestAligner::NEW);
 	force_add(&RTFBestAligner::NEW);
 	force_add(&RTFRadonAligner::NEW);
 	force_add(&RefineAligner::NEW);
@@ -1153,7 +1153,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 	return dn;
 }
 
-
+/*
 EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
 {
@@ -1314,6 +1314,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 
 	return dn;
 }
+*/
 
 EMData *RTFBestAligner::align(EMData * this_img, EMData *to,  
 			const string & cmp_name, const Dict& cmp_params) const
