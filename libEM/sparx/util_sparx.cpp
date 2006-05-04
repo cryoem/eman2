@@ -2680,3 +2680,356 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	freq_hist = (-freq_hist);
 	return freq_hist;
 }
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#define    QUADPI      		        3.141592653589793238462643383279502884197
+#define    DGR_TO_RAD    		QUADPI/180
+#define    DM(I)         		DM	    [I-1]   
+#define    SS(I)         		SS	    [I-1]
+Dict Util::CANG(float PHI,float THETA,float PSI)
+{
+ double CPHI,SPHI,CTHE,STHE,CPSI,SPSI;
+ vector<float>   DM,SS;
+ 
+ for(int i =0;i<9;i++)
+     DM.push_back(0);
+     
+ for(int i =0;i<6;i++)
+     SS.push_back(0);   
+  
+ CPHI = cos(double(PHI)*DGR_TO_RAD);
+ SPHI = sin(double(PHI)*DGR_TO_RAD);
+ CTHE = cos(double(THETA)*DGR_TO_RAD);
+ STHE = sin(double(THETA)*DGR_TO_RAD);
+ CPSI = cos(double(PSI)*DGR_TO_RAD);
+ SPSI = sin(double(PSI)*DGR_TO_RAD);
+  
+ SS(1) = float(CPHI);
+ SS(2) = float(SPHI);
+ SS(3) = float(CTHE);
+ SS(4) = float(STHE);
+ SS(5) = float(CPSI);
+ SS(6) = float(SPSI);
+   
+ DM(1) = float(CPHI*CTHE*CPSI-SPHI*SPSI);
+ DM(2) = float(SPHI*CTHE*CPSI+CPHI*SPSI);
+ DM(3) = float(-STHE*CPSI);
+ DM(4) = float(-CPHI*CTHE*SPSI-SPHI*CPSI);
+ DM(5) = float(-SPHI*CTHE*SPSI+CPHI*CPSI);
+ DM(6) = float(STHE*SPSI);
+ DM(7) = float(STHE*CPHI);
+ DM(8) = float(STHE*SPHI);
+ DM(9) = float(CTHE);
+ 
+ Dict DMnSS;
+ DMnSS["DM"] = DM;
+ DMnSS["SS"] = SS;
+ 
+ return(DMnSS);
+} 
+#undef SS
+#undef DM
+#undef QUADPI
+#undef DGR_TO_RAD
+//-----------------------------------------------------------------------------------------------------------------------
+#define    DM(I)         		DM	    [I-1]  
+#define    B(i,j) 			Bptr        [i-1+((j-1)*NSAM)] 
+#define    CUBE(i,j,k)                  CUBEptr     [(i-1)+((j-1)+((k-1)*NY3D))*NX3D]
+
+void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
+{
+
+ float  *Bptr = B->get_data(); 
+ float  *CUBEptr = CUBE->get_data();
+ 
+ int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
+ float DIPX,DIPY,XB,YB,XBB,YBB;
+ 
+ NSAM = B->get_xsize();
+ NROW = B->get_ysize();
+ NX3D = CUBE->get_xsize();
+ NY3D = CUBE->get_ysize();
+ NZC = CUBE->get_zsize();
+
+
+ LDPX   = NX3D/2 +1;
+ LDPY   = NY3D/2 +1;
+ LDPZ   = NZC/2 +1;
+ LDPNMX = NSAM/2 +1;
+ LDPNMY = NROW/2 +1;
+ NZ1    = 1; 
+  
+ for(int K=1;K<=NZC;K++)
+     {
+       KZ=K-1+NZ1;
+       for(int J=1;J<=NY3D;J++)
+           {
+	     XBB = (1-LDPX)*DM(1)+(J-LDPY)*DM(2)+(KZ-LDPZ)*DM(3);
+             YBB = (1-LDPX)*DM(4)+(J-LDPY)*DM(5)+(KZ-LDPZ)*DM(6);
+              for(int I=1;I<=NX3D;I++)
+	          {
+		     XB  = (I-1)*DM(1)+XBB;
+		     IQX = int(XB+float(LDPNMX));
+                     if (IQX <1 || IQX >= NSAM) continue;
+		     YB   = (I-1)*DM(4)+YBB;
+                     IQY  = int(YB+float(LDPNMY));
+                     if (IQY<1 || IQY>=NROW)  continue;
+                     DIPX = XB+LDPNMX-IQX;
+		     DIPY = YB+LDPNMY-IQY;
+ 
+                    CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
+ 	          }
+           } 
+ 
+    } 
+    
+   
+} 
+
+#undef DM
+#undef B
+#undef CUBE
+
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#define    W(i,j) 			Wptr        [i-1+((j-1)*(Wnx))] 
+#define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*(NNNN))] 
+#define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
+
+void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable)
+{
+ int NSAM,NROW,NNNN,NR2,L,JY,KX,NANG;
+ float WW,OX,OY,Y;
+ 
+ NSAM = PROJ->get_xsize();
+ NROW = PROJ->get_ysize(); 
+ NNNN   = NSAM+2-(NSAM%2);
+ NR2 = NROW/2;
+ 
+ NANG = int(SS.size())/6; 
+  
+ EMData* W = new EMData();
+ int Wnx = NNNN/2;
+ W->set_size(Wnx,NROW,1);
+ W->to_zero();
+ float *Wptr = W->get_data();
+ float *PROJptr = PROJ->get_data(); 
+ float indcnst = 1000/2.0;
+ // we create look-up table for 1001 uniformly distributed samples [0,2];
+ 
+ for(int LT=1;LT<=NANG;LT++)
+    {
+      L = LT;
+      OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
+      OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
+
+      if(OX != 0.0f || OY!=0.0f)  
+        { 
+	 //int count = 0;
+         for(int J=1;J<=NROW;J++)
+	     {
+	      JY = (J-1);
+	      if(JY > NR2) JY=JY-NROW;	       
+	      for(int I=1;I<=NNNN/2;I++)
+	         {
+		  Y =  fabs(OX * (I-1) + OY * JY);
+                  if(Y < 2.0f) W(I,J) += exptable[int(Y*indcnst)];//exp(-4*Y*Y);//
+		  //if(Y < 2.0f) Wptr[count++] += exp(-4*Y*Y);//exptable[int(Y*indcnst)];//
+		 }   
+	     }
+	}     
+      else
+        { 
+	 //int count = 0;
+	 for(int J=1;J<=NROW;J++)
+	    for(int I=1;I<=NNNN/2;I++)
+	        W(I,J) += 1.0f;//Wptr[count++]++;//
+ 	}
+    }
+
+ PROJ->pad_fft();
+ PROJ->do_fft_inplace();
+ PROJ->update();
+ PROJ->done_data();
+ PROJptr = PROJ->get_data();
+ 
+ 
+ //int PROJcount = 0;
+ // int Wcount = 0; 
+ float WNRMinv,temp;
+ WNRMinv = 1/W(1,1);
+ for(int J=1;J<=NROW;J++)
+    for(int I=1;I<=NNNN;I+=2)
+       {
+         KX          = (I+1)/2;
+	 temp        =  W(KX,J)*WNRMinv;
+	 WW          =  temp/((temp*temp) + SNR);
+	 PROJ(I,J)   *= WW;//PROJptr[PROJcount++] *= WW;//
+         PROJ(I+1,J)   *= WW;//PROJptr[PROJcount++] *= WW;//
+       }  
+	 
+PROJ->do_ift_inplace();
+PROJ->postift_depad_corner_inplace();  
+}
+
+#undef PROJ
+#undef W
+#undef SS
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)] 
+#define    PROJ(i,j) 			PROJptr     [i-1+((j-1)*NNNN)] 
+#define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
+#define    RI(i,j)                      RI          [(i-1) + ((j-1)*3)]
+#define    CC(i)                        CC          [i-1]
+#define    CP(i)                        CP          [i-1]  
+#define    VP(i)                        VP          [i-1]  
+#define    VV(i)                        VV          [i-1]  
+#define    AMAX1(i,j)                   i>j?i:j
+#define    AMIN1(i,j)                   i<j?i:j 
+  
+void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
+{
+ float rad2deg =(180/3.1415926);
+ float deg2rad = (3.1415926/180);
+ 
+ int NSAM,NROW,NNNN,NR2,NANG,L,JY;
+  
+ NSAM = PROJ->get_xsize();
+ NROW = PROJ->get_ysize(); 
+ NNNN   = NSAM+2-(NSAM%2);
+ NR2 = NROW/2;
+ NANG = int(SS.size())/6; 
+  
+ float RI[9]; 
+ RI(1,1)=SS(1,NUMP)*SS(3,NUMP)*SS(5,NUMP)-SS(2,NUMP)*SS(6,NUMP);
+ RI(2,1)=-SS(1,NUMP)*SS(3,NUMP)*SS(6,NUMP)-SS(2,NUMP)*SS(5,NUMP);
+ RI(3,1)=SS(1,NUMP)*SS(4,NUMP);
+ RI(1,2)=SS(2,NUMP)*SS(3,NUMP)*SS(5,NUMP)+SS(1,NUMP)*SS(6,NUMP);
+ RI(2,2)=-SS(2,NUMP)*SS(3,NUMP)*SS(6,NUMP)+SS(1,NUMP)*SS(5,NUMP);
+ RI(3,2)=SS(2,NUMP)*SS(4,NUMP);
+ RI(1,3)=-SS(4,NUMP)*SS(5,NUMP);
+ RI(2,3)=SS(4,NUMP)*SS(6,NUMP);
+ RI(3,3)=SS(3,NUMP);
+ 
+ float THICK=NSAM/DIAMETER/2.0;
+
+ EMData* W = new EMData();
+ int Wnx = NNNN/2;
+ W->set_size(NNNN/2,NROW,1);
+ W->to_one();
+ float *Wptr = W->get_data(); 
+  
+ float ALPHA,TMP,FV,RT,FM,CCN,CC[3],CP[2],VP[2],VV[3]; 
+  
+ for(int LT=1;LT<=NANG;LT++)
+     { 
+        L = LT;
+	if (L != NUMP)
+	 {
+	  CC(1)=SS(2,L)*SS(4,L)*SS(3,NUMP)-SS(3,L)*SS(2,NUMP)*SS(4,NUMP);
+	  CC(2)=SS(3,L)*SS(1,NUMP)*SS(4,NUMP)-SS(1,L)*SS(4,L)*SS(3,NUMP);
+	  CC(3)=SS(1,L)*SS(4,L)*SS(2,NUMP)*SS(4,NUMP)-SS(2,L)*SS(4,L)*SS(1,NUMP)*SS(4,NUMP);
+          
+	  
+	  TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
+	  CCN=AMAX1( AMIN1(TMP,1.0) ,-1.0);
+	  ALPHA=rad2deg*float(asin(CCN));
+	  if (ALPHA>180.0) ALPHA=ALPHA-180.0;
+	  if (ALPHA>90.0) ALPHA=180.0-ALPHA;
+	  if(ALPHA<1.0E-6)
+	    {
+	     int count = 0;
+             for(int J=1;J<=NROW;J++)
+	          for(int I=1;I<=NNNN/2;I++)
+		      W(I,J)+=1.0;
+            } 
+	  else
+	    {
+             FM=THICK/(fabs(sin(ALPHA*deg2rad)));
+             CC(1)   = CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)   = CC(3)/CCN;
+             VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
+             VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
+             VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
+             CP(1)   = 0.0;CP(2) = 0.0;
+             VP(1)   = 0.0;VP(2) = 0.0;
+             
+	     CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
+	     CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
+	     VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
+	     VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);		                   
+             
+             TMP = CP(1)*VP(2)-CP(2)*VP(1);
+
+       //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
+            TMP = AMAX1(1.0E-4,fabs(TMP));
+            int count = 0;
+	    float tmpinv = 1/TMP;   
+            for(int J=1;J<=NROW;J++)
+	      {
+		JY = (J-1);
+                if (JY>NR2)  JY=JY-NROW;
+                for(int I=1;I<=NNNN/2;I++)
+		 {
+                   FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
+                   RT     = 1.0-FV/FM;
+                   W(I,J) += ((RT>0.0)*RT);		    
+                 }
+              } 
+           }  
+	}
+
+    }
+ 
+ PROJ->pad_fft();
+ PROJ->do_fft_inplace();
+ PROJ->update();
+ PROJ->done_data();
+ float *PROJptr = PROJ->get_data();
+  
+ int KX;
+ float WW;
+ for(int J=1;J<=NROW;J++)
+    for(int I=1;I<=NNNN;I+=2)
+       {
+         KX          = (I+1)/2;
+         WW          =  1/W(KX,J);
+	 PROJ(I,J)   = PROJ(I,J)*WW;
+         PROJ(I+1,J) = PROJ(I+1,J)*WW;
+       }  
+	 
+  PROJ->do_ift_inplace();
+  PROJ->postift_depad_corner_inplace();  
+}	
+	
+#undef   AMAX1	
+#undef   AMIN1
+#undef   RI
+#undef   CC
+#undef   CP
+#undef   VV
+#undef   VP
+	 
+ 
+#undef   W
+#undef   SS
+#undef   PROJ
+//-----------------------------------------------------------------------------------------------------------------------
+Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
+{
+  //exp(-16) is 1.0E-7 approximately)
+  vector<float> expvect;
+  
+  double inc = double(ymax)/nsamples;
+  double temp;
+  for(int i =0;i<nsamples;i++)
+     {
+      temp = exp((-4*(i*inc)*(i*inc)));
+      expvect.push_back(float(temp));  
+     }
+ expvect.push_back(0.0);
+ Dict lookupdict;
+ lookupdict["table"] = expvect;
+ lookupdict["ymax"] = ymax;
+ lookupdict["nsamples"] = nsamples;
+
+  return lookupdict;  
+}
+//------------------------------------------------------------------------------------------------------------------------- 
