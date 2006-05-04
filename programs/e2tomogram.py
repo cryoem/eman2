@@ -49,7 +49,7 @@ of the center. maxrange allows calculating a limited distance from the center"""
 			clip1*=mask
 			
 			clip2.process_inplace("eman1.normalize")
-			clip2s=clip2.copy(0)
+			clip2s=clip2.copy()
 			clip2s.process_inplace("eman1.math.squared")
 			
 			ccf=clip1.calc_ccf(clip2,fp_flag.CIRCULANT)
@@ -155,7 +155,7 @@ Processes a tomographic tilt series"""
 			iml=EMData.read_images(args[inn],range(i[0],i[0]+options.localavg))
 		for img in iml:
 			img.process_inplace("eman1.normalize.edgemean")
-		im1=iml[0].copy(0)
+		im1=iml[0].copy()
 		for img in iml[1:]:
 			im1+=img
 		iml=None
@@ -191,7 +191,7 @@ Processes a tomographic tilt series"""
 			if i[0]==nimg/2 :
 				cen=(rgnp[0],rgnp[1])
 
-			ref=im1.copy(0)
+			ref=im1.copy()
 			
 			mask=ref.copy_head()
 			mask.to_one()
@@ -201,7 +201,7 @@ Processes a tomographic tilt series"""
 			ref*=mask
 			
 			im2.process_inplace("eman1.normalize")
-			im2s=im2.copy(0)
+			im2s=im2.copy()
 			im2s.process_inplace("eman1.math.squared")
 			
 #			ref.write_image("dbug.hed",-1)
