@@ -661,13 +661,15 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	else if (cosalt < -max) { // alt close to pi
 		alt = 180;
 		az=0; 
-		phi=-(180/M_PI)*(float)atan2(matrix[0][1], matrix[0][0]);
+		phi=360.0f-(180/M_PI)*(float)atan2(matrix[0][1], matrix[0][0]);
 	}
 	else {
 		alt = (180/M_PI)*(float) acos(cosalt);
-		az  = (180/M_PI)*(float)atan2(matrix[2][0], -matrix[2][1]);
-		phi = (180/M_PI)*(float)atan2(matrix[0][2], matrix[1][2]);
+		az  = 360.0f+(180/M_PI)*(float)atan2(matrix[2][0], -matrix[2][1]);
+		phi = 360.0f+(180/M_PI)*(float)atan2(matrix[0][2], matrix[1][2]);
 	}
+	az=fmod(az,360.0f);
+	phi=fmod(phi,360.0f);
 
 //   get phiS, psiS ; SPIDER
 	if (fabs(cosalt) > max) {  // that is, alt close to 0
@@ -675,8 +677,8 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		psiS = phi;
 	}
 	else {
-		phiS = fmod((az   - 90.0f ),  360.0f);
-		psiS = fmod((phi  + 90.0f ), 360.0f);
+		phiS = fmod((az   + 270.0f ),  360.0f);
+		psiS = fmod((phi  + 540.0f ), 360.0f);
 	}
 
 //   do some quaternionic stuff here
