@@ -391,7 +391,7 @@ inline void set_attr(const string & key, EMObject val)
 Dict get_attr_dict();
 
 
-/** Set the attribute dictionary to a new dictioanary.
+/** Merge the new values with the existing dictionary.
  *
  * @param new_dict The new attribute dictionary.
  */

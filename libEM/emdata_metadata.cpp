@@ -672,8 +672,11 @@ Dict EMData::get_attr_dict()
 	return Dict(attr_dict);
 }
 
-
 void EMData::set_attr_dict(const Dict & new_dict)
 {
-	attr_dict = new_dict;
+	vector<string> new_keys = new_dict.keys();
+	vector<string>::const_iterator it;
+	for(it = new_keys.begin(); it!=new_keys.end(); ++it) {
+			attr_dict.put(*it, new_dict[*it]);
+	} 
 }
