@@ -265,6 +265,11 @@ namespace EMAN
 			dict[key] = val;
 		}
 
+		void erase(const string & key)
+		{
+			dict.erase(key);
+		}
+		
 		EMData *set_default(const string & key, EMData * val)
 		{
 			if (!has_key(key)) {

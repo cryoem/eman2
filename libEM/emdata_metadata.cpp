@@ -677,6 +677,20 @@ void EMData::set_attr_dict(const Dict & new_dict)
 	vector<string> new_keys = new_dict.keys();
 	vector<string>::const_iterator it;
 	for(it = new_keys.begin(); it!=new_keys.end(); ++it) {
-			attr_dict.put(*it, new_dict[*it]);
+			this->set_attr(*it, new_dict[*it]);
 	} 
+}
+
+void EMData::del_attr(const string & attr_name)
+{
+	attr_dict.erase(attr_name);
+}
+
+void EMData::del_attr_dict(const Dict & del_dict)
+{
+	vector<string> del_keys = del_dict.keys();
+	vector<string>::const_iterator it;
+	for(it=del_keys.begin(); it!=del_keys.end(); ++it) {
+		this->del_attr(*it);
+	}
 }

@@ -398,6 +398,20 @@ Dict get_attr_dict();
 void set_attr_dict(const Dict & new_dict);
 
 
+/** Delete the attribute from dictionary.
+ * 
+ * @param string the attribute name to be removed
+ * */
+ void del_attr(const string & attr_name);
+
+ 
+ /** Delete the attributes from the dictionary.
+  * 
+  * @param Dict the attrutes Dict to be removed
+  * */
+ void del_attr_dict(const Dict & del_dict);
+
+
 /** Get the image x-dimensional size.
  * @return Image x-dimensional size.
  */
