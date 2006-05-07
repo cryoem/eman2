@@ -300,7 +300,9 @@ void EMData::div(const EMData & em)
 		if( is_real() )
 		{
 			for (size_t i = 0; i < size; i++) {
-				rdata[i] /= src_data[i];
+				if(src_data[i] != 0) {
+					rdata[i] /= src_data[i];
+				}
 			}
 		}
 		else
