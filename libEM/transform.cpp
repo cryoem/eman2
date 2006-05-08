@@ -678,21 +678,23 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	}
 	else {
 		phiS = fmod((az   + 270.0f ),  360.0f);
-		psiS = fmod((phi  + 540.0f ), 360.0f);
+		psiS = fmod((phi  + 450.0f ), 360.0f);
 	}
 
 //   do some quaternionic stuff here
 
 	float nphi = (az-phi)/2.0f;
     // The next is also e0
-	float cosOover2 = fabs( cos((az+phi*M_PI)/360) * cos(alt*M_PI/360) );
+	float cosOover2 = (cos((az+phi)*M_PI/360) * cos(alt*M_PI/360)) ;
 	float sinOover2 = sqrt(1 -cosOover2*cosOover2);
 	float cosnTheta = sin((az+phi)*M_PI/360) * cos(alt*M_PI/360) / sqrt(1-cosOover2*cosOover2) ;
 	float sinnTheta = sqrt(1-cosnTheta*cosnTheta);
 	float n1 = sinnTheta*cos(nphi*M_PI/180);
 	float n2 = sinnTheta*sin(nphi*M_PI/180);
 	float n3 = cosnTheta;
-	
+	if (cosOover2<0) {
+		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
+	}
 
 
 	switch (euler_type) {
