@@ -1491,7 +1491,7 @@ class TestEMData(unittest.TestCase):
         os.unlink(imgfile)        
 
     def test_set_attr_dict(self):
-        """test set_attr_dict() function ...................."""
+        """test set/del_attr_dict() function ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace("testimage.noise.uniform.rand")
@@ -1501,6 +1501,18 @@ class TestEMData(unittest.TestCase):
         e.set_attr_dict(d)
         d2 = e.get_attr_dict()
         self.assertEqual(d2['is_complex'], True)
+        
+        e.set_attr('name1', 'Grant')
+        e.set_attr('int1', 1000)
+        d3 = e.get_attr_dict()
+        self.assertEqual(d3['name1'], 'Grant')
+        self.assertEqual(d3['int1'], 1000)
+        e.del_attr_dict(['name1', 'int1', 'is_complex'])
+        d4 = e.get_attr_dict()
+        self.assertEqual(d4.has_key('name1'), False)
+        self.assertEqual(d4.has_key('int1'), False)
+        self.assertEqual(d4.has_key('is_complex'), False)
+        self.assertEqual(d4.has_key('mean'), True)
         
     def test_get_clip(self):
         """test get_clip() function ........................."""
@@ -2003,13 +2015,17 @@ class TestEMData(unittest.TestCase):
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
     def test_set_attr(self):
-        """test set/get_attr() function ....................."""
+        """test set/get/del_attr() function ................."""
         e = EMData()
         e.set_size(32, 32, 32)
         e.process_inplace("testimage.noise.uniform.rand")
         self.assertEqual(e.get_attr("is_complex"), False)
         e.set_attr("is_complex", True)
         self.assertEqual(e.get_attr("is_complex"), True)
+        
+        e.del_attr('is_complex')
+        d = e.get_attr_dict()
+        self.assertEqual(d.has_key('is_complex'), False)
         
     def test_boolean_check(self):
         """test some boolean check in EMData ................"""
