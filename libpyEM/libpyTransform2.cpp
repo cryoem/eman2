@@ -194,6 +194,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
         .value("QUATERNION", EMAN::Transform3D::QUATERNION)
         .value("SGIROT", EMAN::Transform3D::SGIROT)
         .value("MRC", EMAN::Transform3D::MRC)
+        .value("XYZ", EMAN::Transform3D::XYZ)
         .value("SPIN", EMAN::Transform3D::SPIN)
         .value("EMAN", EMAN::Transform3D::EMAN)
     ;

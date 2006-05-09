@@ -73,6 +73,7 @@ namespace EMAN
 			SGIROT,
 			SPIDER,
 			MRC,
+			XYZ,
 			MATRIX
 		};
 		

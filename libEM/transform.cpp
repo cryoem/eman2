@@ -447,6 +447,10 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	float az  = 0;
 	float alt = 0;
 	float phi = 0;
+        float cxtilt = 0;
+	float sxtilt = 0;
+	float cytilt = 0;
+	float sytilt = 0;
 	bool is_quaternion = 0;
 	bool is_matrix = 0;
 
@@ -466,6 +470,16 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 		az =  (float)rotation["phi"]    + 90.0f ;              ;
 		alt = (float)rotation["theta"]  ;
 		phi = (float)rotation["psi"]    - 90.0f ;
+		break;
+
+	case XYZ:
+	        cxtilt = cos( (M_PI/180.0f)*(float)rotation["xtilt"]);
+	        sxtilt = sin( (M_PI/180.0f)*(float)rotation["xtilt"]);
+	        cytilt = cos( (M_PI/180.0f)*(float)rotation["ytilt"]);
+	        sytilt = sin( (M_PI/180.0f)*(float)rotation["ytilt"]);
+		az =  (180.0f/M_PI)*atan2(-cytilt*sxtilt,sytilt)   + 90.0f ;              ;
+		alt = (180.0f/M_PI)*acos(cytilt*cxtilt)  ;
+		phi = (float)rotation["ztilt"] +(180.0f/M_PI)*atan2(sxtilt,cxtilt*sytilt)   - 90.0f ;
 		break;
 
 	case MRC:
@@ -692,6 +706,11 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	float n1 = sinnTheta*cos(nphi*M_PI/180);
 	float n2 = sinnTheta*sin(nphi*M_PI/180);
 	float n3 = cosnTheta;
+        float xtilt = 0;
+        float ytilt = 0;
+        float ztilt = 0;
+
+	
 	if (cosOover2<0) {
 		cosOover2*=-1; n1 *=-1; n2*=-1; n3*=-1;
 	}
@@ -721,6 +740,18 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		result["theta"] = alt;
 		result["omega"] = psiS;
 		break;
+
+	case XYZ:
+	        xtilt = atan2(-sin((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt),cos((M_PI/180.0f)*alt));
+	        ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
+	        ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
+
+		result["xtilt"]  = xtilt*180/M_PI;
+		result["ytilt"]  = ytilt*180/M_PI;
+		result["ztilt"]  = ztilt*180/M_PI;
+		break;
+
+
 
 	case QUATERNION:
 		result["e0"] = cosOover2 ;
