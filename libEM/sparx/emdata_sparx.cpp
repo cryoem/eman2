@@ -2093,3 +2093,103 @@ float EMData::find_3d_threshold(float mass,float pixel_size)
 #undef density_protein
 #undef R
 #undef C
+#define quadpi (3.141592653589793238462643383279502884197)
+
+EMData * EMData::ctf_img(float ps,float cs,float dz,float voltage,float dza, float azz,float wgh,float b_factor, int sign)
+{     
+       
+       EMData&  buf = *this;                     
+       int img_dim=buf.get_ndim();
+       int nx = buf.get_xsize();
+       int ny = buf.get_ysize();
+       int nz = buf.get_zsize();  
+       int  lsm;
+       double ix,iy,iz;
+       float i,j,k;    
+       int nr2 ,nl2;
+       float dzz,az,ak;
+       float  tf;
+       if (nx%2==0) 
+    	    lsm=nx+2;
+       else
+    	    lsm=nx+1;                
+      float lambda=12.398/pow(voltage *(1022.+voltage),.5);   
+      cs=cs*pow(10.,-7);    
+      wgh = atan(wgh/(1.0-wgh));   
+      EMData* ctf_img1 = new EMData();       
+      ctf_img1->set_size(lsm,ny,nz);
+      float freq=1./ps/2./nx  ;  
+      ctf_img1->set_complex(true);
+      ctf_img1->set_ri(true);
+     
+      switch (img_dim)
+       {
+           case(1):
+	   for (i=0;i<lsm;++i)
+	       {   ix=(i-1.)/2.;
+		   ak=pow(ix*ix,.5)*freq;
+		   if(ak!=0)
+		      az=0.0;
+		   else
+		      az=quadpi/2.;
+		   dzz=dz+dza/2*sin(2*(az-azz*quadpi/180));
+		   tf=sin(-quadpi*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
+		   (*ctf_img1)(i)= tf;
+		  }
+	   break;
+           case(2):
+	   nr2=ny/2;
+	         for (j=0; j<ny;++j)
+	  { 
+	     if(iy>nr2) iy=iy-float(ny);
+		for (i=0;i<lsm;++i)
+		   {  ix=(i-1)/2;
+		       ak=pow(ix*ix+iy*iy,.5)*freq;
+		     if(ak!=0) 
+		        az=0.0;
+		     else
+			az=quadpi;
+		      dzz=dz+dza/2.*sin(2*(az-azz*quadpi/180));
+	              tf=sin(-quadpi*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
+		      (*ctf_img1)(i,j)= tf;
+		      }
+	          }
+           break;
+           case(3):		
+	   nr2=ny/2 ;
+	   nl2=nz/2 ;
+	   for ( k=0; k<nz;++k)
+	     {  iz=k-1;
+	          if(iz>nl2) iz=iz-float(nz);
+		  for ( j=0; j<ny;++j)
+		      {
+		         if(iy>nr2) iy=iy-float(ny);
+			    for ( i=0;i<lsm;++i)
+			        {  ix=(i-1)/2;
+			           ak=pow(ix*ix+iy*iy+iz*iz,.5)*freq;
+				   if(ak!=0)
+				   	az=0.0;
+				   else
+					az=quadpi;
+				    dzz=dz+dza/2.*sin(2*(az-azz*quadpi/180.));
+                                    tf=sin(-quadpi*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
+		                    (*ctf_img1)(i,j,k) =  tf;
+				  }
+			
+                        }
+		
+	        }
+	
+	    break;
+	    
+          } 
+	                 ctf_img1->set_complex(true);
+	                 ctf_img1->set_ri(1);			 
+			 ctf_img1->set_fftodd(true);
+	                 ctf_img1->set_attr("npad", 1);					 		 			 
+                         return ctf_img1;
+			 ctf_img1->done_data();
+} 		
+				
+#undef quadpi
+

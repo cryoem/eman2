@@ -351,6 +351,17 @@ vector<float> phase_cog();
 
 float find_3d_threshold(float mass,float pixel_size);
 
+/** Create 1D,2D, and 3D CTF 
+   input parameters: cs, dz(defocus),voltage,
+  The CTF function takes form:
+  *sin(-quadpi*(dz*lambda*ak^2-cs*lambda^3*ak^4/2.)-wgh)*exp(-b_factor*ak^2)*sign
+  * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
+  Attention: Envelope function in power spectrum has a form of exp(-2.0*b_factor*ak^2)
+  */   	
+  
+EMData* ctf_img(float ps, float cs,float dz,float voltage,float dza,float azz,float wgh,float b_factor,int sign);
+		
+
 private:
 //utility function for peak_search()
 static bool peakcmp(const Pixel& p1, const Pixel& p2);  
