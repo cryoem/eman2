@@ -830,7 +830,7 @@ class TestEMData(unittest.TestCase):
         os.unlink(outfile2)
         
     def test_rotate_3d(self):
-        """test rotate_2d ..................................."""
+        """test rotate_3d ..................................."""
         a = EMData()
         a.set_size(72,72,72)
         a.to_one()
@@ -2423,6 +2423,21 @@ class TestEMData(unittest.TestCase):
             for y in range(2):
                 for x in range(2):
                     self.assertAlmostEqual( d[z][y][x], log10(coefficient))
+    
+    def test_process(self):
+        """test process(Processor)..........................."""
+        p = Processors.get('testimage.circlesphere', {'radius':200})
+        
+        e = EMData()
+        e.set_size(800,800)
+        e.process_inplace(p)
+        e2 = e.process(p)
+        
+        d1 = e.get_2dview()
+        d2 = e2.get_2dview()
+        for y in range(800):
+            for x in range(800):
+                self.assertEqual(d1[y][x], d2[y][x])
 
 def test_main():
     test_support.run_unittest(TestEMData)
