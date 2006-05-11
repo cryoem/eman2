@@ -2105,7 +2105,7 @@ EMData * EMData::ctf_img(float ps,float cs,float dz,float voltage,float dza, flo
        int nz = buf.get_zsize();  
        int  lsm;
        double ix,iy,iz;
-       float i,j,k;    
+       int i,j,k;    
        int nr2 ,nl2;
        float dzz,az,ak;
        float  tf;
@@ -2121,6 +2121,7 @@ EMData * EMData::ctf_img(float ps,float cs,float dz,float voltage,float dza, flo
       float freq=1./ps/2./nx  ;  
       ctf_img1->set_complex(true);
       ctf_img1->set_ri(true);
+      ctf_img1->to_zero();
      
       switch (img_dim)
        {
@@ -2131,7 +2132,7 @@ EMData * EMData::ctf_img(float ps,float cs,float dz,float voltage,float dza, flo
 		   if(ak!=0)
 		      az=0.0;
 		   else
-		      az=quadpi/2.;
+		   az=quadpi/2.;
 		   dzz=dz+dza/2*sin(2*(az-azz*quadpi/180));
 		   tf=sin(-quadpi*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
 		   (*ctf_img1)(i)= tf;
