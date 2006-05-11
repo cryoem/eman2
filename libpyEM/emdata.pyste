@@ -79,6 +79,7 @@ set_policy(EMData.extractplane, return_value_policy(manage_new_object))
 set_policy(EMData.real2FH, return_value_policy(manage_new_object))
 set_policy(EMData.FH2F, return_value_policy(manage_new_object))
 set_policy(EMData.FH2Real, return_value_policy(manage_new_object))
+set_policy(EMData.ctf_img, return_value_policy(manage_new_object))
 
 exclude(EMData.get_data)
 exclude(EMData.fft_slice)
