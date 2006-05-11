@@ -16,6 +16,12 @@ public:
  * @exception NotExistingObjectError If the processor doesn't exist.
  */
 void process_inplace(const string & processorname, const Dict & params = Dict());
+
+/** Call the process_inplace with an instance od Processor, usually this instancecan 
+ * be get by (in Python) Processors.get("name", {'k':v, 'k':v})
+ * @param p the processor pointer
+ * */
+void process_inplace(Processor * p);
 		
 /** Apply a processor with its parameters on a copy of this image, return result 
  * as a a new image. The returned image may or may not be the same size as this image.
@@ -25,6 +31,12 @@ void process_inplace(const string & processorname, const Dict & params = Dict())
  * @exception NotExistingObjectError If the processor doesn't exist.
  * */
 EMData * process(const string & processorname, const Dict & params = Dict());
+
+/** Call the process with an instance od Processor, usually this instancecan 
+ * be get by (in Python) Processors.get("name", {'k':v, 'k':v})
+ * @param p the processor pointer
+ * */
+EMData * process(Processor * p);
 
 /** Compare this image with another image.
  * @param cmpname Comparison algorithm name.

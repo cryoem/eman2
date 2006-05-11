@@ -24,6 +24,14 @@ void EMData::process_inplace(const string & processorname, const Dict & params)
 	EXITFUNC;
 }
 
+void EMData::process_inplace(Processor * p)
+{
+	ENTERFUNC;
+	if(p) {
+		p->process_inplace(this);
+	}
+	EXITFUNC;
+}
 
 EMData* EMData::process(const string & processorname, const Dict & params)
 {
@@ -42,6 +50,16 @@ EMData* EMData::process(const string & processorname, const Dict & params)
 	EXITFUNC;
 }
 
+EMData * EMData::process(Processor * p)
+{
+	ENTERFUNC;
+	EMData * result = 0;
+	if(p) {
+		result = p->process(this);
+	}
+	return result;
+	EXITFUNC;
+}
 
 float EMData::cmp(const string & cmpname, EMData * with, const Dict & params)
 {
