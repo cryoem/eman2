@@ -1763,6 +1763,20 @@ class TestEMData(unittest.TestCase):
             e /= e6
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
+        #division by zero exception
+        self.assertRaises( RuntimeError, e.div, 0.0 )
+        try:
+            e/= 0.0
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+        e7 = EMData()
+        e7.set_size(32,32,32)
+        e7.to_zero()
+        self.assertRaises( RuntimeError, e.div, e7 )
+        try:
+            e/=e7
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "InvalidValueException")
 
     def test_stat_locations(self):
         """test locational stats ............................"""
