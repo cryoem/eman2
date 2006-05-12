@@ -641,7 +641,7 @@ EMData * EMData::log10()
 }
 
 
-EMData * EMData::real() //real part has half of x dimension
+EMData * EMData::real() //real part has half of x dimension for a complex image
 {
 	ENTERFUNC;
 	
@@ -653,9 +653,9 @@ EMData * EMData::real() //real part has half of x dimension
 	}
 	else //for a complex image
 	{
-		if( !is_ri() ) //complex image in amplitude/phase foramt, convert it to real/imaginary first
+		if( !is_ri() ) 
 		{
-			ap2ri();
+			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
 		}
 		int nx = get_xsize();
 		int ny = get_ysize();
@@ -699,8 +699,8 @@ EMData * EMData::imag()
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
 	}
 	else {	//for complex image
-		if( !is_ri() ) {	//complex image in amplitude/phase foramt, convert it to real/imaginary first
-			ap2ri();
+		if( !is_ri() ) {	
+			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
 		}
 		int nx = get_xsize();
 		int ny = get_ysize();
@@ -729,6 +729,91 @@ EMData * EMData::imag()
 	EXITFUNC;
 }
 
+EMData * EMData::amplitude()
+{
+	ENTERFUNC;
+	
+	EMData * e = new EMData();
+	
+	if( is_real() ) {	
+		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
+	}
+	else {
+		if(is_ri()) {
+			throw InvalidCallException("This image is in real/imaginary format, this function call require a complex image in amplitude/phase format.");
+		}
+		
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		e->set_size(nx/2, ny, nz);
+		float * edata = e->get_data();
+		for( int i=0; i<nx; i++ )
+		{
+			for( int j=0; j<ny; j++ )
+			{
+				for( int k=0; k<nz; k++ )
+				{
+					if( i%2 == 0 )
+					{
+						//complex data in format [amp, phase, amp, phase...]
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny];
+					}
+				}
+			}
+		}
+	}
+	
+	e->set_complex(false);
+	if(e->get_ysize()==1 && e->get_zsize()==1) {
+		e->set_complex_x(false);
+	}
+	e->update_stat();
+	return e; 	
+	
+	EXITFUNC;
+}
+
+EMData * EMData::phase()
+{
+	ENTERFUNC;
+	
+	EMData * e = new EMData();
+	
+	if( is_real() ) {	
+		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
+	}
+	else {
+		if(is_ri()) {
+			throw InvalidCallException("This image is in real/imaginary format, this function call require a complex image in amplitude/phase format.");
+		}
+		
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		e->set_size(nx/2, ny, nz);
+		float * edata = e->get_data();
+		for( int i=0; i<nx; i++ ) {
+			for( int j=0; j<ny; j++ ) {
+				for( int k=0; k<nz; k++ ) {
+					if( i%2 == 1 ) {
+						//complex data in format [real, complex, real, complex...]
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] = rdata[i+j*nx+k*nx*ny];
+					}
+				}
+			}
+		}
+	}
+	
+	e->set_complex(false);
+	if(e->get_ysize()==1 && e->get_zsize()==1) {
+		e->set_complex_x(false);
+	}
+	e->update_stat();
+	return e;
+	
+	EXITFUNC;
+}
 
 EMData * EMData::real2complex(const float img)
 {

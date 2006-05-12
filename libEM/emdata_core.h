@@ -484,10 +484,25 @@ EMData * real();
 
 		
 /** return imaginary part of a complex image as a real image format.
+ * for a real image, just return itself.
  * @return a real image which is the imaginary part of this image.
  * @exception InvalidCallException if this image is a real image
  */
 EMData * imag();
+
+
+/** return amplitude part of a complex image as a real image format
+ * @return EMData * a real image which is the amplitude part of this image
+ * @exception InvalidCallException if this image is a real image or is in real/imaginary format
+ * */
+EMData * amplitude();
+
+
+/** return phase part of a complex image as a real image format
+ * @return EMData * a real image which is the phase part of this image
+ * @exception InvalidCallException if this image is a real image or is in real/imaginary format
+ * */
+EMData * phase();
 
 		
 /** create a complex image from a real image, this complex image is in real/imaginary format
