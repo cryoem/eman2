@@ -2157,6 +2157,35 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual( d5[z][y][x*2], d[z][y][x] )
                     self.assertEqual( d5[z][y][x*2], d[z][y][x] )
 
+    def test_image_amplitude_phase(self):
+        """test amplitude()/phase() function ................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process_inplace('testimage.noise.uniform.rand')
+        e.do_fft_inplace()
+        e.ri2ap()
+        e2 = e.amplitude()
+        e3 = e.phase()
+        d = e.get_3dview()
+        d2 = e2.get_3dview()
+        d3 = e3.get_3dview()
+        for x in range(16):
+            for y in range(32):
+                for z in range(32):
+                    self.assertEqual( d2[z][y][x], d[z][y][x*2] )
+                    self.assertEqual( d3[z][y][x], d[z][y][x*2+1] )
+        
+        #amplitude()/phase() only apply to complex image in amplitude/phase format
+        f = EMData()
+        f.set_size(32,32)
+        f.process_inplace('testimage.noise.uniform.rand')
+        self.assertRaises( RuntimeError, f.amplitude, )
+        self.assertRaises( RuntimeError, f.phase, )
+        
+        f.do_fft_inplace()
+        self.assertRaises( RuntimeError, f.amplitude, )
+        self.assertRaises( RuntimeError, f.phase, )
+        
     def test_read_images(self):
         """test read_images() function ......................"""
         e = EMData()
