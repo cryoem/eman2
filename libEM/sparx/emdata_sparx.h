@@ -359,7 +359,7 @@ float find_3d_threshold(float mass,float pixel_size);
   Attention: Envelope function in power spectrum has a form of exp(-2.0*b_factor*ak^2)
   */   	
   
-EMData* ctf_img(float ps, float cs,float dz,float voltage,float dza,float azz,float wgh,float b_factor,int sign);
+EMData* ctf_img(float ps,float dz,float cs,float voltage,float dza,float azz,float wgh,float b_factor,int sign);
 		
 
 private:
