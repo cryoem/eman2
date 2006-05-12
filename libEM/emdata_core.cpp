@@ -270,12 +270,16 @@ void EMData::div(float f)
 	if (is_complex()) {
 		ap2ri();
 	}
+	
 	if (f != 0) {
 		update();
 		size_t size = nx * ny * nz;
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] /= f;
 		}
+	}
+	else {
+		throw InvalidValueException(f, "divide by zero");
 	}
 	EXITFUNC;
 }
@@ -302,6 +306,9 @@ void EMData::div(const EMData & em)
 			for (size_t i = 0; i < size; i++) {
 				if(src_data[i] != 0) {
 					rdata[i] /= src_data[i];
+				}
+				else {
+					throw InvalidValueException(src_data[i], "divide by zero");
 				}
 			}
 		}
