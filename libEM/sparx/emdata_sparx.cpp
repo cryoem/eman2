@@ -2008,7 +2008,7 @@ float EMData::find_3d_threshold(float mass,float pixel_size)
 	/* Calculation of the volume of the voxels */
 	float density_1_mole,vol_1_mole,vol_angstrom;
 	int vol_voxels;
-	density_1_mole = (float)mass/avagadro;
+	density_1_mole = (float)(mass*1000.0f)/avagadro;
 	vol_1_mole = density_1_mole/density_protein;
 	vol_angstrom = vol_1_mole*(double)pow((double)pow(10.0,8),3);
 	vol_voxels = static_cast<int> (vol_angstrom/(double)pow(pixel_size,3));
