@@ -355,4 +355,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict histc(EMData *ref,EMData *img,EMData *mask);
 	
 	static float hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min);
+	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0,float voltage=100,float dza=0.0,float azz=0.0,float wgh=.1,float b_factor=10000.,int sign=-1);
+ 
+    
 #endif	//util__sparx_h__
