@@ -3034,12 +3034,12 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 }
 //------------------------------------------------------------------------------------------------------------------------- 
 
-inline float tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,int sign){
-b_factor=1./b_factor;
+float Util::tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign){
 return sin(-M_PI*(dzz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
 }
 
-EMData * Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float voltage,float dza, float azz,float wgh,float b_factor, int sign)
+EMData * Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float voltage,float dza, float azz,float
+wgh,float b_factor, float sign)
 {               
        int  lsm;
        double ix,iy,iz;
