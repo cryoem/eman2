@@ -358,10 +358,6 @@ float find_3d_threshold(float mass,float pixel_size);
   * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
   Attention: Envelope function in power spectrum has a form of exp(-2.0*b_factor*ak^2)
   */   	
-  
-EMData* ctf_img(float ps,float dz,float cs,float voltage,float dza,float azz,float wgh,float b_factor,int sign);
-		
-
 private:
 //utility function for peak_search()
 static bool peakcmp(const Pixel& p1, const Pixel& p2);  
