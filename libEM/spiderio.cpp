@@ -665,13 +665,13 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area,
 	off_t cur_offset = (off_t) (hl + (data_size * sizeof(float) + hl) * image_index + hl);
 	portable_fseek(spider_file, cur_offset, SEEK_SET);
 
-#if 1
+#if 0
     // with region I/O support
 	EMUtil::process_region_io(data, spider_file, WRITE_ONLY, image_index,
 							  sizeof(float), (int)cur_h->nx, (int)cur_h->ny,
 							  (int)cur_h->nslice, area);
 #endif
-#if 0
+#if 1
     // no region I/O support. This part should be removed if the
     // region I/O version works.
 	if (fwrite(data, sec_size, nz, spider_file) != (unsigned int) nz) {
