@@ -1064,7 +1064,7 @@ EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 			#endif	//_WIN32
 				float xold = x*cang/scale + ysang;
 				float yold = x*sang/scale + ycang;
-				(*ret)(ix,iy) = Util::quadri(xold, yold, nx, ny, get_data());
+				(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());//have to add one as quadri uses Fortran counting
 			}
 		}
 	set_array_offsets(saved_offsets);
