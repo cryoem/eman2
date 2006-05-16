@@ -200,9 +200,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		     dz=params["defocus"];
 		     cs=params["cs"];
 		     lambda=params["voltage"];  	       
-		     ps=params["pixel size"];
+		     ps=params["ps"];
 		     b_factor=params["b_factor"];
-		     wgh=params["amplitude contrast"];
+		     wgh=params["wgh"];
 		     sign=params["sign"];
 		     break;		     
 		case KAISER_I0:
@@ -393,8 +393,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							fp->cmplx(ix,iy,iz) *= f;
 							break;
 						case CTF_:					
-						   ak=sqrt(ix/lsd2*ix/lsd2+iy/nyp2*iy/nyp2+iz/nzp2*iz/nzp2)/ps/2.0f;
-						  fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);  
+						   ak=sqrt(jx/lsd2*jx/lsd2+jy/nyp2*jy/nyp2+jz/nzp2*jz/nzp2)/ps/2.0f;
+						  fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);
+						  if(iz==1 && iy==1)
+						    { cout<<fp<<endl;}  
 						  break;      
 					}
 				}

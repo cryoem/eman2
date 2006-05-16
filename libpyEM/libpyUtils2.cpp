@@ -27,6 +27,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_decimate_overloads_2_4, EMAN::Util::de
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_window_overloads_2_7, EMAN::Util::window, 2, 7)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_3_8, EMAN::Util::pad, 3, 8)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_ctf_img_overloads_5_12, EMAN::Util::ctf_img, 5, 12)
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
@@ -170,6 +172,8 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("histogram", &EMAN::Util::histogram)
         .def("histc", &EMAN::Util::histc)
         .def("hist_comp_freq", &EMAN::Util::hist_comp_freq)
+        .def("ctf_img", &EMAN::Util::ctf_img,return_value_policy< manage_new_object >())
+        .def("tf", &EMAN::Util::tf)
         .def("is_file_exist", &EMAN::Util::is_file_exist)
         .def("svdcmp", &EMAN::Util::svdcmp)
         .def("sstrncmp", &EMAN::Util::sstrncmp)
@@ -224,9 +228,10 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("get_frand")
         .staticmethod("fftr_q")
         .staticmethod("BPCQ")
-        .staticmethod("svdcmp")
+        .staticmethod("tf")
         .staticmethod("crosrng_msr")
         .staticmethod("trilinear_interpolate")
+        .staticmethod("svdcmp")
         .staticmethod("Crosrng_ms")
         .staticmethod("is_file_exist")
         .staticmethod("fftc_d")
@@ -274,6 +279,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("eman_copysign")
         .staticmethod("sbasename")
         .staticmethod("round")
+        .staticmethod("ctf_img")
         .staticmethod("Polar2Dm")
     );
 

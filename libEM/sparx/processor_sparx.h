@@ -552,7 +552,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("defocus", EMObject::FLOAT, "defocus value in Angstrom.");
 			d.put("cs", EMObject::FLOAT, "cs in CM.");
-			d.put("lambda", EMObject::FLOAT, "voltage in Kv.");
+			d.put("voltage", EMObject::FLOAT, "voltage in Kv.");
 			d.put("ps", EMObject::FLOAT, "pixel size.");
 			d.put("b_factor", EMObject::FLOAT, "Gaussian like evelope function (b_factor).");
 			d.put("wgh", EMObject::FLOAT, "Amplitude contrast ratio.");
