@@ -167,8 +167,9 @@ The basic design of EMAN Processors: <br>\
 			TANH_LOW_PASS,
 			TANH_HIGH_PASS,
 			TANH_HOMOMORPHIC,
-			TANH_BAND_PASS,
-			RADIAL_TABLE
+			TANH_BAND_PASS,	
+			RADIAL_TABLE,
+		        CTF_,
 		};
 
 		/** Compute a Fourier-filter processed image in place.

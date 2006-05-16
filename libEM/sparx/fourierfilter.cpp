@@ -32,7 +32,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
 	bool   complex_input;
 	vector<float> table;
-
+	float lambda,ak,cs,ps,b_factor,wgh,sign;
 	if (!fimage) {
 		return NULL;
 	}
@@ -196,6 +196,15 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			cnstL = float(pihalf/aL/(omegaH-omegaL));
 			cnstH = float(pihalf/aH/(omegaH-omegaL));
 			break;
+	        case CTF_:
+		     dz=params["defocus"];
+		     cs=params["cs"];
+		     lambda=params["voltage"];  	       
+		     ps=params["pixel size"];
+		     b_factor=params["b_factor"];
+		     wgh=params["amplitude contrast"];
+		     sign=params["sign"];
+		     break;		     
 		case KAISER_I0:
 		case KAISER_SINH:
 		case KAISER_I0_INVERSE:
@@ -383,6 +392,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							float f = (1-df)*table[ir]+df*table[ir+1];
 							fp->cmplx(ix,iy,iz) *= f;
 							break;
+						case CTF_:					
+						   ak=sqrt(ix/lsd2*ix/lsd2+iy/nyp2*iy/nyp2+iz/nzp2*iz/nzp2)/ps/2.0f;
+						  fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);  
+						  break;      
 					}
 				}
 			}

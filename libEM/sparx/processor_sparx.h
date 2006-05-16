@@ -532,6 +532,34 @@ namespace EMAN
 			return d;
 		}
 	};
+		class CTF_Processor:public NewFourierProcessor
+	{
+	  public:
+		string get_name() const
+		{ return "CTF_"; }
+		static Processor *NEW()
+		{ return new CTF_Processor(); }
+		string get_desc() const
+		{
+			return "CTF_ is applied to Fourier image.";
+		}
+		void process_inplace(EMData* image) {
+			params["filter_type"] = CTF_;
+			EMFourierFilterInPlace(image, params); 
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("defocus", EMObject::FLOAT, "defocus value in Angstrom.");
+			d.put("cs", EMObject::FLOAT, "cs in CM.");
+			d.put("lambda", EMObject::FLOAT, "voltage in Kv.");
+			d.put("ps", EMObject::FLOAT, "pixel size.");
+			d.put("b_factor", EMObject::FLOAT, "Gaussian like evelope function (b_factor).");
+			d.put("wgh", EMObject::FLOAT, "Amplitude contrast ratio.");
+			d.put("sign", EMObject::FLOAT, "Sign of Contrast transfer function,and use -1 to compensate.");
+			return d;
+		}
+	};
 }
 
 #endif	//eman_processor_sparx_h__
