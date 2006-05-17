@@ -2117,8 +2117,11 @@ void FlipProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
+	
+	//const char *axis = params["axis"];
+	string axis = (const char*)params["axis"];
 
-	const char *axis = params["axis"];
+	std::cout << "start flip processing: " << axis << std::endl;
 
 	float *d = image->get_data();
 	int nx = image->get_xsize();
@@ -2127,57 +2130,33 @@ void FlipProcessor::process_inplace(EMData * image)
 
 	int nxy = nx * ny;
 
-	if (axis == "x") {			// horizonal flip
-		for (int z = 0; z < nz; z++) {
-			for (int y = 0; y < ny; y++) {
-				int i = y * nx + z * nxy;
-				int j = i + nx;
-
-				for (int x = 1; x < nx / 2; x++) {
-					float t = d[i + x];
-					d[i + x] = d[j - x];
-					d[j - x] = t;
+	if (axis == "x" || axis == "X") {		// horizontal flip
+		for(int z = 0; z < nz; ++z) {
+			for(int y = 0; y < ny; ++y) {
+				for(int x = 0; x < nx / 2; ++x) {
+					std::swap(d[z*nxy + y*nx + x], d[z*nxy + y*nx + (nx-x-1)]);
 				}
 			}
 		}
 	}
-	else if (axis == "y") {		// vertical flip
-		if (nz == 1) {
-			for (int i = 1; i < ny / 2; i++) {
-				for (int j = 0; j < nx; j++) {
-					int l1 = i * nx + j;
-					int l2 = (ny - i) * nx + j;
-					float t = d[l1];
-					d[l1] = d[l2];
-					d[l2] = t;
+	else if (axis == "y" || axis == "Y") {		// vertical flip
+		for(int z=0; z<nz; ++z) {
+			for(int y=0; y<ny/2; ++y) {
+				for(int x=0; x<nx; ++x) {
+					std::swap(d[z*nxy + y*nx +x], d[z*nxy + (ny -y -1)*nx +x]);
 				}
 			}
-			for (int j = 0; j < nx; j++) {
-				d[j] = d[nx + j];
-			}
-		}
-		else {
-			for (int i = 1; i < nz / 2; i++) {
-				for (int j = 0; j < ny; j++) {
-					for (int k = 0; k < nx; k++) {
-						int l1 = i * nx * ny + j * nx + k;
-						int l2 = (nz - i) * nxy + j * nx + k;
-						float t = d[l1];
-						d[l1] = d[l2];
-						d[l2] = t;
-					}
-				}
-			}
-
-			for (int j = 0; j < ny; j++) {
-				for (int k = 0; k < nx; k++) {
-					d[j * nx + k] = d[nxy + j * nx + k];
-				}
-			}
-		}
+		} 
 	}
-	else if (axis == "z") {
-		LOGWARN("flip around z axis is not implemented yet. do nothing");
+	else if (axis == "z" || axis == "Z") {
+		std::cout << "start z-axis flipping..." << std::endl;
+		for(int z=0; z<nz/2; ++z) {
+			for(int y=0; y<ny; ++y) {
+				for(int x=0; x<nx; ++x) {
+					std::swap(d[z*nxy + y*nx +x], d[(nz-z-1)*nxy+y*nx +x]);
+				}
+			}
+		}
 	}
 
 	image->done_data();
