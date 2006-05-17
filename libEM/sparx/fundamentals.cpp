@@ -149,8 +149,8 @@ Output: 1-2-3D real image with the result
 						for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
 							fp->cmplx(ix,iy,iz) *=
-								conj(gp->cmplx(ix,iy,iz))
-								*std::complex<float>(cos(arg),sin(arg));
+								conj(gp->cmplx(ix,iy,iz));
+								//*std::complex<float>(cos(arg),sin(arg));
 						}
 					}
 				}
@@ -227,9 +227,6 @@ Output: 1-2-3D real image with the result
 				(f->get_ysize() == g->get_ysize()) &&
 				(f->get_zsize() == g->get_zsize()));
 	}
-
-
-
 }
 
 /* vim: set ts=4 noet: */
