@@ -2120,8 +2120,6 @@ void FlipProcessor::process_inplace(EMData * image)
 	
 	string axis = (const char*)params["axis"];
 
-	std::cout << "start flip processing: " << axis << std::endl;
-
 	float *d = image->get_data();
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -2148,7 +2146,6 @@ void FlipProcessor::process_inplace(EMData * image)
 		} 
 	}
 	else if (axis == "z" || axis == "Z") {		//z axis flip
-		std::cout << "start z-axis flipping..." << std::endl;
 		for(int z=0; z<nz/2; ++z) {
 			for(int y=0; y<ny; ++y) {
 				for(int x=0; x<nx; ++x) {
