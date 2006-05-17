@@ -666,10 +666,12 @@ int SpiderIO::write_data(float *data, int image_index, const Region* area,
 	portable_fseek(spider_file, cur_offset, SEEK_SET);
 
 #if 0
+	/** This region I/O function does not work for spider image stack, Because it assume image stack
+	 * withou header, like 3D image. So it's fseek does not work correctly.  -- Grant Tang*/
     // with region I/O support
-	EMUtil::process_region_io(data, spider_file, WRITE_ONLY, image_index,
-							  sizeof(float), (int)cur_h->nx, (int)cur_h->ny,
-							  (int)cur_h->nslice, area);
+//	EMUtil::process_region_io(data, spider_file, WRITE_ONLY, image_index,
+//							  sizeof(float), (int)cur_h->nx, (int)cur_h->ny,
+//							  (int)cur_h->nslice, area);
 #endif
 #if 1
     // no region I/O support. This part should be removed if the
