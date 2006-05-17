@@ -392,11 +392,16 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							float f = (1-df)*table[ir]+df*table[ir+1];
 							fp->cmplx(ix,iy,iz) *= f;
 							break;
-						case CTF_:					
-						   ak=sqrt(jx/lsd2*jx/lsd2+jy/nyp2*jy/nyp2+jz/nzp2*jz/nzp2)/ps/2.0f;
-						  fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);
-						  if(iz==1 && iy==1)
-						    { cout<<fp<<endl;}  
+						case CTF_:
+						  if(ny>1 && nz<=1 )						  					
+						   { ak=sqrt(jx/lsd2*jx/lsd2+jy/nyp2*jy/nyp2)/ps/2.0f;}
+						  else	if(ny<=1)
+						  	     { ak=sqrt(jx/lsd2*jx/lsd2)/ps/2.0f;}
+						  else  if(nz>1)
+						     { ak=sqrt(jx/lsd2*jx/lsd2+jy/nyp2*jy/nyp2+jz/nzp2*jz/nzp2)/ps/2.0f;}          
+						       				
+						  fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);			  
+						 
 						  break;      
 					}
 				}
