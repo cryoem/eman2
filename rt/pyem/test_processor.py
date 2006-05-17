@@ -13,7 +13,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 115)
+        self.assertEqual(len(processor_names), 116)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -1087,13 +1087,34 @@ class TestProcessor(unittest.TestCase):
     def test_eman1_xform_flip(self):
         """test eman1.xform.flip processor .................."""
         e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
+        e.set_size(2,2,2)
         self.assertEqual(e.is_complex(), False)
+        e.set_value_at(0,0,0, 1)
+        e.set_value_at(0,0,1, 2)
+        e.set_value_at(0,1,0, 3)
+        e.set_value_at(0,1,1, 4)
+        e.set_value_at(1,0,0, 5)
+        e.set_value_at(1,0,1, 6)
+        e.set_value_at(1,1,0, 7)
+        e.set_value_at(1,1,1, 8)
         
         e.process_inplace('eman1.xform.flip', {'axis':'x'})
+        self.assertEqual(e.get_value_at(0, 0, 0), 5)
+        self.assertEqual(e.get_value_at(0, 1, 0), 7)
+        self.assertEqual(e.get_value_at(1, 0, 0), 1)
+        self.assertEqual(e.get_value_at(1, 1, 0), 3)
+        
         e.process_inplace('eman1.xform.flip', {'axis':'y'})
+        self.assertEqual(e.get_value_at(0, 0, 0), 7)
+        self.assertEqual(e.get_value_at(0, 1, 0), 5)
+        self.assertEqual(e.get_value_at(1, 0, 0), 3)
+        self.assertEqual(e.get_value_at(1, 1, 0), 1)
+        
         e.process_inplace('eman1.xform.flip', {'axis':'z'})
+        self.assertEqual(e.get_value_at(0, 0, 0), 8)
+        self.assertEqual(e.get_value_at(0, 1, 0), 6)
+        self.assertEqual(e.get_value_at(1, 0, 0), 4)
+        self.assertEqual(e.get_value_at(1, 1, 0), 2)
     
     def test_eman1_math_addnoise(self):
         """test eman1.math.addnoise processor ..............."""
