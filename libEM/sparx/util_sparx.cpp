@@ -2356,9 +2356,9 @@ EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, in
 	
 
 	/*    Calculation of the start point */
-	new_st_x=int(ceil((new_nx-nx)/2.f  + x_offset));
-	new_st_y=int(ceil((new_ny-ny)/2.f  + y_offset));
-	new_st_z=int(ceil((new_nz-nz)/2.f  + z_offset));
+	new_st_x=int((new_nx/2-nx/2)  + x_offset);
+	new_st_y=int((new_ny/2-ny/2)  + y_offset);
+	new_st_z=int((new_nz/2-nz/2)  + z_offset);
 	/* ============================== */					
 
 
@@ -3097,4 +3097,5 @@ wgh,float b_factor, float sign)
 		return ctf_img1;
 			 			 
 } 		
+
 
