@@ -2259,9 +2259,9 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 	
 	/*    Calculation of the start point */
-	int new_st_x=int(ceil((nx-new_nx)/2.f + x_offset)),
-	    new_st_y=int(ceil((ny-new_ny)/2.f + y_offset)),  
-	    new_st_z=int(ceil((nz-new_nz)/2.f + z_offset));
+	int new_st_x=int((nx/2-new_nx/2) + x_offset),
+	    new_st_y=int((ny/2-new_ny/2) + y_offset),  
+	    new_st_z=int((nz/2-new_nz/2) + z_offset);
 	/* ============================== */
 	    
 	/* Exception Handle */
