@@ -355,7 +355,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict histc(EMData *ref,EMData *img,EMData *mask);
 	
 	static float hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min);
-	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0f,float voltage=100.0f,float dza=0.0f,float azz=0.0f,float wgh=.1,float b_factor=10000.f,float sign=-1.0f);
+	/* The unit in the ctf function: dz: Angstrom, cs: CM  Ps: Angstrom, Voltage: Kv,dza: Angstrom, azz: degree wgh: None unit. b_factor: Angstrom^2 
+	 The CTF function takes form of   *sin(-quadpi*(dz*lambda*ak^2-cs*lambda^3*ak^4/2.)-wgh)*exp(-b_factor*ak^2)*sign
+          * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
+                  Attention: Envelope function in power spectrum has a form of exp(-b_factor*ak^2)
+                                          */ 
+	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0f,float voltage=100.0f,float dza=0.0f,float azz=0.0f,float wgh=.1,float b_factor=0.0f,float sign=-1.0f);
         static float tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign);
     	
 #endif	//util__sparx_h__
