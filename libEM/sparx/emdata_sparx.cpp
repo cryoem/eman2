@@ -1100,9 +1100,10 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	delx = fmod(delx, float(nxn));
 	dely = fmod(dely, float(nyn));
 	// center of big image,
-	// have to add the fraction on account on even-sized images for which Fourier zero-padding changes the center location 
-	float xc = nxn+(nxn%2)/2.0f;
-	float yc = nyn+(nyn%2)/2.0f;
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
 	// center of small image
 	int xcn = nxn/2;
 	int ycn = nyn/2;
@@ -1125,8 +1126,8 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 			float ysang = -y*sang/scale + xc;
 			for (int ix = 0; ix < nxn; ix++) {
 				float x = float(ix) - shiftxc;
-				float xold = x*cang/scale + ysang;
-				float yold = x*sang/scale + ycang;
+				float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+				float yold = x*sang/scale + ycang-iys;
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 				     sum=0.0f;    w=0.0f;
 				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
