@@ -100,6 +100,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&RadialAverageProcessor::NEW);
 	force_add(&RadialSubstractProcessor::NEW);
 	force_add(&FlipProcessor::NEW);
+	force_add(&MirrorProcessor::NEW);
 
 	force_add(&AddNoiseProcessor::NEW);
 	force_add(&AddSigmaNoiseProcessor::NEW);
@@ -156,8 +157,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&NewHomomorphicTanhProcessor::NEW);
 	force_add(&NewRadialTableProcessor::NEW);
 	force_add(&InverseKaiserI0Processor::NEW);
-	force_add(&InverseKaiserSinhProcessor::NEW);
-	force_add(&IntegerCyclicShift2DProcessor::NEW);
+	force_add(&InverseKaiserSinhProcessor::NEW);	 
 	force_add(&CCDNormProcessor::NEW);
 	force_add(&CTF_Processor::NEW);
 }
@@ -2157,9 +2157,7 @@ void FlipProcessor::process_inplace(EMData * image)
 
 	image->done_data();
 }
-
-
-
+ 
 void AddNoiseProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -4508,61 +4506,81 @@ void CCDNormProcessor::process_inplace(EMData * image)
 
 }
 
-void 
-IntegerCyclicShift2DProcessor::colreverse(float* beg, float* end, int nx) {
-	float* tmp = new float[nx];
-	int n = (end - beg)/nx;
-	int nhalf = n/2;
-	for (int i = 0; i < nhalf; i++) {
-		// swap col i and col n-1-i
-		memcpy(tmp, beg+i*nx, nx*sizeof(float));
-		memcpy(beg+i*nx, beg+(n-1-i)*nx, nx*sizeof(float));
-		memcpy(beg+(n-1-i)*nx, tmp, nx*sizeof(float));
-	}
-	delete[] tmp;
-}
 
-void IntegerCyclicShift2DProcessor::process_inplace(EMData * image) {
-	if (image->is_complex())
-		throw ImageFormatException("Real image required for "
-				                   "IntegerCyclicShift2DProcessor");
-	if (2 != image->get_ndim() || 1 != image->get_zsize())
-		throw ImageFormatException("2-D image needed for "
-				                   "IntegerCyclicShift2DProcessor");
-	int dx = params["dx"];
-	int dy = params["dy"];
-	// The reverse trick we're using shifts to the left (a negative shift)
-	int nx = image->get_xsize();
-	dx %= nx;
-	if (dx < 0) dx += nx;
-	int ny = image->get_ysize();
-	dy %= ny;
-	if (dy < 0) dy += ny;
-#ifdef DEBUG
-	std::cout << dx << std::endl;
-	std::cout << dy << std::endl;
-#endif
-	int mx = -(dx - nx);
-	int my = -(dy - ny);
-	float* data = image->get_data();
-	// x-reverses
-	if (mx != 0) {
-		for (int iy = 0; iy < ny; iy++) {
-			// reverses for column iy
-			int offset = nx*iy; // starting location for column iy
-			reverse(&data[offset],&data[offset+mx]);
-			reverse(&data[offset+mx],&data[offset+nx]);
-			reverse(&data[offset],&data[offset+nx]);
+void MirrorProcessor::process_inplace(EMData *image) {
+if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	
+	string axis = (const char*)params["axis"];
+
+	float* data = image->EMData::get_data();
+	
+	int nx = image->EMData::get_xsize();
+	int ny = image->EMData::get_ysize();
+	int nz = image->EMData::get_zsize();	 
+	int nxy = nx*ny;
+	
+	int x_start = 1-nx%2;
+	int y_start = 1-ny%2;
+	int z_start = 1-nz%2;
+	
+	if (axis == "x" || axis == "X") {
+	        for (int iz = 0; iz < nz; iz++)
+			for (int iy = 0; iy < ny; iy++) {
+				int offset = nx*iy + nxy*iz;
+                         	 reverse(&data[offset+x_start],&data[offset+nx]);
+		         }
+         }
+	 
+         //Will have to define colreverse function to the inner loop for y and z
+         if (axis == "y" || axis == "Y") {
+                 float *tmp = new float[nx];
+	         int nhalf   = ny/2;
+ 		 int beg     = 0;
+                 for (int iz = 0; iz < nz; iz++) {
+		      beg = iz*nxy;
+		      for (int iy = y_start; iy < nhalf; iy++) {
+		      		memcpy(tmp, &data[beg+iy*nx], nx*sizeof(float));
+				memcpy(&data[beg+iy*nx], &data[beg+(ny-iy-1+y_start)*nx], nx*sizeof(float));
+				memcpy(&data[beg+(ny-iy-1+y_start)*nx], tmp, nx*sizeof(float));
+			}
 		}
-	}
-	// y-reverses
-	if (my != 0) {
-		colreverse(&data[0], &data[my*nx], nx);
-		colreverse(&data[my*nx], &data[ny*nx], nx);
-		colreverse(&data[0], &data[ny*nx], nx);
-	}
+		delete[] tmp;
+	}			 
+	 
+         if (axis == "z" || axis == "Z") {
+	 	if(1-z_start){
+			int nhalf = nz/2;
+			float *tmp = new float[nxy];
+			for(int iz = 0;iz<nhalf;iz++){
+				memcpy(tmp,&data[iz*nxy],nxy*sizeof(float));
+				memcpy(&data[iz*nxy],&data[(nz-iz-1)*nxy],nxy*sizeof(float));
+				memcpy(&data[(nz-iz-1)*nxy],tmp,nxy*sizeof(float));
+				}
+			delete[] tmp;
+		}
+		else{
+			float *tmp = new float[nx];
+			int nhalf   = nz/2;
+			int beg     = 0;
+			for (int iy = 0; iy < ny; iy++) {
+				beg = iy*nx;
+				for (int iz = z_start; iz < nhalf; iz++) {
+					memcpy(tmp, &data[beg+ iz*nxy], nx*sizeof(float));
+					memcpy(&data[beg+iz*nxy], &data[beg+(nz-iz-1+z_start)*nxy], nx*sizeof(float));
+					memcpy(&data[beg+(nz-iz-1+z_start)*nxy], tmp, nx*sizeof(float));
+				}
+			}
+			delete[] tmp;
+		}
+         }
+	 
+	 image->done_data();
 }
 
+ 
 int EMAN::multi_processors(EMData * image, vector < string > processornames)
 {
 	Assert(image != 0);

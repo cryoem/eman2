@@ -2782,6 +2782,35 @@ The basic design of EMAN Processors: <br>\
 		}
 		
 	};
+	
+	/*class FlipProcessor1:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return "eman1.xform.flip1";
+		}
+
+		static Processor *NEW()
+		{
+			return new FlipProcessor1();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "flip an image around an axis.";
+		}
+		
+	};*/
 
 	/** add noise to an image
 	 * @param noise 
@@ -3777,57 +3806,7 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
-
-	/** Cyclical shift of a 2D image by an integer number of pixels.
-	 * @author Grant Goodyear <grant.goodyear@uth.tmc.edu> 
-	 * @date 10-2005
-	 * @see http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
-	 *
-	 * This class uses an interesting reversal algorithm for cyclic shifts:
-	 *
-	 * A[0] A[1] A[2] A[3] A[4] A[5] A[6] A[7] A[8] A[9]
-	 *
-	 * 10   20   30   40   50   60   70   80   90   100
-	 * ------------
-	 *    m = 3 (shift left three places)
-	 *
-	 * Reverse the items from 0..m-1 and m..N-1:
-	 * 
-	 * 30   20   10   100  90   80   70   60   50   40
-	 *
-	 * Now reverse the entire sequence:
-	 *
-	 * 40   50   60   70   80   90   100  10   20   30
-	 */
-	class IntegerCyclicShift2DProcessor:public Processor
-	{
-		void colreverse(float* beg, float* end, int nx);
-	  public:
-		void process_inplace(EMData * image);
-
-		string get_name() const
-		{
-			return "filter.integercyclicshift2d";
-		}
-
-		static Processor *NEW()
-		{
-			return new IntegerCyclicShift2DProcessor();
-		}
-
-		string get_desc() const
-		{
-			return "Cyclically shift a 2D image by an integer number of pixels";
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("dx", EMObject::INT, "number of pixels to shift along x");
-			d.put("dy", EMObject::INT, "number of pixels to shift along y");
-			return d;
-		}
-	};
+ 
 
 #if 0
 
