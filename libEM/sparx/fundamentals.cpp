@@ -149,8 +149,8 @@ Output: 1-2-3D real image with the result
 						for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
 							fp->cmplx(ix,iy,iz) *=
-								conj(gp->cmplx(ix,iy,iz));
-								//*std::complex<float>(cos(arg),sin(arg));
+								conj(gp->cmplx(ix,iy,iz))
+								*std::complex<float>(cos(arg),sin(arg));
 						}
 					}
 				}
@@ -188,7 +188,7 @@ Output: 1-2-3D real image with the result
 		fp->do_ift_inplace();
 		fp->postift_depad_corner_inplace();
 
-		vector<int> saved_offsets = fp->get_array_offsets();
+		//vector<int> saved_offsets = fp->get_array_offsets();  I do not know what the meaning of it was, did not work anyway PAP
 		fp->set_array_offsets(1,1,1);
 
 		normfact = (nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
@@ -216,7 +216,8 @@ Output: 1-2-3D real image with the result
 			}	
 		}
 		//OVER AND OUT
-		fp->set_array_offsets(saved_offsets);
+		//fp->set_array_offsets(saved_offsets);  This was strange and did not work, PAP
+		fp->set_array_offsets(0,0,0);
 		fp->done_data();
 		return fp;  
 	}
