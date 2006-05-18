@@ -2439,7 +2439,7 @@ if (image->is_complex())
          }
          // y-reverses
          if (my != 0) {	 
-	         for (int iz = 0; iz < ny; iz++) {
+	         for (int iz = 0; iz < nz; iz++) {
 		 	int offset = nx*ny*iz;
             	     	colreverse(&data[offset], &data[offset + my*nx], nx);
                      	colreverse(&data[offset + my*nx], &data[offset + ny*nx], nx);
