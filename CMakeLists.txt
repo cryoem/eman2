@@ -27,6 +27,7 @@ OPTION(ENABLE_TIFF "enable TIFF support" ON)
 OPTION(ENABLE_HDF5 "enable HDF5 support" ON)
 OPTION(ENABLE_V4L2 "enable V4L2 framegrabbing support" OFF)
 OPTION(ENABLE_PNG "enable PNG support" ON)
+OPTION(ENABLE_JPEG "enable JPEG support" ON)
 OPTION(ENABLE_PYTHON "enable boost python support" ON)
 
 OPTION(ENABLE_DEBUG "enable debug support" OFF)
@@ -357,6 +358,10 @@ IF(ENABLE_TIFF)
     CHECK_OPTIONAL_LIB(TIFF tiff tiffio.h)
     CHECK_LIB_ONLY(JPEG jpeg)
 ENDIF(ENABLE_TIFF)
+
+IF(ENABLE_JPEG)
+    CHECK_OPTIONAL_LIB(JPEG jpeg jpeglib.h)
+ENDIF(ENABLE_JPEG)
 
 IF(ENABLE_HDF5)
     IF (WIN32)

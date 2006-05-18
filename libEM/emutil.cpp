@@ -117,6 +117,11 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		imagetypes["v4l"] = IMAGE_V4L;
 		imagetypes["V4L"] = IMAGE_V4L;
 		
+		imagetypes["jpg"] = IMAGE_JPEG;
+		imagetypes["JPG"] = IMAGE_JPEG;
+		imagetypes["jpeg"] = IMAGE_JPEG;
+		imagetypes["JPEG"] = IMAGE_JPEG;
+
 		initialized = true;
 	}
 	

@@ -16,6 +16,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     dm3io.cpp
     tifio.cpp
     hdfio.cpp
+    jpegio.cpp
     emdata.cpp
     emdata_io.cpp
     emdata_core.cpp
