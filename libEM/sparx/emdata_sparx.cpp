@@ -1099,9 +1099,10 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	ret->to_zero();  //we will leave margins zeroed.
 	delx = fmod(delx, float(nxn));
 	dely = fmod(dely, float(nyn));
-	// center of big image
-	int xc = nxn;
-	int yc = nyn;
+	// center of big image,
+	// have to add the fraction on account on even-sized images for which Fourier zero-padding changes the center location 
+	float xc = nxn+(nxn%2)/2.0f;
+	float yc = nyn+(nyn%2)/2.0f;
 	// center of small image
 	int xcn = nxn/2;
 	int ycn = nyn/2;
