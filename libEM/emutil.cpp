@@ -469,6 +469,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_PGM:
 		imageio = new PgmIO(filename, rw_mode);
 		break;
+	case IMAGE_JPEG:
+		imageio = new JpegIO(filename,rw_mode);
+		break;
 	case IMAGE_EMIM:
 		imageio = new EmimIO(filename, rw_mode);
 		break;
@@ -544,6 +547,8 @@ const char *EMUtil::get_imagetype_name(ImageType t)
 		return "EMIM";
 	case IMAGE_GATAN2:
 		return "GatanDM2";
+	case IMAGE_JPEG:
+		return "JPEG";
 	case IMAGE_AMIRA:
 		return "AmiraMesh";
 	case IMAGE_XPLOR:

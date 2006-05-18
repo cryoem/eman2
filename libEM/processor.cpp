@@ -4321,6 +4321,16 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	
 	image->done_data();
 	image->update();
+
+/*	Sample code for returning various types
+	vector<float> vec1(5,0.0);
+	vec1[1]=1.0;
+	vec1[2]=2.0;
+
+	image->set_attr("abc1",1.0);
+	image->set_attr("abc2","def");
+	image->set_attr("abc3",vec1);
+*/
 }
 
 void RampProcessor::process_inplace(EMData * image)

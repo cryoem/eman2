@@ -131,7 +131,6 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	cf->set_attr("align_score", max_value);
 	cf->set_attr("translational.dx",result[0]); 
 	cf->set_attr("translational.dy",result[1]); 
-	cf->set_attr("translational.dz",result[2]); 
 
 	return cf;
 }
@@ -206,7 +205,6 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 	float score = 0;
 	score = Util::hypot3(tx, ty, tz);
 
-	cf->set_attr("align_score", score);
 
 	if (!to) {
 		tx /= 2;
@@ -215,6 +213,11 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 	}
 
 	this_img->translate(tx, ty, tz);
+
+	cf->set_attr("align_score", max_value);
+	cf->set_attr("translational.dx",tx); 
+	cf->set_attr("translational.dy",ty); 
+	cf->set_attr("translational.dz",tz); 
 
 	cf->done_data();
 

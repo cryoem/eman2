@@ -12,6 +12,9 @@
 	#include "pngio.h"
 #endif	//EM_PNG
 
+#ifdef EM_JPEG
+	#include "jpegio.h"
+#endif
 
 #include "dm3io.h"
 

@@ -67,6 +67,14 @@ def error_exit(s) :
 	print s
 	exit(1)
 	
+def test_image(type=0,size=(128,128)):
+	"""Returns a simple standard test image"""
+	ret=EMData()
+	ret.set_size(*size)
+	if (type==0) :
+		ret.process_inplace("testimage.scurve")
+	
+	return ret
 
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\

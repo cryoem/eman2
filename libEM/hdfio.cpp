@@ -67,6 +67,7 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 	cur_image_index = -1;
 	old_func = 0;
 	old_client_data = 0;
+//	printf("HDf open\n");
 }
 
 HdfIO::~HdfIO()
@@ -79,6 +80,7 @@ HdfIO::~HdfIO()
 		H5Fflush(file,H5F_SCOPE_GLOBAL);	// If there were no resource leaks, this wouldn't be necessary...
 		H5Fclose(file);
     }
+//printf("HDf close\n");
 }
 
 void HdfIO::init()

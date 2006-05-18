@@ -8,7 +8,7 @@
 #include "jpegio.h"
 #include "geometry.h"
 #include "util.h"
-
+#include <math.h>
 
 using namespace EMAN;
 
@@ -45,6 +45,7 @@ void JpegIO::init()
 		jpeg_stdio_dest(&cinfo, jpeg_file);
 	}
 
+	rendermin=rendermax=0;
 	EXITFUNC;
 }
 
@@ -81,6 +82,10 @@ int JpegIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	cinfo.image_width = (int) dict["nx"];      /* image width and height, in pixels */
 	cinfo.image_height = (int) dict["ny"];
+	if (area) {
+		cinfo.image_width = (int) area->size[0];
+		cinfo.image_height = (int) area->size[1];
+	}
 	cinfo.input_components = 1;     /* # of color components per pixel */
 	cinfo.in_color_space = JCS_GRAYSCALE; /* colorspace of input image */
 	jpeg_set_defaults(&cinfo);
@@ -104,18 +109,18 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 	ENTERFUNC;
 
 	if (image_index>0) throw ImageReadException("N/A", "JPEG files are single-image only");
-	if (area->size[0]!=cinfo.image_width || area->size[1]!=cinfo.image_height)
+	if (area && (area->size[0]!=cinfo.image_width || area->size[1]!=cinfo.image_height))
 		 throw ImageReadException("N/A", "No region writing for JPEG images");
-	int nx=(int)area->size[0],ny=(int)area->size[1];
+	int nx=cinfo.image_width,ny=cinfo.image_height;
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	if (rendermax<=rendermin) {
-		float m=0,s=0;
+	if (rendermax<=rendermin || isnan(rendermin) || isnan(rendermax)) {
+		double m=0,s=0;
 		
 		for (int i=0; i<nx*ny; i++) { m+=data[i]; s+=data[i]*data[i]; }
 		m/=(float)(nx*ny);
-		s=sqrt(m/(float)(nx*ny)-m*m);
-		if (s<=0) s=1.0;	// this means all data values are the same
+		s=sqrt(s/(float)(nx*ny)-m*m);
+		if (s<=0 || isnan(s)) s=1.0;	// this means all data values are the same
 		rendermin=m-s*3.0;
 		rendermax=m+s*3.0;
 	}
@@ -140,6 +145,11 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 
 	free(cdata);
 	EXITFUNC;
+
+	return 0;
+}
+
+int JpegIO::get_nimg() {
 	return 0;
 }
 
