@@ -36,7 +36,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 	   stats.push_back(Vol->get_attr("minimum"));
 	   stats.push_back(Vol->get_attr("maximum"));
 	   return stats;
-	  }		
+	  } 
 	
 	/* Check if the sizes of the mask and image are same */
 		
@@ -2395,16 +2395,51 @@ void Util::slicereverse(float *beg, float *end, int nx,int ny)
 
 
 void Util::cyclicshift(EMData *image, Dict params) {
+/*
+ Performs inplace integer cyclic shift as specified by the "dx","dy","dz" parameters on a 3d volume.
+ Implements the inplace swapping using reversals as descibed in  also:
+    http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
+    
+ 
+* @author  Phani Ivatury
+* @date 18-2006
+* @see http://www.csse.monash.edu.au/~lloyd/tildeAlgDS/Intro/Eg01/
+*
+*
+* A[0] A[1] A[2] A[3] A[4] A[5] A[6] A[7] A[8] A[9]
+*
+* 10   20   30   40   50   60   70   80   90   100
+* ------------
+*    m = 3 (shift left three places)
+*
+* Reverse the items from 0..m-1 and m..N-1:
+* 
+* 30   20   10   100  90   80   70   60   50   40
+*
+* Now reverse the entire sequence:
+*
+* 40   50   60   70   80   90   100  10   20   30
+
+    
+    cycl_shift() in libpy/fundementals.py calls this function
+    
+    Usage: 
+    EMData *im1 = new EMData();
+    im1->set_size(70,80,85);
+    im1->to_one();
+    Dict params; params["dx"] = 10;params["dy"] = 10000;params["zx"] = -10;
+    Utils::cyclicshift(im1,params);
+    im1.peak_search(1,1)
+*/
+
 if (image->is_complex())
                 throw ImageFormatException("Real image required for "
                                                    "IntegerCyclicShift2DProcessor");
-/*         if (3 != image->get_ndim() || 1 != image->get_zsize())
-                throw ImageFormatException("2-D image needed for "
-                                                   "IntegerCyclicShift2DProcessor");
-*/						   
+ 
          int dx = params["dx"];
          int dy = params["dy"];
 	 int dz = params["dz"];
+ 
          // The reverse trick we're using shifts to the left (a negative shift)
          int nx = image->get_xsize();
          dx %= nx;
@@ -2415,6 +2450,7 @@ if (image->is_complex())
 	 int nz = image->get_zsize();
          dz %= nz;
          if (dz < 0) dz += nz;	 
+	 
 	 
  #ifdef DEBUG
          std::cout << dx << std::endl;
@@ -2451,6 +2487,7 @@ if (image->is_complex())
                  slicereverse(&data[my*ny*nx], &data[nz*ny*nx], nx, ny);
                  slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
          }
+	image->done_data();	 
 }
 
 //-----------------------------------------------------------------------------------------------------------------------

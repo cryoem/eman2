@@ -7,6 +7,46 @@
 
 namespace EMAN
 {
+
+        
+	/** flip an image around an axis
+	 * @param axis  'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;
+	 */
+	class MirrorProcessor:public Processor
+	{ 
+	        /*void colreverse(float* beg, float* end, int nx);*/
+		
+                /*void slicereverse(float* beg, float* end, int nx,int ny);*/
+		
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return "mirror";
+		}
+
+		static Processor *NEW()
+		{
+			return new MirrorProcessor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "flip an image around an axis.";
+		}
+		
+	};
+
+
+
 	class NewFourierProcessor:public Processor
 	{
 	  public:
