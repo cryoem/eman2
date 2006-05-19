@@ -68,7 +68,9 @@ def error_exit(s) :
 	exit(1)
 	
 def test_image(type=0,size=(128,128)):
-	"""Returns a simple standard test image"""
+	"""Returns a simple standard test image
+	type=0   'scurve'
+	size=(128,128) """
 	ret=EMData()
 	ret.set_size(*size)
 	if (type==0) :
