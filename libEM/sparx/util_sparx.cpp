@@ -3179,9 +3179,9 @@ EMData* Util::OneD_image_mask(EMData* image, EMData* mask)
 	/******
 	**** Cleaning the Memory
 	*******/
-	delete[]img_ptr;delete[]mask_ptr;
-	img_ptr=0;mask_ptr=0;
-	OneD_image.clear();
+	//delete[]img_ptr;delete[]mask_ptr;
+	//img_ptr=0;mask_ptr=0;
+	//OneD_image.clear();
 	
 
 	/* return the 1-D image */
@@ -3228,8 +3228,8 @@ EMData *Util::recons_image_OneD(EMData* image,EMData *mask)
 	/******
 	**** Cleaning the Memory
 	*******/
-	delete[]img_ptr;delete[]mask_ptr;
-	img_ptr=0;mask_ptr=0;
+	//delete[]img_ptr;delete[]mask_ptr;
+	//img_ptr=0;mask_ptr=0;
 	
 	/* return the new image of size "size" */
 	return new_image;
