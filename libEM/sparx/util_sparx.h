@@ -362,5 +362,7 @@ class FakeKaiserBessel : public KaiserBessel {
                                           */ 
 	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0f,float voltage=100.0f,float dza=0.0f,float azz=0.0f,float wgh=.1,float b_factor=0.0f,float sign=-1.0f);
         static float tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign);
-    	
+	static EMData *OneD_image_mask(EMData* image, EMData* mask);
+	static EMData *recons_image_OneD(EMData *image,EMData *mask);
+	
 #endif	//util__sparx_h__
