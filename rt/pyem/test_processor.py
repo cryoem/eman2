@@ -1434,7 +1434,8 @@ class TestProcessor(unittest.TestCase):
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.gauss', {'noise_level':0.3})
         
-    def test_IntegerCyclicShift2DProcessor(self):
+    #this filter.integercyclicshift2d processor is removed by Phani at 5/18/2006    
+    def no_test_IntegerCyclicShift2DProcessor(self):
         """test filter.integercyclicshift2d processor........"""
         e = EMData()
         e.set_size(50,50,1)
