@@ -142,7 +142,7 @@ namespace EMAN
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;
 		
-		Transform3D inverse();
+		Transform3D inverse() const;
 					
 		Dict get_rotation(EulerType euler_type=EMAN) const;
 

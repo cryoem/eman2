@@ -682,8 +682,8 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		az  = 360.0f+(180/M_PI)*(float)atan2(matrix[2][0], -matrix[2][1]);
 		phi = 360.0f+(180/M_PI)*(float)atan2(matrix[0][2], matrix[1][2]);
 	}
-	az=fmod(az,360.0f);
-	phi=fmod(phi,360.0f);
+	az=fmod(az+180.0f,360.0f)-180.0f;
+	phi=fmod(phi+180.0f,360.0f)-180.0f;
 
 //   get phiS, psiS ; SPIDER
 	if (fabs(cosalt) > max) {  // that is, alt close to 0
@@ -691,9 +691,11 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 		psiS = phi;
 	}
 	else {
-		phiS = fmod((az   + 270.0f ),  360.0f);
-		psiS = fmod((phi  + 450.0f ), 360.0f);
+		phiS = az   - 90.0f;
+		psiS = phi  + 90.0f;
 	}
+	phiS = fmod((phiS   + 540.0f ), 360.0f) - 180.0f;
+	psiS = fmod((psiS   + 540.0f ), 360.0f) - 180.0f;
 
 //   do some quaternionic stuff here
 
@@ -746,9 +748,12 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 	        ytilt = asin(  cos((M_PI/180.0f)*phiS)*sin((M_PI/180.0f)*alt));
 	        ztilt = psiS*M_PI/180.0f - atan2(sin(xtilt), cos(xtilt) *sin(ytilt));
 
-		result["xtilt"]  = xtilt*180/M_PI;
+		xtilt=fmod(xtilt*180/M_PI+540.0f,360.0f) -180.0f;
+		ztilt=fmod(ztilt*180/M_PI+540.0f,360.0f) -180.0f;
+
+		result["xtilt"]  = xtilt;
 		result["ytilt"]  = ytilt*180/M_PI;
-		result["ztilt"]  = ztilt*180/M_PI;
+		result["ztilt"]  = ztilt;
 		break;
 
 
@@ -798,7 +803,7 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 map<string, int> Transform3D::symmetry_map = map<string, int>();
 
 
-Transform3D Transform3D::inverse()     //   YYN need to test it for sure
+Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 {
 	// First Find the scale
 	EulerType eE=EMAN;
