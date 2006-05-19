@@ -140,6 +140,18 @@ EMData* rotavg();
 		EMData* rot_scale_trans2D(float ang, float delx = 0.f, float dely = 0.f, float scale = 1.f);
 		
 
+		/** Rotate-Shift-Scale-Circulantly image 
+		 *
+		 *  If the image is a volume, then all slices are
+		 *  rotated/translated/scaled.
+		 *  
+		 *  @param[in] RA Transform3D object
+		 *  @exception ImageDimensionException can not rotate 1 D image
+		 *  @return New rotated/shifted/scaled image
+		 */
+		EMData* rot_scale_trans(const Transform3D &RA);
+		
+
 		
 		/** Rotate-Shift-Scale-Circulantly image using convolution 
 		 *

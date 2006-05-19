@@ -601,15 +601,25 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 }
 
 
+
 void EMData::rotate_translate(const Transform3D & xform)
 {
 	ENTERFUNC;
+	
+	std::cout << "start rotate_translate..." << std::endl;
 
 	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
 	Vec3f translation = xform.get_posttrans();
 	Dict rotation = xform.get_rotation(Transform3D::EMAN);
-
+	
+	vector<string> keys = rotation.keys();
+	vector<string>::const_iterator it;
+	for(it=keys.begin(); it!=keys.end(); ++it) {
+//		std::cout << *it << " : " << rotation[*it] << std::endl;
+		std::cout << *it << " : " << (float)rotation.get(*it) << std::endl;
+	} 
+	
 	int nx2 = nx;
 	int ny2 = ny;
 	float inv_scale = 1.0f;
@@ -675,7 +685,7 @@ void EMData::rotate_translate(const Transform3D & xform)
 		}
 	}
 
-	else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) {
+	else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) { // square, odd image, with nz= (nx+1)/2
 		// make sure this is right
 		Transform3D mx = xform;
 		mx.set_scale(inv_scale);
@@ -719,11 +729,16 @@ void EMData::rotate_translate(const Transform3D & xform)
 		}
 	}
 	else {
+		std::cout << "I am in this case..." << std::endl;
+		
 		Transform3D mx = xform;
 		mx.set_scale(inv_scale);
 
 		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
 		Vec3f v4 = dcenter2 * mx  - dcenter2 - translation; // verify this
+
+		std::cout << v4[0] << " " << v4[1]<< " " << v4[2]<< " "
+			<< dcenter2[0]<< " "<< dcenter2[1]<< " "<< dcenter2[2] << std::endl;
 
 		int nxy = nx * ny;
 		int l = 0;
@@ -734,11 +749,15 @@ void EMData::rotate_translate(const Transform3D & xform)
 			for (int j = 0; j < ny; j++) {
 				Vec3f v2 = v3;
 
+                
 				for (int i = 0; i < nx; i++, l++) {
 
 					if (v2[0] < 0 || v2[1] < 0 || v2[2] < 0 ||
 						v2[0] >= nx - 1 || v2[1] >= ny - 1 || v2[2] >= nz - 1) {
 						des_data[l] = 0;
+                		std::cout << l <<" weird if statement..." << std::endl;
+                		std::cout << v2[0] << " "<< v2[1] << " " << v2[2] << " "  << std::endl;
+		
 					}
 					else {
 						int x = Util::fast_floor(v2[0]);
@@ -748,18 +767,17 @@ void EMData::rotate_translate(const Transform3D & xform)
 						int ii = x + y * nx + z * nxy;
 
 						des_data[l] = Util::trilinear_interpolate(src_data[ii],
-																  src_data[ii + 1],
-																  src_data[ii + nx],
-																  src_data[ii + nx + 1],
-																  src_data[ii + nx * ny],
-																  src_data[ii + nxy + 1],
-																  src_data[ii + nxy + nx],
-																  src_data[ii + nxy + nx + 1],
-																  tuv[0],
-																  tuv[1],
-																  tuv[2]
-																  );
-
+							  src_data[ii + 1],
+							  src_data[ii + nx],
+							  src_data[ii + nx + 1],
+							  src_data[ii + nx * ny],
+							  src_data[ii + nxy + 1],
+							  src_data[ii + nxy + nx],
+							  src_data[ii + nxy + nx + 1],
+							  tuv[0],
+							  tuv[1],
+							  tuv[2]);
+						std::cout << src_data[ii] << std::endl;
 					}
 
 					v2 += mx.get_matrix3_col(0);
@@ -768,7 +786,6 @@ void EMData::rotate_translate(const Transform3D & xform)
 			}
 			v4 += mx.get_matrix3_col(2); //  or should it be row?   PRB April 2005
 		}
-
 	}
 
 	if( rdata )

@@ -401,9 +401,9 @@ namespace EMAN
 		 * @return The trilinear interpolation value.
 		 */
 		static inline float trilinear_interpolate(float p1, float p2, float p3,
-												  float p4, float p5, float p6, 
-												  float p7, float p8, float t,
-												  float u, float v)
+							  float p4, float p5, float p6, 
+							 float p7, float p8, float t,
+								  float u, float v)
 		{
 			return ((1 - t) * (1 - u) * (1 - v) * p1 + t * (1 - u) * (1 - v) * p2
 					+ (1 - t) * u * (1 - v) * p3 + t * u * (1 - v) * p4

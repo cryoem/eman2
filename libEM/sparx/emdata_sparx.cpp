@@ -1015,33 +1015,103 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 }
 
 EMData*
-EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
+EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) {
+	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
-	if (1 < nz) 
+	if (nz==1) { 
+		vector<int> saved_offsets = get_array_offsets();
+		set_array_offsets(0,0,0);
+		if (0.f == scale) scale = 1.f; // silently fix common user error
+		EMData* ret = copy_head();
+		delx = fmod(delx, float(nx));
+		dely = fmod(dely, float(ny));
+		// center of image
+		int xc = nx/2;
+		int yc = ny/2;
+		// shifted center for rotation
+		float shiftxc = xc + delx;
+		float shiftyc = yc + dely;
+		// bounds if origin at center
+		float ymin = -ny/2.0f;
+		float xmin = -nx/2.0f;
+		float ymax = -ymin;
+		float xmax = -xmin;
+		if (0 == nx%2) xmax--;
+		if (0 == ny%2) ymax--;
+		// trig
+		float cang = cos(ang);
+		float sang = sin(ang);
+			for (int iy = 0; iy < ny; iy++) {
+				float y = float(iy) - shiftyc;
+			#ifdef _WIN32
+				if (y < ymin) y = _MIN(y+ny,ymax);
+				if (y > ymax) y = _MAX(y-ny,ymin);
+			#else
+				if (y < ymin) y = std::min(y+ny,ymax);
+				if (y > ymax) y = std::max(y-ny,ymin);
+			#endif	//_WIN32
+				float ycang = y*cang/scale + yc;
+				float ysang = -y*sang/scale + xc;
+				for (int ix = 0; ix < nx; ix++) {
+					float x = float(ix) - shiftxc;
+				#ifdef _WIN32
+					if (x < xmin) x = _MIN(x+nx,xmax);
+					if (x > xmax) x = _MAX(x-nx,xmin);
+				#else
+					if (x < xmin) x = std::min(x+nx,xmax);
+					if (x > xmax) x = std::max(x-nx,xmin);
+				#endif	//_WIN32
+					float xold = x*cang/scale + ysang ;
+					float yold = x*sang/scale + ycang ;
+					(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
+					   //have to add one as quadri uses Fortran counting
+				}
+			}
+		set_array_offsets(saved_offsets);
+		return ret;
+	} else {
 		throw ImageDimensionException("Volume not currently supported");
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,0,0);
-	if (0.f == scale) scale = 1.f; // silently fix common user error
+	}
+}
+
+EMData*
+EMData::rot_scale_trans(const Transform3D &RA) {
+	
+	Vec3f  translations = RA.get_posttrans();
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	float delz = translations.at(2);
 	EMData* ret = copy_head();
 	delx = fmod(delx, float(nx));
 	dely = fmod(dely, float(ny));
-	// center of image
+	delz = fmod(delz, float(nz));
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
 	int xc = nx/2;
 	int yc = ny/2;
-	// shifted center for rotation
+	int zc = nz/2;
+//         shifted center for rotation
 	float shiftxc = xc + delx;
 	float shiftyc = yc + dely;
-	// bounds if origin at center
-	float ymin = -ny/2.0f;
+	float shiftzc = zc + delz;
+// 	bounds if origin at center
 	float xmin = -nx/2.0f;
-	float ymax = -ymin;
+	float ymin = -ny/2.0f;
+	float zmin = -nz/2.0f;
 	float xmax = -xmin;
+	float ymax = -ymin;
+	float zmax = -zmin;
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
-	// trig
-	float cang = cos(ang);
-	float sang = sin(ang);
+	if (0 == nz%2) zmax--;
+
+	Transform3D RAinv; // = new Transform3D();
+	RAinv= RA.inverse();
+
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (nz==1) { 
 		for (int iy = 0; iy < ny; iy++) {
 			float y = float(iy) - shiftyc;
 		#ifdef _WIN32
@@ -1051,8 +1121,8 @@ EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 			if (y < ymin) y = std::min(y+ny,ymax);
 			if (y > ymax) y = std::max(y-ny,ymin);
 		#endif	//_WIN32
-			float ycang = y*cang/scale + yc;
-			float ysang = -y*sang/scale + xc;
+			float xoldy = y*RAinv[0][1]+xc; 
+			float yoldy = y*RAinv[1][1]+yc;
 			for (int ix = 0; ix < nx; ix++) {
 				float x = float(ix) - shiftxc;
 			#ifdef _WIN32
@@ -1062,15 +1132,106 @@ EMData::rot_scale_trans2D(float ang, float delx,float dely, float scale) {
 				if (x < xmin) x = std::min(x+nx,xmax);
 				if (x > xmax) x = std::max(x-nx,xmin);
 			#endif	//_WIN32
-				float xold = x*cang/scale + ysang;
-				float yold = x*sang/scale + ycang;
-				(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());//have to add one as quadri uses Fortran counting
-			}
+				float xold = xoldy + x*RAinv[0][0]; 
+				float yold = yoldy + x*RAinv[1][0];
+//                    		printf("\t\t xold = %f, yold=%f \n",xold,yold);
+				(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
+				   //have to add one as quadri uses Fortran counting
+			} //ends x loop
+		} // ends y loop
+		set_array_offsets(saved_offsets);
+		return ret;
+	} else {
+//		 This begins the 3D version
+//                  set up array to use later
+//
+		int xArr[27];
+		int yArr[27];
+		int zArr[27];
+		float fdata[27];
+		
+		for (int iL=0; iL<27 ; iL++){  // need this indexing array later
+			xArr[iL]  = (int) (fmod(iL,3.0f) - 1);
+			yArr[iL]  = (int)( fmod( ((int) (iL/3) ),3.0f)- 1);
+			zArr[iL]  = ((int) (iL/9)  ) -1;
+//			printf(" xArr=%d, \t yArr=%d, \t zArr=%d \n", xArr[iL],yArr[iL],zArr[iL]);
 		}
-	set_array_offsets(saved_offsets);
-	return ret;
-}
+					
+		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
+		      (*ret)(ix,iy,iz) = 0;}}}   // initialize returned data
+		
+		for (int iz = 0; iz < nz; iz++) {
+			float z = float(iz) - shiftzc;
+		#ifdef _WIN32
+			if (z < zmin) z = _MIN(z+nz,zmax);
+			if (z > zmax) z = _MAX(z-nz,zmin);
+		#else
+			if (z < zmin) z = std::min(z+nz,ymax);
+			if (z > zmax) z = std::max(z-nz,ymin);
+		#endif	//_WIN32
+			float xoldz = z*RAinv[0][2]+xc;
+			float yoldz = z*RAinv[1][2]+yc;
+			float zoldz = z*RAinv[2][2]+zc;
+			for (int iy = 0; iy < ny; iy++) {
+				float y = float(iy) - shiftyc;
+			#ifdef _WIN32
+				if (y < ymin) y = _MIN(y+ny,ymax);
+				if (y > ymax) y = _MAX(y-ny,ymin);
+			#else
+				if (y < ymin) y = std::min(y+ny,ymax);
+				if (y > ymax) y = std::max(y-ny,ymin);
+			#endif	//_WIN32
+				float xoldzy = xoldz + y*RAinv[0][1] ;
+				float yoldzy = yoldz + y*RAinv[1][1] ;
+				float zoldzy = zoldz + y*RAinv[2][1] ;
+				for (int ix = 0; ix < nx; ix++) {
+					float x = float(ix) - shiftxc;
+				#ifdef _WIN32
+					if (x < xmin) x = _MIN(x+nx,xmax);
+					if (x > xmax) x = _MAX(x-nx,xmin);
+				#else
+					if (x < xmin) x = std::min(x+nx,xmax);
+					if (x > xmax) x = std::max(x-nx,xmin);
+				#endif	//_WIN32
+					float xold = xoldzy + x*RAinv[0][0] ;
+					float yold = yoldzy + x*RAinv[1][0] ;
+					float zold = zoldzy + x*RAinv[2][0] ;
+					
+					float dx = remainder(xold,1);  //  now |dx| <= .5 
+					float dy = remainder(yold,1);
+					float dz = remainder(zold,1);
+					
+					int IOX = (int) (xold -dx+.00001); // This is the center of the array
+					int IOY = (int) (yold -dy+.00001);
+					int IOZ = (int) (zold -dz+.00001);
+					
+//					printf(" IOX=%d \t IOY=%d \t IOZ=%d \n", IOX, IOY, IOZ);
+					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
+//                                      	ROTATED POSITION IS INSIDE OF VOLUME
+//						FIND INTENSITIES ON 3x3x3 COORDINATE GRID
+						for  (int iL=0; iL<27 ; iL++){
+							int xCoor = (int) fmod(IOX+xArr[iL] + nx + .0001f, (float) nx);
+							int yCoor = (int) fmod(IOY+yArr[iL] + ny + .0001f, (float) ny);
+							int zCoor = (int) fmod(IOZ+zArr[iL] + nz + .0001f, (float) nz);
+							fdata[iL] = (*this)( xCoor, yCoor ,zCoor );
+//							printf(" fdata=%f \n", fdata[iL]);
+						}
+					}
 
+					(*ret)(ix,iy,iz) = Util::triquad(dx, dy, dz, fdata);
+
+				} //ends x loop
+			} // ends y loop
+		} // ends z loop
+
+		set_array_offsets(saved_offsets);
+		return ret;
+/*		static inline float trilinear_interpolate(float p1, 
+                     float p2, float p3,float p4, float p5, float p6,float p7, float p8, float t, float u, float v)
+*/
+//		throw ImageDimensionException("Volume not currently supported");
+	}
+}
 
 
 EMData*
