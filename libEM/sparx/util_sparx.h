@@ -3,25 +3,13 @@
  */
  
 /** This file is a part of util.h, 
- * To use this file's functions, you should #include "util.h"
+ * To use this file's functions, you should include "util.h"
  * NEVER directly include this file */
  
 #ifndef util__sparx_h__
 #define util__sparx_h__ 
 
 public:
-
-/** Creates a Two D Test Pattern
- * @param[in] Size, must be odd
- * @param[in] p the x frequency
- * @param[in] q the y frequency
- * @param[in] a the x falloff
- * @param[in] alpha the projection angle
- * @param[out] The 2D test pattern in real space, fourier space,
- *               or the projection in real or fourier space 
- *               or the FH of the pattern
-*/
-
 
 static Dict ExpMinus4YSqr(float ymax,int nsamples);
 
@@ -43,6 +31,18 @@ static  void cyclicshift(EMData* image, Dict params);
 
 static Dict im_diff(EMData* V1, EMData* V2, EMData* mask);
 
+/** Creates a Two D Test Pattern
+ * @param[in] Size must be odd
+ * @param[in] p the x frequency
+ * @param[in] q the y frequency
+ * @param[in] a the x falloff
+ * @param b
+ * @param flag
+ * @param[in] alphaDeg the projection angle
+ * @return The 2D test pattern in real space, fourier space,
+ *               or the projection in real or fourier space 
+ *               or the FH of the pattern
+*/
 static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b, 
                    int flag=0, float alphaDeg=0); //PRB
 
@@ -51,9 +51,12 @@ static EMData* TwoDTestFunc(int Size, float p, float q,  float a, float b,
  * Given the values of the m values xq to be interpolated
  * This routine returns the interpolated array yq, PRB
  * This function is called by splint 
+ * @param x
  * @param[in] y of x is the tabulated function of length n
+ * @param n
  * @param[in] xq is the x values to be splined: has m points.
  * @param[out]  yq are the splined values
+ * @param m
 */
 static void spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m); //PRB
 
@@ -62,8 +65,11 @@ static void spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m);
  * This routine returns an array y2, that contains the second derivatives
  * of the function at the tabulated points.   PRB
  * This function is called by splint 
+ * @param x
  * @param[in] y of x is the tabulated function of length n
- * @param[in] yp1, ypn : the derivatives of the first and last point.
+ * @param n
+ * @param[in] yp1 : the derivatives of the first point.
+ * @param[in] ypn : the derivatives of the last point.
  * @param[out]  y2 is the value of the second derivatives
 */
 static void spline(float *x, float *y, int n, float yp1, float ypn, float *y2);
@@ -71,10 +77,13 @@ static void spline(float *x, float *y, int n, float yp1, float ypn, float *y2);
 /** Given the arrays xa(ordered, ya of length n, which tabulate a function 
  *  and given the array y2a which is the output of spline and an unordered array xq,
  *  this routine returns a cubic-spline interpolated array yq.
- * @param[in] y of x is the tabulated function of length n
+ * @param xa
+ * @param[in] ya of x is the tabulated function of length n
  * @param[in] y2a is returned from spline: second derivs
+ * @param n
  * @param[in] xq is the x values to be splined: has m points.
  * @param[out]  yq are the splined values
+ * @param m
 */  // PRB
 static void splint( float *xa, float *ya, float *y2a, int n,  
                                      float *xq, float *yq, int m);
@@ -82,10 +91,13 @@ static void splint( float *xa, float *ya, float *y2a, int n,
 
 /** list the sorted lengths of the  integer lattice 
  * sites of a square sided image of  size Size. PRB
- * @param[in] Size The length of the image 
  * @param[out] PermMatTr  The matrix telling the ordering of the lattice 
  *                        sites wrt the array
+ * @param kValsSorted
  * @param[out] weightofkvalsSorted the number of sites at that distance
+ * @param[in] Size The length of the image 
+ * @param SizeReturned
+ * 
  */
  static void Radialize(int *PermMatTr,  float * kValsSorted,
             float *weightofkvalsSorted, int Size, int *SizeReturned);
@@ -271,6 +283,8 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *
 		 *	@param[in] x x-coord value
 		 *	@param[in] y y-coord value
+		 *  @param nx
+		 *  @param ny
 		 *	@param[in] image Image object (pointer)
 		 *
 		 *	@return Interpolated value

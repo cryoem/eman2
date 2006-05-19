@@ -163,7 +163,7 @@ inline Vec3f get_translation() const
 
 /** Set 'this' images' translation vector from the original
  * location.
- * @param new_translation The new translation vector.
+ * @param t The new translation vector.
  */
 inline void set_translation(const Vec3f &t)
 {
@@ -231,7 +231,7 @@ void set_complex_size(int nx, int ny=1, int nz=1) {
 
 
 /** Set the path
- * @param path The new path.
+ * @param new_path The new path.
  */
 inline void set_path(const string & new_path)
 {
@@ -373,7 +373,7 @@ EMObject get_attr(const string & attr_name);
 		
 /** Set a header attribute's value.
  *
- * @param attr_name The header attribute name.
+ * @param key The header attribute name.
  * @param val The attribute value.
  */
 inline void set_attr(const string & key, EMObject val)
@@ -400,14 +400,14 @@ void set_attr_dict(const Dict & new_dict);
 
 /** Delete the attribute from dictionary.
  * 
- * @param string the attribute name to be removed
+ * @param attr_name the attribute name to be removed
  * */
  void del_attr(const string & attr_name);
 
  
  /** Delete the attributes from the dictionary.
   * 
-  * @param vector<string> the attrutes' names to be removed
+  * @param del_keys the attrutes' names to be removed
   * */
  void EMData::del_attr_dict(const vector<string> & del_keys);
 
@@ -673,7 +673,7 @@ inline bool is_fftpadded() const
 
 
 /** Mark this image as already extended along x for ffts.
- * @param is_padded If true, mark as padded along x; If
+ * @param is_fftpadded If true, mark as padded along x; If
  * false, mark as not padded along x.
  */
 inline void set_fftpad(bool is_fftpadded)

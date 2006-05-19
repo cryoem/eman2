@@ -18,7 +18,7 @@ EMData *real2FH(float OverSamplekB);
  * real/imaginary format. The FH switch is set off.
  * @param Size is the size of the image to be returned
  * @param OverSamplekB is a parameter controlling the fineness of the Fourier sampling
- * @param IntensityFlag=0 is the usual; =1 means that the input was an intensity
+ * @param IntensityFlag =0 is the usual; =1 means that the input was an intensity
  * @return the shuffled version of the FFT
  */
 EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
@@ -28,7 +28,7 @@ EMData *FH2F(int Size, float OverSamplekB, int IntensityFlag =0);
  * real format.
  * @param Size is the size of the image to be returned
  * @param OverSamplekB is a parameter controlling the fineness of the Fourier sampling
- * @param IntensityFlag=0 is the usual; =1 means that the input was an intensity
+ * @param IntensityFlag =0 is the usual; =1 means that the input was an intensity
  * @return the real version of the data
  */
 EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
@@ -75,7 +75,6 @@ EMData* rotavg();
 		 * @param j y fourier index (frequency)
 		 * @param n number of real elements.
 		 * @param n2 Number of complex elements.
-		 * @param x  Complex matrix of [0:n2][1:n][1:n]
 		 * @param nr Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
@@ -150,8 +149,7 @@ EMData* rotavg();
 		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
-		 *  @param[in] scale Scaling factor (default=1.0)
-		 *  @param[in] convolution kernel
+		 *  @param[in] kb convolution kernel
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
@@ -164,16 +162,14 @@ EMData* rotavg();
 		 *  If the image is a volume, then all slices are
 		 *  rotated/translated/scaled.
 		 *  
-		 *  @param[in] ang Rotation angle in degrees.
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
 		 *  @param[in] delz Amount to shift rotation origin along z
-		 *  @param[in] scale Scaling factor (default=1.0)
-		 *  @param[in] convolution kernel
+		 *  @param[in] kb convolution kernel
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		float get_pixel_conv(float delx, float dely, float dely, Util::KaiserBessel& kb);
+		float get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb);
 
 
 	

@@ -112,9 +112,10 @@ namespace EMAN
 		PolarData() {printf("Welcome to PolarData class... \n");}
 		
 		/** Construct a PolarData object from a EMData
-		 * @param em   the EMData object to be converted
+		 * @param image   the EMData object to be converted
 		 * @param xcen the x dimension of the center
 		 * @param ycen the y dimension of the center
+		 * @param mode
 		 */
 		PolarData(EMData * image, int xcen, int ycen, string mode);
 		

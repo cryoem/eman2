@@ -130,9 +130,6 @@ namespace EMAN
 	 *  @param[in] f First real-space image object.
 	 *               Image may be 1-, 2-, or 3-dimensional.  Image f is not
 	 *               changed.
-	 *  @param[in] K Second real-space image object (the convolution Kernel).
-	 *               Image may be 1-, 2-, or 3-dimensional.  Image K is not changed.
-	 *
 	 *  @return Real-space convolution image.
 	 */
 	EMData* rscp(EMData* f);

@@ -58,6 +58,7 @@ void postift_depad_corner_inplace();
  *  @param[in] nxni new x size (has to be larger/equal than the original x size)
  *  @param[in] nyni new y size (has to be larger/equal than the original y size)
  *  @param[in] nzni new z size (has to be larger/equal than the original z size)
+ *  @param RetReal
  *  
  *  @return New interpolated up image.
  */

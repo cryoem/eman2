@@ -588,11 +588,10 @@ namespace EMAN
 		 *
 		 * @param image1 The first image.
 		 * @param image2 The second image.
-		 * @param steps: 1/2 of the resolution of the map.
+		 * @param steps 1/2 of the resolution of the map.
 		 * @param horizontal In horizontal way or not.
 		 * @exception NullPointerException If 'image1' or 'image2' is NULL.
-		 * @exception ImageFormatException If 'image1' 'image2' are
-		 * not same size.
+		 * @exception ImageFormatException If 'image1' 'image2' are not same size.
 		 */
 		void common_lines_real(EMData * image1, EMData * image2,
 							   int steps = 180, bool horizontal = false);

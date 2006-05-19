@@ -306,12 +306,14 @@ namespace EMAN
 		
 		/** does a sort as in Matlab. Carries along the Permutation
 		 * matrix
-		 * @param[in] The array [left .. right] is sorted
-		 * @param[in] The array [leftPerm rightPerm] is shuffled due to the sorting
-		 * @param[out] Both arrays  are reshuffled.
+		 * @param[in] left The array [left .. right] is sorted
+		 * @param[in] right The array [left .. right] is sorted
+		 * @param[in] leftPerm The array [leftPerm rightPerm] is shuffled due to the sorting
+		 * @param[in] rightPerm The array [leftPerm rightPerm] is shuffled due to the sorting
+		 * Both arrays  are reshuffled.
 		 */
-		static void sort_mat(float *left, float *right, int *leftPerm, int
- 				*rightPerm);
+		static void sort_mat(float *left, float *right, int *leftPerm, 
+							 int *rightPerm);
 
 		
 		/** Get a float random number between low and high.
