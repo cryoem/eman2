@@ -786,7 +786,9 @@ void EMData::rotate_translate(const Transform3D & xform)
 							  tuv[0],
 							  tuv[1],
 							  tuv[2]);
+#ifdef DEBUG
 						std::cout << src_data[ii] << std::endl;
+#endif
 					}
 
 					v2 += mx.get_matrix3_col(0);
