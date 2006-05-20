@@ -36,14 +36,14 @@ void EMData::center_origin_fft()
 		LOGWARN("Only RI should be used. ");
 	}
 	vector<int> saved_offsets = get_array_offsets();
-	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2]
+	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2], but nx comes in as extended and is the same for odd
+	//                                                 and even, so we can ignore the difference...
+	//                         in short, as ix is extended, it should be  ix in [0,(nx-2)/2],  corrected PAP 05/20
 	set_array_offsets(0,1,1);
-	int xmax = (is_fftodd())
-		? (nx-1)/2 + 1
-		: (nx-2)/2;
+	int xmax = nx/2;
 	for (int iz = 1; iz <= nz; iz++) {
 		for (int iy = 1; iy <= ny; iy++) {
-			for (int ix = 0; ix <= xmax; ix++) {
+			for (int ix = 0; ix < xmax; ix++) {
 				// next line multiplies by +/- 1
 				cmplx(ix,iy,iz) *= static_cast<float>(-2*((ix+iy+iz)%2) + 1);
 			}
