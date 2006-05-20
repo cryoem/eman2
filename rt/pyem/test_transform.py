@@ -18,7 +18,7 @@ class TestTransform(unittest.TestCase):
         rot = t.get_rotation(EULER_EMAN)
 
         #testlib.assertfloat(self, az, float(rot["az"]))
-        self.assertAlmostEqual(az+360, rot["az"], 3)
+        self.assertAlmostEqual(az, rot["az"], 3)
         testlib.assertfloat(self, alt, float(rot["alt"]))
         testlib.assertfloat(self, phi, float(rot["phi"]))
         
@@ -33,7 +33,7 @@ class TestTransform(unittest.TestCase):
         tran = t.get_posttrans()
         
         #testlib.assertfloat(self, az, float(rot["az"]))
-        self.assertAlmostEqual(az+360, rot["az"], 3)
+        self.assertAlmostEqual(az, rot["az"], 3)
         testlib.assertfloat(self, alt, float(rot["alt"]))
         testlib.assertfloat(self, phi, float(rot["phi"]))
         testlib.assertfloat(self, tran.at(0), 1.0)
@@ -53,7 +53,7 @@ class TestTransform(unittest.TestCase):
         
         rot = t.get_rotation()    #default argument is EULER_EMAN
         #testlib.assertfloat(self, az, float(rot["az"]))
-        self.assertAlmostEqual(az+360, rot["az"], 3)
+        self.assertAlmostEqual(az, rot["az"], 3)
         testlib.assertfloat(self, alt, float(rot["alt"]))
         testlib.assertfloat(self, phi, float(rot["phi"]))
         
