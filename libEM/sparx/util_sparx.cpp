@@ -2941,13 +2941,13 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
  
  
  float WNRMinv,temp;
- floar osnr = 1.0f/SNR;
+ float osnr = 1.0f/SNR;
  WNRMinv = 1/W(1,1);
  for(int J=1;J<=NROW;J++)
     for(int I=1;I<=NNNN;I+=2)
        {
          KX          = (I+1)/2;
-	 tmp         = W(KX,J)*WNRMinv;
+	 temp         = W(KX,J)*WNRMinv;
 	 WW          = temp/(temp*temp + osnr);
 	 PROJ(I,J)   *= WW;
          PROJ(I+1,J) *= WW;
