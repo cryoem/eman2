@@ -605,21 +605,25 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 void EMData::rotate_translate(const Transform3D & xform)
 {
 	ENTERFUNC;
-	
+
+#ifdef DEBUG	
 	std::cout << "start rotate_translate..." << std::endl;
+#endif
 
 	float scale = xform.get_scale();
 	Vec3f dcenter = xform.get_center();
 	Vec3f translation = xform.get_posttrans();
 	Dict rotation = xform.get_rotation(Transform3D::EMAN);
-	
+
+#ifdef DEBUG
 	vector<string> keys = rotation.keys();
 	vector<string>::const_iterator it;
 	for(it=keys.begin(); it!=keys.end(); ++it) {
 //		std::cout << *it << " : " << rotation[*it] << std::endl;
 		std::cout << *it << " : " << (float)rotation.get(*it) << std::endl;
 	} 
-	
+#endif
+
 	int nx2 = nx;
 	int ny2 = ny;
 	float inv_scale = 1.0f;
@@ -729,16 +733,20 @@ void EMData::rotate_translate(const Transform3D & xform)
 		}
 	}
 	else {
+#ifdef DEBUG
 		std::cout << "I am in this case..." << std::endl;
-		
+#endif
+
 		Transform3D mx = xform;
 		mx.set_scale(inv_scale);
 
 		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
 		Vec3f v4 = dcenter2 * mx  - dcenter2 - translation; // verify this
 
+#ifdef DEBUG
 		std::cout << v4[0] << " " << v4[1]<< " " << v4[2]<< " "
 			<< dcenter2[0]<< " "<< dcenter2[1]<< " "<< dcenter2[2] << std::endl;
+#endif
 
 		int nxy = nx * ny;
 		int l = 0;
@@ -755,9 +763,10 @@ void EMData::rotate_translate(const Transform3D & xform)
 					if (v2[0] < 0 || v2[1] < 0 || v2[2] < 0 ||
 						v2[0] >= nx - 1 || v2[1] >= ny - 1 || v2[2] >= nz - 1) {
 						des_data[l] = 0;
+#ifdef DEBUG
                 		std::cout << l <<" weird if statement..." << std::endl;
                 		std::cout << v2[0] << " "<< v2[1] << " " << v2[2] << " "  << std::endl;
-		
+#endif
 					}
 					else {
 						int x = Util::fast_floor(v2[0]);
