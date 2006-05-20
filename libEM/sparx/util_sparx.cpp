@@ -2929,7 +2929,7 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
 	 //int count = 0;
 	 for(int J=1;J<=NROW;J++)
 	    for(int I=1;I<=NNNN/2;I++)
-	        W(I,J) += 1.0f;//Wptr[count++]++;//
+	        W(I,J) += 1.0f;
  	}
     }
 
@@ -2940,18 +2940,17 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
  PROJptr = PROJ->get_data();
  
  
- //int PROJcount = 0;
- // int Wcount = 0; 
  float WNRMinv,temp;
+ floar osnr = 1.0f/SNR;
  WNRMinv = 1/W(1,1);
  for(int J=1;J<=NROW;J++)
     for(int I=1;I<=NNNN;I+=2)
        {
          KX          = (I+1)/2;
-	 temp        =  W(KX,J)*WNRMinv;
-	 WW          =  temp/((temp*temp) + SNR);
-	 PROJ(I,J)   *= WW;//PROJptr[PROJcount++] *= WW;//
-         PROJ(I+1,J)   *= WW;//PROJptr[PROJcount++] *= WW;//
+	 tmp         = W(KX,J)*WNRMinv;
+	 WW          = temp/(temp*temp + osnr);
+	 PROJ(I,J)   *= WW;
+         PROJ(I+1,J) *= WW;
        }  
 	 
 PROJ->do_ift_inplace();
@@ -3126,7 +3125,7 @@ float Util::tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor
 return sin(-M_PI*(dzz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
 }
 
-EMData * Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float voltage,float dza, float azz,float
+EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float voltage,float dza, float azz,float
 wgh,float b_factor, float sign)
 {               
        int  lsm;
@@ -3185,62 +3184,47 @@ wgh,float b_factor, float sign)
 		return ctf_img1;
 			 			 
 } 		
-//Return the I-D image under mask which has only active pixels values in it
+//Return the 1-D image that contains only pixels from a n-d image selected by a mask
 
-EMData* Util::OneD_image_mask(EMData* image, EMData* mask)
+EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 {
 	/***********
 	***get the size of the image for validation purpose
 	**************/
-	int nx = image->get_xsize(),ny = image->get_ysize(),nz = image->get_zsize(); 
+	int nx = image->get_xsize(),ny = image->get_ysize(),nz = image->get_zsize();  //Aren't  these  implied?  Please check and let me know, PAP.
 	/********
 	***Exception Handle 
 	*************/
 	if(nx != mask->get_xsize() || ny != mask->get_ysize() || nz != mask->get_zsize())
 		throw ImageDimensionException("The dimension of the image does not match the dimension of the mask!");
 
-	int i,j,size = nx*ny*nz;; /*loop counters of course: */
-	//float *img_ptr  = (float*)calloc(size,sizeof(float));  /* Image pixel accessing pointer */
-	//float *mask_ptr = (float*)calloc(size,sizeof(float)); /* mask pixel accessing pointer */
-	float* img_ptr  = new float[size];
-	float* mask_ptr = new float[size];
+	int i, size = nx*ny*nz;
 		
-	img_ptr = image->get_data(), mask_ptr = mask->get_data();
-	vector<float> OneD_image;
-	/*******
-	**** main loop
-	********/
-	
+	float* img_ptr = image->get_data();
+	float* mask_ptr = mask->get_data();
+
+	int ln=0;  //length of the output image = number of points under the mask.
 	for(i = 0;i < size;i++){
-		if(mask_ptr[i] > 0.5f){
-			OneD_image.push_back(img_ptr[i]);
-			
+		if(mask_ptr[i] > 0.5f) ln++;
+	}
+
+	EMData* new_image = new EMData();
+	new_image->set_size(ln,1,1); /* set size of the new image */
+	float *new_ptr    = new_image->get_data();
+
+	ln=-1;
+	for(i = 0;i < size;i++){
+		if(mask_ptr[i] > 0.5f) {
+		ln++;
+		new_ptr[ln]=img_ptr[i];
 		}
 	}
 
-	/* new image declaration */
-	EMData* new_image = new EMData();
-	new_image->set_size(OneD_image.size(),1,1); /* set size of the new image */
-	float *new_ptr    = new_image->get_data();  /* declare a new image pointer */
-
-	/* transfering data from the vector to the image pointer */ 
-	for (j = 0;j < (int)OneD_image.size();j++)
-		new_ptr[j]=OneD_image[j];
-
-	/******
-	**** Cleaning the Memory
-	*******/
-	//delete[]img_ptr;delete[]mask_ptr;
-	//img_ptr=0;mask_ptr=0;
-	//OneD_image.clear();
-	
-
-	/* return the 1-D image */
 	return new_image;
 }
 
-/* Returns the new image by adding 1D image pixel values into positions of the mask image with natural numbers */
-EMData *Util::recons_image_OneD(EMData* image,EMData *mask)
+/* Recreates a n-d image using its compressed 1-D form and the mask */
+EMData *Util::reconstitue_image_mask(EMData* image, EMData *mask)
 {
 	/********
 	***Exception Handle 
@@ -3262,9 +3246,6 @@ EMData *Util::recons_image_OneD(EMData* image,EMData *mask)
 	float *img_ptr  = image->get_data();	 /* assign a pointer to the 1D image */
 	int count = 0;
 	
-	/*******
-	**** main loop
-	********/
 	for(i = 0;i < size;i++){
 		if(mask_ptr[i] > 0.5f){
 			new_ptr[i] = img_ptr[count];
@@ -3276,12 +3257,5 @@ EMData *Util::recons_image_OneD(EMData* image,EMData *mask)
 	}
 	new_image->update();
 	
-	/******
-	**** Cleaning the Memory
-	*******/
-	//delete[]img_ptr;delete[]mask_ptr;
-	//img_ptr=0;mask_ptr=0;
-	
-	/* return the new image of size "size" */
 	return new_image;
 }	
