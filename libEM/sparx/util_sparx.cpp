@@ -3224,7 +3224,7 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 }
 
 /* Recreates a n-d image using its compressed 1-D form and the mask */
-EMData *Util::reconstitue_image_mask(EMData* image, EMData *mask)
+EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 {
 	/********
 	***Exception Handle 
