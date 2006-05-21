@@ -3023,7 +3023,6 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 	  if (ALPHA>90.0) ALPHA=180.0-ALPHA;
 	  if(ALPHA<1.0E-6)
 	    {
-	     int count = 0;
              for(int J=1;J<=NROW;J++)
 	          for(int I=1;I<=NNNN/2;I++)
 		      W(I,J)+=1.0;
@@ -3047,7 +3046,6 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 
        //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
             TMP = AMAX1(1.0E-4,fabs(TMP));
-            int count = 0;
 	    float tmpinv = 1/TMP;   
             for(int J=1;J<=NROW;J++)
 	      {
