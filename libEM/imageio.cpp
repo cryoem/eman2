@@ -1,6 +1,8 @@
 /**
  * $Id$
  */
+#include <cmath>
+
 #include "imageio.h"
 #include "geometry.h"
 
@@ -143,4 +145,18 @@ int ImageIO::get_nimg()
 {
 	init();
 	return 1;
+}
+
+void ImageIO::getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax)
+{
+	if (rendermax<=rendermin || isnan(rendermin) || isnan(rendermax)) {
+		double m=0,s=0;
+			
+		for (int i=0; i<nx*ny; i++) { m+=data[i]; s+=data[i]*data[i]; }
+		m/=(float)(nx*ny);
+		s=sqrt(s/(float)(nx*ny)-m*m);
+		if (s<=0 || isnan(s)) s=1.0;	// this means all data values are the same
+		rendermin=m-s*3.0;
+		rendermax=m+s*3.0;	
+	}
 }

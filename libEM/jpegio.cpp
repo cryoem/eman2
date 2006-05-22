@@ -108,22 +108,13 @@ int JpegIO::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
-	if (image_index>0) throw ImageReadException("N/A", "JPEG files are single-image only");
+	if (image_index>0) throw ImageWriteException("N/A", "JPEG files are single-image only");
 	if (area && (area->size[0]!=cinfo.image_width || area->size[1]!=cinfo.image_height))
-		 throw ImageReadException("N/A", "No region writing for JPEG images");
+		 throw ImageWriteException("N/A", "No region writing for JPEG images");
 	int nx=cinfo.image_width,ny=cinfo.image_height;
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	if (rendermax<=rendermin || isnan(rendermin) || isnan(rendermax)) {
-		double m=0,s=0;
-		
-		for (int i=0; i<nx*ny; i++) { m+=data[i]; s+=data[i]*data[i]; }
-		m/=(float)(nx*ny);
-		s=sqrt(s/(float)(nx*ny)-m*m);
-		if (s<=0 || isnan(s)) s=1.0;	// this means all data values are the same
-		rendermin=m-s*3.0;
-		rendermax=m+s*3.0;
-	}
+	getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	unsigned char *cdata=(unsigned char *)malloc(nx+1);
 

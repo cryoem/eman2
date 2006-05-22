@@ -12,18 +12,11 @@ const char *PgmIO::MAGIC_BINARY = "P5";
 const char *PgmIO::MAGIC_ASCII = "P2";
 
 PgmIO::PgmIO(const string & file, IOMode rw)
-:	filename(file), pgm_file(0), initialized(false)
-{
-	rw_mode = rw;
-	is_big_endian = true;
-
-	nx = 0;
-	ny = 0;
-	maxval = 0;
-	minval = 0;
-	datatype = PGM_UNKNOWN_TYPE;
-	file_offset = 0;
-}
+:	filename(file), rw_mode(rw), pgm_file(0), is_big_endian(true), 
+	initialized(false), nx(0), ny(0), maxval(0), minval(0),
+	datatype(PGM_UNKNOWN_TYPE),	file_offset(0), 
+	rendermin(0), rendermax(0)
+{}
 
 PgmIO::~PgmIO()
 {
@@ -152,17 +145,25 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 	check_write_access(rw_mode, image_index);
 
 	int nz = dict["nz"];
-	if (nz != 1) {
+	if ((int)nz != 1) {
 		LOGERR("Cannot write 3D image as PGM. Your image nz = %d", nz);
 		err = 1;
 	}
 	else {
-		rewind(pgm_file);
-			
 		nx = dict["nx"];
 		ny = dict["ny"];
-		minval = dict["min_gray"];
-		maxval = dict["max_gray"];
+		
+		if(dict.has_key("min_grey")) minval = dict["min_gray"];
+		if(dict.has_key("max_grey")) maxval = dict["max_gray"];
+		
+		//if we didn't get any good values from attributes, assign to 255 by default
+		if (maxval<=minval || isnan(minval) || isnan(maxval)) {
+			maxval = 255;
+		}
+		
+		if(dict.has_key("render_min")) rendermin=(float)dict["render_min"];	// float value representing black in the output
+		if(dict.has_key("render_max")) rendermax=(float)dict["render_max"];	// float value representign white in the output
+
 		fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
 	}
 	
@@ -231,17 +232,45 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 	return 0;
 }
 
-int PgmIO::write_data(float *data, int image_index, const Region* ,
+int PgmIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
-	check_write_access(rw_mode, image_index, 1, data);
-	portable_fseek(pgm_file, file_offset, SEEK_SET);
-	LOGERR("not working yet. need to normalize data before write");
-	//fwrite(data, nx, ny, pgm_file);
+	if (image_index>0) throw ImageWriteException("N/A", "PGM files are single-image only");
+	if(area && (area->size[0]!=nx || area->size[1]!=ny)) {
+		throw ImageWriteException("N/A", "No region writing for PGM images");
+	}
+	
+	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
+	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	
+	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//data is the normalized data
+
+	int old_add = 0;
+	int new_add = 0;
+	for( int j=0; j<ny; ++j ) {
+		for( int i=0; i<nx; ++i) {
+			old_add = j*nx+i;
+			new_add = (ny-1-j)*nx + i; 
+			if( data[old_add]<rendermin ) {
+				cdata[new_add] = 0;
+			}
+			else if( data[old_add]>rendermax )
+			{
+				cdata[new_add] = 255;
+			}
+			else {
+				cdata[new_add] = (int)((data[old_add]-rendermin)/(rendermax-rendermin)*256.0);
+			}
+		}
+	}
+		
+	fwrite(cdata, nx, ny, pgm_file);
+	
+	free(cdata);
 	EXITFUNC;
-	return 1;
+	return 0;
 }
 
 void PgmIO::flush()

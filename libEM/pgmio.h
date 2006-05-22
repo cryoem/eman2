@@ -43,7 +43,7 @@ namespace EMAN
 		};
 
 	  private:
-		  string filename;
+		string filename;
 		IOMode rw_mode;
 		FILE *pgm_file;
 
@@ -57,6 +57,9 @@ namespace EMAN
 
 		DataType datatype;
 		off_t file_offset;
+		
+		float rendermin;
+		float rendermax;
 	};
 }
 
