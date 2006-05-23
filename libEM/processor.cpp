@@ -4309,14 +4309,15 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	if( sigma == 0 ) {
 		sigma = 0.5f;
 	}
-	
 	//gsl_rng_random_glibc2 is the glibc version random number generator
 	const gsl_rng * gen = gsl_rng_alloc(gsl_rng_random_glibc2);
+	//unsigned long int seed = params["seed"];  This does not work as the type is unsupported  PAP
+	//gsl_rng_set (const gsl_rng * gen, seed);
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
 		dat[i] = (float)gsl_ran_gaussian( gen, sigma );
 	}
-	
+	//gsl_rng_free (gsl_rng * gen);  Why the memory was not freed? PAP
 	image->done_data();
 	image->update();
 
