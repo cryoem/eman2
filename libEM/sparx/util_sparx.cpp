@@ -7,6 +7,7 @@
 #include "emdata.h"
 #include "util.h"
 
+
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
 
@@ -2974,8 +2975,8 @@ PROJ->postift_depad_corner_inplace();
   
 void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
 {
- float rad2deg =(180/3.1415926);
- float deg2rad = (3.1415926/180);
+ float rad2deg =(180.0/3.1415926);
+ float deg2rad = (3.1415926/180.0);
  
  int NSAM,NROW,NNNN,NR2,NANG,L,JY;
   

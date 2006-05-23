@@ -34,7 +34,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;");
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means mirror about x axis; 'y' means mirror about y axis;");
 			return d;
 		}
 
