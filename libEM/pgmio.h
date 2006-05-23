@@ -12,7 +12,7 @@ namespace EMAN
 	 * format. Data can be in either ASCII or BINARY format. Only
 	 * Binary format is supported in EMAN so far.
 	 * 
-	 * A PGM file contains 1 2D image.
+	 * A PGM file contains one 2D image.
 	 *
 	 */
 	class PgmIO:public ImageIO
@@ -35,13 +35,6 @@ namespace EMAN
 			PGM_UNKNOWN_FILE
 		};
 
-		enum DataType
-		{
-			PGM_UCHAR,
-			PGM_USHORT,
-			PGM_UNKNOWN_TYPE
-		};
-
 	  private:
 		string filename;
 		IOMode rw_mode;
@@ -55,7 +48,6 @@ namespace EMAN
 		int maxval;
 		int minval;
 
-		DataType datatype;
 		off_t file_offset;
 		
 		float rendermin;

@@ -14,8 +14,7 @@ const char *PgmIO::MAGIC_ASCII = "P2";
 PgmIO::PgmIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), pgm_file(0), is_big_endian(true), 
 	initialized(false), nx(0), ny(0), maxval(0), minval(0),
-	datatype(PGM_UNKNOWN_TYPE),	file_offset(0), 
-	rendermin(0), rendermax(0)
+	file_offset(0), rendermin(0), rendermax(0)
 {}
 
 PgmIO::~PgmIO()
@@ -26,18 +25,22 @@ PgmIO::~PgmIO()
 	}
 }
 
-static int read_int_and_space(FILE * in)
+//anonymous namespace make this function local for this file
+namespace
 {
-	char buf[32];
-	int c = 0;
-
-	int i = 0;
-	while (!isspace(c = getc(in))) {
-		buf[i] = static_cast < char >(c);
-		i++;
+	int read_int_and_space(FILE * in)
+	{
+		char buf[32];
+		int c = 0;
+	
+		int i = 0;
+		while (!isspace(c = getc(in))) {
+			buf[i] = static_cast < char >(c);
+			i++;
+		}
+	
+		return atoi(buf);
 	}
-
-	return atoi(buf);
 }
 
 void PgmIO::init()
@@ -80,18 +83,7 @@ void PgmIO::init()
 		if (nx <= 0 || ny <= 0) {
 			throw ImageReadException(filename, "file size < 0");
 		}
-		if (maxval > USHRT_MAX) {
-			throw ImageReadException(filename, "max gray value is too large");
-		}
-		else if (maxval > UCHAR_MAX) {
-			datatype = PGM_USHORT;
-		}
-		else if (maxval > 0) {
-			datatype = PGM_UCHAR;
-		}
-		else {
-			throw ImageReadException(filename, "max gray value <= 0");
-		}
+		
 		file_offset = portable_ftell(pgm_file);
 	}
 	EXITFUNC;
@@ -121,16 +113,8 @@ int PgmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 			
-	if (datatype == PGM_UCHAR) {
-		dict["datatype"] = EMUtil::EM_UCHAR;
-	}
-	else {
-		dict["datatype"] = EMUtil::EM_USHORT;
-	}
-			
 	dict["max_gray"] = maxval;
 	dict["min_gray"] = minval;
-
 	
 	EXITFUNC;
 	return 0;
@@ -148,6 +132,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 	if ((int)nz != 1) {
 		LOGERR("Cannot write 3D image as PGM. Your image nz = %d", nz);
 		err = 1;
+		throw ImageWriteException("N/A", "Cannot write 3D image as PGM.");
 	}
 	else {
 		nx = dict["nx"];
@@ -181,53 +166,18 @@ int PgmIO::read_data(float *data, int image_index, const Region * area, bool)
 	portable_fseek(pgm_file, file_offset, SEEK_SET);
 
 	unsigned char *cdata = (unsigned char *) (data);
-	unsigned short *sdata = (unsigned short *) (data);
-
-	size_t mode_size = 0;
-	if (datatype == PGM_UCHAR) {
-		mode_size = sizeof(unsigned char);
-	}
-	else if (datatype == PGM_USHORT) {
-		mode_size = sizeof(unsigned short);
-	}
-
+	size_t mode_size = sizeof(unsigned char);
+	
 	EMUtil::process_region_io(cdata, pgm_file, READ_ONLY, image_index, 
 							  mode_size, nx, ny, 1, area, true);
-
-#if 0
-	int ushort_size = sizeof(unsigned short);
-
-	for (int j = 0; j < ny; j++) {
-		int n = 0;
-		if (datatype == PGM_UCHAR) {
-			n = fread(&cdata[(ny - j - 1) * nx], nx, 1, pgm_file);
-		}
-		else {
-			n = fread(&sdata[(ny - j - 1) * nx], nx * ushort_size, 1, pgm_file);
-		}
-
-		if (n != 1) {
-			LOGERR("Incomplete data read in PGM file '%s'", filename.c_str());
-			return 1;
-		}
-	}
-#endif
 
 	int xlen = 0, ylen = 0;
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
-	if (datatype == PGM_USHORT) {
-		become_host_endian(sdata, xlen * ylen);
-	}
-
 	for (int k = xlen * ylen - 1; k >= 0; k--) {
-		if (datatype == PGM_UCHAR) {
-			data[k] = static_cast < float >(cdata[k]);
-		}
-		else {
-			data[k] = static_cast < float >(sdata[k]);
-		}
+		data[k] = static_cast < float >(cdata[k]);	
 	}
+	
 	EXITFUNC;
 	return 0;
 }
@@ -245,7 +195,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	getRenderMinMax(data, nx, ny, rendermin, rendermax);
 	
-	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//data is the normalized data
+	unsigned char *cdata=(unsigned char *)malloc(nx*ny);	//cdata is the normalized data
 
 	int old_add = 0;
 	int new_add = 0;
@@ -261,7 +211,7 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 				cdata[new_add] = 255;
 			}
 			else {
-				cdata[new_add] = (int)((data[old_add]-rendermin)/(rendermax-rendermin)*256.0);
+				cdata[new_add] = (unsigned char)((data[old_add]-rendermin)/(rendermax-rendermin)*256.0);
 			}
 		}
 	}
