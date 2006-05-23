@@ -1151,8 +1151,8 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 		float fdata[27];
 		
 		for (int iL=0; iL<27 ; iL++){  // need this indexing array later
-			xArr[iL]  = (int) (fmod(iL,3.0f) - 1);
-			yArr[iL]  = (int)( fmod( ((int) (iL/3) ),3.0f)- 1);
+			xArr[iL]  =  (int) (fmod(iL,3.0f) - 1);
+			yArr[iL]  =  (int)( fmod( ((int) (iL/3) ),3.0f)- 1);
 			zArr[iL]  = ((int) (iL/9)  ) -1;
 //			printf(" xArr=%d, \t yArr=%d, \t zArr=%d \n", xArr[iL],yArr[iL],zArr[iL]);
 		}
@@ -1202,11 +1202,11 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 					float dz = remainder(zold,1);
 					
 					int IOX = (int) (xold -dx+.00001); // This is the center of the array
-					int IOY = (int) (yold -dy+.00001);
-					int IOZ = (int) (zold -dz+.00001);
+					int IOY = (int) (yold -dy+.00001); // In the next loop we interpolate
+					int IOZ = (int) (zold -dz+.00001); // 
 					
 //					printf(" IOX=%d \t IOY=%d \t IOZ=%d \n", IOX, IOY, IOZ);
-					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
+//					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
 //                                      	ROTATED POSITION IS INSIDE OF VOLUME
 //						FIND INTENSITIES ON 3x3x3 COORDINATE GRID
 						for  (int iL=0; iL<27 ; iL++){
@@ -1214,8 +1214,8 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 							int yCoor = (int) fmod(IOY+yArr[iL] + ny + .0001f, (float) ny);
 							int zCoor = (int) fmod(IOZ+zArr[iL] + nz + .0001f, (float) nz);
 							fdata[iL] = (*this)( xCoor, yCoor ,zCoor );
-//							printf(" fdata=%f \n", fdata[iL]);
-						}
+							if (iy==iz && iz==0){printf(" fdata=%f \n", fdata[iL]);}
+//						}
 					}
 
 					(*ret)(ix,iy,iz) = Util::triquad(dx, dy, dz, fdata);
