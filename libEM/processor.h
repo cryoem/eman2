@@ -3742,8 +3742,12 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 	
-	/**Replace a source image as a random noise, the random value is gaussian distributed
-	 *@param noise_level sigma value of gausian distributed noise, this parameter is optional default is 0.5
+	/**Replace a source image with gaussian distributed random noise
+	 * If you don't provide a seed at all, it should be seeded using the best available
+	 * source of randomness( time(0) in this implementation).
+	 * The testimage classes using random numbers should take an int 'seed'
+	 * parameter. If this parameter is provided, it will be cast into an unsigned int. 
+	 * This will permit initialization to a known state if desired.
 	 */
 	class TestImageNoiseGauss : public TestImageProcessor
 	{
@@ -3768,9 +3772,21 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("noise_level", EMObject::FLOAT, "sigma value of gausian distributed noise, this parameter is optional default is 0.5");
+			d.put("sigma", EMObject::FLOAT, "sigma value of gausian distributed noise, default is 0.5");
+			d.put("mean", EMObject::FLOAT, "mean value of gausian distributed noise, default is zero.");
+			d.put("seed", EMObject::INT, "the seed for random number generator");
 			return d;
 		}
+	private:
+		/** return a random number with gaussian distribution
+		 * @param mean mean value
+		 * @param sigma sigma value*/
+		float grand(float mean,float sigma);
+		
+		/**return a random number in [min, max]
+		 * @param min
+		 * @param max*/
+		float frand(float min,float max);
 	};
 
 	/** Try to normalize the 4 quadrants of a CCD image

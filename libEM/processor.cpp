@@ -4305,31 +4305,48 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float sigma = params["noise_level"];
-	if( sigma == 0 ) {
+	float sigma = params["sigma"];
+	if( sigma == 0 ) {	
 		sigma = 0.5f;
 	}
-	//gsl_rng_random_glibc2 is the glibc version random number generator
-	const gsl_rng * gen = gsl_rng_alloc(gsl_rng_random_glibc2);
-	//unsigned long int seed = params["seed"];  This does not work as the type is unsupported  PAP
-	//gsl_rng_set (const gsl_rng * gen, seed);
+	float mean = params["mean"];
+	
+	unsigned int seed = (int)params["seed"];
+	if(seed == 0) {	//user does not provide a seed
+		srandom(time(0));
+	}
+	else {	//using user's seed
+		srandom(seed);
+	}
+	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
-		dat[i] = (float)gsl_ran_gaussian( gen, sigma );
+		dat[i] = grand(mean, sigma);
 	}
-	//gsl_rng_free (gsl_rng * gen);  Why the memory was not freed? PAP
+	
 	image->done_data();
 	image->update();
+}
 
-/*	Sample code for returning various types
-	vector<float> vec1(5,0.0);
-	vec1[1]=1.0;
-	vec1[2]=2.0;
+/*grand() for gaussian distributed random numbers, copied from EMAN1*/
+float TestImageNoiseGauss::grand(float mean,float sigma)
+{
+	float x,y,r,f;
+	
+	do {
+		x=frand(-1.0,1.0);
+		y=frand(-1.0,1.0);
+		r=x*x+y*y;
+	} while (r>1.0||r==0);
+	f=sqrt(-2.0*log(r)/r);
+	
+	return x*f*sigma+mean;
+}
 
-	image->set_attr("abc1",1.0);
-	image->set_attr("abc2","def");
-	image->set_attr("abc3",vec1);
-*/
+/* copied from EMAN1*/
+float TestImageNoiseGauss::frand(float lo, float hi)
+{
+	return ((float)random()/2147483647.0*(hi-lo)+lo);
 }
 
 void RampProcessor::process_inplace(EMData * image)
