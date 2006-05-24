@@ -44,7 +44,10 @@ interactive web browsing."""
 
 	if options.display!="" :
 		l,x,y=options.display.split(',')
-		img=get_tile(args[0],int(l),int(x),int(y))
+		try: img=get_tile(args[0],int(l),int(x),int(y))
+		except:
+			print "Tile not present in file"
+			sys.exit(1)
 		o=file("/tmp/tile.jpg","w")
 		o.write(img)
 		o.close()
