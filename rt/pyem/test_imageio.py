@@ -8,6 +8,20 @@ import sys
 import testlib
 import os
 
+class TestPGMIO(unittest.TestCase):
+    """PGM file IO test"""
+    
+    def test_read_write_pgm(self):
+        """test pgm file read/write ........................."""
+        e = EMData()
+        e.set_size(1024,1024)
+        e.process_inplace('testimage.noise.uniform.rand')
+        e.write_image('test_image.pgm')
+        
+        f = EMData()
+        f.read_image('test_image.pgm')
+        
+        os.remove('test_image.pgm')
 
 class TestSpiderIO(unittest.TestCase):
     """spider file IO test"""
@@ -644,7 +658,7 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestSpiderIO, TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
+    test_support.run_unittest(TestPGMIO, TestSpiderIO, TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
 
 if __name__ == '__main__':
     test_main()
