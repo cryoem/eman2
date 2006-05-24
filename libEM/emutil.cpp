@@ -719,8 +719,6 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 			if (rw_mode == ImageIO::READ_ONLY) {
 				if (fread(&cdata[k2 + jj * area_row_size],
 						  area_row_size, 1, file) != 1) {
-                    int a = 1;
-                    a = 1;
 					throw ImageReadException("", "incomplete data read");
 				}
 			}
