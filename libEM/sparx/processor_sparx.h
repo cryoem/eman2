@@ -9,14 +9,11 @@ namespace EMAN
 {
 
         
-	/** flip an image around an axis
-	 * @param axis  'x', 'y', or 'z' axis. 'x' means horizonal flip; 'y' means vertical flip;
+	/** mirror an image
+	 * @param axis  ''x', 'y', or 'z' axis, means mirror by changing the sign of the respective axis;
 	 */
 	class MirrorProcessor:public Processor
 	{ 
-	        /*void colreverse(float* beg, float* end, int nx);*/
-		
-                /*void slicereverse(float* beg, float* end, int nx,int ny);*/
 		
 	  public:
 		void process_inplace(EMData * image);
@@ -34,13 +31,13 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis. 'x' means mirror about x axis; 'y' means mirror about y axis;");
+			d.put("axis", EMObject::STRING, "'x', 'y', or 'z' axis, means mirror by changing the sign of the respective axis;");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "flip an image around an axis.";
+			return "mirror an image.";
 		}
 		
 	};

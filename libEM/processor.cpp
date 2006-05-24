@@ -4534,9 +4534,16 @@ if (!image) {
 	int y_start = 1-ny%2;
 	int z_start = 1-nz%2;
 	
-         //Will have to define colreverse function to the inner loop for y and z
 	if (axis == "x" || axis == "X") {
-                 float *tmp = new float[nx];
+ 	        for (int iz = 0; iz < nz; iz++)
+			for (int iy = 0; iy < ny; iy++) {
+				int offset = nx*iy + nxy*iz;
+                         	 reverse(&data[offset+x_start],&data[offset+nx]);
+		         }
+         }
+	 
+         if (axis == "y" || axis == "Y") {
+                float *tmp = new float[nx];
 	         int nhalf   = ny/2;
  		 int beg     = 0;
                  for (int iz = 0; iz < nz; iz++) {
@@ -4549,14 +4556,6 @@ if (!image) {
 		}
 		delete[] tmp;
 	}			 
-	 
-         if (axis == "y" || axis == "Y") {
-	        for (int iz = 0; iz < nz; iz++)
-			for (int iy = 0; iy < ny; iy++) {
-				int offset = nx*iy + nxy*iz;
-                         	 reverse(&data[offset+x_start],&data[offset+nx]);
-		         }
-         }
 	 
          if (axis == "z" || axis == "Z") {
 	 	if(1-z_start){
