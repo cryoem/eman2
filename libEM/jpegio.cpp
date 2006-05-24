@@ -46,6 +46,7 @@ void JpegIO::init()
 	}
 
 	rendermin=rendermax=0;
+	jpegqual=75;
 	EXITFUNC;
 }
 
@@ -79,6 +80,8 @@ int JpegIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	rendermin=(float)dict["render_min"];	// float value representing black in the output
 	rendermax=(float)dict["render_max"];	// float value representign white in the output
+	jpegqual=(int)dict["jpeg_quality"];
+	if (jpegqual==0) jpegqual=75;
 
 	cinfo.image_width = (int) dict["nx"];      /* image width and height, in pixels */
 	cinfo.image_height = (int) dict["ny"];
@@ -89,7 +92,7 @@ int JpegIO::write_header(const Dict & dict, int image_index, const Region* area,
 	cinfo.input_components = 1;     /* # of color components per pixel */
 	cinfo.in_color_space = JCS_GRAYSCALE; /* colorspace of input image */
 	jpeg_set_defaults(&cinfo);
-	jpeg_set_quality(&cinfo,75,true);
+	jpeg_set_quality(&cinfo,jpegqual,true);
 
 	EXITFUNC;
 	return 0;

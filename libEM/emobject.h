@@ -313,6 +313,10 @@ namespace EMAN
 
 		EMObject & operator[] (const string & key)
 		{
+//			static EMObject nullreturn;
+//			if( has_key(key) )  return dict[key];
+//			else return nullreturn;
+
 //			if( has_key(key) ) {
 				return dict[key];
 //			}
@@ -324,9 +328,10 @@ namespace EMAN
 
 		EMObject operator[] (const string & key) const
 		{
-//			if( has_key(key) ) {
-				return dict[key];
-//			}
+//			if( has_key(key) )  return dict[key];
+//			else return EMObject();
+			return dict[key];
+
 //			else {
 //				LOGERR("No such key exist in this Dict");
 //				throw NotExistingObjectException("EMObject", "Nonexisting key (" + key + ") in Dict");

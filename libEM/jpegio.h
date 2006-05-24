@@ -32,6 +32,7 @@ namespace EMAN
 		bool initialized;
 		float rendermin;
 		float rendermax;
+		int jpegqual;
 
 		struct jpeg_compress_struct cinfo;
 		struct jpeg_error_mgr jerr;
