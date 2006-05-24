@@ -2834,6 +2834,7 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("noise", EMObject::FLOAT);
+			d.put("seed", EMObject::INT, "seed for random number generator");
 			return d;
 		}
 
@@ -2903,6 +2904,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("dx", EMObject::FLOAT);
 			d.put("y", EMObject::FLOATARRAY);
 			d.put("interpolation", EMObject::INT);
+			d.put("seed", EMObject::INT, "seed for random number generator");
 			return d;
 		}
 
@@ -3739,6 +3741,13 @@ The basic design of EMAN Processors: <br>\
 		static Processor * NEW()
 		{
 			return new TestImageNoiseUniformRand();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("seed", EMObject::INT, "seed for random number generator");
+			return d;
 		}
 	};
 	

@@ -2165,6 +2165,13 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 		return;
 	}
 
+	if(params.has_key("seed")) {
+		srandom((int)params["seed"]);
+	}
+	else {
+		srandom(time(0));
+	}
+
 	float addnoise = params["noise"];
 	addnoise *= get_sigma(image);
 	float *dat = image->get_data();
@@ -2738,7 +2745,6 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 }
 
 
-
 void AddRandomNoiseProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -2761,6 +2767,12 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 		interpolation = params["interpolation"];
 	}
 
+	if(params.has_key("seed")) {
+		srandom((int)params["seed"]);
+	}
+	else {
+		srandom(time(0));
+	}
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -4291,7 +4303,13 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	srand(time(0)); //generate a seed by current time
+	if(params.has_key("seed")) {
+		srandom((int)params["seed"]);
+	}
+	else {
+		srand(time(0)); //generate a seed by current time
+	}
+	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
 		dat[i] = (float)rand()/(float)RAND_MAX;
