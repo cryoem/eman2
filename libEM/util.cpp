@@ -570,26 +570,30 @@ float Util::get_frand(int lo, int hi)
 	return get_frand((float)lo, (float)hi);
 }
 
+/*the static variable does not work well in Python call for this function*/
 float Util::get_frand(float lo, float hi)
 {
-	static bool inited = false;
+/*	static bool inited = false;
 	if (!inited) {
+		std::cout << "(float)Not initiated..." << std::endl;
 		srand(time(0));
 		inited = true;
 	}
-
+*/
 	float r = (hi - lo) * rand() / (RAND_MAX + 1.0f) + lo;
 	return r;
 }
 
+/*the static variable does not work well in Python call for this function*/
 float Util::get_frand(double lo, double hi)
 {
-	static bool inited = false;
+/*	static bool inited = false;
 	if (!inited) {
+		std::cout << "(double)Not initiated..." << std::endl;
 		srand(time(0));
 		inited = true;
 	}
-
+*/
 	double r = (hi - lo) * rand() / (RAND_MAX + 1.0) + lo;
 	return (float)r;
 }
