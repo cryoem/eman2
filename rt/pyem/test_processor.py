@@ -1430,9 +1430,31 @@ class TestProcessor(unittest.TestCase):
         
     def test_testimage_noise_gauss(self):
         """test testimage.noise.gauss processor ............."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.gauss', {'noise_level':0.3})
+        e1 = EMData()
+        e1.set_size(8,8,8)
+        e1.process_inplace('testimage.noise.gauss', {'mean':0.3, 'sigma':1.1, 'seed':6666})
+        d1 = e1.get_3dview()
+        
+        e2 = EMData()
+        e2.set_size(8, 8, 8)
+        e2.process_inplace('testimage.noise.gauss', {'mean':0.3, 'sigma':1.1})
+        d2 = e2.get_3dview()
+        
+        e3 = EMData()
+        e3.set_size(8,8,8)
+        e3.process_inplace('testimage.noise.gauss', {'mean':0.3, 'sigma':1.1, 'seed':6666})
+        d3 = e1.get_3dview()
+        
+        e4 = EMData()
+        e4.set_size(8, 8, 8)
+        e4.process_inplace('testimage.noise.gauss', {'mean':0.3, 'sigma':1.1})
+        d4 = e2.get_3dview()
+        
+        for k in range(8):
+            for j in range(8):
+                for i in range(8):
+                    self.assertAlmostEqual(d1[i][j][k], d3[i][j][k])
+                    self.assertAlmostEqual(d2[i][j][k], d4[i][j][k])
         
     #this filter.integercyclicshift2d processor is removed by Phani at 5/18/2006    
     def no_test_IntegerCyclicShift2DProcessor(self):
