@@ -13,27 +13,29 @@ extern "C" {
 
 using namespace EMAN;
 
-static int get_rank(int ny, int nz)
-{
-	int rank = 3;
-	if (ny == 1) {
-		rank = 1;
+namespace {
+	int get_rank(int ny, int nz)
+	{
+		int rank = 3;
+		if (ny == 1) {
+			rank = 1;
+		}
+		else if (nz == 1) {
+			rank = 2;
+		}
+		return rank;
 	}
-	else if (nz == 1) {
-		rank = 2;
-	}
-	return rank;
 }
 
 #ifdef FFTW2
 
-list < FftwPlan * >EMfft::fwplans = list < FftwPlan * >();
-FftwPlan EMfft::planf_1d = FftwPlan();
-FftwPlan EMfft::planr_1d = FftwPlan();
+//list < FftwPlan * >EMfft::fwplans = list < FftwPlan * >();
+//FftwPlan EMfft::planf_1d = FftwPlan();
+//FftwPlan EMfft::planr_1d = FftwPlan();
 
 //rfftw_plan FftwPlan::plan_1d = 0;
 //rfftwnd_plan FftwPlan::plan_nd = 0;
-
+/*
 FftwPlan::FftwPlan()
 :	rank(0), direction(UNKNOWN_DIRECTION)
 {
@@ -103,18 +105,17 @@ bool EMAN::operator==(const FftwPlan & p1, const FftwPlan & p2)
 	}
 	return false;
 }
-
+*/
 
 int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 {
-	if (planf_1d.get_dim(0) != n) {
+/*	if (planf_1d.get_dim(0) != n) {
 		planf_1d = FftwPlan(n, REAL_TO_COMPLEX, FFTW_ESTIMATE);
 	}
-
+*/
 #ifdef DJBFFT
 	switch(n)
 	{
-		printf("I am here now!\n");
 		if ( n==2 || n==4 || n==8 || n==16 || n==32 || n==64 || n==128
 			|| n==256 || n==512 || n==1024 || n==2048 || n==4096 || n==8192 )
 		{
@@ -164,7 +165,11 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 			rfftw_one(planf_1d.get_plan_1d(), (fftw_real *) real_data, (fftw_real *) complex_data);
 	}	
 #else
-	rfftw_one(planf_1d.get_plan_1d(), (fftw_real *) real_data, (fftw_real *) complex_data);
+	rfftw_plan p = rfftw_create_plan(n, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+	
+	rfftw_one(p, (fftw_real *) real_data, (fftw_real *) complex_data);
+	
+	rfftw_destroy_plan(p);
 #endif	//DJBFFT	
 
 	return 0;
@@ -172,10 +177,10 @@ int EMfft::real_to_complex_1d(float *real_data, float *complex_data, int n)
 
 int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 {
-	if (planr_1d.get_dim(0) != n) {
+/*	if (planr_1d.get_dim(0) != n) {
 		planr_1d = FftwPlan(n, COMPLEX_TO_REAL, FFTW_ESTIMATE);
 	}
-
+*/
 #ifdef DJBFFT
 	switch(n)
 	{
@@ -241,7 +246,10 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 			rfftw_one(planr_1d.get_plan_1d(), (fftw_real *) complex_data, (fftw_real *) real_data);
 	}
 #else
-	rfftw_one(planr_1d.get_plan_1d(), (fftw_real *) complex_data, (fftw_real *) real_data);
+	rfftw_plan p = rfftw_create_plan(n, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);
+	rfftw_one(p, (fftw_real *) complex_data, (fftw_real *) real_data);
+	
+	rfftw_destroy_plan(p);
 #endif	//DJBFFT
 	
 	return 0;
@@ -252,24 +260,63 @@ int EMfft::complex_to_real_1d(float *complex_data, float *real_data, int n)
 
 int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int ny, int nz)
 {
-	// in-place or out-of-place?
+/*	// in-place or out-of-place?
 	FFTPLACE fftplace = (real_data == complex_data) 
 		? FFT_IN_PLACE
 		: FFT_OUT_OF_PLACE;
 	FftwPlan *fwplan = make_plan(nx, ny, nz, REAL_TO_COMPLEX, fftplace);
 	rfftwnd_one_real_to_complex(fwplan->get_plan_nd(), (fftw_real *) real_data,
 								(fftw_complex *) complex_data);
+	
+	delete fwplan;
+	rfftwnd_destroy_plan(fwplan->get_plan_nd());
+*/
+/*	FFTPLACE fftplace = (real_data == complex_data) 
+		? FFT_IN_PLACE
+		: FFT_OUT_OF_PLACE;
+	
+	int rank = get_rank(ny, nz);
+	int flags = FFTW_ESTIMATE | FFTW_USE_WISDOM | FFTW_THREADSAFE;
+	if(FFT_OUT_OF_PLACE == fftplace) {
+		flags |= FFTW_OUT_OF_PLACE;
+	}
+	else {
+		flags |= FFTW_IN_PLACE;
+	}
+*/
+	int rank = get_rank(ny, nz);
+	int dims[3];
+	dims[0] = nz;
+	dims[1] = ny;
+	dims[2] = nx;
+	rfftwnd_plan plan_nd = 
+		rfftwnd_create_plan(rank, dims + (3 - rank), FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE);
+	rfftwnd_one_real_to_complex(plan_nd, (fftw_real *) real_data,
+								(fftw_complex *) complex_data);
+	rfftwnd_destroy_plan(plan_nd);
 	return 0;
 }
 
 int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny, int nz)
 {
-	FftwPlan *fwplan = make_plan(nx, ny, nz, COMPLEX_TO_REAL);
-	rfftwnd_one_complex_to_real(fwplan->get_plan_nd(), (fftw_complex *) complex_data,
-								(fftw_real *) real_data);
+	int rank = get_rank(ny, nz);
+	int dims[3];
+	dims[0] = nz;
+	dims[1] = ny;
+	dims[2] = nx;
+	
+//	FftwPlan *fwplan = make_plan(nx, ny, nz, COMPLEX_TO_REAL);
+	
+	rfftwnd_plan plan_nd = 
+		rfftwnd_create_plan(rank, dims + (3 - rank), FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE);	
+								
+	rfftwnd_one_complex_to_real(plan_nd, (fftw_complex *) complex_data,
+								(fftw_real *) real_data);					
+
+	rfftwnd_destroy_plan(plan_nd);
 	return 0;
 }
-
+/*
 FftwPlan *EMfft::make_plan(int nx, int ny, int nz, 
 		                   FftwDirection dir,
 						   FFTPLACE fftplace)
@@ -313,7 +360,7 @@ FftwPlan *EMfft::make_plan(int nx, int ny, int nz,
 	fwplans.push_back(new_plan);
 	return new_plan;
 }
-
+*/
 #endif	//FFTW2
 
 #ifdef FFTW3
@@ -647,10 +694,6 @@ int EMfft::real_to_complex_2d(float *real_data, float *complex_data, int nx, int
 	/* Allocate communication work array */
 	float * comm = (float *)malloc((3*nx+100)*sizeof(float));
 	
-	/*cout << *real_data << endl;
-	cout << *(real_data+1b) << endl;
-	cout << *(real_data+2) << endl;
-	cout << *(real_data+3) << endl;*/
 	/* Allocate work array to store ACML complex array*/
 	float * fft_data = (float *)malloc(complex_nx * ny * sizeof(float));
 	cout << "fft_data after allocation:" << endl;

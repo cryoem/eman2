@@ -31,7 +31,7 @@ namespace EMAN
      *  FftwPlan *plan_nd = new FftwPlan(rank, nx, ny, nz, REAL_TO_COMPLEX, FFTW_ESTIMATE);
      *  rfftwnd_plan *plan2 = plan_nd->get_plan_nd()
      */
-	class FftwPlan
+/*	class FftwPlan
 	{
 	  public:
 		FftwPlan();
@@ -68,7 +68,7 @@ namespace EMAN
 	};
 
 	bool operator==(const FftwPlan & plan1, const FftwPlan & plan2);
-
+*/
 	/** EMfft converts 1d/nd data from real to complex or from complex to real.
      */
 	class EMfft
@@ -83,14 +83,17 @@ namespace EMAN
 									  int nz);
 
 	  private:
-		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
-		static FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir, FFTPLACE fftplace = FFT_IN_PLACE);
-
-		enum
-		{ MAX_NUM_PLANS = 6 };
-		static list < FftwPlan * >fwplans;
-		static FftwPlan planf_1d;
-		static FftwPlan planr_1d;
+//		enum FFTPLACE { FFT_OUT_OF_PLACE, FFT_IN_PLACE };
+		//static FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir, FFTPLACE fftplace = FFT_IN_PLACE);
+//		FftwPlan *make_plan(int nx, int ny, int nz, FftwDirection dir, FFTPLACE fftplace = FFT_IN_PLACE);
+		
+//		enum
+//		{ MAX_NUM_PLANS = 6 };
+//		static list < FftwPlan * >fwplans;
+//		static FftwPlan planf_1d;
+//		FftwPlan planf_1d;
+//		static FftwPlan planr_1d;
+//		FftwPlan planr_1d;
 	};
 }
 #endif	//FFTW2
