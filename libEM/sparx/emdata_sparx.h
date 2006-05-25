@@ -108,7 +108,7 @@ EMData* rotavg();
 		 * @param tf Transform3D reference
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf);
+		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -117,7 +117,7 @@ EMData* rotavg();
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
 		 */
-		void nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf);
+		void nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, float defocus);
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.

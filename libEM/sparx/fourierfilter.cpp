@@ -197,14 +197,14 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			cnstH = float(pihalf/aH/(omegaH-omegaL));
 			break;
 	        case CTF_:
-		     dz=params["defocus"];
-		     cs=params["cs"];
-		     lambda=params["voltage"];  	       
-		     ps=params["ps"];
-		     b_factor=params["b_factor"];
-		     wgh=params["wgh"];
-		     sign=params["sign"];
-		     break;		     
+			dz=params["defocus"];
+			cs=params["cs"];
+			lambda=params["voltage"];		  
+			ps=params["ps"];
+			b_factor=params["b_factor"];
+			wgh=params["wgh"];
+			sign=params["sign"];
+			break;  		
 		case KAISER_I0:
 		case KAISER_SINH:
 		case KAISER_I0_INVERSE:
@@ -372,11 +372,11 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							fp->cmplx(ix,iy,iz) *= 
 								0.5f*(tanh(cnst*(argx+omega)))-tanh(cnst*(argx-omega)); break;
 						case TANH_HIGH_PASS: 
-							argx= sqrt(argx); 
+							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
 								1.0f-0.5f*(tanh(cnst*(argx+omega)))-tanh(cnst*(argx-omega)); break;
 						case TANH_HOMOMORPHIC: 
-							argx= sqrt(argx); 
+							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
 								1.0f-gamma*0.5f*(tanh(cnst*(argx+omega)))-tanh(cnst*(argx-omega)); break;
 						case TANH_BAND_PASS: 
@@ -395,24 +395,14 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						}
 							break;
 						case CTF_:
-						  if(ny>1 && nz<=1 )						  					
-
-						   { ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
-						        static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;}
-
-						  else	if(ny<=1)
-
-						  	     { ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2)/ps/2.0f;}						  	    
-
-						  else  if(nz>1)
-						     {
-                                                       ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
-						               static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
-							       static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;}          						   	
-						       				
-						  fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);			  
-						 
-						  break;      
+							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
+						        			static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
+							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2)/ps/2.0f;						  	    
+							else  if(nz>1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
+						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
+							      		static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
+							fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);			  
+							break;      
 					}
 				}
 			}

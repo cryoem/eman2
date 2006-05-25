@@ -347,12 +347,14 @@ namespace EMAN
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
 			d.put("symmetry", EMObject::STRING);
+			d.put("snr", EMObject::FLOAT);
+			d.put("defocus", EMObject::FLOAT);
 			return d;
 		}
 
 	  private:
 		EMData* v;
-		EMArray<int>* nrptr;
+		EMArray<float>* wptr;
 		int vnx, vny, vnz;
 		int npad;
 		int vnzp, vnyp, vnxp, vnxc;

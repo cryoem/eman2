@@ -1030,8 +1030,7 @@ void PawelBackProjectionReconstructor::setup() {
 	nsym = Transform3D::get_nsym(symmetry);
 }
 
-void
-PawelBackProjectionReconstructor::buildFFTVolume() {
+void PawelBackProjectionReconstructor::buildFFTVolume() {
 	v = new EMData;
 	int offset = 2 - vnxp%2;
 	v->set_size(vnxp+offset,vnyp,vnzp);
@@ -1044,8 +1043,7 @@ PawelBackProjectionReconstructor::buildFFTVolume() {
 	v->set_array_offsets(0,1,1);
 }
 
-void
-PawelBackProjectionReconstructor::buildNormVolume() {
+void PawelBackProjectionReconstructor::buildNormVolume() {
 	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
 	nrptr->set_array_offsets(0,1,1);
 	for (int iz = 1; iz <= vnzp; iz++) 
@@ -1154,7 +1152,7 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	return w;
 }
 #undef  tw
-
+//####################################################################################
 //** nn4 ctf reconstructor 
 
 nn4_ctfReconstructor::nn4_ctfReconstructor() 
@@ -1188,8 +1186,7 @@ void nn4_ctfReconstructor::setup() {
 	nsym = Transform3D::get_nsym(symmetry);
 }
 
-void
-nn4_ctfReconstructor::buildFFTVolume() {
+void nn4_ctfReconstructor::buildFFTVolume() {
 	v = new EMData;
 	int offset = 2 - vnxp%2;
 	v->set_size(vnxp+offset,vnyp,vnzp);
@@ -1202,14 +1199,13 @@ nn4_ctfReconstructor::buildFFTVolume() {
 	v->set_array_offsets(0,1,1);
 }
 
-void
-nn4_ctfReconstructor::buildNormVolume() {
-	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
-	nrptr->set_array_offsets(0,1,1);
+void nn4_ctfReconstructor::buildNormVolume() {
+	wptr = new EMArray<float>(vnxc+1,vnyp,vnzp);
+	wptr->set_array_offsets(0,1,1);
 	for (int iz = 1; iz <= vnzp; iz++) 
 		for (int iy = 1; iy <= vnyp; iy++) 
 			for (int ix = 0; ix <= vnxc; ix++) 
-				(*nrptr)(ix,iy,iz) = 0;
+				(*wptr)(ix,iy,iz) = 0;
 }
 
 int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
@@ -1230,17 +1226,17 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	// larger area.  FIXME!
 	EMData* zeropadded = slice->zeropad_ntimes(npad);
 	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-	if( zeropadded )
-	{
+	if( zeropadded ) {
 		delete zeropadded;
 		zeropadded = 0;
 	}
 	padfftslice->do_fft_inplace();
 	padfftslice->center_origin_fft();
 	// insert slice for all symmetry related positions
+	float defocus = params["defocus"];
 	for (int isym=0; isym < nsym; isym++) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
-		v->nn(*nrptr, padfftslice, tsym);
+		v->nn_ctf(*wptr, padfftslice, tsym, defocus);
 	}
 	if( padfftslice ) {
 		delete padfftslice;
@@ -1251,26 +1247,33 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfReconstructor::finish() {
-	EMArray<int>& nr = *nrptr;
-	v->symplane0(nr);
+	float snr = params["snr"];
+	float osnr = 1.0f/snr;
+	EMArray<float>& w = *wptr;
+	v->symplane0_ctf(w);
 	// normalize
 	for (int iz = 1; iz <= vnzp; iz++) {
 		for (int iy = 1; iy <= vnyp; iy++) {
 			for (int ix = 0; ix <= vnxc; ix++) {//std::cout<<"  "<<iz<<"  "<<iy<<"  "<<ix<<"  "<<nr(ix,iy,iz)<<"  "<<(-2*((ix+iy+iz)%2)+1)<<"  "<<(*v)(ix,iy,iz)<<std::endl;
-				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
-					float  tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+				if (w(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
+					float  tmp = (-2*((ix+iy+iz)%2)+1)/(w(ix,iy,iz)+osnr);
 					(*v)(2*ix,iy,iz) *= tmp;
 					(*v)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
 		}
 	}
+	//  do not need weights anymore
+	if( wptr ) {
+		delete wptr;
+		wptr = 0;
+	}
 	// back fft
 	v->do_ift_inplace();
-	EMData* w = v->window_center(vnx);
-	float *tw = w->get_data();
+	EMData* win = v->window_center(vnx);
+	float *tw = win->get_data();
 	//  mask and subtract circumference average
-	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
+	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
 	int IP = ix/2+1;
@@ -1298,18 +1301,12 @@ EMData* nn4_ctfReconstructor::finish() {
 			}
 		}
 	}
+	return win;
 	// clean up
-	if( v )
-	{
+	if( v ) {
 		delete v;
 		v = 0;
 	}
-	if( nrptr )
-	{
-		delete nrptr;
-		nrptr = 0;
-	}
-	return w;
 }
 #undef  tw
 

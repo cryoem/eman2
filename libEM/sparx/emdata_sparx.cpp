@@ -954,13 +954,19 @@ EMData::symplane0(EMArray<int>& w) {
 
 //  Helper functions for method nn4_ctf
 void EMData::onelinenn_ctf(int j, int n, int n2, 
-		          EMArray<float>& w, EMData* bi, const Transform3D& tf) {//std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float dz) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+	//  CTF parameters
+	float ps = 4.2f, lambda = 200.0f, cs= 2.0f, wgh=0.1f, b_factor=0.0f, sign=-1.0f;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
+	float  dy2 = pow(float(j)/float(n),2);
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-        if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
-//        if ( !((0 == i) && (j < 0))) {
+		if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
+			 //	   if ( !((0 == i) && (j < 0))) {
+			//  Calculate absolute frequency
+			float  freq = sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
+			float  ctf = Util::tf(dz, freq, 12.398f/sqrt(lambda *(1022.f+lambda)), cs*1.0e-7f, atan(wgh/(1.0-wgh)), b_factor, sign);
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -969,15 +975,12 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 				xnew = -xnew;
 				ynew = -ynew;
 				znew = -znew;
-				btq = conj(bi->cmplx(i,jp));
-			} else {
-				btq = bi->cmplx(i,jp);
-			}
+				btq = conj(bi->cmplx(i,jp))*ctf;
+			} else  btq = bi->cmplx(i,jp)*ctf;
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)
-				            && (izn >= -n2) && (izn <= n2)) {
+			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2) && (izn >= -n2) && (izn <= n2)) {
 				if (ixn >= 0) {
 					int iza, iya;
 					if (izn >= 0) {
@@ -992,7 +995,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					}
 					cmplx(ixn,iya,iza) += btq;
 					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
-					w(ixn,iya,iza)++;
+					w(ixn,iya,iza) += ctf*ctf;
 				} else {
 					int izt, iyt;
 					if (izn > 0) {
@@ -1007,16 +1010,15 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq);
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
-					w(-ixn,iyt,izt)++;
+					w(-ixn,iyt,izt) += ctf*ctf;
 				}
 			}
-
 		}
 	}
 }
 
 void
-EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf) {
+EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, float defocus) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1025,7 +1027,7 @@ EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf) {
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf(iy, ny, nxc, w, myfft, tf);
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf(iy, ny, nxc, w, myfft, tf, defocus);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
