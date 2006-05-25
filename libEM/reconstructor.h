@@ -310,6 +310,60 @@ namespace EMAN
 		int nsym;
 	};
 
+
+
+
+	/** nn4_ctf Back Projection Reconstructor
+     * 
+     */
+	class nn4_ctf_Reconstructor:public Reconstructor
+	{
+	  public:
+		nn4_ctf_Reconstructor();
+		~nn4_ctf_Reconstructor();
+
+		void setup();
+		int insert_slice(EMData * slice, const Transform3D & euler);
+		EMData *finish();
+
+		string get_name() const
+		{
+			return "nn4_ctf_projection";
+		}
+		
+		string get_desc() const
+		{
+			return "Fourier back-projection reconstruction routine";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new nn4_ctf_Reconstructor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INT);
+			d.put("npad", EMObject::INT);
+			d.put("symmetry", EMObject::STRING);
+			return d;
+		}
+
+	  private:
+		EMData* v;
+		EMArray<int>* nrptr;
+		int vnx, vny, vnz;
+		int npad;
+		int vnzp, vnyp, vnxp, vnxc;
+		void buildFFTVolume();
+		void buildNormVolume();
+		string symmetry;
+		int nsym;
+	};
+
+
+
 	template <> Factory < Reconstructor >::Factory();
 
 	void dump_reconstructors();

@@ -13,6 +13,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&PawelBackProjectionReconstructor::NEW);
+	force_add(&nn4_ctf_Reconstructor::NEW);
 }
 
 FourierReconstructor::FourierReconstructor()
@@ -1152,6 +1153,141 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	}
 	return w;
 }
+
+//** nn4 ctf reconstructor 
+
+nn4_ctf_Reconstructor::nn4_ctf_Reconstructor() 
+	: v(NULL) {}
+
+nn4_ctf_Reconstructor::~nn4_ctf_Reconstructor()
+{
+	if (v) {
+		delete v;
+		v = NULL;
+	}
+}
+
+void nn4_ctf_Reconstructor::setup() {
+	int nsize = params["size"];
+	vnx = vny = vnz = nsize;
+	npad = params["npad"];
+	vnxp = nsize*npad;
+	vnyp = nsize*npad;
+	vnzp = nsize*npad;
+	vnxc = vnxp/2;
+	buildFFTVolume();
+	buildNormVolume();
+	try {
+		symmetry = params["symmetry"].to_str();
+		if ("" == symmetry) symmetry = "c1";
+	}
+	catch(_NotExistingObjectException) {
+		symmetry = "c1";
+	}
+	nsym = Transform3D::get_nsym(symmetry);
+}
+
+void
+nn4_ctf_Reconstructor::buildFFTVolume() {
+	v = new EMData;
+	int offset = 2 - vnxp%2;
+	v->set_size(vnxp+offset,vnyp,vnzp);
+	v->set_nxc(vnxp/2);
+	v->set_complex(true);
+	v->set_ri(true);
+	v->set_fftpad(true);
+	v->set_attr("npad", npad);
+	v->to_zero();
+	v->set_array_offsets(0,1,1);
+}
+
+void
+nn4_ctf_Reconstructor::buildNormVolume() {
+	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
+	nrptr->set_array_offsets(0,1,1);
+	for (int iz = 1; iz <= vnzp; iz++) 
+		for (int iy = 1; iy <= vnyp; iy++) 
+			for (int ix = 0; ix <= vnxc; ix++) 
+				(*nrptr)(ix,iy,iz) = 0;
+}
+
+int nn4_ctf_Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
+	// sanity checks
+	if (!slice) {
+		LOGERR("try to insert NULL slice");
+		return 1;
+	}
+	if ((slice->get_xsize() != slice->get_ysize()) 
+		|| slice->get_xsize() != vnx) {
+		// FIXME: Why doesn't this throw an exception?
+		LOGERR("Tried to insert a slice that is the wrong size.");
+		return 1;
+	}
+	// process 2-d slice -- zero-pad, fft extend, and fft
+	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
+	// because only the former centers the original image in the 
+	// larger area.  FIXME!
+	EMData* zeropadded = slice->zeropad_ntimes(npad);
+	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
+	if( zeropadded )
+	{
+		delete zeropadded;
+		zeropadded = 0;
+	}
+	padfftslice->do_fft_inplace();
+	padfftslice->center_origin_fft();
+	// insert slice for all symmetry related positions
+	for (int isym=0; isym < nsym; isym++) {
+		Transform3D tsym = t.get_sym(symmetry, isym);
+		v->nn(*nrptr, padfftslice, tsym);
+	}
+	if( padfftslice ) {
+		delete padfftslice;
+		padfftslice = 0;
+	}
+	return 0;
+}
+
+EMData* nn4_ctf_Reconstructor::finish() {
+	EMArray<int>& nr = *nrptr;
+	v->symplane0(nr);
+	// normalize
+	for (int iz = 1; iz <= vnzp; iz++) {
+		for (int iy = 1; iy <= vnyp; iy++) {
+			for (int ix = 0; ix <= vnxc; ix++) {//std::cout<<"  "<<iz<<"  "<<iy<<"  "<<ix<<"  "<<nr(ix,iy,iz)<<"  "<<(-2*((ix+iy+iz)%2)+1)<<"  "<<(*v)(ix,iy,iz)<<std::endl;
+				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
+					float  tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+					(*v)(2*ix,iy,iz) *= tmp;
+					(*v)(2*ix+1,iy,iz) *= tmp;
+				}
+			}
+		}
+	}
+	// back fft
+	v->do_ift_inplace();
+	EMData* w = v->window_center(vnx);
+	float *tw = w->get_data();
+	//  normalize
+	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
+	int norma = ix*iy*iz;
+	for (int i = 0; i <ix*iy*iz; i++) tw[i] *= norma;
+	// clean up
+	if( v )
+	{
+		delete v;
+		v = 0;
+	}
+	if( nrptr )
+	{
+		delete nrptr;
+		nrptr = 0;
+	}
+	return w;
+}
+
+
+
+
 
 void EMAN::dump_reconstructors()
 {
