@@ -1269,10 +1269,35 @@ EMData* nn4_ctfReconstructor::finish() {
 	v->do_ift_inplace();
 	EMData* w = v->window_center(vnx);
 	float *tw = w->get_data();
-	//  normalize
+	//  mask and subtract circumference average
 	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
-	int norma = ix*iy*iz;
-	for (int i = 0; i <ix*iy*iz; i++) tw[i] *= norma;
+	int L2 = (ix/2)*(ix/2);
+	int L2P = (ix/2-1)*(ix/2-1);
+	int IP = ix/2+1;
+	float  TNR = 0.0f;
+	int m = 0;
+	for (int k = 1; k <= iz; k++) {
+		for (int j = 1; j <= iy; j++) {
+			for (int i = 1; i <= ix; i++) {
+				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
+				if (LR<=L2) {
+					if(LR >= L2P && LR <= L2) {
+						TNR += tw(i,j,k);
+						m++;
+					}
+				}
+			}
+		}
+	}
+	TNR /=float(m);
+	for (int k = 1; k <= iz; k++) {
+		for (int j = 1; j <= iy; j++) {
+			for (int i = 1; i <= ix; i++) {
+				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
+				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
+			}
+		}
+	}
 	// clean up
 	if( v )
 	{
