@@ -32,7 +32,7 @@ CMAKE_CURRENT_SOURCE = /home/pawel/EMAN2/src/eman2/doc/latex
 CMAKE_CURRENT_BINARY = /home/pawel/EMAN2/src/eman2/doc/latex
 CMAKE_SOURCE_DIR = /home/pawel/EMAN2/src/eman2
 CMAKE_BINARY_DIR = /home/pawel/EMAN2/src/eman2
-INCLUDE_FLAGS = -I. -I/home/pawel/EMAN2/src/eman2 -I/home/pawel/EMAN2/src/eman2/libEM -I/usr/include/gsl   -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DHAVE_FSEEKO -DHAVE_FTELLO -DFFTW2 -DEM_TIFF -DEM_JPEG -DEM_HDF5 -DEM_PNG -DEM_BOOST
+INCLUDE_FLAGS = -I. -I/home/pawel/EMAN2/src/eman2 -I/home/pawel/EMAN2/src/eman2/libEM -I/usr/include/gsl   -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DHAVE_FSEEKO -DHAVE_FTELLO -DFFTW3 -DEM_TIFF -DEM_JPEG -DEM_HDF5 -DEM_PNG -DEM_BOOST
 
 #---------------------------------------------------------
 # Default target executed when no arguments are given to make, first make sure cmake.depends exists, cmake.check_depends is up-to-date, check the sources, then build the all target
