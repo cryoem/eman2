@@ -316,11 +316,11 @@ namespace EMAN
 	/** nn4_ctf Back Projection Reconstructor
      * 
      */
-	class nn4_ctf_Reconstructor:public Reconstructor
+	class nn4_ctfReconstructor:public Reconstructor
 	{
 	  public:
-		nn4_ctf_Reconstructor();
-		~nn4_ctf_Reconstructor();
+		nn4_ctfReconstructor();
+		~nn4_ctfReconstructor();
 
 		void setup();
 		int insert_slice(EMData * slice, const Transform3D & euler);
@@ -328,7 +328,7 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "nn4_ctf_projection";
+			return "nn4_ctf";
 		}
 		
 		string get_desc() const
@@ -338,7 +338,7 @@ namespace EMAN
 
 		static Reconstructor *NEW()
 		{
-			return new nn4_ctf_Reconstructor();
+			return new nn4_ctfReconstructor();
 		}
 
 		TypeDict get_param_types() const

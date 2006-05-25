@@ -13,7 +13,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&PawelBackProjectionReconstructor::NEW);
-	force_add(&nn4_ctf_Reconstructor::NEW);
+	force_add(&nn4_ctfReconstructor::NEW);
 }
 
 FourierReconstructor::FourierReconstructor()
@@ -1153,13 +1153,14 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	}
 	return w;
 }
+#undef  tw
 
 //** nn4 ctf reconstructor 
 
-nn4_ctf_Reconstructor::nn4_ctf_Reconstructor() 
+nn4_ctfReconstructor::nn4_ctfReconstructor() 
 	: v(NULL) {}
 
-nn4_ctf_Reconstructor::~nn4_ctf_Reconstructor()
+nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
 	if (v) {
 		delete v;
@@ -1167,7 +1168,7 @@ nn4_ctf_Reconstructor::~nn4_ctf_Reconstructor()
 	}
 }
 
-void nn4_ctf_Reconstructor::setup() {
+void nn4_ctfReconstructor::setup() {
 	int nsize = params["size"];
 	vnx = vny = vnz = nsize;
 	npad = params["npad"];
@@ -1188,7 +1189,7 @@ void nn4_ctf_Reconstructor::setup() {
 }
 
 void
-nn4_ctf_Reconstructor::buildFFTVolume() {
+nn4_ctfReconstructor::buildFFTVolume() {
 	v = new EMData;
 	int offset = 2 - vnxp%2;
 	v->set_size(vnxp+offset,vnyp,vnzp);
@@ -1202,7 +1203,7 @@ nn4_ctf_Reconstructor::buildFFTVolume() {
 }
 
 void
-nn4_ctf_Reconstructor::buildNormVolume() {
+nn4_ctfReconstructor::buildNormVolume() {
 	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
 	nrptr->set_array_offsets(0,1,1);
 	for (int iz = 1; iz <= vnzp; iz++) 
@@ -1211,7 +1212,7 @@ nn4_ctf_Reconstructor::buildNormVolume() {
 				(*nrptr)(ix,iy,iz) = 0;
 }
 
-int nn4_ctf_Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
+int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1248,7 +1249,8 @@ int nn4_ctf_Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	return 0;
 }
 
-EMData* nn4_ctf_Reconstructor::finish() {
+#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
+EMData* nn4_ctfReconstructor::finish() {
 	EMArray<int>& nr = *nrptr;
 	v->symplane0(nr);
 	// normalize
@@ -1284,7 +1286,7 @@ EMData* nn4_ctf_Reconstructor::finish() {
 	}
 	return w;
 }
-
+#undef  tw
 
 
 
