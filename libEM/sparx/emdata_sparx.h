@@ -80,9 +80,7 @@ EMData* rotavg();
 		 * @param tf Transform3D reference
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn(int j, int n, int n2, 
-				              EMArray<int>& nr, EMData* bi, 
-							  const Transform3D& tf);
+		void onelinenn(int j, int n, int n2, EMArray<int>& nr, EMData* bi, const Transform3D& tf);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -99,6 +97,34 @@ EMData* rotavg();
 		 * @param norm Normalization data.
 		 */
 		void symplane0(EMArray<int>& norm);
+
+		/** Helper function for method nn4_ctf.
+		 *
+		 * @param j y fourier index (frequency)
+		 * @param n number of real elements.
+		 * @param n2 Number of complex elements.
+		 * @param w Normalization matrix [0:n2][1:n][1:n]
+		 * @param bi Fourier transform matrix [0:n2][1:n]
+		 * @param tf Transform3D reference
+		 * @return The set of images read from filename.
+		 */
+		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf);
+
+		/** Nearest Neighbor interpolation.
+		 *  Modifies the current object.
+		 *
+		 * @param w Normalization data.
+		 * @param myfft FFT data.
+		 * @param tf Transform3D reference
+		 */
+		void nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf);
+
+		/** Symmetrize plane 0
+		 *  Modifies the current object.
+		 *
+		 * @param w Normalization data.
+		 */
+		void symplane0_ctf(EMArray<float>& w);
 
 				
 		/** Symmetrize volume in real space.
