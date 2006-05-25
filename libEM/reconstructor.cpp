@@ -1053,8 +1053,7 @@ PawelBackProjectionReconstructor::buildNormVolume() {
 				(*nrptr)(ix,iy,iz) = 0;
 }
 
-int PawelBackProjectionReconstructor::insert_slice(EMData* slice, 
-												   const Transform3D& t) {
+int PawelBackProjectionReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1070,24 +1069,23 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice,
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
+	EMData* zeropadded = slice->zeropad_ntimes(npad);
+	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
+	if( zeropadded )
+	{
+		delete zeropadded;
+		zeropadded = 0;
+	}
+	padfftslice->do_fft_inplace();
+	padfftslice->center_origin_fft();
+	// insert slice for all symmetry related positions
 	for (int isym=0; isym < nsym; isym++) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
-		EMData* zeropadded = slice->zeropad_ntimes(npad);
-		EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-		if( zeropadded )
-		{
-			delete zeropadded;
-			zeropadded = 0;
-		}
-		padfftslice->do_fft_inplace();
-		padfftslice->center_origin_fft();
-		// insert slice
 		v->nn(*nrptr, padfftslice, tsym);
-		if( padfftslice )
-		{
-			delete padfftslice;
-			padfftslice = 0;
-		}
+	}
+	if( padfftslice ) {
+		delete padfftslice;
+		padfftslice = 0;
 	}
 	return 0;
 }
@@ -1098,10 +1096,11 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	// normalize
 	for (int iz = 1; iz <= vnzp; iz++) {
 		for (int iy = 1; iy <= vnyp; iy++) {
-			for (int ix = 0; ix <= vnxc; ix++) {
-				if (nr(ix,iy,iz) > 0) {
-					(*v)(ix,iy,iz) *= (-2*((ix+iy+iz)%2)+1)
-										/float(nr(ix,iy,iz));
+			for (int ix = 0; ix <= vnxc; ix++) {//std::cout<<"  "<<iz<<"  "<<iy<<"  "<<ix<<"  "<<nr(ix,iy,iz)<<"  "<<(-2*((ix+iy+iz)%2)+1)<<"  "<<(*v)(ix,iy,iz)<<std::endl;
+				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
+					float  tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+					(*v)(2*ix,iy,iz) *= tmp;
+					(*v)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
 		}
@@ -1109,6 +1108,11 @@ EMData* PawelBackProjectionReconstructor::finish() {
 	// back fft
 	v->do_ift_inplace();
 	EMData* w = v->window_center(vnx);
+	float *tw = w->get_data();
+	//  normalize
+	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
+	int norma = ix*iy*iz;
+	for (int i = 0; i <ix*iy*iz; i++) tw[i] *= norma;
 	// clean up
 	if( v )
 	{

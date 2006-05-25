@@ -837,17 +837,14 @@ EMData* EMData::symvol(string symmetry) {
 }
 
 
-
-
-
-
-
 void EMData::onelinenn(int j, int n, int n2, 
-		          EMArray<int>& nr, EMData* bi, const Transform3D& tf) {
+		          EMArray<int>& nr, EMData* bi, const Transform3D& tf) {//std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
+	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
         if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
+//        if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -878,6 +875,7 @@ void EMData::onelinenn(int j, int n, int n2,
 						iya = n + iyn + 1;
 					}
 					cmplx(ixn,iya,iza) += btq;
+					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
 					nr(ixn,iya,iza)++;
 				} else {
 					int izt, iyt;
@@ -892,6 +890,7 @@ void EMData::onelinenn(int j, int n, int n2,
 						iyt = -iyn + 1;
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq);
+					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 					nr(-ixn,iyt,izt)++;
 				}
 			}
@@ -910,9 +909,7 @@ EMData::nn(EMArray<int>& nr, EMData* myfft, const Transform3D& tf) {
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) {
-		onelinenn(iy, ny, nxc, nr, myfft, tf);
-	}
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn(iy, ny, nxc, nr, myfft, tf);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
