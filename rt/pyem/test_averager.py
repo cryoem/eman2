@@ -78,8 +78,8 @@ class TestConstructor(unittest.TestCase):
         r.insert_slice(e3, Transform3D(EULER_EMAN, 0,0,0))
         result = r.finish()
         
-    def test_PawelBackProjectionReconstructor(self):
-        """test PawelBackProjectionReconstructor ............"""
+    def test_nn4Reconstructor(self):
+        """test nn4Reconstructor ............................"""
         e1 = EMData()
         e1.set_size(32,32,1)
         e1.process_inplace('testimage.noise.uniform.rand')
@@ -91,7 +91,7 @@ class TestConstructor(unittest.TestCase):
         e3.process_inplace('testimage.noise.uniform.rand')
         
         Log.logger().set_level(-1)    #no log message printed out
-        r = Reconstructors.get('pawel_back_projection', {'size':32, 'npad':1, 'symmetry':'CSYM'})
+        r = Reconstructors.get('nn4', {'size':32, 'npad':1, 'symmetry':'CSYM'})
         r.setup()
         r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
         r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))
