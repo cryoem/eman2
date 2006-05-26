@@ -293,12 +293,12 @@ class FakeKaiserBessel : public KaiserBessel {
 
 
 		/** Quadratic interpolation (3D)
-		 *	@param[in] x x-coord value
-		 *	@param[in] y y-coord value
-		 *	@param[in] image Image object (pointer)
-		 *      @param[in]  a 3by3by3 block of data
+		 * @param r
+		 * @param s
+		 * @param t
+		 * @param fdata
 		 *
-		 *	@return Interpolated value
+		 * @return Interpolated value
 		*/
 		static float triquad(float r, float s, float t, float* fdata);
 
