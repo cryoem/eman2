@@ -261,14 +261,14 @@ namespace EMAN
 	};
 
 
-	/** Pawel Back Projection Reconstructor
+	/** Direct Fourier inversion Reconstructor
      * 
      */
-	class PawelBackProjectionReconstructor:public Reconstructor
+	class nn4Reconstructor:public Reconstructor
 	{
 	  public:
-		PawelBackProjectionReconstructor();
-		~PawelBackProjectionReconstructor();
+		nn4Reconstructor();
+		~nn4Reconstructor();
 
 		void setup();
 		int insert_slice(EMData * slice, const Transform3D & euler);
@@ -276,17 +276,17 @@ namespace EMAN
 
 		string get_name() const
 		{
-			return "pawel_back_projection";
+			return "nn4";
 		}
 		
 		string get_desc() const
 		{
-			return "Fourier back-projection reconstruction routine";
+			return "Direct Fourier inversion routine";
 		}
 
 		static Reconstructor *NEW()
 		{
-			return new PawelBackProjectionReconstructor();
+			return new nn4Reconstructor();
 		}
 
 		TypeDict get_param_types() const
@@ -313,7 +313,7 @@ namespace EMAN
 
 
 
-	/** nn4_ctf Back Projection Reconstructor
+	/** nn4_ctf Direct Fourier Inversion Reconstructor
      * 
      */
 	class nn4_ctfReconstructor:public Reconstructor
@@ -333,7 +333,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "Fourier back-projection reconstruction routine";
+			return "Direct Fourier inversion reconstruction routine";
 		}
 
 		static Reconstructor *NEW()

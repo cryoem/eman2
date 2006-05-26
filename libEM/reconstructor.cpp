@@ -12,7 +12,7 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&FourierReconstructor::NEW);
 	force_add(&WienerFourierReconstructor::NEW);
 	force_add(&BackProjectionReconstructor::NEW);
-	force_add(&PawelBackProjectionReconstructor::NEW);
+	force_add(&nn4Reconstructor::NEW);
 	force_add(&nn4_ctfReconstructor::NEW);
 }
 
@@ -999,10 +999,10 @@ EMData *BackProjectionReconstructor::finish()
 	return image;
 }
 
-PawelBackProjectionReconstructor::PawelBackProjectionReconstructor() 
+nn4Reconstructor::nn4Reconstructor() 
 	: v(NULL) {}
 
-PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
+nn4Reconstructor::~nn4Reconstructor()
 {
 	if (v) {
 		delete v;
@@ -1010,7 +1010,7 @@ PawelBackProjectionReconstructor::~PawelBackProjectionReconstructor()
 	}
 }
 
-void PawelBackProjectionReconstructor::setup() {
+void nn4Reconstructor::setup() {
 	int nsize = params["size"];
 	vnx = vny = vnz = nsize;
 	npad = params["npad"];
@@ -1030,7 +1030,7 @@ void PawelBackProjectionReconstructor::setup() {
 	nsym = Transform3D::get_nsym(symmetry);
 }
 
-void PawelBackProjectionReconstructor::buildFFTVolume() {
+void nn4Reconstructor::buildFFTVolume() {
 	v = new EMData;
 	int offset = 2 - vnxp%2;
 	v->set_size(vnxp+offset,vnyp,vnzp);
@@ -1043,7 +1043,7 @@ void PawelBackProjectionReconstructor::buildFFTVolume() {
 	v->set_array_offsets(0,1,1);
 }
 
-void PawelBackProjectionReconstructor::buildNormVolume() {
+void nn4Reconstructor::buildNormVolume() {
 	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
 	nrptr->set_array_offsets(0,1,1);
 	for (int iz = 1; iz <= vnzp; iz++) 
@@ -1052,7 +1052,7 @@ void PawelBackProjectionReconstructor::buildNormVolume() {
 				(*nrptr)(ix,iy,iz) = 0;
 }
 
-int PawelBackProjectionReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
+int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1090,7 +1090,7 @@ int PawelBackProjectionReconstructor::insert_slice(EMData* slice, const Transfor
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* PawelBackProjectionReconstructor::finish() {
+EMData* nn4Reconstructor::finish() {
 	EMArray<int>& nr = *nrptr;
 	v->symplane0(nr);
 	// normalize
