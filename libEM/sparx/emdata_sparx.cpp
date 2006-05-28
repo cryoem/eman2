@@ -836,7 +836,46 @@ EMData* EMData::symvol(string symmetry) {
 	return svol;
 }
 
+#define proj(ix,iy,iz)  proj[ix-1+(iy-1+(iz-1)*ny)*nx]
+#define pnewimg(ix,iy,iz)  pnewimg[ix-1+(iy-1+(iz-1)*ny)*nx]
+EMData* EMData::average_circ_sub() {
+//  this is written as though dimensions could be different, but in fact they should be all equal nx=ny=nz,
+//                                                           no check of this	
+	ENTERFUNC;
+	EMData* image = this;
+	EMData* newimg = copy_head();
+	newimg->set_size(nx,ny,nz);
+	float *proj = image->get_data();
+	float *pnewimg = newimg->get_data();
+	//  Calculate average outside of a circle
+	float r2 = (nx/2)*(nx/2);
+	float qs=0.0f;
+	int m=0;
+	int nc = nx/2 + 1;
+	for (int iz = 1; iz <= nz; iz++) { float yy = (iz-nc)*(iz-nc);
+		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-nc)*(iy-nc);
+			for (int ix = 1; ix <= nx; ix++) {
+				if(xx+float((ix-nc)*(ix-nc)) > r2 ) {
+					qs += proj(ix,iy,iz);
+					m++;
+				}
+			}
+		}
+	}
+	qs /= m;
+	for (int iz = 1; iz <= nz; iz++) 
+		for (int iy = 1; iy <= ny; iy++) 
+			for (int ix = 1; ix <= nx; ix++)
+					pnewimg(ix,iy,iz) = proj(ix,iy,iz) - qs;
+	newimg->done_data();
+	return newimg;
+	EXITFUNC;
+}
+
+
 //  Helper functions for method nn
+
+
 void EMData::onelinenn(int j, int n, int n2, 
 		          EMArray<int>& nr, EMData* bi, const Transform3D& tf) {//std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -899,8 +938,7 @@ void EMData::onelinenn(int j, int n, int n2,
 	}
 }
 
-void
-EMData::nn(EMArray<int>& nr, EMData* myfft, const Transform3D& tf) {
+void EMData::nn(EMArray<int>& nr, EMData* myfft, const Transform3D& tf) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -915,8 +953,7 @@ EMData::nn(EMArray<int>& nr, EMData* myfft, const Transform3D& tf) {
 	EXITFUNC;
 }
 
-void
-EMData::symplane0(EMArray<int>& w) {
+void EMData::symplane0(EMArray<int>& w) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;

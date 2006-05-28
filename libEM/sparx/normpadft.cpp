@@ -58,7 +58,7 @@ void EMData::center_origin_fft()
 // #G2#
 EMData* EMData::zeropad_ntimes(int npad) {
 	ENTERFUNC;
-	if (is_complex()) 
+	if (is_complex())
 		throw ImageFormatException("Zero padding complex images not supported");
 	EMData* newimg = copy_head();
 	int nxpad = npad*nx;

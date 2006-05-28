@@ -68,6 +68,12 @@ EMData* rotavg();
 		 */
 		vector <float> calc_fourier_shell_correlation(EMData * with, float w = 1.0f);
 
+		/** Subtract average outside of a circle
+		 *  
+		 *  
+		 *  @return image with sbtracted average outside of a circle..
+		 */
+		EMData* average_circ_sub();
 
 
 		/** Helper function for method nn.

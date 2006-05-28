@@ -1064,17 +1064,15 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
-	// process 2-d slice -- zero-pad, fft extend, and fft
+	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
+	EMData* temp = slice->average_circ_sub();
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
-	EMData* zeropadded = slice->zeropad_ntimes(npad);
+	EMData* zeropadded = temp->zeropad_ntimes(npad);
+	if( temp ) {delete temp; temp = 0;}
 	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-	if( zeropadded )
-	{
-		delete zeropadded;
-		zeropadded = 0;
-	}
+	if( zeropadded ) { delete zeropadded; zeropadded = 0;}
 	padfftslice->do_fft_inplace();
 	padfftslice->center_origin_fft();
 	// insert slice for all symmetry related positions
@@ -1082,10 +1080,8 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
 		v->nn(*nrptr, padfftslice, tsym);
 	}
-	if( padfftslice ) {
-		delete padfftslice;
-		padfftslice = 0;
-	}
+	if( padfftslice ) { delete padfftslice;
+		padfftslice = 0;}
 	return 0;
 }
 
@@ -1139,16 +1135,8 @@ EMData* nn4Reconstructor::finish() {
 		}
 	}
 	// clean up
-	if( v )
-	{
-		delete v;
-		v = 0;
-	}
-	if( nrptr )
-	{
-		delete nrptr;
-		nrptr = 0;
-	}
+	if( v ) { delete v; v = 0;}
+	if( nrptr ) { delete nrptr; nrptr = 0;}
 	return w;
 }
 #undef  tw
@@ -1160,10 +1148,7 @@ nn4_ctfReconstructor::nn4_ctfReconstructor()
 
 nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
-	if (v) {
-		delete v;
-		v = NULL;
-	}
+	if (v) {delete v;v = NULL;}
 }
 
 void nn4_ctfReconstructor::setup() {
@@ -1220,16 +1205,15 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
-	// process 2-d slice -- zero-pad, fft extend, and fft
+	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
+	EMData* temp = slice->average_circ_sub();
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
-	EMData* zeropadded = slice->zeropad_ntimes(npad);
+	EMData* zeropadded = temp->zeropad_ntimes(npad);
+	if( temp ) {delete temp; temp = 0;}
 	EMData* padfftslice = zeropadded->pad_fft(1); // just fft extension
-	if( zeropadded ) {
-		delete zeropadded;
-		zeropadded = 0;
-	}
+	if( zeropadded ) { delete zeropadded; zeropadded = 0;}
 	padfftslice->do_fft_inplace();
 	padfftslice->center_origin_fft();
 	// insert slice for all symmetry related positions
@@ -1238,10 +1222,7 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
 		v->nn_ctf(*wptr, padfftslice, tsym, defocus);
 	}
-	if( padfftslice ) {
-		delete padfftslice;
-		padfftslice = 0;
-	}
+	if( padfftslice ) { delete padfftslice; padfftslice = 0;}
 	return 0;
 }
 
@@ -1264,10 +1245,7 @@ EMData* nn4_ctfReconstructor::finish() {
 		}
 	}
 	//  do not need weights anymore
-	if( wptr ) {
-		delete wptr;
-		wptr = 0;
-	}
+	if( wptr ) { delete wptr; wptr = 0;}
 	// back fft
 	v->do_ift_inplace();
 	EMData* win = v->window_center(vnx);
@@ -1303,10 +1281,7 @@ EMData* nn4_ctfReconstructor::finish() {
 	}
 	return win;
 	// clean up
-	if( v ) {
-		delete v;
-		v = 0;
-	}
+	if( v ) { delete v; v = 0;}
 }
 #undef  tw
 
