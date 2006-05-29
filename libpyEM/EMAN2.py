@@ -69,12 +69,15 @@ def error_exit(s) :
 	
 def test_image(type=0,size=(128,128)):
 	"""Returns a simple standard test image
-	type=0   'scurve'
+	type=0  scurve
+	type=1	gaussian noise, 0 mean, sigma 1
 	size=(128,128) """
 	ret=EMData()
 	ret.set_size(*size)
-	if (type==0) :
+	if type==0 :
 		ret.process_inplace("testimage.scurve")
+	elif type==1 :
+		ret.process_inplace("testimage.noise.gauss")
 	
 	return ret
 

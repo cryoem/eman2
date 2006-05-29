@@ -948,14 +948,14 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 	
 	//Note : real image only!
 	if(image->is_complex()) {
-		LOGERR("%s Processor only apply to real image", get_name().c_str());
+		LOGERR("%s Processor only operates on real images", get_name().c_str());
 		throw ImageFormatException("apply to real image only");
 	}
 
 	// Note : 2D only!	
 	int nz = image->get_zsize();
 	if (nz > 1) {
-		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
+		LOGERR("%s Processor doesn't support 3D models", get_name().c_str());
 		throw ImageDimensionException("3D model not supported");
 	}
 	
@@ -973,6 +973,7 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 		for (y=0; y<ny; y++) {
 			int y2;
 			if (y<ny/2) y2=y+ny/2;
+			else if (y==ny/2) y2=ny;
 			else y2=y-ny/2;
 			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2));
 		}
