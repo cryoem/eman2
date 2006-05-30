@@ -2112,8 +2112,9 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "This will replace the image with a full-circle 2D fft amplitude rendering.";
+			return "This will replace the image with a full-circle 2D fft amplitude rendering. Note that this renders amplitude, when intensity is more common.";
 		}
+
 	};
 			
 

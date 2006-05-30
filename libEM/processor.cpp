@@ -966,7 +966,8 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 	int ny=image->get_ysize();
 	
 	int x,y;
-	
+	float norm=nx*ny;
+
 	for (y=0; y<ny; y++) image->set_value_at(0,y,0);
 	
 	for (x=1; x<nx/2; x++) {
@@ -975,7 +976,7 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 			if (y<ny/2) y2=y+ny/2;
 			else if (y==ny/2) y2=ny;
 			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2));
+			image->set_value_at(x,y,ff->get_value_at(nx-x*2,ny-y2)/norm);
 		}
 	}
 	
@@ -984,7 +985,7 @@ void RealToFFTProcessor::process_inplace(EMData *image)
 			int y2;
 			if (y<ny/2) y2=y+ny/2;
 			else y2=y-ny/2;
-			image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2));
+			image->set_value_at(x,y,ff->get_value_at(x*2-nx,y2)/norm);
 		}
 	}
 	

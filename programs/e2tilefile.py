@@ -18,7 +18,8 @@ interactive web browsing."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-	parser.add_option("--build", type="string", help="Build a new tile file from this image")
+	parser.add_option("--build", type="string", help="Build a new tile file from the specified image")
+	parser.add_option("--buildpspec",action="store_true",default=False,help="If set, then builds 1D and 2D power spectra for the images when building")
 	parser.add_option("--tilesize", type="int",default=256, help="Build a new tile file from this image")
 	parser.add_option("--dump",action="store_true",default=False,help="Dump the tile dictionary from the file")
 	parser.add_option("--display",type='string',default="",help="Displays a specific tile (level,x,y))")
@@ -32,8 +33,11 @@ interactive web browsing."""
 		# read the target and probe
 		orig=EMData()
 		orig.read_image(options.build)
+		orig.process_inplace("eman1.normalize")
+		opt=[]
+		if options.buildpspec : opt.append("pspec")
 	
-		build_tiles(orig,args[0],256)
+		build_tiles(orig,args[0],256,opt)
 
 	if options.dump:
 		td=tile_list(args[0])
@@ -81,9 +85,10 @@ def get_tile(tilefile,level,x,y):
 	return ret
 	
 
-def build_tiles(img,tilefile,tilesize):
+def build_tiles(img,tilefile,tilesize,options=[]):
 	"""build_tiles(img,tilefile,tilesize)
-	This will construct a new tile file from a source image."""
+	This will construct a new tile file from a source image.
+	options may include : pspec """
 	levels=ceil(log(max(img.get_xsize(),img.get_ysize())/tilesize)/log(2.0))
 	
 	tf=file(tilefile,"w")
@@ -100,13 +105,32 @@ def build_tiles(img,tilefile,tilesize):
 				i=img2.get_clip(Region(x,y,tilesize,tilesize))
 				i.set_attr("render_min",rmin)
 				i.set_attr("render_max",rmax)
-				i.set_attr("jpeg_quality",60)
+				i.set_attr("jpeg_quality",70)
 				fsp="tmpimg.%d.%03d.%03d.jpg"%(l,x/tilesize,y/tilesize)
 				i.write_image(fsp)
 				sz=os.stat(fsp).st_size
 				tile_dict[(l,x/tilesize,y/tilesize)]=(pos,sz)
 				pos+=sz
 		img2.mean_shrink(2)
+	
+	if "pspec" in options :
+		nx,ny=img.get_xsize()/512,img.get_ysize()/512
+		a=EMData()
+		a.set_size(512,512)
+		for y in range(1,ny-1):
+			for x in range(1,nx-1):
+				c=img.get_clip(Region(x*512,y*512,512,512))
+				c.process_inplace("eman1.normalize")
+				c.process_inplace("eman1.math.realtofft")
+				c.process_inplace("eman1.math.squared")
+				a+=c
+		a-=a.get_attr("minimum")-a.get_attr("sigma")*.01
+		a.process_inplace("eman1.math.log")
+		a.set_attr("render_min",0.0)
+		a.set_attr("render_max",a.get_attr("sigma")*3.0)
+		a.set_attr("jepg_quality",80)
+		a.write_image("/tmp/tmpimg.mrc")
+		a.write_image("/tmp/tmpimg.jpg")
 	
 	pickle.dump(tile_dict,tf)
 	
