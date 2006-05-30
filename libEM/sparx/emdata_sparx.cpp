@@ -1306,7 +1306,7 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 			xArr[iL]  =  (int) (fmod(iL,3.0f) - 1);
 			yArr[iL]  =  (int)( fmod( ((int) (iL/3) ),3.0f)- 1);
 			zArr[iL]  = ((int) (iL/9)  ) -1;
-//			printf(" xArr=%d, \t yArr=%d, \t zArr=%d \n", xArr[iL],yArr[iL],zArr[iL]);
+//			printf("iL=%d, \t xArr=%d, \t yArr=%d, \t zArr=%d \n",iL, xArr[iL],yArr[iL],zArr[iL]);
 		}
 					
 		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
@@ -1348,29 +1348,45 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 					float xold = xoldzy + x*RAinv[0][0] ;
 					float yold = yoldzy + x*RAinv[1][0] ;
 					float zold = zoldzy + x*RAinv[2][0] ;
-					
-					float dx = remainder(xold,1);  //  now |dx| <= .5 
-					float dy = remainder(yold,1);
-					float dz = remainder(zold,1);
-					
-					int IOX = (int) (xold -dx+.00001); // This is the center of the array
-					int IOY = (int) (yold -dy+.00001); // In the next loop we interpolate
-					int IOZ = (int) (zold -dz+.00001); // 
+
+//         This is currently coded the way  SPIDER coded it,
+//            changing floor to round  in the next 3 lines below may be better
+					int IOX = (int) floor(xold); // This is the center of the array
+					int IOY = (int) floor(yold ); // In the next loop we interpolate
+					int IOZ = (int) floor(zold ); //  If floor is used dx is positive
+
+					float dx = xold-IOX; //remainder(xold,1);  //  now |dx| <= .5 
+					float dy = yold-IOY; //remainder(yold,1);
+					float dz = zold-IOZ; //remainder(zold,1);
 					
 //					printf(" IOX=%d \t IOY=%d \t IOZ=%d \n", IOX, IOY, IOZ);
 //					if (IOX>=0 && IOX<nx  && IOY>=0 && IOY < ny && IOZ >= 0 && IOZ < nz ) {
 //                                      	ROTATED POSITION IS INSIDE OF VOLUME
-//						FIND INTENSITIES ON 3x3x3 COORDINATE GRID
+//						FIND INTENSITIES ON 3x3x3 COORDINATE GRID;
+//                                     Solution is wrapped
 						for  (int iL=0; iL<27 ; iL++){
 							int xCoor = (int) fmod(IOX+xArr[iL] + nx + .0001f, (float) nx);
 							int yCoor = (int) fmod(IOY+yArr[iL] + ny + .0001f, (float) ny);
 							int zCoor = (int) fmod(IOZ+zArr[iL] + nz + .0001f, (float) nz);
 							fdata[iL] = (*this)( xCoor, yCoor ,zCoor );
-							if (iy==iz && iz==0){printf(" fdata=%f \n", fdata[iL]);}
+//							if (iy==iz && iz==0){printf(" fdata=%f \n", fdata[iL]);}
 //						}
 					}
 
 					(*ret)(ix,iy,iz) = Util::triquad(dx, dy, dz, fdata);
+//					(*ret)(ix,iy,iz) = Util:: trilinear_interpolate(fdata[13],fdata[14],fdata[16],
+//											fdata[17],fdata[22],fdata[23],
+//											fdata[25],fdata[26],dx, dy, dz);
+//	p1 iL=13,   xArr= 0,         yArr= 0,         zArr= 0
+//	p2 iL=14,   xArr= 1,         yArr= 0,         zArr= 0
+//	p3 iL=16,   xArr= 0,         yArr= 1,         zArr= 0
+//	p4 iL=17,   xArr= 1,         yArr= 1,         zArr= 0
+//	p5 iL=22,   xArr= 0,         yArr= 0,         zArr= 1
+//	p6 iL=23,   xArr= 1,         yArr= 0,         zArr= 1
+//	p7 iL=25,   xArr= 0,         yArr= 1,         zArr= 1
+//	p8 iL=26,   xArr= 1,         yArr= 1,         zArr= 1
+
+
 
 				} //ends x loop
 			} // ends y loop

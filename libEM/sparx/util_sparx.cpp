@@ -470,7 +470,13 @@ Util::voea(float delta, float t1, float t2, float p1, float p2)
 	return angles;
 }
 
-
+/*	static float Util::trilinear_interpolate(float t, float u, float v, float f[]){
+	 return Util:trilinear_interpolate(f[0],f[1], f[2],
+				  f[3], f[4], float p6, 
+							 float p7, float p8, float t,
+								  float u, float v)
+	}
+*/
 float Util::triquad(double r, double s, double t, float f[]) {
 	const float c2 = 1.0f / 2.0f;
 	const float c4 = 1.0f / 4.0f;

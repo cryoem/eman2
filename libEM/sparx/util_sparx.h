@@ -235,6 +235,8 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *
 		 *	@return Interpolated value
 		 */
+/*		static float trilinear_interpolate(float t, float u, float v, float *fdata); */
+		
 		static float triquad(double r, double s, double t, float f[]);
 
 		/** Quadratic interpolation (2D).
@@ -386,5 +388,6 @@ class FakeKaiserBessel : public KaiserBessel {
         static float tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
+
 	
 #endif	//util__sparx_h__
