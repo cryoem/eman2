@@ -1088,7 +1088,7 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4Reconstructor::finish() {
 	EMArray<int>& nr = *nrptr;
-	v->symplane0(nr);
+	//v->symplane0(nr);
 	// normalize
 	for (int iz = 1; iz <= vnzp; iz++) {
 		for (int iy = 1; iy <= vnyp; iy++) {
@@ -1104,7 +1104,7 @@ EMData* nn4Reconstructor::finish() {
 	// back fft
 	v->do_ift_inplace();
 	EMData* w = v->window_center(vnx);
-	float *tw = w->get_data();
+	/*float *tw = w->get_data();
 	//  mask and subtract circumference average
 	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
 	int L2 = (ix/2)*(ix/2);
@@ -1133,7 +1133,7 @@ EMData* nn4Reconstructor::finish() {
 				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
 			}
 		}
-	}
+	}*/
 	// clean up
 	if( v ) { delete v; v = 0;}
 	if( nrptr ) { delete nrptr; nrptr = 0;}
@@ -1217,7 +1217,7 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	padfftslice->do_fft_inplace();
 	padfftslice->center_origin_fft();
 	// insert slice for all symmetry related positions
-	float defocus = params["defocus"];
+	float defocus = slice->get_attr("defocus");
 	for (int isym=0; isym < nsym; isym++) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
 		v->nn_ctf(*wptr, padfftslice, tsym, defocus);
