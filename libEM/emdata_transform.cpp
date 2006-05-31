@@ -34,7 +34,6 @@ EMData *EMData::do_fft()
 	}
 	dat->set_ri(true);
 
-
 	done_data();
 
 	EXITFUNC;
@@ -124,8 +123,9 @@ EMData *EMData::do_ift()
 	if (ndim == 1) {
 		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 	}
-
-	if (ndim >= 2) {
+	/* Do inplace IFT on a image copy, because the complex to real transform of 
+	 * nd will destroy its input array even for out-of-place transforms.*/
+	else {
 		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
 		size_t row_size = (nx - offset) * sizeof(float);
@@ -138,12 +138,10 @@ EMData *EMData::do_ift()
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
-#endif	//NATIVE_FFT || ACML
+#endif	//FFTW2 || FFTW3
 
 	dat->done_data();
-#if 1
-	dat->set_size(nx - offset, ny, nz);
-#endif
+	dat->set_size(nx - offset, ny, nz);	//remove the padding
 	dat->update();
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
@@ -171,15 +169,25 @@ EMData *EMData::do_ift_inplace()
 	if (!is_ri()) {
 		LOGWARN("run IFT on AP data, only RI should be used. ");
 	}
-
 	ap2ri();
 
 	int offset = is_fftodd() ? 1 : 2;
 	EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
 
+	if(get_ndim() >= 2) {
+		size_t row_size = (nx - offset) * sizeof(float);
+		for (int i = 1; i < ny * nz; i++) {
+			memmove((char *) &rdata[i * (nx - offset)], (char *) &rdata[i * nx], row_size);
+		}
+	}
+
+#if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	mult(scale);
+#endif //FFTW2 || FFTW3
+
+	this->set_size(nx - offset, ny, nz);	//remove the padding
 	done_data();
 	update();
 	set_complex(false);
@@ -187,7 +195,6 @@ EMData *EMData::do_ift_inplace()
 		set_complex_x(false);
 	}
 	set_ri(false);
-
 
 	done_data();
 
