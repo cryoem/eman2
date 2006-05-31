@@ -364,6 +364,7 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 					real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
 			fftwf_execute(plan);
 			fftwf_destroy_plan(plan);
+			break;
 		
 		default:
 			LOGERR("Should NEVER be here!!!");
