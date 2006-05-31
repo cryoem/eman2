@@ -2714,6 +2714,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 
 
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
+//This function does not work, it fails with simple function call in unit test. --Grant Tang
 EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 {
 	ENTERFUNC;
