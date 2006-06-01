@@ -483,11 +483,6 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 	      		LOGWARN("real_to_complex_nd(2df): status = %d\n", status);
 	   		}
 	   		
-	   		//the complex part need negate to be consistent with fftw result
-			for(int i=1; i<complex_nx*ny*nz; i+=2) {
-				complex_data[i] *= -1;
-			}
-	   		
 	   		free(work);
 	   		return 0;
 		}
@@ -513,11 +508,6 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 	      		LOGWARN("real_to_complex_nd(3df): status = %d\n", status);
 	   		}
 	   		
-	   		//the complex part need negate to be consistent with fftw result
-			for(int i=1; i<complex_nx*ny*nz; i+=2) {
-				complex_data[i] *= -1;
-			}
-	   		
 	   		free(work);
 	   		return 0;
 	   	}
@@ -537,12 +527,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 			complex_to_real_1d(complex_data, real_data, nx);
 			return 0;
 		case 2:		//for 2D ift
-		{
-			//the complex part need negate to be consistent with fftw result
-			for(int i=1; i<complex_nx*ny*nz; i+=2) {
-				complex_data[i] *= -1;
-			}
-			
+		{	
 			if(real_data != complex_data) {
 				memcpy(real_data, complex_data, complex_nx*ny*sizeof(float));
 			}
@@ -564,12 +549,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 			return 0;
 		}
 		case 3:		//for 3D ift
-		{
-			//the complex part need negate to be consistent with fftw result
-			for(int i=1; i<complex_nx*ny*nz; i+=2) {
-				complex_data[i] *= -1;
-			}
-			
+		{	
 			if(real_data != complex_data) {
 				memcpy(real_data, complex_data, complex_nx*ny*nz*sizeof(float));
 			}
