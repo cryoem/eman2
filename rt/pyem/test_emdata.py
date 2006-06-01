@@ -385,6 +385,7 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
+    #for native FFT, this test will fail because the sign of the imaginary part
     def test_do_fft_complex_value(self):
         """test the complex image values after FFT .........."""
         #test 1D image(5)
@@ -508,6 +509,7 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(f6.get_value_at(2,1,1), 0, 2)
         self.assertAlmostEqual(f6.get_value_at(3,1,1), 0, 2)
     
+     #for native FFT, this test will fail because the sign of the imaginary part
     def test_do_fft_inplace_value(self):
         """test inplace fft/ift numerical correctness ......."""
         #test 1D image
