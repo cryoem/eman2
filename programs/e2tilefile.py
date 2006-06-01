@@ -113,24 +113,36 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 				pos+=sz
 		img2.mean_shrink(2)
 	
+	# This will produce 2 power spectrum images in the tile file
+	# with scale factors -1 and -2
 	if "pspec" in options :
 		nx,ny=img.get_xsize()/512,img.get_ysize()/512
 		a=EMData()
 		a.set_size(512,512)
-		for y in range(1,ny-1):
-			for x in range(1,nx-1):
-				c=img.get_clip(Region(x*512,y*512,512,512))
-				c.process_inplace("eman1.normalize")
-				c.process_inplace("eman1.math.realtofft")
-				c.process_inplace("eman1.math.squared")
-				a+=c
-		a-=a.get_attr("minimum")-a.get_attr("sigma")*.01
-		a.process_inplace("eman1.math.log")
-		a.set_attr("render_min",0.0)
-		a.set_attr("render_max",a.get_attr("sigma")*3.0)
-		a.set_attr("jepg_quality",80)
-		a.write_image("/tmp/tmpimg.mrc")
-		a.write_image("/tmp/tmpimg.jpg")
+		if (ny>2 and nx>2) :
+			for y in range(1,ny-1):
+				for x in range(1,nx-1):
+					c=img.get_clip(Region(x*512,y*512,512,512))
+					c.process_inplace("eman1.normalize")
+					c.process_inplace("eman1.math.realtofft")
+					c.process_inplace("eman1.math.squared")
+					a+=c
+			a-=a.get_attr("minimum")-a.get_attr("sigma")*.01
+			a.process_inplace("eman1.math.log")
+			a.set_attr("render_min",a.get_attr("minimum")-a.get_attr("sigma")*.1)
+			a.set_attr("render_max",a.get_attr("mean")+a.get_attr("sigma")*4.0)
+			a.set_attr("jepg_quality",80)
+			a.write_image("/tmp/tmpimg.mrc")
+			a.write_image("/tmp/tmpimg.jpg")
+			fsp="tmpimg.%d.%03d.%03d.jpg"%(l,x/tilesize,y/tilesize)
+			a.write_image(fsp)
+			sz=os.stat(fsp).st_size
+			tile_dict[(-1,0,0)]=(pos,sz)
+			pos+=sz
+	
+		try: import pylab
+		except:
+			
 	
 	pickle.dump(tile_dict,tf)
 	
