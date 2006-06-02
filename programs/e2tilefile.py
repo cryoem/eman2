@@ -146,13 +146,13 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 			matplotlib.use('Agg')
 			import pylab
 			manager = pylab.get_current_fig_manager()
-			x=pylab.arange(0,253,1.0)
-			y=a.calc_radial_dist(253,0,1)	# radial power spectrum (log)
+			x=pylab.arange(0,255,1.0)
+			y=a.calc_radial_dist(255,1,1,0)	# radial power spectrum (log)
 			pylab.plot(x,y)
-			print y
+#			print y
 			
 			fsp="tmpimg2.png"
-			pylab.savefig("tmpimg2.png")
+			pylab.savefig(fsp)
 			sz=os.stat(fsp).st_size
 			tile_dict[(-2,0,0)]=(pos,sz)
 			pos+=sz

@@ -2096,8 +2096,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 			for (x=0; x<nx; x+=step,i+=step) {
 				float r,v;
 				if (is_complex()) {
-					r=hypot(x/2.0,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
-					if (inten) {
+					r=hypot(x/2.0f,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
+					if (!inten) {
 						if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
 						else v=rdata[i];							// amp/phase, just get amp
 					} else {
@@ -2131,7 +2131,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					float r,v;
 					if (is_complex()) {
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
-						if (inten) {
+						if (!inten) {
 							if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
 							else v=rdata[i];							// amp/phase, just get amp
 						} else {
@@ -2161,6 +2161,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 	}
 
 	for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0;	// Normalize
+
 	EXITFUNC;
 
 	return ret;
@@ -2191,7 +2192,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, 
 			if (is_complex()) {
 				r=hypot(x/2.0,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
 				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
-				if (inten) {
+				if (!inten) {
 					if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
 					else v=rdata[i];							// amp/phase, just get amp
 				} else {
