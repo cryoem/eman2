@@ -2096,6 +2096,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 			for (x=0; x<nx; x+=step,i+=step) {
 				float r,v;
 				if (is_complex()) {
+					if (x==0 && y>ny/2) continue;
 					r=hypot(x/2.0f,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
 						if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
@@ -2130,6 +2131,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 				for (x=0; x<nx; x+=step,i+=step) {
 					float r,v;
 					if (is_complex()) {
+						if (x==0 && y>ny/2) continue;
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 						if (!inten) {
 							if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
