@@ -260,8 +260,8 @@ float OptVarianceCmp::cmp(EMData * image, EMData *with) const
 		EMData *a = image->do_fft();
 		EMData *b = with->do_fft();
 		
-		vector <float> rfa=a->calc_radial_dist(a->get_ysize()/2,0.0f,1.0f);
-		vector <float> rfb=b->calc_radial_dist(b->get_ysize()/2,0.0f,1.0f);
+		vector <float> rfa=a->calc_radial_dist(a->get_ysize()/2,0.0f,1.0f,1);
+		vector <float> rfb=b->calc_radial_dist(b->get_ysize()/2,0.0f,1.0f,1);
 		
 		for (size_t i=0; i<a->get_ysize()/2.0f; i++) rfa[i]/=(rfb[i]==0?1.0f:rfb[i]);
 		

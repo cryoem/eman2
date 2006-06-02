@@ -2052,7 +2052,7 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
-	vector < float >dist = image->calc_radial_dist(nx / 2, 0, 1);
+	vector < float >dist = image->calc_radial_dist(nx / 2, 0, 1,0);
 
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
@@ -2090,7 +2090,7 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
-	vector < float >dist = image->calc_radial_dist(nx / 2, 0, 1);
+	vector < float >dist = image->calc_radial_dist(nx / 2, 0, 1,0);
 
 	int c = 0;
 	for (int y = 0; y < ny; y++) {
@@ -3437,7 +3437,7 @@ void SetSFProcessor::process_inplace(EMData * image)
 
 	EMData *dataf = image->do_fft();
 
-	vector < float >curve = dataf->calc_radial_dist(nx, 0, 0.5f);
+	vector < float >curve = dataf->calc_radial_dist(nx, 0, 0.5f,1);
 	float step = 1.0f / (apix * 2.0f * nx);
 	Util::save_data(0, step, curve, "proc3d.raddist");
 

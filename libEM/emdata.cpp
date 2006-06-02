@@ -2078,108 +2078,95 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	EXITFUNC;
 }
 
-
-vector < float >EMData::calc_radial_dist(int n, float x0, float dx)
+vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 {
 	ENTERFUNC;
 
-	float *yc = new float[n];
-	float *d = new float[n];
-	for (int i = 0; i < n; i++) {
-		yc[i] = 0;
-		d[i] = 0;
-	}
+	vector<float>ret(n);
+	vector<float>norm(n);
 
-	int c = 0;
-	float half_nz = 0;
-	if (nz > 1) {
-		half_nz = nz / 2.0f;
-	}
+	int x,y,z,i;
+	int step=is_complex()?2:1;
 
-	int step = 1;
-	if (is_complex()) {
-		step = 2;
-	}
+	for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
 
-	for (int z = 0; z < nz; z++) {
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx; x += step, c += step) {
-				float r = 0;
+	// We do 2D separately to avoid the hypot3 call
+	if (nz==1) {
+		for (y=i=0; y<ny; y++) {
+			for (x=0; x<nx; x+=step,i+=step) {
+				float r,v;
 				if (is_complex()) {
-					r = (Util::hypot3(x / 2.0f, (float)(y<ny/2?y:ny-y), (float)(z<half_nz?z:nz-z)) - x0) / dx;
+					r=hypot(x/2.0,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
+					if (inten) {
+						if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
+						else v=rdata[i];							// amp/phase, just get amp
+					} else {
+						if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
+						else v=rdata[i]*rdata[i];
+					}
 				}
 				else {
-					r = (Util::hypot3(x - nx / 2.0f, y - ny / 2.0f, z - half_nz) - x0) / dx;
+					r=hypot(float(x-nx/2),float(y-ny/2));
+					if (inten) v=rdata[i]*rdata[i];
+					else v=rdata[i];
 				}
-
-				int i = (int) floor(r);
-				r -= i;
-				if (i == 0) {
-					d[0] += Util::square(rdata[c]) * (1 - r);
-					yc[0] += (1 - r);
+				r=(r-x0)/dx;
+				int f=int(r);	// safe truncation, so floor isn't needed
+				r-=float(f);	// r is now the fractional spacing between bins
+				if (f>=0 && f<n) {
+					ret[f]+=v*(1.0-r);
+					norm[f]+=(1.0-r);
+					if (f<n-1) {
+						ret[f+1]+=v*r;
+						norm[f+1]+=r;
+					}
 				}
-				else if (i == n - 1) {
-					d[n - 1] += Util::square(rdata[c]) * r;
-					yc[n - 1] += r;
-				}
-				else if (i > 0 && i < n - 1) {
-					float h = 0;
+			}
+		}
+	}
+	else {
+		for (z=i=0; z<nz; z++) {
+			for (y=0; y<ny; y++) {
+				for (x=0; x<nx; x+=step,i+=step) {
+					float r,v;
 					if (is_complex()) {
-						if (is_ri()) {
-							h = Util::square(rdata[c]) + Util::square(rdata[c + 1]);
-						}
-						else {
-							h = rdata[c] * rdata[c];
+						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+						if (inten) {
+							if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
+							else v=rdata[i];							// amp/phase, just get amp
+						} else {
+							if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
+							else v=rdata[i]*rdata[i];
 						}
 					}
 					else {
-						h = rdata[c];
+						r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
+						if (inten) v=rdata[i]*rdata[i];
+						else v=rdata[i];
 					}
-
-					d[i] += h * (1 - r);
-					yc[i] += (1 - r);
-					d[i + 1] += h * r;
-					yc[i + 1] += r;
+					r=(r-x0)/dx;
+					int f=int(r);	// safe truncation, so floor isn't needed
+					r-=float(f);	// r is now the fractional spacing between bins
+					if (f>=0 && f<n) {
+						ret[f]+=v*(1.0-r);
+						norm[f]+=(1.0-r);
+						if (f<n-1) {
+							ret[f+1]+=v*r;
+							norm[f+1]+=r;
+						}
+					}
 				}
 			}
 		}
 	}
 
-	for (int i = 0; i < n; i++) {
-		if (yc[i] != 0) {
-			d[i] /= yc[i];
-		}
-	}
-
-	for (int i = 1; i < n - 1; i++) {
-		if (yc[i] < 0.1) {
-			d[i] = (d[i - 1] + d[i + 1]) / 2.0f;
-		}
-	}
-
-	if( yc )
-	{
-		delete[]yc;
-		yc = 0;
-	}
-
-	vector < float >dv(n);
-	for (int i = 0; i < n; i++) {
-		dv[i] = d[i];
-	}
-
-	if( d )
-	{
-		delete[]d;
-		d = 0;
-	}
-
+	for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0;	// Normalize
 	EXITFUNC;
-	return dv;
+
+	return ret;
 }
-
-
-vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, float awid)
+	
+vector < float >EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, bool inten)
 {
 	ENTERFUNC;
 
@@ -2188,147 +2175,56 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, float acen, 
 		throw ImageDimensionException("2D images only");
 	}
 
-	float *yc = new float[n];
-	float *yc2 = new float[n];
-	float *d = new float[n];
-	float *d2 = new float[n];
+	vector<float>ret(n*nwedge);
+	vector<float>norm(n*nwedge);
 
-	for (int i = 0; i < n; i++) {
-		yc[i] = 0;
-		yc2[i] = 0;
-		d[i] = 0;
-		d2[i] = 0;
-	}
+	int x,y,i;
+	int step=is_complex()?2:1;
+	float astep=M_PI*2.0/float(nwedge);
 
-	int step = 1;
-	if (is_complex()) {
-		step = 2;
-	}
+	for (i=0; i<n*nwedge; i++) ret[i]=norm[i]=0.0;
 
-	int c = 0;
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx; x += step, c += step) {
-			float a = 0;
-			if (y != ny / 2.0f || x != 0) {
-				if (is_complex()) {
-					a = atan2(y<ny/2.0f?y:ny-y, x / 2.0f);
-				}
-				else {
-					a = atan2(y - ny / 2.0f, x - nx / 2.0f);
+	// We do 2D separately to avoid the hypot3 call
+	for (y=i=0; y<ny; y++) {
+		for (x=0; x<nx; x+=step,i+=step) {
+			float r,v,a;
+			if (is_complex()) {
+				r=hypot(x/2.0,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
+				a=atan2(float(y<ny/2?y:ny-y),x/2.0f);
+				if (inten) {
+					if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
+					else v=rdata[i];							// amp/phase, just get amp
+				} else {
+					if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
+					else v=rdata[i]*rdata[i];
 				}
 			}
-
-			if (fabs(Util::angle_sub_pi(a, acen)) <= awid) {
-				float r = 0;
-				if (is_complex()) {
-					r = ((float)hypot(x / 2.0f, y - ny / 2.0f) - x0) / dx;
-				}
-				else {
-					r = ((float)hypot(x - (nx - 1) / 2.0f, y - (ny - 1) / 2.0f) - x0) / dx;
-				}
-
-				int i = (int) floor(r);
-				r -= i;
-
-				if (i == 0) {
-					d[i] += Util::square(rdata[c]) * (1 - r);
-					yc[i] += 1 - r;
-				}
-				else if (i == n - 1) {
-					d[i] += Util::square(rdata[c]) * r;
-					yc[i] += r;
-				}
-				else if (i > 0 && i < n - 1) {
-					float h = 0;
-					if (is_complex()) {
-						if (is_ri()) {
-							h = Util::square(rdata[c]) + Util::square(rdata[c + 1]);
-						}
-						else {
-							h = rdata[c] * rdata[c];
-						}
-					}
-					else {
-						h = rdata[c];
-					}
-
-					d[i] += h * (1 - r);
-					yc[i] += 1 - r;
-					d[i + 1] += h * r;
-					yc[i + 1] += r;
+			else {
+				r=hypot(float(x-nx/2),float(y-ny/2));
+				a=atan2(float(y-ny/2),float(x-nx/2));
+				if (inten) v=rdata[i]*rdata[i];
+				else v=rdata[i];
+			}
+			int bin=n*int((a+M_PI)/astep);
+			if (bin>=nwedge) bin=nwedge-1;
+			r=(r-x0)/dx;
+			int f=int(r);	// safe truncation, so floor isn't needed
+			r-=float(f);	// r is now the fractional spacing between bins
+			if (f>=0 && f<n) {
+				ret[f+bin]+=v*(1.0-r);
+				norm[f+bin]+=(1.0-r);
+				if (f<n-1) {
+					ret[f+1+bin]+=v*r;
+					norm[f+1+bin]+=r;
 				}
 			}
 		}
 	}
 
-	const float scale1 = 0.57f;
-	const float scale2 = 0.105f;
-
-	for (int i = 0; i < n; i++) {
-		d2[i] = d[i];
-		yc2[i] = yc[i];
-	}
-
-	for (int i = 1; i < n; i++) {
-		d2[i - 1] += d[i] * scale1;
-		yc2[i - 1] += yc[i] * scale1;
-	}
-
-	for (int i = 2; i < n; i++) {
-		d2[i - 2] += d[i] * scale2;
-		yc2[i - 2] += yc[i] * scale2;
-	}
-
-	for (int i = 0; i < n - 1; i++) {
-		d2[i + 1] += d[i] * scale1;
-		yc2[i + 1] += yc[i] * scale1;
-	}
-
-	for (int i = 0; i < n - 2; i++) {
-		d2[i + 2] += d[i] * scale2;
-		yc2[i + 2] += yc[i] * scale2;
-	}
-
-	for (int i = 0; i < n; i++) {
-		if (yc2[i] != 0) {
-			d[i] = d2[i] / yc2[i];
-		}
-		else {
-			d[i] = 0;
-		}
-	}
-
-	vector < float >dv(n);
-	for (int i = 0; i < n; i++) {
-		dv[i] = d[i];
-	}
-
-	if( yc )
-	{
-		delete[]yc;
-		yc = 0;
-	}
-
-	if( yc2 )
-	{
-		delete[]yc2;
-		yc2 = 0;
-	}
-
-	if( d2 )
-	{
-		delete[]d2;
-		d2 = 0;
-	}
-
-	if( d )
-	{
-		delete[]d;
-		d = 0;
-	}
-
+	for (i=0; i<n*nwedge; i++) ret[i]/=norm[i]?norm[i]:1.0;	// Normalize
 	EXITFUNC;
-	return dv;
+
+	return ret;
 }
 
 void EMData::cconj() {

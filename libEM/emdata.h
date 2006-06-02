@@ -436,26 +436,32 @@ namespace EMAN
 		void apply_radial_func(float x0, float dx, vector < float >array, bool interp = true);
 		
 		
-		/** calculates radial distribution. works for real and imaginary images. 
+		/** calculates radial distribution. works for real and imaginary images.
+		 * Returns mean radial amplitude, or intensity if inten is set. Note that the complex
+		 * origin is at (0,0), with periodic boundaries. Note that the inten option is NOT
+		 * equivalent to returning amplitude and squaring the result.
 		 * 
 		 * @param n number of points.
 		 * @param x0 starting point x coordinate.
 		 * @param dx step of x.
+		 * @param inten returns intensity (amp^2) rather than amplitude if set
 		 * @return The radial distribution in an array.
 		 */					
-		vector < float >calc_radial_dist(int n, float x0, float dx);
+		vector < float >calc_radial_dist(int n, float x0, float dx,bool inten);
 		
 		
-		/** calculates radial distribution. works for real and imaginary images. 
+		/** calculates radial distribution subdivided by angle. works for real and imaginary images.
+		 * 2-D only. The first returns a single vector of n*nwedge points, with radius varying first.
+		 * That is, the first n points represent the radial profile in the first wedge.
 		 * @param n number of points.
 		 * @param x0 starting x coordinate.
 		 * @param dx step of x.
-		 * @param acen The direction.
-		 * @param arange The angular range around the direction in radians.
+		 * @param nwedge int number of wedges to divide the circle into
+		 * @param inten returns intensity (amp^2) rather than amplitude if set
 		 * @exception ImageDimensionException If 'this' image is not 2D.
-		 * @return The radial distribution in an array.
+		 * @return nwedge radial distributions packed into a single vector<float>
 		 */
-		vector < float >calc_radial_dist(int n, float x0, float dx, float acen, float arange);
+		vector < float >calc_radial_dist(int n, float x0, float dx, int nwedge,bool inten);
 		
 
 		/** Replace the image its complex conjugate.
