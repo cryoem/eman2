@@ -7,6 +7,7 @@ import os
 import pickle
 import sys
 
+
 def main():
 	global tdim,pdim
 	global cmp_probe,cmp_target
@@ -127,21 +128,37 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 					c.process_inplace("eman1.math.realtofft")
 					c.process_inplace("eman1.math.squared")
 					a+=c
+			a.set_value_at(256,256,0,.01)
 			a-=a.get_attr("minimum")-a.get_attr("sigma")*.01
 			a.process_inplace("eman1.math.log")
 			a.set_attr("render_min",a.get_attr("minimum")-a.get_attr("sigma")*.1)
 			a.set_attr("render_max",a.get_attr("mean")+a.get_attr("sigma")*4.0)
 			a.set_attr("jepg_quality",80)
 			a.write_image("/tmp/tmpimg.mrc")
-			a.write_image("/tmp/tmpimg.jpg")
-			fsp="tmpimg.%d.%03d.%03d.jpg"%(l,x/tilesize,y/tilesize)
+			fsp="tmpimg.jpg"
 			a.write_image(fsp)
 			sz=os.stat(fsp).st_size
 			tile_dict[(-1,0,0)]=(pos,sz)
 			pos+=sz
 	
-		try: import pylab
-		except:
+#		try:
+			import matplotlib
+			matplotlib.use('Agg')
+			import pylab
+			manager = pylab.get_current_fig_manager()
+			x=pylab.arange(0,253,1.0)
+			y=a.calc_radial_dist(253,0,1)	# radial power spectrum (log)
+			pylab.plot(x,y)
+			print y
+			
+			fsp="tmpimg2.png"
+			pylab.savefig("tmpimg2.png")
+			sz=os.stat(fsp).st_size
+			tile_dict[(-2,0,0)]=(pos,sz)
+			pos+=sz
+
+#		except:
+#			print "Unable to generate plot (need matplotlib)"
 			
 	
 	pickle.dump(tile_dict,tf)
@@ -157,6 +174,14 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 				os.remove(fsp)
 		xs/=2
 		ys/=2
+	
+	if "pspec" in options :
+		for fsp in ["tmpimg.jpg","tmpimg2.png"] :
+			a=file(fsp,"r")
+			b=a.read()
+			a.close()
+			tf.write(b)
+#			os.remove(fsp)
 	
 	tf.close()
 
