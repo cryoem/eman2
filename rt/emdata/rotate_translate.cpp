@@ -545,7 +545,7 @@ void debug_do_fft_inplace()
 	}
 	
 }
-
+/*
 void debug_calc_radial_dist()
 {
 	cout << "Starting debug_calc_radial_dist() ... " << endl;
@@ -566,7 +566,7 @@ void debug_calc_radial_dist()
 	
 	cout << "Finish debug_calc_radial_dist() ... " << endl;
 }
-
+*/
 void debug_calc_hist()
 {
 	cout << "Starting debug_calc_hist() ... " << endl;
