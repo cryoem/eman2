@@ -360,10 +360,12 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 		
 		case 2:
 		case 3:
+		{
 			fftwf_plan plan = fftwf_plan_dft_r2c(rank, dims + (3 - rank), 
 					real_data, (fftwf_complex *) complex_data, FFTW_ESTIMATE);
 			fftwf_execute(plan);
 			fftwf_destroy_plan(plan);
+		}
 			break;
 		
 		default:
@@ -389,10 +391,12 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 		
 		case 2:
 		case 3:
+		{
 			fftwf_plan plan = fftwf_plan_dft_c2r(rank, dims + (3 - rank), 
 					(fftwf_complex *) complex_data, real_data, FFTW_ESTIMATE);
 			fftwf_execute(plan);
 			fftwf_destroy_plan(plan);
+		}
 			break;
 			
 		default:
