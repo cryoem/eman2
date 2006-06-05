@@ -867,8 +867,8 @@ int Nativefft::fmrs_1rf(float *x, float *work, int nsam)
    status = fftmcf_(x,work,&n,&n,&n,&inv);
    // should put in appropriate exception handling here
    if (status == -1) {
-       fprintf(stderr, "Native FFT cannot be performed on images with the leading ");
-       fprintf(stderr, "dimension set to = %d\n", nsam);  
+       fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+       fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
        exit(1); 
    }
 
@@ -914,8 +914,8 @@ int Nativefft::fmrs_1rb(float *x, float *work, int nsam)
     status = fftmcf_(x,work,&n,&n,&n,&inv);
    // should put in appropriate exception handling here
     if (status == -1) {
-       fprintf(stderr, "Native IFT cannot be performed on images with the leading ");
-       fprintf(stderr, "dimension set to = %d\n", nsam);  
+       fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+       fprintf(stderr, "the dimensions set to n = %d\n", nsam);  
        exit(1); 
     }
 
@@ -950,6 +950,11 @@ int Nativefft::fmrs_2rf(float *x, float *work, int lda, int nsam, int nrow)
    for (i=1;i<=lda;i=i+2){
       invt = ins;
       status = fftmcf_(&x(i,1),&x(i+1,1),&nrow,&nrow,&nrow,&invt);
+      if (status == -1) {
+         fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+         fprintf(stderr, "the dimensions set to n = %d\n", nrow);
+         exit(1); 
+      }
    }
 
    return status;
@@ -970,6 +975,11 @@ int Nativefft::fmrs_2rb(float *y, float *work, int lda, int nsam, int nrow)
    for (i=1;i<=lda;i=i+2){
       invt = ins;
       fftmcf_(&y(i,1),&y(i+1,1),&nrow,&nrow,&nrow,&invt);
+      if (status == -1) {
+         fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+         fprintf(stderr, "the dimensions set to n = %d\n", nrow);
+         exit(1); 
+      }
    }
     
    // normalize for inverse
@@ -1010,6 +1020,12 @@ int Nativefft::fmrs_3rf(float *b, float *work, int lda, int nsam, int nrow, int 
        for (i=1;i<=lda-1;i=i+2) {
 	  ndrt=ndr;
           status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndrt);
+          if (status == -1) {
+             fprintf(stderr, "Native FFT cannot be performed on images with one of ");
+             fprintf(stderr, "the dimensions set to n = %d\n", nslice);
+             exit(1); 
+          }
+
        }
     }
     // should check for error here by looking at ndrt
@@ -1034,6 +1050,12 @@ int Nativefft::fmrs_3rb(float *b, float *work,
        for (i=1;i<=lda-1;i=i+2) {
 	  ndrt=ndr;
           status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndrt);
+          if (status == -1) {
+             fprintf(stderr, "Native IFT cannot be performed on images with one of ");
+             fprintf(stderr, "the dimensions set to n = %d\n", nslice);
+             exit(1); 
+          }
+
        }
     }
 
