@@ -6,6 +6,9 @@
 #include <cmath>
 #include "native_fft.h" 
 
+#include <stdio.h>
+#include <stdlib.h>
+
 using namespace EMAN;
 
 int Nativefft::fftmcf_(float *a, float *b, integer *ntot, 
@@ -14,6 +17,7 @@ int Nativefft::fftmcf_(float *a, float *b, integer *ntot,
     /* System generated locals */
     integer i__1;
     float r__1, r__2;
+    int   status = -1;
 
     /* Builtin functions */
     // double atan(), cos(), sin(), sqrt();
@@ -839,6 +843,7 @@ L950:
 
 L998:
     *isn = 0;
+    return status; 
 } /* fftmcf_ */
 
 #define work(i)  work[(i)-1]
@@ -860,6 +865,12 @@ int Nativefft::fmrs_1rf(float *x, float *work, int nsam)
       work(i) = 0.0;
    }
    status = fftmcf_(x,work,&n,&n,&n,&inv);
+   // should put in appropriate exception handling here
+   if (status == -1) {
+       fprintf(stderr, "Native FFT cannot be performed on images with the leading ");
+       fprintf(stderr, "dimension set to = %d\n", nsam);  
+       exit(1); 
+   }
 
    // check even/odd
    if (n%2 == 0) {
@@ -901,6 +912,12 @@ int Nativefft::fmrs_1rb(float *x, float *work, int nsam)
     for (i=n;i>=n/2+2;i--)  x(i) = x(n-i+2);
 
     status = fftmcf_(x,work,&n,&n,&n,&inv);
+   // should put in appropriate exception handling here
+    if (status == -1) {
+       fprintf(stderr, "Native IFT cannot be performed on images with the leading ");
+       fprintf(stderr, "dimension set to = %d\n", nsam);  
+       exit(1); 
+    }
 
     return status;
 }
@@ -1016,7 +1033,7 @@ int Nativefft::fmrs_3rb(float *b, float *work,
     for (j=1;j<=nrow;j++) {
        for (i=1;i<=lda-1;i=i+2) {
 	  ndrt=ndr;
-          fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndrt);
+          status = fftmcf_(&b(i,j,1),&b(i+1,j,1),&nslice,&nslice,&nslice,&ndrt);
        }
     }
 
