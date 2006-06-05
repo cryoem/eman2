@@ -263,6 +263,7 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 		
 		case 2: 
 		case 3:
+		{
 			rfftwnd_plan plan_nd;
 			if(real_data == complex_data) {
 				plan_nd = rfftwnd_create_plan(rank, dims + (3 - rank), 
@@ -275,6 +276,7 @@ int EMfft::real_to_complex_nd(float *real_data, float *complex_data, int nx, int
 			rfftwnd_one_real_to_complex(plan_nd, (fftw_real *) real_data,
 										(fftw_complex *) complex_data);
 			rfftwnd_destroy_plan(plan_nd);
+		}
 			break;
 		
 		default:
@@ -301,6 +303,7 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 		
 		case 2:
 		case 3:
+		{
 			rfftwnd_plan plan_nd;
 			if(real_data == complex_data) {
 				plan_nd = rfftwnd_create_plan(rank, dims + (3 - rank), 
@@ -312,7 +315,8 @@ int EMfft::complex_to_real_nd(float *complex_data, float *real_data, int nx, int
 			}	
 			rfftwnd_one_complex_to_real(plan_nd, (fftw_complex *) complex_data,	
 				(fftw_real *) real_data);
-			rfftwnd_destroy_plan(plan_nd);		
+			rfftwnd_destroy_plan(plan_nd);
+		}		
 			break;
 		
 		default:
