@@ -409,7 +409,7 @@ void set_attr_dict(const Dict & new_dict);
   * 
   * @param del_keys the attrutes' names to be removed
   * */
- void EMData::del_attr_dict(const vector<string> & del_keys);
+ void del_attr_dict(const vector<string> & del_keys);
 
 
 /** Get the image x-dimensional size.
