@@ -20,7 +20,7 @@ interactive web browsing."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--build", type="string", help="Build a new tile file from the specified image")
-	parser.add_option("--buildpspec",action="store_true",default=False,help="If set, then builds 1D and 2D power spectra for the images when building")
+	parser.add_option("--buildpspec",type="float",help="Builds 1D and 2D power spectra for the images when building, Value is A/pix for image.")
 	parser.add_option("--tilesize", type="int",default=256, help="Build a new tile file from this image")
 	parser.add_option("--dump",action="store_true",default=False,help="Dump the tile dictionary from the file")
 	parser.add_option("--display",type='string',default="",help="Displays a specific tile (level,x,y))")
@@ -35,8 +35,9 @@ interactive web browsing."""
 		orig=EMData()
 		orig.read_image(options.build)
 		orig.process_inplace("eman1.normalize")
-		opt=[]
-		if options.buildpspec : opt.append("pspec")
+		opt={}
+		try: opt["pspec"]=options.buildpspec
+		except: pass
 	
 		build_tiles(orig,args[0],256,opt)
 
@@ -131,6 +132,7 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 			a.set_value_at(256,256,0,.01)
 			a-=a.get_attr("minimum")-a.get_attr("sigma")*.01
 			a.process_inplace("eman1.math.log")
+			a-=a.get_attr("minimum")
 			a.set_attr("render_min",a.get_attr("minimum")-a.get_attr("sigma")*.1)
 			a.set_attr("render_max",a.get_attr("mean")+a.get_attr("sigma")*4.0)
 			a.set_attr("jepg_quality",80)
@@ -146,13 +148,20 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 			matplotlib.use('Agg')
 			import pylab
 			manager = pylab.get_current_fig_manager()
-			x=pylab.arange(0,255,1.0)
+			apix=options["pspec"]
+			dx=1.0/(2.0*apix*256.0)
+			x=pylab.arange(dx,dx*255.9,dx)
 			y=a.calc_radial_dist(255,1,1,0)	# radial power spectrum (log)
+			pylab.figure(figsize=(8,6),dpi=96)
+			pylab.axes([.08,.08,.9,.9], axisbg='w')
 			pylab.plot(x,y)
+			pylab.axis([0,dx*256,min(y),max(y)])
+			pylab.xlabel("Spatial Freq. (1/A)")
+			pylab.ylabel("Log Intensity (10^x)")
 #			print y
 			
 			fsp="tmpimg2.png"
-			pylab.savefig(fsp)
+			pylab.savefig(fsp,dpi=96)
 			sz=os.stat(fsp).st_size
 			tile_dict[(-2,0,0)]=(pos,sz)
 			pos+=sz
