@@ -50,13 +50,55 @@ namespace EMAN
 		// 3d inplace IFFT
 		static int fmrs_3rb(float *b, float *work, int lda, int nsam, int nrow, int nslice);
 		
+		//  2D FFT OUT OF PLACE
+		static int Nativefft::ftp_2rf(float *reald, float *complexd, int lda, int nsam, int nrow);
+		
+		//  2D IFT This one is part of out of place, but overwrites the input by the real image (not resized!)....
+		static int Nativefft::ftp_2rb(float *complexd, int lda, int nsam, int nrow);
+
+		//  3D FFT OUT OF PLACE
+		static int Nativefft::ftp_3rf(float *reald, float *complexd, int lda, int nsam, int nrow, int nslice);
+
+		//  3D IFT This one is part of out of place, but overwrites the input by the real image (not resized!)....
+		static int Nativefft::ftp_3rb(float *complexd, int lda, int nsam, int nrow, int nslice);
+
+		
 	private:
 		/* chao modify integer to int */
 		typedef int integer;
 		
-		static int fftmcf_(float *a, float *b, integer *ntot, 
-				integer *n, integer *nspan, integer *isn);
+		static int fftmcf_(float *a, float *b, integer *ntot, integer *n, integer *nspan, integer *isn);
 	};
+
+
+
+//#define __cplusplus
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
+
+//#define DOUBLE
+
+#ifdef DOUBLE
+#define Treal double
+#else
+#define Treal float
+#endif
+
+ void cfftf(int N, Treal data[], Treal wrk[]);
+ void cfftb(int N, Treal data[], Treal wrk[]);
+ void cffti(int N, Treal wrk[]);
+
+ void rfftf(int N, Treal data[], Treal wrk[]);
+ void rfftb(int N, Treal data[], Treal wrk[]);
+ void rffti(int N, Treal wrk[]);
+
+//#ifdef __cplusplus
+//}
+#//endif
+
+
+
 }
 
 #endif	//NATIVE_FFT

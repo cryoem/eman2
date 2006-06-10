@@ -988,12 +988,12 @@ void EMData::symplane0(EMArray<int>& w) {
 }
 
 
-
 //  Helper functions for method nn4_ctf
 void EMData::onelinenn_ctf(int j, int n, int n2, 
 		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float dz) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	//  CTF parameters
-	float ps = 4.2f, lambda = 200.0f, cs= 2.0f, wgh=0.1f, b_factor=0.0f, sign=-1.0f;
+	float ps = 4.2f, voltage = 200.0f, cs= 2.0*1.0e-7f, ww=0.1, b_factor=0.0f, sign=-1.0f;
+	float wgh=atan(ww/(1.0-ww)), lambda = 12.398f/sqrt(voltage *(1022.f+voltage));
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
 	float  dy2 = pow(float(j)/float(n),2);
@@ -1002,8 +1002,9 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 		if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
 			 //	   if ( !((0 == i) && (j < 0))) {
 			//  Calculate absolute frequency
-			float  freq = sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
-			float  ctf = Util::tf(dz, freq, 12.398f/sqrt(lambda *(1022.f+lambda)), cs*1.0e-7f, atan(wgh/(1.0-wgh)), b_factor, sign);
+			float  ak = sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
+			//float  ctf = Util::tf(dz, freq, 12.398f/sqrt(lambda *(1022.f+lambda)), cs*1.0e-7f, atan(wgh/(1.0-wgh)), b_factor, sign);
+			float  ctf = -sin(-M_PI*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh);
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];

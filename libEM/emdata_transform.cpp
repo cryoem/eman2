@@ -21,17 +21,16 @@ EMData *EMData::do_fft()
 	int nx2 = nx + offset;
 	EMData* dat = copy_head();
 	dat->set_size(nx2, ny, nz);
-	dat->to_zero();
+	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
 	if (offset == 1)  dat->set_fftodd(true);
 
 	float *d = dat->get_data();
+	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
 	dat->done_data();
 	dat->set_complex(true);
-	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
-		dat->set_complex_x(true);
-	}
+	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
 
 	done_data();
@@ -39,6 +38,7 @@ EMData *EMData::do_fft()
 	EXITFUNC;
 	return dat;
 }
+
 
 
 EMData *EMData::do_fft_inplace()
@@ -68,12 +68,7 @@ EMData *EMData::do_fft_inplace()
 					(*this)(newxpos) = (*this)(oldxpos);
 				}
 			}
-		}
-		/*// zero out padding   SHOULD NOT BE NECCESSARY PAP 01/28/06
-		for (int iz=0; iz < nz; iz++)
-			for (int iy=0; iy < ny; iy++)
-				for (int ix=nxreal; ix < nx; ix++)
-					(*this)(ix,iy,iz) = 0.f;*/
+		 }
 		set_fftpad(true);
 	} else {
 		offset = is_fftodd() ? 1 : 2;
@@ -114,9 +109,9 @@ EMData *EMData::do_ift()
 	float *d = dat->get_data();
 	int ndim = get_ndim();
 
-	if (ndim >= 2) {
-		memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
-	}
+//	if (ndim >= 2) {
+//		memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
+//	}
 
 
 	int offset = is_fftodd() ? 1 : 2;
@@ -124,9 +119,10 @@ EMData *EMData::do_ift()
 		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 	}
 	/* Do inplace IFT on a image copy, because the complex to real transform of 
-	 * nd will destroy its input array even for out-of-place transforms.*/
+	 * nd will destroy its input array even for out-of-place transforms.  THIS IS STRANGE! GRANT, I changed the
+	 * call to rdata..*/
 	else {
-		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
+		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
 
 		size_t row_size = (nx - offset) * sizeof(float);
 		for (int i = 1; i < ny * nz; i++) {
@@ -191,6 +187,7 @@ EMData *EMData::do_ift_inplace()
 	done_data();
 	update();
 	set_complex(false);
+	set_fftpad(false);
 	if(ny==1 && nz==1) {
 		set_complex_x(false);
 	}

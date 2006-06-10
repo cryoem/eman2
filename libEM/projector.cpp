@@ -924,7 +924,7 @@ int ChaoProjector::getnnz(Vec3i volsize, int ri, Vec3i origin, int *nrays, int *
     return status;
 }
 
-#define cube(i,j,k) cube[ ((k)-1)*nx*ny + ((j)-1)*nx + (i)-1 ] 
+#define cube(i,j,k) cube[ ((k-1)*ny + j-1)*nx + i-1 ] 
 #define sphere(i)   sphere[(i)-1]
 #define cord(i,j)   cord[((j)-1)*3 + (i) -1]
 #define ptrs(i)     ptrs[(i)-1]
@@ -1021,7 +1021,7 @@ int ChaoProjector::sph2cb(float *sphere, Vec3i volsize, int  nrays, int    ri,
 }
 
 #define x(i)        x[(i)-1]
-#define y(i,j)      y[((j)-1)*nx + (i) - 1]
+#define y(i,j)      y[(j-1)*nx + i - 1]
 
 // project from 3D to 2D (single image)
 int ChaoProjector::fwdpj3(Vec3i volsize, int nrays, int   nnz, float *dm, 
@@ -1225,7 +1225,7 @@ void ChaoProjector::setdm(vector<float> anglelist, string const angletype, float
 }
 #undef anglelist
 
-#define images(i,j,k) images[ ((k)-1)*nxvol*nyvol + ((j)-1)*nxvol + (i)-1 ] 
+#define images(i,j,k) images[ ((k-1)*nyvol + j-1)*nxvol + i-1 ] 
 
 // project from 3D to 2D (multiple projections)
 EMData *ChaoProjector::project3d(EMData * vol) const
