@@ -1103,6 +1103,7 @@ EMData* nn4Reconstructor::finish() {
 	// back fft
 	v->do_ift_inplace();
 	EMData* w = v->window_center(vnx);
+	if( v ) { delete v; v = 0;}
 	float *tw = w->get_data();
 	//  mask and subtract circumference average
 	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
@@ -1134,7 +1135,6 @@ EMData* nn4Reconstructor::finish() {
 		}
 	}
 	// clean up
-	if( v ) { delete v; v = 0;}
 	if( nrptr ) { delete nrptr; nrptr = 0;}
 	return w;
 }
@@ -1247,6 +1247,7 @@ EMData* nn4_ctfReconstructor::finish() {
 	// back fft
 	v->do_ift_inplace();
 	EMData* win = v->window_center(vnx);
+	if( v ) { delete v; v = 0;}
 	float *tw = win->get_data();
 	//  mask and subtract circumference average
 	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
@@ -1279,7 +1280,6 @@ EMData* nn4_ctfReconstructor::finish() {
 	}
 	return win;
 	// clean up
-	if( v ) { delete v; v = 0;}
 }
 #undef  tw
 

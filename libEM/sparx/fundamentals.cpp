@@ -116,9 +116,7 @@ Output: 1-2-3D real image with the result
 							int jx=ix-1; float arg=sx*jx+argy;
 							float fpr = real(fp->cmplx(ix,iy,iz));
 							float fpi = imag(fp->cmplx(ix,iy,iz));
-							fp->cmplx(ix,iy,iz)=
-								(fpr*fpr + fpi*fpi)
-								*std::complex<float>(cos(arg),sin(arg));
+							fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi) *std::complex<float>(cos(arg),sin(arg));
 						}
 					}
 				}
@@ -132,9 +130,7 @@ Output: 1-2-3D real image with the result
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 						for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
-							fp->cmplx(ix,iy,iz) = 
-								abs(fp->cmplx(ix,iy,iz))
-								*std::complex<float>(cos(arg),sin(arg));
+							fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
 						}
 					}
 				}
@@ -148,9 +144,7 @@ Output: 1-2-3D real image with the result
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 						for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
-							fp->cmplx(ix,iy,iz) *=
-								conj(gp->cmplx(ix,iy,iz))
-								*std::complex<float>(cos(arg),sin(arg));
+							fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
 						}
 					}
 				}
@@ -164,9 +158,7 @@ Output: 1-2-3D real image with the result
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
 						for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
-							fp->cmplx(ix,iy,iz) *=
-								gp->cmplx(ix,iy,iz)
-								*std::complex<float>(cos(arg),sin(arg));
+							fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
 						}
 					}
 				}
@@ -193,13 +185,7 @@ Output: 1-2-3D real image with the result
 
 		normfact = (nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
 		if(normfact>1) {
-			for (int iz = 1; iz <= nz; iz++) {
-				for (int iy = 1; iy <= ny; iy++) {
-					for (int ix = 1; ix <= nx; ix++) {
-						(*fp)(ix,iy,iz) *= normfact;
-					}
-				}
-			}
+		 for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
 		}
 		// Lag normalization
 		if(flag>4)  {

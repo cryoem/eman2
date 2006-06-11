@@ -79,12 +79,7 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	int xstart = (nx != 1) ? (nxpad - nx)/2 + nx%2 : 0;
 	int ystart = (ny != 1) ? (nypad - ny)/2 + ny%2 : 0;
 	int zstart = (nz != 1) ? (nzpad - nz)/2 + nz%2 : 0;
-	for (int iz = 0; iz < nz; iz++) {
-		for (int iy = 0; iy < ny; iy++) {
-			memcpy(&(*newimg)(xstart,iy+ystart,iz+zstart),
-				   &(*this)(0,iy,iz), bytes);
-		}
-	}
+	for (int iz = 0; iz < nz; iz++) for (int iy = 0; iy < ny; iy++) memcpy( &(*newimg)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
 	newimg->done_data();
 	return newimg;
 	EXITFUNC;
@@ -107,7 +102,7 @@ EMData* EMData::pad_fft(int npad) {
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
 	EMData* newimg = copy_head();
-	newimg->to_zero();
+	//newimg->to_zero();  makes no sense, no size set
 	if (is_fftpadded() == false) {
 		int nxpad = npad*nx;
 		int nypad = npad*ny;
@@ -127,7 +122,7 @@ EMData* EMData::pad_fft(int npad) {
 		offset = 2 - nxpad%2;
 		bytes = nx*sizeof(float);
 		newimg->set_size(nxpad+offset, nypad, nzpad);
-		newimg->to_zero();
+		if(npad > 1)  newimg->to_zero();  // If only extension for FFT, no need to zero...
 		newimg->set_fftpad(true);
 		newimg->set_attr("npad", npad);
 		if (offset == 1) newimg->set_fftodd(true);
@@ -152,7 +147,6 @@ EMData* EMData::pad_fft(int npad) {
 	#endif	//_WIN32
 		int bytes = nxold*sizeof(float);
 		newimg->set_size(nxold, nyold, nzold);
-		newimg->to_zero();
 		newimg->set_fftpad(false);
 		for (int iz = 0; iz < nzold; iz++) {
 			for (int iy = 0; iy < nyold; iy++) {
@@ -168,35 +162,35 @@ EMData* EMData::pad_fft(int npad) {
 
 void EMData::postift_depad_corner_inplace() {
 	ENTERFUNC;
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,0,0);
-	int npad = attr_dict["npad"];
-	if (0 == npad) npad = 1;
-	int offset = is_fftodd() ? 1 : 2;
-	int nxold = (nx - offset)/npad;
+	if(is_fftpadded() == true) {
+		vector<int> saved_offsets = get_array_offsets();
+		set_array_offsets(0,0,0);
+		int npad = attr_dict["npad"];
+		if (0 == npad) npad = 1;
+		int offset = is_fftodd() ? 1 : 2;
+		int nxold = (nx - offset)/npad;
 #ifdef _WIN32
-	int nyold = _MAX(ny/npad, 1);
-	int nzold = _MAX(nz/npad, 1);
+		int nyold = _MAX(ny/npad, 1);
+		int nzold = _MAX(nz/npad, 1);
 #else
-	int nyold = std::max<int>(ny/npad, 1);
-	int nzold = std::max<int>(nz/npad, 1);
-#endif	//_WIN32
-	int bytes = nxold*sizeof(float);
-	float* dest = get_data();
-	for (int iz=0; iz < nzold; iz++) {
-		for (int iy = 0; iy < nyold; iy++) {
-			memmove(dest, &(*this)(0,iy,iz), bytes);
-			dest += nxold;
+		int nyold = std::max<int>(ny/npad, 1);
+		int nzold = std::max<int>(nz/npad, 1);
+#endif  //_WIN32
+		int bytes = nxold*sizeof(float);
+		float* dest = get_data();
+		for (int iz=0; iz < nzold; iz++) {
+			for (int iy = 0; iy < nyold; iy++) {
+				memmove(dest, &(*this)(0,iy,iz), bytes);
+				dest += nxold;
+			}
 		}
+		set_size(nxold, nyold, nzold);
+		set_fftpad(false);
+		update();
+		set_complex(false);
+		if(ny==1 && nz==1) set_complex_x(false);
+		set_array_offsets(saved_offsets);
 	}
-	set_size(nxold, nyold, nzold);
-	set_fftpad(false);
-	update();
-	set_complex(false);
-	if(ny==1 && nz==1) {
-		set_complex_x(false);
-	}
-	set_array_offsets(saved_offsets);
 	EXITFUNC;
 }
 
@@ -349,17 +343,12 @@ namespace EMAN {
 			// indexing starts at 1
 			vector<int> saved_offsets = fpimage.get_array_offsets();
 			fpimage.set_array_offsets(1,1,1);
-			for (int iz = 1; iz <= nz; iz++) {
-				for (int iy = 1; iy <= ny; iy++) {
-					for (int ix = 1; ix <= nx; ix++) {
-						fpimage(ix,iy,iz) = (fpimage(ix,iy,iz)-mean)/stddev;
-					}
-				}
-			}
+			for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) fpimage(ix,iy,iz) = (fpimage(ix,iy,iz)-mean)/stddev;
 			fpimage.set_array_offsets(saved_offsets); // reset
 		}
-		mean = fpimage.get_attr("mean");
-		stddev = fpimage.get_attr("sigma");
+		//mean = fpimage.get_attr("mean");  // I do not know why these were needed and I doubt they would work
+		                               //  properly for fft extended image
+		//stddev = fpimage.get_attr("sigma");
 		fpimage.do_fft_inplace();
 		return &fpimage;
 	}

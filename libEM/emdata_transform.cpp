@@ -4,6 +4,9 @@
 #include "emdata.h"
 #include "emfft.h"
 
+#include <stdio.h>
+
+
 using namespace EMAN;
 
 
@@ -29,6 +32,7 @@ EMData *EMData::do_fft()
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
 	dat->done_data();
+    dat->set_fftpad(true);
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
@@ -130,15 +134,15 @@ EMData *EMData::do_ift()
 		}
 	}
 
+	dat->done_data();
+	dat->set_size(nx - offset, ny, nz);	//remove the padding
+	dat->update();
 #if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
 #endif	//FFTW2 || FFTW3
-
-	dat->done_data();
-	dat->set_size(nx - offset, ny, nz);	//remove the padding
-	dat->update();
+    dat->set_fftpad(false);
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
 		dat->set_complex_x(false);
@@ -152,7 +156,10 @@ EMData *EMData::do_ift()
 	return dat;
 }
 
-
+/*
+   FFT in place does not depad, return real x-extended image
+   use 
+*/
 EMData *EMData::do_ift_inplace()
 {
 	ENTERFUNC;
@@ -170,24 +177,38 @@ EMData *EMData::do_ift_inplace()
 	int offset = is_fftodd() ? 1 : 2;
 	EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
 
+
+#if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
+	// SCALE the inverse FFT
+	int nxo = nx - offset;
+	float scale = 1.0f / (nxo * ny * nz);
+	mult(scale);  // this is wasteful, but I do not know how to make the next block work!
+	/*std::cout << " normalize "<<scale<<" "<<nxo<<" "<<nx<<" "<<ny<<" "<<nz<<std::endl;
+	for (int k=1; k<=nz; k++)  {
+		for (int j=1; j<=ny; j++)  {
+			for (int i=1; i<=nxo; i++) {
+				size_t pos = i-1 + (j-1+(k-1)*ny)*nz;
+				(*this)(pos)*=scale;
+			}
+		}
+	}*/
+#endif //FFTW2 || FFTW3
+
+
+//  THIS IS A MISTAKE, SHOULD NOT REMOVE THE PADDING
+/*
 	if(get_ndim() >= 2) {
 		size_t row_size = (nx - offset) * sizeof(float);
 		for (int i = 1; i < ny * nz; i++) {
 			memmove((char *) &rdata[i * (nx - offset)], (char *) &rdata[i * nx], row_size);
 		}
 	}
-
-#if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
-	// SCALE the inverse FFT
-	float scale = 1.0f / ((nx - offset) * ny * nz);
-	mult(scale);
-#endif //FFTW2 || FFTW3
-
 	this->set_size(nx - offset, ny, nz);	//remove the padding
 	done_data();
 	update();
-	set_complex(false);
 	set_fftpad(false);
+	*/
+	set_complex(false);
 	if(ny==1 && nz==1) {
 		set_complex_x(false);
 	}
@@ -198,7 +219,7 @@ EMData *EMData::do_ift_inplace()
 	EXITFUNC;
 	return this;
 }
-
+#undef rdata
 
 std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,

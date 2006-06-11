@@ -2513,11 +2513,11 @@ if (image->is_complex())
  #ifdef DEBUG
          std::cout << dx << std::endl;
          std::cout << dy << std::endl;
-	 std::cout << dz << std::endl;
+	     std::cout << dz << std::endl;
  #endif
          int mx = -(dx - nx);
          int my = -(dy - ny);
-	 int mz = -(dz - nz);
+	 	 int mz = -(dz - nz);
 	 
          float* data = image->get_data();
          // x-reverses
@@ -2910,35 +2910,25 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
  float indcnst = 1000/2.0;
  // we create look-up table for 1001 uniformly distributed samples [0,2];
  
- for(int LT=1;LT<=NANG;LT++)
-    {
-      L = LT;
+ for (L=1; L<=NANG; L++) {
       OX = SS(6,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) + SS(5,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
       OY = SS(5,K)*SS(4,L)*(-SS(1,L)*SS(2,K)+ SS(1,K)*SS(2,L)) - SS(6,K)*(-SS(3,L)*SS(4,K)+SS(3,K)*SS(4,L)*(SS(1,K)*SS(1,L) + SS(2,K)*SS(2,L)));
 
-      if(OX != 0.0f || OY!=0.0f)  
-        { 
+      if(OX != 0.0f || OY!=0.0f) { 
 	 //int count = 0;
-         for(int J=1;J<=NROW;J++)
-	     {
+        for(int J=1;J<=NROW;J++) {
 	      JY = (J-1);
 	      if(JY > NR2) JY=JY-NROW;	       
-	      for(int I=1;I<=NNNN/2;I++)
-	         {
-		  Y =  fabs(OX * (I-1) + OY * JY);
+	      for(int I=1;I<=NNNN/2;I++) {
+		          Y =  fabs(OX * (I-1) + OY * JY);
                   if(Y < 2.0f) W(I,J) += exptable[int(Y*indcnst)];//exp(-4*Y*Y);//
 		  //if(Y < 2.0f) Wptr[count++] += exp(-4*Y*Y);//exptable[int(Y*indcnst)];//
-		 }   
-	     }
-	}     
-      else
-        { 
-	 //int count = 0;
-	 for(int J=1;J<=NROW;J++)
-	    for(int I=1;I<=NNNN/2;I++)
-	        W(I,J) += 1.0f;
- 	}
-    }
+		  }   
+	    }
+	  } else { 
+	    for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++)  W(I,J) += 1.0f;
+ 	  }
+ }
 
  PROJ->pad_fft();
  PROJ->do_fft_inplace();
@@ -2951,17 +2941,16 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
  float osnr = 1.0f/SNR;
  WNRMinv = 1/W(1,1);
  for(int J=1;J<=NROW;J++)
-    for(int I=1;I<=NNNN;I+=2)
-       {
+    for(int I=1;I<=NNNN;I+=2) {
          KX          = (I+1)/2;
-	 temp         = W(KX,J)*WNRMinv;
-	 WW          = temp/(temp*temp + osnr);
-	 PROJ(I,J)   *= WW;
+	     temp        = W(KX,J)*WNRMinv;
+	     WW          = temp/(temp*temp + osnr);
+	     PROJ(I,J)   *= WW;
          PROJ(I+1,J) *= WW;
        }  
-	 
+
 PROJ->do_ift_inplace();
-PROJ->postift_depad_corner_inplace();  
+PROJ->postift_depad_corner_inplace();
 }
 
 #undef PROJ
@@ -3013,62 +3002,51 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
   
  float ALPHA,TMP,FV,RT,FM,CCN,CC[3],CP[2],VP[2],VV[3]; 
   
- for(int LT=1;LT<=NANG;LT++)
-     { 
-        L = LT;
-	if (L != NUMP)
-	 {
+ for (L=1; L<=NANG; L++) { 
+	if (L != NUMP) {
 	  CC(1)=SS(2,L)*SS(4,L)*SS(3,NUMP)-SS(3,L)*SS(2,NUMP)*SS(4,NUMP);
 	  CC(2)=SS(3,L)*SS(1,NUMP)*SS(4,NUMP)-SS(1,L)*SS(4,L)*SS(3,NUMP);
 	  CC(3)=SS(1,L)*SS(4,L)*SS(2,NUMP)*SS(4,NUMP)-SS(2,L)*SS(4,L)*SS(1,NUMP)*SS(4,NUMP);
-          
 	  
 	  TMP = sqrt(CC(1)*CC(1) +  CC(2)*CC(2) + CC(3)*CC(3)); 
 	  CCN=AMAX1( AMIN1(TMP,1.0) ,-1.0);
 	  ALPHA=rad2deg*float(asin(CCN));
 	  if (ALPHA>180.0) ALPHA=ALPHA-180.0;
 	  if (ALPHA>90.0) ALPHA=180.0-ALPHA;
-	  if(ALPHA<1.0E-6)
-	    {
-             for(int J=1;J<=NROW;J++)
-	          for(int I=1;I<=NNNN/2;I++)
-		      W(I,J)+=1.0;
-            } 
-	  else
-	    {
-             FM=THICK/(fabs(sin(ALPHA*deg2rad)));
-             CC(1)   = CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)   = CC(3)/CCN;
-             VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
-             VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
-             VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
-             CP(1)   = 0.0;CP(2) = 0.0;
-             VP(1)   = 0.0;VP(2) = 0.0;
-             
-	     CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
-	     CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
-	     VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
-	     VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);		                   
-             
-             TMP = CP(1)*VP(2)-CP(2)*VP(1);
+	  if(ALPHA<1.0E-6) {
+          for(int J=1;J<=NROW;J++) for(int I=1;I<=NNNN/2;I++) W(I,J)+=1.0;
+    } else {
+      FM=THICK/(fabs(sin(ALPHA*deg2rad)));
+      CC(1)   = CC(1)/CCN;CC(2)   = CC(2)/CCN;CC(3)   = CC(3)/CCN;
+      VV(1)= SS(2,L)*SS(4,L)*CC(3)-SS(3,L)*CC(2);
+      VV(2)= SS(3,L)*CC(1)-SS(1,L)*SS(4,L)*CC(3);
+      VV(3)= SS(1,L)*SS(4,L)*CC(2)-SS(2,L)*SS(4,L)*CC(1);
+      CP(1)   = 0.0;CP(2) = 0.0;
+      VP(1)   = 0.0;VP(2) = 0.0;
+      
+	  CP(1) = CP(1) + RI(1,1)*CC(1) + RI(1,2)*CC(2) + RI(1,3)*CC(3);
+	  CP(2) = CP(2) + RI(2,1)*CC(1) + RI(2,2)*CC(2) + RI(2,3)*CC(3);
+	  VP(1) = VP(1) + RI(1,1)*VV(1) + RI(1,2)*VV(2) + RI(1,3)*VV(3);
+	  VP(2) = VP(2) + RI(2,1)*VV(1) + RI(2,2)*VV(2) + RI(2,3)*VV(3);						
+      
+      TMP = CP(1)*VP(2)-CP(2)*VP(1);
 
        //     PREVENT TMP TO BE TOO SMALL, SIGN IS IRRELEVANT
-            TMP = AMAX1(1.0E-4,fabs(TMP));
-	    float tmpinv = 1/TMP;   
-            for(int J=1;J<=NROW;J++)
-	      {
-		JY = (J-1);
-                if (JY>NR2)  JY=JY-NROW;
-                for(int I=1;I<=NNNN/2;I++)
-		 {
-                   FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
-                   RT     = 1.0-FV/FM;
-                   W(I,J) += ((RT>0.0)*RT);		    
-                 }
-              } 
-           }  
+       TMP = AMAX1(1.0E-4,fabs(TMP));
+	   float tmpinv = 1/TMP;   
+       for(int J=1;J<=NROW;J++) {
+	     JY = (J-1);
+         if (JY>NR2)  JY=JY-NROW;
+         for(int I=1;I<=NNNN/2;I++) {
+        		FV     = fabs((JY*CP(1)-(I-1)*CP(2))*tmpinv);
+        		RT     = 1.0-FV/FM;
+        		W(I,J) += ((RT>0.0)*RT);		 
+         }
+       } 
+      }  
 	}
 
-    }
+ }
  
  PROJ->pad_fft();
  PROJ->do_fft_inplace();
@@ -3078,17 +3056,16 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
   
  int KX;
  float WW;
- for(int J=1;J<=NROW;J++)
-    for(int I=1;I<=NNNN;I+=2)
-       {
-         KX          = (I+1)/2;
-         WW          =  1/W(KX,J);
-	 PROJ(I,J)   = PROJ(I,J)*WW;
+ for(int J=1; J<=NROW; J++)
+    for(int I=1; I<=NNNN; I+=2) {
+         KX          =  (I+1)/2;
+         WW          =  1.0f/W(KX,J);
+	     PROJ(I,J)   = PROJ(I,J)*WW;
          PROJ(I+1,J) = PROJ(I+1,J)*WW;
-       }  
-	 
-  PROJ->do_ift_inplace();
-  PROJ->postift_depad_corner_inplace();  
+    }  
+
+ PROJ->do_ift_inplace();
+ PROJ->postift_depad_corner_inplace();  
 }	
 	
 #undef   AMAX1	
