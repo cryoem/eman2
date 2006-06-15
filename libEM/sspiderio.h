@@ -10,8 +10,8 @@
 namespace EMAN
 {
 	/** Single Spider Image I/O class. For Spider and Single Spider
-	 * image format, please refer spider.h.
-	 * @see spider.h
+	 * image format, please refer spiderio.h.
+	 * @see spiderio.h
 	 */	
 	class SingleSpiderIO:public SpiderIO
 	{
@@ -23,7 +23,7 @@ namespace EMAN
 		SingleSpiderIO(const string & filename, IOMode rw_mode = READ_ONLY);
 		~SingleSpiderIO();
 		
-		/** Write a header to an image.
+		/** Write a single SPIDER format header to an image.
 		 *
 		 * @param dict A keyed-dictionary storing the header information.
 		 * @param image_index The index of the image to write.
