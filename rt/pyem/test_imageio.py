@@ -41,8 +41,8 @@ class TestSpiderIO(unittest.TestCase):
         file1 = "test_overwrite_spider.spi"
         nx1 = 24
         ny1 = 32
-        TestUtil.make_image_file(file1, SPIDER, EM_FLOAT, nx1, ny1)
-        TestUtil.make_image_file(file1, SPIDER, EM_FLOAT, nx1*2, ny1*2)
+        TestUtil.make_image_file(file1, SINGLE_SPIDER, EM_FLOAT, nx1, ny1)
+        TestUtil.make_image_file(file1, SINGLE_SPIDER, EM_FLOAT, nx1*2, ny1*2)
         os.unlink(file1)  
 
 class TestHdfIO(unittest.TestCase):
