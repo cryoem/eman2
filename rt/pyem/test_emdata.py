@@ -529,7 +529,7 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(e.get_value_at(5,0,0), 0, 2)
         
         e.do_ift_inplace()
-        self.assertEqual(e.get_xsize(), 4)
+        self.assertEqual(e.get_xsize(), 6)
         self.assertEqual(e.is_complex(), False)
         self.assertAlmostEqual(e.get_value_at(0,0,0), 1, 2)
         self.assertAlmostEqual(e.get_value_at(1,0,0), 2, 2)
@@ -551,7 +551,7 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(e2.get_value_at(5,0,0), 0.81, 2)
         
         e2.do_ift_inplace()
-        self.assertEqual(e2.get_xsize(), 5)
+        self.assertEqual(e2.get_xsize(), 6)
         self.assertEqual(e2.is_complex(), False)
         self.assertAlmostEqual(e2.get_value_at(0,0,0), 1, 2)
         self.assertAlmostEqual(e2.get_value_at(1,0,0), 2, 2)
@@ -583,7 +583,7 @@ class TestEMData(unittest.TestCase):
         
         e3.do_ift_inplace()
         #print '\n', e3.get_2dview() 
-        self.assertEqual(e3.get_xsize(), 2)
+        self.assertEqual(e3.get_xsize(), 4)
         self.assertEqual(e3.get_ysize(), 2)
         self.assertEqual(e3.is_complex(), False)
         self.assertAlmostEqual(e3.get_value_at(0,0,0), 1, 2)
@@ -614,7 +614,7 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(e4.get_value_at(3,1,0), 0, 2)
         
         e4.do_ift_inplace()
-        self.assertEqual(e4.get_xsize(), 3)
+        self.assertEqual(e4.get_xsize(), 4)
         self.assertEqual(e4.get_ysize(), 2)
         self.assertEqual(e4.is_complex(), False)
         self.assertAlmostEqual(e4.get_value_at(0,0,0), 1, 2)
@@ -657,7 +657,7 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(e5.get_value_at(3,1,1), 0, 2)
         
         e5.do_ift_inplace()
-        self.assertEqual(e5.get_xsize(), 2)
+        self.assertEqual(e5.get_xsize(), 4)
         self.assertEqual(e5.get_ysize(), 2)
         self.assertEqual(e5.get_zsize(), 2)
         self.assertEqual(e5.is_complex(), False)
@@ -703,7 +703,7 @@ class TestEMData(unittest.TestCase):
         
         e6.do_ift_inplace()
         self.assertEqual(e6.is_complex(), False)
-        self.assertEqual(e6.get_xsize(), 3)
+        self.assertEqual(e6.get_xsize(), 4)
         self.assertEqual(e6.get_ysize(), 2)
         self.assertEqual(e6.get_zsize(), 2)
         self.assertAlmostEqual(e6.get_value_at(0,0,0), 1, 2)
