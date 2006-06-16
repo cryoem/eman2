@@ -46,7 +46,7 @@ class TestSpiderIO(unittest.TestCase):
         os.unlink(file1)  
         
     def test_write_spider_stack(self):
-        """test _to write a spider stack image file ........."""
+        """test to write a spider stack image file  ........."""
         if(os.path.isfile('test.spi')):
             os.remove('test.spi')
         e = EMData() 
@@ -63,11 +63,8 @@ class TestSpiderIO(unittest.TestCase):
         e.process_inplace('testimage.sinewave', {'wave_length':20})
         e.set_attr('SPIDER.title', 'The fourth image in the stack')
         e.write_image('test.spi', 3)
-    
-    def test_read_spider_stack(self):
-        """test to read image from a spider stack file ......"""
-        f = EMData()
         
+        f = EMData()
         #read the overall herder
         f.read_image('test.spi', -1, True)
         d = f.get_attr_dict()
@@ -81,7 +78,7 @@ class TestSpiderIO(unittest.TestCase):
             self.assertEqual(f.get_ysize(), 100)
             self.assertEqual(f.get_zsize(), 1)
             
-        os.unlink('test.spi')
+        os.remove('test.spi')
 
 class TestHdfIO(unittest.TestCase):
     """hdf file IO test ....................................."""
