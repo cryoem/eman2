@@ -1289,6 +1289,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), False)
         
         e.process_inplace('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
+        f = e.process('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
         
         os.unlink('norm.mrc')
         
