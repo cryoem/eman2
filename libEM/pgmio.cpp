@@ -188,9 +188,12 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 	ENTERFUNC;
 
 	if (image_index>0) throw ImageWriteException("N/A", "PGM files are single-image only");
-	if(area && (area->size[0]!=nx || area->size[1]!=ny)) {
+/*	if(area && (area->size[0]!=nx || area->size[1]!=ny)) {
 		throw ImageWriteException("N/A", "No region writing for PGM images");
 	}
+*/
+	check_write_access(rw_mode, image_index, 1, data);
+	check_region(area, IntSize(nx, ny));
 	
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	getRenderMinMax(data, nx, ny, rendermin, rendermax);
@@ -215,8 +218,11 @@ int PgmIO::write_data(float *data, int image_index, const Region* area,
 			}
 		}
 	}
-		
-	fwrite(cdata, nx, ny, pgm_file);
+	
+	size_t mode_size = sizeof(unsigned char);	
+	//fwrite(cdata, nx, ny, pgm_file);
+	EMUtil::process_region_io(cdata, pgm_file, WRITE_ONLY, image_index,
+							  mode_size, nx, ny, 1, area);
 	
 	free(cdata);
 	EXITFUNC;
