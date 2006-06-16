@@ -44,6 +44,44 @@ class TestSpiderIO(unittest.TestCase):
         TestUtil.make_image_file(file1, SINGLE_SPIDER, EM_FLOAT, nx1, ny1)
         TestUtil.make_image_file(file1, SINGLE_SPIDER, EM_FLOAT, nx1*2, ny1*2)
         os.unlink(file1)  
+        
+    def test_write_spider_stack(self):
+        """test _to write a spider stack image file ........."""
+        if(os.path.isfile('test.spi')):
+            os.remove('test.spi')
+        e = EMData() 
+        e.set_size(100,100)
+        e.process_inplace('testimage.squarecube', {'edge_length':20})
+        e.write_image('test.spi', 0)
+            
+        e.process_inplace('testimage.circlesphere', {'radius':20})
+        e.write_image('test.spi', 1)
+        
+        e.process_inplace('testimage.gaussian', {'sigma':20})
+        e.write_image('test.spi', 2)
+            
+        e.process_inplace('testimage.sinewave', {'wave_length':20})
+        e.set_attr('SPIDER.title', 'The fourth image in the stack')
+        e.write_image('test.spi', 3)
+    
+    def test_read_spider_stack(self):
+        """test to read image from a spider stack file ......"""
+        f = EMData()
+        
+        #read the overall herder
+        f.read_image('test.spi', -1, True)
+        d = f.get_attr_dict()
+        img_num = d['SPIDER.maxim']
+        
+        #read the individual image from a stack
+        for i in range(img_num):
+            f.read_image('test.spi', i)
+            self.assertEqual(f.is_complex(), False)
+            self.assertEqual(f.get_xsize(), 100)
+            self.assertEqual(f.get_ysize(), 100)
+            self.assertEqual(f.get_zsize(), 1)
+            
+        os.unlink('test.spi')
 
 class TestHdfIO(unittest.TestCase):
     """hdf file IO test ....................................."""
