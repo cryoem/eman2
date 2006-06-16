@@ -25,7 +25,8 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
 {
 	initialized = false;
-	is_new_file = false;
+	file=-1;
+	group=-1;
 }
 
 HdfIO::~HdfIO()
@@ -50,45 +51,28 @@ void HdfIO::init()
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
 
-	initialized = true;
-	
-	FILE *tmp_file = sfopen(filename, rw_mode, &is_new_file);
-
-	if (!is_new_file) {
-		char buf[128];
-		if (fread(buf, sizeof(buf), 1, tmp_file) != 1) {
-			fclose(tmp_file);
-			throw ImageReadException(filename, "read HDF5 first block");
-		}
-		else {
-			if (!is_valid(buf)) {
-				fclose(tmp_file);
-				throw ImageReadException(filename, "invalid HDF5 file");
-			}
-		}
-	}
-
-	fclose(tmp_file);
-	tmp_file = 0;
-
 	if (rw_mode == READ_ONLY) {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+		if (file<0) throw FileAccessException(filename,"Cannot open HDF5 for reading");
 	}
 	else {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-		if (file < 0) file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+		if (file < 0) {
+			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+			if (file < 0) throw FileAccessException(filename, "Cannot create HDF5 file");
+		}
 	}
 	
-	if (file < 0) {
-		throw FileAccessException(filename);
+	group=H5Gopen(file,"/TEM")
+	if (group<0) {
+		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /TEM group)");
+		group=H5Gcreate(file,"/TEM",4096);		// create the group where image data will be stored
 	}
-	
-	string root_group_str = get_item_name(ROOT_GROUP);
-	group = H5Gopen(file, root_group_str.c_str());
-	cur_dataset = -1;
+	if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM) to HDF5 file");
 
-	H5Giterate(file, root_group_str.c_str(), NULL, file_info, &image_indices);
-	create_enum_types();
+	
+
+	initialized = true;
 	EXITFUNC;
 
 }

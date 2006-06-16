@@ -39,12 +39,11 @@ namespace EMAN
 		int get_num_dataset();
 		vector < int >get_image_indices();
         
+		hid_t file;
+		hid_t group;
 		string filename;
 		IOMode rw_mode;
 		bool initialized;
-		bool is_new_file;
-		
-       
 	};
 }
 
