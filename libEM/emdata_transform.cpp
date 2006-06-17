@@ -112,21 +112,17 @@ EMData *EMData::do_ift()
 
 	float *d = dat->get_data();
 	int ndim = get_ndim();
-
-//	if (ndim >= 2) {
-//		memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
-//	}
-
+	
+	/* Do inplace IFT on a image copy, because the complex to real transform of 
+	 * nd will destroy its input array even for out-of-place transforms.
+	 */
+	memcpy((char *) d, (char *) rdata, nx * ny * nz * sizeof(float));
 
 	int offset = is_fftodd() ? 1 : 2;
 	if (ndim == 1) {
-		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
-	}
-	/* Do inplace IFT on a image copy, because the complex to real transform of 
-	 * nd will destroy its input array even for out-of-place transforms.  THIS IS STRANGE! GRANT, I changed the
-	 * call to rdata..*/
-	else {
-		EMfft::complex_to_real_nd(rdata, d, nx - offset, ny, nz);
+		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
+	} else {
+		EMfft::complex_to_real_nd(d, d, nx - offset, ny, nz);
 
 		size_t row_size = (nx - offset) * sizeof(float);
 		for (int i = 1; i < ny * nz; i++) {
