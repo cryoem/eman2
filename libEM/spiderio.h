@@ -170,12 +170,12 @@ namespace EMAN
 		/** write a SPIDER header to spider_file
 		 * @param dict the dictionary contain header information
 		 * @param area the region we want to write
-		 * @image_index the image index inthe stack, it's 0-indexed
-		 * @offset the offset in the spider_file
-		 * @hp the SpiderHeader pointer all header info will write to, then the content of hp will write to spider file
-		 * @ISTACK the istack field for SPIDER's header, 0 for dingle image, 2 for stacked image
-		 * @MAXIM maxim field for header, only used for overall header
-		 * @IMGNUM imgnum for header, only used for sacked image header
+		 * @param image_index the image index inthe stack, it's 0-indexed
+		 * @param offset the offset in the spider_file
+		 * @param hp the SpiderHeader pointer all header info will write to, then the content of hp will write to spider file
+		 * @param ISTACK the istack field for SPIDER's header, 0 for dingle image, 2 for stacked image
+		 * @param MAXIM maxim field for header, only used for overall header
+		 * @param IMGNUM imgnum for header, only used for sacked image header
 		 * @exception ImageWriteException
 		 * @return 0 for sucess
 		 * */
@@ -187,9 +187,9 @@ namespace EMAN
 		 * @param data the data block to be written
 		 * @param area the data region we want to write
 		 * @param hp the SpiderHeader pointer all header info will write to
-		 * @offset the offset in the spider_file
-		 * @image_index the image index inthe stack, it's 0-indexed
-		 * @max_nimg max image number in a stack
+		 * @param offset the offset in the spider_file
+		 * @param img_index the image index inthe stack, it's 0-indexed
+		 * @param max_nimg max image number in a stack
 		 * @exception ImageWriteException
 		 * @return 0 for success
 		 * */
