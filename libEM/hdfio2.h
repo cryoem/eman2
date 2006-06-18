@@ -41,6 +41,7 @@ namespace EMAN
         
 		hid_t file;
 		hid_t group;
+		hid_t simple_space;
 		string filename;
 		IOMode rw_mode;
 		bool initialized;

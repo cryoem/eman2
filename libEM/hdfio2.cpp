@@ -27,10 +27,13 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 	initialized = false;
 	file=-1;
 	group=-1;
+	hsize_t dims=1;
+	simple_space=H5Screate_simple(1,&dims,NULL);
 }
 
 HdfIO::~HdfIO()
 {
+	H5Sclose(simple_space);
 	close_cur_dataset();
     if (group >= 0) {
         H5Gclose(group);
@@ -40,6 +43,40 @@ HdfIO::~HdfIO()
 		H5Fclose(file);
     }
 //printf("HDf close\n");
+}
+
+int HdfIO::write_attr(hid_t loc,const char *name,EMObject obj) {
+	hid_t type;
+	hid_t spc;
+	hsize_t dims=1;
+	switch(obj.get_type) {
+	case INT: type=H5Tcopy(H5T_STD_I32BE); spc=H5Scopy(simple_space); break;
+	case FLOAT: type=H5Tcopy(H5T_IEEE_F32BE); spc=H5Scopy(simple_space); break;
+	case DOUBLE: type=H5Tcopy(H5T_IEEE_F64BE); spc=H5Scopy(simple_space); break;
+	case STRING: 
+		type=H5Tcopy(H5T_C_S1); 
+		H5Tset_size(type,strlen((const char *)obj)+1);
+		spc=H5Scopy(simple_space); 
+		break;
+	case FLOATARRAY:
+		type=H5Tcopy(H5T_IEEE_F32BE);
+		(vector < float > () const)obj.size();
+		dims=(vector < float > () const)obj.size();
+		simple_space=H5Screate_simple(1,&dims,NULL);
+		break;
+	case STRINGARRAY:
+	case EMDATA:
+	case XYDATA:
+		return -1;
+		break;
+	}
+
+	H5Adelete(loc,name);
+	attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
+
+
+	H5Tclose(type);
+	H5Sclose(spc);
 }
 
 void HdfIO::init()
@@ -70,12 +107,11 @@ void HdfIO::init()
 	}
 	if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM) to HDF5 file");
 
-	
-
 	initialized = true;
 	EXITFUNC;
 
 }
+
 
 
 bool HdfIO::is_valid(const void *first_block)
