@@ -343,33 +343,50 @@ class TestEMData(unittest.TestCase):
         e.set_size(32,32,32)
         e.process_inplace("testimage.noise.uniform.rand")
         e2 = e.do_fft()
+        e2_copy = e2.copy()
         e3 = e2.do_ift()
         
+        #after do_fft() and do_ift(), we should get original real image
         for i in range(32):
             for j in range(32):
                 for k in range(32):
                     self.assertAlmostEqual(e.get_value_at(i,j,k), e3.get_value_at(i,j,k), 3)
+        
+        #do_ift() is out-of-place operation, the complex image should not be destroyed
+        for i in range(32):
+            for j in range(32):
+                for k in range(32):
+                    self.assertEqual(e2.get_value_at(i,j,k), e2_copy.get_value_at(i,j,k))
         
         #test 1D image
         e4 = EMData()
         e4.set_size(32,1,1)
         e.process_inplace("testimage.noise.uniform.rand")
         e5 = e4.do_fft()
+        e5_copy = e5.copy()
         e6 = e5.do_ift()
         
         for l in range(32):
-                self.assertAlmostEqual(e4.get_value_at(l, 0, 0), e6.get_value_at(l, 0, 0), 3)
+            self.assertAlmostEqual(e4.get_value_at(l, 0, 0), e6.get_value_at(l, 0, 0), 3)
+        
+        for l in range(32):
+            self.assertEqual(e5.get_value_at(l,0,0), e5_copy.get_value_at(l,0,0))
         
         #test 2D image
         e7 = EMData()
         e7.set_size(32,32,1)
         e7.process_inplace("testimage.noise.uniform.rand")
         e8 = e7.do_fft()
+        e8_copy = e8.copy()
         e9 = e8.do_ift()
         
         for m in range(32):
             for n in range(32):
                 self.assertAlmostEqual(e7.get_value_at(m,n,0), e9.get_value_at(m,n,0), 3)
+        
+        for m in range(32):
+            for n in range(32):
+                self.assertEqual(e8.get_value_at(m,n,0), e8_copy.get_value_at(m,n,0))
         
         #do_fft() only apply to real image
         self.assertRaises( RuntimeError, e2.do_fft, )
