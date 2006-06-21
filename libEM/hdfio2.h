@@ -1,8 +1,8 @@
 /**
  * $Id$
  */
-#ifndef eman__hdfio_h__
-#define eman__hdfio_h__ 1
+#ifndef eman__hdfio2_h__
+#define eman__hdfio2_h__ 1
 
 #ifdef EM_HDF5
 
@@ -16,15 +16,15 @@ using std::vector;
 namespace EMAN
 {
 	/** HDF5 (hiearchical data format version 5) is supported in
-	 * HdfIO.
+	 * HdfIO. This is a revised HDF5 format file.
 	 *
 	 * A HDF5 file may contains multiple 2D or 3D images.
 	 */
-	class HdfIO:public ImageIO
+	class HdfIO2:public ImageIO
 	{
 	  public:
-		HdfIO(const string & filename, IOMode rw_mode = READ_ONLY);
-		~HdfIO();
+		HdfIO2(const string & filename, IOMode rw_mode = READ_ONLY);
+		~HdfIO2();
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
@@ -34,11 +34,12 @@ namespace EMAN
 			return false;
 		}
         
+		int write_attr(hid_t loc,const char *name,EMObject &obj);
+		EMObject read_attr(hid_t loc,const char *name);
 		int get_nimg();
 
 		int get_num_dataset();
 		vector < int >get_image_indices();
-        
 		hid_t file;
 		hid_t group;
 		hid_t simple_space;

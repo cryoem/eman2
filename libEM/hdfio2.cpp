@@ -3,7 +3,7 @@
  */
 #ifdef EM_HDF5
 
-#include "hdfio.h"
+#include "hdfio2.h"
 #include "geometry.h"
 #include "ctf.h"
 #include "Assert.h"
@@ -18,10 +18,7 @@
 
 using namespace EMAN;
 
-hid_t HdfIO::mapinfo_type = -1;
-const char *HdfIO::HDF5_SIGNATURE = "\211HDF\r\n\032\n";
-
-HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
+HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
 {
 	initialized = false;
@@ -31,10 +28,9 @@ HdfIO::HdfIO(const string & hdf_filename, IOMode rw)
 	simple_space=H5Screate_simple(1,&dims,NULL);
 }
 
-HdfIO::~HdfIO()
+HdfIO2::~HdfIO2()
 {
 	H5Sclose(simple_space);
-	close_cur_dataset();
     if (group >= 0) {
         H5Gclose(group);
     }
@@ -45,41 +41,137 @@ HdfIO::~HdfIO()
 //printf("HDf close\n");
 }
 
-int HdfIO::write_attr(hid_t loc,const char *name,EMObject obj) {
+EMObject HdfIO2::read_attr(hid_t loc,const char *name) {
+	hid_t attr = H5Aopen_name(loc,name);
+	hid_t type = H5Aget_type(attr);
+	hid_t spc = H5Aget_space(attr);
+	H5T_class_t cls = H5Tget_class(type);
+	size_t sz = H5Tget_size(type);						// storage size, arrays handled in the 'space'
+	hssize_t pts = H5Sget_simple_extent_npoints(spc);	// number of points > 1 if an array of floats
+
+	EMObject ret(0);
+	int i;
+	float f,*fa;
+	double d;
+	char *s;
+	vector <float> fv(pts);
+
+	switch (cls) {
+	case H5T_INTEGER:
+		H5Aread(attr,H5T_NATIVE_INT,&i);
+		ret=EMObject(i);
+		break;
+	case H5T_FLOAT:
+		if (sz==4) {
+			if (pts==1) {
+				H5Aread(attr,H5T_NATIVE_FLOAT,&f);
+				ret=EMObject(f);
+			}
+			else {
+				fa=(float *)malloc(pts*sizeof(float));
+				H5Aread(attr,H5T_NATIVE_FLOAT,fa);
+				for (i=0; i<pts; i++) fv[i]=fa[i];
+				free(fa);
+				ret=EMObject(fv);
+			}
+		}
+		else if (sz==8) {
+			H5Aread(attr,H5T_NATIVE_DOUBLE,&d);
+			ret=EMObject(d);
+		}
+		break;
+	case H5T_STRING:
+		s=(char *)malloc(sz+1);
+		H5Aread(attr,H5T_NATIVE_CHAR,s);
+		ret=EMObject(s);
+		free(s);
+		break;
+	default:
+		LOGERR("Unhandled HDF5 metadata %d", cls);
+	}
+
+	H5Sclose(spc);
+	H5Tclose(type);
+	H5Aclose(attr);
+
+	return ret;
+}
+
+int HdfIO2::write_attr(hid_t loc,const char *name,EMObject &obj) {
 	hid_t type;
 	hid_t spc;
 	hsize_t dims=1;
-	switch(obj.get_type) {
-	case INT: type=H5Tcopy(H5T_STD_I32BE); spc=H5Scopy(simple_space); break;
-	case FLOAT: type=H5Tcopy(H5T_IEEE_F32BE); spc=H5Scopy(simple_space); break;
-	case DOUBLE: type=H5Tcopy(H5T_IEEE_F64BE); spc=H5Scopy(simple_space); break;
-	case STRING: 
-		type=H5Tcopy(H5T_C_S1); 
+	switch(obj.get_type()) {
+	case EMObject::INT: type=H5Tcopy(H5T_NATIVE_INT); spc=H5Scopy(simple_space); break;
+	case EMObject::FLOAT: type=H5Tcopy(H5T_NATIVE_FLOAT); spc=H5Scopy(simple_space); break;
+	case EMObject::DOUBLE: type=H5Tcopy(H5T_NATIVE_DOUBLE); spc=H5Scopy(simple_space); break;
+	case EMObject::STRING: 
+		type=H5Tcopy(H5T_NATIVE_CHAR); 
 		H5Tset_size(type,strlen((const char *)obj)+1);
 		spc=H5Scopy(simple_space); 
 		break;
-	case FLOATARRAY:
-		type=H5Tcopy(H5T_IEEE_F32BE);
-		(vector < float > () const)obj.size();
-		dims=(vector < float > () const)obj.size();
+	case EMObject::FLOATARRAY:
+		type=H5Tcopy(H5T_NATIVE_FLOAT);
+		dims=((vector <float>)obj).size();
 		simple_space=H5Screate_simple(1,&dims,NULL);
 		break;
-	case STRINGARRAY:
-	case EMDATA:
-	case XYDATA:
+	case EMObject::STRINGARRAY:
+	case EMObject::EMDATA:
+	case EMObject::XYDATA:
 		return -1;
+		break;
+	case EMObject::UNKNOWN:
 		break;
 	}
 
 	H5Adelete(loc,name);
-	attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
+	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
+
+	unsigned int i;
+	float f,*fa;
+	double d;
+	const char *s;
+	vector <float> fv;
+	switch(obj.get_type()) {
+	case EMObject::INT:
+		i=(int)obj;
+		H5Awrite(attr,H5T_NATIVE_INT,&i);
+		break;
+	case EMObject::FLOAT:
+		f=(float)obj;
+		H5Awrite(attr,H5T_NATIVE_FLOAT,&f);
+		break;
+	case EMObject::DOUBLE:
+		d=(double)obj;
+		H5Awrite(attr,H5T_NATIVE_DOUBLE,&d);
+		break;
+	case EMObject::STRING: 
+		s=(const char *)obj;
+		H5Awrite(attr,H5T_NATIVE_CHAR,s);
+		break;
+	case EMObject::FLOATARRAY:
+		fv=(vector < float >)obj;
+		fa=(float *)malloc(fv.size()*sizeof(float));
+		for (i=0; i<fv.size(); i++) fa[i]=fv[i];
+		H5Awrite(attr,H5T_NATIVE_FLOAT,fa);
+		free(fa);
+		break;
+//	case EMObject::STRINGARRAY:
+//	case EMObject::EMDATA:
+//	case EMObject::XYDATA:
+//		return -1;
+//		break;
+	default:
+		LOGERR("Unhandled HDF5 metadata '%s'", name);
+		
+	}
 
 
 	H5Tclose(type);
 	H5Sclose(spc);
 }
 
-void HdfIO::init()
+void HdfIO2::init()
 {
 	ENTERFUNC;
 	if (initialized) {
@@ -90,31 +182,32 @@ void HdfIO::init()
 
 	if (rw_mode == READ_ONLY) {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-		if (file<0) throw FileAccessException(filename,"Cannot open HDF5 for reading");
+		if (file<0) throw FileAccessException(filename);
 	}
 	else {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 		if (file < 0) {
 			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-			if (file < 0) throw FileAccessException(filename, "Cannot create HDF5 file");
+			if (file < 0) throw FileAccessException(filename);
 		}
 	}
 	
-	group=H5Gopen(file,"/TEM")
+	group=H5Gopen(file,"/MDF")
 	if (group<0) {
 		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /TEM group)");
-		group=H5Gcreate(file,"/TEM",4096);		// create the group where image data will be stored
+		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
+		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM) to HDF5 file");
+		H5Gclose(group);
+		group=H5Gcreate(file,"/MDF/images",4096);		// create the group for images/volumes
+		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM/images) to HDF5 file");
+		write_attr(group,"imageid_max",EMObject(-1));
 	}
-	if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM) to HDF5 file");
-
 	initialized = true;
 	EXITFUNC;
 
 }
 
-
-
-bool HdfIO::is_valid(const void *first_block)
+bool HdfIO2::is_valid(const void *first_block)
 {
 	ENTERFUNC;
 
@@ -129,291 +222,101 @@ bool HdfIO::is_valid(const void *first_block)
 	return false;
 }
 
-int HdfIO::read_header(Dict & dict, int image_index, const Region * area, bool)
+int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
-	check_read_access(image_index);
-	
-	int nx = 0, ny = 0, nz = 0;
-	if (get_hdf_dims(image_index, &nx, &ny, &nz) != 0) {
-		throw ImageReadException(filename, "invalid image dimensions");
-	}
-	
-	check_region(area, IntSize(nx, ny, nz));
-
-	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
-
-	set_dataset(image_index);
-	int err = 0;
-	if (cur_dataset < 0) {
-		err = 1;
-	}
-	else {
-		err = H5Aiterate(cur_dataset, 0, attr_info, &dict);
-		if (err < 0) {
-			err = 1;
-		}
-	}
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = zlen;
-
-    Dict euler_angles;
-    read_euler_angles(euler_angles, image_index);
-
-    vector<string> euler_names = euler_angles.keys();
-    for (size_t i = 0; i < euler_names.size(); i++) {
-        dict[euler_names[i]] = euler_angles[euler_names[i]];
-    }
-   
-	dict["datatype"] = EMUtil::EM_FLOAT;
-	EXITFUNC;
-	return 0;
-}
-
-
-int HdfIO::read_data(float *data, int image_index, const Region * area, bool)
-{
-	ENTERFUNC;
-	
-	check_read_access(image_index, data);
-	set_dataset(image_index);
-#if 0
-	if (cur_dataset < 0) {
-		char cur_dataset_name[32];
-		sprintf(cur_dataset_name, "%d", image_index);
-		cur_dataset = H5Dopen(file, cur_dataset_name);
-
-		if (cur_dataset < 0) {
-			char desc[256];
-			sprintf(desc, "no image with id = %d", image_index);
-			throw ImageReadException(filename, desc);
-		}
-	}
-#endif
-	hid_t datatype = H5Dget_type(cur_dataset);
-	H5T_class_t t_class = H5Tget_class(datatype);
-	H5Tclose(datatype);
-	
-	if (t_class != H5T_FLOAT) {
-		char desc[256];
-		sprintf(desc, "unsupported HDF5 data type '%d'", (int) t_class);
-		throw ImageReadException(filename, desc);
-	}
-
-	int nx = 0, ny = 0, nz = 0;
-	if (get_hdf_dims(image_index, &nx, &ny, &nz) != 0) {
-		throw ImageReadException(filename, "invalid image dimensions");
-	}
-	
-	check_region(area, FloatSize(nx, ny, nz));
-
-	int err = 0;
-	if (!area) {
-		err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
-					  H5S_ALL, H5P_DEFAULT, data);
-	}
-	else {
-		hid_t dataspace_id = 0;
-		hid_t memspace_id = 0;
-		
-		err = create_region_space(&dataspace_id, &memspace_id, area,
-								  nx, ny, nz, image_index);
-		if (err == 0) {
-			err = H5Dread(cur_dataset, H5T_NATIVE_FLOAT, memspace_id,
-						  dataspace_id, H5P_DEFAULT, data);
-		}
-		
-		H5Sclose(dataspace_id);
-		H5Sclose(memspace_id);
-		if (err < 0) {
-			throw ImageReadException(filename,
-									 "creating memory space or file space id failed");
-		}
-	}
-
-	if (err < 0) {
-		char desc[256];
-		sprintf(desc, "reading %dth HDF5 image failed", image_index);
-		throw ImageReadException(filename, desc);
-	}
 
 	EXITFUNC;
 	return 0;
 }
 
 
-int HdfIO::write_header(const Dict & dict, int image_index, const Region* area,
+int HdfIO2::read_data(float *data, int image_index, const Region * area, bool)
+{
+	ENTERFUNC;
+	
+	EXITFUNC;
+	return 0;
+}
+
+
+int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	check_write_access(rw_mode, image_index);
+	// If image_index<0 append, and make sure the max value in the file is correct
+	int nimg = read_attr(group,"imageid_max");
+	if (image_index<0) image_index=nimg+1;
+	if (image_index>nimg) {
+		write_attr(group,"imageid_max",EMObject(image_index));
+	}
 
-	if (area) {
-		int nx0 = 0;
-		int ny0 = 0;
-		int nz0 = 0;
-		
-		if (get_hdf_dims(image_index, &nx0, &ny0, &nz0) != 0) {
-			throw ImageReadException(filename, "invalid image dimensions");
-		}
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d",image_index);
+	hid_t igrp=H5Gopen(file,ipath);
+	if (igrp<0) {
+		// Need to create a new image group
+		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
+		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
 
-		check_region(area, FloatSize(nx0, ny0, nz0), is_new_file);
-
-		EXITFUNC;
-		return 0;		
+		// Now create the actual image dataset
+		sprintf(ipath,"/MDF/images/%d/image",image_index);
+		int dims[3]= { dict["nx"],dict["ny"],dict["nz"] };
+		if (dict["nz"]==1) hid_t space=H5Screate_simple(2,dims,NULL);
+		else hid_t space=H5Screate_simple(3,dims,NULL);
+		ds=H5Dcreate(file,path, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
+		H5Dclose(ds);
+		H5Sclose(space);
 	}
 	
-	int nx = dict["nx"];
-	int ny = dict["ny"];
-	int nz = dict["nz"];
-	
-	create_cur_dataset(image_index, nx, ny, nz);
-	Assert(cur_dataset >= 0);
-	
-	vector<string> keys = dict.keys();
-	vector<string>::const_iterator iter;
-	for (iter = keys.begin(); iter != keys.end(); iter++) {
-		//handle special case for euler anglers
-		if(*iter == "orientation_convention") {	
-			string eulerstr = (const char*) dict["orientation_convention"];
-        	write_string_attr(image_index, "orientation_convention", eulerstr);
-
-        	vector<string> euler_names = EMUtil::get_euler_names(eulerstr);
-        	Dict euler_dict;
-        	for (size_t i = 0; i < euler_names.size(); i++) {
-            	euler_dict[euler_names[i]] = dict[euler_names[i]];
-        	}
-
-        	write_euler_angles(euler_dict, image_index);
-		}
-		//micrograph_id should save as string
-		else if(*iter == "micrograph_id") {	
-			write_string_attr(image_index, "micrograph_id", (const char *) dict["micrograph_id"]);
-		}
-		//handle normal attributes
-		else {
-			EMObject attr_val = dict[*iter];
-			//string val_type = EMObject::get_object_type_name(attr_val.get_type());
-			EMObject::ObjectType t = attr_val.get_type();
-			switch(t) {
-				case EMObject::INT:
-					write_int_attr(image_index, *iter, attr_val);
-					break;
-				case EMObject::FLOAT:
-				case EMObject::DOUBLE:
-					write_float_attr(image_index, *iter, attr_val);
-					break;
-				case EMObject::STRING:
-					write_string_attr(image_index, *iter, attr_val.to_str());
-					break;
-				case EMObject::EMDATA:
-				case EMObject::XYDATA:
-				case EMObject::FLOATARRAY:
-				case EMObject::STRINGARRAY:
-					throw NotExistingObjectException("EMObject", "unsupported type");
-					break;
-				case EMObject::UNKNOWN:
-					std::cout << "Type::UNKNOWN the error attribute is: " << *iter << std::endl;
-					throw NotExistingObjectException("EMObject", "unsupported type");
-					break;
-				default:
-					throw NotExistingObjectException("EMObject", "unsupported type");
-			}
-		}
+	// Write the attributes to the group
+	map < string, EMObject >::const_iterator p;
+	for (p = dict.begin(); p != dict.end(); p++) {
+		string s("EMAN.");
+		s+=(const char *)p->second;
+		write_attr(igrp,p->first,EMObject(s));
 	}
-	
-    
-	//flush();
-	close_cur_dataset();
-	
+
+	H5Gclose(igrp);
 	EXITFUNC;
 	return 0;
 }
 
-int HdfIO::write_data(float *data, int image_index, const Region* area,
+int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-
-	check_write_access(rw_mode, image_index, 0, data);
-
-	int nx = read_int_attr(image_index, "nx");
-	int ny = read_int_attr(image_index, "ny");
-	int nz = read_int_attr(image_index, "nz");
-
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d/image"%image_index);
+	hid_t ds=H5Dopen(file,ipath);
+	if (ds<0) throw ImageWriteException(filename,"Image dataset does not exist");
 	
-	check_region(area, FloatSize(nx, ny, nz), is_new_file);
-	create_cur_dataset(image_index, nx, ny, nz);
-	Assert(cur_dataset >= 0);
-	
-	int err = 0;
-		
-	if (!area) {
-		err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, H5S_ALL,
-					   H5S_ALL, H5P_DEFAULT, data);
-		//if (err >= 0) {
-		//increase_num_dataset();
-		//image_indices.push_back(image_index);
-		//}
-	}
-	else {
-		hid_t dataspace_id = 0;
-		hid_t memspace_id = 0;
-			
-		err = create_region_space(&dataspace_id, &memspace_id, area,
-								  nx, ny, nz, image_index);
-		if (err == 0) {
-			err = H5Dwrite(cur_dataset, H5T_NATIVE_FLOAT, memspace_id,
-						   dataspace_id, H5P_DEFAULT, data);
-		}
-			
-		H5Sclose(dataspace_id);
-		H5Sclose(memspace_id);
-		if (err < 0) {
-			throw ImageReadException(filename,
-									 "creating memory space or file space id failed");
-		}
-	}
-
-	if (err < 0) {
-		throw ImageWriteException(filename, "HDF data write failed");
-	}		
-	
-	//flush();
-	close_cur_dataset();
 	
 	EXITFUNC;
 	return 0;
 }
 
-void HdfIO::flush()
+void HdfIO2::flush()
 {
 	if (cur_dataset > 0) {
 		H5Fflush(cur_dataset, H5F_SCOPE_LOCAL);
 	}
 }
 
-int HdfIO::get_nimg()
+int HdfIO2::get_nimg()
 {
 	init();
-	hdf_err_off();
-	int n = read_global_int_attr(get_item_name(NUMDATASET));
-	hdf_err_on();
-	return n;
+	return (int)read_attr(group,"imageid_max");
 }
 
 
-bool HdfIO::is_complex_mode()
+bool HdfIO2::is_complex_mode()
 {
 	return false;
 }
 
 // always big endian
-bool HdfIO::is_image_big_endian()
+bool HdfIO2::is_image_big_endian()
 {
 	return true;
 }
