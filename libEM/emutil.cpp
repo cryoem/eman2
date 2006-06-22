@@ -173,7 +173,7 @@ EMUtil::ImageType EMUtil::fast_get_image_type(const string & filename,
 		break;
 #ifdef EM_HDF5
 	case IMAGE_HDF:
-		if (HdfIO::is_valid(first_block)) {
+		if (HdfIO2::is_valid(first_block)) {
 			return IMAGE_HDF;
 		}
 		break;
@@ -310,7 +310,7 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 		image_type = IMAGE_DM3;
 	}
 #ifdef EM_HDF5
-	else if (HdfIO::is_valid(first_block)) {
+	else if (HdfIO2::is_valid(first_block)) {
 		image_type = IMAGE_HDF;
 	}
 #endif
@@ -448,7 +448,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 #endif
 #ifdef EM_HDF5
 	case IMAGE_HDF:
-		imageio = new HdfIO(filename, rw_mode);
+		imageio = new HdfIO2(filename, rw_mode);
 		break;
 #endif
 	case IMAGE_LST:

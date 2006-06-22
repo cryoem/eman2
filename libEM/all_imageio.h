@@ -31,7 +31,7 @@
 #include "lstio.h"
 
 #ifdef EM_HDF5
-	#include "hdfio.h"
+	#include "hdfio2.h"
 #endif	//EM_HDF5
 
 #include "salio.h"

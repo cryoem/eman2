@@ -290,6 +290,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	if (image_index<0)
+		image_index = read_attr(group,"imageid_max");
+
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
@@ -306,6 +309,10 @@ int HdfIO2::get_nimg()
 	return (int)read_attr(group,"imageid_max");
 }
 
+void HdfIO2::flush()
+{
+	return;
+}
 
 bool HdfIO2::is_complex_mode()
 {
