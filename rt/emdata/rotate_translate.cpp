@@ -672,6 +672,24 @@ void debug_peak_search()
 	cout << "End debug_peak_search function ..." << endl;
 }
 */
+
+void emobject_cast_test(EMObject& obj)
+{
+	cout << "Enter emobject_cast_test() ..." << endl;
+	
+	//int dims = ((vector <float>)obj).size();
+	//float dim = (float)obj;
+	//double dim = (double)obj;
+	//const char * dim = (const char *)obj;
+	//float dim = (float)obj;
+	//EMData * em = (EMData *)obj;
+	//XYData * dim = (XYData *)obj;
+	//vector<string> dim = obj;
+	vector<float> dim = obj.operator vector<float>();
+	
+	cout << "Leave emobject_cast_test() ..." << endl;
+}
+
 int main()
 {
 	cout << "Starting to test rotate_translate..." << endl;
@@ -701,6 +719,8 @@ int main()
 		//debug_common_lines();
 		//debug_sigma_processor();
 		//debug_peak_search();
+		EMObject obj;
+		emobject_cast_test(obj);
 	}
 	catch (E2Exception & e) {
 		cout << e.what();
