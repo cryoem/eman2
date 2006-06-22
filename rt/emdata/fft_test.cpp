@@ -20,7 +20,7 @@ int main()
 	*/
 	for (int i=0; i<1; ++i) {
 		EMData * w = new EMData();
-		w->set_size(4096,4096);
+		w->set_size(1024,1024);
 		w->process_inplace("testimage.noise.gauss", Dict("mean", 0.0f, "sigma", 1.0f, "seed", 8888));
 		
 		w->do_fft_inplace();
