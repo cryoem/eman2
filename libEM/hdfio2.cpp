@@ -97,10 +97,11 @@ EMObject HdfIO2::read_attr(hid_t loc,const char *name) {
 	return ret;
 }
 
-int HdfIO2::write_attr(hid_t loc,const char *name,EMObject &obj) {
-	hid_t type;
-	hid_t spc;
+int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
+	hid_t type=0;
+	hid_t spc=0;
 	hsize_t dims=1;
+	vector <float> fv;
 	switch(obj.get_type()) {
 	case EMObject::INT: type=H5Tcopy(H5T_NATIVE_INT); spc=H5Scopy(simple_space); break;
 	case EMObject::FLOAT: type=H5Tcopy(H5T_NATIVE_FLOAT); spc=H5Scopy(simple_space); break;
@@ -112,7 +113,8 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject &obj) {
 		break;
 	case EMObject::FLOATARRAY:
 		type=H5Tcopy(H5T_NATIVE_FLOAT);
-		dims=((vector <float>)obj).size();
+		fv=obj;
+		dims=fv.size();
 		simple_space=H5Screate_simple(1,&dims,NULL);
 		break;
 	case EMObject::STRINGARRAY:
@@ -131,7 +133,6 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject &obj) {
 	float f,*fa;
 	double d;
 	const char *s;
-	vector <float> fv;
 	switch(obj.get_type()) {
 	case EMObject::INT:
 		i=(int)obj;
@@ -150,7 +151,6 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject &obj) {
 		H5Awrite(attr,H5T_NATIVE_CHAR,s);
 		break;
 	case EMObject::FLOATARRAY:
-		fv=(vector < float >)obj;
 		fa=(float *)malloc(fv.size()*sizeof(float));
 		for (i=0; i<fv.size(); i++) fa[i]=fv[i];
 		H5Awrite(attr,H5T_NATIVE_FLOAT,fa);
@@ -192,7 +192,7 @@ void HdfIO2::init()
 		}
 	}
 	
-	group=H5Gopen(file,"/MDF")
+	group=H5Gopen(file,"/MDF");
 	if (group<0) {
 		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /TEM group)");
 		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
@@ -246,14 +246,16 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	ENTERFUNC;
 	// If image_index<0 append, and make sure the max value in the file is correct
 	int nimg = read_attr(group,"imageid_max");
+	unsigned int i;
 	if (image_index<0) image_index=nimg+1;
 	if (image_index>nimg) {
-		write_attr(group,"imageid_max",EMObject(image_index));
+		write_attr(group,(const char *)"imageid_max",EMObject(image_index));
 	}
 
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d",image_index);
 	hid_t igrp=H5Gopen(file,ipath);
+	hid_t ds;
 	if (igrp<0) {
 		// Need to create a new image group
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
@@ -261,20 +263,22 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
 		// Now create the actual image dataset
 		sprintf(ipath,"/MDF/images/%d/image",image_index);
-		int dims[3]= { dict["nx"],dict["ny"],dict["nz"] };
-		if (dict["nz"]==1) hid_t space=H5Screate_simple(2,dims,NULL);
-		else hid_t space=H5Screate_simple(3,dims,NULL);
-		ds=H5Dcreate(file,path, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
+		hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
+		hid_t space;
+		if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
+		else space=H5Screate_simple(3,dims,NULL);
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
 		H5Dclose(ds);
 		H5Sclose(space);
 	}
 	
 	// Write the attributes to the group
-	map < string, EMObject >::const_iterator p;
-	for (p = dict.begin(); p != dict.end(); p++) {
+	vector <string> keys=dict.keys();
+
+	for (i=0; i<keys.size(); i++) {
 		string s("EMAN.");
-		s+=(const char *)p->second;
-		write_attr(igrp,p->first,EMObject(s));
+		s+=keys[i];
+		write_attr(igrp,s.c_str(),keys[i]); 
 	}
 
 	H5Gclose(igrp);
@@ -287,20 +291,13 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 	char ipath[50];
-	sprintf(ipath,"/MDF/images/%d/image"%image_index);
+	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
 	if (ds<0) throw ImageWriteException(filename,"Image dataset does not exist");
 	
 	
 	EXITFUNC;
 	return 0;
-}
-
-void HdfIO2::flush()
-{
-	if (cur_dataset > 0) {
-		H5Fflush(cur_dataset, H5F_SCOPE_LOCAL);
-	}
 }
 
 int HdfIO2::get_nimg()

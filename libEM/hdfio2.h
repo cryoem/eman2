@@ -34,7 +34,7 @@ namespace EMAN
 			return false;
 		}
         
-		int write_attr(hid_t loc,const char *name,EMObject &obj);
+		int write_attr(hid_t loc,const char *name,EMObject obj);
 		EMObject read_attr(hid_t loc,const char *name);
 		int get_nimg();
 
