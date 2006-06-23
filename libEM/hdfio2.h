@@ -35,7 +35,7 @@ namespace EMAN
 		}
         
 		int write_attr(hid_t loc,const char *name,EMObject obj);
-		EMObject read_attr(hid_t loc,const char *name);
+		EMObject read_attr(hid_t attr);
 		int get_nimg();
 
 		int get_num_dataset();

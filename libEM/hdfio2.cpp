@@ -41,8 +41,7 @@ HdfIO2::~HdfIO2()
 //printf("HDf close\n");
 }
 
-EMObject HdfIO2::read_attr(hid_t loc,const char *name) {
-	hid_t attr = H5Aopen_name(loc,name);
+EMObject HdfIO2::read_attr(hid_t attr) {
 	hid_t type = H5Aget_type(attr);
 	hid_t spc = H5Aget_space(attr);
 	H5T_class_t cls = H5Tget_class(type);
@@ -92,7 +91,6 @@ EMObject HdfIO2::read_attr(hid_t loc,const char *name) {
 
 	H5Sclose(spc);
 	H5Tclose(type);
-	H5Aclose(attr);
 
 	return ret;
 }
@@ -103,19 +101,19 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	hsize_t dims=1;
 	vector <float> fv;
 	switch(obj.get_type()) {
-	case EMObject::INT: type=H5Tcopy(H5T_NATIVE_INT); spc=H5Scopy(simple_space); break;
-	case EMObject::FLOAT: type=H5Tcopy(H5T_NATIVE_FLOAT); spc=H5Scopy(simple_space); break;
-	case EMObject::DOUBLE: type=H5Tcopy(H5T_NATIVE_DOUBLE); spc=H5Scopy(simple_space); break;
+	case EMObject::INT: type=H5Tcopy(H5T_STD_I32LE); spc=H5Scopy(simple_space); break;
+	case EMObject::FLOAT: type=H5Tcopy(H5T_IEEE_F32LE); spc=H5Scopy(simple_space); break;
+	case EMObject::DOUBLE: type=H5Tcopy(H5T_IEEE_F64LE); spc=H5Scopy(simple_space); break;
 	case EMObject::STRING: 
-		type=H5Tcopy(H5T_NATIVE_CHAR); 
+		type=H5Tcopy(H5T_C_S1); 
 		H5Tset_size(type,strlen((const char *)obj)+1);
 		spc=H5Scopy(simple_space); 
 		break;
 	case EMObject::FLOATARRAY:
-		type=H5Tcopy(H5T_NATIVE_FLOAT);
+		type=H5Tcopy(H5T_IEEE_F32LE);
 		fv=obj;
 		dims=fv.size();
-		simple_space=H5Screate_simple(1,&dims,NULL);
+		spc=H5Screate_simple(1,&dims,NULL);
 		break;
 	case EMObject::STRINGARRAY:
 	case EMObject::EMDATA:
@@ -169,6 +167,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 
 	H5Tclose(type);
 	H5Sclose(spc);
+	return 0;
 }
 
 void HdfIO2::init()
@@ -192,7 +191,7 @@ void HdfIO2::init()
 		}
 	}
 	
-	group=H5Gopen(file,"/MDF");
+	group=H5Gopen(file,"/MDF/images");
 	if (group<0) {
 		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /TEM group)");
 		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
@@ -225,16 +224,47 @@ bool HdfIO2::is_valid(const void *first_block)
 int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+	int i;
+	// Each image is in a group for later expansion. Open the group
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d",image_index);
+	hid_t igrp=H5Gopen(file,ipath);
+	
+	int nattr=H5Aget_num_attrs(igrp);
 
+	char name[128];
+	for (i=0; i<nattr; i++) {
+		hid_t attr=H5Aopen_idx(igrp,i);
+		ssize_t l=H5Aget_name(attr,127,name);
+		if (strncmp(name,"EMAN.",5)!=0) {
+			H5Aclose(attr);
+			continue;
+		}
+		EMObject val=read_attr(attr);
+		dict[name+5]=val;
+		H5Aclose(attr);
+	}
+
+	H5Gclose(igrp);
 	EXITFUNC;
 	return 0;
 }
 
 
-int HdfIO2::read_data(float *data, int image_index, const Region * area, bool)
+int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is3d)
 {
 	ENTERFUNC;
+
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d/image",image_index);
+	hid_t ds=H5Dopen(file,ipath);
+	if (ds<0) throw ImageWriteException(filename,"Image does not exist");
+	hid_t spc=H5Dget_space(ds);
+
+	H5Dread(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 	
+	H5Sclose(spc);
+	H5Dclose(ds);
 	EXITFUNC;
 	return 0;
 }
@@ -245,13 +275,17 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 {
 	ENTERFUNC;
 	// If image_index<0 append, and make sure the max value in the file is correct
-	int nimg = read_attr(group,"imageid_max");
+	// though this is normally handled by EMData.write_image()
+	hid_t attr=H5Aopen_name(group,"imageid_max");
+	int nimg = read_attr(attr);
+	H5Aclose(attr);
 	unsigned int i;
 	if (image_index<0) image_index=nimg+1;
 	if (image_index>nimg) {
 		write_attr(group,(const char *)"imageid_max",EMObject(image_index));
 	}
 
+	// Each image is in a group for later expansion. Open the group, create if necessary
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d",image_index);
 	hid_t igrp=H5Gopen(file,ipath);
@@ -278,7 +312,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	for (i=0; i<keys.size(); i++) {
 		string s("EMAN.");
 		s+=keys[i];
-		write_attr(igrp,s.c_str(),keys[i]); 
+		write_attr(igrp,s.c_str(),dict[keys[i]]); 
 	}
 
 	H5Gclose(igrp);
@@ -287,18 +321,27 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 }
 
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
-					  EMUtil::EMDataType, bool)
+					  EMUtil::EMDataType dt, bool uhe)
 {
 	ENTERFUNC;
-	if (image_index<0)
-		image_index = read_attr(group,"imageid_max");
+	if (dt!=EMUtil::EM_FLOAT) throw ImageWriteException(filename,"HDF5 write only supports float format");
+
+	if (image_index<0) {
+		hid_t attr=H5Aopen_name(group,"imageid_max");
+		image_index = read_attr(attr);
+		H5Aclose(attr);
+	}
 
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
 	if (ds<0) throw ImageWriteException(filename,"Image dataset does not exist");
+	hid_t spc=H5Dget_space(ds);
+
+	H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 	
-	
+	H5Sclose(spc);
+	H5Dclose(ds);
 	EXITFUNC;
 	return 0;
 }
@@ -306,7 +349,11 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 int HdfIO2::get_nimg()
 {
 	init();
-	return (int)read_attr(group,"imageid_max");
+	hid_t attr=H5Aopen_name(group,"imageid_max");
+	int n = read_attr(attr);
+	H5Aclose(attr);
+
+	return n+1;
 }
 
 void HdfIO2::flush()
