@@ -81,7 +81,8 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 		break;
 	case H5T_STRING:
 		s=(char *)malloc(sz+1);
-		H5Aread(attr,H5T_NATIVE_CHAR,s);
+		H5Aread(attr,type,s);
+//		H5Aread(attr,H5T_NATIVE_CHAR,s);
 		ret=EMObject(s);
 		free(s);
 		break;
@@ -107,7 +108,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	case EMObject::STRING: 
 		type=H5Tcopy(H5T_C_S1); 
 		H5Tset_size(type,strlen((const char *)obj)+1);
-		spc=H5Scopy(simple_space); 
+		spc=H5Screate(H5S_SCALAR);
 		break;
 	case EMObject::FLOATARRAY:
 		type=H5Tcopy(H5T_IEEE_F32LE);
@@ -146,7 +147,8 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		break;
 	case EMObject::STRING: 
 		s=(const char *)obj;
-		H5Awrite(attr,H5T_NATIVE_CHAR,s);
+//		H5Awrite(attr,H5T_NATIVE_CHAR,s);
+		H5Awrite(attr,type,s);
 		break;
 	case EMObject::FLOATARRAY:
 		fa=(float *)malloc(fv.size()*sizeof(float));
@@ -251,6 +253,31 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
+int HdfIO2::erase_header(int image_index)
+{
+	ENTERFUNC;
+	init();
+	int i;
+	// Each image is in a group for later expansion. Open the group
+	char ipath[50];
+	sprintf(ipath,"/MDF/images/%d",image_index);
+	hid_t igrp=H5Gopen(file,ipath);
+	
+	int nattr=H5Aget_num_attrs(igrp);
+
+	char name[128];
+	for (i=0; i<nattr; i++) {
+		hid_t attr=H5Aopen_idx(igrp,i);
+		ssize_t l=H5Aget_name(attr,127,name);
+		H5Aclose(attr);
+		H5Adelete(igrp,name);
+	}
+
+	H5Gclose(igrp);
+	EXITFUNC;
+	return 0;
+}
+
 
 int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is3d)
 {
@@ -275,6 +302,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 {
 	ENTERFUNC;
 	init();
+	erase_header(image_index);
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
 	hid_t attr=H5Aopen_name(group,"imageid_max");
