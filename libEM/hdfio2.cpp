@@ -224,6 +224,7 @@ bool HdfIO2::is_valid(const void *first_block)
 int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+	init();
 	int i;
 	// Each image is in a group for later expansion. Open the group
 	char ipath[50];
@@ -254,7 +255,6 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is3d)
 {
 	ENTERFUNC;
-
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
@@ -274,6 +274,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	init();
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
 	hid_t attr=H5Aopen_name(group,"imageid_max");

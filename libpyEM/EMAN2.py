@@ -51,15 +51,17 @@ This function is called to log the end of the current job. n is returned by E2in
 
 
 def display(img):
-	"""This will use 'v2', and EMAN1 program to view an image
+	"""This will use 'v2', an EMAN1 program to view an image
 	or a list/tuple of images. This is basically a hack."""
-	try: os.unlink("/tmp/img.hdf")
+	try: os.unlink("/tmp/img.hed")
+	except: pass
+	try: os.unlink("/tmp/img.img")
 	except: pass
 	if isinstance(img,list) or isinstance(img,tuple) :
-		for i in img: i.write_image("/tmp/img.hdf",-1)
+		for i in img: i.write_image("/tmp/img.hed",-1)
 	else:
-		img.write_image("/tmp/img.hdf")
-	os.system("v2 /tmp/img.hdf")
+		img.write_image("/tmp/img.hed")
+	os.system("v2 /tmp/img.hed")
 
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function
