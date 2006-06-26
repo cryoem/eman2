@@ -268,19 +268,30 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-
+	
 	check_write_access(rw_mode, image_index, 1, data);
+
+	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
+	getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	if (depth_type == PNG_CHAR_DEPTH) {
 		unsigned char *cdata = new unsigned char[nx];
-
+		
 		for (unsigned int y = 0; y < ny; y++) {
 			for (unsigned int x = 0; x < nx; x++) {
-				cdata[x] = static_cast < unsigned char >(data[y * nx + x]);
+				if(data[y * nx + x] < rendermin){
+					cdata[x] = 0;
+				}
+				else if(data[y * nx + x] > rendermax) {
+					cdata[x] = 255;
+				}
+				else {
+					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 256);
+				}
 			}
 			png_write_row(png_ptr, (png_byte *) cdata);
 		}
-
+		
 		if( cdata )
 		{
 			delete[]cdata;
@@ -292,7 +303,15 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 
 		for (unsigned int y = 0; y < ny; y++) {
 			for (unsigned int x = 0; x < nx; x++) {
-				sdata[x] = static_cast < unsigned short >(data[y * nx + x]);
+				if(data[y * nx + x] < rendermin){
+					sdata[x] = 0;
+				}
+				else if(data[y * nx + x] > rendermax) {
+					sdata[x] = 65535;
+				}
+				else {
+					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 65536);
+				}
 			}
 			
 			png_write_row(png_ptr, (png_byte *) sdata);

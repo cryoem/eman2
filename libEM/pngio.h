@@ -52,6 +52,9 @@ namespace EMAN
 		png_uint_32 ny;
 		BitDepthType depth_type;
 		int number_passes;
+		
+		float rendermin;
+		float rendermax;
 	};
 
 }
