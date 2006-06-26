@@ -449,6 +449,10 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 #ifdef EM_HDF5
 	case IMAGE_HDF:
 		imageio = new HdfIO2(filename, rw_mode);
+		if (((HdfIO2 *)imageio)->init_test()==-1) {
+			delete imageio;
+			imageio = new HdfIO(filename, rw_mode);
+		}
 		break;
 #endif
 	case IMAGE_LST:

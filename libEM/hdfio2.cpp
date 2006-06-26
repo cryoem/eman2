@@ -208,6 +208,49 @@ void HdfIO2::init()
 
 }
 
+// If this version of init() returns -1, then we have an old-style HDF5 file
+int HdfIO2::init_test()
+{
+	ENTERFUNC;
+	if (initialized) {
+		return 1;
+	}
+
+	H5Eset_auto(0, 0);	// Turn off console error logging.
+
+	if (rw_mode == READ_ONLY) {
+		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+		if (file<0) return 0;
+	}
+	else {
+		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+		if (file < 0) {
+			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+			if (file < 0) return 0;
+		}
+	}
+	
+	group=H5Gopen(file,"/MDF/images");
+	if (group<0) {
+		if (rw_mode == READ_ONLY) return -1;
+		group=H5Aopen_name(file,"num_dataset");
+		if (group>=0) {
+			H5Aclose(group);
+			group=-1;
+			return -1;
+		}
+		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
+		if (group<0) return 0;
+		H5Gclose(group);
+		group=H5Gcreate(file,"/MDF/images",4096);		// create the group for images/volumes
+		if (group<0) return 0;
+		write_attr(group,"imageid_max",EMObject(-1));
+	}
+	initialized = true;
+	EXITFUNC;
+	return 1;
+}
+
 bool HdfIO2::is_valid(const void *first_block)
 {
 	ENTERFUNC;

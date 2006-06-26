@@ -34,6 +34,7 @@ namespace EMAN
 			return false;
 		}
         
+		int init_test();
 		int erase_header(int image_index);
 		int write_attr(hid_t loc,const char *name,EMObject obj);
 		EMObject read_attr(hid_t attr);
