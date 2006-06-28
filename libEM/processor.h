@@ -380,7 +380,7 @@ The basic design of EMAN Processors: <br>\
 
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = FourierProcessor::get_param_types();
 			d.put("lowpass", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			return d;
 		}
@@ -417,7 +417,7 @@ The basic design of EMAN Processors: <br>\
 
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = FourierProcessor::get_param_types();
 			d.put("highpass", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
 			return d;
 		}
