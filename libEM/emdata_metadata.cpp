@@ -35,7 +35,7 @@ EMData* EMData::get_fft_amplitude2D()
 		for (int i = 0; i < nx2; i++) {
 			temp = (*this)(2*i,j)*(*this)(2*i,j);
 			temp += (*this)(2*i+1,j)*(*this)(2*i+1,j);
-			(*dat)(i,j) = sqrt(temp);
+			(*dat)(i,j) = std::sqrt(temp);
 		}
 	}
 
@@ -235,8 +235,8 @@ float EMData::calc_sigma_diff()
 		}
 	}
 
-	float sigup = sqrt((float)sum_up / nup);
-	float sigdown = sqrt((float)sum_down / ndown);
+	float sigup = std::sqrt((float)sum_up / nup);
+	float sigdown = std::sqrt((float)sum_down / ndown);
 	float sig_diff = fabs(sigup - sigdown) / sigma;
 
 

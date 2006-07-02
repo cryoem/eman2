@@ -224,7 +224,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	float *fint = temp_ft->get_data();
 //  TO KEEP THE EXACT VALUES ON THE PREVIOUS GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
-	float  sq2 = 1.0f/sqrt(2.0f);
+	float  sq2 = 1.0f/std::sqrt(2.0f);
 	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
 	//for (i = 0; i < lsd*ny*nz; i++)  fout[i] = fint[i];
 	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;

@@ -256,7 +256,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 			float fjkx = float(jkx);
 			float fjky = float(jky);
 
-			kValue =sqrt(fjkx*fjkx +  fjky*fjky )  ;
+			kValue = std::sqrt(fjkx*fjkx +  fjky*fjky )  ;
 //        		mMaxR= floor(ScalFactor*kValue +10);
 
  //                   How many copies
@@ -435,7 +435,7 @@ EMData* EMData::rotavg()
 	   for (int j = -ny/2; j < ny/2 + ny%2; j++) {
 		if (abs(j) > rmax) continue;
 		for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-			float r = sqrt(float(k*k) + float(j*j) + float(i*i));
+			float r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
 			int ir = int(r);
 			if (ir >= rmax) continue;
 			float frac = r - float(ir);
@@ -486,7 +486,7 @@ vector<float> EMData::cog()
 				sum1 += val;
 				RG   += val*(square(MX - (i-1)));
 			}
-			RG=sqrt(RG/sum1);
+			RG=std::sqrt(RG/sum1);
 			MX=MX-(nx/2);
 			cntog.push_back(MX);
 			cntog.push_back(RG);	
@@ -517,7 +517,7 @@ vector<float> EMData::cog()
 						RG   += val*(square(MX - (i-1)) + r);
 					}
 				}
-			RG = sqrt(RG/sum1);
+			RG = std::sqrt(RG/sum1);
 			MX = MX - nx/2;
 			MY = MY - ny/2;
 			cntog.push_back(MX);
@@ -558,7 +558,7 @@ vector<float> EMData::cog()
 					}
 				}
 			}
-			RG = sqrt(RG/sum1);
+			RG = std::sqrt(RG/sum1);
 			MX = MX - nx/2;
 			MY = MY - ny/2;
 			MZ = MZ - nz/2;
@@ -676,7 +676,7 @@ Output: 2D 3xk real image.
 			for ( ix = 0; ix <= lsd2-1; ix+=2) {
 			// Skip Friedel related values
 			   if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-				argx = 0.5f*sqrt(argy + float(ix*ix)*0.25f*dx2);
+				argx = 0.5f*std::sqrt(argy + float(ix*ix)*0.25f*dx2);
 				int r = Util::round(inc*2*argx);
 				if(r <= inc) {
 					int ii = ix + (iy  + iz * ny)* lsd2;
@@ -695,7 +695,7 @@ Output: 2D 3xk real image.
 	for (int i = 0; i <= inc; i++) {
 		if(lr[i]>0) {
 			result[i]     = float(i)/float(2*inc);
-			result[i+inc+1]           = float(ret[i] / (sqrt(n1[i] * n2[i])));
+			result[i+inc+1] = float(ret[i] / (std::sqrt(n1[i] * n2[i])));
 			result[i+2*(inc+1)] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
 		else {
 			result[i]           = 0.0f;
@@ -993,7 +993,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float dz) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	//  CTF parameters
 	float ps = 4.2f, voltage = 200.0f, cs= 2.0*1.0e-7f, ww=0.1, b_factor=0.0f, sign=-1.0f;
-	float wgh=atan(ww/(1.0-ww)), lambda = 12.398f/sqrt(voltage *(1022.f+voltage));
+	float wgh=atan(ww/(1.0-ww)), lambda = 12.398f/std::sqrt(voltage *(1022.f+voltage));
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
 	float  dy2 = pow(float(j)/float(n),2);
@@ -1002,7 +1002,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 		if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
 			 //	   if ( !((0 == i) && (j < 0))) {
 			//  Calculate absolute frequency
-			float  ak = sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
+			float  ak = std::sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
 			//float  ctf = Util::tf(dz, freq, 12.398f/sqrt(lambda *(1022.f+lambda)), cs*1.0e-7f, atan(wgh/(1.0-wgh)), b_factor, sign);
 			float  ctf = -sin(-M_PI*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh);
 			float xnew = i*tf[0][0] + j*tf[1][0];

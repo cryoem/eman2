@@ -583,6 +583,35 @@ EMData * EMData::power(int n)
 }
 
 
+EMData * EMData::sqrt()
+{
+	ENTERFUNC;
+	
+	if (is_complex()) {
+		throw ImageFormatException("real image only");
+	}
+	
+	EMData * r = this->copy();
+	float * new_data = r->get_data();
+	size_t size = nx * ny * nz;
+	for (size_t i = 0; i < size; ++i) {
+		if(rdata[i] < 0) {	
+			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
+		}
+		else {
+			if(rdata[i]) {	//do nothing with pixel has value zero 
+				new_data[i] = std::sqrt(rdata[i]);
+			}
+		}
+	}
+	
+	r->update_stat();
+	return r;
+	
+	EXITFUNC;
+}
+
+
 EMData * EMData::log()
 {
 	ENTERFUNC;

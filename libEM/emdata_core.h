@@ -459,6 +459,12 @@ std::complex<float>& cmplx(const int ix) {
  */
 EMData * power(int n);		
 
+/**return square root of current image
+ * @return a image which is the square root of this image
+ * @exception ImageFormatException real image only
+ * */
+EMData * sqrt();
+
 		
 /** return natural logarithm image for a image 
  * @return a image which is the natural logarithm of this image

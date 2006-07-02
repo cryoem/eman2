@@ -1039,7 +1039,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 					}
 				}
 
-				dot2 = sqrt(dot2);
+				dot2 = std::sqrt(dot2);
 
 				if (dot2 == 0) {
 					ret_data[i + j * nx] = 0;
@@ -1416,7 +1416,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 
 	if (with == this) {
 		for (int i = 0; i < this_fft_size; i += 2) {
-			rdata2[i] = sqrt(rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1]);
+			rdata2[i] = std::sqrt(rdata1[i] * rdata2[i] + rdata1[i + 1] * rdata2[i + 1]);
 			rdata2[i + 1] = 0;
 		}
 
@@ -2039,7 +2039,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 				else { jny=(ny-j)/(float)ny; jny*=jny; }
 
 				for (int i = 0; i < nx; i += 2, k += 2) {
-					float r = sqrt((i * i / (nx*nx*4.0f)) + jny + mnz);
+					float r = std::sqrt((i * i / (nx*nx*4.0f)) + jny + mnz);
 					r = (r - x0) / step;
 
 					int l = 0;
@@ -2284,13 +2284,13 @@ void EMData::update_stat()
 	double mean = sum / n;
 
 #ifdef _WIN32
-	float sigma = (float)sqrt( _cpp_max(0.0,(square_sum - sum*sum / n)/(n-1)));
+	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*sum / n)/(n-1)));
 	n_nonzero = _cpp_max(1,n_nonzero);
-	double sigma_nonzero = sqrt( _cpp_max(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
+	double sigma_nonzero = std::sqrt( _cpp_max(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 #else
-	float sigma = (float)sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
+	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
 	n_nonzero = std::max<int>(1,n_nonzero);
-	double sigma_nonzero = sqrt(std::max<double>(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
+	double sigma_nonzero = std::sqrt(std::max<double>(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
 #endif	//_WIN32
 	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
 	
@@ -2609,7 +2609,7 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 		ret += Util::square(d1[i] - d2[i]);
 	}
 	EXITFUNC;
-	return sqrt(ret);
+	return std::sqrt(ret);
 }
 
 
@@ -2677,7 +2677,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	float mean = (float)lsum / num;
-	float sigma = sqrt(sq);
+	float sigma = std::sqrt(sq);
 	float th = 0.00001f;
 
 	if (sq > th) {
@@ -2953,8 +2953,8 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 		}
 
 		jmax = j - 1;
-		float sqrt_s1 = sqrt(s1);
-		float sqrt_s2 = sqrt(s2);
+		float sqrt_s1 = std::sqrt(s1);
+		float sqrt_s2 = std::sqrt(s2);
 
 		int l = 0;
 		for (float r = 1; r < rmax; r += 1.0f) {
@@ -3172,7 +3172,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 			}
 
 			float mean = sum1 / image_ny;
-			float sigma = sqrt(sum2 / image_ny - sum1 * sum1);
+			float sigma = std::sqrt(sum2 / image_ny - sum1 * sum1);
 
 			for (int j = 0; j < image_ny; j++) {
 				int l = i * image_ny + j;
