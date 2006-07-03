@@ -389,5 +389,4 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
 
-	
 #endif	//util__sparx_h__

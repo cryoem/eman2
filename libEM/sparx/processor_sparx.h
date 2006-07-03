@@ -573,12 +573,12 @@ namespace EMAN
 	{
 	  public:
 		string get_name() const
-		{ return "CTF_"; }
+		{ return "filter.CTF_"; }
 		static Processor *NEW()
 		{ return new CTF_Processor(); }
 		string get_desc() const
 		{
-			return "CTF_ is applied to Fourier image.";
+			return "CTF_ is applied in Fourier image.";
 		}
 		void process_inplace(EMData* image) {
 			params["filter_type"] = CTF_;
@@ -594,6 +594,7 @@ namespace EMAN
 			d.put("b_factor", EMObject::FLOAT, "Gaussian like evelope function (b_factor).");
 			d.put("wgh", EMObject::FLOAT, "Amplitude contrast ratio.");
 			d.put("sign", EMObject::FLOAT, "Sign of Contrast transfer function,and use -1 to compensate.");
+			d.put("npow", EMObject::FLOAT, "power of transfer function.");
 			return d;
 		}
 	};

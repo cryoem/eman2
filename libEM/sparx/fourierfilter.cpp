@@ -401,7 +401,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							else  if(nz>1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 							      		static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
-							fp->cmplx(ix,iy,iz) *= Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);			  
+									float tf=Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);
+							fp->cmplx(ix,iy,iz) *= tf;			  
 							break;      
 					}
 				}

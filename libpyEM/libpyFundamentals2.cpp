@@ -39,5 +39,6 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
     def("equalsize", &EMAN::equalsize);
     def("tflm", &EMAN::tflm);
+    def("call_cl1", &EMAN::call_cl1, return_value_policy< manage_new_object >());
 }
 

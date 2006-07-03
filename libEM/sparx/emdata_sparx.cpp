@@ -2126,7 +2126,7 @@ vector<float> EMData::peak_search(int ml, float invert)
 		for(j=0;j<=ny-1;++j)
  	    {  
  	    	j__1=(j-1+ny)%ny;
- 		 	j__2=(j+1)%ny;
+ 		j__2=(j+1)%ny;
  	        for(i=0;i<=nx-1;++i)
 			{ 
 				i__1=(i-1+nx)%nx;
@@ -2424,4 +2424,122 @@ float EMData::find_3d_threshold(float mass,float pixel_size)
 #undef avagadro
 #undef density_protein
 #undef R
-#undef C
+#undef C			
+vector<float> EMData::peak_ccf(float hf_p)
+{   
+    	 EMData & buf = *this;
+	 vector<Pixel> peaks;	 
+	 int half=int(hf_p);
+	 float hf_p2=hf_p*hf_p;
+ 	 int i,j;
+ 	 int i__1,i__2;
+ 	 int j__1,j__2;
+ 	 bool peak_found;
+	 bool not_overlap;
+	 vector<float>res;
+ 	 int nx = buf.get_xsize()-half;
+ 	 int ny = buf.get_ysize()-half; 
+	 int n_peak=0;
+	 for(i=half;i<=nx;++i)																																																													 
+ 		{	
+			i__1=i-1;		
+ 		  	i__2=i+1;	 																	 							    
+			for (j=half;j<=ny;++j)
+				{  
+			    	 	j__1=j-1;
+				 	j__2=j+1;   																      
+					peak_found=(buf(i,j)>buf(i,j__1)) && (buf(i,j)>buf(i,j__2));
+					peak_found=peak_found && (buf(i,j)>buf(i__1,j)) && (buf(i,j)>buf(i__2,j));
+					peak_found=peak_found && (buf(i,j)>buf(i__1,j__1)) && ((buf(i,j))> buf(i__1,j__2));
+					peak_found=peak_found && (buf(i,j)>buf(i__2,j__1)) && (buf(i,j)> buf(i__2,j__2));				
+			  		if(peak_found)
+ 			       			{	
+							if (peaks.size()==0) 
+								{	 
+									peaks.push_back(Pixel(i,j,0,buf(i,j)));
+							 		n_peak=n_peak+1;
+								}
+							else									
+								{	
+									not_overlap=true;							
+									bool higher_peak=false;	
+						 			int size=peaks.size();
+						 			for ( int kk= 0; kk< size; kk++)								 
+										{	
+											vector<Pixel>::iterator it= peaks.begin()+kk;
+											float radius=((*it).x-float(i))*((*it).x-float(i))+((*it).y-float(j))*((*it).y-float(j));																	
+							  				if (radius <= hf_p2 )
+												{	
+													not_overlap=false;
+													if( buf(i,j) > (*it).value)
+														{	
+															peaks.erase(it);												 													 
+															higher_peak=true;																							
+														}																																	
+									      												
+													else
+														{	
+															higher_peak=false; 
+															break;
+														}
+												}
+																
+										}
+													
+									if(not_overlap|higher_peak)
+										{										
+											n_peak=n_peak+1;
+								 			peaks.push_back(Pixel(i,j,0,buf(i,j)));
+										}
+								}
+							                                
+					}
+			}						
+	}	
+	if(peaks.size()>=1)
+   	     	    	 
+  		{	sort(peaks.begin(),peaks.end(), peakcmp); 
+			for (vector<Pixel>::iterator it = peaks.begin(); it != peaks.end(); it++) 
+				{
+					res.push_back((*it).value);
+					res.push_back((*it).x);
+					res.push_back((*it).y);			
+			
+		 		}
+		}
+	else
+		{	
+			res.push_back(buf(0,0,0));
+ 			res.insert(res.begin(),1,0.0); 	
+		}
+	return res;
+}
+EMData* EMData::get_pow(float n_pow)
+{   
+	EMData & buf = *this;
+	vector<int> saved_offsets = get_array_offsets();
+	EMData* buf_new = new EMData();
+ 	int nx = buf.get_xsize();
+ 	int ny = buf.get_ysize(); 
+	int nz = buf.get_zsize(); 
+	buf_new->set_size(nx,ny,nz);
+			 				
+			for (int j=0;j<ny;j++)
+				{
+					for(int i=0;i<nx;i++)
+						{
+							
+							if( buf(i,j) <0.0) 							
+							 	{   (*buf_new)(i,j)=0.0; }
+							else
+								{ (*buf_new)(i,j)=pow(buf(i,j),n_pow);}		
+						}
+				}
+			
+	return buf_new;
+}						
+			
+			
+			
+			
+			

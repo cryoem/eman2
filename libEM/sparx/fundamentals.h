@@ -226,6 +226,7 @@ namespace EMAN
 	long tflm(long l, long nl, long n, long nmax, long lpp2, long iv,
 			 double t, double y, double w, double a, long iprint,
 			 double alf, double beta);
+        EMData * call_cl1(EMData * img,float ps);
 }
 
 

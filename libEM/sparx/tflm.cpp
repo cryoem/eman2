@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cerrno>
-
+#include "emdata.h"
 using namespace std;
 
 namespace {
@@ -2056,6 +2056,715 @@ L30:
         return ret_val;
     } /* vpnorm_ */
 }
+/* Get background noise automatically  Z. Huang */
+/* cl1.f -- translated by f2c (version 20050501).
+   You must link the resulting object file with libf2c:
+	on Microsoft Windows system, link with libf2c.lib;
+	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
+	or, if you install libf2c.a in a standard place, with -lf2c -lm
+	-- in that order, at the end of the command line, as in
+		cc *.o -lf2c -lm
+	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,
+
+		http://www.netlib.org/f2c/libf2c.zip
+*/
+
+
+
+/* ************************************************************ */
+/* *  CL1.F */
+/* =************************************************************ */
+/* =* From: SPIDER - MODULAR IMAGE PROCESSING SYSTEM */
+/* =* Copyright (C)2002, Z. Huang & P. A. Penczek */
+/* =* */
+/* =* University of Texas - Houston Medical School */
+/* =* */
+/* =* Email:  pawel.a.penczek@uth.tmc.edu */
+/* =* */
+/* =* This program is free software; you can redistribute it and */
+/* =* modify it under the terms of the GNU General Public Licens */
+/* =* published by the Free Software Foundation; either version */
+/* =* License, or (at your option) any later version. */
+/* =* */
+/* =* This program is distributed in the hope that it will be us */
+/* =* but WITHOUT ANY WARRANTY; without even the implied warrant */
+/* =* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See */
+/* =* General Public License for more details. */
+/* =* */
+/* =* You should have received a copy of the GNU General Public */
+/* =* along with this program; if not, write to the */
+/* =* Free Software Foundation, Inc., */
+/* =* 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, U */
+/* =* */
+/* =************************************************************ */
+/* ************************************************************ */
+/* C==Inequality&Equality Constrained Least Square Fitting Progr */
+/*      SUBROUTINE CL1(K, L, M, N, KLMD, KLM2D, NKLMD, N2D, */
+/*     * Q, KODE, TOLER, ITER, X, RES, ERROR, CU, IU, S) */
+ vector<float>  cl1_(float *pw2, int *k, int *l, int *m, 
+	int *n, float *ps)
+{
+    /* System generated locals */
+    int i__1, i__2;
+    float r__1;
+    double d__1;
+
+    /* Local variables */
+    static int i__, j;
+    static double q[1646400]	/* was [1568][1050] */, s[1566], x[1050], z__;
+    static int n1, n2, ia, ii, kk, in;
+    static double cu[3144]	/* was [2][1572] */;
+    static int nk, js, iu[3144]	/* was [2][1572] */;
+    static double sn, zu, zv;
+    static int nk1, klm, nkl, jmn, jpn;
+    static double res[1566], cuv;
+    static int klm1, nkl1, klm2, kode, iimn, nklm, iter;
+    static float xmin;
+    static double xmax;
+    static int iout;
+    static double xsum;
+    static int iineg, maxit;
+    static double toler;
+    static float error;
+    static double pivot;
+    static int kforce; 
+    static int iphase;
+    static double tpivot;
+
+/* We assume K=256,M=256,L=10,N=6. */
+/* THIS SUBROUTINE USES A MODIFICATION OF THE SIMPLEX */
+/* METHOD OF LINEAR PROGRAMMING TO CALCULATE AN L1 SOLUTION */
+/* TO A K BY N SYSTEM OF LINEAR EQUATIONS */
+/*             AX=B */
+/* SUBJECT TO L LINEAR EQUALITY CONSTRAINTS */
+/*             CX=D */
+/* AND M LINEAR INEQUALITY CONSTRAINTS */
+/*             EX.LE.F. */
+/* DESCRIPTION OF PARAMETERS */
+/* K      NUMBER OF ROWS OF THE MATRIX A (K.GE.1). */
+/* L      NUMBER OF ROWS OF THE MATRIX C (L.GE.0). */
+/* M      NUMBER OF ROWS OF THE MATRIX E (M.GE.0). */
+/* N      NUMBER OF COLUMNS OF THE MATRICES A,C,E (N.GE.1). */
+/* KLMD   SET TO AT LEAST K+L+M FOR ADJUSTABLE DIMENSIONS. */
+/* KLM2D  SET TO AT LEAST K+L+M+2 FOR ADJUSTABLE DIMENSIONS. */
+/* NKLMD  SET TO AT LEAST N+K+L+M FOR ADJUSTABLE DIMENSIONS. */
+/* N2D    SET TO AT LEAST N+2 FOR ADJUSTABLE DIMENSIONS */
+/* Q      TWO DIMENSIONAL float ARRAY WITH KLM2D ROWS AND */
+/*        AT LEAST N2D COLUMNS. */
+/*        ON ENTRY THE MATRICES A,C AND E, AND THE VECTORS */
+/*        B,D AND F MUST BE STORED IN THE FIRST K+L+M ROWS */
+/*        AND N+1 COLUMNS OF Q AS FOLLOWS */
+/*             A B */
+/*         Q = C D */
+/*             E F */
+/*        THESE VALUES ARE DESTROYED BY THE SUBROUTINE. */
+/* KODE   A CODE USED ON ENTRY TO, AND EXIT */
+/*        FROM, THE SUBROUTINE. */
+/*        ON ENTRY, THIS SHOULD NORMALLY BE SET TO 0. */
+/*        HOWEVER, IF CERTAIN NONNEGATIVITY CONSTRAINTS */
+/*        ARE TO BE INCLUDED IMPLICITLY, RATHER THAN */
+/*        EXPLICITLY IN THE CONSTRAINTS EX.LE.F, THEN KODE */
+/*        SHOULD BE SET TO 1, AND THE NONNEGATIVITY */
+/*        CONSTRAINTS INCLUDED IN THE ARRAYS X AND */
+/*        RES (SEE BELOW). */
+/*        ON EXIT, KODE HAS ONE OF THE */
+/*        FOLLOWING VALUES */
+/*             0- OPTIMAL SOLUTION FOUND, */
+/*             1- NO FEASIBLE SOLUTION TO THE */
+/*                CONSTRAINTS, */
+/*             2- CALCULATIONS TERMINATED */
+/*                PREMATURELY DUE TO ROUNDING ERRORS, */
+/*             3- MAXIMUM NUMBER OF ITERATIONS REACHED. */
+/* TOLER  A SMALL POSITIVE TOLERANCE. EMPIRICAL */
+/*        EVIDENCE SUGGESTS TOLER = 10**(-D*2/3), */
+/*        WHERE D REPRESENTS THE NUMBER OF DECIMAL */
+/*        DIGITS OF ACCURACY AVAILABLE. ESSENTIALLY, */
+/*        THE SUBROUTINE CANNOT DISTINGUISH BETWEEN ZERO */
+/*        AND ANY QUANTITY WHOSE MAGNITUDE DOES NOT EXCEED */
+/*        TOLER. IN PARTICULAR, IT WILL NOT PIVOT ON ANY */
+/*        NUMBER WHOSE MAGNITUDE DOES NOT EXCEED TOLER. */
+/* ITER   ON ENTRY ITER MUST CONTAIN AN UPPER BOUND ON */
+/*        THE MAXIMUM NUMBER OF ITERATIONS ALLOWED. */
+/*        A SUGGESTED VALUE IS 10*(K+L+M). ON EXIT ITER */
+/*        GIVES THE NUMBER OF SIMPLEX ITERATIONS. */
+/* X      ONE DIMENSIONAL float ARRAY OF SIZE AT LEAST N2D. */
+/*        ON EXIT THIS ARRAY CONTAINS A */
+/*        SOLUTION TO THE L1 PROBLEM. IF KODE=1 */
+/*        ON ENTRY, THIS ARRAY IS ALSO USED TO INCLUDE */
+/*        SIMPLE NONNEGATIVITY CONSTRAINTS ON THE */
+/*        VARIABLES. THE VALUES -1, 0, OR 1 */
+/*        FOR X(J) INDICATE THAT THE J-TH VARIABLE */
+/*        IS RESTRICTED TO BE .LE.0, UNRESTRICTED, */
+/*        OR .GE.0 RESPECTIVELY. */
+/* RES    ONE DIMENSIONAL float ARRAY OF SIZE AT LEAST KLMD. */
+/*        ON EXIT THIS CONTAINS THE RESIDUALS B-AX */
+/*        IN THE FIRST K COMPONENTS, D-CX IN THE */
+/*        NEXT L COMPONENTS (THESE WILL BE =0),AND */
+/*        F-EX IN THE NEXT M COMPONENTS. IF KODE=1 ON */
+/*        ENTRY, THIS ARRAY IS ALSO USED TO INCLUDE SIMPLE */
+/*        NONNEGATIVITY CONSTRAINTS ON THE RESIDUALS */
+/*        B-AX. THE VALUES -1, 0, OR 1 FOR RES(I) */
+/*        INDICATE THAT THE I-TH RESIDUAL (1.LE.I.LE.K) IS */
+/*        RESTRICTED TO BE .LE.0, UNRESTRICTED, OR .GE.0 */
+/*        RESPECTIVELY. */
+/* ERROR  ON EXIT, THIS GIVES THE MINIMUM SUM OF */
+/*        ABSOLUTE VALUES OF THE RESIDUALS. */
+/* CU     A TWO DIMENSIONAL float ARRAY WITH TWO ROWS AND */
+/*        AT LEAST NKLMD COLUMNS USED FOR WORKSPACE. */
+/* IU     A TWO DIMENSIONAL int ARRAY WITH TWO ROWS AND */
+/*        AT LEAST NKLMD COLUMNS USED FOR WORKSPACE. */
+/* S      int ARRAY OF SIZE AT LEAST KLMD, USED FOR */
+/*        WORKSPACE. */
+/* IF YOUR FORTRAN COMPILER PERMITS A SINGLE COLUMN OF A TWO */
+/* DIMENSIONAL ARRAY TO BE PASSED TO A ONE DIMENSIONAL ARRAY */
+/* THROUGH A SUBROUTINE CALL, CONSIDERABLE SAVINGS IN */
+/* EXECUTION TIME MAY BE ACHIEVED THROUGH THE USE OF THE */
+/* FOLLOWING SUBROUTINE, WHICH OPERATES ON COLUMN VECTORS. */
+/*     SUBROUTINE COL(V1, V2, XMLT, NOTROW, K) */
+/* THIS SUBROUTINE ADDS TO THE VECTOR V1 A MULTIPLE OF THE */
+/* VECTOR V2 (ELEMENTS 1 THROUGH K EXCLUDING NOTROW). */
+/*     DIMENSION V1(K), V2(K) */
+/*     KEND = NOTROW - 1 */
+/*     KSTART = NOTROW + 1 */
+/*     IF (KEND .LT. 1) GO TO 20 */
+/*     DO 10 I=1,KEND */
+/*        V1(I) = V1(I) + XMLT*V2(I) */
+/*  10 CONTINUE */
+/*     IF(KSTART .GT. K) GO TO 40 */
+/*  20 DO 30 I=KSTART,K */
+/*       V1(I) = V1(I) + XMLT*V2(I) */
+/*  30 CONTINUE */
+/*  40 RETURN */
+/*     END */
+/* SEE COMMENTS FOLLOWING STATEMENT LABELLED 440 FOR */
+/* INSTRUCTIONS ON THE IMPLEMENTATION OF THIS MODIFICATION. */
+/*      DOUBLE PRECISION DBLE */
+/*      float Q, X, Z, CU, SN, ZU, ZV, CUV, RES, XMAX, XMIN, */
+/* C     * ERROR, PIVOT, TOLER, TPIVOT */
+/*      float ABS */
+/*      int I, J, K, L, M, N, S, IA, II, IN, IU, JS, KK, */
+/*     * NK, N1, N2, JMN, JPN, KLM, NKL, NK1, N2D, IIMN, */
+/*     * IOUT, ITER, KLMD, KLM1, KLM2, KODE, NKLM, NKL1, */
+/*     * KLM2D, MAXIT, NKLMD, IPHASE, KFORCE, IINEG */
+/*      int IABS */
+    /* Parameter adjustments */
+    --pw2;
+
+    /* Function Body */
+    i__1 = *k;
+    for (ii = 1; ii <= i__1; ++ii) {
+	r__1 = (ii - 1) / *ps / 2. / *k;
+	q[ii - 1] = double(r__1);
+	r__1 = (ii - 1) / *ps / 2. / *k;
+	q[ii + *k - 1] =double( r__1);
+	q[ii + 3135] = double(pw2[ii]);
+	q[ii + *k + 3135] = double(pw2[ii-1]);	
+	q[ii + 1567] = 1.;
+	q[ii + *k + 1567] =1.;
+    }
+/* INITIALIZATION. */
+    toler=.000001;
+    kode=0;
+    maxit = 500;
+    n1 = *n + 1;
+    n2 = *n + 2;
+    nk = *n + *k;
+    nk1 = nk + 1;
+    nkl = nk + *l;
+    nkl1 = nkl + 1;
+    klm = *k + *l + *m;
+    klm1 = klm + 1;
+    klm2 = klm + 2;
+    nklm = *n + klm;
+    kforce = 1;
+    iter = 0;
+    js = 1;
+    ia = 0;
+/* SET UP LABELS IN Q. */
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	q[klm2 + j * 1568 - 1569] = (double) j;
+/* L10: */
+    }
+    i__1 = klm;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	q[i__ + n2 * 1568 - 1569] = (double) (*n + i__);
+	if (q[i__ + n1 * 1568 - 1569] >= 0.f) {
+	    goto L30;
+	}
+	i__2 = n2;
+	for (j = 1; j <= i__2; ++j) {
+	    q[i__ + j * 1568 - 1569] = -q[i__ + j * 1568 - 1569];
+/* L20: */
+	}
+L30:
+	;
+    }
+/* SET UP PHASE 1 COSTS. */
+    iphase = 2;
+    i__1 = nklm;
+    for (j = 1; j <= i__1; ++j) {
+	cu[(j << 1) - 2] = 0.f;
+	cu[(j << 1) - 1] = 0.f;
+	iu[(j << 1) - 2] = 0;
+	iu[(j << 1) - 1] = 0;
+/* L40: */
+    }
+    if (*l == 0) {
+	goto L60;
+    }
+    i__1 = nkl;
+    for (j = nk1; j <= i__1; ++j) {
+	cu[(j << 1) - 2] = 1.f;
+	cu[(j << 1) - 1] = 1.f;
+	iu[(j << 1) - 2] = 1;
+	iu[(j << 1) - 1] = 1;
+/* L50: */
+    }
+    iphase = 1;
+L60:
+    if (*m == 0) {
+	goto L80;
+    }
+    i__1 = nklm;
+    for (j = nkl1; j <= i__1; ++j) {
+	cu[(j << 1) - 1] = 1.f;
+	iu[(j << 1) - 1] = 1;
+	jmn = j - *n;
+	if (q[jmn + n2 * 1568 - 1569] < 0.f) {
+	    iphase = 1;
+	}
+/* L70: */
+    }
+L80:
+    if (kode == 0) {
+	goto L150;
+    }
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	if ((d__1 = x[j - 1]) < 0.) {
+	    goto L90;
+	} else if (d__1 == 0) {
+	    goto L110;
+	} else {
+	    goto L100;
+	}
+L90:
+	cu[(j << 1) - 2] = 1.f;
+	iu[(j << 1) - 2] = 1;
+	goto L110;
+L100:
+	cu[(j << 1) - 1] = 1.f;
+	iu[(j << 1) - 1] = 1;
+L110:
+	;
+    }
+    i__1 = *k;
+    for (j = 1; j <= i__1; ++j) {
+	jpn = j + *n;
+	if ((d__1 = res[j - 1]) < 0.) {
+	    goto L120;
+	} else if (d__1 == 0) {
+	    goto L140;
+	} else {
+	    goto L130;
+	}
+L120:
+	cu[(jpn << 1) - 2] = 1.f;
+	iu[(jpn << 1) - 2] = 1;
+	if (q[j + n2 * 1568 - 1569] > 0.f) {
+	    iphase = 1;
+	}
+	goto L140;
+L130:
+	cu[(jpn << 1) - 1] = 1.f;
+	iu[(jpn << 1) - 1] = 1;
+	if (q[j + n2 * 1568 - 1569] < 0.f) {
+	    iphase = 1;
+	}
+L140:
+	;
+    }
+L150:
+    if (iphase == 2) {
+	goto L500;
+    }
+/* COMPUTE THE MARGINAL COSTS. */
+L160:
+    i__1 = n1;
+    for (j = js; j <= i__1; ++j) {
+	xsum = 0.;
+	i__2 = klm;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    ii = (int) q[i__ + n2 * 1568 - 1569];
+	    if (ii < 0) {
+		goto L170;
+	    }
+	    z__ = cu[(ii << 1) - 2];
+	    goto L180;
+L170:
+	    iineg = -ii;
+	    z__ = cu[(iineg << 1) - 1];
+L180:
+	    xsum += q[i__ + j * 1568 - 1569] * z__;
+/*  180       XSUM = XSUM + Q(I,J)*Z */
+/* L190: */
+	}
+	q[klm1 + j * 1568 - 1569] = xsum;
+/* L200: */
+    }
+    i__1 = *n;
+    for (j = js; j <= i__1; ++j) {
+	ii = (int) q[klm2 + j * 1568 - 1569];
+	if (ii < 0) {
+	    goto L210;
+	}
+	z__ = cu[(ii << 1) - 2];
+	goto L220;
+L210:
+	iineg = -ii;
+	z__ = cu[(iineg << 1) - 1];
+L220:
+	q[klm1 + j * 1568 - 1569] -= z__;
+/* L230: */
+    }
+/* DETERMINE THE VECTOR TO ENTER THE BASIS. */
+L240:
+    xmax = 0.f;
+    if (js > *n) {
+	goto L490;
+    }
+    i__1 = *n;
+    for (j = js; j <= i__1; ++j) {
+	zu = q[klm1 + j * 1568 - 1569];
+	ii = (int) q[klm2 + j * 1568 - 1569];
+	if (ii > 0) {
+	    goto L250;
+	}
+	ii = -ii;
+	zv = zu;
+	zu = -zu - cu[(ii << 1) - 2] - cu[(ii << 1) - 1];
+	goto L260;
+L250:
+	zv = -zu - cu[(ii << 1) - 2] - cu[(ii << 1) - 1];
+L260:
+	if (kforce == 1 && ii > *n) {
+	    goto L280;
+	}
+	if (iu[(ii << 1) - 2] == 1) {
+	    goto L270;
+	}
+	if (zu <= xmax) {
+	    goto L270;
+	}
+	xmax = zu;
+	in = j;
+L270:
+	if (iu[(ii << 1) - 1] == 1) {
+	    goto L280;
+	}
+	if (zv <= xmax) {
+	    goto L280;
+	}
+	xmax = zv;
+	in = j;
+L280:
+	;
+    }
+    if (xmax <= toler) {
+	goto L490;
+    }
+    if (q[klm1 + in * 1568 - 1569] == xmax) {
+	goto L300;
+    }
+    i__1 = klm2;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	q[i__ + in * 1568 - 1569] = -q[i__ + in * 1568 - 1569];
+/* L290: */
+    }
+    q[klm1 + in * 1568 - 1569] = xmax;
+/* DETERMINE THE VECTOR TO LEAVE THE BASIS. */
+L300:
+    if (iphase == 1 || ia == 0) {
+	goto L330;
+    }
+    xmax = 0.f;
+    i__1 = ia;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	z__ = (d__1 = q[i__ + in * 1568 - 1569], abs(d__1));
+	if (z__ <= xmax) {
+	    goto L310;
+	}
+	xmax = z__;
+	iout = i__;
+L310:
+	;
+    }
+    if (xmax <= toler) {
+	goto L330;
+    }
+    i__1 = n2;
+    for (j = 1; j <= i__1; ++j) {
+	z__ = q[ia + j * 1568 - 1569];
+	q[ia + j * 1568 - 1569] = q[iout + j * 1568 - 1569];
+	q[iout + j * 1568 - 1569] = z__;
+/* L320: */
+    }
+    iout = ia;
+    --ia;
+    pivot = q[iout + in * 1568 - 1569];
+    goto L420;
+L330:
+    kk = 0;
+    i__1 = klm;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	z__ = q[i__ + in * 1568 - 1569];
+	if (z__ <= toler) {
+	    goto L340;
+	}
+	++kk;
+	res[kk - 1] = q[i__ + n1 * 1568 - 1569] / z__;
+	s[kk - 1] = (double) i__;
+L340:
+	;
+    }
+L350:
+    if (kk > 0) {
+	goto L360;
+    }
+    kode = 2;
+    goto L590;
+L360:
+    xmin = res[0];
+    iout = (int) s[0];
+    j = 1;
+    if (kk == 1) {
+	goto L380;
+    }
+    i__1 = kk;
+    for (i__ = 2; i__ <= i__1; ++i__) {
+	if (res[i__ - 1] >= xmin) {
+	    goto L370;
+	}
+	j = i__;
+	xmin = res[i__ - 1];
+	iout = (int) s[i__ - 1];
+L370:
+	;
+    }
+    res[j - 1] = res[kk - 1];
+    s[j - 1] = s[kk - 1];
+L380:
+    --kk;
+    pivot = q[iout + in * 1568 - 1569];
+    ii = (int) q[iout + n2 * 1568 - 1569];
+    if (iphase == 1) {
+	goto L400;
+    }
+    if (ii < 0) {
+	goto L390;
+    }
+    if (iu[(ii << 1) - 1] == 1) {
+	goto L420;
+    }
+    goto L400;
+L390:
+    iineg = -ii;
+    if (iu[(iineg << 1) - 2] == 1) {
+	goto L420;
+    }
+/* 400 II = IABS(II) */
+L400:
+    ii = abs(ii);
+    cuv = cu[(ii << 1) - 2] + cu[(ii << 1) - 1];
+    if (q[klm1 + in * 1568 - 1569] - pivot * cuv <= toler) {
+	goto L420;
+    }
+/* BYPASS INTERMEDIATE VERTICES. */
+    i__1 = n1;
+    for (j = js; j <= i__1; ++j) {
+	z__ = q[iout + j * 1568 - 1569];
+	q[klm1 + j * 1568 - 1569] -= z__ * cuv;
+	q[iout + j * 1568 - 1569] = -z__;
+/* L410: */
+    }
+    q[iout + n2 * 1568 - 1569] = -q[iout + n2 * 1568 - 1569];
+    goto L350;
+/* GAUSS-JORDAN ELIMINATION. */
+L420:
+    if (iter < maxit) {
+	goto L430;
+    }
+    kode = 3;
+    goto L590;
+L430:
+    ++iter;
+    i__1 = n1;
+    for (j = js; j <= i__1; ++j) {
+	if (j != in) {
+	    q[iout + j * 1568 - 1569] /= pivot;
+	}
+/* L440: */
+    }
+/* IF PERMITTED, USE SUBROUTINE COL OF THE DESCRIPTION */
+/* SECTION AND REPLACE THE FOLLOWING SEVEN STATEMENTS DOWN */
+/* TO AND INCLUDING STATEMENT NUMBER 460 BY.. */
+/*     DO 460 J=JS,N1 */
+/*        IF(J .EQ. IN) GO TO 460 */
+/*        Z = -Q(IOUT,J) */
+/*        CALL COL(Q(1,J), Q(1,IN), Z, IOUT, KLM1) */
+/* 460 CONTINUE */
+    i__1 = n1;
+    for (j = js; j <= i__1; ++j) {
+	if (j == in) {
+	    goto L460;
+	}
+	z__ = -q[iout + j * 1568 - 1569];
+	i__2 = klm1;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    if (i__ != iout) {
+		q[i__ + j * 1568 - 1569] += z__ * q[i__ + in * 1568 - 1569];
+	    }
+/* L450: */
+	}
+L460:
+	;
+    }
+    tpivot = -pivot;
+    i__1 = klm1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	if (i__ != iout) {
+	    q[i__ + in * 1568 - 1569] /= tpivot;
+	}
+/* L470: */
+    }
+    q[iout + in * 1568 - 1569] = 1.f / pivot;
+    z__ = q[iout + n2 * 1568 - 1569];
+    q[iout + n2 * 1568 - 1569] = q[klm2 + in * 1568 - 1569];
+    q[klm2 + in * 1568 - 1569] = z__;
+    ii = (int) abs(z__);
+    if (iu[(ii << 1) - 2] == 0 || iu[(ii << 1) - 1] == 0) {
+	goto L240;
+    }
+    i__1 = klm2;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	z__ = q[i__ + in * 1568 - 1569];
+	q[i__ + in * 1568 - 1569] = q[i__ + js * 1568 - 1569];
+	q[i__ + js * 1568 - 1569] = z__;
+/* L480: */
+    }
+    ++js;
+    goto L240;
+/* TEST FOR OPTIMALITY. */
+L490:
+    if (kforce == 0) {
+	goto L580;
+    }
+    if (iphase == 1 && q[klm1 + n1 * 1568 - 1569] <= toler) {
+	goto L500;
+    }
+    kforce = 0;
+    goto L240;
+/* SET UP PHASE 2 COSTS. */
+L500:
+    iphase = 2;
+    i__1 = nklm;
+    for (j = 1; j <= i__1; ++j) {
+	cu[(j << 1) - 2] = 0.f;
+	cu[(j << 1) - 1] = 0.f;
+/* L510: */
+    }
+    i__1 = nk;
+    for (j = n1; j <= i__1; ++j) {
+	cu[(j << 1) - 2] = 1.f;
+	cu[(j << 1) - 1] = 1.f;
+/* L520: */
+    }
+    i__1 = klm;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	ii = (int) q[i__ + n2 * 1568 - 1569];
+	if (ii > 0) {
+	    goto L530;
+	}
+	ii = -ii;
+	if (iu[(ii << 1) - 1] == 0) {
+	    goto L560;
+	}
+	cu[(ii << 1) - 1] = 0.f;
+	goto L540;
+L530:
+	if (iu[(ii << 1) - 2] == 0) {
+	    goto L560;
+	}
+	cu[(ii << 1) - 2] = 0.f;
+L540:
+	++ia;
+	i__2 = n2;
+	for (j = 1; j <= i__2; ++j) {
+	    z__ = q[ia + j * 1568 - 1569];
+	    q[ia + j * 1568 - 1569] = q[i__ + j * 1568 - 1569];
+	    q[i__ + j * 1568 - 1569] = z__;
+/* L550: */
+	}
+L560:
+	;
+    }
+    goto L160;
+L570:
+    if (q[klm1 + n1 * 1568 - 1569] <= toler) {
+	goto L500;
+    }
+    kode = 1;
+    goto L590;
+L580:
+    if (iphase == 1) {
+	goto L570;
+    }
+/* PREPARE OUTPUT. */
+    kode = 0;
+L590:
+    xsum = 0.;
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	x[j - 1] = 0.f;
+/* L600: */
+    }
+    i__1 = klm;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	res[i__ - 1] = 0.f;
+/* L610: */
+    }
+    i__1 = klm;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	ii = (int) q[i__ + n2 * 1568 - 1569];
+	sn = 1.f;
+	if (ii > 0) {
+	    goto L620;
+	}
+	ii = -ii;
+	sn = -1.f;
+L620:
+	if (ii > *n) {
+	    goto L630;
+	}
+	x[ii - 1] = sn * q[i__ + n1 * 1568 - 1569];
+	goto L640;
+L630:
+	iimn = ii - *n;
+	res[iimn - 1] = sn * q[i__ + n1 * 1568 - 1569];
+	if (ii >= n1 && ii <= nk) {
+	    xsum += q[i__ + n1 * 1568 - 1569];
+	}
+/*     *    Q(I,N1) */
+L640:
+	;
+    }
+    error = xsum;
+     vector<float>  output;
+    for  ( static int i__x=0;i__x<=*n-1;++i__x)
+         { output.push_back(float(x[i__x]));}
+    return output;
+} /* cl1_ */
 
 namespace EMAN {
     long tflm(long l, long nl, long n, long nmax, long lpp2, long iv,
@@ -2067,4 +2776,29 @@ namespace EMAN {
         return ierr;
     }
 }
-
+namespace EMAN {
+    EMData * call_cl1(EMData * img,float ps) {
+        int  k_1=img->get_xsize();
+	EMData * line_noise = new EMData();
+	line_noise->set_size(k_1,1,1);
+	float *img_ptr  = line_noise->get_data() ;
+	float * pw2=img->get_data();
+	for (int i=0;i<=k_1-1;++i)
+	    {   pw2[i]=log(pw2[i]);  }
+	int  k=k_1;
+	int  n=2;
+	int  l=0;
+	int  m=k;
+	float *new_ptr  = line_noise->get_data();
+	vector<float> x;
+	x.reserve(n);
+	x=cl1_(pw2,&k,&l,&m,&n,&ps);	
+	float r__x;
+	for (int i__y=0;i__y<=k;++i__y)
+	   { r__x=i__y/ps/2./k*x[0]+x[1];
+	   float r__z=exp(r__x);
+	   img_ptr[i__y]=r__z; }
+	line_noise->update();   	
+        return line_noise;
+    }
+}
