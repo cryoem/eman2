@@ -702,7 +702,7 @@ Output: 2D 3xk real image.
 		if(lr[i]>0) {
 			ii++;
 			result[ii]        = float(i)/float(2*inc);
-			result[ii+linc]   = float(ret[i] / (sqrt(n1[i] * n2[i])));
+			result[ii+linc]   = float(ret[i] / (std::sqrt(n1[i] * n2[i])));
 			result[ii+2*linc] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
 		/*else {
 			result[i]           = 0.0f;
