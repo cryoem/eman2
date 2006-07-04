@@ -434,7 +434,7 @@ void Util::Radialize(int *PermMatTr, float *kValsSorted,   // PRB
 
 
 vector<float>
-Util::voea(float delta, float t1, float t2, float p1, float p2)
+Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 {
 	vector<float> angles;
 	float psi = 0.0;

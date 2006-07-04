@@ -605,7 +605,7 @@ Output: 2D 3xk real image.
 	3 column - currently n /error of the FSC = 1/sqrt(n), 
                      where n is the number of Fourier coefficients within given shell
 */  
-	int needfree=0, nx, ny, nz, nx2, ny2, nz2, ix, iy, iz, kz, ky;
+	int needfree=0, nx, ny, nz, nx2, ny2, nz2, ix, iy, iz, kz, ky, ii;
 	float  dx2, dy2, dz2, argx, argy, argz;
 
 	if (!with) {
@@ -679,7 +679,7 @@ Output: 2D 3xk real image.
 				argx = 0.5f*std::sqrt(argy + float(ix*ix)*0.25f*dx2);
 				int r = Util::round(inc*2*argx);
 				if(r <= inc) {
-					int ii = ix + (iy  + iz * ny)* lsd2;
+					ii = ix + (iy  + iz * ny)* lsd2;
 					ret[r] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
 					n1[r]  += d1[ii] * double(d1[ii]) + d1[ii + 1] * double(d1[ii + 1]);
 					n2[r]  += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
@@ -690,17 +690,24 @@ Output: 2D 3xk real image.
 		}
 	}
 
-	vector < float >result((inc+1)*3);
 
+	int  linc = 0;
+	for (int i = 0; i <= inc; i++) if(lr[i]>0) linc++;
+	
+
+	vector < float >result(linc*3);
+
+	ii = -1;
 	for (int i = 0; i <= inc; i++) {
 		if(lr[i]>0) {
-			result[i]     = float(i)/float(2*inc);
-			result[i+inc+1] = float(ret[i] / (std::sqrt(n1[i] * n2[i])));
-			result[i+2*(inc+1)] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
-		else {
+			ii++;
+			result[ii]        = float(i)/float(2*inc);
+			result[ii+linc]   = float(ret[i] / (sqrt(n1[i] * n2[i])));
+			result[ii+2*linc] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
+		/*else {
 			result[i]           = 0.0f;
 			result[i+inc+1]     = 0.0f;
-			result[i+2*(inc+1)] = 0.0f;}
+			result[i+2*(inc+1)] = 0.0f;}*/
 	}
 
 	if( ret )

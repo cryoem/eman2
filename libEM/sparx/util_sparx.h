@@ -211,7 +211,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		void build_I0table();
 };
 
-		/** Compute a vector containing quais-evenly spaced Euler angles
+		/** Compute a vector containing quasi-evenly spaced Euler angles
 		 *
 		 * The order of angles in the vector is phi, theta, psi.
 		 *
@@ -223,8 +223,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 * @return Vector of angles as a flat list of phi_0, theta_0, psi_0, ..., phi_N, theta_N, psi_N.
 		 */
 		static vector<float>
-		voea(float delta, float t1=0, float t2=90, 
-			 float p1=0, float p2=359.9);
+		even_angles(float delta, float t1=0, float t2=90, float p1=0, float p2=359.999);
 
 		/** Tri-Quadratic interpolation.
 		 *
