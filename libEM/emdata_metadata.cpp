@@ -662,7 +662,12 @@ EMObject EMData::get_attr(const string & key)
 
 
 	EXITFUNC;
-	return attr_dict[key];
+	if(attr_dict.has_key(key)) {
+		return attr_dict[key];
+	}
+	else {
+		throw NotExistingObjectException(key, "Not exist");
+	}
 }
 
 
