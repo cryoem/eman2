@@ -41,6 +41,8 @@ HdfIO2::~HdfIO2()
 //printf("HDf close\n");
 }
 
+// This reads an already opened attribute and returns the results as an EMObject
+// The attribute is not closed
 EMObject HdfIO2::read_attr(hid_t attr) {
 	hid_t type = H5Aget_type(attr);
 	hid_t spc = H5Aget_space(attr);
@@ -96,6 +98,8 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	return ret;
 }
 
+// This writes an attribute with specified name to a given open object
+// The attribute is opened and closed. returns 0 on success
 int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	hid_t type=0;
 	hid_t spc=0;
@@ -172,6 +176,14 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	return 0;
 }
 
+// Initializes the file for read-only or read-write access
+// Data is stored under /MDF/images
+// An attribute named imageid_max stores the number of the highest
+// numbered image in the file.
+// A group is then made for each individual image, all metadata for the
+// individual images is currently associated with the GROUP, not the dataset
+// dataset-specific data could also be associated with the dataset in
+// future. At the moment, there is only a single dataset in each group.
 void HdfIO2::init()
 {
 	ENTERFUNC;
@@ -197,10 +209,10 @@ void HdfIO2::init()
 	if (group<0) {
 		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /TEM group)");
 		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
-		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM) to HDF5 file");
+		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/MDF) to HDF5 file");
 		H5Gclose(group);
 		group=H5Gcreate(file,"/MDF/images",4096);		// create the group for images/volumes
-		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/TEM/images) to HDF5 file");
+		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/MDF/images) to HDF5 file");
 		write_attr(group,"imageid_max",EMObject(-1));
 	}
 	initialized = true;
@@ -208,6 +220,7 @@ void HdfIO2::init()
 
 }
 
+// This 
 // If this version of init() returns -1, then we have an old-style HDF5 file
 int HdfIO2::init_test()
 {
@@ -266,6 +279,7 @@ bool HdfIO2::is_valid(const void *first_block)
 	return false;
 }
 
+// Reads all of the attributes from the /MDF/images/<imgno> group
 int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
@@ -296,6 +310,9 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	return 0;
 }
 
+// This erases any existing attributes from the image group
+// prior to writing a new header. For a new image there
+// won't be any, so this should be harmless.
 int HdfIO2::erase_header(int image_index)
 {
 	ENTERFUNC;
@@ -340,6 +357,8 @@ int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is
 }
 
 
+// Writes all attributes in 'dict' to the image group
+// Creation of the image dataset is also handled here
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
@@ -392,6 +411,8 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	return 0;
 }
 
+// Writes the actual image data to the corresponding dataset (already created)
+// Region writing has not been implemented yet
 int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool uhe)
 {
