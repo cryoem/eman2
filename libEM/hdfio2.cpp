@@ -24,6 +24,10 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 	initialized = false;
 	file=-1;
 	group=-1;
+	accprop=H5Pcreate(H5P_FILE_ACCESS);
+	H5Pset_fapl_stdio( accprop );
+//	H5Pset_fapl_core( accprop, 1048576, 0  );
+//	H5Pset_cache(accprop)
 	hsize_t dims=1;
 	simple_space=H5Screate_simple(1,&dims,NULL);
 }
@@ -31,6 +35,7 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 HdfIO2::~HdfIO2()
 {
 	H5Sclose(simple_space);
+	H5Pclose(accprop);
     if (group >= 0) {
         H5Gclose(group);
     }
@@ -194,13 +199,13 @@ void HdfIO2::init()
 	H5Eset_auto(0, 0);	// Turn off console error logging.
 
 	if (rw_mode == READ_ONLY) {
-		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, accprop);
 		if (file<0) throw FileAccessException(filename);
 	}
 	else {
-		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
 		if (file < 0) {
-			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
 			if (file < 0) throw FileAccessException(filename);
 		}
 	}
@@ -232,13 +237,13 @@ int HdfIO2::init_test()
 	H5Eset_auto(0, 0);	// Turn off console error logging.
 
 	if (rw_mode == READ_ONLY) {
-		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, accprop);
 		if (file<0) return 0;
 	}
 	else {
-		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
 		if (file < 0) {
-			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
 			if (file < 0) return 0;
 		}
 	}

@@ -10,11 +10,12 @@ class ValSlider(QtGui.QWidget):
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	def __init__(self, parent):
+	def __init__(self, parent, range=None, label=None):
 		if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
-		self.range=[0,1.0]
+		if range : self.range=list(range)
+		else : self.range=[0,1.0]
 		self.value=0.0
 		self.ignore=0
 		
@@ -22,6 +23,21 @@ class ValSlider(QtGui.QWidget):
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
+		
+		self.label = QtGui.QLabel(self)
+		
+		if label:
+			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(5),QtGui.QSizePolicy.Policy(0))
+#			sizePolicy.setHorizontalStretch(1)
+#			sizePolicy.setVerticalStretch(0)
+#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
+			self.label.setSizePolicy(sizePolicy)
+			self.label.setMinimumSize(QtCore.QSize(30,0))
+			self.label.setObjectName("label")
+			self.hboxlayout.addWidget(self.label)
+		
+			self.label = QtGui.QLabel(self)
+			self.label.setText(label)
 		
 		self.text = QtGui.QLineEdit(self)
 		
@@ -49,15 +65,19 @@ class ValSlider(QtGui.QWidget):
 		self.slider.setObjectName("slider")
 		self.hboxlayout.addWidget(self.slider)
 		
-		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textchange)
-		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderchange)
+		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
+		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
 
-	def setvalue(val):
+	def setRange(minv,maxv):
+		self.range=[minv,maxv]
+		self.updates()
+
+	def setValue(val):
 		self.value=val
 		self.updateboth()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 		
-	def textchange(self):
+	def textChange(self):
 		if self.ignore : return
 		x=self.text.text()
 		if len(x)==0 : return
@@ -77,7 +97,7 @@ class ValSlider(QtGui.QWidget):
 			except:
 				self.updateboth()
 				
-	def sliderchange(self,x):
+	def sliderChange(self,x):
 		if self.ignore : return
 		self.value=(self.slider.value()/4095.0)*(self.range[1]-self.range[0])+self.range[0]
 		self.updatet()

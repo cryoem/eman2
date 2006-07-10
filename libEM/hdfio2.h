@@ -44,6 +44,7 @@ namespace EMAN
 		vector < int >get_image_indices();
 		hid_t file;
 		hid_t group;
+		hid_t accprop;
 		hid_t simple_space;
 		string filename;
 		IOMode rw_mode;
