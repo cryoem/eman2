@@ -7,27 +7,27 @@
 # /home/stevel/pro/eman2/CMakeLists.txt
 # /home/stevel/pro/eman2/CMakeSystem.cmake
 # /home/stevel/pro/eman2/doc/CMakeLists.txt
-# /usr/local/share/CMake/Modules/CMakeDefaultMakeRuleVariables.cmake
-# /usr/local/share/CMake/Modules/CMakeSystemSpecificInformation.cmake
-# /usr/local/share/CMake/Modules/CheckFunctionExists.cmake
-# /usr/local/share/CMake/Modules/CheckIncludeFiles.cmake
-# /usr/local/share/CMake/Modules/CheckTypeSize.cmake
-# /usr/local/share/CMake/Modules/Platform/Linux.cmake
-# /usr/local/share/CMake/Modules/Platform/gcc.cmake
+# /local/local/share/CMake/Modules/CMakeDefaultMakeRuleVariables.cmake
+# /local/local/share/CMake/Modules/CMakeSystemSpecificInformation.cmake
+# /local/local/share/CMake/Modules/CheckFunctionExists.cmake
+# /local/local/share/CMake/Modules/CheckIncludeFiles.cmake
+# /local/local/share/CMake/Modules/CheckTypeSize.cmake
+# /local/local/share/CMake/Modules/Platform/Linux.cmake
+# /local/local/share/CMake/Modules/Platform/gcc.cmake
 
 
 # disable some common implicit rules to speed things up
 .SUFFIXES:
 .SUFFIXES:.hpuxmakemusthaverule
-CMAKE_MAKEFILE_SOURCES =  /home/stevel/pro/eman2/CMakeCCompiler.cmake /home/stevel/pro/eman2/CMakeCXXCompiler.cmake /home/stevel/pro/eman2/CMakeLists.txt /home/stevel/pro/eman2/CMakeSystem.cmake /home/stevel/pro/eman2/doc/CMakeLists.txt /usr/local/share/CMake/Modules/CMakeDefaultMakeRuleVariables.cmake /usr/local/share/CMake/Modules/CMakeSystemSpecificInformation.cmake /usr/local/share/CMake/Modules/CheckFunctionExists.cmake /usr/local/share/CMake/Modules/CheckIncludeFiles.cmake /usr/local/share/CMake/Modules/CheckTypeSize.cmake /usr/local/share/CMake/Modules/Platform/Linux.cmake /usr/local/share/CMake/Modules/Platform/gcc.cmake /home/stevel/pro/eman2/CMakeCache.txt
+CMAKE_MAKEFILE_SOURCES =  /home/stevel/pro/eman2/CMakeCCompiler.cmake /home/stevel/pro/eman2/CMakeCXXCompiler.cmake /home/stevel/pro/eman2/CMakeLists.txt /home/stevel/pro/eman2/CMakeSystem.cmake /home/stevel/pro/eman2/doc/CMakeLists.txt /local/local/share/CMake/Modules/CMakeDefaultMakeRuleVariables.cmake /local/local/share/CMake/Modules/CMakeSystemSpecificInformation.cmake /local/local/share/CMake/Modules/CheckFunctionExists.cmake /local/local/share/CMake/Modules/CheckIncludeFiles.cmake /local/local/share/CMake/Modules/CheckTypeSize.cmake /local/local/share/CMake/Modules/Platform/Linux.cmake /local/local/share/CMake/Modules/Platform/gcc.cmake /home/stevel/pro/eman2/CMakeCache.txt
 
 
 # the standard shell for make
 SHELL = /bin/sh
 
-CMAKE_COMMAND = /usr/local/bin/cmake
-RM = /usr/local/bin/cmake -E remove -f
-CMAKE_EDIT_COMMAND = /usr/local/bin/ccmake
+CMAKE_COMMAND = /local/local/bin/cmake
+RM = /local/local/bin/cmake -E remove -f
+CMAKE_EDIT_COMMAND = /local/local/bin/ccmake
 CMAKE_CURRENT_SOURCE = /home/stevel/pro/eman2/doc/latex
 CMAKE_CURRENT_BINARY = /home/stevel/pro/eman2/doc/latex
 CMAKE_SOURCE_DIR = /home/stevel/pro/eman2

@@ -49,5 +49,5 @@ ADD_PYSTE_LIB(pyPolarData2)
 
 INSTALL_FILES(/lib "^.+\\.py$")
 INSTALL_FILES(/include "^.+\\.h$")
-INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py)
+INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py gui/emimagecanvas.py)
 

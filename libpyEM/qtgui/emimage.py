@@ -66,8 +66,9 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 		if self.data :
 			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,1,254,self.minden,self.maxden,0)
-#			print "%d %d   %d"%(self.width(),self.height(),len(a))
-			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_BYTE,a)
+#			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
+#			GL.glPixelZoom(self.scale,self.scale)
+			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 	
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -80,10 +81,9 @@ class EMImage(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
-			if self.inspector : self.inspector.show()
-			else:
-				self.inspector=EMImageInspector(self)
-				self.inspector.show()
+			if not self.inspector : self.inspector=EMImageInspector(self)
+			self.inspector.setLimits(self.data)
+			self.inspector.show()
 	
 	def mouseMoveEvent(self, event):
 		pass
@@ -94,6 +94,7 @@ class EMImage(QtOpenGL.QGLWidget):
 class EMImageInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
+		self.target=target
 		
 		self.vboxlayout = QtGui.QVBoxLayout(self)
 		self.vboxlayout.setMargin(0)
@@ -112,12 +113,30 @@ class EMImageInspector(QtGui.QWidget):
 		self.maxs.setObjectName("maxs")
 		self.vboxlayout.addWidget(self.maxs)
 		
+		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
+		self.brts.setObjectName("brts")
+		self.vboxlayout.addWidget(self.brts)
+		
+		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
+		self.conts.setObjectName("conts")
+		self.vboxlayout.addWidget(self.conts)
+		
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), target.setDenMin)
-		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), target.setDenMax)
+		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
+		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
+		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
+		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 
+	def newMin(val):
+	
+	def newMax(val):
+		
+	def newBrt(val):
+		
+	def newCont(val):
+	
 
-	def setlims(target):
+	def setLimits(target):
 		data=target.data
 		if data==None : return
 		mean=data.get_attr("mean")
@@ -126,6 +145,7 @@ class EMImageInspector(QtGui.QWidget):
 		m1=data.get_attr("maximum")
 		
 		self.mins.setRange(max(m0,mean-3.0*sigma),min(m1,mean+3.0*sigma))
+		self.maxs.setRange(max(m0,mean-3.0*sigma),min(m1,mean+3.0*sigma))
 		
 
 if __name__ == '__main__':
