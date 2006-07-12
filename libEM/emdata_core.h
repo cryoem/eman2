@@ -118,7 +118,7 @@ float dot(EMData * with);
 EMData *get_row(int row_index) const;
 
 
-/** Get one row of a 1D/2D image.
+/** Set one row of a 1D/2D image.
  *
  * @param data The row image data.
  * @param row_index Index of the row.
@@ -127,7 +127,7 @@ EMData *get_row(int row_index) const;
 void set_row(const EMData * data, int row_index);
 
 
-/** Set one row of a 2D images.
+/** Get one column of a 2D images.
  *
  * @param col_index Index of the column.
  * @exception ImageDimensionException If this image is not 2D.
@@ -136,7 +136,7 @@ void set_row(const EMData * data, int row_index);
 EMData *get_col(int col_index) const;
 
 
-/** Get one column of a 2D image.
+/** Set one column of a 2D image.
  *
  * @param data The column image data.
  * @param col_index Index of the column.
