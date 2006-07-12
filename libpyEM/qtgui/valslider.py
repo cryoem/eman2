@@ -68,11 +68,11 @@ class ValSlider(QtGui.QWidget):
 		QtCore.QObject.connect(self.text, QtCore.SIGNAL("editingFinished()"), self.textChange)
 		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
 
-	def setRange(minv,maxv):
+	def setRange(self,minv,maxv):
 		self.range=[minv,maxv]
 		self.updates()
 
-	def setValue(val):
+	def setValue(self,val):
 		self.value=val
 		self.updateboth()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)

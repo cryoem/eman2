@@ -242,10 +242,10 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	else asrgb=1;
 
 	std::string ret=std::string();
-	ret.resize(iysize*bpl+hist*256);
-	ret.assign(iysize*bpl,char(mingray));
+//	ret.resize(iysize*bpl);
+	ret.assign(iysize*bpl+hist*1024,char(mingray));
 	unsigned char *data=(unsigned char *)ret.data();
-	unsigned char *histd=data+iysize*bpl;
+	unsigned int *histd=(unsigned int *)(data+iysize*bpl);
 	if (hist) {
 		for (int i=0; i<256; i++) histd[i]=0;
 	}

@@ -5,6 +5,7 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 import sys
+import array
 
 class EMImage(QtOpenGL.QGLWidget):
 	def __init__(self, parent=None):
@@ -65,10 +66,14 @@ class EMImage(QtOpenGL.QGLWidget):
 		GL.glTranslated(0.0, 0.0, -10.0)
 		
 		if self.data :
-			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,1,254,self.minden,self.maxden,0)
+			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 #			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
 #			GL.glPixelZoom(self.scale,self.scale)
 			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+#			print self.width(),self.height(),len(a)
+			hist=array.array("I")
+			hist.fromstring(a[-1024:])
+			print hist
 	
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -127,16 +132,16 @@ class EMImageInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 
-	def newMin(val):
-	
-	def newMax(val):
-		
-	def newBrt(val):
-		
-	def newCont(val):
-	
+	def newMin(self,val):
+		pass	
+	def newMax(self,val):
+		pass
+	def newBrt(self,val):
+		pass
+	def newCont(self,val):
+		pass
 
-	def setLimits(target):
+	def setLimits(self,target):
 		data=target.data
 		if data==None : return
 		mean=data.get_attr("mean")

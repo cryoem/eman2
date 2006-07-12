@@ -40,7 +40,9 @@ EMData *do_ift();
 EMData* do_ift_inplace();
 
 
-/** Render the image into an 8-bit image. 2D image only.
+/** Render the image into an 8-bit image. 2D images only.
+ * flags provide a way to do unusual things with this function, such
+ * as calculating a histogram of the rendered area.
  *
  * @param x	origin of the area to render
  * @param y
@@ -52,7 +54,7 @@ EMData* do_ift_inplace();
  * @param max_gray	maximum gray value to render (0-255)
  * @param min_render	float image density corresponding to min_gray
  * @param max_render	float image density corresponding to max_gray
- * @param flags	1-duplicate each output pixel 3x for RGB rendering,2-add a 256 character greyscale histogram to the end of the image array
+ * @param flags	1-duplicate each output pixel 3x for RGB rendering,2-add a 256 int greyscale histogram to the end of the image array
  * @exception ImageDimensionException If the image is not 2D.
  */
 std::string render_amp8(int x, int y, int xsize, int ysize,
