@@ -74,6 +74,40 @@ Dict SimpleCtf::to_dict() const
 	return dict;
 }
 
+void SimpleCtf::from_vector(const vector<float>& vctf)
+{
+	defocus = vctf[0];
+	bfactor = vctf[1];
+	amplitude = vctf[2];
+	ampcont = vctf[3];
+	noise1 = vctf[4];
+	noise2 = vctf[5];
+	noise3 = vctf[6];
+	noise4 = vctf[7];
+	voltage = vctf[8];
+	cs = vctf[9];
+	apix = vctf[10];
+}
+
+vector<float> SimpleCtf::to_vector() const
+{
+	vector<float> vctf;
+	
+	vctf.push_back(defocus);
+	vctf.push_back(bfactor);
+	vctf.push_back(amplitude);
+	vctf.push_back(ampcont);
+	vctf.push_back(noise1);
+	vctf.push_back(noise2);
+	vctf.push_back(noise3);
+	vctf.push_back(noise4);
+	vctf.push_back(voltage);
+	vctf.push_back(cs);
+	vctf.push_back(apix);
+	
+	return vctf;
+}
+		
 
 string SimpleCtf::to_string() const
 {

@@ -65,6 +65,9 @@ namespace EMAN
 
 		virtual void from_dict(const Dict & dict) = 0;
 		virtual Dict to_dict() const = 0;
+		
+		virtual void from_vector(const vector<float>& vctf) = 0;
+		virtual vector<float> to_vector() const = 0;
 
 		virtual vector < float >compute_1d(int size, CtfType t, XYData * struct_factor = 0) = 0;
 		virtual void compute_2d_real(EMData * img, CtfType t, XYData * struct_factor = 0) = 0;
@@ -112,6 +115,9 @@ namespace EMAN
 
 		void from_dict(const Dict & dict);
 		Dict to_dict() const;
+		
+		void from_vector(const vector<float>& vctf);
+		vector<float> to_vector() const;
 
 		void copy_from(const Ctf * new_ctf);
 		bool equal(const Ctf * ctf1) const;
