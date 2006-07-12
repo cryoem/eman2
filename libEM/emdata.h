@@ -645,7 +645,7 @@ namespace EMAN
 			EMDATA_FH = 1 << 11        // is the complex image a FH image
 		};
 
-		void update_stat();
+		void update_stat() const;
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void scale_pixel(float scale_factor) const;
 		void save_byteorder_to_dict(ImageIO * imageio);
@@ -657,10 +657,13 @@ namespace EMAN
 		float *rdata;	 
 		/** supplementary data array */       
 		float *supp;    
-		/** CTF data */        
-		Ctf *ctf;		   
+		
+		/** CTF data 
+		 * All CTF data become attribute ctf(vector<float>) in attr_dict  --Grant Tang*/        
+		//Ctf *ctf;		   
+		
 		/** flags */  
-		int flags;       
+		mutable int flags;       
 		// Incremented every time the image changes
 		int changecount;
 		/** image size */       

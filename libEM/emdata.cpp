@@ -33,7 +33,6 @@ EMData::EMData()
 
 	rdata = 0;
 	supp = 0;
-	ctf = 0;
 
 	flags =0;
 	// used to replace cube 'pixel'
@@ -70,11 +69,6 @@ EMData::~EMData()
 	if (supp) {
 		free(supp);
 		supp = 0;
-	}
-
-	if (ctf) {
-		delete ctf;
-		ctf = 0;
 	}
 
 	EMData::totalalloc--;
@@ -2245,7 +2239,7 @@ void EMData::cconj() {
 }
 
 
-void EMData::update_stat()
+void EMData::update_stat() const
 {
 	ENTERFUNC;
 

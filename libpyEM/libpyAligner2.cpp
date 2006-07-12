@@ -86,6 +86,14 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
     EMAN::Dict to_dict() const {
         return call_method< EMAN::Dict >(py_self, "to_dict");
     }
+    
+    void from_vector(const std::vector<float, std::allocator<float> >& p0) {
+        call_method< void >(py_self, "from_vector", p0);
+    }
+
+    std::vector<float, std::allocator<float> > to_vector() const {
+        return call_method< std::vector<float, std::allocator<float> > >(py_self, "to_vector");
+    }
 
     std::vector<float,std::allocator<float> > compute_1d(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
         return call_method< std::vector<float,std::allocator<float> > >(py_self, "compute_1d", p0, p1, p2);

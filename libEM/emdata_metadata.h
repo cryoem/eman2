@@ -138,10 +138,7 @@ float get_circle_mean();
 /** Get ctf parameter of this image.
  * @return The ctf parameter.
  */
-inline Ctf * get_ctf() const
-{
-	return ctf;
-}
+Ctf * get_ctf() const;
 
 
 /** Set the CTF parameter of this image.
@@ -388,7 +385,7 @@ inline void set_attr(const string & key, EMObject val)
  * @return The image attribute dictionary containing all
  * attribute names and values.
  */
-Dict get_attr_dict();
+Dict get_attr_dict() const;
 
 
 /** Merge the new values with the existing dictionary.
@@ -727,5 +724,73 @@ inline void set_nxc(int nxc)
 {
 	attr_dict["nxc"] = nxc;
 }
+
+/******************************************************************************
+ ** These functions are used for EMData's pickling, do not use it for         *
+ *  other purpose, e.g. get flags of a EMData object                          *
+ * ***************************************************************************/
+inline int get_flags() const
+{
+	return flags;
+}
+
+inline void set_flags(int f)
+{
+	flags = f;
+}
+
+inline int get_changecount() const
+{
+	return changecount;
+}
+
+inline void set_changecount(int c)
+{
+	changecount = c;
+}
+
+inline int get_xoff() const
+{
+	return xoff;
+}
+
+inline int get_yoff() const
+{
+	return yoff;
+}
+
+inline int get_zoff() const
+{
+	return zoff;
+}
+
+inline void set_xyzoff(int x, int y, int z)
+{
+	xoff = x;
+	yoff = y;
+	zoff = z;
+}
+
+inline string get_path() const
+{
+	return path;
+}
+
+inline int get_pathnum() const
+{
+	return pathnum;
+}
+
+vector<float> get_data_pickle() const;
+
+void set_data_pickle(const vector<float>& vf);
+
+//we don't actually pickle supp, just a place holder to set supp to NULL
+int get_supp_pickle() const;
+
+void set_supp_pickle(int i);
+
+
+/*****************************************************************************/
 
 #endif	//emdata__metadata_h__

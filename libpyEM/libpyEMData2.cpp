@@ -12,6 +12,7 @@
 #include <processor.h>
 #include <transform.h>
 #include <xydata.h>
+#include "emdata_pickle.h"
 
 // Using =======================================================================
 using namespace boost::python;
@@ -114,6 +115,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 {
     scope* EMAN_EMData_scope = new scope(
     class_< EMAN::EMData >("EMData", init<  >())
+       	.def_pickle(EMData_pickle_suite())
         .def(init< const EMAN::EMData& >())
         .def_readwrite("totalalloc", &EMAN::EMData::totalalloc)
         .def("read_image", &EMAN::EMData::read_image, EMAN_EMData_read_image_overloads_1_5())
@@ -350,8 +352,8 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def( self /= self )
         .def("__call__", (float& (EMAN::EMData::*)(const int, const int, const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
         .def("__call__", (float& (EMAN::EMData::*)(const int, const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
-        .def("__call__", (float& (EMAN::EMData::*)(const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
-    );
+        .def("__call__", (float& (EMAN::EMData::*)(const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >()))
+        ;
 
     enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")
         .value("FFT_IN_PLACE", EMAN::EMData::FFT_IN_PLACE)

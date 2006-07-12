@@ -18,12 +18,6 @@ EMData * EMData::copy() const
 	memcpy(data, rdata, nx * ny * nz * sizeof(float));
 	ret->done_data();
 
-
-	if (ctf) {
-		ret->ctf = new SimpleCtf();
-		ret->ctf->copy_from(ctf);
-	}
-
 	ret->flags = flags & ( EMDATA_PAD 
 							| EMDATA_SHUFFLE
 							| EMDATA_FLIP
@@ -48,11 +42,6 @@ EMData *EMData::copy_head() const
 	EMData *ret = new EMData();
 	ret->attr_dict = attr_dict;
 	ret->set_size(nx, ny, nz);
-
-	if (ctf) {
-		ret->ctf = new SimpleCtf();
-		ret->ctf->copy_from(ctf);
-	}
 
 	ret->flags = flags & ( EMDATA_PAD | EMDATA_FFTODD);
 

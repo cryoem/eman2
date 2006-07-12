@@ -43,21 +43,13 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			ny = attr_dict["ny"];
 			nz = attr_dict["nz"];
 
-			if (!ctf) {
-				ctf = new SimpleCtf();
-			}
-			err = imageio->read_ctf(*ctf, img_index);
-			if (err) {
-				if( ctf )
-				{
-					delete ctf;
-					ctf = 0;
-				}
-				flags &= ~EMDATA_HASCTFF;
-			}
-			else {
+			if(attr_dict.has_key("ctf")) {
 				flags |= EMDATA_HASCTFF;
 			}
+			else {
+				flags &= ~EMDATA_HASCTFF;
+			}
+			
 
 			if (!nodata) {
 				set_size(nx, ny, nz);
@@ -140,10 +132,6 @@ void EMData::write_image(const string & filename, int img_index,
 			throw ImageWriteException(filename, "imageio write header failed");
 		}
 		else {
-			if (ctf) {
-				imageio->write_ctf(*ctf, img_index);
-			}
-
 			if (!header_only) {
 				if (imgtype == EMUtil::IMAGE_LST) {
 

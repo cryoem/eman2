@@ -470,14 +470,22 @@ void EMData::set_ctf(Ctf * new_ctf)
 {
 	ENTERFUNC;
 
-	if (!ctf) {
-		ctf = new SimpleCtf();
-	}
+	vector<float> vctf = new_ctf->to_vector();
+	attr_dict["ctf"] = vctf;
 
-	ctf->copy_from(new_ctf);
 	EXITFUNC;
 }
 
+Ctf * EMData::get_ctf() const
+{
+	ENTERFUNC;
+	
+	SimpleCtf * ctf = new SimpleCtf();
+	ctf->from_vector(attr_dict["ctf"]);
+	
+	EXITFUNC;
+	return ctf;
+}
 
 void EMData::set_size(int x, int y, int z)
 {
@@ -671,7 +679,7 @@ EMObject EMData::get_attr(const string & key)
 }
 
 
-Dict EMData::get_attr_dict()
+Dict EMData::get_attr_dict() const
 {
 	update_stat();
 	return Dict(attr_dict);
@@ -697,4 +705,29 @@ void EMData::del_attr_dict(const vector<string> & del_keys)
 	for(it=del_keys.begin(); it!=del_keys.end(); ++it) {
 		this->del_attr(*it);
 	}
+}
+
+vector<float> EMData::get_data_pickle() const
+{
+	vector<float> vf;
+	vf.resize(nx*ny*nz);
+	std::copy(rdata, rdata+nx*ny*nz, vf.begin());
+	
+	return vf;
+}
+
+void EMData::set_data_pickle(const vector<float>& vf)
+{
+	rdata = (float *)malloc(nx*ny*nz*sizeof(float));
+	std::copy(vf.begin(), vf.end(), rdata);
+}
+
+int EMData::get_supp_pickle() const
+{
+	return 0;
+}
+
+void EMData::set_supp_pickle(int)
+{
+	this->supp = 0;
 }
