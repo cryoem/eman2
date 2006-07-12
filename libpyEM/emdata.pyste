@@ -15,7 +15,7 @@ rename(EMData.emdata_setitem, "__setitem__")
 
 
 set_policy(EMData.process, return_value_policy(manage_new_object))
-set_policy(EMData.get_ctf, return_internal_reference())
+set_policy(EMData.get_ctf, return_value_policy(manage_new_object))
 set_policy(EMData.copy, return_value_policy(manage_new_object))
 set_policy(EMData.get_clip, return_value_policy(manage_new_object))
 set_policy(EMData.get_rotated_clip, return_value_policy(manage_new_object))
