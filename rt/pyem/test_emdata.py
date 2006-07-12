@@ -2188,7 +2188,7 @@ class TestEMData(unittest.TestCase):
     def test_ctf(self):
         """test ctf ........................................."""
         infile = "test_ctf_in.mrc"
-        TestUtil.make_image_file(infile, MRC)
+        TestUtil.make_image_file(infile, HDF)
         ctf = SimpleCtf()
         d = {"defocus":1, "bfactor":2, "amplitude":3, "ampcont":4, "noise1":5, "noise2":6, "noise3":7, "noise4":8, "voltage":9, "cs":10,"apix":11}
         
@@ -2198,7 +2198,7 @@ class TestEMData(unittest.TestCase):
         e.read_image(infile)
         e.set_ctf(ctf)
 
-        outfile = "test_ctf_out.mrc"
+        outfile = "test_ctf_out.hdf"
         e.write_image(outfile)
 
         e2 = EMData()
@@ -2852,7 +2852,26 @@ class TestEMData(unittest.TestCase):
         for y in range(800):
             for x in range(800):
                 self.assertEqual(d1[y][x], d2[y][x])
-
+                
+    def test_pickling(self):
+        """test EMData's pickle ............................."""
+        import pickle
+        e = EMData()
+        e.set_size(16,16,16)
+        e.process_inplace('testimage.noise.uniform.rand')
+        
+        e.set_attr('author', 'Grant Tang')
+        mydb = open('mydb', 'w')
+        pickle.dump(e, mydb)
+        mydb.close()
+        
+        mydb2 = open('mydb', 'r')
+        f = pickle.load(mydb2)
+        d = f.get_attr_dict()
+        self.assertEqual(d['author'], 'Grant Tang')
+        
+        os.remove('mydb')
+        
 def test_main():
     test_support.run_unittest(TestEMData)
 
