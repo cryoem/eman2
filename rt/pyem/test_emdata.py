@@ -2859,6 +2859,8 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(16,16,16)
         e.process_inplace('testimage.noise.uniform.rand')
+        data1 = e.get_3dview()
+        
         
         e.set_attr('author', 'Grant Tang')
         mydb = open('mydb', 'w')
@@ -2866,9 +2868,16 @@ class TestEMData(unittest.TestCase):
         mydb.close()
         
         mydb2 = open('mydb', 'r')
-        f = pickle.load(mydb2)
-        d = f.get_attr_dict()
-        self.assertEqual(d['author'], 'Grant Tang')
+        e2 = pickle.load(mydb2)
+        data2 = e2.get_3dview()
+        attr_dict = e2.get_attr_dict()
+        self.assertEqual(attr_dict['author'], 'Grant Tang')
+        
+        
+        for z in range(16):
+            for y in range(16):
+                for x in range(16):
+                    self.assertEqual(data1[z][y][x], data2[z][y][x])
         
         os.remove('mydb')
         
