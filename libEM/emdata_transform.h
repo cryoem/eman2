@@ -52,12 +52,12 @@ EMData* do_ift_inplace();
  * @param max_gray	maximum gray value to render (0-255)
  * @param min_render	float image density corresponding to min_gray
  * @param max_render	float image density corresponding to max_gray
- * @param asrgb	duplicate each output pixel 3x for RGB rendering
+ * @param flags	1-duplicate each output pixel 3x for RGB rendering,2-add a 256 character greyscale histogram to the end of the image array
  * @exception ImageDimensionException If the image is not 2D.
  */
 std::string render_amp8(int x, int y, int xsize, int ysize,
 				 int bpl, float scale, int min_gray, int max_gray,
-				 float min_render, float max_render,int asrgb);
+				 float min_render, float max_render,int flags);
 
 		
 /** Render the image into a 24-bit image. 2D image only.

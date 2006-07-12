@@ -3395,4 +3395,3 @@ void EMData::save_byteorder_to_dict(ImageIO * imageio)
 	}
 }
 
-/* vim: set ts=4 noet nospell: */

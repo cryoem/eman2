@@ -219,9 +219,12 @@ EMData *EMData::do_ift_inplace()
 
 std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
-						 float render_min, float render_max,int asrgb)
+						 float render_min, float render_max,int flags)
 {
 	ENTERFUNC;
+
+	int asrgb;
+	int hist=(flags&2)/2;
 
 	if (get_ndim() != 2) {
 		throw ImageDimensionException("2D only");
@@ -235,13 +238,17 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 		render_max = render_min + 0.01f;
 	}
 
-	if (asrgb) asrgb=3;
+	if (flags&1) asrgb=3;
 	else asrgb=1;
 
 	std::string ret=std::string();
-	ret.resize(iysize*bpl);
+	ret.resize(iysize*bpl+hist*256);
 	ret.assign(iysize*bpl,char(mingray));
 	unsigned char *data=(unsigned char *)ret.data();
+	unsigned char *histd=data+iysize*bpl;
+	if (hist) {
+		for (int i=0; i<256; i++) histd[i]=0;
+	}
 
 	float rm = render_min;
 	float inv_scale = 1.0f / scale;
@@ -322,6 +329,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k += mingray;
 					}
 					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
+					if (hist) histd[k]++;
 					ll += dsx;
 				}
 				l += dsy;
@@ -356,6 +364,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k += mingray;
 					}
 					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
+					if (hist) histd[k]++;
 					ll += addi;
 					remx += addr;
 					if (remx > scale_n) {
@@ -390,6 +399,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k += mingray;
 					}
 					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
+					if (hist) histd[k]++;
 					l += dsx;
 				}
 				l = br + dsy;
@@ -412,6 +422,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k += mingray;
 					}
 					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
+					if (hist) histd[k]++;
 					l += addi;
 					remx += addr;
 					if (remx > scale_n) {
