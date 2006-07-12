@@ -22,6 +22,18 @@ class TestPGMIO(unittest.TestCase):
         f.read_image('test_image.pgm')
         
         os.remove('test_image.pgm')
+    
+    def test_pgm_region_io(self):
+        """test pgm region io ..............................."""
+        e = EMData()
+        e.set_size(1024,1024)
+        e.process_inplace('testimage.circlesphere', {'radius':300})
+        e.write_image('test_circle.pgm')
+        
+        f = EMData()
+        f.read_image('test_circle.pgm', 0, False, Region(300,300,200,200))
+        
+        os.remove('test_circle.pgm')
 
 class TestSpiderIO(unittest.TestCase):
     """spider file IO test"""
