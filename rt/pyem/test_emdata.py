@@ -2512,6 +2512,22 @@ class TestEMData(unittest.TestCase):
                     self.assertEqual( d5[z][y][x*2], d[z][y][x] )
                     self.assertEqual( d5[z][y][x*2], d[z][y][x] )
 
+    def test_sqrt(self):
+        """test sqrt() function for real image ..............""" 
+        import math
+        e = EMData()
+        e.set_size(32,32,32)
+        e.process_inplace('testimage.noise.uniform.rand')
+        d = e.get_3dview() 
+        e2 = e.sqrt()
+        d2 = e2.get_3dview()
+        dd = e.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertEqual( d[z][y][x], dd[z][y][x] )
+                    self.assertAlmostEqual( math.sqrt(dd[z][y][x]), d2[z][y][x], 3 ) 
+
     def test_image_amplitude_phase(self):
         """test amplitude()/phase() function ................"""
         e = EMData()
