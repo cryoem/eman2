@@ -478,13 +478,15 @@ void EMData::set_ctf(Ctf * new_ctf)
 
 Ctf * EMData::get_ctf() const
 {
-	ENTERFUNC;
+	if(attr_dict.has_key("ctf")) {
+		SimpleCtf * ctf = new SimpleCtf();
+		ctf->from_vector(attr_dict["ctf"]);
 	
-	SimpleCtf * ctf = new SimpleCtf();
-	ctf->from_vector(attr_dict["ctf"]);
-	
-	EXITFUNC;
-	return ctf;
+		return dynamic_cast<Ctf *>(ctf);
+	}
+	else {
+		return 0;
+	}
 }
 
 void EMData::set_size(int x, int y, int z)
