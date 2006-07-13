@@ -34,6 +34,9 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 		self.minden=max(m0,mean-3.0*sigma)
 		self.maxden=min(m1,mean+3.0*sigma)
+		
+		if self.inspector: self.inspector.setLimits(self.minden,self.maxden,self.minden,self.maxden)
+		
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -41,7 +44,7 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.maxden=x1
 		self.updateGL()
 	
-	def setDenOrigin(self,x,y):
+	def setOrigin(self,x,y):
 		self.origin=(x,y)
 		self.updateGL()
 		
@@ -73,7 +76,7 @@ class EMImage(QtOpenGL.QGLWidget):
 #			print self.width(),self.height(),len(a)
 			hist=array.array("I")
 			hist.fromstring(a[-1024:])
-			print hist
+			if self.inspector : self.inspector.setHist(hist)
 	
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -87,7 +90,7 @@ class EMImage(QtOpenGL.QGLWidget):
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
 			if not self.inspector : self.inspector=EMImageInspector(self)
-			self.inspector.setLimits(self.data)
+			if self.inspector: self.inspector.setLimits(self.minden,self.maxden,self.minden,self.maxden)
 			self.inspector.show()
 	
 	def mouseMoveEvent(self, event):
@@ -95,7 +98,29 @@ class EMImage(QtOpenGL.QGLWidget):
 	
 	def mouseReleaseEvent(self, event):
 		pass
+
+class Histogram(QtGui.QWidget):
+	def __init__(self,parent):
+		QtGui.QWidget.__init__(self,parent)
+		self.brush=QtGui.QBrush(Qt.black)
+		
+		self.histdata=None
+		self.setMinimumSize(QtCore.QSize(258,128))
 	
+	def setData(self,data):
+		self.histdata=data
+		self.norm=max(self.histdata[1:-1])
+		self.update()
+	
+	def paintEvent (self, event):
+		if not self.histdata : return
+		p=QtGui.QPainter()
+		p.begin(self)
+		p.setPen(Qt.black)
+		for i,j in enumerate(self.histdata):
+			p.drawLine(i,127,i,127-j*126/self.norm)
+		p.end()
+
 class EMImageInspector(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
@@ -105,6 +130,10 @@ class EMImageInspector(QtGui.QWidget):
 		self.vboxlayout.setMargin(0)
 		self.vboxlayout.setSpacing(6)
 		self.vboxlayout.setObjectName("vboxlayout")
+		
+		self.hist = Histogram(self)
+		self.hist.setObjectName("hist")
+		self.vboxlayout.addWidget(self.hist)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
@@ -133,25 +162,27 @@ class EMImageInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 
 	def newMin(self,val):
-		pass	
+		self.target.setDenMin(val)
+		self.minval=val
+		
 	def newMax(self,val):
-		pass
+		self.target.setDenMax(val)
+		self.maxval=val
+	
 	def newBrt(self,val):
 		pass
+		
 	def newCont(self,val):
 		pass
 
-	def setLimits(self,target):
-		data=target.data
-		if data==None : return
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
-		m0=data.get_attr("minimum")
-		m1=data.get_attr("maximum")
-		
-		self.mins.setRange(max(m0,mean-3.0*sigma),min(m1,mean+3.0*sigma))
-		self.maxs.setRange(max(m0,mean-3.0*sigma),min(m1,mean+3.0*sigma))
-		
+	def setHist(self,hist):
+		self.hist.setData(hist)
+
+	def setLimits(self,lowlim,highlim,curmin,curmax):
+		self.mins.setRange(lowlim,highlim)
+		self.maxs.setRange(lowlim,highlim)
+		self.mins.setValue(curmin)
+		self.maxs.setValue(curmax)
 
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
