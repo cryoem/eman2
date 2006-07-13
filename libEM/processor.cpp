@@ -160,6 +160,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&InverseKaiserSinhProcessor::NEW);	 
 	force_add(&CCDNormProcessor::NEW);
 	force_add(&CTF_Processor::NEW);
+	force_add(&SHIFTProcessor::NEW);
 }
 
 EMData* Processor::process(EMData * image)
