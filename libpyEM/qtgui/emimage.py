@@ -17,6 +17,8 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.scale=1.0
 		self.minden=0
 		self.maxden=1.0
+		self.mindeng=0
+		self.maxdeng=1.0
 		self.origin=(0,0)
 		
 		self.inspector=None
@@ -34,8 +36,10 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 		self.minden=max(m0,mean-3.0*sigma)
 		self.maxden=min(m1,mean+3.0*sigma)
-		
-		if self.inspector: self.inspector.setLimits(self.minden,self.maxden,self.minden,self.maxden)
+		self.mindeng=max(m0,mean-4.0*sigma)
+		self.maxdeng=min(m1,mean+4.0*sigma)
+
+		if self.inspector: self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		
 		self.updateGL()
 		
@@ -90,7 +94,7 @@ class EMImage(QtOpenGL.QGLWidget):
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
 			if not self.inspector : self.inspector=EMImageInspector(self)
-			if self.inspector: self.inspector.setLimits(self.minden,self.maxden,self.minden,self.maxden)
+			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
 	
 	def mouseMoveEvent(self, event):
@@ -104,22 +108,56 @@ class Histogram(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,parent)
 		self.brush=QtGui.QBrush(Qt.black)
 		
+		self.font=QtGui.QFont("Helvetica", 10);
+		self.probe=None
 		self.histdata=None
 		self.setMinimumSize(QtCore.QSize(258,128))
 	
 	def setData(self,data):
 		self.histdata=data
-		self.norm=max(self.histdata[1:-1])
+#		self.norm=max(self.histdata)
+		self.norm=0
+		for i in self.histdata: self.norm+=i*i
+		self.norm-=max(self.histdata)**2
+		self.norm=sqrt(self.norm/255)*3.0
+		self.total=sum(self.histdata)
 		self.update()
 	
 	def paintEvent (self, event):
 		if not self.histdata : return
 		p=QtGui.QPainter()
 		p.begin(self)
-		p.setPen(Qt.black)
+		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
 			p.drawLine(i,127,i,127-j*126/self.norm)
+		
+		if self.probe :
+			p.setPen(Qt.blue)
+			p.drawLine(self.probe[0],0,self.probe[0],127-self.probe[1]*126/self.norm)
+			p.setFont(self.font)
+			p.drawText(200,20,"x=%d"%(self.probe[0]))
+			p.drawText(200,34,"y=%d"%(self.probe[1]))
+			p.drawText(200,48,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
+		
+		p.setPen(Qt.black)
+		p.drawRect(0,0,257,128)
 		p.end()
+
+	def mousePressEvent(self, event):
+		if event.button()==Qt.LeftButton:
+			x=max(min(event.x(),256),1)
+			self.probe=(x,self.histdata[x-1])
+			self.update()
+			
+	def mouseMoveEvent(self, event):
+		if event.buttons()&Qt.LeftButton:
+			x=max(min(event.x(),256),1)
+			self.probe=(x,self.histdata[x-1])
+			self.update()
+	
+	def mouseReleaseEvent(self, event):
+		self.probe=None
+
 
 class EMImageInspector(QtGui.QWidget):
 	def __init__(self,target) :
@@ -179,6 +217,7 @@ class EMImageInspector(QtGui.QWidget):
 		self.hist.setData(hist)
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
+		print lowlim,highlim,curmin,curmax
 		self.mins.setRange(lowlim,highlim)
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
@@ -187,7 +226,7 @@ class EMImageInspector(QtGui.QWidget):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMImage()
-	window.data=test_image()
+	window.setData(test_image(size=(512,512)))
 	window.show()
 	
 #	w2=QtGui.QWidget()
