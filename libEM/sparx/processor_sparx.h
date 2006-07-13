@@ -300,6 +300,33 @@ namespace EMAN
 		}
 	};
 	
+	/**Shift by phase multiplication in Fourier space.
+	 */
+	class SHIFTProcessor:public NewFourierProcessor
+	{
+	  public:
+		string get_name() const
+		{ return "filter.shift"; }
+		static Processor *NEW()
+		{ return new SHIFTProcessor(); }
+		string get_desc() const
+		{
+			return "Shift by phase multiplication in Fourier space.";
+		}
+		void process_inplace(EMData* image) {
+			params["filter_type"] = SHIFT;
+			EMFourierFilterInPlace(image, params); 
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("shift_x", EMObject::FLOAT, "Shift x");
+			d.put("shift_y", EMObject::FLOAT, "Shift y");
+			d.put("shift_z", EMObject::FLOAT, "Shift z");
+			return d;
+		}
+	};
+	
 	/**Divide by a Kaiser-Bessel I0 func in Fourier space.
 	 */
 	class InverseKaiserI0Processor:public NewFourierProcessor
