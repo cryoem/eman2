@@ -8,6 +8,9 @@ import sys
 import array
 
 class EMImage(QtOpenGL.QGLWidget):
+	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
+	or sets of 2D images.
+	"""
 	def __init__(self, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
@@ -24,22 +27,55 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.inspector=None
 	
 	def setData(self,data):
+		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
 		self.data=data
 		if data==None:
 			self.updateGL()
 			return
 		
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
-		m0=data.get_attr("minimum")
-		m1=data.get_attr("maximum")
-		
-		self.minden=max(m0,mean-3.0*sigma)
-		self.maxden=min(m1,mean+3.0*sigma)
-		self.mindeng=max(m0,mean-4.0*sigma)
-		self.maxdeng=min(m1,mean+4.0*sigma)
+		# If we have a list of 2D images
+		if isinstance(data,list) :
+			self.minden=data[0].get_attr("mean")
+			self.maxden=self.minden
+			self.mindeng=self.minden
+			self.maxdeng=self.minden
+			for i in data:
+				if i.get_zsize()!=1 :
+					self.data=None
+					self.updateGL()
+					return
+				mean=data.get_attr("mean")
+				sigma=data.get_attr("sigma")
+				m0=data.get_attr("minimum")
+				m1=data.get_attr("maximum")
+			
+				self.minden=min(self.minden,max(m0,mean-3.0*sigma))
+				self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
+				self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
+				self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 
-		if self.inspector: self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			if self.inspector: self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+		# If we have a single 2D image
+		elif data.get_zsize()==1:
+			mean=data.get_attr("mean")
+			sigma=data.get_attr("sigma")
+			m0=data.get_attr("minimum")
+			m1=data.get_attr("maximum")
+			
+			self.minden=max(m0,mean-3.0*sigma)
+			self.maxden=min(m1,mean+3.0*sigma)
+			self.mindeng=max(m0,mean-5.0*sigma)
+			self.maxdeng=min(m1,mean+5.0*sigma)
+
+			if self.inspector: self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+		# if we have a single 3D image
+		elif data.get_zsize()>1 :
+			pass
+		# Someone passed something wierd
+		else :
+			self.data=None
+			self.updateGL()
+			return
 		
 		self.updateGL()
 		
@@ -80,7 +116,7 @@ class EMImage(QtOpenGL.QGLWidget):
 #			print self.width(),self.height(),len(a)
 			hist=array.array("I")
 			hist.fromstring(a[-1024:])
-			if self.inspector : self.inspector.setHist(hist)
+			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 	
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -103,7 +139,7 @@ class EMImage(QtOpenGL.QGLWidget):
 	def mouseReleaseEvent(self, event):
 		pass
 
-class Histogram(QtGui.QWidget):
+class ImgHistogram(QtGui.QWidget):
 	def __init__(self,parent):
 		QtGui.QWidget.__init__(self,parent)
 		self.brush=QtGui.QBrush(Qt.black)
@@ -113,14 +149,18 @@ class Histogram(QtGui.QWidget):
 		self.histdata=None
 		self.setMinimumSize(QtCore.QSize(258,128))
 	
-	def setData(self,data):
+	def setData(self,data,minden,maxden):
 		self.histdata=data
 #		self.norm=max(self.histdata)
 		self.norm=0
+		self.minden=minden
+		self.maxden=maxden
 		for i in self.histdata: self.norm+=i*i
 		self.norm-=max(self.histdata)**2
 		self.norm=sqrt(self.norm/255)*3.0
 		self.total=sum(self.histdata)
+		if self.norm==0 : self.norm=1.0
+		if self.total==0 : self.histdata=None
 		self.update()
 	
 	def paintEvent (self, event):
@@ -131,13 +171,17 @@ class Histogram(QtGui.QWidget):
 		for i,j in enumerate(self.histdata):
 			p.drawLine(i,127,i,127-j*126/self.norm)
 		
+		# If the user has dragged, we need to show a value
 		if self.probe :
 			p.setPen(Qt.blue)
-			p.drawLine(self.probe[0],0,self.probe[0],127-self.probe[1]*126/self.norm)
+			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-self.probe[1]*126/self.norm)
+			p.setPen(Qt.darkRed)
+			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-self.probe[1]*126/self.norm)
 			p.setFont(self.font)
 			p.drawText(200,20,"x=%d"%(self.probe[0]))
-			p.drawText(200,34,"y=%d"%(self.probe[1]))
-			p.drawText(200,48,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
+			p.drawText(200,34,"%1.2f"%(self.probe[0]/255.0*(self.maxden-self.minden)+self.minden))
+			p.drawText(200,48,"y=%d"%(self.probe[1]))
+			p.drawText(200,62,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
 		
 		p.setPen(Qt.black)
 		p.drawRect(0,0,257,128)
@@ -145,21 +189,21 @@ class Histogram(QtGui.QWidget):
 
 	def mousePressEvent(self, event):
 		if event.button()==Qt.LeftButton:
-			x=max(min(event.x(),256),1)
-			self.probe=(x,self.histdata[x-1])
+			x=max(min(event.x()-1,255),0)
+			self.probe=(x,self.histdata[x])
 			self.update()
 			
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.LeftButton:
-			x=max(min(event.x(),256),1)
-			self.probe=(x,self.histdata[x-1])
+			x=max(min(event.x()-1,255),0)
+			self.probe=(x,self.histdata[x])
 			self.update()
 	
 	def mouseReleaseEvent(self, event):
 		self.probe=None
 
 
-class EMImageInspector(QtGui.QWidget):
+class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
@@ -169,7 +213,7 @@ class EMImageInspector(QtGui.QWidget):
 		self.vboxlayout.setSpacing(6)
 		self.vboxlayout.setObjectName("vboxlayout")
 		
-		self.hist = Histogram(self)
+		self.hist = ImgHistogram(self)
 		self.hist.setObjectName("hist")
 		self.vboxlayout.addWidget(self.hist)
 		
@@ -201,11 +245,9 @@ class EMImageInspector(QtGui.QWidget):
 
 	def newMin(self,val):
 		self.target.setDenMin(val)
-		self.minval=val
 		
 	def newMax(self,val):
 		self.target.setDenMax(val)
-		self.maxval=val
 	
 	def newBrt(self,val):
 		pass
@@ -213,8 +255,8 @@ class EMImageInspector(QtGui.QWidget):
 	def newCont(self,val):
 		pass
 
-	def setHist(self,hist):
-		self.hist.setData(hist)
+	def setHist(self,hist,minden,maxden):
+		self.hist.setData(hist,minden,maxden)
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
 		print lowlim,highlim,curmin,curmax
