@@ -1074,11 +1074,10 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	EMData* padfftslice = zeropadded->do_fft();
 	if( zeropadded ) { delete zeropadded; zeropadded = 0;}
 	//  shift the projection
-	//float sx = slice->get_attr("sx");
-	//float sy = slice->get_attr("sy");
-	//if(sx != 0.0f || sy != 0.0) 
-//	  padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
-//	  padfftslice->process_inplace("filter.shift", Dict("sigma", 0.15f));
+	float sx = slice->get_attr("sx");
+	float sy = slice->get_attr("sy");
+	if(sx != 0.0f || sy != 0.0) 
+	  padfftslice->process_inplace("filter.shift", Dict("shift_x", sx, "shift_y", sy, "shift_z", 0.0f));
 	padfftslice->center_origin_fft();
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < nsym; isym++) {
