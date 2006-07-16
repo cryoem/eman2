@@ -127,6 +127,31 @@ EMData* rotavg();
 		 */
 		void nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, float defocus);
 
+		/** Helper function for method nn4_ctf.
+		 *  here it is assumed the projection data was already multiplied by the ctf...
+		 *
+		 * @param j y fourier index (frequency)
+		 * @param n number of real elements.
+		 * @param n2 Number of complex elements.
+		 * @param w Normalization matrix [0:n2][1:n][1:n]
+		 * @param bi Fourier transform matrix [0:n2][1:n]
+		 * @param tf Transform3D reference
+		 * @param defocus
+		 * @return The set of images read from filename.
+		 */
+		void onelinenn_ctf_applied(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus);
+
+		/** Nearest Neighbor interpolation.
+		 *  Modifies the current object.
+		 *  here it is assumed the projection data was already multiplied by the ctf...
+		 *
+		 * @param w Normalization data.
+		 * @param myfft FFT data.
+		 * @param tf Transform3D reference
+		 * @param defocus
+		 */
+		void nn_ctf_applied(EMArray<float>& w, EMData* myfft, const Transform3D& tf, float defocus);
+
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
 		 *

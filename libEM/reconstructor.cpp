@@ -1222,9 +1222,13 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	padfftslice->center_origin_fft();
 	// insert slice for all symmetry related positions
 	float defocus = slice->get_attr("defocus");
+	//  check whether CTF was applied, is yes, do not multiply projs by the CTF
+	float tmp = slice->get_attr("ctf_applied");
+	int   isctf = (int) tmp;
 	for (int isym=0; isym < nsym; isym++) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
-		v->nn_ctf(*wptr, padfftslice, tsym, defocus);
+		if(isctf) { v->nn_ctf_applied(*wptr, padfftslice, tsym, defocus);}
+		     else {v->nn_ctf(*wptr, padfftslice, tsym, defocus);}
 	}
 	if( padfftslice ) { delete padfftslice; padfftslice = 0;}
 	return 0;
