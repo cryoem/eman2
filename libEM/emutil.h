@@ -208,6 +208,13 @@ namespace EMAN
 		
         static vector<string> get_euler_names(const string & euler_type);
 
+		/** Get an attribute from a stack of image, returned as a vector
+		 * 
+		 * @param attr_name The header attribute name.
+		 * @return the vector of attribute value 
+		 * @exception NotExistingObjectException when access an non-existing attribute
+		 * @exception InvalidCallException when call this function for a non-stack image */
+		static vector<EMObject> get_all_attributes(const string & file_name, const string & attr_name);
         
 	  private:
 		static ImageType fast_get_image_type(const string & filename,
