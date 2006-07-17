@@ -635,7 +635,7 @@ MCArray3D EMData::get_3dcview(int x0, int y0, int z0) const
 }
 
 
-EMObject EMData::get_attr(const string & key)
+EMObject EMData::get_attr(const string & key) const
 {
 	ENTERFUNC;
 
@@ -679,7 +679,6 @@ EMObject EMData::get_attr(const string & key)
 		throw NotExistingObjectException(key, "Not exist");
 	}
 }
-
 
 Dict EMData::get_attr_dict() const
 {

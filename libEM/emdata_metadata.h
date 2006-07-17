@@ -365,8 +365,7 @@ MCArray3D get_3dcview(int x0, int y0, int z0) const;
  * @param attr_name The header attribute name.
  * @return The attribute value.
  */
-EMObject get_attr(const string & attr_name);
-
+EMObject get_attr(const string & attr_name) const;
 		
 /** Set a header attribute's value.
  *
