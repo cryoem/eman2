@@ -225,12 +225,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			sz[1] = static_cast<float>(nyp2); 
 			sz[2] = static_cast<float>(nzp2);
 			szmax = *max_element(&sz[0],&sz[3]);
-			// for 2d, sqrt(2)/2 ~ 0.75
-			maxsize = vector<float>::size_type(0.75*szmax);
-			// for 3d, sqrt(3)/2 ~ 0.9
-			if (nzp > 1)
-				maxsize = 
-					vector<float>::size_type(0.9*szmax);
+			// for 2d, sqrt(2) ~ 1.5
+			// for 3d, sqrt(3) ~ 1.8
+			if (nzp > 1) {maxsize = vector<float>::size_type(1.8*szmax);} else {maxsize = vector<float>::size_type(1.5*szmax);}
 			for (vector<float>::size_type i = tsize+1; i < maxsize; i++) 
 				table.push_back(0.f);
 			break;
@@ -385,12 +382,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 								0.5f*(tanh(cnstH*(argx+omegaH)))-tanh(cnstH*(argx-omegaH)-tanh(cnstL*(argx+omegaL)))+tanh(cnstL*(argx-omegaL)); break;
 						case RADIAL_TABLE:
 						{
-							float rf = sqrt( static_cast<float>(ix) * static_cast<float>(ix) + 
-											 static_cast<float>(iy) * static_cast<float>(iy) + 
-											 static_cast<float>(iz) * static_cast<float>(iz) );
+							float rf = sqrt( argx )*2.0f*lsd2;
 							int ir = int(rf);
 							float df = rf - float(ir);
-							float f = (1-df)*table[ir]+df*table[ir+1];
+							float f = table[ir] + df * (table[ir+1] - table[ir]); // (1-df)*table[ir]+df*table[ir+1];
 							fp->cmplx(ix,iy,iz) *= f;
 						}
 							break;
@@ -403,7 +398,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							      		static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz,ak,12.398f/sqrt(lambda *(1022.f+lambda)),cs*1.0e-7f,atan(wgh/(1.0-wgh)),b_factor,sign);
 							fp->cmplx(ix,iy,iz) *= tf;			  
-							break;      
+							break;
 					}
 				}
 			}
