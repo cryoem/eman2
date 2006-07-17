@@ -244,7 +244,8 @@ class TestUtils(unittest.TestCase):
         a = 123.456
         e = Util.eman_erfc(a)
    
-    def test_voea(self):
+    # no more voea() functions
+    def no_test_voea(self):
        """test voea() function ............................."""
        v = Util.voea(1.2)    #test default argument
        v2 = Util.voea(1.2, 20.0, 3.0, 401.0)
