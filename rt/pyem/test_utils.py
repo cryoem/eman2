@@ -260,8 +260,30 @@ class TestUtils(unittest.TestCase):
         #f = Util.quadri(e, 2.0, 3.0)    #test default argument
         f2 = Util.quadri(e, 2.3, 3.4, 2)    #test non-default argument
         
+class TestEMUtils(unittest.TestCase):
+    """test EMUtil class"""
+    def test_get_all_attibutes(self):
+        """test get_all_attributes function ................"""
+        e1 = test_image()
+        e1.set_attr('name', 'Tom')
+        e1.write_image('test.hdf', 0)
+        
+        e2 = test_image()
+        e2.set_attr('name', 'Sam')
+        e2.write_image('test.hdf', 1)
+        
+        e3 = test_image()
+        e3.set_attr('name', 'Eddy')
+        e3.write_image('test.hdf', 2)
+        
+        l = EMUtil.get_all_attributes('test.hdf', 'name')
+        self.assertEqual(l[0], 'Tom')
+        self.assertEqual(l[1], 'Sam')
+        self.assertEqual(l[2], 'Eddy')
+        
 def test_main():
     test_support.run_unittest(TestUtils)
+    test_support.run_unittest(TestEMUtils)
 
 if __name__ == '__main__':
     test_main()
