@@ -421,9 +421,9 @@ float find_3d_threshold(float mass,float pixel_size);
   
  /* Peak (with a radius of hf_p) search for particle picking:
                                                            */ 
-vector<float> EMData::peak_ccf(float hf_p);
+vector<float> peak_ccf(float hf_p);
 /* pixel power operation function */
-EMData* EMData::get_pow(float n_pow);
+EMData* get_pow(float n_pow);
 
 private:
 //utility function for peak_search()
