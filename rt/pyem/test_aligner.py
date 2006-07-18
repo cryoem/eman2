@@ -121,6 +121,12 @@ class TestAligner(unittest.TestCase):
         e4.process_inplace('testimage.noise.uniform.rand')
         
         img = e.align('rotate_translate_radon', e2, {'maxshift':2, 'radonwith':e3, 'radonthis':e4})
+        
+        import os
+        os.remove('radon.hed')
+        os.remove('radon.img')
+        os.remove('racf.hed')
+        os.remove('racf.img')
    
     def test_RotateFlipAligner(self):
         """test RotateFlipAligner ..........................."""

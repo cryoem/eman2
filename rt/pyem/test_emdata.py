@@ -1998,7 +1998,7 @@ class TestEMData(unittest.TestCase):
         #for i in range(len(dlist)):
         #    testlib.assertfloat(self, dlist[i], dlist2[i])
 
-        #os.unlink(file1)
+        os.unlink(file1)
 
     def test_rotavg(self):
         """test rotavg() function ..........................."""
