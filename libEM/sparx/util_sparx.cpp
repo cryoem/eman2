@@ -1925,6 +1925,9 @@ c       optional limit on angular search should be added.
   prb1d(t7,7,&pos);
   *tot = (float)(jtot)+pos;
 
+  // Do not interpolate
+  //*tot = (float)(jtot);
+
   // mirrored
   fftr_d(t,ip);
 
@@ -1937,6 +1940,7 @@ c       optional limit on angular search should be added.
      }
   }
 
+
   // find angle
   for (k=-3;k<=3;k++) {
     j       = ((jtot+k+maxrin-1)%maxrin) + 1;
@@ -1948,6 +1952,9 @@ c       optional limit on angular search should be added.
   prb1d(t7,7,&pos);
   *tmt = float(jtot) + pos;
 
+  // Do not interpolate
+  //*tmt = float(jtot);
+  
   free(t);
   free(q);
 }
