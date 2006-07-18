@@ -78,6 +78,8 @@ BOOST_PYTHON_MODULE(libpyTypeConverter2)
 	EMAN::emobject_emdata_from_python();
 	EMAN::emobject_string_from_python();
 	EMAN::emobject_xydata_from_python();
+	EMAN::emobject_null_from_python();
+	
 
 	implicitly_convertible<int, EMAN::EMObject>();
 	implicitly_convertible<float, EMAN::EMObject>();

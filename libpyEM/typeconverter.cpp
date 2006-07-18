@@ -151,6 +151,9 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		
 		result = python::incref(python::list(flist).ptr());
 	}
+	else if (t == EMObject::UNKNOWN) {
+		result = Py_None;
+	}
 
 	return result;
 }
