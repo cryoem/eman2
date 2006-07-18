@@ -680,7 +680,7 @@ EMObject EMData::get_attr(const string & key) const
 	}
 }
 
-EMObject EMData::get_attr_default(const string & key) const
+EMObject EMData::get_attr_default(const string & key, const EMObject & em_obj) const
 {
 	ENTERFUNC;
 	
@@ -688,7 +688,7 @@ EMObject EMData::get_attr_default(const string & key) const
 		return get_attr(key);
 	}
 	else {
-		return EMObject();
+		return em_obj;
 	}
 	
 	EXITFUNC;

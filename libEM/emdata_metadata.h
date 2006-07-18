@@ -377,7 +377,7 @@ EMObject get_attr(const string & attr_name) const;
  * @param attr_name The header attribute name.
  * @return The attribute value.
  */
-EMObject get_attr_default(const string & attr_name) const;
+EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EMObject()) const;
 		
 /** Set a header attribute's value.
  *
