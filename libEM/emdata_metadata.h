@@ -360,12 +360,24 @@ MCArray3D get_3dcview(int x0, int y0, int z0) const;
 
 
 /** The generic way to get any image header information
- * given a header attribute name.
+ * given a header attribute name. If the attribute does not exist,
+ * it will raise an exception.
+ *
+ * @param attr_name The header attribute name.
+ * @return The attribute value.
+ * @exception NotExistingObjectException when attribute not exist
+ */
+EMObject get_attr(const string & attr_name) const;
+
+/** The generic way to get any image header information
+ * given a header attribute name. If the attribute does not exist,
+ * it will return a default EMObject() object, which will be converted
+ * to None in Python.
  *
  * @param attr_name The header attribute name.
  * @return The attribute value.
  */
-EMObject get_attr(const string & attr_name) const;
+EMObject get_attr_default(const string & attr_name) const;
 		
 /** Set a header attribute's value.
  *

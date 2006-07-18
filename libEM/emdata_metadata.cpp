@@ -680,6 +680,20 @@ EMObject EMData::get_attr(const string & key) const
 	}
 }
 
+EMObject EMData::get_attr_default(const string & key) const
+{
+	ENTERFUNC;
+	
+	if(attr_dict.has_key(key)) {
+		return get_attr(key);
+	}
+	else {
+		return EMObject();
+	}
+	
+	EXITFUNC;
+}
+
 Dict EMData::get_attr_dict() const
 {
 	update_stat();

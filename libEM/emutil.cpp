@@ -1305,15 +1305,16 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	}
 	
 	if(nimg>1) {
-		Dict attr_dict;
 		for(int img_index = 0; img_index < nimg; ++img_index) {
+			Dict attr_dict;
 			imageio->read_header(attr_dict, img_index);
 			
 			if( attr_dict.has_key(attr_name) ) {
 				v.push_back(attr_dict[attr_name]);
 			}
 			else {
-				throw NotExistingObjectException(attr_name, "Not exist");
+				//throw NotExistingObjectException(attr_name, "Not exist");
+				v.push_back(EMObject());
 			}
 		}
 		
