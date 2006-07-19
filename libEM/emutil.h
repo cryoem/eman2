@@ -124,6 +124,10 @@ namespace EMAN
 		 */
 		static const char *get_imagetype_name(EMUtil::ImageType type);
 		
+		/** Give each data type a meaningful name
+		 * @param type the EMDataType
+		 * @return a name for that data type
+		 * */
 		static const char *get_datatype_string(EMDataType type);
 
 		/** Get a region's dimensions.
