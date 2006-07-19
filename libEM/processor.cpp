@@ -139,6 +139,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageNoiseUniformRand::NEW);
 	force_add(&TestImageNoiseGauss::NEW);
 	force_add(&TestImageScurve::NEW);
+	force_add(&TestImageCylinder::NEW);
 
 	force_add(&NewLowpassTopHatProcessor::NEW);
 	force_add(&NewHighpassTopHatProcessor::NEW);
@@ -4483,6 +4484,58 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
 		dat[i] = Util::get_gauss_rand(mean, sigma);
+	}
+	
+	image->done_data();
+	image->update();
+}
+
+void TestImageCylinder::process_inplace(EMData * image)
+{
+	preprocess(image);
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	if(nz == 1) {
+		throw ImageDimensionException("This processor only apply to 3D image");
+	} 
+	
+	float radius = params["radius"];
+	if(radius > std::min(nx, ny)/2.0) {
+		throw InvalidValueException(radius, "radius must be <= min(nx, ny)/2");
+	}
+	
+	float height;
+	if(params.has_key("height")) {
+		height = params["height"];
+		if(height > nz) {
+			throw InvalidValueException(radius, "height must be <= nz");
+		}
+	}
+	else {
+		height = nz;
+	}
+	
+	float *dat = image->get_data();
+	float x2, y2; //this is coordinates of this pixel from center axle
+	float r = 0.0f;
+	for (int k = 0; k < nz; k++) {
+		for (int j = 0; j < ny; j++) {
+			for (int i = 0; i < nx; i++, dat++) {				
+				x2 = fabs((float)i - nx/2);
+				y2 = fabs((float)j - ny/2);
+				r = (x2*x2)/(radius*radius) + (y2*y2)/(radius*radius);
+				
+				if(r<=1 && k>=(nz-height)/2 && k<=(nz+height)/2) {
+					*dat = 1;
+				}
+				else {
+					*dat = 0;
+				}
+			}
+		}
 	}
 	
 	image->done_data();

@@ -3826,6 +3826,37 @@ The basic design of EMAN Processors: <br>\
 			return d;
 		}
 	};
+	
+	/** Replace a source image with a cylinder */
+	class TestImageCylinder : public TestImageProcessor
+	{
+	public:
+		void process_inplace(EMData * image);
+		
+		string get_name() const
+		{
+			return "testimage.cylinder";
+		}	
+		
+		string get_desc() const
+		{
+			return "Replace a source image as a cylinder";
+		}
+		
+		static Processor * NEW()
+		{
+			return new TestImageCylinder();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("radius", EMObject::FLOAT, "radius for the cylinder");
+			d.put("height", EMObject::FLOAT, "height for the cylinder, by default it's the nz");
+			
+			return d;
+		}
+	};
 
 	/** Try to normalize the 4 quadrants of a CCD image
 	 * @author Deepy Mann <dsmann@bcm.tmc.edu> 
