@@ -262,8 +262,9 @@ class TestUtils(unittest.TestCase):
         
 class TestEMUtils(unittest.TestCase):
     """test EMUtil class"""
+    
     def test_get_all_attibutes(self):
-        """test get_all_attributes function ................"""
+        """test get_all_attributes function ................."""
         e1 = test_image()
         e1.set_attr('name', 'Tom')
         e1.write_image('test.hdf', 0)
@@ -281,6 +282,290 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(l[1], 'Sam')
         self.assertEqual(l[2], 'Eddy')
         
+        os.remove('test.hdf')
+    
+    def test_is_same_size(self):
+        """test is_same_size function ......................."""
+        e1 = test_image()
+        e2 = test_image()
+        self.assertEqual(EMUtil.is_same_size(e1, e2), True)
+        
+        e3 = EMData()
+        e3.set_size(32,32,32)
+        e4 = EMData()
+        e4.set_size(32,32,31)
+        self.assertEqual(EMUtil.is_same_size(e3, e4), False)
+        
+        e5 = EMData()
+        e5.set_size(32,32,32)
+        e6 = EMData()
+        e6.set_size(2,30,108)
+        self.assertEqual(EMUtil.is_same_size(e5, e6), False)
+        
+    def test_is_complex_type(self):
+        """test is_complex_type function ...................."""
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_USHORT_COMPLEX), True)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_FLOAT_COMPLEX), True)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_SHORT_COMPLEX), True)
+        
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_CHAR), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_DOUBLE), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_FLOAT), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_INT), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_SHORT), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_UCHAR), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_UINT), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_UNKNOWN), False)
+        self.assertEqual(EMUtil.is_complex_type(EMUtil.EMDataType.EM_USHORT), False)
+        
+    def test_get_euler_names(self):
+        """test get_euler_names ............................."""
+        l1 = EMUtil.get_euler_names('EMAN')
+        self.assertEqual(l1, ['euler_alt', 'euler_az', 'euler_phi'])
+        
+        l2 = EMUtil.get_euler_names('MRC')
+        self.assertEqual(l2, ['euler_theta', 'euler_phi', 'euler_omega'])
+        
+        l3 = EMUtil.get_euler_names('IMAGIC')
+        self.assertEqual(l3, ['euler_alpha', 'euler_beta', 'euler_gamma'])
+        
+        l4 = EMUtil.get_euler_names('SPIDER')
+        self.assertEqual(l4, ['euler_phi', 'euler_theta', 'euler_gamma'])
+        
+        l5 = EMUtil.get_euler_names('SPIN')
+        self.assertEqual(l5, ['euler_q', 'euler_n1', 'euler_n2', 'euler_n3'])
+        
+        l6 = EMUtil.get_euler_names('SGIROT')
+        self.assertEqual(l6, ['euler_q', 'euler_n1', 'euler_n2', 'euler_n3'])
+        
+        l7 = EMUtil.get_euler_names('QUATERNION')
+        self.assertEqual(l7, ['euler_e0', 'euler_e1', 'euler_e2', 'euler_e3',])
+        
+    def test_is_same_ctf(self):
+        """test is_same_ctf function ........................"""
+        e1 = EMData()
+        e1.set_size(32,32,1)
+        e1.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,10])
+        
+        e2 = EMData()
+        e2.set_size(64,64,1)
+        e2.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,10])
+        
+        self.assertEqual(EMUtil.is_same_ctf(e1, e2), True)
+        
+        e1.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,10])
+        e2.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,99])
+        self.assertEqual(EMUtil.is_same_ctf(e1, e2), False)
+        
+    def test_get_image_ext_type(self):
+        """test get_image_ext_type function ................."""
+        self.assertEqual(EMUtil.get_image_ext_type('mrc'), EMUtil.ImageType.IMAGE_MRC)
+        self.assertEqual(EMUtil.get_image_ext_type('MRC'), EMUtil.ImageType.IMAGE_MRC)
+        self.assertEqual(EMUtil.get_image_ext_type('tnf'), EMUtil.ImageType.IMAGE_MRC)
+        self.assertEqual(EMUtil.get_image_ext_type('TNF'), EMUtil.ImageType.IMAGE_MRC)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('dm3'), EMUtil.ImageType.IMAGE_DM3)
+        self.assertEqual(EMUtil.get_image_ext_type('DM3'), EMUtil.ImageType.IMAGE_DM3)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('spi'), EMUtil.ImageType.IMAGE_SPIDER)
+        self.assertEqual(EMUtil.get_image_ext_type('SPI'), EMUtil.ImageType.IMAGE_SPIDER)
+        self.assertEqual(EMUtil.get_image_ext_type('spider'), EMUtil.ImageType.IMAGE_SPIDER)
+        self.assertEqual(EMUtil.get_image_ext_type('SPIDER'), EMUtil.ImageType.IMAGE_SPIDER)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('spidersingle'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        self.assertEqual(EMUtil.get_image_ext_type('SPIDERSINGLE'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        self.assertEqual(EMUtil.get_image_ext_type('singlespider'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        self.assertEqual(EMUtil.get_image_ext_type('SINGLESPIDER'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('img'), EMUtil.ImageType.IMAGE_IMAGIC)
+        self.assertEqual(EMUtil.get_image_ext_type('IMG'), EMUtil.ImageType.IMAGE_IMAGIC)
+        self.assertEqual(EMUtil.get_image_ext_type('hed'), EMUtil.ImageType.IMAGE_IMAGIC)
+        self.assertEqual(EMUtil.get_image_ext_type('HED'), EMUtil.ImageType.IMAGE_IMAGIC)
+        self.assertEqual(EMUtil.get_image_ext_type('imagic'), EMUtil.ImageType.IMAGE_IMAGIC)
+        self.assertEqual(EMUtil.get_image_ext_type('IMAGIC'), EMUtil.ImageType.IMAGE_IMAGIC)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('pgm'), EMUtil.ImageType.IMAGE_PGM)
+        self.assertEqual(EMUtil.get_image_ext_type('PGM'), EMUtil.ImageType.IMAGE_PGM)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('lst'), EMUtil.ImageType.IMAGE_LST)
+        self.assertEqual(EMUtil.get_image_ext_type('LST'), EMUtil.ImageType.IMAGE_LST)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('pif'), EMUtil.ImageType.IMAGE_PIF)
+        self.assertEqual(EMUtil.get_image_ext_type('PIF'), EMUtil.ImageType.IMAGE_PIF)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('png'), EMUtil.ImageType.IMAGE_PNG)
+        self.assertEqual(EMUtil.get_image_ext_type('PNG'), EMUtil.ImageType.IMAGE_PNG)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('h5'), EMUtil.ImageType.IMAGE_HDF)
+        self.assertEqual(EMUtil.get_image_ext_type('H5'), EMUtil.ImageType.IMAGE_HDF)
+        self.assertEqual(EMUtil.get_image_ext_type('hdf'), EMUtil.ImageType.IMAGE_HDF)
+        self.assertEqual(EMUtil.get_image_ext_type('HDF'), EMUtil.ImageType.IMAGE_HDF)
+        self.assertEqual(EMUtil.get_image_ext_type('hd5'), EMUtil.ImageType.IMAGE_HDF)
+        self.assertEqual(EMUtil.get_image_ext_type('HD5'), EMUtil.ImageType.IMAGE_HDF)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('tif'), EMUtil.ImageType.IMAGE_TIFF)
+        self.assertEqual(EMUtil.get_image_ext_type('TIF'), EMUtil.ImageType.IMAGE_TIFF)
+        self.assertEqual(EMUtil.get_image_ext_type('tiff'), EMUtil.ImageType.IMAGE_TIFF)
+        self.assertEqual(EMUtil.get_image_ext_type('TIFF'), EMUtil.ImageType.IMAGE_TIFF)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('vtk'), EMUtil.ImageType.IMAGE_VTK)
+        self.assertEqual(EMUtil.get_image_ext_type('VTK'), EMUtil.ImageType.IMAGE_VTK)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('hdr'), EMUtil.ImageType.IMAGE_SAL)
+        self.assertEqual(EMUtil.get_image_ext_type('HDR'), EMUtil.ImageType.IMAGE_SAL)
+        self.assertEqual(EMUtil.get_image_ext_type('sal'), EMUtil.ImageType.IMAGE_SAL)
+        self.assertEqual(EMUtil.get_image_ext_type('SAL'), EMUtil.ImageType.IMAGE_SAL)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('map'), EMUtil.ImageType.IMAGE_ICOS)
+        self.assertEqual(EMUtil.get_image_ext_type('MAP'), EMUtil.ImageType.IMAGE_ICOS)
+        self.assertEqual(EMUtil.get_image_ext_type('icos'), EMUtil.ImageType.IMAGE_ICOS)
+        self.assertEqual(EMUtil.get_image_ext_type('ICOS'), EMUtil.ImageType.IMAGE_ICOS)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('am'), EMUtil.ImageType.IMAGE_AMIRA)
+        self.assertEqual(EMUtil.get_image_ext_type('AM'), EMUtil.ImageType.IMAGE_AMIRA)
+        self.assertEqual(EMUtil.get_image_ext_type('amira'), EMUtil.ImageType.IMAGE_AMIRA)
+        self.assertEqual(EMUtil.get_image_ext_type('AMIRA'), EMUtil.ImageType.IMAGE_AMIRA)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('emim'), EMUtil.ImageType.IMAGE_EMIM)
+        self.assertEqual(EMUtil.get_image_ext_type('EMIM'), EMUtil.ImageType.IMAGE_EMIM)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('xplor'), EMUtil.ImageType.IMAGE_XPLOR)
+        self.assertEqual(EMUtil.get_image_ext_type('XPLOR'), EMUtil.ImageType.IMAGE_XPLOR)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('em'), EMUtil.ImageType.IMAGE_EM)
+        self.assertEqual(EMUtil.get_image_ext_type('EM'), EMUtil.ImageType.IMAGE_EM)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('dm2'), EMUtil.ImageType.IMAGE_GATAN2)
+        self.assertEqual(EMUtil.get_image_ext_type('DM2'), EMUtil.ImageType.IMAGE_GATAN2)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('v4l'), EMUtil.ImageType.IMAGE_V4L)
+        self.assertEqual(EMUtil.get_image_ext_type('V4L'), EMUtil.ImageType.IMAGE_V4L)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('jpg'), EMUtil.ImageType.IMAGE_JPEG)
+        self.assertEqual(EMUtil.get_image_ext_type('JPG'), EMUtil.ImageType.IMAGE_JPEG)
+        self.assertEqual(EMUtil.get_image_ext_type('jpeg'), EMUtil.ImageType.IMAGE_JPEG)
+        self.assertEqual(EMUtil.get_image_ext_type('JPEG'), EMUtil.ImageType.IMAGE_JPEG)
+        
+        self.assertEqual(EMUtil.get_image_ext_type('xyz'), EMUtil.ImageType.IMAGE_UNKNOWN)
+        
+    def test_get_image_type(self):
+        """test get_image_type function ....................."""
+        e = test_image()
+        
+        e.write_image('mrcfile', 0, EMUtil.ImageType.IMAGE_MRC)
+        self.assertEqual(EMUtil.get_image_type('mrcfile'), EMUtil.ImageType.IMAGE_MRC)
+        os.remove('mrcfile')
+        
+        Log.logger().set_level(-1)    #no log message printed out
+        e.write_image('hdffile', 0, EMUtil.ImageType.IMAGE_HDF)
+        self.assertEqual(EMUtil.get_image_type('hdffile'), EMUtil.ImageType.IMAGE_HDF)
+        os.remove('hdffile')
+        
+        #e.write_image('lstfile', 0, EMUtil.ImageType.IMAGE_LST)
+        #self.assertEqual(EMUtil.get_image_type('lstfile'), EMUtil.ImageType.IMAGE_LST)
+        #os.remove('lstfile')
+        
+        e.write_image('spiderfile', 0, EMUtil.ImageType.IMAGE_SPIDER)
+        self.assertEqual(EMUtil.get_image_type('spiderfile'), EMUtil.ImageType.IMAGE_SPIDER)
+        os.remove('spiderfile')
+        
+        e.write_image('sspiderfile', 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        self.assertEqual(EMUtil.get_image_type('sspiderfile'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+        os.remove('sspiderfile')
+        
+        #e.write_image('piffile', 0, EMUtil.ImageType.IMAGE_PIF)
+        #self.assertEqual(EMUtil.get_image_type('piffile'), EMUtil.ImageType.IMAGE_PIF)
+        #os.remove('piffile')
+        
+        e.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
+        self.assertEqual(EMUtil.get_image_type('pngfile'), EMUtil.ImageType.IMAGE_PNG)
+        os.remove('pngfile')
+        
+        e.write_image('vtkfile', 0, EMUtil.ImageType.IMAGE_VTK)
+        self.assertEqual(EMUtil.get_image_type('vtkfile'), EMUtil.ImageType.IMAGE_VTK)
+        os.remove('vtkfile')
+        
+        e.write_image('pgmfile', 0, EMUtil.ImageType.IMAGE_PGM)
+        self.assertEqual(EMUtil.get_image_type('pgmfile'), EMUtil.ImageType.IMAGE_PGM)
+        os.remove('pgmfile')
+        
+        e.write_image('icosfile', 0, EMUtil.ImageType.IMAGE_ICOS)
+        self.assertEqual(EMUtil.get_image_type('icosfile'), EMUtil.ImageType.IMAGE_ICOS)
+        os.remove('icosfile')
+        
+        e.write_image('xplorfile', 0, EMUtil.ImageType.IMAGE_XPLOR)
+        self.assertEqual(EMUtil.get_image_type('xplorfile'), EMUtil.ImageType.IMAGE_XPLOR)
+        os.remove('xplorfile')
+        
+        e.write_image('emfile', 0, EMUtil.ImageType.IMAGE_EM)
+        self.assertEqual(EMUtil.get_image_type('emfile'), EMUtil.ImageType.IMAGE_EM)
+        os.remove('emfile')
+        
+        e.write_image('imagicfile', 0, EMUtil.ImageType.IMAGE_IMAGIC)
+        self.assertEqual(EMUtil.get_image_type('imagicfile.hed'), EMUtil.ImageType.IMAGE_IMAGIC)
+        os.remove('imagicfile.hed')
+        os.remove('imagicfile.img')
+        
+    def test_get_image_count(self):
+        """test get_image_count function ...................."""
+        e = test_image()
+        e.write_image('test_image_count.mrc')
+        self.assertEqual(EMUtil.get_image_count('test_image_count.mrc'), 1)
+        os.remove('test_image_count.mrc')
+        
+        Log.logger().set_level(-1)    #no log message printed out
+        e.write_image('test_image_count.hdf', 0)
+        e.write_image('test_image_count.hdf', 1)
+        e.write_image('test_image_count.hdf', 2)
+        self.assertEqual(EMUtil.get_image_count('test_image_count.hdf'), 3)
+        
+        e.write_image('test_image_count.spi', 0, EMUtil.ImageType.IMAGE_SPIDER)
+        e.write_image('test_image_count.spi', 1, EMUtil.ImageType.IMAGE_SPIDER)
+        e.write_image('test_image_count.spi', 2, EMUtil.ImageType.IMAGE_SPIDER)
+        self.assertEqual(EMUtil.get_image_count('test_image_count.spi'), 3)
+        
+    def test_get_imagetype_name(self):
+        """test get_imagetype_name function ................."""
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_V4L), 'V4L2')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_MRC), 'MRC')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_SPIDER), 'SPIDER')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_SINGLE_SPIDER), 'Single-SPIDER')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_IMAGIC), 'IMAGIC')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_PGM), 'PGM')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_LST), 'LST')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_PIF), 'PIF')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_PNG), 'PNG')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_HDF), 'HDF5')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_DM3), 'GatanDM3')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_TIFF), 'TIFF')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_VTK), 'VTK')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_SAL), 'HDR')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_ICOS), 'ICOS_MAP')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_EMIM), 'EMIM')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_GATAN2), 'GatanDM2')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_JPEG), 'JPEG')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_AMIRA), 'AmiraMesh')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_XPLOR), 'XPLOR')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_EM), 'EM')
+        self.assertEqual(EMUtil.get_imagetype_name(EMUtil.ImageType.IMAGE_UNKNOWN), 'unknown')
+        
+    def test_get_datatype_string(self):
+        """test get_datatype_string function ................"""
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_CHAR), 'CHAR')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_UCHAR), 'UNSIGNED CHAR')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_SHORT), 'SHORT')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_USHORT), 'UNSIGNED SHORT')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_INT), 'INT')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_UINT), 'UNSIGNED INT')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_FLOAT), 'FLOAT')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_DOUBLE), 'DOUBLE')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_SHORT_COMPLEX), 'SHORT_COMPLEX')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_USHORT_COMPLEX), 'USHORT_COMPLEX')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_FLOAT_COMPLEX), 'FLOAT_COMPLEX')
+        self.assertEqual(EMUtil.get_datatype_string(EMUtil.EMDataType.EM_UNKNOWN), 'UNKNOWN')
+
+    
+                       
 def test_main():
     test_support.run_unittest(TestUtils)
     test_support.run_unittest(TestEMUtils)
