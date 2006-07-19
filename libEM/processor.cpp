@@ -70,6 +70,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&CutoffBlockProcessor::NEW);
 	force_add(&GradientRemoverProcessor::NEW);
+	force_add(&GradientPlaneRemoverProcessor::NEW);
 	force_add(&VerticalStripeProcessor::NEW);
 	force_add(&RealToFFTProcessor::NEW);
 	force_add(&SigmaZeroEdgeProcessor::NEW);
@@ -907,7 +908,153 @@ void GradientRemoverProcessor::process_inplace(EMData * image)
 	image->done_data();
 }
 
+#include <gsl/gsl_linalg.h>
+void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
 
+	int nz = image->get_zsize();
+	if (nz > 1) {
+		LOGERR("%s Processor doesn't support 3D model", get_name().c_str());
+		throw ImageDimensionException("3D map not supported");
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	float *d = image->get_data();
+	EMData *mask = 0;
+	float *dm = 0;
+	if (params.has_key("mask")) {
+		mask = params["mask"];
+		if (nx!=mask->get_xsize() || ny!=mask->get_ysize()) {
+			LOGERR("%s Processor requires same size mask image", get_name().c_str());
+			throw ImageDimensionException("wrong size mask image");
+		}
+		dm = mask->get_data();
+	}
+	int count = 0;
+	if (dm) {
+		for(int i=0; i<nx*ny; i++) {
+			if(dm[i]) count++;
+		}
+	}
+	else {
+		count = nx * ny;
+	}
+	if(count<3) {
+		LOGERR("%s Processor requires at least 3 pixels to fit a plane", get_name().c_str());
+		throw ImageDimensionException("too few usable pixels to fit a plane");
+	}
+	// Allocate the working space
+	gsl_vector *S=gsl_vector_calloc(3);
+	gsl_matrix *A=gsl_matrix_calloc(count,3);
+	gsl_matrix *V=gsl_matrix_calloc(3,3);
+	
+	double m[3] = {0, 0, 0};
+	int index=0;
+	if (dm) {
+		for(int j=0; j<ny; j++){
+			for(int i=0; i<nx; i++){
+				int ij=j*nx+i;
+				if(dm[ij]) {
+					m[0]+=i;	// x
+					m[1]+=j;	// y
+					m[2]+=d[ij];	// z
+					/*printf("index=%d/%d\ti,j=%d,%d\tval=%g\txm,ym,zm=%g,%g,%g\n", \
+					        index,count,i,j,d[ij],m[0]/(index+1),m[1]/(index+1),m[2]/(index+1));*/
+					index++;
+				}
+			}
+		}
+	}
+	else {
+		for(int j=0; j<ny; j++){
+			for(int i=0; i<nx; i++){
+				int ij=j*nx+i;
+					m[0]+=i;	// x
+					m[1]+=j;	// y
+					m[2]+=d[ij];	// z
+					/*printf("index=%d/%d\ti,j=%d,%d\tval=%g\txm,ym,zm=%g,%g,%g\n", \
+					        index,count,i,j,d[ij],m[0]/(index+1),m[1]/(index+1),m[2]/(index+1));*/
+					index++;
+			}
+		}
+	}
+	
+	for(int i=0; i<3; i++) m[i]/=count;	// compute center of the plane
+	
+	index=0;
+	if (dm) {
+		for(int j=0; j<ny; j++){
+			for(int i=0; i<nx; i++){
+				int ij=j*nx+i;
+				if(dm[ij]) {
+					//printf("index=%d/%d\ti,j=%d,%d\tval=%g\n",index,count,i,j,d[index]);
+					gsl_matrix_set(A,index,0,i-m[0]);
+					gsl_matrix_set(A,index,1,j-m[1]);
+					gsl_matrix_set(A,index,2,d[ij]-m[2]);
+					index++;
+				}
+			}
+		}
+		mask->done_data(); 
+	}
+	else {
+		for(int j=0; j<ny; j++){
+			for(int i=0; i<nx; i++){
+				int ij=j*nx+i;
+					//printf("index=%d/%d\ti,j=%d,%d\tval=%g\n",index,count,i,j,d[index]);
+					gsl_matrix_set(A,index,0,i-m[0]);
+					gsl_matrix_set(A,index,1,j-m[1]);
+					gsl_matrix_set(A,index,2,d[ij]-m[2]);
+					index++;
+			}
+		}
+	}
+	
+	// SVD decomposition and use the V vector associated with smallest singular value as the plan normal
+	gsl_linalg_SV_decomp_jacobi(A, V, S);
+	
+	double n[3];
+	for(int i=0; i<3; i++) n[i] = gsl_matrix_get(V, i, 2);
+	
+	#ifdef DEBUG
+	printf("S=%g,%g,%g\n",gsl_vector_get(S,0), gsl_vector_get(S,1), gsl_vector_get(S,2));
+	printf("V[0,:]=%g,%g,%g\n",gsl_matrix_get(V,0,0), gsl_matrix_get(V,0,1),gsl_matrix_get(V,0,2));
+	printf("V[1,:]=%g,%g,%g\n",gsl_matrix_get(V,1,0), gsl_matrix_get(V,1,1),gsl_matrix_get(V,1,2));
+	printf("V[2,:]=%g,%g,%g\n",gsl_matrix_get(V,2,0), gsl_matrix_get(V,2,1),gsl_matrix_get(V,2,2));
+	printf("Fitted plane: p0=%g,%g,%g\tn=%g,%g,%g\n",m[0],m[1],m[2],n[0],n[1],n[2]);
+	#endif
+	
+	int changeZero = 0;
+	if (params.has_key("changeZero")) changeZero = params["changeZero"];
+	if (changeZero) {
+		for(int j=0; j<nx; j++){
+			for(int i=0; i<ny; i++){
+				int ij = j*nx+i;
+				d[ij]-=-((i-m[0])*n[0]+(j-m[1])*n[1])/n[2]+m[2];
+			}
+		}
+	}
+	else {
+		for(int j=0; j<nx; j++){
+			for(int i=0; i<ny; i++){
+				int ij = j*nx+i;
+				if(d[ij]) d[ij]-=-((i-m[0])*n[0]+(j-m[1])*n[1])/n[2]+m[2];
+			}
+		}
+	}
+	image->done_data();
+	// set return plane parameters
+	vector< float > planeParam;
+	planeParam.resize(6);
+	for(int i=0; i<3; i++) planeParam[i] = n[i];
+	for(int i=0; i<3; i++) planeParam[i+3] = m[i];
+	params["planeParam"]=EMObject(planeParam);
+}
 
 void VerticalStripeProcessor::process_inplace(EMData * image)
 {

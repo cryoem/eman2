@@ -2043,6 +2043,43 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/**Gradient removed by least square plane fit
+	 *@param mask[in] optional EMData object to mask the pixels used to fit the plane
+	 *@param changeZero[in] optional bool to specify if the zero value pixels are modified
+	 *@param planeParam[out] optional return parameters [nx, ny, nz, cx, cy, cz] for the fitted plane defined as (x-cx)*nx+(y-cy)*ny+(z-cz)*nz=0
+	 *
+	 *@author Wen Jiang
+	 *@date 2006/7/18
+	 */
+	class GradientPlaneRemoverProcessor:public Processor
+    {
+	  public:
+		void process_inplace(EMData * image);
+		
+		string get_name() const
+		{
+			return "filter.gradientPlaneRemover";
+		}
+		static Processor *NEW()
+		{
+			return new GradientPlaneRemoverProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Remove gradient by least square plane fit";
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mask", EMObject::EMDATA, "mask object: nonzero pixel positions will be used to fit plane. default = 0");
+			d.put("changeZero", EMObject::INT, "if zero pixels are modified when removing gradient. default = 0");
+			d.put("planeParam", EMObject::FLOATARRAY, "fitted plane parameters output");
+			return d;
+		}	
+	};
+	
 	/**Ramp processor -- Fits a least-squares plane to the picture, and subtracts the plane from the picture.  A wedge-shaped overall density profile can thus be removed from the picture.
 	 */
 	class RampProcessor:public Processor
