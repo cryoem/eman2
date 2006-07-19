@@ -112,14 +112,14 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	  for (long i = 0; i < totsize; i++) {
 	       if (dm[i] > 0.5) {
 	        double temp = x_data[i]- y_data[i];
-		result += temp*temp;
-	  		  n++;
+			result += temp*temp;
+	  		n++;
 	       }
 	  }
 	} else {
 	  for (long i = 0; i < totsize; i++) {
 	        double temp = x_data[i]- y_data[i];
-		result += temp*temp;
+			result += temp*temp;
 	   }
 	   n = totsize;
 	}
@@ -145,8 +145,8 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	float negative = (float)params.set_default("negative", 1);
 	
 	if (negative) negative=-1.0; else negative=1.0;
-	long n = 0;
 	double result = 0.;
+	long n = 0;
 	long totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
 
 	double square_sum1 = 0., square_sum2 = 0.;
@@ -161,7 +161,6 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 			  square_sum1 += d1[i]*double(d1[i]);
 			  square_sum2 += d2[i]*double(d2[i]);
 			  result += d1[i]*double(d2[i]);
-			  n++;
 			}
 	   }
 	  } else {
@@ -179,10 +178,10 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	  if (normalize) {
 	   square_sum1 = image->get_attr_dict().get("square_sum");
 	   square_sum2 = with->get_attr_dict().get("square_sum");
-	  }
+	  } else n = totsize;
 	}
 	
-	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= totsize;
+	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= n;
 			
 	EXITFUNC;
 	return (float) (negative*result);
