@@ -7,6 +7,7 @@
 #include "emdata.h"
 #include "util.h"
 
+#include "lapackblas.h"
 
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -3232,3 +3233,41 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 	return new_image;
 }	
 
+int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
+{
+    // n size of the covmat
+    // covmat --- covariance/correlation matrix (n by n)
+    // eigval --- returns eigenvalues
+    // eigvec --- returns eigenvectors
+
+    ENTERFUNC;
+
+    int i;
+
+    // make a copy of covmat so that it will not be overwritten
+    for ( i = 0 ; i < n * n ; i++ ) {
+       eigvec[i] = covmat[i];
+    }		
+	
+    char NEEDV = 'V';
+    char UPLO = 'U';
+    int lwork = -1;
+    int info = 0;
+    float *work;
+  
+    work = (float *)malloc(1 * sizeof(float));
+    //	query to get optimal workspace
+    ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, 
+           &lwork, &info);
+    lwork = (int)work[0];
+    free(work);
+
+    lwork = 10*n;
+    work = (float *)calloc(lwork, sizeof(float));
+    // 	calculate eigs
+    ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, 
+           &lwork, &info);
+    free(work);
+    return info;
+    EXITFUNC;
+}

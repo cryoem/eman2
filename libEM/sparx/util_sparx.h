@@ -11,6 +11,8 @@
 
 public:
 
+static int Util::coveig(int n, float *covmat, float *eigval, float *eigvec);
+
 static Dict ExpMinus4YSqr(float ymax,int nsamples);
 
 static void WTM(EMData* PROJ, vector<float> SS,int DIAMETER,int NUMP);
