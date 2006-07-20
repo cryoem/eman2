@@ -511,18 +511,20 @@ class TestEMUtils(unittest.TestCase):
         e = test_image()
         e.write_image('test_image_count.mrc')
         self.assertEqual(EMUtil.get_image_count('test_image_count.mrc'), 1)
-        os.remove('test_image_count.mrc')
+        testlib.safe_unlink('test_image_count.mrc')
         
         Log.logger().set_level(-1)    #no log message printed out
         e.write_image('test_image_count.hdf', 0)
         e.write_image('test_image_count.hdf', 1)
         e.write_image('test_image_count.hdf', 2)
         self.assertEqual(EMUtil.get_image_count('test_image_count.hdf'), 3)
+        testlib.safe_unlink('test_image_count.hdf')
         
         e.write_image('test_image_count.spi', 0, EMUtil.ImageType.IMAGE_SPIDER)
         e.write_image('test_image_count.spi', 1, EMUtil.ImageType.IMAGE_SPIDER)
         e.write_image('test_image_count.spi', 2, EMUtil.ImageType.IMAGE_SPIDER)
         self.assertEqual(EMUtil.get_image_count('test_image_count.spi'), 3)
+        testlib.safe_unlink('test_image_count.spi')
         
     def test_get_imagetype_name(self):
         """test get_imagetype_name function ................."""
