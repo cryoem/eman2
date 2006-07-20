@@ -3,6 +3,8 @@
  */
 #ifdef EM_HDF5
 
+//#define DEBUGHDF	1
+
 #include "hdfio2.h"
 #include "geometry.h"
 #include "ctf.h"
@@ -195,6 +197,9 @@ void HdfIO2::init()
 	if (initialized) {
 		return;
 	}
+#ifdef DEBUGHDF	
+	printf("init\n");
+#endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
 
@@ -233,6 +238,9 @@ int HdfIO2::init_test()
 	if (initialized) {
 		return 1;
 	}
+#ifdef DEBUGHDF	
+	printf("initt\n");
+#endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
 
@@ -289,6 +297,9 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	init();
+#ifdef DEBUGHDF	
+	printf("read_head %d\n",image_index);
+#endif
 	int i;
 	// Each image is in a group for later expansion. Open the group
 	char ipath[50];
@@ -322,6 +333,9 @@ int HdfIO2::erase_header(int image_index)
 {
 	ENTERFUNC;
 	init();
+#ifdef DEBUGHDF	
+	printf("erase_head %d\n",image_index);
+#endif
 	int i;
 	// Each image is in a group for later expansion. Open the group
 	char ipath[50];
@@ -347,6 +361,9 @@ int HdfIO2::erase_header(int image_index)
 int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is3d)
 {
 	ENTERFUNC;
+#ifdef DEBUGHDF	
+	printf("read_data %d\n",image_index);
+#endif
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d/image",image_index);
 	hid_t ds=H5Dopen(file,ipath);
@@ -367,6 +384,9 @@ int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is
 int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
+#ifdef DEBUGHDF	
+	printf("write_head %d\n",image_index);
+#endif
 	ENTERFUNC;
 	init();
 	erase_header(image_index);
@@ -422,6 +442,9 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool uhe)
 {
 	ENTERFUNC;
+#ifdef DEBUGHDF	
+	printf("write_data %d\n",image_index);
+#endif
 	if (dt!=EMUtil::EM_FLOAT) throw ImageWriteException(filename,"HDF5 write only supports float format");
 
 	if (image_index<0) {
