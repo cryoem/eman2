@@ -11,7 +11,7 @@
 
 public:
 
-static int Util::coveig(int n, float *covmat, float *eigval, float *eigvec);
+static int coveig(int n, float *covmat, float *eigval, float *eigvec);
 
 static Dict ExpMinus4YSqr(float ymax,int nsamples);
 
