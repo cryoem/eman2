@@ -1071,7 +1071,7 @@ class TestEMData(unittest.TestCase):
                 testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
                 testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
 
-        os.unlink(infile)
+        testlib.safe_unlink(infile)
 
     def test_multi_array_c3d(self):
         """test multi_array 3d complex ......................"""
@@ -1117,7 +1117,7 @@ class TestEMData(unittest.TestCase):
                     testlib.assertfloat(self, fft.get_value_at(k,j,i), c1.real)
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
-        os.unlink(infile)
+        testlib.safe_unlink(infile)
         
     def test_translate(self):
         """test translate() function ........................"""
@@ -1155,7 +1155,7 @@ class TestEMData(unittest.TestCase):
         x.rotate_translate(az, alt, phi, 6, 6, 6)
         testlib.check_emdata(x, sys.argv[0])
 
-        os.unlink(infile)
+        testlib.safe_unlink(infile)
                 
     def test_rotate_2d(self):
         """test rotate_2d ..................................."""
@@ -1179,9 +1179,9 @@ class TestEMData(unittest.TestCase):
 
         # verify b
 
-        os.unlink(infile)
-        os.unlink(outfile1)
-        os.unlink(outfile2)
+        testlib.safe_unlink(infile)
+        testlib.safe_unlink(outfile1)
+        testlib.safe_unlink(outfile2)
         
     def test_rotate_3d(self):
         """test rotate_3d ..................................."""
@@ -1808,7 +1808,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(proj.get_ysize(), n)
         self.assertEqual(proj.get_zsize(), 1)
         testlib.check_emdata(proj, sys.argv[0])
-        os.unlink(infile)
+        testlib.safe_unlink(infile)
 
     def test_calc_highest_locations(self):
         """test calculation of highest location ............."""
@@ -1821,7 +1821,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(len(pixels),  1144)
         self.assertEqual(pixels[0], Pixel(19, 10, 0, 401.0))
 
-        os.unlink(infile)
+        testlib.safe_unlink(infile)
 
     def test_get_attr_dict(self):
         """test get_attr_dict() function ...................."""
@@ -1842,7 +1842,7 @@ class TestEMData(unittest.TestCase):
                 if (not ("MRC" in mykey)):
                     cur_attrlist.append(mykey + "=" + str(mydict[mykey])+"\n")        
         
-        os.unlink(imgfile)        
+        testlib.safe_unlink(imgfile)        
 
     def test_set_attr_dict(self):
         """test set/del_attr_dict() function ................"""
@@ -1895,9 +1895,9 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e3.get_xsize(), nx*2)
         self.assertEqual(e3.get_ysize(), ny*2)
 
-        os.unlink(infile)
-        os.unlink(outfile1)
-        os.unlink(outfile2)    
+        testlib.safe_unlink(infile)
+        testlib.safe_unlink(outfile1)
+        testlib.safe_unlink(outfile2)    
             
     def test_get_rotated_clip(self):
         """test get_rotated_clip() function ................."""
@@ -1922,7 +1922,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(attrd["nz"], 1)
         self.assertEqual(attrd["datatype"], EM_FLOAT_COMPLEX)
 
-        os.unlink(infile)        
+        testlib.safe_unlink(infile)        
         
     def test_set_value_at(self):
         """test set_value_at() .............................."""
@@ -1940,7 +1940,7 @@ class TestEMData(unittest.TestCase):
                 for k in range(nx):
                     e.set_value_at(k,j,i, 1)
 
-        os.unlink(infile)
+        testlib.safe_unlink(infile)
         narray = EMNumPy.em2numpy(e)
 
         for i in range(nz):
@@ -1998,7 +1998,7 @@ class TestEMData(unittest.TestCase):
         #for i in range(len(dlist)):
         #    testlib.assertfloat(self, dlist[i], dlist2[i])
 
-        os.unlink(file1)
+        testlib.safe_unlink(file1)
 
     def test_rotavg(self):
         """test rotavg() function ..........................."""
@@ -2159,7 +2159,7 @@ class TestEMData(unittest.TestCase):
         max2 = e1.get_value_at(max_location[2], max_location[1], max_location[0])
         self.assertEqual(max, max2)
         
-        os.unlink(file1)
+        testlib.safe_unlink(file1)
 
     def test_image_overwrite(self):
         """test overwriting a image ........................."""
@@ -2183,7 +2183,7 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(ny2, e2.get_ysize())
         self.assertEqual(nz2, e2.get_zsize())
 
-        os.unlink(file1)
+        testlib.safe_unlink(file1)
         
     def test_ctf(self):
         """test ctf ........................................."""
@@ -2207,8 +2207,8 @@ class TestEMData(unittest.TestCase):
 
         ctfstr = ctf2.to_string()
         self.assertEqual(ctfstr, "1 2 3 4 5 6 7 8 9 10 11")
-        os.unlink(infile)
-        os.unlink(outfile)
+        testlib.safe_unlink(infile)
+        testlib.safe_unlink(outfile)
         
     def test_get_translation(self):
         """test get/set_translation() function .............."""
@@ -2567,7 +2567,7 @@ class TestEMData(unittest.TestCase):
         e.write_image(file1)
         im = EMData.read_images(file1)
         
-        os.unlink(file1)
+        testlib.safe_unlink(file1)
         
     def test_rot_trans2D(self):
         """test rot_trans2D() function ......................"""
@@ -2879,7 +2879,7 @@ class TestEMData(unittest.TestCase):
                 for x in range(16):
                     self.assertEqual(data1[z][y][x], data2[z][y][x])
         
-        os.remove('mydb')
+        testlib.safe_unlink('mydb')
         
 def test_main():
     test_support.run_unittest(TestEMData)

@@ -404,7 +404,7 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(float(new_params["value"]), fnum)
         f1.process_inplace(e)
         testlib.check_emdata(e, sys.argv[0])
-        os.unlink(imgfile1)
+        testlib.safe_unlink(imgfile1)
 
     def test_eman1_threshold_compress(self):
         """test eman1.threshold.compress processor .........."""
@@ -489,8 +489,8 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace("eman1.threshold.binary", {"value": 200})
         e.write_image(outfile1)
 
-        os.unlink(imgfile1)
-        os.unlink(outfile1)
+        testlib.safe_unlink(imgfile1)
+        testlib.safe_unlink(outfile1)
 
     def test_eman1_math_sigma(self):
         """test eman1.math.sigma processor .................."""
@@ -1050,7 +1050,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('eman1.normalize.tofile', {'noisyfile':filename, 'keepzero':2, \
                    'invert':1, 'mult':2.3, 'add':0.5 })
                    
-        os.unlink(filename)
+        testlib.safe_unlink(filename)
         
     def test_eman1_normalize_toimage_lsq(self):
         """test eman1.normalize.toimage.lsq processor ......."""
@@ -1291,7 +1291,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
         f = e.process('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
         
-        os.unlink('norm.mrc')
+        testlib.safe_unlink('norm.mrc')
         
     def test_eman1_mask_fromfile(self):
         """test eman1.mask.fromfile processor ..............."""
@@ -1309,7 +1309,7 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.mask.fromfile', {'filename':filename, 'ismaskset':1})
         
-        os.unlink(filename)
+        testlib.safe_unlink(filename)
         
     def test_eman1_mask_fromfile_sizediff(self):
         """test eman1.mask.fromfile.sizediff processor ......"""
@@ -1330,7 +1330,7 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.mask.fromfile.sizediff', {'filename':filename})
         
-        os.unlink(filename)
+        testlib.safe_unlink(filename)
         
     def no_test_eman1_misc_setpowspec(self):
         """test eman1.misc.setpowspec processor ............."""

@@ -49,8 +49,8 @@ class TestBoost(unittest.TestCase):
         image3 = image1.calc_ccf(image2)
         testlib.check_emdata(image3, sys.argv[0])
 
-        os.unlink(imgfile1)
-        os.unlink(imgfile2)
+        testlib.safe_unlink(imgfile1)
+        testlib.safe_unlink(imgfile2)
 
 class TestException(unittest.TestCase):
     """exception related tests"""

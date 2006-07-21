@@ -21,7 +21,7 @@ class TestPGMIO(unittest.TestCase):
         f = EMData()
         f.read_image('test_image.pgm')
         
-        os.remove('test_image.pgm')
+        testlib.safe_unlink('test_image.pgm')
     
     def test_pgm_region_io(self):
         """test pgm region io ..............................."""
@@ -33,7 +33,7 @@ class TestPGMIO(unittest.TestCase):
         f = EMData()
         f.read_image('test_circle.pgm', 0, False, Region(300,300,200,200))
         
-        os.remove('test_circle.pgm')
+        testlib.safe_unlink('test_circle.pgm')
 
 class TestSpiderIO(unittest.TestCase):
     """spider file IO test"""
@@ -46,7 +46,7 @@ class TestSpiderIO(unittest.TestCase):
         TestUtil.make_image_file(file1, SPIDER, EM_FLOAT, nx1, nx1)
         err = TestUtil.verify_image_file(file1, SPIDER, EM_FLOAT, nx1, nx1)
         self.assertEqual(err, 0)
-        os.unlink(file1)
+        testlib.safe_unlink(file1)
 
     def test_overwrite_spider(self):
         """test overwrite spider image file ................."""
@@ -55,12 +55,12 @@ class TestSpiderIO(unittest.TestCase):
         ny1 = 32
         TestUtil.make_image_file(file1, SINGLE_SPIDER, EM_FLOAT, nx1, ny1)
         TestUtil.make_image_file(file1, SINGLE_SPIDER, EM_FLOAT, nx1*2, ny1*2)
-        os.unlink(file1)  
+        testlib.safe_unlink(file1)  
         
     def test_write_spider_stack(self):
         """test to write a spider stack image file  ........."""
         if(os.path.isfile('test.spi')):
-            os.remove('test.spi')
+            testlib.safe_unlink('test.spi')
         e = EMData() 
         e.set_size(100,100)
         e.process_inplace('testimage.squarecube', {'edge_length':20})
@@ -90,7 +90,7 @@ class TestSpiderIO(unittest.TestCase):
             self.assertEqual(f.get_ysize(), 100)
             self.assertEqual(f.get_zsize(), 1)
             
-        os.remove('test.spi')
+        testlib.safe_unlink('test.spi')
 
 class TestHdfIO(unittest.TestCase):
     """hdf file IO test ....................................."""
@@ -101,7 +101,7 @@ class TestHdfIO(unittest.TestCase):
         TestUtil.make_image_file(imgfile, HDF, EM_FLOAT)
         err = TestUtil.verify_image_file(imgfile, HDF, EM_FLOAT)
         self.assertEqual(err, 0)
-        os.unlink(imgfile)
+        testlib.safe_unlink(imgfile)
         
     def test_read_image(self):
         """test read hdf image file ........................."""
@@ -124,7 +124,7 @@ class TestHdfIO(unittest.TestCase):
         self.assertEqual(attrdict["maximum"], 325.0)
         self.assertEqual(attrdict["minimum"], 0.0)
 
-        os.unlink(imgfile)        
+        testlib.safe_unlink(imgfile)        
 
     def test_hdf_attr(self):
         """test hdf file attribute .........................."""

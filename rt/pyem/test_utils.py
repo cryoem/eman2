@@ -24,7 +24,7 @@ class TestUtils(unittest.TestCase):
         result3 = Util.is_file_exist("")
         self.assertEqual(result3, False)
 
-        os.unlink(imgfile1)
+        testlib.safe_unlink(imgfile1)
 
     def test_sstrcmp(self):
         """test sstrcmp() function .........................."""
@@ -282,7 +282,7 @@ class TestEMUtils(unittest.TestCase):
         self.assertEqual(l[1], 'Sam')
         self.assertEqual(l[2], 'Eddy')
         
-        os.remove('test.hdf')
+        testlib.safe_unlink('test.hdf')
     
     def test_is_same_size(self):
         """test is_same_size function ......................."""
@@ -454,57 +454,57 @@ class TestEMUtils(unittest.TestCase):
         
         e.write_image('mrcfile', 0, EMUtil.ImageType.IMAGE_MRC)
         self.assertEqual(EMUtil.get_image_type('mrcfile'), EMUtil.ImageType.IMAGE_MRC)
-        os.remove('mrcfile')
+        testlib.safe_unlink('mrcfile')
         
         Log.logger().set_level(-1)    #no log message printed out
         e.write_image('hdffile', 0, EMUtil.ImageType.IMAGE_HDF)
         self.assertEqual(EMUtil.get_image_type('hdffile'), EMUtil.ImageType.IMAGE_HDF)
-        os.remove('hdffile')
+        testlib.safe_unlink('hdffile')
         
         #e.write_image('lstfile', 0, EMUtil.ImageType.IMAGE_LST)
         #self.assertEqual(EMUtil.get_image_type('lstfile'), EMUtil.ImageType.IMAGE_LST)
-        #os.remove('lstfile')
+        #testlib.safe_unlink('lstfile')
         
         e.write_image('spiderfile', 0, EMUtil.ImageType.IMAGE_SPIDER)
         self.assertEqual(EMUtil.get_image_type('spiderfile'), EMUtil.ImageType.IMAGE_SPIDER)
-        os.remove('spiderfile')
+        testlib.safe_unlink('spiderfile')
         
         e.write_image('sspiderfile', 0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
         self.assertEqual(EMUtil.get_image_type('sspiderfile'), EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
-        os.remove('sspiderfile')
+        testlib.safe_unlink('sspiderfile')
         
         #e.write_image('piffile', 0, EMUtil.ImageType.IMAGE_PIF)
         #self.assertEqual(EMUtil.get_image_type('piffile'), EMUtil.ImageType.IMAGE_PIF)
-        #os.remove('piffile')
+        #testlib.safe_unlink('piffile')
         
         e.write_image('pngfile', 0, EMUtil.ImageType.IMAGE_PNG)
         self.assertEqual(EMUtil.get_image_type('pngfile'), EMUtil.ImageType.IMAGE_PNG)
-        os.remove('pngfile')
+        testlib.safe_unlink('pngfile')
         
         e.write_image('vtkfile', 0, EMUtil.ImageType.IMAGE_VTK)
         self.assertEqual(EMUtil.get_image_type('vtkfile'), EMUtil.ImageType.IMAGE_VTK)
-        os.remove('vtkfile')
+        testlib.safe_unlink('vtkfile')
         
         e.write_image('pgmfile', 0, EMUtil.ImageType.IMAGE_PGM)
         self.assertEqual(EMUtil.get_image_type('pgmfile'), EMUtil.ImageType.IMAGE_PGM)
-        os.remove('pgmfile')
+        testlib.safe_unlink('pgmfile')
         
         e.write_image('icosfile', 0, EMUtil.ImageType.IMAGE_ICOS)
         self.assertEqual(EMUtil.get_image_type('icosfile'), EMUtil.ImageType.IMAGE_ICOS)
-        os.remove('icosfile')
+        testlib.safe_unlink('icosfile')
         
         e.write_image('xplorfile', 0, EMUtil.ImageType.IMAGE_XPLOR)
         self.assertEqual(EMUtil.get_image_type('xplorfile'), EMUtil.ImageType.IMAGE_XPLOR)
-        os.remove('xplorfile')
+        testlib.safe_unlink('xplorfile')
         
         e.write_image('emfile', 0, EMUtil.ImageType.IMAGE_EM)
         self.assertEqual(EMUtil.get_image_type('emfile'), EMUtil.ImageType.IMAGE_EM)
-        os.remove('emfile')
+        testlib.safe_unlink('emfile')
         
         e.write_image('imagicfile', 0, EMUtil.ImageType.IMAGE_IMAGIC)
         self.assertEqual(EMUtil.get_image_type('imagicfile.hed'), EMUtil.ImageType.IMAGE_IMAGIC)
-        os.remove('imagicfile.hed')
-        os.remove('imagicfile.img')
+        testlib.safe_unlink('imagicfile.hed')
+        testlib.safe_unlink('imagicfile.img')
         
     def test_get_image_count(self):
         """test get_image_count function ...................."""

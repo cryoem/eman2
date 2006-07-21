@@ -19,7 +19,7 @@ class TestCmp(unittest.TestCase):
         e2 = e1.copy()
         score = e2.cmp("SqEuclidean", e1)
         self.assertEqual(score, 0)
-        os.unlink(imgfile1)
+        testlib.safe_unlink(imgfile1)
         
     def test_basic_cmp(self):
         """test basic cmp ..................................."""
@@ -48,8 +48,8 @@ class TestCmp(unittest.TestCase):
 #        testlib.assertfloat(self, frc_score, -0.4011)    #todo: score not match, anything wrong?
 
         (hed1,img1) = testlib.get_imagic_filename_pair(imgfile1)
-        os.unlink(hed1)
-        os.unlink(img1)
+        testlib.safe_unlink(hed1)
+        testlib.safe_unlink(img1)
     
     def test_QuadMinDotCmp(self):
         """test QuadMinDotCmp ..............................."""
@@ -77,8 +77,8 @@ class TestCmp(unittest.TestCase):
         score  = e.cmp('optvariance', e2, {})    #default argument
         score2 = e.cmp('optvariance', e2, {'invert':1, 'keepzero':1, 'matchfilt':2, 'radweight':2, 'debug':1})
         
-        os.unlink('a.hdf')
-        os.unlink('dbug.optvar.txt')
+        testlib.safe_unlink('a.hdf')
+        testlib.safe_unlink('dbug.optvar.txt')
         
     def test_FRCCmp(self):
         """test FRCCmp ......................................"""
