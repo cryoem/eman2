@@ -64,6 +64,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/Tokenizer.cpp
     sparx/SparxIO.cpp
     sparx/lapackblas.cpp
+    sparx/pca.cpp
     )
 
 IF(WIN32)
