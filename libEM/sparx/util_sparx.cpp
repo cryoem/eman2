@@ -3151,10 +3151,10 @@ EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float vo
 	       }
 
 	}
+		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true); 
 		ctf_img1->set_complex(true);
-	    	ctf_img1->set_ri(1);
- 		ctf_img1->set_fftodd(true);
-	        ctf_img1->set_attr("npad", 1);
+	    	ctf_img1->set_ri(1);  
+	        if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
 		return ctf_img1;
 			 			 
 } 		
@@ -3218,7 +3218,7 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 	float *new_ptr  = new_image->get_data(); /* set size of the new image */
 	float *mask_ptr = mask->get_data();	 /* assign a pointer to the mask image */
 	float *img_ptr  = image->get_data();	 /* assign a pointer to the 1D image */
-	int count = 0;	
+	int count = 0;
 	for(i = 0;i < size;i++){
 		if(mask_ptr[i] > 0.5f){
 			new_ptr[i] = img_ptr[count];
@@ -3231,6 +3231,69 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 	new_image->update();
 	
 	return new_image;
+}	
+vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p_size)
+{	
+	vector<float>new_peak;
+	int n1=peak1.size()/3;
+	float p_size2=p_size*p_size;
+	for (int i=0;i<n1;++i)
+		{
+			vector<float>::iterator it2= peak1.begin()+3*i;
+			bool push_back1=true;
+			int n2=peak2.size()/3;
+			/*cout<<"peak2 size==="<<n2<<"i====="<<i<<endl;
+			cout<<"new peak size==="<<new_peak.size()/3<<endl;*/
+			
+			if(n2 ==0) 
+				{
+					new_peak.push_back(*it2);
+					new_peak.push_back(*(it2+1));
+					new_peak.push_back(*(it2+2));
+				
+				}
+			else 
+				{						
+					int j=0;					
+					while (j< n2-1 )
+						{								
+							vector<float>::iterator it3= peak2.begin()+3*j;
+							float d2=((*(it2+1))-(*(it3+1)))*((*(it2+1))-(*(it3+1)))+((*(it2+2))-(*(it3+2)))*((*(it2+2))-(*(it3+2)));							
+							if(d2< p_size2 )
+								{ 	
+									if( (*it2)<(*it3))
+										{	
+											new_peak.push_back(*it3);
+											new_peak.push_back(*(it3+1));
+											new_peak.push_back(*(it3+2));
+											peak2.erase(it3);
+											peak2.erase(it3);
+											peak2.erase(it3);
+											push_back1=false;
+										}
+									else
+										{
+											peak2.erase(it3);
+											peak2.erase(it3);
+											peak2.erase(it3);
+									
+										}	
+								}
+							else
+								{
+									j=j+1;
+								}
+								n2=peak2.size()/3;						
+						}
+					if(push_back1)
+						{
+							new_peak.push_back(*it2);
+							new_peak.push_back(*(it2+1));
+							new_peak.push_back(*(it2+2));
+						}
+				}
+		}				
+	return new_peak;
 }	
 
 int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
