@@ -3235,7 +3235,7 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 
 int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
 {
-    // n size of the covmat
+    // n size of the covariance/correlation matrix
     // covmat --- covariance/correlation matrix (n by n)
     // eigval --- returns eigenvalues
     // eigvec --- returns eigenvectors
@@ -3253,16 +3253,13 @@ int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
     char UPLO = 'U';
     int lwork = -1;
     int info = 0;
-    float *work;
+    float *work, wsize;
   
-    work = (float *)malloc(1 * sizeof(float));
     //	query to get optimal workspace
-    ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, 
+    ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, &wsize, 
            &lwork, &info);
-    lwork = (int)work[0];
-    free(work);
+    lwork = (int)wsize;
 
-    lwork = 10*n;
     work = (float *)calloc(lwork, sizeof(float));
     // 	calculate eigs
     ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, 
