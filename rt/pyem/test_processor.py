@@ -1219,6 +1219,8 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.mask.auto3d', {'radius':16, 'threshold':0.5, 'nshells':3})
         
+        testlib.safe_unlink('mask.mrc')
+        
     def test_eman1_mask_addshells(self):
         """test eman1.mask.addshells processor .............."""
         e = EMData()
