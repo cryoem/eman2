@@ -389,6 +389,6 @@ class FakeKaiserBessel : public KaiserBessel {
         static float tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
-	static vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
+	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
 
 #endif	//util__sparx_h__
