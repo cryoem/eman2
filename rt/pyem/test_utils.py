@@ -274,13 +274,10 @@ class TestEMUtils(unittest.TestCase):
         e2.write_image('test.hdf', 1)
         
         e3 = test_image()
-        e3.set_attr('name', 'Eddy')
         e3.write_image('test.hdf', 2)
         
         l = EMUtil.get_all_attributes('test.hdf', 'name')
-        self.assertEqual(l[0], 'Tom')
-        self.assertEqual(l[1], 'Sam')
-        self.assertEqual(l[2], 'Eddy')
+        self.assertEqual(l, ['Tom', 'Sam', None])
         
         testlib.safe_unlink('test.hdf')
     
