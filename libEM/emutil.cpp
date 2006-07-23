@@ -1296,31 +1296,13 @@ vector<EMObject> EMUtil::get_all_attributes(const string & file_name, const stri
 	vector<EMObject> v;
 	
 	Assert(file_name != "");
+	Assert(attr_name != "");
 	
-	int nimg = 0;
-	ImageIO *imageio = get_imageio(file_name, ImageIO::READ_ONLY);
-
-	if (imageio) {
-		nimg = imageio->get_nimg();
+	vector<EMData *> vpImg = EMData::read_images(file_name, vector<int>(), true);
+	vector<EMData *>::iterator iter;
+	for(iter = vpImg.begin(); iter!=vpImg.end(); ++iter) {
+		v.push_back((*iter)->get_attr_default(attr_name));
 	}
 	
-	if(nimg>1) {
-		for(int img_index = 0; img_index < nimg; ++img_index) {
-			Dict attr_dict;
-			imageio->read_header(attr_dict, img_index);
-			
-			if( attr_dict.has_key(attr_name) ) {
-				v.push_back(attr_dict[attr_name]);
-			}
-			else {
-				//throw NotExistingObjectException(attr_name, "Not exist");
-				v.push_back(EMObject());
-			}
-		}
-		
-		return v;
-	}
-	else {
-		throw InvalidCallException("This function can only be called by stack image");
-	}
+	return v;
 }
