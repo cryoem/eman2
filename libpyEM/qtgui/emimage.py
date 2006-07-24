@@ -313,10 +313,14 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
 
+# This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMImage()
-	window.setData(test_image(size=(512,512)))
+	if len(sys.argv)==0 : window.setData(test_image(size=(512,512)))
+	else :
+		a=EMData.read_images(sys.argv[1],[0])
+		window.setData(a[0])
 	window.show()
 	
 #	w2=QtGui.QWidget()
