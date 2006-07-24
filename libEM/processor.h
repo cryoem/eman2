@@ -3677,7 +3677,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("wave_length", EMObject::FLOAT, "this value is the d in function |sin(x/d)|");
+			d.put("wave_length", EMObject::FLOAT, "(required)this value is the d in function |sin(x/d)|, unit: pixel");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
 			d.put("phase", EMObject::FLOAT, "(optional)phase for sine wave, default is 0");
@@ -3714,7 +3714,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("edge_length", EMObject::FLOAT, "edge length of the square or cube");
+			d.put("edge_length", EMObject::FLOAT, "edge length of the square or cube, unit: pixel");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("odd_edge", EMObject::FLOAT, "edge length for the asymmetric axis");
 			d.put("fill", EMObject::STRING, "answer 'yes' or 'no' to specify if it's filled or hollow, default filled");
@@ -3751,7 +3751,7 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("radius", EMObject::FLOAT, "radius of circle or sphere");
+			d.put("radius", EMObject::FLOAT, "radius of circle or sphere, unit: pixel");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
 			d.put("fill", EMObject::STRING, "answer 'yes' or 'no' to specify if it's filled or hollow, default filled");
