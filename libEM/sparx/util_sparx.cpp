@@ -1652,7 +1652,13 @@ void Util::Frngs(EMData* circ, vector<int> numr){
 void Util::frngs(float *circ, int *numr, int nring){
    int i, l; 
    for (i=1; i<=nring;i++) {
+
+#ifdef WIN32
+	l = (int)( log(numr(3,i))/log(2) );
+#else
      l=(int)(log2(numr(3,i)));
+#endif	//WIN32
+
      fftr_q(&circ(numr(2,i)),l);
    }
 }
@@ -1729,7 +1735,12 @@ c       automatic arrays
    int    i, j, k, ip, jc, numr3i, numr2i, jtot;
    float  pos;
 
+#ifdef WIN32
+	ip = -(int)(log(maxrin)/log(2));
+#else
    ip = -(int) (log2(maxrin));
+#endif	//WIN32
+
    q = (double*)calloc(maxrin, sizeof(double));
    t = (float*)calloc(maxrin, sizeof(float));
      
@@ -1853,7 +1864,11 @@ c       optional limit on angular search should be added.
    *tot = 0.0;
    *tmt = 0.0; 
 
+#ifdef WIN32
+	ip = -(int)(log(maxrin)/log(2));
+#else
    ip = -(int)(log2(maxrin));
+#endif
 
    //  c - straight  = circ1 * conjg(circ2)
    //  zero q array
@@ -2010,7 +2025,11 @@ c       optional limit on angular search should be added.
    *tot = 0.0;
    *tmt = 0.0; 
 
+#ifdef WIN32
+	ip = -(int)(log(maxrin)/log(2));
+#else
    ip = -(int)(log2(maxrin));
+#endif	//WIN32
 
    //  c - straight  = circ1 * conjg(circ2)
    //  zero q array
@@ -2172,7 +2191,11 @@ c       optional limit on angular search should be added.
    int   ip, jc, numr3i, numr2i, i, j;
    float t1, t2, t3, t4, c1, c2, d1, d2;
 
-   ip = -(int)(log2(maxrin));
+#ifdef WIN32
+	ip = -(int)(log(maxrin)/log(2));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//WIN32
 
    //  q - straight  = circ1 * conjg(circ2)
 
