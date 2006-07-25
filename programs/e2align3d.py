@@ -13,7 +13,6 @@ cmp_target=None
 tdim=None
 pdim=None
 c2alt=0
-degrad=pi/180.0
 
 def display(img):
 	img.write_image("tmploc.mrc")
@@ -100,7 +99,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
 			prr=probeclip.copy()
-			prr.rotate(a1*degrad,a2*degrad,a3*degrad)
+			prr.rotate(a1,a2,a3)
 #			print a1,a2,a3
 #			display(prr)
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
@@ -119,7 +118,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #			print mean,sig
 #			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
 			vec=ccf.calc_highest_locations(mean+sig+.0000001)
-			for v in vec: best.append([v.value,a1*degrad,a2*degrad,a3*degrad,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
+			for v in vec: best.append([v.value,a1,a2,a3,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
 #			print len(vec)
 #			for v in vec: print v.value,v.x,v.y,v.z
 #			print a1,a2,a3,mean+sig,float(ccf.get_attr("max")),len(vec)
@@ -202,7 +201,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 			sm=Simplex(compare2,[best2[j][3],best2[j][6]],[1,2.])
 			bt=sm.minimize()
 			b=bt[0]
-			print "\n",j,"\t%5.2f,%5.2f  %5.1f"%(c2alt/degrad,b[0]/degrad,b[1])
+			print "\n",j,"\t%5.2f,%5.2f  %5.1f"%(c2alt,b[0],b[1])
 #			a=cmp_target.get_rotated_clip((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),*b[0:3],EULER_EMAN,pdim,1.0)
 #			a.write_image("clip.%02d.mrc"%j)
 			pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
@@ -216,7 +215,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 		sm=Simplex(compare,best2[j][1:7],[1,1,1,2.,2.,2.])
 		bt=sm.minimize()
 		b=bt[0]
-		print "\n",j,"\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f"%(b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
+		print "\n",j,"\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f"%(b[0],b[1],b[2],b[3],b[4],b[5])
 		a=cmp_target.get_rotated_clip(Transform3D([b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2],*b[0:3]),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%j)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))

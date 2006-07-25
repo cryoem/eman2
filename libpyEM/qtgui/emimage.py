@@ -119,7 +119,8 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 		if not self.data : return
 		
-		if isinstance(data,list) :
+		if isinstance(self.data,list) :
+			pass
 		else :
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 #			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
@@ -141,7 +142,7 @@ class EMImage(QtOpenGL.QGLWidget):
 	
 	def mousePressEvent(self, event):
 		if event.button()==Qt.MidButton:
-			if not self.inspector : self.inspector=EMImageInspector2D(self)
+			if not self.inspector : self.inspector=EMImageMxInspector2D(self)
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
 		elif event.button()==Qt.RightButton:
@@ -234,10 +235,32 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.vboxlayout.addWidget(self.hist)
 		
-		self.scale = QtGui.QSpinBox(self)
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vboxlayout.addWidget(self.scale)
+		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout.setMargin(0)
+		self.hboxlayout.setSpacing(6)
+		self.hboxlayout.setObjectName("hboxlayout")
+		self.vboxlayout.addLayout(self.hboxlayout)
+		
+		self.lbl = QtGui.QLabel("#/row:")
+		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+		self.hboxlayout.addWidget(self.lbl)
+		
+		self.nrow = QtGui.QSpinBox(self)
+		self.nrow.setObjectName("nrow")
+		self.nrow.setRange(1,50)
+		self.nrow.setValue(6)
+		self.hboxlayout.addWidget(self.nrow)
+		
+		self.lbl = QtGui.QLabel("N:")
+		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
+		self.hboxlayout.addWidget(self.lbl)
+		
+		self.imgn = QtGui.QSpinBox(self)
+		self.imgn.setObjectName("imgn")
+		self.imgn.setRange(-1,50)
+		self.imgn.setValue(-1)
+		self.imgn.setSpecialValueText("All")
+		self.hboxlayout.addWidget(self.imgn)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")

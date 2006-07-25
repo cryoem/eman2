@@ -12,7 +12,12 @@ from random import random
 def main() :
 	global threshold
 	
-	usage=""
+        usage = """%prog [options] <input> <output>
+
+This program attempts to extract one subunit from a volume by starting at
+a high point then iteratively expanding until a subunit has been located.
+"""
+
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
