@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+
+
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
@@ -24,9 +26,13 @@ def main():
 	global cmp_probe,cmp_target
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] input.mrc
-	
-Designed for use on scanned micrographs. Overlays image with a grid of
-2D power spectra."""
+
+Helps to visually assess large images using localized power spectra. Generally
+this is used with scanned images to look for position dependent MTF due to
+film flatness problems or problems with the scanner optics. Boxes a grid pattern
+of areas (default 256x256), calculates a power spectrum for each area, then reinserts
+in the image, with a gap between them so the micrograph is still visible in the
+background."""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 

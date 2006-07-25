@@ -24,6 +24,7 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.origin=(0,0)
+		self.nperrow=2
 		self.mousedrag=None
 		
 		self.inspector=None
@@ -116,7 +117,10 @@ class EMImage(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		GL.glTranslated(0.0, 0.0, -10.0)
 		
-		if self.data :
+		if not self.data : return
+		
+		if isinstance(data,list) :
+		else :
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 #			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
 #			GL.glPixelZoom(self.scale,self.scale)
@@ -215,6 +219,107 @@ class ImgHistogram(QtGui.QWidget):
 	
 	def mouseReleaseEvent(self, event):
 		self.probe=None
+
+class EMImageMxInspector2D(QtGui.QWidget):
+	def __init__(self,target) :
+		QtGui.QWidget.__init__(self,None)
+		self.target=target
+		
+		self.vboxlayout = QtGui.QVBoxLayout(self)
+		self.vboxlayout.setMargin(0)
+		self.vboxlayout.setSpacing(6)
+		self.vboxlayout.setObjectName("vboxlayout")
+		
+		self.hist = ImgHistogram(self)
+		self.hist.setObjectName("hist")
+		self.vboxlayout.addWidget(self.hist)
+		
+		self.scale = QtGui.QSpinBox(self)
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		self.vboxlayout.addWidget(self.scale)
+		
+		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		self.vboxlayout.addWidget(self.scale)
+		
+		self.mins = ValSlider(self,label="Min:")
+		self.mins.setObjectName("mins")
+		self.vboxlayout.addWidget(self.mins)
+		
+		self.maxs = ValSlider(self,label="Max:")
+		self.maxs.setObjectName("maxs")
+		self.vboxlayout.addWidget(self.maxs)
+		
+		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
+		self.brts.setObjectName("brts")
+		self.vboxlayout.addWidget(self.brts)
+		
+		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
+		self.conts.setObjectName("conts")
+		self.vboxlayout.addWidget(self.conts)
+		
+		self.lowlim=0
+		self.highlim=1.0
+		self.busy=0
+		
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
+		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
+		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
+		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
+
+	def newMin(self,val):
+		if self.busy : return
+		self.busy=1
+		self.target.setDenMin(val)
+
+		self.updBC()
+		self.busy=0
+		
+	def newMax(self,val):
+		if self.busy : return
+		self.busy=1
+		self.target.setDenMax(val)
+		self.updBC()
+		self.busy=0
+	
+	def newBrt(self,val):
+		if self.busy : return
+		self.busy=1
+		self.updMM()
+		self.busy=0
+		
+	def newCont(self,val):
+		if self.busy : return
+		self.busy=1
+		self.updMM()
+		self.busy=0
+
+	def updBC(self):
+		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))
+		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
+		self.brts.setValue(-b)
+		self.conts.setValue(1.0-c)
+		
+	def updMM(self):
+		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value+self.brts.value))
+		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value-self.brts.value))
+		self.mins.setValue(x0)
+		self.maxs.setValue(x1)
+		self.target.setDenRange(x0,x1)
+		
+	def setHist(self,hist,minden,maxden):
+		self.hist.setData(hist,minden,maxden)
+
+	def setLimits(self,lowlim,highlim,curmin,curmax):
+		self.lowlim=lowlim
+		self.highlim=highlim
+		self.mins.setRange(lowlim,highlim)
+		self.maxs.setRange(lowlim,highlim)
+		self.mins.setValue(curmin)
+		self.maxs.setValue(curmax)
 
 
 class EMImageInspector2D(QtGui.QWidget):

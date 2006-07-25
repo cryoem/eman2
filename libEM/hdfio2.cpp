@@ -389,7 +389,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 #endif
 	ENTERFUNC;
 	init();
-	erase_header(image_index);
+//	erase_header(image_index);
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
 	hid_t attr=H5Aopen_name(group,"imageid_max");
