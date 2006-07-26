@@ -5,7 +5,7 @@
 #define eman__emutil__h__ 1
 
 #include "emobject.h"
-#include "assert.h"
+#include <cassert>
 
 using std::string;
 using std::vector;
@@ -17,17 +17,31 @@ using std::vector;
 template <class T>
 inline void EMDeletePtr(T & x)
 {
-        {assert(x != NULL);}
-        delete x;
-        x = NULL;
+#ifdef _WIN32
+	if(x != NULL) {
+		delete x;
+		x = NULL;
+	}
+#else
+	{assert(x != NULL);}
+	delete x;
+	x = NULL;
+#endif
 }
 
 template <class T>
 inline void EMDeleteArray(T & x)
 {
-     {assert(x != NULL);}
+#ifdef _WIN32
+	if(x != NULL) {
+		delete x;
+		x = NULL;
+	}
+#else
+	{assert(x != NULL);}
      delete [] x;
      x = NULL;
+#endif
 }
 
 namespace EMAN
