@@ -8,6 +8,10 @@
 #include "ctf.h"
 #include "Assert.h"
 
+#ifdef _WIN32
+	#include <ctime>
+#endif	//_WIN32
+
 using namespace EMAN;
 
 const char *ImagicIO::HED_EXT = "hed";

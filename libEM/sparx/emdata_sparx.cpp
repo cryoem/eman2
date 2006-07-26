@@ -2331,11 +2331,23 @@ vector<float> EMData::phase_cog()
 		SNX = F1/P +1.0;
 		SNX = SNX - ((nx/2)+1);
 		ph_cntog.push_back(SNX);
+#ifdef _WIN32
+		ph_cntog.push_back(abs(Util::round(SNX)));
+#else
 		ph_cntog.push_back(fabs(round(SNX)));
+#endif
 		}
 	else if (get_ndim()==2)
+#ifdef _WIN32
+		{
+		float SNY;
+		float T=0.0f;
+		vector<float> X;
+		X.resize(nx);
+#else
 		{float SNY,X[nx],T=0.f;
-		 for ( i=1;i<=nx;i++)
+#endif	//_WIN32
+		for ( i=1;i<=nx;i++)
 			{X(i)=0.0;}			
                  P = 8*atan(1.0f)/ny;
 		 for(j=1;j<=ny;j++)
@@ -2358,11 +2370,25 @@ vector<float> EMData::phase_cog()
 		 SNX = F1/P +1.0;
 		 SNX = SNX - ((nx/2)+1);
 		 SNY = SNY - ((ny/2)+1);
-		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);		
+		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);	
+#ifdef _WIN32
+		 ph_cntog.push_back(abs(Util::round(SNX))); ph_cntog.push_back(abs(Util::round(SNY)));
+#else
 		 ph_cntog.push_back(fabs(round(SNX))); ph_cntog.push_back(fabs(round(SNY)));
+#endif	//_WIN32	
 		}
 	else
+#ifdef _WIN32
+		{float val=0.f,sum1=0.f, SNY,SNZ;
+		vector<float> X;
+		X.resize(nx);
+		vector<float> Y;
+		Y.resize(ny);
+		vector<float> Z;
+		Z.resize(nz);
+#else
 		{float val=0.f,sum1=0.f,X[nx],Y[ny],Z[nz],SNY,SNZ;
+#endif	//_WIN32
 		 for (i=1;i<=nx;i++)
 			{X(i)=0.0;}
 		 for (j=1;j<=ny;j++)
@@ -2406,7 +2432,7 @@ vector<float> EMData::phase_cog()
 		 SNY = SNY - ((ny/2)+1);
 		 SNZ = SNZ - ((nz/2)+1);		
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
-		 ph_cntog.push_back(fabs(round(SNX))); ph_cntog.push_back(fabs(round(SNY))); ph_cntog.push_back(fabs(round(SNZ)));
+		 ph_cntog.push_back(abs(Util::round(SNX))); ph_cntog.push_back(abs(Util::round(SNY))); ph_cntog.push_back(abs(Util::round(SNZ)));
 	}
 	return ph_cntog;
 }

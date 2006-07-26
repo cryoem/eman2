@@ -20,6 +20,7 @@
 	#include <unistd.h>
 	#include <sys/param.h>
 #else
+	#include <ctime>
 	#include <io.h>
 	#define access _access
 	#define F_OK 00

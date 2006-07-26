@@ -6,6 +6,12 @@
 #include "util.h"
 #include "portable_fileio.h"
 
+#ifdef _WIN32
+	//MS Visual Studio.NET does not supply isnan()
+	//they have _isnan() in <cfloat>
+	#include <cfloat>	
+#endif
+
 using namespace EMAN;
 
 const char *PgmIO::MAGIC_BINARY = "P5";
@@ -142,7 +148,11 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 		if(dict.has_key("max_grey")) maxval = dict["max_gray"];
 		
 		//if we didn't get any good values from attributes, assign to 255 by default
+#ifdef _WIN32
+		if (maxval<=minval || _isnan(minval) || _isnan(maxval)) {
+#else
 		if (maxval<=minval || isnan(minval) || isnan(maxval)) {
+#endif	//_WIN32	
 			maxval = 255;
 		}
 		

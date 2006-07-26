@@ -473,9 +473,11 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_PGM:
 		imageio = new PgmIO(filename, rw_mode);
 		break;
+#ifdef EM_JPEG
 	case IMAGE_JPEG:
 		imageio = new JpegIO(filename,rw_mode);
 		break;
+#endif
 	case IMAGE_EMIM:
 		imageio = new EmimIO(filename, rw_mode);
 		break;

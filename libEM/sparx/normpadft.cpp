@@ -139,8 +139,8 @@ EMData* EMData::pad_fft(int npad) {
 		if (0 == npad) npad = 1;
 		int nxold = (nx - 2 + int(is_fftodd()))/npad; 
 	#ifdef _WIN32
-		int nyold = _MAX(ny/npad, 1);
-		int nzold = _MAX(nz/npad, 1);
+		int nyold = _cpp_max(ny/npad, 1);
+		int nzold = _cpp_max(nz/npad, 1);
 	#else
 		int nyold = std::max<int>(ny/npad, 1);
 		int nzold = std::max<int>(nz/npad, 1);
@@ -170,8 +170,8 @@ void EMData::postift_depad_corner_inplace() {
 		int offset = is_fftodd() ? 1 : 2;
 		int nxold = (nx - offset)/npad;
 #ifdef _WIN32
-		int nyold = _MAX(ny/npad, 1);
-		int nzold = _MAX(nz/npad, 1);
+		int nyold = _cpp_max(ny/npad, 1);
+		int nzold = _cpp_max(nz/npad, 1);
 #else
 		int nyold = std::max<int>(ny/npad, 1);
 		int nzold = std::max<int>(nz/npad, 1);

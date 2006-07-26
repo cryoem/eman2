@@ -1053,7 +1053,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    return out;
 }
 
-EMData* Util::alrq_msi(EMData* image, float cns2, float cnr2,
+void Util::alrq_msi(EMData* image, float cns2, float cnr2,
              int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb)
 {
    double dpi, dfi;
@@ -1653,11 +1653,11 @@ void Util::frngs(float *circ, int *numr, int nring){
    int i, l; 
    for (i=1; i<=nring;i++) {
 
-#ifdef WIN32
-	l = (int)( log(numr(3,i))/log(2) );
+#ifdef _WIN32
+	l = (int)( log((float)numr(3,i))/log(2.0f) );
 #else
      l=(int)(log2(numr(3,i)));
-#endif	//WIN32
+#endif	//_WIN32
 
      fftr_q(&circ(numr(2,i)),l);
    }
@@ -1735,11 +1735,11 @@ c       automatic arrays
    int    i, j, k, ip, jc, numr3i, numr2i, jtot;
    float  pos;
 
-#ifdef WIN32
-	ip = -(int)(log(maxrin)/log(2));
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
    ip = -(int) (log2(maxrin));
-#endif	//WIN32
+#endif	//_WIN32
 
    q = (double*)calloc(maxrin, sizeof(double));
    t = (float*)calloc(maxrin, sizeof(float));
@@ -1864,11 +1864,11 @@ c       optional limit on angular search should be added.
    *tot = 0.0;
    *tmt = 0.0; 
 
-#ifdef WIN32
-	ip = -(int)(log(maxrin)/log(2));
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
    ip = -(int)(log2(maxrin));
-#endif
+#endif	//_WIN32
 
    //  c - straight  = circ1 * conjg(circ2)
    //  zero q array
@@ -2026,7 +2026,7 @@ c       optional limit on angular search should be added.
    *tmt = 0.0; 
 
 #ifdef WIN32
-	ip = -(int)(log(maxrin)/log(2));
+	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
    ip = -(int)(log2(maxrin));
 #endif	//WIN32
@@ -2191,11 +2191,11 @@ c       optional limit on angular search should be added.
    int   ip, jc, numr3i, numr2i, i, j;
    float t1, t2, t3, t4, c1, c2, d1, d2;
 
-#ifdef WIN32
-	ip = -(int)(log(maxrin)/log(2));
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
 	ip = -(int)(log2(maxrin));
-#endif	//WIN32
+#endif	//_WIN32
 
    //  q - straight  = circ1 * conjg(circ2)
 
@@ -2802,7 +2802,7 @@ float Util::hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData 
 	int freq_hist = 0;
 
 	for(int i = 0;i < (3*hist_len);i++)
-		freq_hist += (int)pow(((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
+		freq_hist += (int)pow((float)((int)ref_freq_hist[i] - (int)img_freq_bin[i]),2.f);
 	freq_hist = (-freq_hist);
 	return freq_hist;
 }
