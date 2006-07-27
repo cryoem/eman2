@@ -24,10 +24,13 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.origin=(0,0)
-		self.nperrow=2
+		self.nperrow=6
+		self.nshow=0
 		self.mousedrag=None
 		
 		self.inspector=None
+		self.inspectorl=None
+		self.inspector3=None
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -47,17 +50,15 @@ class EMImage(QtOpenGL.QGLWidget):
 					self.data=None
 					self.updateGL()
 					return
-				mean=data.get_attr("mean")
-				sigma=data.get_attr("sigma")
-				m0=data.get_attr("minimum")
-				m1=data.get_attr("maximum")
+				mean=i.get_attr("mean")
+				sigma=i.get_attr("sigma")
+				m0=i.get_attr("minimum")
+				m1=i.get_attr("maximum")
 			
 				self.minden=min(self.minden,max(m0,mean-3.0*sigma))
 				self.maxden=max(self.maxden,min(m1,mean+3.0*sigma))
 				self.mindeng=min(self.mindeng,max(m0,mean-5.0*sigma))
 				self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
-
-			if self.inspector: self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		# If we have a single 2D image
 		elif data.get_zsize()==1:
 			mean=data.get_attr("mean")
@@ -71,8 +72,6 @@ class EMImage(QtOpenGL.QGLWidget):
 			self.maxdeng=min(m1,mean+5.0*sigma)
 
 			self.datasize=(data.get_xsize(),data.get_ysize())
-
-			if self.inspector: self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		# if we have a single 3D image
 		elif data.get_zsize()>1 :
 			pass
@@ -82,6 +81,7 @@ class EMImage(QtOpenGL.QGLWidget):
 			self.updateGL()
 			return
 		
+		self.showInspector()		# shows the correct inspector if already open
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -109,6 +109,14 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.maxden=val
 		self.updateGL()
 
+	def setNPerRow(self,val):
+		self.nperrow=val
+		self.updateGL()
+		
+	def setNShow(self,val):
+		self.nshow=val
+		self.updateGL()
+
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 	
@@ -120,7 +128,22 @@ class EMImage(QtOpenGL.QGLWidget):
 		if not self.data : return
 		
 		if isinstance(self.data,list) :
-			pass
+			if self.nshow==-1 :
+#				GL.glRasterPos(
+				n=len(self.data)
+				x,y=self.origin[0],self.origin[1]
+				for i in n:
+					
+					y=len(self.data)%nperrow
+					if y==0 : x=0
+#					y*=
+				pass
+			else:
+				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+				GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+				hist=array.array("I")
+				hist.fromstring(a[-1024:])
+				if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 		else :
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 #			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
@@ -140,11 +163,26 @@ class EMImage(QtOpenGL.QGLWidget):
 		GL.glOrtho(-0.5, +0.5, +0.5, -0.5, 4.0, 15.0)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 	
-	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton:
-			if not self.inspector : self.inspector=EMImageMxInspector2D(self)
+	def showInspector(self,force=0):
+		if not force and self.inspector==None and self.inspectorl==None and self.inspector3==None : return
+		if isinstance(self.data,list) or isinstance(self.data,tuple) :
+			if self.inspector : self.inspector.hide()
+			if self.inspector3 : self.inspector3.hide()
+			if not self.inspectorl : self.inspectorl=EMImageMxInspector2D(self)
+			self.inspectorl.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			self.inspectorl.show()
+		elif self.data.get_zsize()==1 :
+			if self.inspectorl : self.inspectorl.hide()
+			if self.inspector3 : self.inspector3.hide()
+			if not self.inspector : self.inspector=EMImageInspector2D(self)
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
+		else:
+			pass	# 3d not done yet
+	
+	def mousePressEvent(self, event):
+		if event.button()==Qt.MidButton:
+			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
 			self.mousedrag=(event.x(),event.y())
 	
@@ -235,7 +273,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.vboxlayout.addWidget(self.hist)
 		
-		self.hboxlayout = QtGui.QHBoxLayout(self)
+		self.hboxlayout = QtGui.QHBoxLayout()
 		self.hboxlayout.setMargin(0)
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
@@ -258,7 +296,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.imgn = QtGui.QSpinBox(self)
 		self.imgn.setObjectName("imgn")
 		self.imgn.setRange(-1,50)
-		self.imgn.setValue(-1)
+		self.imgn.setValue(0)
 		self.imgn.setSpecialValueText("All")
 		self.hboxlayout.addWidget(self.imgn)
 		
@@ -287,11 +325,14 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.highlim=1.0
 		self.busy=0
 		
+		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.setNPerRow)
+		QtCore.QObject.connect(self.imgn, QtCore.SIGNAL("valueChanged(int)"), target.setNShow)
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
+
 
 	def newMin(self,val):
 		if self.busy : return
@@ -447,8 +488,9 @@ if __name__ == '__main__':
 	window = EMImage()
 	if len(sys.argv)==0 : window.setData(test_image(size=(512,512)))
 	else :
-		a=EMData.read_images(sys.argv[1],[0])
-		window.setData(a[0])
+		a=EMData.read_images(sys.argv[1])
+		if len(a)==1 : window.setData(a[0])
+		else : window.setData(a)
 	window.show()
 	
 #	w2=QtGui.QWidget()
