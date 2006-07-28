@@ -375,6 +375,7 @@ EMObject get_attr(const string & attr_name) const;
  * to None in Python.
  *
  * @param attr_name The header attribute name.
+ * @param em_obj the default attribute to return when this attr_name not exist in attr_dict
  * @return The attribute value.
  */
 EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EMObject()) const;

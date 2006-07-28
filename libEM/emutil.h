@@ -228,6 +228,7 @@ namespace EMAN
 
 		/** Get an attribute from a stack of image, returned as a vector
 		 * 
+		 * @param file_name the image file name
 		 * @param attr_name The header attribute name.
 		 * @return the vector of attribute value 
 		 * @exception NotExistingObjectException when access an non-existing attribute
