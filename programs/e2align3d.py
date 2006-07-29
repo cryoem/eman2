@@ -93,9 +93,14 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 
 #	Log.logger().set_level(Log.LogLevel.DEBUG_LOG)
 	
+#	probeclip.write_image("m0.mrc")
 	best=[]
-	sum=probeclip.copy_head()
-	sum.to_zero()
+#	sm=probeclip.copy_head()
+#	sm.to_zero()
+	
+	sm=EMData()
+	sm.set_size(probeclip.get_xsize(),probeclip.get_ysize(),probeclip.get_zsize())
+	sm.to_one()	
 	for a1,a2 in roughang:
 		for a3 in range(0,360,45):
 			prr=probeclip.copy()
@@ -104,16 +109,19 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #			display(prr)
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
 			
-			target.write_image("m1.mrc")
-			prr.write_image("m2.mrc")
+#			target.write_image("m1.mrc")
+#			prr.write_image("m2.mrc")
 			ccf=target.calc_ccf(prr,fp_flag.CIRCULANT)
 			mean=float(ccf.get_attr("mean"))
 			sig=float(ccf.get_attr("sigma"))
 #			ccf.write_image('ccf1.%0d%0d%0d.mrc'%(a1,a2,a3))
 			ccf.process_inplace("eman1.mask.zeroedge3d",{"x0":pdim2[0]/4,"x1":pdim2[0]/4,"y0":pdim2[1]/4,"y1":pdim2[1]/4,"z0":pdim2[2]/4,"z1":pdim2[2]/4})
-#			ccf.write_image('ccf2.%0d%0d%0d.mrc'%(a1,a2,a3))
-			ccf.process_inplace("eman1.mask.onlypeaks",{"npeaks":0})		# only look at peak values in the CCF map
-			sum+=ccf
+			ccf.process_inplace("eman1.mask.onlypeaks",{"npeaks":1})		# only look at peak values in the CCF map
+			ccf.write_image('ccf2.%0d%0d%0d.mrc'%(a1,a2,a3))
+			print ccf.get_attr("sigma"),
+			sm.add(ccf)
+			sm.write_image("sm.mrc")
+			print sm.get_attr("maximum")
 
 #			print mean,sig
 #			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
@@ -125,7 +133,7 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 	
 	best.sort()		# this is a list of all reasonable candidate locations
 	best.reverse()
-	for i in best: print i
+#	for i in best: print i
 	
 	print len(best)," candidate locations"
 	
@@ -142,11 +150,10 @@ Locates the best 'docking' locations for a small probe in a large target map."""
 #	for i in best:
 #		if not i[7]: best2.append(i)
 
-	# now we find peaks in the sum of all CCF calculations, and find the best angle associated with each peak
-#	sum.write_image("sum.mrc")
-	sum.process_inplace("eman1.mask.onlypeaks",{"npeaks":0})
-	sum.write_image("sum.mrc")
-	vec=sum.calc_highest_locations(mean+sig+.0000001)
+	# now we find peaks in the sm of all CCF calculations, and find the best angle associated with each peak
+#	sm.write_image("sm.mrc")
+	sm.process_inplace("eman1.mask.onlypeaks",{"npeaks":1})
+	vec=sm.calc_highest_locations(mean+sig+.0000001)
 	best2=[]
 	for v in vec:
 #		print "%5.1f  %5.1f  %5.1f"%(v.x*sfac-tdim[0]/2,v.y*sfac-tdim[1]/2,v.z*sfac-tdim[2]/2)

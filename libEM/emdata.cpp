@@ -636,15 +636,15 @@ void EMData::rotate_translate(const Transform3D & xform)
 		float mx0 = inv_scale * cos((M_PI/180.0f)*(float)rotation["phi"]);
 		float mx1 = inv_scale * sin((M_PI/180.0f)*(float)rotation["phi"]);
 
-		float x2c = nx / 2.0f - dcenter[0] - translation[0];
-		float y2c = ny / 2.0f - dcenter[1] - translation[1];
-		float y = -ny / 2.0f + dcenter[0];
+		float x2c =  nx / 2 - dcenter[0] - translation[0];
+		float y2c =  ny / 2 - dcenter[1] - translation[1];
+		float y   = -ny / 2 + dcenter[1]; // changed 0 to 1 in dcenter and below
 
 		for (int j = 0; j < ny; j++, y += 1.0f) {
-			float x = -nx / 2.0f + dcenter[1];
+			float x = -nx / 2 + dcenter[0];
 
 			for (int i = 0; i < nx; i++, x += 1.0f) {
-				float x2 = (mx0 * x + mx1 * y) + x2c;
+				float x2 = ( mx0 * x + mx1 * y) + x2c;
 				float y2 = (-mx1 * x + mx0 * y) + y2c;
 
 				if (x2 < 0 || x2 > nx2 - 1 || y2 < 0 || y2 > ny2 - 1) {
@@ -677,65 +677,19 @@ void EMData::rotate_translate(const Transform3D & xform)
 					float p3 = src_data[k3] * tt * u;
 					float p2 = src_data[k2] * t * u;
 
-					des_data[i + j * nx] = p0 + p1 + p2 + p3;
-				}
-			}
-		}
-	}
-
-	else if (nx == (nx / 2 * 2 + 1) && nx == ny && (2 * nz - 1) == nx) { // square, odd image, with nz= (nx+1)/2
-		// make sure this is right
-		Transform3D mx = xform;
-		mx.set_scale(inv_scale);
-		int nxy = nx * ny;
-		int l = 0;
-
-		for (int k = 0; k < nz; k++) {
-			for (int j = -ny / 2; j < ny - ny / 2; j++) {
-				for (int i = -nx / 2; i < nx - nx / 2; i++, l++) {
-					float x2 = mx[0][0] * i + mx[0][1] * j + mx[0][2] * k + nx / 2;
-					float y2 = mx[1][0] * i + mx[1][1] * j + mx[1][2] * k + ny / 2;
-					float z2 = mx[2][0] * i + mx[2][1] * j + mx[2][2] * k + 0 / 2;
-
-					if (x2 >= 0 && y2 >= 0 && z2 > -(nz - 1) && x2 < nx && y2 < ny && z2 < nz - 1) {
-						if (z2 < 0) {
-							x2 = nx - 1 - x2;
-							z2 = -z2;
-						}
-
-						int x = Util::fast_floor(x2);
-						int y = Util::fast_floor(y2);
-						int z = Util::fast_floor(z2);
-
-						float t = x2 - x;
-						float u = y2 - y;
-						float v = z2 - z;
-
-						int ii = (int) (x + y * nx + z * nxy);
-
-						des_data[l] += Util::trilinear_interpolate(src_data[ii], src_data[ii + 1],
-																   src_data[ii + nx],
-																   src_data[ii + nx + 1],
-																   src_data[ii + nx * ny],
-																   src_data[ii + nxy + 1],
-																   src_data[ii + nxy + nx],
-																   src_data[ii + nxy + nx + 1], t,
-																   u, v);
-					}
+					des_data[i + j * nx] = p0 + p1 + p2 + p3; // This is essentially linear interpolation
+ //  		        printf("x2=%f \t y2=%f \t x=%f  \t y=%f \t val=%f \n", x2 ,y2, x, y, p0+p1+p2+p3 );
 				}
 			}
 		}
 	}
 	else {
 #ifdef DEBUG
-		std::cout << "I am in this case..." << std::endl;
+		std::cout << "This is the 3D case." << std::endl    ;
 #endif
 
 		Transform3D mx = xform;
 		mx.set_scale(inv_scale);
-
-		Vec3f dcenter2 = Vec3f((float)nx,(float)ny,(float)nz)/(-2.0f) + dcenter;
-		Vec3f v4 = dcenter2 * mx  - dcenter2 - translation; // verify this
 
 #ifdef DEBUG
 		std::cout << v4[0] << " " << v4[1]<< " " << v4[2]<< " "
@@ -745,29 +699,39 @@ void EMData::rotate_translate(const Transform3D & xform)
 		int nxy = nx * ny;
 		int l = 0;
 
-		for (int k = 0; k < nz; k++) {
-			Vec3f v3 = v4;
+		float x2c =  nx / 2 - dcenter[0] - translation[0];
+		float y2c =  ny / 2 - dcenter[1] - translation[1];
+		float z2c =  nz / 2 - dcenter[2] - translation[2];
 
-			for (int j = 0; j < ny; j++) {
-				Vec3f v2 = v3;
+		float z   = -nz / 2 + dcenter[2]; //
 
-                
-				for (int i = 0; i < nx; i++, l++) {
 
-					if (v2[0] < 0 || v2[1] < 0 || v2[2] < 0 ||
-						v2[0] >= nx - 1 || v2[1] >= ny - 1 || v2[2] >= nz - 1) {
+		for (int k = 0; k < nz; k++, z += 1.0f) {
+			float y   = -ny / 2 + dcenter[1]; // 
+			for (int j = 0; j < ny; j++,   y += 1.0f) {
+				float x = -nx / 2 + dcenter[0];
+				for (int i = 0; i < nx; i++, l++ ,  x += 1.0f) {
+					float x2 = mx[0][0] * x + mx[0][1] * y + mx[0][2] * z + x2c;
+					float y2 = mx[1][0] * x + mx[1][1] * y + mx[1][2] * z + y2c;
+					float z2 = mx[2][0] * x + mx[2][1] * y + mx[2][2] * z + z2c;
+
+
+					if (x2 < 0 || y2 < 0 || z2 < 0 ||
+						x2 >= nx  || y2 >= ny  || z2>= nz ) {
 						des_data[l] = 0;
-#ifdef DEBUG
-                		std::cout << l <<" weird if statement..." << std::endl;
-                		std::cout << v2[0] << " "<< v2[1] << " " << v2[2] << " "  << std::endl;
-#endif
 					}
 					else {
-						int x = Util::fast_floor(v2[0]);
-						int y = Util::fast_floor(v2[1]);
-						int z = Util::fast_floor(v2[2]);
-						Vec3f tuv = v2 - Vec3f((float)x,(float)y,(float)z);
-						int ii = x + y * nx + z * nxy;
+						int ix = Util::fast_floor(x2);
+						int iy = Util::fast_floor(y2);
+						int iz = Util::fast_floor(z2);
+						if (ix==nx-1||iy==ny-1||iz==nz-1) {
+							des_data[l]=0;
+							continue;
+						}
+						float tuvx = x2-ix;
+						float tuvy = y2-iy;
+						float tuvz = z2-iz;
+						int ii = ix + iy * nx + iz * nxy;
 
 						des_data[l] = Util::trilinear_interpolate(src_data[ii],
 							  src_data[ii + 1],
@@ -777,19 +741,14 @@ void EMData::rotate_translate(const Transform3D & xform)
 							  src_data[ii + nxy + 1],
 							  src_data[ii + nxy + nx],
 							  src_data[ii + nxy + nx + 1],
-							  tuv[0],
-							  tuv[1],
-							  tuv[2]);
+							  tuvx, tuvy, tuvz);
 #ifdef DEBUG
+		          		     	printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
 						std::cout << src_data[ii] << std::endl;
 #endif
 					}
-
-					v2 += mx.get_matrix3_col(0);
 				}
-				v3 += mx.get_matrix3_col(1);
 			}
-			v4 += mx.get_matrix3_col(2); //  or should it be row?   PRB April 2005
 		}
 	}
 
@@ -813,6 +772,8 @@ void EMData::rotate_translate(const Transform3D & xform)
 	all_translation += translation;
 	EXITFUNC;
 }
+
+
 
 
 void EMData::rotate_x(int dx)
