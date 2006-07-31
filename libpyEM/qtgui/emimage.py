@@ -1,6 +1,6 @@
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from OpenGL import GL
+from OpenGL import GL,GLU
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -122,33 +122,54 @@ class EMImage(QtOpenGL.QGLWidget):
 	
 	def paintGL(self):
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-		GL.glLoadIdentity()
-		GL.glTranslated(0.0, 0.0, -10.0)
+#		GL.glLoadIdentity()
+#		GL.glTranslated(0.0, 0.0, -10.0)
 		
 		if not self.data : return
 		
+		
 		if isinstance(self.data,list) :
 			if self.nshow==-1 :
-#				GL.glRasterPos(
+				GL.glPixelZoom(1.0,-1.0)
 				n=len(self.data)
-				x,y=self.origin[0],self.origin[1]
-				for i in n:
+				x,y=-self.origin[0],self.height()-self.origin[1]-1
+				for i in range(n):
+					w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
+					h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
+#					print i,x,y,w,h
+					if x>0 and x<self.width() and y>0 and y<self.height() :
+						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						GL.glRasterPos(x,y)
+						GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+					elif x+w>0 and y+h>0 :
+						a=self.data[i].render_amp8(-x,-y,x+w,y+w,(x+w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						if x<0 : xx=0
+						else : xx=x
+						if y<0 : yy=0
+						else : yy=y
+						GL.glRasterPos(xx,yy)
+						GL.glDrawPixels(x+w,y+h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+						
 					
-					y=len(self.data)%nperrow
-					if y==0 : x=0
-#					y*=
-				pass
+					if (i+1)%self.nperrow==0 : 
+						y-=h+4.0
+						x=self.origin[0]
+					else: x+=w+4.0
 			else:
 				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+				GL.glRasterPos(0,self.height()-1)
+				GL.glPixelZoom(1.0,-1.0)
 				GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 				hist=array.array("I")
 				hist.fromstring(a[-1024:])
-				if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+				if self.inspectorl : self.inspectorl.setHist(hist,self.minden,self.maxden)
 		else :
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 #			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
-#			GL.glPixelZoom(self.scale,self.scale)
+			GL.glRasterPos(0,self.height()-1)
+			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+#			print "X ",GL.glGetFloatv(GL.GL_CURRENT_RASTER_POSITION),GL.glGetBooleanv(GL.GL_CURRENT_RASTER_POSITION_VALID)
 #			print self.width(),self.height(),len(a)
 			hist=array.array("I")
 			hist.fromstring(a[-1024:])
@@ -156,12 +177,19 @@ class EMImage(QtOpenGL.QGLWidget):
 	
 	def resizeGL(self, width, height):
 		side = min(width, height)
-		GL.glViewport((width - side) / 2, (height - side) / 2, side, side)
+#		GL.glViewport((width - side) / 2, (height - side) / 2, side, side)
+		GL.glViewport(0,0,self.width(),self.height())
 	
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GL.glOrtho(-0.5, +0.5, +0.5, -0.5, 4.0, 15.0)
+		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
+		
+#		GL.glMatrixMode(GL.GL_PROJECTION)
+#		GL.glLoadIdentity()
+#		GL.glOrtho(-0.5, +0.5, +0.5, -0.5, 4.0, 15.0)
+#		GL.glMatrixMode(GL.GL_MODELVIEW)
 	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None and self.inspectorl==None and self.inspector3==None : return
@@ -188,7 +216,7 @@ class EMImage(QtOpenGL.QGLWidget):
 	
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
-			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]+self.mousedrag[1]-event.y())
+			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
 			self.update()
 		

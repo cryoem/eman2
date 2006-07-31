@@ -210,6 +210,7 @@ void HdfIO2::init()
 	else {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
 		if (file < 0) {
+			printf("File truncated\n");
 			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
 			if (file < 0) throw FileAccessException(filename);
 		}
@@ -251,6 +252,7 @@ int HdfIO2::init_test()
 	else {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
 		if (file < 0) {
+			printf("File truncated\n");
 			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
 			if (file < 0) return 0;
 		}
