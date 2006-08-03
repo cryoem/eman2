@@ -692,8 +692,8 @@ void EMData::rotate_translate(const Transform3D & xform)
 		mx.set_scale(inv_scale);
 
 #ifdef DEBUG
-		std::cout << v4[0] << " " << v4[1]<< " " << v4[2]<< " "
-			<< dcenter2[0]<< " "<< dcenter2[1]<< " "<< dcenter2[2] << std::endl;
+//		std::cout << v4[0] << " " << v4[1]<< " " << v4[2]<< " "
+//			<< dcenter2[0]<< " "<< dcenter2[1]<< " "<< dcenter2[2] << std::endl;
 #endif
 
 		int nxy = nx * ny;
