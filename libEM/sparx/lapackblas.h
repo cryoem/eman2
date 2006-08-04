@@ -21,7 +21,7 @@ typedef short ftnint;
 
 
 integer s_cmp(char *, char *, ftnlen, ftnlen);
-int s_copy(char *a, char *b, ftnlen la, ftnlen lb);
+void s_copy(char *a, char *b, ftnlen la, ftnlen lb);
 double pow_ri(real *ap, integer *bp);
 double r_sign(real *a, real *b);
 

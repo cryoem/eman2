@@ -262,7 +262,7 @@ integer ilaenv_(integer *ispec, char *name__, char *opts, integer *n1,
     /* System generated locals */
     integer ret_val;
     /* Builtin functions   
-       Subroutine */ int s_copy(char *, char *, ftnlen, ftnlen);
+       Subroutine */ void s_copy(char *, char *, ftnlen, ftnlen);
     integer s_cmp(char *, char *, ftnlen, ftnlen);
     /* Local variables */
     static integer i__;
@@ -1039,7 +1039,7 @@ return(0);
 #ifdef KR_headers
 VOID s_copy(a, b, la, lb) register char *a, *b; ftnlen la, lb;
 #else
-void s_copy(register char *a, register char *b, ftnlen la, ftnlen lb)
+void s_copy(char *a, char *b, ftnlen la, ftnlen lb)
 #endif
 {
 	register char *aend, *bend;
