@@ -55,17 +55,19 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 
 	int nx = this_img->get_xsize();
 	int ny = this_img->get_ysize();
-	int maxshift = params["maxshift"];
-
-	if (maxshift <= 0) {
-		maxshift = ny / 8;
+	int maxshiftx = params["maxshift"];
+	int maxshifty = params["maxshift"];
+	
+	if (maxshiftx <= 0) {
+		maxshiftx = nx / 8;
+		maxshifty = ny / 8;
 	}
-	if (maxshift > nx / 2 - 1) {
-		maxshift = nx / 2 - 1;
+	if (maxshiftx > nx / 2 - 1) {
+		maxshiftx = nx / 2 - 1;
 	}
 
-	if (maxshift > ny / 2 - 1) {
-		maxshift = ny / 2 - 1;
+	if (maxshifty > ny / 2 - 1) {
+		maxshifty = ny / 2 - 1;
 	}
 
 
@@ -85,8 +87,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	float max_value = -FLT_MAX;
 	float min_value = FLT_MAX;
 
-	for (int j = ny / 2 - maxshift; j < ny / 2 + maxshift; j++) {
-		for (int i = nx / 2 - maxshift; i < nx / 2 + maxshift; i++) {
+	for (int j = ny / 2 - maxshifty; j < ny / 2 + maxshifty; j++) {
+		for (int i = nx / 2 - maxshiftx; i < nx / 2 + maxshiftx; i++) {
 			int l = i + j * nx;
 
 			if (cf_data[l] * flag > max_value) {

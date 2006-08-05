@@ -1,3 +1,5 @@
+#!/bin/env python
+
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU
@@ -141,19 +143,21 @@ class EMImage(QtOpenGL.QGLWidget):
 						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 						GL.glRasterPos(x,y)
 						GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-					elif x+w>0 and y+h>0 :
-						a=self.data[i].render_amp8(-x,-y,x+w,y+w,(x+w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
-						if x<0 : xx=0
-						else : xx=x
-						if y<0 : yy=0
-						else : yy=y
-						GL.glRasterPos(xx,yy)
-						GL.glDrawPixels(x+w,y+h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+#					elif x+w>0 and y+h>0 and x<self.width() and y<self.height():
+#						a=self.data[i].render_amp8(int(-x),int(-y),int(x+w),int(y+w),int(x+w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+#						if x<0 : xx=0
+#						else : xx=x
+#						if y>=self.height() : yy=self.height()-1
+#						else : yy=y
+#						print "%d(%d,%d)"%(i,xx,yy)
+#						GL.glRasterPos(xx,yy)
+#						print xx,yy,x+w,h-(y-self.height()-1)
+#						GL.glDrawPixels(x+w,h-(y-self.height()-1),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 						
 					
 					if (i+1)%self.nperrow==0 : 
 						y-=h+4.0
-						x=self.origin[0]
+						x=-self.origin[0]
 					else: x+=w+4.0
 			else:
 				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
@@ -514,7 +518,7 @@ class EMImageInspector2D(QtGui.QWidget):
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMImage()
-	if len(sys.argv)==0 : window.setData(test_image(size=(512,512)))
+	if len(sys.argv)==1 : window.setData(test_image(size=(512,512)))
 	else :
 		a=EMData.read_images(sys.argv[1])
 		if len(a)==1 : window.setData(a[0])

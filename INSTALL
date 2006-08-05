@@ -62,6 +62,23 @@ libraries should be installed as shared-object libraries where applicable):
        Executables for several platforms are available; source code
        can also be used for custom installations.
 
+    5. PyQT4 - Involves several subpackages:
+	* Qt 4.1+
+	http://www.trolltech.com/developer/downloads/qt/x11
+
+	Suggest:
+	./configure -no-xrender 
+
+	* SIP
+	http://www.riverbankcomputing.co.uk/sip/download.php
+
+	* PyQt4
+	http://www.riverbankcomputing.co.uk/pyqt/download.php
+
+	* PyOpenGL
+	http://sourceforge.net/project/showfiles.php?group_id=5988
+
+
 
 
  2.  Optional Libraries / Programs

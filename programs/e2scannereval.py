@@ -60,7 +60,7 @@ background."""
 			cl.process_inplace("eman1.normalize.edgemean")
 			cl.process_inplace("eman1.math.realtofft")
 			cl.process_inplace("eman1.normalize.edgemean")
-			cl*=(float(sig)/float(cl.get_attr("sigma")))
+			cl*=(5.0*float(sig)/float(cl.get_attr("sigma")))
 			target.insert_clip(cl,(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,0))
 
 	target.write_image(args[0][:-3]+"eval.mrc")
