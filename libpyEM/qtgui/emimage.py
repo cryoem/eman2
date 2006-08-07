@@ -99,7 +99,10 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
+		if isinstance(self.data,list) :
+			yo=self.height()-self.origin[1]-1
+			self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
+		else : self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
 		self.scale=newscale
 		self.updateGL()
 		
@@ -143,22 +146,30 @@ class EMImage(QtOpenGL.QGLWidget):
 						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 						GL.glRasterPos(x,y)
 						GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-#					elif x+w>0 and y+h>0 and x<self.width() and y<self.height():
-#						a=self.data[i].render_amp8(int(-x),int(-y),int(x+w),int(y+w),int(x+w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
-#						if x<0 : xx=0
-#						else : xx=x
-#						if y>=self.height() : yy=self.height()-1
-#						else : yy=y
-#						print "%d(%d,%d)"%(i,xx,yy)
-#						GL.glRasterPos(xx,yy)
-#						print xx,yy,x+w,h-(y-self.height()-1)
-#						GL.glDrawPixels(x+w,h-(y-self.height()-1),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+					elif x+w>0 and y-h<self.height() and x<self.width() and y>0:
+						if x<0 : 
+							x0=-x/self.scale
+							x1=w+x
+						else : 
+							x0=0
+							x1=w
+						if y>self.height()-1 : y1=h-y+self.height()-1
+						else : y1=h
+						x0,x1,y1=int(x0),int(x1),int(y1)
+						a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+#						a=self.data[i].render_amp8(int(-x),int(y-self.height()),min(w,int(x+w)),int(h-y+self.height()),min(w-1,int(x+w-1))/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						if x<0 : xx=0
+						else : xx=x
+						if y>=self.height() : yy=self.height()-1
+						else : yy=y
+						GL.glRasterPos(xx,yy)
+						GL.glDrawPixels(x1,y1,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 						
 					
 					if (i+1)%self.nperrow==0 : 
-						y-=h+4.0
+						y-=h+2.0
 						x=-self.origin[0]
-					else: x+=w+4.0
+					else: x+=w+2.0
 			else:
 				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 				GL.glRasterPos(0,self.height()-1)
