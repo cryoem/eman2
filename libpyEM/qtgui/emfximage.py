@@ -10,7 +10,7 @@ from EMAN2 import *
 import sys
 import array
 
-class EMImage(QtOpenGL.QGLWidget):
+class EMFXImage(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
@@ -19,25 +19,11 @@ class EMImage(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		
-		light_ambient =  [0.0, 0.0, 0.0, 1.0]
-		light_diffuse =  [1.0, 1.0, 1.0, 1.0]
-		light_specular =  [1.0, 1.0, 1.0, 1.0]
-		light_position =  [2.,2.,100.]
 		
-		glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient)
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse)
-		glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular)
-		glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		
-		self.imtex=glGenTextures(1)				# 'name' of the image display texture
-#		print "tex=",self.imtex
-#		glBindTexture(GL_TEXTURE_2D,self.imtex)
-		glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,"\000"*(512*512))	# start with an empty texture
-#		glBindTexture(GL_TEXTURE_2D,0)
+		self.imtex=0
+		self.spinang=0.0
+		self.gq=0			# quadric object for cylinders, etc
+		self.framedl=0		# display list for an image frame
 		
 		self.data=None
 		self.datasize=(1,1)
@@ -153,7 +139,54 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 		if not self.data : return
 		
-		
+		# define the texture used to render the image on the screen
+		if not self.imtex :
+#			 glDeleteTextures([self.imtex])
+			self.imtex=glGenTextures(1)				# 'name' of the image display texture
+			print "tex=",self.imtex
+			glBindTexture(GL_TEXTURE_2D,self.imtex)
+			glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,"\000"*(512*512))	# start with an empty texture
+			glBindTexture(GL_TEXTURE_2D,0)
+
+		# get a new Quadric object for drawing cylinders, spheres, etc
+		if not self.gq:
+			self.gq=gluNewQuadric()
+			gluQuadricDrawStyle(self.gq,GLU_FILL)
+			gluQuadricNormals(self.gq,GLU_SMOOTH)
+			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+			gluQuadricTexture(self.gq,GL_FALSE)
+
+		# define a square frame of rounded components bordering -1,-1 to 1,1
+		if not self.framedl :
+			self.framedl=glGenLists(1)
+			glNewList(self.framedl,GL_COMPILE)
+			glPushMatrix()
+			glRotate(90.,1.,0.,0.)
+			glTranslate(1.02,0.,-1.02)
+			gluCylinder(self.gq,.02,.02,2.04,12,2)
+			glTranslate(-2.04,0.,0.)
+			gluCylinder(self.gq,.02,.02,2.04,12,2)
+			glPopMatrix()
+			
+			glPushMatrix()
+			glRotate(90.,0.,1.,0.)
+			glTranslate(0.,1.02,-1.02)
+			gluCylinder(self.gq,.02,.02,2.04,12,2)
+			glTranslate(0.,-2.04,0.)
+			gluCylinder(self.gq,.02,.02,2.04,12,2)
+			glPopMatrix()
+			
+			glTranslate(1.02,1.02,0.)
+			gluSphere(self.gq,.02,6,6)
+			glTranslate(-2.04,0.,0.)
+			gluSphere(self.gq,.02,6,6)
+			glTranslate(0.,-2.04,0.)
+			gluSphere(self.gq,.02,6,6)
+			glTranslate(2.04,0.,0.)
+			gluSphere(self.gq,.02,6,6)
+			glPopMatrix()
+			glEndList()
+
 		if isinstance(self.data,list) :
 			if self.nshow==-1 :
 				glPixelZoom(1.0,-1.0)
@@ -203,54 +236,58 @@ class EMImage(QtOpenGL.QGLWidget):
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),512,512,512,self.scale,0,255,self.minden,self.maxden,2)
 
 			glEnable(GL_TEXTURE_2D)
+			glBindTexture(GL_TEXTURE_2D,self.imtex)
+#			glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)	# start with an empty texture
+			glTexSubImage2D(GL_TEXTURE_2D,0,0,0,512,512,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+			
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 			glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_REPLACE)
-#			glBindTexture(GL_TEXTURE_2D,self.imtex)
-			glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)	# start with an empty texture
-#			glTexSubImage2D(GL_TEXTURE_2D,0,0,0,512,512,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
+
+			# This is the textured square showing the actual image
+			glPushMatrix()
+			glRotate(self.spinang,1.,.2,0.)
 			glBegin(GL_QUADS)
-			GlTexCoord(0.,0.)
+			glTexCoord(0.,.999)
 			glVertex(-1.,-1.)
-			glTexCoord(1.,0.)
+			glTexCoord(.999,.999)
 			glVertex( 1.,-1.)
-			glTexCoord(1.,1.)
+			glTexCoord(.999,0.)
 			glVertex( 1., 1.)
-			glTexCoord(0.,1.)
+			glTexCoord(0.,0.)
 			glVertex(-1., 1.)
 			glEnd()
-#			glRectf(-1.0,-1.0,1.0,1.0)
-#			glBindTexture(GL_TEXTURE_2D,0)
-
-
-#			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
-# 			glRasterPos(0,self.height()-1)
-# 			glPixelZoom(1.0,-1.0)
-# 			glDrawPixels(self.width(),self.height(),GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
-# 			hist=array.array("I")
-# 			hist.fromstring(a[-1024:])
-# 			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+			glBindTexture(GL_TEXTURE_2D,0)
+			
+			glDisable(GL_TEXTURE_2D)
 			
 			
-# 			glPushMatrix()
-# 			glColor(1.0,0.0,0.0)
-# 			glTranslate(0,0,-1.)
-# 			glRectf(-1.0,-1.0,-0.3,1.0)
-# 			glPopMatrix()
-# 	
-# 			glPushMatrix()
-# 			glColor(0.0,1.0,0.0)
-# #			glTranslate(0,0,-7.)
-# 			glRectf(-0.3,-1.0,0.3,1.0)
-# 			glPopMatrix()
-# 	
-# 			glPushMatrix()
-# 			glColor(0.0,0.0,1.0)
-# 			glTranslate(0,0,1.)
-# 			glRectf(0.3,-1.0,1.0,1.0)
-# 			glPopMatrix()
-	
-
+			glColor(.2,.2,.8)
+			glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
+			glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
+			glMaterial(GL_FRONT,GL_SHININESS,50.0)
+			
+			glPushMatrix()
+			glCallList(self.framedl)
+			glPopMatrix()
+				
+	def timer(self):
+		self.spinang+=0.5
+		self.updateGL()
 	
 	def resizeGL(self, width, height):
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.1,1.,0.])
+	
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+
+
 		side = min(width, height)
 #		glViewport((width - side) / 2, (height - side) / 2, side, side)
 		glViewport(0,0,self.width(),self.height())
@@ -258,8 +295,11 @@ class EMImage(QtOpenGL.QGLWidget):
 		glLoadIdentity()
 		glFrustum(-1.*width/height,1.*width/height, -1.,1., 5.,15.)
 		glTranslatef(0.,0.,-10.0)
+		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+
+
 	
 # 		glMatrixMode(GL_PROJECTION)
 # 		glLoadIdentity()
@@ -594,13 +634,19 @@ class EMImageInspector2D(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage()
+	window = EMFXImage()
 	if len(sys.argv)==1 : window.setData(test_image(size=(512,512)))
 	else :
 		a=EMData.read_images(sys.argv[1])
 		if len(a)==1 : window.setData(a[0])
 		else : window.setData(a)
 	window.show()
+	
+	ti=QtCore.QTimer()
+	ti.setInterval(50.)
+	QtCore.QObject.connect(ti, QtCore.SIGNAL("timeout()"), window.timer)
+	ti.start()
+
 	
 #	w2=QtGui.QWidget()
 #	w2.resize(256,128)
