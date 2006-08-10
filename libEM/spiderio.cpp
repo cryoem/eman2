@@ -390,41 +390,18 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 		hp->type = IMAGE_3D;
 	}
 
-/** complex image file not supported in EMAN2 
- * 
-	if (1 == int(dict["is_complex"])) {
-		if (1 == int(dict["is_fftodd"])) {
-			if (1 == nz) {
-				hp->type = IMAGE_2D_FFT_ODD;
-			} else {
-				hp->type = IMAGE_3D_FFT_ODD;
-			}
-		} else {
-			if (1 == nz) {
-				hp->type = IMAGE_2D_FFT_EVEN;
-			} else {
-				hp->type = IMAGE_3D_FFT_EVEN;
-			}
-		}
-	} else {
-		if (nz == 1) {
-			hp->type = IMAGE_2D;
-		}
-		else {
-			hp->type = IMAGE_3D;
-		}
-	}
-*/
+// complex image file not supported in EMAN2 
 
 	hp->reclen = (float)record_size;
 	hp->headrec = (float)num_records;
 	hp->headlen = (float)header_length;
 	
-	if(ISTACK != SINGLE_IMAGE_HEADER) {
-		hp->maxim = (float)MAXIM;
-		hp->imgnum = (float)IMGNUM;
+	if(ISTACK == OVERALL_STACK_HEADER) {
+		hp->maxim = (float)MAXIM;		
 	}
 	
+	hp->imgnum = (float)IMGNUM;
+		
 	time_t tod;
  	time(&tod);
  	struct tm * ttt = localtime(&tod);

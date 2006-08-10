@@ -175,7 +175,7 @@ namespace EMAN
 		 * @param hp the SpiderHeader pointer all header info will write to, then the content of hp will write to spider file
 		 * @param ISTACK the istack field for SPIDER's header, 0 for dingle image, 2 for stacked image
 		 * @param MAXIM maxim field for header, only used for overall header
-		 * @param IMGNUM imgnum for header, only used for sacked image header
+		 * @param IMGNUM imgnum for header, only used for stacked image header
 		 * @exception ImageWriteException
 		 * @return 0 for sucess
 		 * */
