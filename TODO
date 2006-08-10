@@ -320,7 +320,7 @@
 	   endian can be returned.
 	   
   1/8/05 080. 
-       Spider writing seems doesn't work. Need to fix it.
+       Spider writing seems doesn't work. Need to fix it. Fixed(Grant Tang).
 
   1/8/05 081.
        rename multi_array_ref<float, 3> to better name like MultiArray3D.
