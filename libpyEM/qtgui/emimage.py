@@ -307,62 +307,62 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
-		self.vboxlayout = QtGui.QVBoxLayout(self)
-		self.vboxlayout.setMargin(0)
-		self.vboxlayout.setSpacing(6)
-		self.vboxlayout.setObjectName("vboxlayout")
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vboxlayout")
 		
 		self.hist = ImgHistogram(self)
 		self.hist.setObjectName("hist")
-		self.vboxlayout.addWidget(self.hist)
+		self.vbl.addWidget(self.hist)
 		
-		self.hboxlayout = QtGui.QHBoxLayout()
-		self.hboxlayout.setMargin(0)
-		self.hboxlayout.setSpacing(6)
-		self.hboxlayout.setObjectName("hboxlayout")
-		self.vboxlayout.addLayout(self.hboxlayout)
+		self.hbl = QtGui.QHBoxLayout()
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hboxlayout")
+		self.vbl.addLayout(self.hbl)
 		
 		self.lbl = QtGui.QLabel("#/row:")
 		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-		self.hboxlayout.addWidget(self.lbl)
+		self.hbl.addWidget(self.lbl)
 		
 		self.nrow = QtGui.QSpinBox(self)
 		self.nrow.setObjectName("nrow")
 		self.nrow.setRange(1,50)
 		self.nrow.setValue(6)
-		self.hboxlayout.addWidget(self.nrow)
+		self.hbl.addWidget(self.nrow)
 		
 		self.lbl = QtGui.QLabel("N:")
 		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
-		self.hboxlayout.addWidget(self.lbl)
+		self.hbl.addWidget(self.lbl)
 		
 		self.imgn = QtGui.QSpinBox(self)
 		self.imgn.setObjectName("imgn")
 		self.imgn.setRange(-1,50)
 		self.imgn.setValue(0)
 		self.imgn.setSpecialValueText("All")
-		self.hboxlayout.addWidget(self.imgn)
+		self.hbl.addWidget(self.imgn)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
-		self.vboxlayout.addWidget(self.scale)
+		self.vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")
 		self.mins.setObjectName("mins")
-		self.vboxlayout.addWidget(self.mins)
+		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
-		self.vboxlayout.addWidget(self.maxs)
+		self.vbl.addWidget(self.maxs)
 		
 		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
 		self.brts.setObjectName("brts")
-		self.vboxlayout.addWidget(self.brts)
+		self.vbl.addWidget(self.brts)
 		
 		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
 		self.conts.setObjectName("conts")
-		self.vboxlayout.addWidget(self.conts)
+		self.vbl.addWidget(self.conts)
 		
 		self.lowlim=0
 		self.highlim=1.0
@@ -434,35 +434,55 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
-		self.vboxlayout = QtGui.QVBoxLayout(self)
-		self.vboxlayout.setMargin(0)
-		self.vboxlayout.setSpacing(6)
-		self.vboxlayout.setObjectName("vboxlayout")
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.hbl = QtGui.QHBoxLayout()
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hbl")
+		self.vbl.addLayout(self.hbl)
 		
 		self.hist = ImgHistogram(self)
 		self.hist.setObjectName("hist")
-		self.vboxlayout.addWidget(self.hist)
+		self.hbl.addWidget(self.hist)
 		
+		self.vbl2 = QtGui.QVBoxLayout(self)
+		self.vbl2.setMargin(0)
+		self.vbl2.setSpacing(6)
+		self.vbl2.setObjectName("vbl2")
+		self.hbl.addLayout(self.vbl2)
+		
+		self.invtog = QtGui.QPushButton("Invert")
+		self.invtog.setCheckable(1)
+		self.vbl2.addWidget(self.invtog)
+		
+		self.ffttog = QtGui.QPushButton("FFT")
+		self.ffttog.setCheckable(1)
+		self.vbl2.addWidget(self.ffttog)
+
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
-		self.vboxlayout.addWidget(self.scale)
+		self.vbl.addWidget(self.scale)
 		
 		self.mins = ValSlider(self,label="Min:")
 		self.mins.setObjectName("mins")
-		self.vboxlayout.addWidget(self.mins)
+		self.vbl.addWidget(self.mins)
 		
 		self.maxs = ValSlider(self,label="Max:")
 		self.maxs.setObjectName("maxs")
-		self.vboxlayout.addWidget(self.maxs)
+		self.vbl.addWidget(self.maxs)
 		
 		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
 		self.brts.setObjectName("brts")
-		self.vboxlayout.addWidget(self.brts)
+		self.vbl.addWidget(self.brts)
 		
 		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
 		self.conts.setObjectName("conts")
-		self.vboxlayout.addWidget(self.conts)
+		self.vbl.addWidget(self.conts)
 		
 		self.lowlim=0
 		self.highlim=1.0

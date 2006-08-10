@@ -1,4 +1,7 @@
 #!/bin/env python
+# EMFXImage.py  Steve Ludtke  08/06/2006
+# An experimental version of emimage.py that displays an image in a 3D context
+# using texture mapping. Not a fully fleshed out class at this point
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -22,6 +25,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		
 		self.imtex=0
 		self.spinang=0.0
+		self.insang=0.0
 		self.gq=0			# quadric object for cylinders, etc
 		self.framedl=0		# display list for an image frame
 		
@@ -143,7 +147,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		if not self.imtex :
 #			 glDeleteTextures([self.imtex])
 			self.imtex=glGenTextures(1)				# 'name' of the image display texture
-			print "tex=",self.imtex
+#			print "tex=",self.imtex
 			glBindTexture(GL_TEXTURE_2D,self.imtex)
 			glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE8,512,512,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,"\000"*(512*512))	# start with an empty texture
 			glBindTexture(GL_TEXTURE_2D,0)
@@ -184,7 +188,6 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			gluSphere(self.gq,.02,6,6)
 			glTranslate(2.04,0.,0.)
 			gluSphere(self.gq,.02,6,6)
-			glPopMatrix()
 			glEndList()
 
 		if isinstance(self.data,list) :
@@ -234,6 +237,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				if self.inspectorl : self.inspectorl.setHist(hist,self.minden,self.maxden)
 		else :
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),512,512,512,self.scale,0,255,self.minden,self.maxden,2)
+			hist=array.array("I")
+			hist.fromstring(a[-1024:])
+			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 
 			glEnable(GL_TEXTURE_2D)
 			glBindTexture(GL_TEXTURE_2D,self.imtex)
@@ -259,6 +265,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			glTexCoord(0.,0.)
 			glVertex(-1., 1.)
 			glEnd()
+			
+
+			
 			glBindTexture(GL_TEXTURE_2D,0)
 			
 			glDisable(GL_TEXTURE_2D)
@@ -272,9 +281,75 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			glPushMatrix()
 			glCallList(self.framedl)
 			glPopMatrix()
+			glPopMatrix()
 				
+			if self.inspector:
+				glPushMatrix()
+				glRotate(self.insang,0.1,1.0,0.0)
+				self.itex=self.bindTexture(QtGui.QPixmap.grabWidget(self.inspector))
+				glEnable(GL_TEXTURE_2D)
+				glBindTexture(GL_TEXTURE_2D,self.itex)
+# 				print glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH),glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_HEIGHT)
+				glBegin(GL_QUADS)
+				glTexCoord(0.,0.)
+				glVertex(-3.5,-1.)
+				glTexCoord(.999,0.)
+				glVertex( -1.5,-1.)
+				glTexCoord(.999,0.999)
+				glVertex( -1.5, 1.)
+				glTexCoord(0.,.999)
+				glVertex(-3.5, 1.)
+				glEnd()
+				self.deleteTexture(self.itex)
+				
+				wmodel=glGetDoublev(GL_MODELVIEW_MATRIX)
+				wproj=glGetDoublev(GL_PROJECTION_MATRIX)
+				wview=glGetIntegerv(GL_VIEWPORT)
+
+				self.mc00=gluProject(-3.5,-1.0,0.0,wmodel,wproj,wview)
+				self.mc10=gluProject(-1.5,-1.0,0.0,wmodel,wproj,wview)
+				self.mc11=gluProject(-1.5, 1.0,0.0,wmodel,wproj,wview)
+				self.mc01=gluProject(-3.5, 1.0,0.0,wmodel,wproj,wview)
+				glPopMatrix()
+
+				print "-3.5,-1.0", self.mouseinwin(self.mc00[0],self.mc00[1])
+				print "mid", self.mouseinwin((self.mc00[0]+self.mc11[0])/2,(self.mc00[1]+self.mc11[1])/2)
+
+	def mouseinwin(self,x,y):
+		x00=self.mc00[0]
+		x01=self.mc01[0]-x00
+		x10=self.mc10[0]-x00
+		x11=self.mc11[0]-x00
+		y00=self.mc00[1]
+		y01=self.mc01[1]-y00
+		y10=self.mc10[1]-y00
+		y11=self.mc11[1]-y00
+		x-=x00
+		y-=y00
+		
+# 		print "%f,%f  %f,%f  %f,%f  %f,%f"%(x00,y00,x01,y01,x11,y11,x10,y10)
+		
+		try: xx=(x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
+		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
+		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
+		except: xx=x/x10
+			
+		try: yy=(x01*y + x10*y - x11*y - x*y01 + x10*y01 - x*y10 - x01*y10 +
+		x*y11 - sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
+		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*(x10*y01 - x11*y01 + x01*(-y10 + y11)))
+		except: yy=y/y01
+			
+		return (xx,yy)
+		
+		
+# 		return (x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
+# 		x*y11 + sqrt(pow(x11*y + x*y01 - x10*(y + y01) + x*y10 + x01*(-y + y10) - x*y11,2) -
+# 		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*((x01 - x11)*y10 + x10*(-y01 + y11)))
+
+
 	def timer(self):
 		self.spinang+=0.5
+		self.insang+=0.2
 		self.updateGL()
 	
 	def resizeGL(self, width, height):
@@ -319,13 +394,14 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			if self.inspector3 : self.inspector3.hide()
 			if not self.inspectorl : self.inspectorl=EMImageMxInspector2D(self)
 			self.inspectorl.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
-			self.inspectorl.show()
+#			self.inspectorl.show()
 		elif self.data.get_zsize()==1 :
 			if self.inspectorl : self.inspectorl.hide()
 			if self.inspector3 : self.inspector3.hide()
 			if not self.inspector : self.inspector=EMImageInspector2D(self)
 			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
+#			self.inspector.hide()
 		else:
 			pass	# 3d not done yet
 	
