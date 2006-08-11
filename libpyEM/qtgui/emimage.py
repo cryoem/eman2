@@ -23,6 +23,8 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.scale=1.0
 		self.minden=0
 		self.maxden=1.0
+		self.invert=0
+		self.fft=None
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.origin=(0,0)
@@ -121,6 +123,18 @@ class EMImage(QtOpenGL.QGLWidget):
 	def setNShow(self,val):
 		self.nshow=val
 		self.updateGL()
+
+	def setInvert(self,val):
+		if val: self.invert=1
+		else : self.invert=0
+		self.updateGL()
+		
+	def setFFT(self,val):
+		if val:
+			try: self.fft=self.data.do_fft()
+			except: self.fft=None
+		else: self.fft=None
+		self.updateGL
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
