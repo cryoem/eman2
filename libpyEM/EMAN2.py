@@ -73,6 +73,9 @@ def test_image(type=0,size=(128,128)):
 	"""Returns a simple standard test image
 	type=0  scurve
 	type=1	gaussian noise, 0 mean, sigma 1
+	type=2  square
+	type=3  hollow square
+	type=4  circular sinewave
 	size=(128,128) """
 	ret=EMData()
 	ret.set_size(*size)
@@ -80,6 +83,12 @@ def test_image(type=0,size=(128,128)):
 		ret.process_inplace("testimage.scurve")
 	elif type==1 :
 		ret.process_inplace("testimage.noise.gauss")
+	elif type==2:
+		ret.process_inplace("testimage.squarecube")
+	elif type==3:
+		ret.process_inplace("testimage.squarecube",{"fill":1})
+	elif type==4:
+		ret.process_inplace("testimage.sinewave.circular")
 	
 	return ret
 

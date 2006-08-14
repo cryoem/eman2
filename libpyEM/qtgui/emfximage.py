@@ -285,7 +285,9 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				
 			if self.inspector:
 				glPushMatrix()
+				glTranslate(-2.5,0,0)
 				glRotate(self.insang,0.1,1.0,0.0)
+				glTranslate(2.5,0,0)
 				self.itex=self.bindTexture(QtGui.QPixmap.grabWidget(self.inspector))
 				glEnable(GL_TEXTURE_2D)
 				glBindTexture(GL_TEXTURE_2D,self.itex)
@@ -312,8 +314,8 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				self.mc01=gluProject(-3.5, 1.0,0.0,wmodel,wproj,wview)
 				glPopMatrix()
 
-				print "-3.5,-1.0", self.mouseinwin(self.mc00[0],self.mc00[1])
-				print "mid", self.mouseinwin((self.mc00[0]+self.mc11[0])/2,(self.mc00[1]+self.mc11[1])/2)
+#				print "-3.5,-1.0", self.mouseinwin(self.mc00[0],self.mc00[1])
+#				print "mid", self.mouseinwin((self.mc00[0]+self.mc11[0])/2,(self.mc00[1]+self.mc11[1])/2)
 
 	def mouseinwin(self,x,y):
 		x00=self.mc00[0]
@@ -339,7 +341,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 		4*(x10*y - x*y10)*(x10*y01 - x11*y01 + x01*(-y10 + y11))))/(2.*(x10*y01 - x11*y01 + x01*(-y10 + y11)))
 		except: yy=y/y01
 			
-		return (xx,yy)
+		return (xx*self.inspector.width(),yy*self.inspector.height())
 		
 		
 # 		return (x01*y + x10*y - x11*y - x*y01 - x10*y01 - x*y10 + x01*y10 +
@@ -410,16 +412,50 @@ class EMFXImage(QtOpenGL.QGLWidget):
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
 			self.mousedrag=(event.x(),event.y())
+		elif event.button()==Qt.LeftButton:
+#			self.mousedrag=(event.x(),event.y())
+			app=QtGui.QApplication.instance()
+			if self.inspector :
+				l=self.mouseinwin(event.x(),event.y())
+				cw=self.inspector.childAt(l[0],l[1])
+				gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+				qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+#				self.inspector.mousePressEvent(qme)
+				cw.mousePressEvent(qme)
+#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
+				print qme.x(),qme.y(),l,gp.x(),gp.y()
 	
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
 			self.update()
+		elif event.buttons()==Qt.LeftButton:
+#			self.mousedrag=(event.x(),event.y())
+			if self.inspector :
+				l=self.mouseinwin(event.x(),event.y())
+				cw=self.inspector.childAt(l[0],l[1])
+				gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+				qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+#				self.inspector.mousePressEvent(qme)
+				cw.mouseMoveEvent(qme)
+#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
+				print qme.x(),qme.y(),l,gp.x(),gp.y()
 		
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.RightButton:
 			self.mousedrag=None
+		elif event.button()==Qt.LeftButton:
+#			self.mousedrag=(event.x(),event.y())
+			if self.inspector :
+				l=self.mouseinwin(event.x(),event.y())
+				cw=self.inspector.childAt(l[0],l[1])
+				gp=self.inspector.mapToGlobal(QtCore.QPoint(l[0],l[1]))
+				qme=QtGui.QMouseEvent(event.Type(),QtCore.QPoint(l[0]-cw.x(),l[1]-cw.y()),gp,event.button(),event.buttons(),event.modifiers())
+#				self.inspector.mousePressEvent(qme)
+				cw.mouseReleaseEvent(qme)
+#				print app.sendEvent(self.inspector.childAt(l[0],l[1]),qme)
+				print qme.x(),qme.y(),l,gp.x(),gp.y()
 
 class ImgHistogram(QtGui.QWidget):
 	def __init__(self,parent):
@@ -706,6 +742,11 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.maxs.setRange(lowlim,highlim)
 		self.mins.setValue(curmin)
 		self.maxs.setValue(curmax)
+		
+# 	def mousePressEvent(self, event):
+# 		print str(event.__dict__)
+# 		QtGui.QWidget.mousePressEvent(self,event)
+		
 
 # This is just for testing, of course
 if __name__ == '__main__':

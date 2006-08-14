@@ -7,7 +7,7 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 import sys
-import array
+import Numeric
 
 class EMImage(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -28,8 +28,8 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.mindeng=0
 		self.maxdeng=1.0
 		self.origin=(0,0)
-		self.nperrow=6
-		self.nshow=0
+		self.nperrow=8
+		self.nshow=-1
 		self.mousedrag=None
 		
 		self.inspector=None
@@ -76,6 +76,9 @@ class EMImage(QtOpenGL.QGLWidget):
 			self.maxdeng=min(m1,mean+5.0*sigma)
 
 			self.datasize=(data.get_xsize(),data.get_ysize())
+		
+			if self.fft : 
+				self.setFFT(1)
 		# if we have a single 3D image
 		elif data.get_zsize()>1 :
 			pass
@@ -131,10 +134,29 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 	def setFFT(self,val):
 		if val:
-			try: self.fft=self.data.do_fft()
-			except: self.fft=None
+			try: 
+				self.fft=self.data.do_fft()
+				self.fft.set_value_at(0,0,0,0)
+				self.fft.set_value_at(1,0,0,0)
+				self.fft.process_inplace("eman1.xform.fourierorigin",{})
+				self.fft=self.fft.get_fft_amplitude()
+			
+				mean=self.fft.get_attr("mean")
+				sigma=self.fft.get_attr("sigma")
+				m0=self.fft.get_attr("minimum")
+				m1=self.fft.get_attr("maximum")
+			
+				self.fminden=0
+				self.fmaxden=min(m1,mean+5.0*sigma)
+				self.fmindeng=0
+				self.fmaxdeng=min(m1,mean+8.0*sigma)
+				
+				self.showInspector()
+			except: 
+				self.fft=None
 		else: self.fft=None
-		self.updateGL
+		self.showInspector()
+		self.updateGL()
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -146,20 +168,25 @@ class EMImage(QtOpenGL.QGLWidget):
 		
 		if not self.data : return
 		
+		if not self.invert : pixden=(0,255)
+		else: pixden=(255,0)
 		
 		if isinstance(self.data,list) :
 			if self.nshow==-1 :
 				GL.glPixelZoom(1.0,-1.0)
 				n=len(self.data)
 				x,y=-self.origin[0],self.height()-self.origin[1]-1
+				hist=Numeric.zeros(256)
 				for i in range(n):
 					w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 					h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
 #					print i,x,y,w,h
 					if x>0 and x<self.width() and y>0 and y<self.height() :
-						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
 						GL.glRasterPos(x,y)
 						GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+						hist2=Numeric.fromstring(a[-1024:],'i')
+						hist+=hist2
 					elif x+w>0 and y-h<self.height() and x<self.width() and y>0:
 						if x<0 : 
 							x0=-x/self.scale
@@ -170,7 +197,7 @@ class EMImage(QtOpenGL.QGLWidget):
 						if y>self.height()-1 : y1=h-y+self.height()-1
 						else : y1=h
 						x0,x1,y1=int(x0),int(x1),int(y1)
-						a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
 #						a=self.data[i].render_amp8(int(-x),int(y-self.height()),min(w,int(x+w)),int(h-y+self.height()),min(w-1,int(x+w-1))/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 						if x<0 : xx=0
 						else : xx=x
@@ -178,30 +205,32 @@ class EMImage(QtOpenGL.QGLWidget):
 						else : yy=y
 						GL.glRasterPos(xx,yy)
 						GL.glDrawPixels(x1,y1,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+						hist2=Numeric.fromstring(a[-1024:],'i')
+						hist+=hist2
 						
 					
 					if (i+1)%self.nperrow==0 : 
 						y-=h+2.0
 						x=-self.origin[0]
 					else: x+=w+2.0
+				if self.inspectorl : self.inspectorl.setHist(hist,self.minden,self.maxden)
 			else:
-				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 				GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-				hist=array.array("I")
-				hist.fromstring(a[-1024:])
+				hist=Numeric.fromstring(a[-1024:],'i')
 				if self.inspectorl : self.inspectorl.setHist(hist,self.minden,self.maxden)
 		else :
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+			if self.fft : a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
+			else : a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
 #			a=self.data.render_amp8(self.origin[0],self.origin[1],self.width(),self.height(),(self.width()-1)/4*4+4,1.0,1,254,self.minden,self.maxden,0)
 			GL.glRasterPos(0,self.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 #			print "X ",GL.glGetFloatv(GL.GL_CURRENT_RASTER_POSITION),GL.glGetBooleanv(GL.GL_CURRENT_RASTER_POSITION_VALID)
 #			print self.width(),self.height(),len(a)
-			hist=array.array("I")
-			hist.fromstring(a[-1024:])
+			hist=Numeric.fromstring(a[-1024:],'i')
 			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 	
 	def resizeGL(self, width, height):
@@ -232,7 +261,8 @@ class EMImage(QtOpenGL.QGLWidget):
 			if self.inspectorl : self.inspectorl.hide()
 			if self.inspector3 : self.inspector3.hide()
 			if not self.inspector : self.inspector=EMImageInspector2D(self)
-			self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+			if self.fft : self.inspector.setLimits(self.fmindeng,self.fmaxdeng,self.fminden,self.fmaxden)
+			else : self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 			self.inspector.show()
 		else:
 			pass	# 3d not done yet
@@ -258,7 +288,7 @@ class ImgHistogram(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,parent)
 		self.brush=QtGui.QBrush(Qt.black)
 		
-		self.font=QtGui.QFont("Helvetica", 10);
+		self.font=QtGui.QFont("Helvetica", 12);
 		self.probe=None
 		self.histdata=None
 		self.setMinimumSize(QtCore.QSize(258,128))
@@ -281,6 +311,8 @@ class ImgHistogram(QtGui.QWidget):
 		if not self.histdata : return
 		p=QtGui.QPainter()
 		p.begin(self)
+		p.setBackground(QtGui.QColor(16,16,16))
+		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
 			p.drawLine(i,127,i,127-j*126/self.norm)
@@ -289,13 +321,13 @@ class ImgHistogram(QtGui.QWidget):
 		if self.probe :
 			p.setPen(Qt.blue)
 			p.drawLine(self.probe[0]+1,0,self.probe[0]+1,127-self.probe[1]*126/self.norm)
-			p.setPen(Qt.darkRed)
+			p.setPen(Qt.red)
 			p.drawLine(self.probe[0]+1,127,self.probe[0]+1,127-self.probe[1]*126/self.norm)
 			p.setFont(self.font)
 			p.drawText(200,20,"x=%d"%(self.probe[0]))
-			p.drawText(200,34,"%1.2f"%(self.probe[0]/255.0*(self.maxden-self.minden)+self.minden))
-			p.drawText(200,48,"y=%d"%(self.probe[1]))
-			p.drawText(200,62,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
+			p.drawText(200,36,"%1.2f"%(self.probe[0]/255.0*(self.maxden-self.minden)+self.minden))
+			p.drawText(200,52,"y=%d"%(self.probe[1]))
+			p.drawText(200,68,"%1.2f%%"%(100.0*float(self.probe[1])/self.total))
 		
 		p.setPen(Qt.black)
 		p.drawRect(0,0,257,128)
@@ -329,7 +361,31 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.hist = ImgHistogram(self)
 		self.hist.setObjectName("hist")
 		self.vbl.addWidget(self.hist)
+
+		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2.setMargin(0)
+		self.hbl2.setSpacing(6)
+		self.hbl2.setObjectName("hboxlayout")
+		self.vbl.addLayout(self.hbl2)
 		
+		self.mmeas = QtGui.QPushButton("App")
+		self.mmeas.setCheckable(1)
+		self.hbl2.addWidget(self.mmeas)
+
+		self.mdel = QtGui.QPushButton("Del")
+		self.mdel.setCheckable(1)
+		self.hbl2.addWidget(self.mdel)
+
+		self.mmove = QtGui.QPushButton("Move")
+		self.mmove.setCheckable(1)
+		self.hbl2.addWidget(self.mmove)
+
+		self.bg=QtGui.QButtonGroup()
+		self.bg.setExclusive(1)
+		self.bg.addButton(self.mmeas)
+		self.bg.addButton(self.mdel)
+		self.bg.addButton(self.mmove)
+
 		self.hbl = QtGui.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
@@ -343,7 +399,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.nrow = QtGui.QSpinBox(self)
 		self.nrow.setObjectName("nrow")
 		self.nrow.setRange(1,50)
-		self.nrow.setValue(6)
+		self.nrow.setValue(8)
 		self.hbl.addWidget(self.nrow)
 		
 		self.lbl = QtGui.QLabel("N:")
@@ -353,7 +409,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.imgn = QtGui.QSpinBox(self)
 		self.imgn.setObjectName("imgn")
 		self.imgn.setRange(-1,50)
-		self.imgn.setValue(0)
+		self.imgn.setValue(-1)
 		self.imgn.setSpecialValueText("All")
 		self.hbl.addWidget(self.imgn)
 		
@@ -507,6 +563,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
+		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
+		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
 
 	def newMin(self,val):
 		if self.busy : return
