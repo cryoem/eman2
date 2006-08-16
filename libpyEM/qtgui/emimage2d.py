@@ -2,7 +2,7 @@
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU
+from OpenGL import GL,GLU,GLUT
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -18,6 +18,18 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		
+# 		try: 
+# 			if EMImage2D.gq : pass
+# 		except:
+# 			EMImage2D.gq=GLU.gluNewQuadric()
+# 			GLU.gluQuadricDrawStyle(EMImage2D.gq,GLU.GLU_FILL)
+# 			GLU.gluQuadricNormals(EMImage2D.gq,GLU.GLU_SMOOTH)
+# 			GLU.gluQuadricNormals(EMImage2D.gq,GLU.GLU_NONE)
+# 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_OUTSIDE)
+# 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_INSIDE)
+# 			GLU.gluQuadricTexture(EMImage2D.gq,GL.GL_FALSE)
+
 		
 		self.data=None
 		self.datasize=(1,1)
@@ -169,6 +181,14 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		
 	def setupShapes(self):
+		# make our own cirle rather than use gluDisk or somesuch
+		GL.glNewList(2,GL.GL_COMPILE)
+		GL.glBegin(GL.GL_LINE_LOOP)
+		d2r=pi/180.0
+		for i in range(90): GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
+		GL.glEnd()
+		GL.glEndList()
+		
 		GL.glNewList(1,GL.GL_COMPILE)
 		GL.glPushMatrix()
 		for k,s in self.shapes.items():
@@ -192,9 +212,23 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				GL.glEnd()
 				GL.glPopMatrix()
 			elif s[0]=="label":
-				pass
-			elif s[0]=="ellipse":
-				pass
+				GL.glPushMatrix()
+				GL.glColor(s[1],s[2],s[3])
+				GL.glTranslate(s[4],s[5],0)
+				GL.glScale(s[7]/100.0,s[7]/100.0,s[7]/100.0)
+				GL.glLineWidth(s[8])
+				for i in s[6]:
+					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
+				GL.glPopMatrix()
+			elif s[0]=="circle":
+				GL.glPushMatrix()
+				GL.glColor(s[1],s[2],s[3])
+				GL.glLineWidth(s[7])
+				GL.glTranslate(s[4],s[5],0)
+				GL.glScale(s[6],s[6],s[6])
+				GL.glCallList(2)
+				GL.glPopMatrix()
+
 			
 		GL.glPopMatrix()
 		GL.glEndList()
@@ -215,10 +249,11 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		keyed into a dictionary, so different types of shapes for different
 		purposes may be simultaneously displayed.
 		
-		"rect",R,G,B,x0,y0,x1,y1,linew
-		"line",R,G,B,x0,y0,x1,y1,linew
-		"label",R,G,B,x0,y0,text,linew
-		"circle",R,G,B,x0,y0,r,linew
+		0         1  2  3  4  5     6     7     8
+		"rect"    R  G  B  x0 y0    x1    y1    linew
+		"line"    R  G  B  x0 y0    x1    y1    linew
+		"label"   R  G  B  x0 y0    text  size	linew
+		"circle"  R  G  B  x0 y0    r     linew
 		"""
 		self.shapes[k]=s
 		self.shapechange=1
@@ -398,7 +433,12 @@ if __name__ == '__main__':
 	window = EMImage2D()
 	if len(sys.argv)==1 : 
 		window.setData(test_image(size=(512,512)))
-		window.addShape("A",["rect",.2,.8,.2,20,20,80,80,2])
+
+		# these lines are for testing shape rendering
+# 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
+# 		window.addShape("b",["circle",.5,.8,.2,120,50,30.0,2])
+# 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
+# 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
 		a=EMData.read_images(sys.argv[1],[0])
 		window.setData(a[0])
