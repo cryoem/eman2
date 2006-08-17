@@ -647,7 +647,7 @@ void EMData::rotate_translate(const Transform3D & xform)
 				float x2 = ( mx0 * x + mx1 * y) + x2c;
 				float y2 = (-mx1 * x + mx0 * y) + y2c;
 
-				if (x2 < 0 || x2 > nx2 - 1 || y2 < 0 || y2 > ny2 - 1) {
+				if (x2 < 0 || x2 >= nx2 - 1 || y2 < 0 || y2 >= ny2 - 1) {
 					des_data[i + j * nx] = 0;
 				}
 				else {
@@ -717,17 +717,13 @@ void EMData::rotate_translate(const Transform3D & xform)
 
 
 					if (x2 < 0 || y2 < 0 || z2 < 0 ||
-						x2 >= nx  || y2 >= ny  || z2>= nz ) {
+						x2 >= nx-1  || y2 >= ny-1  || z2>= nz-1 ) {
 						des_data[l] = 0;
 					}
 					else {
 						int ix = Util::fast_floor(x2);
 						int iy = Util::fast_floor(y2);
 						int iz = Util::fast_floor(z2);
-						if (ix==nx-1||iy==ny-1||iz==nz-1) {
-							des_data[l]=0;
-							continue;
-						}
 						float tuvx = x2-ix;
 						float tuvy = y2-iy;
 						float tuvz = z2-iz;

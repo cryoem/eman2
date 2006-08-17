@@ -4318,7 +4318,7 @@ void TestImageSquarecube::process_inplace(EMData * image)
 	float edge_length = params["edge_length"];
 	string axis = (const char*)params["axis"];
 	float odd_edge = params["odd_edge"];
-	string fill = (const char*)params["fill"];
+	int fill = (int)params["fill"];
 	
 	float *dat = image->get_data();
 	float x2, y2, z2; //this coordinates of this pixel from center
@@ -4356,7 +4356,7 @@ void TestImageSquarecube::process_inplace(EMData * image)
 				y2 = (float)fabs((float)j - ny/2);
 				z2 = (float)fabs((float)k - nz/2);
 				if( x2<=xEdge && y2<=yEdge && z2<=zEdge ) {
-					if( fill == "no" ) {
+					if( !fill) {
 						*dat = 0;
 					} 
 					else {
@@ -4364,7 +4364,7 @@ void TestImageSquarecube::process_inplace(EMData * image)
 					}
 				}
 				else {
-					if( fill == "no" ) {
+					if( !fill ) {
 						*dat = 1;
 					}
 					else {
@@ -4386,7 +4386,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 	float radius = params["radius"];
 	string axis = (const char*)params["axis"];
 	float c = params["c"];
-	string fill = (const char*)params["fill"];
+	int fill = (int)params["fill"];
 	
 	float *dat = image->get_data();
 	float x2, y2, z2; //this is coordinates of this pixel from center
@@ -4427,7 +4427,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 					r = (x2*x2)/(radius*radius) + (y2*y2)/(radius*radius) + (z2*z2)/(asy*asy);
 				}
 				if( r<=1 ) {
-					if( fill == "no" ) {
+					if( !fill) {
 						*dat = 0;
 					} 
 					else {
@@ -4435,7 +4435,7 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 					}
 				}
 				else {
-					if( fill == "no" ) {
+					if( !fill ) {
 						*dat = 1;
 					}
 					else {

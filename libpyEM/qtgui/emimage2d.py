@@ -14,7 +14,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
-	def __init__(self, parent=None):
+	def __init__(self, image=None, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
@@ -50,6 +50,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.shapechange=1
 		
 		self.inspector=None
+		
+		if image : self.setData(image)
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""

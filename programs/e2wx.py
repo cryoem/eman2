@@ -12,7 +12,7 @@ except:
 from optparse import OptionParser
 #from panels import *
 from EMAN2 import *
-from emimage import *
+from wxgui import *
 
 class EMAN2(wx.App):
 	def OnInit(self):
@@ -23,7 +23,7 @@ class EMAN2(wx.App):
 #		self.paramdialog.Show()
 #		self.frame = py.crust.CrustFrame()
 		self.frame = py.shell.ShellFrame()
-		self.frame.SetSize((800, 600))
+		self.frame.SetSize((800, 600)
 		self.frame.Show()
 		self.SetTopWindow(self.frame)
 		self.timer=E2Timer()
