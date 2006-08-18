@@ -21,29 +21,44 @@ TiffIO::~TiffIO()
 {
 	if (tiff_file) {
 		TIFFClose(tiff_file);
+		tiff_file = 0;
 	}
 }
 
 void TiffIO::init()
 {
+	ENTERFUNC;
 	if (initialized) {
 		return;
 	}
-	
-	ENTERFUNC;
 	initialized = true;
 
-	FILE *tmp_in = fopen(filename.c_str(), "rb");
+	bool is_new_file = false;
+	FILE *tmp_in = sfopen(filename, rw_mode, &is_new_file, true);
+	
+	std::cout << "open the file: " << filename << std::endl;
+	
+//	FILE *tmp_in = fopen(filename.c_str(), "rb");
 	if (!tmp_in) {
 		throw ImageReadException(filename, "open TIFF");
 	}
-	char buf[64];
-	if (fread(buf, sizeof(buf), 1, tmp_in) != 1) {
-		throw ImageReadException(filename, "first block");
-	}
-
-	if (!is_valid(&buf)) {
-		throw ImageReadException(filename, "invalid TIFF");
+	
+	if( !is_new_file ) {
+		char buf[64];
+		if (fread(buf, sizeof(buf), 1, tmp_in) != 1) {
+			throw ImageReadException(filename, "first block");
+		}
+	
+		if (!is_valid(&buf)) {
+			throw ImageReadException(filename, "invalid TIFF");
+		}
+		
+		if (buf[0] == TIFF_BIG_ENDIAN) {
+			is_big_endian = true;
+		}
+		else {
+			is_big_endian = false;
+		}
 	}
 
 	fclose(tmp_in);
@@ -51,28 +66,35 @@ void TiffIO::init()
 
 	TIFFSetWarningHandler(0);
 
-	tiff_file = TIFFOpen(filename.c_str(), "r");
-	if (!tiff_file) {
-		throw ImageReadException(filename, "open TIFF");
-	}
-
-	if (buf[0] == TIFF_BIG_ENDIAN) {
-		is_big_endian = true;
+	if( rw_mode == ImageIO::READ_ONLY ) {
+		
+		std::cout << "Read only..." << std::endl;
+		
+		tiff_file = TIFFOpen(filename.c_str(), "r");
+		if (!tiff_file) {
+			throw ImageReadException(filename, "open TIFF");
+		}
+	
+		TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
+	
+		if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
+			char desc[256];
+			sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",
+					bitspersample, CHAR_BIT, (int)(CHAR_BIT * sizeof(short)));
+			throw ImageReadException(filename, desc);
+		}
 	}
 	else {
-		is_big_endian = false;
+		
+		std::cout << "Write only..." << std::endl;
+		
+		tiff_file = TIFFOpen(filename.c_str(), "w");
+		if (!tiff_file) {
+			throw ImageReadException(filename, "open TIFF");
+		}
 	}
-
-	TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
-
-	if (bitspersample != CHAR_BIT && bitspersample != (CHAR_BIT * sizeof(short))) {
-		char desc[256];
-		sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",
-				bitspersample, CHAR_BIT, (int)(CHAR_BIT * sizeof(short)));
-		throw ImageReadException(filename, desc);
-	}
+	
 	EXITFUNC;
-
 }
 
 bool TiffIO::is_valid(const void *first_block)
@@ -218,24 +240,124 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 }
 
 
-int TiffIO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType, bool)
+int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	LOGERR("TIFF writing is not supported");
+	
+	check_write_access(rw_mode, image_index);
+	
+	nx = (unsigned int) (int) dict["nx"];
+	ny = (unsigned int) (int) dict["ny"];
+	nz = (unsigned int) (int)dict["nz"];
+	if (nz != 1) {
+		LOGERR("Only support 2D TIFF file write");
+		return 1;
+	}
+	
+	TIFFSetField(tiff_file, TIFFTAG_IMAGEWIDTH, nx);
+	TIFFSetField(tiff_file, TIFFTAG_IMAGELENGTH, ny);
+	
+	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
+	if (datatype == EMUtil::EM_UCHAR) {
+		bitspersample = CHAR_BIT;
+	}
+	else if(datatype == EMUtil::EM_USHORT) {
+		bitspersample = CHAR_BIT * sizeof(short);
+	}
+	else {
+		LOGWARN("Don't support data type '%s' in PNG. Convert to '%s'.",
+				EMUtil::get_datatype_string(datatype),
+				EMUtil::get_datatype_string(EMUtil::EM_USHORT));
+	}
+	TIFFSetField(tiff_file, TIFFTAG_BITSPERSAMPLE, bitspersample);
+	
+	TIFFSetField(tiff_file, TIFFTAG_SAMPLESPERPIXEL, 1);
+	TIFFSetField(tiff_file, TIFFTAG_ROWSPERSTRIP, ny);
+	//TIFFSetField(tiff_file, TIFFTAG_COMPRESSION, NO_COMPRESSION);
+	TIFFSetField(tiff_file, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+	TIFFSetField(tiff_file, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
+	TIFFSetField(tiff_file, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+	
 	EXITFUNC;
 	return 0;
 }
 
-int TiffIO::write_data(float *, int, const Region* , EMUtil::EMDataType, bool)
+int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-	LOGERR("TIFF writing is not supported");
+	
+	std::cout << "Enter TiffIO::write_data() function..." << std::endl;
+	
+	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
+	getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	
+	if(bitspersample == CHAR_BIT) {
+		
+		std::cout << "Writing 8 bit TIFF file..." << std::endl;
+		
+		unsigned char *cdata = new unsigned char[nx*ny];
+		
+		for (unsigned int y = 0; y < ny; y++) {
+			for (unsigned int x = 0; x < nx; x++) {
+				if(data[y * nx + x] < rendermin){
+					cdata[x] = 0;
+				}
+				else if(data[y * nx + x] > rendermax) {
+					cdata[x] = 255;
+				}
+				else {
+					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 256);
+				}
+			}
+		}
+		
+		TIFFWriteEncodedStrip(tiff_file, 0, cdata, nx*ny);	
+		
+		if( cdata )
+		{
+			delete[]cdata;
+			cdata = 0;
+		}	
+	}
+	else if(bitspersample == CHAR_BIT*sizeof(short)) {
+		
+		std::cout << "Writing 16 bit TIFF file..." << std::endl;
+		
+		unsigned short *sdata = new unsigned short[nx];
+		
+		for (unsigned int y = 0; y < ny; y++) {
+			for (unsigned int x = 0; x < nx; x++) {
+				if(data[y * nx + x] < rendermin){
+					sdata[x] = 0;
+				}
+				else if(data[y * nx + x] > rendermax) {
+					sdata[x] = 65535;
+				}
+				else {
+					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 65536);
+				}
+			}
+		}
+		
+		TIFFWriteEncodedStrip(tiff_file, 0, sdata, nx*ny);	
+		
+		if( sdata )
+		{
+			delete[]sdata;
+			sdata = 0;
+		}	
+	}
+	else {
+		LOGWARN("TIFF in EMAN2 only support data type 8 bit or 16 bit.");
+	}
+	
 	EXITFUNC;
 	return 0;
 }
 
 void TiffIO::flush()
 {
+	TIFFFlush(tiff_file);
 }
 
 bool TiffIO::is_complex_mode()

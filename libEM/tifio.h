@@ -39,6 +39,13 @@ namespace EMAN
 		unsigned short bitspersample;
 		bool is_big_endian;
 		bool initialized;
+		
+		unsigned int nx;
+		unsigned int ny;
+		unsigned int nz;
+		
+		float rendermin;
+		float rendermax;
 	};
 }
 
