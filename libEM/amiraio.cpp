@@ -89,13 +89,13 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 	ny = dict["ny"];
 	nz = dict["nz"];
 	
-	float xorigin;		
+	float xorigin = 0.0f;		
 	if(dict.has_key("origin_row")) xorigin = dict["origin_row"];
-	float yorigin;
+	float yorigin = 0.0f;
 	if(dict.has_key("origin_col")) yorigin = dict["origin_col"];
-	float zorigin;
+	float zorigin = 0.0f;
 	if(dict.has_key("origin_sec")) zorigin = dict["origin_sec"];
-	float pixel;
+	float pixel = 0.0f;
 	if(dict.has_key("pixel")) pixel = dict["pixel"];
 			
 	rewind(amira_file);
