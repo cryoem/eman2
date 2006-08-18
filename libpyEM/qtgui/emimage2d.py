@@ -9,15 +9,18 @@ from EMAN2 import *
 import sys
 import Numeric
 from emimageutil import ImgHistogram
+from weakref import WeakKeyDictionary
 
 class EMImage2D(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
+	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMImage2D.allim[self]=0
 		
 # 		try: 
 # 			if EMImage2D.gq : pass
@@ -51,7 +54,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.inspector=None
 		
-		if image : self.setData(image)
+		if image : 
+			self.setData(image)
+			self.show()
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -171,6 +176,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glScale(self.scale,self.scale,self.scale)
 		GL.glCallList(1)
 		GL.glPopMatrix()
+		self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
 		side = min(width, height)
