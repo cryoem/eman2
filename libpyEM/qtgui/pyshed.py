@@ -7,7 +7,8 @@ import imp
 from subprocess import Popen,PIPE
 import traceback
 from EMAN2 import *
-
+from emimagemx import *
+from emimage2d import *
 
 class Shell(QtGui.QTextEdit):
 	
