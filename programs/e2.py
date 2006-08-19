@@ -13,7 +13,7 @@ from PyQt4.QtCore import Qt
 def imgupd():
 	for i in EMImage2D.allim.keys():
 		if i.data.get_attr("changecount")!=i.changec :
-			i.setData(i.rdata)
+			i.setData(i.data)
 
 if __name__ == "__main__":
 	app = QtGui.QApplication([])

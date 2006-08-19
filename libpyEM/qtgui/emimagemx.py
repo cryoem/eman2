@@ -9,15 +9,18 @@ from EMAN2 import *
 import sys
 import Numeric
 from emimageutil import ImgHistogram
+from weakref import WeakKeyDictionary
 
 class EMImage(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
+	allim=WeakKeyDictionary()
 	def __init__(self, parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		EMImage2D.allim[self]=0
 		
 		self.data=None
 		self.datasize=(1,1)
@@ -121,6 +124,8 @@ class EMImage(QtOpenGL.QGLWidget):
 #		GL.glTranslated(0.0, 0.0, -10.0)
 		
 		if not self.data : return
+		for i,j in enumerate(self.data):
+			self.changec=self.data.get_attr("changecount")
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
