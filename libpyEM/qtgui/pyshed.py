@@ -77,7 +77,11 @@ class Shell(QtGui.QTextEdit):
 		QtGui.QTextEdit.keyPressEvent(self,event)
 	
 	def insertFromMimeData(self,source):
-		"This deals with 'paste' events"	
+		"This deals with 'paste' events"
+		lns=str(source.text().replace(">>> ","")).split("\n")
+		for i in lns: self.append("P>> "+i)
+		self.com+="\n".join(lns)
+		
 
 if __name__ == '__main__':
 	app = QtGui.QApplication([])

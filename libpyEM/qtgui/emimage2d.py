@@ -46,7 +46,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.origin=(0,0)
 		self.nperrow=8
 		self.nshow=-1
-		self.mousedrag=None
+		self.rmousedrag=None
 		self.mmode=0
 		
 		self.shapes={}
@@ -106,10 +106,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		if isinstance(self.data,list) :
-			yo=self.height()-self.origin[1]-1
-			self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
-		else : self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
+		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
 		self.scale=newscale
 		self.updateGL()
 		
@@ -137,11 +134,17 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.fmindeng=0
 				self.fmaxdeng=min(m1,mean+8.0*sigma)
 				
+				self.ominden=self.minden
+				self.omaxden=self.maxden
+				
 				self.showInspector()
 			except: 
 				self.fft=None
-		else: self.fft=None
-		self.showInspector()
+		else: 
+			self.fft=None
+			self.minden=self.ominden
+			self.maxden=self.omaxden
+			self.showInspector()
 		self.updateGL()
 
 	def initializeGL(self):
@@ -280,21 +283,48 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.shapechange=1
 		self.updateGL()
 	
+	def scrtoimg(self,vec):
+		return ((vec[0]+self.origin[0])/self.scale,(self.height()-(vec[1]-self.origin[1]))/self.scale)
+	
 	def mousePressEvent(self, event):
+		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
-			self.mousedrag=(event.x(),event.y())
+			self.rmousedrag=(event.x(),event.y())
+		elif event.button()==Qt.LeftButton:
+			if self.mmode==0:
+				self.emit(QtCore.SIGNAL("mousedown"), event)
+				return
+			elif self.mmode==1 :
+				try: del self.shapes["MEASL"]
+				except: pass
+				self.addShape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
 	
 	def mouseMoveEvent(self, event):
-		if self.mousedrag:
-			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
-			self.mousedrag=(event.x(),event.y())
+		lc=self.scrtoimg((event.x(),event.y()))
+		if self.rmousedrag and event.buttons()&Qt.RightButton:
+			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
+			self.rmousedrag=(event.x(),event.y())
 			self.update()
-		
+		elif event.buttons()&Qt.LeftButton:
+			if self.mmode==0:
+				self.emit(QtCore.SIGNAL("mousedrag"), event)
+				return
+			elif self.mmode==1 :
+				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
+				self.addShape("MEASL",("label",.5,.1,.5,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1]),12,1))
+	
 	def mouseReleaseEvent(self, event):
+		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.RightButton:
-			self.mousedrag=None
+			self.rmousedrag=None
+		elif event.button()==Qt.LeftButton:
+			if self.mmode==0:
+				self.emit(QtCore.SIGNAL("mouseup"), event)
+				return
+			elif self.mmode==1 :
+				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 
 
 class EMImageInspector2D(QtGui.QWidget):

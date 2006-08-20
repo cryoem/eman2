@@ -11,16 +11,16 @@ import Numeric
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 
-class EMImage(QtOpenGL.QGLWidget):
+class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
 	"""
 	allim=WeakKeyDictionary()
-	def __init__(self, parent=None):
+	def __init__(self, data=None,parent=None):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage2D.allim[self]=0
+		EMImageMX.allim[self]=0
 		
 		self.data=None
 		self.datasize=(1,1)
@@ -35,9 +35,15 @@ class EMImage(QtOpenGL.QGLWidget):
 		self.nperrow=8
 		self.nshow=-1
 		self.mousedrag=None
+		self.nimg=0
+		self.changec={}
 		
 		self.inspector=None
-	
+		if data: 
+			self.setData(data)
+			self.show()
+			
+			
 	def setData(self,data):
 		if not self.data and data:
 			try:
@@ -49,6 +55,8 @@ class EMImage(QtOpenGL.QGLWidget):
 		if data==None:
 			self.updateGL()
 			return
+		
+		self.nimg=len(data)
 		
 		self.minden=data[0].get_attr("mean")
 		self.maxden=self.minden
@@ -87,9 +95,11 @@ class EMImage(QtOpenGL.QGLWidget):
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		
-		yo=self.height()-self.origin[1]-1
-		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
-		print self.origin
+#		yo=self.height()-self.origin[1]-1
+		yo=self.origin[1]
+#		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
+		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
+#		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
 		self.updateGL()
@@ -124,8 +134,8 @@ class EMImage(QtOpenGL.QGLWidget):
 #		GL.glTranslated(0.0, 0.0, -10.0)
 		
 		if not self.data : return
-		for i,j in enumerate(self.data):
-			self.changec=self.data.get_attr("changecount")
+		for i in self.data:
+			self.changec[i]=i.get_attr("changecount")
 		
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
