@@ -223,11 +223,22 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				GL.glEnd()
 				GL.glPopMatrix()
 			elif s[0]=="label":
+				if s[8]<0 :
+					GL.glPushMatrix()
+					GL.glColor(0,0,0)
+					GL.glTranslate(s[4],s[5],0)
+					GL.glScale(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
+					GL.glLineWidth(-s[8]+2)
+					for i in s[6]:
+						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
+					GL.glPopMatrix()
+				
 				GL.glPushMatrix()
 				GL.glColor(s[1],s[2],s[3])
 				GL.glTranslate(s[4],s[5],0)
-				GL.glScale(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-				GL.glLineWidth(s[8])
+#				GL.glScale(s[7]/100.0,s[7]/100.0,s[7]/100.0)
+				GL.glScale(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
+				GL.glLineWidth(fabs(s[8]))
 				for i in s[6]:
 					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 				GL.glPopMatrix()
@@ -297,7 +308,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.emit(QtCore.SIGNAL("mousedown"), event)
 				return
 			elif self.mmode==1 :
-				try: del self.shapes["MEASL"]
+				try: 
+					del self.shapes["MEASL"]
 				except: pass
 				self.addShape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
 	
@@ -313,7 +325,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				return
 			elif self.mmode==1 :
 				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
-				self.addShape("MEASL",("label",.5,.1,.5,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1]),12,1))
+				dx=lc[0]-self.shapes["MEAS"][4]
+				dy=lc[1]-self.shapes["MEAS"][5]
+				self.addShape("MEASL",("label",.5,.1,.5,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),10,-1))
 	
 	def mouseReleaseEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))

@@ -34,7 +34,9 @@ for single particle analysis."""
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
-		
+	parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
+	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
+	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
@@ -353,36 +355,17 @@ for single particle analysis."""
 		else : thr=goodpks2[-1][0]
 		
 		print "Threshold : ",thr
-		# Write EMAN1 style box database
-		out=open(args[0][:-3]+"box","w")
-		n=0
+		
+		# put results in standard 'box' array so GUI can modify if desired
+		boxes=[]
+		boxthr=thr
 		for i in goodpks2:
-			if i[0]>thr : break
-			n+=1
-			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[1],i[2],options.box,options.box))		
-		out.close()
-		print n," particles found"
-
-		# write boxed particles
-		if args[0][-3:]=="hdf" : outn=args[0][:-3]+"box.hdf"
-		else: outn=args[0][:-3]+"hdf"
-		n=0
-		for i in goodpks2:
-			if i[0]>thr : break
-			try: b.read_image(args[0],0,0,Region(i[1],i[2],options.box,options.box))
-			except: continue
-			if options.norm: b.process_inplace("eman1.normalize.edgemean")
-			print n,i
-#			print i[4]
-			b.write_image(outn,n)
-			n+=1
-			if options.savealiref:
-				refptcl[i[3]].write_image("boxali.hdf",-1)
-				b.write_image("boxali.hdf",-1)
-				
-		out=open("box.stats","w")
-		for i in goodpks2: out.write("%f\n"%i[0])
-		out.close()
+			boxes.append((i[1],1[2],options.box,options.box,i[0])		# x,y,xsize,ysize,quality
+			
+# 		out=open("box.stats","w")
+# 		for i in goodpks2: out.write("%f\n"%i[0])
+# 		out.close()
+		
 		
 	if "circle" in options.auto:
 		shrinksq=shrink.copy()
@@ -413,6 +396,72 @@ for single particle analysis."""
 	
 	E2end(logid)
 
+	# invoke the GUI if requested
+	if options.gui:
+		(boxes,boxthr)=dogui(args[0],boxes,boxthr)
+
+	if options.dbout:
+		# Write EMAN1 style box database
+		out=open(options.dbout,"w")
+		n=0
+		for i in boxes:
+			if i[4]>boxthr : continue
+			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[0],i[1],i[2],i[3]))		
+		out.close()
+
+	if options.ptclout
+		# write boxed particles
+		n=0
+		for i in boxes:
+			if i[4]>boxthr : continue
+			try: b.read_image(args[0],0,0,Region(i[0],i[1],i[2],i[3]))
+			except: continue
+			if options.norm: b.process_inplace("eman1.normalize.edgemean")
+#			print n,i
+#			print i[4]
+			b.write_image(options.ptclout,n)
+			n+=1
+			if options.savealiref:
+				refptcl[i[3]].write_image("boxali.hdf",-1)
+				b.write_image("boxali.hdf",-1)
+				
+
+def dogui(imagefsp,boxes,thr):
+	"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
+	to begin with. Modified boxes/thr are returned."""
+	try:
+		from PyQt4 import QtCore, QtGui, QtOpenGL
+		from PyQt4.QtCore import Qt
+	except:
+		print "PyQt4 must be installed to use the --gui option"
+		sys.exit(1)
+	try:
+		from emimagemx import *
+		from emimage2d import *
+	except:
+		print "Cannot import EMAN image GUI objects (emimage,etc.)"
+		sys.exit(1)
+
+	guiapp = QtGui.QApplication([])
+	
+	image=EMData()
+	image.read_image(imagefsp,0)
+	
+	boxupdate()
+	
+	ptcl=[]
+	for i in boxes:
+		if i[4]>boxthr: continue
+		im=image.get_clip(i[0],i[1],i[2],i[3])
+		ptcl.append(im)
 		
+	guiim=EMImage2D(image)
+	guiim.show()
+	
+	guimx=EMImageMX(ptcl)
+	guimx.show()
+	
+	app.exec_()
+	
 if __name__ == "__main__":
 	main()
