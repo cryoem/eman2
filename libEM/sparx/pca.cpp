@@ -3,7 +3,7 @@
 
 using namespace EMAN;
 
-vector <EMData*> dopca(vector <EMData*> imgstack, EMData *mask)
+vector <EMData*> dopca(vector <EMData*> imgstack, EMData *mask, int nvec)
 {
    // performs PCA on a list of images (each under a mask)
    // returns a list of eigenimages
@@ -26,7 +26,9 @@ vector <EMData*> dopca(vector <EMData*> imgstack, EMData *mask)
 
    img1dlst.clear();
 
-   for (i=0; i<nimg; i++) {
+   if (nimg < nvec) nvec = nimg;
+
+   for (i=0; i<nvec; i++) {
       eigimages.push_back(Util::reconstitute_image_mask(eigvecs[i],mask));
    }
 
