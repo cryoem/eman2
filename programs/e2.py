@@ -4,8 +4,7 @@ import sys
 import os
 from optparse import OptionParser
 from EMAN2 import *
-from emimagemx import *
-from emimage2d import *
+from emimage import *
 import pyshed
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -15,6 +14,10 @@ def imgupd():
 		if i.data.get_attr("changecount")!=i.changec :
 			i.setData(i.data)
 
+	for i in EMImage3D.allim.keys():
+		if i.data.get_attr("changecount")!=i.changec :
+			i.setData(i.data)
+	
 	for i in EMImageMX.allim.keys():
 		try:
 			if len(i.data)!=i.nimg : i.setData(i.data)
