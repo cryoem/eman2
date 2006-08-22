@@ -21,16 +21,15 @@ for single particle analysis."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=-1)
-	parser.add_option("--refptcl","-R",type="string",help="A stack of reference images. Must have the same scale as the image being boxed.",default=None)
-	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
-	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref",default=[])
-	parser.add_option("--grid","-G",type="int",help="Box the entire image in a grid pattern with the specified overlap in pixels (can be negative)",default=None)
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
 	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+	parser.add_option("--refptcl","-R",type="string",help="A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	parser.add_option("--retestlist",type="string",help="Comma separated list of image numbers for retest cycle",default="")
+	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
+	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=-1)
+	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
+	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
@@ -51,22 +50,16 @@ for single particle analysis."""
 		print "Using initial file: ",initial
 	else: initial=options.farfocus
 	
+	# read the image in, though it is likely to get destroyed/modified later
 	image=EMData()
 	image.read_image(initial)
 	image.set_attr("datatype",7)
 	
-	if options.grid!=None :
-		step=int(options.box)+int(options.grid)
-		print "Grid boxing with box size %d and step %d"%(options.box,step)
-		x0=image.get_xsize()%step
-		y0=image.get_ysize()%step
-		outn=args[0][:-3]+"grid.hed"
-		for y in range(y0,image.get_ysize()-step,step):
-			for x in range(x0,image.get_xsize()-step,step):
-				nim=image.get_clip(Region(x,y,options.box,options.box))
-				nim.write_image(outn,-1)
-		sys.exit(0)
-				
+	# Store this for later use, even if the image is later corrupted
+	image_size=(image.get_xsize(),image.get_ysize())
+	
+	# read in the reference particles if provided, these could be used
+	# by different autoboxing algorithms
 	refptcl=None
 	if options.refptcl :
 		print options.refptcl
@@ -74,6 +67,8 @@ for single particle analysis."""
 		refbox=refptcl[0].get_xsize()
 		print "%d reference particles read (%d x %d)"%(len(refptcl),refbox,refbox)
 	
+	# we need to know how big to make the boxes. If nothing is specified, but
+	# reference particles are, then we use the reference particle size
 	if options.box<5 :
 		if options.refptcl : options.box=refptcl[0].get_xsize()
 		elif options.ptclsize : 
@@ -128,7 +123,10 @@ for single particle analysis."""
 #	shrink.write_image("e.mrc")
 #	shrink2.write_image("f.mrc")
 		
-	print "Autobox mode ",options.auto[0]
+	if len(options.auto)>0 : print "Autobox mode ",options.auto[0]
+	
+	boxes=[]
+	boxthr=1.0
 	
 	if "ref" in options.auto:
 		if not refptcl: error_exit("Reference particles required")
@@ -355,18 +353,20 @@ for single particle analysis."""
 		else : thr=goodpks2[-1][0]
 		
 		print "Threshold : ",thr
+		boxthr=thr
 		
 		# put results in standard 'box' array so GUI can modify if desired
-		boxes=[]
-		boxthr=thr
 		for i in goodpks2:
-			boxes.append((i[1],1[2],options.box,options.box,i[0])		# x,y,xsize,ysize,quality
+			boxes.append((i[1],1[2],options.box,options.box,i[0]))		# x,y,xsize,ysize,quality
 			
-# 		out=open("box.stats","w")
+	# 		out=open("box.stats","w")
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
-		
-		
+	if "grid" in options.auto:
+		for x in range(0,image_size[1]-options.box,options.box):
+			for y in range(0,image_size[0]-options.box,options.box):
+				boxes.append((x,y,options.box,options.box,0.0))
+				
 	if "circle" in options.auto:
 		shrinksq=shrink.copy()
 		shrinksq*=shrinksq			# shrunken original image squared
@@ -409,7 +409,7 @@ for single particle analysis."""
 			out.write("%d\t%d\t%d\t%d\t-3\n"%(i[0],i[1],i[2],i[3]))		
 		out.close()
 
-	if options.ptclout
+	if options.ptclout:
 		# write boxed particles
 		n=0
 		for i in boxes:
@@ -426,42 +426,55 @@ for single particle analysis."""
 				b.write_image("boxali.hdf",-1)
 				
 
-def dogui(imagefsp,boxes,thr):
-	"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
-	to begin with. Modified boxes/thr are returned."""
-	try:
-		from PyQt4 import QtCore, QtGui, QtOpenGL
-		from PyQt4.QtCore import Qt
-	except:
-		print "PyQt4 must be installed to use the --gui option"
-		sys.exit(1)
-	try:
-		from emimagemx import *
-		from emimage2d import *
-	except:
-		print "Cannot import EMAN image GUI objects (emimage,etc.)"
-		sys.exit(1)
-
-	guiapp = QtGui.QApplication([])
+class GUIbox():
+	def __init__(imagefsp,boxes,thr):
+		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
+		to begin with. Modified boxes/thr are returned."""
+		try:
+			from PyQt4 import QtCore, QtGui, QtOpenGL
+			from PyQt4.QtCore import Qt
+		except:
+			print "PyQt4 must be installed to use the --gui option"
+			sys.exit(1)
+		try:
+			from emimage import EMImage,get_app
+			from emimagemx import EMImageMX
+			from emimage2d import EMImage2D
+		except:
+			print "Cannot import EMAN image GUI objects (emimage,etc.)"
+			sys.exit(1)
 	
-	image=EMData()
-	image.read_image(imagefsp,0)
-	
-	boxupdate()
-	
-	ptcl=[]
-	for i in boxes:
-		if i[4]>boxthr: continue
-		im=image.get_clip(i[0],i[1],i[2],i[3])
-		ptcl.append(im)
+		guiapp = QtGui.QApplication([])
 		
-	guiim=EMImage2D(image)
-	guiim.show()
-	
-	guimx=EMImageMX(ptcl)
-	guimx.show()
-	
-	app.exec_()
+		image=EMData()
+		image.read_image(imagefsp,0)
+		
+		boxupdate()
+		
+		ptcl=[]
+		for i in boxes:
+			if i[4]>boxthr: continue
+			im=image.get_clip(i[0],i[1],i[2],i[3])
+			ptcl.append(im)
+			
+		guiim=EMImage2D(image)
+		guiim.show()
+		
+		guimx=EMImageMX(ptcl)
+		guimx.show()
+		
+		app.exec_()
+
+	def run():
+		"""If you make your own application outside of this object, you are free to use
+		your own local app.exec_(). This is a convenience for boxer-only programs."""
+		self.app.exec_()
+		
+
+	def boxupdate():
+		pass	
+
+
 	
 if __name__ == "__main__":
 	main()
