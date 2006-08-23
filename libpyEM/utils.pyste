@@ -35,6 +35,9 @@ exclude(Util.set_log_level)
 exclude(Util.printMatI3D)
 exclude(Util.triquad)
 
+#merge_peaks() cause trouble on some platform, not expose to Python
+exclude(Util.merge_peaks)
+
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
 set_policy(EMUtil.vertical_acf, return_value_policy(manage_new_object))
