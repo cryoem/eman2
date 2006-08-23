@@ -52,6 +52,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     reconstructor.cpp
     exception.cpp
     testutil.cpp
+    analyzer.cpp
     sparx/fundamentals.cpp
     sparx/normpadft.cpp
     sparx/periodogram.cpp
