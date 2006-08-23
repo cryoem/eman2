@@ -78,6 +78,12 @@ EMData *project(const string & projector_name, const Dict & params = Dict());
  */
 EMData *backproject(const string & projector_name, const Dict & params = Dict());
 
+/**
+ */
+vector <EMData*> analyze( const string & analyzer_name, 
+						const vector<EMData*> images, 
+						const Dict & params = Dict() );
+
 
 #endif	//emdata__modular_h__
 

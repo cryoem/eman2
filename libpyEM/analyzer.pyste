@@ -1,0 +1,11 @@
+Include("emdata.h")
+Factory = Template("EMAN::Factory", "emobject.h")
+
+Analyzer = Class("EMAN::Analyzer", "analyzer.h")
+rename(Analyzer, "__Analyzer")
+
+AnalyzerFactory = Factory("EMAN::Analyzer", "Analyzers")
+set_policy(AnalyzerFactory.get, return_value_policy(manage_new_object))
+exclude(AnalyzerFactory.add)
+
+

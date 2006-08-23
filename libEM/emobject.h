@@ -32,6 +32,7 @@ namespace EMAN
 	class Processor;
 	class Projector;
 	class Reconstructor;
+	class Analyzer;
 
 	enum MapInfoType {
 		NORMAL,

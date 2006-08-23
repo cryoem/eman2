@@ -6,6 +6,7 @@
 #include "cmp.h"
 #include "aligner.h"
 #include "projector.h"
+#include "analyzer.h"
 
 using namespace EMAN;
 
@@ -137,6 +138,27 @@ EMData *EMData::backproject(const string & projector_name, const Dict & params)
 		}
 	}
 
+	EXITFUNC;
+	return result;
+}
+
+vector <EMData*> EMData::analyze(const string & analyzer_name,
+								const vector<EMData*> images, 
+								const Dict & params)
+{
+	ENTERFUNC;
+	
+	vector<EMData*> result;
+	Analyzer *p = Factory< Analyzer >::get(analyzer_name, params);
+	if(p) {
+		result = p->analyze(images);
+		if( p )
+		{
+			delete p;
+			p = 0;
+		}
+	}
+	
 	EXITFUNC;
 	return result;
 }

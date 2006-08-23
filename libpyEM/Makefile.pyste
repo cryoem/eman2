@@ -15,7 +15,8 @@ all: libpyAligner2.cpp \
 	 libpyPointArray2.cpp \
 	 libpyTransform2.cpp \
 	 libpyTypeConverter2.cpp \
-	 libpyPolarData2.cpp	
+	 libpyPolarData2.cpp \
+	 libpyAnalyzer2.cpp	
 	 
 libpyGeometry2.cpp: geometry.pyste ../libEM/geometry.h
 	rm -f libpyGeometry2.cpp
@@ -79,3 +80,6 @@ libpyPolarData2.cpp: polardata.pyste ../libEM/polardata.h
 	rm -f libpyPolarData2.cpp
 	$(PYSTE) --module=libpyPolarData2 polardata.pyste
 	
+libpyAnalyzer2.cpp: analyzer.pyste ../libEM/analyzer.h ../libEM/emobject.h
+	rm -f libpyAnalyzer2.cpp
+	$(PYSTE) --module=libpyAnalyzer2 analyzer.pyste	
