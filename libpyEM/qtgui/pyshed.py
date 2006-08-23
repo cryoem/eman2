@@ -30,12 +30,34 @@ class Shell(QtGui.QTextEdit):
 	def keyPressEvent(self,event):
 		"This is where most of the magic that allows the user to only type on the current line is"
 		if event.key()==Qt.Key_Up :
+			cur=self.textCursor()
 			self.histc-=1
 			cur.movePosition(QtGui.QTextCursor.End)
-			self.select(QTextCursor.BlockUnderCursor)
-			self.deleteChar()
+			cur.select(QtGui.QTextCursor.BlockUnderCursor)
+			self.setTextCursor(cur)
+			cur.deleteChar()
+			try:
+				self.append(">>> "+self.history[self.histc])
+			except:
+				self.append(">>> "+self.history[0])
+				self.histc+=1
+			return
 		if event.key()==Qt.Key_Down:
-			pass
+			cur=self.textCursor()
+			self.histc+=1
+			if self.histc>0: self.histc=0
+			cur.movePosition(QtGui.QTextCursor.End)
+			cur.select(QtGui.QTextCursor.BlockUnderCursor)
+			self.setTextCursor(cur)
+			cur.deleteChar()
+			if self.histc==0 : self.append(">>> ")
+			else:
+				try:
+					self.append(">>> "+self.history[self.histc])
+				except:
+					self.append(">>> ")
+					self.histc=0
+			return
 		lpos=self.document().end().previous().position()
 		cur=self.textCursor()
 		if cur.position()<lpos+4: 

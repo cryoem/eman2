@@ -363,8 +363,11 @@ for single particle analysis."""
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
 	if "grid" in options.auto:
-		for x in range(0,image_size[1]-options.box,options.box):
-			for y in range(0,image_size[0]-options.box,options.box):
+		dy=(image_size[1]%options.box)*options.box/image_size[1]-1
+		dx=(image_size[0]%options.box)*options.box/image_size[0]-1
+		
+		for y in range(dy/2,image_size[1]-options.box,dy):
+			for x in range(dx/2,image_size[0]-options.box,dx):
 				boxes.append((x,y,options.box,options.box,0.0))
 				
 	if "circle" in options.auto:
@@ -398,7 +401,8 @@ for single particle analysis."""
 
 	# invoke the GUI if requested
 	if options.gui:
-		(boxes,boxthr)=dogui(args[0],boxes,boxthr)
+		gui=GUIbox(args[0],boxes,boxthr)
+		gui.run()
 
 	if options.dbout:
 		# Write EMAN1 style box database
@@ -426,8 +430,8 @@ for single particle analysis."""
 				b.write_image("boxali.hdf",-1)
 				
 
-class GUIbox():
-	def __init__(imagefsp,boxes,thr):
+class GUIbox:
+	def __init__(self,imagefsp,boxes,thr):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
 		to begin with. Modified boxes/thr are returned."""
 		try:
@@ -438,18 +442,16 @@ class GUIbox():
 			sys.exit(1)
 		try:
 			from emimage import EMImage,get_app
-			from emimagemx import EMImageMX
-			from emimage2d import EMImage2D
 		except:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
-	
-		guiapp = QtGui.QApplication([])
+			
+		self.app=get_app()
 		
 		image=EMData()
 		image.read_image(imagefsp,0)
 		
-		boxupdate()
+#		boxupdate()
 		
 		ptcl=[]
 		for i in boxes:
@@ -457,21 +459,20 @@ class GUIbox():
 			im=image.get_clip(i[0],i[1],i[2],i[3])
 			ptcl.append(im)
 			
-		guiim=EMImage2D(image)
-		guiim.show()
+		self.guiim=EMImage(image)
+		self.guiim.show()
 		
-		guimx=EMImageMX(ptcl)
-		guimx.show()
+		self.guimx=EMImage(ptcl)
+		self.guimx.show()
 		
-		app.exec_()
 
-	def run():
+	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.app.exec_()
 		
 
-	def boxupdate():
+	def boxupdate(self):
 		pass	
 
 
