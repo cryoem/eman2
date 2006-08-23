@@ -86,13 +86,13 @@ struct EMAN_Ctf_Wrapper: EMAN::Ctf
     EMAN::Dict to_dict() const {
         return call_method< EMAN::Dict >(py_self, "to_dict");
     }
-    
-    void from_vector(const std::vector<float, std::allocator<float> >& p0) {
+
+    void from_vector(const std::vector<float,std::allocator<float> >& p0) {
         call_method< void >(py_self, "from_vector", p0);
     }
 
-    std::vector<float, std::allocator<float> > to_vector() const {
-        return call_method< std::vector<float, std::allocator<float> > >(py_self, "to_vector");
+    std::vector<float,std::allocator<float> > to_vector() const {
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "to_vector");
     }
 
     std::vector<float,std::allocator<float> > compute_1d(int p0, EMAN::Ctf::CtfType p1, EMAN::XYData* p2) {
@@ -202,6 +202,22 @@ struct EMAN_SimpleCtf_Wrapper: EMAN::SimpleCtf
         return EMAN::SimpleCtf::to_dict();
     }
 
+    void from_vector(const std::vector<float,std::allocator<float> >& p0) {
+        call_method< void >(py_self, "from_vector", p0);
+    }
+
+    void default_from_vector(const std::vector<float,std::allocator<float> >& p0) {
+        EMAN::SimpleCtf::from_vector(p0);
+    }
+
+    std::vector<float,std::allocator<float> > to_vector() const {
+        return call_method< std::vector<float,std::allocator<float> > >(py_self, "to_vector");
+    }
+
+    std::vector<float,std::allocator<float> > default_to_vector() const {
+        return EMAN::SimpleCtf::to_vector();
+    }
+
     void copy_from(const EMAN::Ctf* p0) {
         call_method< void >(py_self, "copy_from", p0);
     }
@@ -270,6 +286,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("to_string", pure_virtual(&EMAN::Ctf::to_string))
         .def("from_dict", pure_virtual(&EMAN::Ctf::from_dict))
         .def("to_dict", pure_virtual(&EMAN::Ctf::to_dict))
+        .def("from_vector", pure_virtual(&EMAN::Ctf::from_vector))
+        .def("to_vector", pure_virtual(&EMAN::Ctf::to_vector))
         .def("compute_1d", pure_virtual(&EMAN::Ctf::compute_1d))
         .def("compute_2d_real", pure_virtual(&EMAN::Ctf::compute_2d_real))
         .def("compute_2d_complex", pure_virtual(&EMAN::Ctf::compute_2d_complex))
@@ -330,6 +348,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .def("to_string", (std::string (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_string, (std::string (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_string)
         .def("from_dict", (void (EMAN::SimpleCtf::*)(const EMAN::Dict&) )&EMAN::SimpleCtf::from_dict, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Dict&))&EMAN_SimpleCtf_Wrapper::default_from_dict)
         .def("to_dict", (EMAN::Dict (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_dict, (EMAN::Dict (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_dict)
+        .def("from_vector", (void (EMAN::SimpleCtf::*)(const std::vector<float,std::allocator<float> >&) )&EMAN::SimpleCtf::from_vector, (void (EMAN_SimpleCtf_Wrapper::*)(const std::vector<float,std::allocator<float> >&))&EMAN_SimpleCtf_Wrapper::default_from_vector)
+        .def("to_vector", (std::vector<float,std::allocator<float> > (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::to_vector, (std::vector<float,std::allocator<float> > (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_to_vector)
         .def("copy_from", (void (EMAN::SimpleCtf::*)(const EMAN::Ctf*) )&EMAN::SimpleCtf::copy_from, (void (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Ctf*))&EMAN_SimpleCtf_Wrapper::default_copy_from)
         .def("equal", (bool (EMAN::SimpleCtf::*)(const EMAN::Ctf*) const)&EMAN::SimpleCtf::equal, (bool (EMAN_SimpleCtf_Wrapper::*)(const EMAN::Ctf*) const)&EMAN_SimpleCtf_Wrapper::default_equal)
         .def("get_defocus", (float (EMAN::SimpleCtf::*)() const)&EMAN::SimpleCtf::get_defocus, (float (EMAN_SimpleCtf_Wrapper::*)() const)&EMAN_SimpleCtf_Wrapper::default_get_defocus)
