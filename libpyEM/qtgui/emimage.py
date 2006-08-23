@@ -12,6 +12,44 @@ from emimage3d import *
 #import sys
 #import Numeric
 
+def get_app():
+	app=QtGui.QApplication.instance()
+	if not app : app = QtGui.QApplication([])
+	
+	try: 
+		if app.updtimer : pass
+	except:
+		tmr=QtCore.QTimer()
+		tmr.setInterval(250)
+		tmr.connect(tmr,QtCore.SIGNAL("timeout()"), imageupdate)
+		tmr.start()
+	
+		app.updtimer=tmr
+
+	return app
+		
+def imageupdate():
+	for i in EMImage2D.allim.keys():
+		if i.data.get_attr("changecount")!=i.changec :
+			i.setData(i.data)
+
+	for i in EMImage3D.allim.keys():
+		if i.data.get_attr("changecount")!=i.changec :
+			i.setData(i.data)
+	
+	for i in EMImageMX.allim.keys():
+		try:
+			if len(i.data)!=i.nimg : i.setData(i.data)
+		except:
+			pass
+		for j in i.changec.keys():
+			upd=0
+			if j.get_attr("changecount")!=i.changec[j] :
+				upd=1
+				break
+		if upd : i.setData(i.data)
+
+
 class EMImage(object):
 	"""This is basically a factory class that will return an instance of the appropriate EMImage* class """
 
