@@ -13,6 +13,7 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
 #include <algorithm>
+#include <ctime>
 
 using namespace EMAN;
 using std::reverse;
@@ -285,7 +286,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	int n = fft->get_xsize()*fft->get_ysize()*fft->get_zsize();
 	for (i=0; i<n; i+=2) {
 		float c;
-		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25);
+		if (dosqrt) c=pow(fftd[i]*fftd[i]+fftd[i+1]*fftd[i+1],0.25f);
 		else c = hypot(fftd[i],fftd[i+1]);
 		if (c==0) c=1.0e-30;	// prevents divide by zero in normalization
 		fftd[i]*=c;
@@ -2317,10 +2318,18 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 	}
 
 	if(params.has_key("seed")) {
+#ifdef _WIN32
+		srand((int)params["seed"]);
+#else 
 		srandom((int)params["seed"]);
+#endif
 	}
 	else {
+#ifdef _WIN32
+		srand(time(0));
+#else
 		srandom(time(0));
+#endif
 	}
 
 	float addnoise = params["noise"];
@@ -2919,10 +2928,18 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 	}
 
 	if(params.has_key("seed")) {
+#ifdef _WIN32
+		srand((int)params["seed"]);
+#else
 		srandom((int)params["seed"]);
+#endif 
 	}
 	else {
+#ifdef _WIN32
+		srand(time(0));
+#else
 		srandom(time(0));
+#endif 
 	}
 
 	int nx = image->get_xsize();
@@ -4455,10 +4472,18 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 	preprocess(image);
 	
 	if(params.has_key("seed")) {
+#ifdef _WIN32
+		srand((int)params["seed"]);
+#else
 		srandom((int)params["seed"]);
+#endif 
 	}
 	else {
-		srand(time(0)); //generate a seed by current time
+#ifdef _WIN32
+		srand(time(0));
+#else 
+		srandom(time(0)); //generate a seed by current time
+#endif 
 	}
 	
 	float *dat = image->get_data();
@@ -4479,7 +4504,13 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 
 	float mean = params["mean"];
 	
-	if (params.has_key("seed"))  srandom((int)params["seed"]);
+	if (params.has_key("seed")) {
+#ifdef _WIN32
+		srand((int)params["seed"]);
+#else
+		srandom((int)params["seed"]);
+#endif
+	}
 	
 	float *dat = image->get_data();
 	for (int i=0; i<nx*ny*nz; i++) {
@@ -4503,7 +4534,11 @@ void TestImageCylinder::process_inplace(EMData * image)
 	} 
 	
 	float radius = params["radius"];
+#ifdef _WIN32
+	if(radius > _cpp_min(nx, ny)/2.0) {
+#else
 	if(radius > std::min(nx, ny)/2.0) {
+#endif
 		throw InvalidValueException(radius, "radius must be <= min(nx, ny)/2");
 	}
 	
