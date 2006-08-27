@@ -10,11 +10,12 @@
 #include "transform.h"
 #include <iostream>
 
-#ifndef WIN32
+#ifndef _WIN32
 	#include <sys/param.h>
 #else
+	#include <windows.h>
 	#define  MAXPATHLEN (MAX_PATH * 4)
-#endif	//WIN32
+#endif	//_WIN32
 
 using namespace EMAN;
 
