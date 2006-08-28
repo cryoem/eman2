@@ -2582,7 +2582,7 @@ if (image->is_complex())
 //-----------------------------------------------------------------------------------------------------------------------
 
 
-void Util::histogram(EMData* image, EMData* mask)
+/*void Util::histogram(EMData* image, EMData* mask)
 {
 	if (image->is_complex())
                 throw ImageFormatException("Cannot do Histogram on Fourier Image");
@@ -2683,6 +2683,7 @@ void Util::histogram(EMData* image, EMData* mask)
 	}
 	delete[] freq;
 }
+*/
 			
 Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 {

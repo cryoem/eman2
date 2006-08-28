@@ -489,7 +489,12 @@ vector<float> EMData::cog()
 			RG=std::sqrt(RG/sum1);
 			MX=MX-(nx/2);
 			cntog.push_back(MX);
-			cntog.push_back(RG);	
+			cntog.push_back(RG);
+#ifdef _WIN32
+			cntog.push_back(Util::round(MX));
+#else
+			cntog.push_back(round(MX));
+#endif	//_WIN32
 	}	
 	else if (ndim == 2)
 	{	
@@ -523,6 +528,11 @@ vector<float> EMData::cog()
 			cntog.push_back(MX);
 			cntog.push_back(MY);
 			cntog.push_back(RG);
+#ifdef _WIN32
+			cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));
+#else
+			cntog.push_back(round(MX));cntog.push_back(round(MY));
+#endif	//_WIN32
 	}
 	else 
 	{		
@@ -566,8 +576,11 @@ vector<float> EMData::cog()
 			cntog.push_back(MY);
 			cntog.push_back(MZ);
 			cntog.push_back(RG);
-			//cntog.push_back(MZ);
-			//cntog.push_back(RZ);
+#ifdef _WIN32
+			cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));cntog.push_back(Util::round(MZ));
+#else
+			cntog.push_back(round(MX));cntog.push_back(round(MY));cntog.push_back(round(MZ));
+#endif	//_WIN32	
 	}	 
 	return cntog;
 }
@@ -2332,10 +2345,10 @@ vector<float> EMData::phase_cog()
 		SNX = SNX - ((nx/2)+1);
 		ph_cntog.push_back(SNX);
 #ifdef _WIN32
-		ph_cntog.push_back(abs(Util::round(SNX)));
+		ph_cntog.push_back(Util::round(SNX));
 #else
-		ph_cntog.push_back(fabs(round(SNX)));
-#endif
+		ph_cntog.push_back(round(SNX));
+#endif //_WIN32
 		}
 	else if (get_ndim()==2)
 #ifdef _WIN32
@@ -2372,10 +2385,10 @@ vector<float> EMData::phase_cog()
 		 SNY = SNY - ((ny/2)+1);
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);	
 #ifdef _WIN32
-		 ph_cntog.push_back(abs(Util::round(SNX))); ph_cntog.push_back(abs(Util::round(SNY)));
+		 ph_cntog.push_back(Util::round(SNX)); ph_cntog.push_back(Util::round(SNY));
 #else
-		 ph_cntog.push_back(fabs(round(SNX))); ph_cntog.push_back(fabs(round(SNY)));
-#endif	//_WIN32	
+		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));
+#endif	//_WIN32
 		}
 	else
 #ifdef _WIN32
@@ -2432,7 +2445,11 @@ vector<float> EMData::phase_cog()
 		 SNY = SNY - ((ny/2)+1);
 		 SNZ = SNZ - ((nz/2)+1);		
 		 ph_cntog.push_back(SNX); ph_cntog.push_back(SNY); ph_cntog.push_back(SNZ);
-		 ph_cntog.push_back(abs(Util::round(SNX))); ph_cntog.push_back(abs(Util::round(SNY))); ph_cntog.push_back(abs(Util::round(SNZ)));
+#ifdef _WIN32
+		 ph_cntog.push_back(Util::round(SNX)); ph_cntog.push_back(Util::round(SNY)); ph_cntog.push_back(Util::round(SNZ));
+#else
+		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));ph_cntog.push_back(round(SNZ));
+#endif
 	}
 	return ph_cntog;
 }

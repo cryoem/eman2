@@ -375,7 +375,7 @@ class FakeKaiserBessel : public KaiserBessel {
 
 	static EMData* pad(EMData* img, Dict params,int new_nx, int new_ny=1, int new_nz=1, int x_offset=0, int y_offset=0, int z_offset=0);
 
-	static void histogram(EMData* image, EMData* mask);
+	/*static void histogram(EMData* image, EMData* mask);*/
 	
 	static Dict histc(EMData *ref,EMData *img,EMData *mask);
 	
