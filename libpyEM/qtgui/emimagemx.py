@@ -49,7 +49,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			try:
 				if len(data)<self.nperrow : w=len(data)*(data[0].get_xsize()+2)
 				else : w=self.nperrow*(data[0].get_xsize()+2)
-				self.resize(w,512)
+				if w>0 : self.resize(w,512)
 			except: pass
 		self.data=data
 		if data==None:

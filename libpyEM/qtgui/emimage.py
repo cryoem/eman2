@@ -42,8 +42,8 @@ def imageupdate():
 			if len(i.data)!=i.nimg : i.setData(i.data)
 		except:
 			pass
+		upd=0
 		for j in i.changec.keys():
-			upd=0
 			if j.get_attr("changecount")!=i.changec[j] :
 				upd=1
 				break

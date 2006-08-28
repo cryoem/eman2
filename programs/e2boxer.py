@@ -357,18 +357,21 @@ for single particle analysis."""
 		
 		# put results in standard 'box' array so GUI can modify if desired
 		for i in goodpks2:
-			boxes.append((i[1],1[2],options.box,options.box,i[0]))		# x,y,xsize,ysize,quality
+			boxes.append([i[1],1[2],options.box,options.box,i[0],1])		# x,y,xsize,ysize,quality,changed
 			
 	# 		out=open("box.stats","w")
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
 	if "grid" in options.auto:
 		dy=(image_size[1]%options.box)*options.box/image_size[1]-1
+		if dy<=0 : dy=((image_size[1]-1)%options.box)*options.box/image_size[1]-1
 		dx=(image_size[0]%options.box)*options.box/image_size[0]-1
+		if dx<=0 : dx=((image_size[0]-1)%options.box)*options.box/image_size[0]-1
 		
-		for y in range(dy/2,image_size[1]-options.box,dy):
-			for x in range(dx/2,image_size[0]-options.box,dx):
-				boxes.append((x,y,options.box,options.box,0.0))
+#		print image_size,dx,dy,options.box
+		for y in range(dy/2,image_size[1]-options.box,dy+options.box):
+			for x in range(dx/2,image_size[0]-options.box,dx+options.box):
+				boxes.append([x,y,options.box,options.box,0.0,1])
 				
 	if "circle" in options.auto:
 		shrinksq=shrink.copy()
@@ -401,7 +404,7 @@ for single particle analysis."""
 
 	# invoke the GUI if requested
 	if options.gui:
-		gui=GUIbox(args[0],boxes,boxthr)
+		gui=GUIbox(args[0],boxes,boxthr,options.box)
 		gui.run()
 
 	if options.dbout:
@@ -430,51 +433,174 @@ for single particle analysis."""
 				b.write_image("boxali.hdf",-1)
 				
 
+try:
+	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from PyQt4.QtCore import Qt
+except:
+	print "Warning: PyQt4 must be installed to use the --gui option"
+	class dummy:
+		pass
+	class QWidget:
+		"A dummy class for use when Qt not installed"
+		def __init__(self,parent):
+			print "Qt4 has not been loaded"
+	QtGui=dummy()
+	QtGui.QWidget=QWidget
+
 class GUIbox:
-	def __init__(self,imagefsp,boxes,thr):
+	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
-		to begin with. Modified boxes/thr are returned."""
-		try:
-			from PyQt4 import QtCore, QtGui, QtOpenGL
-			from PyQt4.QtCore import Qt
-		except:
-			print "PyQt4 must be installed to use the --gui option"
-			sys.exit(1)
+		to begin with. Modified boxes/thr are returned. 
+		
+		'boxes' is a list of box locations:
+		[x0,y0,xsize,ysize,quality,changed]
+		quality is used in conjuntion with 'thr' to decide which
+		boxes are 'real'. 'changed' is used by the GUI to decide when
+		redrawing is necessary (should be set to 1 initially)."""
 		try:
 			from emimage import EMImage,get_app
 		except:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
-			
+		
+		if len(boxes)>0 and boxsize==-1: self.boxsize=boxes[0][2]
+		elif boxsize==-1: self.boxsize=128
+		else: self.boxsize=boxsize
+		
 		self.app=get_app()
+		self.image=EMData()					# the image to be boxed
+		self.image.read_image(imagefsp)
+		self.boxes=boxes					# the list of box locations
+		self.threshold=thr					# Threshold to decide which boxes to use
+		self.ptcl=[]						# list of actual boxed out EMImages
 		
-		image=EMData()
-		image.read_image(imagefsp,0)
+		self.moving=None					# Used during a user box drag
 		
-#		boxupdate()
+		self.guiim=EMImage(self.image)		# widget for displaying large image
+		self.guimx=EMImage(self.ptcl)		# widget for displaying matrix of smaller images
 		
-		ptcl=[]
-		for i in boxes:
-			if i[4]>boxthr: continue
-			im=image.get_clip(i[0],i[1],i[2],i[3])
-			ptcl.append(im)
-			
-		self.guiim=EMImage(image)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
+		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouseup  )
+		
 		self.guiim.show()
-		
-		self.guimx=EMImage(ptcl)
 		self.guimx.show()
+		self.boxupdate()
+
+	def mousedown(self,event) :
+		m=self.guiim.scrtoimg((event.x(),event.y()))
+		for i,j in enumerate(self.boxes):
+			if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] : continue
+			break
+		else: 
+			if event.modifiers()&Qt.ShiftModifier : return
+			# If we get here, we need to make a new box
+			self.boxes.append([m[0]-self.boxsize/2,m[1]-self.boxsize/2,self.boxsize,self.boxsize,0,1])
+			i=len(self.boxes)-1
+			self.boxupdate()
+		# an existing box
+		if event.modifiers()&Qt.ShiftModifier :
+			# with shift, we delete
+			self.delbox(i)
+			return
+		self.moving=(i,m)
+		self.guiim.setActive(i,.9,.9,.4)
+		x0=self.boxes[i][0]+self.boxes[i][2]/2-1
+		y0=self.boxes[i][1]+self.boxes[i][3]/2-1
+		self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 		
+	def mousedrag(self,event) :
+		m=self.guiim.scrtoimg((event.x(),event.y()))
+		
+		# box deletion when shift held down
+		if event.modifiers()&Qt.ShiftModifier:
+			for i,j in enumerate(self.boxes):
+				if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] : continue
+				break
+			else: return
+			self.delbox(i)
+			return
+			
+		if self.moving:
+			self.boxes[self.moving[0]][0]+=m[0]-self.moving[1][0]
+			self.boxes[self.moving[0]][1]+=m[1]-self.moving[1][1]
+			self.boxes[self.moving[0]][-1]=1
+			self.moving=(self.moving[0],m)
+			
+			# update the center marker
+			i=self.moving[0]
+			x0=self.boxes[i][0]+self.boxes[i][2]/2-1
+			y0=self.boxes[i][1]+self.boxes[i][3]/2-1
+			self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+			
+			self.boxupdate()
+		
+	def mouseup(self,event) :
+		m=self.guiim.scrtoimg((event.x(),event.y()))
+		self.moving=None
+	
+	def delbox(self,i):
+		"Deletes the numbered box completely"
+		sh=self.guiim.shapes
+		k=sh.keys()
+		k.sort()
+		for j in k:
+			if isinstance(j,int):
+				if j>i : 
+					sh[j-1]=sh[j]
+					del(sh[j])
+		self.guiim.delShapes()
+		self.guiim.addShapes(sh)
+		self.guiim.setActive(None,.9,.9,.4)
+		
+		del(self.boxes[i])
+		del(self.ptcl[i])
+		self.guimx.setData(self.ptcl)
+	
+	def boxupdate(self):
+		ns={}
+		for j,i in enumerate(self.boxes):
+			if not i[5] or i[4]>self.threshold: continue
+			
+			self.boxes[j][-1]=0
+			im=self.image.get_clip(Region(i[0],i[1],i[2],i[3]))
+			ns[j]=["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],1.0]
+			if j>=len(self.ptcl) : self.ptcl.append(im)
+			else : self.ptcl[j]=im
+
+		self.guiim.addShapes(ns)
+		self.guimx.setData(self.ptcl)
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.app.exec_()
+
+class GUIboxPanel(QtGui.QWidget):
+	def __init__(self,target) :
 		
+		QtGui.QWidget.__init__(self,None)
+		self.target=target
+		
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		
+		self.scale = QtGui.QLabel(self,(0.1,5.0),"Mag:")
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		self.vbl.addWidget(self.scale)
 
-	def boxupdate(self):
-		pass	
+		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		self.vbl.addWidget(self.scale)
 
+		self.scale = QtGui.QSpinBox(self,(0.1,5.0),"Mag:")
+		self.scale.setObjectName("scale")
+		self.scale.setValue(1.0)
+		self.vbl.addWidget(self.scale)
 
 	
 if __name__ == "__main__":

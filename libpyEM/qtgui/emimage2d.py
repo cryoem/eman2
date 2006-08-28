@@ -34,25 +34,24 @@ class EMImage2D(QtOpenGL.QGLWidget):
 # 			GLU.gluQuadricTexture(EMImage2D.gq,GL.GL_FALSE)
 
 		
-		self.data=None
-		self.datasize=(1,1)
-		self.scale=1.0
+		self.data=None				# EMData object to display
+		self.datasize=(1,1)			# Dimensions of current image
+		self.scale=1.0				# Scale factor for display
+		self.origin=(0,0)			# Current display origin
+		self.invert=0				# invert image on display
 		self.minden=0
 		self.maxden=1.0
-		self.invert=0
-		self.fft=None
 		self.mindeng=0
 		self.maxdeng=1.0
-		self.origin=(0,0)
-		self.nperrow=8
-		self.nshow=-1
-		self.rmousedrag=None
-		self.mmode=0
+		self.fft=None				# The FFT of the current target if currently displayed
+		self.rmousedrag=None		# coordinates during a right-drag operation
+		self.mmode=0				# current mouse mode as selected by the inspector
 		
-		self.shapes={}
-		self.shapechange=1
+		self.shapes={}				# dictionary of shapes to draw, see addShapes
+		self.shapechange=1			# Set to 1 when shapes need to be redrawn
+		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
 		
-		self.inspector=None
+		self.inspector=None			# set to inspector panel widget when exists
 		
 		if image : 
 			self.setData(image)
@@ -203,11 +202,13 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glNewList(1,GL.GL_COMPILE)
 		GL.glPushMatrix()
 		for k,s in self.shapes.items():
-			GL.glColor(s[1],s[2],s[3])
+			col=(s[1],s[2],s[3])
+			if self.active[0]==k: col=self.active[1:]
 			
 			if s[0]=="rect":
 				GL.glLineWidth(s[8])
 				GL.glBegin(GL.GL_LINE_LOOP)
+				GL.glColor(*col)
 				GL.glVertex(s[4],s[5])
 				GL.glVertex(s[6],s[5])
 				GL.glVertex(s[6],s[7])
@@ -215,7 +216,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				GL.glEnd()
 			elif s[0]=="line":
 				GL.glPushMatrix()
-				GL.glColor(s[1],s[2],s[3])
+				GL.glColor(*col)
 				GL.glLineWidth(s[8])
 				GL.glBegin(GL.GL_LINES)
 				GL.glVertex(s[4],s[5])
@@ -234,7 +235,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 					GL.glPopMatrix()
 				
 				GL.glPushMatrix()
-				GL.glColor(s[1],s[2],s[3])
+				GL.glColor(*col)
 				GL.glTranslate(s[4],s[5],0)
 #				GL.glScale(s[7]/100.0,s[7]/100.0,s[7]/100.0)
 				GL.glScale(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
@@ -244,7 +245,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				GL.glPopMatrix()
 			elif s[0]=="circle":
 				GL.glPushMatrix()
-				GL.glColor(s[1],s[2],s[3])
+				GL.glColor(*col)
 				GL.glLineWidth(s[7])
 				GL.glTranslate(s[4],s[5],0)
 				GL.glScale(s[6],s[6],s[6])
@@ -266,6 +267,11 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def setMMode(self,m):
 		self.mmode=m
 	
+	def setActive(self,n,r,g,b):
+		self.active=(n,r,g,b)
+		self.shapechange=1
+		self.updateGL()
+	
 	def addShape(self,k,s):
 		"""Add a 'shape' object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
@@ -286,11 +292,14 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.shapechange=1
 		self.updateGL()
 	
-	def delShapes(self,k):
-		try:
-			for i in k:
-				del a[k]
-		except: del a[k]
+	def delShapes(self,k=None):
+		if k:
+			try:
+				for i in k:
+					del self.shapes[k]
+			except: del self.shapes[k]
+		else:
+			self.shapes={}
 		self.shapechange=1
 		self.updateGL()
 	
