@@ -13,8 +13,14 @@ namespace EMAN {
 
          // pca in core, returns a subset of right singular vectors
          vector <EMData*> dopca(vector <EMData*> imgstack, EMData *mask, int nvec);
+         vector <EMData*> PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nvec);
          // pca out of core
          char *dopca_ooc(const string &filename, EMData *mask, int nvec);
+
+         // Lanczos factorization
+         int Lanczos(vector <EMData*> imgstack, int *maxiter, 
+                     float  *diag, float *subdiag, float *V, float *beta);
+
    };
 }
 
