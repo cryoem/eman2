@@ -104,6 +104,10 @@ doublereal slapy2_(real *x, real *y);
 
 doublereal snrm2_(integer *n, real *x, integer *incx);
 
+/* Subroutine */ int srot_(integer *n, real *sx, integer *incx, real *sy, 
+			   integer *incy, real *c__, real *s);
+
+
 /* Subroutine */ int sorg2l_(integer *m, integer *n, integer *k, real *a, 
 	integer *lda, real *tau, real *work, integer *info);
 
@@ -158,4 +162,71 @@ doublereal snrm2_(integer *n, real *x, integer *incx);
 	real *a, integer *lda, real *x, integer *incx);
 
 /* Subroutine */ int xerbla_(char *srname, integer *info);
+
+/* Subroutine */ int sstedc_(char *compz, integer *n, real *d__, real *e, 
+	real *z__, integer *ldz, real *work, integer *lwork, integer *iwork, 
+			     integer *liwork, integer *info);
+
+/* Subroutine */ int sstevd_(char *jobz, integer *n, real *d__, real *e, real 
+	*z__, integer *ldz, real *work, integer *lwork, integer *iwork, 
+			     integer *liwork, integer *info);
+
+/* Subroutine */ int slaeda_(integer *n, integer *tlvls, integer *curlvl, 
+	integer *curpbm, integer *prmptr, integer *perm, integer *givptr, 
+	integer *givcol, real *givnum, real *q, integer *qptr, real *z__, 
+			     real *ztemp, integer *info);
+
+/* Subroutine */ int slaed0_(integer *icompq, integer *qsiz, integer *n, real 
+	*d__, real *e, real *q, integer *ldq, real *qstore, integer *ldqs, 
+			     real *work, integer *iwork, integer *info);
+
+/* Subroutine */ int slaed1_(integer *n, real *d__, real *q, integer *ldq, 
+	integer *indxq, real *rho, integer *cutpnt, real *work, integer *
+			     iwork, integer *info);
+
+/* Subroutine */ int slaed2_(integer *k, integer *n, integer *n1, real *d__, 
+	real *q, integer *ldq, integer *indxq, real *rho, real *z__, real *
+	dlamda, real *w, real *q2, integer *indx, integer *indxc, integer *
+			     indxp, integer *coltyp, integer *info);
+
+/* Subroutine */ int slaed3_(integer *k, integer *n, integer *n1, real *d__, 
+	real *q, integer *ldq, real *rho, real *dlamda, real *q2, integer *
+			     indx, integer *ctot, real *w, real *s, integer *info);
+
+/* Subroutine */ int slaed4_(integer *n, integer *i__, real *d__, real *z__, 
+			     real *delta, real *rho, real *dlam, integer *info);
+
+/* Subroutine */ int slaed5_(integer *i__, real *d__, real *z__, real *delta, 
+			     real *rho, real *dlam);
+
+/* Subroutine */ int slaed6_(integer *kniter, logical *orgati, real *rho, 
+			     real *d__, real *z__, real *finit, real *tau, integer *info);
+
+/* Subroutine */ int slaed7_(integer *icompq, integer *n, integer *qsiz, 
+	integer *tlvls, integer *curlvl, integer *curpbm, real *d__, real *q, 
+	integer *ldq, integer *indxq, real *rho, integer *cutpnt, real *
+	qstore, integer *qptr, integer *prmptr, integer *perm, integer *
+	givptr, integer *givcol, real *givnum, real *work, integer *iwork, 
+			     integer *info);
+
+/* Subroutine */ int slaed8_(integer *icompq, integer *k, integer *n, integer 
+	*qsiz, real *d__, real *q, integer *ldq, integer *indxq, real *rho, 
+	integer *cutpnt, real *z__, real *dlamda, real *q2, integer *ldq2, 
+	real *w, integer *perm, integer *givptr, integer *givcol, real *
+			     givnum, integer *indxp, integer *indx, integer *info);
+
+/* Subroutine */ int slaed9_(integer *k, integer *kstart, integer *kstop, 
+	integer *n, real *d__, real *q, integer *ldq, real *rho, real *dlamda,
+			     real *w, real *s, integer *lds, integer *info);
+
+
+/* Subroutine */ int slacpy_(char *uplo, integer *m, integer *n, real *a, 
+			     integer *lda, real *b, integer *ldb);
+
+/* Subroutine */ int slamrg_(integer *n1, integer *n2, real *a, integer *
+			     strd1, integer *strd2, integer *index);
+
+
+
+
 

@@ -195,7 +195,7 @@ integer ilaenv_(integer *ispec, char *name__, char *opts, integer *n1,
                  than this value, an unblocked routine should be used)   
             = 4: the number of shifts, used in the nonsymmetric   
                  eigenvalue routines   
-            = 5: the minimum column dimension for blocking to be used;   
+            = 5: the MINIMUM Column dimension for blocking to be used;   
                  rectangular blocks must have dimension at least k by m,   
                  where k is given by ILAENV(2,...) and m by ILAENV(5,...)   
             = 6: the crossover point for the SVD (when reducing an m by n   
@@ -898,6 +898,37 @@ if(n != 0)
 return(pow);
 }
 
+#ifdef KR_headers
+integer pow_ii(ap, bp) integer *ap, *bp;
+#else
+integer pow_ii(integer *ap, integer *bp)
+#endif
+{
+	integer pow, x, n;
+	unsigned long u;
+
+	x = *ap;
+	n = *bp;
+
+	if (n <= 0) {
+		if (n == 0 || x == 1)
+			return 1;
+		if (x != -1)
+			return x == 0 ? 1/x : 0;
+		n = -n;
+		}
+	u = n;
+	for(pow = 1; ; )
+		{
+		if(u & 01)
+			pow *= x;
+		if(u >>= 1)
+			x *= x;
+		else
+			break;
+		}
+	return(pow);
+	}
 
 #ifdef KR_headers
 double r_sign(a,b) real *a, *b;
@@ -11145,4 +11176,5135 @@ L40:
 
     return 0;
 } /* xerbla_ */
+
+
+/* Subroutine */ int sstedc_(char *compz, integer *n, real *d__, real *e, 
+	real *z__, integer *ldz, real *work, integer *lwork, integer *iwork, 
+	integer *liwork, integer *info)
+{
+/*  -- LAPACK driver routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SSTEDC computes all eigenvalues and, optionally, eigenvectors of a   
+    symmetric tridiagonal matrix using the divide and conquer method.   
+    The eigenvectors of a full or band real symmetric matrix can also be   
+    found if SSYTRD or SSPTRD or SSBTRD has been used to reduce this   
+    matrix to tridiagonal form.   
+
+    This code makes very mild assumptions about floating point   
+    arithmetic. It will work on machines with a guard digit in   
+    add/subtract, or on those binary machines without guard digits   
+    which subtract like the Cray X-MP, Cray Y-MP, Cray C-90, or Cray-2.   
+    It could conceivably fail on hexadecimal or decimal machines   
+    without guard digits, but we know of none.  See SLAED3 for details.   
+
+    Arguments   
+    =========   
+
+    COMPZ   (input) CHARACTER*1   
+            = 'N':  Compute eigenvalues only.   
+            = 'I':  Compute eigenvectors of tridiagonal matrix also.   
+            = 'V':  Compute eigenvectors of original dense symmetric   
+                    matrix also.  On entry, Z contains the orthogonal   
+                    matrix used to reduce the original matrix to   
+                    tridiagonal form.   
+
+    N       (input) INTEGER   
+            The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    D       (input/output) REAL array, dimension (N)   
+            On entry, the diagonal elements of the tridiagonal matrix.   
+            On exit, if INFO = 0, the eigenvalues in ascending order.   
+
+    E       (input/output) REAL array, dimension (N-1)   
+            On entry, the subdiagonal elements of the tridiagonal matrix.   
+            On exit, E has been destroyed.   
+
+    Z       (input/output) REAL array, dimension (LDZ,N)   
+            On entry, if COMPZ = 'V', then Z contains the orthogonal   
+            matrix used in the reduction to tridiagonal form.   
+            On exit, if INFO = 0, then if COMPZ = 'V', Z contains the   
+            orthonormal eigenvectors of the original symmetric matrix,   
+            and if COMPZ = 'I', Z contains the orthonormal eigenvectors   
+            of the symmetric tridiagonal matrix.   
+            If  COMPZ = 'N', then Z is not referenced.   
+
+    LDZ     (input) INTEGER   
+            The leading dimension of the array Z.  LDZ >= 1.   
+            If eigenvectors are desired, then LDZ >= max(1,N).   
+
+    WORK    (workspace/output) REAL array,   
+                                           dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.   
+            If COMPZ = 'N' or N <= 1 then LWORK must be at least 1.   
+            If COMPZ = 'V' and N > 1 then LWORK must be at least   
+                           ( 1 + 3*N + 2*N*lg N + 3*N**2 ),   
+                           where lg( N ) = smallest integer k such   
+                           that 2**k >= N.   
+            If COMPZ = 'I' and N > 1 then LWORK must be at least   
+                           ( 1 + 4*N + N**2 ).   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    IWORK   (workspace/output) INTEGER array, dimension (LIWORK)   
+            On exit, if INFO = 0, IWORK(1) returns the optimal LIWORK.   
+
+    LIWORK  (input) INTEGER   
+            The dimension of the array IWORK.   
+            If COMPZ = 'N' or N <= 1 then LIWORK must be at least 1.   
+            If COMPZ = 'V' and N > 1 then LIWORK must be at least   
+                           ( 6 + 6*N + 5*N*lg N ).   
+            If COMPZ = 'I' and N > 1 then LIWORK must be at least   
+                           ( 3 + 5*N ).   
+
+            If LIWORK = -1, then a workspace query is assumed; the   
+            routine only calculates the optimal size of the IWORK array,   
+            returns this value as the first entry of the IWORK array, and   
+            no error message related to LIWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  The algorithm failed to compute an eigenvalue while   
+                  working on the submatrix lying in rows and columns   
+                  INFO/(N+1) through mod(INFO,N+1).   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+    Modified by Francoise Tisseur, University of Tennessee.   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__2 = 2;
+    static integer c__9 = 9;
+    static integer c__0 = 0;
+    static real c_b18 = 0.f;
+    static real c_b19 = 1.f;
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer z_dim1, z_offset, i__1, i__2;
+    real r__1, r__2;
+    /* Builtin functions */
+    //double log(doublereal);
+    integer pow_ii(integer *, integer *);
+    //double sqrt(doublereal);
+    /* Local variables */
+    static real tiny;
+    static integer i__, j, k, m;
+    static real p;
+    extern logical lsame_(char *, char *);
+    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+	    integer *, real *, real *, integer *, real *, integer *, real *, 
+	    real *, integer *);
+    static integer lwmin, start;
+    extern /* Subroutine */ int sswap_(integer *, real *, integer *, real *, 
+	    integer *), slaed0_(integer *, integer *, integer *, real *, real 
+	    *, real *, integer *, real *, integer *, real *, integer *, 
+	    integer *);
+    static integer ii;
+    extern doublereal slamch_(char *);
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slascl_(char *, integer *, integer *, real *, 
+	    real *, integer *, integer *, real *, integer *, integer *), slacpy_(char *, integer *, integer *, real *, integer *, 
+	    real *, integer *), slaset_(char *, integer *, integer *, 
+	    real *, real *, real *, integer *);
+    static integer liwmin, icompz;
+    static real orgnrm;
+    extern doublereal slanst_(char *, integer *, real *, real *);
+    extern /* Subroutine */ int ssterf_(integer *, real *, real *, integer *),
+	     slasrt_(char *, integer *, real *, integer *);
+    static logical lquery;
+    static integer smlsiz;
+    extern /* Subroutine */ int ssteqr_(char *, integer *, real *, real *, 
+	    real *, integer *, real *, integer *);
+    static integer storez, strtrw, end, lgn;
+    static real eps;
+#define z___ref(a_1,a_2) z__[(a_2)*z_dim1 + a_1]
+
+
+    --d__;
+    --e;
+    z_dim1 = *ldz;
+    z_offset = 1 + z_dim1 * 1;
+    z__ -= z_offset;
+    --work;
+    --iwork;
+
+    /* Function Body */
+    *info = 0;
+    lquery = *lwork == -1 || *liwork == -1;
+
+    if (lsame_(compz, "N")) {
+	icompz = 0;
+    } else if (lsame_(compz, "V")) {
+	icompz = 1;
+    } else if (lsame_(compz, "I")) {
+	icompz = 2;
+    } else {
+	icompz = -1;
+    }
+    if (*n <= 1 || icompz <= 0) {
+	liwmin = 1;
+	lwmin = 1;
+    } else {
+	lgn = (integer) (log((real) (*n)) / log(2.f));
+	if (pow_ii(&c__2, &lgn) < *n) {
+	    ++lgn;
+	}
+	if (pow_ii(&c__2, &lgn) < *n) {
+	    ++lgn;
+	}
+	if (icompz == 1) {
+/* Computing 2nd power */
+	    i__1 = *n;
+	    lwmin = *n * 3 + 1 + (*n << 1) * lgn + i__1 * i__1 * 3;
+	    liwmin = *n * 6 + 6 + *n * 5 * lgn;
+	} else if (icompz == 2) {
+/* Computing 2nd power */
+	    i__1 = *n;
+	    lwmin = (*n << 2) + 1 + i__1 * i__1;
+	    liwmin = *n * 5 + 3;
+	}
+    }
+    if (icompz < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*ldz < 1 || icompz > 0 && *ldz < f2cmax(1,*n)) {
+	*info = -6;
+    } else if (*lwork < lwmin && ! lquery) {
+	*info = -8;
+    } else if (*liwork < liwmin && ! lquery) {
+	*info = -10;
+    }
+
+    if (*info == 0) {
+	work[1] = (real) lwmin;
+	iwork[1] = liwmin;
+    }
+
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SSTEDC", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+    if (*n == 1) {
+	if (icompz != 0) {
+	    z___ref(1, 1) = 1.f;
+	}
+	return 0;
+    }
+
+    smlsiz = ilaenv_(&c__9, "SSTEDC", " ", &c__0, &c__0, &c__0, &c__0, (
+	    ftnlen)6, (ftnlen)1);
+
+/*     If the following conditional clause is removed, then the routine   
+       will use the Divide and Conquer routine to compute only the   
+       eigenvalues, which requires (3N + 3N**2) real workspace and   
+       (2 + 5N + 2N lg(N)) integer workspace.   
+       Since on many architectures SSTERF is much faster than any other   
+       algorithm for finding eigenvalues only, it is used here   
+       as the default.   
+
+       If COMPZ = 'N', use SSTERF to compute the eigenvalues. */
+
+    if (icompz == 0) {
+	ssterf_(n, &d__[1], &e[1], info);
+	return 0;
+    }
+
+/*     If N is smaller than the minimum divide size (SMLSIZ+1), then   
+       solve the problem with another solver. */
+
+    if (*n <= smlsiz) {
+	if (icompz == 0) {
+	    ssterf_(n, &d__[1], &e[1], info);
+	    return 0;
+	} else if (icompz == 2) {
+	    ssteqr_("I", n, &d__[1], &e[1], &z__[z_offset], ldz, &work[1], 
+		    info);
+	    return 0;
+	} else {
+	    ssteqr_("V", n, &d__[1], &e[1], &z__[z_offset], ldz, &work[1], 
+		    info);
+	    return 0;
+	}
+    }
+
+/*     If COMPZ = 'V', the Z matrix must be stored elsewhere for later   
+       use. */
+
+    if (icompz == 1) {
+	storez = *n * *n + 1;
+    } else {
+	storez = 1;
+    }
+
+    if (icompz == 2) {
+	slaset_("Full", n, n, &c_b18, &c_b19, &z__[z_offset], ldz);
+    }
+
+/*     Scale. */
+
+    orgnrm = slanst_("M", n, &d__[1], &e[1]);
+    if (orgnrm == 0.f) {
+	return 0;
+    }
+
+    eps = slamch_("Epsilon");
+
+    start = 1;
+
+/*     while ( START <= N ) */
+
+L10:
+    if (start <= *n) {
+
+/*     Let END be the position of the next subdiagonal entry such that   
+       E( END ) <= TINY or END = N if no such subdiagonal exists.  The   
+       matrix identified by the elements between START and END   
+       constitutes an independent sub-problem. */
+
+	end = start;
+L20:
+	if (end < *n) {
+	    tiny = eps * sqrt((r__1 = d__[end], dabs(r__1))) * sqrt((r__2 = 
+		    d__[end + 1], dabs(r__2)));
+	    if ((r__1 = e[end], dabs(r__1)) > tiny) {
+		++end;
+		goto L20;
+	    }
+	}
+
+/*        (Sub) Problem determined.  Compute its size and solve it. */
+
+	m = end - start + 1;
+	if (m == 1) {
+	    start = end + 1;
+	    goto L10;
+	}
+	if (m > smlsiz) {
+	    *info = smlsiz;
+
+/*           Scale. */
+
+	    orgnrm = slanst_("M", &m, &d__[start], &e[start]);
+	    slascl_("G", &c__0, &c__0, &orgnrm, &c_b19, &m, &c__1, &d__[start]
+		    , &m, info);
+	    i__1 = m - 1;
+	    i__2 = m - 1;
+	    slascl_("G", &c__0, &c__0, &orgnrm, &c_b19, &i__1, &c__1, &e[
+		    start], &i__2, info);
+
+	    if (icompz == 1) {
+		strtrw = 1;
+	    } else {
+		strtrw = start;
+	    }
+	    slaed0_(&icompz, n, &m, &d__[start], &e[start], &z___ref(strtrw, 
+		    start), ldz, &work[1], n, &work[storez], &iwork[1], info);
+	    if (*info != 0) {
+		*info = (*info / (m + 1) + start - 1) * (*n + 1) + *info % (m 
+			+ 1) + start - 1;
+		return 0;
+	    }
+
+/*           Scale back. */
+
+	    slascl_("G", &c__0, &c__0, &c_b19, &orgnrm, &m, &c__1, &d__[start]
+		    , &m, info);
+
+	} else {
+	    if (icompz == 1) {
+
+/*     Since QR won't update a Z matrix which is larger than the   
+       length of D, we must solve the sub-problem in a workspace and   
+       then multiply back into Z. */
+
+		ssteqr_("I", &m, &d__[start], &e[start], &work[1], &m, &work[
+			m * m + 1], info);
+		slacpy_("A", n, &m, &z___ref(1, start), ldz, &work[storez], n);
+		sgemm_("N", "N", n, &m, &m, &c_b19, &work[storez], ldz, &work[
+			1], &m, &c_b18, &z___ref(1, start), ldz);
+	    } else if (icompz == 2) {
+		ssteqr_("I", &m, &d__[start], &e[start], &z___ref(start, 
+			start), ldz, &work[1], info);
+	    } else {
+		ssterf_(&m, &d__[start], &e[start], info);
+	    }
+	    if (*info != 0) {
+		*info = start * (*n + 1) + end;
+		return 0;
+	    }
+	}
+
+	start = end + 1;
+	goto L10;
+    }
+
+/*     endwhile   
+
+       If the problem split any number of times, then the eigenvalues   
+       will not be properly ordered.  Here we permute the eigenvalues   
+       (and the associated eigenvectors) into ascending order. */
+
+    if (m != *n) {
+	if (icompz == 0) {
+
+/*        Use Quick Sort */
+
+	    slasrt_("I", n, &d__[1], info);
+
+	} else {
+
+/*        Use Selection Sort to minimize swaps of eigenvectors */
+
+	    i__1 = *n;
+	    for (ii = 2; ii <= i__1; ++ii) {
+		i__ = ii - 1;
+		k = i__;
+		p = d__[i__];
+		i__2 = *n;
+		for (j = ii; j <= i__2; ++j) {
+		    if (d__[j] < p) {
+			k = j;
+			p = d__[j];
+		    }
+/* L30: */
+		}
+		if (k != i__) {
+		    d__[k] = d__[i__];
+		    d__[i__] = p;
+		    sswap_(n, &z___ref(1, i__), &c__1, &z___ref(1, k), &c__1);
+		}
+/* L40: */
+	    }
+	}
+    }
+
+    work[1] = (real) lwmin;
+    iwork[1] = liwmin;
+
+    return 0;
+
+/*     End of SSTEDC */
+
+} /* sstedc_ */
+
+#undef z___ref
+
+
+/* Subroutine */ int sstevd_(char *jobz, integer *n, real *d__, real *e, real 
+	*z__, integer *ldz, real *work, integer *lwork, integer *iwork, 
+	integer *liwork, integer *info)
+{
+/*  -- LAPACK driver routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SSTEVD computes all eigenvalues and, optionally, eigenvectors of a   
+    real symmetric tridiagonal matrix. If eigenvectors are desired, it   
+    uses a divide and conquer algorithm.   
+
+    The divide and conquer algorithm makes very mild assumptions about   
+    floating point arithmetic. It will work on machines with a guard   
+    digit in add/subtract, or on those binary machines without guard   
+    digits which subtract like the Cray X-MP, Cray Y-MP, Cray C-90, or   
+    Cray-2. It could conceivably fail on hexadecimal or decimal machines   
+    without guard digits, but we know of none.   
+
+    Arguments   
+    =========   
+
+    JOBZ    (input) CHARACTER*1   
+            = 'N':  Compute eigenvalues only;   
+            = 'V':  Compute eigenvalues and eigenvectors.   
+
+    N       (input) INTEGER   
+            The order of the matrix.  N >= 0.   
+
+    D       (input/output) REAL array, dimension (N)   
+            On entry, the n diagonal elements of the tridiagonal matrix   
+            A.   
+            On exit, if INFO = 0, the eigenvalues in ascending order.   
+
+    E       (input/output) REAL array, dimension (N)   
+            On entry, the (n-1) subdiagonal elements of the tridiagonal   
+            matrix A, stored in elements 1 to N-1 of E; E(N) need not   
+            be set, but is used by the routine.   
+            On exit, the contents of E are destroyed.   
+
+    Z       (output) REAL array, dimension (LDZ, N)   
+            If JOBZ = 'V', then if INFO = 0, Z contains the orthonormal   
+            eigenvectors of the matrix A, with the i-th column of Z   
+            holding the eigenvector associated with D(i).   
+            If JOBZ = 'N', then Z is not referenced.   
+
+    LDZ     (input) INTEGER   
+            The leading dimension of the array Z.  LDZ >= 1, and if   
+            JOBZ = 'V', LDZ >= max(1,N).   
+
+    WORK    (workspace/output) REAL array,   
+                                           dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.   
+            If JOBZ  = 'N' or N <= 1 then LWORK must be at least 1.   
+            If JOBZ  = 'V' and N > 1 then LWORK must be at least   
+                           ( 1 + 4*N + N**2 ).   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    IWORK   (workspace/output) INTEGER array, dimension (LIWORK)   
+            On exit, if INFO = 0, IWORK(1) returns the optimal LIWORK.   
+
+    LIWORK  (input) INTEGER   
+            The dimension of the array IWORK.   
+            If JOBZ  = 'N' or N <= 1 then LIWORK must be at least 1.   
+            If JOBZ  = 'V' and N > 1 then LIWORK must be at least 3+5*N.   
+
+            If LIWORK = -1, then a workspace query is assumed; the   
+            routine only calculates the optimal size of the IWORK array,   
+            returns this value as the first entry of the IWORK array, and   
+            no error message related to LIWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+            > 0:  if INFO = i, the algorithm failed to converge; i   
+                  off-diagonal elements of E did not converge to zero.   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer z_dim1, z_offset, i__1;
+    real r__1;
+    /* Builtin functions */
+    // double sqrt(doublereal);
+    /* Local variables */
+    static real rmin, rmax, tnrm, sigma;
+    extern logical lsame_(char *, char *);
+    extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
+    static integer lwmin;
+    static logical wantz;
+    static integer iscale;
+    extern doublereal slamch_(char *);
+    static real safmin;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    static real bignum;
+    extern /* Subroutine */ int sstedc_(char *, integer *, real *, real *, 
+	    real *, integer *, real *, integer *, integer *, integer *, 
+	    integer *);
+    static integer liwmin;
+    extern doublereal slanst_(char *, integer *, real *, real *);
+    extern /* Subroutine */ int ssterf_(integer *, real *, real *, integer *);
+    static real smlnum;
+    static logical lquery;
+    static real eps;
+#define z___ref(a_1,a_2) z__[(a_2)*z_dim1 + a_1]
+
+
+    --d__;
+    --e;
+    z_dim1 = *ldz;
+    z_offset = 1 + z_dim1 * 1;
+    z__ -= z_offset;
+    --work;
+    --iwork;
+
+    /* Function Body */
+    wantz = lsame_(jobz, "V");
+    lquery = *lwork == -1 || *liwork == -1;
+
+    *info = 0;
+    liwmin = 1;
+    lwmin = 1;
+    if (*n > 1 && wantz) {
+/* Computing 2nd power */
+	i__1 = *n;
+	lwmin = (*n << 2) + 1 + i__1 * i__1;
+	liwmin = *n * 5 + 3;
+    }
+
+    if (! (wantz || lsame_(jobz, "N"))) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*ldz < 1 || wantz && *ldz < *n) {
+	*info = -6;
+    } else if (*lwork < lwmin && ! lquery) {
+	*info = -8;
+    } else if (*liwork < liwmin && ! lquery) {
+	*info = -10;
+    }
+
+    if (*info == 0) {
+	work[1] = (real) lwmin;
+	iwork[1] = liwmin;
+    }
+
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SSTEVD", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+    if (*n == 1) {
+	if (wantz) {
+	    z___ref(1, 1) = 1.f;
+	}
+	return 0;
+    }
+
+/*     Get machine constants. */
+
+    safmin = slamch_("Safe minimum");
+    eps = slamch_("Precision");
+    smlnum = safmin / eps;
+    bignum = 1.f / smlnum;
+    rmin = sqrt(smlnum);
+    rmax = sqrt(bignum);
+
+/*     Scale matrix to allowable range, if necessary. */
+
+    iscale = 0;
+    tnrm = slanst_("M", n, &d__[1], &e[1]);
+    if (tnrm > 0.f && tnrm < rmin) {
+	iscale = 1;
+	sigma = rmin / tnrm;
+    } else if (tnrm > rmax) {
+	iscale = 1;
+	sigma = rmax / tnrm;
+    }
+    if (iscale == 1) {
+	sscal_(n, &sigma, &d__[1], &c__1);
+	i__1 = *n - 1;
+	sscal_(&i__1, &sigma, &e[1], &c__1);
+    }
+
+/*     For eigenvalues only, call SSTERF.  For eigenvalues and   
+       eigenvectors, call SSTEDC. */
+
+    if (! wantz) {
+	ssterf_(n, &d__[1], &e[1], info);
+    } else {
+	sstedc_("I", n, &d__[1], &e[1], &z__[z_offset], ldz, &work[1], lwork, 
+		&iwork[1], liwork, info);
+    }
+
+/*     If matrix was scaled, then rescale eigenvalues appropriately. */
+
+    if (iscale == 1) {
+	r__1 = 1.f / sigma;
+	sscal_(n, &r__1, &d__[1], &c__1);
+    }
+
+    work[1] = (real) lwmin;
+    iwork[1] = liwmin;
+
+    return 0;
+
+/*     End of SSTEVD */
+
+} /* sstevd_ */
+
+#undef z___ref
+
+
+/* Subroutine */ int slaed0_(integer *icompq, integer *qsiz, integer *n, real 
+	*d__, real *e, real *q, integer *ldq, real *qstore, integer *ldqs, 
+	real *work, integer *iwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLAED0 computes all eigenvalues and corresponding eigenvectors of a   
+    symmetric tridiagonal matrix using the divide and conquer method.   
+
+    Arguments   
+    =========   
+
+    ICOMPQ  (input) INTEGER   
+            = 0:  Compute eigenvalues only.   
+            = 1:  Compute eigenvectors of original dense symmetric matrix   
+                  also.  On entry, Q contains the orthogonal matrix used   
+                  to reduce the original matrix to tridiagonal form.   
+            = 2:  Compute eigenvalues and eigenvectors of tridiagonal   
+                  matrix.   
+
+    QSIZ   (input) INTEGER   
+           The dimension of the orthogonal matrix used to reduce   
+           the full matrix to tridiagonal form.  QSIZ >= N if ICOMPQ = 1.   
+
+    N      (input) INTEGER   
+           The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    D      (input/output) REAL array, dimension (N)   
+           On entry, the main diagonal of the tridiagonal matrix.   
+           On exit, its eigenvalues.   
+
+    E      (input) REAL array, dimension (N-1)   
+           The off-diagonal elements of the tridiagonal matrix.   
+           On exit, E has been destroyed.   
+
+    Q      (input/output) REAL array, dimension (LDQ, N)   
+           On entry, Q must contain an N-by-N orthogonal matrix.   
+           If ICOMPQ = 0    Q is not referenced.   
+           If ICOMPQ = 1    On entry, Q is a subset of the columns of the   
+                            orthogonal matrix used to reduce the full   
+                            matrix to tridiagonal form corresponding to   
+                            the subset of the full matrix which is being   
+                            decomposed at this time.   
+           If ICOMPQ = 2    On entry, Q will be the identity matrix.   
+                            On exit, Q contains the eigenvectors of the   
+                            tridiagonal matrix.   
+
+    LDQ    (input) INTEGER   
+           The leading dimension of the array Q.  If eigenvectors are   
+           desired, then  LDQ >= max(1,N).  In any case,  LDQ >= 1.   
+
+    QSTORE (workspace) REAL array, dimension (LDQS, N)   
+           Referenced only when ICOMPQ = 1.  Used to store parts of   
+           the eigenvector matrix when the updating matrix multiplies   
+           take place.   
+
+    LDQS   (input) INTEGER   
+           The leading dimension of the array QSTORE.  If ICOMPQ = 1,   
+           then  LDQS >= max(1,N).  In any case,  LDQS >= 1.   
+
+    WORK   (workspace) REAL array,   
+           If ICOMPQ = 0 or 1, the dimension of WORK must be at least   
+                       1 + 3*N + 2*N*lg N + 2*N**2   
+                       ( lg( N ) = smallest integer k   
+                                   such that 2^k >= N )   
+           If ICOMPQ = 2, the dimension of WORK must be at least   
+                       4*N + N**2.   
+
+    IWORK  (workspace) INTEGER array,   
+           If ICOMPQ = 0 or 1, the dimension of IWORK must be at least   
+                          6 + 6*N + 5*N*lg N.   
+                          ( lg( N ) = smallest integer k   
+                                      such that 2^k >= N )   
+           If ICOMPQ = 2, the dimension of IWORK must be at least   
+                          3 + 5*N.   
+
+    INFO   (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  The algorithm failed to compute an eigenvalue while   
+                  working on the submatrix lying in rows and columns   
+                  INFO/(N+1) through mod(INFO,N+1).   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__9 = 9;
+    static integer c__0 = 0;
+    static integer c__2 = 2;
+    static real c_b23 = 1.f;
+    static real c_b24 = 0.f;
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer q_dim1, q_offset, qstore_dim1, qstore_offset, i__1, i__2;
+    real r__1;
+    /* Builtin functions */
+    // double log(doublereal);
+    integer pow_ii(integer *, integer *);
+    /* Local variables */
+    static real temp;
+    static integer curr, i__, j, k;
+    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+	    integer *, real *, real *, integer *, real *, integer *, real *, 
+	    real *, integer *);
+    static integer iperm, indxq, iwrem;
+    extern /* Subroutine */ int scopy_(integer *, real *, integer *, real *, 
+	    integer *);
+    static integer iqptr, tlvls;
+    extern /* Subroutine */ int slaed1_(integer *, real *, real *, integer *, 
+	    integer *, real *, integer *, real *, integer *, integer *), 
+	    slaed7_(integer *, integer *, integer *, integer *, integer *, 
+	    integer *, real *, real *, integer *, integer *, real *, integer *
+	    , real *, integer *, integer *, integer *, integer *, integer *, 
+	    real *, real *, integer *, integer *);
+    static integer iq, igivcl;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    static integer igivnm, submat;
+    extern /* Subroutine */ int slacpy_(char *, integer *, integer *, real *, 
+	    integer *, real *, integer *);
+    static integer curprb, subpbs, igivpt, curlvl, matsiz, iprmpt, smlsiz;
+    extern /* Subroutine */ int ssteqr_(char *, integer *, real *, real *, 
+	    real *, integer *, real *, integer *);
+    static integer lgn, msd2, smm1, spm1, spm2;
+#define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
+#define qstore_ref(a_1,a_2) qstore[(a_2)*qstore_dim1 + a_1]
+
+
+    --d__;
+    --e;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    qstore_dim1 = *ldqs;
+    qstore_offset = 1 + qstore_dim1 * 1;
+    qstore -= qstore_offset;
+    --work;
+    --iwork;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*icompq < 0 || *icompq > 2) {
+	*info = -1;
+    } else if (*icompq == 1 && *qsiz < f2cmax(0,*n)) {
+	*info = -2;
+    } else if (*n < 0) {
+	*info = -3;
+    } else if (*ldq < f2cmax(1,*n)) {
+	*info = -7;
+    } else if (*ldqs < f2cmax(1,*n)) {
+	*info = -9;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED0", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+    smlsiz = ilaenv_(&c__9, "SLAED0", " ", &c__0, &c__0, &c__0, &c__0, (
+	    ftnlen)6, (ftnlen)1);
+
+/*     Determine the size and placement of the submatrices, and save in   
+       the leading elements of IWORK. */
+
+    iwork[1] = *n;
+    subpbs = 1;
+    tlvls = 0;
+L10:
+    if (iwork[subpbs] > smlsiz) {
+	for (j = subpbs; j >= 1; --j) {
+	    iwork[j * 2] = (iwork[j] + 1) / 2;
+	    iwork[(j << 1) - 1] = iwork[j] / 2;
+/* L20: */
+	}
+	++tlvls;
+	subpbs <<= 1;
+	goto L10;
+    }
+    i__1 = subpbs;
+    for (j = 2; j <= i__1; ++j) {
+	iwork[j] += iwork[j - 1];
+/* L30: */
+    }
+
+/*     Divide the matrix into SUBPBS submatrices of size at most SMLSIZ+1   
+       using rank-1 modifications (cuts). */
+
+    spm1 = subpbs - 1;
+    i__1 = spm1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	submat = iwork[i__] + 1;
+	smm1 = submat - 1;
+	d__[smm1] -= (r__1 = e[smm1], dabs(r__1));
+	d__[submat] -= (r__1 = e[smm1], dabs(r__1));
+/* L40: */
+    }
+
+    indxq = (*n << 2) + 3;
+    if (*icompq != 2) {
+
+/*        Set up workspaces for eigenvalues only/accumulate new vectors   
+          routine */
+
+	temp = log((real) (*n)) / log(2.f);
+	lgn = (integer) temp;
+	if (pow_ii(&c__2, &lgn) < *n) {
+	    ++lgn;
+	}
+	if (pow_ii(&c__2, &lgn) < *n) {
+	    ++lgn;
+	}
+	iprmpt = indxq + *n + 1;
+	iperm = iprmpt + *n * lgn;
+	iqptr = iperm + *n * lgn;
+	igivpt = iqptr + *n + 2;
+	igivcl = igivpt + *n * lgn;
+
+	igivnm = 1;
+	iq = igivnm + (*n << 1) * lgn;
+/* Computing 2nd power */
+	i__1 = *n;
+	iwrem = iq + i__1 * i__1 + 1;
+
+/*        Initialize pointers */
+
+	i__1 = subpbs;
+	for (i__ = 0; i__ <= i__1; ++i__) {
+	    iwork[iprmpt + i__] = 1;
+	    iwork[igivpt + i__] = 1;
+/* L50: */
+	}
+	iwork[iqptr] = 1;
+    }
+
+/*     Solve each submatrix eigenproblem at the bottom of the divide and   
+       conquer tree. */
+
+    curr = 0;
+    i__1 = spm1;
+    for (i__ = 0; i__ <= i__1; ++i__) {
+	if (i__ == 0) {
+	    submat = 1;
+	    matsiz = iwork[1];
+	} else {
+	    submat = iwork[i__] + 1;
+	    matsiz = iwork[i__ + 1] - iwork[i__];
+	}
+	if (*icompq == 2) {
+	    ssteqr_("I", &matsiz, &d__[submat], &e[submat], &q_ref(submat, 
+		    submat), ldq, &work[1], info);
+	    if (*info != 0) {
+		goto L130;
+	    }
+	} else {
+	    ssteqr_("I", &matsiz, &d__[submat], &e[submat], &work[iq - 1 + 
+		    iwork[iqptr + curr]], &matsiz, &work[1], info);
+	    if (*info != 0) {
+		goto L130;
+	    }
+	    if (*icompq == 1) {
+		sgemm_("N", "N", qsiz, &matsiz, &matsiz, &c_b23, &q_ref(1, 
+			submat), ldq, &work[iq - 1 + iwork[iqptr + curr]], &
+			matsiz, &c_b24, &qstore_ref(1, submat), ldqs);
+	    }
+/* Computing 2nd power */
+	    i__2 = matsiz;
+	    iwork[iqptr + curr + 1] = iwork[iqptr + curr] + i__2 * i__2;
+	    ++curr;
+	}
+	k = 1;
+	i__2 = iwork[i__ + 1];
+	for (j = submat; j <= i__2; ++j) {
+	    iwork[indxq + j] = k;
+	    ++k;
+/* L60: */
+	}
+/* L70: */
+    }
+
+/*     Successively merge eigensystems of adjacent submatrices   
+       into eigensystem for the corresponding larger matrix.   
+
+       while ( SUBPBS > 1 ) */
+
+    curlvl = 1;
+L80:
+    if (subpbs > 1) {
+	spm2 = subpbs - 2;
+	i__1 = spm2;
+	for (i__ = 0; i__ <= i__1; i__ += 2) {
+	    if (i__ == 0) {
+		submat = 1;
+		matsiz = iwork[2];
+		msd2 = iwork[1];
+		curprb = 0;
+	    } else {
+		submat = iwork[i__] + 1;
+		matsiz = iwork[i__ + 2] - iwork[i__];
+		msd2 = matsiz / 2;
+		++curprb;
+	    }
+
+/*     Merge lower order eigensystems (of size MSD2 and MATSIZ - MSD2)   
+       into an eigensystem of size MATSIZ.   
+       SLAED1 is used only for the full eigensystem of a tridiagonal   
+       matrix.   
+       SLAED7 handles the cases in which eigenvalues only or eigenvalues   
+       and eigenvectors of a full symmetric matrix (which was reduced to   
+       tridiagonal form) are desired. */
+
+	    if (*icompq == 2) {
+		slaed1_(&matsiz, &d__[submat], &q_ref(submat, submat), ldq, &
+			iwork[indxq + submat], &e[submat + msd2 - 1], &msd2, &
+			work[1], &iwork[subpbs + 1], info);
+	    } else {
+		slaed7_(icompq, &matsiz, qsiz, &tlvls, &curlvl, &curprb, &d__[
+			submat], &qstore_ref(1, submat), ldqs, &iwork[indxq + 
+			submat], &e[submat + msd2 - 1], &msd2, &work[iq], &
+			iwork[iqptr], &iwork[iprmpt], &iwork[iperm], &iwork[
+			igivpt], &iwork[igivcl], &work[igivnm], &work[iwrem], 
+			&iwork[subpbs + 1], info);
+	    }
+	    if (*info != 0) {
+		goto L130;
+	    }
+	    iwork[i__ / 2 + 1] = iwork[i__ + 2];
+/* L90: */
+	}
+	subpbs /= 2;
+	++curlvl;
+	goto L80;
+    }
+
+/*     end while   
+
+       Re-merge the eigenvalues/vectors which were deflated at the final   
+       merge step. */
+
+    if (*icompq == 1) {
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    j = iwork[indxq + i__];
+	    work[i__] = d__[j];
+	    scopy_(qsiz, &qstore_ref(1, j), &c__1, &q_ref(1, i__), &c__1);
+/* L100: */
+	}
+	scopy_(n, &work[1], &c__1, &d__[1], &c__1);
+    } else if (*icompq == 2) {
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    j = iwork[indxq + i__];
+	    work[i__] = d__[j];
+	    scopy_(n, &q_ref(1, j), &c__1, &work[*n * i__ + 1], &c__1);
+/* L110: */
+	}
+	scopy_(n, &work[1], &c__1, &d__[1], &c__1);
+	slacpy_("A", n, n, &work[*n + 1], n, &q[q_offset], ldq);
+    } else {
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    j = iwork[indxq + i__];
+	    work[i__] = d__[j];
+/* L120: */
+	}
+	scopy_(n, &work[1], &c__1, &d__[1], &c__1);
+    }
+    goto L140;
+
+L130:
+    *info = submat * (*n + 1) + submat + matsiz - 1;
+
+L140:
+    return 0;
+
+/*     End of SLAED0 */
+
+} /* slaed0_ */
+
+#undef qstore_ref
+#undef q_ref
+
+
+
+/* Subroutine */ int slaed7_(integer *icompq, integer *n, integer *qsiz, 
+	integer *tlvls, integer *curlvl, integer *curpbm, real *d__, real *q, 
+	integer *ldq, integer *indxq, real *rho, integer *cutpnt, real *
+	qstore, integer *qptr, integer *prmptr, integer *perm, integer *
+	givptr, integer *givcol, real *givnum, real *work, integer *iwork, 
+	integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    SLAED7 computes the updated eigensystem of a diagonal   
+    matrix after modification by a rank-one symmetric matrix. This   
+    routine is used only for the eigenproblem which requires all   
+    eigenvalues and optionally eigenvectors of a dense symmetric matrix   
+    that has been reduced to tridiagonal form.  SLAED1 handles   
+    the case in which all eigenvalues and eigenvectors of a symmetric   
+    tridiagonal matrix are desired.   
+
+      T = Q(in) ( D(in) + RHO * Z*Z' ) Q'(in) = Q(out) * D(out) * Q'(out)   
+
+       where Z = Q'u, u is a vector of length N with ones in the   
+       CUTPNT and CUTPNT + 1 th elements and zeros elsewhere.   
+
+       The eigenvectors of the original matrix are stored in Q, and the   
+       eigenvalues are in D.  The algorithm consists of three stages:   
+
+          The first stage consists of deflating the size of the problem   
+          when there are multiple eigenvalues or if there is a zero in   
+          the Z vector.  For each such occurence the dimension of the   
+          secular equation problem is reduced by one.  This stage is   
+          performed by the routine SLAED8.   
+
+          The second stage consists of calculating the updated   
+          eigenvalues. This is done by finding the roots of the secular   
+          equation via the routine SLAED4 (as called by SLAED9).   
+          This routine also calculates the eigenvectors of the current   
+          problem.   
+
+          The final stage consists of computing the updated eigenvectors   
+          directly using the updated eigenvalues.  The eigenvectors for   
+          the current problem are multiplied with the eigenvectors from   
+          the overall problem.   
+
+    Arguments   
+    =========   
+
+    ICOMPQ  (input) INTEGER   
+            = 0:  Compute eigenvalues only.   
+            = 1:  Compute eigenvectors of original dense symmetric matrix   
+                  also.  On entry, Q contains the orthogonal matrix used   
+                  to reduce the original matrix to tridiagonal form.   
+
+    N      (input) INTEGER   
+           The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    QSIZ   (input) INTEGER   
+           The dimension of the orthogonal matrix used to reduce   
+           the full matrix to tridiagonal form.  QSIZ >= N if ICOMPQ = 1.   
+
+    TLVLS  (input) INTEGER   
+           The total number of merging levels in the overall divide and   
+           conquer tree.   
+
+    CURLVL (input) INTEGER   
+           The current level in the overall merge routine,   
+           0 <= CURLVL <= TLVLS.   
+
+    CURPBM (input) INTEGER   
+           The current problem in the current level in the overall   
+           merge routine (counting from upper left to lower right).   
+
+    D      (input/output) REAL array, dimension (N)   
+           On entry, the eigenvalues of the rank-1-perturbed matrix.   
+           On exit, the eigenvalues of the repaired matrix.   
+
+    Q      (input/output) REAL array, dimension (LDQ, N)   
+           On entry, the eigenvectors of the rank-1-perturbed matrix.   
+           On exit, the eigenvectors of the repaired tridiagonal matrix.   
+
+    LDQ    (input) INTEGER   
+           The leading dimension of the array Q.  LDQ >= max(1,N).   
+
+    INDXQ  (output) INTEGER array, dimension (N)   
+           The permutation which will reintegrate the subproblem just   
+           solved back into sorted order, i.e., D( INDXQ( I = 1, N ) )   
+           will be in ascending order.   
+
+    RHO    (input) REAL   
+           The subdiagonal element used to create the rank-1   
+           modification.   
+
+    CUTPNT (input) INTEGER   
+           Contains the location of the last eigenvalue in the leading   
+           sub-matrix.  min(1,N) <= CUTPNT <= N.   
+
+    QSTORE (input/output) REAL array, dimension (N**2+1)   
+           Stores eigenvectors of submatrices encountered during   
+           divide and conquer, packed together. QPTR points to   
+           beginning of the submatrices.   
+
+    QPTR   (input/output) INTEGER array, dimension (N+2)   
+           List of indices pointing to beginning of submatrices stored   
+           in QSTORE. The submatrices are numbered starting at the   
+           bottom left of the divide and conquer tree, from left to   
+           right and bottom to top.   
+
+    PRMPTR (input) INTEGER array, dimension (N lg N)   
+           Contains a list of pointers which indicate where in PERM a   
+           level's permutation is stored.  PRMPTR(i+1) - PRMPTR(i)   
+           indicates the size of the permutation and also the size of   
+           the full, non-deflated problem.   
+
+    PERM   (input) INTEGER array, dimension (N lg N)   
+           Contains the permutations (from deflation and sorting) to be   
+           applied to each eigenblock.   
+
+    GIVPTR (input) INTEGER array, dimension (N lg N)   
+           Contains a list of pointers which indicate where in GIVCOL a   
+           level's Givens rotations are stored.  GIVPTR(i+1) - GIVPTR(i)   
+           indicates the number of Givens rotations.   
+
+    GIVCOL (input) INTEGER array, dimension (2, N lg N)   
+           Each pair of numbers indicates a pair of columns to take place   
+           in a Givens rotation.   
+
+    GIVNUM (input) REAL array, dimension (2, N lg N)   
+           Each number indicates the S value to be used in the   
+           corresponding Givens rotation.   
+
+    WORK   (workspace) REAL array, dimension (3*N+QSIZ*N)   
+
+    IWORK  (workspace) INTEGER array, dimension (4*N)   
+
+    INFO   (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  if INFO = 1, an eigenvalue did not converge   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__2 = 2;
+    static integer c__1 = 1;
+    static real c_b10 = 1.f;
+    static real c_b11 = 0.f;
+    static integer c_n1 = -1;
+    
+    /* System generated locals */
+    integer q_dim1, q_offset, i__1, i__2;
+    /* Builtin functions */
+    integer pow_ii(integer *, integer *);
+    /* Local variables */
+    static integer indx, curr, i__, k, indxc;
+    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+	    integer *, real *, real *, integer *, real *, integer *, real *, 
+	    real *, integer *);
+    static integer indxp, n1, n2;
+    extern /* Subroutine */ int slaed8_(integer *, integer *, integer *, 
+	    integer *, real *, real *, integer *, integer *, real *, integer *
+	    , real *, real *, real *, integer *, real *, integer *, integer *,
+	     integer *, real *, integer *, integer *, integer *), slaed9_(
+	    integer *, integer *, integer *, integer *, real *, real *, 
+	    integer *, real *, real *, real *, real *, integer *, integer *), 
+	    slaeda_(integer *, integer *, integer *, integer *, integer *, 
+	    integer *, integer *, integer *, real *, real *, integer *, real *
+	    , real *, integer *);
+    static integer idlmda, is, iw, iz;
+    extern /* Subroutine */ int xerbla_(char *, integer *), slamrg_(
+	    integer *, integer *, real *, integer *, integer *, integer *);
+    static integer coltyp, iq2, ptr, ldq2;
+#define givcol_ref(a_1,a_2) givcol[(a_2)*2 + a_1]
+#define givnum_ref(a_1,a_2) givnum[(a_2)*2 + a_1]
+
+
+    --d__;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    --indxq;
+    --qstore;
+    --qptr;
+    --prmptr;
+    --perm;
+    --givptr;
+    givcol -= 3;
+    givnum -= 3;
+    --work;
+    --iwork;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*icompq < 0 || *icompq > 1) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*icompq == 1 && *qsiz < *n) {
+	*info = -4;
+    } else if (*ldq < f2cmax(1,*n)) {
+	*info = -9;
+    } else if (f2cmin(1,*n) > *cutpnt || *n < *cutpnt) {
+	*info = -12;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED7", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+/*     The following values are for bookkeeping purposes only.  They are   
+       integer pointers which indicate the portion of the workspace   
+       used by a particular array in SLAED8 and SLAED9. */
+
+    if (*icompq == 1) {
+	ldq2 = *qsiz;
+    } else {
+	ldq2 = *n;
+    }
+
+    iz = 1;
+    idlmda = iz + *n;
+    iw = idlmda + *n;
+    iq2 = iw + *n;
+    is = iq2 + *n * ldq2;
+
+    indx = 1;
+    indxc = indx + *n;
+    coltyp = indxc + *n;
+    indxp = coltyp + *n;
+
+/*     Form the z-vector which consists of the last row of Q_1 and the   
+       first row of Q_2. */
+
+    ptr = pow_ii(&c__2, tlvls) + 1;
+    i__1 = *curlvl - 1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	i__2 = *tlvls - i__;
+	ptr += pow_ii(&c__2, &i__2);
+/* L10: */
+    }
+    curr = ptr + *curpbm;
+    slaeda_(n, tlvls, curlvl, curpbm, &prmptr[1], &perm[1], &givptr[1], &
+	    givcol[3], &givnum[3], &qstore[1], &qptr[1], &work[iz], &work[iz 
+	    + *n], info);
+
+/*     When solving the final problem, we no longer need the stored data,   
+       so we will overwrite the data from this level onto the previously   
+       used storage space. */
+
+    if (*curlvl == *tlvls) {
+	qptr[curr] = 1;
+	prmptr[curr] = 1;
+	givptr[curr] = 1;
+    }
+
+/*     Sort and Deflate eigenvalues. */
+
+    slaed8_(icompq, &k, n, qsiz, &d__[1], &q[q_offset], ldq, &indxq[1], rho, 
+	    cutpnt, &work[iz], &work[idlmda], &work[iq2], &ldq2, &work[iw], &
+	    perm[prmptr[curr]], &givptr[curr + 1], &givcol_ref(1, givptr[curr]
+	    ), &givnum_ref(1, givptr[curr]), &iwork[indxp], &iwork[indx], 
+	    info);
+    prmptr[curr + 1] = prmptr[curr] + *n;
+    givptr[curr + 1] += givptr[curr];
+
+/*     Solve Secular Equation. */
+
+    if (k != 0) {
+	slaed9_(&k, &c__1, &k, n, &d__[1], &work[is], &k, rho, &work[idlmda], 
+		&work[iw], &qstore[qptr[curr]], &k, info);
+	if (*info != 0) {
+	    goto L30;
+	}
+	if (*icompq == 1) {
+	    sgemm_("N", "N", qsiz, &k, &k, &c_b10, &work[iq2], &ldq2, &qstore[
+		    qptr[curr]], &k, &c_b11, &q[q_offset], ldq);
+	}
+/* Computing 2nd power */
+	i__1 = k;
+	qptr[curr + 1] = qptr[curr] + i__1 * i__1;
+
+/*     Prepare the INDXQ sorting permutation. */
+
+	n1 = k;
+	n2 = *n - k;
+	slamrg_(&n1, &n2, &d__[1], &c__1, &c_n1, &indxq[1]);
+    } else {
+	qptr[curr + 1] = qptr[curr];
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    indxq[i__] = i__;
+/* L20: */
+	}
+    }
+
+L30:
+    return 0;
+
+/*     End of SLAED7 */
+
+} /* slaed7_ */
+
+#undef givnum_ref
+#undef givcol_ref
+
+
+/* Subroutine */ int slaed1_(integer *n, real *d__, real *q, integer *ldq, 
+	integer *indxq, real *rho, integer *cutpnt, real *work, integer *
+	iwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLAED1 computes the updated eigensystem of a diagonal   
+    matrix after modification by a rank-one symmetric matrix.  This   
+    routine is used only for the eigenproblem which requires all   
+    eigenvalues and eigenvectors of a tridiagonal matrix.  SLAED7 handles   
+    the case in which eigenvalues only or eigenvalues and eigenvectors   
+    of a full symmetric matrix (which was reduced to tridiagonal form)   
+    are desired.   
+
+      T = Q(in) ( D(in) + RHO * Z*Z' ) Q'(in) = Q(out) * D(out) * Q'(out)   
+
+       where Z = Q'u, u is a vector of length N with ones in the   
+       CUTPNT and CUTPNT + 1 th elements and zeros elsewhere.   
+
+       The eigenvectors of the original matrix are stored in Q, and the   
+       eigenvalues are in D.  The algorithm consists of three stages:   
+
+          The first stage consists of deflating the size of the problem   
+          when there are multiple eigenvalues or if there is a zero in   
+          the Z vector.  For each such occurence the dimension of the   
+          secular equation problem is reduced by one.  This stage is   
+          performed by the routine SLAED2.   
+
+          The second stage consists of calculating the updated   
+          eigenvalues. This is done by finding the roots of the secular   
+          equation via the routine SLAED4 (as called by SLAED3).   
+          This routine also calculates the eigenvectors of the current   
+          problem.   
+
+          The final stage consists of computing the updated eigenvectors   
+          directly using the updated eigenvalues.  The eigenvectors for   
+          the current problem are multiplied with the eigenvectors from   
+          the overall problem.   
+
+    Arguments   
+    =========   
+
+    N      (input) INTEGER   
+           The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    D      (input/output) REAL array, dimension (N)   
+           On entry, the eigenvalues of the rank-1-perturbed matrix.   
+           On exit, the eigenvalues of the repaired matrix.   
+
+    Q      (input/output) REAL array, dimension (LDQ,N)   
+           On entry, the eigenvectors of the rank-1-perturbed matrix.   
+           On exit, the eigenvectors of the repaired tridiagonal matrix.   
+
+    LDQ    (input) INTEGER   
+           The leading dimension of the array Q.  LDQ >= max(1,N).   
+
+    INDXQ  (input/output) INTEGER array, dimension (N)   
+           On entry, the permutation which separately sorts the two   
+           subproblems in D into ascending order.   
+           On exit, the permutation which will reintegrate the   
+           subproblems back into sorted order,   
+           i.e. D( INDXQ( I = 1, N ) ) will be in ascending order.   
+
+    RHO    (input) REAL   
+           The subdiagonal entry used to create the rank-1 modification.   
+
+    CUTPNT (input) INTEGER   
+           The location of the last eigenvalue in the leading sub-matrix.   
+           min(1,N) <= CUTPNT <= N/2.   
+
+    WORK   (workspace) REAL array, dimension (4*N + N**2)   
+
+    IWORK  (workspace) INTEGER array, dimension (4*N)   
+
+    INFO   (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  if INFO = 1, an eigenvalue did not converge   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+    Modified by Francoise Tisseur, University of Tennessee.   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    
+    /* System generated locals */
+    integer q_dim1, q_offset, i__1, i__2;
+    /* Local variables */
+    static integer indx, i__, k, indxc, indxp;
+    extern /* Subroutine */ int scopy_(integer *, real *, integer *, real *, 
+	    integer *);
+    static integer n1, n2;
+    extern /* Subroutine */ int slaed2_(integer *, integer *, integer *, real 
+	    *, real *, integer *, integer *, real *, real *, real *, real *, 
+	    real *, integer *, integer *, integer *, integer *, integer *), 
+	    slaed3_(integer *, integer *, integer *, real *, real *, integer *
+	    , real *, real *, real *, integer *, integer *, real *, real *, 
+	    integer *);
+    static integer idlmda, is, iw, iz;
+    extern /* Subroutine */ int xerbla_(char *, integer *), slamrg_(
+	    integer *, integer *, real *, integer *, integer *, integer *);
+    static integer coltyp, iq2, cpp1;
+#define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
+
+
+    --d__;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    --indxq;
+    --work;
+    --iwork;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*n < 0) {
+	*info = -1;
+    } else if (*ldq < f2cmax(1,*n)) {
+	*info = -4;
+    } else /* if(complicated condition) */ {
+/* Computing MIN */
+	i__1 = 1, i__2 = *n / 2;
+	if (f2cmin(i__1,i__2) > *cutpnt || *n / 2 < *cutpnt) {
+	    *info = -7;
+	}
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED1", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+/*     The following values are integer pointers which indicate   
+       the portion of the workspace   
+       used by a particular array in SLAED2 and SLAED3. */
+
+    iz = 1;
+    idlmda = iz + *n;
+    iw = idlmda + *n;
+    iq2 = iw + *n;
+
+    indx = 1;
+    indxc = indx + *n;
+    coltyp = indxc + *n;
+    indxp = coltyp + *n;
+
+
+/*     Form the z-vector which consists of the last row of Q_1 and the   
+       first row of Q_2. */
+
+    scopy_(cutpnt, &q_ref(*cutpnt, 1), ldq, &work[iz], &c__1);
+    cpp1 = *cutpnt + 1;
+    i__1 = *n - *cutpnt;
+    scopy_(&i__1, &q_ref(cpp1, cpp1), ldq, &work[iz + *cutpnt], &c__1);
+
+/*     Deflate eigenvalues. */
+
+    slaed2_(&k, n, cutpnt, &d__[1], &q[q_offset], ldq, &indxq[1], rho, &work[
+	    iz], &work[idlmda], &work[iw], &work[iq2], &iwork[indx], &iwork[
+	    indxc], &iwork[indxp], &iwork[coltyp], info);
+
+    if (*info != 0) {
+	goto L20;
+    }
+
+/*     Solve Secular Equation. */
+
+    if (k != 0) {
+	is = (iwork[coltyp] + iwork[coltyp + 1]) * *cutpnt + (iwork[coltyp + 
+		1] + iwork[coltyp + 2]) * (*n - *cutpnt) + iq2;
+	slaed3_(&k, n, cutpnt, &d__[1], &q[q_offset], ldq, rho, &work[idlmda],
+		 &work[iq2], &iwork[indxc], &iwork[coltyp], &work[iw], &work[
+		is], info);
+	if (*info != 0) {
+	    goto L20;
+	}
+
+/*     Prepare the INDXQ sorting permutation. */
+
+	n1 = k;
+	n2 = *n - k;
+	slamrg_(&n1, &n2, &d__[1], &c__1, &c_n1, &indxq[1]);
+    } else {
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    indxq[i__] = i__;
+/* L10: */
+	}
+    }
+
+L20:
+    return 0;
+
+/*     End of SLAED1 */
+
+} /* slaed1_ */
+
+#undef q_ref
+
+
+/* Subroutine */ int slacpy_(char *uplo, integer *m, integer *n, real *a, 
+	integer *lda, real *b, integer *ldb)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SLACPY copies all or part of a two-dimensional matrix A to another   
+    matrix B.   
+
+    Arguments   
+    =========   
+
+    UPLO    (input) CHARACTER*1   
+            Specifies the part of the matrix A to be copied to B.   
+            = 'U':      Upper triangular part   
+            = 'L':      Lower triangular part   
+            Otherwise:  All of the matrix A   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix A.  N >= 0.   
+
+    A       (input) REAL array, dimension (LDA,N)   
+            The m by n matrix A.  If UPLO = 'U', only the upper triangle   
+            or trapezoid is accessed; if UPLO = 'L', only the lower   
+            triangle or trapezoid is accessed.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    B       (output) REAL array, dimension (LDB,N)   
+            On exit, B = A in the locations specified by UPLO.   
+
+    LDB     (input) INTEGER   
+            The leading dimension of the array B.  LDB >= max(1,M).   
+
+    =====================================================================   
+
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer a_dim1, a_offset, b_dim1, b_offset, i__1, i__2;
+    /* Local variables */
+    static integer i__, j;
+    extern logical lsame_(char *, char *);
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define b_ref(a_1,a_2) b[(a_2)*b_dim1 + a_1]
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    b_dim1 = *ldb;
+    b_offset = 1 + b_dim1 * 1;
+    b -= b_offset;
+
+    /* Function Body */
+    if (lsame_(uplo, "U")) {
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = f2cmin(j,*m);
+	    for (i__ = 1; i__ <= i__2; ++i__) {
+		b_ref(i__, j) = a_ref(i__, j);
+/* L10: */
+	    }
+/* L20: */
+	}
+    } else if (lsame_(uplo, "L")) {
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (i__ = j; i__ <= i__2; ++i__) {
+		b_ref(i__, j) = a_ref(i__, j);
+/* L30: */
+	    }
+/* L40: */
+	}
+    } else {
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (i__ = 1; i__ <= i__2; ++i__) {
+		b_ref(i__, j) = a_ref(i__, j);
+/* L50: */
+	    }
+/* L60: */
+	}
+    }
+    return 0;
+
+/*     End of SLACPY */
+
+} /* slacpy_ */
+
+#undef b_ref
+#undef a_ref
+
+
+/* Subroutine */ int slamrg_(integer *n1, integer *n2, real *a, integer *
+	strd1, integer *strd2, integer *index)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    SLAMRG will create a permutation list which will merge the elements   
+    of A (which is composed of two independently sorted sets) into a   
+    single set which is sorted in ascending order.   
+
+    Arguments   
+    =========   
+
+    N1     (input) INTEGER   
+    N2     (input) INTEGER   
+           These arguements contain the respective lengths of the two   
+           sorted lists to be merged.   
+
+    A      (input) REAL array, dimension (N1+N2)   
+           The first N1 elements of A contain a list of numbers which   
+           are sorted in either ascending or descending order.  Likewise   
+           for the final N2 elements.   
+
+    STRD1  (input) INTEGER   
+    STRD2  (input) INTEGER   
+           These are the strides to be taken through the array A.   
+           Allowable strides are 1 and -1.  They indicate whether a   
+           subset of A is sorted in ascending (STRDx = 1) or descending   
+           (STRDx = -1) order.   
+
+    INDEX  (output) INTEGER array, dimension (N1+N2)   
+           On exit this array will contain a permutation such that   
+           if B( I ) = A( INDEX( I ) ) for I=1,N1+N2, then B will be   
+           sorted in ascending order.   
+
+    =====================================================================   
+
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer i__1;
+    /* Local variables */
+    static integer i__, ind1, ind2, n1sv, n2sv;
+
+    --index;
+    --a;
+
+    /* Function Body */
+    n1sv = *n1;
+    n2sv = *n2;
+    if (*strd1 > 0) {
+	ind1 = 1;
+    } else {
+	ind1 = *n1;
+    }
+    if (*strd2 > 0) {
+	ind2 = *n1 + 1;
+    } else {
+	ind2 = *n1 + *n2;
+    }
+    i__ = 1;
+/*     while ( (N1SV > 0) & (N2SV > 0) ) */
+L10:
+    if (n1sv > 0 && n2sv > 0) {
+	if (a[ind1] <= a[ind2]) {
+	    index[i__] = ind1;
+	    ++i__;
+	    ind1 += *strd1;
+	    --n1sv;
+	} else {
+	    index[i__] = ind2;
+	    ++i__;
+	    ind2 += *strd2;
+	    --n2sv;
+	}
+	goto L10;
+    }
+/*     end while */
+    if (n1sv == 0) {
+	i__1 = n2sv;
+	for (n1sv = 1; n1sv <= i__1; ++n1sv) {
+	    index[i__] = ind2;
+	    ++i__;
+	    ind2 += *strd2;
+/* L20: */
+	}
+    } else {
+/*     N2SV .EQ. 0 */
+	i__1 = n1sv;
+	for (n2sv = 1; n2sv <= i__1; ++n2sv) {
+	    index[i__] = ind1;
+	    ++i__;
+	    ind1 += *strd1;
+/* L30: */
+	}
+    }
+
+    return 0;
+
+/*     End of SLAMRG */
+
+} /* slamrg_ */
+
+/* Subroutine */ int slaed8_(integer *icompq, integer *k, integer *n, integer 
+	*qsiz, real *d__, real *q, integer *ldq, integer *indxq, real *rho, 
+	integer *cutpnt, real *z__, real *dlamda, real *q2, integer *ldq2, 
+	real *w, integer *perm, integer *givptr, integer *givcol, real *
+	givnum, integer *indxp, integer *indx, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Oak Ridge National Lab, Argonne National Lab,   
+       Courant Institute, NAG Ltd., and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    SLAED8 merges the two sets of eigenvalues together into a single   
+    sorted set.  Then it tries to deflate the size of the problem.   
+    There are two ways in which deflation can occur:  when two or more   
+    eigenvalues are close together or if there is a tiny element in the   
+    Z vector.  For each such occurrence the order of the related secular   
+    equation problem is reduced by one.   
+
+    Arguments   
+    =========   
+
+    ICOMPQ  (input) INTEGER   
+            = 0:  Compute eigenvalues only.   
+            = 1:  Compute eigenvectors of original dense symmetric matrix   
+                  also.  On entry, Q contains the orthogonal matrix used   
+                  to reduce the original matrix to tridiagonal form.   
+
+    K      (output) INTEGER   
+           The number of non-deflated eigenvalues, and the order of the   
+           related secular equation.   
+
+    N      (input) INTEGER   
+           The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    QSIZ   (input) INTEGER   
+           The dimension of the orthogonal matrix used to reduce   
+           the full matrix to tridiagonal form.  QSIZ >= N if ICOMPQ = 1.   
+
+    D      (input/output) REAL array, dimension (N)   
+           On entry, the eigenvalues of the two submatrices to be   
+           combined.  On exit, the trailing (N-K) updated eigenvalues   
+           (those which were deflated) sorted into increasing order.   
+
+    Q      (input/output) REAL array, dimension (LDQ,N)   
+           If ICOMPQ = 0, Q is not referenced.  Otherwise,   
+           on entry, Q contains the eigenvectors of the partially solved   
+           system which has been previously updated in matrix   
+           multiplies with other partially solved eigensystems.   
+           On exit, Q contains the trailing (N-K) updated eigenvectors   
+           (those which were deflated) in its last N-K columns.   
+
+    LDQ    (input) INTEGER   
+           The leading dimension of the array Q.  LDQ >= max(1,N).   
+
+    INDXQ  (input) INTEGER array, dimension (N)   
+           The permutation which separately sorts the two sub-problems   
+           in D into ascending order.  Note that elements in the second   
+           half of this permutation must first have CUTPNT added to   
+           their values in order to be accurate.   
+
+    RHO    (input/output) REAL   
+           On entry, the off-diagonal element associated with the rank-1   
+           cut which originally split the two submatrices which are now   
+           being recombined.   
+           On exit, RHO has been modified to the value required by   
+           SLAED3.   
+
+    CUTPNT (input) INTEGER   
+           The location of the last eigenvalue in the leading   
+           sub-matrix.  min(1,N) <= CUTPNT <= N.   
+
+    Z      (input) REAL array, dimension (N)   
+           On entry, Z contains the updating vector (the last row of   
+           the first sub-eigenvector matrix and the first row of the   
+           second sub-eigenvector matrix).   
+           On exit, the contents of Z are destroyed by the updating   
+           process.   
+
+    DLAMDA (output) REAL array, dimension (N)   
+           A copy of the first K eigenvalues which will be used by   
+           SLAED3 to form the secular equation.   
+
+    Q2     (output) REAL array, dimension (LDQ2,N)   
+           If ICOMPQ = 0, Q2 is not referenced.  Otherwise,   
+           a copy of the first K eigenvectors which will be used by   
+           SLAED7 in a matrix multiply (SGEMM) to update the new   
+           eigenvectors.   
+
+    LDQ2   (input) INTEGER   
+           The leading dimension of the array Q2.  LDQ2 >= max(1,N).   
+
+    W      (output) REAL array, dimension (N)   
+           The first k values of the final deflation-altered z-vector and   
+           will be passed to SLAED3.   
+
+    PERM   (output) INTEGER array, dimension (N)   
+           The permutations (from deflation and sorting) to be applied   
+           to each eigenblock.   
+
+    GIVPTR (output) INTEGER   
+           The number of Givens rotations which took place in this   
+           subproblem.   
+
+    GIVCOL (output) INTEGER array, dimension (2, N)   
+           Each pair of numbers indicates a pair of columns to take place   
+           in a Givens rotation.   
+
+    GIVNUM (output) REAL array, dimension (2, N)   
+           Each number indicates the S value to be used in the   
+           corresponding Givens rotation.   
+
+    INDXP  (workspace) INTEGER array, dimension (N)   
+           The permutation used to place deflated values of D at the end   
+           of the array.  INDXP(1:K) points to the nondeflated D-values   
+           and INDXP(K+1:N) points to the deflated eigenvalues.   
+
+    INDX   (workspace) INTEGER array, dimension (N)   
+           The permutation used to sort the contents of D into ascending   
+           order.   
+
+    INFO   (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static real c_b3 = -1.f;
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer q_dim1, q_offset, q2_dim1, q2_offset, i__1;
+    real r__1;
+    /* Builtin functions */
+    // double sqrt(doublereal);
+    /* Local variables */
+    static integer jlam, imax, jmax;
+    extern /* Subroutine */ int srot_(integer *, real *, integer *, real *, 
+	    integer *, real *, real *);
+    static real c__;
+    static integer i__, j;
+    static real s, t;
+    extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
+    static integer k2;
+    extern /* Subroutine */ int scopy_(integer *, real *, integer *, real *, 
+	    integer *);
+    static integer n1, n2;
+    extern doublereal slapy2_(real *, real *);
+    static integer jp;
+    extern doublereal slamch_(char *);
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer isamax_(integer *, real *, integer *);
+    extern /* Subroutine */ int slamrg_(integer *, integer *, real *, integer 
+	    *, integer *, integer *), slacpy_(char *, integer *, integer *, 
+	    real *, integer *, real *, integer *);
+    static integer n1p1;
+    static real eps, tau, tol;
+#define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
+#define q2_ref(a_1,a_2) q2[(a_2)*q2_dim1 + a_1]
+#define givcol_ref(a_1,a_2) givcol[(a_2)*2 + a_1]
+#define givnum_ref(a_1,a_2) givnum[(a_2)*2 + a_1]
+
+
+    --d__;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    --indxq;
+    --z__;
+    --dlamda;
+    q2_dim1 = *ldq2;
+    q2_offset = 1 + q2_dim1 * 1;
+    q2 -= q2_offset;
+    --w;
+    --perm;
+    givcol -= 3;
+    givnum -= 3;
+    --indxp;
+    --indx;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*icompq < 0 || *icompq > 1) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -3;
+    } else if (*icompq == 1 && *qsiz < *n) {
+	*info = -4;
+    } else if (*ldq < f2cmax(1,*n)) {
+	*info = -7;
+    } else if (*cutpnt < f2cmin(1,*n) || *cutpnt > *n) {
+	*info = -10;
+    } else if (*ldq2 < f2cmax(1,*n)) {
+	*info = -14;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED8", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+    n1 = *cutpnt;
+    n2 = *n - n1;
+    n1p1 = n1 + 1;
+
+    if (*rho < 0.f) {
+	sscal_(&n2, &c_b3, &z__[n1p1], &c__1);
+    }
+
+/*     Normalize z so that norm(z) = 1 */
+
+    t = 1.f / sqrt(2.f);
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	indx[j] = j;
+/* L10: */
+    }
+    sscal_(n, &t, &z__[1], &c__1);
+    *rho = (r__1 = *rho * 2.f, dabs(r__1));
+
+/*     Sort the eigenvalues into increasing order */
+
+    i__1 = *n;
+    for (i__ = *cutpnt + 1; i__ <= i__1; ++i__) {
+	indxq[i__] += *cutpnt;
+/* L20: */
+    }
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	dlamda[i__] = d__[indxq[i__]];
+	w[i__] = z__[indxq[i__]];
+/* L30: */
+    }
+    i__ = 1;
+    j = *cutpnt + 1;
+    slamrg_(&n1, &n2, &dlamda[1], &c__1, &c__1, &indx[1]);
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	d__[i__] = dlamda[indx[i__]];
+	z__[i__] = w[indx[i__]];
+/* L40: */
+    }
+
+/*     Calculate the allowable deflation tolerence */
+
+    imax = isamax_(n, &z__[1], &c__1);
+    jmax = isamax_(n, &d__[1], &c__1);
+    eps = slamch_("Epsilon");
+    tol = eps * 8.f * (r__1 = d__[jmax], dabs(r__1));
+
+/*     If the rank-1 modifier is small enough, no more needs to be done   
+       except to reorganize Q so that its columns correspond with the   
+       elements in D. */
+
+    if (*rho * (r__1 = z__[imax], dabs(r__1)) <= tol) {
+	*k = 0;
+	if (*icompq == 0) {
+	    i__1 = *n;
+	    for (j = 1; j <= i__1; ++j) {
+		perm[j] = indxq[indx[j]];
+/* L50: */
+	    }
+	} else {
+	    i__1 = *n;
+	    for (j = 1; j <= i__1; ++j) {
+		perm[j] = indxq[indx[j]];
+		scopy_(qsiz, &q_ref(1, perm[j]), &c__1, &q2_ref(1, j), &c__1);
+/* L60: */
+	    }
+	    slacpy_("A", qsiz, n, &q2_ref(1, 1), ldq2, &q_ref(1, 1), ldq);
+	}
+	return 0;
+    }
+
+/*     If there are multiple eigenvalues then the problem deflates.  Here   
+       the number of equal eigenvalues are found.  As each equal   
+       eigenvalue is found, an elementary reflector is computed to rotate   
+       the corresponding eigensubspace so that the corresponding   
+       components of Z are zero in this new basis. */
+
+    *k = 0;
+    *givptr = 0;
+    k2 = *n + 1;
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	if (*rho * (r__1 = z__[j], dabs(r__1)) <= tol) {
+
+/*           Deflate due to small z component. */
+
+	    --k2;
+	    indxp[k2] = j;
+	    if (j == *n) {
+		goto L110;
+	    }
+	} else {
+	    jlam = j;
+	    goto L80;
+	}
+/* L70: */
+    }
+L80:
+    ++j;
+    if (j > *n) {
+	goto L100;
+    }
+    if (*rho * (r__1 = z__[j], dabs(r__1)) <= tol) {
+
+/*        Deflate due to small z component. */
+
+	--k2;
+	indxp[k2] = j;
+    } else {
+
+/*        Check if eigenvalues are close enough to allow deflation. */
+
+	s = z__[jlam];
+	c__ = z__[j];
+
+/*        Find sqrt(a**2+b**2) without overflow or   
+          destructive underflow. */
+
+	tau = slapy2_(&c__, &s);
+	t = d__[j] - d__[jlam];
+	c__ /= tau;
+	s = -s / tau;
+	if ((r__1 = t * c__ * s, dabs(r__1)) <= tol) {
+
+/*           Deflation is possible. */
+
+	    z__[j] = tau;
+	    z__[jlam] = 0.f;
+
+/*           Record the appropriate Givens rotation */
+
+	    ++(*givptr);
+	    givcol_ref(1, *givptr) = indxq[indx[jlam]];
+	    givcol_ref(2, *givptr) = indxq[indx[j]];
+	    givnum_ref(1, *givptr) = c__;
+	    givnum_ref(2, *givptr) = s;
+	    if (*icompq == 1) {
+		srot_(qsiz, &q_ref(1, indxq[indx[jlam]]), &c__1, &q_ref(1, 
+			indxq[indx[j]]), &c__1, &c__, &s);
+	    }
+	    t = d__[jlam] * c__ * c__ + d__[j] * s * s;
+	    d__[j] = d__[jlam] * s * s + d__[j] * c__ * c__;
+	    d__[jlam] = t;
+	    --k2;
+	    i__ = 1;
+L90:
+	    if (k2 + i__ <= *n) {
+		if (d__[jlam] < d__[indxp[k2 + i__]]) {
+		    indxp[k2 + i__ - 1] = indxp[k2 + i__];
+		    indxp[k2 + i__] = jlam;
+		    ++i__;
+		    goto L90;
+		} else {
+		    indxp[k2 + i__ - 1] = jlam;
+		}
+	    } else {
+		indxp[k2 + i__ - 1] = jlam;
+	    }
+	    jlam = j;
+	} else {
+	    ++(*k);
+	    w[*k] = z__[jlam];
+	    dlamda[*k] = d__[jlam];
+	    indxp[*k] = jlam;
+	    jlam = j;
+	}
+    }
+    goto L80;
+L100:
+
+/*     Record the last eigenvalue. */
+
+    ++(*k);
+    w[*k] = z__[jlam];
+    dlamda[*k] = d__[jlam];
+    indxp[*k] = jlam;
+
+L110:
+
+/*     Sort the eigenvalues and corresponding eigenvectors into DLAMDA   
+       and Q2 respectively.  The eigenvalues/vectors which were not   
+       deflated go into the first K slots of DLAMDA and Q2 respectively,   
+       while those which were deflated go into the last N - K slots. */
+
+    if (*icompq == 0) {
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    jp = indxp[j];
+	    dlamda[j] = d__[jp];
+	    perm[j] = indxq[indx[jp]];
+/* L120: */
+	}
+    } else {
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    jp = indxp[j];
+	    dlamda[j] = d__[jp];
+	    perm[j] = indxq[indx[jp]];
+	    scopy_(qsiz, &q_ref(1, perm[j]), &c__1, &q2_ref(1, j), &c__1);
+/* L130: */
+	}
+    }
+
+/*     The deflated eigenvalues and their corresponding vectors go back   
+       into the last N - K slots of D and Q respectively. */
+
+    if (*k < *n) {
+	if (*icompq == 0) {
+	    i__1 = *n - *k;
+	    scopy_(&i__1, &dlamda[*k + 1], &c__1, &d__[*k + 1], &c__1);
+	} else {
+	    i__1 = *n - *k;
+	    scopy_(&i__1, &dlamda[*k + 1], &c__1, &d__[*k + 1], &c__1);
+	    i__1 = *n - *k;
+	    slacpy_("A", qsiz, &i__1, &q2_ref(1, *k + 1), ldq2, &q_ref(1, *k 
+		    + 1), ldq);
+	}
+    }
+
+    return 0;
+
+/*     End of SLAED8 */
+
+} /* slaed8_ */
+
+#undef givnum_ref
+#undef givcol_ref
+#undef q2_ref
+#undef q_ref
+
+/*  -- translated by f2c (version 19990503).
+   You must link the resulting object file with the libraries:
+	-lf2c -lm   (in that order)
+*/
+
+/* Table of constant values */
+
+static real c_b3 = -1.f;
+static integer c__1 = 1;
+
+/* Subroutine */ int slaed2_(integer *k, integer *n, integer *n1, real *d__, 
+	real *q, integer *ldq, integer *indxq, real *rho, real *z__, real *
+	dlamda, real *w, real *q2, integer *indx, integer *indxc, integer *
+	indxp, integer *coltyp, integer *info)
+{
+    /* System generated locals */
+    integer q_dim1, q_offset, i__1, i__2;
+    real r__1, r__2, r__3, r__4;
+
+    /* Builtin functions */
+    // double sqrt(doublereal);
+
+    /* Local variables */
+    static integer imax, jmax, ctot[4];
+    extern /* Subroutine */ int srot_(integer *, real *, integer *, real *, 
+	    integer *, real *, real *);
+    static real c__;
+    static integer i__, j;
+    static real s, t;
+    extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
+    static integer k2;
+    extern /* Subroutine */ int scopy_(integer *, real *, integer *, real *, 
+	    integer *);
+    static integer n2;
+    extern doublereal slapy2_(real *, real *);
+    static integer ct, nj, pj, js;
+    extern doublereal slamch_(char *);
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer isamax_(integer *, real *, integer *);
+    extern /* Subroutine */ int slamrg_(integer *, integer *, real *, integer 
+	    *, integer *, integer *), slacpy_(char *, integer *, integer *, 
+	    real *, integer *, real *, integer *);
+    static integer iq1, iq2, n1p1;
+    static real eps, tau, tol;
+    static integer psm[4];
+
+
+#define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
+
+
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLAED2 merges the two sets of eigenvalues together into a single   
+    sorted set.  Then it tries to deflate the size of the problem.   
+    There are two ways in which deflation can occur:  when two or more   
+    eigenvalues are close together or if there is a tiny entry in the   
+    Z vector.  For each such occurrence the order of the related secular   
+    equation problem is reduced by one.   
+
+    Arguments   
+    =========   
+
+    K      (output) INTEGER   
+           The number of non-deflated eigenvalues, and the order of the   
+           related secular equation. 0 <= K <=N.   
+
+    N      (input) INTEGER   
+           The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    N1     (input) INTEGER   
+           The location of the last eigenvalue in the leading sub-matrix.   
+           f2cmin(1,N) <= N1 <= N/2.   
+
+    D      (input/output) REAL array, dimension (N)   
+           On entry, D contains the eigenvalues of the two submatrices to   
+           be combined.   
+           On exit, D contains the trailing (N-K) updated eigenvalues   
+           (those which were deflated) sorted into increasing order.   
+
+    Q      (input/output) REAL array, dimension (LDQ, N)   
+           On entry, Q contains the eigenvectors of two submatrices in   
+           the two square blocks with corners at (1,1), (N1,N1)   
+           and (N1+1, N1+1), (N,N).   
+           On exit, Q contains the trailing (N-K) updated eigenvectors   
+           (those which were deflated) in its last N-K columns.   
+
+    LDQ    (input) INTEGER   
+           The leading dimension of the array Q.  LDQ >= max(1,N).   
+
+    INDXQ  (input/output) INTEGER array, dimension (N)   
+           The permutation which separately sorts the two sub-problems   
+           in D into ascending order.  Note that elements in the second   
+           half of this permutation must first have N1 added to their   
+           values. Destroyed on exit.   
+
+    RHO    (input/output) REAL   
+           On entry, the off-diagonal element associated with the rank-1   
+           cut which originally split the two submatrices which are now   
+           being recombined.   
+           On exit, RHO has been modified to the value required by   
+           SLAED3.   
+
+    Z      (input) REAL array, dimension (N)   
+           On entry, Z contains the updating vector (the last   
+           row of the first sub-eigenvector matrix and the first row of   
+           the second sub-eigenvector matrix).   
+           On exit, the contents of Z have been destroyed by the updating   
+           process.   
+
+    DLAMDA (output) REAL array, dimension (N)   
+           A copy of the first K eigenvalues which will be used by   
+           SLAED3 to form the secular equation.   
+
+    W      (output) REAL array, dimension (N)   
+           The first k values of the final deflation-altered z-vector   
+           which will be passed to SLAED3.   
+
+    Q2     (output) REAL array, dimension (N1**2+(N-N1)**2)   
+           A copy of the first K eigenvectors which will be used by   
+           SLAED3 in a matrix multiply (SGEMM) to solve for the new   
+           eigenvectors.   
+
+    INDX   (workspace) INTEGER array, dimension (N)   
+           The permutation used to sort the contents of DLAMDA into   
+           ascending order.   
+
+    INDXC  (output) INTEGER array, dimension (N)   
+           The permutation used to arrange the columns of the deflated   
+           Q matrix into three groups:  the first group contains non-zero   
+           elements only at and above N1, the second contains   
+           non-zero elements only below N1, and the third is dense.   
+
+    INDXP  (workspace) INTEGER array, dimension (N)   
+           The permutation used to place deflated values of D at the end   
+           of the array.  INDXP(1:K) points to the nondeflated D-values   
+           and INDXP(K+1:N) points to the deflated eigenvalues.   
+
+    COLTYP (workspace/output) INTEGER array, dimension (N)   
+           During execution, a label which will indicate which of the   
+           following types a column in the Q2 matrix is:   
+           1 : non-zero in the upper half only;   
+           2 : dense;   
+           3 : non-zero in the lower half only;   
+           4 : deflated.   
+           On exit, COLTYP(i) is the number of columns of type i,   
+           for i=1 to 4 only.   
+
+    INFO   (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+    Modified by Francoise Tisseur, University of Tennessee.   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    --d__;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    --indxq;
+    --z__;
+    --dlamda;
+    --w;
+    --q2;
+    --indx;
+    --indxc;
+    --indxp;
+    --coltyp;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*n < 0) {
+	*info = -2;
+    } else if (*ldq < f2cmax(1,*n)) {
+	*info = -6;
+    } else /* if(complicated condition) */ {
+/* Computing F2CMIN */
+	i__1 = 1, i__2 = *n / 2;
+	if (f2cmin(i__1,i__2) > *n1 || *n / 2 < *n1) {
+	    *info = -3;
+	}
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED2", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+    n2 = *n - *n1;
+    n1p1 = *n1 + 1;
+
+    if (*rho < 0.f) {
+	sscal_(&n2, &c_b3, &z__[n1p1], &c__1);
+    }
+
+/*     Normalize z so that norm(z) = 1.  Since z is the concatenation of   
+       two normalized vectors, norm2(z) = sqrt(2). */
+
+    t = 1.f / sqrt(2.f);
+    sscal_(n, &t, &z__[1], &c__1);
+
+/*     RHO = ABS( norm(z)**2 * RHO ) */
+
+    *rho = (r__1 = *rho * 2.f, dabs(r__1));
+
+/*     Sort the eigenvalues into increasing order */
+
+    i__1 = *n;
+    for (i__ = n1p1; i__ <= i__1; ++i__) {
+	indxq[i__] += *n1;
+/* L10: */
+    }
+
+/*     re-integrate the deflated parts from the last pass */
+
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	dlamda[i__] = d__[indxq[i__]];
+/* L20: */
+    }
+    slamrg_(n1, &n2, &dlamda[1], &c__1, &c__1, &indxc[1]);
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	indx[i__] = indxq[indxc[i__]];
+/* L30: */
+    }
+
+/*     Calculate the allowable deflation tolerance */
+
+    imax = isamax_(n, &z__[1], &c__1);
+    jmax = isamax_(n, &d__[1], &c__1);
+    eps = slamch_("Epsilon");
+/* Computing MAX */
+    r__3 = (r__1 = d__[jmax], dabs(r__1)), r__4 = (r__2 = z__[imax], dabs(
+	    r__2));
+    tol = eps * 8.f * df2cmax(r__3,r__4);
+
+/*     If the rank-1 modifier is small enough, no more needs to be done   
+       except to reorganize Q so that its columns correspond with the   
+       elements in D. */
+
+    if (*rho * (r__1 = z__[imax], dabs(r__1)) <= tol) {
+	*k = 0;
+	iq2 = 1;
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__ = indx[j];
+	    scopy_(n, &q_ref(1, i__), &c__1, &q2[iq2], &c__1);
+	    dlamda[j] = d__[i__];
+	    iq2 += *n;
+/* L40: */
+	}
+	slacpy_("A", n, n, &q2[1], n, &q[q_offset], ldq);
+	scopy_(n, &dlamda[1], &c__1, &d__[1], &c__1);
+	goto L190;
+    }
+
+/*     If there are multiple eigenvalues then the problem deflates.  Here   
+       the number of equal eigenvalues are found.  As each equal   
+       eigenvalue is found, an elementary reflector is computed to rotate   
+       the corresponding eigensubspace so that the corresponding   
+       components of Z are zero in this new basis. */
+
+    i__1 = *n1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	coltyp[i__] = 1;
+/* L50: */
+    }
+    i__1 = *n;
+    for (i__ = n1p1; i__ <= i__1; ++i__) {
+	coltyp[i__] = 3;
+/* L60: */
+    }
+
+
+    *k = 0;
+    k2 = *n + 1;
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	nj = indx[j];
+	if (*rho * (r__1 = z__[nj], dabs(r__1)) <= tol) {
+
+/*           Deflate due to small z component. */
+
+	    --k2;
+	    coltyp[nj] = 4;
+	    indxp[k2] = nj;
+	    if (j == *n) {
+		goto L100;
+	    }
+	} else {
+	    pj = nj;
+	    goto L80;
+	}
+/* L70: */
+    }
+L80:
+    ++j;
+    nj = indx[j];
+    if (j > *n) {
+	goto L100;
+    }
+    if (*rho * (r__1 = z__[nj], dabs(r__1)) <= tol) {
+
+/*        Deflate due to small z component. */
+
+	--k2;
+	coltyp[nj] = 4;
+	indxp[k2] = nj;
+    } else {
+
+/*        Check if eigenvalues are close enough to allow deflation. */
+
+	s = z__[pj];
+	c__ = z__[nj];
+
+/*        Find sqrt(a**2+b**2) without overflow or   
+          destructive underflow. */
+
+	tau = slapy2_(&c__, &s);
+	t = d__[nj] - d__[pj];
+	c__ /= tau;
+	s = -s / tau;
+	if ((r__1 = t * c__ * s, dabs(r__1)) <= tol) {
+
+/*           Deflation is possible. */
+
+	    z__[nj] = tau;
+	    z__[pj] = 0.f;
+	    if (coltyp[nj] != coltyp[pj]) {
+		coltyp[nj] = 2;
+	    }
+	    coltyp[pj] = 4;
+	    srot_(n, &q_ref(1, pj), &c__1, &q_ref(1, nj), &c__1, &c__, &s);
+/* Computing 2nd power */
+	    r__1 = c__;
+/* Computing 2nd power */
+	    r__2 = s;
+	    t = d__[pj] * (r__1 * r__1) + d__[nj] * (r__2 * r__2);
+/* Computing 2nd power */
+	    r__1 = s;
+/* Computing 2nd power */
+	    r__2 = c__;
+	    d__[nj] = d__[pj] * (r__1 * r__1) + d__[nj] * (r__2 * r__2);
+	    d__[pj] = t;
+	    --k2;
+	    i__ = 1;
+L90:
+	    if (k2 + i__ <= *n) {
+		if (d__[pj] < d__[indxp[k2 + i__]]) {
+		    indxp[k2 + i__ - 1] = indxp[k2 + i__];
+		    indxp[k2 + i__] = pj;
+		    ++i__;
+		    goto L90;
+		} else {
+		    indxp[k2 + i__ - 1] = pj;
+		}
+	    } else {
+		indxp[k2 + i__ - 1] = pj;
+	    }
+	    pj = nj;
+	} else {
+	    ++(*k);
+	    dlamda[*k] = d__[pj];
+	    w[*k] = z__[pj];
+	    indxp[*k] = pj;
+	    pj = nj;
+	}
+    }
+    goto L80;
+L100:
+
+/*     Record the last eigenvalue. */
+
+    ++(*k);
+    dlamda[*k] = d__[pj];
+    w[*k] = z__[pj];
+    indxp[*k] = pj;
+
+/*     Count up the total number of the various types of columns, then   
+       form a permutation which positions the four column types into   
+       four uniform groups (although one or more of these groups may be   
+       empty). */
+
+    for (j = 1; j <= 4; ++j) {
+	ctot[j - 1] = 0;
+/* L110: */
+    }
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	ct = coltyp[j];
+	++ctot[ct - 1];
+/* L120: */
+    }
+
+/*     PSM(*) = Position in SubMatrix (of types 1 through 4) */
+
+    psm[0] = 1;
+    psm[1] = ctot[0] + 1;
+    psm[2] = psm[1] + ctot[1];
+    psm[3] = psm[2] + ctot[2];
+    *k = *n - ctot[3];
+
+/*     Fill out the INDXC array so that the permutation which it induces   
+       will place all type-1 columns first, all type-2 columns next,   
+       then all type-3's, and finally all type-4's. */
+
+    i__1 = *n;
+    for (j = 1; j <= i__1; ++j) {
+	js = indxp[j];
+	ct = coltyp[js];
+	indx[psm[ct - 1]] = js;
+	indxc[psm[ct - 1]] = j;
+	++psm[ct - 1];
+/* L130: */
+    }
+
+/*     Sort the eigenvalues and corresponding eigenvectors into DLAMDA   
+       and Q2 respectively.  The eigenvalues/vectors which were not   
+       deflated go into the first K slots of DLAMDA and Q2 respectively,   
+       while those which were deflated go into the last N - K slots. */
+
+    i__ = 1;
+    iq1 = 1;
+    iq2 = (ctot[0] + ctot[1]) * *n1 + 1;
+    i__1 = ctot[0];
+    for (j = 1; j <= i__1; ++j) {
+	js = indx[i__];
+	scopy_(n1, &q_ref(1, js), &c__1, &q2[iq1], &c__1);
+	z__[i__] = d__[js];
+	++i__;
+	iq1 += *n1;
+/* L140: */
+    }
+
+    i__1 = ctot[1];
+    for (j = 1; j <= i__1; ++j) {
+	js = indx[i__];
+	scopy_(n1, &q_ref(1, js), &c__1, &q2[iq1], &c__1);
+	scopy_(&n2, &q_ref(*n1 + 1, js), &c__1, &q2[iq2], &c__1);
+	z__[i__] = d__[js];
+	++i__;
+	iq1 += *n1;
+	iq2 += n2;
+/* L150: */
+    }
+
+    i__1 = ctot[2];
+    for (j = 1; j <= i__1; ++j) {
+	js = indx[i__];
+	scopy_(&n2, &q_ref(*n1 + 1, js), &c__1, &q2[iq2], &c__1);
+	z__[i__] = d__[js];
+	++i__;
+	iq2 += n2;
+/* L160: */
+    }
+
+    iq1 = iq2;
+    i__1 = ctot[3];
+    for (j = 1; j <= i__1; ++j) {
+	js = indx[i__];
+	scopy_(n, &q_ref(1, js), &c__1, &q2[iq2], &c__1);
+	iq2 += *n;
+	z__[i__] = d__[js];
+	++i__;
+/* L170: */
+    }
+
+/*     The deflated eigenvalues and their corresponding vectors go back   
+       into the last N - K slots of D and Q respectively. */
+
+    slacpy_("A", n, &ctot[3], &q2[iq1], n, &q_ref(1, *k + 1), ldq);
+    i__1 = *n - *k;
+    scopy_(&i__1, &z__[*k + 1], &c__1, &d__[*k + 1], &c__1);
+
+/*     Copy CTOT into COLTYP for referencing in SLAED3. */
+
+    for (j = 1; j <= 4; ++j) {
+	coltyp[j] = ctot[j - 1];
+/* L180: */
+    }
+
+L190:
+    return 0;
+
+/*     End of SLAED2 */
+
+} /* slaed2_ */
+
+#undef q_ref
+
+
+/* Subroutine */ int slaed9_(integer *k, integer *kstart, integer *kstop, 
+	integer *n, real *d__, real *q, integer *ldq, real *rho, real *dlamda,
+	 real *w, real *s, integer *lds, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Oak Ridge National Lab, Argonne National Lab,   
+       Courant Institute, NAG Ltd., and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    SLAED9 finds the roots of the secular equation, as defined by the   
+    values in D, Z, and RHO, between KSTART and KSTOP.  It makes the   
+    appropriate calls to SLAED4 and then stores the new matrix of   
+    eigenvectors for use in calculating the next level of Z vectors.   
+
+    Arguments   
+    =========   
+
+    K       (input) INTEGER   
+            The number of terms in the rational function to be solved by   
+            SLAED4.  K >= 0.   
+
+    KSTART  (input) INTEGER   
+    KSTOP   (input) INTEGER   
+            The updated eigenvalues Lambda(I), KSTART <= I <= KSTOP   
+            are to be computed.  1 <= KSTART <= KSTOP <= K.   
+
+    N       (input) INTEGER   
+            The number of rows and columns in the Q matrix.   
+            N >= K (delation may result in N > K).   
+
+    D       (output) REAL array, dimension (N)   
+            D(I) contains the updated eigenvalues   
+            for KSTART <= I <= KSTOP.   
+
+    Q       (workspace) REAL array, dimension (LDQ,N)   
+
+    LDQ     (input) INTEGER   
+            The leading dimension of the array Q.  LDQ >= max( 1, N ).   
+
+    RHO     (input) REAL   
+            The value of the parameter in the rank one update equation.   
+            RHO >= 0 required.   
+
+    DLAMDA  (input) REAL array, dimension (K)   
+            The first K elements of this array contain the old roots   
+            of the deflated updating problem.  These are the poles   
+            of the secular equation.   
+
+    W       (input) REAL array, dimension (K)   
+            The first K elements of this array contain the components   
+            of the deflation-adjusted updating vector.   
+
+    S       (output) REAL array, dimension (LDS, K)   
+            Will contain the eigenvectors of the repaired matrix which   
+            will be stored for subsequent Z vector calculation and   
+            multiplied by the previously accumulated eigenvectors   
+            to update the system.   
+
+    LDS     (input) INTEGER   
+            The leading dimension of S.  LDS >= max( 1, K ).   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  if INFO = 1, an eigenvalue did not converge   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer q_dim1, q_offset, s_dim1, s_offset, i__1, i__2;
+    real r__1;
+    /* Builtin functions */
+    // double sqrt(doublereal), r_sign(real *, real *);
+    /* Local variables */
+    static real temp;
+    extern doublereal snrm2_(integer *, real *, integer *);
+    static integer i__, j;
+    extern /* Subroutine */ int scopy_(integer *, real *, integer *, real *, 
+	    integer *), slaed4_(integer *, integer *, real *, real *, real *, 
+	    real *, real *, integer *);
+    extern doublereal slamc3_(real *, real *);
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+#define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
+#define s_ref(a_1,a_2) s[(a_2)*s_dim1 + a_1]
+
+
+    --d__;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    --dlamda;
+    --w;
+    s_dim1 = *lds;
+    s_offset = 1 + s_dim1 * 1;
+    s -= s_offset;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*k < 0) {
+	*info = -1;
+    } else if (*kstart < 1 || *kstart > f2cmax(1,*k)) {
+	*info = -2;
+    } else if (f2cmax(1,*kstop) < *kstart || *kstop > f2cmax(1,*k)) {
+	*info = -3;
+    } else if (*n < *k) {
+	*info = -4;
+    } else if (*ldq < f2cmax(1,*k)) {
+	*info = -7;
+    } else if (*lds < f2cmax(1,*k)) {
+	*info = -12;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED9", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*k == 0) {
+	return 0;
+    }
+
+/*     Modify values DLAMDA(i) to make sure all DLAMDA(i)-DLAMDA(j) can   
+       be computed with high relative accuracy (barring over/underflow).   
+       This is a problem on machines without a guard digit in   
+       add/subtract (Cray XMP, Cray YMP, Cray C 90 and Cray 2).   
+       The following code replaces DLAMDA(I) by 2*DLAMDA(I)-DLAMDA(I),   
+       which on any of these machines zeros out the bottommost   
+       bit of DLAMDA(I) if it is 1; this makes the subsequent   
+       subtractions DLAMDA(I)-DLAMDA(J) unproblematic when cancellation   
+       occurs. On binary machines with a guard digit (almost all   
+       machines) it does not change DLAMDA(I) at all. On hexadecimal   
+       and decimal machines with a guard digit, it slightly   
+       changes the bottommost bits of DLAMDA(I). It does not account   
+       for hexadecimal or decimal machines without guard digits   
+       (we know of none). We use a subroutine call to compute   
+       2*DLAMBDA(I) to prevent optimizing compilers from eliminating   
+       this code. */
+
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	dlamda[i__] = slamc3_(&dlamda[i__], &dlamda[i__]) - dlamda[i__];
+/* L10: */
+    }
+
+    i__1 = *kstop;
+    for (j = *kstart; j <= i__1; ++j) {
+	slaed4_(k, &j, &dlamda[1], &w[1], &q_ref(1, j), rho, &d__[j], info);
+
+/*        If the zero finder fails, the computation is terminated. */
+
+	if (*info != 0) {
+	    goto L120;
+	}
+/* L20: */
+    }
+
+    if (*k == 1 || *k == 2) {
+	i__1 = *k;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    i__2 = *k;
+	    for (j = 1; j <= i__2; ++j) {
+		s_ref(j, i__) = q_ref(j, i__);
+/* L30: */
+	    }
+/* L40: */
+	}
+	goto L120;
+    }
+
+/*     Compute updated W. */
+
+    scopy_(k, &w[1], &c__1, &s[s_offset], &c__1);
+
+/*     Initialize W(I) = Q(I,I) */
+
+    i__1 = *ldq + 1;
+    scopy_(k, &q[q_offset], &i__1, &w[1], &c__1);
+    i__1 = *k;
+    for (j = 1; j <= i__1; ++j) {
+	i__2 = j - 1;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    w[i__] *= q_ref(i__, j) / (dlamda[i__] - dlamda[j]);
+/* L50: */
+	}
+	i__2 = *k;
+	for (i__ = j + 1; i__ <= i__2; ++i__) {
+	    w[i__] *= q_ref(i__, j) / (dlamda[i__] - dlamda[j]);
+/* L60: */
+	}
+/* L70: */
+    }
+    i__1 = *k;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	r__1 = sqrt(-w[i__]);
+	w[i__] = r_sign(&r__1, &s_ref(i__, 1));
+/* L80: */
+    }
+
+/*     Compute eigenvectors of the modified rank-1 modification. */
+
+    i__1 = *k;
+    for (j = 1; j <= i__1; ++j) {
+	i__2 = *k;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    q_ref(i__, j) = w[i__] / q_ref(i__, j);
+/* L90: */
+	}
+	temp = snrm2_(k, &q_ref(1, j), &c__1);
+	i__2 = *k;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    s_ref(i__, j) = q_ref(i__, j) / temp;
+/* L100: */
+	}
+/* L110: */
+    }
+
+L120:
+    return 0;
+
+/*     End of SLAED9 */
+
+} /* slaed9_ */
+
+#undef s_ref
+#undef q_ref
+
+
+integer isamax_(integer *n, real *sx, integer *incx)
+{
+    /* System generated locals */
+    integer ret_val, i__1;
+    real r__1;
+    /* Local variables */
+    static real smax;
+    static integer i__, ix;
+/*     finds the index of element having max. absolute value.   
+       jack dongarra, linpack, 3/11/78.   
+       modified 3/93 to return if incx .le. 0.   
+       modified 12/3/93, array(1) declarations changed to array(*)   
+       Parameter adjustments */
+    --sx;
+    /* Function Body */
+    ret_val = 0;
+    if (*n < 1 || *incx <= 0) {
+	return ret_val;
+    }
+    ret_val = 1;
+    if (*n == 1) {
+	return ret_val;
+    }
+    if (*incx == 1) {
+	goto L20;
+    }
+/*        code for increment not equal to 1 */
+    ix = 1;
+    smax = dabs(sx[1]);
+    ix += *incx;
+    i__1 = *n;
+    for (i__ = 2; i__ <= i__1; ++i__) {
+	if ((r__1 = sx[ix], dabs(r__1)) <= smax) {
+	    goto L5;
+	}
+	ret_val = i__;
+	smax = (r__1 = sx[ix], dabs(r__1));
+L5:
+	ix += *incx;
+/* L10: */
+    }
+    return ret_val;
+/*        code for increment equal to 1 */
+L20:
+    smax = dabs(sx[1]);
+    i__1 = *n;
+    for (i__ = 2; i__ <= i__1; ++i__) {
+	if ((r__1 = sx[i__], dabs(r__1)) <= smax) {
+	    goto L30;
+	}
+	ret_val = i__;
+	smax = (r__1 = sx[i__], dabs(r__1));
+L30:
+	;
+    }
+    return ret_val;
+} /* isamax_ */
+
+/* Subroutine */ int srot_(integer *n, real *sx, integer *incx, real *sy, 
+	integer *incy, real *c__, real *s)
+{
+    /* System generated locals */
+    integer i__1;
+    /* Local variables */
+    static integer i__;
+    static real stemp;
+    static integer ix, iy;
+/*     applies a plane rotation.   
+       jack dongarra, linpack, 3/11/78.   
+       modified 12/3/93, array(1) declarations changed to array(*)   
+       Parameter adjustments */
+    --sy;
+    --sx;
+    /* Function Body */
+    if (*n <= 0) {
+	return 0;
+    }
+    if (*incx == 1 && *incy == 1) {
+	goto L20;
+    }
+/*       code for unequal increments or equal increments not equal   
+           to 1 */
+    ix = 1;
+    iy = 1;
+    if (*incx < 0) {
+	ix = (-(*n) + 1) * *incx + 1;
+    }
+    if (*incy < 0) {
+	iy = (-(*n) + 1) * *incy + 1;
+    }
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	stemp = *c__ * sx[ix] + *s * sy[iy];
+	sy[iy] = *c__ * sy[iy] - *s * sx[ix];
+	sx[ix] = stemp;
+	ix += *incx;
+	iy += *incy;
+/* L10: */
+    }
+    return 0;
+/*       code for both increments equal to 1 */
+L20:
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	stemp = *c__ * sx[i__] + *s * sy[i__];
+	sy[i__] = *c__ * sy[i__] - *s * sx[i__];
+	sx[i__] = stemp;
+/* L30: */
+    }
+    return 0;
+} /* srot_ */
+
+/* Subroutine */ int slaed4_(integer *n, integer *i__, real *d__, real *z__, 
+	real *delta, real *rho, real *dlam, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Oak Ridge National Lab, Argonne National Lab,   
+       Courant Institute, NAG Ltd., and Rice University   
+       December 23, 1999   
+
+
+    Purpose   
+    =======   
+
+    This subroutine computes the I-th updated eigenvalue of a symmetric   
+    rank-one modification to a diagonal matrix whose elements are   
+    given in the array d, and that   
+
+               D(i) < D(j)  for  i < j   
+
+    and that RHO > 0.  This is arranged by the calling routine, and is   
+    no loss in generality.  The rank-one modified system is thus   
+
+               diag( D )  +  RHO *  Z * Z_transpose.   
+
+    where we assume the Euclidean norm of Z is 1.   
+
+    The method consists of approximating the rational functions in the   
+    secular equation by simpler interpolating rational functions.   
+
+    Arguments   
+    =========   
+
+    N      (input) INTEGER   
+           The length of all arrays.   
+
+    I      (input) INTEGER   
+           The index of the eigenvalue to be computed.  1 <= I <= N.   
+
+    D      (input) REAL array, dimension (N)   
+           The original eigenvalues.  It is assumed that they are in   
+           order, D(I) < D(J)  for I < J.   
+
+    Z      (input) REAL array, dimension (N)   
+           The components of the updating vector.   
+
+    DELTA  (output) REAL array, dimension (N)   
+           If N .ne. 1, DELTA contains (D(j) - lambda_I) in its  j-th   
+           component.  If N = 1, then DELTA(1) = 1.  The vector DELTA   
+           contains the information necessary to construct the   
+           eigenvectors.   
+
+    RHO    (input) REAL   
+           The scalar in the symmetric updating formula.   
+
+    DLAM   (output) REAL   
+           The computed lambda_I, the I-th updated eigenvalue.   
+
+    INFO   (output) INTEGER   
+           = 0:  successful exit   
+           > 0:  if INFO = 1, the updating process failed.   
+
+    Internal Parameters   
+    ===================   
+
+    Logical variable ORGATI (origin-at-i?) is used for distinguishing   
+    whether D(i) or D(i+1) is treated as the origin.   
+
+              ORGATI = .true.    origin at i   
+              ORGATI = .false.   origin at i+1   
+
+     Logical variable SWTCH3 (switch-for-3-poles?) is for noting   
+     if we are working with THREE poles!   
+
+     MAXIT is the maximum number of iterations allowed for each   
+     eigenvalue.   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Ren-Cang Li, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+       Since this routine is called in an inner loop, we do no argument   
+       checking.   
+
+       Quick return for N=1 and 2.   
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer i__1;
+    real r__1;
+    /* Builtin functions */
+    // double sqrt(doublereal);
+    /* Local variables */
+    static real dphi, dpsi;
+    static integer iter;
+    static real temp, prew, temp1, a, b, c__;
+    static integer j;
+    static real w, dltlb, dltub, midpt;
+    static integer niter;
+    static logical swtch;
+    extern /* Subroutine */ int slaed5_(integer *, real *, real *, real *, 
+	    real *, real *), slaed6_(integer *, logical *, real *, real *, 
+	    real *, real *, real *, integer *);
+    static logical swtch3;
+    static integer ii;
+    static real dw;
+    extern doublereal slamch_(char *);
+    static real zz[3];
+    static logical orgati;
+    static real erretm, rhoinv;
+    static integer ip1;
+    static real del, eta, phi, eps, tau, psi;
+    static integer iim1, iip1;
+
+    --delta;
+    --z__;
+    --d__;
+
+    /* Function Body */
+    *info = 0;
+    if (*n == 1) {
+
+/*         Presumably, I=1 upon entry */
+
+	*dlam = d__[1] + *rho * z__[1] * z__[1];
+	delta[1] = 1.f;
+	return 0;
+    }
+    if (*n == 2) {
+	slaed5_(i__, &d__[1], &z__[1], &delta[1], rho, dlam);
+	return 0;
+    }
+
+/*     Compute machine epsilon */
+
+    eps = slamch_("Epsilon");
+    rhoinv = 1.f / *rho;
+
+/*     The case I = N */
+
+    if (*i__ == *n) {
+
+/*        Initialize some basic variables */
+
+	ii = *n - 1;
+	niter = 1;
+
+/*        Calculate initial guess */
+
+	midpt = *rho / 2.f;
+
+/*        If ||Z||_2 is not one, then TEMP should be set to   
+          RHO * ||Z||_2^2 / TWO */
+
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    delta[j] = d__[j] - d__[*i__] - midpt;
+/* L10: */
+	}
+
+	psi = 0.f;
+	i__1 = *n - 2;
+	for (j = 1; j <= i__1; ++j) {
+	    psi += z__[j] * z__[j] / delta[j];
+/* L20: */
+	}
+
+	c__ = rhoinv + psi;
+	w = c__ + z__[ii] * z__[ii] / delta[ii] + z__[*n] * z__[*n] / delta[*
+		n];
+
+	if (w <= 0.f) {
+	    temp = z__[*n - 1] * z__[*n - 1] / (d__[*n] - d__[*n - 1] + *rho) 
+		    + z__[*n] * z__[*n] / *rho;
+	    if (c__ <= temp) {
+		tau = *rho;
+	    } else {
+		del = d__[*n] - d__[*n - 1];
+		a = -c__ * del + z__[*n - 1] * z__[*n - 1] + z__[*n] * z__[*n]
+			;
+		b = z__[*n] * z__[*n] * del;
+		if (a < 0.f) {
+		    tau = b * 2.f / (sqrt(a * a + b * 4.f * c__) - a);
+		} else {
+		    tau = (a + sqrt(a * a + b * 4.f * c__)) / (c__ * 2.f);
+		}
+	    }
+
+/*           It can be proved that   
+                 D(N)+RHO/2 <= LAMBDA(N) < D(N)+TAU <= D(N)+RHO */
+
+	    dltlb = midpt;
+	    dltub = *rho;
+	} else {
+	    del = d__[*n] - d__[*n - 1];
+	    a = -c__ * del + z__[*n - 1] * z__[*n - 1] + z__[*n] * z__[*n];
+	    b = z__[*n] * z__[*n] * del;
+	    if (a < 0.f) {
+		tau = b * 2.f / (sqrt(a * a + b * 4.f * c__) - a);
+	    } else {
+		tau = (a + sqrt(a * a + b * 4.f * c__)) / (c__ * 2.f);
+	    }
+
+/*           It can be proved that   
+                 D(N) < D(N)+TAU < LAMBDA(N) < D(N)+RHO/2 */
+
+	    dltlb = 0.f;
+	    dltub = midpt;
+	}
+
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    delta[j] = d__[j] - d__[*i__] - tau;
+/* L30: */
+	}
+
+/*        Evaluate PSI and the derivative DPSI */
+
+	dpsi = 0.f;
+	psi = 0.f;
+	erretm = 0.f;
+	i__1 = ii;
+	for (j = 1; j <= i__1; ++j) {
+	    temp = z__[j] / delta[j];
+	    psi += z__[j] * temp;
+	    dpsi += temp * temp;
+	    erretm += psi;
+/* L40: */
+	}
+	erretm = dabs(erretm);
+
+/*        Evaluate PHI and the derivative DPHI */
+
+	temp = z__[*n] / delta[*n];
+	phi = z__[*n] * temp;
+	dphi = temp * temp;
+	erretm = (-phi - psi) * 8.f + erretm - phi + rhoinv + dabs(tau) * (
+		dpsi + dphi);
+
+	w = rhoinv + phi + psi;
+
+/*        Test for convergence */
+
+	if (dabs(w) <= eps * erretm) {
+	    *dlam = d__[*i__] + tau;
+	    goto L250;
+	}
+
+	if (w <= 0.f) {
+	    dltlb = df2cmax(dltlb,tau);
+	} else {
+	    dltub = df2cmin(dltub,tau);
+	}
+
+/*        Calculate the new step */
+
+	++niter;
+	c__ = w - delta[*n - 1] * dpsi - delta[*n] * dphi;
+	a = (delta[*n - 1] + delta[*n]) * w - delta[*n - 1] * delta[*n] * (
+		dpsi + dphi);
+	b = delta[*n - 1] * delta[*n] * w;
+	if (c__ < 0.f) {
+	    c__ = dabs(c__);
+	}
+	if (c__ == 0.f) {
+/*          ETA = B/A   
+             ETA = RHO - TAU */
+	    eta = dltub - tau;
+	} else if (a >= 0.f) {
+	    eta = (a + sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1)))) / (
+		    c__ * 2.f);
+	} else {
+	    eta = b * 2.f / (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(
+		    r__1))));
+	}
+
+/*        Note, eta should be positive if w is negative, and   
+          eta should be negative otherwise. However,   
+          if for some reason caused by roundoff, eta*w > 0,   
+          we simply use one Newton step instead. This way   
+          will guarantee eta*w < 0. */
+
+	if (w * eta > 0.f) {
+	    eta = -w / (dpsi + dphi);
+	}
+	temp = tau + eta;
+	if (temp > dltub || temp < dltlb) {
+	    if (w < 0.f) {
+		eta = (dltub - tau) / 2.f;
+	    } else {
+		eta = (dltlb - tau) / 2.f;
+	    }
+	}
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    delta[j] -= eta;
+/* L50: */
+	}
+
+	tau += eta;
+
+/*        Evaluate PSI and the derivative DPSI */
+
+	dpsi = 0.f;
+	psi = 0.f;
+	erretm = 0.f;
+	i__1 = ii;
+	for (j = 1; j <= i__1; ++j) {
+	    temp = z__[j] / delta[j];
+	    psi += z__[j] * temp;
+	    dpsi += temp * temp;
+	    erretm += psi;
+/* L60: */
+	}
+	erretm = dabs(erretm);
+
+/*        Evaluate PHI and the derivative DPHI */
+
+	temp = z__[*n] / delta[*n];
+	phi = z__[*n] * temp;
+	dphi = temp * temp;
+	erretm = (-phi - psi) * 8.f + erretm - phi + rhoinv + dabs(tau) * (
+		dpsi + dphi);
+
+	w = rhoinv + phi + psi;
+
+/*        Main loop to update the values of the array   DELTA */
+
+	iter = niter + 1;
+
+	for (niter = iter; niter <= 30; ++niter) {
+
+/*           Test for convergence */
+
+	    if (dabs(w) <= eps * erretm) {
+		*dlam = d__[*i__] + tau;
+		goto L250;
+	    }
+
+	    if (w <= 0.f) {
+		dltlb = df2cmax(dltlb,tau);
+	    } else {
+		dltub = df2cmin(dltub,tau);
+	    }
+
+/*           Calculate the new step */
+
+	    c__ = w - delta[*n - 1] * dpsi - delta[*n] * dphi;
+	    a = (delta[*n - 1] + delta[*n]) * w - delta[*n - 1] * delta[*n] * 
+		    (dpsi + dphi);
+	    b = delta[*n - 1] * delta[*n] * w;
+	    if (a >= 0.f) {
+		eta = (a + sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1)))) /
+			 (c__ * 2.f);
+	    } else {
+		eta = b * 2.f / (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(
+			r__1))));
+	    }
+
+/*           Note, eta should be positive if w is negative, and   
+             eta should be negative otherwise. However,   
+             if for some reason caused by roundoff, eta*w > 0,   
+             we simply use one Newton step instead. This way   
+             will guarantee eta*w < 0. */
+
+	    if (w * eta > 0.f) {
+		eta = -w / (dpsi + dphi);
+	    }
+	    temp = tau + eta;
+	    if (temp > dltub || temp < dltlb) {
+		if (w < 0.f) {
+		    eta = (dltub - tau) / 2.f;
+		} else {
+		    eta = (dltlb - tau) / 2.f;
+		}
+	    }
+	    i__1 = *n;
+	    for (j = 1; j <= i__1; ++j) {
+		delta[j] -= eta;
+/* L70: */
+	    }
+
+	    tau += eta;
+
+/*           Evaluate PSI and the derivative DPSI */
+
+	    dpsi = 0.f;
+	    psi = 0.f;
+	    erretm = 0.f;
+	    i__1 = ii;
+	    for (j = 1; j <= i__1; ++j) {
+		temp = z__[j] / delta[j];
+		psi += z__[j] * temp;
+		dpsi += temp * temp;
+		erretm += psi;
+/* L80: */
+	    }
+	    erretm = dabs(erretm);
+
+/*           Evaluate PHI and the derivative DPHI */
+
+	    temp = z__[*n] / delta[*n];
+	    phi = z__[*n] * temp;
+	    dphi = temp * temp;
+	    erretm = (-phi - psi) * 8.f + erretm - phi + rhoinv + dabs(tau) * 
+		    (dpsi + dphi);
+
+	    w = rhoinv + phi + psi;
+/* L90: */
+	}
+
+/*        Return with INFO = 1, NITER = MAXIT and not converged */
+
+	*info = 1;
+	*dlam = d__[*i__] + tau;
+	goto L250;
+
+/*        End for the case I = N */
+
+    } else {
+
+/*        The case for I < N */
+
+	niter = 1;
+	ip1 = *i__ + 1;
+
+/*        Calculate initial guess */
+
+	del = d__[ip1] - d__[*i__];
+	midpt = del / 2.f;
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    delta[j] = d__[j] - d__[*i__] - midpt;
+/* L100: */
+	}
+
+	psi = 0.f;
+	i__1 = *i__ - 1;
+	for (j = 1; j <= i__1; ++j) {
+	    psi += z__[j] * z__[j] / delta[j];
+/* L110: */
+	}
+
+	phi = 0.f;
+	i__1 = *i__ + 2;
+	for (j = *n; j >= i__1; --j) {
+	    phi += z__[j] * z__[j] / delta[j];
+/* L120: */
+	}
+	c__ = rhoinv + psi + phi;
+	w = c__ + z__[*i__] * z__[*i__] / delta[*i__] + z__[ip1] * z__[ip1] / 
+		delta[ip1];
+
+	if (w > 0.f) {
+
+/*           d(i)< the ith eigenvalue < (d(i)+d(i+1))/2   
+
+             We choose d(i) as origin. */
+
+	    orgati = TRUE_;
+	    a = c__ * del + z__[*i__] * z__[*i__] + z__[ip1] * z__[ip1];
+	    b = z__[*i__] * z__[*i__] * del;
+	    if (a > 0.f) {
+		tau = b * 2.f / (a + sqrt((r__1 = a * a - b * 4.f * c__, dabs(
+			r__1))));
+	    } else {
+		tau = (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1)))) /
+			 (c__ * 2.f);
+	    }
+	    dltlb = 0.f;
+	    dltub = midpt;
+	} else {
+
+/*           (d(i)+d(i+1))/2 <= the ith eigenvalue < d(i+1)   
+
+             We choose d(i+1) as origin. */
+
+	    orgati = FALSE_;
+	    a = c__ * del - z__[*i__] * z__[*i__] - z__[ip1] * z__[ip1];
+	    b = z__[ip1] * z__[ip1] * del;
+	    if (a < 0.f) {
+		tau = b * 2.f / (a - sqrt((r__1 = a * a + b * 4.f * c__, dabs(
+			r__1))));
+	    } else {
+		tau = -(a + sqrt((r__1 = a * a + b * 4.f * c__, dabs(r__1)))) 
+			/ (c__ * 2.f);
+	    }
+	    dltlb = -midpt;
+	    dltub = 0.f;
+	}
+
+	if (orgati) {
+	    i__1 = *n;
+	    for (j = 1; j <= i__1; ++j) {
+		delta[j] = d__[j] - d__[*i__] - tau;
+/* L130: */
+	    }
+	} else {
+	    i__1 = *n;
+	    for (j = 1; j <= i__1; ++j) {
+		delta[j] = d__[j] - d__[ip1] - tau;
+/* L140: */
+	    }
+	}
+	if (orgati) {
+	    ii = *i__;
+	} else {
+	    ii = *i__ + 1;
+	}
+	iim1 = ii - 1;
+	iip1 = ii + 1;
+
+/*        Evaluate PSI and the derivative DPSI */
+
+	dpsi = 0.f;
+	psi = 0.f;
+	erretm = 0.f;
+	i__1 = iim1;
+	for (j = 1; j <= i__1; ++j) {
+	    temp = z__[j] / delta[j];
+	    psi += z__[j] * temp;
+	    dpsi += temp * temp;
+	    erretm += psi;
+/* L150: */
+	}
+	erretm = dabs(erretm);
+
+/*        Evaluate PHI and the derivative DPHI */
+
+	dphi = 0.f;
+	phi = 0.f;
+	i__1 = iip1;
+	for (j = *n; j >= i__1; --j) {
+	    temp = z__[j] / delta[j];
+	    phi += z__[j] * temp;
+	    dphi += temp * temp;
+	    erretm += phi;
+/* L160: */
+	}
+
+	w = rhoinv + phi + psi;
+
+/*        W is the value of the secular function with   
+          its ii-th element removed. */
+
+	swtch3 = FALSE_;
+	if (orgati) {
+	    if (w < 0.f) {
+		swtch3 = TRUE_;
+	    }
+	} else {
+	    if (w > 0.f) {
+		swtch3 = TRUE_;
+	    }
+	}
+	if (ii == 1 || ii == *n) {
+	    swtch3 = FALSE_;
+	}
+
+	temp = z__[ii] / delta[ii];
+	dw = dpsi + dphi + temp * temp;
+	temp = z__[ii] * temp;
+	w += temp;
+	erretm = (phi - psi) * 8.f + erretm + rhoinv * 2.f + dabs(temp) * 3.f 
+		+ dabs(tau) * dw;
+
+/*        Test for convergence */
+
+	if (dabs(w) <= eps * erretm) {
+	    if (orgati) {
+		*dlam = d__[*i__] + tau;
+	    } else {
+		*dlam = d__[ip1] + tau;
+	    }
+	    goto L250;
+	}
+
+	if (w <= 0.f) {
+	    dltlb = df2cmax(dltlb,tau);
+	} else {
+	    dltub = df2cmin(dltub,tau);
+	}
+
+/*        Calculate the new step */
+
+	++niter;
+	if (! swtch3) {
+	    if (orgati) {
+/* Computing 2nd power */
+		r__1 = z__[*i__] / delta[*i__];
+		c__ = w - delta[ip1] * dw - (d__[*i__] - d__[ip1]) * (r__1 * 
+			r__1);
+	    } else {
+/* Computing 2nd power */
+		r__1 = z__[ip1] / delta[ip1];
+		c__ = w - delta[*i__] * dw - (d__[ip1] - d__[*i__]) * (r__1 * 
+			r__1);
+	    }
+	    a = (delta[*i__] + delta[ip1]) * w - delta[*i__] * delta[ip1] * 
+		    dw;
+	    b = delta[*i__] * delta[ip1] * w;
+	    if (c__ == 0.f) {
+		if (a == 0.f) {
+		    if (orgati) {
+			a = z__[*i__] * z__[*i__] + delta[ip1] * delta[ip1] * 
+				(dpsi + dphi);
+		    } else {
+			a = z__[ip1] * z__[ip1] + delta[*i__] * delta[*i__] * 
+				(dpsi + dphi);
+		    }
+		}
+		eta = b / a;
+	    } else if (a <= 0.f) {
+		eta = (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1)))) /
+			 (c__ * 2.f);
+	    } else {
+		eta = b * 2.f / (a + sqrt((r__1 = a * a - b * 4.f * c__, dabs(
+			r__1))));
+	    }
+	} else {
+
+/*           Interpolation using THREE most relevant poles */
+
+	    temp = rhoinv + psi + phi;
+	    if (orgati) {
+		temp1 = z__[iim1] / delta[iim1];
+		temp1 *= temp1;
+		c__ = temp - delta[iip1] * (dpsi + dphi) - (d__[iim1] - d__[
+			iip1]) * temp1;
+		zz[0] = z__[iim1] * z__[iim1];
+		zz[2] = delta[iip1] * delta[iip1] * (dpsi - temp1 + dphi);
+	    } else {
+		temp1 = z__[iip1] / delta[iip1];
+		temp1 *= temp1;
+		c__ = temp - delta[iim1] * (dpsi + dphi) - (d__[iip1] - d__[
+			iim1]) * temp1;
+		zz[0] = delta[iim1] * delta[iim1] * (dpsi + (dphi - temp1));
+		zz[2] = z__[iip1] * z__[iip1];
+	    }
+	    zz[1] = z__[ii] * z__[ii];
+	    slaed6_(&niter, &orgati, &c__, &delta[iim1], zz, &w, &eta, info);
+	    if (*info != 0) {
+		goto L250;
+	    }
+	}
+
+/*        Note, eta should be positive if w is negative, and   
+          eta should be negative otherwise. However,   
+          if for some reason caused by roundoff, eta*w > 0,   
+          we simply use one Newton step instead. This way   
+          will guarantee eta*w < 0. */
+
+	if (w * eta >= 0.f) {
+	    eta = -w / dw;
+	}
+	temp = tau + eta;
+	if (temp > dltub || temp < dltlb) {
+	    if (w < 0.f) {
+		eta = (dltub - tau) / 2.f;
+	    } else {
+		eta = (dltlb - tau) / 2.f;
+	    }
+	}
+
+	prew = w;
+
+/* L170: */
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    delta[j] -= eta;
+/* L180: */
+	}
+
+/*        Evaluate PSI and the derivative DPSI */
+
+	dpsi = 0.f;
+	psi = 0.f;
+	erretm = 0.f;
+	i__1 = iim1;
+	for (j = 1; j <= i__1; ++j) {
+	    temp = z__[j] / delta[j];
+	    psi += z__[j] * temp;
+	    dpsi += temp * temp;
+	    erretm += psi;
+/* L190: */
+	}
+	erretm = dabs(erretm);
+
+/*        Evaluate PHI and the derivative DPHI */
+
+	dphi = 0.f;
+	phi = 0.f;
+	i__1 = iip1;
+	for (j = *n; j >= i__1; --j) {
+	    temp = z__[j] / delta[j];
+	    phi += z__[j] * temp;
+	    dphi += temp * temp;
+	    erretm += phi;
+/* L200: */
+	}
+
+	temp = z__[ii] / delta[ii];
+	dw = dpsi + dphi + temp * temp;
+	temp = z__[ii] * temp;
+	w = rhoinv + phi + psi + temp;
+	erretm = (phi - psi) * 8.f + erretm + rhoinv * 2.f + dabs(temp) * 3.f 
+		+ (r__1 = tau + eta, dabs(r__1)) * dw;
+
+	swtch = FALSE_;
+	if (orgati) {
+	    if (-w > dabs(prew) / 10.f) {
+		swtch = TRUE_;
+	    }
+	} else {
+	    if (w > dabs(prew) / 10.f) {
+		swtch = TRUE_;
+	    }
+	}
+
+	tau += eta;
+
+/*        Main loop to update the values of the array   DELTA */
+
+	iter = niter + 1;
+
+	for (niter = iter; niter <= 30; ++niter) {
+
+/*           Test for convergence */
+
+	    if (dabs(w) <= eps * erretm) {
+		if (orgati) {
+		    *dlam = d__[*i__] + tau;
+		} else {
+		    *dlam = d__[ip1] + tau;
+		}
+		goto L250;
+	    }
+
+	    if (w <= 0.f) {
+		dltlb = df2cmax(dltlb,tau);
+	    } else {
+		dltub = df2cmin(dltub,tau);
+	    }
+
+/*           Calculate the new step */
+
+	    if (! swtch3) {
+		if (! swtch) {
+		    if (orgati) {
+/* Computing 2nd power */
+			r__1 = z__[*i__] / delta[*i__];
+			c__ = w - delta[ip1] * dw - (d__[*i__] - d__[ip1]) * (
+				r__1 * r__1);
+		    } else {
+/* Computing 2nd power */
+			r__1 = z__[ip1] / delta[ip1];
+			c__ = w - delta[*i__] * dw - (d__[ip1] - d__[*i__]) * 
+				(r__1 * r__1);
+		    }
+		} else {
+		    temp = z__[ii] / delta[ii];
+		    if (orgati) {
+			dpsi += temp * temp;
+		    } else {
+			dphi += temp * temp;
+		    }
+		    c__ = w - delta[*i__] * dpsi - delta[ip1] * dphi;
+		}
+		a = (delta[*i__] + delta[ip1]) * w - delta[*i__] * delta[ip1] 
+			* dw;
+		b = delta[*i__] * delta[ip1] * w;
+		if (c__ == 0.f) {
+		    if (a == 0.f) {
+			if (! swtch) {
+			    if (orgati) {
+				a = z__[*i__] * z__[*i__] + delta[ip1] * 
+					delta[ip1] * (dpsi + dphi);
+			    } else {
+				a = z__[ip1] * z__[ip1] + delta[*i__] * delta[
+					*i__] * (dpsi + dphi);
+			    }
+			} else {
+			    a = delta[*i__] * delta[*i__] * dpsi + delta[ip1] 
+				    * delta[ip1] * dphi;
+			}
+		    }
+		    eta = b / a;
+		} else if (a <= 0.f) {
+		    eta = (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1))
+			    )) / (c__ * 2.f);
+		} else {
+		    eta = b * 2.f / (a + sqrt((r__1 = a * a - b * 4.f * c__, 
+			    dabs(r__1))));
+		}
+	    } else {
+
+/*              Interpolation using THREE most relevant poles */
+
+		temp = rhoinv + psi + phi;
+		if (swtch) {
+		    c__ = temp - delta[iim1] * dpsi - delta[iip1] * dphi;
+		    zz[0] = delta[iim1] * delta[iim1] * dpsi;
+		    zz[2] = delta[iip1] * delta[iip1] * dphi;
+		} else {
+		    if (orgati) {
+			temp1 = z__[iim1] / delta[iim1];
+			temp1 *= temp1;
+			c__ = temp - delta[iip1] * (dpsi + dphi) - (d__[iim1] 
+				- d__[iip1]) * temp1;
+			zz[0] = z__[iim1] * z__[iim1];
+			zz[2] = delta[iip1] * delta[iip1] * (dpsi - temp1 + 
+				dphi);
+		    } else {
+			temp1 = z__[iip1] / delta[iip1];
+			temp1 *= temp1;
+			c__ = temp - delta[iim1] * (dpsi + dphi) - (d__[iip1] 
+				- d__[iim1]) * temp1;
+			zz[0] = delta[iim1] * delta[iim1] * (dpsi + (dphi - 
+				temp1));
+			zz[2] = z__[iip1] * z__[iip1];
+		    }
+		}
+		slaed6_(&niter, &orgati, &c__, &delta[iim1], zz, &w, &eta, 
+			info);
+		if (*info != 0) {
+		    goto L250;
+		}
+	    }
+
+/*           Note, eta should be positive if w is negative, and   
+             eta should be negative otherwise. However,   
+             if for some reason caused by roundoff, eta*w > 0,   
+             we simply use one Newton step instead. This way   
+             will guarantee eta*w < 0. */
+
+	    if (w * eta >= 0.f) {
+		eta = -w / dw;
+	    }
+	    temp = tau + eta;
+	    if (temp > dltub || temp < dltlb) {
+		if (w < 0.f) {
+		    eta = (dltub - tau) / 2.f;
+		} else {
+		    eta = (dltlb - tau) / 2.f;
+		}
+	    }
+
+	    i__1 = *n;
+	    for (j = 1; j <= i__1; ++j) {
+		delta[j] -= eta;
+/* L210: */
+	    }
+
+	    tau += eta;
+	    prew = w;
+
+/*           Evaluate PSI and the derivative DPSI */
+
+	    dpsi = 0.f;
+	    psi = 0.f;
+	    erretm = 0.f;
+	    i__1 = iim1;
+	    for (j = 1; j <= i__1; ++j) {
+		temp = z__[j] / delta[j];
+		psi += z__[j] * temp;
+		dpsi += temp * temp;
+		erretm += psi;
+/* L220: */
+	    }
+	    erretm = dabs(erretm);
+
+/*           Evaluate PHI and the derivative DPHI */
+
+	    dphi = 0.f;
+	    phi = 0.f;
+	    i__1 = iip1;
+	    for (j = *n; j >= i__1; --j) {
+		temp = z__[j] / delta[j];
+		phi += z__[j] * temp;
+		dphi += temp * temp;
+		erretm += phi;
+/* L230: */
+	    }
+
+	    temp = z__[ii] / delta[ii];
+	    dw = dpsi + dphi + temp * temp;
+	    temp = z__[ii] * temp;
+	    w = rhoinv + phi + psi + temp;
+	    erretm = (phi - psi) * 8.f + erretm + rhoinv * 2.f + dabs(temp) * 
+		    3.f + dabs(tau) * dw;
+	    if (w * prew > 0.f && dabs(w) > dabs(prew) / 10.f) {
+		swtch = ! swtch;
+	    }
+
+/* L240: */
+	}
+
+/*        Return with INFO = 1, NITER = MAXIT and not converged */
+
+	*info = 1;
+	if (orgati) {
+	    *dlam = d__[*i__] + tau;
+	} else {
+	    *dlam = d__[ip1] + tau;
+	}
+
+    }
+
+L250:
+
+    return 0;
+
+/*     End of SLAED4 */
+
+} /* slaed4_ */
+
+/* Subroutine */ int slaeda_(integer *n, integer *tlvls, integer *curlvl, 
+	integer *curpbm, integer *prmptr, integer *perm, integer *givptr, 
+	integer *givcol, real *givnum, real *q, integer *qptr, real *z__, 
+	real *ztemp, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    SLAEDA computes the Z vector corresponding to the merge step in the   
+    CURLVLth step of the merge process with TLVLS steps for the CURPBMth   
+    problem.   
+
+    Arguments   
+    =========   
+
+    N      (input) INTEGER   
+           The dimension of the symmetric tridiagonal matrix.  N >= 0.   
+
+    TLVLS  (input) INTEGER   
+           The total number of merging levels in the overall divide and   
+           conquer tree.   
+
+    CURLVL (input) INTEGER   
+           The current level in the overall merge routine,   
+           0 <= curlvl <= tlvls.   
+
+    CURPBM (input) INTEGER   
+           The current problem in the current level in the overall   
+           merge routine (counting from upper left to lower right).   
+
+    PRMPTR (input) INTEGER array, dimension (N lg N)   
+           Contains a list of pointers which indicate where in PERM a   
+           level's permutation is stored.  PRMPTR(i+1) - PRMPTR(i)   
+           indicates the size of the permutation and incidentally the   
+           size of the full, non-deflated problem.   
+
+    PERM   (input) INTEGER array, dimension (N lg N)   
+           Contains the permutations (from deflation and sorting) to be   
+           applied to each eigenblock.   
+
+    GIVPTR (input) INTEGER array, dimension (N lg N)   
+           Contains a list of pointers which indicate where in GIVCOL a   
+           level's Givens rotations are stored.  GIVPTR(i+1) - GIVPTR(i)   
+           indicates the number of Givens rotations.   
+
+    GIVCOL (input) INTEGER array, dimension (2, N lg N)   
+           Each pair of numbers indicates a pair of columns to take place   
+           in a Givens rotation.   
+
+    GIVNUM (input) REAL array, dimension (2, N lg N)   
+           Each number indicates the S value to be used in the   
+           corresponding Givens rotation.   
+
+    Q      (input) REAL array, dimension (N**2)   
+           Contains the square eigenblocks from previous levels, the   
+           starting positions for blocks are given by QPTR.   
+
+    QPTR   (input) INTEGER array, dimension (N+2)   
+           Contains a list of pointers which indicate where in Q an   
+           eigenblock is stored.  SQRT( QPTR(i+1) - QPTR(i) ) indicates   
+           the size of the block.   
+
+    Z      (output) REAL array, dimension (N)   
+           On output this vector contains the updating vector (the last   
+           row of the first sub-eigenvector matrix and the first row of   
+           the second sub-eigenvector matrix).   
+
+    ZTEMP  (workspace) REAL array, dimension (N)   
+
+    INFO   (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__2 = 2;
+    static integer c__1 = 1;
+    static real c_b24 = 1.f;
+    static real c_b26 = 0.f;
+    
+    /* System generated locals */
+    integer i__1, i__2, i__3;
+    /* Builtin functions */
+    integer pow_ii(integer *, integer *);
+    // double sqrt(doublereal);
+    /* Local variables */
+    static integer curr;
+    extern /* Subroutine */ int srot_(integer *, real *, integer *, real *, 
+	    integer *, real *, real *);
+    static integer bsiz1, bsiz2, psiz1, psiz2, i__, k, zptr1;
+    extern /* Subroutine */ int sgemv_(char *, integer *, integer *, real *, 
+	    real *, integer *, real *, integer *, real *, real *, integer *), scopy_(integer *, real *, integer *, real *, integer *), 
+	    xerbla_(char *, integer *);
+    static integer mid, ptr;
+#define givcol_ref(a_1,a_2) givcol[(a_2)*2 + a_1]
+#define givnum_ref(a_1,a_2) givnum[(a_2)*2 + a_1]
+
+
+    --ztemp;
+    --z__;
+    --qptr;
+    --q;
+    givnum -= 3;
+    givcol -= 3;
+    --givptr;
+    --perm;
+    --prmptr;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*n < 0) {
+	*info = -1;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAEDA", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*n == 0) {
+	return 0;
+    }
+
+/*     Determine location of first number in second half. */
+
+    mid = *n / 2 + 1;
+
+/*     Gather last/first rows of appropriate eigenblocks into center of Z */
+
+    ptr = 1;
+
+/*     Determine location of lowest level subproblem in the full storage   
+       scheme */
+
+    i__1 = *curlvl - 1;
+    curr = ptr + *curpbm * pow_ii(&c__2, curlvl) + pow_ii(&c__2, &i__1) - 1;
+
+/*     Determine size of these matrices.  We add HALF to the value of   
+       the SQRT in case the machine underestimates one of these square   
+       roots. */
+
+    bsiz1 = (integer) (sqrt((real) (qptr[curr + 1] - qptr[curr])) + .5f);
+    bsiz2 = (integer) (sqrt((real) (qptr[curr + 2] - qptr[curr + 1])) + .5f);
+    i__1 = mid - bsiz1 - 1;
+    for (k = 1; k <= i__1; ++k) {
+	z__[k] = 0.f;
+/* L10: */
+    }
+    scopy_(&bsiz1, &q[qptr[curr] + bsiz1 - 1], &bsiz1, &z__[mid - bsiz1], &
+	    c__1);
+    scopy_(&bsiz2, &q[qptr[curr + 1]], &bsiz2, &z__[mid], &c__1);
+    i__1 = *n;
+    for (k = mid + bsiz2; k <= i__1; ++k) {
+	z__[k] = 0.f;
+/* L20: */
+    }
+
+/*     Loop thru remaining levels 1 -> CURLVL applying the Givens   
+       rotations and permutation and then multiplying the center matrices   
+       against the current Z. */
+
+    ptr = pow_ii(&c__2, tlvls) + 1;
+    i__1 = *curlvl - 1;
+    for (k = 1; k <= i__1; ++k) {
+	i__2 = *curlvl - k;
+	i__3 = *curlvl - k - 1;
+	curr = ptr + *curpbm * pow_ii(&c__2, &i__2) + pow_ii(&c__2, &i__3) - 
+		1;
+	psiz1 = prmptr[curr + 1] - prmptr[curr];
+	psiz2 = prmptr[curr + 2] - prmptr[curr + 1];
+	zptr1 = mid - psiz1;
+
+/*       Apply Givens at CURR and CURR+1 */
+
+	i__2 = givptr[curr + 1] - 1;
+	for (i__ = givptr[curr]; i__ <= i__2; ++i__) {
+	    srot_(&c__1, &z__[zptr1 + givcol_ref(1, i__) - 1], &c__1, &z__[
+		    zptr1 + givcol_ref(2, i__) - 1], &c__1, &givnum_ref(1, 
+		    i__), &givnum_ref(2, i__));
+/* L30: */
+	}
+	i__2 = givptr[curr + 2] - 1;
+	for (i__ = givptr[curr + 1]; i__ <= i__2; ++i__) {
+	    srot_(&c__1, &z__[mid - 1 + givcol_ref(1, i__)], &c__1, &z__[mid 
+		    - 1 + givcol_ref(2, i__)], &c__1, &givnum_ref(1, i__), &
+		    givnum_ref(2, i__));
+/* L40: */
+	}
+	psiz1 = prmptr[curr + 1] - prmptr[curr];
+	psiz2 = prmptr[curr + 2] - prmptr[curr + 1];
+	i__2 = psiz1 - 1;
+	for (i__ = 0; i__ <= i__2; ++i__) {
+	    ztemp[i__ + 1] = z__[zptr1 + perm[prmptr[curr] + i__] - 1];
+/* L50: */
+	}
+	i__2 = psiz2 - 1;
+	for (i__ = 0; i__ <= i__2; ++i__) {
+	    ztemp[psiz1 + i__ + 1] = z__[mid + perm[prmptr[curr + 1] + i__] - 
+		    1];
+/* L60: */
+	}
+
+/*        Multiply Blocks at CURR and CURR+1   
+
+          Determine size of these matrices.  We add HALF to the value of   
+          the SQRT in case the machine underestimates one of these   
+          square roots. */
+
+	bsiz1 = (integer) (sqrt((real) (qptr[curr + 1] - qptr[curr])) + .5f);
+	bsiz2 = (integer) (sqrt((real) (qptr[curr + 2] - qptr[curr + 1])) + 
+		.5f);
+	if (bsiz1 > 0) {
+	    sgemv_("T", &bsiz1, &bsiz1, &c_b24, &q[qptr[curr]], &bsiz1, &
+		    ztemp[1], &c__1, &c_b26, &z__[zptr1], &c__1);
+	}
+	i__2 = psiz1 - bsiz1;
+	scopy_(&i__2, &ztemp[bsiz1 + 1], &c__1, &z__[zptr1 + bsiz1], &c__1);
+	if (bsiz2 > 0) {
+	    sgemv_("T", &bsiz2, &bsiz2, &c_b24, &q[qptr[curr + 1]], &bsiz2, &
+		    ztemp[psiz1 + 1], &c__1, &c_b26, &z__[mid], &c__1);
+	}
+	i__2 = psiz2 - bsiz2;
+	scopy_(&i__2, &ztemp[psiz1 + bsiz2 + 1], &c__1, &z__[mid + bsiz2], &
+		c__1);
+
+	i__2 = *tlvls - k;
+	ptr += pow_ii(&c__2, &i__2);
+/* L70: */
+    }
+
+    return 0;
+
+/*     End of SLAEDA */
+
+} /* slaeda_ */
+
+#undef givnum_ref
+#undef givcol_ref
+
+
+/* Subroutine */ int slaed3_(integer *k, integer *n, integer *n1, real *d__, 
+	real *q, integer *ldq, real *rho, real *dlamda, real *q2, integer *
+	indx, integer *ctot, real *w, real *s, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Oak Ridge National Lab, Argonne National Lab,   
+       Courant Institute, NAG Ltd., and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLAED3 finds the roots of the secular equation, as defined by the   
+    values in D, W, and RHO, between 1 and K.  It makes the   
+    appropriate calls to SLAED4 and then updates the eigenvectors by   
+    multiplying the matrix of eigenvectors of the pair of eigensystems   
+    being combined by the matrix of eigenvectors of the K-by-K system   
+    which is solved here.   
+
+    This code makes very mild assumptions about floating point   
+    arithmetic. It will work on machines with a guard digit in   
+    add/subtract, or on those binary machines without guard digits   
+    which subtract like the Cray X-MP, Cray Y-MP, Cray C-90, or Cray-2.   
+    It could conceivably fail on hexadecimal or decimal machines   
+    without guard digits, but we know of none.   
+
+    Arguments   
+    =========   
+
+    K       (input) INTEGER   
+            The number of terms in the rational function to be solved by   
+            SLAED4.  K >= 0.   
+
+    N       (input) INTEGER   
+            The number of rows and columns in the Q matrix.   
+            N >= K (deflation may result in N>K).   
+
+    N1      (input) INTEGER   
+            The location of the last eigenvalue in the leading submatrix.   
+            min(1,N) <= N1 <= N/2.   
+
+    D       (output) REAL array, dimension (N)   
+            D(I) contains the updated eigenvalues for   
+            1 <= I <= K.   
+
+    Q       (output) REAL array, dimension (LDQ,N)   
+            Initially the first K columns are used as workspace.   
+            On output the columns 1 to K contain   
+            the updated eigenvectors.   
+
+    LDQ     (input) INTEGER   
+            The leading dimension of the array Q.  LDQ >= max(1,N).   
+
+    RHO     (input) REAL   
+            The value of the parameter in the rank one update equation.   
+            RHO >= 0 required.   
+
+    DLAMDA  (input/output) REAL array, dimension (K)   
+            The first K elements of this array contain the old roots   
+            of the deflated updating problem.  These are the poles   
+            of the secular equation. May be changed on output by   
+            having lowest order bit set to zero on Cray X-MP, Cray Y-MP,   
+            Cray-2, or Cray C-90, as described above.   
+
+    Q2      (input) REAL array, dimension (LDQ2, N)   
+            The first K columns of this matrix contain the non-deflated   
+            eigenvectors for the split problem.   
+
+    INDX    (input) INTEGER array, dimension (N)   
+            The permutation used to arrange the columns of the deflated   
+            Q matrix into three groups (see SLAED2).   
+            The rows of the eigenvectors found by SLAED4 must be likewise   
+            permuted before the matrix multiply can take place.   
+
+    CTOT    (input) INTEGER array, dimension (4)   
+            A count of the total number of the various types of columns   
+            in Q, as described in INDX.  The fourth column type is any   
+            column which has been deflated.   
+
+    W       (input/output) REAL array, dimension (K)   
+            The first K elements of this array contain the components   
+            of the deflation-adjusted updating vector. Destroyed on   
+            output.   
+
+    S       (workspace) REAL array, dimension (N1 + 1)*K   
+            Will contain the eigenvectors of the repaired matrix which   
+            will be multiplied by the previously accumulated eigenvectors   
+            to update the system.   
+
+    LDS     (input) INTEGER   
+            The leading dimension of S.  LDS >= max(1,K).   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  if INFO = 1, an eigenvalue did not converge   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Jeff Rutter, Computer Science Division, University of California   
+       at Berkeley, USA   
+    Modified by Francoise Tisseur, University of Tennessee.   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static real c_b22 = 1.f;
+    static real c_b23 = 0.f;
+    
+    /* System generated locals */
+    integer q_dim1, q_offset, i__1, i__2;
+    real r__1;
+    /* Builtin functions */
+    // double sqrt(doublereal), r_sign(real *, real *);
+    /* Local variables */
+    static real temp;
+    extern doublereal snrm2_(integer *, real *, integer *);
+    static integer i__, j;
+    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+	    integer *, real *, real *, integer *, real *, integer *, real *, 
+	    real *, integer *), scopy_(integer *, real *, 
+	    integer *, real *, integer *);
+    static integer n2;
+    extern /* Subroutine */ int slaed4_(integer *, integer *, real *, real *, 
+	    real *, real *, real *, integer *);
+    extern doublereal slamc3_(real *, real *);
+    static integer n12, ii, n23;
+    extern /* Subroutine */ int xerbla_(char *, integer *), slacpy_(
+	    char *, integer *, integer *, real *, integer *, real *, integer *
+	    ), slaset_(char *, integer *, integer *, real *, real *, 
+	    real *, integer *);
+    static integer iq2;
+#define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
+
+
+    --d__;
+    q_dim1 = *ldq;
+    q_offset = 1 + q_dim1 * 1;
+    q -= q_offset;
+    --dlamda;
+    --q2;
+    --indx;
+    --ctot;
+    --w;
+    --s;
+
+    /* Function Body */
+    *info = 0;
+
+    if (*k < 0) {
+	*info = -1;
+    } else if (*n < *k) {
+	*info = -2;
+    } else if (*ldq < f2cmax(1,*n)) {
+	*info = -6;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SLAED3", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*k == 0) {
+	return 0;
+    }
+
+/*     Modify values DLAMDA(i) to make sure all DLAMDA(i)-DLAMDA(j) can   
+       be computed with high relative accuracy (barring over/underflow).   
+       This is a problem on machines without a guard digit in   
+       add/subtract (Cray XMP, Cray YMP, Cray C 90 and Cray 2).   
+       The following code replaces DLAMDA(I) by 2*DLAMDA(I)-DLAMDA(I),   
+       which on any of these machines zeros out the bottommost   
+       bit of DLAMDA(I) if it is 1; this makes the subsequent   
+       subtractions DLAMDA(I)-DLAMDA(J) unproblematic when cancellation   
+       occurs. On binary machines with a guard digit (almost all   
+       machines) it does not change DLAMDA(I) at all. On hexadecimal   
+       and decimal machines with a guard digit, it slightly   
+       changes the bottommost bits of DLAMDA(I). It does not account   
+       for hexadecimal or decimal machines without guard digits   
+       (we know of none). We use a subroutine call to compute   
+       2*DLAMBDA(I) to prevent optimizing compilers from eliminating   
+       this code. */
+
+    i__1 = *k;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	dlamda[i__] = slamc3_(&dlamda[i__], &dlamda[i__]) - dlamda[i__];
+/* L10: */
+    }
+
+    i__1 = *k;
+    for (j = 1; j <= i__1; ++j) {
+	slaed4_(k, &j, &dlamda[1], &w[1], &q_ref(1, j), rho, &d__[j], info);
+
+/*        If the zero finder fails, the computation is terminated. */
+
+	if (*info != 0) {
+	    goto L120;
+	}
+/* L20: */
+    }
+
+    if (*k == 1) {
+	goto L110;
+    }
+    if (*k == 2) {
+	i__1 = *k;
+	for (j = 1; j <= i__1; ++j) {
+	    w[1] = q_ref(1, j);
+	    w[2] = q_ref(2, j);
+	    ii = indx[1];
+	    q_ref(1, j) = w[ii];
+	    ii = indx[2];
+	    q_ref(2, j) = w[ii];
+/* L30: */
+	}
+	goto L110;
+    }
+
+/*     Compute updated W. */
+
+    scopy_(k, &w[1], &c__1, &s[1], &c__1);
+
+/*     Initialize W(I) = Q(I,I) */
+
+    i__1 = *ldq + 1;
+    scopy_(k, &q[q_offset], &i__1, &w[1], &c__1);
+    i__1 = *k;
+    for (j = 1; j <= i__1; ++j) {
+	i__2 = j - 1;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    w[i__] *= q_ref(i__, j) / (dlamda[i__] - dlamda[j]);
+/* L40: */
+	}
+	i__2 = *k;
+	for (i__ = j + 1; i__ <= i__2; ++i__) {
+	    w[i__] *= q_ref(i__, j) / (dlamda[i__] - dlamda[j]);
+/* L50: */
+	}
+/* L60: */
+    }
+    i__1 = *k;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	r__1 = sqrt(-w[i__]);
+	w[i__] = r_sign(&r__1, &s[i__]);
+/* L70: */
+    }
+
+/*     Compute eigenvectors of the modified rank-1 modification. */
+
+    i__1 = *k;
+    for (j = 1; j <= i__1; ++j) {
+	i__2 = *k;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    s[i__] = w[i__] / q_ref(i__, j);
+/* L80: */
+	}
+	temp = snrm2_(k, &s[1], &c__1);
+	i__2 = *k;
+	for (i__ = 1; i__ <= i__2; ++i__) {
+	    ii = indx[i__];
+	    q_ref(i__, j) = s[ii] / temp;
+/* L90: */
+	}
+/* L100: */
+    }
+
+/*     Compute the updated eigenvectors. */
+
+L110:
+
+    n2 = *n - *n1;
+    n12 = ctot[1] + ctot[2];
+    n23 = ctot[2] + ctot[3];
+
+    slacpy_("A", &n23, k, &q_ref(ctot[1] + 1, 1), ldq, &s[1], &n23)
+	    ;
+    iq2 = *n1 * n12 + 1;
+    if (n23 != 0) {
+	sgemm_("N", "N", &n2, k, &n23, &c_b22, &q2[iq2], &n2, &s[1], &n23, &
+		c_b23, &q_ref(*n1 + 1, 1), ldq);
+    } else {
+	slaset_("A", &n2, k, &c_b23, &c_b23, &q_ref(*n1 + 1, 1), ldq);
+    }
+
+    slacpy_("A", &n12, k, &q[q_offset], ldq, &s[1], &n12);
+    if (n12 != 0) {
+	sgemm_("N", "N", n1, k, &n12, &c_b22, &q2[1], n1, &s[1], &n12, &c_b23,
+		 &q[q_offset], ldq);
+    } else {
+	slaset_("A", n1, k, &c_b23, &c_b23, &q_ref(1, 1), ldq);
+    }
+
+
+L120:
+    return 0;
+
+/*     End of SLAED3 */
+
+} /* slaed3_ */
+
+#undef q_ref
+
+
+/* Subroutine */ int slaed6_(integer *kniter, logical *orgati, real *rho, 
+	real *d__, real *z__, real *finit, real *tau, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Oak Ridge National Lab, Argonne National Lab,   
+       Courant Institute, NAG Ltd., and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLAED6 computes the positive or negative root (closest to the origin)   
+    of   
+                     z(1)        z(2)        z(3)   
+    f(x) =   rho + --------- + ---------- + ---------   
+                    d(1)-x      d(2)-x      d(3)-x   
+
+    It is assumed that   
+
+          if ORGATI = .true. the root is between d(2) and d(3);   
+          otherwise it is between d(1) and d(2)   
+
+    This routine will be called by SLAED4 when necessary. In most cases,   
+    the root sought is the smallest in magnitude, though it might not be   
+    in some extremely rare situations.   
+
+    Arguments   
+    =========   
+
+    KNITER       (input) INTEGER   
+                 Refer to SLAED4 for its significance.   
+
+    ORGATI       (input) LOGICAL   
+                 If ORGATI is true, the needed root is between d(2) and   
+                 d(3); otherwise it is between d(1) and d(2).  See   
+                 SLAED4 for further details.   
+
+    RHO          (input) REAL   
+                 Refer to the equation f(x) above.   
+
+    D            (input) REAL array, dimension (3)   
+                 D satisfies d(1) < d(2) < d(3).   
+
+    Z            (input) REAL array, dimension (3)   
+                 Each of the elements in z must be positive.   
+
+    FINIT        (input) REAL   
+                 The value of f at 0. It is more accurate than the one   
+                 evaluated inside this routine (if someone wants to do   
+                 so).   
+
+    TAU          (output) REAL   
+                 The root of the equation f(x).   
+
+    INFO         (output) INTEGER   
+                 = 0: successful exit   
+                 > 0: if INFO = 1, failure to converge   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Ren-Cang Li, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+       Parameter adjustments */
+    /* Initialized data */
+    static logical first = TRUE_;
+    /* System generated locals */
+    integer i__1;
+    real r__1, r__2, r__3, r__4;
+    /* Builtin functions */
+    // double sqrt(doublereal), log(doublereal), pow_ri(real *, integer *);
+    /* Local variables */
+    static real base;
+    static integer iter;
+    static real temp, temp1, temp2, temp3, temp4, a, b, c__, f;
+    static integer i__;
+    static logical scale;
+    static integer niter;
+    static real small1, small2, fc, df, sminv1, sminv2, dscale[3], sclfac;
+    extern doublereal slamch_(char *);
+    static real zscale[3], erretm, sclinv, ddf, eta, eps;
+
+    --z__;
+    --d__;
+
+    /* Function Body */
+
+    *info = 0;
+
+    niter = 1;
+    *tau = 0.f;
+    if (*kniter == 2) {
+	if (*orgati) {
+	    temp = (d__[3] - d__[2]) / 2.f;
+	    c__ = *rho + z__[1] / (d__[1] - d__[2] - temp);
+	    a = c__ * (d__[2] + d__[3]) + z__[2] + z__[3];
+	    b = c__ * d__[2] * d__[3] + z__[2] * d__[3] + z__[3] * d__[2];
+	} else {
+	    temp = (d__[1] - d__[2]) / 2.f;
+	    c__ = *rho + z__[3] / (d__[3] - d__[2] - temp);
+	    a = c__ * (d__[1] + d__[2]) + z__[1] + z__[2];
+	    b = c__ * d__[1] * d__[2] + z__[1] * d__[2] + z__[2] * d__[1];
+	}
+/* Computing MAX */
+	r__1 = dabs(a), r__2 = dabs(b), r__1 = f2cmax(r__1,r__2), r__2 = dabs(
+		c__);
+	temp = df2cmax(r__1,r__2);
+	a /= temp;
+	b /= temp;
+	c__ /= temp;
+	if (c__ == 0.f) {
+	    *tau = b / a;
+	} else if (a <= 0.f) {
+	    *tau = (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1)))) / (
+		    c__ * 2.f);
+	} else {
+	    *tau = b * 2.f / (a + sqrt((r__1 = a * a - b * 4.f * c__, dabs(
+		    r__1))));
+	}
+	temp = *rho + z__[1] / (d__[1] - *tau) + z__[2] / (d__[2] - *tau) + 
+		z__[3] / (d__[3] - *tau);
+	if (dabs(*finit) <= dabs(temp)) {
+	    *tau = 0.f;
+	}
+    }
+
+/*     On first call to routine, get machine parameters for   
+       possible scaling to avoid overflow */
+
+    if (first) {
+	eps = slamch_("Epsilon");
+	base = slamch_("Base");
+	i__1 = (integer) (log(slamch_("SafMin")) / log(base) / 3.f)
+		;
+	small1 = pow_ri(&base, &i__1);
+	sminv1 = 1.f / small1;
+	small2 = small1 * small1;
+	sminv2 = sminv1 * sminv1;
+	first = FALSE_;
+    }
+
+/*     Determine if scaling of inputs necessary to avoid overflow   
+       when computing 1/TEMP**3 */
+
+    if (*orgati) {
+/* Computing MIN */
+	r__3 = (r__1 = d__[2] - *tau, dabs(r__1)), r__4 = (r__2 = d__[3] - *
+		tau, dabs(r__2));
+	temp = df2cmin(r__3,r__4);
+    } else {
+/* Computing MIN */
+	r__3 = (r__1 = d__[1] - *tau, dabs(r__1)), r__4 = (r__2 = d__[2] - *
+		tau, dabs(r__2));
+	temp = df2cmin(r__3,r__4);
+    }
+    scale = FALSE_;
+    if (temp <= small1) {
+	scale = TRUE_;
+	if (temp <= small2) {
+
+/*        Scale up by power of radix nearest 1/SAFMIN**(2/3) */
+
+	    sclfac = sminv2;
+	    sclinv = small2;
+	} else {
+
+/*        Scale up by power of radix nearest 1/SAFMIN**(1/3) */
+
+	    sclfac = sminv1;
+	    sclinv = small1;
+	}
+
+/*        Scaling up safe because D, Z, TAU scaled elsewhere to be O(1) */
+
+	for (i__ = 1; i__ <= 3; ++i__) {
+	    dscale[i__ - 1] = d__[i__] * sclfac;
+	    zscale[i__ - 1] = z__[i__] * sclfac;
+/* L10: */
+	}
+	*tau *= sclfac;
+    } else {
+
+/*        Copy D and Z to DSCALE and ZSCALE */
+
+	for (i__ = 1; i__ <= 3; ++i__) {
+	    dscale[i__ - 1] = d__[i__];
+	    zscale[i__ - 1] = z__[i__];
+/* L20: */
+	}
+    }
+
+    fc = 0.f;
+    df = 0.f;
+    ddf = 0.f;
+    for (i__ = 1; i__ <= 3; ++i__) {
+	temp = 1.f / (dscale[i__ - 1] - *tau);
+	temp1 = zscale[i__ - 1] * temp;
+	temp2 = temp1 * temp;
+	temp3 = temp2 * temp;
+	fc += temp1 / dscale[i__ - 1];
+	df += temp2;
+	ddf += temp3;
+/* L30: */
+    }
+    f = *finit + *tau * fc;
+
+    if (dabs(f) <= 0.f) {
+	goto L60;
+    }
+
+/*        Iteration begins   
+
+       It is not hard to see that   
+
+             1) Iterations will go up monotonically   
+                if FINIT < 0;   
+
+             2) Iterations will go down monotonically   
+                if FINIT > 0. */
+
+    iter = niter + 1;
+
+    for (niter = iter; niter <= 20; ++niter) {
+
+	if (*orgati) {
+	    temp1 = dscale[1] - *tau;
+	    temp2 = dscale[2] - *tau;
+	} else {
+	    temp1 = dscale[0] - *tau;
+	    temp2 = dscale[1] - *tau;
+	}
+	a = (temp1 + temp2) * f - temp1 * temp2 * df;
+	b = temp1 * temp2 * f;
+	c__ = f - (temp1 + temp2) * df + temp1 * temp2 * ddf;
+/* Computing MAX */
+	r__1 = dabs(a), r__2 = dabs(b), r__1 = f2cmax(r__1,r__2), r__2 = dabs(
+		c__);
+	temp = df2cmax(r__1,r__2);
+	a /= temp;
+	b /= temp;
+	c__ /= temp;
+	if (c__ == 0.f) {
+	    eta = b / a;
+	} else if (a <= 0.f) {
+	    eta = (a - sqrt((r__1 = a * a - b * 4.f * c__, dabs(r__1)))) / (
+		    c__ * 2.f);
+	} else {
+	    eta = b * 2.f / (a + sqrt((r__1 = a * a - b * 4.f * c__, dabs(
+		    r__1))));
+	}
+	if (f * eta >= 0.f) {
+	    eta = -f / df;
+	}
+
+	temp = eta + *tau;
+	if (*orgati) {
+	    if (eta > 0.f && temp >= dscale[2]) {
+		eta = (dscale[2] - *tau) / 2.f;
+	    }
+	    if (eta < 0.f && temp <= dscale[1]) {
+		eta = (dscale[1] - *tau) / 2.f;
+	    }
+	} else {
+	    if (eta > 0.f && temp >= dscale[1]) {
+		eta = (dscale[1] - *tau) / 2.f;
+	    }
+	    if (eta < 0.f && temp <= dscale[0]) {
+		eta = (dscale[0] - *tau) / 2.f;
+	    }
+	}
+	*tau += eta;
+
+	fc = 0.f;
+	erretm = 0.f;
+	df = 0.f;
+	ddf = 0.f;
+	for (i__ = 1; i__ <= 3; ++i__) {
+	    temp = 1.f / (dscale[i__ - 1] - *tau);
+	    temp1 = zscale[i__ - 1] * temp;
+	    temp2 = temp1 * temp;
+	    temp3 = temp2 * temp;
+	    temp4 = temp1 / dscale[i__ - 1];
+	    fc += temp4;
+	    erretm += dabs(temp4);
+	    df += temp2;
+	    ddf += temp3;
+/* L40: */
+	}
+	f = *finit + *tau * fc;
+	erretm = (dabs(*finit) + dabs(*tau) * erretm) * 8.f + dabs(*tau) * df;
+	if (dabs(f) <= eps * erretm) {
+	    goto L60;
+	}
+/* L50: */
+    }
+    *info = 1;
+L60:
+
+/*     Undo scaling */
+
+    if (scale) {
+	*tau *= sclinv;
+    }
+    return 0;
+
+/*     End of SLAED6 */
+
+} /* slaed6_ */
+
+/* Subroutine */ int slaed5_(integer *i__, real *d__, real *z__, real *delta, 
+	real *rho, real *dlam)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Oak Ridge National Lab, Argonne National Lab,   
+       Courant Institute, NAG Ltd., and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    This subroutine computes the I-th eigenvalue of a symmetric rank-one   
+    modification of a 2-by-2 diagonal matrix   
+
+               diag( D )  +  RHO *  Z * transpose(Z) .   
+
+    The diagonal elements in the array D are assumed to satisfy   
+
+               D(i) < D(j)  for  i < j .   
+
+    We also assume RHO > 0 and that the Euclidean norm of the vector   
+    Z is one.   
+
+    Arguments   
+    =========   
+
+    I      (input) INTEGER   
+           The index of the eigenvalue to be computed.  I = 1 or I = 2.   
+
+    D      (input) REAL array, dimension (2)   
+           The original eigenvalues.  We assume D(1) < D(2).   
+
+    Z      (input) REAL array, dimension (2)   
+           The components of the updating vector.   
+
+    DELTA  (output) REAL array, dimension (2)   
+           The vector DELTA contains the information necessary   
+           to construct the eigenvectors.   
+
+    RHO    (input) REAL   
+           The scalar in the symmetric updating formula.   
+
+    DLAM   (output) REAL   
+           The computed lambda_I, the I-th updated eigenvalue.   
+
+    Further Details   
+    ===============   
+
+    Based on contributions by   
+       Ren-Cang Li, Computer Science Division, University of California   
+       at Berkeley, USA   
+
+    =====================================================================   
+
+
+       Parameter adjustments */
+    /* System generated locals */
+    real r__1;
+    /* Builtin functions */
+    // double sqrt(doublereal);
+    /* Local variables */
+    static real temp, b, c__, w, del, tau;
+
+    --delta;
+    --z__;
+    --d__;
+
+    /* Function Body */
+    del = d__[2] - d__[1];
+    if (*i__ == 1) {
+	w = *rho * 2.f * (z__[2] * z__[2] - z__[1] * z__[1]) / del + 1.f;
+	if (w > 0.f) {
+	    b = del + *rho * (z__[1] * z__[1] + z__[2] * z__[2]);
+	    c__ = *rho * z__[1] * z__[1] * del;
+
+/*           B > ZERO, always */
+
+	    tau = c__ * 2.f / (b + sqrt((r__1 = b * b - c__ * 4.f, dabs(r__1))
+		    ));
+	    *dlam = d__[1] + tau;
+	    delta[1] = -z__[1] / tau;
+	    delta[2] = z__[2] / (del - tau);
+	} else {
+	    b = -del + *rho * (z__[1] * z__[1] + z__[2] * z__[2]);
+	    c__ = *rho * z__[2] * z__[2] * del;
+	    if (b > 0.f) {
+		tau = c__ * -2.f / (b + sqrt(b * b + c__ * 4.f));
+	    } else {
+		tau = (b - sqrt(b * b + c__ * 4.f)) / 2.f;
+	    }
+	    *dlam = d__[2] + tau;
+	    delta[1] = -z__[1] / (del + tau);
+	    delta[2] = -z__[2] / tau;
+	}
+	temp = sqrt(delta[1] * delta[1] + delta[2] * delta[2]);
+	delta[1] /= temp;
+	delta[2] /= temp;
+    } else {
+
+/*     Now I=2 */
+
+	b = -del + *rho * (z__[1] * z__[1] + z__[2] * z__[2]);
+	c__ = *rho * z__[2] * z__[2] * del;
+	if (b > 0.f) {
+	    tau = (b + sqrt(b * b + c__ * 4.f)) / 2.f;
+	} else {
+	    tau = c__ * 2.f / (-b + sqrt(b * b + c__ * 4.f));
+	}
+	*dlam = d__[2] + tau;
+	delta[1] = -z__[1] / (del + tau);
+	delta[2] = -z__[2] / tau;
+	temp = sqrt(delta[1] * delta[1] + delta[2] * delta[2]);
+	delta[1] /= temp;
+	delta[2] /= temp;
+    }
+    return 0;
+
+/*     End OF SLAED5 */
+
+} /* slaed5_ */
 
