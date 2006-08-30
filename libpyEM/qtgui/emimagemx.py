@@ -52,7 +52,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				if w>0 : self.resize(w,512)
 			except: pass
 		self.data=data
-		if data==None:
+		if data==None or len(data)==0:
 			self.updateGL()
 			return
 		

@@ -25,7 +25,8 @@ sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
 #	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
 #	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
 	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
-	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=4)
+	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
+	parser.add_option("--maxpairerr","-E",type="float",help="Maximum error match between pairs of helices, default=50",default=50.0)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -40,10 +41,16 @@ def ssematch(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
+	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
+	for i in sspred: print "%4d "%int(i[0]/1.5),
+	print ""
+	
 	# get lists of possible pairwise assignments and quality assessment for each
 	pairqual={}
 	for i in range(len(sspred)-1):
-		pairqual[i]=findpairs(i,sspred,sseh)
+		pairqual[i]=findpairs(i,sspred,sseh,options.maxpairerr)
+		print "%4d "%len(pairqual[i]),
+	print
 	
 	# This is where we generate all of the final answers
 	all=[]
@@ -59,27 +66,35 @@ def ssematch(ssehfsp,sspredfsp,options):
 def recursesoln(pairqual,tot,soln,all,maxbad):
 	# first round, try all 1st level pairs
 	if len(soln)==0 :
-		for i in pairqual[0]: recursesoln(pairqual,[i[0]],[i[1],i[2]],all,maxbad)
+		for j,i in enumerate(pairqual[0]): 
+			recursesoln(pairqual,[i[0]],[i[1],i[2]],all,maxbad)
+			print "%d/%d"%(j,len(pairqual[0]))
 		return
 		
 	# if we get here, we're done
 	if len(soln)==len(pairqual):
-		all.append((sum(tot),soln))
-		print sum(tot),soln
+		v=sum(tot)/len(tot)
+		try:
+			if v<min(all)[0]: print v,soln
+		except: print v,soln
+		all.append((v,soln))
 		return
 	
 	tries=0
 	for i in pairqual[len(soln)-1]:
-		if i[1]!=soln[-1] : continue	# no agreement between end and beginning
-		if i[2] in soln : continue		# next one in series already assigned
+		# three tests. If the previous element isn't undefined, it must match
+		# and, the next choice in the series must not already be used
+		if (soln[-1]!=-1 and i[1]!=soln[-1]) or i[2] in soln : continue		# next one in series already assigned
 		tries+=1
+		try: minq=min(minq,i[0])
+		except: minq=i[0]
 		recursesoln(pairqual,tot+[i[0]],soln+[i[2]],all,maxbad)
 	
 	# if we didn't find even one good assignment, we skip this helix (unless we've skipped too many)
-	if tries==0	and soln.count(-1)<maxbad:
-		recursesoln(pairqual,tot+[500.0],soln+[-1],all,maxbad)
+	if (tries==0 or minq>32) and soln.count(-1)<maxbad:
+		recursesoln(pairqual,tot,soln+[-1],all,maxbad)
 	
-def findpairs(p1,sspred,sseh):
+def findpairs(p1,sspred,sseh,maxpe):
 	"""This will generate a sorted list of possible pair assignments. Assigns the
 	predicted helices p1 and p2 to two helices from sseh. Returns a sorted list of:
 	(error,s1,s2)		lower error is a better match """
@@ -97,7 +112,7 @@ def findpairs(p1,sspred,sseh):
 			poss.append((err,s1,s2))
 	poss.sort()
 	for i,v in enumerate(poss):
-		if v[0]>250 : break
+		if v[0]>maxpe : break
 	if i==0: i+=1
 	return poss[:i]
 	

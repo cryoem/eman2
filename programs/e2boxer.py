@@ -27,7 +27,7 @@ for single particle analysis."""
 	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	parser.add_option("--retestlist",type="string",help="Comma separated list of image numbers for retest cycle",default="")
 	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=-1)
+	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=0)
 	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
 	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
@@ -72,7 +72,8 @@ for single particle analysis."""
 	if options.box<5 :
 		if options.refptcl : options.box=refptcl[0].get_xsize()
 		elif options.ptclsize : 
-			options.box=good_boxsize(options.ptclsize*1.2)
+			options.box=options.ptclsize
+#			options.box=good_boxsize(options.ptclsize*1.2)
 		else : parser.error("Please specify a box size")
 	else:
 		if not options.box in good_box_sizes:
