@@ -14,7 +14,7 @@ namespace EMAN
 	class PcaAnalyzer : public Analyzer
 	{
 	  public:
-//		PcaAnalyzer() {}
+		PcaAnalyzer() : mask(0), nvec(0) {}
 /*		virtual ~PcaAnalyzer() {
 			if(mask) {
 				delete mask;
