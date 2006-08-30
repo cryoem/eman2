@@ -8,16 +8,15 @@
 using namespace EMAN;
 
 // return all right singular vectors
-vector <EMData*> PCA::dopca(vector <EMData*> imgstack, EMData *mask)
+int PCA::dopca(vector <EMData*> imgstack, EMData *mask)
 {
    // performs PCA on a list of images (each under a mask)
    // returns a list of eigenimages
 
-   int i;
+   int i, status = 0;
 
    vector<EMData*> img1dlst;
    vector<EMData*> eigvecs;
-   vector<EMData*> eigenimages;
 
    int nimgs = imgstack.size();
 
@@ -36,18 +35,19 @@ vector <EMData*> PCA::dopca(vector <EMData*> imgstack, EMData *mask)
 
    eigvecs.clear();
 
-   return eigenimages;
+   return status;
 }
 
+//------------------------------------------------------------------
 // return a subset of right singular vectors
-vector <EMData*> PCA::dopca(vector <EMData*> imgstack, EMData *mask, int nvec)
+int PCA::dopca(vector <EMData*> imgstack, EMData *mask, int nvec)
 {
    // performs PCA on a list of images (each under a mask)
    // returns a list of eigenimages
 
    vector<EMData*> img1dlst;
    vector<EMData*> eigvecs;
-   vector<EMData*> eigenimages;
+   int status = 0;
 
    int nimgs = imgstack.size();
 
@@ -65,14 +65,15 @@ vector <EMData*> PCA::dopca(vector <EMData*> imgstack, EMData *mask, int nvec)
 
    eigvecs.clear();
 
-   return eigenimages;
+   return status;
 }
 
+//------------------------------------------------------------------
 // PCA by Lanczos
 #define qmat(i,j) qmat[((j)-1)*kstep + (i) -1]
 #define diag(i)   diag[(i)-1]
 
-vector <EMData*> PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nvec)
+int PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nvec)
 {
    // performs PCA on a list of images (each under a mask)
    // returns a list of eigenimages
@@ -83,7 +84,6 @@ vector <EMData*> PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nve
 
    vector<EMData*> img1dlst;
    vector<EMData*> eigvecs;
-   vector<EMData*> eigenimages;
 
    int status = 0;
    int nimgs = imgstack.size();
@@ -125,9 +125,12 @@ vector <EMData*> PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nve
    sstevd_(jobz, &kstep, diag, subdiag, qmat, &kstep, work, &lwork,
            iwork, &liwork, &info);
 
-   // eigenvalues have been sorted in ascending order
-   //for (int j = kstep; j > kstep - nvec; j--)
-   //   printf("sigval2(%d) = %11.4e\n", j, sqrt(diag(j)));  
+   // store singular values
+   // eigenvalues of the cov matrix have been sorted in ascending order
+   for (int j = kstep; j > kstep - nvec; j--) {
+      // printf("sigval2(%d) = %11.4e\n", j, (float)sqrt(diag(j)));  
+      singular_vals.push_back((float)sqrt(diag(j)));
+   }
 
    img1dlst.clear();
    
@@ -153,31 +156,111 @@ vector <EMData*> PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nve
    EMDeleteArray(work);
    EMDeleteArray(iwork);
    EMDeletePtr(eigvec);
-   return eigenimages;
+   return status;
+}
+
+//------------------------------------------------------------------
+// out of core version of PCA, not completed yet
+int PCA::dopca_ooc(const string &filename_in, const string &filename_out, 
+                   const string &lanscratch,  EMData *mask, int nvec)
+{
+   int status = 0, ione = 1;
+   EMData *image_raw = new EMData();
+   EMData *image_masked = NULL;
+
+   int nimgs = EMUtil::get_image_count(filename_in);
+
+   if (nimgs <= 0) {
+      status = 2;
+      fprintf(stderr,"dopca_ooc: no image in %s\n", filename_in.c_str());
+   }
+   for (int i=0; i<nimgs; i++) {
+       image_raw->read_image(filename_in, i);      
+       image_masked=Util::compress_image_mask(image_raw,mask);
+       image_masked->write_image("temp_masked_images.img",i); 
+   }
+
+   int ndim = image_masked->get_ndim();
+   if (ndim != 1) {
+       fprintf(stderr,"dopca_ooc: masked image should be 1-D\n");
+       status = 3; // images should all be 1-d
+   }
+
+   int nx = image_masked->get_xsize();
+   
+   float resnrm = 0.0;
+
+   if ( nvec > nimgs || nvec ==0 ) nvec = nimgs;
+
+   // the definition of kstep is purely a heuristic for right now
+   int kstep = nvec + 20;
+   if (kstep > nimgs) kstep = nimgs;
+
+   float *diag    = new float[kstep];
+   float *subdiag = new float[kstep-1];
+
+   status = Lanczos_ooc("temp_masked_images.img", &kstep, diag, subdiag,
+                        lanscratch , &resnrm);
+
+   char jobz[2] = "V";
+   float *qmat  = new float[kstep*kstep];
+   // workspace size will be optimized later
+   int   lwork  = 100 + 4*kstep + kstep*kstep;
+   int   liwork = 3+5*kstep;
+
+   float *work  = new float[lwork];
+   int   *iwork = new int[liwork]; 
+   int   info = 0;
+
+   // call LAPACK tridiagonal eigensolver
+   sstevd_(jobz, &kstep, diag, subdiag, qmat, &kstep, work, &lwork,
+           iwork, &liwork, &info);
+
+   // store singular values
+   // eigenvalues of the cov matrix have been sorted in ascending order
+   for (int j = kstep; j > kstep - nvec; j--) {
+      // printf("sigval2(%d) = %11.4e\n", j, (float)sqrt(diag(j)));  
+      singular_vals.push_back((float)sqrt(diag(j)));
+   }
+
+   EMData *eigvec = new EMData();
+   eigvec->set_size(nx, 1, 1);
+   float *ritzvec = eigvec->get_data(); 
+   EMData *newimage;
+
+   // compute Ritz vectors (approximate eigenvectors) one at a time
+   FILE *fp;
+   float *vlan = new float[nx];
+   fp = fopen(lanscratch.c_str(),"r"); 
+   for (int j=0; j<nvec; j++) {
+      for (int i = 0; i<nx; i++) ritzvec[i]=0.0;
+      for (int jlan = 1; jlan <= kstep; jlan++) {
+           fread(vlan, sizeof(float), nx, fp);
+           saxpy_(&nx, &qmat(jlan,kstep-j), vlan, &ione, ritzvec, &ione);
+      }
+      rewind(fp);
+      newimage = Util::reconstitute_image_mask(eigvec,mask);
+      newimage->write_image(filename_out,j);
+   }
+   fclose(fp);
+
+   EMDeleteArray(diag);
+   EMDeleteArray(subdiag);
+   EMDeleteArray(qmat);
+   EMDeleteArray(work);
+   EMDeleteArray(iwork);
+   EMDeleteArray(vlan);
+   EMDeletePtr(eigvec);
+   EMDeletePtr(newimage);
+
+   return status;
 }
 #undef diag
 #undef qmat
 
-// out of core version of PCA, not completed yet
-char* PCA::dopca_ooc(const string &filename_in, EMData *mask, int nvec)
-{
-   char *filename_out = NULL;
-   EMData *image_raw = new EMData();
-   EMData *image_masked;
-
-   int nimgs = EMUtil::get_image_count(filename_in);
-   for (int i=0; i<nimgs; i++) {
-       image_raw->read_image(filename_in, i);      
-       image_masked=Util::compress_image_mask(image_raw,mask);
-       image_masked->write_image("temp_masked_imaged.img",i); 
-   }
-
-   return filename_out;
-}
-
+//------------------------------------------------------------------
 #define TOL 1e-7
 #define V(i,j)      V[((j)-1)*imgsize + (i) - 1]
-#define T(i,j)      T[((j)-1)*(*kstep) + (i) - 1]
 #define v0(i)       v0[(i)-1]
 #define Av(i)       Av[(i)-1]
 #define subdiag(i)  subdiag[(i)-1]
@@ -327,4 +410,200 @@ EXIT:
 #undef v0
 #undef Av
 #undef V
-#undef T
+#undef hvec
+#undef diag
+#undef subdiag
+#undef TOL
+
+//------------------------------------------------------------------
+#define TOL 1e-7
+#define v(i)        v[(i) - 1]
+#define v0(i)       v0[(i)-1]
+#define Av(i)       Av[(i)-1]
+#define subdiag(i)  subdiag[(i)-1]
+#define diag(i)     diag[(i)-1]
+
+int PCA::Lanczos_ooc(string const& filename_in, int *kstep, 
+    float  *diag, float *subdiag, string const& lanscratch,
+    float  *beta)
+{
+    /*
+        Purpose: Compute a kstep-step Lanczos factorization
+                 on the covariant matrix X*trans(X), where 
+                 X (imgstack) contains a set of images;
+
+        Input: 
+           filename_in  The name of the input file that contains
+           (string)     masked images;
+           
+           kstep (int*) The maximum number of Lanczos iterations allowed.
+                        If Lanczos terminates before kstep steps
+                        is reached (an invariant subspace is found), 
+                        kstep returns the number of steps taken;
+
+           lanscratch   The name of the file that will be used to 
+           (string)     store a set of orthonormal Lanczos basis vectors;
+
+        Output:
+           diag (float*)    The projection of the covariant matrix into a
+                            Krylov subspace of dimension at most kstep.
+                            The projection is a tridiagonal matrix. The
+                            diagonal elements of this matrix is stored in 
+                            the diag array;
+
+           subdiag (float*) The subdiagonal elements of the projection
+                            is stored here;
+
+           beta (float *)   The residual norm of the factorization;
+    */
+    int i, j;
+    EMData *maskedimage;
+    
+    float alpha;
+    int   ione = 1;
+    int   status = 0;
+    
+    int   imgsize = 0, ndim = 0, offset=0; 
+    float *v, *Av, *imgdata;
+    float h = 0.0, htmp=0.0;
+
+    int nimgs = EMUtil::get_image_count(filename_in);
+    if (nimgs <= 0) {
+	status = 2; // no image in the stack
+        goto EXIT; 
+    }
+
+    maskedimage = new EMData();
+    maskedimage->read_image(filename_in,0);
+    // what happens when filename_in does not exist, or when read fails?
+
+    ndim = maskedimage->get_ndim();
+    if (ndim != 1) {
+        status = 3; // images should all be 1-d
+        goto EXIT; 
+    }
+
+    imgsize = maskedimage->get_xsize();
+     
+    v    = new float[imgsize];
+    Av   = new float[imgsize];
+
+    if (v == NULL || Av == NULL ) {
+        fprintf(stderr, "Lanczos: failed to allocate v,Av\n"); 
+	status = -1;
+        goto EXIT;
+    }
+
+    // may choose a random starting guess here     
+    for ( i = 1; i <= imgsize; i++) v(i) = 1.0;
+
+    // normalize the starting vector
+    *beta  = snrm2_(&imgsize, v, &ione);
+    alpha = 1/(*beta);
+    sscal_(&imgsize, &alpha, v, &ione);
+    // write v out to a scratch file
+    FILE *fp;
+    fp = fopen(lanscratch.c_str(), "w");
+    fwrite(v, sizeof(float), imgsize, fp);
+    fclose(fp);
+
+    // do Av <-- A*v, where A is a cov matrix
+    for (i = 0; i < nimgs; i++) {
+       maskedimage->read_image(filename_in,i);
+       imgdata = maskedimage->get_data();
+       alpha = sdot_(&imgsize, imgdata, &ione, v, &ione); 
+       saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
+    }
+
+    // Av <--- Av - V(:,1)*V(:,1)'*Av 
+    diag(1) = sdot_(&imgsize, v, &ione, Av, &ione); 
+    alpha   = -diag(1);
+    saxpy_(&imgsize, &alpha, v, &ione, Av, &ione);
+
+    // main loop 
+    for ( j = 2 ; j <= *kstep ; j++ ) {
+        *beta = snrm2_(&imgsize, Av, &ione);
+
+        if (*beta < TOL) {
+	    // found an invariant subspace, exit
+            *kstep = j;
+            break;
+        }
+ 
+        subdiag(j-1) = *beta;
+	for ( i = 1 ; i <= imgsize ; i++ ) {
+	    v(i) = Av(i) / (*beta);
+	}	
+        // write v out to a scratch file at appropriate position
+        fp = fopen(lanscratch.c_str(),"w");
+        offset = imgsize*sizeof(float)*(j-1);
+        fseek(fp, offset, SEEK_SET);
+        fwrite(v, sizeof(float), imgsize, fp);
+        fclose(fp);
+
+        // do Av <-- A*V(:,j), where A is a cov matrix
+        for (i = 0; i < imgsize; i++) Av[i] = 0;
+        for (i = 0; i < nimgs; i++) {
+           maskedimage->read_image(filename_in,i);
+           imgdata = maskedimage->get_data();
+           alpha = sdot_(&imgsize, imgdata, &ione, v, &ione); 
+           saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
+        }
+
+        // f <--- Av - V(:,1:j)*V(:,1:j)'*Av
+        // the out-of-core version reads one Lanczos vector at a time
+        fp = fopen(lanscratch.c_str(),"r");
+        for (int jlan = 1; jlan <= j; jlan++) {
+           fread(v, sizeof(float), imgsize, fp);
+           h     = sdot_(&imgsize, v, &ione, Av, &ione);
+           alpha = -h;
+           saxpy_(&imgsize, &alpha, v, &ione, Av, &ione);
+        }
+        fclose(fp);
+
+        // one step of reorthogonalization
+        fp = fopen(lanscratch.c_str(),"r");
+        for (int jlan = 1; jlan <= j; jlan++) {
+           fread(v, sizeof(float), imgsize, fp);
+           htmp  = sdot_(&imgsize, v, &ione, Av, &ione);
+           alpha = -htmp;
+           saxpy_(&imgsize, &alpha, v, &ione, Av, &ione);
+           h =+ htmp;
+        }
+        fclose(fp);
+        diag(j) = h;
+    }
+
+    EMDeleteArray(v);
+    EMDeleteArray(Av);
+    EMDeletePtr(maskedimage);
+
+EXIT:
+    return status;
+}
+
+#undef Av
+#undef v
+#undef diag
+#undef subdiag
+#undef TOL
+
+//------------------------------------------------------------------
+vector<float> PCA::get_vals()
+{
+   // method for retrieving singular values
+   return singular_vals;
+}
+
+vector<EMData*> PCA::get_vecs()
+{
+   // method for retrieving right singular vectors (eigenimages)
+   return eigenimages;
+}
+
+void PCA::clear()
+{
+    // flush singular values and vectors
+   singular_vals.clear();
+   eigenimages.clear();
+}
