@@ -3,7 +3,7 @@
  */
 
 #ifndef eman_analyzer_sparx_h__
-#define eman_analyzer_spzrx_h__
+#define eman_analyzer_sparx_h__
 
 #include "analyzer.h"
 
