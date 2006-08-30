@@ -15,13 +15,13 @@ namespace EMAN
 	{
 	  public:
 //		PcaAnalyzer() {}
-		virtual ~PcaAnalyzer() {
+/*		virtual ~PcaAnalyzer() {
 			if(mask) {
 				delete mask;
 				mask = 0;
 			}
 		}
-		
+*/		
 		virtual vector<EMData*> analyze(const vector<EMData*> & images);
 		
 		string get_name() const
