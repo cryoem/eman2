@@ -437,6 +437,7 @@ for single particle analysis."""
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
+	from valslider import ValSlider
 except:
 	print "Warning: PyQt4 must be installed to use the --gui option"
 	class dummy:
@@ -448,7 +449,7 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
-class GUIbox:
+class GUIbox(QtCore.QObject):
 	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
 		to begin with. Modified boxes/thr are returned. 
@@ -486,6 +487,10 @@ class GUIbox:
 		
 		self.guiim.show()
 		self.guimx.show()
+		
+		self.guictl=GUIboxPanel(self)
+		self.guictl.show()
+		
 		self.boxupdate()
 
 	def mousedown(self,event) :
@@ -558,19 +563,26 @@ class GUIbox:
 		del(self.ptcl[i])
 		self.guimx.setData(self.ptcl)
 	
-	def boxupdate(self):
+	def boxupdate(self,force=False):
+		goodboxes=[i for i in self.boxes if i[4]<=self.threshold]
+		if len(self.ptcl)>len(goodboxes) :
+			del self.ptcl[len(goodboxes):]
+			self.guiim.delShapes()
+
 		ns={}
-		for j,i in enumerate(self.boxes):
-			if not i[5] or i[4]>self.threshold: continue
+		for j,i in enumerate(goodboxes):
+			if not i[5] and not force: continue
 			
 			self.boxes[j][-1]=0
 			im=self.image.get_clip(Region(i[0],i[1],i[2],i[3]))
-			ns[j]=["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],1.0]
+			ns[j]=["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],2.0]
 			if j>=len(self.ptcl) : self.ptcl.append(im)
 			else : self.ptcl[j]=im
 
 		self.guiim.addShapes(ns)
 		self.guimx.setData(self.ptcl)
+		
+#		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
@@ -588,21 +600,62 @@ class GUIboxPanel(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.scale = QtGui.QLabel(self,(0.1,5.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		self.info = QtGui.QLabel("%d Boxes"%len(target.boxes),self)
+		self.vbl.addWidget(self.info)
 
-		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		self.thr = ValSlider(self,(0.0,3.0),"Threshold:")
+		self.thr.setValue(target.threshold)
+		self.vbl.addWidget(self.thr)
 
-		self.scale = QtGui.QSpinBox(self,(0.1,5.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		self.hbl1=QtGui.QHBoxLayout(self)
+		self.hbl1.setMargin(0)
+		self.hbl1.setSpacing(2)
+		self.vbl.addLayout(self.hbl1)
+		
+		self.lblbs=QtGui.QLabel("Box Size:",self)
+		self.hbl1.addWidget(self.lblbs)
+		
+		self.bs = QtGui.QLineEdit(str(target.boxsize),self)
+		self.hbl1.addWidget(self.bs)
 
+		self.hbl2=QtGui.QHBoxLayout(self)
+		self.hbl2.setMargin(0)
+		self.hbl2.setSpacing(2)
+		self.vbl.addLayout(self.hbl2)
+
+		self.done=QtGui.QPushButton("Done")
+		self.vbl.addWidget(self.done)
+		
+		self.connect(self.bs,QtCore.SIGNAL("editingFinished()"),self.newBoxSize)
+		self.connect(self.thr,QtCore.SIGNAL("valueChanged"),self.newThresh)
+		self.connect(self.done,QtCore.SIGNAL("clicked(bool)"),self.target.app.quit)
+#		self.target.connect(self.target,QtCore.SIGNAL("nboxes"),self.nboxesChanged)
+		
+	def nboxesChanged(self,n):
+		self.info.setText("%d Boxes"%n)
 	
+	def newBoxSize(self):
+		try:
+			v=int(self.bs.text())
+			if v<12 : raise Exception
+		except:
+			self.bs.setText(str(self.target.boxsize))
+			return
+		
+		for i in self.target.boxes:
+			if i[2]!=v or i[3]!=v : i[5]=1
+			else: continue
+			i[0]-=(v-i[2])/2
+			i[1]-=(v-i[3])/2
+			i[2]=v
+			i[3]=v
+		
+		self.target.boxupdate()
+		
+	def newThresh(self,val):
+		self.target.threshold=val
+		self.boxupdate(True)
+
+
 if __name__ == "__main__":
 	main()
