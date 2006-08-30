@@ -106,10 +106,6 @@ int PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nvec)
 
    // run kstep-step Lanczos factorization
    status = Lanczos(img1dlst, &kstep, diag, subdiag, vmat, &resnrm);
-/*
-   for (int j = 0; j < kstep-1; j++)
-      printf("subdiag(%d) = %11.3e\n", j, subdiag[j]);  
-*/
 
    char jobz[2] = "V";
    float *qmat  = new float[kstep*kstep];
@@ -128,7 +124,6 @@ int PCA::dopca_lan(vector <EMData*> imgstack, EMData *mask, int nvec)
    // store singular values
    // eigenvalues of the cov matrix have been sorted in ascending order
    for (int j = kstep; j > kstep - nvec; j--) {
-      // printf("sigval2(%d) = %11.4e\n", j, (float)sqrt(diag(j)));  
       singular_vals.push_back((float)sqrt(diag(j)));
    }
 
@@ -219,7 +214,6 @@ int PCA::dopca_ooc(const string &filename_in, const string &filename_out,
    // store singular values
    // eigenvalues of the cov matrix have been sorted in ascending order
    for (int j = kstep; j > kstep - nvec; j--) {
-      // printf("sigval2(%d) = %11.4e\n", j, (float)sqrt(diag(j)));  
       singular_vals.push_back((float)sqrt(diag(j)));
    }
 
@@ -300,7 +294,7 @@ int PCA::Lanczos(vector <EMData*> imgstack, int *kstep,
 
            beta (float *) the residual norm of the factorization;
     */
-    int i, j;
+    int i, iter;
     
     float alpha;
     int   ione = 1;
@@ -357,45 +351,45 @@ int PCA::Lanczos(vector <EMData*> imgstack, int *kstep,
     saxpy_(&imgsize, &alpha, V, &ione, Av, &ione);
 
     // main loop 
-    for ( j = 2 ; j <= *kstep ; j++ ) {
+    for ( iter = 2 ; iter <= *kstep ; iter++ ) {
         *beta = snrm2_(&imgsize, Av, &ione);
 
         if (*beta < TOL) {
 	    // found an invariant subspace, exit
-            *kstep = j;
+            *kstep = iter;
             break;
         }
  
-        subdiag(j-1) = *beta;
+        subdiag(iter-1) = *beta;
 	for ( i = 1 ; i <= imgsize ; i++ ) {
-	    V(i,j) = Av(i) / (*beta);
+	    V(i,iter) = Av(i) / (*beta);
 	}	
 
-        // do Av <-- A*V(:,j), where A is a cov matrix
+        // do Av <-- A*V(:,iter), where A is a cov matrix
         for (i = 0; i < imgsize; i++) Av[i] = 0;
         for (i = 0; i < nimgs; i++) {
            imgdata = imgstack[i]->get_data();
-           alpha = sdot_(&imgsize, imgdata, &ione, &V(1,j), &ione); 
+           alpha = sdot_(&imgsize, imgdata, &ione, &V(1,iter), &ione); 
            saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
         }
 	
-        // f <--- Av - V(:,1:j)*V(:,1:j)'*Av
+        // f <--- Av - V(:,1:iter)*V(:,1:iter)'*Av
         trans = 'T';
-        status = sgemv_(&trans, &imgsize, &j, &one, V, &imgsize, Av, &ione,
+        status = sgemv_(&trans, &imgsize, &iter, &one, V, &imgsize, Av, &ione,
                         &zero , hvec    , &ione); 
         trans = 'N';
-        status = sgemv_(&trans, &imgsize, &j, &mone, V, &imgsize, hvec, 
+        status = sgemv_(&trans, &imgsize, &iter, &mone, V, &imgsize, hvec, 
                         &ione , &one    , Av, &ione);
 
         // one step of reorthogonalization
         trans = 'T';
-        status = sgemv_(&trans, &imgsize, &j, &one, V, &imgsize, Av, &ione,
+        status = sgemv_(&trans, &imgsize, &iter, &one, V, &imgsize, Av, &ione,
                         &zero , htmp    , &ione); 
-        saxpy_(&j, &one, htmp, &ione, hvec, &ione); 
+        saxpy_(&iter, &one, htmp, &ione, hvec, &ione); 
         trans = 'N';
-        status = sgemv_(&trans, &imgsize, &j, &mone, V, &imgsize, htmp, 
+        status = sgemv_(&trans, &imgsize, &iter, &mone, V, &imgsize, htmp, 
                         &ione , &one    , Av, &ione);
-        diag(j) = hvec(j);
+        diag(iter) = hvec(iter);
     }
 
     EMDeleteArray(v0);
@@ -418,10 +412,14 @@ EXIT:
 //------------------------------------------------------------------
 #define TOL 1e-7
 #define v(i)        v[(i) - 1]
-#define v0(i)       v0[(i)-1]
+#define resid(i)    resid[(i) - 1]
 #define Av(i)       Av[(i)-1]
 #define subdiag(i)  subdiag[(i)-1]
 #define diag(i)     diag[(i)-1]
+
+// currently reading one image at a time, can be improved by
+// allocate a buffer to store a subset of images and Lanczos
+// vectors
 
 int PCA::Lanczos_ooc(string const& filename_in, int *kstep, 
     float  *diag, float *subdiag, string const& lanscratch,
@@ -456,15 +454,15 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
 
            beta (float *)   The residual norm of the factorization;
     */
-    int i, j;
+    int i, iter;
     EMData *maskedimage;
     
     float alpha;
     int   ione = 1;
     int   status = 0;
     
-    int   imgsize = 0, ndim = 0, offset=0; 
-    float *v, *Av, *imgdata;
+    int   imgsize = 0, ndim = 0;
+    float *v, *Av, *resid, *imgdata;
     float h = 0.0, htmp=0.0;
 
     int nimgs = EMUtil::get_image_count(filename_in);
@@ -485,8 +483,9 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
 
     imgsize = maskedimage->get_xsize();
      
-    v    = new float[imgsize];
-    Av   = new float[imgsize];
+    v     = new float[imgsize];
+    Av    = new float[imgsize];
+    resid = new float[imgsize];
 
     if (v == NULL || Av == NULL ) {
         fprintf(stderr, "Lanczos: failed to allocate v,Av\n"); 
@@ -499,7 +498,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
 
     // normalize the starting vector
     *beta  = snrm2_(&imgsize, v, &ione);
-    alpha = 1/(*beta);
+    alpha = 1/(*beta);    
     sscal_(&imgsize, &alpha, v, &ione);
     // write v out to a scratch file
     FILE *fp;
@@ -518,30 +517,30 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
     // Av <--- Av - V(:,1)*V(:,1)'*Av 
     diag(1) = sdot_(&imgsize, v, &ione, Av, &ione); 
     alpha   = -diag(1);
-    saxpy_(&imgsize, &alpha, v, &ione, Av, &ione);
+    scopy_(&imgsize, Av, &ione, resid, &ione);
+    saxpy_(&imgsize, &alpha, v, &ione, resid, &ione);
 
     // main loop 
-    for ( j = 2 ; j <= *kstep ; j++ ) {
-        *beta = snrm2_(&imgsize, Av, &ione);
+    for ( iter = 2 ; iter <= *kstep ; iter++ ) {
+        *beta = snrm2_(&imgsize, resid, &ione);
 
         if (*beta < TOL) {
 	    // found an invariant subspace, exit
-            *kstep = j;
+            *kstep = iter;
             break;
         }
  
-        subdiag(j-1) = *beta;
+        subdiag(iter-1) = *beta;
 	for ( i = 1 ; i <= imgsize ; i++ ) {
-	    v(i) = Av(i) / (*beta);
+	    v(i) = resid(i) / (*beta);
 	}	
+
         // write v out to a scratch file at appropriate position
-        fp = fopen(lanscratch.c_str(),"w");
-        offset = imgsize*sizeof(float)*(j-1);
-        fseek(fp, offset, SEEK_SET);
+        fp = fopen(lanscratch.c_str(),"a");
         fwrite(v, sizeof(float), imgsize, fp);
         fclose(fp);
 
-        // do Av <-- A*V(:,j), where A is a cov matrix
+        // do Av <-- A*V(:,iter), where A is a cov matrix
         for (i = 0; i < imgsize; i++) Av[i] = 0;
         for (i = 0; i < nimgs; i++) {
            maskedimage->read_image(filename_in,i);
@@ -550,32 +549,35 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
            saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
         }
 
-        // f <--- Av - V(:,1:j)*V(:,1:j)'*Av
+        // f <--- Av - V(:,1:iter)*V(:,1:iter)'*Av
         // the out-of-core version reads one Lanczos vector at a time
+        scopy_(&imgsize, Av, &ione, resid, &ione);
         fp = fopen(lanscratch.c_str(),"r");
-        for (int jlan = 1; jlan <= j; jlan++) {
+        for (int jlan = 1; jlan <= iter; jlan++) {
            fread(v, sizeof(float), imgsize, fp);
            h     = sdot_(&imgsize, v, &ione, Av, &ione);
            alpha = -h;
-           saxpy_(&imgsize, &alpha, v, &ione, Av, &ione);
+           saxpy_(&imgsize, &alpha, v, &ione, resid, &ione);
         }
         fclose(fp);
 
         // one step of reorthogonalization
+        scopy_(&imgsize, resid, &ione, Av, &ione);
         fp = fopen(lanscratch.c_str(),"r");
-        for (int jlan = 1; jlan <= j; jlan++) {
+        for (int jlan = 1; jlan <= iter; jlan++) {
            fread(v, sizeof(float), imgsize, fp);
            htmp  = sdot_(&imgsize, v, &ione, Av, &ione);
            alpha = -htmp;
-           saxpy_(&imgsize, &alpha, v, &ione, Av, &ione);
-           h =+ htmp;
+           saxpy_(&imgsize, &alpha, v, &ione, resid, &ione);
+           h += htmp;
         }
         fclose(fp);
-        diag(j) = h;
+        diag(iter) = h;
     }
 
     EMDeleteArray(v);
     EMDeleteArray(Av);
+    EMDeleteArray(resid);
     EMDeletePtr(maskedimage);
 
 EXIT:
@@ -584,6 +586,7 @@ EXIT:
 
 #undef Av
 #undef v
+#undef resid
 #undef diag
 #undef subdiag
 #undef TOL
