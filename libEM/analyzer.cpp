@@ -7,9 +7,13 @@
 
 using namespace EMAN;
 
-template <> Factory < Analyzer >::Factory()
-{
-	force_add(&PcaAnalyzer::NEW);
+namespace EMAN {
+
+	template <> Factory < Analyzer >::Factory()
+	{
+		force_add(&PcaAnalyzer::NEW);
+	}
+
 }
 
 vector<EMData*> PcaAnalyzer::analyze(const vector<EMData*> & images)
