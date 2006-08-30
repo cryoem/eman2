@@ -3717,7 +3717,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("edge_length", EMObject::FLOAT, "edge length of the square or cube, unit: pixel");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("odd_edge", EMObject::FLOAT, "edge length for the asymmetric axis");
-			d.put("fill", EMObject::INT, "Flag indicating if image is filled, default filled");
+			d.put("fill", EMObject::INT, "Flag indicating if image is filled, default filled, 1 for filled, 0 for blank");
 			return d;
 		}
 	};
@@ -3754,7 +3754,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("radius", EMObject::FLOAT, "radius of circle or sphere, unit: pixel");
 			d.put("axis", EMObject::STRING, "specify a major axis for asymmetric features");
 			d.put("c", EMObject::FLOAT, "distance between focus and the center of an ellipse");
-			d.put("fill", EMObject::INT, "Flag indicating if image is filled, default filled");
+			d.put("fill", EMObject::INT, "Flag indicating if image is filled, default filled, 1 for filled, 0 for blank.");
 			return d;
 		}
 	};
