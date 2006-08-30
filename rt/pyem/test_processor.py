@@ -1419,14 +1419,14 @@ class TestProcessor(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.squarecube', {'edge_length':22})
-        e.process_inplace('testimage.squarecube', {'edge_length':22, 'axis':'y', 'odd_edge':18, 'fill':'yes'})
+        e.process_inplace('testimage.squarecube', {'edge_length':22, 'axis':'y', 'odd_edge':18, 'fill':0})
         
     def test_testimage_circlesphere(self):
         """test testimage.circlesphere processor ............"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.circlesphere', {'radius':20})
-        e.process_inplace('testimage.circlesphere', {'radius':20, 'axis':'z', 'c':15, 'fill':'yes'})
+        e.process_inplace('testimage.circlesphere', {'radius':20, 'axis':'z', 'c':15, 'fill':1})
         
     def test_testimage_noise_uniform_rand(self):
         """test testimage.noise.uniform.rand processor ......"""
