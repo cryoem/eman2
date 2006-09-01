@@ -449,7 +449,7 @@ except:
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
 
-class GUIbox(QtCore.QObject):
+class GUIbox:
 	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
 		"""Implements the 'boxer' GUI. image is the entire image, and boxes and thr specify current boxes
 		to begin with. Modified boxes/thr are returned. 
@@ -582,6 +582,7 @@ class GUIbox(QtCore.QObject):
 		self.guiim.addShapes(ns)
 		self.guimx.setData(self.ptcl)
 		
+		self.guictl.nboxesChanged(len(self.ptcl))
 #		self.emit(QtCore.SIGNAL("nboxes"),len(self.ptcl))
 
 	def run(self):
@@ -607,7 +608,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.thr.setValue(target.threshold)
 		self.vbl.addWidget(self.thr)
 
-		self.hbl1=QtGui.QHBoxLayout(self)
+		self.hbl1=QtGui.QHBoxLayout()
 		self.hbl1.setMargin(0)
 		self.hbl1.setSpacing(2)
 		self.vbl.addLayout(self.hbl1)
@@ -618,7 +619,7 @@ class GUIboxPanel(QtGui.QWidget):
 		self.bs = QtGui.QLineEdit(str(target.boxsize),self)
 		self.hbl1.addWidget(self.bs)
 
-		self.hbl2=QtGui.QHBoxLayout(self)
+		self.hbl2=QtGui.QHBoxLayout()
 		self.hbl2.setMargin(0)
 		self.hbl2.setSpacing(2)
 		self.vbl.addLayout(self.hbl2)
@@ -654,7 +655,7 @@ class GUIboxPanel(QtGui.QWidget):
 		
 	def newThresh(self,val):
 		self.target.threshold=val
-		self.boxupdate(True)
+		self.target.boxupdate(True)
 
 
 if __name__ == "__main__":

@@ -38,6 +38,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.nimg=0
 		self.changec={}
 		
+		self.coords=[]
+		
 		self.inspector=None
 		if data: 
 			self.setData(data)
@@ -173,6 +175,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				hist2=Numeric.fromstring(a[-1024:],'i')
 				hist+=hist2
 				
+			try: self.coords[i]=(x+self.origin[0],self.height()-y+1+self.origin[1])
+			except: self.coords.append((x+self.origin[0],self.height()-y+1+self.origin[1]))
 			
 			if (i+1)%self.nperrow==0 : 
 				y-=h+2.0
@@ -190,7 +194,12 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
-	
+	def scrollTo(self,n):
+		"""Moves image 'n' to the center of the display"""
+		try: self.origin=(self.coords[n][0]-self.width()/2,self.coords[n][1]+self.height()/2)
+		except: return
+		self.updateGL()
+		
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
