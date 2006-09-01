@@ -966,7 +966,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    EMData* out = new EMData();
    char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
    out->set_size(lcirc,1,1);
-   alrq_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
+   for (int i=0; i<60000; i++) alrq_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
    return out;
 }
 void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -1647,7 +1647,7 @@ void  Util::fftr_d(double *xcmplx, int nv)
 
 void Util::Frngs(EMData* circ, vector<int> numr){
    int nring = numr.size()/3;
-   frngs(circ->get_data(), &numr[0],  nring);
+   for (int i=0; i<60000; i++) frngs(circ->get_data(), &numr[0],  nring);
 }
 void Util::frngs(float *circ, int *numr, int nring){
    int i, l; 
@@ -1822,7 +1822,7 @@ Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
    double qn; float tot; double qm; float tmt;
-   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
+   for (int i=0; i<60000; i++) crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
               &numr[0], &qn, &tot, &qm, &tmt);
    Dict retvals;
    retvals["qn"] = qn;
