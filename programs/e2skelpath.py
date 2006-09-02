@@ -86,11 +86,12 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	for s in seeds:
 		# search nearest neighbors to continue trace
 
+		skeleton.set_value_at(s[0],s[1],s[2],n)
 		for z in range(s[2]-1,s[2]+2):
 			for y in range(s[1]-1,s[1]+2):
 				for x in range(s[0]-1,s[0]+2):
 					
-					print n-2,it,x,y,z,skeleton.get_value_at(x,y,z)
+#					print n-2,it,x,y,z,skeleton.get_value_at(x,y,z)
 					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
 						for i,j in enumerate(mappoints):
 							if i==n: continue
@@ -99,10 +100,9 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 								setbox(x,y,z,skeleton,n)
 								continue
 						newseeds.append((x,y,z))
-					skeleton.set_value_at(x,y,z,n)
-	
-	findPath(skeleton,mappoints,newseeds,it+1,pairs,n)
-
+						skeleton.set_value_at(x,y,z,n)
+	if len(newseeds):
+		findPath(skeleton,mappoints,newseeds,it+1,pairs,n)
 
 def setbox(x,y,z,img,n):
 	for xx in range(x-1,x+2):
