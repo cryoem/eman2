@@ -158,10 +158,14 @@ class KaiserBessel
 		/** Kaiser-Bessel I0 window function */
 		virtual float i0win(float x) const;
 		/** Kaiser-Bessel I0 window function (uses table lookup) */
-				float i0win_tab(float x) const {
-					float absx = fabs(x);
+				inline float i0win_tab(float x) const {
+					/*float absx = fabs(x);
 					int loc = int(round(absx*fltb));
-					return i0table[loc];
+					return i0table[loc];*/
+					float xt;
+					if(x<0.f) xt = -x*fltb+0.5f; else xt = x*fltb+0.5f;
+					return i0table[ (int) xt];
+					/*return i0table[ (int) (fabs(x)*fltb+0.5f)];*/
 #if 0 // old version
 					if (absx > vtable) return 0.f;
 					float loc = absx/dtable;
@@ -292,7 +296,9 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *
 		 *	@return Interpolated value
 		 */
-		static float quadri(float x, float y, int nx, int ny, float* image);
+		static inline float quadri(float x, float y, int nx, int ny, float* image);
+		static inline float quadris(float x, float y, int nx, int ny, float* image);
+		static inline float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
 
 		/** Quadratic interpolation (3D)
@@ -325,11 +331,13 @@ class FakeKaiserBessel : public KaiserBessel {
 				return exp(-x*x/(twosigma2))/rttwopisigma;
 			}
 		};
-	static void alrq(float *xim,  int nsam , int nrow , int *numr,
+		static void alrq(float *xim,  int nsam , int nrow , int *numr,
                                  float *circ, int lcirc, int nring, char mode);
         static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
         static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
         static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+                            int  *numr, float *circ, int lcirc, int  nring, char  mode);
+        static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
                             int  *numr, float *circ, int lcirc, int  nring, char  mode);
         static void alrq_msi(EMData* image,float cns2, float cnr2,
                            int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb);

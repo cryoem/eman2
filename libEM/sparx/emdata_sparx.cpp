@@ -1504,7 +1504,7 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	}
 }
 
-
+/*
 EMData*
 EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb) {
 	int nxn, nyn, nzn;
@@ -1577,7 +1577,87 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	set_array_offsets(saved_offsets);
 	return ret;
 }
+*/
 
+EMData*
+EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb) {
+	int nxn, nyn, nzn;
+	const float scale=0.5;
+	float  sum, w;
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+	nxn=nx/2;nyn=ny/2;nzn=nz/2;
+
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+	int kbc = kbmax+1;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = new EMData();
+#ifdef _WIN32
+	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32 
+	//ret->to_zero();  //we will leave margins zeroed.
+	delx = fmod(delx, float(nxn));
+	dely = fmod(dely, float(nyn));
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	// bounds if origin at center
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	
+	float   *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
+
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+	for (int iy = 0; iy < nyn; iy++) {
+		float y = float(iy) - shiftyc;
+		float ycang = y*cang/scale + yc;
+		float ysang = -y*sang/scale + xc;
+		for (int ix = 0; ix < nxn; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float yold = x*sang/scale + ycang-iys;
+			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
+			sum=0.0f;    w=0.0f;
+			for (int m1 =kbmin; m1 <=kbmax; m1++) t[m1-kbmin] = kb.i0win_tab(xold - inxold-m1);
+			if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+				for (int m2 =kbmin; m2 <=kbmax; m2++) { float qt = kb.i0win_tab(yold - inyold-m2);
+				for (int m1 =kbmin; m1 <=kbmax; m1++) {
+					float q = t[m1-kbmin]*qt;
+					sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}}
+		    	} else {
+				for (int m2 =kbmin; m2 <=kbmax; m2++) { float qt = kb.i0win_tab(yold - inyold-m2);
+			  	for (int m1 =kbmin; m1 <=kbmax; m1++) {
+					float q = t[m1-kbmin]*qt;
+					sum += (*this)(inxold+m1,inyold+m2)*q; w+=q;}}
+		    }
+			(*ret)(ix,iy)=sum/w;
+		}
+	}
+	if (t) free(t);
+	set_array_offsets(saved_offsets);
+	return ret;
+}
 
 
 float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
