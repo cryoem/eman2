@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# ssematch.py  08/28/2004  Steven Ludtke, Matt Baker
+# ssematch.py  08/28/2006  Steven Ludtke, Matt Baker
 # This tries to match sequence based secondary structure prediction to
 # ssehunter results, based on length and distance constraints in each case
 
