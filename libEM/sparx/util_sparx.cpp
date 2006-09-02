@@ -966,7 +966,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    EMData* out = new EMData();
    char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
    out->set_size(lcirc,1,1);
-   for (int i=0; i<60000; i++) alrq_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
+   alrq_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
    return out;
 }
 void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -1647,7 +1647,7 @@ void  Util::fftr_d(double *xcmplx, int nv)
 
 void Util::Frngs(EMData* circ, vector<int> numr){
    int nring = numr.size()/3;
-   for (int i=0; i<60000; i++) frngs(circ->get_data(), &numr[0],  nring);
+   frngs(circ->get_data(), &numr[0],  nring);
 }
 void Util::frngs(float *circ, int *numr, int nring){
    int i, l; 
@@ -1822,8 +1822,7 @@ Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
    double qn; float tot; double qm; float tmt;
-   for (int i=0; i<60000; i++) crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
-              &numr[0], &qn, &tot, &qm, &tmt);
+   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], &qn, &tot, &qm, &tmt);
    Dict retvals;
    retvals["qn"] = qn;
    retvals["tot"] = tot;
@@ -1881,7 +1880,7 @@ c       optional limit on angular search should be added.
 
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 
-   for (i=1;i<=nring;i++) {
+   for (i=1; i<=nring; i++) {
 
       numr3i = numr(3,i);
       numr2i = numr(2,i);
@@ -1894,29 +1893,28 @@ c       optional limit on angular search should be added.
          t1   = circ1(numr2i+1) * circ2(numr2i+1);
          q(2) = q(2)+t1;
          t(2) = t(2)+t1;
+      } else {
+	 	t1          = circ1(numr2i+1) * circ2(numr2i+1);
+	 	q(numr3i+1) = q(numr3i+1)+t1;
       }
-      else {
-	 t1          = circ1(numr2i+1) * circ2(numr2i+1);
-	 q(numr3i+1) = q(numr3i+1)+t1;
-      }
 
-      for (j=3;j<=numr3i;j=j+2) {
-	 jc     = j+numr2i-1;
+	for (j=3; j<=numr3i; j=j+2) {
+		jc     = j+numr2i-1;
 
- 	 c1     = circ1(jc);
- 	 c2     = circ1(jc+1);
-         d1     = circ2(jc);
-         d2     = circ2(jc+1);
+		c1     = circ1(jc);
+		c2     = circ1(jc+1);
+		d1     = circ2(jc);
+		d2     = circ2(jc+1);
 
-  	 t1     = c1 * d1;
- 	 t3     = c1 * d2;
- 	 t2     = c2 * d2;
- 	 t4     = c2 * d1;
+		t1     = c1 * d1;
+		t3     = c1 * d2;
+		t2     = c2 * d2;
+		t4     = c2 * d1;
 
-	 q(j)   = q(j)   + t1 + t2;
-	 q(j+1) = q(j+1) - t3 + t4;
-	 t(j)   = t(j)   + t1 - t2;
-	 t(j+1) = t(j+1) - t3 - t4;
+		q(j)   = q(j)	+ t1 + t2;
+		q(j+1) = q(j+1) - t3 + t4;
+		t(j)   = t(j)	+ t1 - t2;
+		t(j+1) = t(j+1) - t3 - t4;
       } 
   }
 
@@ -1981,8 +1979,7 @@ Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
    float qn; float tot; float qm; float tmt;
-   crosrng_msr(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, 
-              &numr[0], &qn, &tot, &qm, &tmt);
+   crosrng_msr(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], &qn, &tot, &qm, &tmt);
    Dict retvals;
    retvals["qn"] = qn;
    retvals["tot"] = tot;
@@ -1990,7 +1987,7 @@ Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
    retvals["tmt"] = tmt;
    return retvals;
 }
-#define  temp(i)            temp      [(i)-1]
+#define  temp(i)            temp[(i)-1]
 
 //---------------------------------------------------
 void Util::crosrng_msr(float *circ1, float *circ2, int  lcirc, int  nring,
@@ -2069,8 +2066,8 @@ c       optional limit on angular search should be added.
 
  	 c1     = circ1(jc);
  	 c2     = circ1(jc+1);
-         d1     = circ2(jc);
-         d2     = circ2(jc+1);
+     d1     = circ2(jc);
+     d2     = circ2(jc+1);
 
   	 t1     = c1 * d1;
  	 t3     = c1 * d2;
@@ -2227,8 +2224,8 @@ c       optional limit on angular search should be added.
 
  	 c1     = circ1(jc);
  	 c2     = circ1(jc+1);
-         d1     = circ2(jc);
-         d2     = circ2(jc+1);
+     d1     = circ2(jc);
+     d2     = circ2(jc+1);
 
   	 t1     = c1 * d1;
  	 t3     = c1 * d2;
