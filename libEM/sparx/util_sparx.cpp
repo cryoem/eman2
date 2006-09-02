@@ -529,7 +529,7 @@ inline float Util::triquad(double r, double s, double t, float f[]) {
 }
 
 #define  fdata(i,j)      fdata  [ i-1 + (j-1)*nxdata ]
-inline float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
+float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
 /*
 c  purpose: quadratic interpolation 
@@ -651,8 +651,7 @@ c
 
     return quadri; 
 }
-
-inline float Util::quadris(float x, float y, int nxdata, int nydata, float* fdata)
+float Util::quadris(float x, float y, int nxdata, int nydata, float* fdata)
 {
 /*
 c  purpose: quadratic interpolation
@@ -972,18 +971,18 @@ c
      kcirc          = numr(2,i);
      xold           = 0.0;
      yold           = inr;
-     circ(kcirc)    = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+     circ(kcirc)    = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
      xold           = inr;
      yold           = 0.0;
-     circ(lt+kcirc) = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+     circ(lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
 
      if (mode == 'f' || mode == 'F') {
         xold              = 0.0;
         yold              = -inr;
-        circ(lt+lt+kcirc) = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+        circ(lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
         xold              = -inr;
         yold              = 0.0;
-        circ(lt+lt+lt+kcirc) = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+        circ(lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
      }
 
      for (j=1;j<=nsim;j++) {
@@ -992,18 +991,18 @@ c
         y                = cos(fi)*yq;
         xold             = x;
         yold             = y;
-        circ(j+kcirc)    = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+        circ(j+kcirc)    = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
         xold             =  y;
         yold             = -x;
-        circ(j+lt+kcirc) = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+        circ(j+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
 
         if (mode == 'f' || mode == 'F')  {
            xold                = -x;
            yold                = -y;
-           circ(j+lt+lt+kcirc) = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+           circ(j+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
            xold                = -y;
            yold                =  x;
-           circ(j+lt+lt+lt+kcirc) = quadris(xold+ns2,yold+nr2,nsam,nrow,xim);
+           circ(j+lt+lt+lt+kcirc) = quadri(xold+ns2,yold+nr2,nsam,nrow,xim);
         };
      }
    }
@@ -1021,8 +1020,80 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    EMData* out = new EMData();
    out->set_size(lcirc,1,1);
    char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
-   alrq_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
+   alrl_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
    return out;
+}
+
+void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+             int  *numr, float *circ, int lcirc, int  nring, char  mode)
+{
+   double dpi, dfi;
+   int    it, jt, inr, l, nsim, kcirc, lt;
+   float  yq, xold, yold, fi, x, y;
+
+   //     cns2 and cnr2 are predefined centers
+   //     no need to set to zero, all elements are defined
+
+   dpi = 2*atan(1.0);
+   for (it=1; it<=nring; it++) {
+      // radius of the ring
+      inr = numr(1,it);
+      //yq  = inr;
+
+      l = numr(3,it);
+      if ( mode == 'h' || mode == 'H' ) { 
+         lt = l / 2;
+      }
+      else { // if ( mode == 'f' || mode == 'F' )
+         lt = l / 4;
+      } 
+
+      nsim  = lt - 1;
+      dfi   = dpi / (nsim+1);
+      kcirc = numr(2,it);
+      xold  = 0.0+cns2;
+      yold  = inr+cnr2;
+
+      circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+      xold  = inr+cns2;
+      yold  = 0.0+cnr2;
+      circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+      if ( mode == 'f' || mode == 'F' ) {
+         xold = 0.0+cns2;
+         yold = -inr+cnr2;
+         circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+         xold = -inr+cns2;
+         yold = 0.0+cnr2;
+         circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+      }
+      
+      for (jt=1; jt<=nsim; jt++) {
+         fi   = dfi * jt;
+         x    = sin(fi) * inr;//yq;
+         y    = cos(fi) * inr;//yq;
+
+         xold = x+cns2;
+         yold = y+cnr2;
+         circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+         xold = y+cns2;
+         yold = -x+cnr2;
+         circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+         if ( mode == 'f' || mode == 'F' ) {
+            xold = -x+cns2;
+            yold = -y+cnr2;
+            circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+
+            xold = -y+cns2;
+            yold = x+cnr2;
+            circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+         }
+      } // end for jt
+   } //end for it
 }
 inline float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {
@@ -1074,12 +1145,12 @@ c  purpose: linear interpolation
     return bilinear;
 }
 
-void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
              int  *numr, float *circ, int lcirc, int  nring, char  mode)
 {
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
-   float  xold, yold, fi, x, y;
+   float  yq, xold, yold, fi, x, y;
 
    //     cns2 and cnr2 are predefined centers
    //     no need to set to zero, all elements are defined
@@ -1088,6 +1159,7 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
    for (it=1; it<=nring; it++) {
       // radius of the ring
       inr = numr(1,it);
+      //yq  = inr;
 
       l = numr(3,it);
       if ( mode == 'h' || mode == 'H' ) { 
@@ -1102,10 +1174,10 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       kcirc = numr(2,it);
 	  
 	  
-	  xold  = 0.0+cns2;
-	  yold  = inr+cnr2;
+	xold  = 0.0+cns2;
+	yold  = inr+cnr2;
 
-	  circ(kcirc) = quadris(xold,yold,nsam,nrow,xim);
+	circ(kcirc) = quadris(xold,yold,nsam,nrow,xim);
 
       xold  = inr+cns2;
       yold  = 0.0+cnr2;
@@ -1146,6 +1218,82 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       } // end for jt
    } //end for it
 }
+/*
+void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+             int  *numr, float *circ, int lcirc, int  nring, char  mode)
+{
+   double dpi, dfi;
+   int    it, jt, inr, l, nsim, kcirc, lt, xold, yold;
+   float  yq, fi, x, y;
+
+   //     cns2 and cnr2 are predefined centers
+   //     no need to set to zero, all elements are defined
+
+   dpi = 2*atan(1.0);
+   for (it=1; it<=nring; it++) {
+      // radius of the ring
+      inr = numr(1,it);
+      yq  = inr;
+
+      l = numr(3,it);
+      if ( mode == 'h' || mode == 'H' ) { 
+         lt = l / 2;
+      }
+      else { // if ( mode == 'f' || mode == 'F' )
+         lt = l / 4;
+      } 
+
+      nsim  = lt - 1;
+      dfi   = dpi / (nsim+1);
+      kcirc = numr(2,it);
+	  
+	  
+	xold = (int) (0.0+cns2);
+	yold = (int) (inr+cnr2);
+
+	circ(kcirc) = xim(xold, yold);
+
+      xold = (int) (inr+cns2);
+      yold = (int) (0.0+cnr2);
+      circ(lt+kcirc) = xim(xold, yold);
+
+      if ( mode == 'f' || mode == 'F' ) {
+         xold  = (int) (0.0+cns2);
+         yold = (int) (-inr+cnr2);
+         circ(lt+lt+kcirc) = xim(xold, yold);
+
+         xold  = (int) (-inr+cns2);
+         yold = (int) (0.0+cnr2);
+         circ(lt+lt+lt+kcirc) = xim(xold, yold);
+      }
+      
+      for (jt=1; jt<=nsim; jt++) {
+         fi   = dfi * jt;
+         x    = sin(fi) * yq;
+         y    = cos(fi) * yq;
+
+         xold  = (int) (x+cns2);
+         yold = (int) (y+cnr2);
+         circ(jt+kcirc) = xim(xold, yold);
+
+         xold  = (int) (y+cns2);
+         yold = (int) (-x+cnr2);
+         circ(jt+lt+kcirc) = xim(xold, yold);
+
+         if ( mode == 'f' || mode == 'F' ) {
+            xold  = (int) (-x+cns2);
+            yold = (int) (-y+cnr2);
+            circ(jt+lt+lt+kcirc) = xim(xold, yold);
+
+            xold  = (int) (-y+cns2);
+            yold = (int) (x+cnr2);
+            circ(jt+lt+lt+lt+kcirc) = xim(xold, yold);  
+         }
+      } // end for jt
+   } //end for it
+}
+*/
+//xim((int) floor(xold), (int) floor(yold))
 #undef  xim
 
 EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb){

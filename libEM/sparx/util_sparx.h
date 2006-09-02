@@ -296,8 +296,8 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *
 		 *	@return Interpolated value
 		 */
-		static inline float quadri(float x, float y, int nx, int ny, float* image);
-		static inline float quadris(float x, float y, int nx, int ny, float* image);
+		static float quadri(float x, float y, int nx, int ny, float* image);
+		static float quadris(float x, float y, int nx, int ny, float* image);
 		static inline float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
 
@@ -336,6 +336,8 @@ class FakeKaiserBessel : public KaiserBessel {
         static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
         static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
         static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+                            int  *numr, float *circ, int lcirc, int  nring, char  mode);
+        static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
                             int  *numr, float *circ, int lcirc, int  nring, char  mode);
         static void alrq_msi(EMData* image,float cns2, float cnr2,
                            int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb);
