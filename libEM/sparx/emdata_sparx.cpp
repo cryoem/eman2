@@ -832,7 +832,7 @@ EMData* EMData::symvol(string symmetry) {
 							int jx = ix - llim;
 							int jy = iy - llim;
 							int jz = iz - llim;
-							(*svol)(jx,jy,jz) += Util::triquad(dx,dy,dz,f);
+							(*svol)(jx,jy,jz) += Util::triquad(dx, dy, dz, f);
 						} else {
 							// rotated position is outside volume
 							int jx = ix - llim;

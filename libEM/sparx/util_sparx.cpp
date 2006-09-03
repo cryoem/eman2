@@ -732,7 +732,7 @@ float Util::triquad(float R, float S, float T, float* fdata)
     float  TP1  = (1+T);
 
     float triquad =   
-    	(-C8) * RST * RM1  * SM1  * TM1 * fdata[0] + 
+    (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] + 
 	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] + 
 	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] + 
 	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] + 
