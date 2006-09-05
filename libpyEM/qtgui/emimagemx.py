@@ -97,6 +97,9 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.height() or self.data[0].get_xsize()*newscale>self.width()):
+			newscale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
+			
 #		yo=self.height()-self.origin[1]-1
 		yo=self.origin[1]
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
@@ -193,6 +196,9 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
+		
+		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.height() or self.data[0].get_xsize()*self.scale>self.width()):
+			self.scale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
 		
 	def scrollTo(self,n):
 		"""Moves image 'n' to the center of the display"""
@@ -363,7 +369,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
-	window = EMImage()
+	window = EMImageMX()
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)])
 	else :
 		a=EMData.read_images(sys.argv[1])

@@ -589,6 +589,7 @@ class GUIbox:
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.app.exec_()
+		return (self.boxes,self.threshold)
 
 class GUIboxPanel(QtGui.QWidget):
 	def __init__(self,target) :
@@ -651,6 +652,7 @@ class GUIboxPanel(QtGui.QWidget):
 			i[2]=v
 			i[3]=v
 		
+		self.target.boxsize=v
 		self.target.boxupdate()
 		
 	def newThresh(self,val):
