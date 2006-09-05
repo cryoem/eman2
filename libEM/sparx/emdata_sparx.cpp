@@ -770,9 +770,7 @@ EMData* EMData::symvol(string symmetry) {
 	int llim = -nx/2;
 	int ulim = (nx/2) -1 + (nx % 2);
 	// set up output volume
-	EMData* svol = new EMData;
-	svol->set_size(nx, ny, nz);
-	svol->copy();
+	EMData* svol = this->copy();
 	// set up coord grid
 	const int nsize = 27;
 	int x[nsize], y[nsize], z[nsize];
@@ -2726,32 +2724,17 @@ vector<float> EMData::peak_ccf(float hf_p)
 		}
 	return res;
 }
+
 EMData* EMData::get_pow(float n_pow)
 {   
-	EMData & buf = *this;
 	vector<int> saved_offsets = get_array_offsets();
 	EMData* buf_new = new EMData();
- 	int nx = buf.get_xsize();
- 	int ny = buf.get_ysize(); 
-	int nz = buf.get_zsize(); 
+ 	int nx = this->get_xsize();
+ 	int ny = this->get_ysize(); 
+	int nz = this->get_zsize(); 
 	buf_new->set_size(nx,ny,nz);
-			 				
-			for (int j=0;j<ny;j++)
-				{
-					for(int i=0;i<nx;i++)
-						{
-							
-							if( buf(i,j) <0.0) 							
-							 	{   (*buf_new)(i,j)=0.0; }
-							else
-								{ (*buf_new)(i,j)=pow(buf(i,j),n_pow);}		
-						}
-				}
-			
+	float *in = this->get_data();
+	float *out = buf_new->get_data();
+	for(int i=0; i<nx*ny*nz; i++) out[i]=pow(in[i],n_pow);
 	return buf_new;
 }						
-			
-			
-			
-			
-			
