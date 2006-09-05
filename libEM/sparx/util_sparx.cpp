@@ -471,65 +471,9 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 	return angles;
 }
 
-/*	static float Util::trilinear_interpolate(float t, float u, float v, float f[]){
-	 return Util:trilinear_interpolate(f[0],f[1], f[2],
-				  f[3], f[4], float p6, 
-							 float p7, float p8, float t,
-								  float u, float v)
-	}
-*/
-inline float Util::triquad(double r, double s, double t, float f[]) {
-	const float c2 = 1.0f / 2.0f;
-	const float c4 = 1.0f / 4.0f;
-	const float c8 = 1.0f / 8.0f;
-	float rs = (float)(r*s);
-	float st = (float)(s*t);
-	float rt = (float)(r*t);
-	float rst = (float)(r*st);
-	float rsq = (float)(1 - r*r);
-	float ssq = (float)(1 - s*s);
-	float tsq = (float)(1 - t*t);
-	float rm1 = (float)(1 - r);
-	float sm1 = (float)(1 - s);
-	float tm1 = (float)(1 - t);
-	float rp1 = (float)(1 + r);
-	float sp1 = (float)(1 + s);
-	float tp1 = (float)(1 + t);
-
-	return (float)(
-		(-c8) * rst * rm1  * sm1  * tm1 * f[ 0] +
-		( c4) * st	* rsq  * sm1  * tm1 * f[ 1] +
-		( c8) * rst * rp1  * sm1  * tm1 * f[ 2] +
-		( c4) * rt	* rm1  * ssq  * tm1 * f[ 3] +
-		(-c2) * t	* rsq  * ssq  * tm1 * f[ 4] +
-		(-c4) * rt	* rp1  * ssq  * tm1 * f[ 5] +
-		( c8) * rst * rm1  * sp1  * tm1 * f[ 6] +
-		(-c4) * st	* rsq  * sp1  * tm1 * f[ 7] +
-		(-c8) * rst * rp1  * sp1  * tm1 * f[ 8] +
-
-		( c4) * rs	* rm1  * sm1  * tsq * f[ 9] +
-		(-c2) * s	* rsq  * sm1  * tsq * f[10] +
-		(-c4) * rs	* rp1  * sm1  * tsq * f[11] +
-		(-c2) * r	* rm1  * ssq  * tsq * f[12] +
-					  rsq  * ssq  * tsq * f[13] +
-		( c2) * r	* rp1  * ssq  * tsq * f[14] +
-		(-c4) * rs	* rm1  * sp1  * tsq * f[15] +
-		( c2) * s	* rsq  * sp1  * tsq * f[16] +
-		( c4) * rs	* rp1  * sp1  * tsq * f[17] +
-
-		( c8) * rst * rm1  * sm1  * tp1 * f[18] +
-		(-c4) * st	* rsq  * sm1  * tp1 * f[19] +
-		(-c8) * rst * rp1  * sm1  * tp1 * f[20] +
-		(-c4) * rt	* rm1  * ssq  * tp1 * f[21] +
-		( c2) * t	* rsq  * ssq  * tp1 * f[22] +
-		( c4) * rt	* rp1  * ssq  * tp1 * f[23] +
-		(-c8) * rst * rm1  * sp1  * tp1 * f[24] +
-		( c4) * st	* rsq  * sp1  * tp1 * f[25] +
-		( c8) * rst * rp1  * sp1  * tp1 * f[26]);
-}
 
 #define  fdata(i,j)      fdata  [ i-1 + (j-1)*nxdata ]
-float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
+/*float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
 /*
 c  purpose: quadratic interpolation 
@@ -573,7 +517,7 @@ c                                       c3*(y-y0) + c4*(y-y0)*(y-y1)
 c                                       + c5*(x-x0)*(y-y0)
 c
 c
-*/
+
     float x, y, dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
     float quadri;
     int   i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
@@ -650,60 +594,60 @@ c
     quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
 
     return quadri; 
-}
-float Util::quadris(float x, float y, int nxdata, int nydata, float* fdata)
+}*/
+float Util::quadri(float x, float y, int nxdata, int nydata, float* fdata)
 {
 /*
 c  purpose: quadratic interpolation
   Optimized for speed, circular closer removed, checking of ranges removed
 */
-    float dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
-    float quadris;
-    int   i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
- 
-    i   = (int) x;
-    j   = (int) y;
+	float dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
+	float quadri;
+	int   i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
 
-    if (i > nxdata) i -= nxdata;
-    if (i < 1)      i += nxdata;
-    if (j > nydata) j -= nydata;
-    if (j < 1)      j += nydata;
+	i   = (int) x;
+	j   = (int) y;
 
-    dx0 = x - i;
-    dy0 = y - j;
+	if (i > nxdata) i -= nxdata;
+	if (i < 1)	i += nxdata;
+	if (j > nydata) j -= nydata;
+	if (j < 1)	j += nydata;
 
-    ip1 = i + 1;
-    im1 = i - 1;
-    jp1 = j + 1;
-    jm1 = j - 1;
+	dx0 = x - i;
+	dy0 = y - j;
 
-    if (ip1 > nxdata) ip1 -= nxdata;
-    if (im1 < 1)      im1 += nxdata;
-    if (jp1 > nydata) jp1 -= nydata;
-    if (jm1 < 1)      jm1 += nydata;
+	ip1 = i + 1;
+	im1 = i - 1;
+	jp1 = j + 1;
+	jm1 = j - 1;
 
-    f0  = fdata(i,j);
-    c1  = fdata(ip1,j) - f0;
-    c2  = (c1 - f0 + fdata(im1,j)) * 0.5;
-    c3  = fdata(i,jp1) - f0;
-    c4  = (c3 - f0 + fdata(i,jm1)) * 0.5;
+	if (ip1 > nxdata) ip1 -= nxdata;
+	if (im1 < 1)	  im1 += nxdata;
+	if (jp1 > nydata) jp1 -= nydata;
+	if (jm1 < 1)	  jm1 += nydata;
 
-    dxb = dx0 - 1;
-    dyb = dy0 - 1;
+	f0  = fdata(i,j);
+	c1  = fdata(ip1,j) - f0;
+	c2  = (c1 - f0 + fdata(im1,j)) * 0.5;
+	c3  = fdata(i,jp1) - f0;
+	c4  = (c3 - f0 + fdata(i,jm1)) * 0.5;
 
-    // hxc & hyc are either 1 or -1
-    if (dx0 >= 0) { hxc = 1; } else { hxc = -1; }
-    if (dy0 >= 0) { hyc = 1; } else { hyc = -1; }
- 
-    ic  = i + hxc;
-    jc  = j + hyc;
+	dxb = dx0 - 1;
+	dyb = dy0 - 1;
 
-    c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
-            - hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
+	// hxc & hyc are either 1 or -1
+	if (dx0 >= 0) { hxc = 1; } else { hxc = -1; }
+	if (dy0 >= 0) { hyc = 1; } else { hyc = -1; }
 
-    quadris = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
+	ic  = i + hxc;
+	jc  = j + hyc;
 
-    return quadris; 
+	c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
+		- hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
+
+	quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
+
+	return quadri; 
 }
 #undef fdata
 
@@ -733,33 +677,33 @@ float Util::triquad(float R, float S, float T, float* fdata)
 
     float triquad =   
     (-C8) * RST * RM1  * SM1  * TM1 * fdata[0] + 
-	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] + 
-	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] + 
-	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] + 
-	(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] + 
-	(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] + 
-	( C8) * RST * RM1  * SP1  * TM1 * fdata[6] + 
-	(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] + 
-	(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] + 
+	( C4) * ST  * RSQ  * SM1  * TM1 * fdata[1] +
+	( C8) * RST * RP1  * SM1  * TM1 * fdata[2] +
+	( C4) * RT  * RM1  * SSQ  * TM1 * fdata[3] +
+	(-C2) * T   * RSQ  * SSQ  * TM1 * fdata[4] +
+	(-C4) * RT  * RP1  * SSQ  * TM1 * fdata[5] +
+	( C8) * RST * RM1  * SP1  * TM1 * fdata[6] +
+	(-C4) * ST  * RSQ  * SP1  * TM1 * fdata[7] +
+	(-C8) * RST * RP1  * SP1  * TM1 * fdata[8] +
 //
-	( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  + 
-	(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] + 
-	(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] + 
-	(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] + 
-	              RSQ  * SSQ  * TSQ * fdata[13] + 
-	( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] + 
-	(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] + 
-	( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] + 
+	( C4) * RS  * RM1  * SM1  * TSQ * fdata[9]  +
+	(-C2) * S   * RSQ  * SM1  * TSQ * fdata[10] +
+	(-C4) * RS  * RP1  * SM1  * TSQ * fdata[11] +
+	(-C2) * R   * RM1  * SSQ  * TSQ * fdata[12] +
+	              RSQ  * SSQ  * TSQ * fdata[13] +
+	( C2) * R   * RP1  * SSQ  * TSQ * fdata[14] +
+	(-C4) * RS  * RM1  * SP1  * TSQ * fdata[15] +
+	( C2) * S   * RSQ  * SP1  * TSQ * fdata[16] +
 	( C4) * RS  * RP1  * SP1  * TSQ * fdata[17] +
  //
-	( C8) * RST * RM1  * SM1  * TP1 * fdata[18] + 
-	(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] + 
-	(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] + 
-	(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] + 
-	( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] + 
-	( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] + 
-	(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] + 
-	( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] + 
+	( C8) * RST * RM1  * SM1  * TP1 * fdata[18] +
+	(-C4) * ST  * RSQ  * SM1  * TP1 * fdata[19] +
+	(-C8) * RST * RP1  * SM1  * TP1 * fdata[20] +
+	(-C4) * RT  * RM1  * SSQ  * TP1 * fdata[21] +
+	( C2) * T   * RSQ  * SSQ  * TP1 * fdata[22] +
+	( C4) * RT  * RP1  * SSQ  * TP1 * fdata[23] +
+	(-C8) * RST * RM1  * SP1  * TP1 * fdata[24] +
+	( C4) * ST  * RSQ  * SP1  * TP1 * fdata[25] +
 	( C8) * RST * RP1  * SP1  * TP1 * fdata[26]   ;
      return triquad;
 }
@@ -1177,20 +1121,20 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 	xold  = 0.0+cns2;
 	yold  = inr+cnr2;
 
-	circ(kcirc) = quadris(xold,yold,nsam,nrow,xim);
+	circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
       xold  = inr+cns2;
       yold  = 0.0+cnr2;
-      circ(lt+kcirc) = quadris(xold,yold,nsam,nrow,xim);
+      circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
       if ( mode == 'f' || mode == 'F' ) {
          xold = 0.0+cns2;
          yold = -inr+cnr2;
-         circ(lt+lt+kcirc) = quadris(xold,yold,nsam,nrow,xim);
+         circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
          xold = -inr+cns2;
          yold = 0.0+cnr2;
-         circ(lt+lt+lt+kcirc) = quadris(xold,yold,nsam,nrow,xim);
+         circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
       }
       
       for (jt=1; jt<=nsim; jt++) {
@@ -1200,20 +1144,20 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 
          xold = x+cns2;
          yold = y+cnr2;
-         circ(jt+kcirc) = quadris(xold,yold,nsam,nrow,xim);
+         circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
          xold = y+cns2;
          yold = -x+cnr2;
-         circ(jt+lt+kcirc) = quadris(xold,yold,nsam,nrow,xim);
+         circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
          if ( mode == 'f' || mode == 'F' ) {
             xold = -x+cns2;
             yold = -y+cnr2;
-            circ(jt+lt+lt+kcirc) = quadris(xold,yold,nsam,nrow,xim);
+            circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
 
             xold = -y+cns2;
             yold = x+cnr2;
-            circ(jt+lt+lt+lt+kcirc) = quadris(xold,yold,nsam,nrow,xim);  
+            circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  
          }
       } // end for jt
    } //end for it

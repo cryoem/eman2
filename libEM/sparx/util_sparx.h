@@ -231,18 +231,6 @@ class FakeKaiserBessel : public KaiserBessel {
 		static vector<float>
 		even_angles(float delta, float t1=0, float t2=90, float p1=0, float p2=359.999);
 
-		/** Tri-Quadratic interpolation.
-		 *
-		 *	@param[in] r x-coord value
-		 *	@param[in] s y-coord value
-		 *	@param[in] t z-coord value
-		 *	@param[in] f 3x3x3 grid of measured values
-		 *
-		 *	@return Interpolated value
-		 */
-/*		static float trilinear_interpolate(float t, float u, float v, float *fdata); */
-		
-		static float triquad(double r, double s, double t, float f[]);
 
 		/** Quadratic interpolation (2D).
 		 *
@@ -297,7 +285,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *	@return Interpolated value
 		 */
 		static float quadri(float x, float y, int nx, int ny, float* image);
-		static float quadris(float x, float y, int nx, int ny, float* image);
+		/*static float quadris(float x, float y, int nx, int ny, float* image);*/
 		static inline float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
 

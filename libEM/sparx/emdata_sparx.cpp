@@ -772,7 +772,7 @@ EMData* EMData::symvol(string symmetry) {
 	// set up output volume
 	EMData* svol = new EMData;
 	svol->set_size(nx, ny, nz);
-	svol->to_zero();
+	svol->copy();
 	// set up coord grid
 	const int nsize = 27;
 	int x[nsize], y[nsize], z[nsize];
@@ -794,11 +794,11 @@ EMData* EMData::symvol(string symmetry) {
 	for (int isym = 0; isym < nsym; isym++) {
 		Transform3D rm = sym.get_sym(symmetry, isym);
 		if ((1.0 == rm[0][0]) && (1.0 == rm[1][1]) && (1.0 == rm[2][2])) {
-			// symmetry is the identity matrix
-			for (int iz = 0; iz < nz; iz++)
+			// symmetry has to include the identity matrix and this was taken care of by the copy statement above
+			/*for (int iz = 0; iz < nz; iz++)
 				for (int iy = 0; iy < ny; iy++)
 					for (int ix = 0; ix < nx; ix++)
-						(*svol)(ix,iy,iz) += (*this)(ix,iy,iz);
+						(*svol)(ix,iy,iz) += (*this)(ix,iy,iz);*/
 		} else {
 			// symmetry is something interesting
 			Vec3f qrt, qr;
