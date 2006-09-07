@@ -9,6 +9,7 @@ from math import *
 import time
 import os
 import sys
+from pprint import pprint
 
 pl=()
 
@@ -26,7 +27,9 @@ sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
 #	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
 	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
 	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
-	parser.add_option("--maxpairerr","-E",type="float",help="Maximum error match between pairs of helices, default=50",default=50.0)
+	parser.add_option("--maxpairerr","-E",type="float",help="Maximum error match between pairs of helices, default=50",default=10.0)
+	parser.add_option("--skelpath","-K",type="string",help="Optional (recommended) output from the e2skelpath.py program")
+	parser.add_option("--lengthmatchmatrix",type="string",help="Writes an image containing an exhaustive comparison of predicted vs SSE helix lengths as a matrix",default=None)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -40,6 +43,17 @@ def ssematch(ssehfsp,sspredfsp,options):
 	
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
+	
+	skel=readconnect(options.skelpath,len(sseh[0]))
+	try:
+		skel=readconnect(options.skelpath,len(sseh[0]))
+		sseh=(sseh[0],skel)
+		print "Skeletonization results read, %d paths"%len(skel)
+#		pprint(skel)
+	except: pass
+	
+	if options.lengthmatchmatrix:
+		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
 	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
 	for i in sspred: print "%4d "%int(i[0]/1.5),
@@ -104,20 +118,32 @@ def findpairs(p1,sspred,sseh,maxpe):
 	poss=[]
 	for s1 in range(len(sseh[0])):
 		for s2 in range(len(sseh[0])):
-#			print ssemin[s1][s2][1],sspred[p1+1][1]
-			if s1==s2 or ssemin[s1][s2][1]>sspred[p1+1][1]: continue
+			if s1==s2 or ssemin[s1][s2][1]>sspred[p1+1][1]*1.1: continue
 			# error includes squared length mismatches and a term downweighting long distances between helices
-			err=(sspred[p1][0]-sseh[0][s1])**2+(sspred[p1+1][0]-sseh[0][s2])**2
-			if ssemin[s1][s2][1]/sspred[p1+1][1]>.5: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.5))**2		# varies from 1-4
+			err=(sspred[p1][0]-sseh[0][s1])**4+(sspred[p1+1][0]-sseh[0][s2])**4
+			if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
 			poss.append((err,s1,s2))
 	poss.sort()
+	if len(poss)==0: return poss
 	for i,v in enumerate(poss):
 		if v[0]>maxpe : break
 	if i==0: i+=1
 	return poss[:i]
 	
+def lengthmatrix(sspred,sseh,fsp):
+	"""Compares each predicted length to each SSE helix length in a matrix
+	stored as a 2-D image."""
+	out=EMData()
+	out.set_size(len(sspred),len(sseh[0]),1)
+	
+	for p in range(len(sspred)):
+		for h in range(len(sseh[0])):
+			out.set_value_at(p,h,0,fabs(sspred[p][0]-sseh[0][h]))
+	
+	out.write_image(fsp)
+	
 def readsseh(fsp):
-	"""reads a ssehunter output file, returns 3 results:
+	"""reads a ssehunter output file, returns 2 results:
 	a list of helix lengths
 	a distance matrix (h1,h2):(1|2,1|2,dist)  h1<h2
 	
@@ -134,7 +160,7 @@ def readsseh(fsp):
 	lenlist=[sqrt((i[0]-i[3])**2+(i[1]-i[4])**2+(i[2]-i[5])**2) for i in hlx]
 	
 	# min length matrix (this needs to be replaced with connectivity info from skeletonization)
-	# (h1,h2):((0|1,0|1),len)
+	# [h1][h2] -> ((0|1,0|1),len)
 	lenmx=[[[] for i in range(len(hlx))] for i in range(len(hlx))]
 	for h1 in range(len(hlx)):
 		for h2 in range(len(hlx)):
@@ -152,6 +178,47 @@ def readsseh(fsp):
 	
 	return (lenlist,lenmx)
 					
+def readconnect(fsp,nel):
+	"""reads the results from e2skelpath, a list of connectivity and pathlengths between all ssehunter helices
+	returns the same results as the second component of readsseh(), and should replace it when possible
+	nel is the number of helices in the SSEhunter file supplied to e2skelpath"""
+	
+	lns=file(fsp,"r").readlines()
+	lns=[i.split() for i in lns]
+	lns=[(int(i[1]),int(i[3]),int(i[0]),int(i[2]),float(i[4])) for i in lns]	# reorder as helixA#,helixB#,endA,endB,pathlen
+	
+	ret=[[[] for i in range(nel)] for i in range(nel)]
+	for i in lns:
+		if len(ret[i[0]][i[1]])>0 :
+			if ret[i[0]][i[1]][2]>i[4] : ret[i[0]][i[1]]=(i[2],i[3],i[4])
+		else: ret[i[0]][i[1]]=(i[2],i[3],i[4])
+	
+	# Symmetrize the distance matrix
+	# it is reasonable that the file results are not symmetric due to the discrete
+	# path-tracing algorithm used
+	for i in range(nel):
+		for j in range(i):
+			a=ret[i][j]
+			b=ret[j][i]
+			if len(a)==0 and len(b)==0 : continue
+			if len(a)==0 : ret[i][j]=(b[1],b[0],b[2])		# since helix order is swapped, endpoint must also be swapped
+			elif len(b)==0 : ret[j][i]=(a[1],a[0],a[2])
+			else:											# we have both values, symmetrize with the smaller value
+				if a[2]<b[2] :
+					ret[j][i]=(a[1],a[0],a[2])
+				else:
+					ret[i][j]=(b[1],b[0],b[2])
+	
+	# writes a distance matrix to an image file for debugging purposes
+	mx=EMData()
+	mx.set_size(nel,nel,1)
+	for i in range(nel):
+		for j in range(nel):
+			if len(ret[i][j])==0 : mx.set_value_at(i,j,0,-1.0)
+			else : mx.set_value_at(i,j,0,ret[i][j][2])
+	mx.write_image("lenmx.mrc")
+	
+	return ret
 
 def readsspred(fsp,minhelix):
 	"""reads a file containing a sequence of -,H,E characters, 1 per residue.

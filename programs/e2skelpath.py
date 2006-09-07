@@ -13,7 +13,7 @@ pl=()
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <skeleton map> <dejavu file>
+	usage = """%prog [options] <skeleton map> <dejavu file> <output>
 	
 """
 
@@ -33,6 +33,12 @@ def main():
 		
 	skeleton=EMData()
 	skeleton.read_image(args[0])
+	skeleton.set_attr("apix_x",1.06)
+	skeleton.set_attr("apix_y",1.06)
+	skeleton.set_attr("apix_z",1.06)
+	skeleton.set_attr("MRC.nxstart",1)
+	skeleton.set_attr("MRC.nystart",1)
+	skeleton.set_attr("MRC.nzstart",1)
 
 	dejavupoints=getPoints(args[1],options.apix)
 	mappoints=[getNearest(i[:3],3,skeleton) for i in dejavupoints]
@@ -43,12 +49,23 @@ def main():
 	
 	pairlist=[]
 	for i,j in enumerate(mappoints):
-		findPath(skeleton,mappoints,[j],1,pairlist,i+2)
+		findPath(skeleton,mappoints,[(j[0],j[1],j[2],0)],1,pairlist,i+2)
 
-	print pairlist
+#	print pairlist
 	
-	for i in pairlist:
-		print i[0],i[1],mappoints[i[0]],mappoints[i[1]],vecdist(mappoints[i[0]],mappoints[i[1]]),i[2]
+#	for i in pairlist:
+#		print i[0],i[1],mappoints[i[0]],mappoints[i[1]],vecdist(mappoints[i[0]],mappoints[i[1]]),i[2]
+	
+	print "%d paths detected"%len(pairlist)
+	skeleton.write_image("zz.mrc")
+	
+	pts=len(dejavupoints)
+	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2]) for i in pairlist]
+	
+	out=file(args[2],"w")
+	for i in pairlist: 
+		if i[0][0]!=i[1][0] : out.write("%d %d\t%d %d\t%1.3f\n"%(i[0][1],i[0][0],i[1][1],i[1][0],i[2]*options.apix))
+	out.close()
 	
 def vecdist(a,b):
 	return sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2)	
@@ -80,9 +97,46 @@ def getNearest(coord, searchrange, skeleton):
 	#print coord, bestcoord
 	return(bestcoord)
 
+def zapPairs(skeleton,mappoints,seeds,it,n):
+	# Similar to findPath, but only seeks out connections between helix endpoint
+	# pairs, and erases them
+	newseeds=[]
+	mp2=len(mappoints)/2
+	for s in seeds:
+		# search nearest neighbors to continue trace
+
+		skeleton.set_value_at(s[0],s[1],s[2],n)
+		for z in range(s[2]-1,s[2]+2):
+			for y in range(s[1]-1,s[1]+2):
+				for x in range(s[0]-1,s[0]+2):
+					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
+						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
+						for i,j in enumerate(mappoints):
+							if i==n: continue
+							if [x,y,z]==j :
+								return 
+								pairs.append((n-2,i,s[3]+l))
+								setbox(x,y,z,skeleton,n)
+								continue
+							
+	for s in seeds:
+		# 2nd pass to find new seeds away from new endpoints
+		for z in range(s[2]-1,s[2]+2):
+			for y in range(s[1]-1,s[1]+2):
+				for x in range(s[0]-1,s[0]+2):
+					
+					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
+						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
+						newseeds.append((x,y,z,l+s[3]))
+						skeleton.set_value_at(x,y,z,n)
+	if len(newseeds):
+		zapPairs(skeleton,mappoints,newseeds,it+1,n)
+
+
 def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	# Iterate over all current trace edge points
 	newseeds=[]
+	mp2=len(mappoints)/2
 	for s in seeds:
 		# search nearest neighbors to continue trace
 
@@ -93,22 +147,35 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 					
 #					print n-2,it,x,y,z,skeleton.get_value_at(x,y,z)
 					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
+						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
 						for i,j in enumerate(mappoints):
 							if i==n: continue
 							if [x,y,z]==j :
-								pairs.append((n-2,i,it))
+								pairs.append((n-2,i,s[3]+l))
 								setbox(x,y,z,skeleton,n)
 								continue
-						newseeds.append((x,y,z))
+							
+	for s in seeds:
+		# 2nd pass to find new seeds away from new endpoints
+		for z in range(s[2]-1,s[2]+2):
+			for y in range(s[1]-1,s[1]+2):
+				for x in range(s[0]-1,s[0]+2):
+					
+					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
+						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
+						newseeds.append((x,y,z,l+s[3]))
 						skeleton.set_value_at(x,y,z,n)
 	if len(newseeds):
+		if n==2 :
+#			if it<20 : skeleton.write_image("zzzz.%02d.mrc"%it)
+			print n,it,len(newseeds)
 		findPath(skeleton,mappoints,newseeds,it+1,pairs,n)
 
 def setbox(x,y,z,img,n):
-	for xx in range(x-1,x+2):
-		for yy in range(y-1,y+2):
-			for zz in range(z-1,z+2):
-				img.set_value_at(xx,yy,zz,n)
+	for xx in range(x-3,x+4):
+		for yy in range(y-3,y+4):
+			for zz in range(z-3,z+4):
+				if img.get_value_at(xx,yy,zz) : img.set_value_at(xx,yy,zz,n)
 				
 if __name__ == "__main__":
 	main()
