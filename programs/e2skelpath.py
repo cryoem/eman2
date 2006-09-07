@@ -47,6 +47,9 @@ def main():
 # 	for s in mappoints:
 # 		print s[0],s[1],s[2],skeleton.get_value_at(*s)
 	
+	zapPairs(skeleton,mappoints)
+	skeleton.write_image("skel.noh.mrc")
+	
 	pairlist=[]
 	for i,j in enumerate(mappoints):
 		findPath(skeleton,mappoints,[(j[0],j[1],j[2],0)],1,pairlist,i+2)
@@ -97,41 +100,18 @@ def getNearest(coord, searchrange, skeleton):
 	#print coord, bestcoord
 	return(bestcoord)
 
-def zapPairs(skeleton,mappoints,seeds,it,n):
-	# Similar to findPath, but only seeks out connections between helix endpoint
-	# pairs, and erases them
-	newseeds=[]
-	mp2=len(mappoints)/2
-	for s in seeds:
-		# search nearest neighbors to continue trace
-
-		skeleton.set_value_at(s[0],s[1],s[2],n)
-		for z in range(s[2]-1,s[2]+2):
-			for y in range(s[1]-1,s[1]+2):
-				for x in range(s[0]-1,s[0]+2):
-					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
-						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
-						for i,j in enumerate(mappoints):
-							if i==n: continue
-							if [x,y,z]==j :
-								return 
-								pairs.append((n-2,i,s[3]+l))
-								setbox(x,y,z,skeleton,n)
-								continue
-							
-	for s in seeds:
-		# 2nd pass to find new seeds away from new endpoints
-		for z in range(s[2]-1,s[2]+2):
-			for y in range(s[1]-1,s[1]+2):
-				for x in range(s[0]-1,s[0]+2):
-					
-					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
-						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
-						newseeds.append((x,y,z,l+s[3]))
-						skeleton.set_value_at(x,y,z,n)
-	if len(newseeds):
-		zapPairs(skeleton,mappoints,newseeds,it+1,n)
-
+def zapPairs(skeleton,mp):
+	"""Erases a path connecting the pairs of Helix endpoints, so no connectivities
+	following paths through helices will be considered. 'mp' is the mappoints array."""
+	n=len(mp)/2
+	for i in range(n):
+		l=sqrt((mp[i][0]-mp[i+n][0])**2+(mp[i][1]-mp[i+n][1])**2+(mp[i][2]-mp[i+n][2])**2)
+		l=floor(l)
+		for f in [x/l for x in range(3,int(l)-2)]:
+			x=f*mp[i][0]+(1.0-f)*mp[i+n][0]
+			y=f*mp[i][1]+(1.0-f)*mp[i+n][1]
+			z=f*mp[i][2]+(1.0-f)*mp[i+n][2]
+			setbox(int(x),int(y),int(z),skeleton,0)
 
 def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	# Iterate over all current trace edge points
@@ -172,9 +152,9 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 		findPath(skeleton,mappoints,newseeds,it+1,pairs,n)
 
 def setbox(x,y,z,img,n):
-	for xx in range(x-3,x+4):
-		for yy in range(y-3,y+4):
-			for zz in range(z-3,z+4):
+	for xx in range(x-2,x+3):
+		for yy in range(y-2,y+3):
+			for zz in range(z-2,z+3):
 				if img.get_value_at(xx,yy,zz) : img.set_value_at(xx,yy,zz,n)
 				
 if __name__ == "__main__":
