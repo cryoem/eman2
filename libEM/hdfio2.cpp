@@ -20,6 +20,7 @@
 
 using namespace EMAN;
 
+
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
 {
@@ -45,7 +46,9 @@ HdfIO2::~HdfIO2()
 		H5Fflush(file,H5F_SCOPE_GLOBAL);	// If there were no resource leaks, this wouldn't be necessary...
 		H5Fclose(file);
     }
-//printf("HDf close\n");
+#ifdef DEBUGHDF
+	printf("HDf close\n");
+#endif
 }
 
 // This reads an already opened attribute and returns the results as an EMObject
@@ -136,7 +139,16 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		break;
 	}
 
-	H5Adelete(loc,name);
+/*	//don't need delete attribute since the erase_header() has 
+    //been called in the very beginning of write_header() 
+	if( H5Adelete(loc,name) < 0 ) {
+		LOGERR("Attribute %s deletion error in write_attr().\n", name);
+	}
+	else {
+#ifdef DEBUGHDF		
+		printf("delete attribute %s successfully in write_attr().\n", name);
+#endif	
+	} */
 	hid_t attr = H5Acreate(loc,name,type,spc,H5P_DEFAULT);
 
 	unsigned int i;
@@ -177,10 +189,16 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		
 	}
 
-
-	H5Tclose(type);
-	H5Sclose(spc);
-	return 0;
+	herr_t ret1 = H5Tclose(type);
+	herr_t ret2 = H5Sclose(spc);
+	herr_t ret3 = H5Aclose(attr);
+	if(ret1>=0 && ret2>=0 && ret3>=0) {
+		return 0;
+	}
+	else {
+		LOGERR("close error in write_attr()\n");
+		return -1;
+	}
 }
 
 // Initializes the file for read-only or read-write access
@@ -210,11 +228,15 @@ void HdfIO2::init()
 	else {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
 		if (file < 0) {
-#ifdef DEBUGHDF	
-			printf("File truncated\n");
-#endif
 			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
-			if (file < 0) throw FileAccessException(filename);
+			if (file < 0) {
+				throw FileAccessException(filename);
+			}
+			else {
+#ifdef DEBUGHDF	
+				printf("File truncated or new file created\n");
+#endif			
+			}
 		}
 	}
 	
@@ -230,10 +252,9 @@ void HdfIO2::init()
 	}
 	initialized = true;
 	EXITFUNC;
-
 }
 
-// This 
+
 // If this version of init() returns -1, then we have an old-style HDF5 file
 int HdfIO2::init_test()
 {
@@ -242,7 +263,7 @@ int HdfIO2::init_test()
 		return 1;
 	}
 #ifdef DEBUGHDF	
-	printf("initt\n");
+	printf("init_test\n");
 #endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
@@ -254,11 +275,15 @@ int HdfIO2::init_test()
 	else {
 		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
 		if (file < 0) {
-#ifdef DEBUGHDF
-			printf("File truncated\n");
-#endif
 			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
-			if (file < 0) return 0;
+			if (file < 0) {
+				return 0;
+			}
+			else {
+#ifdef DEBUGHDF
+				printf("File truncated or new file created\n");
+#endif				
+			}
 		}
 	}
 	
@@ -304,21 +329,21 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 	init();
 #ifdef DEBUGHDF	
-	printf("read_head %d\n",image_index);
+	printf("read_head %d\n", image_index);
 #endif
 	int i;
 	// Each image is in a group for later expansion. Open the group
 	char ipath[50];
-	sprintf(ipath,"/MDF/images/%d",image_index);
-	hid_t igrp=H5Gopen(file,ipath);
+	sprintf(ipath,"/MDF/images/%d", image_index);
+	hid_t igrp=H5Gopen(file, ipath);
 	
 	int nattr=H5Aget_num_attrs(igrp);
 
 	char name[128];
 	for (i=0; i<nattr; i++) {
-		hid_t attr=H5Aopen_idx(igrp,i);
-		ssize_t l=H5Aget_name(attr,127,name);
-		if (strncmp(name,"EMAN.",5)!=0) {
+		hid_t attr=H5Aopen_idx(igrp, i);
+		H5Aget_name(attr,127,name);
+		if (strncmp(name,"EMAN.", 5)!=0) {
 			H5Aclose(attr);
 			continue;
 		}
@@ -338,6 +363,9 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 int HdfIO2::erase_header(int image_index)
 {
 	ENTERFUNC;
+	
+	if(image_index < 0) return 0; //image_index<0 for appending image, no need for erasing 
+	
 	init();
 #ifdef DEBUGHDF	
 	printf("erase_head %d\n",image_index);
@@ -345,17 +373,19 @@ int HdfIO2::erase_header(int image_index)
 	int i;
 	// Each image is in a group for later expansion. Open the group
 	char ipath[50];
-	sprintf(ipath,"/MDF/images/%d",image_index);
-	hid_t igrp=H5Gopen(file,ipath);
+	sprintf(ipath,"/MDF/images/%d", image_index);
+	hid_t igrp=H5Gopen(file, ipath);
 	
 	int nattr=H5Aget_num_attrs(igrp);
 
 	char name[128];
 	for (i=0; i<nattr; i++) {
-		hid_t attr=H5Aopen_idx(igrp,i);
-		ssize_t l=H5Aget_name(attr,127,name);
+		hid_t attr = H5Aopen_idx(igrp, 0); //use 0 as index here, since the H5Adelete() will change the index
+		H5Aget_name(attr,127,name);
 		H5Aclose(attr);
-		H5Adelete(igrp,name);
+		if( H5Adelete(igrp,name) < 0 ) {
+			LOGERR("attribute %s deletion error in erase_header().\n", name);
+		}
 	}
 
 	H5Gclose(igrp);
@@ -394,12 +424,13 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	printf("write_head %d\n",image_index);
 #endif
 	ENTERFUNC;
-	init();
-//	erase_header(image_index);
+	init();	//this init() is called in erase_header().
+	erase_header(image_index);
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
 	hid_t attr=H5Aopen_name(group,"imageid_max");
 	int nimg = read_attr(attr);
+
 	H5Aclose(attr);
 	unsigned int i;
 	if (image_index<0) image_index=nimg+1;
