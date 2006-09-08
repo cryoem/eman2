@@ -118,7 +118,7 @@ def findpairs(p1,sspred,sseh,maxpe):
 	poss=[]
 	for s1 in range(len(sseh[0])):
 		for s2 in range(len(sseh[0])):
-			if s1==s2 or ssemin[s1][s2][1]>sspred[p1+1][1]*1.1: continue
+			if s1==s2 or len(ssemin[s1][s2])==0 or ssemin[s1][s2][1]>sspred[p1+1][1]*1.1: continue
 			# error includes squared length mismatches and a term downweighting long distances between helices
 			err=(sspred[p1][0]-sseh[0][s1])**4+(sspred[p1+1][0]-sseh[0][s2])**4
 			if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2

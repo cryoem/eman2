@@ -49,12 +49,13 @@ def main():
 	
 
 	for i in range(len(mappoints)/2):
-		print mappoints[i],mappoints[i+len(mappoints)/2]
-		removeHelix(mappoints[i],mappoints[i+len(mappoints)/2],skeleton,-1)
-		skeleton.set_value_at(mappoints[i][0],mappoints[i][1],mappoints[i][2],i+2)
-		skeleton.set_value_at(mappoints[i+len(mappoints)/2][0],mappoints[i+len(mappoints)/2][1],mappoints[i+len(mappoints)/2][2],i+2)
-	skeleton.write_image("skel.noh.mrc")
+		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)
 	
+	skeleton.process_inplace("eman1.threshold.binary",{"value":0.5})
+#	skeleton.write_image("skel.noh.mrc")
+# 	for s in mappoints:
+# 		print s[0],s[1],s[2],skeleton.get_value_at(*s)
+		
 	pairlist=[]
 	for i,j in enumerate(mappoints):
 		findPath(skeleton,mappoints,[(j[0],j[1],j[2],0)],1,pairlist,i+2)
@@ -101,7 +102,7 @@ def getNearest(coord, searchrange, skeleton):
 					distance=sqrt(dx**2+dy**2+dz**2)
 					if distance < maxdistance:
 						maxdistance=distance
-						bestcoord=[coord[0]+dx, coord[1]+dy, coord[2]+dz]
+						bestcoord=(coord[0]+dx, coord[1]+dy, coord[2]+dz)
 	#print coord, bestcoord
 	return(bestcoord)
 
@@ -152,8 +153,32 @@ def removeHelix(startpoint, endpoint, skeleton, maxdistance):
 
 
 def erasePairs(skeleton,target,seeds,n):
-	"""Iteratively erases the shortest path connecting two points (inital seed and target)"""
+	"""Iteratively erases the shortest path connecting two points (inital seed and target)
+	seed must be passed as ((x,y,z),()),)"""
+	newseeds=[]
 	
+#	print n,len(seeds),seeds[0][0]
+	for s in seeds:
+		if s[0]==target :
+#			print "trace ",len(s[1])
+			for i in s[1][3:-3]:
+#				setbox(i[0],i[1],i[2],skeleton,0,1)
+				skeleton.set_value_at(i[0],i[1],i[2],0)
+			return
+
+	for ss in seeds:
+		s=ss[0]
+		# 2nd pass to find new seeds away from new endpoints
+		for z in range(s[2]-1,s[2]+2):
+			for y in range(s[1]-1,s[1]+2):
+				for x in range(s[0]-1,s[0]+2):
+					
+					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
+						newseeds.append(((x,y,z),ss[1]+(ss[0],)))
+						skeleton.set_value_at(x,y,z,n)
+	if len(newseeds):
+		erasePairs(skeleton,target,newseeds,n)
+
 
 def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	# Iterate over all current trace edge points
@@ -172,7 +197,7 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
 						for i,j in enumerate(mappoints):
 							if i==n: continue
-							if [x,y,z]==j :
+							if (x,y,z)==j :
 								pairs.append((n-2,i,s[3]+l))
 								setbox(x,y,z,skeleton,n)
 								continue
@@ -193,10 +218,10 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 			print n,it,len(newseeds)
 		findPath(skeleton,mappoints,newseeds,it+1,pairs,n)
 
-def setbox(x,y,z,img,n):
-	for xx in range(x-2,x+3):
-		for yy in range(y-2,y+3):
-			for zz in range(z-2,z+3):
+def setbox(x,y,z,img,n,rng=2):
+	for xx in range(x-rng,x+rng+1):
+		for yy in range(y-rng,y+rng+1):
+			for zz in range(z-rng,z+rng+1):
 				if img.get_value_at(xx,yy,zz) : img.set_value_at(xx,yy,zz,n)
 				
 if __name__ == "__main__":
