@@ -84,7 +84,7 @@ def main():
 		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)
 	
 	skeleton.process_inplace("eman1.threshold.binary",{"value":0.5})
-#	skeleton.write_image("skel.noh.mrc")
+	skeleton.write_image("skel.noh.mrc")
 # 	for s in mappoints:
 # 		print s[0],s[1],s[2],skeleton.get_value_at(*s)
 		
@@ -193,7 +193,7 @@ def erasePairs(skeleton,target,seeds,n):
 	for s in seeds:
 		if s[0]==target :
 #			print "trace ",len(s[1])
-			for i in s[1][3:-3]:
+			for i in s[1][5:-5]:
 #				setbox(i[0],i[1],i[2],skeleton,0,1)
 				skeleton.set_value_at(i[0],i[1],i[2],0)
 			return
@@ -245,9 +245,9 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 						newseeds.append((x,y,z,l+s[3]))
 						skeleton.set_value_at(x,y,z,n)
 	if len(newseeds):
-		if n==2 :
+#		if n==2 :
 #			if it<20 : skeleton.write_image("zzzz.%02d.mrc"%it)
-			print n,it,len(newseeds)
+#			print n,it,len(newseeds)
 		findPath(skeleton,mappoints,newseeds,it+1,pairs,n)
 
 def setbox(x,y,z,img,n,rng=2):

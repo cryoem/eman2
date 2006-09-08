@@ -76,6 +76,9 @@ def ssematch(ssehfsp,sspredfsp,options):
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
 	
+	for i in sseh[0]: print "%d "%int(i/1.5),
+	print
+	
 	skel=readconnect(options.skelpath,len(sseh[0]))
 	try:
 		skel=readconnect(options.skelpath,len(sseh[0]))
@@ -152,8 +155,10 @@ def findpairs(p1,sspred,sseh,maxpe):
 		for s2 in range(len(sseh[0])):
 			if s1==s2 or len(ssemin[s1][s2])==0 or ssemin[s1][s2][1]>sspred[p1+1][1]*1.1: continue
 			# error includes squared length mismatches and a term downweighting long distances between helices
-			err=(sspred[p1][0]-sseh[0][s1])**4+(sspred[p1+1][0]-sseh[0][s2])**4
-			if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
+#			err=sqrt((sspred[p1][0]-sseh[0][s1])**2+(sspred[p1+1][0]-sseh[0][s2])**2)
+			err=tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+tanh(fabs(sspred[p1+1][0]-sseh[0][s2]))+2
+			err+=2.0*fabs(ssemin[s1][s2][1]/sspred[p1+1][1]-1.0)
+#			if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
 			poss.append((err,s1,s2))
 	poss.sort()
 	if len(poss)==0: return poss
