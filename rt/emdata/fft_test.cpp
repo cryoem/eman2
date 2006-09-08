@@ -1,3 +1,34 @@
+/*
+Â * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+Â * Copyright (c) 2000-2006 Baylor College of Medicine
+Â *
+Â * This software is issued under a joint BSD/GNU license. You may use the
+Â * source code in this file under either license. However, note that the
+Â * complete EMAN2 and SPARX software packages have some GPL dependencies,
+Â * so you are responsible for compliance with the licenses of these packages
+Â * if you opt to use BSD licensing. The warranty disclaimer below holds
+Â * in either instance.
+Â *
+Â * This complete copyright notice must be included in any revised version of the
+Â * source code. Additional authorship citations may be added, but existing
+Â * author citations must be preserved.
+Â *
+Â * This program is free software; you can redistribute it and/or modify
+Â * it under the terms of the GNU General Public License as published by
+Â * the Free Software Foundation; either version 2 of the License, or
+Â * (at your option) any later version.
+Â *
+Â * This program is distributed in the hope that it will be useful,
+Â * but WITHOUT ANY WARRANTY; without even the implied warranty of
+Â * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. Â See the
+Â * GNU General Public License for more details.
+Â *
+Â * You should have received a copy of the GNU General Public License
+Â * along with this program; if not, write to the Free Software
+Â * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA Â 02111-1307 Â USA
+Â *
+Â */
+
 #include <iostream>
 #include "emdata.h"
 
@@ -36,21 +67,21 @@ int main()
 /*
 void Util::test1(EMData *PROJ)
 {
-  //int nx = PROJ->get_xsize();
-  //int ny = PROJ->get_ysize();
-  //int nz = PROJ->get_zsize();
-  //int n = nx*ny*nz;
-  for(int i = 0;i<20;i++)
-  {
-    EMData* W =  PROJ->pad_fft();
-    W->do_fft_inplace();// W = W->do_fft_inplace();
-    W->do_ift_inplace();// W = W->do_ift_inplace();
-    W->postift_depad_corner_inplace();
-    //float *src = W->get_data();
-    //float *dest = PROJ->get_data();
-    //memcpy(dest,src,sizeof(float)*n);
-    // W->set_size(1,1);
-    delete W;W = 0;
-   }  
+ï¿½ //int nx = PROJ->get_xsize();
+ï¿½ //int ny = PROJ->get_ysize();
+ï¿½ //int nz = PROJ->get_zsize();
+ï¿½ //int n = nx*ny*nz;
+ï¿½ for(int i = 0;i<20;i++)
+ï¿½ {
+ï¿½ ï¿½ EMData* W = ï¿½PROJ->pad_fft();
+ï¿½ ï¿½ W->do_fft_inplace();// W = W->do_fft_inplace();
+ï¿½ ï¿½ W->do_ift_inplace();// W = W->do_ift_inplace();
+ï¿½ ï¿½ W->postift_depad_corner_inplace();
+ï¿½ ï¿½ //float *src = W->get_data();
+ï¿½ ï¿½ //float *dest = PROJ->get_data();
+ï¿½ ï¿½ //memcpy(dest,src,sizeof(float)*n);
+ï¿½ ï¿½ // W->set_size(1,1);
+ï¿½ ï¿½ delete W;W = 0;
+ï¿½ ï¿½} ï¿½
 }
 */
