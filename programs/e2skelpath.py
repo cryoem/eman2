@@ -47,7 +47,12 @@ def main():
 # 	for s in mappoints:
 # 		print s[0],s[1],s[2],skeleton.get_value_at(*s)
 	
-	zapPairs(skeleton,mappoints)
+
+	for i in range(len(mappoints)/2):
+		print mappoints[i],mappoints[i+len(mappoints)/2]
+		removeHelix(mappoints[i],mappoints[i+len(mappoints)/2],skeleton,-1)
+		skeleton.set_value_at(mappoints[i][0],mappoints[i][1],mappoints[i][2],i+2)
+		skeleton.set_value_at(mappoints[i+len(mappoints)/2][0],mappoints[i+len(mappoints)/2][1],mappoints[i+len(mappoints)/2][2],i+2)
 	skeleton.write_image("skel.noh.mrc")
 	
 	pairlist=[]
@@ -60,7 +65,7 @@ def main():
 #		print i[0],i[1],mappoints[i[0]],mappoints[i[1]],vecdist(mappoints[i[0]],mappoints[i[1]]),i[2]
 	
 	print "%d paths detected"%len(pairlist)
-	skeleton.write_image("zz.mrc")
+#	skeleton.write_image("zz.mrc")
 	
 	pts=len(dejavupoints)
 	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2]) for i in pairlist]
@@ -102,7 +107,8 @@ def getNearest(coord, searchrange, skeleton):
 
 def zapPairs(skeleton,mp):
 	"""Erases a path connecting the pairs of Helix endpoints, so no connectivities
-	following paths through helices will be considered. 'mp' is the mappoints array."""
+	following paths through helices will be considered. 'mp' is the mappoints array.
+	Doesn't work very well in most cases..."""
 	n=len(mp)/2
 	for i in range(n):
 		l=sqrt((mp[i][0]-mp[i+n][0])**2+(mp[i][1]-mp[i+n][1])**2+(mp[i][2]-mp[i+n][2])**2)
@@ -112,6 +118,42 @@ def zapPairs(skeleton,mp):
 			y=f*mp[i][1]+(1.0-f)*mp[i+n][1]
 			z=f*mp[i][2]+(1.0-f)*mp[i+n][2]
 			setbox(int(x),int(y),int(z),skeleton,0)
+
+def removeHelix(startpoint, endpoint, skeleton, maxdistance):
+	searchrange=range(-2,3)
+	STOPFLAG=0
+	if maxdistance<0: 
+		maxdistance=sqrt((startpoint[0]-endpoint[0])**2+(startpoint[1]-endpoint[1])**2+(startpoint[2]-endpoint[2])**2)
+	
+	newpoints=[startpoint,endpoint]
+	nmd=maxdistance
+	for dx in searchrange:
+		for dy in searchrange:
+			for dz in searchrange:
+				sp=[startpoint[0]+dx, startpoint[1]+dy, startpoint[2]+dz]
+				ep=[endpoint[0]+dx, endpoint[1]+dy, endpoint[2]+dz]
+
+				toep=sqrt((sp[0]-endpoint[0])**2+(sp[1]-endpoint[1])**2+(sp[2]-endpoint[2])**2)
+				if toep<maxdistance and skeleton.get_value_at(sp[0],sp[1],sp[2])!=0:
+					newpoints[0]=sp
+					nmd=min(nmd,toep)
+					skeleton.set_value_at(sp[0],sp[1],sp[2],0)
+					STOPFLAG=1
+
+				tosp=sqrt((startpoint[0]-ep[0])**2+(startpoint[1]-ep[1])**2+(startpoint[2]-ep[2])**2)
+				if tosp<maxdistance and skeleton.get_value_at(ep[0],ep[1],ep[2])!=0:
+					newpoints[1]=ep
+					nmd=min(nmd,tosp)
+					skeleton.set_value_at(ep[0],ep[1],ep[2],0)
+					STOPFLAG=1
+	maxdistance=nmd
+	if STOPFLAG==1:
+		removeHelix(newpoints[0],newpoints[1], skeleton, maxdistance)
+
+
+def erasePairs(skeleton,target,seeds,n):
+	"""Iteratively erases the shortest path connecting two points (inital seed and target)"""
+	
 
 def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	# Iterate over all current trace edge points
