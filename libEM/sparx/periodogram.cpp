@@ -55,6 +55,7 @@ Input: f real or complex 1-2-3D image
 Output: 1-2-3D real image with periodogram.  |F(0,0,0)|^2 is at the image center
         int[n/2]+1.
 */  
+/*
 EMData* 
 periodogram(EMData* f) {
 	// These are actual dimensions
@@ -162,7 +163,7 @@ periodogram(EMData* f) {
 	return &power;
 //OVER AND OUT
 }
+*/
 
 }
-
 /* vim: set ts=4 noet nospell: */
