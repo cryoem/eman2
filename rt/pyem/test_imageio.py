@@ -38,6 +38,7 @@ import os
 import sys
 import testlib
 import os
+from pyemtbx.exceptions import *
 
 class TestPGMIO(unittest.TestCase):
     """PGM file IO test"""
@@ -239,6 +240,35 @@ class TestHdfIO(unittest.TestCase):
         os.unlink(imgfile2)
         os.unlink(imgfile3)
         os.unlink(outfile)
+        
+    def test_delete_attribute(self):
+        """test add and delete attribute from hdf file ......"""
+        e1 = EMData()
+        e1.set_size(32,32)
+        e1.process_inplace('testimage.noise.uniform.rand')
+        e1.set_attr('Grant', 10000)
+        testimage = 'testimage.hdf'
+        e1.write_image(testimage)
+        del e1
+        
+        #test whether the attribute 'Grant' has been written to file
+        e2 = EMData()
+        e2.read_image(testimage)
+        self.assertEqual(e2.get_attr('Grant'), 10000)
+                
+        #testwhether the attribute 'Grant' can be removed from file
+        e2.del_attr('Grant')
+        e2.write_image(testimage)
+        del e2
+        e3 = EMData()
+        e3.read_image(testimage)
+        try:
+            no_such_attr = e3.get_attr('Grant')
+        except RuntimeError, runtime_err:
+            err_type = exception_type(runtime_err)
+            self.assertEqual(err_type, "NotExistingObjectException")           
+        
+        os.unlink(testimage)
 
 class TestMrcIO(unittest.TestCase):
     """mrc file IO test"""
