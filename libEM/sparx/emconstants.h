@@ -1,6 +1,6 @@
 /*
- * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
- * Copyright (c) 2000-2006 Baylor College of Medicine
+ * Author: Pawel A.Penczek, 09/09/2006 (Pawel.A.Penczek@uth.tmc.edu)
+ * Copyright (c) 2000-2006 The University of Texas - Houston Medical School
  *
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
