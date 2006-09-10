@@ -22,8 +22,16 @@ struct EMAN_Analyzer_Wrapper: EMAN::Analyzer
     EMAN_Analyzer_Wrapper(PyObject* py_self_):
         EMAN::Analyzer(), py_self(py_self_) {}
 
-    std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > analyze(const std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> >& p0) {
-        return call_method< std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > >(py_self, "analyze", p0);
+    int insert_image(EMAN::EMData* p0) {
+        return call_method< int >(py_self, "insert_image", p0);
+    }
+
+    int insert_images_list(std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > p0) {
+        return call_method< int >(py_self, "insert_images_list", p0);
+    }
+
+    std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > analyze() {
+        return call_method< std::vector<EMAN::EMData*,std::allocator<EMAN::EMData*> > >(py_self, "analyze");
     }
 
     std::string get_name() const {
@@ -42,12 +50,16 @@ struct EMAN_Analyzer_Wrapper: EMAN::Analyzer
         EMAN::Analyzer::set_params(p0);
     }
 
-    EMAN::TypeDict get_param_types() const {
-        return call_method< EMAN::TypeDict >(py_self, "get_param_types");
+    EMAN::Dict get_params() const {
+        return call_method< EMAN::Dict >(py_self, "get_params");
     }
 
-    EMAN::TypeDict default_get_param_types() const {
-        return EMAN::Analyzer::get_param_types();
+    EMAN::Dict default_get_params() const {
+        return EMAN::Analyzer::get_params();
+    }
+
+    EMAN::TypeDict get_param_types() const {
+        return call_method< EMAN::TypeDict >(py_self, "get_param_types");
     }
 
     PyObject* py_self;
@@ -61,11 +73,14 @@ struct EMAN_Analyzer_Wrapper: EMAN::Analyzer
 BOOST_PYTHON_MODULE(libpyAnalyzer2)
 {
     class_< EMAN::Analyzer, boost::noncopyable, EMAN_Analyzer_Wrapper >("__Analyzer", init<  >())
+        .def("insert_image", pure_virtual(&EMAN::Analyzer::insert_image))
+        .def("insert_images_list", pure_virtual(&EMAN::Analyzer::insert_images_list))
         .def("analyze", pure_virtual(&EMAN::Analyzer::analyze))
         .def("get_name", pure_virtual(&EMAN::Analyzer::get_name))
         .def("get_desc", pure_virtual(&EMAN::Analyzer::get_desc))
         .def("set_params", &EMAN::Analyzer::set_params, &EMAN_Analyzer_Wrapper::default_set_params)
-        .def("get_param_types", &EMAN::Analyzer::get_param_types, &EMAN_Analyzer_Wrapper::default_get_param_types)
+        .def("get_params", &EMAN::Analyzer::get_params, &EMAN_Analyzer_Wrapper::default_get_params)
+        .def("get_param_types", pure_virtual(&EMAN::Analyzer::get_param_types))
     ;
 
     class_< EMAN::Factory<EMAN::Analyzer>, boost::noncopyable >("Analyzers", no_init)

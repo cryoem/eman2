@@ -52,8 +52,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, projec
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_backproject_overloads_1_2, backproject, 1, 2)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_analyze_overloads_2_3, analyze, 2, 3)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_insert_scaled_sum_overloads_2_4, insert_scaled_sum, 2, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_add_overloads_1_2, add, 1, 2)
@@ -215,7 +213,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("align", &EMAN::EMData::align, EMAN_EMData_align_overloads_2_5()[ return_value_policy< manage_new_object >() ])
         .def("project", &EMAN::EMData::project, EMAN_EMData_project_overloads_1_2()[ return_value_policy< manage_new_object >() ])
         .def("backproject", &EMAN::EMData::backproject, EMAN_EMData_backproject_overloads_1_2()[ return_value_policy< manage_new_object >() ])
-        .def("analyze", &EMAN::EMData::analyze, EMAN_EMData_analyze_overloads_2_3())
         .def("do_fft", &EMAN::EMData::do_fft, return_value_policy< manage_new_object >())
         .def("do_fft_inplace", &EMAN::EMData::do_fft_inplace, return_value_policy< reference_existing_object >())
         .def("do_ift", &EMAN::EMData::do_ift, return_value_policy< manage_new_object >())

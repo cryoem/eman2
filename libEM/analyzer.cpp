@@ -47,8 +47,8 @@ namespace EMAN {
 
 }
 
-vector<EMData*> PcaAnalyzer::analyze(const vector<EMData*> & images)
+vector<EMData*> PcaAnalyzer::analyze()
 {
-	
+	printf("start analyzing...\n");
 }
 

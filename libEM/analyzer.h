@@ -60,11 +60,27 @@ namespace EMAN
 	class Analyzer
 	{
 	  public:
+	  	Analyzer() {}
+	  
 		virtual ~Analyzer()
-		{
-		}
+		{}
 		
-		virtual vector<EMData*> analyze(const vector<EMData*> & images) = 0;
+		/** insert a image to the list of input images
+		 * @param image 
+		 * @return int 0 for success, <0 for fail
+		 * */
+		virtual int insert_image(EMData * image) = 0;
+		
+		/** insert a list of images to the list of input images
+		 * @param image_list 
+		 * @return int 0 for success, <0 for fail
+		 * */
+		virtual int insert_images_list(vector<EMData *> image_list) = 0;
+		
+		/** main function for Analyzer, analyze input images and create output images
+		 * @return vector<EMData *> result os images analysis
+		 * */
+		virtual vector<EMData*> analyze() = 0;
 		
 		/** Get the Analyzer's name. Each Analyzer is identified by a unique name.
 		 * @return The Analyzer's name.
@@ -84,20 +100,25 @@ namespace EMAN
 			params = new_params;
 		}
 		
+		/** Get the Reconstructor's parameters in a key/value dictionary.
+		 * @return A key/value pair dictionary containing the parameters.
+		 */
+		virtual Dict get_params() const
+		{
+			return params;
+		}
+		
 		/** Get Analyzer parameter information in a dictionary. Each
 		 * parameter has one record in the dictionary. Each record
 		 * contains its name, data-type, and description.
 		 *
 		 * @return A dictionary containing the parameter info.
 		 */	 
-		virtual TypeDict get_param_types() const
-		{
-			TypeDict d;
-			return d;
-		}
+		virtual TypeDict get_param_types() const = 0;
 		
 	  protected:
 		mutable Dict params;
+		vector<EMData *> images;
 	};
 	
 	

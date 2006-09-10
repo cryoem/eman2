@@ -40,20 +40,27 @@
 
 namespace EMAN
 {
-	/** 
+	/** Principal component analysis
 	 */
 	class PcaAnalyzer : public Analyzer
 	{
 	  public:
 		PcaAnalyzer() : mask(0), nvec(0) {}
-/*		virtual ~PcaAnalyzer() {
-			if(mask) {
-				delete mask;
-				mask = 0;
-			}
+		
+		virtual int insert_image(EMData * image) {
+			images.push_back(image);
+			return 0;
 		}
-*/		
-		virtual vector<EMData*> analyze(const vector<EMData*> & images);
+		
+		virtual int insert_images_list(vector<EMData *> image_list) {
+			vector<EMData*>::const_iterator iter;
+			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
+				images.push_back(*iter);
+			}
+			return 0;
+		}
+		
+		virtual vector<EMData*> analyze();
 		
 		string get_name() const
 		{
@@ -62,7 +69,7 @@ namespace EMAN
 		
 		string get_desc() const
 		{
-			return "";
+			return "Principal component analysis";
 		}
 		
 		static Analyzer * NEW()
@@ -87,7 +94,7 @@ namespace EMAN
 		
 	  protected:
 		EMData * mask;
-		int nvec;
+		int nvec;	//number of desired principal components
 	}; 
 }
 
