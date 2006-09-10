@@ -100,7 +100,6 @@ namespace EMAN
 		}
 
 		/** Initialize the reconstructor.
-		 * @return 0 if OK. 1 if error.
 		 */
 		virtual void setup() = 0;
 
