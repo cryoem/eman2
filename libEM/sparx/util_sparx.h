@@ -62,7 +62,7 @@ static void slicereverse(float* beg, float* end, int nx,int ny);
 
 static  void cyclicshift(EMData* image, Dict params);
 
-static Dict im_diff(EMData* V1, EMData* V2, EMData* mask);
+static Dict im_diff(EMData* V1, EMData* V2, EMData* mask=0);
 
 /** Creates a Two D Test Pattern
  * @param[in] Size must be odd

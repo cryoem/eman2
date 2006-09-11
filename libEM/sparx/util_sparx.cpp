@@ -135,6 +135,11 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 {
 	ENTERFUNC;
 	
+	if (!EMUtil::is_same_size(V1, V2)) {
+		LOGERR("images not same size");
+		throw ImageFormatException( "images not same size");
+	}
+	
 	size_t nx = V1->get_xsize();
 	size_t ny = V1->get_ysize();
 	size_t nz = V1->get_zsize();
@@ -149,10 +154,25 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	long double S1=0.L,S2=0.L,S3=0.L,S4=0.L;
 	int nvox = 0L;
 	
-    V1ptr = V1->get_data();
+   	V1ptr = V1->get_data();
 	V2ptr = V2->get_data();
-	MASKptr = mask->get_data();
 	BDptr = BD->get_data();
+	
+	
+	if(!mask){
+		EMData * Mask = new EMData();
+		Mask->set_size(nx,ny,nz);
+		Mask->to_one();
+		MASKptr = Mask->get_data();	
+	} else {
+		if (!EMUtil::is_same_size(V1, mask)) {
+			LOGERR("mask not same size");
+			throw ImageFormatException( "mask not same size");
+		}
+		
+		MASKptr = mask->get_data();
+	}
+	
 	
 	
 //	 calculation of S1,S2,S3,S3,nvox
@@ -190,7 +210,8 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	BDnParams["imdiff"] = BD;
 	BDnParams["A"] = params[0];
 	BDnParams["B"] = params[1];
-		
+	
+	EXITFUNC;	
 	return BDnParams;
  }
 
