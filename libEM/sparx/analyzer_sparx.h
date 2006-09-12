@@ -47,10 +47,12 @@ namespace EMAN
 	  public:
 		PcaAnalyzer() : mask(0), nvec(0) {}
 		
-		virtual int insert_image(EMData * image) {
-			images.push_back(image);
-			return 0;
-		}
+//		virtual int insert_image(EMData * image) {
+//		images.push_back(image);
+//		return 0;
+//
+//}
+		virtual int insert_image(EMData * image);
 		
 		virtual int insert_images_list(vector<EMData *> image_list) {
 			vector<EMData*>::const_iterator iter;
@@ -77,12 +79,14 @@ namespace EMAN
 			return new PcaAnalyzer();
 		}
 		
-		void set_params(const Dict & new_params)
-		{
-			params = new_params;
-			mask = params["mask"];
-			nvec = params["nvec"];
-		}
+		void set_params(const Dict & new_params);
+
+//		void set_params(const Dict & new_params)
+//		{
+//			params = new_params;
+//			mask = params["mask"];
+//			nvec = params["nvec"];
+//		}
 
 		TypeDict get_param_types() const
 		{
@@ -95,6 +99,12 @@ namespace EMAN
 	  protected:
 		EMData * mask;
 		int nvec;	//number of desired principal components
+
+          private:
+                float *covmat; // covariance matrix 
+                int   ncov;    // dimension of the covariance matrix
+                float *eigval; // array for storing computed eigvalues
+                float *eigvec; // array for storing computed eigvectors
 	}; 
 }
 
