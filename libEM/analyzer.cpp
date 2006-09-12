@@ -33,8 +33,10 @@
  *
  */
 
+#include "emdata.h"
 #include "analyzer.h"
 #include "sparx/analyzer_sparx.h"
+#include "util.h"
 
 using namespace EMAN;
 
@@ -47,8 +49,76 @@ namespace EMAN {
 
 }
 
+#define covmat(i,j) covmat[ ((j)-1)*nx + (i)-1 ]
+#define imgdata(i)  imgdata[ (i)-1 ]
+int PcaAnalyzer::insert_image(EMData * image)
+{
+   EMData *maskedimage = Util::compress_image_mask(image,mask);
+
+   int nx = maskedimage->get_xsize();
+   float *imgdata = maskedimage->get_data();
+   if (nx != ncov) {
+      fprintf(stderr,"insert_image: something is wrong...\n");
+      exit(1);
+   }
+
+   // there is a faster version of the following rank-1 update 
+   for (int j = 1; j <= nx; j++)
+       for (int i = 1; i<=nx; i++) {
+           covmat(i,j) += imgdata(i)*imgdata(j);
+   }   
+
+   return 0;
+}
+#undef covmat
+
+#define eigvec(i,j) eigvec[(j)*ncov + (i)]
 vector<EMData*> PcaAnalyzer::analyze()
 {
-	printf("start analyzing...\n");
+	int status = 0;
+	printf("start analyzing..., ncov = %d\n", ncov);
+        eigval = (float*)calloc(ncov,sizeof(float));
+        eigvec = (float*)calloc(ncov*ncov,sizeof(float));
+        status = Util::coveig(ncov, covmat, eigval, eigvec);
+
+        for (int i=1; i<=5; i++) printf("eigval = %11.4e\n", 
+            eigval[ncov-i]);
+
+        // pack eigenvectors into the return imagelist
+        EMData *eigenimage = new EMData();
+        eigenimage->set_size(ncov,1,1);
+        float *rdata = eigenimage->get_data();
+        for (int j = 1; j<= nvec; j++) {
+	    for (int i = 0; i < ncov; i++)
+		rdata[i] = eigvec(i,ncov-j);
+	    images.push_back(Util::reconstitute_image_mask(eigenimage,mask));
+        }
+
+        free(eigvec);
+        EMDeletePtr(eigenimage); 
+
+	return images;
+}
+#undef eigvec
+
+void PcaAnalyzer::set_params(const Dict & new_params)
+{
+	params = new_params;
+	mask = params["mask"];
+	nvec = params["nvec"];
+
+        // count the number of pixels under the mask
+        // (this is really ugly!!!)
+        EMData *dummy = new EMData();
+
+        int nx = mask->get_xsize();
+        dummy->set_size(nx,nx);
+        EMData *dummy1d = Util::compress_image_mask(dummy,mask);
+        ncov = dummy1d->get_xsize();
+        EMDeletePtr(dummy);
+        EMDeletePtr(dummy1d);
+
+	// allocate and set up the covriance matrix
+	covmat = (float*)calloc(ncov*ncov,sizeof(float));
 }
 
