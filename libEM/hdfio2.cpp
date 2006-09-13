@@ -301,45 +301,25 @@ int HdfIO2::init_test()
 #endif
 
 	H5Eset_auto(0, 0);	// Turn off console error logging.
-
-	if (rw_mode == READ_ONLY) {
-		file = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, accprop);
-		if (file<0) return 0;
+	
+	hid_t fileid = H5Fopen(filename.c_str(), H5F_ACC_RDWR, H5Pcreate(H5P_FILE_ACCESS));
+	hid_t groupid = H5Gopen(fileid, "/");
+	hid_t attid = H5Aopen_name(groupid, "num_dataset");
+	
+	if (attid < 0) {
+		H5Gclose(groupid);
+		H5Fclose(fileid);
+		init();
+		EXITFUNC;
+		return 0;
 	}
 	else {
-		file = H5Fopen(filename.c_str(), H5F_ACC_RDWR, accprop);
-		if (file < 0) {
-			file = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, accprop);
-			if (file < 0) {
-				return 0;
-			}
-			else {
-#ifdef DEBUGHDF
-				printf("File truncated or new file created\n");
-#endif				
-			}
-		}
+		H5Aclose(attid);
+		H5Gclose(groupid);
+		H5Fclose(fileid);
+		EXITFUNC;
+		return -1;
 	}
-	
-	group=H5Gopen(file,"/MDF/images");
-	if (group<0) {
-		if (rw_mode == READ_ONLY) return -1;
-		group=H5Aopen_name(file,"num_dataset");
-		if (group>=0) {
-			H5Aclose(group);
-			group=-1;
-			return -1;
-		}
-		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
-		if (group<0) return 0;
-		H5Gclose(group);
-		group=H5Gcreate(file,"/MDF/images",4096);		// create the group for images/volumes
-		if (group<0) return 0;
-		write_attr(group,"imageid_max",EMObject(-1));
-	}
-	initialized = true;
-	EXITFUNC;
-	return 1;
 }
 
 bool HdfIO2::is_valid(const void *first_block)

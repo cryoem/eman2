@@ -78,6 +78,10 @@ herr_t attr_info(hid_t dataset, const char *name, void *opdata)
 			value_string = tmp_string;
 			(*dict)[name] = value_string;
 		}
+		else if(H5Tget_class(atype) == H5T_ENUM || H5Tget_class(atype) == H5T_ARRAY) {
+			//for old-style hdf file created by EMAN1, the euler convention is enum
+			//skip those attribute to make EMAN2 read the content of the image
+		}
 		else {
 			LOGERR("can only handle float/int/string parameters in HDF attr_info()");
 			exit(1);
@@ -376,7 +380,6 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area,
 					throw NotExistingObjectException("EMObject", "unsupported type");
 					break;
 				case EMObject::UNKNOWN:
-					std::cout << "Type::UNKNOWN the error attribute is: " << *iter << std::endl;
 					throw NotExistingObjectException("EMObject", "unsupported type");
 					break;
 				default:
@@ -1296,7 +1299,13 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 	return err;
 }
 
-
+int HdfIO::get_num_dataset()
+{
+    hdf_err_off();
+    int n = read_global_int_attr(get_item_name(NUMDATASET));
+    hdf_err_on();
+    return n;
+}
 
 
 #endif	//EM_HDF5
