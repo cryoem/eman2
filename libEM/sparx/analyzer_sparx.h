@@ -91,8 +91,8 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("mask", EMObject::EMDATA);
-			d.put("nvec", EMObject::INT);
+			d.put("mask", EMObject::EMDATA, " ");
+			d.put("nvec", EMObject::INT, " ");
 			return d;
 		}
 		
@@ -151,8 +151,8 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("mask", EMObject::EMDATA);
-			d.put("nvec", EMObject::INT);
+			d.put("mask", EMObject::EMDATA, " ");
+			d.put("nvec", EMObject::INT, " ");
 			return d;
 		}
 		
