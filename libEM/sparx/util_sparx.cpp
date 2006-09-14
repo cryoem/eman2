@@ -1092,7 +1092,7 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       } // end for jt
    } //end for it
 }
-inline float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
+float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {
 /*
 c  purpose: linear interpolation

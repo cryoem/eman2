@@ -317,7 +317,7 @@ class FakeKaiserBessel : public KaiserBessel {
 		 */
 		static float quadri(float x, float y, int nx, int ny, float* image);
 		/*static float quadris(float x, float y, int nx, int ny, float* image);*/
-		static inline float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
+		static float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
 
 		/** Quadratic interpolation (3D)
