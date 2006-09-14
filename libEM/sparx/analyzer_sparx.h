@@ -138,7 +138,7 @@ namespace EMAN
 		
 		static Analyzer * NEW()
 		{
-			return new PCAsmall();
+			return new PCAlarge();
 		}
 		
 		void set_params(const Dict & new_params);
