@@ -72,6 +72,8 @@ struct EMAN_Analyzer_Wrapper: EMAN::Analyzer
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyAnalyzer2)
 {
+    def("dump_analyzers", &EMAN::dump_analyzers);
+    def("dump_analyzers_list", &EMAN::dump_analyzers_list);
     class_< EMAN::Analyzer, boost::noncopyable, EMAN_Analyzer_Wrapper >("__Analyzer", init<  >())
         .def("insert_image", pure_virtual(&EMAN::Analyzer::insert_image))
         .def("insert_images_list", pure_virtual(&EMAN::Analyzer::insert_images_list))

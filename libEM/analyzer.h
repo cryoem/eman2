@@ -121,8 +121,10 @@ namespace EMAN
 		vector<EMData *> images;
 	};
 	
+	template <> Factory < Analyzer >::Factory();
 	
-	
+	void dump_analyzers();
+	map<string, vector<string> > dump_analyzers_list();
 }
 
 #endif	//eman_analyzer_h__

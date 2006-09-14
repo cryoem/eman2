@@ -162,6 +162,7 @@ The following classes are defined: \n\
   dump_processors() - Print out all Processor`s and their parameters. \n\
   dump_projectors() - Print out all Projectors and their parameters. \n\
   dump_reconstructors() - Print out all Reconstructors and their parameters. \n\
+  dump_analyzers() - Print out all Analyzers anf their parameters. \n\
 "
   
   

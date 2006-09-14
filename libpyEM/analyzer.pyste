@@ -1,5 +1,8 @@
 Include("emdata.h")
+
 Factory = Template("EMAN::Factory", "emobject.h")
+Function("EMAN::dump_analyzers", "analyzer.h")
+Function("EMAN::dump_analyzers_list", "analyzer.h")
 
 Analyzer = Class("EMAN::Analyzer", "analyzer.h")
 rename(Analyzer, "__Analyzer")

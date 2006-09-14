@@ -413,3 +413,15 @@ EXIT:
 #undef diag
 #undef subdiag
 #undef TOL
+
+
+void EMAN::dump_analyzers()
+{
+	dump_factory < Analyzer > ();
+}
+
+map<string, vector<string> > EMAN::dump_analyzers_list()
+{
+	return dump_factory_list < Analyzer > ();
+}
+
