@@ -85,7 +85,7 @@ vector<EMData*> PCAsmall::analyze()
         eigvec = (float*)calloc(ncov*ncov,sizeof(float));
         status = Util::coveig(ncov, covmat, eigval, eigvec);
 
-        for (int i=1; i<=5; i++) printf("eigval = %11.4e\n", 
+        for (int i=1; i<=nvec; i++) printf("eigval = %11.4e\n", 
             eigval[ncov-i]);
 
         // pack eigenvectors into the return imagelist
@@ -135,8 +135,9 @@ int PCAlarge::insert_image(EMData * image)
    EMData *maskedimage = Util::compress_image_mask(image,mask);
 
    FILE *fp;
+   string scratchfile = string("maskedimages.scratch");
 
-   fp = fopen("maskedimages.scratch","a");
+   fp = fopen(scratchfile.c_str(),"a");
 
    int nx = maskedimage->get_xsize();
    float *imgdata = maskedimage->get_data();
@@ -181,6 +182,8 @@ vector<EMData*> PCAlarge::analyze()
 	float one = 1.0, zero = 0.0;
 	char trans;
         float *eigvec;
+        string scratchfile = string("maskedimages.scratch");
+        char command[100];
 
 	printf("start analyzing..., ncov = %d\n", ncov);
 
@@ -198,8 +201,15 @@ vector<EMData*> PCAlarge::analyze()
 	float *vmat    = new float[nx*kstep];
 
         // run kstep-step Lanczos factorization
-	status = Lanczos("maskedimags.scratch", &kstep, diag, subdiag, 
+	status = Lanczos(scratchfile, &kstep, diag, subdiag, 
                          vmat, &resnrm);
+
+        // remove scratch file
+        sprintf(command,"rm -f %s\n", scratchfile.c_str());
+        status = system(command);
+        if (status != 0) {
+	    fprintf(stderr,"PCAlarge: cannot remove scratchfile\n");
+        }
 
 	char jobz[2] = "V";
 	float *qmat  = new float[kstep*kstep];
@@ -223,7 +233,7 @@ vector<EMData*> PCAlarge::analyze()
             eigval[j] = diag(kstep-j);
         }
 
-        for (int i=0; i<5; i++) printf("eigval = %11.4e\n", 
+        for (int i=0; i<nvec; i++) printf("eigval = %11.4e\n", 
             eigval[i]);
 
         // compute eigenvectors
@@ -305,7 +315,7 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
     char trans;
     int  imgsize = 0; 
     float *v0, *Av, *hvec, *htmp, *imgdata;
-    FILE  *fp;
+    FILE  *fp=NULL;
 
     if (nimages <= 0) {
 	status = 2; // no image in the stack
@@ -324,7 +334,8 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
     htmp = new float[*kstep];
     imgdata = new float[imgsize];
 
-    if (v0 == NULL || Av == NULL || hvec == NULL || htmp == NULL ) {
+    if (v0 == NULL || Av == NULL || hvec == NULL || 
+        htmp == NULL || imgdata == NULL) {
         fprintf(stderr, "Lanczos: failed to allocate v0,Av,hvec,htmp\n"); 
 	status = -1;
         goto EXIT;
@@ -340,12 +351,16 @@ int PCAlarge::Lanczos(const string &maskedimages, int *kstep,
 
     // do Av <-- A*v0, where A is a cov matrix
     fp = fopen(maskedimages.c_str(),"r");
+    if (fp==NULL) {
+	fprintf(stderr,"Lanczos: cannot open %s\n", maskedimages.c_str());
+    }
     for (i = 0; i < nimages; i++) {
        fread(imgdata, sizeof(float), imgsize, fp);
        alpha = sdot_(&imgsize, imgdata, &ione, V, &ione); 
        saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
     }
     fclose(fp);
+
 
     // Av <--- Av - V(:,1)*V(:,1)'*Av 
     diag(1) = sdot_(&imgsize, V, &ione, Av, &ione); 
