@@ -42,10 +42,10 @@ namespace EMAN
 {
 	/** Principal component analysis
 	 */
-	class PcaAnalyzer : public Analyzer
+	class PCAsmall : public Analyzer
 	{
 	  public:
-		PcaAnalyzer() : mask(0), nvec(0) {}
+		PCAsmall() : mask(0), nvec(0) {}
 		
 //		virtual int insert_image(EMData * image) {
 //		images.push_back(image);
@@ -76,7 +76,7 @@ namespace EMAN
 		
 		static Analyzer * NEW()
 		{
-			return new PcaAnalyzer();
+			return new PCAsmall();
 		}
 		
 		void set_params(const Dict & new_params);
@@ -103,9 +103,69 @@ namespace EMAN
           private:
                 float *covmat; // covariance matrix 
                 int   ncov;    // dimension of the covariance matrix
+                int   nimages; // number of images
                 float *eigval; // array for storing computed eigvalues
-                float *eigvec; // array for storing computed eigvectors
 	}; 
+
+        //-------------------------------------------------------------
+
+	class PCAlarge : public Analyzer
+	{
+	  public:
+		PCAlarge() : mask(0), nvec(0) {}
+		
+		virtual int insert_image(EMData * image);
+		
+		virtual int insert_images_list(vector<EMData *> image_list) {
+			vector<EMData*>::const_iterator iter;
+			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
+				images.push_back(*iter);
+			}
+			return 0;
+		}
+		
+		virtual vector<EMData*> analyze();
+		
+		string get_name() const
+		{
+			return "pca_large";
+		}	  	
+		
+		string get_desc() const
+		{
+			return "Principal component analysis";
+		}
+		
+		static Analyzer * NEW()
+		{
+			return new PCAsmall();
+		}
+		
+		void set_params(const Dict & new_params);
+
+                int Lanczos(const string &maskedimages, int *kstep, 
+                            float  *diag, float *subdiag, float *V, 
+                            float  *beta);
+
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mask", EMObject::EMDATA);
+			d.put("nvec", EMObject::INT);
+			return d;
+		}
+		
+	  protected:
+		EMData * mask;
+		int nvec;	//number of desired principal components
+
+          private:
+                int   ncov;    // dimension of the covariance matrix
+                int   nimages; // number of images used in the analysis
+                float *eigval; // array for storing computed eigvalues
+	}; 
+
 }
 
 #endif	//eman_analyzer_sparx_h__ 
