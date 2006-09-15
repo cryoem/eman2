@@ -100,10 +100,10 @@ def ssematch(ssehfsp,sspredfsp,options):
 		pairqual[i]=findpairs(i,sspred,sseh,options.maxpairerr)
 		print "%4d "%len(pairqual[i]),
 	print
-	
+		
 	# This is where we generate all of the final answers
 	all=[]
-	recursesoln(pairqual,[],[],all,options.maxbad)
+	recursesoln(pairqual,[],[],[],all,options.maxbad)
 	
 	out=file("ssematch.out","w")
 	for i in all:
@@ -112,36 +112,41 @@ def ssematch(ssehfsp,sspredfsp,options):
 	
 	print len(all)
 
-def recursesoln(pairqual,tot,soln,all,maxbad):
+def recursesoln(pairqual,tot,soln,ends,all,maxbad):
+#	print soln,"\n",ends
 	# first round, try all 1st level pairs
 	if len(soln)==0 :
 		for j,i in enumerate(pairqual[0]): 
-			recursesoln(pairqual,[i[0]],[i[1],i[2]],all,maxbad)
+			recursesoln(pairqual,[i[0]],[i[1],i[2]],[i[3],i[4]],all,maxbad)
 			print "%d/%d"%(j,len(pairqual[0]))
 		return
 		
 	# if we get here, we're done
-	if len(soln)==len(pairqual):
+	if len(soln)==len(pairqual)+1:
 		v=sum(tot)/len(tot)
 		try:
-			if v<min(all)[0]: print v,soln
-		except: print v,soln
-		all.append((v,soln))
+			if v<min(all)[0]: print v,soln,"\n",ends
+		except: print v,soln,"\n",ends
+		all.append((v,soln,ends))
 		return
 	
 	tries=0
 	for i in pairqual[len(soln)-1]:
 		# three tests. If the previous element isn't undefined, it must match
 		# and, the next choice in the series must not already be used
+#		if (soln[-1]!=-1 and i[1]!=soln[-1]) or (ends[-1]==i[3])or i[2] in soln : continue		# next one in series already assigned
 		if (soln[-1]!=-1 and i[1]!=soln[-1]) or i[2] in soln : continue		# next one in series already assigned
+		if ends[-1]==i[3] : 
+			mm=170
+		else: mm=0
 		tries+=1
 		try: minq=min(minq,i[0])
 		except: minq=i[0]
-		recursesoln(pairqual,tot+[i[0]],soln+[i[2]],all,maxbad)
+		recursesoln(pairqual,tot+[i[0]+mm],soln+[i[2]],ends+[i[4]],all,maxbad)
 	
 	# if we didn't find even one good assignment, we skip this helix (unless we've skipped too many)
 	if (tries==0 or minq>32) and soln.count(-1)<maxbad:
-		recursesoln(pairqual,tot,soln+[-1],all,maxbad)
+		recursesoln(pairqual,tot,soln+[-1],ends+[-1],all,maxbad)
 	
 def findpairs(p1,sspred,sseh,maxpe):
 	"""This will generate a sorted list of possible pair assignments. Assigns the
@@ -156,10 +161,10 @@ def findpairs(p1,sspred,sseh,maxpe):
 			if s1==s2 or len(ssemin[s1][s2])==0 or ssemin[s1][s2][1]>sspred[p1+1][1]*1.1: continue
 			# error includes squared length mismatches and a term downweighting long distances between helices
 #			err=sqrt((sspred[p1][0]-sseh[0][s1])**2+(sspred[p1+1][0]-sseh[0][s2])**2)
-			err=tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+tanh(fabs(sspred[p1+1][0]-sseh[0][s2]))+2
+			err=tanh(fabs(sspred[p1][0]-sseh[0][s1])-8)+tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-8)+2
 			err+=2.0*fabs(ssemin[s1][s2][1]/sspred[p1+1][1]-1.0)
 #			if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
-			poss.append((err,s1,s2))
+			poss.append((err,s1,s2,ssemin[s1][s2][0],ssemin[s1][s2][1]))
 	poss.sort()
 	if len(poss)==0: return poss
 	for i,v in enumerate(poss):
