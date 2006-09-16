@@ -61,7 +61,7 @@ sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
 	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
 	parser.add_option("--maxpairerr","-E",type="float",help="Maximum error match between pairs of helices, default=50",default=10.0)
 	parser.add_option("--skelpath","-K",type="string",help="Optional (recommended) output from the e2skelpath.py program")
-	parser.add_option("--lengthmatchmatrix",type="string",help="Writes an image containing an exhaustive comparison of predicted vs SSE helix lengths as a matrix",default=None)
+#	parser.add_option("--lengthmatchmatrix",type="string",help="Writes an image containing an exhaustive comparison of predicted vs SSE helix lengths as a matrix",default=None)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -69,9 +69,33 @@ sec_struct_file is a string of -,H,E defining per-residue predicted structure"""
 	logid=E2init(sys.argv)
 	
 	ssematch(args[0],args[1],options)
+
+def ssematch2(ssehfsp,sspredfsp,options):
+	sseh=readsseh(ssehfsp)
+	sspred=readsspred(sspredfsp,options.minhelix)
 	
+	for i in sseh[0]: print "%d "%int(i/1.5),
+	print
+	
+	skel=readconnect(options.skelpath,len(sseh[0]))
+	try:
+		skel=readconnect(options.skelpath,len(sseh[0]))
+		sseh=(sseh[0],skel)
+		print "Skeletonization results read, %d paths"%len(skel)
+#		pprint(skel)
+	except: pass
+	
+# 	if options.lengthmatchmatrix:
+# 		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
+	
+	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
+	for i in sspred: print "%4d "%int(i[0]/1.5),
+	print ""
+
+	
+
 def ssematch(ssehfsp,sspredfsp,options):
-	"actual function of the program implemented here"
+	"older algorithm that matches pairs of predicted helices to pairs of SSEhunter helices"
 	
 	sseh=readsseh(ssehfsp)
 	sspred=readsspred(sspredfsp,options.minhelix)
@@ -229,36 +253,27 @@ def readconnect(fsp,nel):
 	lns=[i.split() for i in lns]
 	lns=[(int(i[1]),int(i[3]),int(i[0]),int(i[2]),float(i[4])) for i in lns]	# reorder as helixA#,helixB#,endA,endB,pathlen
 	
-	ret=[[[] for i in range(nel)] for i in range(nel)]
+	# ret is a 4 dimensional array. The first 2 dimensions are either 0 or 1 and represent the
+	# end of the helix (arbitrarily assigned by ssehunter). The second two dimensions
+	# represent the helix numbers. ie - helix 8 end 1 connected to helix 4 end 0 would be ret[1][0][8][4] or ret[0][1][4][8]
+	ret=[[0,0],[0,0]]
+	ret[0][0]=[[-1.0 for i in range(nel)] for i in range(nel)]
+	ret[0][1]=[[-1.0 for i in range(nel)] for i in range(nel)]
+	ret[1][0]=[[-1.0 for i in range(nel)] for i in range(nel)]
+	ret[1][1]=[[-1.0 for i in range(nel)] for i in range(nel)]
 	for i in lns:
-		if len(ret[i[0]][i[1]])>0 :
-			if ret[i[0]][i[1]][2]>i[4] : ret[i[0]][i[1]]=(i[2],i[3],i[4])
-		else: ret[i[0]][i[1]]=(i[2],i[3],i[4])
+		ret[i[2]][i[3]][i[0]][i[1]]=i[4]
 	
-	# Symmetrize the distance matrix
+	# Symmetrize the distance matrices
 	# it is reasonable that the file results are not symmetric due to the discrete
 	# path-tracing algorithm used
-	for i in range(nel):
-		for j in range(i):
-			a=ret[i][j]
-			b=ret[j][i]
-			if len(a)==0 and len(b)==0 : continue
-			if len(a)==0 : ret[i][j]=(b[1],b[0],b[2])		# since helix order is swapped, endpoint must also be swapped
-			elif len(b)==0 : ret[j][i]=(a[1],a[0],a[2])
-			else:											# we have both values, symmetrize with the smaller value
-				if a[2]<b[2] :
-					ret[j][i]=(a[1],a[0],a[2])
-				else:
-					ret[i][j]=(b[1],b[0],b[2])
-	
-	# writes a distance matrix to an image file for debugging purposes
-	mx=EMData()
-	mx.set_size(nel,nel,1)
-	for i in range(nel):
-		for j in range(nel):
-			if len(ret[i][j])==0 : mx.set_value_at(i,j,0,-1.0)
-			else : mx.set_value_at(i,j,0,ret[i][j][2])
-	mx.write_image("lenmx.mrc")
+	for a in (0,1):
+		for b in (0,1):
+			for x in range(nel):
+				for y in range(x):
+					t=max(ret[a][b][x][y],ret[b][a][y][x])		# pick the largest of the 2 symmetric values
+					ret[a][b][x][y]=t
+					ret[b][a][y][x]=t
 	
 	return ret
 
