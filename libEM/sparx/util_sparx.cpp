@@ -529,47 +529,47 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 /*float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
 
-c  purpose: quadratic interpolation 
+//  purpose: quadratic interpolation 
+//
+//  parameters:       xx,yy treated as circularly closed.
+//                    fdata - image 1..nxdata, 1..nydata
+//
+//                    f3    fc       f0, f1, f2, f3 are the values
+//                     +             at the grid points.  x is the
+//                     + x           point at which the function
+//              f2++++f0++++f1       is to be estimated. (it need
+//                     +             not be in the first quadrant).
+//                     +             fc - the outer corner point
+//                    f4             nearest x.
 c
-c  parameters:       xx,yy treated as circularly closed.
-c                    fdata - image 1..nxdata, 1..nydata
+//                                   f0 is the value of the fdata at
+//                                   fdata(i,j), it is the interior mesh
+//                                   point nearest  x.
+//                                   the coordinates of f0 are (x0,y0),
+//                                   the coordinates of f1 are (xb,y0),
+//                                   the coordinates of f2 are (xa,y0),
+//                                   the coordinates of f3 are (x0,yb),
+//                                   the coordinates of f4 are (x0,ya),
+//                                   the coordinates of fc are (xc,yc),
 c
-c                    f3    fc       f0, f1, f2, f3 are the values
-c                     +             at the grid points.  x is the
-c                     + x           point at which the function
-c              f2++++f0++++f1       is to be estimated. (it need
-c                     +             not be in the first quadrant).
-c                     +             fc - the outer corner point
-c                    f4             nearest x.
+//                   o               hxa, hxb are the mesh spacings
+//                   +               in the x-direction to the left
+//                  hyb              and right of the center point.
+//                   +
+//            ++hxa++o++hxb++o       hyb, hya are the mesh spacings
+//                   +               in the y-direction.
+//                  hya
+//                   +               hxc equals either  hxb  or  hxa
+//                   o               depending on where the corner
+//                                   point is located.
 c
-c                                   f0 is the value of the fdata at
-c                                   fdata(i,j), it is the interior mesh
-c                                   point nearest  x.
-c                                   the coordinates of f0 are (x0,y0),
-c                                   the coordinates of f1 are (xb,y0),
-c                                   the coordinates of f2 are (xa,y0),
-c                                   the coordinates of f3 are (x0,yb),
-c                                   the coordinates of f4 are (x0,ya),
-c                                   the coordinates of fc are (xc,yc),
-c
-c                   o               hxa, hxb are the mesh spacings
-c                   +               in the x-direction to the left
-c                  hyb              and right of the center point.
-c                   +
-c            ++hxa++o++hxb++o       hyb, hya are the mesh spacings
-c                   +               in the y-direction.
-c                  hya
-c                   +               hxc equals either  hxb  or  hxa
-c                   o               depending on where the corner
-c                                   point is located.
-c
-c                                   construct the interpolant
-c                                   f = f0 + c1*(x-x0) +
-c                                       c2*(x-x0)*(x-x1) +
-c                                       c3*(y-y0) + c4*(y-y0)*(y-y1)
-c                                       + c5*(x-x0)*(y-y0)
-c
-c
+//                                   construct the interpolant
+//                                   f = f0 + c1*(x-x0) +
+//                                       c2*(x-x0)*(x-x1) +
+//                                       c3*(y-y0) + c4*(y-y0)*(y-y1)
+//                                       + c5*(x-x0)*(y-y0)
+//
+//
 
     float x, y, dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
     float quadri;
@@ -579,10 +579,10 @@ c
     y = yy;
 
     // circular closure
-    if (x < 1.0)               x = x+(1 - floor(x) / nxdata) * nxdata;
-    if (x > (float)nxdata+0.5) x = fmod(x-1.0f,(float)nxdata) + 1.0f;
-    if (y < 1.0)               y = y+(1 - floor(y) / nydata) * nydata;
-    if (y > (float)nydata+0.5) y = fmod(y-1.0f,(float)nydata) + 1.0f;
+    if (x < 1.0)               x = x+(1 - (int) x / nxdata) * nxdata;
+    if (x > (float)nxdata+0.5)  x = fmod(x-1.0f,(float)nxdata) + 1.0f;
+    if (y < 1.0)               y = y+(1 - (int) y / nydata) * nydata;
+    if (y > (float)nydata+0.5)  y = fmod(y-1.0f,(float)nydata) + 1.0f;
 
 
     i   = (int) x;
@@ -611,35 +611,14 @@ c
     dyb = dy0 - 1;
 
     // hxc & hyc are either 1 or -1
-    if (dx0 >= 0) {
-       hxc = 1;
-    }
-    else {
-       hxc = -1;
-    }
-    if (dy0 >= 0) {
-       hyc = 1;
-    }
-    else {
-       hyc = -1;
-    }
+    if (dx0 >= 0) { hxc = 1; } else { hxc = -1; }
+    if (dy0 >= 0) { hyc = 1; } else { hyc = -1; }
  
     ic  = i + hxc;
     jc  = j + hyc;
 
-    if (ic > nxdata) {
-       ic = ic - nxdata;
-    }
-    else if (ic < 1) {
-       ic = ic + nxdata;
-    }
-
-    if (jc > nydata) {
-       jc = jc - nydata;
-    }
-    else if (jc < 1) {
-       jc = jc + nydata;
-    }
+    if (ic > nxdata) { ic = ic - nxdata; }  else if (ic < 1) { ic = ic + nxdata; }
+    if (jc > nydata) { jc = jc - nydata; } else if (jc < 1) { jc = jc + nydata; }
 
     c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
             - hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
@@ -648,23 +627,22 @@ c
 
     return quadri; 
 }*/
-float Util::quadri(float x, float y, int nxdata, int nydata, float* fdata)
+float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
-/*
-c  purpose: quadratic interpolation
-  Optimized for speed, circular closer removed, checking of ranges removed
-*/
-	float dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
-	float quadri;
-	int   i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
+//  purpose: quadratic interpolation
+//  Optimized for speed, circular closer removed, checking of ranges removed
+	float  x, y, dx0, dy0, f0, c1, c2, c3, c4, c5, dxb, dyb;
+	float  quadri;
+	int    i, j, ip1, im1, jp1, jm1, ic, jc, hxc, hyc;
+
+	x = xx;
+	y = yy;
+
+	if (x < 1.0) x += nxdata; else if (x >= (float)(nxdata+1))  x -= nxdata;
+	if (y < 1.0) y += nydata; else if (y >= (float)(nydata+1))  y -= nydata;
 
 	i   = (int) x;
 	j   = (int) y;
-
-	if (i > nxdata) i -= nxdata;
-	if (i < 1)	i += nxdata;
-	if (j > nydata) j -= nydata;
-	if (j < 1)	j += nydata;
 
 	dx0 = x - i;
 	dy0 = y - j;
@@ -689,19 +667,24 @@ c  purpose: quadratic interpolation
 	dyb = dy0 - 1;
 
 	// hxc & hyc are either 1 or -1
-	if (dx0 >= 0) { hxc = 1; } else { hxc = -1; }
-	if (dy0 >= 0) { hyc = 1; } else { hyc = -1; }
+	if (dx0 >= 0) hxc = 1; else hxc = -1;
+	if (dy0 >= 0) hyc = 1; else hyc = -1;
 
 	ic  = i + hxc;
 	jc  = j + hyc;
 
+	if (ic > nxdata) ic -= nxdata;  else if (ic < 1) ic += nxdata;
+	if (jc > nydata) jc -= nydata;  else if (jc < 1) jc += nydata;
+
 	c5  =  ( (fdata(ic,jc) - f0 - hxc * c1 - (hxc * (hxc - 1.0)) * c2 
 		- hyc * c3 - (hyc * (hyc - 1.0)) * c4) * (hxc * hyc));
+
 
 	quadri = f0 + dx0 * (c1 + dxb * c2 + dy0 * c5) + dy0 * (c3 + dyb * c4);
 
 	return quadri; 
 }
+
 #undef fdata
 
 float Util::triquad(float R, float S, float T, float* fdata)
@@ -1146,7 +1129,7 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 {
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
-   float  yq, xold, yold, fi, x, y;
+   float   xold, yold, fi, x, y;
 
    //     cns2 and cnr2 are predefined centers
    //     no need to set to zero, all elements are defined
@@ -1155,7 +1138,6 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
    for (it=1; it<=nring; it++) {
       // radius of the ring
       inr = numr(1,it);
-      //yq  = inr;
 
       l = numr(3,it);
       if ( mode == 'h' || mode == 'H' ) { 
@@ -1191,8 +1173,8 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       
       for (jt=1; jt<=nsim; jt++) {
          fi   = dfi * jt;
-         x    = sin(fi) * inr;//yq;
-         y    = cos(fi) * inr;//yq;
+         x    = sin(fi) * inr;
+         y    = cos(fi) * inr;
 
          xold = x+cns2;
          yold = y+cnr2;
