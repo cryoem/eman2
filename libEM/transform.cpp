@@ -51,6 +51,16 @@ Transform3D::Transform3D()  //    C1
 	init();
 }
 
+Transform3D::Transform3D( const Transform3D& rhs )
+{
+    for( int i=0; i < 4; ++i )
+    {
+        for( int j=0; j < 4; ++j )
+	{
+	    matrix[i][j] = rhs.matrix[i][j];
+	}
+    }
+}
 
 // C2
 Transform3D::Transform3D(float az, float alt, float phi) 

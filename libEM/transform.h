@@ -112,6 +112,9 @@ namespace EMAN
 	     // C1
 		Transform3D();
 
+             // copy constructor
+	        Transform3D( const Transform3D& rhs );
+
 	     // C2   
 		Transform3D(float az,float alt, float phi); // EMAN by default
 
