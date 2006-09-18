@@ -351,9 +351,9 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("shift_x", EMObject::FLOAT, "Shift x");
-			d.put("shift_y", EMObject::FLOAT, "Shift y");
-			d.put("shift_z", EMObject::FLOAT, "Shift z");
+			d.put("x_shift", EMObject::FLOAT, "Shift x");
+			d.put("y_shift", EMObject::FLOAT, "Shift y");
+			d.put("z_shift", EMObject::FLOAT, "Shift z");
 			return d;
 		}
 	};
@@ -627,7 +627,8 @@ namespace EMAN
 			return d;
 		}
 	};
-		class CTF_Processor:public NewFourierProcessor
+
+	class CTF_Processor:public NewFourierProcessor
 	{
 	  public:
 		string get_name() const
