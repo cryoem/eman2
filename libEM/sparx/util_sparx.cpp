@@ -3100,6 +3100,9 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
  int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
  float DIPX,DIPY,XB,YB,XBB,YBB;
  
+ float x_shift = B->get_attr( "sx" );
+ float y_shift = B->get_attr( "sy" );
+
  NSAM = B->get_xsize();
  NROW = B->get_ysize();
  NX3D = CUBE->get_xsize();
@@ -3123,11 +3126,11 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
              YBB = (1-LDPX)*DM(4)+(J-LDPY)*DM(5)+(KZ-LDPZ)*DM(6);
               for(int I=1;I<=NX3D;I++)
 	          {
-		     XB  = (I-1)*DM(1)+XBB;
+		     XB  = (I-1)*DM(1)+XBB-x_shift;
 		     IQX = int(XB+float(LDPNMX));
                      if (IQX <1 || IQX >= NSAM) continue;
-		     YB   = (I-1)*DM(4)+YBB;
-                     IQY  = int(YB+float(LDPNMY));
+		     YB  = (I-1)*DM(4)+YBB-y_shift;
+                     IQY = int(YB+float(LDPNMY));
                      if (IQY<1 || IQY>=NROW)  continue;
                      DIPX = XB+LDPNMX-IQX;
 		     DIPY = YB+LDPNMY-IQY;
