@@ -38,6 +38,8 @@
 
 #include <map>
 #include <vector>
+#include <iostream>
+#include <boost/shared_ptr.hpp>
 
 #include "log.h"
 #include "exception.h"
@@ -45,6 +47,8 @@
 using std::vector;
 using std::string;
 using std::map;
+
+using boost::shared_ptr;
 
 namespace EMAN
 {
@@ -97,6 +101,7 @@ namespace EMAN
 			STRING,
 			EMDATA,
 			XYDATA,
+			INTARRAY,
 			FLOATARRAY,
 			STRINGARRAY,
 			UNKNOWN
@@ -133,6 +138,12 @@ namespace EMAN
 		EMObject(XYData * xy):n(0),  emdata(0), xydata(xy),type(XYDATA)
 		{
 		}
+
+		EMObject(const vector< int >& v )
+		    : n(0), emdata(0), xydata(0), iarray( new vector<int>(v) ), type(INTARRAY)
+		{
+		}
+
 		EMObject(const vector < float >&v)
 			:n(0), emdata(0), xydata(0), farray(v),type(FLOATARRAY)
 		{
@@ -142,7 +153,7 @@ namespace EMAN
 			:n(0),emdata(0),xydata(0),strarray(sarray),type(STRINGARRAY)
 		{
 		}
-		
+
 		~EMObject() {
 		}
 
@@ -153,6 +164,7 @@ namespace EMAN
 		operator  EMData *() const;
 		operator  XYData *() const;
 
+                operator shared_ptr< vector<int> >() const;
 		operator vector < float > () const;
 		operator vector<string> () const;
 		
@@ -175,6 +187,7 @@ namespace EMAN
 		EMData *emdata;
 		XYData *xydata;
 		string str;
+		shared_ptr< vector<int> > iarray;
 		vector < float >farray;
 		vector < string> strarray;
 		ObjectType type;

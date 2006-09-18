@@ -144,6 +144,21 @@ EMObject::operator  XYData * () const
 	return xydata;
 }
 
+EMObject::operator shared_ptr< vector<int> >() const
+{
+    if( type != INTARRAY )
+    {
+        if( type != UNKNOWN )
+	{
+	    throw TypeException("Cannot convert to int array from ", get_object_type_name(type) );
+	}
+
+	return shared_ptr< vector<int> >();
+    }
+
+    return iarray;
+}
+
 EMObject::operator vector < float > () const
 {
 	if (type != FLOATARRAY) {
@@ -225,6 +240,8 @@ const char *EMObject::get_object_type_name(ObjectType t)
 		return "EMDATA";
 	case XYDATA:
 		return "XYDATA";
+	case INTARRAY:
+	        return "INTARRAY";
 	case FLOATARRAY:
 		return "FLOATARRAY";
 	case STRINGARRAY:
