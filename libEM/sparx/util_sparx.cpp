@@ -528,7 +528,7 @@ Util::even_angles(float delta, float t1, float t2, float p1, float p2)
 #define  fdata(i,j)      fdata  [ i-1 + (j-1)*nxdata ]
 /*float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 {
-/*
+
 c  purpose: quadratic interpolation 
 c
 c  parameters:       xx,yy treated as circularly closed.
@@ -1026,7 +1026,7 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 {
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
-   float  yq, xold, yold, fi, x, y;
+   float  xold, yold, fi, x, y;
 
    //     cns2 and cnr2 are predefined centers
    //     no need to set to zero, all elements are defined
@@ -1035,7 +1035,6 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
    for (it=1; it<=nring; it++) {
       // radius of the ring
       inr = numr(1,it);
-      //yq  = inr;
 
       l = numr(3,it);
       if ( mode == 'h' || mode == 'H' ) { 
@@ -1069,8 +1068,8 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
       
       for (jt=1; jt<=nsim; jt++) {
          fi   = dfi * jt;
-         x    = sin(fi) * inr;//yq;
-         y    = cos(fi) * inr;//yq;
+         x    = sin(fi) * inr;
+         y    = cos(fi) * inr;
 
          xold = x+cns2;
          yold = y+cnr2;
