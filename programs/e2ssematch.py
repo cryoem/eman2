@@ -111,8 +111,8 @@ def ssematch(ssehfsp,sspredfsp,options):
 #		pprint(skel)
 	except: pass
 	
-	if options.lengthmatchmatrix:
-		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
+#	if options.lengthmatchmatrix:
+#		lengthmatrix(sspred,sseh,options.lengthmatchmatrix)
 	
 	print "%d predicted helices    %d helices in density"%(len(sspred),len(sseh[0]))
 	for i in sspred: print "%4d "%int(i[0]/1.5),
@@ -174,7 +174,7 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 	
 def findpairs(p1,sspred,sseh,maxpe):
 	"""This will generate a sorted list of possible pair assignments. Assigns the
-	predicted helices p1 and p2 to two helices from sseh. Returns a sorted list of:
+	predicted helices p1 and p1+1 to two helices from sseh. Returns a sorted list of:
 	(error,s1,s2)		lower error is a better match """
 	
 	ssemin=sseh[1]
@@ -182,13 +182,16 @@ def findpairs(p1,sspred,sseh,maxpe):
 	poss=[]
 	for s1 in range(len(sseh[0])):
 		for s2 in range(len(sseh[0])):
-			if s1==s2 or len(ssemin[s1][s2])==0 or ssemin[s1][s2][1]>sspred[p1+1][1]*1.1: continue
-			# error includes squared length mismatches and a term downweighting long distances between helices
-#			err=sqrt((sspred[p1][0]-sseh[0][s1])**2+(sspred[p1+1][0]-sseh[0][s2])**2)
-			err=tanh(fabs(sspred[p1][0]-sseh[0][s1])-8)+tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-8)+2
-			err+=2.0*fabs(ssemin[s1][s2][1]/sspred[p1+1][1]-1.0)
-#			if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
-			poss.append((err,s1,s2,ssemin[s1][s2][0],ssemin[s1][s2][1]))
+			for a in (0,1):
+				for b in (0,1):
+					if s1==s2 or ssemin[a][b][s1][s2]<0 or ssemin[a][b][s1][s2]>sspred[p1+1][1]*1.1: continue
+					# error includes squared length mismatches and a term downweighting long distances between helices
+#					err=sqrt((sspred[p1][0]-sseh[0][s1])**2+(sspred[p1+1][0]-sseh[0][s2])**2)
+					err=sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0+sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0
+					if ssemin[a][b][s1][s2]/sspred[p1+1][1]>.75: err+=(4.0*(ssemin[a][b][s1][s2]/sspred[p1+1][1]-.75))**2
+#					err+=2.0*fabs(ssemin[a][b][s1][s2]/sspred[p1+1][1]-1.0)
+#					if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
+					poss.append((err,s1,s2,a,b))
 	poss.sort()
 	if len(poss)==0: return poss
 	for i,v in enumerate(poss):
