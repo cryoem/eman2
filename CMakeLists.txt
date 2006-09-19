@@ -393,11 +393,11 @@ IF(ENABLE_PYTHON)
     ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)
-        # Check the longest name first.
-	CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
+        # Check the most generic name first (used by cctbx).
+	CHECK_OPTIONAL_LIB(BOOST boost_python boost/python.hpp)
 	IF(BOOST_LIBRARY)
 	ELSE(BOOST_LIBRARY)
-            CHECK_OPTIONAL_LIB(BOOST boost_python boost/python.hpp)
+            CHECK_OPTIONAL_LIB(BOOST boost_python-gcc boost/python.hpp)
 	ENDIF(BOOST_LIBRARY)
 	IF(BOOST_INCLUDE_PATH AND BOOST_LIBRARY)
 	    SUBDIRS(libpyEM pyemtbx)
