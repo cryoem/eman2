@@ -35,7 +35,7 @@
 
 #include <iostream>
 #include <stdio.h>
-
+#include <stdlib.h>
 #include "emdata.h"
 #include "util.h"
 
@@ -2600,8 +2600,9 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 
 #define inp(i,j,k) inp[i+(j+(k*ny))*nx]
 #define outp(i,j,k) outp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*new_ny))*new_nx]
-EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
+EMData *Util::pad(EMData* img,int new_nx, int new_ny, int new_nz, int x_offset, int y_offset, int z_offset,char *params)
 {
+	
 	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
@@ -2620,7 +2621,6 @@ EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, in
 	if(x_offset>((new_nx-(new_nx/2))-(nx-(nx/2))) || y_offset>((new_ny-(new_ny/2))-(ny-(ny/2))) || z_offset>((new_nz-(new_nz/2))-(nz-(nz/2))))
 		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
 	/* ============================== */
-
 	
 	EMData* pading=new EMData();
 	pading->set_size(new_nx,new_ny,new_nz);
@@ -2631,10 +2631,11 @@ EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, in
 	/* Calculation of the average and the circumference values for background substitution 
 	=======================================================================================*/
 	float background;
-	if (strcmp("average",params["average"])==0){
+	
+	if (strcmp(params,"average")==0){
 		background = img->get_attr("mean");
 		}
-	else if (strcmp("circumference",params["circumference"])==0)
+	else if (strcmp(params,"circumference")==0)
 	{
 		float sum1=0.f;
 		int cnt=0;
@@ -2657,10 +2658,9 @@ EMData *Util::pad(EMData* img,Dict params,int new_nx, int new_ny, int new_nz, in
 		}
 		background = sum1/cnt;
 	}		
-	else{
-		background = static_cast<int>(params["background"]);
+	else{	
+		background = atof( params );
 	}
-	
 	/*=====================================================================================*/
 	
 	
