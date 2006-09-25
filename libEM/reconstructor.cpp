@@ -1116,8 +1116,7 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
 		v->nn(*nrptr, padfftslice, tsym);
 	}
-	if( padfftslice ) { delete padfftslice;
-		padfftslice = 0;}
+	if( padfftslice ) { delete padfftslice; padfftslice = 0;}
 	return 0;
 }
 
