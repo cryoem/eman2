@@ -68,6 +68,7 @@ def compares(vec):
 	global cmp_probe,cmp_target,sfac
 	
 	a=cmp_target.get_rotated_clip(Transform3D((vec[3]/float(sfac)+tdim2[0]/2,vec[4]/float(sfac)+tdim2[1]/2,vec[5]/float(sfac)+tdim2[2]/2),(0,0,0),vec[0],vec[1],vec[2]),pdim2,1.0)
+#	print vec
 	return -cmp_probe.cmp("dot",a,{})
 
 def main():
@@ -89,6 +90,7 @@ both box sizes should be multiples of 8."""
 	if len(args)<2 : parser.error("Input and output files required")
 	try: chains=options.chains
 	except: chains=None
+	logid=E2init(sys.argv)
 	
 	try : infile=open(args[0],"r")
 	except : parser.error("Cannot open input file")
@@ -137,7 +139,7 @@ both box sizes should be multiples of 8."""
 	for a1,a2 in roughang:
 		for a3 in range(0,360,30):
 			prr=probeclip.copy()
-			prr.rotate(a1*degrad,a2*degrad,a3*degrad)
+			prr.rotate(a1,a2,float(a3))
 #			prr.write_image('prr.%0d%0d%0d.mrc'%(a1,a2,a3))
 			
 			ccf=target.calc_ccf(prr,fp_flag.CIRCULANT)
@@ -149,7 +151,7 @@ both box sizes should be multiples of 8."""
 			
 #			ccf.write_image('ccf.%0d%0d%0d.mrc'%(a1,a2,a3))
 			vec=ccf.calc_highest_locations(mean+sig+.0000001)
-			for v in vec: best.append([v.value,a1*degrad,a2*degrad,a3*degrad,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
+			for v in vec: best.append([v.value,a1,a2,a3,v.x-tdim2[0]/2,v.y-tdim2[1]/2,v.z-tdim2[2]/2,0])
 			
 #			print a1,a2,a3,mean+sig,float(ccf.get_attr("max")),len(vec)
 	
@@ -188,7 +190,7 @@ both box sizes should be multiples of 8."""
 	print len(best2), " final candidates"
 	print "Qual     \talt\taz\tphi\tdx\tdy\tdz\t"
 	for i in best2: 
-		print "%1.5f  \t%1.3f\t%1.3f\t%1.3f\t%1.1f\t%1.1f\t%1.1f"%(-i[0],i[1]/degrad,i[2]/degrad,i[3]/degrad,i[4],i[5],i[6])
+		print "%1.5f  \t%1.3f\t%1.3f\t%1.3f\t%1.1f\t%1.1f\t%1.1f"%(-i[0],i[1],i[2],i[3],i[4],i[5],i[6])
 
 
 	# try to improve the angles for each position
@@ -199,7 +201,7 @@ both box sizes should be multiples of 8."""
 	for j in range(len(best2)):
 		print j," --------"
 		tries=[[0,0],[0,0],[0,0],[0,0]]
-		testang=((0,0),(pi,0),(0,pi),(pi,pi))	# modify the 'best' angle a few times to try to find a better minimum
+		testang=((0,0),(180.0,0),(0,180.0),(180.0,180.0))	# modify the 'best' angle a few times to try to find a better minimum
 		for k in range(4):
 			guess=best2[j][1:7]
 			guess[0]+=testang[k][0]
@@ -208,7 +210,7 @@ both box sizes should be multiples of 8."""
 			m=sm.minimize(monitor=0,epsilon=.01)
 			tries[k][0]=m[1]
 			tries[k][1]=m[0]
-			print "%1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(-tries[k][0],tries[k][1][0]/degrad,tries[k][1][1]/degrad,tries[k][1][2]/degrad,
+			print "%1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(-tries[k][0],tries[k][1][0],tries[k][1][1],tries[k][1][2],
 				tries[k][1][3],tries[k][1][4],tries[k][1][5])
 		best2[j][1:7]=min(tries)[1]		# best of the 4 angles we started with
 		
@@ -229,7 +231,7 @@ both box sizes should be multiples of 8."""
 		sm=Simplex(compare,best2[j][1:7],[.5,.5,.5,2.,2.,2.])
 		bt=sm.minimize(epsilon=options.epsilon)
 		b=bt[0]
-		print "\n%1.2f\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f)"%(-bt[1],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
+		print "\n%1.2f\t(%5.2f  %5.2f  %5.2f    %5.1f  %5.1f  %5.1f)"%(-bt[1],b[0],b[1],b[2],b[3],b[4],b[5])
 		final.append((bt[1],b))
 	
 	print "\n\nFinal Results"
@@ -238,8 +240,8 @@ both box sizes should be multiples of 8."""
 	final.sort()
 	for i,j in enumerate(final):
 		b=j[1]
-		print "%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,j[0],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5])
-		out.write("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f\n"%(i,j[0],b[0]/degrad,b[1]/degrad,b[2]/degrad,b[3],b[4],b[5]))
+		print "%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f"%(i,j[0],b[0],b[1],b[2],b[3],b[4],b[5])
+		out.write("%d. %1.3f  \t%1.2f\t%1.2f\t%1.2f\t%1.1f\t%1.1f\t%1.1f\n"%(i,j[0],b[0],b[1],b[2],b[3],b[4],b[5]))
 		a=cmp_target.get_rotated_clip(Transform3D((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),(0,0,0),b[0],b[1],b[2]),pdim,1.0)
 		a.write_image("clip.%02d.mrc"%i)
 		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))

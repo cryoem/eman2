@@ -57,6 +57,9 @@ rebuild_cache/fast: rebuild_cache
 #=============================================================================
 # Special targets provided by cmake.
 
+# Produce verbose output by default.
+VERBOSE = 1
+
 # Suppress display of executed commands.
 $(VERBOSE).SILENT:
 
