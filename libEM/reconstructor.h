@@ -36,11 +36,13 @@
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
 
+#include <boost/shared_ptr.hpp>
 #include "emdata.h"
 
 using std::vector;
 using std::map;
 using std::string;
+using boost::shared_ptr;
 
 namespace EMAN
 {
@@ -295,22 +297,31 @@ namespace EMAN
 	/** Direct Fourier inversion Reconstructor
      * 
      */
+
+
+        EMData* padfft_slice( EMData* slice, int npad );
+
 	class nn4Reconstructor:public Reconstructor
 	{
 	  public:
 		nn4Reconstructor();
+
+		nn4Reconstructor( const string& symmetry, int size, int npad );
+
 		~nn4Reconstructor();
 
-		void setup();
-		int insert_slice(EMData * slice, const Transform3D & euler);
-		EMData *finish();
+		virtual void setup();
 
-		string get_name() const
+	      	virtual int insert_slice(EMData * slice, const Transform3D & trans);
+
+                virtual EMData *finish();
+
+		virtual string get_name() const
 		{
 			return "nn4";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Direct Fourier inversion routine";
 		}
@@ -329,16 +340,71 @@ namespace EMAN
 			return d;
 		}
 
+		void setup( const string& symmetry, int size, int npad );
+
+                int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+
+
 	  private:
-		EMData* v;
-		EMArray<int>* nrptr;
-		int vnx, vny, vnz;
-		int npad;
-		int vnzp, vnyp, vnxp, vnxc;
+		EMData* m_volume;
+		shared_ptr< EMArray<int> > m_nrptr;
+	        string  m_symmetry;
+		int m_vnx, m_vny, m_vnz;
+		int m_npad;
+		int m_nsym;
+		int m_vnzp, m_vnyp, m_vnxp, m_vnxc;
 		void buildFFTVolume();
 		void buildNormVolume();
-		string symmetry;
-		int nsym;
+	};
+
+
+	class bootstrap_nnReconstructor:public Reconstructor
+	{
+	  public:
+		bootstrap_nnReconstructor();
+
+		~bootstrap_nnReconstructor();
+
+		virtual void setup();
+
+		virtual int insert_slice(EMData * slice, const Transform3D & euler);
+		
+		virtual EMData *finish();
+
+		virtual string get_name() const
+		{
+			return "bootstrap_nn";
+		}
+		
+		string get_desc() const
+		{
+			return "Bootstrap nearest neighbour constructor";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new bootstrap_nnReconstructor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INT);
+			d.put("npad", EMObject::INT);
+			d.put("symmetry", EMObject::STRING);
+			d.put("mult", EMObject::INTARRAY);
+			d.put("media", EMObject::STRING);
+			return d;
+		}
+
+	  private:
+	  	string m_media;
+		string m_symmetry;
+		int m_size;
+		int m_npad;
+		int m_nsym;
+		vector< EMData* > m_padffts;
+		vector< Transform3D* > m_transes;
 	};
 
 

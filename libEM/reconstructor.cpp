@@ -33,11 +33,22 @@
  * 
  * */
 
+
+#include <boost/bind.hpp>
 #include "reconstructor.h"
 #include "interp.h"
 #include "ctf.h"
 
 using namespace EMAN;
+
+template < typename T > void checked_delete( T*& x )
+{
+    typedef char type_must_be_complete[ sizeof(T)? 1: -1 ];
+    (void) sizeof(type_must_be_complete);
+    delete x;
+    x = NULL;
+}
+
 
 template <> Factory < Reconstructor >::Factory()
 {
@@ -46,7 +57,8 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&nn4Reconstructor::NEW);
 	force_add(&nn4_ctfReconstructor::NEW);
-}
+	force_add(&nn4_ctfReconstructor::NEW);
+	force_add(&bootstrap_nnReconstructor::NEW); }
 
 FourierReconstructor::FourierReconstructor()
 :	image(0), nx(0), ny(0), nz(0)
@@ -1031,27 +1043,63 @@ EMData *BackProjectionReconstructor::finish()
 	return image;
 }
 
+EMData* EMAN::padfft_slice( EMData* slice, int npad )
+{
+	if ( slice->get_xsize() != slice->get_ysize() )
+	{
+		// FIXME: What kind of exception should we throw here?
+		throw std::logic_error("Tried to padfft a slice that is not square.");
+	}
+	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
+	EMData* temp = slice->average_circ_sub();
+	
+	assert( temp != NULL );
+	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
+	// because only the former centers the original image in the 
+	// larger area.  FIXME!
+	EMData* zeropadded = temp->zeropad_ntimes(npad);
+	assert( zeropadded != NULL );
+
+	checked_delete( temp );
+
+	EMData* padfftslice = zeropadded->do_fft();
+	checked_delete( zeropadded );
+
+	// shift the projection
+	float sx = slice->get_attr("sx");
+	float sy = slice->get_attr("sy");
+	if(sx != 0.0f || sy != 0.0)
+            padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
+
+	padfftslice->center_origin_fft();
+
+	return padfftslice;
+}
+
+
+
 nn4Reconstructor::nn4Reconstructor() 
-	: v(NULL) {}
+    : m_volume(NULL) 
+{
+}
+
+nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
+    : m_volume(NULL)
+{
+    setup( symmetry, size, npad );
+}
 
 nn4Reconstructor::~nn4Reconstructor()
 {
-	if (v) {
-		delete v;
-		v = NULL;
-	}
+    checked_delete( m_volume );
 }
 
-void nn4Reconstructor::setup() {
-	int nsize = params["size"];
-	vnx = vny = vnz = nsize;
-	npad = params["npad"];
-	vnxp = nsize*npad;
-	vnyp = nsize*npad;
-	vnzp = nsize*npad;
-	vnxc = vnxp/2;
-	buildFFTVolume();
-	buildNormVolume();
+void nn4Reconstructor::setup() 
+{
+	int size = params["size"];
+	int npad = params["npad"];
+
+        string symmetry;
 	try {
 		symmetry = params["symmetry"].to_str();
 		if ("" == symmetry) symmetry = "c1";
@@ -1059,30 +1107,53 @@ void nn4Reconstructor::setup() {
 	catch(_NotExistingObjectException) {
 		symmetry = "c1";
 	}
-	nsym = Transform3D::get_nsym(symmetry);
+        
+        setup( symmetry, size, npad );
+}
+
+void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
+{
+        m_symmetry = symmetry;
+        m_npad = npad;
+	m_nsym = Transform3D::get_nsym(m_symmetry);
+
+        m_vnx = size;
+	m_vny = size;
+	m_vnz = size;
+
+	m_vnxp = size*npad;
+	m_vnyp = size*npad;
+	m_vnzp = size*npad;
+
+	m_vnxc = m_vnxp/2;
+	
+	buildFFTVolume();
+	buildNormVolume();
+
 }
 
 void nn4Reconstructor::buildFFTVolume() {
-	v = new EMData;
-	int offset = 2 - vnxp%2;
-	v->set_size(vnxp+offset,vnyp,vnzp);
-	v->set_nxc(vnxp/2);
-	v->set_complex(true);
-	v->set_ri(true);
-	v->set_fftpad(true);
-	v->set_attr("npad", npad);
-	v->to_zero();
-	v->set_array_offsets(0,1,1);
+	int offset = 2 - m_vnxp%2;
+	m_volume = new EMData();
+	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+	m_volume->set_nxc(m_vnxp/2);
+	m_volume->set_complex(true);
+	m_volume->set_ri(true);
+	m_volume->set_fftpad(true);
+	m_volume->set_attr("npad", m_npad);
+	m_volume->to_zero();
+	m_volume->set_array_offsets(0,1,1);
 }
 
 void nn4Reconstructor::buildNormVolume() {
-	nrptr = new EMArray<int>(vnxc+1,vnyp,vnzp);
-	nrptr->set_array_offsets(0,1,1);
-	for (int iz = 1; iz <= vnzp; iz++) 
-		for (int iy = 1; iy <= vnyp; iy++) 
-			for (int ix = 0; ix <= vnxc; ix++) 
-				(*nrptr)(ix,iy,iz) = 0;
+	m_nrptr = shared_ptr< EMArray<int> >( new EMArray<int>(m_vnxc+1,m_vnyp,m_vnzp) );
+	m_nrptr->set_array_offsets(0,1,1);
+	for (int iz = 1; iz <= m_vnzp; iz++) 
+		for (int iy = 1; iy <= m_vnyp; iy++) 
+			for (int ix = 0; ix <= m_vnxc; ix++) 
+				(*m_nrptr)(ix,iy,iz) = 0;
 }
+
 
 int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	// sanity checks
@@ -1090,56 +1161,51 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
-	if ((slice->get_xsize() != slice->get_ysize()) 
-		|| slice->get_xsize() != vnx) {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
-	}
-	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
-	EMData* temp = slice->average_circ_sub();
-	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
-	// because only the former centers the original image in the 
-	// larger area.  FIXME!
-	EMData* zeropadded = temp->zeropad_ntimes(npad);
-	if( temp ) {delete temp; temp = 0;}
-	EMData* padfftslice = zeropadded->do_fft();
-	if( zeropadded ) { delete zeropadded; zeropadded = 0;}
-	//  shift the projection
-	float sx = slice->get_attr("sx");
-	float sy = slice->get_attr("sy");
-	if(sx != 0.0f || sy != 0.0) 
-	  padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
-	padfftslice->center_origin_fft();
+
+	EMData* padfft = padfft_slice( slice, m_npad );
+
+        insert_padfft_slice( padfft, t, 1 );
+
+        checked_delete( padfft );
+
+	return 0;
+}
+
+int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
+{
+	assert( padfft != NULL );
 	// insert slice for all symmetry related positions
-	for (int isym=0; isym < nsym; isym++) {
-		Transform3D tsym = t.get_sym(symmetry, isym);
-		v->nn(*nrptr, padfftslice, tsym);
-	}
-	if( padfftslice ) { delete padfftslice; padfftslice = 0;}
+	for (int isym=0; isym < m_nsym; isym++) {
+		Transform3D tsym = t.get_sym(m_symmetry, isym);
+		m_volume->nn( *m_nrptr, padfft, tsym, mult);
+        }
 	return 0;
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
-EMData* nn4Reconstructor::finish() {
-	EMArray<int>& nr = *nrptr;
-	//v->symplane0(nr);
+EMData* nn4Reconstructor::finish() 
+{
+	EMArray<int>& nr = *m_nrptr;
+        m_volume->symplane0(nr);
 	// normalize
-	for (int iz = 1; iz <= vnzp; iz++) {
-		for (int iy = 1; iy <= vnyp; iy++) {
-			for (int ix = 0; ix <= vnxc; ix++) {//std::cout<<"  "<<iz<<"  "<<iy<<"  "<<ix<<"  "<<nr(ix,iy,iz)<<"  "<<(-2*((ix+iy+iz)%2)+1)<<"  "<<(*v)(ix,iy,iz)<<std::endl;
+	
+	for (int iz = 1; iz <= m_vnzp; iz++) {
+		for (int iy = 1; iy <= m_vnyp; iy++) {
+			for (int ix = 0; ix <= m_vnxc; ix++) {
 				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
 					float  tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
-					(*v)(2*ix,iy,iz) *= tmp;
-					(*v)(2*ix+1,iy,iz) *= tmp;
+					(*m_volume)(2*ix,iy,iz) *= tmp;
+					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
 		}
 	}
+
 	// back fft
-	v->do_ift_inplace();
-	EMData* w = v->window_center(vnx);
-	if( v ) { delete v; v = 0;}
+	m_volume->do_ift_inplace();
+	EMData* w = m_volume->window_center(m_vnx);
+	checked_delete( m_volume );
+
 	float *tw = w->get_data();
 	//  mask and subtract circumference average
 	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
@@ -1161,6 +1227,7 @@ EMData* nn4Reconstructor::finish() {
 			}
 		}
 	}
+
 	TNR /=float(m);
 	for (int k = 1; k <= iz; k++) {
 		for (int j = 1; j <= iy; j++) {
@@ -1170,11 +1237,95 @@ EMData* nn4Reconstructor::finish() {
 			}
 		}
 	}
-	// clean up
-	if( nrptr ) { delete nrptr; nrptr = 0;}
+
 	return w;
 }
 #undef  tw
+
+//####################################################################################
+//** bootstrap_nn reconstructor
+
+bootstrap_nnReconstructor::bootstrap_nnReconstructor()
+{
+}
+
+bootstrap_nnReconstructor::~bootstrap_nnReconstructor()
+{
+    for_each( m_padffts.begin(), m_padffts.end(), boost::ptr_fun( checked_delete< EMData > ) );
+    for_each( m_transes.begin(), m_transes.end(), boost::ptr_fun( checked_delete< Transform3D > ) );
+}
+
+void bootstrap_nnReconstructor::setup()
+{
+    m_npad = params["npad"];
+    m_size = params["size"];
+    m_media = params["media"].to_str();
+
+    try {
+	m_symmetry = params["symmetry"].to_str();
+	if ("" == m_symmetry) m_symmetry = "c1";
+    }
+    catch(_NotExistingObjectException) {
+        m_symmetry = "c1";
+    }
+        
+    m_nsym = Transform3D::get_nsym(m_symmetry);
+
+}
+
+int bootstrap_nnReconstructor::insert_slice(EMData* slice, const Transform3D& euler)
+{
+    EMData* padfft = padfft_slice( slice, m_npad );
+    assert( padfft != NULL );
+
+    if( m_media == "memory" )
+    {
+        m_padffts.push_back( padfft );
+    }
+    else
+    {
+        padfft->write_image( m_media, m_transes.size() );
+	checked_delete( padfft );
+    }
+
+    Transform3D* trans = new Transform3D( euler );
+    m_transes.push_back( trans );
+    return 0;
+}
+
+EMData* bootstrap_nnReconstructor::finish()
+{
+    nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size,m_npad) );
+    shared_ptr< vector<int> > mults = params["mult"];
+    assert( mults != NULL );
+    assert( m_transes.size() == mults->size() );
+
+    int total = 0;
+    for( int i=0; i < mults->size(); ++i )
+    {
+        int mult = mults->at(i);
+	if( mult > 0 )
+	{
+	    if( m_media == "memory" )
+	    {
+                r->insert_padfft_slice( m_padffts[i], *m_transes[i], mult );
+	    }
+	    else
+	    {
+	        EMData* padfft = new EMData();
+		padfft->read_image( m_media, i );
+		r->insert_padfft_slice( padfft, *m_transes[i], mult );
+		checked_delete( padfft );
+            }
+	}
+	total += mult;
+    }
+
+    EMData* w = r->finish();
+    checked_delete(r);
+    return w;
+}
+
 //####################################################################################
 //** nn4 ctf reconstructor 
 
@@ -1288,6 +1439,11 @@ EMData* nn4_ctfReconstructor::finish() {
 	v->do_ift_inplace();
 	EMData* win = v->window_center(vnx);
 	if( v ) { delete v; v = 0;}
+
+        // set v to win because this function is declared as return internal 
+	// reference, see libpyEM/libpyReconstructor2.cpp, the class itself
+	// should be responsible for the deletion of win;
+	v = win;
 	float *tw = win->get_data();
 	//  mask and subtract circumference average
 	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
