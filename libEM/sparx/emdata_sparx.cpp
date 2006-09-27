@@ -966,8 +966,6 @@ void EMData::onelinenn_mult(int j, int n, int n2,
 						iya = n + iyn + 1;
 					}
 					cmplx(ixn,iya,iza) += btq*float(mult);
-				
-					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
 					nr(ixn,iya,iza)+=mult;
 				} else {
 					int izt, iyt;
@@ -982,7 +980,6 @@ void EMData::onelinenn_mult(int j, int n, int n2,
 						iyt = -iyn + 1;
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
-					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 					nr(-ixn,iyt,izt)+=mult;
 				}
 			}
