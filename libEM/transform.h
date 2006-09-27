@@ -62,10 +62,11 @@ namespace EMAN
 	 *
 	 * Internally a transformation is stored in a 4x4 matrix.
 	 *         a b c d
-	 *         e f g h           R     v
-	 *  M=     j k m n    =      0     1    , where R is 3by3, v is 3by1
-	 *         0 0 0 1
-	 *  This is a standard computer graphics convention and can be found in many
+	 *         e f g h           R        v
+	 *  M=     j k m n    =      vpre     1    , where R is 3by3, v is 3by1
+	 *         p q r 1
+	 *  The standard computer graphics convention is identical to ours after setting vpre to 
+	 *     zero and can be found in many
 	 *    references including Frackowiak et al; Human Brain Function
 	 *
 	 *
@@ -77,8 +78,12 @@ namespace EMAN
 	 *
 	 * provides rotation, scaling and skewing (not yet implimented).
 	 *
-	 * The (post) translation is stored in (d, h, n).
-	 *
+	 * The cumulative translation is stored in (d, h, n).
+	 * We put the post-translation into (p, q, r), since it is convenient
+	 *   to carry along at times. When matrices are multiplied or printed, these
+	 *   are hidden to the user. They can only be found by applying the post_translation
+	 *    method, and these elements are non-zero. Otherwise the post-translation method returns
+	 *         the cumulative translationmlb
 	 *
 	 * If rotations need to be found
 	 *    around alternate origins, then brief calculations need to be performed
@@ -120,19 +125,19 @@ namespace EMAN
 
 
              //  C3  Usual Constructor: Post Trans, after appying Rot
-		Transform3D(const Vec3f& posttrans, float az,float alt, float phi);
+		Transform3D(float az, float alt, float phi, const Vec3f& posttrans);
                 
-
+ 
  	     // C4
 	     	Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
-									      // SPIDER     phi theta psi
+								                            // SPIDER     phi theta psi
 		
 	     // C5   First apply pretrans: Then rotation
 		Transform3D(EulerType euler_type, const Dict& rotation);
 		
 
 	     // C6   First apply pretrans: Then rotation: Then posttrans
-		Transform3D(const Vec3f & pretrans, const Vec3f& posttrans, float az, float alt, float phi);
+		Transform3D(const Vec3f & pretrans, float az, float alt, float phi,  const Vec3f& posttrans);
 
               
 		Transform3D(float m11, float m12, float m13,
@@ -151,15 +156,15 @@ namespace EMAN
 		void set_rotation(EulerType euler_type, float a1, float a2, float a3); // just SPIDER and EMAN
 		
 		void set_rotation(float m11, float m12, float m13,
-                                  float m21, float m22, float m23,
-			          float m31, float m32, float m33);
+                                     float m21, float m22, float m23,
+			             float m31, float m32, float m33);
 
 		void set_rotation(EulerType euler_type, const Dict &rotation );
 		
 
 		/** returns a rotation that maps a pair of unit vectors, a,b to a second  pair A,B
 		 * @param eahat, ebhat, eAhat, eBhat are all unit vectors
-		 * @return a transform3D rotation
+		 * @return  a transform3D rotation
 		 */
 		void set_rotation(const Vec3f & eahat, const Vec3f & ebhat,
 		                                    const Vec3f & eAhat, const Vec3f & eBhat); 
@@ -171,7 +176,7 @@ namespace EMAN
 		/** returns the spin-axis (or finger) of the rotation
 		*/
 		Vec3f get_finger() const;
-		Vec3f get_posttrans(Vec3f &pretrans) const;
+		Vec3f get_pretrans() const;
 		Vec3f get_posttrans() const;
  		Vec3f get_center() const;
 		Vec3f get_matrix3_col(int i) const;
@@ -182,10 +187,11 @@ namespace EMAN
 		Dict get_rotation(EulerType euler_type=EMAN) const;
 
 		void printme() const {
-			for (int i=0; i<4; i++) {
+			for (int i=0; i<3; i++) {
 				printf("%6.3f\t%6.3f\t%6.3f\t%6.3f\n",
 					   matrix[i][0],matrix[i][1],matrix[i][2],matrix[i][3]);
 			}
+			printf("%6.3f\t%6.3f\t%6.3f\t%6.3f\n",0.0,0.0,0.0,1.0);
 			printf("\n");
 		}
 

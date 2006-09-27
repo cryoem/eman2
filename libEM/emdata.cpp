@@ -613,7 +613,7 @@ void EMData::rotate(const Transform3D & t)
 
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy, float dz)
 {
-	Transform3D t(Vec3f(dx, dy, dz),  az, alt, phi);
+	Transform3D t( az, alt, phi,Vec3f(dx, dy, dz));
 	rotate_translate(t);
 }
 
@@ -621,7 +621,7 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy,
 							  float dz, float pdx, float pdy, float pdz)
 {
-	Transform3D t(Vec3f(dx, dy, dz), Vec3f(pdx,pdy,pdz), az, alt, phi);
+	Transform3D t(Vec3f(dx, dy, dz), az, alt, phi, Vec3f(pdx,pdy,pdz));
 	rotate_translate(t);
 }
 

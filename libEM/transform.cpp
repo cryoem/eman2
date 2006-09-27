@@ -71,7 +71,7 @@ Transform3D::Transform3D(float az, float alt, float phi)
 
 
 //  C3  Usual Constructor: Post Trans, after appying Rot
-Transform3D::Transform3D(const Vec3f& posttrans, float az, float alt, float phi)
+Transform3D::Transform3D( float az, float alt, float phi, const Vec3f& posttrans )
 {
 	init();
 	set_rotation(az,alt,phi);
@@ -88,7 +88,7 @@ Transform3D::Transform3D(float m11, float m12, float m13,
 
 // C4
 Transform3D::Transform3D(EulerType euler_type, float a1, float a2, float a3)  // usually az, alt, phi
-						      // only SPIDER and EMAN supported
+                                                                                        // only SPIDER and EMAN supported
 {
 	init();
 	Dict rot;
@@ -117,12 +117,12 @@ Transform3D::Transform3D(EulerType euler_type, const Dict& rotation)  //YYY
 }
 
 
-// C6
-Transform3D::Transform3D(const Vec3f& pretrans, const Vec3f& posttrans,
-					 float az, float alt, float phi) //YYY  by default EMAN
+// C6   First apply pretrans: Then rotation: Then posttrans
+
+Transform3D::Transform3D(  const Vec3f& pretrans,  float az, float alt, float phi, const Vec3f& posttrans )  //YYY  by default EMAN
 {
 	init();
-	set_posttrans(pretrans);   // Fix this
+	set_pretrans(pretrans);
 	set_rotation(az,alt,phi);
 	set_posttrans(posttrans);
 }
@@ -179,16 +179,15 @@ void Transform3D::set_center(const Vec3f & center) //YYN
 }
 
 
-void Transform3D::set_pretrans(const Vec3f & pretrans)  // YYN
+void Transform3D::set_pretrans(const Vec3f & preT)  // YYN
 {
 
-	for (int j=0; j<3; j++) {
-		matrix[j][3]=0;
-	}
-	Transform3D preMatrix;  // remember by default preMatrix is identity
-	preMatrix.set_posttrans(pretrans);
+//     transFinal = transPost +  Rotation * transPre;
 
-	*this=(*this)*preMatrix;
+	matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+	matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+	matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
+
 }
 
 
@@ -202,9 +201,6 @@ const float * Transform3D::operator[] (int i) const
 {
 	return matrix[i];
 }
-
-
-
 
 
 //            METHODS
@@ -225,9 +221,17 @@ void Transform3D::init()  // M1
 
 void Transform3D::set_posttrans(const Vec3f & posttrans) // YYN
 {
+	Vec3f preT   = get_pretrans( ) ;
 	for (int i = 0; i < 3; i++) {
-		matrix[i][3] = posttrans[i];
+		matrix[3][i] = posttrans[i];
 	}
+//     transFinal = transPost +  Rotation * transPre;
+
+	
+	matrix[0][3] = matrix[3][0] + matrix[0][0]*preT.at(0) + matrix[0][1]*preT.at(1) + matrix[0][2]*preT.at(2)  ;
+	matrix[1][3] = matrix[3][1] + matrix[1][0]*preT.at(0) + matrix[1][1]*preT.at(1) + matrix[1][2]*preT.at(2)  ;
+	matrix[2][3] = matrix[3][2] + matrix[2][0]*preT.at(0) + matrix[2][1]*preT.at(1) + matrix[2][2]*preT.at(2)  ;
+
 }
 
 
@@ -294,14 +298,30 @@ Vec3f Transform3D::get_finger() const //
 
 Vec3f Transform3D::get_posttrans() const    // 
 {
-	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
+	return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
 }
 
 
 
-Vec3f Transform3D::get_posttrans(Vec3f &pretrans) const    // Fix Me
+Vec3f Transform3D::get_pretrans() const    // Fix Me
 {
-	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
+//	The expression is R^T(v_total - v_post);
+
+	Vec3f pretrans;
+	Vec3f posttrans(matrix[3][0], matrix[3][1], matrix[3][2]);
+	Vec3f tottrans(matrix[0][3], matrix[1][3], matrix[2][3]);
+	Vec3f totminuspost;
+	
+	totminuspost = tottrans-posttrans;
+	
+	for (int i=0; i<3; i++) {
+                float ptnow=0;
+		for (int j=0; j<3; j++) {
+			ptnow += totminuspost.at(j) * matrix[j][i] ;
+		}
+		pretrans.set_value_at(i,ptnow) ;  // 
+	}
+	return pretrans;
 }
 
 
@@ -326,18 +346,23 @@ Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
 
 
 
-Transform3D EMAN::operator*(const Transform3D & M1, const Transform3D & M2)     // YYY
+Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     // YYY
 {
-//       This is the  left multiplication of a matrix M2 by a matrix M1; that is M1*M2
+//       This is the  left multiplication of a matrix M1 by a matrix M2; that is M2*M1
 //       It returns a new matrix
 	Transform3D resultant;
 	for (int i=0; i<3; i++) {
 		for (int j=0; j<4; j++) {
-			resultant[i][j] = M1[i][0] * M2[0][j] +  M1[i][1] * M2[1][j] + M1[i][2] * M2[2][j];
+			resultant[i][j] = M2[i][0] * M1[0][j] +  M2[i][1] * M1[1][j] + M2[i][2] * M1[2][j];
 		}
-		resultant[i][3] += M1[i][3];  // add on the new translation (not included above)
+		resultant[i][3] += M2[i][3];  // add on the new translation (not included above)
 	}
-	return resultant;
+	
+	for (int j=0; j<3; j++) {
+		resultant[3][j] = M2[3][j];
+	}
+	
+	return resultant; // This will have the post_trans of M2
 }
 
 
@@ -459,8 +484,8 @@ void Transform3D::set_rotation(float az, float alt, float phi )
 }
 
 // This is where it all happens;
-void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a3)  // EMAN: az, alt, phi 
- 									            // SPIDER: phi, theta, psi 
+void Transform3D::set_rotation(EulerType euler_type, float a1, float a2, float a3) // EMAN: az alt, phi 
+ 									                        // SPIDER: phi, theta, psi 
 {
 	init();
 	Dict rot;
@@ -574,6 +599,10 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 	}  // ends switch euler_type
 
 
+	Vec3f postT  = get_posttrans( ) ;
+	Vec3f preT   = get_pretrans( ) ;
+
+
 	float azp  = az*M_PI/180;
 	float altp  = alt*M_PI/180;
 	float phip = phi*M_PI/180;
@@ -601,6 +630,11 @@ void Transform3D::set_rotation(EulerType euler_type, const Dict& rotation)
 		matrix[2][2] = e0 * e0 - e1 * e1 - e2 * e2 + e3 * e3;
 		// keep in mind matrix[0][2] is M13 gives an e0 e2 piece, etc
 	}
+	// Now do post and pretrans: vfinal = vpost + R vpre;
+	
+	matrix[0][3] = postT.at(0) + matrix[0][0]*preT.at(0) + matrix[0][1]*preT.at(1) + matrix[0][2]*preT.at(2)  ;
+	matrix[1][3] = postT.at(1) + matrix[1][0]*preT.at(0) + matrix[1][1]*preT.at(1) + matrix[1][2]*preT.at(2)  ;
+	matrix[2][3] = postT.at(2) + matrix[2][0]*preT.at(0) + matrix[2][1]*preT.at(1) + matrix[2][2]*preT.at(2)  ;
 }
 
 
@@ -608,15 +642,18 @@ void Transform3D::set_rotation(float m11, float m12, float m13,
                                float m21, float m22, float m23,
 			       float m31, float m32, float m33)
 {
-	matrix[0][0] =  m11;
-	matrix[0][1] =  m12;
-	matrix[0][2] =  m13;
-	matrix[1][0] =  m21;
-	matrix[1][1] =  m22;
-	matrix[1][2] =  m23;
-	matrix[2][0] =  m31;
-	matrix[2][1] =  m32;
-	matrix[2][2] =  m33;
+	EulerType euler_type= MATRIX;
+	Dict rot;
+	rot["m11"]  = m11;
+	rot["m12"]  = m12;
+	rot["m13"]  = m13;
+	rot["m21"]  = m21;
+	rot["m22"]  = m22;
+	rot["m23"]  = m23;
+	rot["m31"]  = m31;
+	rot["m32"]  = m32;
+	rot["m33"]  = m33;
+        set_rotation(euler_type, rot);  // Or should it be &rot ?
 }
 
 void Transform3D::set_rotation(const Vec3f & eahat, const Vec3f & ebhat,

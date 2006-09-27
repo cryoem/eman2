@@ -126,10 +126,10 @@ static void splint( float *xa, float *ya, float *y2a, int n,
  * sites of a square sided image of  size Size. PRB
  * @param[out] PermMatTr  The matrix telling the ordering of the lattice 
  *                        sites wrt the array
- * @param kValsSorted
+ * @param [out] kValsSorted
  * @param[out] weightofkvalsSorted the number of sites at that distance
  * @param[in] Size The length of the image 
- * @param SizeReturned
+ * @param [out] SizeReturned
  * 
  */
  static void Radialize(int *PermMatTr,  float * kValsSorted,

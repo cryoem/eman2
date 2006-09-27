@@ -174,6 +174,15 @@ namespace EMAN
 			vec[2] =  v[2];
 		}
 
+		/** Set values at a particular index
+		 * @param index  The index to be set
+		 * @param value  The value to be set
+		 */
+		void set_value_at(int index, int value)
+		{
+			vec[index] =  value;
+		}
+
 		/** Set new values to this vector object.
 		 * @param x Value of the first item.
 		 * @param y Value of the second item.
@@ -502,6 +511,15 @@ namespace EMAN
 			vec[1] =  v[1];
 			vec[2] =  v[2];
 		}
+		/** Set values at a particular index
+		 * @param index  The index to be set
+		 * @param value  The value to be set
+		 */
+		void set_value_at(int index, float value)
+		{
+			vec[index] =  value;
+		}
+
 		
 		/** Set new values to this vector object.
 		 * @param x Value of the first item.
