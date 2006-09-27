@@ -863,6 +863,70 @@ EMData* EMData::average_circ_sub() {
 
 
 void EMData::onelinenn(int j, int n, int n2, 
+		       EMArray<int>& nr, EMData* bi, const Transform3D& tf)
+{   
+        //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+	int jp = (j >= 0) ? j+1 : n+j+1;
+	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
+	// loop over x
+	for (int i = 0; i <= n2; i++) {
+        if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
+//        if ( !((0 == i) && (j < 0))) {
+			float xnew = i*tf[0][0] + j*tf[1][0];
+			float ynew = i*tf[0][1] + j*tf[1][1];
+			float znew = i*tf[0][2] + j*tf[1][2];
+			std::complex<float> btq;
+			if (xnew < 0.) {
+				xnew = -xnew;
+				ynew = -ynew;
+				znew = -znew;
+				btq = conj(bi->cmplx(i,jp));
+			} else {
+				btq = bi->cmplx(i,jp);
+			}
+			int ixn = int(xnew + 0.5 + n) - n;
+			int iyn = int(ynew + 0.5 + n) - n;
+			int izn = int(znew + 0.5 + n) - n;
+			if ((ixn <= n2) && (iyn >= -n2) && (iyn <= n2)
+				            && (izn >= -n2) && (izn <= n2)) {
+				if (ixn >= 0) {
+					int iza, iya;
+					if (izn >= 0) {
+						iza = izn + 1;
+					} else {
+						iza = n + izn + 1;
+					}
+					if (iyn >= 0) {
+						iya = iyn + 1;
+					} else {
+						iya = n + iyn + 1;
+					}
+					cmplx(ixn,iya,iza) += btq;
+					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
+					nr(ixn,iya,iza)++;
+				} else {
+					int izt, iyt;
+					if (izn > 0) {
+						izt = n - izn + 1;
+					} else {
+						izt = -izn + 1;
+					}
+					if (iyn > 0) {
+						iyt = n - iyn + 1;
+					} else {
+						iyt = -iyn + 1;
+					}
+					cmplx(-ixn,iyt,izt) += conj(btq);
+					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
+					nr(-ixn,iyt,izt)++;
+				}
+			}
+		}
+	}
+}
+
+
+void EMData::onelinenn_mult(int j, int n, int n2, 
 		       EMArray<int>& nr, EMData* bi, const Transform3D& tf, int mult)
 {   
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
@@ -902,8 +966,9 @@ void EMData::onelinenn(int j, int n, int n2,
 						iya = n + iyn + 1;
 					}
 					cmplx(ixn,iya,iza) += btq*float(mult);
+				
 					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
-					nr(ixn,iya,iza)++;
+					nr(ixn,iya,iza)+=mult;
 				} else {
 					int izt, iyt;
 					if (izn > 0) {
@@ -918,7 +983,7 @@ void EMData::onelinenn(int j, int n, int n2,
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
-					nr(-ixn,iyt,izt) += mult;
+					nr(-ixn,iyt,izt)+=mult;
 				}
 			}
 		}
@@ -935,8 +1000,16 @@ void EMData::nn(EMArray<int>& nr, EMData* myfft, const Transform3D& tf, int mult
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn(iy, ny, nxc, nr, myfft, tf, mult);
-	set_array_offsets(saved_offsets);
+	if( mult == 1 )
+	{
+	    for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn(iy, ny, nxc, nr, myfft, tf);
+	}
+	else
+	{
+	    for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_mult(iy, ny, nxc, nr, myfft, tf, mult);
+        }
+
+        set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
 }

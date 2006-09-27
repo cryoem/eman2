@@ -118,7 +118,9 @@ EMData* rotavg();
 		 * @param tf Transform3D reference
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn(int j, int n, int n2, EMArray<int>& nr, EMData* bi, const Transform3D& tf, int mult=1);
+		void onelinenn(int j, int n, int n2, EMArray<int>& nr, EMData* bi, const Transform3D& tf);
+
+		void onelinenn_mult(int j, int n, int n2, EMArray<int>& nr, EMData* bi, const Transform3D& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
