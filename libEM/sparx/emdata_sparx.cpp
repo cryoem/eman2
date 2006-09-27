@@ -835,11 +835,13 @@ EMData* EMData::average_circ_sub() {
 	float r2 = (nx/2)*(nx/2);
 	float qs=0.0f;
 	int m=0;
-	int nc = nx/2 + 1;
-	for (int iz = 1; iz <= nz; iz++) { float yy = (iz-nc)*(iz-nc);
-		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-nc)*(iy-nc);
+	int ncz = nz/2 + 1;
+	int ncy = ny/2 + 1;
+	int ncx = nx/2 + 1;
+	for (int iz = 1; iz <= nz; iz++) { float yy = (iz-ncz)*(iz-ncz);
+		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-ncy)*(iy-ncy);
 			for (int ix = 1; ix <= nx; ix++) {
-				if(xx+float((ix-nc)*(ix-nc)) > r2 ) {
+				if(xx+float((ix-ncx)*(ix-ncx)) > r2 ) {
 					qs += proj(ix,iy,iz);
 					m++;
 				}
