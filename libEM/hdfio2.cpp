@@ -163,6 +163,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		spc=H5Screate_simple(1,&dims,NULL);
 		break;
 	case EMObject::STRINGARRAY:
+	case EMObject::INTARRAY:
 	case EMObject::EMDATA:
 	case EMObject::XYDATA:
 		return -1;

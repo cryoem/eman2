@@ -1301,7 +1301,7 @@ EMData* bootstrap_nnReconstructor::finish()
     assert( m_transes.size() == mults->size() );
 
     int total = 0;
-    for( int i=0; i < mults->size(); ++i )
+    for( unsigned int i=0; i < mults->size(); ++i )
     {
         int mult = mults->at(i);
 	if( mult > 0 )
