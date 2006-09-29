@@ -128,6 +128,7 @@ EMData* rotavg();
 		 * @param norm Normalization data.
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
+		 * @param mult
 		 */
 		void nn(EMArray<int>& norm, EMData* myfft, const Transform3D& tf, int mult=1);
 
