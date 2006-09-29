@@ -343,6 +343,25 @@ Vec3f Transform3D::get_matrix3_row(int i) const     // YYY
 	return Vec3f(matrix[i][0], matrix[i][1], matrix[i][2]);
 }
 
+Vec3f Transform3D::transform(Vec3f & v3f) const     // YYY
+{
+//      This is the transformation of a vector, v by a matrix M
+	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2] + matrix[0][3] ;
+	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2] + matrix[1][3] ;
+	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2] + matrix[2][3] ;
+	return Vec3f(x, y, z);
+}
+
+
+Vec3f Transform3D::rotate(Vec3f & v3f) const     // YYY
+{
+//      This is the rotation of a vector, v by a matrix M
+	float x = matrix[0][0] * v3f[0] + matrix[0][1] * v3f[1] + matrix[0][2] * v3f[2]  ;
+	float y = matrix[1][0] * v3f[0] + matrix[1][1] * v3f[1] + matrix[1][2] * v3f[2]  ;
+	float z = matrix[2][0] * v3f[0] + matrix[2][1] * v3f[1] + matrix[2][2] * v3f[2]  ;
+	return Vec3f(x, y, z);
+}
+
 
 
 
@@ -371,8 +390,8 @@ Transform3D EMAN::operator*(const Transform3D & M2, const Transform3D & M1)     
 
 Vec3f EMAN::operator*(const Vec3f & v, const Transform3D & M)   // YYY
 {
-//               This is the right multiplication of a row vector, v by a matrix M
-	float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0];
+//               This is the right multiplication of a row vector, v by a transform3D matrix M
+	float x = v[0] * M[0][0] + v[1] * M[1][0] + v[2] * M[2][0] ;
 	float y = v[0] * M[0][1] + v[1] * M[1][1] + v[2] * M[2][1];
 	float z = v[0] * M[0][2] + v[1] * M[1][2] + v[2] * M[2][2];
 	return Vec3f(x, y, z);
@@ -381,10 +400,10 @@ Vec3f EMAN::operator*(const Vec3f & v, const Transform3D & M)   // YYY
 
 Vec3f EMAN::operator*( const Transform3D & M, const Vec3f & v)      // YYY
 {
-//               This is the  left multiplication of a vector, v by a matrix M
-	float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] ;
-	float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] ;
-	float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2];
+//      This is the  left multiplication of a vector, v by a matrix M
+	float x = M[0][0] * v[0] + M[0][1] * v[1] + M[0][2] * v[2] + M[0][3] ;
+	float y = M[1][0] * v[0] + M[1][1] * v[1] + M[1][2] * v[2] + M[1][3];
+	float z = M[2][0] * v[0] + M[2][1] * v[1] + M[2][2] * v[2] + M[2][3];
 	return Vec3f(x, y, z);
 }
 
@@ -889,6 +908,7 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 
 
 	float scale   = get_scale();
+	Vec3f preT   = get_pretrans( ) ;
 	Vec3f postT   = get_posttrans( ) ;
 	Dict angs     = get_rotation(eE);
 	Dict invAngs  ;
@@ -911,6 +931,7 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 	invM.set_rotation(EMAN, invAngs);
 	invM.apply_scale(inverseScale);
 	invM.set_pretrans(-postT );
+	invM.set_posttrans(-preT );
 
 
 	return invM;

@@ -181,6 +181,8 @@ namespace EMAN
  		Vec3f get_center() const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;
+                Vec3f transform(Vec3f & v3f) const ; // This applies the full tranform to the vec
+                Vec3f rotate(Vec3f & v3f) const ;  // This just applies the rotation to the vec
 		
 		Transform3D inverse() const;
 					
@@ -223,8 +225,7 @@ namespace EMAN
 
 	private:
 		enum SymType
-		{
-			CSYM,
+		{      CSYM,
 			DSYM,
 			TET_SYM,
 			ICOS_SYM,
