@@ -136,11 +136,10 @@ EMAN2 import *</span><br
 EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">e.read_image("test1.mrc")</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
-      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.process("eman1.math.sqrt")</span><br
- style="color: rgb(0, 0, 0); font-family: monospace;">
-      <span style="color: rgb(0, 0, 0); font-family: monospace;">e.process("eman1.threshold.binaryrange",
-{"low" :
-5.2, "high" : 10})</span><br
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">
+      e.process_inplace("eman1.math.sqrt")</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      <span style="color: rgb(0, 0, 0); font-family: monospace;">
+      e.process_inplace("eman1.threshold.binaryrange", {"low" :5.2, "high" : 10})</span><br
  style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">e.write_image("output.mrc")</span></li>
   </ul>
