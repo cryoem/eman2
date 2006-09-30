@@ -1,91 +1,104 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <meta http-equiv="content-type"
- content="text/html; charset=ISO-8859-1">
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
   <title>EMAN2 Coding Style</title>
 </head>
 <body>
-<div style="text-align: center;"><big
- style="color: rgb(0, 0, 153); font-weight: bold;"><big><br>
-EMAN2 Coding Style</big></big><br>
+<div style="text-align: center; color: rgb(0, 0, 153); font-weight: bold;">
+	<big><big><big><br>EMAN2 Coding Style</big></big></big><br>
 </div>
 <ol>
   <li style="font-weight: bold; color: rgb(51, 102, 255);"><big>Introduction</big></li>
-  <ul>
+  <ol>
     <li>This document summarizes the basic coding and naming style in
-EMAN2. The intended audiences are EMAN2 developers. <br>
+	EMAN2. The intended audiences are EMAN2 developers. <br>
     </li>
     <li>This document is not a programming tutorial. You may refer the
-references at the end of document for good books.<br>
+	references at the end of document for good books.<br>
     </li>
-  </ul>
-  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Overview</big></li>
-  <div style="margin-left: 40px;"><big><span style="font-weight: bold;">Coding:</span></big>
-  <br>
-  <ol>
-    <li>EMAN2 follows the GNU coding style with minor changes. We use <a
- href="http://www.gnu.org/software/indent/indent.html">indent</a> at
-http://www.gnu.org/software/indent/indent.html
-for beautifying EMAN2 code. </li>
   </ol>
-  <big><span style="font-weight: bold;">Naming:</span></big> <br>
+<br>
+  <li style="font-weight: bold; color: rgb(51, 102, 255);"><big>Overview</big></li>
+    <div style="margin-left: 40px;">
+	<big><span style="font-weight: bold;">Coding:</span></big>
+  	<br>
+  	<ul>
+   	 <li>EMAN2 follows the GNU coding style with minor changes. We use <a
+ 		href="http://www.gnu.org/software/indent/indent.html">indent</a> at
+		http://www.gnu.org/software/indent/indent.html
+		for beautifying EMAN2 code. </li>
+  	</ul>
+  	<big><span style="font-weight: bold;">Naming:</span></big> <br>
   <ol>
-    <li>All source code files use lower cases.<br>
-    </li>
+    <li>All source code files use lower cases; </li>
     <li>All classes and data types use uppercase in the first letter; </li>
-    <li>All functions use lower cases with '_' if necessary.</li>
+    <li>All functions use lower cases with '_' if necessary; </li>
+    <li>All parameter names use lower case with '_' if necessary. </li>
   </ol>
   </div>
-  <p> </p>
-  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">indent
-HowTo</big></li>
-  <ol>
+<br>
+  <li style="font-weight: bold; color: rgb(51, 102, 255);"><big>indent HowTo</big></li>
     <ol>
-      <li> install indent. (for linux, rpm is available from standard
-distribution.) </li>
-      <li>save file <a href="./.indent.pro">.indent.pro</a> to your
-home
-directory.</li>
-      <li>say you have a file called "foo.C", run indent like this: <span
- style="font-weight: bold; font-family: courier new,courier,monospace; color: rgb(102, 0, 204);">indent
-foo.C </span><br>
+      <li> install indent. (for linux, rpm is available from standard distribution.) </li>
+      <li>save file <a href="./.indent.pro">.indent.pro</a> to your home directory.</li>
+      <li>say you have a file called "foo.C", run indent like this: 
+	<span style="font-weight: bold; font-family: courier new,courier,monospace; color: rgb(102, 0, 204);">
+		indent foo.C </span><br>
       </li>
       <li>because indent is designed for C code, it is not perfect for
-C++ code. Read your new source and fix the following possible errors:</li>
+	C++ code. Read your new source and fix the following possible errors:</li>
     </ol>
-  </ol>
-  <ol>
-    <ol>
-      <ol>
+  <ul>
+    <ul>
         <li>change 'const const' to 'const'</li>
-      </ol>
-    </ol>
-  </ol>
-  <p> </p>
-  <li> <big style="font-weight: bold; color: rgb(51, 102, 255);">Comments</big><br>
-  </li>
-Use <b>Doxygen</b> JavaDoc style: <br>
-  <pre>/** Brief description which ends at this dot. Details follow here.<br> */<br>class Test<br>{<br>public:<br>	/** The constructor's brief description in one line.<br>	 * A more elaborate description of the constructor.<br>	 */<br>	Test();<br><br>	/** do some test.<br>	 * @author Liwei Peng &lt;lpeng@bcm.tmc.edu&gt;<br>	 * @date 1/20/2005<br>	 * @param low the low threshold.<br>	 * @param high the high threshold.<br>	 * @return 0 if do_test succeeds; 1 if do_test fails.<br>	 */<br>	int do_test(float low, float high);<br><br>	/** Calculate the sum of an array.<br>	 * @param[in] data Data array<br>	 * @param[in] nitems Number of items in the array.<br>	 * @param[out] sum The sum of the array.<br>	 */<br>	void calc_sum(int[] data, int nitems, int *sum);<br>	<br>}<br></pre>
-  <li><big style="font-weight: bold; color: rgb(51, 102, 255);">Samples</big><br>
-    <ol>
-      <li> <a href="./html/emdata_8h-source.html">emdata.h </a> </li>
-      <li> <a href="./html/emdata_8cpp-source.html"> emdata.cpp </a> </li>
-    </ol>
-  </li>
-  <div style="margin-left: 40px;"><br>
-  <br>
+    </ul>
+  </ul>
+<br>
+  <li style="font-weight: bold; color: rgb(51, 102, 255);"><big>Comments</big><br>
+  </li>Use <b>Doxygen</b> JavaDoc style: 
+<br>
+  <pre>
+/** Brief description which ends at this dot. Details follow here.
+ */
+class Test
+{
+public:	
+	/** The constructor's brief description in one line.	 
+	* A more elaborate description of the constructor.
+	*/<br>	Test();<br><br>	
+	/** do some test.
+	 * @author Liwei Peng &lt;lpeng@bcm.tmc.edu&gt;
+	 * @date 1/20/2005
+	 * @param low the low threshold.
+	 * @param high the high threshold.
+	 * @return 0 if do_test succeeds; 1 if do_test fails.
+	 * @exception ImageDimensionException If the image is 3D.
+	 */
+	int do_test(float low, float high);
+	<br>	
+	/** Calculate the sum of an array.
+	 * @param[in] data Data array
+	 * @param[in] nitems Number of items in the array.
+	 * @param[out] sum The sum of the array.
+	 */
+	void calc_sum(int[] data, int nitems, int *sum);
+
+private:
+	int count;		
+}<br>
+  </pre>
   </div>
   <li style="color: rgb(51, 102, 255); font-weight: bold;"><big>References</big></li>
 </ol>
-<ul>
+<ul><ul>
   <li>Doxygen: <a href="http://www.stack.nl/%7Edimitri/doxygen/">http://www.stack.nl/~dimitri/doxygen/</a><br>
   </li>
-</ul>
+</ul></ul>
 <br>
 <hr style="width: 100%; height: 2px;">Last modified on <big><span
- style="font-weight: bold;">6/4/2004</span></big> by <big><span
- style="font-weight: bold;">Liwei Peng</span></big> (lpeng@bcm.tmc.edu)<br>
+ style="font-weight: bold;">9/30/2006</span></big> by <big><span
+ style="font-weight: bold;">Grant Tang</span></big> (gtang@bcm.edu)<br>
 <br>
 <ol>
   <div style="margin-left: 40px;"> </div>
