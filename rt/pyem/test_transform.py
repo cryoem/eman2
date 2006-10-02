@@ -59,7 +59,7 @@ class TestTransform(unittest.TestCase):
         az = -0.60170830102
         phi = 0
         
-        t = Transform3D((1.0,2.0,3.0), az, alt, phi)
+        t = Transform3D((0.0,0.0,0.0), az, alt, phi,(1.0,2.0,3.0),)
         rot = t.get_rotation(EULER_EMAN)
         tran = t.get_posttrans()
         
@@ -80,7 +80,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         rot = t.get_rotation()    #default argument is EULER_EMAN
         #testlib.assertfloat(self, az, float(rot["az"]))
@@ -108,7 +108,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         t.apply_scale(0.4)
         self.assertAlmostEqual(t.get_scale(), 0.4, 3)
@@ -123,7 +123,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         t.set_scale(2.5)
         self.assertAlmostEqual(t.get_scale(), 2.5, 3)
@@ -133,7 +133,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         t.set_scale(2.3)
         self.assertAlmostEqual(t.get_scale(), 2.3, 3)
@@ -145,7 +145,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         tt = t.get_sym('CSYM', 1)
     
@@ -154,7 +154,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         t.set_center((2.0,3.0,4.0))
         t.set_pretrans((1.1,2.2,3.3))
@@ -164,7 +164,7 @@ class TestTransform(unittest.TestCase):
         alt = 1.45232928554
         az = -0.60170830102
         phi = 0
-        t = Transform3D((1.0,2.0,3.0), (4.0,5.0,6.0), az, alt, phi)
+        t = Transform3D((1.0,2.0,3.0), az, alt, phi, (4.0,5.0,6.0))
         
         t.to_identity()
         self.assertEqual(t.is_identity(), True)
