@@ -174,11 +174,20 @@ libraries should be installed as shared-object libraries where applicable):
           
 4.2  How to Generate Latest Documentation
 -----------------------------------------
-
-   1. Install doxygen (version 1.4.3+, http://www.doxygen.org)
-   2. Run "sh ./makedoc.sh" from the "EMAN2/src/eman2/" directory to
-   generate the documentation in the "EMAN2/src/eman2/doc/".
-
+	
+	in EMAN2/doc directory, except some hand-coded html and text files, 
+	we have three groups of auto-generated documents:
+	1. Latex documents generated from tex files, same content can be viewed
+		in four formats: dvi, ps, pdf and html.
+	2. Doxygen html files. 
+	3. two html files describe processor and processor group.
+	
+	To create these files in EMAN2 building process, you need:  
+   	1. Install doxygen (version 1.4.3+, http://www.doxygen.org)
+   	2. Install latex2html (http://www.latex2html.org/)
+   	3. Install Doxygen (http://www.stack.nl/~dimitri/doxygen/)
+   	4. Install Graphviz(dot) (http://www.graphviz.org/)
+   	5. Choose "ENABLE_AUTODOC" in the CMake configuration.
     
 
 5. Notes For Developers

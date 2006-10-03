@@ -1,9 +1,9 @@
-SUBDIRS(latex)
-SET(DOC_PATH ${EMAN_INSTALL_PREFIX}/doc)
+IF (ENABLE_AUTODOC)
+	SUBDIRS(latex processor_html doxygen)
+ENDIF (ENABLE_AUTODOC)
 
 MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/doc)
-#MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/doc/Golem)
-#MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/doc/latex)
+SET(DOC_PATH ${EMAN_INSTALL_PREFIX}/doc)
 
-INSTALL_FILES(/doc "^.+\\.(html|dvi|pdf|ps|txt)$")
-INSTALL_FILES(/doc "\\.(INSTALL)$")
+INSTALL_FILES(/doc "^.+\\.(html)$")
+INSTALL_FILES(/doc FILES WindowsVisualStudioDotNet2003CompilationNotes.txt adding_processor.txt INSTALL)
