@@ -1,10 +1,15 @@
-LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2 EMext)
 
 IF(WIN32)	
+    LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2 EMext)
 ELSE(WIN32)
     SET(CMAKE_CXX_FLAGS_DEBUG "")
     SET(CMAKE_CXX_FLAGS "${CMAKE_ORIG_FLAGS} ${EMAN_CXX_FLAGS} -O0")
     SET(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -O0")
+    ## On linux, linking agains libpython24.a fails, and libpython24.so is
+    ## not available in the default cctbx configuration.
+    ## 
+    ## LINK_LIBRARIES(${BOOST_LIBRARY} ${PYTHON_LIBRARY} EM2 EMext)
+    LINK_LIBRARIES(${BOOST_LIBRARY}  EM2 EMext)
 ENDIF(WIN32)
 
 
