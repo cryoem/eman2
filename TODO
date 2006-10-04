@@ -15,10 +15,6 @@
        routine will handle the logfile thing, and we may use for other tasks
        later on...
 
-  009: build a regression test system to call all the unit tests.
-
-  020: investigate EMAN2 GUI tools: QT PyQT WxPython etc
-
   042. imageio caching caused problems in some imageio subclasses such that
        the header/data writing are not started from the proper locations. this
        need to be verified and tested on all image formats. one test is:
@@ -43,24 +39,10 @@
 	   e.g. on mdk9.2, gcc 3.3.1, python 2.3, boost 1.31.0.
 	   But the function overloading works at other situations. Need to 
 	   figure out why.
-
-  084. Add DEBUG macros at proper places to check array bounds, pointers,
-	   etc, for more solid code.
-
-  085. e2proc2d seems not working.
-
-  093. SpiderIO. If an existing image has a single image, then writing to
-       it at image index = 0 should overwrite the old image. The current
-       implementation check image size and refuse overwriting if different
-       sizes. 2) maxim is wrong in 'e2iminfo spider-stack.spi'.
        
 --- Low Priority ---
 
   010: use 'goodf()' to check floating number in FileIO routines.
-
-  011. implement a callback mechanism so that if the image data is changed in
-	   memory, the image display GUI can be updated automatically, either from
-	   python GUI or C++ GUI.
 
   012. Implement 3D Convex Mask in image read/write and image processing.
 	   ImageIO, Processor, and EMData.
@@ -87,10 +69,6 @@
 
   049. EMAN2 source code is based on EMAN1 source code on 08/2004. The new
 	   changes in EMAN1 since then need to be integrated into EMAN2.
-
-  062. Windows support. debug build failed with:
-	   libpyFilter (debug info exceeds limit);
-	   libpyUtils complaining that libpython_d.dll could not be found.
  
   063. to handle large volume (>32 bits), use size_t for nx*ny*nz and
 	   data index.
@@ -100,10 +78,6 @@
 
   067. boost python part: compilation failed with python 2.4, boost 1.32.0
 	   on IRIX 6.5 with CC MIPSpro Compilers: Version 7.3.1.3m
-
-  068. Windows support. windows file system uses '\' as path separator while
-	   unix/linux uses '/'. Need a generic way to make the code portable.
-
 
   070. boost python documentation.
 	   - The combination dump_BASENAME, BASENAME.get("subclass name") 
@@ -355,5 +329,28 @@
        HdfIO: create functions to read/write compound attributes including
        CTF, EulerAngles, etc
  
-  	   
+  009: build a regression test system to call all the unit tests.
+  
+  020: investigate EMAN2 GUI tools: QT PyQT WxPython etc
+   	      
+  084. Add DEBUG macros at proper places to check array bounds, pointers,
+	   etc, for more solid code.
+
+  085. e2proc2d seems not working.
+  
+  093. SpiderIO. If an existing image has a single image, then writing to
+       it at image index = 0 should overwrite the old image. The current
+       implementation check image size and refuse overwriting if different
+       sizes. 2) maxim is wrong in 'e2iminfo spider-stack.spi'.
+       
+  011. implement a callback mechanism so that if the image data is changed in
+	   memory, the image display GUI can be updated automatically, either from
+	   python GUI or C++ GUI.
+	   
+  062. Windows support. debug build failed with:
+	   libpyFilter (debug info exceeds limit);
+	   libpyUtils complaining that libpython_d.dll could not be found.
+	   
+  068. Windows support. windows file system uses '\' as path separator while
+	   unix/linux uses '/'. Need a generic way to make the code portable.
 	   
