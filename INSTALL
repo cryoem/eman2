@@ -17,25 +17,23 @@ App. A     Help for Optional Progam Installation
 The following libraries are required for EMAN2 installation (the
 libraries should be installed as shared-object libraries where applicable):
 
-    1. fftw (version 2.1.3+)   (http://www.fftw.org/)
+    1. fftw2 (version 2.1.3+) or fftw3  (http://www.fftw.org/) 
        To install fftw from source use either configure option:
        % ./configure --enable-static=no --enable-shared=yes --enable-float --enable-type-prefix
-
-       OR
-
-       % ./configure --enable-shared=yes --enable-float
-       
-       Followed by:
-       
        % make
 
 
     2. gsl (version 1.3+)    (http://www.gnu.org/software/gsl/)
 
         % ./configure
-	% make
+		% make
 
-    3. Boost (version 1.32 or lower)    (http://www.boost.org) 
+	3. Python (version 2.3+)             (http://www.python.org)
+	
+	4. Numerical Python Numpy (version 22.0+)
+                                        (http://www.pfdubois.com/numpy)
+	
+    5. Boost Python (version 1.32 or upper)    (http://www.boost.org) 
 
        3.1  Installing Boost requires Boost.Jam.  Executables and
 	    source code for jam can be found at the Boost website.
@@ -44,7 +42,7 @@ libraries should be installed as shared-object libraries where applicable):
        toolset to use during compliation.  Most UNIX systems will
        probably use the "gcc" toolset; visit 
        http://www.boost.org/more/getting_started.html#Tools for a
-       complete listing.        
+       complete listing. go to boost/libs/python/build:        
 
        % bjam "-sTOOLS=gcc" install 
 
@@ -58,11 +56,11 @@ libraries should be installed as shared-object libraries where applicable):
        % cp -r boost /usr/include/boost
       
   
-    4. CMake (version 2.0.5+)    (http://www.cmake.org)
+    6. CMake (version 2.0.5+)    (http://www.cmake.org)
        Executables for several platforms are available; source code
        can also be used for custom installations.
 
-    5. PyQT4 - Involves several subpackages:
+    7. PyQT4 - Involves several subpackages:
 	* Qt 4.1+
 	http://www.trolltech.com/developer/downloads/qt/x11
 
@@ -81,7 +79,7 @@ libraries should be installed as shared-object libraries where applicable):
 
 
 
- 2.  Optional Libraries / Programs
+2.  Optional Libraries / Programs
 ----------------------------------        
     - To read/write HDF5 image, use hdf5 (http://hdf.ncsa.uiuc.edu/HDF5).
 	  
@@ -89,18 +87,8 @@ libraries should be installed as shared-object libraries where applicable):
 
     - To read PNG image, use PNG (http://www.libpng.org)
 
-    For development the following libraries/programs are required (see
-    Appedix A for installation help):
-
-    - Python (version 2.3+)             (http://www.python.org)
-    
-    - Boost Python (version 1.32+)	(http://www.boost.org)
-    
-    - Numerical Python Numpy (version 22.0+)
-                                        (http://www.pfdubois.com/numpy)
-
-
-
+	- To create code based auto-generated documentation, see section 4.2.
+	
 3. Quick Installation 
 ----------------------
 
@@ -122,17 +110,17 @@ libraries should be installed as shared-object libraries where applicable):
        4) set up login shell
           for csh/tcsh, put the following to your .cshrc or .tcshrc file:
           
-          setenv EMAN2DIR $HOME/EMAN2
-          setenv PATH $EMAN2DIR/bin:${PATH}
-          setenv LD_LIBRARY_PATH  $EMAN2DIR/lib
-          setenv PYTHONPATH .:$HOME/EMAN2/lib
+          setenv EMAN2DIR ${HOME}/EMAN2
+          setenv PATH ${EMAN2DIR}/bin:${PATH}
+          setenv LD_LIBRARY_PATH  ${LD_LIBRARY_PATH}:${EMAN2DIR}/lib
+          setenv PYTHONPATH .:${HOME}/EMAN2/lib:${PYTHONPATH}
 
-	  for bash in .bashrc add:
+	  	  for bash in .bashrc add:
 	
-          export EMAN2DIR=$HOME/EMAN2
-          export PATH=$PATH:$EMAN2DIR/bin
-          export LD_LIBRARY_PATH=$EMAN2DIR/lib
-          export PYTHONPATH=$PYTHONPATH:$HOME/EMAN2/lib
+          export EMAN2DIR=${HOME}/EMAN2
+          export PATH=${PATH}:${EMAN2DIR}/bin
+          export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${EMAN2DIR}/lib
+          export PYTHONPATH=${PYTHONPATH}:${HOME}/EMAN2/lib
 
 
 		  
@@ -169,7 +157,7 @@ libraries should be installed as shared-object libraries where applicable):
 
     In CMake Configuration, enable the following option for your platform:
         - Athlon:  ENABLE_ATHLON
-        - Opteron: ENABLE_OPTERON
+        - Opteron(Athlon 64): ENABLE_OPTERON
         - Mac G5:  ENABLE_G5
           
 4.2  How to Generate Latest Documentation
@@ -207,10 +195,11 @@ libraries should be installed as shared-object libraries where applicable):
         2) install elementtree
         3) install GCCXML
         4) for boost 1.32.0, apply a patch for PYSTE.
-           (Contact EMAN2 developers for the patch.)
+           (Contact EMAN2 developers for the patch. This patch is for default 
+           argument handling)
            
     2. To generate new boost python wrapper, run
-        % cd eman2/libpyEm
+        % cd eman2/libpyEM
         % ./create_boost_python
 
     3. Windows Installer

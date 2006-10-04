@@ -7,22 +7,27 @@ What is the file structure for EMAN2 source code
 
   - libEM       core libEM library
   - libpyEM     boost python wrapper of libEM
-  - programs    command-line programs
+  - programs    python programs
   - utils       utility-level programs
+  - examples	Pyton sample programs
   - pyemtbx     python library modules toolbox
-  - plugins     templates and sample code for EMAN2 developments
+  - plugins     c++ templates and sample code for EMAN2 developments
   - doc         documentation
   - rt          regression tests
   
 Where is the documentation
 
-    EMAN2 has 2 levels of documentations:
-    1) The basic documentation. It is under 'doc' directory.
+    EMAN2 documentation are in doc directory, has 2 kinds of documentation source:
+    1) The hand-written documentation, for example: INSTALL.
     
-    2) The code-based documentation.
-       EMAN2 uses Doxygen (ver 1.4.3+ prefered) to maintain its code-embedded 
-       documentations. To generate the Doxygen-based documentation, run:
-         % sh makedoc.sh
+    2) The code-based auto-generated documentation, which will be built and 
+    installed in the EMAN2 building process if ENABLE_AUTODOC option is set.
+    	a) EMAN2 uses Doxygen (ver 1.4.3+ prefered) to maintain its code-embedded 
+       	documentations. To generate the Doxygen-based documentation.
+       	b) EMAN2 has a set of latex based documentation in /doc/latex directory, 
+       	which will create same content in dvi, ps, pdf and html format.
+       	c) There is a docgen.py Python program which can create two html files to 
+       	describe processors.
 
 What's the coding style of EMAN2
     1) EMAN2 follows the GNU coding style with minor differences. We use
@@ -33,6 +38,8 @@ What's the coding style of EMAN2
        a) All source code files use lower cases.
        b) All classes and data types use uppercase in the first letter.
        c) All functions use lower cases with '_' as the word separator.
+       d) All parameter names for modular class use lower cases with '_' 
+       as the word separator.
      
 How do I make my code to follow the EMAN2 coding style
     Suppose your code is in file 'input.cpp', then run:
