@@ -4195,22 +4195,33 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float sigma = params["sigma"];
+	float x_sigma = params["x_sigma"];
+	float y_sigma = params["y_sigma"];
+	float z_sigma = params["z_sigma"];
+
+        float x_center = params["x_center"];
+	float y_center = params["y_center"];
+	float z_center = params["z_center"];
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	int xc = nx/2, yc = ny/2, zc = nz/2;
-	float twosig2 = 2*sigma*sigma;
-	int d = image->get_ndim();
-	float norm = pow(twosig2*static_cast<float>(pi),-float(d)/2);
+
+        float x_twosig2 = 2*x_sigma*x_sigma;
+	float y_twosig2 = 2*y_sigma*y_sigma;
+	float z_twosig2 = 2*z_sigma*z_sigma;
+
+        float sr2pi = sqrt( 2.0*pi );
+	float norm  = 1.0f/ ( x_sigma*y_sigma*z_sigma*sr2pi*sr2pi*sr2pi );
+
 	for (int iz=0; iz < nz; iz++) {
-		float z = static_cast<float>(iz - zc);
+		float z = static_cast<float>(iz) - z_center;
 		for (int iy=0; iy < ny; iy++) {
-			float y = static_cast<float>(iy - yc);
+			float y = static_cast<float>(iy) - y_center;
 			for (int ix=0; ix < nx; ix++) {
-				float x = static_cast<float>(ix - xc);
-				float r2 = x*x + y*y + z*z;
-				float val = norm*exp(-r2/twosig2);
+				float x = static_cast<float>(ix) - x_center;
+				float sum = x*x/x_twosig2 + y*y/y_twosig2 + z*z/z_twosig2;
+				float val = norm*exp(-sum);
 				(*image)(ix,iy,iz) = val;
 			}
 		}

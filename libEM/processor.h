@@ -3570,7 +3570,12 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("sigma", EMObject::FLOAT, "sigma value for this Gaussian blob");
+			d.put("x_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on x direction");
+                        d.put("y_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on y direction");
+                        d.put("z_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on z direction");
+                        d.put("x_center", EMObject::FLOAT, "center for this Gaussian blob on x direction" );
+			d.put("y_center", EMObject::FLOAT, "center for this Gaussian blob on y direction" );
+			d.put("z_center", EMObject::FLOAT, "center for this Gaussian blob on z direction" );
 			return d;
 		}
 	};
