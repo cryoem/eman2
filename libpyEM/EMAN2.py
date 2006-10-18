@@ -94,6 +94,25 @@ def display(img):
 		img.write_image("/tmp/img.hed")
 	os.system("v2 /tmp/img.hed")
 
+def plot(img):
+	"""plots an image using the matplotlib library"""
+	import matplotlib
+	matplotlib.use('Agg')
+	import pylab
+	a=[]
+	for i in range(img.get_xsize()): 
+		a.append(img.get_value_at(i,0,0))
+	pylab.plot(a)
+	pylab.savefig("plot.png")
+
+def qplot(img):
+	"""This will plot a 1D image using qplot"""
+	out=file("/tmp/plt.txt","w")
+	for i in range(img.get_xsize()):
+		out.write("%d\t%f\n"%(i,img.get_value_at(i,0)))
+	out.close()
+	os.system("qplot /tmp/plt.txt")
+
 def error_exit(s) :
 	"""A quick hack until I can figure out the logging stuff. This function
 	should still remain as a shortcut"""
@@ -115,9 +134,9 @@ def test_image(type=0,size=(128,128)):
 	elif type==1 :
 		ret.process_inplace("testimage.noise.gauss")
 	elif type==2:
-		ret.process_inplace("testimage.squarecube")
+		ret.process_inplace("testimage.squarecube",{"edge_length":size[0]/2})
 	elif type==3:
-		ret.process_inplace("testimage.squarecube",{"fill":1})
+		ret.process_inplace("testimage.squarecube",{"fill":1,"edge_length":size[0]/2})
 	elif type==4:
 		ret.process_inplace("testimage.sinewave.circular")
 	

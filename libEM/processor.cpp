@@ -43,6 +43,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
+#include <gsl/gsl_wavelet.h>
+#include <gsl/gsl_wavelet2d.h>
 #include <algorithm>
 #include <ctime>
 
@@ -195,6 +197,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&CCDNormProcessor::NEW);
 	force_add(&CTF_Processor::NEW);
 	force_add(&SHIFTProcessor::NEW);
+
+	force_add(&WaveletProcessor::NEW);
 }
 
 EMData* Processor::process(EMData * image)
@@ -4794,6 +4798,53 @@ void CCDNormProcessor::process_inplace(EMData * image)
 
 }
 
+void WaveletProcessor::process_inplace(EMData *image) 
+{
+	if (image->get_zsize() != 1) {
+			LOGERR("%s Processor doesn't support 3D", get_name().c_str());
+			throw ImageDimensionException("3D model not supported");
+	}	
+
+	int i,nx,ny;
+	const gsl_wavelet_type * T;
+	nx=image->get_xsize();
+	ny=image->get_ysize();
+	
+	if (nx != ny && ny!=1) throw ImageDimensionException("Wavelet transform only supports square images");
+	float l=log((float)nx)/log(2.0);
+	if (l!=floor(l)) throw ImageDimensionException("Wavelet transform size must be power of 2");
+
+	// Unfortunately GSL works only on double() arrays
+	// eventually we should put our own wavelet code in here
+	// but this will work for now
+	double *cpy = (double *)malloc(nx*ny*sizeof(double));
+	
+	for (i=0; i<nx*ny; i++) cpy[i]=image->get_value_at(i,0,0);
+
+	string tp = (const char*)params["type"];
+	if (tp=="daub") T=gsl_wavelet_daubechies;
+	else if (tp=="harr") T=gsl_wavelet_haar;
+	else if (tp=="bspl") T=gsl_wavelet_bspline;
+	else throw InvalidStringException(tp,"Invalid wavelet name, 'daub', 'harr' or 'bspl'");
+	
+	int K=(int)params["ord"];
+	gsl_wavelet_direction dir;
+	if ((int)params["dir"]==1) dir=forward;
+	else dir=backward;
+
+	gsl_wavelet *w = gsl_wavelet_alloc(T, K);
+	gsl_wavelet_workspace *work = gsl_wavelet_workspace_alloc(nx);
+
+	if (ny==1) gsl_wavelet_transform (w,cpy, 1, nx, dir, work);
+	else gsl_wavelet2d_transform (w, cpy, nx,nx,ny, dir, work);
+
+	gsl_wavelet_workspace_free (work);
+	gsl_wavelet_free (w);
+
+	for (i=0; i<nx*ny; i++) image->set_value_at_fast(i,0,0,cpy[i]);
+	
+	free(cpy);
+}
 
 void MirrorProcessor::process_inplace(EMData *image) {
 if (!image) {

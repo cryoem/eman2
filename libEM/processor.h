@@ -3928,7 +3928,44 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
- 
+ 	/** Perform a Wavelet transform using GSL
+	 * @author Steve Ludtke <sludtke@bcm.edu>
+	 * @date 10/15/2006
+	 * @param type  "daub", "harr", or "bspl"
+	 * @param inv  if 1, performs inverse transform
+	 * @param ord  for Daubechies (4,6,8,...,20), for Harr (2), for B-Splines (103, 105, 202, 204, 206, 208, 301, 303, 305 307, 309)
+	 */
+	class WaveletProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return "basis.wavelet";
+		}
+
+		static Processor *NEW()
+		{
+			return new WaveletProcessor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("type", EMObject::STRING, "'daub', 'harr' or 'bspl'");
+			d.put("dir", EMObject::INT, "1 for forward transform, -1 for inverse transform");
+			d.put("ord", EMObject::INT, "Daubechies (4,6,8,...,20), for Harr (2), for B-Splines (103, 105, 202, 204, 206, 208, 301, 303, 305 307, 309)");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Computes the DWT (discrete wavelet transform) of an image in one of 3 possible bases";
+		}
+		
+	};
+
 
 #if 0
 
