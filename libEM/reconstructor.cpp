@@ -33,7 +33,8 @@
  * 
  * */
 
-
+#include <fstream>
+#include <iomanip>
 #include <boost/bind.hpp>
 #include "reconstructor.h"
 #include "interp.h"
@@ -1094,10 +1095,53 @@ nn4Reconstructor::~nn4Reconstructor()
     checked_delete( m_volume );
 }
 
+enum weighting_method { NONE, ESTIMATE, VORONOI };
+
+float max3d( int kc, const vector<float>& pow_a )
+{
+    float max = 0;
+    for( int i=-kc; i <= kc; ++i )
+    {
+        for( int j=-kc; j <= kc; ++j )
+	{
+	    for( int k=-kc; k <= kc; ++k )
+	    {
+                if( i==0 && j==0 && k==0 ) continue;
+
+		// if( i!=0 ) 
+		{
+		    int c = 3*kc+1 - std::abs(i) - std::abs(j) - std::abs(k);
+		    max = max + pow_a[c];
+		    // max = max + c * c;
+		    // max = max + c; 
+		}
+	    }
+	}
+    }
+
+    return max;
+}
+
+
 void nn4Reconstructor::setup() 
 {
 	int size = params["size"];
 	int npad = params["npad"];
+
+        string wght = params["weighting"].to_str();
+
+	if( wght == "NONE" )
+	{
+	    m_weighting = NONE;
+	}
+	else if( wght == "ESTIMATE" )
+	{
+            m_weighting = ESTIMATE;
+        }
+	else if( wght == "VORONOI" )
+	{
+	    m_weighting = VORONOI;
+	}
 
         string symmetry;
 	try {
@@ -1146,7 +1190,8 @@ void nn4Reconstructor::buildFFTVolume() {
 }
 
 void nn4Reconstructor::buildNormVolume() {
-	m_nrptr = shared_ptr< EMArray<int> >( new EMArray<int>(m_vnxc+1,m_vnyp,m_vnzp) );
+
+        m_nrptr = shared_ptr< EMArray<int> >( new EMArray<int>(m_vnxc+1,m_vnyp,m_vnzp) );
 	m_nrptr->set_array_offsets(0,1,1);
 	for (int iz = 1; iz <= m_vnzp; iz++) 
 		for (int iy = 1; iy <= m_vnyp; iy++) 
@@ -1182,18 +1227,82 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 	return 0;
 }
 
+
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4Reconstructor::finish() 
 {
 	EMArray<int>& nr = *m_nrptr;
         m_volume->symplane0(nr);
-	// normalize
 	
+	int m_vnyc = m_vnyp/2;
+	int m_vnzc = m_vnzp/2;
+
+        int box = 7;
+        int vol = box*box*box;
+        int kc = (box-1)/2;
+        vector< float > pow_a( 3*kc, 1.0 );
+	for( int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(0.6);
+
+	vector< float > pow_b( 3*m_vnyc, 1.0 );
+	for( int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(0.005);
+
+        float max = max3d( kc, pow_a );
+        float alpha = ( 1.0 - 1.0/vol ) / max;
+
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
 				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
-					float  tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+					float tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+
+					if( m_weighting == ESTIMATE ) 
+					{
+                                            int cx = ix;
+					    int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+					    int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+
+					    float sum = 0.0;
+					    for( int ii = -kc; ii <= kc; ++ii )
+                                            { 
+					        int nbrcx = cx + ii;
+						if( nbrcx >= m_vnxc ) continue;
+
+					        for( int jj= -kc; jj <= kc; ++jj )
+						{
+						    int nbrcy = cy + jj;
+						    if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+
+						    for( int kk = -kc; kk <= kc; ++kk )
+						    {
+						        int nbrcz = cz + jj;
+                                                        if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+
+							if( nbrcx < 0 )
+							{
+							    nbrcx = -nbrcx;
+							    nbrcy = -nbrcy;
+							    nbrcz = -nbrcz;
+							}
+
+                                                        int nbrix = nbrcx;
+							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+
+							if( nr( nbrix, nbriy, nbriz ) == 0 )
+							{
+                                                            int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+							    sum = sum + pow_a[c];
+							}
+                                                    }
+                                                }
+                                            }
+
+					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
+					    assert( r >=0 && r < pow_b.size() );
+                                            float wght = pow_b[r] / ( 1.0 - alpha * sum );
+					    tmp = tmp * wght;
+				        }
+
 					(*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
