@@ -94,16 +94,17 @@ def display(img):
 		img.write_image("/tmp/img.hed")
 	os.system("v2 /tmp/img.hed")
 
-def plot(img):
+def plot(img,size=(800,600),path="plot.png"):
 	"""plots an image using the matplotlib library"""
 	import matplotlib
 	matplotlib.use('Agg')
 	import pylab
+	pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
 	a=[]
 	for i in range(img.get_xsize()): 
 		a.append(img.get_value_at(i,0,0))
 	pylab.plot(a)
-	pylab.savefig("plot.png")
+	pylab.savefig(path)
 
 def qplot(img):
 	"""This will plot a 1D image using qplot"""
