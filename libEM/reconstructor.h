@@ -349,7 +349,6 @@ namespace EMAN
 	  private:
 		EMData* m_volume;
 		shared_ptr< EMArray<int> > m_nrptr;
-		shared_ptr< EMArray<float> > m_wghts;
 	        string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
