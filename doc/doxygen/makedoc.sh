@@ -16,6 +16,7 @@ cd ${EMAN2DIR}/src/eman2
 doxygen  doc/doxygen/Doxyfile
 echo "Done"
 
-mv ${EMAN2DIR}/src/eman2/doc/html ${EMAN2DIR}/doc/doxygen_html
+rm -rf ${EMAN2DIR}/doc/doxygen_html
+mv -f ${EMAN2DIR}/src/eman2/doc/html ${EMAN2DIR}/doc/doxygen_html
 
 #echo "Documentation is at $PWD/doc/html/index.html"
