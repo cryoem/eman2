@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 119)
+        self.assertEqual(len(processor_names), 121)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -1398,13 +1398,13 @@ class TestProcessor(unittest.TestCase):
         """test testimage.puregaussian processor ............"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process_inplace('testimage.puregaussian', {'sigma':12})
+        e.process_inplace('testimage.gaussian', {'sigma':12})
         
     def test_testimage_gaussian(self):
         """test testimage.gaussian processor ................"""
         e = EMData()
         e.set_size(32,32,32)
-        e.process_inplace('testimage.puregaussian', {'sigma':12})
+        e.process_inplace('testimage.puregaussian', {'x_sigma':12, 'y_sigma':12, 'z_sigma':12})
         
     def test_testimage_scurve(self):
         """test testimage.scurve processor .................."""
@@ -1492,6 +1492,49 @@ class TestProcessor(unittest.TestCase):
                 for i in range(8):
                     self.assertAlmostEqual(d1[i][j][k], d3[i][j][k])
                     self.assertAlmostEqual(d2[i][j][k], d4[i][j][k])
+    
+    def test_basis_wavelet(self):
+        """test basis.wavelet processor ....................."""
+        e1 = EMData()
+        e1.set_size(16,16)
+        e1.process_inplace('testimage.noise.uniform.rand')
+        d1 = e1.get_2dview()
+        
+        e2 = e1.process('basis.wavelet', {'type':'daub', 'dir':1, 'ord':20})
+        d2 = e2.get_2dview()
+        
+        e3 = e2.process('basis.wavelet', {'type':'daub', 'dir':-1, 'ord':20})        
+        d3 = e3.get_2dview()
+        
+        for j in range(16):
+            for i in range(16):
+                self.assertAlmostEqual(d1[i][j], d3[i][j], 3)
+    
+    def test_basis_fft(self):
+        """test basis.fft processor ........................."""
+        e1 = EMData()
+        e1.set_size(8,8,8)
+        e1.process_inplace('testimage.noise.uniform.rand')
+        d1 = e1.get_3dview()
+        
+        e2 = e1.process('basis.fft', {'dir':1})
+        d2 = e2.get_3dview()
+        
+        e3 = e2.process('basis.fft', {'dir':-1})
+        d3 = e3.get_3dview()
+        
+        e4 = e1.do_fft()
+        d4 = e4.get_3dview()
+        
+        e5 = e2.do_ift()
+        d5 = e5.get_3dview()
+        
+        for k in range(8):
+            for j in range(8):
+                for i in range(8):
+                    self.assertAlmostEqual(d1[i][j][k], d3[i][j][k], 3)
+                    self.assertAlmostEqual(d2[i][j][k], d4[i][j][k], 3)
+                    self.assertAlmostEqual(d1[i][j][k], d5[i][j][k], 3)
         
     #this filter.integercyclicshift2d processor is removed by Phani at 5/18/2006    
     def no_test_IntegerCyclicShift2DProcessor(self):
