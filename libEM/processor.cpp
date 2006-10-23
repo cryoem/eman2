@@ -199,6 +199,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&SHIFTProcessor::NEW);
 
 	force_add(&WaveletProcessor::NEW);
+	force_add(&FFTProcessor::NEW);
 }
 
 EMData* Processor::process(EMData * image)
@@ -4844,6 +4845,18 @@ void WaveletProcessor::process_inplace(EMData *image)
 	for (i=0; i<nx*ny; i++) image->set_value_at_fast(i,0,0,cpy[i]);
 	
 	free(cpy);
+}
+
+void FFTProcessor::process_inplace(EMData* image)
+{
+	if( params.has_key("dir") ) {
+		if ((int)params["dir"]==-1) {
+			image->do_ift_inplace();
+		}
+		else {
+			image->do_fft_inplace();
+		}
+	}
 }
 
 void MirrorProcessor::process_inplace(EMData *image) {

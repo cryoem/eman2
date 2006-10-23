@@ -3571,9 +3571,9 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 			d.put("x_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on x direction");
-                        d.put("y_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on y direction");
-                        d.put("z_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on z direction");
-                        d.put("x_center", EMObject::FLOAT, "center for this Gaussian blob on x direction" );
+			d.put("y_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on y direction");
+			d.put("z_sigma", EMObject::FLOAT, "sigma value for this Gaussian blob on z direction");
+			d.put("x_center", EMObject::FLOAT, "center for this Gaussian blob on x direction" );
 			d.put("y_center", EMObject::FLOAT, "center for this Gaussian blob on y direction" );
 			d.put("z_center", EMObject::FLOAT, "center for this Gaussian blob on z direction" );
 			return d;
@@ -3932,7 +3932,7 @@ The basic design of EMAN Processors: <br>\
 	 * @author Steve Ludtke <sludtke@bcm.edu>
 	 * @date 10/15/2006
 	 * @param type  "daub", "harr", or "bspl"
-	 * @param inv  if 1, performs inverse transform
+	 * @param dir  1 for forward transform, -1 for inverse transform
 	 * @param ord  for Daubechies (4,6,8,...,20), for Harr (2), for B-Splines (103, 105, 202, 204, 206, 208, 301, 303, 305 307, 309)
 	 */
 	class WaveletProcessor:public Processor
@@ -3965,7 +3965,37 @@ The basic design of EMAN Processors: <br>\
 		}
 		
 	};
-
+	
+	/** Perform a FFT transform by calling EMData::do_fft() and EMData::do_ift()
+	 * @param dir 1 for forward transform, -1 for inverse transform, forward transform by default
+	 */
+	class FFTProcessor : public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+		
+		string get_name() const
+		{
+			return "basis.fft";
+		}	
+		
+		static Processor *NEW()
+		{
+			return new FFTProcessor();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("dir", EMObject::INT, "1 for forward transform, -1 for inverse transform");
+			return d;
+		}
+		
+		string get_desc() const
+		{
+			return "Computes the DFFT (Discrete Fast Fourier Transform) of an image";
+		}
+	};
 
 #if 0
 
