@@ -83,11 +83,11 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 
 	cf = this_img->calc_ccf(to);
 
-
 	int nx = this_img->get_xsize();
 	int ny = this_img->get_ysize();
 	int maxshiftx = params["maxshift"];
 	int maxshifty = params["maxshift"];
+	int nozero = params["nozero"];
 	
 	if (maxshiftx <= 0) {
 		maxshiftx = nx / 8;
@@ -102,7 +102,19 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	}
 
 
+//	cf->write_image("ccf.mrc");
 	float *cf_data = cf->get_data();
+	if (nozero) {
+		cf_data[nx/2+nx*ny/2]=0;
+		cf_data[nx/2+nx*ny/2+1]=0;
+		cf_data[nx/2+nx*ny/2-1]=0;
+		cf_data[nx/2+nx*ny/2+nx]=0;
+		cf_data[nx/2+nx*ny/2-nx]=0;
+		cf_data[nx/2+nx*ny/2+1+nx]=0;
+		cf_data[nx/2+nx*ny/2-1+nx]=0;
+		cf_data[nx/2+nx*ny/2+1-nx]=0;
+		cf_data[nx/2+nx*ny/2-1-nx]=0;
+	}
 
 	float neg = (float)cf->get_attr("mean") - (float)cf->get_attr("minimum");
 	float pos = (float)cf->get_attr("maximum") - (float)cf->get_attr("mean");
@@ -112,7 +124,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		flag = -1;
 	}
 
-	int peak_x = nx / 2;
+	int peak_x = nx / 2+1;
 	int peak_y = ny / 2;
 
 	float max_value = -FLT_MAX;
@@ -287,9 +299,9 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		cf = 0;
 	}
 	cf=this_img->copy();
-	cf->rotate((float)(-peak_index * M_PI / this_img2_nx), 0, 0);
+	cf->rotate((float)(-peak_index * 180.0 / this_img2_nx), 0, 0);
 	cf->set_attr("align_score", peak);
-	cf->set_attr("rotational",-peak_index * M_PI / this_img2_nx);
+	cf->set_attr("rotational",-peak_index * 180.0 / this_img2_nx);
 
 
 	return cf;
@@ -314,8 +326,8 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 	float peak = 0;
 	int peak_index = 0;
 	Util::find_max(data, size, &peak, &peak_index);
-	float a = (float) ((1.0f - 1.0f * peak_index / size) * M_PI * 2);
-	this_img->rotate(a, 0, 0);
+	float a = (float) ((1.0f - 1.0f * peak_index / size) * 180. * 2);
+	this_img->rotate(a*180./M_PI, 0, 0);
 
 	cf->set_attr("align_score", peak);
 	cf->set_attr("rotational",a);
@@ -486,8 +498,8 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 	printf("%f\t%d\n", aa / ndot * 180.0 / M_PI, i + 5);
 #endif
 
-	this_img->rotate(aa / ndot, 0, 0);
-	this_img->set_attr("align_score", aa / ndot);
+	this_img->rotate(aa * 180. / ndot, 0, 0);
+	this_img->set_attr("rotational", aa * 180. / ndot);
 	return 0;
 }
 
@@ -506,13 +518,13 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 	
 	EMData *this_copy2 = this_copy->copy();
 	this_copy2->rotate_180();
-	this_copy2->set_attr("rotational",(float)this_copy2->get_attr("rotational")+M_PI);
+	this_copy2->set_attr("rotational",(float)this_copy2->get_attr("rotational")+180.0);
 
 	Dict trans_params;
 	
 	trans_params["intonly"] = 1;
 	trans_params["maxshift"] = params["maxshift"];
-
+	trans_params["nozero"]=params["nozero"];
 	EMData *tmp = this_copy;
 	this_copy=tmp->align("translational", to, trans_params);
 	if( tmp )
@@ -605,7 +617,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 	cdx = trans_v2[0] * cos(cda2) + trans_v2[1] * sin(cda2);
 	cdy = -trans_v2[0] * sin(cda2) + trans_v2[1] * cos(cda2);
 
-	refine_params["alt"] = cda2;
+	refine_params["az"] = cda2/M_PI*180.;
 	refine_params["dx"] = cdx;
 	refine_params["dy"] = cdy;
 
@@ -798,7 +810,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 
 	t1 = this_img->copy();
 
-	t1->rotate_translate(-lda * (float)M_PI * 2.0f / size, 0, 0, -max * cos(ta), -max * sin(ta), 0);
+	t1->rotate_translate(-lda * (float)180. * 2.0f / size, 0, 0, -max * cos(ta), -max * sin(ta), 0);
 
 	if (drt) {
 		if( radonthis )

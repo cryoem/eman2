@@ -112,6 +112,9 @@ EMUtil::ImageType EMUtil::get_image_ext_type(const string & file_ext)
 		
 		imagetypes["tiff"] = IMAGE_TIFF;
 		imagetypes["TIFF"] = IMAGE_TIFF;
+
+		imagetypes["fts"] = IMAGE_FITS;
+		imagetypes["FTS"] = IMAGE_FITS;
 		
 		imagetypes["vtk"] = IMAGE_VTK;
 		imagetypes["VTK"] = IMAGE_VTK;
@@ -392,6 +395,9 @@ EMUtil::ImageType EMUtil::get_image_type(const string & in_filename)
 	else if (Gatan2IO::is_valid(first_block)) {
 		image_type = IMAGE_GATAN2;
 	}
+	else if (FitsIO::is_valid(first_block)) {
+		image_type = IMAGE_FITS;
+	}
 	else if (EmIO::is_valid(first_block, file_size)) {
 		image_type = IMAGE_EM;
 	}
@@ -536,6 +542,9 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	case IMAGE_XPLOR:
 		imageio = new XplorIO(filename, rw_mode);
 		break;
+	case IMAGE_FITS:
+		imageio = new FitsIO(filename, rw_mode);
+		break;
 	default:
 		break;
 	}
@@ -593,6 +602,8 @@ const char *EMUtil::get_imagetype_name(ImageType t)
 		return "XPLOR";
 	case IMAGE_EM:
 		return "EM";
+	case IMAGE_FITS:
+		return "FITS";
 	case IMAGE_UNKNOWN:
 		return "unknown";
 	}

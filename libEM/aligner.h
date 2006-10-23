@@ -165,8 +165,9 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("intonly", EMObject::INT);
-			d.put("maxshift", EMObject::INT);
+			d.put("intonly", EMObject::INT,"Integer pixel translations only");
+			d.put("maxshift", EMObject::INT,"Maximum translation in pixels");
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			return d;
 		}
 	};
@@ -351,6 +352,7 @@ namespace EMAN
 			TypeDict d;
 			//d.put("usedot", EMObject::INT);
 			d.put("maxshift", EMObject::INT);
+			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			return d;
 		}
 	};

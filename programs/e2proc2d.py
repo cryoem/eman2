@@ -98,8 +98,8 @@ def main():
 					type="string", help="Excludes image numbers in EXCLUDE file")
 	parser.add_option("--fftavg", metavar="filename", type="string",
 					help="Incoherent Fourier average of all images and write a single power spectrum image")
-	parser.add_option("--filter", metavar="filtername:param1=val1:param2=val2", type="string",
-					action="append", help="apply a filter named 'filtername' with all its parameters/values.")
+	parser.add_option("--process", metavar="processorname:param1=val1:param2=val2", type="string",
+					action="append", help="apply a processor named 'processorname' with all its parameters/values.")
 	parser.add_option("--first", metavar="n", type="int", default=0, help="the first image in the input to process [0 - n-1])")
 	parser.add_option("--inplace", action="store_true",
 					help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
@@ -131,7 +131,7 @@ def main():
 					help="Splits the input file into a set of n output files")
 	parser.add_option("--verbose", metavar="n", type="int", help="verbose level [1-4]")
 
-	append_options = ["clip", "filter", "meanshrink", "shrink", "scale"]
+	append_options = ["clip", "process", "meanshrink", "shrink", "scale"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 	
@@ -213,10 +213,11 @@ def main():
 
 		for option1 in optionlist:
 
-			if option1 == "filter":
+			if option1 == "process":
 				fi = index_d[option1]
-				(filtername, param_dict) = pyemtbx.options.parse_filter_params(options.filter[fi])
-				d.process_inplace(filtername, param_dict)
+				(processorname, param_dict) = pyemtbx.options.parse_filter_params(options.process[fi])
+				if not param_dict : param_dict={}
+				d.process_inplace(processorname, param_dict)
 				index_d[option1] += 1
 
 			elif option1 == "norefs" and d.get_average_nimg() <= 0:
@@ -277,7 +278,8 @@ def main():
 				(clipx, clipy) = options.clip[ci]
 				
 				e = d.get_clip(Region((nx-clipx)/2, (ny-clipy)/2, clipx, clipy))
-				e.set_attr("avgnimg", d.get_attr("avgnimg"))
+				try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
+				except: pass
 				d = e
 				index_d[option1] += 1
 			

@@ -47,6 +47,7 @@ thr=float(sys.argv[2])
 if len(sys.argv)>3: iter=int(sys.argv[3])
 else: iter=1
 
+darkref=None
 if len(sys.argv)>4 :
 	darkref=EMData()
 	darkref.read_image(sys.argv[4],0)
@@ -58,29 +59,57 @@ else : gamma=0
 # Pass 1, sequential alignment to average
 avg=EMData()
 avg.read_image(sys.argv[1],0)
-darkref.process_inplace("eman1.normalize.toimage",{"noisy":avg})
-avg-=darkref
+ref0=avg.process("filter.lowpass.gauss",{"sigma":.15})
+nx=avg.get_xsize()
+if darkref :
+	darkref.process_inplace("eman1.normalize.toimage",{"noisy":avg})
+	avg-=darkref
 avg-=avg.get_edge_mean()
 #if gamma : avg.process_inplace("math.pow",{"pow":gamma})
 sum=1
 for i in range(1,n):
-	a=EMData()
-	a.read_image(sys.argv[1],i)
-	darkref.process_inplace("eman1.normalize.toimage",{"noisy":a})
-	a-=darkref
-	a-=a.get_edge_mean()
-#	if gamma : a.process_inplace("math.pow",{"pow":gamma})
-	b=a.align("translational",avg,{})
-	dot=b.cmp("dot",avg,{"negative":0,"normalize":1})
-	print "%4d. %3d\t%3d\t%1.4f"%(i,b.get_attr("translational.dx"),b.get_attr("translational.dy"),dot)
+	aa=EMData()
+	aa.read_image(sys.argv[1],i)
+	if darkref :
+		darkref.process_inplace("eman1.normalize.toimage",{"noisy":a})
+		aa-=darkref
+	aa-=aa.get_edge_mean()
+	
+	a=aa.process("filter.lowpass.gauss",{"sigma":.15})
+	
+	b=a.align("rotate_translate",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
+#	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
+#	b.set_attr("rotational",0.0)
+	dot=b.cmp("dot",ref0,{"negative":0,"normalize":1})
+	#bdot=0
+	#bang=0
+	#for angi in range(-8,8):
+		#ang=angi/10.0+.05
+		#a=aa.copy()
+		#a.rotate(ang,0,0)
+	##	if gamma : a.process_inplace("math.pow",{"pow":gamma})
+	##	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2})
+		#b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2})
+		#dot=b.cmp("dot",ref0,{"negative":0,"normalize":1})
+		#if dot>bdot : 
+			#bdot=dot
+			#bang=ang
+			#bdx=b.get_attr("translational.dx")
+			#bdy=b.get_attr("translational.dy")
+	
+	a=aa.copy()
+	a.rotate(b.get_attr("rotational"),0,0)
+	a.translate(b.get_attr("translational.dx"),b.get_attr("translational.dy"),0)
+#	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2})
+	print "%4d. %3d\t%3d\t%1.2f\t%1.4f"%(i,b.get_attr("translational.dx"),b.get_attr("translational.dy"),b.get_attr("rotational"),dot)
 	if dot>thr : 
-		avg+=b
+		avg+=a
 		sum+=1
 	
 print "%d/%d used"%(sum,n)
 avg-=avg.get_attr("minimum")
 avg/=avg.get_attr("maximum")
-avg.process_inplace("math.pow",{"pow":gamma})
+#avg.process_inplace("math.pow",{"pow":gamma})
 avg.write_image("avg.mrc")
 display(avg)
 

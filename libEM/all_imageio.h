@@ -73,6 +73,7 @@
 #include "gatan2io.h"
 #include "emio.h"
 #include "imagicio.h"
+#include "fitsio.h"
 
 #ifdef ENABLE_V4L2
 	#include "v4l2io.h"

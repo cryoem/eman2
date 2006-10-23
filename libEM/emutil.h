@@ -129,7 +129,8 @@ namespace EMAN
 			IMAGE_XPLOR,
 			IMAGE_EM,
 			IMAGE_V4L,
-			IMAGE_JPEG
+			IMAGE_JPEG,
+			IMAGE_FITS
 		};
 
 		static EMData *vertical_acf(const EMData * image, int maxdy);
