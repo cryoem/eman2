@@ -1241,10 +1241,10 @@ EMData* nn4Reconstructor::finish()
         int vol = box*box*box;
         int kc = (box-1)/2;
         vector< float > pow_a( 3*kc, 1.0 );
-	for( int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(0.6);
+	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(0.6);
 
 	vector< float > pow_b( 3*m_vnyc, 1.0 );
-	for( int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(0.005);
+	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(0.005);
 
         float max = max3d( kc, pow_a );
         float alpha = ( 1.0 - 1.0/vol ) / max;
