@@ -1077,17 +1077,15 @@ EMData* EMAN::padfft_slice( EMData* slice, int npad )
 	return padfftslice;
 }
 
-
-
 nn4Reconstructor::nn4Reconstructor() 
     : m_volume(NULL) 
 {
 }
 
-nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
+nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, const string& wght, int npad )
     : m_volume(NULL)
 {
-    setup( symmetry, size, npad );
+    setup( symmetry, size, wght, npad );
 }
 
 nn4Reconstructor::~nn4Reconstructor()
@@ -1128,22 +1126,9 @@ void nn4Reconstructor::setup()
 	int size = params["size"];
 	int npad = params["npad"];
 
-        string wght = params["weighting"].to_str();
+    string wght = params["weighting"].to_str();
 
-	if( wght == "NONE" )
-	{
-	    m_weighting = NONE;
-	}
-	else if( wght == "ESTIMATE" )
-	{
-            m_weighting = ESTIMATE;
-        }
-	else if( wght == "VORONOI" )
-	{
-	    m_weighting = VORONOI;
-	}
-
-        string symmetry;
+    string symmetry;
 	try {
 		symmetry = params["symmetry"].to_str();
 		if ("" == symmetry) symmetry = "c1";
@@ -1152,17 +1137,31 @@ void nn4Reconstructor::setup()
 		symmetry = "c1";
 	}
         
-        setup( symmetry, size, npad );
+    setup( symmetry, size, wght, npad );
 }
 
-void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
+void nn4Reconstructor::setup( const string& symmetry, int size, const string& wght, int npad )
 {
-        m_symmetry = symmetry;
-        m_npad = npad;
-	m_nsym = Transform3D::get_nsym(m_symmetry);
+	if( wght == "NONE" )
+	{
+	    m_weighting = NONE;
+	}
+	else if( wght == "ESTIMATE" )
+	{
+        m_weighting = ESTIMATE;
+    }
+	else if( wght == "VORONOI" )
+	{
+	    m_weighting = VORONOI;
+	}
 
-        m_vnx = size;
-	m_vny = size;
+
+    m_symmetry = symmetry;
+    m_npad = npad;
+    m_nsym = Transform3D::get_nsym(m_symmetry);
+
+    m_vnx = size;
+    m_vny = size;
 	m_vnz = size;
 
 	m_vnxp = size*npad;
@@ -1369,6 +1368,7 @@ void bootstrap_nnReconstructor::setup()
     m_npad = params["npad"];
     m_size = params["size"];
     m_media = params["media"].to_str();
+    m_weighting = params["weighting"].to_str();
 
     try {
 	m_symmetry = params["symmetry"].to_str();
@@ -1404,7 +1404,7 @@ int bootstrap_nnReconstructor::insert_slice(EMData* slice, const Transform3D& eu
 
 EMData* bootstrap_nnReconstructor::finish()
 {
-    nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size,m_npad) );
+    nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_weighting, m_npad) );
     shared_ptr< vector<int> > mults = params["mult"];
     assert( mults != NULL );
     assert( m_transes.size() == mults->size() );

@@ -306,15 +306,15 @@ namespace EMAN
 	  public:
 		nn4Reconstructor();
 
-		nn4Reconstructor( const string& symmetry, int size, int npad );
+		nn4Reconstructor( const string& symmetry, int size, const string& wght, int npad );
 
 		~nn4Reconstructor();
 
 		virtual void setup();
 
-	      	virtual int insert_slice(EMData * slice, const Transform3D & trans);
+	    virtual int insert_slice(EMData * slice, const Transform3D & trans);
 
-                virtual EMData *finish();
+        virtual EMData *finish();
 
 		virtual string get_name() const
 		{
@@ -341,15 +341,15 @@ namespace EMAN
 			return d;
 		}
 
-		void setup( const string& symmetry, int size, int npad );
+		void setup( const string& symmetry, int size, const string& wght, int npad );
 
-                int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+        int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
 
 
 	  private:
 		EMData* m_volume;
 		shared_ptr< EMArray<int> > m_nrptr;
-	        string  m_symmetry;
+	    string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
 		int m_npad;
@@ -393,6 +393,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
+            d.put("weighting", EMObject::STRING);
 			d.put("symmetry", EMObject::STRING);
 			d.put("mult", EMObject::INTARRAY);
 			d.put("media", EMObject::STRING);
@@ -401,6 +402,7 @@ namespace EMAN
 
 	  private:
 	  	string m_media;
+        string m_weighting;
 		string m_symmetry;
 		int m_size;
 		int m_npad;
