@@ -1,5 +1,5 @@
 IF (ENABLE_AUTODOC)
-	SUBDIRS(latex processor_html doxygen)
+	SUBDIRS(latex modular_class_html doxygen)
 ENDIF (ENABLE_AUTODOC)
 
 MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/doc)
