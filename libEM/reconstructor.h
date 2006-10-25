@@ -306,7 +306,7 @@ namespace EMAN
 	  public:
 		nn4Reconstructor();
 
-		nn4Reconstructor( const string& symmetry, int size, const string& wght, int npad );
+		nn4Reconstructor( const string& symmetry, int size, const string& wght, float wghta, float wghtb, int npad, const string& ctf, float snr );
 
 		~nn4Reconstructor();
 
@@ -334,29 +334,39 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("ctf", EMObject::STRING);
+			d.put("snr", EMObject::FLOAT);
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
 			d.put("symmetry", EMObject::STRING);
 			d.put("weighting", EMObject::STRING);
+			d.put("weighting_a", EMObject::FLOAT);
+			d.put("weighting_b", EMObject::FLOAT);
 			return d;
 		}
 
-		void setup( const string& symmetry, int size, const string& wght, int npad );
+		void setup( const string& symmetry, int size, const string& wght, float wghta, float wghtb, int npad, const string& ctf, float snr );
 
-        int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+                int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
 
 
 	  private:
 		EMData* m_volume;
 		shared_ptr< EMArray<int> > m_nrptr;
-	    string  m_symmetry;
+		shared_ptr< EMArray<float> > m_wgptr;
+	        string  m_symmetry;
+		int m_ctf;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
 		int m_npad;
 		int m_nsym;
-		int m_vnzp, m_vnyp, m_vnxp, m_vnxc;
+		int m_vnzp, m_vnyp, m_vnxp;
+		int m_vnzc, m_vnyc, m_vnxc;
 		void buildFFTVolume();
 		void buildNormVolume();
+		float m_wghta;
+		float m_wghtb;
+		float m_snr;
 	};
 
 
@@ -391,19 +401,27 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("ctf", EMObject::STRING);
+			d.put("snr", EMObject::FLOAT);
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
-            d.put("weighting", EMObject::STRING);
-			d.put("symmetry", EMObject::STRING);
-			d.put("mult", EMObject::INTARRAY);
+        		d.put("mult", EMObject::INTARRAY);
 			d.put("media", EMObject::STRING);
+			d.put("symmetry", EMObject::STRING);
+	                d.put("weighting", EMObject::STRING);
+			d.put("weighting_a", EMObject::FLOAT);
+			d.put("weighting_b", EMObject::FLOAT);
 			return d;
 		}
 
 	  private:
+	        string m_ctf;
 	  	string m_media;
-        string m_weighting;
+                string m_weighting;
 		string m_symmetry;
+		float m_snr;
+		float m_wghta;
+		float m_wghtb;
 		int m_size;
 		int m_npad;
 		int m_nsym;

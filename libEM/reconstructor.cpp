@@ -1082,10 +1082,10 @@ nn4Reconstructor::nn4Reconstructor()
 {
 }
 
-nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, const string& wght, int npad )
+nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, const string& wght, float wghta, float wghtb, int npad, const string& ctf, float snr )
     : m_volume(NULL)
 {
-    setup( symmetry, size, wght, npad );
+    setup( symmetry, size, wght, wghta, wghtb, npad, ctf, snr );
 }
 
 nn4Reconstructor::~nn4Reconstructor()
@@ -1128,6 +1128,8 @@ void nn4Reconstructor::setup()
 
     string wght = params["weighting"].to_str();
 
+    string ctf  = params["ctf"].to_str();
+
     string symmetry;
 	try {
 		symmetry = params["symmetry"].to_str();
@@ -1136,11 +1138,20 @@ void nn4Reconstructor::setup()
 	catch(_NotExistingObjectException) {
 		symmetry = "c1";
 	}
-        
-    setup( symmetry, size, wght, npad );
+
+    float wghta = 0.0;
+    if(wght=="ESTIMATE") wghta = params["weighting_a"];
+
+    float wghtb = 0.0;
+    if(wght=="ESTIMATE") wghtb = params["weighting_b"];
+
+    float snr = 1000.0;
+    if(ctf=="applied")  snr = params["snr"];
+
+    setup( symmetry, size, wght, wghta, wghtb, npad, ctf, snr );
 }
 
-void nn4Reconstructor::setup( const string& symmetry, int size, const string& wght, int npad )
+void nn4Reconstructor::setup( const string& symmetry, int size, const string& wght, float wghta, float wghtb, int npad, const string& ctf, float snr )
 {
 	if( wght == "NONE" )
 	{
@@ -1148,14 +1159,21 @@ void nn4Reconstructor::setup( const string& symmetry, int size, const string& wg
 	}
 	else if( wght == "ESTIMATE" )
 	{
-        m_weighting = ESTIMATE;
-    }
+            m_weighting = ESTIMATE;
+        }
 	else if( wght == "VORONOI" )
 	{
 	    m_weighting = VORONOI;
 	}
+        else 
+	{ 
+	    throw std::logic_error( "Error: unknown weighting method " + m_weighting );
+	}
 
-
+    m_wghta = wghta;
+    m_wghtb = wghtb;
+    m_snr   = snr;
+ 
     m_symmetry = symmetry;
     m_npad = npad;
     m_nsym = Transform3D::get_nsym(m_symmetry);
@@ -1169,7 +1187,11 @@ void nn4Reconstructor::setup( const string& symmetry, int size, const string& wg
 	m_vnzp = size*npad;
 
 	m_vnxc = m_vnxp/2;
-	
+	m_vnyc = m_vnyp/2;
+	m_vnzc = m_vnzp/2;
+
+        m_ctf = ( ctf=="applied" ) ? 1 : 0;
+
 	buildFFTVolume();
 	buildNormVolume();
 
@@ -1192,10 +1214,21 @@ void nn4Reconstructor::buildNormVolume() {
 
         m_nrptr = shared_ptr< EMArray<int> >( new EMArray<int>(m_vnxc+1,m_vnyp,m_vnzp) );
 	m_nrptr->set_array_offsets(0,1,1);
+
+	m_wgptr = shared_ptr< EMArray<float> >( new EMArray<float>(m_vnxc+1,m_vnyp,m_vnzp) );
+	m_wgptr->set_array_offsets(0,1,1);
+
 	for (int iz = 1; iz <= m_vnzp; iz++) 
+	{
 		for (int iy = 1; iy <= m_vnyp; iy++) 
+		{
 			for (int ix = 0; ix <= m_vnxc; ix++) 
+			{
 				(*m_nrptr)(ix,iy,iz) = 0;
+				(*m_wgptr)(ix,iy,iz) = 0;
+			}
+		}
+	}
 }
 
 
@@ -1221,7 +1254,15 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn( *m_nrptr, padfft, tsym, mult);
+
+		if( m_ctf ) 
+		{
+		    m_volume->nn_ctf_applied( *m_wgptr, padfft, tsym, mult );
+		}
+		else
+		{
+		    m_volume->nn( *m_nrptr, padfft, tsym, mult);
+		}
         }
 	return 0;
 }
@@ -1231,28 +1272,44 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 EMData* nn4Reconstructor::finish() 
 {
 	EMArray<int>& nr = *m_nrptr;
-        m_volume->symplane0(nr);
-	
-	int m_vnyc = m_vnyp/2;
-	int m_vnzc = m_vnzp/2;
+	EMArray<float>& wg = *m_wgptr;
+
+	if( m_ctf )
+	{
+	    m_volume->symplane0_ctf(wg);
+	}
+	else
+	{
+            m_volume->symplane0(nr);
+	}
 
         int box = 7;
         int vol = box*box*box;
         int kc = (box-1)/2;
         vector< float > pow_a( 3*kc, 1.0 );
-	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(0.6);
+	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
 
 	vector< float > pow_b( 3*m_vnyc, 1.0 );
-	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(0.005);
+	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
         float max = max3d( kc, pow_a );
         float alpha = ( 1.0 - 1.0/vol ) / max;
+	float osnr = 1.0/m_snr;
 
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
-				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
-					float tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+				if (nr(ix,iy,iz) > 0 || wg(ix,iy,iz) != 0.0 ) {//(*v) should be treated as complex!!
+					float tmp = 0.0;
+					
+					if( m_ctf )
+					{
+                                            tmp = (-2*((ix+iy+iz)%2)+1)/(wg(ix,iy,iz)+osnr);
+					}
+					else
+					{
+					    tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+                                        }
 
 					if( m_weighting == ESTIMATE ) 
 					{
@@ -1304,7 +1361,8 @@ EMData* nn4Reconstructor::finish()
 
 					(*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
-				}
+
+				  }
 			}
 		}
 	}
@@ -1365,10 +1423,20 @@ bootstrap_nnReconstructor::~bootstrap_nnReconstructor()
 
 void bootstrap_nnReconstructor::setup()
 {
+    m_ctf  = params["ctf"].to_str();
     m_npad = params["npad"];
     m_size = params["size"];
     m_media = params["media"].to_str();
     m_weighting = params["weighting"].to_str();
+
+    m_snr = 1000.0;
+    if(m_ctf=="applied") m_snr = params["snr"];
+
+    m_wghta = 0.0;
+    if(m_weighting=="ESTIMATE") m_wghta = params["weighting_a"];
+
+    m_wghtb = 0.0;
+    if(m_weighting=="ESTIMATE") m_wghtb = params["weighting_b"];
 
     try {
 	m_symmetry = params["symmetry"].to_str();
@@ -1404,7 +1472,7 @@ int bootstrap_nnReconstructor::insert_slice(EMData* slice, const Transform3D& eu
 
 EMData* bootstrap_nnReconstructor::finish()
 {
-    nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_weighting, m_npad) );
+    nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_weighting, m_wghta, m_wghtb, m_npad, m_ctf, m_snr) );
     shared_ptr< vector<int> > mults = params["mult"];
     assert( mults != NULL );
     assert( m_transes.size() == mults->size() );
@@ -1517,8 +1585,8 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	int   isctf = (int) tmp;
 	for (int isym=0; isym < nsym; isym++) {
 		Transform3D tsym = t.get_sym(symmetry, isym);
-		if(isctf) { v->nn_ctf_applied(*wptr, padfftslice, tsym, defocus);}
-		     else {v->nn_ctf(*wptr, padfftslice, tsym, defocus);}
+		if(isctf) { v->nn_ctf_applied(*wptr, padfftslice, tsym, 1);}
+		     else {v->nn_ctf(*wptr, padfftslice, tsym, 1);}
 	}
 	if( padfftslice ) { delete padfftslice; padfftslice = 0;}
 	return 0;
@@ -1549,11 +1617,7 @@ EMData* nn4_ctfReconstructor::finish() {
 	EMData* win = v->window_center(vnx);
 	if( v ) { delete v; v = 0;}
 
-        // set v to win because this function is declared as return internal 
-	// reference, see libpyEM/libpyReconstructor2.cpp, the class itself
-	// should be responsible for the deletion of win;
-	v = win;
-	float *tw = win->get_data();
+        float *tw = win->get_data();
 	//  mask and subtract circumference average
 	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
