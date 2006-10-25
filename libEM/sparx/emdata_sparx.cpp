@@ -1136,7 +1136,8 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 	float voltage = bi->get_attr("voltage");
 	float cs= bi->get_attr( "Cs" );
 	float wgh=bi->get_attr( "amp_contrast" );
-	float b_factor=bi->get_attr( "b_factor" );
+        //float b_factor=bi->get_attr( "b_factor" );
+	float b_factor = 0.0;
 	float sign=-1.0f;
 
 	cs = cs*1.0e-7f;
