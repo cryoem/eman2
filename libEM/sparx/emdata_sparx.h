@@ -150,7 +150,7 @@ EMData* rotavg();
 		 * @param defocus
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus);
+		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -160,7 +160,7 @@ EMData* rotavg();
 		 * @param tf Transform3D reference
 		 * @param defocus
 		 */
-		void nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, float defocus);
+		void nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult);
 
 		/** Helper function for method nn4_ctf.
 		 *  here it is assumed the projection data was already multiplied by the ctf...
@@ -171,10 +171,10 @@ EMData* rotavg();
 		 * @param w Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
-		 * @param defocus
+		 * @param mult
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn_ctf_applied(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus);
+		void onelinenn_ctf_applied(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -183,9 +183,9 @@ EMData* rotavg();
 		 * @param w Normalization data.
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
-		 * @param defocus
+		 * @param mult
 		 */
-		void nn_ctf_applied(EMArray<float>& w, EMData* myfft, const Transform3D& tf, float defocus);
+		void nn_ctf_applied(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult );
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
