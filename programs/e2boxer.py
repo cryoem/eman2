@@ -53,20 +53,21 @@ for single particle analysis."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
+	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
+	parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
 	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
-	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
-	parser.add_option("--refptcl","-R",type="string",help="A stack of reference images. Must have the same scale as the image being boxed.",default=None)
-	parser.add_option("--nretest",type="int",help="Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
-	parser.add_option("--retestlist",type="string",help="Comma separated list of image numbers for retest cycle",default="")
-	parser.add_option("--box","-B",type="int",help="Box size in pixels",default=-1)
-	parser.add_option("--ptclsize","-P",type="int",help="Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=0)
-	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
-	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
-	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
-	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
+	parser.add_option("--threshold","-T",type="float",help="(auto:ref) Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
+	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
+	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
+	parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
+	parser.add_option("--ptclsize","-P",type="int",help="(auto:circle) Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=0)
+#	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
+#	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
 	parser.add_option("--dbout",type="string",help="filename to write EMAN1 style box database file to",default=None)
+	parser.add_option("--norm",action="store_true",help="Edgenormalize boxed particles",default=False)
 	parser.add_option("--ptclout",type="string",help="filename to write boxed out particles to",default=None)
+	parser.add_option("--savealiref",action="store_true",help="Stores intermediate aligned particle images in boxali.hdf. Mainly for debugging.",default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
@@ -99,25 +100,39 @@ for single particle analysis."""
 		refbox=refptcl[0].get_xsize()
 		print "%d reference particles read (%d x %d)"%(len(refptcl),refbox,refbox)
 	
+	boxes=[]
+	boxthr=1.0
+	
+	# Read box database from a file
+	if options.dbin:
+		# x,y,xsize,ysize,quality,changed
+		boxes=[[int(j) for j in i.split()] for i in file(options.dbin,"r").readlines() if i[0]!="#"]	# this reads the whole box db file
+		
+		for i in boxes: 
+			i[4]=1.0		# all qualities set to 1
+			i.append(1)		# 'changed' flag initially set to 1
+
+		if options.boxsize<5 : options.boxsize=boxes[0][2]
+
 	# we need to know how big to make the boxes. If nothing is specified, but
 	# reference particles are, then we use the reference particle size
-	if options.box<5 :
-		if options.refptcl : options.box=refptcl[0].get_xsize()
+	if options.boxsize<5 :
+		if options.refptcl : options.boxsize=refptcl[0].get_xsize()
 		elif options.ptclsize : 
-			options.box=options.ptclsize
-#			options.box=good_boxsize(options.ptclsize*1.2)
+			options.boxsize=options.ptclsize
+#			options.boxsize=good_boxsize(options.ptclsize*1.2)
 		else : parser.error("Please specify a box size")
 	else:
-		if not options.box in good_box_sizes:
-			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.box)
+		if not options.boxsize in good_box_sizes:
+			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.boxsize)
 	
 	try: options.retestlist=[int(i) for i in options.retestlist.split(',')]
 	except: pass
 			
-	shrinkfactor=int(ceil(options.box/16))
+	shrinkfactor=int(ceil(options.boxsize/16))
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
-	#if options.box/shrinkfactor<12 : shrinkfactor/=2
+	#if options.boxsize/shrinkfactor<12 : shrinkfactor/=2
 	
 	image.process_inplace("eman1.normalize")
 	shrink=image
@@ -129,7 +144,7 @@ for single particle analysis."""
 		shrink=shrink.get_clip(Region(0,0,(shrink.get_xsize()|1)^1,(shrink.get_ysize()|1)^1))
 
 	# now we try to clean up long range density variations in the image
-	filtrad=options.box*2/shrinkfactor
+	filtrad=options.boxsize*2/shrinkfactor
 	flt=EMData()
 	flt.set_size(shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4,1)
 	flt.to_one()
@@ -158,9 +173,8 @@ for single particle analysis."""
 		
 	if len(options.auto)>0 : print "Autobox mode ",options.auto[0]
 	
-	boxes=[]
-	boxthr=1.0
 	
+	# Reference-based automatic particle picking
 	if "ref" in options.auto:
 		if not refptcl: error_exit("Reference particles required")
 		
@@ -183,7 +197,7 @@ for single particle analysis."""
 		# prepare a mask to use for local sigma calculaton
 		circle=shrink.copy_head()
 		circle.to_one()
-		circle.process_inplace("eman1.mask.sharp",{"outer_radius":options.box/(shrinkfactor*2)-1})
+		circle.process_inplace("eman1.mask.sharp",{"outer_radius":options.boxsize/(shrinkfactor*2)-1})
 		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
 		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT)
@@ -225,20 +239,20 @@ for single particle analysis."""
 		# first we prepare a grid table of putative box locations for speed
 		grid={}
 		for n,i in enumerate(pks):
-			x=int(floor(i[2]*shrinkfactor/options.box))
-			y=int(floor(i[3]*shrinkfactor/options.box))
+			x=int(floor(i[2]*shrinkfactor/options.boxsize))
+			y=int(floor(i[3]*shrinkfactor/options.boxsize))
 			try: grid[(x,y)].append(n)
 			except: grid[(x,y)]=[n]
 
 		
 		goodpks=[]
-		bf=options.box/(shrinkfactor*2)
+		bf=options.boxsize/(shrinkfactor*2)
 		for n,i in enumerate(pks):
 			if i[2]<bf or i[3]<bf or i[2]>xs-bf-1 or i[3]>ys-bf-1 : continue
 
 			# local is a list of putative peaks near the current peak
-                        x=int(floor(i[2]*shrinkfactor/options.box))
-                        y=int(floor(i[3]*shrinkfactor/options.box))
+                        x=int(floor(i[2]*shrinkfactor/options.boxsize))
+                        y=int(floor(i[3]*shrinkfactor/options.boxsize))
 			local=[]
 			for xx in range(x-1,x+2):
 				for yy in range(y-1,y+2):
@@ -249,7 +263,7 @@ for single particle analysis."""
 			for nn in local:
 				ii=pks[nn]
 				if hypot(i[2]-ii[2],i[3]-ii[3])<bf*3/2 : break
-			else: goodpks.append([i[0],i[1],i[2]*shrinkfactor-options.box/2,i[3]*shrinkfactor-options.box/2])
+			else: goodpks.append([i[0],i[1],i[2]*shrinkfactor-options.boxsize/2,i[3]*shrinkfactor-options.boxsize/2])
 		
 		print "%d putative particles after local exclusion"%len(goodpks)
 		
@@ -270,7 +284,7 @@ for single particle analysis."""
 				refns=[i[1]]+options.retestlist
 			
 			# read in the area where we think a particle exists
-			try: b.read_image(initial,0,0,Region(i[2],i[3],options.box,options.box))
+			try: b.read_image(initial,0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 			except: continue
 			b.process_inplace("eman1.normalize.edgemean")
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
@@ -293,12 +307,12 @@ for single particle analysis."""
 #			refptcl[i[1]].write_image("cmp.hdf",-1)
 #			ba.write_image("cmp.hdf",-1)
 #			try: 
-#				b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+#				b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 #				b.write_image("cmp.hdf",-1)
 #			except: pass
 			
 			# now we refine this by doing a second pass with the best reference
-			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 			except: continue
 			b.process_inplace("eman1.normalize.edgemean")
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
@@ -327,7 +341,7 @@ for single particle analysis."""
 			
 			# now we calculate the particle quality using the final
 			# alignment parameters
-			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.box,options.box))
+			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 			except: continue
 			b.process_inplace("eman1.normalize.edgemean")
 #			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.05})
@@ -390,21 +404,21 @@ for single particle analysis."""
 		
 		# put results in standard 'box' array so GUI can modify if desired
 		for i in goodpks2:
-			boxes.append([i[1],1[2],options.box,options.box,i[0],1])		# x,y,xsize,ysize,quality,changed
+			boxes.append([i[1],1[2],options.boxsize,options.boxsize,i[0],1])		# x,y,xsize,ysize,quality,changed
 			
 	# 		out=open("box.stats","w")
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
 	if "grid" in options.auto:
-		dy=(image_size[1]%options.box)*options.box/image_size[1]-1
-		if dy<=0 : dy=((image_size[1]-1)%options.box)*options.box/image_size[1]-1
-		dx=(image_size[0]%options.box)*options.box/image_size[0]-1
-		if dx<=0 : dx=((image_size[0]-1)%options.box)*options.box/image_size[0]-1
+		dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
+		if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
+		dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
+		if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
 		
-#		print image_size,dx,dy,options.box
-		for y in range(dy/2,image_size[1]-options.box,dy+options.box):
-			for x in range(dx/2,image_size[0]-options.box,dx+options.box):
-				boxes.append([x,y,options.box,options.box,0.0,1])
+#		print image_size,dx,dy,options.boxsize
+		for y in range(dy/2,image_size[1]-options.boxsize,dy+options.boxsize):
+			for x in range(dx/2,image_size[0]-options.boxsize,dx+options.boxsize):
+				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
 				
 	if "circle" in options.auto:
 		shrinksq=shrink.copy()
@@ -412,7 +426,7 @@ for single particle analysis."""
 		
 		# outer and inner ring mask
 		outer=EMData()
-		sbox=int(options.box/shrinkfactor)
+		sbox=int(options.boxsize/shrinkfactor)
 		outer.set_size(shrink.get_xsize(),shrink.get_ysize(),1)
 		outer.to_one()
 		inner=outer.copy()
@@ -437,7 +451,7 @@ for single particle analysis."""
 
 	# invoke the GUI if requested
 	if options.gui:
-		gui=GUIbox(args[0],boxes,boxthr,options.box)
+		gui=GUIbox(args[0],boxes,boxthr,options.boxsize)
 		gui.run()
 
 	if options.dbout:
