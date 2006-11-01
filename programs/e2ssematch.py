@@ -149,7 +149,11 @@ def recursesoln(pairqual,tot,soln,ends,all,maxbad):
 	if len(soln)==len(pairqual)+1:
 		v=sum(tot)/len(tot)
 		try:
-			if v<min(all)[0]: print v,soln,"\n",ends
+			if v<min(all)[0]: 
+				print v,soln,"\n",ends
+				for i in tot: print "%1.2f "%i,
+				print
+
 		except: print v,soln,"\n",ends
 		all.append((v,soln,ends))
 		return
@@ -184,11 +188,11 @@ def findpairs(p1,sspred,sseh,maxpe):
 		for s2 in range(len(sseh[0])):
 			for a in (0,1):
 				for b in (0,1):
-					if s1==s2 or ssemin[a][b][s1][s2]<0 or ssemin[a][b][s1][s2]>sspred[p1+1][1]*1.1: continue
+					if s1==s2 or ssemin[a][b][s1][s2]<0 or ssemin[a][b][s1][s2]>sspred[p1+1][1]+9.0: continue
 					# error includes squared length mismatches and a term downweighting long distances between helices
 #					err=sqrt((sspred[p1][0]-sseh[0][s1])**2+(sspred[p1+1][0]-sseh[0][s2])**2)
 					err=sseh[0][s1]*(tanh(fabs(sspred[p1][0]-sseh[0][s1])-6)+1)/30.0+sseh[0][s2]*(tanh(fabs(sspred[p1+1][0]-sseh[0][s2])-6)+1)/30.0
-					if ssemin[a][b][s1][s2]/sspred[p1+1][1]>.75: err+=(4.0*(ssemin[a][b][s1][s2]/sspred[p1+1][1]-.75))**2
+#					if ssemin[a][b][s1][s2]/sspred[p1+1][1]>.75: err+=(4.0*(ssemin[a][b][s1][s2]/sspred[p1+1][1]-.75))**2
 #					err+=2.0*fabs(ssemin[a][b][s1][s2]/sspred[p1+1][1]-1.0)
 #					if ssemin[s1][s2][1]/sspred[p1+1][1]>.75: err+=(16.0*(ssemin[s1][s2][1]/sspred[p1+1][1]-.75))**2
 					poss.append((err,s1,s2,a,b))

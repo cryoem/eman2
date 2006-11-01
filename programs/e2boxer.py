@@ -109,7 +109,8 @@ for single particle analysis."""
 		boxes=[[int(j) for j in i.split()] for i in file(options.dbin,"r").readlines() if i[0]!="#"]	# this reads the whole box db file
 		
 		for i in boxes: 
-			i[4]=1.0		# all qualities set to 1
+			try: i[4]=1.0		# all qualities set to 1
+			except: i.append(1.0)
 			i.append(1)		# 'changed' flag initially set to 1
 
 		if options.boxsize<5 : options.boxsize=boxes[0][2]
@@ -557,6 +558,7 @@ class GUIbox:
 			return
 		self.moving=(i,m)
 		self.guiim.setActive(i,.9,.9,.4)
+		self.guimx.scrollTo(i)
 		x0=self.boxes[i][0]+self.boxes[i][2]/2-1
 		y0=self.boxes[i][1]+self.boxes[i][3]/2-1
 		self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
