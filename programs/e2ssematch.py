@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 08/28/2006 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,7 +31,7 @@
 #
 #
 
-# ssematch.py  08/28/2006  Steven Ludtke, Matt Baker
+# ssematch.py    Steven Ludtke, Matt Baker
 # This tries to match sequence based secondary structure prediction to
 # ssehunter results, based on length and distance constraints in each case
 
@@ -131,8 +131,10 @@ def ssematch(ssehfsp,sspredfsp,options):
 	
 	out=file("ssematch.out","w")
 	for i in all:
-		out.write("%f\t%s\n"%(i[0],str(i[1])))
+		out.write("%f\t%s\t%s\n"%(i[0],str(i[1]),str(i[2])))
 	out.close()
+	
+	print all[0]
 	
 	print len(all)
 
@@ -264,6 +266,7 @@ def readconnect(fsp,nel):
 	# end of the helix (arbitrarily assigned by ssehunter). The second two dimensions
 	# represent the helix numbers. ie - helix 8 end 1 connected to helix 4 end 0 would be ret[1][0][8][4] or ret[0][1][4][8]
 	ret=[[0,0],[0,0]]
+
 	ret[0][0]=[[-1.0 for i in range(nel)] for i in range(nel)]
 	ret[0][1]=[[-1.0 for i in range(nel)] for i in range(nel)]
 	ret[1][0]=[[-1.0 for i in range(nel)] for i in range(nel)]
