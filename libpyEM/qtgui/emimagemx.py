@@ -235,7 +235,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		"""Moves image 'n' to the center of the display"""
 		print self.origin,self.coords[0],self.coords[1]
 #		try: self.origin=(self.coords[n][0]-self.width()/2,self.coords[n][1]+self.height()/2)
-		try: self.origin=(self.coords[8][0]-self.width()/2,self.coords[8][1]+self.height()/2)
+		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
 		#try: self.origin=(self.coords[n][0],self.coords[n][1])
 		except: return
 		print self.origin

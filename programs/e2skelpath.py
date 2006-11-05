@@ -90,7 +90,7 @@ def main():
 		
 	pairlist=[]
 	for i,j in enumerate(mappoints):
-		findPath(skeleton,mappoints,[(j[0],j[1],j[2],0)],1,pairlist,i+2)
+		findPath(skeleton,mappoints,[((j[0],j[1],j[2],0),[j[:3]])],1,pairlist,i+2)
 
 #	print pairlist
 	
@@ -101,11 +101,11 @@ def main():
 #	skeleton.write_image("zz.mrc")
 	
 	pts=len(dejavupoints)
-	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2]) for i in pairlist]
+	pairlist=[((i[0]%pts,i[0]/pts),(i[1]%pts,i[1]/pts),i[2],j) for i,j in pairlist]
 	
 	out=file(args[2],"w")
 	for i in pairlist: 
-		if i[0][0]!=i[1][0] : out.write("%d %d\t%d %d\t%1.3f\n"%(i[0][1],i[0][0],i[1][1],i[1][0],i[2]*options.apix))
+		if i[0][0]!=i[1][0] : out.write("%d %d\t%d %d\t%1.3f\t%s\n"%(i[0][1],i[0][0],i[1][1],i[1][0],i[2]*options.apix,i[3]))
 	out.close()
 	
 def vecdist(a,b):
@@ -216,7 +216,7 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 	# Iterate over all current trace edge points
 	newseeds=[]
 	mp2=len(mappoints)/2
-	for s in seeds:
+	for s,p in seeds:
 		# search nearest neighbors to continue trace
 
 		skeleton.set_value_at(s[0],s[1],s[2],n)
@@ -230,11 +230,11 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 						for i,j in enumerate(mappoints):
 							if i==n: continue
 							if (x,y,z)==j :
-								pairs.append((n-2,i,s[3]+l))
+								pairs.append(((n-2,i,s[3]+l),p+[(x,y,z)]))
 								setbox(x,y,z,skeleton,n)
 								continue
 							
-	for s in seeds:
+	for s,p in seeds:
 		# 2nd pass to find new seeds away from new endpoints
 		for z in range(s[2]-1,s[2]+2):
 			for y in range(s[1]-1,s[1]+2):
@@ -242,7 +242,7 @@ def findPath(skeleton,mappoints,seeds,it,pairs,n):
 					
 					if skeleton.get_value_at(x,y,z)>0 and skeleton.get_value_at(x,y,z)!=n:
 						l=sqrt((z-s[2])**2+(y-s[1])**2+(x-s[0])**2)
-						newseeds.append((x,y,z,l+s[3]))
+						newseeds.append(((x,y,z,l+s[3]),p+[(x,y,z)]))
 						skeleton.set_value_at(x,y,z,n)
 	if len(newseeds):
 #		if n==2 :
