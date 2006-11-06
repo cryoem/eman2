@@ -484,6 +484,19 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 
 	EXITFUNC;
 
+	// ok, ok, not the most efficient place to do this, but it works
+	if (invy) {
+		int x,y;
+		char swp;
+		for (y=0; y<iysize/2; y++) {
+			for (x=0; x<ixsize; x++) {
+				swp=ret[y*bpl+x];
+				ret[y*bpl+x]=ret[(iysize-y-1)*bpl+x];
+				ret[(iysize-y-1)*bpl+x]=swp;
+			}
+		}
+	}
+
     //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
 	return ret;
 }
