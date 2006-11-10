@@ -1,7 +1,7 @@
 #!/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: Steven Ludtke (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -43,8 +43,10 @@ from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 
 class EMImageMX(QtOpenGL.QGLWidget):
-	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
-	or sets of 2D images.
+	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
+	in 'matrix' form on the display. The middle mouse button will bring up a
+	control-panel. The QT event loop must be running for this object to function
+	properly.
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
@@ -176,15 +178,18 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		GL.glPixelZoom(1.0,-1.0)
+		
+		
+		
+#		GL.glPixelZoom(1.0,-1.0)
 		n=len(self.data)
-		x,y=-self.origin[0],self.height()-self.origin[1]-1
+		x,y=-self.origin[0],-self.origin[1]
 		hist=Numeric.zeros(256)
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
 			if x>0 and x<self.width() and y>0 and y<self.height() :
-				a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
+				a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
 				GL.glRasterPos(x,y)
 				GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 				hist2=Numeric.fromstring(a[-1024:],'i')

@@ -119,8 +119,18 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			fp = fimage->copy();
 		}
 	} else {
-		fp = fimage->pad_fft(npad); 
-		fp->do_fft_inplace();
+		if (doInPlace) {
+			if (npad>1) {
+				LOGERR("Cannot pad with inplace filter"); 
+				return NULL;	// FIXME, exception
+			}
+			fp=fimage;
+			fp->do_fft_inplace();
+		}
+		else {
+			fp = fimage->pad_fft(npad); 
+			fp->do_fft_inplace();
+		}
 	}
 	fp->set_array_offsets(1,1,1);
 
