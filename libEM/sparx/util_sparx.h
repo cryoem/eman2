@@ -417,5 +417,33 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
 	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
-
+	static float eval(char * images,EMData * img, vector<int> S,int N, int K,int size);
+	
+	
+	/*static vector<double> vrdg(vector<double> theta,vector<double> phi,int len);*/
+	static void vrdg();
+	/*static void hsortd(vector<double> &theta,vector<double> &phi,vector<int> &key,int option);*/
+	static void hsortd(double *theta,double *phi,vector<int> key,int option);
+	/*static void voronoidiag(vector<double> theta,vector<double> phi,vector<double> weight,int n);*/
+	static void voronoidiag(double *theta,double *phi,double* weight,int n);
+	static void angstep(double* thetast,int len);
+	static void voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last);
+	static void disorder2(double *x,double *y,double *z,int *key,int len);
+	static void ang_to_xyz(double *x,double *y,double *z,int len);
+	static double dot_product(double *x,double *y);
+	static void flip23(double *x,double *y,double *z,int *key,int k,int len);
+	static void swap(double x,double y);
+	
+	struct	tmpstruct{
+ 		double theta1,phi1;
+		int key1;
+ 		};
+	static bool cmp1(tmpstruct tmp1,tmpstruct tmp2);
+	static bool cmp2(tmpstruct tmp1,tmpstruct tmp2);
+	static int trmsh3_(int *n0, double *tol, double *x, 
+		double *y, double *z__, int *n, int *list, int *
+		lptr, int *lend, int *lnew, int *indx, int *lcnt, 
+		int *near__, int *next, double *dist, int *ier);
+	static double areav_(int *k, int *n, double *x, double *y, 
+		double *z__, int *list, int *lptr, int *lend, int *ier);
 #endif	//util__sparx_h__
