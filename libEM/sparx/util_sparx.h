@@ -419,12 +419,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
 	static float eval(char * images,EMData * img, vector<int> S,int N, int K,int size);
 	
-	
-	/*static vector<double> vrdg(vector<double> theta,vector<double> phi,int len);*/
+	/*
+	static vector<double> vrdg(vector<double> theta,vector<double> phi,int len);
 	static void vrdg();
-	/*static void hsortd(vector<double> &theta,vector<double> &phi,vector<int> &key,int option);*/
+	static void hsortd(vector<double> &theta,vector<double> &phi,vector<int> &key,int option);
 	static void hsortd(double *theta,double *phi,vector<int> key,int option);
-	/*static void voronoidiag(vector<double> theta,vector<double> phi,vector<double> weight,int n);*/
+	static void voronoidiag(vector<double> theta,vector<double> phi,vector<double> weight,int n);
 	static void voronoidiag(double *theta,double *phi,double* weight,int n);
 	static void angstep(double* thetast,int len);
 	static void voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last);
@@ -445,5 +445,5 @@ class FakeKaiserBessel : public KaiserBessel {
 		lptr, int *lend, int *lnew, int *indx, int *lcnt, 
 		int *near__, int *next, double *dist, int *ier);
 	static double areav_(int *k, int *n, double *x, double *y, 
-		double *z__, int *list, int *lptr, int *lend, int *ier);
+		double *z__, int *list, int *lptr, int *lend, int *ier);*/
 #endif	//util__sparx_h__

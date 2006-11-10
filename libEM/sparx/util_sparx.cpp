@@ -3605,6 +3605,7 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int K,int size
 	return SSE;	
 }
 	
+#ifdef NEVER
 
 #define		mymax(x,y)		(((x)>(y))?(x):(y))
 #define 	mymin(x,y)		(((x)<(y))?(x):(y))
@@ -3760,7 +3761,7 @@ bool Util::cmp2(tmpstruct tmp1,tmpstruct tmp2)
 }
 
 
-/******************  VORONOI DIAGRAM **********************************/
+
 
 //void Util::voronoidiag(vector<double> theta,vector<double> phi,vector<double> weight,int n){
 void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
@@ -4081,7 +4082,7 @@ label1:
 
 	if (status != 0) {
 		printf(" error in trmsh3\n");
-		/*return status;*/
+		
 	}
 	
 	
@@ -4229,7 +4230,6 @@ void Util::swap(double x,double y)
 
 
 /* Common Block Declarations */
-
 
 #include <math.h>
 
@@ -13730,4 +13730,4 @@ void Util::swap(double x,double y)
 	    return 0;
 	} /* random_ */
 
-
+#endif
