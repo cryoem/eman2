@@ -2799,3 +2799,153 @@ EMData* EMData::get_pow(float n_pow)
 	for(int i=0; i<nx*ny*nz; i++) out[i]=pow(in[i],n_pow);
 	return buf_new;
 }						
+
+EMData* EMData::extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew) 
+{
+	if (!is_complex()) 
+		throw ImageFormatException("extractline requires a fourier image");
+	if (nx%2 != 0)
+		throw ImageDimensionException("extractline requires nx to be even");
+	int nxreal = nx - 2; 
+	if (nxreal != ny)
+		throw ImageDimensionException("extractline requires ny == nx");
+	// build complex result image
+	EMData* res = new EMData();
+	res->set_size(nx,1,1);
+	res->to_zero();
+	res->set_complex(true);
+	res->set_fftodd(false);
+	res->set_fftpad(true);
+	res->set_ri(true);
+	// Array offsets: (0..nhalf,-nhalf..nhalf-1)
+	int n = nxreal;
+	int nhalf = n/2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,-nhalf,-nhalf);
+	res->set_array_offsets(0,-nhalf,0);
+
+	// set up some temporary weighting arrays
+	int kbsize = kb.get_window_size();
+	int kbmin = -kbsize/2;
+	int kbmax = -kbmin;
+	float* wy0 = new float[kbmax - kbmin + 1];
+	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
+	float* wx0 = new float[kbmax - kbmin + 1];
+	float* wx = wx0 - kbmin;
+
+	int count = 0;
+	float wsum = 0.f;
+	bool flip = (nuxnew < 0.f);
+
+	for (int jx = 0; jx <= nhalf; jx++) {
+		float xnew = jx*nuxnew, ynew = jx*nuynew;
+			count++;
+			std::complex<float> btq(0.f,0.f);
+			if (flip) {
+				xnew = -xnew;
+				ynew = -ynew;
+			}
+			int ixn = int(Util::round(xnew));
+			int iyn = int(Util::round(ynew));
+			// populate weight arrays
+			for (int i=kbmin; i <= kbmax; i++) {
+				int iyp = iyn + i;
+				wy[i] = kb.i0win_tab(ynew - iyp);
+				int ixp = ixn + i;
+				wx[i] = kb.i0win_tab(xnew - ixp);
+			}
+			// restrict weight arrays to non-zero elements
+
+			int lnby = 0;
+			for (int iy = kbmin; iy <= -1; iy++) {
+				if (wy[iy] != 0.f) {
+					lnby = iy;
+					break;
+				}
+			}
+			int lney = 0;
+			for (int iy = kbmax; iy >= 1; iy--) {
+				if (wy[iy] != 0.f) {
+					lney = iy;
+					break;
+				}
+			}
+			int lnbx = 0;
+			for (int ix = kbmin; ix <= -1; ix++) {
+				if (wx[ix] != 0.f) {
+					lnbx = ix;
+					break;
+				}
+			}
+			int lnex = 0;
+			for (int ix = kbmax; ix >= 1; ix--) {
+				if (wx[ix] != 0.f) {
+					lnex = ix;
+					break;
+				}
+			}
+			if (ixn >= -kbmin && ixn <= nhalf-1-kbmax
+					&& iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax) {
+				// interior points
+				for (int ly=lnby; ly<=lney; ly++) {
+					int iyp = iyn + ly;
+					for (int lx=lnbx; lx<=lnex; lx++) {
+						int ixp = ixn + lx;
+						float wg = wx[lx]*wy[ly];
+						btq += cmplx(ixp,iyp)*wg;
+						wsum += wg;
+					}
+				}
+			}
+			else {
+				// points "sticking out"
+				for (int ly=lnby; ly<=lney; ly++) {
+					int iyp = iyn + ly;
+					for (int lx=lnbx; lx<=lnex; lx++) {
+						int ixp = ixn + lx;
+						float wg = wx[lx]*wy[ly];
+						bool mirror = false;
+						int ixt(ixp), iyt(iyp);
+						if (ixt > nhalf || ixt < -nhalf) {
+							ixt = Util::sgn(ixt)*(n - abs(ixt));
+							iyt = -iyt;
+							mirror = !mirror;
+						}
+						if (iyt >= nhalf || iyt < -nhalf) {
+							if (ixt != 0) {
+								ixt = -ixt;
+								iyt = Util::sgn(iyt)
+									  *(n - abs(iyt));
+								mirror = !mirror;
+							} else {
+								iyt -= n*Util::sgn(iyt);
+							}
+						}
+						if (ixt < 0) {
+							ixt = -ixt;
+							iyt = -iyt;
+							mirror = !mirror;
+						}
+						if (iyt == nhalf) iyt = -nhalf;
+						if (mirror) 
+							btq += conj(cmplx(ixt,iyt))*wg;
+						else
+							btq += cmplx(ixt,iyt)*wg;
+							wsum += wg;
+					}
+				}
+			}
+		if (flip) 
+			res->cmplx(jx) = conj(btq);
+		else
+			res->cmplx(jx) = btq;
+	}
+	for (int jx = 0; jx <= nhalf; jx++) 
+		res->cmplx(jx) *= count/wsum;
+	
+	delete[] wx0; delete[] wy0;
+	set_array_offsets(saved_offsets);
+	res->set_array_offsets(0,0,0);
+	res->set_shuffled(true);
+	return res;
+}

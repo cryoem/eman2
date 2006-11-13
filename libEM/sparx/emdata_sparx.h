@@ -464,5 +464,5 @@ private:
 //utility function for peak_search()
 static bool peakcmp(const Pixel& p1, const Pixel& p2);  
 public:
-
+EMData* extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew);
 #endif	//emdata__sparx_h__
