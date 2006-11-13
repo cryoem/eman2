@@ -220,6 +220,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
         .def("Crosrng_e", &util_Crosrng_e)
+	.def("vrdg", &EMAN::Util::vrdg)
         .staticmethod("Crosrng_e")
         .staticmethod("alrq_ms")
         .staticmethod("CANG")
@@ -291,6 +292,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("round")
         .staticmethod("ctf_img")
         .staticmethod("Polar2Dm")
+	.staticmethod("vrdg")
     );
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
