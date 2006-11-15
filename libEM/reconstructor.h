@@ -306,7 +306,7 @@ namespace EMAN
 	  public:
 		nn4Reconstructor();
 
-		nn4Reconstructor( const string& symmetry, int size, const string& wght, float wghta, float wghtb, int npad, const string& ctf, float snr );
+		nn4Reconstructor( const string& symmetry, int size, int npad );
 
 		~nn4Reconstructor();
 
@@ -334,18 +334,13 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("ctf", EMObject::STRING);
-			d.put("snr", EMObject::FLOAT);
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
 			d.put("symmetry", EMObject::STRING);
-			d.put("weighting", EMObject::STRING);
-			d.put("weighting_a", EMObject::FLOAT);
-			d.put("weighting_b", EMObject::FLOAT);
 			return d;
 		}
 
-		void setup( const string& symmetry, int size, const string& wght, float wghta, float wghtb, int npad, const string& ctf, float snr );
+		void setup( const string& symmetry, int size, int npad );
 
                 int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
 
@@ -353,9 +348,7 @@ namespace EMAN
 	  private:
 		EMData* m_volume;
 		shared_ptr< EMArray<int> > m_nrptr;
-		shared_ptr< EMArray<float> > m_wgptr;
 	        string  m_symmetry;
-		int m_ctf;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
 		int m_npad;
@@ -366,7 +359,6 @@ namespace EMAN
 		void buildNormVolume();
 		float m_wghta;
 		float m_wghtb;
-		float m_snr;
 	};
 
 
@@ -439,18 +431,23 @@ namespace EMAN
 	{
 	  public:
 		nn4_ctfReconstructor();
+
+		nn4_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign );
+
 		~nn4_ctfReconstructor();
 
-		void setup();
-		int insert_slice(EMData * slice, const Transform3D & euler);
-		EMData *finish();
+		virtual void setup();
 
-		string get_name() const
+		virtual int insert_slice(EMData * slice, const Transform3D & euler);
+
+		virtual EMData *finish();
+
+		virtual string get_name() const
 		{
 			return "nn4_ctf";
 		}
 		
-		string get_desc() const
+		virtual string get_desc() const
 		{
 			return "Direct Fourier inversion reconstruction routine";
 		}
@@ -465,22 +462,33 @@ namespace EMAN
 			TypeDict d;
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
+			d.put("sign", EMObject::INT);
 			d.put("symmetry", EMObject::STRING);
 			d.put("snr", EMObject::FLOAT);
-			d.put("defocus", EMObject::FLOAT);
 			return d;
 		}
 
+		void setup( const string& symmetry, int size, int npad, float snr, int sign );
+
+                int insert_padfft_slice( EMData* padfft, const Transform3D& trans, int mult=1);
+
 	  private:
-		EMData* v;
-		EMArray<float>* wptr;
-		int vnx, vny, vnz;
-		int npad;
-		int vnzp, vnyp, vnxp, vnxc;
+		EMData* m_volume;
+		shared_ptr< EMArray<float> > m_wptr;
+		int m_vnx, m_vny, m_vnz;
+		int m_vnzp, m_vnyp, m_vnxp;
+		int m_vnxc, m_vnyc, m_vnzc;
+		int m_npad;
+		int m_sign;
+                int m_weighting;
+		float m_wghta, m_wghtb;
+		float m_snr;
+		string m_symmetry;
+		int m_nsym;
+
 		void buildFFTVolume();
 		void buildNormVolume();
-		string symmetry;
-		int nsym;
+
 	};
 
 
