@@ -68,15 +68,15 @@ def main():
 def display(img):
 	if isinstance(img,str) : img=[img]
 	app = QtGui.QApplication(sys.argv)
-	if len(img)==1:
-		a=EMData()
-		a.read_image(img[0])
-	else:
-		window = EMImage()
-		a=EMData.read_images(img)
 	
-	window = EMImage(a)
-	window.show()
+	win=[]
+	for f in img:
+		a=EMData.read_images(f)
+		if len(a)==1 : a=a[0]
+		w=EMImage(a)
+		w.show()
+		win.append(w)
+	
 	sys.exit(app.exec_())
 
 # If executed as a program

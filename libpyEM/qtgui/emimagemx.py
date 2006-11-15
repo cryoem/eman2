@@ -136,7 +136,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 #		yo=self.height()-self.origin[1]-1
 		yo=self.origin[1]
 #		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+yo)-self.height()/2)
-		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
+#		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(yo-self.height()/2)+self.height()/2)
+		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
 #		print self.origin,newscale/self.scale,yo,self.height()/2+yo
 		
 		self.scale=newscale
@@ -178,9 +179,6 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		
-		
-		
 #		GL.glPixelZoom(1.0,-1.0)
 		n=len(self.data)
 		x,y=-self.origin[0],-self.origin[1]
@@ -188,37 +186,29 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
-			if x>0 and x<self.width() and y>0 and y<self.height() :
-				a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
-				GL.glRasterPos(x,y)
-				GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-				hist2=Numeric.fromstring(a[-1024:],'i')
-				hist+=hist2
-			elif x+w>0 and y-h<self.height() and x<self.width() and y>0:
-				if x<0 : 
-					x0=-x/self.scale
-					x1=w+x
-				else : 
-					x0=0
-					x1=w
-				if y>self.height()-1 : y1=h-y+self.height()-1
-				else : y1=h
-				x0,x1,y1=int(x0),int(x1),int(y1)
-				a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
-				if x<0 : xx=0
-				else : xx=x
-				if y>=self.height() : yy=self.height()-1
-				else : yy=y
-				GL.glRasterPos(xx,yy)
-				GL.glDrawPixels(x1,y1,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-				hist2=Numeric.fromstring(a[-1024:],'i')
-				hist+=hist2
+			if x<self.width() and y<self.height():
+				if x>0 and y>0:
+					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
+					GL.glRasterPos(x,y)
+					GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+					hist2=Numeric.fromstring(a[-1024:],'i')
+					hist+=hist2
+				elif x+w>0 and y+h>0:
+					tx=int(max(x,0))
+					ty=int(max(y,0))
+					tw=int(w-tx+x)
+					th=int(h-ty+y)
+					a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
+					GL.glRasterPos(tx,ty)
+					GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+					hist2=Numeric.fromstring(a[-1024:],'i')
+					hist+=hist2
 				
-			try: self.coords[i]=(x+self.origin[0],self.height()-y+1+self.origin[1])
-			except: self.coords.append((x+self.origin[0],self.height()-y+1+self.origin[1]))
+			try: self.coords[i]=(x+self.origin[0],y+self.origin[1])
+			except: self.coords.append((x+self.origin[0],y+self.origin[1]))
 			
 			if (i+1)%self.nperrow==0 : 
-				y-=h+2.0
+				y+=h+2.0
 				x=-self.origin[0]
 			else: x+=w+2.0
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
