@@ -3381,7 +3381,7 @@ EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float vo
 	float scx, scy,scz;	  
 	if (nx%2==0) lsm=nx+2; else lsm=nx+1;		     
 	float lambda=12.398/pow(voltage *(1022.+voltage),.5);	
-	cs=cs*1.0e-7f;    
+	cs=cs*1.0e7f;    
 	wgh = atan(wgh/(1.0-wgh));   
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(lsm,ny,nz);
