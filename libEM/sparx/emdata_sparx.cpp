@@ -1045,37 +1045,97 @@ void EMData::symplane0(EMArray<int>& w) {
 	EXITFUNC;
 }
 
+class ctf_store
+{
+public:
+
+    static void init( int winsize, float voltage, float pixel, float Cs, float amp_contrast, float b_factor )
+    {
+        m_inited = true;
+        m_winsize = winsize;
+	m_voltage = voltage;
+	m_pixel   = pixel;
+	m_Cs      = Cs * 1.0e7f;
+	m_amp_contrast = amp_contrast;
+	m_b_factor = b_factor;
+
+        m_winsize2= m_winsize*m_winsize;
+        m_vecsize = m_winsize2/4;
+        m_wgh=atan( amp_contrast/(1.0-amp_contrast) );
+	m_lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
+    }
+
+    static bool inited( )
+    {
+        return m_inited;
+    }
+
+    static float get_ctf( float defocus, int r2 )
+    {
+        assert( m_inited );
+
+        shared_ptr< vector<float> > ptr;
+
+        map< float, shared_ptr< vector<float> > >::iterator i = m_store.find( defocus );
+ 
+        if( i == m_store.end() )
+	{
+	    ptr = shared_ptr< vector<float> >( new vector<float>(m_vecsize, 0.0) );
+	    m_store[defocus] = ptr;
+	}    
+        else
+	{
+	    ptr = i->second;
+	}
+
+        float ctf = ptr->at(r2);
+
+	if( ctf == 0.0 )
+	{
+	    float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
+	    float a = m_lambda*ak*ak;
+	    float b = m_lambda*a*a;
+	    ctf = -sin(-M_PI*(defocus*a-m_Cs*b/2.)-m_wgh);
+	    ptr->at(r2) = ctf;
+        }
+
+        return ctf;
+    }
+
+private:
+ 
+    static bool m_inited;
+
+    static int m_winsize, m_winsize2, m_vecsize;
+
+    static float m_Cs, m_voltage, m_pixel, m_amp_contrast, m_b_factor;
+
+    static float m_lambda, m_wgh;
+
+    static map< float, shared_ptr< vector<float> > > m_store;
+};
+
+bool ctf_store::m_inited = false;
+
+int ctf_store::m_winsize, ctf_store::m_winsize2, ctf_store::m_vecsize;
+
+float ctf_store::m_Cs, ctf_store::m_voltage, ctf_store::m_pixel, ctf_store::m_amp_contrast, ctf_store::m_b_factor;
+
+float ctf_store::m_lambda, ctf_store::m_wgh;
+
+std::map< float, shared_ptr< std::vector<float> > > ctf_store::m_store;
+
 
 //  Helper functions for method nn4_ctf
 void EMData::onelinenn_ctf(int j, int n, int n2, 
-		          EMArray<float>& w, EMData* bi, const Transform3D& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
-	//  CTF parameters
-	// float ps = 4.2f, voltage = 200.0f, cs= 2.0*1.0e-7f, ww=0.1, b_factor=0.0f, sign=-1.0f;
-	// float wgh=atan(ww/(1.0-ww)), lambda = 12.398f/std::sqrt(voltage *(1022.f+voltage));
-	float dz = bi->get_attr( "defocus" );
-	float ps = bi->get_attr( "pixel" );
-	float voltage = bi->get_attr("voltage");
-	float cs= bi->get_attr( "Cs" );
-	float ww=0.1;
-	float b_factor=0.0;
-	float sign=-1.0f;
-
-	cs = cs*1.0e-7f;
-	float wgh=atan(ww/(1.0-ww));
-	float lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
-	
+		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
-	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
-	float  dy2 = pow(float(j)/float(n),2);
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-		if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
-			 //	   if ( !((0 == i) && (j < 0))) {
-			//  Calculate absolute frequency
-			float  ak = std::sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
-			//float  ctf = Util::tf(dz, freq, 12.398f/sqrt(lambda *(1022.f+lambda)), cs*1.0e-7f, atan(wgh/(1.0-wgh)), b_factor, sign);
-			float  ctf = -sin(-M_PI*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh);
+	        int r2 = i*i+j*j;
+		if ( (r2<n*n/4) && !( (0==i) && (j<0) ) ) {
+		        float  ctf = ctf_store::get_ctf( defocus, r2 );
 			float xnew = i*tf[0][0] + j*tf[1][0];
 			float ynew = i*tf[0][1] + j*tf[1][1];
 			float znew = i*tf[0][2] + j*tf[1][2];
@@ -1084,8 +1144,8 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 				xnew = -xnew;
 				ynew = -ynew;
 				znew = -znew;
-				btq = conj(bi->cmplx(i,jp))*ctf*ctf;
-			} else  btq = bi->cmplx(i,jp)*ctf*ctf;
+				btq = conj(bi->cmplx(i,jp));
+			} else  btq = bi->cmplx(i,jp);
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
@@ -1102,7 +1162,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					} else {
 						iya = n + iyn + 1;
 					}
-					cmplx(ixn,iya,iza) += btq*float(mult);
+					cmplx(ixn,iya,iza) += btq*ctf*float(mult);
 					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
 					w(ixn,iya,iza) += ctf*ctf*mult;
 				} else {
@@ -1117,7 +1177,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					} else {
 						iyt = -iyn + 1;
 					}
-					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
+					cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 					w(-ixn,iyt,izt) += ctf*ctf*float(mult);
 				}
@@ -1127,32 +1187,14 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 }
 
 void EMData::onelinenn_ctf_applied(int j, int n, int n2, 
-		          EMArray<float>& w, EMData* bi, const Transform3D& tf, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
-	//  CTF parameters
-	//
-        float dz = bi->get_attr( "defocus" );
-        float ps = bi->get_attr( "pixel" );
-	float voltage = bi->get_attr("voltage");
-	float cs= bi->get_attr( "Cs" );
-	float wgh=bi->get_attr( "amp_contrast" );
-        //float b_factor=bi->get_attr( "b_factor" );
-	float b_factor = 0.0;
-	float sign=-1.0f;
-
-	cs = cs*1.0e-7f;
-	float lambda = 12.398f/std::sqrt(voltage*(1022.f+voltage));
 	int jp = (j >= 0) ? j+1 : n+j+1;
-	//for(int i = 0; i <= 1; i++){for(int l = 0; l <= 2; l++){std::cout<<"  "<<tf[i][l]<<"  "<<std::endl;}}
-	float  dy2 = pow(float(j)/float(n),2);
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
-		if (((i*i+j*j) < n*n/4) && !((0 == i) && (j < 0))) {
-
-                 	//  Calculate absolute frequency
-                        float  ak = std::sqrt(pow(float(i)/float(2*n2),2)+dy2)/ps;
-                        float  ctf = Util::tf(dz,ak,lambda,cs, atan(wgh/(1.0-wgh)), b_factor, sign);
-                        //float  ctf = -sin(-M_PI*(dz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh);
+	        int r2 = i*i + j*j;
+		if ( (r2< n*n/4) && !((0==i) && (j< 0)) ) {
+                        float  ctf = ctf_store::get_ctf( defocus, r2);
 
 			 //	   if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
@@ -1182,7 +1224,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 					} else {
 						iya = n + iyn + 1;
 					}
-					cmplx(ixn,iya,iza) += btq*float(mult)*ctf;
+					cmplx(ixn,iya,iza) += btq*float(mult);
 					w(ixn,iya,iza) += mult*ctf*ctf;
 				} else {
 					int izt, iyt;
@@ -1196,9 +1238,8 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 					} else {
 						iyt = -iyn + 1;
 					}
-					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult)*ctf;
+					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
 					w(-ixn,iyt,izt) += mult*ctf*ctf;
-
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 				}
 			}
@@ -1215,8 +1256,20 @@ EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
+
+	if( ! ctf_store::inited() )
+	{
+            float Cs= myfft->get_attr( "Cs" );
+            float pixel = myfft->get_attr( "pixel" );
+            float voltage = myfft->get_attr("voltage");
+            float amp_contrast = myfft->get_attr( "amp_contrast" );
+            float b_factor=0.0;
+            ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
+	}
+
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf(iy, ny, nxc, w, myfft, tf, mult);
+        float defocus = myfft->get_attr( "defocus" );
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf(iy, ny, nxc, w, myfft, tf, defocus, mult);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;
@@ -1231,8 +1284,20 @@ EMData::nn_ctf_applied(EMArray<float>& w, EMData* myfft, const Transform3D& tf, 
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
+
+	if( ! ctf_store::inited() )
+	{
+            float Cs= myfft->get_attr( "Cs" );
+            float pixel = myfft->get_attr( "pixel" );
+            float voltage = myfft->get_attr("voltage");
+            float amp_contrast = myfft->get_attr( "amp_contrast" );
+            float b_factor=0.0;
+            ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
+	}
+
 	// loop over frequencies in y
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_applied(iy, ny, nxc, w, myfft, tf, mult);
+	float defocus = myfft->get_attr( "defocus" );
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_applied(iy, ny, nxc, w, myfft, tf, defocus, mult);
 	set_array_offsets(saved_offsets);
 	myfft->set_array_offsets(myfft_saved_offsets);
 	EXITFUNC;

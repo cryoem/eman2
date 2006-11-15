@@ -150,7 +150,7 @@ EMData* rotavg();
 		 * @param defocus
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, int mult);
+		void onelinenn_ctf(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -174,7 +174,7 @@ EMData* rotavg();
 		 * @param mult
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn_ctf_applied(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, int mult);
+		void onelinenn_ctf_applied(int j, int n, int n2, EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
