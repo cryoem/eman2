@@ -393,36 +393,25 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("ctf", EMObject::STRING);
-			d.put("snr", EMObject::FLOAT);
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
         		d.put("mult", EMObject::INTARRAY);
 			d.put("media", EMObject::STRING);
 			d.put("symmetry", EMObject::STRING);
-	                d.put("weighting", EMObject::STRING);
-			d.put("weighting_a", EMObject::FLOAT);
-			d.put("weighting_b", EMObject::FLOAT);
 			return d;
 		}
 
 	  private:
 	        string m_ctf;
 	  	string m_media;
-                string m_weighting;
 		string m_symmetry;
 		float m_snr;
-		float m_wghta;
-		float m_wghtb;
 		int m_size;
 		int m_npad;
 		int m_nsym;
 		vector< EMData* > m_padffts;
 		vector< Transform3D* > m_transes;
 	};
-
-
-
 
 	/** nn4_ctf Direct Fourier Inversion Reconstructor
      * 
@@ -489,6 +478,60 @@ namespace EMAN
 		void buildFFTVolume();
 		void buildNormVolume();
 
+	};
+
+	class bootstrap_nnctfReconstructor:public Reconstructor
+	{
+	  public:
+		bootstrap_nnctfReconstructor();
+
+		~bootstrap_nnctfReconstructor();
+
+		virtual void setup();
+
+		virtual int insert_slice(EMData * slice, const Transform3D & euler);
+		
+		virtual EMData *finish();
+
+		virtual string get_name() const
+		{
+			return "bootstrap_nnctf";
+		}
+		
+		string get_desc() const
+		{
+			return "Bootstrap nearest neighbour CTF constructor";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new bootstrap_nnctfReconstructor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("snr", EMObject::FLOAT);
+			d.put("size", EMObject::INT);
+			d.put("npad", EMObject::INT);
+			d.put("sign", EMObject::INT);
+        		d.put("mult", EMObject::INTARRAY);
+			d.put("media", EMObject::STRING);
+			d.put("symmetry", EMObject::STRING);
+			return d;
+		}
+
+	  private:
+	        string m_ctf;
+	  	string m_media;
+		string m_symmetry;
+		float m_snr;
+		int m_size;
+		int m_npad;
+		int m_nsym;
+		int m_sign;
+		vector< EMData* > m_padffts;
+		vector< Transform3D* > m_transes;
 	};
 
 

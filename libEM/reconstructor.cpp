@@ -59,7 +59,9 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&nn4Reconstructor::NEW);
 	force_add(&nn4_ctfReconstructor::NEW);
 	force_add(&nn4_ctfReconstructor::NEW);
-	force_add(&bootstrap_nnReconstructor::NEW); }
+	force_add(&bootstrap_nnReconstructor::NEW); 
+	force_add(&bootstrap_nnctfReconstructor::NEW); 
+}
 
 FourierReconstructor::FourierReconstructor()
 :	image(0), nx(0), ny(0), nz(0)
@@ -1360,16 +1362,6 @@ void bootstrap_nnReconstructor::setup()
     m_npad = params["npad"];
     m_size = params["size"];
     m_media = params["media"].to_str();
-    m_weighting = params["weighting"].to_str();
-
-    m_snr = 1000.0;
-    if(m_ctf=="applied") m_snr = params["snr"];
-
-    m_wghta = 0.0;
-    if(m_weighting=="ESTIMATE") m_wghta = params["weighting_a"];
-
-    m_wghtb = 0.0;
-    if(m_weighting=="ESTIMATE") m_wghtb = params["weighting_b"];
 
     try {
 	m_symmetry = params["symmetry"].to_str();
@@ -1380,7 +1372,6 @@ void bootstrap_nnReconstructor::setup()
     }
         
     m_nsym = Transform3D::get_nsym(m_symmetry);
-
 }
 
 int bootstrap_nnReconstructor::insert_slice(EMData* slice, const Transform3D& euler)
@@ -1698,6 +1689,88 @@ EMData* nn4_ctfReconstructor::finish()
 #undef  tw
 
 
+// bootstrap_nnctfReconstructor
+bootstrap_nnctfReconstructor::bootstrap_nnctfReconstructor()
+{
+}
+
+bootstrap_nnctfReconstructor::~bootstrap_nnctfReconstructor()
+{
+    for_each( m_padffts.begin(), m_padffts.end(), boost::ptr_fun( checked_delete< EMData > ) );
+    for_each( m_transes.begin(), m_transes.end(), boost::ptr_fun( checked_delete< Transform3D > ) );
+}
+
+void bootstrap_nnctfReconstructor::setup()
+{
+    m_npad = params["npad"];
+    m_size = params["size"];
+    m_sign = params["sign"];
+    m_media = params["media"].to_str();
+    m_snr = params["snr"];
+
+    try {
+	m_symmetry = params["symmetry"].to_str();
+	if ("" == m_symmetry) m_symmetry = "c1";
+    }
+    catch(_NotExistingObjectException) {
+        m_symmetry = "c1";
+    }
+        
+    m_nsym = Transform3D::get_nsym(m_symmetry);
+}
+
+int bootstrap_nnctfReconstructor::insert_slice(EMData* slice, const Transform3D& euler)
+{
+    EMData* padfft = padfft_slice( slice, m_npad );
+    assert( padfft != NULL );
+
+    if( m_media == "memory" )
+    {
+        m_padffts.push_back( padfft );
+    }
+    else
+    {
+        padfft->write_image( m_media, m_transes.size() );
+	checked_delete( padfft );
+    }
+
+    Transform3D* trans = new Transform3D( euler );
+    m_transes.push_back( trans );
+    return 0;
+}
+
+EMData* bootstrap_nnctfReconstructor::finish()
+{
+    nn4_ctfReconstructor* r( new nn4_ctfReconstructor(m_symmetry, m_size, m_npad, m_snr, m_sign) );
+    shared_ptr< vector<int> > mults = params["mult"];
+    assert( mults != NULL );
+    assert( m_transes.size() == mults->size() );
+
+    int total = 0;
+    for( unsigned int i=0; i < mults->size(); ++i )
+    {
+        int mult = mults->at(i);
+	if( mult > 0 )
+	{
+	    if( m_media == "memory" )
+	    {
+                r->insert_padfft_slice( m_padffts[i], *m_transes[i], mult );
+	    }
+	    else
+	    {
+	        EMData* padfft = new EMData();
+		padfft->read_image( m_media, i );
+		r->insert_padfft_slice( padfft, *m_transes[i], mult );
+		checked_delete( padfft );
+            }
+	}
+	total += mult;
+    }
+
+    EMData* w = r->finish();
+    checked_delete(r);
+    return w;
+}
 
 
 void EMAN::dump_reconstructors()
