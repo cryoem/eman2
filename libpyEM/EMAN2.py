@@ -93,7 +93,7 @@ def display(img):
 	else:
 		img.write_image("/tmp/img.hed")
 #	os.system("v2 /tmp/img.hed")
-	os.system("e2display.py img.hed")
+	os.system("e2display.py /tmp/img.hed")
 
 def plot(img,size=(800,600),path="plot.png"):
 	"""plots an image using the matplotlib library"""
