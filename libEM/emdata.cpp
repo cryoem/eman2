@@ -627,7 +627,7 @@ void EMData::rotate_translate(float az, float alt, float phi, float dx, float dy
 
 
 
-void EMData::rotate_translate(const Transform3D & xform)
+void EMData::rotate_translate(const Transform3D & RA)
 {
 	ENTERFUNC;
 
@@ -635,10 +635,10 @@ void EMData::rotate_translate(const Transform3D & xform)
 	std::cout << "start rotate_translate..." << std::endl;
 #endif
 
-	float scale = xform.get_scale();
-	Vec3f dcenter = xform.get_center();
-	Vec3f translation = xform.get_posttrans();
-	Dict rotation = xform.get_rotation(Transform3D::EMAN);
+	float scale       = RA.get_scale();
+	Vec3f dcenter     = RA.get_center();
+	Vec3f translation = RA.get_posttrans();
+	Dict rotation      = RA.get_rotation(Transform3D::EMAN);
 
 #ifdef DEBUG
 	vector<string> keys = rotation.keys();
@@ -664,8 +664,8 @@ void EMData::rotate_translate(const Transform3D & xform)
 	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
 
 	if (nz == 1) {
-		float mx0 = inv_scale * cos((M_PI/180.0f)*(float)rotation["phi"]);
-		float mx1 = inv_scale * sin((M_PI/180.0f)*(float)rotation["phi"]);
+		float cosphi = inv_scale * cos((M_PI/180.0f)*(float)rotation["phi"]);
+		float sinphi = inv_scale * sin((M_PI/180.0f)*(float)rotation["phi"]);
 
 		float x2c =  nx / 2 - dcenter[0] - translation[0];
 		float y2c =  ny / 2 - dcenter[1] - translation[1];
@@ -675,8 +675,8 @@ void EMData::rotate_translate(const Transform3D & xform)
 			float x = -nx / 2 + dcenter[0];
 
 			for (int i = 0; i < nx; i++, x += 1.0f) {
-				float x2 = ( mx0 * x + mx1 * y) + x2c;
-				float y2 = (-mx1 * x + mx0 * y) + y2c;
+				float x2 = ( cosphi * x  - sinphi * y) + x2c;
+				float y2 = ( sinphi * x + cosphi * y) + y2c;
 
 				if (x2 < 0 || x2 >= nx2 - 1 || y2 < 0 || y2 >= ny2 - 1) {
 					des_data[i + j * nx] = 0;
@@ -719,7 +719,7 @@ void EMData::rotate_translate(const Transform3D & xform)
 		std::cout << "This is the 3D case." << std::endl    ;
 #endif
 
-		Transform3D mx = xform;
+		Transform3D mx = RA;
 		mx.set_scale(inv_scale);
 
 #ifdef DEBUG

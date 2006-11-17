@@ -47,10 +47,10 @@ using namespace std;
 
 EMData *EMData::real2FH(float OverSamplekB) // PRB
 {
-	int nx=get_xsize();
-	int ny=get_ysize();
-	int nz=get_zsize();
-	int Center = (int) floor( (nx+1.0)/2.0 +.01);
+	int nx        = get_xsize();
+	int ny        = get_ysize();
+	int nz        = get_zsize();
+	int Center  = (int) floor( (nx+1.0)/2.0 +.01);
 #ifdef DEBUG
 	printf("nx=%d, ny=%d, nz=%d Center=%d\n", nx,ny,nz, Center);
 #endif	//DEBUG
@@ -116,6 +116,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 		int CenterM= Center-1; // to convert from Matlab to C++
 		std::complex <float> *rhoOfRandmTemp = new std::complex <float>[RIntMax];
 		std::complex <float> rhoTemp;
+
 		int PCount=0;
 
 
@@ -221,15 +222,15 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	int CenterM= Center-1;
 	int CountMax = (Center+1)*Center/2;
 
-	int   *PermMatTr           = new int[CountMax];
-	float *RValsSorted         = new float[CountMax];
-	float *weightofkValsSorted = new float[CountMax];
-	int   *SizeReturned        = new int[1];
+	int     *PermMatTr           = new int[CountMax];
+	float  *RValsSorted         = new float[CountMax];
+	float  *weightofkValsSorted = new float[CountMax];
+	int      *SizeReturned        = new int[1];
 	Util::Radialize(PermMatTr, RValsSorted,weightofkValsSorted,Size, SizeReturned);
 	int RIntMax= SizeReturned[0];  // replaces CountMax; the latter should now never be used.
 //	kVec2Use = (0:1/OverSamplek:RValsSorted(RIntMax)+1/OverSamplek); %   in pixels  (otherwise need *2*pi/Size)
 
-	int mMax = (int) floor( ScalFactor*RValsSorted[RIntMax-1]+10.0);
+	int   mMax = (int) floor( ScalFactor*RValsSorted[RIntMax-1]+10.0);
 
 	int    kIntMax  = 2+ (int) floor( RValsSorted[RIntMax-1]*OverSamplekB);
 	float *kVec2Use = new float[kIntMax];
@@ -1340,7 +1341,9 @@ EMData::symplane0_ctf(EMArray<float>& w) {
 
 
 EMData*
-EMData::rot_trans2D(float ang, float delx, float dely) {
+EMData::rot_trans2D(float angDeg, float delx, float dely) {  // This uses bilinear interpolation; 
+	float ang=angDeg*M_PI/180.0f;
+	
 	if (1 >= ny) 
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (1 < nz) 
@@ -1349,10 +1352,11 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 		EMData* ret = copy();
 		return ret;
 	}
+	
 	update();
 	float background = get_attr("mean");
-	if (ang > pi) ang -= static_cast<float>(twopi);
-	if (ang < -pi) ang += static_cast<float>(twopi);
+//	if (ang >  pi) ang -= static_cast<float>(twopi);
+//	if (ang < -pi) ang += static_cast<float>(twopi);
 	float cang = cos(ang);
 	float sang = sin(ang);
 	EMData* ret = copy_head();
@@ -1371,20 +1375,21 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 			float x = float(ix) - shiftxc;
 			float xold = x*cang + ysang;
 			float yold = x*sang + ycang;
+			printf("\t\t xold = %f, yold=%f \n",xold,yold);
 			int iyold = int(yold);
 			float q = yold - float(iyold);
-			float qcomp = 1.f - q;
+			float qbar = 1.f - q;
 			int ixold = int(xold);
 			// Note: nx-2 or ny-2 below because need room for
 			// (forward) interpolation
 			if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
 				// inside boundaries of input image
 				float p = xold - ixold;
-				float pcomp = 1.f - p;
-				(*ret)(ix,iy) = q*(pcomp*(*this)(ixold,iyold+1)
-						         + p*(*this)(ixold+1,iyold+1))
-					        + qcomp*(pcomp*(*this)(ixold,iyold)
-									 + p*(*this)(ixold+1,iyold));
+				float pbar = 1.f - p;
+				(*ret)(ix,iy) = q*(  pbar*(*this)(ixold,iyold+1)
+						   + p*(*this)(ixold+1,iyold+1)    )
+					        + qbar*(   pbar*(*this)(ixold,iyold)
+							 + p*(*this)(ixold+1,iyold)   );
 			}
 		}
 	}
@@ -1394,7 +1399,7 @@ EMData::rot_trans2D(float ang, float delx, float dely) {
 }
 
 EMData*
-EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) {
+EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { // quadrilinear, no background, 2D
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");

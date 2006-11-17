@@ -224,7 +224,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
     int Mid= (Size+1)/2;
 
     if (flag<0 || flag>4) {
-    	cout <<" flat must be 0,1,2,3, or 4";
+    	cout <<" flag must be 0,1,2,3, or 4";
     }
     if (flag==0) { // This is the real function
 	   EMData* ImBW = new EMData();

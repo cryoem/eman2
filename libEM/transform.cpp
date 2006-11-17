@@ -244,6 +244,9 @@ void Transform3D::apply_scale(float scale)    // YYY
 			matrix[i][j] *= scale;
 		}
 	}
+	for (int j = 0; j < 3; j++) {
+		matrix[3][j] *= scale;
+	}
 }
 
 
