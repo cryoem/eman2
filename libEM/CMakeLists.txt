@@ -58,7 +58,6 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/normpadft.cpp
     sparx/fourierfilter.cpp
     sparx/rsconvolution.cpp
-    sparx/tflm.cpp
     polardata.cpp
     sparx/native_fft.cpp
     sparx/util_sparx.cpp

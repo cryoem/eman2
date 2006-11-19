@@ -66,7 +66,6 @@ cd
 "CMakeFiles/EM2.dir/sparx/periodogram.o"
 "CMakeFiles/EM2.dir/sparx/fourierfilter.o"
 "CMakeFiles/EM2.dir/sparx/rsconvolution.o"
-"CMakeFiles/EM2.dir/sparx/tflm.o"
 "CMakeFiles/EM2.dir/polardata.o"
 "CMakeFiles/EM2.dir/sparx/native_fft.o"
 "CMakeFiles/EM2.dir/sparx/util_sparx.o"
@@ -217,7 +216,6 @@ lib_em2_sources = [
     "sparx/periodogram.cpp", 
     "sparx/fourierfilter.cpp", 
     "sparx/rsconvolution.cpp", 
-    "sparx/tflm.cpp", 
     "polardata.cpp", 
     "sparx/native_fft.cpp", 
     "sparx/util_sparx.cpp", 
