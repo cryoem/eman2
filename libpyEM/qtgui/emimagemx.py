@@ -278,23 +278,23 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.hbl2.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl2)
 		
-		self.mapp = QtGui.QPushButton("App")
-		self.mapp.setCheckable(1)
-		self.hbl2.addWidget(self.mapp)
+		self.mmeas = QtGui.QPushButton("Meas")
+		self.mmeas.setCheckable(1)
+		self.hbl2.addWidget(self.mmeas)
 
 		self.mdel = QtGui.QPushButton("Del")
 		self.mdel.setCheckable(1)
 		self.hbl2.addWidget(self.mdel)
 
-		self.mmove = QtGui.QPushButton("Drag")
-		self.mmove.setCheckable(1)
-		self.hbl2.addWidget(self.mmove)
+		self.mdrag = QtGui.QPushButton("Drag")
+		self.mdrag.setCheckable(1)
+		self.hbl2.addWidget(self.mdrag)
 
 		self.bg=QtGui.QButtonGroup()
 		self.bg.setExclusive(1)
 		self.bg.addButton(self.mmeas)
 		self.bg.addButton(self.mdel)
-		self.bg.addButton(self.mmove)
+		self.bg.addButton(self.mdrag)
 
 		self.hbl = QtGui.QHBoxLayout()
 		self.hbl.setMargin(0)
@@ -344,10 +344,12 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 		
-		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.newMode)
+		QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.newMode)
 		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.newMode)
 		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.newMode)
 
+	def newMode(self,i):
+		print i
 
 	def newMin(self,val):
 		if self.busy : return
