@@ -278,13 +278,15 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	}
 
 	bool premasked = true;
-	// rfp's are cached by the image object, they should not be deleted here
 	EMData *this_img2 = this_img->make_rotational_footprint(premasked);
 	EMData *to2 = to->make_rotational_footprint(premasked);
 
 	int this_img2_nx = this_img2->get_xsize();
 
 	EMData *cf = this_img2->calc_ccfx(to2, 0, this_img->get_ysize());
+
+	delete this_img2;
+	delete to2;
 
 	float *data = cf->get_data();
 	float peak = 0;

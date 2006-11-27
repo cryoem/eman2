@@ -77,9 +77,9 @@ for i in range(1,n):
 	
 	a=aa.process("filter.lowpass.gauss",{"sigma":.1})
 	
-#	b=a.align("rotate_translate",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
-	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
-	b.set_attr("rotational",0.0)
+	b=a.align("rotate_translate",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
+#	b=a.align("translational",ref0,{"nozero":1,"maxshift":nx/2},"dot",{"negative":1})
+#	b.set_attr("rotational",0.0)
 	dot=b.cmp("dot",ref0,{"negative":0,"normalize":1})
 	#bdot=0
 	#bang=0
