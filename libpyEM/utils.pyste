@@ -38,6 +38,23 @@ exclude(Util.triquad)
 #merge_peaks() cause trouble on some platform, not expose to Python
 exclude(Util.merge_peaks)
 
+exclude(Util.run_cl5)
+exclude(Util.lsfit)
+exclude(Util.cl1)
+
+exclude(Util.hsortd)
+exclude(Util.voronoidiag)
+exclude(Util.voronoidiag)
+exclude(Util.trmsh3_)
+exclude(Util.angstep)
+exclude(Util.angstep)
+exclude(Util.voronoi)
+exclude(Util.disorder2)
+exclude(Util.ang_to_xyz)
+exclude(Util.dot_product)
+exclude(Util.flip23) 
+exclude(Util.swap)
+exclude(Util.areav)
 EMUtil = Class("EMAN::EMUtil", "emutil.h")
 set_policy(EMUtil.get_imageio, return_internal_reference())
 set_policy(EMUtil.vertical_acf, return_value_policy(manage_new_object))
@@ -57,6 +74,7 @@ set_policy(Util.reconstitute_image_mask,return_value_policy(manage_new_object))
 exclude(EMUtil.get_region_dims)
 exclude(EMUtil.get_region_origins)
 exclude(EMUtil.get_region_data)
+
 
 #exclude this function to make EMAN2 compile with boost 1.33.0
 exclude(EMUtil.process_region_io)
