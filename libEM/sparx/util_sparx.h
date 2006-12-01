@@ -417,8 +417,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
 	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
+	static vector<float> pw_extract(vector<float>pw, int n, int iswi,float ps);
+	static void run_cl5(long int *k,long int *n, float *ps, long int *iswi, float *pw, float *q2, double *q, double *x, double *res, double *cu, double *s, long int *iu);
+	static vector<float> lsfit(long int *ks,long int *n, long int *klm2d, long int *iswi, float *q1,double *q, double *x, double *res, double *cu, double *s,long int *iu);
+	static void cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,double *q, double *x, double *res, double *cu, long
+	int *iu, double *s);
 	static float eval(char * images,EMData * img, vector<int> S,int N, int K,int size);
-	
 	/*  VORONOI DIAGRAM */
 	static vector<double> vrdg(EMData *th, EMData *ph);
 	static void hsortd(double *theta,double *phi,int *key,int len,int option);
@@ -438,7 +442,6 @@ class FakeKaiserBessel : public KaiserBessel {
 	static bool cmp1(tmpstruct tmp1,tmpstruct tmp2);
 	static bool cmp2(tmpstruct tmp1,tmpstruct tmp2);
 	/**********************************************************/
-	
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 	static int trmsh3_(int *n0, double *tol, double *x, double *y, double *z__, int *n, int *list, int *lptr, 
 	       int *lend, int *lnew, int *indx, int *lcnt, int *near__, int *next, double *dist, int *ier);
