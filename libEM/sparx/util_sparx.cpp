@@ -3600,21 +3600,16 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	klmd=k+l+m;
 	klm2d= k+l+m+2;
 	nklmd=k+l+m+n;
-	n2d=n+2;
-	
-	/*size has to be increased when N is large*/
-	
+	n2d=n+2;	
+	/*size has to be increased when N is large*/	
 	n_larg=klmd*2;
 	klm2d=n_larg+klm2d;
 	klmd=n_larg+klmd;
 	nklmd=n_larg+nklmd;
 	int size_q=klm2d*n2d;
-	int size_cu=nklmd*2;	
-		
-	cout<<"numbers"<<k<<klm2d<<n2d<<endl;
-	
+	int size_cu=nklmd*2;				
 	static int i__,j__;
-	/* prepare arrays for CL1 */	
+
 	 double *q ;
 	 double *x ;
 	 double *res;
@@ -3631,24 +3626,15 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	 q2 = (float*)calloc(size_q,sizeof(float));
 	 iu = (long int*)calloc(size_cu,sizeof(long int));
 	 pw_ = (float*)calloc(k,sizeof(float));
-	/* double *cu = new double[size_cu];
-	 double *s = new double[klmd];
-	 float *q2 = new  float[size_q];
-	 long int *iu = new long int[n];
-	 float *pw_ = new float [k];*/
 	
-	cout<<"Broken"<<k<<klm2d<<n2d<<endl;
 	for( i__ =0;i__<k;++i__)
 		{ 
-		pw_[i__]=pw[i__];
-		cout<<"PW2      "<<pw_[i__]<<endl;
-		} 
-	cout<<"Broken"<<k<<klm2d<<n2d<<endl;	
+		pw_[i__]=log(pw[i__]); } 
 	static long int l_k=k;
 	static long int l_n=n;
 	static long int l_iswi=iswi;
-	Util::run_cl5(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);
-	cout<<"finish run_cl5"<<endl;		
+	vector<float> cl1_res;
+	cl1_res=Util::call_cl1(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);		
 	free(q);
 	free(x);
 	free(res);
@@ -3657,30 +3643,15 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	free(q2);
 	free(iu);
 	free(pw_);
-/*	delete [ ] q;
-	delete [ ] x;
-	delete [ ] res;
-	delete [ ] cu;
-	delete [ ] s;
-	delete [ ] q2;
-	delete [ ] iu;
-	delete [ ] pw_;*/
-	vector<float> out;
-	out.push_back(1);
-	return out;		
+	return cl1_res;		
 }
-void Util::run_cl5(long int *k, long int *n, float *ps, long int *iswi, float *pw, float *q2,double *q, double *x, double *res, double *cu, double *s, long int *iu)
+vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi, float *pw, float *q2,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
-    /* System generated locals */
     long int q2_dim1, q2_dim2, q2_offset, q_dim1, q_offset, i__1, i__2;
     float r__1;
     int tmp__i;
-    float tmp__x;
-	
-    /* Local variables */
+    float tmp__x;	
     static long int i__, j, l;
-
-/*   Define variables, and open arrays    */
     --s;
     --res;
     iu -= 3;
@@ -3696,7 +3667,6 @@ void Util::run_cl5(long int *k, long int *n, float *ps, long int *iswi, float *p
     q2_offset = 1 + q2_dim1;
     q2 -= q2_offset;
 
-/* Function Body */
     i__1 = *n - 1;
     tmp__i=0;
     for (j = 1; j <= i__1; ++j) {
@@ -3704,21 +3674,16 @@ void Util::run_cl5(long int *k, long int *n, float *ps, long int *iswi, float *p
 	tmp__i+=1;
 	for (i__ = 1; i__ <= i__2; ++i__) {
 	    r__1 = float(i__ - 1) /(float) *k / (*ps * 2);
-	    q2[i__ + j * q2_dim1] = pow(r__1, tmp__i);	 
-	
-	}	 
-	
-	
+	    q2[i__ + j * q2_dim1] = pow(r__1, tmp__i);
+	}	 		
     }
     for  (i__ = 1; i__ <= i__2; ++i__)
       { q2[i__ + *n * q2_dim1] = 1.f;
 	    q2[i__ + (*n + 1) * q2_dim1] = pw[i__-1];
-	    cout<<"FEED    "<<pw[i__-1]<<endl;
 	}
-   vector<float> out;
-   out=Util::lsfit(k, n, &klm2d, iswi, &q2[q2_offset], &q[q_offset], &x[1], &res[1], &cu[3], &s[1], &iu[3]);
-   cout<<"finish lsfit"<<endl;
-   return ;
+   vector<float> fit_res;
+   fit_res=Util::lsfit(k, n, &klm2d, iswi, &q2[q2_offset], &q[q_offset], &x[1], &res[1], &cu[3], &s[1], &iu[3]);
+   return fit_res;
 }
 vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *iswi,float *q1,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
@@ -3848,33 +3813,31 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
     }
     
     Util::cl1(ks, &l, &m, n, klm2d, &q[q_offset], &x[1], &res[1], &cu[3], &iu[3], &s[1]);
-/* C==CALCULATING THE RESTRAINED RESULTS */
-
     i__1 = *ks;
     int tmp__j=0;
     for (i__ = 1; i__ <= i__1; ++i__) {
 	tmp = 0.f;
 	i__2 = *n - 1;
 	for (j = 1; j <= i__2; ++j) {
-	tmp__j+=1;
-	    tmp += pow(q1[i__ + q1_dim1], tmp__j) * x[j];
+	tmp__j=j;
+	    tmp += pow(q1[i__ + q1_dim1], tmp__j) * x[j];	 
 	}
 	tmp += x[*n];
-	p.push_back(0); /*(float) tmp;*/
+	p.push_back(exp(tmp));
+	p.push_back(q1[i__ + q1_dim1]);	 
     }
-    cout<<"X1  "<<x[1]<<"X2   "<<x[2];
+    i__2=*n;
+    for (i__=1;i__<=i__2;++i__)
+    	{ p.push_back(x[i__]);}	
     return p;
 }
 void Util::cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,
 	double *q, double *x, double *res, double *cu, long int *iu, double *s)
 {
-     
-    /* System generated locals */
-    
+         
     long int q_dim1, q_offset, i__1, i__2;
     double d__1;
 
-    /* Local variables */
     static long int i__, j;
     static double z__;
     static long int n1, n2, ia, ii, kk, in, nk, js;
@@ -3893,9 +3856,6 @@ void Util::cl1(long int *k, long int *l, long int *m, long int *n, long int *klm
     static long int kforce, iphase;
     static double tpivot;
 
-/* THIS SUBROUTINE USES A MODIFICATION OF THE SIMPLEX */
-/* INITIALIZATION. */
-    /* Parameter adjustments */
     --s;
     --res;
     iu -= 3;
@@ -3908,7 +3868,7 @@ void Util::cl1(long int *k, long int *l, long int *m, long int *n, long int *klm
     /* Function Body */
     maxit = 500;
     kode = 0;
-    toler = 1e-6f;
+    toler = 1e-4f;
     iter = 0;
     n1 = *n + 1;
     n2 = *n + 2;
@@ -4399,12 +4359,10 @@ L630:
 	if (ii >= n1 && ii <= nk) {
 	    xsum += q[i__ + n1 * q_dim1];
 	}
-/*     *    Q(I,N1) */
 L640:
 	;
     }
     error = (float)xsum;
-    cout<<"error==="<<error<<endl;
     return;
 }
 float Util::eval(char * images,EMData * img, vector<int> S,int N, int K,int size)
