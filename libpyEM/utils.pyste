@@ -37,11 +37,11 @@ exclude(Util.triquad)
 
 #merge_peaks() cause trouble on some platform, not expose to Python
 exclude(Util.merge_peaks)
-
-exclude(Util.run_cl5)
+#screened functions used by pw_extract 
+exclude(Util.call_cl1)
 exclude(Util.lsfit)
 exclude(Util.cl1)
-
+#screened functions used by voronoidiagram 
 exclude(Util.hsortd)
 exclude(Util.voronoidiag)
 exclude(Util.voronoidiag)
