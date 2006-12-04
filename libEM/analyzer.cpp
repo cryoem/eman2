@@ -117,7 +117,11 @@ void PCAsmall::set_params(const Dict & new_params)
         EMData *dummy = new EMData();
 
         int nx = mask->get_xsize();
-        dummy->set_size(nx,nx);
+        int ny = mask->get_ysize();
+        int nz = mask->get_zsize();
+
+        dummy->set_size(nx,ny,nz);
+
         EMData *dummy1d = Util::compress_image_mask(dummy,mask);
         ncov = dummy1d->get_xsize();
         EMDeletePtr(dummy);
@@ -161,9 +165,15 @@ void PCAlarge::set_params(const Dict & new_params)
         EMData *dummy = new EMData();
 
         int nx = mask->get_xsize();
-        dummy->set_size(nx,nx);
+        int ny = mask->get_ysize();
+        int nz = mask->get_zsize();
+
+        dummy->set_size(nx,ny,nz);
+
         EMData *dummy1d = Util::compress_image_mask(dummy,mask);
+
         ncov = dummy1d->get_xsize();
+
         EMDeletePtr(dummy);
         EMDeletePtr(dummy1d);
         // no need to allocate the covariance matrix
