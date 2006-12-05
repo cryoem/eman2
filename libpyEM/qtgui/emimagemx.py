@@ -33,7 +33,7 @@
 
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU
+from OpenGL import GL,GLU,GLUT
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -72,6 +72,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.changec={}
 		
 		self.coords=[]
+		self.valstodisp=["Img #"]
 		
 		self.inspector=None
 		if data: 
@@ -187,12 +188,23 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
 			if x<self.width() and y<self.height():
-				if x>0 and y>0:
+				if x>=0 and y>=0:
 					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
 					GL.glRasterPos(x,y)
 					GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 					hist2=Numeric.fromstring(a[-1024:],'i')
 					hist+=hist2
+					
+					ty=y
+					for v in self.valstodisp:
+						if v=="Img #" : self.renderText(x,ty,"%d"%i)
+						else : 
+							av=self.data[i].get_attr(v)
+							if isinstance(av,float) : avs="%1.4g"%av
+							else: avs=str(av)
+							try: self.renderText(x,ty,str(avs))
+							except: self.renderText(x,ty,"------")
+						ty+=16
 				elif x+w>0 and y+h>0:
 					tx=int(max(x,0))
 					ty=int(max(y,0))
@@ -204,6 +216,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 					hist2=Numeric.fromstring(a[-1024:],'i')
 					hist+=hist2
 				
+			
 			try: self.coords[i]=(x+self.origin[0],y+self.origin[1])
 			except: self.coords.append((x+self.origin[0],y+self.origin[1]))
 			
@@ -212,6 +225,12 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				x=-self.origin[0]
 			else: x+=w+2.0
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
+	
+	def renderText(self,x,y,s):
+		GL.glRasterPos(x+2,y+2)
+		for c in s:
+			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))
+
 	
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -236,6 +255,12 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		print self.origin
 		self.updateGL()
 		
+	def setValDisp(self,v2d):
+		"""Pass in a list of strings describing image attributes to overlay on the image, in order of display"""
+		v2d.reverse()
+		self.valstodisp=v2d
+		self.updateGL()
+	
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
@@ -262,6 +287,25 @@ class EMImageMxInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
+		
+		self.vals = QtGui.QMenu()
+		self.valsbut = QtGui.QPushButton("Values")
+		self.valsbut.setMenu(self.vals)
+		
+		try:
+			self.vals.clear()
+			vn=self.target.data[0].get_attr_dict().keys()
+			vn.sort()
+			for i in vn:
+				action=self.vals.addAction(i)
+				action.setCheckable(1)
+				action.setChecked(0)
+		except:
+			pass
+		
+		action=self.vals.addAction("Img #")
+		action.setCheckable(1)
+		action.setChecked(1)
 		
 		self.vbl = QtGui.QVBoxLayout(self)
 		self.vbl.setMargin(0)
@@ -302,6 +346,8 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.hbl.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl)
 		
+		self.hbl.addWidget(self.valsbut)
+		
 		self.lbl = QtGui.QLabel("#/row:")
 		self.lbl.setAlignment(Qt.AlignRight|Qt.AlignVCenter)
 		self.hbl.addWidget(self.lbl)
@@ -337,6 +383,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.highlim=1.0
 		self.busy=0
 		
+		QtCore.QObject.connect(self.vals, QtCore.SIGNAL("triggered(QAction*)"), self.newValDisp)
 		QtCore.QObject.connect(self.nrow, QtCore.SIGNAL("valueChanged(int)"), target.setNPerRow)
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
@@ -347,6 +394,10 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.newMode)
 		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.newMode)
 		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.newMode)
+
+	def newValDisp(self):
+		v2d=[str(i.text()) for i in self.vals.actions() if i.isChecked()]
+		self.target.setValDisp(v2d)
 
 	def newMode(self,i):
 		print i
