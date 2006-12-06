@@ -4409,7 +4409,7 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int K,int size
 vector<double> Util::vrdg(EMData * th,EMData *ph)
 { 
 	ENTERFUNC;
-	if (th->get_ysize() > 1);{
+	if (th->get_ysize() > 1){
 		LOGERR("input image should be 1D");
 		throw ImageFormatException( "input image should be 1D");
 	}
