@@ -4409,6 +4409,16 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int K,int size
 vector<double> Util::vrdg(EMData * th,EMData *ph)
 { 
 	ENTERFUNC;
+	if (th->get_ysize() > 1);{
+		LOGERR("input image should be 1D");
+		throw ImageFormatException( "input image should be 1D");
+	}
+	
+	if (!EMUtil::is_same_size(th, ph)) {
+		LOGERR("images not same size");
+		throw ImageFormatException( "images not same size");
+	}
+	
 	int i,*key;
 	int len = th->get_xsize();
 	double *theta,*phi,*weight;
