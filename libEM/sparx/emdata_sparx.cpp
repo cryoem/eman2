@@ -1375,7 +1375,9 @@ EMData::rot_trans2D(float angDeg, float delx, float dely) {  // This uses biline
 			float x = float(ix) - shiftxc;
 			float xold = x*cang + ysang;
 			float yold = x*sang + ycang;
+#ifdef DEBUG
 			printf("\t\t xold = %f, yold=%f \n",xold,yold);
+#endif
 			int iyold = int(yold);
 			float q = yold - float(iyold);
 			float qbar = 1.f - q;
