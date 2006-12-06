@@ -423,10 +423,10 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void cl1(long int *k, long int *l, long int *m, long int *n, long int *klm2d,double *q, double *x, double *res, double *cu, long
 	int *iu, double *s);
 	static float eval(char * images,EMData * img, vector<int> S,int N, int K,int size);
+
 	/*  VORONOI DIAGRAM */
 	static vector<double> vrdg(EMData *th, EMData *ph);
 	static void hsortd(double *theta,double *phi,int *key,int len,int option);
-	static void voronoidiag(vector<double> theta,vector<double> phi,vector<double> weight,int n);
 	static void voronoidiag(double *theta,double *phi,double* weight,int n);
 	static void angstep(double* thetast,int len);
 	static void voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last);
