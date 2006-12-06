@@ -44,9 +44,9 @@ BOOST_PYTHON_MODULE(libpyGeometry2)
         .def_readwrite("value", &EMAN::Pixel::value)
         .def("get_point", &EMAN::Pixel::get_point)
         .def("get_value", &EMAN::Pixel::get_value)
-        .def( self < self )
         .def( self != self )
         .def( self == self )
+        .def( self < self )
     ;
 
 }
