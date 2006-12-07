@@ -72,6 +72,7 @@ int PCAsmall::insert_image(EMData * image)
            covmat(i,j) += imgdata(i)*imgdata(j);
    }   
 
+   EMDeletePtr(maskedimage);
    return 0;
 }
 #undef covmat
@@ -150,6 +151,8 @@ int PCAlarge::insert_image(EMData * image)
    nimages++;
 
    fclose(fp);
+
+   EMDeletePtr(maskedimage);
 
    return 0;
 }
@@ -261,7 +264,12 @@ vector<EMData*> PCAlarge::analyze()
         for (int j = 1; j<= nvec; j++) {
 	    for (int i = 1; i <= ncov; i++)
 		rdata(i) = eigvec(i,nvec-j+1);
-	    images.push_back(Util::reconstitute_image_mask(eigenimage,mask));
+  
+            EMData* recons_eigvec = Util::reconstitute_image_mask(eigenimage,mask);
+
+            recons_eigvec->set_attr( "eigval", eigval[nvec-j] );
+
+	    images.push_back( recons_eigvec );
         }
 
         free(eigvec);
