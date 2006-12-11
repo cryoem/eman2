@@ -1544,8 +1544,6 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t)
 	    mult = 1;
         }
 
-        std::cout << "mult: " << mult << std::endl;
-
         assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
