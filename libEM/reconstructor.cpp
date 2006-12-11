@@ -1527,7 +1527,7 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t)
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
-	if ((slice->get_xsize() != slice->get_ysize()) 
+	if ( (slice->get_xsize() != slice->get_ysize()) 
 		|| slice->get_xsize() != m_vnx) {
 		// FIXME: Why doesn't this throw an exception?
 		LOGERR("Tried to insert a slice that is the wrong size.");
@@ -1536,7 +1536,18 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t)
 
         EMData* padfft = padfft_slice( slice, m_npad );
 
-	insert_padfft_slice( padfft, t, 1 );
+        int mult=0;
+        try {
+	    mult = slice->get_attr("mult");
+        }
+        catch(_NotExistingObjectException) {
+	    mult = 1;
+        }
+
+        std::cout << "mult: " << mult << std::endl;
+
+        assert( mult > 0 );
+	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
 
