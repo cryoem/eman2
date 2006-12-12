@@ -14424,3 +14424,50 @@ L12:
 ######   You must link the resulting object file with the libraries: #############################
 ####################	-lf2c -lm   (in that order)   ############################################
 ################################################################################################*/
+
+
+
+EMData * Util::mult_scalar(EMData* img, float scalar)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ============================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	EMData * img2 = new EMData();
+	img2->set_size(nx,ny,nz);
+	float *img_ptr=img->get_data();
+	float *img2_ptr = img2->get_data();
+	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
+	img2->update();
+	
+	return img2;
+	EXITFUNC;
+}
+
+EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ============================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	EMData * img2 = new EMData();
+	img2->set_size(nx,ny,nz);
+	float *img_ptr=img->get_data();
+	float *img2_ptr = img2->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar + img1_ptr[i];
+	img2->update();
+	
+	return img2;
+	EXITFUNC;
+}

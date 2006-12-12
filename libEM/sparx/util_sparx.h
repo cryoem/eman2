@@ -446,4 +446,9 @@ class FakeKaiserBessel : public KaiserBessel {
 	static int trmsh3_(int *n0, double *tol, double *x, double *y, double *z__, int *n, int *list, int *lptr, 
 	       int *lend, int *lnew, int *indx, int *lcnt, int *near__, int *next, double *dist, int *ier);
 	static double areav_(int *k, int *n, double *x, double *y, double *z__, int *list, int *lptr, int *lend, int *ier);
+	/**********************************************************/
+	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
+	
+	static EMData* mult_scalar(EMData* img, float scalar);
+	static EMData* mad_scalar(EMData* img, EMData* img1, float scalar);
 #endif	//util__sparx_h__
