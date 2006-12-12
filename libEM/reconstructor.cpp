@@ -1143,8 +1143,8 @@ void nn4Reconstructor::setup()
 void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 {
     m_weighting = ESTIMATE;
-    m_wghta = 0.06;
-    m_wghtb = 0.015;
+    m_wghta = 0.2;
+    m_wghtb = 0.004;
  
     m_symmetry = symmetry;
     m_npad = npad;
@@ -1467,7 +1467,7 @@ void nn4_ctfReconstructor::setup()
 
 void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
 {
-    m_weighting = ESTIMATE; // NONE;
+    m_weighting = ESTIMATE;
     m_wghta = 0.2;
     m_wghtb = 0.004;
  
@@ -1692,6 +1692,11 @@ EMData* nn4_ctfReconstructor::finish()
 			}
 		}
 	}
+
+        // add m_volume = win here because the reconstructor is responsible for the memory of m_volume
+	// which I think is strange
+        m_volume = win;
+
 	return win;
 	// clean up
 }
