@@ -1073,6 +1073,7 @@ public:
 
     static float get_ctf( float defocus, int r2 )
     {
+    /*
         assert( m_inited );
 
         shared_ptr< vector<float> > ptr;
@@ -1093,12 +1094,13 @@ public:
 
 	if( ctf == 0.0 )
 	{
+     */
 	    float ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
 	    float a = m_lambda*ak*ak;
 	    float b = m_lambda*a*a;
-	    ctf = -sin(-M_PI*(defocus*a-m_Cs*b/2.)-m_wgh);
-	    ptr->at(r2) = ctf;
-        }
+	    float ctf = -sin(-M_PI*(defocus*a-m_Cs*b/2.)-m_wgh);
+     //	    ptr->at(r2) = ctf;
+     //    }
 
         return ctf;
     }
