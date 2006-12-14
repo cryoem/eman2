@@ -35,7 +35,7 @@
 
 #ifndef eman_reconstructor_h__
 #define eman_reconstructor_h__ 1
-
+#include <fstream>
 #include <boost/shared_ptr.hpp>
 #include "emdata.h"
 
@@ -540,6 +540,39 @@ namespace EMAN
 
 	void dump_reconstructors();
 	map<string, vector<string> > dump_reconstructors_list();
+
+
+        class file_store
+        {
+        public: 
+            file_store(const string& filename, int npad, int write);
+
+            virtual ~file_store();
+
+            void add_image(EMData* data);
+
+            void get_image(int id, EMData* padfft);
+
+            void restart();
+       private:
+            shared_ptr<std::ifstream> m_ihandle;
+            shared_ptr<std::ofstream> m_ohandle;
+            string m_filename;
+            int m_npad;
+            int m_prev;
+            int m_xsize;
+            int m_ysize;
+            int m_zsize;
+            int m_write;
+            int m_totsize;
+            float m_Cs;
+            float m_pixel;
+            float m_voltage;
+            float m_ctf_applied;
+            float m_amp_contrast;
+            vector< float > m_defocuses;
+       };
+
 }
 
 #endif
