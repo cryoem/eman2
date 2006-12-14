@@ -96,7 +96,6 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	ny  = fimage->get_ysize();
 	nz  = fimage->get_zsize();
 		// We manifestly assume no zero-padding here, just the 
-			omega = params["cutoff_frequency"];
 		// necessary extension along x for the fft
 	if (fimage->is_complex()) nx = (nx - 2 + fimage->is_fftodd()); 
 
