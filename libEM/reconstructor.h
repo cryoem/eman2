@@ -556,8 +556,10 @@ namespace EMAN
             void restart();
        private:
             shared_ptr<std::ifstream> m_ihandle;
-            shared_ptr<std::ofstream> m_ohandle;
-            string m_filename;
+            shared_ptr<std::ofstream> m_bin_ohandle;
+            shared_ptr<std::ofstream> m_txt_ohandle;
+            string m_bin_file;
+            string m_txt_file;
             int m_npad;
             int m_prev;
             int m_xsize;
@@ -571,6 +573,9 @@ namespace EMAN
             float m_ctf_applied;
             float m_amp_contrast;
             vector< float > m_defocuses;
+            vector< float > m_phis;
+            vector< float > m_thetas;
+            vector< float > m_psis;
        };
 
 }

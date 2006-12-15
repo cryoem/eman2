@@ -1536,6 +1536,7 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t)
 	    padffted= 0;
         }
 
+
 	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
         {
 		// FIXME: Why doesn't this throw an exception?
@@ -1617,6 +1618,7 @@ EMData* nn4_ctfReconstructor::finish()
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
+                                                               
 				if (w(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
 					float  tmp = (-2*((ix+iy+iz)%2)+1)/(w(ix,iy,iz)+osnr)*m_sign;
 
@@ -1668,7 +1670,7 @@ EMData* nn4_ctfReconstructor::finish()
 					    tmp = tmp * wght;
 				        }
 
-					(*m_volume)(2*ix,iy,iz) *= tmp;
+                                        (*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
@@ -1799,7 +1801,7 @@ EMData* bootstrap_nnctfReconstructor::finish()
 	total += mult;
     }
 
-    EMData* w = r->finish();
+    EMData* w = r->finish()->copy();
     checked_delete(r);
     return w;
 }
@@ -1816,7 +1818,8 @@ map<string, vector<string> > EMAN::dump_reconstructors_list()
 }
 
 file_store::file_store(const string& filename, int npad, int write)
-    : m_filename( filename )
+    : m_bin_file(filename + ".bin"), 
+      m_txt_file(filename + ".txt")
 {
     m_prev = -1;
     m_npad = npad;
@@ -1836,9 +1839,11 @@ void file_store::add_image(  EMData* emdata )
 
     float* data = padfft->get_data();
 
-    if( m_write && m_ohandle == NULL )
+    if( m_write && m_bin_ohandle == NULL )
     {
-        m_ohandle = shared_ptr< ofstream >( new ofstream(m_filename.c_str(), std::ios::out | std::ios::binary) );
+        m_bin_ohandle = shared_ptr< ofstream >( new ofstream(m_bin_file.c_str(), std::ios::out | std::ios::binary) );
+        m_txt_ohandle = shared_ptr< ofstream >( new ofstream(m_txt_file.c_str() ) );
+        *m_txt_ohandle << "#Cs pixel voltage ctf_applied amp_contrast defocus phi theta psi" << std::endl;
     }
 
     m_xsize = padfft->get_xsize();
@@ -1846,17 +1851,35 @@ void file_store::add_image(  EMData* emdata )
     m_zsize = padfft->get_zsize();
     m_totsize = m_xsize*m_ysize*m_zsize;  
  
-    if( m_write )
-    {
-        m_ohandle->write( (char*)data, sizeof(float)*m_totsize );
-    }
-
+        
     m_Cs = padfft->get_attr( "Cs" );
     m_pixel = padfft->get_attr( "pixel" );
     m_voltage = padfft->get_attr( "voltage" );
     m_ctf_applied = padfft->get_attr( "ctf_applied" );
     m_amp_contrast = padfft->get_attr( "amp_contrast" );
     m_defocuses.push_back( (float)(padfft->get_attr( "defocus" )) );
+    m_phis.push_back( (float)(padfft->get_attr( "phi" )) );
+    m_thetas.push_back( (float)(padfft->get_attr( "theta" )) );
+    m_psis.push_back( (float)(padfft->get_attr( "psi" )) );
+
+
+    if( m_write )
+    {
+        m_bin_ohandle->write( (char*)data, sizeof(float)*m_totsize );
+        *m_txt_ohandle << m_Cs << " ";
+        *m_txt_ohandle << m_pixel << " ";
+        *m_txt_ohandle << m_voltage << " ";
+        *m_txt_ohandle << m_ctf_applied << " ";
+        *m_txt_ohandle << m_amp_contrast << " ";
+        *m_txt_ohandle << m_defocuses.back() << " ";
+        *m_txt_ohandle << m_phis.back() << " ";
+        *m_txt_ohandle << m_thetas.back() << " ";
+        *m_txt_ohandle << m_psis.back() << " ";
+        *m_txt_ohandle << m_xsize << " ";
+        *m_txt_ohandle << m_ysize << " ";
+        *m_txt_ohandle << m_zsize << " ";
+        *m_txt_ohandle << m_totsize << std::endl;
+    }
 
     checked_delete(padfft);
 }
@@ -1870,7 +1893,27 @@ void file_store::get_image( int id, EMData* padfft )
         int offset = (id-m_prev-1) * sizeof(float) * m_totsize;
         m_ihandle->seekg( offset, std::ios::cur  );
     }
- 
+
+    if( m_defocuses.size() == 0 )
+    {
+        ifstream m_txt_ifs( m_txt_file.c_str() );
+        m_txt_ifs.ignore( 4096, '\n' );
+
+        float defocus, phi, theta, psi;
+
+        while( m_txt_ifs >> m_Cs )
+        {
+            m_txt_ifs >> m_pixel >> m_voltage;
+            m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
+            m_txt_ifs >> defocus >> phi >> theta >> psi;
+            m_txt_ifs >> m_xsize >> m_ysize >> m_zsize >> m_totsize;
+            m_defocuses.push_back( defocus );
+            m_phis.push_back( phi );
+            m_thetas.push_back( theta );
+            m_psis.push_back( psi );
+        }
+    }
+        
     if( padfft->get_xsize() != m_xsize ||
         padfft->get_ysize() != m_ysize ||
         padfft->get_zsize() != m_zsize )
@@ -1886,7 +1929,11 @@ void file_store::get_image( int id, EMData* padfft )
     padfft->set_attr( "ctf_applied", m_ctf_applied );
     padfft->set_attr( "amp_contrast", m_amp_contrast );
     padfft->set_attr( "defocus", m_defocuses[id] );
+    padfft->set_attr( "phi", m_phis[id] );
+    padfft->set_attr( "theta", m_thetas[id] );
+    padfft->set_attr( "psi", m_psis[id] );
     padfft->set_attr( "padffted", 1 );
+
     m_prev = id;
 }
 
@@ -1896,7 +1943,7 @@ void file_store::restart( )
 
     if( m_ihandle == NULL )
     {
-        m_ihandle = shared_ptr< ifstream >( new ifstream(m_filename.c_str(), std::ios::in | std::ios::binary) );
+        m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
     }
     else
     {
