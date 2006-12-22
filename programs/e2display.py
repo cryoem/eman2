@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 #
 # Author: Steven Ludtke 11/09/2006 (sludtke@bcm.edu)
