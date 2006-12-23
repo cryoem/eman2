@@ -254,6 +254,8 @@ int SpiderIO::read_header(Dict & dict, int image_index, const Region * area, boo
 
 	dict["SPIDER.nslice"] = (int) cur_image_hed->nslice;
 	dict["SPIDER.type"] = (int) cur_image_hed->type;
+
+	dict["SPIDER.irec"] = cur_image_hed->irec;
 	
 	dict["SPIDER.angvalid"] = (int)cur_image_hed->angvalid;
 	if((int)dict["SPIDER.angvalid"] != 0) {
@@ -431,6 +433,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 	if(ISTACK == OVERALL_STACK_HEADER) {
 		hp->maxim = (float)MAXIM;		
 	}
+	hp->irec = (float)(num_records + ny*nz);
 	
 	hp->imgnum = (float)IMGNUM;
 		
