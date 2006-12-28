@@ -1930,7 +1930,7 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr) {
-int neg =0;
+        int neg =0;
 	cout<<"  crosrng_e"<< neg;
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
@@ -1941,6 +1941,7 @@ int neg =0;
    Dict retvals;
    retvals["qn"] = qn;
    retvals["tot"] = tot;
+   return  retvals;
 }
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
