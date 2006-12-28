@@ -38,7 +38,6 @@ libpyEMData2.cpp: emdata.pyste ../libEM/emdata.h
 libpyUtils2.cpp: utils.pyste ../libEM/util.h ../libEM/emutil.h ../libEM/testutil.h
 	rm -f libpyUtils2.cpp
 	$(PYSTE) --module=libpyUtils2 utils.pyste
-	sed -i -e 's/util_Crosrng_e)/util_Crosrng_e)\n        .staticmethod("Crosrng_e")/' libpyUtils2.cpp
 
 libpyPointArray2.cpp: pointarray.pyste ../libEM/pointarray.h
 	rm -f libpyPointArray2.cpp

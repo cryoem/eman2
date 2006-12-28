@@ -1929,7 +1929,8 @@ void Util::prb1d(double *b, int npoint, float *pos)
    if (c3 != 0.0)  *pos = c2/(2.0*c3) - nhalf;
 }
 #undef  b
-Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
+Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr) {
+int neg =0;
 	cout<<"  crosrng_e"<< neg;
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
