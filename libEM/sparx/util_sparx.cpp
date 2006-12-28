@@ -1929,14 +1929,17 @@ void Util::prb1d(double *b, int npoint, float *pos)
    if (c3 != 0.0)  *pos = c2/(2.0*c3) - nhalf;
 }
 #undef  b
-boost::tuple<double, float, int> Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
+Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
+	cout<<"  crosrng_e"<< neg;
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
    double qn;   float  tot;
    crosrng_e(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
 		      &qn, &tot, neg);
-   return boost::make_tuple(qn, tot, neg);
+   Dict retvals;
+   retvals["qn"] = qn;
+   retvals["tot"] = tot;
 }
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
