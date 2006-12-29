@@ -1888,10 +1888,10 @@ void Util::frngs(float *circ, int *numr, int nring){
 #ifdef _WIN32
 	l = (int)( log((float)numr(3,i))/log(2.0f) );
 #else
-     l=(int)(log2(numr(3,i)));
+	l=(int)(log2(numr(3,i)));
 #endif	//_WIN32
 
-     fftr_q(&circ(numr(2,i)),l);
+	fftr_q(&circ(numr(2,i)),l);
    }
 }
 #undef  circ
@@ -1929,6 +1929,7 @@ void Util::prb1d(double *b, int npoint, float *pos)
    if (c3 != 0.0)  *pos = c2/(2.0*c3) - nhalf;
 }
 #undef  b
+
 Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
    //  neg = 0 straight,  neg = 1 mirrored
    int nring = numr.size()/3;
@@ -2159,7 +2160,7 @@ c       optional limit on angular search should be added.
      }
   }
 
- 
+/* 
   for (k=-3;k<=3;k++) {
     j = ((jtot+k+maxrin-1)%maxrin)+1;
     t7(k+4) = q(j);
@@ -2168,9 +2169,9 @@ c       optional limit on angular search should be added.
   // interpolate
   prb1d(t7,7,&pos);
   *tot = (float)(jtot)+pos;
-
+*/
   // Do not interpolate
-  //*tot = (float)(jtot);
+  *tot = (float)(jtot);
 
   // mirrored
   fftr_d(t,ip);
@@ -2184,7 +2185,7 @@ c       optional limit on angular search should be added.
      }
   }
 
-
+/*
   // find angle
   for (k=-3;k<=3;k++) {
     j       = ((jtot+k+maxrin-1)%maxrin) + 1;
@@ -2195,9 +2196,9 @@ c       optional limit on angular search should be added.
 
   prb1d(t7,7,&pos);
   *tmt = float(jtot) + pos;
-
+*/
   // Do not interpolate
-  //*tmt = float(jtot);
+  *tmt = float(jtot);
   
   free(t);
   free(q);
