@@ -1929,9 +1929,8 @@ void Util::prb1d(double *b, int npoint, float *pos)
    if (c3 != 0.0)  *pos = c2/(2.0*c3) - nhalf;
 }
 #undef  b
-Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr) {
-        int neg =0;
-	cout<<"  crosrng_e"<< neg;
+Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
+   //  neg = 0 straight,  neg = 1 mirrored
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    int maxrin = numr[numr.size()-1];
@@ -1949,8 +1948,6 @@ Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr) {
 #define  q(i)            q      [(i)-1]
 #define  b(i)            b      [(i)-1]
 #define  t7(i)           t7     [(i)-1]
-
-
 //-----------------------------------------------
 void Util::crosrng_e(float *circ1, float *circ2, int lcirc,
                      int    nring, int   maxrin, int *numr,
@@ -1990,42 +1987,40 @@ c       automatic arrays
 
       if (numr3i != maxrin) {
          // test .ne. first for speed on some compilers
-	 t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
-	 t(2)        = 0.0;
+		t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
+		t(2)        = 0.0;
 
          if (neg) {
             // first set is conjugated (mirrored)
-	    for (j=3;j<=numr3i;j=j+2) {
-	       jc = j+numr2i-1;
-	       t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
-	       t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
-	    } 
-         } 
-         else {
-	    for (j=3;j<=numr3i;j=j+2) {
-	       jc = j+numr2i-1;
-	       t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-	       t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-	    }
-         } 
+	    	for (j=3;j<=numr3i;j=j+2) {
+	      		jc = j+numr2i-1;
+	      		t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
+	      		t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+	    	} 
+         } else {
+	    	for (j=3;j<=numr3i;j=j+2) {
+	      		jc = j+numr2i-1;
+				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+	    	}
+         }
          for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
       }
       else {
-	 t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-         if (neg) {
+	 	t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+        if (neg) {
             // first set is conjugated (mirrored)
-	    for (j=3;j<=maxrin;j=j+2) {
-	       jc = j+numr2i-1;
-	       t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
-	       t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
-	    }
-         }
-         else {
-	    for (j=3;j<=maxrin;j=j+2) {
-	       jc = j+numr2i-1;
-	       t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
-	       t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
-	    } 
+	    	for (j=3;j<=maxrin;j=j+2) {
+				jc = j+numr2i-1;
+				t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+				t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+	    	}
+         } else {
+			for (j=3;j<=maxrin;j=j+2) {
+				jc = j+numr2i-1;
+				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+			} 
          }
          for (j = 1; j <= maxrin; j++) q(j) = q(j) + t(j);
       }
@@ -2036,14 +2031,12 @@ c       automatic arrays
    *qn = -1.0e20;
    for (j=1;j<=maxrin;j++) {
       if (q(j) >= *qn) {
-         *qn = q(j);
-	 jtot = j;
+         *qn = q(j); jtot = j;
       }
    } 
 
    for (k=-3;k<=3;k++) {
-      j = (jtot+k+maxrin-1)%maxrin + 1;
-      t7(k+4) = q(j);
+      j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
    }
 
    prb1d(t7,7,&pos);
