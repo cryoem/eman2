@@ -2160,7 +2160,6 @@ c       optional limit on angular search should be added.
      }
   }
 
-/* 
   for (k=-3;k<=3;k++) {
     j = ((jtot+k+maxrin-1)%maxrin)+1;
     t7(k+4) = q(j);
@@ -2169,9 +2168,8 @@ c       optional limit on angular search should be added.
   // interpolate
   prb1d(t7,7,&pos);
   *tot = (float)(jtot)+pos;
-*/
   // Do not interpolate
-  *tot = (float)(jtot);
+  //*tot = (float)(jtot);
 
   // mirrored
   fftr_d(t,ip);
@@ -2185,8 +2183,6 @@ c       optional limit on angular search should be added.
      }
   }
 
-/*
-  // find angle
   for (k=-3;k<=3;k++) {
     j       = ((jtot+k+maxrin-1)%maxrin) + 1;
     t7(k+4) = t(j);
@@ -2196,9 +2192,8 @@ c       optional limit on angular search should be added.
 
   prb1d(t7,7,&pos);
   *tmt = float(jtot) + pos;
-*/
   // Do not interpolate
-  *tmt = float(jtot);
+  //*tmt = float(jtot);
   
   free(t);
   free(q);
@@ -2482,6 +2477,97 @@ c       optional limit on angular search should be added.
 #undef  q
 #undef  b
 #undef  t7
+
+
+#define    QUADPI      		        3.141592653589793238462643383279502884197
+#define    PI2                      2*QUADPI
+
+// helper functions for ali2d_ra
+void Util::update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr){
+   int nring = numr.size()/3;
+   update_f(ave->get_data(), dat->get_data(), tot, mirror, &numr[0],  nring);
+}
+void Util::update_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring){
+cout<<tot<<" update_f  "<<mirror;
+	int i, j, numr3i, np;
+	float  arg, cs, si;
+	int maxrin = numr(nring,3);
+	if(mirror == 1) { //for mirrored data has to be conjugated
+		for (i=1; i<=nring; i++) {
+            numr3i = numr(3,i);
+            np     = numr(2,i)-1;
+			ave[np]   += dat[np];
+			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			for (j=2; j<numr3i; j=j+2) {
+				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				cs = cos(arg);
+				si = sin(arg);
+				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
+				ave[np + j]    += dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] -= dat[np + j]*si - dat[np + j +1]*cs;
+			}
+		}
+	} else {
+		for (i=1; i<=nring; i++) {
+            numr3i = numr(3,i);
+            np     = numr(2,i)-1;
+			ave[np]   += dat[np];
+			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			for (j=2; j<numr3i; j=j+2) {
+				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				cs = cos(arg);
+				si = sin(arg);
+				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
+				ave[np + j]    += dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] += dat[np + j]*si - dat[np + j +1]*cs;
+			}
+		}
+	}
+}
+
+void Util::sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr){
+   int nring = numr.size()/3;
+   sub_f(ave->get_data(), dat->get_data(), tot, mirror, &numr[0],  nring);
+}
+void Util::sub_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring){
+cout<<tot<<"   "<<mirror;
+	int i, j, numr3i, np;
+	float  arg, cs, si;
+	int maxrin = numr(nring,3);
+	if(mirror == 1) { //for mirrored data has to be conjugated
+		for (i=1; i<=nring; i++) {
+            numr3i = numr(3,i);
+            np     = numr(2,i)-1;
+			ave[np]   += dat[np];
+			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			for (j=2; j<numr3i; j=j+2) {
+				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				cs = cos(arg);
+				si = sin(arg);
+				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
+				ave[np + j]    -= dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] += dat[np + j]*si - dat[np + j +1]*cs;
+			}
+		}
+	} else {
+		for (i=1; i<=nring; i++) {
+            numr3i = numr(3,i);
+            np     = numr(2,i)-1;
+			ave[np]   += dat[np];
+			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			for (j=2; j<numr3i; j=j+2) {
+				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				cs = cos(arg);
+				si = sin(arg);
+				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
+				ave[np + j]    -= dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] -= dat[np + j]*si - dat[np + j +1]*cs;
+			}
+		}
+	}
+}
+#undef    QUADPI
+#undef    PI2
 
 
 #undef  numr
@@ -4468,6 +4554,7 @@ struct	tmpstruct{
 	double theta1,phi1;
 	int key1;
 	};
+
 void Util::hsortd(double *theta,double *phi,int *key,int len,int option)
 {
 	ENTERFUNC;

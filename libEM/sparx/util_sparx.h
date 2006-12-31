@@ -387,6 +387,12 @@ class FakeKaiserBessel : public KaiserBessel {
                                 int   maxrin, int   *numr );
 	
         static void  prb1d(double *b, int npoint, float *pos);
+		
+		static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
+		static void update_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring);
+	
+		static void sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
+		static void sub_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring);
 	
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same 
