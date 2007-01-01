@@ -444,8 +444,7 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 }  // ends FH2F
 
 
-EMData* EMData::rotavg()
-{
+EMData* EMData::rotavg() {
 	ENTERFUNC;
 
 	if (ny<2 && nz <2) {
@@ -496,8 +495,7 @@ EMData* EMData::rotavg()
 
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
 #define square(x) ((x)*(x))
-vector<float> EMData::cog()
-{
+vector<float> EMData::cog() {
 	
 	vector<float> cntog;
 	int ndim = get_ndim();

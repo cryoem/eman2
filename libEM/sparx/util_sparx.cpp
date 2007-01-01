@@ -1877,11 +1877,9 @@ void  Util::fftr_d(double *xcmplx, int nv)
 #undef  br
 #undef  bi
 
-void Util::Frngs(EMData* circ, vector<int> numr){
+void Util::Frngs(EMData* circp, vector<int> numr){
    int nring = numr.size()/3;
-   frngs(circ->get_data(), &numr[0],  nring);
-}
-void Util::frngs(float *circ, int *numr, int nring){
+   float *circ = circp->get_data();
    int i, l; 
    for (i=1; i<=nring;i++) {
 
@@ -1895,7 +1893,7 @@ void Util::frngs(float *circ, int *numr, int nring){
    }
 }
 #undef  circ
-//---------------------------------------------------
+
 #define  b(i)            b      [(i)-1]
 void Util::prb1d(double *b, int npoint, float *pos)
 {
@@ -1930,30 +1928,20 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 
-Dict Util::Crosrng_e(EMData*  circ1, EMData* circ2, vector<int> numr, int neg) {
-   //  neg = 0 straight,  neg = 1 mirrored
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   double qn;   float  tot;
-   crosrng_e(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], 
-		      &qn, &tot, neg);
-   Dict retvals;
-   retvals["qn"] = qn;
-   retvals["tot"] = tot;
-   return  retvals;
-}
 #define  circ1(i)        circ1  [(i)-1]
 #define  circ2(i)        circ2  [(i)-1]
 #define  t(i)            t      [(i)-1]
 #define  q(i)            q      [(i)-1]
 #define  b(i)            b      [(i)-1]
 #define  t7(i)           t7     [(i)-1]
-//-----------------------------------------------
-void Util::crosrng_e(float *circ1, float *circ2, int lcirc,
-                     int    nring, int   maxrin, int *numr,
-                     double *qn, float *tot, int neg)
-{
+Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
+   //  neg = 0 straight,  neg = 1 mirrored
+   int nring = numr.size()/3;
+   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   double qn;   float  tot;
+   float *circ1 = circ1p->get_data();
+   float *circ2 = circ2p->get_data();
 /*
 c checks single position, neg is flag for checking mirrored position
 c
@@ -2006,8 +1994,7 @@ c       automatic arrays
 	    	}
          }
          for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
-      }
-      else {
+      } else {
 	 	t(2) = circ1(numr2i+1) * circ2(numr2i+1);
         if (neg) {
             // first set is conjugated (mirrored)
@@ -2023,16 +2010,16 @@ c       automatic arrays
 				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 			} 
          }
-         for (j = 1; j <= maxrin; j++) q(j) = q(j) + t(j);
+         for (j = 1; j <= maxrin; j++) q(j) += t(j);
       }
    }
 
    fftr_d(q,ip);
 
-   *qn = -1.0e20;
+   qn = -1.0e20;
    for (j=1;j<=maxrin;j++) {
-      if (q(j) >= *qn) {
-         *qn = q(j); jtot = j;
+      if (q(j) >= qn) {
+         qn = q(j); jtot = j;
       }
    } 
 
@@ -2042,31 +2029,130 @@ c       automatic arrays
 
    prb1d(t7,7,&pos);
 
-   *tot = (float)jtot + pos;
+   tot = (float)jtot + pos;
 
    if (q) free(q);
    if (t) free(t);
-}
-
-Dict Util::Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr) {
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-   double qn; float tot; double qm; float tmt;
-   crosrng_ms(circ1->get_data(), circ2->get_data(), lcirc, nring, maxrin, &numr[0], &qn, &tot, &qm, &tmt);
+   
    Dict retvals;
    retvals["qn"] = qn;
    retvals["tot"] = tot;
-   retvals["qm"] = qm;
-   retvals["tmt"] = tmt;
-   return retvals;
+   return  retvals;
 }
 
-//---------------------------------------------------
-void Util::crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
-                      int   maxrin, int   *numr , double *qn, float *tot,
-                      double   *qm, float *tmt)
-{
+Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int neg) {
+   //  neg = 0 straight,  neg = 1 mirrored
+   int nring = numr.size()/3;
+   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   double qn;   float  tot;
+   float *circ1 = circ1p->get_data();
+   float *circ2 = circ2p->get_data();
+/*
+c checks single position, neg is flag for checking mirrored position
+c
+c  input - fourier transforms of rings!
+c  first set is conjugated (mirrored) if neg
+c  multiplication by weights!
+c       automatic arrays
+	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
+	double precision  q(maxrin)
+	double precision  t7(-3:3)
+*/
+   float *t;
+   double t7[7], *q;
+   int    i, j, k, ip, jc, numr3i, numr2i, jtot;
+   float  pos;
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+   ip = -(int) (log2(maxrin));
+#endif	//_WIN32
+
+   q = (double*)calloc(maxrin, sizeof(double));
+   t = (float*)calloc(maxrin, sizeof(float));
+     
+//   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
+   for (i=1;i<=nring;i++) {
+      numr3i = numr(3,i);
+      numr2i = numr(2,i);
+
+      t(1) = circ1(numr2i) * circ2(numr2i);
+
+      if (numr3i != maxrin) {
+         // test .ne. first for speed on some compilers
+		t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
+		t(2)        = 0.0;
+
+         if (neg) {
+            // first set is conjugated (mirrored)
+	    	for (j=3;j<=numr3i;j=j+2) {
+	      		jc = j+numr2i-1;
+	      		t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
+	      		t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+	    	} 
+         } else {
+	    	for (j=3;j<=numr3i;j=j+2) {
+	      		jc = j+numr2i-1;
+				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+	    	}
+         }
+         for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
+      } else {
+	 	t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+        if (neg) {
+            // first set is conjugated (mirrored)
+	    	for (j=3;j<=maxrin;j=j+2) {
+				jc = j+numr2i-1;
+				t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+				t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+	    	}
+         } else {
+			for (j=3;j<=maxrin;j=j+2) {
+				jc = j+numr2i-1;
+				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+			} 
+         }
+         for (j = 1; j <= maxrin; j++) q(j) += t(j)*w[i-1];
+      }
+   }
+
+   fftr_d(q,ip);
+
+   qn = -1.0e20;
+   for (j=1;j<=maxrin;j++) {
+      if (q(j) >= qn) {
+         qn = q(j); jtot = j;
+      }
+   } 
+
+   for (k=-3;k<=3;k++) {
+      j = (jtot+k+maxrin-1)%maxrin + 1; t7(k+4) = q(j);
+   }
+
+   prb1d(t7,7,&pos);
+
+   tot = (float)jtot + pos;
+
+   if (q) free(q);
+   if (t) free(t);
+   
+   Dict retvals;
+   retvals["qn"] = qn;
+   retvals["tot"] = tot;
+   return  retvals;
+}
+
+Dict Util::Crosrng_ms(EMData* circ1p, EMData* circ2p, vector<int> numr) {
+   int nring = numr.size()/3;
+   //int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+   int maxrin = numr[numr.size()-1];
+   double qn; float tot; double qm; float tmt;
+   float *circ1 = circ1p->get_data();
+   float *circ2 = circ2p->get_data();
 /*
 c
 c  checks both straight & mirrored positions
@@ -2089,10 +2175,10 @@ c       optional limit on angular search should be added.
    int   ip, jc, numr3i, numr2i, i, j, k, jtot;
    float t1, t2, t3, t4, c1, c2, d1, d2, pos;
 
-   *qn  = 0.0;
-   *qm  = 0.0;
-   *tot = 0.0;
-   *tmt = 0.0; 
+   qn  = 0.0;
+   qm  = 0.0;
+   tot = 0.0;
+   tmt = 0.0; 
 
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
@@ -2152,10 +2238,10 @@ c       optional limit on angular search should be added.
   fftr_d(q,ip);
 
   jtot = 0;
-  *qn  = -1.0e20;
+  qn  = -1.0e20;
   for (j=1; j<=maxrin; j++) {
-     if (q(j) >= *qn) {
-        *qn  = q(j);
+     if (q(j) >= qn) {
+        qn  = q(j);
         jtot = j;
      }
   }
@@ -2167,7 +2253,7 @@ c       optional limit on angular search should be added.
 
   // interpolate
   prb1d(t7,7,&pos);
-  *tot = (float)(jtot)+pos;
+  tot = (float)(jtot)+pos;
   // Do not interpolate
   //*tot = (float)(jtot);
 
@@ -2175,10 +2261,10 @@ c       optional limit on angular search should be added.
   fftr_d(t,ip);
 
   // find angle
-  *qm = -1.0e20;
+  qm = -1.0e20;
   for (j=1; j<=maxrin;j++) {
-     if ( t(j) >= *qm ) {
-        *qm   = t(j);
+     if ( t(j) >= qm ) {
+        qm   = t(j);
         jtot = j;
      }
   }
@@ -2191,12 +2277,19 @@ c       optional limit on angular search should be added.
   // interpolate
 
   prb1d(t7,7,&pos);
-  *tmt = float(jtot) + pos;
+  tmt = float(jtot) + pos;
   // Do not interpolate
   //*tmt = float(jtot);
   
-  free(t);
-  free(q);
+	free(t);
+	free(q);
+	
+	Dict retvals;
+	retvals["qn"] = qn;
+	retvals["tot"] = tot;
+	retvals["qm"] = qm;
+	retvals["tmt"] = tmt;
+	return retvals;
 }
 //  Try rotational gridding
 
@@ -2483,57 +2576,37 @@ c       optional limit on angular search should be added.
 #define    PI2                      2*QUADPI
 
 // helper functions for ali2d_ra
-void Util::update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr){
-   int nring = numr.size()/3;
-   update_f(ave->get_data(), dat->get_data(), tot, mirror, &numr[0],  nring);
-}
-void Util::update_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring){
-cout<<tot<<" update_f  "<<mirror;
-	int i, j, numr3i, np;
-	float  arg, cs, si;
-	int maxrin = numr(nring,3);
-	if(mirror == 1) { //for mirrored data has to be conjugated
-		for (i=1; i<=nring; i++) {
-            numr3i = numr(3,i);
-            np     = numr(2,i)-1;
-			ave[np]   += dat[np];
-			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
-			for (j=2; j<numr3i; j=j+2) {
-				arg = PI2*(tot-1.)*(j/2)/maxrin;
-				cs = cos(arg);
-				si = sin(arg);
-				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
-				ave[np + j]    += dat[np + j]*cs - dat[np + j +1]*si;
-				ave[np + j +1] -= dat[np + j]*si - dat[np + j +1]*cs;
-			}
-		}
-	} else {
-		for (i=1; i<=nring; i++) {
-            numr3i = numr(3,i);
-            np     = numr(2,i)-1;
-			ave[np]   += dat[np];
-			ave[np+1] += dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
-			for (j=2; j<numr3i; j=j+2) {
-				arg = PI2*(tot-1.)*(j/2)/maxrin;
-				cs = cos(arg);
-				si = sin(arg);
-				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
-				ave[np + j]    += dat[np + j]*cs - dat[np + j +1]*si;
-				ave[np + j +1] += dat[np + j]*si - dat[np + j +1]*cs;
-			}
-		}
-	}
+
+vector<float> Util::ener(EMData* ave, vector<int> numr) {
+	ENTERFUNC;
+	vector<float> norm;
+	long double ener,en;	
+		
+	int nring = numr.size()/3;
+	int maxrin = numr[numr.size()-1];
+	float *aveptr = ave->get_data();
+
+	ener = 0.0;
+	for (int i=1; i<=nring; i++) {
+        int numr3i = numr(3,i);
+        int np     = numr(2,i)-1;
+		float tq = PI2*numr[1,i]/numr3i;
+		en = tq*(aveptr[np]*aveptr[np]+aveptr[np+1]*aveptr[np+1])*0.5;
+		for (int j=2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
+		ener += en/numr3i;
+	}            
+	norm.push_back(ener);
+	EXITFUNC;
+	return norm;
 }
 
-void Util::sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr){
-   int nring = numr.size()/3;
-   sub_f(ave->get_data(), dat->get_data(), tot, mirror, &numr[0],  nring);
-}
-void Util::sub_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring){
-cout<<tot<<"   "<<mirror;
+void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr){
+	int nring = numr.size()/3;
+	float *ave = avep->get_data();
+	float *dat = datp->get_data();
 	int i, j, numr3i, np;
 	float  arg, cs, si;
-	int maxrin = numr(nring,3);
+	int maxrin = numr(3,nring);
 	if(mirror == 1) { //for mirrored data has to be conjugated
 		for (i=1; i<=nring; i++) {
             numr3i = numr(3,i);
@@ -2545,8 +2618,8 @@ cout<<tot<<"   "<<mirror;
 				cs = cos(arg);
 				si = sin(arg);
 				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
-				ave[np + j]    -= dat[np + j]*cs - dat[np + j +1]*si;
-				ave[np + j +1] += dat[np + j]*si - dat[np + j +1]*cs;
+				ave[np + j]    += dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] -= dat[np + j]*si + dat[np + j +1]*cs;
 			}
 		}
 	} else {
@@ -2560,12 +2633,58 @@ cout<<tot<<"   "<<mirror;
 				cs = cos(arg);
 				si = sin(arg);
 				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
-				ave[np + j]    -= dat[np + j]*cs - dat[np + j +1]*si;
-				ave[np + j +1] -= dat[np + j]*si - dat[np + j +1]*cs;
+				ave[np + j]    += dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] += dat[np + j]*si + dat[np + j +1]*cs;
 			}
 		}
 	}
+	avep->done_data();
+	EXITFUNC;
 }
+
+void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int> numr){
+	int nring = numr.size()/3;
+	float *ave = avep->get_data();
+	float *dat = datp->get_data();
+	int i, j, numr3i, np;
+	float  arg, cs, si;
+	int maxrin = numr(3,nring);
+	if(mirror == 1) { //for mirrored data has to be conjugated
+		for (i=1; i<=nring; i++) {
+            numr3i = numr(3,i);
+            np     = numr(2,i)-1;
+			ave[np]   -= dat[np];
+			ave[np+1] -= dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			for (j=2; j<numr3i; j=j+2) {
+				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				cs = cos(arg);
+				si = sin(arg);
+				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
+				ave[np + j]    -= dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] += dat[np + j]*si + dat[np + j +1]*cs;
+			}
+		}
+	} else {
+		for (i=1; i<=nring; i++) {
+            numr3i = numr(3,i);
+            np     = numr(2,i)-1;
+			ave[np]   -= dat[np];
+			ave[np+1] -= dat[np+1]*cos(PI2*(tot-1.0f)/2.0f*numr3i/maxrin);
+			for (j=2; j<numr3i; j=j+2) {
+				arg = PI2*(tot-1.)*(j/2)/maxrin;
+				cs = cos(arg);
+				si = sin(arg);
+				//complex(data[np + j],data[np + j +1])*complex(cos(arg),sin(arg))
+				ave[np + j]    -= dat[np + j]*cs - dat[np + j +1]*si;
+				ave[np + j +1] -= dat[np + j]*si + dat[np + j +1]*cs;
+			}
+		}
+	}
+	avep->done_data();
+	EXITFUNC;
+}
+
+
 #undef    QUADPI
 #undef    PI2
 
@@ -3669,8 +3788,8 @@ int Util::coveig(int n, float *covmat, float *eigval, float *eigvec)
     ssyev_(&NEEDV, &UPLO, &n, eigvec, &n, eigval, work, 
            &lwork, &info);
     free(work);
-    return info;
     EXITFUNC;
+    return info;
 }
 
 vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
@@ -14531,8 +14650,8 @@ EMData * Util::mult_scalar(EMData* img, float scalar)
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
 	
-	return img2;
 	EXITFUNC;
+	return img2;
 }
 
 EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
@@ -14554,6 +14673,6 @@ EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar + img1_ptr[i];
 	img2->update();
 	
-	return img2;
 	EXITFUNC;
+	return img2;
 }

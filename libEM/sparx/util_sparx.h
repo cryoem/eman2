@@ -367,16 +367,12 @@ class FakeKaiserBessel : public KaiserBessel {
         static void  fftc_q(float  *br, float  *bi, int ln, int ks);
         static void  fftc_d(double *br, double *bi, int ln, int ks);
         static void  Frngs(EMData* circ, vector<int> numr);
-        static void  frngs(float *circ, int *numr, int nring);
+
 		static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
-        static void  crosrng_e(float *circ1, float *circ2, int lcirc,
-                               int    nring, int   maxrin, int *numr,
-                               double *qn, float *tot, int neg);
-			       
+		static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
+	       
         static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
-        static void  crosrng_ms(float *circ1, float *circ2, int  lcirc, int  nring,
-                                int   maxrin, int   *numr , double *qn, float *tot,
-                                double   *qm, float *tmt);
+
         static Dict Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr);
         static void  crosrng_msr(float *circ1, float *circ2, int  lcirc, int  nring,
                                 int   maxrin, int   *numr , float *qn, float *tot,
@@ -389,10 +385,9 @@ class FakeKaiserBessel : public KaiserBessel {
         static void  prb1d(double *b, int npoint, float *pos);
 		
 		static void update_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
-		static void update_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring);
-	
 		static void sub_fav(EMData* ave,EMData* dat, float tot, int mirror, vector<int> numr);
-		static void sub_f(float *ave, float *dat, float tot, int mirror, int *numr, int nring);
+
+		static vector<float> ener(EMData* ave, vector<int> numr);
 	
 	/* Decimates the image with respect to the image center.
 	 * (i.e) the center of the original image is kept the same 
