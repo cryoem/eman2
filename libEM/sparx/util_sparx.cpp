@@ -3834,9 +3834,9 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	for( i__ =0;i__<k;++i__)
 		{ 
 		pw_[i__]=log(pw[i__]); } 
-	static long int l_k=k;
-	static long int l_n=n;
-	static long int l_iswi=iswi;
+	long int l_k=k;
+	long int l_n=n;
+	long int l_iswi=iswi;
 	vector<float> cl1_res;
 	cl1_res=Util::call_cl1(&l_k, &l_n, &ps, &l_iswi, pw_, q2, q, x, res, cu, s, iu);		
 	free(q);
@@ -3855,13 +3855,13 @@ vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi
     float r__1;
     int tmp__i;
     float tmp__x;	
-    static long int i__, j, l;
+    long int i__, j, l;
     --s;
     --res;
     iu -= 3;
     cu -= 3;
     --x;
-    static long int klm2d;    
+    long int klm2d;    
     klm2d= *k+*k+2;
     klm2d=klm2d+klm2d;
     q_dim1 = klm2d;
@@ -3895,8 +3895,8 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
     long int q_dim1, q_offset, q1_dim1, q1_offset, i__1, i__2;
 
     /* Local variables */
-    static long int i__, j, k, m, n1, ii, jj;
-    static double tmp; 
+    long int i__, j, k, m, n1, ii, jj;
+    double tmp; 
     vector<float> p;
     --x;
     q_dim1 = *klm2d;
@@ -3911,7 +3911,7 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
     cu -= 3;
     
     /* Function Body */
-    static long int l = 0;
+    long int l = 0;
    
 /* C==ZHONG HUANG,JULY,12,02;L=0,1,2,3,4,5,6 correspond to different equality constraints */
     m = *ks;
