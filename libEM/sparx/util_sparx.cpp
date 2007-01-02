@@ -14639,13 +14639,13 @@ EMData * Util::mult_scalar(EMData* img, float scalar)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ============================== */
+	/* ============  output = scalar*input  ================== */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
-	float *img_ptr=img->get_data();
+	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
@@ -14661,13 +14661,13 @@ EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ============================== */
+	/* ==============   output = scalar*img + img1   ================ */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
-	float *img_ptr=img->get_data();
+	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar + img1_ptr[i];
@@ -14675,4 +14675,23 @@ EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	
 	EXITFUNC;
 	return img2;
+}
+
+void Util::add_img(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img = img + img1 ===================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++) img_ptr[i] = img_ptr[i] + img1_ptr[i];
+	img->update();
+	
+	EXITFUNC;
 }

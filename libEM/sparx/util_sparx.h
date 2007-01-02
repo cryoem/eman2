@@ -451,4 +451,5 @@ class FakeKaiserBessel : public KaiserBessel {
 	
 	static EMData* mult_scalar(EMData* img, float scalar);
 	static EMData* mad_scalar(EMData* img, EMData* img1, float scalar);
+	static void add_img(EMData* img, EMData* img1);
 #endif	//util__sparx_h__
