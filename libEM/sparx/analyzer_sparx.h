@@ -166,6 +166,53 @@ namespace EMAN
                 float *eigval; // array for storing computed eigvalues
 	}; 
 
+	class varimax : public Analyzer
+	{
+	  public:
+		varimax() : m_mask(NULL) {}
+		
+		virtual int insert_image(EMData * image);
+		
+		virtual int insert_images_list(vector<EMData *> image_list) {
+			vector<EMData*>::const_iterator iter;
+			for(iter=image_list.begin(); iter!=image_list.end(); ++iter) {
+				insert_image(*iter);
+			}
+			return 0;
+		}
+		
+		virtual vector<EMData*> analyze();
+		
+		string get_name() const
+		{
+			return "varimax";
+		}	  	
+		
+		string get_desc() const
+		{
+			return "varimax rotation of PCA results";
+		}
+		
+		static Analyzer * NEW()
+		{
+			return new varimax();
+		}
+		
+		virtual void set_params(const Dict & new_params);
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mask", EMObject::EMDATA, " ");
+			return d;
+		}
+		
+          private:
+	        int m_nlen;
+		int m_nfac;
+		EMData *m_mask;
+		vector<float> m_data;
+         }; 
 }
 
 #endif	//eman_analyzer_sparx_h__ 

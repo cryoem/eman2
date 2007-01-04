@@ -39,6 +39,7 @@
 #include "sparx/analyzer_sparx.h"
 #include "util.h"
 #include "sparx/lapackblas.h"
+#include "varimax.h"
 
 using namespace EMAN;
 
@@ -48,6 +49,7 @@ namespace EMAN {
 	{
 		force_add(&PCAsmall::NEW);
 		force_add(&PCAlarge::NEW);
+		force_add(&varimax::NEW);
 	}
 
 }
@@ -449,6 +451,73 @@ EXIT:
 #undef TOL
 
 
+void varimax::set_params(const Dict & new_params)
+{
+	params = new_params;
+	m_mask = params["mask"];
+
+        // count the number of pixels under the mask
+        // (this is really ugly!!!)
+        EMData *dummy = new EMData();
+
+        int nx = m_mask->get_xsize();
+        int ny = m_mask->get_ysize();
+        int nz = m_mask->get_zsize();
+
+        dummy->set_size(nx,ny,nz);
+
+        EMData *dummy1d = Util::compress_image_mask(dummy,m_mask);
+
+        m_nlen = dummy1d->get_xsize();
+        m_nfac = 0;
+
+        EMDeletePtr(dummy);
+        EMDeletePtr(dummy1d);
+}
+
+int varimax::insert_image(EMData* image)
+{
+    EMData* img1d = Util::compress_image_mask(image,m_mask);
+
+    m_data.insert( m_data.end(), img1d->get_data(), img1d->get_data() + m_nlen );
+
+    m_nfac++;
+
+    assert( (int)m_data.size() == m_nfac*m_nlen);
+}
+
+vector<EMData*> varimax::analyze()
+{
+    int itmax = 10000;
+    float eps = 1e-4;
+    int verbose = 1;
+    float params[4];
+    params[0] = 1.0;
+    varmx( &m_data[0], m_nlen, m_nfac, IVARIMAX, params, NULL, itmax, eps, verbose);
+
+    vector<EMData*> images;
+
+    EMData* img1d = new EMData();
+    img1d->set_size(m_nlen, 1, 1);
+    for( int i=0; i < m_nfac; ++i )
+    {
+	float* imgdata = img1d->get_data();
+
+	int offset = i * m_nlen;
+	for( int i=0; i < m_nlen; ++i )
+	{
+	    imgdata[i] = m_data[offset+i];
+        }
+
+        EMData* img = Util::reconstitute_image_mask(img1d,m_mask);
+	images.push_back(img);
+    }
+
+    EMDeletePtr(img1d);
+
+    return images;
+}
+
 void EMAN::dump_analyzers()
 {
 	dump_factory < Analyzer > ();
@@ -458,4 +527,10 @@ map<string, vector<string> > EMAN::dump_analyzers_list()
 {
 	return dump_factory_list < Analyzer > ();
 }
+
+
+
+
+
+
 
