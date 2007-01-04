@@ -458,6 +458,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	static EMData* addn_img(EMData* img, EMData* img1);
 	/* out = img - img1  */
 	static EMData* subn_img(EMData* img, EMData* img1);
+	/* out = img * img1  */
+	static EMData* muln_img(EMData* img, EMData* img1);
 	/* img *= scalar  */	
 	static void mul_scalar(EMData* img, float scalar);
 	/* img += img1  */
@@ -466,4 +468,6 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void add_img2(EMData* img, EMData* img1);
 	/* img -= img1  */
 	static void sub_img(EMData* img, EMData* img1);
+	/* img *= img1  */
+	static void mul_img(EMData* img, EMData* img1);
 #endif	//util__sparx_h__
