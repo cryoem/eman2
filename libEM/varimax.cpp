@@ -1,3 +1,8 @@
+// this file is taken from MacAnova by Wei Zhang 1/4/2007. MacAnova is
+// also a GPL licensed software, so it is OK to use its source code here
+// if things change in the future, we will need re-implement this part
+
+
 /*
 *(C)* The file is part of the source distribution of MacAnova
 *(C)* version 4.12 or later
