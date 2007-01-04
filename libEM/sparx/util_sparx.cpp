@@ -3571,7 +3571,11 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 }
 //------------------------------------------------------------------------------------------------------------------------- 
 
-float Util::tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign)  {
+float Util::tf(float dzz,float ak,float voltage,float cs,float wgh,float b_factor,float sign)  
+{
+	cs=cs*1.0e7f;
+	wgh = atan(wgh/(1.0-wgh));
+        float lambda=12.398/pow(voltage *(1022.+voltage),.5); 
 return sin(-M_PI*(dzz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
 }
 
@@ -3583,10 +3587,7 @@ EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float vo
 	int nr2 ,nl2;
 	float dzz,az,ak;
 	float scx, scy,scz;	  
-	if (nx%2==0) lsm=nx+2; else lsm=nx+1;		     
-	float lambda=12.398/pow(voltage *(1022.+voltage),.5);	
-	cs=cs*1.0e7f;    
-	wgh = atan(wgh/(1.0-wgh));   
+	if (nx%2==0) lsm=nx+2; else lsm=nx+1;		     	   
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(lsm,ny,nz);
 	float freq=1./(2.*ps);		    
@@ -3604,7 +3605,7 @@ EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float vo
 	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz,.5)*freq;
 	     		   if(ak!=0) az=0.0; else az=M_PI;
 	     		   dzz=dz+dza/2.*sin(2*(az-azz*M_PI/180.));
-			   (*ctf_img1) (i*2,j,k)=tf(dzz,ak,lambda,cs,wgh,b_factor,sign);
+			   (*ctf_img1) (i*2,j,k)=tf(dzz,ak,voltage,cs,wgh,b_factor,sign);
 	     		   (*ctf_img1) (i*2+1,j,k)=0.0f;
 	     	     }
 	     	     
