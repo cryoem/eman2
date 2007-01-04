@@ -448,8 +448,22 @@ class FakeKaiserBessel : public KaiserBessel {
 	static double areav_(int *k, int *n, double *x, double *y, double *z__, int *list, int *lptr, int *lend, int *ier);
 	/**********************************************************/
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
-	
+
+    /*  Various operation on images */
+	/* out = scalar * img  */	
 	static EMData* mult_scalar(EMData* img, float scalar);
+	/* out = img + scalar * img1  */
 	static EMData* mad_scalar(EMData* img, EMData* img1, float scalar);
+	/* out = img + img1  */
+	static EMData* addn_img(EMData* img, EMData* img1);
+	/* out = img - img1  */
+	static EMData* subn_img(EMData* img, EMData* img1);
+	/* img *= scalar  */	
+	static void mul_scalar(EMData* img, float scalar);
+	/* img += img1  */
 	static void add_img(EMData* img, EMData* img1);
+	/* img += img1**2  */
+	static void add_img2(EMData* img, EMData* img1);
+	/* img -= img1  */
+	static void sub_img(EMData* img, EMData* img1);
 #endif	//util__sparx_h__

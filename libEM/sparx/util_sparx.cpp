@@ -3571,15 +3571,17 @@ Dict Util::ExpMinus4YSqr(float ymax,int nsamples)
 }
 //------------------------------------------------------------------------------------------------------------------------- 
 
-float Util::tf(float dzz,float ak,float voltage,float cs,float wgh,float b_factor,float sign)  
+float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_factor, float sign)  
 {
-	cs=cs*1.0e7f;
-	wgh = atan(wgh/(1.0-wgh));
-        float lambda=12.398/pow(voltage *(1022.+voltage),.5); 
-return sin(-M_PI*(dzz*lambda*ak*ak-cs*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wgh)*exp(-b_factor*ak*ak)*sign;
+	float cst  = cs*1.0e7f;
+	float wght = atan(wgh/(1.0-wgh));
+	float lambda=12.398/pow(voltage *(1022.+voltage),.5); 
+    float ctfv = sin(-M_PI*(dzz*lambda*ak*ak-cst*lambda*lambda*lambda*ak*ak*ak*ak/2.)-wght)*sign;
+	if(b_factor != 0.0f)  ctfv *= b_factor*exp(-b_factor*ak*ak);
+    return ctfv;
 }
 
-EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float voltage,float dza, float azz,float wgh,float b_factor, float sign)
+EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float voltage,float dza, float azz,float wgh,float b_factor, float sign)
 {               
 	int  lsm;
 	double ix,iy,iz;
@@ -3594,8 +3596,8 @@ EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float vo
 	scx=2./nx;
 	if(ny<=1) scy=2./ny; else scy=0.0;
 	if(nz<=1) scz=2./nz; else scz=0.0;
-	nr2=ny/2 ;
-	nl2=nz/2 ;
+	nr2 = ny/2 ;
+	nl2 = nz/2 ;
 	for ( k=0; k<nz;k++) {
 	       if(k>nl2) iz=k-float(nz);
 	       for ( j=0; j<ny;j++) { 
@@ -3605,17 +3607,17 @@ EMData *Util::ctf_img(int nx, int ny, int nz,float ps,float dz,float cs,float vo
 	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz,.5)*freq;
 	     		   if(ak!=0) az=0.0; else az=M_PI;
 	     		   dzz=dz+dza/2.*sin(2*(az-azz*M_PI/180.));
-			   (*ctf_img1) (i*2,j,k)=tf(dzz,ak,voltage,cs,wgh,b_factor,sign);
-	     		   (*ctf_img1) (i*2+1,j,k)=0.0f;
+			       (*ctf_img1) (i*2,j,k)   = tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
+	     		   (*ctf_img1) (i*2+1,j,k) = 0.0f;
 	     	     }
 	     	     
 	       }
 
 	}
-		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true); 
+		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 		ctf_img1->set_complex(true);
-	    	ctf_img1->set_ri(1);  
-	        if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
+	    ctf_img1->set_ri(1);  
+	    if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
 		return ctf_img1;
 			 			 
 } 		
@@ -14633,7 +14635,7 @@ L12:
 
 
 
-EMData * Util::mult_scalar(EMData* img, float scalar)
+EMData* Util::mult_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -14655,7 +14657,7 @@ EMData * Util::mult_scalar(EMData* img, float scalar)
 	return img2;
 }
 
-EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
+EMData* Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 {
 	ENTERFUNC;
 	/* Exception Handle */
@@ -14678,6 +14680,70 @@ EMData * Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	return img2;
 }
 
+EMData* Util::addn_img(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   output = img + img1   ================ */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	EMData * img2 = new EMData();
+	img2->set_size(nx,ny,nz);
+	float *img_ptr  =img->get_data();
+	float *img2_ptr = img2->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + img1_ptr[i];
+	img2->update();
+	
+	EXITFUNC;
+	return img2;
+}
+
+EMData* Util::subn_img(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   output = img - img1   ================ */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	EMData * img2 = new EMData();
+	img2->set_size(nx,ny,nz);
+	float *img_ptr  =img->get_data();
+	float *img2_ptr = img2->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] - img1_ptr[i];
+	img2->update();
+	
+	EXITFUNC;
+	return img2;
+}
+
+void Util::mul_scalar(EMData* img, float scalar)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ============  output = scalar*input  ================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  =img->get_data();
+	for (int i=0;i<size;i++) img_ptr[i] *= scalar;
+	img->update();
+	
+	EXITFUNC;
+}
+
 void Util::add_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -14691,7 +14757,45 @@ void Util::add_img(EMData* img, EMData* img1)
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] = img_ptr[i] + img1_ptr[i];
+	for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i];
+	img->update();
+	
+	EXITFUNC;
+}
+
+void Util::add_img2(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img = img + img1**2 ===================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
+	img->update();
+	
+	EXITFUNC;
+}
+
+void Util::sub_img(EMData* img, EMData* img1)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img = img - img1 ===================== */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++) img_ptr[i] -= img1_ptr[i];
 	img->update();
 	
 	EXITFUNC;
