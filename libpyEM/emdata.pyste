@@ -5,6 +5,7 @@ Include("aligner.h")
 Include("cmp.h")
 Include("emfft.h")
 Include("xydata.h")
+Include("emdata_pickle.h")
 
 #EMData = Class("EMAN::EMData", "emdata.h")
 EMData = Class("EMAN::EMData", "emdata_wrapitems.h")
