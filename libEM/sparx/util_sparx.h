@@ -412,8 +412,8 @@ class FakeKaiserBessel : public KaiserBessel {
           * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
                   Attention: Envelope function in power spectrum has a form of exp(-b_factor*ak^2)
                                           */ 
-	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0f,float voltage=100.0f,float dza=0.0f,float azz=0.0f,float wgh=.1,float b_factor=0.0f,float sign=-1.0f);
-        static float tf(float dzz,float ak,float lambda,float cs,float wgh,float b_factor,float sign);
+	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0f,float voltage=120.0f,float dza=0.0f,float azz=0.0f,float wgh=.1,float b_factor=0.0f,float sign=-1.0f);
+    static float   tf(float dzz,float ak,float voltage = 120.0f,float cs = 2.0f,float wgh = 0.1,float b_factor = 0.0f,float sign = -1.0f);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
 	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
@@ -450,17 +450,20 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* ######### STRIDPACK USED COMMANDS FOR VORONOI #########################*/
 
     /*  Various operation on images */
+	/* out = img + scalar * img1  */
+	static EMData* madn_scalar(EMData* img, EMData* img1, float scalar);
 	/* out = scalar * img  */	
 	static EMData* mult_scalar(EMData* img, float scalar);
-	/* out = img + scalar * img1  */
-	static EMData* mad_scalar(EMData* img, EMData* img1, float scalar);
 	/* out = img + img1  */
 	static EMData* addn_img(EMData* img, EMData* img1);
 	/* out = img - img1  */
 	static EMData* subn_img(EMData* img, EMData* img1);
 	/* out = img * img1  */
 	static EMData* muln_img(EMData* img, EMData* img1);
-	/* img *= scalar  */	
+	
+	/* img *= scalar * img1 */	
+	static void mad_scalar(EMData* img, EMData* img1, float scalar);
+	/* img *= scalar  */
 	static void mul_scalar(EMData* img, float scalar);
 	/* img += img1  */
 	static void add_img(EMData* img, EMData* img1);

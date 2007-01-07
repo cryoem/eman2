@@ -14657,14 +14657,14 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	return img2;
 }
 
-EMData* Util::mad_scalar(EMData* img, EMData* img1, float scalar)
+EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 {
 	ENTERFUNC;
 	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ==============   output = scalar*img + img1   ================ */
+	/* ==============   output = img + scalar*img1   ================ */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
@@ -14673,7 +14673,7 @@ EMData* Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar + img1_ptr[i];
+	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + img1_ptr[i]*scalar;
 	img2->update();
 	
 	EXITFUNC;
@@ -14748,7 +14748,6 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	EXITFUNC;
 	return img2;
 }
-
 void Util::mul_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -14763,6 +14762,26 @@ void Util::mul_scalar(EMData* img, float scalar)
 	float *img_ptr  =img->get_data();
 	for (int i=0;i<size;i++) img_ptr[i] *= scalar;
 	img->update();
+	
+	EXITFUNC;
+}
+
+
+void Util::mad_scalar(EMData* img, EMData* img1, float scalar)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   img += scalar*img1   ================ */
+	
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int size = nx*ny*nz;
+	float *img_ptr  =img->get_data();
+	float *img1_ptr = img1->get_data();
+	for (int i=0;i<size;i++)img_ptr[i] += img1_ptr[i]*scalar;
+	img1->update();
 	
 	EXITFUNC;
 }

@@ -63,7 +63,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
 	bool   complex_input;
 	vector<float> table;
-	float lambda,ak,cs,ps,b_factor,wgh,sign;
+	float voltage, ak, cs, ps, b_factor, wgh, sign;
 	if (!fimage) {
 		return NULL;
 	}
@@ -237,13 +237,13 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			cnstH = float(pihalf/aH/(omegaH-omegaL));
 			break;
 	        case CTF_:
-			dz=params["defocus"];
-			cs=params["cs"];
-			lambda=params["lambda"];		  
-			ps=params["ps"];
-			b_factor=params["b_factor"];
-			wgh=params["wgh"];
-			sign=params["sign"];
+			dz       = params["defocus"];
+			cs       = params["Cs"];
+			voltage   = params["voltage"];		  
+			ps       = params["Pixel_size"];
+			b_factor = params["B_factor"];
+			wgh      = params["amplitude_contrast"];
+			sign     = params["sign"];
 			break;  		
 		case KAISER_I0:
 		case KAISER_SINH:
@@ -431,12 +431,12 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							break;
 						case CTF_:
 							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
-						        			static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
+						        			     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
 							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2)/ps/2.0f;						  	    
 							else  if(nz>1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
-							      		static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
-									float tf=Util::tf(dz,ak,lambda,cs,atan(wgh/(1.0-wgh)),b_factor,sign);
+							      		    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
+									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
 							fp->cmplx(ix,iy,iz) *= tf;			  
 							break;
 					}
