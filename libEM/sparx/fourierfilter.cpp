@@ -242,7 +242,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			voltage   = params["voltage"];		  
 			ps       = params["Pixel_size"];
 			b_factor = params["B_factor"];
-			wgh      = params["amplitude_contrast"];
+			wgh      = params["amp_contrast"];
 			sign     = params["sign"];
 			break;  		
 		case KAISER_I0:
