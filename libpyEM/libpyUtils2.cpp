@@ -31,6 +31,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_window_overloads_2_7, EMAN::Util::wind
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_2_8, EMAN::Util::pad, 2, 8)
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_ctf_img_overloads_5_12, EMAN::Util::ctf_img, 5, 12)
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_tf_overloads_2_7, EMAN::Util::tf, 2, 7)
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
     EMAN_Util_KaiserBessel_Wrapper(PyObject* py_self_, const EMAN::Util::KaiserBessel& p0):
@@ -179,7 +181,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("histc", &EMAN::Util::histc)
         .def("hist_comp_freq", &EMAN::Util::hist_comp_freq)
         .def("ctf_img", &EMAN::Util::ctf_img, return_value_policy< manage_new_object >(), EMAN_Util_ctf_img_overloads_5_12())
-        .def("tf", &EMAN::Util::tf)
+        .def("tf", &EMAN::Util::tf, EMAN_Util_tf_overloads_2_7())
         .def("compress_image_mask", &EMAN::Util::compress_image_mask, return_value_policy< manage_new_object >())
         .def("reconstitute_image_mask", &EMAN::Util::reconstitute_image_mask, return_value_policy< manage_new_object >())
         .def("pw_extract", &EMAN::Util::pw_extract)
@@ -188,13 +190,13 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("cmp1", &EMAN::Util::cmp1)
         .def("cmp2", &EMAN::Util::cmp2)
         .def("areav_", &EMAN::Util::areav_)
-        .def("mult_scalar", &EMAN::Util::mult_scalar, return_value_policy< manage_new_object >())
         .def("madn_scalar", &EMAN::Util::madn_scalar, return_value_policy< manage_new_object >())
+        .def("mult_scalar", &EMAN::Util::mult_scalar, return_value_policy< manage_new_object >())
         .def("addn_img", &EMAN::Util::addn_img, return_value_policy< manage_new_object >())
         .def("subn_img", &EMAN::Util::subn_img, return_value_policy< manage_new_object >())
         .def("muln_img", &EMAN::Util::muln_img, return_value_policy< manage_new_object >())
-        .def("mul_scalar", &EMAN::Util::mul_scalar)
         .def("mad_scalar", &EMAN::Util::mad_scalar)
+        .def("mul_scalar", &EMAN::Util::mul_scalar)
         .def("add_img", &EMAN::Util::add_img)
         .def("add_img2", &EMAN::Util::add_img2)
         .def("sub_img", &EMAN::Util::sub_img)

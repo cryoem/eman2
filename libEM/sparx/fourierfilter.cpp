@@ -239,7 +239,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	        case CTF_:
 			dz       = params["defocus"];
 			cs       = params["Cs"];
-			voltage   = params["voltage"];		  
+			voltage  = params["voltage"];		  
 			ps       = params["Pixel_size"];
 			b_factor = params["B_factor"];
 			wgh      = params["amp_contrast"];

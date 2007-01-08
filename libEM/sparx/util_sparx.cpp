@@ -223,9 +223,6 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 {
     int Mid= (Size+1)/2;
 
-    if (flag<0 || flag>4) {
-    	cout <<" flag must be 0,1,2,3, or 4";
-    }
     if (flag==0) { // This is the real function
 	   EMData* ImBW = new EMData();
 	   ImBW->set_size(Size,Size,1);
@@ -249,7 +246,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	
 	   return ImBW;
    	}
-   	if (flag==1) {  // This is the Fourier Transform
+   	else if (flag==1) {  // This is the Fourier Transform
 	   EMData* ImBWFFT = new EMData();
 	   ImBWFFT ->set_size(2*Size,Size,1);
 	   ImBWFFT ->to_zero();
@@ -272,7 +269,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 	
 	   return ImBWFFT;
    	}   		
-   	if (flag==2 || flag==3) { //   This is the projection in Real Space
+   	else if (flag==2 || flag==3) { //   This is the projection in Real Space
 		float alpha =alphaDeg*M_PI/180.0;
 		float C=cos(alpha);
 		float S=sin(alpha);
@@ -321,12 +318,14 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 			return pofalphak;
    		}
    	}   		
-    if (flag==4) {
+    else if (flag==4) {
 		cout <<" FH under construction";
    		EMData* OutFT= TwoDTestFunc(Size, p, q, a, b, 1);
    		EMData* TryFH= OutFT -> real2FH(4.0);
    		return TryFH;
-   	}   			
+   	} else {
+    	cout <<" flag must be 0,1,2,3, or 4";
+    }
 }
 
 
@@ -1917,7 +1916,8 @@ void Util::prb1d(double *b, int npoint, float *pos)
       c2 = (5.*b(1) - 8.*b(2) + 3.*b(3) ) / (-2.0);
       c3 = (b(1) - 2.*b(2) + b(3) ) / 2.0;
    }
-   else if (npoint == 9) {
+   //else if (npoint == 9) {
+   else  { // at least one has to be true!!
       c2 = (1708.*b(1) + 581.*b(2) - 246.*b(3) - 773.*b(4)
          - 1000.*b(5) - 927.*b(6) - 554.*b(7) + 119.*b(8)
          + 1092.*b(9) ) / (-4620.);
@@ -2583,14 +2583,13 @@ vector<float> Util::ener(EMData* ave, vector<int> numr) {
 	long double ener,en;	
 		
 	int nring = numr.size()/3;
-	int maxrin = numr[numr.size()-1];
 	float *aveptr = ave->get_data();
 
 	ener = 0.0;
 	for (int i=1; i<=nring; i++) {
         int numr3i = numr(3,i);
         int np     = numr(2,i)-1;
-		float tq = PI2*numr[1,i]/numr3i;
+		float tq = PI2*numr(1,i)/numr3i;
 		en = tq*(aveptr[np]*aveptr[np]+aveptr[np+1]*aveptr[np+1])*0.5;
 		for (int j=2; j<np+numr3i-1; j++) en += tq*aveptr[j]*aveptr[j];
 		ener += en/numr3i;
@@ -3583,28 +3582,28 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 
 EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float voltage,float dza, float azz,float wgh,float b_factor, float sign)
 {               
-	int  lsm;
-	double ix,iy,iz;
-	int i,j,k;    
-	int nr2 ,nl2;
-	float dzz,az,ak;
-	float scx, scy,scz;	  
-	if (nx%2==0) lsm=nx+2; else lsm=nx+1;		     	   
+	int   lsm;
+	int   ix, iy, iz;
+	int   i,  j, k;    
+	int   nr2, nl2;
+	float  dzz, az, ak;
+	float  scx, scy, scz;	  
+	lsm = nx + 2 - nx%2;		     	   
 	EMData* ctf_img1 = new EMData();
-	ctf_img1->set_size(lsm,ny,nz);
+	ctf_img1->set_size(lsm, ny, nz);
 	float freq=1./(2.*ps);		    
-	scx=2./nx;
+	scx=2./float(nx);
 	if(ny<=1) scy=2./ny; else scy=0.0;
 	if(nz<=1) scz=2./nz; else scz=0.0;
 	nr2 = ny/2 ;
 	nl2 = nz/2 ;
 	for ( k=0; k<nz;k++) {
-	       if(k>nl2) iz=k-float(nz);
+	       iz = k;  if(k>nl2) iz=k-nz;
 	       for ( j=0; j<ny;j++) { 
-	     	     if(j>nr2) iy=j-float(ny);
-	     	     for ( i=0;i<lsm/2;i++) {
+	     	     iy = j;  if(j>nr2) iy=j - ny;
+	     	     for ( i=0; i<lsm/2; i++) {
 	     		   ix=i;
-	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz,.5)*freq;
+	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz, 0.5f)*freq;
 	     		   if(ak!=0) az=0.0; else az=M_PI;
 	     		   dzz=dz+dza/2.*sin(2*(az-azz*M_PI/180.));
 			       (*ctf_img1) (i*2,j,k)   = tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
@@ -3815,7 +3814,7 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 	nklmd=n_larg+nklmd;
 	int size_q=klm2d*n2d;
 	int size_cu=nklmd*2;				
-	static int i__,j__;
+	static int i__;
 
 	 double *q ;
 	 double *x ;
@@ -3854,11 +3853,10 @@ vector<float> Util::pw_extract(vector<float>pw, int n, int iswi, float ps)
 }
 vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi, float *pw, float *q2,double *q, double *x, double *res, double *cu, double *s, long int *iu)
 {
-    long int q2_dim1, q2_dim2, q2_offset, q_dim1, q_offset, i__1, i__2;
+    long int q2_dim1, q2_offset, q_dim1, q_offset, i__1, i__2;
     float r__1;
     int tmp__i;
-    float tmp__x;	
-    long int i__, j, l;
+    long int i__, j;
     --s;
     --res;
     iu -= 3;
@@ -3898,7 +3896,7 @@ vector<float> Util::lsfit(long int *ks,long int *n, long int *klm2d, long int *i
     long int q_dim1, q_offset, q1_dim1, q1_offset, i__1, i__2;
 
     /* Local variables */
-    long int i__, j, k, m, n1, ii, jj;
+    long int i__, j, m, n1, ii, jj;
     double tmp; 
     vector<float> p;
     --x;
@@ -6339,7 +6337,7 @@ double areav_new__(int *k, int *n, double *x, double *y,
 	*ier)
 {
     /* System generated locals */
-    double ret_val;
+    double ret_val = 0;
 
     /* Builtin functions */
     //double acos(double);
@@ -9748,7 +9746,7 @@ long int inside_(double *p, int *lv, double *xv, double *yv,
 
     /* System generated locals */
     int i__1;
-    long int ret_val;
+    long int ret_val = 0;
 
     /* Builtin functions */
     //double sqrt(double);
