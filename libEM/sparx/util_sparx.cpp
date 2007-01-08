@@ -3615,8 +3615,8 @@ EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float 
 	}
 		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 		ctf_img1->set_complex(true);
-	    ctf_img1->set_ri(1);  
-	    if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
+	        ctf_img1->set_ri(1);  
+	        if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
 		return ctf_img1;
 			 			 
 } 		
