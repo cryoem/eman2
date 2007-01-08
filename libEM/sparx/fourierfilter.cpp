@@ -236,7 +236,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			cnstL = float(pihalf/aL/(omegaH-omegaL));
 			cnstH = float(pihalf/aH/(omegaH-omegaL));
 			break;
-	        case CTF_:
+	    case CTF_:
 			dz       = params["defocus"];
 			cs       = params["Cs"];
 			voltage  = params["voltage"];		  
@@ -244,7 +244,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			b_factor = params["B_factor"];
 			wgh      = params["amp_contrast"];
 			sign     = params["sign"];
-			break;  		
+			break;
 		case KAISER_I0:
 		case KAISER_SINH:
 		case KAISER_I0_INVERSE:
