@@ -41,6 +41,8 @@ import sys
 import Numeric
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
+from pickle import dumps,loads
+from PyQt4.QtGui import QImage
 
 class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
@@ -70,6 +72,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.mousedrag=None
 		self.nimg=0
 		self.changec={}
+		self.mmode=0
 		
 		self.coords=[]
 		self.valstodisp=["Img #"]
@@ -184,6 +187,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		n=len(self.data)
 		x,y=-self.origin[0],-self.origin[1]
 		hist=Numeric.zeros(256)
+		if len(self.coords)>n : self.coords=self.coords[:n]
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
@@ -217,8 +221,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 					hist+=hist2
 				
 			
-			try: self.coords[i]=(x+self.origin[0],y+self.origin[1])
-			except: self.coords.append((x+self.origin[0],y+self.origin[1]))
+			try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale)
+			except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale))
 			
 			if (i+1)%self.nperrow==0 : 
 				y+=h+2.0
@@ -266,13 +270,45 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		if not self.inspector : self.inspector=EMImageMxInspector2D(self)
 		self.inspector.setLimits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 		self.inspector.show()
+
+	def scrtoimg(self,vec):
+		"""Converts screen location (ie - mouse event) to pixel coordinates within a single
+		image from the matrix. Returns (image number,x,y) or None if the location is not within any
+		of the contained images. """
+		absloc=((vec[0]+self.origin[0]),(self.height()-(vec[1]-self.origin[1])))
+		for i,c in enumerate(self.coords):
+			if absloc[0]>c[0] and absloc[1]>c[1] and absloc[0]<c[0]+c[2] and absloc[1]<c[1]+c[3] :
+				return (i,(absloc[0]-c[0])/self.scale,(absloc[1]-c[1])/self.scale)
+		return None
 	
 	def mousePressEvent(self, event):
+		lc=self.scrtoimg((event.x(),event.y()))
+		print lc
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
 			self.mousedrag=(event.x(),event.y())
-	
+		elif event.button()==Qt.LeftButton:
+			if self.mmode=="drag" and lc:
+				xs=self.data[lc[0]].get_xsize()
+				ys=self.data[lc[0]].get_ysize()
+				drag = QtGui.QDrag(self)
+				mimeData = QtCore.QMimeData()
+				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
+				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
+				mimeData.setImageData(QtCore.QVariant(di))
+				if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
+				else: pm=QtGui.QPixmap.fromImage(di)
+				drag.setPixmap(pm)
+				drag.setMimeData(mimeData)
+				drag.setHotSpot(QtCore.QPoint(12,12))
+				dropAction = drag.start()
+				print dropAction
+			
+			elif self.mmode=="del" and lc:
+				del self.data[lc[0]]
+				self.setData(self.data)
+
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
@@ -322,9 +358,9 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.hbl2.setObjectName("hboxlayout")
 		self.vbl.addLayout(self.hbl2)
 		
-		self.mmeas = QtGui.QPushButton("Meas")
-		self.mmeas.setCheckable(1)
-		self.hbl2.addWidget(self.mmeas)
+		#self.mmeas = QtGui.QPushButton("Meas")
+		#self.mmeas.setCheckable(1)
+		#self.hbl2.addWidget(self.mmeas)
 
 		self.mdel = QtGui.QPushButton("Del")
 		self.mdel.setCheckable(1)
@@ -336,7 +372,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 
 		self.bg=QtGui.QButtonGroup()
 		self.bg.setExclusive(1)
-		self.bg.addButton(self.mmeas)
+#		self.bg.addButton(self.mmeas)
 		self.bg.addButton(self.mdel)
 		self.bg.addButton(self.mdrag)
 
@@ -391,16 +427,22 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 		
-		QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.newMode)
-		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.newMode)
-		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.newMode)
+		#QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.setMeasMode)
+		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.setDelMode)
+		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.setDragMode)
 
 	def newValDisp(self):
 		v2d=[str(i.text()) for i in self.vals.actions() if i.isChecked()]
 		self.target.setValDisp(v2d)
 
-	def newMode(self,i):
-		print i
+	def setMeasMode(self,i):
+		self.target.mmode="meas"
+	
+	def setDelMode(self,i):
+		self.target.mmode="del"
+	
+	def setDragMode(self,i):
+		self.target.mmode="drag"
 
 	def newMin(self,val):
 		if self.busy : return

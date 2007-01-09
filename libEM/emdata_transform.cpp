@@ -271,7 +271,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 		render_max = render_min + 0.01f;
 	}
 
-	if (flags&1) asrgb=3;
+	if (flags&8) asrgb=4;
+	else if (flags&1) asrgb=3;
 	else asrgb=1;
 
 	std::string ret=std::string();
@@ -478,6 +479,14 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*3; i+=3) {
 				data[i+j+1]=data[i+j+2]=data[i+j];
+			}
+		}
+	}
+	if (asrgb==4) {
+		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+			for (int i=xmin; i<xsize*4; i+=4) {
+				data[i+j+1]=data[i+j+2]=data[i+j+3]=data[i+j];
+				data[i+j+3]=255;
 			}
 		}
 	}
