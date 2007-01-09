@@ -1289,7 +1289,7 @@ EMData* nn4Reconstructor::finish()
                                             }
 
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-					    assert( r >=0 && r < pow_b.size() );
+					    assert( r >=0 && r < (int)pow_b.size() );
                                             float wght = pow_b[r] / ( 1.0 - alpha * sum );
 					    tmp = tmp * wght;
 				        }
@@ -1460,9 +1460,11 @@ void nn4_ctfReconstructor::setup()
 	symmetry = "c1";
     }
 
+
     float snr = params["snr"];
 
     setup( symmetry, size, npad, snr, sign );
+
 }
 
 void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
@@ -1508,6 +1510,8 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 	m_volume->set_attr("npad", m_npad);
 	m_volume->to_zero();
 	m_volume->set_array_offsets(0,1,1);
+
+	//params["fftvol"] = m_volume;
 }
 
 void nn4_ctfReconstructor::buildNormVolume() {
@@ -1518,6 +1522,8 @@ void nn4_ctfReconstructor::buildNormVolume() {
 		for (int iy = 1; iy <= m_vnyp; iy++) 
 			for (int ix = 0; ix <= m_vnxc; ix++) 
 				(*m_wptr)(ix,iy,iz) = 0.0;
+
+	//params["weight"] = m_wptr;
 }
 
 int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) 
@@ -1665,7 +1671,7 @@ EMData* nn4_ctfReconstructor::finish()
                                             }
 
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-					    assert( r >=0 && r < pow_b.size() );
+					    assert( r >=0 && r < (int)pow_b.size() );
                                             float wght = pow_b[r] / ( 1.0 - alpha * sum );
 					    tmp = tmp * wght;
 				        }
@@ -1853,7 +1859,7 @@ void file_store::add_image(  EMData* emdata )
  
         
     m_Cs = padfft->get_attr( "Cs" );
-    m_pixel = padfft->get_attr( "pixel" );
+    m_pixel = padfft->get_attr( "Pixel_size" );
     m_voltage = padfft->get_attr( "voltage" );
     m_ctf_applied = padfft->get_attr( "ctf_applied" );
     m_amp_contrast = padfft->get_attr( "amp_contrast" );
@@ -1924,7 +1930,7 @@ void file_store::get_image( int id, EMData* padfft )
     m_ihandle->read( (char*)(padfft->get_data()), sizeof(float)*m_totsize );
 
     padfft->set_attr( "Cs", m_Cs );
-    padfft->set_attr( "pixel", m_pixel );
+    padfft->set_attr( "Pixel_size", m_pixel );
     padfft->set_attr( "voltage", m_voltage );
     padfft->set_attr( "ctf_applied", m_ctf_applied );
     padfft->set_attr( "amp_contrast", m_amp_contrast );

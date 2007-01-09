@@ -97,6 +97,11 @@ namespace EMAN {
 #endif // BOUNDS_CHECKING
                 return *(array + pos);
             }
+
+            int get_xsize() const { return nx; }
+	    int get_ysize() const { return ny; }
+	    int get_zsize() const { return nz; }
+
         private:
             const size_t nx, ny, nz;
             size_t size;
