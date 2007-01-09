@@ -133,27 +133,96 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 
 	float *y_data = with->get_data();
 	float *x_data = image->get_data();
-
 	double result = 0.;
 	long n = 0;
-	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
-	if (params.has_key("mask")) {
-	  EMData* mask;
-	  mask = params["mask"];
-  	  float* dm = mask->get_data();
-	  for (long i = 0; i < totsize; i++) {
-	       if (dm[i] > 0.5) {
-	        double temp = x_data[i]- y_data[i];
-			result += temp*temp;
-	  		n++;
-	       }
-	  }
+	if(image->is_complex() && with->is_complex()) {
+		int nx  = with->get_xsize();
+		int ny  = with->get_ysize();
+		int nz  = with->get_zsize();
+		nx = (nx - 2 + with->is_fftodd()); // nx is the real-space size of the input image
+		int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
+
+		int ixb = 2*(nx+1)%2;
+		int iyb = ny%2;
+		// 
+		if(nz == 1) {
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			double part = 0.;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+				}
+			}
+			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+				int ii = (iy  + iz * ny)* lsd2;
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+				part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
+			}
+			if(nx%2 == 0) {
+				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+					part += (x_data[ii+1] - y_data[ii+1])*double(x_data[ii+1] - y_data[ii+1]);
+				}
+			
+			}
+			part *= 2;
+			part += (x_data[0] - y_data[0])*double(x_data[0] - y_data[0]);
+			if(ny%2 == 0) {
+				int ii = (ny/2  + iz * ny)* lsd2;
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+			}
+			if(nx%2 == 0) {
+				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+				part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+				if(ny%2 == 0) {
+					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+					part += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);				
+				}
+			}
+			result += part;
+		}
+		n = nx*ny*nz*nx*ny*nz;
+		
+		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
+		int kx, ky, kz;
+		int ny2 = ny/2; int nz2 = nz/2;
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			if(iz>nz2) kz=iz-nz; else kz=iz;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				if(iy>ny2) ky=iy-ny; else ky=iy;
+				for ( int ix = 0; ix <= lsd2-1; ix++) {
+				// Skip Friedel related values
+				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						result += (x_data[ii] - y_data[ii])*double(x_data[ii] - y_data[ii]);
+					}
+				}
+			}
+		}
+		n = nx*ny*nz*nx*ny*nz/2;
+		}
 	} else {
-	  for (long i = 0; i < totsize; i++) {
-	        double temp = x_data[i]- y_data[i];
-			result += temp*temp;
-	   }
-	   n = totsize;
+		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
+		if (params.has_key("mask")) {
+		  EMData* mask;
+		  mask = params["mask"];
+  		  float* dm = mask->get_data();
+		  for (long i = 0; i < totsize; i++) {
+			   if (dm[i] > 0.5) {
+				double temp = x_data[i]- y_data[i];
+				result += temp*temp;
+				n++;
+			   }
+		  }
+		} else {
+		  for (long i = 0; i < totsize; i++) {
+				double temp = x_data[i]- y_data[i];
+				result += temp*temp;
+		   }
+		   n = totsize;
+		}
 	}
 	result/=n;
 	
