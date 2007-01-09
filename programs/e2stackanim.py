@@ -63,6 +63,7 @@ Converts a 2D image stack into a GIF/PNM animation using ImageMagick"""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--scale", "-S", type="float", help="Scale factor",default=1.0)
+	parser.add_option("--pingpong",action="store_true",default=False,help="Cycle through the sequence forwards then backwards")
 #	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
 #	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
@@ -80,6 +81,10 @@ Converts a 2D image stack into a GIF/PNM animation using ImageMagick"""
 			if options.scale<1.0: a[i].scale(options.scale)
 			a[i]=a[i].get_clip(Region((olds[0]-news[0])/2.0,(olds[1]-news[1])/2.0,news[0],news[1]))
 			if options.scale>1.0: a[i].scale(options.scale)
+
+	if options.pingpong :
+		for i in range(len(a)-2,-1,-1):
+			a.append(a[i])
 			
 	stacktoanim(a,args[1])
 
