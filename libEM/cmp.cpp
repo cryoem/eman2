@@ -136,6 +136,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 	double result = 0.;
 	long n = 0;
 	if(image->is_complex() && with->is_complex()) {
+	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
 		int nx  = with->get_xsize();
 		int ny  = with->get_ysize();
 		int nz  = with->get_zsize();
@@ -146,6 +147,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		int iyb = ny%2;
 		// 
 		if(nz == 1) {
+		//  it looks like it could work in 3D, but it is not, really.
 		for ( int iz = 0; iz <= nz-1; iz++) {
 			double part = 0.;
 			for ( int iy = 0; iy <= ny-1; iy++) {
@@ -186,7 +188,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		n = nx*ny*nz*nx*ny*nz;
 		
 		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
-		int kx, ky, kz;
+		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
 		for ( int iz = 0; iz <= nz-1; iz++) {
 			if(iz>nz2) kz=iz-nz; else kz=iz;
@@ -234,13 +236,13 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 
 // Even though this uses doubles, it might be wise to recode it row-wise
 // to avoid numerical errors on large images
-float DotCmp::cmp(EMData * image, EMData *with) const
+float DotCmp::cmp(EMData* image, EMData* with) const
 {
 	ENTERFUNC;
 	validate_input_args(image, with);
 
-	float *d1 = image->get_data();
-	float *d2 = with->get_data();
+	float *x_data = image->get_data();
+	float *y_data = with->get_data();
 
 	int normalize = params.set_default("normalize", 0);
 	float negative = (float)params.set_default("negative", 1);
@@ -248,41 +250,114 @@ float DotCmp::cmp(EMData * image, EMData *with) const
 	if (negative) negative=-1.0; else negative=1.0;
 	double result = 0.;
 	long n = 0;
-	long totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
+	if(image->is_complex() && with->is_complex()) {
+	// Implemented by PAP  01/09/06 - please do not change.  If in doubts, write/call me.
+		int nx  = with->get_xsize();
+		int ny  = with->get_ysize();
+		int nz  = with->get_zsize();
+		nx = (nx - 2 + with->is_fftodd()); // nx is the real-space size of the input image
+		int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 
-	double square_sum1 = 0., square_sum2 = 0.;
-
-	if (params.has_key("mask")) {
-	  EMData* mask;
-	  mask = params["mask"];
-	  float* dm = mask->get_data();
-	  if (normalize) {
-	   for (long i = 0; i < totsize; i++) {
-			if (dm[i] > 0.5) {
-			  square_sum1 += d1[i]*double(d1[i]);
-			  square_sum2 += d2[i]*double(d2[i]);
-			  result += d1[i]*double(d2[i]);
+		int ixb = 2*(nx+1)%2;
+		int iyb = ny%2;
+		// 
+		if(nz == 1) {
+		//  it looks like it could work in 3D, but it is not, really.
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			double part = 0.;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				for ( int ix = 2; ix <= lsd2 - 1 - ixb; ix++) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						part += x_data[ii] * double(y_data[ii]);
+				}
 			}
-	   }
-	  } else {
-	   for (long i = 0; i < totsize; i++) {
-			if (dm[i] > 0.5) {
-			  result += d1[i]*double(d2[i]);
-			  n++;
+			for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+				int ii = (iy  + iz * ny)* lsd2;
+				part += x_data[ii] * double(y_data[ii]);
+				part += x_data[ii+1] * double(y_data[ii+1]);
 			}
-	   }
-	  }
+			if(nx%2 == 0) {
+				for ( int iy = 1; iy <= ny/2-1 + iyb; iy++) {
+					int ii = lsd2 - 2 + (iy  + iz * ny)* lsd2;
+					part += x_data[ii] * double(y_data[ii]);
+					part += x_data[ii+1] * double(y_data[ii+1]);
+				}
+			
+			}
+			part *= 2;
+			part += x_data[0] * double(y_data[0]);
+			if(ny%2 == 0) {
+				int ii = (ny/2  + iz * ny)* lsd2;
+				part += x_data[ii] * double(y_data[ii]);				
+			}
+			if(nx%2 == 0) {
+				int ii = lsd2 - 2 + (0  + iz * ny)* lsd2;
+				part += x_data[ii] * double(y_data[ii]);				
+				if(ny%2 == 0) {
+					int ii = lsd2 - 2 +(ny/2  + iz * ny)* lsd2;
+					part += x_data[ii] * double(y_data[ii]);				
+				}
+			}
+			result += part;
+		}
+		n = nx*ny*nz*nx*ny*nz;
+		
+		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
+		int ky, kz;
+		int ny2 = ny/2; int nz2 = nz/2;
+		for ( int iz = 0; iz <= nz-1; iz++) {
+			if(iz>nz2) kz=iz-nz; else kz=iz;
+			for ( int iy = 0; iy <= ny-1; iy++) {
+				if(iy>ny2) ky=iy-ny; else ky=iy;
+				for ( int ix = 0; ix <= lsd2-1; ix++) {
+				// Skip Friedel related values
+				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+						int ii = ix + (iy  + iz * ny)* lsd2;
+						result += x_data[ii] * double(y_data[ii]);
+					}
+				}
+			}
+		}
+		n = nx*ny*nz*nx*ny*nz/2;
+		}
+		result /= n;
 	} else {
-	  for (long i = 0; i < totsize; i++) {
-		result += d1[i]*double(d2[i]);
-	  }
-	  if (normalize) {
-	   square_sum1 = image->get_attr_dict().get("square_sum");
-	   square_sum2 = with->get_attr_dict().get("square_sum");
-	  } else n = totsize;
+		long totsize = image->get_xsize() * image->get_ysize() * image->get_zsize();
+
+		double square_sum1 = 0., square_sum2 = 0.;
+
+		if (params.has_key("mask")) {
+		  EMData* mask;
+		  mask = params["mask"];
+		  float* dm = mask->get_data();
+		  if (normalize) {
+		   for (long i = 0; i < totsize; i++) {
+				if (dm[i] > 0.5) {
+				  square_sum1 += x_data[i]*double(x_data[i]);
+				  square_sum2 += y_data[i]*double(y_data[i]);
+				  result += x_data[i]*double(y_data[i]);
+				}
+		   }
+		  } else {
+		   for (long i = 0; i < totsize; i++) {
+				if (dm[i] > 0.5) {
+				  result += x_data[i]*double(y_data[i]);
+				  n++;
+				}
+		   }
+		  }
+		} else {
+		  for (long i = 0; i < totsize; i++) {
+			result += x_data[i]*double(y_data[i]);
+		  }
+		  if (normalize) {
+		   square_sum1 = image->get_attr_dict().get("square_sum");
+		   square_sum2 = with->get_attr_dict().get("square_sum");
+		  } else n = totsize;
+		}
+	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= n;
 	}
 	
-	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= n;
 			
 	EXITFUNC;
 	return (float) (negative*result);
