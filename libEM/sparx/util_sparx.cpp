@@ -3615,8 +3615,8 @@ EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float 
 	}
 		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 		ctf_img1->set_complex(true);
-	        ctf_img1->set_ri(1);  
-	        if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
+	    ctf_img1->set_ri(1);
+	    if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
 		return ctf_img1;
 			 			 
 } 		
@@ -14650,7 +14650,12 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	float *img2_ptr = img2->get_data();
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
-	
+	if(img->is_complex()) {
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+		int npad = img->get_attr("npad");
+		img2->set_attr("npad",npad);
+	}
 	EXITFUNC;
 	return img2;
 }
@@ -14673,6 +14678,12 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + img1_ptr[i]*scalar;
 	img2->update();
+	if(img->is_complex()) {
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+		int npad = img->get_attr("npad");
+		img2->set_attr("npad",npad);
+	}
 	
 	EXITFUNC;
 	return img2;
@@ -14696,6 +14707,12 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + img1_ptr[i];
 	img2->update();
+	if(img->is_complex()) {
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+		int npad = img->get_attr("npad");
+		img2->set_attr("npad",npad);
+	}
 	
 	EXITFUNC;
 	return img2;
@@ -14719,6 +14736,12 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] - img1_ptr[i];
 	img2->update();
+	if(img->is_complex()) {
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+		int npad = img->get_attr("npad");
+		img2->set_attr("npad",npad);
+	}
 	
 	EXITFUNC;
 	return img2;
@@ -14742,6 +14765,12 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
 	img2->update();
+	if(img->is_complex()) {
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+		int npad = img->get_attr("npad");
+		img2->set_attr("npad",npad);
+	}
 	
 	EXITFUNC;
 	return img2;
@@ -14791,7 +14820,7 @@ void Util::add_img(EMData* img, EMData* img1)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ========= img = img + img1 ===================== */
+	/* ========= img += img1 ===================== */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
@@ -14810,7 +14839,7 @@ void Util::add_img2(EMData* img, EMData* img1)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ========= img = img + img1**2 ===================== */
+	/* ========= img += img1**2 ===================== */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
@@ -14829,7 +14858,7 @@ void Util::sub_img(EMData* img, EMData* img1)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ========= img = img - img1 ===================== */
+	/* ========= img -= img1 ===================== */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;
@@ -14848,7 +14877,7 @@ void Util::mul_img(EMData* img, EMData* img1)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ========= img = img * img1 ===================== */
+	/* ========= img *= img1 ===================== */
 	
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int size = nx*ny*nz;

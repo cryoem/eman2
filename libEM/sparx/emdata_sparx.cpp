@@ -1260,11 +1260,11 @@ EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult
 
 	if( ! ctf_store::inited() )
 	{
-            float Cs= myfft->get_attr( "Cs" );
+            float Cs = myfft->get_attr( "Cs" );
             float pixel = myfft->get_attr( "Pixel_size" );
             float voltage = myfft->get_attr("voltage");
             float amp_contrast = myfft->get_attr( "amp_contrast" );
-            float b_factor=0.0;
+            float b_factor = 0.0;
             ctf_store::init( ny, voltage, pixel, Cs, amp_contrast, b_factor );
 	}
 
