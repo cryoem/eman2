@@ -3587,8 +3587,9 @@ EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float 
 	int   i,  j, k;    
 	int   nr2, nl2;
 	float  dzz, az, ak;
-	float  scx, scy, scz;	  
-	lsm = nx + 2 - nx%2;		     	   
+	float  scx, scy, scz;
+	int offset = 2 - nx%2;  
+	lsm = nx + offset;		     	   
 	EMData* ctf_img1 = new EMData();
 	ctf_img1->set_size(lsm, ny, nz);
 	float freq=1./(2.*ps);		    
@@ -3613,10 +3614,9 @@ EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float 
 	       }
 
 	}
-		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
+		ctf_img1->done_data();
 		ctf_img1->set_complex(true);
-	    ctf_img1->set_ri(1);
-	    if(nx%2==0) ctf_img1->set_attr("npad",2); else  ctf_img1->set_attr("npad",1);
+		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
 		return ctf_img1;
 			 			 
 } 		
@@ -14717,7 +14717,6 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 	EXITFUNC;
 	return img2;
 }
-
 EMData* Util::subn_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -14870,6 +14869,7 @@ void Util::sub_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
+
 void Util::mul_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -14888,3 +14888,4 @@ void Util::mul_img(EMData* img, EMData* img1)
 	
 	EXITFUNC;
 }
+
