@@ -50,11 +50,7 @@ EMData * EMData::copy() const
 	memcpy(data, rdata, nx * ny * nz * sizeof(float));
 	ret->done_data();
 
-	ret->flags = flags & ( EMDATA_PAD 
-							| EMDATA_SHUFFLE
-							| EMDATA_FLIP
-							| EMDATA_FH
-							| EMDATA_FFTODD);
+	ret->flags = flags;
 
 	ret->all_translation = all_translation;
 
@@ -75,7 +71,7 @@ EMData *EMData::copy_head() const
 	ret->attr_dict = attr_dict;
 	ret->set_size(nx, ny, nz);
 
-	ret->flags = flags & ( EMDATA_PAD | EMDATA_FFTODD);
+	ret->flags = flags;
 
 	ret->all_translation = all_translation;
 

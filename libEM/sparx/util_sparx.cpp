@@ -14650,11 +14650,12 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	float *img2_ptr = img2->get_data();
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
+
+	//img2->flags = EMData::EMDataFlags ;
+
 	if(img->is_complex()) {
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
-		int npad = img->get_attr("npad");
-		img2->set_attr("npad",npad);
 	}
 	EXITFUNC;
 	return img2;
@@ -14681,8 +14682,6 @@ EMData* Util::madn_scalar(EMData* img, EMData* img1, float scalar)
 	if(img->is_complex()) {
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
-		int npad = img->get_attr("npad");
-		img2->set_attr("npad",npad);
 	}
 	
 	EXITFUNC;
@@ -14710,8 +14709,6 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 	if(img->is_complex()) {
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
-		int npad = img->get_attr("npad");
-		img2->set_attr("npad",npad);
 	}
 	
 	EXITFUNC;
@@ -14738,8 +14735,6 @@ EMData* Util::subn_img(EMData* img, EMData* img1)
 	if(img->is_complex()) {
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
-		int npad = img->get_attr("npad");
-		img2->set_attr("npad",npad);
 	}
 	
 	EXITFUNC;
@@ -14767,8 +14762,6 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	if(img->is_complex()) {
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
-		int npad = img->get_attr("npad");
-		img2->set_attr("npad",npad);
 	}
 	
 	EXITFUNC;
