@@ -412,7 +412,6 @@ class FakeKaiserBessel : public KaiserBessel {
           * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
                   Attention: Envelope function in power spectrum has a form of exp(-b_factor*ak^2)
                                           */ 
-	static EMData* ctf_img(int nx, int ny, int nz, float ps,float dz,float cs=2.0f,float voltage=300.0f,float dza=0.0f,float azz=0.0f,float wgh=0.1f,float b_factor=0.0f,float sign=-1.0f);
         static float   tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);

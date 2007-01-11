@@ -3579,49 +3579,6 @@ float Util::tf(float dzz, float ak, float voltage, float cs, float wgh, float b_
 	if(b_factor != 0.0f)  ctfv *= b_factor*exp(-b_factor*ak*ak);
     return ctfv;
 }
-
-EMData* Util::ctf_img(int nx, int ny, int nz,float ps,float dz, float cs, float voltage,float dza, float azz,float wgh,float b_factor, float sign)
-{               
-	int   lsm;
-	int   ix, iy, iz;
-	int   i,  j, k;    
-	int   nr2, nl2;
-	float  dzz, az, ak;
-	float  scx, scy, scz;
-	int offset = 2 - nx%2;  
-	lsm = nx + offset;		     	   
-	EMData* ctf_img1 = new EMData();
-	ctf_img1->set_size(lsm, ny, nz);
-	float freq=1./(2.*ps);		    
-	scx=2./float(nx);
-	if(ny<=1) scy=2./ny; else scy=0.0;
-	if(nz<=1) scz=2./nz; else scz=0.0;
-	nr2 = ny/2 ;
-	nl2 = nz/2 ;
-	for ( k=0; k<nz;k++) {
-	       iz = k;  if(k>nl2) iz=k-nz;
-	       for ( j=0; j<ny;j++) { 
-	     	     iy = j;  if(j>nr2) iy=j - ny;
-	     	     for ( i=0; i<lsm/2; i++) {
-	     		   ix=i;
-	     		   ak=pow(ix*ix*scx*scx+iy*scy*iy*scy+iz*scz*iz*scz, 0.5f)*freq;
-	     		   if(ak!=0) az=0.0; else az=M_PI;
-	     		   dzz=dz+dza/2.*sin(2*(az-azz*M_PI/180.));
-			       (*ctf_img1) (i*2,j,k)   = tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
-	     		   (*ctf_img1) (i*2+1,j,k) = 0.0f;
-	     	     }
-	     	     
-	       }
-
-	}
-		ctf_img1->done_data();
-		ctf_img1->set_complex(true);
-		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
-		return ctf_img1;
-			 			 
-} 		
-//Return the 1-D image that contains only pixels from a n-d image selected by a mask
-
 EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 {
 	/***********
