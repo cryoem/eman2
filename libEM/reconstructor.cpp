@@ -36,6 +36,7 @@
 #include <fstream>
 #include <iomanip>
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 #include "reconstructor.h"
 #include "interp.h"
 #include "ctf.h"
@@ -1442,7 +1443,8 @@ nn4_ctfReconstructor::nn4_ctfReconstructor( const string& symmetry, int size, in
 
 nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
-    checked_delete( m_volume );
+//    checked_delete( m_volume );
+//    checked_delete( m_wptr );
 }
 
 void nn4_ctfReconstructor::setup() 
@@ -1492,11 +1494,8 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
     m_vnyc = m_vnyp/2;
     m_vnzc = m_vnzp/2;
 
-
     buildFFTVolume();
     buildNormVolume();
-
-
 }
 
 void nn4_ctfReconstructor::buildFFTVolume() {
@@ -1510,20 +1509,23 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 	m_volume->set_attr("npad", m_npad);
 	m_volume->to_zero();
 	m_volume->set_array_offsets(0,1,1);
-
-	//params["fftvol"] = m_volume;
+	params["fftvol"] = m_volume;
 }
 
 void nn4_ctfReconstructor::buildNormVolume() {
-	m_wptr = shared_ptr< EMArray<float> >( new EMArray<float>(m_vnxc+1,m_vnyp,m_vnzp) );
+	m_wptr = new EMData();
+	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr->set_array_offsets(0,1,1);
  
-	for (int iz = 1; iz <= m_vnzp; iz++) 
-		for (int iy = 1; iy <= m_vnyp; iy++) 
-			for (int ix = 0; ix <= m_vnxc; ix++) 
-				(*m_wptr)(ix,iy,iz) = 0.0;
+        int ntot = (m_vnxc+1)*m_vnyp*m_vnzp;
 
-	//params["weight"] = m_wptr;
+        float* data = m_wptr->get_data();
+	for( int i=0; i < ntot; ++i)
+	{
+	    data[i] = 0.0;
+	}
+
+        params["weight"] = m_wptr;
 }
 
 int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) 
@@ -1589,11 +1591,11 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 
 	if(ctf_applied) 
 	{ 
-	    m_volume->nn_ctf_applied(*m_wptr, padfft, tsym, mult);
+	    m_volume->nn_ctf_applied(m_wptr, padfft, tsym, mult);
 	}
 	else 
 	{
-	    m_volume->nn_ctf(*m_wptr, padfft, tsym, mult);
+	    m_volume->nn_ctf(m_wptr, padfft, tsym, mult);
 	}
     }
 
@@ -1604,8 +1606,7 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfReconstructor::finish() 
 {
-	EMArray<float>& w = *m_wptr;
-	m_volume->symplane0_ctf(w);
+	m_volume->symplane0_ctf(m_wptr);
 
         int box = 7;
         int vol = box*box*box;
@@ -1620,13 +1621,14 @@ EMData* nn4_ctfReconstructor::finish()
         float alpha = ( 1.0 - 1.0/vol ) / max;
 	float osnr = 1.0f/m_snr;
 
+
 	// normalize
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
                                                                
-				if (w(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
-					float  tmp = (-2*((ix+iy+iz)%2)+1)/(w(ix,iy,iz)+osnr)*m_sign;
+				if ( (*m_wptr)(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
+					float  tmp = (-2*((ix+iy+iz)%2)+1)/( (*m_wptr)(ix,iy,iz)+osnr)*m_sign;
 
 					if( m_weighting == ESTIMATE ) 
 					{
@@ -1661,23 +1663,28 @@ EMData* nn4_ctfReconstructor::finish()
 							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
 							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
 
-							if( w( nbrix, nbriy, nbriz ) == 0.0 )
+							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 )
 							{
                                                             int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
 							    sum = sum + pow_a[c];
+							    //if( ix==0 && iy==1 && iz==1 )
+							    //    std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
 							}
                                                     }
                                                 }
                                             }
 
+                               
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 					    assert( r >=0 && r < (int)pow_b.size() );
                                             float wght = pow_b[r] / ( 1.0 - alpha * sum );
+                                            
 					    tmp = tmp * wght;
 				        }
 
                                         (*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
+
 				}
 			}
 		}

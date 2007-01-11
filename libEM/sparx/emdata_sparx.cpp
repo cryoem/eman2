@@ -1129,7 +1129,7 @@ std::map< float, shared_ptr< std::vector<float> > > ctf_store::m_store;
 
 //  Helper functions for method nn4_ctf
 void EMData::onelinenn_ctf(int j, int n, int n2, 
-		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
@@ -1165,7 +1165,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					}
 					cmplx(ixn,iya,iza) += btq*ctf*float(mult);
 					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
-					w(ixn,iya,iza) += ctf*ctf*mult;
+					(*w)(ixn,iya,iza) += ctf*ctf*mult;
 				} else {
 					int izt, iyt;
 					if (izn > 0) {
@@ -1180,7 +1180,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
-					w(-ixn,iyt,izt) += ctf*ctf*float(mult);
+					(*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
 				}
 			}
 		}
@@ -1188,7 +1188,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 }
 
 void EMData::onelinenn_ctf_applied(int j, int n, int n2, 
-		          EMArray<float>& w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+		          EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
@@ -1226,7 +1226,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 						iya = n + iyn + 1;
 					}
 					cmplx(ixn,iya,iza) += btq*float(mult);
-					w(ixn,iya,iza) += mult*ctf*ctf;
+					(*w)(ixn,iya,iza) += mult*ctf*ctf;
 				} else {
 					int izt, iyt;
 					if (izn > 0) {
@@ -1240,7 +1240,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 						iyt = -iyn + 1;
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq)*float(mult);
-					w(-ixn,iyt,izt) += mult*ctf*ctf;
+					(*w)(-ixn,iyt,izt) += mult*ctf*ctf;
 					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
 				}
 			}
@@ -1249,7 +1249,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 }
 
 void
-EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult) {
+EMData::nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1277,7 +1277,7 @@ EMData::nn_ctf(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult
 }
 
 void
-EMData::nn_ctf_applied(EMArray<float>& w, EMData* myfft, const Transform3D& tf, int mult) {
+EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1304,8 +1304,7 @@ EMData::nn_ctf_applied(EMArray<float>& w, EMData* myfft, const Transform3D& tf, 
 	EXITFUNC;
 }
 
-void
-EMData::symplane0_ctf(EMArray<float>& w) {
+void EMData::symplane0_ctf(EMData* w) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
 	int n = nxc*2;
@@ -1315,26 +1314,26 @@ EMData::symplane0_ctf(EMArray<float>& w) {
 	for (int iza = 2; iza <= nxc; iza++) {
 		for (int iya = 2; iya <= nxc; iya++) {
 			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
-			w(0,iya,iza) += w(0,n-iya+2,n-iza+2);
+			(*w)(0,iya,iza) += (*w)(0,n-iya+2,n-iza+2);
 			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
-			w(0,n-iya+2,n-iza+2) = w(0,iya,iza);
+			(*w)(0,n-iya+2,n-iza+2) = (*w)(0,iya,iza);
 			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
-			w(0,n-iya+2,iza) += w(0,iya,n-iza+2);
+			(*w)(0,n-iya+2,iza) += (*w)(0,iya,n-iza+2);
 			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
-			w(0,iya,n-iza+2) = w(0,n-iya+2,iza);
+			(*w)(0,iya,n-iza+2) = (*w)(0,n-iya+2,iza);
 		}
 	}
 	for (int iya = 2; iya <= nxc; iya++) {
 		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
-		w(0,iya,1) += w(0,n-iya+2,1);
+		(*w)(0,iya,1) += (*w)(0,n-iya+2,1);
 		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
-		w(0,n-iya+2,1) = w(0,iya,1);
+		(*w)(0,n-iya+2,1) = (*w)(0,iya,1);
 	}
 	for (int iza = 2; iza <= nxc; iza++) {
 		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
-		w(0,1,iza) += w(0,1,n-iza+2);
+		(*w)(0,1,iza) += (*w)(0,1,n-iza+2);
 		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
-		w(0,1,n-iza+2) = w(0,1,iza);
+		(*w)(0,1,n-iza+2) = (*w)(0,1,iza);
 	}
 	EXITFUNC;
 }

@@ -463,7 +463,7 @@ namespace EMAN
 
 	  private:
 		EMData* m_volume;
-		shared_ptr< EMArray<float> > m_wptr;
+		EMData* m_wptr;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnxc, m_vnyc, m_vnzc;
