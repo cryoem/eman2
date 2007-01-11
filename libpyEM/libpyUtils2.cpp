@@ -30,8 +30,6 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_window_overloads_2_7, EMAN::Util::wind
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_pad_overloads_2_8, EMAN::Util::pad, 2, 8)
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_ctf_img_overloads_5_12, EMAN::Util::ctf_img, 5, 12)
-
 BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_Util_tf_overloads_2_7, EMAN::Util::tf, 2, 7)
 struct EMAN_Util_KaiserBessel_Wrapper: EMAN::Util::KaiserBessel
 {
@@ -180,7 +178,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("pad", &EMAN::Util::pad, return_value_policy< manage_new_object >(), EMAN_Util_pad_overloads_2_8())
         .def("histc", &EMAN::Util::histc)
         .def("hist_comp_freq", &EMAN::Util::hist_comp_freq)
-        .def("ctf_img", &EMAN::Util::ctf_img, return_value_policy< manage_new_object >(), EMAN_Util_ctf_img_overloads_5_12())
         .def("tf", &EMAN::Util::tf, EMAN_Util_tf_overloads_2_7())
         .def("compress_image_mask", &EMAN::Util::compress_image_mask, return_value_policy< manage_new_object >())
         .def("reconstitute_image_mask", &EMAN::Util::reconstitute_image_mask, return_value_policy< manage_new_object >())
@@ -268,7 +265,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("bilinear_interpolate")
         .staticmethod("alrq")
         .staticmethod("round")
-        .staticmethod("ctf_img")
         .staticmethod("square")
         .staticmethod("areav_")
         .staticmethod("TwoDTestFunc")
