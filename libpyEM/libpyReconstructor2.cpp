@@ -93,5 +93,11 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
         .staticmethod("get")
     ;
 
+    class_< EMAN::file_store >( "file_store", init< const string&, int, int >() )
+        .def( "add_image", &EMAN::file_store::add_image )
+        .def( "get_image", &EMAN::file_store::get_image )
+        .def( "restart",   &EMAN::file_store::restart )
+    ;
+
 }
 
