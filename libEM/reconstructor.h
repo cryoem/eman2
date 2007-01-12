@@ -463,6 +463,7 @@ namespace EMAN
 
 	  private:
 		EMData* m_volume;
+		EMData* m_result;
 		EMData* m_wptr;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;

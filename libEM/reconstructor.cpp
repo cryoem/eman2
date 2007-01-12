@@ -1432,8 +1432,10 @@ EMData* bootstrap_nnReconstructor::finish()
 //** nn4 ctf reconstructor 
 
 nn4_ctfReconstructor::nn4_ctfReconstructor() 
-	: m_volume(NULL) 
 {
+    m_volume  = NULL;
+    m_wptr    = NULL;
+    m_result  = NULL;
 }
 
 nn4_ctfReconstructor::nn4_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign )
@@ -1445,6 +1447,7 @@ nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
 //    checked_delete( m_volume );
 //    checked_delete( m_wptr );
+    checked_delete( m_result );
 }
 
 void nn4_ctfReconstructor::setup() 
@@ -1693,7 +1696,6 @@ EMData* nn4_ctfReconstructor::finish()
 	// back fft
 	m_volume->do_ift_inplace();
 	EMData* win = m_volume->window_center(m_vnx);
-	checked_delete( m_volume );
 
         float *tw = win->get_data();
 	//  mask and subtract circumference average
@@ -1728,7 +1730,7 @@ EMData* nn4_ctfReconstructor::finish()
 
         // add m_volume = win here because the reconstructor is responsible for the memory of m_volume
 	// which I think is strange
-        m_volume = win;
+        m_result = win;
 
 	return win;
 	// clean up
