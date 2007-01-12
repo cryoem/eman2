@@ -74,6 +74,7 @@ def display(img):
 		a=EMData.read_images(f)
 		if len(a)==1 : a=a[0]
 		w=EMImage(a)
+		w.setWindowTitle("EMImage (%s)"%f)
 		w.show()
 		win.append(w)
 	
