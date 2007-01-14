@@ -1955,7 +1955,7 @@ c       automatic arrays
 */
    float *t;
    double t7[7], *q;
-   int    i, j, k, ip, jc, numr3i, numr2i, jtot;
+   int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
    float  pos;
 
 #ifdef _WIN32
@@ -2061,7 +2061,7 @@ c       automatic arrays
 */
    float *t;
    double t7[7], *q;
-   int    i, j, k, ip, jc, numr3i, numr2i, jtot;
+   int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
    float  pos;
 
 #ifdef _WIN32
@@ -2087,13 +2087,13 @@ c       automatic arrays
 
          if (neg) {
             // first set is conjugated (mirrored)
-	    	for (j=3;j<=numr3i;j=j+2) {
+	    	for (j=3; j<=numr3i; j=j+2) {
 	      		jc = j+numr2i-1;
-	      		t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
+	      		t(j)   =  (circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
 	      		t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
 	    	} 
          } else {
-	    	for (j=3;j<=numr3i;j=j+2) {
+	    	for (j=3; j<=numr3i; j=j+2) {
 	      		jc = j+numr2i-1;
 				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
 				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
@@ -2104,13 +2104,13 @@ c       automatic arrays
 	 	t(2) = circ1(numr2i+1) * circ2(numr2i+1);
         if (neg) {
             // first set is conjugated (mirrored)
-	    	for (j=3;j<=maxrin;j=j+2) {
+	    	for (j=3; j<=maxrin; j=j+2) {
 				jc = j+numr2i-1;
 				t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
 				t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 	    	}
          } else {
-			for (j=3;j<=maxrin;j=j+2) {
+			for (j=3; j<=maxrin; j=j+2) {
 				jc = j+numr2i-1;
 				t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
 				t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
@@ -2124,9 +2124,7 @@ c       automatic arrays
 
    qn = -1.0e20;
    for (j=1;j<=maxrin;j++) {
-      if (q(j) >= qn) {
-         qn = q(j); jtot = j;
-      }
+      if (q(j) >= qn) {  qn = q(j); jtot = j; }
    } 
 
    for (k=-3;k<=3;k++) {
@@ -2172,14 +2170,13 @@ c       optional limit on angular search should be added.
    // t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
    double *t, *q, t7[7];
 
-   int   ip, jc, numr3i, numr2i, i, j, k, jtot;
+   int   ip, jc, numr3i, numr2i, i, j, k, jtot = 0;
    float t1, t2, t3, t4, c1, c2, d1, d2, pos;
 
    qn  = 0.0;
    qm  = 0.0;
    tot = 0.0;
-   tmt = 0.0; 
-
+   tmt = 0.0;
 #ifdef _WIN32
 	ip = -(int)(log((float)maxrin)/log(2.0f));
 #else
@@ -2196,26 +2193,24 @@ c       optional limit on angular search should be added.
    t = (double*)calloc(maxrin,sizeof(double));
 
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-
-   for (i=1; i<=nring; i++) {
+	for (i=1; i<=nring; i++) {
 
       numr3i = numr(3,i);
       numr2i = numr(2,i);
 
       t1   = circ1(numr2i) * circ2(numr2i);
-      q(1) = q(1)+t1;
-      t(1) = t(1)+t1;
+      q(1) += t1;
+      t(1) += t1;
 
       if (numr3i == maxrin)  {
-         t1   = circ1(numr2i+1) * circ2(numr2i+1);
-         q(2) = q(2)+t1;
-         t(2) = t(2)+t1;
+		t1   = circ1(numr2i+1) * circ2(numr2i+1);
+		q(2) += t1;
+		t(2) += t1;
       } else {
-	 	t1          = circ1(numr2i+1) * circ2(numr2i+1);
-	 	q(numr3i+1) = q(numr3i+1)+t1;
+		q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
       }
 
-	for (j=3; j<=numr3i; j=j+2) {
+	for (j=3; j<=numr3i; j += 2) {
 		jc     = j+numr2i-1;
 
 		c1     = circ1(jc);
@@ -2228,27 +2223,22 @@ c       optional limit on angular search should be added.
 		t2     = c2 * d2;
 		t4     = c2 * d1;
 
-		q(j)   = q(j)	+ t1 + t2;
-		q(j+1) = q(j+1) - t3 + t4;
-		t(j)   = t(j)	+ t1 - t2;
-		t(j+1) = t(j+1) - t3 - t4;
+		q(j)   += t1 + t2;
+		q(j+1) += -t3 + t4;
+		t(j)   += t1 - t2;
+		t(j+1) += -t3 - t4;
       } 
   }
 
   fftr_d(q,ip);
 
-  jtot = 0;
   qn  = -1.0e20;
   for (j=1; j<=maxrin; j++) {
-     if (q(j) >= qn) {
-        qn  = q(j);
-        jtot = j;
-     }
+     if (q(j) >= qn) { qn  = q(j); jtot = j; }
   }
 
   for (k=-3;k<=3;k++) {
-    j = ((jtot+k+maxrin-1)%maxrin)+1;
-    t7(k+4) = q(j);
+    j = ((jtot+k+maxrin-1)%maxrin)+1; t7(k+4) = q(j);
   }
 
   // interpolate
@@ -2263,15 +2253,11 @@ c       optional limit on angular search should be added.
   // find angle
   qm = -1.0e20;
   for (j=1; j<=maxrin;j++) {
-     if ( t(j) >= qm ) {
-        qm   = t(j);
-        jtot = j;
-     }
+     if ( t(j) >= qm ) { qm   = t(j); jtot = j; }
   }
 
   for (k=-3;k<=3;k++) {
-    j       = ((jtot+k+maxrin-1)%maxrin) + 1;
-    t7(k+4) = t(j);
+    j = ((jtot+k+maxrin-1)%maxrin) + 1; t7(k+4) = t(j);
   }
 
   // interpolate
@@ -2280,10 +2266,10 @@ c       optional limit on angular search should be added.
   tmt = float(jtot) + pos;
   // Do not interpolate
   //*tmt = float(jtot);
-  
+
 	free(t);
 	free(q);
-	
+
 	Dict retvals;
 	retvals["qn"] = qn;
 	retvals["tot"] = tot;
