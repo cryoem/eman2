@@ -350,17 +350,18 @@ class FakeKaiserBessel : public KaiserBessel {
 				return exp(-x*x/(twosigma2))/rttwopisigma;
 			}
 		};
-		static void alrq(float *xim,  int nsam , int nrow , int *numr,
-                                 float *circ, int lcirc, int nring, char mode);
+		/*static void alrq(float *xim,  int nsam , int nrow , int *numr,
+                                 float *circ, int lcirc, int nring, char mode);*/
         static EMData* Polar2D(EMData* image, vector<int> numr, string mode);
-        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode);
-        static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
-                            int  *numr, float *circ, int lcirc, int  nring, char  mode);
+        static EMData* Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode);
+        /*static void alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
+                            int  *numr, float *circ, int lcirc, int  nring, char  mode);*/
         static void alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
                             int  *numr, float *circ, int lcirc, int  nring, char  mode);
-        static void alrq_msi(EMData* image,float cns2, float cnr2,
-                           int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb);
-        static EMData* Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb);
+        /*static void alrq_msi(EMData* image,float cns2, float cnr2,
+                           int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel&
+						   kb);*/
+        static EMData* Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode, Util::KaiserBessel& kb);
 
         static void  fftr_q(float  *xcmplx, int nv);
         static void  fftr_d(double *xcmplx, int nv);

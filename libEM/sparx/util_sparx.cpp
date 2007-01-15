@@ -897,24 +897,26 @@ float Util::FakeKaiserBessel::sinhwin(float x) const {
 
 
 
-EMData* Util::Polar2D(EMData* image, vector<int> numr, string mode){
+#define  circ(i)         circ   [i-1]
+#define  numr(i,j)       numr   [(j-1)*3 + i-1]
+#define  xim(i,j)        xim    [(j-1)*nsam + i-1]
+
+EMData* Util::Polar2D(EMData* image, vector<int> numr, string cmode){
    int nsam = image->get_xsize();
    int nrow = image->get_ysize();
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    EMData* out = new EMData();
-   char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
    out->set_size(lcirc,1,1);
-   alrq(image->get_data(), nsam, nrow, &numr[0], out->get_data(), lcirc, nring, cmode);
+   char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
+   float *xim  = image->get_data();
+   float *circ = out->get_data();
+/*   alrq(image->get_data(), nsam, nrow, &numr[0], out->get_data(), lcirc, nring, cmode);
    return out;
 }
-
-#define  circ(i)         circ   [i-1]
-#define  numr(i,j)       numr   [(j-1)*3 + i-1]
-#define  xim(i,j)        xim    [(j-1)*nsam + i-1]
 void Util::alrq(float *xim,  int nsam , int nrow , int *numr,
           float *circ, int lcirc, int nring, char mode)
-{
+{*/
 /* 
 c                                                                     
 c  purpose:                                                          
@@ -985,27 +987,30 @@ c
         };
      }
    }
- 
+   return  out;
 }
 
 
 
 
-EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string mode){
+EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
    int nsam = image->get_xsize();
    int nrow = image->get_ysize();
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    EMData* out = new EMData();
    out->set_size(lcirc,1,1);
-   char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
+   char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
+   float *xim  = image->get_data();
+   float *circ = out->get_data();
+/*   out->get_data();
    alrl_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
    return out;
 }
 
 void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
              int  *numr, float *circ, int lcirc, int  nring, char  mode)
-{
+{*/
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
    float  xold, yold, fi, x, y;
@@ -1072,6 +1077,7 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
          }
       } // end for jt
    } //end for it
+   return out;
 }
 float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {
@@ -1273,20 +1279,21 @@ void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
 //xim((int) floor(xold), (int) floor(yold))
 #undef  xim
 
-EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string mode, Util::KaiserBessel& kb){
+EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode, Util::KaiserBessel& kb){
 // input image is twice the size of the original image
    int nring = numr.size()/3;
    int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
    EMData* out = new EMData();
-   char cmode = (mode == "F" || mode == "f") ? 'f' : 'h';
    out->set_size(lcirc,1,1);
-   Util::alrq_msi(image, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode, kb);
+   char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
+   float *circ = out->get_data();
+/*   Util::alrq_msi(image, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode, kb);
    return out;
 }
 
 void Util::alrq_msi(EMData* image, float cns2, float cnr2,
              int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb)
-{
+{*/
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
    float  yq, xold, yold, fi, x, y;
@@ -1353,6 +1360,7 @@ void Util::alrq_msi(EMData* image, float cns2, float cnr2,
          }
       } // end for jt
    } //end for it
+   return  out;
 }
 
 /*
