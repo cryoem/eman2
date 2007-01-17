@@ -405,7 +405,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 						std::complex <float> fact(0,-mm*thetak);
 						std::complex <float> expfact= exp(fact);
 						std::complex <float> tempRho((*rhoOfkandm)(2*mm,kIntm1) ,(*rhoOfkandm)(2*mm+1,kIntm1) );
-						float mmFac = mmFac;
+						float mmFac = float(1-2*(mm%2));
 						if (IntensityFlag==1){ mmFac=1;}
 						ImfTemp +=  expfact * tempRho +  mmFac *conj(expfact*tempRho);
 					}
@@ -1490,6 +1490,7 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
 	if (0 == nz%2) zmax--;
+	float *in = this->get_data();
 
 	Transform3D RAinv; // = new Transform3D();
 	RAinv= RA.inverse();
@@ -1520,7 +1521,14 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 				float xold = xoldy + x*RAinv[0][0]; 
 				float yold = yoldy + x*RAinv[1][0];
 //                    		printf("\t\t xold = %f, yold=%f \n",xold,yold);
-				(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
+//				(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
+				int xfloor = int(xold) ; int yfloor = int(yold);
+				float t=xold-xfloor; float u = yold-yfloor;
+				float p1 =in[xfloor   + yfloor*ny];
+				float p2 =in[xfloor+1 + yfloor*ny];
+				float p3 =in[xfloor+1 + (yfloor+1)*ny];
+				float p4 =in[xfloor   + (yfloor+1)*ny];
+				(*ret)(ix,iy) = (1-t) * (1-u) * p1 + t * (1-u) * p2 + t * u * p3 + (1-t) * u * p4 ;
 				   //have to add one as quadri uses Fortran counting
 			} //ends x loop
 		} // ends y loop
