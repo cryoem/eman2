@@ -3822,7 +3822,7 @@ vector<float> Util::call_cl1(long int *k, long int *n, float *ps, long int *iswi
     q2_dim1 = klm2d;
     q2_offset = 1 + q2_dim1;
     q2 -= q2_offset;
-
+    i__2=0;
     i__1 = *n - 1;
     tmp__i=0;
     for (j = 1; j <= i__1; ++j) {
