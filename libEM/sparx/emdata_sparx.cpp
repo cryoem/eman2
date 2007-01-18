@@ -1460,6 +1460,57 @@ EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { //
 	}
 }
 
+
+float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
+{
+    int lnlen = get_xsize();
+    int nline = get_ysize();
+
+    assert( n1 >=0 && n1 < nline );
+    assert( n2 >=0 && n2 < nline );
+    assert( alpha1>=0.0 && alpha1 < 360.0 );
+    assert( alpha2>=0.0 && alpha2 < 360.0 );
+
+    float* line_1 = get_data() + n1*lnlen;
+    float* line_2 = sinoj->get_data() + n2*lnlen;
+
+    if( (alpha1-180.0)*(alpha2-180.0) > 0.0 )
+    {
+        double dis2=0.0;
+        for( int i=0; i < lnlen; ++i)
+        {
+           float tmp = line_1[i] - line_2[i];
+	   dis2 += tmp*tmp;
+        }
+        return std::sqrt( dis2 );
+    }
+
+    assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
+
+    if( alpha1 > 180.0 )
+    {
+        double dis2 = 0.0;
+        for( int i=0; i < lnlen; ++i )
+        {
+            float tmp = line_1[lnlen-1-i] - line_2[i];
+	    dis2 += tmp*tmp;
+	}
+	return std::sqrt(dis2);
+    }
+
+    double dis2 = 0.0;
+    for( int i=0; i < lnlen; ++i )
+    {
+        float tmp = line_1[i] - line_2[lnlen-1-i];
+	dis2 += tmp*tmp;
+    }
+
+    return std::sqrt(dis2);
+}
+
+
+
+
 EMData*
 EMData::rot_scale_trans(const Transform3D &RA) {
 	

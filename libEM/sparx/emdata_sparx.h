@@ -246,6 +246,13 @@ EMData* rotavg();
 		EMData* rot_scale_trans(const Transform3D &RA);
 		
 
+                /** eucludian distance of two line
+		 *
+		 */
+
+		float cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2);
+
+
 		
 		/** Rotate-Shift-Scale-Circulantly image using convolution 
 		 *
