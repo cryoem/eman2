@@ -428,13 +428,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	static vector<double> vrdg(EMData *th, EMData *ph);
 	static void hsortd(double *theta,double *phi,int *key,int len,int option);
 	static void voronoidiag(double *theta,double *phi,double* weight,int n);
-	static void angstep(double* thetast,int len);
-	static void voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last);
+	/*static void angstep(double* thetast,int len);*/
+	/*static void voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last);*/
+	static void voronoi(double *phi,double *theta,double *weight, int nt);
 	static void disorder2(double *x,double *y,double *z,int *key,int len);
 	static void ang_to_xyz(double *x,double *y,double *z,int len);
-	static double dot_product(double *x,double *y);
 	static void flip23(double *x,double *y,double *z,int *key,int k,int len);
-	static void swap(double x,double y);
 	struct tmpstruct{
  		double theta1,phi1;
 		int key1;

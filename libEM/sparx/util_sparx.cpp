@@ -4597,13 +4597,14 @@ vector<double> Util::vrdg(EMData * th,EMData *ph)
 	}
 
 	//  sort by theta
-	Util::hsortd(theta,phi,key,len,1);
+	Util::hsortd(theta, phi, key, len, 1);
 
-	Util::voronoidiag(theta,phi, weight, len);
+	//Util::voronoidiag(theta,phi, weight, len);
+ 	Util::voronoi(phi, theta, weight, len); 
 	
 	//sort by key
-	Util::hsortd(weight,weight,key,len,2);
-	
+	Util::hsortd(weight, weight, key, len, 2);
+
 	free(theta);
 	free(phi);
 	free(key);
@@ -4614,7 +4615,7 @@ vector<double> Util::vrdg(EMData * th,EMData *ph)
 		wt.push_back(weight(i));
 		count += weight(i);
 	}
-	printf("\n SUM OF ALL WEIGHTS IN VORONOI SPHERE IS == %lf \n", count);
+	printf("\n SUM OF VORONOI CELLS AREAS IS == %lf \n", count);
 	free(weight);
 	EXITFUNC;
 	return wt;
@@ -4661,7 +4662,7 @@ bool Util::cmp2(tmpstruct tmp1,tmpstruct tmp2)
 }
 
 /******************  VORONOI DIAGRAM **********************************/
-
+/*
 void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
 {	
 	ENTERFUNC;
@@ -4772,7 +4773,7 @@ void Util::voronoidiag(double *theta,double *phi,double* weight,int n)
 			}
 		acum=acum/quadpi/2.0; 
 		exit(1);
-label2:		
+label2:
 	 	 
 		continue;
 		}
@@ -4805,9 +4806,9 @@ void Util::angstep(double* thetast,int len){
 	
 	EXITFUNC;
 }
-
-
-void Util::voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last)
+*/
+/*
+void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low, int medium, int nt, int last)
 {
 	
 	ENTERFUNC;
@@ -4816,13 +4817,13 @@ void Util::voronoi(double *phi,double *theta,double *weight,int lenw,int low,int
 	int i,k,mt,status;
 
 
-	double *ds,*x,*y,*z;
+	double *ds, *x, *y, *z;
 	double tol=1.0e-8;
-	double tmp1[3],tmp2[3],a;
+	double a;
 
 	if(last){
-		if(medium>nt)  n=nt+nt;
-		else   n=nt+nt-medium+1;
+		if(medium>nt)  n = nt+nt;
+		else           n = nt+nt-medium+1;
 	} 
 	else{
 		n=nt;
@@ -4879,23 +4880,22 @@ void Util::voronoi(double *phi,double *theta,double *weight,int lenw,int low,int
 
 	Util::disorder2(x,y,z,key,n);
 
-	Util::ang_to_xyz(x,y,z,n);        
+	Util::ang_to_xyz(x,y,z,n);
 
 
-	label1: 
-	for(k=1;k<=2;k++){
-		for(i=k+1;i<=3;i++){
-			tmp1[0] = x[i-1];tmp1[1] = y[i-1];tmp1[2] = z[i-1];
-			tmp2[0] = x[k-1];tmp2[1] = y[k-1];tmp2[2] = z[k-1];
-			if( Util::dot_product(tmp1,tmp2) > 1.0-tol){
-				Util::flip23(x,y,z,key,k-1,n);
+	//  Make sure that first three are no colinear
+	label1:
+	for(k=0; k<2; k++){
+		for(i=k+1; i<3; i++){
+			if(  x[i]*x[k]+y[i]*y[k]+z[i]*z[k] > 1.0-tol){
+				Util::flip23(x, y, z, key, k, n);
 				goto label1;
 			} 
 		}
 	}
 
 
-	status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew,indx,lcnt,iwk,good,ds,&ier);
+	status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew,indx,lcnt, iwk, good, ds, &ier);
 
 
 	if (status != 0) {
@@ -4936,22 +4936,27 @@ void Util::voronoi(double *phi,double *theta,double *weight,int lenw,int low,int
 		}
 	}
 
+// Fill out the duplicated weights
 	for(i = 1;i<=n;i++){
 		mt=-indx[i-1];
 		if (mt>0){
 			k=good[mt-1];
+//  This is a duplicated entry, get the already calculated
+//   weight and assign it.
 			if (key[i-1]>=low && key[i-1]<medium){
+//  Is it already calculated weight??
 				if(key[k-1]>=low && key[k-1]<medium){
 					weight[key[i-1]-low]=weight[key[k-1]-low];
 				}
 				else{
-					a = Util::areav_(&mt,&nout,x,y,z,list,lptr,lend,&ier);
+//  No, the weight is from the outside of valid region, calculate it anyway
+					a = Util::areav_(&mt, &nout, x, y, z, list, lptr, lend, &ier);
 					if (ier != 0){
 						printf("    *** error in areav:  ier = %d ***\n", ier);
 						weight[key[i-1]-low] =-1.0;
 					}
 					else {
-						weight[key[i-1]-low]	=	a/lcnt[mt-1];
+						weight[key[i-1]-low] = a/lcnt[mt-1];
 					}
 				}
 			}
@@ -4973,25 +4978,174 @@ void Util::voronoi(double *phi,double *theta,double *weight,int lenw,int low,int
 	free(z);
 	EXITFUNC;
 }
+*/
+void Util::voronoi(double *phi, double *theta, double *weight, int nt)
+{
+	
+	ENTERFUNC;
+	int *list, *lptr, *lend, *iwk, *key,*lcnt,*indx,*good;
+	int nt6, n, ier,nout,lnew,mdup,nd;
+	int i,k,mt,status;
+
+
+	double *ds, *x, *y, *z;
+	double tol=1.0e-8;
+	double a;
+
+	/*if(last){
+		if(medium>nt)  n = nt+nt;
+		else           n = nt+nt-medium+1;
+	} 
+	else{
+		n=nt;
+	}*/
+
+	n = nt + nt;
+
+	nt6 = n*6;
+
+	list = (int*)calloc(nt6,sizeof(int));  
+	lptr = (int*)calloc(nt6,sizeof(int));  
+	lend = (int*)calloc(n  ,sizeof(int));  
+	iwk  = (int*)calloc(n  ,sizeof(int));  
+	good = (int*)calloc(n  ,sizeof(int));  
+	key  = (int*)calloc(n  ,sizeof(int));  
+	indx = (int*)calloc(n  ,sizeof(int)); 
+	lcnt = (int*)calloc(n  ,sizeof(int)); 
+
+	ds	= 	(double*) calloc(n,sizeof(double)); 
+	x	= 	(double*) calloc(n,sizeof(double)); 
+	y	= 	(double*) calloc(n,sizeof(double)); 
+	z	= 	(double*) calloc(n,sizeof(double)); 
+
+	if (list == NULL ||
+	lptr == NULL ||
+	lend == NULL ||
+	iwk  == NULL ||
+	good == NULL ||
+	key  == NULL ||
+	indx == NULL ||
+	lcnt == NULL ||
+	x    == NULL ||
+	y    == NULL ||
+	z    == NULL ||
+	ds   == NULL) {
+       		printf("memory allocation failure!\n");
+       		exit(1);
+	}
+
+
+
+	for(i = 0; i<nt; i++){
+		x[i] = theta[i];
+		y[i] = phi[i];
+		x[nt+i-1] = 180.0 - x[nt-i];
+		y[nt+i-1] = 180.0 + y[nt-i];
+	}
+
+	Util::ang_to_xyz(x, y, z, n);
+	Util::disorder2(x, y, z, key, n);
+
+	//  Make sure that first three are no colinear
+	label1:
+	for(k=0; k<2; k++){
+		for(i=k+1; i<3; i++){
+			if(  x[i]*x[k]+y[i]*y[k]+z[i]*z[k] > 1.0-tol){
+				Util::flip23(x, y, z, key, k, n);
+				goto label1;
+			} 
+		}
+	}
+
+
+	status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
+
+
+	if (status != 0) {
+		printf(" error in trmsh3 \n");
+		exit(1);
+	}
+
+
+	mdup=n-nout;
+	if (ier == -2) {
+		printf("*** Error in TRMESH:the first three nodes are collinear***\n");
+		exit(1);
+	}
+	else if (ier > 0) {
+		printf("*** Error in TRMESH:  duplicate nodes encountered ***\n");
+		exit(1);
+	}
+
+//  Create a list of unique nodes GOOD, the numbers refer to locations on the full list
+//  INDX contains node numbers from the squeezed list
+	nd=0;
+	for (k=1; k<=n; k++){
+		if (indx[k-1]>0) {
+			nd++;
+			good[nd-1]=k;
+		}
+	}
+
+
+//
+// *** Compute the Voronoi region areas.
+//
+	for(i = 1; i<=nout; i++) {
+		k=good[i-1];
+//  CALCULATE THE AREA
+ 			a = Util::areav_(&i, &nout, x, y, z, list, lptr, lend, &ier);
+    			if (ier != 0){
+//  We set the weight to -1, this will signal the error in the calling
+//   program, as the area will turn out incorrect
+				printf("    *** error in areav:  ier = %d ***\n", ier);
+				weight[key[k-1]-1] =-1.0;
+			}
+			else {
+//  Assign the weight
+				weight[key[k-1]-1]=a/lcnt[i-1];
+			}
+	}
+
+// Fill out the duplicated weights
+	for(i = 1; i<=n; i++){
+		mt =- indx[i-1];
+		if (mt>0){
+			k = good[mt-1];
+//  This is a duplicated entry, get the already calculated
+//   weight and assign it.
+			weight[key[i-1]-1] = weight[key[k-1]-1];
+			}
+	}
+
+
+	free(list);
+	free(lend);
+	free(iwk);
+	free(good);
+	free(key); 
+
+	free(indx);
+	free(lcnt);
+	free(ds);
+	free(x);
+	free(y);
+	free(z);
+	EXITFUNC;
+}
 
 void Util::disorder2(double *x,double *y,double *z,int *key,int len)
 {
 	ENTERFUNC;	
-	int k,it,i;
-	double tmp;
-	for(i=1;i<=len;i++)
-		key[i-1]=i;
+	int k, i;
+	for(i=0; i<len; i++) key[i]=i;
 
-
-	for(i = 1;i<=len;i++){
+	for(i = 0; i<len;i++){
 		k = (int)(rand() / (((double)RAND_MAX + 1)/ len));
-		it=key[k];
-		key[k]=key[i-1];
-		key[i-1]=it;
-
-		tmp=x[k];x[k]=x[i-1];x[i-1] = tmp; 
-		tmp=y[k];y[k]=y[i-1];y[i-1] = tmp; 
-		tmp=z[k];z[k]=z[i-1];z[i-1] = tmp;
+		std::swap(key[k], key[i]);
+		std::swap(x[k], x[i]);
+		std::swap(y[k], y[i]);
+		std::swap(z[k], z[i]);
 	}
 	EXITFUNC;
 }
@@ -5000,8 +5154,7 @@ void Util::ang_to_xyz(double *x,double *y,double *z,int len)
 {
 	ENTERFUNC;   
 	double costheta,sintheta,cosphi,sinphi;
-	int i;
-	for(i = 0;i<len;i++) 
+	for(int i = 0;  i<len;  i++) 
 	{
 		cosphi = cos(y[i]*dgr_to_rad);
 		sinphi = sin(y[i]*dgr_to_rad);
@@ -5021,33 +5174,17 @@ void Util::ang_to_xyz(double *x,double *y,double *z,int len)
 	EXITFUNC;	 
 }
 
-double Util::dot_product(double *x,double *y)
-{
-	return(x[0]*y[0] +x[1]*y[1] +x[2]*y[2]);
-}
-
-void Util::flip23(double *x,double *y,double *z,int *key,int k,int len)
+void Util::flip23(double *x,double *y,double *z,int *key, int k, int len)
 {
 	ENTERFUNC;
 	int i = k;
-	while(i==k)
-		i = (int)(rand() / (((double)RAND_MAX + 1)/ len));
-	int tmp = key[i];key[i] = key[k];key[k]  = tmp;
-	Util::swap(x[i],x[k]);
-	Util::swap(y[i],y[k]);
-	Util::swap(z[i],z[k]);
+	while( i == k )  i = (int)(rand() / (((double)RAND_MAX + 1)/ len));
+	std::swap(key[i], key[k]);
+	std::swap(x[i], x[k]);
+	std::swap(y[i], y[k]);
+	std::swap(z[i], z[k]);
 	EXITFUNC;
 } 
-
-void Util::swap(double x,double y)
-{
-	ENTERFUNC;
-	double tmp;
-	tmp = x;
-	x = y;
-	y = tmp;
-	EXITFUNC;
-}
 
 
 #undef	mymax
