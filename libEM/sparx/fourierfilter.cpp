@@ -63,7 +63,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
 	bool   complex_input;
 	vector<float> table;
-	float voltage, ak, cs, ps, b_factor, wgh, sign;
+	float voltage=100.0, ak=0.0, cs=2.0, ps=1.0, b_factor=0, wgh=.1, sign=-1.0;
 	if (!fimage) {
 		return NULL;
 	}
@@ -151,7 +151,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	float sz[3];
 	float szmax;
 	vector<float>::size_type maxsize;
-	float xshift, yshift, zshift;
+	float xshift=0.0, yshift=0.0, zshift=0.0;
 
 	// For the given type of filter set up any necessary parameters for the
 	// filter calculation.  FIXME: Need parameter bounds checking!
