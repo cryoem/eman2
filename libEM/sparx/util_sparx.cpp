@@ -4600,7 +4600,7 @@ vector<double> Util::vrdg(EMData * th,EMData *ph)
 	Util::hsortd(theta, phi, key, len, 1);
 
 	//Util::voronoidiag(theta,phi, weight, len);
- 	Util::voronoi(phi, theta, weight, len); 
+ 	Util::voronoi(phi, theta, weight, len);
 	
 	//sort by key
 	Util::hsortd(weight, weight, key, len, 2);
@@ -4610,13 +4610,15 @@ vector<double> Util::vrdg(EMData * th,EMData *ph)
 	free(key);
 	vector<double> wt;
 	double count = 0;
-	for(i=1;i<=len;i++)
+	for(i=1; i<= len; i++)
 	{
 		wt.push_back(weight(i));
 		count += weight(i);
 	}
 	printf("\n SUM OF VORONOI CELLS AREAS IS == %lf \n", count);
+
 	free(weight);
+
 	EXITFUNC;
 	return wt;
 	
@@ -4878,7 +4880,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int lenw, int low
 	}
 
 
-	Util::disorder2(x,y,z,key,n);
+	Util::disorder2(x,y,key,n);
 
 	Util::ang_to_xyz(x,y,z,n);
 
@@ -4984,7 +4986,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	
 	ENTERFUNC;
 	int *list, *lptr, *lend, *iwk, *key,*lcnt,*indx,*good;
-	int nt6, n, ier,nout,lnew,mdup,nd;
+	int nt6, n, ier, nout, lnew, mdup, nd;
 	int i,k,mt,status;
 
 
@@ -5039,12 +5041,12 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	for(i = 0; i<nt; i++){
 		x[i] = theta[i];
 		y[i] = phi[i];
-		x[nt+i-1] = 180.0 - x[nt-i];
-		y[nt+i-1] = 180.0 + y[nt-i];
+		x[nt+i] = 180.0 - x[i];
+		y[nt+i] = 180.0 + y[i];
 	}
 
+	Util::disorder2(x, y, key, n);
 	Util::ang_to_xyz(x, y, z, n);
-	Util::disorder2(x, y, z, key, n);
 
 	//  Make sure that first three are no colinear
 	label1:
@@ -5059,7 +5061,6 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 
 
 	status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
-
 
 	if (status != 0) {
 		printf(" error in trmsh3 \n");
@@ -5087,12 +5088,13 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 		}
 	}
 
-
 //
 // *** Compute the Voronoi region areas.
 //
 	for(i = 1; i<=nout; i++) {
 		k=good[i-1];
+		//  We only need n weights from hemisphere
+		if (key[k-1] <= nt) {
 //  CALCULATE THE AREA
  			a = Util::areav_(&i, &nout, x, y, z, list, lptr, lend, &ier);
     			if (ier != 0){
@@ -5100,11 +5102,11 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 //   program, as the area will turn out incorrect
 				printf("    *** error in areav:  ier = %d ***\n", ier);
 				weight[key[k-1]-1] =-1.0;
-			}
-			else {
+			} else {
 //  Assign the weight
 				weight[key[k-1]-1]=a/lcnt[i-1];
 			}
+		}
 	}
 
 // Fill out the duplicated weights
@@ -5114,10 +5116,10 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 			k = good[mt-1];
 //  This is a duplicated entry, get the already calculated
 //   weight and assign it.
-			weight[key[i-1]-1] = weight[key[k-1]-1];
+		//  We only need n weights from hemisphere
+			if (key[i-1] <= nt && key[k-1] <= nt) { weight[key[i-1]-1] = weight[key[k-1]-1];}
 			}
 	}
-
 
 	free(list);
 	free(lend);
@@ -5134,18 +5136,17 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	EXITFUNC;
 }
 
-void Util::disorder2(double *x,double *y,double *z,int *key,int len)
+void Util::disorder2(double *x,double *y, int *key, int len)
 {
 	ENTERFUNC;	
 	int k, i;
-	for(i=0; i<len; i++) key[i]=i;
+	for(i=0; i<len; i++) key[i]=i+1;
 
 	for(i = 0; i<len;i++){
 		k = (int)(rand() / (((double)RAND_MAX + 1)/ len));
 		std::swap(key[k], key[i]);
 		std::swap(x[k], x[i]);
 		std::swap(y[k], y[i]);
-		std::swap(z[k], z[i]);
 	}
 	EXITFUNC;
 }

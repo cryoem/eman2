@@ -431,7 +431,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	/*static void angstep(double* thetast,int len);*/
 	/*static void voronoi(double *phi,double *theta,double *weight,int lenw,int low,int medium,int nt,int last);*/
 	static void voronoi(double *phi,double *theta,double *weight, int nt);
-	static void disorder2(double *x,double *y,double *z,int *key,int len);
+	static void disorder2(double *x,double *y,int *key,int len);
 	static void ang_to_xyz(double *x,double *y,double *z,int len);
 	static void flip23(double *x,double *y,double *z,int *key,int k,int len);
 	struct tmpstruct{
