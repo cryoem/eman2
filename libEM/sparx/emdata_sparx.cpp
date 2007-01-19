@@ -2952,7 +2952,6 @@ EMData* EMData::extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew)
 	int nhalf = n/2;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,-nhalf,-nhalf);
-	res->set_array_offsets(0,-nhalf,0);
 
 	// set up some temporary weighting arrays
 	int kbsize = kb.get_window_size();
@@ -3076,7 +3075,7 @@ EMData* EMData::extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew)
 	delete[] wx0; delete[] wy0;
 	set_array_offsets(saved_offsets);
 	res->set_array_offsets(0,0,0);
-	res->set_shuffled(true);
+	//res->set_shuffled(true);
 	return res;
 }
 
