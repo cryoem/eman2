@@ -410,7 +410,6 @@ namespace EMAN {
 			EMObject& result = *((EMObject*) storage);
 	
 			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
-			vector<int>  iarray;
 			vector<float> farray;
 			vector<string> strarray;
 			
@@ -429,29 +428,18 @@ namespace EMAN {
 				python::object py_elem_obj(py_elem_hdl);
 
 				if (object_type == EMObject::UNKNOWN) {
-					python::extract<int> elem_proxy0(py_elem_obj);
-					if (elem_proxy0.check()) {
-						iarray.push_back(elem_proxy0());
-						object_type = EMObject::INTARRAY;
+					python::extract<float> elem_proxy1(py_elem_obj);
+					if (elem_proxy1.check()) {					
+						farray.push_back(elem_proxy1());
+						object_type = EMObject::FLOATARRAY;
 					}
 					else {
-						python::extract<float> elem_proxy1(py_elem_obj);
-						if (elem_proxy1.check()) {					
-							farray.push_back(elem_proxy1());
-							object_type = EMObject::FLOATARRAY;
-						}
-						else {
-							python::extract<string> elem_proxy2(py_elem_obj);
-							if (elem_proxy2.check()) {
-								strarray.push_back(elem_proxy2());
-								object_type = EMObject::STRINGARRAY;
-							}
+						python::extract<string> elem_proxy2(py_elem_obj);
+						if (elem_proxy2.check()) {
+							strarray.push_back(elem_proxy2());
+							object_type = EMObject::STRINGARRAY;
 						}
 					}
-				}
-				else if (object_type == EMObject::INTARRAY) {
-					python::extract<int> elem_proxy0(py_elem_obj);
-					iarray.push_back(elem_proxy0());
 				}
 				else if (object_type == EMObject::FLOATARRAY) {
 					python::extract<float> elem_proxy1(py_elem_obj);
@@ -462,11 +450,7 @@ namespace EMAN {
 					strarray.push_back(elem_proxy2());
 				}
 			}
-
-			if (object_type == EMObject::INTARRAY) {
-				result = EMObject(iarray);
-			}
-			else if	(object_type == EMObject::FLOATARRAY) {
+			if (object_type == EMObject::FLOATARRAY) {
 				result = EMObject(farray);
 			}
 			else if (object_type == EMObject::STRINGARRAY) {
