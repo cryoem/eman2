@@ -5143,7 +5143,7 @@ void Util::disorder2(double *x,double *y, int *key, int len)
 	for(i=0; i<len; i++) key[i]=i+1;
 
 	for(i = 0; i<len;i++){
-		k = (int)(rand() / (((double)RAND_MAX + 1)/ len));
+		k = rand()%len;
 		std::swap(key[k], key[i]);
 		std::swap(x[k], x[i]);
 		std::swap(y[k], y[i]);
@@ -5179,7 +5179,7 @@ void Util::flip23(double *x,double *y,double *z,int *key, int k, int len)
 {
 	ENTERFUNC;
 	int i = k;
-	while( i == k )  i = (int)(rand() / (((double)RAND_MAX + 1)/ len));
+	while( i == k )  i = rand()%len;
 	std::swap(key[i], key[k]);
 	std::swap(x[i], x[k]);
 	std::swap(y[i], y[k]);
