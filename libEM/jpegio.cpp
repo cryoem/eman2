@@ -33,7 +33,7 @@
  * 
  * */
 
-#ifdef EM_PNG
+#ifdef EM_JPEG
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -195,4 +195,4 @@ bool JpegIO::is_image_big_endian()
 }
 
 
-#endif	//EM_PNG
+#endif	//EM_JPEG
