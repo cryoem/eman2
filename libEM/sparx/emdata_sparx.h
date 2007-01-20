@@ -267,7 +267,7 @@ EMData* rotavg();
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
 		 */
-		EMData* rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb);
+		EMData* rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
 
 		
 		/** Get pixel value image using convolution 
@@ -298,8 +298,8 @@ EMData* rotavg();
 		 *
 		 *  @return Value of masked/convolved image at (x,y)
 		 */
-		//template<class Win>
-		//float getconvpt2d(float x, float y, Win win, int size = 7);
+		/*template<class Win>
+		float getconvpt2d(float x, float y, Win win, int size = 7);*/
 		float getconvpt2d_kbi0(float x, float y, 
 				Util::KaiserBessel::kbi0_win win, int size = 7);
 		

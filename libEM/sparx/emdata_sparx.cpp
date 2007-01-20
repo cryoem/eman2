@@ -1769,9 +1769,11 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 */
 
 EMData*
-EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb) {
+EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 	int nxn, nyn, nzn;
-	const float scale=0.5;
+	if(scale_input == 0.0f) scale_input = 1.0f;
+	//const float scale=0.5;
+	float  scale = 0.5*scale_input;
 	float  sum, w;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
