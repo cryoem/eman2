@@ -265,11 +265,11 @@ vector<EMData*> PCAlarge::analyze()
         float *rdata = eigenimage->get_data();
         for (int j = 1; j<= nvec; j++) {
 	    for (int i = 1; i <= ncov; i++)
-		rdata(i) = eigvec(i,nvec-j+1);
+		rdata(i) = eigvec(i,j);
   
             EMData* recons_eigvec = Util::reconstitute_image_mask(eigenimage,mask);
 
-            recons_eigvec->set_attr( "eigval", eigval[nvec-j] );
+            recons_eigvec->set_attr( "eigval", eigval[j-1] );
 
 	    images.push_back( recons_eigvec );
         }
