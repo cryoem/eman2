@@ -248,7 +248,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	lsdn = nxn+ 2 -nxn%2;
 //  do out of place ft
         EMData *temp_ft = do_fft();
-	EMData *ret = new EMData();
+	EMData *ret = this->copy();
 	ret->set_size(lsdn, nyn, nzn);
 	ret->to_zero();
 	float *fout = ret->get_data();
