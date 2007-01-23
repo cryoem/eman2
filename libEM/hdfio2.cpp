@@ -458,13 +458,25 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	sprintf(ipath,"/MDF/images/%d",image_index);
 	hid_t igrp=H5Gopen(file,ipath);
 	hid_t ds;
-	if (igrp<0) {
+	if (igrp<0) {	//group not existed
 		// Need to create a new image group
 		igrp=H5Gcreate(file,ipath,64);		// The image is a group, with attributes on the group
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
 
 		// Now create the actual image dataset
 		sprintf(ipath,"/MDF/images/%d/image",image_index);
+		hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
+		hid_t space;
+		if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
+		else space=H5Screate_simple(3,dims,NULL);
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
+		H5Dclose(ds);
+		H5Sclose(space);
+	}
+	else {	//group already existed, need unlink the existing dataset first 
+		sprintf(ipath,"/MDF/images/%d/image",image_index);
+		H5Gunlink(igrp, ipath);
+		
 		hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
 		hid_t space;
 		if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
