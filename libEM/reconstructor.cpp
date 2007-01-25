@@ -1903,11 +1903,8 @@ void file_store::get_image( int id, EMData* padfft )
 {
     assert( m_ihandle != NULL );
 
-    if( id != m_prev+1 )
-    {
-        int offset = (id-m_prev-1) * sizeof(float) * m_totsize;
-        m_ihandle->seekg( offset, std::ios::cur  );
-    }
+    int offset = id*sizeof(float)*m_totsize;
+    m_ihandle->seekg( offset, std::ios::beg );
 
     if( m_defocuses.size() == 0 )
     {
@@ -1960,11 +1957,8 @@ void file_store::restart( )
     {
         m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
     }
-    else
-    {
-        m_ihandle->seekg( 0, std::ios::beg );
-    }
 
+    m_ihandle->seekg( 0, std::ios::beg );
 }
  
 
