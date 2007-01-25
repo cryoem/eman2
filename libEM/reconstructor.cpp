@@ -1445,8 +1445,12 @@ nn4_ctfReconstructor::nn4_ctfReconstructor( const string& symmetry, int size, in
 
 nn4_ctfReconstructor::~nn4_ctfReconstructor()
 {
-//    checked_delete( m_volume );
-//    checked_delete( m_wptr );
+    if( m_delete_volume )
+        checked_delete(m_volume);
+
+    if( m_delete_weight )
+        checked_delete( m_wptr );
+
     checked_delete( m_result );
 }
 
@@ -1457,17 +1461,17 @@ void nn4_ctfReconstructor::setup()
     int sign = params["sign"];
 
     string symmetry;
-    try {
-	symmetry = params["symmetry"].to_str();
-	if ("" == symmetry) symmetry = "c1";
+    if( params.has_key("symmetry") )
+    {
+   	    symmetry = params["symmetry"].to_str();
     }
-    catch(_NotExistingObjectException) {
-	symmetry = "c1";
+    else
+    {
+	    symmetry = "c1";
     }
 
 
     float snr = params["snr"];
-
     setup( symmetry, size, npad, snr, sign );
 
 }
@@ -1503,7 +1507,17 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 
 void nn4_ctfReconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
-	m_volume = new EMData();
+    if( params.has_key("fftvol") )
+    {
+        m_volume = params["fftvol"];
+        m_delete_volume = false;
+    }
+    else
+    {
+	    m_volume = new EMData();
+        m_delete_volume = true;
+    }
+
 	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
@@ -1512,23 +1526,32 @@ void nn4_ctfReconstructor::buildFFTVolume() {
 	m_volume->set_attr("npad", m_npad);
 	m_volume->to_zero();
 	m_volume->set_array_offsets(0,1,1);
-	params["fftvol"] = m_volume;
 }
 
-void nn4_ctfReconstructor::buildNormVolume() {
-	m_wptr = new EMData();
+void nn4_ctfReconstructor::buildNormVolume() 
+{
+    if( params.has_key("weight") )
+    {
+        m_wptr = params["weight"];
+        m_delete_weight = false;
+    }
+    else
+    {
+	    m_wptr = new EMData();
+        m_delete_weight = true;
+    }
+
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr->set_array_offsets(0,1,1);
  
-        int ntot = (m_vnxc+1)*m_vnyp*m_vnzp;
+    int ntot = (m_vnxc+1)*m_vnyp*m_vnzp;
 
-        float* data = m_wptr->get_data();
+    float* data = m_wptr->get_data();
 	for( int i=0; i < ntot; ++i)
 	{
 	    data[i] = 0.0;
 	}
 
-        params["weight"] = m_wptr;
 }
 
 int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) 
@@ -1693,14 +1716,9 @@ EMData* nn4_ctfReconstructor::finish()
 		}
 	}
 
-        std::cout << "m_volume->is_complex():" << m_volume->is_complex() << std::endl;
-        std::cout << "m_volume(30,30,30):" << m_volume->get_value_at(30,31,31) << std::endl;
-
 	// back fft
-	EMData* tmpvol = m_volume->copy();
-	tmpvol->do_ift_inplace();
-	EMData* win = tmpvol->window_center(m_vnx);
-        checked_delete(tmpvol);
+	m_volume->do_ift_inplace();
+	EMData* win = m_volume->window_center(m_vnx);
 
         float *tw = win->get_data();
 	//  mask and subtract circumference average
@@ -1908,11 +1926,8 @@ void file_store::get_image( int id, EMData* padfft )
 {
     assert( m_ihandle != NULL );
 
-    if( id != m_prev+1 )
-    {
-        int offset = (id-m_prev-1) * sizeof(float) * m_totsize;
-        m_ihandle->seekg( offset, std::ios::cur  );
-    }
+    int offset = id*sizeof(float)*m_totsize;
+    m_ihandle->seekg( offset, std::ios::beg );
 
     if( m_defocuses.size() == 0 )
     {
@@ -1965,11 +1980,8 @@ void file_store::restart( )
     {
         m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
     }
-    else
-    {
-        m_ihandle->seekg( 0, std::ios::beg );
-    }
 
+    m_ihandle->seekg( 0, std::ios::beg );
 }
  
 
