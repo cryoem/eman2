@@ -454,6 +454,8 @@ namespace EMAN
 			d.put("sign", EMObject::INT);
 			d.put("symmetry", EMObject::STRING);
 			d.put("snr", EMObject::FLOAT);
+            d.put("fftvol", EMObject::EMDATA);
+            d.put("weight", EMObject::EMDATA);
 			return d;
 		}
 
@@ -465,17 +467,19 @@ namespace EMAN
 		EMData* m_volume;
 		EMData* m_result;
 		EMData* m_wptr;
+        bool m_delete_volume;
+        bool m_delete_weight;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnxc, m_vnyc, m_vnzc;
 		int m_npad;
 		int m_sign;
-                int m_weighting;
+        int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;
 		string m_symmetry;
 		int m_nsym;
-
+        
 		void buildFFTVolume();
 		void buildNormVolume();
 

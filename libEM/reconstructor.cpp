@@ -1693,9 +1693,14 @@ EMData* nn4_ctfReconstructor::finish()
 		}
 	}
 
+        std::cout << "m_volume->is_complex():" << m_volume->is_complex() << std::endl;
+        std::cout << "m_volume(30,30,30):" << m_volume->get_value_at(30,31,31) << std::endl;
+
 	// back fft
-	m_volume->do_ift_inplace();
-	EMData* win = m_volume->window_center(m_vnx);
+	EMData* tmpvol = m_volume->copy();
+	tmpvol->do_ift_inplace();
+	EMData* win = tmpvol->window_center(m_vnx);
+        checked_delete(tmpvol);
 
         float *tw = win->get_data();
 	//  mask and subtract circumference average
@@ -1903,8 +1908,11 @@ void file_store::get_image( int id, EMData* padfft )
 {
     assert( m_ihandle != NULL );
 
-    int offset = id*sizeof(float)*m_totsize;
-    m_ihandle->seekg( offset, std::ios::beg );
+    if( id != m_prev+1 )
+    {
+        int offset = (id-m_prev-1) * sizeof(float) * m_totsize;
+        m_ihandle->seekg( offset, std::ios::cur  );
+    }
 
     if( m_defocuses.size() == 0 )
     {
@@ -1957,8 +1965,11 @@ void file_store::restart( )
     {
         m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
     }
+    else
+    {
+        m_ihandle->seekg( 0, std::ios::beg );
+    }
 
-    m_ihandle->seekg( 0, std::ios::beg );
 }
  
 
