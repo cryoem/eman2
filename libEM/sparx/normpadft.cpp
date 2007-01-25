@@ -335,7 +335,8 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	EMUtil::dump_dict(d1);
 	printf("-----------------Attribute Dict for ret--------------\n");
 	EMUtil::dump_dict(d2);*/
-	
+	delete temp_ft;
+	temp_ft = 0;
 	return ret;
 }
 #undef fint
