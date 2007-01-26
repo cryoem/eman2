@@ -571,7 +571,7 @@ namespace EMAN
             int m_ysize;
             int m_zsize;
             int m_write;
-            int m_totsize;
+            std::istream::off_type m_totsize;
             float m_Cs;
             float m_pixel;
             float m_voltage;

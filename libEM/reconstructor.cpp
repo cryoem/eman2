@@ -1514,7 +1514,7 @@ void nn4_ctfReconstructor::buildFFTVolume() {
     }
     else
     {
-	    m_volume = new EMData();
+	m_volume = new EMData();
         m_delete_volume = true;
     }
 
@@ -1537,7 +1537,7 @@ void nn4_ctfReconstructor::buildNormVolume()
     }
     else
     {
-	    m_wptr = new EMData();
+	m_wptr = new EMData();
         m_delete_weight = true;
     }
 
@@ -1930,8 +1930,11 @@ void file_store::get_image( int id, EMData* padfft )
 {
     assert( m_ihandle != NULL );
 
-    int offset = id*sizeof(float)*m_totsize;
+    std::istream::off_type offset = id*sizeof(float)*m_totsize;
+    assert( offset >= 0 );
     m_ihandle->seekg( offset, std::ios::beg );
+    assert( ! m_ihandle->bad() && ! m_ihandle->fail() );
+
 
     if( m_defocuses.size() == 0 )
     {
