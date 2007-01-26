@@ -1717,8 +1717,12 @@ EMData* nn4_ctfReconstructor::finish()
 	}
 
 	// back fft
-	m_volume->do_ift_inplace();
-	EMData* win = m_volume->window_center(m_vnx);
+    // m_volume->do_ift_inplace();
+    EMData* tmpvol = m_volume->copy();
+    tmpvol->do_ift_inplace();
+	EMData* win = tmpvol->window_center(m_vnx);
+    checked_delete(tmpvol);
+
 
         float *tw = win->get_data();
 	//  mask and subtract circumference average
