@@ -91,6 +91,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		LOGERR("Cannot pad Fourier input image");
 		return NULL; // FIXME: replace w/ exception throw
 	}
+				
+	Util::KaiserBessel* kbptr = 0;
+
 
 	nx  = fimage->get_xsize();
 	ny  = fimage->get_ysize();
@@ -104,8 +107,6 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	const int nzp = (nz > 1) ? npad*nz : 1;
 
 	int lsd2 = (nxp + 2 - nxp%2) / 2; // Extended x-dimension of the complex image
-
-	Util::KaiserBessel* kbptr = 0;
 
 	//  Perform padding (if necessary) and fft, if the image is not already an fft image 
 	EMData* fp = NULL; // workspace image
@@ -236,7 +237,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			cnstL = float(pihalf/aL/(omegaH-omegaL));
 			cnstH = float(pihalf/aH/(omegaH-omegaL));
 			break;
-	    case CTF_:
+	    	case CTF_:
 			dz       = params["defocus"];
 			cs       = params["Cs"];
 			voltage  = params["voltage"];		  
@@ -324,9 +325,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						case GAUSS_INVERSE :
 							fp->cmplx(ix,iy,iz) *= exp(argx*omega); break;
 						case KAISER_I0:   // K-B filter
-							if (!kbptr) 
-								throw 
-									NullPointerException("kbptr null!");
+							//if (!kbptr) 
+							//	throw
+							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
 									fp->cmplx(ix,iy,iz) *= kbptr->i0win(nux)*kbptr->i0win(nuy)*kbptr->i0win(nuz);
@@ -340,9 +341,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							}
 							break;
 						case KAISER_SINH:   //  Sinh filter
-							if (!kbptr) 
-								throw 
-									NullPointerException("kbptr null!");
+							//if (!kbptr) 
+							//	throw 
+							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
 									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin(jx)*kbptr->sinhwin(jy)*kbptr->sinhwin(jz);
@@ -358,9 +359,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							}
 							break;
 						case KAISER_I0_INVERSE:   // 1./(K-B filter)
-							if (!kbptr) 
-								throw 
-									NullPointerException("kbptr null!");
+							//if (!kbptr) 
+							//	throw 
+							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
 									fp->cmplx(ix,iy,iz) /= (kbptr->i0win(nux)*kbptr->i0win(nuy)*kbptr->i0win(nuz));
@@ -374,9 +375,9 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							}
 							break;
 						case KAISER_SINH_INVERSE:  // 1./sinh
-							if (!kbptr) 
-								throw 
-									NullPointerException("kbptr null!");
+							//if (!kbptr) 
+							//	throw 
+							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
 									fp->cmplx(ix,iy,iz) /= (kbptr->sinhwin(jx)*kbptr->sinhwin(jy)*kbptr->sinhwin(jz));
@@ -444,6 +445,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			}
 		}
 	}
+	delete kbptr; kbptr = 0;
 	if (!complex_input) {
 		fp->do_ift_inplace();
 		fp->postift_depad_corner_inplace();
