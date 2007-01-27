@@ -1070,8 +1070,8 @@ EMData* EMAN::padfft_slice( EMData* slice, int npad )
 	checked_delete( zeropadded );
 
 	// shift the projection
-	float sx = slice->get_attr("sx");
-	float sy = slice->get_attr("sy");
+	float sx = slice->get_attr("s2x");
+	float sy = slice->get_attr("s2y");
 	if(sx != 0.0f || sy != 0.0)
             padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
 
