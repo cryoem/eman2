@@ -1787,7 +1787,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	int kbc = kbmax+1;
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
-	EMData* ret = new EMData();
+	EMData* ret = this->copy_head();
 #ifdef _WIN32
 	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
 #else
