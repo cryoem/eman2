@@ -52,6 +52,7 @@
 
 using namespace EMAN;
 
+static const int ATTR_NAME_LEN = 128;
 
 HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 :	filename(hdf_filename), rw_mode(rw)
@@ -354,7 +355,7 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	
 	int nattr=H5Aget_num_attrs(igrp);
 
-	char name[128];
+	char name[ATTR_NAME_LEN];
 	for (i=0; i<nattr; i++) {
 		hid_t attr=H5Aopen_idx(igrp, i);
 		H5Aget_name(attr,127,name);
@@ -393,7 +394,7 @@ int HdfIO2::erase_header(int image_index)
 	
 	int nattr=H5Aget_num_attrs(igrp);
 
-	char name[128];
+	char name[ATTR_NAME_LEN];
 	for (i=0; i<nattr; i++) {
 		hid_t attr = H5Aopen_idx(igrp, 0); //use 0 as index here, since the H5Adelete() will change the index
 		H5Aget_name(attr,127,name);
@@ -439,14 +440,14 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	printf("write_head %d\n",image_index);
 #endif
 	ENTERFUNC;
-	init();	//this init() is called in erase_header().
-	erase_header(image_index);
+	init();	
+	
 	// If image_index<0 append, and make sure the max value in the file is correct
 	// though this is normally handled by EMData.write_image()
 	hid_t attr=H5Aopen_name(group,"imageid_max");
 	int nimg = read_attr(attr);
-
 	H5Aclose(attr);
+	
 	unsigned int i;
 	if (image_index<0) image_index=nimg+1;
 	if (image_index>nimg) {
@@ -457,7 +458,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d",image_index);
 	hid_t igrp=H5Gopen(file,ipath);
-	hid_t ds;
+	int nattr=H5Aget_num_attrs(igrp);	
 	
 	if (igrp<0) {	//group not existed
 		// Need to create a new image group
@@ -465,21 +466,53 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
 		
 		sprintf(ipath,"/MDF/images/%d/image",image_index);
+		// Now create the actual image dataset		
+		hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
+		hid_t space;
+		hid_t ds;
+		if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
+		else space=H5Screate_simple(3,dims,NULL);
+		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
+		H5Dclose(ds);
+		H5Sclose(space);
 	}
-	else {	//group already existed, need unlink the existing dataset first 
-		sprintf(ipath,"/MDF/images/%d/image",image_index);
-		H5Gunlink(igrp, ipath);
+	//if group already existed, and the overwiting image is in different size, 
+	//need unlink the existing dataset first
+	else {	 		
+		char name[ATTR_NAME_LEN];
+		Dict dict2;
+		for (int i=0; i<nattr; i++) {
+			hid_t attr=H5Aopen_idx(igrp, i);
+			H5Aget_name(attr,127,name);
+			if (strncmp(name,"EMAN.", 5)!=0) {
+				H5Aclose(attr);
+				continue;
+			}
+			EMObject val=read_attr(attr);
+			dict2[name+5]=val;
+			H5Aclose(attr);
+		}
+		
+		erase_header(image_index);
+		
+		if((int)dict["nx"]!=(int)dict2["nx"] 
+				|| (int)dict["ny"]!=(int)dict2["ny"] 
+				|| (int)dict["nz"]!=(int)dict2["nz"]) {					
+			sprintf(ipath,"/MDF/images/%d/image",image_index);
+			H5Gunlink(igrp, ipath);
+			
+			// Now create the actual image dataset		
+			hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
+			hid_t space;
+			hid_t ds;
+			if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
+			else space=H5Screate_simple(3,dims,NULL);
+			ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
+			H5Dclose(ds);
+			H5Sclose(space);
+		}
 	}
-	
-	// Now create the actual image dataset		
-	hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
-	hid_t space;
-	if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
-	else space=H5Screate_simple(3,dims,NULL);
-	ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
-	H5Dclose(ds);
-	H5Sclose(space);
-	
+		
 	// Write the attributes to the group
 	vector <string> keys=dict.keys();
 
