@@ -29,6 +29,19 @@
  * 
  * */
 
+/* This program runs a set of speed tests on the current machine
+
+ * This program runs a set of speed tests in the current computer. It should
+ * have at least 1 unloaded processor, and minimal i/o occuring when this
+ *  is run. It will give a single value which should be generally proportional
+ * to how fast refine will run on a given computer. It is a 'real world' test,
+ * in that it simulates a variety of actual operations performed by a 
+ * refinement procedure. Don't compare values given by speed test in
+ * different versions of EMAN, since the underlying routines may be
+ * improved with time.
+ *  
+ * */
+
 #include <ctime>
 
 #include "emdata.h"
@@ -40,19 +53,17 @@ using namespace EMAN;
 
 int main(int argc, char *argv[])
 {
-    int SIZE = 96;
+	int SIZE = 96;
     int NTT = 500;
  
     int slow = 0;
     int low = 0;
     int big = 0;
     int newali = 0;
-    int vg = 1;
+    int vg = 0;
 
     if (argc > 1) {
-		if (Util::sstrncmp(argv[1], "slowest"))
-			slow = 2;
-		else if (Util::sstrncmp(argv[1], "slow"))
+		if (Util::sstrncmp(argv[1], "slow"))
 			slow = 1;
 		else if (Util::sstrncmp(argv[1], "best"))
 			slow = 3;
@@ -70,18 +81,18 @@ int main(int argc, char *argv[])
     // parts of the core library. It is not for benchmarking
     // purposes.
     if (vg) {
-	EMData *a = new EMData();
-	a->set_size(128,128,1);
-	a->process_inplace("testimage.scurve");
-	EMData *b = a->rot_scale_trans2D(0.0,1.0,1.0,0.0);
-	EMData *d = b->align("rotate_translate",a,Dict(),"SqEuclidean");
-	Dict r=b->get_attr_dict();
-	printf("%p\n",&r);
-	printf("%d\n",(int)r["nx"]);
-	delete a;
-	delete b;
-	delete d;
-	exit(0);
+		EMData *a = new EMData();
+		a->set_size(128,128,1);
+		a->process_inplace("testimage.scurve");
+		EMData *b = a->rot_scale_trans2D(0.0,1.0,1.0,0.0);
+		EMData *d = b->align("rotate_translate",a,Dict(),"SqEuclidean");
+		Dict r=b->get_attr_dict();
+		printf("%p\n",&r);
+		printf("nx = %d\n",(int)r["nx"]);
+		delete a;
+		delete b;
+		delete d;
+		exit(0);
     }
 
     printf("This could take a few minutes. Please be patient.\n");
@@ -89,7 +100,6 @@ int main(int argc, char *argv[])
 		NTT = 100;
 		SIZE = 320;
     }
-
 
     printf("Initializing\n");
 
@@ -126,7 +136,6 @@ int main(int argc, char *argv[])
 			data[i]->write_image("speed.hed", i, EMUtil::IMAGE_IMAGIC);
 		}
     }
-
 
     if (low) {
 		printf("Low level tests starting. Please note that compiling with optimization may invalidate certain tests. Also note that overhead is difficult to compensate for, so in most cases it is not dealt with.\n");
@@ -361,18 +370,12 @@ int main(int argc, char *argv[])
     EMData *tmp = 0;
     float t1 = (float) clock();
     for (int i = 0; i < 3; i++) {
-		for (int j = 5; j < (slow == 2 ? NTT / 10 : NTT); j++) {
-			if (slow == 2) {
-				Dict d;
-				d["flip"] = (EMData*)0;
-				d["maxshift"] = SIZE/8;
-				tmp = data[i]->align("rtf_slowest", data[j], d);
-			}
-			else if (slow == 3) {
+		for (int j = 5; j < NTT; j++) {
+			if (slow == 3) {
 				tmp = data[i]->align("rtf_best", data[j],
 									 Dict("flip", (EMData*)0,"maxshift", SIZE/8));
 			}
-			else if (slow == 1) {
+			else if (slow == 1) {			
 				Dict d;
 				d["flip"] = (EMData*)0;
 				d["maxshift"] = SIZE/8;
