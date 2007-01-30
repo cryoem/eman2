@@ -129,6 +129,12 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, 
 
 }// namespace 
 
+namespace EMAN { 
+namespace boost_python {
+
+void wrap_apmq();
+
+}}
 
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
@@ -562,6 +568,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("SetVal", &TFList::SetVal)
         .def("GetVal", &TFList::GetVal)
     ;
-
+    EMAN::boost_python::wrap_apmq();
 }
 
