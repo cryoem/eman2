@@ -108,6 +108,6 @@ namespace boost_python {
 void wrap_apmq()
 {
     using namespace boost::python;
-    def("apmq", apmq);
+    def("sparx_apmq", apmq);
 }
 }}
