@@ -59,7 +59,6 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&BackProjectionReconstructor::NEW);
 	force_add(&nn4Reconstructor::NEW);
 	force_add(&nn4_ctfReconstructor::NEW);
-	force_add(&nn4_ctfReconstructor::NEW);
 	force_add(&bootstrap_nnReconstructor::NEW); 
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
@@ -1100,7 +1099,7 @@ enum weighting_method { NONE, ESTIMATE, VORONOI };
 
 float max3d( int kc, const vector<float>& pow_a )
 {
-    float max = 0;
+    float max = 0.0;
     for( int i=-kc; i <= kc; ++i )
     {
         for( int j=-kc; j <= kc; ++j )
@@ -1227,19 +1226,20 @@ EMData* nn4Reconstructor::finish()
 {
 	EMArray<int>& nr = *m_nrptr;
 
-        m_volume->symplane0(nr);
+    m_volume->symplane0(nr);
 
-        int box = 7;
-        int vol = box*box*box;
-        int kc = (box-1)/2;
-        vector< float > pow_a( 3*kc, 1.0 );
-	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+    int box = 7;
+    int vol = box*box*box;
+    int kc = (box-1)/2;
+    vector< float > pow_a( 3*kc+1, 1.0 );
+    for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+    pow_a[3*kc] = 0.0;
 
-	vector< float > pow_b( 3*m_vnyc, 1.0 );
-	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
+   	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
+    for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
-        float max = max3d( kc, pow_a );
-        float alpha = ( 1.0 - 1.0/vol ) / max;
+    float max = max3d( kc, pow_a );
+    float alpha = ( 1.0 - 1.0/vol ) / max;
 
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
@@ -1632,21 +1632,24 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfReconstructor::finish() 
 {
-	m_volume->symplane0_ctf(m_wptr);
+    m_volume->set_array_offsets(0, 1, 1);
+    m_wptr->set_array_offsets(0, 1, 1);
+    m_volume->symplane0_ctf(m_wptr);
 
-        int box = 7;
-        int vol = box*box*box;
-        int kc = (box-1)/2;
-        vector< float > pow_a( 3*kc, 1.0 );
+    int box = 7;
+    int vol = box*box*box;
+    int kc = (box-1)/2;
+    vector< float > pow_a( 3*kc+1, 1.0 );
 	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+    pow_a[3*kc]=0.0;
+
 
 	vector< float > pow_b( 3*m_vnyc, 1.0 );
 	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
-        float max = max3d( kc, pow_a );
-        float alpha = ( 1.0 - 1.0/vol ) / max;
+    float max = max3d( kc, pow_a );
+    float alpha = ( 1.0 - 1.0/vol ) / max;
 	float osnr = 1.0f/m_snr;
-
 
 	// normalize
 	for (int iz = 1; iz <= m_vnzp; iz++) {
@@ -1658,74 +1661,76 @@ EMData* nn4_ctfReconstructor::finish()
 
 					if( m_weighting == ESTIMATE ) 
 					{
-                                            int cx = ix;
+                        int cx = ix;
 					    int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 					    int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
 
 					    float sum = 0.0;
 					    for( int ii = -kc; ii <= kc; ++ii )
-                                            { 
+                        { 
 					        int nbrcx = cx + ii;
-						if( nbrcx >= m_vnxc ) continue;
+					    	if( nbrcx >= m_vnxc ) continue;
 
 					        for( int jj= -kc; jj <= kc; ++jj )
-						{
-						    int nbrcy = cy + jj;
-						    if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-
-						    for( int kk = -kc; kk <= kc; ++kk )
 						    {
-						        int nbrcz = cz + jj;
-                                                        if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+						        int nbrcy = cy + jj;
+						        if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
 
-							if( nbrcx < 0 )
-							{
-							    nbrcx = -nbrcx;
-							    nbrcy = -nbrcy;
-							    nbrcz = -nbrcz;
-							}
+						        for( int kk = -kc; kk <= kc; ++kk )
+						        {
+						            int nbrcz = cz + jj;
+                                    if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
 
-                                                        int nbrix = nbrcx;
-							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+						            if( nbrcx < 0 )
+							        {
+							            nbrcx = -nbrcx;
+							            nbrcy = -nbrcy;
+							            nbrcz = -nbrcz;
+							        }
 
-							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 )
-							{
-                                                            int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-							    sum = sum + pow_a[c];
-							    //if( ix==0 && iy==1 && iz==1 )
-							    //    std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
-							}
-                                                    }
-                                                }
-                                            }
+                                    int nbrix = nbrcx;
+							        int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+							        int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+
+							        if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 )
+							        {
+                                        int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+							            sum = sum + pow_a[c];
+							            // if(ix%20==0 && iy%20==0 && iz%20==0)
+							            //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
+							        }
+                                }
+                            }
+                        }
 
                                
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 					    assert( r >=0 && r < (int)pow_b.size() );
-                                            float wght = pow_b[r] / ( 1.0 - alpha * sum );
-                                            
+                        float wght = pow_b[r] / ( 1.0 - alpha * sum );
+
+                        // if(ix%10==0 && iy%10==0)
+                        //{
+                        //    std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
+                        //    std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum; 
+                        //    std::cout << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
+                        //    std::cout << std::endl;
+                        //} 
 					    tmp = tmp * wght;
-				        }
+				    }
 
-                                        (*m_volume)(2*ix,iy,iz) *= tmp;
+
+                    (*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
-
 				}
 			}
 		}
 	}
 
 	// back fft
-    // m_volume->do_ift_inplace();
-    EMData* tmpvol = m_volume->copy();
-    tmpvol->do_ift_inplace();
-	EMData* win = tmpvol->window_center(m_vnx);
-    checked_delete(tmpvol);
+    m_volume->do_ift_inplace();
+    EMData* win = m_volume->window_center(m_vnx);
 
-
-        float *tw = win->get_data();
-	//  mask and subtract circumference average
+    float *tw = win->get_data();
 	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
@@ -1755,9 +1760,9 @@ EMData* nn4_ctfReconstructor::finish()
 		}
 	}
 
-        // add m_volume = win here because the reconstructor is responsible for the memory of m_volume
+    // add m_result = win here because the reconstructor is responsible for the memory of m_volume
 	// which I think is strange
-        m_result = win;
+    m_result = win;
 
 	return win;
 	// clean up
