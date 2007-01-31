@@ -50,8 +50,8 @@ EMAN::Dict apmq(EMAN::EMData* image, boost::python::list const &crefim_list,
     int ky = int(2*yrng/step+0.5)/2; 
     int kx = int(2*xrng/step+0.5)/2;
     //for i in xrange(-ky, ky+1):
-    int iref, nref, mirror, iy, ix, sx, sy;
-    float ang;
+    int iref, nref=0, mirror=0, iy, ix, sx=0, sy=0;
+    float ang=0.0f;
     for (int i = -ky; i <= ky; i++) {
         iy = i * step ;
         // for  j in xrange(-kx, kx+1):
@@ -62,7 +62,7 @@ EMAN::Dict apmq(EMAN::EMData* image, boost::python::list const &crefim_list,
             EMAN::Util::Frngs(cimage, numr);
             //  compare with all reference images
             // for iref in xrange(len(crefim)): 
-            for ( iref = 0; iref < crefim_len; iref++) {
+            for ( iref = 0; iref < (int)crefim_len; iref++) {
                 EMAN::Dict retvals =
                     EMAN::Util::Crosrng_ms(crefim[iref], cimage, numr);  
                 double qn = retvals["qn"];
