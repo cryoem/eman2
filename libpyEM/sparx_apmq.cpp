@@ -37,8 +37,7 @@ EMAN::Dict apmq(EMAN::EMData* image, boost::python::list const &crefim_list,
     
     // Manually extract.
     vector< EMAN::EMData* > crefim;
-
-    std::size_t crefim_len = boost::python::len(crefim_list);
+    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
     crefim.reserve(crefim_len);
 
     for(std::size_t i=0;i<crefim_len;i++) {
