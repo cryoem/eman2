@@ -1,5 +1,6 @@
 #include <boost/python.hpp>
-#include <math.h>
+#include <boost/python/detail/api_placeholder.hpp>
+#include <cmath>
 #include "emdata.h"
 #include "util.h"
 
