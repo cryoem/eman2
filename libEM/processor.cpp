@@ -1662,27 +1662,33 @@ float NormalizeMaskProcessor::calc_sigma(EMData * image) const
 		return 0;
 	}
 	EMData *mask = params["mask"];
-
-	if (!EMUtil::is_same_size(mask, image)) {
-		LOGERR("normalize.maskProcessor: mask and image must be the same size");
-		return 0;
+	int no_sigma = params["no_sigma"];
+	
+	if(no_sigma == 0) {
+		return 1;
 	}
-
-	float *data = image->get_data();
-	float *mask_data = mask->get_data();
-	size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
-	double sum = 0;
-	double sq2 = 0;
-	size_t n_norm = 0;
-
-	for (size_t i = 0; i < size; i++) {
-		if (mask_data[i] && data[i]) {
-			sum += data[i];
-			sq2 += data[i]*double (data[i]);
-			n_norm++;
+	else {
+		if (!EMUtil::is_same_size(mask, image)) {
+			LOGERR("normalize.maskProcessor: mask and image must be the same size");
+			throw ImageDimensionException("mask and image must be the same size");
 		}
+	
+		float *data = image->get_data();
+		float *mask_data = mask->get_data();
+		size_t size = image->get_xsize() * image->get_ysize() * image->get_zsize();
+		double sum = 0;
+		double sq2 = 0;
+		size_t n_norm = 0;
+	
+		for (size_t i = 0; i < size; i++) {
+			if (mask_data[i] && data[i]) {
+				sum += data[i];
+				sq2 += data[i]*double (data[i]);
+				n_norm++;
+			}
+		}
+		return sqrt((sq2 - sum * sum /n_norm)/float(n_norm -1)) ;
 	}
-	return sqrt((sq2 - sum * sum /n_norm)/float(n_norm -1)) ;
 }
 
 float NormalizeMaskProcessor::calc_mean(EMData * image) const
@@ -1695,7 +1701,7 @@ float NormalizeMaskProcessor::calc_mean(EMData * image) const
 
 	if (!EMUtil::is_same_size(mask, image)) {
 		LOGERR("normalize.maskProcessor: mask and image must be the same size");
-		return 0;
+		throw ImageDimensionException("mask and image must be the same size");
 	}
 
 	float *data = image->get_data();

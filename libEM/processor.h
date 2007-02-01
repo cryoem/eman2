@@ -2528,8 +2528,8 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("mask", EMObject::EMDATA);
-			d.put("no_sigma", EMObject::INT);
+			d.put("mask", EMObject::EMDATA, "the 1/0 mask defining a region to use for the zero-normalization");
+			d.put("no_sigma", EMObject::INT, "if this flag is zero, only average under the mask will be substracted. set this flag to 1, standard deviation not modified");
 			return d;
 		}
 
