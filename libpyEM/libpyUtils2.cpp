@@ -128,14 +128,14 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_TestUtil_verify_image_file2_overloads_2_6, 
 
 
 }// namespace 
-
+/*
 namespace EMAN { 
 namespace boost_python {
 
 void wrap_apmq();
 
 }}
-
+*/
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyUtils2)
 {
@@ -240,6 +240,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_time_label", &EMAN::Util::get_time_label)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
+        .def("apmq", &EMAN::Util::apmq)
         .staticmethod("madn_scalar")
         .staticmethod("CANG")
         .staticmethod("get_filename_ext")
@@ -325,6 +326,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("sbasename")
         .staticmethod("round")
         .staticmethod("Polar2Dm")
+        .staticmethod("apmq")
     );
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(
@@ -568,6 +570,6 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("SetVal", &TFList::SetVal)
         .def("GetVal", &TFList::GetVal)
     ;
-    EMAN::boost_python::wrap_apmq();
+//    EMAN::boost_python::wrap_apmq();
 }
 

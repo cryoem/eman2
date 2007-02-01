@@ -472,4 +472,12 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
+
+private:	
+	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
+public:
+	static Dict apmq(EMData* image, const vector< EMData* >& crefim,
+                int xrng, int yrng, int step, string mode,
+                vector< int >numr, int cnx, int cny); 
+
 #endif	//util__sparx_h__
