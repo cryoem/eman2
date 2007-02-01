@@ -449,13 +449,13 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("size", EMObject::INT);
-			d.put("npad", EMObject::INT);
-			d.put("sign", EMObject::INT);
-			d.put("symmetry", EMObject::STRING);
-			d.put("snr", EMObject::FLOAT);
-            d.put("fftvol", EMObject::EMDATA);
-            d.put("weight", EMObject::EMDATA);
+			d.put("size",		EMObject::INT);
+			d.put("npad",		EMObject::INT);
+			d.put("sign",		EMObject::INT);
+			d.put("symmetry",	EMObject::STRING);
+			d.put("snr",		EMObject::FLOAT);
+			d.put("fftvol",		EMObject::EMDATA);
+			d.put("weight",		EMObject::EMDATA);
 			return d;
 		}
 

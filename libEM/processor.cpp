@@ -1681,7 +1681,7 @@ float NormalizeMaskProcessor::calc_sigma(EMData * image) const
 		size_t n_norm = 0;
 	
 		for (size_t i = 0; i < size; i++) {
-			if (mask_data[i] && data[i]) {
+			if (mask_data[i] > 0.5f) {
 				sum += data[i];
 				sq2 += data[i]*double (data[i]);
 				n_norm++;
@@ -1711,7 +1711,7 @@ float NormalizeMaskProcessor::calc_mean(EMData * image) const
 	size_t n_norm = 0;
 
 	for (size_t i = 0; i < size; i++) {
-		if (mask_data[i] && data[i]) {
+		if (mask_data[i] > 0.5f) {
 			sum += data[i];
 			n_norm++;
 		}
