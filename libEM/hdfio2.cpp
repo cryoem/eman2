@@ -457,8 +457,7 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	// Each image is in a group for later expansion. Open the group, create if necessary
 	char ipath[50];
 	sprintf(ipath,"/MDF/images/%d",image_index);
-	hid_t igrp=H5Gopen(file,ipath);
-	int nattr=H5Aget_num_attrs(igrp);	
+	hid_t igrp=H5Gopen(file,ipath);	
 	
 	if (igrp<0) {	//group not existed
 		// Need to create a new image group
@@ -478,7 +477,8 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 	//if group already existed, and the overwiting image is in different size, 
 	//need unlink the existing dataset first
-	else {	 		
+	else {	 
+		int nattr=H5Aget_num_attrs(igrp);		
 		char name[ATTR_NAME_LEN];
 		Dict dict2;
 		for (int i=0; i<nattr; i++) {
