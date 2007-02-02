@@ -999,10 +999,20 @@ class TestProcessor(unittest.TestCase):
         self.assertEqual(e.is_complex(), False)
         
         e2 = EMData()
-        e2.set_size(10,10,10)
+        e2.set_size(32,32,32)
         e2.process_inplace('testimage.noise.uniform.rand')
         
-        e.process_inplace('eman1.normalize.mask', {'mask':e2, 'no_sigma':3})
+        e3 = e.process('eman1.normalize.mask', {'mask':e2, 'no_sigma':1})
+        
+        e4 = EMData()
+        e4.set_size(16,16,16)
+        e4.process_inplace('testimage.noise.uniform.rand')
+        
+        try:
+            e5 = e.process('eman1.normalize.mask', {'mask':e4, 'no_sigma':1})
+        except RuntimeError, runtime_err:
+            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+        
         
     def test_eman1_normalize_edgemean(self):
         """test eman1.normalize.edgemean processor .........."""
