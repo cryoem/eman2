@@ -136,7 +136,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if not self.inspector : self.inspector=EMImageInspector3D(self)
 		self.inspector.show()
 	
-	
+	def closeEvent(self,event) :
+		if self.inspector: self.inspector.close()
+			
 	def mousePressEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:

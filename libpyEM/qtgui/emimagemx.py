@@ -76,6 +76,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 		self.coords=[]
 		self.valstodisp=["Img #"]
+		self.setAcceptDrops(True)
 		
 		self.inspector=None
 		if data: 
@@ -281,9 +282,46 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				return (i,(absloc[0]-c[0])/self.scale,(absloc[1]-c[1])/self.scale)
 		return None
 	
+	def closeEvent(self,event) :
+		if self.inspector: self.inspector.close()
+		
+	def dragEnterEvent(self,event):
+#		f=event.mimeData().formats()
+#		for i in f:
+#			print str(i)
+		
+		if event.source()==self:
+			event.setDropAction(Qt.MoveAction)
+			event.accept()
+		elif event.provides("application/x-eman"):
+			event.setDropAction(Qt.CopyAction)
+			event.accept()
+
+	
+	def dropEvent(self,event):
+		lc=self.scrtoimg((event.pos().x(),event.pos().y()))
+		if event.source()==self:
+#			print lc
+			n=int(event.mimeData().text())
+			if not lc : lc=[len(self.data)]
+			if n>lc[0] : 
+				self.data.insert(lc[0],self.data[n])
+				del self.data[n+1]
+			else : 
+				self.data.insert(lc[0]+1,self.data[n])
+				del self.data[n]
+			event.setDropAction(Qt.MoveAction)
+			event.accept()
+		elif event.provides("application/x-eman"):
+			x=loads(event.mimeData().data("application/x-eman"))
+			self.data.insert(lc[0],x)
+			self.setData(self.data)
+			event.acceptProposedAction()
+
+
 	def mousePressEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
-		print lc
+#		print lc
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
@@ -295,15 +333,20 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				drag = QtGui.QDrag(self)
 				mimeData = QtCore.QMimeData()
 				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
+				mimeData.setText( str(lc[0])+"\n")
 				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
 				mimeData.setImageData(QtCore.QVariant(di))
-				if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
-				else: pm=QtGui.QPixmap.fromImage(di)
-				drag.setPixmap(pm)
 				drag.setMimeData(mimeData)
-				drag.setHotSpot(QtCore.QPoint(12,12))
+
+# This (mini image drag) looks cool, but seems to cause crashing sometimes in the pixmap creation process  :^(
+				#di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
+				#if xs>64 : pm=QtGui.QPixmap.fromImage(di).scaledToWidth(64)
+				#else: pm=QtGui.QPixmap.fromImage(di)
+				#drag.setPixmap(pm)
+				#drag.setHotSpot(QtCore.QPoint(12,12))
+				
 				dropAction = drag.start()
-				print dropAction
+#				print dropAction
 			
 			elif self.mmode=="del" and lc:
 				del self.data[lc[0]]

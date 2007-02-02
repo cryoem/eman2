@@ -338,6 +338,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def scrtoimg(self,vec):
 		return ((vec[0]+self.origin[0])/self.scale,(self.height()-(vec[1]-self.origin[1]))/self.scale)
 	
+	def closeEvent(self,event) :
+		if self.inspector: self.inspector.close()
+		
+	
 	def mousePressEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
