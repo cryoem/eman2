@@ -61,6 +61,7 @@ for single particle analysis."""
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
 	parser.add_option("--retestlist",type="string",help="(auto:ref) Comma separated list of image numbers for retest cycle",default="")
 	parser.add_option("--ptclsize","-P",type="int",help="(auto:circle) Approximate size (diameter) of the particle in pixels. Not required if reference particles are provided.",default=0)
+	parser.add_option("--overlap",type="int",help="(auto:grid) number of pixels of overlap between boxes. May be negative.")
 #	parser.add_option("--refvol","-V",type="string",help="A 3D model to use as a reference for autoboxing",default=None)
 #	parser.add_option("--sym","-S",type="string",help="Symmetry of the 3D model",default=None)
 	parser.add_option("--farfocus",type="string",help="filename or 'next', name of an aligned far from focus image for preliminary boxing",default=None)
@@ -411,14 +412,19 @@ for single particle analysis."""
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
 	if "grid" in options.auto:
-		dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
-		if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
-		dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
-		if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
+		try:
+			dx=-options.overlap
+			if dx+options.boxsize<=0 : dx=0.0
+			dy=dx
+		except:
+			dy=(image_size[1]%options.boxsize)*options.boxsize/image_size[1]-1
+			dx=(image_size[0]%options.boxsize)*options.boxsize/image_size[0]-1
+			if dy<=0 : dy=((image_size[1]-1)%options.boxsize)*options.boxsize/image_size[1]-1
+			if dx<=0 : dx=((image_size[0]-1)%options.boxsize)*options.boxsize/image_size[0]-1
 		
 #		print image_size,dx,dy,options.boxsize
-		for y in range(dy/2,image_size[1]-options.boxsize,dy+options.boxsize):
-			for x in range(dx/2,image_size[0]-options.boxsize,dx+options.boxsize):
+		for y in range(options.boxsize/2,image_size[1]-options.boxsize,dy+options.boxsize):
+			for x in range(options.boxsize/2,image_size[0]-options.boxsize,dx+options.boxsize):
 				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
 				
 	if "circle" in options.auto:
@@ -467,6 +473,7 @@ for single particle analysis."""
 	if options.ptclout:
 		# write boxed particles
 		n=0
+		b=EMData()
 		for i in boxes:
 			if i[4]>boxthr : continue
 			try: b.read_image(args[0],0,0,Region(i[0],i[1],i[2],i[3]))
@@ -479,6 +486,7 @@ for single particle analysis."""
 			if options.savealiref:
 				refptcl[i[3]].write_image("boxali.hdf",-1)
 				b.write_image("boxali.hdf",-1)
+		print "Wrote %d/%d particles to %s"%(n,len(boxes),options.ptclout)
 				
 
 try:

@@ -66,6 +66,8 @@ background."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--box", "-S", type="int", help="size in pixels of the power spectra", default=256)
+	parser.add_option("--norm", "-N", dest="norm", action="store_true", help="Normalize the image before analysis")
+
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input file required")
@@ -73,6 +75,9 @@ background."""
 	# read the target and probe
 	target=EMData()
 	target.read_image(args[0])
+	target.del_attr("bitspersample")
+	target.del_attr("datatype")
+	if options.norm : target.process_inplace("eman1.normalize")
 	sig=target.get_attr("sigma")
 	
 	nx=target.get_xsize();
@@ -89,7 +94,10 @@ background."""
 			cl.process_inplace("eman1.normalize.edgemean")
 			cl.process_inplace("eman1.math.realtofft")
 			cl.process_inplace("eman1.normalize.edgemean")
-			cl*=(5.0*float(sig)/float(cl.get_attr("sigma")))
+			try:
+				cl*=(5.0*float(sig)/float(cl.get_attr("sigma")))
+			except:
+				pass
 			target.insert_clip(cl,(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,0))
 
 	target.write_image(args[0][:-3]+"eval.mrc")

@@ -162,7 +162,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	portable_fseek(fitsfile, dstart, SEEK_SET);
 	char *cdata=(char *)rdata;
 	short *sdata=(short *)rdata;
-	int *idata=(int *)idata;
+	int *idata=(int *)rdata;
 	double *ddata;
 
 	switch (dtype) {

@@ -46,7 +46,7 @@ from PyQt4.QtCore import Qt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <skeleton map> <dejavu file> <output>
+	usage = """%prog [options] <image file> ...
 	
 """
 
