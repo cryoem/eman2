@@ -3297,8 +3297,8 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
  int NSAM,NROW,NX3D,NY3D,NZC,KZ,IQX,IQY,LDPX,LDPY,LDPZ,LDPNMX,LDPNMY,NZ1;
  float DIPX,DIPY,XB,YB,XBB,YBB;
  
- float x_shift = B->get_attr( "sx" );
- float y_shift = B->get_attr( "sy" );
+ float x_shift = B->get_attr( "s2x" );
+ float y_shift = B->get_attr( "s2y" );
 
  NSAM = B->get_xsize();
  NROW = B->get_ysize();
