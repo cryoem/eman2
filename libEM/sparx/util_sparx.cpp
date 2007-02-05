@@ -3323,16 +3323,16 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
              YBB = (1-LDPX)*DM(4)+(J-LDPY)*DM(5)+(KZ-LDPZ)*DM(6);
               for(int I=1;I<=NX3D;I++)
 	          {
-		     XB  = (I-1)*DM(1)+XBB-x_shift;
-		     IQX = int(XB+float(LDPNMX));
-                     if (IQX <1 || IQX >= NSAM) continue;
-		     YB  = (I-1)*DM(4)+YBB-y_shift;
-                     IQY = int(YB+float(LDPNMY));
-                     if (IQY<1 || IQY>=NROW)  continue;
-                     DIPX = XB+LDPNMX-IQX;
-		     DIPY = YB+LDPNMY-IQY;
+		   XB  = (I-1)*DM(1)+XBB-x_shift;
+		   IQX = int(XB+float(LDPNMX));
+                   if (IQX <1 || IQX >= NSAM) continue;
+		   YB  = (I-1)*DM(4)+YBB-y_shift;
+                   IQY = int(YB+float(LDPNMY));
+                   if (IQY<1 || IQY>=NROW)  continue;
+                   DIPX = XB+LDPNMX-IQX;
+		   DIPY = YB+LDPNMY-IQY;
  
-                    CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
+                   CUBE(I,J,K) = CUBE(I,J,K)+B(IQX,IQY)+DIPY*(B(IQX,IQY+1)-B(IQX,IQY))+DIPX*(B(IQX+1,IQY)-B(IQX,IQY)+DIPY*(B(IQX+1,IQY+1)-B(IQX+1,IQY)-B(IQX,IQY+1)+B(IQX,IQY)));
  	          }
            } 
  
