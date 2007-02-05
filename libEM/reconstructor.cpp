@@ -1080,19 +1080,29 @@ EMData* EMAN::padfft_slice( EMData* slice, int npad )
 }
 
 nn4Reconstructor::nn4Reconstructor() 
-    : m_volume(NULL) 
 {
+    m_volume = NULL; 
+    m_wptr   = NULL;
+    m_result = NULL;
 }
 
 nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
-    : m_volume(NULL)
 {
+    m_volume = NULL; 
+    m_wptr   = NULL;
+    m_result = NULL;
     setup( symmetry, size, npad );
 }
 
 nn4Reconstructor::~nn4Reconstructor()
 {
-    checked_delete( m_volume );
+    if( m_delete_volume )
+        checked_delete(m_volume);
+
+    if( m_delete_weight )
+        checked_delete( m_wptr );
+
+    checked_delete( m_result );
 }
 
 enum weighting_method { NONE, ESTIMATE, VORONOI };
@@ -1129,13 +1139,15 @@ void nn4Reconstructor::setup()
     int npad = params["npad"];
 
     string symmetry;
-    try {
-	symmetry = params["symmetry"].to_str();
-	if ("" == symmetry) symmetry = "c1";
+    if( params.has_key("symmetry") )
+    {
+   	    symmetry = params["symmetry"].to_str();
     }
-    catch(_NotExistingObjectException) {
-	symmetry = "c1";
+    else
+    {
+	    symmetry = "c1";
     }
+
 
     setup( symmetry, size, npad );
 }
@@ -1162,7 +1174,6 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
     m_vnyc = m_vnyp/2;
     m_vnzc = m_vnzp/2;
 
-
     buildFFTVolume();
     buildNormVolume();
 
@@ -1170,7 +1181,18 @@ void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 
 void nn4Reconstructor::buildFFTVolume() {
 	int offset = 2 - m_vnxp%2;
-	m_volume = new EMData();
+
+        if( params.has_key("fftvol") )
+        {
+            m_volume = params["fftvol"];
+            m_delete_volume = false;
+        }
+        else
+        {
+	    m_volume = new EMData();
+            m_delete_volume = true;
+        }
+
 	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
@@ -1183,15 +1205,29 @@ void nn4Reconstructor::buildFFTVolume() {
 
 void nn4Reconstructor::buildNormVolume() {
 
-        m_nrptr = shared_ptr< EMArray<int> >( new EMArray<int>(m_vnxc+1,m_vnyp,m_vnzp) );
-	m_nrptr->set_array_offsets(0,1,1);
+    if( params.has_key("weight") )
+    {
+        m_wptr = params["weight"];
+        m_delete_weight = false;
+    }
+    else
+    {
+	m_wptr = new EMData();
+        m_delete_weight = true;
+    }
 
-	for (int iz = 1; iz <= m_vnzp; iz++) 
-		for (int iy = 1; iy <= m_vnyp; iy++) 
-			for (int ix = 0; ix <= m_vnxc; ix++) 
-				(*m_nrptr)(ix,iy,iz) = 0;
+    m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
+    m_wptr->set_array_offsets(0,1,1);
+
+    int ntot = (m_vnxc+1)*m_vnyp*m_vnzp;
+
+    float* data = m_wptr->get_data();
+    for( int i=0; i < ntot; ++i)
+    {
+        data[i] = 0.0;
+    }
+
 }
-
 
 int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 	// sanity checks
@@ -1200,12 +1236,44 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		return 1;
 	}
 
-	EMData* padfft = padfft_slice( slice, m_npad );
+        int padffted=0;
+        try {
+	    padffted= slice->get_attr("padffted");
+        }
+        catch(_NotExistingObjectException) {
+	    padffted= 0;
+        }
 
-        insert_padfft_slice( padfft, t, 1 );
+	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
+        {
+		// FIXME: Why doesn't this throw an exception?
+		LOGERR("Tried to insert a slice that is the wrong size.");
+		return 1;
+	}
 
-        checked_delete( padfft );
+        EMData* padfft = NULL;
 
+        if( padffted != 0 )
+        {
+            padfft = slice;
+        }
+        else
+        {
+            padfft = padfft_slice( slice, m_npad );
+        }
+
+        int mult=0;
+        try {
+	    mult = slice->get_attr("mult");
+        }
+        catch(_NotExistingObjectException) {
+	    mult = 1;
+        }
+
+        assert( mult > 0 );
+	insert_padfft_slice( padfft, t, mult );
+
+	if( padffted == 0 ) checked_delete( padfft );
 	return 0;
 }
 
@@ -1215,7 +1283,7 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-		    m_volume->nn( *m_nrptr, padfft, tsym, mult);
+		    m_volume->nn( m_wptr, padfft, tsym, mult);
         }
 	return 0;
 }
@@ -1224,9 +1292,8 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4Reconstructor::finish() 
 {
-	EMArray<int>& nr = *m_nrptr;
 
-    m_volume->symplane0(nr);
+    m_volume->symplane0(m_wptr);
 
     int box = 7;
     int vol = box*box*box;
@@ -1244,8 +1311,8 @@ EMData* nn4Reconstructor::finish()
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
-				if (nr(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
-					float tmp = (-2*((ix+iy+iz)%2)+1)/float(nr(ix,iy,iz));
+				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
+					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
 
 					if( m_weighting == ESTIMATE ) 
 					{
@@ -1280,7 +1347,7 @@ EMData* nn4Reconstructor::finish()
 							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
 							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
 
-							if( nr( nbrix, nbriy, nbriz ) == 0 )
+							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 )
 							{
                                                             int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
 							    sum = sum + pow_a[c];
@@ -1305,12 +1372,13 @@ EMData* nn4Reconstructor::finish()
 
 	// back fft
 	m_volume->do_ift_inplace();
-	EMData* w = m_volume->window_center(m_vnx);
-	checked_delete( m_volume );
+	EMData* win = m_volume->window_center(m_vnx);
 
-	float *tw = w->get_data();
+	float *tw = win->get_data();
 	//  mask and subtract circumference average
-	int ix = w->get_xsize(),iy = w->get_ysize(),iz = w->get_zsize();
+	int ix = win->get_xsize();
+	int iy = win->get_ysize();
+	int iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
 	int IP = ix/2+1;
@@ -1340,7 +1408,8 @@ EMData* nn4Reconstructor::finish()
 		}
 	}
 
-	return w;
+        m_result = win;
+	return win;
 }
 #undef  tw
 

@@ -118,9 +118,9 @@ EMData* rotavg();
 		 * @param tf Transform3D reference
 		 * @return The set of images read from filename.
 		 */
-		void onelinenn(int j, int n, int n2, EMArray<int>& nr, EMData* bi, const Transform3D& tf);
+		void onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf);
 
-		void onelinenn_mult(int j, int n, int n2, EMArray<int>& nr, EMData* bi, const Transform3D& tf, int mult);
+		void onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf, int mult);
 
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
@@ -130,14 +130,14 @@ EMData* rotavg();
 		 * @param tf Transform3D reference
 		 * @param mult
 		 */
-		void nn(EMArray<int>& norm, EMData* myfft, const Transform3D& tf, int mult=1);
+		void nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult=1);
 
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
 		 *
 		 * @param norm Normalization data.
 		 */
-		void symplane0(EMArray<int>& norm);
+		void symplane0(EMData* norm);
 
 		/** Helper function for method nn4_ctf.
 		 *

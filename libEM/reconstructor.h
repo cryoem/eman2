@@ -337,6 +337,8 @@ namespace EMAN
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
 			d.put("symmetry", EMObject::STRING);
+			d.put("fftvol", EMObject::EMDATA);
+			d.put("weight", EMObject::EMDATA);
 			return d;
 		}
 
@@ -347,7 +349,10 @@ namespace EMAN
 
 	  private:
 		EMData* m_volume;
-		shared_ptr< EMArray<int> > m_nrptr;
+		EMData* m_wptr;
+		EMData* m_result;
+		bool m_delete_volume;
+		bool m_delete_weight;
 	        string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;
