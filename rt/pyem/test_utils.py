@@ -45,7 +45,7 @@ class TestUtils(unittest.TestCase):
     def test_is_file_exist(self):
         """test is_file_exist() function ...................."""
         imgfile1 = "test_is_file_exist.mrc"
-        TestUtil.make_image_file(imgfile1, MRC)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC)
         result1 = Util.is_file_exist(imgfile1)
         self.assertEqual(result1, True)
         

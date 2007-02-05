@@ -201,7 +201,7 @@ class TestTypeConverter(unittest.TestCase):
         self.assertEqual(slist, slist2)
 
         imgfile1 = "test_vector1.mrc"
-        TestUtil.make_image_file(imgfile1, MRC)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC)
         e1 = EMData()
         e1.read_image(imgfile1)
         e2 = EMData()
@@ -231,7 +231,7 @@ class TestTypeConverter(unittest.TestCase):
         imgfile1 = "test_em2numpy_1.mrc"
         nx0 = 100
         ny0 = 200
-        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, nx0, ny0)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC, EM_FLOAT, nx0, ny0)
         
         e = EMData()
         e.read_image(imgfile1)
@@ -281,7 +281,7 @@ class TestTypeConverter(unittest.TestCase):
         imgfile1 = "test_em2numpy2_1.mrc"
         nx0 = 100
         ny0 = 200
-        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, nx0, ny0)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC, EM_FLOAT, nx0, ny0)
         
         e = EMData()
         e.read_image(imgfile1)
@@ -294,7 +294,7 @@ class TestTypeConverter(unittest.TestCase):
     def test_Point_and_Size_class(self):
         """test point ans Size class ........................"""
         imgfile1 = "test_Point_and_Size_class_1.mrc"
-        TestUtil.make_image_file(imgfile1, MRC, EM_FLOAT, 32,32,32)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC, EM_FLOAT, 32,32,32)
 
         img1 = EMData()
         img1.read_image(imgfile1)

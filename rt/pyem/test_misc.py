@@ -68,8 +68,8 @@ class TestBoost(unittest.TestCase):
         """test default arguments ..........................."""
         imgfile1 = "test_defaultargs_1.mrc"
         imgfile2 = "test_defaultargs_2.mrc"
-        TestUtil.make_image_file(imgfile1, MRC)
-        TestUtil.make_image_file(imgfile2, MRC)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC)
+        TestUtil.make_image_file(imgfile2, IMAGE_MRC)
         
         image1 = EMData()
         image1.read_image(imgfile1)
