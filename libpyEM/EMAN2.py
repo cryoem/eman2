@@ -38,6 +38,7 @@ from sys import exit
 import os
 import time
 import shelve
+import re
 
 EMANVERSION="EMAN2 v1.90"
 
@@ -80,6 +81,32 @@ This function is called to log the end of the current job. n is returned by E2in
 	
 	return n
 
+parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
+parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
+def parsemodopt(optstr):
+	"""This is used so the user can provide the name of a comparitor, processor, etc. with options
+	in a convenient form. It will parse "dot(normalize=1,negative=0)" and return
+	("dot",{"normalize":1,"negative":0})"""
+	
+	if not optstr or len(optstr)==0 : return (None,{})
+	
+	p1=re.findall(parseparmobj1,optstr)
+	if len(p1)==0 : return (optstr,{})
+	
+	p2=re.findall(parseparmobj2,p1[0][1])
+	r2={}
+	# this will convert values to integers, floats or strings. Note that an integer '1' can be forced to be 
+	# considered a string with test(name="1")
+	for i,j in enumerate(p2):
+		v=j[1]
+		try: v=int(v)
+		except:
+			try: v=float(v)
+			except:
+				if v[0]=='"' and v[-1]=='"' : v=j[1][1:-1]
+		r2[j[0]]=v
+		
+	return (p1[0][0],r2)
 
 def display(img):
 	"""This will use 'v2', an EMAN1 program to view an image

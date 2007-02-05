@@ -398,7 +398,7 @@ def main():
 
 	if options.fftavg:
 		ffgavg.mult(1.0 / sqrt(n1 - n0 + 1))
-		fftavg.write_image(options.fftavg, 0, MRC)
+		fftavg.write_image(options.fftavg, 0)
 	
 	try:
 		n_outimg = EMUtil.get_image_count(outfile)
