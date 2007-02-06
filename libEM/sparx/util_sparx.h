@@ -476,9 +476,8 @@ class FakeKaiserBessel : public KaiserBessel {
 private:	
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
-	static Dict multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
+	static vector<float> multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny); 
-
 
 #endif	//util__sparx_h__

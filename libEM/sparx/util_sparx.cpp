@@ -14979,7 +14979,7 @@ float Util::ang_n(float peakp, string mode, int maxrin)
         return fmodf(((peakp-1.0) / maxrin+1.0)*180.0,180.0);
 }
 
-Dict Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
+vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny) {
 
@@ -15043,13 +15043,12 @@ Dict Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
 	so = -sin(ang*pi/180.0);
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
-
-	EMAN::Dict retvals;
-	retvals["ang"] = ang;
-	retvals["sxs"] = sxs;
-	retvals["sys"] = sys;
-	retvals["mirror"] = mirror;
-	retvals["peak"] = peak;
-	retvals["nref"] = nref;
-	return retvals;
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(mirror);
+	res.push_back(nref);
+	res.push_back(peak);
+	return res;
 }
