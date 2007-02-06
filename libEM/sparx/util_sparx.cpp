@@ -14979,10 +14979,11 @@ float Util::ang_n(float peakp, string mode, int maxrin)
         return fmodf(((peakp-1.0) / maxrin+1.0)*180.0,180.0);
 }
 
-Dict Util::apmq(EMData* image, const vector< EMData* >& crefim,
-                int xrng, int yrng, int step, string mode,
-                vector< int >numr, int cnx, int cny) {
+Dict Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny) {
 
+// formerly known as apmq
     // Determine shift and rotation between image and many reference
     // images (crefim, weights have to be applied) quadratic
     // interpolation  
@@ -15001,9 +15002,10 @@ Dict Util::apmq(EMData* image, const vector< EMData* >& crefim,
 	size_t crefim_len = crefim.size();
 	
 	float peak = -1.0E23;
-	int ky = int(2*yrng/step+0.5)/2; 
-	int kx = int(2*xrng/step+0.5)/2;
-	int iref, nref=0, mirror=0, iy, ix, sx=0, sy=0;
+	int   ky = int(2*yrng/step+0.5)/2; 
+	int   kx = int(2*xrng/step+0.5)/2;
+	int   iref, nref=0, mirror=0; 
+	float iy, ix, sx=0, sy=0;
 	float ang=0.0f;
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
@@ -15028,6 +15030,7 @@ Dict Util::apmq(EMData* image, const vector< EMData* >& crefim,
 			    } 
 			else {
 			    ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+
 			    peak = qm; 
 			    mirror = 1;
 			}
