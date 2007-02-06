@@ -43,7 +43,7 @@ class TestCmp(unittest.TestCase):
     def test_variance(self):
         """test variance ...................................."""
         imgfile1 = "test_variance_1.mrc"
-        TestUtil.make_image_file(imgfile1, MRC)
+        TestUtil.make_image_file(imgfile1, IMAGE_MRC)
         e1 = EMData()
         e1.read_image(imgfile1)
 
@@ -55,7 +55,7 @@ class TestCmp(unittest.TestCase):
     def test_basic_cmp(self):
         """test basic cmp ..................................."""
         imgfile1 = "test_basic_cmp_1.hed"
-        TestUtil.make_image_file(imgfile1, IMAGIC, EM_FLOAT, 16,16,4)
+        TestUtil.make_image_file(imgfile1, IMAGE_IMAGIC, EM_FLOAT, 16,16,4)
 
         e1 = EMData()
         e1.read_image(imgfile1, 1)
