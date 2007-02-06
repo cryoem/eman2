@@ -675,7 +675,7 @@ The basic design of EMAN Processors: <br>\
 		float slope;
 	};
 
-	/**he base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.
+	/**The base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.
 	 */
 	class RealPixelProcessor:public Processor
 	{
