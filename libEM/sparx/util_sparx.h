@@ -54,7 +54,7 @@ static Dict CANG(float PHI, float THETA, float PSI);
  
 static void BPCQ(EMData* B, EMData *CUBE,vector<float> DM);
 
-static vector<float> infomask(EMData* Vol, EMData* mask);
+static vector<float> infomask(EMData* Vol, EMData* mask, bool);
 
 static void colreverse(float* beg, float* end, int nx);
 
