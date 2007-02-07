@@ -47,7 +47,7 @@
 using namespace EMAN;
 using namespace std;
 
-vector<float> Util::infomask(EMData* Vol, EMData* mask)
+vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 {
 	ENTERFUNC;
 	vector<float> stats;
@@ -104,7 +104,7 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask)
 			       
 	for (size_t i = 0;i < nx*ny*nz; i++)
 	    {
-	      if (maskptr[i]>0.5f)
+	      if (maskptr[i]>0.5f == flip)
 	      {
 	       Sum1 += Volptr[i];	       
 	       Sum2 += Volptr[i]*Volptr[i];	       
