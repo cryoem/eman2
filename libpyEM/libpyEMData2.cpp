@@ -68,8 +68,6 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_fourier_shell_correlatio
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_nn_overloads_3_4, nn, 3, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_trans2D_overloads_1_3, rot_trans2D, 1, 3)
-
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_trans2D_overloads_1_4, rot_scale_trans2D, 1, 4)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_rot_scale_conv_overloads_4_5, rot_scale_conv, 4, 5)
@@ -287,7 +285,6 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("nn_ctf_applied", &EMAN::EMData::nn_ctf_applied)
         .def("symplane0_ctf", &EMAN::EMData::symplane0_ctf)
         .def("symvol", &EMAN::EMData::symvol, return_value_policy< manage_new_object >())
-        .def("rot_trans2D", &EMAN::EMData::rot_trans2D, return_value_policy< manage_new_object >(), EMAN_EMData_rot_trans2D_overloads_1_3())
         .def("rot_scale_trans2D", &EMAN::EMData::rot_scale_trans2D, return_value_policy< manage_new_object >(), EMAN_EMData_rot_scale_trans2D_overloads_1_4())
         .def("rot_scale_trans", &EMAN::EMData::rot_scale_trans, return_value_policy< manage_new_object >())
         .def("cm_euc", &EMAN::EMData::cm_euc)
