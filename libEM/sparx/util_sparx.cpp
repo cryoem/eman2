@@ -15030,12 +15030,11 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 			    } 
 			else {
 			    ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-
 			    peak = qm; 
 			    mirror = 1;
 			}
 		    }
-		}
+		}  delete cimage; cimage = 0;
 	    }
 	}
 	float co, so, sxs, sys;
