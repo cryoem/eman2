@@ -444,6 +444,56 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 }  // ends FH2F
 
 
+
+float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
+{
+    int lnlen = get_xsize();
+    int nline = get_ysize();
+
+    assert( n1 >=0 && n1 < nline );
+    assert( n2 >=0 && n2 < nline );
+    assert( alpha1>=0.0 && alpha1 < 360.0 );
+    assert( alpha2>=0.0 && alpha2 < 360.0 );
+
+    float* line_1 = get_data() + n1*lnlen;
+    float* line_2 = sinoj->get_data() + n2*lnlen;
+
+    if( (alpha1-180.0)*(alpha2-180.0) > 0.0 )
+    {
+        double dis2=0.0;
+        for( int i=0; i < lnlen; ++i)
+        {
+           float tmp = line_1[i] - line_2[i];
+	   dis2 += tmp*tmp;
+        }
+        return std::sqrt( dis2 );
+    }
+
+    assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
+
+    if( alpha1 > 180.0 )
+    {
+        double dis2 = 0.0;
+        for( int i=0; i < lnlen; ++i )
+        {
+            float tmp = line_1[lnlen-1-i] - line_2[i];
+	    dis2 += tmp*tmp;
+	}
+	return std::sqrt(dis2);
+    }
+
+    double dis2 = 0.0;
+    for( int i=0; i < lnlen; ++i )
+    {
+        float tmp = line_1[i] - line_2[lnlen-1-i];
+	dis2 += tmp*tmp;
+    }
+
+    return std::sqrt(dis2);
+}
+
+
+
 EMData* EMData::rotavg() {
 	ENTERFUNC;
 
@@ -1340,67 +1390,7 @@ void EMData::symplane0_ctf(EMData* w) {
 
 
 EMData*
-EMData::rot_trans2D(float angDeg, float delx, float dely) {  // This uses bilinear interpolation; 
-	float ang=angDeg*M_PI/180.0f;
-	
-	if (1 >= ny) 
-		throw ImageDimensionException("Can't rotate 1D image");
-	if (1 < nz) 
-		throw ImageDimensionException("Volume not currently supported");
-	if (0.f == ang) {
-		EMData* ret = copy();
-		return ret;
-	}
-	
-	update();
-	float background = get_attr("mean");
-//	if (ang >  pi) ang -= static_cast<float>(twopi);
-//	if (ang < -pi) ang += static_cast<float>(twopi);
-	float cang = cos(ang);
-	float sang = sin(ang);
-	EMData* ret = copy_head();
-	// center of the image
-	int xc = nx/2;
-	int yc = ny/2;
-	// shift center for rotation (if desired)
-	float shiftxc = xc + delx;
-	float shiftyc = yc + dely;
-	for (int iy = 0; iy < ny; iy++) {
-		float y = float(iy) - shiftyc;
-		float ycang = y*cang + shiftyc;
-		float ysang = -y*sang + shiftxc;
-		for (int ix = 0; ix < nx; ix++) {
-			(*ret)(ix,iy) = background;
-			float x = float(ix) - shiftxc;
-			float xold = x*cang + ysang;
-			float yold = x*sang + ycang;
-#ifdef DEBUG
-			printf("\t\t xold = %f, yold=%f \n",xold,yold);
-#endif
-			int iyold = int(yold);
-			float q = yold - float(iyold);
-			float qbar = 1.f - q;
-			int ixold = int(xold);
-			// Note: nx-2 or ny-2 below because need room for
-			// (forward) interpolation
-			if ((yold>=0 && iyold<=(ny-2)) && (xold>=0 && ixold<=(nx-2))) {
-				// inside boundaries of input image
-				float p = xold - ixold;
-				float pbar = 1.f - p;
-				(*ret)(ix,iy) = q*(  pbar*(*this)(ixold,iyold+1)
-						   + p*(*this)(ixold+1,iyold+1)    )
-					        + qbar*(   pbar*(*this)(ixold,iyold)
-							 + p*(*this)(ixold+1,iyold)   );
-			}
-		}
-	}
-	ret->done_data();
-	ret->update();
-	return ret;
-}
-
-EMData*
-EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { // quadrilinear, no background, 2D
+EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { // quadratic, no background, 2D
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
@@ -1409,44 +1399,23 @@ EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { //
 		set_array_offsets(0,0,0);
 		if (0.f == scale) scale = 1.f; // silently fix common user error
 		EMData* ret = copy_head();
-		delx = fmod(delx, float(nx));
-		dely = fmod(dely, float(ny));
+		if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+		if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
 		// center of image
 		int xc = nx/2;
 		int yc = ny/2;
 		// shifted center for rotation
 		float shiftxc = xc + delx;
 		float shiftyc = yc + dely;
-		// bounds if origin at center
-		float ymin = -ny/2.0f;
-		float xmin = -nx/2.0f;
-		float ymax = -ymin;
-		float xmax = -xmin;
-		if (0 == nx%2) xmax--;
-		if (0 == ny%2) ymax--;
 		// trig
 		float cang = cos(ang);
 		float sang = sin(ang);
 			for (int iy = 0; iy < ny; iy++) {
 				float y = float(iy) - shiftyc;
-			#ifdef _WIN32
-				if (y < ymin) y = _MIN(y+ny,ymax);
-				if (y > ymax) y = _MAX(y-ny,ymin);
-			#else
-				if (y < ymin) y = std::min(y+ny,ymax);
-				if (y > ymax) y = std::max(y-ny,ymin);
-			#endif	//_WIN32
 				float ycang = y*cang/scale + yc;
 				float ysang = -y*sang/scale + xc;
 				for (int ix = 0; ix < nx; ix++) {
 					float x = float(ix) - shiftxc;
-				#ifdef _WIN32
-					if (x < xmin) x = _MIN(x+nx,xmax);
-					if (x > xmax) x = _MAX(x-nx,xmin);
-				#else
-					if (x < xmin) x = std::min(x+nx,xmax);
-					if (x > xmax) x = std::max(x-nx,xmin);
-				#endif	//_WIN32
 					float xold = x*cang/scale + ysang ;
 					float yold = x*sang/scale + ycang ;
 					(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
@@ -1461,69 +1430,63 @@ EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { //
 }
 
 
-float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
-{
-    int lnlen = get_xsize();
-    int nline = get_ysize();
-
-    assert( n1 >=0 && n1 < nline );
-    assert( n2 >=0 && n2 < nline );
-    assert( alpha1>=0.0 && alpha1 < 360.0 );
-    assert( alpha2>=0.0 && alpha2 < 360.0 );
-
-    float* line_1 = get_data() + n1*lnlen;
-    float* line_2 = sinoj->get_data() + n2*lnlen;
-
-    if( (alpha1-180.0)*(alpha2-180.0) > 0.0 )
-    {
-        double dis2=0.0;
-        for( int i=0; i < lnlen; ++i)
-        {
-           float tmp = line_1[i] - line_2[i];
-	   dis2 += tmp*tmp;
-        }
-        return std::sqrt( dis2 );
-    }
-
-    assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
-
-    if( alpha1 > 180.0 )
-    {
-        double dis2 = 0.0;
-        for( int i=0; i < lnlen; ++i )
-        {
-            float tmp = line_1[lnlen-1-i] - line_2[i];
-	    dis2 += tmp*tmp;
-	}
-	return std::sqrt(dis2);
-    }
-
-    double dis2 = 0.0;
-    for( int i=0; i < lnlen; ++i )
-    {
-        float tmp = line_1[i] - line_2[lnlen-1-i];
-	dis2 += tmp*tmp;
-    }
-
-    return std::sqrt(dis2);
-}
-
-
-
-
 EMData*
 EMData::rot_scale_trans(const Transform3D &RA) {
 	
+	EMData* ret = copy_head();
+	float *in = this->get_data();
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
 	Vec3f  translations = RA.get_posttrans();
+	Transform3D RAinv; // = new Transform3D();
+	RAinv= RA.inverse();
+
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (nz==1) { 
+
+	float delx = translations.at(0);
+	float dely = translations.at(1);
+	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	int xc = nx/2;
+	int yc = ny/2;
+//         shifted center for rotation
+	float shiftxc = xc + delx;
+	float shiftyc = yc + dely;
+
+		for (int iy = 0; iy < ny; iy++) {
+			float y = float(iy) - shiftyc;
+			float ysang = y*RAinv[0][1]+xc;
+			float ycang = y*RAinv[1][1]+yc;
+			for (int ix = 0; ix < nx; ix++) {
+				float x = float(ix) - shiftxc;
+				float xold = x*RAinv[0][0] + ysang;
+				float yold = x*RAinv[1][0] + ycang;
+				if (xold < 0.0f) xold += nx-1;
+				if (xold >= (float) (nx-1) ) xold -= nx-1;
+				if (yold < 0.0f) yold += ny-1;
+				if (yold >= (float) (nx-1) ) yold -= ny-1;
+				int xfloor = int(xold); int yfloor = int(yold);
+				float t=xold-xfloor; float u = yold-yfloor;
+				float p1 =in[xfloor   + yfloor*ny];
+				float p2 =in[xfloor+1 + yfloor*ny];
+				float p3 =in[xfloor+1 + (yfloor+1)*ny];
+				float p4 =in[xfloor   + (yfloor+1)*ny];
+				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
+			} //ends x loop
+		} // ends y loop
+		set_array_offsets(saved_offsets);
+		return ret;
+	} else {
+//		 This begins the 3D version
+
 	float delx = translations.at(0);
 	float dely = translations.at(1);
 	float delz = translations.at(2);
-	EMData* ret = copy_head();
 	delx = fmod(delx, float(nx));
 	dely = fmod(dely, float(ny));
 	delz = fmod(delz, float(nz));
-	vector<int> saved_offsets = get_array_offsets();
-	set_array_offsets(0,0,0);
 	int xc = nx/2;
 	int yc = ny/2;
 	int zc = nz/2;
@@ -1541,52 +1504,6 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	if (0 == nx%2) xmax--;
 	if (0 == ny%2) ymax--;
 	if (0 == nz%2) zmax--;
-	float *in = this->get_data();
-
-	Transform3D RAinv; // = new Transform3D();
-	RAinv= RA.inverse();
-
-	if (1 >= ny)
-		throw ImageDimensionException("Can't rotate 1D image");
-	if (nz==1) { 
-		for (int iy = 0; iy < ny; iy++) {
-			float y = float(iy) - shiftyc;
-		#ifdef _WIN32
-			if (y < ymin) y = _MIN(y+ny,ymax);
-			if (y > ymax) y = _MAX(y-ny,ymin);
-		#else
-			if (y < ymin) y = std::min(y+ny,ymax);
-			if (y > ymax) y = std::max(y-ny,ymin);
-		#endif	//_WIN32
-			float xoldy = y*RAinv[0][1]+xc; 
-			float yoldy = y*RAinv[1][1]+yc;
-			for (int ix = 0; ix < nx; ix++) {
-				float x = float(ix) - shiftxc;
-			#ifdef _WIN32
-				if (x < xmin) x = _MIN(x+nx,xmax);
-				if (x > xmax) x = _MAX(x-nx,xmin);
-			#else
-				if (x < xmin) x = std::min(x+nx,xmax);
-				if (x > xmax) x = std::max(x-nx,xmin);
-			#endif	//_WIN32
-				float xold = xoldy + x*RAinv[0][0]; 
-				float yold = yoldy + x*RAinv[1][0];
-//                    		printf("\t\t xold = %f, yold=%f \n",xold,yold);
-//				(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
-				int xfloor = int(xold) ; int yfloor = int(yold);
-				float t=xold-xfloor; float u = yold-yfloor;
-				float p1 =in[xfloor   + yfloor*ny];
-				float p2 =in[xfloor+1 + yfloor*ny];
-				float p3 =in[xfloor+1 + (yfloor+1)*ny];
-				float p4 =in[xfloor   + (yfloor+1)*ny];
-				(*ret)(ix,iy) = (1-t) * (1-u) * p1 + t * (1-u) * p2 + t * u * p3 + (1-t) * u * p4 ;
-				   //have to add one as quadri uses Fortran counting
-			} //ends x loop
-		} // ends y loop
-		set_array_offsets(saved_offsets);
-		return ret;
-	} else {
-//		 This begins the 3D version
 //                  set up array to use later
 //
 		int xArr[27];
@@ -1794,8 +1711,8 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
 #endif	//_WIN32 
 	//ret->to_zero();  //we will leave margins zeroed.
-	delx = fmod(delx, float(nxn));
-	dely = fmod(dely, float(nyn));
+	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
 	// center of big image,
 	int xc = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images

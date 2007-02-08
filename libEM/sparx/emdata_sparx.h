@@ -203,20 +203,6 @@ EMData* rotavg();
 		 */
 		EMData* symvol(string symmetry);
 
-
-		/** Rotate-Shift-Circulantly image 
-		 *
-		 *  Method uses bilinear (4-point) interpolation:
-		 *  @see Abramowitz & Stegun, Handbook of Mathematical Functions 25.2.6
-		 *
-		 *  @param[in] ang Rotation angle in degrees.
-		 *  @param[in] delx Shift along x
-		 *  @param[in] dely Shift along y
-		 *  @exception ImageDimensionException only support 2D image
-		 *  @return New rotated/shifted/scaled image
-		 */
-		EMData* rot_trans2D(float ang, float delx=0.f, float dely=0.f);
-		
 		
 		/** Rotate-Shift-Scale-Circulantly image 
 		 *
