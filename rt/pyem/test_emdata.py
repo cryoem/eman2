@@ -2600,7 +2600,8 @@ class TestEMData(unittest.TestCase):
         
         testlib.safe_unlink(file1)
         
-    def test_rot_trans2D(self):
+        #no such function in EMAN2 any more 
+    def no_test_rot_trans2D(self):
         """test rot_trans2D() function ......................"""
         e = EMData()
         e.set_size(32,32,1)
