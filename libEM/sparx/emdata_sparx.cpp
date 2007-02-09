@@ -1418,6 +1418,12 @@ EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { //
 					float x = float(ix) - shiftxc;
 					float xold = x*cang/scale + ysang ;
 					float yold = x*sang/scale + ycang ;
+
+					if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
+					else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+					if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
+					else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+
 					(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
 					   //have to add one as quadri uses Fortran counting
 				}
@@ -1444,7 +1450,7 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
 	if (nz==1) { 
-
+	float  p1, p2, p3, p4;
 	float delx = translations.at(0);
 	float dely = translations.at(1);
 	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
@@ -1454,7 +1460,6 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 //         shifted center for rotation
 	float shiftxc = xc + delx;
 	float shiftyc = yc + dely;
-
 		for (int iy = 0; iy < ny; iy++) {
 			float y = float(iy) - shiftyc;
 			float ysang = y*RAinv[0][1]+xc;
@@ -1463,16 +1468,40 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 				float x = float(ix) - shiftxc;
 				float xold = x*RAinv[0][0] + ysang;
 				float yold = x*RAinv[1][0] + ycang;
-				if (xold < 0.0f) xold += nx-1;
-				if (xold >= (float) (nx-1) ) xold -= nx-1;
-				if (yold < 0.0f) yold += ny-1;
-				if (yold >= (float) (nx-1) ) yold -= ny-1;
+
+				if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
+				else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+				if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
+				else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+
 				int xfloor = int(xold); int yfloor = int(yold);
 				float t=xold-xfloor; float u = yold-yfloor;
-				float p1 =in[xfloor   + yfloor*ny];
-				float p2 =in[xfloor+1 + yfloor*ny];
-				float p3 =in[xfloor+1 + (yfloor+1)*ny];
-				float p4 =in[xfloor   + (yfloor+1)*ny];
+				if(xfloor == nx -1 && yfloor == ny -1) {
+
+				p1 =in[xfloor   + yfloor*ny];
+				p2 =in[ yfloor*ny];
+				p3 =in[0];
+				p4 =in[xfloor];}
+
+				else if(xfloor == nx - 1) {
+				
+				p1 =in[xfloor   + yfloor*ny];
+				p2 =in[           yfloor*ny];
+				p3 =in[          (yfloor+1)*ny];
+				p4 =in[xfloor   + (yfloor+1)*ny];}
+
+				else if(yfloor == ny - 1) {
+				
+				p1 =in[xfloor   + yfloor*ny];
+				p2 =in[xfloor+1 + yfloor*ny];
+				p3 =in[xfloor+1 ];
+				p4 =in[xfloor   ];}
+				
+				else {
+				p1 =in[xfloor   + yfloor*ny];
+				p2 =in[xfloor+1 + yfloor*ny];
+				p3 =in[xfloor+1 + (yfloor+1)*ny];
+				p4 =in[xfloor   + (yfloor+1)*ny];}
 				(*ret)(ix,iy) = p1 + u * ( p4 - p1) + t * ( p2 - p1 + u *(p3-p2-p4+p1));
 			} //ends x loop
 		} // ends y loop
@@ -1745,6 +1774,12 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 			float x = float(ix) - shiftxc;
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
+
+		       if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
+		       else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+		       if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
+		       else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 			sum=0.0f;    w=0.0f;
 			for (int m1 =kbmin; m1 <=kbmax; m1++) t[m1-kbmin] = kb.i0win_tab(xold - inxold-m1);
@@ -1758,7 +1793,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 			  	for (int m1 =kbmin; m1 <=kbmax; m1++) {
 					float q = t[m1-kbmin]*qt;
 					sum += (*this)(inxold+m1,inyold+m2)*q; w+=q;}}
-		    }
+		    	}
 			(*ret)(ix,iy)=sum/w;
 		}
 	}
