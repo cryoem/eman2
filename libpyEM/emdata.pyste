@@ -69,7 +69,7 @@ set_policy(EMData.symvol, return_value_policy(manage_new_object))
 set_policy(EMData.average_circ_sub, return_value_policy(manage_new_object))
 set_policy(EMData.rot_scale_trans2D, return_value_policy(manage_new_object))
 set_policy(EMData.rot_scale_trans, return_value_policy(manage_new_object))
-set_policy(EMData.rot_trans2D, return_value_policy(manage_new_object))
+#set_policy(EMData.rot_trans2D, return_value_policy(manage_new_object))
 set_policy(EMData.cmplx, return_value_policy(reference_existing_object))
 set_policy(EMData.operator['()'], return_value_policy(copy_non_const_reference))
 
