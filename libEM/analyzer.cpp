@@ -39,7 +39,7 @@
 #include "sparx/analyzer_sparx.h"
 #include "util.h"
 #include "sparx/lapackblas.h"
-#include "varimax.h"
+#include "sparx/varimax.h"
 
 using namespace EMAN;
 
