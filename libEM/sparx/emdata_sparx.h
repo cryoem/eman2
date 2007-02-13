@@ -113,10 +113,9 @@ EMData* rotavg();
 		 * @param j y fourier index (frequency)
 		 * @param n number of real elements.
 		 * @param n2 Number of complex elements.
-		 * @param nr Normalization matrix [0:n2][1:n][1:n]
+		 * @param wptr Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
-		 * @return The set of images read from filename.
 		 */
 		void onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf);
 
@@ -125,7 +124,7 @@ EMData* rotavg();
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
 		 *
-		 * @param norm Normalization data.
+		 * @param wptr Normalization data.
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
 		 * @param mult
@@ -148,7 +147,7 @@ EMData* rotavg();
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
 		 * @param defocus
-		 * @return The set of images read from filename.
+		 * @param mult
 		 */
 		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult);
 
@@ -158,7 +157,7 @@ EMData* rotavg();
 		 * @param w Normalization data.
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
-		 * @param defocus
+		 * @param mult
 		 */
 		void nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult);
 
@@ -171,8 +170,8 @@ EMData* rotavg();
 		 * @param w Normalization matrix [0:n2][1:n][1:n]
 		 * @param bi Fourier transform matrix [0:n2][1:n]
 		 * @param tf Transform3D reference
+		 * @param defocus
 		 * @param mult
-		 * @return The set of images read from filename.
 		 */
 		void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform3D& tf, float defocus, int mult);
 
@@ -249,6 +248,7 @@ EMData* rotavg();
 		 *  @param[in] delx Amount to shift rotation origin along x
 		 *  @param[in] dely Amount to shift rotation origin along y
 		 *  @param[in] kb convolution kernel
+		 *  @param[in] scale
 		 *  @exception ImageDimensionException can not rotate 1 D image
 		 *  @exception ImageDimensionException can not rotate 3 D image
 		 *  @return New rotated/shifted/scaled image
