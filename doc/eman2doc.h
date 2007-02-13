@@ -17,8 +17,14 @@
  *  <ul>
  *    <li> <a href="../processors.html"> Manual of Individual Processor</a>
  *    <li> <a href="../processor_groups.html"> Manual of Grouped Processors</a>
+ * 	  <li> <a href="../aligners.html"> Manual of Individual Aligner</a>
+ *    <li> <a href="../analyzers.html"> Manual of Individual Analyzer</a>
+ *    <li> <a href="../averagers.html"> Manual of Individual Averager</a>
+ *    <li> <a href="../cmps.html"> Manual of Individual Comparator</a>
+ *    <li> <a href="../projectors.html"> Manual of Individual Projector</a>
+ *    <li> <a href="../reconstructors.html"> Manual of Individual Reconstructor</a>
  *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
- *    <li> Documentation (<a href="../EMAN2.dvi"> dvi</a>, <a href="../EMAN2.ps"> ps</a>, <a href="../EMAN2.pdf"> pdf</a>, <a href="../latex/EMAN2/index.html"> html</a>)
+ *    <li> Documentation (<a href="../EMAN2.dvi"> dvi</a>, <a href="../EMAN2.ps"> ps</a>, <a href="../EMAN2.pdf"> pdf</a>, <a href="../EMAN2.html/index.html"> html</a>)
  *  </ul>
  */
  
