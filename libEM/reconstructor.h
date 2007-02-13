@@ -312,7 +312,7 @@ namespace EMAN
 
 		virtual void setup();
 
-	    virtual int insert_slice(EMData * slice, const Transform3D & trans);
+	    virtual int insert_slice(EMData * slice, const Transform3D & euler);
 
         virtual EMData *finish();
 
