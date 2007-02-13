@@ -229,7 +229,7 @@ void EMData::mult(float f)
 	if (is_complex()) {
 		ap2ri();
 	}
-	if (f != 1) {
+	if (f != 1.0) {
 		update();
 		size_t size = nx * ny * nz;
 		for (size_t i = 0; i < size; i++) {
