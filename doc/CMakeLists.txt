@@ -6,4 +6,4 @@ MAKE_DIRECTORY(${EMAN_INSTALL_PREFIX}/doc)
 SET(DOC_PATH ${EMAN_INSTALL_PREFIX}/doc)
 
 INSTALL_FILES(/doc "^.+\\.(html)$")
-INSTALL_FILES(/doc FILES WindowsVisualStudioDotNet2003CompilationNotes.txt adding_processor.txt INSTALL)
+INSTALL_FILES(/doc FILES WindowsVisualStudioDotNet2003CompilationNotes.txt adding_processor.txt INSTALL EMAN2.0.big.jpg)
