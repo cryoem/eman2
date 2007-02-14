@@ -52,25 +52,23 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	ENTERFUNC;
 	vector<float> stats;
 	float *Volptr, *maskptr,MAX,MIN;
-	long double Sum1,Sum2;	
+	long double Sum1,Sum2;
 	long count;
 	
 	MAX = FLT_MIN;
 	MIN = FLT_MAX;
 	count = 0L;
-	Sum1 = 0.L;
-	Sum2 = 0.L;
-		
-	
-	if (mask == NULL)	
-          {
+	Sum1 = 0.0L;
+	Sum2 = 0.0L;
+
+	if (mask == NULL) {
 	   //Vol->update_stat();	
 	   stats.push_back(Vol->get_attr("mean"));
 	   stats.push_back(Vol->get_attr("sigma"));
 	   stats.push_back(Vol->get_attr("minimum"));
 	   stats.push_back(Vol->get_attr("maximum"));
 	   return stats;
-	  } 
+	} 
 	
 	/* Check if the sizes of the mask and image are same */
 		
@@ -94,28 +92,26 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
            fprintf(stderr, " ny = %d, mask_ny = %d\n", ny, mask_ny);
            fprintf(stderr, " nz = %d, mask_nz = %d\n", nz, mask_nz);
            exit(1);
-        }    
- */	 
+        }
+ */
 	Volptr = Vol->get_data();
 	maskptr = mask->get_data();		 
-	
-	
-	/* Calculation of the Statistics */
-			       
-	for (size_t i = 0;i < nx*ny*nz; i++)
-	    {
-	      if (maskptr[i]>0.5f == flip)
-	      {
-	       Sum1 += Volptr[i];	       
-	       Sum2 += Volptr[i]*Volptr[i];	       
-	       MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
-	       MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
-	       count++;	       
+
+	for (size_t i = 0; i < nx*ny*nz; i++) {
+	      if (maskptr[i]>0.5f == flip) {
+		Sum1 += Volptr[i];
+		Sum2 += Volptr[i]*Volptr[i];
+		MAX = (MAX < Volptr[i])?Volptr[i]:MAX;
+		MIN = (MIN > Volptr[i])?Volptr[i]:MIN;
+		count++;
 	      }
-	    }
-	
-       if (count==0) count++;
-    
+	}
+
+	if (count == 0) {
+		LOGERR("Invalid mask");
+		throw ImageFormatException( "Invalid mask");
+	}
+
        float avg = static_cast<float>(Sum1/count);
        float sig2 = static_cast<float>(Sum2/count - avg*avg);
        float sig = sqrt(sig2);
