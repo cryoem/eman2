@@ -1525,21 +1525,16 @@ nn4_ctfReconstructor::~nn4_ctfReconstructor()
 
 void nn4_ctfReconstructor::setup() 
 {
+    if( ! params.has_key("size") )
+    {
+        throw std::logic_error("Error: image size is not given");
+    }
+
     int size = params["size"];
-    int npad = params["npad"];
-    int sign = params["sign"];
-
-    string symmetry;
-    if( params.has_key("symmetry") )
-    {
-   	    symmetry = params["symmetry"].to_str();
-    }
-    else
-    {
-	    symmetry = "c1";
-    }
-
-
+    int npad = 4;
+    int sign = params.has_key("sign") ? int(params["sign"]) : 1;
+    string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
+    
     float snr = params["snr"];
     setup( symmetry, size, npad, snr, sign );
 
@@ -1575,7 +1570,7 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 }
 
 void nn4_ctfReconstructor::buildFFTVolume() {
-	int offset = 2 - m_vnxp%2;
+    int offset = 2 - m_vnxp%2;
     if( params.has_key("fftvol") )
     {
         m_volume = params["fftvol"];
@@ -1587,14 +1582,20 @@ void nn4_ctfReconstructor::buildFFTVolume() {
         m_delete_volume = true;
     }
 
-	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
-	m_volume->set_nxc(m_vnxp/2);
-	m_volume->set_complex(true);
-	m_volume->set_ri(true);
-	m_volume->set_fftpad(true);
-	m_volume->set_attr("npad", m_npad);
-	m_volume->to_zero();
-	m_volume->set_array_offsets(0,1,1);
+    if( m_volume->get_xsize() != m_vnxp+offset &&
+        m_volume->get_ysize() != m_vnyp &&
+	m_volume->get_zsize() != m_vnzp )
+    {
+        m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+        m_volume->to_zero();
+    }
+
+    m_volume->set_nxc(m_vnxp/2);
+    m_volume->set_complex(true);
+    m_volume->set_ri(true);
+    m_volume->set_fftpad(true);
+    m_volume->set_attr("npad", m_npad);
+    m_volume->set_array_offsets(0,1,1);
 }
 
 void nn4_ctfReconstructor::buildNormVolume() 
@@ -1610,16 +1611,15 @@ void nn4_ctfReconstructor::buildNormVolume()
         m_delete_weight = true;
     }
 
+    if( m_wptr->get_xsize() != m_vnxc+1 &&
+        m_wptr->get_ysize() != m_vnyp &&
+	m_wptr->get_zsize() != m_vnzp )
+    {
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-	m_wptr->set_array_offsets(0,1,1);
- 
-    int ntot = (m_vnxc+1)*m_vnyp*m_vnzp;
+	m_wptr->to_zero();
+    }
 
-    float* data = m_wptr->get_data();
-	for( int i=0; i < ntot; ++i)
-	{
-	    data[i] = 0.0;
-	}
+    m_wptr->set_array_offsets(0,1,1);
 
 }
 
@@ -1777,7 +1777,7 @@ EMData* nn4_ctfReconstructor::finish()
 					    assert( r >=0 && r < (int)pow_b.size() );
                         float wght = pow_b[r] / ( 1.0 - alpha * sum );
 
-                        // if(ix%10==0 && iy%10==0)
+                        //if(ix%10==0 && iy%10==0)
                         //{
                         //    std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
                         //    std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum; 
@@ -1785,11 +1785,11 @@ EMData* nn4_ctfReconstructor::finish()
                         //    std::cout << std::endl;
                         //} 
 					    tmp = tmp * wght;
-				    }
+             	    }
 
 
                     (*m_volume)(2*ix,iy,iz) *= tmp;
-					(*m_volume)(2*ix+1,iy,iz) *= tmp;
+	  	    (*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
 		}
