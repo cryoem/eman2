@@ -24,6 +24,7 @@
  *    <li> <a href="../projectors.html"> Manual of Individual Projector</a>
  *    <li> <a href="../reconstructors.html"> Manual of Individual Reconstructor</a>
  *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
+ *    <li> <a href="../adding_processor.html"> Adding New Processor How-to</a>
  *    <li> <a href="../coding_style.html"> EMAN2 Coding Style</a>
  *    <li> <a href="../cvshowto.html"> EMAN2 developer CVS Howto</a>
  *    <li> <a href="../development_policy_faq.html"> EMAN2 Development Policy FAQ</a>
