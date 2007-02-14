@@ -1193,13 +1193,20 @@ void nn4Reconstructor::buildFFTVolume() {
             m_delete_volume = true;
         }
 
-	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+        if( m_volume->get_xsize() != m_vnxp+offset &&
+            m_volume->get_ysize() != m_vnyp &&
+	    m_volume->get_zsize() != m_vnzp )
+        {
+            m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+            m_volume->to_zero();
+        }
+
+
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
 	m_volume->set_fftpad(true);
 	m_volume->set_attr("npad", m_npad);
-	m_volume->to_zero();
 	m_volume->set_array_offsets(0,1,1);
 }
 
@@ -1216,17 +1223,15 @@ void nn4Reconstructor::buildNormVolume() {
         m_delete_weight = true;
     }
 
-    m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-    m_wptr->set_array_offsets(0,1,1);
-
-    int ntot = (m_vnxc+1)*m_vnyp*m_vnzp;
-
-    float* data = m_wptr->get_data();
-    for( int i=0; i < ntot; ++i)
+    if( m_wptr->get_xsize() != m_vnxc+1 &&
+        m_wptr->get_ysize() != m_vnyp &&
+	m_wptr->get_zsize() != m_vnzp )
     {
-        data[i] = 0.0;
+	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
+	m_wptr->to_zero();
     }
 
+    m_wptr->set_array_offsets(0,1,1);
 }
 
 int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
