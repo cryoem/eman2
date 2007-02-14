@@ -55,8 +55,8 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 	long double Sum1,Sum2;
 	long count;
 	
-	MAX = FLT_MIN;
-	MIN = FLT_MAX;
+	MAX = -FLT_MAX;
+	MIN =  FLT_MAX;
 	count = 0L;
 	Sum1 = 0.0L;
 	Sum2 = 0.0L;
