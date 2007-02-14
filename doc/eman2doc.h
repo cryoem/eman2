@@ -24,6 +24,13 @@
  *    <li> <a href="../projectors.html"> Manual of Individual Projector</a>
  *    <li> <a href="../reconstructors.html"> Manual of Individual Reconstructor</a>
  *    <li> <a href="../developer-guide.html"> Developer's FAQ</a>
+ *    <li> <a href="../coding_style.html"> EMAN2 Coding Style</a>
+ *    <li> <a href="../cvshowto.html"> EMAN2 developer CVS Howto</a>
+ *    <li> <a href="../development_policy_faq.html"> EMAN2 Development Policy FAQ</a>
+ *    <li> <a href="../develop_system_setup.html"> EMAN2 Development System Setup</a>
+ *    <li> <a href="../exception_faq.html"> EMAN2 Exception FAQ</a>
+ *    <li> <a href="../header_naming.html"> EMAN2 Header Naming</a>
+ *    <li> <a href="../testing.html"> EMAN2 Tesing Framework</a>
  *    <li> Documentation (<a href="../EMAN2.dvi"> dvi</a>, <a href="../EMAN2.ps"> ps</a>, <a href="../EMAN2.pdf"> pdf</a>, <a href="../EMAN2.html/index.html"> html</a>)
  *  </ul>
  */
