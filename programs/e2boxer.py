@@ -606,11 +606,12 @@ class GUIbox:
 		sh=self.guiim.shapes
 		k=sh.keys()
 		k.sort()
+		del sh[i]
 		for j in k:
 			if isinstance(j,int):
-				if j>i : 
+				if j>i :
 					sh[j-1]=sh[j]
-					del(sh[j])
+					del sh[j]
 		self.guiim.delShapes()
 		self.guiim.addShapes(sh)
 		self.guiim.setActive(None,.9,.9,.4)

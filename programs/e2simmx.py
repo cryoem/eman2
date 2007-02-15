@@ -56,17 +56,28 @@ def main():
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to in comparing the aligned images", default="dot(normalize=1)")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
+	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	(options, args) = parser.parse_args()
-	if len(args)<2 : parser.error("Input and output files required")
-	try: chains=options.chains
-	except: chains=None
-		
+	
+	if len(args)<3 : parser.error("Input and output files required")
+	
+	E2n=E2init(sys.argv)
+	
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
 	options.cmp=parsemodopt(options.cmp)
 	
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
+	
+	if options.init:
+		a=EMData()
+		if options.saveali : a.set_size(clen,rlen,4)
+		else : a.set_size(clen,rlen,1)
+		a.to_zero()
+		a.write_image(arg[2])
+		E2end(E2n)
+		sys.exit(0)
 	
 	# Compute range in c and r
 	if options.range :
@@ -86,7 +97,8 @@ def main():
 	else : mxout.set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
 	mxout.to_zero()
 
-	cimgs=EMData.read_images(args[0],range(*crange)
+	# Read all c images, then read and compare one r image at a time
+	cimgs=EMData.read_images(args[0],range(*crange))
 	rimg=EMData()
 	for r in range(*rrange):
 		rimg.read_image(args[1],r)
@@ -100,13 +112,24 @@ def main():
 				mxout.set_value_at(c,r,2,v[2])
 				mxout.set_value_at(c,r,3,v[3])
 	
+	# write the results into the full-sized matrix
 	if options.saveali : mxout.write_image(args[2],0,IMAGE_UNKNOWN,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],4))
 	else : mxout.write_image(args[2],0,IMAGE_UNKNOWN,Region(crange[0],rrange[0],crange[1]-crange[0],rrange[1]-rrange[0]))
 	
+	E2end(E2n)
 	
 def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{})):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
-
+	
+	ret=[None for i in reflist]
+	for i,r in enumerate(reflist):
+		if align[0] : 
+			ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
+			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),ta.get_attr_default("translational.dx",0),ta.get_attr_default("translational.dy",0),ta.get_attr_default("rotational",0))
+		else : 
+			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0)
+		
+	return ret
 
 				
 if __name__ == "__main__":

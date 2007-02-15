@@ -251,7 +251,7 @@ EMData *EMData::do_ift_inplace()
 
 std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						 int bpl, float scale, int mingray, int maxgray,
-						 float render_min, float render_max,int flags)
+						 float render_min, float render_max,float gamma,int flags)
 {
 	ENTERFUNC;
 
@@ -270,6 +270,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	if (render_max <= render_min) {
 		render_max = render_min + 0.01f;
 	}
+
+	if (gamma<=0) gamma=1.0;
 
 	if (flags&8) asrgb=4;
 	else if (flags&1) asrgb=3;
@@ -295,6 +297,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	}
 
 	float gs = (maxgray - mingray) / (render_max - render_min);
+	float gs2 = 1.0 / (render_max - render_min);
 	if (render_max < render_min) {
 		gs = 0;
 		rm = FLT_MAX;
@@ -358,6 +361,10 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					float t = rdata[k];
 					if (t <= rm)  k = mingray;
 					else if (t >= render_max) k = maxgray;
+					else if (gamma!=1.0) {
+						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k += mingray;
+					}
 					else {
 						k = (int) (gs * (t - render_min));
 						k += mingray;
@@ -392,6 +399,10 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k = mingray;
 					else if (t >= render_max) {
 						k = maxgray;
+					}
+					else if (gamma!=1.0) {
+						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k += mingray;
 					}
 					else {
 						k = (int) (gs * (t - render_min));
@@ -428,6 +439,10 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					float t = rdata[l];
 					if (t <= rm) k = mingray;
 					else if (t >= render_max) k = maxgray;
+					else if (gamma!=1.0) {
+						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k += mingray;
+					}
 					else {
 						k = (int) (gs * (t - render_min));
 						k += mingray;
@@ -451,6 +466,10 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					float t = rdata[l];
 					if (t <= rm) k = mingray;
 					else if (t >= render_max) k = maxgray;
+					else if (gamma!=1.0) {
+						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k += mingray;
+					}
 					else {
 						k = (int) (gs * (t - render_min));
 						k += mingray;

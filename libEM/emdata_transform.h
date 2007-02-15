@@ -90,7 +90,7 @@ EMData* do_ift_inplace();
  */
 std::string render_amp8(int x, int y, int xsize, int ysize,
 				 int bpl, float scale, int min_gray, int max_gray,
-				 float min_render, float max_render,int flags);
+				 float min_render, float max_render,float gamma,int flags);
 
 		
 /** Render the image into a 24-bit image. 2D image only.

@@ -66,6 +66,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.fft=None
 		self.mindeng=0
 		self.maxdeng=1.0
+		self.gamma=1.0
 		self.origin=(0,0)
 		self.nperrow=8
 		self.nshow=-1
@@ -156,6 +157,10 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.maxden=val
 		self.updateGL()
 
+	def setGamma(self,val):
+		self.gamma=val
+		self.updateGL()
+	
 	def setNPerRow(self,val):
 		self.nperrow=val
 		self.updateGL()
@@ -194,7 +199,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
 			if x<self.width() and y<self.height():
 				if x>=0 and y>=0:
-					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
+					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 					GL.glRasterPos(x,y)
 					GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 					hist2=Numeric.fromstring(a[-1024:],'i')
@@ -215,7 +220,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 					ty=int(max(y,0))
 					tw=int(w-tx+x)
 					th=int(h-ty+y)
-					a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,6)
+					a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 					GL.glRasterPos(tx,ty)
 					GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 					hist2=Numeric.fromstring(a[-1024:],'i')
@@ -458,6 +463,11 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.conts.setObjectName("conts")
 		self.vbl.addWidget(self.conts)
 		
+		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
+		self.gammas.setObjectName("gamma")
+		self.gammas.setValue(1.0)
+		self.vbl.addWidget(self.gammas)
+
 		self.lowlim=0
 		self.highlim=1.0
 		self.busy=0
@@ -469,6 +479,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
+		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		
 		#QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.setMeasMode)
 		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.setDelMode)
@@ -512,6 +523,12 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		if self.busy : return
 		self.busy=1
 		self.updMM()
+		self.busy=0
+	
+	def newGamma(self,val):
+		if self.busy : return
+		self.busy=1
+		self.target.setGamma(val)
 		self.busy=0
 
 	def updBC(self):

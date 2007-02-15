@@ -71,6 +71,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
 		self.invert=0				# invert image on display
+		self.gamma=1.0				# gamma for display (impact on inverted contrast ?
 		self.minden=0
 		self.maxden=1.0
 		self.mindeng=0
@@ -128,6 +129,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def setDenMax(self,val):
 		self.maxden=val
+		self.updateGL()
+	
+	def setGamma(self,val):
+		self.gamma=val
 		self.updateGL()
 
 	def setOrigin(self,x,y):
@@ -195,8 +200,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		if self.fft : a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
-		else : a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,2)
+		if self.fft : a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+		else : a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 		GL.glRasterPos(0,self.height()-1)
 		GL.glPixelZoom(1.0,-1.0)
 		GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
@@ -460,6 +465,11 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.conts.setObjectName("conts")
 		self.vbl.addWidget(self.conts)
 		
+		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
+		self.gammas.setObjectName("gamma")
+		self.gammas.setValue(1.0)
+		self.vbl.addWidget(self.gammas)
+
 		self.lowlim=0
 		self.highlim=1.0
 		self.busy=0
@@ -469,6 +479,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
 		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
+		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
 		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
@@ -498,6 +509,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		if self.busy : return
 		self.busy=1
 		self.updMM()
+		self.busy=0
+		
+	def newGamma(self,val):
+		if self.busy : return
+		self.busy=1
+		self.target.setGamma(val)
 		self.busy=0
 
 	def updBC(self):
