@@ -126,7 +126,7 @@ int varmx(float *aload,int nv, int nf, int method, float *params,
 	float        *aloadj, *aloadk;
 	float         denominator, numerator, angl, trot;
 	float         eps1 = eps, eps2 = eps;
-	float         lambda;
+	float         lambda = 0.0;	//avoid use lambda uninitialized
 	int           inoim = 0, ict = 0, irot = 0;
 	int           i, j, k, iflip, nf1 = nf - 1;
 
