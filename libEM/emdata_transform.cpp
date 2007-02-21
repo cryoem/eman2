@@ -362,7 +362,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (t <= rm)  k = mingray;
 					else if (t >= render_max) k = maxgray;
 					else if (gamma!=1.0) {
-						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
 						k += mingray;
 					}
 					else {
@@ -401,7 +401,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						k = maxgray;
 					}
 					else if (gamma!=1.0) {
-						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
 						k += mingray;
 					}
 					else {
@@ -440,7 +440,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (t <= rm) k = mingray;
 					else if (t >= render_max) k = maxgray;
 					else if (gamma!=1.0) {
-						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
 						k += mingray;
 					}
 					else {
@@ -467,7 +467,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (t <= rm) k = mingray;
 					else if (t >= render_max) k = maxgray;
 					else if (gamma!=1.0) {
-						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
 						k += mingray;
 					}
 					else {
