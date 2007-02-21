@@ -30,31 +30,29 @@
  */
 
 #ifndef __Tokenizer__
-#define  __Tokenizer__
+#define __Tokenizer__
 
 #include <string>
 using std::string;
 
 class Tokenizer
-{  public:
-     Tokenizer(const string& str, 
-               const string& delim = WHITE,
-               bool want_delim = false)
-     : target(str), position(0), delimiter(delim), 
-       delimToken(want_delim) {  }
-     bool moreToken() const;
-     string nextToken();
-     string setDelimiter(const string& delim)
-     {  delimiter = delim; }
-     int tokenCount() const;
+{  
+public:
+	Tokenizer(const string& str, const string& delim = WHITE, bool want_delim = false)
+		: position(0), target(str), delimiter(delim), delimToken(want_delim) {}
+	bool moreToken() const;
+	string nextToken();
+	void setDelimiter(const string& delim) { delimiter = delim; }
+	int tokenCount() const;
 
-   private:
-     string next();
-     string nextAll();
-     static const string WHITE;
-     int position;
-     const string& target;
-     string delimiter;
-     bool delimToken;
+private:
+	string next();
+	string nextAll();
+	static const string WHITE;
+	string::size_type position;
+	const string& target;
+	string delimiter;
+	bool delimToken;
 };
+
 #endif //  __Tokenizer__
