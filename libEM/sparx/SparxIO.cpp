@@ -220,10 +220,11 @@ TFList::~TFList()
 int TFList::read(char *filename)
 {
    ifstream TFin1, TFin2;
-   int  ntoken;
+// int  ntoken;
    char buffer[MAXLEN];
-   int  i, j, imin, imax, lenbuf, ntokens, maxntks = 0, minntks = 100;
-   int  isemi;
+// int  i, j, imin, imax, lenbuf, ntokens, maxntks = 0, minntks = 100;
+   int  i, j, imin=0, imax=0, ntokens, maxntks = 0, minntks = 100;
+   string::size_type isemi;
    int  status = 0;
    
    TFin1.open(filename);
@@ -374,6 +375,7 @@ float TFList::GetVal(int irow, int jcol)
    }
    else {
       cerr << "TFList::GetVal: index out of range!" << endl;
+	return 0;
    }
 }
 #undef data
