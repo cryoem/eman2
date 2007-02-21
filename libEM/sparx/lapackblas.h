@@ -29,7 +29,7 @@
  *
  */
 
-#include <math.h>
+#include <cmath>
 
 typedef int integer;
 typedef float real;

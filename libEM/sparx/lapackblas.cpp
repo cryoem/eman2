@@ -29,9 +29,8 @@
  *
  */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "lapackblas.h"
 
@@ -2534,7 +2533,7 @@ int
 	savec = c;
 	r__1 = -(doublereal)a;
 	c = slamc3_(&c, &r__1);
-	lbeta = c + qtr;
+	lbeta = static_cast<integer>(c + qtr);
 
 /*        Now determine whether rounding or chopping occurs,  by addin
 g a   
@@ -2681,7 +2680,7 @@ L30:
    ===================================================================== 
 */
     /* Table of constant values */
-    static integer c__1 = 1;
+//    static integer c__1 = 1;	//not used in this function
     
     /* Initialized data */
     static logical first = TRUE_;
@@ -9057,7 +9056,7 @@ L40:
     llwork = *lwork - indwrk + 1;
     ssytrd_(uplo, n, &a[a_offset], lda, &w[1], &work[inde], &work[indtau], &
 	    work[indwrk], &llwork, &iinfo);
-    lopt = (*n << 1) + work[indwrk];
+    lopt = static_cast<integer>( (*n << 1) + work[indwrk] );
 
 /*     For eigenvalues only, call SSTERF.  For eigenvectors, first call   
        SORGTR to generate the orthogonal matrix, then call SSTEQR. */
