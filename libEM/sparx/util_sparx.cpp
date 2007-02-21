@@ -321,6 +321,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
    		return TryFH;
    	} else {
     	cout <<" flag must be 0,1,2,3, or 4";
+    	return 0;
     }
 }
 
