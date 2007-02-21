@@ -129,7 +129,7 @@ for single particle analysis."""
 			print "Note: EMAN2 processing would be more efficient with a boxsize of %d"%good_boxsize(options.boxsize)
 	
 	try: options.retestlist=[int(i) for i in options.retestlist.split(',')]
-	except: pass
+	except: options.retestlist=[]
 			
 	shrinkfactor=int(ceil(options.boxsize/16))
 	print "Shrink factor = ",shrinkfactor
@@ -406,7 +406,7 @@ for single particle analysis."""
 		
 		# put results in standard 'box' array so GUI can modify if desired
 		for i in goodpks2:
-			boxes.append([i[1],1[2],options.boxsize,options.boxsize,i[0],1])		# x,y,xsize,ysize,quality,changed
+			boxes.append([i[1],i[2],options.boxsize,options.boxsize,i[0],1])		# x,y,xsize,ysize,quality,changed
 			
 	# 		out=open("box.stats","w")
 # 		for i in goodpks2: out.write("%f\n"%i[0])

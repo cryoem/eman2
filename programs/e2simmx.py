@@ -56,6 +56,7 @@ def main():
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to in comparing the aligned images", default="dot(normalize=1)")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
+	parser.add_option("--verbose","-v",action="store_true",help="Verbose display during run",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
 	(options, args) = parser.parse_args()
 	
@@ -75,7 +76,7 @@ def main():
 		if options.saveali : a.set_size(clen,rlen,4)
 		else : a.set_size(clen,rlen,1)
 		a.to_zero()
-		a.write_image(arg[2])
+		a.write_image(args[2])
 		E2end(E2n)
 		sys.exit(0)
 	
@@ -96,11 +97,15 @@ def main():
 	if options.saveali : mxout.set_size(crange[1]-crange[0],rrange[1]-rrange[0],4)
 	else : mxout.set_size(crange[1]-crange[0],rrange[1]-rrange[0],1)
 	mxout.to_zero()
+	if options.verbose: print "Computing Similarities"
 
 	# Read all c images, then read and compare one r image at a time
 	cimgs=EMData.read_images(args[0],range(*crange))
 	rimg=EMData()
 	for r in range(*rrange):
+		if options.verbose: 
+			print "%d/%d\r"%(r,rrange[1]),
+			sys.stdout.flush()
 		rimg.read_image(args[1],r)
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp)
 		for c,v in enumerate(row):
@@ -112,9 +117,14 @@ def main():
 				mxout.set_value_at(c,r,2,v[2])
 				mxout.set_value_at(c,r,3,v[3])
 	
+	if options.verbose : print"\nSimilarity computation complete"
+	
 	# write the results into the full-sized matrix
-	if options.saveali : mxout.write_image(args[2],0,IMAGE_UNKNOWN,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],4))
-	else : mxout.write_image(args[2],0,IMAGE_UNKNOWN,Region(crange[0],rrange[0],crange[1]-crange[0],rrange[1]-rrange[0]))
+	if crange==[0,clen] and rrange==[0,rlen] :
+		mxout.write_image(args[2],0)
+	else :
+		if options.saveali : mxout.write_image(args[2],0,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],0,crange[1]-crange[0],rrange[1]-rrange[0],4))
+		else : mxout.write_image(args[2],0,IMAGE_UNKNOWN,0,Region(crange[0],rrange[0],crange[1]-crange[0],rrange[1]-rrange[0]))
 	
 	E2end(E2n)
 	

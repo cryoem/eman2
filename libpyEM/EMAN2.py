@@ -122,16 +122,31 @@ def display(img):
 #	os.system("v2 /tmp/img.hed")
 	os.system("e2display.py /tmp/img.hed")
 
-def plot(img,size=(800,600),path="plot.png"):
-	"""plots an image using the matplotlib library"""
+def plot(data,size=(800,600),path="plot.png"):
+	"""plots an image or an array using the matplotlib library"""
 	import matplotlib
 	matplotlib.use('Agg')
 	import pylab
 	pylab.figure(figsize=(size[0]/72.0,size[1]/72.0),dpi=72)
-	a=[]
-	for i in range(img.get_xsize()): 
-		a.append(img.get_value_at(i,0,0))
-	pylab.plot(a)
+	if isinstance(data,EMData) :
+		a=[]
+		for i in range(data.get_xsize()): 
+			a.append(data.get_value_at(i,0,0))
+		pylab.plot(a)
+	elif isinstance(data,list) or isinstance(data,tuple):
+		if isinstance(data[0],list) or isinstance(data[0],tuple) :
+			pylab.plot(data[0],data[1])
+		else:
+			try:
+				a=float(data[0])
+				pylab.plot(data)
+			except:
+				print "List, but data isn't floats"
+				return
+	else :
+		print "I don't know how to plot that type"
+		return
+	
 	pylab.savefig(path)
 
 def qplot(img):
