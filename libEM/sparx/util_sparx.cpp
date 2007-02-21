@@ -217,53 +217,53 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 
 EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int flag, float alphaDeg) //PRB
 {
-    int Mid= (Size+1)/2;
+	ENTERFUNC;	
+    	int Mid= (Size+1)/2;
 
-    if (flag==0) { // This is the real function
-	   EMData* ImBW = new EMData();
-	   ImBW->set_size(Size,Size,1);
-	   ImBW->to_zero();
+    	if (flag==0) { // This is the real function
+		EMData* ImBW = new EMData();
+	   	ImBW->set_size(Size,Size,1);
+	   	ImBW->to_zero();
 	   
-	   float tempIm;
-	   float x,y;
+	   	float tempIm;
+	   	float x,y;
 	
-	   for (int ix=(1-Mid);  ix<Mid; ix++){
-	        for (int iy=(1-Mid);  iy<Mid; iy++){
-		  x = ix;
-		  y = iy;
-	       	  tempIm= (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) ;
-		  (*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
+	   	for (int ix=(1-Mid);  ix<Mid; ix++){
+	        	for (int iy=(1-Mid);  iy<Mid; iy++){
+		  		x = ix;
+		  		y = iy;
+	       	  		tempIm= (1/(2*M_PI)) * cos(p*x)* cos(q*y) * exp(-.5*x*x/(a*a))* exp(-.5*y*y/(b*b)) ;
+		  		(*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
+	   		}
 	   	}
-	   }
-	   ImBW->done_data();
-	   ImBW->set_complex(false);
-	   ImBW->set_ri(true);
+	   	ImBW->done_data();
+	   	ImBW->set_complex(false);
+	   	ImBW->set_ri(true);
 	
-	
-	   return ImBW;
+	   	return ImBW;
    	}
-   	else if (flag==1) {  // This is the Fourier Transform
-	   EMData* ImBWFFT = new EMData();
-	   ImBWFFT ->set_size(2*Size,Size,1);
-	   ImBWFFT ->to_zero();
+	else if (flag==1) {  // This is the Fourier Transform
+		EMData* ImBWFFT = new EMData();
+	   	ImBWFFT ->set_size(2*Size,Size,1);
+	   	ImBWFFT ->to_zero();
 	   
-	   float r,s;
+	   	float r,s;
 	
-	   for (int ir=(1-Mid);  ir<Mid; ir++){
-	        for (int is=(1-Mid);  is<Mid; is++){
-		   r = ir;
-		   s = is;
-	       	   (*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
-		            exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
+	   	for (int ir=(1-Mid);  ir<Mid; ir++){
+	        	for (int is=(1-Mid);  is<Mid; is++){
+		   		r = ir;
+		   		s = is;
+	       	   		(*ImBWFFT)(2*(ir+Mid-1),is+Mid-1)= cosh(p*r*a*a) * cosh(q*s*b*b) *
+		            	exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
+	   		}
 	   	}
-	   }
-	   ImBWFFT->done_data();
-	   ImBWFFT->set_complex(true);
-	   ImBWFFT->set_ri(true);
-	   ImBWFFT->set_shuffled(true);
-	   ImBWFFT->set_fftodd(true);
+	   	ImBWFFT->done_data();
+	   	ImBWFFT->set_complex(true);
+	   	ImBWFFT->set_ri(true);
+	   	ImBWFFT->set_shuffled(true);
+	   	ImBWFFT->set_fftodd(true);
 	
-	   return ImBWFFT;
+	   	return ImBWFFT;
    	}   		
    	else if (flag==2 || flag==3) { //   This is the projection in Real Space
 		float alpha =alphaDeg*M_PI/180.0;
@@ -314,15 +314,18 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 			return pofalphak;
    		}
    	}   		
-    else if (flag==4) {
+    	else if (flag==4) {
 		cout <<" FH under construction";
    		EMData* OutFT= TwoDTestFunc(Size, p, q, a, b, 1);
    		EMData* TryFH= OutFT -> real2FH(4.0);
    		return TryFH;
-   	} else {
-    	cout <<" flag must be 0,1,2,3, or 4";
-    	return 0;
-    }
+   	} 
+	else {
+    		cout <<" flag must be 0,1,2,3, or 4";
+    	}
+	
+	EXITFUNC;
+	return 0;	
 }
 
 
