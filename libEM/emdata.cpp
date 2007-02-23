@@ -132,24 +132,38 @@ EMData::EMData(int nx, int ny, int nz, bool is_real)
 	attr_dict["apix_x"] = 1.0f;
 	attr_dict["apix_y"] = 1.0f;
 	attr_dict["apix_z"] = 1.0f;
-
-	attr_dict["is_complex"] = int(0);
-	attr_dict["is_complex_x"] = int(0);
-	attr_dict["is_complex_ri"] = int(1);
+	xoff = yoff = zoff = 0;
 
 	changecount=0;
-
-	this->nx = 0;
-	this->ny = 0;
-	this->nz = 0;
-	xoff = yoff = zoff = 0;
 	
-	set_size(nx, ny, nz);
-	this->process_inplace("testimage.noise.uniform.rand");
-	
-	if(!is_real) {	//create a complex image which real dimension is [ny, ny, nz]
-		do_fft_inplace();
+	if(is_real) {	// create a real image [nx, ny, nz]
+		attr_dict["is_complex"] = int(0);
+		attr_dict["is_complex_x"] = int(0);
+		attr_dict["is_complex_ri"] = int(1);
+		set_size(nx, ny, nz);
 	}
+	else {	//create a complex image which real dimension is [ny, ny, nz]
+		int new_nx = nx + 2 - nx%2;
+		set_size(new_nx, ny, nz);
+		
+		attr_dict["is_complex"] = int(1);
+		
+		if(ny==1 && nz ==1)	{
+			attr_dict["is_complex_x"] = int(1);
+		}
+		else {
+			attr_dict["is_complex_x"] = int(0);	
+		}
+		
+		attr_dict["is_complex_ri"] = int(1);
+		attr_dict["is_fftpad"] = int(1);
+		
+		if(nx%2 == 1) {
+			attr_dict["is_fftodd"] = 1;
+		}
+	}
+	
+	this->to_zero();
 	
 	EMData::totalalloc++;
 	
