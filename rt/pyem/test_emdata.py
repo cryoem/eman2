@@ -43,7 +43,7 @@ import os
 
 class TestEMData(unittest.TestCase):
     """this is the unit test for EMData class"""
-
+    
     def test_default_args(self):
         """test default constructor of EMData ..............."""
         e = EMData()
@@ -56,6 +56,52 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e.get_ysize(), 0)
         self.assertEqual(e.get_zsize(), 0) 
 
+    def test_emdata_constructor_imagefile(self):
+        """test the EMData constructor from image file ......"""
+        e0 = EMData()
+        e0.set_size(32,32,32)
+        e0.process_inplace('testimage.noise.uniform.rand')
+        e0.write_image('test_emdata_constructor.hdf', 0)
+        
+        e1 = EMData()
+        e1.set_size(32,32,32)
+        e1.process_inplace('testimage.noise.uniform.rand')
+        e1.write_image('test_emdata_constructor.hdf', 1)
+        
+        f = EMData('test_emdata_constructor.hdf', 1)
+        for k in range(32):
+            for j in range(32):
+                for i in range(32):
+                    self.assertEqual(e1.get_3dview()[i][j][k], f.get_3dview()[i][j][k])
+
+        g = EMData('test_emdata_constructor.hdf')
+        for k in range(32):
+            for j in range(32):
+                for i in range(32):
+                    self.assertEqual(e0.get_3dview()[i][j][k], g.get_3dview()[i][j][k])
+                    
+    def test_emdata_constructor_size(self):
+        """test the EMData constructor from size ............"""
+        #test real imge
+        e0 = EMData(64,64)
+        self.assertEqual(e0.get_xsize(), 64)
+        self.assertEqual(e0.get_ysize(), 64)
+        self.assertEqual(e0.get_zsize(), 1)  
+        self.assertEqual(e0.get_attr("is_complex"), 0)  
+
+        e1 = EMData(32,32,32, True)
+        self.assertEqual(e1.get_xsize(), 32)
+        self.assertEqual(e1.get_ysize(), 32)
+        self.assertEqual(e1.get_zsize(), 32)  
+        self.assertEqual(e1.get_attr("is_complex"), 0) 
+        
+        #test complex image
+        e2 = EMData(64,64,1,False)
+        self.assertEqual(e2.get_xsize(), 66)
+        self.assertEqual(e2.get_ysize(), 64)
+        self.assertEqual(e2.get_zsize(), 1)  
+        self.assertEqual(e2.get_attr("is_complex"), 1) 
+        
     def test_copy(self):
         """test copy() function ............................."""
         e = EMData()
