@@ -100,7 +100,30 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(e2.get_xsize(), 66)
         self.assertEqual(e2.get_ysize(), 64)
         self.assertEqual(e2.get_zsize(), 1)  
-        self.assertEqual(e2.get_attr("is_complex"), 1) 
+        self.assertEqual(e2.get_attr("is_complex"), 1)
+        self.assertEqual(e2.get_attr("is_fftpad"), 1)
+        self.assertEqual(e2.get_attr("is_complex_ri"), 1)
+        self.assertEqual(e2.get_attr("is_complex_x"), 0)
+        
+        e3 = EMData(63,64,1,False)
+        self.assertEqual(e3.get_xsize(), 64)
+        self.assertEqual(e3.get_ysize(), 64)
+        self.assertEqual(e3.get_zsize(), 1)  
+        self.assertEqual(e3.get_attr("is_complex"), 1)
+        self.assertEqual(e3.get_attr("is_fftpad"), 1)
+        self.assertEqual(e3.get_attr("is_complex_ri"), 1)
+        self.assertEqual(e3.get_attr("is_fftodd"), 1) 
+        self.assertEqual(e3.get_attr("is_complex_x"), 0)
+        
+        e4 = EMData(63,1,1,False)
+        self.assertEqual(e4.get_xsize(), 64)
+        self.assertEqual(e4.get_ysize(), 1)
+        self.assertEqual(e4.get_zsize(), 1)  
+        self.assertEqual(e4.get_attr("is_complex"), 1)
+        self.assertEqual(e4.get_attr("is_fftpad"), 1)
+        self.assertEqual(e4.get_attr("is_complex_ri"), 1)
+        self.assertEqual(e4.get_attr("is_fftodd"), 1) 
+        self.assertEqual(e4.get_attr("is_complex_x"), 1)
         
     def test_copy(self):
         """test copy() function ............................."""
