@@ -89,6 +89,73 @@ EMData::EMData()
 	EXITFUNC;
 }
 
+EMData::EMData(string filename, int image_index)
+{
+	ENTERFUNC;
+	
+	rdata = 0;
+	supp = 0;
+
+	flags =0;
+	// used to replace cube 'pixel'
+	attr_dict["apix_x"] = 1.0f;
+	attr_dict["apix_y"] = 1.0f;
+	attr_dict["apix_z"] = 1.0f;
+
+	attr_dict["is_complex"] = int(0);
+	attr_dict["is_complex_x"] = int(0);
+	attr_dict["is_complex_ri"] = int(1);
+
+	changecount=0;
+
+	nx = 0;
+	ny = 0;
+	nz = 0;
+	xoff = yoff = zoff = 0;
+	
+	this->read_image(filename, image_index);
+	
+	EMData::totalalloc++;
+	
+	EXITFUNC;
+}
+
+EMData::EMData(int nx, int ny, int nz, bool is_real)
+{
+	ENTERFUNC;
+	
+	rdata = 0;
+	supp = 0;
+
+	flags =0;
+	// used to replace cube 'pixel'
+	attr_dict["apix_x"] = 1.0f;
+	attr_dict["apix_y"] = 1.0f;
+	attr_dict["apix_z"] = 1.0f;
+
+	attr_dict["is_complex"] = int(0);
+	attr_dict["is_complex_x"] = int(0);
+	attr_dict["is_complex_ri"] = int(1);
+
+	changecount=0;
+
+	this->nx = 0;
+	this->ny = 0;
+	this->nz = 0;
+	xoff = yoff = zoff = 0;
+	
+	set_size(nx, ny, nz);
+	this->process_inplace("testimage.noise.uniform.rand");
+	
+	if(!is_real) {	//create a complex image which real dimension is [ny, ny, nz]
+		do_fft_inplace();
+	}
+	
+	EMData::totalalloc++;
+	
+	EXITFUNC;
+}
+
 EMData::~EMData()
 {
 	ENTERFUNC;
@@ -2393,46 +2460,12 @@ EMData * EMAN::operator/(const EMData & a, const EMData & b)
 	return r;
 }
 
-
-
-
 void EMData::set_xyz_origin(float origin_x, float origin_y, float origin_z)
 {
 	attr_dict["origin_row"] = origin_x;
 	attr_dict["origin_col"] = origin_y;
 	attr_dict["origin_sec"] = origin_z;
 }
-
-
-void EMData::to_zero()
-{
-	ENTERFUNC;
-
-	if (is_complex()) {
-		set_ri(true);
-	}
-	else {
-		set_ri(false);
-	}
-
-	memset(rdata, 0, nx * ny * nz * sizeof(float));
-	done_data();
-	EXITFUNC;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #if 0
 void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
@@ -2504,31 +2537,6 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 }
 
 #endif
-
-
-void EMData::to_one()
-{
-	ENTERFUNC;
-
-	if (is_complex()) {
-		set_ri(true);
-	}
-	else {
-		set_ri(false);
-	}
-
-	for (int i = 0; i < nx * ny * nz; i++) {
-		rdata[i] = 1.0f;
-	}
-
-	update();
-	EXITFUNC;
-}
-
-
-
-
-
 
 void EMData::add_incoherent(EMData * obj)
 {

@@ -894,3 +894,38 @@ EMData * EMData::real2complex(const float img)
 
 	EXITFUNC;
 }
+
+void EMData::to_zero()
+{
+	ENTERFUNC;
+
+	if (is_complex()) {
+		set_ri(true);
+	}
+	else {
+		set_ri(false);
+	}
+
+	memset(rdata, 0, nx * ny * nz * sizeof(float));
+	done_data();
+	EXITFUNC;
+}
+
+void EMData::to_one()
+{
+	ENTERFUNC;
+
+	if (is_complex()) {
+		set_ri(true);
+	}
+	else {
+		set_ri(false);
+	}
+
+	for (int i = 0; i < nx * ny * nz; i++) {
+		rdata[i] = 1.0f;
+	}
+
+	update();
+	EXITFUNC;
+}

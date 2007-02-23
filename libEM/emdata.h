@@ -107,6 +107,18 @@ namespace EMAN
 		EMData();
 		virtual ~ EMData();  
 
+		/** Construct from an image file. 
+		 * @param filename the image file name 
+		 * @param image_index the image index for stack image file, default 0 */
+		EMData(string filename, int image_index=0);
+		
+		/**# makes an image of the specified size, either real or complex. 
+		 * For complex image, the user would specify the real-space dimensions. 
+		 * @param nx size for x dimension 
+		 * @param ny size for y dimension
+		 * @param ny size for z dimension, default 1 
+		 * @param is_real boolean to specify real(true) or complex(false) image, default real */
+		EMData(int nx, int ny, int nz=1, bool is_real=true);
 		
 		/**  Do the Fourier Harmonic Transform  PRB
 		 * Takes a real image, returns the FH
