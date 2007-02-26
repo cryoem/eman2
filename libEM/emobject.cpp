@@ -144,6 +144,17 @@ EMObject::operator  XYData * () const
 	return xydata;
 }
 
+EMObject::operator  Transform3D *() const
+{
+	if(type != TRANSFORM3D) {
+		if(type != UNKNOWN) {
+			throw TypeException("Cannot convert to TRANSFORM3D* from this data type",
+				   get_object_type_name(type));
+		}
+	}
+	return transform3d;
+}
+
 EMObject::operator shared_ptr< vector<int> >() const
 {
     if( type != INTARRAY )
@@ -240,8 +251,10 @@ const char *EMObject::get_object_type_name(ObjectType t)
 		return "EMDATA";
 	case XYDATA:
 		return "XYDATA";
+	case TRANSFORM3D:
+		return "TRANSFORM3D";
 	case INTARRAY:
-	        return "INTARRAY";
+		return "INTARRAY";
 	case FLOATARRAY:
 		return "FLOATARRAY";
 	case STRINGARRAY:

@@ -69,6 +69,7 @@ namespace EMAN
 	class Projector;
 	class Reconstructor;
 	class Analyzer;
+	class Transform3D;
 
 	enum MapInfoType {
 		NORMAL,
@@ -104,58 +105,48 @@ namespace EMAN
 			INTARRAY,
 			FLOATARRAY,
 			STRINGARRAY,
+			TRANSFORM3D,
 			UNKNOWN
 		};
 
 	public:
-		EMObject():type(UNKNOWN)
-		{
-			n = 0;
-			f = 0;
-			d = 0;
-			emdata = 0;
-			xydata = 0;
-		}
+		EMObject()
+			:n(0), emdata(0), xydata(0), transform3d(0), type(UNKNOWN) {}
 
-		EMObject(int num):n(num), emdata(0), xydata(0), type(INT)
-		{
-		}
-		EMObject(float ff):f(ff), emdata(0), xydata(0), type(FLOAT)
-		{
-		}
-		EMObject(double dd):d(dd), emdata(0), xydata(0), type(DOUBLE)
-		{
-		}
-		EMObject(const char *s): n(0), emdata(0), xydata(0), str(string(s)), type(STRING)
-		{
-		}
-		EMObject(const string & s):n(0), emdata(0), xydata(0), str(s), type(STRING)
-		{
-		}
-		EMObject(EMData * em):n(0), emdata(em), xydata(0), type(EMDATA)
-		{
-		}
-		EMObject(XYData * xy):n(0),  emdata(0), xydata(xy),type(XYDATA)
-		{
-		}
+		EMObject(int num)
+			:n(num), emdata(0), xydata(0), transform3d(0), type(INT) {}
+		
+		EMObject(float ff)
+			:f(ff), emdata(0), xydata(0), transform3d(0), type(FLOAT) {}
+		
+		EMObject(double dd)
+			:d(dd), emdata(0), xydata(0), transform3d(0), type(DOUBLE) {}
+		
+		EMObject(const char *s)
+			: n(0), emdata(0), xydata(0), transform3d(0), str(string(s)), type(STRING) {}
+		
+		EMObject(const string & s)
+			:n(0), emdata(0), xydata(0), transform3d(0), str(s), type(STRING) {}
+		
+		EMObject(EMData * em)
+			:n(0), emdata(em), xydata(0), transform3d(0), type(EMDATA) {}
+		
+		EMObject(XYData * xy)
+			:n(0), emdata(0), xydata(xy), transform3d(0), type(XYDATA) {}
+		
+		EMObject(Transform3D * t)
+			:n(0), emdata(0), xydata(0), transform3d(t), type(TRANSFORM3D) {}
 
 		EMObject(const vector< int >& v )
-		    : n(0), emdata(0), xydata(0), iarray( new vector<int>(v) ), type(INTARRAY)
-		{
-		}
+		    : n(0), emdata(0), xydata(0), transform3d(0), iarray( new vector<int>(v) ), type(INTARRAY) {}
 
 		EMObject(const vector < float >&v)
-			:n(0), emdata(0), xydata(0), farray(v),type(FLOATARRAY)
-		{
-		}
+			:n(0), emdata(0), xydata(0), transform3d(0), farray(v),type(FLOATARRAY)	{}
 
 		EMObject(const vector <string>& sarray)
-			:n(0),emdata(0),xydata(0),strarray(sarray),type(STRINGARRAY)
-		{
-		}
+			:n(0),emdata(0), xydata(0), transform3d(0), strarray(sarray), type(STRINGARRAY){}
 
-		~EMObject() {
-		}
+		~EMObject() {}
 
 		operator  int () const;
 		operator  float () const;
@@ -163,8 +154,9 @@ namespace EMAN
 		operator  const char *() const;
 		operator  EMData *() const;
 		operator  XYData *() const;
+		operator  Transform3D *() const;
 
-                operator shared_ptr< vector<int> >() const;
+		operator shared_ptr< vector<int> >() const;
 		operator vector < float > () const;
 		operator vector<string> () const;
 		
@@ -186,6 +178,7 @@ namespace EMAN
 
 		EMData *emdata;
 		XYData *xydata;
+		Transform3D * transform3d;
 		string str;
 		shared_ptr< vector<int> > iarray;
 		vector < float >farray;
