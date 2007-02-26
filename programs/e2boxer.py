@@ -55,7 +55,7 @@ for single particle analysis."""
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
 	parser.add_option("--dbin","-D",type="string",help="Filename to read an existing box database from",default=None)
-	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid, pspec",default=[])
 	parser.add_option("--threshold","-T",type="float",help="(auto:ref) Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
 	parser.add_option("--refptcl","-R",type="string",help="(auto:ref) A stack of reference images. Must have the same scale as the image being boxed.",default=None)
 	parser.add_option("--nretest",type="int",help="(auto:ref) Number of reference images (starting with the first) to use in the final test for particle quality.",default=-1)
@@ -411,6 +411,17 @@ for single particle analysis."""
 	# 		out=open("box.stats","w")
 # 		for i in goodpks2: out.write("%f\n"%i[0])
 # 		out.close()
+	
+	if "pspec" in options.auto:
+		for y in range(0,image_size[1]-options.boxsize,options.boxsize/2):
+			for x in range(0,image_size[0]-options.boxsize,options.boxsize/2):
+				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
+
+		for b in boxes:
+			cl=shrink.get_clip(Region(b[0]/shrinkfactor,b[1]/shrinkfactor,options.boxsize/shrinkfactor,options.boxsize/shrinkfactor))
+			f=cl.do_fft()
+			r=f.calc_radial_dist(options.boxsize/shrinkfactor/2-2,2.0,1.0,0)
+	
 	if "grid" in options.auto:
 		try:
 			dx=-options.overlap

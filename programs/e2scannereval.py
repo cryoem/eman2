@@ -67,7 +67,7 @@ background."""
 
 	parser.add_option("--box", "-S", type="int", help="size in pixels of the power spectra", default=256)
 	parser.add_option("--norm", "-N", dest="norm", action="store_true", help="Normalize the image before analysis")
-
+	parser.add_option("--nopad",action="store_true", help="No padding between boxes")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input file required")
@@ -83,10 +83,16 @@ background."""
 	nx=target.get_xsize();
 	ny=target.get_ysize();
 	
-	nbx=nx/int(1.5*options.box)		# number of boxes in x
-	sepx=options.box*3/2+(nx%(options.box*3/2))/nbx-1	# separation between boxes
-	nby=ny/int(1.5*options.box)
-	sepy=options.box*3/2+(ny%int(1.5*options.box))/nby
+	if options.nopad:
+		nbx=nx/int(options.box)		# number of boxes in x	
+		sepx=options.box	# separation between boxes
+		nby=ny/int(options.box)
+		sepy=options.box
+	else:
+		nbx=nx/int(1.5*options.box)		# number of boxes in x	
+		sepx=options.box*3/2+(nx%(options.box*3/2))/nbx-1	# separation between boxes
+		nby=ny/int(1.5*options.box)
+		sepy=options.box*3/2+(ny%int(1.5*options.box))/nby
 	
 	for x in range(nbx):
 		for y in range(nby):

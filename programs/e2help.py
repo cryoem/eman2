@@ -52,7 +52,7 @@ Interactive help on a variety of topics. """
 
 	#parser.add_option("--res", "-R", type="float", help="Resolution in A, equivalent to Gaussian lowpass with 1/e width at 1/res",default=2.8)
 	#parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
-	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
+	parser.add_option("--verbose", "-v", action="store_true", help="More detailed help", default=False)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : 
@@ -84,15 +84,23 @@ processors, cmps, aligners, projectors, reconstructors"""
 		l=dump_aligners_list()
 		
 	if l:
-		k=l.keys()
-		maxk=max([len(ii) for ii in k])
-		fmt="%%-%0ds : "%maxk
-		k.sort()
-		for i in k:
-			print fmt%i,
-			for j in range(1,len(l[i]),3): 
-				print "%s(%s)  "%(l[i][j],l[i][j+1]),
-			if len(k)>1: print ""
+		if options.verbose:
+			k=l.keys()
+			k.sort()
+			for i in k:
+				print "%s :"%i
+				for j in range(1,len(l[i]),3): 
+					print "\t%s(%s) - %s"%(l[i][j],l[i][j+1],l[i][j+2])
+		else :
+			k=l.keys()
+			maxk=max([len(ii) for ii in k])
+			fmt="%%-%0ds : "%maxk
+			k.sort()
+			for i in k:
+				print fmt%i,
+				for j in range(1,len(l[i]),3): 
+					print "%s(%s)  "%(l[i][j],l[i][j+1]),
+				if len(k)>1: print ""
 
 if __name__ == "__main__":
     main()
