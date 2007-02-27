@@ -84,6 +84,8 @@ for single particle analysis."""
 		print "Using initial file: ",initial
 	else: initial=options.farfocus
 	
+	if not options.dbout and not options.ptclout : print "WARNING : No output files specified"
+	
 	# read the image in, though it is likely to get destroyed/modified later
 	image=EMData()
 	image.read_image(initial)
@@ -577,10 +579,10 @@ class GUIbox:
 			return
 		self.moving=(i,m)
 		self.guiim.setActive(i,.9,.9,.4)
-		self.guimx.scrollTo(i)
 		x0=self.boxes[i][0]+self.boxes[i][2]/2-1
 		y0=self.boxes[i][1]+self.boxes[i][3]/2-1
 		self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+		self.guimx.scrollTo(i)
 		
 	def mousedrag(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))

@@ -43,6 +43,7 @@ from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 from PyQt4.QtGui import QImage
+from PyQt4.QtCore import QTimer
 
 class EMImageMX(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display stacks of 2D images
@@ -74,10 +75,15 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.nimg=0
 		self.changec={}
 		self.mmode=0
+		self.targetorigin=None
 		
 		self.coords=[]
 		self.valstodisp=["Img #"]
 		self.setAcceptDrops(True)
+		
+		self.timer = QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
+
 		
 		self.inspector=None
 		if data: 
@@ -120,6 +126,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 		
 		self.showInspector()		# shows the correct inspector if already open
+		self.timer.start(100)
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -131,11 +138,16 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	def setOrigin(self,x,y):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
+		self.targetorigin=None
 		self.updateGL()
 		
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
 		
+		if self.targetorigin : 
+			self.origin=self.targetorigin
+			self.targetorigin=None
+			
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.height() or self.data[0].get_xsize()*newscale>self.width()):
 			newscale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
 			
@@ -176,6 +188,19 @@ class EMImageMX(QtOpenGL.QGLWidget):
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
+	
+	def timeout(self):
+		"""Called a few times eeach second when idle for things like automatic scrolling"""
+		if self.targetorigin :
+			vec=(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])
+			h=hypot(vec[0],vec[1])
+			if h<25.0 :
+				self.origin=self.targetorigin
+				self.targetorigin=None
+			vec=(vec[0]/h,vec[1]/h)
+			self.origin=(self.origin[0]+vec[0]*25.0,self.origin[1]+vec[1]*25.0)
+			self.updateGL()
+		
 	
 	def paintGL(self):
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -257,13 +282,13 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		
 	def scrollTo(self,n):
 		"""Moves image 'n' to the center of the display"""
-		print self.origin,self.coords[0],self.coords[1]
+#		print self.origin,self.coords[0],self.coords[1]
 #		try: self.origin=(self.coords[n][0]-self.width()/2,self.coords[n][1]+self.height()/2)
-		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
-		#try: self.origin=(self.coords[n][0],self.coords[n][1])
+#		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
+		try: self.targetorigin=(self.coords[n][0]-self.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
 		except: return
-		print self.origin
-		self.updateGL()
+#		print n,self.origin
+#		self.updateGL()
 		
 	def setValDisp(self,v2d):
 		"""Pass in a list of strings describing image attributes to overlay on the image, in order of display"""
