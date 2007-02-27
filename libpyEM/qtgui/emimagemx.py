@@ -364,7 +364,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				mimeData = QtCore.QMimeData()
 				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
 				mimeData.setText( str(lc[0])+"\n")
-				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,14),xs,ys,QImage.Format_RGB32)
+				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,1.0,14),xs,ys,QImage.Format_RGB32)
 				mimeData.setImageData(QtCore.QVariant(di))
 				drag.setMimeData(mimeData)
 
@@ -488,7 +488,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.conts.setObjectName("conts")
 		self.vbl.addWidget(self.conts)
 		
-		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
+		self.gammas = ValSlider(self,(.5,2.0),"Gam:")
 		self.gammas.setObjectName("gamma")
 		self.gammas.setValue(1.0)
 		self.vbl.addWidget(self.gammas)

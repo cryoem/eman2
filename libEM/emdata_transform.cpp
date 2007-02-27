@@ -273,6 +273,26 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 
 	if (gamma<=0) gamma=1.0;
 
+	// Calculating a full floating point gamma for
+	// each pixel in the image slows rendering unacceptably
+	// however, applying a gamma-mapping to an 8 bit colorspace
+	// has unaccepable accuracy. So, we oversample the 8 bit colorspace
+	// as a 12 bit colorspace and apply the gamma mapping to that
+	// This should produce good accuracy for gamma values
+	// larger than 0.5 (and a high upper limit)
+	static int smg0=0,smg1=0;	// while this destroys threadsafety in the rendering process
+	static float sgam=0;		// it is necessary for speed when rendering large numbers of small images
+	static unsigned char gammamap[4096];
+	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
+		for (int i=0; i<4096; i++) {
+			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
+			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
+		}
+	}
+	smg0=mingray;	// so we don't recompute the map unless something changes
+	smg1=maxgray;
+	sgam=gamma;
+
 	if (flags&8) asrgb=4;
 	else if (flags&1) asrgb=3;
 	else asrgb=1;
@@ -297,7 +317,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	}
 
 	float gs = (maxgray - mingray) / (render_max - render_min);
-	float gs2 = 1.0 / (render_max - render_min);
+	float gs2 = 4095.999 / (render_max - render_min);
+//	float gs2 = 1.0 / (render_max - render_min);
 	if (render_max < render_min) {
 		gs = 0;
 		rm = FLT_MAX;
@@ -353,24 +374,29 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (l + ll > lmax || ll >= nx - 2) break;
 
 					int k = 0;
+					unsigned char p;
 					if (ll >= nx / 2) {
 						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
 						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
 					float t = rdata[k];
-					if (t <= rm)  k = mingray;
-					else if (t >= render_max) k = maxgray;
+					if (t <= rm)  p = mingray;
+					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
-						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-						k += mingray;
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						p += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
 					}
 					else {
-						k = (int) (gs * (t - render_min));
-						k += mingray;
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
 					}
-					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
-					if (hist) histd[k]++;
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
 					ll += dsx;
 				}
 				l += dsy;
@@ -388,6 +414,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						break;
 					}
 					int k = 0;
+					unsigned char p;
 					if (ll >= nx / 2) {
 						if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
 						else k = 2 * (ll - nx / 2) + l + 2 + nx;
@@ -396,20 +423,24 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 
 					float t = rdata[k];
 					if (t <= rm)
-						k = mingray;
+						p = mingray;
 					else if (t >= render_max) {
-						k = maxgray;
+						p = maxgray;
 					}
 					else if (gamma!=1.0) {
-						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-						k += mingray;
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						p += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
 					}
 					else {
-						k = (int) (gs * (t - render_min));
-						k += mingray;
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
 					}
-					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
-					if (hist) histd[k]++;
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
 					ll += addi;
 					remx += addr;
 					if (remx > scale_n) {
@@ -436,19 +467,24 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						break;
 					}
 					int k = 0;
+					unsigned char p;
 					float t = rdata[l];
-					if (t <= rm) k = mingray;
-					else if (t >= render_max) k = maxgray;
+					if (t <= rm) p = mingray;
+					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
-						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-						k += mingray;
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						k += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
 					}
 					else {
-						k = (int) (gs * (t - render_min));
-						k += mingray;
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
 					}
-					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
-					if (hist) histd[k]++;
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
 					l += dsx;
 				}
 				l = br + dsy;
@@ -463,19 +499,24 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) break;
 					int k = 0;
+					unsigned char p;
 					float t = rdata[l];
-					if (t <= rm) k = mingray;
-					else if (t >= render_max) k = maxgray;
+					if (t <= rm) p = mingray;
+					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
-						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
-						k += mingray;
+						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+						p = gammamap[k];					// apply gamma using precomputed gamma map
+//						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
+//						k += mingray;
+//						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
+//						k += mingray;
 					}
 					else {
-						k = (int) (gs * (t - render_min));
-						k += mingray;
+						p = (unsigned char) (gs * (t - render_min));
+						p += mingray;
 					}
-					data[i * asrgb + j * bpl] = static_cast < unsigned char >(k);
-					if (hist) histd[k]++;
+					data[i * asrgb + j * bpl] = p;
+					if (hist) histd[p]++;
 					l += addi;
 					remx += addr;
 					if (remx > scale_n) {
