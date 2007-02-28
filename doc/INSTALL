@@ -79,7 +79,7 @@ libraries should be installed as shared-object libraries where applicable):
     
     - Boost Python (version 1.32+)		(http://www.boost.org)
     
-    - Numerical Python (version 22.0+)	(http://www.pfdubois.com/numpy)
+    - numpy 	(http://www.scipy.org)
 
 
 
@@ -248,20 +248,19 @@ A.2. How to use your own python version
     PYTHON_VERSION is '2.4'.
 
        
-A.3. How to Install Numeric Python
+A.3. How to Install numpy
 ----------------------------------
  
-    From the website http://sourceforge.net/projects/numpy and download
-    version 22.0 of above.
+    From the website http://sourceforge.net/projects/numpy download source package.
  
     For windows, run the binary installer and the installation is
     complete.  Other users must download the source code and install
     manually as follows:
 
-    - get source code Numeric-XX.Y.tar.gz
-    - % gunzip Numeric-XX.Y.tar.gz
-      % tar xf Numeric-XX.Y.tar
+    - get source code numpy-1.0.1.tar.gz
+    - % gunzip numpy-1.0.1.tar.gz
+      % tar xf numpy-1.0.1.tar
     - login as root
-    - % cd Numeric-XX.Y; 
+    - % cd numpy-1.0.1; 
       % python setup.py install
 

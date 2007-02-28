@@ -38,7 +38,7 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 import sys
-import Numeric
+import numpy
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
@@ -217,7 +217,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 #		GL.glPixelZoom(1.0,-1.0)
 		n=len(self.data)
 		x,y=-self.origin[0],-self.origin[1]
-		hist=Numeric.zeros(256)
+		hist=numpy.zeros(256)
 		if len(self.coords)>n : self.coords=self.coords[:n]
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
@@ -227,7 +227,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 					GL.glRasterPos(x,y)
 					GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-					hist2=Numeric.fromstring(a[-1024:],'i')
+					hist2=numpy.fromstring(a[-1024:],'i')
 					hist+=hist2
 					
 					ty=y
@@ -248,7 +248,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 					a=self.data[i].render_amp8(int(-min(x/self.scale,0)),int(-min(y/self.scale,0)),tw,th,(tw-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 					GL.glRasterPos(tx,ty)
 					GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-					hist2=Numeric.fromstring(a[-1024:],'i')
+					hist2=numpy.fromstring(a[-1024:],'i')
 					hist+=hist2
 				
 			

@@ -58,27 +58,30 @@ class TestEMData(unittest.TestCase):
 
     def test_emdata_constructor_imagefile(self):
         """test the EMData constructor from image file ......"""
+        testfile = 'test_emdata_constructor.hdf'
         e0 = EMData()
         e0.set_size(32,32,32)
         e0.process_inplace('testimage.noise.uniform.rand')
-        e0.write_image('test_emdata_constructor.hdf', 0)
+        e0.write_image(testfile, 0)
         
         e1 = EMData()
         e1.set_size(32,32,32)
         e1.process_inplace('testimage.noise.uniform.rand')
-        e1.write_image('test_emdata_constructor.hdf', 1)
+        e1.write_image(testfile, 1)
         
-        f = EMData('test_emdata_constructor.hdf', 1)
+        f = EMData(testfile, 1)
         for k in range(32):
             for j in range(32):
                 for i in range(32):
                     self.assertEqual(e1.get_3dview()[i][j][k], f.get_3dview()[i][j][k])
 
-        g = EMData('test_emdata_constructor.hdf')
+        g = EMData(testfile)
         for k in range(32):
             for j in range(32):
                 for i in range(32):
                     self.assertEqual(e0.get_3dview()[i][j][k], g.get_3dview()[i][j][k])
+        
+        testlib.safe_unlink(testfile)
                     
     def test_emdata_constructor_size(self):
         """test the EMData constructor from size ............"""
@@ -1081,8 +1084,8 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(nx, ny)
         array = e.get_2dview()
-        self.assertEqual(type(array).__name__, 'array')
-        self.assertEqual(array.typecode(), "f")
+        self.assertEqual(type(array).__name__, 'ndarray')
+        self.assertEqual(array.dtype, "float32")
         self.assertEqual(array.shape, (ny, nx))
 
         for i in range(ny):
@@ -1094,7 +1097,7 @@ class TestEMData(unittest.TestCase):
             for j in range(nx):
                 self.assertEqual(e.get_value_at(j,i), array[i][j])
 
-        array.savespace(1)
+        #array.savespace(1)
         array *= 2
         
         for i in range(ny):
@@ -1110,8 +1113,8 @@ class TestEMData(unittest.TestCase):
         e = EMData()
         e.set_size(nx, ny, nz)
         array = e.get_3dview()
-        self.assertEqual(type(array).__name__, 'array')
-        self.assertEqual(array.typecode(), "f")
+        self.assertEqual(type(array).__name__, 'ndarray')
+        self.assertEqual(array.dtype, "float32")
         self.assertEqual(array.shape, (nz, ny, nx))
 
         for i in range(nz):
@@ -1125,7 +1128,7 @@ class TestEMData(unittest.TestCase):
                 for k in range(nx):
                     self.assertEqual(e.get_value_at(k,j,i), array[i][j][k])
 
-        array.savespace(1)
+        #array.savespace(1)
         array *= 2
         for i in range(nz):
             for j in range(ny):
@@ -1145,8 +1148,8 @@ class TestEMData(unittest.TestCase):
         nx2 = fft.get_xsize()
         array = fft.get_2dcview()
         
-        self.assertEqual(type(array).__name__, 'array')
-        self.assertEqual(array.typecode(), "F")
+        self.assertEqual(type(array).__name__, 'ndarray')
+        self.assertEqual(array.dtype, "complex64")
         self.assertEqual(array.shape, (ny, nx2/2))
 
         for i in range(ny):
@@ -1163,7 +1166,7 @@ class TestEMData(unittest.TestCase):
                 testlib.assertfloat(self, fft.get_value_at(j,i), c1.real)
                 testlib.assertfloat(self, fft.get_value_at(j+1,i), c1.imag)
 
-        array.savespace(1)
+        #array.savespace(1)
         array *= 2
         for i in range(ny):
             for j in range(0, nx2, 2):
@@ -1188,8 +1191,8 @@ class TestEMData(unittest.TestCase):
         nx2 = fft.get_xsize()
         
         array = fft.get_3dcview()
-        self.assertEqual(type(array).__name__, 'array')
-        self.assertEqual(array.typecode(), "F")
+        self.assertEqual(type(array).__name__, 'ndarray')
+        self.assertEqual(array.dtype, "complex64")
         self.assertEqual(array.shape, (nz, ny, nx2/2))
 
         for i in range(nz):
@@ -1208,7 +1211,7 @@ class TestEMData(unittest.TestCase):
                     testlib.assertfloat(self, fft.get_value_at(k+1,j,i), c1.imag)
 
 
-        array.savespace(1)
+        #array.savespace(1)
         array *= 2
         for i in range(nz):
             for j in range(ny):

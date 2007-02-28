@@ -2,7 +2,7 @@ Include("xydata.h")
 
 EMNumPy = Class("EMAN::EMNumPy", "typeconverter.h")
 
-module_code("\n	import_array();\n        python::numeric::array::set_module_and_type(\"Numeric\", \"ArrayType\");\n\n")
+module_code("\n	import_array();\n        python::numeric::array::set_module_and_type(\"numpy\", \"ndarray\");\n\n")
 
 module_code("\n	EMAN::vector_to_python<int>();\n	EMAN::vector_to_python<long>();\n	EMAN::vector_to_python<float>();\n	EMAN::vector_to_python<double>();\n	EMAN::vector_to_python<std::string>();\n	EMAN::vector_to_python<EMAN::EMData*>();\n	EMAN::vector_to_python<EMAN::Pixel>();\n	EMAN::vector_to_python<EMAN::EMObject>();\n	EMAN::vector_from_python<int>();\n	EMAN::vector_from_python<long>();\n	EMAN::vector_from_python<float>();\n	EMAN::vector_from_python<std::string>();\n	EMAN::vector_from_python<EMAN::EMData*>();\n	EMAN::vector_from_python<EMAN::Pixel>();\n	EMAN::vector_from_python<EMAN::EMObject>();\n")
 

@@ -39,7 +39,7 @@ from valslider import ValSlider
 from math import *
 from EMAN2 import *
 import sys
-import Numeric
+import numpy
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 

@@ -39,9 +39,9 @@ except:
 	print "You need Python version 2.3 or later. Check http://www.python.org for more information"
 	sys.exit(-1)
 try:
-	import MLab, Numeric
+	import MLab, numpy
 except:
-	print "You need to install Numeric python. Check http://www.pfdubois.com/numpy for more information"
+	print "You need to install numpy. Check http://www.scipy.org for more information"
 	sys.exit(-1)
 try:
 	import EMAN2
@@ -79,7 +79,7 @@ def main():
 	for f in inputs:
 		num+=EMAN2.EMUtil.get_image_count(f)
 
-	mat = Numeric.zeros((num,nx*ny/(shrink*shrink)),typecode='d')
+	mat = numpy.zeros((num,nx*ny/(shrink*shrink)),typecode='d')
 	ptcls = [()] * num
 	count=0
 	for f in inputs:
@@ -134,16 +134,16 @@ def main():
 		d = EMAN2.EMData()
 		for i in range(len(w)):
 			vi = v[i]
-			vi = Numeric.reshape(vi,(1,nx/shrink,ny/shrink))
+			vi = numpy.reshape(vi,(1,nx/shrink,ny/shrink))
 			EMAN2.Wrapper.numpy2em(vi,d)
 			d.write_image(eigenimgfile,i)
 		
-	projval = Numeric.zeros((num,svalnum), typecode='d')
+	projval = numpy.zeros((num,svalnum), typecode='d')
 	for i in range(num):
 		img = mat[i]
 		for k in range(svalnum):
 			vk = v[k]
-			projval[i][k] = Numeric.dot(img, vk)
+			projval[i][k] = numpy.dot(img, vk)
 		
 	#clusterid, centroids, error, nfound = Pycluster.kcluster(whiten, nclusters=3, transpose=0, npass=1, method='a', dist='e')
 	clusterid, centroids, error, nfound = Pycluster.kcluster(projval, nclusters=classesnum, transpose=0, npass=1, method='a', dist='e')

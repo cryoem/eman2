@@ -215,7 +215,7 @@ The following classes are defined: \n\
   TestUtil - Unit test utility functions. \n\
   Util - Generic utility functions. \n\
 \n\
-  EMNumPy - Defines functions for conversions between EMData and Numeric python array. \n\
+  EMNumPy - Defines functions for conversions between EMData and numpy array. \n\
   Log - Log output at different verbose level. \n\
   PointArray - Point array. \n\
 \n\

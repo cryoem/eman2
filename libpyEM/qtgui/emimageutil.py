@@ -32,7 +32,7 @@
 from PyQt4 import QtGui,QtCore
 from PyQt4.QtCore import Qt
 from math import *
-import Numeric
+import numpy
 
 
 class ImgHistogram(QtGui.QWidget):

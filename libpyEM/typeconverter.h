@@ -44,7 +44,7 @@
 #include <boost/python.hpp>
 #include <boost/python/to_python_converter.hpp>
 #include <boost/python/detail/api_placeholder.hpp>
-#include <Numeric/arrayobject.h>
+#include <numpy/arrayobject.h>
 
 #include <vector>
 #include <map>

@@ -41,7 +41,7 @@ from emimage3d import *
 #from math import *
 #from EMAN2 import *
 #import sys
-#import Numeric
+#import numpy
 
 def get_app():
 	app=QtGui.QApplication.instance()

@@ -547,17 +547,17 @@ Rotation(alt, az, phi, Rotation::EMAN);</span><br style="font-family: monospace;
   </ul>
 
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to
-use Numeric Python?</big></li>
+use numpy?</big></li>
 
   
   <ul>
 
     <li style="font-weight: bold; color: rgb(0, 0, 0);">In EMAN2,&nbsp;
-Numeric array and the corresponding EMData object shares the same
+numpy array and the corresponding EMData object shares the same
 memory block.</li>
 
     <li style="color: rgb(51, 51, 255); font-weight: bold; background-color: rgb(255, 255, 204);">From
-EMData object to Numeric numpy array:&nbsp;&nbsp; <br>
+EMData object to numpy array:&nbsp;&nbsp; <br>
 
       <span style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">from
 EMAN2 import *</span><br style="color: rgb(0, 0, 0); font-weight: normal; font-family: monospace;">
@@ -579,7 +579,7 @@ Numerc numpy array to EMData object:<br>
 EMAN2 import *</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">import
-Numeric</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+numpy</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">n
 = 100</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
@@ -588,7 +588,7 @@ Numeric</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weigh
 = range(2*n*n)</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">array
-= Numeric.reshape(Numeric.array(numbers, Numeric.Float32), (2*n, n))</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
+= numpy.reshape(numpy.array(numbers, numpy.Float32), (2*n, n))</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">e
 = EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace; font-weight: normal;">

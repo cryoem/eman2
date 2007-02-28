@@ -36,7 +36,7 @@ import unittest,os,sys
 from test import test_support
 import testlib
 from pyemtbx.exceptions import *
-import Numeric
+import numpy
 
 class TestProcessor(unittest.TestCase):
     """Processor test"""
@@ -1554,7 +1554,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('testimage.noise.uniform.rand')
         
         d1 = e.get_2dview()
-        d3 = Numeric.array(d1)    #make a copy of d1, since d1 and d2 share the same memory
+        d3 = numpy.array(d1)    #make a copy of d1, since d1 and d2 share the same memory
         e.process_inplace('filter.integercyclicshift2d', {'dx':10, 'dy':20})
         d2 = e.get_2dview()
         for x in range(50):

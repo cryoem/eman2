@@ -40,7 +40,7 @@ from PyQt4.QtCore import Qt
 #from OpenGL import GL,GLU,GLUT
 #from valslider import ValSlider
 #from math import *
-#import Numeric
+#import numpy
 #from emimageutil import ImgHistogram
 #from weakref import WeakKeyDictionary
 

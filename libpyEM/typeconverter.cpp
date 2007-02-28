@@ -110,7 +110,7 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	int nz = 1;
 
 	if (ndim <= 0 || ndim > 3) {
-		LOGERR("%dD Numeric array to EMData is not supported.", ndim);
+		LOGERR("%dD numpy array to EMData is not supported.", ndim);
 		return;
 	}
 

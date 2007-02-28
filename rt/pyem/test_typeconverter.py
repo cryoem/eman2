@@ -35,7 +35,7 @@ from EMAN2 import *
 from testlib import *
 import os
 import sys
-import Numeric
+import numpy
 
 import unittest
 from test import test_support
@@ -245,7 +245,7 @@ class TestTypeConverter(unittest.TestCase):
             self.assertEqual(e.get_value_at(i, n), a[n][i])
 
         self.assertEqual(a.shape, (ny0, nx0))
-        self.assertEqual(a.typecode(), "f")
+        self.assertEqual(a.dtype, "f")
 
         for x in range(nx):
             for y in range(n):
@@ -263,10 +263,10 @@ class TestTypeConverter(unittest.TestCase):
         """test numpy2em .................................... """
         n = 100
         l = range(2*n*n)
-        a = Numeric.reshape(Numeric.array(l, Numeric.Float32), (2*n, n))
+        a = numpy.reshape(numpy.array(l, numpy.float32), (2*n, n))
 
         self.assertEqual(a.shape, (2*n, n))
-        self.assertEqual(a.typecode(), "f")
+        self.assertEqual(a.dtype, "float32")
 
         e = EMData()
         e.set_size(n, 2*n)
