@@ -194,8 +194,8 @@ libraries should be installed as shared-object libraries where applicable):
            python setup.py install
         2) install elementtree
         3) install GCCXML
-        4) for boost 1.32.0, apply a patch for PYSTE.
-           (Contact EMAN2 developers for the patch. This patch is for default 
+        4) for boost 1.32.0+, apply a patch for PYSTE.
+           (Download patch from EMAN2 wiki page. This patch is for default 
            argument handling)
            
     2. To generate new boost python wrapper, run
@@ -272,4 +272,7 @@ A.3. How to Install numpy
     - login as root
     - % cd numpy-1.0.1; 
       % python setup.py install
-
+	
+	Note: for Developer, copy the numpy header directory under 
+	/usr/lib/YOURPYTHON/site-packages/numpy/core/include to your Python header directory
+	/usr/include/YOURPYTHON.
