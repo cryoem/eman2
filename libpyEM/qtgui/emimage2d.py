@@ -205,7 +205,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glRasterPos(0,self.height()-1)
 		GL.glPixelZoom(1.0,-1.0)
 		GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-		hist=Numeric.fromstring(a[-1024:],'i')
+		hist=numpy.fromstring(a[-1024:],'i')
 		if self.inspector : 
 			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
 			else: self.inspector.setHist(hist,self.minden,self.maxden)
