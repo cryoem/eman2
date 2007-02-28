@@ -103,11 +103,14 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
 	int ndim = array_ptr->nd;
-	int * dims_ptr = (int*) array_ptr->dimensions;
 	
-	int nx = 1;
-	int ny = 1;
-	int nz = 1;
+#if defined (__LP64__) //is it a 64-bit platform?
+ 	long * dims_ptr = (long*)array_ptr->dimensions;
+ 	long nx=1, ny=1, nz=1;
+#else	//for 32 bit platform
+	int * dims_ptr = (int*)array_ptr->dimensions; 
+	int nx=1, ny=1, nz=1;
+#endif // defined (__LP64__)
 
 	if (ndim <= 0 || ndim > 3) {
 		LOGERR("%dD numpy array to EMData is not supported.", ndim);
