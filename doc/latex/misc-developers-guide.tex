@@ -140,12 +140,12 @@ float phi = r.mrc_phi();
 float omega = r.mrc_omega();\end{verbatim}}
     \end{itemize}
 
-    \subsection{Using Numeric Python} \index{Numeric Python!Usage}
+    \subsection{Using numpy} \index{numpy!Usage}
     \begin{itemize}
       \item
 	In EMAN2,  Numeric array and the corresponding EMData object shares the same memory block.
       \item
-	Example: Converting EMData object to Numeric numpy array
+	Example: Converting EMData object to numpy array
 	{
 	\begin {verbatim}from EMAN2 import *
 e = EMData()
@@ -155,10 +155,10 @@ array = EMNumPy.em2numpy(e)\end{verbatim}}
 	Example: Converting Numerc numpy array to EMData object
 	{
 	\begin{verbatim}from EMAN2 import *
-import Numeric
+import numpy
 n= 100
 numbers= range(2*n*n)
-array= Numeric.reshape(Numeric.array(numbers,Numeric.Float32),(2*n,n))
+array= numpy.reshape(numpy.ndarray(numbers,numpy.Float32),(2*n,n))
 e= EMData()
 Wrapper.numpy2em(array, e)
 e.write_image("numpy.mrc")\end{verbatim}}
