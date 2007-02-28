@@ -103,7 +103,7 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
 	
 	PyArrayObject * array_ptr = (PyArrayObject*) array.ptr();
 	int ndim = array_ptr->nd;
-	int * dims_ptr = array_ptr->dimensions;
+	int * dims_ptr = (int*) array_ptr->dimensions;
 	
 	int nx = 1;
 	int ny = 1;
