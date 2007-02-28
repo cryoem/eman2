@@ -89,7 +89,7 @@ EMData::EMData()
 	EXITFUNC;
 }
 
-EMData::EMData(string filename, int image_index)
+EMData::EMData(const string& filename, int image_index)
 {
 	ENTERFUNC;
 	

@@ -110,7 +110,7 @@ namespace EMAN
 		/** Construct from an image file. 
 		 * @param filename the image file name 
 		 * @param image_index the image index for stack image file, default 0 */
-		EMData(string filename, int image_index=0);
+		EMData(const string& filename, int image_index=0);
 		
 		/**# makes an image of the specified size, either real or complex. 
 		 * For complex image, the user would specify the real-space dimensions. 
