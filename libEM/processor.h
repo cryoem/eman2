@@ -896,6 +896,45 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+
+// Added by Zhengfan Yang on 03/01/07
+
+	/**f(x) = x-minval if x >= minval; f(x) = 0 if x < minval
+	 *@param minval
+	 */
+	class CutToZeroProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return "eman1.threshold.belowtozero_cut";
+		}
+		static Processor *NEW()
+		{
+			return new CutToZeroProcessor();
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("minval", EMObject::FLOAT);
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "f(x) = x-minval if x >= minval; f(x) = 0 if x < minval.";
+		}
+		
+	  protected:
+		void process_pixel(float *x) const
+		{
+		        *x = *x - value;
+			if (*x < 0) {
+				*x = 0;
+			}
+		}
+	};
+	
 	/**f(x) = 0 if x < value; f(x) = 1 if x >= value.
 	 *@param value
 	 */

@@ -71,6 +71,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSqrtProcessor::NEW);
 
 	force_add(&ToZeroProcessor::NEW);
+	force_add(&CutToZeroProcessor::NEW);
 	force_add(&BinarizeProcessor::NEW);
 	force_add(&CollapseProcessor::NEW);
 	force_add(&LinearXformProcessor::NEW);
