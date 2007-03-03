@@ -422,6 +422,27 @@ class TestProcessor(unittest.TestCase):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x], 0, 3)
+                    
+    def test_eman1_threshold_belowtozero_cut(self):
+        """test eman1.threshold.belowtozero_cut processor ..."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_one()
+        e*=2
+        
+        d = e.get_3dview()
+        for x in range(16):
+            for y in range(32):
+                for z in range(32):
+                    d[x][y][z] -= 1.5
+        
+        e.process_inplace('eman1.threshold.belowtozero_cut', {'minval':1})
+        
+        for x in range(16):
+            for y in range(32):
+                for z in range(32):
+                    self.assertAlmostEqual(d[x][y][z], 0.0, 3)
+                    self.assertAlmostEqual(d[x+16][y][z], 1.0, 3)
                             
     def test_BinarizeProcessor(self):
         """test binary processor ............................"""
