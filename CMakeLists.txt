@@ -412,6 +412,12 @@ IF(ENABLE_PYTHON)
 	MESSAGE("WARNING: Python.h not found, ENABLE_PYTHON is set back to OFF")
 	OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
     ENDIF(PYTHON_INCLUDE_PATH)
+
+    FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h /usr/lib64/python2.4/site-packages/numpy/core/include
+	/usr/lib/python2.4/site-packages/numpy/core/include $ENV{PYTHON_ROOT}/site-packages/numpy/core/include
+	/usr/include)
+
+    INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
     
 ENDIF(ENABLE_PYTHON)
 
