@@ -45,7 +45,7 @@ def main():
 	usage = """%prog [options] <c input> <r input> <output>
 	Computes a similarity matrix between c-input (col) and r-input (row) stacks of 2-D images. Images may
 	optionally be aligned before comparison. Output is a matrix stored as an image with similarity value
-	pairs"""
+	pairs. When used for classifiaction, c input is the references and r input are the particles."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	#parser.add_option("--apix", "-A", type="float", help="A/voxel", default=1.0)

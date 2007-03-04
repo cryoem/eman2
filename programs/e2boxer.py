@@ -423,6 +423,7 @@ for single particle analysis."""
 			cl=shrink.get_clip(Region(b[0]/shrinkfactor,b[1]/shrinkfactor,options.boxsize/shrinkfactor,options.boxsize/shrinkfactor))
 			f=cl.do_fft()
 			r=f.calc_radial_dist(options.boxsize/shrinkfactor/2-2,2.0,1.0,0)
+			plot(r)
 	
 	if "grid" in options.auto:
 		try:

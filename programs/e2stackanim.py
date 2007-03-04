@@ -41,17 +41,18 @@ from math import *
 import os
 import sys
 
-def stacktoanim(stack,outpath):
+def stacktoanim(stack,outpath,ntk):
 	"""Takes an input list of images and and output pathname. Converts each image to a standard 2D image
 	format, then produces a GIF animation. Requires functional ImageMagick installation."""
-	for i,im in enumerate(stack):
+	for i in range(ntk+1):
+		im=stack[i]
 		im.set_attr("render_min",im.get_attr("mean")-im.get_attr("sigma")*3.0)
 		im.set_attr("render_max",im.get_attr("mean")+im.get_attr("sigma")*3.0)
 		im.write_image("tmp_img-%03d.pgm"%i)
 		print "%d. %1.3f - %1.3f"%(i,im.get_attr("render_min"),im.get_attr("render_max"))
 	os.system("convert -delay 10 tmp_img-*.pgm %s "%outpath)
 	
-	for i in range(len(stack)):
+	for i in range(ntk+1):
 		os.unlink("tmp_img-%03d.pgm"%i)
 
 def main():
@@ -64,7 +65,7 @@ Converts a 2D image stack into a GIF/PNM animation using ImageMagick"""
 
 	parser.add_option("--scale", "-S", type="float", help="Scale factor",default=1.0)
 	parser.add_option("--pingpong",action="store_true",default=False,help="Cycle through the sequence forwards then backwards")
-#	parser.add_option("--maxshift","-M", type="int", help="Maximum translational error between images (pixels), default=64",default=64.0)
+	parser.add_option("--last","-M", type="int", help="Number of last image to use",default=0)
 #	parser.add_option("--mode",type="string",help="centering mode 'modeshift', 'censym' or 'region,<x>,<y>,<clipsize>,<alisize>",default="censym")
 #	parser.add_option("--twopass",action="store_true",default=False,help="Skip automatic tilt axis location, use fixed angle from x")
 	
@@ -72,21 +73,23 @@ Converts a 2D image stack into a GIF/PNM animation using ImageMagick"""
 	if len(args)<2 : parser.error("Input and output files required")
 	
 	a=EMData.read_images(args[0])
+	if options.last>0 and options.last<len(a): ntk=options.last
+	else : ntk=len(a)-1
 	
 	# rescale images if requested
 	if options.scale!=1.0 :
 		olds=(a[0].get_xsize(),a[0].get_ysize())
 		news=(int(olds[0]*options.scale),int(olds[1]*options.scale))
-		for i in range(len(a)):
+		for i in range(ntk+1):
 			if options.scale<1.0: a[i].scale(options.scale)
 			a[i]=a[i].get_clip(Region((olds[0]-news[0])/2.0,(olds[1]-news[1])/2.0,news[0],news[1]))
 			if options.scale>1.0: a[i].scale(options.scale)
 
 	if options.pingpong :
-		for i in range(len(a)-2,-1,-1):
+		for i in range(ntk-1,-1,-1):
 			a.append(a[i])
 			
-	stacktoanim(a,args[1])
+	stacktoanim(a,args[1],ntk)
 
 if __name__ == "__main__":
     main()
