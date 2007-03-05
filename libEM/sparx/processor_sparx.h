@@ -84,6 +84,15 @@ namespace EMAN
 		{
 			return "Fourier Filter Processors are frequency domain processors. The input image can be either real or Fourier, and the output processed image format corresponds to that of the input file. FourierFilter class is the base class of fourier space processors. The processors can be either low-pass, high-pass, band-pass, or homomorphic. The processor parameters are in absolute frequency units, valid range is ]0,0.5], where 0.5 is Nyquist freqeuncy. ";
 		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
+			d.put("cutoff_pixels", EMObject::FLOAT, "0 - get_xsize()/2");
+			d.put("cutoff_freq", EMObject::FLOAT, "0 - 1.0/(get_xsize()*apix_x) same for y and z");
+			return d;
+		}
 	};
 	
 	/**Lowpass top-hat filter processor applied in Fourier space.
@@ -106,11 +115,17 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			return d;
 		}
-		
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["cutoff_frequency"] = params["cutoff_abs"];
+			}
+		}
 	};
 	
 	/** Highpass top-hat filter applied in Fourier space.
@@ -133,9 +148,16 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["cutoff_frequency"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -160,7 +182,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
@@ -189,7 +211,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
@@ -217,9 +239,16 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["sigma"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -243,9 +272,16 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["sigma"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -270,10 +306,17 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			d.put("center", EMObject::FLOAT, "Gaussian center.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["sigma"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -298,10 +341,17 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["sigma"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -325,9 +375,16 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("sigma", EMObject::FLOAT, "Gaussian sigma.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["sigma"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -350,7 +407,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("x_shift", EMObject::FLOAT, "Shift x");
 			d.put("y_shift", EMObject::FLOAT, "Shift y");
 			d.put("z_shift", EMObject::FLOAT, "Shift z");
@@ -375,6 +432,11 @@ namespace EMAN
 			params["filter_type"] = KAISER_I0_INVERSE;
 			EMFourierFilterInPlace(image, params); 
 		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d = NewFourierProcessor::get_param_types();
+			return d;
+		}
 	};
 	
 	/**Divide by a Kaiser-Bessel Sinh func in Fourier space.
@@ -393,6 +455,11 @@ namespace EMAN
 		void process_inplace(EMData* image) {
 			params["filter_type"] = KAISER_SINH_INVERSE;
 			EMFourierFilterInPlace(image, params); 
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d = NewFourierProcessor::get_param_types();
+			return d;
 		}
 	};
 	
@@ -416,7 +483,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("table", EMObject::FLOATARRAY, "Tabulated filter data.");
 			return d;
 		}
@@ -443,7 +510,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
@@ -471,7 +538,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			return d;
@@ -500,7 +567,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
@@ -529,10 +596,17 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["cutoff_frequency"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -557,10 +631,17 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["cutoff_frequency"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -586,11 +667,18 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] cut-off frequency.");
 			d.put("fall_off", EMObject::FLOAT, "Tanh decay rate.");
 			d.put("value_at_zero_frequency", EMObject::FLOAT, "Value at zero frequency.");
 			return d;
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if( params.has_key("cutoff_abs") ) {
+				params["cutoff_frequency"] = params["cutoff_abs"];
+			}
 		}
 	};
 	
@@ -618,7 +706,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
 			d.put("Low_fall_off", EMObject::FLOAT, "Tanh low decay rate.");
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
@@ -645,7 +733,7 @@ namespace EMAN
 		}
 		TypeDict get_param_types() const
 		{
-			TypeDict d;
+			TypeDict d = NewFourierProcessor::get_param_types();
 			d.put("defocus", EMObject::FLOAT, "defocus value in Angstrom.");
 			d.put("cs", EMObject::FLOAT, "cs in CM.");
 			d.put("voltage", EMObject::FLOAT, "voltage in Kv.");
