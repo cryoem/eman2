@@ -80,6 +80,13 @@ namespace EMAN
 		SELF_CORRELATION,
 		AUTOCORRELATION
 	};
+
+	enum kernel_shape {
+		BLOCK = 1,
+		CIRCULAR = 2,
+		CROSS = 3
+	};
+	
 	/** Fourier product of two images.
 	 *
 	 * @par Purpose: Calculate the correlation or convolution of
@@ -256,13 +263,7 @@ orrelation.
 	 */
 	bool    equalsize(EMData* f, EMData* g);
 
-	enum kernel_shape {
-		BLOCK = 1,
-		CIRCULAR = 2,
-		CROSS = 3
-	};
-
-	EMData* filt_median(EMData* f, int kernel_size, kernel_shape myshape);
+	EMData* filt_median(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape);
 	/** Median filter
 	 *
 	 * @par Purpose: Calculate the median filtered image.
@@ -270,18 +271,16 @@ orrelation.
 	 *  @param[in] f First real-space image object.
 	 *               Image may be 1-, 2-, or 3-dimensional.  Image f is not
 	 *               changed.
-	 *  @param[in] kernel_size Size of the kernal, should be odd.
-	 *             For block kernal, this is the edge length of the line/square/cube;
-	 *             For circular kernal, this is the diameter of the line/circle/sphere;
-	 *             For cross kernal, this is the length of the line/cross;
-	 *  	       It should be noted that for 1-dimensional image, these 
-	 *  	       three kernels degenerate into the same shape.
+	 *  @param[in] nxk, nyk, nzk  Size of the kernel on each dimension
+	 *  	       Note: For CIRCULAR kernel, we currently only consider circle or 
+	 *  	       sphere kernel, i.e., nxk==nyk for 2 dimensional image and 
+	 *  	       nxk==nyk==nzk for 3 dimensional image.
 	 *  @param[in] myshape     Shape of the kernal
 	 *  	       BLOCK is for block kernal;
 	 *  	       CIRCULAR is for circular kernel;
 	 *  	       CROSS is for cross kernal;
-	 *  	       It should be noted that for 1-dimensional image, these 
-	 *  	       three kernels degenerate into the same shape.
+	 *  	       Note: For 1-dimensional image, these three kernels degenerate
+	 *  	       into the same shape.
 	 *  @return Median filtered image.
 	 */
 }

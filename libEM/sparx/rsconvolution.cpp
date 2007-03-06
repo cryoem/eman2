@@ -92,7 +92,7 @@ namespace {
 				if (ir == l+1 && arr[ir] < arr[l] ) {
 					SWAP(arr[l],arr[ir])
 				}
-			return arr[k];
+				return arr[k];
 			} else {
 				mid = (l+ir) >> 1;
 				SWAP(arr[mid], arr[l+1])
@@ -122,45 +122,50 @@ namespace {
 		}
 	}
 
-	inline float median(EMData& f, int nk, kernel_shape myshape, int iz, int iy, int ix) {
+	inline float median(EMData& f, int nxk, int nyk, int nzk, kernel_shape myshape, int iz, int iy, int ix) {
 		int index = 0;
 		int dimension = 3;
-		float med = 0.f;
+		float median_value = 0.f;
 		float *table;
+
 		int nxf = (&f)->get_xsize();
 		int nyf = (&f)->get_ysize();
 		int nzf = (&f)->get_zsize();
 
-		int kzmin = ( nzf == 1 ) ? 0 : iz-nk;
-		int kzmax = ( nzf == 1 ) ? 0 : iz+nk;
-		int kymin = ( nyf == 1 ) ? 0 : iy-nk;
-		int kymax = ( nyf == 1 ) ? 0 : iy+nk;
-		int kxmin = ix-nk;
-		int kxmax = ix+nk;
+		int nxk2 = (nxk-1)/2;
+		int nyk2 = (nyk-1)/2;
+		int nzk2 = (nzk-1)/2;
+
+		int kzmin = iz-nzk2;
+		int kzmax = iz+nzk2;
+		int kymin = iy-nyk2;
+		int kymax = iy+nyk2;
+		int kxmin = ix-nxk2;
+		int kxmax = ix+nxk2;
 
 		if ( nzf == 1 ) {
 			dimension--;
-			if ( nyf == 1 )  dimension--;
-			}
+			if ( nyf == 1 )  dimension--; 
+		}
 
 		switch (myshape) {
 		case BLOCK:
 			switch (dimension) {
 			case 1: 
-				table = (float*)malloc(nk*sizeof(float));
+				table = (float*)malloc(nxk*sizeof(float));
 				break;
-			case 2: table = (float*)malloc(nk*nk*sizeof(float));
+			case 2: table = (float*)malloc(nxk*nyk*sizeof(float));
 				break;
-			case 3: table = (float*)malloc(nk*nk*nk*sizeof(float));
+			case 3: table = (float*)malloc(nxk*nyk*nzk*sizeof(float));
 			 	break;
 			}	
 			for (int kz = kzmin; kz <= kzmax; kz++) {
-				int jz = kz % nzf;
+				int jz = kz < 0 ? kz+nzf : kz % nzf;
 				for (int ky = kymin; ky <= kymax; ky++) {
-					int jy = ky % nyf; 
+					int jy = ky < 0 ? ky+nyf : ky % nyf; 
 					for (int kx = kxmin; kx <= kxmax; kx++) {
-						int jx = kx % nxf; 
-						table[index]=f(jx,jy,jz);
+						int jx = kx < 0 ? kx+nxf : kx % nxf; 
+						table[index] = f(jx,jy,jz);
 						index++;
 					}
 				}
@@ -169,20 +174,20 @@ namespace {
 		case CIRCULAR:
 			switch (dimension) {
 			case 1: 
-				table = (float*)malloc(nk*sizeof(float));
+				table = (float*)malloc(nxk*sizeof(float));
 				break;
-			case 2: table = (float*)malloc(nk*nk*sizeof(float));
+			case 2: table = (float*)malloc(nxk*nxk*sizeof(float));
 				break;
-			case 3: table = (float*)malloc(nk*nk*nk*sizeof(float));
+			case 3: table = (float*)malloc(nxk*nxk*nxk*sizeof(float));
 			 	break;
 			}	
 			for (int kz = kzmin; kz <= kzmax; kz++) {
-				int jz = kz % nzf;
+				int jz = kz < 0 ? kz+nzf : kz % nzf;
 				for (int ky = kymin; ky <= kymax; ky++) {
-					int jy = ky % nyf; 
+					int jy = ky < 0 ? ky+nyf : ky % nyf; 
 					for (int kx = kxmin; kx <= kxmax; kx++) {
-						int jx = kx % nxf; 
-						if (4*((kz-iz)*(kz-iz)+(ky-iy)*(ky-iy)+(kx-ix)*(kx-ix))<=(nk-1)*(nk-1)) {
+						int jx = kx < 0 ? kx+nxf : kx % nxf; 
+						if ( (kz-iz)*(kz-iz)+(ky-iy)*(ky-iy)+(kx-ix)*(kx-ix) <= nxk2*nxk2 ) {
 							table[index] = f(jx,jy,jz);
 							index++;
 						}
@@ -192,35 +197,35 @@ namespace {
 			break;
 		case CROSS:
 			if ( nzf != 1 )  {
-				table = (float*)malloc((3*nk-2)*sizeof(float));
+				table = (float*)malloc((nxk+nyk+nzk-2)*sizeof(float));
 				for (int kz = kzmin; kz <= kzmax; kz++) {
-					int jz = kz % nzf;
+					int jz = kz < 0 ? kz+nzf : kz % nzf;
 					if ( kz != iz ) { table[index] = f(ix,iy,jz); index++; }
 				}
 				for (int ky = kymin; ky <= kymax; ky++) {
-					int jy = ky % nyf;
+					int jy = ky < 0 ? ky+nyf : ky % nyf; 
 					if ( ky != iy ) { table[index] = f(ix,jy,iz); index++; }
 				}
 				for (int kx = kxmin; kx <= kxmax; kx++) {
-					int jx = kx % nxf;
+					int jx = kx < 0 ? kx+nxf : kx % nxf; 
 					table[index] = f(jx,iy,iz);
 					index++;
 				}
 			} else if  ( nyf != 1 ) {
-				table = (float*)malloc((2*nk-1)*sizeof(float));
+				table = (float*)malloc((nxk+nyk-1)*sizeof(float));
 				for (int ky = kymin; ky <= kymax; ky++) {
-					int jy = ky % nyf;
+					int jy = ky < 0 ? ky+nyf : ky % nyf; 
 					if ( ky != iy ) { table[index] = f(ix,jy,iz); index++; }
 				}
 				for (int kx = kxmin; kx <= kxmax; kx++) {
-					int jx = kx % nxf;
+					int jx = kx < 0 ? kx+nxf : kx % nxf; 
 					table[index] = f(jx,iy,iz);
 					index++;
 				}
 			} else {
-				table = (float*)malloc(nk*sizeof(float));
+				table = (float*)malloc(nxk*sizeof(float));
 				for (int kx = kxmin; kx <= kxmax; kx++) {
-					int jx = kx % nxf;
+					int jx = kx < 0 ? kx+nxf : kx % nxf; 
 					table[index] = f(jx,iy,iz);
 					index++;
 				}
@@ -228,9 +233,9 @@ namespace {
 			break;
 		default: throw ImageDimensionException("Illegal Kernal Shape!");
 		}
-		if ( index % 2 != 1 ) LOGERR("Error happened!");
-		med=select_nth_largest(index, (index+1)/2, table-1);
-		return med;
+		median_value=select_nth_largest((index+1)/2, index, table-1);
+		free((void *)table);
+		return median_value;
 	}
 }
 
@@ -387,21 +392,28 @@ namespace EMAN {
 		return result;
 	}
 
-    EMData* filt_median(EMData* f, int kernel_size, kernel_shape myshape) {
+    EMData* filt_median(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape) {
 		
-		// Kernel should be smaller than the size of image
-		int nxf = f->get_xsize();
+ 		int nxf = f->get_xsize();
 		int nyf = f->get_ysize(); 
 		int nzf = f->get_zsize();
-		int nk = kernel_size;
-		if (( nk > nxf ) || ( nk > nyf ) && ( nyf != 1 ) || ( nk < nzf ) && ( nzf != 1 )) {
-			// incommensurate sizes
-			throw ImageDimensionException("input images are incommensurate");
+		
+		if ( nxk > nxf || nyk > nyf || nzk > nzf ) {
+			// Kernel should be smaller than the size of image
+			throw ImageDimensionException("Kernel should be smaller than the size of image.");
 		}	
 
-		// Kernel needs to be odd in size
-		if (nk % 2 != 1) 
+		if ( nxk % 2 != 1 || nyk % 2 != 1 || nzk % 2 != 1 ) {
+			// Kernel needs to be odd in size
 			throw ImageDimensionException("Real-space kernel must have odd size (so the center is well-defined).");
+		}
+
+		if ( myshape == CIRCULAR ) {
+			// For CIRCULAR kernal, size must be same on all dimensions
+			if ( nzf != 1 && ( nxk != nyk || nxk != nzk ) || nzf == 1 && nyf != 1 && nxk != nyk ) {
+				throw ImageDimensionException("For CIRCULAR kernal, size must be same on all dimensions.");
+			}
+		}
 
 		EMData* result = new EMData();
 		result->set_size(nxf, nyf, nzf);
@@ -409,12 +421,12 @@ namespace EMAN {
 
 		for (int iz = 0; iz <= nzf-1; iz++) {
 			for (int iy = 0; iy <= nyf-1; iy++) {
-				for (int ix = 0; ix <= nxf-1 ; ix++) {
-					(*result)(ix,iy,iz) = median (*f, nk, myshape, iz, iy, ix);
+				for (int ix = 0; ix <= nxf-1; ix++) {
+					(*result)(ix,iy,iz) = median (*f, nxk, nyk, nzk, myshape, iz, iy, ix);					
 				}
 			}
 		}
-
+		
 		return result;
 	}
 
