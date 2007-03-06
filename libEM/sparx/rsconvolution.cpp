@@ -33,6 +33,8 @@
 
 #include <algorithm>
 
+#define SWAP(a,b) temp=(a);(a)=(b);(b)=temp;
+
 using namespace EMAN;
 using std::swap;
 
@@ -77,6 +79,159 @@ namespace {
 		return sum;
 	}
 	// In the future we may want to add other boundary conditions here
+	
+	inline float select_nth_largest(int k, int n, float *arr)
+	{
+		int i, ir, j, l, mid;
+		float a, temp;
+
+		l = 1;
+		ir = n;
+		for (;;) {
+			if (ir <= l+1) {
+				if (ir == l+1 && arr[ir] < arr[l] ) {
+					SWAP(arr[l],arr[ir])
+				}
+			return arr[k];
+			} else {
+				mid = (l+ir) >> 1;
+				SWAP(arr[mid], arr[l+1])
+				if (arr[l+1] > arr[ir]) {
+					SWAP(arr[l+1],arr[ir])
+				}
+				if (arr[l] > arr[ir]) {
+					SWAP(arr[l],arr[ir])
+				}
+				if (arr[l+1] > arr[l]) {
+					SWAP(arr[l+1],arr[l])
+				}
+				i = l+1;
+				j = ir;
+				a = arr[l];
+				for (;;) {
+					do i++; while (arr[i] < a);
+					do j--; while (arr[j] > a);
+					if (j < i) break;
+					SWAP(arr[i],arr[j])
+				}
+				arr[l] = arr[j];
+				arr[j] = a;
+				if (j >= k) ir = j-1;
+				if (j <= k) l = i;
+			}
+		}
+	}
+
+	inline float median(EMData& f, int nk, kernel_shape myshape, int iz, int iy, int ix) {
+		int index = 0;
+		int dimension = 3;
+		float med = 0.f;
+		float *table;
+		int nxf = (&f)->get_xsize();
+		int nyf = (&f)->get_ysize();
+		int nzf = (&f)->get_zsize();
+
+		int kzmin = ( nzf == 1 ) ? 0 : iz-nk;
+		int kzmax = ( nzf == 1 ) ? 0 : iz+nk;
+		int kymin = ( nyf == 1 ) ? 0 : iy-nk;
+		int kymax = ( nyf == 1 ) ? 0 : iy+nk;
+		int kxmin = ix-nk;
+		int kxmax = ix+nk;
+
+		if ( nzf == 1 ) {
+			dimension--;
+			if ( nyf == 1 )  dimension--;
+			}
+
+		switch (myshape) {
+		case BLOCK:
+			switch (dimension) {
+			case 1: 
+				table = (float*)malloc(nk*sizeof(float));
+				break;
+			case 2: table = (float*)malloc(nk*nk*sizeof(float));
+				break;
+			case 3: table = (float*)malloc(nk*nk*nk*sizeof(float));
+			 	break;
+			}	
+			for (int kz = kzmin; kz <= kzmax; kz++) {
+				int jz = kz % nzf;
+				for (int ky = kymin; ky <= kymax; ky++) {
+					int jy = ky % nyf; 
+					for (int kx = kxmin; kx <= kxmax; kx++) {
+						int jx = kx % nxf; 
+						table[index]=f(jx,jy,jz);
+						index++;
+					}
+				}
+			}
+			break;
+		case CIRCULAR:
+			switch (dimension) {
+			case 1: 
+				table = (float*)malloc(nk*sizeof(float));
+				break;
+			case 2: table = (float*)malloc(nk*nk*sizeof(float));
+				break;
+			case 3: table = (float*)malloc(nk*nk*nk*sizeof(float));
+			 	break;
+			}	
+			for (int kz = kzmin; kz <= kzmax; kz++) {
+				int jz = kz % nzf;
+				for (int ky = kymin; ky <= kymax; ky++) {
+					int jy = ky % nyf; 
+					for (int kx = kxmin; kx <= kxmax; kx++) {
+						int jx = kx % nxf; 
+						if (4*((kz-iz)*(kz-iz)+(ky-iy)*(ky-iy)+(kx-ix)*(kx-ix))<=(nk-1)*(nk-1)) {
+							table[index] = f(jx,jy,jz);
+							index++;
+						}
+					}
+				}
+			}
+			break;
+		case CROSS:
+			if ( nzf != 1 )  {
+				table = (float*)malloc((3*nk-2)*sizeof(float));
+				for (int kz = kzmin; kz <= kzmax; kz++) {
+					int jz = kz % nzf;
+					if ( kz != iz ) { table[index] = f(ix,iy,jz); index++; }
+				}
+				for (int ky = kymin; ky <= kymax; ky++) {
+					int jy = ky % nyf;
+					if ( ky != iy ) { table[index] = f(ix,jy,iz); index++; }
+				}
+				for (int kx = kxmin; kx <= kxmax; kx++) {
+					int jx = kx % nxf;
+					table[index] = f(jx,iy,iz);
+					index++;
+				}
+			} else if  ( nyf != 1 ) {
+				table = (float*)malloc((2*nk-1)*sizeof(float));
+				for (int ky = kymin; ky <= kymax; ky++) {
+					int jy = ky % nyf;
+					if ( ky != iy ) { table[index] = f(ix,jy,iz); index++; }
+				}
+				for (int kx = kxmin; kx <= kxmax; kx++) {
+					int jx = kx % nxf;
+					table[index] = f(jx,iy,iz);
+					index++;
+				}
+			} else {
+				table = (float*)malloc(nk*sizeof(float));
+				for (int kx = kxmin; kx <= kxmax; kx++) {
+					int jx = kx % nxf;
+					table[index] = f(jx,iy,iz);
+					index++;
+				}
+			}
+			break;
+		default: throw ImageDimensionException("Illegal Kernal Shape!");
+		}
+		if ( index % 2 != 1 ) LOGERR("Error happened!");
+		med=select_nth_largest(index, (index+1)/2, table-1);
+		return med;
+	}
 }
 
 namespace EMAN {
@@ -229,6 +384,37 @@ namespace EMAN {
 		}
 		K->set_array_offsets(K_saved_offsets);
 		result->done_data();
+		return result;
+	}
+
+    EMData* filt_median(EMData* f, int kernel_size, kernel_shape myshape) {
+		
+		// Kernel should be smaller than the size of image
+		int nxf = f->get_xsize();
+		int nyf = f->get_ysize(); 
+		int nzf = f->get_zsize();
+		int nk = kernel_size;
+		if (( nk > nxf ) || ( nk > nyf ) && ( nyf != 1 ) || ( nk < nzf ) && ( nzf != 1 )) {
+			// incommensurate sizes
+			throw ImageDimensionException("input images are incommensurate");
+		}	
+
+		// Kernel needs to be odd in size
+		if (nk % 2 != 1) 
+			throw ImageDimensionException("Real-space kernel must have odd size (so the center is well-defined).");
+
+		EMData* result = new EMData();
+		result->set_size(nxf, nyf, nzf);
+		result->to_zero();
+
+		for (int iz = 0; iz <= nzf-1; iz++) {
+			for (int iy = 0; iy <= nyf-1; iy++) {
+				for (int ix = 0; ix <= nxf-1 ; ix++) {
+					(*result)(ix,iy,iz) = median (*f, nk, myshape, iz, iy, ix);
+				}
+			}
+		}
+
 		return result;
 	}
 

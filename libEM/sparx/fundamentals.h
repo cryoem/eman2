@@ -182,7 +182,9 @@ namespace EMAN
 	inline EMData* autocorrelation(EMData* f, fp_flag myflag) {
 		return fourierproduct(f, NULL, myflag, AUTOCORRELATION);
 	}
-	/** Image self-correlation.
+	/** Image self-c			// incommensurate sizes
+			throw ImageDimensionException("input images are incommensurate");
+orrelation.
 	 *
 	 * @par Purpose: Calculate the self-correlation of a 1-, 2-,
 	 *               or 3-dimensional image.
@@ -253,6 +255,35 @@ namespace EMAN
 	 *  @return true if the images have the same size, false otherwise.
 	 */
 	bool    equalsize(EMData* f, EMData* g);
+
+	enum kernel_shape {
+		BLOCK = 1,
+		CIRCULAR = 2,
+		CROSS = 3
+	};
+
+	EMData* filt_median(EMData* f, int kernel_size, kernel_shape myshape);
+	/** Median filter
+	 *
+	 * @par Purpose: Calculate the median filtered image.
+	 *  
+	 *  @param[in] f First real-space image object.
+	 *               Image may be 1-, 2-, or 3-dimensional.  Image f is not
+	 *               changed.
+	 *  @param[in] kernel_size Size of the kernal, should be odd.
+	 *             For block kernal, this is the edge length of the line/square/cube;
+	 *             For circular kernal, this is the diameter of the line/circle/sphere;
+	 *             For cross kernal, this is the length of the line/cross;
+	 *  	       It should be noted that for 1-dimensional image, these 
+	 *  	       three kernels degenerate into the same shape.
+	 *  @param[in] myshape     Shape of the kernal
+	 *  	       BLOCK is for block kernal;
+	 *  	       CIRCULAR is for circular kernel;
+	 *  	       CROSS is for cross kernal;
+	 *  	       It should be noted that for 1-dimensional image, these 
+	 *  	       three kernels degenerate into the same shape.
+	 *  @return Median filtered image.
+	 */
 }
 
 
