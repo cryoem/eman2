@@ -36,6 +36,11 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
         .value("CROSS", EMAN::CROSS)
     ;
 
+    enum_< EMAN::morph_type >("morph_type")
+    	.value("BINARY", EMAN::BINARY)
+	.value("GRAYLEVEL", EMAN:GRAYLEVEL)
+    ;
+
     def("correlation", &EMAN::correlation, return_value_policy< manage_new_object >());
     def("convolution", &EMAN::convolution, return_value_policy< manage_new_object >());
     def("autocorrelation", &EMAN::autocorrelation, return_value_policy< manage_new_object >());
@@ -44,6 +49,7 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("norm_pad_ft", &EMAN::norm_pad_ft, return_value_policy< manage_new_object >(), norm_pad_ft_overloads_3_4());
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
     def("filt_median", &EMAN::filt_median, return_value_policy< manage_new_object >());
+    def("filt_dilation", &EMAN::filt_dilation, return_value_policy< manage_new_object >());
     def("equalsize", &EMAN::equalsize);
 }
 
