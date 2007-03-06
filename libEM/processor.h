@@ -897,8 +897,6 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
-// Added by Zhengfan Yang on 03/01/07
-
 	/**f(x) = x-minval if x >= minval; f(x) = 0 if x < minval
 	 *@param minval
 	 */
