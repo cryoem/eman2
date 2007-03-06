@@ -30,6 +30,12 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
         .value("PADDED_LAG", EMAN::PADDED_LAG)
     ;
 
+    enum_< EMAN::kernel_shape >("kernel_shape")
+        .value("BLOCK", EMAN::BLOCK)
+        .value("CIRCULAR", EMAN::CIRCULAR)
+        .value("CROSS", EMAN::CROSS)
+    ;
+
     def("correlation", &EMAN::correlation, return_value_policy< manage_new_object >());
     def("convolution", &EMAN::convolution, return_value_policy< manage_new_object >());
     def("autocorrelation", &EMAN::autocorrelation, return_value_policy< manage_new_object >());
@@ -37,6 +43,7 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("periodogram", &EMAN::periodogram, return_value_policy< manage_new_object >());
     def("norm_pad_ft", &EMAN::norm_pad_ft, return_value_policy< manage_new_object >(), norm_pad_ft_overloads_3_4());
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
+    def("filt_median", &EMAN::filt_median, return_value_policy< manage_new_object >());
     def("equalsize", &EMAN::equalsize);
 }
 
