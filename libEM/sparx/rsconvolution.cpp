@@ -80,7 +80,11 @@ namespace {
 	}
 	// In the future we may want to add other boundary conditions here
 	
-	float select_nth_largest(int k, int n, float *table) {
+
+	// This function selects the k-th smallest element in the array table[0..n-1]
+	// i.e. k = 1 gets the smallest element
+	//      k = n gets the largest element
+	float select_kth_smallest(float *table, int n, int k) {
 
 		int i,j,left,middle,right;
 		float temp;
@@ -88,6 +92,7 @@ namespace {
 
 		left = 0;
 		right = n-1;
+		k = k-1;  // This is necessary because the index of array begins from 0
 		while (flag == 0) {
 			if ( left+1 < right ) {
 				middle = (left+right)/2;
@@ -233,7 +238,7 @@ namespace {
 			break;
 		default: throw ImageDimensionException("Illegal Kernal Shape!");
 		}
-		median_value=select_nth_largest((index+1)/2, index, table);
+		median_value=select_kth_smallest(table, index, (index+1)/2);
 		free((void *)table);
 		return median_value;
 	}
