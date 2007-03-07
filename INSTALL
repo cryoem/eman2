@@ -173,9 +173,9 @@ libraries should be installed as shared-object libraries where applicable):
 	To create these files in EMAN2 building process, you need:  
    	1. Install doxygen (version 1.4.3+, http://www.doxygen.org)
    	2. Install latex2html (http://www.latex2html.org/)
-   	3. Install Doxygen (http://www.stack.nl/~dimitri/doxygen/)
-   	4. Install Graphviz(dot) (http://www.graphviz.org/)
-   	5. Choose "ENABLE_AUTODOC" in the CMake configuration.
+   	3. Install Graphviz(dot) (http://www.graphviz.org/)
+   	4. compile and install EMAN2 with "ENABLE_AUTODOC" set to off 
+   	5. Choose "ENABLE_AUTODOC" in the CMake configuration, compile and install EMAN2 again
     
 
 5. Notes For Developers
