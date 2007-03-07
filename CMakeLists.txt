@@ -413,10 +413,11 @@ IF(ENABLE_PYTHON)
 	OPTION(ENABLE_PYTHON "if enable boost python support" OFF)
     ENDIF(PYTHON_INCLUDE_PATH)
 
-    FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h /usr/lib64/python2.4/site-packages/numpy/core/include
-	/usr/lib/python2.4/site-packages/numpy/core/include
-$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
-	/usr/include)
+    FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h 
+    	$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
+    	/usr/lib64/python2.4/site-packages/numpy/core/include
+		/usr/lib/python2.4/site-packages/numpy/core/include
+		/usr/include)
 
     INCLUDE_DIRECTORIES(${NUMPY_INCLUDE_PATH})
     
