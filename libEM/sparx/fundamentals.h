@@ -81,12 +81,6 @@ namespace EMAN
 		AUTOCORRELATION
 	};
 
-	enum kernel_shape {
-		BLOCK = 1,
-		CIRCULAR = 2,
-		CROSS = 3
-	};
-	
 	/** Fourier product of two images.
 	 *
 	 * @par Purpose: Calculate the correlation or convolution of
@@ -263,6 +257,12 @@ orrelation.
 	 */
 	bool    equalsize(EMData* f, EMData* g);
 
+	enum kernel_shape {
+		BLOCK = 1,
+		CIRCULAR = 2,
+		CROSS = 3
+	};
+
 	EMData* filt_median(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape);
 	/** Median filter
 	 *
@@ -283,6 +283,28 @@ orrelation.
 	 *  	       into the same shape.
 	 *  @return Median filtered image.
 	 */
+
+	enum morph_type {
+		BINARY = 1,
+		GRAYLEVEL = 2
+	};
+
+	EMData* filt_dilation(EMData* f, EMData* K, morph_type mydilation);
+	/** Dilation filter 	 
+	 *
+	 * @par Purpose: Calculate the Minkowski addition of the two images
+	 *  
+	 *  @param[in] f First real-space image object.
+	 *               Image may be 2- or 3-dimensional.  Image f is not
+	 *               changed.
+	 *             K Second real-space image object
+	 *               Image may be 2- or 3-dimentional. Image K is not changed.
+	 *             mydilation 	Type of dilation
+	 *             BINARY is for binary dilation.
+	 *             GRAYLEVEL is for graylevel dilation.
+	 *  @return    Dilated image.
+	 */
+
 }
 
 

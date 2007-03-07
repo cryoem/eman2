@@ -430,6 +430,96 @@ namespace EMAN {
 		return result;
 	}
 
+    EMData* filt_dilation(EMData* f, EMData* K, morph_type mydilation) {
+
+ 		int nxf = f->get_xsize();
+		int nyf = f->get_ysize(); 
+		int nzf = f->get_zsize();
+
+		int nxk = K->get_xsize();
+		int nyk = K->get_ysize();
+		int nzk = K->get_zsize();
+	
+		if ( nxf < nxk && nyf < nyk && nzf < nzk) {
+			// whoops, f smaller than K
+			swap(f,K); swap(nxf,nxk); swap(nyf,nyk); swap(nzf,nzk);
+		} else if ( nxk > nxf || nyk > nyf || nzk > nzf ) {
+			// Incommensurate sizes
+			throw ImageDimensionException("Two input images are incommensurate.");
+		}
+
+		if ( nxk % 2 != 1 || nyk % 2 != 1 || nzk % 2 != 1 ) {
+			// Kernel needs to be odd in size
+			throw ImageDimensionException("Kernel should have odd nx,ny,nz so the center is well-defined.");
+		}
+
+		int nxk2 = (nxk-1)/2;
+		int nyk2 = (nyk-1)/2;
+		int nzk2 = (nzk-1)/2;
+
+		if ( mydilation == BINARY ) {
+			// Check whether two images are truly binary.
+	 		for (int iz = 0; iz <= nzf-1; iz++) {
+				for (int iy = 0; iy <= nyf-1; iy++) {
+					for (int ix = 0; ix <= nxf-1; ix++) {
+						int fxyz=(int)(*f)(ix,iy,iz);
+						if ( fxyz != 0 && fxyz != 1 ) {
+							throw ImageDimensionException("One of the two images is not binary.");
+						}
+					}
+				}
+			}
+	 		for (int iz = 0; iz <= nzk-1; iz++) {
+				for (int iy = 0; iy <= nyk-1; iy++) {
+					for (int ix = 0; ix <= nxk-1; ix++) {
+						int kxyz=(int)(*K)(ix,iy,iz);
+						if ( kxyz != 0 && kxyz != 1 ) {
+							throw ImageDimensionException("One of the two images is not binary.");
+						}
+					}
+				}
+			}
+		}
+
+		EMData* result = new EMData();
+		result->set_size(nxf, nyf, nzf);
+		result->to_zero();
+
+		for (int iz = 0; iz <= nzf-1; iz++) {
+			for (int iy = 0; iy <= nyf-1; iy++) {
+				for (int ix = 0; ix <= nxf-1; ix++) {
+					if ( mydilation == BINARY ) {
+						int fxyz=(int)(*f)(ix,iy,iz);
+						if (fxyz == 1) {
+							int kzmin = iz-nzk2 < 0     ?   0   : iz-nzk2 ;
+							int kzmax = iz+nzk2 > nzf-1 ? nzf-1 : iz+nzk2 ;
+							int kymin = iy-nyk2 < 0     ?   0   : iy-nyk2 ;
+							int kymax = iy+nyk2 > nyf-1 ? nyf-1 : iy+nyk2 ;
+							int kxmin = ix-nxk2 < 0     ?   0   : ix-nxk2 ;
+							int kxmax = ix+nxk2 > nxf-1 ? nxf-1 : ix+nxk2 ;
+							for (int jz=kzmin; jz<=kzmax; jz++) {
+								for (int jy=kymin; jy<=kymax; jy++) {
+									for (int jx=kxmin; jx<=kxmax; jx++) {
+										if ( (int)(*K)(jz-iz+nzk2,jy-iy+nyk2,jx-ix+nxk2) == 1 ) {
+											(*result)(jx,jy,jz) = 1;
+										}
+									}
+								}
+							}
+						}
+					} else if ( mydilation == GRAYLEVEL ) {
+						
+					} else {
+						throw ImageDimensionException("Illegal dilation type!");
+					}
+				}
+			}
+		}
+		
+		return result;
+
+    }	
+
 }
 
 /*
