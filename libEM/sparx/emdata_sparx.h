@@ -231,7 +231,7 @@ EMData* rotavg();
 		EMData* rot_scale_trans(const Transform3D &RA);
 		
 
-                /** eucludian distance of two line
+                /** euclidean distance between two line
 		 *
 		 */
 

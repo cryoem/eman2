@@ -1513,9 +1513,9 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	float delx = translations.at(0);
 	float dely = translations.at(1);
 	float delz = translations.at(2);
-	delx = fmod(delx, float(nx));
-	dely = fmod(dely, float(ny));
-	delz = fmod(delz, float(nz));
+	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	if(dely >= 0.0f) { delz = fmod(delz, float(nz));} else {delz = -fmod(-delz, float(nz));}
 	int xc = nx/2;
 	int yc = ny/2;
 	int zc = nz/2;
@@ -1523,16 +1523,6 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 	float shiftxc = xc + delx;
 	float shiftyc = yc + dely;
 	float shiftzc = zc + delz;
-// 	bounds if origin at center
-	float xmin = -nx/2.0f;
-	float ymin = -ny/2.0f;
-	float zmin = -nz/2.0f;
-	float xmax = -xmin;
-	float ymax = -ymin;
-	float zmax = -zmin;
-	if (0 == nx%2) xmax--;
-	if (0 == ny%2) ymax--;
-	if (0 == nz%2) zmax--;
 //                  set up array to use later
 //
 		int xArr[27];
@@ -1547,51 +1537,41 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 //			printf("iL=%d, \t xArr=%d, \t yArr=%d, \t zArr=%d \n",iL, xArr[iL],yArr[iL],zArr[iL]);
 		}
 					
-		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
-		      (*ret)(ix,iy,iz) = 0;}}}   // initialize returned data
+//		for (int iz = 0; iz < nz; iz++) {for (int iy = 0; iy < ny; iy++) {for (int ix = 0; ix < nx; ix++) {
+//		      (*ret)(ix,iy,iz) = 0;}}}   // initialize returned data
 		
 		for (int iz = 0; iz < nz; iz++) {
 			float z = float(iz) - shiftzc;
-		#ifdef _WIN32
-			if (z < zmin) z = _MIN(z+nz,zmax);
-			if (z > zmax) z = _MAX(z-nz,zmin);
-		#else
-			if (z < zmin) z = std::min(z+nz,ymax);
-			if (z > zmax) z = std::max(z-nz,ymin);
-		#endif	//_WIN32
 			float xoldz = z*RAinv[0][2]+xc;
 			float yoldz = z*RAinv[1][2]+yc;
 			float zoldz = z*RAinv[2][2]+zc;
 			for (int iy = 0; iy < ny; iy++) {
 				float y = float(iy) - shiftyc;
-			#ifdef _WIN32
-				if (y < ymin) y = _MIN(y+ny,ymax);
-				if (y > ymax) y = _MAX(y-ny,ymin);
-			#else
-				if (y < ymin) y = std::min(y+ny,ymax);
-				if (y > ymax) y = std::max(y-ny,ymin);
-			#endif	//_WIN32
 				float xoldzy = xoldz + y*RAinv[0][1] ;
 				float yoldzy = yoldz + y*RAinv[1][1] ;
 				float zoldzy = zoldz + y*RAinv[2][1] ;
 				for (int ix = 0; ix < nx; ix++) {
 					float x = float(ix) - shiftxc;
-				#ifdef _WIN32
-					if (x < xmin) x = _MIN(x+nx,xmax);
-					if (x > xmax) x = _MAX(x-nx,xmin);
-				#else
-					if (x < xmin) x = std::min(x+nx,xmax);
-					if (x > xmax) x = std::max(x-nx,xmin);
-				#endif	//_WIN32
 					float xold = xoldzy + x*RAinv[0][0] ;
 					float yold = yoldzy + x*RAinv[1][0] ;
 					float zold = zoldzy + x*RAinv[2][0] ;
 
+
+				if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
+				else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+				if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
+				else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+				if (zold < 0.0f) zold =fmod((int(zold/float(nz))+1)*nz-zold, float(nz));
+				else if (zold > (float) (nz-1) ) zold = fmod(zold, float(nz));
+
 //         This is currently coded the way  SPIDER coded it,
 //            changing floor to round  in the next 3 lines below may be better
-					int IOX = (int) floor(xold); // This is the center of the array
-					int IOY = (int) floor(yold ); // In the next loop we interpolate
-					int IOZ = (int) floor(zold ); //  If floor is used dx is positive
+//					int IOX = (int) floor(xold); // This is the center of the array
+//					int IOY = (int) floor(yold ); // In the next loop we interpolate
+//					int IOZ = (int) floor(zold ); //  If floor is used dx is positive
+					int IOX = int(xold);
+					int IOY = int(yold);
+					int IOZ = int(zold);
 
 					float dx = xold-IOX; //remainder(xold,1);  //  now |dx| <= .5 
 					float dy = yold-IOY; //remainder(yold,1);
