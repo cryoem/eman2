@@ -80,48 +80,48 @@ namespace {
 	}
 	// In the future we may want to add other boundary conditions here
 	
-	inline float select_nth_largest(int k, int n, float *arr)
-	{
-		int i, ir, j, l, mid;
-		float a, temp;
+	float select_nth_largest(int k, int n, float *table) {
 
-		l = 1;
-		ir = n;
-		for (;;) {
-			if (ir <= l+1) {
-				if (ir == l+1 && arr[ir] < arr[l] ) {
-					SWAP(arr[l],arr[ir])
-				}
-				return arr[k];
+		int i,j,left,middle,right;
+		float temp;
+		bool flag = 0;
+
+		left = 0;
+		right = n-1;
+		while (flag == 0) {
+			if ( left+1 < right ) {
+				middle = (left+right)/2;
+				swap(table[middle],table[left+1]);
+				if ( table[left+1] > table [right] )
+					swap(table[left+1], table[right]);
+				if ( table[left] > table[right] )
+					swap(table[left], table[right]);
+				if ( table[left+1] > table[left] )
+					swap(table[left+1], table[left]);
+				i = left+1;
+				j = right;
+				temp = table[left];
+				do {
+					i++; 
+					while (table[i] < temp) i++;
+					j--;
+					while (table[j] > temp) j--;
+					if (j >= i) 
+						swap(table[i], table[j]);
+				} while (j >= i);
+				table[left] = table[j];
+				table[j] = temp;
+				if (j >= k) right = j-1;
+				if (j <= k) left = i;
 			} else {
-				mid = (l+ir) >> 1;
-				SWAP(arr[mid], arr[l+1])
-				if (arr[l+1] > arr[ir]) {
-					SWAP(arr[l+1],arr[ir])
-				}
-				if (arr[l] > arr[ir]) {
-					SWAP(arr[l],arr[ir])
-				}
-				if (arr[l+1] > arr[l]) {
-					SWAP(arr[l+1],arr[l])
-				}
-				i = l+1;
-				j = ir;
-				a = arr[l];
-				for (;;) {
-					do i++; while (arr[i] < a);
-					do j--; while (arr[j] > a);
-					if (j < i) break;
-					SWAP(arr[i],arr[j])
-				}
-				arr[l] = arr[j];
-				arr[j] = a;
-				if (j >= k) ir = j-1;
-				if (j <= k) l = i;
+				if ( right == left+1 && table[right] < table[left] ) 
+					swap(table[left], table[right]);
+				flag = 1;
 			}
 		}
+		return table[k];
 	}
-
+	
 	inline float median(EMData& f, int nxk, int nyk, int nzk, kernel_shape myshape, int iz, int iy, int ix) {
 		int index = 0;
 		int dimension = 3;
@@ -233,7 +233,7 @@ namespace {
 			break;
 		default: throw ImageDimensionException("Illegal Kernal Shape!");
 		}
-		median_value=select_nth_largest((index+1)/2, index, table-1);
+		median_value=select_nth_largest((index+1)/2, index, table);
 		free((void *)table);
 		return median_value;
 	}
