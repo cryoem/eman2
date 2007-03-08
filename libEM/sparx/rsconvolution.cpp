@@ -493,31 +493,31 @@ namespace EMAN {
 		for (int iz = 0; iz <= nzf-1; iz++) {
 			for (int iy = 0; iy <= nyf-1; iy++) {
 				for (int ix = 0; ix <= nxf-1; ix++) {
-//						int kzmin = iz-nzk2 < 0     ?   0   : iz-nzk2 ;
-//						int kzmax = iz+nzk2 > nzf-1 ? nzf-1 : iz+nzk2 ;
-//						int kymin = iy-nyk2 < 0     ?   0   : iy-nyk2 ;
-//						int kymax = iy+nyk2 > nyf-1 ? nyf-1 : iy+nyk2 ;
-//						int kxmin = ix-nxk2 < 0     ?   0   : ix-nxk2 ;
-//						int kxmax = ix+nxk2 > nxf-1 ? nxf-1 : ix+nxk2 ;
-						if ( mydilation == BINARY ) {
-							int fxyz=(int)(*f)(ix,iy,iz);
-							if (fxyz == 1) {
-								for (int jz = -nzk2; jz <= nzk2; jz++) {
-									for (int jy = -nyk2; jy <= nyk2; jy++) {
-										for (int jx= -nxk2; jx <= nxk2; jx++) {
-											if ( (int)(*K)(jz,jy,jx) == 1 ) {
-												int fz = iz+jz;
-												int fy = iy+jy;
-												int fx = ix+jx;
-												if ( fz >= 0 && fz <= nzf-1 && fy >= 0 && fy <= nyf-1 && fx >= 0 && fx <= nxf-1 )
-													(*result)(fx,fy,fz) = 1;
+//					int kzmin = iz-nzk2 < 0     ?   0   : iz-nzk2 ;
+//					int kzmax = iz+nzk2 > nzf-1 ? nzf-1 : iz+nzk2 ;
+//					int kymin = iy-nyk2 < 0     ?   0   : iy-nyk2 ;
+//					int kymax = iy+nyk2 > nyf-1 ? nyf-1 : iy+nyk2 ;
+//					int kxmin = ix-nxk2 < 0     ?   0   : ix-nxk2 ;
+//					int kxmax = ix+nxk2 > nxf-1 ? nxf-1 : ix+nxk2 ;
+					if ( mydilation == BINARY ) {
+						int fxyz = (int)(*f)(ix,iy,iz);
+						if ( fxyz == 1 ) {
+							for (int jz = -nzk2; jz <= nzk2; jz++) {
+								for (int jy = -nyk2; jy <= nyk2; jy++) {
+									for (int jx= -nxk2; jx <= nxk2; jx++) {
+										if ( (int)(*K)(jx+nxk2,jy+nyk2,jz+nzk2) == 1 ) {
+											int fz = iz+jz;
+											int fy = iy+jy;
+											int fx = ix+jx;
+											if ( fz >= 0 && fz <= nzf-1 && fy >= 0 && fy <= nyf-1 && fx >= 0 && fx <= nxf-1 )
+												(*result)(fx,fy,fz) = 1;
 											}
 										}
 									}
 								}
 							}
 					} else if ( mydilation == GRAYLEVEL ) {
-							float pmax = 0; // We assume the definition of graylevel is from 0 to 255.
+							float pmax = (*f)(ix,iy,iz)+(*K)(nxk2,nyk2,nzk2); 
 							for (int jz = -nzk2; jz <= nzk2; jz++) {
 								for (int jy = -nyk2; jy <= nyk2; jy++) {
 									for (int jx = -nxk2; jx <= nxk2; jx++) {
@@ -525,8 +525,8 @@ namespace EMAN {
 										int fy = iy+jy;
 										int fx = ix+jx;
 										if ( fz >= 0 && fz <= nzf-1 && fy >= 0 && fy <= nyf-1 && fx >= 0 && fx <= nxf-1 ) {
-											float kxyz = (*K)(jx,jy,jz);
-											float fxyz = (*f)(fx,fy,fz);
+											float kxyz = (*K)(jx+nxk2,jy+nyk2,jz+nzk2);
+											float fxyz = (*f)(fx,fy,fz);											
 											if ( kxyz+fxyz > pmax )  pmax = kxyz+fxyz;
 										}
 									}
@@ -538,8 +538,7 @@ namespace EMAN {
 					}
 				}
 			}
-		}
-		
+		}		
 		return result;
 
     }	
