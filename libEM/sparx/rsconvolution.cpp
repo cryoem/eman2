@@ -618,7 +618,7 @@ namespace EMAN {
 								}
 							}
 					} else if ( myerosion == GRAYLEVEL ) {
-							float pmax = (*f)(ix,iy,iz)+(*K)(nxk2,nyk2,nzk2); 
+							float pmin = (*f)(ix,iy,iz)-(*K)(nxk2,nyk2,nzk2); 
 							for (int jz = -nzk2; jz <= nzk2; jz++) {
 								for (int jy = -nyk2; jy <= nyk2; jy++) {
 									for (int jx = -nxk2; jx <= nxk2; jx++) {
@@ -628,12 +628,12 @@ namespace EMAN {
 										if ( fz >= 0 && fz <= nzf-1 && fy >= 0 && fy <= nyf-1 && fx >= 0 && fx <= nxf-1 ) {
 											float kxyz = (*K)(jx+nxk2,jy+nyk2,jz+nzk2);
 											float fxyz = (*f)(fx,fy,fz);											
-											if ( kxyz+fxyz > pmax )  pmax = kxyz+fxyz;
+											if ( fxyz-kxyz < pmin )  pmin = fxyz-kxyz;
 										}
 									}
 								}
 							}
-							(*result)(ix,iy,iz) = pmax;
+							(*result)(ix,iy,iz) = pmin;
 					} else {
 						throw ImageDimensionException("Illegal dilation type!");
 					}
