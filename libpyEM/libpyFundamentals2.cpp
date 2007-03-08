@@ -50,6 +50,7 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
     def("filt_median", &EMAN::filt_median, return_value_policy< manage_new_object >());
     def("filt_dilation", &EMAN::filt_dilation, return_value_policy< manage_new_object >());
+    def("filt_erosion", &EMAN::filt_erosion, return_value_policy< manage_new_object >());
     def("equalsize", &EMAN::equalsize);
 }
 

@@ -410,7 +410,7 @@ namespace EMAN {
 
 		if ( nxk % 2 != 1 || nyk % 2 != 1 || nzk % 2 != 1 ) {
 			// Kernel needs to be odd in size
-			throw ImageDimensionException("Real-space kernel must have odd size (so the center is well-defined).");
+			throw ImageDimensionException("Real-space kernel must have odd size so that the center is well-defined.");
 		}
 
 		if ( myshape == CIRCULAR ) {
@@ -445,7 +445,7 @@ namespace EMAN {
 		int nyk = K->get_ysize();
 		int nzk = K->get_zsize();
 	
-		if ( nxf < nxk && nyf < nyk && nzf < nzk) {
+		if ( nxf < nxk && nyf < nyk && nzf < nzk ) {
 			// whoops, f smaller than K
 			swap(f,K); swap(nxf,nxk); swap(nyf,nyk); swap(nzf,nzk);
 		} else if ( nxk > nxf || nyk > nyf || nzk > nzf ) {
@@ -455,7 +455,7 @@ namespace EMAN {
 
 		if ( nxk % 2 != 1 || nyk % 2 != 1 || nzk % 2 != 1 ) {
 			// Kernel needs to be odd in size
-			throw ImageDimensionException("Kernel should have odd nx,ny,nz so the center is well-defined.");
+			throw ImageDimensionException("Kernel should have odd nx,ny,nz so that the center is well-defined.");
 		}
 
 		int nxk2 = (nxk-1)/2;
@@ -540,8 +540,108 @@ namespace EMAN {
 			}
 		}		
 		return result;
+    }
 
-    }	
+    EMData* filt_erosion(EMData* f, EMData* K, morph_type myerosion) {
+
+ 		int nxf = f->get_xsize();
+		int nyf = f->get_ysize(); 
+		int nzf = f->get_zsize();
+
+		int nxk = K->get_xsize();
+		int nyk = K->get_ysize();
+		int nzk = K->get_zsize();
+	
+		if ( nxf < nxk && nyf < nyk && nzf < nzk ) {
+			// whoops, f smaller than K
+			swap(f,K); swap(nxf,nxk); swap(nyf,nyk); swap(nzf,nzk);
+		} else if ( nxk > nxf || nyk > nyf || nzk > nzf ) {
+			// Incommensurate sizes
+			throw ImageDimensionException("Two input images are incommensurate.");
+		}
+
+		if ( nxk % 2 != 1 || nyk % 2 != 1 || nzk % 2 != 1 ) {
+			// Kernel needs to be odd in size
+			throw ImageDimensionException("Kernel should have odd nx,ny,nz so that the center is well-defined.");
+		}
+
+		int nxk2 = (nxk-1)/2;
+		int nyk2 = (nyk-1)/2;
+		int nzk2 = (nzk-1)/2;
+
+		if ( myerosion == BINARY ) {
+			// Check whether two images are truly binary.
+	 		for (int iz = 0; iz <= nzf-1; iz++) {
+				for (int iy = 0; iy <= nyf-1; iy++) {
+					for (int ix = 0; ix <= nxf-1; ix++) {
+						int fxyz=(int)(*f)(ix,iy,iz);
+						if ( fxyz != 0 && fxyz != 1 ) {
+							throw ImageDimensionException("One of the two images is not binary.");
+						}
+					}
+				}
+			}
+	 		for (int iz = 0; iz <= nzk-1; iz++) {
+				for (int iy = 0; iy <= nyk-1; iy++) {
+					for (int ix = 0; ix <= nxk-1; ix++) {
+						int kxyz=(int)(*K)(ix,iy,iz);
+						if ( kxyz != 0 && kxyz != 1 ) {
+							throw ImageDimensionException("One of the two images is not binary.");
+						}
+					}
+				}
+			}
+		}
+
+		EMData* result = new EMData();
+		result->set_size(nxf, nyf, nzf);
+		result->to_one();
+
+		for (int iz = 0; iz <= nzf-1; iz++) {
+			for (int iy = 0; iy <= nyf-1; iy++) {
+				for (int ix = 0; ix <= nxf-1; ix++) {
+					if ( myerosion == BINARY ) {
+						int fxyz = (int)(*f)(ix,iy,iz);
+						if ( fxyz == 0 ) {
+							for (int jz = -nzk2; jz <= nzk2; jz++) {
+								for (int jy = -nyk2; jy <= nyk2; jy++) {
+									for (int jx= -nxk2; jx <= nxk2; jx++) {
+										if ( (int)(*K)(jx+nxk2,jy+nyk2,jz+nzk2) == 1 ) {
+											int fz = iz+jz;
+											int fy = iy+jy;
+											int fx = ix+jx;
+											if ( fz >= 0 && fz <= nzf-1 && fy >= 0 && fy <= nyf-1 && fx >= 0 && fx <= nxf-1 )
+												(*result)(fx,fy,fz) = 0;
+											}
+										}
+									}
+								}
+							}
+					} else if ( myerosion == GRAYLEVEL ) {
+							float pmax = (*f)(ix,iy,iz)+(*K)(nxk2,nyk2,nzk2); 
+							for (int jz = -nzk2; jz <= nzk2; jz++) {
+								for (int jy = -nyk2; jy <= nyk2; jy++) {
+									for (int jx = -nxk2; jx <= nxk2; jx++) {
+										int fz = iz+jz;
+										int fy = iy+jy;
+										int fx = ix+jx;
+										if ( fz >= 0 && fz <= nzf-1 && fy >= 0 && fy <= nyf-1 && fx >= 0 && fx <= nxf-1 ) {
+											float kxyz = (*K)(jx+nxk2,jy+nyk2,jz+nzk2);
+											float fxyz = (*f)(fx,fy,fz);											
+											if ( kxyz+fxyz > pmax )  pmax = kxyz+fxyz;
+										}
+									}
+								}
+							}
+							(*result)(ix,iy,iz) = pmax;
+					} else {
+						throw ImageDimensionException("Illegal dilation type!");
+					}
+				}
+			}
+		}		
+		return result;
+    }
 
 }
 
