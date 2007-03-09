@@ -278,7 +278,7 @@ void HdfIO2::init()
 	
 	group=H5Gopen(file,"/MDF/images");
 	if (group<0) {
-		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /TEM group)");
+		if (rw_mode == READ_ONLY) throw ImageReadException(filename,"HDF5 file has no image data (no /MDF group)");
 		group=H5Gcreate(file,"/MDF",64);		// create the group for Macromolecular data
 		if (group<0) throw ImageWriteException(filename,"Unable to add image group (/MDF) to HDF5 file");
 		H5Gclose(group);
