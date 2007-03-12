@@ -134,6 +134,7 @@ for single particle analysis."""
 	except: options.retestlist=[]
 			
 	shrinkfactor=int(ceil(options.boxsize/16))
+	if "pspec" in options.auto : shrinkfactor/=2
 	print "Shrink factor = ",shrinkfactor
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.boxsize/shrinkfactor<12 : shrinkfactor/=2
@@ -415,6 +416,7 @@ for single particle analysis."""
 # 		out.close()
 	
 	if "pspec" in options.auto:
+		shrink.write_image("shr.mrc")
 		for y in range(0,image_size[1]-options.boxsize,options.boxsize/2):
 			for x in range(0,image_size[0]-options.boxsize,options.boxsize/2):
 				boxes.append([x,y,options.boxsize,options.boxsize,0.0,1])
@@ -423,7 +425,7 @@ for single particle analysis."""
 			cl=shrink.get_clip(Region(b[0]/shrinkfactor,b[1]/shrinkfactor,options.boxsize/shrinkfactor,options.boxsize/shrinkfactor))
 			f=cl.do_fft()
 			r=f.calc_radial_dist(options.boxsize/shrinkfactor/2-2,2.0,1.0,0)
-			plot(r)
+			plot(r,1)
 	
 	if "grid" in options.auto:
 		try:

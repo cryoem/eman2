@@ -126,7 +126,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			self.maxdeng=max(self.maxdeng,min(m1,mean+5.0*sigma))
 		
 		self.showInspector()		# shows the correct inspector if already open
-		self.timer.start(100)
+		self.timer.start(25)
 		self.updateGL()
 		
 	def setDenRange(self,x0,x1):
@@ -198,7 +198,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				self.origin=self.targetorigin
 				self.targetorigin=None
 			vec=(vec[0]/h,vec[1]/h)
-			self.origin=(self.origin[0]+vec[0]*25.0,self.origin[1]+vec[1]*25.0)
+			self.origin=(self.origin[0]+vec[0]*10.0,self.origin[1]+vec[1]*10.0)
 			self.updateGL()
 		
 	
@@ -277,6 +277,11 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		
+		#print width/(self.data[0].get_xsize()*self.scale)
+		self.nperrow=int(width/(self.data[0].get_xsize()*self.scale))
+		if self.nperrow<1 : self.nperrow=1
+		#except: pass
+		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.height() or self.data[0].get_xsize()*self.scale>self.width()):
 			self.scale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
 		
@@ -344,7 +349,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			event.accept()
 		elif event.provides("application/x-eman"):
 			x=loads(event.mimeData().data("application/x-eman"))
-			self.data.insert(lc[0],x)
+			if not lc : self.data.append(x)
+			else : self.data.insert(lc[0],x)
 			self.setData(self.data)
 			event.acceptProposedAction()
 

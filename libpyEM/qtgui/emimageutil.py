@@ -60,7 +60,7 @@ class ImgHistogram(QtGui.QWidget):
 		self.update()
 	
 	def paintEvent (self, event):
-		if not self.histdata : return
+		if self.histdata==None : return
 		p=QtGui.QPainter()
 		p.begin(self)
 		p.setBackground(QtGui.QColor(16,16,16))

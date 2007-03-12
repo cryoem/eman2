@@ -122,7 +122,7 @@ def display(img):
 #	os.system("v2 /tmp/img.hed")
 	os.system("e2display.py /tmp/img.hed")
 
-def plot(data,size=(800,600),path="plot.png"):
+def plot(data,show=0,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	import matplotlib
 	matplotlib.use('Agg')
@@ -148,6 +148,8 @@ def plot(data,size=(800,600),path="plot.png"):
 		return
 	
 	pylab.savefig(path)
+
+	if show: os.system("display "+path)
 
 def qplot(img):
 	"""This will plot a 1D image using qplot"""

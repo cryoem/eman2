@@ -31,6 +31,13 @@
 #
 #
 
+#########################
+#
+#     This module is obsolete. ipython is used instead, now that it supports QT4
+#
+#########################
+
+
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 import sys
