@@ -75,10 +75,13 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.mousedrag=None
 		self.nimg=0
 		self.changec={}
-		self.mmode=0
+		self.mmode="drag"
+		self.selected=[]
 		self.targetorigin=None
+		self.targetspeed=20.0
 		
 		self.coords=[]
+		self.nshown=0
 		self.valstodisp=["Img #"]
 		self.setAcceptDrops(True)
 		
@@ -151,6 +154,8 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*newscale>self.height() or self.data[0].get_xsize()*newscale>self.width()):
 			newscale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
+			if self.inspector: self.inspector.scale.setValue(newscale)
+			
 			
 #		yo=self.height()-self.origin[1]-1
 		yo=self.origin[1]
@@ -176,6 +181,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	
 	def setNPerRow(self,val):
 		if self.nperrow==val: return
+		if val<1 : val=1
 		
 		self.nperrow=val
 		self.updateGL()
@@ -197,15 +203,16 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GL.glClearColor(0,0,0,0)
 	
 	def timeout(self):
-		"""Called a few times eeach second when idle for things like automatic scrolling"""
+		"""Called a few times each second when idle for things like automatic scrolling"""
 		if self.targetorigin :
 			vec=(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])
 			h=hypot(vec[0],vec[1])
-			if h<25.0 :
+			if h<=self.targetspeed :
 				self.origin=self.targetorigin
 				self.targetorigin=None
-			vec=(vec[0]/h,vec[1]/h)
-			self.origin=(self.origin[0]+vec[0]*10.0,self.origin[1]+vec[1]*10.0)
+			else :
+				vec=(vec[0]/h,vec[1]/h)
+				self.origin=(self.origin[0]+vec[0]*self.targetspeed,self.origin[1]+vec[1]*self.targetspeed)
 			self.updateGL()
 		
 	
@@ -227,18 +234,43 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		hist=numpy.zeros(256)
 		if len(self.coords)>n : self.coords=self.coords[:n]
 		GL.glColor(0.5,1.0,0.5)
+		GL.glLineWidth(2)
+		try:
+			# we render the 16x16 corner of the image and decide if it's light or dark to decide the best way to 
+			# contrast the text labels...
+			a=self.data[0].render_amp8(0,0,16,16,16,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,4)
+			ims=[ord(pv) for pv in a]
+			if sum(ims)>32768 : txtcol=(0.0,0.0,0.2)
+			else : txtcol=(.8,.8,1.0)
+		except: txtcol=(1.0,1.0,1.0)
+
+		self.nshown=0
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
+			shown=False
 			if x<self.width() and y<self.height():
 				if x>=0 and y>=0:
+					shown=True
 					a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,6)
 					GL.glRasterPos(x,y)
 					GL.glDrawPixels(w,h,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+					
+					# Selection box
+					if i in self.selected:
+						GL.glColor(0.5,0.5,1.0)
+						GL.glBegin(GL.GL_LINE_LOOP)
+						GL.glVertex(x,y)
+						GL.glVertex(x+w,y)
+						GL.glVertex(x+w,y+h)
+						GL.glVertex(x,y+h)
+						GL.glEnd()
 					hist2=numpy.fromstring(a[-1024:],'i')
 					hist+=hist2
-					
+
+					# render labels
 					ty=y
+					GL.glColor(*txtcol)
 					for v in self.valstodisp:
 						if v=="Img #" : self.renderText(x,ty,"%d"%i)
 						else : 
@@ -249,6 +281,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 							except: self.renderText(x,ty,"------")
 						ty+=16
 				elif x+w>0 and y+h>0:
+					shown=True
 					tx=int(max(x,0))
 					ty=int(max(y,0))
 					tw=int(w-tx+x)
@@ -258,15 +291,32 @@ class EMImageMX(QtOpenGL.QGLWidget):
 					GL.glDrawPixels(tw,th,GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 					hist2=numpy.fromstring(a[-1024:],'i')
 					hist+=hist2
+					
+					# Selection box
+					if i in self.selected:
+						GL.glColor(0.5,0.5,1.0)
+						GL.glBegin(GL.GL_LINE_LOOP)
+						GL.glVertex(x,y)
+						GL.glVertex(x+w,y)
+						GL.glVertex(x+w,y+h)
+						GL.glVertex(x,y+h)
+						GL.glEnd()
 				
-			
-			try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale)
-			except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale))
+			try: self.coords[i]=(x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown)
+			except: self.coords.append((x+self.origin[0],y+self.origin[1],self.data[i].get_xsize()*self.scale,self.data[i].get_ysize()*self.scale,shown))
+			if shown : self.nshown+=1
 			
 			if (i+1)%self.nperrow==0 : 
 				y+=h+2.0
 				x=-self.origin[0]
 			else: x+=w+2.0
+		
+		# If the user is lost, help him find himself again...
+		if self.nshown==0 : 
+			try: self.targetorigin=(0,self.coords[self.selected[0]][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
+			except: self.targetorigin=(0,0)
+			self.targetspeed=100.0
+		
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 	
 	def renderText(self,x,y,s):
@@ -286,23 +336,40 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		GL.glLoadIdentity()
 		
 		#print width/(self.data[0].get_xsize()*self.scale)
-		self.nperrow=int(width/(self.data[0].get_xsize()*self.scale))
-		if self.nperrow<1 : self.nperrow=1
+		if self.data and len(self.data)>0 : self.setNPerRow(int(width/(self.data[0].get_xsize()*self.scale)))
 		#except: pass
 		
 		if self.data and len(self.data)>0 and (self.data[0].get_ysize()*self.scale>self.height() or self.data[0].get_xsize()*self.scale>self.width()):
 			self.scale=min(float(self.height())/self.data[0].get_ysize(),float(self.width())/self.data[0].get_xsize())
-		
-	def scrollTo(self,n):
+	
+	def isVisible(self,n):
+		try: return self.coords[n][4]
+		except: return False
+	
+	def scrollTo(self,n,yonly=0):
 		"""Moves image 'n' to the center of the display"""
 #		print self.origin,self.coords[0],self.coords[1]
 #		try: self.origin=(self.coords[n][0]-self.width()/2,self.coords[n][1]+self.height()/2)
 #		try: self.origin=(self.coords[8][0]-self.width()/2-self.origin[0],self.coords[8][1]+self.height()/2-self.origin[1])
-		try: self.targetorigin=(self.coords[n][0]-self.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
-		except: return
+		if yonly :
+			try: 
+				self.targetorigin=(0,self.coords[n][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
+			except: return
+		else:
+			try: self.targetorigin=(self.coords[n][0]-self.width()/2+self.data[0].get_xsize()*self.scale/2,self.coords[n][1]-self.height()/2+self.data[0].get_ysize()*self.scale/2)
+			except: return
+		self.targetspeed=hypot(self.targetorigin[0]-self.origin[0],self.targetorigin[1]-self.origin[1])/20.0
 #		print n,self.origin
 #		self.updateGL()
-		
+	
+	def setSelected(self,numlist):
+		"""pass an integer or a list/tuple of integers which should be marked as 'selected' in the
+		display"""
+		if isinstance(numlist,int) : numlist=[numlist]
+		if isinstance(numlist,list) or isinstance(numlist,tuple) : self.selected=numlist
+		else : self.selected=[]
+		self.updateGL()
+	
 	def setValDisp(self,v2d):
 		"""Pass in a list of strings describing image attributes to overlay on the image, in order of display"""
 		v2d.reverse()
@@ -460,6 +527,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 
 		self.mdrag = QtGui.QPushButton("Drag")
 		self.mdrag.setCheckable(1)
+		self.mdrag.setDefault(1)
 		self.hbl2.addWidget(self.mdrag)
 
 		self.bg=QtGui.QButtonGroup()

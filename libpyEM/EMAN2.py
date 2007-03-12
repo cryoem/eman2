@@ -129,7 +129,7 @@ def display(img):
 	#	os.system("v2 /tmp/img.hed")
 		os.system("e2display.py /tmp/img.hed")
 
-def plot(data,show=0,size=(800,600),path="plot.png"):
+def plot(data,show=1,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""
 	import matplotlib
 	matplotlib.use('Agg')
@@ -155,6 +155,9 @@ def plot(data,show=0,size=(800,600),path="plot.png"):
 		return
 	
 	pylab.savefig(path)
+	if show:
+		try: os.system("display "+path)
+		except: pass
 
 	if show: os.system("display "+path)
 

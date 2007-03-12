@@ -585,7 +585,8 @@ class GUIbox:
 		x0=self.boxes[i][0]+self.boxes[i][2]/2-1
 		y0=self.boxes[i][1]+self.boxes[i][3]/2-1
 		self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
-		self.guimx.scrollTo(i)
+		if not self.guimx.isVisible(i) : self.guimx.scrollTo(i,yonly=1)
+		self.guimx.setSelected(i)
 		
 	def mousedrag(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
