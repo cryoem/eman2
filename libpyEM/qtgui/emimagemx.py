@@ -37,6 +37,7 @@ from OpenGL import GL,GLU,GLUT
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
+import EMAN2
 import sys
 import numpy
 from emimageutil import ImgHistogram
@@ -174,8 +175,14 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		self.updateGL()
 	
 	def setNPerRow(self,val):
+		if self.nperrow==val: return
+		
 		self.nperrow=val
 		self.updateGL()
+		try:
+			if self.inspector.nrow.value!=val :
+				self.inspector.nrow.setValue(val)
+		except: pass
 		
 	def setNShow(self,val):
 		self.nshow=val
@@ -219,6 +226,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		x,y=-self.origin[0],-self.origin[1]
 		hist=numpy.zeros(256)
 		if len(self.coords)>n : self.coords=self.coords[:n]
+		GL.glColor(0.5,1.0,0.5)
 		for i in range(n):
 			w=int(min(self.data[i].get_xsize()*self.scale,self.width()))
 			h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
@@ -347,6 +355,10 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				del self.data[n]
 			event.setDropAction(Qt.MoveAction)
 			event.accept()
+		elif EMAN2.GUIbeingdragged:
+			self.data.append(EMAN2.GUIbeingdragged)
+			self.setData(self.data)
+			EMAN2.GUIbeingdragged=None
 		elif event.provides("application/x-eman"):
 			x=loads(event.mimeData().data("application/x-eman"))
 			if not lc : self.data.append(x)
@@ -369,6 +381,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 				drag = QtGui.QDrag(self)
 				mimeData = QtCore.QMimeData()
 				mimeData.setData("application/x-eman", dumps(self.data[lc[0]]))
+				EMAN2.GUIbeingdragged=self.data[lc[0]]		# This deals with within-application dragging between windows
 				mimeData.setText( str(lc[0])+"\n")
 				di=QImage(self.data[lc[0]].render_amp8(0,0,xs,ys,xs*4,1.0,0,255,self.minden,self.maxden,1.0,14),xs,ys,QImage.Format_RGB32)
 				mimeData.setImageData(QtCore.QVariant(di))

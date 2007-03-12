@@ -46,6 +46,9 @@ Vec3f.__str__=lambda x:"Vec3f"+str(x.as_list())
 
 Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
+GUIMode=0
+GUIbeingdragged=None
+
 def timer(fn,n=1):
 	a=time.time()
 	for i in range(n): fn()
@@ -109,18 +112,22 @@ def parsemodopt(optstr):
 	return (p1[0][0],r2)
 
 def display(img):
-	"""This will use 'v2', an EMAN1 program to view an image
-	or a list/tuple of images. This is basically a hack."""
-	try: os.unlink("/tmp/img.hed")
-	except: pass
-	try: os.unlink("/tmp/img.img")
-	except: pass
-	if isinstance(img,list) or isinstance(img,tuple) :
-		for i in img: i.write_image("/tmp/img.hed",-1)
+	
+	if GUIMode:
+		import emimage
+		return emimage.EMImage(img)
 	else:
-		img.write_image("/tmp/img.hed")
-#	os.system("v2 /tmp/img.hed")
-	os.system("e2display.py /tmp/img.hed")
+		# In non interactive GUI mode, this will display an image or list of images with e2display
+		try: os.unlink("/tmp/img.hed")
+		except: pass
+		try: os.unlink("/tmp/img.img")
+		except: pass
+		if isinstance(img,list) or isinstance(img,tuple) :
+			for i in img: i.write_image("/tmp/img.hed",-1)
+		else:
+			img.write_image("/tmp/img.hed")
+	#	os.system("v2 /tmp/img.hed")
+		os.system("e2display.py /tmp/img.hed")
 
 def plot(data,show=0,size=(800,600),path="plot.png"):
 	"""plots an image or an array using the matplotlib library"""

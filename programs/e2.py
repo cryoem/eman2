@@ -34,7 +34,7 @@
 import sys
 import os
 from optparse import OptionParser
-from EMAN2 import *
+import EMAN2
 from emimage import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -119,6 +119,7 @@ class IPShellQt4a(threading.Thread):
 
 if __name__ == "__main__":
 	
+	EMAN2.GUIMode=True
 	sh=IPShellQt4a()
 #	app = get_app()
 	sh.mainloop(banner="Welcome to EMAN2\nPrompt provided by IPython\nEnter '?' for ipython help\n")

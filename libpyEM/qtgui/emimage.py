@@ -61,13 +61,17 @@ def get_app():
 		
 def imageupdate():
 	for i in EMImage2D.allim.keys():
-		if i.data.get_attr("changecount")!=i.changec :
-			i.setData(i.data)
+		try:
+			if i.data.get_attr("changecount")!=i.changec :
+				i.setData(i.data)
+		except: pass
 
 	for i in EMImage3D.allim.keys():
-		if i.data.get_attr("changecount")!=i.changec :
-			i.setData(i.data)
-	
+		try:
+			if i.data.get_attr("changecount")!=i.changec :
+				i.setData(i.data)
+		except: pass
+		
 	for i in EMImageMX.allim.keys():
 		try:
 			if len(i.data)!=i.nimg : i.setData(i.data)
@@ -75,9 +79,11 @@ def imageupdate():
 			pass
 		upd=0
 		for j in i.changec.keys():
-			if j.get_attr("changecount")!=i.changec[j] :
-				upd=1
-				break
+			try:
+				if j.get_attr("changecount")!=i.changec[j] :
+					upd=1
+					break
+			except: pass
 		if upd : i.setData(i.data)
 
 

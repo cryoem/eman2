@@ -38,10 +38,12 @@ from OpenGL import GL,GLU,GLUT
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
+import EMAN2
 import sys
 import numpy
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
+from pickle import dumps,loads
 
 class EMImage2D(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -85,6 +87,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.active=(None,0,0,0)	# The active shape and a hilight color (n,r,g,b)
 		
 		self.inspector=None			# set to inspector panel widget when exists
+		
+		self.setAcceptDrops(True)
 		
 		if image : 
 			self.setData(image)
@@ -346,6 +350,26 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
 		
+	def dragEnterEvent(self,event):
+#		f=event.mimeData().formats()
+#		for i in f:
+#			print str(i)
+		
+		if event.provides("application/x-eman"):
+			event.setDropAction(Qt.CopyAction)
+			event.accept()
+
+	
+	def dropEvent(self,event):
+#		lc=self.scrtoimg((event.pos().x(),event.pos().y()))
+		if EMAN2.GUIbeingdragged:
+			self.setData(EMAN2.GUIbeingdragged)
+			EMAN2.GUIbeingdragged=None
+		elif event.provides("application/x-eman"):
+			x=loads(event.mimeData().data("application/x-eman"))
+			self.setData(x)
+			event.acceptProposedAction()
+
 	
 	def mousePressEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
