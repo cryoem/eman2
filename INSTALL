@@ -76,7 +76,7 @@ libraries should be installed as shared-object libraries where applicable):
 	* PyOpenGL
 	http://sourceforge.net/project/showfiles.php?group_id=5988
 
-
+	8. IPython (version 0.7.3)	(http://ipython.scipy.org/moin/)
 
 
 2.  Optional Libraries / Programs
@@ -272,7 +272,5 @@ A.3. How to Install numpy
     - login as root
     - % cd numpy-1.0.1; 
       % python setup.py install
+
 	
-	Note: for Developer, copy the numpy header directory under 
-	/usr/lib/YOURPYTHON/site-packages/numpy/core/include to your Python header directory
-	/usr/include/YOURPYTHON.
