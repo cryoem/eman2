@@ -216,7 +216,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	
 		GL.glPushMatrix()
 		GL.glTranslate(-self.origin[0],-self.origin[1],0)
-		GL.glScale(self.scale,self.scale,self.scale)
+		GL.glScalef(self.scale,self.scale,self.scale)
 		GL.glCallList(1)
 		GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
@@ -269,7 +269,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 					GL.glPushMatrix()
 					GL.glColor(0,0,0)
 					GL.glTranslate(s[4],s[5],0)
-					GL.glScale(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
+					GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
 					GL.glLineWidth(-s[8]+2)
 					for i in s[6]:
 						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
@@ -278,8 +278,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				GL.glPushMatrix()
 				GL.glColor(*col)
 				GL.glTranslate(s[4],s[5],0)
-#				GL.glScale(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-				GL.glScale(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
+#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
+				GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
 				GL.glLineWidth(fabs(s[8]))
 				for i in s[6]:
 					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
@@ -289,7 +289,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				GL.glColor(*col)
 				GL.glLineWidth(s[7])
 				GL.glTranslate(s[4],s[5],0)
-				GL.glScale(s[6],s[6],s[6])
+				GL.glScalef(s[6],s[6],s[6])
 				GL.glCallList(2)
 				GL.glPopMatrix()
 
