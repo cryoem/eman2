@@ -176,7 +176,7 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	for (size_t i = 0L;i < size; i++) {
 	      if (MASKptr[i]>0.5f) {
 	       S1 += V1ptr[i]*V2ptr[i];
-	       S2 += V2ptr[i]*V2ptr[i];
+	       S2 += V1ptr[i]*V1ptr[i];
 	       S3 += V2ptr[i]; 
 	       S4 += V1ptr[i];
 	       nvox ++;
@@ -184,14 +184,14 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	}       
 	 
 			
-	A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S3*S3);
-	B = static_cast<float> (A*S3  -  S4)/nvox;
+	A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4);
+	B = static_cast<float> (A*S4  -  S3)/nvox;
         
 	// calculation of the difference image
 	
 	for (size_t i = 0L;i < size; i++) {
 	     if (MASKptr[i]>0.5f) {
-	       BDptr[i] = A*V2ptr[i] -  B  - V1ptr[i];
+	       BDptr[i] = A*V1ptr[i] -  B  - V2ptr[i];
 	     }  else  {
                BDptr[i] = 0.f;
 	     }
