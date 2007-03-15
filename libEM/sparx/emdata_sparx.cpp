@@ -890,7 +890,7 @@ EMData* EMData::average_circ_sub() {
 	for (int iz = 1; iz <= nz; iz++) { float yy = (iz-ncz)*(iz-ncz);
 		for (int iy = 1; iy <=ny; iy++) { float xx = yy + (iy-ncy)*(iy-ncy);
 			for (int ix = 1; ix <= nx; ix++) {
-				if(xx+float((ix-ncx)*(ix-ncx)) > r2 ) {
+				if ( xx+float((ix-ncx)*(ix-ncx)) > r2 ) {
 					qs += proj(ix,iy,iz);
 					m++;
 				}

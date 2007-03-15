@@ -107,9 +107,17 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	newimg->set_size(nxpad,nypad,nzpad);
 	newimg->to_zero();
 	size_t bytes = nx*sizeof(float);
-	int xstart = (nx != 1) ? (nxpad - nx)/2 + nx%2 : 0;
-	int ystart = (ny != 1) ? (nypad - ny)/2 + ny%2 : 0;
-	int zstart = (nz != 1) ? (nzpad - nz)/2 + nz%2 : 0;
+	
+	// Commented by Zhengfan Yang on 03/14/07
+	// This is incorrect for npad=1 and nx (or ny, nz) is odd
+	// int xstart = (nx != 1) ? (nxpad - nx)/2 + nx%2 : 0;
+	// int ystart = (ny != 1) ? (nypad - ny)/2 + ny%2 : 0;
+	// int zstart = (nz != 1) ? (nzpad - nz)/2 + nz%2 : 0;
+	// Should have better way to write it, but temporarily we'll use the following
+	int xstart = ( nx == 1 || npad == 1 ) ? 0 : (nxpad - nx)/2 + nx%2;
+	int ystart = ( ny == 1 || npad == 1 ) ? 0 : (nypad - ny)/2 + ny%2;
+	int zstart = ( nz == 1 || npad == 1 ) ? 0 : (nzpad - nz)/2 + nz%2;
+	
 	for (int iz = 0; iz < nz; iz++) for (int iy = 0; iy < ny; iy++) memcpy( &(*newimg)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
 	newimg->done_data();
 	return newimg;

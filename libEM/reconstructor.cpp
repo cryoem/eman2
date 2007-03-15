@@ -1053,13 +1053,15 @@ EMData* EMAN::padfft_slice( EMData* slice, int npad )
 		// FIXME: What kind of exception should we throw here?
 		throw std::logic_error("Tried to padfft a slice that is not square.");
 	}
+
 	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
 	EMData* temp = slice->average_circ_sub();
-	
+
 	assert( temp != NULL );
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
+	
 	EMData* zeropadded = temp->zeropad_ntimes(npad);
 	assert( zeropadded != NULL );
 
@@ -1259,7 +1261,7 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
         EMData* padfft = NULL;
 
         if( padffted != 0 )
-        {
+        {	   
             padfft = slice;
         }
         else
