@@ -1202,8 +1202,14 @@ void nn4Reconstructor::buildFFTVolume() {
             m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
             m_volume->to_zero();
         }
-
-
+        // ---------------------------------------------------------
+	// Added by Zhengfan Yang on 03/15/07
+	// Original author: please check whether other Reconstructor
+	// need similiar revision.
+	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
+			else   { m_volume->set_fftodd(1); }
+	// ---------------------------------------------------------
+	
 	m_volume->set_nxc(m_vnxp/2);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
