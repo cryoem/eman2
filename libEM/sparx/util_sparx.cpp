@@ -183,8 +183,14 @@ Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
 	      }
 	}       
 	 
-			
-	A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4);
+	if ((nvox*S1 - S3*S4) == 0. || (nvox*S2 - S4*S4) == 0)  
+	{ 		
+		A =1.0 ;
+	}
+	else 
+	{ 
+		A = static_cast<float> (nvox*S1 - S3*S4)/(nvox*S2 - S4*S4);
+	}		
 	B = static_cast<float> (A*S4  -  S3)/nvox;
         
 	// calculation of the difference image
