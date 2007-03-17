@@ -173,7 +173,7 @@ namespace EMAN {
             vector<int> dims;
             const size_t * shape = mcarray.shape();
             int ndim = mcarray.num_dimensions();
-            for (int i = ndim-1; i >= 0; i--) {
+            for (int i = 0; i <= ndim-1; i++) {
                 dims.push_back(shape[i]);
             }
             
