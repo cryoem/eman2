@@ -202,7 +202,7 @@ PyObject* MArray2D_to_python::convert(MArray2D const & marray2d)
     vector<int> dims;
     const size_t * shape = marray2d.shape();
     int ndim = marray2d.num_dimensions();
-    for (int i = ndim-1; i >= 0; i--) {
+    for (int i = 0; i <= ndim-1; i++) {
         dims.push_back(shape[i]);
     }
 
