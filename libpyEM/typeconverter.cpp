@@ -81,15 +81,15 @@ python::numeric::array EMNumPy::em2numpy(EMData *image)
 	
 	vector<int> dims;
 	
-	if (nz > 1) {
-		dims.push_back(nz);
-	}
+	dims.push_back(nx);
 	
 	if (ny > 1) {
 		dims.push_back(ny);
 	}
 	
-	dims.push_back(nx);
+	if (nz > 1) {
+		dims.push_back(nz);
+	}
 	
 	return make_numeric_array(data, dims);
 }
