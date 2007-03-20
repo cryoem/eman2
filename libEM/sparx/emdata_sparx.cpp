@@ -1060,6 +1060,78 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult)
 	EXITFUNC;
 }
 
+void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform3D& tf, int mult)
+{
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"];
+
+	vector<int> saved_offsets = get_array_offsets();
+	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
+
+	set_array_offsets(0,1,1);
+       	myfft->set_array_offsets(0,1);
+
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) {
+		int jp = (iy >= 0) ? iy+1 : ny+iy+1;
+		for (int ix = 0; ix <= nxc; ix++) {
+        		if (( 4*(ix*ix+iy*iy) < ny*ny ) && !( ix == 0 && iy < 0 )) {
+				float xnew = ix*tf[0][0] + iy*tf[1][0];
+				float ynew = ix*tf[0][1] + iy*tf[1][1];
+				float znew = ix*tf[0][2] + iy*tf[1][2];
+				std::complex<float> btq;
+				if (xnew < 0.0) {
+					xnew = -xnew;
+					ynew = -ynew;
+					znew = -znew;
+					btq = conj(myfft->cmplx(ix,jp));
+				} else {
+					btq = myfft->cmplx(ix,jp);
+				}
+				int ixn = int(xnew + 0.5 + nx) - nx;
+				int iyn = int(ynew + 0.5 + ny) - ny;
+				int izn = int(znew + 0.5 + nz) - nz;
+				if ((ixn <= nxc) && (iyn >= -nxc) && (iyn <= nxc) && (izn >= -nxc) && (izn <= nxc)) {
+					if (ixn >= 0) {
+						int iza, iya;
+						if (izn >= 0) {
+							iza = izn + 1;
+						} else {
+							iza = nz + izn + 1;
+						}
+						if (iyn >= 0) {
+							iya = iyn + 1;
+						} else {
+							iya = ny + iyn + 1;
+						}
+						cmplx(ixn,iya,iza) += btq;
+						(*wptr)(ixn,iya,iza)++;
+						(*wptr2)(ixn,iya,iza) += norm(btq);
+					} else {
+						int izt, iyt;
+						if (izn > 0) {
+							izt = nz - izn + 1;
+						} else {
+							izt = -izn + 1;
+						}
+						if (iyn > 0) {
+							iyt = ny - iyn + 1;
+						} else {
+							iyt = -iyn + 1;
+						}
+						cmplx(-ixn,iyt,izt) += conj(btq);
+						(*wptr)(-ixn,iyt,izt)++;
+						(*wptr2)(-ixn,iyt,izt) += norm(btq);
+					}
+				}
+			}
+		}
+	}
+	set_array_offsets(saved_offsets);
+	myfft->set_array_offsets(myfft_saved_offsets);
+	EXITFUNC;
+}
+
+
 void EMData::symplane0(EMData* wptr) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
@@ -1090,6 +1162,47 @@ void EMData::symplane0(EMData* wptr) {
 		(*wptr)(0,1,iza) += (*wptr)(0,1,n-iza+2);
 		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
 		(*wptr)(0,1,n-iza+2) = (*wptr)(0,1,iza);
+	}
+	EXITFUNC;
+}
+
+void EMData::symplane1(EMData* wptr, EMData* wptr2) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"];
+	int n = nxc*2;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,1,1);
+	for (int iza = 2; iza <= nxc; iza++) {
+		for (int iya = 2; iya <= nxc; iya++) {
+			cmplx(0,iya,iza) += conj(cmplx(0,n-iya+2,n-iza+2));
+			(*wptr)(0,iya,iza) += (*wptr)(0,n-iya+2,n-iza+2);
+			(*wptr2)(0,iya,iza) += (*wptr2)(0,n-iya+2,n-iza+2);
+			cmplx(0,n-iya+2,n-iza+2) = conj(cmplx(0,iya,iza));
+			(*wptr)(0,n-iya+2,n-iza+2) = (*wptr)(0,iya,iza);
+			(*wptr2)(0,n-iya+2,n-iza+2) = (*wptr2)(0,iya,iza);
+			cmplx(0,n-iya+2,iza) += conj(cmplx(0,iya,n-iza+2));
+			(*wptr)(0,n-iya+2,iza) += (*wptr)(0,iya,n-iza+2);
+			(*wptr2)(0,n-iya+2,iza) += (*wptr2)(0,iya,n-iza+2);
+			cmplx(0,iya,n-iza+2) = conj(cmplx(0,n-iya+2,iza));
+			(*wptr)(0,iya,n-iza+2) = (*wptr)(0,n-iya+2,iza);
+			(*wptr2)(0,iya,n-iza+2) = (*wptr2)(0,n-iya+2,iza);
+		}
+	}
+	for (int iya = 2; iya <= nxc; iya++) {
+		cmplx(0,iya,1) += conj(cmplx(0,n-iya+2,1));
+		(*wptr)(0,iya,1) += (*wptr)(0,n-iya+2,1);
+		(*wptr2)(0,iya,1) += (*wptr2)(0,n-iya+2,1);
+		cmplx(0,n-iya+2,1) = conj(cmplx(0,iya,1));
+		(*wptr)(0,n-iya+2,1) = (*wptr)(0,iya,1);
+		(*wptr2)(0,n-iya+2,1) = (*wptr2)(0,iya,1);
+	}
+	for (int iza = 2; iza <= nxc; iza++) {
+		cmplx(0,1,iza) += conj(cmplx(0,1,n-iza+2));
+		(*wptr)(0,1,iza) += (*wptr)(0,1,n-iza+2);
+		(*wptr2)(0,1,iza) += (*wptr2)(0,1,n-iza+2);
+		cmplx(0,1,n-iza+2) = conj(cmplx(0,1,iza));
+		(*wptr)(0,1,n-iza+2) = (*wptr)(0,1,iza);
+		(*wptr2)(0,1,n-iza+2) = (*wptr2)(0,1,iza);
 	}
 	EXITFUNC;
 }

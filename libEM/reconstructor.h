@@ -367,6 +367,82 @@ namespace EMAN
 	};
 
 
+     /* Fourier Reconstruction by nearest neighbor with 3D SSNR
+        Added by Zhengfan Yang on 03/16/07
+     */        
+
+	class nnSSNR_Reconstructor:public Reconstructor
+	{
+
+	  public:
+		nnSSNR_Reconstructor();
+
+		nnSSNR_Reconstructor( const string& symmetry, int size, int npad);
+
+		~nnSSNR_Reconstructor();
+
+		virtual void setup();
+
+	    	virtual int insert_slice(EMData * slice, const Transform3D & euler);
+
+	        virtual EMData* finish();
+
+		virtual string get_name() const
+		{
+			return "nnSSNR_";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Reconstruction by nearest neighbor with 3D SSNR";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new nnSSNR_Reconstructor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INT);
+			d.put("npad", EMObject::INT);
+			d.put("symmetry", EMObject::STRING);
+			d.put("fftvol", EMObject::EMDATA);
+			d.put("weight", EMObject::EMDATA);
+			d.put("SSNR", EMObject::EMDATA);
+			d.put("w", EMObject::FLOAT);
+			return d;
+		}
+
+		void setup( const string& symmetry, int size, int npad);
+
+                int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+
+
+	  private:
+		EMData* m_volume;
+		EMData* m_wptr;
+		EMData* m_wptr2;
+		EMData* m_result;
+		bool m_delete_volume;
+		bool m_delete_weight;
+		bool m_delete_weight2;
+	        string  m_symmetry;
+		int m_weighting;
+		int m_vnx, m_vny, m_vnz;
+		int m_npad;
+		int m_nsym;
+		int m_vnzp, m_vnyp, m_vnxp;
+		int m_vnzc, m_vnyc, m_vnxc;
+		void buildFFTVolume();
+		void buildNormVolume();
+		void buildNorm2Volume();
+		float m_wghta;
+		float m_wghtb;
+	};
+
+
 	class bootstrap_nnReconstructor:public Reconstructor
 	{
 	  public:
