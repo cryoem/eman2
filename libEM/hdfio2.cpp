@@ -465,12 +465,17 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 		if (igrp<0) throw ImageWriteException(filename,"Unable to add /MDF/images/# to HDF5 file");
 		
 		sprintf(ipath,"/MDF/images/%d/image",image_index);
-		// Now create the actual image dataset		
-		hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
+		// Now create the actual image dataset				
 		hid_t space;
 		hid_t ds;
-		if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
-		else space=H5Screate_simple(3,dims,NULL);
+		if ((int)dict["nz"]==1)  {
+			hsize_t dims[2]= { (int)dict["ny"],(int)dict["nx"] };
+			space=H5Screate_simple(2,dims,NULL);
+		}
+		else {
+			hsize_t dims[3]= { (int)dict["nz"],(int)dict["ny"],(int)dict["nx"] };
+			space=H5Screate_simple(3,dims,NULL);
+		}
 		ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
 		H5Dclose(ds);
 		H5Sclose(space);
@@ -502,11 +507,16 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 			H5Gunlink(igrp, ipath);
 			
 			// Now create the actual image dataset		
-			hsize_t dims[3]= { (int)dict["nx"],(int)dict["ny"],(int)dict["nz"] };
 			hid_t space;
 			hid_t ds;
-			if ((int)dict["nz"]==1) space=H5Screate_simple(2,dims,NULL);
-			else space=H5Screate_simple(3,dims,NULL);
+			if ((int)dict["nz"]==1) {
+				hsize_t dims[2]= { (int)dict["ny"],(int)dict["nx"] };
+				space=H5Screate_simple(2,dims,NULL);
+			}
+			else {
+				hsize_t dims[3]= { (int)dict["nz"],(int)dict["ny"],(int)dict["nx"] };
+				space=H5Screate_simple(3,dims,NULL);
+			}
 			ds=H5Dcreate(file,ipath, H5T_NATIVE_FLOAT, space, H5P_DEFAULT );
 			H5Dclose(ds);
 			H5Sclose(space);
