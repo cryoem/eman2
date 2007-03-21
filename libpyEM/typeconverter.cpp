@@ -81,15 +81,15 @@ python::numeric::array EMNumPy::em2numpy(EMData *image)
 	
 	vector<int> dims;
 	
-	dims.push_back(nx);
+	if (nz > 1) {
+		dims.push_back(nz);
+	}
 	
 	if (ny > 1) {
 		dims.push_back(ny);
 	}
 	
-	if (nz > 1) {
-		dims.push_back(nz);
-	}
+	dims.push_back(nx);
 	
 	return make_numeric_array(data, dims);
 }
@@ -202,7 +202,7 @@ PyObject* MArray2D_to_python::convert(MArray2D const & marray2d)
     vector<int> dims;
     const size_t * shape = marray2d.shape();
     int ndim = marray2d.num_dimensions();
-    for (int i = 0; i <= ndim-1; i++) {
+    for (int i = ndim-1; i >= 0; i--) {
         dims.push_back(shape[i]);
     }
 
