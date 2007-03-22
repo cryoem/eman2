@@ -34,7 +34,6 @@
 using namespace EMAN;
 using std::vector;
 using std::complex;
-#define PI 3.141592653589793
 
 void EMData::center_origin()
 {
@@ -80,7 +79,7 @@ void EMData::center_origin_fft()
 			for (int iy = 1; iy <= ny; iy++) {
 				for (int ix = 0; ix < nxc; ix++) {
 					cmplx(ix,iy,iz) *= float(-2*((ix+iy+iz)%2) + 1);
-					float temp = float(iz-1+iy-1+ix)/float(ny)*PI; 		
+					float temp = float(iz-1+iy-1+ix)/float(ny)*M_PI; 		
 					complex<float> temp2 = complex<float>(cos(temp), -sin(temp));
 					cmplx(ix,iy,iz) *= temp2;			
 				}
