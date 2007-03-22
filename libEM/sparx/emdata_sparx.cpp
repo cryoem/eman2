@@ -1537,9 +1537,9 @@ EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { //
 					float xold = x*cang/scale + ysang ;
 					float yold = x*sang/scale + ycang ;
 
-					if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
+					if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
 					else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-					if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
+					if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
 					else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 
 					(*ret)(ix,iy) = Util::quadri(xold+1.0f, yold+1.0f, nx, ny, get_data());
