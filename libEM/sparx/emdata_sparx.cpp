@@ -1587,9 +1587,9 @@ EMData::rot_scale_trans(const Transform3D &RA) {
 				float xold = x*RAinv[0][0] + ysang;
 				float yold = x*RAinv[1][0] + ycang;
 
-				if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
+				if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
 				else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-				if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
+				if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
 				else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 
 				int xfloor = int(xold); int yfloor = int(yold);
