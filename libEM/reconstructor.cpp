@@ -43,7 +43,6 @@
 
 using namespace EMAN;
 using std::complex;
-#define PI 3.141592653589793
 
 template < typename T > void checked_delete( T*& x )
 {
@@ -1437,6 +1436,7 @@ nnSSNR_Reconstructor::nnSSNR_Reconstructor()
 {
     m_volume = NULL; 
     m_wptr   = NULL;
+    m_wptr2  = NULL;
     m_result = NULL;
 }
 
@@ -1444,6 +1444,7 @@ nnSSNR_Reconstructor::nnSSNR_Reconstructor( const string& symmetry, int size, in
 {
     m_volume = NULL; 
     m_wptr   = NULL;
+    m_wptr2  = NULL;
     m_result = NULL;
 
     setup( symmetry, size, npad );
@@ -1451,9 +1452,9 @@ nnSSNR_Reconstructor::nnSSNR_Reconstructor( const string& symmetry, int size, in
 
 nnSSNR_Reconstructor::~nnSSNR_Reconstructor()
 {
-    if( m_delete_volume )
+   if( m_delete_volume )
         checked_delete(m_volume);
-
+ 
     if( m_delete_weight )
         checked_delete( m_wptr );
     
@@ -1710,7 +1711,7 @@ EMData* nnSSNR_Reconstructor::finish()
 
 					m_volume->cmplx(ix,iy,iz) *= tmp;
 					if (m_volume->is_fftodd()) {
-						float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*PI;
+						float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*M_PI;
 						complex<float> temp2 = complex<float>(cos(temp),sin(temp));
 						m_volume->cmplx(ix,iy,iz) *= temp2;
 					}
