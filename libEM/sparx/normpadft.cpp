@@ -33,6 +33,8 @@
 
 using namespace EMAN;
 using std::vector;
+using std::complex;
+#define PI 3.141592653589793
 
 void EMData::center_origin()
 {
@@ -69,14 +71,28 @@ void EMData::center_origin_fft()
 	vector<int> saved_offsets = get_array_offsets();
 	// iz in [1,nz], iy in [1,ny], ix in [0,nx/2], but nx comes in as extended and is the same for odd
 	//                                                 and even, so we can ignore the difference...
-	//                         in short, as ix is extended, it should be  ix in [0,(nx-2)/2],  corrected PAP 05/20
+	//                         in short, as nx is extended, it should be  ix in [0,(nx-2)/2],  corrected PAP 05/20
 	set_array_offsets(0,1,1);
-	int xmax = nx/2;
-	for (int iz = 1; iz <= nz; iz++) {
-		for (int iy = 1; iy <= ny; iy++) {
-			for (int ix = 0; ix < xmax; ix++) {
-				// next line multiplies by +/- 1
-				cmplx(ix,iy,iz) *= static_cast<float>(-2*((ix+iy+iz)%2) + 1);
+	int nxc = nx/2;
+
+	if (is_fftodd()) {
+		for (int iz = 1; iz <= nz; iz++) {
+			for (int iy = 1; iy <= ny; iy++) {
+				for (int ix = 0; ix < nxc; ix++) {
+					cmplx(ix,iy,iz) *= float(-2*((ix+iy+iz)%2) + 1);
+					float temp = float(iz-1+iy-1+ix)/float(ny)*PI; 		
+					complex<float> temp2 = complex<float>(cos(temp), -sin(temp));
+					cmplx(ix,iy,iz) *= temp2;			
+				}
+			}
+		}
+	} else {
+		for (int iz = 1; iz <= nz; iz++) {
+			for (int iy = 1; iy <= ny; iy++) {
+				for (int ix = 0; ix < nxc; ix++) {
+					// next line multiplies by +/- 1
+					cmplx(ix,iy,iz) *= float(-2*((ix+iy+iz)%2) + 1);
+				}
 			}
 		}
 	}

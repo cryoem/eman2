@@ -42,6 +42,8 @@
 #include "ctf.h"
 
 using namespace EMAN;
+using std::complex;
+#define PI 3.141592653589793
 
 template < typename T > void checked_delete( T*& x )
 {
@@ -1454,6 +1456,9 @@ nnSSNR_Reconstructor::~nnSSNR_Reconstructor()
 
     if( m_delete_weight )
         checked_delete( m_wptr );
+    
+    if ( m_delete_weight2 )
+        checked_delete( m_wptr2 );
 
     checked_delete( m_result );
 }
@@ -1517,7 +1522,7 @@ void nnSSNR_Reconstructor::buildFFTVolume() {
 	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
 			else   { m_volume->set_fftodd(1); }
 	
-	m_volume->set_nxc(m_vnxp/2);
+	m_volume->set_nxc(m_vnxc);
 	m_volume->set_complex(true);
 	m_volume->set_ri(true);
 	m_volume->set_fftpad(true);
@@ -1635,7 +1640,6 @@ EMData* nnSSNR_Reconstructor::finish()
 		denom[i] = 0.0f;
 		nn[i] = 0;
 	}
-	float *SSNR2 = new float[inc+1];
 
 	m_volume->symplane1(m_wptr, m_wptr2);
 
@@ -1659,11 +1663,9 @@ EMData* nnSSNR_Reconstructor::finish()
 				if ( Kn > 0.0f ) {
 					argx = std::sqrt(argy + float(ix*ix)*dx2);
 					int r = Util::round(float(inc)*argx);
-					if ( r > 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
+					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
 						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
 						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
-						// if ( denominator < 1.0f ) std::cout << denominator << " " << Kn << " " << r << std::endl << std::endl;
-						// SSNR2[r] += nominator/denominator;
 						nom[r] += nominator;
 						denom[r] += denominator;
 						nn[r] += 2;
@@ -1706,16 +1708,19 @@ EMData* nnSSNR_Reconstructor::finish()
 						tmp = tmp * wght;
 				        } // end of ( m_weighting == ESTIMATE )
 
-					(*m_volume)(2*ix,iy,iz) *= tmp;
-					(*m_volume)(2*ix+1,iy,iz) *= tmp;
-				  }
+					m_volume->cmplx(ix,iy,iz) *= tmp;
+					if (m_volume->is_fftodd()) {
+						float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*PI;
+						complex<float> temp2 = complex<float>(cos(temp),sin(temp));
+						m_volume->cmplx(ix,iy,iz) *= temp2;
+					}
+				}
 			}
 		}
 	}
 
-	for (int i = 1; i <= inc; i++)  { 
+	for (int i = 0; i <= inc; i++)  { 
 		(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;		
-		std::cout << float(i)/float(inc)/2 << " " << (*SSNR)(i,0,0) <<  std::endl;
 	}
 
 	m_volume->do_ift_inplace();

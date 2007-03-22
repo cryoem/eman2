@@ -1071,26 +1071,31 @@ void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform
 	set_array_offsets(0,1,1);
        	myfft->set_array_offsets(0,1);
 
-	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) {
-		int jp = (iy >= 0) ? iy+1 : ny+iy+1;
+	int iymin = is_fftodd() ? -ny/2 : -ny/2 + 1 ;
+	int iymax = ny/2;
+	int izmin = is_fftodd() ? -nz/2 : -nz/2 + 1 ;
+	int izmax = nz/2;
+
+	for (int iy = iymin; iy <= iymax; iy++) {
+		int jp = iy >= 0 ? iy+1 : ny+iy+1; //checked, works for both odd and even
 		for (int ix = 0; ix <= nxc; ix++) {
-        		if (( 4*(ix*ix+iy*iy) < ny*ny ) && !( ix == 0 && iy < 0 )) {
+        		if (( 4*(ix*ix+iy*iy) < ny*ny ) && !( ix == 0 && iy < 0 ) ) {
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];
 				std::complex<float> btq;
 				if (xnew < 0.0) {
-					xnew = -xnew;
+					xnew = -xnew; // ensures xnew>=0.0
 					ynew = -ynew;
 					znew = -znew;
 					btq = conj(myfft->cmplx(ix,jp));
 				} else {
 					btq = myfft->cmplx(ix,jp);
 				}
-				int ixn = int(xnew + 0.5 + nx) - nx;
+				int ixn = int(xnew + 0.5 + nx) - nx; // ensures ixn >= 0
 				int iyn = int(ynew + 0.5 + ny) - ny;
 				int izn = int(znew + 0.5 + nz) - nz;
-				if ((ixn <= nxc) && (iyn >= -nxc) && (iyn <= nxc) && (izn >= -nxc) && (izn <= nxc)) {
+				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
 					if (ixn >= 0) {
 						int iza, iya;
 						if (izn >= 0) {
