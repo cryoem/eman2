@@ -1873,10 +1873,10 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 
-		       if (xold < 0.0f) xold = fmod((int(xold/float(nx))+1)*nx-xold, float(nx));
-		       else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-		       if (yold < 0.0f) yold =fmod((int(yold/float(ny))+1)*ny-yold, float(ny));
-		       else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+		      if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
+		      else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+		      if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
+		      else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 			sum=0.0f;    w=0.0f;
