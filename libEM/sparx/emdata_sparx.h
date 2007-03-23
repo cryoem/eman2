@@ -72,6 +72,12 @@ EMData *FH2Real(int Size, float OverSamplekB, int IntensityFlag =0);
  */					
 EMData* rotavg();
 
+/** Create a 2-D or 3-D rotationally averaged image.
+ * @exception ImageDimensionException If 'this' image is 1D.
+ * @return 2-D or 3-D rotationally-averaged image
+ */					
+EMData* rotavg_i();
+
 /** Calculates the Center of Gravity 
  *  and the Radius of Gyration of the image.
  *  @returns the mass and the radius as vectors.

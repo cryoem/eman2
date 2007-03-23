@@ -31,14 +31,14 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     ;
 
     enum_< EMAN::kernel_shape >("kernel_shape")
+        .value("CROSS", EMAN::CROSS)
         .value("BLOCK", EMAN::BLOCK)
         .value("CIRCULAR", EMAN::CIRCULAR)
-        .value("CROSS", EMAN::CROSS)
     ;
 
     enum_< EMAN::morph_type >("morph_type")
-    	.value("BINARY", EMAN::BINARY)
-	.value("GRAYLEVEL", EMAN::GRAYLEVEL)
+        .value("BINARY", EMAN::BINARY)
+        .value("GRAYLEVEL", EMAN::GRAYLEVEL)
     ;
 
     def("correlation", &EMAN::correlation, return_value_policy< manage_new_object >());

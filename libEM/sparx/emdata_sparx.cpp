@@ -495,6 +495,9 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 
 
 EMData* EMData::rotavg() {
+
+	int rmax;
+
 	ENTERFUNC;
 
 	if (ny<2 && nz <2) {
@@ -504,9 +507,19 @@ EMData* EMData::rotavg() {
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(-nx/2,-ny/2,-nz/2);
 #ifdef _WIN32
-	int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
+	//int rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
+	if ( nz == 1 ) {
+		rmax = _MIN(nx/2 + nx%2, ny/2 + ny%2);
+	} else {
+		rmax = _MIN(nx/2 + nx%2, _MIN(ny/2 + ny%2, nz/2 + nz%2));
+	}
 #else
-	int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
+	//int rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
+	if ( nz == 1 ) {
+		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);	
+	} else {
+		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));
+	}
 #endif	//_WIN32
 	EMData* ret = new EMData();
 	ret->set_size(rmax+1, 1, 1);
@@ -541,6 +554,50 @@ EMData* EMData::rotavg() {
 	ret->done_data();
 	EXITFUNC;
 	return ret;
+}
+
+EMData* EMData::rotavg_i() {
+
+	int rmax;
+
+	ENTERFUNC;
+	if ( ny == 1 && nz == 1 ) {
+		LOGERR("Input image must be 2-D or 3-D!");
+		throw ImageDimensionException("Input image must be 2-D or 3-D!");
+	}
+
+	EMData* avg1D = new EMData();
+	EMData* result = new EMData();
+
+	result->set_size(nx,ny,nz);
+	result->to_zero();
+	result->set_array_offsets(-nx/2, -ny/2, -nz/2);
+	
+	if ( nz == 1 ) {
+		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
+	} else {
+		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));	
+	}
+
+	avg1D = rotavg();
+
+	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
+		if (abs(k) > rmax) continue;
+		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+			if (abs(j) > rmax) continue;
+			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+				float r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+				int ir = int(r);
+				if (ir >= rmax) continue;
+				float frac = r - float(ir);
+				(*result)(i,j,k) = (*avg1D)(ir)*(1.0f - frac)+(*avg1D)(ir+1)*frac;
+			}
+		}
+	}
+
+	result->set_array_offsets(0,0,0);
+	EXITFUNC;
+	return result;
 }
 
 #define rdata(i,j,k) rdata[(i-1)+((j-1)+(k-1)*ny)*nx]
