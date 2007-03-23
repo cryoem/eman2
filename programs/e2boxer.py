@@ -457,18 +457,18 @@ for single particle analysis."""
 		outer.process_inplace("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
 		inner.process_inplace("eman1.mask.sharp",{"outer_radius":sbox*2/5})
 		
-#		outer.write_image("b_outer.hdf")
-#		inner.write_image("b_inner.hdf")
+		outer.write_image("b_outer.hdf")
+		inner.write_image("b_inner.hdf")
 
 		ccf1=shrinksq.calc_ccf(inner,fp_flag.CIRCULANT)
 		ccf2=shrinksq.calc_ccf(outer,fp_flag.CIRCULANT)
 		
-#		ccf1.write_image("b_ccf1.hdf")
-#		ccf2.write_image("b_ccf2.hdf")
+		ccf1.write_image("b_ccf1.hdf")
+		ccf2.write_image("b_ccf2.hdf")
 		
 		ccf1/=ccf2
 		
-#		ccf1.write_image("b_result.hdf")
+		ccf1.write_image("b_result.hdf")
 	
 	E2end(logid)
 
