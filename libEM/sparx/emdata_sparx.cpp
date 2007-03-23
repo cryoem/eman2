@@ -559,14 +559,13 @@ EMData* EMData::rotavg() {
 EMData* EMData::rotavg_i() {
 
 	int rmax;
-
 	ENTERFUNC;
 	if ( ny == 1 && nz == 1 ) {
 		LOGERR("Input image must be 2-D or 3-D!");
 		throw ImageDimensionException("Input image must be 2-D or 3-D!");
 	}
 
-	EMData* avg1D = new EMData();
+	EMData* avg1D  = new EMData();
 	EMData* result = new EMData();
 
 	result->set_size(nx,ny,nz);
@@ -580,21 +579,43 @@ EMData* EMData::rotavg_i() {
 	}
 
 	avg1D = rotavg();
-
-	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
+	float padded_value = 0.0, number_of_pixel = 0.0, r, frac;
+	int i, j, k, ir;
+	for ( k = -nz/2; k < nz/2 + nz%2; k++) {
 		if (abs(k) > rmax) continue;
-		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+		for ( j = -ny/2; j < ny/2 + ny%2; j++) {
 			if (abs(j) > rmax) continue;
-			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-				float r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
-				int ir = int(r);
-				if (ir >= rmax) continue;
-				float frac = r - float(ir);
-				(*result)(i,j,k) = (*avg1D)(ir)*(1.0f - frac)+(*avg1D)(ir+1)*frac;
+			for (i = -nx/2; i < nx/2 + nx%2; i++) {
+				r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+				ir = int(r);
+				if (ir > rmax || ir < rmax-2 ) continue ;				 
+				else
+      					{
+	      					padded_value += (*avg1D)(ir) ;
+	      					number_of_pixel += 1.0 ;
+					}
 			}
 		}
 	}
-
+	padded_value /= number_of_pixel ;
+	for ( k = -nz/2; k < nz/2 + nz%2; k++) 
+	{
+		for ( j = -ny/2; j < ny/2 + ny%2; j++) 
+			{
+					for ( i = -nx/2; i < nx/2 + nx%2; i++) 
+					{
+						r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+						ir = int(r);
+						if (ir >= rmax) (*result)(i,j,k) = padded_value ;
+						else  
+						{
+							frac = r - float(ir); 
+							(*result)(i,j,k) = (*avg1D)(ir)*(1.0f - frac)+(*avg1D)(ir+1)*frac;
+						}	
+						
+					}
+			}
+	}				
 	result->set_array_offsets(0,0,0);
 	EXITFUNC;
 	return result;
