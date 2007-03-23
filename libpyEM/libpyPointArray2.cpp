@@ -5,13 +5,14 @@
 
 // Includes ====================================================================
 #include <pointarray.h>
-#include <emdata.h>
-#include <transform.h>
+
 // Using =======================================================================
 using namespace boost::python;
 
 // Declarations ================================================================
 namespace  {
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_distmx_overloads_0_1, distmx, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_mask_overloads_1_2, mask, 1, 2)
 
@@ -25,7 +26,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_sort_by_axis_overloads_0_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_projection_by_nfft_overloads_2_3, projection_by_nfft, 2, 3)
 
-//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_PointArray_distmx_overloads_0_1, projection_by_nfft, 0, 1)
+
 }// namespace 
 
 
@@ -50,8 +51,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("set_vector_at", (void (EMAN::PointArray::*)(int, EMAN::Vec3f, double) )&EMAN::PointArray::set_vector_at)
         .def("set_vector_at", (void (EMAN::PointArray::*)(int, std::vector<double,std::allocator<double> >) )&EMAN::PointArray::set_vector_at)
         .def("set_points_array", &EMAN::PointArray::set_points_array)
-//        .def("distmx", &EMAN::PointArray::distmx, EMAN_PointArray_distmx_overloads_0_1(), return_value_policy< manage_new_object >())
-        .def("distmx", &EMAN::PointArray::distmx, return_value_policy< manage_new_object >())
+        .def("distmx", &EMAN::PointArray::distmx, EMAN_PointArray_distmx_overloads_0_1()[ return_value_policy< manage_new_object >() ])
         .def("align_2d", &EMAN::PointArray::align_2d, return_value_policy< manage_new_object >())
         .def("align_trans_2d", &EMAN::PointArray::align_trans_2d, return_value_policy< manage_new_object >())
         .def("mask", &EMAN::PointArray::mask, EMAN_PointArray_mask_overloads_1_2())
@@ -62,7 +62,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("sort_by_axis", &EMAN::PointArray::sort_by_axis, EMAN_PointArray_sort_by_axis_overloads_0_1())
         .def("pdb2mrc_by_nfft", &EMAN::PointArray::pdb2mrc_by_nfft, return_value_policy< manage_new_object >())
         .def("pdb2mrc_by_summation", &EMAN::PointArray::pdb2mrc_by_summation, return_value_policy< manage_new_object >())
-        .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, return_value_policy< manage_new_object >(), EMAN_PointArray_projection_by_nfft_overloads_2_3())
+        .def("projection_by_nfft", &EMAN::PointArray::projection_by_nfft, EMAN_PointArray_projection_by_nfft_overloads_2_3()[ return_value_policy< manage_new_object >() ])
         .def("projection_by_summation", &EMAN::PointArray::projection_by_summation, return_value_policy< manage_new_object >())
         .def("replace_by_summation", &EMAN::PointArray::replace_by_summation)
         .def("opt_from_proj", &EMAN::PointArray::opt_from_proj)
