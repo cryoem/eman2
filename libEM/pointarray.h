@@ -79,6 +79,28 @@ namespace EMAN
 		void set_vector_at(int i,Vec3f vec,double value);
 		void set_vector_at(int i,vector<double>); 
 		void set_points_array(double *p);
+
+		/** Calculates a (symmetrized) distance matrix for the current PointArray
+		*
+		* @return An EMData object containing the similarity matrix
+		*/
+		EMData *distmx(PointArray *to=NULL);	// computes a distance matrix. Self-matrix if 'to' is NULL
+
+
+		/** Aligns one PointArray to another in 2 dimensions
+		*
+		* @param to Another PointArray to align to
+		* @return A Pixel containing dx,dy and a quality factor (smaller better)
+		*/
+		Transform3D *align_2d(PointArray *to);	// computes the optimal alignment between two (non-identical) sets of points
+
+		/** Translationally aligns one PointArray to another in 2 dimensions
+		*
+		* @param to Another PointArray to align to
+		* @return A Pixel containing dx,dy and a quality factor (smaller better)
+		*/
+		Pixel *align_trans_2d(PointArray *to);		// translational alignment of point sets in 2-D
+
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(const string & sym);
 		void set_from(PointArray * source, const string & sym = "", Transform3D *transform=0);

@@ -105,6 +105,71 @@ void PointArray::set_points_array(double *p)
 	points = p;
 }
 
+EMData *PointArray::distmx(PointArray *to) {
+
+}
+
+Transform3D *PointArray::align_2d(PointArray *to) {
+
+}
+
+Pixel *PointArray::align_trans_2d(PointArray *to) {
+int na=   get_number_points();
+int nb=to->get_number_points();
+int *a2b = (int *)malloc(na*sizeof(int));
+int *b2a = (int *)malloc(nb*sizeof(int));
+
+// find unweighted centers
+float cax,cay,cbx,cby;
+int i,j;
+
+cax=cay=cbx=cby=0;
+
+for (i=0; i<na; i++) { cax+=get_vector_at(i)[0]; cay+=get_vector_at(i)[1]; }
+cax/=(float)na;
+cay/=(float)na;
+
+for (i=0; i<nb; i++) { cbx+=to->get_vector_at(i)[0]; cby+=to->get_vector_at(i)[1]; }
+cbx/=(float)nb;
+cby/=(float)nb;
+
+Vec3f offset(cbx-cax,cby-cay,0);
+
+// find the nearest point for each x point, taking the estimated centers into account
+for (i=0; i<na; i++) {
+	float rmin=1.0e30;
+	for (j=0; j<nb; j++) {
+		float r=(get_vector_at(i)+offset-to->get_vector_at(j)).length();
+		if (r<rmin) { a2b[i]=j; rmin=r; }
+	}
+}
+
+// find the nearest point for each y point
+for (i=0; i<nb; i++) {
+	float rmin=1.0e30;
+	for (j=0; j<na; j++) {
+		float r=(get_vector_at(j)+offset-to->get_vector_at(i)).length();
+		if (r<rmin) { b2a[i]=j; rmin=r; }
+	}
+}
+
+// now keep only points where x->y matches y->x
+for (i=0; i<na; i++) {
+	if (a2b[i]<0) continue;
+	if (b2a[a2b[i]]!=i) { b2a[a2b[i]]=-1; a2b[i]=-1; }
+}
+
+for (i=0; i<nb; i++) {
+	if (b2a[i]<0) continue;
+	if (a2b[b2a[i]]!=i) { a2b[b2a[i]]=-1; b2a[i]=-1; }
+}
+
+
+free(a2b);
+free(b2a);
+}
+
+
 bool PointArray::read_from_pdb(const char *file)
 {
 	struct stat filestat;
