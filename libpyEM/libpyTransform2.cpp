@@ -26,6 +26,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_Transform3D_get_rotation_overloads_0
 BOOST_PYTHON_MODULE(libpyTransform2)
 {
     class_< EMAN::Vec3f >("Vec3f", init<  >())
+    	.def_pickle(Vec3f_pickle_suite())
         .def(init< float, float, optional< float > >())
         .def(init< const std::vector<float,std::allocator<float> >& >())
         .def(init< const EMAN::Vec3i& >())
