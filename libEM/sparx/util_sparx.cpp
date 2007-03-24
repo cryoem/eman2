@@ -3643,20 +3643,12 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 		if(mask_ptr[i] > 0.5f){
 			new_ptr[i] = img_ptr[count];
 			count++;
-			pixel_under_mask += img_ptr[count];
 		}
 		else{
 			new_ptr[i] = 0.0f;
 		}
 	}
-	pixel_under_mask /= float(count);
-	for(i = 0;i < size;i++){
-	if(mask_ptr[i] <= 0.5f){
-		new_ptr[i] = pixel_under_mask ;
-		}
-	}
 	new_image->update();
-	
 	return new_image;
 }	
 vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p_size)
