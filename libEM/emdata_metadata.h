@@ -403,11 +403,11 @@ EMObject get_attr(const string & attr_name) const;
 /** The generic way to get any image header information
  * given a header attribute name. If the attribute does not exist,
  * it will return a default EMObject() object, which will be converted
- * to None in Python.
+ * to None in Python. Or return any object user want.
  *
  * @param attr_name The header attribute name.
  * @param em_obj the default attribute to return when this attr_name not exist in attr_dict
- * @return The attribute value.
+ * @return The attribute value, default to None.
  */
 EMObject get_attr_default(const string & attr_name, const EMObject & em_obj = EMObject()) const;
 		
