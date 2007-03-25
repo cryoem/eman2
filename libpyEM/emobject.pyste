@@ -1,5 +1,0 @@
-Include("emdata.h")
-Include("xydata.h")
-
-
-TypeDict = Class("EMAN::TypeDict", "emobject.h")

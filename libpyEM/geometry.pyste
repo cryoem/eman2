@@ -1,6 +1,0 @@
-
-Region = Class("EMAN::Region", "geometry.h")
-
-Pixel = Class("EMAN::Pixel", "geometry.h")
-
-
