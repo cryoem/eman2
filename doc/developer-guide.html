@@ -273,44 +273,6 @@ boost python wrapper. To use Pyste, <br>
 
     </li>
 
-    
-    <ol>
-
-      <li>Install Pyste libraries/tools: a) <span style="font-weight: bold;">Pyste</span> in boost library; b) <span style="font-weight: bold;">elementtree</span> c) <span style="font-weight: bold;">gccxml</span></li>
-
-      <li>Create or modify the pyste file. e.g., <span style="font-style: italic;">eman2/libpyEM/processor.pyste</span>.
-For a function that return a pointer, a return-policy
-must be defined in the pyste file. The typical cases
-are: <br>
-
-      </li>
-
-      
-      <ol>
-
-        <li>If the function returns a pointer allocated in this
-function, do: <span style="font-family: courier new,courier,monospace; color: rgb(0, 153, 0); font-weight: bold;">set_policy(YOUR_FUNCTION,
-return_value_policy(manage_new_object))</span></li>
-
-        <li>If the function returns a static pointer , do: <span style="font-family: courier new,courier,monospace; color: rgb(0, 153, 0); font-weight: bold;">set_policy(YOUR_FUNCTION,
-return_value_policy(reference_existing_object))</span></li>
-
-        <li>For other cases, do: <span style="font-family: courier new,courier,monospace; color: rgb(0, 153, 0); font-weight: bold;">set_policy(YOUR_FUNCTION,
-return_internal_reference())</span></li>
-
-      
-      </ol>
-
-      <li>Run script: <span style="font-weight: bold;"><span style="color: rgb(0, 153, 0);">eman2/libpyEM/create_boost_python</span><br>
-
-        <br>
-
-        </span></li>
-
-    
-    </ol>
-
-  
   </ul>
 
   <li style="color: rgb(51, 51, 255); font-weight: bold;"><big>How to

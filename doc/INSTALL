@@ -177,17 +177,6 @@ libraries should be installed as shared-object libraries where applicable):
 
     1. Ensure the Boost.Python
 
-    1. EMAN2 uses Pyste (http://www.boost.org/libs/python/pyste/) to wrap C++
-       into python. Here is the way to install Pyste:
-
-        1) get boost python.
-           cd libs/python/pyste/install
-           python setup.py install
-        2) install elementtree
-        3) install GCCXML
-        4) for boost 1.32.0, apply a patch for PYSTE.
-           (https://blake.bcm.edu/emanwiki/EMAN2/Library)
-           
     2. To generate new boost python wrapper, run
         % cd eman2/libpyEM
         % ./create_boost_python
