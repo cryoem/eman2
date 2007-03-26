@@ -174,6 +174,8 @@ int VtkIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);	
 	check_region(area, IntSize(nx, ny, nz));
 
@@ -202,7 +204,9 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index);
 
 	nx = dict["nx"];
@@ -234,7 +238,9 @@ int VtkIO::write_header(const Dict & dict, int image_index, const Region*,
 int VtkIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 
 	if (area) {
@@ -300,6 +306,8 @@ int VtkIO::write_data(float *data, int image_index, const Region* ,
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 
 	bool swapped = false;

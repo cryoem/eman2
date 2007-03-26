@@ -113,6 +113,8 @@ int EmimIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -157,6 +159,8 @@ int EmimIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	int err = 0;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 	
 	off_t imgsize = (off_t)efh.nx * (off_t)efh.ny * (off_t)efh.nz * (off_t)sizeof(float) + (off_t)sizeof(EmimImageHeader);

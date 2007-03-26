@@ -115,6 +115,8 @@ bool Gatan2IO::is_valid(const void *first_block)
 int Gatan2IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 	
 	if (is_complex_mode()) {
@@ -147,6 +149,8 @@ int Gatan2IO::write_header(const Dict &, int, const Region* , EMUtil::EMDataType
 int Gatan2IO::read_data(float *data, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 
 	if (is_complex_mode()) {

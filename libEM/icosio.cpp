@@ -115,6 +115,8 @@ int IcosIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz));
 
@@ -137,6 +139,8 @@ int IcosIO::write_header(const Dict & dict, int image_index, const Region* ,
 {
 	ENTERFUNC;
 	int err = 0;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1);
 
 	icosh.stamp = STAMP;
@@ -165,6 +169,8 @@ int IcosIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 	check_region(area, IntSize(icosh.nx, icosh.ny, icosh.nz));
 
@@ -188,6 +194,8 @@ int IcosIO::write_data(float *data, int image_index, const Region* area,
 					   EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 	portable_fseek(icos_file, sizeof(IcosHeader), SEEK_SET);
 

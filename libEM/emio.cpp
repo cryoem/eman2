@@ -144,7 +144,9 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);	
 	check_region(area, IntSize(emh.nx, emh.ny, emh.nz));
 
@@ -163,6 +165,8 @@ int EmIO::write_header(const Dict & dict, int image_index, const Region* area,
 					   EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1);
 	if (area) {
 		check_region(area, FloatSize(emh.nx, emh.ny, emh.nz), is_new_file);
@@ -188,7 +192,9 @@ int EmIO::write_header(const Dict & dict, int image_index, const Region* area,
 int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 	check_region(area, IntSize(emh.nx, emh.ny, emh.nz));
 	
@@ -242,6 +248,8 @@ int EmIO::read_data(float *data, int image_index, const Region * area, bool)
 int EmIO::write_data(float *data, int image_index, const Region* area, EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 	portable_fseek(em_file, sizeof(EMHeader), SEEK_SET);
 

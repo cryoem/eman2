@@ -157,6 +157,8 @@ int SalIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 	check_region(area, IntSize(nx, ny));
 	
@@ -185,6 +187,8 @@ int SalIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 	check_region(area, IntSize(nx, ny));
 

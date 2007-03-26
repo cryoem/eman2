@@ -173,7 +173,9 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 
-	check_read_access(image_index);
+	//single image format, index can only be zero
+	image_index = 0;
+	check_read_access(image_index);	
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
 	dict["apix_x"] = mrch.xlen / (mrch.nx - 1);
@@ -259,6 +261,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1);
 	if (area) {
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
@@ -380,7 +385,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, rdata);
 
 	if (area && is_complex_mode()) {
@@ -440,6 +447,8 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 	

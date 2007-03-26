@@ -156,7 +156,9 @@ int FitsIO::read_data(float *rdata, int image_index, const Region * area, bool )
 {
 	ENTERFUNC;
 	int i;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, rdata);
 
 	portable_fseek(fitsfile, dstart, SEEK_SET);

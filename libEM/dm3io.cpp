@@ -735,6 +735,8 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	ENTERFUNC;
 	int err = 0;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 
 	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);
@@ -772,6 +774,8 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, rdata);
 	
 	portable_fseek(dm3file, NUM_ID_INT * sizeof(int), SEEK_SET);

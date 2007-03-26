@@ -194,7 +194,9 @@ bool XplorIO::is_valid(const void *first_block)
 int XplorIO::read_header(Dict &dict, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 	check_region(area, FloatSize(nx, ny, nz), is_new_file);
 	
@@ -221,6 +223,8 @@ int XplorIO::write_header(const Dict & dict, int image_index, const Region* area
 						  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index);
 	if (area) {
 		check_region(area, FloatSize(nx, ny, nz), is_new_file);
@@ -272,6 +276,8 @@ int XplorIO::read_data(float *data, int image_index, const Region *area, bool)
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 	check_region(area, FloatSize(nx, ny, nz), is_new_file);
 
@@ -339,6 +345,8 @@ int XplorIO::write_data(float *data, int image_index, const Region* area,
 {
 
 	ENTERFUNC;
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 	check_region(area, FloatSize(nx,ny,nz), is_new_file);
 

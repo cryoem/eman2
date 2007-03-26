@@ -170,6 +170,8 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index);
 
 	int nx1 = static_cast < int >(nx);
@@ -200,7 +202,9 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region* area,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-
+	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index);
 
 	nx = (png_uint_32) (int) dict["nx"];
@@ -244,6 +248,8 @@ int PngIO::read_data(float *data, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
+	//single image format, index can only be zero
+	image_index = 0;
 	check_read_access(image_index, data);
 
 	int nx1 = static_cast < int >(nx);
@@ -301,6 +307,8 @@ int PngIO::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 	
+	//single image format, index can only be zero
+	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
