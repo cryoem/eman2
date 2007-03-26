@@ -3617,7 +3617,7 @@ EMData* Util::compress_image_mask(EMData* image, EMData* mask)
 }
 
 /* Recreates a n-d image using its compressed 1-D form and the mask */
-EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
+EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask )
 {
 	/********
 	***Exception Handle 
@@ -3640,23 +3640,19 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 	float count = 0;
 	float pixel_under_mask = 0.0 ;
 	for(i = 0;i < size;i++){
-		if(mask_ptr[i] > 0.5f){
-			new_ptr[i] = img_ptr[i];
-			pixel_under_mask += img_ptr[i];
-			count += 1. ;
-		}
-		else{
-			new_ptr[i] = 0.0f;
-		}
+			if(mask_ptr[i] > 0.5f){
+				new_ptr[i] = img_ptr[i];
+				pixel_under_mask += img_ptr[i];
+				count += 1. ;
+			}
 	}
-	pixel_under_mask /= count ;
+		pixel_under_mask /= count ;
 	for(i = 0;i < size;i++)
-	{
-		if(mask_ptr[i] <= 0.5f)
 		{
+			if(mask_ptr[i] <= 0.5f) {			
 			new_ptr[i] = pixel_under_mask;
-	   	}
-	}
+			}
+		}
 	new_image->update();
 	return new_image;
 }	
