@@ -40,6 +40,66 @@ import testlib
 import os
 from pyemtbx.exceptions import *
 
+class TestEMIO(unittest.TestCase):
+    """EM file IO test"""
+    
+    def test_negative_image_index_em(self):
+        """test ignore negative index for em ................"""
+        filename = 'testimage.em'
+        e = EMData()
+        e.set_size(32,32)
+        e.to_zero()
+        e.write_image(filename, -1)
+        os.unlink(filename)
+
+class TestIcosIO(unittest.TestCase):
+    """ICOS file IO test"""
+    
+    def test_write_icos(self):
+        """test ignore negative index for icos .............."""
+        filename = 'testimage.icos'
+        e = EMData()
+        e.set_size(32,32)
+        e.to_zero()
+        e.write_image(filename, -1)
+        os.unlink(filename)
+
+class TestPNGIO(unittest.TestCase):
+    """PNG file IO test"""
+    
+    def test_write_png(self):
+        """test ignore negative index for png ..............."""
+        filename = 'testimage.png'
+        e = EMData()
+        e.set_size(32,32)
+        e.to_zero()
+        e.write_image(filename, -1)
+        os.unlink(filename)
+        
+class TestVTKIO(unittest.TestCase):
+    """VTK file IO test"""
+    
+    def test_write_vtk(self):
+        """test ignore negative index for vtk ..............."""
+        filename = 'testimage.vtk'
+        e = EMData()
+        e.set_size(32,32)
+        e.to_zero()
+        e.write_image(filename, -1)
+        os.unlink(filename)
+
+class TestXPLORIO(unittest.TestCase):
+    """XPLOR file IO test"""
+    
+    def test_write_xplor(self):
+        """test ignore negative index for xplor ............."""
+        filename = 'testimage.xplor'
+        e = EMData()
+        e.set_size(32,32)
+        e.to_zero()
+        e.write_image(filename, -1)
+        os.unlink(filename)
+
 class TestPGMIO(unittest.TestCase):
     """PGM file IO test"""
     
@@ -48,7 +108,7 @@ class TestPGMIO(unittest.TestCase):
         e = EMData()
         e.set_size(1024,1024)
         e.process_inplace('testimage.noise.uniform.rand')
-        e.write_image('test_image.pgm')
+        e.write_image('test_image.pgm', -1)
         
         f = EMData()
         f.read_image('test_image.pgm')
@@ -272,6 +332,14 @@ class TestHdfIO(unittest.TestCase):
 
 class TestMrcIO(unittest.TestCase):
     """mrc file IO test"""
+    def test_negative_image_index(self):
+        """"test ignore negative image index ................"""
+        filename = 'testimage.mrc'
+        e = EMData()
+        e.set_size(32,32)
+        e.to_zero()
+        e.write_image(filename, -1)
+        os.unlink(filename)
     
     def test_overwrite(self):
         """test overwrite mrc image file ...................."""
@@ -766,7 +834,7 @@ class TestImageIO(unittest.TestCase):
         
 def test_main():
     TestUtil.set_progname("region")
-    test_support.run_unittest(TestPGMIO, TestSpiderIO, TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
+    test_support.run_unittest(TestEMIO, TestIcosIO, TestPNGIO, TestVTKIO, TestXPLORIO, TestPGMIO, TestSpiderIO, TestImageIO, TestHdfIO,TestMrcIO, TestImagicIO)
 
 if __name__ == '__main__':
     test_main()
