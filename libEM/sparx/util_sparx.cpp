@@ -3637,16 +3637,25 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask)
 	float *new_ptr  = new_image->get_data(); /* set size of the new image */
 	float *mask_ptr = mask->get_data();	 /* assign a pointer to the mask image */
 	float *img_ptr  = image->get_data();	 /* assign a pointer to the 1D image */
-	int count = 0;
+	float count = 0;
 	float pixel_under_mask = 0.0 ;
 	for(i = 0;i < size;i++){
 		if(mask_ptr[i] > 0.5f){
-			new_ptr[i] = img_ptr[count];
-			count++;
+			new_ptr[i] = img_ptr[i];
+			pixel_under_mask += img_ptr[i];
+			count += 1. ;
 		}
 		else{
 			new_ptr[i] = 0.0f;
 		}
+	}
+	pixel_under_mask /= count ;
+	for(i = 0;i < size;i++)
+	{
+		if(mask_ptr[i] <= 0.5f)
+		{
+			new_ptr[i] = pixel_under_mask;
+	   	}
 	}
 	new_image->update();
 	return new_image;
