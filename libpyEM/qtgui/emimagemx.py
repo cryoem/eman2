@@ -54,11 +54,15 @@ class EMImageMX(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, data=None,parent=None):
+		GLUT.glutInit( len(sys.argv), sys.argv )
+                print 'glutInit called'
+
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImageMX.allim[self]=0
 		
+
 		self.data=None
 		self.datasize=(1,1)
 		self.scale=1.0
@@ -320,6 +324,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)
 	
 	def renderText(self,x,y,s):
+	        print 'in render Text'
 		GL.glRasterPos(x+2,y+2)
 		for c in s:
 			GLUT.glutBitmapCharacter(GLUT.GLUT_BITMAP_9_BY_15,ord(c))

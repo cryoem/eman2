@@ -51,6 +51,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	"""
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
+	        GLUT.glutInit( len(sys.argv), sys.argv )
+		print 'glutInit called'
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
