@@ -55,6 +55,7 @@ def timer(fn,n=1):
 	print time.time()-a
 
 def E2init(argv) :
+        from OpenGL import GLUT
 	"""E2init(argv)
 This function is called to log information about the current job to the local logfile"""
 	try:
@@ -70,7 +71,8 @@ This function is called to log information about the current job to the local lo
 		db["count"]=n
 	db[str(n)]={"pid":os.getpid(),"start":time.time(),"args":argv}
 	db.close()
-	
+	GLUT.glutInit( argv )
+
 	return n
 
 def E2end(n):
