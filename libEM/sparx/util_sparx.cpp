@@ -4573,30 +4573,27 @@ float Util::eval(char * images,EMData * img, vector<int> S,int N, int K,int size
 #define key(i)			key     [i-1]
 
 
-vector<double> Util::vrdg(EMData * th,EMData *ph)
+vector<double> Util::vrdg(const vector<float>& th, const vector<float>& ph)
 { 
+
 	ENTERFUNC;
-	if (th->get_ysize() > 1){
-		LOGERR("input image should be 1D");
-		throw ImageFormatException( "input image should be 1D");
-	}
-	
-	if (!EMUtil::is_same_size(th, ph)) {
+
+	if ( th.size() != ph.size() ) {
 		LOGERR("images not same size");
 		throw ImageFormatException( "images not same size");
 	}
 	
 	int i,*key;
-	int len = th->get_xsize();
+	int len = th.size();
 	double *theta,*phi,*weight;
 	theta   = 	(double*) calloc(len,sizeof(double));
 	phi     = 	(double*) calloc(len,sizeof(double));
 	weight  = 	(double*) calloc(len,sizeof(double));
 	key     =      (int*) calloc(len,sizeof(int));
-	float *thptr, *phptr;
+	const float *thptr, *phptr;
 
-	thptr = th->get_data();
-	phptr = ph->get_data();
+	thptr = &th[0];
+	phptr = &ph[0];
 	for(i=1;i<=len;i++){
 		key(i) = i;
 		weight(i) = 0.0;
@@ -4626,7 +4623,11 @@ vector<double> Util::vrdg(EMData * th,EMData *ph)
 		wt.push_back(weight(i));
 		count += weight(i);
 	}
-	printf("\n SUM OF VORONOI CELLS AREAS IS == %lf \n", count);
+
+        if( abs(count-6.28) > 0.1 ) 
+	{
+	    printf("Warning: SUM OF VORONOI CELLS AREAS IS %lf, should 2*PI\n", count);
+	}
 
 	free(weight);
 
@@ -4996,6 +4997,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 {
 	
 	ENTERFUNC;
+
 	int *list, *lptr, *lend, *iwk, *key,*lcnt,*indx,*good;
 	int nt6, n, ier, nout, lnew, mdup, nd;
 	int i,k,mt,status;
@@ -5047,48 +5049,59 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
        		exit(1);
 	}
 
-
-
-	for(i = 0; i<nt; i++){
+        bool colinear=true;
+	while(colinear)
+	{
+ 	    for(i = 0; i<nt; i++){
 		x[i] = theta[i];
 		y[i] = phi[i];
 		x[nt+i] = 180.0 - x[i];
 		y[nt+i] = 180.0 + y[i];
-	}
+	    }
 
-	Util::disorder2(x, y, key, n);
-	Util::ang_to_xyz(x, y, z, n);
+	    Util::disorder2(x, y, key, n);
+	    Util::ang_to_xyz(x, y, z, n);
 
-	//  Make sure that first three are no colinear
-	label1:
-	for(k=0; k<2; k++){
-		for(i=k+1; i<3; i++){
-			if(  x[i]*x[k]+y[i]*y[k]+z[i]*z[k] > 1.0-tol){
+	    //  Make sure that first three has no duplication
+	    bool dupnode=true;
+  	    while(dupnode)
+	    {
+	        for(k=0; k<2; k++){
+		    for(i=k+1; i<3; i++){
+			if(  x[i]*x[k]+y[i]*y[k]+z[i]*z[k] > 1.0-tol) {
 				Util::flip23(x, y, z, key, k, n);
-				goto label1;
+				continue;
 			} 
-		}
-	}
+		    }
+	        }
+	        dupnode = false;
+	    }
+        
 
+       	    ier = 0;
+	    status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
 
-	status = Util::trmsh3_(&n,&tol,x,y,z,&nout,list,lptr,lend,&lnew, indx, lcnt, iwk, good, ds, &ier);
-
-	if (status != 0) {
-		printf(" error in trmsh3 \n");
+	    if (status != 0) {
+	 	printf(" error in trmsh3 \n");
 		exit(1);
-	}
+	    }
 
-
-	mdup=n-nout;
-	if (ier == -2) {
-		printf("*** Error in TRMESH:the first three nodes are collinear***\n");
-		exit(1);
-	}
-	else if (ier > 0) {
+            if (ier > 0) {
 		printf("*** Error in TRMESH:  duplicate nodes encountered ***\n");
 		exit(1);
-	}
+	    }
 
+	    mdup=n-nout;
+	    if (ier == -2) {
+		printf("in TRMESH:the first three nodes are collinear*** disorder again\n");
+	    }
+	    else 
+	    {
+	        colinear=false;
+	    }
+        }
+
+        assert( ier != -2 );
 //  Create a list of unique nodes GOOD, the numbers refer to locations on the full list
 //  INDX contains node numbers from the squeezed list
 	nd=0;
@@ -5144,6 +5157,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	free(x);
 	free(y);
 	free(z);
+
 	EXITFUNC;
 }
 
