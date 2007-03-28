@@ -443,6 +443,27 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 	return eguess;
 }  // ends FH2F
 
+float dist(int lnlen, const float* line_1, const float* line_2)
+{
+    double dis2=0.0;
+    for( int i=0; i < lnlen; ++i)
+    {
+       float tmp = line_1[i] - line_2[i];
+       dis2 += tmp*tmp;
+    }
+    return std::sqrt( dis2 );
+}   
+
+float dist_r(int lnlen, const float* line_1, const float* line_2)
+{
+    double dis2 = 0.0;
+    for( int i=0; i < lnlen; ++i )
+    {
+        float tmp = line_1[lnlen-1-i] - line_2[i];
+        dis2 += tmp*tmp;
+    }
+    return std::sqrt(dis2);
+}
 
 
 float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
@@ -457,39 +478,21 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 
     float* line_1 = get_data() + n1*lnlen;
     float* line_2 = sinoj->get_data() + n2*lnlen;
-
-    if( (alpha1-180.0)*(alpha2-180.0) > 0.0 )
+    float just = (alpha1-180.0)*(alpha2-180.0);
+    if( just > 0.0 )
     {
-        double dis2=0.0;
-        for( int i=0; i < lnlen; ++i)
-        {
-           float tmp = line_1[i] - line_2[i];
-	   dis2 += tmp*tmp;
-        }
-        return std::sqrt( dis2 );
+        return dist(lnlen, line_1, line_2);
+    }
+
+    if( just == 0.0 )
+    {
+        float dist_1 = dist(lnlen, line_1, line_2);
+	float dist_2 = dist_r(lnlen, line_1, line_2);
+	return std::min(dist_1, dist_2);
     }
 
     assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
-
-    if( alpha1 > 180.0 )
-    {
-        double dis2 = 0.0;
-        for( int i=0; i < lnlen; ++i )
-        {
-            float tmp = line_1[lnlen-1-i] - line_2[i];
-	    dis2 += tmp*tmp;
-	}
-	return std::sqrt(dis2);
-    }
-
-    double dis2 = 0.0;
-    for( int i=0; i < lnlen; ++i )
-    {
-        float tmp = line_1[i] - line_2[lnlen-1-i];
-	dis2 += tmp*tmp;
-    }
-
-    return std::sqrt(dis2);
+    return dist_r(lnlen, line_1, line_2);
 }
 
 
@@ -1410,7 +1413,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 						iya = n + iyn + 1;
 					}
 					cmplx(ixn,iya,iza) += btq*ctf*float(mult);
-					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<btq<<std::endl;
+					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
 					(*w)(ixn,iya,iza) += ctf*ctf*mult;
 				} else {
 					int izt, iyt;
@@ -1425,7 +1428,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 						iyt = -iyn + 1;
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
-					//std::cout<<" *  "<<j<<"  "<<ixn<<"  "<<iyt<<"  "<<izt<<"  "<<btq<<std::endl;
+					//std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
 					(*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
 				}
 			}
