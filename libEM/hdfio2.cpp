@@ -61,7 +61,11 @@ HdfIO2::HdfIO2(const string & hdf_filename, IOMode rw)
 	file=-1;
 	group=-1;
 	accprop=H5Pcreate(H5P_FILE_ACCESS);
-	H5Pset_fapl_stdio( accprop );
+	
+	//STDIO file driver has 2G size limit on 32 bit Linux system
+	H5Pset_fapl_sec2( accprop );
+	//H5Pset_fapl_stdio( accprop );
+	
 //	H5Pset_fapl_core( accprop, 1048576, 0  );
 //	H5Pset_cache(accprop)
 	hsize_t dims=1;
