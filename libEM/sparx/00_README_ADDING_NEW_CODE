@@ -16,11 +16,8 @@ emdata_sparx2.h/cpp, just put a line:
 into emdata.h, and add your emdata_sparx2.cpp into CMakeLists.txt under 
 eman2/libEM (note it /libEM, not the one in /libEM/sparx directory). 
 
-If your function return new object, such as EMData*, you need specify a policy
-in libpyEM/emdata.pyste, just follow other similar function as example. Then run
-the libpyEM/create_boost_pyton script to update libpyEMData2.cpp file. Then
-your function will be wrapped into Python correctly. If no new object returned,
-you don't need bother with Pyste.
+If your function return new object, such as EMData*, you need modify the
+corresponding libpyEMData2.cpp under libpyEM directory.
 
 2. add new processor:
 To add a new processor, you could add it into processor_sparx.h, just folow
