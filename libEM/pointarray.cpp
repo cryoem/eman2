@@ -34,6 +34,7 @@
  * */
 
 #include "pointarray.h"
+#include <vector>
 
 using namespace EMAN;
 
@@ -106,32 +107,106 @@ void PointArray::set_points_array(double *p)
 }
 
 EMData *PointArray::distmx(PointArray *to) {
-
+return NULL;
 }
 
-Transform3D *PointArray::align_2d(PointArray *to) {
+vector<float> PointArray::align_2d(PointArray *to) {
+float da,step=.1745;
+float a;
+int i;
+Transform3D *xf=new Transform3D(0,0,0);
 
+// find the point closest to the center (bestn) 
+float bestd=1.0e38;
+int bestn=0;
+FloatPoint cen=get_center();
+for (i=0; i<get_number_points(); i++) {
+	float h=hypot(get_vector_at(i)[0]-cen[0],get_vector_at(i)[1]-cen[1]);
+	if (h<bestd) { bestd=h; bestn=i; }
+}
+cen[0]=get_vector_at(i)[0];
+cen[1]=get_vector_at(i)[1];
+
+PointArray *p2=new PointArray;
+vector<float> best(4,0.0);
+best[2]=1.0e38;
+for (a=0; a<360.0; a+=5.0) {
+	xf->set_rotation(a,0,0);
+	p2->set_from(this,"",xf);
+	vector<float> ali=p2->align_trans_2d(to);
+	
+	// now try assigning each 'to' point to the 'this' point closest to the center
+	printf("%1.1f) ",a);
+	for (i=0; i<to->get_number_points(); i++) {
+		vector<float> ali2=p2->align_trans_2d(to,1,to->get_vector_at(i)[0]-cen[0],to->get_vector_at(i)[1]-cen[1]);
+		if (ali2[3]>2 && ali2[3]>=ali[3] && ali2[2]<=ali[2]) ali=ali2;
+		printf("%1.0f(%1.2f), ",ali2[3],ali2[2]);
+	}
+	printf("\n");
+
+//	printf("%f %f %f %f\n",ali[0],ali[1],ali[2],ali[3]);
+	if (ali[3]>2 && ali[3]>=best[3] && ali[2]<best[2]) {
+		best=ali;
+		best.push_back(a);
+	}
 }
 
-Pixel *PointArray::align_trans_2d(PointArray *to) {
+delete xf;
+delete p2;
+return best;
+}
+
+vector<float> PointArray::align_trans_2d(PointArray *to, int flags, float dxhint,float dyhint) {
+// returns (dx,dy,residual error,n points used)
+// dxhint,dyhint should translate this->to
+// flags : 1 - use hint values, 2 - center by strongest point (highest 'value')
 int na=   get_number_points();
 int nb=to->get_number_points();
+if (na<=0 || nb<=0) return vector<float>(4,0);
+
 int *a2b = (int *)malloc(na*sizeof(int));
 int *b2a = (int *)malloc(nb*sizeof(int));
+
 
 // find unweighted centers
 float cax,cay,cbx,cby;
 int i,j;
 
-cax=cay=cbx=cby=0;
+if (flags&1) {
+	cbx=dxhint;
+	cby=dyhint;
+	cax=cay=0;
+}
+else if (flags&2) {
+	// find the 'a' list peak
+	float hia=0;
+	int hina=0;
+	for (i=0; i<na; i++) {
+		if (get_value_at(i)>hia) { hia=get_value_at(i); hina=i; }
+	}
+	cax=get_vector_at(hina)[0];
+	cay=get_vector_at(hina)[1];
 
-for (i=0; i<na; i++) { cax+=get_vector_at(i)[0]; cay+=get_vector_at(i)[1]; }
-cax/=(float)na;
-cay/=(float)na;
+	// find the 'b' list peak
+	float hib=0;
+	int hinb=0;
+	for (i=0; i<na; i++) {
+		if (to->get_value_at(i)>hib) { hib=to->get_value_at(i); hinb=i; }
+	}
+	cbx=to->get_vector_at(hinb)[0];
+	cby=to->get_vector_at(hinb)[1];
+}
+else {
+	cax=cay=cbx=cby=0;
 
-for (i=0; i<nb; i++) { cbx+=to->get_vector_at(i)[0]; cby+=to->get_vector_at(i)[1]; }
-cbx/=(float)nb;
-cby/=(float)nb;
+	for (i=0; i<na; i++) { cax+=get_vector_at(i)[0]; cay+=get_vector_at(i)[1]; }
+	cax/=(float)na;
+	cay/=(float)na;
+
+	for (i=0; i<nb; i++) { cbx+=to->get_vector_at(i)[0]; cby+=to->get_vector_at(i)[1]; }
+	cbx/=(float)nb;
+	cby/=(float)nb;
+}
 
 Vec3f offset(cbx-cax,cby-cay,0);
 
@@ -156,17 +231,46 @@ for (i=0; i<nb; i++) {
 // now keep only points where x->y matches y->x
 for (i=0; i<na; i++) {
 	if (a2b[i]<0) continue;
-	if (b2a[a2b[i]]!=i) { b2a[a2b[i]]=-1; a2b[i]=-1; }
+	if (b2a[a2b[i]]!=i) { printf(" #%d!=%d# ",b2a[a2b[i]],i);  b2a[a2b[i]]=-1; a2b[i]=-1; }
+	printf("%d->%d  ",i,a2b[i]);
 }
+printf("\n");
 
 for (i=0; i<nb; i++) {
 	if (b2a[i]<0) continue;
 	if (a2b[b2a[i]]!=i) { a2b[b2a[i]]=-1; b2a[i]=-1; }
+	printf("%d->%d  ",i,b2a[i]);
 }
+printf("\n");
 
+// Compute the average translation required to align the points
+float dx=0,dy=0,dr=0,nr=0;
+for (i=0; i<na; i++) {
+	if (a2b[i]==-1) continue;
+	dx+=to->get_vector_at(a2b[i])[0]-get_vector_at(i)[0];
+	dy+=to->get_vector_at(a2b[i])[1]-get_vector_at(i)[1];
+	nr+=1.0;
+}
+//printf("%f %f %f\n",dx,dy,nr);
+if (nr<2) return vector<float>(4,0);
+dx/=nr;
+dy/=nr;
+
+// Compute the residual error
+for (i=0; i<na; i++) {
+	if (i==-1  || a2b[i]==-1) continue;
+	dr+=(to->get_vector_at(a2b[i])-get_vector_at(i)-Vec3f(dx,dy,0)).length();
+}
+dr/=nr;
 
 free(a2b);
 free(b2a);
+vector<float> ret(4);
+ret[0]=dx;
+ret[1]=dy;
+ret[2]=dr;
+ret[3]=(float)nr;
+return ret;
 }
 
 

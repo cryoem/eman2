@@ -34,12 +34,13 @@ from EMAN2 import *
 from emimage import *
 import time
 from optparse import OptionParser
+from pprint import pprint
 
 def findstars(img):
 	"""This will find localized peaks to subpixel accuracy and return a list of
 	x,y,peak,rad_gyr"""
 	imc=img.copy()
-	thr=imc.get_attr("mean")+imc.get_attr("sigma")*8.0
+	thr=imc.get_attr("mean")+imc.get_attr("sigma")*3.0
 	imc.process_inplace("filter.lowpass.gauss",{"sigma":0.3})
 	imc.process_inplace("eman1.mask.onlypeaks",{"npeaks":0})
 	peaks=imc.calc_highest_locations(thr)
@@ -47,6 +48,11 @@ def findstars(img):
 	ret=[]
 	for i in peaks:
 		c=img.get_clip(Region(i.x-5,i.y-5,11,11))
+		
+		# this should remove 'hot' ccd pixels
+		if c.get_value_at(5,5)>c.get_value_at(4,5)+c.get_value_at(6,5)+c.get_value_at(5,4)+c.get_value_at(5,6) : continue
+		
+		# find the center of mass of each peak
 		cg=c.cog()[:3]
 		ret.append((i.x+cg[0],i.y+cg[1],i.value,cg[2]))	# x,y,peak,rad
 	
@@ -65,10 +71,22 @@ def centerofstars(a):
 	
 	return (x/s,y/s)
 
+def l2pa(a):
+	"""Convert a list, as output by findstars, into a PointArray"""
+	r=PointArray(len(a))
+	for i,j in enumerate(a):
+		r.set_vector_at(i,Vec3f(j[0],j[1],0),j[2])
+	
+	return r
+
 def alignstars(a,b):
 	"""This will take two lists of x,y,peak,rad_gyr and align them in 2-d"""
-	
-	print centerofstars(a),centerofstars(b)
+	a=l2pa(a)
+	b=l2pa(b)
+#	print a.align_trans_2d(b)
+	print a.align_2d(b)
+	print a.align_trans_2d(b,1,0,0)
+#	print centerofstars(a),centerofstars(b)
 
 
 def main():
@@ -88,10 +106,20 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	for i in args:
 		img=EMData(i,0)
 		pats.append(findstars(img))
-	
+	print len(pats[0]),len(pats[1])
+#	pprint(pats[0])
 	print alignstars(pats[0],pats[1])
-	print alignstars(pats[1],pats[2])
-	print alignstars(pats[2],pats[3])
+#	print alignstars(pats[1],pats[2])
+#	print alignstars(pats[2],pats[3])
+	
+	out=file("z1","w")
+	for i in pats[0]: out.write("%f\t%f\n"%(i[0],i[1]))
+	out.close()
+	out=file("z2","w")
+	for i in pats[1]: out.write("%f\t%f\n"%(i[0],i[1]))
+	out.close()
+	
+
 	
 if __name__ == "__main__":
     main()

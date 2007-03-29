@@ -1071,6 +1071,7 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 		break;
 	case ISYM:
 		ret.set_rotation(0, 0, 0);
+		break;
 	default:
 		throw InvalidValueException(type, symname);
 	}
@@ -1084,10 +1085,6 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 
 int Transform3D::get_nsym(const string & name)
 {
-	if (name == "") {
-		return 0;
-	}
-
 	if (symmetry_map.find(name) != symmetry_map.end()) {
 		return symmetry_map[name];
 	}
@@ -1157,7 +1154,7 @@ Transform3D::SymType Transform3D::get_sym_type(const string & name)
 	else if (name == "tet") {
 		t = TET_SYM;
 	}
-	else if (name == "i") {
+	else if (name == "i" || name == "") {
 		t = ISYM;
 	}
 	return t;
