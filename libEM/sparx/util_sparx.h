@@ -380,8 +380,8 @@ class FakeKaiserBessel : public KaiserBessel {
                                 float   *qm, float *tmt);
 				
         static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
-        static void  crosrng_msg(float *circ1, float *circ2, double *q, double *t, int  lcirc, int  nring,
-                                int   maxrin, int   *numr );
+   //     static void  crosrng_msg(float *circ1, float *circ2, double *q, double *t, int  lcirc, int  nring,
+   //                             int   maxrin, int   *numr );
 	
         static void  prb1d(double *b, int npoint, float *pos);
 		
