@@ -453,7 +453,7 @@ namespace EMAN {
 					strarray.push_back(elem_proxy2());
 				}
 				else if (object_type == EMObject::UNKNOWN) {
-					
+					LOGERR("Unknown array type ");
 				}
 			}
 			if (object_type == EMObject::INTARRAY) {
