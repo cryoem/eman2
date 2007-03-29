@@ -82,9 +82,20 @@ namespace EMAN
 
 		/** Calculates a (symmetrized) distance matrix for the current PointArray
 		*
+		* @param sortrows if set, will sort the values in each row. The return will no longer be a true similarity matrix.
 		* @return An EMData object containing the similarity matrix
 		*/
-		EMData *distmx(PointArray *to=NULL);	// computes a distance matrix. Self-matrix if 'to' is NULL
+		EMData *distmx(int sortrows=0);	// computes a distance matrix
+
+		/** Will try to establish a 1-1 correspondence between points in
+		*   two different PointArray objects (this and to). Returns
+		*   a vector<int> where the index is addresses the points in 'this'
+		*   and the value addresses points in 'to'. A value of -1 means there
+		*   was no match for that point.
+		*
+		* @return A vector<int> with the mapping of points from 'this' to 'to'. e.g. - ret[2]=5 means point 2 in 'this' matches point 5 in 'to'
+		*/
+		vector<int> match_points(PointArray *to);
 
 
 		/** Aligns one PointArray to another in 2 dimensions

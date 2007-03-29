@@ -38,6 +38,59 @@
 
 using namespace EMAN;
 
+int cmp_axis_x(const void *a, const void *b)
+{
+	double diff = ((double *) a)[0] - ((double *) b)[0];
+	if (diff < 0.0)
+		return -1;
+	else if (diff > 0.0)
+		return 1;
+	else
+		return 0;
+}
+int cmp_axis_y(const void *a, const void *b)
+{
+	double diff = ((double *) a)[1] - ((double *) b)[1];
+	if (diff < 0.0)
+		return -1;
+	else if (diff > 0.0)
+		return 1;
+	else
+		return 0;
+}
+int cmp_axis_z(const void *a, const void *b)
+{
+	double diff = ((double *) a)[2] - ((double *) b)[2];
+	if (diff < 0.0)
+		return -1;
+	else if (diff > 0.0)
+		return 1;
+	else
+		return 0;
+}
+int cmp_val(const void *a, const void *b)
+{
+	double diff = ((double *) a)[3] - ((double *) b)[3];
+	if (diff < 0.0)
+		return -1;
+	else if (diff > 0.0)
+		return 1;
+	else
+		return 0;
+}
+// This will do a sort in descending order
+int cmp_float(const void *a, const void *b)
+{
+	double diff = *((float *) a) - *((float *) b);
+	if (diff < 0.0)
+		return 1;
+	else if (diff > 0.0)
+		return -1;
+	else
+		return 0;
+}
+
+
 PointArray::PointArray()
 {
 	points = 0;
@@ -106,8 +159,73 @@ void PointArray::set_points_array(double *p)
 	points = p;
 }
 
-EMData *PointArray::distmx(PointArray *to) {
-return NULL;
+EMData *PointArray::distmx(int sortrows) {
+if (n==0) return NULL;
+
+int i,j;
+
+EMData *ret= new EMData(n,n,1);
+ret->to_zero();
+
+for (i=0; i<n; i++) {
+	for (j=i+1; j<n; j++) {
+		float r=(get_vector_at(i)-get_vector_at(j)).length();
+		ret->set_value_at(i,j,0,r);
+		ret->set_value_at(j,i,0,r);
+	}
+}
+
+if (sortrows) {
+	float *data=ret->get_data();
+	for (i=0; i<n; i++) qsort(&data[i*n],n,sizeof(float),cmp_float);
+	ret->update();
+}
+
+return ret;
+}
+
+vector<int> PointArray::match_points(PointArray *to) {
+EMData *mx0=distmx(1);
+EMData *mx1=to->distmx(1);
+int n2=mx1->get_xsize();	// same as get_number_points on to
+
+float max_miss=(float)mx0->get_attr("sigma")/4.0;
+printf("max error %f\n",max_miss);
+
+
+
+vector<int> ret(n,-1);
+vector<float> rete(n,0.0);
+int i,j,k,l;
+
+if (!mx0 || !mx1) return ret;
+
+// i iterates over elements of 'this', j looks for a match in 'to'
+// k and l iterate over the individual distances
+for (i=0; i<n; i++) {
+	int bestn=-1;			// number of best match in mx1
+	double bestd=1.0e38;		// residual error distance in best match
+	for (j=0; j<n2; j++) {
+		double d=0;
+		int nd=0;
+		for (k=l=0; k<n-1 && l<n2-1; k++,l++) {
+			float d1=fabs(mx0->get_value_at(k,i)-mx1->get_value_at(l,j));
+			float d2=fabs(mx0->get_value_at(k+1,i)-mx1->get_value_at(l,j));
+			float d3=fabs(mx0->get_value_at(k,i)-mx1->get_value_at(l+1,j));
+			float d4=fabs(mx0->get_value_at(k+1,i)-mx1->get_value_at(l+1,j));
+			if (d2<d1 && d4>d2) { l--; continue; }
+			if (d3<d1 && d4>d3) { k--; continue; }
+			d+=d1;
+			nd++;
+		}
+		d/=(float)nd;
+		printf("%d -> %d\t%f\t%d\n",i,j,d,nd);
+		if (d<bestd) { bestd=d; bestn=j; }
+	}
+	ret[i]=bestn;
+
+}
+return ret;
 }
 
 vector<float> PointArray::align_2d(PointArray *to) {
@@ -832,46 +950,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 
 
 
-int cmp_axis_x(const void *a, const void *b)
-{
-	double diff = ((double *) a)[0] - ((double *) b)[0];
-	if (diff < 0.0)
-		return -1;
-	else if (diff > 0.0)
-		return 1;
-	else
-		return 0;
-}
-int cmp_axis_y(const void *a, const void *b)
-{
-	double diff = ((double *) a)[1] - ((double *) b)[1];
-	if (diff < 0.0)
-		return -1;
-	else if (diff > 0.0)
-		return 1;
-	else
-		return 0;
-}
-int cmp_axis_z(const void *a, const void *b)
-{
-	double diff = ((double *) a)[2] - ((double *) b)[2];
-	if (diff < 0.0)
-		return -1;
-	else if (diff > 0.0)
-		return 1;
-	else
-		return 0;
-}
-int cmp_val(const void *a, const void *b)
-{
-	double diff = ((double *) a)[3] - ((double *) b)[3];
-	if (diff < 0.0)
-		return -1;
-	else if (diff > 0.0)
-		return 1;
-	else
-		return 0;
-}
+
 void PointArray::sort_by_axis(int axis)
 {
 	if (axis == 0)
