@@ -179,6 +179,16 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 
 		result = python::incref(python::list(flist).ptr());
 	}
+	else if (t == EMObject::INTARRAY) {
+		vector<int> iarray = emobj;
+		python::list ilist;
+	    
+		for (size_t i = 0; i < iarray.size(); i++) {
+			ilist.append(iarray[i]);
+		}
+
+		result = python::incref(python::list(ilist).ptr());
+	}
 	else if (t == EMObject::STRINGARRAY) {
 		vector<string> strarray = emobj;
 		python::list flist;

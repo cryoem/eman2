@@ -408,12 +408,26 @@ namespace EMAN {
 			data->convertible = storage;
 
 			EMObject& result = *((EMObject*) storage);
-	
+			
+			PyObject * first_obj = PyObject_GetItem(obj_ptr, PyInt_FromLong(0));
+			EMObject::ObjectType object_type;
+			if( PyObject_TypeCheck(first_obj, &PyInt_Type) ) {
+				object_type = EMObject::INTARRAY;
+			}
+			else if( PyObject_TypeCheck(first_obj, &PyFloat_Type) ) {
+				object_type = EMObject::FLOATARRAY;
+			}
+			else if( PyObject_TypeCheck(first_obj, &PyString_Type) ) {
+				object_type = EMObject::STRINGARRAY;
+			}
+			else {
+				object_type = EMObject::UNKNOWN;
+			}
+			
 			python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+			vector<int> iarray;
 			vector<float> farray;
 			vector<string> strarray;
-			
-			EMObject::ObjectType object_type = EMObject::UNKNOWN;
 			
 			while(1) {
 				python::handle<> py_elem_hdl(python::allow_null(PyIter_Next(obj_iter.get())));
@@ -426,20 +440,9 @@ namespace EMAN {
 				}
 	    
 				python::object py_elem_obj(py_elem_hdl);
-
-				if (object_type == EMObject::UNKNOWN) {
-					python::extract<float> elem_proxy1(py_elem_obj);
-					if (elem_proxy1.check()) {					
-						farray.push_back(elem_proxy1());
-						object_type = EMObject::FLOATARRAY;
-					}
-					else {
-						python::extract<string> elem_proxy2(py_elem_obj);
-						if (elem_proxy2.check()) {
-							strarray.push_back(elem_proxy2());
-							object_type = EMObject::STRINGARRAY;
-						}
-					}
+				if (object_type == EMObject::INTARRAY) {
+					python::extract<int> elem_proxy1(py_elem_obj);
+					iarray.push_back(elem_proxy1());
 				}
 				else if (object_type == EMObject::FLOATARRAY) {
 					python::extract<float> elem_proxy1(py_elem_obj);
@@ -449,8 +452,14 @@ namespace EMAN {
 					python::extract<string> elem_proxy2(py_elem_obj);
 					strarray.push_back(elem_proxy2());
 				}
+				else if (object_type == EMObject::UNKNOWN) {
+					
+				}
 			}
-			if (object_type == EMObject::FLOATARRAY) {
+			if (object_type == EMObject::INTARRAY) {
+				result = EMObject(iarray);
+			}
+			else if (object_type == EMObject::FLOATARRAY) {
 				result = EMObject(farray);
 			}
 			else if (object_type == EMObject::STRINGARRAY) {

@@ -40,6 +40,9 @@
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_errno.h>
 #include <vector>
+#include <boost/shared_ptr.hpp>
+
+using boost::shared_ptr;
 using std::vector;
 using std::cout;
 using namespace EMAN;

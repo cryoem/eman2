@@ -155,18 +155,15 @@ EMObject::operator  Transform3D *() const
 	return transform3d;
 }
 
-EMObject::operator shared_ptr< vector<int> >() const
+EMObject::operator vector<int>() const
 {
     if( type != INTARRAY )
     {
-        if( type != UNKNOWN )
-	{
-	    throw TypeException("Cannot convert to int array from ", get_object_type_name(type) );
-	}
-
-	return shared_ptr< vector<int> >();
+        if( type != UNKNOWN ) {
+	    	throw TypeException("Cannot convert to vector<int> from this data type", get_object_type_name(type) );
+		}
+		return vector<int>();
     }
-
     return iarray;
 }
 
@@ -299,6 +296,15 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 		}
 		else {
 			return false;
+		}
+	case EMObject::INTARRAY:
+		if (e1.iarray.size() == e2.iarray.size()) {
+			for (size_t i = 0; i < e1.iarray.size(); i++) {
+				if (e1.iarray[i] != e2.iarray[i]) {
+					return false;
+				}
+			}
+			return true;
 		}
 	case EMObject::STRINGARRAY:
 		if (e1.strarray.size() == e2.strarray.size()) {

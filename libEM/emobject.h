@@ -39,7 +39,6 @@
 #include <map>
 #include <vector>
 #include <iostream>
-#include <boost/shared_ptr.hpp>
 
 #include "log.h"
 #include "exception.h"
@@ -47,8 +46,6 @@
 using std::vector;
 using std::string;
 using std::map;
-
-using boost::shared_ptr;
 
 namespace EMAN
 {
@@ -138,10 +135,10 @@ namespace EMAN
 			:n(0), emdata(0), xydata(0), transform3d(t), type(TRANSFORM3D) {}
 
 		EMObject(const vector< int >& v )
-		    : n(0), emdata(0), xydata(0), transform3d(0), iarray( new vector<int>(v) ), type(INTARRAY) {}
+		    : n(0), emdata(0), xydata(0), transform3d(0), iarray(v), type(INTARRAY) {}
 
 		EMObject(const vector < float >&v)
-			:n(0), emdata(0), xydata(0), transform3d(0), farray(v),type(FLOATARRAY)	{}
+			:n(0), emdata(0), xydata(0), transform3d(0), farray(v), type(FLOATARRAY)	{}
 
 		EMObject(const vector <string>& sarray)
 			:n(0),emdata(0), xydata(0), transform3d(0), strarray(sarray), type(STRINGARRAY){}
@@ -156,7 +153,7 @@ namespace EMAN
 		operator  XYData *() const;
 		operator  Transform3D *() const;
 
-		operator shared_ptr< vector<int> >() const;
+		operator vector < int > () const;
 		operator vector < float > () const;
 		operator vector<string> () const;
 		
@@ -180,7 +177,7 @@ namespace EMAN
 		XYData *xydata;
 		Transform3D * transform3d;
 		string str;
-		shared_ptr< vector<int> > iarray;
+		vector < int > iarray;
 		vector < float >farray;
 		vector < string> strarray;
 		ObjectType type;

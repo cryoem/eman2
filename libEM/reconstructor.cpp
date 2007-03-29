@@ -1830,14 +1830,14 @@ int bootstrap_nnReconstructor::insert_slice(EMData* slice, const Transform3D& eu
 EMData* bootstrap_nnReconstructor::finish()
 {
     nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_npad) );
-    shared_ptr< vector<int> > mults = params["mult"];
-    assert( mults != NULL );
-    assert( m_transes.size() == mults->size() );
+    vector<int> mults = params["mult"];
+//    assert( mults != NULL );
+    assert( m_transes.size() == mults.size() );
 
     int total = 0;
-    for( unsigned int i=0; i < mults->size(); ++i )
+    for( unsigned int i=0; i < mults.size(); ++i )
     {
-        int mult = mults->at(i);
+        int mult = mults.at(i);
 	if( mult > 0 )
 	{
 	    if( m_media == "memory" )
@@ -2255,14 +2255,14 @@ int bootstrap_nnctfReconstructor::insert_slice(EMData* slice, const Transform3D&
 EMData* bootstrap_nnctfReconstructor::finish()
 {
     nn4_ctfReconstructor* r( new nn4_ctfReconstructor(m_symmetry, m_size, m_npad, m_snr, m_sign) );
-    shared_ptr< vector<int> > mults = params["mult"];
-    assert( mults != NULL );
-    assert( m_transes.size() == mults->size() );
+    vector<int> mults = params["mult"];
+//    assert( mults != NULL );
+    assert( m_transes.size() == mults.size() );
 
     int total = 0;
-    for( unsigned int i=0; i < mults->size(); ++i )
+    for( unsigned int i=0; i < mults.size(); ++i )
     {
-        int mult = mults->at(i);
+        int mult = mults.at(i);
 	if( mult > 0 )
 	{
 	    if( m_media == "memory" )
