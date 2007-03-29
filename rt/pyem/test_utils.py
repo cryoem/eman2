@@ -373,16 +373,16 @@ class TestEMUtils(unittest.TestCase):
         """test is_same_ctf function ........................"""
         e1 = EMData()
         e1.set_size(32,32,1)
-        e1.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,10])
+        e1.set_attr('ctf', [0.,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.])
         
         e2 = EMData()
         e2.set_size(64,64,1)
-        e2.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,10])
+        e2.set_attr('ctf', [0.,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.])
         
         self.assertEqual(EMUtil.is_same_ctf(e1, e2), True)
         
-        e1.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,10])
-        e2.set_attr('ctf', [0,1,2,3,4,5,6,7,8,9,99])
+        e1.set_attr('ctf', [0.,1.,2.,3.,4.,5.,6.,7.,8.,9.,10.])
+        e2.set_attr('ctf', [0.,1.,2.,3.,4.,5.,6.,7.,8.,9.,99.])
         self.assertEqual(EMUtil.is_same_ctf(e1, e2), False)
         
     def test_get_image_ext_type(self):
