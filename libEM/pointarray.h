@@ -95,7 +95,7 @@ namespace EMAN
 		*
 		* @return A vector<int> with the mapping of points from 'this' to 'to'. e.g. - ret[2]=5 means point 2 in 'this' matches point 5 in 'to'
 		*/
-		vector<int> match_points(PointArray *to);
+		vector<int> match_points(PointArray *to,float max_miss=-1.0);
 
 
 		/** Aligns one PointArray to another in 2 dimensions

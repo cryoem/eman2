@@ -184,13 +184,13 @@ if (sortrows) {
 return ret;
 }
 
-vector<int> PointArray::match_points(PointArray *to) {
+vector<int> PointArray::match_points(PointArray *to,float max_miss) {
 EMData *mx0=distmx(1);
 EMData *mx1=to->distmx(1);
 int n2=mx1->get_xsize();	// same as get_number_points on to
 
-float max_miss=(float)mx0->get_attr("sigma")/4.0;
-printf("max error %f\n",max_miss);
+if (max_miss<0) max_miss=(float)mx0->get_attr("sigma")/10.0;
+//printf("max error %f\n",max_miss);
 
 
 
@@ -219,12 +219,23 @@ for (i=0; i<n; i++) {
 			nd++;
 		}
 		d/=(float)nd;
-		printf("%d -> %d\t%f\t%d\n",i,j,d,nd);
+//		printf("%d -> %d\t%f\t%d\n",i,j,d,nd);
 		if (d<bestd) { bestd=d; bestn=j; }
 	}
 	ret[i]=bestn;
-
+	rete[i]=bestd;
 }
+
+// This will remove duplicate assignments, keeping the best one
+// also remove any assignments with large errors
+for (i=0; i<n; i++) {
+	for (j=0; j<n; j++) {
+		if (rete[i]>max_miss) { ret[i]=-1; break; }
+		if (i==j || ret[i]!=ret[j] || ret[i]==-1) continue;
+		if (rete[i]>rete[j]) { ret[i]=-1; break; }
+	}
+}
+
 return ret;
 }
 
@@ -254,7 +265,7 @@ for (a=0; a<360.0; a+=5.0) {
 	vector<float> ali=p2->align_trans_2d(to);
 	
 	// now try assigning each 'to' point to the 'this' point closest to the center
-	printf("%1.1f) ",a);
+//	printf("%1.1f) ",a);
 	for (i=0; i<to->get_number_points(); i++) {
 		vector<float> ali2=p2->align_trans_2d(to,1,to->get_vector_at(i)[0]-cen[0],to->get_vector_at(i)[1]-cen[1]);
 		if (ali2[3]>2 && ali2[3]>=ali[3] && ali2[2]<=ali[2]) ali=ali2;

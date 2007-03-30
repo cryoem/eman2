@@ -105,19 +105,22 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	pats=[]
 	for i in args:
 		img=EMData(i,0)
-		pats.append(findstars(img))
-	print len(pats[0]),len(pats[1])
+		pats.append(l2pa(findstars(img)))
+		
 #	pprint(pats[0])
-	print alignstars(pats[0],pats[1])
+#	print alignstars(pats[0],pats[1])
 #	print alignstars(pats[1],pats[2])
 #	print alignstars(pats[2],pats[3])
 	
-	out=file("z1","w")
-	for i in pats[0]: out.write("%f\t%f\n"%(i[0],i[1]))
-	out.close()
-	out=file("z2","w")
-	for i in pats[1]: out.write("%f\t%f\n"%(i[0],i[1]))
-	out.close()
+	match=pats[0].match_points(pats[1],-1.0)
+	
+	print pats[0].get_vector_at(0)
+	out1=file("z1","w")
+	out2=file("z2","w")
+	for i in range(len(match)):
+		if match[i]==-1 : continue
+		out1.write("%f\t%f\n"%(pats[0].get_vector_at(i).at(0),pats[0].get_vector_at(i).at(1)))
+		out2.write("%f\t%f\n"%(pats[1].get_vector_at(match[i]).at(0),pats[1].get_vector_at(match[i]).at(1)))
 	
 
 	
