@@ -37,6 +37,7 @@
 #define eman_pointarray_h_
 
 #include "emdata.h"
+#include "transform.h"
 
 #if defined NFFT || NFFT2
 extern "C"
@@ -103,7 +104,7 @@ namespace EMAN
 		* @param to Another PointArray to align to
 		* @return A vector<float> containing (dx,dy,align_err,points_used
 		*/
-		vector<float> align_2d(PointArray *to);	// computes the optimal alignment between two (non-identical) sets of points
+		Transform3D *align_2d(PointArray *to);	// computes the optimal alignment between two (non-identical) sets of points
 
 		/** Translationally aligns one PointArray to another in 2 dimensions
 		*

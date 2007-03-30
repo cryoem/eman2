@@ -47,7 +47,6 @@
 #include <gsl/gsl_linalg.h>
 #include <algorithm>
 
-
 #ifndef WIN32
 	#include <unistd.h>
 	#include <sys/param.h>
@@ -493,6 +492,33 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 
 	*intercept = (float) ((sum_xx * sum_y - sum_x * sum_xy) / div);
 	*slope = (float) ((sum * sum_xy - sum_x * sum_y) / div);
+}
+
+Vec3f calc_bilinear_least_square(vector<Vec3f> p) {
+int i;
+
+// various sums used in the final solution
+double Sx=0,Sy=0,Sxy=0,Sxx=0,Syy=0,Sz=0,Sxz=0,Syz=0,S=0;
+for (i=0; i<p.size(); i++) {
+	Sx+=p[i][0];
+	Sy+=p[i][1];
+	Sz+=p[i][2];
+	Sxx+=p[i][0]*p[i][0];
+	Syy+=p[i][1]*p[i][1];
+	Sxy+=p[i][0]*p[i][1];
+	S+=1.0;
+	Sxz+=p[i][0]*p[i][2];
+	Syz+=p[i][1]*p[i][2];
+}
+double d=S*Sxy*Sxy - 2*Sx*Sxy*Sy + Sxx*Sy*Sy  + Sx*Sx*Syy - S*Sxx*Syy;
+
+Vec3f ret(0,0,0);
+
+ret[0]=-((Sxy*Sxz*Sy - Sx*Sxz*Syy + Sx*Sxy*Syz - Sxx*Sy*Syz - Sxy*Sxy*Sz +Sxx*Syy*Sz)/d);
+ret[1]=-((-Sxz*Sy*Sy  + S*Sxz*Syy - S*Sxy*Syz + Sx*Sy*Syz + Sxy*Sy*Sz -Sx*Syy*Sz) /d);
+ret[2]=-((-S*Sxy*Sxz + Sx*Sxz*Sy - Sx*Sx*Syz + S*Sxx*Syz + Sx*Sxy*Sz -Sxx*Sy*Sz) /d);
+
+return ret;
 }
 
 void Util::save_data(const vector < float >&x_array, const vector < float >&y_array,

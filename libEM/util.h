@@ -43,6 +43,7 @@
 
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
+#include "vec3.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -296,6 +297,14 @@ namespace EMAN
 		static void calc_least_square_fit(size_t nitems, const float *data_x,
 										  const float *data_y, float *p_slope, 
 										  float *p_intercept, bool ignore_zero,float absmax=0);
+
+		/** calculate bilinear least-square fit, z = a + b x + c y
+		* Takes a set of x,y,z vectors and produces an a,b,c vector
+		* does not accept error bars on z or return goodness of fit
+		* @param[in] points  a vector<Vec3f> of x,y,z values to fit a plane to
+		* @return result as a Vec3f(a,b,c)
+		*/
+		Vec3f calc_bilinear_least_square(vector<Vec3f> points);
 
 		/** Save (x y) data array into a file. Each line of the file
 		 * have the format "x1TABy1", where x1, y1 are elements of x

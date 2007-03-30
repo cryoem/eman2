@@ -198,7 +198,11 @@ vector<int> ret(n,-1);
 vector<float> rete(n,0.0);
 int i,j,k,l;
 
-if (!mx0 || !mx1) return ret;
+if (!mx0 || !mx1) {
+	if (mx0) delete mx0;
+	if (mx1) delete mx1;
+	return ret;
+}
 
 // i iterates over elements of 'this', j looks for a match in 'to'
 // k and l iterate over the individual distances
@@ -236,56 +240,24 @@ for (i=0; i<n; i++) {
 	}
 }
 
+delete mx0;
+delete mx1;
+
 return ret;
 }
 
-vector<float> PointArray::align_2d(PointArray *to) {
-float da,step=.1745;
-float a;
-int i;
-Transform3D *xf=new Transform3D(0,0,0);
+// uses bilinear least-squares to generate a transformation
+// matrix for pairs of points
+Transform3D *PointArray::align_2d(PointArray *to) {
+vector<int> match=match_points(to);
 
-// find the point closest to the center (bestn) 
-float bestd=1.0e38;
-int bestn=0;
-FloatPoint cen=get_center();
-for (i=0; i<get_number_points(); i++) {
-	float h=hypot(get_vector_at(i)[0]-cen[0],get_vector_at(i)[1]-cen[1]);
-	if (h<bestd) { bestd=h; bestn=i; }
-}
-cen[0]=get_vector_at(i)[0];
-cen[1]=get_vector_at(i)[1];
 
-PointArray *p2=new PointArray;
-vector<float> best(4,0.0);
-best[2]=1.0e38;
-for (a=0; a<360.0; a+=5.0) {
-	xf->set_rotation(a,0,0);
-	p2->set_from(this,"",xf);
-	vector<float> ali=p2->align_trans_2d(to);
-	
-	// now try assigning each 'to' point to the 'this' point closest to the center
-//	printf("%1.1f) ",a);
-	for (i=0; i<to->get_number_points(); i++) {
-		vector<float> ali2=p2->align_trans_2d(to,1,to->get_vector_at(i)[0]-cen[0],to->get_vector_at(i)[1]-cen[1]);
-		if (ali2[3]>2 && ali2[3]>=ali[3] && ali2[2]<=ali[2]) ali=ali2;
-		printf("%1.0f(%1.2f), ",ali2[3],ali2[2]);
-	}
-	printf("\n");
 
-//	printf("%f %f %f %f\n",ali[0],ali[1],ali[2],ali[3]);
-	if (ali[3]>2 && ali[3]>=best[3] && ali[2]<best[2]) {
-		best=ali;
-		best.push_back(a);
-	}
-}
-
-delete xf;
-delete p2;
-return best;
 }
 
 vector<float> PointArray::align_trans_2d(PointArray *to, int flags, float dxhint,float dyhint) {
+printf("Warning, this is old code. Use align_2d.\n");
+
 // returns (dx,dy,residual error,n points used)
 // dxhint,dyhint should translate this->to
 // flags : 1 - use hint values, 2 - center by strongest point (highest 'value')
