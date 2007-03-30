@@ -2445,116 +2445,6 @@ c
 
 
 #define  dout(i,j)   dout[i+maxrin*j]
-
-/*
-EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr) {
-   int nring = numr.size()/3;
-   int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
-   int maxrin = numr[numr.size()-1];
-
-   // t(maxrin), q(maxrin)  // removed +2
-   double *t, *q;
-
-   //  q - straight  = circ1 * conjg(circ2)
-   //  zero q array
-   q = (double*)calloc(maxrin,sizeof(double));
-
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
-   //   zero t array
-   t = (double*)calloc(maxrin,sizeof(double));
-
-   crosrng_msg(circ1->get_data(), circ2->get_data(), &q[0], &t[0], lcirc, nring, maxrin, &numr[0]);
-   EMData* out = new EMData();
-   out->set_size(maxrin,2,1);
-   float *dout = out->get_data();
-   for (int i=0; i<maxrin; i++) {dout(i,0)=q[i]; dout(i,1)=t[i];}
-   //out->set_size(maxrin,1,1);
-   //float *dout = out->get_data();
-   //for (int i=0; i<maxrin; i++) {dout(i,0)=q[i];}
-   free(t);
-   free(q);
-   return out;
-}
-#undef out
-*/
-/*
-//---------------------------------------------------
-void Util::crosrng_msg(float *circ1, float *circ2, double *q, double *t, int  lcirc, int  nring,
-                      int  maxrin, int   *numr )
-{*/
-/*
-c
-c  checks both straight & mirrored positions
-c
-c  input - fourier transforms of rings!!
-c  circ1 already multiplied by weights!
-c
-
-*/
-/*
-   // dimension         circ1(lcirc),circ2(lcirc)
-
-   int   ip, jc, numr3i, numr2i, i, j;
-   float t1, t2, t3, t4, c1, c2, d1, d2;
-
-#ifdef _WIN32
-	ip = -(int)(log((float)maxrin)/log(2.0f));
-#else
-	ip = -(int)(log2(maxrin));
-#endif	//_WIN32
-
-   //  q - straight  = circ1 * conjg(circ2)
-
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
-
-   //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-
-   for (i=1;i<=nring;i++) {
-
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
-
-      t1   = circ1(numr2i) * circ2(numr2i);
-      q(1) = q(1)+t1;
-      t(1) = t(1)+t1;
-
-      if (numr3i == maxrin)  {
-         t1   = circ1(numr2i+1) * circ2(numr2i+1);
-         q(2) = q(2)+t1;
-         t(2) = t(2)+t1;
-      }
-      else {
-	 t1          = circ1(numr2i+1) * circ2(numr2i+1);
-	 q(numr3i+1) = q(numr3i+1)+t1;
-      }
-
-      for (j=3;j<=numr3i;j=j+2) {
-	 jc     = j+numr2i-1;
-
- 	 c1     = circ1(jc);
- 	 c2     = circ1(jc+1);
-     d1     = circ2(jc);
-     d2     = circ2(jc+1);
-
-  	 t1     = c1 * d1;
- 	 t3     = c1 * d2;
- 	 t2     = c2 * d2;
- 	 t4     = c2 * d1;
-
-	 q(j)   = q(j)   + t1 + t2;
-	 q(j+1) = q(j+1) - t3 + t4;
-	 t(j)   = t(j)   + t1 - t2;
-	 t(j+1) = t(j+1) - t3 - t4;
-      } 
-  }
-  
-  // straight
-  fftr_d(q,ip);
-
-  // mirrored
-  fftr_d(t,ip);
-}*/
-
 #define  circ1b(i)        circ1b  [(i)-1]
 #define  circ2b(i)        circ2b  [(i)-1]
 
@@ -2585,12 +2475,7 @@ c
    // t(maxrin), q(maxrin)  // removed +2
    double *t, *q;
 
-   //  q - straight  = circ1 * conjg(circ2)
-   //  zero q array
    q = (double*)calloc(maxrin,sizeof(double));
-
-   //   t - mirrored  = conjg(circ1) * conjg(circ2)
-   //   zero t array
    t = (double*)calloc(maxrin,sizeof(double));
 
 #ifdef _WIN32
