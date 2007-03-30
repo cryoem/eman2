@@ -216,7 +216,24 @@ class TestHdfIO(unittest.TestCase):
         self.assertEqual(attrdict["maximum"], 325.0)
         self.assertEqual(attrdict["minimum"], 0.0)
 
-        testlib.safe_unlink(imgfile)        
+        testlib.safe_unlink(imgfile)  
+        
+    def test_int_array_attr(self):
+        """test int array as attribute ......................"""
+        hdffile = 'testfile.hdf'
+        e = EMData(64, 64)
+        e.process_inplace('testimage.noise.uniform.rand')
+        e.set_attr('int_array1', [1, 2, 3])
+        e.set_attr('int_array2', (5, 6, 7))
+        e.write_image(hdffile)
+        
+        e2 = EMData()
+        e2.read_image(hdffile)
+        d1 = e2.get_attr('int_array1')
+        d2 = e2.get_attr('int_array2')
+        self.assertEqual(d1, [1,2,3])
+        self.assertEqual(d2, [5,6,7])
+        os.unlink(hdffile)      
 
     def test_hdf_attr(self):
         """test hdf file attribute .........................."""
