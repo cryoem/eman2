@@ -95,19 +95,30 @@ EMObject HdfIO2::read_attr(hid_t attr) {
 	hid_t spc = H5Aget_space(attr);
 	H5T_class_t cls = H5Tget_class(type);
 	size_t sz = H5Tget_size(type);						// storage size, arrays handled in the 'space'
-	hssize_t pts = H5Sget_simple_extent_npoints(spc);	// number of points > 1 if an array of floats
+	hssize_t pts = H5Sget_simple_extent_npoints(spc);	// number of points > 1 if an array of floats or integers
 
 	EMObject ret(0);
 	int i;
 	float f,*fa;
+	int * ia;
 	double d;
 	char *s;
 	vector <float> fv(pts);
+	vector <int> iv(pts);
 
 	switch (cls) {
 	case H5T_INTEGER:
-		H5Aread(attr,H5T_NATIVE_INT,&i);
-		ret=EMObject(i);
+		if(pts==1) {
+			H5Aread(attr,H5T_NATIVE_INT,&i);
+			ret=EMObject(i);
+		}
+		else {
+			ia=(int *)malloc(pts*sizeof(int));
+			H5Aread(attr,H5T_NATIVE_INT,ia);
+			for (i=0; i<pts; i++) iv[i]=ia[i];
+			free(ia);
+			ret=EMObject(iv);
+		}
 		break;
 	case H5T_FLOAT:
 		if (sz==4) {
@@ -152,6 +163,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	hid_t spc=0;
 	hsize_t dims=1;
 	vector <float> fv;
+	vector <int> iv;	
 	switch(obj.get_type()) {
 	case EMObject::INT: type=H5Tcopy(H5T_STD_I32LE); spc=H5Scopy(simple_space); break;
 	case EMObject::FLOAT: type=H5Tcopy(H5T_IEEE_F32LE); spc=H5Scopy(simple_space); break;
@@ -167,8 +179,14 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		dims=fv.size();
 		spc=H5Screate_simple(1,&dims,NULL);
 		break;
-	case EMObject::STRINGARRAY:
 	case EMObject::INTARRAY:
+		type=H5Tcopy(H5T_STD_I32LE);
+		iv=obj;
+		dims=iv.size();
+		spc=H5Screate_simple(1,&dims,NULL);
+		break;
+	case EMObject::STRINGARRAY:
+	case EMObject::TRANSFORM3D:
 	case EMObject::EMDATA:
 	case EMObject::XYDATA:
 		return -1;
@@ -193,6 +211,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 
 	unsigned int i;
 	float f,*fa;
+	int * ia;
 	double d;
 	const char *s;
 	switch(obj.get_type()) {
@@ -218,6 +237,12 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		for (i=0; i<fv.size(); i++) fa[i]=fv[i];
 		H5Awrite(attr,H5T_NATIVE_FLOAT,fa);
 		free(fa);
+		break;
+	case EMObject::INTARRAY:
+		ia=(int *)malloc(iv.size()*sizeof(int));
+		for (i=0; i<iv.size(); i++) ia[i]=iv[i];
+		H5Awrite(attr,H5T_NATIVE_INT,ia);
+		free(ia);
 		break;
 //	case EMObject::STRINGARRAY:
 //	case EMObject::EMDATA:
