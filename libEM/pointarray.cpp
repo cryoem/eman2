@@ -250,9 +250,35 @@ return ret;
 // matrix for pairs of points
 Transform3D *PointArray::align_2d(PointArray *to) {
 vector<int> match=match_points(to);
+Transform3D *ret=new Transform3D();
 
+int i,j;
+vector<float> pts;
+for (i=0; i<match.size(); i++) {
+	if (match[i]==-1) continue;
 
+	pts.push_back(get_vector_at(i)[0]);
+	pts.push_back(get_vector_at(i)[1]);
+	pts.push_back(to->get_vector_at(match[i])[0]);
+}
 
+Vec3f vx=Util::calc_bilinear_least_square(pts);
+	
+for (i=j=0; i<match.size(); i++) {
+	if (match[i]==-1) continue;
+	pts[j*3]  =get_vector_at(i)[0];
+	pts[j*3+1]=get_vector_at(i)[1];
+	pts[j*3+2]=to->get_vector_at(match[i])[1];
+	j++;
+}
+
+Vec3f vy=Util::calc_bilinear_least_square(pts);
+
+//ret->set_rotation(vx[1],vx[2],0.0,vy[1],vy[2],0.0,0.0,0.0,1.0);
+ret->set_rotation(vx[1],vy[1],0.0,vx[2],vy[2],0.0,0.0,0.0,1.0);
+ret->set_pretrans(Vec3f(-vx[0],-vy[0],0));
+
+return ret;
 }
 
 vector<float> PointArray::align_trans_2d(PointArray *to, int flags, float dxhint,float dyhint) {

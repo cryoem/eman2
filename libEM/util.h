@@ -301,10 +301,10 @@ namespace EMAN
 		/** calculate bilinear least-square fit, z = a + b x + c y
 		* Takes a set of x,y,z vectors and produces an a,b,c vector
 		* does not accept error bars on z or return goodness of fit
-		* @param[in] points  a vector<Vec3f> of x,y,z values to fit a plane to
+		* @param[in] points  a vector<float> of x,y,z values in (x1,y1,z1,x2,y2,z2...) sequence to fit a plane to
 		* @return result as a Vec3f(a,b,c)
 		*/
-		Vec3f calc_bilinear_least_square(vector<Vec3f> points);
+		static Vec3f calc_bilinear_least_square(const vector<float> &points);
 
 		/** Save (x y) data array into a file. Each line of the file
 		 * have the format "x1TABy1", where x1, y1 are elements of x

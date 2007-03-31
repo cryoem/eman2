@@ -203,7 +203,7 @@ namespace EMAN
 
             //
 		static int get_nsym(const string & sym);
-            Transform3D get_sym(const string & sym, int n) const;
+		Transform3D get_sym(const string & sym, int n) const;
 		void set_center(const Vec3f & center);
 		void set_pretrans(const Vec3f & pretrans);
             //

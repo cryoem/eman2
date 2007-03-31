@@ -494,21 +494,21 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 	*slope = (float) ((sum * sum_xy - sum_x * sum_y) / div);
 }
 
-Vec3f calc_bilinear_least_square(vector<Vec3f> p) {
+Vec3f Util::calc_bilinear_least_square(const vector<float> &p) {
 int i;
 
 // various sums used in the final solution
 double Sx=0,Sy=0,Sxy=0,Sxx=0,Syy=0,Sz=0,Sxz=0,Syz=0,S=0;
-for (i=0; i<p.size(); i++) {
-	Sx+=p[i][0];
-	Sy+=p[i][1];
-	Sz+=p[i][2];
-	Sxx+=p[i][0]*p[i][0];
-	Syy+=p[i][1]*p[i][1];
-	Sxy+=p[i][0]*p[i][1];
+for (i=0; i<p.size(); i+=3) {
+	Sx+=p[i];
+	Sy+=p[i+1];
+	Sz+=p[i+2];
+	Sxx+=p[i]*p[i];
+	Syy+=p[i+1]*p[i+1];
+	Sxy+=p[i]*p[i+1];
 	S+=1.0;
-	Sxz+=p[i][0]*p[i][2];
-	Syz+=p[i][1]*p[i][2];
+	Sxz+=p[i]*p[i+2];
+	Syz+=p[i+1]*p[i+2];
 }
 double d=S*Sxy*Sxy - 2*Sx*Sxy*Sy + Sxx*Sy*Sy  + Sx*Sx*Syy - S*Sxx*Syy;
 

@@ -720,6 +720,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 	Vec3f dcenter     = RA.get_center();
 	Vec3f translation = RA.get_posttrans();
 	Dict rotation      = RA.get_rotation(Transform3D::EMAN);
+	Transform3D mx = RA;
 
 #ifdef DEBUG
 	vector<string> keys = rotation.keys();
@@ -745,19 +746,12 @@ void EMData::rotate_translate(const Transform3D & RA)
 	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
 
 	if (nz == 1) {
-		float cosphi = inv_scale * cos((M_PI/180.0f)*(float)rotation["phi"]);
-		float sinphi = inv_scale * sin((M_PI/180.0f)*(float)rotation["phi"]);
-
-		float x2c =  nx / 2 - dcenter[0] - translation[0];
-		float y2c =  ny / 2 - dcenter[1] - translation[1];
-		float y   = -ny / 2 + dcenter[1]; // changed 0 to 1 in dcenter and below
-
+		float y=-ny/2.0+mx[3][1];
 		for (int j = 0; j < ny; j++, y += 1.0f) {
-			float x = -nx / 2 + dcenter[0];
-
+			float x=-nx/2.0+mx[3][0];
 			for (int i = 0; i < nx; i++, x += 1.0f) {
-				float x2 = ( cosphi * x  - sinphi * y) + x2c;
-				float y2 = ( sinphi * x + cosphi * y) + y2c;
+				float x2 = mx[0][0]*x + mx[0][1]*y + mx[0][3]+nx/2;
+				float y2 = mx[1][0]*x + mx[1][1]*y + mx[1][3]+ny/2;
 
 				if (x2 < 0 || x2 >= nx2 - 1 || y2 < 0 || y2 >= ny2 - 1) {
 					des_data[i + j * nx] = 0;
@@ -800,7 +794,6 @@ void EMData::rotate_translate(const Transform3D & RA)
 		std::cout << "This is the 3D case." << std::endl    ;
 #endif
 
-		Transform3D mx = RA;
 		mx.set_scale(inv_scale);
 
 #ifdef DEBUG

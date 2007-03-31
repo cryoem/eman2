@@ -249,8 +249,6 @@ void Transform3D::apply_scale(float scale)    // YYY
 	}
 }
 
-
-
 void Transform3D::orthogonalize()  // YYY
 {
 	//EulerType EMAN;
