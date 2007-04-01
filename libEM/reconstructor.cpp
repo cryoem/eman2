@@ -2365,14 +2365,6 @@ void file_store::add_image(  EMData* emdata )
 
 void file_store::get_image( int id, EMData* padfft )
 {
-    assert( m_ihandle != NULL );
-
-    std::istream::off_type offset = id*sizeof(float)*m_totsize;
-    assert( offset >= 0 );
-    m_ihandle->seekg( offset, std::ios::beg );
-    assert( ! m_ihandle->bad() && ! m_ihandle->fail() );
-
-
     if( m_defocuses.size() == 0 )
     {
         ifstream m_txt_ifs( m_txt_file.c_str() );
@@ -2392,7 +2384,35 @@ void file_store::get_image( int id, EMData* padfft )
             m_psis.push_back( psi );
         }
     }
-        
+
+    assert( m_ihandle != NULL );
+
+    std::istream::off_type offset = id*sizeof(float)*m_totsize;
+    assert( offset >= 0 );
+
+    if( offset > 0 )
+    {
+        m_ihandle->seekg(offset, std::ios::beg);
+    }
+
+    if( m_ihandle->bad() )
+    {
+        std::cout << "bad while fetching id, offset: " << id << " " << offset << std::endl;
+        throw std::logic_error( "bad happen" );
+    }
+
+    if( m_ihandle->fail() )
+    {
+        std::cout << "fail while fetching id, offset, curoff: " << id << " " << offset << std::endl;
+        throw std::logic_error( "fail happen" );
+    }
+
+    if( m_ihandle->eof() )
+    {
+        std::cout << "eof while fetching id, offset: " << id << " " << offset << std::endl;
+        throw std::logic_error( "eof happen" );
+    }
+
     if( padfft->get_xsize() != m_xsize ||
         padfft->get_ysize() != m_ysize ||
         padfft->get_zsize() != m_zsize )
@@ -2400,7 +2420,9 @@ void file_store::get_image( int id, EMData* padfft )
         padfft->set_size(m_xsize, m_ysize, m_zsize);
     }
 
-    m_ihandle->read( (char*)(padfft->get_data()), sizeof(float)*m_totsize );
+    char* data = (char*)(padfft->get_data());
+    m_ihandle->read( data, sizeof(float)*m_totsize );
+    padfft->done_data();
 
     padfft->set_attr( "Cs", m_Cs );
     padfft->set_attr( "Pixel_size", m_pixel );
@@ -2412,19 +2434,20 @@ void file_store::get_image( int id, EMData* padfft )
     padfft->set_attr( "theta", m_thetas[id] );
     padfft->set_attr( "psi", m_psis[id] );
     padfft->set_attr( "padffted", 1 );
-
-    m_prev = id;
 }
 
 void file_store::restart( )
 {
-    m_prev = -1;
-
     if( m_ihandle == NULL )
     {
         m_ihandle = shared_ptr< ifstream >( new ifstream(m_bin_file.c_str(), std::ios::in | std::ios::binary) );
     }
-
+    
+    if( m_ihandle->bad() || m_ihandle->fail() || m_ihandle->eof() )
+    {
+        m_ihandle->open( m_bin_file.c_str(), std::ios::binary );
+    }
+   
     m_ihandle->seekg( 0, std::ios::beg );
 }
  
