@@ -1293,13 +1293,6 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    out->set_size(lcirc,1,1);
    char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
    float *circ = out->get_data();
-/*   Util::alrq_msi(image, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode, kb);
-   return out;
-}
-
-void Util::alrq_msi(EMData* image, float cns2, float cnr2,
-             int  *numr, float *circ, int lcirc, int  nring, char  mode, Util::KaiserBessel& kb)
-{*/
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
    float  yq, xold, yold, fi, x, y;
@@ -1890,6 +1883,7 @@ void  Util::fftr_d(double *xcmplx, int nv)
 #undef  br
 #undef  bi
 
+// This function conducts the Fourier Transform for a set of rings
 void Util::Frngs(EMData* circp, vector<int> numr){
    int nring = numr.size()/3;
    float *circ = circp->get_data();
@@ -2514,8 +2508,8 @@ c
 
  	 c1     = circ1b(jc);
  	 c2     = circ1b(jc+1);
-     d1     = circ2b(jc);
-     d2     = circ2b(jc+1);
+	 d1     = circ2b(jc);
+	 d2     = circ2b(jc+1);
 
   	 t1     = c1 * d1;
  	 t3     = c1 * d2;
