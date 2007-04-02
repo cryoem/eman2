@@ -103,24 +103,35 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	if len(args)<2 : parser.error("At least 2 inputs required")
 
 	pats=[]
+	imgs=[]
 	for i in args:
 		img=EMData(i,0)
 		pats.append(l2pa(findstars(img)))
+		imgs.append(img)
 		
 #	pprint(pats[0])
 #	print alignstars(pats[0],pats[1])
 #	print alignstars(pats[1],pats[2])
 #	print alignstars(pats[2],pats[3])
 	
-	match=pats[0].match_points(pats[1],-1.0)
+#	match=pats[0].match_points(pats[1],-1.0)
+	xf=pats[0].align_2d(pats[1])
+	print str(xf)
+	print xf.get_scale()
+	print xf.get_center()
+	print xf.get_posttrans()
+	print xf.get_rotation(EULER_EMAN)
+
+	imgs[0].rotate_translate(xf)
+	imgs[0].write_image("z.mrc")
 	
-	print pats[0].get_vector_at(0)
-	out1=file("z1","w")
-	out2=file("z2","w")
-	for i in range(len(match)):
-		if match[i]==-1 : continue
-		out1.write("%f\t%f\n"%(pats[0].get_vector_at(i).at(0),pats[0].get_vector_at(i).at(1)))
-		out2.write("%f\t%f\n"%(pats[1].get_vector_at(match[i]).at(0),pats[1].get_vector_at(match[i]).at(1)))
+	#print pats[0].get_vector_at(0)
+	#out1=file("z1","w")
+	#out2=file("z2","w")
+	#for i in range(len(match)):
+		#if match[i]==-1 : continue
+		#out1.write("%f\t%f\n"%(pats[0].get_vector_at(i).at(0),pats[0].get_vector_at(i).at(1)))
+		#out2.write("%f\t%f\n"%(pats[1].get_vector_at(match[i]).at(0),pats[1].get_vector_at(match[i]).at(1)))
 	
 
 	
