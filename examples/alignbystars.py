@@ -33,10 +33,11 @@
 from EMAN2 import *
 from emimage import *
 import time
+import sys
 from optparse import OptionParser
 from pprint import pprint
 
-def findstars(img):
+def findstars(img,scale=1.0):
 	"""This will find localized peaks to subpixel accuracy and return a list of
 	x,y,peak,rad_gyr"""
 	imc=img.copy()
@@ -54,7 +55,7 @@ def findstars(img):
 		
 		# find the center of mass of each peak
 		cg=c.cog()[:3]
-		ret.append((i.x+cg[0],i.y+cg[1],i.value,cg[2]))	# x,y,peak,rad
+		ret.append(((i.x+cg[0]-img.get_xsize()/2)*scale,(i.y+cg[1]-img.get_ysize()/2)*scale,i.value,cg[2]))	# x,y,peak,rad
 	
 	return ret
 
@@ -97,41 +98,54 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--csym", action="store_true", help="Restrict axes for c/d symmetric objects", default=False)
+#	parser.add_option("--scale", action="store_true", help="Restrict axes for c/d symmetric objects", default=False)
+	parser.add_option("--scale", "-S", type="float", help="scale factor", default=1.0)
+	parser.add_option("--out", "-o", type="string", help="Output filespec", default="out.mrc")
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("At least 2 inputs required")
+	scale=options.scale
 
 	pats=[]
-	imgs=[]
-	for i in args:
+	for j,i in enumerate(args):
 		img=EMData(i,0)
-		pats.append(l2pa(findstars(img)))
-		imgs.append(img)
+		pats.append(l2pa(findstars(img,scale)))
+		print " %04d\r"%j,
+		sys.stdout.flush()
 		
-#	pprint(pats[0])
-#	print alignstars(pats[0],pats[1])
-#	print alignstars(pats[1],pats[2])
-#	print alignstars(pats[2],pats[3])
+	avg=EMData(args[0],0)
+	avg.process_inplace("eman1.normalize.edgemean",{})
+	nx=avg.get_xsize()
+	ny=avg.get_ysize()
+	if scale!=1.0 : 
+		avg=avg.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
+		avg.scale(1.0/scale)
+	avgn=avg.copy()
+	avgn.to_one()
+		
+	for i in range(1,len(pats)):
+		xf=pats[i].align_2d(pats[0])
+		print "%d. %6.2f\t%6.2f"%(i,xf.get_pretrans().at(0),xf.get_pretrans().at(1))
+		img=EMData(args[i],0)
+		img.process_inplace("eman1.normalize.edgemean",{})
+		if scale!=1.0 : 
+			img=img.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
+			img.scale(1.0/scale)
+		imgn=img.copy()
+		imgn.to_one()
+		img.rotate_translate(xf)
+		imgn.rotate_translate(xf)
+		avg+=img
+		avgn+=imgn
 	
-#	match=pats[0].match_points(pats[1],-1.0)
-	xf=pats[0].align_2d(pats[1])
-	print str(xf)
-	print xf.get_scale()
-	print xf.get_center()
-	print xf.get_posttrans()
-	print xf.get_rotation(EULER_EMAN)
+	avg/=avgn
+	avg.write_image(options.out)
+	#print str(xf)
+	#print xf.get_scale()
+	#print xf.get_center()
+	#print xf.get_posttrans()
+	#print xf.get_rotation(EULER_EMAN)
 
-	imgs[0].rotate_translate(xf)
-	imgs[0].write_image("z.mrc")
-	
-	#print pats[0].get_vector_at(0)
-	#out1=file("z1","w")
-	#out2=file("z2","w")
-	#for i in range(len(match)):
-		#if match[i]==-1 : continue
-		#out1.write("%f\t%f\n"%(pats[0].get_vector_at(i).at(0),pats[0].get_vector_at(i).at(1)))
-		#out2.write("%f\t%f\n"%(pats[1].get_vector_at(match[i]).at(0),pats[1].get_vector_at(match[i]).at(1)))
 	
 
 	
