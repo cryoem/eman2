@@ -3618,25 +3618,38 @@ EMData *Util::reconstitute_image_mask(EMData* image, EMData *mask )
 	float *new_ptr  = new_image->get_data(); /* set size of the new image */
 	float *mask_ptr = mask->get_data();	 /* assign a pointer to the mask image */
 	float *img_ptr  = image->get_data();	 /* assign a pointer to the 1D image */
-	float count = 0;
-	float pixel_under_mask = 0.0 ;
+	int count = 0;
+	float sum_under_mask = 0.0 ;
 	for(i = 0;i < size;i++){
 			if(mask_ptr[i] > 0.5f){
-				new_ptr[i] = img_ptr[i];
-				pixel_under_mask += img_ptr[i];
-				count += 1. ;
+				new_ptr[i] = img_ptr[count];
+				sum_under_mask += img_ptr[count];
+				count++;
+                                if( count > image->get_xsize() )
+                                {
+                                    throw ImageDimensionException("Error: in reconstitute_image_mask, the mask doesn't match the image, it is too large");
+                                }
 			}
 	}
-		pixel_under_mask /= count ;
+
+        if( count > image->get_xsize() )
+        {
+            throw ImageDimensionException("Error: in reconstitute_image_mask, the mask doesn't match the image, it is too small");
+        }
+
+	float avg_under_mask = sum_under_mask / count;
 	for(i = 0;i < size;i++)
-		{
-			if(mask_ptr[i] <= 0.5f) {			
-			new_ptr[i] = pixel_under_mask;
-			}
+	{
+		if(mask_ptr[i] <= 0.5f) {			
+			new_ptr[i] = avg_under_mask;
 		}
+	}
 	new_image->update();
 	return new_image;
 }	
+
+
+
 vector<float> Util::merge_peaks(vector<float> peak1, vector<float> peak2,float p_size)
 {	
 	vector<float>new_peak;
