@@ -54,6 +54,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     exception.cpp
     testutil.cpp
     analyzer.cpp
+    MarchingCubes.cpp
     sparx/fundamentals.cpp
     sparx/normpadft.cpp
     sparx/fourierfilter.cpp
