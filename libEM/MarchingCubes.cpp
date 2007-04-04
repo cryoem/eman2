@@ -1,3 +1,6 @@
+
+#ifdef ENABLE_OPENGL
+
 #include "MarchingCubes.h"
 #include "vecmath.h"
 
@@ -653,3 +656,5 @@ BOOST_PYTHON_MODULE(gorgon)
     ;
 }
 */
+
+#endif
