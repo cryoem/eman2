@@ -30,7 +30,7 @@ namespace EMAN
 	class MarchingCubes : public Isosurface {
 	public:
 		MarchingCubes();
-		~MarchingCubes();
+		virtual ~MarchingCubes();
 	
 		/**
 		 * Sets Voxel data for Isosurface implementation

@@ -62,7 +62,7 @@ namespace EMAN
 	    }
 	  
 	    ScreenVector operator*( const double s ) const {
-	        return ScreenVector( x * s, y * s );
+	        return ScreenVector( (int)(x * s), (int)(y * s) );
 	    }
 	  
 	    // Dot
@@ -95,7 +95,7 @@ namespace EMAN
 	};
 	
 	inline ScreenVector operator*( const double s, const ScreenVector &v ) {
-	    return ScreenVector( v[0] * s, v[1] * s );
+	    return ScreenVector( (int)(v[0] * s), (int)(v[1] * s) );
 	}
 	
 	inline std::ostream& operator<<(std::ostream& os, const ScreenVector& v) {
@@ -422,6 +422,7 @@ namespace EMAN
 	        for ( int i = 0; i < 3; i++ )
 	            for ( int j = 0; j < 3; j++ )
 	                matRet(i,j) = (*this)(j,i);
+		return matRet;
 	    }
 	  
 	    Matrix3 operator+( const Matrix3 &m) const {
@@ -460,6 +461,7 @@ namespace EMAN
 	                    matRet(i,j) += (*this)(i,k) * (*this)(k,j);
 	            }
 	        }
+		return matRet;
 	    }
 	
 	    static Matrix3 identity() {

@@ -9,7 +9,7 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include <GL/glut.h>
+//#include <GL/glut.h>
 
 using std::map;
 //using std::hash_map;
@@ -27,7 +27,7 @@ namespace EMAN
 			// Compute smooth normals.
 			map<int, vector<int> > point_map;
 	
-			for(int i=0; i<_faces->size(); i+=3) {
+			for(unsigned int i=0; i<_faces->size(); i+=3) {
 				for(int j=0; j<3; j++) {
 					int pt = (*_faces)[i+j];
 					if(!point_map.count(pt)) 
@@ -36,7 +36,7 @@ namespace EMAN
 				}
 			}
 	
-			for(int i=0; i<_points->size(); i+=3) {
+			for(unsigned int i=0; i<_points->size(); i+=3) {
 				int size = point_map[i].size();
 				float x,y,z;
 				x = y = z = 0;

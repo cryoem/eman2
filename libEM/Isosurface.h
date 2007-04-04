@@ -10,7 +10,7 @@ namespace EMAN
 	class Isosurface {
 	public:
 		Isosurface(){}
-		~Isosurface(){}
+		virtual ~Isosurface(){}
 		
 		/**
 		 * Sets Voxel data for Isosurface implementation

@@ -719,8 +719,8 @@ namespace EMAN
 		AnalyzeReader( char* fname )
 		{
 			dsr hdr;
-			int size;
-			double cmax, cmin;
+			//int size;
+			//double cmax, cmin;
 			FILE *fp;
 			if((fp=fopen(fname,"r"))==NULL)
 			{
@@ -817,7 +817,7 @@ namespace EMAN
 			int thick = size / 6 ;
 	
 			double cent = (size - 1) / 2.0 ;
-			double r2 = radius * radius ;
+			//double r2 = radius * radius ;
 			for ( int x = 0 ; x < size ; x ++ )
 				for ( int y = 0 ; y < size ; y ++ )
 					for ( int z = 0 ; z < size ; z ++ )
@@ -910,9 +910,9 @@ namespace EMAN
 		SphereVolumeGenerator( int dim, double ratiox, double ratioy, double ratioz )
 		{
 			size = dim ;
-			rx = ratiox ;
-			ry = ratioy ;
-			rz = ratioz ;
+			rx = (int)ratiox ;
+			ry = (int)ratioy ;
+			rz = (int)ratioz ;
 		};
 	
 		Volume* getVolume()
