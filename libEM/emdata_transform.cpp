@@ -942,9 +942,9 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		float by=block->get_ysize()/2.0f;
 		float bz=block->get_zsize()/2.0f;
 
-		for (int x=x0; x<x1; x++) {
-			for (int y=y0; y<y1; y++) {
-				for (int z=z0; z<z1; z++) {
+		for (int x=x0; x<=x1; x++) {
+			for (int y=y0; y<=y1; y++) {
+				for (int z=z0; z<=z1; z++) {
 					rdata[x + y * nx + z * nx * ny] +=
 						block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
 				}
@@ -972,8 +972,8 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		float bx=block->get_xsize()/2.0f;
 		float by=block->get_ysize()/2.0f;
 
-		for (int x=x0; x<x1; x++) {
-			for (int y=y0; y<y1; y++) {
+		for (int x=x0; x<=x1; x++) {
+			for (int y=y0; y<=y1; y++) {
 				rdata[x + y * nx] +=
 					block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by);
 			}
