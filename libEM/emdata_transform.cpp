@@ -934,9 +934,9 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		if (x0<0) x0=0;
 		if (y0<0) y0=0;
 		if (z0<0) z0=0;
-		if (x1>get_xsize()) x1=get_xsize();
-		if (y1>get_ysize()) y1=get_ysize();
-		if (z1>get_zsize()) z1=get_zsize();
+		if (x1>=get_xsize()) x1=get_xsize()-1;
+		if (y1>=get_ysize()) y1=get_ysize()-1;
+		if (z1>=get_zsize()) z1=get_zsize()-1;
 
 		float bx=block->get_xsize()/2.0f;
 		float by=block->get_ysize()/2.0f;
@@ -966,8 +966,8 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		// make sure we stay inside the volume
 		if (x0<0) x0=0;
 		if (y0<0) y0=0;
-		if (x1>get_xsize()) x1=get_xsize();
-		if (y1>get_ysize()) y1=get_ysize();
+		if (x1>=get_xsize()) x1=get_xsize()-1;
+		if (y1>=get_ysize()) y1=get_ysize()-1;
 
 		float bx=block->get_xsize()/2.0f;
 		float by=block->get_ysize()/2.0f;
