@@ -49,6 +49,7 @@
 from EMAN2 import *
 from optparse import OptionParser
 from math import *
+from global_def import *
 import os
 import sys
 
@@ -205,11 +206,15 @@ map to the center of the volume."""
 		except: print "Skipping %d '%s'"%(i,atoms[i][0])
 		
 	if not options.quiet: print '\r   %d\nConversion complete'%len(atoms)
-	outmap.set_attr("apix_x",options.apix)
-	outmap.set_attr("apix_y",options.apix)
-	outmap.set_attr("apix_z",options.apix)
-	outmap.set_attr("Pixel_size",options.apix)
-	outmap.write_image(args[1])
+	(filename_path, filextension) = os.path.splitext(args[1])
+	if filextension == ".hdf" :
+		outmap.set_attr("apix_x",options.apix)
+		outmap.set_attr("apix_y",options.apix)
+		outmap.set_attr("apix_z",options.apix)
+		outmap.set_attr("Pixel_size",options.apix)
+		outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_HDF)
+	elif filextension == ".spi": outmap.write_image(args[1],0, EMUtil.ImageType.IMAGE_SINGLE_SPIDER)
+	else:   ERROR("unknown image type","e2pdb2em",1)
 				
 if __name__ == "__main__":
     main()
