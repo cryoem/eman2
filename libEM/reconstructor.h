@@ -566,6 +566,89 @@ namespace EMAN
 
 	};
 
+
+     /* Fourier Reconstruction by nearest neighbor with 3D SSNR and CTF
+        Added by Zhengfan Yang on 04/11/07
+     */        
+
+	class nnSSNR_ctfReconstructor:public Reconstructor
+	{
+
+	  public:
+		nnSSNR_ctfReconstructor();
+
+		nnSSNR_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign);
+
+		~nnSSNR_ctfReconstructor();
+
+		virtual void setup();
+
+	    	virtual int insert_slice(EMData * slice, const Transform3D & euler);
+
+	        virtual EMData* finish();
+
+		virtual string get_name() const
+		{
+			return "nnSSNR_ctf";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Reconstruction by nearest neighbor with 3D SSNR with CTF";
+		}
+
+		static Reconstructor *NEW()
+		{
+			return new nnSSNR_ctfReconstructor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INT);
+			d.put("npad", EMObject::INT);
+			d.put("symmetry", EMObject::STRING);
+			d.put("fftvol", EMObject::EMDATA);
+			d.put("weight", EMObject::EMDATA);
+			d.put("SSNR", EMObject::EMDATA);
+			d.put("w", EMObject::FLOAT);
+			d.put("sign",EMObject::INT);
+			d.put("snr",EMObject::FLOAT);
+			return d;
+		}
+
+		void setup( const string& symmetry, int size, int npad, float snr, int sign);
+
+                int insert_padfft_slice( EMData* padded, const Transform3D& trans, int mult=1 );
+
+
+	  private:
+		EMData* m_volume;
+		EMData* m_wptr;
+		EMData* m_wptr2;
+		EMData* m_wptr3;
+		EMData* m_result;
+		bool m_delete_volume;
+		bool m_delete_weight;
+		bool m_delete_weight2;
+		bool m_delete_weight3;
+	        string  m_symmetry;
+		int m_weighting;
+		int m_vnx, m_vny, m_vnz;		
+		int m_npad;
+		int m_nsym;
+		int m_vnzp, m_vnyp, m_vnxp;
+		int m_vnzc, m_vnyc, m_vnxc;
+		void buildFFTVolume();
+		void buildNormVolume();
+		void buildNorm2Volume();
+		void buildNorm3Volume();
+		float m_wghta;
+		float m_wghtb;
+		int m_sign;
+		float m_snr;
+	};
+
 	class bootstrap_nnctfReconstructor:public Reconstructor
 	{
 	  public:
