@@ -148,6 +148,17 @@ EMData* rotavg_i();
 		 */
 		void nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform3D& tf, int mult=1);		
 
+		/** Nearest Neighbor interpolation, meanwhile return necessary data such as
+		 *  Kn, sum_k(F_k^n) ans sum_k(|F_k^n|^2)
+		 *  Modifies the current object.
+		 *
+		 * @param wptr Normalization data.
+		 * @param myfft FFT data.
+		 * @param tf Transform3D reference
+		 * @param mult
+		 */
+		void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult=1);
+		
 		/** Symmetrize plane 0
 		 *  Modifies the current object.
 		 *
@@ -161,6 +172,13 @@ EMData* rotavg_i();
 		 * @param norm Normalization data.
 		 */
 		void symplane1(EMData* norm, EMData* norm2);
+		
+		/** Symmetrize plane 0
+		 *  Modifies the current object.
+		 *
+		 * @param norm Normalization data.
+		 */
+		void symplane2(EMData* norm, EMData* norm2, EMData* norm3);
 		
 		/** Helper function for method nn4_ctf.
 		 *
