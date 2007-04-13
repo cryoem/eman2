@@ -1633,7 +1633,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
-	SSNR->set_size(inc+1,1,1);
+	SSNR->set_size(inc+1,2,1);
 
 	float *nom = new float[inc+1];
 	float *denom  = new float[inc+1];
@@ -1723,7 +1723,8 @@ EMData* nnSSNR_Reconstructor::finish()
 	}
 
 	for (int i = 0; i <= inc; i++)  { 
-		(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;		
+		(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;	
+		(*SSNR)(i,1,0) = denom[i];	
 	}
 
 	m_volume->do_ift_inplace();
