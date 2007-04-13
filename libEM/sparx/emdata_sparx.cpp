@@ -1472,7 +1472,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 						iya = n + iyn + 1;
 					}
 					cmplx(ixn,iya,iza) += btq*ctf*float(mult);
-					//std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
+				       //	std::cout<<"    "<<j<<"  "<<ixn<<"  "<<iya<<"  "<<iza<<"  "<<ctf<<std::endl;
 					(*w)(ixn,iya,iza) += ctf*ctf*mult;
 				} else {
 					int izt, iyt;
@@ -1487,7 +1487,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2,
 						iyt = -iyn + 1;
 					}
 					cmplx(-ixn,iyt,izt) += conj(btq)*ctf*float(mult);
-					//std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
+				        //	std::cout<<" *  " << j << "  " <<-ixn << "  " << iyt << "  " << izt << "  " << ctf <<std::endl;
 					(*w)(-ixn,iyt,izt) += ctf*ctf*float(mult);
 				}
 			}
@@ -1566,7 +1566,7 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform3D& tf, int mult) {
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-	if( ! ctf_store::inited() )
+	// if( ! ctf_store::inited() )
 	{
             float Cs = myfft->get_attr( "Cs" );
             float pixel = myfft->get_attr( "Pixel_size" );
@@ -1594,7 +1594,7 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-	if( ! ctf_store::inited() )
+	// if( ! ctf_store::inited() )
 	{
             float Cs= myfft->get_attr( "Cs" );
             float pixel = myfft->get_attr( "Pixel_size" );
@@ -1625,7 +1625,7 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 	set_array_offsets(0,1,1);
        	myfft->set_array_offsets(0,1);
 
-	if( ! ctf_store::inited() )
+	// if( ! ctf_store::inited() )
 	{
             float Cs = myfft->get_attr( "Cs" );
             float pixel = myfft->get_attr( "Pixel_size" );
