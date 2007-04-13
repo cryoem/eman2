@@ -2091,7 +2091,7 @@ EMData* nn4_ctfReconstructor::finish()
 			for (int ix = 0; ix <= m_vnxc; ix++) {
                                                                
 				if ( (*m_wptr)(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
-					float  tmp = (-2*((ix+iy+iz)%2)+1)/( (*m_wptr)(ix,iy,iz)+osnr)*m_sign;
+					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
 
 					if( m_weighting == ESTIMATE ) 
 					{
@@ -2141,14 +2141,15 @@ EMData* nn4_ctfReconstructor::finish()
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 					    assert( r >=0 && r < (int)pow_b.size() );
                         float wght = pow_b[r] / ( 1.0 - alpha * sum );
-
-                        //if(ix%10==0 && iy%10==0)
-                        //{
-                        //    std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
-                        //    std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum; 
-                        //    std::cout << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
-                        //    std::cout << std::endl;
-                        //} 
+/*
+                        if(ix%10==0 && iy%10==0)
+                        {
+                            std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
+                            std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum; 
+                            std::cout << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
+                            std::cout << std::endl;
+                        } 
+ */
 					    tmp = tmp * wght;
              	    }
 
@@ -2469,11 +2470,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						complex<float> average = m_volume->cmplx(ix,iy,iz)/((*m_wptr)(ix,iy,iz)+osnr);
 						float nominator = std::norm(average);
 						float denominator = ((*m_wptr2)(ix,iy,iz)+std::norm(average)*(*m_wptr)(ix,iy,iz)-2*std::real(std::conj(average)*m_volume->cmplx(ix,iy,iz)))/(Kn*(Kn-1.0f));
-						//if (denominator < 0.0f ) {						
-							//std::cout << r << " " << denominator << " " << average << " " << m_volume->cmplx(ix,iy,iz) << " " << (*m_wptr)(ix,iy,iz) << " " << (*m_wptr2)(ix,iy,iz) << " " << (*m_wptr3)(ix,iy,iz) << std::endl;
-							//std::cout << std::conj(average) << " " << std::conj(average)*(*m_volume)(ix,iy,iz) << " " << std::real(std::conj(average)*(*m_volume)(ix,iy,iz));
-							//std::cout << std::endl;
-						//}
 						nom[r] += nominator;
 						denom[r] += denominator;
 						nn[r] += 2;
