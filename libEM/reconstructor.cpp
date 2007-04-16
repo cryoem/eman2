@@ -1723,7 +1723,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	}
 
 	for (int i = 0; i <= inc; i++)  { 
-		(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;	
+	        (*SSNR)(i,0,0)  = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
 		(*SSNR)(i,1,0) = denom[i];	
 	}
 
