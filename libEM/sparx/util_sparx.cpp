@@ -2541,6 +2541,160 @@ c
   return out;
 }
 
+EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
+{
+/*
+  This program is half of the Crosrng_msg. It only checks both straight positions.
+
+  input - fourier transforms of rings!!
+  circ1 already multiplied by weights!
+
+*/
+
+   int   ip, jc, numr3i, numr2i, i, j;
+   float t1, t2, t3, t4, c1, c2, d1, d2;
+
+   int nring = numr.size()/3;
+   int maxrin = numr[numr.size()-1];
+
+   float* circ1b = circ1->get_data();
+   float* circ2b = circ2->get_data();
+
+   double *q;
+
+   q = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+   //  q - straight  = circ1 * conjg(circ2)
+
+   for (i=1;i<=nring;i++) {
+
+   	   numr3i = numr(3,i);
+   	   numr2i = numr(2,i);
+
+   	   t1	= circ1b(numr2i) * circ2b(numr2i);
+   	   q(1) = q(1)+t1;
+ 
+   	   if (numr3i == maxrin)  {
+   	   	   t1	= circ1b(numr2i+1) * circ2b(numr2i+1);
+   	   	   q(2) = q(2)+t1;
+   	   }
+   	   else {
+   	   	   t1	       = circ1b(numr2i+1) * circ2b(numr2i+1);
+   	   	   q(numr3i+1) = q(numr3i+1)+t1;
+   	   }
+
+   	   for (j=3;j<=numr3i;j=j+2) {
+   	   	   jc	  = j+numr2i-1;
+
+   	   	   c1	  = circ1b(jc);
+   	   	   c2	  = circ1b(jc+1);
+   	   	   d1	  = circ2b(jc);
+   	   	   d2	  = circ2b(jc+1);
+
+   	   	   t1	  = c1 * d1;
+   	   	   t3	  = c1 * d2;
+   	   	   t2	  = c2 * d2;
+   	   	   t4	  = c2 * d1;
+
+   	   	   q(j)   = q(j)   + t1 + t2;
+   	   	   q(j+1) = q(j+1) - t3 + t4;
+   	   } 
+  }
+  
+  // straight
+  fftr_d(q,ip);
+
+  EMData* out = new EMData();
+  out->set_size(maxrin,1,1);
+  float *dout = out->get_data();
+  for (int i=0; i<maxrin; i++) dout[i]=q[i];
+  free(q);
+  return out;
+
+}
+
+
+EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
+{
+/*
+
+  This program is half of the Crosrng_msg, which only checks mirrored position.
+
+  input - fourier transforms of rings!!
+  circ1 already multiplied by weights!
+
+*/
+
+   int   ip, jc, numr3i, numr2i, i, j;
+   float t1, t2, t3, t4, c1, c2, d1, d2;
+
+   int nring = numr.size()/3;
+   int maxrin = numr[numr.size()-1];
+
+   float* circ1b = circ1->get_data();
+   float* circ2b = circ2->get_data();
+
+   double *t;
+
+   t = (double*)calloc(maxrin,sizeof(double));
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+
+   //   t - mirrored  = conjg(circ1) * conjg(circ2)
+
+  for (i=1;i<=nring;i++) {
+
+      numr3i = numr(3,i);
+      numr2i = numr(2,i);
+
+      t1   = circ1b(numr2i) * circ2b(numr2i);
+      t(1) = t(1)+t1;
+
+      if (numr3i == maxrin)  {
+         t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
+         t(2) = t(2)+t1;
+      }
+
+      for (j=3;j<=numr3i;j=j+2) {
+	 jc     = j+numr2i-1;
+
+ 	 c1     = circ1b(jc);
+ 	 c2     = circ1b(jc+1);
+	 d1     = circ2b(jc);
+	 d2     = circ2b(jc+1);
+
+  	 t1     = c1 * d1;
+ 	 t3     = c1 * d2;
+ 	 t2     = c2 * d2;
+ 	 t4     = c2 * d1;
+
+	 t(j)   = t(j)   + t1 - t2;
+	 t(j+1) = t(j+1) - t3 - t4;
+      } 
+  }
+  
+  // mirrored
+  fftr_d(t,ip);
+
+  EMData* out = new EMData();
+  out->set_size(maxrin,1,1);
+  float *dout = out->get_data();
+  for (int i=0; i<maxrin; i++) dout[i]=t[i];
+  free(t);
+  return out;
+
+}
+
 #undef circ1b
 #undef circ2b
 #undef dout
