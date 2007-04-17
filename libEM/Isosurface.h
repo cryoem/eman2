@@ -2,20 +2,22 @@
 #define _ISOSURFACE_H_
 
 #include "Mesh.h"
-#include "VoxelData.h"
+#include "emdata.h"
 
 namespace EMAN
 {
 
 	class Isosurface {
 	public:
-		Isosurface(){}
+		Isosurface() : _emdata(0) {}
 		virtual ~Isosurface(){}
 		
 		/**
 		 * Sets Voxel data for Isosurface implementation
 		 */
-		virtual void setVolumeData(const VoxelData& data) = 0;
+		virtual void setVolumeData(EMData* data) {
+			_emdata = data;
+		}
 	
 		/**
 		 * Set Isosurface value
@@ -35,6 +37,9 @@ namespace EMAN
 		 * Get Isosurface mesh
 		 */
 		virtual const Mesh& getMesh() const = 0;
+	
+	protected:
+		EMData * _emdata;
 	
 	};
 

@@ -1,11 +1,10 @@
 #ifndef _MARCHING_CUBES_H_
 #define _MARCHING_CUBES_H_
 
-#include "Isosurface.h"
 #include <vector>
-//#include <hash_map>
 
-//using std::hash_map;
+#include "Isosurface.h"
+
 using std::vector;
 
 namespace EMAN
@@ -29,16 +28,14 @@ namespace EMAN
 	
 	class MarchingCubes : public Isosurface {
 	public:
-		MarchingCubes();
+		MarchingCubes(EMData * em);
 		virtual ~MarchingCubes();
 	
 		/**
 		 * Sets Voxel data for Isosurface implementation
 		 */
-		void setVolumeData(const VoxelData& data);
-	
-		void loadMRC(std::string file);
-	
+		void setVolumeData(EMData* data);
+
 		/**
 		 * Set Isosurface value
 		 */
@@ -61,10 +58,13 @@ namespace EMAN
 		void drawMesh(bool smooth) const { _mesh->draw(smooth); }
 	
 	private:
+		MarchingCubes(){};
+		
 		Mesh* _mesh;
 		float _surf_value;
 		int _sample;
-		VoxelData _voxel;
+		//VoxelData _voxel;
+		//EMData * _emdata;
 		CubeNode* _root;
 		vector<float> *points, *normals;
 		vector<int> *faces;

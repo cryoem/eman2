@@ -41,9 +41,9 @@ static const int edgeLookUp[12][4] =
 	{0,0,0,2},{1,0,0,2},{1,1,0,2},{0,1,0,2}
 };
 
-MarchingCubes::MarchingCubes() {
+MarchingCubes::MarchingCubes(EMData * em) {
 	_mesh = 0;
-	_voxel = *(new VoxelData());
+	_emdata = em;
 	_surf_value = 1;
 	_sample = 5;
 	_root = new CubeNode();
@@ -53,22 +53,16 @@ MarchingCubes::MarchingCubes() {
 }
 MarchingCubes::~MarchingCubes() {
 	delete _mesh;
-	delete &_voxel;
 	delete _root;
 	delete &point_map;
 }
 
 
-void MarchingCubes::setVolumeData(const VoxelData& data) {
-	_voxel = data;
+void MarchingCubes::setVolumeData(EMData* data) {
+	Isosurface::setVolumeData(data);
 	calculateSurface();
 }
 
-void MarchingCubes::loadMRC(std::string file) {
-	_voxel.loadMRC(file.c_str());
-	buildSearchTree();
-	calculateSurface();
-}
 
 void MarchingCubes::setSurfaceValue(const float value) {
 	float temp = value;
@@ -86,8 +80,8 @@ float MarchingCubes::getSurfaceValue() const { return _surf_value; }
 void MarchingCubes::setSampleDensity(const int size) {
 	int temp = size;
 	
-	if(temp > _voxel.getResolution())
-		temp = _voxel.getResolution();
+	if(temp > _emdata->getResolution())
+		temp = _emdata->getResolution();
 	if(temp < 1)
 		temp = 1;
 
@@ -105,7 +99,7 @@ const Mesh& MarchingCubes::getMesh() const  { return *_mesh; }
 void MarchingCubes::buildSearchTree() {
 	delete _root;
 	std::cout << "Constructing search tree..." << std::endl;
-	_root = getCubeNode(0, 0, 0, 0, _voxel.getSize());
+	_root = getCubeNode(0, 0, 0, 0, _emdata->get_xsize());
 	std::cout << "Finished Construction..."  << std::endl;
 }
 
@@ -113,7 +107,7 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 	if(size == 1) {
 
 		assert(size == 1);
-		assert(level == _voxel.getResolution());
+		assert(level == _emdata->getResolution());
 
 		// terminate, we are at a leaf node
 		CubeNode* node = new CubeNode();
@@ -125,9 +119,9 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 		float minval, maxval = 0;
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
-			float val = _voxel.getValue(min(x + a2fVertexOffset[iVertex][0], _voxel.getSize()-1),
-                                                   min(y + a2fVertexOffset[iVertex][1], _voxel.getSize()-1),
-                                                   min(z + a2fVertexOffset[iVertex][2], _voxel.getSize()-1));
+			float val = _emdata->get_value_at(min(x + a2fVertexOffset[iVertex][0], _emdata->get_xsize()-1),
+                                                   min(y + a2fVertexOffset[iVertex][1], _emdata->get_xsize()-1),
+                                                   min(z + a2fVertexOffset[iVertex][2], _emdata->get_xsize()-1));
 			if(iVertex == 0){
 				minval = val;
 				maxval = val;
@@ -212,9 +206,9 @@ void MarchingCubes::drawCube(CubeNode* node) {
 //This gradient can be used as a very accurate vertx normal for lighting calculations
 void MarchingCubes::getNormal(Vector3 &normal, int fX, int fY, int fZ)
 {
-	normal[0] = _voxel.getValue(fX-1, fY, fZ) - _voxel.getValue(fX+1, fY, fZ);
-    normal[1] = _voxel.getValue(fX, fY-1, fZ) - _voxel.getValue(fX, fY+1, fZ);
-    normal[2] = _voxel.getValue(fX, fY, fZ-1) - _voxel.getValue(fX, fY, fZ+1);
+	normal[0] = _emdata->get_value_at(fX-1, fY, fZ) - _emdata->get_value_at(fX+1, fY, fZ);
+    normal[1] = _emdata->get_value_at(fX, fY-1, fZ) - _emdata->get_value_at(fX, fY+1, fZ);
+    normal[2] = _emdata->get_value_at(fX, fY, fZ-1) - _emdata->get_value_at(fX, fY, fZ+1);
     normal.normalize();
 }
 
@@ -259,7 +253,7 @@ void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
         //Make a local copy of the values at the cube's corners
         for(iVertex = 0; iVertex < 8; iVertex++)
         {
-			afCubeValue[iVertex] = _voxel.getValue(fX + a2fVertexOffset[iVertex][0]*fScale,
+			afCubeValue[iVertex] = _emdata->get_value_at(fX + a2fVertexOffset[iVertex][0]*fScale,
                                                    fY + a2fVertexOffset[iVertex][1]*fScale,
                                                    fZ + a2fVertexOffset[iVertex][2]*fScale);
         }
@@ -304,7 +298,7 @@ void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
 
 
         //Draw the triangles that were found.  There can be up to five per cube
-		float resolution = _voxel.getSize();
+		float resolution = _emdata->get_xsize();
         for(iTriangle = 0; iTriangle < 5; iTriangle++)
         {
                 if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)

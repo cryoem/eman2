@@ -672,7 +672,19 @@ namespace EMAN
 		void uncut_slice(EMData * map, float dz, Transform3D * orientation = 0,
 						 float dx = 0, float dy = 0);
 
-
+		/** function for MarchingCubes, for 3D image display
+		 * @return the resolution
+		 * */
+		int getResolution() const {
+			int resolution = 0;
+			int num = 1;
+			while(num < get_xsize()) {
+				resolution++;
+				num = 1 << resolution;
+			}
+	
+			return resolution;
+		}
 
 	private:
 		enum EMDataFlags {
