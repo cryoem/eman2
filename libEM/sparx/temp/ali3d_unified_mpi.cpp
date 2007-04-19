@@ -67,6 +67,10 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
        ierr = MPI_Finalize();
        exit(1);
     }
+    for (int i = 0; i < ncpus; i++) {
+       psize[i] = psize[i]*5;
+       nbase[i] = nbase[i]*5;
+    }
 
     ndim = volume->get_ndim();
     nx   = volume->get_xsize();
@@ -158,9 +162,6 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     ptrs = new int[nrays+1];
     cord = new int[3*nrays];
     ierr = cb2sph(voldata, volsize, ri, origin, nnz, ptrs, cord, &(x(1))); 
-
-    printf("OK\n");
-    exit(1);
 
     // pack orientation parameters angleshift into x
     ierr = MPI_Allgatherv(angleshift, 5*nloc, MPI_FLOAT, &(x(nnz + 1)), psize, nbase, MPI_FLOAT, comm);
