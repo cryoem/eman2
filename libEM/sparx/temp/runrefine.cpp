@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
     char out_fname[64];
 
     AlignOptions options;
+    options.set_mask3D(NULL);
     options.set_first_ring(1);
     options.set_last_ring(26);
     options.set_rstep(1);
@@ -91,6 +92,9 @@ int main(int argc, char *argv[])
     options.set_yrng(2.0);
     options.set_step(1.0);
     options.set_dtheta(15.0);
+    options.set_snr(1.0);
+    options.set_symmetry("c1");
+    options.set_CTF(false);
 
     try {
 	for ( int iter = 0; iter < max_refine_cycle ; ++iter ) {
