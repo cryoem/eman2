@@ -14,7 +14,7 @@
 using namespace EMAN;
 
 int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, 
-             float *angleshift, int nloc, AlignOptions options, 
+             float *angleshift, int nloc, AlignOptions& options, 
              int max_iter, char* fname_base)
 {
     int mypid, ncpus;
