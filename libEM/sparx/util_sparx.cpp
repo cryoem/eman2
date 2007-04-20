@@ -692,6 +692,83 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 
 #undef fdata
 
+float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb) {
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+	int kbc = kbmax+1;
+
+	float pixel =0.0f;
+	float w=0.0f;
+	float *tablex;
+	
+	delx = fmod(2*delx, float(nx));
+	int inxold = int(Util::round(delx));
+	if(ny<2) {  //1D
+	 		 if(inxold <= kbc || inxold >=nx-kbc-2 )  {
+	 //  loop for ends
+         		   for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1);
+	 		     pixel += data[(inxold+m1+nx)%nx]*q;w+=q;}
+	 		 }else{
+         		   for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1);
+	 		     pixel += data[inxold+m1]*q;w+=q;}
+	 		 }
+	
+	} else if(nz<2) {  // 2D
+			dely = fmod(2*dely, float(ny));
+			int inyold = int(Util::round(dely));
+			tablex = new float[K+1];
+			for (int i=kbmin; i<=kbmax; i++) {
+				tablex[i-kbmin] = kb.i0win_tab(delx-inxold-i);
+			}
+	 		if ( inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+				for (int m2 =kbmin; m2 <=kbmax; m2++) {
+					float qy = kb.i0win_tab(dely-inyold-m2);
+					for (int m1 =kbmin; m1 <=kbmax; m1++) {
+			 			float q = tablex[m1-kbmin]*qy;
+	 		     			pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*ny]*q;
+						w += q;
+					}
+				}
+	 		} else {
+				for (int m2 =kbmin; m2 <=kbmax; m2++) { 
+					float qy = kb.i0win_tab(dely-inyold-m2);
+					for (int m1 =kbmin; m1 <=kbmax; m1++) {
+						//float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+			 			float q = tablex[m1-kbmin]*qy;
+						pixel += data[inxold+m1+(inyold+m2)*ny]*q;
+						w += q;
+					}
+				}
+			}
+			delete tablex;
+	} else {  //  3D
+	dely = fmod(2*dely, float(ny));
+	int inyold = int(Util::round(dely));
+	delz = fmod(2*delz, float(nz));
+	int inzold = int(Util::round(delz));
+			     //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;
+	 		 if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
+	 //  loop for strips
+         		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+			     //cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
+	 		     pixel += data[(inxold+m1+nx)%nx+(inyold+m2+ny)%ny+(inzold+m3+nz)%nz]*q;w+=q;}}}
+	 		 } else {
+         		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+			     //cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
+	 		     pixel += data[inxold+m1+inyold+m2+inzold+m3]*q;w+=q;}}}
+	 		 }
+	}
+        return pixel/w;
+}
+
+
 float Util::triquad(float R, float S, float T, float* fdata)
 {
 
@@ -1025,6 +1102,24 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
+
+/*   xold = numr(1,1)+cns2;
+   yold = 0.0+cnr2;
+   time_t begin_time, end_time;
+   time(&begin_time);
+   float bbb = 0.0f;
+   for (long nnn=0; nnn<100000; nnn++) {
+   	for (long nnn2=0; nnn2<100000; nnn2++) {
+		float a = quadri(xold,yold,nsam,nrow,xim); 
+		a = a*1.002;
+		bbb += a/(nnn2+nnn+1);
+	}
+   }
+   time(&end_time);
+   double total_time = difftime(end_time,begin_time);
+   std::cout << "Time Used for 10^9 Quadri is: " << total_time << " seconds, bbb is " << bbb << std::endl; 
+   exit(0); */
+
    for (it=1; it<=nring; it++) {
       // radius of the ring
       inr = numr(1,it);
@@ -1293,6 +1388,10 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    out->set_size(lcirc,1,1);
    char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
    float *circ = out->get_data();
+   float *fimage = image->get_data();
+   int nx = image->get_xsize();
+   int ny = image->get_ysize();
+   int nz = image->get_zsize();
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
    float  yq, xold, yold, fi, x, y;
@@ -1301,6 +1400,25 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
+   
+   xold = numr(1,1);
+   yold = 0.0;
+   time_t begin_time, end_time;
+   
+   time(&begin_time);
+   float bbb = 0.0f;
+   for (int nnn=0; nnn<10000; nnn++) {
+   	for (int nnn2=0; nnn2<10000; nnn2++) {
+		float a = get_pixel_conv_new(nx, ny, nz, xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+		a = a*1.002;
+		bbb += a/(nnn+nnn2+1); 
+	}
+   }
+   time(&end_time);
+   double total_time = difftime(end_time,begin_time);
+   std::cout << "Time Used for 10^8 get_pixel_conv_new is " << total_time << " seconds, bbb is " << bbb << std::endl; 
+   exit(0); 
+   
    for (it=1;it<=nring;it++) {
       // radius of the ring
       inr = numr(1,it);
@@ -1319,20 +1437,24 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
       kcirc = numr(2,it);
       xold  = 0.0;
       yold  = inr;
-      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+      circ(kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//      circ(kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       
       xold  = inr;
       yold  = 0.0;
-      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+      circ(lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//      circ(lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
       if ( mode == 'f' || mode == 'F' ) {
          xold = 0.0;
          yold = -inr;
-         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+         circ(lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//         circ(lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          xold = -inr;
          yold = 0.0;
-         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+         circ(lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//         circ(lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
       }
       
       for (jt=1;jt<=nsim;jt++) {
@@ -1342,20 +1464,24 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 
          xold = x;
          yold = y;
-         circ(jt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+         circ(jt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//         circ(jt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          xold = y;
          yold = -x;
-         circ(jt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+         circ(jt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//         circ(jt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
          if ( mode == 'f' || mode == 'F' ) {
             xold = -x;
             yold = -y;
-            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+            circ(jt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//            circ(jt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
 
             xold = -y;
             yold = x;
-            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
+            circ(jt+lt+lt+lt+kcirc) = get_pixel_conv_new(nx,ny,nz,xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
+//            circ(jt+lt+lt+lt+kcirc) = image->get_pixel_conv(xold+cns2-1.0f,yold+cnr2-1.0f,0,kb);
          }
       } // end for jt
    } //end for it

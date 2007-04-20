@@ -316,6 +316,9 @@ class FakeKaiserBessel : public KaiserBessel {
 		 *	@return Interpolated value
 		 */
 		static float quadri(float x, float y, int nx, int ny, float* image);
+		
+		static float get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb);
+		
 		/*static float quadris(float x, float y, int nx, int ny, float* image);*/
 		static float bilinear(float xold, float yold, int nsam, int nrow, float* xim);
 
