@@ -63,7 +63,7 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     nbase = new int[ncpus];
     nangloc = setpart(comm, nang, psize, nbase);
     if (nangloc != nloc) {
-       if (mypid == 0) printf("   ali3d_unified: nloc does not match with nangloc, exit...\n");
+       printf("   ali3d_unified: nloc does not match with nangloc on Proc %d , exit...\n", mypid);
        ierr = MPI_Finalize();
        exit(1);
     }
