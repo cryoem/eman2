@@ -44,14 +44,67 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     float yrng     = options.get_yrng();
     float step     = options.get_step();
     float dtheta   = options.get_dtheta();
+    bool CTF       = options.get_CTF();
 
-    EMData * mask3D = new EMData();
-
-    mask3D->set_size(nx,ny,nz);
     Dict maskdict;
     maskdict["radius"] = ri;
     maskdict["fill"]   = 1;
-    mask3D->process_inplace("testimage.circlesphere", maskdict);
+    
+    EMData * mask3D = options.get_mask3D();
+    if (mask3D == NULL) {
+	mask3D = new EMData();
+	
+	mask3D->set_size(nx,ny,nz);
+	mask3D->process_inplace("testimage.circlesphere", maskdict);
+    }
+			
+    EMData * mask2D = new EMData();
+    mask2D->set_size(nx,ny,1);
+    mask2D->process_inplace("testimage.circlesphere", maskdict);
+    if (first_ring > 0) {
+	// subtract off the smaller ring
+	EMData * inner_mask2D = new EMData();
+	inner_mask2D->set_size(nx,ny,1);
+	maskdict["radius"] = first_ring;
+	inner_mask2D->process_inplace("testimage.circlesphere", maskdict);
+	*mask2D -= *inner_mask2D;
+	EMDeletePtr(inner_mask2D);
+    }	
+
+    std::string recons_name = "nn4";
+    Dict recons_params;
+    recons_params["symmetry"] = options.get_symmetry();
+    recons_params["size"]     = nx;
+    recons_params["npad"]     = 4; // will this ever be != 4?
+
+    Dict CTF_params;
+    CTF_params["sign"] = -1.0;
+    int CTF_applied;
+    int padffted;
+    if (CTF) {
+	// filter each image according to its ctf header info
+	for ( int i = 0 ; i < nloc ; ++i ) {
+	    CTF_applied = projdata[i]->get_attr("ctf_applied");
+	    if ( CTF_applied == 0 ) {
+		CTF_params["defocus"]      = projdata[i]->get_attr("defocus");
+		CTF_params["Cs"]           = projdata[i]->get_attr("Cs");
+		CTF_params["Pixel_size"]   = projdata[i]->get_attr("Pixel_size");
+		CTF_params["B_factor"]     = projdata[i]->get_attr("B_factor");
+		CTF_params["amp_contrast"] = projdata[i]->get_attr("amp_contrast");
+		projdata[i]->process_inplace("filter.CTF_",CTF_params);
+	    }
+	}
+	// set a few more things for the reconstructor to deal with
+	recons_name = "nn4_ctf";
+	recons_params["snr"] = options.get_snr();
+	recons_params["sign"] = 1.0; // confirm this, sign is not defined in the current python code.
+	try {
+	    padffted = projdata[0]->get_attr("padffted");
+	} catch ( E2Exception& e ) { // the only exception thrown by get_attr() is NotExistingObjectException()
+	    padffted = 0;
+	}
+	if (padffted == 1) recons_params["size"] = (float) recons_params["size"] / (float) recons_params["npad"];
+    }
 
     // The below are done in proj_ali_incore
     // Perhaps could be moved inside a major loop iterating over 
@@ -66,20 +119,6 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
     std::vector<int> numr = Numrinit(first_ring, last_ring, rstep, mode);
     std::vector<float> wr = ringwe(numr, mode);
-
-    EMData * mask2D = new EMData();
-    mask2D->set_size(nx,ny,1);
-    mask2D->process_inplace("testimage.circlesphere", maskdict);
-    if (first_ring > 0) {
-	// subtract off the smaller ring
-	EMData * inner_mask2D = new EMData();
-	inner_mask2D->set_size(nx,ny,1);
-	maskdict["radius"] = first_ring;
-	inner_mask2D->process_inplace("testimage.circlesphere", maskdict);
-	*mask2D -= *inner_mask2D;
-	EMDeletePtr(inner_mask2D);
-
-    }	
 
     std::vector<EMData *> ref_proj_rings;
     EMData * ref_proj_ptr;
@@ -108,10 +147,6 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     make_ref_proj_dict["mask"] = mask2D;
     make_ref_proj_dict["no_sigma"] = 1;
 
-    Dict recons_params;
-    recons_params["symmetry"] = "c1";
-    recons_params["size"]     = nx;
-    recons_params["npad"]     = 4;
     EMData * vol1 = NULL;
     EMData * vol2 = NULL;
     EMData * fftvol;
@@ -123,8 +158,11 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     int weight_size;
     float * fftvol_recv;
     float * weight_recv;
+
+    std::vector<float> stats;
     std::vector<float> fsc_result;
     int fsc_size;
+
     float ring_width = 1.0;
     float phi, theta, psi;
     int filter_cutoff_index;
@@ -133,6 +171,10 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     float filter_high_default = 0.49;
     float filter_low, filter_high; // these get passed to the filter
     Dict btwl_dict;
+
+    std::vector<float> ph_cog;
+    Dict cog_dict;
+
     total_timer = MPI_Wtime();
 
     float * peak_corr = new float[nloc];
@@ -245,7 +287,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	weight = new EMData();
 	recons_params["fftvol"] = fftvol;
 	recons_params["weight"] = weight;
-	r = Factory<Reconstructor>::get("nn4", recons_params);
+	r = Factory<Reconstructor>::get(recons_name, recons_params);
 	r->setup();
 	for ( int j = 0 ; j < nloc ; j += 2 ) { 
 	    phi   = projdata[j]->get_attr("phi");
@@ -273,7 +315,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	weight = new EMData();
 	recons_params["fftvol"] = fftvol;
 	recons_params["weight"] = weight;
-	r = Factory<Reconstructor>::get("nn4", recons_params);
+	r = Factory<Reconstructor>::get(recons_name, recons_params);
 	r->setup();
 	for ( int j = 1 ; j < nloc ; j += 2 ) { 
 	    phi   = projdata[j]->get_attr("phi");
@@ -297,6 +339,14 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	EMDeletePtr(fftvol);
 	EMDeletePtr(weight);
 
+	// calculate and subtract the mean from vol1 and vol2, and apply the 3D mask
+	stats = Util::infomask(vol1, mask3D, false);
+	*vol1 -= stats[0]; // stats[0] = mean
+	Util::mul_img(vol1, mask3D);
+	stats = Util::infomask(vol2, mask3D, false);
+	*vol2 -= stats[0]; // stats[0] = mean
+	Util::mul_img(vol2, mask3D);
+
 	// calculate fsc
 	fsc_result = vol1->calc_fourier_shell_correlation(vol2, ring_width);
 	fsc_size = fsc_result.size() / 3;
@@ -305,7 +355,6 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	    fsc_out.open(out_fname);
 	    for ( int j = 0 ; j < fsc_size ; ++j ) {
 		// Note the indexing of fsc: the frequencies are in the first fsc_size entries, then the correlation coeffs after that
-//		    std::cout << std::scientific << fsc_result[j] << '\t'  << fsc_result[j + fsc_size] << '\t'  << fsc_result[j + 2 * fsc_size] << std::endl;
 		fsc_out << std::scientific << fsc_result[j] << '\t'  << fsc_result[j + fsc_size] << '\t'  << fsc_result[j + 2 * fsc_size] << std::endl;
 	    }
 	    fsc_out.close();
@@ -319,7 +368,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	weight = new EMData();
 	recons_params["fftvol"] = fftvol;
 	recons_params["weight"] = weight;
-	r = Factory<Reconstructor>::get("nn4", recons_params);
+	r = Factory<Reconstructor>::get(recons_name, recons_params);
 	r->setup();
 	for ( int j = 0 ; j < nloc ; ++j ) { 
 	    phi   = projdata[j]->get_attr("phi");
@@ -369,6 +418,15 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	btwl_dict["low_cutoff_frequency"]  = filter_low;
 	btwl_dict["high_cutoff_frequency"] = filter_high;
 	volume->process_inplace("filter.lowpass.butterworth", btwl_dict);
+	// calculate the center of gravity
+	ph_cog = volume->phase_cog();
+	cog_dict["x_shift"] = -ph_cog[0];
+	cog_dict["y_shift"] = -ph_cog[1];
+	cog_dict["z_shift"] = -ph_cog[2];
+	// vol = fshift(vol, -cs[0], -cs[1], -cs[2]
+	volume->process_inplace("filter.shift", cog_dict);
+
+	// and write to disk
 	sprintf(out_fname, "vol_f_%s_pm%d.spi", fname_base, i);
 	if (mypid == 0) volume->write_image(out_fname, 0, WRITE_SPI);
 
@@ -386,9 +444,10 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	std::cout << MPI_Wtime() - total_timer << std::endl;
     }
 
-    EMDeletePtr(mask3D);
+    if (options.get_mask3D() == NULL) EMDeletePtr(mask3D); // If it was created by new in this function, otherwise it belongs to someone else.
     EMDeletePtr(mask2D);	
     EMDeleteArray(peak_corr);
+
     return 0;
 	
 }
