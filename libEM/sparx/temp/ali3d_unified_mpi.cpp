@@ -220,6 +220,11 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     sprintf(out_fname, "vol_r_%s.spi", fname_base);
     if (mypid == 0) volume->write_image(out_fname, 0, WRITE_SPI);
 
+    // copy new angles and shifts to angleshift from x
+    for ( int i = 0 ; i < 5 * nangloc ; ++i ) {
+	angleshift[i] = x(nnz + 1 + nbase[mypid] + i);
+    }
+
     EMDeleteArray(rhs);
     EMDeleteArray(ptrs);
     EMDeleteArray(cord);
