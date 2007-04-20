@@ -2,6 +2,7 @@
 
 AlignOptions::AlignOptions()
 {
+    mask3D     = NULL;
     first_ring = 1;
     last_ring  = 26;
     rstep      = 1;
@@ -10,10 +11,14 @@ AlignOptions::AlignOptions()
     yrng       = 1.0;
     step       = 1.0;
     dtheta     = 15.0;
+    snr        = 1.0;
+    symmetry   = "c1";
+    CTF        = false;
 }
 
 AlignOptions::AlignOptions(const AlignOptions& old_options)
 {
+    mask3D     = old_options.mask3D;
     first_ring = old_options.first_ring;
     last_ring  = old_options.last_ring;
     rstep      = old_options.rstep;
@@ -22,13 +27,18 @@ AlignOptions::AlignOptions(const AlignOptions& old_options)
     yrng       = old_options.yrng;
     step       = old_options.step;
     dtheta     = old_options.dtheta;
-    
+    snr        = old_options.snr;
+    symmetry   = old_options.symmetry;
+    CTF        = old_options.CTF;
 }
 
 AlignOptions::~AlignOptions()
 {
 }
 
+void AlignOptions::set_mask3D(EMData * in_mask3D){
+    mask3D = in_mask3D;
+}
 void AlignOptions::set_first_ring(int in_first_ring){
     first_ring = in_first_ring;
 }
@@ -53,7 +63,19 @@ void AlignOptions::set_step(float in_step){
 void AlignOptions::set_dtheta(float in_dtheta){
     dtheta = in_dtheta;
 }
+void AlignOptions::set_snr(float in_snr){
+    snr = in_snr;
+}
+void AlignOptions::set_symmetry(std::string in_symmetry){
+    symmetry = in_symmetry;
+}
+void AlignOptions::set_CTF(bool in_CTF){
+    CTF = in_CTF;
+}
 
+EMData * AlignOptions::get_mask3D(){
+    return mask3D;
+}
 int   AlignOptions::get_first_ring(){
     return first_ring;
 }
@@ -77,4 +99,13 @@ float AlignOptions::get_step(){
 }
 float AlignOptions::get_dtheta(){
     return dtheta;
+}
+float AlignOptions::get_snr(){
+    return snr;
+}
+std::string AlignOptions::get_symmetry(){
+    return symmetry;
+}
+bool AlignOptions::get_CTF(){
+    return CTF;
 }
