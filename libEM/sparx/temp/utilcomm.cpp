@@ -48,7 +48,7 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
     int *nbase = new int[ncpus];
     nloc = setpart(comm, nima, psize, nbase);
 
-    *images2D = new EMData*[nloc];
+    *images2D = new EMData*[nloc]; // NB!: whoever calls ReadStackandDist must delete this!
 	
     EMData *img_ptr;
     int img_index;
@@ -89,7 +89,10 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
 	printf("received data for processor %d\n", mypid);
     }
     if (mypid == 0) printf("finished reading and distributing data\n");
+    
     EMDeletePtr(img_ptr);
+    EMDeleteArray(psize);
+    EMDeleteArray(nbase);
     return nloc;
 }
 
