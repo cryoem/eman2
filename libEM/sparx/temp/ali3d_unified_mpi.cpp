@@ -103,7 +103,7 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     int klp, klploc; // number of pixels in background
     klp = 0;
     klploc = 0;
-    ri = 30;
+    ri = nx / 2 - 2; // radius depends on resolution of volume data
 	
     // calculate avg background in parallel
     for ( int i = 0 ; i < nloc ; ++i ) {
