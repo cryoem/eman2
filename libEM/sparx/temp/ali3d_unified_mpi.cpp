@@ -103,7 +103,7 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     int klp, klploc; // number of pixels in background
     klp = 0;
     klploc = 0;
-    ri = nx / 2 - 2; // radius depends on resolution of volume data
+    ri = nx / 2 - 1; // radius depends on resolution of volume data
 	
     // calculate avg background in parallel
     for ( int i = 0 ; i < nloc ; ++i ) {
@@ -192,7 +192,7 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     iprint = 1; // print out info after every iteration 
     if (task.substr(0,2) == "FG") {
 
-	if (numfg > max_iter) goto Terminate;
+	if (numfg >= max_iter) goto Terminate;
 	sprintf(res_fname_base, "%s_fg%d" , fname_base, numfg);
 	ierr =  fgcalc(comm, &(x(1)), volsize, nnz, nrays, origin, ri, 
 		       ptrs, cord, &(x(nnz + 1)), nang, rhs, aba, &f, &(g(1)), res_fname_base); 
