@@ -1,6 +1,7 @@
 #ifndef ALIGNOPTIONS_H
 #define ALIGNOPTIONS_H
 
+#include "mpi.h"
 #include "emdata.h"
 #include <string>
 
