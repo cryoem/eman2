@@ -48,7 +48,7 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
     int *nbase = new int[ncpus];
     nloc = setpart(comm, nima, psize, nbase);
 
-    *images2D = new (EMData*)[nloc];
+    *images2D = new EMData*[nloc];
 	
     EMData *img_ptr;
     int img_index;
