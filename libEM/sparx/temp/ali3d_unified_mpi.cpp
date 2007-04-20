@@ -955,9 +955,6 @@ int fcalc(MPI_Comm comm, float *volsph, Vec3i volsize,
 	    for (int i = 1; i <= nx*ny; i++) {
 		rvec(i) = rvec(i) - rhs(i,j+1);
 	    }
-	    // std::cout << "\n" << rvec[0] << "\n" << std::endl;		
-	    ierr = bckpj3(volsize, nrays, nnz, dm, origin, ri, ptrs, cord, 
-			  rvec, gradloc);
 
 	    // fval <--- norm(rvec)^2/2 
 	    ibeg = nnz + 5*(jglb) - 1;
