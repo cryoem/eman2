@@ -96,7 +96,7 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
 	}
     }
 	
-    // Subtract average "background" from all pixels
+    // Calculate average "background" from all pixels strictly outside of radius
     double aba, abaloc; // average background
     aba = 0.0;
     abaloc = 0.0;
@@ -114,9 +114,20 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     MPI_Allreduce(&klploc, &klp, 1, MPI_INT, MPI_SUM, comm);
 
     aba /= klp;
-	
-    for ( int i = 0 ; i < nx*ny*nloc ; ++i ) {
-	rhs[i] -= aba;
+
+    // subtract off the average background from pixels weakly inside of radius
+    int x_summand, y_summand;
+    int r_squared = ri * ri;
+    for ( int i = 0 ; i < nloc ; ++i ) {
+	for ( int j = 0 ; j < nx ; ++j) {
+	    x_summand = (j - origin[0]) *  (j - origin[0]);
+	    for ( int k = 0 ; k < ny ; ++k ) {
+		y_summand = (k - origin[1]) *  (k - origin[1]);
+		if ( x_summand + y_summand <= r_squared) {
+		    rhs[i*nx*ny + j*ny + k] -= aba;
+		}
+	    }
+	}
     }
 
     ierr = getnnz(volsize, ri, origin, &nrays, &nnz);
