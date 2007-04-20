@@ -895,7 +895,7 @@ int fgcalc(MPI_Comm comm, float *volsph, Vec3i volsize,
 int fcalc(MPI_Comm comm, float *volsph, Vec3i volsize, 
            int nnz, int nrays, Vec3i origin, int ri, 
            int *ptrs, int *cord, float *angtrs, int nang, 
-           float *rhs, float aba, NUMBER *fval, char * fname_base)
+           float *rhs, float aba, NUMBER *fval)
 {
 	int mypid, ncpus, nvars;
 	int *psize, *nbase;
@@ -920,11 +920,6 @@ int fcalc(MPI_Comm comm, float *volsph, Vec3i volsize,
 	psize = new int[ncpus];
 	nbase = new int[ncpus];
  	rvec  = new float[nx*ny];
-
-	std::ofstream res_out;
-	char out_fname[64];
-	sprintf(out_fname, "res_%s.dat", fname_base);
-	res_out.open(out_fname);
 
 	nangloc = setpart(comm, nang, psize, nbase);
 	float * img_res = new float[nangloc]; // here we'll store the residuals for each data image
@@ -981,25 +976,6 @@ int fcalc(MPI_Comm comm, float *volsph, Vec3i volsize,
 	}
 	
 	ierr = MPI_Allreduce(&fvalloc, fval, 1, MPI_FLOAT, MPI_SUM, comm);
-
-// 	// in turn, send each array of image residuals to master, then write to disk
-	MPI_Status mpistatus;
-	if (mypid == 0) {
-	    for ( int j = 0 ; j < psize[0] ; ++j ) {
-		res_out << std::scientific << img_res[j] << std::endl;
-	    }
-	    for ( int j = 1 ; j < ncpus ; ++j ) {
-		ierr = MPI_Recv(img_res, psize[j], MPI_FLOAT, j, j, comm, &mpistatus);
-		for ( int i = 0 ; i < psize[j] ; ++i ) {
-		    res_out << std::scientific << img_res[i] << std::endl;
-		}
-	    }
-	} else { // mypid != 0 , send my data to master to write out
-	    ierr = MPI_Send(img_res, nangloc, MPI_FLOAT, 0, mypid, comm);
-	}
-
-
-	res_out.close();
 
 	EMDeleteArray(psize);
 	EMDeleteArray(nbase);
