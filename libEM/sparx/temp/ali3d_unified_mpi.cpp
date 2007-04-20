@@ -224,6 +224,14 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     for ( int i = 0 ; i < 5 * nangloc ; ++i ) {
 	angleshift[i] = x(nnz + 1 + nbase[mypid] + i);
     }
+    // and convert back to ali3d_d's format
+    for ( int i = 0 ; i < nangloc ; ++i ) {
+	angleshift[0] *= (180.0/PI);
+	angleshift[1] *= (180.0/PI);
+	angleshift[2] *= (180.0/PI);
+	angleshift[3] *= -1.0;
+	angleshift[4] *= -1.0;		
+    }
 
     EMDeleteArray(rhs);
     EMDeleteArray(ptrs);
