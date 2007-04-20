@@ -693,8 +693,19 @@ float Util::quadri(float xx, float yy, int nxdata, int nydata, float* fdata)
 #undef fdata
 
 float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, float delz, float* data, Util::KaiserBessel& kb) {
-//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
+// Here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
 
+/* Commented by Zhengfan Yang on 04/20/07
+This function is written to replace get_pixel_conv(), which is too slow to use in practice.
+I made the following changes to get_pixel_conv():
+1. Use the same data passing scheme as quadri() and move the function from emdata_sparx.cpp to util_sparx.cpp
+2. Reduce usage of i0win_tab (from 98 calls to 14 calls in 2D case, from 1029 calls to 21 calls in 3D case!)
+3. Unfold the 'for' loop
+4. Reduce the usage of multiplications through some bracketing (from 98 times to 57 times in 2D case, from 1029 times to 400 times in 3D case)
+
+The shortcoming of this routine is that it only works for window size N=7. In case you want to use other window
+size, say N=5, you can easily modify it by referring my code.
+*/
 	int K = kb.get_window_size();
 	int kbmin = -K/2;
 	int kbmax = -kbmin;
@@ -702,26 +713,135 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 
 	float pixel =0.0f;
 	float w=0.0f;
-	float *tablex;
 	
 	delx = fmod(2*delx, float(nx));
-	int inxold = int(Util::round(delx));
-	if(ny<2) {  //1D
-	 		 if(inxold <= kbc || inxold >=nx-kbc-2 )  {
-	 //  loop for ends
-         		   for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 		     float q = kb.i0win_tab(delx - inxold-m1);
-	 		     pixel += data[(inxold+m1+nx)%nx]*q;w+=q;}
-	 		 }else{
-         		   for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 		     float q = kb.i0win_tab(delx - inxold-m1);
-	 		     pixel += data[inxold+m1]*q;w+=q;}
-	 		 }
-	
+	int inxold = int(delx+0.5);
+	if (ny<2) {  //1D
+		float tablex1 = kb.i0win_tab(delx-inxold+3);
+		float tablex2 = kb.i0win_tab(delx-inxold+2);
+		float tablex3 = kb.i0win_tab(delx-inxold+1);
+		float tablex4 = kb.i0win_tab(delx-inxold);
+		float tablex5 = kb.i0win_tab(delx-inxold-1);
+		float tablex6 = kb.i0win_tab(delx-inxold-2);
+		float tablex7 = kb.i0win_tab(delx-inxold-3);
+			
+		int x1, x2, x3, x4, x5, x6, x7;
+			
+	 	if ( inxold <= kbc || inxold >=nx-kbc-2 )  {
+			x1 = (inxold-3+nx)%nx;
+			x2 = (inxold-2+nx)%nx;
+			x3 = (inxold-1+nx)%nx;
+			x4 = (inxold  +nx)%nx;
+			x5 = (inxold+1+nx)%nx;
+			x6 = (inxold+2+nx)%nx;
+			x7 = (inxold+3+nx)%nx;			
+	 	} else {
+			x1 = inxold-3;
+			x2 = inxold-2;
+			x3 = inxold-1;
+			x4 = inxold;
+			x5 = inxold+1;
+			x6 = inxold+2;
+			x7 = inxold+3;			 
+	 	}
+			
+		pixel = data[x1]*tablex1 + data[x2]*tablex2 + data[x3]*tablex3 +
+			data[x4]*tablex4 + data[x5]*tablex5 + data[x6]*tablex6 +
+			data[x7]*tablex7 ;
+			     
+		w = tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7;
+			
+	     	/*if ( inxold <= kbc || inxold >=nx-kbc-2 )  {
+			for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	     		  float q = kb.i0win_tab(delx - inxold-m1);
+	     		  pixel += data[(inxold+m1+nx)%nx]*q;w+=q;}
+	     	      }else{
+	     		for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	     		  float q = kb.i0win_tab(delx - inxold-m1);
+	     		  pixel += data[inxold+m1]*q;w+=q;}
+	     	      }*/   
+		       
 	} else if(nz<2) {  // 2D
-			dely = fmod(2*dely, float(ny));
-			int inyold = int(Util::round(dely));
-			tablex = new float[K+1];
+		dely = fmod(2*dely, float(ny));
+		int inyold = int(dely+0.5);
+		float tablex1 = kb.i0win_tab(delx-inxold+3);
+		float tablex2 = kb.i0win_tab(delx-inxold+2);
+		float tablex3 = kb.i0win_tab(delx-inxold+1);
+		float tablex4 = kb.i0win_tab(delx-inxold);
+		float tablex5 = kb.i0win_tab(delx-inxold-1);
+		float tablex6 = kb.i0win_tab(delx-inxold-2);
+		float tablex7 = kb.i0win_tab(delx-inxold-3);
+
+		float tabley1 = kb.i0win_tab(dely-inyold+3);
+		float tabley2 = kb.i0win_tab(dely-inyold+2);
+		float tabley3 = kb.i0win_tab(dely-inyold+1);
+		float tabley4 = kb.i0win_tab(dely-inyold);
+		float tabley5 = kb.i0win_tab(dely-inyold-1);
+		float tabley6 = kb.i0win_tab(dely-inyold-2);
+		float tabley7 = kb.i0win_tab(dely-inyold-3); 
+			
+		int x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7;
+			
+	 	if ( inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+			x1 = (inxold-3+nx)%nx;
+			x2 = (inxold-2+nx)%nx;
+			x3 = (inxold-1+nx)%nx;
+			x4 = (inxold  +nx)%nx;
+			x5 = (inxold+1+nx)%nx;
+			x6 = (inxold+2+nx)%nx;
+			x7 = (inxold+3+nx)%nx;
+			
+			y1 = ((inyold-3+ny)%ny)*nx;
+			y2 = ((inyold-2+ny)%ny)*nx;
+			y3 = ((inyold-1+ny)%ny)*nx;
+			y4 = ((inyold  +ny)%ny)*nx;
+			y5 = ((inyold+1+ny)%ny)*nx;
+			y6 = ((inyold+2+ny)%ny)*nx;
+			y7 = ((inyold+3+ny)%ny)*nx;
+		} else {
+			x1 = inxold-3;
+			x2 = inxold-2;
+			x3 = inxold-1;
+			x4 = inxold;
+			x5 = inxold+1;
+			x6 = inxold+2;
+			x7 = inxold+3;
+			
+			y1 = (inyold-3)*nx;
+			y2 = (inyold-2)*nx;
+			y3 = (inyold-1)*nx;
+			y4 = inyold*nx;
+			y5 = (inyold+1)*nx;
+			y6 = (inyold+2)*nx;
+			y7 = (inyold+3)*nx;
+		}
+				
+		pixel    = ( data[x1+y1]*tablex1 + data[x2+y1]*tablex2 + data[x3+y1]*tablex3 +
+		             data[x4+y1]*tablex4 + data[x5+y1]*tablex5 + data[x6+y1]*tablex6 +
+		   	     data[x7+y1]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2]*tablex1 + data[x2+y2]*tablex2 + data[x3+y2]*tablex3 +
+		   	     data[x4+y2]*tablex4 + data[x5+y2]*tablex5 + data[x6+y2]*tablex6 +
+		   	     data[x7+y2]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3]*tablex1 + data[x2+y3]*tablex2 + data[x3+y3]*tablex3 +
+		   	     data[x4+y3]*tablex4 + data[x5+y3]*tablex5 + data[x6+y3]*tablex6 +
+		   	     data[x7+y3]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4]*tablex1 + data[x2+y4]*tablex2 + data[x3+y4]*tablex3 +
+		   	     data[x4+y4]*tablex4 + data[x5+y4]*tablex5 + data[x6+y4]*tablex6 +
+		   	     data[x7+y4]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5]*tablex1 + data[x2+y5]*tablex2 + data[x3+y5]*tablex3 +
+		   	     data[x4+y5]*tablex4 + data[x5+y5]*tablex5 + data[x6+y5]*tablex6 +
+		   	     data[x7+y5]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6]*tablex1 + data[x2+y6]*tablex2 + data[x3+y6]*tablex3 +
+		   	     data[x4+y6]*tablex4 + data[x5+y6]*tablex5 + data[x6+y6]*tablex6 +
+		   	     data[x7+y6]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7]*tablex1 + data[x2+y7]*tablex2 + data[x3+y7]*tablex3 +
+		   	     data[x4+y7]*tablex4 + data[x5+y7]*tablex5 + data[x6+y7]*tablex6 +
+		   	     data[x7+y7]*tablex7 ) * tabley7;
+			     
+		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
+		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);	
+		    
+/*			tablex = new float[K+1];
 			for (int i=kbmin; i<=kbmax; i++) {
 				tablex[i-kbmin] = kb.i0win_tab(delx-inxold-i);
 			}
@@ -730,7 +850,7 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 					float qy = kb.i0win_tab(dely-inyold-m2);
 					for (int m1 =kbmin; m1 <=kbmax; m1++) {
 			 			float q = tablex[m1-kbmin]*qy;
-	 		     			pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*ny]*q;
+	 		     			pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*nx]*q;
 						w += q;
 					}
 				}
@@ -740,30 +860,257 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 					for (int m1 =kbmin; m1 <=kbmax; m1++) {
 						//float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
 			 			float q = tablex[m1-kbmin]*qy;
-						pixel += data[inxold+m1+(inyold+m2)*ny]*q;
+						pixel += data[inxold+m1+(inyold+m2)*nx]*q;
 						w += q;
 					}
 				}
 			}
-			delete tablex;
+			delete tablex; */
 	} else {  //  3D
-	dely = fmod(2*dely, float(ny));
-	int inyold = int(Util::round(dely));
-	delz = fmod(2*delz, float(nz));
-	int inzold = int(Util::round(delz));
-			     //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;
-	 		 if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
-	 //  loop for strips
+		dely = fmod(2*dely, float(ny));
+		int inyold = int(dely+0.5);
+		delz = fmod(2*delz, float(nz));
+		int inzold = int(delz+0.5);
+		
+		float tablex1 = kb.i0win_tab(delx-inxold+3);
+		float tablex2 = kb.i0win_tab(delx-inxold+2);
+		float tablex3 = kb.i0win_tab(delx-inxold+1);
+		float tablex4 = kb.i0win_tab(delx-inxold);
+		float tablex5 = kb.i0win_tab(delx-inxold-1);
+		float tablex6 = kb.i0win_tab(delx-inxold-2);
+		float tablex7 = kb.i0win_tab(delx-inxold-3);
+
+		float tabley1 = kb.i0win_tab(dely-inyold+3);
+		float tabley2 = kb.i0win_tab(dely-inyold+2);
+		float tabley3 = kb.i0win_tab(dely-inyold+1);
+		float tabley4 = kb.i0win_tab(dely-inyold);
+		float tabley5 = kb.i0win_tab(dely-inyold-1);
+		float tabley6 = kb.i0win_tab(dely-inyold-2);
+		float tabley7 = kb.i0win_tab(dely-inyold-3); 
+			
+		float tablez1 = kb.i0win_tab(delz-inzold+3);
+		float tablez2 = kb.i0win_tab(delz-inzold+2);
+		float tablez3 = kb.i0win_tab(delz-inzold+1);
+		float tablez4 = kb.i0win_tab(delz-inzold);
+		float tablez5 = kb.i0win_tab(delz-inzold-1);
+		float tablez6 = kb.i0win_tab(delz-inzold-2);
+		float tablez7 = kb.i0win_tab(delz-inzold-3); 
+		
+		int x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7, z1, z2, z3, z4, z5, z6, z7;
+		
+		if ( inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 || inzold <= kbc || inzold >= nz-kbc-2 )  {
+			x1 = (inxold-3+nx)%nx;
+			x2 = (inxold-2+nx)%nx;
+			x3 = (inxold-1+nx)%nx;
+			x4 = (inxold  +nx)%nx;
+			x5 = (inxold+1+nx)%nx;
+			x6 = (inxold+2+nx)%nx;
+			x7 = (inxold+3+nx)%nx;
+			
+			y1 = ((inyold-3+ny)%ny)*nx;
+			y2 = ((inyold-2+ny)%ny)*nx;
+			y3 = ((inyold-1+ny)%ny)*nx;
+			y4 = ((inyold  +ny)%ny)*nx;
+			y5 = ((inyold+1+ny)%ny)*nx;
+			y6 = ((inyold+2+ny)%ny)*nx;
+			y7 = ((inyold+3+ny)%ny)*nx;
+
+			z1 = ((inzold-3+nz)%nz)*nx*ny;
+			z2 = ((inzold-2+nz)%nz)*nx*ny;
+			z3 = ((inzold-1+nz)%nz)*nx*ny;
+			z4 = ((inzold  +nz)%nz)*nx*ny;
+			z5 = ((inzold+1+nz)%nz)*nx*ny;
+			z6 = ((inzold+2+nz)%nz)*nx*ny;
+			z7 = ((inzold+3+nz)%nz)*nx*ny;
+		} else {
+			x1 = inxold-3;
+			x2 = inxold-2;
+			x3 = inxold-1;
+			x4 = inxold;
+			x5 = inxold+1;
+			x6 = inxold+2;
+			x7 = inxold+3;
+			
+			y1 = (inyold-3)*nx;
+			y2 = (inyold-2)*nx;
+			y3 = (inyold-1)*nx;
+			y4 = inyold*nx;
+			y5 = (inyold+1)*nx;
+			y6 = (inyold+2)*nx;
+			y7 = (inyold+3)*nx;
+
+			z1 = (inzold-3)*nx*ny;
+			z2 = (inzold-2)*nx*ny;
+			z3 = (inzold-1)*nx*ny;
+			z4 = inzold*nx*ny;
+			z5 = (inzold+1)*nx*ny;
+			z6 = (inzold+2)*nx*ny;		
+			z7 = (inzold+3)*nx*ny;
+	 	}
+		
+		pixel  = ( ( data[x1+y1+z1]*tablex1 + data[x2+y1+z1]*tablex2 + data[x3+y1+z1]*tablex3 +
+		             data[x4+y1+z1]*tablex4 + data[x5+y1+z1]*tablex5 + data[x6+y1+z1]*tablex6 +
+		   	     data[x7+y1+z1]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z1]*tablex1 + data[x2+y2+z1]*tablex2 + data[x3+y2+z1]*tablex3 +
+		   	     data[x4+y2+z1]*tablex4 + data[x5+y2+z1]*tablex5 + data[x6+y2+z1]*tablex6 +
+		   	     data[x7+y2+z1]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z1]*tablex1 + data[x2+y3+z1]*tablex2 + data[x3+y3+z1]*tablex3 +
+		   	     data[x4+y3+z1]*tablex4 + data[x5+y3+z1]*tablex5 + data[x6+y3+z1]*tablex6 +
+		   	     data[x7+y3+z1]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z1]*tablex1 + data[x2+y4+z1]*tablex2 + data[x3+y4+z1]*tablex3 +
+		   	     data[x4+y4+z1]*tablex4 + data[x5+y4+z1]*tablex5 + data[x6+y4+z1]*tablex6 +
+		   	     data[x7+y4+z1]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z1]*tablex1 + data[x2+y5+z1]*tablex2 + data[x3+y5+z1]*tablex3 +
+		   	     data[x4+y5+z1]*tablex4 + data[x5+y5+z1]*tablex5 + data[x6+y5+z1]*tablex6 +
+		   	     data[x7+y5+z1]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z1]*tablex1 + data[x2+y6+z1]*tablex2 + data[x3+y6+z1]*tablex3 +
+		   	     data[x4+y6+z1]*tablex4 + data[x5+y6+z1]*tablex5 + data[x6+y6+z1]*tablex6 +
+		   	     data[x7+y6+z1]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z1]*tablex1 + data[x2+y7+z1]*tablex2 + data[x3+y7+z1]*tablex3 +
+		   	     data[x4+y7+z1]*tablex4 + data[x5+y7+z1]*tablex5 + data[x6+y7+z1]*tablex6 +
+		   	     data[x7+y7+z1]*tablex7 ) * tabley7 ) *tablez1 +
+		         ( ( data[x1+y1+z2]*tablex1 + data[x2+y1+z2]*tablex2 + data[x3+y1+z2]*tablex3 +
+		             data[x4+y1+z2]*tablex4 + data[x5+y1+z2]*tablex5 + data[x6+y1+z2]*tablex6 +
+		   	     data[x7+y1+z2]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z2]*tablex1 + data[x2+y2+z2]*tablex2 + data[x3+y2+z2]*tablex3 +
+		   	     data[x4+y2+z2]*tablex4 + data[x5+y2+z2]*tablex5 + data[x6+y2+z2]*tablex6 +
+		   	     data[x7+y2+z2]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z2]*tablex1 + data[x2+y3+z2]*tablex2 + data[x3+y3+z2]*tablex3 +
+		   	     data[x4+y3+z2]*tablex4 + data[x5+y3+z2]*tablex5 + data[x6+y3+z2]*tablex6 +
+		   	     data[x7+y3+z2]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z2]*tablex1 + data[x2+y4+z2]*tablex2 + data[x3+y4+z2]*tablex3 +
+		   	     data[x4+y4+z2]*tablex4 + data[x5+y4+z2]*tablex5 + data[x6+y4+z2]*tablex6 +
+		   	     data[x7+y4+z2]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z2]*tablex1 + data[x2+y5+z2]*tablex2 + data[x3+y5+z2]*tablex3 +
+		   	     data[x4+y5+z2]*tablex4 + data[x5+y5+z2]*tablex5 + data[x6+y5+z2]*tablex6 +
+		   	     data[x7+y5+z2]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z2]*tablex1 + data[x2+y6+z2]*tablex2 + data[x3+y6+z2]*tablex3 +
+		   	     data[x4+y6+z2]*tablex4 + data[x5+y6+z2]*tablex5 + data[x6+y6+z2]*tablex6 +
+		   	     data[x7+y6+z2]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z2]*tablex1 + data[x2+y7+z2]*tablex2 + data[x3+y7+z2]*tablex3 +
+		   	     data[x4+y7+z2]*tablex4 + data[x5+y7+z2]*tablex5 + data[x6+y7+z2]*tablex6 +
+		   	     data[x7+y7+z2]*tablex7 ) * tabley7 ) *tablez2 +
+		         ( ( data[x1+y1+z3]*tablex1 + data[x2+y1+z3]*tablex2 + data[x3+y1+z3]*tablex3 +
+		             data[x4+y1+z3]*tablex4 + data[x5+y1+z3]*tablex5 + data[x6+y1+z3]*tablex6 +
+		   	     data[x7+y1+z3]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z3]*tablex1 + data[x2+y2+z3]*tablex2 + data[x3+y2+z3]*tablex3 +
+		   	     data[x4+y2+z3]*tablex4 + data[x5+y2+z3]*tablex5 + data[x6+y2+z3]*tablex6 +
+		   	     data[x7+y2+z3]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z3]*tablex1 + data[x2+y3+z3]*tablex2 + data[x3+y3+z3]*tablex3 +
+		   	     data[x4+y3+z3]*tablex4 + data[x5+y3+z3]*tablex5 + data[x6+y3+z3]*tablex6 +
+		   	     data[x7+y3+z3]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z3]*tablex1 + data[x2+y4+z3]*tablex2 + data[x3+y4+z3]*tablex3 +
+		   	     data[x4+y4+z3]*tablex4 + data[x5+y4+z3]*tablex5 + data[x6+y4+z3]*tablex6 +
+		   	     data[x7+y4+z3]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z3]*tablex1 + data[x2+y5+z3]*tablex2 + data[x3+y5+z3]*tablex3 +
+		   	     data[x4+y5+z3]*tablex4 + data[x5+y5+z3]*tablex5 + data[x6+y5+z3]*tablex6 +
+		   	     data[x7+y5+z3]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z3]*tablex1 + data[x2+y6+z3]*tablex2 + data[x3+y6+z3]*tablex3 +
+		   	     data[x4+y6+z3]*tablex4 + data[x5+y6+z3]*tablex5 + data[x6+y6+z3]*tablex6 +
+		   	     data[x7+y6+z3]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z3]*tablex1 + data[x2+y7+z3]*tablex2 + data[x3+y7+z3]*tablex3 +
+		   	     data[x4+y7+z3]*tablex4 + data[x5+y7+z3]*tablex5 + data[x6+y7+z3]*tablex6 +
+		   	     data[x7+y7+z3]*tablex7 ) * tabley7 ) *tablez3 +
+		         ( ( data[x1+y1+z4]*tablex1 + data[x2+y1+z4]*tablex2 + data[x3+y1+z4]*tablex3 +
+		             data[x4+y1+z4]*tablex4 + data[x5+y1+z4]*tablex5 + data[x6+y1+z4]*tablex6 +
+		   	     data[x7+y1+z4]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z4]*tablex1 + data[x2+y2+z4]*tablex2 + data[x3+y2+z4]*tablex3 +
+		   	     data[x4+y2+z4]*tablex4 + data[x5+y2+z4]*tablex5 + data[x6+y2+z4]*tablex6 +
+		   	     data[x7+y2+z4]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z4]*tablex1 + data[x2+y3+z4]*tablex2 + data[x3+y3+z4]*tablex3 +
+		   	     data[x4+y3+z4]*tablex4 + data[x5+y3+z4]*tablex5 + data[x6+y3+z4]*tablex6 +
+		   	     data[x7+y3+z4]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z4]*tablex1 + data[x2+y4+z4]*tablex2 + data[x3+y4+z4]*tablex3 +
+		   	     data[x4+y4+z4]*tablex4 + data[x5+y4+z4]*tablex5 + data[x6+y4+z4]*tablex6 +
+		   	     data[x7+y4+z4]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z4]*tablex1 + data[x2+y5+z4]*tablex2 + data[x3+y5+z4]*tablex3 +
+		   	     data[x4+y5+z4]*tablex4 + data[x5+y5+z4]*tablex5 + data[x6+y5+z4]*tablex6 +
+		   	     data[x7+y5+z4]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z4]*tablex1 + data[x2+y6+z4]*tablex2 + data[x3+y6+z4]*tablex3 +
+		   	     data[x4+y6+z4]*tablex4 + data[x5+y6+z4]*tablex5 + data[x6+y6+z4]*tablex6 +
+		   	     data[x7+y6+z4]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z4]*tablex1 + data[x2+y7+z4]*tablex2 + data[x3+y7+z4]*tablex3 +
+		   	     data[x4+y7+z4]*tablex4 + data[x5+y7+z4]*tablex5 + data[x6+y7+z4]*tablex6 +
+		   	     data[x7+y7+z4]*tablex7 ) * tabley7 ) *tablez4 +
+		         ( ( data[x1+y1+z5]*tablex1 + data[x2+y1+z5]*tablex2 + data[x3+y1+z5]*tablex3 +
+		             data[x4+y1+z5]*tablex4 + data[x5+y1+z5]*tablex5 + data[x6+y1+z5]*tablex6 +
+		   	     data[x7+y1+z5]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z5]*tablex1 + data[x2+y2+z5]*tablex2 + data[x3+y2+z5]*tablex3 +
+		   	     data[x4+y2+z5]*tablex4 + data[x5+y2+z5]*tablex5 + data[x6+y2+z5]*tablex6 +
+		   	     data[x7+y2+z5]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z5]*tablex1 + data[x2+y3+z5]*tablex2 + data[x3+y3+z5]*tablex3 +
+		   	     data[x4+y3+z5]*tablex4 + data[x5+y3+z5]*tablex5 + data[x6+y3+z5]*tablex6 +
+		   	     data[x7+y3+z5]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z5]*tablex1 + data[x2+y4+z5]*tablex2 + data[x3+y4+z5]*tablex3 +
+		   	     data[x4+y4+z5]*tablex4 + data[x5+y4+z5]*tablex5 + data[x6+y4+z5]*tablex6 +
+		   	     data[x7+y4+z5]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z5]*tablex1 + data[x2+y5+z5]*tablex2 + data[x3+y5+z5]*tablex3 +
+		   	     data[x4+y5+z5]*tablex4 + data[x5+y5+z5]*tablex5 + data[x6+y5+z5]*tablex6 +
+		   	     data[x7+y5+z5]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z5]*tablex1 + data[x2+y6+z5]*tablex2 + data[x3+y6+z5]*tablex3 +
+		   	     data[x4+y6+z5]*tablex4 + data[x5+y6+z5]*tablex5 + data[x6+y6+z5]*tablex6 +
+		   	     data[x7+y6+z5]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z5]*tablex1 + data[x2+y7+z5]*tablex2 + data[x3+y7+z5]*tablex3 +
+		   	     data[x4+y7+z5]*tablex4 + data[x5+y7+z5]*tablex5 + data[x6+y7+z5]*tablex6 +
+		   	     data[x7+y7+z5]*tablex7 ) * tabley7 ) *tablez5 +
+		         ( ( data[x1+y1+z6]*tablex1 + data[x2+y1+z6]*tablex2 + data[x3+y1+z6]*tablex3 +
+		             data[x4+y1+z6]*tablex4 + data[x5+y1+z6]*tablex5 + data[x6+y1+z6]*tablex6 +
+		   	     data[x7+y1+z6]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z6]*tablex1 + data[x2+y2+z6]*tablex2 + data[x3+y2+z6]*tablex3 +
+		   	     data[x4+y2+z6]*tablex4 + data[x5+y2+z6]*tablex5 + data[x6+y2+z6]*tablex6 +
+		   	     data[x7+y2+z6]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z6]*tablex1 + data[x2+y3+z6]*tablex2 + data[x3+y3+z6]*tablex3 +
+		   	     data[x4+y3+z6]*tablex4 + data[x5+y3+z6]*tablex5 + data[x6+y3+z6]*tablex6 +
+		   	     data[x7+y3+z6]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z6]*tablex1 + data[x2+y4+z6]*tablex2 + data[x3+y4+z6]*tablex3 +
+		   	     data[x4+y4+z6]*tablex4 + data[x5+y4+z6]*tablex5 + data[x6+y4+z6]*tablex6 +
+		   	     data[x7+y4+z6]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z6]*tablex1 + data[x2+y5+z6]*tablex2 + data[x3+y5+z6]*tablex3 +
+		   	     data[x4+y5+z6]*tablex4 + data[x5+y5+z6]*tablex5 + data[x6+y5+z6]*tablex6 +
+		   	     data[x7+y5+z6]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z6]*tablex1 + data[x2+y6+z6]*tablex2 + data[x3+y6+z6]*tablex3 +
+		   	     data[x4+y6+z6]*tablex4 + data[x5+y6+z6]*tablex5 + data[x6+y6+z6]*tablex6 +
+		   	     data[x7+y6+z6]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z6]*tablex1 + data[x2+y7+z6]*tablex2 + data[x3+y7+z6]*tablex3 +
+		   	     data[x4+y7+z6]*tablex4 + data[x5+y7+z6]*tablex5 + data[x6+y7+z6]*tablex6 +
+		   	     data[x7+y7+z6]*tablex7 ) * tabley7 ) *tablez6 +
+		         ( ( data[x1+y1+z7]*tablex1 + data[x2+y1+z7]*tablex2 + data[x3+y1+z7]*tablex3 +
+		             data[x4+y1+z7]*tablex4 + data[x5+y1+z7]*tablex5 + data[x6+y1+z7]*tablex6 +
+		   	     data[x7+y1+z7]*tablex7 ) * tabley1 +
+		   	   ( data[x1+y2+z7]*tablex1 + data[x2+y2+z7]*tablex2 + data[x3+y2+z7]*tablex3 +
+		   	     data[x4+y2+z7]*tablex4 + data[x5+y2+z7]*tablex5 + data[x6+y2+z7]*tablex6 +
+		   	     data[x7+y2+z7]*tablex7 ) * tabley2 +
+		   	   ( data[x1+y3+z7]*tablex1 + data[x2+y3+z7]*tablex2 + data[x3+y3+z7]*tablex3 +
+		   	     data[x4+y3+z7]*tablex4 + data[x5+y3+z7]*tablex5 + data[x6+y3+z7]*tablex6 +
+		   	     data[x7+y3+z7]*tablex7 ) * tabley3 +
+		   	   ( data[x1+y4+z7]*tablex1 + data[x2+y4+z7]*tablex2 + data[x3+y4+z7]*tablex3 +
+		   	     data[x4+y4+z7]*tablex4 + data[x5+y4+z7]*tablex5 + data[x6+y4+z7]*tablex6 +
+		   	     data[x7+y4+z7]*tablex7 ) * tabley4 +
+		   	   ( data[x1+y5+z7]*tablex1 + data[x2+y5+z7]*tablex2 + data[x3+y5+z7]*tablex3 +
+		   	     data[x4+y5+z7]*tablex4 + data[x5+y5+z7]*tablex5 + data[x6+y5+z7]*tablex6 +
+		   	     data[x7+y5+z7]*tablex7 ) * tabley5 +
+		   	   ( data[x1+y6+z7]*tablex1 + data[x2+y6+z7]*tablex2 + data[x3+y6+z7]*tablex3 +
+		   	     data[x4+y6+z7]*tablex4 + data[x5+y6+z7]*tablex5 + data[x6+y6+z7]*tablex6 +
+		   	     data[x7+y6+z7]*tablex7 ) * tabley6 +
+		   	   ( data[x1+y7+z7]*tablex1 + data[x2+y7+z7]*tablex2 + data[x3+y7+z7]*tablex3 +
+		   	     data[x4+y7+z7]*tablex4 + data[x5+y7+z7]*tablex5 + data[x6+y7+z7]*tablex6 +
+		   	     data[x7+y7+z7]*tablex7 ) * tabley7 ) *tablez7;
+			     
+		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
+		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7) *
+		    (tablez1+tablez2+tablez3+tablez4+tablez5+tablez6+tablez7);	
+		    
+	/* if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
          		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
 			     //cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
-	 		     pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*ny+((inzold+m3+nz)%nz)*nz]*q;w+=q;}}}
+	 		     pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*nx+((inzold+m3+nz)%nz)*nx*ny]*q;w+=q;}}}
 	 		 } else {
          		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
 			     //cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
-	 		     pixel += data[inxold+m1+(inyold+m2)*ny+(inzold+m3)*nz]*q;w+=q;}}}
-	 		 }
+	 		     pixel += data[inxold+m1+(inyold+m2)*nx+(inzold+m3)*nx*ny]*q;w+=q;}}}
+	 		 }*/
 	}
         return pixel/w;
 }
@@ -1086,14 +1433,6 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    char mode = (cmode == "F" || cmode == "f") ? 'f' : 'h';
    float *xim  = image->get_data();
    float *circ = out->get_data();
-/*   out->get_data();
-   alrl_ms(image->get_data(), nsam, nrow, cns2, cnr2, &numr[0], out->get_data(), lcirc, nring, cmode);
-   return out;
-}
-
-void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
-             int  *numr, float *circ, int lcirc, int  nring, char  mode)
-{*/
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
    float  xold, yold, fi, x, y;
@@ -1102,24 +1441,6 @@ void Util::alrq_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
-
-/*   xold = numr(1,1)+cns2;
-   yold = 0.0+cnr2;
-   time_t begin_time, end_time;
-   time(&begin_time);
-   float bbb = 0.0f;
-   for (long nnn=0; nnn<100000; nnn++) {
-   	for (long nnn2=0; nnn2<100000; nnn2++) {
-		float a = quadri(xold,yold,nsam,nrow,xim); 
-		a = a*1.002;
-		bbb += a/(nnn2+nnn+1);
-	}
-   }
-   time(&end_time);
-   double total_time = difftime(end_time,begin_time);
-   std::cout << "Time Used for 10^9 Quadri is: " << total_time << " seconds, bbb is " << bbb << std::endl; 
-   exit(0); */
-
    for (it=1; it<=nring; it++) {
       // radius of the ring
       inr = numr(1,it);
@@ -1400,24 +1721,6 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
-   
-/*   xold = numr(1,1);
-   yold = 0.0;
-   time_t begin_time, end_time;   
-   time(&begin_time);
-   float bbb = 0.0f;
-   for (int nnn=0; nnn<10000; nnn++) {
-   	for (int nnn2=0; nnn2<10000; nnn2++) {
-		float a = get_pixel_conv_new(nx, ny, nz, xold+cns2-1.0f,yold+cnr2-1.0f,0,fimage,kb);
-		a = a*1.002;
-		bbb += a/(nnn+nnn2+1); 
-	}
-   }
-   time(&end_time);
-   double total_time = difftime(end_time,begin_time);
-   std::cout << "Time Used for 10^8 get_pixel_conv_new is " << total_time << " seconds, bbb is " << bbb << std::endl; 
-   exit(0); */
-   
    for (it=1;it<=nring;it++) {
       // radius of the ring
       inr = numr(1,it);
