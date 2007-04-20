@@ -757,12 +757,12 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
          		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
 			     //cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
-	 		     pixel += data[(inxold+m1+nx)%nx+(inyold+m2+ny)%ny+(inzold+m3+nz)%nz]*q;w+=q;}}}
+	 		     pixel += data[(inxold+m1+nx)%nx+((inyold+m2+ny)%ny)*ny+((inzold+m3+nz)%nz)*nz]*q;w+=q;}}}
 	 		 } else {
          		   for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
 	 		     float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
 			     //cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
-	 		     pixel += data[inxold+m1+inyold+m2+inzold+m3]*q;w+=q;}}}
+	 		     pixel += data[inxold+m1+(inyold+m2)*ny+(inzold+m3)*nz]*q;w+=q;}}}
 	 		 }
 	}
         return pixel/w;
@@ -1401,10 +1401,9 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
 
    dpi = 2*atan(1.0);
    
-   xold = numr(1,1);
+/*   xold = numr(1,1);
    yold = 0.0;
-   time_t begin_time, end_time;
-   
+   time_t begin_time, end_time;   
    time(&begin_time);
    float bbb = 0.0f;
    for (int nnn=0; nnn<10000; nnn++) {
@@ -1417,7 +1416,7 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    time(&end_time);
    double total_time = difftime(end_time,begin_time);
    std::cout << "Time Used for 10^8 get_pixel_conv_new is " << total_time << " seconds, bbb is " << bbb << std::endl; 
-   exit(0); 
+   exit(0); */
    
    for (it=1;it<=nring;it++) {
       // radius of the ring
