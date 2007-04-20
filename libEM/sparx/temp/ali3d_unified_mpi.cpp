@@ -212,6 +212,8 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     EMDeleteArray(rhs);
     EMDeleteArray(ptrs);
     EMDeleteArray(cord);
+    EMDeleteArray(psize);
+    EMDeleteArray(nbase);
 
     return 0;
 	
