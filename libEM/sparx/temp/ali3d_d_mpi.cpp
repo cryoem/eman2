@@ -9,6 +9,7 @@
 #include "reconstructor.h"
 
 #include "ali3d_d_mpi.h"
+#include "ali3d_unified_mpi.h"
 #include "alignoptions.h"
 
 using namespace EMAN;
@@ -147,6 +148,22 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     make_ref_proj_dict["mask"] = mask2D;
     make_ref_proj_dict["no_sigma"] = 1;
 
+    float multiref_res, unified_res;
+    float * volsph, * voldata;
+    Vec3i volsize(nx, ny, nz);
+    Vec3i origin(nx/2 + 1, ny/2 + 1, nz/2 + 1);
+    int nnz, nrays;
+
+    ierr = getnnz(volsize, ri, origin, &nrays, &nnz);
+    int * ptrs = new int[nrays+1];
+    int * cord = new int[3*nrays];
+    volsph = new float[nnz];
+    voldata = volume->get_data();
+    ierr = cb2sph(voldata, volsize, ri, origin, nnz, ptrs, cord, volsph); 
+    
+    float angtrs[5];
+    float * img_data;
+
     EMData * vol1 = NULL;
     EMData * vol2 = NULL;
     EMData * fftvol;
@@ -226,7 +243,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	    comptheta = fmod((float) compeuler["theta"] + 360.0, 360.0);
 	    comppsi   = fmod((float) compeuler["psi"]   + 360.0, 360.0);
 
-	    angb = fmod(compphi + comppsi, 360.0);
+	    angb = fmod((float) compphi + comppsi,  (float) 360.0); // 
 	    sxb  = Rcomp.at(0,3);
 	    syb  = Rcomp.at(1,3);
 	    ct   = Rcomp.get_scale();
@@ -246,15 +263,51 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		composition_dict["s2x"]   = sxb + sxo;
 		composition_dict["s2y"]   = syb + syo;
 	    }
-	    projdata[j]->set_attr_dict(composition_dict);
 
-	    angleshift[5*j + 0] = composition_dict["phi"];
-	    angleshift[5*j + 1] = composition_dict["theta"];
-	    angleshift[5*j + 2] = composition_dict["psi"];
-	    angleshift[5*j + 3] = composition_dict["s2x"];
-	    angleshift[5*j + 4] = composition_dict["s2y"];
+	    // compare residual for this image under old angles (from refinement) and new angles (from projection matching)
+	    img_data = projdata[j]->get_data();
 
+	    angtrs[0] = (float) composition_dict["phi"]   * (PI/180.0);
+	    angtrs[1] = (float) composition_dict["theta"] * (PI/180.0);
+	    angtrs[2] = (float) composition_dict["psi"]   * (PI/180.0);
+	    angtrs[3] = (float) composition_dict["s2x"]   * -1.0;
+	    angtrs[4] = (float) composition_dict["s2y"]   * -1.0;
+	    
+	    ierr = fcalc(comm, volsph, volsize, 
+			 nnz, nrays, origin, ri, 
+			 ptrs, cord, angtrs, 1, 
+			 img_data, &multiref_res);
+
+	    // set angtrs to the values in angleshift
+	    angtrs[0] = (float) composition_dict["phi"]   * (PI/180.0);
+	    angtrs[1] = (float) composition_dict["theta"] * (PI/180.0);
+	    angtrs[2] = (float) composition_dict["psi"]   * (PI/180.0);
+	    angtrs[3] = (float) composition_dict["s2x"]   * -1.0;
+	    angtrs[4] = (float) composition_dict["s2y"]   * -1.0;
+
+	    ierr = fcalc(comm, volsph, volsize, 
+			 nnz, nrays, origin, ri, 
+			 ptrs, cord, angtrs, 1, 
+			 img_data, &unified_res);
+
+ 	    if ( multiref_res < unified_res ) {
+		angleshift[5*j + 0] = composition_dict["phi"];
+		angleshift[5*j + 1] = composition_dict["theta"];
+		angleshift[5*j + 2] = composition_dict["psi"];
+		angleshift[5*j + 3] = composition_dict["s2x"];
+		angleshift[5*j + 4] = composition_dict["s2y"];
+	    } else { 
+		composition_dict["phi"]   = angleshift[5*j + 0];
+		composition_dict["theta"] = angleshift[5*j + 1];
+		composition_dict["psi"]   = angleshift[5*j + 2];
+		composition_dict["s2x"]   = angleshift[5*j + 3];
+		composition_dict["s2y"]   = angleshift[5*j + 4];
+	    }
+	// set the header of projdata[j] to the best angle and shift values
+	projdata[j]->set_attr_dict(composition_dict);
 	}
+
+
 	if (mypid == 0) {
 	  printf("   Wall clock seconds for alignment, iteration %d = %11.3e\n",
 		 i, MPI_Wtime() - timer);
@@ -447,6 +500,9 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     if (options.get_mask3D() == NULL) EMDeletePtr(mask3D); // If it was created by new in this function, otherwise it belongs to someone else.
     EMDeletePtr(mask2D);	
     EMDeleteArray(peak_corr);
+    EMDeleteArray(ptrs);
+    EMDeleteArray(cord);
+    EMDeleteArray(volsph);
 
     return 0;
 	
