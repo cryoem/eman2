@@ -895,7 +895,7 @@ int fgcalc(MPI_Comm comm, float *volsph, Vec3i volsize,
 int fcalc(MPI_Comm comm, float *volsph, Vec3i volsize, 
            int nnz, int nrays, Vec3i origin, int ri, 
            int *ptrs, int *cord, float *angtrs, int nang, 
-           float *rhs, float aba, NUMBER *fval)
+           float *rhs, NUMBER *fval)
 {
 	int mypid, ncpus, nvars;
 	int *psize, *nbase;
