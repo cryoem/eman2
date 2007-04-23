@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
     options.set_snr(1.0);
     options.set_symmetry("c1");
     options.set_CTF(false);
+    options.set_have_angles(false);
 
     try {
 	for ( int iter = 0; iter < max_refine_cycle ; ++iter ) {
@@ -106,6 +107,7 @@ int main(int argc, char *argv[])
 
 	    unified(comm, volume, expimages, angleshift, nloc, 
                     max_iter_unified, out_fname);
+	    options.set_have_angles(true);
 	}
     }
     catch (std::exception const& e) {

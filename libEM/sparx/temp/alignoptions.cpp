@@ -14,6 +14,7 @@ AlignOptions::AlignOptions()
     snr        = 1.0;
     symmetry   = "c1";
     CTF        = false;
+    have_angles = false;
 }
 
 AlignOptions::AlignOptions(const AlignOptions& old_options)
@@ -30,6 +31,7 @@ AlignOptions::AlignOptions(const AlignOptions& old_options)
     snr        = old_options.snr;
     symmetry   = old_options.symmetry;
     CTF        = old_options.CTF;
+    have_angles = old_options.have_angles;
 }
 
 AlignOptions::~AlignOptions()
@@ -72,6 +74,9 @@ void AlignOptions::set_symmetry(std::string in_symmetry){
 void AlignOptions::set_CTF(bool in_CTF){
     CTF = in_CTF;
 }
+void AlignOptions::set_have_angles(bool in_have_angles){
+    have_angles = in_have_angles;
+}
 
 EMData * AlignOptions::get_mask3D(){
     return mask3D;
@@ -108,4 +113,7 @@ std::string AlignOptions::get_symmetry(){
 }
 bool AlignOptions::get_CTF(){
     return CTF;
+}
+bool AlignOptions::get_have_angles(){
+    return have_angles;
 }

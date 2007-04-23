@@ -25,6 +25,7 @@ public:
     void set_snr(float snr);
     void set_symmetry(std::string symmetry);
     void set_CTF(bool CTF);
+    void set_have_angles(bool have_angles);
 
     EMData * get_mask3D();
     int   get_first_ring();
@@ -38,6 +39,7 @@ public:
     float get_snr();
     std::string get_symmetry();
     bool  get_CTF();
+    bool  get_have_angles();
 
 private:
 
@@ -53,6 +55,6 @@ private:
     float snr;
     std::string symmetry;
     bool CTF;
-
+    bool have_angles;
 };
 #endif // ALIGNOPTIONS_H
