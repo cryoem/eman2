@@ -716,7 +716,7 @@ size, say N=5, you can easily modify it by referring my code.
 	
 	delx = fmod(2*delx, float(nx));
 	int inxold = int(delx+0.5);
-	if (ny<2) {  //1D
+	if ( ny < 2 ) {  //1D
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
 		float tablex3 = kb.i0win_tab(delx-inxold+1);
@@ -761,7 +761,7 @@ size, say N=5, you can easily modify it by referring my code.
 	     		  pixel += data[inxold+m1]*q;w+=q;}
 	     	      }*/   
 		       
-	} else if(nz<2) {  // 2D
+	} else if ( nz < 2 ) {  // 2D
 		dely = fmod(2*dely, float(ny));
 		int inyold = int(dely+0.5);
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
