@@ -552,7 +552,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	EMData* ret = new EMData();
 	ret->set_size(nx, ny, nangles);
 	ret->to_zero();
-
+	
 	// loop over sets of angles
 	for (int ia = 0; ia < nangles; ia++) {
 		int indx = 3*ia;
@@ -565,11 +565,11 @@ EMData *PawelProjector::project3d(EMData * image) const
 				for (int j = ipcube[i].start; j <= ipcube[i].end; j++) {
 					// check for pixels out-of-bounds
 					int iox = int(vb[0]);
-					if ((iox >= 0) & (iox < nx-1)) {
+					if ((iox >= 0) && (iox < nx-1)) {
 						int ioy = int(vb[1]);
-						if ((ioy >= 0) & (ioy < ny-1)) {
+						if ((ioy >= 0) && (ioy < ny-1)) {
 							int ioz = int(vb[2]);
-							if ((ioz >= 0) & (ioz < nz-1)) {
+							if ((ioz >= 0) && (ioz < nz-1)) {
 								// real work for pixels in bounds
 								float dx = vb[0] - iox;
 								float dy = vb[1] - ioy;
@@ -633,7 +633,7 @@ EMData *PawelProjector::project3d(EMData * image) const
 	ret->done_data();
 	ret->update();
         EMDeleteArray(ipcube);
-	return ret;
+	return ret;	
 }
 
 
