@@ -26,6 +26,12 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     MPI_Comm_rank(comm,&mypid);
     MPI_Comm_size(comm,&ncpus);
 
+    int * psize, * nbase, nangloc, nang;
+    psize = new int[ncpus];
+    nbase = new int[ncpus];
+    MPI_Allreduce(&nloc, &nang, 1, MPI_INT, MPI_SUM, comm);
+    nangloc = setpart(comm, nang, psize, nbase);
+
     char out_fname[64];
     std::ofstream fsc_out;
 
@@ -46,6 +52,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     float step     = options.get_step();
     float dtheta   = options.get_dtheta();
     bool CTF       = options.get_CTF();
+    bool have_angles = options.get_have_angles();
 
     Dict maskdict;
     maskdict["radius"] = ri;
@@ -221,8 +228,13 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	if (mypid == 0) std::cout << "Matching data to reference projections..." << std::endl;
 	timer = MPI_Wtime();
 	for ( int j = 0 ; j < nloc ; ++j ) {
-	    sxo = projdata[j]->get_attr("s2x");
-	    syo = projdata[j]->get_attr("s2y");
+	    if (have_angles) {
+		sxo = angleshift[5*j + 3];
+		syo = angleshift[5*j + 4];
+	    } else {
+		sxo = projdata[j]->get_attr("s2x");
+		syo = projdata[j]->get_attr("s2y");
+	    }
 	    best_alignment = Util::multiref_polar_ali_2d(projdata[j], ref_proj_rings, xrng, yrng, step, mode, numr, cnx - sxo, cny - syo);
 	    numref = (int) best_alignment[4];
 
@@ -263,50 +275,58 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		composition_dict["s2x"]   = sxb + sxo;
 		composition_dict["s2y"]   = syb + syo;
 	    }
+	    if (have_angles) {
+		// compare residual for this image under old angles (from refinement) and new angles (from projection matching)
+		img_data = projdata[j]->get_data();
 
-	    // compare residual for this image under old angles (from refinement) and new angles (from projection matching)
-	    img_data = projdata[j]->get_data();
-
-	    angtrs[0] = (float) composition_dict["phi"]   * (PI/180.0);
-	    angtrs[1] = (float) composition_dict["theta"] * (PI/180.0);
-	    angtrs[2] = (float) composition_dict["psi"]   * (PI/180.0);
-	    angtrs[3] = (float) composition_dict["s2x"]   * -1.0;
-	    angtrs[4] = (float) composition_dict["s2y"]   * -1.0;
+		angtrs[0] = (float) composition_dict["phi"]   * (PI/180.0);
+		angtrs[1] = (float) composition_dict["theta"] * (PI/180.0);
+		angtrs[2] = (float) composition_dict["psi"]   * (PI/180.0);
+		angtrs[3] = (float) composition_dict["s2x"]   * -1.0;
+		angtrs[4] = (float) composition_dict["s2y"]   * -1.0;
 	    
-	    ierr = fcalc(comm, volsph, volsize, 
-			 nnz, nrays, origin, ri, 
-			 ptrs, cord, angtrs, 1, 
-			 img_data, &multiref_res);
+		ierr = fcalc(volsph, volsize, 
+			     nnz, nrays, origin, ri, 
+			     ptrs, cord, angtrs, 1, 
+			     img_data, &multiref_res);
 
-	    // set angtrs to the values in angleshift
-	    angtrs[0] = (float) composition_dict["phi"]   * (PI/180.0);
-	    angtrs[1] = (float) composition_dict["theta"] * (PI/180.0);
-	    angtrs[2] = (float) composition_dict["psi"]   * (PI/180.0);
-	    angtrs[3] = (float) composition_dict["s2x"]   * -1.0;
-	    angtrs[4] = (float) composition_dict["s2y"]   * -1.0;
+		// set angtrs to the values in angleshift
+		angtrs[0] = angleshift[5*j + 0] * (PI/180.0);
+		angtrs[1] = angleshift[5*j + 1] * (PI/180.0);
+		angtrs[2] = angleshift[5*j + 2] * (PI/180.0);
+		angtrs[3] = angleshift[5*j + 3] * -1.0;
+		angtrs[4] = angleshift[5*j + 4] * -1.0;
 
-	    ierr = fcalc(comm, volsph, volsize, 
-			 nnz, nrays, origin, ri, 
-			 ptrs, cord, angtrs, 1, 
-			 img_data, &unified_res);
+		ierr = fcalc(volsph, volsize, 
+			     nnz, nrays, origin, ri, 
+			     ptrs, cord, angtrs, 1, 
+			     img_data, &unified_res);
 
- 	    if ( multiref_res < unified_res ) {
+		std::cout << std::scientific << multiref_res << " " << unified_res << " " << j + nbase[mypid] << std::endl;
+		// whichever gives better residual gets used
+		if ( multiref_res < unified_res ) {
+		    angleshift[5*j + 0] = composition_dict["phi"];
+		    angleshift[5*j + 1] = composition_dict["theta"];
+		    angleshift[5*j + 2] = composition_dict["psi"];
+		    angleshift[5*j + 3] = composition_dict["s2x"];
+		    angleshift[5*j + 4] = composition_dict["s2y"];
+		} else { // multiref_res >= unified_res
+		    composition_dict["phi"]   = angleshift[5*j + 0];
+		    composition_dict["theta"] = angleshift[5*j + 1];
+		    composition_dict["psi"]   = angleshift[5*j + 2];
+		    composition_dict["s2x"]   = angleshift[5*j + 3];
+		    composition_dict["s2y"]   = angleshift[5*j + 4];
+		}
+	    } else { // don't have intial angles, and need to set them
 		angleshift[5*j + 0] = composition_dict["phi"];
 		angleshift[5*j + 1] = composition_dict["theta"];
 		angleshift[5*j + 2] = composition_dict["psi"];
 		angleshift[5*j + 3] = composition_dict["s2x"];
 		angleshift[5*j + 4] = composition_dict["s2y"];
-	    } else { 
-		composition_dict["phi"]   = angleshift[5*j + 0];
-		composition_dict["theta"] = angleshift[5*j + 1];
-		composition_dict["psi"]   = angleshift[5*j + 2];
-		composition_dict["s2x"]   = angleshift[5*j + 3];
-		composition_dict["s2y"]   = angleshift[5*j + 4];
 	    }
 	// set the header of projdata[j] to the best angle and shift values
 	projdata[j]->set_attr_dict(composition_dict);
 	}
-
 
 	if (mypid == 0) {
 	  printf("   Wall clock seconds for alignment, iteration %d = %11.3e\n",
@@ -316,13 +336,13 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	sprintf(out_fname, "corr_%s_pm%d.dat", fname_base, i);
 	corr_out.open(out_fname);
 	if (mypid == 0) {
-	    for ( int j = 0 ; j < nloc ; ++j ) {
-		corr_out << std::scientific << peak_corr[j] << std::endl;
+	    for ( int corr_index = 0 ; corr_index < nloc ; ++corr_index ) {
+		corr_out << std::scientific << peak_corr[corr_index] << std::endl;
 	    }
-	    for ( int j = 1 ; j < ncpus ; ++j ) {
-		ierr = MPI_Recv(peak_corr, nloc, MPI_FLOAT, j, j, comm, &mpistatus);
-		for ( int k = 0 ; k < nloc ; ++k ) {
-		    corr_out << std::scientific << peak_corr[k] << std::endl;
+	    for ( int k = 1 ; k < ncpus ; ++k ) {
+		ierr = MPI_Recv(peak_corr, psize[k], MPI_FLOAT, k, k, comm, &mpistatus);
+		for ( int corr_index = 0 ; corr_index < psize[k] ; ++corr_index ) {
+		    corr_out << std::scientific << peak_corr[corr_index] << std::endl;
 		}
 	    }
 	} else { // mypid != 0 , send my data to master to write out
@@ -503,6 +523,8 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     EMDeleteArray(ptrs);
     EMDeleteArray(cord);
     EMDeleteArray(volsph);
+    EMDeleteArray(psize);
+    EMDeleteArray(nbase);
 
     return 0;
 	
