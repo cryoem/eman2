@@ -60,19 +60,44 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
     int nx = img_ptr->get_xsize();
     int ny = img_ptr->get_ysize();
 
+    float s2x, s2y;
+
     if (mypid == 0) {
 	for ( int ip = 0 ; ip < ncpus ; ++ip ) {
 	    for ( int i = 0 ; i < psize[ip] ; ++i ) {
 		img_index = nbase[ip] + i;
 		if (ip != 0) {
 		    img_ptr->read_image(stackfname, img_index);
+		    // get a pointer to the image's data
 		    imgdata = img_ptr->get_data();
+		    // find the x/y shift values if it has them, otherwise set them to 0.0
+		    try {
+		        s2x = (*images2D)[i]->get_attr("s2x");
+		    } catch ( E2Exception& e ) {
+			s2x = 0.0;
+		    }
+		    try {
+		        s2y = (*images2D)[i]->get_attr("s2y");
+		    } catch ( E2Exception& e ) {
+			s2y = 0.0;
+		    }
+		    // send these to processor ip
 		    MPI_Send(imgdata, nx*ny, MPI_FLOAT, ip, ip, comm);
+		    MPI_Send(&s2x, 1, MPI_FLOAT, ip, ip, comm);
+		    MPI_Send(&s2y, 1, MPI_FLOAT, ip, ip, comm);
 		} else { // ip == 0				    
 		    (*images2D)[i] = new EMData();
 		    (*images2D)[i]->read_image(stackfname, img_index);
-		    (*images2D)[i]->set_attr("s2x",0.0);
-		    (*images2D)[i]->set_attr("s2y",0.0);
+		    try {
+		        s2x = (*images2D)[i]->get_attr("s2x");
+		    } catch ( E2Exception& e ) {
+			(*images2D)[i]->set_attr("s2x",0.0);
+		    }
+		    try {
+			s2y = (*images2D)[i]->get_attr("s2y");
+		    } catch ( E2Exception& e ) {
+			(*images2D)[i]->set_attr("s2y",0.0);
+		    }
 		}
 	    }
 	    printf("finished reading data for processor %d\n", ip);
@@ -83,8 +108,10 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
 	    (*images2D)[i]->set_size(nx, ny, 1);
 	    imgdata = (*images2D)[i]->get_data();
 	    MPI_Recv(imgdata, nx*ny, MPI_FLOAT, 0, mypid, comm, &mpistatus);
-	    (*images2D)[i]->set_attr("s2x",0.0);
-	    (*images2D)[i]->set_attr("s2y",0.0);
+	    MPI_Recv(&s2x, 1, MPI_FLOAT, 0, mypid, comm, &mpistatus);
+	    MPI_Recv(&s2y, 1, MPI_FLOAT, 0, mypid, comm, &mpistatus);
+	    (*images2D)[i]->set_attr("s2x",s2x);
+	    (*images2D)[i]->set_attr("s2y",s2y);
 	}
 	printf("received data for processor %d\n", mypid);
     }
