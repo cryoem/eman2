@@ -302,7 +302,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 			     ptrs, cord, angtrs, 1, 
 			     img_data, &unified_res);
 
-		std::cout << std::scientific << multiref_res << " " << unified_res << " " << j + nbase[mypid] << std::endl;
+//		std::cout << std::scientific << multiref_res << " " << unified_res << " " << j + nbase[mypid] << std::endl;
 		// whichever gives better residual gets used
 		if ( multiref_res < unified_res ) {
 		    angleshift[5*j + 0] = composition_dict["phi"];
