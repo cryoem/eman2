@@ -296,6 +296,7 @@ EMData* rotavg_i();
 		 *  @return New rotated/shifted/scaled image
 		 */
 		EMData* rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
+		EMData* rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
 
 		
 		/** Get pixel value image using convolution 

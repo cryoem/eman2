@@ -2136,6 +2136,80 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	return ret;
 }
 
+EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
+
+	int nxn, nyn, nzn;
+	
+	if (scale_input == 0.0f) scale_input = 1.0f;
+	float  scale = 0.5*scale_input;
+
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+	nxn = nx/2; nyn = ny/2; nzn = nz/2;
+
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32 
+	//ret->to_zero();  //we will leave margins zeroed.
+	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	// bounds if origin at center
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	
+	float *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
+	
+	float* data = this->get_data();
+
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+	for (int iy = 0; iy < nyn; iy++) {
+		float y = float(iy) - shiftyc;
+		float ycang = y*cang/scale + yc;
+		float ysang = -y*sang/scale + xc;
+		for (int ix = 0; ix < nxn; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float yold = x*sang/scale + ycang-iys;
+			
+			xold = xold/2.0;
+			yold = yold/2.0;
+			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx,ny,1,xold,yold,1,data,kb);
+			
+		}
+	}
+	if (t) free(t);
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+
 
 float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
