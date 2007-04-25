@@ -162,7 +162,7 @@ void PointArray::set_points_array(double *p)
 EMData *PointArray::distmx(int sortrows) {
 if (n==0) return NULL;
 
-int i,j;
+unsigned int i,j;
 
 EMData *ret= new EMData(n,n,1);
 ret->to_zero();
@@ -187,7 +187,7 @@ return ret;
 vector<int> PointArray::match_points(PointArray *to,float max_miss) {
 EMData *mx0=distmx(1);
 EMData *mx1=to->distmx(1);
-int n2=mx1->get_xsize();	// same as get_number_points on to
+unsigned int n2=mx1->get_xsize();	// same as get_number_points on to
 
 if (max_miss<0) max_miss=(float)mx0->get_attr("sigma")/10.0;
 //printf("max error %f\n",max_miss);
@@ -196,7 +196,7 @@ if (max_miss<0) max_miss=(float)mx0->get_attr("sigma")/10.0;
 
 vector<int> ret(n,-1);
 vector<float> rete(n,0.0);
-int i,j,k,l;
+unsigned int i,j,k,l;
 
 if (!mx0 || !mx1) {
 	if (mx0) delete mx0;
@@ -252,7 +252,7 @@ Transform3D *PointArray::align_2d(PointArray *to) {
 vector<int> match=match_points(to);
 Transform3D *ret=new Transform3D();
 
-int i,j;
+unsigned int i,j;
 vector<float> pts;
 for (i=0; i<match.size(); i++) {
 	if (match[i]==-1) continue;
