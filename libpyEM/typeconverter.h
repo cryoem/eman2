@@ -480,7 +480,7 @@ namespace EMAN {
     
 		static void* convertible(PyObject* obj_ptr)
 		{
-			char * type_name = obj_ptr->ob_type->tp_name;
+			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "str") != 0) {
 				return 0;
 			}
@@ -512,7 +512,7 @@ namespace EMAN {
     
 		static void* convertible(PyObject* obj_ptr)
 		{
-			char * type_name = obj_ptr->ob_type->tp_name;
+			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "EMData") != 0) {
 				return 0;
 			}
@@ -544,7 +544,7 @@ namespace EMAN {
     	
     	static void* convertible(PyObject* obj_ptr)
 		{
-			char * type_name = obj_ptr->ob_type->tp_name;
+			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "Transform3D") != 0) {
 				return 0;
 			}
@@ -576,7 +576,7 @@ namespace EMAN {
     
 		static void* convertible(PyObject* obj_ptr)
 		{
-			char * type_name = obj_ptr->ob_type->tp_name;
+			const char * type_name = obj_ptr->ob_type->tp_name;
 			if (type_name == 0 || strcmp(type_name, "XYData") != 0) {
 				return 0;
 			}
@@ -608,7 +608,7 @@ namespace EMAN {
     	
     	static void* convertible(PyObject* obj_ptr)
 		{
-			char * type_name = obj_ptr->ob_type->tp_name;
+			const char * type_name = obj_ptr->ob_type->tp_name;
 			
 			if(string(type_name) == "NoneType") {
 				return obj_ptr;
