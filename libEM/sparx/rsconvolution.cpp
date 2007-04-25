@@ -131,7 +131,7 @@ namespace {
 		int index = 0;
 		int dimension = 3;
 		float median_value = 0.f;
-		float *table;
+		float *table = 0;
 
 		int nxf = (&f)->get_xsize();
 		int nyf = (&f)->get_ysize();
