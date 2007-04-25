@@ -715,7 +715,7 @@ size, say N=5, you can easily modify it by referring my code.
 	float w=0.0f;
 	
 	delx = fmod(2*delx, float(nx));
-	int inxold = int(delx+0.5);
+	int inxold = int(round(delx));
 	if ( ny < 2 ) {  //1D
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
@@ -763,7 +763,7 @@ size, say N=5, you can easily modify it by referring my code.
 		       
 	} else if ( nz < 2 ) {  // 2D
 		dely = fmod(2*dely, float(ny));
-		int inyold = int(dely+0.5);
+		int inyold = int(round(dely));
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
 		float tablex3 = kb.i0win_tab(delx-inxold+1);
@@ -868,9 +868,9 @@ size, say N=5, you can easily modify it by referring my code.
 			delete tablex; */
 	} else {  //  3D
 		dely = fmod(2*dely, float(ny));
-		int inyold = int(dely+0.5);
+		int inyold = int(round(dely));
 		delz = fmod(2*delz, float(nz));
-		int inzold = int(delz+0.5);
+		int inzold = int(round(delz));
 		
 		float tablex1 = kb.i0win_tab(delx-inxold+3);
 		float tablex2 = kb.i0win_tab(delx-inxold+2);
