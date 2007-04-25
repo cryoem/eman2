@@ -116,12 +116,12 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 		node->x = x;
 		node->y = y;
 		node->z = z;
-		float minval, maxval = 0;
+		float minval = 0.0f, maxval = 0.0f;
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
-			float val = _emdata->get_value_at(min(x + a2fVertexOffset[iVertex][0], _emdata->get_xsize()-1),
-                                                   min(y + a2fVertexOffset[iVertex][1], _emdata->get_xsize()-1),
-                                                   min(z + a2fVertexOffset[iVertex][2], _emdata->get_xsize()-1));
+			float val = _emdata->get_value_at((int)min(x + a2fVertexOffset[iVertex][0], _emdata->get_xsize()-1),
+                                                   (int)min(y + a2fVertexOffset[iVertex][1], _emdata->get_xsize()-1),
+                                                   (int)min(z + a2fVertexOffset[iVertex][2], _emdata->get_xsize()-1));
 			if(iVertex == 0){
 				minval = val;
 				maxval = val;
@@ -152,9 +152,9 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 		float minval, maxval = 0;
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
-			node->children[iVertex] = getCubeNode(x + a2fVertexOffset[iVertex][0]*size,
-                                                   y + a2fVertexOffset[iVertex][1]*size,
-                                                   z + a2fVertexOffset[iVertex][2]*size,
+			node->children[iVertex] = getCubeNode((int)(x + a2fVertexOffset[iVertex][0]*size),
+                                                   (int)(y + a2fVertexOffset[iVertex][1]*size),
+                                                   (int)(z + a2fVertexOffset[iVertex][2]*size),
 												   level, size);
 			if(iVertex == 0){
 				minval = node->children[iVertex]->min;
@@ -248,14 +248,14 @@ void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
         float afCubeValue[8];
         Vector3 asEdgeVertex[12];
 		int pointIndex[12];
-        Vector3 asEdgeNorm[12];
+//        Vector3 asEdgeNorm[12];
 
         //Make a local copy of the values at the cube's corners
         for(iVertex = 0; iVertex < 8; iVertex++)
         {
-			afCubeValue[iVertex] = _emdata->get_value_at(fX + a2fVertexOffset[iVertex][0]*fScale,
-                                                   fY + a2fVertexOffset[iVertex][1]*fScale,
-                                                   fZ + a2fVertexOffset[iVertex][2]*fScale);
+			afCubeValue[iVertex] = _emdata->get_value_at((int)(fX + a2fVertexOffset[iVertex][0]*fScale),
+                                                   (int)(fY + a2fVertexOffset[iVertex][1]*fScale),
+                                                   (int)(fZ + a2fVertexOffset[iVertex][2]*fScale) );
         }
 
         //Find which vertices are inside of the surface and which are outside
