@@ -327,33 +327,33 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		double square_sum1 = 0., square_sum2 = 0.;
 
 		if (params.has_key("mask")) {
-		  EMData* mask;
-		  mask = params["mask"];
-		  float* dm = mask->get_data();
-		  if (normalize) {
-		   for (long i = 0; i < totsize; i++) {
-				if (dm[i] > 0.5) {
-				  square_sum1 += x_data[i]*double(x_data[i]);
-				  square_sum2 += y_data[i]*double(y_data[i]);
-				  result += x_data[i]*double(y_data[i]);
+			EMData* mask;
+			mask = params["mask"];
+			float* dm = mask->get_data();
+			if (normalize) {
+				for (long i = 0; i < totsize; i++) {
+					if (dm[i] > 0.5) {
+						square_sum1 += x_data[i]*double(x_data[i]);
+						square_sum2 += y_data[i]*double(y_data[i]);
+						result += x_data[i]*double(y_data[i]);
+					}
 				}
-		   }
-		  } else {
-		   for (long i = 0; i < totsize; i++) {
-				if (dm[i] > 0.5) {
-				  result += x_data[i]*double(y_data[i]);
-				  n++;
+			} else {
+				for (long i = 0; i < totsize; i++) {
+					if (dm[i] > 0.5) {
+						result += x_data[i]*double(y_data[i]);
+						n++;
+					}
 				}
-		   }
-		  }
+			}
 		} else {
-		  for (long i = 0; i < totsize; i++) {
-			result += x_data[i]*double(y_data[i]);
-		  }
-		  if (normalize) {
-		   square_sum1 = image->get_attr_dict().get("square_sum");
-		   square_sum2 = with->get_attr_dict().get("square_sum");
-		  } else n = totsize;
+			for (long i = 0; i < totsize; i++) {
+				result += x_data[i]*double(y_data[i]);
+			}
+			if (normalize) {
+				square_sum1 = image->get_attr_dict().get("square_sum");
+				square_sum2 = with->get_attr_dict().get("square_sum");
+			} else n = totsize;
 		}
 	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= n;
 	}
