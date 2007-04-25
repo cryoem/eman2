@@ -495,7 +495,7 @@ void Util::calc_least_square_fit(size_t nitems, const float *data_x, const float
 }
 
 Vec3f Util::calc_bilinear_least_square(const vector<float> &p) {
-int i;
+unsigned int i;
 
 // various sums used in the final solution
 double Sx=0,Sy=0,Sxy=0,Sxx=0,Syy=0,Sz=0,Sxz=0,Syz=0,S=0;
