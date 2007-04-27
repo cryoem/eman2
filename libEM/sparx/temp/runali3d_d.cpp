@@ -88,9 +88,9 @@ int main(int argc, char *argv[])
     AlignOptions options;
     options.set_mask3D(NULL);
     options.set_first_ring(1);
-    options.set_last_ring(55);
+    options.set_last_ring(ri);
     options.set_rstep(1);
-    options.set_ri(volume->get_xsize()/2 - 1);
+    options.set_ri(ri);
     options.set_xrng(2.0);
     options.set_yrng(2.0);
     options.set_step(1.0);
