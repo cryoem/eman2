@@ -133,7 +133,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     EMData * cimage_ptr;
     Dict volparams;
     volparams["angletype"] = "SPIDER";
-    volparams["radius"] = last_ring;
+    volparams["radius"] = ri;
     Dict proj_params;
     proj_params["ctf_applied"] = 0;
     std::vector<float> anglelist(3,0.0);
@@ -296,7 +296,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		angtrs[2] = (float) composition_dict["psi"]   * (PI/180.0);
 		angtrs[3] = (float) composition_dict["s2x"]   * -1.0;
 		angtrs[4] = (float) composition_dict["s2y"]   * -1.0;
-	    
+		
 		ierr = fcalc(volsph, volsize, 
 			     nnz, nrays, origin, ri, 
 			     ptrs, cord, angtrs, 1, 
