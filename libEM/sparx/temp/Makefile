@@ -1,4 +1,4 @@
-CC = mpic++
+CC = mpicxx
 
 CFLAGS = -fPIC -ftemplate-depth-120 -w -DBOOST_DISABLE_THREADS  -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DHAVE_FSEEKO -DHAVE_FTELLO -DFFTW2 -DEM_TIFF -DEM_PNG -DEM_BOOST -DUSE_MPI -DEM2_EXPORTS -Wall 
 
@@ -20,6 +20,9 @@ runhybrid: runhybrid.o $(OBJ)
 
 rununified: rununified.o ali3d_unified_mpi.o utilcomm.o
 	$(CC) rununified.o ali3d_unified_mpi.o utilcomm.o $(LIB) -o rununified
+
+runali3d_d: runali3d_d.o $(OBJ)
+	$(CC) runali3d_d.o $(OBJ) $(LIB) -o runali3d_d
 
 clean:
 	rm -f *.o runhybrid rununified
