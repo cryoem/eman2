@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     origin[0] = volume->get_xsize()/2 + 1;
     origin[1] = volume->get_ysize()/2 + 1;
     origin[2] = volume->get_zsize()/2 + 1;
-    int ri = volume->get_xsize()/2 - 1;
+    int ri = volume->get_xsize()/2 - 2;
     ierr = CleanStack(comm, expimages, nloc, ri, volsize, origin);
 
 
@@ -98,9 +98,9 @@ int main(int argc, char *argv[])
     AlignOptions options;
     options.set_mask3D(NULL);
     options.set_first_ring(1);
-    options.set_last_ring(55);
+    options.set_last_ring(ri);
     options.set_rstep(1);
-    options.set_ri(volume->get_xsize()/2 - 1);
+    options.set_ri(ri);
     options.set_xrng(2.0);
     options.set_yrng(2.0);
     options.set_step(1.0);
