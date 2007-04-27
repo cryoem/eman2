@@ -11,6 +11,7 @@
 
 int ReadVandBcast(MPI_Comm comm, EMData *volume, char *volfname);
 int ReadStackandDist(MPI_Comm comm, EMData ***expimages, char *stackfname);
+int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
 int setpart(MPI_Comm comm, int nima, int *psize, int *nbase);
 
 int main(int argc, char *argv[])
@@ -73,6 +74,18 @@ int main(int argc, char *argv[])
        printf("I/O time for reading image stack = %11.3e\n",
               MPI_Wtime() - t0);
     }
+
+    Vec3i volsize;
+    Vec3i origin;
+    volsize[0] = volume->get_xsize();
+    volsize[1] = volume->get_ysize();
+    volsize[2] = volume->get_zsize();
+    origin[0] = volume->get_xsize()/2 + 1;
+    origin[1] = volume->get_ysize()/2 + 1;
+    origin[2] = volume->get_zsize()/2 + 1;
+    int ri = volume->get_xsize()/2 - 1;
+    ierr = CleanStack(comm, expimages, nloc, ri, volsize, origin);
+
 
     float * angleshift = new float[5*nloc];
     

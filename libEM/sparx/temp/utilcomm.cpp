@@ -2,6 +2,8 @@
 #include "stdlib.h"
 #include "emdata.h"
 
+#include "ali3d_unified_mpi.h"
+
 using namespace EMAN;
 
 int ReadVandBcast(MPI_Comm comm, EMData *volume, char *volfname);
@@ -123,6 +125,51 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
     return nloc;
 }
 
+int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin)
+{
+    int nx = volsize[0];
+    int ny = volsize[1];
+    	
+    float * rhs = new float[nx*ny];
+    float * imgdata;
+	
+    // Calculate average "background" from all pixels strictly outside of radius
+    double aba, abaloc; // average background
+    aba = 0.0;
+    abaloc = 0.0;
+    int klp, klploc; // number of pixels in background
+    klp = 0;
+    klploc = 0;
+	
+    // calculate avg background in parallel
+    for ( int i = 0 ; i < nloc ; ++i ) {
+ 	imgdata = image_stack[i]->get_data();
+	asta2(imgdata, nx, ny, ri, &abaloc, &klploc);
+    }
+	
+    MPI_Allreduce(&abaloc, &aba, 1, MPI_DOUBLE, MPI_SUM, comm);
+    MPI_Allreduce(&klploc, &klp, 1, MPI_INT, MPI_SUM, comm);
+
+    aba /= klp;
+
+    // subtract off the average background from pixels weakly inside of radius
+    int x_summand, y_summand;
+    int r_squared = ri * ri;
+    for ( int i = 0 ; i < nloc ; ++i ) {
+	imgdata = image_stack[i]->get_data();
+	for ( int j = 0 ; j < nx ; ++j) {
+	    x_summand = (j - origin[0]) *  (j - origin[0]);
+	    for ( int k = 0 ; k < ny ; ++k ) {
+		y_summand = (k - origin[1]) *  (k - origin[1]);
+		if ( x_summand + y_summand <= r_squared) {
+		    imgdata[j*ny + k] -= aba;
+		}
+	    }
+	}
+    }
+    EMDeleteArray(rhs);
+    return 0;
+}
 
 int setpart(MPI_Comm comm, int nang, int *psize, int *nbase)
 {
