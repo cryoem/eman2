@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
           printf("Not enough arguments to the command...\n");
           printf("Usage: rununified -data=<imagestack> ");
           printf("-model=<initial 3D volume filename> ");
-          printf("-param=<initial angles&shifts");
+          printf("-param=<initial angles&shifts> ");
           printf("-out=<output volume filename>\n"); 
       }
       ierr = MPI_Finalize();
