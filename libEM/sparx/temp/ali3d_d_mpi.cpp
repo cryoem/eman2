@@ -157,8 +157,15 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
     float multiref_res, unified_res;
     float * volsph, * voldata;
-    Vec3i volsize(nx, ny, nz);
-    Vec3i origin(nx/2 + 1, ny/2 + 1, nz/2 + 1);
+    Vec3i volsize;
+    Vec3i origin;
+    volsize[0] = nx;
+    volsize[1] = ny;
+    volsize[2] = nz;
+    origin[0] = nx/2 + 1;
+    origin[1] = ny/2 + 1;
+    origin[2] = nz/2 + 1;
+
     int nnz, nrays;
 
     ierr = getnnz(volsize, ri, origin, &nrays, &nnz);
@@ -203,6 +210,11 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
     float * peak_corr = new float[nloc];
     std::ofstream corr_out;
+
+    // These keep track of how many times we take new parameters based on projection matching
+    int new_angles = 0;
+    int old_angles = 0;
+    int new_total, old_total;
 
     for ( int i = 0 ; i < max_iter ; ++i ) { // This loop is as in ali3d_d
 	// entering proj_ali_incore
@@ -305,12 +317,14 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 //		std::cout << std::scientific << multiref_res << " " << unified_res << " " << j + nbase[mypid] << std::endl;
 		// whichever gives better residual gets used
 		if ( multiref_res < unified_res ) {
+		    ++new_angles;
 		    angleshift[5*j + 0] = composition_dict["phi"];
 		    angleshift[5*j + 1] = composition_dict["theta"];
 		    angleshift[5*j + 2] = composition_dict["psi"];
 		    angleshift[5*j + 3] = composition_dict["s2x"];
 		    angleshift[5*j + 4] = composition_dict["s2y"];
 		} else { // multiref_res >= unified_res
+		    ++old_angles;
 		    composition_dict["phi"]   = angleshift[5*j + 0];
 		    composition_dict["theta"] = angleshift[5*j + 1];
 		    composition_dict["psi"]   = angleshift[5*j + 2];
@@ -324,13 +338,17 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		angleshift[5*j + 3] = composition_dict["s2x"];
 		angleshift[5*j + 4] = composition_dict["s2y"];
 	    }
-	// set the header of projdata[j] to the best angle and shift values
-	projdata[j]->set_attr_dict(composition_dict);
+	    // set the header of projdata[j] to the best angle and shift values
+	    projdata[j]->set_attr_dict(composition_dict);
 	}
 
+	MPI_Reduce(&new_angles, &new_total, 1, MPI_INT, MPI_SUM, 0, comm);
+	MPI_Reduce(&old_angles, &old_total, 1, MPI_INT, MPI_SUM, 0, comm);
 	if (mypid == 0) {
 	  printf("   Wall clock seconds for alignment, iteration %d = %11.3e\n",
 		 i, MPI_Wtime() - timer);
+	  if (have_angles)
+	      printf("   Using %d sets of parameters from projection matching, %d sets from previous unified refinement\n", new_total, old_total);
 	}
 
 	sprintf(out_fname, "corr_%s_pm%d.dat", fname_base, i);
