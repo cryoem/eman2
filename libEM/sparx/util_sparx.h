@@ -189,19 +189,17 @@ class KaiserBessel
 		/** Kaiser-Bessel I0 window function */
 		virtual float i0win(float x) const;
 		/** Kaiser-Bessel I0 window function (uses table lookup) */
-				inline float i0win_tab(float x) const {
-					/*float absx = fabs(x);
-					int loc = int(round(absx*fltb));
-					return i0table[loc];*/
-					float xt;
-					if(x<0.f) xt = -x*fltb+0.5f; else xt = x*fltb+0.5f;
-					return i0table[ (int) xt];
-					/*return i0table[ (int) (fabs(x)*fltb+0.5f)];*/
-#if 0 // old version
-					if (absx > vtable) return 0.f;
-					float loc = absx/dtable;
-					return i0table[int(loc + 0.5f)];
-#endif // 0
+		inline float i0win_tab(float x) const {
+		/*float absx = fabs(x);
+			int loc = int(round(absx*fltb));
+			return i0table[loc];*/
+			float xt;
+			if(x<0.f) xt = -x*fltb+0.5f; else xt = x*fltb+0.5f;
+			return i0table[ (int) xt];
+			/*return i0table[ (int) (fabs(x)*fltb+0.5f)];
+				if (absx > vtable) return 0.f;
+				float loc = absx/dtable;
+				return i0table[int(loc + 0.5f)]; */
 		}
 		/** Return the size of the I0 window */
 		int get_window_size() const { return K; }

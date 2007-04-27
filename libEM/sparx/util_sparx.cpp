@@ -32,7 +32,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  *
  */
-
+#include <ctime>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1441,6 +1441,20 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
+   /*std::cout << lcirc << std::endl;
+   clock_t start_time, end_time;
+   xold = 0.0+cns2; yold = numr(1,1)+cnr2;
+   start_time = clock();
+   float b = 0.0;
+   for (int iii=1; iii<=10000; iii++) {
+   	for (int jjj=1; jjj<=10000; jjj++) {
+		float a=quadri(xold,yold,nsam,nrow,xim);
+		b = b + a + iii - jjj;
+	}
+   } 
+   end_time = clock();
+   std::cout << "Elapsed time for 10^10 quadri is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Results is " << b << std::endl;
+   exit(0); */
    for (it=1; it<=nring; it++) {
       // radius of the ring
       inr = numr(1,it);
@@ -1721,6 +1735,20 @@ EMData* Util::Polar2Dmi(EMData* image, float cns2, float cnr2, vector<int> numr,
    //     no need to set to zero, all elements are defined
 
    dpi = 2*atan(1.0);
+   /*std::cout << lcirc << std::endl;
+   clock_t start_time, end_time;
+   xold = 0.0f+cns2-1.0f; yold = numr(1,1)+cnr2-1.0f;
+   float b = 0.0;
+   start_time = clock();
+   for (int iii=1; iii<=10000; iii++) {
+   	for (int jjj=1; jjj<=10000; jjj++) {
+		float a=get_pixel_conv_new(nx,ny,nz,xold,yold,0.0f,fimage,kb);
+		b = b + a + iii - jjj; 
+	}
+   }
+   end_time = clock();
+   std::cout << "Elapsed time for 10^8 get_pixel_conv_new is " << (double(end_time)-double(start_time))/CLOCKS_PER_SEC << " seconds. Result is " << b << std::endl;
+   exit(0);*/
    for (it=1;it<=nring;it++) {
       // radius of the ring
       inr = numr(1,it);
