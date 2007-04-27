@@ -15,6 +15,8 @@ CCTBXINCLUDE = -I../../../../../cctbx/cctbx_sources/scitbx/include \
 
 OBJ = ali3d_d_mpi.o ali3d_unified_mpi.o alignoptions.o utilcomm.o
 
+all: runhybrid rununified runali3d_d
+
 runhybrid: runhybrid.o $(OBJ)
 	$(CC) runhybrid.o $(OBJ) $(LIB) -o runhybrid
 
@@ -25,4 +27,4 @@ runali3d_d: runali3d_d.o $(OBJ)
 	$(CC) runali3d_d.o $(OBJ) $(LIB) -o runali3d_d
 
 clean:
-	rm -f *.o runhybrid rununified
+	rm -f *.o runhybrid rununified runali3d_d
