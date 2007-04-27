@@ -394,8 +394,8 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	weight_recv = new float[weight_size];
 	MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
 	MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	for ( int j = 0 ; j < fftvol_size ; j += 2 ) *(fftvol_send + j) = fftvol_recv[j];
-	for ( int j = 0 ; j < weight_size ; j += 2 ) *(weight_send + j) = weight_recv[j];
+	for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
+	for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
 	EMDeleteArray(fftvol_recv);
 	EMDeleteArray(weight_recv);
 	vol1 = r->finish();
@@ -422,8 +422,8 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	weight_recv = new float[weight_size];
 	MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
 	MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	for ( int j = 1 ; j < fftvol_size ; j += 2 ) *(fftvol_send + j) = fftvol_recv[j];
-	for ( int j = 1 ; j < weight_size ; j += 2 ) *(weight_send + j) = weight_recv[j];
+	for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
+	for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
 	EMDeleteArray(fftvol_recv);
 	EMDeleteArray(weight_recv);
 	vol2 = r->finish();
