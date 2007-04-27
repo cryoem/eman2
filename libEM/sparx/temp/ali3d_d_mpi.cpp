@@ -212,11 +212,11 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     std::ofstream corr_out;
 
     // These keep track of how many times we take new parameters based on projection matching
-    int new_angles = 0;
-    int old_angles = 0;
-    int new_total, old_total;
+    int new_angles, old_angles, new_total, old_total;
 
     for ( int i = 0 ; i < max_iter ; ++i ) { // This loop is as in ali3d_d
+	new_angles = 0;
+	old_angles = 0;
 	// entering proj_ali_incore
 	// generate reference projections and push pointers to them on the back of ref_proj_rings
 	if (mypid == 0) std::cout << "Generating reference projections..." << std::endl;
@@ -348,7 +348,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	  printf("   Wall clock seconds for alignment, iteration %d = %11.3e\n",
 		 i, MPI_Wtime() - timer);
 	  if (have_angles)
-	      printf("   Using %d sets of parameters from projection matching, %d sets from previous unified refinement\n", new_total, old_total);
+	      printf("   \nUsing %d sets of parameters from projection matching, %d sets from previous unified refinement\n\n", new_total, old_total);
 	}
 
 	sprintf(out_fname, "corr_%s_pm%d.dat", fname_base, i);
