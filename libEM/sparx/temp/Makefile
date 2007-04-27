@@ -13,10 +13,13 @@ CCTBXINCLUDE = -I../../../../../cctbx/cctbx_sources/scitbx/include \
 .cpp.o:
 	$(CC) $(CFLAGS) $(EMAN2INCLUDE) $(CCTBXINCLUDE) -c $<
 
-OBJ = runrefine.o ali3d_d_mpi.o ali3d_unified_mpi.o alignoptions.o utilcomm.o
+OBJ = ali3d_d_mpi.o ali3d_unified_mpi.o alignoptions.o utilcomm.o
 
-runrefine: $(OBJ)
-	$(CC) $(OBJ) $(LIB) -o runrefine
+runhybrid: runhybrid.o $(OBJ)
+	$(CC) runhybrid.o $(OBJ) $(LIB) -o runhybrid
+
+rununified: rununified.o ali3d_unified_mpi.o utilcomm.o
+	$(CC) rununified.o ali3d_unified_mpi.o utilcomm.o $(LIB) -o rununified
 
 clean:
-	rm -f *.o runrefine
+	rm -f *.o runhybrid rununified
