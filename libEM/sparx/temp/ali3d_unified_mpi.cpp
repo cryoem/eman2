@@ -97,6 +97,7 @@ int  unified(MPI_Comm comm, EMData *volume, EMData **projdata,
     }
 	
     double aba;
+    ri = nx/2 - 1;
 
     ierr = getnnz(volsize, ri, origin, &nrays, &nnz);
     if (mypid ==0) printf("    nnz = %d\n", nnz);
