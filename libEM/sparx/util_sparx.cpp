@@ -1443,11 +1443,16 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    dpi = 2*atan(1.0);
    /*std::cout << lcirc << std::endl;
    clock_t start_time, end_time;
-   xold = 0.0+cns2; yold = numr(1,1)+cnr2;
+   it = 10; inr = numr(1,it); l = numr(3,it); lt = l / 4; std::cout << inr << " " << l << std::endl;
+   dfi = dpi / lt; jt = 1;
+   fi = dfi * jt;
+   inr = numr(1,1);
+   x = sin(fi)* inr; y = cos(fi)*inr;
+   xold = x+cns2;    yold = y+cnr2;
    start_time = clock();
    float b = 0.0;
-   for (int iii=1; iii<=10000; iii++) {
-   	for (int jjj=1; jjj<=10000; jjj++) {
+   for (int iii=1; iii<=100000; iii++) {
+   	for (int jjj=1; jjj<=100000; jjj++) {
 		float a=quadri(xold,yold,nsam,nrow,xim);
 		b = b + a + iii - jjj;
 	}
