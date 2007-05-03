@@ -26,7 +26,8 @@ public:
     void set_symmetry(std::string symmetry);
     void set_CTF(bool CTF);
     void set_have_angles(bool have_angles);
-
+    void set_ref_angle_type(std::string ref_angle_type);
+    
     EMData * get_mask3D();
     int   get_first_ring();
     int   get_last_ring();
@@ -40,6 +41,7 @@ public:
     std::string get_symmetry();
     bool  get_CTF();
     bool  get_have_angles();
+    std::string get_ref_angle_type();
 
 private:
 
@@ -56,5 +58,6 @@ private:
     std::string symmetry;
     bool CTF;
     bool have_angles;
+    std::string ref_angle_type;
 };
 #endif // ALIGNOPTIONS_H
