@@ -32,11 +32,6 @@ namespace EMAN
 	
 		virtual float getSampleDensity() const = 0;
 	
-		/**
-		 * Get Isosurface mesh
-		 */
-//		virtual const Mesh& getMesh() const = 0;
-	
 	protected:
 		EMData * _emdata;
 	

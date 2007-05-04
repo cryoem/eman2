@@ -1,6 +1,3 @@
-
-#ifdef ENABLE_OPENGL
-
 #include "MarchingCubes.h"
 
 using namespace EMAN;
@@ -40,18 +37,17 @@ static const int edgeLookUp[12][4] =
 	{0,0,0,2},{1,0,0,2},{1,1,0,2},{0,1,0,2}
 };
 
-MarchingCubes::MarchingCubes(EMData * em) {
-//	_mesh = 0;
+MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
+	: isSmooth(smooth), _surf_value(1), _sample(5) 
+{
 	_emdata = em;
-	_surf_value = 1;
-	_sample = 5;
 	_root = new CubeNode();
 	_root->is_leaf = true;
 	buildSearchTree();
-	calculateSurface();
+	calculateSurface(isSmooth);
 }
+
 MarchingCubes::~MarchingCubes() {
-//	delete _mesh;
 	delete _root;
 	delete &point_map;
 }
@@ -59,9 +55,8 @@ MarchingCubes::~MarchingCubes() {
 
 void MarchingCubes::setVolumeData(EMData* data) {
 	Isosurface::setVolumeData(data);
-	calculateSurface();
+	calculateSurface(isSmooth);
 }
-
 
 void MarchingCubes::setSurfaceValue(const float value) {
 	float temp = value;
@@ -71,7 +66,7 @@ void MarchingCubes::setSurfaceValue(const float value) {
 	if(_surf_value == temp) return;
 
 	_surf_value = temp;
-	calculateSurface();
+	calculateSurface(isSmooth);
 }
 
 float MarchingCubes::getSurfaceValue() const { return _surf_value; }
@@ -88,12 +83,10 @@ void MarchingCubes::setSampleDensity(const int size) {
 
 	_sample = temp;
 	
-	calculateSurface();
+	calculateSurface(isSmooth);
 }
 
 float MarchingCubes::getSampleDensity() const  { return _sample; }
-
-//const Mesh& MarchingCubes::getMesh() const  { return *_mesh; }
 
 void MarchingCubes::buildSearchTree() {
 	delete _root;
@@ -173,9 +166,7 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 	}
 }
 
-void MarchingCubes::calculateSurface() {
-//	if(_mesh != 0) delete _mesh;
-	
+void MarchingCubes::calculateSurface(bool smooth) {
 	points = new vector<float>();
 	normals = new vector<float>();
 	normalsSm = new vector<float>();
@@ -185,8 +176,9 @@ void MarchingCubes::calculateSurface() {
 	drawCube(_root);
 	
 	point_map.clear();
-//	_mesh = new Mesh(points, faces, normals);
-	calculate_smooth_normals();
+	if(smooth) {
+		calculate_smooth_normals();
+	}
 }
 
 void MarchingCubes::drawCube(CubeNode* node) {
@@ -203,8 +195,6 @@ void MarchingCubes::drawCube(CubeNode* node) {
 	return;
 }
 
-//getNormal() finds the gradient of the scalar field at a point
-//This gradient can be used as a very accurate vertx normal for lighting calculations
 void MarchingCubes::getNormal(Vector3 &normal, int fX, int fY, int fZ)
 {
 	normal[0] = _emdata->get_value_at(fX-1, fY, fZ) - _emdata->get_value_at(fX+1, fY, fZ);
@@ -213,8 +203,6 @@ void MarchingCubes::getNormal(Vector3 &normal, int fX, int fY, int fZ)
     normal.normalize();
 }
 
-//getOffset finds the approximate point of intersection of the surface
-// between two points with the values fValue1 and fValue2
 float MarchingCubes::getOffset(float fValue1, float fValue2, float fValueDesired)
 {
         double fDelta = fValue2 - fValue1;
@@ -235,9 +223,7 @@ int MarchingCubes::getEdgeNum(int x, int y, int z, int edge) {
 
 /*
 BYPASS cubes without data.
-
 */
-//MarchCube performs the Marching Cubes algorithm on a single cube
 void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
 {
         extern int aiCubeEdgeFlags[256];
@@ -689,5 +675,3 @@ BOOST_PYTHON_MODULE(gorgon)
     ;
 }
 */
-
-#endif
