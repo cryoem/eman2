@@ -2,7 +2,6 @@
 #ifdef ENABLE_OPENGL
 
 #include "MarchingCubes.h"
-#include "vecmath.h"
 
 using namespace EMAN;
 
