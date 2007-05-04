@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "vecmath.h"
 #include "Isosurface.h"
 
 using std::vector;
@@ -53,20 +54,20 @@ namespace EMAN
 		/**
 		 * Get Isosurface mesh
 		 */
-		const Mesh& getMesh() const ;
+//		const Mesh& getMesh() const ;
 	
-		void drawMesh(bool smooth) const { _mesh->draw(smooth); }
+//		void drawMesh(bool smooth) const { _mesh->draw(smooth); }
 	
 	private:
 		MarchingCubes(){};
 		
-		Mesh* _mesh;
+		//Mesh* _mesh;
 		float _surf_value;
 		int _sample;
 		//VoxelData _voxel;
 		//EMData * _emdata;
 		CubeNode* _root;
-		vector<float> *points, *normals;
+		vector<float> *points, *normals, *normalsSm;
 		vector<int> *faces;
 		map<int, int> point_map;
 	
@@ -78,6 +79,8 @@ namespace EMAN
 		void buildSearchTree();
 		CubeNode* getCubeNode(int x, int y, int z, int level, int size);
 		void drawCube(CubeNode* node);
+		
+		void calculate_smooth_normals();
 	};
 
 }

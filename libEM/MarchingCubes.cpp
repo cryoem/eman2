@@ -42,7 +42,7 @@ static const int edgeLookUp[12][4] =
 };
 
 MarchingCubes::MarchingCubes(EMData * em) {
-	_mesh = 0;
+//	_mesh = 0;
 	_emdata = em;
 	_surf_value = 1;
 	_sample = 5;
@@ -52,7 +52,7 @@ MarchingCubes::MarchingCubes(EMData * em) {
 	calculateSurface();
 }
 MarchingCubes::~MarchingCubes() {
-	delete _mesh;
+//	delete _mesh;
 	delete _root;
 	delete &point_map;
 }
@@ -94,13 +94,13 @@ void MarchingCubes::setSampleDensity(const int size) {
 
 float MarchingCubes::getSampleDensity() const  { return _sample; }
 
-const Mesh& MarchingCubes::getMesh() const  { return *_mesh; }
+//const Mesh& MarchingCubes::getMesh() const  { return *_mesh; }
 
 void MarchingCubes::buildSearchTree() {
 	delete _root;
-	std::cout << "Constructing search tree..." << std::endl;
+//	std::cout << "Constructing search tree..." << std::endl;
 	_root = getCubeNode(0, 0, 0, 0, _emdata->get_xsize());
-	std::cout << "Finished Construction..."  << std::endl;
+//	std::cout << "Finished Construction..."  << std::endl;
 }
 
 CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
@@ -149,7 +149,7 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 		// find children
 		size = size >> 1; // size /= 2
 		level++;
-		float minval, maxval = 0;
+		float minval = 0, maxval = 0;
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
 			node->children[iVertex] = getCubeNode((int)(x + a2fVertexOffset[iVertex][0]*size),
@@ -175,17 +175,19 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 }
 
 void MarchingCubes::calculateSurface() {
-	if(_mesh != 0) delete _mesh;
+//	if(_mesh != 0) delete _mesh;
 	
 	points = new vector<float>();
 	normals = new vector<float>();
+	normalsSm = new vector<float>();
 	faces = new vector<int>();
 	//point_map.clear();
 
 	drawCube(_root);
 	
 	point_map.clear();
-	_mesh = new Mesh(points, faces, normals);
+//	_mesh = new Mesh(points, faces, normals);
+	calculate_smooth_normals();
 }
 
 void MarchingCubes::drawCube(CubeNode* node) {
@@ -337,6 +339,44 @@ void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
 				normals->push_back(n[2]);
 					
         }
+}
+
+void MarchingCubes::calculate_smooth_normals()
+{
+	// Compute smooth normals.
+	map<int, vector<int> > pointmap;
+
+	for(unsigned int i=0; i<faces->size(); i+=3) {
+		for(int j=0; j<3; j++) {
+			int pt = (*faces)[i+j];
+			if(!pointmap.count(pt)) 
+				pointmap[pt] = vector<int>();
+			pointmap[pt].push_back(i);
+		}
+	}
+
+	for(unsigned int i=0; i<points->size(); i+=3) {
+		int size = pointmap[i].size();
+		float x,y,z;
+		x = y = z = 0;
+		Vector3 n(0,0,0);
+		//std::cout << size << std::endl;
+		for(int j=0; j<size; j++) {
+			int index = pointmap[i][j];
+			Vector3 comp((*normals)[index], (*normals)[index+1], (*normals)[index+2]);
+			n += comp;
+			//x += (*_normals)[index];
+			//y += (*_normals)[index+1];
+			//z += (*_normals)[index+2];
+		}	
+		n.normalize();
+		//_normalsSm->push_back(x/((float)size));
+		//_normalsSm->push_back(y/((float)size));
+		//_normalsSm->push_back(z/((float)size));
+		normalsSm->push_back(n[0]);
+		normalsSm->push_back(n[1]);
+		normalsSm->push_back(n[2]);
+	}
 }
 
 // For any edge, if one vertex is inside of the surface and the other is outside of the surface

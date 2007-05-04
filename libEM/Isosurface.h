@@ -1,7 +1,6 @@
 #ifndef _ISOSURFACE_H_
 #define _ISOSURFACE_H_
 
-#include "Mesh.h"
 #include "emdata.h"
 
 namespace EMAN
@@ -36,7 +35,7 @@ namespace EMAN
 		/**
 		 * Get Isosurface mesh
 		 */
-		virtual const Mesh& getMesh() const = 0;
+//		virtual const Mesh& getMesh() const = 0;
 	
 	protected:
 		EMData * _emdata;
