@@ -200,6 +200,11 @@ def test_image(type=0,size=(128,128)):
 	
 	return ret
 
+def isosurface(img, threshhold, smooth=False):
+	"""Return the Isosurface points, triangles, normals(smooth=True), normalsSm(smooth=False)"""
+	d = Util.get_isosurface(img, threshhold, smooth)
+	return d['points'], d['faces'], d['normals']
+
 __doc__ = \
 "EMAN classes and routines for image/volume processing in \n\
 single particle reconstructions.\n\

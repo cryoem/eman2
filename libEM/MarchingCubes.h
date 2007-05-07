@@ -50,6 +50,22 @@ namespace EMAN
 		void setSampleDensity(const int size);
 	
 		float getSampleDensity() const ;
+		
+		vector<float> * get_points() const {
+			return points;
+		}
+		
+		vector<float> * get_normals() const {
+			return normals;
+		}
+		
+		vector<float> * get_normalsSm() const {
+			return normalsSm;
+		}
+		
+		vector<int> * get_faces() const {
+			return faces;
+		}
 	
 	private:
 		MarchingCubes(){};

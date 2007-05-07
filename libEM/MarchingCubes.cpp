@@ -44,12 +44,17 @@ MarchingCubes::MarchingCubes(EMData * em, bool smooth)
 	_root = new CubeNode();
 	_root->is_leaf = true;
 	buildSearchTree();
-	calculateSurface(isSmooth);
+//	calculateSurface(isSmooth);
 }
 
 MarchingCubes::~MarchingCubes() {
 	delete _root;
-	delete &point_map;
+//	delete &point_map;
+
+	delete points;
+	delete normals;
+	delete normalsSm;
+	delete faces;
 }
 
 

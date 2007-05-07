@@ -841,7 +841,7 @@ namespace EMAN
 		/** Print a 3D integer matrix to a file stream (std out by default).
 		 *
 		 * @param[in] mat integer 3-d multi_array reference
-		 * @param out Output stream; cout by default.
+		 * @param[out] Output stream; cout by default.
 		 * @param[in] str Message string to be printed.
 		 */
 		static void printMatI3D(MIArray3D& mat, 
@@ -856,6 +856,18 @@ namespace EMAN
 		template<class T> static inline T sgn(T& val) {
 			return (val > 0) ? T(+1) : T(-1);
 		}
+		
+		/** Get the isosurface value for 3D image. 
+		 * 
+		 * @param[in] image 3D image data
+		 * @param[in] surface_value threshhold for isosurface valuse
+		 * @param[in] smooth boolean to specify whether the smooth value needed
+		 * 
+		 * @return Dict to wrap the points(float array), and triangles(int array)
+		 * 
+		 * @exception ImageDimensionException 3D image only 
+		 * */
+		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
 	};
 }
 

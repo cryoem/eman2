@@ -37,6 +37,7 @@
 #include "Assert.h"
 #include "emdata.h"
 #include "util.h"
+#include "MarchingCubes.h"
 
 #include <fcntl.h>
 #include <iomanip>
@@ -826,3 +827,29 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 	}
 }
 
+Dict Util::get_isosurface(EMData * image, float surface_value, bool smooth)
+{
+	if (image->get_ndim() != 3) {
+		throw ImageDimensionException("3D only");
+	}
+	
+	MarchingCubes * mc = new MarchingCubes(image, smooth);
+	mc->setSurfaceValue(surface_value);
+	
+	Dict d;
+	if(smooth) {	
+		d.put("points", *(mc->get_points()));
+		d.put("faces", *(mc->get_faces()));
+		d.put("normals", *(mc->get_normalsSm()));
+	}
+	else {
+		d.put("points", *(mc->get_points()));
+		d.put("faces", *(mc->get_faces()));
+		d.put("normals", *(mc->get_normals()));
+	}
+	
+	delete mc;
+	mc = 0;
+	
+	return d;
+}
