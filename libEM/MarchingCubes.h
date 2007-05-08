@@ -29,6 +29,7 @@ namespace EMAN
 	
 	class MarchingCubes : public Isosurface {
 	public:
+		MarchingCubes() : _root(0) {};
 		MarchingCubes(EMData * em, bool isSmooth = false);
 		virtual ~MarchingCubes();
 	
@@ -51,31 +52,11 @@ namespace EMAN
 	
 		float getSampleDensity() const ;
 		
-		vector<float> * get_points() const {
-			return points;
-		}
-		
-		vector<float> * get_normals() const {
-			return normals;
-		}
-		
-		vector<float> * get_normalsSm() const {
-			return normalsSm;
-		}
-		
-		vector<int> * get_faces() const {
-			return faces;
-		}
+		Dict get_isosurface(bool smooth) const ;
 	
-	private:
-		MarchingCubes(){};
-		
-		bool isSmooth;	//boolean to indicate if smooth normals needed
-		float _surf_value;	
+	private:	
 		int _sample;
 		CubeNode* _root;
-		vector<float> *points, *normals, *normalsSm;
-		vector<int> *faces;
 		map<int, int> point_map;
 	
 		void calculateSurface(bool smooth);

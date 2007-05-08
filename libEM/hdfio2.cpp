@@ -185,8 +185,10 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 		dims=iv.size();
 		spc=H5Screate_simple(1,&dims,NULL);
 		break;
-	case EMObject::STRINGARRAY:
 	case EMObject::TRANSFORM3D:
+		return -1;
+		break;
+	case EMObject::STRINGARRAY:
 	case EMObject::EMDATA:
 	case EMObject::XYDATA:
 		return -1;

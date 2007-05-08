@@ -826,7 +826,7 @@ void Util::printMatI3D(MIArray3D& mat, const string str, ostream& out) {
 		}
 	}
 }
-
+/*
 Dict Util::get_isosurface(EMData * image, float surface_value, bool smooth)
 {
 	if (image->get_ndim() != 3) {
@@ -853,3 +853,4 @@ Dict Util::get_isosurface(EMData * image, float surface_value, bool smooth)
 	
 	return d;
 }
+*/

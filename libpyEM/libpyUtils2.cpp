@@ -238,7 +238,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .def("get_time_label", &EMAN::Util::get_time_label)
         .def("eman_copysign", &EMAN::Util::eman_copysign)
         .def("eman_erfc", &EMAN::Util::eman_erfc)
-        .def("get_isosurface", &EMAN::Util::get_isosurface)
+//        .def("get_isosurface", &EMAN::Util::get_isosurface)
         .staticmethod("CANG")
         .staticmethod("ener")
         .staticmethod("sstrncmp")
@@ -328,7 +328,7 @@ BOOST_PYTHON_MODULE(libpyUtils2)
         .staticmethod("mul_scalar")
         .staticmethod("get_filename_ext")
         .staticmethod("Polar2Dm")
-        .staticmethod("get_isosurface")
+//        .staticmethod("get_isosurface")
     );
 
     scope* EMAN_Util_KaiserBessel_scope = new scope(

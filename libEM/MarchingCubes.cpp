@@ -38,25 +38,45 @@ static const int edgeLookUp[12][4] =
 };
 
 MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
-	: isSmooth(smooth), _surf_value(1), _sample(5) 
+	: _sample(5) 
 {
+	isSmooth = smooth;
+	_surf_value = 1;
 	_emdata = em;
 	_root = new CubeNode();
 	_root->is_leaf = true;
+	
+	printf("Before buildSearchTree...\n");
 	buildSearchTree();
-//	calculateSurface(isSmooth);
+	printf("before calculatesurface...\n");
+	calculateSurface(isSmooth);
 }
 
 MarchingCubes::~MarchingCubes() {
 	delete _root;
 //	delete &point_map;
-
-	delete points;
-	delete normals;
-	delete normalsSm;
-	delete faces;
+	
+	if(points) {delete points; points=0;}
+	if(normals) {delete normals; normals=0;}
+	if(normalsSm) {delete normalsSm; normalsSm=0;}
+	if(faces) {delete faces; faces=0;}
 }
 
+Dict MarchingCubes::get_isosurface(bool smooth) const
+{
+	Dict d;
+	if(smooth) {	
+		d.put("points", *points);
+		d.put("faces", *faces);
+		d.put("normals", *normalsSm);
+	}
+	else {
+		d.put("points", *points);
+		d.put("faces", *faces);
+		d.put("normals", *normals);
+	}
+	return d;
+}
 
 void MarchingCubes::setVolumeData(EMData* data) {
 	Isosurface::setVolumeData(data);

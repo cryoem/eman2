@@ -81,6 +81,7 @@ lib_em2_sources = [ "libpyAligner2",
                     "libpyTypeConverter2",
                     "libpyUtils2",
                     "libpyAnalyzer2",
+                    "libpyMarchingCubes2",
                     ]
 
 #*

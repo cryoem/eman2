@@ -867,7 +867,7 @@ namespace EMAN
 		 * 
 		 * @exception ImageDimensionException 3D image only 
 		 * */
-		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
+//		static Dict get_isosurface(EMData * image, float surface_value, bool smooth);
 	};
 }
 
