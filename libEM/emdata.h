@@ -116,7 +116,7 @@ namespace EMAN
 		 * For complex image, the user would specify the real-space dimensions. 
 		 * @param nx size for x dimension 
 		 * @param ny size for y dimension
-		 * @param ny size for z dimension, default 1 
+		 * @param nz size for z dimension, default 1 
 		 * @param is_real boolean to specify real(true) or complex(false) image, default real */
 		EMData(int nx, int ny, int nz=1, bool is_real=true);
 		

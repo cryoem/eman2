@@ -142,6 +142,7 @@ EMData* rotavg_i();
 		 *  Modifies the current object.
 		 *
 		 * @param wptr Normalization data.
+		 * @param wptr2 
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
 		 * @param mult
@@ -153,6 +154,8 @@ EMData* rotavg_i();
 		 *  Modifies the current object.
 		 *
 		 * @param wptr Normalization data.
+		 * @param wptr2 
+		 * @param wptr3
 		 * @param myfft FFT data.
 		 * @param tf Transform3D reference
 		 * @param mult
@@ -170,6 +173,7 @@ EMData* rotavg_i();
 		 *  Modifies the current object.
 		 *
 		 * @param norm Normalization data.
+		 * @param norm2 
 		 */
 		void symplane1(EMData* norm, EMData* norm2);
 		
@@ -177,6 +181,8 @@ EMData* rotavg_i();
 		 *  Modifies the current object.
 		 *
 		 * @param norm Normalization data.
+		 * @param norm2
+		 * @param norm3
 		 */
 		void symplane2(EMData* norm, EMData* norm2, EMData* norm3);
 		

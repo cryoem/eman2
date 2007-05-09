@@ -109,6 +109,9 @@ namespace EMAN
 		/** Translationally aligns one PointArray to another in 2 dimensions
 		*
 		* @param to Another PointArray to align to
+		* @param flags
+		* @param dxhint
+		* @param dyhint
 		* @return A Pixel containing dx,dy and a quality factor (smaller better)
 		*/
 		vector<float> align_trans_2d(PointArray *to,int flags=0,float dxhint=0,float dyhint=0 );		// translational alignment of point sets in 2-D

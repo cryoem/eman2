@@ -67,7 +67,7 @@ namespace EMAN
 		 * @param fX 
 		 * @param fY 
 		 * @param fZ
-		 * @param fScale.
+		 * @param fScale
 		 */
 		void marchingCube(int fX, int fY, int fZ, int fScale);
 		
@@ -77,7 +77,7 @@ namespace EMAN
 		 * @param normal 
 		 * @param fX 
 		 * @param fY 
-		 * @param fZ.
+		 * @param fZ
 		 */
 		void getNormal(Vector3 &normal, int fX, int fY, int fZ);
 		
