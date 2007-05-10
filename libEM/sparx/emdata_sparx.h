@@ -160,13 +160,21 @@ EMData* rotavg_i();
 		 * @param tf Transform3D reference
 		 * @param mult
 		 */
-		void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult=1);
-		
-		/** Symmetrize plane 0
-		 *  Modifies the current object.
-		 *
-		 * @param norm Normalization data.
-		 */
+   		 void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData*
+   		   wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult=1);
+   		   
+   		   /**  Calculate Spectrum signal noise ratio (SSNR) accounting CTF correction
+   		    *  a. 3D Wiener volume F_3D has been pre-calculated already. F_3D(k) = sum(k)(CTF_k*F_k)/{sum CTF_k^2 + 1/snr}
+   		    *  b. Terms calculated : |F_k|^2, |CTF_k|^2*||P^2D->3D*F_3D|^2,2*Re(CTF_k*P^2D->3D*F_3D*F_k^*) 
+   		    *  
+   		    */
+   		 void nn_wiener(EMData* wptr, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult);
+   		   /** Calculate Wiener summation from the inserted 2D slice 
+   		   *   put the summation into 3D grids using nearest neighbour approximation
+   		   *   a. Map the 2D coordinates of the interted slice into 3D grid using 3D transformation  
+   		   *   b. calculate 2D CTF_K^2  and CTF_K*F_K, and put them on the voxel of 3D volume
+   		   *   c. count the number of images entering each boxel wptr3
+   		   */
 		void symplane0(EMData* norm);
 
 		/** Symmetrize plane 0
