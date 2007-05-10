@@ -3005,7 +3005,7 @@ c
 EMData* Util::Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr)
 {
 /*
-  This program is half of the Crosrng_msg. It only checks both straight positions.
+  This program is half of the Crosrng_msg. It only checks straight position.
 
   input - fourier transforms of rings!!
   circ1 already multiplied by weights!
@@ -3085,7 +3085,7 @@ EMData* Util::Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr)
 {
 /*
 
-  This program is half of the Crosrng_msg, which only checks mirrored position.
+  This program is half of the Crosrng_msg. It only checks mirrored position.
 
   input - fourier transforms of rings!!
   circ1 already multiplied by weights!
