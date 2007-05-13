@@ -395,7 +395,7 @@ IF(ENABLE_PYTHON)
     IF(WIN32)
 		CHECK_PYTHON($ENV{PYTHON_VERSION} 24 23 22)
     ELSE(WIN32)
-		CHECK_PYTHON($ENV{PYTHON_VERSION} 2.4 2.3 2.2)
+		CHECK_PYTHON($ENV{PYTHON_VERSION} 2.5 2.4 2.3 2.2)
     ENDIF(WIN32)
     
     IF(PYTHON_INCLUDE_PATH)
@@ -414,8 +414,11 @@ IF(ENABLE_PYTHON)
     ENDIF(PYTHON_INCLUDE_PATH)
 
     FIND_PATH(NUMPY_INCLUDE_PATH numpy/arrayobject.h 
+    	$ENV{PYTHON_ROOT}/lib/python2.5/site-packages/numpy/core/include
     	$ENV{PYTHON_ROOT}/lib/python2.4/site-packages/numpy/core/include
+    	/usr/lib64/python2.5/site-packages/numpy/core/include
     	/usr/lib64/python2.4/site-packages/numpy/core/include
+    	/usr/lib/python2.5/site-packages/numpy/core/include
 		/usr/lib/python2.4/site-packages/numpy/core/include
 		/usr/include)
 
