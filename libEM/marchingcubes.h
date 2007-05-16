@@ -29,7 +29,6 @@ namespace EMAN
 	
 	class MarchingCubes : public Isosurface {
 	public:
-		MarchingCubes() : _root(0) {};
 		MarchingCubes(EMData * em, bool isSmooth = false);
 		virtual ~MarchingCubes();
 	
@@ -54,7 +53,8 @@ namespace EMAN
 		
 		Dict get_isosurface(bool smooth) const ;
 	
-	private:	
+	private:
+		MarchingCubes(){};	
 		int _sample;
 		CubeNode* _root;
 		map<int, int> point_map;

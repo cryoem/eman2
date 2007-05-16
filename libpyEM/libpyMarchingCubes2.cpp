@@ -59,9 +59,11 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 		.def("get_sample_density", pure_virtual(&EMAN::Isosurface::get_sample_density))
 		.def("get_isosurface", pure_virtual(&EMAN::Isosurface::get_isosurface))
 		;
-		
-	class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init<  >())
-		.def(init< EMAN::EMData *, optional< bool > >())
+	
+	/* We do not wrap default constructor of MarchingCubes into Python */	
+	//class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init<  >())
+	class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init< EMAN::EMData *, optional< bool > >())
+		//.def(init< EMAN::EMData *, optional< bool > >())
 		;
 }
 
