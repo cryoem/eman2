@@ -1,3 +1,5 @@
+#ifdef  BUGFREE
+
 #include "marchingcubes.h"
 
 using namespace EMAN;
@@ -697,3 +699,4 @@ BOOST_PYTHON_MODULE(gorgon)
     ;
 }
 */
+#endif

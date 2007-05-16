@@ -1,3 +1,5 @@
+#ifdef BUGFREE
+
 #ifndef _MARCHING_CUBES_H_
 #define _MARCHING_CUBES_H_
 
@@ -103,4 +105,5 @@ namespace EMAN
 
 }
 
+#endif
 #endif
