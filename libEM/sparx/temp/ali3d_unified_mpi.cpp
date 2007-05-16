@@ -446,6 +446,14 @@ int bckpj3(Vec3i volsize, int nrays, int   nnz, float *dm,
     int zcent = origin[2];
 
     int nx = volsize[0];
+    int ny = volsize[1];
+
+    // Phi: adding the shift parameters that get passed in as the last two entries of dm
+    float sx, sy;
+
+    sx = dm(7);
+    sy = dm(8);
+
 
     if ( nx > 2*ri) {
 	for (i = 1; i <= nrays; i++) {
@@ -453,8 +461,8 @@ int bckpj3(Vec3i volsize, int nrays, int   nnz, float *dm,
 	    yc = cord(2,i) - ycent;
             xc = cord(3,i) - xcent;
 
-            xb = zc*dm(1)+yc*dm(2)+xc*dm(3) + xcent;
-            yb = zc*dm(4)+yc*dm(5)+xc*dm(6) + ycent;
+            xb = zc*dm(1)+yc*dm(2)+xc*dm(3) + xcent + sx;
+            yb = zc*dm(4)+yc*dm(5)+xc*dm(6) + ycent + sy;
 
             for (j = ptrs(i); j <ptrs(i+1); j++) {
 		iqx = ifix(xb);
@@ -483,11 +491,25 @@ c                              x(i+1,j)           -x(i+1,j)
 c                                                x(i+1,j+1) 
 c
 */
-               y(j) += x(iqx,iqy)
-                    +  dx*(-x(iqx,iqy)+x(iqx+1,iqy))
-                    +  dy*(-x(iqx,iqy)+x(iqx,iqy+1))
-                    +  dxdy*( x(iqx,iqy) - x(iqx,iqy+1) 
-                             -x(iqx+1,iqy) + x(iqx+1,iqy+1) );
+		// Phi: add index checking, now that shifts are being used
+		if ( iqx <= nx && iqy <= ny && iqx >= 1 && iqy >= 1 ) {
+		    y(j) += x(iqx,iqy);
+		    if ( iqx + 1 <= nx && iqx + 1 >= 1 ) {
+			y(j) += dx*(-x(iqx,iqy)+x(iqx+1,iqy));
+		    }
+		    if ( iqy + 1 <= ny && iqy + 1 >= 1 ) {
+			y(j) += dy*(-x(iqx,iqy)+x(iqx,iqy+1));
+		    }
+		    if ( iqx + 1 <= nx && iqy + 1 <= ny && iqx + 1 >= 1 && iqy + 1 >= 1 ) {
+			y(j) += dxdy*( x(iqx,iqy) - x(iqx,iqy+1) -x(iqx+1,iqy) + x(iqx+1,iqy+1) );
+		    }
+		}
+
+//                y(j) += x(iqx,iqy)
+//                     +  dx*(-x(iqx,iqy)+x(iqx+1,iqy))
+//                     +  dy*(-x(iqx,iqy)+x(iqx,iqy+1))
+//                     +  dxdy*( x(iqx,iqy) - x(iqx,iqy+1) 
+//                              -x(iqx+1,iqy) + x(iqx+1,iqy+1) );
 
                xb += dm(1);
                yb += dm(4);
@@ -928,13 +950,21 @@ int fcalc(float *volsph, Vec3i volsize,
 // This might be a convenient function to use in fgcalc, rather than repeating the same code six times
 int make_proj_mat(float phi, float theta, float psi, float * dm)
 {
-    float cphi=cos(phi);
-    float sphi=sin(phi);
-    float cthe=cos(theta);
-    float sthe=sin(theta);
-    float cpsi=cos(psi);
-    float spsi=sin(psi);
-		
+//     float cphi=cos(phi);
+//     float sphi=sin(phi);
+//     float cthe=cos(theta);
+//     float sthe=sin(theta);
+//     float cpsi=cos(psi);
+//     float spsi=sin(psi);
+
+    double cphi, sphi, cthe, sthe, cpsi, spsi;
+    double dphi = phi;
+    double dthe = theta;
+    double dpsi = psi;
+    sincos(dphi, &sphi, &cphi);
+    sincos(dthe, &sthe, &cthe);
+    sincos(dpsi, &spsi, &cpsi);
+
     dm[0]=cphi*cthe*cpsi-sphi*spsi;
     dm[1]=sphi*cthe*cpsi+cphi*spsi;
     dm[2]=-sthe*cpsi;
