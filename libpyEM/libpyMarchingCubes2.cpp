@@ -4,8 +4,7 @@
 #include <boost/cstdint.hpp>
 
 // Includes ====================================================================
-#include "MarchingCubes.h"
-//#include "Isosurface.h"
+#include "marchingcubes.h"
 
 // Using =======================================================================
 using namespace boost::python;

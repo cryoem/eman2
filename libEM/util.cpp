@@ -37,7 +37,7 @@
 #include "Assert.h"
 #include "emdata.h"
 #include "util.h"
-#include "MarchingCubes.h"
+#include "marchingcubes.h"
 
 #include <fcntl.h>
 #include <iomanip>

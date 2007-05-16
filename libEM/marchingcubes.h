@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "vecmath.h"
-#include "Isosurface.h"
+#include "isosurface.h"
 
 using std::vector;
 

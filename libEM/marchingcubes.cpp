@@ -1,4 +1,4 @@
-#include "MarchingCubes.h"
+#include "marchingcubes.h"
 
 using namespace EMAN;
 
