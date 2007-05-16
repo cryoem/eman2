@@ -834,7 +834,7 @@ Dict Util::get_isosurface(EMData * image, float surface_value, bool smooth)
 	}
 	
 	MarchingCubes * mc = new MarchingCubes(image, smooth);
-	mc->setSurfaceValue(surface_value);
+	mc->set_surface_value(surface_value);
 	
 	Dict d;
 	if(smooth) {	

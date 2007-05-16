@@ -19,23 +19,23 @@ namespace EMAN
 		/**
 		 * Sets Voxel data for Isosurface implementation
 		 */
-		virtual void setVolumeData(EMData* data) {
+		virtual void set_data(EMData* data) {
 			_emdata = data;
 		}
 	
 		/**
 		 * Set Isosurface value
 		 */
-		virtual void setSurfaceValue(const float value) = 0;
+		virtual void set_surface_value(const float value) = 0;
 	
-		virtual float getSurfaceValue() const = 0;
+		virtual float get_surface_value() const = 0;
 	
 		/**
 		 * Set Grid Size
 		 */
-		virtual void setSampleDensity(const int size) = 0;
+		virtual void set_sample_density(const int size) = 0;
 	
-		virtual float getSampleDensity() const = 0;
+		virtual float get_sample_density() const = 0;
 		
 		virtual Dict get_isosurface(bool smooth) const =0;
 	

@@ -202,7 +202,7 @@ def test_image(type=0,size=(128,128)):
 
 def isosurface(marchingcubes, threshhold, smooth=False):
 	"""Return the Isosurface points, triangles, normals(smooth=True), normalsSm(smooth=False)"""
-	marchingcubes.setSurfaceValue(threshhold)
+	marchingcubes.set_surface_value(threshhold)
 	d = marchingcubes.get_isosurface(smooth)
 	return d['points'], d['faces'], d['normals']
 

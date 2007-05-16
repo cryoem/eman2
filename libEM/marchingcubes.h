@@ -36,21 +36,21 @@ namespace EMAN
 		/**
 		 * Sets Voxel data for Isosurface implementation
 		 */
-		void setVolumeData(EMData* data);
+		void set_data(EMData* data);
 
 		/**
 		 * Set Isosurface value
 		 */
-		void setSurfaceValue(const float value);
+		void set_surface_value(const float value);
 	
-		float getSurfaceValue() const ;
+		float get_surface_value() const ;
 	
 		/**
 		 * Set Grid Size
 		 */
-		void setSampleDensity(const int size);
+		void set_sample_density(const int size);
 	
-		float getSampleDensity() const ;
+		float get_sample_density() const ;
 		
 		Dict get_isosurface(bool smooth) const ;
 	
@@ -59,7 +59,7 @@ namespace EMAN
 		CubeNode* _root;
 		map<int, int> point_map;
 	
-		void calculateSurface(bool smooth);
+		void calculate_surface(bool smooth);
 		
 		/** MarchCube performs the Marching Cubes algorithm on a single cube 
 		 * and BYPASS cubes without data.
@@ -69,7 +69,7 @@ namespace EMAN
 		 * @param fZ
 		 * @param fScale
 		 */
-		void marchingCube(int fX, int fY, int fZ, int fScale);
+		void marching_cube(int fX, int fY, int fZ, int fScale);
 		
 		/** Find the gradient of the scalar field at a point. This gradient can 
 		 * be used as a very accurate vertx normal for lighting calculations.
@@ -79,7 +79,7 @@ namespace EMAN
 		 * @param fY 
 		 * @param fZ
 		 */
-		void getNormal(Vector3 &normal, int fX, int fY, int fZ);
+		void get_normal(Vector3 &normal, int fX, int fY, int fZ);
 		
 		/** Find the approximate point of intersection of the surface between two 
 		 * points with the values fValue1 and fValue2
@@ -89,12 +89,12 @@ namespace EMAN
 		 * @param fValueDesired 
 		 * @return offset
 		 */
-		float getOffset(float fValue1, float fValue2, float fValueDesired);
+		float get_offset(float fValue1, float fValue2, float fValueDesired);
 		
-		int getEdgeNum(int x, int y, int z, int edge);
-		void buildSearchTree();
-		CubeNode* getCubeNode(int x, int y, int z, int level, int size);
-		void drawCube(CubeNode* node);
+		int get_edge_num(int x, int y, int z, int edge);
+		void build_search_tree();
+		CubeNode* get_cube_node(int x, int y, int z, int level, int size);
+		void draw_cube(CubeNode* node);
 		
 		/** Compute smooth normals. 
 		 * */

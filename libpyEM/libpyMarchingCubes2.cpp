@@ -15,30 +15,30 @@ namespace  {
 
 struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
 {  
-    void default_setVolumeData(EMAN::EMData* p0) {
-        EMAN::Isosurface::setVolumeData(p0);
+    void default_set_data(EMAN::EMData* p0) {
+        EMAN::Isosurface::set_data(p0);
     }
         
-	void setVolumeData(EMAN::EMData* p0) {
-        if(override setVolumeData = this->get_override("setVolumeData")) {
-        	EMAN::Isosurface::setVolumeData(p0);
+	void set_data(EMAN::EMData* p0) {
+        if(override set_data = this->get_override("set_data")) {
+        	EMAN::Isosurface::set_data(p0);
         }
     }
     
-    void setSurfaceValue(float p0) {
-        this->get_override("setSurfaceValue")(p0);
+    void set_surface_value(float p0) {
+        this->get_override("set_surface_value")(p0);
     }
     
-    float getSurfaceValue() {
-    	return this->get_override("getSurfaceValue")();
+    float get_surface_value() {
+    	return this->get_override("get_surface_value")();
     }
     
-    void setSampleDensity(float p0) {
-        this->get_override("setSampleDensity")(p0);
+    void set_sample_density(float p0) {
+        this->get_override("set_sample_density")(p0);
     }
     
-    float getSampleDensity() {
-        return this->get_override("getSampleDensity")();
+    float get_sample_density() {
+        return this->get_override("get_sample_density")();
     }
     
     EMAN::Dict get_isosurface(bool p0) {
@@ -52,11 +52,11 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
 BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 {
 	class_<EMAN_Isosurface_Wrapper, boost::noncopyable>("Isosurface", no_init)
-		.def("setVolumeData", &EMAN::Isosurface::setVolumeData, &EMAN_Isosurface_Wrapper::default_setVolumeData)
-		.def("setSurfaceValue", pure_virtual(&EMAN::Isosurface::setSurfaceValue))
-		.def("getSurfaceValue", pure_virtual(&EMAN::Isosurface::getSurfaceValue))
-		.def("setSampleDensity", pure_virtual(&EMAN::Isosurface::setSampleDensity))
-		.def("getSampleDensity", pure_virtual(&EMAN::Isosurface::getSampleDensity))
+		.def("set_data", &EMAN::Isosurface::set_data, &EMAN_Isosurface_Wrapper::default_set_data)
+		.def("set_surface_value", pure_virtual(&EMAN::Isosurface::set_surface_value))
+		.def("get_surface_value", pure_virtual(&EMAN::Isosurface::get_surface_value))
+		.def("set_sample_density", pure_virtual(&EMAN::Isosurface::set_sample_density))
+		.def("get_sample_density", pure_virtual(&EMAN::Isosurface::get_sample_density))
 		.def("get_isosurface", pure_virtual(&EMAN::Isosurface::get_isosurface))
 		;
 		

@@ -46,10 +46,9 @@ MarchingCubes::MarchingCubes(EMData * em, bool smooth)
 	_root = new CubeNode();
 	_root->is_leaf = true;
 	
-	printf("Before buildSearchTree...\n");
-	buildSearchTree();
-	printf("before calculatesurface...\n");
-	calculateSurface(isSmooth);
+	build_search_tree();
+
+	calculate_surface(isSmooth);
 }
 
 MarchingCubes::~MarchingCubes() {
@@ -78,12 +77,12 @@ Dict MarchingCubes::get_isosurface(bool smooth) const
 	return d;
 }
 
-void MarchingCubes::setVolumeData(EMData* data) {
-	Isosurface::setVolumeData(data);
-	calculateSurface(isSmooth);
+void MarchingCubes::set_data(EMData* data) {
+	Isosurface::set_data(data);
+	calculate_surface(isSmooth);
 }
 
-void MarchingCubes::setSurfaceValue(const float value) {
+void MarchingCubes::set_surface_value(const float value) {
 	float temp = value;
 	if(value > 1000) temp = 1000;
 	if(value < 0) temp = 0;
@@ -91,12 +90,12 @@ void MarchingCubes::setSurfaceValue(const float value) {
 	if(_surf_value == temp) return;
 
 	_surf_value = temp;
-	calculateSurface(isSmooth);
+	calculate_surface(isSmooth);
 }
 
-float MarchingCubes::getSurfaceValue() const { return _surf_value; }
+float MarchingCubes::get_surface_value() const { return _surf_value; }
 
-void MarchingCubes::setSampleDensity(const int size) {
+void MarchingCubes::set_sample_density(const int size) {
 	int temp = size;
 	
 	if(temp > _emdata->getResolution())
@@ -108,19 +107,17 @@ void MarchingCubes::setSampleDensity(const int size) {
 
 	_sample = temp;
 	
-	calculateSurface(isSmooth);
+	calculate_surface(isSmooth);
 }
 
-float MarchingCubes::getSampleDensity() const  { return _sample; }
+float MarchingCubes::get_sample_density() const  { return _sample; }
 
-void MarchingCubes::buildSearchTree() {
+void MarchingCubes::build_search_tree() {
 	delete _root;
-//	std::cout << "Constructing search tree..." << std::endl;
-	_root = getCubeNode(0, 0, 0, 0, _emdata->get_xsize());
-//	std::cout << "Finished Construction..."  << std::endl;
+	_root = get_cube_node(0, 0, 0, 0, _emdata->get_xsize());
 }
 
-CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
+CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size) {
 	if(size == 1) {
 
 		assert(size == 1);
@@ -169,7 +166,7 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 		float minval = 0, maxval = 0;
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
-			node->children[iVertex] = getCubeNode((int)(x + a2fVertexOffset[iVertex][0]*size),
+			node->children[iVertex] = get_cube_node((int)(x + a2fVertexOffset[iVertex][0]*size),
                                                    (int)(y + a2fVertexOffset[iVertex][1]*size),
                                                    (int)(z + a2fVertexOffset[iVertex][2]*size),
 												   level, size);
@@ -191,14 +188,14 @@ CubeNode* MarchingCubes::getCubeNode(int x, int y, int z, int level, int size) {
 	}
 }
 
-void MarchingCubes::calculateSurface(bool smooth) {
+void MarchingCubes::calculate_surface(bool smooth) {
 	points = new vector<float>();
 	normals = new vector<float>();
 	normalsSm = new vector<float>();
 	faces = new vector<int>();
 	//point_map.clear();
 
-	drawCube(_root);
+	draw_cube(_root);
 	
 	point_map.clear();
 	if(smooth) {
@@ -206,21 +203,21 @@ void MarchingCubes::calculateSurface(bool smooth) {
 	}
 }
 
-void MarchingCubes::drawCube(CubeNode* node) {
+void MarchingCubes::draw_cube(CubeNode* node) {
 	if(node->min < _surf_value && node->max > _surf_value) {
 		if(node->level == _sample) {
-			marchingCube(node->x, node->y, node->z, node->size);
+			marching_cube(node->x, node->y, node->z, node->size);
 		}
 		else {
 			for(int i=0; i<8; i++)
-				drawCube(node->children[i]);
+				draw_cube(node->children[i]);
 		}
 	}
 
 	return;
 }
 
-void MarchingCubes::getNormal(Vector3 &normal, int fX, int fY, int fZ)
+void MarchingCubes::get_normal(Vector3 &normal, int fX, int fY, int fZ)
 {
 	normal[0] = _emdata->get_value_at(fX-1, fY, fZ) - _emdata->get_value_at(fX+1, fY, fZ);
     normal[1] = _emdata->get_value_at(fX, fY-1, fZ) - _emdata->get_value_at(fX, fY+1, fZ);
@@ -228,7 +225,7 @@ void MarchingCubes::getNormal(Vector3 &normal, int fX, int fY, int fZ)
     normal.normalize();
 }
 
-float MarchingCubes::getOffset(float fValue1, float fValue2, float fValueDesired)
+float MarchingCubes::get_offset(float fValue1, float fValue2, float fValueDesired)
 {
         double fDelta = fValue2 - fValue1;
 
@@ -239,7 +236,7 @@ float MarchingCubes::getOffset(float fValue1, float fValue2, float fValueDesired
         return (fValueDesired - fValue1)/fDelta;
 }
 
-int MarchingCubes::getEdgeNum(int x, int y, int z, int edge) {
+int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 	// edge direction is right, down, back (x, y, z)
 	unsigned int index = 0;
 	index = (x << 22) | (y << 12) | (z << 2) | edge;
@@ -249,7 +246,7 @@ int MarchingCubes::getEdgeNum(int x, int y, int z, int edge) {
 /*
 BYPASS cubes without data.
 */
-void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
+void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fScale)
 {
         extern int aiCubeEdgeFlags[256];
         extern int a2iTriangleConnectionTable[256][16];
@@ -294,7 +291,7 @@ void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
                 //if there is an intersection on this edge
                 if(iEdgeFlags & (1<<iEdge))
                 {
-                        fOffset = getOffset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
+                        fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
                                                      afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
                         asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) * fScale;
@@ -302,8 +299,8 @@ void MarchingCubes::marchingCube(int fX, int fY, int fZ, int fScale)
                         asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) * fScale;
 
 						
-						pointIndex[iEdge] = getEdgeNum(fX+edgeLookUp[iEdge][0]*fScale, fY+edgeLookUp[iEdge][1]*fScale, fZ+edgeLookUp[iEdge][2]*fScale, edgeLookUp[iEdge][3]);
-                        //getNormal(asEdgeNorm[iEdge], asEdgeVertex[iEdge][0], asEdgeVertex[iEdge][1], asEdgeVertex[iEdge][2]);
+						pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0]*fScale, fY+edgeLookUp[iEdge][1]*fScale, fZ+edgeLookUp[iEdge][2]*fScale, edgeLookUp[iEdge][3]);
+                        //get_normal(asEdgeNorm[iEdge], asEdgeVertex[iEdge][0], asEdgeVertex[iEdge][1], asEdgeVertex[iEdge][2]);
 
                 }
         }
