@@ -490,13 +490,13 @@ namespace EMAN
 	    }
 	
 	    Matrix3 inverse() const {
-	        Matrix3 adjoint( Vector3(  det2x2((*this)(1,1), (*this)(1,2), (*this)(2,1), (*this)(2,2)),
+			Matrix3 adjoint = Matrix3( Vector3(  det2x2((*this)(1,1), (*this)(1,2), (*this)(2,1), (*this)(2,2)),
 	                                  -det2x2((*this)(1,0), (*this)(1,2), (*this)(2,0), (*this)(2,2)),
 	                                   det2x2((*this)(1,0), (*this)(1,1), (*this)(2,0), (*this)(2,1)) ),
-	                         Vector3( -det2x2((*this)(0,1), (*this)(0,2), (*this)(2,1), (*this)(2,2)),
+	                         			Vector3( -det2x2((*this)(0,1), (*this)(0,2), (*this)(2,1), (*this)(2,2)),
 	                                   det2x2((*this)(0,0), (*this)(0,2), (*this)(2,0), (*this)(2,2)),
 	                                  -det2x2((*this)(0,0), (*this)(0,1), (*this)(2,0), (*this)(2,1)) ),
-	                         Vector3(  det2x2((*this)(0,1), (*this)(0,2), (*this)(1,1), (*this)(1,2)),
+	                         			Vector3(  det2x2((*this)(0,1), (*this)(0,2), (*this)(1,1), (*this)(1,2)),
 	                                  -det2x2((*this)(0,0), (*this)(0,2), (*this)(1,0), (*this)(1,2)),
 	                                   det2x2((*this)(0,0), (*this)(0,1), (*this)(1,0), (*this)(1,1)) ) );
 	        const double dDet = determinant();
