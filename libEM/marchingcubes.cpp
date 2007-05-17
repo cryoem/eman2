@@ -1,5 +1,3 @@
-#ifdef  BUGFREE
-
 #include "marchingcubes.h"
 
 using namespace EMAN;
@@ -38,6 +36,23 @@ static const int edgeLookUp[12][4] =
 	{0,0,1,0},{1,0,1,1},{0,1,1,0},{0,0,1,1},
 	{0,0,0,2},{1,0,0,2},{1,1,0,2},{0,1,0,2}
 };
+
+MarchingCubes::MarchingCubes()
+	: _sample(5) 
+{
+	isSmooth = false;
+	_surf_value = 1;
+	_root = new CubeNode();
+	_root->is_leaf = true;
+	
+	std::cout << "before search tree..." << std::endl;
+	build_search_tree();
+	std::cout << "before calc surface..." << std::endl;
+	calculate_surface(isSmooth);
+	std::cout << "end constructor..." << std::endl;
+	
+	
+}
 
 MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
 	: _sample(5) 
@@ -699,4 +714,3 @@ BOOST_PYTHON_MODULE(gorgon)
     ;
 }
 */
-#endif

@@ -1,5 +1,3 @@
-#ifdef BUGFREE
-
 #ifndef _MARCHING_CUBES_H_
 #define _MARCHING_CUBES_H_
 
@@ -31,6 +29,7 @@ namespace EMAN
 	
 	class MarchingCubes : public Isosurface {
 	public:
+		MarchingCubes();
 		MarchingCubes(EMData * em, bool isSmooth = false);
 		virtual ~MarchingCubes();
 	
@@ -55,8 +54,7 @@ namespace EMAN
 		
 		Dict get_isosurface(bool smooth) const ;
 	
-	private:
-		MarchingCubes(){};	
+	private:	
 		int _sample;
 		CubeNode* _root;
 		map<int, int> point_map;
@@ -105,5 +103,4 @@ namespace EMAN
 
 }
 
-#endif
 #endif
