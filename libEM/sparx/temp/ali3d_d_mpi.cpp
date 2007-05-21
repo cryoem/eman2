@@ -11,6 +11,7 @@
 #include "ali3d_d_mpi.h"
 #include "ali3d_unified_mpi.h"
 #include "alignoptions.h"
+#include "sirt.h"
 
 using namespace EMAN;
 
@@ -53,6 +54,8 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     float dtheta   = options.get_dtheta();
     bool CTF       = options.get_CTF();
     bool have_angles = options.get_have_angles();
+    bool use_sirt  = options.get_use_sirt();
+    std::string symmetry = options.get_symmetry();
 
     Dict maskdict;
     maskdict["radius"] = ri;
@@ -78,40 +81,49 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	*mask2D -= *inner_mask2D;
 	EMDeletePtr(inner_mask2D);
     }	
-
-    std::string recons_name = "nn4";
+    
+    EMData ** sirt_images;
     Dict recons_params;
-    recons_params["symmetry"] = options.get_symmetry();
-    recons_params["size"]     = nx;
-    recons_params["npad"]     = 4; // will this ever be != 4?
+    std::string recons_name;
+    float * even_odd_angleshift = new float[5*nloc];
 
-    Dict CTF_params;
-    CTF_params["sign"] = -1.0;
-    int CTF_applied;
-    int padffted;
-    if (CTF) {
-	// filter each image according to its ctf header info
-	for ( int i = 0 ; i < nloc ; ++i ) {
-	    CTF_applied = projdata[i]->get_attr("ctf_applied");
-	    if ( CTF_applied == 0 ) {
-		CTF_params["defocus"]      = projdata[i]->get_attr("defocus");
-		CTF_params["Cs"]           = projdata[i]->get_attr("Cs");
-		CTF_params["Pixel_size"]   = projdata[i]->get_attr("Pixel_size");
-		CTF_params["B_factor"]     = projdata[i]->get_attr("B_factor");
-		CTF_params["amp_contrast"] = projdata[i]->get_attr("amp_contrast");
-		projdata[i]->process_inplace("filter.CTF_",CTF_params);
+
+    if ( use_sirt ) {
+	sirt_images = new EMData*[nloc];
+    } else {
+	recons_name = "nn4";
+	recons_params["symmetry"] = symmetry;
+	recons_params["size"]     = nx;
+	recons_params["npad"]     = 4; // will this ever be != 4?
+
+	Dict CTF_params;
+	CTF_params["sign"] = -1.0;
+	int CTF_applied;
+	int padffted;
+	if (CTF) {
+	    // filter each image according to its ctf header info
+	    for ( int i = 0 ; i < nloc ; ++i ) {
+		CTF_applied = projdata[i]->get_attr("ctf_applied");
+		if ( CTF_applied == 0 ) {
+		    CTF_params["defocus"]      = projdata[i]->get_attr("defocus");
+		    CTF_params["Cs"]           = projdata[i]->get_attr("Cs");
+		    CTF_params["Pixel_size"]   = projdata[i]->get_attr("Pixel_size");
+		    CTF_params["B_factor"]     = projdata[i]->get_attr("B_factor");
+		    CTF_params["amp_contrast"] = projdata[i]->get_attr("amp_contrast");
+		    projdata[i]->process_inplace("filter.CTF_",CTF_params);
+		}
 	    }
+	    // set a few more things for the reconstructor to deal with
+	    recons_name = "nn4_ctf";
+	    recons_params["snr"] = options.get_snr();
+	    recons_params["sign"] = 1.0; // confirm this, sign is not defined in the current python code.
+	    try {
+		padffted = projdata[0]->get_attr("padffted");
+	    } catch ( E2Exception& e ) { // the only exception thrown by get_attr() is NotExistingObjectException()
+		padffted = 0;
+	    }
+	    if (padffted == 1) recons_params["size"] = (float) recons_params["size"] / (float) recons_params["npad"];
 	}
-	// set a few more things for the reconstructor to deal with
-	recons_name = "nn4_ctf";
-	recons_params["snr"] = options.get_snr();
-	recons_params["sign"] = 1.0; // confirm this, sign is not defined in the current python code.
-	try {
-	    padffted = projdata[0]->get_attr("padffted");
-	} catch ( E2Exception& e ) { // the only exception thrown by get_attr() is NotExistingObjectException()
-	    padffted = 0;
-	}
-	if (padffted == 1) recons_params["size"] = (float) recons_params["size"] / (float) recons_params["npad"];
     }
 
     // The below are done in proj_ali_incore
@@ -180,6 +192,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
     EMData * vol1 = NULL;
     EMData * vol2 = NULL;
+
     EMData * fftvol;
     EMData * weight;
     Reconstructor* r;
@@ -213,7 +226,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
     // These keep track of how many times we take new parameters based on projection matching
     int new_angles, old_angles, new_total, old_total;
-
+    
     for ( int i = 0 ; i < max_iter ; ++i ) { // This loop is as in ali3d_d
 	new_angles = 0;
 	old_angles = 0;
@@ -223,7 +236,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	for ( int j = 0 ; j < num_ref ; ++j ) { 
 	    for ( int k = 0 ; k < 3 ; ++k) anglelist[k] = ref_angles[3 * j + k];
 	    volparams["anglelist"] = anglelist;
-	    ref_proj_ptr = volume->project("chao", volparams);// This uses a version of fwdpj3() internally, but I'm not sure how, precisely.
+	    ref_proj_ptr = volume->project("chao", volparams);// This uses a version of fwdpj3() internally
 	    proj_params["phi"] = anglelist[0];
 	    proj_params["theta"] = anglelist[1];
 	    proj_params["psi"] = anglelist[2];
@@ -267,7 +280,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	    comptheta = fmod((float) compeuler["theta"] + 360.0, 360.0);
 	    comppsi   = fmod((float) compeuler["psi"]   + 360.0, 360.0);
 
-	    angb = fmod((float) compphi + comppsi,  (float) 360.0); // 
+	    angb = fmod((float) compphi + comppsi,  (float) 360.0);  
 	    sxb  = Rcomp.at(0,3);
 	    syb  = Rcomp.at(1,3);
 	    ct   = Rcomp.get_scale();
@@ -314,7 +327,6 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 			     ptrs, cord, angtrs, 1, 
 			     img_data, &unified_res);
 
-//		std::cout << std::scientific << multiref_res << " " << unified_res << " " << j + nbase[mypid] << std::endl;
 		// whichever gives better residual gets used
 		if ( multiref_res < unified_res ) {
 		    ++new_angles;
@@ -372,63 +384,89 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	// leaving proj_ali_incore
 
 	// build two reconstructions
-// The evens
 	if (mypid == 0) printf("   Building even/odd volumes for FSC calculation...\n");
-	fftvol = new EMData();
-	weight = new EMData();
-	recons_params["fftvol"] = fftvol;
-	recons_params["weight"] = weight;
-	r = Factory<Reconstructor>::get(recons_name, recons_params);
-	r->setup();
-	for ( int j = 0 ; j < nloc ; j += 2 ) { 
-	    phi   = projdata[j]->get_attr("phi");
-	    theta = projdata[j]->get_attr("theta");
-	    psi   = projdata[j]->get_attr("psi");
-	    r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
-	}
-	fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
-	weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
-	fftvol_send = fftvol->get_data();
-	weight_send = weight->get_data();
-	fftvol_recv = new float[fftvol_size];
-	weight_recv = new float[weight_size];
-	MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
-	MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
-	for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
-	EMDeleteArray(fftvol_recv);
-	EMDeleteArray(weight_recv);
-	vol1 = r->finish();
-	EMDeletePtr(fftvol);
-	EMDeletePtr(weight);
+	if ( use_sirt ) {
+// The evens
+	    vol1 = new EMData();
+	    // lam should be based on number of images, right?
+	    for ( int j = 0 ; j < nloc ; j += 2 ) {
+		sirt_images[j/2] = projdata[j];
+		even_odd_angleshift[5*(j/2) + 0] = angleshift[5*j + 0];
+		even_odd_angleshift[5*(j/2) + 1] = angleshift[5*j + 1];
+		even_odd_angleshift[5*(j/2) + 2] = angleshift[5*j + 2];
+		even_odd_angleshift[5*(j/2) + 3] = angleshift[5*j + 3];
+		even_odd_angleshift[5*(j/2) + 4] = angleshift[5*j + 4];
+	    }
+	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol1, (nloc+1)/2, ri, 1.0e-4, 100, symmetry, 1.0e-3);
 // The odds
-	fftvol = new EMData();
-	weight = new EMData();
-	recons_params["fftvol"] = fftvol;
-	recons_params["weight"] = weight;
-	r = Factory<Reconstructor>::get(recons_name, recons_params);
-	r->setup();
-	for ( int j = 1 ; j < nloc ; j += 2 ) { 
-	    phi   = projdata[j]->get_attr("phi");
-	    theta = projdata[j]->get_attr("theta");
-	    psi   = projdata[j]->get_attr("psi");
-	    r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+	    vol2 = new EMData();
+	    for ( int j = 1 ; j < nloc ; j += 2 ) {
+		sirt_images[j/2] = projdata[j];
+		even_odd_angleshift[5*(j/2) + 0] = angleshift[5*j + 0];
+		even_odd_angleshift[5*(j/2) + 1] = angleshift[5*j + 1];
+		even_odd_angleshift[5*(j/2) + 2] = angleshift[5*j + 2];
+		even_odd_angleshift[5*(j/2) + 3] = angleshift[5*j + 3];
+		even_odd_angleshift[5*(j/2) + 4] = angleshift[5*j + 4];
+	    }
+	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol2, nloc/2, ri, 1.0e-4, 100, symmetry, 1.0e-3);
+	} else {
+// The evens
+	    fftvol = new EMData();
+	    weight = new EMData();
+	    recons_params["fftvol"] = fftvol;
+	    recons_params["weight"] = weight;
+	    r = Factory<Reconstructor>::get(recons_name, recons_params);
+	    r->setup();
+	    for ( int j = 0 ; j < nloc ; j += 2 ) { 
+		phi   = projdata[j]->get_attr("phi");
+		theta = projdata[j]->get_attr("theta");
+		psi   = projdata[j]->get_attr("psi");
+		r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+	    }
+	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
+	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
+	    fftvol_send = fftvol->get_data();
+	    weight_send = weight->get_data();
+	    fftvol_recv = new float[fftvol_size];
+	    weight_recv = new float[weight_size];
+	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
+	    MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
+	    for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
+	    for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
+	    EMDeleteArray(fftvol_recv);
+	    EMDeleteArray(weight_recv);
+	    vol1 = r->finish();
+	    EMDeletePtr(fftvol);
+	    EMDeletePtr(weight);
+// The odds
+	    fftvol = new EMData();
+	    weight = new EMData();
+	    recons_params["fftvol"] = fftvol;
+	    recons_params["weight"] = weight;
+	    r = Factory<Reconstructor>::get(recons_name, recons_params);
+	    r->setup();
+	    for ( int j = 1 ; j < nloc ; j += 2 ) { 
+		phi   = projdata[j]->get_attr("phi");
+		theta = projdata[j]->get_attr("theta");
+		psi   = projdata[j]->get_attr("psi");
+		r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+	    }
+	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
+	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
+	    fftvol_send = fftvol->get_data();
+	    weight_send = weight->get_data();
+	    fftvol_recv = new float[fftvol_size];
+	    weight_recv = new float[weight_size];
+	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
+	    MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
+	    for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
+	    for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
+	    EMDeleteArray(fftvol_recv);
+	    EMDeleteArray(weight_recv);
+	    vol2 = r->finish();
+	    EMDeletePtr(fftvol);
+	    EMDeletePtr(weight);
 	}
-	fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
-	weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
-	fftvol_send = fftvol->get_data();
-	weight_send = weight->get_data();
-	fftvol_recv = new float[fftvol_size];
-	weight_recv = new float[weight_size];
-	MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
-	MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
-	for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
-	EMDeleteArray(fftvol_recv);
-	EMDeleteArray(weight_recv);
-	vol2 = r->finish();
-	EMDeletePtr(fftvol);
-	EMDeletePtr(weight);
 
 	// calculate and subtract the mean from vol1 and vol2, and apply the 3D mask
 	stats = Util::infomask(vol1, mask3D, false);
@@ -455,43 +493,49 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
 	// and reconstruct the volume
 	if (mypid == 0) std::cout << "Building 3-D reconstruction ... " << std::endl;
-	fftvol = new EMData();
-	weight = new EMData();
-	recons_params["fftvol"] = fftvol;
-	recons_params["weight"] = weight;
-	r = Factory<Reconstructor>::get(recons_name, recons_params);
-	r->setup();
-	for ( int j = 0 ; j < nloc ; ++j ) { 
-	    phi   = projdata[j]->get_attr("phi");
-	    theta = projdata[j]->get_attr("theta");
-	    psi   = projdata[j]->get_attr("psi");
-	    r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+	if ( use_sirt ) {
+	    volume = new EMData();
+	    recons3d_sirt_mpi(comm, projdata, angleshift, volume, nloc, ri, 1.0e-4, 100, symmetry, 1.0e-3);
+
+	} else {
+	    fftvol = new EMData();
+	    weight = new EMData();
+	    recons_params["fftvol"] = fftvol;
+	    recons_params["weight"] = weight;
+	    r = Factory<Reconstructor>::get(recons_name, recons_params);
+	    r->setup();
+	    for ( int j = 0 ; j < nloc ; ++j ) { 
+		phi   = projdata[j]->get_attr("phi");
+		theta = projdata[j]->get_attr("theta");
+		psi   = projdata[j]->get_attr("psi");
+		r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+	    }
+	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
+	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
+
+	    fftvol_send = fftvol->get_data();
+	    weight_send = weight->get_data();
+
+
+	    fftvol_recv = new float[fftvol_size];
+	    weight_recv = new float[weight_size];
+
+
+	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
+	    MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
+	    for ( int j = 0 ; j < fftvol_size ; ++j ) {
+		*(fftvol_send + j) = fftvol_recv[j];
+	    }
+	    for ( int j = 0 ; j < weight_size ; ++j ) {
+		*(weight_send + j) = weight_recv[j];
+	    }
+	    EMDeleteArray(fftvol_recv);
+	    EMDeleteArray(weight_recv);
+	    EMDeletePtr(volume); // r->finish() returns EMData *, must free the old one
+	    volume = r->finish();
+	    EMDeletePtr(fftvol);
+	    EMDeletePtr(weight);
 	}
-	fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
-	weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
-
-	fftvol_send = fftvol->get_data();
-	weight_send = weight->get_data();
-
-
-	fftvol_recv = new float[fftvol_size];
-	weight_recv = new float[weight_size];
-
-
-	MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
-	MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	for ( int j = 0 ; j < fftvol_size ; ++j ) {
-	    *(fftvol_send + j) = fftvol_recv[j];
-	}
-	for ( int j = 0 ; j < weight_size ; ++j ) {
-	    *(weight_send + j) = weight_recv[j];
-	}
-	EMDeleteArray(fftvol_recv);
-	EMDeleteArray(weight_recv);
-	EMDeletePtr(volume); // r->finish() returns EMData *, must free the old one
-	volume = r->finish();
-	EMDeletePtr(fftvol);
-	EMDeletePtr(weight);
 	sprintf(out_fname, "vol_%s_pm%d.spi", fname_base, i);
 	if (mypid == 0) volume->write_image(out_fname, 0, WRITE_SPI);
 	// End of reconstruction
@@ -543,6 +587,8 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     EMDeleteArray(volsph);
     EMDeleteArray(psize);
     EMDeleteArray(nbase);
+    if ( use_sirt) EMDeleteArray(sirt_images);
+    EMDeleteArray(even_odd_angleshift);
 
     return 0;
 	
