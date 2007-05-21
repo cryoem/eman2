@@ -1,3 +1,5 @@
+#include "mpi.h"
+
 #define NUMBER float
 #define PI 3.141592653589793
 

@@ -12,7 +12,7 @@ using namespace EMAN;
 
 int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
 
-int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangles, int radius, float lam, int maxit, std::string symmetry, float tol)
+int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangloc, int radius, float lam, int maxit, std::string symmetry, float tol)
 {
     int ncpus, mypid, ierr;
 
@@ -22,16 +22,16 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
     
     int * psize;
     int * nbase;
-    int nangloc;
+
+    int nangles;
     psize = new int[ncpus];
     nbase = new int[ncpus];
-    nangloc = setpart(comm, nangles, psize, nbase);
+    MPI_Allreduce(&nangloc, &nangles, 1, MPI_INT, MPI_SUM, comm);
     
 
     int nsym = 0;
     // get image size from first image
     int nx = images[0]->get_xsize();
-    // mask2d, then set it to 1- itself	
     if ( radius == -1 ) radius = nx/2 - 1; // make radius as large as possible if the user didn't provide one
     
     Vec3i volsize, origin;
@@ -47,7 +47,6 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
     xvol->to_zero();
     float * voldata = xvol->get_data();
 	
-    // create a volume to hold trans(P)*P*xvol
 	
     // vector of symmetrized angles
     std::vector<float> symangles(3,0.0); 
@@ -68,9 +67,14 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
     // this is just to set ptrs and cord, voldata is all 0.0 at this point
     ierr = cb2sph(voldata, volsize, radius, origin, nnz, ptrs, cord, xvol_sph); 
 
+    // arrays to hold volume data:
+    // initial backprojected volume, local
     float * bvol_loc = new float[nnz];
+    // initial backprojected volume, global
     float * bvol = new float[nnz];
+    // P^T * P * xvol, local
     float * pxvol = new float[nnz];
+    // P^T * P * xvol, global
     float * pxvol_loc = new float[nnz];
     
     for ( int i = 0 ; i < nnz ; ++i ) {
@@ -97,42 +101,50 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
     float * image_data;
     float * projected_data = new float[nx*nx];
     float dm[8];
-
+    
+    int restarts = 0;
+    
     while (iter <= maxit) {
 	if ( iter == 1 ) {
-	    for ( int i = 0 ; i < nangloc ; ++i ) {
-		current_image = images[i];
-		image_data = current_image->get_data(); 
-		// store the angles and shifts associated with each image in the vectors
-		// angles and shifts.
-		phi   = current_image->get_attr("phi"); 
-		angles.push_back(phi);
-		theta = current_image->get_attr("theta"); 
-		angles.push_back(theta);
-		psi   = current_image->get_attr("psi"); 
-		angles.push_back(psi);
-		dm[6] = current_image->get_attr("s2x");
-		shifts.push_back(dm[6]);
-		dm[7] = current_image->get_attr("s2y");
-		shifts.push_back(dm[7]);
-		// make an instance of Transform3D with the angles
-		RA = Transform3D(EULER_SPIDER, phi, theta, psi);
-		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
-		    // compose it with each symmetry rotation in turn
-		    // shifts (stored in dm[6] and dm[7] remain fixed
-		    Tf = Tf.get_sym(symmetry, ns) * RA;
-		    angdict = Tf.get_rotation(EULER_SPIDER);
- 		    phi   = (float) angdict["phi"]   * PI/180.0;
-		    theta = (float) angdict["theta"] * PI/180.0;
-		    psi   = (float) angdict["psi"]   * PI/180.0;
-		    make_proj_mat(phi, theta, psi, dm); 
-		    // accumulate the back-projected images in bvol_loc
-		    ierr = bckpj3(volsize, nrays, nnz, dm, origin, radius, ptrs, cord, 
-				  image_data, bvol_loc);
+	    if ( restarts == 0 ) {
+		// only do this if we aren't restarting due to lam being too large
+		for ( int i = 0 ; i < nangloc ; ++i ) {
+		    current_image = images[i];
+		    image_data = current_image->get_data(); 
+		    // store the angles and shifts associated with each image in the vectors
+		    // angles and shifts.
+		    phi   = current_image->get_attr("phi"); 
+		    angles.push_back(phi);
+		    theta = current_image->get_attr("theta"); 
+		    angles.push_back(theta);
+		    psi   = current_image->get_attr("psi"); 
+		    angles.push_back(psi);
+		    dm[6] = current_image->get_attr("s2x");
+		    dm[6] *= -1.0;
+		    shifts.push_back(dm[6]);
+		    dm[7] = current_image->get_attr("s2y");
+		    dm[7] *= -1.0;
+		    shifts.push_back(dm[7]);
+		    // make an instance of Transform3D with the angles
+		    RA = Transform3D(EULER_SPIDER, phi, theta, psi);
+		    for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
+			// compose it with each symmetry rotation in turn
+			// shifts (stored in dm[6] and dm[7] remain fixed
+			Tf = Tf.get_sym(symmetry, ns) * RA;
+			angdict = Tf.get_rotation(EULER_SPIDER);
+			phi   = (float) angdict["phi"]   * PI/180.0;
+			theta = (float) angdict["theta"] * PI/180.0;
+			psi   = (float) angdict["psi"]   * PI/180.0;
+			make_proj_mat(phi, theta, psi, dm); 
+			// accumulate the back-projected images in bvol_loc
+			ierr = bckpj3(volsize, nrays, nnz, dm, origin, radius, ptrs, cord, 
+				      image_data, bvol_loc);
+		    }
 		}
+		// reduce bvol_loc so each processor has the full volume
+		ierr = MPI_Allreduce(bvol_loc, bvol, nnz, MPI_FLOAT, MPI_SUM, comm);
+
 	    }
-	    // reduce bvol_loc so each processor has the full volume
-	    ierr = MPI_Allreduce(bvol_loc, bvol, nnz, MPI_FLOAT, MPI_SUM, comm);
 
 	    // calculate the norm of the backprojected volume
 	    for ( int j = 0 ; j < nnz ; ++j ) {
@@ -181,15 +193,28 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
 	rnorm /= nnz;
 	rnorm = sqrt(rnorm);
 	if ( mypid == 0 ) printf("iter = %3d, rnorm / bnorm = %6.3f, rnorm = %6.3f\n", iter, rnorm / bnorm, rnorm);
-////////////////////////////////////////////////
-	// perhaps should add test like the following lines?
-// 	if ( iter == 2 && rnorm / bnorm > old_rnorm ) {
-// 	    iter = 1;
-// 	    lam /= 10.0;
-//	    if ( mypid == 0 ) printf("reducing lam to %f, restarting\n", lam);
-//	// would also need some counter to make sure this doesn't go on forever
-// 	}
-////////////////////////////////////////	
+	// if on the second pass, rnorm is greater than bnorm, lam is probably set too high
+	// reduce it by a factor of 10 and start over
+	if ( iter == 2 && rnorm / bnorm > old_rnorm ) {
+	    // but don't do it more than 10 times
+	    if ( restarts > 20 ) {
+		if ( mypid == 0 ) printf("Failure to converge, even with lam = %f\n",lam);
+		break;
+	    } else {
+		++restarts;
+		iter = 1;
+		lam /= 2.0;
+		// reset these 
+		old_rnorm = 1.0;
+		for ( int j = 0 ; j < nnz ; ++j ) {
+		    xvol_sph[j]  = 0.0;
+		    pxvol_loc[j] = 0.0; 
+		    // bvol_loc[j]  = 0.0; // can reuse this instead, catch restarts != 0 in primary loop
+		}
+		if ( mypid == 0 ) printf("reducing lam to %f, restarting\n", lam);
+		continue;
+	    }
+	}
 	// if changes are sufficiently small, or if no further progress is made, terminate
 	if ( rnorm / bnorm < tol || rnorm / bnorm > old_rnorm ) {
 	    break;
@@ -221,21 +246,21 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
 	
     return 0; // recons3d_sirt_mpi
 }
-
+// 
 // int main(int argc, char ** argv)
 // {
 //     MPI_Comm comm = MPI_COMM_WORLD;
 //     int ncpus, mypid, ierr;
 //     int nloc; 
-
+// 
 //     MPI_Status mpistatus;
 //     MPI_Init(&argc,&argv);
 //     MPI_Comm_size(comm,&ncpus);
 //     MPI_Comm_rank(comm,&mypid);
 //     printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
-
+// 
 //     EMData * xvol = new EMData();
-
+// 
 //     EMData *volume = new EMData();
 //     if ( mypid == 0 ) {
 // 	volume->read_image("vol001.tfc");
@@ -244,24 +269,24 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
 //     ierr = MPI_Bcast(&nx, 1, MPI_INT, 0, comm);
 //     float dtheta = 5.0;
 //     std::vector<float> ref_angles = Util::even_angles(dtheta);
-
+// 
 //     int nangles = ref_angles.size() / 3;
 //     if ( mypid == 0 ) printf("Using %d images\n", nangles);
 //     int radius = 30;
 //     int maxit = 50;
-
+// 
 //     int * psize;
 //     int * nbase;
 //     int nangloc;
 //     psize = new int[ncpus];
 //     nbase = new int[ncpus];
 //     nangloc = setpart(comm, nangles, psize, nbase);
-
+// 
 //     EMData ** images = (EMData **) malloc(nangloc * sizeof(EMData *));
 //     std::vector<float> anglelist(3,0.0);
 //     Dict volparams;
 //     volparams["angletype"] = "SPIDER";
-
+// 
 //     float * imgdata;
 //     EMData * send_projection;
 //     volparams["radius"] = radius;
@@ -290,7 +315,7 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
 // 		MPI_Send(imgdata, nx*nx, MPI_FLOAT, np, np, comm);
 // 		EMDeletePtr(send_projection);
 // 	    }
-		
+// 		
 // 	}
 //     } else { // mypid != 0
 // 	for ( int i = 0 ; i < nangloc ; ++i ) {
@@ -307,28 +332,28 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, EMData *& xvol, int nangl
 // 	}
 //     }
 //     if ( mypid == 0 ) printf("Done with data distribution\n");
-	
-//     float lam = 1.0e-5;
+// 	
+//     float lam = 1.0e-4;
 //     float tol = 1.0e-3;
 //     std::string symmetry = "c1";
-
-//     recons3d_sirt_mpi(comm, images, xvol, nangles, radius, lam, maxit, symmetry, tol);
+// 
+//     recons3d_sirt_mpi(comm, images, xvol, nangloc, radius, lam, maxit, symmetry, tol);
 //     if ( mypid == 0 ) printf("Done with SIRT\n");
-
+// 
 //     EMUtil::ImageType WRITE_SPI = EMUtil::IMAGE_SINGLE_SPIDER;
 //     if ( mypid == 0 ) {
 // 	xvol->write_image("volume_sirt.spi", 0, WRITE_SPI);
 //     }
-
-
+// 
+// 
 //     for ( int i = 0 ; i < nangloc ; ++i ) {	
 // 	EMDeletePtr(images[i]);
 //     }		
 //     free(images);
 //     EMDeletePtr(xvol);
 //     EMDeletePtr(volume);
-
+// 
 //     ierr = MPI_Finalize();
-
+// 
 //     return 0; // main
 // }
