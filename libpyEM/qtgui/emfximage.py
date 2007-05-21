@@ -232,7 +232,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 					h=int(min(self.data[i].get_ysize()*self.scale,self.height()))
 #					print i,x,y,w,h
 					if x>0 and x<self.width() and y>0 and y<self.height() :
-						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						a=self.data[i].render_amp8(0,0,w,h,(w-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,1.0,2)
 						glRasterPos(x,y)
 						glDrawPixels(w,h,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 					elif x+w>0 and y-h<self.height() and x<self.width() and y>0:
@@ -245,7 +245,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 						if y>self.height()-1 : y1=h-y+self.height()-1
 						else : y1=h
 						x0,x1,y1=int(x0),int(x1),int(y1)
-						a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+						a=self.data[i].render_amp8(x0,0,x1,y1,(x1-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,1.0,2)
 #						a=self.data[i].render_amp8(int(-x),int(y-self.height()),min(w,int(x+w)),int(h-y+self.height()),min(w-1,int(x+w-1))/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
 						if x<0 : xx=0
 						else : xx=x
@@ -260,7 +260,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 						x=-self.origin[0]
 					else: x+=w+2.0
 			else:
-				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,2)
+				a=self.data[self.nshow].render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,0,255,self.minden,self.maxden,1.0,2)
 				glRasterPos(0,self.height()-1)
 				glPixelZoom(1.0,-1.0)
 				glDrawPixels(self.width(),self.height(),GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
@@ -268,7 +268,7 @@ class EMFXImage(QtOpenGL.QGLWidget):
 				hist.fromstring(a[-1024:])
 				if self.inspectorl : self.inspectorl.setHist(hist,self.minden,self.maxden)
 		else :
-			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),512,512,512,self.scale,0,255,self.minden,self.maxden,2)
+			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),512,512,512,self.scale,0,255,self.minden,self.maxden,1.0,2)
 			hist=array.array("I")
 			hist.fromstring(a[-1024:])
 			if self.inspector : self.inspector.setHist(hist,self.minden,self.maxden)

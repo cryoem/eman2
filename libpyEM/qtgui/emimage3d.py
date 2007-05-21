@@ -34,6 +34,8 @@
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 from OpenGL import GL,GLU,GLUT
+from OpenGL.GL import *
+from OpenGL.GLU import *
 from valslider import ValSlider
 from math import *
 from EMAN2 import *
@@ -51,7 +53,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMImage2D.allim[self]=0
+		EMImage3D.allim[self]=0
 		
 # 		try: 
 # 			if EMImage2D.gq : pass
@@ -67,8 +69,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.data=None
 		
-		self.shapes={}
-		self.shapechange=1
+		self.isothr=1.0
+		self.isorender=None
+		self.aspect=1.0
+		self.gq=0
 		
 		self.inspector=None
 		
@@ -81,7 +85,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 #		if not self.data and data: self.resize(data.get_xsize(),data.get_ysize())
 		
 		self.data=data
-		if data==None:
+		if data==None or (isinstance(data,EMData) and data.get_zsize()<=1) :
 			self.updateGL()
 			return
 		
@@ -94,37 +98,97 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.maxden=min(m1,mean+3.0*sigma)
 		self.mindeng=max(m0,mean-5.0*sigma)
 		self.maxdeng=min(m1,mean+5.0*sigma)
-			
+		
 		self.showInspector()		# shows the correct inspector if already open
+		
+		self.isorender=MarchingCubes(data,1)
 		self.updateGL()
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
+		
+		if not self.gq:
+			self.gq=gluNewQuadric()
+			gluQuadricDrawStyle(self.gq,GLU_FILL)
+			gluQuadricNormals(self.gq,GLU_SMOOTH)
+			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+			gluQuadricTexture(self.gq,GL_FALSE)
+		
+		# Precompile a displaylist for the display volume border
+		self.volcubedl=glGenLists(1)
+		glNewList(self.volcubedl,GL_COMPILE)
+		glPushMatrix()
+		glColor(.7,.7,1.0)
+#		glRotate(90.,1.,0.,0.)
+		glTranslate(-self.aspect-.01,1.01,-4.0)
+		gluCylinder(self.gq,.01,.01,15.0,12,2)
+		glTranslate(self.aspect*2.0+.02,0.0,0.0)
+		gluCylinder(self.gq,.01,.01,15.0,12,2)
+		glTranslate(0.0,-2.02,0.0)
+		gluCylinder(self.gq,.01,.01,15.0,12,2)
+		glTranslate(-self.aspect*2.0-.02,0.0,0.0)
+		gluCylinder(self.gq,.01,.01,15.0,12,2)		
+		glPopMatrix()
+		glEndList()
 	
 	def paintGL(self):
-		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-#		GL.glLoadIdentity()
-#		GL.glTranslated(0.0, 0.0, -10.0)
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+#		glLoadIdentity()
+#		glTranslated(0.0, 0.0, -10.0)
+		if not self.isorender: return
 		
-		if not self.data : return
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glCallList(self.volcubedl)
 		
-		if self.shapechange:
-			self.setupShapes()
-			self.shapechange=0
+		self.isorender.set_surface_value(self.isothr)
+		a=self.isorender.get_isosurface(1)
+		f=a["faces"]
+		n=a["normals"]
+		p=a["points"]
 		
+		f=[i/3 for i in f]
 		
+		glPushMatrix()
+		glTranslate(-.5,-.5,2.0)
+		glScale(2.0,2.0,2.0)
+		glBegin(GL_TRIANGLES)
+		for i in f:
+			glVertex(p[i*3],p[i*3+1],p[i*3+2])
+		glEnd()
 		
+		#glEnableClientState(GL_VERTEX_ARRAY)
+		#glEnableClientState(GL_INDEX_ARRAY)
+		#glVertexPointer(3,GL_FLOAT,0,p)
+		#glIndexPointer(GL_INT,0,f)
+		#glDrawArrays(GL_TRIANGLES,0,len(f))
+		
+		glPopMatrix()
+		
+		print p
+		print f
 		self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+
+
 		side = min(width, height)
-# 		GL.glViewport(0,0,self.width(),self.height())
-# 	
-# 		GL.glMatrixMode(GL.GL_PROJECTION)
-# 		GL.glLoadIdentity()
-# 		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
-# 		GL.glMatrixMode(GL.GL_MODELVIEW)
-# 		GL.glLoadIdentity()
+#		glViewport((width - side) / 2, (height - side) / 2, side, side)
+		glViewport(0,0,self.width(),self.height())
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
+		glTranslatef(0.,0.,-14.9)
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
 		
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch
@@ -140,7 +204,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if self.inspector: self.inspector.close()
 			
 	def mousePressEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
+#		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.LeftButton:
@@ -149,7 +213,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				return
 	
 	def mouseMoveEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
+#		lc=self.scrtoimg((event.x(),event.y()))
 # 		if self.rmousedrag and event.buttons()&Qt.RightButton:
 # 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 # 			self.rmousedrag=(event.x(),event.y())
@@ -160,7 +224,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				return
 	
 	def mouseReleaseEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
+#		lc=self.scrtoimg((event.x(),event.y()))
 # 		if event.button()==Qt.RightButton:
 # 			self.rmousedrag=None
 		if event.button()==Qt.LeftButton:
