@@ -16,6 +16,7 @@ AlignOptions::AlignOptions()
     CTF        = false;
     have_angles = false;
     ref_angle_type = "P";
+    use_sirt = true;
 }
 
 AlignOptions::AlignOptions(const AlignOptions& old_options)
@@ -34,6 +35,7 @@ AlignOptions::AlignOptions(const AlignOptions& old_options)
     CTF        = old_options.CTF;
     have_angles = old_options.have_angles;
     ref_angle_type = old_options.ref_angle_type;
+    use_sirt = old_options.use_sirt;
 }
 
 AlignOptions::~AlignOptions()
@@ -82,6 +84,9 @@ void AlignOptions::set_have_angles(bool in_have_angles){
 void AlignOptions::set_ref_angle_type(std::string in_ref_angle_type){
     ref_angle_type = in_ref_angle_type;
 }
+void AlignOptions::set_use_sirt(bool in_use_sirt){
+    use_sirt = in_use_sirt;
+}
 
 EMData * AlignOptions::get_mask3D(){
     return mask3D;
@@ -124,4 +129,7 @@ bool AlignOptions::get_have_angles(){
 }
 std::string AlignOptions::get_ref_angle_type(){
     return ref_angle_type;
+}
+bool AlignOptions::get_use_sirt(){
+    return use_sirt;
 }
