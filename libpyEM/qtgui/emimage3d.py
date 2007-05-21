@@ -69,10 +69,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.data=None
 		
-		self.isothr=1.0
+		self.isothr=3.0
 		self.isorender=None
 		self.aspect=1.0
 		self.gq=0
+		self.mmode=0
 		
 		self.inspector=None
 		
@@ -104,7 +105,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.isorender=MarchingCubes(data,1)
 		self.updateGL()
 		
-	def initializeGL(self):
+	def initializeGL(self):		
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		
 		GL.glClearColor(0,0,0,0)
 		
 		if not self.gq:
@@ -137,8 +142,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 #		glTranslated(0.0, 0.0, -10.0)
 		if not self.isorender: return
 		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
 		glCallList(self.volcubedl)
 		
 		self.isorender.set_surface_value(self.isothr)
@@ -165,19 +168,25 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glPopMatrix()
 		
-		print p
-		print f
+		print len(p),len(f)/3
+		#print p
+		#print f
 		self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.5,-3.,0.])
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT,[.2,.2,.2,1.0])
 
+		glMaterialfv(GL_FRONT,GL_SPECULAR,[1.,1.,1.,1.])
+		glMaterialfv(GL_FRONT,GL_SHININESS,[50.0])
+		
+		glLightModel(GL_LIGHT_MODEL_TWO_SIDE,1)
+#		glLightf(GL_LIGHT0,
 
 		side = min(width, height)
 #		glViewport((width - side) / 2, (height - side) / 2, side, side)
