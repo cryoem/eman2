@@ -147,7 +147,7 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	} else {
 	    for ( int i = 0 ; i < nangloc ; ++i ) {
 		// retrieve the angles and shifts from angleshift
-		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], angleshift[5*i + 1], angleshift[53*i + 2]);
+		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], angleshift[5*i + 1], angleshift[5*i + 2]);
 		dm[6] = angleshift[5*i + 3];
 		dm[7] = angleshift[5*i + 4];
 		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
