@@ -63,6 +63,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
 	bool   complex_input;
 	vector<float> table;
+	int undoctf=0;
 	float voltage=100.0, ak=0.0, cs=2.0, ps=1.0, b_factor=0, wgh=.1, sign=-1.0;
 	if (!fimage) {
 		return NULL;
@@ -245,6 +246,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			b_factor = params["B_factor"];
 			wgh      = params["amp_contrast"];
 			sign     = params["sign"];
+			undoctf  = params["undo"];
 			break;
 		case KAISER_I0:
 		case KAISER_SINH:
@@ -438,7 +440,20 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 							      		    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
-							fp->cmplx(ix,iy,iz) *= tf;			  
+
+                                                        // printf( "ix,iy,iz,tf,vold: %4d %4d %4d %20.3e %20.3f %20.3f\n", ix, iy, iz, tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
+
+							if( undoctf == 1 )
+							{
+							    if( tf>0 && tf <  1e-5 ) tf =  1e-5;
+							    if( tf<0 && tf > -1e-5 ) tf = -1e-5;
+							    fp->cmplx(ix,iy,iz) /= tf;
+							}
+							else
+							    fp->cmplx(ix,iy,iz) *= tf;
+
+                                                        // printf( "      newtf,vnew:                %20.3e %20.3f %20.3f\n", tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
+
 							break;
 					}
 				}
