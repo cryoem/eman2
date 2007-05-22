@@ -43,6 +43,8 @@ import sys
 import numpy
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
+from time import time
+from PyQt4.QtCore import QTimer
 
 class EMImage3D(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
@@ -51,7 +53,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	allim=WeakKeyDictionary()
 	def __init__(self, image=None, parent=None):
 		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True);
+		fmt.setDoubleBuffer(True)
+		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3D.allim[self]=0
 		
@@ -65,11 +68,14 @@ class EMImage3D(QtOpenGL.QGLWidget):
 # 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_OUTSIDE)
 # 			GLU.gluQuadricOrientation(EMImage2D.gq,GLU.GLU_INSIDE)
 # 			GLU.gluQuadricTexture(EMImage2D.gq,GL.GL_FALSE)
+		
+		self.timer = QTimer()
+		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
 		
 		self.data=None
 		
-		self.isothr=3.0
+		self.isothr=1.0
 		self.isorender=None
 		self.aspect=1.0
 		self.gq=0
@@ -80,6 +86,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if image : 
 			self.setData(image)
 			self.show()
+		
+	
+	def timeout(self):
+		self.updateGL()
+		
 	
 	def setData(self,data):
 		"""Pass in a 3D EMData object"""
@@ -104,6 +115,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.isorender=MarchingCubes(data,1)
 		self.updateGL()
+		self.timer.start(25)
 		
 	def initializeGL(self):		
 		glEnable(GL_LIGHTING)
@@ -142,7 +154,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 #		glTranslated(0.0, 0.0, -10.0)
 		if not self.isorender: return
 		
-		glCallList(self.volcubedl)
+#		glCallList(self.volcubedl)
 		
 		self.isorender.set_surface_value(self.isothr)
 		a=self.isorender.get_isosurface(1)
@@ -152,23 +164,35 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		f=[i/3 for i in f]
 		
-		glPushMatrix()
-		glTranslate(-.5,-.5,2.0)
-		glScale(2.0,2.0,2.0)
-		glBegin(GL_TRIANGLES)
-		for i in f:
-			glVertex(p[i*3],p[i*3+1],p[i*3+2])
-		glEnd()
+		#glPushMatrix()
+		#gluSphere(self.gq,.2,20,20)
+##		glTranslate(.2,.2,.2)
+##		gluSphere(self.gq,.25,20,20)
+		#glPopMatrix()
 		
-		#glEnableClientState(GL_VERTEX_ARRAY)
-		#glEnableClientState(GL_INDEX_ARRAY)
-		#glVertexPointer(3,GL_FLOAT,0,p)
-		#glIndexPointer(GL_INT,0,f)
-		#glDrawArrays(GL_TRIANGLES,0,len(f))
+		glPushMatrix()
+#		glTranslate(0,0,2.0)
+		glScalef(2.0,2.0,2.0)
+		glRotate(fmod(time()*10.0,360.0),1.0,0.0,0.0)
+		glTranslate(-0.5,-0.5,-0.5)
+		#glBegin(GL_TRIANGLES)
+		#for i in f:
+			#glNormal(n[i*3],n[i*3+1],n[i*3+2])
+			#glVertex(p[i*3],p[i*3+1],p[i*3+2])
+			
+		#glEnd()
+		
+		
+		glEnableClientState(GL_VERTEX_ARRAY)
+		glEnableClientState(GL_NORMAL_ARRAY)
+		glVertexPointer(3,GL_FLOAT,0,p)
+		glNormalPointer(GL_FLOAT,0,n)
+		glDrawElements(GL_TRIANGLES,len(f),GL_UNSIGNED_INT,f)
 		
 		glPopMatrix()
 		
-		print len(p),len(f)/3
+#		print fmod(time()*10.0,360.0)
+#		print len(p),len(f)/3
 		#print p
 		#print f
 		self.changec=self.data.get_attr("changecount")
@@ -179,22 +203,24 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.1,.5,-3.,0.])
+		glLightfv(GL_LIGHT0, GL_POSITION, [5.0,10.0,15.,0.])
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT,[.2,.2,.2,1.0])
 
 		glMaterialfv(GL_FRONT,GL_SPECULAR,[1.,1.,1.,1.])
-		glMaterialfv(GL_FRONT,GL_SHININESS,[50.0])
+		glMaterialfv(GL_FRONT,GL_SHININESS,[10.0])
 		
-		glLightModel(GL_LIGHT_MODEL_TWO_SIDE,1)
+#		glLightModel(GL_LIGHT_MODEL_TWO_SIDE,1)
 #		glLightf(GL_LIGHT0,
 
+		self.aspect=float(width)/height
 		side = min(width, height)
 #		glViewport((width - side) / 2, (height - side) / 2, side, side)
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
-		glTranslatef(0.,0.,-14.9)
+#		glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
+		glFrustum(-self.aspect,self.aspect, -1.,1., 2.,4.)
+		glTranslatef(0.,0.,-3.0)
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
