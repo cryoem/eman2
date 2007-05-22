@@ -101,8 +101,8 @@ int main(int argc, char *argv[])
     options.set_last_ring(ri);
     options.set_rstep(1);
     options.set_ri(ri);
-    options.set_xrng(2.0);
-    options.set_yrng(2.0);
+    options.set_xrng(1.0);
+    options.set_yrng(1.0);
     options.set_step(1.0);
     options.set_dtheta(5.0);
     options.set_snr(1.0);
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     try {
 	for ( int iter = 0; iter < max_refine_cycle ; ++iter ) {
             if (mypid == 0) printf("refinement cycle: %d\n", iter+1);
-	    sprintf(out_fname, "major%d", iter);
+	    sprintf(out_fname, "%smajor%d", voutfname, iter);
 
 	    ali3d_d(comm, volume, expimages, angleshift, nloc, options, 
                     max_iter_ali3d, out_fname);
