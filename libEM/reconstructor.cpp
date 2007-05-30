@@ -1638,6 +1638,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	float *nom = new float[inc+1];
 	float *denom  = new float[inc+1];
 	int *nn = new int[inc+1];
+	float wght;
 	for (int i = 0; i <= inc; i++) {
 		nom[i] = 0.0f;
 		denom[i] = 0.0f;
@@ -1666,16 +1667,9 @@ EMData* nnSSNR_Reconstructor::finish()
 				if ( Kn > 0.0f ) {
 					argx = std::sqrt(argy + float(ix*ix)*dx2);
 					int r = Util::round(float(inc)*argx);
-					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
-						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
-						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
-						nom[r] += nominator;
-						denom[r] += denominator;
-						nn[r] += 2;
-					}
+			
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
-
-					if ( m_weighting == ESTIMATE ) {
+					if ( m_weighting != 1 ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
@@ -1707,9 +1701,16 @@ EMData* nnSSNR_Reconstructor::finish()
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						assert( r >=0 && r < (int)pow_b.size() );
-						float wght = pow_b[r] / ( 1.0 - alpha * sum );
+						wght = pow_b[r] / ( 1.0 - alpha * sum );
 						tmp = tmp * wght;
 				        } // end of ( m_weighting == ESTIMATE )
+					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
+						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn)*wght;
+						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)*wght/(Kn*(Kn-1.0f));
+						nom[r]   += nominator;
+						denom[r] += denominator;
+						nn[r] += 2;
+					}
 
 					m_volume->cmplx(ix,iy,iz) *= tmp;
 					if (m_volume->is_fftodd()) {
@@ -1724,7 +1725,7 @@ EMData* nnSSNR_Reconstructor::finish()
 
 	for (int i = 0; i <= inc; i++)  { 
 	        (*SSNR)(i,0,0)  = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
-		(*SSNR)(i,1,0) = denom[i];	
+		(*SSNR)(i,1,0) = denom[i]/(M_PI*(i+1.)/(inc+1));	
 	}
 
 	m_volume->do_ift_inplace();
@@ -2673,7 +2674,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
 						tmp = tmp * wght;
 				        } // end of ( m_weighting == ESTIMATE )
-					if ( r >= 0 && r <= inc && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) 
+					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) 
 					{
 						nom[r]   += (*m_wptr2)(ix,iy,iz)*wght/Kn;
 
@@ -2693,8 +2694,8 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	}
 	for (int i = 0; i <= inc; i++)  
 	{ 
-		(*SSNR)(i,0,0) = nom[i]; 
-		(*SSNR)(i,1,0) = denom[i];		
+		(*SSNR)(i,0,0) = nom[i]/(M_PI*(i+1.)/(inc+1)); 
+		(*SSNR)(i,1,0) = denom[i]/(M_PI*(i+1.)/(inc+1));		
 	}
 	m_volume->do_ift_inplace();
 	EMData* win = m_volume->window_center(m_vnx);
