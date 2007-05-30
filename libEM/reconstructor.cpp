@@ -1633,16 +1633,18 @@ EMData* nnSSNR_Reconstructor::finish()
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
-	SSNR->set_size(inc+1,2,1);
+	SSNR->set_size(inc+1,4,1);
 
 	float *nom = new float[inc+1];
 	float *denom  = new float[inc+1];
 	int *nn = new int[inc+1];
+	int *ka = new int[inc+1];
 	float wght;
 	for (int i = 0; i <= inc; i++) {
 		nom[i] = 0.0f;
 		denom[i] = 0.0f;
 		nn[i] = 0;
+		ka[i] = 0;
 	}
 
 	m_volume->symplane1(m_wptr, m_wptr2);
@@ -1667,7 +1669,15 @@ EMData* nnSSNR_Reconstructor::finish()
 				if ( Kn > 0.0f ) {
 					argx = std::sqrt(argy + float(ix*ix)*dx2);
 					int r = Util::round(float(inc)*argx);
-			
+					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
+						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
+						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
+						nom[r] += nominator;
+						denom[r] += denominator;
+						nn[r] += 2;
+						ka[r] += int(Kn);
+					}
+
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
 					if ( m_weighting != 1 ) {
 						int cx = ix;
@@ -1710,6 +1720,7 @@ EMData* nnSSNR_Reconstructor::finish()
 						nom[r]   += nominator;
 						denom[r] += denominator;
 						nn[r] += 2;
+						ka[r] += Kn;
 					}
 
 					m_volume->cmplx(ix,iy,iz) *= tmp;
@@ -1725,48 +1736,12 @@ EMData* nnSSNR_Reconstructor::finish()
 
 	for (int i = 0; i <= inc; i++)  { 
 	        (*SSNR)(i,0,0)  = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
-		(*SSNR)(i,1,0) = denom[i]/(M_PI*(i+1.)/(inc+1));	
+		(*SSNR)(i,1,0) = denom[i];    // variance
+		(*SSNR)(i,2,0) = nn[i];
+		(*SSNR)(i,3,0) = ka[i];
 	}
 
-	m_volume->do_ift_inplace();
-	EMData* win = m_volume->window_center(m_vnx);
-
-	float *tw = win->get_data();
-	//  mask and subtract circumference average
-	int ix = win->get_xsize();
-	int iy = win->get_ysize();
-	int iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
-	int IP = ix/2+1;
-	float  TNR = 0.0f;
-	int m = 0;
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
-				if (LR<=L2) {
-					if(LR >= L2P && LR <= L2) {
-						TNR += tw(i,j,k);
-						m++;
-					}
-				}
-			}
-		}
-	}
-
-	TNR /=float(m);
-	for (int k = 1; k <= iz; k++) {
-		for (int j = 1; j <= iy; j++) {
-			for (int i = 1; i <= ix; i++) {
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
-				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
-			}
-		}
-	}
-
-        m_result = win;
-	return win;
+	return m_volume;
 
 	//vector<float> SSNR;
 	//SSNR.push_back(1.0);
