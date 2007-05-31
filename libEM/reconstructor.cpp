@@ -1485,7 +1485,7 @@ void nnSSNR_Reconstructor::setup()
 void nnSSNR_Reconstructor::setup( const string& symmetry, int size, int npad )
 {
    
-    m_weighting = NONE;
+    m_weighting = ESTIMATE;
     m_wghta = 0.2;
     m_wghtb = 0.004;
  
@@ -1514,13 +1514,19 @@ void nnSSNR_Reconstructor::setup( const string& symmetry, int size, int npad )
 void nnSSNR_Reconstructor::buildFFTVolume() {
 	
 	int offset = 2 - m_vnxp%2;
-
-	m_volume = new EMData();
-        m_delete_volume = true;
-        
+	
+        if( params.has_key("fftvol") )
+	{
+		m_volume = params["fftvol"]; /* volume should be defined in python when PMI is turned on*/
+		m_delete_volume = false;
+	}
+	else
+	{
+		m_volume = new EMData();
+		m_delete_volume = true;	
+	}
         m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
         m_volume->to_zero();
-
 	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
 			else   { m_volume->set_fftodd(1); }
 	
@@ -1533,9 +1539,15 @@ void nnSSNR_Reconstructor::buildFFTVolume() {
 }
 
 void nnSSNR_Reconstructor::buildNormVolume() {
-
-	m_wptr = new EMData();
-        m_delete_weight = true;
+	if( params.has_key("weight") )
+	{
+	 	m_wptr          = params["weight"]; 
+	 	m_delete_weight = false;
+	}
+	else
+	{	m_wptr = new EMData();
+        	m_delete_weight = true;
+	}
 
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr->to_zero();
@@ -1545,12 +1557,18 @@ void nnSSNR_Reconstructor::buildNormVolume() {
 
 void nnSSNR_Reconstructor::buildNorm2Volume() {
 
-	m_wptr2 = new EMData();
-	m_delete_weight2 = true;
-
+	if( params.has_key("weight2") )
+	{
+		m_wptr2          = params["weight2"]; 
+		m_delete_weight2 = false;
+	}
+	else
+	{
+		m_wptr2 = new EMData();
+		m_delete_weight2 = true;
+	}		
 	m_wptr2->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr2->to_zero();
-
 	m_wptr2->set_array_offsets(0,1,1);
 }
 
@@ -1639,7 +1657,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	float *denom  = new float[inc+1];
 	int *nn = new int[inc+1];
 	int *ka = new int[inc+1];
-	float wght;
+	float wght = 1.0f;
 	for (int i = 0; i <= inc; i++) {
 		nom[i] = 0.0f;
 		denom[i] = 0.0f;
@@ -1669,17 +1687,17 @@ EMData* nnSSNR_Reconstructor::finish()
 				if ( Kn > 0.0f ) {
 					argx = std::sqrt(argy + float(ix*ix)*dx2);
 					int r = Util::round(float(inc)*argx);
-					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
+					/***if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
 						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
 						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
 						nom[r] += nominator;
 						denom[r] += denominator;
 						nn[r] += 2;
 						ka[r] += int(Kn);
-					}
+					}***/
 
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
-					if ( m_weighting != 1 ) {
+					if ( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
@@ -2571,11 +2589,12 @@ EMData* nnSSNR_ctfReconstructor::finish()
     else  //Calculate SSNR 
     
  {   	
- 	float wght;
-	SSNR->set_size(inc+1,2,1);
+ 	float wght = 1.;
+	SSNR->set_size(inc+1,4,1);
 	float *nom    = new float[inc+1];
 	float *denom  = new float[inc+1];
-	int   *nn     = new int[inc+1];
+	int *ka = new int[inc+1];
+	int *nn = new int[inc+1];
 	for (int i = 0; i <= inc; i++) 
 	{
 		nom[i]   = 0.0f;
@@ -2655,6 +2674,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 
 						denom[r] += ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*wght/(Kn*(Kn-1.0f));
 						nn[r]    += 2;
+						ka[r]    += Kn;
 					} 
 					m_volume->cmplx(ix,iy,iz) *= tmp;
 					if (m_volume->is_fftodd()) 
@@ -2669,8 +2689,11 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	}
 	for (int i = 0; i <= inc; i++)  
 	{ 
-		(*SSNR)(i,0,0) = nom[i]/(M_PI*(i+1.)/(inc+1)); 
-		(*SSNR)(i,1,0) = denom[i]/(M_PI*(i+1.)/(inc+1));		
+		(*SSNR)(i,0,0) = nom[i]; 
+		(*SSNR)(i,1,0) = denom[i];
+		(*SSNR)(i,2,0) = nn[i];
+		(*SSNR)(i,3,0) = ka[i];
+				
 	}
 	m_volume->do_ift_inplace();
 	EMData* win = m_volume->window_center(m_vnx);
