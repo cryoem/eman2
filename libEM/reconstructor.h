@@ -410,6 +410,7 @@ namespace EMAN
 			d.put("symmetry", EMObject::STRING);
 			d.put("fftvol", EMObject::EMDATA);
 			d.put("weight", EMObject::EMDATA);
+			d.put("weight2", EMObject::EMDATA);
 			d.put("SSNR", EMObject::EMDATA);
 			d.put("w", EMObject::FLOAT);
 			return d;
