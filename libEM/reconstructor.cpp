@@ -2589,7 +2589,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
     else  //Calculate SSNR 
     
  {   	
- 	float wght = 1.;
+ 	float wght = 1.f;
 	SSNR->set_size(inc+1,4,1);
 	float *nom    = new float[inc+1];
 	float *denom  = new float[inc+1];
@@ -2600,6 +2600,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		nom[i]   = 0.0f;
 		denom[i] = 0.0f;
 		nn[i]    = 0;
+		ka[i]    = 0;
 	}
 	m_volume->symplane2(m_wptr, m_wptr2, m_wptr3);
 	if ( m_weighting == ESTIMATE ) 
