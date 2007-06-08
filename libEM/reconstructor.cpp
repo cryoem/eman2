@@ -1738,7 +1738,7 @@ EMData* nnSSNR_Reconstructor::finish()
 						nom[r]   += nominator;
 						denom[r] += denominator;
 						nn[r] += 2;
-						ka[r] += Kn;
+						ka[r] += int(Kn);
 					}
 
 					m_volume->cmplx(ix,iy,iz) *= tmp;
@@ -2675,7 +2675,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 
 						denom[r] += ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*wght/(Kn*(Kn-1.0f));
 						nn[r]    += 2;
-						ka[r]    += Kn;
+						ka[r]    += int(Kn);
 					} 
 					m_volume->cmplx(ix,iy,iz) *= tmp;
 					if (m_volume->is_fftodd()) 
@@ -2696,52 +2696,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		(*SSNR)(i,3,0) = ka[i];
 				
 	}
-	m_volume->do_ift_inplace();
-	EMData* win = m_volume->window_center(m_vnx);
-	float *tw = win->get_data();
-	//  mask and subtract circumference average
-	int ix = win->get_xsize();
-	int iy = win->get_ysize();
-	int iz = win->get_zsize();
-	int L2 = (ix/2)*(ix/2);
-	int L2P = (ix/2-1)*(ix/2-1);
-	int IP = ix/2+1;
-	float  TNR = 0.0f;
-	int m = 0;
-	for (int k = 1; k <= iz; k++) 
-	{
-		for (int j = 1; j <= iy; j++) 
-		{
-			for (int i = 1; i <= ix; i++) 
-			{
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
-				if (LR<=L2) 
-				{
-					if(LR >= L2P && LR <= L2) 
-					{
-						TNR += tw(i,j,k);
-						m++;
-					}
-				}
-			}
-		}
-	}
-
-	TNR /=float(m);
-	for (int k = 1; k <= iz; k++) 
-	{
-		for (int j = 1; j <= iy; j++) 
-		{
-			for (int i = 1; i <= ix; i++) 
-			{
-				int LR = (k-IP)*(k-IP)+(j-IP)*(j-IP)+(i-IP)*(i-IP);
-				if (LR<=L2) tw(i,j,k) -= TNR; else tw(i,j,k) = 0.0f;
-			}
-		}
-	}
-
-        m_result = win;
-	return win;
+	return m_volume;
    }
 
 }
