@@ -243,7 +243,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	old_angles = 0;
 	// entering proj_ali_incore
 	// generate reference projections and push pointers to them on the back of ref_proj_rings
-	if (mypid == 0) std::cout << "Generating reference projections..." << std::endl;
+	if (mypid == 0) std::cout << "Generating " << num_ref << " reference projections..." << std::endl;
 	for ( int j = 0 ; j < num_ref ; ++j ) { 
 	    for ( int k = 0 ; k < 3 ; ++k) anglelist[k] = ref_angles[3 * j + k];
 	    volparams["anglelist"] = anglelist;
