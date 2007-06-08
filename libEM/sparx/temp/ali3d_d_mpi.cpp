@@ -131,9 +131,20 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
     // different dtheta
     // xrng, and xshift settings.
     std::string mode("F");
-    std::vector<float> ref_angles = Util::even_angles(dtheta);
-    int num_ref = ref_angles.size() / 3;
-    int numref; // used after call to multiref_polar_ali_2d
+
+    // The below ensures that dtheta is sufficiently small to make the inverse problem over-determined
+    int num_ref = 0;
+    std::vector<float> ref_angles;
+    int max_dimension = (nx > ny ? nx : ny);
+    max_dimension = (max_dimension > nz ? max_dimension : nz);
+    while (true) {
+	ref_angles = Util::even_angles(dtheta);
+	num_ref = ref_angles.size() / 3;
+	if (num_ref >= max_dimension) break;
+	dtheta -= 1.0;
+	if (mypid == 0) printf("Problem is underdetermined: decreasing dtheta to %f\n",dtheta);
+    }
+    int numref; // used after call to multiref_polar_ali_2d, stores the index of the image with max correlation
 
     Util::mul_img(volume, mask3D);
 
