@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     float *angleshift = new float[5*nloc];
     
-    AlignOptions options;
+    AlignOptions options(volsize);
 
     std::ifstream option_stream;
     std::string current_option;
