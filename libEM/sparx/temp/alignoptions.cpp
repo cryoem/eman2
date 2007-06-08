@@ -4,9 +4,31 @@ AlignOptions::AlignOptions()
 {
     mask3D     = NULL;
     first_ring = 1;
-    last_ring  = 26;
+    last_ring  = 0;
     rstep      = 1;
-    ri         = 26;
+    ri         = 0;
+    xrng       = 1.0;
+    yrng       = 1.0;
+    step       = 1.0;
+    dtheta     = 15.0;
+    snr        = 1.0;
+    symmetry   = "c1";
+    CTF        = false;
+    have_angles = false;
+    ref_angle_type = "P";
+    use_sirt = true;
+}
+
+AlignOptions::AlignOptions(Vec3i volsize)
+{
+    int min_dim = (volsize[0] < volsize[1] ? volsize[0] : volsize[1]);
+    min_dim = (min_dim < volsize[2] ? min_dim : volsize[2]);
+    // min_dim = min(nx,ny,nz)
+    mask3D     = NULL;
+    first_ring = 1;
+    last_ring  = min_dim / 2 - 2;
+    rstep      = 1;
+    ri         = min_dim / 2 - 2;
     xrng       = 1.0;
     yrng       = 1.0;
     step       = 1.0;
