@@ -50,7 +50,7 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     // vector of symmetrized angles
     std::vector<float> symangles(3,0.0); 
 	
-    float old_rnorm = 1.0;
+    float old_rnorm = 1.00001; // kluge, make sure if its 1.0 + epsilon it still works;
 	
     int nrays, nnz;
 
@@ -185,7 +185,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	if ( mypid == 0 ) printf("iter = %3d, rnorm / bnorm = %6.3f, rnorm = %6.3f\n", iter, rnorm / bnorm, rnorm);
 	// if on the second pass, rnorm is greater than bnorm, lam is probably set too high
 	// reduce it by a factor of 2 and start over
-	if ( iter == 2 && rnorm / bnorm > old_rnorm ) {
+	//	if ( iter == 2 && rnorm / bnorm > old_rnorm ) {
+	if ( rnorm / bnorm > old_rnorm ) {
 	    // but don't do it more than 20 times
 	    if ( restarts > 20 ) {
 		if ( mypid == 0 ) printf("Failure to converge, even with lam = %f\n", lam);
@@ -195,7 +196,7 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 		iter = 1;
 		lam /= 2.0;
 		// reset these 
-		old_rnorm = 1.0;
+		old_rnorm = 1.0001; // kluge, make sure if its 1.0 + epsilon it still works
 		for ( int j = 0 ; j < nnz ; ++j ) {
 		    xvol_sph[j]  = 0.0;
 		    pxvol_loc[j] = 0.0; 
@@ -206,6 +207,7 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	}
 	// if changes are sufficiently small, or if no further progress is made, terminate
 	if ( rnorm / bnorm < tol || rnorm / bnorm > old_rnorm ) {
+	    if ( mypid == 0 ) printf("Terminating with rnorm/bnorm = %f, tol = %f, old_rnorm = %f\n",rnorm/bnorm, tol, old_rnorm);
 	    break;
 	}
 	// update the termination threshold
