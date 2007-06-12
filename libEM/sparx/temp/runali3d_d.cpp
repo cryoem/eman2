@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(comm,&mypid);
     printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
     char  volfname[100], optionsfname[100], stackfname[100],voutfname[100];
+    voutfname[0] = 0; // default to empty string
     EMData **expimages;
 
     // parse the command line and set filenames	
@@ -32,8 +33,9 @@ int main(int argc, char *argv[])
       if (mypid == 0) {
           printf("Not enough arguments to the command...\n");
           printf("Usage: runali3d_d -data=<imagestack> ");
-          printf("-model=<initial 3D volume>"); 
-          printf("-out=<output volume filename>\n"); 
+          printf("-model=<initial 3D volume> ");
+          printf("-out=<output filename base string> "); 
+	  printf("-options=<options filename>\n");
       }
       ierr = MPI_Finalize();
       exit(1);
