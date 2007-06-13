@@ -114,51 +114,63 @@ int main(int argc, char *argv[])
 		else if ( current_option == "inner_ring" ) {
 		    option_stream >> int_option;
 		    options.set_first_ring(int_option);
+		    std::cout << "first_ring = " << int_option << std::endl;
 		} 
 		else if ( current_option == "outer_ring" ) {
 		    option_stream >> int_option;
 		    options.set_last_ring(int_option);
+		    std::cout << "last_ring = " << int_option << std::endl;
 		} 
 		else if ( current_option == "rstep" ) {
 		    option_stream >> int_option;
 		    options.set_rstep(int_option);
+		    std::cout << "rstep = " << int_option << std::endl;
 		} 
 		else if ( current_option == "radius" ) { // perhaps this is the same as outer_ring?
 		    option_stream >> int_option;	
 		    options.set_ri(int_option);
+		    std::cout << "radius = " << int_option << std::endl;
 		} 
 		else if ( current_option == "x_range" ) {
 		    option_stream >> float_option;
 		    options.set_xrng(float_option);
+		    std::cout << "x_range = " << float_option << std::endl;
 		} 
 		else if ( current_option == "y_range" ) {
 		    option_stream >> float_option;
 		    options.set_yrng(float_option);
+		    std::cout << "y_range = " << float_option << std::endl;
 		}
 		else if ( current_option == "translation_step" ) {
 		    option_stream >> float_option;
 		    options.set_step(float_option);
+		    std::cout << "step = " << float_option << std::endl;
 		}
 		else if ( current_option == "theta_step" ) {
 		    option_stream >> float_option;
 		    options.set_dtheta(float_option);
+		    std::cout << "theta_step = " << float_option << std::endl;
 		}
 		else if ( current_option == "maxit" ) {
 		    option_stream >> int_option;
 		    maxiter = int_option;
+		    std::cout << "maxit = " << int_option << std::endl;
 		}
 		else if ( current_option == "CTF" ) {
 		    option_stream >> current_option;
 		    if ( current_option == "true" ) {
 			options.set_CTF(true);
+			std::cout << "CTF = true" << std::endl;
 		    } 
 		    else { // anything else sets it to false
 			options.set_CTF(false);
+			std::cout << "CTF = false" << std::endl;
 		    }
 		}
 		else if ( current_option == "snr" ) {
 		    option_stream >> float_option;
 		    options.set_snr(float_option);
+		    std::cout << "snr = " << float_option << std::endl;
 		}
 		else if ( current_option == "ref_a" ) {
 		    option_stream >> current_option;
@@ -175,6 +187,7 @@ int main(int argc, char *argv[])
 		else if ( current_option == "symmetry" ) {
 		    option_stream >> current_option;
 		    options.set_symmetry(current_option);
+		    std::cout << "symmetry = " << current_option << std::endl;
 		}
 		else { // catch-all
 		    std::cerr << "Unsupported option " << current_option << "..." << std::endl;
