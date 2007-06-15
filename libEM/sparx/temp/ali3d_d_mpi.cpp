@@ -15,7 +15,7 @@
 
 using namespace EMAN;
 
-int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, 
+int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleandata,
              float *angleshift, int nloc, AlignOptions& options, 
              int max_iter, char* fname_base)
 {
@@ -111,6 +111,17 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		    CTF_params["B_factor"]     = projdata[i]->get_attr("B_factor");
 		    CTF_params["amp_contrast"] = projdata[i]->get_attr("amp_contrast");
 		    projdata[i]->process_inplace("filter.CTF_",CTF_params);
+		}
+		// I think the CTF filter should be applied before the images have the background subtracted,
+		// but I'm not really sure.
+		CTF_applied = cleandata[i]->get_attr("ctf_applied");
+		if ( CTF_applied == 0 ) {
+		    CTF_params["defocus"]      = cleandata[i]->get_attr("defocus");
+		    CTF_params["Cs"]           = cleandata[i]->get_attr("Cs");
+		    CTF_params["Pixel_size"]   = cleandata[i]->get_attr("Pixel_size");
+		    CTF_params["B_factor"]     = cleandata[i]->get_attr("B_factor");
+		    CTF_params["amp_contrast"] = cleandata[i]->get_attr("amp_contrast");
+		    cleandata[i]->process_inplace("filter.CTF_",CTF_params);
 		}
 	    }
 	    // set a few more things for the reconstructor to deal with
@@ -361,8 +372,9 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		angleshift[5*j + 3] = composition_dict["s2x"];
 		angleshift[5*j + 4] = composition_dict["s2y"];
 	    }
-	    // set the header of projdata[j] to the best angle and shift values
+	    // set the header of projdata[j] and cleandata[j] to the best angle and shift values
 	    projdata[j]->set_attr_dict(composition_dict);
+	    cleandata[j]->set_attr_dict(composition_dict);
 	}
 
 	MPI_Reduce(&new_angles, &new_total, 1, MPI_INT, MPI_SUM, 0, comm);
@@ -401,7 +413,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	    vol1 = new EMData();
 	    // lam should be based on number of images, right?
 	    for ( int j = 0 ; j < nloc ; j += 2 ) {
-		sirt_images[j/2] = projdata[j];
+		sirt_images[j/2] = cleandata[j];
 		even_odd_angleshift[5*(j/2) + 0] = angleshift[5*j + 0];
 		even_odd_angleshift[5*(j/2) + 1] = angleshift[5*j + 1];
 		even_odd_angleshift[5*(j/2) + 2] = angleshift[5*j + 2];
@@ -412,7 +424,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 // The odds
 	    vol2 = new EMData();
 	    for ( int j = 1 ; j < nloc ; j += 2 ) {
-		sirt_images[j/2] = projdata[j];
+		sirt_images[j/2] = cleandata[j];
 		even_odd_angleshift[5*(j/2) + 0] = angleshift[5*j + 0];
 		even_odd_angleshift[5*(j/2) + 1] = angleshift[5*j + 1];
 		even_odd_angleshift[5*(j/2) + 2] = angleshift[5*j + 2];
@@ -432,7 +444,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		phi   = projdata[j]->get_attr("phi");
 		theta = projdata[j]->get_attr("theta");
 		psi   = projdata[j]->get_attr("psi");
-		r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+		r->insert_slice(cleandata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
 	    }
 	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
 	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
@@ -460,7 +472,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		phi   = projdata[j]->get_attr("phi");
 		theta = projdata[j]->get_attr("theta");
 		psi   = projdata[j]->get_attr("psi");
-		r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+		r->insert_slice(cleandata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
 	    }
 	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
 	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
@@ -506,7 +518,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	if (mypid == 0) std::cout << "Building 3-D reconstruction ... " << std::endl;
 	if ( use_sirt ) {
 	    volume = new EMData();
-	    recons3d_sirt_mpi(comm, projdata, angleshift, volume, nloc, ri, 1.0e-4, 100, symmetry, 1.0e-3);
+	    recons3d_sirt_mpi(comm, cleandata, angleshift, volume, nloc, ri, 1.0e-4, 100, symmetry, 1.0e-3);
 
 	} else {
 	    fftvol = new EMData();
@@ -519,7 +531,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 		phi   = projdata[j]->get_attr("phi");
 		theta = projdata[j]->get_attr("theta");
 		psi   = projdata[j]->get_attr("psi");
-		r->insert_slice(projdata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+		r->insert_slice(cleandata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
 	    }
 	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
 	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();

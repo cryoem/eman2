@@ -93,7 +93,13 @@ int main(int argc, char *argv[])
     origin[1] = volume->get_ysize()/2 + 1;
     origin[2] = volume->get_zsize()/2 + 1;
     int ri = volume->get_xsize()/2 - 2;
-    ierr = CleanStack(comm, expimages, nloc, ri, volsize, origin);
+
+    // make a copy of the images for removing the background; this stack will be used for reconstruction
+    EMData** cleanimages = new EMData*[nloc];
+    for ( int i = 0 ; i < nloc ; ++i) {
+	cleanimages[i] = expimages[i]->copy();
+    }
+    ierr = CleanStack(comm, cleanimages, nloc, ri, volsize, origin);
 
 
     float * angleshift = new float[5*nloc];
@@ -284,7 +290,7 @@ int main(int argc, char *argv[])
             if (mypid == 0) printf("refinement cycle: %d\n", iter+1);
 	    sprintf(out_fname, "%smajor%d", voutfname, iter);
 
-	    ali3d_d(comm, volume, expimages, angleshift, nloc, options, 
+	    ali3d_d(comm, volume, expimages, cleanimages, angleshift, nloc, options, 
                     max_iter_ali3d, out_fname);
 
 	    unified(comm, volume, expimages, angleshift, nloc, 
@@ -301,6 +307,10 @@ int main(int argc, char *argv[])
 	EMDeletePtr(expimages[i]);
     }
     EMDeleteArray(expimages);
+    for ( int i = 0 ; i < nloc; ++i ) {
+	EMDeletePtr(cleanimages[i]);
+    }
+    EMDeleteArray(cleanimages);
     EMDeleteArray(angleshift);
     if (mask3D != NULL) {
 	EMDeletePtr(mask3D);

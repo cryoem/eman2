@@ -40,7 +40,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     origin[0] = nx/2+1;
     origin[1] = nx/2+1;
     origin[2] = nx/2+1;
-    ierr = CleanStack(comm, images, nangloc, radius, volsize, origin);
+//    this is not currently needed, because the stack that gets passed to sirt will have its background subtracted already
+//    ierr = CleanStack(comm, images, nangloc, radius, volsize, origin);
 
     xvol->set_size(nx, nx, nx);
     xvol->to_zero();

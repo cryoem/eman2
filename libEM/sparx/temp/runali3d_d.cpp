@@ -10,6 +10,7 @@
 
 int ReadVandBcast(MPI_Comm comm, EMData *volume, char *volfname);
 int ReadStackandDist(MPI_Comm comm, EMData ***expimages, char *stackfname);
+int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
 int setpart(MPI_Comm comm, int nima, int *psize, int *nbase);
 
 int main(int argc, char *argv[])
@@ -87,6 +88,13 @@ int main(int argc, char *argv[])
     origin[1] = volume->get_ysize()/2 + 1;
     origin[2] = volume->get_zsize()/2 + 1;
     int    ri = volume->get_xsize()/2 - 2;
+
+    // make a copy of the images for removing the background; this stack will be used for reconstruction
+    EMData** cleanimages = new EMData*[nloc];
+    for ( int i = 0 ; i < nloc ; ++i) {
+	cleanimages[i] = expimages[i]->copy();
+    }
+    ierr = CleanStack(comm, cleanimages, nloc, ri, volsize, origin);
 
     float *angleshift = new float[5*nloc];
     
@@ -261,7 +269,7 @@ int main(int argc, char *argv[])
     options.set_have_angles(false);
 
     try {
-       ali3d_d(comm, volume, expimages, angleshift, nloc, options, 
+       ali3d_d(comm, volume, expimages, cleanimages, angleshift, nloc, options, 
                maxiter, voutfname);
     }
     catch (std::exception const& e) {
@@ -273,6 +281,11 @@ int main(int argc, char *argv[])
 	EMDeletePtr(expimages[i]);
     }
     EMDeleteArray(expimages);
+    EMDeleteArray(expimages);
+    for ( int i = 0 ; i < nloc; ++i ) {
+	EMDeletePtr(cleanimages[i]);
+    }
+    EMDeleteArray(cleanimages);
     EMDeleteArray(angleshift);
     if ( mask3D != NULL ) {
 	EMDeletePtr(mask3D);
