@@ -17,6 +17,9 @@ AlignOptions::AlignOptions()
     have_angles = false;
     ref_angle_type = "P";
     use_sirt = true;
+    sirt_tol = 1.0e-3;
+    sirt_lam = 1.0e-4;
+    sirt_maxit = 100;
 }
 
 AlignOptions::AlignOptions(Vec3i volsize)
@@ -39,6 +42,9 @@ AlignOptions::AlignOptions(Vec3i volsize)
     have_angles = false;
     ref_angle_type = "P";
     use_sirt = true;
+    sirt_tol = 1.0e-3;
+    sirt_lam = 1.0e-4;
+    sirt_maxit = 100;
 }
 
 AlignOptions::AlignOptions(const AlignOptions& old_options)
@@ -58,6 +64,9 @@ AlignOptions::AlignOptions(const AlignOptions& old_options)
     have_angles = old_options.have_angles;
     ref_angle_type = old_options.ref_angle_type;
     use_sirt = old_options.use_sirt;
+    sirt_tol = old_options.sirt_tol;
+    sirt_lam = old_options.sirt_lam;
+    sirt_maxit = old_options.sirt_maxit;
 }
 
 AlignOptions::~AlignOptions()
@@ -109,6 +118,15 @@ void AlignOptions::set_ref_angle_type(std::string in_ref_angle_type){
 void AlignOptions::set_use_sirt(bool in_use_sirt){
     use_sirt = in_use_sirt;
 }
+void AlignOptions::set_sirt_tol(float in_sirt_tol){
+    sirt_tol = in_sirt_tol;
+}
+void AlignOptions::set_sirt_lam(float in_sirt_lam){
+    sirt_lam = in_sirt_lam;
+}
+void AlignOptions::set_sirt_maxit(int in_sirt_maxit){
+    sirt_maxit = in_sirt_maxit;
+}
 
 EMData * AlignOptions::get_mask3D(){
     return mask3D;
@@ -154,4 +172,13 @@ std::string AlignOptions::get_ref_angle_type(){
 }
 bool AlignOptions::get_use_sirt(){
     return use_sirt;
+}
+float AlignOptions::get_sirt_tol(){
+    return sirt_tol;
+}
+float AlignOptions::get_sirt_lam(){
+    return sirt_lam;
+}
+int AlignOptions::get_sirt_maxit(){
+    return sirt_maxit;
 }

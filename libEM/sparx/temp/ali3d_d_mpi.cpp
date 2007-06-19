@@ -83,6 +83,8 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
     }	
     
     EMData ** sirt_images;
+    float sirt_tol, sirt_lam;
+    int sirt_maxit;
     Dict recons_params;
     std::string recons_name;
     float * even_odd_angleshift = new float[5*nloc];
@@ -90,6 +92,9 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 
     if ( use_sirt ) {
 	sirt_images = new EMData*[nloc];
+	sirt_tol = options.get_sirt_tol();
+	sirt_lam = options.get_sirt_lam();
+	sirt_maxit = options.get_sirt_maxit();
     } else {
 	recons_name = "nn4";
 	recons_params["symmetry"] = symmetry;
@@ -420,7 +425,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		even_odd_angleshift[5*(j/2) + 3] = angleshift[5*j + 3];
 		even_odd_angleshift[5*(j/2) + 4] = angleshift[5*j + 4];
 	    }
-	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol1, (nloc+1)/2, ri, 1.0e-4, 100, symmetry, 1.0e-3);
+	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol1, (nloc+1)/2, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
 // The odds
 	    vol2 = new EMData();
 	    for ( int j = 1 ; j < nloc ; j += 2 ) {
@@ -431,7 +436,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		even_odd_angleshift[5*(j/2) + 3] = angleshift[5*j + 3];
 		even_odd_angleshift[5*(j/2) + 4] = angleshift[5*j + 4];
 	    }
-	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol2, nloc/2, ri, 1.0e-4, 100, symmetry, 1.0e-3);
+	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol2, nloc/2, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
 	} else {
 // The evens
 	    fftvol = new EMData();
@@ -518,7 +523,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 	if (mypid == 0) std::cout << "Building 3-D reconstruction ... " << std::endl;
 	if ( use_sirt ) {
 	    volume = new EMData();
-	    recons3d_sirt_mpi(comm, cleandata, angleshift, volume, nloc, ri, 1.0e-4, 100, symmetry, 1.0e-3);
+	    recons3d_sirt_mpi(comm, cleandata, angleshift, volume, nloc, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
 
 	} else {
 	    fftvol = new EMData();

@@ -29,6 +29,9 @@ public:
     void set_have_angles(bool have_angles);
     void set_ref_angle_type(std::string ref_angle_type);
     void set_use_sirt(bool use_sirt);
+    void set_sirt_tol(float sirt_tol);
+    void set_sirt_lam(float sirt_lam);
+    void set_sirt_maxit(int sirt_maxit);
 
     EMData * get_mask3D();
     int   get_first_ring();
@@ -45,6 +48,9 @@ public:
     bool  get_have_angles();
     std::string get_ref_angle_type();
     bool  get_use_sirt();
+    float get_sirt_tol();
+    float get_sirt_lam();
+    int   get_sirt_maxit();
 
 private:
 
@@ -63,5 +69,8 @@ private:
     bool have_angles;
     std::string ref_angle_type;
     bool use_sirt;
+    float sirt_tol;
+    float sirt_lam;
+    int sirt_maxit;
 };
 #endif // ALIGNOPTIONS_H
