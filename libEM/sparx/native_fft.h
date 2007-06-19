@@ -83,16 +83,16 @@ namespace EMAN
 		static int fmrs_3rb(float *b, float *work, int lda, int nsam, int nrow, int nslice);
 		
 		//  2D FFT OUT OF PLACE
-		static int Nativefft::ftp_2rf(float *reald, float *complexd, int lda, int nsam, int nrow);
+		static int ftp_2rf(float *reald, float *complexd, int lda, int nsam, int nrow);
 		
 		//  2D IFT This one is part of out of place, but overwrites the input by the real image (not resized!)....
-		static int Nativefft::ftp_2rb(float *complexd, int lda, int nsam, int nrow);
+		static int ftp_2rb(float *complexd, int lda, int nsam, int nrow);
 
 		//  3D FFT OUT OF PLACE
-		static int Nativefft::ftp_3rf(float *reald, float *complexd, int lda, int nsam, int nrow, int nslice);
+		static int ftp_3rf(float *reald, float *complexd, int lda, int nsam, int nrow, int nslice);
 
 		//  3D IFT This one is part of out of place, but overwrites the input by the real image (not resized!)....
-		static int Nativefft::ftp_3rb(float *complexd, int lda, int nsam, int nrow, int nslice);
+		static int ftp_3rb(float *complexd, int lda, int nsam, int nrow, int nslice);
 
 		
 	private:
