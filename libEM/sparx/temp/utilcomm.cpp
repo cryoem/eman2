@@ -3,12 +3,9 @@
 #include "emdata.h"
 
 #include "ali3d_unified_mpi.h"
+#include "utilcomm.h"
 
 using namespace EMAN;
-
-int ReadVandBcast(MPI_Comm comm, EMData *volume, char *volfname);
-int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname);
-int setpart(MPI_Comm comm, int nima, int *psize, int *nbase);
 
 int ReadVandBcast(MPI_Comm comm, EMData *volume, char *volfname)
 {

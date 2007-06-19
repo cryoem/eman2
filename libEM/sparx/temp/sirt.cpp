@@ -4,12 +4,12 @@
 
 #include "ali3d_unified_mpi.h"
 #include "sirt.h"
+#include "utilcomm.h"
 
 #define PI 3.14159265358979
 using namespace EMAN;
 
-
-int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
+//int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
 
 int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMData *& xvol, int nangloc, int radius, float lam, int maxit, std::string symmetry, float tol)
 {
