@@ -20,8 +20,8 @@ all: runhybrid rununified runali3d_d
 runhybrid: runhybrid.o $(OBJ)
 	$(CC) runhybrid.o $(OBJ) $(LIB) -o runhybrid
 
-rununified: rununified.o ali3d_unified_mpi.o utilcomm.o
-	$(CC) rununified.o ali3d_unified_mpi.o utilcomm.o $(LIB) -o rununified
+rununified: rununified.o $(OBJ) 
+	$(CC) rununified.o $(OBJ) $(LIB) -o rununified
 
 runali3d_d: runali3d_d.o $(OBJ)
 	$(CC) runali3d_d.o $(OBJ) $(LIB) -o runali3d_d
