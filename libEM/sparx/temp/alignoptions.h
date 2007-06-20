@@ -10,7 +10,7 @@ using namespace EMAN;
 class AlignOptions {
 public:
     AlignOptions();
-    AlignOptions(Vec3i volsize);
+    AlignOptions(Vec3i& volsize);
     AlignOptions(const AlignOptions& old_options);
     virtual ~AlignOptions();
 

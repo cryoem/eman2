@@ -23,7 +23,7 @@ AlignOptions::AlignOptions()
     maxit      = 1;
 }
 
-AlignOptions::AlignOptions(Vec3i volsize)
+AlignOptions::AlignOptions(Vec3i& volsize)
 {
     int min_dim = (volsize[0] < volsize[1] ? volsize[0] : volsize[1]);
     min_dim = (min_dim < volsize[2] ? min_dim : volsize[2]);
