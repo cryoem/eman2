@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
     char  volfname[100], optionsfname[100], stackfname[100],voutfname[100];
     voutfname[0] = 0; // default to empty string
+    optionsfname[0] = 0;
     EMData **expimages;
 
     // parse the command line and set filenames	
