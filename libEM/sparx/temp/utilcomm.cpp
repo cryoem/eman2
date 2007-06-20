@@ -62,6 +62,7 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
     float s2x, s2y;
 
     if (mypid == 0) {
+	printf("Master node reading and distributing %d images...\n", nima);
 	for ( int ip = 0 ; ip < ncpus ; ++ip ) {
 	    for ( int i = 0 ; i < psize[ip] ; ++i ) {
 		img_index = nbase[ip] + i;
@@ -112,7 +113,7 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname)
 	    (*images2D)[i]->set_attr("s2x",s2x);
 	    (*images2D)[i]->set_attr("s2y",s2y);
 	}
-	printf("received data for processor %d\n", mypid);
+	printf("received %d images for processor %d\n", nloc, mypid);
     }
     if (mypid == 0) printf("finished reading and distributing data\n");
     
