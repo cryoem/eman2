@@ -32,6 +32,7 @@ public:
     void set_sirt_tol(float sirt_tol);
     void set_sirt_lam(float sirt_lam);
     void set_sirt_maxit(int sirt_maxit);
+    void set_maxit(int maxit);
 
     EMData * get_mask3D();
     int   get_first_ring();
@@ -51,7 +52,7 @@ public:
     float get_sirt_tol();
     float get_sirt_lam();
     int   get_sirt_maxit();
-
+    int   get_maxit();
 private:
 
     EMData * mask3D;
@@ -72,5 +73,6 @@ private:
     float sirt_tol;
     float sirt_lam;
     int sirt_maxit;
+    int maxit;
 };
 #endif // ALIGNOPTIONS_H

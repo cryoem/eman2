@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
     options.set_snr(1.0);
     options.set_symmetry("c1");
     options.set_CTF(false);
+    options.set_maxit(max_iter_ali3d);
     options.set_have_angles(false);
 
     try {
@@ -286,8 +287,7 @@ int main(int argc, char *argv[])
             if (mypid == 0) printf("refinement cycle: %d\n", iter+1);
 	    sprintf(out_fname, "%smajor%d", voutfname, iter);
 
-	    ali3d_d(comm, volume, expimages, cleanimages, angleshift, nloc, options, 
-                    max_iter_ali3d, out_fname);
+	    ali3d_d(comm, volume, expimages, cleanimages, angleshift, nloc, options, out_fname);
 
 	    unified(comm, volume, expimages, angleshift, nloc, 
                     max_iter_unified, out_fname);

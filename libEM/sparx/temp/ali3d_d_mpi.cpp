@@ -16,8 +16,7 @@
 using namespace EMAN;
 
 int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleandata,
-             float *angleshift, int nloc, AlignOptions& options, 
-             int max_iter, char* fname_base)
+             float *angleshift, int nloc, AlignOptions& options, char* fname_base)
 {
     int mypid, ncpus;
     int ierr;
@@ -56,6 +55,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
     bool have_angles = options.get_have_angles();
     bool use_sirt  = options.get_use_sirt();
     std::string symmetry = options.get_symmetry();
+    int max_iter       = options.get_maxit();
 
     Dict maskdict;
     maskdict["radius"] = ri;

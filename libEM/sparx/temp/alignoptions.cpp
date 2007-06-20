@@ -20,6 +20,7 @@ AlignOptions::AlignOptions()
     sirt_tol = 1.0e-3;
     sirt_lam = 1.0e-4;
     sirt_maxit = 100;
+    maxit      = 1;
 }
 
 AlignOptions::AlignOptions(Vec3i volsize)
@@ -45,6 +46,7 @@ AlignOptions::AlignOptions(Vec3i volsize)
     sirt_tol = 1.0e-3;
     sirt_lam = 1.0e-4;
     sirt_maxit = 100;
+    maxit      = 1;
 }
 
 AlignOptions::AlignOptions(const AlignOptions& old_options)
@@ -67,6 +69,7 @@ AlignOptions::AlignOptions(const AlignOptions& old_options)
     sirt_tol = old_options.sirt_tol;
     sirt_lam = old_options.sirt_lam;
     sirt_maxit = old_options.sirt_maxit;
+    maxit      = old_options.maxit;
 }
 
 AlignOptions::~AlignOptions()
@@ -127,6 +130,9 @@ void AlignOptions::set_sirt_lam(float in_sirt_lam){
 void AlignOptions::set_sirt_maxit(int in_sirt_maxit){
     sirt_maxit = in_sirt_maxit;
 }
+void AlignOptions::set_maxit(int in_maxit){
+    maxit = in_maxit;
+}
 
 EMData * AlignOptions::get_mask3D(){
     return mask3D;
@@ -181,4 +187,7 @@ float AlignOptions::get_sirt_lam(){
 }
 int AlignOptions::get_sirt_maxit(){
     return sirt_maxit;
+}
+int AlignOptions::get_maxit(){
+    return maxit;
 }
