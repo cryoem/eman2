@@ -357,6 +357,13 @@ namespace EMAN
 							 int *rightPerm);
 
 		
+		/** Get an integer random number between low and high.
+		 * @param[in] low The lower bound of the random number.
+		 * @param[in] high The upper bound of the random number.
+		 * @return The random number between low and high.
+		 */
+		static int get_irand(int low, int high);
+		
 		/** Get a float random number between low and high.
 		 * @param[in] low The lower bound of the random number.
 		 * @param[in] high The upper bound of the random number.

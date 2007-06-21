@@ -481,4 +481,6 @@ public:
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny); 
 
+	static EMData* move_points(EMData* img,  float qprob, int ro, int ri);
+
 #endif	//util__sparx_h__

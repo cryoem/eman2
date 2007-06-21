@@ -625,6 +625,13 @@ void Util::sort_mat(float *left, float *right, int *leftPerm, int *rightPerm)
 	}
 }
 
+int Util::get_irand(int lo, int hi)
+{
+
+	int r = (int)((0.999999f + hi - lo) * rand() / (RAND_MAX + 1.0f) + lo);
+	return r;
+}
+
 float Util::get_frand(int lo, int hi)
 {
 	return get_frand((float)lo, (float)hi);

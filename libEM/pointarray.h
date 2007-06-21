@@ -133,7 +133,7 @@ namespace EMAN
 		 * This is effectively a 3D reconstruction algorithm.
 		 *
 		 * @author Steve Ludtke  11/27/2004
-		 * @param proj A vector of EMData objects conatining projections with orientations
+		 * @param proj A vector of EMData objects containing projections with orientations
 		 * @param pixres Size of each Gaussian in pixels
 		 */
 		void opt_from_proj(const vector<EMData*> & proj,float pixres);
