@@ -235,7 +235,10 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     EMDeleteArray(cord);
     EMDeleteArray(xvol_sph);
     EMDeleteArray(projected_data);
-	
+    
+    EMDeleteArray(psize);
+    EMDeleteArray(nbase);
+
     return 0; // recons3d_sirt_mpi
 }
 
