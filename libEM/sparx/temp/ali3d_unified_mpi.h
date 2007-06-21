@@ -1,7 +1,12 @@
+#ifndef ALI3D_UNIFIED_MPI_H
+#define ALI3D_UNIFIED_MPI_H
 #include "mpi.h"
 
 #define NUMBER float
+
+#ifndef PI
 #define PI 3.141592653589793
+#endif
 
 using namespace EMAN;
 using namespace std;
@@ -36,3 +41,4 @@ int getnnz(Vec3i volsize, int ri, Vec3i origin, int *nrays, int *nnz);
 int asta2(float *img, int nx, int ny, int ri, double *abaloc, int *klploc);
 int make_proj_mat(float phi, float theta, float psi, float * dm);
 
+#endif // ALI3D_UNIFIED_MPI_H

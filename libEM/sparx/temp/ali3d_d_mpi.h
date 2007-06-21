@@ -1,5 +1,5 @@
-#ifndef ALI3D_D__H
-#define ALI3D_D__H
+#ifndef ALI3D_D_MPI_H
+#define ALI3D_D_MPI_H
 
 #include "mpi.h"
 #include "emdata.h"
@@ -7,7 +7,9 @@
 
 #include "alignoptions.h"
 
+#ifndef PI
 #define PI 3.141592653589793
+#endif
 
 using namespace EMAN;
 
@@ -22,4 +24,4 @@ EMData * recons3d_4nn(std::string stack_name, std::vector<int> list_proj, int np
 int ali3d_d(MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleandata,
             float *angleshift, int nloc, AlignOptions& options, char* fname_base);
 
-#endif // ALI3D_D__H
+#endif // ALI3D_D_MPI_H
