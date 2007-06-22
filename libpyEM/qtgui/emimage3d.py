@@ -75,9 +75,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.data=None
 		
-//		self.aspect=1.0
-//		self.gq=0
-//		self.mmode=0
+#		self.aspect=1.0
+#		self.gq=0
+#		self.mmode=0
 		self.isothr=1.0
 		self.isorender=None
 		
@@ -149,47 +149,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glEndList()
 	
 	def paintGL(self):
-<<<<<<< emimage3d.py
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-#		glLoadIdentity()
-#		glTranslated(0.0, 0.0, -10.0)
-		if not self.isorender: return
-		
-#		glCallList(self.volcubedl)
-		
-		self.isorender.set_surface_value(self.isothr)
-		a=self.isorender.get_isosurface(1)
-		f=a["faces"]
-		n=a["normals"]
-		p=a["points"]
-		
-		f=[i/3 for i in f]
-		
-		#glPushMatrix()
-		#gluSphere(self.gq,.2,20,20)
-##		glTranslate(.2,.2,.2)
-##		gluSphere(self.gq,.25,20,20)
-		#glPopMatrix()
-		
-		glPushMatrix()
-#		glTranslate(0,0,2.0)
-		glScalef(2.0,2.0,2.0)
-		glRotate(fmod(time()*10.0,360.0),1.0,0.0,0.0)
-		glTranslate(-0.5,-0.5,-0.5)
-		#glBegin(GL_TRIANGLES)
-		#for i in f:
-			#glNormal(n[i*3],n[i*3+1],n[i*3+2])
-			#glVertex(p[i*3],p[i*3+1],p[i*3+2])
-			
-		#glEnd()
-		
-		
-		glEnableClientState(GL_VERTEX_ARRAY)
-		glEnableClientState(GL_NORMAL_ARRAY)
-		glVertexPointer(3,GL_FLOAT,0,p)
-		glNormalPointer(GL_FLOAT,0,n)
-		glDrawElements(GL_TRIANGLES,len(f),GL_UNSIGNED_INT,f)
-=======
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 #		glLoadIdentity()
 #		glTranslated(0.0, 0.0, -10.0)
@@ -208,7 +167,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_INDEX_ARRAY)
 		glVertexPointer()
->>>>>>> 1.6.2.2
 		
 		glPopMatrix()
 		
@@ -219,23 +177,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
-<<<<<<< emimage3d.py
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [5.0,10.0,15.,0.])
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT,[.2,.2,.2,1.0])
-
-		glMaterialfv(GL_FRONT,GL_SPECULAR,[1.,1.,1.,1.])
-		glMaterialfv(GL_FRONT,GL_SHININESS,[10.0])
-		
-#		glLightModel(GL_LIGHT_MODEL_TWO_SIDE,1)
-#		glLightf(GL_LIGHT0,
-
-		self.aspect=float(width)/height
-=======
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
@@ -245,20 +186,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 
 
->>>>>>> 1.6.2.2
 		side = min(width, height)
-<<<<<<< emimage3d.py
-#		glViewport((width - side) / 2, (height - side) / 2, side, side)
-		glViewport(0,0,self.width(),self.height())
-		glMatrixMode(GL_PROJECTION)
-		glLoadIdentity()
-#		glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
-		glFrustum(-self.aspect,self.aspect, -1.,1., 2.,4.)
-		glTranslatef(0.,0.,-3.0)
-		
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-=======
 #		glViewport((width - side) / 2, (height - side) / 2, side, side)
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
@@ -268,7 +196,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
->>>>>>> 1.6.2.2
 		
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch

@@ -2292,7 +2292,7 @@ void nnSSNR_ctfReconstructor::buildNorm5Volume() {
 	m_wptr5->to_zero();
 	m_wptr5->set_array_offsets(0,1,1);
 }
-int nnSSNR_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
+int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) 
 	{
@@ -2318,7 +2318,7 @@ int nnSSNR_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 
         if( padffted != 0 )
         {	   
-            padfft = slice;
+            padfft = new EMData(*slice);
         }
         else
         {
@@ -2338,7 +2338,7 @@ int nnSSNR_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) {
         assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
-	if( padffted == 0 ) checked_delete( padfft );
+	checked_delete( padfft );
 	return 0;
 }
 int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
