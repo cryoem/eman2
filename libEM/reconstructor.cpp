@@ -922,7 +922,7 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	float sx = slice->get_attr("s2x");
 	float sy = slice->get_attr("s2y");
 	if(sx != 0.0f || sy != 0.0)
-            padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
+		padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
 
 	padfftslice->center_origin_fft();
 
@@ -1428,13 +1428,13 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 		return 1;
 	}
 
-        int padffted=0;
-        try {
-	    padffted= slice->get_attr("padffted");
-        }
-        catch(_NotExistingObjectException) {
-	    padffted= 0;
-        }
+	int padffted=0;
+	try {
+	padffted= slice->get_attr("padffted");
+	}
+	catch(_NotExistingObjectException) {
+	padffted= 0;
+	}
 
 	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
         {
@@ -1839,13 +1839,13 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 		return 1;
 	}
 
-        int padffted=0;
-        try {
-	    padffted= slice->get_attr("padffted");
-        }
-        catch(_NotExistingObjectException) {
-	    padffted= 0;
-        }
+    int padffted=0;
+    try {
+    padffted= slice->get_attr("padffted");
+    }
+    catch(_NotExistingObjectException) {
+    padffted= 0;
+    }
 
 
 	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
@@ -2313,19 +2313,19 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
 	}
-        EMData* padfft = NULL;
+    EMData* padfft = NULL;
 
-        if( padffted != 0 )
-        {	   
-            padfft = new EMData(*slice);
-        }
-        else
-        {
-            padfft = padfft_slice( slice, m_npad );
-        }
+    if( padffted != 0 )
+    {	   
+        padfft = new EMData(*slice);
+    }
+    else
+    {
+        padfft = padfft_slice( slice, m_npad );
+    }
 
-        int mult=0;
-        try 
+    int mult=0;
+    try 
 	{
 	    mult = slice->get_attr("mult");
         }
@@ -2334,7 +2334,7 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 	    mult = 1;
         }
 
-        assert( mult > 0 );
+	assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
@@ -2352,10 +2352,9 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 		if ( wiener == 0 )
 		m_volume->nn_SSNR_ctf( m_wptr, m_wptr2, m_wptr3, m_wptr4, m_wptr5, padfft, m_wvolume, tsym, mult);
 		else 
-		m_wvolume->nn_wiener(m_wptr, m_wptr3, padfft, tsym, mult);
-		
-		
-        }
+		m_wvolume->nn_wiener(m_wptr, m_wptr3, padfft, tsym, mult);	
+	}
+	
 	return 0;
 }
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
@@ -2404,19 +2403,15 @@ EMData* nnSSNR_ctfReconstructor::finish()
 					float Kn = (*m_wptr3)(ix,iy,iz);
 					if ( Kn > 0.0f ) 
 					{  
-					   
- 					
-					
-						
 						argx = std::sqrt(argy + float(ix*ix)*dx2);
 						float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
 												   
 						 /* if ( ix ==1 && iy ==1)
 	 						    {  std::cout<<"****"<<m_wvolume->cmplx(ix,iy,iz)<<"  "<< osnr
 							    <<std::endl;}*/
-							 m_wvolume->cmplx(ix,iy,iz) *= tmp; 
-     
-					        if (m_wvolume->is_fftodd()) 
+						m_wvolume->cmplx(ix,iy,iz) *= tmp; 
+ 
+				        if (m_wvolume->is_fftodd()) 
 						{
 							float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*M_PI;
 							complex<float> temp2 = complex<float>(cos(temp),sin(temp));
@@ -2426,7 +2421,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 				}
 			}
 		}
-	        EMData* win = m_wvolume->do_ift();
+		EMData* win = m_wvolume->do_ift();
 		win->window_center(m_vnx);
 		m_wptr->to_zero(); 
 		m_wptr->set_array_offsets(0,1,1);
@@ -2434,8 +2429,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		return win; // The function requires a returned object, otherwise is not neccessary
 	}		
     else  //Calculate SSNR 
-    
- {   	
+    {   	
  	float wght = 1.f;
 	SSNR->set_size(inc+1,4,1);
 	float *nom    = new float[inc+1];
