@@ -198,8 +198,8 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 
 
 		} // ends m loop
-		done_data();
-		rhoOfkmB-> done_data();
+		update();
+		rhoOfkmB-> update();
 		rhoOfkmB->set_complex(true);
 		if(rhoOfkmB->get_ysize()==1 && rhoOfkmB->get_zsize()==1) {
 			rhoOfkmB->set_complex_x(true);
@@ -271,7 +271,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 //		printf(" \n");
 //		rhoOfkandm(m+1,:) = spline(kVec2Use,rhoOfkmBReIm(m+1,1:kIntMax),kIntMax,RValsSorted);
 	}
-	rhoOfkandm ->done_data();
+	rhoOfkandm ->update();
 
 //          So far so good PRB ....
 
@@ -420,7 +420,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 
 		} // ends jky
 	} // ends jkx
-	outCopy->done_data();
+	outCopy->update();
 	outCopy->set_complex(true);
 	if(outCopy->get_ysize()==1 && outCopy->get_zsize()==1) {
 		outCopy->set_complex_x(true);
@@ -557,7 +557,6 @@ EMData* EMData::rotavg() {
 
 	set_array_offsets(saved_offsets);
 	ret->update();
-	ret->done_data();
 	EXITFUNC;
 	return ret;
 }
@@ -947,7 +946,6 @@ EMData* EMData::symvol(string symString) {
 		*svol += (*symcopy);
 	}
 	*svol /=  ((float) nsym);
-	svol->done_data();
 	svol->update();
 	EXITFUNC;
 	return svol;
@@ -987,7 +985,7 @@ EMData* EMData::average_circ_sub() const
 		for (int iy = 1; iy <= ny; iy++) 
 			for (int ix = 1; ix <= nx; ix++)
 					pnewimg(ix,iy,iz) = proj(ix,iy,iz) - qs;
-	newimg->done_data();
+	newimg->update();
 	return newimg;
 	EXITFUNC;
 }
@@ -2619,7 +2617,7 @@ void EMData::fft_shuffle() {
 	}
 	set_shuffled(!is_shuffled()); // toggle
 	set_array_offsets(offsets); // reset offsets
-	done_data();
+	update();
 	delete[] temp;
 }
 
@@ -2668,7 +2666,7 @@ EMData* EMData::fouriergridrot2d(float ang, Util::KaiserBessel& kb) {
 	}
 	result->set_array_offsets();
 	result->fft_shuffle(); // reset to an unshuffled result
-	result->done_data();
+	result->update();
 	set_array_offsets();
 	fft_shuffle(); // reset to an unshuffled complex image
 	//result->cmplx(0,0) = 0.;
@@ -3585,7 +3583,7 @@ EMData* EMData::ctf_img(int nx, int ny, int nz,float dz,float ps,float voltage,f
 	       }
 
 	}
-		ctf_img1->done_data();
+		ctf_img1->update();
 	//	ctf_img1->set_complex(true);//
 		ctf_img1->attr_dict["is_complex"] = 1;
 		ctf_img1->attr_dict["is_ri"] = 1;

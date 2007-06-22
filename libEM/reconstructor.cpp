@@ -186,7 +186,7 @@ void FourierReconstructor::setup()
 		rdata[i] = 1.0e-10f * sin(f);
 		rdata[i + 1] = 1.0e-10f * cos(f);
 	}
-	image->done_data();
+	image->update();
 
 	tmp_data = new EMData();
 	tmp_data->set_size(size + 2, size, size);
@@ -395,7 +395,7 @@ void WienerFourierReconstructor::setup()
 		rdata[i] = 1.0e-10f * sin(f);
 		rdata[i + 1] = 1.0e-10f * cos(f);
 	}
-	image->done_data();
+	image->update();
 
 	tmp_data = new EMData();
 	tmp_data->set_size(size + 1, size, size);
@@ -424,7 +424,7 @@ EMData *WienerFourierReconstructor::finish()
 		delete tmp_data;
 		tmp_data = 0;
 	}
-	image->done_data();
+	image->update();
 	return image;
 }
 
@@ -804,9 +804,8 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 		}
 	}
 
-	image->done_data();
-	tmp_data->done_data();
-//	slice->done_data();
+	image->update();
+	tmp_data->update();
 //	slice->update();
 
 	return 0;
@@ -865,7 +864,7 @@ int BackProjectionReconstructor::insert_slice(const EMData* const slice, const T
 		memcpy(&tmp_data[nxy * i], slice_data, nxy_size);
 	}
 
-	tmp->done_data();
+	tmp->update();
 
 	// I am not sure why this was here (next 3 commented lines) - I think they are wrong
 	//	Dict slice_euler = slice->get_transform().get_rotation(Transform3D::EMAN);
@@ -3087,7 +3086,7 @@ void file_store::get_image( int id, EMData* padfft )
 
     char* data = (char*)(padfft->get_data());
     m_ihandle->read( data, sizeof(float)*m_totsize );
-    padfft->done_data();
+    padfft->update();
 
     padfft->set_attr( "Cs", m_Cs );
     padfft->set_attr( "Pixel_size", m_pixel );

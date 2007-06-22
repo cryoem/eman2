@@ -162,7 +162,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		cur_trans[1] = floor(cur_trans[1] + 0.5f);
 	}
 
-	cf->done_data();
+	cf->update();
 	if( cf )
 	{
 		delete cf;
@@ -264,7 +264,7 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 	cf->set_attr("align.dy",ty); 
 	cf->set_attr("align.dz",tz); 
 
-	cf->done_data();
+	cf->update();
 
 	return cf;
 }
@@ -296,7 +296,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 
 	Util::find_max(data, this_img2_nx, &peak, &peak_index);
 	
-	cf->done_data();
+	cf->update();
 	if( cf )
 	{
 		delete cf;
@@ -352,7 +352,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 
 	cf->set_attr("align.score", peak);
 	cf->set_attr("align.az",a);
-	cf->done_data();
+	cf->update();
 
 	if( e1 )
 	{
@@ -453,8 +453,8 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 						}
 					}
 
-					d1->done_data();
-					d2->done_data();
+					d1->update();
+					d2->update();
 
 					ralfp.push_back(d1);
 					ralfp.push_back(d2);
@@ -820,8 +820,8 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 #endif
 		max = floor(sqrt(inten) + 0.5f);
 
-		t1->done_data();
-		radonwith->done_data();
+		t1->update();
+		radonwith->update();
 	}
 
 	if( t1 )

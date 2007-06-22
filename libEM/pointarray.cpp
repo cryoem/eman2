@@ -805,7 +805,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			}
 		}
 		set_number_points(num);
-		tmp_map->done_data();
+		tmp_map->update();
 		if( tmp_map )
 		{
 			delete tmp_map;
@@ -945,7 +945,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 
 			iter++;
 		} while (dcen > min_dcen && iter <= max_iter);
-		map->done_data();
+		map->update();
 
 		sort_by_axis(2);	// x,y,z axes = 0, 1, 2
 	}
@@ -985,7 +985,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		printf("\t->\t%8g,%8g,%8g,%8g\n",points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
 #endif
 	}
-	map->done_data();
+	map->update();
 }
 
 
@@ -1072,7 +1072,7 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 		}
 	}
 	//for(int i=0; i<map_size*map_size; i++) pd[i]/=sqrt(M_PI);
-	map->done_data();
+	map->update();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
 	map->set_attr("apix_z", apix);
@@ -1151,7 +1151,7 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 	}
 	for (int i = 0; i < image_size * image_size; i++)
 		pd[i] /= sqrt(M_PI);
-	proj->done_data();
+	proj->update();
 	return proj;
 }
 
@@ -1228,8 +1228,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 		}
 	}
 	
-
-	proj->done_data();
+	proj->update();
 	return;
 }
 
@@ -1299,7 +1298,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 			}
 		}
 	}
-	fft->done_data();
+	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
 	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
@@ -1381,7 +1380,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 			}
 		}
 	}
-	fft->done_data();
+	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
 	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
@@ -1468,7 +1467,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 			}
 		}
 	}
-	fft->done_data();
+	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
 	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
@@ -1538,7 +1537,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 			}
 		}
 	}
-	fft->done_data();
+	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
 	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image box, instead of at corner

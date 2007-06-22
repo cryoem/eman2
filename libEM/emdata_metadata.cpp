@@ -72,9 +72,8 @@ EMData* EMData::get_fft_amplitude2D()
 	}
 
 
-	done_data();
+	update();
 
-	dat->done_data();
 	dat->update();
 	dat->set_complex(false);
 	dat->set_ri(false);
@@ -123,9 +122,8 @@ EMData* EMData::get_fft_amplitude()
 		}
 	}
 
-	done_data();
+	update();
 
-	dat->done_data();
 	dat->update();
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
@@ -175,9 +173,8 @@ EMData* EMData::get_fft_phase()
 			}
 		}
 	}
-	done_data();
+	update();
 
-	dat->done_data();
 	dat->update();
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
@@ -195,13 +192,6 @@ float *EMData::get_data() const
 	//flags |= EMDATA_BUSY;
 	return rdata;
 }
-
-
-void EMData::done_data()
-{
-	update();
-}
-
 
 
 float EMData::calc_center_density()

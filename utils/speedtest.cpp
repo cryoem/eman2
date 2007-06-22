@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 				(abs(i) < 2 ? 2.0f : 1.0f);
 		}
     }
-    pat.done_data();
+    pat.update();
     pat.process_inplace("normalize.circlemean");
     pat.process_inplace("mask.sharp", Dict("outer_radius", pat.get_xsize()/2));
 
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < SIZE * SIZE; j++) {
 			d[j] += Util::get_gauss_rand(0, 1.0);
 		}
-		data[i]->done_data();
+		data[i]->update();
 		data[i]->process_inplace("normalize.circlemean");
 		data[i]->process_inplace("mask.sharp", Dict("outer_radius", data[i]->get_xsize()/2));
 	
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5c: %d, %d x %d sqrts in %1.1f sec -> ~%1.2f msqrt/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti));
-		data[0]->done_data();
+		data[0]->update();
 
 		d = data[0]->get_data();
 		t1 = (float) clock();
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5d: %d, %d x %d cos in %1.1f sec -> ~%1.2f mcos/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti));
-		data[0]->done_data();
+		data[0]->update();
 
 		d = data[0]->get_data();
 		t1 = (float) clock();
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5e: %d, %d x %d hypot in %1.1f sec -> ~%1.2f mhypot/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 100.0 * NTT / (1000000.0 * ti));
-		data[0]->done_data();
+		data[0]->update();
 
 		d = data[0]->get_data();
 		t1 = (float) clock();
@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5f: %d, %d x %d mult in %1.1f sec -> ~%1.2f mmult/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 1000.0 * NTT / (1000000.0 * ti));
-		data[0]->done_data();
+		data[0]->update();
 
 		d = data[0]->get_data();
 		t1 = (float) clock();
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5g: %d, %d x %d div in %1.1f sec -> ~%1.2f mdiv/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti));
-		data[0]->done_data();
+		data[0]->update();
 
 		d = data[0]->get_data();
 		t1 = (float) clock();
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
 		ti = (t2 - t1) / (float) CPS;
 		printf("Baseline 5h: %d, %d x %d fabs in %1.1f sec -> ~%1.2f fabs/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti));
-		data[0]->done_data();
+		data[0]->update();
 
 		d = data[0]->get_data();
 		t1 = (float) clock();
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
 		printf("Baseline 5i: %d, %d x %d ri2ap in %1.1f sec -> ~%1.2f ri2ap/sec (cached)\n",
 			   100 * NTT / 2, SIZE, SIZE, ti, SIZE * SIZE * 500.0 * NTT / (1000000.0 * ti));
 
-		data[0]->done_data();
+		data[0]->update();
 		t1 = (float) clock();
 	
 		for (int i = 0; i < NTT * 100; i++) {

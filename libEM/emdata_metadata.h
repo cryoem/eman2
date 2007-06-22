@@ -68,16 +68,6 @@ EMData *get_fft_phase();
 float *get_data() const;
 
 
-/** Done with data manipulation. It marks EMData as changed.
- *
- * This function is used together with 'get_data()'.
- * A typical case is 1) call
- * get_data(); 2) work on the data. 3) if data is changed, then
- * call done_data. If not changed, no need to call done_data.
- */
-void done_data();
-
-
 /** Mark EMData as changed, statistics, etc will be updated at need.*/
 inline void update()
 {

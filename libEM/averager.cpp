@@ -149,7 +149,7 @@ EMData * ImageAverager::finish()
 					sigma_image_data[j] = sqrt(f1 - f2 * f2);
 				}
 
-				sigma_image->done_data();
+				sigma_image->update();
 			}
 		}
 		else {
@@ -165,11 +165,10 @@ EMData * ImageAverager::finish()
 					sigma_image_data[j] = sqrt(f1 - f2 * f2);
 				}
 
-				sigma_image->done_data();
+				sigma_image->update();
 			}
 		}
 		
-		result->done_data();
 		result->update();
 	}
 
@@ -239,7 +238,7 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 			}
 		}
 
-		image0->done_data();
+		image0->update();
 		memcpy(result_data, image0_data, image_size * sizeof(float));
 
 		for (size_t i = 1; i < image_list.size(); i++) {
@@ -258,7 +257,7 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 					}
 				}
 
-				image->done_data();
+				image->update();
 				c++;
 			}
 		}
@@ -276,10 +275,8 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 		}
 	}
 
-	result->done_data();
-
 	if (sigma_image_data) {
-		sigma_image->done_data();
+		sigma_image->update();
 	}
 
 	result->update();
@@ -352,9 +349,6 @@ EMData * IterationAverager::finish()
 		sigma_image_data[j] = sqrt(f1 - f2 * f2) / sqrt((float)nimg);
 	}
 		
-	result->done_data();
-	sigma_image->done_data();
-
 	result->update();
 	sigma_image->update();
 
@@ -389,9 +383,7 @@ EMData * IterationAverager::finish()
 		d2 = 0;
 	}
 
-	result->done_data();
-	sigma_image->done_data();
-
+	sigma_image->update();
 	if( sigma_image )
 	{
 		delete sigma_image;
@@ -436,7 +428,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 		sigma_image_data[j] *= sigma_image_data[j];
 	}
 
-	image0->done_data();
+	image0->update();
 
 	int nc = 1;
 	for (size_t i = 1; i < image_list.size(); i++) {
@@ -450,7 +442,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 				sigma_image_data[j] += image_data[j] * image_data[j];
 			}
 
-			image->done_data();
+			image->update();
 			nc++;
 		}
 	}
@@ -466,9 +458,6 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 	for (int j = 0; j < image_size; j++) {
 		result_data[j] /= c;
 	}
-
-	result->done_data();
-	sigma_image->done_data();
 
 	result->update();
 	sigma_image->update();
@@ -505,9 +494,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 		d2 = 0;
 	}
 
-	result->done_data();
-	sigma_image->done_data();
-
+	sigma_image->update();
 	if( sigma_image )
 	{
 		delete sigma_image;
@@ -687,7 +674,7 @@ void CtfAverager::add_image(EMData * image)
 	}
 	
 	EMData *image_fft = image->do_fft();
-	image_fft->done_data();
+	image_fft->update();
 
 }
 
@@ -777,18 +764,19 @@ EMData * CtfAverager::finish()
 		for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
 			cd[i] /= cd[i + Ctf::CTFOS * ny / 2];
 		}
-		curves->done_data();
+		curves->update();
 	}
 
-	image0_copy->done_data();
+	image0_copy->update();
 	
 	float *result_data = result->get_data();
 	EMData *tmp_ift = image0_copy->do_ift();
 	float *tmp_ift_data = tmp_ift->get_data();
 	memcpy(result_data, tmp_ift_data, (nx - 2) * ny * sizeof(float));
-	result->done_data();
-	tmp_ift->done_data();
 
+	tmp_ift->update();
+	result->update();
+	
 	if( image0_copy )
 	{
 		delete image0_copy;
@@ -804,8 +792,6 @@ EMData * CtfAverager::finish()
 		delete[]snrn;
 		snrn = 0;
 	}
-
-	result->update();
 
 	if( snri )
 	{
@@ -1024,7 +1010,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		for (int i = 0; i < Ctf::CTFOS * ny / 2; i++) {
 			cd[i] /= cd[i + Ctf::CTFOS * ny / 2];
 		}
-		curves->done_data();
+		curves->update();
 	}
 
 	EMData *image0_copy = image0_fft->copy_head();
@@ -1053,14 +1039,14 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 		}
 	}
 
-	image0_copy->done_data();
+	image0_copy->update();
 
 	float *result_data = result->get_data();
 	EMData *tmp_ift = image0_copy->do_ift();
 	float *tmp_ift_data = tmp_ift->get_data();
 	memcpy(result_data, tmp_ift_data, (nx - 2) * ny * sizeof(float));
-	result->done_data();
-	tmp_ift->done_data();
+
+	tmp_ift->update();
 
 	if( image0_copy )
 	{
@@ -1070,7 +1056,7 @@ EMData *CtfAverager::average(const vector < EMData * >&image_list) const
 
 	for (size_t i = 0; i < num_images; i++) {
 		EMData *img = image_list[i]->do_fft();
-		img->done_data();
+		img->update();
 	}
 
 	if( src )

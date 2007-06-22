@@ -264,7 +264,6 @@ EMData *EMData::get_clip(const Region & area) const
 		dst += dst_gap;
 	}
 
-	result->done_data();
 
 	if( attr_dict.has_key("apix_x") && attr_dict.has_key("apix_y") &&
 		attr_dict.has_key("apix_z") )
@@ -314,7 +313,6 @@ EMData *EMData::get_top_half() const
 
 	float *half_data = half->get_data();
 	memcpy(half_data, &rdata[nz / 2 * nx * ny], sizeof(float) * nx * ny * nz / 2);
-	half->done_data();
 
 	float apix_z = attr_dict["apix_z"];
 	float origin_sec = attr_dict["origin_sec"];
@@ -382,7 +380,7 @@ EMData* EMData::window_center(int l) {
 				throw ImageFormatException(
 						"Need square real-space image.");
 			}
-			cout << "Using corner " << corner << endl;
+			//cout << "Using corner " << corner << endl;
 			ret = get_clip(Region(corner, corner, l, l));
 			break;
 		case 1:
@@ -570,7 +568,7 @@ void EMData::translate(const Vec3i &translation)
 		tmp_data = 0;
 	}
 
-	done_data();
+	update();
 	all_translation += translation;
 
 	EXITFUNC;
@@ -683,7 +681,6 @@ void EMData::translate(const Vec3f &translation)
 		delete tmp_emdata;
 		tmp_emdata = 0;
 	}
-	done_data();
 	update();
 	all_translation += translation;
 	EXITFUNC;
@@ -882,10 +879,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 	attr_dict["origin_col"] = (float) attr_dict["origin_col"] * inv_scale;
 	attr_dict["origin_sec"] = (float) attr_dict["origin_sec"] * inv_scale;
 
-	done_data();
 	update();
-
-
 	all_translation += translation;
 	EXITFUNC;
 }
@@ -912,7 +906,7 @@ void EMData::rotate_x(int dx)
 		memcpy(&rdata[y_nx], tmp, row_size);
 	}
 
-	done_data();
+	update();
 	if( tmp )
 	{
 		delete[]tmp;
@@ -954,7 +948,7 @@ void EMData::rotate_180()
 		}
 	}
 
-	done_data();
+	update();
 	EXITFUNC;
 }
 
@@ -1123,7 +1117,7 @@ EMData *EMData::little_big_dot(EMData * with, bool do_sigma)
 		}
 	}
 
-	ret->done_data();
+	ret->update();
 
 	EXITFUNC;
 	return ret;
@@ -1163,10 +1157,10 @@ EMData *EMData::do_radon()
 			}
 		}
 
-		this_copy->done_data();
+		this_copy->update();
 	}
 
-	result->done_data();
+	result->update();
 
 	if( this_copy )
 	{
@@ -1257,7 +1251,7 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 			}
 		}
 
-		cf->done_data();
+		cf->update();
 		return cf;
 	}
 	else {
@@ -1329,10 +1323,9 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		}
 	}
 
-	cf->done_data();
-	done_data();
-	with->done_data();
-
+	cf->update();
+	update();
+	with->update();
 
 	EXITFUNC;
 	return cf;
@@ -1492,8 +1485,8 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 			rdata2[i + 1] = 0;
 		}
 
-		this_fft->done_data();
-		cf->done_data();
+		this_fft->update();
+		cf->update();
 	}
 	else {
 		for (int i = 0; i < this_fft_size; i += 2) {
@@ -1501,8 +1494,8 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 			rdata2[i + 1] = (rdata1[i + 1] * rdata2[i] - rdata1[i] * rdata2[i + 1]);
 		}
 
-		this_fft->done_data();
-		cf->done_data();
+		this_fft->update();
+		cf->update();
 		rdata1 = cf->get_data();
 
 		for (int i = 0; i < this_fft_size; i += 2) {
@@ -1513,7 +1506,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 				rdata1[i + 1] /= t;
 			}
 		}
-		cf->done_data();
+		cf->update();
 	}
 
 	if (tocorner) {
@@ -1796,8 +1789,8 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx + 1], d[k + nx], t,u) * (y + r1);
 		}
 	}
-	done_data();
-	ret->done_data();
+	update();
+	ret->update();
 
 	EXITFUNC;
 	return ret;
@@ -1873,13 +1866,12 @@ void EMData::mean_shrink(float shrink_factor0)
 				if ( w>0 ) data[j * nx + i] /= w;
 			}
 		}
-		orig->done_data();
+		orig->update();
 		if( orig )
 		{
 			delete orig;
 			orig = 0;
 		}
-		done_data();
 		update();
 
 		return;
@@ -1934,7 +1926,7 @@ void EMData::mean_shrink(float shrink_factor0)
 		}
 	}
 
-	done_data();
+	update();
 	set_size(shrinked_nx, shrinked_ny, shrinked_nz);
 	scale_pixel((float)shrink_factor);
 	EXITFUNC;
@@ -2028,7 +2020,7 @@ void EMData::median_shrink(int shrink_factor)
 		}
 	}
 
-	done_data();
+	update();
 
 	if( data_copy )
 	{
@@ -2145,7 +2137,6 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 
 	}
 
-	done_data();
 	update();
 	EXITFUNC;
 }
@@ -2589,8 +2580,7 @@ void EMData::add_incoherent(EMData * obj)
 		dest[j + 1] = 0;
 	}
 
-	obj->done_data();
-	done_data();
+	obj->update();
 	update();
 	EXITFUNC;
 }
@@ -2704,7 +2694,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 		}
 	}
 
-	img2->done_data();
+	img2->update();
 
 	EMData *img2_copy = img2->copy();
 	if( img2 )
@@ -2796,7 +2786,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 		conv2_copy = 0;
 	}
 
-	ccf_copy->done_data();
+	ccf_copy->update();
 	EMData *lcf = ccf_copy->copy();
 	if( ccf_copy )
 	{
@@ -2850,7 +2840,7 @@ EMData *EMData::convolute(EMData * with)
 		rdata2[i+1]=im;
 	}
 
-	cf->done_data();
+	cf->update();
 	EMData *f2 = cf->do_ift();
 
 	if( cf )
@@ -3117,8 +3107,8 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 	}
 
 
-	image1->done_data();
-	image2->done_data();
+	image1->update();
+	image2->update();
 	if( image1 )
 	{
 		delete image1;
@@ -3129,7 +3119,6 @@ void EMData::common_lines(EMData * image1, EMData * image2,
 		delete image2;
 		image2 = 0;
 	}
-	done_data();
 	update();
 	EXITFUNC;
 }
@@ -3192,7 +3181,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 				im[l] = (im[l] - mean) / sigma;
 			}
 
-			images[i]->done_data();
+			images[i]->update();
 			a += M_PI / steps;
 		}
 	}
@@ -3227,7 +3216,7 @@ void EMData::common_lines_real(EMData * image1, EMData * image2,
 		}
 	}
 
-	done_data();
+	update();
 
 	if( image1_copy )
 	{
@@ -3325,7 +3314,7 @@ void EMData::cut_slice(const EMData * map, float dz, Transform3D * ort,
 		}
 	}
 
-	done_data();
+	update();
 
 	EXITFUNC;
 }
@@ -3378,8 +3367,8 @@ void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, fl
 		}
 	}
 
-	done_data();
-	map->done_data();
+	update();
+	map->update();
 	EXITFUNC;
 }
 

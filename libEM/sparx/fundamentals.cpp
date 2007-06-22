@@ -137,7 +137,7 @@ periodogram(EMData* f) {
 	}
 	//power[0][0][0]=power[1][0][0];  //Steve requested the original origin.
 
-	power.done_data();
+	power.update();
 	power.set_array_offsets(0,0,0);
 	return &power;
 //OVER AND OUT
@@ -336,7 +336,7 @@ Output: 1-2-3D real image with the result
 		//OVER AND OUT
 		//fp->set_array_offsets(saved_offsets);  This was strange and did not work, PAP
 		fp->set_array_offsets(0,0,0);
-		fp->done_data();
+		fp->update();
 		return fp;  
 	}
 

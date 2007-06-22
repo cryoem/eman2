@@ -449,7 +449,7 @@ void SimpleCtf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 

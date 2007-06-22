@@ -48,7 +48,6 @@ EMData * EMData::copy() const
 	ret->set_size(nx, ny, nz);
 	float *data = ret->get_data();
 	memcpy(data, rdata, nx * ny * nz * sizeof(float));
-	ret->done_data();
 
 	ret->flags = flags;
 
@@ -372,7 +371,7 @@ EMData *EMData::get_row(int row_index) const
 	EMData *ret = new EMData();
 	ret->set_size(nx, 1, 1);
 	memcpy(ret->get_data(), get_data() + nx * row_index, nx * sizeof(float));
-	ret->done_data();
+	ret->update();
 	EXITFUNC;
 	return ret;
 }
@@ -392,7 +391,7 @@ void EMData::set_row(const EMData * d, int row_index)
 	float *dst = get_data();
 	float *src = d->get_data();
 	memcpy(dst + nx * row_index, src, nx * sizeof(float));
-	done_data();
+	update();
 	EXITFUNC;
 }
 
@@ -413,7 +412,7 @@ EMData *EMData::get_col(int col_index) const
 		dst[i] = src[i * nx + col_index];
 	}
 
-	ret->done_data();
+	ret->update();
 	EXITFUNC;
 	return ret;
 }
@@ -437,7 +436,7 @@ void EMData::set_col(const EMData * d, int n)
 		dst[i * nx + n] = src[i];
 	}
 
-	done_data();
+	update();
 	EXITFUNC;
 }
 
@@ -907,7 +906,7 @@ void EMData::to_zero()
 	}
 
 	memset(rdata, 0, nx * ny * nz * sizeof(float));
-	done_data();
+	update();
 	EXITFUNC;
 }
 

@@ -133,7 +133,6 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 		}
 	}
 	f->update();
-	tmp->done_data();
 	tmp->update();
 
 	tmp->process_inplace("xform.fourierorigin");
@@ -630,9 +629,8 @@ EMData *PawelProjector::project3d(EMData * image) const
 			}
 		}
 	}
-	ret->done_data();
 	ret->update();
-        EMDeleteArray(ipcube);
+	EMDeleteArray(ipcube);
 	return ret;	
 }
 
@@ -704,8 +702,7 @@ EMData *SimpleIsoSurfaceProjector::project3d(EMData * image) const
 			}
 		}
 	}
-	image->done_data();
-	ret->done_data();
+	image->update();
 	ret->update();
 	return ret;
 }
@@ -741,8 +738,7 @@ EMData *StandardFastProjector::project3d(EMData * image) const
 		}
 	}
 
-	image->done_data();
-	ret->done_data();
+	image->update();
 	ret->update();
 	return ret;
 }
@@ -797,8 +793,7 @@ EMData *StandardProjector::project3d(EMData * image) const
 		}
 	}
 
-	image->done_data();
-	proj->done_data();
+	image->update();
 	proj->update();
 	return proj;
 }
@@ -896,7 +891,6 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 		delete winproj;
 	}
 	delete imgft;
-	ret->done_data();
 	ret->update();
 	return ret;
 }
@@ -1371,7 +1365,6 @@ EMData *ChaoProjector::project3d(EMData * vol) const
         EMDeleteArray(cord);
         EMDeleteArray(sphere);
 
-        ret->done_data();
 	ret->update();
 	return ret;
 }
@@ -1497,7 +1490,6 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
     EMDeleteArray(cord);
     EMDeleteArray(sphere);
 
-    ret->done_data();
     ret->update();
     return ret;
 }
@@ -1642,7 +1634,6 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
        } // end if
     } // end for ia
 
-    ret->done_data();
     ret->update();
     EMDeleteArray(ipcube);
     return ret;

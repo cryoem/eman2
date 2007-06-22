@@ -54,7 +54,7 @@ int main()
 			data[i] = 0;
 		}
 
-		e2.done_data();
+		e2.update();
 		e2.write_image("search.mrc", 0, EMUtil::IMAGE_MRC);
 		Dict d = e2.get_attr_dict();
 		EMUtil::dump_dict(d);

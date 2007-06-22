@@ -242,7 +242,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 		  		(*ImBW)(ix+Mid-1,iy+Mid-1) = tempIm * exp(.5*p*p*a*a)* exp(.5*q*q*b*b);
 	   		}
 	   	}
-	   	ImBW->done_data();
+	   	ImBW->update();
 	   	ImBW->set_complex(false);
 	   	ImBW->set_ri(true);
 	
@@ -263,7 +263,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 		            	exp(-.5*r*r*a*a)* exp(-.5*s*s*b*b);
 	   		}
 	   	}
-	   	ImBWFFT->done_data();
+	   	ImBWFFT->update();
 	   	ImBWFFT->set_complex(true);
 	   	ImBWFFT->set_ri(true);
 	   	ImBWFFT->set_shuffled(true);
@@ -296,7 +296,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 				(*pofalpha)(is+Mid-1) =  Norm1 * exp(-.5*sD*sD)*cos(sD*(P+Q))
                          + Norm2 * exp(-.5*sD*sD)*cos(sD*(P-Q));
 			}
-			pofalpha-> done_data();
+			pofalpha-> update();
 			pofalpha-> set_complex(false);
 			pofalpha-> set_ri(true);
 
@@ -313,7 +313,7 @@ EMData *Util::TwoDTestFunc(int Size, float p, float q,  float a, float b, int fl
 				vD = iv*D ;
 		 		(*pofalphak)(2*(iv+Mid-1)) =  exp(-.5*vD*vD)*(cosh(vD*(P+Q)) + cosh(vD*(P-Q)) );
 			}
-			pofalphak-> done_data();
+			pofalphak-> update();
 			pofalphak-> set_complex(false);
 			pofalphak-> set_ri(true);
 		
@@ -3233,7 +3233,7 @@ void Util::update_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<i
 			}
 		}
 	}
-	avep->done_data();
+	avep->update();
 	EXITFUNC;
 }
 
@@ -3275,7 +3275,7 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
 			}
 		}
 	}
-	avep->done_data();
+	avep->update();
 	EXITFUNC;
 }
 
@@ -3604,7 +3604,7 @@ if (image->is_complex())
                  slicereverse(&data[my*ny*nx], &data[nz*ny*nx], nx, ny);
                  slicereverse(&data[0], &data[nz*ny*nx], nx ,ny);
          }
-	image->done_data();	 
+	image->update();	 
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
@@ -3996,7 +3996,6 @@ void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> expta
  PROJ->pad_fft();
  PROJ->do_fft_inplace();
  PROJ->update();
- PROJ->done_data();
  PROJptr = PROJ->get_data();
  
  
@@ -4114,7 +4113,6 @@ void Util::WTM(EMData *PROJ,vector<float>SS, int DIAMETER,int NUMP)
  PROJ->pad_fft();
  PROJ->do_fft_inplace();
  PROJ->update();
- PROJ->done_data();
  float *PROJptr = PROJ->get_data();
   
  int KX;

@@ -393,7 +393,7 @@ namespace EMAN {
 			}
 		}
 		K->set_array_offsets(K_saved_offsets);
-		result->done_data();
+		result->update();
 		return result;
 	}
 
@@ -830,7 +830,7 @@ namespace EMAN {
 			}
 		}
 		//K->set_array_offsets(K_saved_offsets);
-		result->done_data();
+		result->update();
 		return result;
 	}
 

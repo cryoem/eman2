@@ -869,7 +869,7 @@ EMData *EMUtil::vertical_acf(const EMData * image, int maxdy)
 		}
 	}
 
-	ret->done_data();
+	ret->update();
 
 	return ret;
 }
@@ -925,7 +925,6 @@ EMData *EMUtil::make_image_median(const vector < EMData * >&image_list)
 		}
 	}
 
-	result->done_data();
 	if( srt )
 	{
 		delete[]srt;

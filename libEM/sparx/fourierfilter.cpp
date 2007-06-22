@@ -481,13 +481,13 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		// by caller if doInPlace == true. As a reminder, the caller is EMFourierFuncInPlace
 		//
 	fp->set_array_offsets(0,0,0);
-	fp->done_data();
+	fp->update();
 	if (doInPlace && !complex_input) {
 		// copy workspace data into the original image
 		float* orig = fimage->get_data();
 		float* work = fp->get_data();
 		for (int i = 0; i < nx*ny*nz; i++) orig[i] = work[i];
-		fimage->done_data();
+		fimage->update();
 	}
 	return fp;
 	EXITFUNC;

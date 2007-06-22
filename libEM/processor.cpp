@@ -235,7 +235,7 @@ void ImageProcessor::process_inplace(EMData * image)
 		data = ift_data;
 		ift_data = t;
 
-		ift->done_data();
+		ift->update();
 
 		if( fft )
 		{
@@ -250,7 +250,7 @@ void ImageProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 #define FFTRADIALOVERSAMPLE 4
@@ -278,7 +278,7 @@ void FourierProcessor::process_inplace(EMData * image)
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
 
-		ift->done_data();
+		ift->update();
 
 		if( fft )
 		{
@@ -293,7 +293,7 @@ void FourierProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 void AmpweightFourierProcessor::process_inplace(EMData * image)
@@ -484,7 +484,7 @@ void RealPixelProcessor::process_inplace(EMData * image)
 	for (size_t i = 0; i < size; i++) {
 		process_pixel(&data[i]);
 	}
-	image->done_data();
+	image->update();
 }
 
 void CoordinateProcessor::process_inplace(EMData * image)
@@ -591,7 +591,7 @@ void ComplexPixelProcessor::process_inplace(EMData * image)
 		data += 2;
 	}
 
-	image->done_data();
+	image->update();
 	image->ap2ri();
 }
 
@@ -665,8 +665,6 @@ void AreaProcessor::process_inplace(EMData * image)
 			}
 		}
 	}
-
-	image->done_data();
 
 	if( matrix )
 	{
@@ -766,7 +764,7 @@ void BoxStatProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 
 	if( data2 )
 	{
@@ -822,7 +820,7 @@ void DiffBlockProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -904,7 +902,7 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 		memset(&data[i * nx + x], 0, (nx - x) * sizeof(float));
 	}
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -945,7 +943,7 @@ void GradientRemoverProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 #include <gsl/gsl_linalg.h>
@@ -1040,7 +1038,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 				}
 			}
 		}
-		mask->done_data(); 
+		mask->update(); 
 	}
 	else {
 		for(int j=0; j<ny; j++){
@@ -1087,7 +1085,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 			}
 		}
 	}
-	image->done_data();
+	image->update();
 	// set return plane parameters
 	vector< float > planeParam;
 	planeParam.resize(6);
@@ -1124,7 +1122,7 @@ void VerticalStripeProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 void RealToFFTProcessor::process_inplace(EMData *image)
@@ -1251,7 +1249,7 @@ void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 	}
 
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -1383,7 +1381,7 @@ void BeamstopProcessor::process_inplace(EMData * image)
 		sigma_values = 0;
 	}
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -1476,7 +1474,7 @@ void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -1508,7 +1506,7 @@ void AverageXProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -1543,7 +1541,7 @@ void ZeroEdgeRowProcessor::process_inplace(EMData * image)
 		memset(d + i * nx, 0, left_ncols * sizeof(float));
 		memset(d + i * nx + nx - right_ncols, 0, right_ncols * sizeof(float));
 	}
-	image->done_data();
+	image->update();
 }
 
 void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
@@ -1596,7 +1594,7 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
+	image->update();
 }
 
 
@@ -1633,7 +1631,6 @@ void NormalizeProcessor::process_inplace(EMData * image)
 		data[i] = (data[i] - mean) / sigma;
 	}
 
-	image->done_data();
 	image->update();
 }
 
@@ -1825,7 +1822,7 @@ void NormalizeRowProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 float NormalizeStdProcessor::calc_mean(EMData * image) const
@@ -1900,7 +1897,7 @@ void NormalizeToStdProcessor::process_inplace(EMData * image)
 				rdata[i] += b;
 			}
 		}
-		image->done_data();
+		image->update();
 	}
 	else {
 		(*image) += b;
@@ -1985,7 +1982,6 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 		rawp[i] = (rawp[i] - a) / b;
 	}
 
-	image->done_data();
 	image->update();
 
 	params["scale"] = scale;
@@ -2248,7 +2244,6 @@ void BilateralProcessor::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -2284,7 +2279,6 @@ void RadialAverageProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
 	image->update();
 }
 
@@ -2318,7 +2312,6 @@ void RadialSubstractProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
 	image->update();
 }
 
@@ -2368,7 +2361,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
  
 void AddNoiseProcessor::process_inplace(EMData * image)
@@ -2402,7 +2395,6 @@ void AddNoiseProcessor::process_inplace(EMData * image)
 		dat[j] += Util::get_gauss_rand(addnoise, addnoise / 2);
 	}
 
-	image->done_data();
 	image->update();
 }
 
@@ -2471,8 +2463,8 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
  		    (*imcp)(-ix+nx2-1,-iy+ ny+2)     = -(*image)(ix+1,iy);  // F*
 		 }
 	     }
-	     image->done_data();
-	     imcp->done_data();
+	     image->update();
+	     imcp->update();
 //	     
 //             We need to recenter and put the data back to the original array
 	     image->set_size(out_nx, out_ny, 1);
@@ -2485,7 +2477,7 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
 	     image->set_complex(true);
 	     image->set_ri(true);
 	     image->set_fftodd(true);
-	     image->done_data();
+	     image->update();
 	     image->set_shuffled(true);
 	} else if  ((nz==1) && (image->is_complex())  // already shuffled
 		&& (image->is_fftodd()) && (image->is_shuffled() )){ // PRB
@@ -2508,7 +2500,7 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
 			(*image)(2*ix,iy)  = cos(phase) *(*imageA)(2*ix,iy)   - sin(phase) *(*imageA)(2*ix+1,iy) ;
 			(*image)(2*ix+1,iy)= cos(phase) *(*imageA)(2*ix+1,iy) + sin(phase) *(*imageA)(2*ix,iy) ;
 	     }}
-	     imageA->done_data();
+	     imageA->update();
 	     
 	     
 
@@ -2545,8 +2537,8 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
 		    (*imcp)(ix+1,iy)  =  (*image)( ix+onxv-1, iy-(onyv+1)/2);  // F
 		 }
 	     }
-	     image->done_data();
-	     imcp->done_data();
+	     image->update();
+	     imcp->update();
 	     image->set_size(out_nx, out_ny, 1);
 	     
 	     for (int ix=0; ix < out_nx; ix++){
@@ -2558,7 +2550,7 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
 	     image->set_ri(true);
 	     image->set_shuffled(false);
 	     image->set_fftodd(true);
-	     image->done_data();
+	     image->update();
 	} else {
 		if (nz == 1) {
 			int l = ny / 2 * nx2;
@@ -2759,7 +2751,7 @@ void Phase180Processor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 void AutoMask2DProcessor::process_inplace(EMData * image)
@@ -2955,7 +2947,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 		dc = 0;
 	}
 
-	d->done_data();
+	d->update();
 
 	image->mult(*d);
 	if( d )
@@ -3057,7 +3049,7 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -3135,7 +3127,7 @@ void AddMaskShellProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 void ToMassCenterProcessor::process_inplace(EMData * image)
@@ -3176,7 +3168,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 
 	xm /= m;
 	ym /= m;
@@ -3620,9 +3612,8 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
 	image->update();
-	msk->done_data();
+	msk->update();
 	if( msk )
 	{
 		delete msk;
@@ -3737,7 +3728,7 @@ void SmartMaskProcessor::process_inplace(EMData * image)
 	}
 
 	float smask = (float) sma / smn;
-	image->done_data();
+	image->update();
 
 	dat = image->get_data();
 	for (int k = 0; k < nz; k++) {
@@ -3756,7 +3747,7 @@ void SmartMaskProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 void AutoMask3DProcessor::search_nearby(float *dat, float *dat2,
@@ -3962,8 +3953,8 @@ void AutoMask3DProcessor::process_inplace(EMData * image)
 
 	fill_nearby(dat2, nx, ny, nz);
 
-	image->done_data();
-	amask->done_data();
+	image->update();
+	amask->update();
 
 	image->mult(*amask);
 	amask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
@@ -4015,7 +4006,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 
 	AutoMask3DProcessor::search_nearby(dat, dat2, nx, ny, nz, threshold);
 
-	amask->done_data();
+	amask->update();
 	float val1 = fabs((float)nshells);
 	float val2 = val1 > 2.0f ? 2.0f : 0.0f;
 
@@ -4027,8 +4018,8 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		AutoMask3DProcessor::fill_nearby(dat2, nx, ny, nz);
 	}
 
-	image->done_data();
-	amask->done_data();
+	image->update();
+	amask->update();
 
 	EMData *norm = amask->copy();
 	norm->process_inplace("threshold.binary");
@@ -4125,7 +4116,7 @@ void IterBinMaskProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	image->done_data();
+	image->update();
 }
 
 void TestImageProcessor::preprocess(const EMData * const image)
@@ -4191,7 +4182,6 @@ void TestImageGaussian::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -4256,7 +4246,6 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 			}
 		}
 	}
-	image->done_data();
 	image->update();
 }
 
@@ -4342,7 +4331,6 @@ void TestImageSinewave::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();	
 }
 
@@ -4396,7 +4384,6 @@ void TestImageSinewaveCircular::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();	
 }
 
@@ -4464,7 +4451,6 @@ void TestImageSquarecube::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -4535,7 +4521,6 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -4563,7 +4548,6 @@ void TestImageNoiseUniformRand::process_inplace(EMData * image)
 		dat[i] = (float)rand()/(float)RAND_MAX;
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -4589,7 +4573,6 @@ void TestImageNoiseGauss::process_inplace(EMData * image)
 		dat[i] = Util::get_gauss_rand(mean, sigma);
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -4645,7 +4628,6 @@ void TestImageCylinder::process_inplace(EMData * image)
 		}
 	}
 	
-	image->done_data();
 	image->update();
 }
 
@@ -4713,7 +4695,7 @@ void RampProcessor::process_inplace(EMData * image)
 		}
 	} // image not altered if c is zero
 
-	image->done_data();
+	image->update();
 }
 
 
@@ -4953,7 +4935,7 @@ if (!image) {
 		}
          }
 	 
-	 image->done_data();
+	 image->update();
 }
 
  

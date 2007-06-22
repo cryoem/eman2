@@ -50,7 +50,7 @@ void EMData::center_origin()
 			}
 		}
 	}
-	done_data();
+	update();
 	update();
 	EXITFUNC;
 }
@@ -96,7 +96,6 @@ void EMData::center_origin_fft()
 		}
 	}
 	set_array_offsets(saved_offsets);
-	done_data();
 	update();
 	EXITFUNC;
 }
@@ -134,7 +133,7 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	int zstart = ( nz == 1 || npad == 1 ) ? 0 : (nzpad - nz)/2 + nz%2;
 	
 	for (int iz = 0; iz < nz; iz++) for (int iy = 0; iy < ny; iy++) memcpy( &(*newimg)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
-	newimg->done_data();
+	newimg->update();
 	return newimg;
 	EXITFUNC;
 }
@@ -208,7 +207,7 @@ EMData* EMData::pad_fft(int npad) {
 			}
 		}
 	}
-	newimg->done_data();
+	newimg->update();
 	set_array_offsets(saved_offsets);
 	return newimg;
 }
@@ -350,7 +349,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	 ret->do_ift_inplace();
 	 ret->postift_depad_corner_inplace();
 	}
-	ret->done_data();
+	ret->update();
 	
 	/*Dict d1 = temp_ft->get_attr_dict();
 	Dict d2 = ret->get_attr_dict();

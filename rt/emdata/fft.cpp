@@ -68,7 +68,7 @@ void create_lattice_image(const char* filename)
 		}
     }
     
-    e.done_data();
+    e.update();
     e.write_image(filename, 0, EMUtil::IMAGE_MRC);
     
     return;

@@ -63,13 +63,13 @@ EMData *EMData::do_fft()
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
-	dat->done_data();
+	dat->update();
     dat->set_fftpad(true);
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
 
-	done_data();
+	update();
 
 	EXITFUNC;
 	return dat;
@@ -118,7 +118,7 @@ EMData *EMData::do_fft_inplace()
 	}
 	set_ri(true);
 
-	done_data();
+	update();
 
 	EXITFUNC;
 	return this;
@@ -162,7 +162,7 @@ EMData *EMData::do_ift()
 		}
 	}
 
-	dat->done_data();
+	dat->update();
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
 	dat->update();
 #if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
@@ -178,7 +178,7 @@ EMData *EMData::do_ift()
 	dat->set_ri(false);
 
 
-	done_data();
+	update();
 
 	EXITFUNC;
 	return dat;
@@ -231,7 +231,7 @@ EMData *EMData::do_ift_inplace()
 		}
 	}
 	this->set_size(nx - offset, ny, nz);	//remove the padding
-	done_data();
+	update();
 	update();
 	set_fftpad(false);
 	*/
@@ -241,7 +241,7 @@ EMData *EMData::do_ift_inplace()
 	}
 	set_ri(false);
 
-	done_data();
+	update();
 
 	EXITFUNC;
 	return this;

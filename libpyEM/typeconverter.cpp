@@ -136,7 +136,7 @@ void EMNumPy::numpy2em(python::numeric::array& array, EMData* image)
     float* data = image->get_data();
 	
 	memcpy(data, array_data, sizeof(float) * nx * ny * nz);
-	image->done_data();
+	image->update();
 }
 
 PyObject* EMObject_to_python::convert(EMObject const& emobj)
