@@ -530,9 +530,7 @@ void TestUtil::make_image_file_by_mode(const string & filename,
     e->set_size(nx, ny, nz);
 	bool is_complex = EMUtil::is_complex_type(datatype);
 	
-	std::cout << "is_complex = " << is_complex << std::endl;
-	
-    e->set_attr("is_complex", (int)is_complex);
+	e->set_attr("is_complex", (int)is_complex);
     e->set_attr("datatype", (int)datatype);
     float * data = e->get_data();
     
@@ -552,17 +550,10 @@ void TestUtil::make_image_file_by_mode(const string & filename,
     }        
  
     if (!is_complex) {
-    	
-    	std::cout << "real image ..." << std::endl;
-    	
         e->write_image(filename, 0, image_type);
-        
-        std::cout << "now is_complex = " << (bool)e->get_attr("is_complex") << std::endl;
     }
     else {
-    	std::cout << "complex image ..." << std::endl;	
-    	
-        e->update();
+    	e->update();
         e->set_attr("is_complex", false);
         EMData * fft = e->do_fft();
         fft->write_image(filename, 0, image_type);
