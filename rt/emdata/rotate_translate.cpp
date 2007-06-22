@@ -679,7 +679,7 @@ void debug_sigma_processor()
 		cout << endl;
 	}	
 	
-	e->process_inplace("eman1.math.sigma", Dict("value1", 1.0, "value2", 1.0));
+	e->process_inplace("math.sigma", Dict("value1", 1.0, "value2", 1.0));
 	MArray2D data = e->get_2dview();
 	for(int i=0; i<2; i++) {
 		for(int j=0; j<2; j++) {

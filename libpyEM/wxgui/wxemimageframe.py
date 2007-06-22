@@ -132,7 +132,7 @@ class EMImageFrame(wx.Window):
 			self.data=emdata.do_fft()
 			self.data.set_value_at(0,0,0,0)
 			self.data.set_value_at(1,0,0,0)
-			self.data.process_inplace("eman1.xform.fourierorigin",{})
+			self.data.process_inplace("xform.fourierorigin",{})
 			self.data=self.data.get_fft_amplitude()
 		else:
 			self.data=self.rdata

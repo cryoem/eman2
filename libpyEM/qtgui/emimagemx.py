@@ -93,6 +93,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 		QtCore.QObject.connect(self.timer, QtCore.SIGNAL("timeout()"), self.timeout)
 
 		
+		self.resize(99,99)
 		self.inspector=None
 		if data: 
 			self.setData(data)
@@ -100,7 +101,7 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			
 			
 	def setData(self,data):
-		if not self.data and data:
+		if not self.data and data and self.size().width()==99 and self.size().height()==99:
 			try:
 				if len(data)<self.nperrow : w=len(data)*(data[0].get_xsize()+2)
 				else : w=self.nperrow*(data[0].get_xsize()+2)
@@ -472,16 +473,22 @@ class EMImageMX(QtOpenGL.QGLWidget):
 			elif self.mmode=="del" and lc:
 				del self.data[lc[0]]
 				self.setData(self.data)
-
+			elif self.mmode=="app" and lc:
+				self.emit(QtCore.SIGNAL("mousedown"),event,lc)
+	
 	def mouseMoveEvent(self, event):
 		if self.mousedrag:
 			self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
 			self.mousedrag=(event.x(),event.y())
 			self.update()
+		elif event.buttons()&Qt.LeftButton and self.mmode=="app":
+			self.emit(QtCore.SIGNAL("mousedrag"),event)
 		
 	def mouseReleaseEvent(self, event):
 		if event.button()==Qt.RightButton:
 			self.mousedrag=None
+		elif event.button()==Qt.LeftButton and self.mmode=="app":
+			self.emit(QtCore.SIGNAL("mouseup"),event)
 
 class EMImageMxInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -512,10 +519,29 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vboxlayout")
 		
+		self.hbl3 = QtGui.QHBoxLayout()
+		self.hbl3.setMargin(0)
+		self.hbl3.setSpacing(6)
+		self.hbl3.setObjectName("hboxlayout")
+		self.vbl.addLayout(self.hbl3)
+		
 		self.hist = ImgHistogram(self)
 		self.hist.setObjectName("hist")
-		self.vbl.addWidget(self.hist)
+		self.hbl3.addWidget(self.hist)
 
+		self.vbl2 = QtGui.QVBoxLayout()
+		self.vbl2.setMargin(0)
+		self.vbl2.setSpacing(6)
+		self.vbl2.setObjectName("vboxlayout")
+		self.hbl3.addLayout(self.vbl2)
+
+		self.bsavedata = QtGui.QPushButton("Save")
+		self.vbl2.addWidget(self.bsavedata)
+
+		self.bsnapshot = QtGui.QPushButton("Snap")
+		self.vbl2.addWidget(self.bsnapshot)
+
+		# This shows the mouse mode buttons
 		self.hbl2 = QtGui.QHBoxLayout()
 		self.hbl2.setMargin(0)
 		self.hbl2.setSpacing(6)
@@ -526,6 +552,10 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		#self.mmeas.setCheckable(1)
 		#self.hbl2.addWidget(self.mmeas)
 
+		self.mapp = QtGui.QPushButton("App")
+		self.mapp.setCheckable(1)
+		self.hbl2.addWidget(self.mapp)
+		
 		self.mdel = QtGui.QPushButton("Del")
 		self.mdel.setCheckable(1)
 		self.hbl2.addWidget(self.mdel)
@@ -538,6 +568,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.bg=QtGui.QButtonGroup()
 		self.bg.setExclusive(1)
 #		self.bg.addButton(self.mmeas)
+		self.bg.addButton(self.mapp)
 		self.bg.addButton(self.mdel)
 		self.bg.addButton(self.mdrag)
 
@@ -556,7 +587,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		self.nrow = QtGui.QSpinBox(self)
 		self.nrow.setObjectName("nrow")
 		self.nrow.setRange(1,50)
-		self.nrow.setValue(8)
+		self.nrow.setValue(self.target.nperrow)
 		self.hbl.addWidget(self.nrow)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
@@ -599,13 +630,61 @@ class EMImageMxInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		
 		#QtCore.QObject.connect(self.mmeas, QtCore.SIGNAL("clicked(bool)"), self.setMeasMode)
+		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.setAppMode)
 		QtCore.QObject.connect(self.mdel, QtCore.SIGNAL("clicked(bool)"), self.setDelMode)
 		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.setDragMode)
 
+		QtCore.QObject.connect(self.bsavedata, QtCore.SIGNAL("clicked(bool)"), self.saveData)
+		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
+	
+	def saveData(self):
+		if self.target.data==None or len(self.target.data)==0: return
+
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File","","","",QtGui.QFileDialog.DontConfirmOverwrite)
+		fsp=str(fsp)
+		
+		# if the file exists, ask the user what to do
+		if QtCore.QFile.exists(fsp) :
+			ow = QtGui.QMessageBox.question(self,"Overwrite or Append","Do you wish to overwrite\nthe existing file (Discard) or\nappend images to the end (Ok)  ?",
+				QtGui.QMessageBox.Discard,QtGui.QMessageBox.Ok,QtGui.QMessageBox.Cancel)
+			if ow == QtGui.QMessageBox.Cancel : return
+			if ow == QtGui.QMessageBox.Discard :
+				QtCore.QFile.remove(fsp)
+				# for IMAGIC files, make sure we remove the image data and the header
+				if fsp[-4:]==".hed" : QtCore.QFile.remove(fsp[:-4]+".img")
+				if fsp[-4:]==".HED" : QtCore.QFile.remove(fsp[:-4]+".IMG")
+				if fsp[-4:]==".img" : QtCore.QFile.remove(fsp[:-4]+".hed")
+				if fsp[-4:]==".IMG" : QtCore.QFile.remove(fsp[:-4]+".HED")
+		
+		for i in self.target.data:
+#			try:
+				i.write_image(fsp,-1)
+#			except:
+#				QtGui.QMessageBox.warning ( self, "File write error", "One or more images were not sucessfully written to '%s'"%fsp)
+#				break
+			
+	def snapShot(self):
+		"Save a screenshot of the current image display"
+		
+		try:
+			qim=self.target.grabFrameBuffer()
+		except:
+			QtGui.QMessageBox.warning ( self, "Framebuffer ?", "Could not read framebuffer")
+		
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Select File")
+		fsp=str(fsp)
+		
+		qim.save(fsp,None,90)
+		
 	def newValDisp(self):
 		v2d=[str(i.text()) for i in self.vals.actions() if i.isChecked()]
 		self.target.setValDisp(v2d)
 
+	def setAppMode(self,i):
+		self.target.mmode="app"
+	
 	def setMeasMode(self,i):
 		self.target.mmode="meas"
 	

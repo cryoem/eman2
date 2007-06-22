@@ -373,7 +373,7 @@ int HdfIO::write_header(const Dict & dict, int image_index, const Region* area,
 				case EMObject::STRING:
 					write_string_attr(image_index, *iter, attr_val.to_str());
 					break;
-				case EMObject::EMDATA:
+//				case EMObject::EMDATA:
 				case EMObject::XYDATA:
 				case EMObject::FLOATARRAY:
 				case EMObject::STRINGARRAY:

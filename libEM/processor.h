@@ -721,7 +721,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.absvalue";
+			return "math.absvalue";
 		}
 		static Processor *NEW()
 		{
@@ -747,7 +747,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.threshold.notzero";
+			return "threshold.notzero";
 		}
 		static Processor *NEW()
 		{
@@ -815,7 +815,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.squared";
+			return "math.squared";
 		}
 		static Processor *NEW()
 		{
@@ -842,7 +842,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.sqrt";
+			return "math.sqrt";
 		}
 		static Processor *NEW()
 		{
@@ -869,7 +869,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.threshold.belowtozero";
+			return "threshold.belowtozero";
 		}
 		static Processor *NEW()
 		{
@@ -905,7 +905,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.threshold.belowtozero_cut";
+			return "threshold.belowtozero_cut";
 		}
 		static Processor *NEW()
 		{
@@ -941,7 +941,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.threshold.binary";
+			return "threshold.binary";
 		}
 		static Processor *NEW()
 		{
@@ -982,7 +982,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.threshold.compress";
+			return "threshold.compress";
 		}
 		static Processor *NEW()
 		{
@@ -1032,7 +1032,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.linear";
+			return "math.linear";
 		}
 		static Processor *NEW()
 		{
@@ -1083,7 +1083,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.exp";
+			return "math.exp";
 		}
 
 		static Processor *NEW()
@@ -1142,7 +1142,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.threshold.binaryrange";
+			return "threshold.binaryrange";
 		}
 		static Processor *NEW()
 		{
@@ -1194,7 +1194,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.sigma";
+			return "math.sigma";
 		}
 		static Processor *NEW()
 		{
@@ -1242,7 +1242,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.log";
+			return "math.log";
 		}
 		static Processor *NEW()
 		{
@@ -1405,7 +1405,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.sharp";
+			return "mask.sharp";
 		}
 		static Processor *NEW()
 		{
@@ -1451,7 +1451,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.mask.ringmean";
+			return "mask.ringmean";
 		}
 		static Processor *NEW()
 		{
@@ -1502,7 +1502,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.mask.noise";
+			return "mask.noise";
 		}
 		static Processor *NEW()
 		{
@@ -1531,7 +1531,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.mask.gaussian";
+			return "mask.gaussian";
 		}
 		static Processor *NEW()
 		{
@@ -1566,7 +1566,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.gausskernelfix";
+			return "math.gausskernelfix";
 		}
 
 		static Processor *NEW()
@@ -1602,7 +1602,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.toradiussqr";
+			return "math.toradiussqr";
 		}
 		static Processor *NEW()
 		{
@@ -1628,7 +1628,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.toradius";
+			return "math.toradius";
 		}
 		static Processor *NEW()
 		{
@@ -1670,7 +1670,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.complex.normpixels";
+			return "complex.normpixels";
 		}
 		static Processor *NEW()
 		{
@@ -1745,7 +1745,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.laplacian";
+			return "math.laplacian";
 		}
 		static Processor *NEW()
 		{
@@ -1769,7 +1769,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.mask.contract";
+			return "mask.contract";
 		}
 		static Processor *NEW()
 		{
@@ -1876,7 +1876,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.localsigma";
+			return "math.localsigma";
 		}
 		static Processor *NEW()
 		{
@@ -1911,7 +1911,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.localmax";
+			return "math.localmax";
 		}
 		static Processor *NEW()
 		{
@@ -1944,7 +1944,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.submax";
+			return "math.submax";
 		}
 		static Processor *NEW()
 		{
@@ -1978,7 +1978,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.mask.onlypeaks";
+			return "mask.onlypeaks";
 		}
 		static Processor *NEW()
 		{
@@ -2024,6 +2024,55 @@ The basic design of EMAN Processors: <br>\
 		}
 	  private:
 		int npeaks;
+	};
+
+	/**peak processor -> if npeaks or more surrounding values >= value, value->0
+	 *@param npeaks
+	 */
+	class XrayPixelProcessor:public BoxStatProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return "mask.xraypixel";
+		}
+		static Processor *NEW()
+		{
+			return new XrayPixelProcessor();
+		}
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			max_peak_ratio = params["max_peak_ratio"];
+			if (max_peak_ratio == 0) {
+				max_peak_ratio=0.1;
+			}
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("max_peak_ratio", EMObject::FLOAT,"Max ratio of neighbor amp/peak amp, default 0.1");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Removes isolated pixels where all neighbors are less than a limiting fraction of the pixel amplitude. Will not work after standard normalization.";
+		}
+
+	  protected:
+		void process_pixel(float *pixel, const float *data, int n) const
+		{
+			
+			for (int i = 0; i < n; i++)
+			{
+				if (data[i] >= *pixel*max_peak_ratio) return;
+			}
+
+		}
+	  private:
+		float max_peak_ratio;
 	};
 
 	/**
@@ -2098,7 +2147,7 @@ The basic design of EMAN Processors: <br>\
 		
 		string get_name() const
 		{
-			return "eman1.math.lineargradientfix";
+			return "math.lineargradientfix";
 		}
 		static Processor *NEW()
 		{
@@ -2184,7 +2233,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.verticalstripefix";
+			return "math.verticalstripefix";
 		}
 
 		static Processor *NEW()
@@ -2208,7 +2257,7 @@ The basic design of EMAN Processors: <br>\
 	
 		string get_name() const
 		{
-			return "eman1.math.realtofft";
+			return "math.realtofft";
 		}
 
 		static Processor *NEW()
@@ -2233,7 +2282,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.zeroedgefill";
+			return "mask.zeroedgefill";
 		}
 		static Processor *NEW()
 		{
@@ -2259,7 +2308,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.beamstop";
+			return "mask.beamstop";
 		}
 
 		static Processor *NEW()
@@ -2291,7 +2340,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.dampedzeroedgefill";
+			return "mask.dampedzeroedgefill";
 		}
 
 		static Processor *NEW()
@@ -2316,7 +2365,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.averageovery";
+			return "math.averageovery";
 		}
 
 		static Processor *NEW()
@@ -2343,7 +2392,7 @@ The basic design of EMAN Processors: <br>\
 		void process_inplace(EMData * image);
 		string get_name() const
 		{
-			return "eman1.mask.zeroedge2d";
+			return "mask.zeroedge2d";
 		}
 
 		static Processor *NEW()
@@ -2381,7 +2430,7 @@ The basic design of EMAN Processors: <br>\
 		void process_inplace(EMData * image);
 		string get_name() const
 		{
-			return "eman1.mask.zeroedge3d";
+			return "mask.zeroedge3d";
 		}
 
 		static Processor *NEW()
@@ -2420,7 +2469,7 @@ The basic design of EMAN Processors: <br>\
 		void process_inplace(EMData * image);
 		string get_name() const
 		{
-			return "eman1.bilateral";
+			return "bilateral";
 		}
 
 		string get_desc() const
@@ -2468,7 +2517,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.unitlen";
+			return "normalize.unitlen";
 		}
 
 		static Processor *NEW()
@@ -2495,7 +2544,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.unitsum";
+			return "normalize.unitsum";
 		}
 
 		static Processor *NEW()
@@ -2523,7 +2572,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize";
+			return "normalize";
 		}
 
 		static Processor *NEW()
@@ -2549,7 +2598,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.mask";
+			return "normalize.mask";
 		}
 
 		string get_desc() const
@@ -2582,7 +2631,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.edgemean";
+			return "normalize.edgemean";
 		}
 
 		static Processor *NEW()
@@ -2606,7 +2655,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.circlemean";
+			return "normalize.circlemean";
 		}
 
 		static Processor *NEW()
@@ -2630,7 +2679,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.lredge";
+			return "normalize.lredge";
 		}
 
 		static Processor *NEW()
@@ -2654,7 +2703,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.maxmin";
+			return "normalize.maxmin";
 		}
 
 		static Processor *NEW()
@@ -2679,7 +2728,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.rows";
+			return "normalize.rows";
 		}
 
 		static Processor *NEW()
@@ -2709,7 +2758,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.normalize.toimage";
+			return "normalize.toimage";
 		}
 
 		static Processor *NEW()
@@ -2747,7 +2796,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.normalize.tofile";
+			return "normalize.tofile";
 		}
 
 		static Processor *NEW()
@@ -2785,7 +2834,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.normalize.toimage.lsq";
+			return "normalize.toimage.lsq";
 		}
 
 		static Processor *NEW()
@@ -2818,7 +2867,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.radialaverage";
+			return "math.radialaverage";
 		}
 
 		static Processor *NEW()
@@ -2842,7 +2891,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.radialsubtract";
+			return "math.radialsubtract";
 		}
 
 		static Processor *NEW()
@@ -2868,7 +2917,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.xform.flip";
+			return "xform.flip";
 		}
 
 		static Processor *NEW()
@@ -2897,7 +2946,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.xform.flip1";
+			return "xform.flip1";
 		}
 
 		static Processor *NEW()
@@ -2929,7 +2978,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.math.addnoise";
+			return "math.addnoise";
 		}
 
 		static Processor *NEW()
@@ -2964,7 +3013,7 @@ The basic design of EMAN Processors: <br>\
 	  public:
 		string get_name() const
 		{
-			return "eman1.math.addsignoise";
+			return "math.addsignoise";
 		}
 
 		static Processor *NEW()
@@ -2995,7 +3044,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.addspectralnoise";
+			return "addspectralnoise";
 		}
 
 		static Processor *NEW()
@@ -3031,7 +3080,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.xform.fourierorigin";
+			return "xform.fourierorigin";
 		}
 
 		static Processor *NEW()
@@ -3055,7 +3104,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.xform.phaseorigin";
+			return "xform.phaseorigin";
 		}
 
 		static Processor *NEW()
@@ -3081,7 +3130,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.auto2d";
+			return "mask.auto2d";
 		}
 
 		static Processor *NEW()
@@ -3115,7 +3164,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.auto3d.thresh";
+			return "mask.auto3d.thresh";
 		}
 
 		static Processor *NEW()
@@ -3152,7 +3201,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.auto3d";
+			return "mask.auto3d";
 		}
 
 		static Processor *NEW()
@@ -3185,7 +3234,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.addshells";
+			return "mask.addshells";
 		}
 
 		string get_desc() const
@@ -3216,7 +3265,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.xform.centerofmass";
+			return "xform.centerofmass";
 		}
 
 		static Processor *NEW()
@@ -3247,7 +3296,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.xform.centeracf";
+			return "xform.centeracf";
 		}
 
 		static Processor *NEW()
@@ -3349,7 +3398,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.misc.symsearch";
+			return "misc.symsearch";
 		}
 
 		string get_desc() const
@@ -3385,7 +3434,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.misc.localnorm";
+			return "misc.localnorm";
 		}
 
 		static Processor *NEW()
@@ -3419,7 +3468,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.fromfile";
+			return "mask.fromfile";
 		}
 
 		static Processor *NEW()
@@ -3452,7 +3501,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.fromfile.sizediff";
+			return "mask.fromfile.sizediff";
 		}
 
 		static Processor *NEW()
@@ -3483,7 +3532,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.misc.setpowspec";
+			return "misc.setpowspec";
 		}
 
 		string get_desc() const
@@ -3514,7 +3563,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.smart";
+			return "mask.smart";
 		}
 
 		static Processor *NEW()
@@ -3544,7 +3593,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.mask.addshells.gauss";
+			return "mask.addshells.gauss";
 		}
 
 		string get_desc() const
@@ -4043,7 +4092,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_name() const
 		{
-			return "eman1.XYZ";
+			return "XYZ";
 		}
 
 		static Processor *NEW()

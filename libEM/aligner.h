@@ -678,7 +678,7 @@ namespace EMAN
 
 		string get_desc() const
 		{
-			return "Refines a preliminary 2D alignment using a simplex algorithm. Subpixel accuracy.";
+			return "Refines a preliminary 2D alignment using a simplex algorithm. Subpixel precision.";
 		}
 
 		static Aligner *NEW()
@@ -691,14 +691,9 @@ namespace EMAN
 			TypeDict d;
 
 			d.put("mode", EMObject::INT);
-			d.put("snr", EMObject::FLOATARRAY);
-			d.put("alot", EMObject::FLOAT);
 			d.put("az", EMObject::FLOAT);
-			d.put("phi", EMObject::FLOAT);
 			d.put("dx", EMObject::FLOAT);
 			d.put("dy", EMObject::FLOAT);
-			d.put("dz", EMObject::FLOAT);
-			d.put("alt", EMObject::FLOAT);
 
 			return d;
 		}

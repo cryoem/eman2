@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 122)
+        self.assertEqual(len(processor_names), 123)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -156,7 +156,7 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('filter.kaiser_io_inverse')
         
-    def test_filter_kaisersinhinverse(self):
+    def no_test_filter_kaisersinhinverse(self):
         """test filter.kaisersinhinverse processor .........."""
         e = EMData()
         e.set_size(32,32,32)
@@ -333,7 +333,7 @@ class TestProcessor(unittest.TestCase):
         e.process_inplace('eman1.filter.ramp', {'intercept':0.25, 'slope':0.3})
         
     def test_eman1_math_absvalue(self):
-        """test eman1.math.absvalue processor ..............."""
+        """test math.absvalue processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -347,20 +347,20 @@ class TestProcessor(unittest.TestCase):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x], -d2[z][y][x], 3)
         
-        e2.process_inplace('eman1.math.absvalue')
+        e2.process_inplace('math.absvalue')
         d2 = e2.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x], d2[z][y][x], 3)
                     
-    def test_eman1_threshold_notzero(self):
-        """test eman1.threshold.notzero processor ..........."""
+    def test_threshold_notzero(self):
+        """test threshold.notzero processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         
         e.to_zero()
-        e.process_inplace('eman1.threshold.notzero')
+        e.process_inplace('threshold.notzero')
         d = e.get_3dview()
         for x in range(32):
             for y in range(32):
@@ -369,15 +369,15 @@ class TestProcessor(unittest.TestCase):
         
         e.to_one()
         e *= 0.5
-        e.process_inplace('eman1.threshold.notzero')
+        e.process_inplace('threshold.notzero')
         d = e.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
                     self.assertEqual(d[z][y][x], 1)
    
-    def test_eman1_math_squared(self):
-        """test eman1.math.squared processor ................"""
+    def test_math_squared(self):
+        """test math.squared processor ......................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -385,15 +385,15 @@ class TestProcessor(unittest.TestCase):
         
         d = e.get_3dview()
         e2 = e.copy()
-        e2.process_inplace('eman1.math.squared')
+        e2.process_inplace('math.squared')
         d2 = e2.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x]**2, d2[z][y][x], 3)
                     
-    def test_eman1_math_sqrt(self):
-        """test eman1.math.sqrt processor ..................."""
+    def test_math_sqrt(self):
+        """test math.sqrt processor ........................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -401,7 +401,7 @@ class TestProcessor(unittest.TestCase):
         
         d = e.get_3dview()
         e2 = e.copy()
-        e2.process_inplace('eman1.math.sqrt')
+        e2.process_inplace('math.sqrt')
         d2 = e2.get_3dview()
         from math import sqrt
         for x in range(32):
@@ -409,22 +409,22 @@ class TestProcessor(unittest.TestCase):
                 for z in range(32):
                     self.assertAlmostEqual(sqrt(d[z][y][x]), d2[z][y][x], 3) 
                     
-    def test_eman1_threshold_belowtozero(self):
-        """test eman1.threshold.belowtozero processor ......."""
+    def test_threshold_belowtozero(self):
+        """test threshold.belowtozero processor ............."""
         e = EMData()
         e.set_size(32,32,32)
         e.to_one()
         e *= 0.4
         
-        e.process_inplace('eman1.threshold.belowtozero', {'minval':0.5})
+        e.process_inplace('threshold.belowtozero', {'minval':0.5})
         d = e.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d[z][y][x], 0, 3)
                     
-    def test_eman1_threshold_belowtozero_cut(self):
-        """test eman1.threshold.belowtozero_cut processor ..."""
+    def test_threshold_belowtozero_cut(self):
+        """test threshold.belowtozero_cut processor ........."""
         e = EMData()
         e.set_size(32,32,32)
         e.to_one()
@@ -436,7 +436,7 @@ class TestProcessor(unittest.TestCase):
                 for z in range(32):
                     d[x][y][z] -= 1.5
         
-        e.process_inplace('eman1.threshold.belowtozero_cut', {'minval':1})
+        e.process_inplace('threshold.belowtozero_cut', {'minval':1})
         
         for x in range(16):
             for y in range(32):
@@ -451,20 +451,20 @@ class TestProcessor(unittest.TestCase):
         e = EMData()
         e.read_image(imgfile1)
         fnum = 1000
-        f1 = Processors.get("eman1.threshold.binary", {'value': fnum})
+        f1 = Processors.get("threshold.binary", {'value': fnum})
         new_params = f1.get_params()
         self.assertEqual(float(new_params["value"]), fnum)
         f1.process_inplace(e)
         testlib.check_emdata(e, sys.argv[0])
         testlib.safe_unlink(imgfile1)
 
-    def test_eman1_threshold_compress(self):
-        """test eman1.threshold.compress processor .........."""
+    def test_threshold_compress(self):
+        """test threshold.compress processor ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.to_one()
         e *= 0.45
-        e.process_inplace('eman1.threshold.compress', {'range':0.2, 'value':0.5})
+        e.process_inplace('threshold.compress', {'range':0.2, 'value':0.5})
         d = e.get_3dview()
         for x in range(32):
             for y in range(32):
@@ -475,15 +475,15 @@ class TestProcessor(unittest.TestCase):
         e2.set_size(32,32,32)
         e2.to_one()
         e2 *= 0.05
-        e2.process_inplace('eman1.threshold.compress', {'range':0.2, 'value':0.5})
+        e2.process_inplace('threshold.compress', {'range':0.2, 'value':0.5})
         d2 = e2.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d2[z][y][x], 0.2+0.05, 3)
         
-    def test_eman1_math_linear(self):
-        """test eman1.math.linear processor ................."""
+    def test_math_linear(self):
+        """test math.linear processor ......................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -491,15 +491,15 @@ class TestProcessor(unittest.TestCase):
         d = e.get_3dview()
         
         e2 = e.copy()
-        e2.process_inplace('eman1.math.linear', {'scale':3.23, 'shift':2.56})
+        e2.process_inplace('math.linear', {'scale':3.23, 'shift':2.56})
         d2 = e2.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
                     self.assertAlmostEqual(d2[z][y][x], d[z][y][x]*3.23 + 2.56, 3)
         
-    def test_eman1_math_exp(self):
-        """test eman1.math.exp processor ...................."""
+    def test_math_exp(self):
+        """test math.exp processor .........................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -507,7 +507,7 @@ class TestProcessor(unittest.TestCase):
         d = e.get_3dview()
         
         e2 = e.copy()
-        e2.process_inplace('eman1.math.exp', {'low':2.56, 'high':3.23})
+        e2.process_inplace('math.exp', {'low':2.56, 'high':3.23})
         d2 = e2.get_3dview()
         from math import exp
         for x in range(32):
@@ -523,29 +523,29 @@ class TestProcessor(unittest.TestCase):
         e.read_image(imgfile1)
         low = 10
         high = 20
-        f1 = Processors.get("eman1.threshold.binaryrange", {"low":low, "high":high});
+        f1 = Processors.get("threshold.binaryrange", {"low":low, "high":high});
         d1 = f1.get_params()
         self.assertEqual(d1["low"], low)
         self.assertEqual(d1["high"], high)
 
         #xc = 12
         rw = 12.5
-        #f2 = Processors.get("eman1.mask.ringmean", {"xc":xc, "ring_width":rw})
-        f2 = Processors.get("eman1.mask.ringmean", {"ring_width":rw})
+        #f2 = Processors.get("mask.ringmean", {"xc":xc, "ring_width":rw})
+        f2 = Processors.get("mask.ringmean", {"ring_width":rw})
         d2 = f2.get_params()
         #self.assertEqual(d2["xc"], xc)
         self.assertEqual(d2["ring_width"], rw)
 
         outfile1 = "test_RangeThreshold_out.mrc"
         
-        e.process_inplace("eman1.threshold.binary", {"value": 200})
+        e.process_inplace("threshold.binary", {"value": 200})
         e.write_image(outfile1)
 
         testlib.safe_unlink(imgfile1)
         testlib.safe_unlink(outfile1)
 
-    def test_eman1_math_sigma(self):
-        """test eman1.math.sigma processor .................."""
+    def test_math_sigma(self):
+        """test math.sigma processor ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -557,7 +557,7 @@ class TestProcessor(unittest.TestCase):
         sigma = e2.get_attr('sigma')
         v1 = 1
         v2 = 1
-        e2.process_inplace('eman1.math.sigma', {'value1':v1, 'value2':v2})
+        e2.process_inplace('math.sigma', {'value1':v1, 'value2':v2})
         d2 = e2.get_3dview()
         for x in range(32):
             for y in range(32):
@@ -567,8 +567,8 @@ class TestProcessor(unittest.TestCase):
                     else:
                         self.assertAlmostEqual(d2[z][y][x], d[z][y][x], 3)
                         
-    def test_eman1_math_log(self):
-        """test eman1.math.log processor ...................."""
+    def test_math_log(self):
+        """test math.log processor .........................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -578,7 +578,7 @@ class TestProcessor(unittest.TestCase):
         
         e2 = e.copy()
         max = e2.get_attr('maximum')
-        e2.process_inplace('eman1.math.log')
+        e2.process_inplace('math.log')
         d2 = e2.get_3dview()
         from math import log10
         for x in range(32):
@@ -589,72 +589,72 @@ class TestProcessor(unittest.TestCase):
                     else:
                         self.assertAlmostEqual(d2[z][y][x], 0.0, 3)
     
-    def test_eman1_mask_sharp(self):
-        """test eman1.mask.sharp processor .................."""
+    def test_mask_sharp(self):
+        """test mask.sharp processor ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.sharp', {'value':0.5})
+        e.process_inplace('mask.sharp', {'value':0.5})
         
-    def test_eman1_mask_ringmean(self):
-        """test eman1.mask.ringmean processor ..............."""
+    def test_mask_ringmean(self):
+        """test mask.ringmean processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.ringmean', {'ring_width':10})
+        e.process_inplace('mask.ringmean', {'ring_width':10})
         
-    def test_eman1_mask_noise(self):
-        """test eman1.mask.noise processor .................."""
+    def test_mask_noise(self):
+        """test mask.noise processor ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.noise')
+        e.process_inplace('mask.noise')
         
-    def test_eman1_mask_gaussian(self):
-        """test eman1.mask.gaussian processor ..............."""
+    def test_mask_gaussian(self):
+        """test mask.gaussian processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.gaussian')
+        e.process_inplace('mask.gaussian')
         
-    def test_eman1_math_gausskernelfix(self):
-        """test eman1.math.gausskernelfix processor ........."""
+    def test_math_gausskernelfix(self):
+        """test math.gausskernelfix processor ..............."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.gausskernelfix', {'gauss_width':10.0})
+        e.process_inplace('math.gausskernelfix', {'gauss_width':10.0})
         
-    def test_eman1_math_toradiussqr(self):
-        """test eman1.math.toradiussqr processor ............"""
+    def test_math_toradiussqr(self):
+        """test math.toradiussqr processor .................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.toradiussqr')
+        e.process_inplace('math.toradiussqr')
         
-    def test_eman1_math_toradius(self):
-        """test eman1.math.toradius processor ..............."""
+    def test_math_toradius(self):
+        """test math.toradius processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.toradius')
+        e.process_inplace('math.toradius')
         
     #need fix, this processor has problem    
-    def no_test_eman1_complex_normpixels(self):
-        """test eman1.complex.normpixels processor .........."""
+    def no_test_complex_normpixels(self):
+        """test complex.normpixels processor ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -664,7 +664,7 @@ class TestProcessor(unittest.TestCase):
         e0 = e.get_fft_phase()    #phase before nomalization
         d0 = e0.get_3dview()
         
-        e.process_inplace('eman1.complex.normpixels')
+        e.process_inplace('complex.normpixels')
         
         e2 = e.get_fft_amplitude()    #amplitude to 1.0
         d2 = e2.get_3dview()
@@ -676,28 +676,28 @@ class TestProcessor(unittest.TestCase):
                     self.assertAlmostEqual(d2[z][y][x], 1.0, 3)
                     self.assertAlmostEqual(d0[z][y][x]. d3[z][y][x], 3)
                     
-    def no_test_eman1_math_laplacian(self):
-        """test eman1.math.laplacian processor .............."""
+    def no_test_math_laplacian(self):
+        """test math.laplacian processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.laplacian')
+        e.process_inplace('math.laplacian')
         
-    def test_eman1_mask_contract(self):
-        """test eman1.mask.contract processor ..............."""
+    def test_mask_contract(self):
+        """test mask.contract processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.contract')
+        e.process_inplace('mask.contract')
         
         e2 = EMData()
         e2.set_size(32,32,32)
         e2.to_zero()
-        e2.process_inplace('eman1.mask.contract')
+        e2.process_inplace('mask.contract')
         d2 = e2.get_3dview()
         for x in range(32):
             for y in range(32):
@@ -713,41 +713,41 @@ class TestProcessor(unittest.TestCase):
         
         e.process_inplace('eman1.filter.median')
         
-    def test_eman1_math_localsigma(self):
-        """test eman1.math.localsigma processor ............."""
+    def test_math_localsigma(self):
+        """test math.localsigma processor ..................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.localsigma')
+        e.process_inplace('math.localsigma')
         
-    def test_eman1_math_localmax(self):
-        """test eman1.math.localmax processor ..............."""
+    def test_math_localmax(self):
+        """test math.localmax processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.localmax')
+        e.process_inplace('math.localmax')
         
-    def test_eman1_math_submax(self):
-        """test eman1.math.submax processor ................."""
+    def test_math_submax(self):
+        """test math.submax processor ......................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.submax')
+        e.process_inplace('math.submax')
         
-    def test_eman1_mask_onlypeaks(self):
-        """test eman1.mask.onlypeaks processor .............."""
+    def test_mask_onlypeaks(self):
+        """test mask.onlypeaks processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.onlypeaks', {'npeaks':2})
+        e.process_inplace('mask.onlypeaks', {'npeaks':2})
         
     def no_test_eman1_filter_blockrange(self):
         """test eman1.filter.blockrange processor ..........."""
@@ -787,22 +787,22 @@ class TestProcessor(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
-    def no_test_eman1_math_lineargradientfix(self):
-        """test eman1.math.lineargradientfix processor ......"""
+    def no_test_math_lineargradientfix(self):
+        """test math.lineargradientfix processor ............"""
         e = EMData()
         e.set_size(32,32, 1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.lineargradientfix')
+        e.process_inplace('math.lineargradientfix')
         
         #3D image not supported by this processor
         e2 = EMData()
         e2.set_size(32,32,32)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process, 'eman1.math.lineargradientfix' )
+        self.assertRaises( RuntimeError, e2.process, 'math.lineargradientfix' )
         try:
-            e2.process_inplace('eman1.math.lineargradientfix')
+            e2.process_inplace('math.lineargradientfix')
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
@@ -825,31 +825,31 @@ class TestProcessor(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
-    def test_eman1_math_verticalstripefix(self):
-        """test eman1.math.verticalstripefix processor ......"""
+    def test_math_verticalstripefix(self):
+        """test math.verticalstripefix processor ............"""
         e = EMData()
         e.set_size(32,32, 32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.verticalstripefix')
+        e.process_inplace('math.verticalstripefix')
         
-    def test_eman1_math_realtofft(self):
-        """test eman1.math.realtofft processor .............."""
+    def test_math_realtofft(self):
+        """test math.realtofft processor ...................."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.realtofft')
+        e.process_inplace('math.realtofft')
         
         #3D image not supported by this processor
         e2 = EMData()
         e2.set_size(32,32,32)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.math.realtofft' )
+        self.assertRaises( RuntimeError, e2.process_inplace, 'math.realtofft' )
         try:
-            e2.process_inplace('eman1.math.realtofft')
+            e2.process_inplace('math.realtofft')
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
@@ -858,162 +858,162 @@ class TestProcessor(unittest.TestCase):
         e3.set_size(32,32,1)
         e3.process_inplace('testimage.noise.uniform.rand')
         e3.do_fft_inplace()
-        self.assertRaises( RuntimeError, e3.process_inplace, 'eman1.math.realtofft' )
+        self.assertRaises( RuntimeError, e3.process_inplace, 'math.realtofft' )
         try:
-            e3.process_inplace('eman1.math.realtofft')
+            e3.process_inplace('math.realtofft')
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
-    def test_eman1_mask_zeroedgefill(self):
-        """test eman1.mask.zeroedgefill processor ..........."""
+    def test_mask_zeroedgefill(self):
+        """test mask.zeroedgefill processor ................."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.zeroedgefill')
+        e.process_inplace('mask.zeroedgefill')
         
         #3D image not supported by this processor
         e2 = EMData()
         e2.set_size(32,32,32)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.mask.zeroedgefill' )
+        self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedgefill' )
         try:
-            e2.process_inplace('eman1.mask.zeroedgefill')
+            e2.process_inplace('mask.zeroedgefill')
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_eman1_mask_beamstop(self):
-        """test eman1.mask.beamstop processor ..............."""
+    def test_mask_beamstop(self):
+        """test mask.beamstop processor ....................."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.beamstop', {'value1':-1.2, 'value2':10, 'value3':8})
+        e.process_inplace('mask.beamstop', {'value1':-1.2, 'value2':10, 'value3':8})
         
         #3D image not supported by this processor
         e2 = EMData()
         e2.set_size(32,32,32)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.mask.beamstop', \
+        self.assertRaises( RuntimeError, e2.process_inplace, 'mask.beamstop', \
                             {'value1':-1.2, 'value2':10, 'value3':8} )
         try:
-            e2.process_inplace('eman1.mask.beamstop', {'value1':-1.2, 'value2':10, 'value3':8})
+            e2.process_inplace('mask.beamstop', {'value1':-1.2, 'value2':10, 'value3':8})
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_eman1_mask_dampedzeroedgefill(self):
-        """test eman1.mask.dampedzeroedgefill processor ....."""
+    def test_mask_dampedzeroedgefill(self):
+        """test mask.dampedzeroedgefill processor ..........."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.dampedzeroedgefill')
+        e.process_inplace('mask.dampedzeroedgefill')
         
         #3D image not supported by this processor
         e2 = EMData()
         e2.set_size(32,32,32)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.mask.dampedzeroedgefill' )
+        self.assertRaises( RuntimeError, e2.process_inplace, 'mask.dampedzeroedgefill' )
         try:
-            e2.process_inplace('eman1.mask.dampedzeroedgefill')
+            e2.process_inplace('mask.dampedzeroedgefill')
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_eman1_math_averageovery(self):
-        """test eman1.math.averageovery processor ..........."""
+    def test_math_averageovery(self):
+        """test math.averageovery processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.averageovery')
+        e.process_inplace('math.averageovery')
         
-    def test_eman1_mask_zeroedge2d(self):
-        """test eman1.mask.zeroedge2d processor ............."""
+    def test_mask_zeroedge2d(self):
+        """test mask.zeroedge2d processor ..................."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
+        e.process_inplace('mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
         
         #3D image not supported by this processor
         e2 = EMData()
         e2.set_size(32,32,32)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
+        self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
         try:
-            e2.process_inplace('eman1.mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
+            e2.process_inplace('mask.zeroedge2d', {'x0':1, 'y0':1, 'x1':25, 'y1':30})
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_eman1_mask_zeroedge3d(self):
-        """test eman1.mask.zeroedge3d processor ............."""
+    def test_mask_zeroedge3d(self):
+        """test mask.zeroedge3d processor ..................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
+        e.process_inplace('mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
         
         #3D image only
         e2 = EMData()
         e2.set_size(32,32,1)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
+        self.assertRaises( RuntimeError, e2.process_inplace, 'mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
         try:
-            e2.process_inplace('eman1.mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
+            e2.process_inplace('mask.zeroedge3d', {'x0':2, 'y0':3, 'z0':4, 'x1':20, 'y1':22, 'z1':26})
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
             
-    def test_eman1_bilateral(self):
-        """test eman1.bilateral processor ..................."""
+    def test_bilateral(self):
+        """test bilateral processor ........................."""
         e = EMData()
         e.set_size(16,16,16)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
+        e.process_inplace('bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
         
         e2 = EMData()
         e2.set_size(32,32)
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
-        e.process_inplace('eman1.bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
+        e.process_inplace('bilateral', {'distance_sigma':0.3, 'value_sigma':0.4, 'niter':2, 'half_width':5})
             
         
-    def test_eman1_normalize_unitlen(self):
-        """test eman1.normalize.unitlen processor ..........."""
+    def test_normalize_unitlen(self):
+        """test normalize.unitlen processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.unitlen')
+        e.process_inplace('normalize.unitlen')
         
-    def test_eman1_normalize_unitsum(self):
-        """test eman1.normalize.unitsum processor ..........."""
+    def test_normalize_unitsum(self):
+        """test normalize.unitsum processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.unitsum')
+        e.process_inplace('normalize.unitsum')
         
-    def test_eman1_normalize(self):
-        """test eman1.normalize processor ..................."""
+    def test_normalize(self):
+        """test normalize processor ........................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize')
+        e.process_inplace('normalize')
         
-    def test_eman1_normalize_mask(self):
-        """test eman1.normalize.mask processor .............."""
+    def test_normalize_mask(self):
+        """test normalize.mask processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1023,65 +1023,65 @@ class TestProcessor(unittest.TestCase):
         e2.set_size(32,32,32)
         e2.process_inplace('testimage.noise.uniform.rand')
         
-        e3 = e.process('eman1.normalize.mask', {'mask':e2, 'no_sigma':1})
+        e3 = e.process('normalize.mask', {'mask':e2, 'no_sigma':1})
         
         e4 = EMData()
         e4.set_size(16,16,16)
         e4.process_inplace('testimage.noise.uniform.rand')
         
         try:
-            e5 = e.process('eman1.normalize.mask', {'mask':e4, 'no_sigma':1})
+            e5 = e.process('normalize.mask', {'mask':e4, 'no_sigma':1})
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
         
-    def test_eman1_normalize_edgemean(self):
-        """test eman1.normalize.edgemean processor .........."""
+    def test_normalize_edgemean(self):
+        """test normalize.edgemean processor ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.edgemean')
+        e.process_inplace('normalize.edgemean')
         
-    def test_eman1_normalize_circlemean(self):
-        """test eman1.normalize.circlemean processor ........"""
+    def test_normalize_circlemean(self):
+        """test normalize.circlemean processor .............."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.circlemean')
+        e.process_inplace('normalize.circlemean')
         
-    def test_eman1_normalize_lredge(self):
-        """test eman1.normalize.lredge processor ............"""
+    def test_normalize_lredge(self):
+        """test normalize.lredge processor .................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.lredge')
+        e.process_inplace('normalize.lredge')
         
-    def test_eman1_normalize_maxmin(self):
-        """test eman1.normalize.maxmin processor ............"""
+    def test_normalize_maxmin(self):
+        """test normalize.maxmin processor .................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.maxmin')
+        e.process_inplace('normalize.maxmin')
         
-    def test_eman1_normalize_rows(self):
-        """test eman1.normalize.rows processor .............."""
+    def test_normalize_rows(self):
+        """test normalize.rows processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.rows')
+        e.process_inplace('normalize.rows')
         
-    def test_eman1_normalize_toimage(self):
-        """test eman1.normalize.toimage processor ..........."""
+    def test_normalize_toimage(self):
+        """test normalize.toimage processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1092,11 +1092,11 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.toimage', {'noisy':e2, 'keepzero':2, 'invert':1, \
+        e.process_inplace('normalize.toimage', {'noisy':e2, 'keepzero':2, 'invert':1, \
                                                 'mult':2.3, 'add':0.5})
                                                 
-    def test_eman1_normalize_tofile(self):
-        """test eman1.normalize.tofile processor ............"""
+    def test_normalize_tofile(self):
+        """test normalize.tofile processor .................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1109,13 +1109,13 @@ class TestProcessor(unittest.TestCase):
         filename = 'noise.mrc'
         e2.write_image(filename)
         
-        e.process_inplace('eman1.normalize.tofile', {'noisyfile':filename, 'keepzero':2, \
+        e.process_inplace('normalize.tofile', {'noisyfile':filename, 'keepzero':2, \
                    'invert':1, 'mult':2.3, 'add':0.5 })
                    
         testlib.safe_unlink(filename)
         
-    def test_eman1_normalize_toimage_lsq(self):
-        """test eman1.normalize.toimage.lsq processor ......."""
+    def test_normalize_toimage_lsq(self):
+        """test normalize.toimage.lsq processor ............."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1126,28 +1126,28 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
         
-        e.process_inplace('eman1.normalize.toimage.lsq', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
+        e.process_inplace('normalize.toimage.lsq', {'to':e2, 'low_threshold':0.2, 'high_threshold':0.8})
         
-    def test_eman1_math_radialaverage(self):
-        """test eman1.math.radialaverage processor .........."""
+    def test_math_radialaverage(self):
+        """test math.radialaverage processor ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.radialaverage')
+        e.process_inplace('math.radialaverage')
         
-    def test_eman1_math_radialsubtract(self):
-        """test eman1.math.radialsubtract processor ........."""
+    def test_math_radialsubtract(self):
+        """test math.radialsubtract processor ..............."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.radialsubtract')
+        e.process_inplace('math.radialsubtract')
         
-    def test_eman1_xform_flip(self):
-        """test eman1.xform.flip processor .................."""
+    def test_xform_flip(self):
+        """test xform.flip processor ........................"""
         e = EMData()
         e.set_size(2,2,2)
         self.assertEqual(e.is_complex(), False)
@@ -1160,44 +1160,44 @@ class TestProcessor(unittest.TestCase):
         e.set_value_at(1,1,0, 7)
         e.set_value_at(1,1,1, 8)
         
-        e.process_inplace('eman1.xform.flip', {'axis':'x'})
+        e.process_inplace('xform.flip', {'axis':'x'})
         self.assertEqual(e.get_value_at(0, 0, 0), 5)
         self.assertEqual(e.get_value_at(0, 1, 0), 7)
         self.assertEqual(e.get_value_at(1, 0, 0), 1)
         self.assertEqual(e.get_value_at(1, 1, 0), 3)
         
-        e.process_inplace('eman1.xform.flip', {'axis':'y'})
+        e.process_inplace('xform.flip', {'axis':'y'})
         self.assertEqual(e.get_value_at(0, 0, 0), 7)
         self.assertEqual(e.get_value_at(0, 1, 0), 5)
         self.assertEqual(e.get_value_at(1, 0, 0), 3)
         self.assertEqual(e.get_value_at(1, 1, 0), 1)
         
-        e.process_inplace('eman1.xform.flip', {'axis':'z'})
+        e.process_inplace('xform.flip', {'axis':'z'})
         self.assertEqual(e.get_value_at(0, 0, 0), 8)
         self.assertEqual(e.get_value_at(0, 1, 0), 6)
         self.assertEqual(e.get_value_at(1, 0, 0), 4)
         self.assertEqual(e.get_value_at(1, 1, 0), 2)
     
-    def test_eman1_math_addnoise(self):
-        """test eman1.math.addnoise processor ..............."""
+    def test_math_addnoise(self):
+        """test math.addnoise processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.addnoise', {'noise':0.89})
+        e.process_inplace('math.addnoise', {'noise':0.89})
         
-    def test_eman1_math_addsignoise(self):
-        """test eman1.math.addsignoise processor ............"""
+    def test_math_addsignoise(self):
+        """test math.addsignoise processor .................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.math.addsignoise')
+        e.process_inplace('math.addsignoise')
         
-    def test_eman1_addspectralnoise(self):
-        """test eman1.addspectralnoise processor ............"""
+    def test_addspectralnoise(self):
+        """test addspectralnoise processor .................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1205,7 +1205,7 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('eman1.addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
+        e.process_inplace('addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
                                     'y':(1.3,2.4), 'interpolation':1})
         
         #complex image only
@@ -1214,16 +1214,16 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
         Log.logger().set_level(-1)    #no log message printed out
-        self.assertRaises( RuntimeError, e2.process_inplace, 'eman1.addspectralnoise', \
+        self.assertRaises( RuntimeError, e2.process_inplace, 'addspectralnoise', \
                             {'n':2, 'x0':9.8, 'dx':1.2, 'y':(1.3,2.4), 'interpolation':1})
         try:
-            e2.process_inplace('eman1.addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
+            e2.process_inplace('addspectralnoise', {'n':2, 'x0':9.8, 'dx':1.2, \
                                     'y':(1.3,2.4), 'interpolation':1})
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
-    def test_eman1_xform_fourierorigin(self):
-        """test eman1.xform.fourierorigin processor ........."""
+    def test_xform_fourierorigin(self):
+        """test xform.fourierorigin processor ..............."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1231,25 +1231,25 @@ class TestProcessor(unittest.TestCase):
         e.do_fft_inplace()
         self.assertEqual(e.is_complex(), True)
         
-        e.process_inplace('eman1.xform.fourierorigin')
+        e.process_inplace('xform.fourierorigin')
         
-    def test_eman1_xform_phaseorigin(self):
-        """test eman1.xform.phaseorigin processor ..........."""
+    def test_xform_phaseorigin(self):
+        """test xform.phaseorigin processor ................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.xform.phaseorigin')
-        
-    def test_eman1_mask_auto2d(self):
-        """test eman1.mask.auto2d processor ................."""
+        e.process_inplace('xform.phaseorigin')
+
+    def test_mask_auto2d(self):
+        """test mask.auto2d processor ......................."""
         e = EMData()
         e.set_size(32,32,1)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.auto2d', {'threshold':0.5, 'filter':0.1})
+        e.process_inplace('mask.auto2d', {'threshold':0.5, 'filter':0.1})
         
         #2D image only
         e2 = EMData()
@@ -1257,58 +1257,58 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         self.assertRaises( RuntimeError, e2.process_inplace, \
-            'eman1.mask.auto2d', {'threshold':0.5, 'filter':0.1})
+            'mask.auto2d', {'threshold':0.5, 'filter':0.1})
         try:
-            e2.process_inplace('eman1.mask.auto2d', {'threshold':0.5, 'filter':0.1})
+            e2.process_inplace('mask.auto2d', {'threshold':0.5, 'filter':0.1})
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     
-    def no_test_eman1_mask_auto3d_thresh(self):
-        """test eman1.mask.auto3d.thresh processor .........."""
+    def no_test_mask_auto3d_thresh(self):
+        """test mask.auto3d.thresh processor ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.auto3d.thresh', {'threshold1':0.23, 'threshold2':0.86})
+        e.process_inplace('mask.auto3d.thresh', {'threshold1':0.23, 'threshold2':0.86})
         
-    def test_eman1_mask_auto3d(self):
-        """test eman1.mask.auto3d processor ................."""
+    def test_mask_auto3d(self):
+        """test mask.auto3d processor ......................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.auto3d', {'radius':16, 'threshold':0.5, 'nshells':3})
+        e.process_inplace('mask.auto3d', {'radius':16, 'threshold':0.5, 'nshells':3})
         
         testlib.safe_unlink('mask.mrc')
         
-    def test_eman1_mask_addshells(self):
-        """test eman1.mask.addshells processor .............."""
+    def test_mask_addshells(self):
+        """test mask.addshells processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.addshells', {'nshells':3})
+        e.process_inplace('mask.addshells', {'nshells':3})
         
-    def test_eman1_xform_centerofmass(self):
-        """test eman1.xform.centerofmass processor .........."""
+    def test_xform_centerofmass(self):
+        """test xform.centerofmass processor ................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.xform.centerofmass', {'int_shift_only':2})
+        e.process_inplace('xform.centerofmass', {'int_shift_only':2})
         
-    def test_eman1_xform_centeracf(self):
-        """test eman1.xform.centeracf processor ............."""
+    def test_xform_centeracf(self):
+        """test xform.centeracf processor ..................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.xform.centeracf', {'is3d':1})
+        e.process_inplace('xform.centeracf', {'is3d':1})
         
     def no_test_eman1_filter_snr(self):
         """test eman1.filter.snr processor .................."""
@@ -1331,8 +1331,8 @@ class TestProcessor(unittest.TestCase):
         filter_file = 'filter.txt'
         e.process_inplace('eman1.filter.byfile', {'filename':filter_file})
         
-    def no_test_eman1_misc_symsearch(self):
-        """test eman1.misc.symsearch processor .............."""
+    def no_test_misc_symsearch(self):
+        """test misc.symsearch processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1343,22 +1343,22 @@ class TestProcessor(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e2.is_complex(), False)
         
-        e.process_inplace('eman1.misc.symsearch', {'sym':['CSYM'], 'thresh':0.5, 'output_symlabel':1, 'symlabel_map':e2})
+        e.process_inplace('misc.symsearch', {'sym':['CSYM'], 'thresh':0.5, 'output_symlabel':1, 'symlabel_map':e2})
         
-    def test_eman1_misc_localnorm(self):
-        """test eman1.misc.localnorm processor .............."""
+    def test_misc_localnorm(self):
+        """test misc.localnorm processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
-        f = e.process('eman1.misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
+        e.process_inplace('misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
+        f = e.process('misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
         
         testlib.safe_unlink('norm.mrc')
         
-    def test_eman1_mask_fromfile(self):
-        """test eman1.mask.fromfile processor ..............."""
+    def test_mask_fromfile(self):
+        """test mask.fromfile processor ....................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1371,12 +1371,12 @@ class TestProcessor(unittest.TestCase):
         filename = 'maskfile.mrc'
         e2.write_image(filename)
         
-        e.process_inplace('eman1.mask.fromfile', {'filename':filename, 'ismaskset':1})
+        e.process_inplace('mask.fromfile', {'filename':filename, 'ismaskset':1})
         
         testlib.safe_unlink(filename)
         
-    def test_eman1_mask_fromfile_sizediff(self):
-        """test eman1.mask.fromfile.sizediff processor ......"""
+    def test_mask_fromfile_sizediff(self):
+        """test mask.fromfile.sizediff processor ............"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1392,12 +1392,12 @@ class TestProcessor(unittest.TestCase):
         filename = 'maskfile.mrc'
         e2.write_image(filename)
         
-        e.process_inplace('eman1.mask.fromfile.sizediff', {'filename':filename})
+        e.process_inplace('mask.fromfile.sizediff', {'filename':filename})
         
         testlib.safe_unlink(filename)
         
-    def no_test_eman1_misc_setpowspec(self):
-        """test eman1.misc.setpowspec processor ............."""
+    def no_test_misc_setpowspec(self):
+        """test misc.setpowspec processor ..................."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
@@ -1405,25 +1405,25 @@ class TestProcessor(unittest.TestCase):
         
         filename = 'powerspec.txt'
         
-        e.process_inplace('eman1.misc.setpowspec', {'filename':filename})
+        e.process_inplace('misc.setpowspec', {'filename':filename})
         
-    def test_eman1_mask_smart(self):
-        """test eman1.mask.smart processor .................."""
+    def test_mask_smart(self):
+        """test mask.smart processor ........................"""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.smart', {'mask':1.1})
+        e.process_inplace('mask.smart', {'mask':1.1})
         
-    def test_eman1_mask_addshells_gauss(self):
-        """test eman1.mask.addshells.gauss processor ........"""
+    def test_mask_addshells_gauss(self):
+        """test mask.addshells.gauss processor .............."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
         self.assertEqual(e.is_complex(), False)
         
-        e.process_inplace('eman1.mask.addshells.gauss')
+        e.process_inplace('mask.addshells.gauss')
         
     def test_testimage_puregaussian(self):
         """test testimage.puregaussian processor ............"""

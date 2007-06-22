@@ -86,6 +86,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&MaskNoiseProcessor::NEW);
 	force_add(&MaskGaussProcessor::NEW);
 	force_add(&MaskGaussInvProcessor::NEW);
+	force_add(&XrayPixelProcessor::NEW);
 	
 	force_add(&MakeRadiusSquaredProcessor::NEW);
 	force_add(&MakeRadiusProcessor::NEW);
@@ -724,7 +725,7 @@ void BoxStatProcessor::process_inplace(EMData * image)
 	}
 
 	float *array = new float[matrix_size];
-//	image->process_inplace("eman1.normalize");
+//	image->process_inplace("normalize");
 
 	float *data = image->get_data();
 	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
@@ -2792,7 +2793,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	d->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", (filter * ny / 2)));
 	d->process_inplace("eman1.filter.highpass.gaussian", Dict("highpass", 0));
 
-	d->process_inplace("eman1.normalize");
+	d->process_inplace("normalize");
 
 	int d_nx = d->get_xsize();
 	int d_ny = d->get_ysize();
@@ -3145,7 +3146,7 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	}
 
 	int int_shift_only = params["int_shift_only"];
-	image->process_inplace("eman1.normalize");
+	image->process_inplace("normalize");
 
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
@@ -3263,7 +3264,7 @@ void SNRProcessor::process_inplace(EMData * image)
 		ctf = image_ctf->compute_1d(image->get_ysize(), Ctf::CTF_ABS_SNR, &sf);
 	}
 
-	image->process_inplace("eman1.normalize.circlemean");
+	image->process_inplace("normalize.circlemean");
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -3372,14 +3373,14 @@ void LocalNormProcessor::process_inplace(EMData * image)
 	EMData *blur = image->copy();
 	EMData *maskblur = image->copy();
 
-	maskblur->process_inplace("eman1.threshold.binary", Dict("value", threshold));
+	maskblur->process_inplace("threshold.binary", Dict("value", threshold));
 	maskblur->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
 	maskblur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
-	maskblur->process_inplace("eman1.threshold.belowtozero", Dict("minval", 0.001f));
-	maskblur->process_inplace("eman1.threshold.belowtozero", Dict("minval", 0.001f));
+	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
+	maskblur->process_inplace("threshold.belowtozero", Dict("minval", 0.001f));
 
 
-	blur->process_inplace("eman1.threshold.belowtozero", Dict("minval", threshold));
+	blur->process_inplace("threshold.belowtozero", Dict("minval", threshold));
 	blur->process_inplace("eman1.filter.lowpass.gaussian", Dict("lowpass", radius));
 	blur->process_inplace("eman1.filter.highpass.tanh", Dict("highpass", -10.0f));
 
@@ -3540,7 +3541,7 @@ void IndexMaskFileProcessor::process_inplace(EMData * image)
 	}
 
 	if ((int) params["ismaskset"] != 0) {
-		msk->process_inplace("eman1.threshold.binaryrange", Dict("low", 0.5f, "high", 1.5f));
+		msk->process_inplace("threshold.binaryrange", Dict("low", 0.5f, "high", 1.5f));
 	}
 
 	image->mult(*msk);
@@ -4018,7 +4019,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	float val1 = fabs((float)nshells);
 	float val2 = val1 > 2.0f ? 2.0f : 0.0f;
 
-	amask->process_inplace("eman1.mask.addshells.gauss", Dict("val1", val1, "val2", val2));
+	amask->process_inplace("mask.addshells.gauss", Dict("val1", val1, "val2", val2));
 
 	dat2 = amask->get_data();
 
@@ -4030,10 +4031,10 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 	amask->done_data();
 
 	EMData *norm = amask->copy();
-	norm->process_inplace("eman1.threshold.binary");
+	norm->process_inplace("threshold.binary");
 
 	EMData *norm2 = norm->copy();
-	norm->process_inplace("eman1.mask.addshells", Dict("nshells", 1));
+	norm->process_inplace("mask.addshells", Dict("nshells", 1));
 	norm->sub(*norm2);
 	if( norm2 )
 	{
@@ -4041,8 +4042,8 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 		norm2 = 0;
 	}
 
-	norm->process_inplace("eman1.mask.addshells", Dict("nshells", 2));
-	image->process_inplace("eman1.normalize.mask", Dict("mask", norm, "no_sigma", 0));
+	norm->process_inplace("mask.addshells", Dict("nshells", 2));
+	image->process_inplace("normalize.mask", Dict("mask", norm, "no_sigma", 0));
 	
 	if( norm )
 	{

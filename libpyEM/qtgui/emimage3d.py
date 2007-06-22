@@ -75,11 +75,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.data=None
 		
+//		self.aspect=1.0
+//		self.gq=0
+//		self.mmode=0
 		self.isothr=1.0
 		self.isorender=None
-		self.aspect=1.0
-		self.gq=0
-		self.mmode=0
 		
 		self.inspector=None
 		
@@ -149,6 +149,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glEndList()
 	
 	def paintGL(self):
+<<<<<<< emimage3d.py
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 #		glLoadIdentity()
 #		glTranslated(0.0, 0.0, -10.0)
@@ -188,6 +189,26 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glVertexPointer(3,GL_FLOAT,0,p)
 		glNormalPointer(GL_FLOAT,0,n)
 		glDrawElements(GL_TRIANGLES,len(f),GL_UNSIGNED_INT,f)
+=======
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+#		glLoadIdentity()
+#		glTranslated(0.0, 0.0, -10.0)
+		if self.norender  or not self.isorender: return
+		
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		
+		self.isorender.set_surface_value(self.isothr)
+		a=self.isorender.get_isosurface(true)
+		f=a["faces"]
+		n=a["normals"]
+		p=a["points"]
+		
+		
+		glEnableClientState(GL_VERTEX_ARRAY)
+		glEnableClientState(GL_INDEX_ARRAY)
+		glVertexPointer()
+>>>>>>> 1.6.2.2
 		
 		glPopMatrix()
 		
@@ -198,6 +219,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
+<<<<<<< emimage3d.py
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		
@@ -213,7 +235,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 #		glLightf(GL_LIGHT0,
 
 		self.aspect=float(width)/height
+=======
+		glEnable(GL_LIGHTING)
+		glEnable(GL_LIGHT0)
+		glEnable(GL_DEPTH_TEST)
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+
+
+>>>>>>> 1.6.2.2
 		side = min(width, height)
+<<<<<<< emimage3d.py
 #		glViewport((width - side) / 2, (height - side) / 2, side, side)
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
@@ -224,6 +258,17 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+=======
+#		glViewport((width - side) / 2, (height - side) / 2, side, side)
+		glViewport(0,0,self.width(),self.height())
+		glMatrixMode(GL_PROJECTION)
+		glLoadIdentity()
+		glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
+		glTranslatef(0.,0.,-14.9)
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
+>>>>>>> 1.6.2.2
 		
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch

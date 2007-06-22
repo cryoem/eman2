@@ -65,7 +65,7 @@ interactive web browsing."""
 		# read the target and probe
 		orig=EMData()
 		orig.read_image(options.build)
-		orig.process_inplace("eman1.normalize")
+		orig.process_inplace("normalize")
 		opt={}
 		try: opt["pspec"]=options.buildpspec
 		except: pass
@@ -156,13 +156,13 @@ def build_tiles(img,tilefile,tilesize,options=[]):
 			for y in range(1,ny-1):
 				for x in range(1,nx-1):
 					c=img.get_clip(Region(x*512,y*512,512,512))
-					c.process_inplace("eman1.normalize")
-					c.process_inplace("eman1.math.realtofft")
-					c.process_inplace("eman1.math.squared")
+					c.process_inplace("normalize")
+					c.process_inplace("math.realtofft")
+					c.process_inplace("math.squared")
 					a+=c
 			a.set_value_at(256,256,0,.01)
 			a-=a.get_attr("minimum")-a.get_attr("sigma")*.01
-			a.process_inplace("eman1.math.log")
+			a.process_inplace("math.log")
 			a-=a.get_attr("minimum")
 			a.set_attr("render_min",a.get_attr("minimum")-a.get_attr("sigma")*.1)
 			a.set_attr("render_max",a.get_attr("mean")+a.get_attr("sigma")*4.0)

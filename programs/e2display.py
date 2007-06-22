@@ -64,6 +64,7 @@ def main():
 
 	logid=E2init(sys.argv)
 	display(args)
+	E2end(logid)
 
 def display(img):
 	if isinstance(img,str) : img=[img]

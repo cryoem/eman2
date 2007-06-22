@@ -43,7 +43,7 @@ def findstars(img,scale=1.0):
 	imc=img.copy()
 	thr=imc.get_attr("mean")+imc.get_attr("sigma")*3.0
 	imc.process_inplace("filter.lowpass.gauss",{"sigma":0.3})
-	imc.process_inplace("eman1.mask.onlypeaks",{"npeaks":0})
+	imc.process_inplace("mask.onlypeaks",{"npeaks":0})
 	peaks=imc.calc_highest_locations(thr)
 	
 	ret=[]
@@ -89,6 +89,24 @@ def alignstars(a,b):
 	print a.align_trans_2d(b,1,0,0)
 #	print centerofstars(a),centerofstars(b)
 
+app=None
+wins=[]
+def showstars(img,pa):
+	global app,wins
+	if not app : app = QtGui.QApplication(sys.argv)
+	
+	w=EMImage(img)
+#	w.setWindowTitle("EMImage (%s)"%f)
+	for i in range(len(pa)):
+		v=["circle",.2,1.,.2,pa[i][0]+img.get_xsize()/2,pa[i][1]+img.get_ysize()/2,5.0,1.0]
+		w.addShape(i,v)
+	w.show()
+	wins.append(w)
+	
+def dorun():
+	global app
+	sys.exit(app.exec_())
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -98,36 +116,47 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
-#	parser.add_option("--scale", action="store_true", help="Restrict axes for c/d symmetric objects", default=False)
+	parser.add_option("--saveali", action="store_true", help="Save aligned images in ali.hed", default=False)
 	parser.add_option("--scale", "-S", type="float", help="scale factor", default=1.0)
+	parser.add_option("--threshold", "-T", type="float", help="Dot threshold for discarding image", default=0.1)
 	parser.add_option("--out", "-o", type="string", help="Output filespec", default="out.mrc")
+	parser.add_option("--maxerr",type="float",help="Maximum error in point pair matching",default=-1)
 	
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("At least 2 inputs required")
 	scale=options.scale
+	logid=E2init(sys.argv)
 
 	pats=[]
 	for j,i in enumerate(args):
 		img=EMData(i,0)
+		img.process_inplace("mask.xraypixel",{})
+		img.process_inplace("normalize.edgemean",{})
 		pats.append(l2pa(findstars(img,scale)))
+#		showstars(img,pats[-1])
 		print " %04d\r"%j,
 		sys.stdout.flush()
-		
+	
+#	dorun()
 	avg=EMData(args[0],0)
-	avg.process_inplace("eman1.normalize.edgemean",{})
+	avg.process_inplace("mask.xraypixel",{})
+	avg.process_inplace("normalize.edgemean",{})
 	nx=avg.get_xsize()
 	ny=avg.get_ysize()
 	if scale!=1.0 : 
 		avg=avg.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
 		avg.scale(1.0/scale)
+	ref=avg.copy()
+	if options.saveali : ref.write_image("ali.hed")
 	avgn=avg.copy()
 	avgn.to_one()
 		
 	for i in range(1,len(pats)):
-		xf=pats[i].align_2d(pats[0])
-		print "%d. %6.2f\t%6.2f"%(i,xf.get_pretrans().at(0),xf.get_pretrans().at(1))
+		xf=pats[i].align_2d(pats[0],options.maxerr)
+		print "%d. %6.2f\t%6.2f\t"%(i,xf.get_pretrans().at(0),xf.get_pretrans().at(1)),
 		img=EMData(args[i],0)
-		img.process_inplace("eman1.normalize.edgemean",{})
+		img.process_inplace("mask.xraypixel",{})
+		img.process_inplace("normalize.edgemean",{})
 		if scale!=1.0 : 
 			img=img.get_clip(Region(-nx*(scale-1)/2,-ny*(scale-1)/2,nx*scale,ny*scale))
 			img.scale(1.0/scale)
@@ -135,9 +164,25 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 		imgn.to_one()
 		img.rotate_translate(xf)
 		imgn.rotate_translate(xf)
+		dot=img.cmp("dot",ref,{"normalize":1,"negative":0})
+		if dot<options.threshold : 
+			print dot," *"
+			continue
+		print dot
 		avg+=img
 		avgn+=imgn
-	
+		if options.saveali : 
+			img.write_image("ali.hed",-1)
+			m=pats[0].match_points(pats[i],-1.0)
+#			pats[i].transform(xf)
+			a=pats[0].get_points()
+			b=pats[i].get_points()
+			out=file("ali.%d.txt"%i,"w")
+			for j,k in enumerate(m):
+				if k==-1 : continue
+				out.write("%1.2f\t%1.2f\n%1.2f\t%1.2f\n"%(a[j*3],a[j*3+1],b[k*3],b[k*3+1]))
+			out.close()
+			
 	avg/=avgn
 	avg.write_image(options.out)
 	#print str(xf)
@@ -146,7 +191,8 @@ Finds isolated spots in the image and uses them as a basis for alignment"""
 	#print xf.get_posttrans()
 	#print xf.get_rotation(EULER_EMAN)
 
-	
+	E2end(logid)
+
 
 	
 if __name__ == "__main__":

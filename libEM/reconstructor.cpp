@@ -38,11 +38,30 @@
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include "reconstructor.h"
-#include "interp.h"
 #include "ctf.h"
 
 using namespace EMAN;
 using std::complex;
+
+
+#include <iostream>
+using std::cerr;
+using std::endl;
+using std::cout; // for debug 
+
+#include <algorithm>
+// find
+
+
+// Static init
+map<unsigned int, FourierPixelInserterMaker* > FourierPixelInserterMaker::maker_registry;
+const FourierInserter3DMode7Maker::FourierInserter3DMode7Maker registerMode7Maker;
+const FourierInserter3DMode6Maker::FourierInserter3DMode6Maker registerMode6Maker;
+const FourierInserter3DMode5Maker::FourierInserter3DMode5Maker registerMode5Maker;
+const FourierInserter3DMode4Maker::FourierInserter3DMode4Maker registerMode4Maker;
+const FourierInserter3DMode3Maker::FourierInserter3DMode3Maker registerMode3Maker;
+const FourierInserter3DMode2Maker::FourierInserter3DMode2Maker registerMode2Maker;
+const FourierInserter3DMode1Maker::FourierInserter3DMode1Maker registerMode1Maker;
 
 template < typename T > void checked_delete( T*& x )
 {
@@ -66,17 +85,85 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
 
-FourierReconstructor::FourierReconstructor()
-:	image(0), nx(0), ny(0), nz(0)
+
+Reconstructor::Reconstructor( const Reconstructor& that )
 {
+	copyData(that);
 }
 
-FourierReconstructor::~FourierReconstructor()
+Reconstructor& Reconstructor::operator=( const Reconstructor& that )
 {
-	if (image) {
+	if ( this != &that )
+	{
+		if ( tmp_data != 0 )
+		{
+			delete tmp_data;
+			tmp_data = 0;
+		}
+		copyData(that);
+	}
+	else
+	{
+		cerr << "Warning: attempted to assign a reconstructor to itself, no action taken" << endl;
+	}
+	return *this;
+}
+
+void Reconstructor::copyData( const Reconstructor& that )
+{
+	params = that.params;
+	if ( that.tmp_data != 0 )
+		tmp_data = new EMData( *that.tmp_data );
+}
+
+ReconstructorWithVolumeData& ReconstructorWithVolumeData::operator=( const ReconstructorWithVolumeData& that )
+{
+	if ( this != &that )
+	{
+		copyData(that);
+		// Make sure the base class performs the assignment also.
+		Reconstructor::operator=(that);
+	}
+	else
+	{
+		cerr << "Warning: attempted to assign a ReconstructorWithVolumeData to itself, no action taken" << endl;
+	}
+
+	return *this;
+}
+
+void ReconstructorWithVolumeData::copyData( const ReconstructorWithVolumeData& that )
+{
+	nx = that.nx;
+	ny = that.ny;
+	nz = that.nz;
+
+	// No matter what the image pointer must be freed
+	if ( image != 0 )
+	{
 		delete image;
 		image = 0;
 	}
+
+	if ( that.image != 0 )
+	{
+		image = new EMData(*that.image);
+	}
+}
+
+FourierReconstructor& FourierReconstructor::operator=( const FourierReconstructor& that )
+{
+	if ( this != &that )
+	{
+		// Make sure the base class performs the assignment also.
+		ReconstructorWithVolumeData::operator=(that);
+	}
+	else
+	{
+		cerr << "Warning: attempted to assign a FourierReconstructor to itself, no action taken" << endl;
+	}
+
+	return *this;
 }
 
 void FourierReconstructor::setup()
@@ -106,387 +193,129 @@ void FourierReconstructor::setup()
 	tmp_data->to_zero();
 }
 
-int FourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
+EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
 {
-	if (!slice) {
-		LOGERR("try to insert NULL slice");
+
+	EMData* return_slice;
+
+	// Apply padding if the option has been set, and it's sensible
+	if ( params.find("pad") != params.end() )
+	{
+		int pad = params["pad"];
+		int x_size = slice->get_xsize();
+		int y_size = slice->get_ysize();
+		if ( x_size >= pad || y_size >= pad )
+		{
+			cerr << "You specified a pad size " <<  pad << " that was smaller than the x " << x_size << " or y " << y_size << " dimension, nothing happened" << endl;
+			return_slice = new EMData(*slice);	
+		}
+		else
+		{
+			return_slice = slice->get_clip(Region((x_size-pad)/2,(y_size-pad)/2,pad,pad));
+		}
+	}
+	else
+	{
+		return_slice = new EMData(*slice);
+	}
+
+	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
+	return_slice->process_inplace("xform.phaseorigin");
+
+	// Fourier transform the slice
+	return_slice->do_fft_inplace();
+	
+	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
+	return_slice->process_inplace("xform.fourierorigin");
+
+	return return_slice;
+}
+
+int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform3D & arg)
+{
+	if (!input_slice) {
+		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
 		return 1;
 	}
 
+	if (input_slice->is_complex()) {
+		LOGERR("Do not Fourier transform the image before it is passed to the FourierReconstructor, this is performed internally");
+		return 1;
+	}
+	
+	// Get the proprecessed slice - there are some things that always happen to a slice,
+	// such as as Fourier conversion and prior padding and normalization etc.
+	EMData* slice = preprocess_slice( input_slice );
+	
+	if (!slice->is_complex()) {
+		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor failed in insert_slice");
+		return 1;
+	}
+	
 	int mode = params["mode"];
 	float weight = params["weight"];
-
-	if (!slice->is_complex()) {
-		LOGERR("Only complex slice can be inserted.");
-		return 1;
-	}
-
-	float *gimx = 0;
-	if (mode == 5) {
-		gimx = Interp::get_gimx();
-	}
-
-	int nxy = nx * ny;
-
-	int off[8];
-	if (mode == 2) {
-		off[0] = 0;
-		off[1] = 2;
-		off[2] = nx;
-		off[3] = nx + 2;
-		off[4] = nxy;
-		off[5] = nxy + 2;
-		off[6] = nxy + nx;
-		off[7] = nxy + nx + 2;
-	}
-
+	
 	float *norm = tmp_data->get_data();
 	float *dat = slice->get_data();
 	float *rdata = image->get_data();
 	
 	int rl = Util::square(ny / 2 - 1);
-	float dt[2];
-	float g[8];
 
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx / 2; x++) {
-			if ((x * x + Util::square(y - ny / 2)) >= rl)
-				continue;
+	FourierPixelInserter3D* inserter = FourierPixelInserterMaker::get_inserter(mode,norm, rdata, nx, ny, nz);
+	if ( inserter == 0 )
+	{
+		LOGERR("no such insert slice mode: '%d'", mode);
+		// FIXME is there a exception thing to throw?
+		throw InvalidCallException("no such insert slice mode:");
+	}
+	
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D euler = arg.get_sym((string) params["sym"], i);
+		
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx / 2; x++) {
+				if ((x * x + Util::square(y - ny / 2)) >= rl)
+					continue;
+	
+				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
+				float cc = 1;
+	
+				if (xx < 0) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1.0;
+				}
+	
+				yy += ny / 2;
+				zz += nz / 2;
+				
+				float dt[2];
+				dt[0] = dat[x * 2 + y * nx];
+				dt[1] = cc * dat[x * 2 + 1 + y * nx];
 
-			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
-			float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
-			float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
-			float cc = 1;
-
-			if (xx < 0) {
-				xx = -xx;
-				yy = -yy;
-				zz = -zz;
-				cc = -1.0;
+				inserter->insert_pixel(xx,yy,zz,dt,weight);
 			}
-
-			yy += ny / 2;
-			zz += nz / 2;
-
-			dt[0] = dat[x * 2 + y * nx];
-			dt[1] = cc * dat[x * 2 + 1 + y * nx];
-
-			int x0 = 0;
-			int y0 = 0;
-			int z0 = 0;
-			int i = 0;
-			int l = 0;
-			float dx = 0;
-			float dy = 0;
-			float dz = 0;
-
-			int mx0 = 0;
-			int my0 = 0;
-			int mz0 = 0;
-
-			switch (mode) {
-			case 1:
-				x0 = 2 * (int) floor(xx + 0.5f);
-				y0 = (int) floor(yy + 0.5f);
-				z0 = (int) floor(zz + 0.5f);
-
-				rdata[x0 + y0 * nx + z0 * nxy] += weight * dt[0];
-				rdata[x0 + y0 * nx + z0 * nxy + 1] += weight * dt[1];
-				norm[x0 + y0 * nx + z0 * nxy] += weight;
-				break;
-
-			case 2:
-				x0 = (int) floor(xx);
-				y0 = (int) floor(yy);
-				z0 = (int) floor(zz);
-
-				dx = xx - x0;
-				dy = yy - y0;
-				dz = zz - z0;
-
-				if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
-					break;
-				}
-
-				i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
-
-				g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
-				g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
-				g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
-				g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
-				g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
-				g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
-				g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
-				g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
-
-				for (int j = 0; j < 8; j++) {
-					int k = i + off[j];
-					rdata[k] += weight * dt[0] * g[j];
-					rdata[k + 1] += weight * dt[1] * g[j];
-					norm[k] += weight * g[j];
-					norm[k + 1] += weight * g[j] * dt[0] * dt[0] * dt[1] * dt[1];
-				}
-
-				break;
-
-			case 3:
-				x0 = 2 * (int) floor(xx + 0.5f);
-				y0 = (int) floor(yy + 0.5f);
-				z0 = (int) floor(zz + 0.5f);
-
-				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
-					break;
-				}
-
-				l = x0 - 2;
-				if (x0 == 0) {
-					l = x0;
-				}
-
-				for (int k = z0 - 1; k <= z0 + 1; k++) {
-					for (int j = y0 - 1; j <= y0 + 1; j++) {
-						for (int i = l; i <= x0 + 2; i += 2) {
-							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = exp(-r / EMConsts::I3G);
-
-							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
-							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
-							norm[i + j * nx + k * nxy] += weight * gg;
-						}
-					}
-				}
-				break;
-
-			case 4:
-				x0 = 2 * (int) floor(xx);
-				y0 = (int) floor(yy);
-				z0 = (int) floor(zz);
-
-				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
-					break;
-				}
-
-				l = x0 - 2;
-				if (x0 == 0) {
-					l = x0;
-				}
-
-				for (int k = z0 - 1; k <= z0 + 2; k++) {
-					for (int j = y0 - 1; j <= y0 + 2; j++) {
-						for (int i = l; i <= x0 + 4; i += 2) {
-							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = exp(-r / EMConsts::I4G);
-
-							rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
-							rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
-							norm[i + j * nx + k * nxy] += weight * gg;
-						}
-					}
-				}
-				break;
-
-			case 5:
-				x0 = (int) floor(xx + 0.5f);
-				y0 = (int) floor(yy + 0.5f);
-				z0 = (int) floor(zz + 0.5f);
-
-				mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f) - 78;
-				my0 = -(int) floor((yy - y0) * 39.0f + 0.5f) - 78;
-				mz0 = -(int) floor((zz - z0) * 39.0f + 0.5f) - 78;
-
-				x0 *= 2;
-
-				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
-					break;
-				}
-
-				l = 0;
-				if (x0 == 0) {
-					mx0 += 78;
-				}
-				else if (x0 == 2) {
-					mx0 += 39;
-				}
-				else {
-					l = x0 - 4;
-				}
-
-				for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
-					for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
-						for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-							int ii = i + j * nx + k * nxy;
-							float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
-
-							rdata[ii] += gg * dt[0];
-							rdata[ii + 1] += gg * dt[1];
-							norm[ii] += gg;
-						}
-					}
-				}
-
-				if (x0 <= 2) {
-					xx = -xx;
-					yy = -(yy - ny / 2) + ny / 2;
-					zz = -(zz - nz / 2) + nz / 2;
-
-					x0 = (int) floor(xx + 0.5f);
-					y0 = (int) floor(yy + 0.5f);
-					z0 = (int) floor(zz + 0.5f);
-
-					int mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f);
-					x0 *= 2;
-
-					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-						break;
-
-					for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
-						for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
-							for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-								int ii = i + j * nx + k * nxy;
-								float gg =
-									weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
-								rdata[ii] += gg * dt[0];
-								rdata[ii + 1] -= gg * dt[1];
-								norm[ii] += gg;
-							}
-						}
-					}
-				}
-				break;
-
-			case 6:
-				x0 = 2 * (int) floor(xx + 0.5f);
-				y0 = (int) floor(yy + 0.5f);
-				z0 = (int) floor(zz + 0.5f);
-
-				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-					break;
-
-				l = x0 - 4;
-				if (x0 <= 2) {
-					l = 0;
-				}
-
-				for (int k = z0 - 2; k <= z0 + 2; k++) {
-					for (int j = y0 - 2; j <= y0 + 2; j++) {
-						for (int i = l; i <= x0 + 4; i += 2) {
-							int ii = i + j * nx + k * nxy;
-							float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-							float gg = weight * exp(-r / EMConsts::I5G);
-
-							rdata[ii] += gg * dt[0];
-							rdata[ii + 1] += gg * dt[1];
-							norm[ii] += gg;
-						}
-					}
-				}
-
-				if (x0 <= 2) {
-					xx = -xx;
-					yy = -(yy - ny / 2) + ny / 2;
-					zz = -(zz - nz / 2) + nz / 2;
-
-					x0 = 2 * (int) floor(xx + 0.5f);
-					y0 = (int) floor(yy + 0.5f);
-					z0 = (int) floor(zz + 0.5f);
-
-					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-						break;
-
-					for (int k = z0 - 2; k <= z0 + 2; k++) {
-						for (int j = y0 - 2; j <= y0 + 2; j++) {
-							for (int i = 0; i <= x0 + 4; i += 2) {
-								int ii = i + j * nx + k * nxy;
-								float r = Util::hypot3((float) i / 2 - xx, (float) j - yy,
-													   (float) k - zz);
-								float gg = weight * exp(-r / EMConsts::I5G);
-
-								rdata[ii] += gg * dt[0];
-								rdata[ii + 1] -= gg * dt[1];
-								norm[ii] += gg;
-							}
-						}
-					}
-				}
-				break;
-
-			case 7:
-				x0 = 2 * (int) floor(xx + 0.5f);
-				y0 = (int) floor(yy + 0.5f);
-				z0 = (int) floor(zz + 0.5f);
-
-				if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-					break;
-
-				l = x0 - 4;
-				if (x0 <= 2)
-					l = 0;
-
-				for (int k = z0 - 2; k <= z0 + 2; k++) {
-					for (int j = y0 - 2; j <= y0 + 2; j++) {
-						for (int i = l; i <= x0 + 4; i += 2) {
-							int ii = i + j * nx + k * nxy;
-							float r =
-								sqrt(Util::
-									 hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
-							float gg = weight * Interp::hyperg(r);
-
-							rdata[ii] += gg * dt[0];
-							rdata[ii + 1] += gg * dt[1];
-							norm[ii] += gg;
-						}
-					}
-				}
-
-				if (x0 <= 2) {
-					xx = -xx;
-					yy = -(yy - ny / 2) + ny / 2;
-					zz = -(zz - nz / 2) + nz / 2;
-					x0 = 2 * (int) floor(xx + 0.5f);
-					y0 = (int) floor(yy + 0.5f);
-					z0 = (int) floor(zz + 0.5f);
-
-					if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-						break;
-
-					for (int k = z0 - 2; k <= z0 + 2; k++) {
-						for (int j = y0 - 2; j <= y0 + 2; j++) {
-							for (int i = 0; i <= x0 + 4; i += 2) {
-								int ii = i + j * nx + k * nxy;
-								float r = sqrt(Util::hypot3((float) i / 2 - xx, (float) j - yy,
-															(float) k - zz));
-								float gg = weight * Interp::hyperg(r);
-
-								rdata[ii] += gg * dt[0];
-								rdata[ii + 1] -= gg * dt[1];
-								norm[ii] += gg;
-							}
-						}
-					}
-				}
-			default:
-				LOGERR("no such insert slice mode: '%d'", mode);
-				return 1;
-			}
-
 		}
 	}
-
-	image->done_data();
-	tmp_data->done_data();
-	slice->done_data();
-	slice->update();
-
+	
+	delete inserter;
+	delete slice;	
+	
+	image->update();
+	
 	return 0;
 }
 
 EMData *FourierReconstructor::finish()
 {
-	int dlog = params["dlog"];
 	float *norm = tmp_data->get_data();
 	float *rdata = image->get_data();
 
-	if (dlog) {
+	if (params["dlog"]) {
 		for (int i = 0; i < nx * ny * nz; i += 2) {
 			float d = norm[i];
 			if (d == 0) {
@@ -517,24 +346,34 @@ EMData *FourierReconstructor::finish()
 
 	if( tmp_data ) {
 		delete tmp_data;
+		tmp_data = 0;
 		norm = 0;
 	}
-	image->done_data();
+	
+	// 
+	image->process_inplace("xform.fourierorigin");
+	image->do_ift_inplace();
+	image->process_inplace("xform.phaseorigin");
+	
+	image->update();
+	
 	return image;
 }
 
-WienerFourierReconstructor::WienerFourierReconstructor()
-:	image(0), nx(0), ny(0), nz(0)
+WienerFourierReconstructor& WienerFourierReconstructor::operator=( const WienerFourierReconstructor& that )
 {
+	if ( this != &that )
+	{
+		ReconstructorWithVolumeData::operator=(that);
+	}
+	else
+	{
+		cerr << "Warning: attempted to assign a WienerFourierReconstructor to itself, no action taken" << endl;
+	}
+
+	return *this;
 }
 
-WienerFourierReconstructor::~WienerFourierReconstructor()
-{
-	if (image) {
-		delete image;
-		image = 0;
-	}
-}
 
 void WienerFourierReconstructor::setup()
 {
@@ -590,7 +429,7 @@ EMData *WienerFourierReconstructor::finish()
 }
 
 
-int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform3D & euler)
+int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Transform3D & euler)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -630,6 +469,8 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform3D &
 	int rl = Util::square(ny / 2 - 1);
 	float dt[2];
 	float g[8];
+	
+	
 
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
@@ -965,23 +806,24 @@ int WienerFourierReconstructor::insert_slice(EMData * slice, const Transform3D &
 
 	image->done_data();
 	tmp_data->done_data();
-	slice->done_data();
-	slice->update();
+//	slice->done_data();
+//	slice->update();
 
 	return 0;
 }
 
-BackProjectionReconstructor::BackProjectionReconstructor()
-:	image(0), nx(0), ny(0), nz(0)
+BackProjectionReconstructor& BackProjectionReconstructor::operator=( const BackProjectionReconstructor& that )
 {
-}
-
-BackProjectionReconstructor::~BackProjectionReconstructor()
-{
-	if (image) {
-		delete image;
-		image = 0;
+	if ( this != &that )
+	{
+		ReconstructorWithVolumeData::operator=(that);
 	}
+	else
+	{
+		cerr << "Warning: attempted to assign a BackProjectionReconstructor to itself, no action taken" << endl;
+	}
+
+	return *this;
 }
 
 void BackProjectionReconstructor::setup()
@@ -994,7 +836,7 @@ void BackProjectionReconstructor::setup()
 	nz = size;
 }
 
-int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform3D &)
+int BackProjectionReconstructor::insert_slice(const EMData* const slice, const Transform3D &transform)
 {
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1025,8 +867,12 @@ int BackProjectionReconstructor::insert_slice(EMData * slice, const Transform3D 
 
 	tmp->done_data();
 
-	Dict slice_euler = slice->get_transform().get_rotation(Transform3D::EMAN);
-	tmp->rotate(-(float)slice_euler["alt"], -(float)slice_euler["az"], -(float)slice_euler["phi"]);
+	// I am not sure why this was here (next 3 commented lines) - I think they are wrong
+	//	Dict slice_euler = slice->get_transform().get_rotation(Transform3D::EMAN);
+	// Dict slice_euler = transform.get_rotation(Transform3D::EMAN)
+	//tmp->rotate(-(float)slice_euler["az"], -(float)slice_euler["alt"], -(float)slice_euler["phi"]);
+	// This solution fixed the problems I was having in e2make3d.py - d.woolford
+	tmp->rotate(transform);
 
 	image->add(*tmp);
 	if( slice_copy )
@@ -1049,7 +895,7 @@ EMData *BackProjectionReconstructor::finish()
 	return image;
 }
 
-EMData* EMAN::padfft_slice( EMData* slice, int npad )
+EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 {
 	if ( slice->get_xsize() != slice->get_ysize() )
 	{
@@ -1096,7 +942,10 @@ nn4Reconstructor::nn4Reconstructor( const string& symmetry, int size, int npad )
     m_volume = NULL; 
     m_wptr   = NULL;
     m_result = NULL;
-    setup( symmetry, size, npad );
+	setup( symmetry, size, npad );
+	std::cout << "printing in constructor" << std::endl;
+	load_default_settings();
+	print_params();
 }
 
 nn4Reconstructor::~nn4Reconstructor()
@@ -1114,27 +963,27 @@ enum weighting_method { NONE, ESTIMATE, VORONOI };
 
 float max3d( int kc, const vector<float>& pow_a )
 {
-    float max = 0.0;
-    for( int i=-kc; i <= kc; ++i )
-    {
-        for( int j=-kc; j <= kc; ++j )
+	float max = 0.0;
+	for( int i=-kc; i <= kc; ++i )
 	{
-	    for( int k=-kc; k <= kc; ++k )
-	    {
-                if( i==0 && j==0 && k==0 ) continue;
-
-		// if( i!=0 ) 
+		for( int j=-kc; j <= kc; ++j )
 		{
-		    int c = 3*kc+1 - std::abs(i) - std::abs(j) - std::abs(k);
-		    max = max + pow_a[c];
-		    // max = max + c * c;
-		    // max = max + c; 
+			for( int k=-kc; k <= kc; ++k )
+			{
+					if( i==0 && j==0 && k==0 ) continue;
+	
+				// if( i!=0 ) 
+				{
+					int c = 3*kc+1 - std::abs(i) - std::abs(j) - std::abs(k);
+					max = max + pow_a[c];
+					// max = max + c * c;
+					// max = max + c; 
+				}
+			}
 		}
-	    }
 	}
-    }
 
-    return max;
+	return max;
 }
 
 
@@ -1245,7 +1094,7 @@ void nn4Reconstructor::buildNormVolume() {
     m_wptr->set_array_offsets(0,1,1);
 }
 
-int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
+int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1267,29 +1116,29 @@ int nn4Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		return 1;
 	}
 
-        EMData* padfft = NULL;
+    EMData* padfft = NULL;
 
-        if( padffted != 0 )
-        {	   
-            padfft = slice;
-        }
-        else
-        {
-            padfft = padfft_slice( slice, m_npad );
-        }
+    if( padffted != 0 )
+    {	   
+        padfft = new EMData(*slice);
+    }
+    else
+    {
+        padfft = padfft_slice( slice, m_npad );
+    }
 
-        int mult=0;
-        try {
-	    mult = slice->get_attr("mult");
-        }
-        catch(_NotExistingObjectException) {
-	    mult = 1;
-        }
+    int mult=0;
+    try {
+    mult = slice->get_attr("mult");
+    }
+    catch(_NotExistingObjectException) {
+    mult = 1;
+    }
 
         assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
-	if( padffted == 0 ) checked_delete( padfft );
+	checked_delete( padfft );
 	return 0;
 }
 
@@ -1573,7 +1422,7 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 }
 
 
-int nnSSNR_Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
+int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -1595,29 +1444,29 @@ int nnSSNR_Reconstructor::insert_slice(EMData* slice, const Transform3D& t) {
 		return 1;
 	}
 
-        EMData* padfft = NULL;
+    EMData* padfft = NULL;
 
-        if( padffted != 0 )
-        {	   
-            padfft = slice;
-        }
-        else
-        {
-            padfft = padfft_slice( slice, m_npad );
-        }
+    if( padffted != 0 )
+    {
+        padfft = new EMData(*slice);
+    }
+    else
+    {
+        padfft = padfft_slice( slice, m_npad );
+    }
 
-        int mult=0;
-        try {
-	    mult = slice->get_attr("mult");
-        }
-        catch(_NotExistingObjectException) {
-	    mult = 1;
-        }
+    int mult=0;
+    try {
+    mult = slice->get_attr("mult");
+    }
+    catch(_NotExistingObjectException) {
+    mult = 1;
+    }
 
         assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
-	if( padffted == 0 ) checked_delete( padfft );
+	checked_delete( padfft );
 	return 0;
 }
 
@@ -1638,7 +1487,7 @@ EMData* nnSSNR_Reconstructor::finish()
 {
 	int kz, ky;
  	int box = 7;
-        int kc = (box-1)/2;
+    int kc = (box-1)/2;
 	float alpha = 0.0;
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
@@ -1804,7 +1653,7 @@ void bootstrap_nnReconstructor::setup()
     m_nsym = Transform3D::get_nsym(m_symmetry);
 }
 
-int bootstrap_nnReconstructor::insert_slice(EMData* slice, const Transform3D& euler)
+int bootstrap_nnReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
 {
     EMData* padfft = padfft_slice( slice, m_npad );
     assert( padfft != NULL );
@@ -1983,7 +1832,7 @@ void nn4_ctfReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t) 
+int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform3D& t) 
 {
 	// sanity checks
 	if (!slice) {
@@ -2007,29 +1856,29 @@ int nn4_ctfReconstructor::insert_slice(EMData* slice, const Transform3D& t)
 		return 1;
 	}
 
-        EMData* padfft = NULL;
+    EMData* padfft = NULL;
 
-        if( padffted != 0 )
-        {
-            padfft = slice;
-        }
-        else
-        {
-            padfft = padfft_slice( slice, m_npad );
-        }
+    if( padffted != 0 )
+    {
+        padfft = new EMData(*slice);
+    }
+    else
+    {
+        padfft = padfft_slice( slice, m_npad );
+    }
 
-        int mult=0;
-        try {
-	    mult = slice->get_attr("mult");
-        }
-        catch(_NotExistingObjectException) {
-	    mult = 1;
-        }
+    int mult=0;
+    try {
+    mult = slice->get_attr("mult");
+    }
+    catch(_NotExistingObjectException) {
+    mult = 1;
+    }
 
-        assert( mult > 0 );
+    assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
-	if( padffted == 0 ) checked_delete( padfft );
+	checked_delete( padfft );
 
 	return 0;
 }
@@ -2084,7 +1933,6 @@ EMData* nn4_ctfReconstructor::finish()
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
-                                                               
 				if ( (*m_wptr)(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
 					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
 
@@ -2736,7 +2584,7 @@ void bootstrap_nnctfReconstructor::setup()
     m_nsym = Transform3D::get_nsym(m_symmetry);
 }
 
-int bootstrap_nnctfReconstructor::insert_slice(EMData* slice, const Transform3D& euler)
+int bootstrap_nnctfReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
 {
     EMData* padfft = padfft_slice( slice, m_npad );
     assert( padfft != NULL );
@@ -2789,6 +2637,319 @@ EMData* bootstrap_nnctfReconstructor::finish()
     return w;
 }
 
+
+bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int x0 = 2 * (int) floor(xx + 0.5f);
+	int y0 = (int) floor(yy + 0.5f);
+	int z0 = (int) floor(zz + 0.5f);
+
+	rdata[x0 + y0 * nx + z0 * nxy] += weight * dt[0];
+	rdata[x0 + y0 * nx + z0 * nxy + 1] += weight * dt[1];
+	norm[x0 + y0 * nx + z0 * nxy] += weight;
+	
+	return true;
+}
+
+FourierInserter3DMode2::FourierInserter3DMode2(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
+	FourierPixelInserter3D( normalize_values, real_data, xsize, ysize, zsize )
+{
+	off[0] = 0;
+	off[1] = 2;
+	off[2] = nx;
+	off[3] = nx + 2;
+	off[4] = nxy;
+	off[5] = nxy + 2;
+	off[6] = nxy + nx;
+	off[7] = nxy + nx + 2;
+}
+		
+bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int x0 = (int) floor(xx);
+	int y0 = (int) floor(yy);
+	int z0 = (int) floor(zz);
+
+	float dx = xx - x0;
+	float dy = yy - y0;
+	float dz = zz - z0;
+
+	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
+		return false;
+	}
+
+	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
+
+	g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
+	g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
+	g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
+	g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
+	g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
+	g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
+	g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
+	g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
+
+	for (int j = 0; j < 8; j++) {
+		int k = i + off[j];
+		rdata[k] += weight * dt[0] * g[j];
+		rdata[k + 1] += weight * dt[1] * g[j];
+		norm[k] += weight * g[j];
+		norm[k + 1] += weight * g[j] * dt[0] * dt[0] * dt[1] * dt[1];
+	}
+	
+	return true;
+}
+		
+bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int x0 = 2 * (int) floor(xx + 0.5f);
+	int y0 = (int) floor(yy + 0.5f);
+	int z0 = (int) floor(zz + 0.5f);
+
+	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
+		return false;
+	}
+
+	int l = x0 - 2;
+	if (x0 == 0) {
+		l = x0;
+	}
+
+	for (int k = z0 - 1; k <= z0 + 1; k++) {
+		for (int j = y0 - 1; j <= y0 + 1; j++) {
+			for (int i = l; i <= x0 + 2; i += 2) {
+				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
+				float gg = exp(-r / EMConsts::I3G);
+
+				rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
+				rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
+				norm[i + j * nx + k * nxy] += weight * gg;
+			}
+		}
+	}
+	return true;
+}
+
+bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int x0 = 2 * (int) floor(xx);
+	int y0 = (int) floor(yy);
+	int z0 = (int) floor(zz);
+
+	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
+		return false;
+	}
+
+	int l = x0 - 2;
+	if (x0 == 0) {
+		l = x0;
+	}
+
+	for (int k = z0 - 1; k <= z0 + 2; k++) {
+		for (int j = y0 - 1; j <= y0 + 2; j++) {
+			for (int i = l; i <= x0 + 4; i += 2) {
+				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
+				float gg = exp(-r / EMConsts::I4G);
+
+				rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
+				rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
+				norm[i + j * nx + k * nxy] += weight * gg;
+			}
+		}
+	}
+	
+	return true;
+}
+
+bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int x0 = (int) floor(xx + 0.5f);
+	int y0 = (int) floor(yy + 0.5f);
+	int z0 = (int) floor(zz + 0.5f);
+
+	int mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f) - 78;
+	int my0 = -(int) floor((yy - y0) * 39.0f + 0.5f) - 78;
+	int mz0 = -(int) floor((zz - z0) * 39.0f + 0.5f) - 78;
+
+	x0 *= 2;
+
+	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
+		return false;
+	}
+
+	int l = 0;
+	if (x0 == 0) {
+		mx0 += 78;
+	}
+	else if (x0 == 2) {
+		mx0 += 39;
+	}
+	else {
+		l = x0 - 4;
+	}
+
+	for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
+		for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
+			for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
+				int ii = i + j * nx + k * nxy;
+				float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+
+				rdata[ii] += gg * dt[0];
+				rdata[ii + 1] += gg * dt[1];
+				norm[ii] += gg;
+			}
+		}
+	}
+
+	if (x0 <= 2) {
+		float xx_b = -xx;
+		float yy_b = -(yy - ny / 2) + ny / 2;
+		float zz_b = -(zz - nz / 2) + nz / 2;
+
+		x0 = (int) floor(xx_b + 0.5f);
+		y0 = (int) floor(yy_b + 0.5f);
+		z0 = (int) floor(zz_b + 0.5f);
+
+		int mx0 = -(int) floor((xx_b - x0) * 39.0f + 0.5f);
+		x0 *= 2;
+
+		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
+			return false;
+
+		for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
+			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
+				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
+					int ii = i + j * nx + k * nxy;
+					float gg =
+						weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+					rdata[ii] += gg * dt[0];
+					rdata[ii + 1] -= gg * dt[1];
+					norm[ii] += gg;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int	x0 = 2 * (int) floor(xx + 0.5f);
+	int y0 = (int) floor(yy + 0.5f);
+	int z0 = (int) floor(zz + 0.5f);
+
+	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
+		return false;
+
+	int l = x0 - 4;
+	if (x0 <= 2) {
+		l = 0;
+	}
+
+	for (int k = z0 - 2; k <= z0 + 2; k++) {
+		for (int j = y0 - 2; j <= y0 + 2; j++) {
+			for (int i = l; i <= x0 + 4; i += 2) {
+				int ii = i + j * nx + k * nxy;
+				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
+				float gg = weight * exp(-r / EMConsts::I5G);
+
+				rdata[ii] += gg * dt[0];
+				rdata[ii + 1] += gg * dt[1];
+				norm[ii] += gg;
+			}
+		}
+	}
+
+	if (x0 <= 2) {
+		float xx_b = -xx;
+		float yy_b = -(yy - ny / 2) + ny / 2;
+		float zz_b = -(zz - nz / 2) + nz / 2;
+
+		x0 = 2 * (int) floor(xx_b + 0.5f);
+		y0 = (int) floor(yy_b + 0.5f);
+		z0 = (int) floor(zz_b + 0.5f);
+
+		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
+			return false;
+
+		for (int k = z0 - 2; k <= z0 + 2; k++) {
+			for (int j = y0 - 2; j <= y0 + 2; j++) {
+				for (int i = 0; i <= x0 + 4; i += 2) {
+					int ii = i + j * nx + k * nxy;
+					float r = Util::hypot3((float) i / 2 - xx_b, (float) j - yy_b,
+										   (float) k - zz_b);
+					float gg = weight * exp(-r / EMConsts::I5G);
+
+					rdata[ii] += gg * dt[0];
+					rdata[ii + 1] -= gg * dt[1];
+					norm[ii] += gg;
+				}
+			}
+		}
+	}
+	
+	return true;
+}
+
+bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight)
+{
+	int x0 = 2 * (int) floor(xx + 0.5f);
+	int y0 = (int) floor(yy + 0.5f);
+	int z0 = (int) floor(zz + 0.5f);
+
+	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
+		return false;
+
+	int l = x0 - 4;
+	if (x0 <= 2)
+		l = 0;
+
+	for (int k = z0 - 2; k <= z0 + 2; k++) {
+		for (int j = y0 - 2; j <= y0 + 2; j++) {
+			for (int i = l; i <= x0 + 4; i += 2) {
+				int ii = i + j * nx + k * nxy;
+				float r =
+					sqrt(Util::
+						 hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
+				float gg = weight * Interp::hyperg(r);
+
+				rdata[ii] += gg * dt[0];
+				rdata[ii + 1] += gg * dt[1];
+				norm[ii] += gg;
+			}
+		}
+	}
+
+	if (x0 <= 2) {
+		float xx_b = -xx;
+		float yy_b = -(yy - ny / 2) + ny / 2;
+		float zz_b = -(zz - nz / 2) + nz / 2;
+		x0 = 2 * (int) floor(xx_b + 0.5f);
+		y0 = (int) floor(yy_b + 0.5f);
+		z0 = (int) floor(zz_b + 0.5f);
+
+		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
+			return false;
+
+		for (int k = z0 - 2; k <= z0 + 2; k++) {
+			for (int j = y0 - 2; j <= y0 + 2; j++) {
+				for (int i = 0; i <= x0 + 4; i += 2) {
+					int ii = i + j * nx + k * nxy;
+					float r = sqrt(Util::hypot3((float) i / 2 - xx_b, (float) j - yy_b,
+												(float) k - zz_b));
+					float gg = weight * Interp::hyperg(r);
+
+					rdata[ii] += gg * dt[0];
+					rdata[ii + 1] -= gg * dt[1];
+					norm[ii] += gg;
+				}
+			}
+		}
+	}
+	
+	return true;
+}
 
 void EMAN::dump_reconstructors()
 {

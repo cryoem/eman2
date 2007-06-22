@@ -179,18 +179,6 @@ void Transform3D::set_center(const Vec3f & center) //YYN
 }
 
 
-void Transform3D::set_pretrans(const Vec3f & preT)  // YYN
-{
-
-//     transFinal = transPost +  Rotation * transPre;
-
-	matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
-	matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
-	matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
-
-}
-
-
 
 float * Transform3D::operator[] (int i)
 {
@@ -215,23 +203,61 @@ void Transform3D::init()  // M1
 	}
 }
 
-
 //      Set Methods
 
+void Transform3D::set_pretrans(float dx, float dy, float dz) // YYY
+{    set_pretrans( Vec3f(dx,dy,dz)); }
 
-void Transform3D::set_posttrans(const Vec3f & posttrans) // YYN
+
+void Transform3D::set_pretrans(float dx, float dy) // YYY
+{    set_pretrans( Vec3f(dx,dy,0)); }
+
+
+void Transform3D::set_pretrans(const Vec3f & preT)  // flag=1 means keep the old value of total trans
 {
-	Vec3f preT   = get_pretrans( ) ;
+		int flag=0;
+
+//     transFinal = transPost +  Rotation * transPre;
+//    This will keep the old value of transPost and change the value of pretrans and the total matrix
+    if (flag==0){
+		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2]  ;
+		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2]  ;
+		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2]  ;
+	}
+//    This will keep the old value of total translation and change the value of posttrans
+    if (flag==1){
+		matrix[3][0] = matrix[0][3] - (matrix[0][0]*preT[0] + matrix[0][1]*preT[1] + matrix[0][2]*preT[2])  ;
+		matrix[3][1] = matrix[1][3] - (matrix[1][0]*preT[0] + matrix[1][1]*preT[1] + matrix[1][2]*preT[2])  ;
+		matrix[3][2] = matrix[2][3] - (matrix[2][0]*preT[0] + matrix[2][1]*preT[1] + matrix[2][2]*preT[2])  ;
+	}
+}
+
+
+void Transform3D::set_posttrans(float dx, float dy, float dz) // YYY
+{    set_posttrans( Vec3f(dx,dy,dz)); }
+
+
+void Transform3D::set_posttrans(float dx, float dy) // YYY
+{    set_posttrans( Vec3f(dx,dy,0)); }
+
+
+void Transform3D::set_posttrans(const Vec3f & posttrans) // flag=1 means keep the old value of total trans
+{
+	int flag=0;
+    Vec3f preT   = get_pretrans(0) ;
 	for (int i = 0; i < 3; i++) {
 		matrix[3][i] = posttrans[i];
 	}
 //     transFinal = transPost +  Rotation * transPre;
-
-	
-	matrix[0][3] = matrix[3][0] + matrix[0][0]*preT.at(0) + matrix[0][1]*preT.at(1) + matrix[0][2]*preT.at(2)  ;
-	matrix[1][3] = matrix[3][1] + matrix[1][0]*preT.at(0) + matrix[1][1]*preT.at(1) + matrix[1][2]*preT.at(2)  ;
-	matrix[2][3] = matrix[3][2] + matrix[2][0]*preT.at(0) + matrix[2][1]*preT.at(1) + matrix[2][2]*preT.at(2)  ;
-
+//   This will keep the old value of pretrans and change the value of posttrans and the total matrix
+	if (flag==0) {
+		matrix[0][3] = matrix[3][0] + matrix[0][0]*preT.at(0) + matrix[0][1]*preT.at(1) + matrix[0][2]*preT.at(2)  ;
+		matrix[1][3] = matrix[3][1] + matrix[1][0]*preT.at(0) + matrix[1][1]*preT.at(1) + matrix[1][2]*preT.at(2)  ;
+		matrix[2][3] = matrix[3][2] + matrix[2][0]*preT.at(0) + matrix[2][1]*preT.at(1) + matrix[2][2]*preT.at(2)  ;
+	}
+//   This will keep the old value of the total matrix, and c
+	if (flag==1) { // Don't do anything
+	}
 }
 
 
@@ -297,14 +323,18 @@ Vec3f Transform3D::get_finger() const //
 	return Vec3f(AA["n1"],AA["n2"],AA["n3"]);
 }
 
-Vec3f Transform3D::get_posttrans() const    // 
+Vec3f Transform3D::get_posttrans(int flag) const    // 
 {
-	return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
+	if (flag==0){
+		return Vec3f(matrix[3][0], matrix[3][1], matrix[3][2]);
+	}
+	// otherwise as if all the translation was post
+	return Vec3f(matrix[0][3], matrix[1][3], matrix[2][3]);
 }
 
 
 
-Vec3f Transform3D::get_pretrans() const    // Fix Me
+Vec3f Transform3D::get_pretrans(int flag) const    // Fix Me
 {
 //	The expression is R^T(v_total - v_post);
 
@@ -312,13 +342,17 @@ Vec3f Transform3D::get_pretrans() const    // Fix Me
 	Vec3f posttrans(matrix[3][0], matrix[3][1], matrix[3][2]);
 	Vec3f tottrans(matrix[0][3], matrix[1][3], matrix[2][3]);
 	Vec3f totminuspost;
+
+	totminuspost = tottrans;
+	if (flag==0) {
+		totminuspost = tottrans-posttrans;
+	}
 	
-	totminuspost = tottrans-posttrans;
-	
+	Transform3D Rinv = inverse();
 	for (int i=0; i<3; i++) {
                 float ptnow=0;
 		for (int j=0; j<3; j++) {
-			ptnow += totminuspost.at(j) * matrix[j][i] ;
+			ptnow +=   Rinv.matrix[i][j]* totminuspost.at(j) ;
 		}
 		pretrans.set_value_at(i,ptnow) ;  // 
 	}
@@ -902,7 +936,7 @@ Dict Transform3D::get_rotation(EulerType euler_type) const
 map<string, int> Transform3D::symmetry_map = map<string, int>();
 
 
-Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
+Transform3D Transform3D::inverseUsingAngs() const    //   YYN need to test it for sure
 {
 	// First Find the scale
 	EulerType eE=EMAN;
@@ -938,6 +972,53 @@ Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
 	return invM;
 
 }
+
+Transform3D Transform3D::inverse() const    //   YYN need to test it for sure
+{
+	// This assumes the matrix is 4 by 4 and the last row reads [0 0 0 1]
+
+	float m00 = matrix[0][0]; float m01=matrix[0][1]; float m02=matrix[0][2];
+	float m10 = matrix[1][0]; float m11=matrix[1][1]; float m12=matrix[1][2];
+	float m20 = matrix[2][0]; float m21=matrix[2][1]; float m22=matrix[2][2];
+ 	float v0  = matrix[0][3]; float v1 =matrix[1][3]; float v2 =matrix[2][3];
+
+    float cof00 = m11*m22-m12*m21;
+    float cof11 = m22*m00-m20*m02;
+    float cof22 = m00*m11-m01*m10;
+    float cof01 = m10*m22-m20*m12;
+    float cof02 = m10*m21-m20*m11;
+    float cof12 = m00*m21-m01*m20;
+    float cof10 = m01*m22-m02*m21;
+    float cof20 = m01*m12-m02*m11;
+    float cof21 = m00*m12-m10*m02;
+
+    float Det = m00* cof00 + m02* cof02 -m01*cof01;
+
+    Transform3D invM;
+   
+    invM.matrix[0][0] =   cof00/Det;
+    invM.matrix[0][1] = - cof10/Det;
+    invM.matrix[0][2] =   cof20/Det;
+    invM.matrix[1][0] = - cof01/Det;
+    invM.matrix[1][1] =   cof11/Det;
+    invM.matrix[1][2] = - cof21/Det;
+    invM.matrix[2][0] =   cof02/Det;
+    invM.matrix[2][1] = - cof12/Det;
+    invM.matrix[2][2] =   cof22/Det;
+
+    invM.matrix[0][3] =  (- cof00*v0 + cof10*v1 - cof20*v2 )/Det;
+    invM.matrix[1][3] =  (  cof01*v0 - cof11*v1 + cof21*v2 )/Det;
+    invM.matrix[2][3] =  (- cof02*v0 + cof12*v1 - cof22*v2 )/Det;
+     
+
+//	invM.set_pretrans(  -postT );
+//	invM.set_posttrans( -preT  );
+
+
+	return invM;
+
+}
+
 
 
 // Symmetry Stuff
@@ -1053,17 +1134,17 @@ Transform3D Transform3D::get_sym(const string & symname, int n) const
 		}
 		break;
 	case ICOS_SYM:
-		ret.set_rotation((float)ICOS[n * 3 ]    ,
-				 (float)ICOS[n * 3 + 1] ,
+		ret.set_rotation((float)ICOS[n * 3 ],
+				 (float)ICOS[n * 3 + 1],
 				 (float)ICOS[n * 3 + 2] );
 		break;
 	case OCT_SYM:
-		ret.set_rotation((float)OCT[n * 3]     ,
-				 (float)OCT[n * 3 + 1] , 
+		ret.set_rotation((float)OCT[n * 3],
+				 (float)OCT[n * 3 + 1], 
 				 (float)OCT[n * 3 + 2] );
 		break;
 	case TET_SYM:
-		ret.set_rotation((float)TET[n * 3 ]    ,
+		ret.set_rotation((float)TET[n * 3 ],
 				 (float)TET[n * 3 + 1] ,
 				 (float)TET[n * 3 + 2] );
 		break;
@@ -1167,6 +1248,5 @@ Transform3D::angles2tfvec(EulerType eulertype, const vector<float> ang) {
 	}
 	return tfvec;
 }
-
 
 /* vim: set ts=4 noet: */

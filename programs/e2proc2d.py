@@ -142,6 +142,8 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit(1)
 	
+	logid=E2init(sys.argv)
+
 	infile = args[0]
 	outfile = args[1]
 
@@ -304,11 +306,11 @@ def main():
 					sc.common_lines_real(d, d, scl, true)
 				else:
 					e = d.copy()
-					e.process_inplace("eman1.xform.phaseorigin")
+					e.process_inplace("xform.phaseorigin")
 				
 					if sclmd == 1:
 						sc.common_lines(e, e, sclmd, scl, true)
-						sc.process_inplace("eman1.math.linear", Dict("shift", EMObject(-90.0), "scale", EMObject(-1.0)))		
+						sc.process_inplace("math.linear", Dict("shift", EMObject(-90.0), "scale", EMObject(-1.0)))		
 					elif sclmd == 2:
 						sc.common_lines(e, e, sclmd, scl, true)
 					else:
@@ -332,8 +334,8 @@ def main():
 					fftavg.set_size(nx+2, ny)
 					fftavg.set_complex(1)
 					fftavg.to_zero()
-				d.process_inplace("eman1.mask.ringmean")
-				d.process_inplace("eman1.normalize")
+				d.process_inplace("mask.ringmean")
+				d.process_inplace("normalize")
 				df = d.do_fft()
 				df.mult(df.get_ysize())
 				fftavg.add_incoherent(df)
@@ -393,7 +395,7 @@ def main():
 
 	if average:
 		average.set_average_nimg(n1-n0+1)
-		average.process_inplace("eman1.normalize");
+		average.process_inplace("normalize");
 		average.append_image(outfile);
 
 	if options.fftavg:
@@ -405,6 +407,8 @@ def main():
 		print str(n_outimg) + " images"
 	except:
 		pass	
+	
+	E2end(logid)
 	
 if __name__ == "__main__":
 	main()

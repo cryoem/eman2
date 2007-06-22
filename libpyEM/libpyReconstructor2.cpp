@@ -11,6 +11,11 @@
 // Using =======================================================================
 using namespace boost::python;
 
+// debug
+#include <iostream>
+using std::cout;
+using std::endl;
+
 // Declarations ================================================================
 namespace  {
 
@@ -26,7 +31,8 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
         call_method< void >(py_self, "setup");
     }
 
-    int insert_slice(EMAN::EMData* p0, const EMAN::Transform3D& p1) {
+    int insert_slice(const EMAN::EMData* const p0, const EMAN::Transform3D& p1) {
+    	cout << "Inserting slice" << endl;
         return call_method< int >(py_self, "insert_slice", p0, p1);
     }
 
@@ -43,8 +49,13 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     }
 
     EMAN::Dict get_params() const {
+		printf("call goes here!\n");
         return call_method< EMAN::Dict >(py_self, "get_params");
     }
+/*
+	void print_params() const {
+        call_method< void >(py_self, "print_params");
+	}*/
 
     EMAN::Dict default_get_params() const {
         return EMAN::Reconstructor::get_params();
@@ -80,8 +91,10 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
         .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))
         .def("get_desc", pure_virtual(&EMAN::Reconstructor::get_desc))
-        .def("get_params", &EMAN::Reconstructor::get_params, &EMAN_Reconstructor_Wrapper::default_get_params)
+        //.def("get_params", &EMAN::Reconstructor::get_params, &EMAN_Reconstructor_Wrapper::default_get_params) 
+		.def("get_params", &EMAN::Reconstructor::get_params)
         .def("set_params", &EMAN::Reconstructor::set_params, &EMAN_Reconstructor_Wrapper::default_set_params)
+		.def("print_params",  &EMAN::Reconstructor::print_params) // Why is this different to set_params and get_params? Why is the wrapper needed? d.woolford May 2007
         .def("get_param_types", pure_virtual(&EMAN::Reconstructor::get_param_types))
     ;
 

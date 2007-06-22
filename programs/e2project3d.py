@@ -2,6 +2,8 @@
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Revised: David Woolford 05/14/2007 (woolford@bcm.edu)
+#
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -34,479 +36,728 @@
 # initial version of project3d; more features/documentation to come
 # try "e2project3d --help"
 
+# References
+# 1. Baldwin, P.R. and Penczek, P.A. 2007. The Transform Class in SPARX and EMAN2. J. Struct. Biol. 157, 250-261.
+# 2. http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
+
+# Specification
+# 
+# 1. Asymmetric units are accurately demarcated and covered by the projection algorithm. This can
+# be tested using 3D plotting in Matlab.
+# 2. By default the entire asymmetric is projected over, but excluding the mirror portion is supported.
+# The accuracy of the demarcation of the asymmetric unit can be tested by using the --verifymirror
+# argument, which subtracts (mirrored) mirror projections in the local asymmetric unit from the 
+# the equivalent original projections - the result should be zero but this is not the case due
+# to interpolation differences, however the images should have a mean of about zero and a standard
+# deviation that is relatively small. Visual inspection of the results (in default output files) can also help.
+# 3. Random orientation generation is supported - all three euler angles are random
+# 4. Perturbation of projections generated in the asymmetric unit is supported in regular reconstructions runs.
+# 5. The user is able to generate projections that include in-plane or "phi" rotations
+# and this is achieved using the phitoo argument
+# 6. The user can smear in-plane projections when the "smear" argument is specified in addition to the "phitoo" argument
+# what else..????
+
 import sys, math, os, random
 from EMAN2 import *
 from optparse import OptionParser
 deg2rad = math.pi / 180.0
 rad2deg = 180.0 / math.pi
+DEBUG = False
+WEN_JIANG = False
+EMAN1_OCT = False
+MIRROR_DEBUG = True
+NO_MIRROR = False
 
 def main():
-
-    (options, files) = load_args()
-    
-    logger=E2init(sys.argv)
-
-    data = EMData()
-
-    try:
-        data.read_image(files[0])
-    except:
-        sys.stderr.write("ERROR: Input file: %s does not exist\n" % files[0])
-        exit(1)
-
-    if (options.dump_angles):
-        try:
-            os.unlink("proj_angles.txt")
-        except OSError :
-            pass
-        try:
-            options.proj_angle_file = open("proj_angles.txt", "w")
-            if (options.angletype == "EMAN"):
-                options.proj_angle_file.write("x\talt\taz\tphi\n")
-            if (options.angletype == "SPIDER"):
-                options.proj_angle_file.write("x\ttheta\tphi\tpsi\n")
-        except:
-            sys.stderr.write("ERROR: Output list file: %s could not be opened\n"
-                             % options.list_file)
-            options.proj_angle_file = ""
-    else:
-        options.proj_angle_file = ""
-    
-
-    try:
-        os.unlink(options.outfile[:len(options.outfile) - 3] + "img")
-        os.unlink(options.outfile[:len(options.outfile) - 3] + "hed")
-    except OSError :
-        pass
-    
-    
-    # setup alt1, az1, phi1 based on sym
-    az1 = 2.0 * math.pi
-    alt1 = math.pi / 2.0
-    alt0, az0 = 0.0, 0.0
-
-    if options.sym:
-        if (options.sym[0] in ["c","d"]):
-            val = int(options.sym[1:])
-            az1 = az1 / (val * 1.0)
-            if (options.sym[0]=="d"):
-                az1 = az1 / 2.0
-        elif (options.sym[0] == "h"):
-            val = int(options.sym[1:])
-            az1 = val * math.pi / 180.
-            alt0 = 80 * math.pi / 180.
-        elif (options.sym == "icos"):
-            val = 60
-            az1 = 10.
-            alt1 = 37.3773681406497 * math.pi / 180.
-        elif (options.sym == "oct"):
-            val = 24
-            az1 = az1 / 4.0
-            alt1 = 54.736 * math.pi / 180.
-        else:
-            sys.stderr.write("ERROR: Invalid symmetry type\n")
-        
-    if options.prop:
-        #        prop(data, options, val, az0, alt0, az1, alt1)
-        prop(data, options, val, az0, az1)
-    elif options.grid:
-        grid(data, options, az0, alt0, az1, alt1)
-    elif options.user_angles:
-        user_angles(data, options)
-    else:  #create single projection
-        if (options.pad):
-            data = data.clip((data.get_xsize() - options.pad) / 2,
-                             (data.get_ysize() - options.pad) / 2,
-                             pad, pad)
-            
-        if options.euler == []:
-            p=Projectors.get(options.projector, {"alt":0.0,
-                                                 "az":0.0,
-                                                 "phi":0.0,
-                                                 "angletype":options.angletype,
-                                                 "mode":options.mode
-                                                 })
-            angs = [0, 0, 0]
-
-        else:
-            p=Projectors.get(options.projector, {"az":options.euler[0],
-                                                 "alt":options.euler[1],
-                                                 "phi":options.euler[2],
-                                                 "angletype":options.angletype,
-                                                 "mode":options.mode})
-
-            angs = options.euler
-            
-
-        sys.stdout.write("Angle: %4.2f\t%4.2f\t%4.2f\n" % (angs[1], angs[0], angs[2]))
-        if (options.proj_angle_file):
-            options.proj_angle_file.write("%d\t%4.2f\t%4.2f\t%4.2f\n" %
-                                          (1 ,angs[1], angs[0], angs[2]))
-
-
-            
-        output = p.project3d(data)
-        output.set_rotation(angs[0] * deg2rad, angs[1] * deg2rad, angs[2] * deg2rad)
-        output.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
-
-        try:
-            output.write_image(options.outfile, -1)
-        except:
-            sys.stderr.write("ERROR: Cannot write to file %s" % options.outfile)
-            exit(1)
-
-    print "Output File: %s" % options.outfile
-
-    if (options.proj_angle_file):
-        try:
-            options.proj_angle_file.close()
-            print "Angle Projection File: proj_angles.txt"
-        except:
-            sys.stderr.write("ERROR: Could not close file proj_angles.txt")
-
-    E2end(logger)          # enable this once things are more stable
-
-def user_angles(data, options):
-    count = 0
-    for x in read_angles(options.user_angles, options.angletype):
-        sys.stdout.write("%d\t%4.2f\t%4.2f\t%4.2f\n" % (count, alt, az, phi))
-
-        if (options.proj_angle_file):
-            options.proj_angle_file.write("%d\t%4.2f\t%4.2f\t%4.2f\n" % (count, alt, az, phi))
-                
-        p = Projectors.get(options.projector, {"alt" : alt,
-                                               "az" : az, 
-                                               "phi" : phi,
-                                               "angletype":options.angletype,
-                                               "mode": options.mode})
-        q = p.project3d(data)
-        q.set_rotation(az, alt, phi)
-        q.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
-
-        try:
-            q.write_image(options.outfile, -1)
-        except:
-            sys.stderr.write("Error: Cannot write to file %s" % options.outfile)
-            exit(1)
-
-        count = count + 1
-
-
-def grid(data, options, az0, alt0, az1, alt1):
-    print "Projection grid %d x %d" % (options.grid, options.grid)
-
-    phi = az = 0
-    i, k, alt = 0, 0, alt0
-
-    while (i < options.grid):
-
-        j, az = 0, az0
-        while (j < options.grid):
-
-            if (options.randomphi):
-                phi = random.random() * 2.0 * math.pi
-            if (options.phic):
-                phi = -az * math.cos(alt)
-
-            if (options.proj_angle_file):
-                options.proj_angle_file.write("%d\t%4.2f\t%4.2f\t%4.2f\n" %
-                                              (j + i * options.grid, alt * rad2deg,
-                                               az * rad2deg, phi * rad2deg))
-            sys.stdout.write("%d\t%f\t%f\t%f\n" % (j + i * options.grid, alt * rad2deg,
-                                                   az  * rad2deg, phi * rad2deg))
-            
-            p = Projectors.get(options.projector, {"alt" : alt * rad2deg,
-                                                   "az" : az * rad2deg, 
-                                                   "phi" : phi * rad2deg,
-                                                   "angletype":options.angletype,
-                                                   "mode": options.mode})
-            q = p.project3d(data)
-            q.set_rotation(az, alt, phi)
-            q.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
-
-            if (options.pad > 0.0):
-                q = q.get_clip( Region(q.get_xsize() - options.pad / 2.0,
-                                       q.get_ysize() - options.pad / 2.0,
-                                       options.pad, options.pad))
-                    
-            try:
-                q.write_image(options.outfile, k)
-            except:
-                sys.stderr.write("Error: Cannot write to file %s" % options.outfile)
-                exit(1)
-
-            j = j + 1
-            k = k + 1
-            az = az + az1 / float(options.grid)        
-
-        i = i + 1
-        alt = alt + alt1 / (options.grid - 1.0)
-        
-    
-
-    
-
-#def prop(data, options, val,  az0, alt0, az1, alt1):
-def prop(data, options, val, az0, az1):
-    alt0 = options.prop_start * deg2rad
-    alt1 = options.prop_end * deg2rad
-    
-    phi = az = 0
-    if (val == 60):
-        val = -5
-    if (val == 24):
-        val = -4
-
-    i, j, alt2 = 1, 0, alt0
-    while (alt2 <= alt1 + options.prop * math.pi / 360.):
-        alt = alt2
-        h = math.floor(360. / (options.prop * 1.1547))
-        h = int(math.floor(h * math.sin(alt) + .5))
-        if (h == 0):
-            h = 1
-        h = abs(val) * math.floor(h / float(abs(val)) + .5)
-
-        if h==0:
-            h=2.0**30                       # ok to do this?
-        else:
-            h = math.pi * 2.0 / h
-        if (alt > 0) and ((az1 - az0) / h < 2.8):
-            h = (az1 - az0) / 2.1
-        if (alt == 0):
-            h = az1
-            
-        az2 = az0
-        if (j % 1):                        # when is this ever true??
-            az2 = az2 + h / 2.0
-
-        while (az2 < az1 - h / 4):
-            alt = alt2
-            az = az2
-     
-            phi = 0
-                
-            if (options.phitoo):
-                limit = math.pi * 2. - options.phitoo * math.pi / 360.
-                step = options.phitoo * math.pi / 180.
-            else:
-                limit = .0001
-                step = math.pi
-            while (phi < limit):
-
-                if (az > math.pi and alt > math.pi / 2 -.001 and alt < math.pi / 2.0 + .001):
-                    continue
-                if (az > math.pi / 4.0):
-                    tmp_check = math.pi / 2.0 - az
-                else:
-                    tmp_check = az
-                if (val == -4 and math.tan(alt) * math.cos(tmp_check) > 1.0):
-                    i = i -1 #423
-                    continue
-
-                if (options.randomphi):
-                    phi = random.random() * 2.0 * math.pi
-                if (options.phic):
-                    phi = -az * math.cos(alt)
-              
-                if (val == -5):
-                    az = az + 3. * math.pi / 2.
-
-                sys.stdout.write("%d\t%4.2f\t%4.2f\t%4.2f\n" % (i, alt * rad2deg,
-                                                                az * rad2deg,
-                                                                phi * rad2deg))
-
-                q = EMData()
-                q2 = EMData()
-                if (options.phitoo and options.smear):   #haven't checked these options yet
-                    p = Projectors.get(options.projector, {"alt" : alt * rad2deg,
-                                                           "az" : az * rad2deg, 
-                                                           "phi" : phi * rad2deg,
-                                                           "angletype":options.angletype,
-                                                           "mode": options.mode})
-                    q = p.project3d(data)
-
-                    smr = phi + options.phitoo * math.pi / 1800.
-
-                    while (smr < phi + options.phitoo * math.pi / 180):
-                        p = Projectors.get(options.projector, {"alt" : alt * rad2deg,
-                                                               "az" : az * rad2deg, 
-                                                               "phi" : smr * rad2deg,
-                                                               "angletype":options.angletype,
-                                                               "mode": options.mode})
-                        q2 = p.project3d(data)
-                        q.add(q2)
-                            
-                        smr = smr + options.phitoo * math.pi / 1800.
-                else:
-                    p = Projectors.get(options.projector, {"alt" : alt * rad2deg,
-                                                           "az" : az * rad2deg, 
-                                                           "phi" : phi * rad2deg,
-                                                           "angletype":options.angletype,
-                                                           "mode": options.mode
-                                                           })
-                    q = p.project3d(data)
-
-                    if (options.proj_angle_file):
-                        options.proj_angle_file.write("%d\t%4.2f\t%4.2f\t%4.2f\n" %
-                                                      (i, alt * rad2deg,
-                                                       az * rad2deg,
-                                                       phi * rad2deg))
-                        
-                # q.process_inplace() #figure this out later
-                q.set_rotation(az, alt, phi)
-                q.process_inplace("eman1.mask.sharp", {"outer_radius":options.mask})
-
-                if (options.pad > 0.0):
-                    q = q.get_clip( Region(q.get_xsize() - options.pad / 2.0,
-                                           q.get_ysize() - options.pad / 2.0,
-                                           options.pad, options.pad))
-                    
-                try:
-                    q.write_image(options.outfile, i-1)
-                except:
-                    sys.stderr.write("Error: Cannot write to file %s" % options.outfile)
-                    exit(1)
-
-                phi = phi + step
-                i = i + 1
-
-                    
-            az2 = az2 + h
-
-        alt2 = alt2 + options.prop * math.pi / 180.
-        j = j + 1
-
-
-def load_args():
-    parser=OptionParser(usage = "%prog <input file> [options]", version = "%prog 2.0"+chr(223))
-    parser.add_option("--out", dest = "outfile", default = "e2proj.img",
-                      help = "Output file. Default is 'e2proj.img'")
-    parser.add_option("--projector", dest = "projector", default = "standard",
-                      help = "Projector to use")
-    parser.add_option("--prop", dest = "prop", type = "float", default = 0.0,
-                      help = "Generates projections with a relatively uniform projection density in the unit triangle.")
-    parser.add_option("--prop_start", dest = "prop_start", type = "float", default = 0.0,
-                      help = "Start projections at the specified alt (in degrees). Default=0.0")
-    parser.add_option("--prop_end", dest = "prop_end", type = "float", default = 90.0,
-                      help = "Create projections up to the specified alt (in degrees). Default=90.0")
-    parser.add_option("--euler", dest = "euler", type = "float", default = [],
-                      action = "store", nargs = 3, metavar = "<az> <alt> <phi>",
-                      help = "Generate a single projection with the given orientation")
-    parser.add_option("--sym", dest = "sym",
-                      help = "Set the symmetry; choices are: c<n>, d<n>, h<n>, i, t, icos, or oct")
-    parser.add_option("--mode", dest = "mode", type = "int", default = 2,
-                      help = "Default is real-space projection, this specifies various Fourier modes")
-    parser.add_option("--angletype", dest = "angletype", default = "EMAN",
-                      help = "Angle convention to use: [EMAN, SPIDER].  EMAN is the default")
-    parser.add_option("--dump_angles", dest = "dump_angles", default = False,
-                      action = "store_true",
-                      help = "Dumps Euler angles to a text file")
-    parser.add_option("--mask", dest = "mask", type = "float", default = 0.0,
-                      help = "Specify a circular mask radius for the projections")
-    parser.add_option("--randomphi", dest = "randomphi", default = False, action = "store_true",
-                      help = "Randomize phi")
-    parser.add_option("--phicomp", dest = "phic", default = False, action = "store_true",
-                      help = "Roughly compensate for in-plane rotation from az with phi")
-    parser.add_option("--phitoo", dest="phitoo", type = "float", default = 0,
-                      help = "This will also vary phi in the final file. Warning: This works only with '--prop=' and generates a LOT of projections.")    
-    parser.add_option("--smear", dest = "smear", default = False, action = "store_true",
-                      help="Used in conjunction with '--phitoo=', this will rotationally smear between phi steps.")
-    parser.add_option("--grid", dest = "grid", type = "int", default = 0.0,
-                      help="Generate projections on an rectangular alt/az mesh, nonuniform projection density")
-    parser.add_option("--angle_input_file", dest = "user_angles", metavar = "FILE_NAME",
-                      help="Us an input file to specify what angles to project")
-    parser.add_option("--pad", dest = "pad", type = "int", default = 0,
-                      help="Pad image")
-
-
-    (opt,args)=parser.parse_args()
-
-    if len(args) < 1:
-        sys.stderr.write("ERROR: No input file given\n")
-        exit(1)
-
-    opt.angletype = opt.angletype.upper()
-
-    
-    try:                             # check for valid projector type
-        Projectors.get(opt.projector)
-    except:
-        sys.stderr.write("ERROR: %s is not a valid projector - use one of the following\n"%
-                         opt.projector)
-        dump_projectors()
-        exit(1)
-        
-
-    if not(opt.sym):             # remove this once unknown symmetry is handled
-        sys.stderr.write("ERROR: No symmetry type given\n");
-        exit(1)
-
-
-    opt.sym=opt.sym.lower()           # check for valid symmetry type
-    if (opt.sym[0] in ["c","d"]):
-        if not(opt.sym[1:].isdigit()):
-            sys.stderr.write("ERROR: %s is an invalid symmetry type\n"%opt.sym)
-
-
-    # test for mutual exclusion   
-    if (opt.randomphi and opt.phic):
-        sys.stderr.write("WARNING: --phicomp and --randomphi are mutually exclusive\n")
-    if (opt.grid and opt.prop):  #doesn't work right anymore
-        sys.stderr.write("ERROR: --grid, --prop, --angle_input_file are mutually exclusive\n")
-        exit(1)
-
-    return (opt, args)
-
-
-def read_angles(filename, angletype):
-    
-    if (angletype == "EMAN"):
-        words = ["alt", "az", "phi"]
-    elif (angletype == "SPIDER"):
-        words = ["phi", "psi", "theta"]
-    else:
-        sys.stderr.write("ERROR: unsupported angle type - use EMAN or SPIDER\n")
-        exit(1)
-
-    try:
-        infile = open(filename)
-        informat = infile.readline()
-    except:
-        sys.stderr.write("ERROR: could not read file: %s\n" % filename)
-        exit(1)
-
-    informat = informat.lower()
-    informat = informat.split()
-    for x in words:
-        if (informat.count(x) > 1):
-            sys.stderr.write("ERROR: %s is listed %d times in the angle-input file format string\n"
-                             % (x, informat.count(x)))
-            exit(1)
-        if (informat.count(x) < 1):
-            sys.stderr.write("ERROR: %s is no listed in the angle-input file format string\n"
-                             % x)
-            exit(1)
-
-    spacing = {}
-    for x in range(len(informat)):
-        if (informat[x] in words):
-            spacing[informat[x]] = x
-
-    for x in infile.readlines():
-        if x == "\n":
-            continue
-        values = x.split()
-        for y in spacing:
-            exec(y+"="+values[spacing[y]]) in globals()
-        yield 1
-
-    
-    try:
-        infile.close()
-    except:
-        sys.stderr.write("ERROR: could not properly close file: %s\n" % filename)
-
-        
+	progname = os.path.basename(sys.argv[0])
+	usage = """%prog image [options] 
+	Projects in real space over the asymmetric unit using the angular separation as specified by prop and the symmetry as specified by sym."""
+	parser = OptionParser(usage=usage,version=EMANVERSION)
+	
+	parser.add_option("--prop", dest = "prop", type = "float", help = "The proportional angular separation of projections in degrees")
+	parser.add_option("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos")
+	parser.add_option("--out", dest = "outfile", default = "e2proj.img", help = "Output file. Default is 'e2proj.img'")
+	parser.add_option("--phitoo", dest="phitoo", type = "float", default = 0.0,help = "In conjunction with the --sym argument, this will additionally iterate phi on the interval [0,360] for each azimuth and altitude pair, using the specified argument as the angular separation (in degrees)")
+	parser.add_option("--random", dest = "random", type = "int", default = 0.0, help = "This will generate a set number of randomly distributed projections (all 3 euler angles are random)")
+	# add --perturb
+	parser.add_option("--nomirror",action="store_true",help="Stops projection over the mirror portion of the asymmetric unit",default=False)
+	parser.add_option("--smear", dest = "smear", type = "int", default=0,help="Used in conjunction with --phitoo, this will rotationally smear between phi steps. The user must specify the amount of smearing (typically 2-10)")
+	parser.add_option("--perturb",action="store_true",help="In conjunction with the --sym argument, perturbs orientations when projecting over the asymmetric unit",default=False)
+	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
+	parser.add_option("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
+	#parser.add_option("--mode", dest = "mode", type = "int", default = 2, help = "Default is real-space projection, this specifies various Fourier modes")
+	#parser.add_option("--angletype", dest = "angletype", default = "EMAN", help = "Angle convention to use: [EMAN, SPIDER].  EMAN is the default")
+	 
+	
+	#parser.add_option("--mask", dest = "mask", type = "float", default = 0.0, help = "Specify a circular mask radius for the projections")
+	
+	(options, args) = parser.parse_args()
+	
+		
+	if len(args) < 1:
+		print "ERROR: No input file given"
+		exit(1)
+		
+	# Check valid symmetry or whether the random argument has been given
+	if options.sym and options.random:
+		print "ERROR: Cannot handle both the sym and random arguments simultaneously"
+		exit(1)
+		
+	elif options.sym:
+		options.sym=options.sym.lower()
+		if (options.sym[0] in ["c","d", "h"]):
+			if not(options.sym[1:].isdigit()):
+				print "ERROR: %s is an invalid symmetry type"%options.sym
+				exit(1)
+		else :
+			if not (options.sym in ["tet","oct","icos"]):
+				print "ERROR: %s is an invalid symmetry type"%options.sym
+				exit(1)
+		if not(options.prop):	# check for valid prop - catches when prop is not specified
+			print "ERROR: No valid prop specified";
+			exit(1)
+		# handle negative or zero prop here	
+		if (options.prop <= 0):
+			print "ERROR: %f is an invalid value for prop (must be greater than zero)"%options.prop
+			exit(1)
+			
+		# GET EULERS here
+		eulers = get_asym_unit_orientations( options.sym, options.prop, options.nomirror, options.perturb )
+
+		# check for the phitoo argument.
+		if (options.phitoo):	
+			if (options.phitoo <= 0):
+				print "ERROR: %f is an invalid value for phitoo (must be greater than zero)"%options.phitoo
+				exit(1)
+			eulers = include_phi_rotations(eulers, options.phitoo)
+		
+	elif ( options.random ):
+		if (options.random <= 0):
+			print "ERROR: %i is an invalid value for random (must be greater than zero)"%options.random
+			exit(1)
+			
+		# GET EULERS here
+		eulers = get_random_orientations( options.sym, options.random, options.nomirror )
+		
+	else:
+		print "ERROR: Atleast one of the sym or random arguments must be given"
+		exit(1)
+	
+	# check to see if the image exists
+	data = EMData() # an object to store the image
+	try:
+		data.read_image(args[0])
+	except:
+		print "ERROR: Input file: %s does not exist" % args[0]
+		exit(1)
+
+	# generate and save all the projections to disk - that's it, that main job is done
+	generate_and_save_projections(options, data, eulers, options.smear, options.phitoo)
+	
+	if options.verifymirror:
+		if options.sym:
+			verify_mirror_test(data, eulers, options.sym, options.projector)
+		else:
+			print "Warning: verify mirror only works when a symmetry has been specified. No action taken."
+
+def include_phi_rotations(eulers, phiprop):
+	
+	limit = math.pi * 2. - phiprop * deg2rad / 2.0	
+	return_eulers = []
+	
+	for euler in eulers:
+		phi_iterator = phiprop * deg2rad
+		return_eulers.append(euler)
+		while (phi_iterator < limit):
+		# have to use a tmp az_iterator because of 
+			return_eulers.append([euler[0],euler[1],phi_iterator])
+		
+			phi_iterator = phi_iterator + phiprop * deg2rad
+
+	return return_eulers
+		
+def get_random_orientations( symmetry, totalprojections, nomirror ):
+		
+	i = 0
+	eulers = []
+	while ( i < totalprojections ):
+		#get a random 3D vector on [-1,1]
+		x = 2*random.random() - 1
+		y = 2*random.random() - 1
+		if nomirror:
+			# if no mirroring is specified, then only consider projections in positive z
+			print "no mirroring"
+			z = random.random()
+		else:
+			z = 2*random.random() - 1
+		
+		length = math.sqrt( x**2 + y**2 + z**2)
+		
+		#if the point is beyond the unit sphere then we should not 
+		#consider it, or else the sampling of Euler angles will be
+		#biased
+		if length > 1:
+			continue
+		
+		#normalize
+		x = x/length
+		y = y/length
+		z = z/length
+		
+		# because the point is randomly distributed over the unit sphere,
+		# its associated eulers will also be random.
+		# note that a point on the unit sphere only implies two angles:
+		az = math.atan2(y,x)
+		alt = math.acos(z)
+			
+		randomphi = random.random()*2*math.pi
+		eulers.append([alt,az,randomphi])
+		
+		i += 1
+	
+	return eulers
+
+def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
+
+	sym_object = get_sym_object( symmetry, nomirror)
+	altmax = sym_object.asym_unit_alt_max()
+	azmax = sym_object.asym_unit_az_max()
+
+	if (DEBUG):
+		print "for symmetry %s altitude max is %f, azimuth max is %f" %(symmetry, rad2deg*altmax, rad2deg*azmax)
+
+	alt_iterator = 0.0
+	
+	# If it's a h symmetry then the alt iterator starts at very close
+	# to the altmax... the object is a h symmetry then it knows its alt_min...
+	if sym_object.is_h_symmetry():
+		alt_iterator = sym_object.asym_unit_alt_min()
+		
+	eulers = []
+	while ( alt_iterator <= altmax ):
+		# get h
+		h = get_h(prop,alt_iterator,sym_object.get_maxcsym())
+		
+		#not sure what this does?
+		if (alt_iterator > 0) and ( (azmax/h) < 2.8):
+			h = (azmax) / 2.1
+		elif (alt_iterator == 0):
+			h = azmax
+			
+		az_iterator = 0.0;
+		while ( az_iterator < azmax - h / 4):
+			# FIXME: add an intelligent comment - this was copied from old code	
+			if ( az_iterator > math.pi and alt_iterator > math.pi/(2.0-0.001) and alt_iterator < math.pi/(2.0+0.001) ):
+				az_iterator = az_iterator + h
+				continue
+			
+			if EMAN1_OCT:
+				if az_iterator > (math.pi/4.0):
+					tmpvalue = math.pi/2.0 - az_iterator
+				else:
+					tmpvalue = az_iterator
+					
+				if (math.tan(alt_iterator)*math.cos(tmpvalue)) > 1.0:
+					az_iterator = az_iterator + h
+					continue
+			
+			#FIXME: double check that symmetry axes are aligned with make3D! Wen Jiang added 3pi/2 for icos
+			# and david woolford added pi for tet
+			# May 11th 2007 - Yes that's right, the output of the make3d (EMAN1) aligns symmeterized objects
+			# in specific orientations (d.woolford) - this might change in EMAN2 ?
+			
+			localEuler = ([alt_iterator, az_iterator, 0])
+			
+			#FIXME: when testing is done remove all references to WEN_JIANG and EMAN1_OCT
+			if not WEN_JIANG and not EMAN1_OCT :
+				if sym_object.is_platonic_symmetry():
+					if sym_object.is_in_asym_unit(localEuler) == False:
+						az_iterator = az_iterator + h
+						continue
+					else :
+						# tetrahedron and icosahedron have their asymetric units
+						# aligned so that an azimuthal offset is needed to
+						# ensure correct orientation generation
+						# unfortunately this results in a redundant call when the
+						# the symmetry is octahedral.
+						# FIXME: this might be fixable by altering make3d to generate
+						# output such that the symmetric axes are aligned so that 
+						# no effsets are needed here
+						localEuler[1] = localEuler[1] + sym_object.get_az_alignment_offset()
+				
+			if perturb and localEuler[0] != 0:
+				# this perturbation scheme is copied from EMAN1
+				if localEuler[0] < (math.pi/2.0-.01):
+					localEuler[0] += gaussian_rand(0.0,.5*prop*math.pi/360.0)
+				
+				localEuler[1] += gaussian_rand(0.0,h/4.0)
+				
+				if localEuler[0] > altmax: 
+					localEuler[0] = altmax
+					
+				if localEuler[1] > azmax:
+					localEuler[1] > azmax
+				elif localEuler[1] < 0:
+					localEuler[1] = 0
+				
+			eulers.append(localEuler)
+
+			az_iterator = az_iterator + h
+
+		alt_iterator = alt_iterator + prop * deg2rad
+
+	return eulers
+
+def get_h(prop,altitude,maxcsym):
+		h = float(math.floor(360. / (prop * 1.1547)))
+		h = int(math.floor(h * math.sin(altitude) + .5))
+		if (h == 0):
+			h = 1.0
+		h = float(maxcsym) * math.floor(float(h) / float(maxcsym) + .5)
+		#this is a temporary hack - i get h == 0, this problem
+		# must occur in EMAN1, but division by zero does not throw in C++
+		# while it does here
+		if ( h == 0 ) :
+			h = 1.0
+		h = math.pi * 2.0 / h
+
+		return h
+	
+def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
+	
+	for i,euler in enumerate(eulers):
+		p=data.project(options.projector,{"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg})
+		#FIXME:: In EMAN2 everything should be set in degrees but atm radians are being used in error!
+		# this problem is being fixed by Phil Baldwin, and when fixed, the arguments here should change to radians
+		p.set_rotation(euler[1]* rad2deg,euler[0]* rad2deg,euler[2]* rad2deg)
+		# this values reads as "particles_represented"
+		#p.set_attr("ptcl_repr",1)
+		a = int( random.random() * 50 ) + 1
+		p.set_attr("ptcl_repr", a)
+		# FIXME, this should be optional etc.
+		#p.process_inplace("mask.sharp", {"outer_radius":options.mask})
+		
+		if smear:
+			if not phiprop:
+				print "ERROR: can not perform smearing operation without a valid phi angle"
+				exit(1)
+			smear_iterator = euler[2] + deg2rad*phiprop/(smear+1)
+			while ( smear_iterator < euler[2] + phiprop*deg2rad ):
+				ptmp=data.project(options.projector,{"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : smear_iterator * rad2deg})
+				
+				p.add(ptmp)
+				smear_iterator +=  deg2rad*phiprop/(smear+1)
+				
+		try: 
+			p.write_image(options.outfile,-1)
+		except:
+			print "Error: Cannot write to file %s"%options.outfile
+			exit(1)
+		
+		pcopy = p;
+		
+		print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
+
+
+def verify_mirror_test(data, eulers, symmetry, projector):
+	
+	sym_object = get_sym_object( symmetry )
+	
+
+	for i,euler in enumerate(eulers) :
+		p=data.project(projector,{"alt" : euler[0] * rad2deg,"az" : euler[1] * rad2deg,"phi" : euler[2] * rad2deg})
+		
+		mirrorEuler = sym_object.asym_unit_mirror_orientation(euler)
+			
+		
+		#Get the projection in this orientations
+		p_mirror = data.project(projector,{"alt" : mirrorEuler[0] * rad2deg,"az" : mirrorEuler[1]* rad2deg,"phi" : mirrorEuler[2] * rad2deg})
+		
+		## Actually do the mirroring
+		if sym_object.is_d_symmetry():
+			p_mirror.process_inplace("mirror", {"axis":'y'})
+		elif sym_object.is_c_symmetry():
+			p_mirror.process_inplace("mirror", {"axis":'x'})
+		#FIXME: The mirror orientation is dependent on the platonic symmetry see http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
+		elif sym_object.is_platonic_symmetry():
+			p_mirror.process_inplace("mirror", {"axis":'y'})
+			
+		
+		## Calculate and write the difference to disk
+		p_difference = p_mirror-p
+		p_difference.write_image(symmetry+"mirror_debug_difference.img",-1)
+		p_mirror.write_image(symmetry+"mirror_debug.img",-1)
+		
+		## Print debug information
+		print "Orientation %d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
+		print "Mirror %d\t%4.2f\t%4.2f\t%4.2f" % (i, mirrorEuler[0] * rad2deg, mirrorEuler[1] * rad2deg, mirrorEuler[2] * rad2deg)
+
+# A base class that encapsulates many of the  things common to all of the symmetries
+# it also stores useful information such as the symmetry itself.
+class asym_unit:
+	def __init__(self, symmetry, nomirror= False):
+		self.symmetry = symmetry
+		self.nomirror = nomirror
+		
+		if (self.symmetry == "icos"):
+			self.maxcsym = 5
+		elif (self.symmetry == "oct"):
+			self.maxcsym = 4
+		elif (self.symmetry == "tet"):
+			self.maxcsym = 3
+		elif (self.symmetry[0] in ["c","d","h"]):
+			self.maxcsym = int(symmetry[1:])
+		else:
+			print "ERROR: In get_maxcsym - unknown symmetry type: %s"%self.symmetry
+			exit(1)
+	
+	def asym_unit_alt_max(self):
+		return self.altmax
+	def asym_unit_az_max(self):
+		return self.azmax
+	
+	def get_maxcsym(self):
+		return self.maxcsym
+
+	#FIXME: These "is_whatever_symmetry" functions could be abstracted.
+	def is_platonic_symmetry(self):
+		if (self.symmetry in ["tet","oct","icos"]):
+			return True
+		else:
+			return False
+
+	def is_c_d_symmetry(self):
+		if (self.symmetry[0] in ["c","d"]):
+			return True
+		else:
+			return False
+	
+	def is_c_symmetry(self):
+		if (self.symmetry[0] == "c"):
+			return True
+		else:
+			return False
+
+	def is_d_symmetry(self):
+		if (self.symmetry[0] == "d"):
+			return True
+		else:
+			return False
+
+	def is_h_symmetry(self):
+		if (self.symmetry[0] == "h"):
+			return True
+		else:
+			return False
+
+class h_asym_unit(asym_unit):
+	# symmetry is a string, c1,d1,c2,d2,etc..class c_odd_asymm_unit:
+	def __init__(self, symmetry, nomirror = False):
+		asym_unit.__init__(self,symmetry, nomirror)
+		
+		self.azmax = self.maxcsym * math.pi/180.0
+		self.altmin = 80.0 * math.pi/180.0
+		self.altmax = math.pi/2.0
+
+	def asym_unit_alt_min(self):
+		return self.altmin
+
+# A class the encapsulates things common or similar in c and d symmetries
+class c_d_asym_unit(asym_unit):
+	# symmetry is a string, c1,d1,c2,d2,etc..class c_odd_asym_unit:
+	def __init__(self, symmetry, nomirror = False):
+		asym_unit.__init__(self,symmetry, nomirror)
+		if symmetry[0]=="c":
+		
+			if nomirror:
+				self.altmax = math.pi / 2.0
+			else:
+				self.altmax = math.pi
+				
+			self.azmax = 2.0*math.pi/self.get_maxcsym()
+		
+		elif symmetry[0]=="d":
+		
+			self.altmax = math.pi / 2.0
+		
+			if nomirror:
+				self.azmax = math.pi/self.get_maxcsym()
+			else:
+				self.azmax = 2.0*math.pi/self.get_maxcsym()
+				
+		else:
+			print "ERROR: In get_c_d_asym_unit_bounds - unknown symmetry type: %s"%symmetry
+			exit(1)
+	
+# a class to encapsulate specific information attributed to d symmetries
+class d_asym_unit(c_d_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		c_d_asym_unit.__init__(self,symmetry, nomirror)
+	
+	def asym_unit_mirror_orientation(self, euler):
+		equiv_asym_unit_az = euler[1] % self.azmax
+		az_offset = euler[1] - equiv_asym_unit_az
+		mirrorEuler = ([euler[0], self.azmax - equiv_asym_unit_az +  az_offset, euler[2]])
+		
+		return mirrorEuler
+
+
+# c odd and even symmetries have different ways of getting mirror orientations, which
+# is reflected here in these two separate classes
+class c_odd_asym_unit(c_d_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		c_d_asym_unit.__init__(self,symmetry, nomirror)
+	
+	def asym_unit_mirror_orientation(self, euler):
+		equiv_asym_unit_az = euler[1] % self.azmax
+		if equiv_asym_unit_az < self.azmax/2.0:
+			mirrorAz = self.azmax/2.0 + euler[1]
+		else:
+			mirrorAz = euler[1] - self.azmax/2.0
+			
+		mirrorEuler = ([self.altmax - euler[0], mirrorAz, euler[2]])
+		
+		return mirrorEuler
+
+class c_even_asym_unit(c_d_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		c_d_asym_unit.__init__(self,symmetry, nomirror)
+	
+	def asym_unit_mirror_orientation(self, euler):
+		
+		mirrorEuler = ([self.altmax - euler[0], euler[1], euler[2]])
+		
+		return mirrorEuler
+
+# a class the encapsulates data and tools common to platon symmetry asym units
+class platonic_asym_unit(asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		asym_unit.__init__(self,symmetry, nomirror)
+		# FIXME: doing WEN_JIANG icosahedral and EMAN1 octahedral projection is only here
+		# because we are cross checking against the original EMAN1 implementation.
+		# Once everything is verified, WEN_JIANG and EMAN1_OCT support can be removed
+		# it turns out that in EMAN1 it looks like they were projecting
+		# over the entire asymmetric unit, and not accounting for mirror symmetry. Infact, the EMAN1 oct approach produces the EMAN2 oct 
+		# approach... remove all references to EMAN1_OCT once these routines have been verified.
+		if ( WEN_JIANG or EMAN1_OCT ):
+			if ( symmetry == "icos" ):
+				self.azmax =  2.0 * math.pi / 10.0
+				self.altmax = 37.3773681406497 * math.pi / 180. #this is the angle between a 5fold axis and the nearest 3fold axis of symmetry
+			elif ( symmetry == "oct" ):
+				self.azmax = 2.0 * math.pi / 4.0
+				self.altmax = 54.736 * math.pi / 180.#this is the angle between a 4fold axis and the nearest 3fold axis of symmetry
+			else:
+				print "DEBUG ERROR: In platonic_asym_unit - current debug mode does not support symmetry type: %s" %symmetry 
+				exit(1)	
+		else:
+			# See the manuscript "The Transform Class in Sparx and EMAN2", Baldwin & Penczek 2007. J. Struct. Biol. 157 (250-261)
+			# In particular see pages 257-259
+			# capSig is capital sigma in the Baldwin paper
+			self.capSig = 2.0*math.pi/ self.get_maxcsym()
+			# capSig is left here incase anyone ever tries to interpret what's happening here in terms of the Baldwin paper
+			self.azmax = self.capSig;
+			
+			
+			# Alpha is the angle between (immediately) neighborhing 3 fold axes of symmetry
+			# This follows the conventions in the Baldwin paper
+			self.alpha = math.acos(1.0/(math.sqrt(3.0)*math.tan(self.capSig/2)))
+			# As in capsig here, alpha is here just for clarity, incase you try to interpret this code in terms of the Baldwin paper
+			self.altmax = self.alpha;
+			
+			# This is half of "theta_c" as in the conventions of the Balwin paper. See also http://blake.bcm.edu/emanwiki/EMAN2/Symmetry.
+			self.thetacontwo = 1.0/2.0*math.acos( math.cos(self.capSig)/(1.0-math.cos(self.capSig)))
+
+	# Tetrahedral symmetry is the only instance that uses alpha != self.alpha, so the 
+	# second argument accomodates this - tetrahedral only does this when its discluding
+	# mirror symmetries!
+	def platonic_boundary_alt(self, azimuth, alpha):
+		
+		baldwin_boundary_alt = math.sin(self.capSig/2.0 - azimuth)/math.tan(self.thetacontwo)
+		baldwin_boundary_alt += math.sin( azimuth )/math.tan(alpha)
+		baldwin_boundary_alt *= 1/math.sin(self.capSig/2.0)
+		baldwin_boundary_alt = math.atan(1/baldwin_boundary_alt)
+
+		return baldwin_boundary_alt
+
+		
+
+# this class encapsulates what is common to icosahedral and octahedral symmetry
+# in terms of the mirror portions of the asym unit
+class icos_oct_asym_unit(platonic_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		platonic_asym_unit.__init__(self,symmetry, nomirror)
+
+	def asym_unit_mirror_orientation(self, euler):
+		# nb, this function will only work for projections in the asymmetric
+		# unit generated by e2project3d.py
+		if self.get_az_alignment_offset() != 0 : # also the same as self.symmetry == "icos"
+			equiv_asym_unit_az = euler[1] % self.get_az_alignment_offset()
+			az_offset = euler[1] - equiv_asym_unit_az
+			mirrorAz = self.azmax + az_offset - equiv_asym_unit_az 
+		else: # also the same as self.symmetry == "oct"
+			mirrorAz = self.azmax - euler[1]
+		
+		# returning only euler[0] for this function restrict might restrict 
+		# its use to only five of the asymmetric units
+		mirrorEuler = (euler[0], mirrorAz, euler[2])
+		
+		return mirrorEuler
+	
+	def is_in_asym_unit(self, euler):
+			
+		# This represents the angle between maxcysm-fold axis and the nearest 
+		# 2fold axis. This is the Badwin "theta_c" divided by two, hence the name.
+		
+		azimuth = euler[1]
+		
+		if ( azimuth > self.capSig/2.0 ):
+			azimuth = self.capSig - azimuth
+	
+		baldwin_boundary_alt_lower = self.platonic_boundary_alt(azimuth, self.alpha)
+	
+		if ( baldwin_boundary_alt_lower > euler[0] ):
+			if ( self.nomirror ):
+				if ( self.azmax/2.0 < euler[1] ):
+					return False
+				else:
+					return True
+			else:
+				return True
+		else:
+			return False
+		
+class icos_asym_unit(icos_oct_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		icos_oct_asym_unit.__init__(self,symmetry, nomirror)
+
+	# this is required to ensure that projection occurs
+	# over the proper portion of the icosahedron and is related
+	# to the fact that make3d generates icosahdral structures
+	# in a very specific orientation
+	def get_az_alignment_offset(self):
+		return 3.0*math.pi/2.0 - math.pi/5.0
+
+class oct_asym_unit(icos_oct_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		icos_oct_asym_unit.__init__(self,symmetry, nomirror)
+
+	# unfortunately returning zero implies redundance, but this
+	# is needed to ensure abstract handling of the symmetries
+	# in the euler generation loop. This could be fixable if
+	# make3d is adapted to avoid the need for azimuthal offsets.
+	def get_az_alignment_offset(self):
+		return 0.0
+
+
+# the tetrahedral asymmetric unit is more complicated in terms of its mirror symmetry
+# it needs special consideration
+class tet_asym_unit(platonic_asym_unit):
+	def __init__(self, symmetry, nomirror = False):
+		platonic_asym_unit.__init__(self,symmetry, nomirror)
+
+	def get_az_alignment_offset(self):
+		return math.pi
+
+	# nb, this function will only work for projections in the asymmetric
+	# unit generated by e2project3d.py - there are 12 asymm units in all,
+	# and special consideration would have to be given to generalize the
+	# approach used here
+	
+	def asym_unit_mirror_orientation(self, euler):
+		
+		c = ([math.sin(self.thetacontwo), 0, math.cos(self.thetacontwo)])
+		f = ([math.sin(self.alpha)*math.cos(self.capSig/2.0), math.sin(self.alpha)*math.sin(self.capSig/2.0), math.cos(self.alpha)])
+		
+		n_fc = ([0,0,0])
+		for i in [0,1,2]:
+			n_fc[i] = (f[i]*math.sin(self.thetacontwo-euler[0]) + c[i]*math.sin(euler[0]))/math.sin(self.thetacontwo)
+		
+		mirrorAz = math.atan2(n_fc[1],n_fc[0]) + euler[1]
+		mirrorAlt = math.acos(n_fc[2])
+		
+		mirrorEuler = (mirrorAlt, mirrorAz, euler[2])
+		
+		return mirrorEuler
+
+	# This function tells the orientaton generating component in e2project2d.py
+	# whether or not the euler angle is inside the asymmetric unit. 
+	# This is required because the bounds created in the platonic_asymm_unit constructor
+	# go beyond the asymmetric unit borders, and as the orientation generation algorithm
+	# loops it simply iterates to the extremes permissible values of self.altmax and 
+	# self.azmax, which will cause overlap unless those orientations beyond the 
+	# asymmetric unit boundary are disregarded.
+	def is_in_asym_unit(self, euler):
+			
+		# This represents the angle between maxcysm-fold axis and the nearest 
+		# 2fold axis. This is the Badwin "theta_c" divided by two, hence the name.
+		
+		azimuth = euler[1]
+		
+		if ( azimuth > self.capSig/2.0 ):
+			azimuth = self.capSig - azimuth
+	
+		baldwin_boundary_alt_lower = self.platonic_boundary_alt(azimuth, self.alpha)
+	
+		if ( baldwin_boundary_alt_lower > euler[0] ):
+			if ( self.nomirror ):
+				baldwin_boundary_alt_upper = self.platonic_boundary_alt( azimuth, self.alpha/2.0)
+				# you could change the "<" to a ">" here to get the other mirror part of the asym unit
+				# however this approach makes sure that the generated asymmetric unit projects look nice
+				# and contiguous
+				if ( baldwin_boundary_alt_upper < euler[0] ):
+					return False
+				else:
+					return True
+			else:
+				return True
+		else:
+			return False
+
+def get_sym_object( symmetry, nomirror=False ):
+	
+	if (symmetry == "icos"):
+		return icos_asym_unit(symmetry, nomirror)
+	elif (symmetry == "oct"):
+		return oct_asym_unit(symmetry, nomirror)
+	elif (symmetry == "tet"):
+		return tet_asym_unit(symmetry, nomirror)
+	elif (symmetry[0] =="c"):
+		maxcsym = int(symmetry[1:])
+		if (maxcsym %2) == 1:
+			return c_odd_asym_unit(symmetry, nomirror)
+		else:
+			return c_even_asym_unit(symmetry, nomirror)
+	elif (symmetry[0] =="d"):
+		return d_asym_unit(symmetry, nomirror)
+	elif (symmetry[0] =="h"):
+		return h_asym_unit(symmetry, nomirror)
+	else:
+		print "ERROR: In get_sym_object - unknown symmetry type: %s" %symmetry
+		exit(1)
+	
+# this is copied from EMAN1 util.C (it's called "grand" there)
+def gaussian_rand(mean, sigma):
+		
+	r = 0
+	while ( r == 0 or r > 1.0):
+		x = 2*random.random() - 1
+		y = 2*random.random() - 1
+		r = x**2 + y**2;
+
+	f = math.sqrt(-2.0*math.log(r)/r);
+
+	return x*f*sigma+mean
+	
+# this is copied from EMAN1 util.C (it's called "frand" there)
+def random_on_interval(low,high):
+
+	if ( high < low ):
+		print "ERROR: can not call random_on_interval when the the left argument is greater than the right argument"
+		# or do this?
+		# return (low-high)*random.random() + high
+		exit(1)
+
+	return (high-low)*random.random() + low
 
 if __name__=="__main__":
-    main()
+	main()

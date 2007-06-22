@@ -171,7 +171,7 @@ namespace EMAN
 		 * @param area The clip area.
 		 * @return The clip image.
 		 */
-		EMData *get_clip(const Region & area);
+		EMData *get_clip(const Region & area) const;
 		
 		
 		/** Get the top half of this 3D image.
@@ -592,7 +592,7 @@ namespace EMAN
 		 * @return the cross correlation image.
 		 */
 		EMData *calc_flcf(EMData * with, int radius = 50,
-						  const string & maskfilter = "eman1.mask.sharp");
+						  const string & maskfilter = "mask.sharp");
 
 		/** Convolutes 2 data sets. The 2 images must be of the same size.
 		 * @param with One data set. 'this' image is the other data set.

@@ -62,13 +62,13 @@ namespace EMAN
 		
 		public:
 		PointArray();
-		PointArray(unsigned int nn);
+		PointArray(int nn);
 		~PointArray();
 		void zero();
 		PointArray *copy();
 		PointArray & operator=(PointArray & pa);
-		unsigned int get_number_points();
-		void set_number_points(unsigned int nn);
+		int get_number_points();
+		void set_number_points(int nn);
 		bool read_from_pdb(const char *file);
 		void save_to_pdb(const char *file);
 		FloatPoint get_center();
@@ -80,6 +80,11 @@ namespace EMAN
 		void set_vector_at(int i,Vec3f vec,double value);
 		void set_vector_at(int i,vector<double>); 
 		void set_points_array(double *p);
+		/** Returns all x,y,z triplets packed into a vector<float>
+		*
+		* @return All points packed into a vector<float>
+		*/
+		vector<float> get_points();
 
 		/** Calculates a (symmetrized) distance matrix for the current PointArray
 		*
@@ -102,9 +107,9 @@ namespace EMAN
 		/** Aligns one PointArray to another in 2 dimensions
 		*
 		* @param to Another PointArray to align to
-		* @return A vector<float> containing (dx,dy,align_err,points_used
+		* @return a Transform3D to map 'this' to 'to'
 		*/
-		Transform3D *align_2d(PointArray *to);	// computes the optimal alignment between two (non-identical) sets of points
+		Transform3D *align_2d(PointArray *to,float max_dist);	// computes the optimal alignment between two (non-identical) sets of points
 
 		/** Translationally aligns one PointArray to another in 2 dimensions
 		*
@@ -118,8 +123,10 @@ namespace EMAN
 
 		void mask(double rmax, double rmin = 0.0);
 		void mask_asymmetric_unit(const string & sym);
+		void transform(Transform3D transform);
+		void set_from(vector<float>);
 		void set_from(PointArray * source, const string & sym = "", Transform3D *transform=0);
-		void set_from(double *source, unsigned int num, const string & sym = "", Transform3D *transform=0);
+		void set_from(double *source, int num, const string & sym = "", Transform3D *transform=0);
 		void set_from_density_map(EMData * map, int num, float thresh, float apix,
 								  Density2PointsArrayAlgorithm mode = PEAKS_DIV);
 		void sort_by_axis(int axis = 1);	// x,y,z axes = 0, 1, 2
@@ -140,7 +147,7 @@ namespace EMAN
 
 		private:
 		double *points;
-		unsigned int n;
+		int n;
 	};
 }
 

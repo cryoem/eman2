@@ -1,17 +1,21 @@
 LINK_LIBRARIES(EM2)
 
-ADD_EXECUTABLE(blankimg blankimg.cpp)
-ADD_EXECUTABLE(fft fft.cpp)
-ADD_EXECUTABLE(rotate rotate.cpp)
+# all of these commented out by david woolford, because when i started writing testing code
+# none of them where being compile anyway...
+#ADD_EXECUTABLE(blankimg blankimg.cpp)
+#ADD_EXECUTABLE(fft fft.cpp)
+#ADD_EXECUTABLE(rotate rotate.cpp)
 #ADD_EXECUTABLE(rotate_translate rotate_translate.cpp)
-ADD_EXECUTABLE(rotate_phi rotate_phi.cpp)
-ADD_EXECUTABLE(ccf2 ccf2.cpp)
-ADD_EXECUTABLE(testalign testalign.cpp)
-ADD_EXECUTABLE(testpolardata testpolardata.cpp)
-ADD_EXECUTABLE(fft_test fft_test.cpp)
+#ADD_EXECUTABLE(rotate_phi rotate_phi.cpp)
+#ADD_EXECUTABLE(ccf2 ccf2.cpp)
+#ADD_EXECUTABLE(testalign testalign.cpp)
+#ADD_EXECUTABLE(testpolardata testpolardata.cpp)
+#ADD_EXECUTABLE(fft_test fft_test.cpp)
 #ADD_EXECUTABLE(projector_test projector_test.cpp)
-ADD_EXECUTABLE(mem_test mem_test.cpp)
-ADD_EXECUTABLE(storage_order_test storage_order_test.cpp)
+#ADD_EXECUTABLE(mem_test mem_test.cpp)
+#ADD_EXECUTABLE(storage_order_test storage_order_test.cpp)
+# this test added by david woolford - it should be executed and results evaluated on every platform.
+ADD_EXECUTABLE(test_emobject_and_dict test_emobject.cpp)
 
 FIND_LIBRARY(EMAN1_LIBRARY NAMES EM PATHS $ENV{EMANDIR}/lib $ENV{HOME}/EMAN/lib)
 IF(EMAN1_LIBRARY)

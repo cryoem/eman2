@@ -205,7 +205,6 @@ EMData *EMData::do_ift_inplace()
 	int offset = is_fftodd() ? 1 : 2;
 	EMfft::complex_to_real_nd(rdata, rdata, nx - offset, ny, nz);
 
-
 #if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	int nxo = nx - offset;

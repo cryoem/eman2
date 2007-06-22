@@ -176,16 +176,16 @@ EMData()</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
       <span style="color: rgb(0, 0, 0); font-family: monospace;">e.read_image("test1.mrc")</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace;">
-      e.process_inplace("eman1.math.sqrt")</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      e.process_inplace("math.sqrt")</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace;">
-      e.process_inplace("eman1.threshold.binaryrange", {"low" :5.2, "high" : 10})</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
+      e.process_inplace("threshold.binaryrange", {"low" :5.2, "high" : 10})</span><br style="color: rgb(0, 0, 0); font-family: monospace;">
 
       <span style="color: rgb(0, 0, 0); font-family: monospace;">e.write_image("output.mrc")<br>
       <br>
 For out of place processing:<br>
       <br>
-f = e.process("eman1.math.sqrt")<br>
+f = e.process("math.sqrt")<br>
 f.write_image("output.mrc")</span></li>
 
   

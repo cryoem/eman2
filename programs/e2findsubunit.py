@@ -60,7 +60,7 @@ a high point then iteratively expanding until a subunit has been located.
 
 	data=EMData()
 	data.read_image(args[0])
-	data.process_inplace("eman1.threshold.belowtozero",{"minval":options.thr})
+	data.process_inplace("threshold.belowtozero",{"minval":options.thr})
 	
 	totest=[]
 	for x in range(-1,2):
@@ -118,7 +118,7 @@ a high point then iteratively expanding until a subunit has been located.
 		if nvox%100==0 : print nvox,len(plist)
 		
 	data*=-1.0
-	data.process_inplace("eman1.threshold.belowtozero",{"minval":options.thr})
+	data.process_inplace("threshold.belowtozero",{"minval":options.thr})
 	data.update()
 	data.write_image(args[1])
 		

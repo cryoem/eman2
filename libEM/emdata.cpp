@@ -170,6 +170,9 @@ EMData::EMData(int nx, int ny, int nz, bool is_real)
 	EXITFUNC;
 }
 
+//debug
+using std::cout;
+using std::endl;
 EMData::~EMData()
 {
 	ENTERFUNC;
@@ -191,7 +194,7 @@ EMData::~EMData()
 }
 
 
-EMData *EMData::get_clip(const Region & area)
+EMData *EMData::get_clip(const Region & area) const
 {
 	ENTERFUNC;
 	if (get_ndim() != area.get_ndim()) {
@@ -199,7 +202,14 @@ EMData *EMData::get_clip(const Region & area)
 		return 0;
 	}
 
-	EMData *result = new EMData();
+	EMData *result = new EMData();	
+	
+	// Added by d.woolford - I need to ensure that all of the metadata of this is stored in the new object
+	// Originally added to ensure that euler angles were retained when preprocessing (zero padding) images
+	// prior to insertion into the 3D for volume in the reconstruction phase (see reconstructor.cpp/h).
+	// Could this present a problem in any way? (I am not certain)
+	result->attr_dict = this->attr_dict;
+	
 	int zsize = (int)area.size[2];
 	if (zsize == 0 || nz <= 1) {
 		zsize = 1;
@@ -372,6 +382,7 @@ EMData* EMData::window_center(int l) {
 				throw ImageFormatException(
 						"Need square real-space image.");
 			}
+			cout << "Using corner " << corner << endl;
 			ret = get_clip(Region(corner, corner, l, l));
 			break;
 		case 1:
@@ -717,9 +728,11 @@ void EMData::rotate_translate(const Transform3D & RA)
 #endif
 
 	float scale       = RA.get_scale();
-	Vec3f dcenter     = RA.get_center();
+ 	Vec3f dcenter     = RA.get_center();
 	Vec3f translation = RA.get_posttrans();
 	Dict rotation      = RA.get_rotation(Transform3D::EMAN);
+//	Transform3D mx = RA;
+//	Transform3D RAInv = RA.inverse();
 
 #ifdef DEBUG
 	vector<string> keys = rotation.keys();
@@ -745,19 +758,15 @@ void EMData::rotate_translate(const Transform3D & RA)
 	des_data = (float *) malloc(nx * ny * nz * sizeof(float));
 
 	if (nz == 1) {
-		float cosphi = inv_scale * cos((M_PI/180.0f)*(float)rotation["phi"]);
-		float sinphi = inv_scale * sin((M_PI/180.0f)*(float)rotation["phi"]);
-
-		float x2c =  nx / 2 - dcenter[0] - translation[0];
-		float y2c =  ny / 2 - dcenter[1] - translation[1];
+		float x2c =  nx / 2 - dcenter[0] + RAInv[0][3];
+		float y2c =  ny / 2 - dcenter[1] + RAInv[1][3];
 		float y   = -ny / 2 + dcenter[1]; // changed 0 to 1 in dcenter and below
-
 		for (int j = 0; j < ny; j++, y += 1.0f) {
 			float x = -nx / 2 + dcenter[0];
-
 			for (int i = 0; i < nx; i++, x += 1.0f) {
-				float x2 = ( cosphi * x  - sinphi * y) + x2c;
-				float y2 = ( sinphi * x + cosphi * y) + y2c;
+				float x2 = RAInv[0][0]*x + RAInv[0][1]*y + x2c;
+				float y2 = RAInv[1][0]*x + RAInv[1][1]*y + y2c;
+//  		                printf("x2=%f \t y2=%f \t x=%f  \t y=%f \n", x2 ,y2, x, y );
 
 				if (x2 < 0 || x2 >= nx2 - 1 || y2 < 0 || y2 >= ny2 - 1) {
 					des_data[i + j * nx] = 0;
@@ -811,9 +820,9 @@ void EMData::rotate_translate(const Transform3D & RA)
 		int nxy = nx * ny;
 		int l = 0;
 
-		float x2c =  nx / 2 - dcenter[0] - translation[0];
-		float y2c =  ny / 2 - dcenter[1] - translation[1];
-		float z2c =  nz / 2 - dcenter[2] - translation[2];
+		float x2c =  nx / 2 - dcenter[0] + RAInv[0][3];;
+		float y2c =  ny / 2 - dcenter[1] + RAInv[1][3];;
+		float z2c =  nz / 2 - dcenter[2] + RAInv[2][3];;
 
 		float z   = -nz / 2 + dcenter[2]; //
 
@@ -823,9 +832,9 @@ void EMData::rotate_translate(const Transform3D & RA)
 			for (int j = 0; j < ny; j++,   y += 1.0f) {
 				float x = -nx / 2 + dcenter[0];
 				for (int i = 0; i < nx; i++, l++ ,  x += 1.0f) {
-					float x2 = mx[0][0] * x + mx[0][1] * y + mx[0][2] * z + x2c;
-					float y2 = mx[1][0] * x + mx[1][1] * y + mx[1][2] * z + y2c;
-					float z2 = mx[2][0] * x + mx[2][1] * y + mx[2][2] * z + z2c;
+					float x2 = RAInv[0][0] * x + RAInv[0][1] * y + RAInv[0][2] * z + x2c;
+					float y2 = RAInv[1][0] * x + RAInv[1][1] * y + RAInv[1][2] * z + y2c;
+					float z2 = RAInv[2][0] * x + RAInv[2][1] * y + RAInv[2][2] * z + z2c;
 
 
 					if (x2 < 0 || y2 < 0 || z2 < 0 ||
@@ -1278,20 +1287,20 @@ EMData *EMData::calc_ccfx(EMData * with, int y0, int y1, bool no_sum)
 		}
 
 		for (int j = y0; j < y1; j++) {
-			float *f1a = d1 + j * nx;
-			float *f2a = d2 + j * nx;
-
+			float *f1a = d1 + j * nx;   // Taken out by PRB May 2007
+			float *f2a = d2 + j * nx; 
+/*
 			f1[0] = f1a[0] * f2a[0];
-			f1[nx / 2] = f1a[nx / 2] * f2a[nx / 2];
+			f1[nx / 2] = f1a[nx / 2] * f2a[nx / 2];*/
 
-			for (int i = 1; i < nx / 2; i++) {
-				float re1 = f1a[i];
-				float re2 = f2a[i];
-				float im1 = f1a[nx - i];
-				float im2 = f2a[nx - i];
+			for (int i = 0; i < nx / 2; i++) { 
+				float re1 = f1a[2*i];
+				float re2 = f2a[2*i];
+				float im1 = f1a[2*i+1];
+				float im2 = f2a[2*i+1];
 
-				f1[i] = re1 * re2 + im1 * im2;
-				f1[nx - i] = im1 * re2 - re1 * im2;
+				f1[i*2] = re1 * re2 + im1 * im2;
+				f1[i*2+1] = im1 * re2 - re1 * im2;
 			}
 
 			EMfft::complex_to_real_1d(f1, f2, nx);
@@ -1357,7 +1366,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 	tmp2 = get_clip(r1);
 
 	if (!premasked) {
-		tmp2->process_inplace("eman1.mask.sharp", Dict("outer_radius", nx / 2, "value", 0));
+		tmp2->process_inplace("mask.sharp", Dict("outer_radius", nx / 2, "value", 0));
 	}
 
 	if (filt->get_xsize() != tmp2->get_xsize() + 2 || filt->get_ysize() != tmp2->get_ysize() ||
@@ -1395,7 +1404,7 @@ EMData *EMData::make_rotational_footprint(bool premasked, bool unwrap)
 
 	if (nz == 1) {
 		if (!unwrap) {
-			tmp2->process_inplace("eman1.mask.sharp", Dict("outer_radius", -1, "value", 0));
+			tmp2->process_inplace("mask.sharp", Dict("outer_radius", -1, "value", 0));
 			rfp = 0;
 			result = tmp2;
 		}
@@ -1419,8 +1428,8 @@ EMData *EMData::make_footprint()
 {
 	//EMData *ccf=calc_ccf(this);
 	EMData *ccf=calc_mutual_correlation(this);
-	ccf->process_inplace("eman1.xform.phaseorigin");
-	ccf->process_inplace("eman1.normalize.edgemean");
+	ccf->process_inplace("xform.phaseorigin");
+	ccf->process_inplace("normalize.edgemean");
 	EMData *un=ccf->unwrap();
 	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize()/2,un->get_ysize()-6));	// 4 and 6 are empirical
 	EMData *cx=tmp->calc_ccfx(tmp,0,-1,1);
@@ -1508,7 +1517,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	}
 
 	if (tocorner) {
-		cf->process_inplace("eman1.xform.phaseorigin");
+		cf->process_inplace("xform.phaseorigin");
 	}
 
 	EMData *f2 = cf->do_ift();
@@ -2629,7 +2638,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	Dict filter_dict;
-	if (mask_filter == "eman1.mask.sharp") {
+	if (mask_filter == "mask.sharp") {
 		filter_dict["value"] = 0;
 	}
 
@@ -2652,7 +2661,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	EMData *img1_copy = img1->copy();
 	img1_copy->to_one();
 	img1_copy->process_inplace(mask_filter, filter_dict);
-	img1_copy->process_inplace("eman1.xform.phaseorigin");
+	img1_copy->process_inplace("xform.phaseorigin");
 
 	int num = 0;
 	float *img1_copy_data = img1_copy->get_data();
@@ -2705,7 +2714,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	img2_copy->process_inplace(mask_filter, filter_dict);
-	img2_copy->process_inplace("eman1.xform.phaseorigin");
+	img2_copy->process_inplace("xform.phaseorigin");
 
 	if( img1_copy )
 	{
@@ -2715,7 +2724,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 
 	EMData *img1_copy2 = img1->copy();
 
-	img1_copy2->process_inplace("eman1.math.squared");
+	img1_copy2->process_inplace("math.squared");
 
 	EMData *ccf = img1->calc_ccf(img2_copy);
 	if( img2_copy )
@@ -2744,7 +2753,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	conv2->mult(img1_size);
-	conv1->process_inplace("eman1.math.squared");
+	conv1->process_inplace("math.squared");
 	conv1->mult(1.0f / (num * num));
 
 	EMData *conv2_copy = conv2->copy();
@@ -2762,7 +2771,7 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	}
 
 	conv2_copy->mult(1.0f / num);
-	conv2_copy->process_inplace("eman1.math.sqrt");
+	conv2_copy->process_inplace("math.sqrt");
 
 	EMData *ccf_copy = ccf->copy();
 	if( ccf )

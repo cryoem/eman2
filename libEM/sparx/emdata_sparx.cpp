@@ -441,7 +441,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 {
 	EMData* FFT= FH2F(Size,OverSamplekB,0);
-	FFT->process_inplace("eman1.xform.fourierorigin");
+	FFT->process_inplace("xform.fourierorigin");
 	EMData* eguess= FFT ->do_ift();
 	return eguess;
 }  // ends FH2F
@@ -955,11 +955,12 @@ EMData* EMData::symvol(string symString) {
 
 #define proj(ix,iy,iz)  proj[ix-1+(iy-1+(iz-1)*ny)*nx]
 #define pnewimg(ix,iy,iz)  pnewimg[ix-1+(iy-1+(iz-1)*ny)*nx]
-EMData* EMData::average_circ_sub() {
+EMData* EMData::average_circ_sub() const
+{
 //  this is written as though dimensions could be different, but in fact they should be all equal nx=ny=nz,
 //                                                           no check of this	
 	ENTERFUNC;
-	EMData* image = this;
+	const EMData* const image = this;
 	EMData* newimg = copy_head();
 	newimg->set_size(nx,ny,nz);
 	float *proj = image->get_data();

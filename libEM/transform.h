@@ -118,7 +118,7 @@ namespace EMAN
 		Transform3D();
 
              // copy constructor
-	        Transform3D( const Transform3D& rhs );
+	    Transform3D( const Transform3D& rhs );
 
 	     // C2   
 		Transform3D(float az,float alt, float phi); // EMAN by default
@@ -146,7 +146,7 @@ namespace EMAN
 
 		virtual ~ Transform3D();  // COmega   Deconstructor
 
-		void set_posttrans(const Vec3f & posttrans);
+
 		void apply_scale(float scale);
 		void set_scale(float scale);
 		void orthogonalize();	// reorthogonalize the matrix
@@ -176,14 +176,15 @@ namespace EMAN
 		/** returns the spin-axis (or finger) of the rotation
 		*/
 		Vec3f get_finger() const;
-		Vec3f get_pretrans() const;
-		Vec3f get_posttrans() const;
+		Vec3f get_pretrans( int flag=0) const; // flag=1 => all trans is pre
+		Vec3f get_posttrans(int flag=0) const; // flag=1 => all trans is post
  		Vec3f get_center() const;
 		Vec3f get_matrix3_col(int i) const;
 		Vec3f get_matrix3_row(int i) const;
-                Vec3f transform(Vec3f & v3f) const ; // This applies the full tranform to the vec
-                Vec3f rotate(Vec3f & v3f) const ;  // This just applies the rotation to the vec
+        Vec3f transform(Vec3f & v3f) const ; // This applies the full tranform to the vec
+        Vec3f rotate(Vec3f & v3f) const ;  // This just applies the rotation to the vec
 		
+		Transform3D inverseUsingAngs() const;
 		Transform3D inverse() const;
 					
 		Dict get_rotation(EulerType euler_type=EMAN) const;
@@ -200,13 +201,17 @@ namespace EMAN
 		inline float at(int r,int c) { return matrix[r][c]; }
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
-
-            //
+		
 		static int get_nsym(const string & sym);
 		Transform3D get_sym(const string & sym, int n) const;
 		void set_center(const Vec3f & center);
-		void set_pretrans(const Vec3f & pretrans);
-            //
+		void set_pretrans(const Vec3f & pretrans); // flag=1 means count all translation as pre
+		void set_pretrans(float dx, float dy, float dz);
+		void set_pretrans(float dx, float dy);
+		void set_posttrans(const Vec3f & posttrans);// flag=1 means count all translation as post
+		void set_posttrans(float dx, float dy, float dz);
+		void set_posttrans(float dx, float dy);
+
 		float get_scale() const;   
 
 		void to_identity();
@@ -247,9 +252,8 @@ namespace EMAN
 	Vec3f operator*(const Vec3f & v    , const Transform3D & M);
 	Vec3f operator*(const Transform3D & M, const Vec3f & v    );
 
-
-
 }  // ends NameSpace EMAN
+
 
 
 #endif

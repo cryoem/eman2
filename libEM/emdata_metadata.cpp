@@ -476,7 +476,7 @@ float EMData::get_circle_mean()
 		mask->to_one();
 
 		float radius = (float)(ny / 2 - 2);
-		mask->process_inplace("eman1.mask.sharp", Dict("inner_radius", radius - 1,
+		mask->process_inplace("mask.sharp", Dict("inner_radius", radius - 1,
 									   "outer_radius", radius + 1));
 
 		int n = 0;

@@ -83,7 +83,7 @@ def main():
 	for i in range(len(mappoints)/2):
 		erasePairs(skeleton,mappoints[i+len(mappoints)/2],((mappoints[i],()),),i+2)
 	
-	skeleton.process_inplace("eman1.threshold.binary",{"value":0.5})
+	skeleton.process_inplace("threshold.binary",{"value":0.5})
 	skeleton.write_image("skel.noh.mrc")
 # 	for s in mappoints:
 # 		print s[0],s[1],s[2],skeleton.get_value_at(*s)

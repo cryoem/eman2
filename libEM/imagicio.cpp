@@ -208,9 +208,9 @@ int ImagicIO::read_header(Dict & dict, int image_index, const Region * area, boo
 	dict["sigma"] = hed.sigma;
 
     dict["orientation_convention"] = "EMAN";
-	dict["euler_alt"] = hed.mrc1[1];
-	dict["euler_az"] = hed.mrc1[2];
-	dict["euler_phi"] = hed.mrc1[0];
+	dict["euler_alt"] = hed.mrc1[1]*180.0/M_PI;
+	dict["euler_az"] = hed.mrc1[2]*180.0/M_PI;
+	dict["euler_phi"] = hed.mrc1[0]*180.0/M_PI;
 	
 	dict["IMAGIC.imgnum"] = hed.imgnum;
 	dict["IMAGIC.count"] = hed.count;
@@ -310,9 +310,9 @@ int ImagicIO::write_header(const Dict & dict, int image_index,
 	new_hed.avdens = (float)dict["mean"];
 	new_hed.sigma = (float)dict["sigma"];
 	
-	if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"];
-	if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"];
-	if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"];
+	if(dict.has_key("euler_alt")) new_hed.mrc1[1] = (float)dict["euler_alt"]*M_PI/180.0;
+	if(dict.has_key("euler_az")) new_hed.mrc1[2] = (float)dict["euler_az"]*M_PI/180.0;
+	if(dict.has_key("euler_phi")) new_hed.mrc1[0] = (float)dict["euler_phi"]*M_PI/180.0;
 	
 	if(dict.has_key("ptcl_repr")) new_hed.mrc2 = (int)dict["ptcl_repr"];
 

@@ -71,13 +71,14 @@ background."""
 	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input file required")
+	logid=E2init(sys.argv)
 	
 	# read the target and probe
 	target=EMData()
 	target.read_image(args[0])
 	target.del_attr("bitspersample")
 	target.del_attr("datatype")
-	if options.norm : target.process_inplace("eman1.normalize")
+	if options.norm : target.process_inplace("normalize")
 	sig=target.get_attr("sigma")
 	
 	nx=target.get_xsize();
@@ -97,9 +98,9 @@ background."""
 	for x in range(nbx):
 		for y in range(nby):
 			cl=target.get_clip(Region(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,options.box,options.box))
-			cl.process_inplace("eman1.normalize.edgemean")
-			cl.process_inplace("eman1.math.realtofft")
-			cl.process_inplace("eman1.normalize.edgemean")
+			cl.process_inplace("normalize.edgemean")
+			cl.process_inplace("math.realtofft")
+			cl.process_inplace("normalize.edgemean")
 			try:
 				cl*=(5.0*float(sig)/float(cl.get_attr("sigma")))
 			except:
@@ -107,6 +108,7 @@ background."""
 			target.insert_clip(cl,(x*sepx+(sepx-options.box)/2,y*sepy+(sepy-options.box)/2,0))
 
 	target.write_image(args[0][:-3]+"eval.mrc")
+	E2end(logid)
 
 if __name__ == "__main__":
     main()

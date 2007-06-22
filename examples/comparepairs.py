@@ -45,7 +45,7 @@ n=EMUtil.get_image_count(sys.argv[1])
 # similarity metrics between the pairs
 for i in range(0,n,2):
 	l=EMData.read_images(sys.argv[1],(i,i+1))
-	l[1].process_inplace("eman1.normalize.edgemean")
+	l[1].process_inplace("normalize.edgemean")
 	l[1].process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 
 	cmps.append((

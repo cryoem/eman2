@@ -60,7 +60,7 @@ int main()
 	float epsilon = 1e-5; // percent
 
 	EMData* dmask=d->copy();
-	dmask->process_inplace("eman1.mask.sharp", Dict("inner_radius", size/3-5, "outer_radius", size/3+5, "value", 0));
+	dmask->process_inplace("mask.sharp", Dict("inner_radius", size/3-5, "outer_radius", size/3+5, "value", 0));
 	
 	d->process_inplace("filter.gradientPlaneRemover", Dict("mask", dmask));
 	

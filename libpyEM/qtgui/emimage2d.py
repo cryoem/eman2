@@ -45,6 +45,8 @@ from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
+MAG_INC = 0.0625
+
 class EMImage2D(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
 	or sets of 2D images.
@@ -91,6 +93,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.inspector=None			# set to inspector panel widget when exists
 		
 		self.setAcceptDrops(True)
+		self.resize(99,99)		
 		
 		if image : 
 			self.setData(image)
@@ -98,8 +101,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
-		if not self.data and data: self.resize(data.get_xsize(),data.get_ysize())
-		
+		if not self.data and data and self.size().width()==99 and self.size().height()==99: 
+			if data.get_xsize()<1024 and data.get_ysize()<1024: self.resize(data.get_xsize(),data.get_ysize())
+			else: self.resize(800,800)
 		self.data=data
 		if data==None:
 			self.updateGL()
@@ -145,6 +149,11 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		"""Set the display origin within the image"""
 		self.origin=(x,y)
 		self.updateGL()
+	
+	def scrollTo(self,x,y):
+		"""center the point on the screen"""
+		self.setOrigin(x*self.scale-self.width()/2,y*self.scale-self.height()/2)
+	
 		
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
@@ -163,7 +172,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.fft=self.data.do_fft()
 				self.fft.set_value_at(0,0,0,0)
 				self.fft.set_value_at(1,0,0,0)
-				self.fft.process_inplace("eman1.xform.fourierorigin",{})
+				self.fft.process_inplace("xform.fourierorigin",{})
 				self.fft=self.fft.get_fft_amplitude()
 			
 				mean=self.fft.get_attr("mean")
@@ -416,6 +425,14 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			elif self.mmode==1 :
 				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 
+	def wheelEvent(self, event):
+		if event.delta() > 0:
+			self.setScale(self.scale + MAG_INC)	
+		elif event.delta() < 0:
+			if ( self.scale - MAG_INC > 0 ):
+				self.setScale(self.scale - MAG_INC)
+		# The self.scale variable is updated now, so just update with that
+		if self.inspector: self.inspector.setScale(self.scale)
 
 class EMImageInspector2D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -509,6 +526,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
 		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
+
+	def setScale(self,val):
+		if self.busy : return
+		self.busy=1
+		self.scale.setValue(val)
+		self.busy=0
 
 	def newMin(self,val):
 		if self.busy : return

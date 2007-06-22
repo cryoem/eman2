@@ -4,7 +4,9 @@
  
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
- * Copyright (c) 2000-2006 Baylor College of Medicine
+ * Probable contributor: Liwei Peng (what dates?)
+ * Contributing author: David Woolford 06/11/2007
+ * Copyright (c) 2000-2007 Baylor College of Medicine
  * 
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -37,15 +39,25 @@
 #define eman__object__h__ 1
 
 #include <map>
+using std::map;
+
 #include <vector>
-#include <iostream>
+using std::vector;
+
+#include <string>
+using std::string;
+
+#include <utility>
+using std::pair;
+
+#include <algorithm>
+// using copy
+
+#include <iterator>
 
 #include "log.h"
 #include "exception.h"
 
-using std::vector;
-using std::string;
-using std::map;
 
 namespace EMAN
 {
@@ -80,19 +92,32 @@ namespace EMAN
 		ICOS_UNKNOWN
 	};
 
-	/** EMObject is a wrapper class for types including int, float,
-     * double, etc as defined in ObjectType. Each type is typically used 
-     * as follows ('int' is the example):
-     *
-     *    int a = 12;
-     *    EMObject o(a);
-     *    EMObject o2 = a; // implicit converter from int to EMObject. 
-     *    int a1 = o;      // implicit converter from EMObject to int.
+	/** EMObjectTypes stores the types of the EMObject (EMObject derives from it)
+     *  It's basically for convenience and simple management.
+     *	It contains the enumerated object types, a registry
+     *  that maps each type to an identifying string, and 
+     *  performs static initialization of the registry upon first construction.
+     *  If an extra type is added to an EMObject, it's type should be encapsulated in this class
+     *  however the associated constructor and conversion operator should be written into EMObject.
+     * 
+     *  Also, this class was not initially designed to ever be instantiated by itself -
+     *  it is tightly coupled to the EMObject.
      */
-	class EMObject
+    
+	class EMObjectTypes
 	{
 	public:
+		/** Constructor
+		 * Performs static initialization of the type_registry and nothing else
+		 */
+		EMObjectTypes();
+		
+		/** Enumeration of the allowable types of the EMObject
+		 * See main comments for this class before inserting a new type.
+		 */
 		enum ObjectType {
+			UNKNOWN,
+			BOOL,
 			INT,
 			FLOAT,
 			DOUBLE,
@@ -102,72 +127,137 @@ namespace EMAN
 			INTARRAY,
 			FLOATARRAY,
 			STRINGARRAY,
-			TRANSFORM3D,
-			UNKNOWN
+			TRANSFORM3D
 		};
+		
+		~EMObjectTypes() {}
+		
+		// There is no copy constructor or assignment operator because there is nothing to copy.
+		// However the compiler will probably make them for us, even though they would not achieve anything.
+		
+	protected:
+		// A type registry that returns the string equivalent of the object type
+		static map< ObjectType, string> type_registry;
 
+	};
+
+	/** EMObject is a wrapper class for types including int, float,
+     * double, etc as defined in ObjectType. Each type is typically used 
+     * as follows ('int' is the example):
+     *
+     *    int a = 12;
+     *    EMObject o(a);
+     *    EMObject o2 = a; // implicit converter from int to EMObject. 
+     *    int a1 = o;      // implicit converter from EMObject to int.
+     * 
+     *  EMObjects may store pointers but they currently do not assume ownership - that
+     *  is, the memory associated with a pointer is never freed by an EMObject.
+     *  
+     * This type of class design is sometimes referred to as the Variant pattern.
+     * 
+     * See the testing code in rt/emdata/test_emobject.cpp for prewritten testing code
+     */
+	class EMObject : public EMObjectTypes
+	{
 	public:
-		EMObject()
-			:n(0), emdata(0), xydata(0), transform3d(0), type(UNKNOWN) {}
+		/** Constructors for each type
+		 * More types could be added, but all of the accompanying functions would have
+		 * to be altered to ensure correct functioning
+		 */
+		EMObject();
+		EMObject(bool boolean);
+		EMObject(int num);
+		EMObject(float ff);
+		EMObject(double dd);
+		EMObject(const char *s);
+		EMObject(const string & s);
+		EMObject(EMData * em);
+		EMObject(XYData * xy);
+		EMObject(Transform3D * t);
+		EMObject(const vector< int >& v );
+		EMObject(const vector < float >&v);
+		EMObject(const vector <string>& sarray);
 
-		EMObject(int num)
-			:n(num), emdata(0), xydata(0), transform3d(0), type(INT) {}
-		
-		EMObject(float ff)
-			:f(ff), emdata(0), xydata(0), transform3d(0), type(FLOAT) {}
-		
-		EMObject(double dd)
-			:d(dd), emdata(0), xydata(0), transform3d(0), type(DOUBLE) {}
-		
-		EMObject(const char *s)
-			: n(0), emdata(0), xydata(0), transform3d(0), str(string(s)), type(STRING) {}
-		
-		EMObject(const string & s)
-			:n(0), emdata(0), xydata(0), transform3d(0), str(s), type(STRING) {}
-		
-		EMObject(EMData * em)
-			:n(0), emdata(em), xydata(0), transform3d(0), type(EMDATA) {}
-		
-		EMObject(XYData * xy)
-			:n(0), emdata(0), xydata(xy), transform3d(0), type(XYDATA) {}
-		
-		EMObject(Transform3D * t)
-			:n(0), emdata(0), xydata(0), transform3d(t), type(TRANSFORM3D) {}
+		/** Copy constructor.
+		 * copies pointer locations - does not take ownership
+		 * deep copies all non pointer objects  
+		 */
+		EMObject(const EMObject& that);
 
-		EMObject(const vector< int >& v )
-		    : n(0), emdata(0), xydata(0), transform3d(0), iarray(v), type(INTARRAY) {}
+		/** Assigment operator
+		 * copies pointer locations (emdata, xydata, transform3d) - does not take ownership 
+		 * deep copies all non pointer objects  
+		 */
+		EMObject& operator=(const EMObject& that);
 
-		EMObject(const vector < float >&v)
-			:n(0), emdata(0), xydata(0), transform3d(0), farray(v), type(FLOATARRAY)	{}
-
-		EMObject(const vector <string>& sarray)
-			:n(0),emdata(0), xydata(0), transform3d(0), strarray(sarray), type(STRINGARRAY){}
-
+		/** Desctructor
+		 * Does not free pointers.
+		 */
 		~EMObject() {}
 
-		operator  int () const;
-		operator  float () const;
-		operator  double () const;
-		operator  const char *() const;
-		operator  EMData *() const;
-		operator  XYData *() const;
-		operator  Transform3D *() const;
-
+		/** Conversion operators
+		 */
+		operator bool () const;
+		operator int () const;
+		operator float () const;
+		operator double () const;
+		operator const char *() const;
+		operator EMData *() const;
+		operator XYData *() const;
+		operator Transform3D *() const;
 		operator vector < int > () const;
 		operator vector < float > () const;
 		operator vector<string> () const;
 		
+		/** Checks to see if the EMObject is interpretable
+		 * This basically equates to checking to see if the
+		 * type is UNKNOWN 
+		 */
 		bool is_null() const;
+		
+		/** Calls to_str( this->type)
+		 */
 		string to_str() const;
-		ObjectType get_type() const;
-		static const char *get_object_type_name(ObjectType t);
+		
+		/** Get the ObjectType
+		 * This is an enumerated type first declared in the class
+		 * EMObjectTypes
+		 */
+		ObjectType get_type() const { return type; }
+		
+		/** Get the ObjectType as a string
+		 * This is an enumerated type first declared in the class
+		 * EMObjectTypes
+		 */		
+		string get_type_string() const { return get_object_type_name(type); }
+		
+		
+		/** Write the EMObject's value to a string
+		 * Literally copies into a string, except for the case
+		 * where the type is boolen where it writes true of false,
+		 * as opposed to 1 or 0.
+		 */
+		string to_str(ObjectType type) const;
+		
+		/** Get an ObjectType as a string statically
+		 * Can be accessed without the instantiation of a class object
+		 */
+		static string get_object_type_name(ObjectType t);
 
+		/** Friend declaration operator== 
+		 * namespace EMAN2 operator== accesses private variables 
+		 */
 		friend bool operator==(const EMObject &e1, const EMObject & e2);
+		
+		/** Friend declaration operator!= 
+		 * namespace EMAN2 operator!= accesses private variables 
+		 */
 		friend bool operator!=(const EMObject &e1, const EMObject & e2);
 		
 	private:
 		union
 		{
+			bool b;
 			int n;
 			float f;
 			double d;
@@ -181,6 +271,11 @@ namespace EMAN
 		vector < float >farray;
 		vector < string> strarray;
 		ObjectType type;
+		
+		/** A debug function that prints as much information as possibe to cout
+		 */
+		void printInfo() const;
+
 	};
 
 	bool operator==(const EMObject &e1, const EMObject & e2);
@@ -195,6 +290,20 @@ namespace EMAN
      *      float lowpass1 = d["lowpass"];
      *
      *      Dict d2("lowpass", 12.23);
+     * 
+     * You can iterate through a dict:
+     *	for ( Dict::const_iterator it = params.begin(); it != params.end(); ++it ) { //do things to it }
+     * And similary use the Dict iterator as arguments to the generic algorithms that are feasible, such as copy.
+     * 
+     * You can find things in the iterator style:
+     * 	if(	d.find("lowpass") != d.end() ) cout << "D has a lowpass key" << endl;\
+     * Or like this
+     * 	if( d.has_key("lowpass") ) ...
+     * 
+     * A Dict has copy and assignment operators.
+     *
+     * 
+     * See the testing code in rt/emdata/test_emobject.cpp for prewritten testing code
      */
 	class Dict
 	{
@@ -203,18 +312,26 @@ namespace EMAN
 		{
 		}
 
+		/** Construct a Dict object from 1 key/value pair
+		 * It's probably more conventional to intialize key/value pairs
+		 * using operator[], but either approach is fine.
+		 */
 		Dict(const string & key1, EMObject val1)
 		{
 			dict[key1] = val1;
 		}
-
+		
+		/** Construct a Dict object from 2 key/value pairs
+		 */
 		Dict(const string & key1, EMObject val1,
 			 const string & key2, EMObject val2)
 		{
 			dict[key1] = val1;
 			dict[key2] = val2;
 		}
-
+		
+		/** Construct a Dict object from 3 key/value pairs
+		 */
 		Dict(const string & key1, EMObject val1,
 			 const string & key2, EMObject val2,
 			 const string & key3, EMObject val3)
@@ -224,6 +341,8 @@ namespace EMAN
 			dict[key3] = val3;
 		}
 
+		/** Construct a Dict object from 4 key/value pairs
+		 */
 		Dict(const string & key1, EMObject val1,
 			 const string & key2, EMObject val2,
 			 const string & key3, EMObject val3,
@@ -235,18 +354,33 @@ namespace EMAN
 			dict[key4] = val4;
 		}
 
-
+		/** Construct a Dict object from a map object
+		 * Calls the generic algorithm "copy".
+		 */
 		Dict(const map < string, EMObject > &d)
 		{
-			map < string, EMObject >::const_iterator p;
-			for (p = d.begin(); p != d.end(); p++) {
-				dict[p->first] = p->second;
-			}
+			copy(d.begin(), d.end(), inserter(dict, dict.begin()));
+			// Or use
+			// dict.insert(d.begin(), d.end());
 		}
+	
+		/** Destructor
+		 * Performs no explicit action besides what the compiler automatically does.
+		 */
+		~Dict() {}
 
-		~Dict() {
-		}
+		/** Copy constructor
+		 * Copies all elements in dict
+		 */
+		Dict( const Dict& that);
+		 
+		/** Assignment operator
+		 * Copies all elements in dict
+		 */
+		Dict& operator=(const Dict& that);
 
+		/**	Get a vector containing all of the (string) keys in this dictionary.
+		 */
 		vector < string > keys()const
 		{
 			vector < string > result;
@@ -258,7 +392,9 @@ namespace EMAN
 
 			return result;
 		}
-
+		
+		/** Get a vector containing copies of each of the EMObjects in this dictionary.
+		 */
 		vector < EMObject > values()const
 		{
 			vector < EMObject > result;
@@ -271,6 +407,9 @@ namespace EMAN
 			return result;
 		}
 
+		/** Ask the Dictionary if it as a particular key
+		 * @param key the (string) key to find
+		 */
 		bool has_key(const string & key) const
 		{
 			map < string, EMObject >::const_iterator p = dict.find(key);
@@ -279,12 +418,17 @@ namespace EMAN
 			}
 			return false;
 		}
-
+		
+		/** Ask the Dictionary for its size
+		 */
 		size_t size() const
 		{
 			return dict.size();
 		}
 
+		/** Get the EMObject corresponding to the particular key
+		 * Probably better to just use operator[]
+		 */
 		EMObject get(const string & key)
 		{
 			if( has_key(key) ) {
@@ -296,16 +440,23 @@ namespace EMAN
 			}
 		}
 
+		/** Put the value/key pair into the dictionary
+		 * probably better to just use operator[]
+		 */
 		void put(const string & key, EMObject val)
 		{
 			dict[key] = val;
 		}
 
+		/** Remove a particular key
+		 */
 		void erase(const string & key)
 		{
 			dict.erase(key);
 		}
 		
+		/** Default setting behavior
+		 */
 		EMData *set_default(const string & key, EMData * val)
 		{
 			if (!has_key(key)) {
@@ -338,15 +489,6 @@ namespace EMAN
 			return dict[key];
 		}
 
-		map < string, EMObject > &get_dict() {
-			return dict;
-		}
-
-		map < string, EMObject > get_dict()const
-		{
-			return dict;
-		}
-
 		EMObject & operator[] (const string & key)
 		{
 //			static EMObject nullreturn;
@@ -374,9 +516,69 @@ namespace EMAN
 //			}
 		}
 
+		/** Friend declaration operator== 
+		 * namespace EMAN2 operator== accesses private variables 
+		 */
+		friend bool operator==(const Dict& d1, const Dict& d2);
+		
+		/** Friend declaration operator!= 
+		 * namespace EMAN2 operator!= accesses private variables 
+		 */
+		friend bool operator!=(const Dict& d1, const Dict& d2);
+
 	private:
 		mutable map < string, EMObject > dict;
+
+	public:
+		// Iterator support added by d.woolford May 2007
+		// This is just a wrapper, everything is inherited from the map<string,EMObject>::iterator
+		// so the interface is the same as you would expect
+		// i.e for ( Dict::const_iterator it = params.begin(); it != params.end(); ++it )
+		class iterator : public map < string, EMObject >::iterator
+		{
+		public:
+			typedef std::bidirectional_iterator_tag iterator_category;
+ 			typedef pair<string, EMObject> value_type;
+			
+		public:
+			iterator( map < string, EMObject >::iterator parent_it );
+			virtual ~iterator(){}
+			
+			iterator( const iterator& that );
+			iterator& operator=( const iterator& that );
+		};
+		
+		// const_iterator support added by d.woolford May 2007
+		class const_iterator :  public map < string, EMObject >::const_iterator
+		{
+		public:
+			typedef std::bidirectional_iterator_tag iterator_category;
+			typedef pair<string, EMObject> value_type; // Note that value_type should NOT be const even though the container elements are const	
+		public:
+			const_iterator( const map < string, EMObject >::const_iterator parent_it);
+			virtual ~const_iterator(){}
+			const_iterator( const Dict::iterator& it );
+			
+			const_iterator( const const_iterator& that );
+			const_iterator& operator=( const const_iterator& that );			
+		};
+
+		// Iterator support
+		iterator begin( void );
+		const_iterator begin( void ) const;
+
+		iterator end( void );
+		const_iterator end( void ) const;
+		
+		// Wraps map.find(const string& key)
+		iterator find( const string& key );
+		const_iterator find( const string& key ) const;
 	};
+
+	// These operators were originally added for the purposes of making testing code but might come in handy for other things
+	// operator== simply wraps map<string, EMObject>::operator==
+	bool operator==(const Dict &d1, const Dict& d2);
+	bool operator!=(const Dict &d1, const Dict& d2);
 
 	/** TypeDict is a dictionary to store <string, EMObject::ObjectType> pair.
      * It is mainly used to store processor-like class's parameter
@@ -440,6 +642,8 @@ namespace EMAN
 
 		void dump();
 
+		inline bool find_type( const string& type ) {  if ( type_dict.find(type) != type_dict.end() ) return true; return false; }
+
 	private:
 		map < string, string > type_dict;
 		map < string, string > desc_dict;
@@ -459,7 +663,7 @@ namespace EMAN
      *
      *   2. How to use a Factory (e.g. Processor Factory):
      *
-     *	    Processor *f1 = Factory<Processor>::get("eman1.math.absvalue");
+     *	    Processor *f1 = Factory<Processor>::get("math.absvalue");
      *      Processor *f2 = Factory<Processor>::get("eman1.filter.lowpass.gaussian", Dict("lowpass", EMObject(12));
      */
 	template < class T > class Factory
@@ -548,9 +752,11 @@ namespace EMAN
 			T *i = my_instance->my_dict[instancename] ();
 			
 			const vector<string> para_keys = params.keys();
+//			std::cout << "the number of keys is " << para_keys.size() << std::endl; // PRB May 19th
 			const vector<string> valid_keys = i->get_param_types().keys();
 			typename vector<string>::const_iterator it;
 			for(it=para_keys.begin(); it!=para_keys.end(); ++it) {
+//				std::cout << "the iterator  is " << *it << std::endl; // PRB May 19th
 				if( find(valid_keys.begin(), valid_keys.end(), *it) == valid_keys.end() ) {
 					throw InvalidParameterException(*it);
 				}

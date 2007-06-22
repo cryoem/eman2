@@ -111,7 +111,7 @@ EMData* rotavg_i();
 		 *  
 		 *  @return image with sbtracted average outside of a circle..
 		 */
-		EMData* average_circ_sub();
+		EMData* average_circ_sub() const;
 
 
 		/** Helper function for method nn.

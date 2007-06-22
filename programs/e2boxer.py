@@ -139,7 +139,7 @@ for single particle analysis."""
 	#shrinkfactor=int(ceil(image.get_ysize()/1024.0))
 	#if options.boxsize/shrinkfactor<12 : shrinkfactor/=2
 	
-	image.process_inplace("eman1.normalize")
+	image.process_inplace("normalize")
 	shrink=image
 	shrink.mean_shrink(shrinkfactor)		# shrunken original image
 	
@@ -153,11 +153,11 @@ for single particle analysis."""
 	flt=EMData()
 	flt.set_size(shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4,1)
 	flt.to_one()
-	flt.process_inplace("eman1.mask.sharp",{"outer_radius":filtrad})
+	flt.process_inplace("mask.sharp",{"outer_radius":filtrad})
 	flt/=(float(flt.get_attr("mean"))*flt.get_xsize()*flt.get_ysize())
-	flt.process_inplace("eman1.xform.phaseorigin")
+	flt.process_inplace("xform.phaseorigin")
 	a=shrink.get_clip(Region(-filtrad*2,-filtrad*2,shrink.get_xsize()+filtrad*4,shrink.get_ysize()+filtrad*4))
-	a.process_inplace("eman1.mask.zeroedgefill")
+	a.process_inplace("mask.zeroedgefill")
 #	a.write_image("q0.hdf",0)
 #	flt.write_image("q0.hdf",1)
 	a=a.convolute(flt)
@@ -170,7 +170,7 @@ for single particle analysis."""
 	a=None
 	
 	shrink2=shrink.copy()
-	shrink2.process_inplace("eman1.math.squared")
+	shrink2.process_inplace("math.squared")
 #	image=EMData()
 #	image.read_image(args[0])
 #	shrink.write_image("e.mrc")
@@ -188,30 +188,30 @@ for single particle analysis."""
 		refptcls=[]
 		for n,i in enumerate(refptcl):
 			# first a circular mask
-			i.process_inplace("eman1.normalize.circlemean")
-			i.process_inplace("eman1.mask.sharp",{"outer_radius":i.get_xsize()/2-1})
+			i.process_inplace("normalize.circlemean")
+			i.process_inplace("mask.sharp",{"outer_radius":i.get_xsize()/2-1})
 						
 			ic=i.copy()
 			refptcls.append(ic)
 			ic.mean_shrink(shrinkfactor)
 			# make the unmasked portion mean -> 0
 			ic-=float(ic.get_attr("mean_nonzero"))
-			ic.process_inplace("eman1.normalize.unitlen")
+			ic.process_inplace("normalize.unitlen")
 #			ic.write_image("scaled_refs.hdf",-1)
 
 		# prepare a mask to use for local sigma calculaton
 		circle=shrink.copy_head()
 		circle.to_one()
-		circle.process_inplace("eman1.mask.sharp",{"outer_radius":options.boxsize/(shrinkfactor*2)-1})
+		circle.process_inplace("mask.sharp",{"outer_radius":options.boxsize/(shrinkfactor*2)-1})
 		circle/=(float(circle.get_attr("mean"))*circle.get_xsize()*circle.get_ysize())
 		
 		ccfmean=shrink.calc_ccf(circle,fp_flag.CIRCULANT)
 #		circle.write_image("z0a.hdf")
 #		shrink2.write_image("z0b.hdf")
 		ccfsig=shrink2.calc_ccf(circle,fp_flag.CIRCULANT)
-		ccfmean.process_inplace("eman1.math.squared")
+		ccfmean.process_inplace("math.squared")
 		ccfsig-=ccfmean		# ccfsig is now pointwise standard deviation of local mean
-		ccfsig.process_inplace("eman1.math.sqrt")
+		ccfsig.process_inplace("math.sqrt")
 #		shrink.write_image("z0.hdf")
 #		ccfsig.write_image("z1.hdf")
 		
@@ -227,7 +227,7 @@ for single particle analysis."""
 			ccfone/=ccfsig
 #			ccfone.write_image("b.%0d.hdf"%n)
 			sig=float(ccfone.get_attr("sigma"))
-			ccfone.process_inplace("eman1.mask.onlypeaks",{"npeaks":0})
+			ccfone.process_inplace("mask.onlypeaks",{"npeaks":0})
 #			ccfone.write_image("c.%0d.hdf"%n)
 			pk=ccfone.calc_highest_locations(sig*3.5)
 			for m,p in enumerate(pk):
@@ -291,7 +291,7 @@ for single particle analysis."""
 			# read in the area where we think a particle exists
 			try: b.read_image(initial,0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 			except: continue
-			b.process_inplace("eman1.normalize.edgemean")
+			b.process_inplace("normalize.edgemean")
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
 			
@@ -319,7 +319,7 @@ for single particle analysis."""
 			# now we refine this by doing a second pass with the best reference
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 			except: continue
-			b.process_inplace("eman1.normalize.edgemean")
+			b.process_inplace("normalize.edgemean")
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
 			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"matchfilt":1})
@@ -348,11 +348,11 @@ for single particle analysis."""
 			# alignment parameters
 			try: b.read_image(args[0],0,0,Region(i[2],i[3],options.boxsize,options.boxsize))
 			except: continue
-			b.process_inplace("eman1.normalize.edgemean")
+			b.process_inplace("normalize.edgemean")
 #			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.05})
 #			print "%d ROT %f"%(n*2,da)
 			rr=refptcl[i[1]].rot_scale_trans2D(da,1.0,0,0)
-			rr.process_inplace("eman1.normalize")
+			rr.process_inplace("normalize")
 			
 #			b.cmp("optvariance",rr,{"keepzero":1})
 #			b*=b.get_attr("ovcmp_m")
@@ -454,8 +454,8 @@ for single particle analysis."""
 		outer.to_one()
 		inner=outer.copy()
 		
-		outer.process_inplace("eman1.mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
-		inner.process_inplace("eman1.mask.sharp",{"outer_radius":sbox*2/5})
+		outer.process_inplace("mask.sharp",{"inner_radius":sbox*2/5,"outer_radius":sbox/2})
+		inner.process_inplace("mask.sharp",{"outer_radius":sbox*2/5})
 		
 		outer.write_image("b_outer.hdf")
 		inner.write_image("b_inner.hdf")
@@ -494,7 +494,7 @@ for single particle analysis."""
 			if i[4]>boxthr : continue
 			try: b.read_image(args[0],0,0,Region(i[0],i[1],i[2],i[3]))
 			except: continue
-			if options.norm: b.process_inplace("eman1.normalize.edgemean")
+			if options.norm: b.process_inplace("normalize.edgemean")
 #			print n,i
 #			print i[4]
 			b.write_image(options.ptclout,n)
@@ -555,14 +555,38 @@ class GUIbox:
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.mousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.mousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.mouseup  )
+		self.guimx.connect(self.guimx,QtCore.SIGNAL("mousedown"),self.boxsel)
+		
+		self.guimx.mmode="app"
+		self.guictl=GUIboxPanel(self)
+		
+		try:
+			E2loadappwin("boxer","imagegeom",self.guiim)
+			E2loadappwin("boxer","matrixgeom",self.guimx)
+			E2loadappwin("boxer","controlgeom",self.guictl)
+			self.guimx.nperrow=E2getappval("boxer","matrixnperrow")
+			
+			if E2getappval("boxer","imcontrol") :
+				self.guiim.showInspector(True)
+				E2loadappwin("boxer","imcontrolgeom",self.guiim.inspector)
+			if E2getappval("boxer","mxcontrol") :
+				self.guimx.showInspector(True)
+				E2loadappwin("boxer","mxcontrolgeom",self.guimx.inspector)
+		except:
+			pass
 		
 		self.guiim.show()
 		self.guimx.show()
-		
-		self.guictl=GUIboxPanel(self)
 		self.guictl.show()
 		
 		self.boxupdate()
+
+	def boxsel(self,event,lc):
+		im=lc[0]
+		self.guiim.setActive(im,.9,.9,.4)
+		self.guimx.setSelected(im)
+		try: self.guiim.scrollTo(self.boxes[im][0]+self.boxes[im][2]/2,self.boxes[im][1]+self.boxes[im][3]/2)
+		except: print "boxsel() scrolling error"
 
 	def mousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
@@ -663,6 +687,20 @@ class GUIbox:
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for boxer-only programs."""
 		self.app.exec_()
+		
+		E2saveappwin("boxer","imagegeom",self.guiim)
+		E2saveappwin("boxer","matrixgeom",self.guimx)
+		E2saveappwin("boxer","controlgeom",self.guictl)
+		E2setappval("boxer","matrixnperrow",self.guimx.nperrow)
+		try:
+			E2setappval("boxer","imcontrol",self.guiim.inspector.isVisible())
+			if self.guiim.inspector.isVisible() : E2saveappwin("boxer","imcontrolgeom",self.guiim.inspector)
+		except : E2setappval("boxer","imcontrol",False)
+		try:
+			E2setappval("boxer","mxcontrol",self.guimx.inspector.isVisible())
+			if self.guimx.inspector.isVisible() : E2saveappwin("boxer","mxcontrolgeom",self.guimx.inspector)
+		except : E2setappval("boxer","mxcontrol",False)
+		
 		return (self.boxes,self.threshold)
 
 class GUIboxPanel(QtGui.QWidget):

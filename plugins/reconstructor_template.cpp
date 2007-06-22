@@ -46,7 +46,7 @@ void XYZReconstructor::setup()
 	
 }
 
-int XYZReconstructor::insert_slice(EMData * , const Transform3D & )
+int XYZReconstructor::insert_slice(const EMData * const slice, const Transform3D & euler)
 {
 	return 0;
 }

@@ -23,8 +23,8 @@ e.write_image(\u201cproj.spi\u201d, 1, SPIDER)
       
 e = EMData()
 e.read_image("test1.mrc")
-e.process("eman1.math.sqrt")
-e.process("eman1.threshold.binaryrange", {"low" : 5.2, "high" : 10})
+e.process("math.sqrt")
+e.process("threshold.binaryrange", {"low" : 5.2, "high" : 10})
 e.write_image("output.mrc")     \end{verbatim}
     \normalcolor
 

@@ -86,33 +86,120 @@ This function is called to log the end of the current job. n is returned by E2in
 	
 	return n
 
+def E2saveappwin(app,key,win):
+	"""stores the window geometry using the application default mechanism for later restoration. Note that
+	this will only work with Qt windows"""
+	pos=win.pos()
+	sz=win.size()
+	geom=(pos.x(),pos.y(),win.width(),win.height())
+	E2setappval(app,key,geom)
+	
+def E2loadappwin(app,key,win):
+	"""restores a geometry saved with E2saveappwin"""
+	geom=E2getappval(app,key)
+	win.resize(geom[2],geom[3])
+	win.move(geom[0],geom[1])
+
+def E2setappval(app,key,value):
+	"""E2setappval
+This function will set an application default value both in the local directory and ~/.eman2
+When settings are read, the local value is checked first, then if necessary, the global value."""
+	try:
+		app.replace(".","_")
+		key.replace(".","_")
+	except: 
+		print "Error with E2setappval, app and key must be strings"
+		return
+	
+	try:
+		db=shelve.open(".eman2settings")
+		db[app+"."+key]=value
+		db.close()
+	except:
+		pass
+
+	try:
+		dir=os.getenv("HOME")
+		dir+="/.eman2"
+		os.mkdir(dir)
+	except:
+		return
+		
+	try:
+		db=shelve.open(dir+"/appdefaults")
+		db[app+"."+key]=value
+		db.close()
+	except:
+		return
+
+
+def E2getappval(app,key):
+	"""E2getappval
+This function will get an application default by first checking the local directory, followed by
+~/.eman2"""
+	try:
+		app.replace(".","_")
+		key.replace(".","_")
+	except: 
+		print "Error with E2getappval, app and key must be strings"
+		return None
+	
+	try:
+		db=shelve.open(".eman2settings")
+		ret=db[app+"."+key]
+		db.close()
+		return ret
+	except:
+		pass
+	
+	try:
+		dir=os.getenv("HOME")
+		dir+="/.eman2"
+		db=shelve.open(dir+"/appdefaults")
+		ret=db[app+"."+key]
+		db.close()
+
+		return ret
+	except: pass
+	
+	return None
+
 parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
+parseparmobj3=re.compile("[^:]\w*=*[\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3") 
+parseparmobj4=re.compile("\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
 def parsemodopt(optstr):
-	"""This is used so the user can provide the name of a comparitor, processor, etc. with options
+	"""This is used so the user can provide the name of a comparator, processor, etc. with options
 	in a convenient form. It will parse "dot(normalize=1,negative=0)" and return
 	("dot",{"normalize":1,"negative":0})"""
 	
 	if not optstr or len(optstr)==0 : return (None,{})
 	
-	p1=re.findall(parseparmobj1,optstr)
-	if len(p1)==0 : return (optstr,{})
+	p_1 = re.findall( parseparmobj3, optstr )
 	
-	p2=re.findall(parseparmobj2,p1[0][1])
-	r2={}
-	# this will convert values to integers, floats or strings. Note that an integer '1' can be forced to be 
-	# considered a string with test(name="1")
-	for i,j in enumerate(p2):
-		v=j[1]
+	if len(p_1)==0: return (optstr,{})
+	
+	r2 = {}
+	for i in range (1, len(p_1)):
+		args = re.findall( parseparmobj4, p_1[i] )
+		if len(args) != 2:
+			print "ERROR: Command line parameter options failed"
+			print "\tSpecify parameters using this syntax - option=optiontype:p1=v1:p2=v2 etc"
+			print "\tThe problems arguments are:"
+			print args
+			exit(1)
+		
+		v = args[1]
 		try: v=int(v)
 		except:
 			try: v=float(v)
 			except:
 				if v[0]=='"' and v[-1]=='"' : v=j[1][1:-1]
-		r2[j[0]]=v
 		
-	return (p1[0][0],r2)
+		r2[args[0]] = v
 
+	return (p_1[0], r2)
+		
 def display(img):
 	
 	if GUIMode:

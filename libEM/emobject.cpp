@@ -4,7 +4,10 @@
 
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
- * Copyright (c) 2000-2006 Baylor College of Medicine
+ * Probable contributor: Liwei Peng (what dates?)
+ * Contributing author: David Woolford 06/11/2007
+ * 
+ * Copyright (c) 2000-2007 Baylor College of Medicine
  * 
  * This software is issued under a joint BSD/GNU license. You may use the
  * source code in this file under either license. However, note that the
@@ -39,13 +42,159 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
+#include <algorithm>
+// using copy
+
 using namespace EMAN;
 
+#include <iostream>
+using std::cout;
+using std::cerr;
+using std::endl;
 
 const float EMConsts::I2G = (float) (4.0 / (M_PI*M_PI));  
 const float EMConsts::I3G = (float) (6.4 / (M_PI*M_PI));  
 const float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI));  
 const float EMConsts::I5G = (float) (10.4 / (M_PI*M_PI)); 
+
+// Static init
+map<EMObjectTypes::ObjectType, string> EMObjectTypes::type_registry;
+
+//-------------------------------EMObjectTypes-----------------------------------------
+EMObjectTypes::EMObjectTypes()
+{
+	static bool first_construction = true;
+	if ( first_construction )
+	{
+		// Initialize the the type registry once and for all
+		type_registry[BOOL] = "BOOL";
+		type_registry[INT] = "INT";
+		type_registry[FLOAT] = "FLOAT";
+		type_registry[DOUBLE] = "DOUBLE";
+		type_registry[STRING] = "STRING";
+		type_registry[EMDATA] = "EMDATA";
+		type_registry[XYDATA] = "XYDATA";
+		type_registry[INTARRAY] = "INTARRAY";
+		type_registry[FLOATARRAY] = "FLOATARRAY";
+		type_registry[STRINGARRAY] = "STRINGARRAY";
+		type_registry[TRANSFORM3D] = "TRANFORM3D";
+		type_registry[UNKNOWN] = "UNKNOWN";
+		
+		first_construction = false;
+	}
+}
+
+//-------------------------------EMObject--------------------------------------------
+
+void EMObject::printInfo() const
+{
+	cout << "The address of my type is " << &type << endl;
+	cout << " Now printing the enumerated values in type_registry " << endl;
+	for( map< ObjectType, string>::const_iterator it = type_registry.begin(); it != type_registry.end(); ++it )
+	{
+		cout << it->first << " " << it->second << endl;	
+	}
+	cout << "My type is " << to_str(type) << " and its enumerated value is " << type << endl;
+	cout << "The address of the static type registry is " << &type_registry <<", it should be same for all EMObjects" << endl;
+}
+
+EMObject::EMObject() :
+	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), type(UNKNOWN)
+{
+}
+
+EMObject::EMObject(bool boolean) :
+	EMObjectTypes(), b(boolean), emdata(0), xydata(0), transform3d(0), type(BOOL)
+{
+}
+
+EMObject::EMObject(int num) : 
+	EMObjectTypes(), n(num), emdata(0), xydata(0), transform3d(0), type(INT)
+{
+}
+
+EMObject::EMObject(float ff) :
+	EMObjectTypes(), f(ff), emdata(0), xydata(0), transform3d(0), type(FLOAT)
+{
+}
+
+EMObject::EMObject(double dd) :
+	EMObjectTypes(), d(dd), emdata(0), xydata(0), transform3d(0), type(DOUBLE)
+{
+}
+
+EMObject::EMObject(const char *s) :
+	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), str(string(s)), type(STRING)
+{
+}
+
+EMObject::EMObject(const string & s) :
+	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), str(s), type(STRING)
+{
+}
+
+EMObject::EMObject(EMData * em)	: 
+	EMObjectTypes(), n(0), emdata(em), xydata(0), transform3d(0), type(EMDATA)
+{
+}
+
+EMObject::EMObject(XYData * xy) : 
+	EMObjectTypes(), n(0), emdata(0), xydata(xy), transform3d(0), type(XYDATA)
+{
+}
+
+EMObject::EMObject(Transform3D * t) :
+	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(t), type(TRANSFORM3D)
+{
+}
+
+EMObject::EMObject(const vector< int >& v ) :
+	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), iarray(v), type(INTARRAY)
+{
+}
+
+EMObject::EMObject(const vector < float >&v) :
+	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), farray(v), type(FLOATARRAY)
+{
+}
+
+EMObject:: EMObject(const vector <string>& sarray) :
+	EMObjectTypes(), n(0),emdata(0), xydata(0), transform3d(0), strarray(sarray), type(STRINGARRAY)
+{
+}
+
+EMObject::operator bool () const
+{
+	if (type == BOOL) {
+		return b;
+	}
+	else if (type == INT) {
+		return n != 0;
+	}
+	else if (type == FLOAT) {
+		return f != 0;
+	}
+	else if (type == DOUBLE) {
+		return d != 0;
+	}
+	else if (type == EMDATA) {
+		return emdata != 0;
+	}
+	else if (type == XYDATA) {
+		return xydata != 0;
+	}
+	else if (type == TRANSFORM3D) {
+		return transform3d != 0;
+	}
+	// It seemed unconventional to return a boolean for the stl objects
+	else {
+		if (type != UNKNOWN) {
+			throw TypeException("Cannot convert to bool this data type ",
+								get_object_type_name(type));
+		}
+	}
+	return 0;
+}
 
 EMObject::operator int () const
 {
@@ -57,6 +206,9 @@ EMObject::operator int () const
 	}
 	else if (type == DOUBLE) {
 		return (int) d;
+	}
+	else if (type == BOOL) {
+		return b?1:0;
 	}
 	else {
 		if (type != UNKNOWN) {
@@ -108,7 +260,7 @@ EMObject::operator double () const
 	return 0;
 }
 
-EMObject::operator  const char *() const
+EMObject::operator const char * () const
 {
 	if (type != STRING) {
 		if (type != UNKNOWN) {
@@ -132,7 +284,7 @@ EMObject::operator EMData * () const
 	return emdata;
 }
 
-EMObject::operator  XYData * () const
+EMObject::operator XYData * () const
 {
 	if (type != XYDATA) {
 		if (type != UNKNOWN) {
@@ -144,7 +296,7 @@ EMObject::operator  XYData * () const
 	return xydata;
 }
 
-EMObject::operator  Transform3D *() const
+EMObject::operator Transform3D *() const
 {
 	if(type != TRANSFORM3D) {
 		if(type != UNKNOWN) {
@@ -198,26 +350,51 @@ bool EMObject::is_null() const
 
 string EMObject::to_str() const
 {
-	if (type == STRING) {
+	return to_str(type);
+}
+
+string EMObject::to_str(ObjectType argtype) const
+{
+	if (argtype == STRING) {
 		return str;
 	}
 	else {
 		char tmp_str[32];
-
-		if (type == INT) {
+		if (argtype == BOOL) {
+			if (b)
+				sprintf(tmp_str, "true");
+			else
+				sprintf(tmp_str, "false");
+		}
+		else if (argtype == INT) {
 			sprintf(tmp_str, "%d", n);
 		}
-		else if (type == FLOAT) {
+		else if (argtype == FLOAT) {
 			sprintf(tmp_str, "%f", f);
 		}
-		else if (type == DOUBLE) {
+		else if (argtype == DOUBLE) {
 			sprintf(tmp_str, "%f", d);
 		}
-		else if (type == EMDATA) {
+		else if (argtype == EMDATA) {
 			sprintf(tmp_str, "EMDATA");
 		}
-		else if (type == XYDATA) {
+		else if (argtype == XYDATA) {
 			sprintf(tmp_str, "XYDATA");
+		}
+		else if (argtype == INTARRAY) {
+			sprintf(tmp_str, "INTARRAY");
+		}
+		else if (argtype == FLOATARRAY) {
+			sprintf(tmp_str, "FLOATARRAY");
+		}
+		else if (argtype == STRINGARRAY) {
+			sprintf(tmp_str, "STRINGARRAY");
+		}
+		else if (argtype == TRANSFORM3D) {
+			sprintf(tmp_str, "TRANSFORM3D");
+		}
+		else if (argtype == UNKNOWN) {
+			sprintf(tmp_str, "UNKNOWN");
 		}
 		else {
 			LOGERR("No such EMObject defined");
@@ -227,65 +404,45 @@ string EMObject::to_str() const
 	}
 }
 
-EMObject::ObjectType EMObject::get_type() const
+string EMObject::get_object_type_name(ObjectType t)
 {
-	return type;
-}
-
-
-const char *EMObject::get_object_type_name(ObjectType t)
-{
-	switch (t) {
-	case INT:
-		return "INT";
-	case FLOAT:
-		return "FLOAT";
-	case DOUBLE:
-		return "DOUBLE";
-	case STRING:
-		return "STRING";
-	case EMDATA:
-		return "EMDATA";
-	case XYDATA:
-		return "XYDATA";
-	case TRANSFORM3D:
-		return "TRANSFORM3D";
-	case INTARRAY:
-		return "INTARRAY";
-	case FLOATARRAY:
-		return "FLOATARRAY";
-	case STRINGARRAY:
-		return "STRINGARRAY";
-	case UNKNOWN:
+	if  ( type_registry.find(t) != type_registry.end() )
+		return type_registry[t];
+	else
 		LOGERR("No such EMObject defined");
 		throw NotExistingObjectException("EMObject", "unknown type");
-	}
-
-	return "UNKNOWN";
 }
-
 
 bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 {
-#if 0
+	
 	if (e1.type != e2.type) {
 		return false;
 	}
-#endif
+	
 	switch (e1.type) {
-	case EMObject::INT:
+	case EMObjectTypes::BOOL:
+		return (e1.b == e2.b);
+	break;
+	case EMObjectTypes::INT:
 		return (e1.n == e2.n);
-	case EMObject::FLOAT:
+	break;
+	case EMObjectTypes::FLOAT:
 		return (e1.f == e2.f);
-	case EMObject::DOUBLE:
+	break;
+	case EMObjectTypes::DOUBLE:
 		return (e1.d == e2.d);
-	case EMObject::STRING:
+	break;
+	case EMObjectTypes::STRING:
 		return (e1.str == e2.str);
-	case EMObject::EMDATA:
+	break;
+	case EMObjectTypes::EMDATA:
 		return (e1.emdata == e2.emdata);
-	case EMObject::XYDATA:
+	break;
+	case EMObjectTypes::XYDATA:
 		return (e1.xydata == e2.xydata);
-	case EMObject::FLOATARRAY:
+	break;
+	case EMObjectTypes::FLOATARRAY:
 		if (e1.farray.size() == e2.farray.size()) {
 			for (size_t i = 0; i < e1.farray.size(); i++) {
 				if (e1.farray[i] != e2.farray[i]) {
@@ -297,7 +454,8 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 		else {
 			return false;
 		}
-	case EMObject::INTARRAY:
+	break;
+	case EMObjectTypes::INTARRAY:
 		if (e1.iarray.size() == e2.iarray.size()) {
 			for (size_t i = 0; i < e1.iarray.size(); i++) {
 				if (e1.iarray[i] != e2.iarray[i]) {
@@ -306,7 +464,8 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 			}
 			return true;
 		}
-	case EMObject::STRINGARRAY:
+	break;
+	case EMObjectTypes::STRINGARRAY:
 		if (e1.strarray.size() == e2.strarray.size()) {
 			for (size_t i = 0; i < e1.strarray.size(); i++) {
 				if (e1.strarray[i] != e2.strarray[i]) {
@@ -318,8 +477,18 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 		else {
 			return false;
 		}
+	break;
+	case EMObjectTypes::TRANSFORM3D:
+		return (e1.transform3d == e2.transform3d);
+	break;
+	case EMObjectTypes::UNKNOWN:
+		// UNKNOWN really means "no type" and if two objects both have
+		// type UNKNOWN they really are the same
+		return (e1.type == e2.type);
+	break;
 	default:
 		return false;
+	break;
 	}
 	return false;
 }
@@ -329,6 +498,85 @@ bool EMAN::operator!=(const EMObject &e1, const EMObject & e2)
 	return !(e1 == e2);
 }
 
+// Copy constructor
+EMObject::EMObject(const EMObject& that)
+{
+	*this = that;
+}
+
+
+// Assignment operator -  - copies only the variable associated with the type of the argument.
+// It would be possible just to do a dumb copy of everything, but that seems opposed to
+// the concept of an EMObject, which is always of a single type.
+EMObject& EMObject::operator=( const EMObject& that )
+{
+	
+	if ( *this != that )
+	{
+		// First store the type of the input, At first I forgot to do this and it was a very
+		// difficult bug to track down
+		type = that.type;
+		
+		switch (type) 
+		{
+		case BOOL:
+			b = that.b;
+		break;
+		case INT:
+			n = that.n;
+		break;
+		case FLOAT:
+			f = that.f;
+		break;
+		case DOUBLE:
+			d = that.d;
+		break;
+		case STRING:
+			str = that.str;
+		break;
+		case EMDATA:
+			// Warning - Pointer address copy.
+			emdata = that.emdata;
+		break;
+		case XYDATA:
+			// Warning - Pointer address copy.
+			xydata = that.xydata;
+		break;
+		case FLOATARRAY:
+			farray = that.farray;
+		break;
+		case INTARRAY:
+			iarray = that.iarray;
+		break;
+		case STRINGARRAY:
+			strarray = that.strarray;
+		break;
+		case TRANSFORM3D:
+			// Warning - Pointer address copy.
+			transform3d = that.transform3d;
+		break;
+		case UNKNOWN:
+			// This is possible, nothing should happen
+			// The EMObject's default constructor has been called and
+			// as yet has no type - doing nothing is exactly as the
+			// the assignment operator should work.
+		break;
+		default:
+			LOGERR("No such EMObject defined");
+			throw NotExistingObjectException("EMObject", "unknown type");
+		break;
+		}
+	}
+	else
+	{
+//		cerr << "Warning - attempt to assign EMObject onto itself. No action taken" << endl;
+//		cerr << "My type is " << get_object_type_name(type) << endl;		
+	}
+	
+	return *this;
+}
+
+//-------------------------------TypeDict--------------------------------------------
 
 void TypeDict::dump() 
 {
@@ -338,3 +586,129 @@ void TypeDict::dump()
 			   p->first.c_str(), p->second.c_str(), desc_dict[p->first].c_str());
 	}
 }
+
+//-------------------------------Dict--------------------------------------------
+
+Dict::Dict(const Dict& that)
+{
+	*this = that;	
+}
+
+Dict& Dict::operator=(const Dict& that)
+{
+	if ( this != &that )
+	{
+		dict.clear();
+		copy(that.begin(), that.end(), inserter(dict, dict.begin()));
+		// or use this
+		// dict.insert( that.begin(), that.end());
+	}
+	else
+	{
+		cerr << "Warning - attempted to assign a Dict object to itself. No action taken" << endl;	
+	}
+	
+	return *this;
+}
+
+bool EMAN::operator==(const Dict& d1, const Dict& d2)
+{
+	// Just make use of map's version of operator==
+	return (d1.dict == d2.dict);
+}
+
+bool EMAN::operator!=(const Dict& d1, const Dict& d2)
+{
+	return !(d1 == d2);
+}
+
+
+// Iterator support
+// This is just a wrapper, everything is inherited from the map<string,EMObject>::iterator
+// so the interface is the same as you would expect
+// iterator support added by d.woolford May 2007
+
+Dict::iterator Dict::begin( void )
+{
+	return iterator( dict.begin() );
+}
+
+Dict::const_iterator Dict::begin( void ) const
+{
+	return const_iterator( (map < string, EMObject >::const_iterator) dict.begin() );
+}
+
+// Wraps map.find(const string& key)
+Dict::iterator Dict::find( const string& key )
+{
+	return iterator( dict.find(key) );	
+}
+
+Dict::iterator Dict::end( void )
+{
+	return iterator( dict.end() );
+}
+
+Dict::const_iterator Dict::end( void ) const
+{
+	return const_iterator( (map < string, EMObject >::const_iterator)dict.end() );
+}
+
+Dict::const_iterator Dict::find( const string& key ) const
+{
+	return const_iterator( (map < string, EMObject >::const_iterator)dict.find(key) );	
+}
+
+//
+// iterator
+//
+Dict::iterator::iterator( map< string, EMObject >::iterator parent_it  ) : 
+	map< string, EMObject >::iterator( parent_it )
+{
+}
+
+
+Dict::iterator::iterator( const iterator& that ) :
+	map < string, EMObject >::iterator( that )
+{
+}
+
+
+Dict::iterator& Dict::iterator::operator=( const iterator& that )
+{
+	if( this != &that ) 
+	{
+		map < string, EMObject >::iterator::operator=( that );
+	}
+	return *this;
+}
+
+//
+// const_iterator
+//
+
+Dict::const_iterator::const_iterator( const map < string, EMObject >::const_iterator parent_it  ) :
+	map< string, EMObject >::const_iterator( parent_it )
+{
+}
+
+Dict::const_iterator::const_iterator( const Dict::iterator& it ) :
+	map< string, EMObject >::const_iterator(it)
+{
+}
+
+Dict::const_iterator::const_iterator( const const_iterator& it ) :
+	map< string, EMObject >::const_iterator(it)
+{
+}
+
+Dict::const_iterator& Dict::const_iterator::operator=( const const_iterator& that )
+{
+	if( this != &that ) 
+	{
+		map < string, EMObject >::const_iterator::operator=( that );
+	}
+	return *this;
+}
+
+

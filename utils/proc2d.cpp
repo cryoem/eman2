@@ -319,11 +319,11 @@ int main(int argc, char *argv[])
 			}
 #endif
 			if (argdict[edgenorm]) {
-				d->process_inplace("eman1.normalize.circlemean");
+				d->process_inplace("normalize.circlemean");
 			}
 
 			if (norm == 1) {
-				d->process_inplace("eman1.normalize");
+				d->process_inplace("normalize");
 			}
 			else if (norm == 2) {
 				(*d) *= nsig / sigma;
@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[flip]) {
-				d->process_inplace("eman1.xform.flip", Dict("axis", "y"));
+				d->process_inplace("xform.flip", Dict("axis", "y"));
 			}
 
 			if (argdict[invert]) {
@@ -425,11 +425,11 @@ int main(int argc, char *argv[])
 			}
 
 			if (imask > 0) {
-				d->process_inplace("eman1.mask.sharp", Dict("inner_radius", imask, "value", 0));
+				d->process_inplace("mask.sharp", Dict("inner_radius", imask, "value", 0));
 			}
 
 			if (automask) {
-				d->process_inplace("eman1.mask.auto2d", Dict("threshold", automask));
+				d->process_inplace("mask.auto2d", Dict("threshold", automask));
 			}
 
 			// uses correlation with 180 deg rot for centering
@@ -442,15 +442,15 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[center]) {
-				d->process_inplace("eman1.xform.centerofmass", Dict("int_shift_only", 1));
+				d->process_inplace("xform.centerofmass", Dict("int_shift_only", 1));
 			}
 
 			if (argdict[phot]) {
-				d->process_inplace("eman1.xform.phaseorigin");
+				d->process_inplace("xform.phaseorigin");
 			}
 
 			if (anoise) {
-				d->process_inplace("eman1.math.addnoise");
+				d->process_inplace("math.addnoise");
 			}
 
 			if (argdict[rfp]) {
@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
 				}
 				else {
 					if (rizef && rand() % 2) {
-						d->process_inplace("eman1.xform.flip", Dict("axis", "y"));
+						d->process_inplace("xform.flip", Dict("axis", "y"));
 					}
 
 					if (rizeda > 0) {
@@ -514,7 +514,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rotav]) {
-				d->process_inplace("eman1.math.radialaverage");
+				d->process_inplace("math.radialaverage");
 			}
 
 			if (csym > 1) {
@@ -541,7 +541,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (argdict[rsub]) {
-				d->process_inplace("eman1.math.radialsubtract");
+				d->process_inplace("math.radialsubtract");
 			}
 
 			if (scl) {
@@ -551,11 +551,11 @@ int main(int argc, char *argv[])
 				}
 				else {
 					EMData *e = d->copy();
-					e->process_inplace("eman1.xform.phaseorigin");
+					e->process_inplace("xform.phaseorigin");
 
 					if (sclmd == 1) {
 						sc->common_lines(e, e, sclmd, scl, true);
-						sc->process_inplace("eman1.math.linear", Dict("shift", -90.0, "scale", -1.0));
+						sc->process_inplace("math.linear", Dict("shift", -90.0, "scale", -1.0));
 					}
 					else if (sclmd == 2) {
 						sc->common_lines(e, e, sclmd, scl, true);
@@ -600,7 +600,7 @@ int main(int argc, char *argv[])
 				p["niter"] = bliter;
 				p["half_width"] = blwidth;
 
-				d->process_inplace("eman1.bilateral", p);
+				d->process_inplace("bilateral", p);
 			}
 
 #if 0
@@ -767,7 +767,7 @@ int main(int argc, char *argv[])
 	
     if (average) {
 		//average->setNImg(n1-n0+1);
-		average->process_inplace("eman1.normalize");
+		average->process_inplace("normalize");
 		average->write_image(outfile, -1);
     }
 #if 0

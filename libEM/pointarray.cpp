@@ -97,7 +97,7 @@ PointArray::PointArray()
 	n = 0;
 }
 
-PointArray::PointArray(unsigned int nn)
+PointArray::PointArray( int nn)
 {
 	n = nn;
 	points = (double *) calloc(4 * n, sizeof(double));
@@ -136,12 +136,12 @@ PointArray & PointArray::operator=(PointArray & pa)
 	return *this;
 }
 
-unsigned int PointArray::get_number_points()
+ int PointArray::get_number_points()
 {
 	return n;
 }
 
-void PointArray::set_number_points(unsigned int nn)
+void PointArray::set_number_points(int nn)
 {
 	if (n != nn) {
 		n = nn;
@@ -248,22 +248,26 @@ return ret;
 
 // uses bilinear least-squares to generate a transformation
 // matrix for pairs of points
-Transform3D *PointArray::align_2d(PointArray *to) {
-vector<int> match=match_points(to);
+Transform3D *PointArray::align_2d(PointArray *to,float max_dist) {
+vector<int> match=match_points(to,max_dist);
 Transform3D *ret=new Transform3D();
 
-unsigned int i,j;
+// we use bilinear least squares to get 3/6 matrix components
+int i,j;
+
 vector<float> pts;
 for (i=0; i<match.size(); i++) {
 	if (match[i]==-1) continue;
 
+//	printf("%d -> %d\n",i,match[i]);
 	pts.push_back(get_vector_at(i)[0]);
 	pts.push_back(get_vector_at(i)[1]);
 	pts.push_back(to->get_vector_at(match[i])[0]);
 }
 
 Vec3f vx=Util::calc_bilinear_least_square(pts);
-	
+
+// then we get the other 3/6
 for (i=j=0; i<match.size(); i++) {
 	if (match[i]==-1) continue;
 	pts[j*3]  =get_vector_at(i)[0];
@@ -405,7 +409,7 @@ bool PointArray::read_from_pdb(const char *file)
 {
 	struct stat filestat;
 	stat(file, &filestat);
-	set_number_points((unsigned int)(filestat.st_size / 80 + 1));
+	set_number_points(( int)(filestat.st_size / 80 + 1));
 #ifdef DEBUG
 	printf("PointArray::read_from_pdb(): try %4d atoms first\n", get_number_points());
 #endif
@@ -416,7 +420,7 @@ bool PointArray::read_from_pdb(const char *file)
 		throw;
 	}
 	char s[200];
-	unsigned int count = 0;
+	 int count = 0;
 	while ((fgets(s, 200, fp) != NULL)) {
 		if (strncmp(s, "ENDMDL", 6) == 0)
 			break;
@@ -499,7 +503,7 @@ bool PointArray::read_from_pdb(const char *file)
 void PointArray::save_to_pdb(const char *file)
 {
 	FILE *fp = fopen(file, "w");
-	for (unsigned int i = 0; i < get_number_points(); i++) {
+	for ( int i = 0; i < get_number_points(); i++) {
 		fprintf(fp, "ATOM  %5d  CA  ALA A%4d    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
 				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
 	}
@@ -512,7 +516,7 @@ FloatPoint PointArray::get_center()
 	double xc, yc, zc;
 	xc = yc = zc = 0.0;
 	double norm = 0.0;
-	for (unsigned int i = 0; i < 4 * get_number_points(); i += 4) {
+	for ( int i = 0; i < 4 * get_number_points(); i += 4) {
 		xc += points[i] * points[i + 3];
 		yc += points[i + 1] * points[i + 3];
 		zc += points[i + 2] * points[i + 3];
@@ -529,7 +533,7 @@ FloatPoint PointArray::get_center()
 void PointArray::center_to_zero()
 {
 	FloatPoint center = get_center();
-	for (unsigned int i = 0; i < 4 * get_number_points(); i += 4) {
+	for ( int i = 0; i < 4 * get_number_points(); i += 4) {
 		points[i] -= center[0];
 		points[i + 1] -= center[1];
 		points[i + 2] -= center[2];
@@ -543,7 +547,7 @@ Region PointArray::get_bounding_box()
 	xmin = xmax = points[0];
 	ymin = ymax = points[1];
 	zmin = zmax = points[2];
-	for (unsigned int i = 0; i < 4 * get_number_points(); i += 4) {
+	for ( int i = 0; i < 4 * get_number_points(); i += 4) {
 		if (points[i] > xmax)
 			xmax = points[i];
 		if (points[i] < xmin)
@@ -566,8 +570,8 @@ void PointArray::mask(double rmax, double rmin)
 	double rmax2 = rmax * rmax, rmin2 = rmin * rmin;
 	PointArray *tmp = this->copy();
 	double *tmp_points = tmp->get_points_array();
-	unsigned int count = 0;
-	for (unsigned int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
+	 int count = 0;
+	for ( int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
 		double x = tmp_points[i], y = tmp_points[i + 1], z = tmp_points[i + 2], v =
 			tmp_points[i + 3];
 		double r2 = x * x + y * y + z * z;
@@ -620,8 +624,8 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 
 	PointArray *tmp = this->copy();
 	double *tmp_points = tmp->get_points_array();
-	unsigned int count = 0;
-	for (unsigned int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
+	 int count = 0;
+	for ( int i = 0; i < 4 * tmp->get_number_points(); i += 4) {
 		double x = tmp_points[i], y = tmp_points[i + 1], z = tmp_points[i + 2], v = tmp_points[i + 3];
 		double az = atan2(y, x);
 		double az_abs = fabs(az - az0);
@@ -648,6 +652,28 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 	}
 }
 
+vector<float> PointArray::get_points() {
+vector<float> ret;
+for (int i=0; i<n; i++) {
+	ret.push_back((float)points[i*4]);
+	ret.push_back((float)points[i*4+1]);
+	ret.push_back((float)points[i*4+2]);
+}
+
+return ret;
+}
+
+void PointArray::transform(Transform3D xf) {
+
+for ( int i = 0; i < 4 * n; i += 4) {
+	Vec3f v((float)points[i],(float)points[i+1],(float)points[i+2]);
+	v=v*xf;
+	points[i]  =v[0];
+	points[i+1]=v[1];
+	points[i+2]=v[2];
+}
+
+}
 
 void PointArray::set_from(PointArray * source, const string & sym, Transform3D *transform)
 {
@@ -655,18 +681,18 @@ void PointArray::set_from(PointArray * source, const string & sym, Transform3D *
 
 }
 
-void PointArray::set_from(double *src, unsigned int num, const string & sym, Transform3D *xform)
+void PointArray::set_from(double *src,  int num, const string & sym, Transform3D *xform)
 {
-	unsigned int nsym = xform->get_nsym(sym);
+	 int nsym = xform->get_nsym(sym);
 
 	if (get_number_points() != nsym * num)
 		set_number_points(nsym * num);
 
 	double *target = get_points_array();
 
-	for (unsigned int s = 0; s < nsym; s++) {
+	for ( int s = 0; s < nsym; s++) {
 		int index = s * 4 * num;
-		for (unsigned int i = 0; i < 4 * num; i += 4, index += 4) {
+		for ( int i = 0; i < 4 * num; i += 4, index += 4) {
 			Vec3f v((float)src[i],(float)src[i+1],(float)src[i+2]);
 			v=v*xform->get_sym(sym,s);
 			target[index]  =v[0];
@@ -677,6 +703,11 @@ void PointArray::set_from(double *src, unsigned int num, const string & sym, Tra
 	}
 }
 
+void PointArray::set_from(vector<float> pts) {
+	set_number_points(pts.size()/4);
+	for (int i=0; i<pts.size(); i++) points[i]=pts[i];
+
+}
 
 void PointArray::set_from_density_map(EMData * map, int num, float thresh, float apix,
 									  Density2PointsArrayAlgorithm mode)
@@ -789,20 +820,20 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 		tmp_pa.set_number_points(num);
 		tmp_pa.zero();
 
-		unsigned int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
+		 int nx = map->get_xsize(), ny = map->get_ysize(), nz = map->get_zsize();
 		float *pd = map->get_data();
 
 		// initialize segments with random centers at pixels with values > thresh
 #ifdef DEBUG
 		printf("Start initial random seeding\n");
 #endif
-		for (unsigned int i = 0; i < get_number_points(); i++) {
-			unsigned int x, y, z;
+		for ( int i = 0; i < get_number_points(); i++) {
+			 int x, y, z;
 			double v;
 			do {
-				x = (unsigned int) Util::get_frand(0, nx - 1);
-				y = (unsigned int) Util::get_frand(0, ny - 1);
-				z = (unsigned int) Util::get_frand(0, nz - 1);
+				x = ( int) Util::get_frand(0, nx - 1);
+				y = ( int) Util::get_frand(0, ny - 1);
+				z = ( int) Util::get_frand(0, nz - 1);
 				v = pd[z * nx * ny + y * nx + x];
 #ifdef DEBUG
 				printf("Trying Point %d: val = %g\tat  %d, %d, %d\tfrom map (%d,%d,%d)\n", i, v, x,
@@ -829,13 +860,13 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 			double *tmp_points = tmp_pa.get_points_array();
 
 			// reassign each pixel to the best segment
-			for (unsigned int k = 0; k < nz; k++) {
-				for (unsigned int j = 0; j < ny; j++) {
-					for (unsigned int i = 0; i < nx; i++) {
+			for ( int k = 0; k < nz; k++) {
+				for ( int j = 0; j < ny; j++) {
+					for ( int i = 0; i < nx; i++) {
 						if (pd[k * nx * ny + j * nx + i] > thresh) {
 							double min_dist = 1e60;	// just a large distance
-							unsigned int min_s = 0;
-							for (unsigned int s = 0; s < get_number_points(); s++) {
+							 int min_s = 0;
+							for ( int s = 0; s < get_number_points(); s++) {
 								double x = points[4 * s];
 								double y = points[4 * s + 1];
 								double z = points[4 * s + 2];
@@ -859,7 +890,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #endif
 			// update each segment's center
 			dcen = 0.0;
-			for (unsigned int s = 0; s < get_number_points(); s++) {
+			for ( int s = 0; s < get_number_points(); s++) {
 				if (tmp_points[4 * s + 3]) {
 					tmp_points[4 * s] /= tmp_points[4 * s + 3];
 					tmp_points[4 * s + 1] /= tmp_points[4 * s + 3];
@@ -871,12 +902,12 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #endif
 				}
 				else {			// empty segments are reseeded
-					unsigned int x, y, z;
+					 int x, y, z;
 					double v;
 					do {
-						x = (unsigned int) Util::get_frand(0, nx - 1);
-						y = (unsigned int) Util::get_frand(0, ny - 1);
-						z = (unsigned int) Util::get_frand(0, nz - 1);
+						x = ( int) Util::get_frand(0, nx - 1);
+						y = ( int) Util::get_frand(0, ny - 1);
+						z = ( int) Util::get_frand(0, nz - 1);
 						v = pd[z * nx * ny + y * nx + x];
 					} while (v <= thresh);
 					tmp_points[4 * s] = (double) x;
@@ -940,7 +971,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 #endif
 
 	float *pd = map->get_data();
-	for (unsigned int i = 0; i < get_number_points(); i++) {
+	for ( int i = 0; i < get_number_points(); i++) {
 #ifdef DEBUG
 		printf("Point %4d: x,y,z,v = %8g,%8g,%8g,%8g",i, points[4 * i],points[4 * i + 1],points[4 * i + 2],points[4 * i + 3]);
 #endif
@@ -1003,7 +1034,7 @@ EMData *PointArray::pdb2mrc_by_summation(int map_size, float apix, float res)
 	map->set_size(map_size, map_size, map_size);
 	map->to_zero();
 	float *pd = map->get_data();
-	for (unsigned int s = 0; s < get_number_points(); s++) {
+	for ( int s = 0; s < get_number_points(); s++) {
 		double xc = points[4 * s] / apix + map_size / 2;
 		double yc = points[4 * s + 1] / apix + map_size / 2;
 		double zc = points[4 * s + 2] / apix + map_size / 2;
@@ -1082,7 +1113,7 @@ EMData *PointArray::projection_by_summation(int image_size, float apix, float re
 	proj->set_size(image_size, image_size, 1);
 	proj->to_zero();
 	float *pd = proj->get_data();
-	for (unsigned int s = 0; s < get_number_points(); s++) {
+	for ( int s = 0; s < get_number_points(); s++) {
 		double xc = points[4 * s] / apix + image_size / 2;
 		double yc = points[4 * s + 1] / apix + image_size / 2;
 		double fval = points[4 * s + 3];
@@ -1146,7 +1177,7 @@ void PointArray::replace_by_summation(EMData *proj, int ind, Vec3f vec, float am
 	if (gbox <= 0)
 		gbox = 1;
 	float *pd = proj->get_data();
-	unsigned int s = ind;
+	 int s = ind;
 	double xc = points[4 * s] / apix + image_size / 2;
 	double yc = points[4 * s + 1] / apix + image_size / 2;
 	double fval = points[4 * s + 3];
@@ -1271,7 +1302,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	fft->done_data();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
+	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1353,7 +1384,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	fft->done_data();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
+	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1440,7 +1471,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 	fft->done_data();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
+	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #elif defined NFFT2
@@ -1510,7 +1541,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 	fft->done_data();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process_inplace("eman1.xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
+	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #else
@@ -1550,7 +1581,7 @@ void calc_opt_proj(int n, const ColumnVector& x, double& fx, int& result)
 		xform=(optdata[i]->get_transform());
 		pa.set_from((double *)x.nric()+1,n/4,std::string("c1"),&xform);
 		EMData *p=pa.projection_by_summation(size,1.0,optpixres);
-		p->process_inplace("eman1.NormalizeUnit");
+		p->process_inplace("normalize.unitlen");
 		fx-=sqrt(p->cmp("dot",EMObject(optdata[i]),Dict()));
 	}
 			

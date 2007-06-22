@@ -173,9 +173,9 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 
 	
 	//float score = (float)hypot(result[0], result[1]);
-	cf->set_attr("align_score", max_value);
-	cf->set_attr("translational.dx",result[0]); 
-	cf->set_attr("translational.dy",result[1]); 
+	cf->set_attr("align.score", max_value);
+	cf->set_attr("align.dx",result[0]); 
+	cf->set_attr("align.dy",result[1]); 
 
 	return cf;
 }
@@ -259,10 +259,10 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 
 	this_img->translate(tx, ty, tz);
 
-	cf->set_attr("align_score", max_value);
-	cf->set_attr("translational.dx",tx); 
-	cf->set_attr("translational.dy",ty); 
-	cf->set_attr("translational.dz",tz); 
+	cf->set_attr("align.score", max_value);
+	cf->set_attr("align.dx",tx); 
+	cf->set_attr("align.dy",ty); 
+	cf->set_attr("align.dz",tz); 
 
 	cf->done_data();
 
@@ -281,10 +281,12 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	EMData *this_img2 = this_img->make_rotational_footprint(premasked);
 	EMData *to2 = to->make_rotational_footprint(premasked);
 
+//	to2->write_image("temp.hdf",-1); // eliminate later, PRB
 	int this_img2_nx = this_img2->get_xsize();
 
 	EMData *cf = this_img2->calc_ccfx(to2, 0, this_img->get_ysize());
 
+	cf->write_image("temp.hdf",-1); // eliminate later, PRB
 	delete this_img2;
 	delete to2;
 
@@ -300,10 +302,27 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		delete cf;
 		cf = 0;
 	}
-	cf=this_img->copy();
-	cf->rotate((float)(-peak_index * 180.0 / this_img2_nx), 0, 0);
-	cf->set_attr("align_score", peak);
-	cf->set_attr("rotational",-peak_index * 180.0 / this_img2_nx);
+	EMData *cfL=this_img->copy();
+	float rotateAngle = (float) peak_index * 180.0 / this_img2_nx;
+	printf("rotateAngleInit= %f \n",rotateAngle ); // eliminate later, PRB
+	cfL->rotate( rotateAngle, 0, 0);
+	EMData *cfR=this_img->copy();
+	cfR->rotate( rotateAngle-180, 0, 0);
+	float Ldot = cfL->dot(to);
+	float Rdot = cfR->dot(to);
+	printf("Ldot = %f, Rdot=%f \n",Ldot, Rdot); // eliminate later, PRB
+	if (Ldot>Rdot){
+		cf=cfL;
+		delete cfR;
+	} else {
+		cf=cfR;
+		delete cfL;
+		rotateAngle = rotateAngle-180;
+	}
+	printf("rotateAngleFinal= %f \n",rotateAngle ); // eliminate later, PRB
+	cf->set_attr("align.score", peak);
+	cf->set_attr("rotational", rotateAngle );
+	cf->set_attr("align.az",rotateAngle);
 
 
 	return cf;
@@ -331,8 +350,8 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 	float a = (float) ((1.0f - 1.0f * peak_index / size) * 180. * 2);
 	this_img->rotate(a*180./M_PI, 0, 0);
 
-	cf->set_attr("align_score", peak);
-	cf->set_attr("rotational",a);
+	cf->set_attr("align.score", peak);
+	cf->set_attr("align.az",a);
 	cf->done_data();
 
 	if( e1 )
@@ -501,7 +520,7 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 #endif
 
 	this_img->rotate(aa * 180. / ndot, 0, 0);
-	this_img->set_attr("rotational", aa * 180. / ndot);
+	this_img->set_attr("align.az", aa * 180. / ndot);
 	return 0;
 }
 
@@ -516,17 +535,18 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		cmp_name = "dot";
 	}
 #endif
-	EMData *this_copy = this_img->align("rotational", to);
+	printf(" This is the one \n");
+	EMData *this_copy  = this_img->align("rotational", to);
 	
-	EMData *this_copy2 = this_copy->copy();
-	this_copy2->rotate_180();
-	this_copy2->set_attr("rotational",(float)this_copy2->get_attr("rotational")+180.0);
+	EMData *this_copy2 = this_copy->copy(); // Now this_copy, this_copy2
+	this_copy2->rotate_180();               //  is an aligned version of this_img
+	this_copy2->set_attr("align.az",(float)this_copy2->get_attr("rotational")+180.0);
 
 	Dict trans_params;
 	
-	trans_params["intonly"] = 1;
+	trans_params["intonly"]  = 1;
 	trans_params["maxshift"] = params["maxshift"];
-	trans_params["nozero"]=params["nozero"];
+	trans_params["nozero"]   = params["nozero"];
 	EMData *tmp = this_copy;
 	this_copy=tmp->align("translational", to, trans_params);
 	if( tmp )
@@ -547,12 +567,12 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 
 	float dot1 = 0;
 	float dot2 = 0;
-	dot1 = this_copy->cmp(cmp_name, tmp, cmp_params);
-	dot2 = this_copy2->cmp(cmp_name, tmp, cmp_params);
+	dot1 = this_copy  ->cmp(cmp_name, tmp, cmp_params);
+	dot2 = this_copy2 ->cmp(cmp_name, tmp, cmp_params);
 
 	EMData *result = 0;
 	if (dot1 < dot2) {			// assumes smaller is better, won't work with Dot !!!
-		this_copy->set_attr("align_score", dot1);
+		this_copy->set_attr("align.score", dot1);
 		if( this_copy2 )
 		{
 			delete this_copy2;
@@ -561,7 +581,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		result = this_copy;
 	}
 	else {
-		this_copy2->set_attr("align_score", dot2);
+		this_copy2->set_attr("align.score", dot2);
 		if( this_copy )
 		{
 			delete this_copy;
@@ -630,7 +650,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 
 	EMData *result = 0;
 	if (dot1 < dot2) {
-		this_copy->set_attr("align_score", dot1);
+		this_copy->set_attr("align.score", dot1);
 		if( this_copy2 )
 		{
 			delete this_copy2;
@@ -639,7 +659,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 		result = this_copy;
 	}
 	else {
-		this_copy2->set_attr("align_score", dot2);
+		this_copy2->set_attr("align.score", dot2);
 		if( this_copy )
 		{
 			delete this_copy;
@@ -856,7 +876,7 @@ EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
 	EMData *this_copy2 = this_img->copy();
 
 	if (!flip) {
-		this_copy2->process_inplace("eman1.xform.flip", Dict("axis", "y"));
+		this_copy2->process_inplace("xform.flip", Dict("axis", "y"));
 	}
 
 	this_copy2->align("rotational", to);
@@ -914,7 +934,7 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		this_copy2 = flip->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
 	}
 	else {
-		this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		this_copy2 = this_img->align("rotate_translate", to, Dict("maxshift", params["maxshift"]));
 	}
 
@@ -956,10 +976,10 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	EMData *result = 0;
 
 	if (dot1 < dot2) {
-		this_copy->set_attr("flipped",0);
-		this_copy->set_attr("align_score",dot1);
+		this_copy->set_attr("align.flip",0);
+		this_copy->set_attr("align.score",dot1);
 		if (!flip) {
-			this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+			this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		}
 
 		if( this_copy2 )
@@ -970,8 +990,8 @@ EMData *RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 		result = this_copy;
 	}
 	else {
-		this_copy2->set_attr("flipped",1);
-		this_copy2->set_attr("align_score",dot2);
+		this_copy2->set_attr("align.flip",1);
+		this_copy2->set_attr("align.score",dot2);
 		if( this_copy )
 		{
 			delete this_copy;
@@ -1019,7 +1039,7 @@ EMData *RTFSlowAligner::align(EMData * this_img, EMData *to,
 	}
 	else {
 		df = this_img->copy();
-		df->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+		df->process_inplace("xform.flip", Dict("axis", "x"));
 	}
 
 	EMData *dns = this_img->copy();
@@ -1219,7 +1239,7 @@ EMData *RTFSlowestAligner::align(EMData * this_img, EMData *to,
 	}
 	else {
 		df = this_img->copy();
-		df->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+		df->process_inplace("xform.flip", Dict("axis", "x"));
 		df = df->copy();
 	}
 
@@ -1380,7 +1400,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,
 	EMData *flip_copy = 0;
 
 	if (!flip) {
-		this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		flip_copy = this_img->align("rotate_translate_best", to, rtb_params);
 	}
 	else {
@@ -1405,7 +1425,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,
 	if (this_cmp > flip_cmp) {
 		this_copy->set_flipped(0);
 		if (!flip) {
-			this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+			this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		}
 		if( flip_copy )
 		{
@@ -1453,9 +1473,9 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,
 	EMData *r2 = 0;
 
 	if (!thisf) {
-		this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		r2 = this_img->align("rtf_radon", to, params);
-		this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+		this_img->process_inplace("xform.flip", Dict("axis", "x"));
 	}
 	else {
 		r2 = thisf->align("rtf_radon", to, params);
@@ -1481,7 +1501,7 @@ EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,
 		}
 
 		if (!thisf) {
-			this_img->process_inplace("eman1.xform.flip", Dict("axis", "x"));
+			this_img->process_inplace("xform.flip", Dict("axis", "x"));
 		}
 		result = r2;
 	}
@@ -1539,129 +1559,78 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		return 0;
 	}
 
-	EMData *result = 0;
+	EMData *result = this_img->copy();
 
 	int ny = this_img->get_ysize();
 
-	float salt = params["alt"];
-	float sdx = params["dx"];
-	float sdy = params["dy"];
-	float sdz = params["dz"];
+//	float salt = this_img.get_attr("align.az");
+//	float sdx = this_img.get_attr("align.dx");
+//	float sdy = this_img.get_attr("align.dy");
 
 	float dda = atan(2.0f / ny);
 
 	int mode = params.set_default("mode", 0);
+	float saz = params.set_default("az",0.0);
+	float sdx = params.set_default("dx",0.0);
+	float sdy = params.set_default("dy",0.0);
 
-	if (mode == 1 || mode == 2) {
-		int np = 3;
-		Dict gsl_params;
-		gsl_params["this"] = this_img;
-		gsl_params["with"] = to;
-		gsl_params["snr"] = params["snr"];
+	int np = 3;
+	Dict gsl_params;
+	gsl_params["this"] = this_img ;
+	gsl_params["with"] = to       ;
+	gsl_params["snr"]  = params["snr"]    ;
+	
 
-		const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
+	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 
-		gsl_vector *ss = gsl_vector_alloc(np);
-		gsl_vector_set(ss, 0, 1.0f);
-		gsl_vector_set(ss, 1, 1.0f);
-		gsl_vector_set(ss, 2, 0.1f);
+	gsl_vector *ss = gsl_vector_alloc(np);
+	gsl_vector_set(ss, 0, 1.0f);
+	gsl_vector_set(ss, 1, 1.0f);
+	gsl_vector_set(ss, 2, 0.1f);
 
-		gsl_vector *x = gsl_vector_alloc(np);
-		gsl_vector_set(x, 0, sdx);
-		gsl_vector_set(x, 1, sdy);
-		gsl_vector_set(x, 2, salt);
+	gsl_vector *x = gsl_vector_alloc(np);
+	gsl_vector_set(x, 0, sdx);
+	gsl_vector_set(x, 1, sdy);
+	gsl_vector_set(x, 2, saz);
 
-		gsl_multimin_function minex_func;
+	gsl_multimin_function minex_func;
 
-		if (mode == 2) {
-			minex_func.f = &refalifnfast;
-		}
-		else {
-			minex_func.f = &refalifn;
-		}
-		minex_func.n = np;
-		minex_func.params = (void *) &gsl_params;
-
-		gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
-		gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
-
-
-		int rval = GSL_CONTINUE;
-		int status = GSL_SUCCESS;
-		int iter = 1;
-
-		while (rval == GSL_CONTINUE && iter < 28) {
-			iter++;
-			status = gsl_multimin_fminimizer_iterate(s);
-			if (status) {
-				break;
-			}
-
-			rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), 0.04f);
-		}
-
-		this_img->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
-								   (float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
-		gsl_vector_free(x);
-		gsl_vector_free(ss);
-		gsl_multimin_fminimizer_free(s);
+	if (mode == 2) {
+		minex_func.f = &refalifnfast;
 	}
 	else {
-		float best = 0;
-		
-		if (mode == 0) {
-			best = this_img->cmp(cmp_name, to, cmp_params);
-		}
-		else if (mode < 0) {
-			printf("Start %f  %f,%f\n", salt * 180.0 / M_PI, sdx, sdy);
-		}
-
-		int j = 0;
-		float f = 0;
-
-		for (int i = 0; i < 5 && j; i++) {
-			j = 0;
-			float last_alt = salt;
-			for (float daz = salt - dda; daz <= salt + dda; daz += dda / 2.0f) {
-				if (daz != salt) {
-					last_alt = daz;
-					this_img->rotate_translate(daz, 0, 0, sdx, sdy, sdz);
-					f = this_img->cmp(cmp_name, to, cmp_params);
-
-					if (f > best) {
-						best = f;
-						salt = daz;
-						j = 1;
-						break;
-					}
-				}
-			}
-
-			for (float dx = sdx - 1.0f; dx <= sdx + 1.0; dx += 0.25f) {
-				for (float dy = sdy - 1.0f; dy <= sdy + 1.0; dy += 0.25f) {
-					this_img->rotate_translate(last_alt, 0, 0, dx, dy, 0);
-					f = this_img->cmp(cmp_name, to, cmp_params);
-
-					if (f > best) {
-						best = f;
-						sdx = dx;
-						sdy = dy;
-						j = 1;
-						break;
-					}
-				}
-			}
-
-			if (mode < 0) {
-				printf("-- %f  %f,%f (%1.3g) \n", salt * 180.0 / M_PI, sdx, sdy, best);
-			}
-		}
-
-		this_img->rotate_translate(salt, 0, 0, sdx, sdy, 0);
-
-		result = this_img->copy();
-		result->set_attr("align_score", best);
+		minex_func.f = &refalifn;
 	}
+	minex_func.n = np;
+	minex_func.params = (void *) &gsl_params;
+
+	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
+	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
+
+
+	int rval = GSL_CONTINUE;
+	int status = GSL_SUCCESS;
+	int iter = 1;
+
+	while (rval == GSL_CONTINUE && iter < 28) {
+		iter++;
+		status = gsl_multimin_fminimizer_iterate(s);
+		if (status) {
+			break;
+		}
+
+		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), 0.04f);
+	}
+
+	result->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
+								(float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
+	gsl_vector_free(x);
+	gsl_vector_free(ss);
+	gsl_multimin_fminimizer_free(s);
+
+	this_img->set_attr("align.az",(float)gsl_vector_get(s->x, 2));
+	this_img->set_attr("align.dx",(float)gsl_vector_get(s->x, 0));
+	this_img->set_attr("align.dy",(float)gsl_vector_get(s->x, 1));
 
 	return result;
 }
