@@ -166,12 +166,19 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	vector <int> iv;	
 	switch(obj.get_type())
 	{
-	case EMObject::BOOL:
-	case EMObject::INT:
+	case EMObject::BOOL: std::cout << "implement this later" << std::endl; break;
+	case EMObject::INT: 
+		type=H5Tcopy(H5T_STD_I32LE); 
+		spc=H5Scopy(simple_space); 
+		break;
 	case EMObject::FLOAT:
-	case EMObject::DOUBLE:
-		type=H5Tcopy(H5T_IEEE_F64LE); spc=H5Scopy(simple_space);
-	break;
+		type=H5Tcopy(H5T_IEEE_F32LE); 
+		spc=H5Scopy(simple_space); 
+		break;
+	case EMObject::DOUBLE: 
+		type=H5Tcopy(H5T_IEEE_F64LE); 
+		spc=H5Scopy(simple_space);
+		break;
 	case EMObject::STRING: 
 		type=H5Tcopy(H5T_C_S1); 
 		H5Tset_size(type,strlen((const char *)obj)+1);
