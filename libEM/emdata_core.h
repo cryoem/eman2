@@ -40,6 +40,8 @@
 #ifndef emdata__core_h__
 #define emdata__core_h__ 
 
+#define BOUNDS_CHECKING //dsaw added for debug, should be removed
+
 public:
 /** Make a copy of this image including both data and header.
  * @return A copy of this image including both data and header.
@@ -384,6 +386,10 @@ inline void set_value_at(int x, float v)
 	}
 }
 
+/** Free memory associated with this EMData
+ * Called in destructor and in assignment operator
+ */
+void free_memory();
 
 EMData & operator+=(float n);
 EMData & operator-=(float n);
@@ -407,12 +413,13 @@ float& operator()(const int ix, const int iy, const int iz) {
 	return *(rdata + pos);
 }
 
-
 float& operator()(const int ix, const int iy) {
 	ptrdiff_t pos = (ix - xoff) + (iy-yoff)*nx;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz)
+	{
 		throw OutofRangeException(0, nx*ny*nz-1, pos, "EMData");
+	}
 #endif // BOUNDS_CHECKING
 	return *(rdata + pos);
 }

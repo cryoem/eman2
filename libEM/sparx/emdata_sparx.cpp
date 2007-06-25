@@ -122,7 +122,6 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 
 		int PCount=0;
 
-
 		for (int m=0; m <=mMax; m++){
 		//    if m==mMax, tic, end
 			std::complex <float> tempF(0.0f,-1.0f);
@@ -159,6 +158,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 //				printf(" %3.1f+ %3.1fi \t",(rhoOfRandmTemp[ss].real()), (rhoOfRandmTemp[ss].imag())   );fflush(stdout);}
 
 // calculate product
+			
 			float tempp;
 //			printf("\n m=%d sampledBesselJ" ,m  );fflush(stdout);
 			for (int st=0; st<= Number2Use; st++){
@@ -166,6 +166,7 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 				sampledBesselJ[st] = static_cast<float>(gsl_sf_bessel_Jn(m,tempp));
 //				printf(" %3.2f  \t",sampledBesselJ[st]   );fflush(stdout);
 			} // good so far
+			
 //			sampledBesselJ  = BesselJ(m,krVec2Use);
 			float *tempMB = new float [kIntMax*RIntMax];
 			Util::spline_mat(krVec2Use, sampledBesselJ, Number2Use+1,krVec,tempMB,kIntMax*RIntMax ); 
@@ -185,8 +186,8 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 //					printf(" %1.3f +%1.3fi \t" , rowV[st].real(), rowV[st].imag() );fflush(stdout);
 			}
 			for (int st=0; st < kIntMax; st++) {
-					(*rhoOfkmB)(2*m  ,st) = rowV[st].real();
-					(*rhoOfkmB)(2*m+1,st) = rowV[st].imag();
+				(*rhoOfkmB)(2*m  ,st) = rowV[st].real();
+				(*rhoOfkmB)(2*m+1,st) = rowV[st].imag();
 			}
 // 			rowV = overallFactor*rhoOfRandmTemp*tempMBB;
 //			rhoOfkmB(m+1,1:kIntMax) = rowV ;
@@ -198,15 +199,16 @@ EMData *EMData::real2FH(float OverSamplekB) // PRB
 
 
 		} // ends m loop
+		
 		update();
 		rhoOfkmB-> update();
 		rhoOfkmB->set_complex(true);
 		if(rhoOfkmB->get_ysize()==1 && rhoOfkmB->get_zsize()==1) {
 			rhoOfkmB->set_complex_x(true);
 		}
-	    	rhoOfkmB->set_ri(true);
-	    	rhoOfkmB->set_FH(true);
-	    	rhoOfkmB->set_fftodd(true);
+    	rhoOfkmB->set_ri(true);
+    	rhoOfkmB->set_FH(true);
+    	rhoOfkmB->set_fftodd(true);
 		return rhoOfkmB;
 	} else {
 		LOGERR("2D real square odd image expected.");

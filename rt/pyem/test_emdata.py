@@ -156,7 +156,22 @@ class TestEMData(unittest.TestCase):
         self.assertEqual(dict1['ny'], dict2['ny'])
         self.assertEqual(dict1['nz'], dict2['nz'])
         self.assertEqual(dict1.keys(), dict2.keys())
-    
+        
+    def test_copy_fft(self):
+        """test copy() on fft ..............................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_zero()
+        e.process_inplace("testimage.noise.uniform.rand")
+        e.do_fft_inplace()
+        e2 = e.copy()
+        
+        self.assertEqual(e.get_attr_dict(), e2.get_attr_dict())
+        for k in range(32):
+            for j in range(32):
+                for i in range(32):
+                    self.assertEqual(e.get_3dview()[i][j][k], e2.get_3dview()[i][j][k])
+                    
     def test_get_clip(self):
         """test get_clip() function ........................."""
         e = EMData()
@@ -235,7 +250,7 @@ class TestEMData(unittest.TestCase):
             e3.get_top_half()
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-
+			
     def test_insert_scaled_sum(self):
         """test insert_scaled_sum() function ................"""
         e = EMData()
@@ -259,7 +274,7 @@ class TestEMData(unittest.TestCase):
             e3.insert_scaled_sum(e4, (0,0,0))
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
+
     def test_window_center(self):
         """test window_center() function ...................."""
         e = EMData()
@@ -400,7 +415,7 @@ class TestEMData(unittest.TestCase):
             e3 = e2.real2FH(1.0)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
+
         e2.set_size(31,21,1)
         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
         try:
@@ -414,7 +429,6 @@ class TestEMData(unittest.TestCase):
             e3 = e2.real2FH(1.0)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
-        
         e2.set_size(31,31,1)
         e2.set_complex(True)
         self.assertRaises( RuntimeError, e2.real2FH, 1.0)
@@ -838,15 +852,102 @@ class TestEMData(unittest.TestCase):
         self.assertAlmostEqual(e6.get_value_at(0,1,1), 10, 2)
         self.assertAlmostEqual(e6.get_value_at(1,1,1), 11, 2)
         self.assertAlmostEqual(e6.get_value_at(2,1,1), 12, 2)
+		
+    def test_ift_inplace(self):
+        """test ift inplace (fft inplace)...................."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_one()
         
+        d = EMData()
+        d.set_size(32,32,32)
+        d.to_one()
+         
+        e.do_fft_inplace()
+        e.do_ift_inplace()
+        
+        self.assertEqual(e.get_xsize(), d.get_xsize())
+        self.assertEqual(e.get_ysize(), d.get_ysize())
+        self.assertEqual(e.get_zsize(), d.get_zsize())
+        
+        for k in range(e.get_xsize()):
+            for j in range(e.get_ysize()):
+                for i in range(e.get_zsize()):
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+                    
+    def test_ift_inplace2(self):
+        """test ift inplace (fft out of place) .............."""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_one()
+        
+        d = EMData()
+        d.set_size(32,32,32)
+        d.to_one()
+         
+        e = e.do_fft()
+        e.do_ift_inplace()
+        
+        self.assertEqual(e.get_xsize(), d.get_xsize())
+        self.assertEqual(e.get_ysize(), d.get_ysize())
+        self.assertEqual(e.get_zsize(), d.get_zsize())
+        
+        for k in range(e.get_xsize()):
+            for j in range(e.get_ysize()):
+                for i in range(e.get_zsize()):
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])  
+    def test_ift(self):
+        """test ift (fft inplace) ..........................."""
+        e = EMData()
+        e.set_size(34,36,32)
+        e.to_one()
+        
+        d = EMData()
+        d.set_size(34,36,32)
+        d.to_one()
+         
+        e.do_fft_inplace()
+        e = e.do_ift()
+        
+        self.assertEqual(e.get_xsize(), d.get_xsize())
+        self.assertEqual(e.get_ysize(), d.get_ysize())
+        self.assertEqual(e.get_zsize(), d.get_zsize())
+        
+        for k in range(e.get_xsize()):
+            for j in range(e.get_ysize()):
+                for i in range(e.get_zsize()):
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+                    
+    def test_ift2(self):
+        """test ift (fft out of place) ......................"""
+        e = EMData()
+        e.set_size(32,32,32)
+        e.to_one()
+        
+        d = EMData()
+        d.set_size(32,32,32)
+        d.to_one()
+         
+        e = e.do_fft()
+        e = e.do_ift()
+        
+        self.assertEqual(e.get_xsize(), d.get_xsize())
+        self.assertEqual(e.get_ysize(), d.get_ysize())
+        self.assertEqual(e.get_zsize(), d.get_zsize())
+        
+        for k in range(e.get_xsize()):
+            for j in range(e.get_ysize()):
+                for i in range(e.get_zsize()):
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k]) 
+
     def test_do_fft_inplace(self):
-        """test do_fft_inplace()/do_ift_inplace ............."""
+        """test do_fft_inplace()/do_ift_inplace other ......."""
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace("testimage.noise.uniform.rand")
         
         #test unpadded real image
-        e2 = e.do_fft_inplace()    
+        e2 = e.do_fft_inplace()
         
         #test padded real image
         e = EMData()
@@ -952,7 +1053,40 @@ class TestEMData(unittest.TestCase):
             str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
+
+    def test_xform_phaseorigin(self):
+		"""test xform.phaseorigin ..........................."""
+		e = EMData()
+		e.set_size(32,32,32)
+		e.process_inplace("testimage.noise.uniform.rand")
+
+		d = e.copy()
+		
+		e.process_inplace("xform.phaseorigin")
+		e.process_inplace("xform.phaseorigin")
+		
+		for k in range(e.get_xsize()):
+			for j in range(e.get_ysize()):
+				for i in range(e.get_zsize()):
+					self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+						
+    def test_xform_fourierorigin(self):
+		"""test xform.fourierorigin ........................."""
+		e = EMData()
+		e.set_size(32,32,32)
+		e.process_inplace("testimage.noise.uniform.rand")
+		e.do_fft_inplace()
+
+		d = e.copy()
+		
+		e.process_inplace("xform.fourierorigin")
+		e.process_inplace("xform.fourierorigin")
+		
+		for k in range(e.get_xsize()):
+			for j in range(e.get_ysize()):
+				for i in range(e.get_zsize()):
+					self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k]) 
+
     def test_ri2ap_ap2ri(self):
         """test ri2ap()/ap2ri() function ...................."""
         e = EMData()

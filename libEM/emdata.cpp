@@ -89,12 +89,10 @@ EMData::EMData()
 	EXITFUNC;
 }
 
-EMData::EMData(const string& filename, int image_index)
+EMData::EMData(const string& filename, int image_index) :
+	rdata(0), supp(0)
 {
 	ENTERFUNC;
-	
-	rdata = 0;
-	supp = 0;
 
 	flags =0;
 	// used to replace cube 'pixel'
@@ -118,6 +116,58 @@ EMData::EMData(const string& filename, int image_index)
 	EMData::totalalloc++;
 	
 	EXITFUNC;
+}
+
+EMData::EMData(const EMData& that) :
+	rdata(0), supp(0)
+{
+	ENTERFUNC;
+	
+	// operator= increments totalalloc
+	set_size(that.nx, that.ny, that.nz);
+
+	memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+	flags = that.flags;
+	all_translation = that.all_translation;
+	path = that.path;
+	pathnum = that.pathnum;
+	attr_dict = that.attr_dict;
+	update();
+	
+	xoff = that.xoff;
+	yoff = that.yoff;
+	zoff = that.zoff;
+
+	changecount = 0;
+
+	EMData::totalalloc++;
+	
+	ENTERFUNC;	
+}
+
+EMData& EMData::operator=(const EMData& that)
+{
+	ENTERFUNC;
+	
+	if ( this != &that )
+	{
+		free_memory();
+		
+		set_size(that.nx, that.ny, that.nz);
+		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+
+		flags = that.flags;
+	
+		all_translation = that.all_translation;
+	
+		path = that.path;
+		pathnum = that.pathnum;
+		attr_dict = that.attr_dict;
+		update();
+	}
+	
+	EXITFUNC;
+	return *this;
 }
 
 EMData::EMData(int nx, int ny, int nz, bool is_real)
@@ -176,15 +226,8 @@ using std::endl;
 EMData::~EMData()
 {
 	ENTERFUNC;
-	if (rdata) {
-		free(rdata);
-		rdata = 0;
-	}
-
-	if (supp) {
-		free(supp);
-		supp = 0;
-	}
+	
+	free_memory();
 
 	EMData::totalalloc--;
 #ifdef MEMDEBUG

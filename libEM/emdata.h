@@ -120,6 +120,18 @@ namespace EMAN
 		 * @param is_real boolean to specify real(true) or complex(false) image, default real */
 		EMData(int nx, int ny, int nz=1, bool is_real=true);
 		
+		/** Construct from an EMData (copy constructor).
+		 * Performs a deep copy 
+		 * @param that the EMData to copy 
+		*/
+		EMData( const EMData& that);
+		
+		/** EMData assignment operator
+		 * Performs a deep copy 
+		 * @param that the EMData to copy 
+		*/
+		EMData& operator=( const EMData& that);
+		
 		/**  Do the Fourier Harmonic Transform  PRB
 		 * Takes a real image, returns the FH
 		 * Sets the EMDATA_FH switch to indicate that it is an FH image
