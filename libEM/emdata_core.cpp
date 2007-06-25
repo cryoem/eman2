@@ -58,6 +58,7 @@ EMData * EMData::copy() const
 	ret->attr_dict = attr_dict;
 	ret->update();
 
+	EMData::totalalloc++;
 	EXITFUNC;
 	return ret;
 }
