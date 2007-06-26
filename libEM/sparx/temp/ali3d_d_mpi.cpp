@@ -268,7 +268,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 	    proj_params["theta"] = anglelist[1];
 	    proj_params["psi"] = anglelist[2];
 	    ref_proj_ptr->set_attr_dict(proj_params);
-	    ref_proj_ptr->process_inplace("eman1.normalize.mask", make_ref_proj_dict);
+	    ref_proj_ptr->process_inplace("normalize.mask", make_ref_proj_dict);
 
 	    cimage_ptr = Util::Polar2Dm(ref_proj_ptr, cnx, cny, numr, mode);
 	    Util::Frngs(cimage_ptr, numr);
