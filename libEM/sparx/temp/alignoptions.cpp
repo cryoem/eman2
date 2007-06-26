@@ -17,7 +17,7 @@ AlignOptions::AlignOptions()
     have_angles = false;
     ref_angle_type = "P";
     use_sirt = true;
-    sirt_tol = 1.0e-3;
+    sirt_tol = 1.0e-1;
     sirt_lam = 1.0e-4;
     sirt_maxit = 100;
     maxit      = 1;
@@ -43,7 +43,7 @@ AlignOptions::AlignOptions(Vec3i& volsize)
     have_angles = false;
     ref_angle_type = "P";
     use_sirt = true;
-    sirt_tol = 1.0e-3;
+    sirt_tol = 1.0e-1;
     sirt_lam = 1.0e-4;
     sirt_maxit = 100;
     maxit      = 1;
