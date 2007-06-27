@@ -58,7 +58,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
     int max_iter       = options.get_maxit();
 
     Dict maskdict;
-    maskdict["radius"] = ri;
+    maskdict["radius"] = last_ring;
     maskdict["fill"]   = 1;
     
     EMData * mask3D = options.get_mask3D();
@@ -637,22 +637,22 @@ std::vector<int> Numrinit(int first_ring, int last_ring, int skip, std::string m
 	int lcirc = 1;
 	int jp, ip, exponent, m;
 	for ( int k = first_ring ; k < last_ring + 1 ; k += skip ) {
-		numr.push_back(k);
-		jp = int(dpi * k + 0.5);
-                exponent = -1;
-                m = 1;
-                while (m <= jp){
-		    m <<= 1;
-                  ++exponent;
-                }
-                // exponent is the largest int such that 2**exponent <= jp                                                                                                           
-                ip = 2 << exponent;
-		if ( (k + skip <= last_ring && jp > ip + ip / 2) || (k + skip > last_ring && jp > ip + ip / 5)) {
-			ip = MAXFFT < 2*ip ? MAXFFT : 2*ip;
-		}
-		numr.push_back(lcirc);
-		numr.push_back(ip);
-		lcirc += ip;
+	    numr.push_back(k);
+	    jp = int(dpi * k + 0.5);
+	    exponent = -1;
+	    m = 1;
+	    while (m <= jp){
+		m <<= 1;
+		++exponent;
+	    }
+	    // exponent is the largest int such that 2**exponent <= jp                                                                                                           
+	    ip = 2 << exponent;
+	    if ( (k + skip <= last_ring && jp > ip + ip / 2) || (k + skip > last_ring && jp > ip + ip / 5)) {
+		ip = MAXFFT < 2*ip ? MAXFFT : 2*ip;
+	    }
+	    numr.push_back(lcirc);
+	    numr.push_back(ip);
+	    lcirc += ip;
 	}	
 	return numr;
 }
