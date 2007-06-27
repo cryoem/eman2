@@ -635,14 +635,18 @@ std::vector<int> Numrinit(int first_ring, int last_ring, int skip, std::string m
 
 	std::vector<int> numr;
 	int lcirc = 1;
-	int jp, ip, exponent;
+	int jp, ip, exponent, m;
 	for ( int k = first_ring ; k < last_ring + 1 ; k += skip ) {
 		numr.push_back(k);
 		jp = int(dpi * k + 0.5);
-		exponent = 0;
-		while ((1 << exponent++) <= jp); 
-		// exponent is the smallest int such that 2**exponent > jp
-		ip = 1 << exponent;
+                exponent = -1;
+                m = 1;
+                while (m <= jp){
+		    m <<= 1;
+                  ++exponent;
+                }
+                // exponent is the largest int such that 2**exponent <= jp                                                                                                           
+                ip = 2 << exponent;
 		if ( (k + skip <= last_ring && jp > ip + ip / 2) || (k + skip > last_ring && jp > ip + ip / 5)) {
 			ip = MAXFFT < 2*ip ? MAXFFT : 2*ip;
 		}
