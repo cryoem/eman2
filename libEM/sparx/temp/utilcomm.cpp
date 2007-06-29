@@ -232,7 +232,7 @@ int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, 
     std::ifstream option_stream;
     std::string current_option;
     char option_buffer[100];
-    int int_option;
+    int int_option, parserr = 0;
     float float_option;
 
     float * mask_data;
@@ -318,6 +318,17 @@ int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, 
 		options.set_symmetry(current_option);
 		std::cout << "symmetry = " << current_option << std::endl;
 	    }
+	    else if ( current_option == "use_sirt" ) {
+		option_stream >> current_option;
+		if ( current_option == "true" ) {
+		    options.set_use_sirt(true);
+		    std::cout << "use_sirt = true" << std::endl;
+		} 
+		else { // anything else sets it to false
+		    options.set_use_sirt(false);
+		    std::cout << "use_sirt = false" << std::endl;
+		}
+            }
 	    else if ( current_option == "sirt_tol" ) {
 		option_stream >> float_option;
 		options.set_sirt_tol(float_option);
@@ -340,9 +351,30 @@ int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, 
 	    }
 	    else { // catch-all
 		std::cerr << "Unsupported option " << current_option << "..." << std::endl;
+                parserr = 1;
 	    }
 	}
 	option_stream.close();
+        if (parserr) { 
+	  printf("The supported options are:\n");
+          printf("    maskfile \n");
+          printf("    inner_ring\n");
+          printf("    outer_ring\n");
+          printf("    rstep\n");
+          printf("    radius\n");
+          printf("    x_range\n");
+          printf("    y_range\n");
+          printf("    translation_step\n");
+          printf("    CTF\n");
+          printf("    snr\n");
+          printf("    ref_a\n");
+          printf("    S\n");
+          printf("    symmetry\n");
+          printf("    sirt_tol\n");
+          printf("    sirt_lam\n");
+          printf("    sirt_maxit\n");
+          printf("     maxit\n");
+        }
     }
     // Then broadcast all the data that was read
     ierr = MPI_Bcast(&mask3D, 1, MPI_INT, 0, comm); // if it's not NULL, need to allocate and bcast its data
