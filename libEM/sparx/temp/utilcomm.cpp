@@ -439,6 +439,10 @@ int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, 
     ierr = MPI_Bcast(option_buffer, current_option.size(), MPI_CHAR, 0, comm);
     options.set_symmetry(option_buffer);
 
+    int_option = options.get_use_sirt();
+    ierr = MPI_Bcast(&int_option, 1, MPI_INT, 0, comm);
+    options.set_use_sirt(int_option);
+
     float_option = options.get_sirt_tol();
     ierr = MPI_Bcast(&float_option, 1, MPI_FLOAT, 0, comm);
     options.set_sirt_tol(float_option);
