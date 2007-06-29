@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     
     // read and distribute a stack of experimental images
     t0 = MPI_Wtime();
-    nloc = ReadStackandDist(comm, &expimages, stackfname);
+    nloc = ReadStackandDist(comm, &expimages, stackfname, &nloc);
     if (mypid == 0) {
        printf("Finished reading and distributing image stack\n");
        printf("I/O time for reading image stack = %11.3e\n",
