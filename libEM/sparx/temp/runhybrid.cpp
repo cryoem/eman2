@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     
 
     // these hard-coded numbers need to be removed eventually
-    int max_refine_cycle = 2;
+    int max_refine_cycle = 0;
     int max_iter_unified = 10;
 
     char out_fname[128];
@@ -119,6 +119,10 @@ int main(int argc, char *argv[])
     }
     options.set_have_angles(false);
 
+    // the below is a bit of a kluge; maxit in the options file indicates total number of refinement cycles, 
+    // options.maxit is number of projection matching steps within each refinement cycle
+    max_refine_cycle = options.get_maxit();
+    options.set_maxit(1);
 
     try {
 	for ( int iter = 0; iter < max_refine_cycle ; ++iter ) {
@@ -127,7 +131,7 @@ int main(int argc, char *argv[])
 
 	    ali3d_d(comm, volume, expimages, cleanimages, angleshift, nloc, options, out_fname);
 
-	    unified(comm, volume, expimages, angleshift, nloc, 
+	    unified(comm, volume, cleanimages, angleshift, nloc, 
                     max_iter_unified, out_fname);
 	    options.set_have_angles(true);
 	}
