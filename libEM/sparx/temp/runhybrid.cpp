@@ -60,19 +60,33 @@ int main(int argc, char *argv[])
     t0 = MPI_Wtime();
     EMData *volume = new EMData();
     ierr = ReadVandBcast(comm, volume, volfname);
-    if (mypid == 0) {
-       printf("Finished reading and replicating volume\n");
-       printf("I/O time for reading volume = %11.3e\n",
-              MPI_Wtime() - t0);
+    if (ierr == 0) {
+	if (mypid == 0) {
+	   printf("Finished reading and replicating volume\n");
+	   printf("I/O time for reading volume = %11.3e\n",
+		  MPI_Wtime() - t0);
+	}
     }
-    
+    else {
+       if (mypid == 0) printf("Failed to read the model volume %s! exit...\n", volfname);
+       ierr = MPI_Finalize();
+       exit(1);
+    }
+
     // read and distribute a stack of experimental images
     t0 = MPI_Wtime();
-    nloc = ReadStackandDist(comm, &expimages, stackfname);
-    if (mypid == 0) {
-       printf("Finished reading and distributing image stack\n");
-       printf("I/O time for reading image stack = %11.3e\n",
-              MPI_Wtime() - t0);
+    ierr = ReadStackandDist(comm, &expimages, stackfname, &nloc);
+    if (ierr == 0) {
+	if (mypid == 0) {
+	   printf("Finished reading and distributing image stack\n");
+	   printf("I/O time for reading image stack = %11.3e\n",
+		  MPI_Wtime() - t0);
+	}
+    }
+    else {
+       if (mypid == 0) printf("Failed to read the image stack %s! exit...\n",stackfname);
+       ierr = MPI_Finalize();
+       exit(1);
     }
 
     Vec3i volsize;
