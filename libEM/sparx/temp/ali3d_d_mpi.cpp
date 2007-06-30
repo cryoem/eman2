@@ -15,8 +15,9 @@
 
 using namespace EMAN;
 
-int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleandata,
-             float *angleshift, int nloc, AlignOptions& options, char* fname_base)
+int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, 
+             EMData** cleandata, float *angleshift, int nloc, 
+             AlignOptions& options, char* fname_base)
 {
     int mypid, ncpus;
     int ierr;
@@ -237,10 +238,15 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
     float ring_width = 1.0;
     float phi, theta, psi;
     int filter_cutoff_index;
-    float filter_coeff_high = 0.9; // these are settings to compare with the fourier shell correlation calculation
+
+    // these are settings to compare with the fourier shell correlation 
+    float filter_coeff_high = 0.9; 
     float filter_freq_low = 0.25;
-    float filter_high_default = 0.49;
-    float filter_low, filter_high; // these get passed to the filter
+    float hcut_default = 0.49;
+
+    // these get passed to the filter
+    float lcut, hcut; 
+
     Dict btwl_dict;
 
     std::vector<float> ph_cog;
@@ -412,9 +418,11 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 	// leaving proj_ali_incore
 
 	// build two reconstructions
-	if (mypid == 0) printf("   Building even/odd volumes for FSC calculation...\n");
+	if (mypid == 0) 
+           printf("   Building even/odd volumes for FSC calculation...\n");
 	if ( use_sirt ) {
-// The evens
+
+            // construct a volume using even numbered images
 	    vol1 = new EMData();
 	    // lam should be based on number of images, right?
 	    for ( int j = 0 ; j < nloc ; j += 2 ) {
@@ -425,8 +433,11 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		even_odd_angleshift[5*(j/2) + 3] = angleshift[5*j + 3];
 		even_odd_angleshift[5*(j/2) + 4] = angleshift[5*j + 4];
 	    }
-	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol1, (nloc+1)/2, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
-// The odds
+	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, 
+                              vol1, (nloc+1)/2, ri, sirt_lam, sirt_maxit, 
+                              symmetry, sirt_tol);
+
+            // construct a volume using odd numbered images
 	    vol2 = new EMData();
 	    for ( int j = 1 ; j < nloc ; j += 2 ) {
 		sirt_images[j/2] = cleandata[j];
@@ -436,9 +447,11 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		even_odd_angleshift[5*(j/2) + 3] = angleshift[5*j + 3];
 		even_odd_angleshift[5*(j/2) + 4] = angleshift[5*j + 4];
 	    }
-	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, vol2, nloc/2, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
+	    recons3d_sirt_mpi(comm, sirt_images, even_odd_angleshift, 
+            vol2, nloc/2, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
 	} else {
-// The evens
+
+            // construct a volume using even numbered images
 	    fftvol = new EMData();
 	    weight = new EMData();
 	    recons_params["fftvol"] = fftvol;
@@ -449,24 +462,33 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		phi   = projdata[j]->get_attr("phi");
 		theta = projdata[j]->get_attr("theta");
 		psi   = projdata[j]->get_attr("psi");
-		r->insert_slice(cleandata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+		r->insert_slice(cleandata[j],
+                                Transform3D(EULER_SPIDER,phi,theta,psi));
 	    }
-	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
-	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
+	    fftvol_size = fftvol->get_xsize() 
+                        * fftvol->get_ysize() * fftvol->get_zsize();
+	    weight_size = weight->get_xsize() 
+                        * weight->get_ysize() * weight->get_zsize();
+
 	    fftvol_send = fftvol->get_data();
 	    weight_send = weight->get_data();
 	    fftvol_recv = new float[fftvol_size];
 	    weight_recv = new float[weight_size];
-	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
-	    MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	    for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
-	    for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
+	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, 
+                          MPI_FLOAT, MPI_SUM, comm);
+	    MPI_Allreduce(weight_send, weight_recv, weight_size, 
+                          MPI_FLOAT, MPI_SUM, comm);
+	    for ( int j = 0 ; j < fftvol_size ; j += 1 ) 
+                fftvol_send[j] = fftvol_recv[j];
+	    for ( int j = 0 ; j < weight_size ; j += 1 ) 
+                weight_send[j] = weight_recv[j];
 	    EMDeleteArray(fftvol_recv);
 	    EMDeleteArray(weight_recv);
 	    vol1 = r->finish();
 	    EMDeletePtr(fftvol);
 	    EMDeletePtr(weight);
-// The odds
+
+            // construct a volume using odd numbered images
 	    fftvol = new EMData();
 	    weight = new EMData();
 	    recons_params["fftvol"] = fftvol;
@@ -477,18 +499,29 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		phi   = projdata[j]->get_attr("phi");
 		theta = projdata[j]->get_attr("theta");
 		psi   = projdata[j]->get_attr("psi");
-		r->insert_slice(cleandata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+		r->insert_slice(cleandata[j], 
+                                Transform3D(EULER_SPIDER,phi,theta,psi));
 	    }
-	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
-	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
+
+	    fftvol_size = fftvol->get_xsize() 
+                        * fftvol->get_ysize() * fftvol->get_zsize();
+	    weight_size = weight->get_xsize() 
+                        * weight->get_ysize() * weight->get_zsize();
+
 	    fftvol_send = fftvol->get_data();
 	    weight_send = weight->get_data();
 	    fftvol_recv = new float[fftvol_size];
 	    weight_recv = new float[weight_size];
-	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
-	    MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
-	    for ( int j = 0 ; j < fftvol_size ; j += 1 ) *(fftvol_send + j) = fftvol_recv[j];
-	    for ( int j = 0 ; j < weight_size ; j += 1 ) *(weight_send + j) = weight_recv[j];
+	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, 
+                          MPI_FLOAT, MPI_SUM, comm);
+	    MPI_Allreduce(weight_send, weight_recv, weight_size, 
+                          MPI_FLOAT, MPI_SUM, comm);
+
+	    for ( int j = 0 ; j < fftvol_size ; j += 1 ) 
+               fftvol_send[j] = fftvol_recv[j];
+	    for ( int j = 0 ; j < weight_size ; j += 1 ) 
+               weight_send[j] = weight_recv[j];
+
 	    EMDeleteArray(fftvol_recv);
 	    EMDeleteArray(weight_recv);
 	    vol2 = r->finish();
@@ -496,7 +529,9 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 	    EMDeletePtr(weight);
 	}
 
-	// calculate and subtract the mean from vol1 and vol2, and apply the 3D mask
+	// calculate and subtract the mean from vol1 and vol2, 
+        // and apply the 3D mask
+        //
 	stats = Util::infomask(vol1, mask3D, false);
 	*vol1 -= stats[0]; // stats[0] = mean
 	Util::mul_img(vol1, mask3D);
@@ -511,20 +546,27 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 	if (mypid == 0) {
 	    fsc_out.open(out_fname);
 	    for ( int j = 0 ; j < fsc_size ; ++j ) {
-		// Note the indexing of fsc: the frequencies are in the first fsc_size entries, then the correlation coeffs after that
-		fsc_out << std::scientific << fsc_result[j] << '\t'  << fsc_result[j + fsc_size] << '\t'  << fsc_result[j + 2 * fsc_size] << std::endl;
+		// Note the indexing of fsc: the frequencies are in the 
+                // first fsc_size entries, then the correlation coeffs 
+                // after that
+		fsc_out << std::scientific 
+                        << fsc_result[j] << '\t'
+                        << fsc_result[j + fsc_size] << '\t'
+                        << fsc_result[j + 2 * fsc_size] 
+                        << std::endl;
 	    }
 	    fsc_out.close();
 	}
 	EMDeletePtr(vol1);
 	EMDeletePtr(vol2);
 
-	// and reconstruct the volume
-	if (mypid == 0) std::cout << "Building 3-D reconstruction ... " << std::endl;
+	// and reconstruct the volume from all images
+	if (mypid == 0) 
+           std::cout << "Building 3-D reconstruction ... " << std::endl;
 	if ( use_sirt ) {
 	    volume = new EMData();
-	    recons3d_sirt_mpi(comm, cleandata, angleshift, volume, nloc, ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
-
+	    recons3d_sirt_mpi(comm, cleandata, angleshift, volume, nloc, 
+                              ri, sirt_lam, sirt_maxit, symmetry, sirt_tol);
 	} else {
 	    fftvol = new EMData();
 	    weight = new EMData();
@@ -536,38 +578,46 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 		phi   = projdata[j]->get_attr("phi");
 		theta = projdata[j]->get_attr("theta");
 		psi   = projdata[j]->get_attr("psi");
-		r->insert_slice(cleandata[j], Transform3D(EULER_SPIDER,phi,theta,psi));
+		r->insert_slice(cleandata[j], 
+                                Transform3D(EULER_SPIDER,phi,theta,psi));
 	    }
-	    fftvol_size = fftvol->get_xsize() * fftvol->get_ysize() * fftvol->get_zsize();
-	    weight_size = weight->get_xsize() * weight->get_ysize() * weight->get_zsize();
+
+	    fftvol_size = fftvol->get_xsize() 
+                        * fftvol->get_ysize() * fftvol->get_zsize();
+	    weight_size = weight->get_xsize()
+                        * weight->get_ysize() * weight->get_zsize();
 
 	    fftvol_send = fftvol->get_data();
 	    weight_send = weight->get_data();
 
-
 	    fftvol_recv = new float[fftvol_size];
 	    weight_recv = new float[weight_size];
 
+	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, 
+                          MPI_FLOAT, MPI_SUM, comm);
+	    MPI_Allreduce(weight_send, weight_recv, weight_size, 
+                          MPI_FLOAT, MPI_SUM, comm);
 
-	    MPI_Allreduce(fftvol_send, fftvol_recv, fftvol_size, MPI_FLOAT, MPI_SUM, comm);
-	    MPI_Allreduce(weight_send, weight_recv, weight_size, MPI_FLOAT, MPI_SUM, comm);
 	    for ( int j = 0 ; j < fftvol_size ; ++j ) {
-		*(fftvol_send + j) = fftvol_recv[j];
+		fftvol_send[j] = fftvol_recv[j];
 	    }
 	    for ( int j = 0 ; j < weight_size ; ++j ) {
-		*(weight_send + j) = weight_recv[j];
+		weight_send[j] = weight_recv[j];
 	    }
+
 	    EMDeleteArray(fftvol_recv);
 	    EMDeleteArray(weight_recv);
-	    EMDeletePtr(volume); // r->finish() returns EMData *, must free the old one
+	    EMDeletePtr(volume); 
+
+            // r->finish() returns EMData *, must free the old one
 	    volume = r->finish();
 	    EMDeletePtr(fftvol);
 	    EMDeletePtr(weight);
 	}
+
 	sprintf(out_fname, "vol_%s_pm%d.spi", fname_base, i);
 	if (mypid == 0) volume->write_image(out_fname, 0, WRITE_SPI);
 	// End of reconstruction
-
 
 	// and filter it based on fourier shell correlation
 	filter_cutoff_index = 0;
@@ -576,11 +626,15 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata, EMData** cleanda
 	       && fsc_result[filter_cutoff_index] < filter_freq_low) {
 	    ++filter_cutoff_index;
 	}
-	filter_low  = fsc_result[filter_cutoff_index * 3];
-	filter_high = (filter_low + 0.1 < filter_high_default ? filter_low + 0.1 : filter_high_default); // min(f_l + 0.1, f_h_default)
-	btwl_dict["low_cutoff_frequency"]  = filter_low;
-	btwl_dict["high_cutoff_frequency"] = filter_high;
+
+	lcut  = fsc_result[filter_cutoff_index * 3];
+        // hcut = min(f_l + 0.1, f_h_default)
+	hcut = (lcut + 0.1 < hcut_default ? lcut + 0.1 : hcut_default); 
+
+	btwl_dict["low_cutoff_frequency"]  = lcut;
+	btwl_dict["high_cutoff_frequency"] = hcut;
 	volume->process_inplace("filter.lowpass.butterworth", btwl_dict);
+
 	// calculate the center of gravity
 	ph_cog = volume->phase_cog();
 	cog_dict["x_shift"] = -ph_cog[0];
