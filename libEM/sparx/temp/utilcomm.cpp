@@ -22,6 +22,7 @@ int ReadVandBcast(MPI_Comm comm, EMData *volume, char *volfname)
             printf("failed to open %s\n", volfname);
         }
         else {
+            fclose(fp);
 	    volume->read_image(volfname);
 	    ndim = volume->get_ndim();
 	    nx   = volume->get_xsize();
@@ -63,6 +64,7 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname, int *n
             printf("failed to open %s\n", stackfname);
         }
         else {
+            fclose(fp);
             nima = my_util->get_image_count(stackfname);
         }
     }
@@ -222,7 +224,8 @@ int setpart(MPI_Comm comm, int nang, int *psize, int *nbase)
    return nangloc;
 }
 
-int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, int nvoxels, EMData*& mask3D)
+int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname,
+                      int nvoxels, EMData*& mask3D)
 {
    int ncpus, mypid, ierr;
 
@@ -377,7 +380,8 @@ int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, 
         }
     }
     // Then broadcast all the data that was read
-    ierr = MPI_Bcast(&mask3D, 1, MPI_INT, 0, comm); // if it's not NULL, need to allocate and bcast its data
+    ierr = MPI_Bcast(&mask3D, 1, MPI_INT, 0, comm); 
+    // if it's not NULL, need to allocate and bcast its data
     // NOTE: this is sending over the master's address for mask3D ONLY as a test to see if it's NULL or not.
     // DO NOT USE THIS POINTER ON ANY OTHER NODES EXCEPT FOR THIS TEST!
     if ( mask3D != NULL ) {
