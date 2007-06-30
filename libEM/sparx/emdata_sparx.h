@@ -501,7 +501,7 @@ vector<float> peak_search(int ml, float invert);
  */
 vector<float> phase_cog();
 
-float find_3d_threshold(float mass,float pixel_size);
+float find_3d_threshold(float mass, float pixel_size);
 
   
  /* Peak (with a radius of hf_p) search for particle picking:

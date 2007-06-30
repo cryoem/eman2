@@ -3306,37 +3306,37 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 	/* Exception Handle */
 	if ((x_step-1 > nx/2 || y_step-1 > ny/2 || z_step-1 > nz/2) || (x_step-1)<0 || (y_step-1)<0 || (z_step-1)<0)
 	{
-		LOGERR("The Parameters for decimation cannot exceed the center of the image.");
-		throw ImageDimensionException("The Parameters for decimation cannot exceed the center of the image.");	 
+		LOGERR("Parameters for decimation cannot exceed the center of the image.");
+		throw ImageDimensionException("Parameters for decimation cannot exceed the center of the image.");	 
 	}
 	/* ============================== */
 	
 	
 	/*    Calculation of the start point */
-	int new_st_x=(nx/2)%x_step,new_st_y=(ny/2)%y_step,new_st_z=(nz/2)%z_step;
+	int new_st_x=(nx/2)%x_step, new_st_y=(ny/2)%y_step, new_st_z=(nz/2)%z_step;
 	/* ============================*/
 	
 	
 	/* Calculation of the size of the decimated image */
-	int rx=2*(nx/(2*x_step)),ry=2*(ny/(2*y_step)),rz=2*(nz/(2*z_step));
-	int r1=int(ceil((nx-(x_step*rx))/(1.f*x_step))),r2=int(ceil((ny-(y_step*ry))/(1.f*y_step)));
+	int rx=2*(nx/(2*x_step)), ry=2*(ny/(2*y_step)), rz=2*(nz/(2*z_step));
+	int r1=int(ceil((nx-(x_step*rx))/(1.f*x_step))), r2=int(ceil((ny-(y_step*ry))/(1.f*y_step)));
 	int r3=int(ceil((nz-(z_step*rz))/(1.f*z_step)));
 	if(r1>1){r1=1;}
 	if(r2>1){r2=1;}
 	if(r3>1){r3=1;}
-	int new_nx=rx+r1,new_ny=ry+r2,new_nz=rz+r3;
+	int new_nx=rx+r1, new_ny=ry+r2, new_nz=rz+r3;
 	/* ===========================================*/
 	
 	
 	EMData* img2 = new EMData();
 	img2->set_size(new_nx,new_ny,new_nz);
-	float *new_ptr=img2->get_data();
-	float *old_ptr=img->get_data();
-	int iptr,jptr,kptr=0;
-	for (int k=new_st_z;k<nz;k+=z_step){jptr=0;
-		for (int j=new_st_y;j<ny;j+=y_step){iptr=0;
-			for (int i=new_st_x;i<nx;i+=x_step){				
-				new_ptr(iptr,jptr,kptr)=old_ptr(i,j,k);
+	float *new_ptr = img2->get_data();
+	float *old_ptr = img->get_data();
+	int iptr, jptr, kptr = 0;
+	for (int k=new_st_z; k<nz; k+=z_step) {jptr=0;
+		for (int j=new_st_y; j<ny; j+=y_step) {iptr=0;
+			for (int i=new_st_x; i<nx; i+=x_step) {				
+				new_ptr(iptr,jptr,kptr) = old_ptr(i,j,k);
 			iptr++;}
 		jptr++;}
 	kptr++;}
@@ -3346,7 +3346,7 @@ EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 #undef old_ptr
 #undef new_ptr
 
-#define inp(i,j,k) inp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*ny))*nx]
+#define inp(i,j,k)  inp[(i+new_st_x)+((j+new_st_y)+((k+new_st_z)*ny))*nx]
 #define outp(i,j,k) outp[i+(j+(k*new_ny))*new_nx]
 EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset, int y_offset, int z_offset)
 {
@@ -3357,40 +3357,40 @@ EMData* Util::window(EMData* img,int new_nx,int new_ny, int new_nz, int x_offset
 	/* ============================== */
 	
 	// Get the size of the input image
-	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int nx=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
 	/* ============================== */
 	
 	/* Exception Handle */
 	if(new_nx>nx || new_ny>ny || new_nz>nz)
 		throw ImageDimensionException("The size of the windowed image cannot exceed the input image size.");
 	if((nx/2)-(new_nx/2)+x_offset<0 || (ny/2)-(new_ny/2)+y_offset<0 || (nz/2)-(new_nz/2)+z_offset<0)
-		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
+		throw ImageDimensionException("The offset inconsistent with the input image size.");
 	if(x_offset>((nx-(nx/2))-(new_nx-(new_nx/2))) || y_offset>((ny-(ny/2))-(new_ny-(new_ny/2))) || z_offset>((nz-(nz/2))-(new_nz-(new_nz/2))))
-		throw ImageDimensionException("The offset imconsistent with the input image size. Solution: Change the offset parameters");
+		throw ImageDimensionException("The offset inconsistent with the input image size.");
 	/* ============================== */
 	
 	EMData* wind= new EMData();
-	wind->set_size(new_nx,new_ny,new_nz);
+	wind->set_size(new_nx, new_ny, new_nz);
 	float *outp=wind->get_data();
 	float *inp=img->get_data();
 
 	
 	/*    Calculation of the start point */
-	int new_st_x=int((nx/2-new_nx/2) + x_offset),
-	    new_st_y=int((ny/2-new_ny/2) + y_offset),  
-	    new_st_z=int((nz/2-new_nz/2) + z_offset);
+	int  new_st_x = nx/2-new_nx/2 + x_offset,
+	    new_st_y = ny/2-new_ny/2 + y_offset,  
+	    new_st_z = nz/2-new_nz/2 + z_offset;
 	/* ============================== */
 	    
 	/* Exception Handle */
 	if (new_st_x<0 || new_st_y<0 || new_st_z<0)   //  WHAT HAPPENS WITH THE END POINT CHECK??  PAP
-		throw ImageDimensionException("The offset inconsistent with the input image size. Solution: Change the offset parameters");
+		throw ImageDimensionException("The offset inconsistent with the input image size.");
 	/* ============================== */
 	
 	
-	for (int k=0;k<new_nz;k++)
-	    for(int j=0;j<new_ny;j++)
-	        for(int i=0;i<new_nx;i++)
-		     outp(i,j,k)=inp(i,j,k);		    
+	for (int k=0; k<new_nz; k++)
+		for(int j=0; j<new_ny; j++)
+			for(int i=0; i<new_nx; i++)
+				outp(i,j,k) = inp(i,j,k);		    
 	wind->update();
 	return wind;
 }
@@ -15685,101 +15685,135 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 }
 #define img_ptr(i,j,k) img_ptr[(i+(j+(k*ny))*nx)]
 #define img2_ptr(i,j,k) img2_ptr[(i+(j+(k*ny))*nx)]
-EMData* Util::move_points(EMData* img, float qprob, int ro, int ri)
+EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 {
 	ENTERFUNC;
 	/* Exception Handle */
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	/* ==============   output = img + scalar*img1   ================ */
-	
+
+	int newx, newy, newz;
+	bool  keep_going;
+	cout << " entered   " <<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
-	int size = nx*ny*nz;
+	//int size = nx*ny*nz;
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);
+	img2->to_zero();
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	int r2 = ro*ro;
 	int r3 = r2*ro;
 	int ri2 = ri*ri;
 	int ri3 = ri2*ri;
-/*	
+
 	int n2 = nx/2;
-	for (int k=-n2; k<=n2; k++) {
+
+	for (int k=-n2; k<=n2; k++) {		//cout << " k   "<<k <<endl;
 		float z2 = k*k;
-		for (int j=-n2; j<=n2; k++) {
+		for (int j=-n2; j<=n2; j++) {
 			float y2 = z2 + j*j;
-			if(y2 < r2) {
+			if(y2 <= r2) {
+											//cout << "  j  "<<j <<endl;
+
 				for (int i=-n2; i<=n2; i++) {
-					float x2 = y2 + i*i
-					if(x2 < r3) {
+					float x2 = y2 + i*i;
+					if(x2 <= r3) {
+											//cout << "  i  "<<i <<endl;
 						int ib = i+n2; int jb = j+n2; int kb = k+n2;
 						if(x2 >= ri3) {
 							//  this is the outer shell, here points can only vanish
-							if(img_ptr(ib,jb,kb) == 1.0) {
-								if(Util::get_frand(0.0,1.0) > qtp){
-									img2_ptr(ib,jb,kb) = 0.0;
-									bool keep_going = True;
+							if(img_ptr(ib,jb,kb) == 1.0f) {
+								//cout << "  1  "<<ib <<endl;
+								if(Util::get_frand(0.0f, 1.0f) > qprob){
+									img2_ptr(ib,jb,kb) = 0.0f;
+									keep_going = true;
+								//cout << "  try  "<<ib <<endl;
 									while(keep_going) {
-										int newx = Util::get_irand(-ro,ro);
-										int newy = Util::get_irand(-ro,ro);
-										int newz = Util::get_irand(-ro,ro);
-										if(newx*newx+newy*newy+newz*newz < r3) {
-											newx += n2
-											newy += n2
-											newz += n2
-											if( img_ptr(new,newy,newz) == 0.0) {
-												img2_ptr(new,newy,newz) = 1.0;
-												keep_going = False;
-						else:
-							# this is inner shell, the point can only move (or vanish, if all neighbors exist)
-							if(b[ib,jb,kb] == 1.0):
-								if(uniform(0.0,1.0) > qtp):
-									#  find out the number of neighbors
-									numn = -1  # we already know the central one is 1
-									for newx in xrange(-1,1):
-										for newy in xrange(-1,1):
-											for newz in xrange(-1,1):
-												numn += b[ib+newx,jb+newy,kb+newz]
-									b[ib,jb,kb] = 0.0
-									if(numn == 26):
-										#  all neighbors exist, it has to vanish
-										keep_going = True
-										while(keep_going):
-											newx = randint(-ro,ro)
-											newy = randint(-ro,ro)
-											newz = randint(-ro,ro)
+										newx = Util::get_irand(-ro,ro);
+										newy = Util::get_irand(-ro,ro);
+										newz = Util::get_irand(-ro,ro);
+										if(newx*newx+newy*newy+newz*newz <= r3) {
+											newx += n2; newy += n2; newz += n2;
+											if( img_ptr(newx,newy,newz) == 0.0f) {
+												img2_ptr(newx,newy,newz) = 1.0f;
+												keep_going = false; }
+										}
+									}
+								}   else  img2_ptr(ib,jb,kb) = 1.0f;
+							}
+						}  else  {
+							// this is inner shell, the point can only move (or vanish, if all neighbors exist)
+							if(img_ptr(ib,jb,kb) == 1.0) {
+								if(Util::get_frand(0.0,1.0) > qprob) {
+									//  find out the number of neighbors
+									float  numn = -1.0f;  // we already know the central one is 1
+									for (newz = -1; newz <= 1; newz++) 
+										for (newy = -1; newy <= 1; newy++) 
+											for (newx = -1; newx <= 1; newx++) 
+												numn += img_ptr(ib+newx,jb+newy,kb+newz);
+									img2_ptr(ib,jb,kb) = 0.0;
+									if(numn == 26.0f) {
+										//  all neighbors exist, it has to vanish
+										keep_going = true;
+										while(keep_going) {
+											newx = Util::get_irand(-ro,ro);
+											newy = Util::get_irand(-ro,ro);
+											newz = Util::get_irand(-ro,ro);
 											if(newx*newx+newy*newy+newz*newz < r3) {
-												newx += n2;
-												newy += n2;
-												newz += n2;
-												if( img_ptr(newx,newy,newz) == 0.0) {
-													b[newx,newy,newz] = 1.0
-													keep_going = False
-									elif(numn == 25):
-										# there is only one empty neighbor, move there
-										for newx in xrange(-1,1):
-											for newy in xrange(-1,1):
-												for newz in xrange(-1,1):
-													if( newx != 0 and newy != 0 and newz != 0):
-														if(b[ib+newx,jb+newy,kb+newz] == 0.0):
-															b[ib+newx,jb+newy,kb+newz] = 1.0
-									else:
-										#  more than one neighbor is zero, select randomly one and move there
-										keep_going = True
-										while(keep_going):
-											newx = randint(-1,1)
-											newy = randint(-1,1)
-											newz = randint(-1,1)
-											if( newx != 0 and newy != 0 and newz != 0):
-												if(b[ib+newx,jb+newy,kb+newz] == 0.0):
-													b[ib+newx,jb+newy,kb+newz] = 1.0
-													keep_going = False
-*/
-	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + Util::get_irand(1,7);
+												newx += n2; newy += n2; newz += n2;
+												if( img_ptr(newx,newy,newz) == 0.0f) {
+													if(newx*newx+newy*newy+newz*newz < r3) {
+														if(newx*newx+newy*newy+newz*newz < r3) {
+															newx += n2; newy += n2; newz += n2;
+															if( img_ptr(newx,newy,newz) == 0.0f) {
+																img2_ptr(newx,newy,newz) = 1.0f;
+																keep_going = false; }
+														}
+													}
+												}
+											}
+										}
+									}  else if(numn == 25.0f) {
+										// there is only one empty neighbor, move there
+										for (newz = -1; newz <= 1; newz++) {
+											for (newy = -1; newy <= 1; newy++) {
+												for (newx = -1; newx <= 1; newx++) {
+													if( newx != 0 and newy != 0 and newz != 0) {
+														if(img_ptr(newx+ib,newy+jb,newz+kb) == 0.0f) {
+															img2_ptr(newx+ib,newy+jb,newz+kb) = 1.0f; 
+															}
+													}
+												}
+											}
+										}
+									}  else {
+										//  more than one neighbor is zero, select randomly one and move there
+										keep_going = true;
+										while(keep_going) {
+											newx = Util::get_irand(-1,1);
+											newy = Util::get_irand(-1,1);
+											newz = Util::get_irand(-1,1);
+											if(newx != 0 & newy != 0 & newz != 0)  {
+												if(img_ptr(ib+newx,jb+newy,kb+newz) == 0.0f) {
+													img2_ptr(ib+newx,jb+newy,kb+newz) = 1.0f;//?????
+													keep_going = false;
+												}
+											}
+										}
+									}
+								}  else img2_ptr(ib,jb,kb) = 1.0f;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	//for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] + Util::get_irand(1,7);
 	img2->update();
-	
+
 	EXITFUNC;
 	return img2;
 }

@@ -132,7 +132,7 @@ static void splint( float *xa, float *ya, float *y2a, int n,
  * @param [out] SizeReturned
  * 
  */
- static void Radialize(int *PermMatTr,  float * kValsSorted,
+static void Radialize(int *PermMatTr,  float * kValsSorted,
             float *weightofkvalsSorted, int Size, int *SizeReturned);
 		            
 
@@ -381,8 +381,8 @@ class FakeKaiserBessel : public KaiserBessel {
                                 float   *qm, float *tmt);
 				
         static EMData* Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr);
- 	static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
-	static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
+ 		static EMData* Crosrng_msg_s(EMData* circ1, EMData* circ2, vector<int> numr);
+		static EMData* Crosrng_msg_m(EMData* circ1, EMData* circ2, vector<int> numr);
 	
         static void  prb1d(double *b, int npoint, float *pos);
 		
@@ -414,7 +414,7 @@ class FakeKaiserBessel : public KaiserBessel {
           * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
                   Attention: Envelope function in power spectrum has a form of exp(-b_factor*ak^2)
                                           */ 
-        static float   tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
+	static float   tf(float dzz, float ak, float voltage = 300.0f, float cs = 2.0f, float wgh = 0.1f, float b_factor = 0.0f, float sign = -1.0f);
 	static EMData *compress_image_mask(EMData* image, EMData* mask);
 	static EMData *reconstitute_image_mask(EMData *image,EMData *mask);
 	static vector<float> merge_peaks(vector<float> peak1, vector<float> peak2,float p_size);
@@ -481,6 +481,6 @@ public:
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny); 
 
-	static EMData* move_points(EMData* img,  float qprob, int ro, int ri);
+	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 #endif	//util__sparx_h__

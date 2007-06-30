@@ -3203,7 +3203,7 @@ vector<float> EMData::phase_cog()
 #define density_protein (1.36)
 #define R (0.61803399)
 #define C (1.f-R)
-float EMData::find_3d_threshold(float mass,float pixel_size)
+float EMData::find_3d_threshold(float mass, float pixel_size)
 {
 	/* Exception Handle */
 	if(get_ndim()!=3)
@@ -3211,8 +3211,8 @@ float EMData::find_3d_threshold(float mass,float pixel_size)
 	/* ===============================================================*/
 	
 	/* Calculation of the volume of the voxels */
-	float density_1_mole,vol_1_mole,vol_angstrom;
-	int vol_voxels;
+	float density_1_mole, vol_1_mole, vol_angstrom;
+	int  vol_voxels;
 	density_1_mole = (float)(mass*1000.0f)/avagadro;
 	vol_1_mole = density_1_mole/density_protein;
 	vol_angstrom = vol_1_mole*(double)pow((double)pow(10.0,8),3);
@@ -3297,7 +3297,9 @@ float EMData::find_3d_threshold(float mass,float pixel_size)
 #undef avagadro
 #undef density_protein
 #undef R
-#undef C			
+#undef C
+
+		
 vector<float> EMData::peak_ccf(float hf_p)
 {   
     	 EMData & buf = *this;
