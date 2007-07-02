@@ -248,8 +248,6 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 		try: os.system("display "+path)
 		except: pass
 
-	if show: os.system("display "+path)
-
 def qplot(img):
 	"""This will plot a 1D image using qplot"""
 	out=file("/tmp/plt.txt","w")
