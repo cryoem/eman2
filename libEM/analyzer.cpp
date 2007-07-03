@@ -483,7 +483,7 @@ int varimax::insert_image(EMData* image)
 
     m_nfac++;
 
-    assert( (int)m_data.size() == m_nfac*m_nlen);
+    Assert( (int)m_data.size() == m_nfac*m_nlen);
     
     return 0;
 }

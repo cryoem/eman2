@@ -5708,7 +5708,7 @@ void Util::voronoi(double *phi, double *theta, double *weight, int nt)
 	    }
         }
 
-        assert( ier != -2 );
+	Assert( ier != -2 );
 //  Create a list of unique nodes GOOD, the numbers refer to locations on the full list
 //  INDX contains node numbers from the squeezed list
 	nd=0;

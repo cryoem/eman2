@@ -187,7 +187,7 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 #ifdef _WIN32
 		if (maxval<=minval || _isnan(minval) || _isnan(maxval)) {
 #else
-		if (maxval<=minval || isnan(minval) || isnan(maxval)) {
+			if (maxval<=minval || std::isnan(minval) || std::isnan(maxval)) {
 #endif	//_WIN32	
 			maxval = 255;
 		}

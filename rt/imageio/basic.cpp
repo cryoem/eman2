@@ -50,17 +50,17 @@ int test_emobject()
     float f = e2;
     f = 2;
     const char *s1 = e2;
-    assert(strcmp(s1, "") == 0);
+    Assert(strcmp(s1, "") == 0);
 
     EMData * image1 = new EMData();
     EMObject e3(image1);
     EMData * image2 = e3;
-    assert(image1 == image2);
+    Assert(image1 == image2);
 
     XYData * xy1 = new XYData();
     EMObject e4(xy1);
     XYData * xy2 = e4;
-    assert(xy1 == xy2);
+    Assert(xy1 == xy2);
     
     if( image1 )
     {
@@ -81,10 +81,10 @@ int test_Dict()
     bool f1 = d.has_key("hello");
     bool f2 = d.has_key("c");
 
-    assert(f1 == false);
-    assert(f2 == true);
+    Assert(f1 == false);
+    Assert(f2 == true);
     
-    assert((int)d["a"] == (int)d.get("a"));
+    Assert((int)d["a"] == (int)d.get("a"));
     
     EMUtil::dump_dict(d);
 
@@ -104,7 +104,7 @@ int test_emcache()
 	em->add(string(name), f);
 
 	float* f1 = em->get(name);
-	assert(f == f1);
+	Assert(f == f1);
     }
 
     return 0;

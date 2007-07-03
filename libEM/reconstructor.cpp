@@ -905,13 +905,13 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	// process 2-d slice -- subtract the average outside of the circle, zero-pad, fft extend, and fft
 	EMData* temp = slice->average_circ_sub();
 
-	assert( temp != NULL );
+	Assert( temp != NULL );
 	// Need to use zeropad_ntimes instead of pad_fft here for zero padding
 	// because only the former centers the original image in the 
 	// larger area.  FIXME!
 	
 	EMData* zeropadded = temp->zeropad_ntimes(npad);
-	assert( zeropadded != NULL );
+	Assert( zeropadded != NULL );
 
 	checked_delete( temp );
 
@@ -1134,7 +1134,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
     mult = 1;
     }
 
-        assert( mult > 0 );
+        Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
@@ -1143,7 +1143,7 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform3D&
 
 int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
-	assert( padfft != NULL );
+	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
@@ -1221,7 +1221,7 @@ EMData* nn4Reconstructor::finish()
                                             }
 
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-					    assert( r >=0 && r < (int)pow_b.size() );
+					    Assert( r >=0 && r < (int)pow_b.size() );
                                             float wght = pow_b[r] / ( 1.0 - alpha * sum );
 					    tmp = tmp * wght;
 				        }
@@ -1462,7 +1462,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
     mult = 1;
     }
 
-        assert( mult > 0 );
+        Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
@@ -1471,7 +1471,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 
 int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
-	assert( padfft != NULL );
+	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
@@ -1576,7 +1576,7 @@ EMData* nnSSNR_Reconstructor::finish()
                                                 	}
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						assert( r >=0 && r < (int)pow_b.size() );
+						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
 						tmp = tmp * wght;
 				        } // end of ( m_weighting == ESTIMATE )
@@ -1655,7 +1655,7 @@ void bootstrap_nnReconstructor::setup()
 int bootstrap_nnReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
 {
     EMData* padfft = padfft_slice( slice, m_npad );
-    assert( padfft != NULL );
+    Assert( padfft != NULL );
 
     if( m_media == "memory" )
     {
@@ -1677,7 +1677,7 @@ EMData* bootstrap_nnReconstructor::finish()
     nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_npad) );
     vector<int> mults = params["mult"];
 //    assert( mults != NULL );
-    assert( m_transes.size() == mults.size() );
+    Assert( m_transes.size() == mults.size() );
 
     int total = 0;
     for( unsigned int i=0; i < mults.size(); ++i )
@@ -1874,7 +1874,7 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
     mult = 1;
     }
 
-    assert( mult > 0 );
+	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
@@ -1884,7 +1884,7 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
 int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
-    assert( padfft != NULL );
+    Assert( padfft != NULL );
     float tmp = padfft->get_attr("ctf_applied");
     int   ctf_applied = (int) tmp;
 	
@@ -1981,7 +1981,7 @@ EMData* nn4_ctfReconstructor::finish()
 
                                
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-					    assert( r >=0 && r < (int)pow_b.size() );
+					    Assert( r >=0 && r < (int)pow_b.size() );
                         float wght = pow_b[r] / ( 1.0 - alpha * sum );
 /*
                         if(ix%10==0 && iy%10==0)
@@ -2334,7 +2334,7 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 	    mult = 1;
         }
 
-	assert( mult > 0 );
+	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
@@ -2342,7 +2342,7 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 }
 int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
-	assert( padfft != NULL );
+	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
 	if ( params.has_key("fftvol"))
 		wiener =  m_volume->get_attr("wiener");
@@ -2506,7 +2506,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
                                                 	}
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						assert( r >=0 && r < (int)pow_b.size() );
+						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
 						tmp = tmp * wght;
 				        } // end of ( m_weighting == ESTIMATE )
@@ -2580,7 +2580,7 @@ void bootstrap_nnctfReconstructor::setup()
 int bootstrap_nnctfReconstructor::insert_slice(const EMData* const slice, const Transform3D& euler)
 {
     EMData* padfft = padfft_slice( slice, m_npad );
-    assert( padfft != NULL );
+    Assert( padfft != NULL );
 
     if( m_media == "memory" )
     {
@@ -2602,7 +2602,7 @@ EMData* bootstrap_nnctfReconstructor::finish()
     nn4_ctfReconstructor* r( new nn4_ctfReconstructor(m_symmetry, m_size, m_npad, m_snr, m_sign) );
     vector<int> mults = params["mult"];
 //    assert( mults != NULL );
-    assert( m_transes.size() == mults.size() );
+    Assert( m_transes.size() == mults.size() );
 
     int total = 0;
     for( unsigned int i=0; i < mults.size(); ++i )
@@ -3043,10 +3043,10 @@ void file_store::get_image( int id, EMData* padfft )
         }
     }
 
-    assert( m_ihandle != NULL );
+    Assert( m_ihandle != NULL );
 
     std::istream::off_type offset = id*sizeof(float)*m_totsize;
-    assert( offset >= 0 );
+    Assert( offset >= 0 );
 
     if( offset > 0 )
     {

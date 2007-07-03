@@ -476,10 +476,10 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
     int lnlen = get_xsize();
     int nline = get_ysize();
 
-    assert( n1 >=0 && n1 < nline );
-    assert( n2 >=0 && n2 < nline );
-    assert( alpha1>=0.0 && alpha1 < 360.0 );
-    assert( alpha2>=0.0 && alpha2 < 360.0 );
+	Assert( n1 >=0 && n1 < nline );
+    Assert( n2 >=0 && n2 < nline );
+    Assert( alpha1>=0.0 && alpha1 < 360.0 );
+    Assert( alpha2>=0.0 && alpha2 < 360.0 );
 
     float* line_1 = get_data() + n1*lnlen;
     float* line_2 = sinoj->get_data() + n2*lnlen;
@@ -496,7 +496,7 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 	return std::min(dist_1, dist_2);
     }
 
-    assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
+    Assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
     return dist_r(lnlen, line_1, line_2);
 }
 

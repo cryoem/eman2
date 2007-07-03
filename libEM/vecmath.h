@@ -213,7 +213,7 @@ namespace EMAN
 	    }
 	  
 	    Vector3 operator/( const double s ) const {
-	        assert( s > 0.0 );
+	        Assert( s > 0.0 );
 	        return Vector3( x / s, y / s, z / s );
 	    }
 	  
@@ -404,7 +404,7 @@ namespace EMAN
 	    }
 	  
 	    // The indexing is this way to match OpenGL
-	    int index( int row, int col ) const { assert( row >= 0 && row < 3 ); assert( col >= 0 && col < 3 ); return col * 3 + row; }
+	    int index( int row, int col ) const { Assert( row >= 0 && row < 3 ); Assert( col >= 0 && col < 3 ); return col * 3 + row; }
 	
 	    const double & operator()( int row, int col ) const { return mat[ index(row,col) ]; }
 	          double & operator()( int row, int col )       { return mat[ index(row,col) ]; }
@@ -501,7 +501,7 @@ namespace EMAN
 	                                   det2x2((*this)(0,0), (*this)(0,1), (*this)(1,0), (*this)(1,1)) ) );
 	        const double dDet = determinant();
 	
-	        assert( isZero( dDet ) == false );
+	        Assert( isZero( dDet ) == false );
 	        adjoint *= 1.0 / dDet;
 	
 	        return adjoint;
@@ -599,7 +599,7 @@ namespace EMAN
 	    }
 	  
 	    Vector4 operator/( const double s ) const {
-	        assert( s > 0.0 );
+	        Assert( s > 0.0 );
 	        return Vector4( x / s, y / s, z / s, w / s );
 	    }
 	  
@@ -694,7 +694,7 @@ namespace EMAN
 	    }
 	  
 	    // The indexing is this way to match OpenGL
-	    int index( int row, int col ) const { assert( row >= 0 && row < 4 ); assert( col >= 0 && col < 4 ); return col * 4 + row; }
+	    int index( int row, int col ) const { Assert( row >= 0 && row < 4 ); Assert( col >= 0 && col < 4 ); return col * 4 + row; }
 	
 	    const double & operator()( int row, int col ) const { return mat[ index(row,col) ]; }
 	          double & operator()( int row, int col )       { return mat[ index(row,col) ]; }
@@ -758,7 +758,7 @@ namespace EMAN
 	                        (*this)(1,0) * p[0] + (*this)(1,1) * p[1] + (*this)(1,2) * p[2] + (*this)(1,3),
 	                        (*this)(2,0) * p[0] + (*this)(2,1) * p[1] + (*this)(2,2) * p[2] + (*this)(2,3));
 	        const double w = (*this)(3,0) * p[0] + (*this)(3,1) * p[1] + (*this)(3,2) * p[2] + (*this)(3,3);
-	        assert( isZero( w ) == false );
+	        Assert( isZero( w ) == false );
 	        return Point3( pt[0] / w, pt[1] / w, pt[2] / w );
 	    }
 	
@@ -949,7 +949,7 @@ namespace EMAN
 	        }
 	
 	        const double s = a(j,j);  // if s == 0, the matrix is singular
-	        assert( isZero( s ) == false );
+	        Assert( isZero( s ) == false );
 	        for ( i = 0; i < 4; i++ ) {
 	            a(j,i) *= (1.0 / s);
 	            b(j,i) *= (1.0 / s);

@@ -55,7 +55,7 @@ inline void EMDeletePtr(T & x)
 		x = NULL;
 	}
 #else
-	{assert(x != NULL);}
+	{Assert(x != NULL);}
 	delete x;
 	x = NULL;
 #endif
@@ -70,7 +70,7 @@ inline void EMDeleteArray(T & x)
 		x = NULL;
 	}
 #else
-	{assert(x != NULL);}
+	{Assert(x != NULL);}
      delete [] x;
      x = NULL;
 #endif
