@@ -215,7 +215,7 @@ EMData* EMData::pad_fft(int npad) {
 
 void EMData::postift_depad_corner_inplace() {
 	ENTERFUNC;
-	if(is_fftpadded() == true) {
+ 	if(is_fftpadded() == true) {
 		vector<int> saved_offsets = get_array_offsets();
 		set_array_offsets(0,0,0);
 		int npad = attr_dict["npad"];

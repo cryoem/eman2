@@ -186,6 +186,12 @@ namespace EMAN
 		EMData *get_clip(const Region & area) const;
 		
 		
+		/** Clip the image inplace - clipping region must be smaller than the current region
+		 * internally memory is reallocated
+		 * @param area The clip area, can be 2D/3D.
+		 */
+		void clip_inplace(const Region & area);
+		
 		/** Get the top half of this 3D image.
 		 * @exception ImageDimensionException If this image is not 3D.
 		 * @return The top half of this image.
@@ -717,7 +723,7 @@ namespace EMAN
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void scale_pixel(float scale_factor) const;
 		void save_byteorder_to_dict(ImageIO * imageio);
-		
+
 	private:
 		/** to store all image header info */
 		mutable Dict attr_dict; 

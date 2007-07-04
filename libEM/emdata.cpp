@@ -109,6 +109,7 @@ EMData::EMData(const string& filename, int image_index) :
 	nx = 0;
 	ny = 0;
 	nz = 0;
+
 	xoff = yoff = zoff = 0;
 	
 	this->read_image(filename, image_index);
@@ -123,22 +124,29 @@ EMData::EMData(const EMData& that) :
 {
 	ENTERFUNC;
 	
-	// operator= increments totalalloc
-	set_size(that.nx, that.ny, that.nz);
+	// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
 
-	memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+	nx = that.nx;
+	ny = that.ny;
+	nz = that.nz;
+
+	if (that.rdata)
+	{
+		set_size(that.nx, that.ny, that.nz);
+		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+	}
 	flags = that.flags;
 	all_translation = that.all_translation;
 	path = that.path;
 	pathnum = that.pathnum;
 	attr_dict = that.attr_dict;
-	update();
 	
 	xoff = that.xoff;
 	yoff = that.yoff;
 	zoff = that.zoff;
 
 	changecount = 0;
+	update();
 
 	EMData::totalalloc++;
 	
@@ -163,6 +171,13 @@ EMData& EMData::operator=(const EMData& that)
 		path = that.path;
 		pathnum = that.pathnum;
 		attr_dict = that.attr_dict;
+
+		xoff = that.xoff;
+		yoff = that.yoff;
+		zoff = that.zoff;
+
+		changecount = that.changecount;
+
 		update();
 	}
 	
@@ -236,10 +251,301 @@ EMData::~EMData()
 	EXITFUNC;
 }
 
+// Clip inplace variables is a local class used from convenience in EMData::clip_inplace - DO NOT DELETE
+class ClipInplaceVariables
+{
+public:
+	ClipInplaceVariables(const int p_nx, const int p_ny, const int p_nz, const int n_nx, const int n_ny, const int n_nz,
+		const int xtrans, const int ytrans, const int ztrans) :
+	prv_nx(p_nx), prv_ny(p_ny), prv_nz(p_nz), new_nx(n_nx), new_ny(n_ny), new_nz(n_nz), xshift(xtrans), yshift(ytrans), zshift(ztrans),
+	x_iter(prv_nx), y_iter(prv_ny), z_iter(prv_nz), new_z_top(0), new_z_bottom(0),  new_y_back(0), new_y_front(0),new_x_left(0), new_x_right(0),
+	prv_z_top(0), prv_z_bottom(0), prv_y_back(0), prv_y_front(0), prv_x_left(0), prv_x_right(0)
+	{
+		if ( xtrans > 0 ) x_iter -= xtrans;
+		if ( x_iter < 0 ) x_iter = 0;
+		if ( ytrans > 0 ) y_iter -= ytrans;
+		if ( y_iter < 0 ) y_iter = 0;
+		if ( ztrans > 0 ) z_iter -= ztrans;
+		if ( z_iter < 0 ) z_iter = 0;
+
+		// Get the depth in the new volume where slices are inserted 
+		// if this value is zero it means that the last z-slice in the new
+		// volume contains image data
+		if ( (new_nz + ztrans) > prv_nz ) new_z_top = new_nz + ztrans - prv_nz;
+		if ( (new_ny + ytrans) > prv_ny ) new_y_back = new_ny + ytrans - prv_ny;
+		if ( (new_nx + xtrans) > prv_nx ) new_x_right = new_nx + xtrans - prv_nx;
+
+		if ( (new_nz + ztrans) < prv_nz )
+		{
+			prv_z_top = prv_nz - new_nz - ztrans;
+			z_iter -= prv_z_top;
+		}
+		if ( (new_ny + ytrans) < prv_ny )
+		{
+			prv_y_back = prv_ny - new_ny - ytrans;
+			y_iter -= prv_y_back;
+		}
+		if ( (new_nx + xtrans) < prv_nx )
+		{
+			prv_x_right = prv_nx - new_nx - xtrans;
+			x_iter -= prv_x_right;
+		}
+
+		if ( xtrans > 0 ) prv_x_left = xtrans;
+		if ( ytrans > 0 ) prv_y_front = ytrans;
+		if ( ztrans > 0 ) prv_z_bottom = ztrans;
+
+		if ( xtrans < 0 ) new_x_left = -xtrans;
+		if ( ytrans < 0 ) new_y_front = -ytrans;
+		if ( ztrans < 0 ) new_z_bottom = -ztrans;
+
+	}
+	~ClipInplaceVariables() {}
+
+	int prv_nx, prv_ny, prv_nz, new_nx, new_ny, new_nz;
+	int xshift, yshift, zshift;
+	int x_iter, y_iter, z_iter;
+	int new_z_top, new_z_bottom, new_y_back, new_y_front, new_x_left, new_x_right;
+	int prv_z_top, prv_z_bottom,  prv_y_back, prv_y_front, prv_x_left, prv_x_right;
+};
+
+void EMData::clip_inplace(const Region & area)
+{
+	ENTERFUNC;
+
+	// Store the current dimension values
+	int prev_nx = nx, prev_ny = ny, prev_nz = nz;
+	int prev_size = nx*ny*nz;
+
+	// Get the zsize, ysize and xsize of the final area, these are the new dimension sizes of the pixel data
+	int new_nz = (int)area.size[2];
+	if (new_nz == 0 || nz <= 1) {
+		new_nz = 1;
+	}
+	int new_ny = (ny<=1 && (int)area.size[1]==0 ? 1 : (int)area.size[1]);
+	int new_nx = (int)area.size[0];
+	int new_size = new_nz*new_ny*new_nx;
+
+	// Get the translation values, they are used to construct the ClipInplaceVariables object
+	int x0 = (int) area.origin[0];
+	int y0 = (int) area.origin[1];
+	int z0 = (int) area.origin[2];
+
+	// Get a object that calculates all the interesting variables associated with the clip inplace operation
+	ClipInplaceVariables civ(prev_nx, prev_ny, prev_nz, new_nx, new_ny, new_nz, x0, y0, z0);
+
+	// Double check to see if any memory shifting even has to occur
+	if ( x0 > prev_nx || y0 > prev_ny || z0 > prev_nz || civ.x_iter == 0 || civ.y_iter == 0 || civ.z_iter == 0)
+	{
+		// In this case the volume has been shifted beyond the location of the pixel data and
+		// the client should expect to see a volume with nothing in it.
+
+		// Set size calls realloc,
+		set_size(new_nx, new_ny, new_nz);
+
+		// Set pixel memory to zero - the client should expect to see nothing
+		memset(rdata, 0, new_nx*new_ny*new_nz);
+
+		return;
+	}
+
+	// Resize the volume before memory shifting occurs if the new volume is larger than the previous volume
+	// All of the pixel data is guaranteed to be at the start of the new volume because realloc (called in set size)
+	// guarantees this.
+	if ( new_size > prev_size )
+		set_size(new_nx, new_ny, new_nz);
+
+	// Variables to store the coordinates in the original volume at which to start at.
+	int x_row_size = civ.x_iter;
+	size_t clipped_row_size = (x_row_size) * sizeof(float);
+
+	int new_sec_size = new_nx * new_ny;
+	int prev_sec_size = prev_nx * prev_ny;
+
+	// Determine the memory locations of the source and destination pixels - at the point nearest
+	// to the beginning of the volume (rdata)
+	int src_it_begin = civ.prv_z_bottom*prev_sec_size + civ.prv_y_front*prev_nx + civ.prv_x_left;
+	int dst_it_begin = civ.new_z_bottom*new_sec_size + civ.new_y_front*new_nx + civ.new_x_left;
+
+	// This loop is in the forward direction (starting at points nearest to the beginning of the volume)
+	// it copies memory only when the destination pointer is less the source pointer - therefore 
+	// ensuring that no memory "copied to" is yet to be "copied from"
+	for (int i = 0; i < civ.z_iter; ++i) {
+		for (int j = 0; j < civ.y_iter; ++j) {
+
+			// Determine the memory increments as dependent on i and j
+			int dst_inc = dst_it_begin + j*new_nx + i*new_sec_size;
+			int src_inc = src_it_begin + j*prev_nx + i*prev_sec_size;
+			float* local_dst = rdata + dst_inc;
+			float* local_src = rdata + src_inc;
+			
+			if ( dst_inc >= src_inc )
+			{
+				// this is fine, it will happen now and then and it will be necessary to continue.
+				// the tempatation is to break, but you can't do that.
+				continue;
+			}
+
+			// Asserts are compiled only in debug mode
+			// This situation not encountered in testing thus far
+			assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
+
+			// Finally copy the memory
+			memcpy(local_dst, local_src, clipped_row_size);
+		}
+	}
+
+	// Determine the memory locations of the source and destination pixels - at the point nearest
+	// to the end of the volume (rdata+new_size)
+	int src_it_end = prev_size - civ.prv_z_top*prev_sec_size - civ.prv_y_back*prev_nx - prev_nx + civ.prv_x_left;
+	int dst_it_end = new_size - civ.new_z_top*new_sec_size - civ.new_y_back*new_nx - new_nx + civ.new_x_left;
+
+	// This loop is in the reverse direction (starting at points nearest to the end of the volume).
+	// It copies memory only when the destination pointer is greater than  the source pointer therefore 
+	// ensuring that no memory "copied to" is yet to be "copied from"
+	for (int i = 0; i < civ.z_iter; ++i) {
+		for (int j = 0; j < civ.y_iter; ++j) {
+
+			// Determine the memory increments as dependent on i and j
+			int dst_inc = dst_it_end - j*new_nx - i*new_sec_size;
+			int src_inc = src_it_end - j*prev_nx - i*prev_sec_size;
+			float* local_dst = rdata + dst_inc;
+			float* local_src = rdata + src_inc;
+
+			if (dst_inc <= (src_inc + civ.x_iter ))
+			{
+				if ( dst_inc > src_inc )
+				{
+					// Because the memcpy operation is the forward direction, and this "reverse
+					// direction" loop is proceeding in a backwards direction, it is possible
+					// that memory copied to is yet to be copied from. This is despite the fact that the
+					// destination pointer is greater than the source pointer, a situation where pixel data
+					// in memory must be shifted forward (and therefore must be dealt with here).
+					// With special consideration this problem is circumvented by copying different parts
+					// of the pixel row before the other - as follows:
+
+					// Contrive the situation where the forward memory copy operation does not write over
+					// pixel data yet to "copied from" - copy as normal
+					float* local_dst = rdata + src_inc + civ.x_iter;
+					float* local_src = rdata + 2*src_inc - dst_inc + civ.x_iter;
+					int num_bytes = dst_inc - src_inc;
+					memcpy(local_dst, local_src, num_bytes*sizeof(float));
+					
+					// Now copy the rest of the pixel row in the reverse direction.
+					num_bytes = civ.x_iter - num_bytes;
+					for( int k = num_bytes; k >= 0; --k )
+					{
+						local_dst = rdata + dst_inc + k;
+						local_src = rdata + src_inc + k;
+						*local_dst = *local_src;
+					}
+					
+				}
+				continue;
+			}
+			
+			// Asserts are compiled only in debug mode
+			// This situation not encountered in testing thus far
+			assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
+			
+			// Perform the memory copy
+			memcpy(local_dst, local_src, clipped_row_size);
+		}
+	}
+
+	// Resize the volume after memory shifting occurs if the new volume is smaller than the previous volume
+	// set_size calls realloc, guaranteeing that the pixel data is in the right location.
+	if ( new_size < prev_size )
+		set_size(new_nx, new_ny, new_nz);
+
+	// Now set all the edges to zero
+
+	// Set the extra bottom z slices to zero
+	if (  z0 < 0 )
+	{
+		memset(rdata, 0, (-z0)*new_sec_size*sizeof(float));
+	}
+
+	// Set the extra top z slices to zero
+	if (  civ.new_z_top > 0 )
+	{
+		float* begin_pointer = rdata + (new_nz-civ.new_z_top)*new_sec_size;
+		memset(begin_pointer, 0, (civ.new_z_top)*new_sec_size*sizeof(float));
+	}
+
+	// Next deal with x and y edges by iterating through each slice
+	for ( int i = civ.new_z_bottom; i < civ.new_z_bottom + civ.z_iter; ++i )
+	{
+		// Set the extra front y components to 0
+		if ( y0 < 0 )
+		{
+			float* begin_pointer = rdata + i*new_sec_size;
+			memset(begin_pointer, 0, (-y0)*new_nx*sizeof(float));
+		}
+	
+		// Set the extra back y components to 0
+		if ( civ.new_y_back > 0 )
+		{
+			float* begin_pointer = rdata + i*new_sec_size + (new_ny-civ.new_y_back)*new_nx;
+			memset(begin_pointer, 0, (civ.new_y_back)*new_nx*sizeof(float));
+		}
+
+		// Iterate through the y to set each correct x component to 0
+		for (int j = civ.new_y_front; j <civ.new_y_front + civ.y_iter; ++j)
+		{
+			// Set the extra left x components to 0
+			if ( x0 < 0 )
+			{
+				float* begin_pointer = rdata + i*new_sec_size + j*new_nx;
+				memset(begin_pointer, 0, (-x0)*sizeof(float));
+			}
+
+			// Set the extra right x components to 0
+			if ( civ.new_x_right > 0 )
+			{
+				float* begin_pointer = rdata + i*new_sec_size + j*new_nx + (new_nx - civ.new_x_right);
+				memset(begin_pointer, 0, (civ.new_x_right)*sizeof(float));
+			}
+
+		}
+	}
+
+// These couts may be useful
+// 	cout << "start starts " << civ.prv_x_left << " " << civ.prv_y_front << " " << civ.prv_z_bottom << endl;
+// 	cout << "start ends " << civ.prv_x_right << " " << civ.prv_y_back << " " << civ.prv_z_top << endl;
+// 	cout << "dst starts " << civ.new_x_left << " " << civ.new_y_front << " " << civ.new_z_bottom << endl;
+// 	cout << "dst ends " << civ.new_x_right << " " << civ.new_y_back << " " << civ.new_z_top << endl;
+// 	cout << "total iter z - " << civ.z_iter << " y - " << civ.y_iter << " x - " << civ.x_iter << endl;
+// 	cout << "=====" << endl;
+// 	cout << "dst_end is " << dst_it_end << " src end is " << src_it_end << endl;
+// 	cout << "dst_begin is " << dst_it_begin << " src begin is " << src_it_begin << endl;
+
+	// Update appropriate attributes (Copied and pasted from get_clip)
+	if( attr_dict.has_key("origin_row") && attr_dict.has_key("origin_col") &&
+	attr_dict.has_key("origin_sec") )
+	{
+		float xorigin = attr_dict["origin_row"];
+		float yorigin = attr_dict["origin_col"];
+		float zorigin = attr_dict["origin_sec"];
+
+		float apix_x = attr_dict["apix_x"];
+		float apix_y = attr_dict["apix_y"];
+		float apix_z = attr_dict["apix_z"];
+
+		set_xyz_origin(xorigin + apix_x * area.origin[0],
+			yorigin + apix_y * area.origin[1],
+			zorigin + apix_z * area.origin[2]);
+	}
+	
+	// Set the update flag because the size of the image has changed and stats should probably be recalculated if requested.
+	update();
+
+	EXITFUNC;
+}
 
 EMData *EMData::get_clip(const Region & area) const
 {
-	ENTERFUNC;
+		ENTERFUNC;
 	if (get_ndim() != area.get_ndim()) {
 		LOGERR("cannot get %dD clip out of %dD image", get_ndim(), area.get_ndim());
 		return 0;
@@ -2355,7 +2661,11 @@ void EMData::update_stat() const
 {
 	ENTERFUNC;
 
+	EXITFUNC;
+	return;
+
 	if (!(flags & EMDATA_NEEDUPD)) {
+		EXITFUNC;
 		return;
 	}
 
@@ -2372,6 +2682,8 @@ void EMData::update_stat() const
 
 	int n_nonzero = 0;
 
+	cout << "point 1" << endl;
+	cout << "size is " << nx << " " << ny << " " << nz << endl;
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
 	#ifdef _WIN32
@@ -2385,7 +2697,7 @@ void EMData::update_stat() const
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
-
+	cout << "Point 2" << endl;
 	int n = nx * ny * nz / step;
 	double mean = sum / n;
 

@@ -169,6 +169,18 @@ FourierReconstructor& FourierReconstructor::operator=( const FourierReconstructo
 void FourierReconstructor::setup()
 {
 	int size = params["size"];
+	if ( params.find("pad") != params.end() )
+	{
+		if ( (int)(params["pad"]) > (int)(params["size"]) )
+			size = params["pad"];
+		else
+		{
+			throw InvalidValueException((int)params["pad"], "pad must be > than image size");
+		}
+	}
+	else
+		size = params["size"];
+
 	image = new EMData();
 	image->set_size(size + 2, size, size);
 	image->set_complex(true);
@@ -191,6 +203,7 @@ void FourierReconstructor::setup()
 	tmp_data = new EMData();
 	tmp_data->set_size(size + 2, size, size);
 	tmp_data->to_zero();
+	tmp_data->update();
 }
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
@@ -206,11 +219,12 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
 		int y_size = slice->get_ysize();
 		if ( x_size >= pad || y_size >= pad )
 		{
-			cerr << "You specified a pad size " <<  pad << " that was smaller than the x " << x_size << " or y " << y_size << " dimension, nothing happened" << endl;
-			return_slice = new EMData(*slice);	
+			cerr << "You specified a pad size " <<  pad << " that was smaller than or equal to the x " << x_size << " or y " << y_size << " dimension" << endl;
+			throw InvalidValueException(pad, "pad must be > than image size");	
 		}
 		else
 		{
+			// x_size and y_size should always be the same size atm, but there may come a time when they are not.
 			return_slice = slice->get_clip(Region((x_size-pad)/2,(y_size-pad)/2,pad,pad));
 		}
 	}
@@ -244,7 +258,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	}
 	
 	// Get the proprecessed slice - there are some things that always happen to a slice,
-	// such as as Fourier conversion and prior padding and normalization etc.
+	// such as as Fourier conversion and optional padding etc.
 	EMData* slice = preprocess_slice( input_slice );
 	
 	if (!slice->is_complex()) {
@@ -353,8 +367,20 @@ EMData *FourierReconstructor::finish()
 	// 
 	image->process_inplace("xform.fourierorigin");
 	image->do_ift_inplace();
+	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
+	image->postift_depad_corner_inplace();
 	image->process_inplace("xform.phaseorigin");
 	
+	// should also clip here if the image was padded
+	if ( params.find("pad") != params.end() )
+	{
+		int pad = params["pad"];
+		int size = params["size"];
+		FloatPoint point((pad-size)/2, (pad-size)/2, (pad-size)/2 );
+		Region clip_region((pad-size)/2, (pad-size)/2, (pad-size)/2, size, size, size );
+		image->clip_inplace( clip_region );
+	}
+
 	image->update();
 	
 	return image;
@@ -474,7 +500,8 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
-			if ((x * x + Util::square(y - ny / 2)) >= rl) {
+			if ((x * x + Util::square(y - ny / 2)) >= rl)
+			{
 				continue;
 			}
 
@@ -2357,6 +2384,7 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 	
 	return 0;
 }
+
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_ctfReconstructor::finish() 
 {
@@ -2388,8 +2416,8 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	{  
 		
 		
-	 	m_wvolume->symplane0(m_wptr);
-	        float osnr = 1.0f/m_snr;
+		m_wvolume->symplane0(m_wptr);
+		float osnr = 1.0f/m_snr;
 		for (int iz = 1; iz <= m_vnzp; iz++) 
 		{
 			if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;

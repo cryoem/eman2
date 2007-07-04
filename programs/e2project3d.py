@@ -331,9 +331,8 @@ def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
 		# this problem is being fixed by Phil Baldwin, and when fixed, the arguments here should change to radians
 		p.set_rotation(euler[1]* rad2deg,euler[0]* rad2deg,euler[2]* rad2deg)
 		# this values reads as "particles_represented"
-		#p.set_attr("ptcl_repr",1)
-		a = int( random.random() * 50 ) + 1
-		p.set_attr("ptcl_repr", a)
+		#p.set_attr("ptcl_repr", int( random.random() * 50 ) + 1)
+		p.set_attr("ptcl_repr", 1)
 		# FIXME, this should be optional etc.
 		#p.process_inplace("mask.sharp", {"outer_radius":options.mask})
 		

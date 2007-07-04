@@ -229,7 +229,7 @@ namespace EMAN
 		
 		/** Copy constructor
 		 */
-		ReconstructorWithVolumeData(const ReconstructorWithVolumeData& that) { copyData(that); }
+		ReconstructorWithVolumeData(const ReconstructorWithVolumeData& that) : Reconstructor(that) { copyData(that); }
 
 		/** Assignment operator
 		 */
@@ -258,12 +258,16 @@ namespace EMAN
 	
 		/** Copy constructor
 		 */
-		FourierReconstructor( const FourierReconstructor& that ) : ReconstructorWithVolumeData(that) { load_default_settings(); }
+		FourierReconstructor( const FourierReconstructor& that ) : ReconstructorWithVolumeData(that)
+		 { load_default_settings(); }
 
 		/** Assignment operator
 		 */
 		FourierReconstructor& operator=( const FourierReconstructor& );
 
+		/** Assignment operator
+		 * @exception InvalidValueException
+		 */
 		virtual void setup();
 
 		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
@@ -296,14 +300,15 @@ namespace EMAN
 			d.put("dlog", EMObject::BOOL);
 			d.put("sym", EMObject::STRING);
 			d.put("pad", EMObject::INT);
+			d.put("apix", EMObject::FLOAT);
 			return d;
 		}
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume
-	  	 * Called internally just after the call to insert slice.
-	  	 * Originally added to mimic the behavior of EMAN1's make3dreal
-	  	 * which normalized each slice before insertion.
-		 * @return A boolean that indicates success
+		 * this Fourier tranforms the slice and make sure all the pixels are in the right positions
+	  	 * @return A boolean that indicates success
+	  	 * @param slice the slice to be prepocessed
+	  	 * @exception InvalidValueException
 		 */
 	  	EMData* preprocess_slice( const EMData* const slice );
 	  private:
@@ -317,6 +322,7 @@ namespace EMAN
 			params["hard"] = 25.0;
 			params["sym"] = "unknown";
 		}
+
 	};
 
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.

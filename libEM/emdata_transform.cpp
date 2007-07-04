@@ -100,7 +100,7 @@ EMData *EMData::do_fft_inplace()
 			for (int iy = ny-1; iy >= 0; iy--) {
 				for (int ix = nxreal-1; ix >= 0; ix--) {
 					size_t oldxpos = ix + (iy + iz*ny)*nxreal;
-					size_t newxpos = ix + (iy + iz*ny)*nx;
+					size_t newxpos = ix + (iy + iz*ny)*nxnew;
 					(*this)(newxpos) = (*this)(oldxpos);
 				}
 			}
@@ -123,7 +123,6 @@ EMData *EMData::do_fft_inplace()
 	EXITFUNC;
 	return this;
 }
-
 
 EMData *EMData::do_ift()
 {
@@ -177,9 +176,6 @@ EMData *EMData::do_ift()
 	}
 	dat->set_ri(false);
 
-
-	update();
-
 	EXITFUNC;
 	return dat;
 }
@@ -230,18 +226,17 @@ EMData *EMData::do_ift_inplace()
 			memmove((char *) &rdata[i * (nx - offset)], (char *) &rdata[i * nx], row_size);
 		}
 	}
-	this->set_size(nx - offset, ny, nz);	//remove the padding
-	update();
-	update();
+	this->set_size(nx - offset, ny, nz);	//remove the paddin
 	set_fftpad(false);
 	*/
+	set_fftpad(true);
 	set_complex(false);
 	if(ny==1 && nz==1) {
 		set_complex_x(false);
 	}
 	set_ri(false);
-
 	update();
+
 
 	EXITFUNC;
 	return this;

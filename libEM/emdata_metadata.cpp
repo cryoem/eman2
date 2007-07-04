@@ -511,6 +511,10 @@ Ctf * EMData::get_ctf() const
 	}
 }
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 void EMData::set_size(int x, int y, int z)
 {
 	ENTERFUNC;
@@ -530,7 +534,7 @@ void EMData::set_size(int x, int y, int z)
 	ny = y;
 	nz = z;
 
-	size_t size = (size_t)x * (size_t)y * (size_t)z * sizeof(float);
+	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	rdata = static_cast < float *>(realloc(rdata, size));
 	update();
 
@@ -538,10 +542,11 @@ void EMData::set_size(int x, int y, int z)
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
 
+	// This will never occur because of the throw above! dsaw
 	if (old_nx == 0) {
 		memset(rdata, 0, size);
 	}
-
+	
 	if (supp) {
 		free(supp);
 		supp = 0;

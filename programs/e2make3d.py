@@ -222,12 +222,19 @@ def back_projection_reconstruction(options):
 	if not(options.quiet):
 		print "Initializing the reconstructor"
 
+	print "1"
 	a = parsemodopt(options.recon_type)
+	print "2"
 	recon=Reconstructors.get(a[0], a[1])
+	print "3"
 	params = recon.get_params()
 	params["size"] = gimme_global_pixel_dimension( options.input_file )
 	recon.set_params(params)
+	
+	print "Calling setup"
 	recon.setup()
+	
+	
 	
 	[particle_number, total_images] = gimme_stats( options.input_file )
 	
@@ -368,7 +375,8 @@ def num_contributing_particles(images):
 	return total
 		
 def gimme_stats( imagefilename ):
-	images=EMData().read_images(imagefilename,[], True)
+	read_header_only = False
+	images=EMData().read_images(imagefilename,[], read_header_only)
 	
 	particle_number = num_contributing_particles(images)
 	
@@ -382,8 +390,9 @@ def gimme_stats( imagefilename ):
 # FIXME: Will support be added for non-square volumes?
 def gimme_global_pixel_dimension( imagefilename ):
 	
-	read_header_only = True
-	images=EMData().read_images(imagefilename,[], read_header_only)
+	read_header_only = False
+	e = EMData();
+	images = e.read_images(imagefilename,[], read_header_only)
 	
 	xsize = images[0].get_xsize()
 	ysize = images[0].get_ysize()
@@ -421,10 +430,8 @@ def fourier_reconstruction(options):
 			print "You specified a padding of %d which is less than the image size %d, so no action is taken" %(options.pad, params["size"])
 		else:
 			params["pad"] = options.pad
-			params["size"] = options.pad
 	if options.mask:
 		params["mask"] = options.mask
-
 	recon.set_params(params)
 	recon.setup()
 	
@@ -477,7 +484,6 @@ def fourier_reconstruction(options):
 
 			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
 			recon.insert_slice(image,transform)
-	
 
 			if (options.goodbad):
 				if g:

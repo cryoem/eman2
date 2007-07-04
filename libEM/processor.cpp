@@ -3052,11 +3052,6 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-
-
-
-
-
 void AddMaskShellProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -3217,7 +3212,6 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 		image->align("translational3d", 0, params1);
 	}
 }
-
 
 void SNRProcessor::process_inplace(EMData * image)
 {

@@ -446,7 +446,6 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
-
 	//single image format, index can only be zero
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);

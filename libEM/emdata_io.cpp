@@ -40,6 +40,10 @@
 #include "all_imageio.h"
 #include "ctf.h"
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 using namespace EMAN;
 
 void EMData::read_image(const string & filename, int img_index, bool nodata,
@@ -69,7 +73,6 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 			if ((int) attr_dict["is_complex_ri"] == 1) {
 				set_ri(true);
 			}
-
 			save_byteorder_to_dict(imageio);
 
 			nx = attr_dict["nx"];
@@ -83,7 +86,6 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 				flags &= ~EMDATA_HASCTFF;
 			}
 			
-
 			if (!nodata) {
 				set_size(nx, ny, nz);
 				int err = imageio->read_data(rdata, img_index, region, is_3d);
@@ -104,7 +106,6 @@ void EMData::read_image(const string & filename, int img_index, bool nodata,
 		imageio = 0;
 	}
 #endif
-
 	EXITFUNC;
 }
 
@@ -127,7 +128,6 @@ void EMData::write_image(const string & filename, int img_index,
 			imgtype = EMUtil::get_image_ext_type(ext);
 		}
 	}
-
 	ImageIO::IOMode rwmode = ImageIO::READ_WRITE;
 
 	if (Util::is_file_exist(filename)) {
@@ -147,7 +147,6 @@ void EMData::write_image(const string & filename, int img_index,
 #endif
 		}
 	}
-
 	LOGVAR("getimageio %d",rwmode);
 	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
 	if (!imageio) {
@@ -167,7 +166,6 @@ void EMData::write_image(const string & filename, int img_index,
 		else {
 			if (!header_only) {
 				if (imgtype == EMUtil::IMAGE_LST) {
-
 					const char *reffile = attr_dict["LST.reffile"];
 					if (strcmp(reffile, "") == 0) {
 						reffile = path.c_str();
@@ -267,8 +265,7 @@ void EMData::print_image(const string str, ostream& out) {
 	}
 }
 
-
-vector < EMData * >EMData::read_images(const string & filename, vector < int >img_indices,
+vector <EMData* > EMData::read_images(const string & filename, vector < int >img_indices,
 									   bool header_only)
 {
 	ENTERFUNC;
@@ -282,12 +279,12 @@ vector < EMData * >EMData::read_images(const string & filename, vector < int >im
 		}
 	}
 
-	size_t n = num_img == 0 ? total_img : num_img;
+	size_t n = (num_img == 0 ? total_img : num_img);
 
-	vector < EMData * >v;
+	vector<EMData* > v;
 	for (size_t j = 0; j < n; j++) {
 		EMData *d = new EMData();
-		size_t k = num_img == 0 ? j : img_indices[j];
+		size_t k = (num_img == 0 ? j : img_indices[j]);
 		try {
 			d->read_image(filename, (int)k, header_only);
 		}
@@ -299,9 +296,14 @@ vector < EMData * >EMData::read_images(const string & filename, vector < int >im
 			}
 			throw(e);
 		}
-
-		v.push_back(d);
+		if ( d != 0 )
+		{
+			v.push_back(d);
+		}
+		else
+			throw ImageReadException(filename, "imageio read data failed");
 	}
+	
 	EXITFUNC;
 	return v;
 }
