@@ -252,6 +252,7 @@ EMData::~EMData()
 }
 
 // Clip inplace variables is a local class used from convenience in EMData::clip_inplace
+// Added by d.woolford
 class ClipInplaceVariables
 {
 public:
@@ -309,8 +310,10 @@ public:
 	int prv_z_top, prv_z_bottom,  prv_y_back, prv_y_front, prv_x_left, prv_x_right;
 };
 
+
 void EMData::clip_inplace(const Region & area)
 {
+	// Added by d.woolford
 	ENTERFUNC;
 
 	// Store the current dimension values
