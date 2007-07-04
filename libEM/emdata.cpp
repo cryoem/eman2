@@ -251,7 +251,7 @@ EMData::~EMData()
 	EXITFUNC;
 }
 
-// Clip inplace variables is a local class used from convenience in EMData::clip_inplace - DO NOT DELETE
+// Clip inplace variables is a local class used from convenience in EMData::clip_inplace
 class ClipInplaceVariables
 {
 public:
@@ -355,10 +355,10 @@ void EMData::clip_inplace(const Region & area)
 	if ( new_size > prev_size )
 		set_size(new_nx, new_ny, new_nz);
 
-	// Variables to store the coordinates in the original volume at which to start at.
-	int x_row_size = civ.x_iter;
-	size_t clipped_row_size = (x_row_size) * sizeof(float);
+	// Store the clipped row size.
+	size_t clipped_row_size = (civ.x_iter) * sizeof(float);
 
+	// Get the new sector sizes to save multiplication later.
 	int new_sec_size = new_nx * new_ny;
 	int prev_sec_size = prev_nx * prev_ny;
 
