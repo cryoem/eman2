@@ -2664,9 +2664,6 @@ void EMData::update_stat() const
 {
 	ENTERFUNC;
 
-	EXITFUNC;
-	return;
-
 	if (!(flags & EMDATA_NEEDUPD)) {
 		EXITFUNC;
 		return;
@@ -2685,8 +2682,8 @@ void EMData::update_stat() const
 
 	int n_nonzero = 0;
 
-	cout << "point 1" << endl;
-	cout << "size is " << nx << " " << ny << " " << nz << endl;
+	//cout << "point 1" << endl;
+	//cout << "size is " << nx << " " << ny << " " << nz << endl;
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
 	#ifdef _WIN32
@@ -2700,7 +2697,7 @@ void EMData::update_stat() const
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
-	cout << "Point 2" << endl;
+	//cout << "Point 2" << endl;
 	int n = nx * ny * nz / step;
 	double mean = sum / n;
 
