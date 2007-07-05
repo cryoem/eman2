@@ -321,12 +321,16 @@ void EMData::clip_inplace(const Region & area)
 	int prev_size = nx*ny*nz;
 
 	// Get the zsize, ysize and xsize of the final area, these are the new dimension sizes of the pixel data
-	int new_nz = (int)area.size[2];
-	if (new_nz == 0 || nz <= 1) {
-		new_nz = 1;
-	}
-	int new_ny = (ny<=1 && (int)area.size[1]==0 ? 1 : (int)area.size[1]);
+	int new_nz = ( area.size[2]==0 ? 1 : (int)area.size[2]);
+	int new_ny = ( area.size[1]==0 ? 1 : (int)area.size[1]);
 	int new_nx = (int)area.size[0];
+
+	if ( new_nz < 0 || new_ny < 0 || new_nx < 0 )
+	{
+		// Negative image dimensions were never tested nor considered when creating this implementation
+		throw ImageDimensionException("New image dimensions are negative - this is not supported in the clip_inplace operation");
+	}
+
 	int new_size = new_nz*new_ny*new_nx;
 
 	// Get the translation values, they are used to construct the ClipInplaceVariables object
@@ -551,10 +555,16 @@ EMData *EMData::get_clip(const Region & area) const
 	result->attr_dict = this->attr_dict;
 	
 	int zsize = (int)area.size[2];
-	if (zsize == 0 || nz <= 1) {
+	if (zsize == 0 && nz <= 1) {
 		zsize = 1;
 	}
 	int ysize = (ny<=1 && (int)area.size[1]==0 ? 1 : (int)area.size[1]);
+
+	if ( (int)area.size[0] < 0 || ysize < 0 || zsize < 0 )
+	{
+		// Negative image dimensions not supported - added retrospectively by d.woolford
+		throw ImageDimensionException("New image dimensions are negative - this is not supported in the the get_clip operation");
+	}
 
 	result->set_size((int)area.size[0], ysize, zsize);
 
@@ -1197,7 +1207,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 							  src_data[ii + nxy + nx + 1],
 							  tuvx, tuvy, tuvz);
 #ifdef DEBUG
-		          		     	printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
+						printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
 						std::cout << src_data[ii] << std::endl;
 #endif
 					}
