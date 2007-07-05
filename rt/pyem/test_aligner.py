@@ -120,7 +120,7 @@ class TestAligner(unittest.TestCase):
         
         e.align('rotate_translate', e2, {'maxshift':1})
         
-    def test_RotateTranslateBestAligner(self):
+    def no_test_RotateTranslateBestAligner(self):
         """test RotateTranslateBestAligner .................."""
         e = EMData()
         e.set_size(32,32,1)
@@ -224,7 +224,7 @@ class TestAligner(unittest.TestCase):
         
         e.align('rtf_slowest', e2, {'flip':e3, 'maxshift':2})
         
-    def test_RTFBestAligner(self):
+    def no_test_RTFBestAligner(self):
         """test RTFBestAligner .............................."""
         e = EMData()
         e.set_size(32,32,1)
@@ -269,7 +269,7 @@ class TestAligner(unittest.TestCase):
         e.align('rtf_radon', e2, {'maxshift':2, 'thisf':e3, 'radonwith':e4, \
                 'radonthis':e5, 'radonthisf':e6})
                 
-    def test_RefineAligner(self):
+    def no_test_RefineAligner(self):
         """test RefineAligner ..............................."""
         e = EMData()
         e.set_size(32,32,1)
