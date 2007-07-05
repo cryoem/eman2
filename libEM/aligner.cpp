@@ -304,13 +304,13 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	}
 	EMData *cfL=this_img->copy();
 	float rotateAngle = (float) peak_index * 180.0 / this_img2_nx;
-	printf("rotateAngleInit= %f \n",rotateAngle ); // eliminate later, PRB
+	//printf("rotateAngleInit= %f \n",rotateAngle ); // eliminate later, PRB
 	cfL->rotate( rotateAngle, 0, 0);
 	EMData *cfR=this_img->copy();
 	cfR->rotate( rotateAngle-180, 0, 0);
 	float Ldot = cfL->dot(to);
 	float Rdot = cfR->dot(to);
-	printf("Ldot = %f, Rdot=%f \n",Ldot, Rdot); // eliminate later, PRB
+	//printf("Ldot = %f, Rdot=%f \n",Ldot, Rdot); // eliminate later, PRB
 	if (Ldot>Rdot){
 		cf=cfL;
 		delete cfR;
@@ -319,7 +319,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		delete cfL;
 		rotateAngle = rotateAngle-180;
 	}
-	printf("rotateAngleFinal= %f \n",rotateAngle ); // eliminate later, PRB
+	//printf("rotateAngleFinal= %f \n",rotateAngle ); // eliminate later, PRB
 	cf->set_attr("align.score", peak);
 	cf->set_attr("rotational", rotateAngle );
 	cf->set_attr("align.az",rotateAngle);
@@ -535,7 +535,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		cmp_name = "dot";
 	}
 #endif
-	printf(" This is the one \n");
+	//printf(" This is the one \n");
 	EMData *this_copy  = this_img->align("rotational", to);
 	
 	EMData *this_copy2 = this_copy->copy(); // Now this_copy, this_copy2
