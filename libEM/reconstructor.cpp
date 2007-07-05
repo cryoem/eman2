@@ -256,23 +256,23 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 		LOGERR("Do not Fourier transform the image before it is passed to the FourierReconstructor, this is performed internally");
 		return 1;
 	}
-	
+
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
 	EMData* slice = preprocess_slice( input_slice );
-	
+
 	if (!slice->is_complex()) {
 		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor failed in insert_slice");
 		return 1;
 	}
-	
+
 	int mode = params["mode"];
 	float weight = params["weight"];
-	
+
 	float *norm = tmp_data->get_data();
 	float *dat = slice->get_data();
 	float *rdata = image->get_data();
-	
+
 	int rl = Util::square(ny / 2 - 1);
 
 	FourierPixelInserter3D* inserter = FourierPixelInserterMaker::get_inserter(mode,norm, rdata, nx, ny, nz);
@@ -286,7 +286,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
 		Transform3D euler = arg.get_sym((string) params["sym"], i);
-		
+
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx / 2; x++) {
 				if ((x * x + Util::square(y - ny / 2)) >= rl)
@@ -315,12 +315,12 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 			}
 		}
 	}
-	
+
 	delete inserter;
 	delete slice;	
-	
+
 	image->update();
-	
+
 	return 0;
 }
 
@@ -371,7 +371,7 @@ EMData *FourierReconstructor::finish()
 	image->postift_depad_corner_inplace();
 	image->process_inplace("xform.phaseorigin");
 	
-	// should also clip here if the image was padded
+	// If the image was padded it should be clipped to the original image size, as the client would expect
 	if ( params.find("pad") != params.end() )
 	{
 		int pad = params["pad"];
@@ -496,8 +496,6 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 	float dt[2];
 	float g[8];
 	
-	
-
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
 			if ((x * x + Util::square(y - ny / 2)) >= rl)

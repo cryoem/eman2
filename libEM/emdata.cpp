@@ -417,32 +417,20 @@ void EMData::clip_inplace(const Region & area)
 
 			if (dst_inc <= (src_inc + civ.x_iter ))
 			{
+				// Overlap
 				if ( dst_inc > src_inc )
 				{
 					// Because the memcpy operation is the forward direction, and this "reverse
 					// direction" loop is proceeding in a backwards direction, it is possible
-					// that memory copied to is yet to be copied from. This is despite the fact that the
-					// destination pointer is greater than the source pointer, a situation where pixel data
-					// in memory must be shifted forward (and therefore must be dealt with here).
-					// With special consideration this problem is circumvented by copying different parts
-					// of the pixel row before the other - as follows:
+					// that memory copied to is yet to be copied from (because memcpy goes forward).
+					// In this scenario pixel memory "copied to" is yet to be "copied from"
+					// i.e. there is overlap
 
-					// Contrive the situation where the forward memory copy operation does not write over
-					// pixel data yet to "copied from" - copy as normal
-					float* local_dst = rdata + src_inc + civ.x_iter;
-					float* local_src = rdata + 2*src_inc - dst_inc + civ.x_iter;
-					int num_bytes = dst_inc - src_inc;
-					memcpy(local_dst, local_src, num_bytes*sizeof(float));
-					
-					// Now copy the rest of the pixel row in the reverse direction.
-					num_bytes = civ.x_iter - num_bytes;
-					for( int k = num_bytes; k >= 0; --k )
-					{
-						local_dst = rdata + dst_inc + k;
-						local_src = rdata + src_inc + k;
-						*local_dst = *local_src;
-					}
-					
+					// memmove handles overlapping cases.
+					// memmove could use a temporary buffer, or could go just go backwards
+					// the specification doesn't say how the function behaves... 
+					// If memmove creates a temporary buffer is clip_inplace no longer inplace?
+					memmove(local_dst, local_src, clipped_row_size);
 				}
 				continue;
 			}
