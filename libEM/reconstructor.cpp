@@ -2406,6 +2406,10 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
         float w = params["w"];
 	EMData* SSNR = params["SSNR"];
+	EMData* vol_ssnr = new EMData();
+	vol_ssnr->set_size(m_vnxp+2 - m_vnxp%2, m_vnyp, m_vnzp);
+	vol_ssnr->set_array_offsets(0,1,1);
+	vol_ssnr->to_zero();
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
@@ -2543,14 +2547,30 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						denom[r] += ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*wght/(Kn*(Kn-1.0f));
 						nn[r]    += 2;
 						ka[r]    += int(Kn);
-					} 
-					m_volume->cmplx(ix,iy,iz) *= tmp;
-					if (m_volume->is_fftodd()) 
-					{
-						float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*M_PI;
-						complex<float> temp2 = complex<float>(cos(temp),sin(temp));
-						m_volume->cmplx(ix,iy,iz) *= temp2;
 					}
+				if ( Kn > 1.0f)
+				{
+				 int iiy, iiz;
+				 if (iy <= m_vnyc )
+				 {
+				  	 iiy = m_vnyc +iy;
+				  }
+				 else
+				 {
+					 iiy = iy - m_vnyc+1;
+				 }
+				 if (iz<= m_vnzc )
+				{
+       					 iiz = m_vnzc +iz;
+ 				}
+				else
+				{
+       					 iiz = iz - m_vnzc+1;
+				}
+				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2+ix,iiy,iiz)=(*m_wptr2)(ix,iy,iz)/((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*(Kn*(Kn-1.0f)/Kn);
+				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2-ix,iiy,iiz)=(*m_wptr2)(ix,iy,iz)/((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*(Kn*(Kn-1.0f)/Kn);
+				}
+					
 				}
 			}
 		}
@@ -2563,7 +2583,9 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		(*SSNR)(i,3,0) = ka[i];
 				
 	}
-	return m_volume;
+	
+	vol_ssnr->update();
+	return vol_ssnr;
    }
 
 }
