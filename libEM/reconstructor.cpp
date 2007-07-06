@@ -1511,12 +1511,15 @@ EMData* nnSSNR_Reconstructor::finish()
 {
 	int kz, ky;
  	int box = 7;
-    int kc = (box-1)/2;
+    	int kc = (box-1)/2;
 	float alpha = 0.0;
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
 	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
-
+	EMData* vol_ssnr = new EMData();
+	vol_ssnr->set_size(m_vnxp+2 - m_vnxp%2, m_vnyp, m_vnzp);
+	vol_ssnr->set_array_offsets(0,1,1);
+	vol_ssnr->to_zero();
         float w = params["w"];
 	EMData* SSNR = params["SSNR"];
 
@@ -1526,7 +1529,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
 	SSNR->set_size(inc+1,4,1);
 
-	float *nom = new float[inc+1];
+	float *nom    = new float[inc+1];
 	float *denom  = new float[inc+1];
 	int *nn = new int[inc+1];
 	int *ka = new int[inc+1];
@@ -1613,13 +1616,32 @@ EMData* nnSSNR_Reconstructor::finish()
 						nn[r] += 2;
 						ka[r] += int(Kn);
 					}
-
-					m_volume->cmplx(ix,iy,iz) *= tmp;
-					if (m_volume->is_fftodd()) {
-						float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*M_PI;
-						complex<float> temp2 = complex<float>(cos(temp),sin(temp));
-						m_volume->cmplx(ix,iy,iz) *= temp2;
-					}
+					
+										}
+				if ( Kn > 1.0f)
+				{
+				 int iiy, iiz;
+				 if (iy <= m_vnyc )
+				 {
+				  	 iiy = m_vnyc +iy;
+				  }
+				 else
+				 {
+					 iiy = iy - m_vnyc+1;
+				 }
+				 if (iz<= m_vnzc )
+				{
+       					 iiz = m_vnzc +iz;
+ 				}
+				else
+				{
+       					 iiz = iz - m_vnzc+1;
+				}
+				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2+ix,iiy,iiz)=
+				 std::norm(m_volume->cmplx(ix,iy,iz))/((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)*(Kn*(Kn-1.0f)/Kn);
+				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2-ix,iiy,iiz)=
+				 std::norm(m_volume->cmplx(ix,iy,iz))/((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)*(Kn*(Kn-1.0f)/Kn);
+									
 				}
 			}
 		}
@@ -1632,14 +1654,7 @@ EMData* nnSSNR_Reconstructor::finish()
 		(*SSNR)(i,3,0) = ka[i];
 	}
 
-	return m_volume;
-
-	//vector<float> SSNR;
-	//SSNR.push_back(1.0);
-	//Dict d;
-	//d["Re"] = win;
-	//d["SSNR"] = SSNR;
-	//return d;
+	return vol_ssnr;
 }
 #undef  tw
 
