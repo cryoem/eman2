@@ -633,6 +633,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 
 	btwl_dict["low_cutoff_frequency"]  = lcut;
 	btwl_dict["high_cutoff_frequency"] = hcut;
+	volume->set_attr("npad",1);
 	volume->process_inplace("filter.lowpass.butterworth", btwl_dict);
 
 	// calculate the center of gravity
