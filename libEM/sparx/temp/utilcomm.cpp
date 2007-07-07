@@ -110,6 +110,9 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname, int *n
 			} catch ( std::exception& e ) {
 			    s2y = 0.0;
 			}
+			// WILL ADD OPTION TO ALLOW USER TO CHOOSE IF HEADER VALUES SHOULD BE USED, OR START WITH 0.0
+			s2x = 0.0;
+			s2y = 0.0;
 			// send these to processor ip
 			MPI_Send(imgdata, nx*ny, MPI_FLOAT, ip, ip, comm);
 			MPI_Send(&s2x, 1, MPI_FLOAT, ip, ip, comm);
