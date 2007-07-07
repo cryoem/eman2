@@ -6,7 +6,6 @@
 #include "sirt.h"
 #include "utilcomm.h"
 
-#define PI 3.14159265358979
 using namespace EMAN;
 
 //int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
@@ -149,8 +148,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	    for ( int i = 0 ; i < nangloc ; ++i ) {
 		// retrieve the angles and shifts from angleshift
 		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], angleshift[5*i + 1], angleshift[5*i + 2]);
-		dm[6] = angleshift[5*i + 3];
-		dm[7] = angleshift[5*i + 4];
+		dm[6] = angleshift[5*i + 3] * -1.0;
+		dm[7] = angleshift[5*i + 4] * -1.0;
 		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
 		    // iterate over symmetries
 		    Tf = Tf.get_sym(symmetry, ns) * RA;
