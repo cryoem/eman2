@@ -309,6 +309,12 @@ class TestTypeConverter(unittest.TestCase):
         testlib.check_emdata(img3, sys.argv[0])
 
         os.unlink(imgfile1)
+    
+    def test_None_emobject(self):
+        """test test None as EMObject ......................."""
+        e = EMData(32,32)
+        e.set_attr('Nothing', None)
+        self.assertEqual(e.get_attr('Nothing'), None)
 
 
 def test_main():
