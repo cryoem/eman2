@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
 				for (int k = 0; k < SIZE * SIZE; k++)
-					sqrt(d[k]);
+					(void)sqrt(d[k]);
 			}
 		}
 		t2 = (float) clock();
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
 				for (int k = 0; k < SIZE * SIZE; k++)
-					cos(d[k]);
+					(void)cos(d[k]);
 			}
 		}
 		t2 = (float) clock();
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < 100; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
 				for (int k = 0; k < SIZE * SIZE - 1; k++)
-					hypot(d[k], d[k + 1]);
+					(void)hypot(d[k], d[k + 1]);
 			}
 		}
 		t2 = (float) clock();
@@ -316,8 +316,8 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < 500; j++) {
 			for (int i = 0; i < NTT / 2; i++) {
 				for (int k = 0; k < SIZE * SIZE - 1; k++) {
-					atan2(d[k], d[k + 1]);
-					hypot(d[k], d[k + 1]);
+					(void)atan2(d[k], d[k + 1]);
+					(void)hypot(d[k], d[k + 1]);
 				}
 			}
 		}
