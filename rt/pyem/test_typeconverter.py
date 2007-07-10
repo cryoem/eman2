@@ -311,7 +311,7 @@ class TestTypeConverter(unittest.TestCase):
         os.unlink(imgfile1)
     
     def test_None_emobject(self):
-        """test test None as EMObject ......................."""
+        """test None as EMObject ......................."""
         e = EMData(32,32)
         e.set_attr('Nothing', None)
         self.assertEqual(e.get_attr('Nothing'), None)
