@@ -251,7 +251,7 @@ int PCA::dopca_ooc(const string &filename_in, const string &filename_out,
    EMData *eigvec = new EMData();
    eigvec->set_size(nx, 1, 1);
    float *ritzvec = eigvec->get_data(); 
-   EMData *newimage;
+   EMData *newimage = 0;
 
    // compute Ritz vectors (approximate eigenvectors) one at a time
    FILE *fp;

@@ -141,7 +141,7 @@ PointArray & PointArray::operator=(PointArray & pa)
 	return n;
 }
 
-void PointArray::set_number_points(int nn)
+void PointArray::set_number_points(unsigned int nn)
 {
 	if (n != nn) {
 		n = nn;
@@ -253,7 +253,7 @@ vector<int> match=match_points(to,max_dist);
 Transform3D *ret=new Transform3D();
 
 // we use bilinear least squares to get 3/6 matrix components
-int i,j;
+unsigned int i,j;
 
 vector<float> pts;
 for (i=0; i<match.size(); i++) {
@@ -654,7 +654,7 @@ void PointArray::mask_asymmetric_unit(const string & sym)
 
 vector<float> PointArray::get_points() {
 vector<float> ret;
-for (int i=0; i<n; i++) {
+for (unsigned int i=0; i<n; i++) {
 	ret.push_back((float)points[i*4]);
 	ret.push_back((float)points[i*4+1]);
 	ret.push_back((float)points[i*4+2]);
@@ -665,7 +665,7 @@ return ret;
 
 void PointArray::transform(Transform3D xf) {
 
-for ( int i = 0; i < 4 * n; i += 4) {
+for ( unsigned int i = 0; i < 4 * n; i += 4) {
 	Vec3f v((float)points[i],(float)points[i+1],(float)points[i+2]);
 	v=v*xf;
 	points[i]  =v[0];
@@ -705,7 +705,7 @@ void PointArray::set_from(double *src,  int num, const string & sym, Transform3D
 
 void PointArray::set_from(vector<float> pts) {
 	set_number_points(pts.size()/4);
-	for (int i=0; i<pts.size(); i++) points[i]=pts[i];
+	for (unsigned int i=0; i<pts.size(); i++) points[i]=pts[i];
 
 }
 

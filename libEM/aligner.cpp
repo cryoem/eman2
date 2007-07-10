@@ -1561,13 +1561,13 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	EMData *result = this_img->copy();
 
-	int ny = this_img->get_ysize();
+//	int ny = this_img->get_ysize();
 
 //	float salt = this_img.get_attr("align.az");
 //	float sdx = this_img.get_attr("align.dx");
 //	float sdy = this_img.get_attr("align.dy");
 
-	float dda = atan(2.0f / ny);
+//	float dda = atan(2.0f / ny);
 
 	int mode = params.set_default("mode", 0);
 	float saz = params.set_default("az",0.0);

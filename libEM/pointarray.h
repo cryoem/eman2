@@ -68,7 +68,7 @@ namespace EMAN
 		PointArray *copy();
 		PointArray & operator=(PointArray & pa);
 		int get_number_points();
-		void set_number_points(int nn);
+		void set_number_points(unsigned int nn);
 		bool read_from_pdb(const char *file);
 		void save_to_pdb(const char *file);
 		FloatPoint get_center();
@@ -147,7 +147,7 @@ namespace EMAN
 
 		private:
 		double *points;
-		int n;
+		unsigned int n;
 	};
 }
 

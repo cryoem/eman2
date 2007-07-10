@@ -474,7 +474,7 @@ float dist_r(int lnlen, const float* line_1, const float* line_2)
 float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 {
     int lnlen = get_xsize();
-    int nline = get_ysize();
+//    int nline = get_ysize();
 
 	Assert( n1 >=0 && n1 < nline );
     Assert( n2 >=0 && n2 < nline );
