@@ -1155,7 +1155,7 @@ int HdfIO::get_hdf_dims(int image_index, int *p_nx, int *p_ny, int *p_nz)
 	return 0;
 }
 
-herr_t HdfIO::file_info(hid_t loc_id, const char *name, void *opdata)
+herr_t HdfIO::file_info(hid_t, const char *name, void *opdata)
 {
 //	loc_id = loc_id;
 	vector < int >*image_indices = static_cast < vector < int >*>(opdata);

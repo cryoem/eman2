@@ -293,7 +293,7 @@ map<string, EMObject> TestUtil::test_map_emobject(const map<string, EMObject>& d
 }
 
 map<string, vector<string> > TestUtil::test_map_vecstring(const map<string,
-														  vector<string> >& d)
+														  vector<string> >&)
 {
 	map<string, vector<string> > r;
 	return r;
@@ -392,7 +392,7 @@ Dict TestUtil::test_dict(const Dict & d)
 
 int TestUtil::check_image(const string& imagefile, EMData * image)
 {
-#if 0
+#if DEBUG
 	string headerfile1 = Util::sbasename(imagefile) + EMDATA_HEADER_EXT;
 	string datafile1 = Util::sbasename(imagefile) + EMDATA_DATA_EXT;
 
@@ -572,7 +572,7 @@ void TestUtil::make_image_file_by_mode(const string & filename,
 }
 
 int TestUtil::verify_image_file_by_mode(const string & filename,
-										EMUtil::ImageType image_type, int mode,
+										EMUtil::ImageType, int mode,
 										EMUtil::EMDataType datatype,
 										int nx, int ny, int nz)
 {

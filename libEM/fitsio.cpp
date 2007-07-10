@@ -79,7 +79,7 @@ bool FitsIO::is_image_big_endian()
 	return is_big_endian;
 }
 
-bool FitsIO::is_valid(const void *first_block, off_t file_size)
+bool FitsIO::is_valid(const void *first_block, off_t)
 {
 	ENTERFUNC;
 	
@@ -93,7 +93,7 @@ bool FitsIO::is_valid(const void *first_block, off_t file_size)
 	return false;
 }
 
-int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool )
+int FitsIO::read_header(Dict & dict, int, const Region * area, bool )
 {
 	ENTERFUNC;
 
@@ -142,7 +142,7 @@ int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 	return 0;
 }
 
-int FitsIO::write_header(const Dict & dict, int image_index, const Region* area,
+int FitsIO::write_header(const Dict & , int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
@@ -152,7 +152,7 @@ int FitsIO::write_header(const Dict & dict, int image_index, const Region* area,
 	return 0;
 }
 
-int FitsIO::read_data(float *rdata, int image_index, const Region * area, bool )
+int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 {
 	ENTERFUNC;
 	int i;
@@ -199,7 +199,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region * area, bool )
 	return 0;
 }
 
-int FitsIO::write_data(float *data, int image_index, const Region* area,
+int FitsIO::write_data(float *data, int image_index, const Region*,
 					  EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
@@ -224,7 +224,7 @@ void FitsIO::flush()
 	fflush(fitsfile);
 }
 
-int FitsIO::read_ctf(Ctf & ctf, int)
+int FitsIO::read_ctf(Ctf &, int)
 {
 	ENTERFUNC;
 	init();
@@ -232,7 +232,7 @@ int FitsIO::read_ctf(Ctf & ctf, int)
 	return 0;
 }
 
-void FitsIO::write_ctf(const Ctf & ctf, int)
+void FitsIO::write_ctf(const Ctf &, int)
 {
 	ENTERFUNC;
 	init();

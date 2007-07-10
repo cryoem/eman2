@@ -499,7 +499,7 @@ bool EMAN::operator!=(const EMObject &e1, const EMObject & e2)
 }
 
 // Copy constructor
-EMObject::EMObject(const EMObject& that)
+EMObject::EMObject(const EMObject& that) : EMObjectTypes(that)
 {
 	*this = that;
 }

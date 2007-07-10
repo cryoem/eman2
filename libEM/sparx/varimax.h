@@ -40,7 +40,7 @@ enum rotationMethods
 
 typedef struct methodName
 {
-	char      *name;
+	const char      *name;
 	short      length; /*minimum number of letters for recognition*/
 } methodName;
 

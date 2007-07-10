@@ -82,13 +82,14 @@ void JpegIO::init()
 	EXITFUNC;
 }
 
-bool JpegIO::is_valid(const void *first_block)
+bool JpegIO::is_valid(const void *)
 {
-	ENTERFUNC;
+//	ENTERFUNC;
 	return false;
 }
 
-int JpegIO::read_header(Dict & dict, int image_index, const Region * area, bool)
+//int JpegIO::read_header(Dict & dict, int image_index, const Region * area, bool)
+int JpegIO::read_header(Dict &, int, const Region *, bool)
 {
 	ENTERFUNC;
 
@@ -130,7 +131,7 @@ int JpegIO::write_header(const Dict & dict, int image_index, const Region* area,
 	return 0;
 }
 
-int JpegIO::read_data(float *data, int image_index, const Region * area, bool)
+int JpegIO::read_data(float *, int, const Region *, bool)
 {
 	ENTERFUNC;
 

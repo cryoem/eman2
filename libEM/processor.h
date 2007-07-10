@@ -2535,7 +2535,7 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 	
-	inline float NormalizeUnitProcessor::calc_mean(EMData *image) const { return 0; }
+	inline float NormalizeUnitProcessor::calc_mean(EMData *) const { return 0; }
 
 	/**Normalize an image so its elements sum to 1.0 (fails if mean=0)
 	 */
@@ -2562,7 +2562,7 @@ The basic design of EMAN Processors: <br>\
 		float calc_mean(EMData * image) const;
 	};
 	
-	inline float NormalizeUnitSumProcessor::calc_mean(EMData *image) const { return 0; }
+	inline float NormalizeUnitSumProcessor::calc_mean(EMData *) const { return 0; }
 
 		
 	/**do a standard normalization on an image.

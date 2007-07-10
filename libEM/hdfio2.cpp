@@ -382,7 +382,7 @@ bool HdfIO2::is_valid(const void *first_block)
 }
 
 // Reads all of the attributes from the /MDF/images/<imgno> group
-int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
+int HdfIO2::read_header(Dict & dict, int image_index, const Region *, bool)
 {
 	ENTERFUNC;
 	init();
@@ -452,7 +452,7 @@ int HdfIO2::erase_header(int image_index)
 }
 
 
-int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is3d)
+int HdfIO2::read_data(float *data, int image_index, const Region *, bool)
 {
 	ENTERFUNC;
 #ifdef DEBUGHDF	
@@ -475,7 +475,7 @@ int HdfIO2::read_data(float *data, int image_index, const Region * area, bool is
 
 // Writes all attributes in 'dict' to the image group
 // Creation of the image dataset is also handled here
-int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
+int HdfIO2::write_header(const Dict & dict, int image_index, const Region*,
 						EMUtil::EMDataType, bool)
 {
 #ifdef DEBUGHDF	
@@ -581,8 +581,8 @@ int HdfIO2::write_header(const Dict & dict, int image_index, const Region* area,
 
 // Writes the actual image data to the corresponding dataset (already created)
 // Region writing has not been implemented yet
-int HdfIO2::write_data(float *data, int image_index, const Region* area,
-					  EMUtil::EMDataType dt, bool uhe)
+int HdfIO2::write_data(float *data, int image_index, const Region*,
+					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
 #ifdef DEBUGHDF	

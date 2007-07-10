@@ -53,7 +53,7 @@ SingleSpiderIO::~SingleSpiderIO()
 
 
 int SingleSpiderIO::write_header(const Dict & dict, int , const Region* area,
-								 EMUtil::EMDataType filestoragetype, bool use_host_endian)
+								 EMUtil::EMDataType, bool)
 {
 	size_t offset = 0;
 	int image_index = 0;
@@ -62,7 +62,7 @@ int SingleSpiderIO::write_header(const Dict & dict, int , const Region* area,
 
 
 int SingleSpiderIO::write_data(float *data, int , const Region* area,
-							   EMUtil::EMDataType filestoragetype, bool use_host_endian)
+							   EMUtil::EMDataType, bool)
 {
 	size_t offset = (int) first_h->headlen;
 	return write_single_data(data, area, first_h, offset, 0, 1);

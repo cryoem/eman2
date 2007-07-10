@@ -184,9 +184,8 @@ integer ieeeck_(integer *ispec, real *zero, real *one)
 
 
 
-integer ilaenv_(integer *ispec, char *name__, char *opts, integer *n1, 
-	integer *n2, integer *n3, integer *n4, ftnlen name_len, ftnlen 
-	opts_len)
+integer ilaenv_(integer *ispec, const char *name__, const char *, integer *n1, 
+	integer *n2, integer *, integer *n4, ftnlen name_len, ftnlen )
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -292,8 +291,8 @@ integer ilaenv_(integer *ispec, char *name__, char *opts, integer *n1,
     /* System generated locals */
     integer ret_val;
     /* Builtin functions   
-       Subroutine */ void s_copy(char *, char *, ftnlen, ftnlen);
-    integer s_cmp(char *, char *, ftnlen, ftnlen);
+       Subroutine */ void s_copy(char *, const char *, ftnlen, ftnlen);
+    integer s_cmp(char *, const char *, ftnlen, ftnlen);
     /* Local variables */
     static integer i__;
     static logical cname, sname;
@@ -793,7 +792,7 @@ L1100:
 
 
 
-logical lsame_(char *ca, char *cb)
+logical lsame_(const char *ca, const char *cb)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -1050,7 +1049,7 @@ L40:
 #ifdef KR_headers
 integer s_cmp(a0, b0, la, lb) char *a0, *b0; ftnlen la, lb;
 #else
-integer s_cmp(char *a0, char *b0, ftnlen la, ftnlen lb)
+integer s_cmp(char *a0, const char *b0, ftnlen la, ftnlen lb)
 #endif
 {
 register unsigned char *a, *aend, *b, *bend;
@@ -1100,10 +1099,11 @@ return(0);
 #ifdef KR_headers
 VOID s_copy(a, b, la, lb) register char *a, *b; ftnlen la, lb;
 #else
-void s_copy(char *a, char *b, ftnlen la, ftnlen lb)
+void s_copy(char *a, const char *b, ftnlen la, ftnlen lb)
 #endif
 {
-	register char *aend, *bend;
+	register char *aend;
+	const register char *bend;
 
 	aend = a + la;
 
@@ -1290,7 +1290,7 @@ L60:
 
 
 
-/* Subroutine */ int sgemm_(char *transa, char *transb, integer *m, integer *
+/* Subroutine */ int sgemm_(const char *transa, const char *transb, integer *m, integer *
 	n, integer *k, real *alpha, real *a, integer *lda, real *b, integer *
 	ldb, real *beta, real *c__, integer *ldc)
 {
@@ -1302,9 +1302,9 @@ L60:
     static logical nota, notb;
     static real temp;
     static integer i__, j, l, ncola;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer nrowa, nrowb;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 #define b_ref(a_1,a_2) b[(a_2)*b_dim1 + a_1]
 #define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
@@ -1602,7 +1602,7 @@ L60:
 
 
 
-/* Subroutine */ int sgemv_(char *trans, integer *m, integer *n, real *alpha, 
+/* Subroutine */ int sgemv_(const char *trans, integer *m, integer *n, real *alpha, 
 	real *a, integer *lda, real *x, integer *incx, real *beta, real *y, 
 	integer *incy)
 {
@@ -1612,9 +1612,9 @@ L60:
     static integer info;
     static real temp;
     static integer lenx, leny, i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer ix, iy, jx, jy, kx, ky;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 /*  Purpose   
     =======   
@@ -1857,7 +1857,7 @@ L60:
     static integer info;
     static real temp;
     static integer i__, j, ix, jy, kx;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 /*  Purpose   
     =======   
@@ -2273,7 +2273,7 @@ L60:
 
 
 
-doublereal slamch_(char *cmach)
+doublereal slamch_(const char *cmach)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -2332,7 +2332,7 @@ doublereal slamch_(char *cmach)
     static integer imin, imax;
     static logical lrnd;
     static real rmin, rmax, t, rmach;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static real small, sfmin;
     extern /* Subroutine */ int slamc2_(integer *, integer *, logical *, real 
 	    *, integer *, real *, integer *, real *);
@@ -3226,7 +3226,7 @@ it
 
 
 
-doublereal slanst_(char *norm, integer *n, real *d__, real *e)
+doublereal slanst_(const char *norm, integer *n, real *d__, real *e)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -3291,7 +3291,7 @@ doublereal slanst_(char *norm, integer *n, real *d__, real *e)
     /* Local variables */
     static integer i__;
     static real scale;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static real anorm;
     extern /* Subroutine */ int slassq_(integer *, real *, integer *, real *, 
 	    real *);
@@ -3365,7 +3365,7 @@ doublereal slanst_(char *norm, integer *n, real *d__, real *e)
 
 
 
-doublereal slansy_(char *norm, char *uplo, integer *n, real *a, integer *lda, 
+doublereal slansy_(const char *norm, char *uplo, integer *n, real *a, integer *lda, 
 	real *work)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -3448,7 +3448,7 @@ doublereal slansy_(char *norm, char *uplo, integer *n, real *a, integer *lda,
     static real absa;
     static integer i__, j;
     static real scale;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static real value;
     extern /* Subroutine */ int slassq_(integer *, real *, integer *, real *, 
 	    real *);
@@ -3631,7 +3631,7 @@ doublereal slapy2_(real *x, real *y)
 
 
 
-/* Subroutine */ int slarfb_(char *side, char *trans, char *direct, char *
+/* Subroutine */ int slarfb_(const char *side, const char *trans, const char *direct, const char *
 	storev, integer *m, integer *n, integer *k, real *v, integer *ldv, 
 	real *t, integer *ldt, real *c__, integer *ldc, real *work, integer *
 	ldwork)
@@ -3730,12 +3730,12 @@ doublereal slapy2_(real *x, real *y)
 	    work_offset, i__1, i__2;
     /* Local variables */
     static integer i__, j;
-    extern logical lsame_(char *, char *);
-    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+    extern logical lsame_(const char *, const char *);
+    extern /* Subroutine */ int sgemm_(const char *, const char *, integer *, integer *, 
 	    integer *, real *, real *, integer *, real *, integer *, real *, 
 	    real *, integer *), scopy_(integer *, real *, 
-	    integer *, real *, integer *), strmm_(char *, char *, char *, 
-	    char *, integer *, integer *, real *, real *, integer *, real *, 
+	    integer *, real *, integer *), strmm_(const char *, const char *, const char *, 
+	    const char *, integer *, integer *, real *, real *, integer *, real *, 
 	    integer *);
     static char transt[1];
 #define work_ref(a_1,a_2) work[(a_2)*work_dim1 + a_1]
@@ -4335,7 +4335,7 @@ doublereal slapy2_(real *x, real *y)
 
 
 
-/* Subroutine */ int slarf_(char *side, integer *m, integer *n, real *v, 
+/* Subroutine */ int slarf_(const char *side, integer *m, integer *n, real *v, 
 	integer *incv, real *tau, real *c__, integer *ldc, real *work)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -4408,8 +4408,8 @@ doublereal slapy2_(real *x, real *y)
     /* Local variables */
     extern /* Subroutine */ int sger_(integer *, integer *, real *, real *, 
 	    integer *, real *, integer *, real *, integer *);
-    extern logical lsame_(char *, char *);
-    extern /* Subroutine */ int sgemv_(char *, integer *, integer *, real *, 
+    extern logical lsame_(const char *, const char *);
+    extern /* Subroutine */ int sgemv_(const char *, integer *, integer *, real *, 
 	    real *, integer *, real *, integer *, real *, real *, integer *);
 
 
@@ -4532,7 +4532,7 @@ doublereal slapy2_(real *x, real *y)
     static integer j;
     extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
     static real xnorm;
-    extern doublereal slapy2_(real *, real *), slamch_(char *);
+    extern doublereal slapy2_(real *, real *), slamch_(const char *);
     static real safmin, rsafmn;
     static integer knt;
 
@@ -4612,7 +4612,7 @@ L10:
 
 
 
-/* Subroutine */ int slarft_(char *direct, char *storev, integer *n, integer *
+/* Subroutine */ int slarft_(const char *direct, const char *storev, integer *n, integer *
 	k, real *v, integer *ldv, real *tau, real *t, integer *ldt)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -4724,9 +4724,9 @@ L10:
     real r__1;
     /* Local variables */
     static integer i__, j;
-    extern logical lsame_(char *, char *);
-    extern /* Subroutine */ int sgemv_(char *, integer *, integer *, real *, 
-	    real *, integer *, real *, integer *, real *, real *, integer *), strmv_(char *, char *, char *, integer *, real *, 
+    extern logical lsame_(const char *, const char *);
+    extern /* Subroutine */ int sgemv_(const char *, integer *, integer *, real *, 
+	    real *, integer *, real *, integer *, real *, real *, integer *), strmv_(const char *, const char *, const char *, integer *, real *, 
 	    integer *, real *, integer *);
     static real vii;
 #define t_ref(a_1,a_2) t[(a_2)*t_dim1 + a_1]
@@ -4925,7 +4925,7 @@ L10:
     static real scale;
     static integer count;
     static real f1, g1, safmn2, safmx2;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real safmin, eps;
 
 
@@ -5026,7 +5026,7 @@ L30:
 
 
 
-/* Subroutine */ int slascl_(char *type__, integer *kl, integer *ku, real *
+/* Subroutine */ int slascl_(const char *type__, integer *kl, integer *ku, real *
 	cfrom, real *cto, integer *m, integer *n, real *a, integer *lda, 
 	integer *info)
 {
@@ -5107,12 +5107,12 @@ L30:
     static logical done;
     static real ctoc;
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer itype, k1, k2, k3, k4;
     static real cfrom1;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real cfromc;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static real bignum, smlnum, mul, cto1;
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
@@ -5339,7 +5339,7 @@ L10:
 
 
 
-/* Subroutine */ int slaset_(char *uplo, integer *m, integer *n, real *alpha, 
+/* Subroutine */ int slaset_(const char *uplo, integer *m, integer *n, real *alpha, 
 	real *beta, real *a, integer *lda)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -5397,7 +5397,7 @@ L10:
     integer a_dim1, a_offset, i__1, i__2, i__3;
     /* Local variables */
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
     a_dim1 = *lda;
@@ -5472,7 +5472,7 @@ L10:
 
 
 
-/* Subroutine */ int slasr_(char *side, char *pivot, char *direct, integer *m,
+/* Subroutine */ int slasr_(const char *side, const char *pivot, const char *direct, integer *m,
 	 integer *n, real *c__, real *s, real *a, integer *lda)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -5581,9 +5581,9 @@ L10:
     static integer info;
     static real temp;
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static real ctemp, stemp;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
     --c__;
@@ -5865,7 +5865,7 @@ L10:
 
 
 
-/* Subroutine */ int slasrt_(char *id, integer *n, real *d__, integer *info)
+/* Subroutine */ int slasrt_(const char *id, integer *n, real *d__, integer *info)
 {
 /*  -- LAPACK routine (version 3.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -5912,11 +5912,11 @@ L10:
     integer i__1, i__2;
     /* Local variables */
     static integer endd, i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer stack[64]	/* was [2][32] */;
     static real dmnmx, d1, d2, d3;
     static integer start;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static integer stkpnt, dir;
     static real tmp;
 #define stack_ref(a_1,a_2) stack[(a_2)*2 + a_1 - 3]
@@ -6365,12 +6365,12 @@ L110:
     extern doublereal sdot_(integer *, real *, integer *, real *, integer *);
     static integer i__;
     static real alpha;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *), 
-	    sgemv_(char *, integer *, integer *, real *, real *, integer *, 
+	    sgemv_(const char *, integer *, integer *, real *, real *, integer *, 
 	    real *, integer *, real *, real *, integer *), saxpy_(
 	    integer *, real *, real *, integer *, real *, integer *), ssymv_(
-	    char *, integer *, real *, real *, integer *, real *, integer *, 
+	    const char *, integer *, real *, real *, integer *, real *, integer *, 
 	    real *, real *, integer *);
     static integer iw;
     extern /* Subroutine */ int slarfg_(integer *, real *, real *, integer *, 
@@ -6677,10 +6677,10 @@ doublereal snrm2_(integer *n, real *x, integer *incx)
     /* Local variables */
     static integer i__, j, l;
     extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *), 
-	    slarf_(char *, integer *, integer *, real *, integer *, real *, 
+	    slarf_(const char *, integer *, integer *, real *, integer *, real *, 
 	    real *, integer *, real *);
     static integer ii;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
 
@@ -6831,8 +6831,8 @@ doublereal snrm2_(integer *n, real *x, integer *incx)
     /* Local variables */
     static integer i__, j, l;
     extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *), 
-	    slarf_(char *, integer *, integer *, real *, integer *, real *, 
-	    real *, integer *, real *), xerbla_(char *, integer *);
+	    slarf_(const char *, integer *, integer *, real *, integer *, real *, 
+	    real *, integer *, real *), xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
 
@@ -7000,12 +7000,12 @@ doublereal snrm2_(integer *n, real *x, integer *incx)
     extern /* Subroutine */ int sorg2l_(integer *, integer *, integer *, real 
 	    *, integer *, real *, real *, integer *);
     static integer ib, nb, kk, nx;
-    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+    extern /* Subroutine */ int slarfb_(const char *, const char *, const char *, const char *, 
 	    integer *, integer *, integer *, real *, integer *, real *, 
-	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(const char *, integer *);
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
-    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int slarft_(const char *, const char *, integer *, integer *, 
 	    real *, integer *, real *, real *, integer *);
     static integer ldwork, lwkopt;
     static logical lquery;
@@ -7261,12 +7261,12 @@ doublereal snrm2_(integer *n, real *x, integer *incx)
     extern /* Subroutine */ int sorg2r_(integer *, integer *, integer *, real 
 	    *, integer *, real *, real *, integer *);
     static integer nb, ki, kk, nx;
-    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+    extern /* Subroutine */ int slarfb_(const char *, const char *, const char *, const char *, 
 	    integer *, integer *, integer *, real *, integer *, real *, 
-	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(const char *, integer *);
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
-    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int slarft_(const char *, const char *, integer *, integer *, 
 	    real *, integer *, real *, real *, integer *);
     static integer ldwork, lwkopt;
     static logical lquery;
@@ -7515,12 +7515,12 @@ doublereal snrm2_(integer *n, real *x, integer *incx)
     integer a_dim1, a_offset, i__1, i__2, i__3;
     /* Local variables */
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer iinfo;
     static logical upper;
     static integer nb;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
     extern /* Subroutine */ int sorgql_(integer *, integer *, integer *, real 
 	    *, integer *, real *, real *, integer *, integer *), sorgqr_(
@@ -7731,7 +7731,7 @@ L40:
 
 
 
-/* Subroutine */ int ssteqr_(char *compz, integer *n, real *d__, real *e, 
+/* Subroutine */ int ssteqr_(const char *compz, integer *n, real *d__, real *e, 
 	real *z__, integer *ldz, real *work, integer *info)
 {
 /*  -- LAPACK routine (version 3.0) --   
@@ -7826,9 +7826,9 @@ L40:
     static real b, c__, f, g;
     static integer i__, j, k, l, m;
     static real p, r__, s;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static real anorm;
-    extern /* Subroutine */ int slasr_(char *, char *, char *, integer *, 
+    extern /* Subroutine */ int slasr_(const char *, const char *, const char *, integer *, 
 	    integer *, real *, real *, real *, integer *);
     static integer l1;
     extern /* Subroutine */ int sswap_(integer *, real *, integer *, real *, 
@@ -7838,21 +7838,21 @@ L40:
 	    , real *, real *);
     extern doublereal slapy2_(real *, real *);
     static integer ii, mm, iscale;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real safmin;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static real safmax;
-    extern /* Subroutine */ int slascl_(char *, integer *, integer *, real *, 
+    extern /* Subroutine */ int slascl_(const char *, integer *, integer *, real *, 
 	    real *, integer *, integer *, real *, integer *, integer *);
     static integer lendsv;
     extern /* Subroutine */ int slartg_(real *, real *, real *, real *, real *
-	    ), slaset_(char *, integer *, integer *, real *, real *, real *, 
+	    ), slaset_(const char *, integer *, integer *, real *, real *, real *, 
 	    integer *);
     static real ssfmin;
     static integer nmaxit, icompz;
     static real ssfmax;
-    extern doublereal slanst_(char *, integer *, real *, real *);
-    extern /* Subroutine */ int slasrt_(char *, integer *, real *, integer *);
+    extern doublereal slanst_(const char *, integer *, real *, real *);
+    extern /* Subroutine */ int slasrt_(const char *, integer *, real *, integer *);
     static integer lm1, mm1, nm1;
     static real rt1, rt2, eps;
     static integer lsv;
@@ -8393,18 +8393,18 @@ L190:
     extern doublereal slapy2_(real *, real *);
     static integer iscale;
     static real oldgam;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real safmin;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static real safmax;
-    extern /* Subroutine */ int slascl_(char *, integer *, integer *, real *, 
+    extern /* Subroutine */ int slascl_(const char *, integer *, integer *, real *, 
 	    real *, integer *, integer *, real *, integer *, integer *);
     static integer lendsv;
     static real ssfmin;
     static integer nmaxit;
     static real ssfmax;
-    extern doublereal slanst_(char *, integer *, real *, real *);
-    extern /* Subroutine */ int slasrt_(char *, integer *, real *, integer *);
+    extern doublereal slanst_(const char *, integer *, real *, real *);
+    extern /* Subroutine */ int slasrt_(const char *, integer *, real *, integer *);
     static real rt1, rt2, eps, rte;
     static integer lsv;
     static real eps2;
@@ -8933,29 +8933,29 @@ L40:
     static real rmin, rmax;
     static integer lopt;
     static real sigma;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer iinfo;
     extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
     static logical lower, wantz;
     static integer nb, iscale;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real safmin;
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static real bignum;
-    extern /* Subroutine */ int slascl_(char *, integer *, integer *, real *, 
+    extern /* Subroutine */ int slascl_(const char *, integer *, integer *, real *, 
 	    real *, integer *, integer *, real *, integer *, integer *);
     static integer indtau, indwrk;
     extern /* Subroutine */ int ssterf_(integer *, real *, real *, integer *);
-    extern doublereal slansy_(char *, char *, integer *, real *, integer *, 
+    extern doublereal slansy_(const char *, char *, integer *, real *, integer *, 
 	    real *);
     static integer llwork;
     static real smlnum;
     static integer lwkopt;
     static logical lquery;
     extern /* Subroutine */ int sorgtr_(char *, integer *, real *, integer *, 
-	    real *, real *, integer *, integer *), ssteqr_(char *, 
+	    real *, real *, integer *, integer *), ssteqr_(const char *, 
 	    integer *, real *, real *, real *, integer *, real *, integer *), ssytrd_(char *, integer *, real *, integer *, real *, 
 	    real *, real *, real *, integer *, integer *);
     static real eps;
@@ -9098,7 +9098,7 @@ L40:
 
 
 
-/* Subroutine */ int ssymv_(char *uplo, integer *n, real *alpha, real *a, 
+/* Subroutine */ int ssymv_(const char *uplo, integer *n, real *alpha, real *a, 
 	integer *lda, real *x, integer *incx, real *beta, real *y, integer *
 	incy)
 {
@@ -9108,9 +9108,9 @@ L40:
     static integer info;
     static real temp1, temp2;
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer ix, iy, jx, jy, kx, ky;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 /*  Purpose   
     =======   
@@ -9357,9 +9357,9 @@ L40:
     static integer info;
     static real temp1, temp2;
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer ix, iy, jx, jy, kx, ky;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 /*  Purpose   
     =======   
@@ -9561,7 +9561,7 @@ L40:
 
 
 
-/* Subroutine */ int ssyr2k_(char *uplo, char *trans, integer *n, integer *k, 
+/* Subroutine */ int ssyr2k_(char *uplo, const char *trans, integer *n, integer *k, 
 	real *alpha, real *a, integer *lda, real *b, integer *ldb, real *beta,
 	 real *c__, integer *ldc)
 {
@@ -9572,10 +9572,10 @@ L40:
     static integer info;
     static real temp1, temp2;
     static integer i__, j, l;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer nrowa;
     static logical upper;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 #define b_ref(a_1,a_2) b[(a_2)*b_dim1 + a_1]
 #define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
@@ -10023,12 +10023,12 @@ L40:
     extern /* Subroutine */ int ssyr2_(char *, integer *, real *, real *, 
 	    integer *, real *, integer *, real *, integer *);
     static real alpha;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static logical upper;
     extern /* Subroutine */ int saxpy_(integer *, real *, real *, integer *, 
-	    real *, integer *), ssymv_(char *, integer *, real *, real *, 
+	    real *, integer *), ssymv_(const char *, integer *, real *, real *, 
 	    integer *, real *, integer *, real *, real *, integer *), 
-	    xerbla_(char *, integer *), slarfg_(integer *, real *, 
+	    xerbla_(const char *, integer *), slarfg_(integer *, real *, 
 	    real *, integer *, real *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 
@@ -10312,17 +10312,17 @@ L40:
     integer a_dim1, a_offset, i__1, i__2, i__3;
     /* Local variables */
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer nbmin, iinfo;
     static logical upper;
     static integer nb, kk;
     extern /* Subroutine */ int ssytd2_(char *, integer *, real *, integer *, 
-	    real *, real *, real *, integer *), ssyr2k_(char *, char *
+	    real *, real *, real *, integer *), ssyr2k_(char *, const char *
 	    , integer *, integer *, real *, real *, integer *, real *, 
 	    integer *, real *, real *, integer *);
     static integer nx;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
     extern /* Subroutine */ int slatrd_(char *, integer *, integer *, real *, 
 	    integer *, real *, real *, real *, integer *);
@@ -10515,7 +10515,7 @@ L40:
 
 
 
-/* Subroutine */ int strmm_(char *side, char *uplo, char *transa, char *diag, 
+/* Subroutine */ int strmm_(const char *side, const char *uplo, const char *transa, const char *diag, 
 	integer *m, integer *n, real *alpha, real *a, integer *lda, real *b, 
 	integer *ldb)
 {
@@ -10526,10 +10526,10 @@ L40:
     static real temp;
     static integer i__, j, k;
     static logical lside;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer nrowa;
     static logical upper;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static logical nounit;
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 #define b_ref(a_1,a_2) b[(a_2)*b_dim1 + a_1]
@@ -10890,7 +10890,7 @@ L40:
 
 
 
-/* Subroutine */ int strmv_(char *uplo, char *trans, char *diag, integer *n, 
+/* Subroutine */ int strmv_(const char *uplo, const char *trans, const char *diag, integer *n, 
 	real *a, integer *lda, real *x, integer *incx)
 {
     /* System generated locals */
@@ -10899,9 +10899,9 @@ L40:
     static integer info;
     static real temp;
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     static integer ix, jx, kx;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static logical nounit;
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 /*  Purpose   
@@ -11167,7 +11167,7 @@ L40:
 
 
 
-/* Subroutine */ int xerbla_(char *srname, integer *info)
+/* Subroutine */ int xerbla_(const char *srname, integer *info)
 {
 /*  -- LAPACK auxiliary routine (version 2.0) --   
        Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
@@ -11208,7 +11208,7 @@ L40:
 } /* xerbla_ */
 
 
-/* Subroutine */ int sstedc_(char *compz, integer *n, real *d__, real *e, 
+/* Subroutine */ int sstedc_(const char *compz, integer *n, real *d__, real *e, 
 	real *z__, integer *ldz, real *work, integer *lwork, integer *iwork, 
 	integer *liwork, integer *info)
 {
@@ -11344,8 +11344,8 @@ L40:
     static real tiny;
     static integer i__, j, k, m;
     static real p;
-    extern logical lsame_(char *, char *);
-    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+    extern logical lsame_(const char *, const char *);
+    extern /* Subroutine */ int sgemm_(const char *, const char *, integer *, integer *, 
 	    integer *, real *, real *, integer *, real *, integer *, real *, 
 	    real *, integer *);
     static integer lwmin, start;
@@ -11354,22 +11354,22 @@ L40:
 	    *, real *, integer *, real *, integer *, real *, integer *, 
 	    integer *);
     static integer ii;
-    extern doublereal slamch_(char *);
-    extern /* Subroutine */ int xerbla_(char *, integer *);
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+    extern doublereal slamch_(const char *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
-    extern /* Subroutine */ int slascl_(char *, integer *, integer *, real *, 
-	    real *, integer *, integer *, real *, integer *, integer *), slacpy_(char *, integer *, integer *, real *, integer *, 
-	    real *, integer *), slaset_(char *, integer *, integer *, 
+    extern /* Subroutine */ int slascl_(const char *, integer *, integer *, real *, 
+	    real *, integer *, integer *, real *, integer *, integer *), slacpy_(const char *, integer *, integer *, real *, integer *, 
+	    real *, integer *), slaset_(const char *, integer *, integer *, 
 	    real *, real *, real *, integer *);
     static integer liwmin, icompz;
     static real orgnrm;
-    extern doublereal slanst_(char *, integer *, real *, real *);
+    extern doublereal slanst_(const char *, integer *, real *, real *);
     extern /* Subroutine */ int ssterf_(integer *, real *, real *, integer *),
-	     slasrt_(char *, integer *, real *, integer *);
+	     slasrt_(const char *, integer *, real *, integer *);
     static logical lquery;
     static integer smlsiz;
-    extern /* Subroutine */ int ssteqr_(char *, integer *, real *, real *, 
+    extern /* Subroutine */ int ssteqr_(const char *, integer *, real *, real *, 
 	    real *, integer *, real *, integer *);
     static integer storez, strtrw, end, lgn;
     static real eps;
@@ -11761,20 +11761,20 @@ L20:
     // double sqrt(doublereal);
     /* Local variables */
     static real rmin, rmax, tnrm, sigma;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
     extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
     static integer lwmin;
     static logical wantz;
     static integer iscale;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real safmin;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     static real bignum;
-    extern /* Subroutine */ int sstedc_(char *, integer *, real *, real *, 
+    extern /* Subroutine */ int sstedc_(const char *, integer *, real *, real *, 
 	    real *, integer *, real *, integer *, integer *, integer *, 
 	    integer *);
     static integer liwmin;
-    extern doublereal slanst_(char *, integer *, real *, real *);
+    extern doublereal slanst_(const char *, integer *, real *, real *);
     extern /* Subroutine */ int ssterf_(integer *, real *, real *, integer *);
     static real smlnum;
     static logical lquery;
@@ -12017,7 +12017,7 @@ L20:
     /* Local variables */
     static real temp;
     static integer curr, i__, j, k;
-    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int sgemm_(const char *, const char *, integer *, integer *, 
 	    integer *, real *, real *, integer *, real *, integer *, real *, 
 	    real *, integer *);
     static integer iperm, indxq, iwrem;
@@ -12031,14 +12031,14 @@ L20:
 	    , real *, integer *, integer *, integer *, integer *, integer *, 
 	    real *, real *, integer *, integer *);
     static integer iq, igivcl;
-    extern /* Subroutine */ int xerbla_(char *, integer *);
-    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
+    extern integer ilaenv_(integer *, const char *, const char *, integer *, integer *, 
 	    integer *, integer *, ftnlen, ftnlen);
     static integer igivnm, submat;
-    extern /* Subroutine */ int slacpy_(char *, integer *, integer *, real *, 
+    extern /* Subroutine */ int slacpy_(const char *, integer *, integer *, real *, 
 	    integer *, real *, integer *);
     static integer curprb, subpbs, igivpt, curlvl, matsiz, iprmpt, smlsiz;
-    extern /* Subroutine */ int ssteqr_(char *, integer *, real *, real *, 
+    extern /* Subroutine */ int ssteqr_(const char *, integer *, real *, real *, 
 	    real *, integer *, real *, integer *);
     static integer lgn, msd2, smm1, spm1, spm2;
 #define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
@@ -12477,7 +12477,7 @@ L140:
     integer pow_ii(integer *, integer *);
     /* Local variables */
     static integer indx, curr, i__, k, indxc;
-    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int sgemm_(const char *, const char *, integer *, integer *, 
 	    integer *, real *, real *, integer *, real *, integer *, real *, 
 	    real *, integer *);
     static integer indxp, n1, n2;
@@ -12491,7 +12491,7 @@ L140:
 	    integer *, integer *, integer *, real *, real *, integer *, real *
 	    , real *, integer *);
     static integer idlmda, is, iw, iz;
-    extern /* Subroutine */ int xerbla_(char *, integer *), slamrg_(
+    extern /* Subroutine */ int xerbla_(const char *, integer *), slamrg_(
 	    integer *, integer *, real *, integer *, integer *, integer *);
     static integer coltyp, iq2, ptr, ldq2;
 #define givcol_ref(a_1,a_2) givcol[(a_2)*2 + a_1]
@@ -12754,7 +12754,7 @@ L30:
 	    , real *, real *, real *, integer *, integer *, real *, real *, 
 	    integer *);
     static integer idlmda, is, iw, iz;
-    extern /* Subroutine */ int xerbla_(char *, integer *), slamrg_(
+    extern /* Subroutine */ int xerbla_(const char *, integer *), slamrg_(
 	    integer *, integer *, real *, integer *, integer *, integer *);
     static integer coltyp, iq2, cpp1;
 #define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
@@ -12862,7 +12862,7 @@ L20:
 #undef q_ref
 
 
-/* Subroutine */ int slacpy_(char *uplo, integer *m, integer *n, real *a, 
+/* Subroutine */ int slacpy_(const char *uplo, integer *m, integer *n, real *a, 
 	integer *lda, real *b, integer *ldb)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -12914,7 +12914,7 @@ L20:
     integer a_dim1, a_offset, b_dim1, b_offset, i__1, i__2;
     /* Local variables */
     static integer i__, j;
-    extern logical lsame_(char *, char *);
+    extern logical lsame_(const char *, const char *);
 #define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
 #define b_ref(a_1,a_2) b[(a_2)*b_dim1 + a_1]
 
@@ -13241,11 +13241,11 @@ L10:
     static integer n1, n2;
     extern doublereal slapy2_(real *, real *);
     static integer jp;
-    extern doublereal slamch_(char *);
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern doublereal slamch_(const char *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     extern integer isamax_(integer *, real *, integer *);
     extern /* Subroutine */ int slamrg_(integer *, integer *, real *, integer 
-	    *, integer *, integer *), slacpy_(char *, integer *, integer *, 
+	    *, integer *, integer *), slacpy_(const char *, integer *, integer *, 
 	    real *, integer *, real *, integer *);
     static integer n1p1;
     static real eps, tau, tol;
@@ -13568,11 +13568,11 @@ static integer c__1 = 1;
     static integer n2;
     extern doublereal slapy2_(real *, real *);
     static integer ct, nj, pj, js;
-    extern doublereal slamch_(char *);
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern doublereal slamch_(const char *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
     extern integer isamax_(integer *, real *, integer *);
     extern /* Subroutine */ int slamrg_(integer *, integer *, real *, integer 
-	    *, integer *, integer *), slacpy_(char *, integer *, integer *, 
+	    *, integer *, integer *), slacpy_(const char *, integer *, integer *, 
 	    real *, integer *, real *, integer *);
     static integer iq1, iq2, n1p1;
     static real eps, tau, tol;
@@ -14147,7 +14147,7 @@ L190:
 	    integer *), slaed4_(integer *, integer *, real *, real *, real *, 
 	    real *, real *, integer *);
     extern doublereal slamc3_(real *, real *);
-    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern /* Subroutine */ int xerbla_(const char *, integer *);
 #define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
 #define s_ref(a_1,a_2) s[(a_2)*s_dim1 + a_1]
 
@@ -14518,7 +14518,7 @@ L20:
     static logical swtch3;
     static integer ii;
     static real dw;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real zz[3];
     static logical orgati;
     static real erretm, rhoinv;
@@ -15436,9 +15436,9 @@ L250:
     extern /* Subroutine */ int srot_(integer *, real *, integer *, real *, 
 	    integer *, real *, real *);
     static integer bsiz1, bsiz2, psiz1, psiz2, i__, k, zptr1;
-    extern /* Subroutine */ int sgemv_(char *, integer *, integer *, real *, 
+    extern /* Subroutine */ int sgemv_(const char *, integer *, integer *, real *, 
 	    real *, integer *, real *, integer *, real *, real *, integer *), scopy_(integer *, real *, integer *, real *, integer *), 
-	    xerbla_(char *, integer *);
+	    xerbla_(const char *, integer *);
     static integer mid, ptr;
 #define givcol_ref(a_1,a_2) givcol[(a_2)*2 + a_1]
 #define givnum_ref(a_1,a_2) givnum[(a_2)*2 + a_1]
@@ -15715,7 +15715,7 @@ L250:
     static real temp;
     extern doublereal snrm2_(integer *, real *, integer *);
     static integer i__, j;
-    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+    extern /* Subroutine */ int sgemm_(const char *, const char *, integer *, integer *, 
 	    integer *, real *, real *, integer *, real *, integer *, real *, 
 	    real *, integer *), scopy_(integer *, real *, 
 	    integer *, real *, integer *);
@@ -15724,9 +15724,9 @@ L250:
 	    real *, real *, real *, integer *);
     extern doublereal slamc3_(real *, real *);
     static integer n12, ii, n23;
-    extern /* Subroutine */ int xerbla_(char *, integer *), slacpy_(
-	    char *, integer *, integer *, real *, integer *, real *, integer *
-	    ), slaset_(char *, integer *, integer *, real *, real *, 
+    extern /* Subroutine */ int xerbla_(const char *, integer *), slacpy_(
+	    const char *, integer *, integer *, real *, integer *, real *, integer *
+	    ), slaset_(const char *, integer *, integer *, real *, real *, 
 	    real *, integer *);
     static integer iq2;
 #define q_ref(a_1,a_2) q[(a_2)*q_dim1 + a_1]
@@ -15986,7 +15986,7 @@ L120:
     static logical scale;
     static integer niter;
     static real small1, small2, fc, df, sminv1, sminv2, dscale[3], sclfac;
-    extern doublereal slamch_(char *);
+    extern doublereal slamch_(const char *);
     static real zscale[3], erretm, sclinv, ddf, eta, eps;
 
     --z__;

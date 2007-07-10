@@ -1619,6 +1619,8 @@ void PointArray::opt_from_proj(const vector<EMData*> & proj,float pixres) {
 	opt.optimize();
 	opt.printStatus("Done");
 #else 
+	(void)proj;		//suppress warning message
+	(void)pixres;	//suppress warning message
 	LOGWARN("OPT++ support not enabled.\n");
 	return;
 #endif

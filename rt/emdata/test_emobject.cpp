@@ -606,7 +606,7 @@ void test_dict()
 	
 }
 
-int main(int argc, char** argv)
+int main(int, char**)
 {
 	cout << "-----------------------------------------------------------------------------" << endl;
 	cout << "TESTING EMOBJECT" << endl << endl;

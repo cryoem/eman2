@@ -61,7 +61,7 @@ template <> Factory < Aligner >::Factory()
 
 
 EMData *TranslationalAligner::align(EMData * this_img, EMData *to, 
-					const string& cmp_name, const Dict& cmp_params) const
+					const string&, const Dict&) const
 {
 	if (!this_img) {
 		return 0;
@@ -183,7 +183,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 	if (!this_img) {
 		return 0;
@@ -271,7 +271,7 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *RotationalAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 	if (!to) {
 		return 0;
@@ -330,7 +330,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 	if (!to) {
 		return 0;
@@ -371,7 +371,7 @@ EMData *RotatePrecenterAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *RotateCHAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 	static vector < EMData * >ralfp;
 	static int rali = 0;
@@ -674,7 +674,7 @@ EMData *RotateTranslateBestAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 
 	int maxshift = params.set_default("maxshift", -1);
@@ -862,7 +862,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 	EMData *flip = to;
 	params.set_default("imask", 0);
@@ -1449,7 +1449,7 @@ EMData *RTFBestAligner::align(EMData * this_img, EMData *to,
 
 
 EMData *RTFRadonAligner::align(EMData * this_img, EMData *to,  
-			const string& cmp_name, const Dict& cmp_params) const
+			const string&, const Dict&) const
 {
 
 	params.set_default("maxshift", -1);
@@ -1552,7 +1552,7 @@ static double refalifnfast(const gsl_vector * v, void *params)
 
 
 EMData *RefineAligner::align(EMData * this_img, EMData *to, 
-			const string & cmp_name, const Dict& cmp_params) const
+			const string &, const Dict&) const
 {
 
 	if (!to) {

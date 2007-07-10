@@ -1520,7 +1520,7 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
    } //end for it
    return out;
 }
-float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
+float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
 {
 /*
 c  purpose: linear interpolation
@@ -1571,7 +1571,7 @@ c  purpose: linear interpolation
 }
 
 void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
-             int  *numr, float *circ, int lcirc, int  nring, char  mode)
+             int  *numr, float *circ, int , int  nring, char  mode)
 {
    double dpi, dfi;
    int    it, jt, inr, l, nsim, kcirc, lt;
@@ -2759,7 +2759,7 @@ Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
 #define  temp(i)            temp[(i)-1]
 
 //---------------------------------------------------
-void Util::crosrng_msr(float *circ1, float *circ2, int  lcirc, int  nring,
+void Util::crosrng_msr(float *circ1, float *circ2, int , int  nring,
                       int   maxrin, int   *numr , float *qn, float *tot,
                       float   *qm, float *tmt)
 {
@@ -5139,7 +5139,7 @@ L640:
     error = (float)xsum;
     return;
 }
-float Util::eval(char * images,EMData * img, vector<int> S,int N, int K,int size)
+float Util::eval(char * images,EMData * img, vector<int> S,int N, int ,int size)
 {
 	int j,d;
 	EMData * e = new EMData();
@@ -9381,7 +9381,7 @@ L26:
     return 0;
 } /* delnod_ */
 
-/* Subroutine */ int drwarc_(int *lun, double *p, double *q, 
+/* Subroutine */ int drwarc_(int *, double *p, double *q, 
 	double *tol, int *nseg)
 {
     /* System generated locals */
@@ -13978,7 +13978,7 @@ L5:
 /* Subroutine */ int trplot_(int *lun, double *pltsiz, double *
 	elat, double *elon, double *a, int *n, double *x, 
 	double *y, double *z__, int *list, int *lptr, int 
-	*lend, char *title, long int *numbr, int *ier, short title_len)
+	*lend, char *, long int *numbr, int *ier, short )
 {
     /* Initialized data */
 
@@ -14770,7 +14770,7 @@ L5:
 	elat, double *elon, double *a, int *n, double *x, 
 	double *y, double *z__, int *nt, int *listc, int *
 	lptr, int *lend, double *xc, double *yc, double *zc, 
-	char *title, long int *numbr, int *ier, short title_len)
+	char *, long int *numbr, int *ier, short)
 {
     /* Initialized data */
 

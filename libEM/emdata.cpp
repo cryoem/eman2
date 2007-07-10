@@ -676,7 +676,7 @@ EMData *EMData::get_top_half() const
 
 
 EMData *EMData::get_rotated_clip(const Transform3D &xform,
-								 const IntSize &size, float scale)
+								 const IntSize &size, float)
 {
 	EMData *result = new EMData();
 	result->set_size(size[0],size[1],size[2]);
@@ -1894,7 +1894,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 
 
 
-vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
+vector < float > EMData::calc_hist(int, float histmin, float histmax)
 {
 	ENTERFUNC;
 

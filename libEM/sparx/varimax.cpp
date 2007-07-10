@@ -119,7 +119,7 @@ float compcrit(float *loadings, int nv, int nf, float lambda)
 */
 int varmx(float *aload,int nv, int nf, int method, float *params,
 				  float *fnorm,
-				  int itmax, float eps, int verbose)
+				  int itmax, float eps, int )
 /*float aload[nv][1];*/
 {
 	float         crit, startCrit, fnv = (float) nv;

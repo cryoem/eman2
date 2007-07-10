@@ -435,7 +435,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 	}
 }
 
-void PawelProjector::prepcubes(int nx, int ny, int nz, int ri, Vec3i origin, 
+void PawelProjector::prepcubes(int, int ny, int nz, int ri, Vec3i origin, 
 		                       int& nn, IPCube* ipcube) const {
 	const float r = float(ri*ri);
 	const int ldpx = origin[0];
@@ -1050,7 +1050,7 @@ int ChaoProjector::sph2cb(float *sphere, Vec3i volsize, int  nrays, int    ri,
 #define y(i,j)      y[(j-1)*nx + i - 1]
 
 // project from 3D to 2D (single image)
-int ChaoProjector::fwdpj3(Vec3i volsize, int nrays, int   nnz, float *dm, 
+int ChaoProjector::fwdpj3(Vec3i volsize, int nrays, int      , float *dm, 
                           Vec3i  origin, int    ri, int *ptrs, int *cord, 
                           float      *x, float  *y) const
 {
@@ -1126,7 +1126,7 @@ int ChaoProjector::fwdpj3(Vec3i volsize, int nrays, int   nnz, float *dm,
 #define x(i,j)      x[((j)-1)*nx + (i) - 1]
 
 // backproject from 2D to 3D for a single image
-int ChaoProjector::bckpj3(Vec3i volsize, int nrays, int   nnz, float *dm, 
+int ChaoProjector::bckpj3(Vec3i volsize, int nrays, int      , float *dm, 
                           Vec3i  origin, int    ri, int *ptrs, int *cord, 
                           float      *x, float *y) const
 {
@@ -1216,7 +1216,7 @@ int ChaoProjector::ifix(float a) const
 #define anglelist(i,j)   anglelist[((j)-1)*3 + (i) - 1]
 
 // SPIDER stype transformation
-void ChaoProjector::setdm(vector<float> anglelist, string const angletype, float *dm) const
+void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) const
 { // convert Euler angles to transformations, dm is an 9 by nangles array
 
     float  psi, theta, phi;
@@ -1501,7 +1501,7 @@ EMData *ChaoProjector::backproject3d(EMData * imagestack) const
 #undef ptrs
 #undef dm
 
-EMData *GaussFFTProjector::backproject3d(EMData * image) const
+EMData *GaussFFTProjector::backproject3d(EMData * ) const
 { 
     // no implementation yet
     EMData *ret = new EMData();
@@ -1640,28 +1640,28 @@ EMData *PawelProjector::backproject3d(EMData * imagestack) const
 }
 #undef images
 
-EMData *SimpleIsoSurfaceProjector::backproject3d(EMData * image) const
+EMData *SimpleIsoSurfaceProjector::backproject3d(EMData * ) const
 {  
    // no implementation yet
    EMData *ret = new EMData();
    return ret;
 }
 
-EMData *StandardProjector::backproject3d(EMData * image) const
+EMData *StandardProjector::backproject3d(EMData * ) const
 {
    // no implementation yet
    EMData *ret = new EMData();
    return ret;
 }
 
-EMData *StandardFastProjector::backproject3d(EMData * image) const
+EMData *StandardFastProjector::backproject3d(EMData * ) const
 {  
    // no implementation yet
    EMData *ret = new EMData();
    return ret;
 }
 
-EMData *FourierGriddingProjector::backproject3d(EMData * image) const
+EMData *FourierGriddingProjector::backproject3d(EMData * ) const
 {  
    // no implementation yet
    EMData *ret = new EMData();

@@ -440,7 +440,7 @@ EMData *EMData::FH2F(int Size, float OverSamplekB, int IntensityFlag)  // PRB
 }  // ends FH2F
 
 
-EMData *EMData::FH2Real(int Size, float OverSamplekB, int IntensityFlag)  // PRB
+EMData *EMData::FH2Real(int Size, float OverSamplekB, int)  // PRB
 {
 	EMData* FFT= FH2F(Size,OverSamplekB,0);
 	FFT->process_inplace("xform.fourierorigin");
@@ -474,7 +474,10 @@ float dist_r(int lnlen, const float* line_1, const float* line_2)
 float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
 {
     int lnlen = get_xsize();
-//    int nline = get_ysize();
+
+#ifdef DEBUG
+    int nline = get_ysize();
+#endif	//DEBUG
 
 	Assert( n1 >=0 && n1 < nline );
     Assert( n2 >=0 && n2 < nline );
@@ -1145,7 +1148,7 @@ void EMData::nn(EMData* wptr, EMData* myfft, const Transform3D& tf, int mult)
 	EXITFUNC;
 }
 
-void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform3D& tf, int mult)
+void EMData::nn_SSNR(EMData* wptr, EMData* wptr2, EMData* myfft, const Transform3D& tf, int)
 {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"];
@@ -1615,7 +1618,7 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult
 
 
 
-void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult)
+void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData*, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int)
 {
 	/***   Preparing terms for SSNR 
 	      m_wvolume F^3D Wiener volume
@@ -1721,7 +1724,7 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wpt
 	EXITFUNC;
 }
 
-void EMData::nn_wiener(EMData* wptr, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult)
+void EMData::nn_wiener(EMData* wptr, EMData* wptr3, EMData* myfft, const Transform3D& tf, int)
 {
      /*** Wiener volume calculating routine
           Counting Kn  
