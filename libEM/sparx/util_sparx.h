@@ -461,7 +461,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	/* out = img * img1  */
 	static EMData* muln_img(EMData* img, EMData* img1);
 
-	/* img *= scalar * img1 */	
+	/* img += scalar * img1 */	
 	static void mad_scalar(EMData* img, EMData* img1, float scalar);
 	/* img *= scalar  */
 	static void mul_scalar(EMData* img, float scalar);
