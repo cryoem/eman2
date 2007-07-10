@@ -627,7 +627,7 @@ namespace EMAN {
 			new (storage) EMObject();
 			
 			data->convertible = storage;
-			EMObject& result = *((EMObject*) storage);
+			//EMObject& result = *((EMObject*) storage);
 		}
     	
     };
