@@ -789,6 +789,67 @@ EMData * EMData::imag()
 	EXITFUNC;
 }
 
+EMData * EMData::absi() //abs has half of x dimension for a complex image
+{
+	ENTERFUNC;
+	
+	EMData * e = new EMData();
+
+	if( is_real() ) // a real image
+	{
+		e = this->copy();
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		float *edata = e->get_data();
+		
+		for( int i=0; i<nx; i++ ) {
+			for( int j=0; j<ny; j++ ) {
+				for( int k=0; k<nz; k++ ) {
+					edata[i+j*nx+k*nx*ny] = std::abs(rdata[i+j*nx+k*nx*ny]);
+				}
+			}
+		}
+	}
+	else //for a complex image
+	{
+		if( !is_ri() ) 
+		{
+			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
+		}
+		int nx = get_xsize();
+		int ny = get_ysize();
+		int nz = get_zsize();
+		e->set_size(nx/2, ny, nz);
+		float * edata = e->get_data();
+		for( int i=0; i<nx; i++ )
+		{
+			for( int j=0; j<ny; j++ )
+			{
+				for( int k=0; k<nz; k++ )
+				{
+					if( i%2 == 0 )
+					{
+						//complex data in format [real, complex, real, complex...]
+						edata[i/2+j*(nx/2)+k*(nx/2)*ny] =
+						std::sqrt(rdata[i+j*nx+k*nx*ny]*rdata[i+j*nx+k*nx*ny]+rdata[i+1+j*nx+k*nx*ny]*rdata[i+1+j*nx+k*nx*ny]);
+					}
+				}
+			}
+		}
+	}
+	
+	e->set_complex(false);
+	if(e->get_ysize()==1 && e->get_zsize()==1) {
+		e->set_complex_x(false);
+	}
+	e->update_stat();
+	return e;
+
+	EXITFUNC;
+}
+
+
 EMData * EMData::amplitude()
 {
 	ENTERFUNC;

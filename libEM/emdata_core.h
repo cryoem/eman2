@@ -534,6 +534,8 @@ EMData * real();
  */
 EMData * imag();
 
+EMData * absi();
+
 
 /** return amplitude part of a complex image as a real image format
  * @return EMData * a real image which is the amplitude part of this image
