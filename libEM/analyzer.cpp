@@ -450,7 +450,6 @@ EXIT:
 #undef subdiag
 #undef TOL
 
-
 void varimax::set_params(const Dict & new_params)
 {
 	params = new_params;

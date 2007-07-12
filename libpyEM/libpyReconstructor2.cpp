@@ -32,7 +32,6 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     }
 
     int insert_slice(const EMAN::EMData* const p0, const EMAN::Transform3D& p1) {
-    	cout << "Inserting slice" << endl;
         return call_method< int >(py_self, "insert_slice", p0, p1);
     }
 
@@ -88,6 +87,8 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
     class_< EMAN::Reconstructor, boost::noncopyable, EMAN_Reconstructor_Wrapper >("__Reconstructor", init<  >())
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
         .def("insert_slice", pure_virtual(&EMAN::Reconstructor::insert_slice))
+		.def("determine_slice_agreement", &EMAN::Reconstructor::determine_slice_agreement)
+		.def("iteration_reset", &EMAN::Reconstructor::iteration_reset)
         .def("finish", pure_virtual(&EMAN::Reconstructor::finish), return_internal_reference< 1 >())
         .def("get_name", pure_virtual(&EMAN::Reconstructor::get_name))
         .def("get_desc", pure_virtual(&EMAN::Reconstructor::get_desc))
@@ -96,6 +97,7 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
         .def("set_params", &EMAN::Reconstructor::set_params, &EMAN_Reconstructor_Wrapper::default_set_params)
 		.def("print_params",  &EMAN::Reconstructor::print_params) // Why is this different to set_params and get_params? Why is the wrapper needed? d.woolford May 2007
         .def("get_param_types", pure_virtual(&EMAN::Reconstructor::get_param_types))
+		.def("zero_memory", &EMAN::Reconstructor::zero_memory)
     ;
 
     class_< EMAN::Factory<EMAN::Reconstructor>, boost::noncopyable >("Reconstructors", no_init)

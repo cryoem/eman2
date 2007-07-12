@@ -51,12 +51,168 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+#include <utility>
+using std::pair;
+
 namespace EMAN
 {
 
 	class Transform3D;
 	class EMData;
 	
+	class QualityScores
+	{
+	public:
+		QualityScores() : frc_integral(0), snr_normed_frc_intergral(0), normed_snr_integral(0) {}
+		QualityScores( const QualityScores& that ) : frc_integral(that.frc_integral), 
+		snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral) {}
+		QualityScores& operator=( const QualityScores& that ) 
+		{
+			frc_integral = that.frc_integral; 
+			snr_normed_frc_intergral = that.snr_normed_frc_intergral;
+			normed_snr_integral  = that.normed_snr_integral;
+			return *this;
+		}
+		
+		~QualityScores() {}
+
+		float get_frc_integral() { return frc_integral; }
+		float get_snr_normed_frc_integral() { return snr_normed_frc_intergral; }
+		float get_normed_snr_integral() { return normed_snr_integral; }
+
+		void set_frc_integral( const float& score ) { frc_integral = score; }
+		void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
+		void set_normed_snr_integral(const float& score) { normed_snr_integral = score; }
+
+		void debug_print()
+		{
+			cout << "frc " << frc_integral << " nfrc " << snr_normed_frc_intergral << " nsnr " << normed_snr_integral << endl;
+		}
+	private:
+
+		float frc_integral, snr_normed_frc_intergral, normed_snr_integral;
+		
+	};
+
+	class InterpolatedFRC
+	{
+	public:
+		InterpolatedFRC() : threed_rdata(0), frc(0), frc_norm_rdata(0), frc_norm_dt(0), size(0), pixel_radius_max(0) {}
+
+		InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling=1.0 );
+		~InterpolatedFRC()
+		{
+			free_memory();
+		}
+
+		// Copy and assignment
+		InterpolatedFRC( const InterpolatedFRC& that );
+		InterpolatedFRC& operator=( const InterpolatedFRC& that);
+	
+		bool continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+	
+		unsigned int get_size() { return size; }
+	
+		float operator[](const unsigned int& idx) { return frc[idx]; }
+
+		QualityScores finish(const unsigned int  num_particles);
+	
+		void reset();
+	private:
+		void free_memory()
+		{
+			if ( frc != 0 )
+			{
+				delete [] frc;
+				frc = 0;
+			}
+			if ( frc_norm_rdata != 0 )
+			{
+				delete [] frc_norm_rdata;
+				frc_norm_rdata = 0;
+			}
+			if ( frc_norm_dt != 0 )
+			{
+				delete [] frc_norm_dt;
+				frc_norm_dt = 0;
+			}
+		}
+		// Pointers to the 3D (complex) data 
+		float* threed_rdata;
+
+		// I wish I could make these unsigned but everything else is ints, so these are too.
+		int nx, ny, nz, nxy;
+	
+		float bin;
+
+		float* frc;
+		float* frc_norm_rdata;
+		float* frc_norm_dt;
+	
+		// The maximum dimension (radius) of a considered pixel
+		int size;
+		int pixel_radius_max;
+		int pixel_radius_max_square;
+
+		int off[8];
+		float g[8];
+	};
+
+	/** A Reconstructor containing an EMData pointer and x,y,z dimensions
+	 *  This is a pseudo abstract base class 
+     *  because it derives from Reconstructor but does not implement 
+	 *  any of its pure virtual functions. It basically stores 
+	 *  a pointer to an image object and stores the dimensions of the image volume.
+	 *  This class was originally added simply to encapsulate the 
+	 *  the things common to FourierReconstructor, WienerFourierReconstructor
+	 *  and BackProjectionReconstructor
+	 *  d.woolford May 2007
+     */
+
+	class ReconstructorWithVolumeData
+	{
+	  public:
+		inline ReconstructorWithVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
+		inline virtual ~ReconstructorWithVolumeData() { free_memory(); }
+
+		/** Copy constructor
+		 */
+		ReconstructorWithVolumeData(const ReconstructorWithVolumeData& that) { copyData(that); }
+
+		/** Assignment operator
+		 */
+		ReconstructorWithVolumeData& operator=(const ReconstructorWithVolumeData& );
+
+		void zero_memory() 
+		{
+			if (tmp_data != 0 ) tmp_data->to_zero();
+			if (image != 0 ) image->to_zero();
+		}
+	  protected:
+		EMData * image;
+		//tmp_data is the substitute of misused parent in reconstruction
+		//the memory will be allocated in setup() and released in finish()
+		EMData* tmp_data;
+		
+		int nx;
+		int ny;
+		int nz;
+
+	  private:
+		/** a convenience function for copying data, called by the assigment operator and the copy constructor,
+		 *  deep and complete complete.
+		 */
+		void copyData( const ReconstructorWithVolumeData& that );
+
+		void free_memory()
+		{
+			if (image)  {delete image; image = 0;} 
+			if ( tmp_data != 0 ) { delete tmp_data; tmp_data = 0; }
+		}
+	};
+
+
+
 	/** Reconstructor class defines a way to do 3D recontruction.
 	 * A reconstruction is done by 3 steps:
 	 *   - set up.
@@ -100,14 +256,12 @@ namespace EMAN
      *        TypeDict get_param_types() const;
 	 @endcode
 	*/
-	class Reconstructor
+	class Reconstructor : public ReconstructorWithVolumeData
 	{
 	  public:
-		Reconstructor() : tmp_data(0) {}
+		Reconstructor() {}
 		inline virtual ~Reconstructor()
 		{
-			if ( tmp_data != 0 )
-				delete tmp_data;
 		}
 
 		/** Copy constructor
@@ -131,6 +285,14 @@ namespace EMAN
 		 * @return 0 if OK. 1 if error.
 		 */
 		virtual int insert_slice(const EMData* const slice, const Transform3D & euler) = 0;
+
+		/** 
+	  	 * @return 
+	  	 * @param 
+	  	 * @exception 
+		 */
+		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1) { return 0;}
+
 
 		/** Finish reconstruction and return the complete model.
 		 * @return The result 3D model.
@@ -197,11 +359,13 @@ namespace EMAN
 
 		EMObject& operator[]( const string& key ) { return params[key]; }
 
+		// A function used only in fourier reconstructor atm for reseting information in between iterations
+		virtual void iteration_reset() {}
+		// A function used only by the Fourier reconstructor for testing purposes 
+		virtual float get_score(const unsigned int idx) { return 0; }
+
 	  protected:
 		mutable Dict params;
-		//tmp_data is the substitute of misused parent in reconstruction
-		//the memory will be allocated in setup() and released in finish()
-		EMData* tmp_data;
 
 	  private:
 		/** a convenience function for copying data, called by the assigment operator and the copy constructor
@@ -210,47 +374,10 @@ namespace EMAN
 	
 	};
 
-	/** A Reconstructor containing an EMData pointer and x,y,z dimensions
-	 *  This is a pseudo abstract base class 
-     *  because it derives from Reconstructor but does not implement 
-	 *  any of its pure virtual functions. It basically stores 
-	 *  a pointer to an image object and stores the dimensions of the image volume.
-	 *  This class was originally added simply to encapsulate the 
-	 *  the things common to FourierReconstructor, WienerFourierReconstructor
-	 *  and BackProjectionReconstructor
-	 *  d.woolford May 2007
-     */
-
-	class ReconstructorWithVolumeData : public Reconstructor
-	{
-	  public:
-		inline ReconstructorWithVolumeData() : image(0), nx(0), ny(0), nz(0) {}
-		inline virtual ~ReconstructorWithVolumeData() { if (image) { delete image; image = 0; } }
-		
-		/** Copy constructor
-		 */
-		ReconstructorWithVolumeData(const ReconstructorWithVolumeData& that) : Reconstructor(that) { copyData(that); }
-
-		/** Assignment operator
-		 */
-		ReconstructorWithVolumeData& operator=(const ReconstructorWithVolumeData& );
-
-	  protected:
-		EMData * image;
-		int nx;
-		int ny;
-		int nz;
-
-	  private:
-		/** a convenience function for copying data, called by the assigment operator and the copy constructor,
-		 *  deep and complete complete.
-		 */
-		void copyData( const ReconstructorWithVolumeData& that );
-	};
 
 	/** Fourier space 3D reconstruction
      */
-	class FourierReconstructor:public ReconstructorWithVolumeData
+	class FourierReconstructor:public Reconstructor
 	{
 	  public:
 		FourierReconstructor() { load_default_settings(); }
@@ -258,7 +385,7 @@ namespace EMAN
 	
 		/** Copy constructor
 		 */
-		FourierReconstructor( const FourierReconstructor& that ) : ReconstructorWithVolumeData(that)
+		FourierReconstructor( const FourierReconstructor& that ) : Reconstructor(that)
 		 { load_default_settings(); }
 
 		/** Assignment operator
@@ -271,6 +398,13 @@ namespace EMAN
 		virtual void setup();
 
 		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+
+		/** 
+	  	 * @return 
+	  	 * @param 
+	  	 * @exception 
+		 */
+		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice);
 
 		virtual	EMData *finish();
 
@@ -303,14 +437,20 @@ namespace EMAN
 			d.put("apix", EMObject::FLOAT);
 			return d;
 		}
+		
+		virtual void iteration_reset() { quality_scores.clear(); idx = 0;}
+
+		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_frc_integral(); else {cout << "foo" << endl; return 2;}}
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right positions
-	  	 * @return A boolean that indicates success
+	  	 * @return the processed slice
 	  	 * @param slice the slice to be prepocessed
 	  	 * @exception InvalidValueException
 		 */
 	  	EMData* preprocess_slice( const EMData* const slice );
+
+
 	  private:
 		void load_default_settings()
 		{
@@ -319,15 +459,17 @@ namespace EMAN
 			params["weight"] = 1.0;
 			params["use_weights"] = true;
 			params["dlog"] = false;
-			params["hard"] = 25.0;
+			params["hard"] = 0.07;
 			params["sym"] = "unknown";
 		}
 
+		vector<QualityScores> quality_scores;
+		unsigned int idx;
 	};
 
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
      */
-	class WienerFourierReconstructor:public ReconstructorWithVolumeData
+	class WienerFourierReconstructor:public Reconstructor
 	{
 	  public:
 		WienerFourierReconstructor() { load_default_settings(); };
@@ -335,7 +477,7 @@ namespace EMAN
 	
 		/** Copy constructor
 		 */
-		WienerFourierReconstructor( const WienerFourierReconstructor& that) : ReconstructorWithVolumeData(that) {}
+		WienerFourierReconstructor( const WienerFourierReconstructor& that) : Reconstructor(that) {}
 
 		/** Assignment operator
 		 */
@@ -395,7 +537,7 @@ namespace EMAN
      * ("back-projection bodies") obtained by translating the
      * 2D projections along the directions of projection. 
      */
-	class BackProjectionReconstructor:public ReconstructorWithVolumeData
+	class BackProjectionReconstructor:public Reconstructor
 	{
 	  public:
 		BackProjectionReconstructor() { load_default_settings();  }
@@ -404,7 +546,7 @@ namespace EMAN
 
 		/** Copy constructor
 		 */
-		BackProjectionReconstructor( const BackProjectionReconstructor& that) : ReconstructorWithVolumeData(that) {}
+		BackProjectionReconstructor( const BackProjectionReconstructor& that) : Reconstructor(that) {}
 
 		/** Assignment operator
 		 */
@@ -908,7 +1050,7 @@ namespace EMAN
 		 * @param weight the weight to given to this complex pixel
 		 * @return A boolean that indicates the pixel has been inserted (or not)
 		 */
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight) = 0;
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight) = 0;
 		
 	protected:
 		// A pointer to the constructor argument normalize_values
@@ -935,7 +1077,7 @@ namespace EMAN
 			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
 		virtual ~FourierInserter3DMode1() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
@@ -960,7 +1102,7 @@ namespace EMAN
 		FourierInserter3DMode2(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize);
 		virtual ~FourierInserter3DMode2() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
@@ -989,7 +1131,7 @@ namespace EMAN
 			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
 		virtual ~FourierInserter3DMode3() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
@@ -1015,7 +1157,7 @@ namespace EMAN
 			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
 		virtual ~FourierInserter3DMode4() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
@@ -1044,7 +1186,7 @@ namespace EMAN
 		}
 		virtual ~FourierInserter3DMode5() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
@@ -1072,7 +1214,7 @@ namespace EMAN
 			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
 		virtual ~FourierInserter3DMode6() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
@@ -1104,7 +1246,7 @@ namespace EMAN
 		 * are not allowable.
 		 * @return a unique mode number
 		 */
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float weight = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		static /* virtual */ unsigned int get_mode_number() { return 7; }
 		

@@ -454,11 +454,33 @@ def fourier_reconstruction(options):
 	if not(options.quiet):
 		print "Inserting Slices"
 		
-	for j in xrange(0,1): #4):     #change back when the thr issue solved
+	for j in xrange(0,2): #4):     #change back when the thr issue solved
+		
+		recon.iteration_reset()
+		
+		if ( j > 0 ):
+			for i in xrange(0,total_images):
+				image=EMData().read_images(options.input_file, [i])[0]
+				
+				num_img=image.get_attr("ptcl_repr") 
+				
+				if (num_img<=0):
+					continue
+				
+				if ( recon.get_params()["use_weights"] ):
+					weight = float (num_img)/particle_number
+					param = {}
+					param["weight"] = weight
+					recon.set_params(param) # this inserts that parameter, maintaining what's already 
+				
+				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+				recon.determine_slice_agreement(image,transform,num_img)
+			recon.zero_memory()
+		
 		if (options.hard>0): thr=options.hard*(1+(3-j)/3.0)
 
 		for i in xrange(0,total_images):
-					
+			
 			image=EMData().read_images(options.input_file, [i])[0]
 
 			if (image.get_attr("ptcl_repr")<=0):
@@ -474,16 +496,21 @@ def fourier_reconstruction(options):
 			if (j==3 and recon.get_params()["dlog"]):
 				image.process_inplace("math.log")
 
+		
+
+			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+			failure = recon.insert_slice(image,transform)
 			if not(options.quiet):
-				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f\n" %
+				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 								(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
 								image.get_attr("euler_alt"),
 								image.get_attr("euler_az"),
 								image.get_attr("euler_phi"),
 								image.get_attr("maximum"),image.get_attr("minimum")))
-
-			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
-			recon.insert_slice(image,transform)
+				if ( failure ):
+					sys.stdout.write( " X" )
+				
+				sys.stdout.write("\n")
 
 			if (options.goodbad):
 				if g:

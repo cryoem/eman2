@@ -251,6 +251,74 @@ EMData::~EMData()
 	EXITFUNC;
 }
 
+// pair<float, float> EMData::get_normalization_and_phaseres( const EMData* const slice, const Transform3D& euler )
+// {
+// 	if (get_ndim() != 3) {
+// 		throw ImageDimensionException("Only 3D images are capable of calculating the normalization and phase residual values in this function");
+// 	}
+// 
+// 	if ( !is_complex() )
+// 	{
+// 		throw ImageFormatException("The image pointed to by this is not complex.")
+// 	}
+// 
+// 	if ( !slice->is_complex() )
+// 	{
+// 		throw ImageFormatException("The slice is not complex.")
+// 	}
+// 	
+// 	int rl = Util::square(ny / 2 - 1);
+// 
+// 	// The thresholding value mimics the bevavior of this function in eman1
+// 	float threshold = 2.0*get_attr("sigma");
+// 
+// 	float dt[2];
+// 
+// 	float * data = slice->get_data();
+// 
+// 	float r=0, rn=0; // normalization
+// 	float pr=0, prn=0;	// phase residual
+// 
+// 	for (int y = 0; y < ny; y++)
+// 	{
+// 		for (int x = 0; x < nx / 2; x++)
+// 		{
+// 			if ((x * x + Util::square(y - ny / 2)) >= rl)
+// 				continue;
+// 
+// 			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+// 			float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+// 			float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
+// 			float cc = 1;
+// 
+// 			if (xx < 0) {
+// 				xx = -xx;
+// 				yy = -yy;
+// 				zz = -zz;
+// 				cc = -1.0;
+// 			}
+// 
+// 			yy += ny / 2;
+// 			zz += nz / 2;
+// 
+// 			int x0=2*(int)floor(xx+.5);
+// 			int y0=(int)floor(yy+.5);
+// 			int z0=(int)floor(zz+.5);
+// 
+// 
+// 			int i=x0+y0*nx+z0*nx*ny;
+// 
+// 			// Do not consider pixels with amplitudes that are considered small
+// 			// FIXME: is this assuming the complex data is stored as amplitude and phase data? If so this will not work
+// 			if (fabs(rdata[i])<threshold) continue;
+// 			
+// 			dt[0]=hypot(rdata[i],rdata[i+1]);
+// 			dt[1]=hypot(data[x*2+y*nx],data[x*2+1+y*nx]);
+// 
+// 			r+=rdata[i]*dt[1];
+// 			rn+=rdata[i]*dt[0];
+// }
+
 // Clip inplace variables is a local class used from convenience in EMData::clip_inplace
 // Added by d.woolford
 class ClipInplaceVariables
@@ -381,6 +449,7 @@ void EMData::clip_inplace(const Region & area)
 		for (int j = 0; j < civ.y_iter; ++j) {
 
 			// Determine the memory increments as dependent on i and j
+			// This could be optimized so that not so many multiplications are occurring...
 			int dst_inc = dst_it_begin + j*new_nx + i*new_sec_size;
 			int src_inc = src_it_begin + j*prev_nx + i*prev_sec_size;
 			float* local_dst = rdata + dst_inc;
@@ -389,7 +458,8 @@ void EMData::clip_inplace(const Region & area)
 			if ( dst_inc >= src_inc )
 			{
 				// this is fine, it will happen now and then and it will be necessary to continue.
-				// the tempatation is to break, but you can't do that.
+				// the tempatation is to break, but you can't do that (because the point where memory intersects
+				// could be in this slice - this aspect could be optimized).
 				continue;
 			}
 
@@ -562,7 +632,7 @@ EMData *EMData::get_clip(const Region & area) const
 
 	if ( (int)area.size[0] < 0 || ysize < 0 || zsize < 0 )
 	{
-		// Negative image dimensions not supported - added retrospectively by d.woolford
+		// Negative image dimensions not supported - added retrospectively by d.woolford (who didn't write get_clip but wrote clip_inplace)
 		throw ImageDimensionException("New image dimensions are negative - this is not supported in the the get_clip operation");
 	}
 

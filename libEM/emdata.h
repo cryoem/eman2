@@ -52,6 +52,9 @@ using std::map;
 //using std::complex;	//comment this out for conflict with ACML
 using std::ostream;
 
+#include <utility>
+using std::pair;
+
 namespace EMAN
 {
 	class ImageIO;
@@ -181,13 +184,14 @@ namespace EMAN
 		/** Get an inclusive clip. Pads 0 if larger than this image.
 		 * area can be 2D/3D.
 		 * @param area The clip area.
+		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
 		 * @return The clip image.
 		 */
 		EMData *get_clip(const Region & area) const;
 		
-		
 		/** Clip the image inplace - clipping region must be smaller than the current region
 		 * internally memory is reallocated
+		 * @exception ImageDimensionException if any of the dimensions of the argument region are negative
 		 * @param area The clip area, can be 2D/3D.
 		 */
 		void clip_inplace(const Region & area);
@@ -197,6 +201,18 @@ namespace EMAN
 		 * @return The top half of this image.
 		 */
 		EMData *get_top_half() const;
+
+		/** Get the normalization and phase residual values
+		 * Used for normalizaton and error measurement when 2D slices are inserted into a 3D volume of Fourier pixels
+		 * Originally added for use by the FourierReconstructor object
+		 * @return the normalization const (pair.first) and the phase residual (pair.second)
+		 * @param slice -the slice to be inserted into the 3D volume
+		 * @param euler - the euler angle orientation of the slice
+		 * @exception ImageDimensionException If this image is not 3D.ImageFormatException
+		 * @exception ImageFormatException If this image is not complex
+		 * @exception ImageFormatException If the slice not complex
+		 */
+		//pair<float, float> get_normalization_and_phaseres( const EMData* const slice, const Transform3D& euler );
 		
 		
 		/** This will extract an arbitrarily oriented and sized region from the
@@ -625,7 +641,6 @@ namespace EMAN
 		void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
 
-		
 
 		/** @ingroup tested2 */
 		/** Finds common lines between 2 complex images.
