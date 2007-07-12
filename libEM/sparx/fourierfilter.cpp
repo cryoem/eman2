@@ -238,7 +238,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			cnstL = float(pihalf/aL/(omegaH-omegaL));
 			cnstH = float(pihalf/aH/(omegaH-omegaL));
 			break;
-	    	case CTF_:
+		case CTF_:
 			dz       = params["defocus"];
 			cs       = params["Cs"];
 			voltage  = params["voltage"];		  
@@ -441,7 +441,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							      		    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
 
-                                                        // printf( "ix,iy,iz,tf,vold: %4d %4d %4d %20.3e %20.3f %20.3f\n", ix, iy, iz, tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
+                         // printf( "ix,iy,iz,tf,vold: %4d %4d %4d %20.3e %20.3f %20.3f\n", ix, iy, iz, tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
 
 							if( undoctf == 1 )
 							{
@@ -452,7 +452,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							else
 							    fp->cmplx(ix,iy,iz) *= tf;
 
-                                                        // printf( "      newtf,vnew:                %20.3e %20.3f %20.3f\n", tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
+                         // printf( "      newtf,vnew:                %20.3e %20.3f %20.3f\n", tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
 
 							break;
 					}
