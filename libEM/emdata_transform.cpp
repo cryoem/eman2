@@ -57,7 +57,10 @@ EMData *EMData::do_fft()
 	EMData* dat = copy_head();
 	dat->set_size(nx2, ny, nz);
 	//dat->to_zero();  // do not need it, real_to_complex will do it right anyway
-	if (offset == 1)  dat->set_fftodd(true);
+	if (offset == 1)  
+	    dat->set_fftodd(true);
+	else
+	    dat->set_fftodd(false);
 
 	float *d = dat->get_data();
 	//std::cout<<" do_fft "<<rdata[5]<<"  "<<d[5]<<std::endl;
