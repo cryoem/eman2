@@ -480,6 +480,9 @@ public:
 	static vector<float> multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny); 
+	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float ant, string mode,
+                vector< int >numr, float cnx, float cny); 
 
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 

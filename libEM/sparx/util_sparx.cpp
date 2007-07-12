@@ -15683,6 +15683,91 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 	res.push_back(peak);
 	return res;
 }
+
+vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float ant, string mode,
+                vector< int >numr, float cnx, float cny) {
+
+// formerly known as apmq
+    // Determine shift and rotation between image and many reference
+    // images (crefim, weights have to be applied) quadratic
+    // interpolation  
+    
+    
+    // Manually extract.
+/*    vector< EMAN::EMData* > crefim;
+    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
+    crefim.reserve(crefim_len);
+
+    for(std::size_t i=0;i<crefim_len;i++) {
+        boost::python::extract<EMAN::EMData*> proxy(crefim_list[i]);
+        crefim.push_back(proxy());
+    }
+*/
+	size_t crefim_len = crefim.size();
+	const float qv = pi/180.0;
+	float  phi = image->get_attr("phi");
+	float  theta = image->get_attr("theta");
+	float  peak = -1.0E23;
+	int   ky = int(2*yrng/step+0.5)/2; 
+	int   kx = int(2*xrng/step+0.5)/2;
+	int   iref, nref=0, mirror=0; 
+	float iy, ix, sx=0, sy=0;
+	float ang=0.0f;
+	for (int i = -ky; i <= ky; i++) {
+	    iy = i * step ;
+	    for (int j = -kx; j <= kx; j++) {
+		ix = j*step ; 
+		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+		Frngs(cimage, numr);
+		//  compare with all reference images
+		// for iref in xrange(len(crefim)): 
+		for ( iref = 0; iref < (int)crefim_len; iref++) {
+			float n1 = crefim[iref]->get_attr("n1");
+			float n2 = crefim[iref]->get_attr("n2");
+			float n3 = crefim[iref]->get_attr("n3");
+			if(abs(n1*sin(theta*qv)*cos(phi*qv) + n2*sin(theta*qv)*sin(phi*qv) + n3*cos(theta*qv))>=ant) {
+		    	Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);  
+		    	double qn = retvals["qn"];
+		    	double qm = retvals["qm"];
+		    	if(qn >= peak || qm >= peak) {
+					sx = -ix;
+					sy = -iy;
+					nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = qn;
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = qm; 
+						mirror = 1;
+					}
+		    	}
+			}
+		}  delete cimage; cimage = 0;
+	    }
+	}
+	float co, so, sxs, sys;
+	if(peak == -1.0E23) {
+		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
+		nref = -1;
+	} else {
+		co =  cos(ang*qv);
+		so = -sin(ang*qv);
+		sxs = sx*co - sy*so;
+		sys = sx*so + sy*co;
+	}
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(mirror);
+	res.push_back(nref);
+	res.push_back(peak);
+	return res;
+}
+
 #define img_ptr(i,j,k) img_ptr[(i+(j+(k*ny))*nx)]
 #define img2_ptr(i,j,k) img2_ptr[(i+(j+(k*ny))*nx)]
 EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
