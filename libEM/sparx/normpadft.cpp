@@ -237,6 +237,7 @@ void EMData::postift_depad_corner_inplace() {
 				dest += nxold;
 			}
 		}
+		set_attr("npad", 1);
 		set_size(nxold, nyold, nzold);
 		set_fftpad(false);
 		update();
