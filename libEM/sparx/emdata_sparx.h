@@ -156,7 +156,10 @@ EMData* rotavg_i();
 		 * @param wptr Normalization data.
 		 * @param wptr2 
 		 * @param wptr3
+		 * @param wptr4
+		 * @param wptr5
 		 * @param myfft FFT data.
+		 * @param m_wvolume
 		 * @param tf Transform3D reference
 		 * @param mult
 		 */

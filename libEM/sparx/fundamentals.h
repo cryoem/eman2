@@ -294,14 +294,16 @@ orrelation.
 	 *
 	 * @par Purpose: Calculate the Minkowski addition of the two images
 	 *  
-	 *  @param[in] f First real-space image object.
+	 * @param[in] f First real-space image object.
 	 *               Image may be 2- or 3-dimensional. Image f is not changed.
 	 *             K Second real-space image object
 	 *               Image may be 2- or 3-dimentional. Image K is not changed.
 	 *             mydilation 	Type of dilation
 	 *             BINARY is for binary dilation.
 	 *             GRAYLEVEL is for graylevel dilation.
-	 *  @return    Dilation filtered image.
+	 * @param 	K
+	 * @param 	myerosion
+	 * @return  Dilation filtered image.
 	 */
 
 	EMData* filt_erosion(EMData* f, EMData* K, morph_type myerosion);
