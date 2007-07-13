@@ -288,7 +288,9 @@ namespace EMAN
 
 		/** 
 	  	 * @return 
-	  	 * @param 
+	  	 * @param input_slice
+	  	 * @param arg
+	  	 * @param num_particles_in_slice
 	  	 * @exception 
 		 */
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1) { return 0;}
@@ -1300,7 +1302,7 @@ namespace EMAN
 		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) = 0;
 		
 		/** make_inserter get an instance of a FourierPixelInserter3D*
-		 * @parm key the key to get the associated maker from the maker registry
+		 * @param key the key to get the associated maker from the maker registry
 		 * @param normalize_values a block of memory equal in size to memory associated with real_data to construct the maker with 
 		 * @param real_data a pointer to the memory containing the discrete 3D volume pixel data to construct the maker with
 		 * @param xsize the xsize of the discrete 3D volume to construct the maker with

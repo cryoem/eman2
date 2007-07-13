@@ -107,6 +107,7 @@ namespace EMAN
 		/** Aligns one PointArray to another in 2 dimensions
 		*
 		* @param to Another PointArray to align to
+		* @param max_dist
 		* @return a Transform3D to map 'this' to 'to'
 		*/
 		Transform3D *align_2d(PointArray *to,float max_dist);	// computes the optimal alignment between two (non-identical) sets of points
