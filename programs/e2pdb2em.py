@@ -58,7 +58,7 @@ atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.006
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] input.pdb output.mrc
+	usage = """%prog [options] input.pdb output.hdf
 	
 Converts a pdb file into an electron density map. 0,0,0 in PDB space will 
 map to the center of the volume."""
@@ -168,7 +168,7 @@ map to the center of the volume."""
 	gaus=EMData()
 	gaus.set_size(64,64,64)
 	gaus.to_one()
-	gaus.process_inplace("eman1.mask.gaussian",{"outer_radius":12.0})
+	gaus.process_inplace("mask.gaussian",{"outer_radius":12.0})
 
 	# find the output box size, either user specified or from bounding box
 	box=[0,0,0]
