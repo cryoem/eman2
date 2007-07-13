@@ -291,7 +291,6 @@ namespace EMAN
 	  	 * @param input_slice
 	  	 * @param arg
 	  	 * @param num_particles_in_slice
-	  	 * @exception 
 		 */
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1) { return 0;}
 
@@ -403,8 +402,9 @@ namespace EMAN
 
 		/** 
 	  	 * @return 
-	  	 * @param 
-	  	 * @exception 
+	  	 * @param input_slice
+	  	 * @param arg
+	  	 * @param num_particles_in_slice
 		 */
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice);
 
@@ -1080,7 +1080,7 @@ namespace EMAN
 			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
 		virtual ~FourierInserter3DMode1() {}
 		
-		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& = 1);
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
 		/** get_mode_number get the unique mode number
 		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
