@@ -839,6 +839,7 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
+                        d.put("weighting",      EMObject::INT);
 			return d;
 		}
 

@@ -1262,6 +1262,10 @@ EMData* EMAN::padfft_slice( const EMData* const slice, int npad )
 	if(sx != 0.0f || sy != 0.0)
 		padfftslice->process_inplace("filter.shift", Dict("x_shift", sx, "y_shift", sy, "z_shift", 0.0f));
 
+        int remove = slice->get_attr_default("remove", 0);
+        padfftslice->set_attr( "remove", remove );
+       
+
 	padfftslice->center_origin_fft();
 
 	return padfftslice;
@@ -2092,8 +2096,10 @@ void nn4_ctfReconstructor::setup()
     }
 
     int size = params["size"];
+
     int npad = 4;
-    int sign = params.has_key("sign") ? int(params["sign"]) : 1;
+    // int sign = params.has_key("sign") ? int(params["sign"]) : 1;
+    int sign = 1;
     string symmetry = params.has_key("symmetry")? params["symmetry"].to_str() : "c1";
     
     float snr = params["snr"];
@@ -2104,6 +2110,15 @@ void nn4_ctfReconstructor::setup()
 void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, float snr, int sign )
 {
     m_weighting = ESTIMATE;
+    if( params.has_key("weighting") )
+    {
+        int tmp = int( params["weighting"] );
+        if( tmp==0 )
+            m_weighting = NONE;
+    }
+
+
+
     m_wghta = 0.2;
     m_wghtb = 0.004;
  
@@ -2356,7 +2371,7 @@ EMData* nn4_ctfReconstructor::finish()
 		}
 	}
 
-	// back fft
+    // back fft
     m_volume->do_ift_inplace();
     EMData* win = m_volume->window_center(m_vnx);
 
@@ -2391,7 +2406,7 @@ EMData* nn4_ctfReconstructor::finish()
 	}
 
     // add m_result = win here because the reconstructor is responsible for the memory of m_volume
-	// which I think is strange
+    // which I think is strange
     m_result = win;
 
 	return win;
