@@ -455,7 +455,6 @@ def fourier_reconstruction(options):
 		print "Inserting Slices"
 		
 	for j in xrange(0,2): #4):     #change back when the thr issue solved
-		
 		recon.iteration_reset()
 		
 		if ( j > 0 ):
@@ -471,7 +470,7 @@ def fourier_reconstruction(options):
 					weight = float (num_img)/particle_number
 					param = {}
 					param["weight"] = weight
-					recon.set_params(param) # this inserts that parameter, maintaining what's already 
+					recon.set_params(param) # this inserts that parameter, maintaining what's already there.
 				
 				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
 				recon.determine_slice_agreement(image,transform,num_img)
@@ -518,15 +517,12 @@ def fourier_reconstruction(options):
 				else:
 					pass #should be writing to 3dbad"
 
-
 	if (options.goodbad):
 		print "print log msgs"
 
 	if not(options.quiet):
 		print "Starting Reconstruction"
-
-	output=recon.finish()
-	
+	output = recon.finish()
 	#FIXME: Answer why this was here in the first place - why would you pad now?
 	#if options.pad:
 	#	output.set_attr("is_fftpad",1)  #why isn't this passed along?

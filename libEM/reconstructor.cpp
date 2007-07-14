@@ -154,6 +154,12 @@ FourierReconstructor& FourierReconstructor::operator=( const FourierReconstructo
 	{
 		// Make sure the base class performs the assignment also.
 		Reconstructor::operator=(that);
+		
+		// Delete the old inserter if it exists.
+		free_memory();
+	
+		// Load the new inserter
+		load_inserter();	
 	}
 	else
 	{
@@ -201,6 +207,9 @@ void FourierReconstructor::setup()
 	tmp_data->set_size(size + 2, size, size);
 	tmp_data->to_zero();
 	tmp_data->update();
+
+	load_inserter();
+
 }
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
@@ -262,29 +271,12 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 		return 1;
 	}
 
-	int mode = params["mode"];
-	float weight = params["weight"];
-
-	float *norm = tmp_data->get_data();
-	float *dat = slice->get_data();
-	float *rdata = image->get_data();
-
-	int rl = Util::square(ny / 2 - 1);
-
-	FourierPixelInserter3D* inserter = FourierPixelInserterMaker::get_inserter(mode,norm, rdata, nx, ny, nz);
-	if ( inserter == 0 )
-	{
-		LOGERR("no such insert slice mode: '%d'", mode);
-		// FIXME is there a exception thing to throw?
-		throw InvalidCallException("no such insert slice mode:");
-	}
-
 	if ( idx < quality_scores.size() )
 	{
 		//cout << "The quality score of " << quality_scores[idx].second << " was compared to " << (float) params["hard"];
 		if ( quality_scores[idx].get_snr_normed_frc_integral() < (float) params["hard"] )
 		{
-			cout << quality_scores[idx].get_snr_normed_frc_integral() << " was less than " << (float) params["hard"] << endl;
+			//cout << quality_scores[idx].get_snr_normed_frc_integral() << " was less than " << (float) params["hard"] << endl;
 			//cout << "....fail";
 			idx++;
 			return 1;
@@ -293,6 +285,23 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 		idx++;
 	}
 	
+	do_insert_slice_work(slice, arg);
+
+	delete slice;	
+
+	image->update();
+
+	return 0;
+}
+
+void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
+{
+	float *dat = input_slice->get_data();
+
+	float weight = params["weight"];
+
+	int rl = Util::square(ny / 2 - 1);
+
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
 		Transform3D euler = arg.get_sym((string) params["sym"], i);
@@ -325,13 +334,6 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 			}
 		}
 	}
-
-	delete inserter;
-	delete slice;	
-
-	image->update();
-
-	return 0;
 }
 
 InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling ) :
@@ -554,6 +556,14 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	InterpolatedFRC ifrc = InterpolatedFRC(image->get_data(), nx, ny, nz );
 	ifrc.reset();
 
+	bool doing_refined = false;
+
+	if ( doing_refined )
+	{
+		inserter->set_pixel_minus_operation();
+		do_insert_slice_work(slice, euler);
+	}
+
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
 			if ((x * x + Util::square(y - ny / 2)) >= rl)
@@ -577,13 +587,21 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			float dt[2];
 			dt[0] = dat[x * 2 + y * nx];
 			dt[1] = cc * dat[x * 2 + 1 + y * nx];
-
-			ifrc.continue_frc_calc(xx, yy, zz, dt, (float)params["weight"]);
+			if ( doing_refined )
+				ifrc.continue_frc_calc(xx, yy, zz, dt, (float)params["weight"]);
+			else
+				ifrc.continue_frc_calc(xx, yy, zz, dt, 0);
 		}
 	}
 
+	if ( doing_refined )
+	{
+		inserter->set_pixel_add_operation();
+		do_insert_slice_work(slice, euler);
+	}
+
 	QualityScores q_scores = ifrc.finish( num_particles_in_slice );
-// 	q_scores.debug_print();
+	q_scores.debug_print();
 	quality_scores.push_back(q_scores);
 
 	delete slice;
@@ -3027,11 +3045,11 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
 	int z0 = (int) floor(zz + 0.5f);
-
-	rdata[x0 + y0 * nx + z0 * nxy] += weight * dt[0];
-	rdata[x0 + y0 * nx + z0 * nxy + 1] += weight * dt[1];
-	norm[x0 + y0 * nx + z0 * nxy] += weight;
 	
+	(*pixel_operation)(rdata + x0 + y0 * nx + z0 * nxy, weight * dt[0]);
+	(*pixel_operation)(rdata + x0 + y0 * nx + z0 * nxy + 1, weight  * dt[1]);
+	(*pixel_operation)(norm + x0 + y0 * nx + z0 * nxy, weight);
+
 	return true;
 }
 
@@ -3073,41 +3091,17 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
 	g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
 
-	// debug
-//	Have to get radial coordinates - x is fine as it is but the other two need translation
-// 	int yt = (int) floor(yy - ny/2);
-// 	int zt = (int) floor(zz - nz/2);
-// 
-// 	int radius =  x0*x0 + yt*yt + zt*zt;
-// 	radius = int(sqrtf(radius));
-	// end debug
-	
-// 	int center = (int) (nx + ny * nx / 2 + nz * nxy / 2);
-
-	for (int j = 0; j < 8; j++) {
+	for (int j = 0; j < 8; j++)
+	{
 		int k = i + off[j];
-// 		if ( k == center )
-// 		{
-// 			cout << j << " at radius " << radius << " real and complex are " << rdata[k] << " " << rdata[k + 1] << endl;
-// 			cout << "Adding real and complex to center pixel " << dt[0] << " " << dt[1] << " weighted by " << g[j] << endl;
-// 		}
-
-
-		rdata[k] += weight * dt[0] * g[j];
-		rdata[k + 1] += weight * dt[1] * g[j];
-// 		if (radius == 0)
-			//cout << j << " first real " << dt[0] << " " << rdata[k] << " imag " << dt[1] << " " << rdata[k + 1] << " " << g[j] << endl;
-		norm[k] += weight * g[j];
-		// FIXME: this second normalization value was original used in make3d in EMAN1 to generate an orientation dependent measure of SNR
-		// at the time of coding it was not being explicitly supported.
-		// Eventually if may be necessary to halve the size of the norm array to ensure efficient usage of memory
-		// - d.woolford June 2007
-//		norm[k + 1] += weight * g[j] * dt[0] * dt[0] * dt[1] * dt[1];
+		(*pixel_operation)(rdata + k, weight * g[j] * dt[0]);
+		(*pixel_operation)(rdata + k + 1, weight * g[j] * dt[1]);
+		(*pixel_operation)(norm + k, weight * g[j]);
 	}
 	
 	return true;
 }
-		
+
 bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
@@ -3129,9 +3123,9 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = exp(-r / EMConsts::I3G);
 
-				rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
-				rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
-				norm[i + j * nx + k * nxy] += weight * gg;
+				(*pixel_operation)(rdata + i + j * nx + k * nxy, weight * gg * dt[0]);
+				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, weight * gg * dt[1]);
+				(*pixel_operation)(norm + i + j * nx + k * nxy, weight * gg);
 			}
 		}
 	}
@@ -3159,9 +3153,9 @@ bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, cons
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = exp(-r / EMConsts::I4G);
 
-				rdata[i + j * nx + k * nxy] += weight * gg * dt[0];
-				rdata[i + j * nx + k * nxy + 1] += weight * gg * dt[1];
-				norm[i + j * nx + k * nxy] += weight * gg;
+				(*pixel_operation)(rdata + i + j * nx + k * nxy, weight * gg * dt[0]);
+				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, weight * gg * dt[1]);
+				(*pixel_operation)(norm + i + j * nx + k * nxy, weight * gg);
 			}
 		}
 	}
@@ -3202,9 +3196,9 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 				int ii = i + j * nx + k * nxy;
 				float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 
-				rdata[ii] += gg * dt[0];
-				rdata[ii + 1] += gg * dt[1];
-				norm[ii] += gg;
+				(*pixel_operation)(rdata + ii, gg * dt[0]);
+				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
+				(*pixel_operation)(norm + ii, gg);
 			}
 		}
 	}
@@ -3230,9 +3224,9 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 					int ii = i + j * nx + k * nxy;
 					float gg =
 						weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
-					rdata[ii] += gg * dt[0];
-					rdata[ii + 1] -= gg * dt[1];
-					norm[ii] += gg;
+					(*pixel_operation)(rdata + ii, gg * dt[0]);
+					(*minus_pixel_operation)(rdata+ii + 1, gg * dt[1]);
+					(*pixel_operation)(norm + ii, gg);
 				}
 			}
 		}
@@ -3262,9 +3256,9 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = weight * exp(-r / EMConsts::I5G);
 
-				rdata[ii] += gg * dt[0];
-				rdata[ii + 1] += gg * dt[1];
-				norm[ii] += gg;
+				(*pixel_operation)(rdata + ii, gg * dt[0]);
+				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
+				(*pixel_operation)(norm + ii, gg);
 			}
 		}
 	}
@@ -3289,9 +3283,9 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 										   (float) k - zz_b);
 					float gg = weight * exp(-r / EMConsts::I5G);
 
-					rdata[ii] += gg * dt[0];
-					rdata[ii + 1] -= gg * dt[1];
-					norm[ii] += gg;
+					(*pixel_operation)(rdata + ii, gg * dt[0]);
+					(*minus_pixel_operation)(rdata+ii + 1, gg * dt[1]);
+					(*pixel_operation)(norm + ii, gg);
 				}
 			}
 		}
@@ -3322,9 +3316,9 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 						 hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
 				float gg = weight * Interp::hyperg(r);
 
-				rdata[ii] += gg * dt[0];
-				rdata[ii + 1] += gg * dt[1];
-				norm[ii] += gg;
+				(*pixel_operation)(rdata + ii, gg * dt[0]);
+				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
+				(*pixel_operation)(norm + ii, gg);
 			}
 		}
 	}
@@ -3348,9 +3342,9 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 												(float) k - zz_b));
 					float gg = weight * Interp::hyperg(r);
 
-					rdata[ii] += gg * dt[0];
-					rdata[ii + 1] -= gg * dt[1];
-					norm[ii] += gg;
+					(*pixel_operation)(rdata + ii, gg * dt[0]);
+					(*minus_pixel_operation)(rdata+ii + 1, gg * dt[1]);
+					(*pixel_operation)(norm + ii, gg);
 				}
 			}
 		}
