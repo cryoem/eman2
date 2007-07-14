@@ -90,28 +90,28 @@ float CccCmp::cmp(EMData * image, EMData *with) const
 	long n = 0;
 	long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
 	if (params.has_key("mask")) {
-	  EMData* mask;			              
+	  EMData* mask;
 	  mask = params["mask"];
-	  float* dm = mask->get_data();	              
-	  for (long i = 0; i < totsize; i++) {         
-	   if (dm[i] > 0.5) {		              
-	 	   avg1 += double(d1[i]);             
-	 	   var1 += d1[i]*double(d1[i]);       
-	 	   avg2 += double(d2[i]);             
-	 	   var2 += d2[i]*double(d2[i]);       
-	 	   ccc += d1[i]*double(d2[i]);        
-	 	   n++; 		              
+	  float* dm = mask->get_data();
+	  for (long i = 0; i < totsize; i++) {
+	   if (dm[i] > 0.5) {
+	 	   avg1 += double(d1[i]);
+	 	   var1 += d1[i]*double(d1[i]);
+	 	   avg2 += double(d2[i]);
+	 	   var2 += d2[i]*double(d2[i]);
+	 	   ccc += d1[i]*double(d2[i]);
+	 	   n++;
 	   }
-	  }				              
+	  }
 	} else {
-	  for (long i = 0; i < totsize; i++) {        
-	  	   avg1 += double(d1[i]);            
-	  	   var1 += d1[i]*double(d1[i]);      
-	  	   avg2 += double(d2[i]);            
-	  	   var2 += d2[i]*double(d2[i]);      
-	  	   ccc += d1[i]*double(d2[i]);       
-	   }				              
-	   n = totsize; 		              
+	  for (long i = 0; i < totsize; i++) {
+	  	   avg1 += double(d1[i]);
+	  	   var1 += d1[i]*double(d1[i]);
+	  	   avg2 += double(d2[i]);
+	  	   var2 += d2[i]*double(d2[i]);
+	  	   ccc += d1[i]*double(d2[i]);
+	   }
+	   n = totsize;
 	}
 
 	avg1 /= double(n);
