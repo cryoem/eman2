@@ -503,7 +503,7 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 		
 
 		float tmp = frc[i]*frc[i];
-		if ( tmp == 1 )
+		if ( tmp == 1.0f )
 		{
 			tmp = 0.999;
 			//cout << "one encountered" << endl;
@@ -1537,59 +1537,50 @@ EMData* nn4Reconstructor::finish()
 			for (int ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
-
-					if( m_weighting == ESTIMATE ) 
-					{
-                                            int cx = ix;
+					if( m_weighting == ESTIMATE ) {
+						int cx = ix;
 					    int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 					    int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
 
-					    float sum = 0.0;
-					    for( int ii = -kc; ii <= kc; ++ii )
-                                            { 
+						float sum = 0.0;
+					    for( int ii = -kc; ii <= kc; ++ii ) { 
 					        int nbrcx = cx + ii;
-						if( nbrcx >= m_vnxc ) continue;
+							if( nbrcx >= m_vnxc ) continue;
 
-					        for( int jj= -kc; jj <= kc; ++jj )
-						{
-						    int nbrcy = cy + jj;
-						    if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+					        for( int jj= -kc; jj <= kc; ++jj ) {
+						    	int nbrcy = cy + jj;
+						    	if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
 
-						    for( int kk = -kc; kk <= kc; ++kk )
-						    {
-						        int nbrcz = cz + jj;
-                                                        if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+						    	for( int kk = -kc; kk <= kc; ++kk ) {
+						        	int nbrcz = cz + jj;
+                            		if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
 
-							if( nbrcx < 0 )
-							{
-							    nbrcx = -nbrcx;
-							    nbrcy = -nbrcy;
-							    nbrcz = -nbrcz;
+									if( nbrcx < 0 ) {
+							   			 nbrcx = -nbrcx;
+							    			nbrcy = -nbrcy;
+							    			nbrcz = -nbrcz;
+									}
+
+									int nbrix = nbrcx;
+									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+
+									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
+										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+										sum = sum + pow_a[c];
+									}
+								}
 							}
-
-                                                        int nbrix = nbrcx;
-							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-
-							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 )
-							{
-                                                            int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-							    sum = sum + pow_a[c];
-							}
-                                                    }
-                                                }
-                                            }
+						}
 
 					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-					    Assert( r >=0 && r < (int)pow_b.size() );
-                                            float wght = pow_b[r] / ( 1.0 - alpha * sum );
-					    tmp = tmp * wght;
-				        }
-
+						Assert( r >=0 && r < (int)pow_b.size() );
+						float wght = pow_b[r] / ( 1.0 - alpha * sum );
+						tmp = tmp * wght;
+					}
 					(*m_volume)(2*ix,iy,iz) *= tmp;
 					(*m_volume)(2*ix+1,iy,iz) *= tmp;
-
-				  }
+				}
 			}
 		}
 	}
@@ -1632,7 +1623,7 @@ EMData* nn4Reconstructor::finish()
 		}
 	}
 
-        m_result = win;
+	m_result = win;
 	return win;
 }
 #undef  tw
@@ -1682,9 +1673,7 @@ void nnSSNR_Reconstructor::setup()
     if( params.has_key("symmetry") )
     {
    	    symmetry = params["symmetry"].to_str();
-    }
-    else
-    {
+    } else {
 	    symmetry = "c1";
     }
     setup( symmetry, size, npad );
@@ -1723,20 +1712,17 @@ void nnSSNR_Reconstructor::buildFFTVolume() {
 	
 	int offset = 2 - m_vnxp%2;
 	
-        if( params.has_key("fftvol") )
-	{
+	if( params.has_key("fftvol") ) {
 		m_volume = params["fftvol"]; /* volume should be defined in python when PMI is turned on*/
 		m_delete_volume = false;
-	}
-	else
-	{
+	} else {
 		m_volume = new EMData();
 		m_delete_volume = true;	
 	}
-        m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
-        m_volume->to_zero();
+	m_volume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
+	m_volume->to_zero();
 	if ( m_vnxp % 2 == 0 ) { m_volume->set_fftodd(0); }
-			else   { m_volume->set_fftodd(1); }
+	else   { m_volume->set_fftodd(1); }
 	
 	m_volume->set_nxc(m_vnxc);
 	m_volume->set_complex(true);
@@ -1747,14 +1733,12 @@ void nnSSNR_Reconstructor::buildFFTVolume() {
 }
 
 void nnSSNR_Reconstructor::buildNormVolume() {
-	if( params.has_key("weight") )
-	{
+	if( params.has_key("weight") ) {
 	 	m_wptr          = params["weight"]; 
 	 	m_delete_weight = false;
-	}
-	else
-	{	m_wptr = new EMData();
-        	m_delete_weight = true;
+	} else {
+		m_wptr = new EMData();
+		m_delete_weight = true;
 	}
 
 	m_wptr->set_size(m_vnxc+1,m_vnyp,m_vnzp);
@@ -1765,13 +1749,10 @@ void nnSSNR_Reconstructor::buildNormVolume() {
 
 void nnSSNR_Reconstructor::buildNorm2Volume() {
 
-	if( params.has_key("weight2") )
-	{
+	if( params.has_key("weight2") ) {
 		m_wptr2          = params["weight2"]; 
 		m_delete_weight2 = false;
-	}
-	else
-	{
+	} else {
 		m_wptr2 = new EMData();
 		m_delete_weight2 = true;
 	}		
@@ -1796,8 +1777,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 	padffted= 0;
 	}
 
-	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-        {
+	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
 		// FIXME: Why doesn't this throw an exception?
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
@@ -1805,12 +1785,9 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 
     EMData* padfft = NULL;
 
-    if( padffted != 0 )
-    {
+    if( padffted != 0 ) {
         padfft = new EMData(*slice);
-    }
-    else
-    {
+    } else {
         padfft = padfft_slice( slice, m_npad );
     }
 
@@ -1822,7 +1799,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
     mult = 1;
     }
 
-        Assert( mult > 0 );
+	Assert( mult > 0 );
 	insert_padfft_slice( padfft, t, mult );
 
 	checked_delete( padfft );
@@ -1835,8 +1812,8 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-		    m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym, mult);
-        }
+		m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym, mult);
+	}
 	return 0;
 }
 
@@ -1844,18 +1821,17 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_Reconstructor::finish() 
 {
-	int kz, ky;
- 	int box = 7;
-    	int kc = (box-1)/2;
+	int kz, ky, iix, iiy, iiz;
+	int box = 7;
+	int kc = (box-1)/2;
 	float alpha = 0.0;
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
 	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
 	EMData* vol_ssnr = new EMData();
-	vol_ssnr->set_size(m_vnxp+2 - m_vnxp%2, m_vnyp, m_vnzp);
-	vol_ssnr->set_array_offsets(0,1,1);
+	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	vol_ssnr->to_zero();
-        float w = params["w"];
+	float w = params["w"];
 	EMData* SSNR = params["SSNR"];
 
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
@@ -1866,8 +1842,8 @@ EMData* nnSSNR_Reconstructor::finish()
 
 	float *nom    = new float[inc+1];
 	float *denom  = new float[inc+1];
-	int *nn = new int[inc+1];
-	int *ka = new int[inc+1];
+	int  *nn     = new int[inc+1];
+	int  *ka     = new int[inc+1];
 	float wght = 1.0f;
 	for (int i = 0; i <= inc; i++) {
 		nom[i] = 0.0f;
@@ -1895,19 +1871,10 @@ EMData* nnSSNR_Reconstructor::finish()
 			argy = argz + float(ky*ky)*dy2;
 			for (int ix = 0; ix <= m_vnxc; ix++) {
 				float Kn = (*m_wptr)(ix,iy,iz);
-				if ( Kn > 0.0f ) {
-					argx = std::sqrt(argy + float(ix*ix)*dx2);
-					int r = Util::round(float(inc)*argx);
-					/***if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
-						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
-						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
-						nom[r] += nominator;
-						denom[r] += denominator;
-						nn[r] += 2;
-						ka[r] += int(Kn);
-					}***/
-
-					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
+				argx = std::sqrt(argy + float(ix*ix)*dx2);
+				int r = Util::round(float(inc)*argx);
+				if ( r >= 0 && Kn > 4.5f ) {
+					//float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);    //  Why this is not used??
 					if ( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -1920,75 +1887,61 @@ EMData* nnSSNR_Reconstructor::finish()
 						        for ( int jj= -kc; jj <= kc; ++jj ) {
 								int nbrcy = cy + jj;
 								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-								for( int kk = -kc; kk <= kc; ++kk ) {
-									int nbrcz = cz + jj;
-		                                                        if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-									if( nbrcx < 0 ) {
-										nbrcx = -nbrcx;
-										nbrcy = -nbrcy;
-										nbrcz = -nbrcz;
-									}
-		                                                        int nbrix = nbrcx;
-									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
-										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-										sum = sum + pow_a[c];
-									}
-                                                    		}
-                                                	}
+									for( int kk = -kc; kk <= kc; ++kk ) {
+										int nbrcz = cz + jj;
+										if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+										if( nbrcx < 0 ) {
+											nbrcx = -nbrcx;
+											nbrcy = -nbrcy;
+											nbrcz = -nbrcz;
+										}
+		                            	int nbrix = nbrcx;
+										int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+										int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+										if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
+											int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+											sum = sum + pow_a[c];
+										}
+								}
+							}
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
-						tmp = tmp * wght;
-				        } // end of ( m_weighting == ESTIMATE )
-					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
-						float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn)*wght;
-						float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)*wght/(Kn*(Kn-1.0f));
-						nom[r]   += nominator;
-						denom[r] += denominator;
-						nn[r] += 2;
-						ka[r] += int(Kn);
+						//tmp = tmp * wght;
+					} // end of ( m_weighting == ESTIMATE )
+					float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
+					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
+					// Skip Friedel related values
+					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
+						if ( r <= inc ) {
+							nom[r]   += nominator*wght;
+							denom[r] += denominator*wght;
+							nn[r]    += 2;
+							ka[r]    += int(Kn);
+						}
+						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
+						iix = m_vnxc + ix; iiy = m_vnyc + ky; iiz = m_vnzc + kz;
+						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+							(*vol_ssnr)(iix, iiy, iiz) = tmp;
+						// Friedel part
+						iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
+						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+							(*vol_ssnr)(iix, iiy, iiz) = tmp;
 					}
-					
-										}
-				if ( Kn > 1.0f)
-				{
-				 int iiy, iiz;
-				 if (iy <= m_vnyc )
-				 {
-				  	 iiy = m_vnyc +iy;
-				  }
-				 else
-				 {
-					 iiy = iy - m_vnyc+1;
-				 }
-				 if (iz<= m_vnzc )
-				{
-       					 iiz = m_vnzc +iz;
- 				}
-				else
-				{
-       					 iiz = iz - m_vnzc+1;
-				}
-				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2+ix,iiy,iiz)=
-				 std::norm(m_volume->cmplx(ix,iy,iz))/((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)*(Kn*(Kn-1.0f)/Kn);
-				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2-ix,iiy,iiz)=
-				 std::norm(m_volume->cmplx(ix,iy,iz))/((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)*(Kn*(Kn-1.0f)/Kn);
-									
-				}
+				} // end of Kn>1.5
 			}
 		}
 	}
 
 	for (int i = 0; i <= inc; i++)  { 
-	        (*SSNR)(i,0,0)  = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
+		(*SSNR)(i,0,0)  = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
 		(*SSNR)(i,1,0) = denom[i];    // variance
 		(*SSNR)(i,2,0) = nn[i];
 		(*SSNR)(i,3,0) = ka[i];
 	}
-
+	vol_ssnr->update();
 	return vol_ssnr;
 }
 #undef  tw
@@ -2901,23 +2854,17 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
 						tmp = tmp * wght;
 				        } // end of ( m_weighting == ESTIMATE )
-					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) 
-					{
+					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
 						nom[r]   += (*m_wptr2)(ix,iy,iz)*wght/Kn;
-
 						denom[r] += ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*wght/(Kn*(Kn-1.0f));
 						nn[r]    += 2;
 						ka[r]    += int(Kn);
 					}
-				if ( Kn > 1.0f)
-				{
+				if ( Kn > 1.0f) {
 				 int iiy, iiz;
-				 if (iy <= m_vnyc )
-				 {
+				 if (iy <= m_vnyc ) {
 				  	 iiy = m_vnyc +iy;
-				  }
-				 else
-				 {
+				 } else {
 					 iiy = iy - m_vnyc+1;
 				 }
 				 if (iz<= m_vnzc )

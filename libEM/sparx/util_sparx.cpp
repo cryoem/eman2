@@ -3610,109 +3610,65 @@ if (image->is_complex())
 //-----------------------------------------------------------------------------------------------------------------------
 
 
-/*void Util::histogram(EMData* image, EMData* mask)
+vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin, float hmax)
 {
 	if (image->is_complex())
-                throw ImageFormatException("Cannot do Histogram on Fourier Image");
-	float hmax = image->get_attr("maximum");
-	float hmin = image->get_attr("minimum");
-	float *imageptr,*maskptr;
+                throw ImageFormatException("Cannot do histogram on Fourier image");
+	//float hmax, hmin;
+	float *imageptr, *maskptr;
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	
+
 	if(mask != NULL){
 		if(nx != mask->get_xsize() || ny != mask->get_ysize() || nz != mask->get_zsize())
 			throw ImageDimensionException("The size of mask image should be of same size as the input image");
-	 }
-	int nbins = 128;
-	float *freq = new float[nbins];
-		
-	for(int i=0;i<nbins;i++)
-		freq[i]=0;
+		maskptr =mask->get_data();
+	}
+	if( nbins == 0) nbins = 128;
+	vector <float> freq(2*nbins, 0.0);
+
 	imageptr=image->get_data();
-	maskptr =mask->get_data();
-	if(mask!=NULL)
-	{
-		for (int i = 0;i < nx*ny*nz; i++)
-	    	{
-	      		if (maskptr[i]>=0.5f)
-	      		{			              
-			       hmax = (hmax < imageptr[i])?imageptr[i]:hmax;
-			       hmin = (hmin > imageptr[i])?imageptr[i]:hmin;
+	if( hmin == hmax ) {
+		if(mask == NULL) {
+			hmax = image->get_attr("maximum");
+			hmin = image->get_attr("minimum");
+		} else {
+			bool  First = true;
+			for (int i = 0;i < nx*ny*nz; i++) {
+	      		if (maskptr[i]>=0.5f) {
+					if(First) {
+						hmax = imageptr[i];
+						hmin = imageptr[i];
+						First = false;
+					} else {
+						hmax = (hmax < imageptr[i])?imageptr[i]:hmax;
+						hmin = (hmin > imageptr[i])?imageptr[i]:hmin;
+					}
+				}
 			}
 		}
 	}
 	float hdiff = hmax - hmin;
 	float ff = (nbins-1)/hdiff;
-	float fnumel=0.f,hav=0.f,hav2=0.f;
-	
-	if(mask!=NULL)
-	{
-		for(int i = 0;i < nx*ny*nz;i++)
+	for (int i = 0; i < nbins; i++) freq[nbins+i] = hmin + (float(i)+0.5f)/ff;
+	if(mask == NULL) {
+		for(int i = 0; i < nx*ny*nz; i++)
 		{
 			int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
-			if(jbin >= 1 && jbin <= nbins)
-			{
-				freq[jbin-1] += 1.0;
-				fnumel += 1;
-				hav += imageptr[i];
-				hav2 += (double)pow(imageptr[i],2);
-			}
+			if(jbin >= 1 && jbin <= nbins)  freq[jbin-1] += 1.0;
 		}
-	}
-	else
-	{
-		for(int i = 0;i < nx*ny*nz;i++)
-		{
-			float bin_mode;
-			float hist_max = freq[1];
-			int max_bin = 0;
-			for(int j=1;j<nbins;j++)
-			{
-				if(freq[j] >= hist_max)
-				{
-					hist_max = freq[j];
-					max_bin = j;
-				}
-			}
-			if(max_bin == 0)
-				bin_mode = 0.5;
-			else if(max_bin == (nbins-1))
-				bin_mode = static_cast<float>(nbins) - 0.5;
-			else
-			{
-				float YM1 = freq[max_bin - 1];
-				float YP1 = freq[max_bin + 1];
-				bin_mode = static_cast<float>(max_bin-1) + ((YM1 - YP1)*0.5/(YM1 + YP1 - (2.0*hist_max)));
-			}
-			//float hist_mode = hmin + (bin_mode*bin_size);
-			
-			double dtop = hav2 - ((hav*hav)/(fnumel=(fnumel==0.f)?1:fnumel));
-			
-			if(dtop < 0.0)
-				throw ImageFormatException("Cannot be negative");
-			
-			hav = hav/(fnumel=(fnumel==0.f)?1:fnumel);
-			//float hsig = sqrt(dtop/(fnumel-1));
-			
-			if(maskptr[i] >= 0.5)
-			{
+	} else {
+		for(int i = 0; i < nx*ny*nz; i++) {
+			if(maskptr[i] >= 0.5) {
 				int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
-				if(jbin >= 1 && jbin <= nbins)
-				{
-					freq[jbin-1] += 1.0;
-					fnumel += 1;
-					hav += imageptr[i];
-					hav2 += (double)pow(imageptr[i],2);
-				}
+				if(jbin >= 1 && jbin <= nbins)  freq[jbin-1] += 1.0;
 			}
 		}
 	}
-	delete[] freq;
+	return freq;
 }
-*/
-			
+		
 Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 {
 	/* Exception Handle */
@@ -3740,7 +3696,7 @@ Dict Util::histc(EMData *ref,EMData *img, EMData *mask)
 	/* Input image under mask attributes */
 	float *mask_ptr = (mask == NULL)?img->get_data():mask->get_data();
 	
-	vector<float> img_data = Util::infomask(img,mask);
+	vector<float> img_data = Util::infomask(img, mask);
 	float img_avg = img_data[0];
 	float img_sig = img_data[1];
 	

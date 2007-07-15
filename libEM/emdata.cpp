@@ -1955,16 +1955,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 }
 
 
-
-
-
-
-
-
-
-
-
-vector < float > EMData::calc_hist(int, float histmin, float histmax)
+vector < float > EMData::calc_hist(int hist_size, float histmin, float histmax)
 {
 	ENTERFUNC;
 
@@ -1975,7 +1966,7 @@ vector < float > EMData::calc_hist(int, float histmin, float histmax)
 		histmax = get_attr("maximum");
 	}
 
-	vector <float> hist(256, 0.0);
+	vector <float> hist(hist_size, 0.0);
 
 	int p0 = 0;
 	int p1 = 0;
@@ -2003,7 +1994,7 @@ vector < float > EMData::calc_hist(int, float histmin, float histmax)
 	}
 
 	size_t di = 0;
-	float norm = 0;
+//	float norm = 0;
 	size_t n = hist.size();
 
 	for (int k = p0; k <= p1; ++k) {
@@ -2014,7 +2005,7 @@ vector < float > EMData::calc_hist(int, float histmin, float histmax)
 			di = prime[k];
 		}
 
-		norm += (float)size / (float) di;
+//		norm += (float)size / (float) di;
 		float w = (float)n / (histmax - histmin);
 
 		for(size_t i=0; i<=size-di; i += di) {
@@ -2024,13 +2015,13 @@ vector < float > EMData::calc_hist(int, float histmin, float histmax)
 			}
 		}
 	}
-
+/*
 	for (size_t i = 0; i < hist.size(); ++i) {
 		if (norm != 0) {
 			hist[i] = hist[i] / norm;
 		}
 	}
-	
+*/	
 	return hist;
 	
 	EXITFUNC;
