@@ -1384,12 +1384,12 @@ namespace EMAN
 
 		virtual EMData *finish();
 
-		virtual string get_desc() const
+		virtual string get_name() const
 		{
 			return "nn4_ctf";
 		}
 		
-		virtual string get_name() const
+		virtual string get_desc() const
 		{
 			return "Direct Fourier inversion reconstruction routine";
 		}
