@@ -263,7 +263,7 @@ orrelation.
 		CROSS = 3
 	};
 
-	EMData* filt_median(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape);
+	EMData* filt_median_(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape);
 	/** Median filter
 	 *
 	 * @par Purpose: Calculate the median filtered image.
@@ -289,7 +289,7 @@ orrelation.
 		GRAYLEVEL = 2
 	};
 
-	EMData* filt_dilation(EMData* f, EMData* K, morph_type mydilation);
+	EMData* filt_dilation_(EMData* f, EMData* K, morph_type mydilation);
 	/** Dilation filter 	 
 	 *
 	 * @par Purpose: Calculate the Minkowski addition of the two images
@@ -306,7 +306,7 @@ orrelation.
 	 * @return  Dilation filtered image.
 	 */
 
-	EMData* filt_erosion(EMData* f, EMData* K, morph_type myerosion);
+	EMData* filt_erosion_(EMData* f, EMData* K, morph_type myerosion);
 	/** Erosion filter 	 
 	 *
 	 * @par Purpose: Calculate the Minkowski addition of the two images

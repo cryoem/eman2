@@ -48,9 +48,9 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("periodogram", &EMAN::periodogram, return_value_policy< manage_new_object >());
     def("norm_pad_ft", &EMAN::norm_pad_ft, return_value_policy< manage_new_object >(), norm_pad_ft_overloads_3_4());
     def("rsconvolution", &EMAN::rsconvolution, return_value_policy< manage_new_object >());
-    def("filt_median", &EMAN::filt_median, return_value_policy< manage_new_object >());
-    def("filt_dilation", &EMAN::filt_dilation, return_value_policy< manage_new_object >());
-    def("filt_erosion", &EMAN::filt_erosion, return_value_policy< manage_new_object >());
+    def("filt_median_", &EMAN::filt_median_, return_value_policy< manage_new_object >());
+    def("filt_dilation_", &EMAN::filt_dilation_, return_value_policy< manage_new_object >());
+    def("filt_erosion_", &EMAN::filt_erosion_, return_value_policy< manage_new_object >());
     def("equalsize", &EMAN::equalsize);
 }
 

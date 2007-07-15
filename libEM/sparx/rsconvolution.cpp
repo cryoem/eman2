@@ -397,7 +397,7 @@ namespace EMAN {
 		return result;
 	}
 
-    EMData* filt_median(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape) {
+    EMData* filt_median_(EMData* f, int nxk, int nyk, int nzk, kernel_shape myshape) {
 		
  		int nxf = f->get_xsize();
 		int nyf = f->get_ysize(); 
@@ -435,7 +435,7 @@ namespace EMAN {
 		return result;
 	}
 
-    EMData* filt_dilation(EMData* f, EMData* K, morph_type mydilation) {
+    EMData* filt_dilation_(EMData* f, EMData* K, morph_type mydilation) {
 
  		int nxf = f->get_xsize();
 		int nyf = f->get_ysize(); 
@@ -542,7 +542,7 @@ namespace EMAN {
 		return result;
     }
 
-    EMData* filt_erosion(EMData* f, EMData* K, morph_type myerosion) {
+    EMData* filt_erosion_(EMData* f, EMData* K, morph_type myerosion) {
 
  		int nxf = f->get_xsize();
 		int nyf = f->get_ysize(); 
