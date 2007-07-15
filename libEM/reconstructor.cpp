@@ -1828,10 +1828,10 @@ EMData* nnSSNR_Reconstructor::finish()
 	float argx, argy, argz;
 	vector< float > pow_a( 3*kc+1, 1.0 );
 	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
+	float w = params["w"];
 	EMData* vol_ssnr = new EMData();
 	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	vol_ssnr->to_zero();
-	float w = params["w"];
 	EMData* SSNR = params["SSNR"];
 
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
@@ -1884,24 +1884,24 @@ EMData* nnSSNR_Reconstructor::finish()
 						for( int ii = -kc; ii <= kc; ++ii ) { 
 							int nbrcx = cx + ii;
 							if( nbrcx >= m_vnxc ) continue;
-						        for ( int jj= -kc; jj <= kc; ++jj ) {
+						    for ( int jj= -kc; jj <= kc; ++jj ) {
 								int nbrcy = cy + jj;
 								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-									for( int kk = -kc; kk <= kc; ++kk ) {
-										int nbrcz = cz + jj;
-										if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-										if( nbrcx < 0 ) {
-											nbrcx = -nbrcx;
-											nbrcy = -nbrcy;
-											nbrcz = -nbrcz;
-										}
-		                            	int nbrix = nbrcx;
-										int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-										int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-										if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
-											int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-											sum = sum + pow_a[c];
-										}
+								for( int kk = -kc; kk <= kc; ++kk ) {
+									int nbrcz = cz + jj;
+									if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+									if( nbrcx < 0 ) {
+										nbrcx = -nbrcx;
+										nbrcy = -nbrcy;
+										nbrcz = -nbrcz;
+									}
+		                        	int nbrix = nbrcx;
+									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
+										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+										sum = sum + pow_a[c];
+									}
 								}
 							}
 						}
@@ -2692,11 +2692,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	vector< float > pow_a( 3*kc+1, 1.0 );
 	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
 	float w = params["w"];
-	EMData* SSNR = params["SSNR"];
-	EMData* vol_ssnr = new EMData();
-	vol_ssnr->set_size(m_vnxp+2 - m_vnxp%2, m_vnyp, m_vnzp);
-	vol_ssnr->set_array_offsets(0,1,1);
-	vol_ssnr->to_zero();
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
@@ -2715,10 +2710,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 					if ( Kn > 0.0f )  {  
 						argx = std::sqrt(argy + float(ix*ix)*dx2);
 						float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
-												   
-						 /* if ( ix ==1 && iy ==1)
-	 						    {  std::cout<<"****"<<m_wvolume->cmplx(ix,iy,iz)<<"  "<< osnr
-							    <<std::endl;}*/
 						m_wvolume->cmplx(ix,iy,iz) *= tmp; 
 						if (m_wvolume->is_fftodd()) {
 							float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*M_PI;
@@ -2736,12 +2727,16 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		wiener = 0; // Turn off flag
 		return win; // The function requires a returned object, otherwise is not neccessary
 	} else  {//Calculate SSNR 
- 	float wght = 1.f;
+	EMData* vol_ssnr = new EMData();
+	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
+	vol_ssnr->to_zero();
+	EMData* SSNR = params["SSNR"];
 	SSNR->set_size(inc+1,4,1);
 	float *nom    = new float[inc+1];
 	float *denom  = new float[inc+1];
 	int  *ka     = new int[inc+1];
 	int  *nn     = new int[inc+1];
+ 	float wght = 1.f;
 	for (int i = 0; i <= inc; i++) {
 		nom[i]   = 0.0f;
 		denom[i] = 0.0f;
@@ -2756,8 +2751,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 		float max = max3d( kc, pow_a );
 		alpha = ( 1.0 - 1.0/vol ) / max;
-	}	
-	float osnr = 1.0f/m_snr;
+	}
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
 		argz = float(kz*kz)*dz2;  
@@ -2765,92 +2759,80 @@ EMData* nnSSNR_ctfReconstructor::finish()
 			if ( iy-1 > m_vnyc ) ky = iy-1-m_vnyp; else ky = iy-1;
 			argy = argz + float(ky*ky)*dy2;
 			for (int ix = 0; ix <= m_vnxc; ix++) {
-				float Kn = (*m_wptr3)(ix,iy,iz);	  
-				if ( Kn > 0.0f ) 
-					argx = std::sqrt(argy + float(ix*ix)*dx2);
-					int r = Util::round(float(inc)*argx);
-					float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
-					if ( m_weighting == ESTIMATE ) 
-					{
+				float Kn = (*m_wptr3)(ix,iy,iz);
+				argx = std::sqrt(argy + float(ix*ix)*dx2);
+				int r = Util::round(float(inc)*argx);
+				if ( r >= 0 && Kn > 4.5f ) {
+					//float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;  // WHY THIS IS NOT USED HERE?
+					if ( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+
 						float sum = 0.0;
-						for( int ii = -kc; ii <= kc; ++ii ) 
-						{ 
+						for( int ii = -kc; ii <= kc; ++ii ) { 
 							int nbrcx = cx + ii;
 							if( nbrcx >= m_vnxc ) continue;
-						        for ( int jj= -kc; jj <= kc; ++jj ) 
-							{
+							for ( int jj= -kc; jj <= kc; ++jj ) {
 								int nbrcy = cy + jj;
 								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-								for( int kk = -kc; kk <= kc; ++kk ) 
-								{
+								for( int kk = -kc; kk <= kc; ++kk ) {
 									int nbrcz = cz + jj;
-		                                                        if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-									if( nbrcx < 0 ) 
-									{
+									if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+									if( nbrcx < 0 ) {
 										nbrcx = -nbrcx;
 										nbrcy = -nbrcy;
 										nbrcz = -nbrcz;
 									}
-		                                                        int nbrix = nbrcx;
+									int nbrix = nbrcx;
 									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
 									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) 
-									{
+									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
 										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
 										sum = sum + pow_a[c];
 									}
-                                                    		}
-                                                	}
+								}
+							}
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
-						tmp = tmp * wght;
-				        } // end of ( m_weighting == ESTIMATE )
-					if ( r >= 0 && r <= inc && Kn > 1.5f && ( ix > 0 || kz > 0 || kz == 0 && ky >= 0 )) {
-						nom[r]   += (*m_wptr2)(ix,iy,iz)*wght/Kn;
-						denom[r] += ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*wght/(Kn*(Kn-1.0f));
-						nn[r]    += 2;
-						ka[r]    += int(Kn);
+						//tmp = tmp * wght;
+					} // end of ( m_weighting == ESTIMATE )
+					float nominator = (*m_wptr2)(ix,iy,iz)/Kn;
+					float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
+					// Skip Friedel related values
+					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
+						if ( r <= inc ) {
+							nom[r]   += nominator*wght;
+							denom[r] += denominator*wght;
+							nn[r]    += 2;
+							ka[r]    += int(Kn);
+						}
+						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
+						int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
+						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+							(*vol_ssnr)(iix, iiy, iiz) = tmp;
+						// Friedel part
+						iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
+						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+							(*vol_ssnr)(iix, iiy, iiz) = tmp;
 					}
-				/*if ( Kn > 1.0f) {
-				 int iiy, iiz;
-				 if (iy <= m_vnyc ) {
-				  	 iiy = m_vnyc +iy;
-				 } else {
-					 iiy = iy - m_vnyc+1;
-				 }
-				 if (iz<= m_vnzc )
-				{
-       					 iiz = m_vnzc +iz;
- 				}
-				else
-				{
-       					 iiz = iz - m_vnzc+1;
-				}
-				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2+ix,iiy,iiz)=(*m_wptr2)(ix,iy,iz)/((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*(Kn*(Kn-1.0f)/Kn);
-				 (*vol_ssnr)(m_vnxc+(2 - m_vnxp%2)/2-ix,iiy,iiz)=(*m_wptr2)(ix,iy,iz)/((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))*(Kn*(Kn-1.0f)/Kn);
-				}
-					
-				}*/
+				} // end of Kn>4.5 or whatever
 			}
 		}
 	}
-	for (int i = 0; i <= inc; i++)  
-	{ 
+	for (int i = 0; i <= inc; i++) { 
 		(*SSNR)(i,0,0) = nom[i]; 
 		(*SSNR)(i,1,0) = denom[i];
 		(*SSNR)(i,2,0) = nn[i];
 		(*SSNR)(i,3,0) = ka[i];
 				
 	}
-	
 	vol_ssnr->update();
 	return vol_ssnr;
-   }
+	}
 
 }
 #undef  tw
