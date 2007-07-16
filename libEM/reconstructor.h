@@ -834,8 +834,8 @@ namespace EMAN
 	class FourierReconstructor:public Reconstructor
 	{
 	  public:
-		FourierReconstructor() { load_default_settings(); }
-		virtual ~FourierReconstructor() { /*free_memory();*/ }
+		FourierReconstructor() : inserter(0) { load_default_settings(); }
+		virtual ~FourierReconstructor() { free_memory(); }
 	
 		/** Copy constructor
 		 */
