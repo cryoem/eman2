@@ -3615,7 +3615,7 @@ vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin
 	if (image->is_complex())
                 throw ImageFormatException("Cannot do histogram on Fourier image");
 	//float hmax, hmin;
-	float *imageptr, *maskptr;
+	float *imageptr=0, *maskptr=0;
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
