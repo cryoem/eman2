@@ -78,7 +78,9 @@ template<typename Type>
 void test_emobject_specific_conversion( const Type& type )
 {
 	if ( static_cast<Type>(EMObject(type)) != type )
+	{
 		cout << "FAILED" << endl;
+	}
 	else
 		cout << "passed" << endl;
 }
@@ -253,6 +255,10 @@ void test_emobject_conversion()
 	cout << "Testing const char* conversion operator..... ";
 	test_emobject_specific_conversion( "hello world" );
 	
+	cout << "Testing float pointer conversion operator..... ";
+	float* pFloat = new float;
+	test_emobject_specific_conversion( pFloat );
+
 	cout << "Testing xydata pointer conversion operator..... ";
 	XYData* xydata = new XYData;
 	test_emobject_specific_conversion( xydata );
@@ -310,6 +316,9 @@ vector<EMObject> get_test_emobjects()
 	
 	EMData *a = new EMData();
 	objects.push_back(EMObject(a));
+
+	float *fp = new float;
+	objects.push_back(EMObject(fp));
 	
 	Transform3D* pTransform = new Transform3D;
 	objects.push_back(EMObject(pTransform));

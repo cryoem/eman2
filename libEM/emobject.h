@@ -4,8 +4,6 @@
  
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
- * Probable contributor: Liwei Peng (what dates?)
- * Contributing author: David Woolford 06/11/2007
  * Copyright (c) 2000-2007 Baylor College of Medicine
  * 
  * This software is issued under a joint BSD/GNU license. You may use the
@@ -127,7 +125,8 @@ namespace EMAN
 			INTARRAY,
 			FLOATARRAY,
 			STRINGARRAY,
-			TRANSFORM3D
+			TRANSFORM3D,
+			FLOAT_POINTER
 		};
 		
 		~EMObjectTypes() {}
@@ -171,6 +170,7 @@ namespace EMAN
 		EMObject(double dd);
 		EMObject(const char *s);
 		EMObject(const string & s);
+		EMObject(float * fp);
 		EMObject(EMData * em);
 		EMObject(XYData * xy);
 		EMObject(Transform3D * t);
@@ -202,6 +202,7 @@ namespace EMAN
 		operator float () const;
 		operator double () const;
 		operator const char *() const;
+		operator float * () const;
 		operator EMData *() const;
 		operator XYData *() const;
 		operator Transform3D *() const;
@@ -261,6 +262,8 @@ namespace EMAN
 			int n;
 			float f;
 			double d;
+			float * fp;
+			// FIXME - this union should probably inlcude pointers
 		};
 
 		EMData *emdata;

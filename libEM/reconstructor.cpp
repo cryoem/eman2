@@ -56,16 +56,6 @@ using std::cout; // for debug
 // find
 
 
-// Static init
-map<unsigned int, FourierPixelInserterMaker* > FourierPixelInserterMaker::maker_registry;
-const FourierInserter3DMode7Maker::FourierInserter3DMode7Maker registerMode7Maker;
-const FourierInserter3DMode6Maker::FourierInserter3DMode6Maker registerMode6Maker;
-const FourierInserter3DMode5Maker::FourierInserter3DMode5Maker registerMode5Maker;
-const FourierInserter3DMode4Maker::FourierInserter3DMode4Maker registerMode4Maker;
-const FourierInserter3DMode3Maker::FourierInserter3DMode3Maker registerMode3Maker;
-const FourierInserter3DMode2Maker::FourierInserter3DMode2Maker registerMode2Maker;
-const FourierInserter3DMode1Maker::FourierInserter3DMode1Maker registerMode1Maker;
-
 template < typename T > void checked_delete( T*& x )
 {
     typedef char type_must_be_complete[ sizeof(T)? 1: -1 ];
@@ -87,6 +77,18 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&bootstrap_nnReconstructor::NEW); 
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
+
+template <> Factory < FourierPixelInserter3D >::Factory()
+{
+	force_add(&FourierInserter3DMode1::NEW);
+	force_add(&FourierInserter3DMode2::NEW);
+	force_add(&FourierInserter3DMode3::NEW);
+	force_add(&FourierInserter3DMode4::NEW);
+	force_add(&FourierInserter3DMode5::NEW);
+	force_add(&FourierInserter3DMode6::NEW);
+	force_add(&FourierInserter3DMode7::NEW);
+}
+
 
 
 Reconstructor::Reconstructor( const Reconstructor& that ) : ReconstructorWithVolumeData(that)
@@ -2924,6 +2926,50 @@ EMData* bootstrap_nnctfReconstructor::finish()
     return w;
 }
 
+void FourierPixelInserter3D::init()
+{
+	if ( params.find("rdata") !=  params.end()  )
+	{
+		rdata = params["rdata"];
+		if ( rdata == 0 )
+			throw NotExistingObjectException("rdata", "error the rdata pointer was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("rdata", "the rdata pointer was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("norm") !=  params.end() )
+	{
+		norm = params["norm"];
+		if ( norm == 0 )
+			throw NotExistingObjectException("norm", "error the norm pointer was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("norm", "the norm pointer was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("nx") != params.end() )
+	{
+		nx = params["nx"];
+		if ( nx == 0 )
+			throw NotExistingObjectException("nx", "error nx was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("nx", "nx was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("ny") != params.end() )
+	{
+		ny = params["ny"];
+		if ( ny == 0 )
+			throw NotExistingObjectException("ny", "error ny was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("ny", "ny was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("nz") != params.end() )
+	{
+		nz = params["nz"];
+		if ( nz == 0 )
+			throw NotExistingObjectException("nz", "error nz was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("nz", "nz was not defined in FourierPixelInserter3D::init");
+	
+	nxy = nx*ny;
+}
 
 bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
@@ -2938,8 +2984,7 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	return true;
 }
 
-FourierInserter3DMode2::FourierInserter3DMode2(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-	FourierPixelInserter3D( normalize_values, real_data, xsize, ysize, zsize )
+FourierInserter3DMode2::FourierInserter3DMode2()
 {
 	off[0] = 0;
 	off[1] = 2;

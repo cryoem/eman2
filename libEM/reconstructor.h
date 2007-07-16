@@ -83,13 +83,34 @@ namespace EMAN
 
 		virtual void operate( float* const target, const float& value ) { *target -= value; }
 	};
-	/** FourierPixelInserter3D - encapsulates a method for inserting a (continuous) 2D Fourier pixel into a discrete 3D volume
-	 * This is an abstract base class
-	 * Deriving classes must over ride the pure virtual insert_pixel function.
-	 * 
-	 * At the moment this is only useful in conjunction with FourierReconstructor
-	 * 
-	 * David Woolford, June 2007.
+	/** FourierPixelInserter3D class defines a way a continuous pixel in 3D
+	 * is inserted into the discrete 3D volume - there are various schemes for doing this
+	 * including simply finding the nearest neighbor to more elaborate schemes that involve
+	 * interpolation using the nearest 8 voxels and so on. 
+	 *
+	 * FourierPixelInserter3D class is the base class for all pixel inserters.
+     * Each specific pixel inserter class has a unique ID name. This name
+	 * is used to create a FourierPixelInserter3D instance or do a pixel insertion.
+     * Currently these IDs are (strings) 1,2,3,4,5,6,7 - where mode 2 is currently the
+	 * most popularly used reconstructor as it generally performs well, and was the 
+	 * default mode in EMAN1.
+	 *
+	 * All FourierPixelInserter3D classes in EMAN2 are managed by a Factory
+	 * pattern. So each FourierPixelInserter3D class must define:
+	 *   - a unique name to idenfity itself in the factory.
+	 *   - a static method to register itself in the factory.
+	 *
+     * Typical usages of FourierPixelInserter3D are as follows:
+     * 
+     *  - How to get all the FourierPixelInserter3D names:
+     *@code
+	 *    vector<string> all_reconstructors = Factory<FourierPixelInserter3D>::get_list();
+     @endcode
+	 *
+	 *  - How to get a FourierPixelInserter3D
+     *@code 
+	 *    Reconstructor* r = Factory<FourierPixelInserter3D>::get("fourier");
+     @endcode
 	*/
 	class FourierPixelInserter3D
 	{
@@ -101,12 +122,12 @@ namespace EMAN
 		 * @param ysize the ysize of the discrete 3D volume
 		 * @param zsize the zsize of the discrete 3D volume
 		 */
-		FourierPixelInserter3D( float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize ) :
-			norm(normalize_values), rdata(real_data), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize)
+		FourierPixelInserter3D() : norm(0), rdata(0), nx(0), ny(0), nz(0), nxy(0)
 		{
 			pixel_operation = new PixelAddOperation;
 			minus_pixel_operation = new PixelMinusOperation;
 		}
+
 		virtual ~FourierPixelInserter3D()
 		{
 			if ( pixel_operation != 0 )
@@ -119,6 +140,40 @@ namespace EMAN
 				delete minus_pixel_operation;
 				minus_pixel_operation = 0;
 			}
+		}
+		
+		
+		/** Set the Reconstructor's parameters using a key/value dictionary.
+		 * @param new_params A dictionary containing the new parameters.
+		 */
+		void set_params(const Dict & new_params)
+		{
+			// note but this is really inserting OR individually replacing...
+			// the old data will be kept if it is not written over
+			// This is different from the original design but has not yet been confirmed
+			// as OK with Steve Ludtke
+			// This shouldn't present any problems.
+			TypeDict permissable_params = get_param_types();
+			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+			{
+				
+				if ( !permissable_params.find_type(it->first) )
+				{
+					throw InvalidParameterException(it->first);
+				}
+				params[it->first] = it->second;
+			}	
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("nx", EMObject::INT);
+			d.put("ny", EMObject::INT);
+			d.put("nz", EMObject::INT);
+			d.put("rdata", EMObject::FLOAT_POINTER);
+			d.put("norm", EMObject::FLOAT_POINTER);
+			return d;
 		}
 		
 		/** Insert a complex pixel [dt[0]+dt[1]i] at (float) coordinate [xx,yy,zz] with weighting into a discrete 3D volume
@@ -151,11 +206,23 @@ namespace EMAN
 			pixel_operation = new PixelAddOperation;
 		}
 
+		
+		/** Get the Reconstructor's name. Each Reconstructor is
+		 * identified by a unique name.
+		 * @return The Reconstructor's name.
+		 */
+		virtual string get_name() const = 0;
+
+		
+		virtual string get_desc() const = 0;
+
+		void init();
 	protected:
+		mutable Dict params;
 		// A pointer to the constructor argument normalize_values
-		float * const norm;
+		float * norm;
 		// A pointer to the constructor argument real_data
-		float * const rdata;
+		float * rdata;
 		
 		// Image volume data sizes, and nxy a convenience variable used here and there
 		int nx, ny, nz, nxy;
@@ -178,20 +245,26 @@ namespace EMAN
 	class FourierInserter3DMode1 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode1(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
+		FourierInserter3DMode1() {}
 		virtual ~FourierInserter3DMode1() {}
 		
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& = 1);
+
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode1();
+		}
+
+		virtual string get_name() const
+		{
+			return "1";
+		}
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
-		static /* virtual */ unsigned int get_mode_number() { return 1; }
-		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion using nearest neighbor";
+		}
+
 	private:
 		// Disallow copy and assignment by default
 		FourierInserter3DMode1( const FourierInserter3DMode1& );
@@ -204,18 +277,26 @@ namespace EMAN
 	class FourierInserter3DMode2 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode2(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize);
+		FourierInserter3DMode2();
 		virtual ~FourierInserter3DMode2() {}
 		
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
-		static /* virtual */ unsigned int  get_mode_number() { return 2; }
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode2();
+		}
+
+		virtual string get_name() const
+		{
+			return "2";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion using interpolation and the nearest 8 voxels";
+		}
+
 		
 	private:
 		int off[8];
@@ -232,20 +313,27 @@ namespace EMAN
 	class FourierInserter3DMode3 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode3(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
+		FourierInserter3DMode3() {}
 		virtual ~FourierInserter3DMode3() {}
 		
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
+				
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode3();
+		}
+
+		virtual string get_name() const
+		{
+			return "3";
+		}
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
-		static /* virtual */ unsigned int get_mode_number() { return 3; }
-		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion mode 3";
+		}
+
+
 	private:
 		// Disallow copy and assignment by default
 		FourierInserter3DMode3( const FourierInserter3DMode3& );
@@ -258,19 +346,26 @@ namespace EMAN
 	class FourierInserter3DMode4 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode4(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
+		FourierInserter3DMode4() {}
 		virtual ~FourierInserter3DMode4() {}
 		
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
-		static /* virtual */ unsigned int get_mode_number() { return 4; }
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode4();
+		}
+
+		virtual string get_name() const
+		{
+			return "4";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion mode 4";
+		}
+
 		
 	private:
 		// Disallow copy and assignment by default
@@ -284,22 +379,29 @@ namespace EMAN
 	class FourierInserter3DMode5 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode5(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize)
+		FourierInserter3DMode5()
 		{
 			gimx = Interp::get_gimx();
 		}
+		
 		virtual ~FourierInserter3DMode5() {}
 		
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
-		static /* virtual */ unsigned int get_mode_number() { return 5; }
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode5();
+		}
+
+		virtual string get_name() const
+		{
+			return "5";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion mode 5";
+		}
 		
 	private:
 		// Disallow copy and assignment by default
@@ -315,19 +417,25 @@ namespace EMAN
 	class FourierInserter3DMode6 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode6(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
+		FourierInserter3DMode6() {}
 		virtual ~FourierInserter3DMode6() {}
 		
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
-		static /* virtual */ unsigned int get_mode_number() { return 6; }
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode6();
+		}
+
+		virtual string get_name() const
+		{
+			return "6";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion mode 6";
+		}
 		
 	private:
 		// Disallow copy and assignment by default
@@ -341,19 +449,25 @@ namespace EMAN
 	class FourierInserter3DMode7 : public FourierPixelInserter3D
 	{
 	public:
-		FourierInserter3DMode7(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) :
-			FourierPixelInserter3D(normalize_values, real_data, xsize, ysize, zsize) {}
+		FourierInserter3DMode7() {}
 		virtual ~FourierInserter3DMode7() {}
 		
-		/** get_mode_number get the unique mode number
-		 * Is static because it makes the implementation of the associated FourierPixelInserterMaker constructor
-		 * independent of the this inserters mode number. Should be virtual, but static virtual functions
-		 * are not allowable.
-		 * @return a unique mode number
-		 */
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
-		static /* virtual */ unsigned int get_mode_number() { return 7; }
+		static FourierPixelInserter3D *NEW()
+		{
+			return new FourierInserter3DMode7();
+		}
+
+		virtual string get_name() const
+		{
+			return "7";
+		}
+		
+		virtual string get_desc() const
+		{
+			return "Fourier pixel insertion mode 7";
+		}
 		
 	private:
 		// Disallow copy and assignment by default
@@ -361,222 +475,6 @@ namespace EMAN
 		FourierInserter3DMode7& operator=( const FourierInserter3DMode7& );
 	};
 	
-	/** FourierPixelInserterMaker - a factory that returns an instance of a FourierPixelInserter3D
-	 * This implementation is an example of an abstract pluggable factory.
-	 * It provides a static interface for performing the factory functionality (get_inserter).
-	 * It also acts as an abstract base class for all FourierPixelInserterMakers inserted into maker_registry.
-	 * FourierPixelInserterMakers are inserted into the maker_registry when they are constructed (see the
-	 * constructor in this (the abstract base) class. Hence, any concrete instance of a FourierPixelInserterMaker
-	 * should only be instantiated once, and this is achieved using static initialisation. Each concrete
-	 * FourierPixelInserterMaker that derives from this class must contain a static member variable of its own
-	 * type. When these static members are initialised they automatically insert themselves into maker_registry
-	 * in this, the base class.
-	 * 
-	 * David Woolford, June 2007.
-	 */
-	class FourierPixelInserterMaker
-	{
-	public:
-		/** FourierPixelInserterMaker constructor
-		 * @param key the key of the inserted (child) FourierPixelInserterMaker
-		 */
-		FourierPixelInserterMaker( const unsigned int key )
-		{
-			if (maker_registry.find(key) == maker_registry.end() )
-			{
-				maker_registry[key] = this;
-			}
-			else
-			{
-				LOGERR("Attempted to insert a key/value pair in the FourierPixelInserterMaker registry that already existed");
-				throw InvalidCallException("Attempted to insert a key/value pair in the FourierPixelInserterMaker registry that already existed");
-			}
-		}
-		virtual ~FourierPixelInserterMaker() {}
-		
-		/** make_inserter get an instance of a FourierPixelInserter3D*
-		 * @param normalize_values a block of memory equal in size to memory associated with real_data
-		 * @param real_data a pointer to the memory containing the discrete 3D volume pixel data
-		 * @param xsize the xsize of the discrete 3D volume
-		 * @param ysize the ysize of the discrete 3D volume
-		 * @param zsize the zsize of the discrete 3D volume
-		 */
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize) = 0;
-		
-		/** make_inserter get an instance of a FourierPixelInserter3D*
-		 * @parm key the key to get the associated maker from the maker registry
-		 * @param normalize_values a block of memory equal in size to memory associated with real_data to construct the maker with 
-		 * @param real_data a pointer to the memory containing the discrete 3D volume pixel data to construct the maker with
-		 * @param xsize the xsize of the discrete 3D volume to construct the maker with
-		 * @param ysize the ysize of the discrete 3D volume to construct the maker with
-		 * @param zsize the zsize of the discrete 3D volume to construct the maker with
-		 */
-		static FourierPixelInserter3D* get_inserter( const unsigned int key, float * const normalize_values, float * const real_data, const unsigned int xsize,
-			 const unsigned int ysize, const unsigned int zsize )
-		{
-			if ( maker_registry.find(key) != maker_registry.end() )
-				return maker_registry[key]->make_inserter(normalize_values, real_data, xsize, ysize, zsize);
-			else
-				return 0;	
-		}
-		
-	private:
-		// The maker registry to underly the Factory implementation
-		static map<unsigned int, FourierPixelInserterMaker* > maker_registry;
-		
-		// Disallow copy and assignment by default
-		FourierPixelInserterMaker( const FourierPixelInserterMaker& );
-		FourierPixelInserterMaker& operator=( const FourierPixelInserterMaker& );
-	};
-	
-	/** FourierInserter3DMode1Maker  - returns a newly made (pointer to) a FourierInserter3DMode1
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode1Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode1Maker(const unsigned int key = FourierInserter3DMode1::get_mode_number() ) : FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode1Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-		{
-			return new FourierInserter3DMode1(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode1Maker registerMode1Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode1Maker( const FourierInserter3DMode1Maker& );
-		FourierInserter3DMode1Maker& operator=( const FourierInserter3DMode1Maker& );
-	};
-	
-	/** FourierInserter3DMode2Maker  - returns a newly made (pointer to) a FourierInserter3DMode2
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode2Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode2Maker(const unsigned int key = FourierInserter3DMode2::get_mode_number() ): FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode2Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-		{
-			return new FourierInserter3DMode2(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode2Maker registerMode2Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode2Maker( const FourierInserter3DMode2Maker& );
-		FourierInserter3DMode2Maker& operator=( const FourierInserter3DMode2Maker& );
-	};
-	
-	/** FourierInserter3DMode3Maker  - returns a newly made (pointer to) a FourierInserter3DMode3
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode3Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode3Maker(const unsigned int key = FourierInserter3DMode3::get_mode_number() ): FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode3Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-		{
-			return new FourierInserter3DMode3(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode3Maker registerMode3Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode3Maker( const FourierInserter3DMode3Maker& );
-		FourierInserter3DMode3Maker& operator=( const FourierInserter3DMode3Maker& );
-	};
-	
-	/** FourierInserter3DMode4Maker  - returns a newly made (pointer to) a FourierInserter3DMode4
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode4Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode4Maker(const unsigned int key = FourierInserter3DMode4::get_mode_number() ): FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode4Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-		{
-			return new FourierInserter3DMode4(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode4Maker registerMode4Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode4Maker( const FourierInserter3DMode4Maker& );
-		FourierInserter3DMode4Maker& operator=( const FourierInserter3DMode4Maker& );
-	};
-	
-	/** FourierInserter3DMode5Maker  - returns a newly made (pointer to) a FourierInserter3DMode5
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode5Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode5Maker(const unsigned int key = FourierInserter3DMode5::get_mode_number() ): FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode5Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-
-		{
-			return new FourierInserter3DMode5(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode5Maker registerMode5Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode5Maker( const FourierInserter3DMode5Maker& );
-		FourierInserter3DMode5Maker& operator=( const FourierInserter3DMode5Maker& );
-	};
-	
-	/** FourierInserter3DMode6Maker  - returns a newly made (pointer to) a FourierInserter3DMode6
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode6Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode6Maker(const unsigned int key = FourierInserter3DMode6::get_mode_number() ): FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode6Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-		{
-			return new FourierInserter3DMode6(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode6Maker registerMode6Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode6Maker( const FourierInserter3DMode6Maker& );
-		FourierInserter3DMode6Maker& operator=( const FourierInserter3DMode6Maker& );
-	};
-	
-	/** FourierInserter3DMode7Maker  - returns a newly made (pointer to) a FourierInserter3DMode7
-	 * See comments in FourierPixelInserterMaker for explanations of functionality
-	 */
-	class FourierInserter3DMode7Maker : public FourierPixelInserterMaker
-	{
-	public:
-		FourierInserter3DMode7Maker(const unsigned int key = FourierInserter3DMode7::get_mode_number() ): FourierPixelInserterMaker(key) {}
-		virtual ~FourierInserter3DMode7Maker() {}
-		
-		virtual FourierPixelInserter3D* make_inserter(float * const normalize_values, float * const real_data, const unsigned int xsize, const unsigned int ysize, const unsigned int zsize)
-		{
-			return new FourierInserter3DMode7(normalize_values, real_data, xsize, ysize, zsize);
-		}
-	private:
-		static const FourierInserter3DMode7Maker registerMode7Maker;
-		
-		// Disallow copy and assignment by default
-		FourierInserter3DMode7Maker( const FourierInserter3DMode7Maker& );
-		FourierInserter3DMode7Maker& operator=( const FourierInserter3DMode7Maker& );
-	};
-
 	class QualityScores
 	{
 	public:
@@ -946,7 +844,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("size", EMObject::INT);
-			d.put("mode", EMObject::INT);
+			d.put("mode", EMObject::STRING);
 			d.put("weight", EMObject::FLOAT);
 			d.put("hard", EMObject::FLOAT);
 			d.put("use_weights", EMObject::BOOL);
@@ -998,7 +896,7 @@ namespace EMAN
 		void load_default_settings()
 		{
 			params["size"] = 0;
-			params["mode"] = 2;
+			params["mode"] = "2";
 			params["weight"] = 1.0;
 			params["use_weights"] = true;
 			params["dlog"] = false;
@@ -1022,14 +920,16 @@ namespace EMAN
 	
 		void load_inserter()
 		{
-			int mode = params["mode"];
-			inserter = FourierPixelInserterMaker::get_inserter(mode,tmp_data->get_data(),image->get_data(), nx, ny, nz);
-			if ( inserter == 0 )
-			{
-				LOGERR("no such insert slice mode: '%d'", mode);
-				// FIXME is there a exception thing to throw?
-				throw InvalidCallException("no such insert slice mode:");
-			}
+			string mode = (string)params["mode"];
+			
+			Dict parms;
+			parms["rdata"] = image->get_data();
+			parms["norm"] = tmp_data->get_data();
+			parms["nx"] = nx;
+			parms["ny"] = ny;
+			parms["nz"] = nz;
+			
+			inserter = Factory<FourierPixelInserter3D>::get("mode", parms);
 		}
 
 		void  do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg);
@@ -1592,6 +1492,7 @@ namespace EMAN
 	};
 
 	template <> Factory < Reconstructor >::Factory();
+	template <> Factory < FourierPixelInserter3D >::Factory();
 
 	void dump_reconstructors();
 	map<string, vector<string> > dump_reconstructors_list();
