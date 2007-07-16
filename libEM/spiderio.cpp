@@ -448,7 +448,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 	std::copy(&cdate[0], &cdate[11], hp->date);
 	
 	if(dict.has_key("SPIDER.title")) {
-		string title = (string)dict["SPIDER.title"];
+		string title = static_cast<string>(dict["SPIDER.title"]);
 		std::copy(&(title[0]), &(title[title.length()]), hp->title);
 	}
 

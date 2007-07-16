@@ -57,6 +57,9 @@ const float EMConsts::I3G = (float) (6.4 / (M_PI*M_PI));
 const float EMConsts::I4G = (float) (8.8 / (M_PI*M_PI));  
 const float EMConsts::I5G = (float) (10.4 / (M_PI*M_PI)); 
 
+#include <sstream>
+using std::stringstream;
+
 // Static init
 map<EMObjectTypes::ObjectType, string> EMObjectTypes::type_registry;
 
@@ -286,10 +289,33 @@ EMObject::operator float * () const
 EMObject::operator const char * () const
 {
 	if (type != STRING) {
-		if (type != UNKNOWN) {
+		stringstream ss;
+		string return_string;
+		if ( type == INT )
+		{
+			ss << n;
+			ss >> return_string;
+			return return_string.c_str();
+		}
+		else
+		if ( type == FLOAT )
+		{
+			ss << f;
+			ss >> return_string;
+			return return_string.c_str();
+		}
+		else
+		if ( type == DOUBLE )
+		{
+			ss << d;
+			ss >> return_string;
+			return return_string.c_str();
+		}
+		else if (type != UNKNOWN) {
 			throw TypeException("Cannot convert to string from this data type",
 								get_object_type_name(type));
 		}
+
 		return "";
 	}
 	return str.c_str();

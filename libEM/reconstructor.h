@@ -4,7 +4,6 @@
 
 /*
  * Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
- * Contributing Author: Dave Woolford, 06/01/2007 (woolford@bcm.edu)
  * Copyright (c) 2000-2006 Baylor College of Medicine
  * 
  * This software is issued under a joint BSD/GNU license. You may use the
@@ -61,15 +60,31 @@ namespace EMAN
 	class EMData;
 	
 	
+	/** PixelOperation is an abstract class that PixelAddOperation and PixelMinusOperation derive from
+	 * These classes are used as members FourierPixelInserter3D to enable the insertion operation
+	 * to switch from subtraction to addition
+	 */
 	struct PixelOperation
 	{
 		virtual ~PixelOperation() {}
 
+		/** Perform an operation on target memory using a given value
+		 *@param target The memory location the data to operate on
+		 *@param value The value to use as the basis of the operation
+		 */
 		virtual void operate( float* const target, const float& value ) = 0;
 
+		/** Operator() is an alternative way to call operate
+		 *@param target The memory location the data to operate on
+		 *@param value The value to use as the basis of the operation
+		 *@return The value stored in the target memory after the operation has been performed
+		 */
 		float& operator()(float* const target, const float& value) { operate(target,value); return *target; }
 	};
 
+	/** PixelAddOperation - encapsulates the the concept of +=
+	 * see PixelOperation comments for details.
+	 */
 	struct PixelAddOperation : public PixelOperation
 	{
 		virtual ~PixelAddOperation() {};
@@ -77,12 +92,16 @@ namespace EMAN
 		virtual void operate( float* const target, const float& value ) { *target += value; }
 	};
 
+	/** PixelAddOperation - encapsulates the the concept of -=
+	 * see PixelOperation comments for details.
+	 */
 	struct PixelMinusOperation : public PixelOperation
 	{
 		virtual ~PixelMinusOperation() {};
 
 		virtual void operate( float* const target, const float& value ) { *target -= value; }
 	};
+
 	/** FourierPixelInserter3D class defines a way a continuous pixel in 3D
 	 * is inserted into the discrete 3D volume - there are various schemes for doing this
 	 * including simply finding the nearest neighbor to more elaborate schemes that involve
@@ -108,26 +127,37 @@ namespace EMAN
      @endcode
 	 *
 	 *  - How to get a FourierPixelInserter3D
-     *@code 
-	 *    Reconstructor* r = Factory<FourierPixelInserter3D>::get("fourier");
+     *@code
+	 *  // First set up the params correctly this is essential - setting up the params requires
+	 *  // these 5 parameters (only and always these 5). nx,ny, and nz are the dims of rdata and
+	 *  // norm, rdata is the real (Fourier) data, and norm is the associated normalization matrix.
+	 *	parms["rdata"] = image->get_data();
+	 *	parms["norm"] = tmp_data->get_data();
+	 *	parms["nx"] = nx;
+	 *	parms["ny"] = ny;
+	 *	parms["nz"] = nz;
+	 *  // The two is the ID of the FourierInserter3DMode2 in this case.
+	 *  FourierPixelInserter3D* r = Factory<FourierPixelInserter3D>::get("2", params);
+	 *  // Then call init - this causes all of the internal data to be stored correctly
+	 *  r->init()
+	 *  // Then tell the inserter to insert the pixel with real and imaginary components dt[0] and dt[1] at floating point coords [xx,yy,zz]
+	 *  // using the given weight - this is typically done for pixels and a set of many slices - see FourierReconstructor::insert_slice
+	 *  r->insert_pixel(xx, yy, zz, dt, weight)
      @endcode
 	*/
 	class FourierPixelInserter3D
 	{
 	public:
-		/** Constructor a FourierSliceInserter
-		 * @param normalize_values a block of memory equal in size to memory associated with real_data
-		 * @param real_data a pointer to the memory containing the discrete 3D volume pixel data
-		 * @param xsize the xsize of the discrete 3D volume
-		 * @param ysize the ysize of the discrete 3D volume
-		 * @param zsize the zsize of the discrete 3D volume
+		/** Construct a FourierPixelInserter3D
 		 */
 		FourierPixelInserter3D() : norm(0), rdata(0), nx(0), ny(0), nz(0), nxy(0)
 		{
 			pixel_operation = new PixelAddOperation;
 			minus_pixel_operation = new PixelMinusOperation;
 		}
-
+		
+		/** Desctruct a FourierPixelInserter3D
+		 */
 		virtual ~FourierPixelInserter3D()
 		{
 			if ( pixel_operation != 0 )
@@ -141,8 +171,7 @@ namespace EMAN
 				minus_pixel_operation = 0;
 			}
 		}
-		
-		
+			
 		/** Set the Reconstructor's parameters using a key/value dictionary.
 		 * @param new_params A dictionary containing the new parameters.
 		 */
@@ -186,6 +215,10 @@ namespace EMAN
 		 */
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight) = 0;
 		
+		/** set_pixel_minus_operation makes the default pixel insertion operation to mimic -=
+		 * This function is useful when a pixel (more specifically all of the pixels in a slice) needs to be removed from a volume
+		 * while maintaining the other contents of the volume. Originally added for testing purposes.
+		 */	
 		void set_pixel_minus_operation()
 		{
 			if ( pixel_operation != 0 )
@@ -196,6 +229,12 @@ namespace EMAN
 			pixel_operation = new PixelMinusOperation;
 		}
 
+		/** set_pixel_add_operation makes the default pixel insertion operation to mimic +=
+		 * The default behaviour of this class is to always add the incoming pixel to the volume,
+		 * however sometimes it might be necessary to switch between adding and subtracting pixels
+		 * from the volume, so if the client ever calls set_pixel_minus_operation they can switch
+		 * back to additive behavior by calling this function
+		 */	
 		void set_pixel_add_operation()
 		{
 			if ( pixel_operation != 0 )
@@ -207,30 +246,32 @@ namespace EMAN
 		}
 
 		
-		/** Get the Reconstructor's name. Each Reconstructor is
-		 * identified by a unique name.
-		 * @return The Reconstructor's name.
+		/** Get the FourierPixelInserter3D's name. Each FourierPixelInserter3D is
+		 * identified by a unique name, them being (strings) 1,2,3,4,5,6 and 7
+		 * @return The FourierPixelInserter3D's ID.
 		 */
 		virtual string get_name() const = 0;
 
-		
+		/** Get the FourierPixelInserter3D's desc.
+		 * @return The FourierPixelInserter3D's description.
+		 */
 		virtual string get_desc() const = 0;
 
 		void init();
 	protected:
 		mutable Dict params;
-		// A pointer to the constructor argument normalize_values
+		/// A pointer to the constructor argument normalize_values
 		float * norm;
-		// A pointer to the constructor argument real_data
+		/// A pointer to the constructor argument real_data
 		float * rdata;
 		
-		// Image volume data sizes, and nxy a convenience variable used here and there
+		/// Image volume data sizes, and nxy a convenience variable used here and there
 		int nx, ny, nz, nxy;
 
-		// A pixel operation, which is addition by default, but which can be changed to subtraction etc.
+		/// A pixel operation, which is addition by default, but which can be changed to subtraction etc.
 		PixelOperation* pixel_operation;
 
-		// Minus pixel operation is a hack needed to for inserter modes 5,6 and 7.
+		/// Minus pixel operation is a hack needed to for inserter modes 5,6 and 7.
 		PixelOperation* minus_pixel_operation;
 		
 	private:
@@ -626,8 +667,6 @@ namespace EMAN
 		}
 	};
 
-
-
 	/** Reconstructor class defines a way to do 3D recontruction.
 	 * A reconstruction is done by 3 steps:
 	 *   - set up.
@@ -844,7 +883,7 @@ namespace EMAN
 		{
 			TypeDict d;
 			d.put("size", EMObject::INT);
-			d.put("mode", EMObject::STRING);
+			d.put("mode", EMObject::INT);
 			d.put("weight", EMObject::FLOAT);
 			d.put("hard", EMObject::FLOAT);
 			d.put("use_weights", EMObject::BOOL);
@@ -896,7 +935,7 @@ namespace EMAN
 		void load_default_settings()
 		{
 			params["size"] = 0;
-			params["mode"] = "2";
+			params["mode"] = 2;
 			params["weight"] = 1.0;
 			params["use_weights"] = true;
 			params["dlog"] = false;
@@ -921,7 +960,6 @@ namespace EMAN
 		void load_inserter()
 		{
 			string mode = (string)params["mode"];
-			
 			Dict parms;
 			parms["rdata"] = image->get_data();
 			parms["norm"] = tmp_data->get_data();
@@ -929,7 +967,8 @@ namespace EMAN
 			parms["ny"] = ny;
 			parms["nz"] = nz;
 			
-			inserter = Factory<FourierPixelInserter3D>::get("mode", parms);
+			inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
+			inserter->init();
 		}
 
 		void  do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg);
@@ -1356,10 +1395,10 @@ namespace EMAN
 
 		virtual void setup();
 
-	    	virtual int insert_slice(const EMData *const slice, const Transform3D & euler);
+		virtual int insert_slice(const EMData *const slice, const Transform3D & euler);
 		
 
-	        virtual EMData* finish();
+		virtual EMData* finish();
 
 		virtual string get_name() const
 		{
@@ -1472,7 +1511,7 @@ namespace EMAN
 			d.put("size", EMObject::INT);
 			d.put("npad", EMObject::INT);
 			d.put("sign", EMObject::INT);
-        		d.put("mult", EMObject::INTARRAY);
+			d.put("mult", EMObject::INTARRAY);
 			d.put("media", EMObject::STRING);
 			d.put("symmetry", EMObject::STRING);
 			return d;
