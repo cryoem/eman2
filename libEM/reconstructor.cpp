@@ -1897,7 +1897,7 @@ EMData* nnSSNR_Reconstructor::finish()
 										nbrcy = -nbrcy;
 										nbrcz = -nbrcz;
 									}
-		                        	int nbrix = nbrcx;
+		                        				int nbrix = nbrcx;
 									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
 									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
 									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
