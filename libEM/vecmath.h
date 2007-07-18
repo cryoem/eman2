@@ -458,7 +458,7 @@ namespace EMAN
 	            for ( int j = 0; j < 3; j++ ) {
 	                matRet(i,j) = 0.0;
 	                for ( int k = 0; k < 3; k++ )
-	                    matRet(i,j) += (*this)(i,k) * (*this)(k,j);
+	                    matRet(i,j) += (*this)(i,k) * m(k,j);
 	            }
 	        }
 		return matRet;
