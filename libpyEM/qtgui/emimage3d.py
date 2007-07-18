@@ -75,7 +75,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.data=None
 		
-#		self.aspect=1.0
+		self.aspect=1.0
 #		self.gq=0
 #		self.mmode=0
 		self.isothr=1.0
@@ -152,21 +152,37 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 #		glLoadIdentity()
 #		glTranslated(0.0, 0.0, -10.0)
-		if self.norender  or not self.isorender: return
+		if not self.isorender: return
 		
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		
 		self.isorender.set_surface_value(self.isothr)
-		a=self.isorender.get_isosurface(true)
+		a=self.isorender.get_isosurface(True)
 		f=a["faces"]
 		n=a["normals"]
 		p=a["points"]
 		
+#		f=[i/3 for i in f]
 		
-		glEnableClientState(GL_VERTEX_ARRAY)
-		glEnableClientState(GL_INDEX_ARRAY)
-		glVertexPointer()
+		#glEnableClientState(GL_VERTEX_ARRAY)
+		#glEnableClientState(GL_INDEX_ARRAY)
+		#glVertexPointer()
+		glPushMatrix()
+		
+		glTranslate(-.5,-.5,2.0)
+		glScale(2.0,2.0,2.0)
+#		glBegin(GL_TRIANGLES)
+		for i in f:
+#			glVertex(p[i*3],p[i*3+1],p[i*3+2])
+			print p[i*3],p[i*3+1],p[i*3+2]
+#		glEnd()
+		
+		#glEnableClientState(GL_VERTEX_ARRAY)
+		#glEnableClientState(GL_INDEX_ARRAY)
+		#glVertexPointer(3,GL_FLOAT,0,p)
+		#glIndexPointer(GL_INT,0,f)
+		#glDrawArrays(GL_TRIANGLES,0,len(f))
 		
 		glPopMatrix()
 		
