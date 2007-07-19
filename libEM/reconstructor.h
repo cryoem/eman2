@@ -742,7 +742,9 @@ namespace EMAN
 
 		/** 
 	  	 * @return 
-	  	 * @param 
+	  	 * @param input_slice
+	  	 * @param arg
+	  	 * @param num_particles_in_slice
 	  	 * @exception 
 		 */
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1) { return 0;}
@@ -857,7 +859,9 @@ namespace EMAN
 
 		/** 
 	  	 * @return 
-	  	 * @param 
+	  	 * @param input_slice
+	  	 * @param arg
+	  	 * @param num_particles_in_slice
 	  	 * @exception 
 		 */
 		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice);
