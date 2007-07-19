@@ -351,9 +351,9 @@ InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int 
 
 	size = static_cast<int>(pixel_radius_max*bin);
 	// The parentheses effectively cause initialization by 0 (apparently) - this should be tested because without 0 initialization this objects behavior will be unexpected. 
-	frc = new float[size]();
-	frc_norm_rdata = new float[size]();
-	frc_norm_dt = new float[size]();
+	frc = new float[size];
+	frc_norm_rdata = new float[size];
+	frc_norm_dt = new float[size];
 
 	off[0] = 0;
 	off[1] = 2;
@@ -369,9 +369,9 @@ InterpolatedFRC::InterpolatedFRC( const InterpolatedFRC& that ) :
 	threed_rdata(that.threed_rdata), nx(that.nx), ny(that.ny), nz(that.nz), nxy(that.nxy), bin(that.bin),
 	 size(that.size), pixel_radius_max(that.pixel_radius_max), pixel_radius_max_square(that.pixel_radius_max_square)
 {
-	frc = new float[size]();
-	frc_norm_rdata = new float[size]();
-	frc_norm_dt = new float[size]();
+	frc = new float[size];
+	frc_norm_rdata = new float[size];
+	frc_norm_dt = new float[size];
 
 	off[0] = 0;
 	off[1] = 2;
@@ -393,9 +393,9 @@ InterpolatedFRC& InterpolatedFRC::operator=( const InterpolatedFRC& that)
 
 		free_memory();
 
-		frc = new float[size]();
-		frc_norm_rdata = new float[size]();
-		frc_norm_dt = new float[size]();
+		frc = new float[size];
+		frc_norm_rdata = new float[size];
+		frc_norm_dt = new float[size];
 	
 		off[0] = 0;
 		off[1] = 2;
