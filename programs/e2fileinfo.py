@@ -68,8 +68,12 @@ def fileinfo(filenames):
 		t=EMUtil.get_imagetype_name(EMUtil.get_image_type(i))
 		d=EMData()
 		d.read_image(i,0,True)
-		s="%%-%ds%%s\t%%d\t%%d x %%d x %%d"%(l+2)
-		print s%(i,t,n,d.get_xsize(),d.get_ysize(),d.get_zsize())
+		if d.get_zsize()==1:
+			s="%%-%ds%%s\t%%d\t%%d x %%d"%(l+2)
+			print s%(i,t,n,d.get_xsize(),d.get_ysize())
+		else:
+			s="%%-%ds%%s\t%%d\t%%d x %%d x %%d"%(l+2)
+			print s%(i,t,n,d.get_xsize(),d.get_ysize(),d.get_zsize())
 		
 # If executed as a program
 if __name__ == '__main__':

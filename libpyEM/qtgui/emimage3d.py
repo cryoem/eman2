@@ -76,7 +76,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.data=None
 		
 		self.aspect=1.0
-#		self.gq=0
+		self.gq=0
 #		self.mmode=0
 		self.isothr=1.0
 		self.isorender=None
@@ -163,7 +163,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		n=a["normals"]
 		p=a["points"]
 		
-#		f=[i/3 for i in f]
+		f=[i/3 for i in f]
 		
 		#glEnableClientState(GL_VERTEX_ARRAY)
 		#glEnableClientState(GL_INDEX_ARRAY)
@@ -171,11 +171,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glPushMatrix()
 		
 		glTranslate(-.5,-.5,2.0)
-		glScale(2.0,2.0,2.0)
+		glScalef(2.0,2.0,2.0)
 #		glBegin(GL_TRIANGLES)
 		for i in f:
-#			glVertex(p[i*3],p[i*3+1],p[i*3+2])
-			print p[i*3],p[i*3+1],p[i*3+2]
+			glVertex(p[i*3],p[i*3+1],p[i*3+2])
+#			print p[i*3],p[i*3+1],p[i*3+2]
 #		glEnd()
 		
 		#glEnableClientState(GL_VERTEX_ARRAY)
