@@ -1,4 +1,3 @@
-SUBDIRS(MarchingCubes)
 LINK_LIBRARIES(EM2)
 ADD_EXECUTABLE(e2iminfo iminfo.cpp)
 #ADD_EXECUTABLE(e2proc2d proc2d.cpp)
