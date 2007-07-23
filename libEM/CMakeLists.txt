@@ -67,6 +67,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     sparx/lapackblas.cpp
     sparx/pca.cpp
     sparx/varimax.cpp
+    sparx/lbfgsb.cpp
     )
 
 IF(WIN32)
