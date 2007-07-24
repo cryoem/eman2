@@ -486,6 +486,8 @@ public:
 		
 	static vector<float> twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
 	
+	static vector<float> twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys);
+	
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 #endif	//util__sparx_h__

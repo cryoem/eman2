@@ -15669,7 +15669,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 	//                    l   specifies the lower bounds,
 	//                    u   specifies the upper bounds. 
  	//		      x   specifies the initial guess
-	x[0] = ang; nbd[0] = 2; l[0] = ang-0.1; u[0] = ang+0.1;
+	x[0] = ang; nbd[0] = 2; l[0] = ang-2.0; u[0] = ang+2.0;
 	x[1] = sxs; nbd[1] = 2; l[1] = sxs-1.5; u[1] = sxs+1.5;
 	x[2] = sys; nbd[2] = 2; l[2] = sys-1.5; u[2] = sys+1.5;
 
@@ -15732,6 +15732,96 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 	return res;
 }
 
+vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys) {
+	
+	EMData *rot;
+
+	int nmax=3, mmax=3;
+	char task[60], csave[60];
+	long int lsave[4];
+	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
+	double f, f1, f2, f3, factr, pgtol, x[nmax], l[nmax], u[nmax], g[nmax], dsave[29], wa[2*mmax*nmax+4*nmax+12*mmax*mmax+12*mmax];
+	long int SIXTY=60;
+
+	//     We wish to have no output.
+	iprint = -1;
+
+	//c     We specify the tolerances in the stopping criteria.
+	factr=1.0e1;
+	pgtol=1.0e-5;
+
+	//     We specify the dimension n of the sample problem and the number
+	//        m of limited memory corrections stored.  (n and m should not
+	//        exceed the limits nmax and mmax respectively.)
+	n=3;
+	m=3;
+ 
+	//     We now provide nbd which defines the bounds on the variables:
+	//                    l   specifies the lower bounds,
+	//                    u   specifies the upper bounds. 
+ 	//		      x   specifies the initial guess
+	x[0] = ang; nbd[0] = 2; l[0] = ang-2.0; u[0] = ang+2.0;
+	x[1] = sxs; nbd[1] = 2; l[1] = sxs-1.5; u[1] = sxs+1.5;
+	x[2] = sys; nbd[2] = 2; l[2] = sys-1.5; u[2] = sys+1.5;
+
+
+	//     We start the iteration by initializing task.
+	// (**MUST clear remaining chars in task with spaces (else crash)!**)
+	strcpy(task,"START");
+	for (int i=5;i<60;i++)	task[i]=' ';
+
+	//     This is the call to the L-BFGS-B code.
+	// (* call the L-BFGS-B routine with task='START' once before loop *)
+	setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+
+ 	// (* while routine returns "FG" or "NEW_X" in task, keep calling it *)
+	while (strncmp(task,"FG",2)==0 || strncmp(task,"NEW_X",5)==0) {
+
+		if (strncmp(task,"FG",2)==0) {
+	      	//   the minimization routine has returned to request the
+		//   function f and gradient g values at the current x
+
+		//        Compute function value f for the sample problem.
+		rot = new EMData();
+		rot = image->rot_scale_conv7(x[0]*pi/180, x[1], x[2], kb, 1.0);
+		f = rot->cmp("ccc", refim, Dict("mask", mask));
+		f = -f;
+		delete rot;
+		
+	      	//        Compute gradient g for the sample problem.
+		float dt = 1.0e-4;
+		rot = new EMData();
+		rot = image->rot_scale_conv7((x[0]+dt)*pi/180, x[1], x[2], kb, 1.0);
+		f1 = rot->cmp("ccc", refim, Dict("mask", mask));
+		f1 = -f1;
+		g[0] = (f1-f)/dt;
+		delete rot;
+
+		rot = new EMData();
+		rot = image->rot_scale_conv7(x[0]*pi/180, x[1]+dt, x[2], kb, 1.0);
+		f2 = rot->cmp("ccc", refim, Dict("mask", mask));		
+		f2 = -f2;
+		g[1] = (f2-f)/dt;
+		delete rot;
+		
+		rot = new EMData();
+		rot = image->rot_scale_conv7(x[0]*pi/180, x[1], x[2]+dt, kb, 1.0);
+		f3 = rot->cmp("ccc", refim, Dict("mask", mask));
+		f3 = -f3;
+		g[2] = (f3-f)/dt;
+		delete rot;
+   		} 
+		
+		//c          go back to the minimization routine.
+		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+  	}
+	
+	vector<float> res;
+	res.push_back(x[0]);
+	res.push_back(x[1]);
+	res.push_back(x[2]);	
+	return res;
+}
 
 vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
