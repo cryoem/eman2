@@ -2294,6 +2294,156 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 	return ret;
 }
 
+EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
+	int nxn, nyn, nzn;
+	float  scale = 0.5*scale_input;
+	float  sum, w;
+	if (1 >= ny)
+		throw ImageDimensionException("Can't rotate 1D image");
+	if (1 < nz) 
+		throw ImageDimensionException("Volume not currently supported");
+	nxn = nx/2; nyn=ny/2; nzn=nz/2;
+
+	int K = kb.get_window_size();
+	int kbmin = -K/2;
+	int kbmax = -kbmin;
+	int kbc = kbmax+1;
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _MAX(nyn,1), _MAX(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32 
+	//ret->to_zero();  //we will leave margins zeroed.
+	if(delx >= 0.0f) { delx = fmod(delx, float(nx));} else {delx = -fmod(-delx, float(nx));}
+	if(dely >= 0.0f) { dely = fmod(dely, float(ny));} else {dely = -fmod(-dely, float(ny));}
+	// center of big image,
+	int xc = nxn;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn;
+	int iys = nyn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	// bounds if origin at center
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+	
+	float   *t = (float*)calloc(kbmax-kbmin+1, sizeof(float));
+
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+	for (int iy = 0; iy < nyn; iy++) {
+		float y = float(iy) - shiftyc;
+		float ycang = y*cang/scale + yc;
+		float ysang = -y*sang/scale + xc;
+		for (int ix = 0; ix < nxn; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
+			float yold = x*sang/scale + ycang-iys;
+
+			if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
+			else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+			if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
+			else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+
+			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
+			sum=0.0f;    w=0.0f;
+			
+			float tablex1 = kb.i0win_tab(xold-inxold+3);
+			float tablex2 = kb.i0win_tab(xold-inxold+2);
+			float tablex3 = kb.i0win_tab(xold-inxold+1);
+			float tablex4 = kb.i0win_tab(xold-inxold);
+			float tablex5 = kb.i0win_tab(xold-inxold-1);
+			float tablex6 = kb.i0win_tab(xold-inxold-2);
+			float tablex7 = kb.i0win_tab(xold-inxold-3);
+
+			float tabley1 = kb.i0win_tab(yold-inyold+3);
+			float tabley2 = kb.i0win_tab(yold-inyold+2);
+			float tabley3 = kb.i0win_tab(yold-inyold+1);
+			float tabley4 = kb.i0win_tab(yold-inyold);
+			float tabley5 = kb.i0win_tab(yold-inyold-1);
+			float tabley6 = kb.i0win_tab(yold-inyold-2);
+			float tabley7 = kb.i0win_tab(yold-inyold-3); 
+			
+			int x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7;
+			
+			if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
+				x1 = (inxold-3+nx)%nx;
+				x2 = (inxold-2+nx)%nx;
+				x3 = (inxold-1+nx)%nx;
+				x4 = (inxold  +nx)%nx;
+				x5 = (inxold+1+nx)%nx;
+				x6 = (inxold+2+nx)%nx;
+				x7 = (inxold+3+nx)%nx;
+			
+				y1 = (inyold-3+ny)%ny;
+				y2 = (inyold-2+ny)%ny;
+				y3 = (inyold-1+ny)%ny;
+				y4 = (inyold  +ny)%ny;
+				y5 = (inyold+1+ny)%ny;
+				y6 = (inyold+2+ny)%ny;
+				y7 = (inyold+3+ny)%ny;
+		    	} else {
+				x1 = inxold-3;
+				x2 = inxold-2;
+				x3 = inxold-1;
+				x4 = inxold;
+				x5 = inxold+1;
+				x6 = inxold+2;
+				x7 = inxold+3;
+			
+				y1 = inyold-3;
+				y2 = inyold-2;
+				y3 = inyold-1;
+				y4 = inyold;
+				y5 = inyold+1;
+				y6 = inyold+2;
+				y7 = inyold+3;
+		    	}
+			sum    =   ( (*this)(x1,y1)*tablex1 + (*this)(x2,y1)*tablex2 + (*this)(x3,y1)*tablex3 +
+		        	     (*this)(x4,y1)*tablex4 + (*this)(x5,y1)*tablex5 + (*this)(x6,y1)*tablex6 +
+			   	     (*this)(x7,y1)*tablex7 ) * tabley1 +
+			   	   ( (*this)(x1,y2)*tablex1 + (*this)(x2,y2)*tablex2 + (*this)(x3,y2)*tablex3 +
+			   	     (*this)(x4,y2)*tablex4 + (*this)(x5,y2)*tablex5 + (*this)(x6,y2)*tablex6 +
+		   		     (*this)(x7,y2)*tablex7 ) * tabley2 +
+			   	   ( (*this)(x1,y3)*tablex1 + (*this)(x2,y3)*tablex2 + (*this)(x3,y3)*tablex3 +
+			   	     (*this)(x4,y3)*tablex4 + (*this)(x5,y3)*tablex5 + (*this)(x6,y3)*tablex6 +
+			   	     (*this)(x7,y3)*tablex7 ) * tabley3 +
+		   		   ( (*this)(x1,y4)*tablex1 + (*this)(x2,y4)*tablex2 + (*this)(x3,y4)*tablex3 +
+			   	     (*this)(x4,y4)*tablex4 + (*this)(x5,y4)*tablex5 + (*this)(x6,y4)*tablex6 +
+			   	     (*this)(x7,y4)*tablex7 ) * tabley4 +
+			   	   ( (*this)(x1,y5)*tablex1 + (*this)(x2,y5)*tablex2 + (*this)(x3,y5)*tablex3 +
+		   		     (*this)(x4,y5)*tablex4 + (*this)(x5,y5)*tablex5 + (*this)(x6,y5)*tablex6 +
+			   	     (*this)(x7,y5)*tablex7 ) * tabley5 +
+			   	   ( (*this)(x1,y6)*tablex1 + (*this)(x2,y6)*tablex2 + (*this)(x3,y6)*tablex3 +
+			   	     (*this)(x4,y6)*tablex4 + (*this)(x5,y6)*tablex5 + (*this)(x6,y6)*tablex6 +
+		   		     (*this)(x7,y6)*tablex7 ) * tabley6 +
+			   	   ( (*this)(x1,y7)*tablex1 + (*this)(x2,y7)*tablex2 + (*this)(x3,y7)*tablex3 +
+			   	     (*this)(x4,y7)*tablex4 + (*this)(x5,y7)*tablex5 + (*this)(x6,y7)*tablex6 +
+			   	     (*this)(x7,y7)*tablex7 ) * tabley7;
+			     
+			w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
+			    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);	
+			
+			(*ret)(ix,iy)=sum/w;
+		}
+	}
+	if (t) free(t);
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+
 EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 
 	int nxn, nyn, nzn;
