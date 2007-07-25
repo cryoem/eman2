@@ -454,7 +454,7 @@ def fourier_reconstruction(options):
 	if not(options.quiet):
 		print "Inserting Slices"
 		
-	for j in xrange(0,2): #4):     #change back when the thr issue solved
+	for j in xrange(0,4): #4):     #change back when the thr issue solved
 		recon.iteration_reset()
 		
 		if ( j > 0 ):
@@ -467,7 +467,7 @@ def fourier_reconstruction(options):
 					continue
 				
 				if ( recon.get_params()["use_weights"] ):
-					weight = float (num_img)/particle_number
+					weight = float (num_img)
 					param = {}
 					param["weight"] = weight
 					recon.set_params(param) # this inserts that parameter, maintaining what's already there.
@@ -486,7 +486,7 @@ def fourier_reconstruction(options):
 				continue
 			
 			if ( recon.get_params()["use_weights"] ):
-				weight = float (image.get_attr("ptcl_repr"))/particle_number
+				weight = float (image.get_attr("ptcl_repr"))
 				param = {}
 				param["weight"] = weight
 				recon.set_params(param) # this inserts that parameter, maintaining what's already there

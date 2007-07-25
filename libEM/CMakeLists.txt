@@ -51,6 +51,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     cmp.cpp
     averager.cpp
     reconstructor.cpp
+    reconstructor_tools.cpp
     exception.cpp
     testutil.cpp
     analyzer.cpp

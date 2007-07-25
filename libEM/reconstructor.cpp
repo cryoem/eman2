@@ -53,7 +53,7 @@ using std::endl;
 using std::cout; // for debug 
 
 #include <algorithm>
-// find
+// find, for_each
 
 
 template < typename T > void checked_delete( T*& x )
@@ -77,19 +77,6 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&bootstrap_nnReconstructor::NEW); 
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
-
-template <> Factory < FourierPixelInserter3D >::Factory()
-{
-	force_add(&FourierInserter3DMode1::NEW);
-	force_add(&FourierInserter3DMode2::NEW);
-	force_add(&FourierInserter3DMode3::NEW);
-	force_add(&FourierInserter3DMode4::NEW);
-	force_add(&FourierInserter3DMode5::NEW);
-	force_add(&FourierInserter3DMode6::NEW);
-	force_add(&FourierInserter3DMode7::NEW);
-}
-
-
 
 Reconstructor::Reconstructor( const Reconstructor& that ) : ReconstructorWithVolumeData(that)
 {
@@ -268,14 +255,17 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	// such as as Fourier conversion and optional padding etc.
 	EMData* slice = preprocess_slice( input_slice );
 
+	
 	if (!slice->is_complex()) {
 		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor::insert_slice failed");
 		return 1;
 	}
 
+	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
+	// place until after the first round of slice insertion
 	if ( idx < quality_scores.size() )
 	{
-		//cout << "The quality score of " << quality_scores[idx].second << " was compared to " << (float) params["hard"];
+		cout << "The quality score of" << endl;
 		if ( quality_scores[idx].get_snr_normed_frc_integral() < (float) params["hard"] )
 		{
 			//cout << quality_scores[idx].get_snr_normed_frc_integral() << " was less than " << (float) params["hard"] << endl;
@@ -284,6 +274,7 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 			return 1;
 		}
 		//cout << endl;
+		slice->mult( 1.0f/quality_scores[idx].get_norm() );
 		idx++;
 	}
 	
@@ -296,14 +287,49 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	return 0;
 }
 
-void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
+int FourierReconstructor::remove_slice(const EMData* const input_slice, const Transform3D & arg)
+{
+	if (!input_slice) {
+		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
+		return 1;
+	}
+
+	if (input_slice->is_complex()) {
+		LOGERR("Do not Fourier transform the image before it is passed to insert_slice in the FourierReconstructor, this is performed internally");
+		return 1;
+	}
+
+	// Get the proprecessed slice - there are some things that always happen to a slice,
+	// such as as Fourier conversion and optional padding etc.
+	EMData* slice = preprocess_slice( input_slice );
+
+	if (!slice->is_complex()) {
+		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor::insert_slice failed");
+		return 1;
+	}
+	
+
+	inserter->set_pixel_minus_operation();
+	
+	do_insert_slice_work(slice, arg);
+
+	inserter->set_pixel_add_operation();
+	
+	
+	
+	delete slice;	
+
+	image->update();
+
+	return 0;
+}
+
+bool FourierReconstructor::do_insert_remove_test(const EMData* const input_slice, const Transform3D & arg)
 {
 	float *dat = input_slice->get_data();
 
-	float weight = params["weight"];
-
 	int rl = Util::square(ny / 2 - 1);
-
+	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
 		Transform3D euler = arg.get_sym((string) params["sym"], i);
@@ -332,210 +358,108 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				dt[0] = dat[x * 2 + y * nx];
 				dt[1] = cc * dat[x * 2 + 1 + y * nx];
 
-				inserter->insert_pixel(xx,yy,zz,dt,weight);
+				inserter->set_pixel_add_operation();
+				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
+				inserter->set_pixel_minus_operation();
+				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
+				
+				if ( !inserter->effected_pixels_are_zero(xx,yy,zz) )
+				{
+					cout << "Fail! " << xx << " " << yy << " " << zz << endl;
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+bool FourierReconstructor::test_pixel_wise_zero(const EMData* const input_slice, const Transform3D & arg)
+{
+	float *dat = input_slice->get_data();
+
+	int rl = Util::square(ny / 2 - 1);
+	
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D euler = arg.get_sym((string) params["sym"], i);
+
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx / 2; x++) {
+				if ((x * x + Util::square(y - ny / 2)) >= rl)
+					continue;
+	
+				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
+				float cc = 1;
+	
+				if (xx < 0) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1.0;
+				}
+				
+				yy += ny / 2;
+				zz += nz / 2;
+				
+				float dt[2];
+				dt[0] = dat[x * 2 + y * nx];
+				dt[1] = cc * dat[x * 2 + 1 + y * nx];
+				
+				if ( !inserter->effected_pixels_are_zero(xx,yy,zz) )
+				{
+					cout << "Fail! " << xx << " " << yy << " " << zz << endl;
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
+{
+	float *dat = input_slice->get_data();
+
+	int rl = Util::square(ny / 2 - 1);
+	
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D euler = arg.get_sym((string) params["sym"], i);
+
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx / 2; x++) {
+				if ((x * x + Util::square(y - ny / 2)) >= rl)
+					continue;
+	
+				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
+				float cc = 1;
+	
+				if (xx < 0) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1.0;
+				}
+				
+				yy += ny / 2;
+				zz += nz / 2;
+				
+				float dt[2];
+				dt[0] = dat[x * 2 + y * nx];
+				dt[1] = cc * dat[x * 2 + 1 + y * nx];
+
+				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
 			}
 		}
 	}
 }
 
-InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling ) :
-	threed_rdata(rdata), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize), bin(sampling)
-{
-	if ( sampling <= 0 )
-	{	
-		throw InvalidValueException(sampling, "Error: sampling must be greater than 0");
-	}
-
-	pixel_radius_max = ny/2;
-	pixel_radius_max_square = Util::square( (int) pixel_radius_max );
-
-	size = static_cast<int>(pixel_radius_max*bin);
-	// The parentheses effectively cause initialization by 0 (apparently) - this should be tested because without 0 initialization this objects behavior will be unexpected. 
-	frc = new float[size];
-	frc_norm_rdata = new float[size];
-	frc_norm_dt = new float[size];
-
-	off[0] = 0;
-	off[1] = 2;
-	off[2] = nx;
-	off[3] = nx + 2;
-	off[4] = nxy;
-	off[5] = nxy + 2;
-	off[6] = nxy + nx;
-	off[7] = nxy + nx + 2;
-}
-
-InterpolatedFRC::InterpolatedFRC( const InterpolatedFRC& that ) :
-	threed_rdata(that.threed_rdata), nx(that.nx), ny(that.ny), nz(that.nz), nxy(that.nxy), bin(that.bin),
-	 size(that.size), pixel_radius_max(that.pixel_radius_max), pixel_radius_max_square(that.pixel_radius_max_square)
-{
-	frc = new float[size];
-	frc_norm_rdata = new float[size];
-	frc_norm_dt = new float[size];
-
-	off[0] = 0;
-	off[1] = 2;
-	off[2] = nx;
-	off[3] = nx + 2;
-	off[4] = nxy;
-	off[5] = nxy + 2;
-	off[6] = nxy + nx;
-	off[7] = nxy + nx + 2;
-}
-
-InterpolatedFRC& InterpolatedFRC::operator=( const InterpolatedFRC& that)
-{
-	if (this != &that)
-	{
-		threed_rdata = that.threed_rdata;
-		nx = that.nx; ny = that.ny; nz = that.nz; nxy = that.nxy; bin = that.bin;
-	 	size = that.size; pixel_radius_max = that.pixel_radius_max; pixel_radius_max_square = that.pixel_radius_max_square;
-
-		free_memory();
-
-		frc = new float[size];
-		frc_norm_rdata = new float[size];
-		frc_norm_dt = new float[size];
-	
-		off[0] = 0;
-		off[1] = 2;
-		off[2] = nx;
-		off[3] = nx + 2;
-		off[4] = nxy;
-		off[5] = nxy + 2;
-		off[6] = nxy + nx;
-		off[7] = nxy + nx + 2;
-	}
-
-	return *this;
-}
-
-
-void InterpolatedFRC::reset()
-{
-	memset(frc, 0, size*sizeof(float));
-	memset(frc_norm_rdata, 0, size*sizeof(float));
-	memset(frc_norm_dt, 0, size*sizeof(float));
-}
-
-bool InterpolatedFRC::continue_frc_calc(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = (int) floor(xx);
-	int y0 = (int) floor(yy);
-	int z0 = (int) floor(zz);
- 
-	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1)
-	{
-		return false;
-	}
-	
-	// Have to get radial coordinates - x is fine as it is but the other two need translation ( after testing it seems like z does not need translation - more testing required)
-	int offset = (ny%2 == 0? 1:0);
-	int yt = y0 - ny/2 - offset;
-	int zt = z0 - nz/2;
-
-	int radius =  x0*x0 + yt*yt + zt*zt;
-	radius = static_cast<int>(sqrtf(radius)*bin);
-
-	// debug
-	if ( radius > (size-1) )
-	{
-		//cout is debug
-		//cout << "radius " << radius << " was greater than or equal to size " << size  << endl;
-		return false;
-	}
-
-	float dx = xx - x0;
-	float dy = yy - y0;
-	float dz = zz - z0;
-
-	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
-
-	g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
-	g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
-	g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
-	g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
-	g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
-	g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
-	g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
-	g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
-
-
-	// The reverse interpolated point
-	float interp_real = 0, interp_comp = 0;
-	
-	for (int j = 0; j < 8; j++) {
-		int k = i + off[j];
-		interp_real += (threed_rdata[k] - weight * dt[0] * g[j]) * g[j];
-		interp_comp += (threed_rdata[k+1] - weight * dt[1] * g[j]) * g[j];
-	}
-	
-// 	if ( radius == 0 )
-// 		cout << "interp was " << interp_real << " " << interp_comp << " actual was " << dt[0] << " " << dt[1] << endl;
-	
-	frc[radius] += interp_real*dt[0] + interp_comp*dt[1];
-
-	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
-	
-	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
-
-	return true;
-}
-
-QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
-{
-	float frc_integral = 0, snr_normed_frc_intergral = 0, normed_snr_integral = 0;
-
-	int contrib = 0;
-
-	float contrib_thresh = 0.01;
-
-	for( int i = 0; i < size; ++i )
-	{
-		if ( frc_norm_rdata[i] == 0 || frc_norm_dt[i] == 0 )
-			frc[i] = 0;
-		else
-			frc[i] /= sqrtf(frc_norm_rdata[i]*frc_norm_dt[i]);
-
-		if ( frc[i] < contrib_thresh ) continue;
-		contrib++;
-		// Accumulate the frc integral - atm this is for testing purposes but could change
-		frc_integral += frc[i];
-		
-		
-
-		float tmp = frc[i]*frc[i];
-		if ( tmp == 1.0f )
-		{
-			tmp = 0.999;
-			//cout << "one encountered" << endl;
-		}
-
-		// This shouldn't happen and at the moment is for debug only
-		if ( tmp > 1 )
-		{
-			cout << " tmp " << tmp << " div by " << (1.0-tmp) << " equals " << (tmp/(1.0-tmp));
-		}
-		
-		float adjusted_ssnr = tmp/((1.0-tmp)*num_particles);
-		normed_snr_integral += adjusted_ssnr;
-		snr_normed_frc_intergral += sqrtf(adjusted_ssnr/( 1.0 + adjusted_ssnr ));
-	}
-
-	frc_integral /= contrib;
-	snr_normed_frc_intergral /= contrib;
-	normed_snr_integral /= contrib;
-
-	QualityScores quality_scores;
-	quality_scores.set_frc_integral( frc_integral );
-	quality_scores.set_snr_normed_frc_integral( snr_normed_frc_intergral );
-	quality_scores.set_normed_snr_integral( normed_snr_integral );
-	
-	return quality_scores;
-}
-
-
-int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & euler, const unsigned int  num_particles_in_slice )
+int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & euler, const unsigned int num_particles_in_slice)
 {
 	if (!input_slice) {
 		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
@@ -557,7 +481,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 
 	InterpolatedFRC ifrc = InterpolatedFRC(image->get_data(), nx, ny, nz );
 	ifrc.reset();
-
+	
 	bool doing_refined = false;
 
 	if ( doing_refined )
@@ -566,6 +490,15 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 		do_insert_slice_work(slice, euler);
 	}
 
+	float dt[2];
+	
+	int mode = params["mode"];
+	
+	float norm_vals[2];
+	float r = 0.0, rn = 0.0;
+	float * rdata = image->get_data();
+	float * norm = tmp_data->get_data();
+	
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
 			if ((x * x + Util::square(y - ny / 2)) >= rl)
@@ -586,24 +519,64 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			yy += ny / 2;
 			zz += nz / 2;
 			
-			float dt[2];
 			dt[0] = dat[x * 2 + y * nx];
 			dt[1] = cc * dat[x * 2 + 1 + y * nx];
-			if ( doing_refined )
-				ifrc.continue_frc_calc(xx, yy, zz, dt, (float)params["weight"]);
-			else
-				ifrc.continue_frc_calc(xx, yy, zz, dt, 0);
+			
+			float weight = 0;
+			if ( !doing_refined )
+			{
+				weight = (float)params["weight"];
+			}
+			switch (mode)
+			{
+				case 1:
+					ifrc.continue_frc_calc1(xx, yy, zz, dt, weight);
+					break;
+				case 2:
+					ifrc.continue_frc_calc2(xx, yy, zz, dt, weight);
+					break;
+				case 3:
+					ifrc.continue_frc_calc3(xx, yy, zz, dt, weight);
+					break;
+				default:
+					cout << "Warning, nothing happened the mode " << mode << " was unsupported" << endl;
+					break;
+			}
+
+			
+			int x0=2*(int)floor(xx+.5);
+			int y0=(int)floor(yy+.5);
+			int z0=(int)floor(zz+.5);
+			int i=x0+y0*nx+z0*nx*ny;
+			
+			//if (fabs(norm[i])<threshold) continue;
+	
+			norm_vals[0]=hypot(rdata[i],rdata[i+1]);
+			norm_vals[1]=hypot(dat[x*2+y*nx],dat[x*2+1+y*nx]);
+	
+			r+=norm[i]*norm_vals[1];
+			rn+=norm[i]*norm_vals[0];
+			
+			
 		}
 	}
+	
 
 	if ( doing_refined )
 	{
 		inserter->set_pixel_add_operation();
 		do_insert_slice_work(slice, euler);
 	}
-
+	if (rn!=0)
+	{
+		r= r/rn;
+	}
+	else r=1.0;
+	
+	
 	QualityScores q_scores = ifrc.finish( num_particles_in_slice );
-	q_scores.debug_print();
+	q_scores.set_norm( r );
+	//q_scores.debug_print();
 	quality_scores.push_back(q_scores);
 
 	delete slice;
@@ -668,7 +641,7 @@ EMData *FourierReconstructor::finish()
 	}
 
 
-	bool want_stats = true;
+	bool want_stats = false;
 	if ( want_stats )
 	{
 		unsigned int size = quality_scores.size();
@@ -713,8 +686,7 @@ EMData *FourierReconstructor::finish()
 	}
 	
 	image->update();
-	
-	image->write_image("tmp.mrc");
+
 	
 	return image;
 }
@@ -2329,7 +2301,7 @@ EMData* nn4_ctfReconstructor::finish()
                         {
                             std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
                             std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum; 
-                            std::cout << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
+                            std::  << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
                             std::cout << std::endl;
                         } 
  */
@@ -2926,363 +2898,6 @@ EMData* bootstrap_nnctfReconstructor::finish()
     return w;
 }
 
-void FourierPixelInserter3D::init()
-{
-	if ( params.find("rdata") !=  params.end()  )
-	{
-		rdata = params["rdata"];
-		if ( rdata == 0 )
-			throw NotExistingObjectException("rdata", "error the rdata pointer was 0 in FourierPixelInserter3D::init");
-	}
-	else throw NotExistingObjectException("rdata", "the rdata pointer was not defined in FourierPixelInserter3D::init");
-	
-	if ( params.find("norm") !=  params.end() )
-	{
-		norm = params["norm"];
-		if ( norm == 0 )
-			throw NotExistingObjectException("norm", "error the norm pointer was 0 in FourierPixelInserter3D::init");
-	}
-	else throw NotExistingObjectException("norm", "the norm pointer was not defined in FourierPixelInserter3D::init");
-	
-	if ( params.find("nx") != params.end() )
-	{
-		nx = params["nx"];
-		if ( nx == 0 )
-			throw NotExistingObjectException("nx", "error nx was 0 in FourierPixelInserter3D::init");
-	}
-	else throw NotExistingObjectException("nx", "nx was not defined in FourierPixelInserter3D::init");
-	
-	if ( params.find("ny") != params.end() )
-	{
-		ny = params["ny"];
-		if ( ny == 0 )
-			throw NotExistingObjectException("ny", "error ny was 0 in FourierPixelInserter3D::init");
-	}
-	else throw NotExistingObjectException("ny", "ny was not defined in FourierPixelInserter3D::init");
-	
-	if ( params.find("nz") != params.end() )
-	{
-		nz = params["nz"];
-		if ( nz == 0 )
-			throw NotExistingObjectException("nz", "error nz was 0 in FourierPixelInserter3D::init");
-	}
-	else throw NotExistingObjectException("nz", "nz was not defined in FourierPixelInserter3D::init");
-	
-	nxy = nx*ny;
-}
-
-bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = 2 * (int) floor(xx + 0.5f);
-	int y0 = (int) floor(yy + 0.5f);
-	int z0 = (int) floor(zz + 0.5f);
-	
-	(*pixel_operation)(rdata + x0 + y0 * nx + z0 * nxy, weight * dt[0]);
-	(*pixel_operation)(rdata + x0 + y0 * nx + z0 * nxy + 1, weight  * dt[1]);
-	(*pixel_operation)(norm + x0 + y0 * nx + z0 * nxy, weight);
-
-	return true;
-}
-
-FourierInserter3DMode2::FourierInserter3DMode2()
-{
-	off[0] = 0;
-	off[1] = 2;
-	off[2] = nx;
-	off[3] = nx + 2;
-	off[4] = nxy;
-	off[5] = nxy + 2;
-	off[6] = nxy + nx;
-	off[7] = nxy + nx + 2;
-}
-		
-bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = (int) floor(xx);
-	int y0 = (int) floor(yy);
-	int z0 = (int) floor(zz);
-
-	float dx = xx - x0;
-	float dy = yy - y0;
-	float dz = zz - z0;
-
-	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
-		return false;
-	}
-
-	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
-
-	g[0] = Util::agauss(1, dx, dy, dz, EMConsts::I2G);
-	g[1] = Util::agauss(1, 1 - dx, dy, dz, EMConsts::I2G);
-	g[2] = Util::agauss(1, dx, 1 - dy, dz, EMConsts::I2G);
-	g[3] = Util::agauss(1, 1 - dx, 1 - dy, dz, EMConsts::I2G);
-	g[4] = Util::agauss(1, dx, dy, 1 - dz, EMConsts::I2G);
-	g[5] = Util::agauss(1, 1 - dx, dy, 1 - dz, EMConsts::I2G);
-	g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
-	g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
-
-	for (int j = 0; j < 8; j++)
-	{
-		int k = i + off[j];
-		(*pixel_operation)(rdata + k, weight * g[j] * dt[0]);
-		(*pixel_operation)(rdata + k + 1, weight * g[j] * dt[1]);
-		(*pixel_operation)(norm + k, weight * g[j]);
-	}
-	
-	return true;
-}
-
-bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = 2 * (int) floor(xx + 0.5f);
-	int y0 = (int) floor(yy + 0.5f);
-	int z0 = (int) floor(zz + 0.5f);
-
-	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
-		return false;
-	}
-
-	int l = x0 - 2;
-	if (x0 == 0) {
-		l = x0;
-	}
-
-	for (int k = z0 - 1; k <= z0 + 1; k++) {
-		for (int j = y0 - 1; j <= y0 + 1; j++) {
-			for (int i = l; i <= x0 + 2; i += 2) {
-				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = exp(-r / EMConsts::I3G);
-
-				(*pixel_operation)(rdata + i + j * nx + k * nxy, weight * gg * dt[0]);
-				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, weight * gg * dt[1]);
-				(*pixel_operation)(norm + i + j * nx + k * nxy, weight * gg);
-			}
-		}
-	}
-	return true;
-}
-
-bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = 2 * (int) floor(xx);
-	int y0 = (int) floor(yy);
-	int z0 = (int) floor(zz);
-
-	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
-		return false;
-	}
-
-	int l = x0 - 2;
-	if (x0 == 0) {
-		l = x0;
-	}
-
-	for (int k = z0 - 1; k <= z0 + 2; k++) {
-		for (int j = y0 - 1; j <= y0 + 2; j++) {
-			for (int i = l; i <= x0 + 4; i += 2) {
-				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = exp(-r / EMConsts::I4G);
-
-				(*pixel_operation)(rdata + i + j * nx + k * nxy, weight * gg * dt[0]);
-				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, weight * gg * dt[1]);
-				(*pixel_operation)(norm + i + j * nx + k * nxy, weight * gg);
-			}
-		}
-	}
-	
-	return true;
-}
-
-bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = (int) floor(xx + 0.5f);
-	int y0 = (int) floor(yy + 0.5f);
-	int z0 = (int) floor(zz + 0.5f);
-
-	int mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f) - 78;
-	int my0 = -(int) floor((yy - y0) * 39.0f + 0.5f) - 78;
-	int mz0 = -(int) floor((zz - z0) * 39.0f + 0.5f) - 78;
-
-	x0 *= 2;
-
-	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
-		return false;
-	}
-
-	int l = 0;
-	if (x0 == 0) {
-		mx0 += 78;
-	}
-	else if (x0 == 2) {
-		mx0 += 39;
-	}
-	else {
-		l = x0 - 4;
-	}
-
-	for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
-		for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
-			for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-				int ii = i + j * nx + k * nxy;
-				float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
-
-				(*pixel_operation)(rdata + ii, gg * dt[0]);
-				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
-				(*pixel_operation)(norm + ii, gg);
-			}
-		}
-	}
-
-	if (x0 <= 2) {
-		float xx_b = -xx;
-		float yy_b = -(yy - ny / 2) + ny / 2;
-		float zz_b = -(zz - nz / 2) + nz / 2;
-
-		x0 = (int) floor(xx_b + 0.5f);
-		y0 = (int) floor(yy_b + 0.5f);
-		z0 = (int) floor(zz_b + 0.5f);
-
-		int mx0 = -(int) floor((xx_b - x0) * 39.0f + 0.5f);
-		x0 *= 2;
-
-		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-			return false;
-
-		for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
-			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
-				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-					int ii = i + j * nx + k * nxy;
-					float gg =
-						weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
-					(*pixel_operation)(rdata + ii, gg * dt[0]);
-					(*minus_pixel_operation)(rdata+ii + 1, gg * dt[1]);
-					(*pixel_operation)(norm + ii, gg);
-				}
-			}
-		}
-	}
-
-	return true;
-}
-
-bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int	x0 = 2 * (int) floor(xx + 0.5f);
-	int y0 = (int) floor(yy + 0.5f);
-	int z0 = (int) floor(zz + 0.5f);
-
-	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-		return false;
-
-	int l = x0 - 4;
-	if (x0 <= 2) {
-		l = 0;
-	}
-
-	for (int k = z0 - 2; k <= z0 + 2; k++) {
-		for (int j = y0 - 2; j <= y0 + 2; j++) {
-			for (int i = l; i <= x0 + 4; i += 2) {
-				int ii = i + j * nx + k * nxy;
-				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = weight * exp(-r / EMConsts::I5G);
-
-				(*pixel_operation)(rdata + ii, gg * dt[0]);
-				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
-				(*pixel_operation)(norm + ii, gg);
-			}
-		}
-	}
-
-	if (x0 <= 2) {
-		float xx_b = -xx;
-		float yy_b = -(yy - ny / 2) + ny / 2;
-		float zz_b = -(zz - nz / 2) + nz / 2;
-
-		x0 = 2 * (int) floor(xx_b + 0.5f);
-		y0 = (int) floor(yy_b + 0.5f);
-		z0 = (int) floor(zz_b + 0.5f);
-
-		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-			return false;
-
-		for (int k = z0 - 2; k <= z0 + 2; k++) {
-			for (int j = y0 - 2; j <= y0 + 2; j++) {
-				for (int i = 0; i <= x0 + 4; i += 2) {
-					int ii = i + j * nx + k * nxy;
-					float r = Util::hypot3((float) i / 2 - xx_b, (float) j - yy_b,
-										   (float) k - zz_b);
-					float gg = weight * exp(-r / EMConsts::I5G);
-
-					(*pixel_operation)(rdata + ii, gg * dt[0]);
-					(*minus_pixel_operation)(rdata+ii + 1, gg * dt[1]);
-					(*pixel_operation)(norm + ii, gg);
-				}
-			}
-		}
-	}
-	
-	return true;
-}
-
-bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
-{
-	int x0 = 2 * (int) floor(xx + 0.5f);
-	int y0 = (int) floor(yy + 0.5f);
-	int z0 = (int) floor(zz + 0.5f);
-
-	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-		return false;
-
-	int l = x0 - 4;
-	if (x0 <= 2)
-		l = 0;
-
-	for (int k = z0 - 2; k <= z0 + 2; k++) {
-		for (int j = y0 - 2; j <= y0 + 2; j++) {
-			for (int i = l; i <= x0 + 4; i += 2) {
-				int ii = i + j * nx + k * nxy;
-				float r =
-					sqrt(Util::
-						 hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
-				float gg = weight * Interp::hyperg(r);
-
-				(*pixel_operation)(rdata + ii, gg * dt[0]);
-				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
-				(*pixel_operation)(norm + ii, gg);
-			}
-		}
-	}
-
-	if (x0 <= 2) {
-		float xx_b = -xx;
-		float yy_b = -(yy - ny / 2) + ny / 2;
-		float zz_b = -(zz - nz / 2) + nz / 2;
-		x0 = 2 * (int) floor(xx_b + 0.5f);
-		y0 = (int) floor(yy_b + 0.5f);
-		z0 = (int) floor(zz_b + 0.5f);
-
-		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
-			return false;
-
-		for (int k = z0 - 2; k <= z0 + 2; k++) {
-			for (int j = y0 - 2; j <= y0 + 2; j++) {
-				for (int i = 0; i <= x0 + 4; i += 2) {
-					int ii = i + j * nx + k * nxy;
-					float r = sqrt(Util::hypot3((float) i / 2 - xx_b, (float) j - yy_b,
-												(float) k - zz_b));
-					float gg = weight * Interp::hyperg(r);
-
-					(*pixel_operation)(rdata + ii, gg * dt[0]);
-					(*minus_pixel_operation)(rdata+ii + 1, gg * dt[1]);
-					(*pixel_operation)(norm + ii, gg);
-				}
-			}
-		}
-	}
-	
-	return true;
-}
-
 void EMAN::dump_reconstructors()
 {
 	dump_factory < Reconstructor > ();
@@ -3326,8 +2941,7 @@ void file_store::add_image(  EMData* emdata )
     m_ysize = padfft->get_ysize();
     m_zsize = padfft->get_zsize();
     m_totsize = m_xsize*m_ysize*m_zsize;  
- 
-        
+
     m_Cs = padfft->get_attr( "Cs" );
     m_pixel = padfft->get_attr( "Pixel_size" );
     m_voltage = padfft->get_attr( "voltage" );

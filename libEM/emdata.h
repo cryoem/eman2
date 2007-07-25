@@ -127,13 +127,13 @@ namespace EMAN
 		 * Performs a deep copy 
 		 * @param that the EMData to copy 
 		*/
-		EMData( const EMData& that);
+		EMData(const EMData& that);
 		
 		/** EMData assignment operator
 		 * Performs a deep copy 
 		 * @param that the EMData to copy 
 		*/
-		EMData& operator=( const EMData& that);
+		EMData& operator=(const EMData& that);
 		
 		/**  Do the Fourier Harmonic Transform  PRB
 		 * Takes a real image, returns the FH

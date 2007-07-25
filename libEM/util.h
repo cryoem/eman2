@@ -527,6 +527,16 @@ namespace EMAN
 			return (float)(x * x + y * y);
 		}
 
+		/** Euclidean distance function in 2D: f(x,y) = sqrt(x*x + y*y);
+		 * @param[in] x The first number.
+		 * @param[in] y The second number.
+		 * @return sqrt(x*x + y*y);
+		 */
+		static inline float hypot2(float x, float y)
+		{
+			return sqrtf(x * x + y * y);
+		}
+		
 		/** Euclidean distance function in 3D: f(x,y,z) = sqrt(x*x + y*y + z*z);
 		 * @param[in] x The first number.
 		 * @param[in] y The second number.
