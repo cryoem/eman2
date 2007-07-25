@@ -1297,14 +1297,10 @@ enum weighting_method { NONE, ESTIMATE, VORONOI };
 float max3d( int kc, const vector<float>& pow_a )
 {
 	float max = 0.0;
-	for( int i=-kc; i <= kc; ++i )
-	{
-		for( int j=-kc; j <= kc; ++j )
-		{
-			for( int k=-kc; k <= kc; ++k )
-			{
-					if( i==0 && j==0 && k==0 ) continue;
-	
+	for( int i=-kc; i <= kc; ++i ) {
+		for( int j=-kc; j <= kc; ++j ) {
+			for( int k=-kc; k <= kc; ++k ) {
+				if( i==0 && j==0 && k==0 ) continue;
 				// if( i!=0 ) 
 				{
 					int c = 3*kc+1 - std::abs(i) - std::abs(j) - std::abs(k);
@@ -1315,7 +1311,6 @@ float max3d( int kc, const vector<float>& pow_a )
 			}
 		}
 	}
-
 	return max;
 }
 
@@ -1491,20 +1486,20 @@ int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t,
 EMData* nn4Reconstructor::finish() 
 {
 
-    m_volume->symplane0(m_wptr);
+	m_volume->symplane0(m_wptr);
 
-    int box = 7;
-    int vol = box*box*box;
-    int kc = (box-1)/2;
-    vector< float > pow_a( 3*kc+1, 1.0 );
-    for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
-    pow_a[3*kc] = 0.0;
+	int box = 7;
+	int vol = box*box*box;
+	int kc = (box-1)/2;
+	vector< float > pow_a( 3*kc+1, 1.0 );
+	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+	pow_a[3*kc] = 0.0;
 
-    vector< float > pow_b( 3*m_vnyc+1, 1.0 );
-    for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
+	vector< float > pow_b( 3*m_vnyc+1, 1.0 );
+	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
-    float max = max3d( kc, pow_a );
-    float alpha = ( 1.0 - 1.0/vol ) / max;
+	float max = max3d( kc, pow_a );
+	float alpha = ( 1.0 - 1.0/vol ) / max;
 
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
@@ -1513,32 +1508,26 @@ EMData* nn4Reconstructor::finish()
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
 					if( m_weighting == ESTIMATE ) {
 						int cx = ix;
-					    int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
-					    int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
-
+						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
 						float sum = 0.0;
-					    for( int ii = -kc; ii <= kc; ++ii ) { 
-					        int nbrcx = cx + ii;
+						for( int ii = -kc; ii <= kc; ++ii ) {
+							int nbrcx = cx + ii;
 							if( nbrcx >= m_vnxc ) continue;
-
-					        for( int jj= -kc; jj <= kc; ++jj ) {
-						    	int nbrcy = cy + jj;
-						    	if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-
-						    	for( int kk = -kc; kk <= kc; ++kk ) {
-						        	int nbrcz = cz + jj;
-                            		if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-
+							for( int jj= -kc; jj <= kc; ++jj ) {
+								int nbrcy = cy + jj;
+								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+								for( int kk = -kc; kk <= kc; ++kk ) {
+									int nbrcz = cz + jj;
+									if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
 									if( nbrcx < 0 ) {
-							   			 nbrcx = -nbrcx;
+										nbrcx = -nbrcx;
 							    			nbrcy = -nbrcy;
 							    			nbrcz = -nbrcz;
 									}
-
 									int nbrix = nbrcx;
 									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
 									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-
 									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
 										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
 										sum = sum + pow_a[c];
@@ -1546,8 +1535,7 @@ EMData* nn4Reconstructor::finish()
 								}
 							}
 						}
-
-					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
+						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
 						float wght = pow_b[r] / ( 1.0 - alpha * sum );
 						tmp = tmp * wght;
@@ -1753,7 +1741,7 @@ int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transfor
 
 	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
 		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
+		LOGERR("Tried to insert a slice that has wrong size.");
 		return 1;
 	}
 
@@ -1811,7 +1799,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
-	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
+	int  inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
 	SSNR->set_size(inc+1,4,1);
 
 	float *nom    = new float[inc+1];
@@ -1910,7 +1898,7 @@ EMData* nnSSNR_Reconstructor::finish()
 	}
 
 	for (int i = 0; i <= inc; i++)  { 
-		(*SSNR)(i,0,0)  = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
+		(*SSNR)(i,0,0) = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
 		(*SSNR)(i,1,0) = denom[i];    // variance
 		(*SSNR)(i,2,0) = nn[i];
 		(*SSNR)(i,3,0) = ka[i];
@@ -2222,80 +2210,66 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfReconstructor::finish() 
 {
-    m_volume->set_array_offsets(0, 1, 1);
-    m_wptr->set_array_offsets(0, 1, 1);
-    m_volume->symplane0_ctf(m_wptr);
+	m_volume->set_array_offsets(0, 1, 1);
+	m_wptr->set_array_offsets(0, 1, 1);
+	m_volume->symplane0_ctf(m_wptr);
 
-    int box = 7;
-    int vol = box*box*box;
-    int kc = (box-1)/2;
-    vector< float > pow_a( 3*kc+1, 1.0 );
+	int box = 7;
+	int vol = box*box*box;
+	int kc = (box-1)/2;
+	vector< float > pow_a( 3*kc+1, 1.0 );
 	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
-    pow_a[3*kc]=0.0;
+	pow_a[3*kc]=0.0;
 
 
 	vector< float > pow_b( 3*m_vnyc, 1.0 );
 	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
-    float max = max3d( kc, pow_a );
-    float alpha = ( 1.0 - 1.0/vol ) / max;
+	float max = max3d( kc, pow_a );
+	float alpha = ( 1.0 - 1.0/vol ) / max;
 	float osnr = 1.0f/m_snr;
 
 	// normalize
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		for (int iy = 1; iy <= m_vnyp; iy++) {
 			for (int ix = 0; ix <= m_vnxc; ix++) {
-				if ( (*m_wptr)(ix,iy,iz) > 0.f) {//(*v) should be treated as complex!!
+				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
 					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
+					if( m_weighting == ESTIMATE ) {
+						int cx = ix;
+						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+						float sum = 0.0;
+						for( int ii = -kc; ii <= kc; ++ii ) { 
+							int nbrcx = cx + ii;
+							if( nbrcx >= m_vnxc ) continue;
+							for( int jj= -kc; jj <= kc; ++jj ) {
+								int nbrcy = cy + jj;
+								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+								for( int kk = -kc; kk <= kc; ++kk ) {
+									int nbrcz = cz + jj;
+									if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+									if( nbrcx < 0 ) {
+										nbrcx = -nbrcx;
+										nbrcy = -nbrcy;
+										nbrcz = -nbrcz;
+									}
 
-					if( m_weighting == ESTIMATE ) 
-					{
-                        int cx = ix;
-					    int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
-					    int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
-
-					    float sum = 0.0;
-					    for( int ii = -kc; ii <= kc; ++ii )
-                        { 
-					        int nbrcx = cx + ii;
-					    	if( nbrcx >= m_vnxc ) continue;
-
-					        for( int jj= -kc; jj <= kc; ++jj )
-						    {
-						        int nbrcy = cy + jj;
-						        if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-
-						        for( int kk = -kc; kk <= kc; ++kk )
-						        {
-						            int nbrcz = cz + jj;
-                                    if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-
-						            if( nbrcx < 0 )
-							        {
-							            nbrcx = -nbrcx;
-							            nbrcy = -nbrcy;
-							            nbrcz = -nbrcz;
-							        }
-
-                                    int nbrix = nbrcx;
-							        int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-							        int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-
-							        if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 )
-							        {
-                                        int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-							            sum = sum + pow_a[c];
-							            // if(ix%20==0 && iy%20==0 && iz%20==0)
-							            //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
-							        }
-                                }
-                            }
-                        }
-
-                               
-					    int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-					    Assert( r >=0 && r < (int)pow_b.size() );
-                        float wght = pow_b[r] / ( 1.0 - alpha * sum );
+									int nbrix = nbrcx;
+									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 ) {
+										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+										sum = sum + pow_a[c];
+							          		  // if(ix%20==0 && iy%20==0 && iz%20==0)
+							           		 //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
+									}
+								}
+							}
+						}
+						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
+						Assert( r >=0 && r < (int)pow_b.size() );
+						float wght = pow_b[r] / ( 1.0 - alpha * sum );
 /*
                         if(ix%10==0 && iy%10==0)
                         {
@@ -2305,22 +2279,20 @@ EMData* nn4_ctfReconstructor::finish()
                             std::cout << std::endl;
                         } 
  */
-					    tmp = tmp * wght;
-             	    }
-
-
-                    (*m_volume)(2*ix,iy,iz) *= tmp;
-	  	    (*m_volume)(2*ix+1,iy,iz) *= tmp;
+						tmp = tmp * wght;
+					}
+					(*m_volume)(2*ix,iy,iz) *= tmp;
+					(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
 		}
 	}
 
-    // back fft
-    m_volume->do_ift_inplace();
-    EMData* win = m_volume->window_center(m_vnx);
+	// back fft
+	m_volume->do_ift_inplace();
+	EMData* win = m_volume->window_center(m_vnx);
 
-    float *tw = win->get_data();
+	float *tw = win->get_data();
 	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
@@ -2350,10 +2322,9 @@ EMData* nn4_ctfReconstructor::finish()
 		}
 	}
 
-    // add m_result = win here because the reconstructor is responsible for the memory of m_volume
-    // which I think is strange
-    m_result = win;
-
+	// add m_result = win here because the reconstructor is responsible for the memory of m_volume
+	// which I think is strange
+	m_result = win;
 	return win;
 	// clean up
 }
@@ -2647,16 +2618,16 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_ctfReconstructor::finish() 
 {
-    /***
-    	m_wptr   ctf^2
-   	m_wptr5  ctf^2*|P^2D->3D(F^3D)|^2 
-   	m_wptr4  -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))
-  	m_wptr2  F_k^2D*conj(F_k^2D) or |F_k^2D|^2 
-	m_wptr3  Kn
-	variance  = Gamma^2d->3d [ |F_k^2D|^2   +  ctf^2*|P^2D->3D(F^3D)|^2 -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))]
-	signal    = Gamma^2d->3d [ |F_k^2D|^2  ]     
-	nominator = sum_rot [ wght*signal ]
-	denominator  = sum_rot[ wght*variance ]                        
+	/***
+	    m_wptr   ctf^2
+	    m_wptr5  ctf^2*|P^2D->3D(F^3D)|^2 
+	    m_wptr4  -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))
+	    m_wptr2  F_k^2D*conj(F_k^2D) or |F_k^2D|^2 
+	    m_wptr3  Kn
+	    variance  = Gamma^2d->3d [ |F_k^2D|^2   +  ctf^2*|P^2D->3D(F^3D)|^2 -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))]
+	    signal    = Gamma^2d->3d [ |F_k^2D|^2  ]	 
+	    nominator = sum_rot [ wght*signal ]
+	    denominator  = sum_rot[ wght*variance ]			   
 						      ***/
 	int kz, ky;
 	int box = 7;
@@ -2700,112 +2671,110 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		m_wptr->set_array_offsets(0,1,1);
 		wiener = 0; // Turn off flag
 		return win; // The function requires a returned object, otherwise is not neccessary
-	} else  {//Calculate SSNR 
-	EMData* vol_ssnr = new EMData();
-	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
-	vol_ssnr->to_zero();
-	EMData* SSNR = params["SSNR"];
-	SSNR->set_size(inc+1,4,1);
-	float *nom    = new float[inc+1];
-	float *denom  = new float[inc+1];
-	int  *ka     = new int[inc+1];
-	int  *nn     = new int[inc+1];
- 	float wght = 1.f;
-	for (int i = 0; i <= inc; i++) {
-		nom[i]   = 0.0f;
-		denom[i] = 0.0f;
-		nn[i]    = 0;
-		ka[i]    = 0;
-	}
-	m_volume->symplane2(m_wptr, m_wptr2, m_wptr3);
-	if ( m_weighting == ESTIMATE ) {
-		int vol = box*box*box;
-		for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
-		pow_a[3*kc] = 0.0;
-		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
-		float max = max3d( kc, pow_a );
-		alpha = ( 1.0 - 1.0/vol ) / max;
-	}
-	for (int iz = 1; iz <= m_vnzp; iz++) {
-		if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
-		argz = float(kz*kz)*dz2;  
-		for (int iy = 1; iy <= m_vnyp; iy++) {
-			if ( iy-1 > m_vnyc ) ky = iy-1-m_vnyp; else ky = iy-1;
-			argy = argz + float(ky*ky)*dy2;
-			for (int ix = 0; ix <= m_vnxc; ix++) {
-				float Kn = (*m_wptr3)(ix,iy,iz);
-				argx = std::sqrt(argy + float(ix*ix)*dx2);
-				int r = Util::round(float(inc)*argx);
-				if ( r >= 0 && Kn > 4.5f ) {
-					//float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;  // WHY THIS IS NOT USED HERE?
-					if ( m_weighting == ESTIMATE ) {
-						int cx = ix;
-						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
-						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
-
-						float sum = 0.0;
-						for( int ii = -kc; ii <= kc; ++ii ) { 
-							int nbrcx = cx + ii;
-							if( nbrcx >= m_vnxc ) continue;
-							for ( int jj= -kc; jj <= kc; ++jj ) {
-								int nbrcy = cy + jj;
-								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-								for( int kk = -kc; kk <= kc; ++kk ) {
-									int nbrcz = cz + jj;
-									if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-									if( nbrcx < 0 ) {
-										nbrcx = -nbrcx;
-										nbrcy = -nbrcy;
-										nbrcz = -nbrcz;
-									}
-									int nbrix = nbrcx;
-									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
-										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-										sum = sum + pow_a[c];
+	} else {//Calculate SSNR 
+		EMData* vol_ssnr = new EMData();
+		vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
+		vol_ssnr->to_zero();
+		EMData* SSNR = params["SSNR"];
+		SSNR->set_size(inc+1,4,1);
+		float *nom    = new float[inc+1];
+		float *denom  = new float[inc+1];
+		int  *ka     = new int[inc+1];
+		int  *nn     = new int[inc+1];
+ 		float wght = 1.f;
+		for (int i = 0; i <= inc; i++) {
+			nom[i]   = 0.0f;
+			denom[i] = 0.0f;
+			nn[i]	 = 0;
+			ka[i]	 = 0;
+		}
+		m_volume->symplane2(m_wptr, m_wptr2, m_wptr3);
+		if ( m_weighting == ESTIMATE ) {
+			int vol = box*box*box;
+			for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+			pow_a[3*kc] = 0.0;
+			for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
+			float max = max3d( kc, pow_a );
+			alpha = ( 1.0 - 1.0/vol ) / max;
+		}
+		for (int iz = 1; iz <= m_vnzp; iz++) {
+			if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
+			argz = float(kz*kz)*dz2;
+			for (int iy = 1; iy <= m_vnyp; iy++) {
+				if ( iy-1 > m_vnyc ) ky = iy-1-m_vnyp; else ky = iy-1;
+				argy = argz + float(ky*ky)*dy2;
+				for (int ix = 0; ix <= m_vnxc; ix++) {
+					float Kn = (*m_wptr3)(ix,iy,iz);
+					argx = std::sqrt(argy + float(ix*ix)*dx2);
+					int r = Util::round(float(inc)*argx);
+					if ( r >= 0 && Kn > 4.5f ) {
+						//float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;  // WHY THIS IS NOT USED HERE?
+						if ( m_weighting == ESTIMATE ) {
+							int cx = ix;
+							int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+							int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+							float sum = 0.0;
+							for( int ii = -kc; ii <= kc; ++ii ) {
+								int nbrcx = cx + ii;
+								if( nbrcx >= m_vnxc ) continue;
+								for ( int jj= -kc; jj <= kc; ++jj ) {
+									int nbrcy = cy + jj;
+									if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+									for( int kk = -kc; kk <= kc; ++kk ) {
+										int nbrcz = cz + jj;
+										if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+										if( nbrcx < 0 ) {
+											nbrcx = -nbrcx;
+											nbrcy = -nbrcy;
+											nbrcz = -nbrcz;
+										}
+										int nbrix = nbrcx;
+										int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+										int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+										if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
+											int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+											sum = sum + pow_a[c];
+										}
 									}
 								}
 							}
+							int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
+							Assert( r >=0 && r < (int)pow_b.size() );
+							wght = pow_b[r] / ( 1.0 - alpha * sum );
+							//tmp = tmp * wght;
+						} // end of ( m_weighting == ESTIMATE )
+						float nominator   = (*m_wptr2)(ix,iy,iz)/Kn;
+						float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
+						// Skip Friedel related values
+						if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
+							if ( r <= inc ) {
+								nom[r]   += nominator*wght;
+								denom[r] += denominator*wght;
+								nn[r]	 += 2;
+								ka[r]	 += int(Kn);
+							}
+							float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+							//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
+							int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
+							if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+								(*vol_ssnr)(iix, iiy, iiz) = tmp;
+							// Friedel part
+							iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
+							if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+								(*vol_ssnr)(iix, iiy, iiz) = tmp;
 						}
-						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-						Assert( r >=0 && r < (int)pow_b.size() );
-						wght = pow_b[r] / ( 1.0 - alpha * sum );
-						//tmp = tmp * wght;
-					} // end of ( m_weighting == ESTIMATE )
-					float nominator = (*m_wptr2)(ix,iy,iz)/Kn;
-					float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
-					// Skip Friedel related values
-					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
-						if ( r <= inc ) {
-							nom[r]   += nominator*wght;
-							denom[r] += denominator*wght;
-							nn[r]    += 2;
-							ka[r]    += int(Kn);
-						}
-						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
-						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
-						int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
-						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
-							(*vol_ssnr)(iix, iiy, iiz) = tmp;
-						// Friedel part
-						iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
-						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
-							(*vol_ssnr)(iix, iiy, iiz) = tmp;
-					}
-				} // end of Kn>4.5 or whatever
+					} // end of Kn>4.5 or whatever
+				}
 			}
 		}
-	}
-	for (int i = 0; i <= inc; i++) { 
-		(*SSNR)(i,0,0) = nom[i]; 
-		(*SSNR)(i,1,0) = denom[i];
-		(*SSNR)(i,2,0) = nn[i];
-		(*SSNR)(i,3,0) = ka[i];
-				
-	}
-	vol_ssnr->update();
-	return vol_ssnr;
+		for (int i = 0; i <= inc; i++) { 
+			(*SSNR)(i,0,0) = nom[i]; 
+			(*SSNR)(i,1,0) = denom[i];
+			(*SSNR)(i,2,0) = nn[i];
+			(*SSNR)(i,3,0) = ka[i];
+		}
+		vol_ssnr->update();
+		return vol_ssnr;
 	}
 
 }
