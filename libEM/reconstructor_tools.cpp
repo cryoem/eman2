@@ -48,7 +48,7 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 }
 
 InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling ) :
-		threed_rdata(rdata), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize), bin(sampling)
+		threed_rdata(rdata), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize), bin(sampling), r(0), rn(0) 
 {
 	if ( sampling <= 0 )
 	{	
@@ -76,7 +76,8 @@ InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int 
 
 InterpolatedFRC::InterpolatedFRC( const InterpolatedFRC& that ) :
 		threed_rdata(that.threed_rdata), nx(that.nx), ny(that.ny), nz(that.nz), nxy(that.nxy), bin(that.bin),
-					 size(that.size), pixel_radius_max(that.pixel_radius_max), pixel_radius_max_square(that.pixel_radius_max_square)
+		size(that.size), pixel_radius_max(that.pixel_radius_max), pixel_radius_max_square(that.pixel_radius_max_square),
+		r(that.r), rn(that.rn)
 {
 	frc = new float[size];
 	frc_norm_rdata = new float[size];
@@ -104,7 +105,8 @@ InterpolatedFRC& InterpolatedFRC::operator=( const InterpolatedFRC& that)
 		threed_rdata = that.threed_rdata;
 		nx = that.nx; ny = that.ny; nz = that.nz; nxy = that.nxy; bin = that.bin;
 		size = that.size; pixel_radius_max = that.pixel_radius_max; pixel_radius_max_square = that.pixel_radius_max_square;
-
+		r = that.r; rn = that.rn;
+		
 		free_memory();
 
 		frc = new float[size];
@@ -137,7 +139,8 @@ void InterpolatedFRC::reset()
 	memset(frc_norm_dt, 0, size*sizeof(float));
 }
 
-bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+
+bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctiod& functoid,  const float& weight )
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -150,11 +153,8 @@ bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const
 	int radius =  (int) floor(xx)*(int) floor(xx) + yt*yt + zt*zt;
 	radius = static_cast<int>(sqrtf(radius)*bin);
 	
-	// debug
 	if ( radius > (size-1) )
 	{
-		//cout is debug
-		//cout << "radius " << radius << " was greater than or equal to size " << size  << endl;
 		return false;
 	}
 	
@@ -166,12 +166,12 @@ bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const
 	// The reverse interpolated point
 	float interp_real = 0, interp_comp = 0;
 	
-	for (int k = z0 - 1; k <= z0 + 1; k++) {
-		for (int j = y0 - 1; j <= y0 + 1; j++) {
-			for (int i = l; i <= x0 + 2; i += 2) {
+	for (int k = z0 - 1; k <= z0 + 2; k++) {
+		for (int j = y0 - 1; j <= y0 + 2; j++) {
+			for (int i = l; i <= x0 + 4; i += 2) {
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = exp(-r / EMConsts::I3G);
-
+				float gg = functoid.operate(r);
+				
 				interp_real += (threed_rdata[i + j * nx + k * nxy]- weight * gg * dt[0])*gg;
 				interp_comp += (threed_rdata[i + j * nx + k * nxy + 1]- weight * gg * dt[1])*gg;
 			}
@@ -184,7 +184,126 @@ bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
+	r += hypot(dt[0], dt[1]);
+	rn += hypot(interp_real, interp_comp);
+	
 	return true;
+}
+
+bool InterpolatedFRC::continue_frc_calc7(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+{
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode7(),weight);
+}
+
+bool InterpolatedFRC::continue_frc_calc6(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+{
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode6(),weight);
+}
+
+bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+{
+	int x0 = (int) floor(xx + 0.5f);
+	int y0 = (int) floor(yy + 0.5f);
+	int z0 = (int) floor(zz + 0.5f);
+	
+	if (x0 >= nx - 4 || y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2) {
+		return true;
+	}
+	
+	// Have to get radial coordinates - x is fine as it is but the other two need translation ( after testing it seems like z does not need translation - more testing required)
+	int offset = (ny%2 == 0? 1:0);
+	int yt = y0 - ny/2 - offset;
+	int zt = z0 - nz/2;
+
+	int radius =  x0*x0 + yt*yt + zt*zt;
+	radius = static_cast<int>(sqrtf(radius)*bin);
+
+	if ( radius > (size-1) )
+	{
+		return true;
+	}
+	
+	x0 *= 2;
+
+	int mx0 = -(int) floor((xx - x0) * 39.0f + 0.5f) - 78;
+	int my0 = -(int) floor((yy - y0) * 39.0f + 0.5f) - 78;
+	int mz0 = -(int) floor((zz - z0) * 39.0f + 0.5f) - 78;
+	
+	int l = 0;
+	if (x0 == 0) {
+		mx0 += 78;
+	}
+	else if (x0 == 2) {
+		mx0 += 39;
+	}
+	else {
+		l = x0 - 4;
+	}
+	// The reverse interpolated point
+	float interp_real = 0, interp_comp = 0;
+
+	for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
+		for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
+			for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
+				int ii = i + j * nx + k * nxy;
+				float gg = InterpolationFunctiodMode5().operate(mmx,mmy,mmz);
+
+				interp_real += (threed_rdata[ii] - weight * dt[0] * gg) * gg;
+				interp_comp += (threed_rdata[ii+1] - weight * dt[1] * gg) * gg;
+			}
+		}
+	}
+	
+	if (x0 <= 2) {
+		float xx_b = -xx;
+		float yy_b = -(yy - ny / 2) + ny / 2;
+		float zz_b = -(zz - nz / 2) + nz / 2;
+
+		x0 = (int) floor(xx_b + 0.5f);
+		y0 = (int) floor(yy_b + 0.5f);
+		z0 = (int) floor(zz_b + 0.5f);
+
+		int mx0 = -(int) floor((xx_b - x0) * 39.0f + 0.5f);
+		x0 *= 2;
+
+		if (y0 > ny - 3 || z0 > nz - 3 || y0 < 2 || z0 < 2)
+			return false;
+
+		for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
+			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
+				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
+					int ii = i + j * nx + k * nxy;
+					float gg = InterpolationFunctiodMode5().operate(mmx,mmy,mmz);
+
+					interp_real += (threed_rdata[ii] - weight * dt[0] * gg) * gg;
+					interp_comp += (threed_rdata[ii+1] + weight * dt[1] * gg) * gg; // note the +, complex conj.
+				}
+			}
+		}
+	}
+
+	frc[radius] += interp_real*dt[0] + interp_comp*dt[1];
+
+	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
+	
+	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
+	
+	r += hypot(dt[0], dt[1]);
+	rn += hypot(interp_real, interp_comp);
+	
+	return true;
+}
+
+
+
+bool InterpolatedFRC::continue_frc_calc4(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+{
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode4(),weight);
+}
+
+bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
+{
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode3(),weight);
 }
 
 bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
@@ -193,10 +312,10 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	int y0 = (int) floor(yy);
 	int z0 = (int) floor(zz);
  
-	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1)
-	{
-		return false;
-	}
+// 	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1)
+// 	{
+// 		return false;
+// 	}
 	
 	// Have to get radial coordinates - x is fine as it is but the other two need translation ( after testing it seems like z does not need translation - more testing required)
 	int offset = (ny%2 == 0? 1:0);
@@ -250,6 +369,9 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	
 //	cout << "Current values are " << frc[radius] << " " << frc_norm_rdata[radius] << " " << frc_norm_dt[radius] << endl;
 	
+	r += hypot(dt[0], dt[1]);
+	rn += hypot(interp_real, interp_comp);
+	
 	return true;
 }
 
@@ -287,6 +409,9 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
+	
+	r += hypot(dt[0], dt[1]);
+	rn += hypot(interp_real, interp_comp);
 	
 	return true;
 }
@@ -339,10 +464,16 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 	quality_scores.set_snr_normed_frc_integral( snr_normed_frc_intergral );
 	quality_scores.set_normed_snr_integral( normed_snr_integral );
 	
+	if (rn!=0)
+	{
+		r = r/rn;
+	}
+	else r=1.0;
+	
+	quality_scores.set_norm( r );
+	
 	return quality_scores;
 }
-
-
 
 void FourierPixelInserter3D::init()
 {
@@ -504,11 +635,11 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 		for (int j = y0 - 1; j <= y0 + 1; j++) {
 			for (int i = l; i <= x0 + 2; i += 2) {
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = exp(-r / EMConsts::I3G);
+				float gg = weight * exp(-r / EMConsts::I3G);
 
-				(*pixel_operation)(rdata + i + j * nx + k * nxy, weight * gg * dt[0]);
-				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, weight * gg * dt[1]);
-				(*pixel_operation)(norm + i + j * nx + k * nxy, weight * gg);
+				(*pixel_operation)(rdata + i + j * nx + k * nxy, gg * dt[0]);
+				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, gg * dt[1]);
+				(*pixel_operation)(norm + i + j * nx + k * nxy, gg);
 			}
 		}
 	}
@@ -564,11 +695,11 @@ bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, cons
 		for (int j = y0 - 1; j <= y0 + 2; j++) {
 			for (int i = l; i <= x0 + 4; i += 2) {
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
-				float gg = exp(-r / EMConsts::I4G);
+				float gg = weight * exp(-r / EMConsts::I4G);
 
-				(*pixel_operation)(rdata + i + j * nx + k * nxy, weight * gg * dt[0]);
-				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, weight * gg * dt[1]);
-				(*pixel_operation)(norm + i + j * nx + k * nxy, weight * gg);
+				(*pixel_operation)(rdata + i + j * nx + k * nxy, gg * dt[0]);
+				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1,  gg * dt[1]);
+				(*pixel_operation)(norm + i + j * nx + k * nxy, gg);
 			}
 		}
 	}

@@ -313,7 +313,7 @@ namespace EMAN
 	  	 * @param num_particles_in_slice
 	  	 * @exception 
 		 */
-		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice);
+		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1);
 
 		virtual	EMData *finish();
 
@@ -374,6 +374,7 @@ namespace EMAN
 		}
 
 		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_frc_integral(); else {cout << "foo" << endl; return 2;}}
+		virtual float get_norm(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_norm(); else {cout << "foo" << endl; return 2;}}
 	  protected:
 	  	/** Preprocess the slice prior to insertion into the 3D volume
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right positions
@@ -410,6 +411,12 @@ namespace EMAN
 	
 		void load_inserter()
 		{
+			if ( inserter != 0 )
+			{
+				delete inserter;
+				inserter = 0;
+			}
+			
 			string mode = (string)params["mode"];
 			Dict parms;
 			parms["rdata"] = image->get_data();

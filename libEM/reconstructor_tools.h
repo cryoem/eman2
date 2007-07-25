@@ -428,7 +428,15 @@ namespace EMAN
 				gimx = EMAN::Interp::get_gimx();
 			}
 		
-			virtual ~FourierInserter3DMode5() {}
+			virtual ~FourierInserter3DMode5()
+			{
+				// Don't delete gimx it causes a seg fault
+// 				if ( gimx != 0 )
+// 				{
+// 					delete gimx;
+// 					gimx = 0;
+// 				}
+			}
 		
 			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1);
 		
@@ -530,42 +538,123 @@ namespace EMAN
 		public:
 			QualityScores() : frc_integral(0), snr_normed_frc_intergral(0), normed_snr_integral(0), norm(0) {}
 			QualityScores( const QualityScores& that ) : frc_integral(that.frc_integral), 
-						   snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral), norm(that.norm) {}
-						   QualityScores& operator=( const QualityScores& that ) 
-						   {
-							   frc_integral = that.frc_integral; 
-							   snr_normed_frc_intergral = that.snr_normed_frc_intergral;
-							   normed_snr_integral  = that.normed_snr_integral;
-							   norm = that.norm;
-							   return *this;
-						   }
-		
-						   ~QualityScores() {}
+				snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral), norm(that.norm) {}
+			QualityScores& operator=( const QualityScores& that ) 
+			{
+				frc_integral = that.frc_integral; 
+				snr_normed_frc_intergral = that.snr_normed_frc_intergral;
+				normed_snr_integral  = that.normed_snr_integral;
+				norm = that.norm;
+				return *this;
+			}
 
-						   float get_frc_integral() { return frc_integral; }
-						   float get_snr_normed_frc_integral() { return snr_normed_frc_intergral; }
-						   float get_normed_snr_integral() { return normed_snr_integral; }
-						   float get_norm() { return norm; }
-		
-						   void set_frc_integral( const float& score ) { frc_integral = score; }
-						   void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
-						   void set_normed_snr_integral(const float& score) { normed_snr_integral = score; }
-						   void set_norm( const float& score ) { norm = score; }
-		
-						   void debug_print()
-						   {
-							   cout << "frc " << frc_integral << " nfrc " << snr_normed_frc_intergral << " nsnr " << normed_snr_integral << " norm " << norm << endl;
-						   }
+			~QualityScores() {}
+
+			float get_frc_integral() { return frc_integral; }
+			float get_snr_normed_frc_integral() { return snr_normed_frc_intergral; }
+			float get_normed_snr_integral() { return normed_snr_integral; }
+			float get_norm() { return norm; }
+
+			void set_frc_integral( const float& score ) { frc_integral = score; }
+			void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
+			void set_normed_snr_integral(const float& score) { normed_snr_integral = score; }
+			void set_norm( const float& score ) { norm = score; }
+
+			void debug_print()
+			{
+				cout << "frc " << frc_integral << " nfrc " << snr_normed_frc_intergral << " nsnr " << normed_snr_integral << " norm " << norm << endl;
+			}
 		private:
 
 			float frc_integral, snr_normed_frc_intergral, normed_snr_integral, norm;
 		
 	};
 
+	class InterpolationFunctiod
+	{
+	public:
+		InterpolationFunctiod() {}
+		virtual ~InterpolationFunctiod() {}
+		
+		virtual float operate( const float radius ) const = 0;
+	};
+	
+	class InterpolationFunctiodMode3 : public InterpolationFunctiod
+	{
+	public:
+		InterpolationFunctiodMode3() {}
+		virtual ~InterpolationFunctiodMode3() {}
+		
+		virtual float operate( const float radius ) const
+		{
+			return  exp(-radius / EMConsts::I3G);
+		}
+	};
+	
+	class InterpolationFunctiodMode4 : public InterpolationFunctiod
+	{
+	public:
+		InterpolationFunctiodMode4() {}
+		virtual ~InterpolationFunctiodMode4() {}
+		
+		virtual float operate( const float radius ) const
+		{
+			return  exp(-radius / EMConsts::I4G);
+		}
+	};
+	
+	class InterpolationFunctiodMode5
+	{
+		public:
+			InterpolationFunctiodMode5() { gimx = EMAN::Interp::get_gimx(); }
+			virtual ~InterpolationFunctiodMode5()
+			{
+				if ( gimx != 0 )
+				{
+// 					delete gimx;
+// 					gimx = 0;
+				}
+			}
+		
+			virtual float operate( const int mmx, const int mmy, const int mmz ) const
+			{
+				return gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+			}
+		private:
+			float * gimx;
+	};
+
+	
+	class InterpolationFunctiodMode6 : public InterpolationFunctiod
+	{
+	public:
+		InterpolationFunctiodMode6() {}
+		virtual ~InterpolationFunctiodMode6() {}
+		
+		virtual float operate( const float radius ) const
+		{
+			return  exp(-radius / EMConsts::I5G);
+		}
+	};
+	
+	class InterpolationFunctiodMode7 : public InterpolationFunctiod
+	{
+	public:
+		InterpolationFunctiodMode7() {}
+		virtual ~InterpolationFunctiodMode7() {}
+		
+		virtual float operate( const float radius ) const
+		{
+			return  EMAN::Interp::hyperg(radius);
+		}
+	};
+	
+	
+	
 	class InterpolatedFRC
 	{
 		public:
-			InterpolatedFRC() : threed_rdata(0), frc(0), frc_norm_rdata(0), frc_norm_dt(0), size(0), pixel_radius_max(0) {}
+			InterpolatedFRC() : threed_rdata(0), frc(0), frc_norm_rdata(0), frc_norm_dt(0), size(0), pixel_radius_max(0), r(0), rn(0) {}
 
 			InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling=1.0 );
 			~InterpolatedFRC()
@@ -580,7 +669,13 @@ namespace EMAN
 			bool continue_frc_calc1(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
 			bool continue_frc_calc2(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
 			bool continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			bool continue_frc_calc4(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			bool continue_frc_calc5(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			bool continue_frc_calc6(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			bool continue_frc_calc7(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
 	
+			bool continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctiod& functoid, const float& weight = 1.0 );
+			
 			unsigned int get_size() { return size; }
 	
 			float operator[](const unsigned int& idx) { return frc[idx]; }
@@ -607,10 +702,10 @@ namespace EMAN
 					frc_norm_dt = 0;
 				}
 			}
-		// Pointers to the 3D (complex) data 
+			// Pointers to the 3D (complex) data 
 			float* threed_rdata;
 
-		// I wish I could make these unsigned but everything else is ints, so these are too.
+			// I wish I could make these unsigned but everything else is ints, so these are too.
 			int nx, ny, nz, nxy;
 	
 			float bin;
@@ -619,11 +714,15 @@ namespace EMAN
 			float* frc_norm_rdata;
 			float* frc_norm_dt;
 	
-		// The maximum dimension (radius) of a considered pixel
+			// The maximum dimension (radius) of a considered pixel
 			int size;
 			int pixel_radius_max;
 			int pixel_radius_max_square;
-
+			
+			
+			// values used for calculating the normalization value
+			float r, rn;
+			
 			int off[8];
 			float g[8];
 	};

@@ -425,6 +425,12 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 
 	int rl = Util::square(ny / 2 - 1);
 	
+	string mode = (string) params["mode"];
+	if ( mode != inserter->get_name() )
+	{
+		load_inserter();
+	}
+	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
 		Transform3D euler = arg.get_sym((string) params["sym"], i);
@@ -492,12 +498,14 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 
 	float dt[2];
 	
-	int mode = params["mode"];
+	// The insertion mode can possibly change - though you wouldn't expect it to happen, it is useful for testing purposes
+	string stringmode = (string)params["mode"];
+	if ( stringmode != inserter->get_name() )
+	{
+		load_inserter();
+	}
 	
-	float norm_vals[2];
-	float r = 0.0, rn = 0.0;
-	float * rdata = image->get_data();
-	float * norm = tmp_data->get_data();
+	int mode = params["mode"];
 	
 	for (int y = 0; y < ny; y++) {
 		for (int x = 0; x < nx / 2; x++) {
@@ -538,25 +546,22 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 				case 3:
 					ifrc.continue_frc_calc3(xx, yy, zz, dt, weight);
 					break;
+				case 4:
+					ifrc.continue_frc_calc4(xx, yy, zz, dt, weight);
+					break;
+				case 5:
+					ifrc.continue_frc_calc5(xx, yy, zz, dt, weight);
+					break;
+				case 6:
+					ifrc.continue_frc_calc6(xx, yy, zz, dt, weight);
+					break;
+				case 7:
+					ifrc.continue_frc_calc7(xx, yy, zz, dt, weight);
+					break;
 				default:
 					cout << "Warning, nothing happened the mode " << mode << " was unsupported" << endl;
 					break;
 			}
-
-			
-			int x0=2*(int)floor(xx+.5);
-			int y0=(int)floor(yy+.5);
-			int z0=(int)floor(zz+.5);
-			int i=x0+y0*nx+z0*nx*ny;
-			
-			//if (fabs(norm[i])<threshold) continue;
-	
-			norm_vals[0]=hypot(rdata[i],rdata[i+1]);
-			norm_vals[1]=hypot(dat[x*2+y*nx],dat[x*2+1+y*nx]);
-	
-			r+=norm[i]*norm_vals[1];
-			rn+=norm[i]*norm_vals[0];
-			
 			
 		}
 	}
@@ -567,15 +572,8 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 		inserter->set_pixel_add_operation();
 		do_insert_slice_work(slice, euler);
 	}
-	if (rn!=0)
-	{
-		r= r/rn;
-	}
-	else r=1.0;
-	
 	
 	QualityScores q_scores = ifrc.finish( num_particles_in_slice );
-	q_scores.set_norm( r );
 	//q_scores.debug_print();
 	quality_scores.push_back(q_scores);
 
