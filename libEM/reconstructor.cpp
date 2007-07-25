@@ -1834,7 +1834,6 @@ EMData* nnSSNR_Reconstructor::finish()
 				argx = std::sqrt(argy + float(ix*ix)*dx2);
 				int r = Util::round(float(inc)*argx);
 				if ( r >= 0 && Kn > 4.5f ) {
-					//float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);    //  Why this is not used??
 					if ( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -1868,7 +1867,6 @@ EMData* nnSSNR_Reconstructor::finish()
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
-						//tmp = tmp * wght;
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
@@ -2706,7 +2704,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 					argx = std::sqrt(argy + float(ix*ix)*dx2);
 					int r = Util::round(float(inc)*argx);
 					if ( r >= 0 && Kn > 4.5f ) {
-						//float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;  // WHY THIS IS NOT USED HERE?
 						if ( m_weighting == ESTIMATE ) {
 							int cx = ix;
 							int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -2739,7 +2736,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 							int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 							Assert( r >=0 && r < (int)pow_b.size() );
 							wght = pow_b[r] / ( 1.0 - alpha * sum );
-							//tmp = tmp * wght;
 						} // end of ( m_weighting == ESTIMATE )
 						float nominator   = (*m_wptr2)(ix,iy,iz)/Kn;
 						float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
