@@ -90,9 +90,9 @@ int dscal_(long int *n, double *da, double *dx, long int *incx);
 
 int dtrsl_(double *t, long int *ldt, long int *n, double *b, long int *job, long int *info);
 
-long int s_cmp(char *str1, char *str2, long int l1, long int l2);
+long int s_cmp(char *str1, const char *const str2, long int l1, long int l2);
 
-int s_copy(char *str1, char *str2, long int l1, long int l2);
+int s_copy(char *str1, const char *const str2, long int l1, long int l2);
 
 
 

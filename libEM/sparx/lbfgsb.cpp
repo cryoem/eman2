@@ -180,7 +180,7 @@ const int SIXTY=60;
   return 0;
 }*/
 
-long int s_cmp(char *str1, char *str2, long int l1, long int l2) {
+long int s_cmp(char *str1, const char *const str2, long int l1, long int l2) {
 	long int l;
 	int i = 0;
 	long int flag = 0;
@@ -194,7 +194,7 @@ long int s_cmp(char *str1, char *str2, long int l1, long int l2) {
 	return flag;
 }
 
-int s_copy(char *str1, char *str2, long int l1, long int l2) {
+int s_copy(char *str1, const char *const str2, long int l1, long int l2) {
 	long int l;
 	int i = 0;
 	l = min_(l1,l2);
@@ -386,7 +386,7 @@ long int csave_len;*/
     long int i__1;
 
     /* Builtin functions */
-    long int s_cmp(char *, char *, long int, long int);
+    long int s_cmp(char *, const char *const, long int, long int);
 
     /* Local variables */
     static long int lsnd, lsgo, lygo, l1, l2, l3, ld, lr, lt;
@@ -696,8 +696,8 @@ actorization in formt;\002,/,\002   refresh the lbfgs memory and restart the\
 //    olist o__1;
 
     /* Builtin functions */
-    long int s_cmp(char *, char *, long int, long int);
-    /* Subroutine */ int s_copy(char *, char *, long int, long int);
+    long int s_cmp(char *, const char *const, long int, long int);
+    /* Subroutine */ int s_copy(char *, const char *const, long int, long int);
     //long int f_open(olist *), s_wsfe(cilist *), do_fio(long int*, char*, long int), e_wsfe();
 
     /* Local variables */
@@ -2511,7 +2511,7 @@ long int task_len;*/
     long int i__1;
 
     /* Builtin functions */
-    /* Subroutine */ int s_copy(char *, char *, long int, long int);
+    /* Subroutine */ int s_copy(char *, const char *const, long int, long int);
 
     /* Local variables */
     static long int i__;
@@ -3333,9 +3333,9 @@ long int csave_len;*/
     double d__1;
 
     /* Builtin functions */
-    long int s_cmp(char *, char *, long int, long int);
+    long int s_cmp(char *, const char *const, long int, long int);
     //double sqrt();
-    /* Subroutine */ int s_copy(char *, char *, long int, long int);
+    /* Subroutine */ int s_copy(char *, const char *const, long int, long int);
 
     /* Local variables */
     extern double ddot_(long int *n, double *dx, long int *incx, double *dy, long int *incy);
@@ -3728,7 +3728,7 @@ p,2(1x,d10.3))";*/
 //    long int i__1;
 
     /* Builtin functions */
-    /* Subroutine */ int s_copy(char *, char *, long int, long int);
+    /* Subroutine */ int s_copy(char *, const char *const, long int, long int);
  //   long int s_wsle(cilist *), do_lio(long int *, long int *, char *, long int), e_wsle(), s_wsfe(cilist *), do_fio(long int*, char*, long int), e_wsfe();
 
     /* Local variables */
@@ -3903,7 +3903,7 @@ x,\002-\002,10x,\002-\002)";*/
 //    long int i__1;
 
     /* Builtin functions */
-    long int s_cmp(char *, char *, long int, long int);
+    long int s_cmp(char *, const char *const, long int, long int);
 //    long int s_wsfe(cilist *), e_wsfe(), do_fio(long int*, char*, long int), s_wsle(cilist *), do_lio(long int *, long int *, char *, long int), e_wsle();
 
     /* Local variables */
@@ -4557,8 +4557,8 @@ long int task_len;*/
     double d__1;
 
     /* Builtin functions */
-    long int s_cmp(char *, char *, long int, long int);
-    /* Subroutine */ int s_copy(char *, char *, long int, long int);
+    long int s_cmp(char *, const char *const, long int, long int);
+    /* Subroutine */ int s_copy(char *, const char *const, long int, long int);
 
     /* Local variables */
     static long int stage;
