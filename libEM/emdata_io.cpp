@@ -178,7 +178,7 @@ void EMData::write_image(const string & filename, int img_index,
 					const char *comment = attr_dict["LST.comment"];
 					char *lstdata = new char[1024];
 					sprintf(lstdata, "%d\t%s", refn, reffile);
-					if (comment != "") {
+					if(strcmp(comment, "") != 0) {
 						sprintf(lstdata+strlen(lstdata), "\t%s\n", comment);
 					}
 					else {

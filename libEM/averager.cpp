@@ -697,7 +697,7 @@ EMData * CtfAverager::finish()
 		snri[i] *= nimg / snrn[i];
 	}
 
-	if (outfile != "") {
+	if(strcmp(outfile, "") != 0) {
 		Util::save_data(0, 1, snri, ny / 2, outfile);
 	}
 	
