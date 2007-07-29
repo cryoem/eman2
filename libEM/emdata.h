@@ -52,9 +52,6 @@ using std::map;
 //using std::complex;	//comment this out for conflict with ACML
 using std::ostream;
 
-#include <utility>
-using std::pair;
-
 namespace EMAN
 {
 	class ImageIO;
@@ -123,18 +120,6 @@ namespace EMAN
 		 * @param is_real boolean to specify real(true) or complex(false) image, default real */
 		EMData(int nx, int ny, int nz=1, bool is_real=true);
 		
-		/** Construct from an EMData (copy constructor).
-		 * Performs a deep copy 
-		 * @param that the EMData to copy 
-		*/
-		EMData(const EMData& that);
-		
-		/** EMData assignment operator
-		 * Performs a deep copy 
-		 * @param that the EMData to copy 
-		*/
-		EMData& operator=(const EMData& that);
-		
 		/**  Do the Fourier Harmonic Transform  PRB
 		 * Takes a real image, returns the FH
 		 * Sets the EMDATA_FH switch to indicate that it is an FH image
@@ -201,18 +186,6 @@ namespace EMAN
 		 * @return The top half of this image.
 		 */
 		EMData *get_top_half() const;
-
-		/** Get the normalization and phase residual values
-		 * Used for normalizaton and error measurement when 2D slices are inserted into a 3D volume of Fourier pixels
-		 * Originally added for use by the FourierReconstructor object
-		 * @return the normalization const (pair.first) and the phase residual (pair.second)
-		 * @param slice -the slice to be inserted into the 3D volume
-		 * @param euler - the euler angle orientation of the slice
-		 * @exception ImageDimensionException If this image is not 3D.ImageFormatException
-		 * @exception ImageFormatException If this image is not complex
-		 * @exception ImageFormatException If the slice not complex
-		 */
-		//pair<float, float> get_normalization_and_phaseres( const EMData* const slice, const Transform3D& euler );
 		
 		
 		/** This will extract an arbitrarily oriented and sized region from the
@@ -640,6 +613,7 @@ namespace EMAN
 		void create_ctf_map(CtfMapType type, XYData * sf = 0);
 #endif
 
+		
 
 		/** @ingroup tested2 */
 		/** Finds common lines between 2 complex images.
@@ -737,7 +711,7 @@ namespace EMAN
 		void set_xyz_origin(float origin_x, float origin_y, float origin_z);
 		void scale_pixel(float scale_factor) const;
 		void save_byteorder_to_dict(ImageIO * imageio);
-
+		
 	private:
 		/** to store all image header info */
 		mutable Dict attr_dict; 

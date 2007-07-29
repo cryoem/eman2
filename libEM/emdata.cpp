@@ -119,72 +119,6 @@ EMData::EMData(const string& filename, int image_index) :
 	EXITFUNC;
 }
 
-EMData::EMData(const EMData& that) :
-	rdata(0), supp(0)
-{
-	ENTERFUNC;
-	
-	// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
-
-	nx = that.nx;
-	ny = that.ny;
-	nz = that.nz;
-
-	if (that.rdata)
-	{
-		set_size(that.nx, that.ny, that.nz);
-		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
-	}
-	flags = that.flags;
-	all_translation = that.all_translation;
-	path = that.path;
-	pathnum = that.pathnum;
-	attr_dict = that.attr_dict;
-	
-	xoff = that.xoff;
-	yoff = that.yoff;
-	zoff = that.zoff;
-
-	changecount = 0;
-	update();
-
-	EMData::totalalloc++;
-	
-	ENTERFUNC;	
-}
-
-EMData& EMData::operator=(const EMData& that)
-{
-	ENTERFUNC;
-	
-	if ( this != &that )
-	{
-		free_memory();
-		
-		set_size(that.nx, that.ny, that.nz);
-		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
-
-		flags = that.flags;
-	
-		all_translation = that.all_translation;
-	
-		path = that.path;
-		pathnum = that.pathnum;
-		attr_dict = that.attr_dict;
-
-		xoff = that.xoff;
-		yoff = that.yoff;
-		zoff = that.zoff;
-
-		changecount = that.changecount;
-
-		update();
-	}
-	
-	EXITFUNC;
-	return *this;
-}
-
 EMData::EMData(int nx, int ny, int nz, bool is_real)
 {
 	ENTERFUNC;
@@ -241,8 +175,15 @@ using std::endl;
 EMData::~EMData()
 {
 	ENTERFUNC;
-	
-	free_memory();
+	if (rdata) {
+		free(rdata);
+		rdata = 0;
+	}
+
+	if (supp) {
+		free(supp);
+		supp = 0;
+	}
 
 	EMData::totalalloc--;
 #ifdef MEMDEBUG
@@ -250,74 +191,6 @@ EMData::~EMData()
 #endif
 	EXITFUNC;
 }
-
-// pair<float, float> EMData::get_normalization_and_phaseres( const EMData* const slice, const Transform3D& euler )
-// {
-// 	if (get_ndim() != 3) {
-// 		throw ImageDimensionException("Only 3D images are capable of calculating the normalization and phase residual values in this function");
-// 	}
-// 
-// 	if ( !is_complex() )
-// 	{
-// 		throw ImageFormatException("The image pointed to by this is not complex.")
-// 	}
-// 
-// 	if ( !slice->is_complex() )
-// 	{
-// 		throw ImageFormatException("The slice is not complex.")
-// 	}
-// 	
-// 	int rl = Util::square(ny / 2 - 1);
-// 
-// 	// The thresholding value mimics the bevavior of this function in eman1
-// 	float threshold = 2.0*get_attr("sigma");
-// 
-// 	float dt[2];
-// 
-// 	float * data = slice->get_data();
-// 
-// 	float r=0, rn=0; // normalization
-// 	float pr=0, prn=0;	// phase residual
-// 
-// 	for (int y = 0; y < ny; y++)
-// 	{
-// 		for (int x = 0; x < nx / 2; x++)
-// 		{
-// 			if ((x * x + Util::square(y - ny / 2)) >= rl)
-// 				continue;
-// 
-// 			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
-// 			float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
-// 			float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
-// 			float cc = 1;
-// 
-// 			if (xx < 0) {
-// 				xx = -xx;
-// 				yy = -yy;
-// 				zz = -zz;
-// 				cc = -1.0;
-// 			}
-// 
-// 			yy += ny / 2;
-// 			zz += nz / 2;
-// 
-// 			int x0=2*(int)floor(xx+.5);
-// 			int y0=(int)floor(yy+.5);
-// 			int z0=(int)floor(zz+.5);
-// 
-// 
-// 			int i=x0+y0*nx+z0*nx*ny;
-// 
-// 			// Do not consider pixels with amplitudes that are considered small
-// 			// FIXME: is this assuming the complex data is stored as amplitude and phase data? If so this will not work
-// 			if (fabs(rdata[i])<threshold) continue;
-// 			
-// 			dt[0]=hypot(rdata[i],rdata[i+1]);
-// 			dt[1]=hypot(data[x*2+y*nx],data[x*2+1+y*nx]);
-// 
-// 			r+=rdata[i]*dt[1];
-// 			rn+=rdata[i]*dt[0];
-// }
 
 // Clip inplace variables is a local class used from convenience in EMData::clip_inplace
 // Added by d.woolford
@@ -610,7 +483,7 @@ void EMData::clip_inplace(const Region & area)
 
 EMData *EMData::get_clip(const Region & area) const
 {
-		ENTERFUNC;
+	ENTERFUNC;
 	if (get_ndim() != area.get_ndim()) {
 		LOGERR("cannot get %dD clip out of %dD image", get_ndim(), area.get_ndim());
 		return 0;
@@ -1277,7 +1150,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 							  src_data[ii + nxy + nx + 1],
 							  tuvx, tuvy, tuvz);
 #ifdef DEBUG
-						printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
+		          		printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
 						std::cout << src_data[ii] << std::endl;
 #endif
 					}
@@ -2741,8 +2614,6 @@ void EMData::update_stat() const
 
 	int n_nonzero = 0;
 
-	//cout << "point 1" << endl;
-	//cout << "size is " << nx << " " << ny << " " << nz << endl;
 	for (int i = 0; i < nx*ny*nz; i += step) {
 		float v = rdata[i];
 	#ifdef _WIN32
@@ -2756,7 +2627,7 @@ void EMData::update_stat() const
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
-	//cout << "Point 2" << endl;
+
 	int n = nx * ny * nz / step;
 	double mean = sum / n;
 

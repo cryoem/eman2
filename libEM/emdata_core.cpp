@@ -40,33 +40,23 @@
 
 using namespace EMAN;
 
-// debug only
-#include <iostream>
-using std::cout;
-using std::endl;
-
-void EMData::free_memory()
-{
-	ENTERFUNC;
-
-	if (rdata) {
-		free(rdata);
-		rdata = 0;
-	}
-
-	if (supp) {
-		free(supp);
-		supp = 0;
-	}
-
-	EXITFUNC;
-}
-
 EMData * EMData::copy() const
 {
 	ENTERFUNC;
-	
-	EMData *ret = new EMData(*this);
+	EMData *ret = new EMData();
+
+	ret->set_size(nx, ny, nz);
+	float *data = ret->get_data();
+	memcpy(data, rdata, nx * ny * nz * sizeof(float));
+
+	ret->flags = flags;
+
+	ret->all_translation = all_translation;
+
+	ret->path = path;
+	ret->pathnum = pathnum;
+	ret->attr_dict = attr_dict;
+	ret->update();
 
 	EXITFUNC;
 	return ret;
@@ -87,17 +77,12 @@ EMData *EMData::copy_head() const
 	ret->path = path;
 	ret->pathnum = pathnum;
 
-// should these be here? d.woolford I did not comment them out, merely place them here (commented out) to draw attention
-// 	ret->xoff = xoff;
-// 	ret->yoff = yoff;
-// 	ret->zoff = zoff;
-// 	ret->changecount = changecount;
-
 	ret->update();
 
 	EXITFUNC;
 	return ret;
 }
+
 
 void EMData::add(float f,int keepzero)
 {
@@ -848,7 +833,6 @@ EMData * EMData::absi() //abs has half of x dimension for a complex image
 
 	EXITFUNC;
 }
-
 
 EMData * EMData::amplitude()
 {
