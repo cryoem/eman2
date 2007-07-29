@@ -1,1 +1,1 @@
-INSTALL_FILES(/include "^.+\\.h$")
+INSTALL_FILES(/include/sparx "^.+\\.h$")
