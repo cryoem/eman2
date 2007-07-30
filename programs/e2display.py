@@ -37,7 +37,7 @@ import sys
 from optparse import OptionParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-#from OpenGL import GL,GLU,GLUT
+from OpenGL import GL,GLU,GLUT
 #from valslider import ValSlider
 #from math import *
 #import numpy
@@ -63,6 +63,7 @@ def main():
 	if len(args)<1 : parser.error("Input image required")
 
 	logid=E2init(sys.argv)
+        GLUT.glutInit(sys.argv)
 	display(args)
 	E2end(logid)
 
