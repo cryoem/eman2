@@ -1731,14 +1731,10 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 						} else {
 							iya = ny + iyn + 1;
 						}
-						//tmpq = (*m_wvolume)(ixn,iya,iza);
 						cmplx(ixn,iya,iza)    += btq*ctf;
 						(*wptr)(ixn,iya,iza)  += ctf*ctf;						
-						//(*wptr5)(ixn,iya,iza) += ctf*ctf*std::norm(tmpq);
 						(*wptr2)(ixn,iya,iza) += std::norm(btq);
-						//tmp2 = tmpq*ctf*conj(btq);
 						(*wptr3)(ixn,iya,iza) += 1;
-						//(*wptr4)(ixn,iya,iza) += -2.*std::real(tmp2);
 					} else {
 						int izt, iyt;
 						if (izn > 0) {
@@ -1751,14 +1747,10 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 						} else {
 							iyt = -iyn + 1;
 						}
-						//tmpq = (*m_wvolume)(-ixn,iyt,izt);
 						cmplx(-ixn,iyt,izt)     += std::conj(btq)*ctf;
 						(*wptr) (-ixn,iyt,izt)  += ctf*ctf;
-						//(*wptr5)(-ixn,iyt,izt)  += ctf*ctf*std::norm(tmpq);
 						(*wptr2)(-ixn,iyt,izt)  += std::norm(btq);
-						//tmp2 = tmpq*ctf*conj(btq);
 						(*wptr3)(-ixn,iyt,izt) += 1;
-						//(*wptr4)(-ixn,iyt,izt)  += -2.*std::real(tmp2);
 					}
 				}
 			}

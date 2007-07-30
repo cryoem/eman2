@@ -2600,17 +2600,11 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
 	Assert( padfft != NULL );
-    	float tmp = padfft->get_attr("ctf_applied");
-	int   ctf_applied = (int) tmp;
+	int   ctf_applied = (int) padfft->get_attr("ctf_applied");
 	
 	// insert slice for all symmetry related positions
-//	if ( params.has_key("fftvol"))	wiener =  m_volume->get_attr("wiener");
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-//		if ( wiener == 0 )
-//		m_volume->nn_SSNR_ctf( m_wptr, m_wptr2, m_wptr3, m_wptr4, m_wptr5, padfft, m_wvolume, tsym, mult);
-//		else 
-//		m_wvolume->nn_wiener(m_wptr, m_wptr3, padfft, tsym, mult);
 		if (ctf_applied) {
 			m_volume->nn_SSNR_ctf_applied( m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);
 		} else {
@@ -2648,37 +2642,6 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
 			
-/*	if (wiener == 1) {// pre-calculate Wiener volume for SSNR calculation, Weighting factor is NOT applied in this step!
-		m_wvolume->symplane0(m_wptr);
-		float osnr = 1.0f/m_snr;
-		for (int iz = 1; iz <= m_vnzp; iz++) {
-			if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
-			argz = float(kz*kz)*dz2;  
-			for (int iy = 1; iy <= m_vnyp; iy++)  {
-				if ( iy-1 > m_vnyc ) ky = iy-1-m_vnyp; else ky = iy-1;
-				argy = argz + float(ky*ky)*dy2;
-				for (int ix = 0; ix <= m_vnxc; ix++) {
-					float Kn = (*m_wptr3)(ix,iy,iz);
-					if ( Kn > 0.0f )  {  
-						argx = std::sqrt(argy + float(ix*ix)*dx2);
-						float tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
-						m_wvolume->cmplx(ix,iy,iz) *= tmp; 
-						if (m_wvolume->is_fftodd()) {
-							float temp = float(iz-1+iy-1+ix)/float(m_vnyp)*M_PI;
-							complex<float> temp2 = complex<float>(cos(temp),sin(temp));
-							m_wvolume->cmplx(ix,iy,iz) *= temp2;
-						}
-					}
-				}
-			}
-		}
-		EMData* win = m_wvolume->do_ift();
-		win->window_center(m_vnx);
-		m_wptr->to_zero(); 
-		m_wptr->set_array_offsets(0,1,1);
-		wiener = 0; // Turn off flag
-		return win; // The function requires a returned object, otherwise is not neccessary
-	} else {//Calculate SSNR  */
 	EMData* vol_ssnr = new EMData();
 	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	vol_ssnr->to_zero();
