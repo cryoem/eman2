@@ -1465,6 +1465,9 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
       // radius of the ring
       inr = numr(1,it);
 
+      // "F" means a full circle interpolation
+      // "H" means a half circle interpolation
+       
       l = numr(3,it);
       if ( mode == 'h' || mode == 'H' ) { 
          lt = l / 2;
@@ -1479,20 +1482,20 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
       xold  = 0.0+cns2;
       yold  = inr+cnr2;
 
-      circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);
+      circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on 90 degree
 
       xold  = inr+cns2;
       yold  = 0.0+cnr2;
-      circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+      circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
 
       if ( mode == 'f' || mode == 'F' ) {
          xold = 0.0+cns2;
          yold = -inr+cnr2;
-         circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+         circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
 
          xold = -inr+cns2;
          yold = 0.0+cnr2;
-         circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+         circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
       }
       
       for (jt=1; jt<=nsim; jt++) {
@@ -1502,20 +1505,20 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 
          xold = x+cns2;
          yold = y+cnr2;
-         circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+         circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the first 
 
          xold = y+cns2;
          yold = -x+cnr2;
-         circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+         circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);    // Sampling on the second
 
          if ( mode == 'f' || mode == 'F' ) {
             xold = -x+cns2;
             yold = -y+cnr2;
-            circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+            circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third
 
             xold = -y+cns2;
             yold = x+cnr2;
-            circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);
+            circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the fourth
          }
       } // end for jt
    } //end for it
@@ -2660,8 +2663,8 @@ c
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
 	for (i=1; i<=nring; i++) {
 
-      numr3i = numr(3,i);
-      numr2i = numr(2,i);
+      numr3i = numr(3,i);	// Number of samples of this ring 
+      numr2i = numr(2,i);	// The beginning point of this ring
 
       t1   = circ1(numr2i) * circ2(numr2i);
       q(1) += t1;
@@ -2677,6 +2680,13 @@ c
 
 	for (j=3; j<=numr3i; j += 2) {
 		jc     = j+numr2i-1;
+
+// Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
+//   			          ----- -----    ----- -----
+//      			   t1     t2      t3    t4 	
+// Here, conj(c1+c2i)*conj(d1+d2i) = (c1*d1-c2*d2)+(-c1*d2-c2*d1)i
+//     		                      ----- -----    ----- -----
+//     			               t1    t2       t3    t4 	
 
 		c1     = circ1(jc);
 		c2     = circ1(jc+1);
@@ -15682,6 +15692,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 	//     This is the call to the L-BFGS-B code.
 	// (* call the L-BFGS-B routine with task='START' once before loop *)
 	setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+	//int step = 1;
 
  	// (* while routine returns "FG" or "NEW_X" in task, keep calling it *)
 	while (strncmp(task,"FG",2)==0 || strncmp(task,"NEW_X",5)==0) {
@@ -15698,7 +15709,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		delete rot;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-4;
+		float dt = 1.0e-2;
 		rot = new EMData();
 		rot = image->rot_scale_trans2D(x[0]+dt, x[1], x[2], 1.0);
 		f1 = rot->cmp("ccc", refim, Dict("mask", mask));
@@ -15723,12 +15734,15 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		
 		//c          go back to the minimization routine.
 		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+		//step++;
   	}
 	
+	//printf("Total step is %d\n", step);
 	vector<float> res;
 	res.push_back(x[0]);
 	res.push_back(x[1]);
 	res.push_back(x[2]);	
+	//res.push_back(step);
 	return res;
 }
 
@@ -15773,6 +15787,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 	//     This is the call to the L-BFGS-B code.
 	// (* call the L-BFGS-B routine with task='START' once before loop *)
 	setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+	//int step = 1;
 
  	// (* while routine returns "FG" or "NEW_X" in task, keep calling it *)
 	while (strncmp(task,"FG",2)==0 || strncmp(task,"NEW_X",5)==0) {
@@ -15789,7 +15804,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		delete rot;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-4;
+		float dt = 1.0e-2;
 		rot = new EMData();
 		rot = image->rot_scale_conv7((x[0]+dt)*pi/180, x[1], x[2], kb, 1.0);
 		f1 = rot->cmp("ccc", refim, Dict("mask", mask));
@@ -15814,12 +15829,15 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		
 		//c          go back to the minimization routine.
 		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+		//step++;
   	}
 	
+	//printf("Total step is %d\n", step);
 	vector<float> res;
 	res.push_back(x[0]);
 	res.push_back(x[1]);
-	res.push_back(x[2]);	
+	res.push_back(x[2]);
+	//res.push_back(step);	
 	return res;
 }
 
