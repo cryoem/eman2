@@ -2641,7 +2641,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
-			
+
 	EMData* vol_ssnr = new EMData();
 	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
 	vol_ssnr->to_zero();
@@ -2711,9 +2711,8 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
-					float nominator   = (*m_wptr2)(ix,iy,iz)/Kn;
-//					float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
-					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/((*m_wptr)(ix,iy,iz)))/(Kn*(Kn-1.0f));
+					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
+					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/((Kn-1.0f));
 					// Skip Friedel related values
 					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
 						if ( r <= inc ) {
