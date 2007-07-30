@@ -15709,7 +15709,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		delete rot;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-2;
+		float dt = 1.0e-3;
 		rot = new EMData();
 		rot = image->rot_scale_trans2D(x[0]+dt, x[1], x[2], 1.0);
 		f1 = rot->cmp("ccc", refim, Dict("mask", mask));
@@ -15717,6 +15717,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 		g[0] = (f1-f)/dt;
 		delete rot;
 
+		dt = 1.0e-2;
 		rot = new EMData();
 		rot = image->rot_scale_trans2D(x[0], x[1]+dt, x[2], 1.0);
 		f2 = rot->cmp("ccc", refim, Dict("mask", mask));		
@@ -15804,7 +15805,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		delete rot;
 		
 	      	//        Compute gradient g for the sample problem.
-		float dt = 1.0e-2;
+		float dt = 1.0e-3;
 		rot = new EMData();
 		rot = image->rot_scale_conv7((x[0]+dt)*pi/180, x[1], x[2], kb, 1.0);
 		f1 = rot->cmp("ccc", refim, Dict("mask", mask));
@@ -15812,6 +15813,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		g[0] = (f1-f)/dt;
 		delete rot;
 
+		dt = 0.5e-3;
 		rot = new EMData();
 		rot = image->rot_scale_conv7(x[0]*pi/180, x[1]+dt, x[2], kb, 1.0);
 		f2 = rot->cmp("ccc", refim, Dict("mask", mask));		

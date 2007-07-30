@@ -2336,24 +2336,24 @@ EMData* nn4_ctfReconstructor::finish()
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor() 
 {
     m_volume  = NULL;
-    m_wvolume = NULL; 
+//    m_wvolume = NULL; 
     m_wptr    = NULL;
     m_wptr2   = NULL;
     m_wptr3   = NULL;
-    m_wptr4   = NULL;	
-    m_wptr5   = NULL;
+//    m_wptr4   = NULL;	
+//    m_wptr5   = NULL;
     m_result  = NULL;
 }
 
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign)
 {
     m_volume  = NULL;
-    m_wvolume = NULL; 
+//    m_wvolume = NULL; 
     m_wptr    = NULL;
     m_wptr2   = NULL;
     m_wptr3   = NULL;
-    m_wptr4   = NULL;
-    m_wptr5   = NULL;
+//    m_wptr4   = NULL;
+//    m_wptr5   = NULL;
     m_result  = NULL;
 
     setup( symmetry, size, npad, snr, sign );
@@ -2375,10 +2375,10 @@ nnSSNR_ctfReconstructor::~nnSSNR_ctfReconstructor()
         checked_delete( m_wptr2 );
    if ( m_delete_weight3 )
         checked_delete( m_wptr3 );
-   if ( m_delete_weight4 )
+/*   if ( m_delete_weight4 )
         checked_delete( m_wptr4 );
    if ( m_delete_weight5 )
-        checked_delete( m_wptr5 );	
+        checked_delete( m_wptr5 );	*/
    checked_delete( m_result );
 }
 
@@ -2424,12 +2424,12 @@ void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad,
     m_vnzc      = m_vnzp/2;
 
     buildFFTVolume();
-    buildWFFTVolume();
+//    buildWFFTVolume();
     buildNormVolume();
     buildNorm2Volume();
     buildNorm3Volume();
-    buildNorm4Volume();
-    buildNorm5Volume();
+//    buildNorm4Volume();
+//    buildNorm5Volume();
 }
 
 void nnSSNR_ctfReconstructor::buildFFTVolume() {
@@ -2460,7 +2460,7 @@ void nnSSNR_ctfReconstructor::buildFFTVolume() {
 	m_volume->set_array_offsets(0,1,1);
 }
 
-void nnSSNR_ctfReconstructor::buildWFFTVolume() {	
+/*void nnSSNR_ctfReconstructor::buildWFFTVolume() {	
 	int offset = 2 - m_vnxp%2;        
 	if( params.has_key("fftwvol") ) {
 		m_wvolume = params["fftwvol"]; 
@@ -2484,7 +2484,7 @@ void nnSSNR_ctfReconstructor::buildWFFTVolume() {
 	m_wvolume->set_fftpad(true);
 	m_wvolume->set_attr("npad", m_npad);
 	m_wvolume->set_array_offsets(0,1,1);
-}
+}*/
 
 
 void nnSSNR_ctfReconstructor::buildNormVolume() 
@@ -2528,7 +2528,8 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	m_wptr3->to_zero();
 	m_wptr3->set_array_offsets(0,1,1);
 }
-void nnSSNR_ctfReconstructor::buildNorm4Volume() {
+
+/*void nnSSNR_ctfReconstructor::buildNorm4Volume() {
 
 	if( params.has_key("weight4") ) {
 		m_wptr4          = params["weight4"]; 
@@ -2541,6 +2542,7 @@ void nnSSNR_ctfReconstructor::buildNorm4Volume() {
 	m_wptr4->to_zero();
 	m_wptr4->set_array_offsets(0,1,1);
 }
+
 void nnSSNR_ctfReconstructor::buildNorm5Volume() {
 
 	if( params.has_key("weight5") ) {
@@ -2553,7 +2555,8 @@ void nnSSNR_ctfReconstructor::buildNorm5Volume() {
 	m_wptr5->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr5->to_zero();
 	m_wptr5->set_array_offsets(0,1,1);
-}
+}*/
+
 int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform3D& t) {
 	// sanity checks
 	if (!slice) {
@@ -2597,15 +2600,22 @@ int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Tran
 int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform3D& t, int mult )
 {
 	Assert( padfft != NULL );
+    	float tmp = padfft->get_attr("ctf_applied");
+	int   ctf_applied = (int) tmp;
+	
 	// insert slice for all symmetry related positions
-	if ( params.has_key("fftvol"))
-		wiener =  m_volume->get_attr("wiener");
+//	if ( params.has_key("fftvol"))	wiener =  m_volume->get_attr("wiener");
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform3D tsym = t.get_sym(m_symmetry, isym);
-		if ( wiener == 0 )
-		m_volume->nn_SSNR_ctf( m_wptr, m_wptr2, m_wptr3, m_wptr4, m_wptr5, padfft, m_wvolume, tsym, mult);
-		else 
-		m_wvolume->nn_wiener(m_wptr, m_wptr3, padfft, tsym, mult);	
+//		if ( wiener == 0 )
+//		m_volume->nn_SSNR_ctf( m_wptr, m_wptr2, m_wptr3, m_wptr4, m_wptr5, padfft, m_wvolume, tsym, mult);
+//		else 
+//		m_wvolume->nn_wiener(m_wptr, m_wptr3, padfft, tsym, mult);
+		if (ctf_applied) {
+			m_volume->nn_SSNR_ctf_applied( m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);
+		} else {
+			m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);		
+		}
 	}
 	
 	return 0;
@@ -2636,8 +2646,9 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
-	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);		
-	if (wiener == 1) {// pre-calculate Wiener volume for SSNR calculation, Weighting factor is NOT applied in this step!
+	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
+			
+/*	if (wiener == 1) {// pre-calculate Wiener volume for SSNR calculation, Weighting factor is NOT applied in this step!
 		m_wvolume->symplane0(m_wptr);
 		float osnr = 1.0f/m_snr;
 		for (int iz = 1; iz <= m_vnzp; iz++) {
@@ -2667,110 +2678,110 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		m_wptr->set_array_offsets(0,1,1);
 		wiener = 0; // Turn off flag
 		return win; // The function requires a returned object, otherwise is not neccessary
-	} else {//Calculate SSNR 
-		EMData* vol_ssnr = new EMData();
-		vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
-		vol_ssnr->to_zero();
-		EMData* SSNR = params["SSNR"];
-		SSNR->set_size(inc+1,4,1);
-		float *nom    = new float[inc+1];
-		float *denom  = new float[inc+1];
-		int  *ka     = new int[inc+1];
-		int  *nn     = new int[inc+1];
- 		float wght = 1.f;
-		for (int i = 0; i <= inc; i++) {
-			nom[i]   = 0.0f;
-			denom[i] = 0.0f;
-			nn[i]	 = 0;
-			ka[i]	 = 0;
-		}
-		m_volume->symplane2(m_wptr, m_wptr2, m_wptr3);
-		if ( m_weighting == ESTIMATE ) {
-			int vol = box*box*box;
-			for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
-			pow_a[3*kc] = 0.0;
-			for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
-			float max = max3d( kc, pow_a );
-			alpha = ( 1.0 - 1.0/vol ) / max;
-		}
-		for (int iz = 1; iz <= m_vnzp; iz++) {
-			if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
-			argz = float(kz*kz)*dz2;
-			for (int iy = 1; iy <= m_vnyp; iy++) {
-				if ( iy-1 > m_vnyc ) ky = iy-1-m_vnyp; else ky = iy-1;
-				argy = argz + float(ky*ky)*dy2;
-				for (int ix = 0; ix <= m_vnxc; ix++) {
-					float Kn = (*m_wptr3)(ix,iy,iz);
-					argx = std::sqrt(argy + float(ix*ix)*dx2);
-					int r = Util::round(float(inc)*argx);
-					if ( r >= 0 && Kn > 4.5f ) {
-						if ( m_weighting == ESTIMATE ) {
-							int cx = ix;
-							int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
-							int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
-							float sum = 0.0;
-							for( int ii = -kc; ii <= kc; ++ii ) {
-								int nbrcx = cx + ii;
-								if( nbrcx >= m_vnxc ) continue;
-								for ( int jj= -kc; jj <= kc; ++jj ) {
-									int nbrcy = cy + jj;
-									if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
-									for( int kk = -kc; kk <= kc; ++kk ) {
-										int nbrcz = cz + jj;
-										if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
-										if( nbrcx < 0 ) {
-											nbrcx = -nbrcx;
-											nbrcy = -nbrcy;
-											nbrcz = -nbrcz;
-										}
-										int nbrix = nbrcx;
-										int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
-										int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
-										if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
-											int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
-											sum = sum + pow_a[c];
-										}
+	} else {//Calculate SSNR  */
+	EMData* vol_ssnr = new EMData();
+	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
+	vol_ssnr->to_zero();
+	EMData* SSNR = params["SSNR"];
+	SSNR->set_size(inc+1,4,1);
+	float *nom    = new float[inc+1];
+	float *denom  = new float[inc+1];
+	int  *ka     = new int[inc+1];
+	int  *nn     = new int[inc+1];
+	float wght = 1.f;
+	for (int i = 0; i <= inc; i++) {
+		nom[i]   = 0.0f;
+		denom[i] = 0.0f;
+		nn[i]	 = 0;
+		ka[i]	 = 0;
+	}
+	m_volume->symplane2(m_wptr, m_wptr2, m_wptr3);
+	if ( m_weighting == ESTIMATE ) {
+		int vol = box*box*box;
+		for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+		pow_a[3*kc] = 0.0;
+		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
+		float max = max3d( kc, pow_a );
+		alpha = ( 1.0 - 1.0/vol ) / max;
+	}
+	for (int iz = 1; iz <= m_vnzp; iz++) {
+		if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
+		argz = float(kz*kz)*dz2;
+		for (int iy = 1; iy <= m_vnyp; iy++) {
+			if ( iy-1 > m_vnyc ) ky = iy-1-m_vnyp; else ky = iy-1;
+			argy = argz + float(ky*ky)*dy2;
+			for (int ix = 0; ix <= m_vnxc; ix++) {
+				float Kn = (*m_wptr3)(ix,iy,iz);
+				argx = std::sqrt(argy + float(ix*ix)*dx2);
+				int r = Util::round(float(inc)*argx);
+				if ( r >= 0 && Kn > 4.5f ) {
+					if ( m_weighting == ESTIMATE ) {
+						int cx = ix;
+						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+						int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+						float sum = 0.0;
+						for( int ii = -kc; ii <= kc; ++ii ) {
+							int nbrcx = cx + ii;
+							if( nbrcx >= m_vnxc ) continue;
+							for ( int jj= -kc; jj <= kc; ++jj ) {
+								int nbrcy = cy + jj;
+								if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+								for( int kk = -kc; kk <= kc; ++kk ) {
+									int nbrcz = cz + jj;
+									if ( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+									if( nbrcx < 0 ) {
+										nbrcx = -nbrcx;
+										nbrcy = -nbrcy;
+										nbrcz = -nbrcz;
+									}
+									int nbrix = nbrcx;
+									int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+									int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+									if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0 ) {
+										int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+										sum = sum + pow_a[c];
 									}
 								}
 							}
-							int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
-							Assert( r >=0 && r < (int)pow_b.size() );
-							wght = pow_b[r] / ( 1.0 - alpha * sum );
-						} // end of ( m_weighting == ESTIMATE )
-						float nominator   = (*m_wptr2)(ix,iy,iz)/Kn;
-						float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
-						// Skip Friedel related values
-						if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
-							if ( r <= inc ) {
-								nom[r]   += nominator*wght;
-								denom[r] += denominator*wght;
-								nn[r]	 += 2;
-								ka[r]	 += int(Kn);
-							}
-							float  tmp = std::max(nominator/denominator-1.0f,0.0f);
-							//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
-							int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
-							if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
-								(*vol_ssnr)(iix, iiy, iiz) = tmp;
-							// Friedel part
-							iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
-							if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
-								(*vol_ssnr)(iix, iiy, iiz) = tmp;
 						}
-					} // end of Kn>4.5 or whatever
-				}
+						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
+						Assert( r >=0 && r < (int)pow_b.size() );
+						wght = pow_b[r] / ( 1.0 - alpha * sum );
+					} // end of ( m_weighting == ESTIMATE )
+					float nominator   = (*m_wptr2)(ix,iy,iz)/Kn;
+//					float denominator = ((*m_wptr2)(ix,iy,iz)+(*m_wptr4)(ix,iy,iz)+(*m_wptr5)(ix,iy,iz))/(Kn*(Kn-1.0f));
+					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/((*m_wptr)(ix,iy,iz)))/(Kn*(Kn-1.0f));
+					// Skip Friedel related values
+					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
+						if ( r <= inc ) {
+							nom[r]   += nominator*wght;
+							denom[r] += denominator*wght;
+							nn[r]	 += 2;
+							ka[r]	 += int(Kn);
+						}
+						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
+						int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
+						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+							(*vol_ssnr)(iix, iiy, iiz) = tmp;
+						// Friedel part
+						iix = m_vnxc - ix; iiy = m_vnyc - ky; iiz = m_vnzc - kz;
+						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
+							(*vol_ssnr)(iix, iiy, iiz) = tmp;
+					}
+				} // end of Kn>4.5 or whatever
 			}
 		}
-		for (int i = 0; i <= inc; i++) { 
-			(*SSNR)(i,0,0) = nom[i]; 
-			(*SSNR)(i,1,0) = denom[i];
-			(*SSNR)(i,2,0) = nn[i];
-			(*SSNR)(i,3,0) = ka[i];
-		}
-		vol_ssnr->update();
-		return vol_ssnr;
 	}
-
+	for (int i = 0; i <= inc; i++) { 
+		(*SSNR)(i,0,0) = nom[i]; 
+		(*SSNR)(i,1,0) = denom[i];
+		(*SSNR)(i,2,0) = nn[i];
+		(*SSNR)(i,3,0) = ka[i];
+	}
+	vol_ssnr->update();
+	return vol_ssnr;
+//	}
 }
 #undef  tw
 // -----------------------------------------------------------------------------------
