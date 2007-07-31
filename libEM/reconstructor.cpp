@@ -1888,7 +1888,7 @@ EMData* nnSSNR_Reconstructor::finish()
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
 							(*vol_ssnr)(iix, iiy, iiz) = tmp;
 					}
-				} // end of Kn>1.5
+				} // end of Kn>4.5
 			}
 		}
 	}
@@ -2711,7 +2711,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						Assert( r >=0 && r < (int)pow_b.size() );
 						wght = pow_b[r] / ( 1.0 - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
-					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))*(*m_wptr)(ix,iy,iz);
+					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/(Kn-1.0f);
 					// Skip Friedel related values
 					if( (ix>0 || (kz>=0 && (ky>=0 || kz!=0)))) {
