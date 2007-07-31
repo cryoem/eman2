@@ -1698,27 +1698,23 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 			int r2 = ix*ix+iy*iy;
         		if (( 4*r2 < ny*ny ) && !( ix == 0 && iy < 0 ) ) 
 			{
-			        float  ctf = ctf_store::get_ctf( defocus, r2 );
+			        float  ctf = ctf_store::get_ctf( defocus, r2 )*10.f;
 				float xnew = ix*tf[0][0] + iy*tf[1][0];
 				float ynew = ix*tf[0][1] + iy*tf[1][1];
 				float znew = ix*tf[0][2] + iy*tf[1][2];
 				std::complex<float> btq;
-				if (xnew < 0.0) 
-				{
+				if (xnew < 0.0) {
 					xnew = -xnew; // ensures xnew>=0.0
 					ynew = -ynew;
 					znew = -znew;
 					btq = conj(myfft->cmplx(ix,jp));
-				} 
-				else 
-				{
+				} else  {
 					btq = myfft->cmplx(ix,jp);
 				}
 				int ixn = int(xnew + 0.5 + nx) - nx; // ensures ixn >= 0
 				int iyn = int(ynew + 0.5 + ny) - ny;
 				int izn = int(znew + 0.5 + nz) - nz;
-				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) 
-				{
+				if ((ixn <= nxc) && (iyn >= iymin) && (iyn <= iymax) && (izn >= izmin) && (izn <= izmax)) {
 					if (ixn >= 0) {
 						int iza, iya;
 						if (izn >= 0) {

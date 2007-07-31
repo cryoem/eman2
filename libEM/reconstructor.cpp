@@ -2424,12 +2424,9 @@ void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad,
     m_vnzc      = m_vnzp/2;
 
     buildFFTVolume();
-//    buildWFFTVolume();
     buildNormVolume();
     buildNorm2Volume();
     buildNorm3Volume();
-//    buildNorm4Volume();
-//    buildNorm5Volume();
 }
 
 void nnSSNR_ctfReconstructor::buildFFTVolume() {
@@ -2460,32 +2457,6 @@ void nnSSNR_ctfReconstructor::buildFFTVolume() {
 	m_volume->set_array_offsets(0,1,1);
 }
 
-/*void nnSSNR_ctfReconstructor::buildWFFTVolume() {	
-	int offset = 2 - m_vnxp%2;        
-	if( params.has_key("fftwvol") ) {
-		m_wvolume = params["fftwvol"]; 
-		m_delete_volume = false;
-	} else {
-		m_wvolume = new EMData();
-		m_delete_wvolume = true;
-	}		
-	m_wvolume->set_size(m_vnxp+offset,m_vnyp,m_vnzp);
-	m_wvolume->to_zero();
-
-	if ( m_vnxp % 2 == 0 ) {
-		m_wvolume->set_fftodd(0);
-	} else {
-		m_wvolume->set_fftodd(1);
-	}
-	
-	m_wvolume->set_nxc(m_vnxc);
-	m_wvolume->set_complex(true);
-	m_wvolume->set_ri(true); //(real, imaginary) instead of polar coordinate
-	m_wvolume->set_fftpad(true);
-	m_wvolume->set_attr("npad", m_npad);
-	m_wvolume->set_array_offsets(0,1,1);
-}*/
-
 
 void nnSSNR_ctfReconstructor::buildNormVolume() 
 {
@@ -2504,12 +2475,12 @@ void nnSSNR_ctfReconstructor::buildNormVolume()
 void nnSSNR_ctfReconstructor::buildNorm2Volume() {
 
 	if( params.has_key("weight2") ) {
-		m_wptr2          = params["weight2"]; 
+		m_wptr2          = params["weight2"];
 		m_delete_weight2 = false;
 	} else {
 		m_wptr2 = new EMData();
 		m_delete_weight2 = true;
-	}		
+	}
 	m_wptr2->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr2->to_zero();
 	m_wptr2->set_array_offsets(0,1,1);
@@ -2523,39 +2494,11 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	} else {
 		m_wptr3 = new EMData();
 		m_delete_weight3 = true;
-	}		
+	}
 	m_wptr3->set_size(m_vnxc+1,m_vnyp,m_vnzp);
 	m_wptr3->to_zero();
 	m_wptr3->set_array_offsets(0,1,1);
 }
-
-/*void nnSSNR_ctfReconstructor::buildNorm4Volume() {
-
-	if( params.has_key("weight4") ) {
-		m_wptr4          = params["weight4"]; 
-		m_delete_weight4 = false;
-	} else {
-		m_wptr4 = new EMData();
-		m_delete_weight4 = true;
-	}		
-	m_wptr4->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-	m_wptr4->to_zero();
-	m_wptr4->set_array_offsets(0,1,1);
-}
-
-void nnSSNR_ctfReconstructor::buildNorm5Volume() {
-
-	if( params.has_key("weight5") ) {
-		m_wptr5          = params["weight5"]; 
-		m_delete_weight5 = false;
-	} else {
-		m_wptr5 = new EMData();
-		m_delete_weight5 = true;
-	}		
-	m_wptr5->set_size(m_vnxc+1,m_vnyp,m_vnzp);
-	m_wptr5->to_zero();
-	m_wptr5->set_array_offsets(0,1,1);
-}*/
 
 int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform3D& t) {
 	// sanity checks
@@ -2627,7 +2570,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	    variance  = Gamma^2d->3d [ |F_k^2D|^2   +  ctf^2*|P^2D->3D(F^3D)|^2 -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))]
 	    signal    = Gamma^2d->3d [ |F_k^2D|^2  ]	 
 	    nominator = sum_rot [ wght*signal ]
-	    denominator  = sum_rot[ wght*variance ]			   
+	    denominator  = sum_rot[ wght*variance ]
 						      ***/
 	int kz, ky;
 	int box = 7;
@@ -2677,7 +2620,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 				float Kn = (*m_wptr3)(ix,iy,iz);
 				argx = std::sqrt(argy + float(ix*ix)*dx2);
 				int r = Util::round(float(inc)*argx);
-				if ( r >= 0 && Kn > 4.5f ) {
+				if ( r >= 0 && Kn > 2.5f ) {
 					if ( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
