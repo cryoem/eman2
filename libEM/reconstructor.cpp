@@ -2336,24 +2336,18 @@ EMData* nn4_ctfReconstructor::finish()
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor() 
 {
     m_volume  = NULL;
-//    m_wvolume = NULL; 
     m_wptr    = NULL;
     m_wptr2   = NULL;
     m_wptr3   = NULL;
-//    m_wptr4   = NULL;	
-//    m_wptr5   = NULL;
     m_result  = NULL;
 }
 
 nnSSNR_ctfReconstructor::nnSSNR_ctfReconstructor( const string& symmetry, int size, int npad, float snr, int sign)
 {
     m_volume  = NULL;
-//    m_wvolume = NULL; 
     m_wptr    = NULL;
     m_wptr2   = NULL;
     m_wptr3   = NULL;
-//    m_wptr4   = NULL;
-//    m_wptr5   = NULL;
     m_result  = NULL;
 
     setup( symmetry, size, npad, snr, sign );
@@ -2364,21 +2358,12 @@ nnSSNR_ctfReconstructor::~nnSSNR_ctfReconstructor()
 
    if( m_delete_volume )
         checked_delete(m_volume);
-/*
-   if( m_delete_wvolume )
-        checked_delete(m_wvolume);
-	*/
-
    if( m_delete_weight )
         checked_delete( m_wptr );
    if ( m_delete_weight2 )
         checked_delete( m_wptr2 );
    if ( m_delete_weight3 )
         checked_delete( m_wptr3 );
-/*   if ( m_delete_weight4 )
-        checked_delete( m_wptr4 );
-   if ( m_delete_weight5 )
-        checked_delete( m_wptr5 );	*/
    checked_delete( m_result );
 }
 
@@ -2562,13 +2547,10 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 EMData* nnSSNR_ctfReconstructor::finish() 
 {
 	/***
+	    m_volume ctf*(P^2D->3D(F^3D))
 	    m_wptr   ctf^2
-	    m_wptr5  ctf^2*|P^2D->3D(F^3D)|^2 
-	    m_wptr4  -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))
-	    m_wptr2  F_k^2D*conj(F_k^2D) or |F_k^2D|^2 
+	    m_wptr2  |P^2D->3D(F^3D)|^2 
 	    m_wptr3  Kn
-	    variance  = Gamma^2d->3d [ |F_k^2D|^2   +  ctf^2*|P^2D->3D(F^3D)|^2 -2*Real(conj(F_k^2D)*ctf*P^2D->3D(F^3D))]
-	    signal    = Gamma^2d->3d [ |F_k^2D|^2  ]	 
 	    nominator = sum_rot [ wght*signal ]
 	    denominator  = sum_rot[ wght*variance ]
 						      ***/

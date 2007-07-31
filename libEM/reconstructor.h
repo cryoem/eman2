@@ -885,13 +885,10 @@ namespace EMAN
 			d.put("weight",   EMObject::EMDATA);
 			d.put("weight2",  EMObject::EMDATA);
 			d.put("weight3",  EMObject::EMDATA);
-//			d.put("weight4",  EMObject::EMDATA);
-//			d.put("weight5",  EMObject::EMDATA);
 			d.put("SSNR",     EMObject::EMDATA);
 			d.put("w",        EMObject::FLOAT);
 			d.put("sign",     EMObject::INT);
 			d.put("snr",      EMObject::FLOAT);
-//			d.put("wiener",   EMObject::INT);
 			return d;
 		}
 		void setup( const string& symmetry, int size, int npad, float snr, int sign);
@@ -900,20 +897,14 @@ namespace EMAN
 
 	  private:
 		EMData* m_volume;
-//		EMData* m_wvolume;
 		EMData* m_wptr;
 		EMData* m_wptr2;
 		EMData* m_wptr3;
-//		EMData* m_wptr4;
-//		EMData* m_wptr5;
 		EMData* m_result;
 		bool m_delete_volume;
-//		bool m_delete_wvolume;
 		bool m_delete_weight;
 		bool m_delete_weight2;
 		bool m_delete_weight3;
-//		bool m_delete_weight4;
-//		bool m_delete_weight5;
 	        string  m_symmetry;
 		int m_weighting;
 		int m_vnx, m_vny, m_vnz;		
@@ -922,12 +913,9 @@ namespace EMAN
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnzc, m_vnyc, m_vnxc;
 		void buildFFTVolume();
-//		void buildWFFTVolume();
 		void buildNormVolume();
 		void buildNorm2Volume();
 		void buildNorm3Volume();
-//		void buildNorm4Volume();
-//		void buildNorm5Volume();
 		float m_wghta;
 		float m_wghtb;
 		int   m_sign;
