@@ -37,19 +37,20 @@
 * The number of steps was: 33                         *
 *                                                     *
 ******************************************************/
-
-
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
+#include "emdata.h"
 
 #define  MACHEPS  1e-15
+
+using namespace EMAN;
 
 
 /*******************************************
   Function subroutine                     */   
-double Eval(double *X) {
+/*double Eval1(double *X) {
   return sin(X[1])+2.0*cos(X[2])-sin(X[3]);
-}
+}*/
 /*******************************************/
 
   // Functions called by Steepda()
@@ -61,7 +62,8 @@ double Eval(double *X) {
     *dd=sqrt(*dd);
   }
 
-  void Utilit2(double *X, double *X1, double *Y, double *D, double *dd, double xk, int l) {
+  void Utilit2(double *X, double *X1, double *Y, double *D, double *dd, double xk, int l, float (*my_func)(EMData* , EMData* , EMData* , float , float , float), EMData *image,
+  EMData *refim, EMData *mask) {
 	int i;
     // Update the X[i] 
     for (i=1; i<l+1; i++) {
@@ -69,12 +71,13 @@ double Eval(double *X) {
       X1[i]=X[i];
       X[i] += xk*D[i]/(*dd);
     }
-    Y[3]=Eval(X);
+    Y[3]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
   }
 
   // Find approximations of partial derivatives D(i)
   // by finite differences
-  void Derivatives(double *X, double *D, double *Y, double *dd, double xk, int l)  {
+  void Derivatives(double *X, double *D, double *Y, double *dd, double xk, int l, float (*my_func)(EMData* , EMData* , EMData* , float , float , float), EMData *image, EMData
+  *refim, EMData *mask)  {
     double a,b,yy;
     int i;
     for (i=1; i<l+1; i++) {
@@ -85,7 +88,7 @@ double Eval(double *X) {
       // Move increment in X(i)
       X[i]=X[i]+b;
       // Obtain yy
-      yy=Eval(X);
+      yy=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
       // Guard against divide by zero near maximum
       if (b==0) b=1e-12;
       // Update D(i)
@@ -121,9 +124,14 @@ double Eval(double *X) {
 *   Eval - The local maximum found                *
 *   n - The number of iterations performed,       *
 **************************************************/
-  void Steepda(double *D, double *Y, double *X, double *X1, double dd, double e, double xk, int l, int m, int *n)  {
+  void Steepda(double *X, double xk, double e, int l, int m, int *n, float (*my_func)(EMData* , EMData* , EMData* , float , float , float), EMData *image, EMData *refim, EMData
+  *mask)  {
   // Labels: e50,e51,e100,e200
   int i;
+  double dd;
+  double  D[4], Y[4];
+  double  X1[11];
+  
   *n=0;
   //The routine needs three values of Y to get started
   //Generate starting D(i) values
@@ -134,10 +142,10 @@ double Eval(double *X) {
   // Start initial probe
   for (i=1; i<l+1; i++) {
     // Obtain yy and D[i]
-    Y[i]=Eval(X);
+    Y[i]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
     // Update X[i]
     Utilit1(D, &dd, l);
-    Utilit2(X, X1, Y, D, &dd, xk, l);
+    Utilit2(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask);
   }
   // We now have a history to base the subsequent search on
   // Accelerate search if approach is monotonic 
@@ -154,12 +162,12 @@ e51: if (Y[3]<Y[2]) xk=xk/2.0;
   goto e200;
 e100: Y[1]=Y[2]; Y[2]=Y[3];
   // Obtain new values
-e200: Y[3]=Eval(X);
-  Derivatives(X, D, Y, &dd, xk, l); // Get D(i)
+e200: Y[3]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
+  Derivatives(X, D, Y, &dd, xk, l, my_func, image, refim, mask); // Get D(i)
   //if dd=0 then the precision limit of the computer has been reached
   if (dd==0) return;
   // Update X[i]
-  Utilit2(X, X1, Y, D, &dd, xk, l);
+  Utilit2(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask);
   // Check for maximum iterations and convergence
   (*n)++;
   if (*n>=m) return;
@@ -171,10 +179,10 @@ e200: Y[3]=Eval(X);
 /*
 int main() {
 
-	double  D[4], Y[4];
-	double  X[11],X1[11];
-	double  dd,e,xk;
-	int i,l,m,n;
+  double X[11];
+  int i,l,m,n;
+  double xk, e;
+  double  (*func)(double *) = Eval1;
 	
   printf("\n How many dimensions: "); scanf("%d",&l);
   printf("\n Convergence criterion: "); scanf("%lf",&e);
@@ -185,13 +193,13 @@ int main() {
     printf("     X(%d) = ",i); scanf("%lf",&X[i]);
   }
 
-  Steepda(D, Y, X, X1, dd, e, xk, l, m, &n);   // Call steepest descent optimization subroutine
+  Steepda(X, xk, e, l, m, &n, func);   // Call steepest descent optimization subroutine
 
   printf("\n\n The results are:\n\n");
   for (i=1; i<l+1; i++) {
     printf("     X(%d) = %1.7f\n",i,X[i]);   
   }
-  printf("\n Local maximum found = %10.7f\n",Eval(X));
+  printf("\n Local maximum found = %10.7f\n",(*func)(X));
   printf("\n The number of iterations was %d\n\n",n);
 }*/
 

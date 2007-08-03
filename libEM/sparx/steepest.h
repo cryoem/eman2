@@ -1,10 +1,8 @@
+void Utilit1(double *, double *, int );
+  
+void Utilit2(double *X, double *X1, double *Y, double *D, double *dd, double xk, int l, float (*my_func)(EMData* , EMData* , EMData* , float , float , float), EMData *image, EMData *refim, EMData *mask);
+    
+void Derivatives(double *X, double *D, double *Y, double *dd, double xk, int l, float (*my_func)(EMData* , EMData* , EMData* , float , float , float), EMData *, EMData *,
+EMData *);
 
-double Eval(double *X);
-
-void Utilit1(double *D, double *dd, int l);
-
-void Utilit2(double *X, double *X1, double *Y, double *D, double *dd, double xk, int l);
-
-void Derivatives(double *X, double *D, double *Y, double *dd, double xk, int l);
-
-void Steepda(double *D, double *Y, double *X, double *X1, double dd, double e, double xk, int l, int m, int *n);
+void Steepda(double *X, double xk, double e, int l, int m, int *n, float (*my_func)(EMData* , EMData* , EMData* , float , float , float), EMData *, EMData *, EMData *);

@@ -473,7 +473,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
-
+	
 private:	
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
@@ -488,6 +488,10 @@ public:
 	
 	static vector<float> twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys);
 	
+	static vector<float> twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
+
+	static float ccc_images(EMData *, EMData *, EMData *, float , float , float );
+
 	static EMData* move_points(EMData* img,  float qprob, int ri, int ro);
 
 #endif	//util__sparx_h__
