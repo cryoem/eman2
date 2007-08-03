@@ -15846,25 +15846,25 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 
 vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys) {
 	
-	double  x[3];
+	double  x[4];
 	int n;
 	int l = 3;
 	int m = 100;
-	double e = 1e-7;
-	double step = 1e-4;  
+	double e = 1e-9;
+	double step = 0.01;  
 	float (*my_func)(EMData* , EMData* , EMData* , float , float , float) = ccc_images;
 	
-	x[0] = ang;
-	x[1] = sxs;
-	x[2] = sys;
+	x[1] = ang;
+	x[2] = sxs;
+	x[3] = sys;
 
 	Steepda(x, step, e, l, m, &n, my_func, image, refim, mask);   // Call steepest descent optimization subroutine
 	printf("Took %d steps\n", n);
 
 	vector<float> res;
-	res.push_back(x[0]);
 	res.push_back(x[1]);
-	res.push_back(x[2]);	
+	res.push_back(x[2]);
+	res.push_back(x[3]);	
 	return res;
 }
 
@@ -15879,6 +15879,44 @@ float Util::ccc_images(EMData* image, EMData* refim, EMData* mask, float ang, fl
 	delete rot;
 	return ccc;
 }
+
+vector<float> Util::twoD_fine_ali_SD_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys) {
+	
+	double  x[4];
+	int n;
+	int l = 3;
+	int m = 100;
+	double e = 1e-9;
+	double step = 0.001;  
+	float (*my_func)(EMData* , EMData* , EMData* , Util::KaiserBessel&, float , float , float) = ccc_images_G;
+	
+	x[1] = ang;
+	x[2] = sxs;
+	x[3] = sys;
+
+	Steepda_G(x, step, e, l, m, &n, my_func, image, refim, mask, kb);   // Call steepest descent optimization subroutine
+	printf("Took %d steps\n", n);
+
+	vector<float> res;
+	res.push_back(x[1]);
+	res.push_back(x[2]);
+	res.push_back(x[3]);
+	res.push_back(n);	
+	return res;
+}
+
+
+float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sx, float sy) {
+
+	EMData *rot= new EMData();
+	float ccc;
+	
+	rot = image->rot_scale_conv7(ang*pi/180.0, sx, sy, kb, 1.0);
+	ccc = rot->cmp("ccc", refim, Dict("mask", mask));
+	delete rot;
+	return ccc;
+}
+
 
 vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,

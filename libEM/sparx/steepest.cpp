@@ -71,7 +71,7 @@ using namespace EMAN;
       X1[i]=X[i];
       X[i] += xk*D[i]/(*dd);
     }
-    Y[3]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
+    Y[3]=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
   }
 
   // Find approximations of partial derivatives D(i)
@@ -88,7 +88,7 @@ using namespace EMAN;
       // Move increment in X(i)
       X[i]=X[i]+b;
       // Obtain yy
-      yy=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
+      yy=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
       // Guard against divide by zero near maximum
       if (b==0) b=1e-12;
       // Update D(i)
@@ -142,7 +142,7 @@ using namespace EMAN;
   // Start initial probe
   for (i=1; i<l+1; i++) {
     // Obtain yy and D[i]
-    Y[i]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
+    Y[i]=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
     // Update X[i]
     Utilit1(D, &dd, l);
     Utilit2(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask);
@@ -162,7 +162,7 @@ e51: if (Y[3]<Y[2]) xk=xk/2.0;
   goto e200;
 e100: Y[1]=Y[2]; Y[2]=Y[3];
   // Obtain new values
-e200: Y[3]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
+e200: Y[3]=(*my_func)(image, refim, mask, X[1], X[2], X[3]);
   Derivatives(X, D, Y, &dd, xk, l, my_func, image, refim, mask); // Get D(i)
   //if dd=0 then the precision limit of the computer has been reached
   if (dd==0) return;
@@ -170,6 +170,7 @@ e200: Y[3]=(*my_func)(image, refim, mask, X[0], X[1], X[2]);
   Utilit2(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask);
   // Check for maximum iterations and convergence
   (*n)++;
+  //printf("Step %3d: X[0]=%12.6f  X[1]=%12.6f  X[2]=%12.6f\n",*n,X[1],X[2],X[3]);
   if (*n>=m) return;
   if (fabs(Y[3]-Y[2])<e) return;
   // Try another iteration
@@ -204,3 +205,98 @@ int main() {
 }*/
 
 // End of file Steepda.cpp
+
+  void Utilit2_G(double *X, double *X1, double *Y, double *D, double *dd, double xk, int l, float (*my_func)(EMData* , EMData* , EMData* , Util::KaiserBessel& , float , float , float), EMData *image,
+  EMData *refim, EMData *mask, Util::KaiserBessel& kb) {
+	int i;
+    // Update the X[i] 
+    for (i=1; i<l+1; i++) {
+      // Save old values
+      X1[i]=X[i];
+      X[i] += xk*D[i]/(*dd);
+    }
+    Y[3]=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+  }
+
+  // Find approximations of partial derivatives D(i)
+  // by finite differences
+  void Derivatives_G(double *X, double *D, double *Y, double *dd, double xk, int l, float (*my_func)(EMData* , EMData* , EMData* , Util::KaiserBessel& , float , float , float), EMData *image, EMData
+  *refim, EMData *mask, Util::KaiserBessel& kb)  {
+    double a,b,yy;
+    int i;
+    for (i=1; i<l+1; i++) {
+      // Save X(i)
+      a=X[i];
+      // Find increment
+      b=D[i]*xk/(2.0*(*dd));
+      // Move increment in X(i)
+      X[i]=X[i]+b;
+      // Obtain yy
+      yy=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+      // Guard against divide by zero near maximum
+      if (b==0) b=1e-12;
+      // Update D(i)
+      D[i]=(yy-Y[3])/b;
+      // Guard against locked up derivative
+      if (D[i]==0) D[i]=1e-5;
+      // Restore X(i) and yy
+      X[i]=a; yy=Y[3];
+    }
+    // Obtain dd
+    Utilit1(D, dd, l);
+  }
+
+
+
+  void Steepda_G(double *X, double xk, double e, int l, int m, int *n, float (*my_func)(EMData* , EMData* , EMData* , Util::KaiserBessel& , float , float , float), EMData *image, EMData *refim, EMData
+  *mask, Util::KaiserBessel& kb)  {
+  // Labels: e50,e51,e100,e200
+  int i;
+  double dd;
+  double  D[4], Y[4];
+  double  X1[11];
+  
+  *n=0;
+  //The routine needs three values of Y to get started
+  //Generate starting D(i) values
+  //These are not even good guesses and slow the program a little
+  dd=1.0;
+  D[1]=1.0/sqrt(l);
+  for (i=2; i<l+1; i++)  D[i]=D[i-1];
+  // Start initial probe
+  for (i=1; i<l+1; i++) {
+    // Obtain yy and D[i]
+    Y[i]=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+    // Update X[i]
+    Utilit1(D, &dd, l);
+    Utilit2_G(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask, kb);
+  }
+  // We now have a history to base the subsequent search on
+  // Accelerate search if approach is monotonic 
+e50: if (fabs(Y[2]-Y[1])<MACHEPS) goto e51;
+  if ((Y[3]-Y[2])/(Y[2]-Y[1])>0.0) xk=xk*1.2;
+  // Decelerate if heading the wrong way
+e51: if (Y[3]<Y[2]) xk=xk/2.0;
+  // Update the Y[i] if value has decreased
+  if (Y[3]>Y[2]) goto e100;
+  // Restore the X[i]
+  for (i=1; i<l+1; i++) {
+    X[i]=X1[i];
+  }
+  goto e200;
+e100: Y[1]=Y[2]; Y[2]=Y[3];
+  // Obtain new values
+e200: Y[3]=(*my_func)(image, refim, mask, kb, X[1], X[2], X[3]);
+  Derivatives_G(X, D, Y, &dd, xk, l, my_func, image, refim, mask, kb); // Get D(i)
+  //if dd=0 then the precision limit of the computer has been reached
+  if (dd==0) return;
+  // Update X[i]
+  Utilit2_G(X, X1, Y, D, &dd, xk, l, my_func, image, refim, mask, kb);
+  // Check for maximum iterations and convergence
+  (*n)++;
+  //printf("Step %3d: X[0]=%12.6f  X[1]=%12.6f  X[2]=%12.6f\n",*n,X[1],X[2],X[3]);
+  if (*n>=m) return;
+  if (fabs(Y[3]-Y[2])<e) return;
+  // Try another iteration
+  goto e50;
+} // Steepds()
