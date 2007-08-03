@@ -26,11 +26,11 @@ struct EMAN_Processor_Wrapper: EMAN::Processor
         call_method< void >(py_self, "process_inplace", p0);
     }
 
-    EMAN::EMData* process(EMAN::EMData* p0) {
+    EMAN::EMData* process(const EMAN::EMData* const p0) {
         return call_method< EMAN::EMData* >(py_self, "process", p0);
     }
 
-    EMAN::EMData* default_process(EMAN::EMData* p0) {
+    EMAN::EMData* default_process(const EMAN::EMData* const p0) {
         return EMAN::Processor::process(p0);
     }
 

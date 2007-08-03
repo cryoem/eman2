@@ -47,8 +47,8 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 	force_add(&FourierInserter3DMode7::NEW);
 }
 
-InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling ) :
-		threed_rdata(rdata), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize), bin(sampling), r(0), rn(0) 
+InterpolatedFRC::InterpolatedFRC(float* const rdata, float* const norm, const int xsize, const int ysize, const int zsize, const float& sampling ) :
+		threed_rdata(rdata), norm_data(norm), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize), bin(sampling), r(0), rn(0) 
 {
 	if ( sampling <= 0 )
 	{	
@@ -75,7 +75,7 @@ InterpolatedFRC::InterpolatedFRC(float* const rdata, const int xsize, const int 
 }
 
 InterpolatedFRC::InterpolatedFRC( const InterpolatedFRC& that ) :
-		threed_rdata(that.threed_rdata), nx(that.nx), ny(that.ny), nz(that.nz), nxy(that.nxy), bin(that.bin),
+		threed_rdata(that.threed_rdata), norm_data(that.norm_data), nx(that.nx), ny(that.ny), nz(that.nz), nxy(that.nxy), bin(that.bin),
 		size(that.size), pixel_radius_max(that.pixel_radius_max), pixel_radius_max_square(that.pixel_radius_max_square),
 		r(that.r), rn(that.rn)
 {
@@ -102,16 +102,33 @@ InterpolatedFRC& InterpolatedFRC::operator=( const InterpolatedFRC& that)
 {
 	if (this != &that)
 	{
+		// Transactionalize the assignment operator, making it "all or nothing"
+		// protects against memory leaks.
+		float * new_frc = 0, * new_frc_norm_rdata = 0, * new_frc_norm_dt = 0;
+		
+		try {
+			new_frc = new float[that.size];
+			new_frc_norm_rdata = new float[that.size];
+			new_frc_norm_dt = new float[that.size];
+		}
+		catch (...) {
+			if ( new_frc != 0 ) delete [] new_frc;
+			if ( new_frc_norm_rdata != 0 ) delete [] new_frc_norm_rdata;
+			if ( new_frc_norm_dt != 0 ) delete [] new_frc_norm_dt;
+			throw;
+		}
+		
+		
 		threed_rdata = that.threed_rdata;
+		norm_data = that.norm_data;
 		nx = that.nx; ny = that.ny; nz = that.nz; nxy = that.nxy; bin = that.bin;
 		size = that.size; pixel_radius_max = that.pixel_radius_max; pixel_radius_max_square = that.pixel_radius_max_square;
 		r = that.r; rn = that.rn;
 		
 		free_memory();
-
-		frc = new float[size];
-		frc_norm_rdata = new float[size];
-		frc_norm_dt = new float[size];
+		frc = new_frc;
+		frc_norm_rdata = new_frc_norm_rdata;
+		frc_norm_dt = new_frc_norm_dt;
 		
 		// Now copy the data in that
 		memcpy(frc,that.frc, size*sizeof(float));
@@ -163,8 +180,13 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 		l = x0;
 	}
 	
+	// The reverse interpolated point minus this pixel (mtp)
+	float interp_real_mtp = 0.0, interp_comp_mtp = 0.0;
+	
 	// The reverse interpolated point
-	float interp_real = 0, interp_comp = 0;
+	float interp_real = 0.0, interp_comp = 0.0;
+	
+	float weight_sum = 0.0;
 	
 	for (int k = z0 - 1; k <= z0 + 2; k++) {
 		for (int j = y0 - 1; j <= y0 + 2; j++) {
@@ -172,20 +194,34 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = functoid.operate(r);
 				
-				interp_real += (threed_rdata[i + j * nx + k * nxy]- weight * gg * dt[0])*gg;
-				interp_comp += (threed_rdata[i + j * nx + k * nxy + 1]- weight * gg * dt[1])*gg;
+				int idx = i + j * nx + k * nxy;
+				
+				if ( norm_data[idx/2] == 0 )
+					continue;
+				float norm = 1/norm_data[idx/2];
+				
+				interp_real_mtp += (threed_rdata[idx]- weight * gg * dt[0] * norm) * gg;
+				interp_comp_mtp += (threed_rdata[idx + 1]- weight * gg * dt[1] * norm) * gg;
+				
+				interp_real += threed_rdata[idx] * gg;
+				interp_comp += threed_rdata[idx + 1] * gg;
+				
+				weight_sum += gg;
 			}
 		}
 	}
 	
-	frc[radius] += interp_real*dt[0] + interp_comp*dt[1];
-
-	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
+	interp_real_mtp /= weight_sum;
+	interp_comp_mtp /= weight_sum;
 	
-	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
+	frc[radius] += interp_real_mtp*dt[0] + interp_comp_mtp*dt[1];
+
+	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
+	
+	frc_norm_dt[radius] += dt[0] * dt[0] + dt[1] * dt[1];
 	
 	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real, interp_comp);
+	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
 	
 	return true;
 }
@@ -239,17 +275,32 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 	else {
 		l = x0 - 4;
 	}
+	// The reverse interpolated point minus this pixel (mtp)
+	float interp_real_mtp = 0.0, interp_comp_mtp = 0.0;
+	
 	// The reverse interpolated point
-	float interp_real = 0, interp_comp = 0;
+	float interp_real = 0.0, interp_comp = 0.0;
+	
+	float weight_sum = 0.0;
 
 	for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
 		for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 			for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-				int ii = i + j * nx + k * nxy;
 				float gg = InterpolationFunctiodMode5().operate(mmx,mmy,mmz);
 
-				interp_real += (threed_rdata[ii] - weight * dt[0] * gg) * gg;
-				interp_comp += (threed_rdata[ii+1] - weight * dt[1] * gg) * gg;
+				int idx = i + j * nx + k * nxy;
+				
+				if ( norm_data[idx/2] == 0 )
+					continue;
+				float norm = 1/norm_data[idx/2];
+				
+				interp_real_mtp += (threed_rdata[idx] - weight * dt[0] * gg * norm) * gg;
+				interp_comp_mtp += (threed_rdata[idx+1] - weight * dt[1] * gg * norm ) * gg;
+				
+				interp_real += threed_rdata[idx] *gg;
+				interp_comp += threed_rdata[idx + 1] * gg;
+				
+				weight_sum += gg;
 			}
 		}
 	}
@@ -272,24 +323,36 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 		for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
 			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-					int ii = i + j * nx + k * nxy;
 					float gg = InterpolationFunctiodMode5().operate(mmx,mmy,mmz);
 
-					interp_real += (threed_rdata[ii] - weight * dt[0] * gg) * gg;
-					interp_comp += (threed_rdata[ii+1] + weight * dt[1] * gg) * gg; // note the +, complex conj.
+					int idx = i + j * nx + k * nxy;
+					if ( norm_data[idx/2] == 0 )
+						continue;
+					float norm = 1/norm_data[idx/2];
+					
+					interp_real_mtp += (threed_rdata[idx] - weight * dt[0] * gg * norm ) * gg;
+					interp_comp_mtp += (threed_rdata[idx+1] + weight * dt[1] * gg * norm ) * gg; // note the +, complex conj.
+					
+					interp_real += threed_rdata[idx] *gg;
+					interp_comp += threed_rdata[idx + 1] * gg;
+				
+					weight_sum += gg;
 				}
 			}
 		}
 	}
 
-	frc[radius] += interp_real*dt[0] + interp_comp*dt[1];
+	interp_real_mtp /= weight_sum;
+	interp_comp_mtp /= weight_sum;
+	
+	frc[radius] += interp_real_mtp*dt[0] + interp_comp_mtp*dt[1];
 
-	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
+	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
 	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real, interp_comp);
+	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
 	
 	return true;
 }
@@ -348,29 +411,52 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	g[6] = Util::agauss(1, dx, 1 - dy, 1 - dz, EMConsts::I2G);
 	g[7] = Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, EMConsts::I2G);
 	
-	// The reverse interpolated point
-	float interp_real = 0, interp_comp = 0;
+	// The reverse interpolated point minus this pixel (mtp)
+	float interp_real_mtp = 0.0, interp_comp_mtp = 0.0;
 	
+	// The reverse interpolated point
+	float interp_real = 0.0, interp_comp = 0.0;
+	
+	float weight_sum = 0.0;
+	//cout << "Pixel [" << dt[0] << "," << dt[1] << "] is surrounded by ";
 	for (int j = 0; j < 8; j++) {
 		int k = i + off[j];
-		interp_real += (threed_rdata[k] - weight * dt[0] * g[j]) * g[j];
-		interp_comp += (threed_rdata[k+1] - weight * dt[1] * g[j]) * g[j];
+		if ( norm_data[k/2] == 0 )
+			continue;
+		float norm = 1/norm_data[k/2];
+		
+		interp_real_mtp += (threed_rdata[k] - weight * dt[0] * g[j] * norm ) * g[j];
+		interp_comp_mtp += (threed_rdata[k+1] - weight * dt[1] * g[j] * norm ) * g[j];
+		
+		interp_real += threed_rdata[k] * g[j];
+		interp_comp += threed_rdata[k + 1] * g[j];
+				
+		weight_sum += g[j];
+		
+		//cout << "[" << interp_real/g[j] << "," << interp_comp/g[j] << "] ";
 	}
 	
 // 	if ( radius == 0 )
 	
 //	cout << "interp was " << interp_real << " " << interp_comp << " actual was " << dt[0] << " " << dt[1] << endl;
 	
-	frc[radius] += interp_real*dt[0] + interp_comp*dt[1];
+	if ( weight_sum == 0 ) return false;
+	
+	interp_real_mtp /= weight_sum;
+	interp_comp_mtp /= weight_sum;
+	
+	frc[radius] += interp_real_mtp*dt[0] + interp_comp_mtp*dt[1];
 
-	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
+	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
 //	cout << "Current values are " << frc[radius] << " " << frc_norm_rdata[radius] << " " << frc_norm_dt[radius] << endl;
 	
 	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real, interp_comp);
+	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
+	
+	//cout << " and norm was " << hypot(dt[0], dt[1])/hypot(interp_real/weight_sum, interp_comp/weight_sum) << endl;
 	
 	return true;
 }
@@ -398,15 +484,27 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 		return false;
 	}
 	
+	// The reverse interpolated point minus this pixel (mtp)
+	float interp_real_mtp = 0.0, interp_comp_mtp = 0.0;
+	
 	// The reverse interpolated point
-	float interp_real = 0, interp_comp = 0;
+	float interp_real = 0.0, interp_comp = 0.0;
 	
-	interp_real = threed_rdata[x0 + y0 * nx + z0 * nxy] - weight * dt[0];
-	interp_comp = threed_rdata[x0 + y0 * nx + z0 * nxy + 1] - weight * dt[1];
+	int idx = x0 + y0 * nx + z0 * nxy;
 	
-	frc[radius] += interp_real*dt[0] + interp_comp*dt[1];
+	if ( norm_data[idx/2] == 0 )
+		return false;
+	float norm = 1/norm_data[idx/2];
+	
+	interp_real_mtp = threed_rdata[idx] - weight * dt[0] * norm;
+	interp_comp_mtp = threed_rdata[idx+1] - weight * dt[1] * norm;
+	
+	interp_real += threed_rdata[idx];
+	interp_comp += threed_rdata[idx + 1];
+	
+	frc[radius] += interp_real_mtp*dt[0] + interp_comp_mtp*dt[1];
 
-	frc_norm_rdata[radius] += interp_real*interp_real + interp_comp*interp_comp;
+	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
@@ -470,7 +568,7 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 	}
 	else r=1.0;
 	
-	quality_scores.set_norm( r );
+	quality_scores.set_norm(r);
 	
 	return quality_scores;
 }
@@ -526,9 +624,11 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	int y0 = (int) floor(yy + 0.5f);
 	int z0 = (int) floor(zz + 0.5f);
 	
-	(*pixel_operation)(rdata + x0 + y0 * nx + z0 * nxy, weight * dt[0]);
-	(*pixel_operation)(rdata + x0 + y0 * nx + z0 * nxy + 1, weight  * dt[1]);
-	(*pixel_operation)(norm + x0 + y0 * nx + z0 * nxy, weight);
+	int idx = x0 + y0 * nx + z0 * nxy;
+	
+	(*pixel_operation)(rdata + idx, weight * dt[0]);
+	(*pixel_operation)(rdata + idx + 1, weight  * dt[1]);
+	(*pixel_operation)(norm + idx/2, weight);
 
 	return true;
 }
@@ -591,9 +691,10 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	for (int j = 0; j < 8; j++)
 	{
 		int k = i + off[j];
-		(*pixel_operation)(rdata + k, weight * g[j] * dt[0]);
-		(*pixel_operation)(rdata + k + 1, weight * g[j] * dt[1]);
-		(*pixel_operation)(norm + k, weight * g[j]);
+		float gg = weight * g[j];
+		(*pixel_operation)(rdata + k, gg * dt[0]);
+		(*pixel_operation)(rdata + k + 1, gg * dt[1]);
+		(*pixel_operation)(norm + k/2, gg);
 	}
 
 	return true;
@@ -637,9 +738,11 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = weight * exp(-r / EMConsts::I3G);
 
-				(*pixel_operation)(rdata + i + j * nx + k * nxy, gg * dt[0]);
-				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1, gg * dt[1]);
-				(*pixel_operation)(norm + i + j * nx + k * nxy, gg);
+				int idx = i + j * nx + k * nxy;
+				
+				(*pixel_operation)(rdata + idx, gg * dt[0]);
+				(*pixel_operation)(rdata + idx + 1, gg * dt[1]);
+				(*pixel_operation)(norm + idx/2, gg);
 			}
 		}
 	}
@@ -668,7 +771,7 @@ bool FourierInserter3DMode3::effected_pixels_are_zero(const float& xx, const flo
 
 				if ( rdata[i + j * nx + k * nxy] > tolerance ) return false;
 				if ( rdata[i + j * nx + k * nxy + 1] > tolerance ) return false;
-
+				
 			}
 		}
 	}
@@ -697,9 +800,11 @@ bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, cons
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = weight * exp(-r / EMConsts::I4G);
 
-				(*pixel_operation)(rdata + i + j * nx + k * nxy, gg * dt[0]);
-				(*pixel_operation)(rdata + i + j * nx + k * nxy + 1,  gg * dt[1]);
-				(*pixel_operation)(norm + i + j * nx + k * nxy, gg);
+				int idx = i + j * nx + k * nxy;
+				
+				(*pixel_operation)(rdata + idx, gg * dt[0]);
+				(*pixel_operation)(rdata + idx + 1,  gg * dt[1]);
+				(*pixel_operation)(norm + idx/2, gg);
 			}
 		}
 	}
@@ -772,7 +877,7 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 
 				(*pixel_operation)(rdata + ii, gg * dt[0]);
 				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
-				(*pixel_operation)(norm + ii, gg);
+				(*pixel_operation)(norm + ii/2, gg);
 			}
 		}
 	}
@@ -800,7 +905,7 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 							weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 					(*pixel_operation)(rdata + ii, gg * dt[0]);
 					(*other_pixel_operation)(rdata+ii + 1, gg * dt[1]); // note the -, complex conj.
-					(*pixel_operation)(norm + ii, gg);
+					(*pixel_operation)(norm + ii/2, gg);
 				}
 			}
 		}
@@ -901,7 +1006,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 
 				(*pixel_operation)(rdata + ii, gg * dt[0]);
 				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
-				(*pixel_operation)(norm + ii, gg);
+				(*pixel_operation)(norm + ii/2, gg);
 			}
 		}
 	}
@@ -928,7 +1033,7 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 
 					(*pixel_operation)(rdata + ii, gg * dt[0]);
 					(*other_pixel_operation)(rdata+ii + 1, gg * dt[1]);// note the -, complex conj
-					(*pixel_operation)(norm + ii, gg);
+					(*pixel_operation)(norm + ii/2, gg);
 				}
 			}
 		}
@@ -1013,7 +1118,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 
 				(*pixel_operation)(rdata + ii, gg * dt[0]);
 				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
-				(*pixel_operation)(norm + ii, gg);
+				(*pixel_operation)(norm + ii/2, gg);
 			}
 		}
 	}
@@ -1039,7 +1144,7 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 
 					(*pixel_operation)(rdata + ii, gg * dt[0]);
 					(*other_pixel_operation)(rdata+ii + 1, gg * dt[1]);// note the -, complex conj
-					(*pixel_operation)(norm + ii, gg);
+					(*pixel_operation)(norm + ii/2, gg);
 				}
 			}
 		}

@@ -123,18 +123,19 @@ EMData::EMData(const EMData& that) :
 	rdata(0), supp(0)
 {
 	ENTERFUNC;
-	
-	// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
 
+// 	cout << "Calling copy constructor" << endl;
 	nx = that.nx;
 	ny = that.ny;
 	nz = that.nz;
 
+	// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
 	if (that.rdata)
 	{
 		set_size(that.nx, that.ny, that.nz);
 		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
 	}
+	
 	flags = that.flags;
 	all_translation = that.all_translation;
 	path = that.path;
@@ -146,6 +147,7 @@ EMData::EMData(const EMData& that) :
 	zoff = that.zoff;
 
 	changecount = 0;
+	
 	update();
 
 	EMData::totalalloc++;
@@ -157,12 +159,22 @@ EMData& EMData::operator=(const EMData& that)
 {
 	ENTERFUNC;
 	
+// 	cout << "Calling assignment op" << endl;
+	
 	if ( this != &that )
 	{
 		free_memory();
 		
-		set_size(that.nx, that.ny, that.nz);
-		memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+		nx = that.nx;
+		ny = that.ny;
+		nz = that.nz;
+		
+		// Only copy the rdata if it exists, we could be in a scenario where only the header has been read
+		if (that.rdata)
+		{
+			set_size(that.nx, that.ny, that.nz);
+			memcpy(rdata, that.rdata, nx * ny * nz * sizeof(float));
+		}
 
 		flags = that.flags;
 	

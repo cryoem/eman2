@@ -458,6 +458,14 @@ namespace EMAN
 			dict.erase(key);
 		}
 		
+		/** Clear all keys
+		 * wraps map.clear()
+		 */
+		void clear()
+		{
+			dict.clear();
+		}
+		
 		/** Default setting behavior
 		 */
 		EMData *set_default(const string & key, EMData * val)

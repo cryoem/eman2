@@ -78,18 +78,18 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
 }
 
-Reconstructor::Reconstructor( const Reconstructor& that ) : ReconstructorWithVolumeData(that)
+Reconstructor::Reconstructor( const Reconstructor& that ) : ReconstructorVolumeData(that)
 {
-	copyData(that);
+	copy_data(that);
 }
 
 Reconstructor& Reconstructor::operator=( const Reconstructor& that )
 {
 	if ( this != &that )
 	{
-		copyData(that);
+		copy_data(that);
 		// Make sure the base class performs the assignment also.
-		ReconstructorWithVolumeData::operator=(that);
+		ReconstructorVolumeData::operator=(that);
 	}
 	else
 	{
@@ -98,26 +98,26 @@ Reconstructor& Reconstructor::operator=( const Reconstructor& that )
 	return *this;
 }
 
-void Reconstructor::copyData( const Reconstructor& that )
+void Reconstructor::copy_data( const Reconstructor& that )
 {
 	params = that.params;
 }
 
-ReconstructorWithVolumeData& ReconstructorWithVolumeData::operator=( const ReconstructorWithVolumeData& that )
+ReconstructorVolumeData& ReconstructorVolumeData::operator=( const ReconstructorVolumeData& that )
 {
 	if ( this != &that )
 	{
-		copyData(that);
+		copy_data(that);
 	}
 	else
 	{
-		cerr << "Warning: attempted to assign a ReconstructorWithVolumeData to itself, no action taken" << endl;
+		cerr << "Warning: attempted to assign a ReconstructorVolumeData to itself, no action taken" << endl;
 	}
 
 	return *this;
 }
 
-void ReconstructorWithVolumeData::copyData( const ReconstructorWithVolumeData& that )
+void ReconstructorVolumeData::copy_data( const ReconstructorVolumeData& that )
 {
 	nx = that.nx;
 	ny = that.ny;
@@ -137,12 +137,47 @@ void ReconstructorWithVolumeData::copyData( const ReconstructorWithVolumeData& t
 	}
 }
 
+void ReconstructorVolumeData::normalize_threed()
+{
+	float* norm = tmp_data->get_data();
+	float* rdata = image->get_data();
+		
+	// FIXME should throw a sensible error
+	if ( 0 == norm )
+		throw;
+	if ( 0 == rdata )
+		throw;
+		
+	for (int i = 0; i < nx * ny * nz; i += 2) {
+		float d = norm[i/2];
+		if (d == 0) {
+			rdata[i] = 0;
+			rdata[i + 1] = 0;
+		}
+		else {
+			rdata[i] /= d;
+			rdata[i + 1] /= d;
+		}
+	}
+}
+
+FourierReconstructor::FourierReconstructor( const FourierReconstructor& that ) : 
+	Reconstructor(that), image_idx(that.image_idx), inserter(0),
+	slice_insertion_flag(that.slice_insertion_flag), slice_agreement_flag(that.slice_agreement_flag)
+{
+	load_inserter();
+}
+
 FourierReconstructor& FourierReconstructor::operator=( const FourierReconstructor& that )
 {
 	if ( this != &that )
 	{
 		// Make sure the base class performs the assignment also.
 		Reconstructor::operator=(that);
+		
+		image_idx = that.image_idx;
+		slice_agreement_flag = that.slice_agreement_flag;
+		slice_insertion_flag = that.slice_insertion_flag;
 		
 		// Delete the old inserter if it exists.
 		free_memory();
@@ -156,6 +191,39 @@ FourierReconstructor& FourierReconstructor::operator=( const FourierReconstructo
 	}
 
 	return *this;
+}
+
+void FourierReconstructor::free_memory()
+{
+	if ( inserter != 0 )
+	{
+		delete inserter;
+		inserter = 0;
+	}
+}
+
+void FourierReconstructor::load_inserter()
+{
+	// ints get converted to strings byt the Dict object here
+	string mode = (string)params["mode"];
+	Dict parms;
+	parms["rdata"] = image->get_data();
+	parms["norm"] = tmp_data->get_data();
+	parms["nx"] = nx;
+	parms["ny"] = ny;
+	parms["nz"] = nz;
+	
+	// Get a new inserter without deleting the old inserter to protect against a potential memory leak...
+	// Because the call to Factory<FourierPixelInserter3D>::get will potentially throw
+	FourierPixelInserter3D* p_inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
+	p_inserter->init();
+	
+	if ( inserter != 0 )
+	{
+		delete inserter;
+	}
+	
+	inserter = p_inserter;
 }
 
 void FourierReconstructor::setup()
@@ -193,17 +261,19 @@ void FourierReconstructor::setup()
 	image->update();
 
 	tmp_data = new EMData();
-	tmp_data->set_size(size + 2, size, size);
+	tmp_data->set_size((size + 2)/2, size, size);
 	tmp_data->to_zero();
 	tmp_data->update();
 
 	load_inserter();
-
 }
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
 {
-	EMData* return_slice;
+	// First normalize the slice, setting it's mean to zero
+	EMData* return_slice = slice->process("normalize");
+
+// 	cout << "The slice had a mean of " << (float)slice->get_attr("mean") << " the new slice has a mean of " << (float) return_slice->get_attr("mean") << endl;
 
 	// Apply padding if the option has been set, and it's sensible
 	if ( params.find("pad") != params.end() )
@@ -219,14 +289,10 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
 		else
 		{
 			// x_size and y_size should always be the same size atm, but there may come a time when they are not.
-			return_slice = slice->get_clip(Region((x_size-pad)/2,(y_size-pad)/2,pad,pad));
+			return_slice->clip_inplace(Region((x_size-pad)/2,(y_size-pad)/2,pad,pad));
 		}
 	}
-	else
-	{
-		return_slice = new EMData(*slice);
-	}
-
+		
 	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
 	return_slice->process_inplace("xform.phaseorigin");
 
@@ -255,29 +321,34 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	// such as as Fourier conversion and optional padding etc.
 	EMData* slice = preprocess_slice( input_slice );
 
-	
-	if (!slice->is_complex()) {
-		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor::insert_slice failed");
-		return 1;
+	// Catch the first time a slice is inserted to do some things....
+	if ( slice_insertion_flag == true )
+	{
+		// Zero the memory in the EMData objects
+		zero_memory();
+		// Reset the image_idx to zero
+		image_idx = 0;
+		// Set flags appropriately - slice_agreement_flag is set for the first time determine_slice_agreement is called
+		slice_agreement_flag = true;
+		slice_insertion_flag = false;
+		
+		if ( prev_quality_scores.size() != 0 ) print_stats( prev_quality_scores );
 	}
-
+	
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
 	// place until after the first round of slice insertion
-	if ( idx < quality_scores.size() )
+	if ( quality_scores.size() != 0 )
 	{
-		cout << "The quality score of" << endl;
-		if ( quality_scores[idx].get_snr_normed_frc_integral() < (float) params["hard"] )
+		if ( quality_scores[image_idx].get_snr_normed_frc_integral() < (float) params["hard"] )
 		{
-			//cout << quality_scores[idx].get_snr_normed_frc_integral() << " was less than " << (float) params["hard"] << endl;
-			//cout << "....fail";
-			idx++;
+			image_idx++;
 			return 1;
 		}
-		//cout << endl;
-		slice->mult( 1.0f/quality_scores[idx].get_norm() );
-		idx++;
+		slice->mult(1.f/quality_scores[image_idx].get_norm());
+		image_idx++;
 	}
 	
+	// Function call could be removed and code inserted here
 	do_insert_slice_work(slice, arg);
 
 	delete slice;	
@@ -308,14 +379,11 @@ int FourierReconstructor::remove_slice(const EMData* const input_slice, const Tr
 		return 1;
 	}
 	
-
 	inserter->set_pixel_minus_operation();
 	
 	do_insert_slice_work(slice, arg);
 
 	inserter->set_pixel_add_operation();
-	
-	
 	
 	delete slice;	
 
@@ -456,8 +524,9 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				zz += nz / 2;
 				
 				float dt[2];
-				dt[0] = dat[x * 2 + y * nx];
-				dt[1] = cc * dat[x * 2 + 1 + y * nx];
+				int idx = x * 2 + y * nx;
+				dt[0] = dat[idx];
+				dt[1] = cc * dat[idx+1];
 
 				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
 			}
@@ -477,25 +546,43 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 		return 1;
 	}
 
+	// The first time determine_slice_agreement is called (in each iteration) some things need to happen...
+	if ( slice_agreement_flag == true )
+	{
+		// Normalize the real data using the normalization values in the normalization volume
+		// This is important because the InterpolatedFRC objects assumes this behaviour
+		normalize_threed();
+		// Reset the image_idx to index into prev_quality_scores correctly
+		image_idx = 0;
+		// Make a copy of the previous quality scores - the first time around this will be like copying nothing
+		prev_quality_scores = quality_scores;
+		// Now clear the old scores so they can be redetermined (which is the purpose of this function)
+		quality_scores.clear();
+		// Reset the flags - especially the insertion flag
+		slice_insertion_flag = true;
+		slice_agreement_flag = false;
+	}
+	
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
 	EMData* slice = preprocess_slice( input_slice );
 
+	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
+	// place until after the first round of slice insertion
+	if (  prev_quality_scores.size() != 0 )
+	{
+		// The slice must be multiplied by the normalization value used in insert or else the calculations will
+		// be inconsistent
+		slice->mult(1.f/prev_quality_scores[image_idx].get_norm());
+	}
+	
 	float *dat = slice->get_data();
 
 	int rl = Util::square(ny / 2 - 1);
 
-	InterpolatedFRC ifrc = InterpolatedFRC(image->get_data(), nx, ny, nz );
+	InterpolatedFRC ifrc = InterpolatedFRC(image->get_data(), tmp_data->get_data(), nx, ny, nz );
 	ifrc.reset();
 	
-	bool doing_refined = false;
-
-	if ( doing_refined )
-	{
-		inserter->set_pixel_minus_operation();
-		do_insert_slice_work(slice, euler);
-	}
-
 	float dt[2];
 	
 	// The insertion mode can possibly change - though you wouldn't expect it to happen, it is useful for testing purposes
@@ -530,11 +617,23 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			dt[0] = dat[x * 2 + y * nx];
 			dt[1] = cc * dat[x * 2 + 1 + y * nx];
 			
-			float weight = 0;
-			if ( !doing_refined )
+
+			float weight = (float)params["weight"];
+			if ( prev_quality_scores.size() != 0 )
 			{
-				weight = (float)params["weight"];
+				// If the slice was not inserted into the 3D volume in the previous round of slice insertion
+				// then the weight must be set to zero, or else the result produced by the InterpolatedFRC will be wrong.
+				// This is because the InterpolatedFRC subtracts the incoming pixels from the 3D volume in order
+				// to estimate quality using only data from the other slices in the volume. If the slice was not previously inserted
+				// then it should not be subtracted prior to quality estimation....
+				if ( prev_quality_scores[image_idx].get_snr_normed_frc_integral() < (float) params["hard"] )
+				{
+					weight = 0;
+				}
 			}
+
+			// FIXME: this could be replaced in favor class implementation with no switch statement, similar to the 
+			// insert in the Fourier reconstructor do_insert_slice_work method
 			switch (mode)
 			{
 				case 1:
@@ -560,25 +659,95 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 					break;
 				default:
 					cout << "Warning, nothing happened the mode " << mode << " was unsupported" << endl;
+					return 1;
+					// okay never get here but it would look weird if the break was absent
 					break;
-			}
-			
+			}	
 		}
 	}
 	
-
-	if ( doing_refined )
-	{
-		inserter->set_pixel_add_operation();
-		do_insert_slice_work(slice, euler);
-	}
 	
 	QualityScores q_scores = ifrc.finish( num_particles_in_slice );
+	// Print the quality scores here for debug information
 	//q_scores.debug_print();
-	quality_scores.push_back(q_scores);
+	
+	if (prev_quality_scores.size() != 0 )
+	{
+		// If a previous normalization value has been calculated then average it with the one that 
+		// was just calculated, this will cause the normalization values to converge more rapidly.
+		q_scores.set_norm((q_scores.get_norm() + prev_quality_scores[image_idx].get_norm())/2.0);
+		image_idx++;
+	}
 
+	quality_scores.push_back(q_scores);
+	
 	delete slice;
 	return 0;
+}
+
+void FourierReconstructor::print_stats( const vector<QualityScores>& scores )
+{
+	if ( prev_quality_scores.size() == 0 )
+	{
+		cout << "No quality scores present in FourierReconstructor::print_stats, nothing to print" << endl;
+		return;
+	}
+	
+	unsigned int size = scores.size();
+
+
+	unsigned int contributing_images = 0;
+	for( unsigned int i = 0; i < size; ++ i )		
+	{
+		if (scores[i].get_snr_normed_frc_integral() < (float) params["hard"])
+			continue;
+		else contributing_images++;
+	}
+	
+	double* norm_frc = new double[contributing_images];
+	double* frc = new double[contributing_images];
+	double* norm_snr = new double[contributing_images];
+	
+	unsigned int idx = 0;
+	for( unsigned int i = 0; i < size; ++ i )		
+	{
+		if (scores[i].get_snr_normed_frc_integral() < (float) params["hard"])
+			continue;
+		
+		norm_frc[idx] = scores[i].get_snr_normed_frc_integral();
+		frc[idx] = scores[i].get_frc_integral();
+		norm_snr[idx] = scores[i].get_normed_snr_integral();
+		
+		++idx;
+	}
+	
+	double mean = gsl_stats_mean(norm_frc, 1, contributing_images);
+	double variance = gsl_stats_variance_m(norm_frc, 1, contributing_images, mean);
+
+	cout << "Normalized FRC mean " << mean << " std dev " << sqrtf(variance) << endl;
+
+	mean = gsl_stats_mean(frc, 1, contributing_images);
+	variance = gsl_stats_variance_m(frc, 1, contributing_images, mean);
+	
+	cout << "FRC mean " << mean << " std dev " << sqrtf(variance) << endl;
+
+	mean = gsl_stats_mean(norm_snr, 1, contributing_images);
+	variance = gsl_stats_variance_m(norm_snr, 1, contributing_images, mean);
+	cout << "SNR mean " << mean << " std dev " << sqrtf(variance) << endl;
+
+	double c0, c1, cov00, cov01, cov11, sumsq;
+	gsl_fit_linear (norm_frc, 1, frc, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+	cout << "The correlation between frc and norm_frc is " << c0 << " + " << c1 << "x" << endl;
+
+	gsl_fit_linear (norm_frc, 1, norm_snr, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+	cout << "The correlation between norm_snr and norm_frc is " << c0 << " + " << c1 << "x" << endl;
+
+	gsl_fit_linear (norm_snr, 1, frc, 1, contributing_images, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+	cout << "The correlation between frc and norm_snr is " << c0 << " + " << c1 << "x" << endl;
+
+	delete [] norm_frc;
+	delete [] frc;
+	delete [] norm_snr;
 }
 
 EMData *FourierReconstructor::finish()
@@ -602,17 +771,7 @@ EMData *FourierReconstructor::finish()
 		}
 	}
 	else {
-		for (int i = 0; i < nx * ny * nz; i += 2) {
-			float d = norm[i];
-			if (d == 0) {
-				rdata[i] = 0;
-				rdata[i + 1] = 0;
-			}
-			else {
-				rdata[i] /= d;
-				rdata[i + 1] /= d;
-			}
-		}
+		normalize_threed();
 	}
 
 	if( tmp_data ) {
@@ -639,49 +798,7 @@ EMData *FourierReconstructor::finish()
 	}
 
 
-	bool want_stats = false;
-	if ( want_stats )
-	{
-		unsigned int size = quality_scores.size();
-		double* norm_frc = new double[size];
-		double* frc = new double[size];
-		double* norm_snr = new double[size];
-
-		for( unsigned int i = 0; i < size; ++ i )		
-		{
-			norm_frc[i] = quality_scores[i].get_snr_normed_frc_integral();
-			frc[i] = quality_scores[i].get_frc_integral();
-			norm_snr[i] = quality_scores[i].get_normed_snr_integral();
-		}
-		
-		double mean = gsl_stats_mean(norm_frc, 1, size);
-		double variance = gsl_stats_variance_m(norm_frc, 1, size, mean);
-	
-		cout << "Normalized FRC mean " << mean << " variance " << variance << endl;
-
-		mean = gsl_stats_mean(frc, 1, size);
-		variance = gsl_stats_variance_m(frc, 1, size, mean);
-		
-		cout << "FRC mean " << mean << " variance " << variance << endl;
-
-		mean = gsl_stats_mean(norm_snr, 1, size);
-		variance = gsl_stats_variance_m(norm_snr, 1, size, mean);
-		cout << "SNR mean " << mean << " variance " << variance << endl;
-
-		double c0, c1, cov00, cov01, cov11, sumsq;
-		gsl_fit_linear (norm_frc, 1, frc, 1, size, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-		cout << "The correlation between frc and norm_frc is " << c0 << " + " << c1 << "x" << endl;
-
-		gsl_fit_linear (norm_frc, 1, norm_snr, 1, size, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-		cout << "The correlation between norm_snr and norm_frc is " << c0 << " + " << c1 << "x" << endl;
-
-		gsl_fit_linear (norm_snr, 1, frc, 1, size, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-		cout << "The correlation between frc and norm_snr is " << c0 << " + " << c1 << "x" << endl;
-
-		delete [] norm_frc;
-		delete [] frc;
-		delete [] norm_snr;
-	}
+	print_stats(quality_scores);
 	
 	image->update();
 

@@ -61,13 +61,13 @@ void process_inplace(Processor * p);
  * @return the processed result, a new image 
  * @exception NotExistingObjectError If the processor doesn't exist.
  * */
-EMData * process(const string & processorname, const Dict & params = Dict());
+EMData * process(const string & processorname, const Dict & params = Dict()) const;
 
 /** Call the process with an instance od Processor, usually this instancecan 
  * be get by (in Python) Processors.get("name", {'k':v, 'k':v})
  * @param p the processor pointer
  * */
-EMData * process(Processor * p);
+EMData * process(Processor * p) const;
 
 /** Compare this image with another image.
  * @param cmpname Comparison algorithm name.

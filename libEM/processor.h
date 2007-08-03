@@ -105,7 +105,7 @@ namespace EMAN
 		 * @param image The image will be copied, actual process happen on copy of image.
 		 * @return the image processing result, may or may not be the same size of the input image  
 		 * */
-		virtual EMData* process(EMData * image);
+		virtual EMData* process(const EMData * const image);
 
 		/** To process multiple images using the same algorithm.
 		 * @param images Multiple images to be processed.

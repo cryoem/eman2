@@ -66,7 +66,7 @@ void EMData::process_inplace(Processor * p)
 	EXITFUNC;
 }
 
-EMData* EMData::process(const string & processorname, const Dict & params)
+EMData* EMData::process(const string & processorname, const Dict & params) const
 {
 	ENTERFUNC;
 	Processor *f = Factory < Processor >::get(processorname, params);
@@ -83,7 +83,7 @@ EMData* EMData::process(const string & processorname, const Dict & params)
 	EXITFUNC;
 }
 
-EMData * EMData::process(Processor * p)
+EMData * EMData::process(Processor * p) const
 {
 	ENTERFUNC;
 	EMData * result = 0;

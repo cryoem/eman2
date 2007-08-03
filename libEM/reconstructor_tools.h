@@ -158,9 +158,6 @@ namespace EMAN
 			{
 			// note but this is really inserting OR individually replacing...
 			// the old data will be kept if it is not written over
-			// This is different from the original design but has not yet been confirmed
-			// as OK with Steve Ludtke
-			// This shouldn't present any problems.
 				TypeDict permissable_params = get_param_types();
 				for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
 				{
@@ -550,10 +547,10 @@ namespace EMAN
 
 			~QualityScores() {}
 
-			float get_frc_integral() { return frc_integral; }
-			float get_snr_normed_frc_integral() { return snr_normed_frc_intergral; }
-			float get_normed_snr_integral() { return normed_snr_integral; }
-			float get_norm() { return norm; }
+			float get_frc_integral() const { return frc_integral; }
+			float get_snr_normed_frc_integral() const { return snr_normed_frc_intergral; }
+			float get_normed_snr_integral() const { return normed_snr_integral; }
+			float get_norm() const { return norm; }
 
 			void set_frc_integral( const float& score ) { frc_integral = score; }
 			void set_snr_normed_frc_integral(const float& score) { snr_normed_frc_intergral = score; }
@@ -656,13 +653,13 @@ namespace EMAN
 		public:
 			InterpolatedFRC() : threed_rdata(0), frc(0), frc_norm_rdata(0), frc_norm_dt(0), size(0), pixel_radius_max(0), r(0), rn(0) {}
 
-			InterpolatedFRC(float* const rdata, const int xsize, const int ysize, const int zsize, const float& sampling=1.0 );
+			InterpolatedFRC(float* const rdata, float* const norm, const int xsize, const int ysize, const int zsize, const float& sampling=1.0 );
 			~InterpolatedFRC()
 			{
 				free_memory();
 			}
 
-		// Copy and assignment
+			// Copy and assignment
 			InterpolatedFRC( const InterpolatedFRC& that );
 			InterpolatedFRC& operator=( const InterpolatedFRC& that);
 	
@@ -703,7 +700,7 @@ namespace EMAN
 				}
 			}
 			// Pointers to the 3D (complex) data 
-			float* threed_rdata;
+			float* threed_rdata, *norm_data;
 
 			// I wish I could make these unsigned but everything else is ints, so these are too.
 			int nx, ny, nz, nxy;

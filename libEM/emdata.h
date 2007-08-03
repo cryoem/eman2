@@ -141,14 +141,14 @@ namespace EMAN
 		 * @exception ImageFormatException If the image is not a square real odd image.
 		 * @return the FH image.
 		 */
-//		EMData* do_FH();
+// 		EMData* do_FH();
 		
 		/**   Do the Inverse Fourier Harmonic Transform   PRB
 		 * Takes an FH image, returns a square  complex image with odd sides
 		 * @exception ImageFormatException If the image is not the FH of something
 		 * @return a square complex image with odd sides
 		 */
-//		EMData* do_FH2F();
+// 		EMData* do_FH2F();
 
 		
 

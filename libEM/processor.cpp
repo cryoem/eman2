@@ -204,7 +204,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&FFTProcessor::NEW);
 }
 
-EMData* Processor::process(EMData * image)
+EMData* Processor::process(const EMData * const image)
 {
 	EMData * result = image->copy();
 	process_inplace(result);

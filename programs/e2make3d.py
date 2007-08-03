@@ -48,10 +48,11 @@ def main():
 	parser=OptionParser(usage="%prog <input file> [options]", version="%prog 2.0a")
 	parser.add_option("--out", dest="filename", default="", help="Output 3D MRC file")
 	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct")
-	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25%")
+	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction")
 	parser.add_option("--recon", dest="recon_type", default="fourier:mode=2", help="Reconstructor to use")
 	parser.add_option("--quiet", dest="quiet", default=False, action="store_true",help="Quiet output")
-	parser.add_option("--hard", type=float, dest="hard", default=0, help="This specifies how well the class averages must match the model to be included, 25 is typical")
+	parser.add_option("--hard", type=float, dest="hard", default=0, help="This specifies how well the class averages must match the model to be included")
+	parser.add_option("--no_weighting", action="store_true", dest="no_wt", default=False, help="Turn weighting off")
 	parser.add_option("--mask", type=int, dest="mask", help="Real-space mask radius")
 	parser.add_option("--goodbad", action="store_true", dest="goodbad", default=False, help="Saves the used and unused class averages in 2 files")
 	parser.add_option("--apix", type=float, dest="apix", default=-1, help="Set the sampling (angstrom/pixel)")
@@ -229,7 +230,7 @@ def back_projection_reconstruction(options):
 	print "3"
 	params = recon.get_params()
 	params["size"] = gimme_global_pixel_dimension( options.input_file )
-	recon.set_params(params)
+	recon.insert_params(params)
 	
 	print "Calling setup"
 	recon.setup()
@@ -253,11 +254,11 @@ def back_projection_reconstruction(options):
 		# is off.
 		t.transpose();
 		
-		if ( recon.get_params()["use_weights"] ):
+		if ( options.no_wt == False ):
 			weight = float (d.get_attr("ptcl_repr"))/particle_number
 			param = {}
 			param["weight"] = weight
-			recon.set_params(param) # this inserts that parameter, maintaining what's already there
+			recon.insert_params(param) # this inserts that parameter, maintaining what's already there
 			#recon.print_params()
 			
 		recon.insert_slice(d, t)
@@ -333,25 +334,25 @@ def back_projection_reconstruction(options):
 		
 	return output
 
-def get_fft_for_reconstruction(emdata, mask, pad):
+#def get_fft_for_reconstruction(emdata, mask, pad):
 
-	emdata.process_inplace("normalize")
-	emdata.process_inplace("mask.ringmean",{"ring_width":mask})
+	#emdata.process_inplace("normalize")
+	#emdata.process_inplace("mask.ringmean",{"ring_width":mask})
 
-	emdata.transform=Transform3D(EULER_EMAN,emdata.get_attr("euler_az"),
-							emdata.get_attr("euler_alt"),emdata.get_attr("euler_phi"))
+	#emdata.transform=Transform3D(EULER_EMAN,emdata.get_attr("euler_az"),
+							#emdata.get_attr("euler_alt"),emdata.get_attr("euler_phi"))
 
-	emdata.process_inplace("xform.phaseorigin")
+	#emdata.process_inplace("xform.phaseorigin")
 
-	if pad>0:
-		emdata=emdata.pad_fft(pad)
+	#if pad>0:
+		#emdata=emdata.pad_fft(pad)
 
-	f=emdata.do_fft()
+	#f=emdata.do_fft()
 
-	f.process_inplace("xform.fourierorigin")
-	f.transform=emdata.transform
+	#f.process_inplace("xform.fourierorigin")
+	#f.transform=emdata.transform
 	
-	return f
+	#return f
 
 
 ## Gets the total number of particles contributing in all images,
@@ -415,11 +416,12 @@ def gimme_global_pixel_dimension( imagefilename ):
 	# if we make it here all the image dimensions are uniform and equal in all directions, it is safe to return xsize or ysize
 	return xsize
 		
-#----------------------------------------- should work
+#----------------------------------------- works
 def fourier_reconstruction(options):
 	if not(options.quiet):
 		print "Initializing the reconstructor ..."
 	
+	# Get the reconstructor and initialize it correctly
 	a = parsemodopt(options.recon_type)
 	recon=Reconstructors.get(a[0], a[1])
 	params = recon.get_params()
@@ -432,10 +434,13 @@ def fourier_reconstruction(options):
 			params["pad"] = options.pad
 	if options.mask:
 		params["mask"] = options.mask
-	recon.set_params(params)
+	recon.insert_params(params)
 	recon.setup()
-	
-	[particle_number, total_images] = gimme_stats( options.input_file )
+
+
+	read_header_only = True
+	images=EMData().read_images(options.input_file,[], read_header_only)
+	total_images = len(images)
 		
 	SNR=[]
 	
@@ -454,30 +459,29 @@ def fourier_reconstruction(options):
 	if not(options.quiet):
 		print "Inserting Slices"
 		
-	for j in xrange(0,4): #4):     #change back when the thr issue solved
-		recon.iteration_reset()
+	for j in xrange(0,5): #4):     #change back when the thr issue solved
+		
+		removed = 0;
 		
 		if ( j > 0 ):
 			for i in xrange(0,total_images):
 				image=EMData().read_images(options.input_file, [i])[0]
 				
 				num_img=image.get_attr("ptcl_repr") 
-				
 				if (num_img<=0):
 					continue
 				
-				if ( recon.get_params()["use_weights"] ):
+				if ( options.no_wt == False ):
 					weight = float (num_img)
 					param = {}
 					param["weight"] = weight
-					recon.set_params(param) # this inserts that parameter, maintaining what's already there.
+					recon.insert_params(param) # this inserts that parameter, maintaining what's already there.
 				
 				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
 				recon.determine_slice_agreement(image,transform,num_img)
-			recon.zero_memory()
-		
-		if (options.hard>0): thr=options.hard*(1+(3-j)/3.0)
-
+	
+		idx = 0
+	
 		for i in xrange(0,total_images):
 			
 			image=EMData().read_images(options.input_file, [i])[0]
@@ -485,20 +489,20 @@ def fourier_reconstruction(options):
 			if (image.get_attr("ptcl_repr")<=0):
 				continue
 			
-			if ( recon.get_params()["use_weights"] ):
+			if ( options.no_wt == False ):
 				weight = float (image.get_attr("ptcl_repr"))
 				param = {}
 				param["weight"] = weight
-				recon.set_params(param) # this inserts that parameter, maintaining what's already there
+				recon.insert_params(param) # this inserts that parameter, maintaining what's already there
+				#print "using weight %d" %weight
 				#recon.print_params()
 			
-			if (j==3 and recon.get_params()["dlog"]):
-				image.process_inplace("math.log")
-
-		
+			#if (j==3 and recon.get_params()["dlog"]):
+				#image.process_inplace("math.log")
 
 			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
 			failure = recon.insert_slice(image,transform)
+			
 			if not(options.quiet):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 								(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
@@ -506,8 +510,12 @@ def fourier_reconstruction(options):
 								image.get_attr("euler_az"),
 								image.get_attr("euler_phi"),
 								image.get_attr("maximum"),image.get_attr("minimum")))
+				if ( j > 0):
+					sys.stdout.write("\t%f %f" %(recon.get_norm(idx), recon.get_score(idx) ))
+					
 				if ( failure ):
 					sys.stdout.write( " X" )
+					removed += 1
 				
 				sys.stdout.write("\n")
 
@@ -516,6 +524,10 @@ def fourier_reconstruction(options):
 					pass  #Should be writing to 3dgood
 				else:
 					pass #should be writing to 3dbad"
+				
+			idx += 1
+			
+		print "Iteration %d excluded %d images " %(j,removed)
 
 	if (options.goodbad):
 		print "print log msgs"
