@@ -932,14 +932,14 @@ class TestEMData(unittest.TestCase):
         e.do_fft_inplace()
         e.do_ift_inplace()
         
-        self.assertEqual(e.get_xsize(), d.get_xsize())
+        self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
         self.assertEqual(e.get_ysize(), d.get_ysize())
         self.assertEqual(e.get_zsize(), d.get_zsize())
         
-        for k in range(e.get_xsize()):
-            for j in range(e.get_ysize()):
-                for i in range(e.get_zsize()):
-                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+        for k in range(d.get_xsize()):
+            for j in range(d.get_ysize()):
+                for i in range(d.get_zsize()):
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)
                     
     def test_ift_inplace2(self):
         """test ift inplace (fft out of place) .............."""
@@ -954,14 +954,14 @@ class TestEMData(unittest.TestCase):
         e = e.do_fft()
         e.do_ift_inplace()
         
-        self.assertEqual(e.get_xsize(), d.get_xsize())
+        self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
         self.assertEqual(e.get_ysize(), d.get_ysize())
         self.assertEqual(e.get_zsize(), d.get_zsize())
         
-        for k in range(e.get_xsize()):
-            for j in range(e.get_ysize()):
-                for i in range(e.get_zsize()):
-                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])  
+        for k in range(d.get_xsize()):
+            for j in range(d.get_ysize()):
+                for i in range(d.get_zsize()):
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)  
     def test_ift(self):
         """test ift (fft inplace) ..........................."""
         e = EMData()
@@ -982,7 +982,7 @@ class TestEMData(unittest.TestCase):
         for k in range(e.get_xsize()):
             for j in range(e.get_ysize()):
                 for i in range(e.get_zsize()):
-                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)
                     
     def test_ift2(self):
         """test ift (fft out of place) ......................"""
@@ -1004,7 +1004,7 @@ class TestEMData(unittest.TestCase):
         for k in range(e.get_xsize()):
             for j in range(e.get_ysize()):
                 for i in range(e.get_zsize()):
-                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k]) 
+                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3) 
 
     def test_do_fft_inplace(self):
         """test do_fft_inplace()/do_ift_inplace other ......."""
@@ -3125,7 +3125,7 @@ class TestEMData(unittest.TestCase):
         for z in range(2):
             for y in range(2):
                 for x in range(2):
-                    self.assertAlmostEqual( d[z][y][x], log(coefficient))
+                    self.assertAlmostEqual( d[z][y][x], log(coefficient), 3)
                     
     def test_log10(self):
         """test log10() arithmatica function for image......."""
@@ -3140,7 +3140,7 @@ class TestEMData(unittest.TestCase):
         for z in range(2):
             for y in range(2):
                 for x in range(2):
-                    self.assertAlmostEqual( d[z][y][x], log10(coefficient))
+                    self.assertAlmostEqual( d[z][y][x], log10(coefficient), 3)
     
     def test_process(self):
         """test process(Processor)..........................."""
