@@ -15864,7 +15864,8 @@ vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask,
 	vector<float> res;
 	res.push_back(x[1]);
 	res.push_back(x[2]);
-	res.push_back(x[3]);	
+	res.push_back(x[3]);
+	res.push_back(n);	
 	return res;
 }
 
