@@ -514,6 +514,7 @@ float find_3d_threshold(float mass, float pixel_size);
  /* Peak (with a radius of hf_p) search for particle picking:
                                                            */ 
 vector<float> peak_ccf(float hf_p);
+
 /* pixel power operation function */
 EMData* get_pow(float n_pow);
 
@@ -522,5 +523,6 @@ private:
 static bool peakcmp(const Pixel& p1, const Pixel& p2);  
 public:
 EMData* extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew);
+
 static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage=300.0f,float cs=2.0f,float wgh=0.1f,float b_factor=0.0f,float dza=0.0f,float azz=0.0f,float sign=-1.0f);
 #endif	//emdata__sparx_h__
