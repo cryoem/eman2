@@ -8,6 +8,7 @@
 #include "ali3d_d_mpi.h"
 #include "ali3d_unified_mpi.h"
 #include "alignoptions.h"
+#include "utilparse.h"
 #include "utilcomm.h"
 
 int main(int argc, char *argv[])
