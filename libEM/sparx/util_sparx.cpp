@@ -15844,6 +15844,151 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 	return res;
 }
 
+vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData *refim, EMData* mask, float phi, float theta, float psi, float sxs, float sys) {
+	
+	EMData *proj;
+
+	int nmax=5, mmax=5;
+	char task[60], csave[60];
+	long int lsave[4];
+	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
+	double f, ft, factr, pgtol, x[nmax], l[nmax], u[nmax], g[nmax], dsave[29], wa[2*mmax*nmax+4*nmax+12*mmax*mmax+12*mmax];
+	long int SIXTY=60;
+
+	//     We wish to have no output.
+	iprint = -1;
+
+	//c     We specify the tolerances in the stopping criteria.
+	factr=1.0e1;
+	pgtol=1.0e-5;
+
+	//     We specify the dimension n of the sample problem and the number
+	//        m of limited memory corrections stored.  (n and m should not
+	//        exceed the limits nmax and mmax respectively.)
+	n=5;
+	m=5;
+ 
+	//     We now provide nbd which defines the bounds on the variables:
+	//                    l   specifies the lower bounds,
+	//                    u   specifies the upper bounds. 
+ 	//		      x   specifies the initial guess
+	x[0] = phi; 	nbd[0] = 2; 	l[0] = phi-2.0; 	u[0] = phi+2.0;
+	x[1] = theta; 	nbd[1] = 2; 	l[1] = theta-2.0;	u[1] = theta+2.0;
+	x[2] = psi; 	nbd[2] = 2; 	l[2] = psi-2.0; 	u[2] = psi+2.0;
+	x[3] = sxs; 	nbd[3] = 2; 	l[3] = sxs-2.0; 	u[3] = sxs+2.0;
+	x[4] = sys; 	nbd[4] = 2; 	l[4] = sys-2.0; 	u[4] = sys+2.0;
+
+
+	//     We start the iteration by initializing task.
+	// (**MUST clear remaining chars in task with spaces (else crash)!**)
+	strcpy(task,"START");
+	for (int i=5;i<60;i++)	task[i]=' ';
+
+	//     This is the call to the L-BFGS-B code.
+	// (* call the L-BFGS-B routine with task='START' once before loop *)
+	setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+	int step = 1;
+
+ 	// (* while routine returns "FG" or "NEW_X" in task, keep calling it *)
+	while (strncmp(task,"FG",2)==0 || strncmp(task,"NEW_X",5)==0) {
+
+		if (strncmp(task,"FG",2)==0) {
+	      	//   the minimization routine has returned to request the
+		//   function f and gradient g values at the current x
+
+		//        Compute function value f for the sample problem.
+		proj = new EMData();
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
+		proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
+		proj->do_ift_inplace();
+		int M = proj->get_ysize()/2;
+		proj = proj->window_center(M);
+		f = proj->cmp("ccc", refim, Dict("mask", mask));
+		f = -f;
+		delete proj;
+		
+	      	//        Compute gradient g for the sample problem.
+		float dt = 1.0e-3;
+		proj = new EMData();
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0]+dt,x[1],x[2]),kb);
+		proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
+		proj->do_ift_inplace();
+		proj = proj->window_center(M);
+		ft = proj->cmp("ccc", refim, Dict("mask", mask));
+		ft = -ft;
+		delete proj;
+		g[0] = (ft-f)/dt;
+
+		proj = new EMData();
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1]+dt,x[2]),kb);
+		proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
+		proj->do_ift_inplace();
+		proj = proj->window_center(M);
+		ft = proj->cmp("ccc", refim, Dict("mask", mask));
+		ft = -ft;
+		delete proj;
+		g[1] = (ft-f)/dt;
+
+		proj = new EMData();
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]+dt),kb);
+		proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
+		proj->do_ift_inplace();
+		proj = proj->window_center(M);
+		ft = proj->cmp("ccc", refim, Dict("mask", mask));
+		ft = -ft;
+		delete proj;
+		g[2] = (ft-f)/dt;
+
+		proj = new EMData();
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
+		proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->process_inplace("filter.shift", Dict("x_shift", x[3]+dt, "y_shift", x[4], "z_shift", 0.0f));
+		proj->do_ift_inplace();
+		proj = proj->window_center(M);
+		ft = proj->cmp("ccc", refim, Dict("mask", mask));
+		ft = -ft;
+		delete proj;
+		g[3] = (ft-f)/dt;
+
+		proj = new EMData();
+		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
+		proj->fft_shuffle();
+		proj->center_origin_fft();
+		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4]+dt, "z_shift", 0.0f));
+		proj->do_ift_inplace();
+		proj = proj->window_center(M);
+		ft = proj->cmp("ccc", refim, Dict("mask", mask));
+		ft = -ft;
+		delete proj;
+		g[4] = (ft-f)/dt;
+   		} 
+		
+		//c          go back to the minimization routine.
+		setulb_(&n,&m,x,l,u,nbd,&f,g,&factr,&pgtol,wa,iwa,task,&iprint,csave,lsave,isave,dsave,SIXTY,SIXTY);
+		step++;
+  	}
+	
+	printf("Total step is %d\n", step);
+	vector<float> res;
+	res.push_back(x[0]);
+	res.push_back(x[1]);
+	res.push_back(x[2]);
+	res.push_back(x[3]);
+	res.push_back(x[4]);
+	//res.push_back(step);	
+	return res;
+}
+
+
 vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys) {
 	
 	double  x[4];

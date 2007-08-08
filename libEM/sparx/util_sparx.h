@@ -488,6 +488,8 @@ public:
 	
 	static vector<float> twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, Util::KaiserBessel& kb, float ang, float sxs, float sys);
 	
+	static vector<float> twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData *refim, EMData* mask, float phi, float theta, float psi, float sxs, float sxy);
+	
 	static vector<float> twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask, float ang, float sxs, float sys);
 
 	static float ccc_images(EMData *, EMData *, EMData *, float , float , float );
