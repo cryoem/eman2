@@ -191,8 +191,7 @@ void GaussFFTProjector::interp_ft_3d(int mode, EMData * image, float x, float y,
 				Util::agauss(1, 1 - dx, 1 - dy, dz, gw) +
 				Util::agauss(1, dx, dy, 1 - dz, gw) +
 				Util::agauss(1, 1 - dx, dy, 1 - dz, gw) +
-				Util::agauss(1, dx, 1 - dy, 1 - dz, gw) + Util::agauss(1, 1 - dx, 1 - dy, 1 - dz,
-																	   gw);
+				Util::agauss(1, dx, 1 - dy, 1 - dz, gw) + Util::agauss(1, 1 - dx, 1 - dy, 1 - dz, gw);
 
 			data[0] = Util::agauss(rdata[i], dx, dy, dz, gw) +
 				Util::agauss(rdata[i + 2], 1 - dx, dy, dz, gw) +
