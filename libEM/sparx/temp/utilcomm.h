@@ -13,5 +13,7 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname, int *n
 int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
 int setpart(MPI_Comm comm, int nima, int *psize, int *nbase);
 int ParseAlignOptions(MPI_Comm comm, AlignOptions& options, char* optionsfname, int nvoxels, EMData*& mask3D);
+int asta2(float *img, int nx, int ny, int ri, double *abaloc, int *klploc);
+int setpart(MPI_Comm comm, int nang, int *psize, int *nbase);
 
 #endif // UTILCOMM_H
