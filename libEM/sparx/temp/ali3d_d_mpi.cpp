@@ -9,9 +9,11 @@
 #include "reconstructor.h"
 
 #include "ali3d_d_mpi.h"
-#include "ali3d_unified_mpi.h"
+#include "utilcomm.h"
 #include "alignoptions.h"
 #include "sirt.h"
+#include "project3d.h"
+#include "fgcalc.h"
 
 using namespace EMAN;
 
@@ -136,7 +138,7 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	    recons_params["sign"] = 1.0; // confirm this, sign is not defined in the current python code.
 	    try {
 		padffted = projdata[0]->get_attr("padffted");
-	    } catch ( E2Exception& e ) { // the only exception thrown by get_attr() is NotExistingObjectException()
+	    } catch ( std::exception& e ) { // the only exception thrown by get_attr() is NotExistingObjectException()
 		padffted = 0;
 	    }
 	    if (padffted == 1) recons_params["size"] = (float) recons_params["size"] / (float) recons_params["npad"];
