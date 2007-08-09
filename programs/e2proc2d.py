@@ -220,7 +220,7 @@ def main():
 				(processorname, param_dict) = parsemodopt(options.process[fi])
 				if not param_dict : param_dict={}
 				d.process_inplace(processorname, param_dict)
-				index_d[option1] += 1
+				#index_d[option1] += 1
 
 			elif option1 == "norefs" and d.get_average_nimg() <= 0:
 				continue
@@ -273,7 +273,7 @@ def main():
 				scale_f = options.scale[index_d[option1]]
 				if scale_f != 1.0:
 					d.scale(scale_f)
-				index_d[option1] += 1
+				#index_d[option1] += 1
 				
 			elif option1 == "clip":
 				ci = index_d[option1]
@@ -283,19 +283,19 @@ def main():
 				try: e.set_attr("avgnimg", d.get_attr("avgnimg"))
 				except: pass
 				d = e
-				index_d[option1] += 1
+				#index_d[option1] += 1
 			
 			elif option1 == "shrink":
 				shrink_f = options.shrink[index_d[option1]]
 				if shrink_f > 1:
 					d.median_shrink(shrink_f)
-				index_d[option1] += 1
+				#index_d[option1] += 1
 
 			elif option1 == "meanshrink":
 				mshrink = options.meanshrink[index_d[option1]]
 				if mshrink > 1:
 					d.mean_shrink(mshrink)
-				index_d[option1] += 1
+				#index_d[option1] += 1
 		
 			elif option1 == "selfcl":
 				scl = options.selfcl[0] / 2
