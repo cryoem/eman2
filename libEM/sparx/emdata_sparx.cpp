@@ -1998,8 +1998,7 @@ void EMData::symplane0_ctf(EMData* w) {
 }
 
 
-EMData*
-EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { // quadratic, no background, 2D
+EMData* EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { // quadratic, no background, 2D
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");
@@ -2303,8 +2302,7 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 }
 */
 
-EMData*
-EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
+EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 	int nxn, nyn, nzn;
 	if(scale_input == 0.0f) scale_input = 1.0f;
 	//const float scale=0.5;
@@ -3016,8 +3014,7 @@ Dict EMData::masked_stats(const EMData* mask) {
 }
 */
 
-EMData*  
-EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
+EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	if (!is_complex()) 
 		throw ImageFormatException("extractplane requires a fourier image");
 	if (nx%2 != 0)
@@ -3527,10 +3524,11 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	
 	if (abs(thr3-thr2)>abs(thr2-thr1))
 	{	x1=thr2;
-		x2=thr2+C*(thr3-thr2);}
-	else
-	{	x2=thr2;
-		x1=thr2-C*(thr2-thr1);	}
+		x2=thr2+C*(thr3-thr2);
+	} else {
+		x2=thr2;
+		x1=thr2-C*(thr2-thr1);
+	}
 		
 	int cnt1=0,cnt2=0;
 	for (int i=0;i<size;i++)
@@ -3558,9 +3556,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 					cnt++;
 			LF2 = cnt - ILE;
 			F2 = LF2*LF2;
-		}
-		else
-		{
+		} else {
 			x3=x2;
 			x2=x1;
 			x1=R*x2 + C*x0;
@@ -3578,9 +3574,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 	{
 		ILE = static_cast<int> (LF1 + ILE);
 		THR = x1;
-	}
-	else
-	{
+	} else {
 		ILE = static_cast<int> (LF2 + ILE);
 		THR = x2;
 	}
@@ -3697,7 +3691,7 @@ EMData* EMData::get_pow(float n_pow)
 	return buf_new;
 }						
 
-EMData* EMData::extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew) 
+EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew) 
 {
 	if (!is_complex()) 
 		throw ImageFormatException("extractline requires a fourier image");
@@ -3886,5 +3880,43 @@ EMData* EMData::ctf_img(int nx, int ny, int nz,float dz,float ps,float voltage,f
 		ctf_img1->attr_dict["is_ri"] = 1;
 		if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);		
 		return ctf_img1;
-			 			 
 } 		
+
+
+EMData* EMData::delete_disconnected_regions(int ix, int iy, int iz) {
+	if (3 != get_ndim())
+		throw ImageDimensionException("delete_disconnected_regions needs a 3-D image.");
+	if (is_complex()) 
+		throw ImageFormatException("delete_disconnected_regions requires a real image");
+	if ((*this)(ix+nx/2,iy+ny/2,iz+nz/2) == 0)
+		throw ImageDimensionException("delete_disconnected_regions starting point is zero.");
+
+	EMData* result = this->copy_head();
+	result->to_zero();
+	(*result)(ix+nx/2,iy+ny/2,iz+nz/2) = (*this)(ix+nx/2,iy+ny/2,iz+nz/2);
+	bool kpt = true;
+	//cout << "  delete   "<<(*result)(ix+nx/2,iy+ny/2,iz+nz/2)<<endl;
+	while(kpt) {
+		kpt = false;
+		for (int cz = 1; cz < nz-1; cz++) {
+			for (int cy = 1; cy < ny-1; cy++) {
+				for (int cx = 1; cx < nx-1; cx++) {
+					if((*result)(cx,cy,cz) == 1) {
+						for (int lz = -1; lz <= 1; lz++) {
+							for (int ly = -1; ly <= 1; ly++) {
+								for (int lx = -1; lx <= 1; lx++) {
+									if(((*this)(cx+lx,cy+ly,cz+lz) == 1) && ((*result)(cx+lx,cy+ly,cz+lz) == 0))  {
+										(*result)(cx+lx,cy+ly,cz+lz) = 1;
+										kpt = true;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	result->update();
+	return result;
+}

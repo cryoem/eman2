@@ -3874,7 +3874,7 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
  NROW = B->get_ysize();
  NX3D = CUBE->get_xsize();
  NY3D = CUBE->get_ysize();
- NZC = CUBE->get_zsize();
+ NZC  = CUBE->get_zsize();
 
 
  LDPX   = NX3D/2 +1;

@@ -2719,7 +2719,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 				float Kn = (*m_wptr3)(ix,iy,iz);
 				argx = std::sqrt(argy + float(ix*ix)*dx2);
 				int r = Util::round(float(inc)*argx);
-				if ( r >= 0 && Kn > 2.5f ) {
+				if ( r >= 0 && Kn > 4.5f ) {
 					if ( m_weighting == ESTIMATE ) {
 						int cx = ix;
 						int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -2778,7 +2778,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		}
 	}
 	for (int i = 0; i <= inc; i++) { 
-		(*SSNR)(i,0,0) = nom[i]; 
+		(*SSNR)(i,0,0) = nom[i];
 		(*SSNR)(i,1,0) = denom[i];
 		(*SSNR)(i,2,0) = nn[i];
 		(*SSNR)(i,3,0) = ka[i];

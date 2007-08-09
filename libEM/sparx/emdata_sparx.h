@@ -350,8 +350,7 @@ EMData* rotavg_i();
 		 */
 		/*template<class Win>
 		float getconvpt2d(float x, float y, Win win, int size = 7);*/
-		float getconvpt2d_kbi0(float x, float y, 
-				Util::KaiserBessel::kbi0_win win, int size = 7);
+		float getconvpt2d_kbi0(float x, float y, Util::KaiserBessel::kbi0_win win, int size = 7);
 		
 		
 		/** 2-D rotation using gridding convolution.
@@ -460,7 +459,7 @@ EMData* rotavg_i();
 		 *       J. Opt. Soc. Am. A _21_, 499-509 (2004)
 		 *
 		 */
-		EMData*  extractplane(const Transform3D& tf, Util::KaiserBessel& kb);
+		EMData* extractplane(const Transform3D& tf, Util::KaiserBessel& kb);
 		
 		EMData* fouriergridrot2d(float ang, Util::KaiserBessel& kb);
 		
@@ -491,38 +490,50 @@ EMData* rotavg_i();
 		//  OBSOLETED  Dict masked_stats(const EMData* mask);
 
 
-/** Search specified number peaks in 1D, 2D, or 3D real images.
-* and output the peaks in descendent order: 
-  The numbers coming out are: image dimension, then
-  1D: pixel value, x coord, relative peak value, x coord( NX/2 center),
-  ...
-  2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
-  ...
-  3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
-  The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is contant.
-  ...                   */
-vector<float> peak_search(int ml, float invert);
-/** Calculate the Phase approximation to center of gravity
- *  This operations works for 1-2-3-d images
- *  @returns both the center of gravity and the phase approximated center of gravity values.
- */
-vector<float> phase_cog();
+		/** Search specified number peaks in 1D, 2D, or 3D real images.
+		* and output the peaks in descendent order: 
+		  The numbers coming out are: image dimension, then
+		  1D: pixel value, x coord, relative peak value, x coord( NX/2 center),
+		  ...
+		  2D: pixel value, x coord, y coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) 
+		  ...
+		  3D  pixel value, x coord, y coord, z coord, realative peak value, x coord(NX/2 center) y coord(NY/2 center) z coord(NZ/2 center)
+		  The function is supposed to return 0 dimension and first pixel value (0,0,0) when the image is contant.
+		  ...			*/
+		vector<float> peak_search(int ml, float invert);
+		/** Calculate the Phase approximation to center of gravity
+		 *  This operations works for 1-2-3-d images
+		 *  @returns both the center of gravity and the phase approximated center of gravity values.
+		 */
+		vector<float> phase_cog();
 
-float find_3d_threshold(float mass, float pixel_size);
+		float find_3d_threshold(float mass, float pixel_size);
 
-  
- /* Peak (with a radius of hf_p) search for particle picking:
-                                                           */ 
-vector<float> peak_ccf(float hf_p);
+		  
+		 /* Peak (with a radius of hf_p) search for particle picking:
+									   */ 
+		vector<float> peak_ccf(float hf_p);
 
-/* pixel power operation function */
-EMData* get_pow(float n_pow);
+		/* pixel power operation function */
+		EMData* get_pow(float n_pow);
 
-private:
-//utility function for peak_search()
-static bool peakcmp(const Pixel& p1, const Pixel& p2);  
-public:
-EMData* extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew);
+		private:
+		//utility function for peak_search()
+		static bool peakcmp(const Pixel& p1, const Pixel& p2);  
+		public:
+		EMData* extractline(Util::KaiserBessel& kb,float nuxnew,float nuynew);
 
-static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage=300.0f,float cs=2.0f,float wgh=0.1f,float b_factor=0.0f,float dza=0.0f,float azz=0.0f,float sign=-1.0f);
+		static EMData* ctf_img(int nx, int ny, int nz, float dz, float ps, float voltage=300.0f,float cs=2.0f,float wgh=0.1f,float b_factor=0.0f,float dza=0.0f,float azz=0.0f,float sign=-1.0f);
+
+		/** Delete disconnected regions in a binary image 
+		 *
+		 *  Works only for a volume.
+		 *  
+		 *  @param[in] ix: x coordinate (with respect to the center) from which the search of the compact region begins.
+		 *  @param[in] iy: y coordinate (with respect to the center) from which the search of the compact region begins.
+		 *  @param[in] iz: z coordinate (with respect to the center) from which the search of the compact region begins.
+		 *  @return New binary image
+		 */
+		EMData* delete_disconnected_regions(int ix=0, int iy=0, int iz=0);
+
 #endif	//emdata__sparx_h__
