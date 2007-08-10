@@ -19,7 +19,7 @@ int main(int argc, char ** argv)
 {
    MPI_Comm comm = MPI_COMM_WORLD;
    int ncpus, mypid, ierr, mpierr=0;
-   int nloc; 
+   int nloc, maxit=0; 
    double t0;
    FILE *fp;
    MPI_Comm comm_2d, comm_row, comm_col;
@@ -33,7 +33,7 @@ int main(int argc, char ** argv)
   int dims[2], periods[2], my2dpid, mycoords[2];
   int srpid, srcoords[2], keep_dims[2];
 
-   char  stackfname[100],voutfname[100], angfname[100];
+   char  stackfname[100],voutfname[100], paramfname[100];
    EMData **expimages;
 
    // parse the command line and set filenames	
@@ -41,7 +41,7 @@ int main(int argc, char ** argv)
      if (mypid == 0) {
          printf("Not enough arguments to the command...\n");
          printf("Usage: runsirt -data=<imagestack> ");
-         printf("-angles=<initial 3D volume> "); 
+         printf("-param=<parameter file that contains angles and shifts> "); 
          printf("-out=<output filename base string> ");
          printf("-rowdim=<row dimension of Cartesian topology> ");
          printf("-coldim=<column dimension of Cartesian topology> ");
@@ -49,13 +49,13 @@ int main(int argc, char ** argv)
      ierr = MPI_Finalize();
      exit(1);
    }
-   int ia=0;
+   int ia=1;
    while (ia < argc) {
       if ( !strncmp(argv[ia],"-data",5) ) {
          strcpy(stackfname,&argv[ia][6]);
       }
-      else if ( !strncmp(argv[ia],"-angles",7) ) {
-         strcpy(angfname,&argv[ia][8]);
+      else if ( !strncmp(argv[ia],"-param",6) ) {
+         strcpy(paramfname,&argv[ia][7]);
       }
       else if ( !strncmp(argv[ia],"-out",4) ) {
          strcpy(voutfname,&argv[ia][5]);
@@ -65,6 +65,14 @@ int main(int argc, char ** argv)
       }
       else if ( !strncmp(argv[ia],"-coldim",7) ) {
          dims[COL] = atoi(&argv[ia][8]); // Column dimension of the topology
+      }
+      else if ( !strncmp(argv[ia],"-maxit",6) ) {
+         maxit = atoi(&argv[ia][7]);
+      }
+      else {
+         if (mypid ==0) printf("invalid option: %s\n", argv[ia]);
+         ierr = MPI_Finalize();
+         exit(1);
       }
       ia++;
    }
@@ -135,7 +143,7 @@ int main(int argc, char ** argv)
    // read angle and shift data and distribute along first column
    float * angleshift = new float[5*nloc];
 
-   ierr = ReadAngTrandDist_Cart(comm_2d, comm_row, dims, angleshift, angfname, nloc);
+   ierr = ReadAngTrandDist_Cart(comm_2d, comm_row, dims, angleshift, paramfname, nloc);
    if (ierr!=0) { 
       mpierr = MPI_Finalize();
       return 1;
@@ -145,7 +153,7 @@ int main(int argc, char ** argv)
    EMData * xvol = new EMData();
 
    // set SIRT parameters
-   int maxit = 20;
+   if (maxit==0) maxit = 10;
    float lam = 5.0e-6;
    float tol = 1.0e-3;
    std::string symmetry = "c1";

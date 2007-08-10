@@ -26,7 +26,7 @@ int main(int argc, char ** argv)
    MPI_Comm_rank(comm,&mypid);
    printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
 
-   char  stackfname[100],voutfname[100], angfname[100];
+   char  stackfname[100],voutfname[100], paramfname[100];
    EMData **expimages;
 
    // parse the command line and set filenames	
@@ -34,26 +34,31 @@ int main(int argc, char ** argv)
      if (mypid == 0) {
          printf("Not enough arguments to the command...\n");
          printf("Usage: runsirt -data=<imagestack> ");
-         printf("-angles=<initial 3D volume> "); 
+         printf("-param=<paramter file that contains angles & shifts> "); 
          printf("-out=<output filename base string> ");
          printf("-maxit=<max number of iterations");
      }
      ierr = MPI_Finalize();
      exit(1);
    }
-   int ia=0;
+   int ia=1;
    while (ia < argc) {
       if ( !strncmp(argv[ia],"-data",5) ) {
          strcpy(stackfname,&argv[ia][6]);
       }
-      else if ( !strncmp(argv[ia],"-angles",7) ) {
-         strcpy(angfname,&argv[ia][8]);
+      else if ( !strncmp(argv[ia],"-param",6) ) {
+         strcpy(paramfname,&argv[ia][7]);
       }
       else if ( !strncmp(argv[ia],"-out",4) ) {
          strcpy(voutfname,&argv[ia][5]);
       }
-      else if ( !strncmp(argv[ia],"-maxit",5) ) {
-         maxit = atoi(&argv[ia][6]);
+      else if ( !strncmp(argv[ia],"-maxit",6) ) {
+         maxit = atoi(&argv[ia][7]);
+      }
+      else {
+         if (mypid ==0) printf("invalid option: %s\n", argv[ia]);
+         ierr = MPI_Finalize();
+         exit(1);
       }
       ia++;
    }
@@ -102,7 +107,7 @@ int main(int argc, char ** argv)
 
    // read angle and shift data and distribute
    float * angleshift = new float[5*nloc];
-   ierr = ReadAngTrandDist(comm, angleshift, angfname, nloc);
+   ierr = ReadAngTrandDist(comm, angleshift, paramfname, nloc);
    if (ierr!=0) { 
       mpierr = MPI_Finalize();
       return 1;
