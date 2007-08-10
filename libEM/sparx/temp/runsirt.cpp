@@ -16,7 +16,7 @@ int main(int argc, char ** argv)
 {
    MPI_Comm comm = MPI_COMM_WORLD;
    int ncpus, mypid, ierr, mpierr=0;
-   int nloc; 
+   int nloc, maxit = 0; 
    double t0;
    FILE *fp;
 
@@ -36,6 +36,7 @@ int main(int argc, char ** argv)
          printf("Usage: runsirt -data=<imagestack> ");
          printf("-angles=<initial 3D volume> "); 
          printf("-out=<output filename base string> ");
+         printf("-maxit=<max number of iterations");
      }
      ierr = MPI_Finalize();
      exit(1);
@@ -50,6 +51,9 @@ int main(int argc, char ** argv)
       }
       else if ( !strncmp(argv[ia],"-out",4) ) {
          strcpy(voutfname,&argv[ia][5]);
+      }
+      else if ( !strncmp(argv[ia],"-maxit",5) ) {
+         maxit = atoi(&argv[ia][6]);
       }
       ia++;
    }
@@ -104,72 +108,11 @@ int main(int argc, char ** argv)
       return 1;
    }
 
-   /*
-   t0 = MPI_Wtime();
-
-   float * iobuffer   = new float[5*nloc];
-   int nimgs=0;
-
-   ierr = 0;
-   if (mypid ==0) {
-      fp = fopen(angfname,"r");
-      if (!fp)  ierr = 1;
-   }
-   MPI_Bcast(&ierr, 1, MPI_INT, 0, comm);
-
-   if ( ierr ) {
-      if (mypid ==0) fprintf(stderr,"failed to open %s\n", angfname);
-      ierr = MPI_Finalize();
-      return 1; 
-   }
-   else {
-      if (mypid == 0) {
-         for (int iproc = 0; iproc < ncpus; iproc++) {
-            // figure out the number of images assigned to processor iproc
-	    if (iproc > 0) {
- 	       MPI_Recv(&nimgs, 1, MPI_INT, iproc, iproc, comm, &mpistatus);
-               // Read the next nimgs set of angles and shifts
-               for (int i = 0; i < nimgs; i++) {
-                  fscanf(fp,"%f %f %f %f %f", 
-                         &iobuffer[5*i+0],
-                         &iobuffer[5*i+1],
-                         &iobuffer[5*i+2],
-                         &iobuffer[5*i+3],
-                         &iobuffer[5*i+4]);
-               }
-               MPI_Send(iobuffer,5*nimgs,MPI_FLOAT,iproc,iproc,comm);
-            }
-            else {
-               for (int i = 0; i < nloc; i++) {
-                  fscanf(fp,"%f %f %f %f %f", 
-                         &angleshift[5*i+0],
-                         &angleshift[5*i+1],
-                         &angleshift[5*i+2],
-                         &angleshift[5*i+3],
-                         &angleshift[5*i+4]);
-               }
-            }
-         }
-         fclose(fp);
-      }
-      else {
-         // send image count to the master processor (mypid = 0)
-         MPI_Send(&nloc, 1, MPI_INT, 0, mypid, comm);
-         // Receive angleshifts
-         MPI_Recv(angleshift, 5*nloc, MPI_FLOAT, 0, mypid, comm, &mpistatus);
-      }
-   }
-   EMDeleteArray(iobuffer);
-   if (mypid == 0)
-      printf("I/O time for reading angles & shifts = %11.3e\n",
-             MPI_Wtime() - t0);
-   */
-
    // Use xvol to hold reconstructed volume
    EMData * xvol = new EMData();
 
    // set SIRT parameters
-   int maxit = 20;
+   if (maxit == 0) maxit = 10;
    float lam = 5.0e-6;
    float tol = 1.0e-3;
    std::string symmetry = "c1";
