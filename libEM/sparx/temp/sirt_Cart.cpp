@@ -147,8 +147,13 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d, MPI_Comm comm_row, MPI_Comm comm_co
 		    phi   = angleshift[5*i + 0];
 		    theta = angleshift[5*i + 1];
 		    psi   = angleshift[5*i + 2];
-		    dm[6] = angleshift[5*i + 3];
-		    dm[7] = angleshift[5*i + 4];
+
+                    // need to change signs here because the input shifts
+                    // are shifts associated with 2-D images. Because
+                    // the projection operator actually shifts the volume
+                    // the signs should be negated here
+		    dm[6] = -angleshift[5*i + 3];
+		    dm[7] = -angleshift[5*i + 4];
 		    // make an instance of Transform3D with the angles
 		    RA = Transform3D(EULER_SPIDER, phi, theta, psi);
 		    for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
@@ -191,9 +196,15 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d, MPI_Comm comm_row, MPI_Comm comm_co
 
 	    for ( int i = 0 ; i < nangloc ; ++i ) {
 		// retrieve the angles and shifts from angleshift
-		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], angleshift[5*i + 1], angleshift[5*i + 2]);
-		dm[6] = angleshift[5*i + 3];
-		dm[7] = angleshift[5*i + 4];
+		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], 
+                                 angleshift[5*i + 1], angleshift[5*i + 2]);
+
+                // need to change signs here because the input shifts
+                // are shifts associated with 2-D images. Because
+                // the projection operator actually shifts the volume
+                // the signs should be negated here
+		dm[6] = -angleshift[5*i + 3];
+		dm[7] = -angleshift[5*i + 4];
 		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
 		    // iterate over symmetries
 		    Tf = Tf.get_sym(symmetry, ns) * RA;
@@ -213,9 +224,15 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d, MPI_Comm comm_row, MPI_Comm comm_co
 
 	    for ( int i = 0 ; i < nangloc ; ++i ) {
 		// retrieve the angles and shifts from angleshift
-		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], angleshift[5*i + 1], angleshift[5*i + 2]);
-		dm[6] = angleshift[5*i + 3];
-		dm[7] = angleshift[5*i + 4];
+		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], 
+                     angleshift[5*i + 1], angleshift[5*i + 2]);
+
+                // need to change signs here because the input shifts
+                // are shifts associated with 2-D images. Because
+                // the projection operator actually shifts the volume
+                // the signs should be negated here
+		dm[6] = -angleshift[5*i + 3];
+		dm[7] = -angleshift[5*i + 4];
 		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
 		    // iterate over symmetries
 		    Tf = Tf.get_sym(symmetry, ns) * RA;
