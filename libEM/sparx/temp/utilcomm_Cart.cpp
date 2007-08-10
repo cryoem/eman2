@@ -184,6 +184,94 @@ int ReadStackandDist_Cart(MPI_Comm comm_2d, EMData ***images2D, char *stackfname
     return ierr;
 }
 
+int ReadAngTrandDist_Cart(MPI_Comm comm_2d, MPI_Comm comm_row, int *dims, float *angleshift, char *angfname, int nloc)
+{
+   int ierr = 0;
+   int ROW = 0, COL = 1;
+   int my2dpid, mycoords[2];
+   int srpid, srcoords[2], keep_dims[2];
+   MPI_Status mpistatus;
+   FILE *fp = NULL;
+
+   int nimgs=0;
+
+   MPI_Comm_rank(comm_2d, &my2dpid); //Get my pid in the new 2D topology
+   MPI_Cart_coords(comm_2d, my2dpid, 2, mycoords); // Get my coordinates
+
+   float * iobuffer   = new float[5*nloc];
+   if (!iobuffer) {
+      fprintf(stderr,"failed to allocate buffer to read angles shifts\n");
+      ierr = -1;
+      goto EXIT;
+   }
+
+   if (mycoords[COL] == 0 && mycoords[ROW] == 0) { //I am Proc (0,0)
+      fp = fopen(angfname,"r");
+      if (!fp)  ierr = 1;
+   }
+   MPI_Bcast(&ierr, 1, MPI_INT, 0, comm_2d);
+
+   if ( ierr ) {
+      if (mycoords[COL] == 0 && mycoords[ROW] == 0) 
+          fprintf(stderr,"failed to open %s\n", angfname);
+      ierr = MPI_Finalize();
+      goto EXIT;
+   }
+   else {
+       if (mycoords[COL] == 0 && mycoords[ROW] == 0) { //I am Proc (0,0)
+	  for (int iproc = 0; iproc < dims[ROW]; iproc++) {
+	     // figure out the number of images assigned to processor (iproc,0)
+	     if (iproc > 0) {
+		srcoords[COL] = 0;
+		srcoords[ROW] = iproc;
+		MPI_Cart_rank(comm_2d, srcoords, &srpid);
+
+		MPI_Recv(&nimgs, 1, MPI_INT, srpid, srpid, comm_2d, &mpistatus);
+
+		// Read the next nimgs set of angles and shifts
+		for (int i = 0; i < nimgs; i++) {
+		   fscanf(fp,"%f %f %f %f %f", 
+			  &iobuffer[5*i+0],
+			  &iobuffer[5*i+1],
+			  &iobuffer[5*i+2],
+			  &iobuffer[5*i+3],
+			  &iobuffer[5*i+4]);
+		}
+		MPI_Send(iobuffer,5*nimgs,MPI_FLOAT,srpid,srpid,comm_2d);
+	     }
+	     else {
+		for (int i = 0; i < nloc; i++) {
+		   fscanf(fp,"%f %f %f %f %f", 
+			  &angleshift[5*i+0],
+			  &angleshift[5*i+1],
+			  &angleshift[5*i+2],
+			  &angleshift[5*i+3],
+			  &angleshift[5*i+4]);
+		}
+	     }
+	  }
+	  fclose(fp);
+       }
+       else if (mycoords[COL] == 0 && mycoords[ROW] != 0) { //I am in the first column
+	  // send image count to the master processor (mypid = 0)
+
+	  MPI_Send(&nloc, 1, MPI_INT, 0, my2dpid, comm_2d);
+	  // Receive angleshifts
+	  MPI_Recv(angleshift, 5*nloc, MPI_FLOAT, 0, my2dpid, comm_2d, &mpistatus);
+       }
+  }
+
+  // Now have all the processors in group g_c_0 broadcast the angles along the row communicator
+  srcoords[ROW] = 0;
+  MPI_Cart_rank(comm_row, srcoords, &srpid);
+  MPI_Bcast(angleshift, 5*nloc, MPI_FLOAT, srpid, comm_row);
+
+  EMDeleteArray(iobuffer);
+
+EXIT:
+   return ierr;
+}
+
 int CleanStack_Cart(MPI_Comm comm_col, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin)
 {
     int nx = volsize[0];

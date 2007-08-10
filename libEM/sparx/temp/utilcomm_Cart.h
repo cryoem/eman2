@@ -10,7 +10,7 @@ using namespace EMAN;
 
 int ReadStackandDist_Cart(MPI_Comm comm, EMData ***images2D, char *stackfname, int *nloc);
 int CleanStack_Cart(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
-
+int ReadAngTrandDist_Cart(MPI_Comm comm_2d, MPI_Comm comm_row, int *dim, float *angleshift, char *angfname, int nloc);
 int setpart_gc1(MPI_Comm comm_2d, int nangs, int *psize, int *nbase);
 int setpart_gr1(MPI_Comm comm_2d, int nnz, int *nnzpart, int *nnzbase);
 

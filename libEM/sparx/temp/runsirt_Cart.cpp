@@ -18,7 +18,7 @@ using namespace EMAN;
 int main(int argc, char ** argv)
 {
    MPI_Comm comm = MPI_COMM_WORLD;
-   int ncpus, mypid, ierr;
+   int ncpus, mypid, ierr, mpierr=0;
    int nloc; 
    double t0;
    FILE *fp;
@@ -134,71 +134,12 @@ int main(int argc, char ** argv)
 
    // read angle and shift data and distribute along first column
    float * angleshift = new float[5*nloc];
-   float * iobuffer   = new float[5*nloc];
-   int nimgs=0;
 
-   ierr = 0;
-   if (mycoords[COL] == 0 && mycoords[ROW] == 0) { //I am Proc (0,0)
-      fp = fopen(angfname,"r");
-      if (!fp)  ierr = 1;
+   ierr = ReadAngTrandDist_Cart(comm_2d, comm_row, dims, angleshift, angfname, nloc);
+   if (ierr!=0) { 
+      mpierr = MPI_Finalize();
+      return 1;
    }
-   MPI_Bcast(&ierr, 1, MPI_INT, 0, comm);
-
-   if ( ierr ) {
-      if (mypid ==0) fprintf(stderr,"failed to open %s\n", angfname);
-      ierr = MPI_Finalize();
-      return 1; 
-   }
-   else {
-       if (mycoords[COL] == 0 && mycoords[ROW] == 0) { //I am Proc (0,0)
-	  for (int iproc = 0; iproc < dims[ROW]; iproc++) {
-	     // figure out the number of images assigned to processor (iproc,0)
-	     if (iproc > 0) {
-		srcoords[COL] = 0;
-		srcoords[ROW] = iproc;
-		MPI_Cart_rank(comm_2d, srcoords, &srpid);
-
-		MPI_Recv(&nimgs, 1, MPI_INT, srpid, srpid, comm_2d, &mpistatus);
-
-		// Read the next nimgs set of angles and shifts
-		for (int i = 0; i < nimgs; i++) {
-		   fscanf(fp,"%f %f %f %f %f", 
-			  &iobuffer[5*i+0],
-			  &iobuffer[5*i+1],
-			  &iobuffer[5*i+2],
-			  &iobuffer[5*i+3],
-			  &iobuffer[5*i+4]);
-		}
-		MPI_Send(iobuffer,5*nimgs,MPI_FLOAT,srpid,srpid,comm_2d);
-	     }
-	     else {
-		for (int i = 0; i < nloc; i++) {
-		   fscanf(fp,"%f %f %f %f %f", 
-			  &angleshift[5*i+0],
-			  &angleshift[5*i+1],
-			  &angleshift[5*i+2],
-			  &angleshift[5*i+3],
-			  &angleshift[5*i+4]);
-		}
-	     }
-	  }
-	  fclose(fp);
-       }
-       else if (mycoords[COL] == 0 && mycoords[ROW] != 0) { //I am in the first column
-	  // send image count to the master processor (mypid = 0)
-
-	  MPI_Send(&nloc, 1, MPI_INT, 0, my2dpid, comm_2d);
-	  // Receive angleshifts
-	  MPI_Recv(angleshift, 5*nloc, MPI_FLOAT, 0, my2dpid, comm_2d, &mpistatus);
-       }
-  }
-
-  // Now have all the processors in group g_c_0 broadcast the angles along the row communicator
-  srcoords[ROW] = 0;
-  MPI_Cart_rank(comm_row, srcoords, &srpid);
-  MPI_Bcast(angleshift, 5*nloc, MPI_FLOAT, srpid, comm_row);
-
-   EMDeleteArray(iobuffer);
 
    // Use xvol to hold reconstructed volume
    EMData * xvol = new EMData();
