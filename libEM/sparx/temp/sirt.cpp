@@ -113,8 +113,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 		    phi   = angleshift[5*i + 0];
 		    theta = angleshift[5*i + 1];
 		    psi   = angleshift[5*i + 2];
-		    dm[6] = angleshift[5*i + 3] * -1.0;
-		    dm[7] = angleshift[5*i + 4] * -1.0;
+		    dm[6] = angleshift[5*i + 3];
+		    dm[7] = angleshift[5*i + 4];
 		    // make an instance of Transform3D with the angles
 		    RA = Transform3D(EULER_SPIDER, phi, theta, psi);
 		    for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
@@ -148,8 +148,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	    for ( int i = 0 ; i < nangloc ; ++i ) {
 		// retrieve the angles and shifts from angleshift
 		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], angleshift[5*i + 1], angleshift[5*i + 2]);
-		dm[6] = angleshift[5*i + 3] * -1.0;
-		dm[7] = angleshift[5*i + 4] * -1.0;
+		dm[6] = angleshift[5*i + 3];
+		dm[7] = angleshift[5*i + 4];
 		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
 		    // iterate over symmetries
 		    Tf = Tf.get_sym(symmetry, ns) * RA;
@@ -241,129 +241,3 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     return 0; // recons3d_sirt_mpi
 }
 
-// #define PROJECTOR_TYPE "chao"
-
-// int main(int argc, char ** argv)
-// {
-//     MPI_Comm comm = MPI_COMM_WORLD;
-//     int ncpus, mypid, ierr;
-//     int nloc; 
-
-//     MPI_Status mpistatus;
-//     MPI_Init(&argc,&argv);
-//     MPI_Comm_size(comm,&ncpus);
-//     MPI_Comm_rank(comm,&mypid);
-//     printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
-
-//     EMData * xvol = new EMData();
-
-//     EMData *volume = new EMData();
-//     if ( mypid == 0 ) {
-// 	volume->read_image("vol001.tfc");
-//     }
-//     int nx = volume->get_xsize();
-//     ierr = MPI_Bcast(&nx, 1, MPI_INT, 0, comm);
-//     float dtheta = 5.0;
-//     std::vector<float> ref_angles = Util::even_angles(dtheta);
-
-//     int nangles = ref_angles.size() / 3;
-//     if ( mypid == 0 ) printf("Using %d images\n", nangles);
-//     int radius = 30;
-//     int maxit = 50;
-
-//     int * psize;
-//     int * nbase;
-//     int nangloc;
-//     psize = new int[ncpus];
-//     nbase = new int[ncpus];
-//     nangloc = setpart(comm, nangles, psize, nbase);
-
-//     EMData ** images = (EMData **) malloc(nangloc * sizeof(EMData *));
-//     std::vector<float> anglelist(3,0.0);
-//     Dict volparams;
-//     volparams["angletype"] = "SPIDER";
-
-//     float * imgdata;
-//     EMData * send_projection;
-//     volparams["radius"] = radius;
-
-//     float * angleshift = new float[5 * nloc];
-
-//     if ( mypid == 0 ) {
-// 	for ( int i = 0 ; i < nangloc ; ++i ) {	
-// 	    anglelist[0] = ref_angles[i*3 + 0];
-// 	    anglelist[1] = ref_angles[i*3 + 1];
-// 	    anglelist[2] = ref_angles[i*3 + 2];
-// 	    volparams["anglelist"] = anglelist;
-// 	    images[i] = volume->project(PROJECTOR_TYPE, volparams);
-// // 	    images[i]->set_attr("phi", anglelist[0]);
-// // 	    images[i]->set_attr("theta", anglelist[1]);
-// // 	    images[i]->set_attr("psi", anglelist[2]);
-// // 	    images[i]->set_attr("s2x", 0.0);
-// // 	    images[i]->set_attr("s2y", 0.0);
-// 	    angleshift[5*i + 0] = anglelist[0];
-// 	    angleshift[5*i + 1] = anglelist[1];
-// 	    angleshift[5*i + 2] = anglelist[2];
-// 	    angleshift[5*i + 3] = 0.0;
-// 	    angleshift[5*i + 4] = 0.0;
-// 	}
-// 	for ( int np = 1 ; np < ncpus ; ++np ) {
-// 	    for ( int i = 0 ; i < psize[np] ; ++i ) {	
-// 		anglelist[0] = ref_angles[(nbase[np] + i)*3 + 0];
-// 		anglelist[1] = ref_angles[(nbase[np] + i)*3 + 1];
-// 		anglelist[2] = ref_angles[(nbase[np] + i)*3 + 2];
-// 		volparams["anglelist"] = anglelist;
-// 		MPI_Send(&anglelist[0], 3, MPI_FLOAT, np, np, comm);
-// 		send_projection = volume->project(PROJECTOR_TYPE, volparams);
-// 		imgdata = send_projection->get_data();
-// 		MPI_Send(imgdata, nx*nx, MPI_FLOAT, np, np, comm);
-// 		EMDeletePtr(send_projection);
-// 	    }
-		
-// 	}
-//     } else { // mypid != 0
-// 	for ( int i = 0 ; i < nangloc ; ++i ) {
-// 	    images[i] = new EMData();
-// 	    images[i]->set_size(nx,nx);
-// 	    MPI_Recv(&anglelist[0], 3, MPI_FLOAT, 0, mypid, comm, &mpistatus);
-// // 	    images[i]->set_attr("phi", anglelist[0]);
-// // 	    images[i]->set_attr("theta", anglelist[1]);
-// // 	    images[i]->set_attr("psi", anglelist[2]);
-// // 	    images[i]->set_attr("s2x", 0.0);
-// // 	    images[i]->set_attr("s2y", 0.0);
-// 	    angleshift[5*i + 0] = anglelist[0];
-// 	    angleshift[5*i + 1] = anglelist[1];
-// 	    angleshift[5*i + 2] = anglelist[2];
-// 	    angleshift[5*i + 3] = 0.0;
-// 	    angleshift[5*i + 4] = 0.0;
-// 	    imgdata = images[i]->get_data();
-// 	    MPI_Recv(imgdata, nx*nx, MPI_FLOAT, 0, mypid, comm, &mpistatus);
-// 	}
-//     }
-//     if ( mypid == 0 ) printf("Done with data distribution\n");
-	
-//     float lam = 1.0e-4;
-//     float tol = 1.0e-3;
-//     std::string symmetry = "c1";
-
-//     recons3d_sirt_mpi(comm, images, angleshift, xvol, nangloc, radius, lam, maxit, symmetry, tol);
-//     if ( mypid == 0 ) printf("Done with SIRT\n");
-
-//     EMUtil::ImageType WRITE_SPI = EMUtil::IMAGE_SINGLE_SPIDER;
-//     if ( mypid == 0 ) {
-// 	xvol->write_image("volume_sirt.spi", 0, WRITE_SPI);
-//     }
-
-
-//     for ( int i = 0 ; i < nangloc ; ++i ) {	
-// 	EMDeletePtr(images[i]);
-//     }		
-//     free(images);
-//     EMDeletePtr(xvol);
-//     EMDeletePtr(volume);
-//     EMDeleteArray(angleshift);
-
-//     ierr = MPI_Finalize();
-
-//     return 0; // main
-// }
