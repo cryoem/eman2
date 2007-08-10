@@ -15,7 +15,7 @@ using namespace EMAN;
 int main(int argc, char ** argv)
 {
    MPI_Comm comm = MPI_COMM_WORLD;
-   int ncpus, mypid, ierr;
+   int ncpus, mypid, ierr, mpierr=0;
    int nloc; 
    double t0;
    FILE *fp;
@@ -95,9 +95,18 @@ int main(int argc, char ** argv)
    if (mypid == 0) printf("image size: nx = %d, ny = %d, ri = %d\n",
                           nx, ny, ri); 
 
+
    // read angle and shift data and distribute
-   t0 = MPI_Wtime();
    float * angleshift = new float[5*nloc];
+   ierr = ReadAngTrandDist(comm, angleshift, angfname, nloc);
+   if (ierr!=0) { 
+      mpierr = MPI_Finalize();
+      return 1;
+   }
+
+   /*
+   t0 = MPI_Wtime();
+
    float * iobuffer   = new float[5*nloc];
    int nimgs=0;
 
@@ -154,6 +163,7 @@ int main(int argc, char ** argv)
    if (mypid == 0)
       printf("I/O time for reading angles & shifts = %11.3e\n",
              MPI_Wtime() - t0);
+   */
 
    // Use xvol to hold reconstructed volume
    EMData * xvol = new EMData();

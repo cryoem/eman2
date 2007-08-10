@@ -13,7 +13,7 @@
 int main(int argc, char *argv[])
 {
     MPI_Comm comm = MPI_COMM_WORLD;
-    int ncpus, mypid, ierr;
+    int ncpus, mypid, ierr, mpierr=0;
     int nloc; 
     double t0;
 
@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
     printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
     char  volfname[100], paramfname[100], stackfname[100],voutfname[100];
     EMData **expimages;
+    int maxiter = 0;
 
     // parse the command line and set filenames	
     if (argc < 4) {
@@ -33,6 +34,9 @@ int main(int argc, char *argv[])
           printf("-model=<initial 3D volume filename> ");
           printf("-param=<initial angles&shifts> ");
           printf("-out=<output volume filename>\n"); 
+          printf("[-maxit=<output volume filename>]\n"); 
+          printf("[-sym=<symmtry type>]\n"); 
+          printf("[-CTF]\n"); 
       }
       ierr = MPI_Finalize();
       exit(1);
@@ -106,10 +110,15 @@ int main(int argc, char *argv[])
     int    ri = volume->get_xsize()/2 - 2;
     ierr = CleanStack(comm, expimages, nloc, ri, volsize, origin);
 
+    // read angles and shifts from the parameter file
     float * angleshift = new float[5*nloc];
-    
-    int maxiter = 10;
+    ierr = ReadAngTrandDist(comm, angleshift, paramfname, nloc);
+    if (ierr!=0) { 
+       mpierr = MPI_Finalize();
+       return 1;
+    }
 
+    if (maxiter <= 0) maxiter = 10;  
     try {
 	unified(comm, volume, expimages, angleshift, nloc, 
                 maxiter, voutfname);

@@ -154,6 +154,82 @@ int ReadStackandDist(MPI_Comm comm, EMData ***images2D, char *stackfname, int *n
     return ierr;
 }
 
+int ReadAngTrandDist(MPI_Comm comm, float *angleshift, char *paramfname, int nloc)
+{
+    // read a parameter file that contains a list of angles and shifts and distribute 
+    // them evenly among different processors
+
+    int mypid, ierr=0, mpierr=0, nimgs=0, ncpus;
+    double t0;
+    MPI_Status mpistatus;
+    FILE *fp=NULL;
+
+    float *iobuffer = new float[5*nloc];
+    if (!iobuffer) {
+       fprintf(stderr,"failed to allocate buffer to read angles shifts\n");
+       ierr = -1;
+       goto EXIT;
+    }
+
+    MPI_Comm_rank(comm,&mypid);
+    MPI_Comm_size(comm,&ncpus);
+
+    t0 = MPI_Wtime();
+
+    if (mypid ==0) {
+       fp = fopen(paramfname,"r");
+       if (!fp)  ierr = 1;
+    }
+    MPI_Bcast(&ierr, 1, MPI_INT, 0, comm);
+ 
+    if ( ierr ) {
+       if (mypid ==0) fprintf(stderr,"failed to open %s\n", paramfname);
+    }
+    else {
+       if (mypid == 0) {
+          for (int iproc = 0; iproc < ncpus; iproc++) {
+             // figure out the number of images assigned to processor iproc
+  	     if (iproc > 0) {
+  	        MPI_Recv(&nimgs, 1, MPI_INT, iproc, iproc, comm, &mpistatus);
+                // Read the next nimgs set of angles and shifts
+                for (int i = 0; i < nimgs; i++) {
+                   fscanf(fp,"%f %f %f %f %f", 
+                          &iobuffer[5*i+0],
+                          &iobuffer[5*i+1],
+                          &iobuffer[5*i+2],
+                          &iobuffer[5*i+3],
+                          &iobuffer[5*i+4]);
+                }
+                MPI_Send(iobuffer,5*nimgs,MPI_FLOAT,iproc,iproc,comm);
+             }
+             else {
+                for (int i = 0; i < nloc; i++) {
+                   fscanf(fp,"%f %f %f %f %f", 
+                          &angleshift[5*i+0],
+                          &angleshift[5*i+1],
+                          &angleshift[5*i+2],
+                          &angleshift[5*i+3],
+                          &angleshift[5*i+4]);
+                }
+             }
+          }
+          fclose(fp);
+       }
+       else {
+          // send image count to the master processor (mypid = 0)
+          MPI_Send(&nloc, 1, MPI_INT, 0, mypid, comm);
+          // Receive angleshifts
+          MPI_Recv(angleshift, 5*nloc, MPI_FLOAT, 0, mypid, comm, &mpistatus);
+       }
+    }
+    EMDeleteArray(iobuffer);
+    if (mypid == 0)
+       printf("I/O time for reading angles & shifts = %11.3e\n",
+              MPI_Wtime() - t0);
+EXIT:
+    return ierr;
+}
+
 int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin)
 {
     int nx = volsize[0];
