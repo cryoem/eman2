@@ -67,10 +67,6 @@ void TiffIO::init()
 
 	bool is_new_file = false;
 	FILE *tmp_in = sfopen(filename, rw_mode, &is_new_file, true);
-	
-	std::cout << "open the file: " << filename << std::endl;
-	
-//	FILE *tmp_in = fopen(filename.c_str(), "rb");
 	if (!tmp_in) {
 		throw ImageReadException(filename, "open TIFF");
 	}
@@ -99,9 +95,6 @@ void TiffIO::init()
 	TIFFSetWarningHandler(0);
 
 	if( rw_mode == ImageIO::READ_ONLY ) {
-		
-		std::cout << "Read only..." << std::endl;
-		
 		tiff_file = TIFFOpen(filename.c_str(), "r");
 		if (!tiff_file) {
 			throw ImageReadException(filename, "open TIFF");
@@ -117,9 +110,6 @@ void TiffIO::init()
 		}
 	}
 	else {
-		
-		std::cout << "Write only..." << std::endl;
-		
 		tiff_file = TIFFOpen(filename.c_str(), "w");
 		if (!tiff_file) {
 			throw ImageReadException(filename, "open TIFF");
@@ -212,63 +202,119 @@ int TiffIO::read_data(float *rdata, int img_index, const Region * area, bool)
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
-	check_region(area, IntSize(nx, ny));
-
-	int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
-	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
-	EMUtil::get_region_origins(area, &x0, &y0);
-
 	int err = 0;
-	int strip_size = TIFFStripSize(tiff_file);
-	uint32 num_strips = TIFFNumberOfStrips(tiff_file);
-
-	unsigned char *cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size));
-
-	int k = 0;
-	int num_read = 0;
-	int mode_size = bitspersample / CHAR_BIT;
-	int total_rows = 0;
-
-	for (uint32 i = 0; i < num_strips; i++) {
-		if ((num_read = TIFFReadEncodedStrip(tiff_file, i, cdata, strip_size)) == -1) {
-			LOGERR("reading stripped TiFF image '%s' failed", filename.c_str());
-			err = 1;
-			break;
+	unsigned char *cdata;	//buffer for strip or tile
+	
+	if(TIFFIsTiled(tiff_file)) {
+		tsize_t tileSize = TIFFTileSize(tiff_file);
+		tsize_t tileMax = TIFFNumberOfTiles(tiff_file);
+		tsize_t tileCount; 
+		
+		uint32 tileWidth, tileLength;
+		TIFFGetField(tiff_file, TIFFTAG_TILEWIDTH, &tileWidth);
+		TIFFGetField(tiff_file, TIFFTAG_TILELENGTH, &tileLength);
+		
+		if((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
+			fprintf(stderr,"Error: Could not allocate enough memory\n");
+			return(-1);
 		}
-
-		int nitems = num_read / mode_size;
-		int nrows = nitems / nx;
-		total_rows += nrows;
-
-		int y_start = 0;
-		int y_end = nrows;
-
-		if (area) {
-			if (total_rows >= y0 && total_rows < y0 + nrows) {
-				y_start = nrows - (total_rows - y0);
+		
+		int tilePerLine = nx/tileWidth + 1;
+		int NX, NY;	//(NX, NY) is the cordinates of tile
+		int xpos, ypos; //(xpos, ypos) is the actual coordinates of pixel (j,i) in image
+		
+		for(tileCount=0; tileCount<tileMax; tileCount++) {
+			if(TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
+				fprintf(stderr,"Error reading tiled image\n");return(-1);
 			}
-			else if (total_rows >= (y0 + ylen) && total_rows < (y0 + ylen + nrows)) {
-				y_end = y0 + ylen - total_rows + nrows;
+			else {
+				NX = tileCount%tilePerLine;
+				NY = tileCount/tilePerLine;
+				uint32 i, j;
+				for(i=0; i<tileLength; i++) {
+					for(j=0; j<tileWidth; j++) {
+						xpos = NX*tileWidth + j;
+						ypos = NY*tileLength + i;
+									
+						if(bitspersample == CHAR_BIT) {
+							if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
+								rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned char*)cdata)[i*tileWidth+j];
+							}
+						}
+						else if(bitspersample == sizeof(unsigned short) * CHAR_BIT) {
+							if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
+								rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned short*)cdata)[i*tileWidth+j];
+							}
+						}
+						else {
+							fprintf(stderr,"BAILING OUT:Allow only 8- or 16-bits image\n");
+							return(-1);
+						}
+					}
+				}
 			}
-			else if (total_rows >= (y0 + ylen + nrows)) {
+		}
+		
+	}
+	else {
+		check_region(area, IntSize(nx, ny));
+		int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
+		EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
+		EMUtil::get_region_origins(area, &x0, &y0);
+		
+		int strip_size = TIFFStripSize(tiff_file);
+		uint32 num_strips = TIFFNumberOfStrips(tiff_file);
+	
+		if((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
+			fprintf(stderr,"Error: Could not allocate enough memory\n");
+			return(-1);
+		}
+	
+		int k = 0;
+		int num_read = 0;
+		int mode_size = bitspersample / CHAR_BIT;
+		int total_rows = 0;
+	
+		for (uint32 i = 0; i < num_strips; i++) {
+			if ((num_read = TIFFReadEncodedStrip(tiff_file, i, cdata, strip_size)) == -1) {
+				LOGERR("reading stripped TiFF image '%s' failed", filename.c_str());
+				err = 1;
 				break;
 			}
-		}
-
-		for (int l = y_start; l < y_end; l++) {
-			for (int j = x0; j < x0 + xlen; j++) {
-				if (bitspersample == CHAR_BIT) {
-					rdata[k] = static_cast < float >(cdata[l * nx + j]);
+	
+			int nitems = num_read / mode_size;
+			int nrows = nitems / nx;
+			total_rows += nrows;
+	
+			int y_start = 0;
+			int y_end = nrows;
+	
+			if (area) {
+				if (total_rows >= y0 && total_rows < y0 + nrows) {
+					y_start = nrows - (total_rows - y0);
 				}
-				else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
-					rdata[k] = static_cast < float >(((unsigned short *) cdata)[l * nx + j]);
+				else if (total_rows >= (y0 + ylen) && total_rows < (y0 + ylen + nrows)) {
+					y_end = y0 + ylen - total_rows + nrows;
 				}
-				k++;
+				else if (total_rows >= (y0 + ylen + nrows)) {
+					break;
+				}
+			}
+	
+			for (int l = y_start; l < y_end; l++) {
+				for (int j = x0; j < x0 + xlen; j++) {
+					if (bitspersample == CHAR_BIT) {
+						rdata[k] = static_cast < float >(((unsigned char *)cdata)[l * nx + j]);
+					}
+					else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
+						rdata[k] = static_cast < float >(((unsigned short *) cdata)[l * nx + j]);
+					}
+					k++;
+				}
 			}
 		}
+		Util::flip_image(rdata, xlen, ylen);
 	}
-
-	Util::flip_image(rdata, xlen, ylen);
 
 	_TIFFfree(cdata);
 	EXITFUNC;
