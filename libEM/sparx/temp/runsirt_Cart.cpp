@@ -7,6 +7,8 @@
 #include "project3d.h"
 
 #define PI 3.14159265358979
+#define ROW 0
+#define COL 1
 
 using namespace EMAN;
 
@@ -29,9 +31,8 @@ int main(int argc, char ** argv)
    MPI_Comm_size(comm,&ncpus);
    MPI_Comm_rank(comm,&mypid);
 
-  int ROW = 0, COL = 1;
-  int dims[2], periods[2], my2dpid, mycoords[2];
-  int srpid, srcoords[2], keep_dims[2];
+   int dims[2], periods[2], my2dpid, mycoords[2];
+   int srpid, srcoords[2], keep_dims[2];
 
    char  stackfname[100],voutfname[100], paramfname[100];
    EMData **expimages;
