@@ -87,16 +87,17 @@ def fileinfo_output(filename, infotype):
 		#print expr
 		vals = re.findall("\S*[\w*]", expr)
 		
-		f = re.findall("\d.\d*", vals[0])
-		defocus = f[0]
 		
-		envelope = vals[1]
-		ac = vals[3]
+		
 		if ( infotype == "defocus" ):
+			f = re.findall("\d.*\d*", vals[0])
+			defocus = f[0]
 			print "%f" %float(defocus)
 		if ( infotype == "bfactor" ):
+			envelope = vals[1]
 			print "%f" %float(envelope)
 		if ( infotype == "ac" ):
+			ac = vals[3]
 			print "%f" %float(ac)
 	
 	#if d.get_zsize()==1:
