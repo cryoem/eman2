@@ -34,6 +34,7 @@
 from EMAN2 import *
 from optparse import OptionParser
 import sys
+import re
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -44,18 +45,67 @@ def main():
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 #	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
-#	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
+	parser.add_option("--auto","-A",type="string",action="append",help="Autobox using specified method: circle, ref, grid",default=[])
 #	parser.add_option("--threshold","-T",type="float",help="Threshold for keeping particles. 0-4, 0 excludes all, 4 keeps all.",default=2.0)
 #	parser.add_option("--maxbad","-M",type="int",help="Maximumum number of unassigned helices",default=2)
 #	parser.add_option("--minhelix","-H",type="int",help="Minimum residues in a helix",default=6)
 #	parser.add_option("--apix","-P",type="float",help="A/Pixel",default=1.0)
 	
+	parser.add_option("--getinfo",type="string",help="getinfo from file (either defocus, ac (amplitude contrast), or bfactor)",default="")
+	
 	(options, args) = parser.parse_args()
 	if len(args)<1 : parser.error("Input image required")
 
 	logid=E2init(sys.argv)
-	fileinfo(args)
+
+	if ( options.getinfo != "" ):
+		fileinfo_output(args[0],options.getinfo)
+	else:
+		fileinfo(args[0])
+	
 	E2end(logid)
+
+def fileinfo_output(filename, infotype):
+	
+	if ( infotype not in ["defocus","ac","bfactor"] ):
+		print "Error, info type must defocus, ac, or bfactor"
+		return
+	
+	#l=[len(i) for i in filenames]
+	#l=max(l)
+	
+	n=EMUtil.get_image_count(filename)
+	t=EMUtil.get_imagetype_name(EMUtil.get_image_type(filename))
+	d=EMData()
+	d.read_image(filename,0,True)
+
+	for i in xrange(0,n):
+		d=EMData()
+		d.read_image(filename,i,True)
+	
+		expr = d.get_attr("IMAGIC.label")
+		#print expr
+		vals = re.findall("\S*[\w*]", expr)
+		
+		f = re.findall("\d.\d*", vals[0])
+		defocus = f[0]
+		
+		envelope = vals[1]
+		ac = vals[3]
+		if ( infotype == "defocus" ):
+			print "%f" %float(defocus)
+		if ( infotype == "bfactor" ):
+			print "%f" %float(envelope)
+		if ( infotype == "ac" ):
+			print "%f" %float(ac)
+	
+	#if d.get_zsize()==1:
+		#s="%%-s%%s\t%%d\t%%d x %%d"
+		#print s%(t,n,d.get_xsize(),d.get_ysize())
+	#else:
+		#s="%%-s%%s\t%%d\t%%d x %%d x %%d"
+		#print s%(t,n,d.get_xsize(),d.get_ysize(),d.get_zsize())
+
 
 def fileinfo(filenames):
 	if isinstance(filenames,str) : filenames=[filenames]

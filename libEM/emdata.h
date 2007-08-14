@@ -718,6 +718,15 @@ namespace EMAN
 			return resolution;
 		}
 
+		void debug_print_parms()
+		{
+			std::cout << "Printing EMData params" << std::endl;
+			for ( Dict::const_iterator it = attr_dict.begin(); it != attr_dict.end(); ++it )
+			{
+				std::cout << (it->first) << " " << (it->second).to_str() << std::endl;
+			}	
+			std::cout << "Done printing EMData params" << std::endl;
+		}
 	private:
 		enum EMDataFlags {
 //			EMDATA_COMPLEX = 1 << 1,

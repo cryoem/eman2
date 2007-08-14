@@ -302,7 +302,7 @@ namespace EMAN
 	 *		The FRC of the slice in the 3D volume is determined - but the slice is removed from the 3D volume before 
 	 * 		doing this so the score reflects the extent to which the slice agrees with the contribution of the other
 	 *		slices in the 3D volume. The FRC is converted to SNR using the relationship described by Penczek
-	 *		( Three-dimensional spectral signal to noise ratio for a class of reconstruction algorithms, JSB 2002 138 (24-46)
+	 *		( Three-dimensional spectral signal to noise ratio for a class of reconstruction algorithms, JSB 2002 138 (24-46) )
 	 *		FRC = S/(sqrt(S+N1)sqrt(S+N2))
 	 *		Where N1 is the noise in the slice of the 3D volume and N2 is the noise in the image slice being inserted.
 	 *		We make the assumption that the noise in the 3D volume is 0 (N1=0) to get

@@ -632,8 +632,8 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 				}
 			}
 
-			// FIXME: this could be replaced in favor class implementation with no switch statement, similar to the 
-			// insert in the Fourier reconstructor do_insert_slice_work method
+			// FIXME: this could be replaced in favor of a class implementation with no switch statement, similar to the 
+			// inserter in the Fourier reconstructor do_insert_slice_work method
 			switch (mode)
 			{
 				case 1:
@@ -797,12 +797,10 @@ EMData *FourierReconstructor::finish()
 		image->clip_inplace( clip_region );
 	}
 
-
 	print_stats(quality_scores);
 	
 	image->update();
 
-	
 	return image;
 }
 
