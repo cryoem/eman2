@@ -8,11 +8,13 @@
 
 using namespace EMAN;
 
-//int CleanStack(MPI_Comm comm, EMData ** image_stack, int nloc, int ri, Vec3i volsize, Vec3i origin);
-
-int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMData *& xvol, int nangloc, int radius, float lam, int maxit, std::string symmetry, float tol)
+int recons3d_sirt_mpi(MPI_Comm comm , EMData ** images, float * angleshift  , 
+                      EMData *& xvol, int nangloc     , int radius          , 
+                      float lam     , int maxit       , std::string symmetry, 
+                      float tol)
 {
     int ncpus, mypid, ierr;
+    double t0;
 
     MPI_Status mpistatus;
     MPI_Comm_size(comm,&ncpus);
@@ -30,7 +32,9 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     int nsym = 0;
     // get image size from first image
     int nx = images[0]->get_xsize();
-    if ( radius == -1 ) radius = nx/2 - 1; // make radius as large as possible if the user didn't provide one
+
+    // make radius as large as possible if the user didn't provide one
+    if ( radius == -1 ) radius = nx/2 - 1; 
     
     Vec3i volsize, origin;
     volsize[0] = nx;
@@ -39,18 +43,20 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     origin[0] = nx/2+1;
     origin[1] = nx/2+1;
     origin[2] = nx/2+1;
-//    this is not currently needed, because the stack that gets passed to sirt will have its background subtracted already
-//    ierr = CleanStack(comm, images, nangloc, radius, volsize, origin);
+
+    // this is not currently needed, because the stack that gets passed to sirt 
+    // will have its background subtracted already
+    // ierr = CleanStack(comm, images, nangloc, radius, volsize, origin);
 
     xvol->set_size(nx, nx, nx);
     xvol->to_zero();
     float * voldata = xvol->get_data();
 	
-	
     // vector of symmetrized angles
     std::vector<float> symangles(3,0.0); 
 	
-    float old_rnorm = 1.00001; // kluge, make sure if its 1.0 + epsilon it still works;
+    // kluge, make sure if its 1.0 + epsilon it still works;
+    float old_rnorm = 1.00001; 
 	
     int nrays, nnz;
 
@@ -100,7 +106,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
     float dm[8];
     
     int restarts = 0;
-    
+
+    t0 = MPI_Wtime();    
     while (iter <= maxit) {
 	if ( iter == 1 ) {
 	    if ( restarts == 0 ) {
@@ -108,8 +115,8 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 		for ( int i = 0 ; i < nangloc ; ++i ) {
 		    current_image = images[i];
 		    image_data = current_image->get_data(); 
-		    // retrieve the angles and shifts associated with each image from the array
-		    // angleshift.
+		    // retrieve the angles and shifts associated with each image 
+                    // from the array angleshift.
 		    phi   = angleshift[5*i + 0];
 		    theta = angleshift[5*i + 1];
 		    psi   = angleshift[5*i + 2];
@@ -175,9 +182,10 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 		    psi   = (float) angdict["psi"]   * PI/180.0;
 		    make_proj_mat(phi, theta, psi, dm); 
 		    // accumulate P^TPxvol in pxvol_loc
-		    ierr = fwdpj3(volsize, nrays, nnz, dm, origin, radius, ptrs, cord, xvol_sph, projected_data);
-		    ierr = bckpj3(volsize, nrays, nnz, dm, origin, radius, ptrs, cord, 
-				  projected_data, pxvol_loc);
+		    ierr = fwdpj3(volsize, nrays, nnz, dm, origin, radius, ptrs, 
+                                  cord, xvol_sph, projected_data);
+		    ierr = bckpj3(volsize, nrays, nnz, dm, origin, radius, ptrs, 
+                                  cord, projected_data, pxvol_loc);
 		}
 	    }
 	    // and reduce the accumulated pxvol_loc's
@@ -194,32 +202,37 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	}
 	rnorm /= nnz;
 	rnorm = sqrt(rnorm);
-	if ( mypid == 0 ) printf("iter = %3d, rnorm / bnorm = %6.3f, rnorm = %6.3f\n", iter, rnorm / bnorm, rnorm);
-	// if on the second pass, rnorm is greater than bnorm, lam is probably set too high
-	// reduce it by a factor of 2 and start over
+	if ( mypid == 0 ) printf("iter = %3d, rnorm / bnorm = %11.3e, rnorm = %11.3e\n", 
+                                 iter, rnorm / bnorm, rnorm);
+	// if on the second pass, rnorm is greater than bnorm, 
+        // lam is probably set too high reduce it by a factor of 2 and start over
 	//	if ( iter == 2 && rnorm / bnorm > old_rnorm ) {
 	if ( rnorm / bnorm > old_rnorm ) {
 	    // but don't do it more than 20 times
 	    if ( restarts > 20 ) {
-		if ( mypid == 0 ) printf("Failure to converge, even with lam = %f\n", lam);
+		if ( mypid == 0 ) 
+                   printf("Failure to converge, even with lam = %11.3e\n", lam);
 		break;
 	    } else {
 		++restarts;
 		iter = 1;
 		lam /= 2.0;
 		// reset these 
-		old_rnorm = 1.0001; // kluge, make sure if its 1.0 + epsilon it still works
+                // kluge, make sure if its 1.0 + epsilon it still works
+		old_rnorm = 1.0001; 
 		for ( int j = 0 ; j < nnz ; ++j ) {
 		    xvol_sph[j]  = 0.0;
 		    pxvol_loc[j] = 0.0; 
 		}
-		if ( mypid == 0 ) printf("reducing lam to %f, restarting\n", lam);
+		if ( mypid == 0 ) printf("reducing lam to %11.3e, restarting\n", lam);
 		continue;
 	    }
 	}
 	// if changes are sufficiently small, or if no further progress is made, terminate
 	if ( rnorm / bnorm < tol || rnorm / bnorm > old_rnorm ) {
-	    if ( mypid == 0 ) printf("Terminating with rnorm/bnorm = %f, tol = %f, old_rnorm = %f\n",rnorm/bnorm, tol, old_rnorm);
+	    if ( mypid == 0 ) 
+               printf("Terminating with rnorm/bnorm = %11.3e, tol = %11.3e, ");
+               printf("old_rnorm = %11.3e\n", rnorm/bnorm, tol, old_rnorm);
 	    break;
 	}
 	// update the termination threshold
@@ -227,11 +240,13 @@ int recons3d_sirt_mpi(MPI_Comm comm, EMData ** images, float * angleshift, EMDat
 	// update the reconstructed volume
 	for ( int j = 0 ; j < nnz ; ++j ) {
 	    xvol_sph[j] += lam * grad[j];
- 	    pxvol_loc[j] = 0.0; // reset it so it's ready to accumulate for the next iteration
+            // reset it so it's ready to accumulate for the next iteration
+ 	    pxvol_loc[j] = 0.0; 
 	}
 
 	++iter;
     }
+    if (mypid == 0) printf("Total time in SIRT = %11.3e\n", MPI_Wtime()-t0);
 
     // unpack the spherical volume back out into the original EMData object
     ierr = sph2cb(xvol_sph, volsize, nrays, radius, nnz, ptrs, cord, voldata);

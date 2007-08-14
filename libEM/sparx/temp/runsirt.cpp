@@ -123,13 +123,11 @@ int main(int argc, char ** argv)
    std::string symmetry = "c1";
 
    // call SIRT to reconstruct
-   t0 = MPI_Wtime();
    recons3d_sirt_mpi(comm, cleanimages, angleshift, xvol, nloc, ri, 
                      lam, maxit, symmetry, tol);
 
    if ( mypid == 0 ) {
       printf("Done with SIRT\n");
-      printf("SIRT timing = %11.3e\n", MPI_Wtime() - t0);
    }
 
    // write the reconstructed volume to disk
