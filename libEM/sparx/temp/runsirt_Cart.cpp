@@ -80,16 +80,18 @@ int main(int argc, char ** argv)
 
   if (dims[ROW]*dims[COL] != ncpus){
 	printf("ERROR: rowdim*coldim != ncpus\n");
+        ierr = MPI_Finalize();
 	return -1;
   }
 
-// Set up the Cartesian virtual topology: comm_2d
+  // Set up the Cartesian virtual topology: comm_2d
   periods[ROW] = periods[COL] = 1; // Set the periods for wrap-around
   MPI_Cart_create(comm, 2, dims, periods, 1, &comm_2d);
   MPI_Comm_rank(comm_2d, &my2dpid); //Get my pid in the new 2D topology
   MPI_Cart_coords(comm_2d, my2dpid, 2, mycoords); // Get my coordinates
   
- // printf("MPI_2d: mypid = %d, my2dpid = %d, mycoords = [%d, %d] \n", mypid, my2dpid, mycoords[ROW], mycoords[COL]);
+  // printf("MPI_2d: mypid = %d, my2dpid = %d, mycoords = [%d, %d] \n", 
+  //mypid, my2dpid, mycoords[ROW], mycoords[COL]);
 
   /* Create the row-based sub-topology */ 
   keep_dims[ROW] = 0; 
@@ -106,7 +108,8 @@ int main(int argc, char ** argv)
    ierr = ReadStackandDist_Cart(comm_2d, &expimages, stackfname, &nloc);
    if (ierr == 0) {
 	if (mypid == 0) {
-	   printf("Finished reading and distributing image stack onto Cartesian topology\n");
+	   printf("Finished reading and distributing image stack onto ");
+           printf("Cartesian topology\n");
 	   printf("I/O time for reading image stack = %11.3e\n",
 		  MPI_Wtime() - t0);
 	}
@@ -144,7 +147,8 @@ int main(int argc, char ** argv)
    // read angle and shift data and distribute along first column
    float * angleshift = new float[5*nloc];
 
-   ierr = ReadAngTrandDist_Cart(comm_2d, comm_row, dims, angleshift, paramfname, nloc);
+   ierr = ReadAngTrandDist_Cart(comm_2d, comm_row, dims, angleshift, 
+                                paramfname, nloc);
    if (ierr!=0) { 
       mpierr = MPI_Finalize();
       return 1;
@@ -161,8 +165,9 @@ int main(int argc, char ** argv)
 
    // call SIRT to reconstruct
    t0 = MPI_Wtime();
-   recons3d_sirt_mpi_Cart(comm_2d, comm_row, comm_col, cleanimages, angleshift, xvol, nloc, ri, 
-                     lam, maxit, symmetry, tol);
+   recons3d_sirt_mpi_Cart(comm_2d, comm_row, comm_col, cleanimages, 
+                          angleshift, xvol, nloc, ri, lam, maxit, 
+                          symmetry, tol);
 
    if ( my2dpid == 0 ) 
        printf("Done with SIRT: time = %11.3e\n", MPI_Wtime() - t0);
