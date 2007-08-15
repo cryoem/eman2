@@ -31,8 +31,8 @@ runali3d_d: runali3d_d.o ali3d_d_mpi.o sirt.o $(OBJS)
 runsirt: runsirt.o sirt.o $(OBJS) 
 	$(CC) runsirt.o sirt.o $(OBJS) $(LIBS) -o runsirt
 
-runsirt_cart: runsirt_Cart.o sirt_Cart.o $(OBJ_CART) 
-	$(CC) runsirt_Cart.o sirt_Cart.o $(OBJ_CART) $(LIBS) -o runsirt_cart
+runsirt_cart: runsirt_Cart.o sirt_Cart.o HyBR_Cart.o $(OBJ_CART) 
+	$(CC) runsirt_Cart.o sirt_Cart.o HyBR_Cart.o $(OBJ_CART) $(LIBS) -o runsirt_cart
 
 clean:
 	rm -f *.o runhybrid rununified runali3d_d runsirt runsirt_cart
