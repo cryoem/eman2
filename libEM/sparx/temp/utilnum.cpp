@@ -8,11 +8,6 @@
 
 #include "lapackblas.h"
 #include "utilnum.h"
-//#include "HyBR_Cart.h"
-#include "hybr.h"
-
-#include "hybr.h"
-
 
 int asta2(float *img, int nx, int ny, int ri, double *abaloc, int *klploc)
 {
