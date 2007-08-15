@@ -34,6 +34,25 @@
 
 #include "lapackblas.h"
 
+int s_cat(char *lp, char **rpp, integer *rnp, integer *np, ftnlen ll)
+//VOID s_cat(char *lp, char *rpp[], ftnlen rnp[], ftnlen *np, ftnlen ll)
+{
+   ftnlen i, n, nc;
+   char *f__rp;
+
+   n = (int)*np;
+   for(i = 0 ; i < n ; ++i) {
+      nc = ll;
+      if(rnp[i] < nc) nc = rnp[i];
+      ll -= nc;
+      f__rp = rpp[i];
+      while(--nc >= 0)	*lp++ = *f__rp++;
+   }
+   while(--ll >= 0)
+   *lp++ = ' ';
+   return 0; 
+}
+
 integer ieeeck_(integer *ispec, real *zero, real *one)
 {
 /*  -- LAPACK auxiliary routine (version 3.0) --   
@@ -16337,4 +16356,11093 @@ L60:
 /*     End OF SLAED5 */
 
 } /* slaed5_ */
+
+
+//==============================================================================
+/* Table of constant values */
+
+static integer c__6 = 6;
+static integer c__0 = 0;
+static integer c__2 = 2;
+//static integer c__1 = 1;
+static integer c_n1 = -1;
+static real c_b416 = 0.f;
+static real c_b438 = 1.f;
+
+
+/* Subroutine */ int sgesvd_(char *jobu, char *jobvt, integer *m, integer *n, 
+	real *a, integer *lda, real *s, real *u, integer *ldu, real *vt, 
+	integer *ldvt, real *work, integer *lwork, integer *info)
+{
+    /* System generated locals */
+    typedef char *address;
+
+    address a__1[2];
+    integer a_dim1, a_offset, u_dim1, u_offset, vt_dim1, vt_offset, i__1[2], 
+	    i__2, i__3, i__4;
+    char ch__1[2];
+
+    /* Builtin functions   
+       Subroutine */ int s_cat(char *, char **, integer *, integer *, ftnlen);
+    //double sqrt(doublereal);
+
+    /* Local variables */
+    static integer iscl;
+    static real anrm;
+    static integer ierr, itau, ncvt, nrvt, i__;
+    extern logical lsame_(char *, char *);
+    static integer chunk;
+    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+	    integer *, real *, real *, integer *, real *, integer *, real *, 
+	    real *, integer *);
+    static integer minmn, wrkbl, itaup, itauq, mnthr, iwork;
+    static logical wntua, wntva, wntun, wntuo, wntvn, wntvo, wntus, wntvs;
+    static integer ie, ir, bdspac, iu;
+    extern /* Subroutine */ int sgebrd_(integer *, integer *, real *, integer 
+	    *, real *, real *, real *, real *, real *, integer *, integer *);
+    extern doublereal slamch_(char *), slange_(char *, integer *, 
+	    integer *, real *, integer *, real *);
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    static real bignum;
+    extern /* Subroutine */ int sgelqf_(integer *, integer *, real *, integer 
+	    *, real *, real *, integer *, integer *), slascl_(char *, integer 
+	    *, integer *, real *, real *, integer *, integer *, real *, 
+	    integer *, integer *), sgeqrf_(integer *, integer *, real 
+	    *, integer *, real *, real *, integer *, integer *), slacpy_(char 
+	    *, integer *, integer *, real *, integer *, real *, integer *), slaset_(char *, integer *, integer *, real *, real *, 
+	    real *, integer *), sbdsqr_(char *, integer *, integer *, 
+	    integer *, integer *, real *, real *, real *, integer *, real *, 
+	    integer *, real *, integer *, real *, integer *), sorgbr_(
+	    char *, integer *, integer *, integer *, real *, integer *, real *
+	    , real *, integer *, integer *), sormbr_(char *, char *, 
+	    char *, integer *, integer *, integer *, real *, integer *, real *
+	    , real *, integer *, real *, integer *, integer *);
+    static integer ldwrkr, minwrk, ldwrku, maxwrk;
+    extern /* Subroutine */ int sorglq_(integer *, integer *, integer *, real 
+	    *, integer *, real *, real *, integer *, integer *);
+    static real smlnum;
+    extern /* Subroutine */ int sorgqr_(integer *, integer *, integer *, real 
+	    *, integer *, real *, real *, integer *, integer *);
+    static logical lquery, wntuas, wntvas;
+    static integer blk, ncu;
+    static real dum[1], eps;
+    static integer nru;
+
+
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define u_ref(a_1,a_2) u[(a_2)*u_dim1 + a_1]
+#define vt_ref(a_1,a_2) vt[(a_2)*vt_dim1 + a_1]
+
+
+/*  -- LAPACK driver routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SGESVD computes the singular value decomposition (SVD) of a real   
+    M-by-N matrix A, optionally computing the left and/or right singular   
+    vectors. The SVD is written   
+
+         A = U * SIGMA * transpose(V)   
+
+    where SIGMA is an M-by-N matrix which is zero except for its   
+    min(m,n) diagonal elements, U is an M-by-M orthogonal matrix, and   
+    V is an N-by-N orthogonal matrix.  The diagonal elements of SIGMA   
+    are the singular values of A; they are real and non-negative, and   
+    are returned in descending order.  The first min(m,n) columns of   
+    U and V are the left and right singular vectors of A.   
+
+    Note that the routine returns V**T, not V.   
+
+    Arguments   
+    =========   
+
+    JOBU    (input) CHARACTER*1   
+            Specifies options for computing all or part of the matrix U:   
+            = 'A':  all M columns of U are returned in array U:   
+            = 'S':  the first min(m,n) columns of U (the left singular   
+                    vectors) are returned in the array U;   
+            = 'O':  the first min(m,n) columns of U (the left singular   
+                    vectors) are overwritten on the array A;   
+            = 'N':  no columns of U (no left singular vectors) are   
+                    computed.   
+
+    JOBVT   (input) CHARACTER*1   
+            Specifies options for computing all or part of the matrix   
+            V**T:   
+            = 'A':  all N rows of V**T are returned in the array VT;   
+            = 'S':  the first min(m,n) rows of V**T (the right singular   
+                    vectors) are returned in the array VT;   
+            = 'O':  the first min(m,n) rows of V**T (the right singular   
+                    vectors) are overwritten on the array A;   
+            = 'N':  no rows of V**T (no right singular vectors) are   
+                    computed.   
+
+            JOBVT and JOBU cannot both be 'O'.   
+
+    M       (input) INTEGER   
+            The number of rows of the input matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the input matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the M-by-N matrix A.   
+            On exit,   
+            if JOBU = 'O',  A is overwritten with the first min(m,n)   
+                            columns of U (the left singular vectors,   
+                            stored columnwise);   
+            if JOBVT = 'O', A is overwritten with the first min(m,n)   
+                            rows of V**T (the right singular vectors,   
+                            stored rowwise);   
+            if JOBU .ne. 'O' and JOBVT .ne. 'O', the contents of A   
+                            are destroyed.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    S       (output) REAL array, dimension (min(M,N))   
+            The singular values of A, sorted so that S(i) >= S(i+1).   
+
+    U       (output) REAL array, dimension (LDU,UCOL)   
+            (LDU,M) if JOBU = 'A' or (LDU,min(M,N)) if JOBU = 'S'.   
+            If JOBU = 'A', U contains the M-by-M orthogonal matrix U;   
+            if JOBU = 'S', U contains the first min(m,n) columns of U   
+            (the left singular vectors, stored columnwise);   
+            if JOBU = 'N' or 'O', U is not referenced.   
+
+    LDU     (input) INTEGER   
+            The leading dimension of the array U.  LDU >= 1; if   
+            JOBU = 'S' or 'A', LDU >= M.   
+
+    VT      (output) REAL array, dimension (LDVT,N)   
+            If JOBVT = 'A', VT contains the N-by-N orthogonal matrix   
+            V**T;   
+            if JOBVT = 'S', VT contains the first min(m,n) rows of   
+            V**T (the right singular vectors, stored rowwise);   
+            if JOBVT = 'N' or 'O', VT is not referenced.   
+
+    LDVT    (input) INTEGER   
+            The leading dimension of the array VT.  LDVT >= 1; if   
+            JOBVT = 'A', LDVT >= N; if JOBVT = 'S', LDVT >= min(M,N).   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK;   
+            if INFO > 0, WORK(2:MIN(M,N)) contains the unconverged   
+            superdiagonal elements of an upper bidiagonal matrix B   
+            whose diagonal is in S (not necessarily sorted). B   
+            satisfies A = U * B * VT, so it has the same singular values   
+            as A, and singular vectors related by U and VT.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK. LWORK >= 1.   
+            LWORK >= MAX(3*MIN(M,N)+MAX(M,N),5*MIN(M,N)).   
+            For good performance, LWORK should generally be larger.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit.   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+            > 0:  if SBDSQR did not converge, INFO specifies how many   
+                  superdiagonals of an intermediate bidiagonal form B   
+                  did not converge to zero. See the description of WORK   
+                  above for details.   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --s;
+    u_dim1 = *ldu;
+    u_offset = 1 + u_dim1 * 1;
+    u -= u_offset;
+    vt_dim1 = *ldvt;
+    vt_offset = 1 + vt_dim1 * 1;
+    vt -= vt_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    minmn = f2cmin(*m,*n);
+/* Writing concatenation */
+    i__1[0] = 1, a__1[0] = jobu;
+    i__1[1] = 1, a__1[1] = jobvt;
+    s_cat(ch__1, a__1, i__1, &c__2, (ftnlen)2);
+    mnthr = ilaenv_(&c__6, "SGESVD", ch__1, m, n, &c__0, &c__0, (ftnlen)6, (
+	    ftnlen)2);
+    wntua = lsame_(jobu, "A");
+    wntus = lsame_(jobu, "S");
+    wntuas = wntua || wntus;
+    wntuo = lsame_(jobu, "O");
+    wntun = lsame_(jobu, "N");
+    wntva = lsame_(jobvt, "A");
+    wntvs = lsame_(jobvt, "S");
+    wntvas = wntva || wntvs;
+    wntvo = lsame_(jobvt, "O");
+    wntvn = lsame_(jobvt, "N");
+    minwrk = 1;
+    lquery = *lwork == -1;
+
+    if (! (wntua || wntus || wntuo || wntun)) {
+	*info = -1;
+    } else if (! (wntva || wntvs || wntvo || wntvn) || wntvo && wntuo) {
+	*info = -2;
+    } else if (*m < 0) {
+	*info = -3;
+    } else if (*n < 0) {
+	*info = -4;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -6;
+    } else if (*ldu < 1 || wntuas && *ldu < *m) {
+	*info = -9;
+    } else if (*ldvt < 1 || wntva && *ldvt < *n || wntvs && *ldvt < minmn) {
+	*info = -11;
+    }
+
+/*     Compute workspace   
+        (Note: Comments in the code beginning "Workspace:" describe the   
+         minimal amount of workspace needed at that point in the code,   
+         as well as the preferred amount for good performance.   
+         NB refers to the optimal block size for the immediately   
+         following subroutine, as returned by ILAENV.) */
+
+    if (*info == 0 && (*lwork >= 1 || lquery) && *m > 0 && *n > 0) {
+	if (*m >= *n) {
+
+/*           Compute space needed for SBDSQR */
+
+	    bdspac = *n * 5;
+	    if (*m >= mnthr) {
+		if (wntun) {
+
+/*                 Path 1 (M much larger than N, JOBU='N') */
+
+		    maxwrk = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    maxwrk = f2cmax(i__2,i__3);
+		    if (wntvo || wntvas) {
+/* Computing MAX */
+			i__2 = maxwrk, i__3 = *n * 3 + (*n - 1) * ilaenv_(&
+				c__1, "SORGBR", "P", n, n, n, &c_n1, (ftnlen)
+				6, (ftnlen)1);
+			maxwrk = f2cmax(i__2,i__3);
+		    }
+		    maxwrk = f2cmax(maxwrk,bdspac);
+/* Computing MAX */
+		    i__2 = *n << 2;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntuo && wntvn) {
+
+/*                 Path 2 (M much larger than N, JOBU='O', JOBVT='N') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *n * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+/* Computing MAX */
+		    i__2 = *n * *n + wrkbl, i__3 = *n * *n + *m * *n + *n;
+		    maxwrk = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntuo && wntvas) {
+
+/*                 Path 3 (M much larger than N, JOBU='O', JOBVT='S' or   
+                   'A') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *n * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", n, n, n, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+/* Computing MAX */
+		    i__2 = *n * *n + wrkbl, i__3 = *n * *n + *m * *n + *n;
+		    maxwrk = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntus && wntvn) {
+
+/*                 Path 4 (M much larger than N, JOBU='S', JOBVT='N') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *n * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *n * *n + wrkbl;
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntus && wntvo) {
+
+/*                 Path 5 (M much larger than N, JOBU='S', JOBVT='O') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *n * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", n, n, n, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = (*n << 1) * *n + wrkbl;
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntus && wntvas) {
+
+/*                 Path 6 (M much larger than N, JOBU='S', JOBVT='S' or   
+                   'A') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *n * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", n, n, n, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *n * *n + wrkbl;
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntua && wntvn) {
+
+/*                 Path 7 (M much larger than N, JOBU='A', JOBVT='N') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *m * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, m, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *n * *n + wrkbl;
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntua && wntvo) {
+
+/*                 Path 8 (M much larger than N, JOBU='A', JOBVT='O') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *m * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, m, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", n, n, n, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = (*n << 1) * *n + wrkbl;
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntua && wntvas) {
+
+/*                 Path 9 (M much larger than N, JOBU='A', JOBVT='S' or   
+                   'A') */
+
+		    wrkbl = *n + *n * ilaenv_(&c__1, "SGEQRF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n + *m * ilaenv_(&c__1, "SORGQR", 
+			    " ", m, m, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", n, n, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORGBR"
+			    , "Q", n, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *n * 3 + (*n - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", n, n, n, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *n * *n + wrkbl;
+/* Computing MAX */
+		    i__2 = *n * 3 + *m;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		}
+	    } else {
+
+/*              Path 10 (M at least N, but not much larger) */
+
+		maxwrk = *n * 3 + (*m + *n) * ilaenv_(&c__1, "SGEBRD", " ", m,
+			 n, &c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+		if (wntus || wntuo) {
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *n * 3 + *n * ilaenv_(&c__1, "SORG"
+			    "BR", "Q", m, n, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    maxwrk = f2cmax(i__2,i__3);
+		}
+		if (wntua) {
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *n * 3 + *m * ilaenv_(&c__1, "SORG"
+			    "BR", "Q", m, m, n, &c_n1, (ftnlen)6, (ftnlen)1);
+		    maxwrk = f2cmax(i__2,i__3);
+		}
+		if (! wntvn) {
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *n * 3 + (*n - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", n, n, n, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    maxwrk = f2cmax(i__2,i__3);
+		}
+		maxwrk = f2cmax(maxwrk,bdspac);
+/* Computing MAX */
+		i__2 = *n * 3 + *m;
+		minwrk = f2cmax(i__2,bdspac);
+		maxwrk = f2cmax(maxwrk,minwrk);
+	    }
+	} else {
+
+/*           Compute space needed for SBDSQR */
+
+	    bdspac = *m * 5;
+	    if (*n >= mnthr) {
+		if (wntvn) {
+
+/*                 Path 1t(N much larger than M, JOBVT='N') */
+
+		    maxwrk = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    maxwrk = f2cmax(i__2,i__3);
+		    if (wntuo || wntuas) {
+/* Computing MAX */
+			i__2 = maxwrk, i__3 = *m * 3 + *m * ilaenv_(&c__1, 
+				"SORGBR", "Q", m, m, m, &c_n1, (ftnlen)6, (
+				ftnlen)1);
+			maxwrk = f2cmax(i__2,i__3);
+		    }
+		    maxwrk = f2cmax(maxwrk,bdspac);
+/* Computing MAX */
+		    i__2 = *m << 2;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntvo && wntun) {
+
+/*                 Path 2t(N much larger than M, JOBU='N', JOBVT='O') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *m * ilaenv_(&c__1, "SORGLQ", 
+			    " ", m, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+/* Computing MAX */
+		    i__2 = *m * *m + wrkbl, i__3 = *m * *m + *m * *n + *m;
+		    maxwrk = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntvo && wntuas) {
+
+/*                 Path 3t(N much larger than M, JOBU='S' or 'A',   
+                   JOBVT='O') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *m * ilaenv_(&c__1, "SORGLQ", 
+			    " ", m, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + *m * ilaenv_(&c__1, "SORGBR"
+			    , "Q", m, m, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+/* Computing MAX */
+		    i__2 = *m * *m + wrkbl, i__3 = *m * *m + *m * *n + *m;
+		    maxwrk = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntvs && wntun) {
+
+/*                 Path 4t(N much larger than M, JOBU='N', JOBVT='S') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *m * ilaenv_(&c__1, "SORGLQ", 
+			    " ", m, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *m * *m + wrkbl;
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntvs && wntuo) {
+
+/*                 Path 5t(N much larger than M, JOBU='O', JOBVT='S') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *m * ilaenv_(&c__1, "SORGLQ", 
+			    " ", m, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + *m * ilaenv_(&c__1, "SORGBR"
+			    , "Q", m, m, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = (*m << 1) * *m + wrkbl;
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntvs && wntuas) {
+
+/*                 Path 6t(N much larger than M, JOBU='S' or 'A',   
+                   JOBVT='S') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *m * ilaenv_(&c__1, "SORGLQ", 
+			    " ", m, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + *m * ilaenv_(&c__1, "SORGBR"
+			    , "Q", m, m, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *m * *m + wrkbl;
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntva && wntun) {
+
+/*                 Path 7t(N much larger than M, JOBU='N', JOBVT='A') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *n * ilaenv_(&c__1, "SORGLQ", 
+			    " ", n, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *m * *m + wrkbl;
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntva && wntuo) {
+
+/*                 Path 8t(N much larger than M, JOBU='O', JOBVT='A') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *n * ilaenv_(&c__1, "SORGLQ", 
+			    " ", n, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + *m * ilaenv_(&c__1, "SORGBR"
+			    , "Q", m, m, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = (*m << 1) * *m + wrkbl;
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		} else if (wntva && wntuas) {
+
+/*                 Path 9t(N much larger than M, JOBU='S' or 'A',   
+                   JOBVT='A') */
+
+		    wrkbl = *m + *m * ilaenv_(&c__1, "SGELQF", " ", m, n, &
+			    c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m + *n * ilaenv_(&c__1, "SORGLQ", 
+			    " ", n, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m << 1) * ilaenv_(&c__1, 
+			    "SGEBRD", " ", m, m, &c_n1, &c_n1, (ftnlen)6, (
+			    ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "P", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    wrkbl = f2cmax(i__2,i__3);
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *m * 3 + *m * ilaenv_(&c__1, "SORGBR"
+			    , "Q", m, m, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    wrkbl = f2cmax(i__2,i__3);
+		    wrkbl = f2cmax(wrkbl,bdspac);
+		    maxwrk = *m * *m + wrkbl;
+/* Computing MAX */
+		    i__2 = *m * 3 + *n;
+		    minwrk = f2cmax(i__2,bdspac);
+		    maxwrk = f2cmax(maxwrk,minwrk);
+		}
+	    } else {
+
+/*              Path 10t(N greater than M, but not much larger) */
+
+		maxwrk = *m * 3 + (*m + *n) * ilaenv_(&c__1, "SGEBRD", " ", m,
+			 n, &c_n1, &c_n1, (ftnlen)6, (ftnlen)1);
+		if (wntvs || wntvo) {
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *m * 3 + *m * ilaenv_(&c__1, "SORG"
+			    "BR", "P", m, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    maxwrk = f2cmax(i__2,i__3);
+		}
+		if (wntva) {
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *m * 3 + *n * ilaenv_(&c__1, "SORG"
+			    "BR", "P", n, n, m, &c_n1, (ftnlen)6, (ftnlen)1);
+		    maxwrk = f2cmax(i__2,i__3);
+		}
+		if (! wntun) {
+/* Computing MAX */
+		    i__2 = maxwrk, i__3 = *m * 3 + (*m - 1) * ilaenv_(&c__1, 
+			    "SORGBR", "Q", m, m, m, &c_n1, (ftnlen)6, (ftnlen)
+			    1);
+		    maxwrk = f2cmax(i__2,i__3);
+		}
+		maxwrk = f2cmax(maxwrk,bdspac);
+/* Computing MAX */
+		i__2 = *m * 3 + *n;
+		minwrk = f2cmax(i__2,bdspac);
+		maxwrk = f2cmax(maxwrk,minwrk);
+	    }
+	}
+	work[1] = (real) maxwrk;
+    }
+
+    if (*lwork < minwrk && ! lquery) {
+	*info = -13;
+    }
+    if (*info != 0) {
+	i__2 = -(*info);
+	xerbla_("SGESVD", &i__2);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m == 0 || *n == 0) {
+	if (*lwork >= 1) {
+	    work[1] = 1.f;
+	}
+	return 0;
+    }
+
+/*     Get machine constants */
+
+    eps = slamch_("P");
+    smlnum = sqrt(slamch_("S")) / eps;
+    bignum = 1.f / smlnum;
+
+/*     Scale A if max element outside range [SMLNUM,BIGNUM] */
+
+    anrm = slange_("M", m, n, &a[a_offset], lda, dum);
+    iscl = 0;
+    if (anrm > 0.f && anrm < smlnum) {
+	iscl = 1;
+	slascl_("G", &c__0, &c__0, &anrm, &smlnum, m, n, &a[a_offset], lda, &
+		ierr);
+    } else if (anrm > bignum) {
+	iscl = 1;
+	slascl_("G", &c__0, &c__0, &anrm, &bignum, m, n, &a[a_offset], lda, &
+		ierr);
+    }
+
+    if (*m >= *n) {
+
+/*        A has at least as many rows as columns. If A has sufficiently   
+          more rows than columns, first reduce using the QR   
+          decomposition (if sufficient workspace available) */
+
+	if (*m >= mnthr) {
+
+	    if (wntun) {
+
+/*              Path 1 (M much larger than N, JOBU='N')   
+                No left singular vectors to be computed */
+
+		itau = 1;
+		iwork = itau + *n;
+
+/*              Compute A=Q*R   
+                (Workspace: need 2*N, prefer N+N*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork], &
+			i__2, &ierr);
+
+/*              Zero out below R */
+
+		i__2 = *n - 1;
+		i__3 = *n - 1;
+		slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &a_ref(2, 1), 
+			lda);
+		ie = 1;
+		itauq = ie + *n;
+		itaup = itauq + *n;
+		iwork = itaup + *n;
+
+/*              Bidiagonalize R in A   
+                (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sgebrd_(n, n, &a[a_offset], lda, &s[1], &work[ie], &work[
+			itauq], &work[itaup], &work[iwork], &i__2, &ierr);
+		ncvt = 0;
+		if (wntvo || wntvas) {
+
+/*                 If right singular vectors desired, generate P'.   
+                   (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgbr_("P", n, n, n, &a[a_offset], lda, &work[itaup], &
+			    work[iwork], &i__2, &ierr);
+		    ncvt = *n;
+		}
+		iwork = ie + *n;
+
+/*              Perform bidiagonal QR iteration, computing right   
+                singular vectors of A in A if desired   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("U", n, &ncvt, &c__0, &c__0, &s[1], &work[ie], &a[
+			a_offset], lda, dum, &c__1, dum, &c__1, &work[iwork], 
+			info);
+
+/*              If right singular vectors desired in VT, copy them there */
+
+		if (wntvas) {
+		    slacpy_("F", n, n, &a[a_offset], lda, &vt[vt_offset], 
+			    ldvt);
+		}
+
+	    } else if (wntuo && wntvn) {
+
+/*              Path 2 (M much larger than N, JOBU='O', JOBVT='N')   
+                N left singular vectors to be overwritten on A and   
+                no right singular vectors to be computed   
+
+   Computing MAX */
+		i__2 = *n << 2;
+		if (*lwork >= *n * *n + f2cmax(i__2,bdspac)) {
+
+/*                 Sufficient workspace for a fast algorithm */
+
+		    ir = 1;
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *lda * *n + *n;
+		    if (*lwork >= f2cmax(i__2,i__3) + *lda * *n) {
+
+/*                    WORK(IU) is LDA by N, WORK(IR) is LDA by N */
+
+			ldwrku = *lda;
+			ldwrkr = *lda;
+		    } else /* if(complicated condition) */ {
+/* Computing MAX */
+			i__2 = wrkbl, i__3 = *lda * *n + *n;
+			if (*lwork >= f2cmax(i__2,i__3) + *n * *n) {
+
+/*                    WORK(IU) is LDA by N, WORK(IR) is N by N */
+
+			    ldwrku = *lda;
+			    ldwrkr = *n;
+			} else {
+
+/*                    WORK(IU) is LDWRKU by N, WORK(IR) is N by N */
+
+			    ldwrku = (*lwork - *n * *n - *n) / *n;
+			    ldwrkr = *n;
+			}
+		    }
+		    itau = ir + ldwrkr * *n;
+		    iwork = itau + *n;
+
+/*                 Compute A=Q*R   
+                   (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork]
+			    , &i__2, &ierr);
+
+/*                 Copy R to WORK(IR) and zero out below it */
+
+		    slacpy_("U", n, n, &a[a_offset], lda, &work[ir], &ldwrkr);
+		    i__2 = *n - 1;
+		    i__3 = *n - 1;
+		    slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[ir + 1]
+			    , &ldwrkr);
+
+/*                 Generate Q in A   
+                   (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgqr_(m, n, n, &a[a_offset], lda, &work[itau], &work[
+			    iwork], &i__2, &ierr);
+		    ie = itau;
+		    itauq = ie + *n;
+		    itaup = itauq + *n;
+		    iwork = itaup + *n;
+
+/*                 Bidiagonalize R in WORK(IR)   
+                   (Workspace: need N*N+4*N, prefer N*N+3*N+2*N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgebrd_(n, n, &work[ir], &ldwrkr, &s[1], &work[ie], &work[
+			    itauq], &work[itaup], &work[iwork], &i__2, &ierr);
+
+/*                 Generate left vectors bidiagonalizing R   
+                   (Workspace: need N*N+4*N, prefer N*N+3*N+N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgbr_("Q", n, n, n, &work[ir], &ldwrkr, &work[itauq], &
+			    work[iwork], &i__2, &ierr);
+		    iwork = ie + *n;
+
+/*                 Perform bidiagonal QR iteration, computing left   
+                   singular vectors of R in WORK(IR)   
+                   (Workspace: need N*N+BDSPAC) */
+
+		    sbdsqr_("U", n, &c__0, n, &c__0, &s[1], &work[ie], dum, &
+			    c__1, &work[ir], &ldwrkr, dum, &c__1, &work[iwork]
+			    , info);
+		    iu = ie + *n;
+
+/*                 Multiply Q in A by left singular vectors of R in   
+                   WORK(IR), storing result in WORK(IU) and copying to A   
+                   (Workspace: need N*N+2*N, prefer N*N+M*N+N) */
+
+		    i__2 = *m;
+		    i__3 = ldwrku;
+		    for (i__ = 1; i__3 < 0 ? i__ >= i__2 : i__ <= i__2; i__ +=
+			     i__3) {
+/* Computing MIN */
+			i__4 = *m - i__ + 1;
+			chunk = f2cmin(i__4,ldwrku);
+			sgemm_("N", "N", &chunk, n, n, &c_b438, &a_ref(i__, 1)
+				, lda, &work[ir], &ldwrkr, &c_b416, &work[iu],
+				 &ldwrku);
+			slacpy_("F", &chunk, n, &work[iu], &ldwrku, &a_ref(
+				i__, 1), lda);
+/* L10: */
+		    }
+
+		} else {
+
+/*                 Insufficient workspace for a fast algorithm */
+
+		    ie = 1;
+		    itauq = ie + *n;
+		    itaup = itauq + *n;
+		    iwork = itaup + *n;
+
+/*                 Bidiagonalize A   
+                   (Workspace: need 3*N+M, prefer 3*N+(M+N)*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sgebrd_(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[
+			    itauq], &work[itaup], &work[iwork], &i__3, &ierr);
+
+/*                 Generate left vectors bidiagonalizing A   
+                   (Workspace: need 4*N, prefer 3*N+N*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgbr_("Q", m, n, n, &a[a_offset], lda, &work[itauq], &
+			    work[iwork], &i__3, &ierr);
+		    iwork = ie + *n;
+
+/*                 Perform bidiagonal QR iteration, computing left   
+                   singular vectors of A in A   
+                   (Workspace: need BDSPAC) */
+
+		    sbdsqr_("U", n, &c__0, m, &c__0, &s[1], &work[ie], dum, &
+			    c__1, &a[a_offset], lda, dum, &c__1, &work[iwork],
+			     info);
+
+		}
+
+	    } else if (wntuo && wntvas) {
+
+/*              Path 3 (M much larger than N, JOBU='O', JOBVT='S' or 'A')   
+                N left singular vectors to be overwritten on A and   
+                N right singular vectors to be computed in VT   
+
+   Computing MAX */
+		i__3 = *n << 2;
+		if (*lwork >= *n * *n + f2cmax(i__3,bdspac)) {
+
+/*                 Sufficient workspace for a fast algorithm */
+
+		    ir = 1;
+/* Computing MAX */
+		    i__3 = wrkbl, i__2 = *lda * *n + *n;
+		    if (*lwork >= f2cmax(i__3,i__2) + *lda * *n) {
+
+/*                    WORK(IU) is LDA by N and WORK(IR) is LDA by N */
+
+			ldwrku = *lda;
+			ldwrkr = *lda;
+		    } else /* if(complicated condition) */ {
+/* Computing MAX */
+			i__3 = wrkbl, i__2 = *lda * *n + *n;
+			if (*lwork >= f2cmax(i__3,i__2) + *n * *n) {
+
+/*                    WORK(IU) is LDA by N and WORK(IR) is N by N */
+
+			    ldwrku = *lda;
+			    ldwrkr = *n;
+			} else {
+
+/*                    WORK(IU) is LDWRKU by N and WORK(IR) is N by N */
+
+			    ldwrku = (*lwork - *n * *n - *n) / *n;
+			    ldwrkr = *n;
+			}
+		    }
+		    itau = ir + ldwrkr * *n;
+		    iwork = itau + *n;
+
+/*                 Compute A=Q*R   
+                   (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork]
+			    , &i__3, &ierr);
+
+/*                 Copy R to VT, zeroing out below it */
+
+		    slacpy_("U", n, n, &a[a_offset], lda, &vt[vt_offset], 
+			    ldvt);
+		    i__3 = *n - 1;
+		    i__2 = *n - 1;
+		    slaset_("L", &i__3, &i__2, &c_b416, &c_b416, &vt_ref(2, 1)
+			    , ldvt);
+
+/*                 Generate Q in A   
+                   (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgqr_(m, n, n, &a[a_offset], lda, &work[itau], &work[
+			    iwork], &i__3, &ierr);
+		    ie = itau;
+		    itauq = ie + *n;
+		    itaup = itauq + *n;
+		    iwork = itaup + *n;
+
+/*                 Bidiagonalize R in VT, copying result to WORK(IR)   
+                   (Workspace: need N*N+4*N, prefer N*N+3*N+2*N*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sgebrd_(n, n, &vt[vt_offset], ldvt, &s[1], &work[ie], &
+			    work[itauq], &work[itaup], &work[iwork], &i__3, &
+			    ierr);
+		    slacpy_("L", n, n, &vt[vt_offset], ldvt, &work[ir], &
+			    ldwrkr);
+
+/*                 Generate left vectors bidiagonalizing R in WORK(IR)   
+                   (Workspace: need N*N+4*N, prefer N*N+3*N+N*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgbr_("Q", n, n, n, &work[ir], &ldwrkr, &work[itauq], &
+			    work[iwork], &i__3, &ierr);
+
+/*                 Generate right vectors bidiagonalizing R in VT   
+                   (Workspace: need N*N+4*N-1, prefer N*N+3*N+(N-1)*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[itaup], 
+			    &work[iwork], &i__3, &ierr);
+		    iwork = ie + *n;
+
+/*                 Perform bidiagonal QR iteration, computing left   
+                   singular vectors of R in WORK(IR) and computing right   
+                   singular vectors of R in VT   
+                   (Workspace: need N*N+BDSPAC) */
+
+		    sbdsqr_("U", n, n, n, &c__0, &s[1], &work[ie], &vt[
+			    vt_offset], ldvt, &work[ir], &ldwrkr, dum, &c__1, 
+			    &work[iwork], info);
+		    iu = ie + *n;
+
+/*                 Multiply Q in A by left singular vectors of R in   
+                   WORK(IR), storing result in WORK(IU) and copying to A   
+                   (Workspace: need N*N+2*N, prefer N*N+M*N+N) */
+
+		    i__3 = *m;
+		    i__2 = ldwrku;
+		    for (i__ = 1; i__2 < 0 ? i__ >= i__3 : i__ <= i__3; i__ +=
+			     i__2) {
+/* Computing MIN */
+			i__4 = *m - i__ + 1;
+			chunk = f2cmin(i__4,ldwrku);
+			sgemm_("N", "N", &chunk, n, n, &c_b438, &a_ref(i__, 1)
+				, lda, &work[ir], &ldwrkr, &c_b416, &work[iu],
+				 &ldwrku);
+			slacpy_("F", &chunk, n, &work[iu], &ldwrku, &a_ref(
+				i__, 1), lda);
+/* L20: */
+		    }
+
+		} else {
+
+/*                 Insufficient workspace for a fast algorithm */
+
+		    itau = 1;
+		    iwork = itau + *n;
+
+/*                 Compute A=Q*R   
+                   (Workspace: need 2*N, prefer N+N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork]
+			    , &i__2, &ierr);
+
+/*                 Copy R to VT, zeroing out below it */
+
+		    slacpy_("U", n, n, &a[a_offset], lda, &vt[vt_offset], 
+			    ldvt);
+		    i__2 = *n - 1;
+		    i__3 = *n - 1;
+		    slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &vt_ref(2, 1)
+			    , ldvt);
+
+/*                 Generate Q in A   
+                   (Workspace: need 2*N, prefer N+N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgqr_(m, n, n, &a[a_offset], lda, &work[itau], &work[
+			    iwork], &i__2, &ierr);
+		    ie = itau;
+		    itauq = ie + *n;
+		    itaup = itauq + *n;
+		    iwork = itaup + *n;
+
+/*                 Bidiagonalize R in VT   
+                   (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgebrd_(n, n, &vt[vt_offset], ldvt, &s[1], &work[ie], &
+			    work[itauq], &work[itaup], &work[iwork], &i__2, &
+			    ierr);
+
+/*                 Multiply Q in A by left vectors bidiagonalizing R   
+                   (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sormbr_("Q", "R", "N", m, n, n, &vt[vt_offset], ldvt, &
+			    work[itauq], &a[a_offset], lda, &work[iwork], &
+			    i__2, &ierr);
+
+/*                 Generate right vectors bidiagonalizing R in VT   
+                   (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[itaup], 
+			    &work[iwork], &i__2, &ierr);
+		    iwork = ie + *n;
+
+/*                 Perform bidiagonal QR iteration, computing left   
+                   singular vectors of A in A and computing right   
+                   singular vectors of A in VT   
+                   (Workspace: need BDSPAC) */
+
+		    sbdsqr_("U", n, n, m, &c__0, &s[1], &work[ie], &vt[
+			    vt_offset], ldvt, &a[a_offset], lda, dum, &c__1, &
+			    work[iwork], info);
+
+		}
+
+	    } else if (wntus) {
+
+		if (wntvn) {
+
+/*                 Path 4 (M much larger than N, JOBU='S', JOBVT='N')   
+                   N left singular vectors to be computed in U and   
+                   no right singular vectors to be computed   
+
+   Computing MAX */
+		    i__2 = *n << 2;
+		    if (*lwork >= *n * *n + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			ir = 1;
+			if (*lwork >= wrkbl + *lda * *n) {
+
+/*                       WORK(IR) is LDA by N */
+
+			    ldwrkr = *lda;
+			} else {
+
+/*                       WORK(IR) is N by N */
+
+			    ldwrkr = *n;
+			}
+			itau = ir + ldwrkr * *n;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R   
+                      (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy R to WORK(IR), zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &work[ir], &
+				ldwrkr);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[ir 
+				+ 1], &ldwrkr);
+
+/*                    Generate Q in A   
+                      (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, n, n, &a[a_offset], lda, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in WORK(IR)   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &work[ir], &ldwrkr, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Generate left vectors bidiagonalizing R in WORK(IR)   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", n, n, n, &work[ir], &ldwrkr, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of R in WORK(IR)   
+                      (Workspace: need N*N+BDSPAC) */
+
+			sbdsqr_("U", n, &c__0, n, &c__0, &s[1], &work[ie], 
+				dum, &c__1, &work[ir], &ldwrkr, dum, &c__1, &
+				work[iwork], info);
+
+/*                    Multiply Q in A by left singular vectors of R in   
+                      WORK(IR), storing result in U   
+                      (Workspace: need N*N) */
+
+			sgemm_("N", "N", m, n, n, &c_b438, &a[a_offset], lda, 
+				&work[ir], &ldwrkr, &c_b416, &u[u_offset], 
+				ldu);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, n, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Zero out below R in A */
+
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &a_ref(2,
+				 1), lda);
+
+/*                    Bidiagonalize R in A   
+                      (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply Q in U by left vectors bidiagonalizing R   
+                      (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("Q", "R", "N", m, n, n, &a[a_offset], lda, &
+				work[itauq], &u[u_offset], ldu, &work[iwork], 
+				&i__2, &ierr)
+				;
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", n, &c__0, m, &c__0, &s[1], &work[ie], 
+				dum, &c__1, &u[u_offset], ldu, dum, &c__1, &
+				work[iwork], info);
+
+		    }
+
+		} else if (wntvo) {
+
+/*                 Path 5 (M much larger than N, JOBU='S', JOBVT='O')   
+                   N left singular vectors to be computed in U and   
+                   N right singular vectors to be overwritten on A   
+
+   Computing MAX */
+		    i__2 = *n << 2;
+		    if (*lwork >= (*n << 1) * *n + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + (*lda << 1) * *n) {
+
+/*                       WORK(IU) is LDA by N and WORK(IR) is LDA by N */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *n;
+			    ldwrkr = *lda;
+			} else if (*lwork >= wrkbl + (*lda + *n) * *n) {
+
+/*                       WORK(IU) is LDA by N and WORK(IR) is N by N */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *n;
+			    ldwrkr = *n;
+			} else {
+
+/*                       WORK(IU) is N by N and WORK(IR) is N by N */
+
+			    ldwrku = *n;
+			    ir = iu + ldwrku * *n;
+			    ldwrkr = *n;
+			}
+			itau = ir + ldwrkr * *n;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R   
+                      (Workspace: need 2*N*N+2*N, prefer 2*N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy R to WORK(IU), zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ 1], &ldwrku);
+
+/*                    Generate Q in A   
+                      (Workspace: need 2*N*N+2*N, prefer 2*N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, n, n, &a[a_offset], lda, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in WORK(IU), copying result to   
+                      WORK(IR)   
+                      (Workspace: need 2*N*N+4*N,   
+                                  prefer 2*N*N+3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("U", n, n, &work[iu], &ldwrku, &work[ir], &
+				ldwrkr);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need 2*N*N+4*N, prefer 2*N*N+3*N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", n, n, n, &work[iu], &ldwrku, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IR)   
+                      (Workspace: need 2*N*N+4*N-1,   
+                                  prefer 2*N*N+3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &work[ir], &ldwrkr, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of R in WORK(IU) and computing   
+                      right singular vectors of R in WORK(IR)   
+                      (Workspace: need 2*N*N+BDSPAC) */
+
+			sbdsqr_("U", n, n, n, &c__0, &s[1], &work[ie], &work[
+				ir], &ldwrkr, &work[iu], &ldwrku, dum, &c__1, 
+				&work[iwork], info);
+
+/*                    Multiply Q in A by left singular vectors of R in   
+                      WORK(IU), storing result in U   
+                      (Workspace: need N*N) */
+
+			sgemm_("N", "N", m, n, n, &c_b438, &a[a_offset], lda, 
+				&work[iu], &ldwrku, &c_b416, &u[u_offset], 
+				ldu);
+
+/*                    Copy right singular vectors of R to A   
+                      (Workspace: need N*N) */
+
+			slacpy_("F", n, n, &work[ir], &ldwrkr, &a[a_offset], 
+				lda);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, n, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Zero out below R in A */
+
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &a_ref(2,
+				 1), lda);
+
+/*                    Bidiagonalize R in A   
+                      (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply Q in U by left vectors bidiagonalizing R   
+                      (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("Q", "R", "N", m, n, n, &a[a_offset], lda, &
+				work[itauq], &u[u_offset], ldu, &work[iwork], 
+				&i__2, &ierr)
+				;
+
+/*                    Generate right vectors bidiagonalizing R in A   
+                      (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &a[a_offset], lda, &work[itaup],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U and computing right   
+                      singular vectors of A in A   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", n, n, m, &c__0, &s[1], &work[ie], &a[
+				a_offset], lda, &u[u_offset], ldu, dum, &c__1,
+				 &work[iwork], info);
+
+		    }
+
+		} else if (wntvas) {
+
+/*                 Path 6 (M much larger than N, JOBU='S', JOBVT='S'   
+                           or 'A')   
+                   N left singular vectors to be computed in U and   
+                   N right singular vectors to be computed in VT   
+
+   Computing MAX */
+		    i__2 = *n << 2;
+		    if (*lwork >= *n * *n + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + *lda * *n) {
+
+/*                       WORK(IU) is LDA by N */
+
+			    ldwrku = *lda;
+			} else {
+
+/*                       WORK(IU) is N by N */
+
+			    ldwrku = *n;
+			}
+			itau = iu + ldwrku * *n;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R   
+                      (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy R to WORK(IU), zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ 1], &ldwrku);
+
+/*                    Generate Q in A   
+                      (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, n, n, &a[a_offset], lda, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in WORK(IU), copying result to VT   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("U", n, n, &work[iu], &ldwrku, &vt[vt_offset],
+				 ldvt);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", n, n, n, &work[iu], &ldwrku, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in VT   
+                      (Workspace: need N*N+4*N-1,   
+                                  prefer N*N+3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[
+				itaup], &work[iwork], &i__2, &ierr)
+				;
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of R in WORK(IU) and computing   
+                      right singular vectors of R in VT   
+                      (Workspace: need N*N+BDSPAC) */
+
+			sbdsqr_("U", n, n, n, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &work[iu], &ldwrku, dum, &
+				c__1, &work[iwork], info);
+
+/*                    Multiply Q in A by left singular vectors of R in   
+                      WORK(IU), storing result in U   
+                      (Workspace: need N*N) */
+
+			sgemm_("N", "N", m, n, n, &c_b438, &a[a_offset], lda, 
+				&work[iu], &ldwrku, &c_b416, &u[u_offset], 
+				ldu);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, n, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy R to VT, zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &vt_ref(
+				2, 1), ldvt);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in VT   
+                      (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &vt[vt_offset], ldvt, &s[1], &work[ie], 
+				&work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply Q in U by left bidiagonalizing vectors   
+                      in VT   
+                      (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("Q", "R", "N", m, n, n, &vt[vt_offset], ldvt, 
+				&work[itauq], &u[u_offset], ldu, &work[iwork],
+				 &i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in VT   
+                      (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[
+				itaup], &work[iwork], &i__2, &ierr)
+				;
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U and computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", n, n, m, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &u[u_offset], ldu, dum, &
+				c__1, &work[iwork], info);
+
+		    }
+
+		}
+
+	    } else if (wntua) {
+
+		if (wntvn) {
+
+/*                 Path 7 (M much larger than N, JOBU='A', JOBVT='N')   
+                   M left singular vectors to be computed in U and   
+                   no right singular vectors to be computed   
+
+   Computing MAX */
+		    i__2 = *n + *m, i__3 = *n << 2, i__2 = f2cmax(i__2,i__3);
+		    if (*lwork >= *n * *n + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			ir = 1;
+			if (*lwork >= wrkbl + *lda * *n) {
+
+/*                       WORK(IR) is LDA by N */
+
+			    ldwrkr = *lda;
+			} else {
+
+/*                       WORK(IR) is N by N */
+
+			    ldwrkr = *n;
+			}
+			itau = ir + ldwrkr * *n;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Copy R to WORK(IR), zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &work[ir], &
+				ldwrkr);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[ir 
+				+ 1], &ldwrkr);
+
+/*                    Generate Q in U   
+                      (Workspace: need N*N+N+M, prefer N*N+N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, m, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in WORK(IR)   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &work[ir], &ldwrkr, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IR)   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", n, n, n, &work[ir], &ldwrkr, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of R in WORK(IR)   
+                      (Workspace: need N*N+BDSPAC) */
+
+			sbdsqr_("U", n, &c__0, n, &c__0, &s[1], &work[ie], 
+				dum, &c__1, &work[ir], &ldwrkr, dum, &c__1, &
+				work[iwork], info);
+
+/*                    Multiply Q in U by left singular vectors of R in   
+                      WORK(IR), storing result in A   
+                      (Workspace: need N*N) */
+
+			sgemm_("N", "N", m, n, n, &c_b438, &u[u_offset], ldu, 
+				&work[ir], &ldwrkr, &c_b416, &a[a_offset], 
+				lda);
+
+/*                    Copy left singular vectors of A from A to U */
+
+			slacpy_("F", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need N+M, prefer N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, m, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Zero out below R in A */
+
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &a_ref(2,
+				 1), lda);
+
+/*                    Bidiagonalize R in A   
+                      (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply Q in U by left bidiagonalizing vectors   
+                      in A   
+                      (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("Q", "R", "N", m, n, n, &a[a_offset], lda, &
+				work[itauq], &u[u_offset], ldu, &work[iwork], 
+				&i__2, &ierr)
+				;
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", n, &c__0, m, &c__0, &s[1], &work[ie], 
+				dum, &c__1, &u[u_offset], ldu, dum, &c__1, &
+				work[iwork], info);
+
+		    }
+
+		} else if (wntvo) {
+
+/*                 Path 8 (M much larger than N, JOBU='A', JOBVT='O')   
+                   M left singular vectors to be computed in U and   
+                   N right singular vectors to be overwritten on A   
+
+   Computing MAX */
+		    i__2 = *n + *m, i__3 = *n << 2, i__2 = f2cmax(i__2,i__3);
+		    if (*lwork >= (*n << 1) * *n + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + (*lda << 1) * *n) {
+
+/*                       WORK(IU) is LDA by N and WORK(IR) is LDA by N */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *n;
+			    ldwrkr = *lda;
+			} else if (*lwork >= wrkbl + (*lda + *n) * *n) {
+
+/*                       WORK(IU) is LDA by N and WORK(IR) is N by N */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *n;
+			    ldwrkr = *n;
+			} else {
+
+/*                       WORK(IU) is N by N and WORK(IR) is N by N */
+
+			    ldwrku = *n;
+			    ir = iu + ldwrku * *n;
+			    ldwrkr = *n;
+			}
+			itau = ir + ldwrkr * *n;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N*N+2*N, prefer 2*N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need 2*N*N+N+M, prefer 2*N*N+N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, m, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy R to WORK(IU), zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ 1], &ldwrku);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in WORK(IU), copying result to   
+                      WORK(IR)   
+                      (Workspace: need 2*N*N+4*N,   
+                                  prefer 2*N*N+3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("U", n, n, &work[iu], &ldwrku, &work[ir], &
+				ldwrkr);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need 2*N*N+4*N, prefer 2*N*N+3*N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", n, n, n, &work[iu], &ldwrku, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IR)   
+                      (Workspace: need 2*N*N+4*N-1,   
+                                  prefer 2*N*N+3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &work[ir], &ldwrkr, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of R in WORK(IU) and computing   
+                      right singular vectors of R in WORK(IR)   
+                      (Workspace: need 2*N*N+BDSPAC) */
+
+			sbdsqr_("U", n, n, n, &c__0, &s[1], &work[ie], &work[
+				ir], &ldwrkr, &work[iu], &ldwrku, dum, &c__1, 
+				&work[iwork], info);
+
+/*                    Multiply Q in U by left singular vectors of R in   
+                      WORK(IU), storing result in A   
+                      (Workspace: need N*N) */
+
+			sgemm_("N", "N", m, n, n, &c_b438, &u[u_offset], ldu, 
+				&work[iu], &ldwrku, &c_b416, &a[a_offset], 
+				lda);
+
+/*                    Copy left singular vectors of A from A to U */
+
+			slacpy_("F", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Copy right singular vectors of R from WORK(IR) to A */
+
+			slacpy_("F", n, n, &work[ir], &ldwrkr, &a[a_offset], 
+				lda);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need N+M, prefer N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, m, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Zero out below R in A */
+
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &a_ref(2,
+				 1), lda);
+
+/*                    Bidiagonalize R in A   
+                      (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply Q in U by left bidiagonalizing vectors   
+                      in A   
+                      (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("Q", "R", "N", m, n, n, &a[a_offset], lda, &
+				work[itauq], &u[u_offset], ldu, &work[iwork], 
+				&i__2, &ierr)
+				;
+
+/*                    Generate right bidiagonalizing vectors in A   
+                      (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &a[a_offset], lda, &work[itaup],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U and computing right   
+                      singular vectors of A in A   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", n, n, m, &c__0, &s[1], &work[ie], &a[
+				a_offset], lda, &u[u_offset], ldu, dum, &c__1,
+				 &work[iwork], info);
+
+		    }
+
+		} else if (wntvas) {
+
+/*                 Path 9 (M much larger than N, JOBU='A', JOBVT='S'   
+                           or 'A')   
+                   M left singular vectors to be computed in U and   
+                   N right singular vectors to be computed in VT   
+
+   Computing MAX */
+		    i__2 = *n + *m, i__3 = *n << 2, i__2 = f2cmax(i__2,i__3);
+		    if (*lwork >= *n * *n + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + *lda * *n) {
+
+/*                       WORK(IU) is LDA by N */
+
+			    ldwrku = *lda;
+			} else {
+
+/*                       WORK(IU) is N by N */
+
+			    ldwrku = *n;
+			}
+			itau = iu + ldwrku * *n;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need N*N+2*N, prefer N*N+N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need N*N+N+M, prefer N*N+N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, m, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy R to WORK(IU), zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ 1], &ldwrku);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in WORK(IU), copying result to VT   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("U", n, n, &work[iu], &ldwrku, &vt[vt_offset],
+				 ldvt);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need N*N+4*N, prefer N*N+3*N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", n, n, n, &work[iu], &ldwrku, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in VT   
+                      (Workspace: need N*N+4*N-1,   
+                                  prefer N*N+3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[
+				itaup], &work[iwork], &i__2, &ierr)
+				;
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of R in WORK(IU) and computing   
+                      right singular vectors of R in VT   
+                      (Workspace: need N*N+BDSPAC) */
+
+			sbdsqr_("U", n, n, n, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &work[iu], &ldwrku, dum, &
+				c__1, &work[iwork], info);
+
+/*                    Multiply Q in U by left singular vectors of R in   
+                      WORK(IU), storing result in A   
+                      (Workspace: need N*N) */
+
+			sgemm_("N", "N", m, n, n, &c_b438, &u[u_offset], ldu, 
+				&work[iu], &ldwrku, &c_b416, &a[a_offset], 
+				lda);
+
+/*                    Copy left singular vectors of A from A to U */
+
+			slacpy_("F", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *n;
+
+/*                    Compute A=Q*R, copying result to U   
+                      (Workspace: need 2*N, prefer N+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgeqrf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+
+/*                    Generate Q in U   
+                      (Workspace: need N+M, prefer N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgqr_(m, m, n, &u[u_offset], ldu, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy R from A to VT, zeroing out below it */
+
+			slacpy_("U", n, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+			i__2 = *n - 1;
+			i__3 = *n - 1;
+			slaset_("L", &i__2, &i__3, &c_b416, &c_b416, &vt_ref(
+				2, 1), ldvt);
+			ie = itau;
+			itauq = ie + *n;
+			itaup = itauq + *n;
+			iwork = itaup + *n;
+
+/*                    Bidiagonalize R in VT   
+                      (Workspace: need 4*N, prefer 3*N+2*N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(n, n, &vt[vt_offset], ldvt, &s[1], &work[ie], 
+				&work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply Q in U by left bidiagonalizing vectors   
+                      in VT   
+                      (Workspace: need 3*N+M, prefer 3*N+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("Q", "R", "N", m, n, n, &vt[vt_offset], ldvt, 
+				&work[itauq], &u[u_offset], ldu, &work[iwork],
+				 &i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in VT   
+                      (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[
+				itaup], &work[iwork], &i__2, &ierr)
+				;
+			iwork = ie + *n;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U and computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", n, n, m, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &u[u_offset], ldu, dum, &
+				c__1, &work[iwork], info);
+
+		    }
+
+		}
+
+	    }
+
+	} else {
+
+/*           M .LT. MNTHR   
+
+             Path 10 (M at least N, but not much larger)   
+             Reduce to bidiagonal form without QR decomposition */
+
+	    ie = 1;
+	    itauq = ie + *n;
+	    itaup = itauq + *n;
+	    iwork = itaup + *n;
+
+/*           Bidiagonalize A   
+             (Workspace: need 3*N+M, prefer 3*N+(M+N)*NB) */
+
+	    i__2 = *lwork - iwork + 1;
+	    sgebrd_(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[itauq], &
+		    work[itaup], &work[iwork], &i__2, &ierr);
+	    if (wntuas) {
+
+/*              If left singular vectors desired in U, copy result to U   
+                and generate left bidiagonalizing vectors in U   
+                (Workspace: need 3*N+NCU, prefer 3*N+NCU*NB) */
+
+		slacpy_("L", m, n, &a[a_offset], lda, &u[u_offset], ldu);
+		if (wntus) {
+		    ncu = *n;
+		}
+		if (wntua) {
+		    ncu = *m;
+		}
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("Q", m, &ncu, n, &u[u_offset], ldu, &work[itauq], &
+			work[iwork], &i__2, &ierr);
+	    }
+	    if (wntvas) {
+
+/*              If right singular vectors desired in VT, copy result to   
+                VT and generate right bidiagonalizing vectors in VT   
+                (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+		slacpy_("U", n, n, &a[a_offset], lda, &vt[vt_offset], ldvt);
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("P", n, n, n, &vt[vt_offset], ldvt, &work[itaup], &
+			work[iwork], &i__2, &ierr);
+	    }
+	    if (wntuo) {
+
+/*              If left singular vectors desired in A, generate left   
+                bidiagonalizing vectors in A   
+                (Workspace: need 4*N, prefer 3*N+N*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("Q", m, n, n, &a[a_offset], lda, &work[itauq], &work[
+			iwork], &i__2, &ierr);
+	    }
+	    if (wntvo) {
+
+/*              If right singular vectors desired in A, generate right   
+                bidiagonalizing vectors in A   
+                (Workspace: need 4*N-1, prefer 3*N+(N-1)*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("P", n, n, n, &a[a_offset], lda, &work[itaup], &work[
+			iwork], &i__2, &ierr);
+	    }
+	    iwork = ie + *n;
+	    if (wntuas || wntuo) {
+		nru = *m;
+	    }
+	    if (wntun) {
+		nru = 0;
+	    }
+	    if (wntvas || wntvo) {
+		ncvt = *n;
+	    }
+	    if (wntvn) {
+		ncvt = 0;
+	    }
+	    if (! wntuo && ! wntvo) {
+
+/*              Perform bidiagonal QR iteration, if desired, computing   
+                left singular vectors in U and computing right singular   
+                vectors in VT   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("U", n, &ncvt, &nru, &c__0, &s[1], &work[ie], &vt[
+			vt_offset], ldvt, &u[u_offset], ldu, dum, &c__1, &
+			work[iwork], info);
+	    } else if (! wntuo && wntvo) {
+
+/*              Perform bidiagonal QR iteration, if desired, computing   
+                left singular vectors in U and computing right singular   
+                vectors in A   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("U", n, &ncvt, &nru, &c__0, &s[1], &work[ie], &a[
+			a_offset], lda, &u[u_offset], ldu, dum, &c__1, &work[
+			iwork], info);
+	    } else {
+
+/*              Perform bidiagonal QR iteration, if desired, computing   
+                left singular vectors in A and computing right singular   
+                vectors in VT   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("U", n, &ncvt, &nru, &c__0, &s[1], &work[ie], &vt[
+			vt_offset], ldvt, &a[a_offset], lda, dum, &c__1, &
+			work[iwork], info);
+	    }
+
+	}
+
+    } else {
+
+/*        A has more columns than rows. If A has sufficiently more   
+          columns than rows, first reduce using the LQ decomposition (if   
+          sufficient workspace available) */
+
+	if (*n >= mnthr) {
+
+	    if (wntvn) {
+
+/*              Path 1t(N much larger than M, JOBVT='N')   
+                No right singular vectors to be computed */
+
+		itau = 1;
+		iwork = itau + *m;
+
+/*              Compute A=L*Q   
+                (Workspace: need 2*M, prefer M+M*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork], &
+			i__2, &ierr);
+
+/*              Zero out above L */
+
+		i__2 = *m - 1;
+		i__3 = *m - 1;
+		slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &a_ref(1, 2), 
+			lda);
+		ie = 1;
+		itauq = ie + *m;
+		itaup = itauq + *m;
+		iwork = itaup + *m;
+
+/*              Bidiagonalize L in A   
+                (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sgebrd_(m, m, &a[a_offset], lda, &s[1], &work[ie], &work[
+			itauq], &work[itaup], &work[iwork], &i__2, &ierr);
+		if (wntuo || wntuas) {
+
+/*                 If left singular vectors desired, generate Q   
+                   (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgbr_("Q", m, m, m, &a[a_offset], lda, &work[itauq], &
+			    work[iwork], &i__2, &ierr);
+		}
+		iwork = ie + *m;
+		nru = 0;
+		if (wntuo || wntuas) {
+		    nru = *m;
+		}
+
+/*              Perform bidiagonal QR iteration, computing left singular   
+                vectors of A in A if desired   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("U", m, &c__0, &nru, &c__0, &s[1], &work[ie], dum, &
+			c__1, &a[a_offset], lda, dum, &c__1, &work[iwork], 
+			info);
+
+/*              If left singular vectors desired in U, copy them there */
+
+		if (wntuas) {
+		    slacpy_("F", m, m, &a[a_offset], lda, &u[u_offset], ldu);
+		}
+
+	    } else if (wntvo && wntun) {
+
+/*              Path 2t(N much larger than M, JOBU='N', JOBVT='O')   
+                M right singular vectors to be overwritten on A and   
+                no left singular vectors to be computed   
+
+   Computing MAX */
+		i__2 = *m << 2;
+		if (*lwork >= *m * *m + f2cmax(i__2,bdspac)) {
+
+/*                 Sufficient workspace for a fast algorithm */
+
+		    ir = 1;
+/* Computing MAX */
+		    i__2 = wrkbl, i__3 = *lda * *n + *m;
+		    if (*lwork >= f2cmax(i__2,i__3) + *lda * *m) {
+
+/*                    WORK(IU) is LDA by N and WORK(IR) is LDA by M */
+
+			ldwrku = *lda;
+			chunk = *n;
+			ldwrkr = *lda;
+		    } else /* if(complicated condition) */ {
+/* Computing MAX */
+			i__2 = wrkbl, i__3 = *lda * *n + *m;
+			if (*lwork >= f2cmax(i__2,i__3) + *m * *m) {
+
+/*                    WORK(IU) is LDA by N and WORK(IR) is M by M */
+
+			    ldwrku = *lda;
+			    chunk = *n;
+			    ldwrkr = *m;
+			} else {
+
+/*                    WORK(IU) is M by CHUNK and WORK(IR) is M by M */
+
+			    ldwrku = *m;
+			    chunk = (*lwork - *m * *m - *m) / *m;
+			    ldwrkr = *m;
+			}
+		    }
+		    itau = ir + ldwrkr * *m;
+		    iwork = itau + *m;
+
+/*                 Compute A=L*Q   
+                   (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork]
+			    , &i__2, &ierr);
+
+/*                 Copy L to WORK(IR) and zero out above it */
+
+		    slacpy_("L", m, m, &a[a_offset], lda, &work[ir], &ldwrkr);
+		    i__2 = *m - 1;
+		    i__3 = *m - 1;
+		    slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[ir + 
+			    ldwrkr], &ldwrkr);
+
+/*                 Generate Q in A   
+                   (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorglq_(m, n, m, &a[a_offset], lda, &work[itau], &work[
+			    iwork], &i__2, &ierr);
+		    ie = itau;
+		    itauq = ie + *m;
+		    itaup = itauq + *m;
+		    iwork = itaup + *m;
+
+/*                 Bidiagonalize L in WORK(IR)   
+                   (Workspace: need M*M+4*M, prefer M*M+3*M+2*M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgebrd_(m, m, &work[ir], &ldwrkr, &s[1], &work[ie], &work[
+			    itauq], &work[itaup], &work[iwork], &i__2, &ierr);
+
+/*                 Generate right vectors bidiagonalizing L   
+                   (Workspace: need M*M+4*M-1, prefer M*M+3*M+(M-1)*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgbr_("P", m, m, m, &work[ir], &ldwrkr, &work[itaup], &
+			    work[iwork], &i__2, &ierr);
+		    iwork = ie + *m;
+
+/*                 Perform bidiagonal QR iteration, computing right   
+                   singular vectors of L in WORK(IR)   
+                   (Workspace: need M*M+BDSPAC) */
+
+		    sbdsqr_("U", m, m, &c__0, &c__0, &s[1], &work[ie], &work[
+			    ir], &ldwrkr, dum, &c__1, dum, &c__1, &work[iwork]
+			    , info);
+		    iu = ie + *m;
+
+/*                 Multiply right singular vectors of L in WORK(IR) by Q   
+                   in A, storing result in WORK(IU) and copying to A   
+                   (Workspace: need M*M+2*M, prefer M*M+M*N+M) */
+
+		    i__2 = *n;
+		    i__3 = chunk;
+		    for (i__ = 1; i__3 < 0 ? i__ >= i__2 : i__ <= i__2; i__ +=
+			     i__3) {
+/* Computing MIN */
+			i__4 = *n - i__ + 1;
+			blk = f2cmin(i__4,chunk);
+			sgemm_("N", "N", m, &blk, m, &c_b438, &work[ir], &
+				ldwrkr, &a_ref(1, i__), lda, &c_b416, &work[
+				iu], &ldwrku);
+			slacpy_("F", m, &blk, &work[iu], &ldwrku, &a_ref(1, 
+				i__), lda);
+/* L30: */
+		    }
+
+		} else {
+
+/*                 Insufficient workspace for a fast algorithm */
+
+		    ie = 1;
+		    itauq = ie + *m;
+		    itaup = itauq + *m;
+		    iwork = itaup + *m;
+
+/*                 Bidiagonalize A   
+                   (Workspace: need 3*M+N, prefer 3*M+(M+N)*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sgebrd_(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[
+			    itauq], &work[itaup], &work[iwork], &i__3, &ierr);
+
+/*                 Generate right vectors bidiagonalizing A   
+                   (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgbr_("P", m, n, m, &a[a_offset], lda, &work[itaup], &
+			    work[iwork], &i__3, &ierr);
+		    iwork = ie + *m;
+
+/*                 Perform bidiagonal QR iteration, computing right   
+                   singular vectors of A in A   
+                   (Workspace: need BDSPAC) */
+
+		    sbdsqr_("L", m, n, &c__0, &c__0, &s[1], &work[ie], &a[
+			    a_offset], lda, dum, &c__1, dum, &c__1, &work[
+			    iwork], info);
+
+		}
+
+	    } else if (wntvo && wntuas) {
+
+/*              Path 3t(N much larger than M, JOBU='S' or 'A', JOBVT='O')   
+                M right singular vectors to be overwritten on A and   
+                M left singular vectors to be computed in U   
+
+   Computing MAX */
+		i__3 = *m << 2;
+		if (*lwork >= *m * *m + f2cmax(i__3,bdspac)) {
+
+/*                 Sufficient workspace for a fast algorithm */
+
+		    ir = 1;
+/* Computing MAX */
+		    i__3 = wrkbl, i__2 = *lda * *n + *m;
+		    if (*lwork >= f2cmax(i__3,i__2) + *lda * *m) {
+
+/*                    WORK(IU) is LDA by N and WORK(IR) is LDA by M */
+
+			ldwrku = *lda;
+			chunk = *n;
+			ldwrkr = *lda;
+		    } else /* if(complicated condition) */ {
+/* Computing MAX */
+			i__3 = wrkbl, i__2 = *lda * *n + *m;
+			if (*lwork >= f2cmax(i__3,i__2) + *m * *m) {
+
+/*                    WORK(IU) is LDA by N and WORK(IR) is M by M */
+
+			    ldwrku = *lda;
+			    chunk = *n;
+			    ldwrkr = *m;
+			} else {
+
+/*                    WORK(IU) is M by CHUNK and WORK(IR) is M by M */
+
+			    ldwrku = *m;
+			    chunk = (*lwork - *m * *m - *m) / *m;
+			    ldwrkr = *m;
+			}
+		    }
+		    itau = ir + ldwrkr * *m;
+		    iwork = itau + *m;
+
+/*                 Compute A=L*Q   
+                   (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork]
+			    , &i__3, &ierr);
+
+/*                 Copy L to U, zeroing about above it */
+
+		    slacpy_("L", m, m, &a[a_offset], lda, &u[u_offset], ldu);
+		    i__3 = *m - 1;
+		    i__2 = *m - 1;
+		    slaset_("U", &i__3, &i__2, &c_b416, &c_b416, &u_ref(1, 2),
+			     ldu);
+
+/*                 Generate Q in A   
+                   (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorglq_(m, n, m, &a[a_offset], lda, &work[itau], &work[
+			    iwork], &i__3, &ierr);
+		    ie = itau;
+		    itauq = ie + *m;
+		    itaup = itauq + *m;
+		    iwork = itaup + *m;
+
+/*                 Bidiagonalize L in U, copying result to WORK(IR)   
+                   (Workspace: need M*M+4*M, prefer M*M+3*M+2*M*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sgebrd_(m, m, &u[u_offset], ldu, &s[1], &work[ie], &work[
+			    itauq], &work[itaup], &work[iwork], &i__3, &ierr);
+		    slacpy_("U", m, m, &u[u_offset], ldu, &work[ir], &ldwrkr);
+
+/*                 Generate right vectors bidiagonalizing L in WORK(IR)   
+                   (Workspace: need M*M+4*M-1, prefer M*M+3*M+(M-1)*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgbr_("P", m, m, m, &work[ir], &ldwrkr, &work[itaup], &
+			    work[iwork], &i__3, &ierr);
+
+/*                 Generate left vectors bidiagonalizing L in U   
+                   (Workspace: need M*M+4*M, prefer M*M+3*M+M*NB) */
+
+		    i__3 = *lwork - iwork + 1;
+		    sorgbr_("Q", m, m, m, &u[u_offset], ldu, &work[itauq], &
+			    work[iwork], &i__3, &ierr);
+		    iwork = ie + *m;
+
+/*                 Perform bidiagonal QR iteration, computing left   
+                   singular vectors of L in U, and computing right   
+                   singular vectors of L in WORK(IR)   
+                   (Workspace: need M*M+BDSPAC) */
+
+		    sbdsqr_("U", m, m, m, &c__0, &s[1], &work[ie], &work[ir], 
+			    &ldwrkr, &u[u_offset], ldu, dum, &c__1, &work[
+			    iwork], info);
+		    iu = ie + *m;
+
+/*                 Multiply right singular vectors of L in WORK(IR) by Q   
+                   in A, storing result in WORK(IU) and copying to A   
+                   (Workspace: need M*M+2*M, prefer M*M+M*N+M)) */
+
+		    i__3 = *n;
+		    i__2 = chunk;
+		    for (i__ = 1; i__2 < 0 ? i__ >= i__3 : i__ <= i__3; i__ +=
+			     i__2) {
+/* Computing MIN */
+			i__4 = *n - i__ + 1;
+			blk = f2cmin(i__4,chunk);
+			sgemm_("N", "N", m, &blk, m, &c_b438, &work[ir], &
+				ldwrkr, &a_ref(1, i__), lda, &c_b416, &work[
+				iu], &ldwrku);
+			slacpy_("F", m, &blk, &work[iu], &ldwrku, &a_ref(1, 
+				i__), lda);
+/* L40: */
+		    }
+
+		} else {
+
+/*                 Insufficient workspace for a fast algorithm */
+
+		    itau = 1;
+		    iwork = itau + *m;
+
+/*                 Compute A=L*Q   
+                   (Workspace: need 2*M, prefer M+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[iwork]
+			    , &i__2, &ierr);
+
+/*                 Copy L to U, zeroing out above it */
+
+		    slacpy_("L", m, m, &a[a_offset], lda, &u[u_offset], ldu);
+		    i__2 = *m - 1;
+		    i__3 = *m - 1;
+		    slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &u_ref(1, 2),
+			     ldu);
+
+/*                 Generate Q in A   
+                   (Workspace: need 2*M, prefer M+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorglq_(m, n, m, &a[a_offset], lda, &work[itau], &work[
+			    iwork], &i__2, &ierr);
+		    ie = itau;
+		    itauq = ie + *m;
+		    itaup = itauq + *m;
+		    iwork = itaup + *m;
+
+/*                 Bidiagonalize L in U   
+                   (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sgebrd_(m, m, &u[u_offset], ldu, &s[1], &work[ie], &work[
+			    itauq], &work[itaup], &work[iwork], &i__2, &ierr);
+
+/*                 Multiply right vectors bidiagonalizing L by Q in A   
+                   (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sormbr_("P", "L", "T", m, n, m, &u[u_offset], ldu, &work[
+			    itaup], &a[a_offset], lda, &work[iwork], &i__2, &
+			    ierr);
+
+/*                 Generate left vectors bidiagonalizing L in U   
+                   (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+		    i__2 = *lwork - iwork + 1;
+		    sorgbr_("Q", m, m, m, &u[u_offset], ldu, &work[itauq], &
+			    work[iwork], &i__2, &ierr);
+		    iwork = ie + *m;
+
+/*                 Perform bidiagonal QR iteration, computing left   
+                   singular vectors of A in U and computing right   
+                   singular vectors of A in A   
+                   (Workspace: need BDSPAC) */
+
+		    sbdsqr_("U", m, n, m, &c__0, &s[1], &work[ie], &a[
+			    a_offset], lda, &u[u_offset], ldu, dum, &c__1, &
+			    work[iwork], info);
+
+		}
+
+	    } else if (wntvs) {
+
+		if (wntun) {
+
+/*                 Path 4t(N much larger than M, JOBU='N', JOBVT='S')   
+                   M right singular vectors to be computed in VT and   
+                   no left singular vectors to be computed   
+
+   Computing MAX */
+		    i__2 = *m << 2;
+		    if (*lwork >= *m * *m + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			ir = 1;
+			if (*lwork >= wrkbl + *lda * *m) {
+
+/*                       WORK(IR) is LDA by M */
+
+			    ldwrkr = *lda;
+			} else {
+
+/*                       WORK(IR) is M by M */
+
+			    ldwrkr = *m;
+			}
+			itau = ir + ldwrkr * *m;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q   
+                      (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy L to WORK(IR), zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &work[ir], &
+				ldwrkr);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[ir 
+				+ ldwrkr], &ldwrkr);
+
+/*                    Generate Q in A   
+                      (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(m, n, m, &a[a_offset], lda, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in WORK(IR)   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &work[ir], &ldwrkr, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Generate right vectors bidiagonalizing L in   
+                      WORK(IR)   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+(M-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", m, m, m, &work[ir], &ldwrkr, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing right   
+                      singular vectors of L in WORK(IR)   
+                      (Workspace: need M*M+BDSPAC) */
+
+			sbdsqr_("U", m, m, &c__0, &c__0, &s[1], &work[ie], &
+				work[ir], &ldwrkr, dum, &c__1, dum, &c__1, &
+				work[iwork], info);
+
+/*                    Multiply right singular vectors of L in WORK(IR) by   
+                      Q in A, storing result in VT   
+                      (Workspace: need M*M) */
+
+			sgemm_("N", "N", m, n, m, &c_b438, &work[ir], &ldwrkr,
+				 &a[a_offset], lda, &c_b416, &vt[vt_offset], 
+				ldvt);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy result to VT */
+
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(m, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Zero out above L in A */
+
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &a_ref(1,
+				 2), lda);
+
+/*                    Bidiagonalize L in A   
+                      (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply right vectors bidiagonalizing L by Q in VT   
+                      (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("P", "L", "T", m, n, m, &a[a_offset], lda, &
+				work[itaup], &vt[vt_offset], ldvt, &work[
+				iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", m, n, &c__0, &c__0, &s[1], &work[ie], &
+				vt[vt_offset], ldvt, dum, &c__1, dum, &c__1, &
+				work[iwork], info);
+
+		    }
+
+		} else if (wntuo) {
+
+/*                 Path 5t(N much larger than M, JOBU='O', JOBVT='S')   
+                   M right singular vectors to be computed in VT and   
+                   M left singular vectors to be overwritten on A   
+
+   Computing MAX */
+		    i__2 = *m << 2;
+		    if (*lwork >= (*m << 1) * *m + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + (*lda << 1) * *m) {
+
+/*                       WORK(IU) is LDA by M and WORK(IR) is LDA by M */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *m;
+			    ldwrkr = *lda;
+			} else if (*lwork >= wrkbl + (*lda + *m) * *m) {
+
+/*                       WORK(IU) is LDA by M and WORK(IR) is M by M */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *m;
+			    ldwrkr = *m;
+			} else {
+
+/*                       WORK(IU) is M by M and WORK(IR) is M by M */
+
+			    ldwrku = *m;
+			    ir = iu + ldwrku * *m;
+			    ldwrkr = *m;
+			}
+			itau = ir + ldwrkr * *m;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q   
+                      (Workspace: need 2*M*M+2*M, prefer 2*M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy L to WORK(IU), zeroing out below it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ ldwrku], &ldwrku);
+
+/*                    Generate Q in A   
+                      (Workspace: need 2*M*M+2*M, prefer 2*M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(m, n, m, &a[a_offset], lda, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in WORK(IU), copying result to   
+                      WORK(IR)   
+                      (Workspace: need 2*M*M+4*M,   
+                                  prefer 2*M*M+3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("L", m, m, &work[iu], &ldwrku, &work[ir], &
+				ldwrkr);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need 2*M*M+4*M-1,   
+                                  prefer 2*M*M+3*M+(M-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", m, m, m, &work[iu], &ldwrku, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IR)   
+                      (Workspace: need 2*M*M+4*M, prefer 2*M*M+3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &work[ir], &ldwrkr, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of L in WORK(IR) and computing   
+                      right singular vectors of L in WORK(IU)   
+                      (Workspace: need 2*M*M+BDSPAC) */
+
+			sbdsqr_("U", m, m, m, &c__0, &s[1], &work[ie], &work[
+				iu], &ldwrku, &work[ir], &ldwrkr, dum, &c__1, 
+				&work[iwork], info);
+
+/*                    Multiply right singular vectors of L in WORK(IU) by   
+                      Q in A, storing result in VT   
+                      (Workspace: need M*M) */
+
+			sgemm_("N", "N", m, n, m, &c_b438, &work[iu], &ldwrku,
+				 &a[a_offset], lda, &c_b416, &vt[vt_offset], 
+				ldvt);
+
+/*                    Copy left singular vectors of L to A   
+                      (Workspace: need M*M) */
+
+			slacpy_("F", m, m, &work[ir], &ldwrkr, &a[a_offset], 
+				lda);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(m, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Zero out above L in A */
+
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &a_ref(1,
+				 2), lda);
+
+/*                    Bidiagonalize L in A   
+                      (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply right vectors bidiagonalizing L by Q in VT   
+                      (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("P", "L", "T", m, n, m, &a[a_offset], lda, &
+				work[itaup], &vt[vt_offset], ldvt, &work[
+				iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors of L in A   
+                      (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &a[a_offset], lda, &work[itauq],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, compute left   
+                      singular vectors of A in A and compute right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", m, n, m, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &a[a_offset], lda, dum, &
+				c__1, &work[iwork], info);
+
+		    }
+
+		} else if (wntuas) {
+
+/*                 Path 6t(N much larger than M, JOBU='S' or 'A',   
+                           JOBVT='S')   
+                   M right singular vectors to be computed in VT and   
+                   M left singular vectors to be computed in U   
+
+   Computing MAX */
+		    i__2 = *m << 2;
+		    if (*lwork >= *m * *m + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + *lda * *m) {
+
+/*                       WORK(IU) is LDA by N */
+
+			    ldwrku = *lda;
+			} else {
+
+/*                       WORK(IU) is LDA by M */
+
+			    ldwrku = *m;
+			}
+			itau = iu + ldwrku * *m;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q   
+                      (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+
+/*                    Copy L to WORK(IU), zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ ldwrku], &ldwrku);
+
+/*                    Generate Q in A   
+                      (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(m, n, m, &a[a_offset], lda, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in WORK(IU), copying result to U   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("L", m, m, &work[iu], &ldwrku, &u[u_offset], 
+				ldu);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need M*M+4*M-1,   
+                                  prefer M*M+3*M+(M-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", m, m, m, &work[iu], &ldwrku, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in U   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &u[u_offset], ldu, &work[itauq],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of L in U and computing right   
+                      singular vectors of L in WORK(IU)   
+                      (Workspace: need M*M+BDSPAC) */
+
+			sbdsqr_("U", m, m, m, &c__0, &s[1], &work[ie], &work[
+				iu], &ldwrku, &u[u_offset], ldu, dum, &c__1, &
+				work[iwork], info);
+
+/*                    Multiply right singular vectors of L in WORK(IU) by   
+                      Q in A, storing result in VT   
+                      (Workspace: need M*M) */
+
+			sgemm_("N", "N", m, n, m, &c_b438, &work[iu], &ldwrku,
+				 &a[a_offset], lda, &c_b416, &vt[vt_offset], 
+				ldvt);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(m, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy L to U, zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &u_ref(1,
+				 2), ldu);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in U   
+                      (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &u[u_offset], ldu, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply right bidiagonalizing vectors in U by Q   
+                      in VT   
+                      (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("P", "L", "T", m, n, m, &u[u_offset], ldu, &
+				work[itaup], &vt[vt_offset], ldvt, &work[
+				iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in U   
+                      (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &u[u_offset], ldu, &work[itauq],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U and computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", m, n, m, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &u[u_offset], ldu, dum, &
+				c__1, &work[iwork], info);
+
+		    }
+
+		}
+
+	    } else if (wntva) {
+
+		if (wntun) {
+
+/*                 Path 7t(N much larger than M, JOBU='N', JOBVT='A')   
+                   N right singular vectors to be computed in VT and   
+                   no left singular vectors to be computed   
+
+   Computing MAX */
+		    i__2 = *n + *m, i__3 = *m << 2, i__2 = f2cmax(i__2,i__3);
+		    if (*lwork >= *m * *m + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			ir = 1;
+			if (*lwork >= wrkbl + *lda * *m) {
+
+/*                       WORK(IR) is LDA by M */
+
+			    ldwrkr = *lda;
+			} else {
+
+/*                       WORK(IR) is M by M */
+
+			    ldwrkr = *m;
+			}
+			itau = ir + ldwrkr * *m;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Copy L to WORK(IR), zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &work[ir], &
+				ldwrkr);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[ir 
+				+ ldwrkr], &ldwrkr);
+
+/*                    Generate Q in VT   
+                      (Workspace: need M*M+M+N, prefer M*M+M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(n, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in WORK(IR)   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &work[ir], &ldwrkr, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IR)   
+                      (Workspace: need M*M+4*M-1,   
+                                  prefer M*M+3*M+(M-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", m, m, m, &work[ir], &ldwrkr, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing right   
+                      singular vectors of L in WORK(IR)   
+                      (Workspace: need M*M+BDSPAC) */
+
+			sbdsqr_("U", m, m, &c__0, &c__0, &s[1], &work[ie], &
+				work[ir], &ldwrkr, dum, &c__1, dum, &c__1, &
+				work[iwork], info);
+
+/*                    Multiply right singular vectors of L in WORK(IR) by   
+                      Q in VT, storing result in A   
+                      (Workspace: need M*M) */
+
+			sgemm_("N", "N", m, n, m, &c_b438, &work[ir], &ldwrkr,
+				 &vt[vt_offset], ldvt, &c_b416, &a[a_offset], 
+				lda);
+
+/*                    Copy right singular vectors of A from A to VT */
+
+			slacpy_("F", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need M+N, prefer M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(n, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Zero out above L in A */
+
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &a_ref(1,
+				 2), lda);
+
+/*                    Bidiagonalize L in A   
+                      (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply right bidiagonalizing vectors in A by Q   
+                      in VT   
+                      (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("P", "L", "T", m, n, m, &a[a_offset], lda, &
+				work[itaup], &vt[vt_offset], ldvt, &work[
+				iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", m, n, &c__0, &c__0, &s[1], &work[ie], &
+				vt[vt_offset], ldvt, dum, &c__1, dum, &c__1, &
+				work[iwork], info);
+
+		    }
+
+		} else if (wntuo) {
+
+/*                 Path 8t(N much larger than M, JOBU='O', JOBVT='A')   
+                   N right singular vectors to be computed in VT and   
+                   M left singular vectors to be overwritten on A   
+
+   Computing MAX */
+		    i__2 = *n + *m, i__3 = *m << 2, i__2 = f2cmax(i__2,i__3);
+		    if (*lwork >= (*m << 1) * *m + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + (*lda << 1) * *m) {
+
+/*                       WORK(IU) is LDA by M and WORK(IR) is LDA by M */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *m;
+			    ldwrkr = *lda;
+			} else if (*lwork >= wrkbl + (*lda + *m) * *m) {
+
+/*                       WORK(IU) is LDA by M and WORK(IR) is M by M */
+
+			    ldwrku = *lda;
+			    ir = iu + ldwrku * *m;
+			    ldwrkr = *m;
+			} else {
+
+/*                       WORK(IU) is M by M and WORK(IR) is M by M */
+
+			    ldwrku = *m;
+			    ir = iu + ldwrku * *m;
+			    ldwrkr = *m;
+			}
+			itau = ir + ldwrkr * *m;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need 2*M*M+2*M, prefer 2*M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need 2*M*M+M+N, prefer 2*M*M+M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(n, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy L to WORK(IU), zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ ldwrku], &ldwrku);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in WORK(IU), copying result to   
+                      WORK(IR)   
+                      (Workspace: need 2*M*M+4*M,   
+                                  prefer 2*M*M+3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("L", m, m, &work[iu], &ldwrku, &work[ir], &
+				ldwrkr);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need 2*M*M+4*M-1,   
+                                  prefer 2*M*M+3*M+(M-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", m, m, m, &work[iu], &ldwrku, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in WORK(IR)   
+                      (Workspace: need 2*M*M+4*M, prefer 2*M*M+3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &work[ir], &ldwrkr, &work[itauq]
+				, &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of L in WORK(IR) and computing   
+                      right singular vectors of L in WORK(IU)   
+                      (Workspace: need 2*M*M+BDSPAC) */
+
+			sbdsqr_("U", m, m, m, &c__0, &s[1], &work[ie], &work[
+				iu], &ldwrku, &work[ir], &ldwrkr, dum, &c__1, 
+				&work[iwork], info);
+
+/*                    Multiply right singular vectors of L in WORK(IU) by   
+                      Q in VT, storing result in A   
+                      (Workspace: need M*M) */
+
+			sgemm_("N", "N", m, n, m, &c_b438, &work[iu], &ldwrku,
+				 &vt[vt_offset], ldvt, &c_b416, &a[a_offset], 
+				lda);
+
+/*                    Copy right singular vectors of A from A to VT */
+
+			slacpy_("F", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Copy left singular vectors of A from WORK(IR) to A */
+
+			slacpy_("F", m, m, &work[ir], &ldwrkr, &a[a_offset], 
+				lda);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need M+N, prefer M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(n, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Zero out above L in A */
+
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &a_ref(1,
+				 2), lda);
+
+/*                    Bidiagonalize L in A   
+                      (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &a[a_offset], lda, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply right bidiagonalizing vectors in A by Q   
+                      in VT   
+                      (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("P", "L", "T", m, n, m, &a[a_offset], lda, &
+				work[itaup], &vt[vt_offset], ldvt, &work[
+				iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in A   
+                      (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &a[a_offset], lda, &work[itauq],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in A and computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", m, n, m, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &a[a_offset], lda, dum, &
+				c__1, &work[iwork], info);
+
+		    }
+
+		} else if (wntuas) {
+
+/*                 Path 9t(N much larger than M, JOBU='S' or 'A',   
+                           JOBVT='A')   
+                   N right singular vectors to be computed in VT and   
+                   M left singular vectors to be computed in U   
+
+   Computing MAX */
+		    i__2 = *n + *m, i__3 = *m << 2, i__2 = f2cmax(i__2,i__3);
+		    if (*lwork >= *m * *m + f2cmax(i__2,bdspac)) {
+
+/*                    Sufficient workspace for a fast algorithm */
+
+			iu = 1;
+			if (*lwork >= wrkbl + *lda * *m) {
+
+/*                       WORK(IU) is LDA by M */
+
+			    ldwrku = *lda;
+			} else {
+
+/*                       WORK(IU) is M by M */
+
+			    ldwrku = *m;
+			}
+			itau = iu + ldwrku * *m;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need M*M+2*M, prefer M*M+M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need M*M+M+N, prefer M*M+M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(n, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy L to WORK(IU), zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &work[iu], &
+				ldwrku);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &work[iu 
+				+ ldwrku], &ldwrku);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in WORK(IU), copying result to U   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &work[iu], &ldwrku, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+			slacpy_("L", m, m, &work[iu], &ldwrku, &u[u_offset], 
+				ldu);
+
+/*                    Generate right bidiagonalizing vectors in WORK(IU)   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+(M-1)*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("P", m, m, m, &work[iu], &ldwrku, &work[itaup]
+				, &work[iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in U   
+                      (Workspace: need M*M+4*M, prefer M*M+3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &u[u_offset], ldu, &work[itauq],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of L in U and computing right   
+                      singular vectors of L in WORK(IU)   
+                      (Workspace: need M*M+BDSPAC) */
+
+			sbdsqr_("U", m, m, m, &c__0, &s[1], &work[ie], &work[
+				iu], &ldwrku, &u[u_offset], ldu, dum, &c__1, &
+				work[iwork], info);
+
+/*                    Multiply right singular vectors of L in WORK(IU) by   
+                      Q in VT, storing result in A   
+                      (Workspace: need M*M) */
+
+			sgemm_("N", "N", m, n, m, &c_b438, &work[iu], &ldwrku,
+				 &vt[vt_offset], ldvt, &c_b416, &a[a_offset], 
+				lda);
+
+/*                    Copy right singular vectors of A from A to VT */
+
+			slacpy_("F", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+		    } else {
+
+/*                    Insufficient workspace for a fast algorithm */
+
+			itau = 1;
+			iwork = itau + *m;
+
+/*                    Compute A=L*Q, copying result to VT   
+                      (Workspace: need 2*M, prefer M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgelqf_(m, n, &a[a_offset], lda, &work[itau], &work[
+				iwork], &i__2, &ierr);
+			slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], 
+				ldvt);
+
+/*                    Generate Q in VT   
+                      (Workspace: need M+N, prefer M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorglq_(n, n, m, &vt[vt_offset], ldvt, &work[itau], &
+				work[iwork], &i__2, &ierr);
+
+/*                    Copy L to U, zeroing out above it */
+
+			slacpy_("L", m, m, &a[a_offset], lda, &u[u_offset], 
+				ldu);
+			i__2 = *m - 1;
+			i__3 = *m - 1;
+			slaset_("U", &i__2, &i__3, &c_b416, &c_b416, &u_ref(1,
+				 2), ldu);
+			ie = itau;
+			itauq = ie + *m;
+			itaup = itauq + *m;
+			iwork = itaup + *m;
+
+/*                    Bidiagonalize L in U   
+                      (Workspace: need 4*M, prefer 3*M+2*M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sgebrd_(m, m, &u[u_offset], ldu, &s[1], &work[ie], &
+				work[itauq], &work[itaup], &work[iwork], &
+				i__2, &ierr);
+
+/*                    Multiply right bidiagonalizing vectors in U by Q   
+                      in VT   
+                      (Workspace: need 3*M+N, prefer 3*M+N*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sormbr_("P", "L", "T", m, n, m, &u[u_offset], ldu, &
+				work[itaup], &vt[vt_offset], ldvt, &work[
+				iwork], &i__2, &ierr);
+
+/*                    Generate left bidiagonalizing vectors in U   
+                      (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+			i__2 = *lwork - iwork + 1;
+			sorgbr_("Q", m, m, m, &u[u_offset], ldu, &work[itauq],
+				 &work[iwork], &i__2, &ierr);
+			iwork = ie + *m;
+
+/*                    Perform bidiagonal QR iteration, computing left   
+                      singular vectors of A in U and computing right   
+                      singular vectors of A in VT   
+                      (Workspace: need BDSPAC) */
+
+			sbdsqr_("U", m, n, m, &c__0, &s[1], &work[ie], &vt[
+				vt_offset], ldvt, &u[u_offset], ldu, dum, &
+				c__1, &work[iwork], info);
+
+		    }
+
+		}
+
+	    }
+
+	} else {
+
+/*           N .LT. MNTHR   
+
+             Path 10t(N greater than M, but not much larger)   
+             Reduce to bidiagonal form without LQ decomposition */
+
+	    ie = 1;
+	    itauq = ie + *m;
+	    itaup = itauq + *m;
+	    iwork = itaup + *m;
+
+/*           Bidiagonalize A   
+             (Workspace: need 3*M+N, prefer 3*M+(M+N)*NB) */
+
+	    i__2 = *lwork - iwork + 1;
+	    sgebrd_(m, n, &a[a_offset], lda, &s[1], &work[ie], &work[itauq], &
+		    work[itaup], &work[iwork], &i__2, &ierr);
+	    if (wntuas) {
+
+/*              If left singular vectors desired in U, copy result to U   
+                and generate left bidiagonalizing vectors in U   
+                (Workspace: need 4*M-1, prefer 3*M+(M-1)*NB) */
+
+		slacpy_("L", m, m, &a[a_offset], lda, &u[u_offset], ldu);
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("Q", m, m, n, &u[u_offset], ldu, &work[itauq], &work[
+			iwork], &i__2, &ierr);
+	    }
+	    if (wntvas) {
+
+/*              If right singular vectors desired in VT, copy result to   
+                VT and generate right bidiagonalizing vectors in VT   
+                (Workspace: need 3*M+NRVT, prefer 3*M+NRVT*NB) */
+
+		slacpy_("U", m, n, &a[a_offset], lda, &vt[vt_offset], ldvt);
+		if (wntva) {
+		    nrvt = *n;
+		}
+		if (wntvs) {
+		    nrvt = *m;
+		}
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("P", &nrvt, n, m, &vt[vt_offset], ldvt, &work[itaup], 
+			&work[iwork], &i__2, &ierr);
+	    }
+	    if (wntuo) {
+
+/*              If left singular vectors desired in A, generate left   
+                bidiagonalizing vectors in A   
+                (Workspace: need 4*M-1, prefer 3*M+(M-1)*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("Q", m, m, n, &a[a_offset], lda, &work[itauq], &work[
+			iwork], &i__2, &ierr);
+	    }
+	    if (wntvo) {
+
+/*              If right singular vectors desired in A, generate right   
+                bidiagonalizing vectors in A   
+                (Workspace: need 4*M, prefer 3*M+M*NB) */
+
+		i__2 = *lwork - iwork + 1;
+		sorgbr_("P", m, n, m, &a[a_offset], lda, &work[itaup], &work[
+			iwork], &i__2, &ierr);
+	    }
+	    iwork = ie + *m;
+	    if (wntuas || wntuo) {
+		nru = *m;
+	    }
+	    if (wntun) {
+		nru = 0;
+	    }
+	    if (wntvas || wntvo) {
+		ncvt = *n;
+	    }
+	    if (wntvn) {
+		ncvt = 0;
+	    }
+	    if (! wntuo && ! wntvo) {
+
+/*              Perform bidiagonal QR iteration, if desired, computing   
+                left singular vectors in U and computing right singular   
+                vectors in VT   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("L", m, &ncvt, &nru, &c__0, &s[1], &work[ie], &vt[
+			vt_offset], ldvt, &u[u_offset], ldu, dum, &c__1, &
+			work[iwork], info);
+	    } else if (! wntuo && wntvo) {
+
+/*              Perform bidiagonal QR iteration, if desired, computing   
+                left singular vectors in U and computing right singular   
+                vectors in A   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("L", m, &ncvt, &nru, &c__0, &s[1], &work[ie], &a[
+			a_offset], lda, &u[u_offset], ldu, dum, &c__1, &work[
+			iwork], info);
+	    } else {
+
+/*              Perform bidiagonal QR iteration, if desired, computing   
+                left singular vectors in A and computing right singular   
+                vectors in VT   
+                (Workspace: need BDSPAC) */
+
+		sbdsqr_("L", m, &ncvt, &nru, &c__0, &s[1], &work[ie], &vt[
+			vt_offset], ldvt, &a[a_offset], lda, dum, &c__1, &
+			work[iwork], info);
+	    }
+
+	}
+
+    }
+
+/*     If SBDSQR failed to converge, copy unconverged superdiagonals   
+       to WORK( 2:MINMN ) */
+
+    if (*info != 0) {
+	if (ie > 2) {
+	    i__2 = minmn - 1;
+	    for (i__ = 1; i__ <= i__2; ++i__) {
+		work[i__ + 1] = work[i__ + ie - 1];
+/* L50: */
+	    }
+	}
+	if (ie < 2) {
+	    for (i__ = minmn - 1; i__ >= 1; --i__) {
+		work[i__ + 1] = work[i__ + ie - 1];
+/* L60: */
+	    }
+	}
+    }
+
+/*     Undo scaling if necessary */
+
+    if (iscl == 1) {
+	if (anrm > bignum) {
+	    slascl_("G", &c__0, &c__0, &bignum, &anrm, &minmn, &c__1, &s[1], &
+		    minmn, &ierr);
+	}
+	if (*info != 0 && anrm > bignum) {
+	    i__2 = minmn - 1;
+	    slascl_("G", &c__0, &c__0, &bignum, &anrm, &i__2, &c__1, &work[2],
+		     &minmn, &ierr);
+	}
+	if (anrm < smlnum) {
+	    slascl_("G", &c__0, &c__0, &smlnum, &anrm, &minmn, &c__1, &s[1], &
+		    minmn, &ierr);
+	}
+	if (*info != 0 && anrm < smlnum) {
+	    i__2 = minmn - 1;
+	    slascl_("G", &c__0, &c__0, &smlnum, &anrm, &i__2, &c__1, &work[2],
+		     &minmn, &ierr);
+	}
+    }
+
+/*     Return optimal workspace in WORK(1) */
+
+    work[1] = (real) maxwrk;
+
+    return 0;
+
+/*     End of SGESVD */
+
+} /* sgesvd_ */
+
+#undef vt_ref
+#undef u_ref
+#undef a_ref
+
+
+//===============================================================================
+
+/* Subroutine */ int sorgl2_(integer *m, integer *n, integer *k, real *a, 
+	integer *lda, real *tau, real *work, integer *info)
+
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SORGL2 generates an m by n real matrix Q with orthonormal rows,   
+    which is defined as the first m rows of a product of k elementary   
+    reflectors of order n   
+
+          Q  =  H(k) . . . H(2) H(1)   
+
+    as returned by SGELQF.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix Q. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix Q. N >= M.   
+
+    K       (input) INTEGER   
+            The number of elementary reflectors whose product defines the   
+            matrix Q. M >= K >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the i-th row must contain the vector which defines   
+            the elementary reflector H(i), for i = 1,2,...,k, as returned   
+            by SGELQF in the first k rows of its array argument A.   
+            On exit, the m-by-n matrix Q.   
+
+    LDA     (input) INTEGER   
+            The first dimension of the array A. LDA >= max(1,M).   
+
+    TAU     (input) REAL array, dimension (K)   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i), as returned by SGELQF.   
+
+    WORK    (workspace) REAL array, dimension (M)   
+
+    INFO    (output) INTEGER   
+            = 0: successful exit   
+            < 0: if INFO = -i, the i-th argument has an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2;
+    real r__1;
+    /* Local variables */
+    static integer i__, j, l;
+    extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *), 
+	    slarf_(char *, integer *, integer *, real *, integer *, real *, 
+	    real *, integer *, real *), xerbla_(char *, integer *);
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < *m) {
+	*info = -2;
+    } else if (*k < 0 || *k > *m) {
+	*info = -3;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -5;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORGL2", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m <= 0) {
+	return 0;
+    }
+
+    if (*k < *m) {
+
+/*        Initialise rows k+1:m to rows of the unit matrix */
+
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (l = *k + 1; l <= i__2; ++l) {
+		a_ref(l, j) = 0.f;
+/* L10: */
+	    }
+	    if (j > *k && j <= *m) {
+		a_ref(j, j) = 1.f;
+	    }
+/* L20: */
+	}
+    }
+
+    for (i__ = *k; i__ >= 1; --i__) {
+
+/*        Apply H(i) to A(i:m,i:n) from the right */
+
+	if (i__ < *n) {
+	    if (i__ < *m) {
+		a_ref(i__, i__) = 1.f;
+		i__1 = *m - i__;
+		i__2 = *n - i__ + 1;
+		slarf_("Right", &i__1, &i__2, &a_ref(i__, i__), lda, &tau[i__]
+			, &a_ref(i__ + 1, i__), lda, &work[1]);
+	    }
+	    i__1 = *n - i__;
+	    r__1 = -tau[i__];
+	    sscal_(&i__1, &r__1, &a_ref(i__, i__ + 1), lda);
+	}
+	a_ref(i__, i__) = 1.f - tau[i__];
+
+/*        Set A(i,1:i-1) to zero */
+
+	i__1 = i__ - 1;
+	for (l = 1; l <= i__1; ++l) {
+	    a_ref(i__, l) = 0.f;
+/* L30: */
+	}
+/* L40: */
+    }
+    return 0;
+
+/*     End of SORGL2 */
+
+} /* sorgl2_ */
+
+#undef a_ref
+
+//==========================================================
+
+/* Subroutine */ int sorglq_(integer *m, integer *n, integer *k, real *a, 
+	integer *lda, real *tau, real *work, integer *lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SORGLQ generates an M-by-N real matrix Q with orthonormal rows,   
+    which is defined as the first M rows of a product of K elementary   
+    reflectors of order N   
+
+          Q  =  H(k) . . . H(2) H(1)   
+
+    as returned by SGELQF.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix Q. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix Q. N >= M.   
+
+    K       (input) INTEGER   
+            The number of elementary reflectors whose product defines the   
+            matrix Q. M >= K >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the i-th row must contain the vector which defines   
+            the elementary reflector H(i), for i = 1,2,...,k, as returned   
+            by SGELQF in the first k rows of its array argument A.   
+            On exit, the M-by-N matrix Q.   
+
+    LDA     (input) INTEGER   
+            The first dimension of the array A. LDA >= max(1,M).   
+
+    TAU     (input) REAL array, dimension (K)   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i), as returned by SGELQF.   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK. LWORK >= max(1,M).   
+            For optimum performance LWORK >= M*NB, where NB is   
+            the optimal blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument has an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__3 = 3;
+    static integer c__2 = 2;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3;
+    /* Local variables */
+    static integer i__, j, l, nbmin, iinfo;
+    extern /* Subroutine */ int sorgl2_(integer *, integer *, integer *, real 
+	    *, integer *, real *, real *, integer *);
+    static integer ib, nb, ki, kk, nx;
+    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+	    integer *, integer *, integer *, real *, integer *, real *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+	    real *, integer *, real *, real *, integer *);
+    static integer ldwork, lwkopt;
+    static logical lquery;
+    static integer iws;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    nb = ilaenv_(&c__1, "SORGLQ", " ", m, n, k, &c_n1, (ftnlen)6, (ftnlen)1);
+    lwkopt = f2cmax(1,*m) * nb;
+    work[1] = (real) lwkopt;
+    lquery = *lwork == -1;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < *m) {
+	*info = -2;
+    } else if (*k < 0 || *k > *m) {
+	*info = -3;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -5;
+    } else if (*lwork < f2cmax(1,*m) && ! lquery) {
+	*info = -8;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORGLQ", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m <= 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    nbmin = 2;
+    nx = 0;
+    iws = *m;
+    if (nb > 1 && nb < *k) {
+
+/*        Determine when to cross over from blocked to unblocked code.   
+
+   Computing MAX */
+	i__1 = 0, i__2 = ilaenv_(&c__3, "SORGLQ", " ", m, n, k, &c_n1, (
+		ftnlen)6, (ftnlen)1);
+	nx = f2cmax(i__1,i__2);
+	if (nx < *k) {
+
+/*           Determine if workspace is large enough for blocked code. */
+
+	    ldwork = *m;
+	    iws = ldwork * nb;
+	    if (*lwork < iws) {
+
+/*              Not enough workspace to use optimal NB:  reduce NB and   
+                determine the minimum value of NB. */
+
+		nb = *lwork / ldwork;
+/* Computing MAX */
+		i__1 = 2, i__2 = ilaenv_(&c__2, "SORGLQ", " ", m, n, k, &c_n1,
+			 (ftnlen)6, (ftnlen)1);
+		nbmin = f2cmax(i__1,i__2);
+	    }
+	}
+    }
+
+    if (nb >= nbmin && nb < *k && nx < *k) {
+
+/*        Use blocked code after the last block.   
+          The first kk rows are handled by the block method. */
+
+	ki = (*k - nx - 1) / nb * nb;
+/* Computing MIN */
+	i__1 = *k, i__2 = ki + nb;
+	kk = f2cmin(i__1,i__2);
+
+/*        Set A(kk+1:m,1:kk) to zero. */
+
+	i__1 = kk;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (i__ = kk + 1; i__ <= i__2; ++i__) {
+		a_ref(i__, j) = 0.f;
+/* L10: */
+	    }
+/* L20: */
+	}
+    } else {
+	kk = 0;
+    }
+
+/*     Use unblocked code for the last or only block. */
+
+    if (kk < *m) {
+	i__1 = *m - kk;
+	i__2 = *n - kk;
+	i__3 = *k - kk;
+	sorgl2_(&i__1, &i__2, &i__3, &a_ref(kk + 1, kk + 1), lda, &tau[kk + 1]
+		, &work[1], &iinfo);
+    }
+
+    if (kk > 0) {
+
+/*        Use blocked code */
+
+	i__1 = -nb;
+	for (i__ = ki + 1; i__1 < 0 ? i__ >= 1 : i__ <= 1; i__ += i__1) {
+/* Computing MIN */
+	    i__2 = nb, i__3 = *k - i__ + 1;
+	    ib = f2cmin(i__2,i__3);
+	    if (i__ + ib <= *m) {
+
+/*              Form the triangular factor of the block reflector   
+                H = H(i) H(i+1) . . . H(i+ib-1) */
+
+		i__2 = *n - i__ + 1;
+		slarft_("Forward", "Rowwise", &i__2, &ib, &a_ref(i__, i__), 
+			lda, &tau[i__], &work[1], &ldwork);
+
+/*              Apply H' to A(i+ib:m,i:n) from the right */
+
+		i__2 = *m - i__ - ib + 1;
+		i__3 = *n - i__ + 1;
+		slarfb_("Right", "Transpose", "Forward", "Rowwise", &i__2, &
+			i__3, &ib, &a_ref(i__, i__), lda, &work[1], &ldwork, &
+			a_ref(i__ + ib, i__), lda, &work[ib + 1], &ldwork);
+	    }
+
+/*           Apply H' to columns i:n of current block */
+
+	    i__2 = *n - i__ + 1;
+	    sorgl2_(&ib, &i__2, &ib, &a_ref(i__, i__), lda, &tau[i__], &work[
+		    1], &iinfo);
+
+/*           Set columns 1:i-1 of current block to zero */
+
+	    i__2 = i__ - 1;
+	    for (j = 1; j <= i__2; ++j) {
+		i__3 = i__ + ib - 1;
+		for (l = i__; l <= i__3; ++l) {
+		    a_ref(l, j) = 0.f;
+/* L30: */
+		}
+/* L40: */
+	    }
+/* L50: */
+	}
+    }
+
+    work[1] = (real) iws;
+    return 0;
+
+/*     End of SORGLQ */
+
+} /* sorglq_ */
+
+#undef a_ref
+
+//=====================================================================
+
+doublereal slange_(char *norm, integer *m, integer *n, real *a, integer *lda, 
+	real *work)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1992   
+
+
+    Purpose   
+    =======   
+
+    SLANGE  returns the value of the one norm,  or the Frobenius norm, or   
+    the  infinity norm,  or the  element of  largest absolute value  of a   
+    real matrix A.   
+
+    Description   
+    ===========   
+
+    SLANGE returns the value   
+
+       SLANGE = ( max(abs(A(i,j))), NORM = 'M' or 'm'   
+                (   
+                ( norm1(A),         NORM = '1', 'O' or 'o'   
+                (   
+                ( normI(A),         NORM = 'I' or 'i'   
+                (   
+                ( normF(A),         NORM = 'F', 'f', 'E' or 'e'   
+
+    where  norm1  denotes the  one norm of a matrix (maximum column sum),   
+    normI  denotes the  infinity norm  of a matrix  (maximum row sum) and   
+    normF  denotes the  Frobenius norm of a matrix (square root of sum of   
+    squares).  Note that  max(abs(A(i,j)))  is not a  matrix norm.   
+
+    Arguments   
+    =========   
+
+    NORM    (input) CHARACTER*1   
+            Specifies the value to be returned in SLANGE as described   
+            above.   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix A.  M >= 0.  When M = 0,   
+            SLANGE is set to zero.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix A.  N >= 0.  When N = 0,   
+            SLANGE is set to zero.   
+
+    A       (input) REAL array, dimension (LDA,N)   
+            The m by n matrix A.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(M,1).   
+
+    WORK    (workspace) REAL array, dimension (LWORK),   
+            where LWORK >= M when NORM = 'I'; otherwise, WORK is not   
+            referenced.   
+
+   =====================================================================   
+
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2;
+    real ret_val, r__1, r__2, r__3;
+    /* Builtin functions */
+    //double sqrt(doublereal);
+    /* Local variables */
+    static integer i__, j;
+    static real scale;
+    extern logical lsame_(char *, char *);
+    static real value;
+    extern /* Subroutine */ int slassq_(integer *, real *, integer *, real *, 
+	    real *);
+    static real sum;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --work;
+
+    /* Function Body */
+    if (f2cmin(*m,*n) == 0) {
+	value = 0.f;
+    } else if (lsame_(norm, "M")) {
+
+/*        Find max(abs(A(i,j))). */
+
+	value = 0.f;
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (i__ = 1; i__ <= i__2; ++i__) {
+/* Computing MAX */
+		r__2 = value, r__3 = (r__1 = a_ref(i__, j), dabs(r__1));
+		value = df2cmax(r__2,r__3);
+/* L10: */
+	    }
+/* L20: */
+	}
+    } else if (lsame_(norm, "O") || *(unsigned char *)
+	    norm == '1') {
+
+/*        Find norm1(A). */
+
+	value = 0.f;
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    sum = 0.f;
+	    i__2 = *m;
+	    for (i__ = 1; i__ <= i__2; ++i__) {
+		sum += (r__1 = a_ref(i__, j), dabs(r__1));
+/* L30: */
+	    }
+	    value = df2cmax(value,sum);
+/* L40: */
+	}
+    } else if (lsame_(norm, "I")) {
+
+/*        Find normI(A). */
+
+	i__1 = *m;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    work[i__] = 0.f;
+/* L50: */
+	}
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (i__ = 1; i__ <= i__2; ++i__) {
+		work[i__] += (r__1 = a_ref(i__, j), dabs(r__1));
+/* L60: */
+	    }
+/* L70: */
+	}
+	value = 0.f;
+	i__1 = *m;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+/* Computing MAX */
+	    r__1 = value, r__2 = work[i__];
+	    value = df2cmax(r__1,r__2);
+/* L80: */
+	}
+    } else if (lsame_(norm, "F") || lsame_(norm, "E")) {
+
+/*        Find normF(A). */
+
+	scale = 0.f;
+	sum = 1.f;
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    slassq_(m, &a_ref(1, j), &c__1, &scale, &sum);
+/* L90: */
+	}
+	value = scale * sqrt(sum);
+    }
+
+    ret_val = value;
+    return ret_val;
+
+/*     End of SLANGE */
+
+} /* slange_ */
+
+#undef a_ref
+
+//===================================================
+
+/* Subroutine */ int sgebrd_(integer *m, integer *n, real *a, integer *lda, 
+	real *d__, real *e, real *tauq, real *taup, real *work, integer *
+	lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SGEBRD reduces a general real M-by-N matrix A to upper or lower   
+    bidiagonal form B by an orthogonal transformation: Q**T * A * P = B.   
+
+    If m >= n, B is upper bidiagonal; if m < n, B is lower bidiagonal.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows in the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns in the matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the M-by-N general matrix to be reduced.   
+            On exit,   
+            if m >= n, the diagonal and the first superdiagonal are   
+              overwritten with the upper bidiagonal matrix B; the   
+              elements below the diagonal, with the array TAUQ, represent   
+              the orthogonal matrix Q as a product of elementary   
+              reflectors, and the elements above the first superdiagonal,   
+              with the array TAUP, represent the orthogonal matrix P as   
+              a product of elementary reflectors;   
+            if m < n, the diagonal and the first subdiagonal are   
+              overwritten with the lower bidiagonal matrix B; the   
+              elements below the first subdiagonal, with the array TAUQ,   
+              represent the orthogonal matrix Q as a product of   
+              elementary reflectors, and the elements above the diagonal,   
+              with the array TAUP, represent the orthogonal matrix P as   
+              a product of elementary reflectors.   
+            See Further Details.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    D       (output) REAL array, dimension (min(M,N))   
+            The diagonal elements of the bidiagonal matrix B:   
+            D(i) = A(i,i).   
+
+    E       (output) REAL array, dimension (min(M,N)-1)   
+            The off-diagonal elements of the bidiagonal matrix B:   
+            if m >= n, E(i) = A(i,i+1) for i = 1,2,...,n-1;   
+            if m < n, E(i) = A(i+1,i) for i = 1,2,...,m-1.   
+
+    TAUQ    (output) REAL array dimension (min(M,N))   
+            The scalar factors of the elementary reflectors which   
+            represent the orthogonal matrix Q. See Further Details.   
+
+    TAUP    (output) REAL array, dimension (min(M,N))   
+            The scalar factors of the elementary reflectors which   
+            represent the orthogonal matrix P. See Further Details.   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The length of the array WORK.  LWORK >= max(1,M,N).   
+            For optimum performance LWORK >= (M+N)*NB, where NB   
+            is the optimal blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value.   
+
+    Further Details   
+    ===============   
+
+    The matrices Q and P are represented as products of elementary   
+    reflectors:   
+
+    If m >= n,   
+
+       Q = H(1) H(2) . . . H(n)  and  P = G(1) G(2) . . . G(n-1)   
+
+    Each H(i) and G(i) has the form:   
+
+       H(i) = I - tauq * v * v'  and G(i) = I - taup * u * u'   
+
+    where tauq and taup are real scalars, and v and u are real vectors;   
+    v(1:i-1) = 0, v(i) = 1, and v(i+1:m) is stored on exit in A(i+1:m,i);   
+    u(1:i) = 0, u(i+1) = 1, and u(i+2:n) is stored on exit in A(i,i+2:n);   
+    tauq is stored in TAUQ(i) and taup in TAUP(i).   
+
+    If m < n,   
+
+       Q = H(1) H(2) . . . H(m-1)  and  P = G(1) G(2) . . . G(m)   
+
+    Each H(i) and G(i) has the form:   
+
+       H(i) = I - tauq * v * v'  and G(i) = I - taup * u * u'   
+
+    where tauq and taup are real scalars, and v and u are real vectors;   
+    v(1:i) = 0, v(i+1) = 1, and v(i+2:m) is stored on exit in A(i+2:m,i);   
+    u(1:i-1) = 0, u(i) = 1, and u(i+1:n) is stored on exit in A(i,i+1:n);   
+    tauq is stored in TAUQ(i) and taup in TAUP(i).   
+
+    The contents of A on exit are illustrated by the following examples:   
+
+    m = 6 and n = 5 (m > n):          m = 5 and n = 6 (m < n):   
+
+      (  d   e   u1  u1  u1 )           (  d   u1  u1  u1  u1  u1 )   
+      (  v1  d   e   u2  u2 )           (  e   d   u2  u2  u2  u2 )   
+      (  v1  v2  d   e   u3 )           (  v1  e   d   u3  u3  u3 )   
+      (  v1  v2  v3  d   e  )           (  v1  v2  e   d   u4  u4 )   
+      (  v1  v2  v3  v4  d  )           (  v1  v2  v3  e   d   u5 )   
+      (  v1  v2  v3  v4  v5 )   
+
+    where d and e denote diagonal and off-diagonal elements of B, vi   
+    denotes an element of the vector defining H(i), and ui an element of   
+    the vector defining G(i).   
+
+    =====================================================================   
+
+
+       Test the input parameters   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__3 = 3;
+    static integer c__2 = 2;
+    static real c_b21 = -1.f;
+    static real c_b22 = 1.f;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3, i__4;
+    /* Local variables */
+    static integer i__, j, nbmin, iinfo;
+    extern /* Subroutine */ int sgemm_(char *, char *, integer *, integer *, 
+	    integer *, real *, real *, integer *, real *, integer *, real *, 
+	    real *, integer *);
+    static integer minmn;
+    extern /* Subroutine */ int sgebd2_(integer *, integer *, real *, integer 
+	    *, real *, real *, real *, real *, real *, integer *);
+    static integer nb, nx;
+    extern /* Subroutine */ int slabrd_(integer *, integer *, integer *, real 
+	    *, integer *, real *, real *, real *, real *, real *, integer *, 
+	    real *, integer *);
+    static real ws;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    static integer ldwrkx, ldwrky, lwkopt;
+    static logical lquery;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --d__;
+    --e;
+    --tauq;
+    --taup;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+/* Computing MAX */
+    i__1 = 1, i__2 = ilaenv_(&c__1, "SGEBRD", " ", m, n, &c_n1, &c_n1, (
+	    ftnlen)6, (ftnlen)1);
+    nb = f2cmax(i__1,i__2);
+    lwkopt = (*m + *n) * nb;
+    work[1] = (real) lwkopt;
+    lquery = *lwork == -1;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -4;
+    } else /* if(complicated condition) */ {
+/* Computing MAX */
+	i__1 = f2cmax(1,*m);
+	if (*lwork < f2cmax(i__1,*n) && ! lquery) {
+	    *info = -10;
+	}
+    }
+    if (*info < 0) {
+	i__1 = -(*info);
+	xerbla_("SGEBRD", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    minmn = f2cmin(*m,*n);
+    if (minmn == 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    ws = (real) f2cmax(*m,*n);
+    ldwrkx = *m;
+    ldwrky = *n;
+
+    if (nb > 1 && nb < minmn) {
+
+/*        Set the crossover point NX.   
+
+   Computing MAX */
+	i__1 = nb, i__2 = ilaenv_(&c__3, "SGEBRD", " ", m, n, &c_n1, &c_n1, (
+		ftnlen)6, (ftnlen)1);
+	nx = f2cmax(i__1,i__2);
+
+/*        Determine when to switch from blocked to unblocked code. */
+
+	if (nx < minmn) {
+	    ws = (real) ((*m + *n) * nb);
+	    if ((real) (*lwork) < ws) {
+
+/*              Not enough work space for the optimal NB, consider using   
+                a smaller block size. */
+
+		nbmin = ilaenv_(&c__2, "SGEBRD", " ", m, n, &c_n1, &c_n1, (
+			ftnlen)6, (ftnlen)1);
+		if (*lwork >= (*m + *n) * nbmin) {
+		    nb = *lwork / (*m + *n);
+		} else {
+		    nb = 1;
+		    nx = minmn;
+		}
+	    }
+	}
+    } else {
+	nx = minmn;
+    }
+
+    i__1 = minmn - nx;
+    i__2 = nb;
+    for (i__ = 1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+
+/*        Reduce rows and columns i:i+nb-1 to bidiagonal form and return   
+          the matrices X and Y which are needed to update the unreduced   
+          part of the matrix */
+
+	i__3 = *m - i__ + 1;
+	i__4 = *n - i__ + 1;
+	slabrd_(&i__3, &i__4, &nb, &a_ref(i__, i__), lda, &d__[i__], &e[i__], 
+		&tauq[i__], &taup[i__], &work[1], &ldwrkx, &work[ldwrkx * nb 
+		+ 1], &ldwrky);
+
+/*        Update the trailing submatrix A(i+nb:m,i+nb:n), using an update   
+          of the form  A := A - V*Y' - X*U' */
+
+	i__3 = *m - i__ - nb + 1;
+	i__4 = *n - i__ - nb + 1;
+	sgemm_("No transpose", "Transpose", &i__3, &i__4, &nb, &c_b21, &a_ref(
+		i__ + nb, i__), lda, &work[ldwrkx * nb + nb + 1], &ldwrky, &
+		c_b22, &a_ref(i__ + nb, i__ + nb), lda)
+		;
+	i__3 = *m - i__ - nb + 1;
+	i__4 = *n - i__ - nb + 1;
+	sgemm_("No transpose", "No transpose", &i__3, &i__4, &nb, &c_b21, &
+		work[nb + 1], &ldwrkx, &a_ref(i__, i__ + nb), lda, &c_b22, &
+		a_ref(i__ + nb, i__ + nb), lda);
+
+/*        Copy diagonal and off-diagonal elements of B back into A */
+
+	if (*m >= *n) {
+	    i__3 = i__ + nb - 1;
+	    for (j = i__; j <= i__3; ++j) {
+		a_ref(j, j) = d__[j];
+		a_ref(j, j + 1) = e[j];
+/* L10: */
+	    }
+	} else {
+	    i__3 = i__ + nb - 1;
+	    for (j = i__; j <= i__3; ++j) {
+		a_ref(j, j) = d__[j];
+		a_ref(j + 1, j) = e[j];
+/* L20: */
+	    }
+	}
+/* L30: */
+    }
+
+/*     Use unblocked code to reduce the remainder of the matrix */
+
+    i__2 = *m - i__ + 1;
+    i__1 = *n - i__ + 1;
+    sgebd2_(&i__2, &i__1, &a_ref(i__, i__), lda, &d__[i__], &e[i__], &tauq[
+	    i__], &taup[i__], &work[1], &iinfo);
+    work[1] = ws;
+    return 0;
+
+/*     End of SGEBRD */
+
+} /* sgebrd_ */
+
+#undef a_ref
+
+//===============================================================
+
+/* Subroutine */ int sgebd2_(integer *m, integer *n, real *a, integer *lda, 
+	real *d__, real *e, real *tauq, real *taup, real *work, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SGEBD2 reduces a real general m by n matrix A to upper or lower   
+    bidiagonal form B by an orthogonal transformation: Q' * A * P = B.   
+
+    If m >= n, B is upper bidiagonal; if m < n, B is lower bidiagonal.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows in the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns in the matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the m by n general matrix to be reduced.   
+            On exit,   
+            if m >= n, the diagonal and the first superdiagonal are   
+              overwritten with the upper bidiagonal matrix B; the   
+              elements below the diagonal, with the array TAUQ, represent   
+              the orthogonal matrix Q as a product of elementary   
+              reflectors, and the elements above the first superdiagonal,   
+              with the array TAUP, represent the orthogonal matrix P as   
+              a product of elementary reflectors;   
+            if m < n, the diagonal and the first subdiagonal are   
+              overwritten with the lower bidiagonal matrix B; the   
+              elements below the first subdiagonal, with the array TAUQ,   
+              represent the orthogonal matrix Q as a product of   
+              elementary reflectors, and the elements above the diagonal,   
+              with the array TAUP, represent the orthogonal matrix P as   
+              a product of elementary reflectors.   
+            See Further Details.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    D       (output) REAL array, dimension (min(M,N))   
+            The diagonal elements of the bidiagonal matrix B:   
+            D(i) = A(i,i).   
+
+    E       (output) REAL array, dimension (min(M,N)-1)   
+            The off-diagonal elements of the bidiagonal matrix B:   
+            if m >= n, E(i) = A(i,i+1) for i = 1,2,...,n-1;   
+            if m < n, E(i) = A(i+1,i) for i = 1,2,...,m-1.   
+
+    TAUQ    (output) REAL array dimension (min(M,N))   
+            The scalar factors of the elementary reflectors which   
+            represent the orthogonal matrix Q. See Further Details.   
+
+    TAUP    (output) REAL array, dimension (min(M,N))   
+            The scalar factors of the elementary reflectors which   
+            represent the orthogonal matrix P. See Further Details.   
+
+    WORK    (workspace) REAL array, dimension (max(M,N))   
+
+    INFO    (output) INTEGER   
+            = 0: successful exit.   
+            < 0: if INFO = -i, the i-th argument had an illegal value.   
+
+    Further Details   
+    ===============   
+
+    The matrices Q and P are represented as products of elementary   
+    reflectors:   
+
+    If m >= n,   
+
+       Q = H(1) H(2) . . . H(n)  and  P = G(1) G(2) . . . G(n-1)   
+
+    Each H(i) and G(i) has the form:   
+
+       H(i) = I - tauq * v * v'  and G(i) = I - taup * u * u'   
+
+    where tauq and taup are real scalars, and v and u are real vectors;   
+    v(1:i-1) = 0, v(i) = 1, and v(i+1:m) is stored on exit in A(i+1:m,i);   
+    u(1:i) = 0, u(i+1) = 1, and u(i+2:n) is stored on exit in A(i,i+2:n);   
+    tauq is stored in TAUQ(i) and taup in TAUP(i).   
+
+    If m < n,   
+
+       Q = H(1) H(2) . . . H(m-1)  and  P = G(1) G(2) . . . G(m)   
+
+    Each H(i) and G(i) has the form:   
+
+       H(i) = I - tauq * v * v'  and G(i) = I - taup * u * u'   
+
+    where tauq and taup are real scalars, and v and u are real vectors;   
+    v(1:i) = 0, v(i+1) = 1, and v(i+2:m) is stored on exit in A(i+2:m,i);   
+    u(1:i-1) = 0, u(i) = 1, and u(i+1:n) is stored on exit in A(i,i+1:n);   
+    tauq is stored in TAUQ(i) and taup in TAUP(i).   
+
+    The contents of A on exit are illustrated by the following examples:   
+
+    m = 6 and n = 5 (m > n):          m = 5 and n = 6 (m < n):   
+
+      (  d   e   u1  u1  u1 )           (  d   u1  u1  u1  u1  u1 )   
+      (  v1  d   e   u2  u2 )           (  e   d   u2  u2  u2  u2 )   
+      (  v1  v2  d   e   u3 )           (  v1  e   d   u3  u3  u3 )   
+      (  v1  v2  v3  d   e  )           (  v1  v2  e   d   u4  u4 )   
+      (  v1  v2  v3  v4  d  )           (  v1  v2  v3  e   d   u5 )   
+      (  v1  v2  v3  v4  v5 )   
+
+    where d and e denote diagonal and off-diagonal elements of B, vi   
+    denotes an element of the vector defining H(i), and ui an element of   
+    the vector defining G(i).   
+
+    =====================================================================   
+
+
+       Test the input parameters   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3, i__4;
+    /* Local variables */
+    static integer i__;
+    extern /* Subroutine */ int slarf_(char *, integer *, integer *, real *, 
+	    integer *, real *, real *, integer *, real *), xerbla_(
+	    char *, integer *), slarfg_(integer *, real *, real *, 
+	    integer *, real *);
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --d__;
+    --e;
+    --tauq;
+    --taup;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -4;
+    }
+    if (*info < 0) {
+	i__1 = -(*info);
+	xerbla_("SGEBD2", &i__1);
+	return 0;
+    }
+
+    if (*m >= *n) {
+
+/*        Reduce to upper bidiagonal form */
+
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*           Generate elementary reflector H(i) to annihilate A(i+1:m,i)   
+
+   Computing MIN */
+	    i__2 = i__ + 1;
+	    i__3 = *m - i__ + 1;
+	    slarfg_(&i__3, &a_ref(i__, i__), &a_ref(f2cmin(i__2,*m), i__), &c__1,
+		     &tauq[i__]);
+	    d__[i__] = a_ref(i__, i__);
+	    a_ref(i__, i__) = 1.f;
+
+/*           Apply H(i) to A(i:m,i+1:n) from the left */
+
+	    i__2 = *m - i__ + 1;
+	    i__3 = *n - i__;
+	    slarf_("Left", &i__2, &i__3, &a_ref(i__, i__), &c__1, &tauq[i__], 
+		    &a_ref(i__, i__ + 1), lda, &work[1]);
+	    a_ref(i__, i__) = d__[i__];
+
+	    if (i__ < *n) {
+
+/*              Generate elementary reflector G(i) to annihilate   
+                A(i,i+2:n)   
+
+   Computing MIN */
+		i__2 = i__ + 2;
+		i__3 = *n - i__;
+		slarfg_(&i__3, &a_ref(i__, i__ + 1), &a_ref(i__, f2cmin(i__2,*n))
+			, lda, &taup[i__]);
+		e[i__] = a_ref(i__, i__ + 1);
+		a_ref(i__, i__ + 1) = 1.f;
+
+/*              Apply G(i) to A(i+1:m,i+1:n) from the right */
+
+		i__2 = *m - i__;
+		i__3 = *n - i__;
+		slarf_("Right", &i__2, &i__3, &a_ref(i__, i__ + 1), lda, &
+			taup[i__], &a_ref(i__ + 1, i__ + 1), lda, &work[1]);
+		a_ref(i__, i__ + 1) = e[i__];
+	    } else {
+		taup[i__] = 0.f;
+	    }
+/* L10: */
+	}
+    } else {
+
+/*        Reduce to lower bidiagonal form */
+
+	i__1 = *m;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*           Generate elementary reflector G(i) to annihilate A(i,i+1:n)   
+
+   Computing MIN */
+	    i__2 = i__ + 1;
+	    i__3 = *n - i__ + 1;
+	    slarfg_(&i__3, &a_ref(i__, i__), &a_ref(i__, f2cmin(i__2,*n)), lda, &
+		    taup[i__]);
+	    d__[i__] = a_ref(i__, i__);
+	    a_ref(i__, i__) = 1.f;
+
+/*           Apply G(i) to A(i+1:m,i:n) from the right   
+
+   Computing MIN */
+	    i__2 = i__ + 1;
+	    i__3 = *m - i__;
+	    i__4 = *n - i__ + 1;
+	    slarf_("Right", &i__3, &i__4, &a_ref(i__, i__), lda, &taup[i__], &
+		    a_ref(f2cmin(i__2,*m), i__), lda, &work[1]);
+	    a_ref(i__, i__) = d__[i__];
+
+	    if (i__ < *m) {
+
+/*              Generate elementary reflector H(i) to annihilate   
+                A(i+2:m,i)   
+
+   Computing MIN */
+		i__2 = i__ + 2;
+		i__3 = *m - i__;
+		slarfg_(&i__3, &a_ref(i__ + 1, i__), &a_ref(f2cmin(i__2,*m), i__)
+			, &c__1, &tauq[i__]);
+		e[i__] = a_ref(i__ + 1, i__);
+		a_ref(i__ + 1, i__) = 1.f;
+
+/*              Apply H(i) to A(i+1:m,i+1:n) from the left */
+
+		i__2 = *m - i__;
+		i__3 = *n - i__;
+		slarf_("Left", &i__2, &i__3, &a_ref(i__ + 1, i__), &c__1, &
+			tauq[i__], &a_ref(i__ + 1, i__ + 1), lda, &work[1]);
+		a_ref(i__ + 1, i__) = e[i__];
+	    } else {
+		tauq[i__] = 0.f;
+	    }
+/* L20: */
+	}
+    }
+    return 0;
+
+/*     End of SGEBD2 */
+
+} /* sgebd2_ */
+
+#undef a_ref
+
+//============================================================
+
+/* Subroutine */ int sormbr_(char *vect, char *side, char *trans, integer *m, 
+	integer *n, integer *k, real *a, integer *lda, real *tau, real *c__, 
+	integer *ldc, real *work, integer *lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    If VECT = 'Q', SORMBR overwrites the general real M-by-N matrix C   
+    with   
+                    SIDE = 'L'     SIDE = 'R'   
+    TRANS = 'N':      Q * C          C * Q   
+    TRANS = 'T':      Q**T * C       C * Q**T   
+
+    If VECT = 'P', SORMBR overwrites the general real M-by-N matrix C   
+    with   
+                    SIDE = 'L'     SIDE = 'R'   
+    TRANS = 'N':      P * C          C * P   
+    TRANS = 'T':      P**T * C       C * P**T   
+
+    Here Q and P**T are the orthogonal matrices determined by SGEBRD when   
+    reducing a real matrix A to bidiagonal form: A = Q * B * P**T. Q and   
+    P**T are defined as products of elementary reflectors H(i) and G(i)   
+    respectively.   
+
+    Let nq = m if SIDE = 'L' and nq = n if SIDE = 'R'. Thus nq is the   
+    order of the orthogonal matrix Q or P**T that is applied.   
+
+    If VECT = 'Q', A is assumed to have been an NQ-by-K matrix:   
+    if nq >= k, Q = H(1) H(2) . . . H(k);   
+    if nq < k, Q = H(1) H(2) . . . H(nq-1).   
+
+    If VECT = 'P', A is assumed to have been a K-by-NQ matrix:   
+    if k < nq, P = G(1) G(2) . . . G(k);   
+    if k >= nq, P = G(1) G(2) . . . G(nq-1).   
+
+    Arguments   
+    =========   
+
+    VECT    (input) CHARACTER*1   
+            = 'Q': apply Q or Q**T;   
+            = 'P': apply P or P**T.   
+
+    SIDE    (input) CHARACTER*1   
+            = 'L': apply Q, Q**T, P or P**T from the Left;   
+            = 'R': apply Q, Q**T, P or P**T from the Right.   
+
+    TRANS   (input) CHARACTER*1   
+            = 'N':  No transpose, apply Q  or P;   
+            = 'T':  Transpose, apply Q**T or P**T.   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix C. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix C. N >= 0.   
+
+    K       (input) INTEGER   
+            If VECT = 'Q', the number of columns in the original   
+            matrix reduced by SGEBRD.   
+            If VECT = 'P', the number of rows in the original   
+            matrix reduced by SGEBRD.   
+            K >= 0.   
+
+    A       (input) REAL array, dimension   
+                                  (LDA,min(nq,K)) if VECT = 'Q'   
+                                  (LDA,nq)        if VECT = 'P'   
+            The vectors which define the elementary reflectors H(i) and   
+            G(i), whose products determine the matrices Q and P, as   
+            returned by SGEBRD.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.   
+            If VECT = 'Q', LDA >= max(1,nq);   
+            if VECT = 'P', LDA >= max(1,min(nq,K)).   
+
+    TAU     (input) REAL array, dimension (min(nq,K))   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i) or G(i) which determines Q or P, as returned   
+            by SGEBRD in the array argument TAUQ or TAUP.   
+
+    C       (input/output) REAL array, dimension (LDC,N)   
+            On entry, the M-by-N matrix C.   
+            On exit, C is overwritten by Q*C or Q**T*C or C*Q**T or C*Q   
+            or P*C or P**T*C or C*P or C*P**T.   
+
+    LDC     (input) INTEGER   
+            The leading dimension of the array C. LDC >= max(1,M).   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.   
+            If SIDE = 'L', LWORK >= max(1,N);   
+            if SIDE = 'R', LWORK >= max(1,M).   
+            For optimum performance LWORK >= N*NB if SIDE = 'L', and   
+            LWORK >= M*NB if SIDE = 'R', where NB is the optimal   
+            blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__2 = 2;
+
+    typedef char *address;    
+
+    /* System generated locals */
+    address a__1[2];
+    integer a_dim1, a_offset, c_dim1, c_offset, i__1, i__2, i__3[2];
+    char ch__1[2];
+    /* Builtin functions   
+       Subroutine */ int s_cat(char *, char **, integer *, integer *, ftnlen);
+    /* Local variables */
+    static logical left;
+    extern logical lsame_(char *, char *);
+    static integer iinfo, i1, i2, nb, mi, ni, nq, nw;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    static logical notran, applyq;
+    static char transt[1];
+    extern /* Subroutine */ int sormlq_(char *, char *, integer *, integer *, 
+	    integer *, real *, integer *, real *, real *, integer *, real *, 
+	    integer *, integer *);
+    static integer lwkopt;
+    static logical lquery;
+    extern /* Subroutine */ int sormqr_(char *, char *, integer *, integer *, 
+	    integer *, real *, integer *, real *, real *, integer *, real *, 
+	    integer *, integer *);
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1 * 1;
+    c__ -= c_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    applyq = lsame_(vect, "Q");
+    left = lsame_(side, "L");
+    notran = lsame_(trans, "N");
+    lquery = *lwork == -1;
+
+/*     NQ is the order of Q or P and NW is the minimum dimension of WORK */
+
+    if (left) {
+	nq = *m;
+	nw = *n;
+    } else {
+	nq = *n;
+	nw = *m;
+    }
+    if (! applyq && ! lsame_(vect, "P")) {
+	*info = -1;
+    } else if (! left && ! lsame_(side, "R")) {
+	*info = -2;
+    } else if (! notran && ! lsame_(trans, "T")) {
+	*info = -3;
+    } else if (*m < 0) {
+	*info = -4;
+    } else if (*n < 0) {
+	*info = -5;
+    } else if (*k < 0) {
+	*info = -6;
+    } else /* if(complicated condition) */ {
+/* Computing MAX */
+	i__1 = 1, i__2 = f2cmin(nq,*k);
+	if (applyq && *lda < f2cmax(1,nq) || ! applyq && *lda < f2cmax(i__1,i__2)) {
+	    *info = -8;
+	} else if (*ldc < f2cmax(1,*m)) {
+	    *info = -11;
+	} else if (*lwork < f2cmax(1,nw) && ! lquery) {
+	    *info = -13;
+	}
+    }
+
+    if (*info == 0) {
+	if (applyq) {
+	    if (left) {
+/* Writing concatenation */
+		i__3[0] = 1, a__1[0] = side;
+		i__3[1] = 1, a__1[1] = trans;
+		s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+		i__1 = *m - 1;
+		i__2 = *m - 1;
+		nb = ilaenv_(&c__1, "SORMQR", ch__1, &i__1, n, &i__2, &c_n1, (
+			ftnlen)6, (ftnlen)2);
+	    } else {
+/* Writing concatenation */
+		i__3[0] = 1, a__1[0] = side;
+		i__3[1] = 1, a__1[1] = trans;
+		s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+		i__1 = *n - 1;
+		i__2 = *n - 1;
+		nb = ilaenv_(&c__1, "SORMQR", ch__1, m, &i__1, &i__2, &c_n1, (
+			ftnlen)6, (ftnlen)2);
+	    }
+	} else {
+	    if (left) {
+/* Writing concatenation */
+		i__3[0] = 1, a__1[0] = side;
+		i__3[1] = 1, a__1[1] = trans;
+		s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+		i__1 = *m - 1;
+		i__2 = *m - 1;
+		nb = ilaenv_(&c__1, "SORMLQ", ch__1, &i__1, n, &i__2, &c_n1, (
+			ftnlen)6, (ftnlen)2);
+	    } else {
+/* Writing concatenation */
+		i__3[0] = 1, a__1[0] = side;
+		i__3[1] = 1, a__1[1] = trans;
+		s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+		i__1 = *n - 1;
+		i__2 = *n - 1;
+		nb = ilaenv_(&c__1, "SORMLQ", ch__1, m, &i__1, &i__2, &c_n1, (
+			ftnlen)6, (ftnlen)2);
+	    }
+	}
+	lwkopt = f2cmax(1,nw) * nb;
+	work[1] = (real) lwkopt;
+    }
+
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORMBR", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    work[1] = 1.f;
+    if (*m == 0 || *n == 0) {
+	return 0;
+    }
+
+    if (applyq) {
+
+/*        Apply Q */
+
+	if (nq >= *k) {
+
+/*           Q was determined by a call to SGEBRD with nq >= k */
+
+	    sormqr_(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+		    c_offset], ldc, &work[1], lwork, &iinfo);
+	} else if (nq > 1) {
+
+/*           Q was determined by a call to SGEBRD with nq < k */
+
+	    if (left) {
+		mi = *m - 1;
+		ni = *n;
+		i1 = 2;
+		i2 = 1;
+	    } else {
+		mi = *m;
+		ni = *n - 1;
+		i1 = 1;
+		i2 = 2;
+	    }
+	    i__1 = nq - 1;
+	    sormqr_(side, trans, &mi, &ni, &i__1, &a_ref(2, 1), lda, &tau[1], 
+		    &c___ref(i1, i2), ldc, &work[1], lwork, &iinfo);
+	}
+    } else {
+
+/*        Apply P */
+
+	if (notran) {
+	    *(unsigned char *)transt = 'T';
+	} else {
+	    *(unsigned char *)transt = 'N';
+	}
+	if (nq > *k) {
+
+/*           P was determined by a call to SGEBRD with nq > k */
+
+	    sormlq_(side, transt, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+		    c_offset], ldc, &work[1], lwork, &iinfo);
+	} else if (nq > 1) {
+
+/*           P was determined by a call to SGEBRD with nq <= k */
+
+	    if (left) {
+		mi = *m - 1;
+		ni = *n;
+		i1 = 2;
+		i2 = 1;
+	    } else {
+		mi = *m;
+		ni = *n - 1;
+		i1 = 1;
+		i2 = 2;
+	    }
+	    i__1 = nq - 1;
+	    sormlq_(side, transt, &mi, &ni, &i__1, &a_ref(1, 2), lda, &tau[1],
+		     &c___ref(i1, i2), ldc, &work[1], lwork, &iinfo);
+	}
+    }
+    work[1] = (real) lwkopt;
+    return 0;
+
+/*     End of SORMBR */
+
+} /* sormbr_ */
+
+#undef c___ref
+#undef a_ref
+
+//=================================================================
+
+/* Subroutine */ int sgelqf_(integer *m, integer *n, real *a, integer *lda, 
+	real *tau, real *work, integer *lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SGELQF computes an LQ factorization of a real M-by-N matrix A:   
+    A = L * Q.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the M-by-N matrix A.   
+            On exit, the elements on and below the diagonal of the array   
+            contain the m-by-min(m,n) lower trapezoidal matrix L (L is   
+            lower triangular if m <= n); the elements above the diagonal,   
+            with the array TAU, represent the orthogonal matrix Q as a   
+            product of elementary reflectors (see Further Details).   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    TAU     (output) REAL array, dimension (min(M,N))   
+            The scalar factors of the elementary reflectors (see Further   
+            Details).   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.  LWORK >= max(1,M).   
+            For optimum performance LWORK >= M*NB, where NB is the   
+            optimal blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+    Further Details   
+    ===============   
+
+    The matrix Q is represented as a product of elementary reflectors   
+
+       Q = H(k) . . . H(2) H(1), where k = min(m,n).   
+
+    Each H(i) has the form   
+
+       H(i) = I - tau * v * v'   
+
+    where tau is a real scalar, and v is a real vector with   
+    v(1:i-1) = 0 and v(i) = 1; v(i+1:n) is stored on exit in A(i,i+1:n),   
+    and tau in TAU(i).   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__3 = 3;
+    static integer c__2 = 2;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3, i__4;
+    /* Local variables */
+    static integer i__, k, nbmin, iinfo;
+    extern /* Subroutine */ int sgelq2_(integer *, integer *, real *, integer 
+	    *, real *, real *, integer *);
+    static integer ib, nb, nx;
+    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+	    integer *, integer *, integer *, real *, integer *, real *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+	    real *, integer *, real *, real *, integer *);
+    static integer ldwork, lwkopt;
+    static logical lquery;
+    static integer iws;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    nb = ilaenv_(&c__1, "SGELQF", " ", m, n, &c_n1, &c_n1, (ftnlen)6, (ftnlen)
+	    1);
+    lwkopt = *m * nb;
+    work[1] = (real) lwkopt;
+    lquery = *lwork == -1;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -4;
+    } else if (*lwork < f2cmax(1,*m) && ! lquery) {
+	*info = -7;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SGELQF", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    k = f2cmin(*m,*n);
+    if (k == 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    nbmin = 2;
+    nx = 0;
+    iws = *m;
+    if (nb > 1 && nb < k) {
+
+/*        Determine when to cross over from blocked to unblocked code.   
+
+   Computing MAX */
+	i__1 = 0, i__2 = ilaenv_(&c__3, "SGELQF", " ", m, n, &c_n1, &c_n1, (
+		ftnlen)6, (ftnlen)1);
+	nx = f2cmax(i__1,i__2);
+	if (nx < k) {
+
+/*           Determine if workspace is large enough for blocked code. */
+
+	    ldwork = *m;
+	    iws = ldwork * nb;
+	    if (*lwork < iws) {
+
+/*              Not enough workspace to use optimal NB:  reduce NB and   
+                determine the minimum value of NB. */
+
+		nb = *lwork / ldwork;
+/* Computing MAX */
+		i__1 = 2, i__2 = ilaenv_(&c__2, "SGELQF", " ", m, n, &c_n1, &
+			c_n1, (ftnlen)6, (ftnlen)1);
+		nbmin = f2cmax(i__1,i__2);
+	    }
+	}
+    }
+
+    if (nb >= nbmin && nb < k && nx < k) {
+
+/*        Use blocked code initially */
+
+	i__1 = k - nx;
+	i__2 = nb;
+	for (i__ = 1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+/* Computing MIN */
+	    i__3 = k - i__ + 1;
+	    ib = f2cmin(i__3,nb);
+
+/*           Compute the LQ factorization of the current block   
+             A(i:i+ib-1,i:n) */
+
+	    i__3 = *n - i__ + 1;
+	    sgelq2_(&ib, &i__3, &a_ref(i__, i__), lda, &tau[i__], &work[1], &
+		    iinfo);
+	    if (i__ + ib <= *m) {
+
+/*              Form the triangular factor of the block reflector   
+                H = H(i) H(i+1) . . . H(i+ib-1) */
+
+		i__3 = *n - i__ + 1;
+		slarft_("Forward", "Rowwise", &i__3, &ib, &a_ref(i__, i__), 
+			lda, &tau[i__], &work[1], &ldwork);
+
+/*              Apply H to A(i+ib:m,i:n) from the right */
+
+		i__3 = *m - i__ - ib + 1;
+		i__4 = *n - i__ + 1;
+		slarfb_("Right", "No transpose", "Forward", "Rowwise", &i__3, 
+			&i__4, &ib, &a_ref(i__, i__), lda, &work[1], &ldwork, 
+			&a_ref(i__ + ib, i__), lda, &work[ib + 1], &ldwork);
+	    }
+/* L10: */
+	}
+    } else {
+	i__ = 1;
+    }
+
+/*     Use unblocked code to factor the last or only block. */
+
+    if (i__ <= k) {
+	i__2 = *m - i__ + 1;
+	i__1 = *n - i__ + 1;
+	sgelq2_(&i__2, &i__1, &a_ref(i__, i__), lda, &tau[i__], &work[1], &
+		iinfo);
+    }
+
+    work[1] = (real) iws;
+    return 0;
+
+/*     End of SGELQF */
+
+} /* sgelqf_ */
+
+#undef a_ref
+
+//===========================================================
+
+/* Subroutine */ int sormlq_(char *side, char *trans, integer *m, integer *n, 
+	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
+	 real *work, integer *lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SORMLQ overwrites the general real M-by-N matrix C with   
+
+                    SIDE = 'L'     SIDE = 'R'   
+    TRANS = 'N':      Q * C          C * Q   
+    TRANS = 'T':      Q**T * C       C * Q**T   
+
+    where Q is a real orthogonal matrix defined as the product of k   
+    elementary reflectors   
+
+          Q = H(k) . . . H(2) H(1)   
+
+    as returned by SGELQF. Q is of order M if SIDE = 'L' and of order N   
+    if SIDE = 'R'.   
+
+    Arguments   
+    =========   
+
+    SIDE    (input) CHARACTER*1   
+            = 'L': apply Q or Q**T from the Left;   
+            = 'R': apply Q or Q**T from the Right.   
+
+    TRANS   (input) CHARACTER*1   
+            = 'N':  No transpose, apply Q;   
+            = 'T':  Transpose, apply Q**T.   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix C. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix C. N >= 0.   
+
+    K       (input) INTEGER   
+            The number of elementary reflectors whose product defines   
+            the matrix Q.   
+            If SIDE = 'L', M >= K >= 0;   
+            if SIDE = 'R', N >= K >= 0.   
+
+    A       (input) REAL array, dimension   
+                                 (LDA,M) if SIDE = 'L',   
+                                 (LDA,N) if SIDE = 'R'   
+            The i-th row must contain the vector which defines the   
+            elementary reflector H(i), for i = 1,2,...,k, as returned by   
+            SGELQF in the first k rows of its array argument A.   
+            A is modified by the routine but restored on exit.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A. LDA >= max(1,K).   
+
+    TAU     (input) REAL array, dimension (K)   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i), as returned by SGELQF.   
+
+    C       (input/output) REAL array, dimension (LDC,N)   
+            On entry, the M-by-N matrix C.   
+            On exit, C is overwritten by Q*C or Q**T*C or C*Q**T or C*Q.   
+
+    LDC     (input) INTEGER   
+            The leading dimension of the array C. LDC >= max(1,M).   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.   
+            If SIDE = 'L', LWORK >= max(1,N);   
+            if SIDE = 'R', LWORK >= max(1,M).   
+            For optimum performance LWORK >= N*NB if SIDE = 'L', and   
+            LWORK >= M*NB if SIDE = 'R', where NB is the optimal   
+            blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__2 = 2;
+    static integer c__65 = 65;
+
+    typedef char *address;    
+    /* System generated locals */
+    address a__1[2];
+    integer a_dim1, a_offset, c_dim1, c_offset, i__1, i__2, i__3[2], i__4, 
+	    i__5;
+    char ch__1[2];
+    /* Builtin functions   
+       Subroutine */ int s_cat(char *, char **, integer *, integer *, ftnlen);
+    /* Local variables */
+    static logical left;
+    static integer i__;
+    static real t[4160]	/* was [65][64] */;
+    extern logical lsame_(char *, char *);
+    static integer nbmin, iinfo, i1, i2, i3, ib, ic, jc;
+    extern /* Subroutine */ int sorml2_(char *, char *, integer *, integer *, 
+	    integer *, real *, integer *, real *, real *, integer *, real *, 
+	    integer *);
+    static integer nb, mi, ni, nq, nw;
+    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+	    integer *, integer *, integer *, real *, integer *, real *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+	    real *, integer *, real *, real *, integer *);
+    static logical notran;
+    static integer ldwork;
+    static char transt[1];
+    static integer lwkopt;
+    static logical lquery;
+    static integer iws;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1 * 1;
+    c__ -= c_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    left = lsame_(side, "L");
+    notran = lsame_(trans, "N");
+    lquery = *lwork == -1;
+
+/*     NQ is the order of Q and NW is the minimum dimension of WORK */
+
+    if (left) {
+	nq = *m;
+	nw = *n;
+    } else {
+	nq = *n;
+	nw = *m;
+    }
+    if (! left && ! lsame_(side, "R")) {
+	*info = -1;
+    } else if (! notran && ! lsame_(trans, "T")) {
+	*info = -2;
+    } else if (*m < 0) {
+	*info = -3;
+    } else if (*n < 0) {
+	*info = -4;
+    } else if (*k < 0 || *k > nq) {
+	*info = -5;
+    } else if (*lda < f2cmax(1,*k)) {
+	*info = -7;
+    } else if (*ldc < f2cmax(1,*m)) {
+	*info = -10;
+    } else if (*lwork < f2cmax(1,nw) && ! lquery) {
+	*info = -12;
+    }
+
+    if (*info == 0) {
+
+/*        Determine the block size.  NB may be at most NBMAX, where NBMAX   
+          is used to define the local array T.   
+
+   Computing MIN   
+   Writing concatenation */
+	i__3[0] = 1, a__1[0] = side;
+	i__3[1] = 1, a__1[1] = trans;
+	s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+	i__1 = 64, i__2 = ilaenv_(&c__1, "SORMLQ", ch__1, m, n, k, &c_n1, (
+		ftnlen)6, (ftnlen)2);
+	nb = f2cmin(i__1,i__2);
+	lwkopt = f2cmax(1,nw) * nb;
+	work[1] = (real) lwkopt;
+    }
+
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORMLQ", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m == 0 || *n == 0 || *k == 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    nbmin = 2;
+    ldwork = nw;
+    if (nb > 1 && nb < *k) {
+	iws = nw * nb;
+	if (*lwork < iws) {
+	    nb = *lwork / ldwork;
+/* Computing MAX   
+   Writing concatenation */
+	    i__3[0] = 1, a__1[0] = side;
+	    i__3[1] = 1, a__1[1] = trans;
+	    s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+	    i__1 = 2, i__2 = ilaenv_(&c__2, "SORMLQ", ch__1, m, n, k, &c_n1, (
+		    ftnlen)6, (ftnlen)2);
+	    nbmin = f2cmax(i__1,i__2);
+	}
+    } else {
+	iws = nw;
+    }
+
+    if (nb < nbmin || nb >= *k) {
+
+/*        Use unblocked code */
+
+	sorml2_(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+		c_offset], ldc, &work[1], &iinfo);
+    } else {
+
+/*        Use blocked code */
+
+	if (left && notran || ! left && ! notran) {
+	    i1 = 1;
+	    i2 = *k;
+	    i3 = nb;
+	} else {
+	    i1 = (*k - 1) / nb * nb + 1;
+	    i2 = 1;
+	    i3 = -nb;
+	}
+
+	if (left) {
+	    ni = *n;
+	    jc = 1;
+	} else {
+	    mi = *m;
+	    ic = 1;
+	}
+
+	if (notran) {
+	    *(unsigned char *)transt = 'T';
+	} else {
+	    *(unsigned char *)transt = 'N';
+	}
+
+	i__1 = i2;
+	i__2 = i3;
+	for (i__ = i1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+/* Computing MIN */
+	    i__4 = nb, i__5 = *k - i__ + 1;
+	    ib = f2cmin(i__4,i__5);
+
+/*           Form the triangular factor of the block reflector   
+             H = H(i) H(i+1) . . . H(i+ib-1) */
+
+	    i__4 = nq - i__ + 1;
+	    slarft_("Forward", "Rowwise", &i__4, &ib, &a_ref(i__, i__), lda, &
+		    tau[i__], t, &c__65);
+	    if (left) {
+
+/*              H or H' is applied to C(i:m,1:n) */
+
+		mi = *m - i__ + 1;
+		ic = i__;
+	    } else {
+
+/*              H or H' is applied to C(1:m,i:n) */
+
+		ni = *n - i__ + 1;
+		jc = i__;
+	    }
+
+/*           Apply H or H' */
+
+	    slarfb_(side, transt, "Forward", "Rowwise", &mi, &ni, &ib, &a_ref(
+		    i__, i__), lda, t, &c__65, &c___ref(ic, jc), ldc, &work[1]
+		    , &ldwork);
+/* L10: */
+	}
+    }
+    work[1] = (real) lwkopt;
+    return 0;
+
+/*     End of SORMLQ */
+
+} /* sormlq_ */
+
+#undef c___ref
+#undef a_ref
+
+//======================================================
+
+/* Subroutine */ int sormqr_(char *side, char *trans, integer *m, integer *n, 
+	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
+	 real *work, integer *lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SORMQR overwrites the general real M-by-N matrix C with   
+
+                    SIDE = 'L'     SIDE = 'R'   
+    TRANS = 'N':      Q * C          C * Q   
+    TRANS = 'T':      Q**T * C       C * Q**T   
+
+    where Q is a real orthogonal matrix defined as the product of k   
+    elementary reflectors   
+
+          Q = H(1) H(2) . . . H(k)   
+
+    as returned by SGEQRF. Q is of order M if SIDE = 'L' and of order N   
+    if SIDE = 'R'.   
+
+    Arguments   
+    =========   
+
+    SIDE    (input) CHARACTER*1   
+            = 'L': apply Q or Q**T from the Left;   
+            = 'R': apply Q or Q**T from the Right.   
+
+    TRANS   (input) CHARACTER*1   
+            = 'N':  No transpose, apply Q;   
+            = 'T':  Transpose, apply Q**T.   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix C. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix C. N >= 0.   
+
+    K       (input) INTEGER   
+            The number of elementary reflectors whose product defines   
+            the matrix Q.   
+            If SIDE = 'L', M >= K >= 0;   
+            if SIDE = 'R', N >= K >= 0.   
+
+    A       (input) REAL array, dimension (LDA,K)   
+            The i-th column must contain the vector which defines the   
+            elementary reflector H(i), for i = 1,2,...,k, as returned by   
+            SGEQRF in the first k columns of its array argument A.   
+            A is modified by the routine but restored on exit.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.   
+            If SIDE = 'L', LDA >= max(1,M);   
+            if SIDE = 'R', LDA >= max(1,N).   
+
+    TAU     (input) REAL array, dimension (K)   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i), as returned by SGEQRF.   
+
+    C       (input/output) REAL array, dimension (LDC,N)   
+            On entry, the M-by-N matrix C.   
+            On exit, C is overwritten by Q*C or Q**T*C or C*Q**T or C*Q.   
+
+    LDC     (input) INTEGER   
+            The leading dimension of the array C. LDC >= max(1,M).   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.   
+            If SIDE = 'L', LWORK >= max(1,N);   
+            if SIDE = 'R', LWORK >= max(1,M).   
+            For optimum performance LWORK >= N*NB if SIDE = 'L', and   
+            LWORK >= M*NB if SIDE = 'R', where NB is the optimal   
+            blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__2 = 2;
+    static integer c__65 = 65;
+    
+    /* System generated locals */
+    typedef char *address;
+    address a__1[2];
+    integer a_dim1, a_offset, c_dim1, c_offset, i__1, i__2, i__3[2], i__4, 
+	    i__5;
+    char ch__1[2];
+    /* Builtin functions   
+       Subroutine */ int s_cat(char *, char **, integer *, integer *, ftnlen);
+    /* Local variables */
+    static logical left;
+    static integer i__;
+    static real t[4160]	/* was [65][64] */;
+    extern logical lsame_(char *, char *);
+    static integer nbmin, iinfo, i1, i2, i3, ib, ic, jc, nb;
+    extern /* Subroutine */ int sorm2r_(char *, char *, integer *, integer *, 
+	    integer *, real *, integer *, real *, real *, integer *, real *, 
+	    integer *);
+    static integer mi, ni, nq, nw;
+    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+	    integer *, integer *, integer *, real *, integer *, real *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+	    real *, integer *, real *, real *, integer *);
+    static logical notran;
+    static integer ldwork, lwkopt;
+    static logical lquery;
+    static integer iws;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1 * 1;
+    c__ -= c_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    left = lsame_(side, "L");
+    notran = lsame_(trans, "N");
+    lquery = *lwork == -1;
+
+/*     NQ is the order of Q and NW is the minimum dimension of WORK */
+
+    if (left) {
+	nq = *m;
+	nw = *n;
+    } else {
+	nq = *n;
+	nw = *m;
+    }
+    if (! left && ! lsame_(side, "R")) {
+	*info = -1;
+    } else if (! notran && ! lsame_(trans, "T")) {
+	*info = -2;
+    } else if (*m < 0) {
+	*info = -3;
+    } else if (*n < 0) {
+	*info = -4;
+    } else if (*k < 0 || *k > nq) {
+	*info = -5;
+    } else if (*lda < f2cmax(1,nq)) {
+	*info = -7;
+    } else if (*ldc < f2cmax(1,*m)) {
+	*info = -10;
+    } else if (*lwork < f2cmax(1,nw) && ! lquery) {
+	*info = -12;
+    }
+
+    if (*info == 0) {
+
+/*        Determine the block size.  NB may be at most NBMAX, where NBMAX   
+          is used to define the local array T.   
+
+   Computing MIN   
+   Writing concatenation */
+	i__3[0] = 1, a__1[0] = side;
+	i__3[1] = 1, a__1[1] = trans;
+	s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+	i__1 = 64, i__2 = ilaenv_(&c__1, "SORMQR", ch__1, m, n, k, &c_n1, (
+		ftnlen)6, (ftnlen)2);
+	nb = f2cmin(i__1,i__2);
+	lwkopt = f2cmax(1,nw) * nb;
+	work[1] = (real) lwkopt;
+    }
+
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORMQR", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m == 0 || *n == 0 || *k == 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    nbmin = 2;
+    ldwork = nw;
+    if (nb > 1 && nb < *k) {
+	iws = nw * nb;
+	if (*lwork < iws) {
+	    nb = *lwork / ldwork;
+/* Computing MAX   
+   Writing concatenation */
+	    i__3[0] = 1, a__1[0] = side;
+	    i__3[1] = 1, a__1[1] = trans;
+	    s_cat(ch__1, a__1, i__3, &c__2, (ftnlen)2);
+	    i__1 = 2, i__2 = ilaenv_(&c__2, "SORMQR", ch__1, m, n, k, &c_n1, (
+		    ftnlen)6, (ftnlen)2);
+	    nbmin = f2cmax(i__1,i__2);
+	}
+    } else {
+	iws = nw;
+    }
+
+    if (nb < nbmin || nb >= *k) {
+
+/*        Use unblocked code */
+
+	sorm2r_(side, trans, m, n, k, &a[a_offset], lda, &tau[1], &c__[
+		c_offset], ldc, &work[1], &iinfo);
+    } else {
+
+/*        Use blocked code */
+
+	if (left && ! notran || ! left && notran) {
+	    i1 = 1;
+	    i2 = *k;
+	    i3 = nb;
+	} else {
+	    i1 = (*k - 1) / nb * nb + 1;
+	    i2 = 1;
+	    i3 = -nb;
+	}
+
+	if (left) {
+	    ni = *n;
+	    jc = 1;
+	} else {
+	    mi = *m;
+	    ic = 1;
+	}
+
+	i__1 = i2;
+	i__2 = i3;
+	for (i__ = i1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+/* Computing MIN */
+	    i__4 = nb, i__5 = *k - i__ + 1;
+	    ib = f2cmin(i__4,i__5);
+
+/*           Form the triangular factor of the block reflector   
+             H = H(i) H(i+1) . . . H(i+ib-1) */
+
+	    i__4 = nq - i__ + 1;
+	    slarft_("Forward", "Columnwise", &i__4, &ib, &a_ref(i__, i__), 
+		    lda, &tau[i__], t, &c__65);
+	    if (left) {
+
+/*              H or H' is applied to C(i:m,1:n) */
+
+		mi = *m - i__ + 1;
+		ic = i__;
+	    } else {
+
+/*              H or H' is applied to C(1:m,i:n) */
+
+		ni = *n - i__ + 1;
+		jc = i__;
+	    }
+
+/*           Apply H or H' */
+
+	    slarfb_(side, trans, "Forward", "Columnwise", &mi, &ni, &ib, &
+		    a_ref(i__, i__), lda, t, &c__65, &c___ref(ic, jc), ldc, &
+		    work[1], &ldwork);
+/* L10: */
+	}
+    }
+    work[1] = (real) lwkopt;
+    return 0;
+
+/*     End of SORMQR */
+
+} /* sormqr_ */
+
+#undef c___ref
+#undef a_ref
+
+//====================================================
+
+/* Subroutine */ int sgelq2_(integer *m, integer *n, real *a, integer *lda, 
+	real *tau, real *work, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SGELQ2 computes an LQ factorization of a real m by n matrix A:   
+    A = L * Q.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the m by n matrix A.   
+            On exit, the elements on and below the diagonal of the array   
+            contain the m by min(m,n) lower trapezoidal matrix L (L is   
+            lower triangular if m <= n); the elements above the diagonal,   
+            with the array TAU, represent the orthogonal matrix Q as a   
+            product of elementary reflectors (see Further Details).   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    TAU     (output) REAL array, dimension (min(M,N))   
+            The scalar factors of the elementary reflectors (see Further   
+            Details).   
+
+    WORK    (workspace) REAL array, dimension (M)   
+
+    INFO    (output) INTEGER   
+            = 0: successful exit   
+            < 0: if INFO = -i, the i-th argument had an illegal value   
+
+    Further Details   
+    ===============   
+
+    The matrix Q is represented as a product of elementary reflectors   
+
+       Q = H(k) . . . H(2) H(1), where k = min(m,n).   
+
+    Each H(i) has the form   
+
+       H(i) = I - tau * v * v'   
+
+    where tau is a real scalar, and v is a real vector with   
+    v(1:i-1) = 0 and v(i) = 1; v(i+1:n) is stored on exit in A(i,i+1:n),   
+    and tau in TAU(i).   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3;
+    /* Local variables */
+    static integer i__, k;
+    extern /* Subroutine */ int slarf_(char *, integer *, integer *, real *, 
+	    integer *, real *, real *, integer *, real *), xerbla_(
+	    char *, integer *), slarfg_(integer *, real *, real *, 
+	    integer *, real *);
+    static real aii;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -4;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SGELQ2", &i__1);
+	return 0;
+    }
+
+    k = f2cmin(*m,*n);
+
+    i__1 = k;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*        Generate elementary reflector H(i) to annihilate A(i,i+1:n)   
+
+   Computing MIN */
+	i__2 = i__ + 1;
+	i__3 = *n - i__ + 1;
+	slarfg_(&i__3, &a_ref(i__, i__), &a_ref(i__, f2cmin(i__2,*n)), lda, &tau[
+		i__]);
+	if (i__ < *m) {
+
+/*           Apply H(i) to A(i+1:m,i:n) from the right */
+
+	    aii = a_ref(i__, i__);
+	    a_ref(i__, i__) = 1.f;
+	    i__2 = *m - i__;
+	    i__3 = *n - i__ + 1;
+	    slarf_("Right", &i__2, &i__3, &a_ref(i__, i__), lda, &tau[i__], &
+		    a_ref(i__ + 1, i__), lda, &work[1]);
+	    a_ref(i__, i__) = aii;
+	}
+/* L10: */
+    }
+    return 0;
+
+/*     End of SGELQ2 */
+
+} /* sgelq2_ */
+
+#undef a_ref
+
+//=============================================
+
+/*  -- translated by f2c (version 19990503).
+   You must link the resulting object file with the libraries:
+	-lf2c -lm   (in that order)
+*/
+
+/* Table of constant values */
+
+static doublereal c_b15 = -.125;
+//static integer c__1 = 1;
+static real c_b49 = 1.f;
+static real c_b72 = -1.f;
+
+/* Subroutine */ int sbdsqr_(char *uplo, integer *n, integer *ncvt, integer *
+	nru, integer *ncc, real *d__, real *e, real *vt, integer *ldvt, real *
+	u, integer *ldu, real *c__, integer *ldc, real *work, integer *info)
+{
+    /* System generated locals */
+    integer c_dim1, c_offset, u_dim1, u_offset, vt_dim1, vt_offset, i__1, 
+	    i__2;
+    real r__1, r__2, r__3, r__4;
+    doublereal d__1;
+
+    /* Builtin functions */
+    //    double pow_dd(doublereal *, doublereal *), sqrt(doublereal), r_sign(real *, real *);
+
+    /* Local variables */
+    static real abse;
+    static integer idir;
+    static real abss;
+    static integer oldm;
+    static real cosl;
+    static integer isub, iter;
+    static real unfl, sinl, cosr, smin, smax, sinr;
+    extern /* Subroutine */ int srot_(integer *, real *, integer *, real *, 
+	    integer *, real *, real *), slas2_(real *, real *, real *, real *,
+	     real *);
+    static real f, g, h__;
+    static integer i__, j, m;
+    static real r__;
+    extern logical lsame_(char *, char *);
+    static real oldcs;
+    extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *);
+    static integer oldll;
+    static real shift, sigmn, oldsn;
+    static integer maxit;
+    static real sminl;
+    extern /* Subroutine */ int slasr_(char *, char *, char *, integer *, 
+	    integer *, real *, real *, real *, integer *);
+    static real sigmx;
+    static logical lower;
+    extern /* Subroutine */ int sswap_(integer *, real *, integer *, real *, 
+	    integer *), slasq1_(integer *, real *, real *, real *, integer *),
+	     slasv2_(real *, real *, real *, real *, real *, real *, real *, 
+	    real *, real *);
+    static real cs;
+    static integer ll;
+    static real sn, mu;
+    extern doublereal slamch_(char *);
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    static real sminoa;
+    extern /* Subroutine */ int slartg_(real *, real *, real *, real *, real *
+	    );
+    static real thresh;
+    static logical rotate;
+    static real sminlo;
+    static integer nm1;
+    static real tolmul;
+    static integer nm12, nm13, lll;
+    static real eps, sll, tol;
+
+
+#define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
+#define u_ref(a_1,a_2) u[(a_2)*u_dim1 + a_1]
+#define vt_ref(a_1,a_2) vt[(a_2)*vt_dim1 + a_1]
+
+
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SBDSQR computes the singular value decomposition (SVD) of a real   
+    N-by-N (upper or lower) bidiagonal matrix B:  B = Q * S * P' (P'   
+    denotes the transpose of P), where S is a diagonal matrix with   
+    non-negative diagonal elements (the singular values of B), and Q   
+    and P are orthogonal matrices.   
+
+    The routine computes S, and optionally computes U * Q, P' * VT,   
+    or Q' * C, for given real input matrices U, VT, and C.   
+
+    See "Computing  Small Singular Values of Bidiagonal Matrices With   
+    Guaranteed High Relative Accuracy," by J. Demmel and W. Kahan,   
+    LAPACK Working Note #3 (or SIAM J. Sci. Statist. Comput. vol. 11,   
+    no. 5, pp. 873-912, Sept 1990) and   
+    "Accurate singular values and differential qd algorithms," by   
+    B. Parlett and V. Fernando, Technical Report CPAM-554, Mathematics   
+    Department, University of California at Berkeley, July 1992   
+    for a detailed description of the algorithm.   
+
+    Arguments   
+    =========   
+
+    UPLO    (input) CHARACTER*1   
+            = 'U':  B is upper bidiagonal;   
+            = 'L':  B is lower bidiagonal.   
+
+    N       (input) INTEGER   
+            The order of the matrix B.  N >= 0.   
+
+    NCVT    (input) INTEGER   
+            The number of columns of the matrix VT. NCVT >= 0.   
+
+    NRU     (input) INTEGER   
+            The number of rows of the matrix U. NRU >= 0.   
+
+    NCC     (input) INTEGER   
+            The number of columns of the matrix C. NCC >= 0.   
+
+    D       (input/output) REAL array, dimension (N)   
+            On entry, the n diagonal elements of the bidiagonal matrix B.   
+            On exit, if INFO=0, the singular values of B in decreasing   
+            order.   
+
+    E       (input/output) REAL array, dimension (N)   
+            On entry, the elements of E contain the   
+            offdiagonal elements of the bidiagonal matrix whose SVD   
+            is desired. On normal exit (INFO = 0), E is destroyed.   
+            If the algorithm does not converge (INFO > 0), D and E   
+            will contain the diagonal and superdiagonal elements of a   
+            bidiagonal matrix orthogonally equivalent to the one given   
+            as input. E(N) is used for workspace.   
+
+    VT      (input/output) REAL array, dimension (LDVT, NCVT)   
+            On entry, an N-by-NCVT matrix VT.   
+            On exit, VT is overwritten by P' * VT.   
+            VT is not referenced if NCVT = 0.   
+
+    LDVT    (input) INTEGER   
+            The leading dimension of the array VT.   
+            LDVT >= max(1,N) if NCVT > 0; LDVT >= 1 if NCVT = 0.   
+
+    U       (input/output) REAL array, dimension (LDU, N)   
+            On entry, an NRU-by-N matrix U.   
+            On exit, U is overwritten by U * Q.   
+            U is not referenced if NRU = 0.   
+
+    LDU     (input) INTEGER   
+            The leading dimension of the array U.  LDU >= max(1,NRU).   
+
+    C       (input/output) REAL array, dimension (LDC, NCC)   
+            On entry, an N-by-NCC matrix C.   
+            On exit, C is overwritten by Q' * C.   
+            C is not referenced if NCC = 0.   
+
+    LDC     (input) INTEGER   
+            The leading dimension of the array C.   
+            LDC >= max(1,N) if NCC > 0; LDC >=1 if NCC = 0.   
+
+    WORK    (workspace) REAL array, dimension (4*N)   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  If INFO = -i, the i-th argument had an illegal value   
+            > 0:  the algorithm did not converge; D and E contain the   
+                  elements of a bidiagonal matrix which is orthogonally   
+                  similar to the input matrix B;  if INFO = i, i   
+                  elements of E have not converged to zero.   
+
+    Internal Parameters   
+    ===================   
+
+    TOLMUL  REAL, default = max(10,min(100,EPS**(-1/8)))   
+            TOLMUL controls the convergence criterion of the QR loop.   
+            If it is positive, TOLMUL*EPS is the desired relative   
+               precision in the computed singular values.   
+            If it is negative, abs(TOLMUL*EPS*sigma_max) is the   
+               desired absolute accuracy in the computed singular   
+               values (corresponds to relative accuracy   
+               abs(TOLMUL*EPS) in the largest singular value.   
+            abs(TOLMUL) should be between 1 and 1/EPS, and preferably   
+               between 10 (for fast convergence) and .1/EPS   
+               (for there to be some accuracy in the results).   
+            Default is to lose at either one eighth or 2 of the   
+               available decimal digits in each computed singular value   
+               (whichever is smaller).   
+
+    MAXITR  INTEGER, default = 6   
+            MAXITR controls the maximum number of passes of the   
+            algorithm through its inner loop. The algorithms stops   
+            (and so fails to converge) if the number of passes   
+            through the inner loop exceeds MAXITR*N**2.   
+
+    =====================================================================   
+
+
+       Test the input parameters.   
+
+       Parameter adjustments */
+    --d__;
+    --e;
+    vt_dim1 = *ldvt;
+    vt_offset = 1 + vt_dim1 * 1;
+    vt -= vt_offset;
+    u_dim1 = *ldu;
+    u_offset = 1 + u_dim1 * 1;
+    u -= u_offset;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1 * 1;
+    c__ -= c_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    lower = lsame_(uplo, "L");
+    if (! lsame_(uplo, "U") && ! lower) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*ncvt < 0) {
+	*info = -3;
+    } else if (*nru < 0) {
+	*info = -4;
+    } else if (*ncc < 0) {
+	*info = -5;
+    } else if (*ncvt == 0 && *ldvt < 1 || *ncvt > 0 && *ldvt < f2cmax(1,*n)) {
+	*info = -9;
+    } else if (*ldu < f2cmax(1,*nru)) {
+	*info = -11;
+    } else if (*ncc == 0 && *ldc < 1 || *ncc > 0 && *ldc < f2cmax(1,*n)) {
+	*info = -13;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SBDSQR", &i__1);
+	return 0;
+    }
+    if (*n == 0) {
+	return 0;
+    }
+    if (*n == 1) {
+	goto L160;
+    }
+
+/*     ROTATE is true if any singular vectors desired, false otherwise */
+
+    rotate = *ncvt > 0 || *nru > 0 || *ncc > 0;
+
+/*     If no singular vectors desired, use qd algorithm */
+
+    if (! rotate) {
+	slasq1_(n, &d__[1], &e[1], &work[1], info);
+	return 0;
+    }
+
+    nm1 = *n - 1;
+    nm12 = nm1 + nm1;
+    nm13 = nm12 + nm1;
+    idir = 0;
+
+/*     Get machine constants */
+
+    eps = slamch_("Epsilon");
+    unfl = slamch_("Safe minimum");
+
+/*     If matrix lower bidiagonal, rotate to be upper bidiagonal   
+       by applying Givens rotations on the left */
+
+    if (lower) {
+	i__1 = *n - 1;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    slartg_(&d__[i__], &e[i__], &cs, &sn, &r__);
+	    d__[i__] = r__;
+	    e[i__] = sn * d__[i__ + 1];
+	    d__[i__ + 1] = cs * d__[i__ + 1];
+	    work[i__] = cs;
+	    work[nm1 + i__] = sn;
+/* L10: */
+	}
+
+/*        Update singular vectors if desired */
+
+	if (*nru > 0) {
+	    slasr_("R", "V", "F", nru, n, &work[1], &work[*n], &u[u_offset], 
+		    ldu);
+	}
+	if (*ncc > 0) {
+	    slasr_("L", "V", "F", n, ncc, &work[1], &work[*n], &c__[c_offset],
+		     ldc);
+	}
+    }
+
+/*     Compute singular values to relative accuracy TOL   
+       (By setting TOL to be negative, algorithm will compute   
+       singular values to absolute accuracy ABS(TOL)*norm(input matrix))   
+
+   Computing MAX   
+   Computing MIN */
+    d__1 = (doublereal) eps;
+//chao changed pow_dd to pow
+    r__3 = 100.f, r__4 = pow(d__1, c_b15);
+    r__1 = 10.f, r__2 = df2cmin(r__3,r__4);
+    tolmul = df2cmax(r__1,r__2);
+    tol = tolmul * eps;
+
+/*     Compute approximate maximum, minimum singular values */
+
+    smax = 0.f;
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+/* Computing MAX */
+	r__2 = smax, r__3 = (r__1 = d__[i__], dabs(r__1));
+	smax = df2cmax(r__2,r__3);
+/* L20: */
+    }
+    i__1 = *n - 1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+/* Computing MAX */
+	r__2 = smax, r__3 = (r__1 = e[i__], dabs(r__1));
+	smax = df2cmax(r__2,r__3);
+/* L30: */
+    }
+    sminl = 0.f;
+    if (tol >= 0.f) {
+
+/*        Relative accuracy desired */
+
+	sminoa = dabs(d__[1]);
+	if (sminoa == 0.f) {
+	    goto L50;
+	}
+	mu = sminoa;
+	i__1 = *n;
+	for (i__ = 2; i__ <= i__1; ++i__) {
+	    mu = (r__2 = d__[i__], dabs(r__2)) * (mu / (mu + (r__1 = e[i__ - 
+		    1], dabs(r__1))));
+	    sminoa = df2cmin(sminoa,mu);
+	    if (sminoa == 0.f) {
+		goto L50;
+	    }
+/* L40: */
+	}
+L50:
+	sminoa /= sqrt((real) (*n));
+/* Computing MAX */
+	r__1 = tol * sminoa, r__2 = *n * 6 * *n * unfl;
+	thresh = df2cmax(r__1,r__2);
+    } else {
+
+/*        Absolute accuracy desired   
+
+   Computing MAX */
+	r__1 = dabs(tol) * smax, r__2 = *n * 6 * *n * unfl;
+	thresh = df2cmax(r__1,r__2);
+    }
+
+/*     Prepare for main iteration loop for the singular values   
+       (MAXIT is the maximum number of passes through the inner   
+       loop permitted before nonconvergence signalled.) */
+
+    maxit = *n * 6 * *n;
+    iter = 0;
+    oldll = -1;
+    oldm = -1;
+
+/*     M points to last element of unconverged part of matrix */
+
+    m = *n;
+
+/*     Begin main iteration loop */
+
+L60:
+
+/*     Check for convergence or exceeding iteration count */
+
+    if (m <= 1) {
+	goto L160;
+    }
+    if (iter > maxit) {
+	goto L200;
+    }
+
+/*     Find diagonal block of matrix to work on */
+
+    if (tol < 0.f && (r__1 = d__[m], dabs(r__1)) <= thresh) {
+	d__[m] = 0.f;
+    }
+    smax = (r__1 = d__[m], dabs(r__1));
+    smin = smax;
+    i__1 = m - 1;
+    for (lll = 1; lll <= i__1; ++lll) {
+	ll = m - lll;
+	abss = (r__1 = d__[ll], dabs(r__1));
+	abse = (r__1 = e[ll], dabs(r__1));
+	if (tol < 0.f && abss <= thresh) {
+	    d__[ll] = 0.f;
+	}
+	if (abse <= thresh) {
+	    goto L80;
+	}
+	smin = df2cmin(smin,abss);
+/* Computing MAX */
+	r__1 = f2cmax(smax,abss);
+	smax = df2cmax(r__1,abse);
+/* L70: */
+    }
+    ll = 0;
+    goto L90;
+L80:
+    e[ll] = 0.f;
+
+/*     Matrix splits since E(LL) = 0 */
+
+    if (ll == m - 1) {
+
+/*        Convergence of bottom singular value, return to top of loop */
+
+	--m;
+	goto L60;
+    }
+L90:
+    ++ll;
+
+/*     E(LL) through E(M-1) are nonzero, E(LL-1) is zero */
+
+    if (ll == m - 1) {
+
+/*        2 by 2 block, handle separately */
+
+	slasv2_(&d__[m - 1], &e[m - 1], &d__[m], &sigmn, &sigmx, &sinr, &cosr,
+		 &sinl, &cosl);
+	d__[m - 1] = sigmx;
+	e[m - 1] = 0.f;
+	d__[m] = sigmn;
+
+/*        Compute singular vectors, if desired */
+
+	if (*ncvt > 0) {
+	    srot_(ncvt, &vt_ref(m - 1, 1), ldvt, &vt_ref(m, 1), ldvt, &cosr, &
+		    sinr);
+	}
+	if (*nru > 0) {
+	    srot_(nru, &u_ref(1, m - 1), &c__1, &u_ref(1, m), &c__1, &cosl, &
+		    sinl);
+	}
+	if (*ncc > 0) {
+	    srot_(ncc, &c___ref(m - 1, 1), ldc, &c___ref(m, 1), ldc, &cosl, &
+		    sinl);
+	}
+	m += -2;
+	goto L60;
+    }
+
+/*     If working on new submatrix, choose shift direction   
+       (from larger end diagonal element towards smaller) */
+
+    if (ll > oldm || m < oldll) {
+	if ((r__1 = d__[ll], dabs(r__1)) >= (r__2 = d__[m], dabs(r__2))) {
+
+/*           Chase bulge from top (big end) to bottom (small end) */
+
+	    idir = 1;
+	} else {
+
+/*           Chase bulge from bottom (big end) to top (small end) */
+
+	    idir = 2;
+	}
+    }
+
+/*     Apply convergence tests */
+
+    if (idir == 1) {
+
+/*        Run convergence test in forward direction   
+          First apply standard test to bottom of matrix */
+
+	if ((r__2 = e[m - 1], dabs(r__2)) <= dabs(tol) * (r__1 = d__[m], dabs(
+		r__1)) || tol < 0.f && (r__3 = e[m - 1], dabs(r__3)) <= 
+		thresh) {
+	    e[m - 1] = 0.f;
+	    goto L60;
+	}
+
+	if (tol >= 0.f) {
+
+/*           If relative accuracy desired,   
+             apply convergence criterion forward */
+
+	    mu = (r__1 = d__[ll], dabs(r__1));
+	    sminl = mu;
+	    i__1 = m - 1;
+	    for (lll = ll; lll <= i__1; ++lll) {
+		if ((r__1 = e[lll], dabs(r__1)) <= tol * mu) {
+		    e[lll] = 0.f;
+		    goto L60;
+		}
+		sminlo = sminl;
+		mu = (r__2 = d__[lll + 1], dabs(r__2)) * (mu / (mu + (r__1 = 
+			e[lll], dabs(r__1))));
+		sminl = df2cmin(sminl,mu);
+/* L100: */
+	    }
+	}
+
+    } else {
+
+/*        Run convergence test in backward direction   
+          First apply standard test to top of matrix */
+
+	if ((r__2 = e[ll], dabs(r__2)) <= dabs(tol) * (r__1 = d__[ll], dabs(
+		r__1)) || tol < 0.f && (r__3 = e[ll], dabs(r__3)) <= thresh) {
+	    e[ll] = 0.f;
+	    goto L60;
+	}
+
+	if (tol >= 0.f) {
+
+/*           If relative accuracy desired,   
+             apply convergence criterion backward */
+
+	    mu = (r__1 = d__[m], dabs(r__1));
+	    sminl = mu;
+	    i__1 = ll;
+	    for (lll = m - 1; lll >= i__1; --lll) {
+		if ((r__1 = e[lll], dabs(r__1)) <= tol * mu) {
+		    e[lll] = 0.f;
+		    goto L60;
+		}
+		sminlo = sminl;
+		mu = (r__2 = d__[lll], dabs(r__2)) * (mu / (mu + (r__1 = e[
+			lll], dabs(r__1))));
+		sminl = df2cmin(sminl,mu);
+/* L110: */
+	    }
+	}
+    }
+    oldll = ll;
+    oldm = m;
+
+/*     Compute shift.  First, test if shifting would ruin relative   
+       accuracy, and if so set the shift to zero.   
+
+   Computing MAX */
+    r__1 = eps, r__2 = tol * .01f;
+    if (tol >= 0.f && *n * tol * (sminl / smax) <= df2cmax(r__1,r__2)) {
+
+/*        Use a zero shift to avoid loss of relative accuracy */
+
+	shift = 0.f;
+    } else {
+
+/*        Compute the shift from 2-by-2 block at end of matrix */
+
+	if (idir == 1) {
+	    sll = (r__1 = d__[ll], dabs(r__1));
+	    slas2_(&d__[m - 1], &e[m - 1], &d__[m], &shift, &r__);
+	} else {
+	    sll = (r__1 = d__[m], dabs(r__1));
+	    slas2_(&d__[ll], &e[ll], &d__[ll + 1], &shift, &r__);
+	}
+
+/*        Test if shift negligible, and if so set to zero */
+
+	if (sll > 0.f) {
+/* Computing 2nd power */
+	    r__1 = shift / sll;
+	    if (r__1 * r__1 < eps) {
+		shift = 0.f;
+	    }
+	}
+    }
+
+/*     Increment iteration count */
+
+    iter = iter + m - ll;
+
+/*     If SHIFT = 0, do simplified QR iteration */
+
+    if (shift == 0.f) {
+	if (idir == 1) {
+
+/*           Chase bulge from top to bottom   
+             Save cosines and sines for later singular vector updates */
+
+	    cs = 1.f;
+	    oldcs = 1.f;
+	    i__1 = m - 1;
+	    for (i__ = ll; i__ <= i__1; ++i__) {
+		r__1 = d__[i__] * cs;
+		slartg_(&r__1, &e[i__], &cs, &sn, &r__);
+		if (i__ > ll) {
+		    e[i__ - 1] = oldsn * r__;
+		}
+		r__1 = oldcs * r__;
+		r__2 = d__[i__ + 1] * sn;
+		slartg_(&r__1, &r__2, &oldcs, &oldsn, &d__[i__]);
+		work[i__ - ll + 1] = cs;
+		work[i__ - ll + 1 + nm1] = sn;
+		work[i__ - ll + 1 + nm12] = oldcs;
+		work[i__ - ll + 1 + nm13] = oldsn;
+/* L120: */
+	    }
+	    h__ = d__[m] * cs;
+	    d__[m] = h__ * oldcs;
+	    e[m - 1] = h__ * oldsn;
+
+/*           Update singular vectors */
+
+	    if (*ncvt > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "F", &i__1, ncvt, &work[1], &work[*n], &
+			vt_ref(ll, 1), ldvt);
+	    }
+	    if (*nru > 0) {
+		i__1 = m - ll + 1;
+		slasr_("R", "V", "F", nru, &i__1, &work[nm12 + 1], &work[nm13 
+			+ 1], &u_ref(1, ll), ldu);
+	    }
+	    if (*ncc > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "F", &i__1, ncc, &work[nm12 + 1], &work[nm13 
+			+ 1], &c___ref(ll, 1), ldc);
+	    }
+
+/*           Test convergence */
+
+	    if ((r__1 = e[m - 1], dabs(r__1)) <= thresh) {
+		e[m - 1] = 0.f;
+	    }
+
+	} else {
+
+/*           Chase bulge from bottom to top   
+             Save cosines and sines for later singular vector updates */
+
+	    cs = 1.f;
+	    oldcs = 1.f;
+	    i__1 = ll + 1;
+	    for (i__ = m; i__ >= i__1; --i__) {
+		r__1 = d__[i__] * cs;
+		slartg_(&r__1, &e[i__ - 1], &cs, &sn, &r__);
+		if (i__ < m) {
+		    e[i__] = oldsn * r__;
+		}
+		r__1 = oldcs * r__;
+		r__2 = d__[i__ - 1] * sn;
+		slartg_(&r__1, &r__2, &oldcs, &oldsn, &d__[i__]);
+		work[i__ - ll] = cs;
+		work[i__ - ll + nm1] = -sn;
+		work[i__ - ll + nm12] = oldcs;
+		work[i__ - ll + nm13] = -oldsn;
+/* L130: */
+	    }
+	    h__ = d__[ll] * cs;
+	    d__[ll] = h__ * oldcs;
+	    e[ll] = h__ * oldsn;
+
+/*           Update singular vectors */
+
+	    if (*ncvt > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "B", &i__1, ncvt, &work[nm12 + 1], &work[
+			nm13 + 1], &vt_ref(ll, 1), ldvt);
+	    }
+	    if (*nru > 0) {
+		i__1 = m - ll + 1;
+		slasr_("R", "V", "B", nru, &i__1, &work[1], &work[*n], &u_ref(
+			1, ll), ldu);
+	    }
+	    if (*ncc > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "B", &i__1, ncc, &work[1], &work[*n], &
+			c___ref(ll, 1), ldc);
+	    }
+
+/*           Test convergence */
+
+	    if ((r__1 = e[ll], dabs(r__1)) <= thresh) {
+		e[ll] = 0.f;
+	    }
+	}
+    } else {
+
+/*        Use nonzero shift */
+
+	if (idir == 1) {
+
+/*           Chase bulge from top to bottom   
+             Save cosines and sines for later singular vector updates */
+
+	    f = ((r__1 = d__[ll], dabs(r__1)) - shift) * (r_sign(&c_b49, &d__[
+		    ll]) + shift / d__[ll]);
+	    g = e[ll];
+	    i__1 = m - 1;
+	    for (i__ = ll; i__ <= i__1; ++i__) {
+		slartg_(&f, &g, &cosr, &sinr, &r__);
+		if (i__ > ll) {
+		    e[i__ - 1] = r__;
+		}
+		f = cosr * d__[i__] + sinr * e[i__];
+		e[i__] = cosr * e[i__] - sinr * d__[i__];
+		g = sinr * d__[i__ + 1];
+		d__[i__ + 1] = cosr * d__[i__ + 1];
+		slartg_(&f, &g, &cosl, &sinl, &r__);
+		d__[i__] = r__;
+		f = cosl * e[i__] + sinl * d__[i__ + 1];
+		d__[i__ + 1] = cosl * d__[i__ + 1] - sinl * e[i__];
+		if (i__ < m - 1) {
+		    g = sinl * e[i__ + 1];
+		    e[i__ + 1] = cosl * e[i__ + 1];
+		}
+		work[i__ - ll + 1] = cosr;
+		work[i__ - ll + 1 + nm1] = sinr;
+		work[i__ - ll + 1 + nm12] = cosl;
+		work[i__ - ll + 1 + nm13] = sinl;
+/* L140: */
+	    }
+	    e[m - 1] = f;
+
+/*           Update singular vectors */
+
+	    if (*ncvt > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "F", &i__1, ncvt, &work[1], &work[*n], &
+			vt_ref(ll, 1), ldvt);
+	    }
+	    if (*nru > 0) {
+		i__1 = m - ll + 1;
+		slasr_("R", "V", "F", nru, &i__1, &work[nm12 + 1], &work[nm13 
+			+ 1], &u_ref(1, ll), ldu);
+	    }
+	    if (*ncc > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "F", &i__1, ncc, &work[nm12 + 1], &work[nm13 
+			+ 1], &c___ref(ll, 1), ldc);
+	    }
+
+/*           Test convergence */
+
+	    if ((r__1 = e[m - 1], dabs(r__1)) <= thresh) {
+		e[m - 1] = 0.f;
+	    }
+
+	} else {
+
+/*           Chase bulge from bottom to top   
+             Save cosines and sines for later singular vector updates */
+
+	    f = ((r__1 = d__[m], dabs(r__1)) - shift) * (r_sign(&c_b49, &d__[
+		    m]) + shift / d__[m]);
+	    g = e[m - 1];
+	    i__1 = ll + 1;
+	    for (i__ = m; i__ >= i__1; --i__) {
+		slartg_(&f, &g, &cosr, &sinr, &r__);
+		if (i__ < m) {
+		    e[i__] = r__;
+		}
+		f = cosr * d__[i__] + sinr * e[i__ - 1];
+		e[i__ - 1] = cosr * e[i__ - 1] - sinr * d__[i__];
+		g = sinr * d__[i__ - 1];
+		d__[i__ - 1] = cosr * d__[i__ - 1];
+		slartg_(&f, &g, &cosl, &sinl, &r__);
+		d__[i__] = r__;
+		f = cosl * e[i__ - 1] + sinl * d__[i__ - 1];
+		d__[i__ - 1] = cosl * d__[i__ - 1] - sinl * e[i__ - 1];
+		if (i__ > ll + 1) {
+		    g = sinl * e[i__ - 2];
+		    e[i__ - 2] = cosl * e[i__ - 2];
+		}
+		work[i__ - ll] = cosr;
+		work[i__ - ll + nm1] = -sinr;
+		work[i__ - ll + nm12] = cosl;
+		work[i__ - ll + nm13] = -sinl;
+/* L150: */
+	    }
+	    e[ll] = f;
+
+/*           Test convergence */
+
+	    if ((r__1 = e[ll], dabs(r__1)) <= thresh) {
+		e[ll] = 0.f;
+	    }
+
+/*           Update singular vectors if desired */
+
+	    if (*ncvt > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "B", &i__1, ncvt, &work[nm12 + 1], &work[
+			nm13 + 1], &vt_ref(ll, 1), ldvt);
+	    }
+	    if (*nru > 0) {
+		i__1 = m - ll + 1;
+		slasr_("R", "V", "B", nru, &i__1, &work[1], &work[*n], &u_ref(
+			1, ll), ldu);
+	    }
+	    if (*ncc > 0) {
+		i__1 = m - ll + 1;
+		slasr_("L", "V", "B", &i__1, ncc, &work[1], &work[*n], &
+			c___ref(ll, 1), ldc);
+	    }
+	}
+    }
+
+/*     QR iteration finished, go back and check convergence */
+
+    goto L60;
+
+/*     All singular values converged, so make them positive */
+
+L160:
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	if (d__[i__] < 0.f) {
+	    d__[i__] = -d__[i__];
+
+/*           Change sign of singular vectors, if desired */
+
+	    if (*ncvt > 0) {
+		sscal_(ncvt, &c_b72, &vt_ref(i__, 1), ldvt);
+	    }
+	}
+/* L170: */
+    }
+
+/*     Sort the singular values into decreasing order (insertion sort on   
+       singular values, but only one transposition per singular vector) */
+
+    i__1 = *n - 1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*        Scan for smallest D(I) */
+
+	isub = 1;
+	smin = d__[1];
+	i__2 = *n + 1 - i__;
+	for (j = 2; j <= i__2; ++j) {
+	    if (d__[j] <= smin) {
+		isub = j;
+		smin = d__[j];
+	    }
+/* L180: */
+	}
+	if (isub != *n + 1 - i__) {
+
+/*           Swap singular values and vectors */
+
+	    d__[isub] = d__[*n + 1 - i__];
+	    d__[*n + 1 - i__] = smin;
+	    if (*ncvt > 0) {
+		sswap_(ncvt, &vt_ref(isub, 1), ldvt, &vt_ref(*n + 1 - i__, 1),
+			 ldvt);
+	    }
+	    if (*nru > 0) {
+		sswap_(nru, &u_ref(1, isub), &c__1, &u_ref(1, *n + 1 - i__), &
+			c__1);
+	    }
+	    if (*ncc > 0) {
+		sswap_(ncc, &c___ref(isub, 1), ldc, &c___ref(*n + 1 - i__, 1),
+			 ldc);
+	    }
+	}
+/* L190: */
+    }
+    goto L220;
+
+/*     Maximum number of iterations exceeded, failure to converge */
+
+L200:
+    *info = 0;
+    i__1 = *n - 1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	if (e[i__] != 0.f) {
+	    ++(*info);
+	}
+/* L210: */
+    }
+L220:
+    return 0;
+
+/*     End of SBDSQR */
+
+} /* sbdsqr_ */
+
+#undef vt_ref
+#undef u_ref
+#undef c___ref
+
+//==========================================
+
+/* Subroutine */ int sgeqrf_(integer *m, integer *n, real *a, integer *lda, 
+	real *tau, real *work, integer *lwork, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SGEQRF computes a QR factorization of a real M-by-N matrix A:   
+    A = Q * R.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the M-by-N matrix A.   
+            On exit, the elements on and above the diagonal of the array   
+            contain the min(M,N)-by-N upper trapezoidal matrix R (R is   
+            upper triangular if m >= n); the elements below the diagonal,   
+            with the array TAU, represent the orthogonal matrix Q as a   
+            product of min(m,n) elementary reflectors (see Further   
+            Details).   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    TAU     (output) REAL array, dimension (min(M,N))   
+            The scalar factors of the elementary reflectors (see Further   
+            Details).   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK.  LWORK >= max(1,N).   
+            For optimum performance LWORK >= N*NB, where NB is   
+            the optimal blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+    Further Details   
+    ===============   
+
+    The matrix Q is represented as a product of elementary reflectors   
+
+       Q = H(1) H(2) . . . H(k), where k = min(m,n).   
+
+    Each H(i) has the form   
+
+       H(i) = I - tau * v * v'   
+
+    where tau is a real scalar, and v is a real vector with   
+    v(1:i-1) = 0 and v(i) = 1; v(i+1:m) is stored on exit in A(i+1:m,i),   
+    and tau in TAU(i).   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    static integer c__3 = 3;
+    static integer c__2 = 2;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3, i__4;
+    /* Local variables */
+    static integer i__, k, nbmin, iinfo;
+    extern /* Subroutine */ int sgeqr2_(integer *, integer *, real *, integer 
+	    *, real *, real *, integer *);
+    static integer ib, nb, nx;
+    extern /* Subroutine */ int slarfb_(char *, char *, char *, char *, 
+	    integer *, integer *, integer *, real *, integer *, real *, 
+	    integer *, real *, integer *, real *, integer *), xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slarft_(char *, char *, integer *, integer *, 
+	    real *, integer *, real *, real *, integer *);
+    static integer ldwork, lwkopt;
+    static logical lquery;
+    static integer iws;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    nb = ilaenv_(&c__1, "SGEQRF", " ", m, n, &c_n1, &c_n1, (ftnlen)6, (ftnlen)
+	    1);
+    lwkopt = *n * nb;
+    work[1] = (real) lwkopt;
+    lquery = *lwork == -1;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -4;
+    } else if (*lwork < f2cmax(1,*n) && ! lquery) {
+	*info = -7;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SGEQRF", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    k = f2cmin(*m,*n);
+    if (k == 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    nbmin = 2;
+    nx = 0;
+    iws = *n;
+    if (nb > 1 && nb < k) {
+
+/*        Determine when to cross over from blocked to unblocked code.   
+
+   Computing MAX */
+	i__1 = 0, i__2 = ilaenv_(&c__3, "SGEQRF", " ", m, n, &c_n1, &c_n1, (
+		ftnlen)6, (ftnlen)1);
+	nx = f2cmax(i__1,i__2);
+	if (nx < k) {
+
+/*           Determine if workspace is large enough for blocked code. */
+
+	    ldwork = *n;
+	    iws = ldwork * nb;
+	    if (*lwork < iws) {
+
+/*              Not enough workspace to use optimal NB:  reduce NB and   
+                determine the minimum value of NB. */
+
+		nb = *lwork / ldwork;
+/* Computing MAX */
+		i__1 = 2, i__2 = ilaenv_(&c__2, "SGEQRF", " ", m, n, &c_n1, &
+			c_n1, (ftnlen)6, (ftnlen)1);
+		nbmin = f2cmax(i__1,i__2);
+	    }
+	}
+    }
+
+    if (nb >= nbmin && nb < k && nx < k) {
+
+/*        Use blocked code initially */
+
+	i__1 = k - nx;
+	i__2 = nb;
+	for (i__ = 1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+/* Computing MIN */
+	    i__3 = k - i__ + 1;
+	    ib = f2cmin(i__3,nb);
+
+/*           Compute the QR factorization of the current block   
+             A(i:m,i:i+ib-1) */
+
+	    i__3 = *m - i__ + 1;
+	    sgeqr2_(&i__3, &ib, &a_ref(i__, i__), lda, &tau[i__], &work[1], &
+		    iinfo);
+	    if (i__ + ib <= *n) {
+
+/*              Form the triangular factor of the block reflector   
+                H = H(i) H(i+1) . . . H(i+ib-1) */
+
+		i__3 = *m - i__ + 1;
+		slarft_("Forward", "Columnwise", &i__3, &ib, &a_ref(i__, i__),
+			 lda, &tau[i__], &work[1], &ldwork);
+
+/*              Apply H' to A(i:m,i+ib:n) from the left */
+
+		i__3 = *m - i__ + 1;
+		i__4 = *n - i__ - ib + 1;
+		slarfb_("Left", "Transpose", "Forward", "Columnwise", &i__3, &
+			i__4, &ib, &a_ref(i__, i__), lda, &work[1], &ldwork, &
+			a_ref(i__, i__ + ib), lda, &work[ib + 1], &ldwork);
+	    }
+/* L10: */
+	}
+    } else {
+	i__ = 1;
+    }
+
+/*     Use unblocked code to factor the last or only block. */
+
+    if (i__ <= k) {
+	i__2 = *m - i__ + 1;
+	i__1 = *n - i__ + 1;
+	sgeqr2_(&i__2, &i__1, &a_ref(i__, i__), lda, &tau[i__], &work[1], &
+		iinfo);
+    }
+
+    work[1] = (real) iws;
+    return 0;
+
+/*     End of SGEQRF */
+
+} /* sgeqrf_ */
+
+#undef a_ref
+
+
+//===============================================
+
+/* Subroutine */ int sorml2_(char *side, char *trans, integer *m, integer *n, 
+	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
+	 real *work, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SORML2 overwrites the general real m by n matrix C with   
+
+          Q * C  if SIDE = 'L' and TRANS = 'N', or   
+
+          Q'* C  if SIDE = 'L' and TRANS = 'T', or   
+
+          C * Q  if SIDE = 'R' and TRANS = 'N', or   
+
+          C * Q' if SIDE = 'R' and TRANS = 'T',   
+
+    where Q is a real orthogonal matrix defined as the product of k   
+    elementary reflectors   
+
+          Q = H(k) . . . H(2) H(1)   
+
+    as returned by SGELQF. Q is of order m if SIDE = 'L' and of order n   
+    if SIDE = 'R'.   
+
+    Arguments   
+    =========   
+
+    SIDE    (input) CHARACTER*1   
+            = 'L': apply Q or Q' from the Left   
+            = 'R': apply Q or Q' from the Right   
+
+    TRANS   (input) CHARACTER*1   
+            = 'N': apply Q  (No transpose)   
+            = 'T': apply Q' (Transpose)   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix C. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix C. N >= 0.   
+
+    K       (input) INTEGER   
+            The number of elementary reflectors whose product defines   
+            the matrix Q.   
+            If SIDE = 'L', M >= K >= 0;   
+            if SIDE = 'R', N >= K >= 0.   
+
+    A       (input) REAL array, dimension   
+                                 (LDA,M) if SIDE = 'L',   
+                                 (LDA,N) if SIDE = 'R'   
+            The i-th row must contain the vector which defines the   
+            elementary reflector H(i), for i = 1,2,...,k, as returned by   
+            SGELQF in the first k rows of its array argument A.   
+            A is modified by the routine but restored on exit.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A. LDA >= max(1,K).   
+
+    TAU     (input) REAL array, dimension (K)   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i), as returned by SGELQF.   
+
+    C       (input/output) REAL array, dimension (LDC,N)   
+            On entry, the m by n matrix C.   
+            On exit, C is overwritten by Q*C or Q'*C or C*Q' or C*Q.   
+
+    LDC     (input) INTEGER   
+            The leading dimension of the array C. LDC >= max(1,M).   
+
+    WORK    (workspace) REAL array, dimension   
+                                     (N) if SIDE = 'L',   
+                                     (M) if SIDE = 'R'   
+
+    INFO    (output) INTEGER   
+            = 0: successful exit   
+            < 0: if INFO = -i, the i-th argument had an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer a_dim1, a_offset, c_dim1, c_offset, i__1, i__2;
+    /* Local variables */
+    static logical left;
+    static integer i__;
+    extern logical lsame_(char *, char *);
+    extern /* Subroutine */ int slarf_(char *, integer *, integer *, real *, 
+	    integer *, real *, real *, integer *, real *);
+    static integer i1, i2, i3, ic, jc, mi, ni, nq;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    static logical notran;
+    static real aii;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1 * 1;
+    c__ -= c_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    left = lsame_(side, "L");
+    notran = lsame_(trans, "N");
+
+/*     NQ is the order of Q */
+
+    if (left) {
+	nq = *m;
+    } else {
+	nq = *n;
+    }
+    if (! left && ! lsame_(side, "R")) {
+	*info = -1;
+    } else if (! notran && ! lsame_(trans, "T")) {
+	*info = -2;
+    } else if (*m < 0) {
+	*info = -3;
+    } else if (*n < 0) {
+	*info = -4;
+    } else if (*k < 0 || *k > nq) {
+	*info = -5;
+    } else if (*lda < f2cmax(1,*k)) {
+	*info = -7;
+    } else if (*ldc < f2cmax(1,*m)) {
+	*info = -10;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORML2", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m == 0 || *n == 0 || *k == 0) {
+	return 0;
+    }
+
+    if (left && notran || ! left && ! notran) {
+	i1 = 1;
+	i2 = *k;
+	i3 = 1;
+    } else {
+	i1 = *k;
+	i2 = 1;
+	i3 = -1;
+    }
+
+    if (left) {
+	ni = *n;
+	jc = 1;
+    } else {
+	mi = *m;
+	ic = 1;
+    }
+
+    i__1 = i2;
+    i__2 = i3;
+    for (i__ = i1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+	if (left) {
+
+/*           H(i) is applied to C(i:m,1:n) */
+
+	    mi = *m - i__ + 1;
+	    ic = i__;
+	} else {
+
+/*           H(i) is applied to C(1:m,i:n) */
+
+	    ni = *n - i__ + 1;
+	    jc = i__;
+	}
+
+/*        Apply H(i) */
+
+	aii = a_ref(i__, i__);
+	a_ref(i__, i__) = 1.f;
+	slarf_(side, &mi, &ni, &a_ref(i__, i__), lda, &tau[i__], &c___ref(ic, 
+		jc), ldc, &work[1]);
+	a_ref(i__, i__) = aii;
+/* L10: */
+    }
+    return 0;
+
+/*     End of SORML2 */
+
+} /* sorml2_ */
+
+#undef c___ref
+#undef a_ref
+
+
+//===============================
+
+/* Subroutine */ int slabrd_(integer *m, integer *n, integer *nb, real *a, 
+	integer *lda, real *d__, real *e, real *tauq, real *taup, real *x, 
+	integer *ldx, real *y, integer *ldy)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SLABRD reduces the first NB rows and columns of a real general   
+    m by n matrix A to upper or lower bidiagonal form by an orthogonal   
+    transformation Q' * A * P, and returns the matrices X and Y which   
+    are needed to apply the transformation to the unreduced part of A.   
+
+    If m >= n, A is reduced to upper bidiagonal form; if m < n, to lower   
+    bidiagonal form.   
+
+    This is an auxiliary routine called by SGEBRD   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows in the matrix A.   
+
+    N       (input) INTEGER   
+            The number of columns in the matrix A.   
+
+    NB      (input) INTEGER   
+            The number of leading rows and columns of A to be reduced.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the m by n general matrix to be reduced.   
+            On exit, the first NB rows and columns of the matrix are   
+            overwritten; the rest of the array is unchanged.   
+            If m >= n, elements on and below the diagonal in the first NB   
+              columns, with the array TAUQ, represent the orthogonal   
+              matrix Q as a product of elementary reflectors; and   
+              elements above the diagonal in the first NB rows, with the   
+              array TAUP, represent the orthogonal matrix P as a product   
+              of elementary reflectors.   
+            If m < n, elements below the diagonal in the first NB   
+              columns, with the array TAUQ, represent the orthogonal   
+              matrix Q as a product of elementary reflectors, and   
+              elements on and above the diagonal in the first NB rows,   
+              with the array TAUP, represent the orthogonal matrix P as   
+              a product of elementary reflectors.   
+            See Further Details.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    D       (output) REAL array, dimension (NB)   
+            The diagonal elements of the first NB rows and columns of   
+            the reduced matrix.  D(i) = A(i,i).   
+
+    E       (output) REAL array, dimension (NB)   
+            The off-diagonal elements of the first NB rows and columns of   
+            the reduced matrix.   
+
+    TAUQ    (output) REAL array dimension (NB)   
+            The scalar factors of the elementary reflectors which   
+            represent the orthogonal matrix Q. See Further Details.   
+
+    TAUP    (output) REAL array, dimension (NB)   
+            The scalar factors of the elementary reflectors which   
+            represent the orthogonal matrix P. See Further Details.   
+
+    X       (output) REAL array, dimension (LDX,NB)   
+            The m-by-nb matrix X required to update the unreduced part   
+            of A.   
+
+    LDX     (input) INTEGER   
+            The leading dimension of the array X. LDX >= M.   
+
+    Y       (output) REAL array, dimension (LDY,NB)   
+            The n-by-nb matrix Y required to update the unreduced part   
+            of A.   
+
+    LDY     (output) INTEGER   
+            The leading dimension of the array Y. LDY >= N.   
+
+    Further Details   
+    ===============   
+
+    The matrices Q and P are represented as products of elementary   
+    reflectors:   
+
+       Q = H(1) H(2) . . . H(nb)  and  P = G(1) G(2) . . . G(nb)   
+
+    Each H(i) and G(i) has the form:   
+
+       H(i) = I - tauq * v * v'  and G(i) = I - taup * u * u'   
+
+    where tauq and taup are real scalars, and v and u are real vectors.   
+
+    If m >= n, v(1:i-1) = 0, v(i) = 1, and v(i:m) is stored on exit in   
+    A(i:m,i); u(1:i) = 0, u(i+1) = 1, and u(i+1:n) is stored on exit in   
+    A(i,i+1:n); tauq is stored in TAUQ(i) and taup in TAUP(i).   
+
+    If m < n, v(1:i) = 0, v(i+1) = 1, and v(i+1:m) is stored on exit in   
+    A(i+2:m,i); u(1:i-1) = 0, u(i) = 1, and u(i:n) is stored on exit in   
+    A(i,i+1:n); tauq is stored in TAUQ(i) and taup in TAUP(i).   
+
+    The elements of the vectors v and u together form the m-by-nb matrix   
+    V and the nb-by-n matrix U' which are needed, with X and Y, to apply   
+    the transformation to the unreduced part of the matrix, using a block   
+    update of the form:  A := A - V*Y' - X*U'.   
+
+    The contents of A on exit are illustrated by the following examples   
+    with nb = 2:   
+
+    m = 6 and n = 5 (m > n):          m = 5 and n = 6 (m < n):   
+
+      (  1   1   u1  u1  u1 )           (  1   u1  u1  u1  u1  u1 )   
+      (  v1  1   1   u2  u2 )           (  1   1   u2  u2  u2  u2 )   
+      (  v1  v2  a   a   a  )           (  v1  1   a   a   a   a  )   
+      (  v1  v2  a   a   a  )           (  v1  v2  a   a   a   a  )   
+      (  v1  v2  a   a   a  )           (  v1  v2  a   a   a   a  )   
+      (  v1  v2  a   a   a  )   
+
+    where a denotes an element of the original matrix which is unchanged,   
+    vi denotes an element of the vector defining H(i), and ui an element   
+    of the vector defining G(i).   
+
+    =====================================================================   
+
+
+       Quick return if possible   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static real c_b4 = -1.f;
+    static real c_b5 = 1.f;
+    static integer c__1 = 1;
+    static real c_b16 = 0.f;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, x_dim1, x_offset, y_dim1, y_offset, i__1, i__2, 
+	    i__3;
+    /* Local variables */
+    static integer i__;
+    extern /* Subroutine */ int sscal_(integer *, real *, real *, integer *), 
+	    sgemv_(char *, integer *, integer *, real *, real *, integer *, 
+	    real *, integer *, real *, real *, integer *), slarfg_(
+	    integer *, real *, real *, integer *, real *);
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define x_ref(a_1,a_2) x[(a_2)*x_dim1 + a_1]
+#define y_ref(a_1,a_2) y[(a_2)*y_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --d__;
+    --e;
+    --tauq;
+    --taup;
+    x_dim1 = *ldx;
+    x_offset = 1 + x_dim1 * 1;
+    x -= x_offset;
+    y_dim1 = *ldy;
+    y_offset = 1 + y_dim1 * 1;
+    y -= y_offset;
+
+    /* Function Body */
+    if (*m <= 0 || *n <= 0) {
+	return 0;
+    }
+
+    if (*m >= *n) {
+
+/*        Reduce to upper bidiagonal form */
+
+	i__1 = *nb;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*           Update A(i:m,i) */
+
+	    i__2 = *m - i__ + 1;
+	    i__3 = i__ - 1;
+	    sgemv_("No transpose", &i__2, &i__3, &c_b4, &a_ref(i__, 1), lda, &
+		    y_ref(i__, 1), ldy, &c_b5, &a_ref(i__, i__), &c__1);
+	    i__2 = *m - i__ + 1;
+	    i__3 = i__ - 1;
+	    sgemv_("No transpose", &i__2, &i__3, &c_b4, &x_ref(i__, 1), ldx, &
+		    a_ref(1, i__), &c__1, &c_b5, &a_ref(i__, i__), &c__1);
+
+/*           Generate reflection Q(i) to annihilate A(i+1:m,i)   
+
+   Computing MIN */
+	    i__2 = i__ + 1;
+	    i__3 = *m - i__ + 1;
+	    slarfg_(&i__3, &a_ref(i__, i__), &a_ref(f2cmin(i__2,*m), i__), &c__1,
+		     &tauq[i__]);
+	    d__[i__] = a_ref(i__, i__);
+	    if (i__ < *n) {
+		a_ref(i__, i__) = 1.f;
+
+/*              Compute Y(i+1:n,i) */
+
+		i__2 = *m - i__ + 1;
+		i__3 = *n - i__;
+		sgemv_("Transpose", &i__2, &i__3, &c_b5, &a_ref(i__, i__ + 1),
+			 lda, &a_ref(i__, i__), &c__1, &c_b16, &y_ref(i__ + 1,
+			 i__), &c__1);
+		i__2 = *m - i__ + 1;
+		i__3 = i__ - 1;
+		sgemv_("Transpose", &i__2, &i__3, &c_b5, &a_ref(i__, 1), lda, 
+			&a_ref(i__, i__), &c__1, &c_b16, &y_ref(1, i__), &
+			c__1);
+		i__2 = *n - i__;
+		i__3 = i__ - 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b4, &y_ref(i__ + 1, 1)
+			, ldy, &y_ref(1, i__), &c__1, &c_b5, &y_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *m - i__ + 1;
+		i__3 = i__ - 1;
+		sgemv_("Transpose", &i__2, &i__3, &c_b5, &x_ref(i__, 1), ldx, 
+			&a_ref(i__, i__), &c__1, &c_b16, &y_ref(1, i__), &
+			c__1);
+		i__2 = i__ - 1;
+		i__3 = *n - i__;
+		sgemv_("Transpose", &i__2, &i__3, &c_b4, &a_ref(1, i__ + 1), 
+			lda, &y_ref(1, i__), &c__1, &c_b5, &y_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *n - i__;
+		sscal_(&i__2, &tauq[i__], &y_ref(i__ + 1, i__), &c__1);
+
+/*              Update A(i,i+1:n) */
+
+		i__2 = *n - i__;
+		sgemv_("No transpose", &i__2, &i__, &c_b4, &y_ref(i__ + 1, 1),
+			 ldy, &a_ref(i__, 1), lda, &c_b5, &a_ref(i__, i__ + 1)
+			, lda);
+		i__2 = i__ - 1;
+		i__3 = *n - i__;
+		sgemv_("Transpose", &i__2, &i__3, &c_b4, &a_ref(1, i__ + 1), 
+			lda, &x_ref(i__, 1), ldx, &c_b5, &a_ref(i__, i__ + 1),
+			 lda);
+
+/*              Generate reflection P(i) to annihilate A(i,i+2:n)   
+
+   Computing MIN */
+		i__2 = i__ + 2;
+		i__3 = *n - i__;
+		slarfg_(&i__3, &a_ref(i__, i__ + 1), &a_ref(i__, f2cmin(i__2,*n))
+			, lda, &taup[i__]);
+		e[i__] = a_ref(i__, i__ + 1);
+		a_ref(i__, i__ + 1) = 1.f;
+
+/*              Compute X(i+1:m,i) */
+
+		i__2 = *m - i__;
+		i__3 = *n - i__;
+		sgemv_("No transpose", &i__2, &i__3, &c_b5, &a_ref(i__ + 1, 
+			i__ + 1), lda, &a_ref(i__, i__ + 1), lda, &c_b16, &
+			x_ref(i__ + 1, i__), &c__1);
+		i__2 = *n - i__;
+		sgemv_("Transpose", &i__2, &i__, &c_b5, &y_ref(i__ + 1, 1), 
+			ldy, &a_ref(i__, i__ + 1), lda, &c_b16, &x_ref(1, i__)
+			, &c__1);
+		i__2 = *m - i__;
+		sgemv_("No transpose", &i__2, &i__, &c_b4, &a_ref(i__ + 1, 1),
+			 lda, &x_ref(1, i__), &c__1, &c_b5, &x_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = i__ - 1;
+		i__3 = *n - i__;
+		sgemv_("No transpose", &i__2, &i__3, &c_b5, &a_ref(1, i__ + 1)
+			, lda, &a_ref(i__, i__ + 1), lda, &c_b16, &x_ref(1, 
+			i__), &c__1);
+		i__2 = *m - i__;
+		i__3 = i__ - 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b4, &x_ref(i__ + 1, 1)
+			, ldx, &x_ref(1, i__), &c__1, &c_b5, &x_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *m - i__;
+		sscal_(&i__2, &taup[i__], &x_ref(i__ + 1, i__), &c__1);
+	    }
+/* L10: */
+	}
+    } else {
+
+/*        Reduce to lower bidiagonal form */
+
+	i__1 = *nb;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*           Update A(i,i:n) */
+
+	    i__2 = *n - i__ + 1;
+	    i__3 = i__ - 1;
+	    sgemv_("No transpose", &i__2, &i__3, &c_b4, &y_ref(i__, 1), ldy, &
+		    a_ref(i__, 1), lda, &c_b5, &a_ref(i__, i__), lda);
+	    i__2 = i__ - 1;
+	    i__3 = *n - i__ + 1;
+	    sgemv_("Transpose", &i__2, &i__3, &c_b4, &a_ref(1, i__), lda, &
+		    x_ref(i__, 1), ldx, &c_b5, &a_ref(i__, i__), lda);
+
+/*           Generate reflection P(i) to annihilate A(i,i+1:n)   
+
+   Computing MIN */
+	    i__2 = i__ + 1;
+	    i__3 = *n - i__ + 1;
+	    slarfg_(&i__3, &a_ref(i__, i__), &a_ref(i__, f2cmin(i__2,*n)), lda, &
+		    taup[i__]);
+	    d__[i__] = a_ref(i__, i__);
+	    if (i__ < *m) {
+		a_ref(i__, i__) = 1.f;
+
+/*              Compute X(i+1:m,i) */
+
+		i__2 = *m - i__;
+		i__3 = *n - i__ + 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b5, &a_ref(i__ + 1, 
+			i__), lda, &a_ref(i__, i__), lda, &c_b16, &x_ref(i__ 
+			+ 1, i__), &c__1);
+		i__2 = *n - i__ + 1;
+		i__3 = i__ - 1;
+		sgemv_("Transpose", &i__2, &i__3, &c_b5, &y_ref(i__, 1), ldy, 
+			&a_ref(i__, i__), lda, &c_b16, &x_ref(1, i__), &c__1);
+		i__2 = *m - i__;
+		i__3 = i__ - 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b4, &a_ref(i__ + 1, 1)
+			, lda, &x_ref(1, i__), &c__1, &c_b5, &x_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = i__ - 1;
+		i__3 = *n - i__ + 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b5, &a_ref(1, i__), 
+			lda, &a_ref(i__, i__), lda, &c_b16, &x_ref(1, i__), &
+			c__1);
+		i__2 = *m - i__;
+		i__3 = i__ - 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b4, &x_ref(i__ + 1, 1)
+			, ldx, &x_ref(1, i__), &c__1, &c_b5, &x_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *m - i__;
+		sscal_(&i__2, &taup[i__], &x_ref(i__ + 1, i__), &c__1);
+
+/*              Update A(i+1:m,i) */
+
+		i__2 = *m - i__;
+		i__3 = i__ - 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b4, &a_ref(i__ + 1, 1)
+			, lda, &y_ref(i__, 1), ldy, &c_b5, &a_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *m - i__;
+		sgemv_("No transpose", &i__2, &i__, &c_b4, &x_ref(i__ + 1, 1),
+			 ldx, &a_ref(1, i__), &c__1, &c_b5, &a_ref(i__ + 1, 
+			i__), &c__1);
+
+/*              Generate reflection Q(i) to annihilate A(i+2:m,i)   
+
+   Computing MIN */
+		i__2 = i__ + 2;
+		i__3 = *m - i__;
+		slarfg_(&i__3, &a_ref(i__ + 1, i__), &a_ref(f2cmin(i__2,*m), i__)
+			, &c__1, &tauq[i__]);
+		e[i__] = a_ref(i__ + 1, i__);
+		a_ref(i__ + 1, i__) = 1.f;
+
+/*              Compute Y(i+1:n,i) */
+
+		i__2 = *m - i__;
+		i__3 = *n - i__;
+		sgemv_("Transpose", &i__2, &i__3, &c_b5, &a_ref(i__ + 1, i__ 
+			+ 1), lda, &a_ref(i__ + 1, i__), &c__1, &c_b16, &
+			y_ref(i__ + 1, i__), &c__1);
+		i__2 = *m - i__;
+		i__3 = i__ - 1;
+		sgemv_("Transpose", &i__2, &i__3, &c_b5, &a_ref(i__ + 1, 1), 
+			lda, &a_ref(i__ + 1, i__), &c__1, &c_b16, &y_ref(1, 
+			i__), &c__1);
+		i__2 = *n - i__;
+		i__3 = i__ - 1;
+		sgemv_("No transpose", &i__2, &i__3, &c_b4, &y_ref(i__ + 1, 1)
+			, ldy, &y_ref(1, i__), &c__1, &c_b5, &y_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *m - i__;
+		sgemv_("Transpose", &i__2, &i__, &c_b5, &x_ref(i__ + 1, 1), 
+			ldx, &a_ref(i__ + 1, i__), &c__1, &c_b16, &y_ref(1, 
+			i__), &c__1);
+		i__2 = *n - i__;
+		sgemv_("Transpose", &i__, &i__2, &c_b4, &a_ref(1, i__ + 1), 
+			lda, &y_ref(1, i__), &c__1, &c_b5, &y_ref(i__ + 1, 
+			i__), &c__1);
+		i__2 = *n - i__;
+		sscal_(&i__2, &tauq[i__], &y_ref(i__ + 1, i__), &c__1);
+	    }
+/* L20: */
+	}
+    }
+    return 0;
+
+/*     End of SLABRD */
+
+} /* slabrd_ */
+
+#undef y_ref
+#undef x_ref
+#undef a_ref
+
+/* Subroutine */ int sgeqr2_(integer *m, integer *n, real *a, integer *lda, 
+	real *tau, real *work, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SGEQR2 computes a QR factorization of a real m by n matrix A:   
+    A = Q * R.   
+
+    Arguments   
+    =========   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix A.  M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix A.  N >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the m by n matrix A.   
+            On exit, the elements on and above the diagonal of the array   
+            contain the min(m,n) by n upper trapezoidal matrix R (R is   
+            upper triangular if m >= n); the elements below the diagonal,   
+            with the array TAU, represent the orthogonal matrix Q as a   
+            product of elementary reflectors (see Further Details).   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.  LDA >= max(1,M).   
+
+    TAU     (output) REAL array, dimension (min(M,N))   
+            The scalar factors of the elementary reflectors (see Further   
+            Details).   
+
+    WORK    (workspace) REAL array, dimension (N)   
+
+    INFO    (output) INTEGER   
+            = 0: successful exit   
+            < 0: if INFO = -i, the i-th argument had an illegal value   
+
+    Further Details   
+    ===============   
+
+    The matrix Q is represented as a product of elementary reflectors   
+
+       Q = H(1) H(2) . . . H(k), where k = min(m,n).   
+
+    Each H(i) has the form   
+
+       H(i) = I - tau * v * v'   
+
+    where tau is a real scalar, and v is a real vector with   
+    v(1:i-1) = 0 and v(i) = 1; v(i+1:m) is stored on exit in A(i+1:m,i),   
+    and tau in TAU(i).   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3;
+    /* Local variables */
+    static integer i__, k;
+    extern /* Subroutine */ int slarf_(char *, integer *, integer *, real *, 
+	    integer *, real *, real *, integer *, real *), xerbla_(
+	    char *, integer *), slarfg_(integer *, real *, real *, 
+	    integer *, real *);
+    static real aii;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < 0) {
+	*info = -2;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -4;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SGEQR2", &i__1);
+	return 0;
+    }
+
+    k = f2cmin(*m,*n);
+
+    i__1 = k;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+
+/*        Generate elementary reflector H(i) to annihilate A(i+1:m,i)   
+
+   Computing MIN */
+	i__2 = i__ + 1;
+	i__3 = *m - i__ + 1;
+	slarfg_(&i__3, &a_ref(i__, i__), &a_ref(f2cmin(i__2,*m), i__), &c__1, &
+		tau[i__]);
+	if (i__ < *n) {
+
+/*           Apply H(i) to A(i:m,i+1:n) from the left */
+
+	    aii = a_ref(i__, i__);
+	    a_ref(i__, i__) = 1.f;
+	    i__2 = *m - i__ + 1;
+	    i__3 = *n - i__;
+	    slarf_("Left", &i__2, &i__3, &a_ref(i__, i__), &c__1, &tau[i__], &
+		    a_ref(i__, i__ + 1), lda, &work[1]);
+	    a_ref(i__, i__) = aii;
+	}
+/* L10: */
+    }
+    return 0;
+
+/*     End of SGEQR2 */
+
+} /* sgeqr2_ */
+
+#undef a_ref
+
+
+//================================
+
+/* Subroutine */ int sorm2r_(char *side, char *trans, integer *m, integer *n, 
+	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
+	 real *work, integer *info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       February 29, 1992   
+
+
+    Purpose   
+    =======   
+
+    SORM2R overwrites the general real m by n matrix C with   
+
+          Q * C  if SIDE = 'L' and TRANS = 'N', or   
+
+          Q'* C  if SIDE = 'L' and TRANS = 'T', or   
+
+          C * Q  if SIDE = 'R' and TRANS = 'N', or   
+
+          C * Q' if SIDE = 'R' and TRANS = 'T',   
+
+    where Q is a real orthogonal matrix defined as the product of k   
+    elementary reflectors   
+
+          Q = H(1) H(2) . . . H(k)   
+
+    as returned by SGEQRF. Q is of order m if SIDE = 'L' and of order n   
+    if SIDE = 'R'.   
+
+    Arguments   
+    =========   
+
+    SIDE    (input) CHARACTER*1   
+            = 'L': apply Q or Q' from the Left   
+            = 'R': apply Q or Q' from the Right   
+
+    TRANS   (input) CHARACTER*1   
+            = 'N': apply Q  (No transpose)   
+            = 'T': apply Q' (Transpose)   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix C. M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix C. N >= 0.   
+
+    K       (input) INTEGER   
+            The number of elementary reflectors whose product defines   
+            the matrix Q.   
+            If SIDE = 'L', M >= K >= 0;   
+            if SIDE = 'R', N >= K >= 0.   
+
+    A       (input) REAL array, dimension (LDA,K)   
+            The i-th column must contain the vector which defines the   
+            elementary reflector H(i), for i = 1,2,...,k, as returned by   
+            SGEQRF in the first k columns of its array argument A.   
+            A is modified by the routine but restored on exit.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A.   
+            If SIDE = 'L', LDA >= max(1,M);   
+            if SIDE = 'R', LDA >= max(1,N).   
+
+    TAU     (input) REAL array, dimension (K)   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i), as returned by SGEQRF.   
+
+    C       (input/output) REAL array, dimension (LDC,N)   
+            On entry, the m by n matrix C.   
+            On exit, C is overwritten by Q*C or Q'*C or C*Q' or C*Q.   
+
+    LDC     (input) INTEGER   
+            The leading dimension of the array C. LDC >= max(1,M).   
+
+    WORK    (workspace) REAL array, dimension   
+                                     (N) if SIDE = 'L',   
+                                     (M) if SIDE = 'R'   
+
+    INFO    (output) INTEGER   
+            = 0: successful exit   
+            < 0: if INFO = -i, the i-th argument had an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, c_dim1, c_offset, i__1, i__2;
+    /* Local variables */
+    static logical left;
+    static integer i__;
+    extern logical lsame_(char *, char *);
+    extern /* Subroutine */ int slarf_(char *, integer *, integer *, real *, 
+	    integer *, real *, real *, integer *, real *);
+    static integer i1, i2, i3, ic, jc, mi, ni, nq;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    static logical notran;
+    static real aii;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+#define c___ref(a_1,a_2) c__[(a_2)*c_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1 * 1;
+    c__ -= c_offset;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    left = lsame_(side, "L");
+    notran = lsame_(trans, "N");
+
+/*     NQ is the order of Q */
+
+    if (left) {
+	nq = *m;
+    } else {
+	nq = *n;
+    }
+    if (! left && ! lsame_(side, "R")) {
+	*info = -1;
+    } else if (! notran && ! lsame_(trans, "T")) {
+	*info = -2;
+    } else if (*m < 0) {
+	*info = -3;
+    } else if (*n < 0) {
+	*info = -4;
+    } else if (*k < 0 || *k > nq) {
+	*info = -5;
+    } else if (*lda < f2cmax(1,nq)) {
+	*info = -7;
+    } else if (*ldc < f2cmax(1,*m)) {
+	*info = -10;
+    }
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORM2R", &i__1);
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m == 0 || *n == 0 || *k == 0) {
+	return 0;
+    }
+
+    if (left && ! notran || ! left && notran) {
+	i1 = 1;
+	i2 = *k;
+	i3 = 1;
+    } else {
+	i1 = *k;
+	i2 = 1;
+	i3 = -1;
+    }
+
+    if (left) {
+	ni = *n;
+	jc = 1;
+    } else {
+	mi = *m;
+	ic = 1;
+    }
+
+    i__1 = i2;
+    i__2 = i3;
+    for (i__ = i1; i__2 < 0 ? i__ >= i__1 : i__ <= i__1; i__ += i__2) {
+	if (left) {
+
+/*           H(i) is applied to C(i:m,1:n) */
+
+	    mi = *m - i__ + 1;
+	    ic = i__;
+	} else {
+
+/*           H(i) is applied to C(1:m,i:n) */
+
+	    ni = *n - i__ + 1;
+	    jc = i__;
+	}
+
+/*        Apply H(i) */
+
+	aii = a_ref(i__, i__);
+	a_ref(i__, i__) = 1.f;
+	slarf_(side, &mi, &ni, &a_ref(i__, i__), &c__1, &tau[i__], &c___ref(
+		ic, jc), ldc, &work[1]);
+	a_ref(i__, i__) = aii;
+/* L10: */
+    }
+    return 0;
+
+/*     End of SORM2R */
+
+} /* sorm2r_ */
+
+#undef c___ref
+#undef a_ref
+
+//============================
+
+/* Subroutine */ int sorgbr_(char *vect, integer *m, integer *n, integer *k, 
+	real *a, integer *lda, real *tau, real *work, integer *lwork, integer 
+	*info)
+{
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       June 30, 1999   
+
+
+    Purpose   
+    =======   
+
+    SORGBR generates one of the real orthogonal matrices Q or P**T   
+    determined by SGEBRD when reducing a real matrix A to bidiagonal   
+    form: A = Q * B * P**T.  Q and P**T are defined as products of   
+    elementary reflectors H(i) or G(i) respectively.   
+
+    If VECT = 'Q', A is assumed to have been an M-by-K matrix, and Q   
+    is of order M:   
+    if m >= k, Q = H(1) H(2) . . . H(k) and SORGBR returns the first n   
+    columns of Q, where m >= n >= k;   
+    if m < k, Q = H(1) H(2) . . . H(m-1) and SORGBR returns Q as an   
+    M-by-M matrix.   
+
+    If VECT = 'P', A is assumed to have been a K-by-N matrix, and P**T   
+    is of order N:   
+    if k < n, P**T = G(k) . . . G(2) G(1) and SORGBR returns the first m   
+    rows of P**T, where n >= m >= k;   
+    if k >= n, P**T = G(n-1) . . . G(2) G(1) and SORGBR returns P**T as   
+    an N-by-N matrix.   
+
+    Arguments   
+    =========   
+
+    VECT    (input) CHARACTER*1   
+            Specifies whether the matrix Q or the matrix P**T is   
+            required, as defined in the transformation applied by SGEBRD:   
+            = 'Q':  generate Q;   
+            = 'P':  generate P**T.   
+
+    M       (input) INTEGER   
+            The number of rows of the matrix Q or P**T to be returned.   
+            M >= 0.   
+
+    N       (input) INTEGER   
+            The number of columns of the matrix Q or P**T to be returned.   
+            N >= 0.   
+            If VECT = 'Q', M >= N >= min(M,K);   
+            if VECT = 'P', N >= M >= min(N,K).   
+
+    K       (input) INTEGER   
+            If VECT = 'Q', the number of columns in the original M-by-K   
+            matrix reduced by SGEBRD.   
+            If VECT = 'P', the number of rows in the original K-by-N   
+            matrix reduced by SGEBRD.   
+            K >= 0.   
+
+    A       (input/output) REAL array, dimension (LDA,N)   
+            On entry, the vectors which define the elementary reflectors,   
+            as returned by SGEBRD.   
+            On exit, the M-by-N matrix Q or P**T.   
+
+    LDA     (input) INTEGER   
+            The leading dimension of the array A. LDA >= max(1,M).   
+
+    TAU     (input) REAL array, dimension   
+                                  (min(M,K)) if VECT = 'Q'   
+                                  (min(N,K)) if VECT = 'P'   
+            TAU(i) must contain the scalar factor of the elementary   
+            reflector H(i) or G(i), which determines Q or P**T, as   
+            returned by SGEBRD in its array argument TAUQ or TAUP.   
+
+    WORK    (workspace/output) REAL array, dimension (LWORK)   
+            On exit, if INFO = 0, WORK(1) returns the optimal LWORK.   
+
+    LWORK   (input) INTEGER   
+            The dimension of the array WORK. LWORK >= max(1,min(M,N)).   
+            For optimum performance LWORK >= min(M,N)*NB, where NB   
+            is the optimal blocksize.   
+
+            If LWORK = -1, then a workspace query is assumed; the routine   
+            only calculates the optimal size of the WORK array, returns   
+            this value as the first entry of the WORK array, and no error   
+            message related to LWORK is issued by XERBLA.   
+
+    INFO    (output) INTEGER   
+            = 0:  successful exit   
+            < 0:  if INFO = -i, the i-th argument had an illegal value   
+
+    =====================================================================   
+
+
+       Test the input arguments   
+
+       Parameter adjustments */
+    /* Table of constant values */
+    static integer c__1 = 1;
+    static integer c_n1 = -1;
+    
+    /* System generated locals */
+    integer a_dim1, a_offset, i__1, i__2, i__3;
+    /* Local variables */
+    static integer i__, j;
+    extern logical lsame_(char *, char *);
+    static integer iinfo;
+    static logical wantq;
+    static integer nb, mn;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int sorglq_(integer *, integer *, integer *, real 
+	    *, integer *, real *, real *, integer *, integer *), sorgqr_(
+	    integer *, integer *, integer *, real *, integer *, real *, real *
+	    , integer *, integer *);
+    static integer lwkopt;
+    static logical lquery;
+#define a_ref(a_1,a_2) a[(a_2)*a_dim1 + a_1]
+
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1 * 1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    /* Function Body */
+    *info = 0;
+    wantq = lsame_(vect, "Q");
+    mn = f2cmin(*m,*n);
+    lquery = *lwork == -1;
+    if (! wantq && ! lsame_(vect, "P")) {
+	*info = -1;
+    } else if (*m < 0) {
+	*info = -2;
+    } else if (*n < 0 || wantq && (*n > *m || *n < f2cmin(*m,*k)) || ! wantq && (
+	    *m > *n || *m < f2cmin(*n,*k))) {
+	*info = -3;
+    } else if (*k < 0) {
+	*info = -4;
+    } else if (*lda < f2cmax(1,*m)) {
+	*info = -6;
+    } else if (*lwork < f2cmax(1,mn) && ! lquery) {
+	*info = -9;
+    }
+
+    if (*info == 0) {
+	if (wantq) {
+	    nb = ilaenv_(&c__1, "SORGQR", " ", m, n, k, &c_n1, (ftnlen)6, (
+		    ftnlen)1);
+	} else {
+	    nb = ilaenv_(&c__1, "SORGLQ", " ", m, n, k, &c_n1, (ftnlen)6, (
+		    ftnlen)1);
+	}
+	lwkopt = f2cmax(1,mn) * nb;
+	work[1] = (real) lwkopt;
+    }
+
+    if (*info != 0) {
+	i__1 = -(*info);
+	xerbla_("SORGBR", &i__1);
+	return 0;
+    } else if (lquery) {
+	return 0;
+    }
+
+/*     Quick return if possible */
+
+    if (*m == 0 || *n == 0) {
+	work[1] = 1.f;
+	return 0;
+    }
+
+    if (wantq) {
+
+/*        Form Q, determined by a call to SGEBRD to reduce an m-by-k   
+          matrix */
+
+	if (*m >= *k) {
+
+/*           If m >= k, assume m >= n >= k */
+
+	    sorgqr_(m, n, k, &a[a_offset], lda, &tau[1], &work[1], lwork, &
+		    iinfo);
+
+	} else {
+
+/*           If m < k, assume m = n   
+
+             Shift the vectors which define the elementary reflectors one   
+             column to the right, and set the first row and column of Q   
+             to those of the unit matrix */
+
+	    for (j = *m; j >= 2; --j) {
+		a_ref(1, j) = 0.f;
+		i__1 = *m;
+		for (i__ = j + 1; i__ <= i__1; ++i__) {
+		    a_ref(i__, j) = a_ref(i__, j - 1);
+/* L10: */
+		}
+/* L20: */
+	    }
+	    a_ref(1, 1) = 1.f;
+	    i__1 = *m;
+	    for (i__ = 2; i__ <= i__1; ++i__) {
+		a_ref(i__, 1) = 0.f;
+/* L30: */
+	    }
+	    if (*m > 1) {
+
+/*              Form Q(2:m,2:m) */
+
+		i__1 = *m - 1;
+		i__2 = *m - 1;
+		i__3 = *m - 1;
+		sorgqr_(&i__1, &i__2, &i__3, &a_ref(2, 2), lda, &tau[1], &
+			work[1], lwork, &iinfo);
+	    }
+	}
+    } else {
+
+/*        Form P', determined by a call to SGEBRD to reduce a k-by-n   
+          matrix */
+
+	if (*k < *n) {
+
+/*           If k < n, assume k <= m <= n */
+
+	    sorglq_(m, n, k, &a[a_offset], lda, &tau[1], &work[1], lwork, &
+		    iinfo);
+
+	} else {
+
+/*           If k >= n, assume m = n   
+
+             Shift the vectors which define the elementary reflectors one   
+             row downward, and set the first row and column of P' to   
+             those of the unit matrix */
+
+	    a_ref(1, 1) = 1.f;
+	    i__1 = *n;
+	    for (i__ = 2; i__ <= i__1; ++i__) {
+		a_ref(i__, 1) = 0.f;
+/* L40: */
+	    }
+	    i__1 = *n;
+	    for (j = 2; j <= i__1; ++j) {
+		for (i__ = j - 1; i__ >= 2; --i__) {
+		    a_ref(i__, j) = a_ref(i__ - 1, j);
+/* L50: */
+		}
+		a_ref(1, j) = 0.f;
+/* L60: */
+	    }
+	    if (*n > 1) {
+
+/*              Form P'(2:n,2:n) */
+
+		i__1 = *n - 1;
+		i__2 = *n - 1;
+		i__3 = *n - 1;
+		sorglq_(&i__1, &i__2, &i__3, &a_ref(2, 2), lda, &tau[1], &
+			work[1], lwork, &iinfo);
+	    }
+	}
+    }
+    work[1] = (real) lwkopt;
+    return 0;
+
+/*     End of SORGBR */
+
+} /* sorgbr_ */
+
+#undef a_ref
+
+//===================================
+/* Table of constant values */
+/*
+static integer c__1 = 1;
+static integer c__2 = 2;
+static integer c__0 = 0;
+*/
+
+/* Subroutine */ int slasq1_(integer *n, real *d__, real *e, real *work, 
+	integer *info)
+{
+    /* System generated locals */
+    integer i__1, i__2;
+    real r__1, r__2, r__3;
+
+    /* Builtin functions */
+    //double sqrt(doublereal);
+
+    /* Local variables */
+    extern /* Subroutine */ int slas2_(real *, real *, real *, real *, real *)
+	    ;
+    static integer i__;
+    static real scale;
+    static integer iinfo;
+    static real sigmn, sigmx;
+    extern /* Subroutine */ int scopy_(integer *, real *, integer *, real *, 
+	    integer *), slasq2_(integer *, real *, integer *);
+    extern doublereal slamch_(char *);
+    static real safmin;
+    extern /* Subroutine */ int xerbla_(char *, integer *), slascl_(
+	    char *, integer *, integer *, real *, real *, integer *, integer *
+	    , real *, integer *, integer *), slasrt_(char *, integer *
+	    , real *, integer *);
+    static real eps;
+
+
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLASQ1 computes the singular values of a real N-by-N bidiagonal   
+    matrix with diagonal D and off-diagonal E. The singular values   
+    are computed to high relative accuracy, in the absence of   
+    denormalization, underflow and overflow. The algorithm was first   
+    presented in   
+
+    "Accurate singular values and differential qd algorithms" by K. V.   
+    Fernando and B. N. Parlett, Numer. Math., Vol-67, No. 2, pp. 191-230,   
+    1994,   
+
+    and the present implementation is described in "An implementation of   
+    the dqds Algorithm (Positive Case)", LAPACK Working Note.   
+
+    Arguments   
+    =========   
+
+    N     (input) INTEGER   
+          The number of rows and columns in the matrix. N >= 0.   
+
+    D     (input/output) REAL array, dimension (N)   
+          On entry, D contains the diagonal elements of the   
+          bidiagonal matrix whose SVD is desired. On normal exit,   
+          D contains the singular values in decreasing order.   
+
+    E     (input/output) REAL array, dimension (N)   
+          On entry, elements E(1:N-1) contain the off-diagonal elements   
+          of the bidiagonal matrix whose SVD is desired.   
+          On exit, E is overwritten.   
+
+    WORK  (workspace) REAL array, dimension (4*N)   
+
+    INFO  (output) INTEGER   
+          = 0: successful exit   
+          < 0: if INFO = -i, the i-th argument had an illegal value   
+          > 0: the algorithm failed   
+               = 1, a split was marked by a positive value in E   
+               = 2, current block of Z not diagonalized after 30*N   
+                    iterations (in inner while loop)   
+               = 3, termination criterion of outer while loop not met   
+                    (program created more than N unreduced blocks)   
+
+    =====================================================================   
+
+
+       Parameter adjustments */
+    --work;
+    --e;
+    --d__;
+
+    /* Function Body */
+    *info = 0;
+    if (*n < 0) {
+	*info = -2;
+	i__1 = -(*info);
+	xerbla_("SLASQ1", &i__1);
+	return 0;
+    } else if (*n == 0) {
+	return 0;
+    } else if (*n == 1) {
+	d__[1] = dabs(d__[1]);
+	return 0;
+    } else if (*n == 2) {
+	slas2_(&d__[1], &e[1], &d__[2], &sigmn, &sigmx);
+	d__[1] = sigmx;
+	d__[2] = sigmn;
+	return 0;
+    }
+
+/*     Estimate the largest singular value. */
+
+    sigmx = 0.f;
+    i__1 = *n - 1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+	d__[i__] = (r__1 = d__[i__], dabs(r__1));
+/* Computing MAX */
+	r__2 = sigmx, r__3 = (r__1 = e[i__], dabs(r__1));
+	sigmx = df2cmax(r__2,r__3);
+/* L10: */
+    }
+    d__[*n] = (r__1 = d__[*n], dabs(r__1));
+
+/*     Early return if SIGMX is zero (matrix is already diagonal). */
+
+    if (sigmx == 0.f) {
+	slasrt_("D", n, &d__[1], &iinfo);
+	return 0;
+    }
+
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+/* Computing MAX */
+	r__1 = sigmx, r__2 = d__[i__];
+	sigmx = df2cmax(r__1,r__2);
+/* L20: */
+    }
+
+/*     Copy D and E into WORK (in the Z format) and scale (squaring the   
+       input data makes scaling by a power of the radix pointless). */
+
+    eps = slamch_("Precision");
+    safmin = slamch_("Safe minimum");
+    scale = sqrt(eps / safmin);
+    scopy_(n, &d__[1], &c__1, &work[1], &c__2);
+    i__1 = *n - 1;
+    scopy_(&i__1, &e[1], &c__1, &work[2], &c__2);
+    i__1 = (*n << 1) - 1;
+    i__2 = (*n << 1) - 1;
+    slascl_("G", &c__0, &c__0, &sigmx, &scale, &i__1, &c__1, &work[1], &i__2, 
+	    &iinfo);
+
+/*     Compute the q's and e's. */
+
+    i__1 = (*n << 1) - 1;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+/* Computing 2nd power */
+	r__1 = work[i__];
+	work[i__] = r__1 * r__1;
+/* L30: */
+    }
+    work[*n * 2] = 0.f;
+
+    slasq2_(n, &work[1], info);
+
+    if (*info == 0) {
+	i__1 = *n;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    d__[i__] = sqrt(work[i__]);
+/* L40: */
+	}
+	slascl_("G", &c__0, &c__0, &scale, &sigmx, n, &c__1, &d__[1], n, &
+		iinfo);
+    }
+
+    return 0;
+
+/*     End of SLASQ1 */
+
+} /* slasq1_ */
+
+//===============================================
+
+/* Table of constant values */
+
+static integer c__10 = 10;
+static integer c__3 = 3;
+static integer c__4 = 4;
+static integer c__11 = 11;
+
+/* Subroutine */ int slasq2_(integer *n, real *z__, integer *info)
+{
+    /* System generated locals */
+    integer i__1, i__2, i__3;
+    real r__1, r__2;
+
+    /* Builtin functions */
+    //double sqrt(doublereal);
+
+    /* Local variables */
+    static logical ieee;
+    static integer nbig;
+    static real dmin__, emin, emax;
+    static integer ndiv, iter;
+    static real qmin, temp, qmax, zmax;
+    static integer splt;
+    static real d__, e;
+    static integer k;
+    static real s, t;
+    static integer nfail;
+    static real desig, trace, sigma;
+    static integer iinfo, i0, i4, n0;
+    extern /* Subroutine */ int slasq3_(integer *, integer *, real *, integer 
+	    *, real *, real *, real *, real *, integer *, integer *, integer *
+	    , logical *);
+    static integer pp;
+    extern doublereal slamch_(char *);
+    static integer iwhila, iwhilb;
+    static real oldemn, safmin;
+    extern /* Subroutine */ int xerbla_(char *, integer *);
+    extern integer ilaenv_(integer *, char *, char *, integer *, integer *, 
+	    integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int slasrt_(char *, integer *, real *, integer *);
+    static real eps, tol;
+    static integer ipn4;
+    static real tol2;
+
+
+/*  -- LAPACK routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLASQ2 computes all the eigenvalues of the symmetric positive   
+    definite tridiagonal matrix associated with the qd array Z to high   
+    relative accuracy are computed to high relative accuracy, in the   
+    absence of denormalization, underflow and overflow.   
+
+    To see the relation of Z to the tridiagonal matrix, let L be a   
+    unit lower bidiagonal matrix with subdiagonals Z(2,4,6,,..) and   
+    let U be an upper bidiagonal matrix with 1's above and diagonal   
+    Z(1,3,5,,..). The tridiagonal is L*U or, if you prefer, the   
+    symmetric tridiagonal to which it is similar.   
+
+    Note : SLASQ2 defines a logical variable, IEEE, which is true   
+    on machines which follow ieee-754 floating-point standard in their   
+    handling of infinities and NaNs, and false otherwise. This variable   
+    is passed to SLASQ3.   
+
+    Arguments   
+    =========   
+
+    N     (input) INTEGER   
+          The number of rows and columns in the matrix. N >= 0.   
+
+    Z     (workspace) REAL array, dimension ( 4*N )   
+          On entry Z holds the qd array. On exit, entries 1 to N hold   
+          the eigenvalues in decreasing order, Z( 2*N+1 ) holds the   
+          trace, and Z( 2*N+2 ) holds the sum of the eigenvalues. If   
+          N > 2, then Z( 2*N+3 ) holds the iteration count, Z( 2*N+4 )   
+          holds NDIVS/NIN^2, and Z( 2*N+5 ) holds the percentage of   
+          shifts that failed.   
+
+    INFO  (output) INTEGER   
+          = 0: successful exit   
+          < 0: if the i-th argument is a scalar and had an illegal   
+               value, then INFO = -i, if the i-th argument is an   
+               array and the j-entry had an illegal value, then   
+               INFO = -(i*100+j)   
+          > 0: the algorithm failed   
+                = 1, a split was marked by a positive value in E   
+                = 2, current block of Z not diagonalized after 30*N   
+                     iterations (in inner while loop)   
+                = 3, termination criterion of outer while loop not met   
+                     (program created more than N unreduced blocks)   
+
+    Further Details   
+    ===============   
+    Local Variables: I0:N0 defines a current unreduced segment of Z.   
+    The shifts are accumulated in SIGMA. Iteration count is in ITER.   
+    Ping-pong is controlled by PP (alternates between 0 and 1).   
+
+    =====================================================================   
+
+
+       Test the input arguments.   
+       (in case SLASQ2 is not called by SLASQ1)   
+
+       Parameter adjustments */
+    --z__;
+
+    /* Function Body */
+    *info = 0;
+    eps = slamch_("Precision");
+    safmin = slamch_("Safe minimum");
+    tol = eps * 100.f;
+/* Computing 2nd power */
+    r__1 = tol;
+    tol2 = r__1 * r__1;
+
+    if (*n < 0) {
+	*info = -1;
+	xerbla_("SLASQ2", &c__1);
+	return 0;
+    } else if (*n == 0) {
+	return 0;
+    } else if (*n == 1) {
+
+/*        1-by-1 case. */
+
+	if (z__[1] < 0.f) {
+	    *info = -201;
+	    xerbla_("SLASQ2", &c__2);
+	}
+	return 0;
+    } else if (*n == 2) {
+
+/*        2-by-2 case. */
+
+	if (z__[2] < 0.f || z__[3] < 0.f) {
+	    *info = -2;
+	    xerbla_("SLASQ2", &c__2);
+	    return 0;
+	} else if (z__[3] > z__[1]) {
+	    d__ = z__[3];
+	    z__[3] = z__[1];
+	    z__[1] = d__;
+	}
+	z__[5] = z__[1] + z__[2] + z__[3];
+	if (z__[2] > z__[3] * tol2) {
+	    t = (z__[1] - z__[3] + z__[2]) * .5f;
+	    s = z__[3] * (z__[2] / t);
+	    if (s <= t) {
+		s = z__[3] * (z__[2] / (t * (sqrt(s / t + 1.f) + 1.f)));
+	    } else {
+		s = z__[3] * (z__[2] / (t + sqrt(t) * sqrt(t + s)));
+	    }
+	    t = z__[1] + (s + z__[2]);
+	    z__[3] *= z__[1] / t;
+	    z__[1] = t;
+	}
+	z__[2] = z__[3];
+	z__[6] = z__[2] + z__[1];
+	return 0;
+    }
+
+/*     Check for negative data and compute sums of q's and e's. */
+
+    z__[*n * 2] = 0.f;
+    emin = z__[2];
+    qmax = 0.f;
+    zmax = 0.f;
+    d__ = 0.f;
+    e = 0.f;
+
+    i__1 = *n - 1 << 1;
+    for (k = 1; k <= i__1; k += 2) {
+	if (z__[k] < 0.f) {
+	    *info = -(k + 200);
+	    xerbla_("SLASQ2", &c__2);
+	    return 0;
+	} else if (z__[k + 1] < 0.f) {
+	    *info = -(k + 201);
+	    xerbla_("SLASQ2", &c__2);
+	    return 0;
+	}
+	d__ += z__[k];
+	e += z__[k + 1];
+/* Computing MAX */
+	r__1 = qmax, r__2 = z__[k];
+	qmax = df2cmax(r__1,r__2);
+/* Computing MIN */
+	r__1 = emin, r__2 = z__[k + 1];
+	emin = df2cmin(r__1,r__2);
+/* Computing MAX */
+	r__1 = f2cmax(qmax,zmax), r__2 = z__[k + 1];
+	zmax = df2cmax(r__1,r__2);
+/* L10: */
+    }
+    if (z__[(*n << 1) - 1] < 0.f) {
+	*info = -((*n << 1) + 199);
+	xerbla_("SLASQ2", &c__2);
+	return 0;
+    }
+    d__ += z__[(*n << 1) - 1];
+/* Computing MAX */
+    r__1 = qmax, r__2 = z__[(*n << 1) - 1];
+    qmax = df2cmax(r__1,r__2);
+    zmax = df2cmax(qmax,zmax);
+
+/*     Check for diagonality. */
+
+    if (e == 0.f) {
+	i__1 = *n;
+	for (k = 2; k <= i__1; ++k) {
+	    z__[k] = z__[(k << 1) - 1];
+/* L20: */
+	}
+	slasrt_("D", n, &z__[1], &iinfo);
+	z__[(*n << 1) - 1] = d__;
+	return 0;
+    }
+
+    trace = d__ + e;
+
+/*     Check for zero data. */
+
+    if (trace == 0.f) {
+	z__[(*n << 1) - 1] = 0.f;
+	return 0;
+    }
+
+/*     Check whether the machine is IEEE conformable. */
+
+    ieee = ilaenv_(&c__10, "SLASQ2", "N", &c__1, &c__2, &c__3, &c__4, (ftnlen)
+	    6, (ftnlen)1) == 1 && ilaenv_(&c__11, "SLASQ2", "N", &c__1, &c__2,
+	     &c__3, &c__4, (ftnlen)6, (ftnlen)1) == 1;
+
+/*     Rearrange data for locality: Z=(q1,qq1,e1,ee1,q2,qq2,e2,ee2,...). */
+
+    for (k = *n << 1; k >= 2; k += -2) {
+	z__[k * 2] = 0.f;
+	z__[(k << 1) - 1] = z__[k];
+	z__[(k << 1) - 2] = 0.f;
+	z__[(k << 1) - 3] = z__[k - 1];
+/* L30: */
+    }
+
+    i0 = 1;
+    n0 = *n;
+
+/*     Reverse the qd-array, if warranted. */
+
+    if (z__[(i0 << 2) - 3] * 1.5f < z__[(n0 << 2) - 3]) {
+	ipn4 = i0 + n0 << 2;
+	i__1 = i0 + n0 - 1 << 1;
+	for (i4 = i0 << 2; i4 <= i__1; i4 += 4) {
+	    temp = z__[i4 - 3];
+	    z__[i4 - 3] = z__[ipn4 - i4 - 3];
+	    z__[ipn4 - i4 - 3] = temp;
+	    temp = z__[i4 - 1];
+	    z__[i4 - 1] = z__[ipn4 - i4 - 5];
+	    z__[ipn4 - i4 - 5] = temp;
+/* L40: */
+	}
+    }
+
+/*     Initial split checking via dqd and Li's test. */
+
+    pp = 0;
+
+    for (k = 1; k <= 2; ++k) {
+
+	d__ = z__[(n0 << 2) + pp - 3];
+	i__1 = (i0 << 2) + pp;
+	for (i4 = (n0 - 1 << 2) + pp; i4 >= i__1; i4 += -4) {
+	    if (z__[i4 - 1] <= tol2 * d__) {
+		z__[i4 - 1] = 0.f;
+		d__ = z__[i4 - 3];
+	    } else {
+		d__ = z__[i4 - 3] * (d__ / (d__ + z__[i4 - 1]));
+	    }
+/* L50: */
+	}
+
+/*        dqd maps Z to ZZ plus Li's test. */
+
+	emin = z__[(i0 << 2) + pp + 1];
+	d__ = z__[(i0 << 2) + pp - 3];
+	i__1 = (n0 - 1 << 2) + pp;
+	for (i4 = (i0 << 2) + pp; i4 <= i__1; i4 += 4) {
+	    z__[i4 - (pp << 1) - 2] = d__ + z__[i4 - 1];
+	    if (z__[i4 - 1] <= tol2 * d__) {
+		z__[i4 - 1] = 0.f;
+		z__[i4 - (pp << 1) - 2] = d__;
+		z__[i4 - (pp << 1)] = 0.f;
+		d__ = z__[i4 + 1];
+	    } else if (safmin * z__[i4 + 1] < z__[i4 - (pp << 1) - 2] && 
+		    safmin * z__[i4 - (pp << 1) - 2] < z__[i4 + 1]) {
+		temp = z__[i4 + 1] / z__[i4 - (pp << 1) - 2];
+		z__[i4 - (pp << 1)] = z__[i4 - 1] * temp;
+		d__ *= temp;
+	    } else {
+		z__[i4 - (pp << 1)] = z__[i4 + 1] * (z__[i4 - 1] / z__[i4 - (
+			pp << 1) - 2]);
+		d__ = z__[i4 + 1] * (d__ / z__[i4 - (pp << 1) - 2]);
+	    }
+/* Computing MIN */
+	    r__1 = emin, r__2 = z__[i4 - (pp << 1)];
+	    emin = df2cmin(r__1,r__2);
+/* L60: */
+	}
+	z__[(n0 << 2) - pp - 2] = d__;
+
+/*        Now find qmax. */
+
+	qmax = z__[(i0 << 2) - pp - 2];
+	i__1 = (n0 << 2) - pp - 2;
+	for (i4 = (i0 << 2) - pp + 2; i4 <= i__1; i4 += 4) {
+/* Computing MAX */
+	    r__1 = qmax, r__2 = z__[i4];
+	    qmax = df2cmax(r__1,r__2);
+/* L70: */
+	}
+
+/*        Prepare for the next iteration on K. */
+
+	pp = 1 - pp;
+/* L80: */
+    }
+
+    iter = 2;
+    nfail = 0;
+    ndiv = n0 - i0 << 1;
+
+    i__1 = *n + 1;
+    for (iwhila = 1; iwhila <= i__1; ++iwhila) {
+	if (n0 < 1) {
+	    goto L150;
+	}
+
+/*        While array unfinished do   
+
+          E(N0) holds the value of SIGMA when submatrix in I0:N0   
+          splits from the rest of the array, but is negated. */
+
+	desig = 0.f;
+	if (n0 == *n) {
+	    sigma = 0.f;
+	} else {
+	    sigma = -z__[(n0 << 2) - 1];
+	}
+	if (sigma < 0.f) {
+	    *info = 1;
+	    return 0;
+	}
+
+/*        Find last unreduced submatrix's top index I0, find QMAX and   
+          EMIN. Find Gershgorin-type bound if Q's much greater than E's. */
+
+	emax = 0.f;
+	if (n0 > i0) {
+	    emin = (r__1 = z__[(n0 << 2) - 5], dabs(r__1));
+	} else {
+	    emin = 0.f;
+	}
+	qmin = z__[(n0 << 2) - 3];
+	qmax = qmin;
+	for (i4 = n0 << 2; i4 >= 8; i4 += -4) {
+	    if (z__[i4 - 5] <= 0.f) {
+		goto L100;
+	    }
+	    if (qmin >= emax * 4.f) {
+/* Computing MIN */
+		r__1 = qmin, r__2 = z__[i4 - 3];
+		qmin = df2cmin(r__1,r__2);
+/* Computing MAX */
+		r__1 = emax, r__2 = z__[i4 - 5];
+		emax = df2cmax(r__1,r__2);
+	    }
+/* Computing MAX */
+	    r__1 = qmax, r__2 = z__[i4 - 7] + z__[i4 - 5];
+	    qmax = df2cmax(r__1,r__2);
+/* Computing MIN */
+	    r__1 = emin, r__2 = z__[i4 - 5];
+	    emin = df2cmin(r__1,r__2);
+/* L90: */
+	}
+	i4 = 4;
+
+L100:
+	i0 = i4 / 4;
+
+/*        Store EMIN for passing to SLASQ3. */
+
+	z__[(n0 << 2) - 1] = emin;
+
+/*        Put -(initial shift) into DMIN.   
+
+   Computing MAX */
+	r__1 = 0.f, r__2 = qmin - sqrt(qmin) * 2.f * sqrt(emax);
+	dmin__ = -df2cmax(r__1,r__2);
+
+/*        Now I0:N0 is unreduced. PP = 0 for ping, PP = 1 for pong. */
+
+	pp = 0;
+
+	nbig = (n0 - i0 + 1) * 30;
+	i__2 = nbig;
+	for (iwhilb = 1; iwhilb <= i__2; ++iwhilb) {
+	    if (i0 > n0) {
+		goto L130;
+	    }
+
+/*           While submatrix unfinished take a good dqds step. */
+
+	    slasq3_(&i0, &n0, &z__[1], &pp, &dmin__, &sigma, &desig, &qmax, &
+		    nfail, &iter, &ndiv, &ieee);
+
+	    pp = 1 - pp;
+
+/*           When EMIN is very small check for splits. */
+
+	    if (pp == 0 && n0 - i0 >= 3) {
+		if (z__[n0 * 4] <= tol2 * qmax || z__[(n0 << 2) - 1] <= tol2 *
+			 sigma) {
+		    splt = i0 - 1;
+		    qmax = z__[(i0 << 2) - 3];
+		    emin = z__[(i0 << 2) - 1];
+		    oldemn = z__[i0 * 4];
+		    i__3 = n0 - 3 << 2;
+		    for (i4 = i0 << 2; i4 <= i__3; i4 += 4) {
+			if (z__[i4] <= tol2 * z__[i4 - 3] || z__[i4 - 1] <= 
+				tol2 * sigma) {
+			    z__[i4 - 1] = -sigma;
+			    splt = i4 / 4;
+			    qmax = 0.f;
+			    emin = z__[i4 + 3];
+			    oldemn = z__[i4 + 4];
+			} else {
+/* Computing MAX */
+			    r__1 = qmax, r__2 = z__[i4 + 1];
+			    qmax = df2cmax(r__1,r__2);
+/* Computing MIN */
+			    r__1 = emin, r__2 = z__[i4 - 1];
+			    emin = df2cmin(r__1,r__2);
+/* Computing MIN */
+			    r__1 = oldemn, r__2 = z__[i4];
+			    oldemn = df2cmin(r__1,r__2);
+			}
+/* L110: */
+		    }
+		    z__[(n0 << 2) - 1] = emin;
+		    z__[n0 * 4] = oldemn;
+		    i0 = splt + 1;
+		}
+	    }
+
+/* L120: */
+	}
+
+	*info = 2;
+	return 0;
+
+/*        end IWHILB */
+
+L130:
+
+/* L140: */
+	;
+    }
+
+    *info = 3;
+    return 0;
+
+/*     end IWHILA */
+
+L150:
+
+/*     Move q's to the front. */
+
+    i__1 = *n;
+    for (k = 2; k <= i__1; ++k) {
+	z__[k] = z__[(k << 2) - 3];
+/* L160: */
+    }
+
+/*     Sort and compute sum of eigenvalues. */
+
+    slasrt_("D", n, &z__[1], &iinfo);
+
+    e = 0.f;
+    for (k = *n; k >= 1; --k) {
+	e += z__[k];
+/* L170: */
+    }
+
+/*     Store trace, sum(eigenvalues) and information on performance. */
+
+    z__[(*n << 1) + 1] = trace;
+    z__[(*n << 1) + 2] = e;
+    z__[(*n << 1) + 3] = (real) iter;
+/* Computing 2nd power */
+    i__1 = *n;
+    z__[(*n << 1) + 4] = (real) ndiv / (real) (i__1 * i__1);
+    z__[(*n << 1) + 5] = nfail * 100.f / (real) iter;
+    return 0;
+
+/*     End of SLASQ2 */
+
+} /* slasq2_ */
+
+//=====================================
+
+/* Subroutine */ int slasq3_(integer *i0, integer *n0, real *z__, integer *pp,
+	 real *dmin__, real *sigma, real *desig, real *qmax, integer *nfail, 
+	integer *iter, integer *ndiv, logical *ieee)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       May 17, 2000   
+
+
+    Purpose   
+    =======   
+
+    SLASQ3 checks for deflation, computes a shift (TAU) and calls dqds.   
+    In case of failure it changes shifts, and tries again until output   
+    is positive.   
+
+    Arguments   
+    =========   
+
+    I0     (input) INTEGER   
+           First index.   
+
+    N0     (input) INTEGER   
+           Last index.   
+
+    Z      (input) REAL array, dimension ( 4*N )   
+           Z holds the qd array.   
+
+    PP     (input) INTEGER   
+           PP=0 for ping, PP=1 for pong.   
+
+    DMIN   (output) REAL   
+           Minimum value of d.   
+
+    SIGMA  (output) REAL   
+           Sum of shifts used in current segment.   
+
+    DESIG  (input/output) REAL   
+           Lower order part of SIGMA   
+
+    QMAX   (input) REAL   
+           Maximum value of q.   
+
+    NFAIL  (output) INTEGER   
+           Number of times shift was too big.   
+
+    ITER   (output) INTEGER   
+           Number of iterations.   
+
+    NDIV   (output) INTEGER   
+           Number of divisions.   
+
+    TTYPE  (output) INTEGER   
+           Shift type.   
+
+    IEEE   (input) LOGICAL   
+           Flag for IEEE or non IEEE arithmetic (passed to SLASQ5).   
+
+    =====================================================================   
+
+       Parameter adjustments */
+    /* Initialized data */
+    static integer ttype = 0;
+    static real dmin1 = 0.f;
+    static real dmin2 = 0.f;
+    static real dn = 0.f;
+    static real dn1 = 0.f;
+    static real dn2 = 0.f;
+    static real tau = 0.f;
+    /* System generated locals */
+    integer i__1;
+    real r__1, r__2;
+    /* Builtin functions */
+    //double sqrt(doublereal);
+    /* Local variables */
+    static real temp, s, t;
+    static integer j4;
+    extern /* Subroutine */ int slasq4_(integer *, integer *, real *, integer 
+	    *, integer *, real *, real *, real *, real *, real *, real *, 
+	    real *, integer *), slasq5_(integer *, integer *, real *, integer 
+	    *, real *, real *, real *, real *, real *, real *, real *, 
+	    logical *), slasq6_(integer *, integer *, real *, integer *, real 
+	    *, real *, real *, real *, real *, real *);
+    static integer nn;
+    extern doublereal slamch_(char *);
+    static real safmin, eps, tol;
+    static integer n0in, ipn4;
+    static real tol2;
+
+    --z__;
+
+    /* Function Body */
+
+    n0in = *n0;
+    eps = slamch_("Precision");
+    safmin = slamch_("Safe minimum");
+    tol = eps * 100.f;
+/* Computing 2nd power */
+    r__1 = tol;
+    tol2 = r__1 * r__1;
+
+/*     Check for deflation. */
+
+L10:
+
+    if (*n0 < *i0) {
+	return 0;
+    }
+    if (*n0 == *i0) {
+	goto L20;
+    }
+    nn = (*n0 << 2) + *pp;
+    if (*n0 == *i0 + 1) {
+	goto L40;
+    }
+
+/*     Check whether E(N0-1) is negligible, 1 eigenvalue. */
+
+    if (z__[nn - 5] > tol2 * (*sigma + z__[nn - 3]) && z__[nn - (*pp << 1) - 
+	    4] > tol2 * z__[nn - 7]) {
+	goto L30;
+    }
+
+L20:
+
+    z__[(*n0 << 2) - 3] = z__[(*n0 << 2) + *pp - 3] + *sigma;
+    --(*n0);
+    goto L10;
+
+/*     Check  whether E(N0-2) is negligible, 2 eigenvalues. */
+
+L30:
+
+    if (z__[nn - 9] > tol2 * *sigma && z__[nn - (*pp << 1) - 8] > tol2 * z__[
+	    nn - 11]) {
+	goto L50;
+    }
+
+L40:
+
+    if (z__[nn - 3] > z__[nn - 7]) {
+	s = z__[nn - 3];
+	z__[nn - 3] = z__[nn - 7];
+	z__[nn - 7] = s;
+    }
+    if (z__[nn - 5] > z__[nn - 3] * tol2) {
+	t = (z__[nn - 7] - z__[nn - 3] + z__[nn - 5]) * .5f;
+	s = z__[nn - 3] * (z__[nn - 5] / t);
+	if (s <= t) {
+	    s = z__[nn - 3] * (z__[nn - 5] / (t * (sqrt(s / t + 1.f) + 1.f)));
+	} else {
+	    s = z__[nn - 3] * (z__[nn - 5] / (t + sqrt(t) * sqrt(t + s)));
+	}
+	t = z__[nn - 7] + (s + z__[nn - 5]);
+	z__[nn - 3] *= z__[nn - 7] / t;
+	z__[nn - 7] = t;
+    }
+    z__[(*n0 << 2) - 7] = z__[nn - 7] + *sigma;
+    z__[(*n0 << 2) - 3] = z__[nn - 3] + *sigma;
+    *n0 += -2;
+    goto L10;
+
+L50:
+
+/*     Reverse the qd-array, if warranted. */
+
+    if (*dmin__ <= 0.f || *n0 < n0in) {
+	if (z__[(*i0 << 2) + *pp - 3] * 1.5f < z__[(*n0 << 2) + *pp - 3]) {
+	    ipn4 = *i0 + *n0 << 2;
+	    i__1 = *i0 + *n0 - 1 << 1;
+	    for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+		temp = z__[j4 - 3];
+		z__[j4 - 3] = z__[ipn4 - j4 - 3];
+		z__[ipn4 - j4 - 3] = temp;
+		temp = z__[j4 - 2];
+		z__[j4 - 2] = z__[ipn4 - j4 - 2];
+		z__[ipn4 - j4 - 2] = temp;
+		temp = z__[j4 - 1];
+		z__[j4 - 1] = z__[ipn4 - j4 - 5];
+		z__[ipn4 - j4 - 5] = temp;
+		temp = z__[j4];
+		z__[j4] = z__[ipn4 - j4 - 4];
+		z__[ipn4 - j4 - 4] = temp;
+/* L60: */
+	    }
+	    if (*n0 - *i0 <= 4) {
+		z__[(*n0 << 2) + *pp - 1] = z__[(*i0 << 2) + *pp - 1];
+		z__[(*n0 << 2) - *pp] = z__[(*i0 << 2) - *pp];
+	    }
+/* Computing MIN */
+	    r__1 = dmin2, r__2 = z__[(*n0 << 2) + *pp - 1];
+	    dmin2 = df2cmin(r__1,r__2);
+/* Computing MIN */
+	    r__1 = z__[(*n0 << 2) + *pp - 1], r__2 = z__[(*i0 << 2) + *pp - 1]
+		    , r__1 = f2cmin(r__1,r__2), r__2 = z__[(*i0 << 2) + *pp + 3];
+	    z__[(*n0 << 2) + *pp - 1] = df2cmin(r__1,r__2);
+/* Computing MIN */
+	    r__1 = z__[(*n0 << 2) - *pp], r__2 = z__[(*i0 << 2) - *pp], r__1 =
+		     f2cmin(r__1,r__2), r__2 = z__[(*i0 << 2) - *pp + 4];
+	    z__[(*n0 << 2) - *pp] = df2cmin(r__1,r__2);
+/* Computing MAX */
+	    r__1 = *qmax, r__2 = z__[(*i0 << 2) + *pp - 3], r__1 = f2cmax(r__1,
+		    r__2), r__2 = z__[(*i0 << 2) + *pp + 1];
+	    *qmax = df2cmax(r__1,r__2);
+	    *dmin__ = 0.f;
+	}
+    }
+
+/* L70:   
+
+   Computing MIN */
+    r__1 = z__[(*n0 << 2) + *pp - 1], r__2 = z__[(*n0 << 2) + *pp - 9], r__1 =
+	     f2cmin(r__1,r__2), r__2 = dmin2 + z__[(*n0 << 2) - *pp];
+    if (*dmin__ < 0.f || safmin * *qmax < df2cmin(r__1,r__2)) {
+
+/*        Choose a shift. */
+
+	slasq4_(i0, n0, &z__[1], pp, &n0in, dmin__, &dmin1, &dmin2, &dn, &dn1,
+		 &dn2, &tau, &ttype);
+
+/*        Call dqds until DMIN > 0. */
+
+L80:
+
+	slasq5_(i0, n0, &z__[1], pp, &tau, dmin__, &dmin1, &dmin2, &dn, &dn1, 
+		&dn2, ieee);
+
+	*ndiv += *n0 - *i0 + 2;
+	++(*iter);
+
+/*        Check status. */
+
+	if (*dmin__ >= 0.f && dmin1 > 0.f) {
+
+/*           Success. */
+
+	    goto L100;
+
+	} else if (*dmin__ < 0.f && dmin1 > 0.f && z__[(*n0 - 1 << 2) - *pp] <
+		 tol * (*sigma + dn1) && dabs(dn) < tol * *sigma) {
+
+/*           Convergence hidden by negative DN. */
+
+	    z__[(*n0 - 1 << 2) - *pp + 2] = 0.f;
+	    *dmin__ = 0.f;
+	    goto L100;
+	} else if (*dmin__ < 0.f) {
+
+/*           TAU too big. Select new TAU and try again. */
+
+	    ++(*nfail);
+	    if (ttype < -22) {
+
+/*              Failed twice. Play it safe. */
+
+		tau = 0.f;
+	    } else if (dmin1 > 0.f) {
+
+/*              Late failure. Gives excellent shift. */
+
+		tau = (tau + *dmin__) * (1.f - eps * 2.f);
+		ttype += -11;
+	    } else {
+
+/*              Early failure. Divide by 4. */
+
+		tau *= .25f;
+		ttype += -12;
+	    }
+	    goto L80;
+	} else if (*dmin__ != *dmin__) {
+
+/*           NaN. */
+
+	    tau = 0.f;
+	    goto L80;
+	} else {
+
+/*           Possible underflow. Play it safe. */
+
+	    goto L90;
+	}
+    }
+
+/*     Risk of underflow. */
+
+L90:
+    slasq6_(i0, n0, &z__[1], pp, dmin__, &dmin1, &dmin2, &dn, &dn1, &dn2);
+    *ndiv += *n0 - *i0 + 2;
+    ++(*iter);
+    tau = 0.f;
+
+L100:
+    if (tau < *sigma) {
+	*desig += tau;
+	t = *sigma + *desig;
+	*desig -= t - *sigma;
+    } else {
+	t = *sigma + tau;
+	*desig = *sigma - (t - tau) + *desig;
+    }
+    *sigma = t;
+
+    return 0;
+
+/*     End of SLASQ3 */
+
+} /* slasq3_ */
+
+//===================================
+
+/* Subroutine */ int slasq4_(integer *i0, integer *n0, real *z__, integer *pp,
+	 integer *n0in, real *dmin__, real *dmin1, real *dmin2, real *dn, 
+	real *dn1, real *dn2, real *tau, integer *ttype)
+{
+    /* Initialized data */
+
+    static real g = 0.f;
+
+    /* System generated locals */
+    integer i__1;
+    real r__1, r__2;
+
+    /* Builtin functions */
+    //double sqrt(doublereal);
+
+    /* Local variables */
+    static real s, a2, b1, b2;
+    static integer i4, nn, np;
+    static real gam, gap1, gap2;
+
+
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLASQ4 computes an approximation TAU to the smallest eigenvalue   
+    using values of d from the previous transform.   
+
+    I0    (input) INTEGER   
+          First index.   
+
+    N0    (input) INTEGER   
+          Last index.   
+
+    Z     (input) REAL array, dimension ( 4*N )   
+          Z holds the qd array.   
+
+    PP    (input) INTEGER   
+          PP=0 for ping, PP=1 for pong.   
+
+    NOIN  (input) INTEGER   
+          The value of N0 at start of EIGTEST.   
+
+    DMIN  (input) REAL   
+          Minimum value of d.   
+
+    DMIN1 (input) REAL   
+          Minimum value of d, excluding D( N0 ).   
+
+    DMIN2 (input) REAL   
+          Minimum value of d, excluding D( N0 ) and D( N0-1 ).   
+
+    DN    (input) REAL   
+          d(N)   
+
+    DN1   (input) REAL   
+          d(N-1)   
+
+    DN2   (input) REAL   
+          d(N-2)   
+
+    TAU   (output) REAL   
+          This is the shift.   
+
+    TTYPE (output) INTEGER   
+          Shift type.   
+
+    Further Details   
+    ===============   
+    CNST1 = 9/16   
+
+    =====================================================================   
+
+       Parameter adjustments */
+    --z__;
+
+    /* Function Body   
+
+       A negative DMIN forces the shift to take that absolute value   
+       TTYPE records the type of shift. */
+
+    if (*dmin__ <= 0.f) {
+	*tau = -(*dmin__);
+	*ttype = -1;
+	return 0;
+    }
+
+    nn = (*n0 << 2) + *pp;
+    if (*n0in == *n0) {
+
+/*        No eigenvalues deflated. */
+
+	if (*dmin__ == *dn || *dmin__ == *dn1) {
+
+	    b1 = sqrt(z__[nn - 3]) * sqrt(z__[nn - 5]);
+	    b2 = sqrt(z__[nn - 7]) * sqrt(z__[nn - 9]);
+	    a2 = z__[nn - 7] + z__[nn - 5];
+
+/*           Cases 2 and 3. */
+
+	    if (*dmin__ == *dn && *dmin1 == *dn1) {
+		gap2 = *dmin2 - a2 - *dmin2 * .25f;
+		if (gap2 > 0.f && gap2 > b2) {
+		    gap1 = a2 - *dn - b2 / gap2 * b2;
+		} else {
+		    gap1 = a2 - *dn - (b1 + b2);
+		}
+		if (gap1 > 0.f && gap1 > b1) {
+/* Computing MAX */
+		    r__1 = *dn - b1 / gap1 * b1, r__2 = *dmin__ * .5f;
+		    s = df2cmax(r__1,r__2);
+		    *ttype = -2;
+		} else {
+		    s = 0.f;
+		    if (*dn > b1) {
+			s = *dn - b1;
+		    }
+		    if (a2 > b1 + b2) {
+/* Computing MIN */
+			r__1 = s, r__2 = a2 - (b1 + b2);
+			s = df2cmin(r__1,r__2);
+		    }
+/* Computing MAX */
+		    r__1 = s, r__2 = *dmin__ * .333f;
+		    s = df2cmax(r__1,r__2);
+		    *ttype = -3;
+		}
+	    } else {
+
+/*              Case 4. */
+
+		*ttype = -4;
+		s = *dmin__ * .25f;
+		if (*dmin__ == *dn) {
+		    gam = *dn;
+		    a2 = 0.f;
+		    if (z__[nn - 5] > z__[nn - 7]) {
+			return 0;
+		    }
+		    b2 = z__[nn - 5] / z__[nn - 7];
+		    np = nn - 9;
+		} else {
+		    np = nn - (*pp << 1);
+		    b2 = z__[np - 2];
+		    gam = *dn1;
+		    if (z__[np - 4] > z__[np - 2]) {
+			return 0;
+		    }
+		    a2 = z__[np - 4] / z__[np - 2];
+		    if (z__[nn - 9] > z__[nn - 11]) {
+			return 0;
+		    }
+		    b2 = z__[nn - 9] / z__[nn - 11];
+		    np = nn - 13;
+		}
+
+/*              Approximate contribution to norm squared from I < NN-1. */
+
+		a2 += b2;
+		i__1 = (*i0 << 2) - 1 + *pp;
+		for (i4 = np; i4 >= i__1; i4 += -4) {
+		    if (b2 == 0.f) {
+			goto L20;
+		    }
+		    b1 = b2;
+		    if (z__[i4] > z__[i4 - 2]) {
+			return 0;
+		    }
+		    b2 *= z__[i4] / z__[i4 - 2];
+		    a2 += b2;
+		    if (df2cmax(b2,b1) * 100.f < a2 || .563f < a2) {
+			goto L20;
+		    }
+/* L10: */
+		}
+L20:
+		a2 *= 1.05f;
+
+/*              Rayleigh quotient residual bound. */
+
+		if (a2 < .563f) {
+		    s = gam * (1.f - sqrt(a2)) / (a2 + 1.f);
+		}
+	    }
+	} else if (*dmin__ == *dn2) {
+
+/*           Case 5. */
+
+	    *ttype = -5;
+	    s = *dmin__ * .25f;
+
+/*           Compute contribution to norm squared from I > NN-2. */
+
+	    np = nn - (*pp << 1);
+	    b1 = z__[np - 2];
+	    b2 = z__[np - 6];
+	    gam = *dn2;
+	    if (z__[np - 8] > b2 || z__[np - 4] > b1) {
+		return 0;
+	    }
+	    a2 = z__[np - 8] / b2 * (z__[np - 4] / b1 + 1.f);
+
+/*           Approximate contribution to norm squared from I < NN-2. */
+
+	    if (*n0 - *i0 > 2) {
+		b2 = z__[nn - 13] / z__[nn - 15];
+		a2 += b2;
+		i__1 = (*i0 << 2) - 1 + *pp;
+		for (i4 = nn - 17; i4 >= i__1; i4 += -4) {
+		    if (b2 == 0.f) {
+			goto L40;
+		    }
+		    b1 = b2;
+		    if (z__[i4] > z__[i4 - 2]) {
+			return 0;
+		    }
+		    b2 *= z__[i4] / z__[i4 - 2];
+		    a2 += b2;
+		    if (df2cmax(b2,b1) * 100.f < a2 || .563f < a2) {
+			goto L40;
+		    }
+/* L30: */
+		}
+L40:
+		a2 *= 1.05f;
+	    }
+
+	    if (a2 < .563f) {
+		s = gam * (1.f - sqrt(a2)) / (a2 + 1.f);
+	    }
+	} else {
+
+/*           Case 6, no information to guide us. */
+
+	    if (*ttype == -6) {
+		g += (1.f - g) * .333f;
+	    } else if (*ttype == -18) {
+		g = .083250000000000005f;
+	    } else {
+		g = .25f;
+	    }
+	    s = g * *dmin__;
+	    *ttype = -6;
+	}
+
+    } else if (*n0in == *n0 + 1) {
+
+/*        One eigenvalue just deflated. Use DMIN1, DN1 for DMIN and DN. */
+
+	if (*dmin1 == *dn1 && *dmin2 == *dn2) {
+
+/*           Cases 7 and 8. */
+
+	    *ttype = -7;
+	    s = *dmin1 * .333f;
+	    if (z__[nn - 5] > z__[nn - 7]) {
+		return 0;
+	    }
+	    b1 = z__[nn - 5] / z__[nn - 7];
+	    b2 = b1;
+	    if (b2 == 0.f) {
+		goto L60;
+	    }
+	    i__1 = (*i0 << 2) - 1 + *pp;
+	    for (i4 = (*n0 << 2) - 9 + *pp; i4 >= i__1; i4 += -4) {
+		a2 = b1;
+		if (z__[i4] > z__[i4 - 2]) {
+		    return 0;
+		}
+		b1 *= z__[i4] / z__[i4 - 2];
+		b2 += b1;
+		if (df2cmax(b1,a2) * 100.f < b2) {
+		    goto L60;
+		}
+/* L50: */
+	    }
+L60:
+	    b2 = sqrt(b2 * 1.05f);
+/* Computing 2nd power */
+	    r__1 = b2;
+	    a2 = *dmin1 / (r__1 * r__1 + 1.f);
+	    gap2 = *dmin2 * .5f - a2;
+	    if (gap2 > 0.f && gap2 > b2 * a2) {
+/* Computing MAX */
+		r__1 = s, r__2 = a2 * (1.f - a2 * 1.01f * (b2 / gap2) * b2);
+		s = df2cmax(r__1,r__2);
+	    } else {
+/* Computing MAX */
+		r__1 = s, r__2 = a2 * (1.f - b2 * 1.01f);
+		s = df2cmax(r__1,r__2);
+		*ttype = -8;
+	    }
+	} else {
+
+/*           Case 9. */
+
+	    s = *dmin1 * .25f;
+	    if (*dmin1 == *dn1) {
+		s = *dmin1 * .5f;
+	    }
+	    *ttype = -9;
+	}
+
+    } else if (*n0in == *n0 + 2) {
+
+/*        Two eigenvalues deflated. Use DMIN2, DN2 for DMIN and DN.   
+
+          Cases 10 and 11. */
+
+	if (*dmin2 == *dn2 && z__[nn - 5] * 2.f < z__[nn - 7]) {
+	    *ttype = -10;
+	    s = *dmin2 * .333f;
+	    if (z__[nn - 5] > z__[nn - 7]) {
+		return 0;
+	    }
+	    b1 = z__[nn - 5] / z__[nn - 7];
+	    b2 = b1;
+	    if (b2 == 0.f) {
+		goto L80;
+	    }
+	    i__1 = (*i0 << 2) - 1 + *pp;
+	    for (i4 = (*n0 << 2) - 9 + *pp; i4 >= i__1; i4 += -4) {
+		if (z__[i4] > z__[i4 - 2]) {
+		    return 0;
+		}
+		b1 *= z__[i4] / z__[i4 - 2];
+		b2 += b1;
+		if (b1 * 100.f < b2) {
+		    goto L80;
+		}
+/* L70: */
+	    }
+L80:
+	    b2 = sqrt(b2 * 1.05f);
+/* Computing 2nd power */
+	    r__1 = b2;
+	    a2 = *dmin2 / (r__1 * r__1 + 1.f);
+	    gap2 = z__[nn - 7] + z__[nn - 9] - sqrt(z__[nn - 11]) * sqrt(z__[
+		    nn - 9]) - a2;
+	    if (gap2 > 0.f && gap2 > b2 * a2) {
+/* Computing MAX */
+		r__1 = s, r__2 = a2 * (1.f - a2 * 1.01f * (b2 / gap2) * b2);
+		s = df2cmax(r__1,r__2);
+	    } else {
+/* Computing MAX */
+		r__1 = s, r__2 = a2 * (1.f - b2 * 1.01f);
+		s = df2cmax(r__1,r__2);
+	    }
+	} else {
+	    s = *dmin2 * .25f;
+	    *ttype = -11;
+	}
+    } else if (*n0in > *n0 + 2) {
+
+/*        Case 12, more than two eigenvalues deflated. No information. */
+
+	s = 0.f;
+	*ttype = -12;
+    }
+
+    *tau = s;
+    return 0;
+
+/*     End of SLASQ4 */
+
+} /* slasq4_ */
+
+//====================================
+
+/* Subroutine */ int slasq5_(integer *i0, integer *n0, real *z__, integer *pp,
+	 real *tau, real *dmin__, real *dmin1, real *dmin2, real *dn, real *
+	dnm1, real *dnm2, logical *ieee)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       May 17, 2000   
+
+
+    Purpose   
+    =======   
+
+    SLASQ5 computes one dqds transform in ping-pong form, one   
+    version for IEEE machines another for non IEEE machines.   
+
+    Arguments   
+    =========   
+
+    I0    (input) INTEGER   
+          First index.   
+
+    N0    (input) INTEGER   
+          Last index.   
+
+    Z     (input) REAL array, dimension ( 4*N )   
+          Z holds the qd array. EMIN is stored in Z(4*N0) to avoid   
+          an extra argument.   
+
+    PP    (input) INTEGER   
+          PP=0 for ping, PP=1 for pong.   
+
+    TAU   (input) REAL   
+          This is the shift.   
+
+    DMIN  (output) REAL   
+          Minimum value of d.   
+
+    DMIN1 (output) REAL   
+          Minimum value of d, excluding D( N0 ).   
+
+    DMIN2 (output) REAL   
+          Minimum value of d, excluding D( N0 ) and D( N0-1 ).   
+
+    DN    (output) REAL   
+          d(N0), the last value of d.   
+
+    DNM1  (output) REAL   
+          d(N0-1).   
+
+    DNM2  (output) REAL   
+          d(N0-2).   
+
+    IEEE  (input) LOGICAL   
+          Flag for IEEE or non IEEE arithmetic.   
+
+    =====================================================================   
+
+
+       Parameter adjustments */
+    /* System generated locals */
+    integer i__1;
+    real r__1, r__2;
+    /* Local variables */
+    static real emin, temp, d__;
+    static integer j4, j4p2;
+
+    --z__;
+
+    /* Function Body */
+    if (*n0 - *i0 - 1 <= 0) {
+	return 0;
+    }
+
+    j4 = (*i0 << 2) + *pp - 3;
+    emin = z__[j4 + 4];
+    d__ = z__[j4] - *tau;
+    *dmin__ = d__;
+    *dmin1 = -z__[j4];
+
+    if (*ieee) {
+
+/*        Code for IEEE arithmetic. */
+
+	if (*pp == 0) {
+	    i__1 = *n0 - 3 << 2;
+	    for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+		z__[j4 - 2] = d__ + z__[j4 - 1];
+		temp = z__[j4 + 1] / z__[j4 - 2];
+		d__ = d__ * temp - *tau;
+		*dmin__ = df2cmin(*dmin__,d__);
+		z__[j4] = z__[j4 - 1] * temp;
+/* Computing MIN */
+		r__1 = z__[j4];
+		emin = df2cmin(r__1,emin);
+/* L10: */
+	    }
+	} else {
+	    i__1 = *n0 - 3 << 2;
+	    for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+		z__[j4 - 3] = d__ + z__[j4];
+		temp = z__[j4 + 2] / z__[j4 - 3];
+		d__ = d__ * temp - *tau;
+		*dmin__ = df2cmin(*dmin__,d__);
+		z__[j4 - 1] = z__[j4] * temp;
+/* Computing MIN */
+		r__1 = z__[j4 - 1];
+		emin = df2cmin(r__1,emin);
+/* L20: */
+	    }
+	}
+
+/*        Unroll last two steps. */
+
+	*dnm2 = d__;
+	*dmin2 = *dmin__;
+	j4 = (*n0 - 2 << 2) - *pp;
+	j4p2 = j4 + (*pp << 1) - 1;
+	z__[j4 - 2] = *dnm2 + z__[j4p2];
+	z__[j4] = z__[j4p2 + 2] * (z__[j4p2] / z__[j4 - 2]);
+	*dnm1 = z__[j4p2 + 2] * (*dnm2 / z__[j4 - 2]) - *tau;
+	*dmin__ = df2cmin(*dmin__,*dnm1);
+
+	*dmin1 = *dmin__;
+	j4 += 4;
+	j4p2 = j4 + (*pp << 1) - 1;
+	z__[j4 - 2] = *dnm1 + z__[j4p2];
+	z__[j4] = z__[j4p2 + 2] * (z__[j4p2] / z__[j4 - 2]);
+	*dn = z__[j4p2 + 2] * (*dnm1 / z__[j4 - 2]) - *tau;
+	*dmin__ = df2cmin(*dmin__,*dn);
+
+    } else {
+
+/*        Code for non IEEE arithmetic. */
+
+	if (*pp == 0) {
+	    i__1 = *n0 - 3 << 2;
+	    for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+		z__[j4 - 2] = d__ + z__[j4 - 1];
+		if (d__ < 0.f) {
+		    return 0;
+		} else {
+		    z__[j4] = z__[j4 + 1] * (z__[j4 - 1] / z__[j4 - 2]);
+		    d__ = z__[j4 + 1] * (d__ / z__[j4 - 2]) - *tau;
+		}
+		*dmin__ = df2cmin(*dmin__,d__);
+/* Computing MIN */
+		r__1 = emin, r__2 = z__[j4];
+		emin = df2cmin(r__1,r__2);
+/* L30: */
+	    }
+	} else {
+	    i__1 = *n0 - 3 << 2;
+	    for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+		z__[j4 - 3] = d__ + z__[j4];
+		if (d__ < 0.f) {
+		    return 0;
+		} else {
+		    z__[j4 - 1] = z__[j4 + 2] * (z__[j4] / z__[j4 - 3]);
+		    d__ = z__[j4 + 2] * (d__ / z__[j4 - 3]) - *tau;
+		}
+		*dmin__ = df2cmin(*dmin__,d__);
+/* Computing MIN */
+		r__1 = emin, r__2 = z__[j4 - 1];
+		emin = df2cmin(r__1,r__2);
+/* L40: */
+	    }
+	}
+
+/*        Unroll last two steps. */
+
+	*dnm2 = d__;
+	*dmin2 = *dmin__;
+	j4 = (*n0 - 2 << 2) - *pp;
+	j4p2 = j4 + (*pp << 1) - 1;
+	z__[j4 - 2] = *dnm2 + z__[j4p2];
+	if (*dnm2 < 0.f) {
+	    return 0;
+	} else {
+	    z__[j4] = z__[j4p2 + 2] * (z__[j4p2] / z__[j4 - 2]);
+	    *dnm1 = z__[j4p2 + 2] * (*dnm2 / z__[j4 - 2]) - *tau;
+	}
+	*dmin__ = df2cmin(*dmin__,*dnm1);
+
+	*dmin1 = *dmin__;
+	j4 += 4;
+	j4p2 = j4 + (*pp << 1) - 1;
+	z__[j4 - 2] = *dnm1 + z__[j4p2];
+	if (*dnm1 < 0.f) {
+	    return 0;
+	} else {
+	    z__[j4] = z__[j4p2 + 2] * (z__[j4p2] / z__[j4 - 2]);
+	    *dn = z__[j4p2 + 2] * (*dnm1 / z__[j4 - 2]) - *tau;
+	}
+	*dmin__ = df2cmin(*dmin__,*dn);
+
+    }
+
+    z__[j4 + 2] = *dn;
+    z__[(*n0 << 2) - *pp] = emin;
+    return 0;
+
+/*     End of SLASQ5 */
+
+} /* slasq5_ */
+
+//====================================
+
+/* Subroutine */ int slasq6_(integer *i0, integer *n0, real *z__, integer *pp,
+	 real *dmin__, real *dmin1, real *dmin2, real *dn, real *dnm1, real *
+	dnm2)
+{
+    /* System generated locals */
+    integer i__1;
+    real r__1, r__2;
+
+    /* Local variables */
+    static real emin, temp, d__;
+    static integer j4;
+    extern doublereal slamch_(char *);
+    static real safmin;
+    static integer j4p2;
+
+
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1999   
+
+
+    Purpose   
+    =======   
+
+    SLASQ6 computes one dqd (shift equal to zero) transform in   
+    ping-pong form, with protection against underflow and overflow.   
+
+    Arguments   
+    =========   
+
+    I0    (input) INTEGER   
+          First index.   
+
+    N0    (input) INTEGER   
+          Last index.   
+
+    Z     (input) REAL array, dimension ( 4*N )   
+          Z holds the qd array. EMIN is stored in Z(4*N0) to avoid   
+          an extra argument.   
+
+    PP    (input) INTEGER   
+          PP=0 for ping, PP=1 for pong.   
+
+    DMIN  (output) REAL   
+          Minimum value of d.   
+
+    DMIN1 (output) REAL   
+          Minimum value of d, excluding D( N0 ).   
+
+    DMIN2 (output) REAL   
+          Minimum value of d, excluding D( N0 ) and D( N0-1 ).   
+
+    DN    (output) REAL   
+          d(N0), the last value of d.   
+
+    DNM1  (output) REAL   
+          d(N0-1).   
+
+    DNM2  (output) REAL   
+          d(N0-2).   
+
+    =====================================================================   
+
+
+       Parameter adjustments */
+    --z__;
+
+    /* Function Body */
+    if (*n0 - *i0 - 1 <= 0) {
+	return 0;
+    }
+
+    safmin = slamch_("Safe minimum");
+    j4 = (*i0 << 2) + *pp - 3;
+    emin = z__[j4 + 4];
+    d__ = z__[j4];
+    *dmin__ = d__;
+
+    if (*pp == 0) {
+	i__1 = *n0 - 3 << 2;
+	for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+	    z__[j4 - 2] = d__ + z__[j4 - 1];
+	    if (z__[j4 - 2] == 0.f) {
+		z__[j4] = 0.f;
+		d__ = z__[j4 + 1];
+		*dmin__ = d__;
+		emin = 0.f;
+	    } else if (safmin * z__[j4 + 1] < z__[j4 - 2] && safmin * z__[j4 
+		    - 2] < z__[j4 + 1]) {
+		temp = z__[j4 + 1] / z__[j4 - 2];
+		z__[j4] = z__[j4 - 1] * temp;
+		d__ *= temp;
+	    } else {
+		z__[j4] = z__[j4 + 1] * (z__[j4 - 1] / z__[j4 - 2]);
+		d__ = z__[j4 + 1] * (d__ / z__[j4 - 2]);
+	    }
+	    *dmin__ = df2cmin(*dmin__,d__);
+/* Computing MIN */
+	    r__1 = emin, r__2 = z__[j4];
+	    emin = df2cmin(r__1,r__2);
+/* L10: */
+	}
+    } else {
+	i__1 = *n0 - 3 << 2;
+	for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
+	    z__[j4 - 3] = d__ + z__[j4];
+	    if (z__[j4 - 3] == 0.f) {
+		z__[j4 - 1] = 0.f;
+		d__ = z__[j4 + 2];
+		*dmin__ = d__;
+		emin = 0.f;
+	    } else if (safmin * z__[j4 + 2] < z__[j4 - 3] && safmin * z__[j4 
+		    - 3] < z__[j4 + 2]) {
+		temp = z__[j4 + 2] / z__[j4 - 3];
+		z__[j4 - 1] = z__[j4] * temp;
+		d__ *= temp;
+	    } else {
+		z__[j4 - 1] = z__[j4 + 2] * (z__[j4] / z__[j4 - 3]);
+		d__ = z__[j4 + 2] * (d__ / z__[j4 - 3]);
+	    }
+	    *dmin__ = df2cmin(*dmin__,d__);
+/* Computing MIN */
+	    r__1 = emin, r__2 = z__[j4 - 1];
+	    emin = df2cmin(r__1,r__2);
+/* L20: */
+	}
+    }
+
+/*     Unroll last two steps. */
+
+    *dnm2 = d__;
+    *dmin2 = *dmin__;
+    j4 = (*n0 - 2 << 2) - *pp;
+    j4p2 = j4 + (*pp << 1) - 1;
+    z__[j4 - 2] = *dnm2 + z__[j4p2];
+    if (z__[j4 - 2] == 0.f) {
+	z__[j4] = 0.f;
+	*dnm1 = z__[j4p2 + 2];
+	*dmin__ = *dnm1;
+	emin = 0.f;
+    } else if (safmin * z__[j4p2 + 2] < z__[j4 - 2] && safmin * z__[j4 - 2] < 
+	    z__[j4p2 + 2]) {
+	temp = z__[j4p2 + 2] / z__[j4 - 2];
+	z__[j4] = z__[j4p2] * temp;
+	*dnm1 = *dnm2 * temp;
+    } else {
+	z__[j4] = z__[j4p2 + 2] * (z__[j4p2] / z__[j4 - 2]);
+	*dnm1 = z__[j4p2 + 2] * (*dnm2 / z__[j4 - 2]);
+    }
+    *dmin__ = df2cmin(*dmin__,*dnm1);
+
+    *dmin1 = *dmin__;
+    j4 += 4;
+    j4p2 = j4 + (*pp << 1) - 1;
+    z__[j4 - 2] = *dnm1 + z__[j4p2];
+    if (z__[j4 - 2] == 0.f) {
+	z__[j4] = 0.f;
+	*dn = z__[j4p2 + 2];
+	*dmin__ = *dn;
+	emin = 0.f;
+    } else if (safmin * z__[j4p2 + 2] < z__[j4 - 2] && safmin * z__[j4 - 2] < 
+	    z__[j4p2 + 2]) {
+	temp = z__[j4p2 + 2] / z__[j4 - 2];
+	z__[j4] = z__[j4p2] * temp;
+	*dn = *dnm1 * temp;
+    } else {
+	z__[j4] = z__[j4p2 + 2] * (z__[j4p2] / z__[j4 - 2]);
+	*dn = z__[j4p2 + 2] * (*dnm1 / z__[j4 - 2]);
+    }
+    *dmin__ = df2cmin(*dmin__,*dn);
+
+    z__[j4 + 2] = *dn;
+    z__[(*n0 << 2) - *pp] = emin;
+    return 0;
+
+/*     End of SLASQ6 */
+
+} /* slasq6_ */
+
+//===================================
+
+/* Subroutine */ int slasv2_(real *f, real *g, real *h__, real *ssmin, real *
+	ssmax, real *snr, real *csr, real *snl, real *csl)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       October 31, 1992   
+
+
+    Purpose   
+    =======   
+
+    SLASV2 computes the singular value decomposition of a 2-by-2   
+    triangular matrix   
+       [  F   G  ]   
+       [  0   H  ].   
+    On return, abs(SSMAX) is the larger singular value, abs(SSMIN) is the   
+    smaller singular value, and (CSL,SNL) and (CSR,SNR) are the left and   
+    right singular vectors for abs(SSMAX), giving the decomposition   
+
+       [ CSL  SNL ] [  F   G  ] [ CSR -SNR ]  =  [ SSMAX   0   ]   
+       [-SNL  CSL ] [  0   H  ] [ SNR  CSR ]     [  0    SSMIN ].   
+
+    Arguments   
+    =========   
+
+    F       (input) REAL   
+            The (1,1) element of the 2-by-2 matrix.   
+
+    G       (input) REAL   
+            The (1,2) element of the 2-by-2 matrix.   
+
+    H       (input) REAL   
+            The (2,2) element of the 2-by-2 matrix.   
+
+    SSMIN   (output) REAL   
+            abs(SSMIN) is the smaller singular value.   
+
+    SSMAX   (output) REAL   
+            abs(SSMAX) is the larger singular value.   
+
+    SNL     (output) REAL   
+    CSL     (output) REAL   
+            The vector (CSL, SNL) is a unit left singular vector for the   
+            singular value abs(SSMAX).   
+
+    SNR     (output) REAL   
+    CSR     (output) REAL   
+            The vector (CSR, SNR) is a unit right singular vector for the   
+            singular value abs(SSMAX).   
+
+    Further Details   
+    ===============   
+
+    Any input parameter may be aliased with any output parameter.   
+
+    Barring over/underflow and assuming a guard digit in subtraction, all   
+    output quantities are correct to within a few units in the last   
+    place (ulps).   
+
+    In IEEE arithmetic, the code works correctly if one matrix element is   
+    infinite.   
+
+    Overflow will not occur unless the largest singular value itself   
+    overflows or is within a few ulps of overflow. (On machines with   
+    partial overflow, like the Cray, overflow may occur if the largest   
+    singular value is within a factor of 2 of overflow.)   
+
+    Underflow is harmless if underflow is gradual. Otherwise, results   
+    may correspond to a matrix modified by perturbations of size near   
+    the underflow threshold.   
+
+   ===================================================================== */
+    /* Table of constant values */
+    static real c_b3 = 2.f;
+    static real c_b4 = 1.f;
+    
+    /* System generated locals */
+    real r__1;
+    /* Builtin functions */
+    //double sqrt(doublereal), r_sign(real *, real *);
+    /* Local variables */
+    static integer pmax;
+    static real temp;
+    static logical swap;
+    static real a, d__, l, m, r__, s, t, tsign, fa, ga, ha, ft, gt, ht, mm;
+    static logical gasmal;
+    extern doublereal slamch_(char *);
+    static real tt, clt, crt, slt, srt;
+
+
+
+
+    ft = *f;
+    fa = dabs(ft);
+    ht = *h__;
+    ha = dabs(*h__);
+
+/*     PMAX points to the maximum absolute element of matrix   
+         PMAX = 1 if F largest in absolute values   
+         PMAX = 2 if G largest in absolute values   
+         PMAX = 3 if H largest in absolute values */
+
+    pmax = 1;
+    swap = ha > fa;
+    if (swap) {
+	pmax = 3;
+	temp = ft;
+	ft = ht;
+	ht = temp;
+	temp = fa;
+	fa = ha;
+	ha = temp;
+
+/*        Now FA .ge. HA */
+
+    }
+    gt = *g;
+    ga = dabs(gt);
+    if (ga == 0.f) {
+
+/*        Diagonal matrix */
+
+	*ssmin = ha;
+	*ssmax = fa;
+	clt = 1.f;
+	crt = 1.f;
+	slt = 0.f;
+	srt = 0.f;
+    } else {
+	gasmal = TRUE_;
+	if (ga > fa) {
+	    pmax = 2;
+	    if (fa / ga < slamch_("EPS")) {
+
+/*              Case of very large GA */
+
+		gasmal = FALSE_;
+		*ssmax = ga;
+		if (ha > 1.f) {
+		    *ssmin = fa / (ga / ha);
+		} else {
+		    *ssmin = fa / ga * ha;
+		}
+		clt = 1.f;
+		slt = ht / gt;
+		srt = 1.f;
+		crt = ft / gt;
+	    }
+	}
+	if (gasmal) {
+
+/*           Normal case */
+
+	    d__ = fa - ha;
+	    if (d__ == fa) {
+
+/*              Copes with infinite F or H */
+
+		l = 1.f;
+	    } else {
+		l = d__ / fa;
+	    }
+
+/*           Note that 0 .le. L .le. 1 */
+
+	    m = gt / ft;
+
+/*           Note that abs(M) .le. 1/macheps */
+
+	    t = 2.f - l;
+
+/*           Note that T .ge. 1 */
+
+	    mm = m * m;
+	    tt = t * t;
+	    s = sqrt(tt + mm);
+
+/*           Note that 1 .le. S .le. 1 + 1/macheps */
+
+	    if (l == 0.f) {
+		r__ = dabs(m);
+	    } else {
+		r__ = sqrt(l * l + mm);
+	    }
+
+/*           Note that 0 .le. R .le. 1 + 1/macheps */
+
+	    a = (s + r__) * .5f;
+
+/*           Note that 1 .le. A .le. 1 + abs(M) */
+
+	    *ssmin = ha / a;
+	    *ssmax = fa * a;
+	    if (mm == 0.f) {
+
+/*              Note that M is very tiny */
+
+		if (l == 0.f) {
+		    t = r_sign(&c_b3, &ft) * r_sign(&c_b4, &gt);
+		} else {
+		    t = gt / r_sign(&d__, &ft) + m / t;
+		}
+	    } else {
+		t = (m / (s + t) + m / (r__ + l)) * (a + 1.f);
+	    }
+	    l = sqrt(t * t + 4.f);
+	    crt = 2.f / l;
+	    srt = t / l;
+	    clt = (crt + srt * m) / a;
+	    slt = ht / ft * srt / a;
+	}
+    }
+    if (swap) {
+	*csl = srt;
+	*snl = crt;
+	*csr = slt;
+	*snr = clt;
+    } else {
+	*csl = clt;
+	*snl = slt;
+	*csr = crt;
+	*snr = srt;
+    }
+
+/*     Correct signs of SSMAX and SSMIN */
+
+    if (pmax == 1) {
+	tsign = r_sign(&c_b4, csr) * r_sign(&c_b4, csl) * r_sign(&c_b4, f);
+    }
+    if (pmax == 2) {
+	tsign = r_sign(&c_b4, snr) * r_sign(&c_b4, csl) * r_sign(&c_b4, g);
+    }
+    if (pmax == 3) {
+	tsign = r_sign(&c_b4, snr) * r_sign(&c_b4, snl) * r_sign(&c_b4, h__);
+    }
+    *ssmax = r_sign(ssmax, &tsign);
+    r__1 = tsign * r_sign(&c_b4, f) * r_sign(&c_b4, h__);
+    *ssmin = r_sign(ssmin, &r__1);
+    return 0;
+
+/*     End of SLASV2 */
+
+} /* slasv2_ */
+
+//=================================
+
+/* Subroutine */ int slas2_(real *f, real *g, real *h__, real *ssmin, real *
+	ssmax)
+{
+/*  -- LAPACK auxiliary routine (version 3.0) --   
+       Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,   
+       Courant Institute, Argonne National Lab, and Rice University   
+       September 30, 1994   
+
+
+    Purpose   
+    =======   
+
+    SLAS2  computes the singular values of the 2-by-2 matrix   
+       [  F   G  ]   
+       [  0   H  ].   
+    On return, SSMIN is the smaller singular value and SSMAX is the   
+    larger singular value.   
+
+    Arguments   
+    =========   
+
+    F       (input) REAL   
+            The (1,1) element of the 2-by-2 matrix.   
+
+    G       (input) REAL   
+            The (1,2) element of the 2-by-2 matrix.   
+
+    H       (input) REAL   
+            The (2,2) element of the 2-by-2 matrix.   
+
+    SSMIN   (output) REAL   
+            The smaller singular value.   
+
+    SSMAX   (output) REAL   
+            The larger singular value.   
+
+    Further Details   
+    ===============   
+
+    Barring over/underflow, all output quantities are correct to within   
+    a few units in the last place (ulps), even in the absence of a guard   
+    digit in addition/subtraction.   
+
+    In IEEE arithmetic, the code works correctly if one matrix element is   
+    infinite.   
+
+    Overflow will not occur unless the largest singular value itself   
+    overflows, or is within a few ulps of overflow. (On machines with   
+    partial overflow, like the Cray, overflow may occur if the largest   
+    singular value is within a factor of 2 of overflow.)   
+
+    Underflow is harmless if underflow is gradual. Otherwise, results   
+    may correspond to a matrix modified by perturbations of size near   
+    the underflow threshold.   
+
+    ==================================================================== */
+    /* System generated locals */
+    real r__1, r__2;
+    /* Builtin functions */
+    //double sqrt(doublereal);
+    /* Local variables */
+    static real fhmn, fhmx, c__, fa, ga, ha, as, at, au;
+
+
+
+    fa = dabs(*f);
+    ga = dabs(*g);
+    ha = dabs(*h__);
+    fhmn = df2cmin(fa,ha);
+    fhmx = df2cmax(fa,ha);
+    if (fhmn == 0.f) {
+	*ssmin = 0.f;
+	if (fhmx == 0.f) {
+	    *ssmax = ga;
+	} else {
+/* Computing 2nd power */
+	    r__1 = df2cmin(fhmx,ga) / df2cmax(fhmx,ga);
+	    *ssmax = df2cmax(fhmx,ga) * sqrt(r__1 * r__1 + 1.f);
+	}
+    } else {
+	if (ga < fhmx) {
+	    as = fhmn / fhmx + 1.f;
+	    at = (fhmx - fhmn) / fhmx;
+/* Computing 2nd power */
+	    r__1 = ga / fhmx;
+	    au = r__1 * r__1;
+	    c__ = 2.f / (sqrt(as * as + au) + sqrt(at * at + au));
+	    *ssmin = fhmn * c__;
+	    *ssmax = fhmx / c__;
+	} else {
+	    au = fhmx / ga;
+	    if (au == 0.f) {
+
+/*              Avoid possible harmful underflow if exponent range   
+                asymmetric (true SSMIN may not underflow even if   
+                AU underflows) */
+
+		*ssmin = fhmn * fhmx / ga;
+		*ssmax = ga;
+	    } else {
+		as = fhmn / fhmx + 1.f;
+		at = (fhmx - fhmn) / fhmx;
+/* Computing 2nd power */
+		r__1 = as * au;
+/* Computing 2nd power */
+		r__2 = at * au;
+		c__ = 1.f / (sqrt(r__1 * r__1 + 1.f) + sqrt(r__2 * r__2 + 1.f)
+			);
+		*ssmin = fhmn * c__ * au;
+		*ssmin += *ssmin;
+		*ssmax = ga / (c__ + c__);
+	    }
+	}
+    }
+    return 0;
+
+/*     End of SLAS2 */
+
+} /* slas2_ */
 
