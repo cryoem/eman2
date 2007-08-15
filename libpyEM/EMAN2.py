@@ -202,7 +202,36 @@ def parsemodopt(optstr):
 		r2[args[0]] = v
 
 	return (p_1[0], r2)
-		
+
+parseparmobj_logical = re.compile(">=|<=|==|~=|!=|<|>") 	# finds the logical operators <=, >=, ==, ~=, !=, <, >
+parseparmobj_logical_words = re.compile("\w*[^=!<>~][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"
+def parsemodopt_logical(optstr):
+
+	if not optstr or len(optstr)==0 : return (None)
+	
+	p_1 = re.findall( parseparmobj_logical_words, optstr )
+	
+	if len(p_1)==0: return (optstr,{})
+	
+	if ( len(p_1) != 2 ):
+		print "ERROR: parsemodopt_logical currently only supports single logical expressions"
+		print "Could not handle %s" %optstr
+		exit(1)
+	
+	p_2 = re.findall( parseparmobj_logical, optstr )
+	
+	if ( len(p_2) != 1 ):
+		print "ERROR: could not find logical expression in %s" %optstr
+		exit(1)
+	
+	
+	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
+		print "ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0])
+		print "Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" "
+		exit(1)
+
+	return (p_1[0], p_2[0], p_1[1])
+
 def display(img):
 	
 	if GUIMode:
