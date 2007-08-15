@@ -1661,7 +1661,7 @@ EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform3D& tf, int mult
 
 
 
-void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult)
+void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int)
 {
 	/***   Preparing terms for SSNR 
 	      m_wvolume F^3D Wiener volume
@@ -1757,7 +1757,7 @@ void EMData::nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myf
 	EXITFUNC;
 }
 
-void EMData::nn_SSNR_ctf_applied(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult)
+void EMData::nn_SSNR_ctf_applied(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int)
 {
 	/***   Preparing terms for SSNR 
 	      m_wvolume F^3D Wiener volume
