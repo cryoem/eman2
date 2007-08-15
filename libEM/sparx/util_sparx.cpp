@@ -1852,9 +1852,9 @@ fftr_d(xcmplx,nv)
 
 */
 #define  tab1(i)      tab1[i-1]
-#define  xcmplx(i,j)  xcmplx [((j)-1)*2 + (i)-1]
-#define  br(i)        br     [(i)-1]
-#define  bi(i)        bi     [(i)-1]
+#define  xcmplx(i,j)  xcmplx [(j-1)*2 + i-1]
+#define  br(i)        br     [i-1]
+#define  bi(i)        bi     [i-1]
 //-----------------------------------------
 void Util::fftc_d(double *br, double *bi, int ln, int ks)
 {
@@ -2365,6 +2365,22 @@ void Util::Frngs(EMData* circp, vector<int> numr){
 	fftr_q(&circ(numr(2,i)),l);
    }
 }
+// This function conducts the Inverse Fourier Transform for a set of rings
+void Util::Frngs_inv(EMData* circp, vector<int> numr){
+   int nring = numr.size()/3;
+   float *circ = circp->get_data();
+   int i, l; 
+   for (i=1; i<=nring;i++) {
+
+#ifdef _WIN32
+	l = (int)( log((float)numr(3,i))/log(2.0f) );
+#else
+	l=(int)(log2(numr(3,i)));
+#endif	//_WIN32
+
+	fftr_q(&circ(numr(2,i)),-l);
+   }
+}
 #undef  circ
 
 #define  b(i)            b      [(i)-1]
@@ -2651,6 +2667,7 @@ c
 #else
    ip = -(int)(log2(maxrin));
 #endif	//_WIN32
+  //for (j=1; j<=maxrin;j++) cout <<"  "<<j<<"   "<<circ1(j)<<"   "<<circ2(j) <<endl;
 
    //  c - straight  = circ1 * conjg(circ2)
    //  zero q array
@@ -2662,7 +2679,7 @@ c
    t = (double*)calloc(maxrin,sizeof(double));
 
    //   premultiply  arrays ie( circ12 = circ1 * circ2) much slower
-	for (i=1; i<=nring; i++) {
+      for (i=1; i<=nring; i++) {
 
       numr3i = numr(3,i);	// Number of samples of this ring 
       numr2i = numr(2,i);	// The beginning point of this ring
@@ -2705,11 +2722,11 @@ c
 		t(j+1) += -t3 - t4;
       } 
   }
-
+//for (j=1; j<=maxrin; j++) cout <<"  "<<j<<"   "<<q(j) <<endl;
   fftr_d(q,ip);
 
   qn  = -1.0e20;
-  for (j=1; j<=maxrin; j++) {
+  for (j=1; j<=maxrin; j++) {//cout <<"  "<<j<<"   "<<q(j) <<endl;
      if (q(j) >= qn) { qn  = q(j); jtot = j; }
   }
 
@@ -2728,7 +2745,7 @@ c
 
   // find angle
   qm = -1.0e20;
-  for (j=1; j<=maxrin;j++) {
+  for (j=1; j<=maxrin;j++) {//cout <<"  "<<j<<"   "<<t(j) <<endl;
      if ( t(j) >= qm ) { qm   = t(j); jtot = j; }
   }
 
@@ -15627,10 +15644,9 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 			    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 			    peak = qn;
 			    mirror = 0;
-			    } 
-			else {
+			} else {
 			    ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-			    peak = qm; 
+			    peak = qm;
 			    mirror = 1;
 			}
 		    }

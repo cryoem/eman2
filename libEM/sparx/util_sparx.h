@@ -369,6 +369,7 @@ class FakeKaiserBessel : public KaiserBessel {
         static void  fftc_q(float  *br, float  *bi, int ln, int ks);
         static void  fftc_d(double *br, double *bi, int ln, int ks);
         static void  Frngs(EMData* circ, vector<int> numr);
+        static void  Frngs_inv(EMData* circ, vector<int> numr);
 
 	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
