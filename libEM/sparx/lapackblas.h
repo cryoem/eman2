@@ -51,9 +51,9 @@ typedef short ftnint;
 #define df2cmax(a,b) (doublereal)f2cmax(a,b)
 
 
-int s_cat(char *, char **, integer *, integer *, ftnlen);
-integer s_cmp(char *, char *, ftnlen, ftnlen);
-void s_copy(char *a, char *b, ftnlen la, ftnlen lb);
+int s_cat(char *, const char **, integer *, integer *, ftnlen);
+integer s_cmp(char *, const char *, ftnlen, ftnlen);
+void s_copy(char *a, const char *b, ftnlen la, ftnlen lb);
 
 double pow_ri(real *ap, integer *bp);
 double r_sign(real *a, real *b);
@@ -269,7 +269,7 @@ doublereal snrm2_(integer *n, real *x, integer *incx);
 /* Subroutine */ int sorglq_(integer *m, integer *n, integer *k, real *a, 
 			     integer *lda, real *tau, real *work, integer *lwork, integer *info);
 
-doublereal slange_(char *norm, integer *m, integer *n, real *a, integer *lda, 
+doublereal slange_(const char *norm, integer *m, integer *n, real *a, integer *lda, 
 		   real *work);
 
 /* Subroutine */ int sgebrd_(integer *m, integer *n, real *a, integer *lda, 
@@ -278,32 +278,32 @@ doublereal slange_(char *norm, integer *m, integer *n, real *a, integer *lda,
 
 /* Subroutine */ int sgebd2_(integer *m, integer *n, real *a, integer *lda, 
 			     real *d__, real *e, real *tauq, real *taup, real *work, integer *info);
-/* Subroutine */ int sormbr_(char *vect, char *side, char *trans, integer *m, 
+/* Subroutine */ int sormbr_(const char *vect, const char *side, const char *trans, integer *m, 
 	integer *n, integer *k, real *a, integer *lda, real *tau, real *c__, 
 			     integer *ldc, real *work, integer *lwork, integer *info);
 
 /* Subroutine */ int sgelqf_(integer *m, integer *n, real *a, integer *lda, 
 			     real *tau, real *work, integer *lwork, integer *info);
 
-/* Subroutine */ int sormlq_(char *side, char *trans, integer *m, integer *n, 
+/* Subroutine */ int sormlq_(const char *side, const char *trans, integer *m, integer *n, 
 	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
 			     real *work, integer *lwork, integer *info);
 
-/* Subroutine */ int sormqr_(char *side, char *trans, integer *m, integer *n, 
+/* Subroutine */ int sormqr_(const char *side, const char *trans, integer *m, integer *n, 
 	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
 			     real *work, integer *lwork, integer *info);
 
 /* Subroutine */ int sgelq2_(integer *m, integer *n, real *a, integer *lda, 
 			     real *tau, real *work, integer *info);
 
-/* Subroutine */ int sbdsqr_(char *uplo, integer *n, integer *ncvt, integer *
+/* Subroutine */ int sbdsqr_(const char *uplo, integer *n, integer *ncvt, integer *
 	nru, integer *ncc, real *d__, real *e, real *vt, integer *ldvt, real *
 			     u, integer *ldu, real *c__, integer *ldc, real *work, integer *info);
 
 /* Subroutine */ int sgeqrf_(integer *m, integer *n, real *a, integer *lda, 
 			     real *tau, real *work, integer *lwork, integer *info);
 
-/* Subroutine */ int sorml2_(char *side, char *trans, integer *m, integer *n, 
+/* Subroutine */ int sorml2_(const char *side, const char *trans, integer *m, integer *n, 
 	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
 			     real *work, integer *info);
 
@@ -314,11 +314,11 @@ doublereal slange_(char *norm, integer *m, integer *n, real *a, integer *lda,
 /* Subroutine */ int sgeqr2_(integer *m, integer *n, real *a, integer *lda, 
 			     real *tau, real *work, integer *info);
 
-/* Subroutine */ int sorm2r_(char *side, char *trans, integer *m, integer *n, 
+/* Subroutine */ int sorm2r_(const char *side, const char *trans, integer *m, integer *n, 
 	integer *k, real *a, integer *lda, real *tau, real *c__, integer *ldc,
 			     real *work, integer *info);
 
-/* Subroutine */ int sorgbr_(char *vect, integer *m, integer *n, integer *k, 
+/* Subroutine */ int sorgbr_(const char *vect, integer *m, integer *n, integer *k, 
 	real *a, integer *lda, real *tau, real *work, integer *lwork, integer 
 			     *info);
 
