@@ -5,6 +5,7 @@
 #include "sirt_Cart.h"
 #include "utilcomm_Cart.h"
 #include "project3d.h"
+#include "HyBR_Cart.h"
 
 #define PI 3.14159265358979
 #define ROW 0
@@ -21,7 +22,7 @@ int main(int argc, char ** argv)
 {
    MPI_Comm comm = MPI_COMM_WORLD;
    int ncpus, mypid, ierr, mpierr=0;
-   int nloc, maxit=0; 
+   int nloc, maxit=0, method=0; 
    double t0;
    FILE *fp;
    MPI_Comm comm_2d, comm_row, comm_col;
@@ -46,6 +47,8 @@ int main(int argc, char ** argv)
          printf("-out=<output filename base string> ");
          printf("-rowdim=<row dimension of Cartesian topology> ");
          printf("-coldim=<column dimension of Cartesian topology> ");
+         printf("-maxit=<maximum number of iterations> ");
+         printf("-method=<method to use: 0 SIRT (default), 1 Hybrid>\n");
      }
      ierr = MPI_Finalize();
      exit(1);
@@ -69,6 +72,9 @@ int main(int argc, char ** argv)
       }
       else if ( !strncmp(argv[ia],"-maxit",6) ) {
          maxit = atoi(&argv[ia][7]);
+      }
+      else if ( !strncmp(argv[ia],"-method",7) ) {
+         method = atoi(&argv[ia][8]);
       }
       else {
          if (mypid ==0) printf("invalid option: %s\n", argv[ia]);
@@ -157,20 +163,31 @@ int main(int argc, char ** argv)
    // Use xvol to hold reconstructed volume
    EMData * xvol = new EMData();
 
-   // set SIRT parameters
    if (maxit==0) maxit = 10;
+
+   if (method!=1) method = 0; //use SIRT unless method=1
+
+   // set SIRT parameters
+  
    float lam = 5.0e-6;
    float tol = 1.0e-3;
    std::string symmetry = "c1";
 
    // call SIRT to reconstruct
    t0 = MPI_Wtime();
-   recons3d_sirt_mpi_Cart(comm_2d, comm_row, comm_col, cleanimages, 
-                          angleshift, xvol, nloc, ri, lam, maxit, 
-                          symmetry, tol);
+   if (method == 0) {
+      recons3d_sirt_mpi_Cart(comm_2d, comm_row, comm_col, cleanimages, 
+                             angleshift, xvol, nloc, ri, lam, maxit, 
+                             symmetry, tol);
+   }
+   else {
+      int insolve = 1;
+      recons3d_HyBR_mpi_Cart(comm_2d, comm_row, comm_col, cleanimages, 
+                             angleshift, xvol, nloc, ri, maxit, symmetry, insolve);
+   }
 
    if ( my2dpid == 0 ) 
-       printf("Done with SIRT: time = %11.3e\n", MPI_Wtime() - t0);
+       printf("Done with reconstruction\n");
 
    // write the reconstructed volume to disk
    EMUtil::ImageType WRITE_SPI = EMUtil::IMAGE_SINGLE_SPIDER;
