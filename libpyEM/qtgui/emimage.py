@@ -36,12 +36,14 @@ from PyQt4.QtCore import Qt
 from emimage2d import *
 from emimagemx import *
 from emimage3d import *
-#from OpenGL import GL,GLU
+from OpenGL import GL,GLU,GLUT
 #from valslider import ValSlider
 #from math import *
 #from EMAN2 import *
 #import sys
 #import numpy
+
+GLUT.glutInit( )
 
 def get_app():
 	app=QtGui.QApplication.instance()
