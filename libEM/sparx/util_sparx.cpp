@@ -3654,7 +3654,7 @@ vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin
 			throw ImageDimensionException("The size of mask image should be of same size as the input image");
 		maskptr =mask->get_data();
 	}
-	if( nbins == 0) nbins = 128;
+	if( nbins == 0) nbins = nx;
 	vector <float> freq(2*nbins, 0.0);
 
 	imageptr=image->get_data();
@@ -3682,8 +3682,7 @@ vector<float> Util::histogram(EMData* image, EMData* mask, int nbins, float hmin
 	float ff = (nbins-1)/hdiff;
 	for (int i = 0; i < nbins; i++) freq[nbins+i] = hmin + (float(i)+0.5f)/ff;
 	if(mask == NULL) {
-		for(int i = 0; i < nx*ny*nz; i++)
-		{
+		for(int i = 0; i < nx*ny*nz; i++) {
 			int jbin = static_cast<int>((imageptr[i]-hmin)*ff + 1.5);
 			if(jbin >= 1 && jbin <= nbins)  freq[jbin-1] += 1.0;
 		}

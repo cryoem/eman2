@@ -410,6 +410,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	static Dict histc(EMData *ref,EMData *img,EMData *mask);
 	
 	static float hist_comp_freq(float PA,float PB,int size_img, int hist_len, EMData *img, vector<float> ref_freq_hist, EMData *mask, float ref_h_diff, float ref_h_min);
+
+
 	/* The unit in the ctf function: dz: Angstrom, cs: CM  Ps: Angstrom, Voltage: Kv,dza: Angstrom, azz: degree wgh: None unit. b_factor: Angstrom^2 
 	 The CTF function takes form of   *sin(-quadpi*(dz*lambda*ak^2-cs*lambda^3*ak^4/2.)-wgh)*exp(-b_factor*ak^2)*sign
           * sign can be set as +1 or -1 . The unit of frequency ak is 1/Angstrom
