@@ -144,7 +144,7 @@ namespace EMAN
 					float m21, float m22, float m23,
 					float m31, float m32, float m33);
 
-		virtual ~ Transform3D();  // COmega   Deconstructor
+		~ Transform3D();  // COmega   Deconstructor
 
 
 		void apply_scale(float scale);
@@ -198,7 +198,8 @@ namespace EMAN
 			printf("\n");
 		}
 
-		inline float at(int r,int c) { return matrix[r][c]; }
+		inline float at(int r,int c) const { return matrix[r][c]; }
+		void set(int r, int c, float value) { matrix[r][c] = value; }
 		float * operator[] (int i);
 		const float * operator[] (int i) const;
 		
