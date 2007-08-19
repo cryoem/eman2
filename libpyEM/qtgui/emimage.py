@@ -43,7 +43,7 @@ from OpenGL import GL,GLU,GLUT
 #import sys
 #import numpy
 
-GLUT.glutInit( )
+#GLUT.glutInit( )
 
 def get_app():
 	app=QtGui.QApplication.instance()
