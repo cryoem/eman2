@@ -45,8 +45,17 @@ using std::string;
 using std::cout;
 using std::endl;
 
+
+// Change this to 1 to enable the use of the PixelOperation structs for pixel insertion
+// If the PixelOperation classes are being used, then you probably want to use 
+// FourierReconstructor::do_insert_remove_test, FourierReconstructor::remove_slice
+// and FourierReconstructor::test_pixel_wise_zero
+// Keep at 0 to avoid and extra function call and get a (slight) performance boost.
+#define RECONSTRUCTOR_TOOLS_TESTING 0
+
 namespace EMAN
 {
+#if RECONSTRUCTOR_TOOLS_TESTING
 	/** PixelOperation is an abstract class that PixelAddOperation and PixelMinusOperation derive from
 	 * These classes are used as members FourierPixelInserter3D to enable the insertion operation
 	 * to switch from subtraction to addition
@@ -88,7 +97,9 @@ namespace EMAN
 
 		virtual void operate( float* const target, const float& value ) { *target -= value; }
 	};
-
+	
+#endif //RECONSTRUCTOR_TOOLS_TESTING
+	
 	/** FourierPixelInserter3D class defines a way a continuous pixel in 3D
 	 * is inserted into the discrete 3D volume - there are various schemes for doing this
 	 * including simply finding the nearest neighbor to more elaborate schemes that involve
@@ -138,104 +149,109 @@ namespace EMAN
 		public:
 		/** Construct a FourierPixelInserter3D
 		 */
-			FourierPixelInserter3D() : norm(0), rdata(0), nx(0), ny(0), nz(0), nxy(0)
-			{
-				pixel_operation = new PixelAddOperation;
-				other_pixel_operation = new PixelMinusOperation;
-			}
+		FourierPixelInserter3D() : norm(0), rdata(0), nx(0), ny(0), nz(0), nxy(0)
+		{
+#if RECONSTRUCTOR_TOOLS_TESTING
+			pixel_operation = new PixelAddOperation;
+			other_pixel_operation = new PixelMinusOperation;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
+		}
 		
 		/** Desctruct a FourierPixelInserter3D
 		 */
-			virtual ~FourierPixelInserter3D()
-			{
-				free_memory();
-			}
+		virtual ~FourierPixelInserter3D()
+		{
+			free_memory();
+		}
 			
 		/** Set the Reconstructor's parameters using a key/value dictionary.
-			 * @param new_params A dictionary containing the new parameters.
+		* @param new_params A dictionary containing the new parameters.
 		 */
-			void set_params(const Dict & new_params)
+		void set_params(const Dict & new_params)
+		{
+		// note but this is really inserting OR individually replacing...
+		// the old data will be kept if it is not written over
+			TypeDict permissable_params = get_param_types();
+			for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
 			{
-			// note but this is really inserting OR individually replacing...
-			// the old data will be kept if it is not written over
-				TypeDict permissable_params = get_param_types();
-				for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+			
+				if ( !permissable_params.find_type(it->first) )
 				{
-				
-					if ( !permissable_params.find_type(it->first) )
-					{
-						throw InvalidParameterException(it->first);
-					}
-					params[it->first] = it->second;
-				}	
-			}
+					throw InvalidParameterException(it->first);
+				}
+				params[it->first] = it->second;
+			}	
+		}
 		
-			TypeDict get_param_types() const
-			{
-				TypeDict d;
-				d.put("nx", EMObject::INT);
-				d.put("ny", EMObject::INT);
-				d.put("nz", EMObject::INT);
-				d.put("rdata", EMObject::FLOAT_POINTER);
-				d.put("norm", EMObject::FLOAT_POINTER);
-				return d;
-			}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("nx", EMObject::INT);
+			d.put("ny", EMObject::INT);
+			d.put("nz", EMObject::INT);
+			d.put("rdata", EMObject::FLOAT_POINTER);
+			d.put("norm", EMObject::FLOAT_POINTER);
+			return d;
+		}
 		
 		/** Insert a complex pixel [dt[0]+dt[1]i] at (float) coordinate [xx,yy,zz] with weighting into a discrete 3D volume
-			 * @param xx the floating point x coordinate
-			 * @param yy the floating point y coordinate
-			 * @param zz the floating point z coordinate
-			 * @param dt the complex pixel value (dt[0] is real, dt[1] is imaginary)
-			 * @param weight the weight to given to this complex pixel
-			 * @return A boolean that indicates the pixel has been inserted (or not)
+		* @param xx the floating point x coordinate
+		* @param yy the floating point y coordinate
+		* @param zz the floating point z coordinate
+		* @param dt the complex pixel value (dt[0] is real, dt[1] is imaginary)
+		* @param weight the weight to given to this complex pixel
+		* @return A boolean that indicates the pixel has been inserted (or not)
 		 */
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight) = 0;
+		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight) = 0;
 		
+		
+#if RECONSTRUCTOR_TOOLS_TESTING
 		/** set_pixel_minus_operation makes the default pixel insertion operation to mimic -=
-			 * This function is useful when a pixel (more specifically all of the pixels in a slice) needs to be removed from a volume
-			 * while maintaining the other contents of the volume. Originally added for testing purposes.
+		* This function is useful when a pixel (more specifically all of the pixels in a slice) needs to be removed from a volume
+		* while maintaining the other contents of the volume. Originally added for testing purposes.
 		 */	
-			void set_pixel_minus_operation()
-			{
-				free_memory();
-				pixel_operation = new PixelMinusOperation;
-				other_pixel_operation = new PixelAddOperation;
-			}
+		void set_pixel_minus_operation()
+		{
+			free_memory();
+			pixel_operation = new PixelMinusOperation;
+			other_pixel_operation = new PixelAddOperation;
+		}
 
 		/** set_pixel_add_operation makes the default pixel insertion operation to mimic +=
-			 * The default behaviour of this class is to always add the incoming pixel to the volume,
-			 * however sometimes it might be necessary to switch between adding and subtracting pixels
-			 * from the volume, so if the client ever calls set_pixel_minus_operation they can switch
-			 * back to additive behavior by calling this function
+		* The default behaviour of this class is to always add the incoming pixel to the volume,
+		* however sometimes it might be necessary to switch between adding and subtracting pixels
+		* from the volume, so if the client ever calls set_pixel_minus_operation they can switch
+		* back to additive behavior by calling this function
 		 */	
-			void set_pixel_add_operation()
-			{
-				free_memory();
-				pixel_operation = new PixelAddOperation;
-				other_pixel_operation = new PixelMinusOperation;
-			}
+		void set_pixel_add_operation()
+		{
+			free_memory();
+			pixel_operation = new PixelAddOperation;
+			other_pixel_operation = new PixelMinusOperation;
+		}
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 
 		
 		/** Get the FourierPixelInserter3D's name. Each FourierPixelInserter3D is
-			 * identified by a unique name, them being (strings) 1,2,3,4,5,6 and 7
-			 * @return The FourierPixelInserter3D's ID.
+		* identified by a unique name, them being (strings) 1,2,3,4,5,6 and 7
+		* @return The FourierPixelInserter3D's ID.
 		 */
-			virtual string get_name() const = 0;
+		virtual string get_name() const = 0;
 
 		/** Get the FourierPixelInserter3D's desc.
-			 * @return The FourierPixelInserter3D's description.
+			* @return The FourierPixelInserter3D's description.
 		 */
-			virtual string get_desc() const = 0;
+		virtual string get_desc() const = 0;
 
-			virtual void init();
+		virtual void init();
 		
 		/** A function added for testing purposes only
-			 * Called with the given floating point coordinate [xx,yy,zz] checks to see if 
-			 * the pixels that the FourierPixelInserter3D's insert_pixel function would
-			 * have effected (or changed) are near enough to zero.
+		* Called with the given floating point coordinate [xx,yy,zz] checks to see if 
+		* the pixels that the FourierPixelInserter3D's insert_pixel function would
+		* have effected (or changed) are near enough to zero.
 		 */
+		virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz) = 0;
 		
-			virtual bool effected_pixels_are_zero(const float& xx, const float& yy, const float& zz) = 0;
 		protected:
 			mutable Dict params;
 			/// A pointer to the constructor argument normalize_values
@@ -245,12 +261,13 @@ namespace EMAN
 		
 			/// Image volume data sizes, and nxy a convenience variable used here and there
 			int nx, ny, nz, nxy;
-
+#if RECONSTRUCTOR_TOOLS_TESTING
 			/// A pixel operation, which is addition by default, but which can be changed to subtraction etc.
 			PixelOperation* pixel_operation;
 
 			/// Minus pixel operation is a hack needed to for inserter modes 5,6 and 7.
 			PixelOperation* other_pixel_operation;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 		
 			/// A measure of tolerance used when testing to see if pixels are zero when calling effected_pixels_are_zero
 			static float tolerance;
@@ -261,6 +278,7 @@ namespace EMAN
 		
 			void free_memory()
 			{
+#if RECONSTRUCTOR_TOOLS_TESTING
 				if ( pixel_operation != 0 )
 				{
 					delete pixel_operation;
@@ -271,6 +289,7 @@ namespace EMAN
 					delete other_pixel_operation;
 					other_pixel_operation = 0;
 				}
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 			}
 	};
 	
@@ -530,23 +549,42 @@ namespace EMAN
 			FourierInserter3DMode7& operator=( const FourierInserter3DMode7& );
 	};
 	
+	
+	/** QualityScores class is used by the FourierReconstructor and InterpolatedFRC for storing useful quality information.
+	 * It's basically a data storage object that has a whole heap of getter and setter methods, and nothing more.
+     */
 	class QualityScores
 	{
 		public:
+			/** Default constructor
+			*/
 			QualityScores() : frc_integral(0), snr_normed_frc_intergral(0), normed_snr_integral(0), norm(0) {}
+			
+			/** Copy constructor
+			* @param that the quality scores to be constructed from
+			*/
 			QualityScores( const QualityScores& that ) : frc_integral(that.frc_integral), 
 				snr_normed_frc_intergral(that.snr_normed_frc_intergral), normed_snr_integral(that.normed_snr_integral), norm(that.norm) {}
+			
+			/** Assignment operator 
+			* @param that the quality scores to be constructed from
+			*/
 			QualityScores& operator=( const QualityScores& that ) 
 			{
-				frc_integral = that.frc_integral; 
-				snr_normed_frc_intergral = that.snr_normed_frc_intergral;
-				normed_snr_integral  = that.normed_snr_integral;
-				norm = that.norm;
+				if ( &that != this )
+				{
+					frc_integral = that.frc_integral; 
+// 					snr_normed_frc_intergral = that.snr_normed_frc_intergral;
+					normed_snr_integral  = that.normed_snr_integral;
+					norm = that.norm;
+				}
 				return *this;
 			}
 
 			~QualityScores() {}
 
+			/// Various setter and getter methods are below
+			
 			float get_frc_integral() const { return frc_integral; }
 			float get_snr_normed_frc_integral() const { return snr_normed_frc_intergral; }
 			float get_normed_snr_integral() const { return normed_snr_integral; }
@@ -567,6 +605,13 @@ namespace EMAN
 		
 	};
 
+	/** InterpolationFunctiod is an abstract base class, having basically one function which is "operate(float radius)"
+	* It simplifies the implementation of InterpolatedFRC::continue_frc_calc? (where ? = 3,4,6 or 7)
+	* The other cases (1,2 and 5) must be handled case by case. Note InterpolationFunctiodMode5 is declared 
+	* below but it does not derive from InterpolationFunctiod, i.e. it is a special case.
+	* Each of these modes corresponds tightly with the FourierInserter3DMode? method of the same number and this
+	* is intentional
+	*/
 	class InterpolationFunctiod
 	{
 	public:
@@ -576,6 +621,9 @@ namespace EMAN
 		virtual float operate( const float radius ) const = 0;
 	};
 	
+	/** InterpolationFunctiodMode3
+	 * see comments for abstract base class InterpolationFunctiod
+	*/
 	class InterpolationFunctiodMode3 : public InterpolationFunctiod
 	{
 	public:
@@ -588,6 +636,9 @@ namespace EMAN
 		}
 	};
 	
+	/** InterpolationFunctiodMode4
+	* see comments for abstract base class InterpolationFunctiod
+	*/
 	class InterpolationFunctiodMode4 : public InterpolationFunctiod
 	{
 	public:
@@ -600,6 +651,9 @@ namespace EMAN
 		}
 	};
 	
+	/** InterpolationFunctiodMode5
+	* Handles the special case of mode5 interpolation - see FourierInserter3DMode5
+	*/
 	class InterpolationFunctiodMode5
 	{
 		public:
@@ -621,7 +675,9 @@ namespace EMAN
 			float * gimx;
 	};
 
-	
+	/** InterpolationFunctiodMode6
+	* see comments for abstract base class InterpolationFunctiod
+	*/
 	class InterpolationFunctiodMode6 : public InterpolationFunctiod
 	{
 	public:
@@ -634,6 +690,9 @@ namespace EMAN
 		}
 	};
 	
+	/** InterpolationFunctiodMode7
+	* see comments for abstract base class InterpolationFunctiod
+	*/
 	class InterpolationFunctiodMode7 : public InterpolationFunctiod
 	{
 	public:
@@ -647,40 +706,130 @@ namespace EMAN
 	};
 	
 	
-	
+	/** Interpolated FRC - oversees calculation of the FRC in Fourier Reconstruction (compares a slice (in some orientation) to a volume)
+	* This class works in a similar fashion to FourierPixelInserter3D objects in that the class is first initialized,
+	* all of the pixels are "inserted" iteratively, and finally a "finish" is called which calculates the quality scores
+	* and returns them in an approprate data object (QualityScores).
+	* Typical programmatic usage of this class is as follows
+	*
+	* InterpatedFRC ifrc(rdata,norm, xsize,ysize,zsize)
+	* for pixels in slice
+	*		// Figure out x,y and z of each pixel using its Euler angle (InterpatedFRC doesn't do this for you)
+	*		// Store the complex pixel value in dt[2]
+	*		ifrc.continue_frc_calc2(x,y,z,dt)
+	* end
+	* QualityScores qualityScores = ifrc.finish(slice->get_attr["ptcl_repr"])
+	*
+	*
+	* As you can see from the above example, in order for this approach to work you must initialize the InterpatedFRC
+	* object with pointers to 3D volumes containing the true pixel data (rdata) and the associated normalization volume (norm).
+	* Note that the norm volume should be half the size of the rdata volume - this is because InterpolatedFRC assumes the real data
+	* is complex, and that for each complex pixel there is only one normalization value.
+	*
+	* Note also that I used continue_frc_calc2 in the above example but could have substituted the "2" with any number
+	* from 1 through 7, and in doing so a different technique for approximating the FRC would be used. Each of these 7
+	* techniques is meant to be used in conjunction with the associated FourierInserter3DMode? that was used to insert
+	* the pixels into the 3D volume in the first place. Because mode 2 is quite often the best method for inserting pixels,
+	* it is the mode I used in the example above. Testing showed that, for modes 1 and 2, the FRC scores were in the high 0.8's 
+	* to low 0.9s when inserting a noisey image into a 3D volume and then testing it's own FRC. For the other 
+	* methods the results weren't as high, varying from 0.7 to 0.5, where mode 7 seemed to give the next best results.
+	*/
 	class InterpolatedFRC
 	{
 		public:
+			/** Default constructor
+			*/
 			InterpolatedFRC() : threed_rdata(0), frc(0), frc_norm_rdata(0), frc_norm_dt(0), size(0), pixel_radius_max(0), r(0), rn(0) {}
 
+			/** Normal constructor
+			* @param rdata a pointer to the real (complex data), which is a 3D volume of dimension xsize x ysize x zsize
+			* @param norm a pointer to the normalization volume linked to rdata, this is half the size of rdata
+			* @param xsize the xsize of the 3D volume pointed at by rdata
+			* @param ysize the ysize of the 3D volume pointed at by rdata
+			* @param zsize the zsize of the 3D volume pointed at by rdata
+			* @param sampling the FRC sampling rate - determines how many rings are created
+			*/
 			InterpolatedFRC(float* const rdata, float* const norm, const int xsize, const int ysize, const int zsize, const float& sampling=1.0 );
+			
+			/** Destructor
+			*/
 			~InterpolatedFRC()
 			{
 				free_memory();
 			}
 
-			// Copy and assignment
+			/** Copy Constructor
+			* Retrospective note, not sure whether this is necessary
+			*/
 			InterpolatedFRC( const InterpolatedFRC& that );
+			
+			/** Assignment operator
+			 * Retrospective note, not sure whether this is necessary
+			 */
 			InterpolatedFRC& operator=( const InterpolatedFRC& that);
 	
+			/** continue_frc_calc1 - function for including an additional pixel in the calculation of the FRC
+			* FRC calculated using nearest neighbor. Meant for use in conjunction with FourierInserter3DMode1
+			* @param xx the floating point x location of the incoming pixel 
+			* @param yy the floating point y location of the incoming pixel
+			* @param zz the floating point z location of the incoming pixel
+			* @param dt the complex pixel value stored in a float array of length 2
+			* @param weight the weight that this pixel has - corresponds to the weight with which the pixel was original inserted into the 3D volume
+			*/
 			bool continue_frc_calc1(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			
+			/** continue_frc_calc2 - function for including an additional pixel in the calculation of the FRC
+			 * FRC calculated using weighted average of 8 nearest neighbors. Meant for use in conjunction with FourierInserter3DMode2.
+			 * See comments in continue_frc_calc1 for parameter details.
+			 */
 			bool continue_frc_calc2(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			
+			/** continue_frc_calc3 - function for including an additional pixel in the calculation of the FRC
+			 * Meant for use in conjunction with FourierInserter3DMode3.
+			 * See comments in continue_frc_calc1 for parameter details.
+			 */
 			bool continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			
+			/** continue_frc_calc4 - function for including an additional pixel in the calculation of the FRC
+			 * Meant for use in conjunction with FourierInserter3DMode4.
+			 * See comments in continue_frc_calc1 for parameter details.
+			 */
 			bool continue_frc_calc4(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			
+			/** continue_frc_calc5 - function for including an additional pixel in the calculation of the FRC
+			 * Meant for use in conjunction with FourierInserter3DMode5.
+			 * See comments in continue_frc_calc1 for parameter details.
+			 */
 			bool continue_frc_calc5(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			
+			/** continue_frc_calc6 - function for including an additional pixel in the calculation of the FRC
+			 * Meant for use in conjunction with FourierInserter3DMode6.
+			 * See comments in continue_frc_calc1 for parameter details.
+			 */
 			bool continue_frc_calc6(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
+			
+			/** continue_frc_calc7 - function for including an additional pixel in the calculation of the FRC
+			 * Meant for use in conjunction with FourierInserter3DMode7.
+			 * See comments in continue_frc_calc1 for parameter details.
+			 */
 			bool continue_frc_calc7(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight = 1.0);
-	
-			bool continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctiod& functoid, const float& weight = 1.0 );
 			
 			unsigned int get_size() { return size; }
 	
 			float operator[](const unsigned int& idx) { return frc[idx]; }
 
-			QualityScores finish(const unsigned int  num_particles);
+			QualityScores finish(const unsigned int num_particles);
 	
 			void reset();
 		private:
+			/** continue_frc_calc_functoid
+		 	* Meant for convenience in continue_frc_calc3, continue_frc_calc4, continue_frc_calc6, and continue_frc_calc7
+		 	* See comments in continue_frc_calc1 for parameter details.
+			*/
+			bool continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctiod& functoid, const float& weight = 1.0 );
+			
+			/** free_memory - frees all associated memory
+			*/
 			void free_memory()
 			{
 				if ( frc != 0 )
@@ -724,6 +873,7 @@ namespace EMAN
 			float g[8];
 	};
 	
+	// Factory for FourierPixelInserter3D
 	template <> Factory < FourierPixelInserter3D >::Factory();
 	
 } // namespace EMAN

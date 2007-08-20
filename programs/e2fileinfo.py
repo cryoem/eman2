@@ -203,54 +203,6 @@ def fileinfo_output(filename, infotype):
 			ac = vals[3]
 			print "%f" %float(ac)
 
-#def fileinfo_output(filename, infotype):
-	
-	#if ( infotype not in ["defocus","ac","bfactor"] ):
-		#print "Error, info type must defocus, ac, or bfactor"
-		#return
-	
-	##l=[len(i) for i in filenames]
-	##l=max(l)
-	
-	#n=EMUtil.get_image_count(filename)
-	#t=EMUtil.get_imagetype_name(EMUtil.get_image_type(filename))
-	#d=EMData()
-	#d.read_image(filename,0,True)
-
-	#for i in xrange(0,n):
-		#d=EMData()
-		#d.read_image(filename,i,True)
-	
-		#try:
-			#expr = d.get_attr("IMAGIC.label")
-		#except RuntimeError:
-			#print "ERROR: the image has no \"IMAGIC.label\" attribute"
-			#return
-			
-					##print expr
-		#vals = re.findall("\S*[\w*]", expr)
-		
-		
-		
-		#if ( infotype in "defocus" ):
-			#f = re.findall("\d.*\d*", vals[0])
-			#defocus = f[0]
-			#print "%f" %float(defocus)
-		#if ( infotype == "bfactor" ):
-			#envelope = vals[1]
-			#print "%f" %float(envelope)
-		#if ( infotype == "ac" ):
-			#ac = vals[3]
-			#print "%f" %float(ac)
-	
-	##if d.get_zsize()==1:
-		##s="%%-s%%s\t%%d\t%%d x %%d"
-		##print s%(t,n,d.get_xsize(),d.get_ysize())
-	##else:
-		##s="%%-s%%s\t%%d\t%%d x %%d x %%d"
-		##print s%(t,n,d.get_xsize(),d.get_ysize(),d.get_zsize())
-
-
 def fileinfo(filenames):
 	if isinstance(filenames,str) : filenames=[filenames]
 	

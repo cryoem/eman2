@@ -56,6 +56,10 @@ using std::pair;
 #include "log.h"
 #include "exception.h"
 
+// debug
+#include <iostream>
+using std::cout;
+using std::endl;
 
 namespace EMAN
 {
@@ -660,6 +664,7 @@ namespace EMAN
 		map < string, string > desc_dict;
 	};
 
+	
 	/** Factory is used to store objects to create new instances.
      * It is a singleton template. Typical usages are as follows:
      *
@@ -775,7 +780,8 @@ namespace EMAN
 			
 			i->set_params(params);
 			return i;
-		}		
+		}
+
 
 		throw NotExistingObjectException(instancename, "No such an instance existing");
 	}

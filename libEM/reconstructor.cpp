@@ -264,14 +264,14 @@ void FourierReconstructor::setup()
 	tmp_data->set_size((size + 2)/2, size, size);
 	tmp_data->to_zero();
 	tmp_data->update();
-
+	
 	load_inserter();
 }
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice )
 {
 	// First normalize the slice, setting it's mean to zero
-	EMData* return_slice = slice->process("normalize");
+	EMData* return_slice = slice->process("normalize.edgemean");
 
 // 	cout << "The slice had a mean of " << (float)slice->get_attr("mean") << " the new slice has a mean of " << (float) return_slice->get_attr("mean") << endl;
 
@@ -357,6 +357,8 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	return 0;
 }
+
+#if RECONSTRUCTOR_TOOLS_TESTING
 
 int FourierReconstructor::remove_slice(const EMData* const input_slice, const Transform3D & arg)
 {
@@ -486,6 +488,8 @@ bool FourierReconstructor::test_pixel_wise_zero(const EMData* const input_slice,
 	}
 	return true;
 }
+
+#endif //#if RECONSTRUCTOR_TOOLS_TESTING
 
 void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
 {
@@ -782,6 +786,7 @@ EMData *FourierReconstructor::finish()
 	
 	// 
 	image->process_inplace("xform.fourierorigin");
+	
 	image->do_ift_inplace();
 	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
 	image->postift_depad_corner_inplace();
@@ -798,6 +803,8 @@ EMData *FourierReconstructor::finish()
 	}
 
 	print_stats(quality_scores);
+	
+	image->process_inplace("normalize");
 	
 	image->update();
 

@@ -422,7 +422,9 @@ def fourier_reconstruction(options):
 	
 	# Get the reconstructor and initialize it correctly
 	a = parsemodopt(options.recon_type)
+		
 	recon=Reconstructors.get(a[0], a[1])
+	
 	params = recon.get_params()
 	params["size"] = gimme_global_pixel_dimension( options.input_file );
 	params["sym"] = options.sym
@@ -435,7 +437,6 @@ def fourier_reconstruction(options):
 		params["mask"] = options.mask
 	recon.insert_params(params)
 	recon.setup()
-
 
 	read_header_only = True
 	images=EMData().read_images(options.input_file,[], read_header_only)
@@ -463,6 +464,8 @@ def fourier_reconstruction(options):
 		removed = 0;
 		
 		if ( j > 0 ):
+			print ""
+			print "Determining slice agreement"
 			for i in xrange(0,total_images):
 				image=EMData().read_images(options.input_file, [i])[0]
 				
@@ -477,8 +480,14 @@ def fourier_reconstruction(options):
 					recon.insert_params(param) # this inserts that parameter, maintaining what's already there.
 				
 				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+				
 				recon.determine_slice_agreement(image,transform,num_img)
-	
+				sys.stdout.write(".")
+				sys.stdout.flush()
+				
+				
+			print " Done"
+
 		idx = 0
 	
 		for i in xrange(0,total_images):

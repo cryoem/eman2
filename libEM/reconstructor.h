@@ -229,7 +229,8 @@ namespace EMAN
 		 */
 		void set_params(const Dict & new_params)
 		{
-			params.clear();
+			// This commented out by d.woolford. 
+			//params.clear();
 			
 			insert_params(new_params);
 		}
@@ -360,9 +361,11 @@ namespace EMAN
 		
 		
 		// these functions are for testing purposes
+#if RECONSTRUCTOR_TOOLS_TESTING
 		bool do_insert_remove_test(const EMData* const input_slice, const Transform3D & arg);
 		int remove_slice(const EMData* const input_slice, const Transform3D & arg);
 		bool test_pixel_wise_zero(const EMData* const input_slice, const Transform3D & arg);
+#endif
 		
 		/** 
 	  	 * @return 

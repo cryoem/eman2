@@ -625,10 +625,16 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	int z0 = (int) floor(zz + 0.5f);
 	
 	int idx = x0 + y0 * nx + z0 * nxy;
-	
+
+#if RECONSTRUCTOR_TOOLS_TESTING
 	(*pixel_operation)(rdata + idx, weight * dt[0]);
 	(*pixel_operation)(rdata + idx + 1, weight  * dt[1]);
 	(*pixel_operation)(norm + idx/2, weight);
+#else
+	rdata[idx] += weight * dt[0];
+	rdata[idx + 1] += weight  * dt[1];
+	norm[idx/2] += weight;
+#endif // RECONSTRUCTOR_TOOLS_TESTING
 
 	return true;
 }
@@ -692,9 +698,15 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	{
 		int k = i + off[j];
 		float gg = weight * g[j];
+#if RECONSTRUCTOR_TOOLS_TESTING
 		(*pixel_operation)(rdata + k, gg * dt[0]);
 		(*pixel_operation)(rdata + k + 1, gg * dt[1]);
 		(*pixel_operation)(norm + k/2, gg);
+#else
+		rdata[k] += gg * dt[0];
+		rdata[k + 1] += gg * dt[1];
+		norm[k/2] += gg;
+#endif // RECONSTRUCTOR_TOOLS_TESTING
 	}
 
 	return true;
@@ -739,10 +751,15 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 				float gg = weight * exp(-r / EMConsts::I3G);
 
 				int idx = i + j * nx + k * nxy;
-				
+#if RECONSTRUCTOR_TOOLS_TESTING
 				(*pixel_operation)(rdata + idx, gg * dt[0]);
 				(*pixel_operation)(rdata + idx + 1, gg * dt[1]);
 				(*pixel_operation)(norm + idx/2, gg);
+#else
+				rdata[idx] += gg * dt[0];
+				rdata[idx + 1] += gg * dt[1];
+				norm[idx/2] += gg;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 			}
 		}
 	}
@@ -801,10 +818,15 @@ bool FourierInserter3DMode4::insert_pixel(const float& xx, const float& yy, cons
 				float gg = weight * exp(-r / EMConsts::I4G);
 
 				int idx = i + j * nx + k * nxy;
-				
+#if RECONSTRUCTOR_TOOLS_TESTING
 				(*pixel_operation)(rdata + idx, gg * dt[0]);
 				(*pixel_operation)(rdata + idx + 1,  gg * dt[1]);
 				(*pixel_operation)(norm + idx/2, gg);
+#else
+				rdata[idx] += gg * dt[0];
+				rdata[idx + 1] +=  gg * dt[1];
+				norm[idx/2] += gg;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 			}
 		}
 	}
@@ -875,9 +897,15 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 				int ii = i + j * nx + k * nxy;
 				float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
 
+#if RECONSTRUCTOR_TOOLS_TESTING
 				(*pixel_operation)(rdata + ii, gg * dt[0]);
 				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
 				(*pixel_operation)(norm + ii/2, gg);
+#else
+				rdata[ii] += gg * dt[0];
+				rdata[ii + 1] += gg * dt[1];
+				norm[ii/2] += gg;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 			}
 		}
 	}
@@ -901,11 +929,17 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
 					int ii = i + j * nx + k * nxy;
-					float gg =
-							weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+					float gg = weight * gimx[abs(mmx) + abs(mmy) * 100 + abs(mmz) * 10000];
+
+#if RECONSTRUCTOR_TOOLS_TESTING
 					(*pixel_operation)(rdata + ii, gg * dt[0]);
 					(*other_pixel_operation)(rdata+ii + 1, gg * dt[1]); // note the -, complex conj.
 					(*pixel_operation)(norm + ii/2, gg);
+#else
+					rdata[ii] += gg * dt[0];
+					rdata[ii + 1] -= gg * dt[1]; // note the -, complex conj.
+					norm[ii/2] += gg;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 				}
 			}
 		}
@@ -1004,9 +1038,15 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 				float r = Util::hypot3((float) i / 2 - xx, j - yy, k - zz);
 				float gg = weight * exp(-r / EMConsts::I5G);
 
+#if RECONSTRUCTOR_TOOLS_TESTING
 				(*pixel_operation)(rdata + ii, gg * dt[0]);
 				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
 				(*pixel_operation)(norm + ii/2, gg);
+#else
+				rdata[ii] += gg * dt[0];
+				rdata[ii + 1] += gg * dt[1];
+				norm[ii/2] += gg;
+#endif //RECONSTRUCTOR_TOOLS_TESTING
 			}
 		}
 	}
@@ -1031,9 +1071,15 @@ bool FourierInserter3DMode6::insert_pixel(const float& xx, const float& yy, cons
 											(float) k - zz_b);
 					float gg = weight * exp(-r / EMConsts::I5G);
 
+#if RECONSTRUCTOR_TOOLS_TESTING
 					(*pixel_operation)(rdata + ii, gg * dt[0]);
 					(*other_pixel_operation)(rdata+ii + 1, gg * dt[1]);// note the -, complex conj
 					(*pixel_operation)(norm + ii/2, gg);
+#else
+					rdata[ii] += gg * dt[0];
+					rdata[ii + 1] -= gg * dt[1]; // note the -, complex conj
+					norm[ii/2] += gg;
+#endif
 				}
 			}
 		}
@@ -1116,9 +1162,15 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 						hypot3((float) i / 2 - xx, (float) j - yy, (float) k - zz));
 				float gg = weight * Interp::hyperg(r);
 
+#if RECONSTRUCTOR_TOOLS_TESTING
 				(*pixel_operation)(rdata + ii, gg * dt[0]);
 				(*pixel_operation)(rdata + ii + 1, gg * dt[1]);
 				(*pixel_operation)(norm + ii/2, gg);
+#else
+				rdata[ii] += gg * dt[0];
+				rdata[ii + 1] += gg * dt[1];
+				norm[ii/2] += gg;
+#endif
 			}
 		}
 	}
@@ -1142,9 +1194,15 @@ bool FourierInserter3DMode7::insert_pixel(const float& xx, const float& yy, cons
 								   (float) k - zz_b));
 					float gg = weight * Interp::hyperg(r);
 
+#if RECONSTRUCTOR_TOOLS_TESTING
 					(*pixel_operation)(rdata + ii, gg * dt[0]);
 					(*other_pixel_operation)(rdata+ii + 1, gg * dt[1]);// note the -, complex conj
 					(*pixel_operation)(norm + ii/2, gg);
+#else
+					rdata[ii] += gg * dt[0];
+					rdata[ii + 1] -= gg * dt[1];// note the -, complex conj
+					norm[ii/2] += gg;
+#endif
 				}
 			}
 		}
