@@ -346,6 +346,25 @@ class TestHdfIO(unittest.TestCase):
             self.assertEqual(err_type, "NotExistingObjectException")           
         
         os.unlink(testimage)
+        
+    def test_hdf_aatribute_transform3d(self):
+        """test Transform3D object as image attibute ........"""
+        t = Transform3D()
+        t.to_identity()
+        e=EMData(2,2)
+        e.set_attr('tr', t)
+        testimage = 'testimage.hdf'
+        e.write_image(testimage)
+        g = EMData()
+        g.read_image(testimage)
+        tt = g.get_attr('tr')
+        for i in range(4):
+            for j in range(4):
+                if i==j:
+                    self.assertAlmostEqual(tt.at(i,j), 1.0, 3)
+                else:
+                    self.assertAlmostEqual(tt.at(i,j), 0.0, 3) 
+        
 
 class TestMrcIO(unittest.TestCase):
     """mrc file IO test"""
