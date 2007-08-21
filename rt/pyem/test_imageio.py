@@ -216,7 +216,7 @@ class TestHdfIO(unittest.TestCase):
         #self.assertEqual(attrdict["maximum"], 325.0)
         #self.assertEqual(attrdict["minimum"], 0.0)
 
-        #testlib.safe_unlink(imgfile)  
+        testlib.safe_unlink(imgfile)  
         
     def test_int_array_attr(self):
         """test int array as attribute ......................"""
@@ -364,7 +364,7 @@ class TestHdfIO(unittest.TestCase):
                     self.assertAlmostEqual(tt.at(i,j), 1.0, 3)
                 else:
                     self.assertAlmostEqual(tt.at(i,j), 0.0, 3) 
-        
+        os.unlink(testimage)
 
 class TestMrcIO(unittest.TestCase):
     """mrc file IO test"""
