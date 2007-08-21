@@ -37,7 +37,7 @@
 #define eman__emutil__h__ 1
 
 #include "emobject.h"
-#include <Assert.h>
+#include "emassert.h"
 
 using std::string;
 using std::vector;

@@ -36,7 +36,7 @@
 #include "ctf.h"
 #include "emdata.h"
 #include "xydata.h"
-#include "Assert.h"
+#include "emassert.h"
 
 using namespace EMAN;
 

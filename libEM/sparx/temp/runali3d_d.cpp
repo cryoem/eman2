@@ -3,7 +3,7 @@
 
 // include EMAN2
 #include "emdata.h"
-#include "assert.h"
+#include "emassert.h"
 
 #include "ali3d_d_mpi.h"
 #include "alignoptions.h"

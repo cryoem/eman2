@@ -38,7 +38,7 @@
 #include "util.h"
 #include "geometry.h"
 #include "ctf.h"
-#include "Assert.h"
+#include "emassert.h"
 
 #ifdef _WIN32
 	#include <ctime>

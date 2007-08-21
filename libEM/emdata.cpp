@@ -409,7 +409,7 @@ void EMData::clip_inplace(const Region & area)
 
 			// Asserts are compiled only in debug mode
 			// This situation not encountered in testing thus far
-			assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
+			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
 			memcpy(local_dst, local_src, clipped_row_size);
@@ -455,7 +455,7 @@ void EMData::clip_inplace(const Region & area)
 			
 			// Asserts are compiled only in debug mode
 			// This situation not encountered in testing thus far
-			assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
+			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 			
 			// Perform the memory copy
 			memcpy(local_dst, local_src, clipped_row_size);
@@ -2871,8 +2871,8 @@ void EMData::calc_rcf(EMData * with, vector < float >&sum_array)
 	for (int i = 8; i < nx2; i += 6) {
 		vdata = calc_az_dist(array_size, 0, da, i, i + 6);
 		vdata2 = with->calc_az_dist(array_size, 0, da, i, i + 6);
-		assert(vdata.size() <= array_size + 2);
-		assert(cdata2.size() <= array_size + 2);
+		Assert(vdata.size() <= array_size + 2);
+		Assert(cdata2.size() <= array_size + 2);
 		std::copy(vdata.begin(), vdata.end(), dat);
 		std::copy(vdata2.begin(), vdata2.end(), dat2);
 

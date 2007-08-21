@@ -36,7 +36,7 @@
 #include "spiderio.h"
 #include "geometry.h"
 #include "portable_fileio.h"
-#include "Assert.h"
+#include "emassert.h"
 #include "util.h"
 #include <iostream>
 #include <ctime>

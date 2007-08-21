@@ -40,7 +40,7 @@
 #include "hdfio2.h"
 #include "geometry.h"
 #include "ctf.h"
-#include "Assert.h"
+#include "emassert.h"
 #include "transform.h"
 #include <iostream>
 

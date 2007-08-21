@@ -34,7 +34,7 @@
  * */
 
 #include "byteorder.h"
-#include "Assert.h"
+#include "emassert.h"
 #include "emdata.h"
 #include "util.h"
 #include "marchingcubes.h"

@@ -4,7 +4,7 @@
 //#include "cse452.h"
 #include <iostream>
 #include <cmath>
-#include <Assert.h>
+#include "emassert.h"
 
 namespace EMAN
 {

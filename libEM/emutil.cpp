@@ -38,7 +38,7 @@
 #include "emcache.h"
 #include "emdata.h"
 #include "ctf.h"
-#include "Assert.h"
+#include "emassert.h"
 
 #ifdef WIN32
 	#include <windows.h>

@@ -1384,7 +1384,7 @@ public:
     static float get_ctf( float defocus, int r2 )
     {
     /*
-        assert( m_inited );
+        Assert( m_inited );
 
         shared_ptr< vector<float> > ptr;
 

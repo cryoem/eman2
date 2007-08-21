@@ -137,8 +137,8 @@ void MarchingCubes::build_search_tree() {
 CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size) {
 	if(size == 1) {
 
-//		assert(size == 1);
-//		assert(level == _emdata->getResolution());
+//		Assert(size == 1);
+//		Assert(level == _emdata->getResolution());
 
 		// terminate, we are at a leaf node
 		CubeNode* node = new CubeNode();

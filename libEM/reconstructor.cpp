@@ -2084,7 +2084,7 @@ EMData* bootstrap_nnReconstructor::finish()
 {
     nn4Reconstructor* r( new nn4Reconstructor(m_symmetry, m_size, m_npad) );
     vector<int> mults = params["mult"];
-//    assert( mults != NULL );
+//    Assert( mults != NULL );
     Assert( m_transes.size() == mults.size() );
 
     int total = 0;
@@ -2852,7 +2852,7 @@ EMData* bootstrap_nnctfReconstructor::finish()
 {
     nn4_ctfReconstructor* r( new nn4_ctfReconstructor(m_symmetry, m_size, m_npad, m_snr, m_sign) );
     vector<int> mults = params["mult"];
-//    assert( mults != NULL );
+//    Assert( mults != NULL );
     Assert( m_transes.size() == mults.size() );
 
     int total = 0;

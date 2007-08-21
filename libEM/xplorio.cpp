@@ -35,7 +35,7 @@
 
 #include "xplorio.h"
 #include "util.h"
-#include "Assert.h"
+#include "emassert.h"
 #include "portable_fileio.h"
 #include "geometry.h"
 

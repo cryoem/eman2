@@ -3,7 +3,7 @@
 
 // include EMAN2
 #include "emdata.h"
-#include "assert.h"
+#include "emassert.h"
 #include "projector.h"
 #include "transform.h"
 #include "reconstructor.h"

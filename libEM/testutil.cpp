@@ -37,7 +37,7 @@
 #include "xydata.h"
 
 #include <algorithm>
-#include <Assert.h>
+#include "emassert.h"
 //#include <stdlib.h>
 
 #ifdef _WIN32

@@ -38,7 +38,7 @@
 #include "ctf.h"
 #include "xydata.h"
 #include "emdata.h"
-#include "Assert.h"
+#include "emassert.h"
 
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>

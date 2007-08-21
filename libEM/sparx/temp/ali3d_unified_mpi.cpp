@@ -3,7 +3,7 @@
 
 // include EMAN2
 #include "emdata.h"
-#include "assert.h"
+#include "emassert.h"
 #include "projector.h"
 
 #include "ali3d_unified_mpi.h"
