@@ -34,7 +34,7 @@
 #include "emutil.h"
 #include "emdata.h"
 #include "xydata.h"
-#include <cassert>
+#include "emassert.h"
 #include "processor.h"
 
 using namespace EMAN;

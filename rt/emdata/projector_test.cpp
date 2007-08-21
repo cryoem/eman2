@@ -35,7 +35,7 @@
 #include "log.h"
 #include "emdata.h"
 #include "xydata.h"
-#include "assert.h"
+#include "emassert.h"
 #include "projector.h"
 
 #include <sys/types.h>
