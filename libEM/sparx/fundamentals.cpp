@@ -174,10 +174,6 @@ Output: 1-2-3D real image with the result
 		// as well as f's workspace, since they will be the same.
 		bool  gexists = true;
 		if (!g) { g = f; gexists = false; }
-		if (!equalsize(f, g)) {
-			LOGERR("Fourier product requires congruent images");
-			throw ImageDimensionException("Fourier product requires congruent images");
-		}
 		if ( f->is_complex() || g->is_complex() ) {
 			// Fourier input only allowed for circulant
 			if (CIRCULANT != flag) {
@@ -299,8 +295,8 @@ Output: 1-2-3D real image with the result
 				LOGERR("Illegal option in Fourier Product");
 				throw InvalidValueException(ptype, "Illegal option in Fourier Product");
 		}
-		// Now done w/ gp, so let's get rid of it (if it's not an alias of fp);
-		if (gexists && (f != g)) 
+		// Now done w/ gp, so let's get rid of it (if it's not an alias of fp or simply g was complex on input);
+		if (gexists && (f != g) && (!g->is_complex())) 
 		{
 			if( gp )
 			{
@@ -338,13 +334,6 @@ Output: 1-2-3D real image with the result
 		fp->set_array_offsets(0,0,0);
 		fp->update();
 		return fp;  
-	}
-
-	bool equalsize(EMData* f, EMData* g) {
-		if (g == f) return true;
-		return ((f->get_xsize() == g->get_xsize()) &&
-				(f->get_ysize() == g->get_ysize()) &&
-				(f->get_zsize() == g->get_zsize()));
 	}
 }
 

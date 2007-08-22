@@ -238,24 +238,6 @@ orrelation.
 	 *  @return fft image of [normalized,] [zero-padded] input image.
 	 */
 	EMData* norm_pad_ft(EMData* f, bool do_norm, bool do_pad, int npad = 2);
-	/** Do two images have the same size?
-	 *
-	 * @warning The current function is too stupid.  It needs to 
-	 *          be able to compare real-space and Fourier images
-	 *          appropriately.
-	 *
-	 * @par Purpose: Determine if two images have equal sizes.
-	 *
-	 *  @param[in] f First image object, either a real-space image
-	 *               or a Fourier image.  Image may be 1-, 2-,
-	 *               or 3-dimensional.  Image f is not changed.
-	 *  @param[in] g Second image object, either a real-space image
-	 *               or a Fourier image.  Image may be 1-, 2-,
-	 *               or 3-dimensional.  Image g is not changed.
-	 *
-	 *  @return true if the images have the same size, false otherwise.
-	 */
-	bool    equalsize(EMData* f, EMData* g);
 
 	enum kernel_shape {
 		BLOCK = 1,

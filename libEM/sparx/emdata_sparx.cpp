@@ -806,11 +806,6 @@ Output: 2D 3xk real image.
 		throw ImageFormatException( "Cannot calculate FSC for 1D images");
 	}
 
-	if (!equalsize(f, g)) {
-		LOGERR("FSC requires congruent images");
-		throw ImageDimensionException("FSC requires congruent images");
-	}
-
 	if (f->is_complex()) nx = (nx - 2 + f->is_fftodd()); // nx is the real-space size of the input image
 	int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 

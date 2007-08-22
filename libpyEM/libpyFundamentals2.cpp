@@ -51,6 +51,5 @@ BOOST_PYTHON_MODULE(libpyFundamentals2)
     def("filt_median_", &EMAN::filt_median_, return_value_policy< manage_new_object >());
     def("filt_dilation_", &EMAN::filt_dilation_, return_value_policy< manage_new_object >());
     def("filt_erosion_", &EMAN::filt_erosion_, return_value_policy< manage_new_object >());
-    def("equalsize", &EMAN::equalsize);
 }
 
