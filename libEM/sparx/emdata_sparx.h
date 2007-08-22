@@ -517,6 +517,9 @@ EMData* rotavg_i();
 		/* pixel power operation function */
 		EMData* get_pow(float n_pow);
 
+		/* pixel conjugate operation function */
+		EMData* conjg();
+
 		private:
 		//utility function for peak_search()
 		static bool peakcmp(const Pixel& p1, const Pixel& p2);  

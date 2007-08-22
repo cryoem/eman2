@@ -965,7 +965,6 @@ EMData* EMData::average_circ_sub() const
 	ENTERFUNC;
 	const EMData* const image = this;
 	EMData* newimg = copy_head();
-	newimg->set_size(nx,ny,nz);
 	float *proj = image->get_data();
 	float *pnewimg = newimg->get_data();
 	//  Calculate average outside of a circle
@@ -3679,17 +3678,23 @@ vector<float> EMData::peak_ccf(float hf_p)
 
 EMData* EMData::get_pow(float n_pow)
 {   
-	vector<int> saved_offsets = get_array_offsets();
-	EMData* buf_new = new EMData();
- 	int nx = this->get_xsize();
- 	int ny = this->get_ysize(); 
-	int nz = this->get_zsize(); 
-	buf_new->set_size(nx,ny,nz);
-	float *in = this->get_data();
+	EMData* buf_new = this->copy_head();
+	float *in  = this->get_data();
 	float *out = buf_new->get_data();
-	for(int i=0; i<nx*ny*nz; i++) out[i]=pow(in[i],n_pow);
+	for(int i=0; i<nx*ny*nz; i++) out[i] = pow(in[i],n_pow);
 	return buf_new;
-}						
+}
+
+EMData* EMData::conjg()
+{  
+	if(this->is_complex()) {
+		EMData* buf_new = this->copy_head();
+ 		float *in  = this->get_data();
+		float *out = buf_new->get_data();
+		for(int i=0; i<nx*ny*nz; i+=2) {out[i] = in[i]; out[i+1] = -in[i+1];}
+		return buf_new;
+	} else throw ImageFormatException("image has to be complex");
+}
 
 EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew) 
 {
