@@ -2383,7 +2383,7 @@ void Util::Frngs_inv(EMData* circp, vector<int> numr){
 }
 #undef  circ
 
-#define  b(i)            b      [(i)-1]
+#define  b(i)            b[i-1]
 void Util::prb1d(double *b, int npoint, float *pos)
 {
    double  c2,c3;
@@ -2418,12 +2418,12 @@ void Util::prb1d(double *b, int npoint, float *pos)
 }
 #undef  b
 
-#define  circ1(i)        circ1  [(i)-1]
-#define  circ2(i)        circ2  [(i)-1]
-#define  t(i)            t      [(i)-1]
-#define  q(i)            q      [(i)-1]
-#define  b(i)            b      [(i)-1]
-#define  t7(i)           t7     [(i)-1]
+#define  circ1(i)        circ1  [i-1]
+#define  circ2(i)        circ2  [i-1]
+#define  t(i)            t      [i-1]
+#define  q(i)            q      [i-1]
+#define  b(i)            b      [i-1]
+#define  t7(i)           t7     [i-1]
 Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
    //  neg = 0 straight,  neg = 1 mirrored
    int nring = numr.size()/3;
@@ -2785,7 +2785,7 @@ Dict Util::Crosrng_msr(EMData* circ1, EMData* circ2, vector<int> numr) {
    retvals["tmt"] = tmt;
    return retvals;
 }
-#define  temp(i)            temp[(i)-1]
+#define  temp(i)            temp[i-1]
 
 //---------------------------------------------------
 void Util::crosrng_msr(float *circ1, float *circ2, int , int  nring,
@@ -2928,9 +2928,9 @@ c
 #undef temp
 
 
-#define  dout(i,j)   dout[i+maxrin*j]
-#define  circ1b(i)        circ1b  [(i)-1]
-#define  circ2b(i)        circ2b  [(i)-1]
+#define  dout(i,j)        dout[i+maxrin*j]
+#define  circ1b(i)        circ1b[i-1]
+#define  circ2b(i)        circ2b[i-1]
 
 EMData* Util::Crosrng_msg(EMData* circ1, EMData* circ2, vector<int> numr)
 {
@@ -3317,7 +3317,7 @@ void Util::sub_fav(EMData* avep,EMData* datp, float tot, int mirror, vector<int>
 
 
 
-#define old_ptr(i,j,k) old_ptr[(i+(j+(k*ny))*nx)]
+#define old_ptr(i,j,k)          old_ptr[(i+(j+(k*ny))*nx)]
 #define new_ptr(iptr,jptr,kptr) new_ptr[iptr+(jptr+(kptr*new_ny))*new_nx]
 EMData* Util::decimate(EMData* img, int x_step, int y_step, int z_step)
 {
@@ -3870,9 +3870,9 @@ Dict Util::CANG(float PHI,float THETA,float PSI)
 #undef QUADPI
 #undef DGR_TO_RAD
 //-----------------------------------------------------------------------------------------------------------------------
-#define    DM(I)         		DM	    [I-1]  
-#define    B(i,j) 			Bptr        [i-1+((j-1)*NSAM)] 
-#define    CUBE(i,j,k)                  CUBEptr     [(i-1)+((j-1)+((k-1)*NY3D))*NX3D]
+#define    DM(I)         		DM[I-1]  
+#define    B(i,j) 			Bptr[i-1+((j-1)*NSAM)] 
+#define    CUBE(i,j,k)                  CUBEptr[(i-1)+((j-1)+((k-1)*NY3D))*NX3D]
 
 void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 {
@@ -3932,8 +3932,8 @@ void Util::BPCQ(EMData *B,EMData *CUBE, vector<float> DM)
 #undef CUBE
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#define    W(i,j) 			Wptr        [i-1+((j-1)*(Wnx))] 
-#define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*(NNNN))] 
+#define    W(i,j) 			Wptr        [i-1+((j-1)*Wnx)] 
+#define    PROJ(i,j) 		        PROJptr     [i-1+((j-1)*NNNN)] 
 #define    SS(I,J)         		SS	    [I-1 + (J-1)*6]
 
 void Util::WTF(EMData* PROJ,vector<float> SS,float SNR,int K,vector<float> exptable)
@@ -15419,6 +15419,7 @@ EMData* Util::addn_img(EMData* img, EMData* img1)
 	EXITFUNC;
 	return img2;
 }
+
 EMData* Util::subn_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -15462,16 +15463,22 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	float *img_ptr  =img->get_data();
 	float *img2_ptr = img2->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
-	img2->update();
 	if(img->is_complex()) {
+		for (int i=0; i<size; i+=2) {
+			img2_ptr[i]   = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
+			img2_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
+		}
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+	} else {
+		for (int i=0; i<size; i++) img2_ptr[i] = img_ptr[i] * img1_ptr[i];
+		img2->update();
 	}
 	
 	EXITFUNC;
 	return img2;
 }
+
 void Util::mul_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -15489,7 +15496,6 @@ void Util::mul_scalar(EMData* img, float scalar)
 	
 	EXITFUNC;
 }
-
 
 void Util::mad_scalar(EMData* img, EMData* img1, float scalar)
 {
@@ -15567,7 +15573,6 @@ void Util::sub_img(EMData* img, EMData* img1)
 	EXITFUNC;
 }
 
-
 void Util::mul_img(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -15581,11 +15586,103 @@ void Util::mul_img(EMData* img, EMData* img1)
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] *= img1_ptr[i];
+	if(img->is_complex()) {
+		for (int i=0; i<size; i+=2) {
+			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
+			img_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
+			img_ptr[i]   = tmp;
+			
+		}
+	} else {
+		for (int i=0;i<size;i++) img_ptr[i] *= img1_ptr[i];
+	}
 	img->update();
 	
 	EXITFUNC;
 }
+
+#define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*nxo]
+
+EMData* Util::pack_complex_to_real(EMData* img)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ==============   img is modulus of a complex image in FFT format (so its imaginary parts are zero), 
+	                      output is img packed into real image with Friedel part added,   ================ */
+	
+	int nxo=img->get_xsize(), ny=img->get_ysize(), nz=img->get_zsize();
+	int nx = nxo - 2 + img->is_fftodd();
+	int lsd2 = (nx + 2 - nx%2) / 2; // Extended x-dimension of the complex image
+	int nyt, nzt;
+	int nx2 = nx/2;
+	int ny2 = ny/2; if(ny2 == 0) nyt =0; else nyt=ny;
+	int nz2 = nz/2; if(nz2 == 0) nzt =0; else nzt=nz;
+	int nx2p = nx2+nx%2;
+	int ny2p = ny2+ny%2;
+	int nz2p = nz2+nz%2;
+	EMData& power = *(new EMData()); // output image
+	power.set_size(nx, ny, nz);
+	power.set_array_offsets(-nx2,-ny2,-nz2);
+	//img->set_array_offsets(1,1,1);
+	float *img_ptr  = img->get_data();
+	for (int iz = 1; iz <= nz; iz++) {
+		int jz=iz-1; 
+		if(jz>=nz2p) jz=jz-nzt;
+		for (int iy = 1; iy <= ny; iy++) {
+			int jy=iy-1; 
+			if(jy>=ny2p) jy=jy-nyt;
+			for (int ix = 1; ix <= lsd2; ix++) {
+				int jx=ix-1; 
+				if(jx>=nx2p) jx=jx-nx;
+				power(jx,jy,jz) = img_ptr(ix,iy,iz); //real(img->cmplx(ix,iy,iz));
+			}
+		}
+	}
+//  Create the Friedel related half
+	int  nzb, nze, nyb, nye, nxb, nxe;
+	nxb =-nx2+(nx+1)%2;
+	nxe = nx2-(nx+1)%2;
+	if(ny2 == 0) {nyb =0; nye = 0;} else {nyb =-ny2+(ny+1)%2; nye = ny2-(ny+1)%2;}
+	if(nz2 == 0) {nzb =0; nze = 0;} else {nzb =-nz2+(nz+1)%2; nze = nz2-(nz+1)%2;}
+	for (int iz = nzb; iz <= nze; iz++) {
+		for (int iy = nyb; iy <= nye; iy++) {
+			for (int ix = 1; ix <= nxe; ix++) { // Note this loop begins with 1 - FFT should create correct Friedel related 0 plane
+				power(-ix,-iy,-iz) = power(ix,iy,iz);
+			}
+		}
+	}
+	if(ny2 != 0)  {
+		if(nz2 != 0)  {
+			if(nz%2 == 0) {  //if nz even, fix the first slice
+				for (int iy = nyb; iy <= nye; iy++) {
+					for (int ix = nxb; ix <= -1; ix++) { 
+						power(ix,iy,-nz2) = power(-ix,-iy,-nz2);
+					}
+				}
+				if(ny%2 == 0) {  //if ny even, fix the first line
+					for (int ix = nxb; ix <= -1; ix++) { 
+						power(ix,-ny2,-nz2) = power(-ix,-ny2,-nz2);
+					}
+				}
+			}
+		}
+		if(ny%2 == 0) {  //if ny even, fix the first column
+			for (int iz = nzb; iz <= nze; iz++) {
+				for (int ix = nxb; ix <= -1; ix++) {
+					power(ix,-ny2,-iz) = power(-ix,-ny2,iz);
+				}
+			}
+		}
+		
+	}
+	power.update();
+	power.set_array_offsets(0,0,0);
+	return &power;
+}
+#undef  img_ptr
 
 float Util::ang_n(float peakp, string mode, int maxrin)
 {
@@ -16162,8 +16259,8 @@ float Util::ccc_images_G(EMData* image, EMData* refim, EMData* mask, Util::Kaise
 	return ccc;
 }
 
-#define img_ptr(i,j,k) img_ptr[(i+(j+(k*ny))*nx)]
-#define img2_ptr(i,j,k) img2_ptr[(i+(j+(k*ny))*nx)]
+#define img_ptr(i,j,k)  img_ptr[i+(j+(k*ny))*nx]
+#define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*nx]
 EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 {
 	ENTERFUNC;

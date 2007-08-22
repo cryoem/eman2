@@ -50,7 +50,7 @@ periodogram(EMData* f) {
 //  Process f if real
 	EMData* fp = NULL;
 	if(f->is_complex()) fp = f->copy(); // we need to make a full copy so that we don't damage the original
-	else fp= norm_pad_ft(f, false, false); // Extend and do the FFT if f is real
+	else fp = norm_pad_ft(f, false, false); // Extend and do the FFT if f is real
 
 	fp->set_array_offsets(1,1,1);
 

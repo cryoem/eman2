@@ -476,7 +476,8 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void sub_img(EMData* img, EMData* img1);
 	/* img *= img1  */
 	static void mul_img(EMData* img, EMData* img1);
-	
+	/* pack absolute values of complex image into  real image with addition of Friedel part  */
+	static EMData* pack_complex_to_real(EMData* img);	
 private:	
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
