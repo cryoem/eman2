@@ -37,13 +37,14 @@ from emimage2d import *
 from emimagemx import *
 from emimage3d import *
 from OpenGL import GL,GLU,GLUT
+from sys import argv
 #from valslider import ValSlider
 #from math import *
 #from EMAN2 import *
 #import sys
 #import numpy
 
-#GLUT.glutInit( )
+GLUT.glutInit(sys.argv )
 
 def get_app():
 	app=QtGui.QApplication.instance()
