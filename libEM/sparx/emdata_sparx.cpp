@@ -3086,9 +3086,9 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 						break;
 					}
 				}
-				if (ixn >= -kbmin && ixn <= nhalf-1-kbmax
-						&& iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax
-						&& izn >= -nhalf-kbmin && izn <= nhalf-1-kbmax) {
+				if    (ixn >= -kbmin      && ixn <= nhalf-1-kbmax
+				   && iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax
+				   && izn >= -nhalf-kbmin && izn <= nhalf-1-kbmax) {
 					// interior points
 					for (int lz = lnbz; lz <= lnez; lz++) {
 						int izp = izn + lz;
@@ -3167,7 +3167,6 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	for (int jy = -nhalf; jy < nhalf; jy++) 
 		for (int jx = 0; jx <= nhalf; jx++) 
 			res->cmplx(jx,jy) *= count/wsum;
-	
 	delete[] wx0; delete[] wy0; delete[] wz0;
 	set_array_offsets(saved_offsets);
 	res->set_array_offsets(0,0,0);
@@ -3696,106 +3695,101 @@ EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew)
 
 	for (int jx = 0; jx <= nhalf; jx++) {
 		float xnew = jx*nuxnew, ynew = jx*nuynew;
-			count++;
-			std::complex<float> btq(0.f,0.f);
-			if (flip) {
-				xnew = -xnew;
-				ynew = -ynew;
-			}
-			int ixn = int(Util::round(xnew));
-			int iyn = int(Util::round(ynew));
-			// populate weight arrays
-			for (int i=kbmin; i <= kbmax; i++) {
-				int iyp = iyn + i;
-				wy[i] = kb.i0win_tab(ynew - iyp);
-				int ixp = ixn + i;
-				wx[i] = kb.i0win_tab(xnew - ixp);
-			}
-			// restrict weight arrays to non-zero elements
+		count++;
+		std::complex<float> btq(0.f,0.f);
+		if (flip) {
+			xnew = -xnew;
+			ynew = -ynew;
+		}
+		int ixn = int(Util::round(xnew));
+		int iyn = int(Util::round(ynew));
+		// populate weight arrays
+		for (int i=kbmin; i <= kbmax; i++) {
+			int iyp = iyn + i;
+			wy[i] = kb.i0win_tab(ynew - iyp);
+			int ixp = ixn + i;
+			wx[i] = kb.i0win_tab(xnew - ixp);
+		}
+		// restrict weight arrays to non-zero elements
 
-			int lnby = 0;
-			for (int iy = kbmin; iy <= -1; iy++) {
-				if (wy[iy] != 0.f) {
-					lnby = iy;
-					break;
+		int lnby = 0;
+		for (int iy = kbmin; iy <= -1; iy++) {
+			if (wy[iy] != 0.f) {
+				lnby = iy;
+				break;
+			}
+		}
+		int lney = 0;
+		for (int iy = kbmax; iy >= 1; iy--) {
+			if (wy[iy] != 0.f) {
+				lney = iy;
+				break;
+			}
+		}
+		int lnbx = 0;
+		for (int ix = kbmin; ix <= -1; ix++) {
+			if (wx[ix] != 0.f) {
+				lnbx = ix;
+				break;
+			}
+		}
+		int lnex = 0;
+		for (int ix = kbmax; ix >= 1; ix--) {
+			if (wx[ix] != 0.f) {
+				lnex = ix;
+				break;
+			}
+		}
+		if (ixn >= -kbmin && ixn <= nhalf-1-kbmax
+				&& iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax) {
+			// interior points
+			for (int ly=lnby; ly<=lney; ly++) {
+				int iyp = iyn + ly;
+				for (int lx=lnbx; lx<=lnex; lx++) {
+					int ixp = ixn + lx;
+					float wg = wx[lx]*wy[ly];
+					btq += cmplx(ixp,iyp)*wg;
+					wsum += wg;
 				}
 			}
-			int lney = 0;
-			for (int iy = kbmax; iy >= 1; iy--) {
-				if (wy[iy] != 0.f) {
-					lney = iy;
-					break;
-				}
-			}
-			int lnbx = 0;
-			for (int ix = kbmin; ix <= -1; ix++) {
-				if (wx[ix] != 0.f) {
-					lnbx = ix;
-					break;
-				}
-			}
-			int lnex = 0;
-			for (int ix = kbmax; ix >= 1; ix--) {
-				if (wx[ix] != 0.f) {
-					lnex = ix;
-					break;
-				}
-			}
-			if (ixn >= -kbmin && ixn <= nhalf-1-kbmax
-					&& iyn >= -nhalf-kbmin && iyn <= nhalf-1-kbmax) {
-				// interior points
-				for (int ly=lnby; ly<=lney; ly++) {
-					int iyp = iyn + ly;
-					for (int lx=lnbx; lx<=lnex; lx++) {
-						int ixp = ixn + lx;
-						float wg = wx[lx]*wy[ly];
-						btq += cmplx(ixp,iyp)*wg;
-						wsum += wg;
+		} else {
+			// points "sticking out"
+			for (int ly=lnby; ly<=lney; ly++) {
+				int iyp = iyn + ly;
+				for (int lx=lnbx; lx<=lnex; lx++) {
+					int ixp = ixn + lx;
+					float wg = wx[lx]*wy[ly];
+					bool mirror = false;
+					int ixt(ixp), iyt(iyp);
+					if (ixt > nhalf || ixt < -nhalf) {
+						ixt = Util::sgn(ixt)*(n - abs(ixt));
+						iyt = -iyt;
+						mirror = !mirror;
 					}
-				}
-			}
-			else {
-				// points "sticking out"
-				for (int ly=lnby; ly<=lney; ly++) {
-					int iyp = iyn + ly;
-					for (int lx=lnbx; lx<=lnex; lx++) {
-						int ixp = ixn + lx;
-						float wg = wx[lx]*wy[ly];
-						bool mirror = false;
-						int ixt(ixp), iyt(iyp);
-						if (ixt > nhalf || ixt < -nhalf) {
-							ixt = Util::sgn(ixt)*(n - abs(ixt));
-							iyt = -iyt;
-							mirror = !mirror;
-						}
-						if (iyt >= nhalf || iyt < -nhalf) {
-							if (ixt != 0) {
-								ixt = -ixt;
-								iyt = Util::sgn(iyt)
-									  *(n - abs(iyt));
-								mirror = !mirror;
-							} else {
-								iyt -= n*Util::sgn(iyt);
-							}
-						}
-						if (ixt < 0) {
+					if (iyt >= nhalf || iyt < -nhalf) {
+						if (ixt != 0) {
 							ixt = -ixt;
-							iyt = -iyt;
+							iyt = Util::sgn(iyt)
+								  *(n - abs(iyt));
 							mirror = !mirror;
+						} else {
+							iyt -= n*Util::sgn(iyt);
 						}
-						if (iyt == nhalf) iyt = -nhalf;
-						if (mirror) 
-							btq += conj(cmplx(ixt,iyt))*wg;
-						else
-							btq += cmplx(ixt,iyt)*wg;
-							wsum += wg;
 					}
+					if (ixt < 0) {
+						ixt = -ixt;
+						iyt = -iyt;
+						mirror = !mirror;
+					}
+					if (iyt == nhalf) iyt = -nhalf;
+					if (mirror) btq += conj(cmplx(ixt,iyt))*wg;
+					else         btq += cmplx(ixt,iyt)*wg;
+					wsum += wg;
 				}
 			}
-		if (flip) 
-			res->cmplx(jx) = conj(btq);
-		else
-			res->cmplx(jx) = btq;
+		}
+		if (flip) res->cmplx(jx) = conj(btq);
+		else      res->cmplx(jx) = btq;
 	}
 	for (int jx = 0; jx <= nhalf; jx++) 
 		res->cmplx(jx) *= count/wsum;
@@ -3803,7 +3797,6 @@ EMData* EMData::extractline(Util::KaiserBessel& kb, float nuxnew, float nuynew)
 	delete[] wx0; delete[] wy0;
 	set_array_offsets(saved_offsets);
 	res->set_array_offsets(0,0,0);
-	//res->set_shuffled(true);
 	return res;
 }
 
