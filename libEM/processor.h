@@ -897,6 +897,40 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/**f(x) = x if x >= minval; f(x) = minval if x < minval
+	 *@param minval
+	 */
+	class ToMinvalProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return "threshold.belowtominval";
+		}
+		static Processor *NEW()
+		{
+			return new ToMinvalProcessor();
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("minval", EMObject::FLOAT);
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "f(x) = x if x >= minval; f(x) = minval if x < minval.";
+		}
+		
+	  protected:
+		void process_pixel(float *x) const
+		{
+			*x = std::max(*x, value);
+		}
+	};
+
+
 	/**f(x) = x-minval if x >= minval; f(x) = 0 if x < minval
 	 *@param minval
 	 */

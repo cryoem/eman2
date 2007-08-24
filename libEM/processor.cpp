@@ -71,6 +71,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&ValueSqrtProcessor::NEW);
 
 	force_add(&ToZeroProcessor::NEW);
+	force_add(&ToMinvalProcessor::NEW);
 	force_add(&CutToZeroProcessor::NEW);
 	force_add(&BinarizeProcessor::NEW);
 	force_add(&CollapseProcessor::NEW);
@@ -3744,8 +3745,7 @@ void SmartMaskProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-void AutoMask3DProcessor::search_nearby(float *dat, float *dat2,
-									 int nx, int ny, int nz, float threshold)
+void AutoMask3DProcessor::search_nearby(float *dat, float *dat2, int nx, int ny, int nz, float threshold)
 {
 	Assert(dat != 0);
 	Assert(dat2 != 0);

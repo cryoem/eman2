@@ -2981,7 +2981,7 @@ Dict EMData::masked_stats(const EMData* mask) {
 
 EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	if (!is_complex()) 
-		throw ImageFormatException("extractplane requires a fourier image");
+		throw ImageFormatException("extractplane requires a complex image");
 	if (nx%2 != 0)
 		throw ImageDimensionException("extractplane requires nx to be even");
 	int nxreal = nx - 2; 
@@ -3002,15 +3002,15 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 	set_array_offsets(0,-nhalf,-nhalf);
 	res->set_array_offsets(0,-nhalf,0);
 	// set up some temporary weighting arrays
-	int kbsize = kb.get_window_size();
-	int kbmin = -kbsize/2;
-	int kbmax = -kbmin;
+	int kbsize =  kb.get_window_size();
+	int kbmin  = -kbsize/2;
+	int kbmax  = -kbmin;
 	float* wy0 = new float[kbmax - kbmin + 1];
-	float* wy = wy0 - kbmin; // wy[kbmin:kbmax]
+	float* wy  = wy0 - kbmin; // wy[kbmin:kbmax]
 	float* wx0 = new float[kbmax - kbmin + 1];
-	float* wx = wx0 - kbmin;
+	float* wx  = wx0 - kbmin;
 	float* wz0 = new float[kbmax - kbmin + 1];
-	float* wz = wz0 - kbmin;
+	float* wz  = wz0 - kbmin;
 	float rim = nhalf*float(nhalf);
 	int count = 0;
 	float wsum = 0.f;
@@ -3152,19 +3152,15 @@ EMData* EMData::extractplane(const Transform3D& tf, Util::KaiserBessel& kb) {
 								}
 								if (iyt == nhalf) iyt = -nhalf;
 								if (izt == nhalf) izt = -nhalf;
-								if (mirror) 
-									btq += conj(cmplx(ixt,iyt,izt))*wg;
-								else
-									btq += cmplx(ixt,iyt,izt)*wg;
+								if (mirror)   btq += conj(cmplx(ixt,iyt,izt))*wg;
+								else          btq += cmplx(ixt,iyt,izt)*wg;
 								wsum += wg;
 							}
 						}
 					}
 				}
-				if (flip) 
-					res->cmplx(jx,jy) = conj(btq);
-				else
-					res->cmplx(jx,jy) = btq;
+				if (flip)  res->cmplx(jx,jy) = conj(btq);
+				else       res->cmplx(jx,jy) = btq;
 			}
 		}
 	}
