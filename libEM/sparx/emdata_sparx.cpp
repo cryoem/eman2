@@ -451,8 +451,7 @@ EMData *EMData::FH2Real(int Size, float OverSamplekB, int)  // PRB
 float dist(int lnlen, const float* line_1, const float* line_2)
 {
     double dis2=0.0;
-    for( int i=0; i < lnlen; ++i)
-    {
+    for( int i=0; i < lnlen; ++i) {
        float tmp = line_1[i] - line_2[i];
        dis2 += tmp*tmp;
     }
@@ -462,8 +461,7 @@ float dist(int lnlen, const float* line_1, const float* line_2)
 float dist_r(int lnlen, const float* line_1, const float* line_2)
 {
     double dis2 = 0.0;
-    for( int i=0; i < lnlen; ++i )
-    {
+    for( int i=0; i < lnlen; ++i ) {
         float tmp = line_1[lnlen-1-i] - line_2[i];
         dis2 += tmp*tmp;
     }
@@ -487,16 +485,14 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
     float* line_1 = get_data() + n1*lnlen;
     float* line_2 = sinoj->get_data() + n2*lnlen;
     float just = (alpha1-180.0)*(alpha2-180.0);
-    if( just > 0.0 )
-    {
+    if( just > 0.0 ) {
         return dist(lnlen, line_1, line_2);
     }
 
-    if( just == 0.0 )
-    {
+    if( just == 0.0 ) {
         float dist_1 = dist(lnlen, line_1, line_2);
-	float dist_2 = dist_r(lnlen, line_1, line_2);
-	return std::min(dist_1, dist_2);
+		float dist_2 = dist_r(lnlen, line_1, line_2);
+		return std::min(dist_1, dist_2);
     }
 
     Assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
@@ -537,20 +533,20 @@ EMData* EMData::rotavg() {
 	ret->to_zero();
 	vector<float> count(rmax+1);
 	for (int k = -nz/2; k < nz/2 + nz%2; k++) {
-	   if (abs(k) > rmax) continue;
-	   for (int j = -ny/2; j < ny/2 + ny%2; j++) {
-		if (abs(j) > rmax) continue;
-		for (int i = -nx/2; i < nx/2 + nx%2; i++) {
-			float r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
-			int ir = int(r);
-			if (ir >= rmax) continue;
-			float frac = r - float(ir);
-			(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
-			(*ret)(ir+1) += (*this)(i,j,k)*frac;
-			count[ir] += 1.0f - frac;
-			count[ir+1] += frac;
+		if (abs(k) > rmax) continue;
+		for (int j = -ny/2; j < ny/2 + ny%2; j++) {
+			if (abs(j) > rmax) continue;
+			for (int i = -nx/2; i < nx/2 + nx%2; i++) {
+				float r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+				int ir = int(r);
+				if (ir >= rmax) continue;
+				float frac = r - float(ir);
+				(*ret)(ir) += (*this)(i,j,k)*(1.0f - frac);
+				(*ret)(ir+1) += (*this)(i,j,k)*frac;
+				count[ir] += 1.0f - frac;
+				count[ir+1] += frac;
+			}
 		}
-	    }
 	}
 	for (int ir = 0; ir <= rmax; ir++) {
 	#ifdef _WIN32
@@ -640,115 +636,98 @@ vector<float> EMData::cog() {
 	int i=1,j=1,k=1;
 	float val,sum1=0.f,MX=0.f,RG=0.f,MY=0.f,MZ=0.f,r=0.f;
 	
-	if (ndim == 1)
-	{
-			for ( i = 1;i <= nx; i++)
-			{
-				val   = rdata(i,j,k);
+	if (ndim == 1) {
+		for ( i = 1;i <= nx; i++) {
+			val   = rdata(i,j,k);
+			sum1 += val;
+			MX   += ((i-1)*val);
+		}
+		MX=(MX/sum1);
+		for ( i = 1;i <= nx; i++) {
+			val   = rdata(i,j,k);
+			sum1 += val;
+			RG   += val*(square(MX - (i-1)));
+		}
+		RG=std::sqrt(RG/sum1);
+		MX=MX-(nx/2);
+		cntog.push_back(MX);
+		cntog.push_back(RG);
+#ifdef _WIN32
+		cntog.push_back(Util::round(MX));
+#else
+		cntog.push_back(round(MX));
+#endif	//_WIN32
+	} else if (ndim == 2) {	
+		for (j=1;j<=ny;j++) {
+			for (i=1;i<=nx;i++) {
+				val = rdata(i,j,k);
 				sum1 += val;
 				MX   += ((i-1)*val);
+				MY   += ((j-1)*val);
 			}
-			MX=(MX/sum1);
-			for ( i = 1;i <= nx; i++)
-			{
-				val   = rdata(i,j,k);
+		}
+		MX=(MX/sum1);
+		MY=(MY/sum1);
+		sum1=0.f;
+		RG=0.f;
+		for (j=1;j<=ny;j++) {
+			r = (square(MY-(j-1)));
+			for (i=1;i<=nx;i++) {
+				val = rdata(i,j,k);
 				sum1 += val;
-				RG   += val*(square(MX - (i-1)));
+				RG   += val*(square(MX - (i-1)) + r);
 			}
-			RG=std::sqrt(RG/sum1);
-			MX=MX-(nx/2);
-			cntog.push_back(MX);
-			cntog.push_back(RG);
+		}
+		RG = std::sqrt(RG/sum1);
+		MX = MX - nx/2;
+		MY = MY - ny/2;
+		cntog.push_back(MX);
+		cntog.push_back(MY);
+		cntog.push_back(RG);
 #ifdef _WIN32
-			cntog.push_back(Util::round(MX));
+		cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));
 #else
-			cntog.push_back(round(MX));
+		cntog.push_back(round(MX));cntog.push_back(round(MY));
 #endif	//_WIN32
-	}	
-	else if (ndim == 2)
-	{	
-			for (j=1;j<=ny;j++)
-				{
-					for (i=1;i<=nx;i++)
-					{
-						val = rdata(i,j,k);
-						sum1 += val;
-						MX   += ((i-1)*val);
-						MY   += ((j-1)*val);
-					}
-				}
-			MX=(MX/sum1);
-			MY=(MY/sum1);
-			sum1=0.f;
-			RG=0.f;
-			for (j=1;j<=ny;j++)
-				{
-					r = (square(MY-(j-1)));
-					for (i=1;i<=nx;i++)
-					{
-						val = rdata(i,j,k);
-						sum1 += val;
-						RG   += val*(square(MX - (i-1)) + r);
-					}
-				}
-			RG = std::sqrt(RG/sum1);
-			MX = MX - nx/2;
-			MY = MY - ny/2;
-			cntog.push_back(MX);
-			cntog.push_back(MY);
-			cntog.push_back(RG);
-#ifdef _WIN32
-			cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));
-#else
-			cntog.push_back(round(MX));cntog.push_back(round(MY));
-#endif	//_WIN32
-	}
-	else 
-	{		
-			for (k = 1;k <= nz;k++)
-			{
-				for (j=1;j<=ny;j++)
-				{
-					for (i=1;i<=nx;i++)
-					{
-						val = rdata(i,j,k);
-						sum1 += val;
-						MX += ((i-1)*val);
-						MY += ((j-1)*val);
-						MZ += ((k-1)*val);
-					}
+	} else {		
+		for (k = 1;k <= nz;k++) {
+			for (j=1;j<=ny;j++) {
+				for (i=1;i<=nx;i++) {
+					val = rdata(i,j,k);
+					sum1 += val;
+					MX += ((i-1)*val);
+					MY += ((j-1)*val);
+					MZ += ((k-1)*val);
 				}
 			}
-			MX = MX/sum1;
-			MY = MY/sum1;
-			MZ = MZ/sum1;
-			sum1=0.f;
-			RG=0.f;
-			for (k = 1;k <= nz;k++)
-			{
-				for (j=1;j<=ny;j++)
-				{
-					float r = (square(MY-(j-1)) + square(MZ - (k-1)));
-					for (i=1;i<=nx;i++)
-					{
-						val = rdata(i,j,k);
-						sum1 += val;
-						RG   += val*(square(MX - (i-1)) + r);
-					}
+		}
+		MX = MX/sum1;
+		MY = MY/sum1;
+		MZ = MZ/sum1;
+		sum1=0.f;
+		RG=0.f;
+		for (k = 1;k <= nz;k++) {
+			for (j=1;j<=ny;j++) {
+				float r = (square(MY-(j-1)) + square(MZ - (k-1)));
+				for (i=1;i<=nx;i++) {
+					val = rdata(i,j,k);
+					sum1 += val;
+					RG   += val*(square(MX - (i-1)) + r);
 				}
 			}
-			RG = std::sqrt(RG/sum1);
-			MX = MX - nx/2;
-			MY = MY - ny/2;
-			MZ = MZ - nz/2;
-			cntog.push_back(MX);
-			cntog.push_back(MY);
-			cntog.push_back(MZ);
-			cntog.push_back(RG);
+		}
+		RG = std::sqrt(RG/sum1);
+		MX = MX - nx/2;
+		MY = MY - ny/2;
+		MZ = MZ - nz/2;
+		cntog.push_back(MX);
+		cntog.push_back(MY);
+		cntog.push_back(MZ);
+		cntog.push_back(RG);
 #ifdef _WIN32
-			cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));cntog.push_back(Util::round(MZ));
+		cntog.push_back(Util::round(MX));cntog.push_back(Util::round(MY));cntog.push_back(Util::round(MZ));
 #else
-			cntog.push_back(round(MX));cntog.push_back(round(MY));cntog.push_back(round(MZ));
+		cntog.push_back(round(MX));cntog.push_back(round(MY));cntog.push_back(round(MZ));
 #endif	//_WIN32	
 	}	 
 	return cntog;
@@ -852,25 +831,23 @@ Output: 2D 3xk real image.
 			if(iy>ny2) ky=iy-ny; else ky=iy; argy = argz + float(ky*ky)*dy2;
 			for ( ix = 0; ix <= lsd2-1; ix+=2) {
 			// Skip Friedel related values
-			   if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
-				argx = 0.5f*std::sqrt(argy + float(ix*ix)*0.25f*dx2);
-				int r = Util::round(inc*2*argx);
-				if(r <= inc) {
-					ii = ix + (iy  + iz * ny)* lsd2;
-					ret[r] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
-					n1[r]  += d1[ii] * double(d1[ii]) + d1[ii + 1] * double(d1[ii + 1]);
-					n2[r]  += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
-					lr[r]  +=2;
+				if(ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+					argx = 0.5f*std::sqrt(argy + float(ix*ix)*0.25f*dx2);
+					int r = Util::round(inc*2*argx);
+					if(r <= inc) {
+						ii = ix + (iy  + iz * ny)* lsd2;
+						ret[r] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
+						n1[r]  += d1[ii] * double(d1[ii]) + d1[ii + 1] * double(d1[ii + 1]);
+						n2[r]  += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
+						lr[r]  += 2;
+					}
 				}
-			   }
 			}
 		}
 	}
 
-
 	int  linc = 0;
 	for (int i = 0; i <= inc; i++) if(lr[i]>0) linc++;
-	
 
 	vector < float >result(linc*3);
 
@@ -880,42 +857,36 @@ Output: 2D 3xk real image.
 			ii++;
 			result[ii]        = float(i)/float(2*inc);
 			result[ii+linc]   = float(ret[i] / (std::sqrt(n1[i] * n2[i])));
-			result[ii+2*linc] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;}
+			result[ii+2*linc] = lr[i]  /*1.0f/sqrt(float(lr[i]))*/;
+		}
 		/*else {
 			result[i]           = 0.0f;
 			result[i+inc+1]     = 0.0f;
 			result[i+2*(inc+1)] = 0.0f;}*/
 	}
 
-	if( ret )
-	{
+	if( ret ) {
 		delete[]ret;
 		ret = 0;
 	}
 
-	if( n1 )
-	{
+	if( n1 ) {
 		delete[]n1;
 		n1 = 0;
 	}
-	if( n2 )
-	{
+	if( n2 ) {
 		delete[]n2;
 		n2 = 0;
 	}
 
-	if (needfree&1)
-	{
-		if( fpimage )
-		{
+	if (needfree&1) {
+		if( fpimage ) {
 			delete fpimage;
 			fpimage = 0;
 		}
 	}
-	if (needfree&2)
-	{
-		if( gpimage )
-		{
+	if (needfree&2) {
+		if( gpimage ) {
 			delete gpimage;
 			gpimage = 0;
 		}
