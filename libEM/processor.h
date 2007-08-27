@@ -2442,10 +2442,10 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("x0", EMObject::INT);
-			d.put("x1", EMObject::INT);
-			d.put("y0", EMObject::INT);
-			d.put("y1", EMObject::INT);
+			d.put("x0", EMObject::INT, "The number of columns to zero from left");
+			d.put("x1", EMObject::INT, "The number of columns to zero from right");
+			d.put("y0", EMObject::INT, "The number of rows to zero from the bottom");
+			d.put("y1", EMObject::INT, "The number of rows to zero from the top");
 			return d;
 		}
 	};
@@ -2480,12 +2480,12 @@ The basic design of EMAN Processors: <br>\
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("x0", EMObject::INT);
-			d.put("x1", EMObject::INT);
-			d.put("y0", EMObject::INT);
-			d.put("y1", EMObject::INT);
-			d.put("z0", EMObject::INT);
-			d.put("z1", EMObject::INT);
+			d.put("x0", EMObject::INT, "The number of columns to zero from left");
+			d.put("x1", EMObject::INT, "The number of columns to zero from right");
+			d.put("y0", EMObject::INT, "The number of rows to zero from the bottom");
+			d.put("y1", EMObject::INT, "The number of rows to zero from the top");
+			d.put("z0", EMObject::INT, "The number of slices to zero from the bottom");
+			d.put("z1", EMObject::INT, "The number of slices to zero from the top");
 			return d;
 		}
 	};

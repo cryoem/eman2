@@ -40,6 +40,9 @@ import sys
 import math
 import random
 
+# python debugging
+import pdb
+
 CONTRIBUTING_PARTICLE_LIMIT = 1000000
 
 def main():
@@ -55,6 +58,7 @@ def main():
 	parser.add_option("--mask", type=int, dest="mask", help="Real-space mask radius")
 	parser.add_option("--goodbad", action="store_true", dest="goodbad", default=False, help="Saves the used and unused class averages in 2 files")
 	parser.add_option("--apix", type=float, dest="apix", default=-1, help="Set the sampling (angstrom/pixel)")
+	parser.add_option("--iter", type=int, dest="iter", default=2, help="Set the number of iterations (default is 4)")
 
 
 	# options that don't work and need to be verified for inclusion in EMAN2
@@ -390,7 +394,9 @@ def gimme_stats( imagefilename ):
 # FIXME: Will support be added for non-square volumes?
 def gimme_global_pixel_dimension( imagefilename ):
 	
-	read_header_only = False
+	#pdb.set_trace()
+	
+	read_header_only = True
 	e = EMData();
 	images = e.read_images(imagefilename,[], read_header_only)
 	
@@ -422,9 +428,7 @@ def fourier_reconstruction(options):
 	
 	# Get the reconstructor and initialize it correctly
 	a = parsemodopt(options.recon_type)
-		
 	recon=Reconstructors.get(a[0], a[1])
-	
 	params = recon.get_params()
 	params["size"] = gimme_global_pixel_dimension( options.input_file );
 	params["sym"] = options.sym
@@ -436,8 +440,9 @@ def fourier_reconstruction(options):
 	if options.mask:
 		params["mask"] = options.mask
 	recon.insert_params(params)
-	recon.setup()
 
+	recon.setup()
+	
 	read_header_only = True
 	images=EMData().read_images(options.input_file,[], read_header_only)
 	total_images = len(images)
@@ -458,16 +463,16 @@ def fourier_reconstruction(options):
 
 	if not(options.quiet):
 		print "Inserting Slices"
-		
-	for j in xrange(0,5): #4):     #change back when the thr issue solved
+	
+	for j in xrange(1,options.iter): #4):     #change back when the thr issue solved
 		
 		removed = 0;
 		
-		if ( j > 0 ):
-			print ""
+		if ( j > 1 ):
 			print "Determining slice agreement"
 			for i in xrange(0,total_images):
-				image=EMData().read_images(options.input_file, [i])[0]
+				image = EMData()
+				image.read_image(options.input_file, i)
 				
 				num_img=image.get_attr("ptcl_repr") 
 				if (num_img<=0):
@@ -489,10 +494,11 @@ def fourier_reconstruction(options):
 			print " Done"
 
 		idx = 0
-	
+		
 		for i in xrange(0,total_images):
 			
-			image=EMData().read_images(options.input_file, [i])[0]
+			image = EMData()
+			image.read_image(options.input_file, i)
 
 			if (image.get_attr("ptcl_repr")<=0):
 				continue
@@ -518,7 +524,7 @@ def fourier_reconstruction(options):
 								image.get_attr("euler_az"),
 								image.get_attr("euler_phi"),
 								image.get_attr("maximum"),image.get_attr("minimum")))
-				if ( j > 0):
+				if ( j > 1):
 					sys.stdout.write("\t%f %f" %(recon.get_norm(idx), recon.get_score(idx) ))
 					
 				if ( failure ):

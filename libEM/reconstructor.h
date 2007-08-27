@@ -344,7 +344,7 @@ namespace EMAN
 	class FourierReconstructor : public Reconstructor
 	{
 	  public:
-		FourierReconstructor() : image_idx(0), inserter(0), slice_insertion_flag(true), slice_agreement_flag(false) { load_default_settings(); }
+		FourierReconstructor() : image_idx(0), inserter(0), slice_insertion_flag(true), slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0) { load_default_settings(); }
 		virtual ~FourierReconstructor() { free_memory(); }
 	
 		/** Copy constructor
@@ -396,14 +396,18 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("size", EMObject::INT);
-			d.put("mode", EMObject::INT);
-			d.put("weight", EMObject::FLOAT);
-			d.put("hard", EMObject::FLOAT);
-			d.put("dlog", EMObject::BOOL);
-			d.put("sym", EMObject::STRING);
-			d.put("pad", EMObject::INT);
-			d.put("apix", EMObject::FLOAT);
+			d.put("size", EMObject::INT, "Should be the size of the input images, i.e. if images are 1024x1024 size should be 1024");
+			d.put("mode", EMObject::INT, "Fourier pixel insertion mode [1-7] - mode 2 is default");
+			d.put("weight", EMObject::FLOAT, "A temporary weight variable, used to weight slices as they are inserted");
+			d.put("hard", EMObject::FLOAT, "The quality metric threshold");
+			d.put("dlog", EMObject::BOOL, "This is a residual from EMAN1 that has not yet been addressed in the EMAN2 implementation");
+			d.put("sym", EMObject::STRING, "The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?");
+			d.put("pad", EMObject::INT, "The amount to pad the input images to - should be greater than the image size");
+			d.put("apix", EMObject::FLOAT, "Angstrom per pixel of the input images, default is 1.0");
+			d.put("zsize", EMObject::INT, "The zsize of the reconstructed volume, most often used in tomographic reconstuction");
+			d.put("ysize", EMObject::INT, "The ysize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified");
+			d.put("xsize", EMObject::INT, "The xsize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified");
+			d.put("tomo", EMObject::BOOL, "A tomographic reconstruction flag that causes alternative weighting schemes to be used for tomographic slicess");
 			return d;
 		}
 
@@ -430,7 +434,7 @@ namespace EMAN
 	  	 * @param slice the slice to be prepocessed
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
-		EMData* preprocess_slice( const EMData* const slice );
+		EMData* preprocess_slice( const EMData* const slice, const Transform3D transform = Transform3D() );
 	  private:
 		void load_default_settings()
 		{
@@ -440,6 +444,12 @@ namespace EMAN
 			params["dlog"] = false;
 			params["hard"] = 0.05;
 			params["sym"] = "unknown";
+			params["apix"] = 1.0;
+			// zsize is a flag and a used value - if it's not zero then the 3D volume is reconstructed with the alternative zsize - useful for tomography etc.
+			params["zsize"] = 0;
+			params["ysize"] = 0;
+			params["xsize"] = 0;
+			params["tomo"] = false;
 		}
 
 		/** Frees the memory owned by this object (but not parent objects)
@@ -473,6 +483,9 @@ namespace EMAN
 		/// Internal flags used to perform memory zeroing and normalization transparently
 		bool slice_insertion_flag;
 		bool slice_agreement_flag;
+		
+		/// Used for scaling frequency axes when any of the xsize, ysize or zsize parameters are specified
+		float x_scale_factor, y_scale_factor, z_scale_factor;
 	};
 
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.

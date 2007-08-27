@@ -468,7 +468,7 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	int y0 = (int) floor(yy + 0.5f);
 	int z0 = (int) floor(zz + 0.5f);
 	
-	// Have to get radial coordinates - x is fine as it is but the other two need translation ( after testing it seems like z does not need translation - more testing required)
+	// Have to get radial coordinates - x is fine as it is but the other two need translation
 	int offset = (ny%2 == 0? 1:0);
 	int yt = (int) floor(yy) - ny/2 - offset;
 	int zt = (int) floor(zz) - nz/2;
@@ -519,11 +519,20 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 {
 	float frc_integral = 0, snr_normed_frc_intergral = 0, normed_snr_integral = 0;
 
-	int contrib = 0;
+//	int contrib = 0;
 
 // 	float contrib_thresh = 0.01;
+	int cutoff = size-1;
+	for( ; cutoff >= 0; --cutoff )
+	{
+		if ( frc[cutoff] !=0 ) break;
+	}
+	
+	//cout << "Cutoff is " << cutoff << endl;
 
-	for( int i = 0; i < size; ++i )
+	cutoff += 1;
+
+	for( int i = 0; i < cutoff; ++i )
 	{
 		if ( frc_norm_rdata[i] == 0 || frc_norm_dt[i] == 0 )
 			frc[i] = 0;
@@ -531,7 +540,7 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 			frc[i] /= sqrtf(frc_norm_rdata[i]*frc_norm_dt[i]);
 
 // 		if ( frc[i] < contrib_thresh ) continue;
-		contrib++;
+		//contrib++;
 		// Accumulate the frc integral - atm this is for testing purposes but could change
 		frc_integral += frc[i];
 		
@@ -553,9 +562,9 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 		snr_normed_frc_intergral += sqrtf(adjusted_ssnr/( 1.0 + adjusted_ssnr ));
 	}
 
-	frc_integral /= contrib;
-	snr_normed_frc_intergral /= contrib;
-	normed_snr_integral /= contrib;
+	frc_integral /= cutoff;
+	snr_normed_frc_intergral /= cutoff;
+	normed_snr_integral /= cutoff;
 
 	QualityScores quality_scores;
 	quality_scores.set_frc_integral( frc_integral );
@@ -679,7 +688,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	float dy = yy - y0;
 	float dz = zz - z0;
 
-	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1) {
+	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 2) {
 		return false;
 	}
 
@@ -703,6 +712,8 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 		(*pixel_operation)(rdata + k + 1, gg * dt[1]);
 		(*pixel_operation)(norm + k/2, gg);
 #else
+
+		//cout << "inserting pixels at " << k << " and " << k+1 << " i was " << i << " offset was " << off[j] << endl;
 		rdata[k] += gg * dt[0];
 		rdata[k + 1] += gg * dt[1];
 		norm[k/2] += gg;

@@ -50,7 +50,7 @@ using std::endl;
 // If the PixelOperation classes are being used, then you probably want to use 
 // FourierReconstructor::do_insert_remove_test, FourierReconstructor::remove_slice
 // and FourierReconstructor::test_pixel_wise_zero
-// Keep at 0 to avoid and extra function call and get a (slight) performance boost.
+// Keep at 0 to avoid an extra function call and get a (slight) performance boost.
 #define RECONSTRUCTOR_TOOLS_TESTING 0
 
 namespace EMAN
@@ -581,6 +581,9 @@ namespace EMAN
 				return *this;
 			}
 
+			/** Deconstructor
+			* no memory is alloced by this object, but 4 private variables fall out of scope
+			*/
 			~QualityScores() {}
 
 			/// Various setter and getter methods are below
@@ -706,7 +709,7 @@ namespace EMAN
 	};
 	
 	
-	/** Interpolated FRC - oversees calculation of the FRC in Fourier Reconstruction (compares a slice (in some orientation) to a volume)
+	/** Interpolated FRC - oversees calculation of the FRC and normalization values in Fourier Reconstruction (compares a slice (in some orientation) to a volume)
 	* This class works in a similar fashion to FourierPixelInserter3D objects in that the class is first initialized,
 	* all of the pixels are "inserted" iteratively, and finally a "finish" is called which calculates the quality scores
 	* and returns them in an approprate data object (QualityScores).
@@ -720,6 +723,10 @@ namespace EMAN
 	* end
 	* QualityScores qualityScores = ifrc.finish(slice->get_attr["ptcl_repr"])
 	*
+	* Note that the qualityScores objects contains the FRC integral, the SNR weighted FRC integral (which is the new EMAN2 similarity metric), the SNR integral,
+	* and the slice normalization score. SNR weighted FRC integral is elaborated upon in the FourierReconstructor comments (reconstructor.h) and will be described and tested
+	* online in the EMAN2 wiki (http://blake.bcm.edu/emanwiki/e2make3d). Further, the slice normalization score is the (inverse of the) constant to be applied
+	* to the image slice (comprised of all the pixels that were part of the calculation) to achieve normalization with respect to the pixels in the volume it intersects.
 	*
 	* As you can see from the above example, in order for this approach to work you must initialize the InterpatedFRC
 	* object with pointers to 3D volumes containing the true pixel data (rdata) and the associated normalization volume (norm).
@@ -727,12 +734,14 @@ namespace EMAN
 	* is complex, and that for each complex pixel there is only one normalization value.
 	*
 	* Note also that I used continue_frc_calc2 in the above example but could have substituted the "2" with any number
-	* from 1 through 7, and in doing so a different technique for approximating the FRC would be used. Each of these 7
+	* from 1 through 7, and in doing so a different technique for approximating the FRC (and normalization) would be used. Each of these 7
 	* techniques is meant to be used in conjunction with the associated FourierInserter3DMode? that was used to insert
 	* the pixels into the 3D volume in the first place. Because mode 2 is quite often the best method for inserting pixels,
 	* it is the mode I used in the example above. Testing showed that, for modes 1 and 2, the FRC scores were in the high 0.8's 
 	* to low 0.9s when inserting a noisey image into a 3D volume and then testing it's own FRC. For the other 
-	* methods the results weren't as high, varying from 0.7 to 0.5, where mode 7 seemed to give the next best results.
+	* methods the results weren't as high, varying from 0.7 to 0.5, where mode 7 seemed to give the next best results. Also note that when a 
+	* a slice is inserted into a 3D volume and, following this, if the normalization constant is calculated it is usually greater than 1, and this is
+	* a consequence of voxels being contributed to by more than one pixel (from the slice) in the 3D volume.
 	*/
 	class InterpolatedFRC
 	{
