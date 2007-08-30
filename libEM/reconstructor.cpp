@@ -55,6 +55,9 @@ using std::cout; // for debug
 #include <algorithm>
 // find, for_each
 
+#include <iomanip>
+using std::setprecision;
+
 
 template < typename T > void checked_delete( T*& x )
 {
@@ -76,65 +79,6 @@ template <> Factory < Reconstructor >::Factory()
 	force_add(&nnSSNR_ctfReconstructor::NEW);
 	force_add(&bootstrap_nnReconstructor::NEW); 
 	force_add(&bootstrap_nnctfReconstructor::NEW); 
-}
-
-Reconstructor::Reconstructor( const Reconstructor& that ) : ReconstructorVolumeData(that)
-{
-	copy_data(that);
-}
-
-Reconstructor& Reconstructor::operator=( const Reconstructor& that )
-{
-	if ( this != &that )
-	{
-		copy_data(that);
-		// Make sure the base class performs the assignment also.
-		ReconstructorVolumeData::operator=(that);
-	}
-	else
-	{
-		cerr << "Warning: attempted to assign a reconstructor to itself, no action taken" << endl;
-	}
-	return *this;
-}
-
-void Reconstructor::copy_data( const Reconstructor& that )
-{
-	params = that.params;
-}
-
-ReconstructorVolumeData& ReconstructorVolumeData::operator=( const ReconstructorVolumeData& that )
-{
-	if ( this != &that )
-	{
-		copy_data(that);
-	}
-	else
-	{
-		cerr << "Warning: attempted to assign a ReconstructorVolumeData to itself, no action taken" << endl;
-	}
-
-	return *this;
-}
-
-void ReconstructorVolumeData::copy_data( const ReconstructorVolumeData& that )
-{
-	nx = that.nx;
-	ny = that.ny;
-	nz = that.nz;
-
-	// No matter what the image pointera and tmp_data pointer must be freed
-	free_memory();
-
-	if ( that.image != 0 )
-	{
-		image = new EMData(*that.image);
-	}
-
-	if ( that.tmp_data != 0 )
-	{
-		tmp_data = new EMData(*that.tmp_data);
-	}
 }
 
 void ReconstructorVolumeData::normalize_threed()
@@ -161,48 +105,17 @@ void ReconstructorVolumeData::normalize_threed()
 	}
 }
 
-FourierReconstructor::FourierReconstructor( const FourierReconstructor& that ) : 
-	Reconstructor(that), image_idx(that.image_idx), inserter(0),
-	slice_insertion_flag(that.slice_insertion_flag), slice_agreement_flag(that.slice_agreement_flag),
-	x_scale_factor(that.x_scale_factor), y_scale_factor(that.y_scale_factor), z_scale_factor(that.z_scale_factor)
-{
-	load_inserter();
-}
-
-FourierReconstructor& FourierReconstructor::operator=( const FourierReconstructor& that )
-{
-	if ( this != &that )
-	{
-		// Make sure the base class performs the assignment also.
-		Reconstructor::operator=(that);
-		
-		image_idx = that.image_idx;
-		slice_agreement_flag = that.slice_agreement_flag;
-		slice_insertion_flag = that.slice_insertion_flag;
-		x_scale_factor = that.x_scale_factor;
-		y_scale_factor = that.y_scale_factor;
-		z_scale_factor = that.z_scale_factor;
-		
-		// Delete the old inserter if it exists.
-		free_memory();
-	
-		// Load the new inserter
-		load_inserter();	
-	}
-	else
-	{
-		cerr << "Warning: attempted to assign a FourierReconstructor to itself, no action taken" << endl;
-	}
-
-	return *this;
-}
-
 void FourierReconstructor::free_memory()
 {
 	if ( inserter != 0 )
 	{
 		delete inserter;
 		inserter = 0;
+	}
+	if ( interpFRC_calculator != 0 )
+	{
+		delete interpFRC_calculator;
+		interpFRC_calculator = 0;
 	}
 }
 
@@ -217,91 +130,119 @@ void FourierReconstructor::load_inserter()
 	parms["ny"] = ny;
 	parms["nz"] = nz;
 	
-	// Get a new inserter without deleting the old inserter to protect against a potential memory leak...
-	// Because the call to Factory<FourierPixelInserter3D>::get will potentially throw
-	FourierPixelInserter3D* p_inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
-	p_inserter->init();
-	
 	if ( inserter != 0 )
 	{
 		delete inserter;
 	}
 	
-	inserter = p_inserter;
+	inserter = Factory<FourierPixelInserter3D>::get(mode, parms);
+	inserter->init();
 }
 
-void FourierReconstructor::setup()
+void FourierReconstructor::load_interpFRC_calculator()
 {
+	Dict init_parms;
+	init_parms["rdata"] = image->get_data();
+	init_parms["norm"] = tmp_data->get_data();
+	init_parms["nx"] = nx;
+	init_parms["ny"] = ny;
+	init_parms["nz"] = nz;
+	
+	
 	int size = params["size"];
-	if ( params.find("pad") != params.end() )
-	{
-		if ( (int)(params["pad"]) > (int)(params["size"]) )
-			size = params["pad"];
-		else
-		{
-			throw InvalidValueException((int)params["pad"], "pad must be > than image size");
-		}
-	}
-	else
-		size = params["size"];
+	if ( params.find("pad") != params.end() ) size = params["pad"];
 	
 	if ( (int) params["xsize"] != 0 )
 	{
 		int xsize = params["xsize"];
-		if ( xsize < 0 )
-		{
-			throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be greater than 0");
-		}
-		nx = xsize+2;
-		
-		x_scale_factor = (float)xsize / (float) size;
-	}
-	else
-	{
-		nx = size + 2;
+		init_parms["x_scale"] = (float) size / (float) xsize;
 	}
 	
 	if ( (int) params["ysize"] != 0 )
 	{
 		int ysize = params["ysize"];
-		if ( ysize < 0 )
-		{
-			throw InvalidValueException((int)params["ysize"], "if ysize is specified it must be greater than 0");
-		}
-		ny = ysize;
-		
-		y_scale_factor = (float)ny / (float) size;
-	}
-	else
-	{
-		ny = size;
+		init_parms["y_scale"] = (float) size / (float) ysize;
 	}
 	
 	if ( (int) params["zsize"] != 0 )
 	{
 		int zsize = params["zsize"];
-		if ( zsize < 0 )
-		{
-			throw InvalidValueException((int)params["zsize"], "if zsize is specified it must be greater than 0");
-		}
-		nz = zsize;
-		
-		z_scale_factor = (float)nz / (float) size;
-	}
-	else
-	{
-		nz = size;
+		init_parms["z_scale"] = (float) size / (float) zsize;
 	}
 	
+	if ( interpFRC_calculator != 0 )
+	{
+		delete interpFRC_calculator;
+	}
+	
+	interpFRC_calculator = new InterpolatedFRC( init_parms );
+}
+
+void FourierReconstructor::setup()
+{
+	// Atm the reconstruction algorith works only for even dimensions, this has something to do xform.fourierorigin not
+	// working for images with odd dimensions - once we are certain the xform.fourierorigin has no problems with oddness
+	// then there could be bugs in the reconstructor itself - it needs testing.
+	int size = params["size"];
+	if ( size % 2 == 1 ) throw InvalidValueException((int)params["size"], "size of images must be even");
+	if ( size < 0 ) throw InvalidValueException((int)params["size"], "size of images must be greater than 0");
+	
+	// If the user has specified padding then the Fourier volume into which slices are begin inserted needs to be
+	// bigger. Unless, of course, the user has specified xsize, ysize or zsize...
+	if ( params.find("pad") != params.end() )
+	{
+		if ( (int)(params["pad"]) > (int)(params["size"]) ) size = params["pad"];
+		else throw InvalidValueException((int)params["pad"], "pad must be > than image size");
+	}
+	else size = params["size"];
+	
+	if ( (int) params["xsize"] != 0 )
+	{
+		// If the user has specified xsize then this is the length of the x dimension of the reconstructed fourier volume.
+		// The Nyquist does not change, so in real space you will observe clipping in the x dimension.
+		// This is useful in Tomographic reconstruction.
+		int xsize = params["xsize"];
+		if ( xsize % 2 == 1 ) throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be even");
+		if ( xsize < 0 ) throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be greater than 0");
+		nx = xsize+2;
+		x_scale_factor = (float)xsize / (float) size;
+	}
+	else nx = size + 2;
+	
+	if ( (int) params["ysize"] != 0 ) {
+		// If the user has specified ysize then this is the length of the y dimension of the reconstructed fourier volume
+		// The Nyquist does not change, so in real space you will observe clipping in the y dimension.
+		// This is useful in Tomographic reconstruction.
+		int ysize = params["ysize"];
+		if ( ysize % 2 == 1 ) throw InvalidValueException((int)params["ysize"], "if ysize is specified it must be even");
+		if ( ysize < 0 ) throw InvalidValueException((int)params["ysize"], "if ysize is specified it must be greater than 0");
+		ny = ysize;
+		y_scale_factor = (float)ny / (float) size;
+	}
+	else ny = size;
+	
+	if ( (int) params["zsize"] != 0 ) {
+		// If the user has specified zsize then this is the length of the z dimension of the reconstructed fourier volume
+		// The Nyquist does not change, so in real space you will observe clipping in the z dimension.
+		// This is useful in Tomographic reconstruction.
+		int zsize = params["zsize"];
+		if ( zsize % 2 == 1 ) throw InvalidValueException((int)params["zsize"], "if zsize is specified it must be even");
+		if ( zsize < 0 ) throw InvalidValueException((int)params["zsize"], "if zsize is specified it must be greater than 0");
+		nz = zsize;
+		z_scale_factor = (float)nz / (float) size;
+	}
+	else nz = size;
+	
 	cout << "Fourier volume dimensions are " << nx << " " << ny << " " << nz << endl;
-	cout << "You will require approximately " << (nx*ny*nz*4.0*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
-// 	cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
+	cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*4.0*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
+//  	cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
 	
 	image = new EMData();
 	image->set_size(nx, ny, nz);
 	image->set_complex(true);
 	image->set_ri(true);
 
+	// WHAT IS THIS FOR? PROBABLY PERFORMS NO FUNCTION - dsaw
 // 	int n = nx * ny * nz;
 // 	float *rdata = image->get_data();
 
@@ -318,39 +259,83 @@ void FourierReconstructor::setup()
 	tmp_data->update();
 	
 	load_inserter();
+	load_interpFRC_calculator();
 }
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D transform )
 {
-	// First normalize the slice, setting it's mean to zero
-	EMData* return_slice = slice->process("normalize.edgemean");
-
-	if ( (bool) params["tomo"] == true )
+	EMData* return_slice;
+	// First edgenorm - default behaviour is for this to happen
+	if ( (bool) params["edgenorm"] == true )
 	{
-		
-		
-		
+		return_slice = slice->process("normalize.edgemean");
+	}
+	else
+	{
+		return_slice = new EMData(*slice);
+	}
+
+	// Perform tomographic weighting if the argument is specified (default is for this not to happen)
+	if ( (bool) params["tomo_weight"] == true )
+	{
 		float alt = (transform.get_rotation())["alt"];
+		// FIXME use a global def for deg2rad
+		float cosine = cos(alt*3.14159265358979323846f/180.0);
+		
+		// This weights slices according to their tilt angle, because tilted images have more mass in single pixels.
+		float mult_fac =  1.0f/ (cosine);
+		return_slice->mult( mult_fac );
+	}
+	
+	// Perform tomographic masking, ensuring a consistent volume is reconstructed (default is for this not to happen)
+	if ( (bool) params["tomo_mask"] == true )
+	{
+		float alt = (transform.get_rotation())["alt"];
+		// FIXME use a global def for deg2rad
 		float cosine = cos(alt*3.14159265358979323846f/180.0);
 	
+		// This masks out the edges of the image which are not present in the image with zero tilt.
 		Dict zero_dict;
 		int x_clip = static_cast<int>( (float) params["size"] * ( 1.0 - cosine ) / 2.0);
 		zero_dict["x0"] = x_clip;
 		zero_dict["x1"] = x_clip;
 		zero_dict["y0"] = 0;
 		zero_dict["y1"] = 0;
-		//cout << "Lost " << x_clip << " pixels in the x direction" << endl;
 		return_slice->process_inplace( "mask.zeroedge2d", zero_dict );
 		
-		float mult_fac =  1.0f/ (cosine);
-		return_slice->mult( mult_fac );
-		//cout << "Weighted by " <<  mult_fac << endl;
 		
-		//return_slice->write_image("test_out.img", -1);
+		// Set the zeroed edge pixels to be the mean of the pixel column where the drop off occurs.
+		// This is experimental and was suggested by Mike Schmid. Sometimes it seems to solve
+		// strip artifacts, other times not. The best solution might be to employ a Gaussian drop off to
+		// the mean.
+		if ( (bool) params["t_emm"] == true && x_clip > 0 )
+		{
+			float left_mean = 0.0, right_mean = 0.0;
+
+			int x = return_slice->get_xsize();
+			int y = return_slice->get_ysize();
+			
+			for ( int i = 0; i < y; ++i ) {
+				left_mean += return_slice->get_value_at(x_clip, i );
+				right_mean += return_slice->get_value_at(x - x_clip-1, i );
+			}
+			left_mean /= y;
+			right_mean /= y;
+			for ( int i = 0; i < y; ++i ) {
+				for ( int j = 0; j < x_clip; ++j )
+				{
+					return_slice->set_value_at(j, i, left_mean );
+				}
+				
+				for ( int j = x - x_clip; j < x; ++j )
+				{
+					return_slice->set_value_at(j, i, right_mean );
+				}
+				
+			}
+		}
 	}
 	
-// 	cout << "The slice had a mean of " << (float)slice->get_attr("mean") << " the new slice has a mean of " << (float) return_slice->get_attr("mean") << endl;
-
 	// Apply padding if the option has been set, and it's sensible
 	if ( params.find("pad") != params.end() )
 	{
@@ -377,8 +362,6 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
 	return_slice->process_inplace("xform.fourierorigin");
-
-	cout << "Return slice stats are " << (float) return_slice->get_attr("mean") << " and " << (float) return_slice->get_attr("sigma") << endl;
 	
 	return return_slice;
 }
@@ -402,11 +385,11 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 	// Catch the first time a slice is inserted to do some things....
 	if ( slice_insertion_flag == true )
 	{
-		// Zero the memory in the EMData objects
+		// Zero the memory in the associated EMData objects 
 		zero_memory();
 		// Reset the image_idx to zero
 		image_idx = 0;
-		// Set flags appropriately - slice_agreement_flag is set for the first time determine_slice_agreement is called
+		// Set flags appropriately
 		slice_agreement_flag = true;
 		slice_insertion_flag = false;
 		
@@ -423,11 +406,11 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 			return 1;
 		}
 		slice->mult(1.f/quality_scores[image_idx].get_norm());
-		cout << "Norm multiplied by " << 1.f/quality_scores[image_idx].get_norm() << endl;
+		//cout << "Norm multiplied by " << 1.f/quality_scores[image_idx].get_norm() << endl;
 		image_idx++;
 	}
-	
-	// Function call could be removed and code inserted here
+
+	// Finally to the pixel wise slice insertion
 	do_insert_slice_work(slice, arg);
 
 	delete slice;	
@@ -436,156 +419,11 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	return 0;
 }
-
-#if RECONSTRUCTOR_TOOLS_TESTING
-
-int FourierReconstructor::remove_slice(const EMData* const input_slice, const Transform3D & arg)
-{
-	if (!input_slice) {
-		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
-		return 1;
-	}
-
-	if (input_slice->is_complex()) {
-		LOGERR("Do not Fourier transform the image before it is passed to insert_slice in the FourierReconstructor, this is performed internally");
-		return 1;
-	}
-
-	// Get the proprecessed slice - there are some things that always happen to a slice,
-	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice );
-
-	if (!slice->is_complex()) {
-		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor::insert_slice failed");
-		return 1;
-	}
-	
-	inserter->set_pixel_minus_operation();
-	
-	do_insert_slice_work(slice, arg);
-
-	inserter->set_pixel_add_operation();
-	
-	delete slice;	
-
-	image->update();
-
-	return 0;
-}
-
-bool FourierReconstructor::do_insert_remove_test(const EMData* const input_slice, const Transform3D & arg)
-{
-	float *dat = input_slice->get_data();
-
-	int rl = Util::square(ny / 2 - 1);
-	
-	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
-	{
-		Transform3D euler = arg.get_sym((string) params["sym"], i);
-
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx / 2; x++) {
-				if ((x * x + Util::square(y - ny / 2)) >= rl)
-					continue;
-	
-				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
-				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
-				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
-				
-				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
-				
-				float cc = 1;
-	
-				if (xx < 0) {
-					xx = -xx;
-					yy = -yy;
-					zz = -zz;
-					cc = -1.0;
-				}
-				
-				yy += ny / 2;
-				zz += nz / 2;
-				
-				float dt[2];
-				dt[0] = dat[x * 2 + y * nx];
-				dt[1] = cc * dat[x * 2 + 1 + y * nx];
-
-				inserter->set_pixel_add_operation();
-				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
-				inserter->set_pixel_minus_operation();
-				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
-				
-				if ( !inserter->effected_pixels_are_zero(xx,yy,zz) )
-				{
-					cout << "Fail! " << xx << " " << yy << " " << zz << endl;
-					return false;
-				}
-			}
-		}
-	}
-	return true;
-}
-
-bool FourierReconstructor::test_pixel_wise_zero(const EMData* const input_slice, const Transform3D & arg)
-{
-	float *dat = input_slice->get_data();
-
-	int rl = Util::square(ny / 2 - 1);
-	
-	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
-	{
-		Transform3D euler = arg.get_sym((string) params["sym"], i);
-
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx / 2; x++) {
-				if ((x * x + Util::square(y - ny / 2)) >= rl)
-					continue;
-	
-				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
-				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
-				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
-				float cc = 1;
-				
-				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
-	
-				if (xx < 0) {
-					xx = -xx;
-					yy = -yy;
-					zz = -zz;
-					cc = -1.0;
-				}
-				
-				yy += ny / 2;
-				zz += nz / 2;
-				
-				float dt[2];
-				dt[0] = dat[x * 2 + y * nx];
-				dt[1] = cc * dat[x * 2 + 1 + y * nx];
-				
-				if ( !inserter->effected_pixels_are_zero(xx,yy,zz) )
-				{
-					cout << "Fail! " << xx << " " << yy << " " << zz << endl;
-					return false;
-				}
-			}
-		}
-	}
-	return true;
-}
-
-#endif //#if RECONSTRUCTOR_TOOLS_TESTING
 
 void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
 {
 	float *dat = input_slice->get_data();
-
-	int size = params["size"];
 	
-	int rl = Util::square(ny / 2 - 1);
 	
 	string mode = (string) params["mode"];
 	if ( mode != inserter->get_name() )
@@ -593,23 +431,27 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 		load_inserter();
 	}
 	
+	int ysize;
+	if ( params.find("pad") != params.end() ) ysize = params["pad"];
+	else ysize = params["size"];
+	int xsize = ysize + 2;
+	int rl = Util::square(ysize / 2 - 1);
+	
+	float dt[2];
+	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
 		Transform3D euler = arg.get_sym((string) params["sym"], i);
 
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < (size+2) / 2; x++) {
-				if ((x * x + Util::square(y - ny / 2)) >= rl)
+		for (int y = 0; y < ysize; y++) {
+			for (int x = 0; x < xsize / 2; x++) {
+				if ((x * x + Util::square(y - ysize / 2)) >= rl)
 					continue;
 	
-				float xx = (float) (x * euler[0][0] + (y - size / 2) * euler[1][0]);
-				float yy = (float) (x * euler[0][1] + (y - size / 2) * euler[1][1]);
-				float zz = (float) (x * euler[0][2] + (y - size / 2) * euler[1][2]);
-				
-				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
-				
+				float xx = (float) (x * euler[0][0] + (y - ysize / 2) * euler[1][0]);
+				float yy = (float) (x * euler[0][1] + (y - ysize / 2) * euler[1][1]);
+				float zz = (float) (x * euler[0][2] + (y - ysize / 2) * euler[1][2]);
+
 				float cc = 1;
 	
 				if (xx < 0) {
@@ -619,11 +461,14 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 					cc = -1.0;
 				}
 				
+				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
+				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
+				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+				
 				yy += ny / 2;
 				zz += nz / 2;
 				
-				float dt[2];
-				int idx = x * 2 + y * (size + 2);
+				int idx = x * 2 + y * (xsize);
 				dt[0] = dat[idx];
 				dt[1] = cc * dat[idx+1];
 
@@ -655,9 +500,9 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 		image_idx = 0;
 		// Make a copy of the previous quality scores - the first time around this will be like copying nothing
 		prev_quality_scores = quality_scores;
-		// Now clear the old scores so they can be redetermined (which is the purpose of this function)
+		// Now clear the old scores so they can be redetermined
 		quality_scores.clear();
-		// Reset the flags - especially the insertion flag
+		// Reset the flags
 		slice_insertion_flag = true;
 		slice_agreement_flag = false;
 	}
@@ -677,34 +522,26 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	float *dat = slice->get_data();
 
-	int rl = Util::square(ny / 2 - 1);
-
-	InterpolatedFRC ifrc = InterpolatedFRC(image->get_data(), tmp_data->get_data(), nx, ny, nz );
-	ifrc.reset();
+	// Reset zeros the associated memory in the ifrc
+	interpFRC_calculator->reset();
 	
+	
+	int ysize;
+	if ( params.find("pad") != params.end() ) ysize = params["pad"];
+	else ysize = params["size"];
+	int xsize = ysize + 2;
+	
+	int rl = Util::square(ysize / 2 - 1);
 	float dt[2];
 	
-	// The insertion mode can possibly change - though you wouldn't expect it to happen, it is useful for testing purposes
-	string stringmode = (string)params["mode"];
-	if ( stringmode != inserter->get_name() )
-	{
-		load_inserter();
-	}
-	
-	int mode = params["mode"];
-	
-	for (int y = 0; y < ny; y++) {
-		for (int x = 0; x < nx / 2; x++) {
-			if ((x * x + Util::square(y - ny / 2)) >= rl)
+	for (int y = 0; y < ysize; y++) {
+		for (int x = 0; x < xsize / 2; x++) {
+			if ((x * x + Util::square(y - ysize / 2)) >= rl)
 				continue;
 
-			float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
-			float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
-			float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
-			
-			if ( z_scale_factor != 0 ) zz *= z_scale_factor;
-			if ( y_scale_factor != 0 ) yy *= y_scale_factor;
-			if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+			float xx = (float) (x * euler[0][0] + (y - ysize / 2) * euler[1][0]);
+			float yy = (float) (x * euler[0][1] + (y - ysize / 2) * euler[1][1]);
+			float zz = (float) (x * euler[0][2] + (y - ysize / 2) * euler[1][2]);
 			
 			float cc = 1;
 
@@ -715,12 +552,17 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 				cc = -1.0;
 			}
 
+			if ( z_scale_factor != 0 ) zz *= z_scale_factor;
+			if ( y_scale_factor != 0 ) yy *= y_scale_factor;
+			if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+			
 			yy += ny / 2;
 			zz += nz / 2;
 			
-			dt[0] = dat[x * 2 + y * nx];
-			dt[1] = cc * dat[x * 2 + 1 + y * nx];
 			
+			int idx = x * 2 + y * (xsize);
+			dt[0] = dat[idx];
+			dt[1] = cc * dat[idx+1];
 
 			float weight = (float)params["weight"];
 			if ( prev_quality_scores.size() != 0 )
@@ -735,43 +577,43 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 					weight = 0;
 				}
 			}
-
+			
 			// FIXME: this could be replaced in favor of a class implementation with no switch statement, similar to the 
 			// inserter in the Fourier reconstructor do_insert_slice_work method
-			switch (mode)
+			switch ((int)params["mode"])
 			{
 				case 1:
-					ifrc.continue_frc_calc1(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc1(xx, yy, zz, dt, weight);
 					break;
 				case 2:
-					ifrc.continue_frc_calc2(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc2(xx, yy, zz, dt, weight);
 					break;
 				case 3:
-					ifrc.continue_frc_calc3(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc3(xx, yy, zz, dt, weight);
 					break;
 				case 4:
-					ifrc.continue_frc_calc4(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc4(xx, yy, zz, dt, weight);
 					break;
 				case 5:
-					ifrc.continue_frc_calc5(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc5(xx, yy, zz, dt, weight);
 					break;
 				case 6:
-					ifrc.continue_frc_calc6(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc6(xx, yy, zz, dt, weight);
 					break;
 				case 7:
-					ifrc.continue_frc_calc7(xx, yy, zz, dt, weight);
+					interpFRC_calculator->continue_frc_calc7(xx, yy, zz, dt, weight);
 					break;
 				default:
-					cout << "Warning, nothing happened the mode " << mode << " was unsupported" << endl;
+					cout << "Warning, nothing happened the mode " << (int)params["mode"] << " was unsupported" << endl;
+					if ( prev_quality_scores.size() != 0 ) image_idx++;
 					return 1;
 					// okay never get here but it would look weird if the break was absent
 					break;
 			}	
 		}
 	}
-	
-	
-	QualityScores q_scores = ifrc.finish( num_particles_in_slice );
+
+	QualityScores q_scores = interpFRC_calculator->finish( num_particles_in_slice );
 	// Print the quality scores here for debug information
 	//q_scores.debug_print();
 	
@@ -793,12 +635,11 @@ void FourierReconstructor::print_stats( const vector<QualityScores>& scores )
 {
 	if ( prev_quality_scores.size() == 0 )
 	{
-		cout << "No quality scores present in FourierReconstructor::print_stats, nothing to print" << endl;
+		//cout << "No quality scores present in FourierReconstructor::print_stats, nothing to print" << endl;
 		return;
 	}
 	
 	unsigned int size = scores.size();
-
 
 	unsigned int contributing_images = 0;
 	for( unsigned int i = 0; i < size; ++ i )		
@@ -877,13 +718,6 @@ EMData *FourierReconstructor::finish()
 	else {
 		normalize_threed();
 	}
-
-	if( tmp_data ) {
-		delete tmp_data;
-		tmp_data = 0;
-		norm = 0;
-	}
-	
 	
 // 	// For debug
 // 	EMData* fftimage = image->get_fft_amplitude ();
@@ -892,7 +726,6 @@ EMData *FourierReconstructor::finish()
 	
 	// 
 	image->process_inplace("xform.fourierorigin");
-	
 	image->do_ift_inplace();
 	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
 	image->postift_depad_corner_inplace();
@@ -901,17 +734,38 @@ EMData *FourierReconstructor::finish()
 	// If the image was padded it should be age size, as the client would expect
 	if ( params.find("pad") != params.end() )
 	{
-		cout << "clipping for padding" << endl;
 		int pad = params["pad"];
 		int size = params["size"];
-		FloatPoint point((pad-size)/2, (pad-size)/2, (pad-size)/2 );
-		Region clip_region((pad-size)/2, (pad-size)/2, (pad-size)/2, size, size, size );
+		
+		FloatPoint origin( (pad-size)/2, (pad-size)/2, (pad-size)/2 );
+		FloatSize region_size( size, size, size);
+		
+		if ( (int)params["xsize"] != 0 )
+		{
+			origin[0] = 0;
+			region_size[0] = params["xsize"];
+		}
+		
+		if ( (int)params["ysize"] != 0 )
+		{
+			origin[1] = 0;
+			region_size[1] = params["ysize"];
+		}
+		
+		if ( (int)params["zsize"] != 0 )
+		{
+			origin[2] = 0;
+			region_size[2] = params["zsize"];
+		}
+		
+		Region clip_region( origin, region_size );
+
 		image->clip_inplace( clip_region );
 	}
 
 	print_stats(quality_scores);
 	
-// 	image->process_inplace("normalize");
+	image->process_inplace("normalize");
 	
 	image->update();
 
@@ -919,21 +773,6 @@ EMData *FourierReconstructor::finish()
 	
 	return image;
 }
-
-WienerFourierReconstructor& WienerFourierReconstructor::operator=( const WienerFourierReconstructor& that )
-{
-	if ( this != &that )
-	{
-		Reconstructor::operator=(that);
-	}
-	else
-	{
-		cerr << "Warning: attempted to assign a WienerFourierReconstructor to itself, no action taken" << endl;
-	}
-
-	return *this;
-}
-
 
 void WienerFourierReconstructor::setup()
 {
@@ -1370,20 +1209,6 @@ int WienerFourierReconstructor::insert_slice(const EMData* const slice, const Tr
 	return 0;
 }
 
-BackProjectionReconstructor& BackProjectionReconstructor::operator=( const BackProjectionReconstructor& that )
-{
-	if ( this != &that )
-	{
-		Reconstructor::operator=(that);
-	}
-	else
-	{
-		cerr << "Warning: attempted to assign a BackProjectionReconstructor to itself, no action taken" << endl;
-	}
-
-	return *this;
-}
-
 void BackProjectionReconstructor::setup()
 {
 	int size = params["size"];
@@ -1394,28 +1219,36 @@ void BackProjectionReconstructor::setup()
 	nz = size;
 }
 
-int BackProjectionReconstructor::insert_slice(const EMData* const slice, const Transform3D &transform)
+EMData* BackProjectionReconstructor::preprocess_slice(const EMData* const slice)
 {
-	if (!slice) {
+	EMData* return_slice = slice->process("normalize.edgemean");
+	
+	return return_slice;
+}
+
+int BackProjectionReconstructor::insert_slice(const EMData* const input, const Transform3D &transform)
+{
+	if (!input) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
 
-	if (slice->get_xsize() != slice->get_ysize() || slice->get_xsize() != nx) {
-		LOGERR("try to insert improve size slice");
+	if (input->get_xsize() != input->get_ysize() || input->get_xsize() != nx) {
+		LOGERR("tried to insert image that was not correction dimensions");
 		return 1;
 	}
 
+	
+	EMData* slice = preprocess_slice(input);
+	
 	float weight = params["weight"];
-
-	EMData *slice_copy = slice->copy();
-	slice_copy->mult(weight);
+	slice->mult(weight);
 
 	EMData *tmp = new EMData();
 	tmp->set_size(nx, ny, nz);
 
-	float *slice_data = slice_copy->get_data();
-	float *tmp_data = tmp->get_data();
+	float *slice_data = slice->get_data();
+	float *tmp_data = slice->get_data();
 	int nxy = nx * ny;
 	size_t nxy_size = nxy * sizeof(float);
 
@@ -1433,10 +1266,10 @@ int BackProjectionReconstructor::insert_slice(const EMData* const slice, const T
 	tmp->rotate(transform);
 
 	image->add(*tmp);
-	if( slice_copy )
+	if( slice )
 	{
-		delete slice_copy;
-		slice_copy = 0;
+		delete slice;
+		slice = 0;
 	}
 
 	if( tmp )
@@ -3154,5 +2987,146 @@ void file_store::restart( )
     m_ihandle->seekg( 0, std::ios::beg );
 }
  
+#if RECONSTRUCTOR_TOOLS_TESTING
+
+int FourierReconstructor::remove_slice(const EMData* const input_slice, const Transform3D & arg)
+{
+	if (!input_slice) {
+		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
+		return 1;
+	}
+
+	if (input_slice->is_complex()) {
+		LOGERR("Do not Fourier transform the image before it is passed to insert_slice in the FourierReconstructor, this is performed internally");
+		return 1;
+	}
+
+	// Get the proprecessed slice - there are some things that always happen to a slice,
+	// such as as Fourier conversion and optional padding etc.
+	EMData* slice = preprocess_slice( input_slice );
+
+	if (!slice->is_complex()) {
+		LOGERR("Only a complex slice can be inserted. The preprocessing of the input slice in FourierReconstructor::insert_slice failed");
+		return 1;
+	}
+	
+	inserter->set_pixel_minus_operation();
+	
+	do_insert_slice_work(slice, arg);
+
+	inserter->set_pixel_add_operation();
+	
+	delete slice;	
+
+	image->update();
+
+	return 0;
+}
+
+bool FourierReconstructor::do_insert_remove_test(const EMData* const input_slice, const Transform3D & arg)
+{
+	float *dat = input_slice->get_data();
+
+	int rl = Util::square(ny / 2 - 1);
+	
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D euler = arg.get_sym((string) params["sym"], i);
+
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx / 2; x++) {
+				if ((x * x + Util::square(y - ny / 2)) >= rl)
+					continue;
+	
+				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
+				
+				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
+				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
+				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+				
+				float cc = 1;
+	
+				if (xx < 0) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1.0;
+				}
+				
+				yy += ny / 2;
+				zz += nz / 2;
+				
+				float dt[2];
+				dt[0] = dat[x * 2 + y * nx];
+				dt[1] = cc * dat[x * 2 + 1 + y * nx];
+
+				inserter->set_pixel_add_operation();
+				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
+				inserter->set_pixel_minus_operation();
+				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
+				
+				if ( !inserter->effected_pixels_are_zero(xx,yy,zz) )
+				{
+					cout << "Fail! " << xx << " " << yy << " " << zz << endl;
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+bool FourierReconstructor::test_pixel_wise_zero(const EMData* const input_slice, const Transform3D & arg)
+{
+	float *dat = input_slice->get_data();
+
+	int rl = Util::square(ny / 2 - 1);
+	
+	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
+	{
+		Transform3D euler = arg.get_sym((string) params["sym"], i);
+
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx / 2; x++) {
+				if ((x * x + Util::square(y - ny / 2)) >= rl)
+					continue;
+	
+				float xx = (float) (x * euler[0][0] + (y - ny / 2) * euler[1][0]);
+				float yy = (float) (x * euler[0][1] + (y - ny / 2) * euler[1][1]);
+				float zz = (float) (x * euler[0][2] + (y - ny / 2) * euler[1][2]);
+				float cc = 1;
+				
+				if ( z_scale_factor != 0 ) zz *= z_scale_factor;
+				if ( y_scale_factor != 0 ) yy *= y_scale_factor;
+				if ( x_scale_factor != 0 ) xx *= x_scale_factor;
+	
+				if (xx < 0) {
+					xx = -xx;
+					yy = -yy;
+					zz = -zz;
+					cc = -1.0;
+				}
+				
+				yy += ny / 2;
+				zz += nz / 2;
+				
+				float dt[2];
+				dt[0] = dat[x * 2 + y * nx];
+				dt[1] = cc * dat[x * 2 + 1 + y * nx];
+				
+				if ( !inserter->effected_pixels_are_zero(xx,yy,zz) )
+				{
+					cout << "Fail! " << xx << " " << yy << " " << zz << endl;
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+#endif //#if RECONSTRUCTOR_TOOLS_TESTING
 
 /* vim: set ts=4 noet: */

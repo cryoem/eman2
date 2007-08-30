@@ -2410,148 +2410,152 @@ float AddSigmaNoiseProcessor::get_sigma(EMData * image)
 
 void FourierOriginShiftProcessor::process_inplace(EMData * image)
 {
-// To quote Pawel "funky reordering"
+	// On TKCVS it will say that d.woolford did all of this, but I just beautified the code, nothing more. It was v.hard to read.
+	
+	// To quote Pawel "funky reordering"
 	float *d = image->get_data();
 	int nx2=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
-	//	printf("nx2=%d, ny=%d, nz=%d \n", nx2,ny,nz);
+	//printf("nx2=%d, ny=%d, nz=%d \n", nx2,ny,nz);
 
 	if ( (nz==1) && ((nx2-1)==ny) && (image->is_complex())  // if odd, square FFT
 		&& (image->is_fftodd()) && (!(image->is_shuffled()) )){ // PRB
-	     int out_nx=2*(nx2-1);
-	     int nx_orig=nx2-1, ny_orig=nx_orig;
-	     int Center= (nx_orig+1)/2;
-	     int CenterM=Center-1;
-	     int out_ny=ny;
-	     float fSize= float(nx_orig);
-	     float phase;
-	     EMData* imcp = image->copy_head();
-//	     printf("entered shuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
+		
+		int out_nx=2*(nx2-1);
+		int nx_orig=nx2-1, ny_orig=nx_orig;
+		int Center= (nx_orig+1)/2;
+		int CenterM=Center-1;
+		int out_ny=ny;
+		float fSize= float(nx_orig);
+		float phase;
+		EMData* imcp = image->copy_head();
+		//printf("entered shuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
 
-	     imcp ->set_size(out_nx, out_ny, 1);
-	     imcp->to_zero();
-	     
+		imcp->set_size(out_nx, out_ny, 1);
+		imcp->to_zero();
+
 	     //  if nx2=6, nx_orig=5, out_nx=10, ny=5, ny_orig=5, out_ny=5
 	     // center is at nx=5,6, ny=3
-	     (*imcp)(nx2-2,(ny-1)/2) = (*image)(0,0);
-	     (*imcp)(nx2-1,(ny-1)/2) = (*image)(1,0); // A block
-            for (int iy = 1; iy < (ny+1)/2; iy++) { // B and C blocks
-		(*imcp)(nx2-2, iy+(ny-1)/2) =  (*image)(0,iy);
-		(*imcp)(nx2-1, iy+(ny-1)/2) =  (*image)(1,iy);
-		(*imcp)(nx2-2,-iy+(ny-1)/2) =  (*image)(0,iy);
-		(*imcp)(nx2-1,-iy+(ny-1)/2) = -(*image)(1,iy);
-	     }
-            for (int ix = 2; ix < nx2; ix=ix+2) { // D blocks
-		(*imcp)( ix+nx2-2,(ny-1)/2)=  (*image)(ix  ,0);
-		(*imcp)( ix+nx2-1,(ny-1)/2)=  (*image)(ix+1,0);
-		(*imcp)(-ix+nx2-2,(ny-1)/2)=  (*image)(ix  ,0);
-		(*imcp)(-ix+nx2-1,(ny-1)/2)= -(*image)(ix+1,0);
-	     }
-            for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
-		for (int iy= 1 ; iy <(ny+1)/2 ; iy++){ 
-		    (*imcp)( ix+nx2-2, iy+(ny-1)/2) =  (*image)(ix  ,iy);  // e
-		    (*imcp)( ix+nx2-1, iy+(ny-1)/2) =  (*image)(ix+1,iy);  // E
-		    (*imcp)(-ix+nx2-2,-iy+(ny-1)/2) =  (*image)(ix  ,iy);  // E*
-		    (*imcp)(-ix+nx2-1,-iy+(ny-1)/2) = -(*image)(ix+1,iy);  // E*
-		 }
-	     }
-            for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
-		for (int iy= (ny+1)/2 ; iy <ny ; iy++){ 
-		    (*imcp)( ix+nx2-2, iy-(ny+1)/2)  =  (*image)(ix  ,iy);  // F
-		    (*imcp)( ix+nx2-1, iy-(ny+1)/2)  =  (*image)(ix+1,iy);  // F
-		    (*imcp)(-ix+nx2-2,-iy+ ny+2)     =  (*image)(ix  ,iy);  // F*
- 		    (*imcp)(-ix+nx2-1,-iy+ ny+2)     = -(*image)(ix+1,iy);  // F*
-		 }
-	     }
-	     image->update();
-	     imcp->update();
-//	     
-//             We need to recenter and put the data back to the original array
-	     image->set_size(out_nx, out_ny, 1);
-	     for (int ix=0; ix < nx_orig; ix++){
-		for (int iy=0; iy < ny_orig; iy++){ 
-		phase = M_PI*(ix+iy-2*CenterM)*(fSize-1)/fSize;
-		(*image)(2*ix,iy)  = cos(phase) *(*imcp)(2*ix,iy)   - sin(phase) *(*imcp)(2*ix+1,iy) ;
-		(*image)(2*ix+1,iy)= cos(phase) *(*imcp)(2*ix+1,iy) + sin(phase) *(*imcp)(2*ix,iy) ;
-	     }}
-	     image->set_complex(true);
-	     image->set_ri(true);
-	     image->set_fftodd(true);
-	     image->update();
-	     image->set_shuffled(true);
+		(*imcp)(nx2-2,(ny-1)/2) = (*image)(0,0);
+		(*imcp)(nx2-1,(ny-1)/2) = (*image)(1,0); // A block
+		for (int iy = 1; iy < (ny+1)/2; iy++) { // B and C blocks
+			(*imcp)(nx2-2, iy+(ny-1)/2) =  (*image)(0,iy);
+			(*imcp)(nx2-1, iy+(ny-1)/2) =  (*image)(1,iy);
+			(*imcp)(nx2-2,-iy+(ny-1)/2) =  (*image)(0,iy);
+			(*imcp)(nx2-1,-iy+(ny-1)/2) = -(*image)(1,iy);
+		}
+		for (int ix = 2; ix < nx2; ix=ix+2) { // D blocks
+			(*imcp)( ix+nx2-2,(ny-1)/2)=  (*image)(ix  ,0);
+			(*imcp)( ix+nx2-1,(ny-1)/2)=  (*image)(ix+1,0);
+			(*imcp)(-ix+nx2-2,(ny-1)/2)=  (*image)(ix  ,0);
+			(*imcp)(-ix+nx2-1,(ny-1)/2)= -(*image)(ix+1,0);
+		}
+		for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
+			for (int iy= 1 ; iy <(ny+1)/2 ; iy++){ 
+				(*imcp)( ix+nx2-2, iy+(ny-1)/2) =  (*image)(ix  ,iy);  // e
+				(*imcp)( ix+nx2-1, iy+(ny-1)/2) =  (*image)(ix+1,iy);  // E
+				(*imcp)(-ix+nx2-2,-iy+(ny-1)/2) =  (*image)(ix  ,iy);  // E*
+				(*imcp)(-ix+nx2-1,-iy+(ny-1)/2) = -(*image)(ix+1,iy);  // E*
+		 	}
+		}
+		for (int ix = 2; ix < nx2; ix=ix+2) { // E blocks
+			for (int iy= (ny+1)/2 ; iy <ny ; iy++){ 
+				(*imcp)( ix+nx2-2, iy-(ny+1)/2)  =  (*image)(ix  ,iy);  // F
+				(*imcp)( ix+nx2-1, iy-(ny+1)/2)  =  (*image)(ix+1,iy);  // F
+				(*imcp)(-ix+nx2-2,-iy+ ny+2)     =  (*image)(ix  ,iy);  // F*
+				(*imcp)(-ix+nx2-1,-iy+ ny+2)     = -(*image)(ix+1,iy);  // F*
+			}
+		}
+		image->update();
+		imcp->update();
+		
+		// We need to recenter and put the data back to the original array
+		image->set_size(out_nx, out_ny, 1);
+		for (int ix=0; ix < nx_orig; ix++){
+			for (int iy=0; iy < ny_orig; iy++){ 
+				phase = M_PI*(ix+iy-2*CenterM)*(fSize-1)/fSize;
+				(*image)(2*ix,iy)  = cos(phase) *(*imcp)(2*ix,iy)   - sin(phase) *(*imcp)(2*ix+1,iy) ;
+				(*image)(2*ix+1,iy)= cos(phase) *(*imcp)(2*ix+1,iy) + sin(phase) *(*imcp)(2*ix,iy) ;
+			}
+		}
+		
+		image->set_complex(true);
+		image->set_ri(true);
+		image->set_fftodd(true);
+		image->update();
+		image->set_shuffled(true);
+		
 	} else if  ((nz==1) && (image->is_complex())  // already shuffled
 		&& (image->is_fftodd()) && (image->is_shuffled() )){ // PRB
-	     int out_nx= 1 + nx2/2;
-	     int out_ny=ny;
-	     int nx_orig= out_nx-1;
-	     int ny_orig=ny;
-	     int Center= (nx_orig+1)/2;
-	     int CenterM=Center-1;
-	     float fSize= float(nx_orig);
-//	     printf("entered unshuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
+			
+		int out_nx= 1 + nx2/2;
+		int out_ny=ny;
+		int nx_orig= out_nx-1;
+		int ny_orig=ny;
+		int Center= (nx_orig+1)/2;
+		int CenterM=Center-1;
+		float fSize= float(nx_orig);
+		// printf("entered unshuffle out_nx=%d  out_ny=%d \n", out_nx,out_ny);
+		
+		EMData* imageA = image->copy();
+		float phase;
+		for (int ix=0; ix < nx_orig; ix++){
+			for (int iy=0; iy < ny_orig; iy++){ 
+				phase = -M_PI*(ix+iy-2*CenterM)*(fSize-1)/fSize;
+				(*image)(2*ix,iy)  = cos(phase) *(*imageA)(2*ix,iy)   - sin(phase) *(*imageA)(2*ix+1,iy) ;
+				(*image)(2*ix+1,iy)= cos(phase) *(*imageA)(2*ix+1,iy) + sin(phase) *(*imageA)(2*ix,iy) ;
+			}
+		}
+		imageA->update();
 
+		EMData* imcp = image->copy_head();
+		imcp ->set_size(out_nx, out_ny, 1);
 
-
-	     EMData* imageA = image->copy();
-	     float phase;
-	     for (int ix=0; ix < nx_orig; ix++){
-		for (int iy=0; iy < ny_orig; iy++){ 
-			phase = -M_PI*(ix+iy-2*CenterM)*(fSize-1)/fSize;
-			(*image)(2*ix,iy)  = cos(phase) *(*imageA)(2*ix,iy)   - sin(phase) *(*imageA)(2*ix+1,iy) ;
-			(*image)(2*ix+1,iy)= cos(phase) *(*imageA)(2*ix+1,iy) + sin(phase) *(*imageA)(2*ix,iy) ;
-	     }}
-	     imageA->update();
-	     
-	     
-
-
-	     EMData* imcp = image->copy_head();
-	     imcp ->set_size(out_nx, out_ny, 1);
-	     
-	     //  if onx=10, nx_orig=5, out_nx=6, onxv=6;
-	     //     ony=5,  ny_orig=5, out_ny=5, onyv=5;
-	     int onxv = nx2/2+1;
-	     int onyv = ny;
-	     // center is at nx=5,6, ny=3
-	     (*imcp)(0,0) = (*image)(onxv-2,(onyv-1)/2); 
-	     (*imcp)(1,0) = (*image)(onxv-1,(onyv-1)/2); // A block
-            for (int iy = 1; iy < (onyv+1)/2; iy++) { // B and C blocks
-		(*imcp)(0,iy) =  (*image)(onxv-2, iy+(onyv-1)/2);
-		(*imcp)(1,iy) =  (*image)(onxv-1, iy+(onyv-1)/2);
-		(*imcp)(0,onyv-iy) =  (*image)(onxv-2,-iy+(onyv-1)/2);
-		(*imcp)(1,onyv-iy) = (*image)(onxv-1,-iy+(onyv-1)/2);
+		//  if onx=10, nx_orig=5, out_nx=6, onxv=6;
+		//     ony=5,  ny_orig=5, out_ny=5, onyv=5;
+		int onxv = nx2/2+1;
+		int onyv = ny;
+		// center is at nx=5,6, ny=3
+		(*imcp)(0,0) = (*image)(onxv-2,(onyv-1)/2); 
+		(*imcp)(1,0) = (*image)(onxv-1,(onyv-1)/2); // A block
+		for (int iy = 1; iy < (onyv+1)/2; iy++) { // B and C blocks
+			(*imcp)(0,iy) =  (*image)(onxv-2, iy+(onyv-1)/2);
+			(*imcp)(1,iy) =  (*image)(onxv-1, iy+(onyv-1)/2);
+			(*imcp)(0,onyv-iy) =  (*image)(onxv-2,-iy+(onyv-1)/2);
+			(*imcp)(1,onyv-iy) = (*image)(onxv-1,-iy+(onyv-1)/2);
+		}
+		for (int ix = 2; ix < onxv; ix=ix+2) { // D blocks
+			(*imcp)(ix  ,0)=  (*image)( ix+onxv-2,(onyv-1)/2);
+			(*imcp)(ix+1,0)=  (*image)( ix+onxv-1,(onyv-1)/2);
+		}
+		for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
+			for (int iy= 1 ; iy <(onyv+1)/2 ; iy++){ 
+				(*imcp)(ix  ,iy) =  (*image)( ix+onxv-2,iy+(onyv-1)/2);  // E
+				(*imcp)(ix+1,iy) =  (*image)( ix+onxv-1,iy+(onyv-1)/2);  // E
+			}
+		}
+		for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
+			for (int iy= (onyv+1)/2 ; iy <onyv ; iy++){ 
+				(*imcp)(ix  ,iy)  =  (*image)( ix+onxv-2, iy-(onyv+1)/2);  // F
+				(*imcp)(ix+1,iy)  =  (*image)( ix+onxv-1, iy-(onyv+1)/2);  // F
+			}
 	     }
-            for (int ix = 2; ix < onxv; ix=ix+2) { // D blocks
-		(*imcp)(ix  ,0)=  (*image)( ix+onxv-2,(onyv-1)/2);
-		(*imcp)(ix+1,0)=  (*image)( ix+onxv-1,(onyv-1)/2);
-	     }
-            for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
-		for (int iy= 1 ; iy <(onyv+1)/2 ; iy++){ 
-		    (*imcp)(ix  ,iy) =  (*image)( ix+onxv-2,iy+(onyv-1)/2);  // E
-		    (*imcp)(ix+1,iy) =  (*image)( ix+onxv-1,iy+(onyv-1)/2);  // E
-		 }
-	     }
-            for (int ix = 2; ix < onxv; ix=ix+2) { // E blocks
-		for (int iy= (onyv+1)/2 ; iy <onyv ; iy++){ 
-		    (*imcp)(ix  ,iy)  =  (*image)( ix+onxv-2, iy-(onyv+1)/2);  // F
-		    (*imcp)(ix+1,iy)  =  (*image)( ix+onxv-1, iy-(onyv+1)/2);  // F
-		 }
-	     }
-	     image->update();
-	     imcp->update();
-	     image->set_size(out_nx, out_ny, 1);
-	     
-	     for (int ix=0; ix < out_nx; ix++){
-		for (int iy=0; iy < out_ny; iy++){ 
-//		printf("%d %d \n",ix,iy);fflush(stdout);
-		(*image)(ix,iy)= (*imcp)(ix,iy);
-	     }}
-	     image->set_complex(true);
-	     image->set_ri(true);
-	     image->set_shuffled(false);
-	     image->set_fftodd(true);
-	     image->update();
+		image->update();
+		imcp->update();
+		image->set_size(out_nx, out_ny, 1);
+
+		for (int ix=0; ix < out_nx; ix++){
+			for (int iy=0; iy < out_ny; iy++){ 
+				//printf("%d %d \n",ix,iy);fflush(stdout);
+				(*image)(ix,iy)= (*imcp)(ix,iy);
+			}
+		}
+		image->set_complex(true);
+		image->set_ri(true);
+		image->set_shuffled(false);
+		image->set_fftodd(true);
+		image->update();
 	} else {
 		if (nz == 1) {
 			int l = ny / 2 * nx2;
@@ -2591,7 +2595,7 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
 			}
 			if( t )
 			{
-				delete[]t;
+				delete [] t;
 				t = 0;
 			}
 		}

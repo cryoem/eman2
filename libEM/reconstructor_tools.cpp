@@ -47,19 +47,32 @@ template <> Factory < FourierPixelInserter3D >::Factory()
 	force_add(&FourierInserter3DMode7::NEW);
 }
 
-InterpolatedFRC::InterpolatedFRC(float* const rdata, float* const norm, const int xsize, const int ysize, const int zsize, const float& sampling ) :
-		threed_rdata(rdata), norm_data(norm), nx(xsize), ny(ysize), nz(zsize), nxy(xsize*ysize), bin(sampling), r(0), rn(0) 
+InterpolatedFRC::InterpolatedFRC( const Dict & new_params ) :
+		threed_rdata(0), norm_data(0), nx(0), ny(0), nz(0), nxy(0), x_scale(1.0), y_scale(1.0), z_scale(1.0), bin(1.0), r(0), rn(0) 
 {
-	if ( sampling <= 0 )
+	set_params(new_params);
+	
+	init();
+	
+	if ( bin <= 0 )
 	{	
-		throw InvalidValueException(sampling, "Error: sampling must be greater than 0");
+		throw InvalidValueException(bin, "Error: sampling must be greater than 0");
 	}
 
-	pixel_radius_max = ny/2;
+	int max_x = nx, max_y = ny, max_z = nz;
+	
+	if ( x_scale != 1.0 ) max_x = (int) x_scale*nx;
+	if ( y_scale != 1.0 ) max_y = (int) y_scale*ny;
+	if ( z_scale != 1.0 ) max_z = (int) z_scale*nz;
+	
+	int max = max_x;
+	if ( max_y > max ) max = max_y;
+	if ( max_z > max ) max = max_z;
+	
+	pixel_radius_max = max/2;
 	pixel_radius_max_square = Util::square( (int) pixel_radius_max );
 
 	size = static_cast<int>(pixel_radius_max*bin);
-	// The parentheses effectively cause initialization by 0 (apparently) - this should be tested because without 0 initialization this objects behavior will be unexpected. 
 	frc = new float[size];
 	frc_norm_rdata = new float[size];
 	frc_norm_dt = new float[size];
@@ -74,86 +87,65 @@ InterpolatedFRC::InterpolatedFRC(float* const rdata, float* const norm, const in
 	off[7] = nxy + nx + 2;
 }
 
-InterpolatedFRC::InterpolatedFRC( const InterpolatedFRC& that ) :
-		threed_rdata(that.threed_rdata), norm_data(that.norm_data), nx(that.nx), ny(that.ny), nz(that.nz), nxy(that.nxy), bin(that.bin),
-		size(that.size), pixel_radius_max(that.pixel_radius_max), pixel_radius_max_square(that.pixel_radius_max_square),
-		r(that.r), rn(that.rn)
+void InterpolatedFRC::init()
 {
-	frc = new float[size];
-	frc_norm_rdata = new float[size];
-	frc_norm_dt = new float[size];
-	
-	// Now copy the data in that
-	memcpy(frc,that.frc, size*sizeof(float));
-	memcpy(frc_norm_rdata,that.frc_norm_rdata, size*sizeof(float));
-	memcpy(frc_norm_dt,that.frc_norm_dt, size*sizeof(float));
-
-	off[0] = 0;
-	off[1] = 2;
-	off[2] = nx;
-	off[3] = nx + 2;
-	off[4] = nxy;
-	off[5] = nxy + 2;
-	off[6] = nxy + nx;
-	off[7] = nxy + nx + 2;
-}
-
-InterpolatedFRC& InterpolatedFRC::operator=( const InterpolatedFRC& that)
-{
-	if (this != &that)
+	if ( params.find("rdata") !=  params.end()  )
 	{
-		// Transactionalize the assignment operator, making it "all or nothing"
-		// protects against memory leaks.
-		float * new_frc = 0, * new_frc_norm_rdata = 0, * new_frc_norm_dt = 0;
-		
-		try {
-			new_frc = new float[that.size];
-			new_frc_norm_rdata = new float[that.size];
-			new_frc_norm_dt = new float[that.size];
-		}
-		catch (...) {
-			if ( new_frc != 0 ) delete [] new_frc;
-			if ( new_frc_norm_rdata != 0 ) delete [] new_frc_norm_rdata;
-			if ( new_frc_norm_dt != 0 ) delete [] new_frc_norm_dt;
-			throw;
-		}
-		
-		
-		threed_rdata = that.threed_rdata;
-		norm_data = that.norm_data;
-		nx = that.nx; ny = that.ny; nz = that.nz; nxy = that.nxy; bin = that.bin;
-		size = that.size; pixel_radius_max = that.pixel_radius_max; pixel_radius_max_square = that.pixel_radius_max_square;
-		r = that.r; rn = that.rn;
-		
-		free_memory();
-		frc = new_frc;
-		frc_norm_rdata = new_frc_norm_rdata;
-		frc_norm_dt = new_frc_norm_dt;
-		
-		// Now copy the data in that
-		memcpy(frc,that.frc, size*sizeof(float));
-		memcpy(frc_norm_rdata,that.frc_norm_rdata, size*sizeof(float));
-		memcpy(frc_norm_dt,that.frc_norm_dt, size*sizeof(float));
-		
-		off[0] = 0;
-		off[1] = 2;
-		off[2] = nx;
-		off[3] = nx + 2;
-		off[4] = nxy;
-		off[5] = nxy + 2;
-		off[6] = nxy + nx;
-		off[7] = nxy + nx + 2;
+		threed_rdata = params["rdata"];
+		if ( threed_rdata == 0 )
+			throw NotExistingObjectException("rdata", "error the rdata pointer was 0 in FourierPixelInserter3D::init");
 	}
-
-	return *this;
+	else throw NotExistingObjectException("rdata", "the rdata pointer was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("norm") !=  params.end() )
+	{
+		norm_data = params["norm"];
+		if ( norm_data == 0 )
+			throw NotExistingObjectException("norm", "error the norm pointer was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("norm", "the norm pointer was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("nx") != params.end() )
+	{
+		nx = params["nx"];
+		if ( nx == 0 )
+			throw NotExistingObjectException("nx", "error nx was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("nx", "nx was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("ny") != params.end() )
+	{
+		ny = params["ny"];
+		if ( ny == 0 )
+			throw NotExistingObjectException("ny", "error ny was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("ny", "ny was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.find("nz") != params.end() )
+	{
+		nz = params["nz"];
+		if ( nz == 0 )
+			throw NotExistingObjectException("nz", "error nz was 0 in FourierPixelInserter3D::init");
+	}
+	else throw NotExistingObjectException("nz", "nz was not defined in FourierPixelInserter3D::init");
+	
+	if ( params.has_key("sampling") ) bin = params["sampling"];
+	
+	if ( params.has_key("x_scale") ) x_scale = params["x_scale"];
+	if ( params.has_key("y_scale") ) y_scale = params["y_scale"];
+	if ( params.has_key("z_scale") ) z_scale = params["z_scale"];
+	
+	nxy = nx*ny;
 }
-
 
 void InterpolatedFRC::reset()
 {
 	memset(frc, 0, size*sizeof(float));
 	memset(frc_norm_rdata, 0, size*sizeof(float));
 	memset(frc_norm_dt, 0, size*sizeof(float));
+	
+	r = 0.0;
+	rn = 0.0;
 }
 
 
@@ -163,11 +155,11 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 	int y0 = (int) floor(yy + 0.5f);
 	int z0 = (int) floor(zz + 0.5f);
 	
-	int offset = (ny%2 == 0? 1:0);
-	int yt = (int) floor(yy) - ny/2 - offset;
-	int zt = (int) floor(zz) - nz/2;
+	// Have to get radial coordinates - x is fine as it is but the other two need translation
+	int yt = y0 - ny/2;
+	int zt = z0 - nz/2;
 	
-	int radius =  (int) floor(xx)*(int) floor(xx) + yt*yt + zt*zt;
+	int radius = (int) x_scale*x_scale*(int) floor(xx)*(int) floor(xx) + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
 	radius = static_cast<int>(sqrtf(radius)*bin);
 	
 	if ( radius > (size-1) )
@@ -246,12 +238,11 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 		return true;
 	}
 	
-	// Have to get radial coordinates - x is fine as it is but the other two need translation ( after testing it seems like z does not need translation - more testing required)
-	int offset = (ny%2 == 0? 1:0);
-	int yt = y0 - ny/2 - offset;
+	// Have to get radial coordinates - x is fine as it is but the other two need translation
+	int yt = y0 - ny/2;
 	int zt = z0 - nz/2;
 
-	int radius =  x0*x0 + yt*yt + zt*zt;
+	int radius = (int) x_scale*x_scale*x0*x0 + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
 	radius = static_cast<int>(sqrtf(radius)*bin);
 
 	if ( radius > (size-1) )
@@ -375,24 +366,16 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	int y0 = (int) floor(yy);
 	int z0 = (int) floor(zz);
  
-// 	if (x0 > nx - 2 || y0 > ny - 1 || z0 > nz - 1)
-// 	{
-// 		return false;
-// 	}
-	
-	// Have to get radial coordinates - x is fine as it is but the other two need translation ( after testing it seems like z does not need translation - more testing required)
-	int offset = (ny%2 == 0? 1:0);
-	int yt = y0 - ny/2 - offset;
+	// Have to get radial coordinates - x is fine as it is but the other two need translation
+	int yt = y0 - ny/2;
 	int zt = z0 - nz/2;
 
-	int radius =  x0*x0 + yt*yt + zt*zt;
+	int radius = (int) x_scale*x_scale*x0*x0 + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
+// 	int radius =  x0*x0 + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
 	radius = static_cast<int>(sqrtf(radius)*bin);
 
-	// debug
 	if ( radius > (size-1) )
 	{
-		//cout is debug
-		//cout << "radius " << radius << " was greater than or equal to size " << size  << endl;
 		return false;
 	}
 
@@ -418,7 +401,6 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	float interp_real = 0.0, interp_comp = 0.0;
 	
 	float weight_sum = 0.0;
-	//cout << "Pixel [" << dt[0] << "," << dt[1] << "] is surrounded by ";
 	for (int j = 0; j < 8; j++) {
 		int k = i + off[j];
 		if ( norm_data[k/2] == 0 )
@@ -469,11 +451,10 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	int z0 = (int) floor(zz + 0.5f);
 	
 	// Have to get radial coordinates - x is fine as it is but the other two need translation
-	int offset = (ny%2 == 0? 1:0);
-	int yt = (int) floor(yy) - ny/2 - offset;
-	int zt = (int) floor(zz) - nz/2;
+	int yt = y0 - ny/2;
+	int zt = z0 - nz/2;
 	
-	int radius =  (int) floor(xx)*(int) floor(xx) + yt*yt + zt*zt;
+	int radius = (int) x_scale*x_scale* (int) floor(xx)*(int) floor(xx) + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
 	radius = static_cast<int>(sqrtf(radius)*bin);
 	
 	// debug
@@ -527,11 +508,8 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 	{
 		if ( frc[cutoff] !=0 ) break;
 	}
-	
-	//cout << "Cutoff is " << cutoff << endl;
-
 	cutoff += 1;
-
+	
 	for( int i = 0; i < cutoff; ++i )
 	{
 		if ( frc_norm_rdata[i] == 0 || frc_norm_dt[i] == 0 )
@@ -728,7 +706,7 @@ bool FourierInserter3DMode2::effected_pixels_are_zero(const float& xx, const flo
 	int x0 = (int) floor(xx);
 	int y0 = (int) floor(yy);
 	int z0 = (int) floor(zz);
-
+	
 	int i = (int) (x0 * 2 + y0 * nx + z0 * nxy);
 
 	for (int j = 0; j < 8; j++)

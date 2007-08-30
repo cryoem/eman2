@@ -75,16 +75,7 @@ namespace EMAN
 	{
 	  public:
 		inline ReconstructorVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
-		virtual ~ReconstructorVolumeData() { free_memory(); }
-
-		/** Copy constructor
-		 */
-		ReconstructorVolumeData(const ReconstructorVolumeData& that) { copy_data(that); }
-
-		/** Assignment operator
-		 */
-		ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
-		
+		virtual ~ReconstructorVolumeData() { free_memory(); }		
 	  protected: 
 		EMData* image;
 		//tmp_data is the substitute of misused parent in reconstruction
@@ -109,12 +100,13 @@ namespace EMAN
 			if (tmp_data != 0 ) tmp_data->to_zero();
 			if (image != 0 ) image->to_zero();
 		}
+		
+		private:
+		// Disallow copy construction
+		ReconstructorVolumeData(const ReconstructorVolumeData& that);
+		// Disallow  assignment
+		ReconstructorVolumeData& operator=(const ReconstructorVolumeData& );
 
-	  private:
-		/** a convenience function for copying data, called by the assigment operator and the copy constructor,
-		 *  deep and complete complete.
-		 */
-		void copy_data( const ReconstructorVolumeData& that );
 	};
 
 	/** Reconstructor class defines a way to do 3D recontruction.
@@ -165,16 +157,6 @@ namespace EMAN
 	  public:
 		Reconstructor() {}
 		virtual ~Reconstructor() {}
-
-		/** Copy constructor
-		 */
-		Reconstructor(const Reconstructor&);
-
-		/** Assignment operator
-		 */
-		Reconstructor& operator=(const Reconstructor& );
-
-
 		/** Initialize the reconstructor.
 		 */
 		virtual void setup() = 0;
@@ -283,11 +265,11 @@ namespace EMAN
 
 	  protected:
 		mutable Dict params;
-
+		
 	  private:
-		/** a convenience function for copying data, called by the assigment operator and the copy constructor
-		 */
-		void copy_data( const Reconstructor& );
+		// Disallow copy construction
+		Reconstructor(const Reconstructor& that);
+		Reconstructor& operator=(const Reconstructor& );
 	
 	};
 
@@ -344,21 +326,12 @@ namespace EMAN
 	class FourierReconstructor : public Reconstructor
 	{
 	  public:
-		FourierReconstructor() : image_idx(0), inserter(0), slice_insertion_flag(true), slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0) { load_default_settings(); }
+		FourierReconstructor() : image_idx(0), inserter(0), interpFRC_calculator(0), slice_insertion_flag(true), slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0) { load_default_settings(); }
 		virtual ~FourierReconstructor() { free_memory(); }
-	
-		/** Copy constructor
-		 */
-		FourierReconstructor( const FourierReconstructor& that );
-
-		/** Assignment operator
-		 */
-		FourierReconstructor& operator=( const FourierReconstructor& );
 
 		virtual void setup();
 
 		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
-		
 		
 		// these functions are for testing purposes
 #if RECONSTRUCTOR_TOOLS_TESTING
@@ -396,18 +369,21 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("size", EMObject::INT, "Should be the size of the input images, i.e. if images are 1024x1024 size should be 1024");
-			d.put("mode", EMObject::INT, "Fourier pixel insertion mode [1-7] - mode 2 is default");
-			d.put("weight", EMObject::FLOAT, "A temporary weight variable, used to weight slices as they are inserted");
-			d.put("hard", EMObject::FLOAT, "The quality metric threshold");
-			d.put("dlog", EMObject::BOOL, "This is a residual from EMAN1 that has not yet been addressed in the EMAN2 implementation");
-			d.put("sym", EMObject::STRING, "The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?");
-			d.put("pad", EMObject::INT, "The amount to pad the input images to - should be greater than the image size");
-			d.put("apix", EMObject::FLOAT, "Angstrom per pixel of the input images, default is 1.0");
-			d.put("zsize", EMObject::INT, "The zsize of the reconstructed volume, most often used in tomographic reconstuction");
-			d.put("ysize", EMObject::INT, "The ysize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified");
-			d.put("xsize", EMObject::INT, "The xsize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified");
-			d.put("tomo", EMObject::BOOL, "A tomographic reconstruction flag that causes alternative weighting schemes to be used for tomographic slicess");
+			d.put("size", EMObject::INT, "Should be the size of the input images, i.e. if images are 1024x1024 size should be 1024.");
+			d.put("mode", EMObject::INT, "Fourier pixel insertion mode [1-7] - mode 2 is default.");
+			d.put("weight", EMObject::FLOAT, "A temporary weight variable, used to weight slices as they are inserted.");
+			d.put("hard", EMObject::FLOAT, "The quality metric threshold.");
+			d.put("dlog", EMObject::BOOL, "This is a residual from EMAN1 that has not yet been addressed in the EMAN2 implementation.");
+			d.put("sym", EMObject::STRING, "The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?.");
+			d.put("pad", EMObject::INT, "The amount to pad the input images to - should be greater than the image size.");
+			d.put("apix", EMObject::FLOAT, "Angstrom per pixel of the input images, default is 1.0.");
+			d.put("zsize", EMObject::INT, "The zsize of the reconstructed volume, most often used in tomographic reconstuction.");
+			d.put("ysize", EMObject::INT, "The ysize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified.");
+			d.put("xsize", EMObject::INT, "The xsize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified.");
+			d.put("tomo_weight", EMObject::BOOL, "A tomographic reconstruction flag that causes inserted slices to be weighted by 1/cos(alt) - alt is the tilt angle. Default is false.");
+			d.put("tomo_mask", EMObject::BOOL, "A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
+			d.put("t_emm", EMObject::BOOL, "Read as tomo edge mean mask - experimental, default false");
+			d.put("edgenorm", EMObject::BOOL, "Whether or not to perform edge normalization on the inserted slices before Fourier transforming them, default is true." );
 			return d;
 		}
 
@@ -436,6 +412,11 @@ namespace EMAN
 		 */
 		EMData* preprocess_slice( const EMData* const slice, const Transform3D transform = Transform3D() );
 	  private:
+		// Disallow copy construction
+		FourierReconstructor( const FourierReconstructor& that );
+		// Disallow assignment
+		FourierReconstructor& operator=( const FourierReconstructor& );
+		  
 		void load_default_settings()
 		{
 			params["size"] = 0;
@@ -449,7 +430,10 @@ namespace EMAN
 			params["zsize"] = 0;
 			params["ysize"] = 0;
 			params["xsize"] = 0;
-			params["tomo"] = false;
+			params["tomo_weight"] = false;
+			params["tomo_mask"] = false;
+			params["t_emm"] = false;
+			params["edgenorm"] = true;
 		}
 
 		/** Frees the memory owned by this object (but not parent objects)
@@ -460,6 +444,11 @@ namespace EMAN
 		/** Load the pixel inserter based on the information in params
 		 */
 		void load_inserter();
+		
+		
+		/** Load the pixel inserter based on the information in params
+		 */
+		void load_interpFRC_calculator();
 		
 		/** A function to perform the nuts and bolts of inserting an image slice
 		 * @param input_slice the slice to insert into the 3D volume
@@ -479,6 +468,9 @@ namespace EMAN
 		
 		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
 		FourierPixelInserter3D* inserter;
+		
+		/// A pixel inserter pointer which inserts pixels into the 3D volume using one of a variety of insertion methods
+		InterpolatedFRC* interpFRC_calculator;
 
 		/// Internal flags used to perform memory zeroing and normalization transparently
 		bool slice_insertion_flag;
@@ -495,14 +487,6 @@ namespace EMAN
 	  public:
 		WienerFourierReconstructor() { load_default_settings(); };
 		virtual ~WienerFourierReconstructor() {};
-	
-		/** Copy constructor
-		 */
-		WienerFourierReconstructor( const WienerFourierReconstructor& that) : Reconstructor(that) {}
-
-		/** Assignment operator
-		 */
-		WienerFourierReconstructor& operator=( const WienerFourierReconstructor& );
 
 		virtual void setup();
 
@@ -539,6 +523,11 @@ namespace EMAN
 			return d;
 		}
 	  private:
+		// Disallow copy construction
+		WienerFourierReconstructor( const WienerFourierReconstructor& that);
+		// Disallow assignment
+		WienerFourierReconstructor& operator=( const WienerFourierReconstructor& );
+
 		void load_default_settings()
 		{
 			params["size"] = 0;
@@ -563,14 +552,6 @@ namespace EMAN
 		BackProjectionReconstructor() { load_default_settings();  }
 	
 		virtual ~BackProjectionReconstructor() {}
-
-		/** Copy constructor
-		 */
-		BackProjectionReconstructor( const BackProjectionReconstructor& that) : Reconstructor(that) {}
-
-		/** Assignment operator
-		 */
-		BackProjectionReconstructor& operator=( const BackProjectionReconstructor& );
 
 		virtual void setup();
 		
@@ -602,12 +583,19 @@ namespace EMAN
 			return d;
 		}
 	  private:
+		// Disallow copy construction
+		BackProjectionReconstructor( const BackProjectionReconstructor& that);
+		// Disallow assignment
+		BackProjectionReconstructor& operator=( const BackProjectionReconstructor& );
+		
 		void load_default_settings()
 		{
 			params["weight"] = 1.0; 
 			params["use_weights"] = true;
 			params["size"] = 0;
 		}
+		
+		EMData* preprocess_slice(const EMData* const slice);
 	};
 
 

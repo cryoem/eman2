@@ -230,12 +230,12 @@ class TestEMData(unittest.TestCase):
         e.to_zero()
         e.process_inplace("testimage.noise.uniform.rand")
 
-        for i in range(-1,1):
-			for j in range(-1,1):
-				for k in range(-1,1):
-					for l in range(-1,1):
-						for m in range(-1,1):
-							for n in range(-1,1):
+        for i in range(-1,2):
+			for j in range(-1,2):
+				for k in range(-1,2):
+					for l in range(-1,2):
+						for m in range(-1,2):
+							for n in range(-1,2):
 								region = Region(i,j,k,16+l,16+m,16+n)
 								f = e.copy()
 								g = e.get_clip(region)
@@ -921,47 +921,67 @@ class TestEMData(unittest.TestCase):
 		
     def test_ift_inplace(self):
         """test ift inplace (fft inplace)...................."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.to_one()
+        n = 16
         
-        d = EMData()
-        d.set_size(32,32,32)
-        d.to_one()
-         
-        e.do_fft_inplace()
-        e.do_ift_inplace()
-        
-        self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
-        self.assertEqual(e.get_ysize(), d.get_ysize())
-        self.assertEqual(e.get_zsize(), d.get_zsize())
-        
-        for k in range(d.get_xsize()):
-            for j in range(d.get_ysize()):
-                for i in range(d.get_zsize()):
-                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)
+		# iterate through dimension sets in all combinations of even and oddness
+        for i in range(0,2):
+			for j in range(0,2):
+				for k in range(0,2):
+					e = EMData()
+					e.set_size(n+i,n+j,n+k)
+					# if you use something like e.to_one, you make yourself vulnerable to erroneous results, because if the real space image is uniform
+					# then the Fourier image has only a DC component. Hence use noise images for FFT tests.
+					e.process_inplace("testimage.noise.uniform.rand")
+					
+					d = e.copy()
+					
+					e.do_fft_inplace()
+					#e.process_inplace("xform.fourierorigin")
+					#e.process_inplace("xform.fourierorigin")
+					e.do_ift_inplace()
+					
+					# This is infact incorrect or behavior that has still not been resolved, the x dimension should probably be smaller
+					# note that currently the correct way to deal with this extra memory problem is to call EMData::postift_depad_corner_inplace()
+					self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
+					self.assertEqual(e.get_ysize(), d.get_ysize())
+					self.assertEqual(e.get_zsize(), d.get_zsize())
+					
+					for k in range(d.get_xsize()):
+						for j in range(d.get_ysize()):
+							for i in range(d.get_zsize()):
+								self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)
                     
     def test_ift_inplace2(self):
         """test ift inplace (fft out of place) .............."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.to_one()
-        
-        d = EMData()
-        d.set_size(32,32,32)
-        d.to_one()
-         
-        e = e.do_fft()
-        e.do_ift_inplace()
-        
-        self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
-        self.assertEqual(e.get_ysize(), d.get_ysize())
-        self.assertEqual(e.get_zsize(), d.get_zsize())
-        
-        for k in range(d.get_xsize()):
-            for j in range(d.get_ysize()):
-                for i in range(d.get_zsize()):
-                    self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)  
+        n = 16
+        # iterate through dimension sets in all combinations of even and oddness
+        for ii in range(0,2):
+			for jj in range(0,2):
+				for kk in range(0,2):
+					e = EMData()
+					e.set_size(n+ii,n+jj,n+kk)
+					# if you use something like e.to_one, you make yourself vulnerable to erroneous results, because if the real space image is uniform
+					# then the Fourier image has only a DC component. Hence use noise images for FFT tests.
+					e.process_inplace("testimage.noise.uniform.rand")
+					
+					d = e.copy()
+			
+					#e.process_inplace("xform.phaseorigin")
+					e = e.do_fft()
+					#e.process_inplace("xform.fourierorigin")
+					#e.process_inplace("xform.fourierorigin")
+					e.do_ift_inplace()
+					#e.process_inplace("xform.phaseorigin")
+					# This is infact incorrect or behavior that has still not been resolved, the x dimension should probably be smaller
+					# note that currently the correct way to deal with this extra memory problem is to call EMData::postift_depad_corner_inplace()
+					self.assertEqual(e.get_xsize(), d.get_xsize()+(2-d.get_xsize()%2))
+					self.assertEqual(e.get_ysize(), d.get_ysize())
+					self.assertEqual(e.get_zsize(), d.get_zsize())
+					
+					for k in range(d.get_xsize()):
+						for j in range(d.get_ysize()):
+							for i in range(d.get_zsize()):
+								self.assertAlmostEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k], 3)  
     def test_ift(self):
         """test ift (fft inplace) ..........................."""
         e = EMData()
@@ -1104,54 +1124,90 @@ class TestEMData(unittest.TestCase):
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     def test_render_amp8(self):
-        """test render_amp8() function ......................"""
-        e = EMData()
-        e.set_size(32,32,1)
-        e.process_inplace("testimage.noise.uniform.rand")
-        str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
-        
-        #only apply to 2D image
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.process_inplace("testimage.noise.uniform.rand")
-        self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
-        try:
-            str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
-        except RuntimeError, runtime_err:
-            self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
+		"""test render_amp8() function ......................"""
+		e = EMData()
+		e.set_size(32,32,1)
+		e.process_inplace("testimage.noise.uniform.rand")
+		str = e.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+		
+		#only apply to 2D image
+		e2 = EMData()
+		e2.set_size(32,32,32)
+		e2.process_inplace("testimage.noise.uniform.rand")
+		self.assertRaises( RuntimeError, e2.render_amp8, 0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+		try:
+			str = e2.render_amp8(0, 0, 32, 32, 96, 1.2, 1, 254, 100.0, 200.0, 2.0, 3)
+		except RuntimeError, runtime_err:
+			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
     def test_xform_phaseorigin(self):
 		"""test xform.phaseorigin ..........................."""
-		e = EMData()
-		e.set_size(32,32,32)
-		e.process_inplace("testimage.noise.uniform.rand")
-
-		d = e.copy()
-		
-		e.process_inplace("xform.phaseorigin")
-		e.process_inplace("xform.phaseorigin")
-		
-		for k in range(e.get_xsize()):
-			for j in range(e.get_ysize()):
-				for i in range(e.get_zsize()):
-					self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+		# note - Most test operations involving images should rigorously test all permutations of even and odd dimensions
+		# as is implemented here
+		n = 16
+		for ii in range(0,2):
+			for jj in range(0,2):
+				for kk in range(0,2):
+					e = EMData()
+					e.set_size(n+ii,n+jj,n+kk)
+					e.process_inplace("testimage.noise.uniform.rand")
+			
+					d = e.copy()
+					
+					e.process_inplace("xform.phaseorigin")
+					e.process_inplace("xform.phaseorigin")
+					
+					for k in range(e.get_xsize()):
+						for j in range(e.get_ysize()):
+							for i in range(e.get_zsize()):
+								self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
 						
     def test_xform_fourierorigin(self):
 		"""test xform.fourierorigin ........................."""
-		e = EMData()
-		e.set_size(32,32,32)
-		e.process_inplace("testimage.noise.uniform.rand")
-		e.do_fft_inplace()
+		# note - Most test operations involving images should rigorously test all permutations of even and odd dimensions
+		# as is implemented here
+		n = 16
+		for ii in range(0,2):
+			for jj in range(0,2):
+				for kk in range(0,2):
+					e = EMData()
+					e.set_size(n+ii,n+jj,n+kk)
+					e.process_inplace("testimage.noise.uniform.rand")
+		
+					e.do_fft_inplace()
+			
+					d = e.copy()
+					
+					e.process_inplace("xform.fourierorigin")
+					e.process_inplace("xform.fourierorigin")
+					
+					for k in range(e.get_xsize()):
+						for j in range(e.get_ysize()):
+							for i in range(e.get_zsize()):
+								self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
 
-		d = e.copy()
-		
-		e.process_inplace("xform.fourierorigin")
-		e.process_inplace("xform.fourierorigin")
-		
-		for k in range(e.get_xsize()):
-			for j in range(e.get_ysize()):
-				for i in range(e.get_zsize()):
-					self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k]) 
+    #def test_xform__phaseorigin_fourierorigin(self):
+		#"""test xform.phaseorigin and xform.fourierorigin ........................."""
+		#n = 16
+		#for ii in range(0,2):
+			#for jj in range(0,2):
+				#for kk in range(0,2):
+					#e = EMData()
+					#e.set_size(n+ii,n+jj,n+kk)
+					#e.process_inplace("testimage.noise.uniform.rand")
+					#d = e.copy()
+					
+					#e.process_inplace("xform.phaseorigin")
+					#e.do_fft_inplace()
+					#e.process_inplace("xform.fourierorigin")
+					#e.process_inplace("xform.fourierorigin")
+					#e.do_ift_inplace()
+					#e.process_inplace("xform.phaseorigin")
+					
+					#for k in range(e.get_xsize()):
+						#for j in range(e.get_ysize()):
+							#for i in range(e.get_zsize()):
+								#self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k]) 
 
     def test_ri2ap_ap2ri(self):
         """test ri2ap()/ap2ri() function ...................."""

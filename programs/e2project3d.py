@@ -2,7 +2,7 @@
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# Revised: David Woolford 05/14/2007 (woolford@bcm.edu)
+# David Woolford 05/14/2007 (woolford@bcm.edu)
 #
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
@@ -40,7 +40,6 @@
 # 1. Baldwin, P.R. and Penczek, P.A. 2007. The Transform Class in SPARX and EMAN2. J. Struct. Biol. 157, 250-261.
 # 2. http://blake.bcm.edu/emanwiki/EMAN2/Symmetry
 
-# Specification
 # 
 # 1. Asymmetric units are accurately demarcated and covered by the projection algorithm. This can
 # be tested using 3D plotting in Matlab.
@@ -98,6 +97,11 @@ def main():
 		print "ERROR: No input file given"
 		exit(1)
 		
+	# check to see if the image exists
+	if not os.path.exists(args[0]):
+		print "Input file %s does not exist" %args[0]
+		exit(1)
+	
 	# Check valid symmetry or whether the random argument has been given
 	if options.sym and options.random:
 		print "ERROR: Cannot handle both the sym and random arguments simultaneously"
@@ -141,14 +145,6 @@ def main():
 		
 	else:
 		print "ERROR: Atleast one of the sym or random arguments must be given"
-		exit(1)
-	
-	# check to see if the image exists
-	data = EMData() # an object to store the image
-	try:
-		data.read_image(args[0])
-	except:
-		print "ERROR: Input file: %s does not exist" % args[0]
 		exit(1)
 
 	# generate and save all the projections to disk - that's it, that main job is done

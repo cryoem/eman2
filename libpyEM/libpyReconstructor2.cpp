@@ -21,8 +21,8 @@ namespace  {
 
 struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 {
-    EMAN_Reconstructor_Wrapper(PyObject* py_self_, const EMAN::Reconstructor& p0):
-        EMAN::Reconstructor(p0), py_self(py_self_) {}
+//     EMAN_Reconstructor_Wrapper(PyObject* py_self_, const EMAN::Reconstructor& p0):
+//         EMAN::Reconstructor(p0), py_self(py_self_) {}
 
     EMAN_Reconstructor_Wrapper(PyObject* py_self_):
         EMAN::Reconstructor(), py_self(py_self_) {}

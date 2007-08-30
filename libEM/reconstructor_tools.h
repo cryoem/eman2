@@ -746,10 +746,6 @@ namespace EMAN
 	class InterpolatedFRC
 	{
 		public:
-			/** Default constructor
-			*/
-			InterpolatedFRC() : threed_rdata(0), frc(0), frc_norm_rdata(0), frc_norm_dt(0), size(0), pixel_radius_max(0), r(0), rn(0) {}
-
 			/** Normal constructor
 			* @param rdata a pointer to the real (complex data), which is a 3D volume of dimension xsize x ysize x zsize
 			* @param norm a pointer to the normalization volume linked to rdata, this is half the size of rdata
@@ -758,7 +754,7 @@ namespace EMAN
 			* @param zsize the zsize of the 3D volume pointed at by rdata
 			* @param sampling the FRC sampling rate - determines how many rings are created
 			*/
-			InterpolatedFRC(float* const rdata, float* const norm, const int xsize, const int ysize, const int zsize, const float& sampling=1.0 );
+			InterpolatedFRC(const Dict & new_params );
 			
 			/** Destructor
 			*/
@@ -766,17 +762,38 @@ namespace EMAN
 			{
 				free_memory();
 			}
-
-			/** Copy Constructor
-			* Retrospective note, not sure whether this is necessary
-			*/
-			InterpolatedFRC( const InterpolatedFRC& that );
-			
-			/** Assignment operator
-			 * Retrospective note, not sure whether this is necessary
-			 */
-			InterpolatedFRC& operator=( const InterpolatedFRC& that);
 	
+			void set_params(const Dict & new_params)
+			{
+		// note but this is really inserting OR individually replacing...
+		// the old data will be kept if it is not written over
+				TypeDict permissable_params = get_param_types();
+				for ( Dict::const_iterator it = new_params.begin(); it != new_params.end(); ++it )
+				{
+			
+					if ( !permissable_params.find_type(it->first) )
+					{
+						throw InvalidParameterException(it->first);
+					}
+					params[it->first] = it->second;
+				}	
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("nx", EMObject::INT);
+				d.put("ny", EMObject::INT);
+				d.put("nz", EMObject::INT);
+				d.put("rdata", EMObject::FLOAT_POINTER);
+				d.put("norm", EMObject::FLOAT_POINTER);
+				d.put("z_scale", EMObject::FLOAT_POINTER);
+				d.put("y_scale", EMObject::FLOAT_POINTER);
+				d.put("x_scale", EMObject::FLOAT_POINTER);
+				d.put("sampling", EMObject::FLOAT_POINTER);
+				return d;
+			}
+			
 			/** continue_frc_calc1 - function for including an additional pixel in the calculation of the FRC
 			* FRC calculated using nearest neighbor. Meant for use in conjunction with FourierInserter3DMode1
 			* @param xx the floating point x location of the incoming pixel 
@@ -830,7 +847,16 @@ namespace EMAN
 			QualityScores finish(const unsigned int num_particles);
 	
 			void reset();
+		
+		protected:
+			mutable Dict params;
+			
 		private:
+			// Disallow copy construction
+			InterpolatedFRC( const InterpolatedFRC& that );
+			// Disallow assigment
+			InterpolatedFRC& operator=( const InterpolatedFRC& that);
+			
 			/** continue_frc_calc_functoid
 		 	* Meant for convenience in continue_frc_calc3, continue_frc_calc4, continue_frc_calc6, and continue_frc_calc7
 		 	* See comments in continue_frc_calc1 for parameter details.
@@ -857,11 +883,20 @@ namespace EMAN
 					frc_norm_dt = 0;
 				}
 			}
+			
+			/** Loads all information from parms into private variables
+			* Called in the constructor only.
+			*/
+			void init();
+			
 			// Pointers to the 3D (complex) data 
 			float* threed_rdata, *norm_data;
 
 			// I wish I could make these unsigned but everything else is ints, so these are too.
 			int nx, ny, nz, nxy;
+			
+			// scale factors are stored when dimensions are being stretched or shrunken in the Fourier reconstructor
+			float x_scale, y_scale, z_scale;
 	
 			float bin;
 
