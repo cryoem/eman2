@@ -465,7 +465,18 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					}
 					int k = 0;
 					unsigned char p;
-					float t = rdata[l];
+					float t;
+					if (dsx==1) t=rdata[l];
+					else {						// This block does local pixel averaging for nicer reduced views
+						t=0;
+						for (int iii=0; iii<dsx; iii++) {
+							for (int jjj=0; jjj<dsy; jjj+=nx) {
+								t+=rdata[l+iii+jjj];
+							}
+						}
+						t/=dsx*(dsy/nx);
+					}
+
 					if (t <= rm) p = mingray;
 					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
@@ -497,7 +508,17 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 					if (l > lmax) break;
 					int k = 0;
 					unsigned char p;
-					float t = rdata[l];
+					float t;
+					if (addi<=1) t = rdata[l];
+					else {						// This block does local pixel averaging for nicer reduced views
+						t=0;
+						for (int iii=0; iii<addi; iii++) {
+							for (int jjj=0; jjj<addi; jjj++) {
+								t+=rdata[l+iii+jjj*nx];
+							}
+						}
+						t/=addi*addi;
+					}
 					if (t <= rm) p = mingray;
 					else if (t >= render_max) p = maxgray;
 					else if (gamma!=1.0) {
