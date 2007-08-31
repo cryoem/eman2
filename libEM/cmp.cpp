@@ -143,7 +143,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 		nx = (nx - 2 + with->is_fftodd()); // nx is the real-space size of the input image
 		int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 
-		int ixb = 2*(nx+1)%2;
+		int ixb = 2*((nx+1)%2);
 		int iyb = ny%2;
 		// 
 		if(nz == 1) {
@@ -258,7 +258,7 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 		nx = (nx - 2 + with->is_fftodd()); // nx is the real-space size of the input image
 		int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
 
-		int ixb = 2*(nx+1)%2;
+		int ixb = 2*((nx+1)%2);
 		int iyb = ny%2;
 		// 
 		if(nz == 1) {
