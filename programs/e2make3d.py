@@ -388,19 +388,16 @@ def gimme_image_dimensions( imagefilename ):
 	xsize = images[0].get_xsize()
 	ysize = images[0].get_ysize()
 	
-	#if ( xsize != ysize ):
-		#print "ERROR: make3d does not currently support the reconstruction of non square volume ( %d != %d )" % (xsize, ysize)
-		#exit(1)	
 	
-	#for i in range(1,len(images)):
-		#if (images[i].get_xsize() != xsize):
-			#print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
-			#print "Image %d x dimension does not match that of image 0 ( %d != %d )" % (images[i].get_xsize(), xsize)
-			#exit(1)
-		#if (images[i].get_ysize() != ysize):
-			#print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
-			#print "Image %d y dimension does not match that of image 0 ( %d != %d )" % (images[i].get_ysize(), ysize)
-			#EXIT(1)
+	for i in range(1,len(images)):
+		if (images[i].get_xsize() != xsize):
+			print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
+			print "Image %d x dimension does not match that of image 0 ( %d != %d )" % (images[i].get_xsize(), xsize)
+			exit(1)
+		if (images[i].get_ysize() != ysize):
+			print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
+			print "Image %d y dimension does not match that of image 0 ( %d != %d )" % (images[i].get_ysize(), ysize)
+			exit(1)
 			
 	
 	# if we make it here all the image dimensions are uniform and equal in all directions, it is safe to return xsize or ysize
@@ -416,11 +413,8 @@ def fourier_reconstruction(options):
 	recon=Reconstructors.get(a[0], a[1])
 	params = recon.get_params()
 	(xsize, ysize ) = gimme_image_dimensions( options.input_file );
-	if ( xsize != ysize ):
-		print "ERROR: Fourier reconstruction does not currently support reconstruction when the image dimensions are unequal ( %d != %d )" % (xsize, ysize)
-		exit(1)
-	
-	params["size"] = xsize;
+	params["in_x"] = xsize;
+	params["in_y"] = ysize;
 	params["sym"] = options.sym
 	if options.pad:
 		if ( options.pad < params["size"] ):
@@ -471,6 +465,7 @@ def fourier_reconstruction(options):
 				recon.insert_params(param) # this inserts the incoming parameter, but doesn't do anything to parameters already stored
 				
 				transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+				#transform = Transform3D(EULER_EMAN,image.get_attr("euler_alt"),image.get_attr("euler_az"),image.get_attr("euler_phi"))
 				
 				recon.determine_slice_agreement(image,transform,num_img)
 				sys.stdout.write(".")
@@ -501,13 +496,14 @@ def fourier_reconstruction(options):
 				#image.process_inplace("math.log")
 
 			transform = Transform3D(EULER_EMAN,image.get_attr("euler_az"),image.get_attr("euler_alt"),image.get_attr("euler_phi"))
+			#transform = Transform3D(EULER_EMAN,image.get_attr("euler_alt"),image.get_attr("euler_az"),image.get_attr("euler_phi"))
 			failure = recon.insert_slice(image,transform)
 			
 			if not(options.quiet):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 								(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
-								image.get_attr("euler_alt"),
 								image.get_attr("euler_az"),
+								image.get_attr("euler_alt"),
 								image.get_attr("euler_phi"),
 								image.get_attr("maximum"),image.get_attr("minimum")))
 				if ( j > 0):

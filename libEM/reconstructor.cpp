@@ -183,10 +183,38 @@ void FourierReconstructor::setup()
 	// Atm the reconstruction algorith works only for even dimensions, this has something to do xform.fourierorigin not
 	// working for images with odd dimensions - once we are certain the xform.fourierorigin has no problems with oddness
 	// then there could be bugs in the reconstructor itself - it needs testing.
-	int size = params["size"];
-	if ( size % 2 == 1 ) throw InvalidValueException((int)params["size"], "size of images must be even");
-	if ( size < 0 ) throw InvalidValueException((int)params["size"], "size of images must be greater than 0");
+	int x_size = params["in_x"];
+	if ( x_size % 2 == 1 ) throw InvalidValueException(x_size, "x size of images must be even");
+	if ( x_size < 0 ) throw InvalidValueException(x_size, "x size of images must be greater than 0");
+	int y_size = params["in_y"];
+	if ( y_size % 2 == 1 ) throw InvalidValueException(y_size, "y size of images must be even");
+	if ( y_size < 0 ) throw InvalidValueException(y_size, "y size of images must be greater than 0");
 	
+	// If the dimensions of the 2D images being inserted are not equal, some book keeping needs to take place:
+	// First, params["size"] should store the largest dimension.
+	// Second, if the user has not specified xsize or ysize, then the smaller value of in_x or in_y has
+	// to be stored as one of these parameters, respectively.
+	// Third, if zsize has not been specifed it is clamped to value chosen in the second point above.
+	if ( x_size != y_size )
+	{
+		if ( x_size > y_size ) 
+		{
+			params["size"] = x_size;
+			if ( (int) params["xsize"] == 0 ) params["ysize"] = y_size+2;
+			if ( (int) params["ysize"] == 0 ) params["ysize"] = y_size;
+			if ( (int) params["zsize"] == 0 ) params["zsize"] = x_size;
+		}
+		else
+		{
+			params["size"] = y_size;
+			if ( (int) params["xsize"] == 0 ) params["xsize"] = x_size+2;
+			if ( (int) params["ysize"] == 0 ) params["ysize"] = x_size;
+			if ( (int) params["zsize"] == 0 ) params["zsize"] = y_size;
+		}
+	}
+	else params["size"] = x_size;
+	
+	int size;
 	// If the user has specified padding then the Fourier volume into which slices are begin inserted needs to be
 	// bigger. Unless, of course, the user has specified xsize, ysize or zsize...
 	if ( params.find("pad") != params.end() )
@@ -205,7 +233,7 @@ void FourierReconstructor::setup()
 		if ( xsize % 2 == 1 ) throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be even");
 		if ( xsize < 0 ) throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be greater than 0");
 		nx = xsize+2;
-		x_scale_factor = (float)xsize / (float) size;
+		x_scale_factor = (float)(xsize+2)  / (float) (size+2);
 	}
 	else nx = size + 2;
 	
@@ -235,7 +263,7 @@ void FourierReconstructor::setup()
 	
 	cout << "Fourier volume dimensions are " << nx << " " << ny << " " << nz << endl;
 	cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*4.0*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
-//  	cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
+	cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
 	
 	image = new EMData();
 	image->set_size(nx, ny, nz);
@@ -261,6 +289,20 @@ void FourierReconstructor::setup()
 	load_inserter();
 	load_interpFRC_calculator();
 }
+
+class GaussianFunctoid
+{
+	public:
+		GaussianFunctoid(const float sigma, const float mean = 0.0) : m_mean(mean), m_sigma_squared(sigma*sigma) {}
+		~GaussianFunctoid() {}
+		
+		float operator()(const float distance ) 
+		{
+			return exp( -(distance-m_mean)*(distance-m_mean)/ (m_sigma_squared ));
+		}
+	private:
+		float m_mean, m_sigma_squared;
+};
 
 EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const Transform3D transform )
 {
@@ -321,6 +363,9 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 			}
 			left_mean /= y;
 			right_mean /= y;
+			
+			left_mean = 0;
+			right_mean = 0;
 			for ( int i = 0; i < y; ++i ) {
 				for ( int j = 0; j < x_clip; ++j )
 				{
@@ -333,8 +378,40 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 				}
 				
 			}
+			
+			if ( (int) params["t_emm_gauss"] != 0 )
+			{
+				int falloff_width = (int) params["t_emm_gauss"];
+				float sigma = (float) falloff_width/3.0;
+				
+				GaussianFunctoid gf(sigma);
+				
+				for ( int i = 0; i < y; ++i ) {
+					
+					float left_value = return_slice->get_value_at(x_clip+falloff_width, i );
+					
+					float scale = left_value - left_mean;
+					
+					for ( int j = falloff_width-1; j >= 0; --j )
+					{
+						return_slice->set_value_at(x_clip+j, i, scale*gf(falloff_width-j) + left_mean );
+					}
+				
+					float right_value = return_slice->get_value_at(x - x_clip - falloff_width, i );
+					scale = right_value - right_mean;
+					
+					for ( int j = 1; j < falloff_width; ++j )
+					{
+						return_slice->set_value_at(x - x_clip - falloff_width + j, i, scale*gf( j ) + right_mean );
+					}
+				
+				}
+				
+			}
 		}
 	}
+	
+	//return_slice->write_image("mikes_test.img",-1);
 	
 	// Apply padding if the option has been set, and it's sensible
 	if ( params.find("pad") != params.end() )
@@ -433,24 +510,44 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	
 	int ysize;
 	if ( params.find("pad") != params.end() ) ysize = params["pad"];
+	
 	else ysize = params["size"];
 	int xsize = ysize + 2;
+	
 	int rl = Util::square(ysize / 2 - 1);
 	
 	float dt[2];
 	
+	int in_x = params["in_x"], in_y = params["in_y"];
+	float y_scale = 0, x_scale = 0;
+	if ( in_x != in_y )
+	{
+		if ( in_x > in_y ) y_scale = (float) ysize / (float) in_y;
+		else x_scale = (float) xsize / (float) in_x;
+	}
+	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
-		Transform3D euler = arg.get_sym((string) params["sym"], i);
+		Transform3D t3d = arg.get_sym((string) params["sym"], i);
 
-		for (int y = 0; y < ysize; y++) {
-			for (int x = 0; x < xsize / 2; x++) {
-				if ((x * x + Util::square(y - ysize / 2)) >= rl)
+		for (int y = 0; y < input_slice->get_ysize(); y++) {
+			for (int x = 0; x < input_slice->get_xsize() / 2; x++) {
+				
+				float rx = (float) x;
+				float ry = (float) y;
+				
+				if ( in_x != in_y )
+				{
+					if ( in_x > in_y ) ry *= y_scale;
+					else rx *= x_scale;
+				}
+				
+				if ((rx * rx + Util::square(ry - ysize / 2)) >= rl)
 					continue;
-	
-				float xx = (float) (x * euler[0][0] + (y - ysize / 2) * euler[1][0]);
-				float yy = (float) (x * euler[0][1] + (y - ysize / 2) * euler[1][1]);
-				float zz = (float) (x * euler[0][2] + (y - ysize / 2) * euler[1][2]);
+
+				float xx = (float) (rx * t3d[0][0] + (ry - ysize / 2) * t3d[1][0]);
+				float yy = (float) (rx * t3d[0][1] + (ry - ysize / 2) * t3d[1][1]);
+				float zz = (float) (rx * t3d[0][2] + (ry - ysize / 2) * t3d[1][2]);
 
 				float cc = 1;
 	
@@ -468,7 +565,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				yy += ny / 2;
 				zz += nz / 2;
 				
-				int idx = x * 2 + y * (xsize);
+				int idx = x * 2 + y * (input_slice->get_xsize());
 				dt[0] = dat[idx];
 				dt[1] = cc * dat[idx+1];
 
@@ -534,14 +631,34 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	int rl = Util::square(ysize / 2 - 1);
 	float dt[2];
 	
-	for (int y = 0; y < ysize; y++) {
-		for (int x = 0; x < xsize / 2; x++) {
-			if ((x * x + Util::square(y - ysize / 2)) >= rl)
+	int in_x = params["in_x"], in_y = params["in_y"];
+	
+	for (int y = 0; y < slice->get_ysize(); y++) {
+		for (int x = 0; x < slice->get_xsize() / 2; x++) {
+			float rx = (float) x;
+			float ry = (float) y;
+				
+			if ( in_x != in_y )
+			{
+				if ( in_x > in_y )
+				{	
+					float y_scale = (float) ysize / (float) in_y;
+					ry *= y_scale;
+				}
+				else
+				{
+					float x_scale = (float) xsize / (float) in_x;
+					rx *= x_scale;
+				}
+			}
+				
+			if ((rx * rx + Util::square(ry - ysize / 2)) >= rl)
 				continue;
 
-			float xx = (float) (x * euler[0][0] + (y - ysize / 2) * euler[1][0]);
-			float yy = (float) (x * euler[0][1] + (y - ysize / 2) * euler[1][1]);
-			float zz = (float) (x * euler[0][2] + (y - ysize / 2) * euler[1][2]);
+			float xx = (float) (rx * euler[0][0] + (ry - ysize / 2) * euler[1][0]);
+			float yy = (float) (rx * euler[0][1] + (ry - ysize / 2) * euler[1][1]);
+			float zz = (float) (rx * euler[0][2] + (ry - ysize / 2) * euler[1][2]);
+
 			
 			float cc = 1;
 
@@ -560,7 +677,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 			zz += nz / 2;
 			
 			
-			int idx = x * 2 + y * (xsize);
+			int idx = x * 2 + y * (input_slice->get_xsize());
 			dt[0] = dat[idx];
 			dt[1] = cc * dat[idx+1];
 
@@ -719,6 +836,62 @@ EMData *FourierReconstructor::finish()
 		normalize_threed();
 	}
 	
+	
+	if ( (bool) params["tomo_mask"] == true )
+	{
+// 		int nxy = nx*ny;
+// 		vector<float> power_sums;
+// 		for ( int x = 0; x <= 2; x += 2)
+// 		{
+// 			float power_sum = 0.0;
+// 			for ( int z = 1; z < nz; ++z )
+// 			{
+// 				for ( int y = 1; y < nx; y += 1 )
+// 				{
+// 					int idx = x + y * nx + z * nxy;
+// 					power_sum += Util::square_sum( rdata[idx], rdata[idx+1]);
+// 				}
+// 			}
+// 			cout << "power is " << power_sum << endl;
+// 			power_sums.push_back(power_sum);
+// 		}
+// 		
+// 		int length = power_sums.size();
+// 		float big_power = power_sums[0];
+// 		float average = 0;
+// 		for(int i = 1; i < length; ++i )
+// 		{
+// 			average += power_sums[i];
+// 		}
+// 		
+// 		average /= (float) (length-1);
+// 		
+// 		float scale = average / big_power;
+// 		
+// 		cout << "Scale is " << sqrtf(scale) << endl;
+// 		
+// 		for ( int x = 0; x <= 1; x += 1)
+// 		{
+// 		for ( int z = 1; z < nz; ++z )
+// 		{
+// 			for ( int y = 1; y < ny; y += 1 )
+// 			{
+// 				int idx = x + y * nx + z * nxy;
+// 				rdata[idx] *= sqrtf(scale);
+// 			}
+// 		}
+// 		}
+	}
+	
+	// we may as well delete the tmp data now... it saves memory and the calling program might
+	// need memory after it gets the return volume.
+	// If this delete didn't happen now, it would happen when the deconstructor was called,
+	if ( tmp_data != 0 )
+	{
+		delete tmp_data;
+		tmp_data = 0;
+	}
+	
 // 	// For debug
 // 	EMData* fftimage = image->get_fft_amplitude ();
 // 	fftimage->write_image("threed_fft_amp.mrc");
@@ -743,7 +916,7 @@ EMData *FourierReconstructor::finish()
 		if ( (int)params["xsize"] != 0 )
 		{
 			origin[0] = 0;
-			region_size[0] = params["xsize"];
+			region_size[0] = (int)params["xsize"]-2;
 		}
 		
 		if ( (int)params["ysize"] != 0 )
@@ -765,10 +938,14 @@ EMData *FourierReconstructor::finish()
 
 	print_stats(quality_scores);
 	
-	image->process_inplace("normalize");
+// 	image->process_inplace("normalize");
+	
+	image->mult(image->get_zsize());
 	
 	image->update();
 
+	
+// 	image->write_image("test_out.mrc");
 // 	cout << "The final 3D image stats are " << (float)image->get_attr("mean") << " and sigma " << (float)image->get_attr("sigma") << endl;
 	
 	return image;

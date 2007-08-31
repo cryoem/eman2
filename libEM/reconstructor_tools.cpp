@@ -638,7 +638,7 @@ bool FourierInserter3DMode1::effected_pixels_are_zero(const float& xx, const flo
 	}
 	else
 	{
-		cout << "bad " << rdata[x0 + y0 * nx + z0 * nxy] << " " <<  rdata[x0 + y0 * nx + z0 * nxy+1] << endl;
+		cout << "the voxel value is non zero it is " << rdata[x0 + y0 * nx + z0 * nxy] << " " <<  rdata[x0 + y0 * nx + z0 * nxy+1] << endl;
 		return false;
 	}
 }
@@ -690,7 +690,6 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 		(*pixel_operation)(rdata + k + 1, gg * dt[1]);
 		(*pixel_operation)(norm + k/2, gg);
 #else
-
 		//cout << "inserting pixels at " << k << " and " << k+1 << " i was " << i << " offset was " << off[j] << endl;
 		rdata[k] += gg * dt[0];
 		rdata[k + 1] += gg * dt[1];

@@ -369,7 +369,9 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("size", EMObject::INT, "Should be the size of the input images, i.e. if images are 1024x1024 size should be 1024.");
+			d.put("in_x", EMObject::INT, "The size of x dimension in the input images.");
+			d.put("in_y", EMObject::INT, "The size of y dimension in the input images.");
+			d.put("size", EMObject::INT, "Should be the largest dimension of the input images, i.e. if images are 1024x1024 or 1024x256 size should be 1024.");
 			d.put("mode", EMObject::INT, "Fourier pixel insertion mode [1-7] - mode 2 is default.");
 			d.put("weight", EMObject::FLOAT, "A temporary weight variable, used to weight slices as they are inserted.");
 			d.put("hard", EMObject::FLOAT, "The quality metric threshold.");
@@ -384,6 +386,7 @@ namespace EMAN
 			d.put("tomo_mask", EMObject::BOOL, "A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
 			d.put("t_emm", EMObject::BOOL, "Read as tomo edge mean mask - experimental, default false");
 			d.put("edgenorm", EMObject::BOOL, "Whether or not to perform edge normalization on the inserted slices before Fourier transforming them, default is true." );
+			d.put("t_emm_gauss", EMObject::INT, "An optional gaussain fall off for tomo_mask" );
 			return d;
 		}
 
@@ -419,6 +422,8 @@ namespace EMAN
 		  
 		void load_default_settings()
 		{
+			params["in_x"] = 0;
+			params["in_y"] = 0;
 			params["size"] = 0;
 			params["mode"] = 2;
 			params["weight"] = 1.0;
@@ -434,6 +439,7 @@ namespace EMAN
 			params["tomo_mask"] = false;
 			params["t_emm"] = false;
 			params["edgenorm"] = true;
+			params["t_emm_gauss"] = 10; 
 		}
 
 		/** Frees the memory owned by this object (but not parent objects)
