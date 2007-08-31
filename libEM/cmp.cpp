@@ -185,7 +185,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 			}
 			result += part;
 		}
-		n = nx*ny*nz*nx*ny*nz;
+		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz;
 		
 		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
@@ -203,7 +203,7 @@ float SqEuclideanCmp::cmp(EMData * image, EMData *with) const
 				}
 			}
 		}
-		n = nx*ny*nz*nx*ny*nz/2;
+		n = (long int)nx*(long int)ny*(long int)nz*(long int)nx*(long int)ny*(long int)nz/2;
 		}
 	} else {
 		long totsize = image->get_xsize()*image->get_ysize()*image->get_zsize();
