@@ -63,7 +63,7 @@ def main():
 	if len(args)<1 : parser.error("Input image required")
 
 	logid=E2init(sys.argv)
-        GLUT.glutInit(sys.argv)
+#        GLUT.glutInit(sys.argv)
 	display(args)
 	E2end(logid)
 
