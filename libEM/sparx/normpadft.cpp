@@ -276,12 +276,11 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	ret->to_zero();
 	float *fout = ret->get_data();
 	float *fint = temp_ft->get_data();
-//  TO KEEP THE EXACT VALUES ON THE PREVIOUS GRID ONE SHOULD USE
+//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/std::sqrt(2.0f);
 	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	//for (i = 0; i < lsd*ny*nz; i++)  fout[i] = fint[i];
-	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-nx; iny = nyn - ny; inz = nzn - nz;
 	for (k=1; k<=nz/2+1; k++) for (j=1; j<=ny/2+1; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j,k);
 	if(nyn>1) {
@@ -330,7 +329,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 		}
 	}
 	ret->set_complex(true);
-
+/*
 //  For padding from odd to even dimension additional shift by 1 pixel is necessary.
 	float  xshift = 0.f, yshift = 0.f, zshift = 0.f;
 	int nyn2, nzn2;
@@ -362,7 +361,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 			}
 		}
 		ret->set_array_offsets(0,0,0);
-	}
+	}*/
 	ret->set_ri(1);
 	ret->set_fftpad(true);
 	ret->set_attr("npad", 1);

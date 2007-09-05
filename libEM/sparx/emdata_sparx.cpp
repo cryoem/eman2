@@ -2327,24 +2327,29 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location 
 			float yold = x*sang/scale + ycang-iys;
 
-		      if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
-		      else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
-		      if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
-		      else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
+			if (xold < 0.0f) xold = fmod(float(nx) - fmod(-xold, float(nx)), float(nx));
+			else if (xold > (float) (nx-1) ) xold = fmod(xold, float(nx));
+			if (yold < 0.0f) yold = fmod(float(ny) - fmod(-yold, float(ny)), float(ny));
+			else if (yold > (float) (ny-1) ) yold = fmod(yold, float(ny));
 
 			int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 			sum=0.0f;    w=0.0f;
 			for (int m1 =kbmin; m1 <=kbmax; m1++) t[m1-kbmin] = kb.i0win_tab(xold - inxold-m1);
 			if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
-				for (int m2 =kbmin; m2 <=kbmax; m2++) { float qt = kb.i0win_tab(yold - inyold-m2);
-				for (int m1 =kbmin; m1 <=kbmax; m1++) {
-					float q = t[m1-kbmin]*qt;
-					sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}}
+				for (int m2 =kbmin; m2 <=kbmax; m2++) {
+					float qt = kb.i0win_tab(yold - inyold-m2);
+					for (int m1 =kbmin; m1 <=kbmax; m1++) {
+						float q = t[m1-kbmin]*qt;
+						sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;
+					}
+				}
 		    	} else {
-				for (int m2 =kbmin; m2 <=kbmax; m2++) { float qt = kb.i0win_tab(yold - inyold-m2);
-			  	for (int m1 =kbmin; m1 <=kbmax; m1++) {
-					float q = t[m1-kbmin]*qt;
-					sum += (*this)(inxold+m1,inyold+m2)*q; w+=q;}}
+				for (int m2 =kbmin; m2 <=kbmax; m2++) {
+					float qt = kb.i0win_tab(yold - inyold-m2);
+			  		for (int m1 =kbmin; m1 <=kbmax; m1++) {
+						float q = t[m1-kbmin]*qt;
+						sum += (*this)(inxold+m1,inyold+m2)*q; w+=q;}
+					}
 		    	}
 			(*ret)(ix,iy)=sum/w;
 		}
@@ -2569,7 +2574,7 @@ EMData* EMData::rot_scale_conv_new(float ang, float delx, float dely, Util::Kais
 			
 			xold = xold/2.0;
 			yold = yold/2.0;
-			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx,ny,1,xold,yold,1,data,kb);
+			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx, ny, 1, xold, yold, 1, data, kb);
 			
 		}
 	}
@@ -2594,28 +2599,32 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	int inxold = int(Util::round(delx));
 	if(ny<2) {  //1D
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 )  {
-	 	//  loop for ends
-         	  for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 	    float q = kb.i0win_tab(delx - inxold-m1);
-	 	    pixel += (*this)((inxold+m1+nx)%nx)*q; w+=q;}
+	 		//  loop for ends
+         		for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.i0win_tab(delx - inxold-m1);
+	 			pixel += (*this)((inxold+m1+nx)%nx)*q; w+=q;
+			}
 	 	} else {
-         	  for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 	    float q = kb.i0win_tab(delx - inxold-m1);
-	 	    pixel += (*this)(inxold+m1)*q; w+=q;}
+         		for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.i0win_tab(delx - inxold-m1);
+	 			pixel += (*this)(inxold+m1)*q; w+=q;
+			}
 	 	}
 	
 	} else if(nz<2) {  // 2D
 	dely = fmod(2*dely, float(ny));
 	int inyold = int(Util::round(dely));
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
-	 	//  loop for strips
-         	  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 	    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
-	 	    pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}}
+	 		//  loop for strips
+         		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+	 			pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}
+			}
 	 	} else {
-         	  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 	    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
-	 	    pixel += (*this)(inxold+m1,inyold+m2)*q; w+=q;}}
+         		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2);
+	 			pixel += (*this)(inxold+m1,inyold+m2)*q; w+=q;}
+			}
 	 	}
 	} else {  //  3D
 	dely = fmod(2*dely, float(ny));
@@ -2624,16 +2633,18 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 	int inzold = int(Util::round(delz));
 		    //cout << inxold<<"  "<< kbc<<"  "<< nx-kbc-2<<"  "<< endl;
 	 	if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2  || inzold <= kbc || inzold >=nz-kbc-2 )  {
-	 	//  loop for strips
-         	  for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 	    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
-		    //cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
-	 	    pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)*q ;w+=q;}}}
+	 		//  loop for strips
+         		for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+				//cout << "BB  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)<< endl;
+	 			pixel += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny,(inzold+m3+nz)%nz)*q ;w+=q;}}
+			}
 	 	} else {
-         	  for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-	 	    float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
-		    //cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
-	 	    pixel += (*this)(inxold+m1,inyold+m2,inzold+m3)*q; w+=q;}}}
+         		for (int m3 =kbmin; m3 <=kbmax; m3++){ for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+	 			float q = kb.i0win_tab(delx - inxold-m1)*kb.i0win_tab(dely - inyold-m2)*kb.i0win_tab(delz - inzold-m3);
+				//cout << "OO  "<<m1<<"  "<< m2<<"  "<< m3<<"  "<< q<<"  "<< q<<"  "<<(*this)(inxold+m1,inyold+m2,inzold+m3)<< endl;
+	 			pixel += (*this)(inxold+m1,inyold+m2,inzold+m3)*q; w+=q;}}
+			}
 	 	}
 	}
         return pixel/w;
