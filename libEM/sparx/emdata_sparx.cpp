@@ -2650,7 +2650,19 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
         return pixel/w;
 }
 
+float  EMData::get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb) {
+//  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
 
+	float *image=(this->get_data());
+	int nx = this->get_xsize();
+	int ny = this->get_ysize();
+	int nz = this->get_zsize();
+	
+	float result;
+	
+	result = Util::get_pixel_conv_new(nx,ny,nz,delx,dely,delz,image,kb);
+	return result;
+}
 
 float EMData::getconvpt2d_kbi0(float x, float y, Util::KaiserBessel::kbi0_win win, int size) {
 	const int nxhalf = nx/2;

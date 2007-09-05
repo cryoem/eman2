@@ -334,6 +334,7 @@ EMData* rotavg_i();
 		 */
 		float get_pixel_conv(float delx, float dely, float delz, Util::KaiserBessel& kb);
 
+		float get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb);
 
 	
 		/** Value of 2-D analytic masking (or 2-D convolution) at off-grid point.
