@@ -330,39 +330,40 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 		}
 	}
 	ret->set_complex(true);
-/*		float  xshift = nx%2;
-		float  yshift;
-		float  zshift;
-		int nyn2; 
-		int nzn2;
-		if(ny > 1) {
-			yshift = ny%2;
-			nyn2 = nyn/2;
-			if(nz > 1) {
-				zshift = nz%2;
-				nzn2 = nzn/2;
-			}  else {
-				zshift =0.f;
-				nzn2 = 0;
-			}
-		} else {
-			yshift =0.f; zshift =0.f;
-			nyn2 = 0; nzn2 = 0;
-		}
 
+//  For padding from odd to even dimension additional shift by 1 pixel is necessary.
+	float  xshift = 0.f, yshift = 0.f, zshift = 0.f;
+	int nyn2, nzn2;
+	if(nxn > nx && nx%2 == 1)  xshift = 1.0f;
+	if(ny > 1) {
+		if(nyn > ny && ny%2 == 1)  yshift = 1.0f;
+		nyn2 = nyn/2;
+		if(nz > 1) {
+			if(nzn > nz && nz%2 == 1)  zshift = 1.0f;
+			nzn2 = nzn/2;
+		}  else {
+			nzn2 = 0;
+		}
+	} else {
+		nyn2 = 0; nzn2 = 0;
+	}
+	if(xshift == 1.0 || yshift == 1.0 || zshift == 1.0)  {
+		ret->set_array_offsets(1,1,1);
+		int  lsdn2 = lsd/2;
 		for (int iz = 1; iz <= nzn; iz++) {
 			int jz=iz-1; if(jz>nzn2) jz=jz-nzn;
 			for (int iy = 1; iy <= nyn; iy++) {
-				int jy=iy-1;
-				if(jy>nyn2) jy=jy-nyn;
-				for (int ix = 1; ix <= lsdn; ix++) {
+				int jy=iy-1; if(jy>nyn2) jy=jy-nyn;
+				for (int ix = 1; ix <= lsdn2; ix++) {
 					int jx=ix-1;
 					ret->cmplx(ix,iy,iz) *= 
 					exp(-float(twopi)*iimag*(xshift*jx/nxn + yshift*jy/nyn+ zshift*jz/nzn));
 				}
 			}
 		}
-*/	ret->set_ri(1);
+		ret->set_array_offsets(0,0,0);
+	}
+	ret->set_ri(1);
 	ret->set_fftpad(true);
 	ret->set_attr("npad", 1);
 	if (nxn%2 == 1) {ret->set_fftodd(true);} else {ret->set_fftodd(false);}
