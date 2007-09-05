@@ -257,20 +257,20 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	int i, j, k;
 
 	if(ny > 1) {
-	  nyn = nyni;
-	  if(nz > 1) {
-	  nzn = nzni;
-	  }  else {
-	  nzn = 1;
-	  }
+		nyn = nyni;
+		if(nz > 1) {
+			nzn = nzni;
+		}  else {
+			nzn = 1;
+		}
 	} else {
-	  nyn = 1; nzn = 1;
+		nyn = 1; nzn = 1;
 	}
 	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
-	lsd = nx+ 2 -nx%2;
-	lsdn = nxn+ 2 -nxn%2;
+	lsd = nx + 2 - nx%2;
+	lsdn = nxn + 2 - nxn%2;
 //  do out of place ft
-        EMData *temp_ft = do_fft();
+	EMData *temp_ft = do_fft();
 	EMData *ret = this->copy();
 	ret->set_size(lsdn, nyn, nzn);
 	ret->to_zero();
@@ -283,72 +283,92 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	//for (i = 0; i < lsd*ny*nz; i++)  fout[i] = fint[i];
 	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-nx; iny = nyn - ny; inz = nzn - nz;
-	for (k=1; k<=nz/2+1; k++) {
-	  for (j=1; j<=ny/2+1; j++) {
-	    for (i=1; i<=lsd; i++) {
-	      fout(i,j,k)=fint(i,j,k);
-	    }
-	  }
-	}
+	for (k=1; k<=nz/2+1; k++) for (j=1; j<=ny/2+1; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j,k);
 	if(nyn>1) {
 	//cout << "  " <<nxn<<"  " <<nyn<<" A " <<nzn<<endl;
-	 for (k=1; k<=nz/2+1; k++) {
-	   for (j=ny/2+2+iny; j<=nyn; j++) {
-	     for (i=1; i<=lsd; i++) {
-	       fout(i,j,k)=fint(i,j-iny,k);
-	     }
-	   }
-	 }
-	 if(nzn>1) {
-	  for (k=nz/2+2+inz; k<=nzn; k++) {
-	    for (j=1; j<=ny/2+1; j++) {
-	      for (i=1; i<=lsd; i++) {
-	        fout(i,j,k)=fint(i,j,k-inz);
-	      }
-	    }
-	    for (j=ny/2+2+iny; j<=nyn; j++) {
-	      for (i=1; i<=lsd; i++) {
-	        fout(i,j,k)=fint(i,j-iny,k-inz);
-	      }
-	    }
-	  }
-	 }
+		for (k=1; k<=nz/2+1; k++) for (j=ny/2+2+iny; j<=nyn; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j-iny,k);
+		if(nzn>1) {
+			for (k=nz/2+2+inz; k<=nzn; k++) {
+				for (j=1; j<=ny/2+1; j++) {
+					for (i=1; i<=lsd; i++) {
+						fout(i,j,k)=fint(i,j,k-inz);
+					}
+				}
+				for (j=ny/2+2+iny; j<=nyn; j++) {
+					for (i=1; i<=lsd; i++) {
+						fout(i,j,k)=fint(i,j-iny,k-inz);
+					}
+				}
+			}
+		}
 	}
 //       WEIGHTING FACTOR USED FOR EVEN NSAM. REQUIRED SINCE ADDING ZERO FOR
 //       INTERPOLATION WILL INTRODUCE A COMPLEX CONJUGATE FOR NSAM/2'TH
 //       ELEMENT.
-        if(nx%2 == 0 && inx !=0) {
-	  for (k=1; k<=nzn; k++) {
-	    for (j=1; j<=nyn; j++) {
-	      fout(nx+1,j,k) *= sq2;
-	      fout(nx+2,j,k) *= sq2;
-	    }
-	  }
-	  if(nyn>1) {
-	   for (k=1; k<=nzn; k++) {
-	     for (i=1; i<=lsd; i++) {
-	       fout(i,ny/2+1+iny,k) = sq2*fout(i,ny/2+1,k);
-	       fout(i,ny/2+1,k) *= sq2;
-	     }
-	   }
-	   if(nzn>1) {
-	    for (j=1; j<=nyn; j++) {
-	      for (i=1; i<=lsd; i++) {
-	        fout(i,j,nz/2+1+inz) = sq2*fout(i,j,nz/2+1);
-	        fout(i,j,nz/2+1) *= sq2;
-	      }
-	    }
-	   }
-	  }
+	if(nx%2 == 0 && inx !=0) {
+		for (k=1; k<=nzn; k++) {
+			for (j=1; j<=nyn; j++) {
+				fout(nx+1,j,k) *= sq2;
+				fout(nx+2,j,k) *= sq2;
+			}
+		}
+		if(nyn>1) {
+			for (k=1; k<=nzn; k++) {
+			  for (i=1; i<=lsd; i++) {
+			    fout(i,ny/2+1+iny,k) = sq2*fout(i,ny/2+1,k);
+			    fout(i,ny/2+1,k) *= sq2;
+			  }
+			}
+			if(nzn>1) {
+				for (j=1; j<=nyn; j++) {
+					for (i=1; i<=lsd; i++) {
+						fout(i,j,nz/2+1+inz) = sq2*fout(i,j,nz/2+1);
+						fout(i,j,nz/2+1) *= sq2;
+					}
+				}
+			}
+		}
 	}
 	ret->set_complex(true);
-	ret->set_ri(1);
+/*		float  xshift = nx%2;
+		float  yshift;
+		float  zshift;
+		int nyn2; 
+		int nzn2;
+		if(ny > 1) {
+			yshift = ny%2;
+			nyn2 = nyn/2;
+			if(nz > 1) {
+				zshift = nz%2;
+				nzn2 = nzn/2;
+			}  else {
+				zshift =0.f;
+				nzn2 = 0;
+			}
+		} else {
+			yshift =0.f; zshift =0.f;
+			nyn2 = 0; nzn2 = 0;
+		}
+
+		for (int iz = 1; iz <= nzn; iz++) {
+			int jz=iz-1; if(jz>nzn2) jz=jz-nzn;
+			for (int iy = 1; iy <= nyn; iy++) {
+				int jy=iy-1;
+				if(jy>nyn2) jy=jy-nyn;
+				for (int ix = 1; ix <= lsdn; ix++) {
+					int jx=ix-1;
+					ret->cmplx(ix,iy,iz) *= 
+					exp(-float(twopi)*iimag*(xshift*jx/nxn + yshift*jy/nyn+ zshift*jz/nzn));
+				}
+			}
+		}
+*/	ret->set_ri(1);
 	ret->set_fftpad(true);
 	ret->set_attr("npad", 1);
-	if (nxn%2 == 1) {ret->set_fftodd(true);}else{ret->set_fftodd(false);}
+	if (nxn%2 == 1) {ret->set_fftodd(true);} else {ret->set_fftodd(false);}
 	if(RetReal) {
-	 ret->do_ift_inplace();
-	 ret->postift_depad_corner_inplace();
+		ret->do_ift_inplace();
+		ret->postift_depad_corner_inplace();
 	}
 	ret->update();
 	
