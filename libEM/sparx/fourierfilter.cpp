@@ -191,7 +191,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			omega = params["sigma"]; 
 			gamma = params["value_at_zero_frequency"];
 			omega = 0.5f/omega/omega;
-			gamma=1.0f-gamma;
+			gamma = 1.0f-gamma;
 			break;
 		case BUTTERWORTH_LOW_PASS: 
 		case BUTTERWORTH_HIGH_PASS: 
@@ -205,12 +205,12 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 		case BUTTERWORTH_HOMOMORPHIC: 
 			omegaL = params["low_cutoff_frequency"];
 			omegaH = params["high_cutoff_frequency"];
-			gamma = params["value_at_zero_frequency"];
+			gamma  = params["value_at_zero_frequency"];
 			eps = 0.882f;
-			aa = 10.624f;
+			aa  = 10.624f;
 			ord = 2.0f*log10(eps/sqrt(pow(aa,2)-1.0f))/log10(omegaL/omegaH);
 			omegaL = omegaL/pow(eps,2.0f/ord);
-			gamma=1.0f-gamma;
+			gamma = 1.0f-gamma;
 			break;
 		case SHIFT:
 			xshift = params["x_shift"];
@@ -315,8 +315,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							if(argx*omegaL>1.0f && argx*omegaH<=1.0f) 
 								fp->cmplx(ix,iy,iz) = 0; break;
 						case TOP_HOMOMORPHIC: 
-							if(argx*omegaH>1.0f) fp->cmplx(ix,iy,iz) = 0; 
-							else if(argx*omegaL<=1.0f) fp->cmplx(ix,iy,iz) *= gamma;  
+							if(argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f; 
+							else if(argx*omegaL<=1.0f) fp->cmplx(ix,iy,iz) *= gamma;
 							break;
 						case GAUSS_LOW_PASS :
 							fp->cmplx(ix,iy,iz) *= exp(-argx*omega); break;
@@ -426,7 +426,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						case RADIAL_TABLE:
 						{
 							float rf = sqrt( argx )*2.0f*lsd2;
-							int ir = int(rf);
+							int  ir = int(rf);
 							float df = rf - float(ir);
 							float f = table[ir] + df * (table[ir+1] - table[ir]); // (1-df)*table[ir]+df*table[ir+1];
 							fp->cmplx(ix,iy,iz) *= f;
@@ -436,24 +436,17 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
 						        			     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
 							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2)/ps/2.0f;						  	    
-							else  if(nz>1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
+							else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
 							      		    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
-
-                         // printf( "ix,iy,iz,tf,vold: %4d %4d %4d %20.3e %20.3f %20.3f\n", ix, iy, iz, tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
-
 							if( undoctf == 1 )
 							{
 							    if( tf>0 && tf <  1e-5 ) tf =  1e-5;
 							    if( tf<0 && tf > -1e-5 ) tf = -1e-5;
 							    fp->cmplx(ix,iy,iz) /= tf;
-							}
-							else
+							} else
 							    fp->cmplx(ix,iy,iz) *= tf;
-
-                         // printf( "      newtf,vnew:                %20.3e %20.3f %20.3f\n", tf, (fp->cmplx(ix,iy,iz)).real(), (fp->cmplx(ix,iy,iz)).imag() );
-
 							break;
 					}
 				}
