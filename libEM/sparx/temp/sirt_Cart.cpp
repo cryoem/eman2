@@ -266,14 +266,14 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d    , MPI_Comm comm_row,
 	for ( int j = 0 ; j < nnzloc ; ++j ) {
 	    rnorm_loc += grad_loc[j]* (double) grad_loc[j];
 	}
-        // printf("I am (%d, %d), with rnorm = %f\n", 
+        // printf("I am (%d, %d), with rnorm = %11.3e\n", 
         // mycoords[ROW], mycoords[COL], rnorm);
         ierr = MPI_Allreduce (&rnorm_loc, &rnorm, 1, MPI_DOUBLE, MPI_SUM, 
                               comm_row);
  	rnorm /= nnz;
 	rnorm = sqrt(rnorm);
 	if ( my2dpid == 0 ) 
-            printf("iter = %3d, rnorm / bnorm = %6.3f, rnorm = %6.3f\n", 
+            printf("iter = %3d, rnorm / bnorm = %11.3e, rnorm = %11.3e\n", 
                    iter, rnorm / bnorm, rnorm);
         // if on the second pass, rnorm is greater than bnorm, 
         // lam is probably set too high reduce it by a factor of 2 
@@ -297,7 +297,7 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d    , MPI_Comm comm_row,
                   pxvol_loc[j] = 0.0; 
                }
                if ( my2dpid == 0 ) 
-                  printf("reducing lam to %f, restarting\n", lam);
+                  printf("reducing lam to %11.3e, restarting\n", lam);
                continue;
            } // endif (restarts)
         } // endif (rnorm/bnorm) 
@@ -306,8 +306,9 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d    , MPI_Comm comm_row,
         // or if no further progress is made, terminate
 	if ( rnorm / bnorm < tol || rnorm / bnorm > old_rnorm ) {
 	   if ( my2dpid == 0 ) 
-              printf("Terminating with rnorm/bnorm = %f, ");
-              printf("tol = %f, old_rnorm = %f\n",rnorm/bnorm, tol, old_rnorm);
+              printf("Terminating with rnorm/bnorm = %11.3e, ");
+              printf("tol = %11.3e, old_rnorm = %11.3e\n",
+                     rnorm/bnorm, tol, old_rnorm);
 	   break;
 	}
 	// update the termination threshold
