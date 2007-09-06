@@ -326,12 +326,40 @@ namespace EMAN
 	class FourierReconstructor : public Reconstructor
 	{
 	  public:
-		FourierReconstructor() : image_idx(0), inserter(0), interpFRC_calculator(0), slice_insertion_flag(true), slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0) { load_default_settings(); }
+		/** Default constructor
+		* calls load_default_settings()
+		*/
+		FourierReconstructor() : image_idx(0), inserter(0), interpFRC_calculator(0), slice_insertion_flag(true),
+		slice_agreement_flag(false), x_scale_factor(0.0), y_scale_factor(0.0), z_scale_factor(0.0), 
+		max_padded_dim(0), output_x(0), output_y(0), output_z(0) { load_default_settings(); }
+		
+		/** Deconstructor
+		* calls free_memory()
+		*/
 		virtual ~FourierReconstructor() { free_memory(); }
 
+		/** Setup the Fourier reconstructor
+		* relies on the correct parameters
+		* throws a variety of exceptions if the parameters are unworkable
+		* @exception InvalidValueException when the x_in parameter is odd or less than zero
+		* @exception InvalidValueException when the y_in parameter is odd or less than zero
+		* @exception InvalidValueException when the x_out parameter is odd or less than zero
+		* @exception InvalidValueException when the y_out parameter is odd or less than zero
+		* @exception InvalidValueException when the z_out parameter is odd or less than zero
+		* @exception InvalidValueException when the pad parameter is less than the greatest dimension of the input images (the greater of x_in and y_in)
+		* Note the restraint that the Fourier volumes should be even will be lifted once debugging of the the xform.fourierorigin processor is performed,
+		* but however, when this happens a rigorous testing should be performed because no testing has been done in this regard.
+		*/
 		virtual void setup();
 
-		virtual int insert_slice(const EMData* const slice, const Transform3D & euler);
+		/** Insert a slice into a 3D volume, in a given orientation
+		* @return 0 if successful, 1 otherwise
+		* @param input_slice the image slice to be inserted into the 3D volume
+		* @param t3d the Transform3D that stores the image Euler angles
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
+		virtual int insert_slice(const EMData* const slice, const Transform3D & t3d);
 		
 		// these functions are for testing purposes
 #if RECONSTRUCTOR_TOOLS_TESTING
@@ -340,53 +368,71 @@ namespace EMAN
 		bool test_pixel_wise_zero(const EMData* const input_slice, const Transform3D & arg);
 #endif
 		
-		/** 
-	  	 * @return 
-	  	 * @param input_slice
-	  	 * @param arg
-	  	 * @param num_particles_in_slice
-	  	 * @exception 
-		 */
-		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & arg, const unsigned int  num_particles_in_slice = 1);
+		/** Determine slice agreement with the current reconstruction
+		* @return 0 if successful, 1 otherwise
+		* @param input_slice the image slice to compared against the 3D volume
+		* @param t3d the Transform3D that the image Euler angles
+		* @param num_particles_in_slice the number of particles in the slice - used to determine the SNR normalized FSC, defaults to 1.
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
+		virtual int determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int  num_particles_in_slice = 1);
 
+		/** Get the reconstructed volume
+		* Peforms Fourier inversion on a potentially large volume and may take 
+		* several minutes.
+		* @return The real space reconstructed volume
+		*/
 		virtual	EMData *finish();
 
+		/** Get the unique name of the reconstructor
+		*/
 		virtual string get_name() const
 		{
 			return "fourier";
 		}
 		
+		/** Get the one line description of the reconstructor
+		*/
 		virtual string get_desc() const
 		{
-			return "Reconstruction via direct Fourier methods using a Gaussian kernel";
+			return "Reconstruction via direct Fourier methods using a combination of nearest neighbour and Gaussian kernels";
 		}
 
+		/** Factory themed method allocating a new FourierReconstructor
+		* @return a Reconstructor pointer to a newly allocated FourierReconstructor
+		*/
 		static Reconstructor *NEW()
 		{
 			return new FourierReconstructor();
 		}
 
+		/** Get the parameter types of this object
+		* @return a TypeDict detailing all of the acceptable (and necessary) parameters
+		*/
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("in_x", EMObject::INT, "The size of x dimension in the input images.");
-			d.put("in_y", EMObject::INT, "The size of y dimension in the input images.");
-			d.put("size", EMObject::INT, "Should be the largest dimension of the input images, i.e. if images are 1024x1024 or 1024x256 size should be 1024.");
-			d.put("mode", EMObject::INT, "Fourier pixel insertion mode [1-7] - mode 2 is default.");
-			d.put("weight", EMObject::FLOAT, "A temporary weight variable, used to weight slices as they are inserted.");
-			d.put("hard", EMObject::FLOAT, "The quality metric threshold.");
-			d.put("dlog", EMObject::BOOL, "This is a residual from EMAN1 that has not yet been addressed in the EMAN2 implementation.");
-			d.put("sym", EMObject::STRING, "The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?.");
-			d.put("pad", EMObject::INT, "The amount to pad the input images to - should be greater than the image size.");
-			d.put("apix", EMObject::FLOAT, "Angstrom per pixel of the input images, default is 1.0.");
-			d.put("zsize", EMObject::INT, "The zsize of the reconstructed volume, most often used in tomographic reconstuction.");
-			d.put("ysize", EMObject::INT, "The ysize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified.");
-			d.put("xsize", EMObject::INT, "The xsize of the reconstructed volume, most often used in tomographic reconstuction, but not commonly specified.");
-			d.put("tomo_weight", EMObject::BOOL, "A tomographic reconstruction flag that causes inserted slices to be weighted by 1/cos(alt) - alt is the tilt angle. Default is false.");
-			d.put("tomo_mask", EMObject::BOOL, "A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
-			d.put("t_emm", EMObject::BOOL, "Read as tomo edge mean mask - experimental, default false");
-			d.put("edgenorm", EMObject::BOOL, "Whether or not to perform edge normalization on the inserted slices before Fourier transforming them, default is true." );
-			d.put("t_emm_gauss", EMObject::INT, "An optional gaussain fall off for tomo_mask" );
+			d.put("x_in", EMObject::INT, "Necessary. The x dimension of the input images.");
+			d.put("y_in", EMObject::INT, "Necessary. The y dimension of the input images.");
+			d.put("zsample", EMObject::INT, "Optional. The z dimension (Fourier sampling) of the reconstructed volume, very useful for tomographic reconstruction. Works for general volumes.");
+			d.put("ysample", EMObject::INT, "Optional. The y dimension (Fourier sampling) of the reconstructed volume, works for general volumes. Not commonly specified.");
+			d.put("xsample", EMObject::INT, "Optional. The x dimension (Fourier sampling) of the reconstructed volume, works for general volumes. Not commonly specified.");
+			d.put("pad", EMObject::INT, "Optional. The amount to pad the input images to - should be greater than the image size.");
+			d.put("x_pad", EMObject::INT, "Optional. The amount to pad the input images to in the x direction - should be greater than the image x size.");
+			d.put("y_pad", EMObject::INT, "Optional. The amount to pad the input images to in the y direction - should be greater than the image y size.");
+			d.put("mode", EMObject::INT, "Optional. Fourier pixel insertion mode [1-7] - mode 2 is default.");
+			d.put("weight", EMObject::FLOAT, "Optional. A temporary weight variable, used to weight slices as they are inserted. Default is 1");
+			d.put("hard", EMObject::FLOAT, "Optional. The quality metric threshold. Default is 0 (off).");
+			d.put("edgenorm", EMObject::BOOL, "Optional. Whether or not to perform edge normalization on the inserted slices before Fourier transforming them. Default is true." );
+			d.put("sym", EMObject::STRING, "Optional. The symmetry of the reconstructed volume, c?, d?, oct, tet, icos, h?. Default is c1");
+			
+			d.put("apix", EMObject::FLOAT, "Optional. Angstrom per pixel of the input images, default is 1.0.");
+			d.put("tomo_weight", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to be weighted by 1/cos(alt) - alt is the tilt angle. Default is false.");
+			d.put("tomo_mask", EMObject::BOOL, "Optional. A tomographic reconstruction flag that causes inserted slices to have their edge pixels masked according to tilt angle, ensuring that each projection image depicts approximately the same volume, default is false." );
+			d.put("t_emm", EMObject::BOOL, "Optional. Read as tomo edge mean mask - experimental, default false");
+			d.put("t_emm_gauss", EMObject::INT, "Optional. An optional gaussain fall off for tomo_mask" );
+			d.put("dlog", EMObject::BOOL, "Optional. This is a residual parameter from EMAN1 that has not yet been addressed in the EMAN2 implementation.");
 			return d;
 		}
 
@@ -394,7 +440,7 @@ namespace EMAN
 		 * this is used in e2make3d.py to print information to std out
 		 * @return the snr normalized Fourier ring correlation score
 		 * @param idx the index of the slice in the quality_scores vector
-		 * @exception GenericException(throw) when the idx is beyond the range of the quality_scores vector
+		 * @exception GenericException(just throw) when the idx is beyond the range of the quality_scores vector
 		 */
 		virtual float get_score(const unsigned int idx) { if ( quality_scores.size() > idx ) return quality_scores[idx].get_snr_normed_frc_integral(); else throw; }
 		
@@ -419,22 +465,24 @@ namespace EMAN
 		FourierReconstructor( const FourierReconstructor& that );
 		// Disallow assignment
 		FourierReconstructor& operator=( const FourierReconstructor& );
-		  
+		
+		/** Load default settings
+		*/
 		void load_default_settings()
 		{
-			params["in_x"] = 0;
-			params["in_y"] = 0;
-			params["size"] = 0;
+			params["x_in"] = 0;
+			params["y_in"] = 0;
+			params["zsample"] = 0;
+			params["ysample"] = 0;
+			params["xsample"] = 0;
+			params["x_pad"] = 0;
+			params["y_pad"] = 0;
 			params["mode"] = 2;
 			params["weight"] = 1.0;
 			params["dlog"] = false;
 			params["hard"] = 0.05;
-			params["sym"] = "unknown";
+			params["sym"] = "c1";
 			params["apix"] = 1.0;
-			// zsize is a flag and a used value - if it's not zero then the 3D volume is reconstructed with the alternative zsize - useful for tomography etc.
-			params["zsize"] = 0;
-			params["ysize"] = 0;
-			params["xsize"] = 0;
 			params["tomo_weight"] = false;
 			params["tomo_mask"] = false;
 			params["t_emm"] = false;
@@ -458,7 +506,7 @@ namespace EMAN
 		
 		/** A function to perform the nuts and bolts of inserting an image slice
 		 * @param input_slice the slice to insert into the 3D volume
-		 * @param euler a transform3D storing the slice's relative euler angle
+		 * @param euler a transform3D storing the slice euler angle
 		 */
 		void do_insert_slice_work(const EMData* const input_slice, const Transform3D & euler);
 		
@@ -482,8 +530,14 @@ namespace EMAN
 		bool slice_insertion_flag;
 		bool slice_agreement_flag;
 		
-		/// Used for scaling frequency axes when any of the xsize, ysize or zsize parameters are specified
+		/// Used for scaling frequency axes when any of the x_out, y_out or z_out parameters are specified
 		float x_scale_factor, y_scale_factor, z_scale_factor;
+		
+		/// Keeps track of the maximum dimension size
+		int max_padded_dim;
+		
+		/// Keeps track of the eventual size of the output real space volume
+		int output_x, output_y, output_z;
 	};
 
 	/** Fourier space 3D reconstruction with slices already Wiener filter processed.
@@ -1051,9 +1105,9 @@ namespace EMAN
 		string m_txt_file;
 		int m_npad;
 		int m_prev;
-		int m_xsize;
-		int m_ysize;
-		int m_zsize;
+		int m_x_out;
+		int m_y_out;
+		int m_z_out;
 		int m_write;
 		std::istream::off_type m_totsize;
 		float m_Cs;

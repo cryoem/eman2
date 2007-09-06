@@ -267,7 +267,7 @@ namespace EMAN
 			float f;
 			double d;
 			float * fp;
-			// FIXME - this union should probably inlcude pointers
+			// FIXME - this union should probably include all pointers
 		};
 
 		EMData *emdata;

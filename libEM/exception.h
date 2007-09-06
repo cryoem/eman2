@@ -138,6 +138,7 @@ namespace EMAN {
 
 	/** Used when an image is not in the expected dimension. For
 	 * example, a 2D image is given when a 3D image is expected.
+	 * Also, when the image is complex as opposed to real (d.woolford).
 	 *  Parameters:
 	 *    1. desc  The description of the situation.
 	 */

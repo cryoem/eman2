@@ -53,7 +53,8 @@ def main():
 	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_option("--align",type="string",help="The name of an 'aligner' to use prior to comparing the images", default=None)
 	parser.add_option("--aligncmp",type="string",help="Name of a 'cmp' to be used in the aligner",default="dot")
-	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to in comparing the aligned images", default="dot(normalize=1)")
+	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
+	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Verbose display during run",default=False)
@@ -64,9 +65,15 @@ def main():
 	
 	E2n=E2init(sys.argv)
 	
+	print options.align
+	print options.aligncmp
+	print options.cmp
+	
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
 	options.cmp=parsemodopt(options.cmp)
+	
+	print "done"
 	
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])

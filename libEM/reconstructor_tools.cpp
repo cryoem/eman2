@@ -71,7 +71,7 @@ InterpolatedFRC::InterpolatedFRC( const Dict & new_params ) :
 	
 	pixel_radius_max = max/2;
 	pixel_radius_max_square = Util::square( (int) pixel_radius_max );
-
+	
 	size = static_cast<int>(pixel_radius_max*bin);
 	frc = new float[size];
 	frc_norm_rdata = new float[size];
@@ -134,7 +134,7 @@ void InterpolatedFRC::init()
 	if ( params.has_key("x_scale") ) x_scale = params["x_scale"];
 	if ( params.has_key("y_scale") ) y_scale = params["y_scale"];
 	if ( params.has_key("z_scale") ) z_scale = params["z_scale"];
-	
+		
 	nxy = nx*ny;
 }
 
@@ -399,7 +399,7 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	
 	// The reverse interpolated point
 	float interp_real = 0.0, interp_comp = 0.0;
-	
+	cout << weight << endl;
 	float weight_sum = 0.0;
 	for (int j = 0; j < 8; j++) {
 		int k = i + off[j];
@@ -415,30 +415,23 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 				
 		weight_sum += g[j];
 		
-		//cout << "[" << interp_real/g[j] << "," << interp_comp/g[j] << "] ";
 	}
-	
-// 	if ( radius == 0 )
-	
-//	cout << "interp was " << interp_real << " " << interp_comp << " actual was " << dt[0] << " " << dt[1] << endl;
 	
 	if ( weight_sum == 0 ) return false;
 	
 	interp_real_mtp /= weight_sum;
 	interp_comp_mtp /= weight_sum;
 	
+	cout << interp_real_mtp << " " << interp_comp_mtp << " " << dt[0] << " " << dt[1] << endl;
+	
 	frc[radius] += interp_real_mtp*dt[0] + interp_comp_mtp*dt[1];
 
 	frc_norm_rdata[radius] += interp_real_mtp*interp_real_mtp + interp_comp_mtp*interp_comp_mtp;
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
-	
-//	cout << "Current values are " << frc[radius] << " " << frc_norm_rdata[radius] << " " << frc_norm_dt[radius] << endl;
-	
+		
 	r += hypot(dt[0], dt[1]);
 	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
-	
-	//cout << " and norm was " << hypot(dt[0], dt[1])/hypot(interp_real/weight_sum, interp_comp/weight_sum) << endl;
 	
 	return true;
 }
@@ -450,6 +443,8 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	int y0 = (int) floor(yy + 0.5f);
 	int z0 = (int) floor(zz + 0.5f);
 	
+	int idx = x0 + y0 * nx + z0 * nxy;
+	
 	// Have to get radial coordinates - x is fine as it is but the other two need translation
 	int yt = y0 - ny/2;
 	int zt = z0 - nz/2;
@@ -457,21 +452,13 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	int radius = (int) x_scale*x_scale* (int) floor(xx)*(int) floor(xx) + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
 	radius = static_cast<int>(sqrtf(radius)*bin);
 	
-	// debug
-	if ( radius > (size-1) )
-	{
-		//cout is debug
-		//cout << "radius " << radius << " was greater than or equal to size " << size  << endl;
-		return false;
-	}
-	
+	if ( radius > (size-1) ) return false;
+
 	// The reverse interpolated point minus this pixel (mtp)
 	float interp_real_mtp = 0.0, interp_comp_mtp = 0.0;
 	
 	// The reverse interpolated point
 	float interp_real = 0.0, interp_comp = 0.0;
-	
-	int idx = x0 + y0 * nx + z0 * nxy;
 	
 	if ( norm_data[idx/2] == 0 )
 		return false;
@@ -511,15 +498,12 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 	cutoff += 1;
 	
 	for( int i = 0; i < cutoff; ++i )
-	{
+	{	
 		if ( frc_norm_rdata[i] == 0 || frc_norm_dt[i] == 0 )
 			frc[i] = 0;
 		else
 			frc[i] /= sqrtf(frc_norm_rdata[i]*frc_norm_dt[i]);
 
-// 		if ( frc[i] < contrib_thresh ) continue;
-		//contrib++;
-		// Accumulate the frc integral - atm this is for testing purposes but could change
 		frc_integral += frc[i];
 		
 		float tmp = frc[i]*frc[i];
@@ -539,10 +523,9 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 		normed_snr_integral += adjusted_ssnr;
 		snr_normed_frc_intergral += sqrtf(adjusted_ssnr/( 1.0 + adjusted_ssnr ));
 	}
-
-	frc_integral /= cutoff;
-	snr_normed_frc_intergral /= cutoff;
-	normed_snr_integral /= cutoff;
+	frc_integral /= size;
+	snr_normed_frc_intergral /= size;
+	normed_snr_integral /= size;
 
 	QualityScores quality_scores;
 	quality_scores.set_frc_integral( frc_integral );
@@ -612,7 +595,7 @@ bool FourierInserter3DMode1::insert_pixel(const float& xx, const float& yy, cons
 	int z0 = (int) floor(zz + 0.5f);
 	
 	int idx = x0 + y0 * nx + z0 * nxy;
-
+	
 #if RECONSTRUCTOR_TOOLS_TESTING
 	(*pixel_operation)(rdata + idx, weight * dt[0]);
 	(*pixel_operation)(rdata + idx + 1, weight  * dt[1]);

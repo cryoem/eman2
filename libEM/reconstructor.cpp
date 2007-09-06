@@ -91,7 +91,7 @@ void ReconstructorVolumeData::normalize_threed()
 		throw;
 	if ( 0 == rdata )
 		throw;
-		
+	
 	for (int i = 0; i < nx * ny * nz; i += 2) {
 		float d = norm[i/2];
 		if (d == 0) {
@@ -148,28 +148,10 @@ void FourierReconstructor::load_interpFRC_calculator()
 	init_parms["ny"] = ny;
 	init_parms["nz"] = nz;
 	
-	
-	int size = params["size"];
-	if ( params.find("pad") != params.end() ) size = params["pad"];
-	
-	if ( (int) params["xsize"] != 0 )
-	{
-		int xsize = params["xsize"];
-		init_parms["x_scale"] = (float) size / (float) xsize;
-	}
-	
-	if ( (int) params["ysize"] != 0 )
-	{
-		int ysize = params["ysize"];
-		init_parms["y_scale"] = (float) size / (float) ysize;
-	}
-	
-	if ( (int) params["zsize"] != 0 )
-	{
-		int zsize = params["zsize"];
-		init_parms["z_scale"] = (float) size / (float) zsize;
-	}
-	
+	if ( x_scale_factor != 0 ) init_parms["x_scale"] = 1.0/x_scale_factor;
+	if ( y_scale_factor != 0 ) init_parms["y_scale"] = 1.0/y_scale_factor;
+	if ( z_scale_factor != 0 ) init_parms["z_scale"] = 1.0/z_scale_factor;
+
 	if ( interpFRC_calculator != 0 )
 	{
 		delete interpFRC_calculator;
@@ -183,103 +165,112 @@ void FourierReconstructor::setup()
 	// Atm the reconstruction algorith works only for even dimensions, this has something to do xform.fourierorigin not
 	// working for images with odd dimensions - once we are certain the xform.fourierorigin has no problems with oddness
 	// then there could be bugs in the reconstructor itself - it needs testing.
-	int x_size = params["in_x"];
+	int x_size = params["x_in"];
 	if ( x_size % 2 == 1 ) throw InvalidValueException(x_size, "x size of images must be even");
 	if ( x_size < 0 ) throw InvalidValueException(x_size, "x size of images must be greater than 0");
-	int y_size = params["in_y"];
+	int y_size = params["y_in"];
 	if ( y_size % 2 == 1 ) throw InvalidValueException(y_size, "y size of images must be even");
 	if ( y_size < 0 ) throw InvalidValueException(y_size, "y size of images must be greater than 0");
 	
-	// If the dimensions of the 2D images being inserted are not equal, some book keeping needs to take place:
-	// First, params["size"] should store the largest dimension.
-	// Second, if the user has not specified xsize or ysize, then the smaller value of in_x or in_y has
-	// to be stored as one of these parameters, respectively.
-	// Third, if zsize has not been specifed it is clamped to value chosen in the second point above.
-	if ( x_size != y_size )
+	if ( x_size > y_size ) max_padded_dim = x_size;
+	else max_padded_dim = y_size;
+	
+	// This is a helical adaptation - FIXME explain
+	bool helical_special_behavior = true;
+	if ( helical_special_behavior )
 	{
-		if ( x_size > y_size ) 
+		if ( x_size > y_size )
 		{
-			params["size"] = x_size;
-			if ( (int) params["xsize"] == 0 ) params["ysize"] = y_size+2;
-			if ( (int) params["ysize"] == 0 ) params["ysize"] = y_size;
-			if ( (int) params["zsize"] == 0 ) params["zsize"] = x_size;
+			if ( (int) params["xsample"] == 0 ) params["xsample"] = y_size;
+			if ( (int) params["zsample"] == 0 ) params["zsample"] = x_size;
 		}
-		else
+		if ( y_size > x_size )
 		{
-			params["size"] = y_size;
-			if ( (int) params["xsize"] == 0 ) params["xsize"] = x_size+2;
-			if ( (int) params["ysize"] == 0 ) params["ysize"] = x_size;
-			if ( (int) params["zsize"] == 0 ) params["zsize"] = y_size;
+			if ( (int) params["ysample"] == 0 ) params["ysample"] = x_size;
+			if ( (int) params["zsample"] == 0 ) params["zsample"] = y_size;
 		}
 	}
-	else params["size"] = x_size;
 	
-	int size;
-	// If the user has specified padding then the Fourier volume into which slices are begin inserted needs to be
-	// bigger. Unless, of course, the user has specified xsize, ysize or zsize...
-	if ( params.find("pad") != params.end() )
+	if ( (int) params["xsample"] != 0  ) output_x = (int) params["xsample"];
+	else output_x = x_size;
+	
+	if ( (int) params["ysample"] != 0  ) output_y = (int) params["ysample"];
+	else output_y = y_size;
+		
+	if ( (int) params["zsample"] != 0  ) output_z = (int) params["zsample"];
+	else
 	{
-		if ( (int)(params["pad"]) > (int)(params["size"]) ) size = params["pad"];
-		else throw InvalidValueException((int)params["pad"], "pad must be > than image size");
-	}
-	else size = params["size"];
+		if ( x_size == y_size ) output_z = x_size;
+		else if ( x_size > y_size ) output_z = x_size;
+		else output_z = y_size;
+	}	
 	
-	if ( (int) params["xsize"] != 0 )
+	nx = output_x;
+	ny = output_y;
+	nz = output_z;
+	
+	int pad = params["pad"];
+	int x_pad = params["x_pad"];
+	int y_pad = params["y_pad"];
+	if ( x_pad != 0 || y_pad != 0 )
 	{
-		// If the user has specified xsize then this is the length of the x dimension of the reconstructed fourier volume.
-		// The Nyquist does not change, so in real space you will observe clipping in the x dimension.
-		// This is useful in Tomographic reconstruction.
-		int xsize = params["xsize"];
-		if ( xsize % 2 == 1 ) throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be even");
-		if ( xsize < 0 ) throw InvalidValueException((int)params["xsize"], "if xsize is specified it must be greater than 0");
-		nx = xsize+2;
-		x_scale_factor = (float)(xsize+2)  / (float) (size+2);
+		if ( pad != 0 ) throw InvalidValueException(pad, "Ambiguous parameters - you cannot specify pad while also specifying atleast one of y_pad and x_pad.");
+		
+		if ( x_pad != 0 )
+		{
+			if ( x_pad < 0) throw InvalidValueException(x_pad, "x_pad must be greater than zero");
+			if ( x_pad % 2 == 1) throw InvalidValueException(x_pad, "x_pad must be even");
+			if ( x_pad <= x_size ) throw InvalidValueException(x_pad, "x_pad must be greater than the image x size");
+			
+			if ( (int) params["xsample"] == 0 ) nx = x_pad;
+		}
+			
+		if ( y_pad != 0 )
+		{
+			if ( y_pad < 0) throw InvalidValueException(y_pad, "y_pad must be greater than 0");
+			if ( y_pad % 2 == 1) throw InvalidValueException(y_pad, "y_pad must be even");
+			if ( y_pad <= y_size ) throw InvalidValueException(y_pad, "y_pad must be greater than the image y size");
+			
+			if ( (int) params["ysample"] == 0 )	ny = y_pad;
+		}
+		
+		if ( x_pad > y_pad ) max_padded_dim  = x_pad;
+		else max_padded_dim = y_pad;
 	}
-	else nx = size + 2;
-	
-	if ( (int) params["ysize"] != 0 ) {
-		// If the user has specified ysize then this is the length of the y dimension of the reconstructed fourier volume
-		// The Nyquist does not change, so in real space you will observe clipping in the y dimension.
-		// This is useful in Tomographic reconstruction.
-		int ysize = params["ysize"];
-		if ( ysize % 2 == 1 ) throw InvalidValueException((int)params["ysize"], "if ysize is specified it must be even");
-		if ( ysize < 0 ) throw InvalidValueException((int)params["ysize"], "if ysize is specified it must be greater than 0");
-		ny = ysize;
-		y_scale_factor = (float)ny / (float) size;
+	else if ( pad != 0 )
+	{
+		if ( pad <= 0) throw InvalidValueException(x_pad, "if you specify pad it must be positive and non-zero");
+		if ( pad % 2 == 1) throw InvalidValueException(pad, "pad must be even");
+		if ( pad <= x_size ) throw InvalidValueException(pad, "pad must be greater than the image x size");
+		if ( pad <= y_size) throw InvalidValueException(pad, "pad must be greater than the image y size");
+		
+		// This information is used in finish - to clip the real space 3D reconstruction to the correct dimensions.
+		if ( (int) params["ysample"] == 0 ) nx = pad;
+		if ( (int) params["xsample"] == 0 ) ny = pad;
+		
+		max_padded_dim = pad;
+		
+		// Storing x_pad and y_pad here is essential - it ensures preprocess_slice pads the input images correctly 
+		params["x_pad"] = pad;
+		params["y_pad"] = pad;
 	}
-	else ny = size;
 	
-	if ( (int) params["zsize"] != 0 ) {
-		// If the user has specified zsize then this is the length of the z dimension of the reconstructed fourier volume
-		// The Nyquist does not change, so in real space you will observe clipping in the z dimension.
-		// This is useful in Tomographic reconstruction.
-		int zsize = params["zsize"];
-		if ( zsize % 2 == 1 ) throw InvalidValueException((int)params["zsize"], "if zsize is specified it must be even");
-		if ( zsize < 0 ) throw InvalidValueException((int)params["zsize"], "if zsize is specified it must be greater than 0");
-		nz = zsize;
-		z_scale_factor = (float)nz / (float) size;
-	}
-	else nz = size;
+	if ( (int) params["zsample"] == 0  ) nz = max_padded_dim;
 	
-	cout << "Fourier volume dimensions are " << nx << " " << ny << " " << nz << endl;
-	cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*4.0*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
-	cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
+	if ( nz < max_padded_dim ) z_scale_factor = (float) nz / (float) max_padded_dim;
+	if ( ny < max_padded_dim ) y_scale_factor = (float) ny / (float) max_padded_dim;
+	if ( nx < max_padded_dim ) x_scale_factor = (float) nx / (float) max_padded_dim;
 	
+	// Finally adjust nx if for Fourier transform even odd issues
+	bool is_fftodd = nx % 2 == 1;
+	nx += 2*(!is_fftodd);
+	
+	// Odd dimension support is here atm, but not above.
 	image = new EMData();
 	image->set_size(nx, ny, nz);
 	image->set_complex(true);
+	image->set_fftodd(is_fftodd);
 	image->set_ri(true);
-
-	// WHAT IS THIS FOR? PROBABLY PERFORMS NO FUNCTION - dsaw
-// 	int n = nx * ny * nz;
-// 	float *rdata = image->get_data();
-
-// 	for (int i = 0; i < n; i += 2) {
-// 		float f = Util::get_frand(0.0, 2.0 * M_PI);
-// 		rdata[i] = 1.0e-10f * sin(f);
-// 		rdata[i + 1] = 1.0e-10f * cos(f);
-// 	}
-// 	image->update();
 
 	tmp_data = new EMData();
 	tmp_data->set_size(nx/2, ny, nz);
@@ -288,6 +279,11 @@ void FourierReconstructor::setup()
 	
 	load_inserter();
 	load_interpFRC_calculator();
+	
+	cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
+	cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*4.0*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
+	cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
+	cout << "Max padded dim is " << max_padded_dim << endl;
 }
 
 class GaussianFunctoid
@@ -338,7 +334,8 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	
 		// This masks out the edges of the image which are not present in the image with zero tilt.
 		Dict zero_dict;
-		int x_clip = static_cast<int>( (float) params["size"] * ( 1.0 - cosine ) / 2.0);
+		float x_in = params["x_in"];
+		int x_clip = static_cast<int>( (float) x_in * ( 1.0 - cosine ) / 2.0);
 		zero_dict["x0"] = x_clip;
 		zero_dict["x1"] = x_clip;
 		zero_dict["y0"] = 0;
@@ -414,23 +411,20 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	//return_slice->write_image("mikes_test.img",-1);
 	
 	// Apply padding if the option has been set, and it's sensible
-	if ( params.find("pad") != params.end() )
+	if ( (int) params["x_pad"] != 0 || (int) params["y_pad"] != 0 )
 	{
-		int pad = params["pad"];
+		int new_x_size = slice->get_xsize();
+		int new_y_size = slice->get_ysize();
+		if ( (int) params["x_pad"] != 0 ) new_x_size = params["x_pad"];
+		if ( (int) params["y_pad"] != 0 ) new_y_size = params["y_pad"];
 		int x_size = slice->get_xsize();
 		int y_size = slice->get_ysize();
-		if ( x_size >= pad || y_size >= pad )
-		{
-			cerr << "You specified a pad size " <<  pad << " that was smaller than or equal to the x " << x_size << " or y " << y_size << " dimension" << endl;
-			throw InvalidValueException(pad, "pad must be > than image size");	
-		}
-		else
-		{
-			// x_size and y_size should always be the same size atm, but there may come a time when they are not.
-			return_slice->clip_inplace(Region((x_size-pad)/2,(y_size-pad)/2,pad,pad));
-		}
-	}
+
+		// Note checking to make sure that pad dimensions are greater than the image dimensions is done in FourierReconstructor::setup
 		
+		return_slice->clip_inplace(Region((x_size-new_x_size)/2,(y_size-new_y_size)/2,new_x_size,new_y_size));
+	}
+	
 	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
 	return_slice->process_inplace("xform.phaseorigin");
 
@@ -445,14 +439,16 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 
 int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform3D & arg)
 {
+	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) {
 		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
-		return 1;
+		throw NullPointerException("EMData pointer (input image) is NULL");
 	}
 
+	// I could also test to make sure the image is the right dimensions...
 	if (input_slice->is_complex()) {
-		LOGERR("Do not Fourier transform the image before it is passed to insert_slice in the FourierReconstructor, this is performed internally");
-		return 1;
+		LOGERR("Do not Fourier transform the image before it is passed to insert_slice in FourierReconstructor, this is performed internally");
+		throw ImageFormatException("The image is complex, expecting real");
 	}
 
 	// Get the proprecessed slice - there are some things that always happen to a slice,
@@ -498,33 +494,33 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 }
 
 void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice, const Transform3D & arg)
-{
-	float *dat = input_slice->get_data();
-	
-	
+{	
+	// Reload the inserter if the mode has changed
 	string mode = (string) params["mode"];
 	if ( mode != inserter->get_name() )
 	{
 		load_inserter();
 	}
 	
-	int ysize;
-	if ( params.find("pad") != params.end() ) ysize = params["pad"];
-	
-	else ysize = params["size"];
-	int xsize = ysize + 2;
-	
-	int rl = Util::square(ysize / 2 - 1);
+	int rl = Util::square( max_padded_dim / 2);
 	
 	float dt[2];
 	
-	int in_x = params["in_x"], in_y = params["in_y"];
 	float y_scale = 0, x_scale = 0;
-	if ( in_x != in_y )
+	
+	int y_in = input_slice->get_ysize();
+	int x_in = input_slice->get_xsize();
+	// Addjust the dimensions to account for odd and even ffts
+	x_in -= 2*(!input_slice->is_fftodd());
+				
+	if ( y_in != x_in )
 	{
-		if ( in_x > in_y ) y_scale = (float) ysize / (float) in_y;
-		else x_scale = (float) xsize / (float) in_x;
+		if ( x_in > y_in ) y_scale = (float) x_in / (float) y_in;
+		else x_scale = (float) y_in / (float) x_in;
 	}
+	
+	float *dat = input_slice->get_data();
+	float weight = (float)params["weight"];
 	
 	for ( int i = 0; i < Transform3D::get_nsym((string)params["sym"]); ++i)
 	{
@@ -536,18 +532,18 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				float rx = (float) x;
 				float ry = (float) y;
 				
-				if ( in_x != in_y )
+				if ( y_in != x_in )
 				{
-					if ( in_x > in_y ) ry *= y_scale;
+					if ( x_in > y_in ) ry *= y_scale;
 					else rx *= x_scale;
 				}
 				
-				if ((rx * rx + Util::square(ry - ysize / 2)) >= rl)
+				if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
 					continue;
 
-				float xx = (float) (rx * t3d[0][0] + (ry - ysize / 2) * t3d[1][0]);
-				float yy = (float) (rx * t3d[0][1] + (ry - ysize / 2) * t3d[1][1]);
-				float zz = (float) (rx * t3d[0][2] + (ry - ysize / 2) * t3d[1][2]);
+				float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
+				float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);
+				float zz = (float) (rx * t3d[0][2] + (ry - max_padded_dim / 2) * t3d[1][2]);
 
 				float cc = 1;
 	
@@ -569,24 +565,26 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 				dt[0] = dat[idx];
 				dt[1] = cc * dat[idx+1];
 
-				inserter->insert_pixel(xx,yy,zz,dt,(float)params["weight"]);
+				inserter->insert_pixel(xx,yy,zz,dt,weight);
 			}
 		}
 	}
 }
 
-int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & euler, const unsigned int num_particles_in_slice)
+int FourierReconstructor::determine_slice_agreement(const EMData* const input_slice, const Transform3D & t3d, const unsigned int num_particles_in_slice)
 {
+	// Are these exceptions really necessary? (d.woolford)
 	if (!input_slice) {
 		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
-		return 1;
+		throw NullPointerException("EMData pointer (input image) is NULL");
 	}
 
+	// I could also test to make sure the image is the right dimensions...
 	if (input_slice->is_complex()) {
 		LOGERR("Do not Fourier transform the image before it is passed to determine_slice_agreement in FourierReconstructor, this is performed internally");
-		return 1;
+		throw ImageFormatException("The image is complex, expecting real");
 	}
-
+	
 	// The first time determine_slice_agreement is called (in each iteration) some things need to happen...
 	if ( slice_agreement_flag == true )
 	{
@@ -606,7 +604,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
-	EMData* slice = preprocess_slice( input_slice, euler );
+	EMData* slice = preprocess_slice( input_slice, t3d );
 
 	// quality_scores.size() is zero on the first run, so this enforcement of slice quality does not take
 	// place until after the first round of slice insertion
@@ -616,68 +614,63 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 		// be inconsistent
 		slice->mult(1.f/prev_quality_scores[image_idx].get_norm());
 	}
-	
-	float *dat = slice->get_data();
 
 	// Reset zeros the associated memory in the ifrc
 	interpFRC_calculator->reset();
 	
+	int rl = Util::square( max_padded_dim / 2);
 	
-	int ysize;
-	if ( params.find("pad") != params.end() ) ysize = params["pad"];
-	else ysize = params["size"];
-	int xsize = ysize + 2;
-	
-	int rl = Util::square(ysize / 2 - 1);
 	float dt[2];
 	
-	int in_x = params["in_x"], in_y = params["in_y"];
+	float y_scale = 0, x_scale = 0;
+	
+	int y_in = slice->get_ysize();
+	int x_in = slice->get_xsize();
+	x_in -= 2*(!slice->is_fftodd());
+				
+	if ( y_in != x_in )
+	{
+		if ( x_in > y_in ) y_scale = (float) x_in / (float) y_in;
+		else x_scale = (float) y_in / (float) x_in;
+	}
+	float *dat = slice->get_data();
 	
 	for (int y = 0; y < slice->get_ysize(); y++) {
 		for (int x = 0; x < slice->get_xsize() / 2; x++) {
+				
 			float rx = (float) x;
 			float ry = (float) y;
 				
-			if ( in_x != in_y )
+			if ( y_in != x_in )
 			{
-				if ( in_x > in_y )
-				{	
-					float y_scale = (float) ysize / (float) in_y;
-					ry *= y_scale;
-				}
-				else
-				{
-					float x_scale = (float) xsize / (float) in_x;
-					rx *= x_scale;
-				}
+				if ( x_in > y_in ) ry *= y_scale;
+				else rx *= x_scale;
 			}
 				
-			if ((rx * rx + Util::square(ry - ysize / 2)) >= rl)
+			if ((rx * rx + Util::square(ry - max_padded_dim / 2)) > rl)
 				continue;
 
-			float xx = (float) (rx * euler[0][0] + (ry - ysize / 2) * euler[1][0]);
-			float yy = (float) (rx * euler[0][1] + (ry - ysize / 2) * euler[1][1]);
-			float zz = (float) (rx * euler[0][2] + (ry - ysize / 2) * euler[1][2]);
+			float xx = (float) (rx * t3d[0][0] + (ry - max_padded_dim / 2) * t3d[1][0]);
+			float yy = (float) (rx * t3d[0][1] + (ry - max_padded_dim / 2) * t3d[1][1]);
+			float zz = (float) (rx * t3d[0][2] + (ry - max_padded_dim / 2) * t3d[1][2]);
 
-			
 			float cc = 1;
-
+	
 			if (xx < 0) {
 				xx = -xx;
 				yy = -yy;
 				zz = -zz;
 				cc = -1.0;
 			}
-
+				
 			if ( z_scale_factor != 0 ) zz *= z_scale_factor;
 			if ( y_scale_factor != 0 ) yy *= y_scale_factor;
 			if ( x_scale_factor != 0 ) xx *= x_scale_factor;
-			
+				
 			yy += ny / 2;
 			zz += nz / 2;
-			
-			
-			int idx = x * 2 + y * (input_slice->get_xsize());
+				
+			int idx = x * 2 + y * (slice->get_xsize());
 			dt[0] = dat[idx];
 			dt[1] = cc * dat[idx+1];
 
@@ -692,9 +685,10 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 				if ( prev_quality_scores[image_idx].get_snr_normed_frc_integral() < (float) params["hard"] )
 				{
 					weight = 0;
+					cout << "Weighted by zero" << endl;
+					cout << "Because " << endl;
 				}
 			}
-			
 			// FIXME: this could be replaced in favor of a class implementation with no switch statement, similar to the 
 			// inserter in the Fourier reconstructor do_insert_slice_work method
 			switch ((int)params["mode"])
@@ -722,10 +716,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 					break;
 				default:
 					cout << "Warning, nothing happened the mode " << (int)params["mode"] << " was unsupported" << endl;
-					if ( prev_quality_scores.size() != 0 ) image_idx++;
-					return 1;
-					// okay never get here but it would look weird if the break was absent
-					break;
+					throw;
 			}	
 		}
 	}
@@ -893,9 +884,9 @@ EMData *FourierReconstructor::finish()
 	}
 	
 // 	// For debug
-// 	EMData* fftimage = image->get_fft_amplitude ();
-// 	fftimage->write_image("threed_fft_amp.mrc");
-// 	delete fftimage;
+	EMData* fftimage = image->get_fft_amplitude ();
+	fftimage->write_image("threed_fft_amp.mrc");
+	delete fftimage;
 	
 	// 
 	image->process_inplace("xform.fourierorigin");
@@ -905,32 +896,39 @@ EMData *FourierReconstructor::finish()
 	image->process_inplace("xform.phaseorigin");
 	
 	// If the image was padded it should be age size, as the client would expect
-	if ( params.find("pad") != params.end() )
+	bool is_fftodd = nx%2;
+	if ( (nx-2*(!is_fftodd)) != output_x || ny != output_y || nz != output_z )
 	{
-		int pad = params["pad"];
-		int size = params["size"];
-		
-		FloatPoint origin( (pad-size)/2, (pad-size)/2, (pad-size)/2 );
-		FloatSize region_size( size, size, size);
-		
-		if ( (int)params["xsize"] != 0 )
+// 		int x_pad = params["x_pad"];
+// 		int y_pad = params["y_pad"];
+// 		
+// 		int x_in = params["x_in"];
+// 		int y_in = params["y_in"];
+// 		
+// 		if ( y_pad == 0 ) y_pad = y_in;
+// 		if ( x_pad == 0 ) x_pad = x_in;
+// 		
+		FloatPoint origin( (nx-output_x)/2, (ny-output_y)/2, (nz-output_z)/2 );
+		FloatSize region_size( output_x, output_y, output_z);
+	/*	
+		if ( (int)params["xsample"] != 0 )
 		{
 			origin[0] = 0;
-			region_size[0] = (int)params["xsize"]-2;
+			region_size[0] = (int)params["xsample"];
 		}
 		
-		if ( (int)params["ysize"] != 0 )
+		if ( (int)params["ysample"] != 0 )
 		{
 			origin[1] = 0;
-			region_size[1] = params["ysize"];
+			region_size[1] = params["ysample"];
 		}
 		
-		if ( (int)params["zsize"] != 0 )
+		if ( (int)params["zsample"] != 0 )
 		{
 			origin[2] = 0;
-			region_size[2] = params["zsize"];
+			region_size[2] = params["zsample"];
 		}
-		
+		*/
 		Region clip_region( origin, region_size );
 
 		image->clip_inplace( clip_region );
@@ -938,15 +936,9 @@ EMData *FourierReconstructor::finish()
 
 	print_stats(quality_scores);
 	
-// 	image->process_inplace("normalize");
-	
 	image->mult(image->get_zsize());
 	
 	image->update();
-
-	
-// 	image->write_image("test_out.mrc");
-// 	cout << "The final 3D image stats are " << (float)image->get_attr("mean") << " and sigma " << (float)image->get_attr("sigma") << endl;
 	
 	return image;
 }
@@ -3039,10 +3031,10 @@ void file_store::add_image(  EMData* emdata )
         *m_txt_ohandle << "#Cs pixel voltage ctf_applied amp_contrast defocus phi theta psi" << std::endl;
     }
 
-    m_xsize = padfft->get_xsize();
-    m_ysize = padfft->get_ysize();
-    m_zsize = padfft->get_zsize();
-    m_totsize = m_xsize*m_ysize*m_zsize;  
+    m_x_out = padfft->get_xsize();
+    m_y_out = padfft->get_ysize();
+    m_z_out = padfft->get_zsize();
+    m_totsize = m_x_out*m_y_out*m_z_out;  
 
     m_Cs = padfft->get_attr( "Cs" );
     m_pixel = padfft->get_attr( "Pixel_size" );
@@ -3067,9 +3059,9 @@ void file_store::add_image(  EMData* emdata )
         *m_txt_ohandle << m_phis.back() << " ";
         *m_txt_ohandle << m_thetas.back() << " ";
         *m_txt_ohandle << m_psis.back() << " ";
-        *m_txt_ohandle << m_xsize << " ";
-        *m_txt_ohandle << m_ysize << " ";
-        *m_txt_ohandle << m_zsize << " ";
+        *m_txt_ohandle << m_x_out << " ";
+        *m_txt_ohandle << m_y_out << " ";
+        *m_txt_ohandle << m_z_out << " ";
         *m_txt_ohandle << m_totsize << std::endl;
     }
 
@@ -3090,7 +3082,7 @@ void file_store::get_image( int id, EMData* padfft )
             m_txt_ifs >> m_pixel >> m_voltage;
             m_txt_ifs >> m_ctf_applied >> m_amp_contrast;
             m_txt_ifs >> defocus >> phi >> theta >> psi;
-            m_txt_ifs >> m_xsize >> m_ysize >> m_zsize >> m_totsize;
+            m_txt_ifs >> m_x_out >> m_y_out >> m_z_out >> m_totsize;
             m_defocuses.push_back( defocus );
             m_phis.push_back( phi );
             m_thetas.push_back( theta );
@@ -3126,11 +3118,11 @@ void file_store::get_image( int id, EMData* padfft )
         throw std::logic_error( "eof happen" );
     }
 
-    if( padfft->get_xsize() != m_xsize ||
-        padfft->get_ysize() != m_ysize ||
-        padfft->get_zsize() != m_zsize )
+    if( padfft->get_xsize() != m_x_out ||
+        padfft->get_ysize() != m_y_out ||
+        padfft->get_zsize() != m_z_out )
     {
-        padfft->set_size(m_xsize, m_ysize, m_zsize);
+        padfft->set_size(m_x_out, m_y_out, m_z_out);
     }
 
     char* data = (char*)(padfft->get_data());

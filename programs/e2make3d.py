@@ -58,7 +58,7 @@ def main():
 	parser.add_option("--out", dest="filename", default="", help="Output 3D MRC file")
 	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct")
 	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction")
-	parser.add_option("--recon", dest="recon_type", default="fourier:mode=2", help="Reconstructor to use see e2help.py reconstructors -v")
+	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
 	parser.add_option("--quiet", dest="quiet", default=False, action="store_true",help="Quiet output")
 	parser.add_option("--hard", type=float, dest="hard", default=0, help="This specifies how well the class averages must match the model to be included")
 	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="Turn weighting off")
@@ -413,12 +413,13 @@ def fourier_reconstruction(options):
 	recon=Reconstructors.get(a[0], a[1])
 	params = recon.get_params()
 	(xsize, ysize ) = gimme_image_dimensions( options.input_file );
-	params["in_x"] = xsize;
-	params["in_y"] = ysize;
+	params["x_in"] = xsize;
+	params["y_in"] = ysize;
 	params["sym"] = options.sym
 	if options.pad:
-		if ( options.pad < params["size"] ):
-			print "You specified a padding of %d which is less than the image size %d, so no action is taken" %(options.pad, params["size"])
+		if ( options.pad < params["x_in"] or options.pad < params["y_in"] ):
+			print "You specified a padding of %d which is less than the image dimensions size %d x %d, so no action is taken" %(options.pad, params["x_in"], params["y_in"])
+			exit(1)
 		else:
 			params["pad"] = options.pad
 	recon.insert_params(params)
@@ -455,6 +456,8 @@ def fourier_reconstruction(options):
 				num_img=image.get_attr("ptcl_repr") 
 				if (num_img<=0 and options.no_wt == False):
 					continue
+				else:
+					num_img = 1
 				
 				weight = 1;
 				if ( options.no_wt == False ):
@@ -470,8 +473,7 @@ def fourier_reconstruction(options):
 				recon.determine_slice_agreement(image,transform,num_img)
 				sys.stdout.write(".")
 				sys.stdout.flush()
-				
-				
+	
 			print " Done"
 
 		idx = 0
@@ -492,6 +494,8 @@ def fourier_reconstruction(options):
 			param["weight"] = weight
 			recon.insert_params(param) # this inserts the incoming parameter, but doesn't do anything to parameters already stored
 			
+			
+			#print "using weight %d" %(weight)
 			#if (j==3 and recon.get_params()["dlog"]):
 				#image.process_inplace("math.log")
 
