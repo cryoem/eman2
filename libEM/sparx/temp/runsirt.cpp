@@ -17,6 +17,9 @@ int main(int argc, char ** argv)
    MPI_Comm comm = MPI_COMM_WORLD;
    int ncpus, mypid, ierr, mpierr=0;
    int nloc, maxit = 0; 
+   float lam = 0.0, tol = 0.0;
+   char symstr[10]="none";
+   std::string symmetry;
    double t0;
    FILE *fp;
 
@@ -36,7 +39,10 @@ int main(int argc, char ** argv)
          printf("Usage: runsirt -data=<imagestack> ");
          printf("-param=<paramter file that contains angles & shifts> "); 
          printf("-out=<output filename base string> ");
-         printf("-maxit=<max number of iterations");
+         printf("-maxit=<max number of iterations> ");
+         printf("-lam=<lambda> ");
+         printf("-tol=<convergence tolerance> ");
+         printf("-sym=<symmtry> \n");
      }
      ierr = MPI_Finalize();
      exit(1);
@@ -54,6 +60,15 @@ int main(int argc, char ** argv)
       }
       else if ( !strncmp(argv[ia],"-maxit",6) ) {
          maxit = atoi(&argv[ia][7]);
+      }
+      else if ( !strncmp(argv[ia],"-lam",4) ) {
+         lam = atof(&argv[ia][5]);
+      }
+      else if ( !strncmp(argv[ia],"-tol",4) ) {
+         tol = atof(&argv[ia][5]);
+      }
+      else if ( !strncmp(argv[ia],"-sym",4) ) {
+         strcpy(symstr, &argv[ia][5]);
       }
       else {
          if (mypid ==0) printf("invalid option: %s\n", argv[ia]);
@@ -118,9 +133,22 @@ int main(int argc, char ** argv)
 
    // set SIRT parameters
    if (maxit == 0) maxit = 10;
-   float lam = 5.0e-6;
-   float tol = 1.0e-3;
-   std::string symmetry = "c1";
+   if (lam == 0.0) lam = 5.0e-6;
+   if (tol == 0.0) tol = 1.0e-3;
+   if ( !strncmp(symstr,"none",4) ) {
+      symmetry = string("c1");
+   }
+   else {
+      symmetry = string(symstr);
+   }
+   // write out all options 
+   if (mypid == 0) {
+      printf("SIRT options used:\n");
+      printf("maxit = %d\n", maxit);
+      printf("lam   = %11.3e\n", lam);
+      printf("tol   = %11.3e\n", tol);
+      printf("sym   = %s\n", symmetry.c_str()); 
+   }
 
    // call SIRT to reconstruct
    recons3d_sirt_mpi(comm, cleanimages, angleshift, xvol, nloc, ri, 
