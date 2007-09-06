@@ -225,8 +225,10 @@ class TestEMData(unittest.TestCase):
 		# added by d.woolford - tests each possible scenario fairly rigorously
 		# by comparing the clip_inplace result against the get_clip result 
 		# pixel by pixel
+        size = 8
+
         e = EMData()
-        e.set_size(16,16,16)
+        e.set_size(size,size,size)
         e.to_zero()
         e.process_inplace("testimage.noise.uniform.rand")
 
@@ -236,13 +238,13 @@ class TestEMData(unittest.TestCase):
 					for l in range(-1,2):
 						for m in range(-1,2):
 							for n in range(-1,2):
-								region = Region(i,j,k,16+l,16+m,16+n)
+								region = Region(i,j,k,size+l,size+m,size+n)
 								f = e.copy()
 								g = e.get_clip(region)
 								f.clip_inplace(region)
-								for r in range(16+n):
-									for s in range(16+m):
-										for t in range(16+l):
+								for r in range(size+n):
+									for s in range(size+m):
+										for t in range(size+l):
 											self.assertEqual(g.get_3dview()[r][s][t], f.get_3dview()[r][s][t])
 
         region = Region(0,0,0,-1,1,1)

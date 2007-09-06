@@ -263,45 +263,44 @@ def back_projection_reconstruction(options):
 	if not(options.quiet):
 		print "Initializing the reconstructor"
 
-	print "1"
 	a = parsemodopt(options.recon_type)
-	print "2"
+
 	recon=Reconstructors.get(a[0], a[1])
-	print "3"
+
 	params = recon.get_params()
-	params["size"] = gimme_global_pixel_dimension( options.input_file )
+	(xsize, ysize ) = gimme_image_dimensions( options.input_file );
+	if ( xsize != ysize ):
+		print "Error, back space projection currently only works for images with uniform dimensions"
+		exit(1)
+		
+	params["size"] = xsize;
+	params["sym"] = options.sym
+
 	recon.insert_params(params)
-	
-	print "Calling setup"
+
 	recon.setup()
-	
-	
-	
-	[particle_number, total_images] = gimme_stats( options.input_file )
+
+	total_images=EMUtil.get_image_count(options.input_file)
 	
 	for i in xrange(total_images):
-		
 		d=EMData().read_images(options.input_file, [i])[0]
 		
-		if (d.get_attr("ptcl_repr")<=0):
+		num_img=d.get_attr("ptcl_repr") 
+		if ( num_img<=0 and options.no_wt == False):
 			continue
-		
-		t = Transform3D(d.get_attr("euler_az"), d.get_attr("euler_alt"), d.get_attr("euler_phi"))
-		# The transpose is the inverse in this instance because the matrix consists of rotations
-		# only. Calculating the transpose is important, if this doesn't happen the reconstruction
-		# is off.
-		t.transpose();
+		else:
+			num_img = 1
 		
 		if ( options.no_wt == False ):
-			weight = float (d.get_attr("ptcl_repr"))/particle_number
-			param = {}
-			param["weight"] = weight
-			recon.insert_params(param) # this inserts that parameter, maintaining what's already there
-			#recon.print_params()
-			
+			weight = float (num_img)
+		
+		param = {}
+		param["weight"] = weight
+		recon.insert_params(param)
+		
+		t = Transform3D(d.get_attr("euler_az"), d.get_attr("euler_alt"), d.get_attr("euler_phi"))
 		recon.insert_slice(d, t)
 
-	
 		if not(options.quiet):
 			print "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g" %(
 					(i+1,total_images,d.get_attr("IMAGIC.imgnum"),
@@ -310,65 +309,33 @@ def back_projection_reconstruction(options):
 					d.get_attr("euler_phi"),
 					d.get_attr("maximum"),d.get_attr("minimum")))
 		
-	tmp=recon.finish()
-	tmp.process_inplace("normalize")
+	output=recon.finish()
+	#tmp.process_inplace("normalize")
 #    output.process_inplace("math.sqrt")  #right processor?
 
-	# Apply symmetry
-	if not(options.sym=="UNKNOWN"):
-		print "Applying %s symmetry" % options.sym
 	
-	# Get ready to start inserting pixel values into the output
-	output = EMData(tmp.get_xsize(), tmp.get_ysize(), tmp.get_zsize())
-	transform=Transform3D(0,0,0)
-	# If you don't call to_identity there seems to be some tiny residuals in the off center entries here
-	transform.to_identity()
-	for i in xrange(0,Transform3D.get_nsym(options.sym)):
-		employ_sym_with_the_highest_accuracy = True
-		if employ_sym_with_the_highest_accuracy:
-			t=transform.get_sym(options.sym, i)
-			print repr(i+1)+" "+repr(t.get_rotation())
-			# I am now using three 3D volumes, this is a lot of memory and could be problematic
-			# If this does indeed become a problem it would be possible to reduce the need of 
-			# on one of these volumes by figuring out the difference in successive transforms
-			# just as embodied in the else statement just below, but for some reason
-			# it is not working very accurately, probably because of the many rotations
-			# that have to be applied to the 3D volume to ensure it is reusable
-			tmpcopy = tmp.copy()
-			tmpcopy.rotate(t)
-			#tmpcopy.rotate(t.inverse())
-			#tmpcopy.rotate(t)
-			output.add(tmpcopy)
-		else:
-			t=transform.get_sym(options.sym, i)
-			tmp.rotate(t)
-			output.add(tmp)
-			tmp.rotate(t.inverse())
-			
-	output.div(1.0*Transform3D.get_nsym(options.sym))
-	
-	# merging steps
-	if (options.fftmerge):
-		print "Merging Models"
-		ny = out.get_ysize()
+	## merging steps
+	#if (options.fftmerge):
+		#print "Merging Models"
+		#ny = out.get_ysize()
 
-		d0=EMData().read_images(options.fftmerge,[0])
-		f0=d0.do_fft()
-		f1=output.do_fft()
+		#d0=EMData().read_images(options.fftmerge,[0])
+		#f0=d0.do_fft()
+		#f1=output.do_fft()
 	
-		for k in xrange(-ny/2,ny/2):
-			g=k
-			for j in xrange(-ny/2,ny/2):
-				for i in xrange(ny/2+1):
-					r=(k**2+j**2+i**2)**.5
-					if r==0 or r>ny/2:
-						f0.set_value_at(g,0)
-						continue
-					f0.set_value_at(g, f0.get_value_at(g)*r*2/ny+f1.get_value_at(g)*(1.0-r*2/ny))
-					g=g+2
+		#for k in xrange(-ny/2,ny/2):
+			#g=k
+			#for j in xrange(-ny/2,ny/2):
+				#for i in xrange(ny/2+1):
+					#r=(k**2+j**2+i**2)**.5
+					#if r==0 or r>ny/2:
+						#f0.set_value_at(g,0)
+						#continue
+					#f0.set_value_at(g, f0.get_value_at(g)*r*2/ny+f1.get_value_at(g)*(1.0-r*2/ny))
+					#g=g+2
 
-		output2=f0.do_ift()
-		output2.write_image(options.fftmerge)
+		#output2=f0.do_ift()
+		#output2.write_image(options.fftmerge)
 		
 	return output
 

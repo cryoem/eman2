@@ -75,7 +75,9 @@ namespace EMAN
 	{
 	  public:
 		inline ReconstructorVolumeData() : image(0), tmp_data(0), nx(0), ny(0), nz(0) {}
-		virtual ~ReconstructorVolumeData() { free_memory(); }		
+		virtual ~ReconstructorVolumeData() { free_memory(); }
+		
+		const EMData* const get_emdata() { return image; }
 	  protected: 
 		EMData* image;
 		//tmp_data is the substitute of misused parent in reconstruction
@@ -85,7 +87,7 @@ namespace EMAN
 		int nx;
 		int ny;
 		int nz;
-
+		
 	  protected:
 		void free_memory()
 		{
@@ -361,13 +363,6 @@ namespace EMAN
 		*/
 		virtual int insert_slice(const EMData* const slice, const Transform3D & t3d);
 		
-		// these functions are for testing purposes
-#if RECONSTRUCTOR_TOOLS_TESTING
-		bool do_insert_remove_test(const EMData* const input_slice, const Transform3D & arg);
-		int remove_slice(const EMData* const input_slice, const Transform3D & arg);
-		bool test_pixel_wise_zero(const EMData* const input_slice, const Transform3D & arg);
-#endif
-		
 		/** Determine slice agreement with the current reconstruction
 		* @return 0 if successful, 1 otherwise
 		* @param input_slice the image slice to compared against the 3D volume
@@ -433,6 +428,8 @@ namespace EMAN
 			d.put("t_emm", EMObject::BOOL, "Optional. Read as tomo edge mean mask - experimental, default false");
 			d.put("t_emm_gauss", EMObject::INT, "Optional. An optional gaussain fall off for tomo_mask" );
 			d.put("dlog", EMObject::BOOL, "Optional. This is a residual parameter from EMAN1 that has not yet been addressed in the EMAN2 implementation.");
+			d.put("quiet", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
+			d.put("3damp", EMObject::BOOL, "Optional. Toggles writing the 3D FFT amplitude image. Default is false.");
 			return d;
 		}
 
@@ -487,7 +484,9 @@ namespace EMAN
 			params["tomo_mask"] = false;
 			params["t_emm"] = false;
 			params["edgenorm"] = true;
-			params["t_emm_gauss"] = 10; 
+			params["t_emm_gauss"] = 10;
+			params["quiet"] = false;
+			params["3damp"] = false;
 		}
 
 		/** Frees the memory owned by this object (but not parent objects)
@@ -637,9 +636,10 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("size", EMObject::INT);
-			d.put("weight", EMObject::FLOAT);
-			d.put("use_weights", EMObject::BOOL);
+			d.put("size", EMObject::INT, "Necessary. The x and y dimensions of the input images.");
+			d.put("weight", EMObject::FLOAT, "Optional. A temporary value set prior to slice insertion, indicative of the inserted slice's weight. Default sis 1.");
+			d.put("sym", EMObject::STRING, "Optional. The symmetry to impose on the final reconstruction. Default is c1");
+			d.put("zsample", EMObject::INT, "Optional. The z dimensions of the reconstructed volume.");
 			return d;
 		}
 	  private:
@@ -653,6 +653,8 @@ namespace EMAN
 			params["weight"] = 1.0; 
 			params["use_weights"] = true;
 			params["size"] = 0;
+			params["sym"] = "c1";
+			params["zsample"] = 0;
 		}
 		
 		EMData* preprocess_slice(const EMData* const slice);

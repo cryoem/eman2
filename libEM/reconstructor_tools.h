@@ -46,59 +46,8 @@ using std::cout;
 using std::endl;
 
 
-// Change this to 1 to enable the use of the PixelOperation structs for pixel insertion
-// If the PixelOperation classes are being used, then you probably want to use 
-// FourierReconstructor::do_insert_remove_test, FourierReconstructor::remove_slice
-// and FourierReconstructor::test_pixel_wise_zero
-// Keep at 0 to avoid an extra function call and get a (slight) performance boost.
-#define RECONSTRUCTOR_TOOLS_TESTING 0
-
 namespace EMAN
 {
-#if RECONSTRUCTOR_TOOLS_TESTING
-	/** PixelOperation is an abstract class that PixelAddOperation and PixelMinusOperation derive from
-	 * These classes are used as members FourierPixelInserter3D to enable the insertion operation
-	 * to switch from subtraction to addition
-	 */
-	struct PixelOperation
-	{
-		virtual ~PixelOperation() {}
-
-		/** Perform an operation on target memory using a given value
-		 *@param target The memory location the data to operate on
-		 *@param value The value to use as the basis of the operation
-		 */
-		virtual void operate( float* const target, const float& value ) = 0;
-
-		/** Operator() is an alternative way to call operate
-		 *@param target The memory location the data to operate on
-		 *@param value The value to use as the basis of the operation
-		 *@return The value stored in the target memory after the operation has been performed
-		 */
-		float& operator()(float* const target, const float& value) { operate(target,value); return *target; }
-	};
-
-	/** PixelAddOperation - encapsulates the the concept of +=
-	 * see PixelOperation comments for details.
-	 */
-	struct PixelAddOperation : public PixelOperation
-	{
-		virtual ~PixelAddOperation() {};
-
-		virtual void operate( float* const target, const float& value ) { *target += value; }
-	};
-
-	/** PixelAddOperation - encapsulates the the concept of -=
-	 * see PixelOperation comments for details.
-	 */
-	struct PixelMinusOperation : public PixelOperation
-	{
-		virtual ~PixelMinusOperation() {};
-
-		virtual void operate( float* const target, const float& value ) { *target -= value; }
-	};
-	
-#endif //RECONSTRUCTOR_TOOLS_TESTING
 	
 	/** FourierPixelInserter3D class defines a way a continuous pixel in 3D
 	 * is inserted into the discrete 3D volume - there are various schemes for doing this
@@ -150,12 +99,7 @@ namespace EMAN
 		/** Construct a FourierPixelInserter3D
 		 */
 		FourierPixelInserter3D() : norm(0), rdata(0), nx(0), ny(0), nz(0), nxy(0)
-		{
-#if RECONSTRUCTOR_TOOLS_TESTING
-			pixel_operation = new PixelAddOperation;
-			other_pixel_operation = new PixelMinusOperation;
-#endif //RECONSTRUCTOR_TOOLS_TESTING
-		}
+		{}
 		
 		/** Desctruct a FourierPixelInserter3D
 		 */
@@ -203,35 +147,7 @@ namespace EMAN
 		* @return A boolean that indicates the pixel has been inserted (or not)
 		 */
 		virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight) = 0;
-		
-		
-#if RECONSTRUCTOR_TOOLS_TESTING
-		/** set_pixel_minus_operation makes the default pixel insertion operation to mimic -=
-		* This function is useful when a pixel (more specifically all of the pixels in a slice) needs to be removed from a volume
-		* while maintaining the other contents of the volume. Originally added for testing purposes.
-		 */	
-		void set_pixel_minus_operation()
-		{
-			free_memory();
-			pixel_operation = new PixelMinusOperation;
-			other_pixel_operation = new PixelAddOperation;
-		}
-
-		/** set_pixel_add_operation makes the default pixel insertion operation to mimic +=
-		* The default behaviour of this class is to always add the incoming pixel to the volume,
-		* however sometimes it might be necessary to switch between adding and subtracting pixels
-		* from the volume, so if the client ever calls set_pixel_minus_operation they can switch
-		* back to additive behavior by calling this function
-		 */	
-		void set_pixel_add_operation()
-		{
-			free_memory();
-			pixel_operation = new PixelAddOperation;
-			other_pixel_operation = new PixelMinusOperation;
-		}
-#endif //RECONSTRUCTOR_TOOLS_TESTING
-
-		
+	
 		/** Get the FourierPixelInserter3D's name. Each FourierPixelInserter3D is
 		* identified by a unique name, them being (strings) 1,2,3,4,5,6 and 7
 		* @return The FourierPixelInserter3D's ID.
@@ -261,13 +177,6 @@ namespace EMAN
 		
 			/// Image volume data sizes, and nxy a convenience variable used here and there
 			int nx, ny, nz, nxy;
-#if RECONSTRUCTOR_TOOLS_TESTING
-			/// A pixel operation, which is addition by default, but which can be changed to subtraction etc.
-			PixelOperation* pixel_operation;
-
-			/// Minus pixel operation is a hack needed to for inserter modes 5,6 and 7.
-			PixelOperation* other_pixel_operation;
-#endif //RECONSTRUCTOR_TOOLS_TESTING
 		
 			/// A measure of tolerance used when testing to see if pixels are zero when calling effected_pixels_are_zero
 			static float tolerance;
@@ -278,18 +187,6 @@ namespace EMAN
 		
 			void free_memory()
 			{
-#if RECONSTRUCTOR_TOOLS_TESTING
-				if ( pixel_operation != 0 )
-				{
-					delete pixel_operation;
-					pixel_operation = 0;
-				}
-				if ( other_pixel_operation != 0 )
-				{
-					delete other_pixel_operation;
-					other_pixel_operation = 0;
-				}
-#endif //RECONSTRUCTOR_TOOLS_TESTING
 			}
 	};
 	
