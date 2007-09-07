@@ -53,7 +53,6 @@ def main():
 	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_option("--align",type="string",help="The name of an 'aligner' to use prior to comparing the images", default=None)
 	parser.add_option("--aligncmp",type="string",help="Name of a 'cmp' to be used in the aligner",default="dot")
-	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
@@ -65,16 +64,10 @@ def main():
 	
 	E2n=E2init(sys.argv)
 	
-	print options.align
-	print options.aligncmp
-	print options.cmp
-	
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
 	options.cmp=parsemodopt(options.cmp)
-	
-	print "done"
-	
+
 	clen=EMUtil.get_image_count(args[0])
 	rlen=EMUtil.get_image_count(args[1])
 	
@@ -120,6 +113,7 @@ def main():
 		
 		if options.saveali :
 			for c,v in enumerate(row):
+				#print "%f %f %f " %(v[1],v[2],v[3])
 				mxout.set_value_at(c,r,1,v[1])
 				mxout.set_value_at(c,r,2,v[2])
 				mxout.set_value_at(c,r,3,v[3])
@@ -140,9 +134,10 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{})):
 	
 	ret=[None for i in reflist]
 	for i,r in enumerate(reflist):
-		if align[0] : 
+		if align[0] :
 			ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
-			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),ta.get_attr_default("translational.dx",0),ta.get_attr_default("translational.dy",0),ta.get_attr_default("rotational",0))
+			#ta.debug_print_params()
+			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),ta.get_attr_default("align.dx",0),ta.get_attr_default("align.dy",0),ta.get_attr_default("align.az",0))
 		else : 
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0)
 		

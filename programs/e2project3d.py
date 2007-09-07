@@ -147,6 +147,8 @@ def main():
 		print "ERROR: Atleast one of the sym or random arguments must be given"
 		exit(1)
 
+	data = EMData()
+	data.read_image(args[0])
 	# generate and save all the projections to disk - that's it, that main job is done
 	generate_and_save_projections(options, data, eulers, options.smear, options.phitoo)
 	

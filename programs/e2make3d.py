@@ -268,7 +268,7 @@ def back_projection_reconstruction(options):
 	recon=Reconstructors.get(a[0], a[1])
 
 	params = recon.get_params()
-	(xsize, ysize ) = gimme_image_dimensions( options.input_file );
+	(xsize, ysize ) = gimme_image_2dimensions( options.input_file );
 	if ( xsize != ysize ):
 		print "Error, back space projection currently only works for images with uniform dimensions"
 		exit(1)
@@ -338,37 +338,6 @@ def back_projection_reconstruction(options):
 		#output2.write_image(options.fftmerge)
 		
 	return output
-
-
-# Get the uniform dimension of the (square) input images. For instance
-# if the images are all 128x128 this will return 128. If the dimensions of the
-# images are not uniform an error is printed and the program exits.
-# FIXME: Will support be added for non-square volumes?
-def gimme_image_dimensions( imagefilename ):
-	
-	#pdb.set_trace()
-	
-	read_header_only = True
-	e = EMData();
-	images = e.read_images(imagefilename,[], read_header_only)
-	
-	xsize = images[0].get_xsize()
-	ysize = images[0].get_ysize()
-	
-	
-	for i in range(1,len(images)):
-		if (images[i].get_xsize() != xsize):
-			print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
-			print "Image %d x dimension does not match that of image 0 ( %d != %d )" % (images[i].get_xsize(), xsize)
-			exit(1)
-		if (images[i].get_ysize() != ysize):
-			print "ERROR: make3d does not currently support the reconstruction of images that do not have uniform dimensions"
-			print "Image %d y dimension does not match that of image 0 ( %d != %d )" % (images[i].get_ysize(), ysize)
-			exit(1)
-			
-	
-	# if we make it here all the image dimensions are uniform and equal in all directions, it is safe to return xsize or ysize
-	return (xsize, ysize)
 		
 #----------------------------------------- works
 def fourier_reconstruction(options):
@@ -379,7 +348,7 @@ def fourier_reconstruction(options):
 	a = parsemodopt(options.recon_type)
 	recon=Reconstructors.get(a[0], a[1])
 	params = recon.get_params()
-	(xsize, ysize ) = gimme_image_dimensions( options.input_file );
+	(xsize, ysize ) = gimme_image_2dimensions( options.input_file );
 	params["x_in"] = xsize;
 	params["y_in"] = ysize;
 	params["sym"] = options.sym
