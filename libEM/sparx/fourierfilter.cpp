@@ -410,19 +410,19 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						case TANH_LOW_PASS : 
 							argx= sqrt(argx); 
 							fp->cmplx(ix,iy,iz) *= 
-								0.5f*(tanh(cnst*(argx+omega)))-tanh(cnst*(argx-omega)); break;
+								0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
 						case TANH_HIGH_PASS: 
 							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
-								1.0f-0.5f*(tanh(cnst*(argx+omega)))-tanh(cnst*(argx-omega)); break;
+								1.0f-0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
 						case TANH_HOMOMORPHIC: 
 							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
-								1.0f-gamma*0.5f*(tanh(cnst*(argx+omega)))-tanh(cnst*(argx-omega)); break;
+								1.0f-gamma*0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
 						case TANH_BAND_PASS: 
 							argx= sqrt(argx); 
 							fp->cmplx(ix,iy,iz) *= 
-								0.5f*(tanh(cnstH*(argx+omegaH)))-tanh(cnstH*(argx-omegaH)-tanh(cnstL*(argx+omegaL)))+tanh(cnstL*(argx-omegaL)); break;
+								0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL))); break;
 						case RADIAL_TABLE:
 						{
 							float rf = sqrt( argx )*2.0f*lsd2;
