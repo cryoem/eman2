@@ -585,8 +585,9 @@ EMData* EMData::rotavg_i() {
 	}
 
 	avg1D = rotavg();
-	float padded_value = 0.0, number_of_pixel = 0.0, r, frac;
+	float padded_value = 0.0, r;
 	int i, j, k, ir;
+	long int number_of_pixels = 0;
 	for ( k = -nz/2; k < nz/2 + nz%2; k++) {
 		if (abs(k) > rmax) continue;
 		for ( j = -ny/2; j < ny/2 + ny%2; j++) {
@@ -595,34 +596,60 @@ EMData* EMData::rotavg_i() {
 				r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
 				ir = int(r);
 				if (ir > rmax || ir < rmax-2 ) continue ;				 
-				else
-      					{
-	      					padded_value += (*avg1D)(ir) ;
-	      					number_of_pixel += 1.0 ;
-					}
+				else {
+	      				padded_value += (*avg1D)(ir) ;
+	      				number_of_pixels++ ;
+				}
 			}
 		}
 	}
-	padded_value /= number_of_pixel ;
-	for ( k = -nz/2; k < nz/2 + nz%2; k++) 
-	{
-		for ( j = -ny/2; j < ny/2 + ny%2; j++) 
-			{
-					for ( i = -nx/2; i < nx/2 + nx%2; i++) 
-					{
-						r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
-						ir = int(r);
-						if (ir >= rmax) (*result)(i,j,k) = padded_value ;
-						else  
-						{
-							frac = r - float(ir); 
-							(*result)(i,j,k) = (*avg1D)(ir)*(1.0f - frac)+(*avg1D)(ir+1)*frac;
-						}	
-						
-					}
+	padded_value /= number_of_pixels;
+	for ( k = -nz/2; k < nz/2 + nz%2; k++) {
+		for ( j = -ny/2; j < ny/2 + ny%2; j++) {
+			for ( i = -nx/2; i < nx/2 + nx%2; i++)  {
+				r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+				ir = int(r);
+				if (ir >= rmax) (*result)(i,j,k) = padded_value ;
+				else            (*result)(i,j,k) = (*avg1D)(ir)+((*avg1D)(ir+1)-(*avg1D)(ir))*(r - float(ir));
+				
 			}
+		}
 	}				
+	result->update();
 	result->set_array_offsets(0,0,0);
+	EXITFUNC;
+	return result;
+}
+
+
+EMData* EMData::mult_radial(EMData* radial) {
+
+	ENTERFUNC;
+	if ( ny == 1 && nz == 1 ) {
+		LOGERR("Input image must be 2-D or 3-D!");
+		throw ImageDimensionException("Input image must be 2-D or 3-D!");
+	}
+
+	EMData* result = this->copy_head();
+
+	result->to_zero();
+	result->set_array_offsets(-nx/2, -ny/2, -nz/2);
+	this->set_array_offsets(-nx/2, -ny/2, -nz/2);
+	int rmax = radial->get_xsize();
+	int i, j, k, ir;
+	float r;
+	for ( k = -nz/2; k < nz/2+nz%2; k++) {
+		for ( j = -ny/2; j < ny/2+ny%2; j++) {
+			for ( i = -nx/2; i < nx/2+nx%2; i++)  {
+				r = std::sqrt(float(k*k) + float(j*j) + float(i*i));
+				ir = int(r);
+				if(ir < rmax-1)  (*result)(i,j,k) = (*this)(i,j,k) * ((*radial)(ir)+((*radial)(ir+1)-(*radial)(ir))*(r - float(ir)));
+			}
+		}
+	}			
+	result->update();
+	result->set_array_offsets(0,0,0);
+	this->set_array_offsets(0,0,0);
 	EXITFUNC;
 	return result;
 }
@@ -964,8 +991,7 @@ EMData* EMData::average_circ_sub() const
 //  Helper functions for method nn
 
 
-void EMData::onelinenn(int j, int n, int n2, 
-		       EMData* wptr, EMData* bi, const Transform3D& tf)
+void EMData::onelinenn(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf)
 {   
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;
@@ -1028,8 +1054,7 @@ void EMData::onelinenn(int j, int n, int n2,
 }
 
 
-void EMData::onelinenn_mult(int j, int n, int n2, 
-		       EMData* wptr, EMData* bi, const Transform3D& tf, int mult)
+void EMData::onelinenn_mult(int j, int n, int n2, EMData* wptr, EMData* bi, const Transform3D& tf, int mult)
 {   
         //std::cout<<"   onelinenn  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 	int jp = (j >= 0) ? j+1 : n+j+1;

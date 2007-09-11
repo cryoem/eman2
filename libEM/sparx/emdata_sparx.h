@@ -78,6 +78,12 @@ EMData* rotavg();
  */					
 EMData* rotavg_i();
 
+/** Multiply radially a 2-D or 3-D image by a 1-D image.
+ * @exception ImageDimensionException If 'this' image is 1D.
+ * @return 2-D or 3-D radially multiplied image
+ */					
+EMData* mult_radial(EMData* radial);
+
 /** Calculates the Center of Gravity 
  *  and the Radius of Gyration of the image.
  *  @returns the mass and the radius as vectors.
