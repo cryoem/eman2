@@ -43,6 +43,8 @@
 #include <iomanip>
 #include <sstream>
 
+#include <algorithm>
+// using accumulate, inner_product, transform
 
 #include <sys/types.h>
 #include <gsl/gsl_linalg.h>
@@ -748,7 +750,56 @@ void Util::find_min_and_max(const float *data, size_t nitems,
 
 }
 
-
+Dict Util::get_stats( const vector<float>& data )
+{
+	// Note that this is a heavy STL approach using generic algorithms - some memory could be saved
+	// using plain c style code.
+	
+	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
+	
+	double sum = accumulate(data.begin(), data.end(), 0.0);
+	
+	double mean = sum / static_cast<double> (data.size());
+	
+	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0;
+	
+	if (data.size() > 1)
+	{
+		// read mm is "minus_mean"
+		vector<double> data_mm(data.size());
+		// read ts as "then squared"
+		vector<double> data_mm_ts(data.size());
+		
+		// Subtract the mean from the data and store it in data_mm
+		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd( std::minus<double>(), mean));
+		
+		// Get the square of the data minus the mean and store it in data_mm_ts
+		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_ts.begin(), std::multiplies<double>());
+		
+		// Get the sum of the squares for the calculation of the standard deviation
+		double square_sum = accumulate(data_mm_ts.begin(), data_mm_ts.end(), 0.0);
+		
+		std_dev = sqrtf(square_sum)/ static_cast<double>(data.size()-1);
+		double std_dev_sq = std_dev * std_dev;
+		
+		double cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_ts.begin(), 0.0);
+		double quartic_sum = inner_product(data_mm_ts.begin(), data_mm_ts.end(),data_mm_ts.begin(), 0.0);
+		
+		// I got these definitions of skewness and kurtosis from
+		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
+		skewness = cubic_sum / (static_cast<double>(data.size()-1) * std_dev_sq * std_dev );
+		kurtosis = quartic_sum / (static_cast<double>(data.size()-1) * std_dev_sq * std_dev_sq );
+		
+	}
+	
+	Dict parms;
+	parms["mean"] = mean;
+	parms["std_dev"] = std_dev;
+	parms["skewness"] = skewness;
+	parms["kurtosis"] = kurtosis;
+	
+	return parms;
+}
 
 int Util::calc_best_fft_size(int low)
 {

@@ -43,7 +43,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """%prog [options] <c input> <r input> <output>
-	Computes a similarity matrix between c-input (col) and r-input (row) stacks of 2-D images. Images may
+	Computes a similarity matrix between c-input (col - projections) and r-input (row - particles) stacks of 2-D images. Images may
 	optionally be aligned before comparison. Output is a matrix stored as an image with similarity value
 	pairs. When used for classifiaction, c input is the references and r input are the particles."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
@@ -52,8 +52,8 @@ def main():
 	#parser.add_option("--box", "-B", type="string", help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_option("--align",type="string",help="The name of an 'aligner' to use prior to comparing the images", default=None)
-	parser.add_option("--aligncmp",type="string",help="Name of a 'cmp' to be used in the aligner",default="dot")
-	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to in comparing the aligned images", default="dot:normalize=1")
+	parser.add_option("--aligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
+	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
 	parser.add_option("--verbose","-v",action="store_true",help="Verbose display during run",default=False)
@@ -61,6 +61,9 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if len(args)<3 : parser.error("Input and output files required")
+	
+	if os.path.exists(args[2]):
+		parser.error("File %s exists, will not write over, exiting" %args[2])
 	
 	E2n=E2init(sys.argv)
 	

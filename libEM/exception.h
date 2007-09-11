@@ -356,6 +356,18 @@ namespace EMAN {
 	};
 #define InvalidParameterException(desc) _InvalidParameterException(__FILE__, __LINE__, desc)
 
+	/** Used when an argument container is empty, such as a vector
+	*/
+	class _EmptyContainerException : public E2Exception
+	{
+		public:
+			_EmptyContainerException(const string& file = "unknown",
+									   int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str) {}
+		
+			const char *name() const { return "Empty container"; }
+	};
+#define EmptyContainerException(desc) _EmptyContainerException(__FILE__, __LINE__, desc)
 }
     
     

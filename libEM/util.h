@@ -147,7 +147,7 @@ namespace EMAN
 		 */
 		static string get_line_from_string(char **str);
 
-		/* Extract the float value from a variable=value string
+		/** Extract the float value from a variable=value string
 		 * with format like "XYZ=1.1", 
 		 * where 'str' is "XYZ=1.1"; 'float_var' is "XYZ=";
 		 * 'p_val' points to float number 1.1.
@@ -161,7 +161,7 @@ namespace EMAN
 		static bool get_str_float(const char *str, const char *float_var, float *p_val);
 
 		
-		/* Extract the float values from a variable=value1,value2 string
+		/** Extract the float values from a variable=value1,value2 string
 		 * with format like "XYZ=1.1,1.2", 
 		 * where 'str' is "XYZ=1.1,1.2"; 'float_var' is "XYZ=";
 		 * 'p_v1' points to  1.1; 'p_v2' points to  1.2.
@@ -176,7 +176,7 @@ namespace EMAN
 		static bool get_str_float(const char *str, const char *float_var,
 								  float *p_v1, float *p_v2);
 	
-		/* Extract number of values and the float values, if any,
+		/** Extract number of values and the float values, if any,
 		 * from a string whose format is
 		 * either "variable=value1,value2 " or "variable".
 		 *
@@ -197,7 +197,7 @@ namespace EMAN
 		static bool get_str_float(const char *str, const char *float_var, 
 								  int *p_nvalues, float *p_v1, float *p_v2);
 
-		/* Extract the int value from a variable=value string
+		/** Extract the int value from a variable=value string
 		 * with format like "XYZ=1", 
 		 * where 'str' is "XYZ=1"; 'int_var' is "XYZ=";
 		 * 'p_val' points to float number 1.
@@ -210,7 +210,7 @@ namespace EMAN
 		 */
 		static bool get_str_int(const char *str, const char *int_var, int *p_val);
 		
-		/* Extract the int value from a variable=value1,value2 string
+		/** Extract the int value from a variable=value1,value2 string
 		 * with format like "XYZ=1,2", 
 		 * where 'str' is "XYZ=1,2"; 'int_var' is "XYZ=";
 		 * 'p_val' points to float number 1.
@@ -225,7 +225,7 @@ namespace EMAN
 		static bool get_str_int(const char *str, const char *int_var,
 								int *p_v1, int *p_v2);
 		
-		/* Extract number of values and the int values, if any,
+		/** Extract number of values and the int values, if any,
 		 * from a string whose format is
 		 * either "variable=value1,value2 " or "variable".
 		 *
@@ -482,6 +482,15 @@ namespace EMAN
 									 float *p_max_val, float *p_min_val,
 									 int *p_max_index = 0, int *p_min_index = 0);
 
+		
+		/** Get the mean, standard deviation, skewness and kurtosis of the input data
+		* @param data the vector of input data
+		* @exception EmptyContainerException when the argument vector is empty
+		*/
+		static Dict get_stats( const vector<float>& data );
+		
+		
+		
 		/** Search the best FFT size with good primes. It supports
 		 * FFT size up to 4096 now.
 		 *

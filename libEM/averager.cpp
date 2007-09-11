@@ -51,6 +51,15 @@ template <> Factory < Averager >::Factory()
 	force_add(&CtfCWautoAverager::NEW);
 }
 
+void Averager::mult(const float& s)
+{
+	if ( result != 0 )
+	{
+		result->mult(s);
+	}
+	else throw NullPointerException("Error, attempted to multiply the result image, which is NULL");
+}
+
 
 void Averager::add_image_list(const vector<EMData*> & image_list)
 {
@@ -60,11 +69,10 @@ void Averager::add_image_list(const vector<EMData*> & image_list)
 }
 
 ImageAverager::ImageAverager()
-	: result(0), sigma_image(0), nimg_n0(0), ignore0(0), nimg(0)
+	: sigma_image(0), nimg_n0(0), ignore0(0), nimg(0)
 {
 	
 }
-
 
 void ImageAverager::add_image(EMData * image)
 {
@@ -284,7 +292,7 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 }
 #endif
 
-IterationAverager::IterationAverager() : result(0), nimg(0)
+IterationAverager::IterationAverager() : nimg(0)
 {
 
 }
@@ -511,7 +519,7 @@ EMData *IterationAverager::average(const vector < EMData * >&image_list) const
 
 CtfAverager::CtfAverager() :
 	sf(0), curves(0), need_snr(false), outfile(0),
-	result(0), image0_fft(0), image0_copy(0), snri(0), snrn(0),
+	image0_fft(0), image0_copy(0), snri(0), snrn(0),
 	tdr(0), tdi(0), tn(0),
 	filter(0), nimg(0), nx(0), ny(0), nz(0)
 {

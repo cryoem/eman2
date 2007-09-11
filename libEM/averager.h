@@ -37,7 +37,9 @@
 #define eman_averager_h__ 1
 
 #include "emobject.h"
+#include "emdata.h"
 
+#include <vector>
 using std::vector;
 
 namespace EMAN
@@ -94,6 +96,8 @@ namespace EMAN
 	class Averager
 	{
 	  public:
+		Averager() : result(0) {}	
+		
 		virtual ~ Averager()
 		{
 		}
@@ -130,6 +134,16 @@ namespace EMAN
 		{
 			params = new_params;
 		}
+		
+		/** Multiply the result image by some floating point constant
+		 * This is useful when weighting the input images prior to 
+		 * calling add_image - a situation where it is likely you
+		 * want to divide by the sum of the weights. Hence call mult
+		 * after all of the weighted images have been added.
+		 * @param s the scaling factor.
+		 * @exception NullPointerException if the EMData pointer (result) is NULL
+		 */
+		virtual void mult(const float& s);
 
 		/** Get Averager  parameter information in a dictionary. Each
 		 * parameter has one record in the dictionary. Each record
@@ -142,9 +156,10 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
-
+		
 	  protected:
 		mutable Dict params;
+		EMData *result;
 	};
 
 	/** ImageAverager averages a list of images. It optionally makes
@@ -180,9 +195,10 @@ namespace EMAN
 			d.put("ignore0", EMObject::INT);
 			return d;
 		}
+		
+		virtual void mult(const float& s) { }
 
 	private:
-		EMData *result;
 		EMData *sigma_image;
 		int *nimg_n0;
 		int ignore0;
@@ -213,7 +229,6 @@ namespace EMAN
 			return new IterationAverager();
 		}
 	private:
-		EMData * result;
 		EMData * sigma_image;
 		int nimg;
 	};
@@ -239,7 +254,6 @@ namespace EMAN
 		const char *outfile;
 	  private:
 		mutable vector < float >snr;
-		EMData * result;
 		EMData * image0_fft;
 		EMData * image0_copy;
 		
