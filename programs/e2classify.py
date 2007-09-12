@@ -64,6 +64,12 @@ def main():
 
 	Simimg=EMData();
 	Simimg.read_image(args[0],0)
+	TransxImg=EMData();
+	TransxImg.read_image(args[0],1)
+	TransyImg=EMData();
+	TransyImg.read_image(args[0],2)
+	RotImg=EMData();
+	RotImg.read_image(args[0],3)
 	
 	
 #	Simimg=getImage(args[0],0);
@@ -79,11 +85,14 @@ def main():
 	
 	NumPeaks=min(options.sep,NumPart);
 	
-	simMatA   = [ range(NumPart) for j in range(NumProj)]
-	simMatB   = [ range(NumPart) for j in range(NumProj)]
-	ReturnVal = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnWt = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnPart = [ range(NumPeaks) for j in range(NumPart)]
+	simMatA       = [ range(NumPart) for j in range(NumProj)]
+	simMatB       = [ range(NumPart) for j in range(NumProj)]
+	ReturnVal     = [ range(NumPeaks) for j in range(NumPart)]
+	ReturnPart    = [ range(NumPeaks) for j in range(NumPart)]
+	ReturnWt      = [ range(NumPeaks) for j in range(NumPart)]
+	ReturnTransx  = [ range(NumPeaks) for j in range(NumPart)]
+	ReturnTransy  = [ range(NumPeaks) for j in range(NumPart)]
+	ReturnRot     = [ range(NumPeaks) for j in range(NumPart)]
 	
 	for iPart in range(NumPart):
 		for iProj in range(NumProj):
@@ -115,8 +124,12 @@ def main():
 		vvCp.reverse();
 		vvIndices=[ vv.index(vvCp[j]) for j in range(NumPeaks)];
 		for iPeaks in range(NumPeaks):
-			ReturnVal[iPart][iPeaks]= vvCp[iPeaks];
-			ReturnPart[iPart][iPeaks] = vvIndices[iPeaks];
+			RelProj             =     vvIndices[iPeaks];
+			ReturnPart[iPart][iPeaks] = RelProj;
+			ReturnVal[iPart][iPeaks]  = vvCp[iPeaks];
+			ReturnTransx[iPart][iPeaks]= TransxImg.get_value_at(RelProj,iPart);
+			ReturnTransy[iPart][iPeaks]= TransyImg.get_value_at(RelProj,iPart);
+			ReturnRot[iPart][iPeaks]= RotImg.get_value_at(RelProj,iPart);
 	
 	
 	
@@ -127,29 +140,35 @@ def main():
 			ReturnWt[iPart][iPeaks]= ReturnVal[iPart][iPeaks]/sumvv;
 	
 	
+	ReturnPartImg  =EMData();
+	ReturnPartImg.set_size(NumPeaks,NumPart) ; ReturnPartImg.to_zero();
 	
-	ReturnWtImg=EMData();
-	ReturnWtImg.set_size(NumProj,NumPart);
-	ReturnWtImg.to_zero();
+	ReturnWtImg    =EMData();
+	ReturnWtImg.set_size(NumPeaks,NumPart)   ;  ReturnWtImg.to_zero();
+
+	ReturnTransxImg=EMData();
+	ReturnTransxImg.set_size(NumPeaks,NumPart); ReturnTransxImg.to_zero();
+
+	ReturnTransyImg=EMData();
+	ReturnTransyImg.set_size(NumPeaks,NumPart); ReturnTransyImg.to_zero();
 	
-	
-	ReturnPartImg=EMData();
-	ReturnPartImg.set_size(NumProj,NumPart);
-	ReturnPartImg.to_zero();
+	ReturnRotImg   =EMData();
+	ReturnRotImg.set_size(NumPeaks,NumPart)   ; ReturnRotImg.to_zero();
 	
 	for iPart in range(NumPart):
 		for iPeaks in range(NumPeaks):
 			ReturnWtImg.set_value_at(iPeaks, iPart,ReturnWt[iPart][iPeaks] );
 			ReturnPartImg.set_value_at(iPeaks,iPart, ReturnPart[iPart][iPeaks] );
+			ReturnTransxImg.set_value_at(iPeaks,iPart, ReturnTransx[iPart][iPeaks] );
+			ReturnTransyImg.set_value_at(iPeaks,iPart, ReturnTransy[iPart][iPeaks] );
+			ReturnRotImg.set_value_at(iPeaks,iPart, ReturnRot[iPart][iPeaks] );
 	
 	
-	tempImg=EMData();
-	ReturnWtImg.write_image(args[1],0);
-	for j in range(3):
-		tempImg.read_image(args[0],j+1);
-		tempImg.write_image(args[1],j+1);
-
-	ReturnPartImg.write_image(args[1],4)
+	ReturnPartImg.write_image(args[1],0)
+	ReturnWtImg.write_image(args[1],1);
+	ReturnTransxImg.write_image(args[1],2);
+	ReturnTransyImg.write_image(args[1],3);
+	ReturnRotImg.write_image(args[1],4);
 
 	
 
