@@ -385,7 +385,7 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 #undef fint
 #undef fout
 
-
+#define  fint(jx,jy,jz)  fint[jx + (jy + jz*ny)*nox]
 EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 
 
@@ -410,13 +410,14 @@ EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 	int nx2 = nox/2;
 	int ny2 = ny/2;
 	int nz2 = nz/2;
+	float *fint = image->get_data();
 	for ( int iz = 1; iz <= nz; iz++) {
-		int jz=nz2-iz+1; if(jz<0) jz = nz2+jz; 
+		int jz=nz2-iz+1; if(jz<0) jz += nz;
 		for ( int iy = 1; iy <= ny; iy++) {
-			int jy=ny2-iy+1; if(jy<0) jy = ny2+jy; 
+			int jy=ny2-iy+1; if(jy<0) jy += ny;
 			for ( int ix = 1; ix <= lsd2; ix++) {
 				int jx = nx2-ix+1;
-				fp->cmplx(ix,iy,iz) *= (*image)(jx,jy,jz);
+				fp->cmplx(ix,iy,iz) *= fint(jx,jy,jz);
 			}
 		}
 	}
@@ -434,6 +435,7 @@ EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
 
 	return fp;
 }
+#undef fint
 
 
 namespace EMAN {
