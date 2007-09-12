@@ -386,6 +386,56 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 #undef fout
 
 
+EMData *EMData::filter_by_image(EMData* image, bool RetReal) {
+
+
+	bool   complex_input = this->is_complex();
+	nx  = this->get_xsize();
+	ny  = this->get_ysize();
+	nz  = this->get_zsize();
+	int nox;
+	if (complex_input) nox = (nx - 2 + this->is_fftodd()); else nox = nx;
+
+	int lsd2 = (nox + 2 - nox%2) / 2; // Extended x-dimension of the complex image
+
+	EMData* fp = NULL; // output image
+	if(complex_input) {
+		// fimage must remain pristine
+		fp = this->copy();
+	} else {
+		fp = this->pad_fft(1); 
+		fp->do_fft_inplace();
+	}
+	fp->set_array_offsets(1,1,1);
+	int nx2 = nox/2;
+	int ny2 = ny/2;
+	int nz2 = nz/2;
+	for ( int iz = 1; iz <= nz; iz++) {
+		int jz=nz2-iz+1; if(jz<0) jz = nz2+jz; 
+		for ( int iy = 1; iy <= ny; iy++) {
+			int jy=ny2-iy+1; if(jy<0) jy = ny2+jy; 
+			for ( int ix = 1; ix <= lsd2; ix++) {
+				int jx = nx2-ix+1;
+				fp->cmplx(ix,iy,iz) *= (*image)(jx,jy,jz);
+			}
+		}
+	}
+
+	fp->set_ri(1);
+	fp->set_fftpad(true);
+	fp->set_attr("npad", 1);
+	if (nx%2 == 1) {fp->set_fftodd(true);} else {fp->set_fftodd(false);}
+	if(RetReal) {
+		fp->do_ift_inplace();
+		fp->postift_depad_corner_inplace();
+	}
+	fp->set_array_offsets(0,0,0);
+	fp->update();
+
+	return fp;
+}
+
+
 namespace EMAN {
 	/* #G2#
 	Purpose: Create a new [normalized] [zero-padded] fft image. 

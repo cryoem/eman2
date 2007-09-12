@@ -1988,7 +1988,7 @@ void EMData::symplane0_ctf(EMData* w) {
 }
 
 
-EMData* EMData::rot_scale_trans2D(float angDeg, float delx,float dely, float scale) { // quadratic, no background, 2D
+EMData* EMData::rot_scale_trans2D(float angDeg, float delx, float dely, float scale) { // quadratic, no background, 2D
 	float ang=angDeg*M_PI/180.0f;
 	if (1 >= ny)
 		throw ImageDimensionException("Can't rotate 1D image");

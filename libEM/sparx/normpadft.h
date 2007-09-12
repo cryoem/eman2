@@ -97,6 +97,6 @@ void postift_depad_corner_inplace();
 EMData* FourInterpol(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 
 
-
+EMData* filter_by_image(EMData* image, bool RetReal = true);
 
 #endif	//normpadft_h__

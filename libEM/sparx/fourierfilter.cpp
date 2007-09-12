@@ -64,7 +64,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	bool   complex_input;
 	vector<float> table;
 	int undoctf=0;
-	float voltage=100.0, ak=0.0, cs=2.0, ps=1.0, b_factor=0, wgh=.1, sign=-1.0;
+	float voltage=100.0, ak=0.0, cs=2.0, ps=1.0, b_factor=0, wgh=0.1, sign=-1.0;
 	if (!fimage) {
 		return NULL;
 	}
@@ -101,7 +101,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	nz  = fimage->get_zsize();
 		// We manifestly assume no zero-padding here, just the 
 		// necessary extension along x for the fft
-	if (fimage->is_complex()) nx = (nx - 2 + fimage->is_fftodd()); 
+	if (complex_input) nx = (nx - 2 + fimage->is_fftodd());
 
 	const int nxp = npad*nx;
 	const int nyp = (ny > 1) ? npad*ny : 1;
