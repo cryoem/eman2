@@ -776,6 +776,11 @@ Dict Util::get_stats( const vector<float>& data )
 		// Get the square of the data minus the mean and store it in data_mm_ts
 		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_ts.begin(), std::multiplies<double>());
 		
+		for ( unsigned int i = 0; i < data.size(); ++i )
+		{
+			cout << data[i] << " " << mean << " " << data_mm[i] << " " << data_mm_ts[i] << endl;
+		}
+		
 		// Get the sum of the squares for the calculation of the standard deviation
 		double square_sum = accumulate(data_mm_ts.begin(), data_mm_ts.end(), 0.0);
 		
@@ -784,6 +789,8 @@ Dict Util::get_stats( const vector<float>& data )
 		
 		double cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_ts.begin(), 0.0);
 		double quartic_sum = inner_product(data_mm_ts.begin(), data_mm_ts.end(),data_mm_ts.begin(), 0.0);
+		
+		cout << "Sums are " << square_sum << " " << cubic_sum << " " <<  quartic_sum << endl;
 		
 		// I got these definitions of skewness and kurtosis from
 		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm

@@ -489,8 +489,6 @@ namespace EMAN
 		*/
 		static Dict get_stats( const vector<float>& data );
 		
-		
-		
 		/** Search the best FFT size with good primes. It supports
 		 * FFT size up to 4096 now.
 		 *

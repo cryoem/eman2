@@ -184,8 +184,11 @@ def main():
 					qual_scores[i].append(ali_parms[i][j][0])
 		
 		for i in range(num_proj):
-			print qual_scores[i]
 			a = Util.get_stats(qual_scores[i])
+			#print a["mean"]
+			#print a["std_dev"]
+			#print a["skewness"]
+			#print a["kurtosis"]
 		
 		print num_proj
 		for i in range(num_proj):
