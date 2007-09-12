@@ -761,7 +761,9 @@ Dict Util::get_stats( const vector<float>& data )
 	
 	double mean = sum / static_cast<double> (data.size());
 	
-	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0;
+	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0, cubic_sum = 0.0, quartic_sum = 0.0;
+	
+	Dict parms;
 	
 	if (data.size() > 1)
 	{
@@ -771,35 +773,30 @@ Dict Util::get_stats( const vector<float>& data )
 		vector<double> data_mm_ts(data.size());
 		
 		// Subtract the mean from the data and store it in data_mm
-		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd( std::minus<double>(), mean));
+		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd(std::minus<double>(), mean));
 		
 		// Get the square of the data minus the mean and store it in data_mm_ts
 		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_ts.begin(), std::multiplies<double>());
 		
-		for ( unsigned int i = 0; i < data.size(); ++i )
-		{
-			cout << data[i] << " " << mean << " " << data_mm[i] << " " << data_mm_ts[i] << endl;
-		}
-		
 		// Get the sum of the squares for the calculation of the standard deviation
 		double square_sum = accumulate(data_mm_ts.begin(), data_mm_ts.end(), 0.0);
 		
-		std_dev = sqrtf(square_sum)/ static_cast<double>(data.size()-1);
+		std_dev = sqrt(square_sum / static_cast<double>(data.size()-1));
 		double std_dev_sq = std_dev * std_dev;
 		
-		double cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_ts.begin(), 0.0);
-		double quartic_sum = inner_product(data_mm_ts.begin(), data_mm_ts.end(),data_mm_ts.begin(), 0.0);
+		cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_ts.begin(), 0.0);
 		
-		cout << "Sums are " << square_sum << " " << cubic_sum << " " <<  quartic_sum << endl;
+		quartic_sum = inner_product(data_mm_ts.begin(), data_mm_ts.end(),data_mm_ts.begin(), 0.0);
 		
 		// I got these definitions of skewness and kurtosis from
 		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
-		skewness = cubic_sum / (static_cast<double>(data.size()-1) * std_dev_sq * std_dev );
-		kurtosis = quartic_sum / (static_cast<double>(data.size()-1) * std_dev_sq * std_dev_sq );
+		skewness = cubic_sum / ((data.size()-1) * std_dev_sq * std_dev );
+		kurtosis = quartic_sum / ((data.size()-1) * std_dev_sq * std_dev_sq );
 		
 	}
+	parms["cs"] = cubic_sum;
+	parms["qs"] = quartic_sum;
 	
-	Dict parms;
 	parms["mean"] = mean;
 	parms["std_dev"] = std_dev;
 	parms["skewness"] = skewness;
@@ -807,6 +804,57 @@ Dict Util::get_stats( const vector<float>& data )
 	
 	return parms;
 }
+
+
+Dict Util::get_stats_cstyle( const vector<float>& data )
+{
+
+	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
+
+	double square_sum = 0.0, sum = 0.0, cube_sum = 0.0, quart_sum = 0.0;
+	for( vector<float>::const_iterator it = data.begin(); it != data.end(); ++it )
+	{
+		double val = *it;
+		double square = val*val;
+		quart_sum += square*square;
+		cube_sum += square*val;
+		square_sum += square;
+		sum += val;
+	}
+	
+	double mean = sum/(double)data.size();
+	
+	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0, cubic_sum = 0.0, quartic_sum = 0.0;;
+	
+	Dict parms;
+	
+	if (data.size() > 1)
+	{
+		std_dev = sqrt( (square_sum - mean*sum)/(double)(data.size()-1));
+		
+		double square_mean = mean*mean;
+		double cube_mean = mean*square_mean;
+		
+		double square_std_dev = std_dev*std_dev;
+		
+		cubic_sum = cube_sum - 3*square_sum*mean + 3*sum*square_mean - cube_mean*data.size();
+		skewness = cubic_sum/((data.size()-1)*square_std_dev*std_dev);
+		
+		quartic_sum = quart_sum - 4*cube_sum*mean + 6*square_sum*square_mean - 4*sum*cube_mean  + square_mean*square_mean*data.size();
+
+		kurtosis = quartic_sum /( (data.size()-1)*square_std_dev*square_std_dev);
+	}
+	
+	parms["cs"] = cubic_sum;
+	parms["qs"] = quartic_sum;
+	parms["mean"] = mean;
+	parms["std_dev"] = std_dev;
+	parms["skewness"] = skewness;
+	parms["kurtosis"] = kurtosis;
+	
+	return parms;
+}
+
 
 int Util::calc_best_fft_size(int low)
 {

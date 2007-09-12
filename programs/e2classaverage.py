@@ -185,7 +185,13 @@ def main():
 		
 		for i in range(num_proj):
 			a = Util.get_stats(qual_scores[i])
-			#print a["mean"]
+			b = Util.get_stats_cstyle(qual_scores[i])
+			print "means %f %f"  %(a["mean"], b["mean"])
+			print "std dev %f %f" %(a["std_dev"], b["std_dev"])
+			print "skew %f %f" %(a["skewness"],b["skewness"])
+			print "kurtosis %f %f" %(a["kurtosis"],b["kurtosis"])
+			print "cs %f %f" %(a["cs"],b["cs"])
+			print "qs %f %f" %(a["qs"],b["qs"])
 			#print a["std_dev"]
 			#print a["skewness"]
 			#print a["kurtosis"]

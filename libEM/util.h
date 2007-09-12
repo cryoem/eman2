@@ -488,6 +488,7 @@ namespace EMAN
 		* @exception EmptyContainerException when the argument vector is empty
 		*/
 		static Dict get_stats( const vector<float>& data );
+		static Dict get_stats_cstyle( const vector<float>& data );
 		
 		/** Search the best FFT size with good primes. It supports
 		 * FFT size up to 4096 now.
