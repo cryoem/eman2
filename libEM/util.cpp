@@ -753,7 +753,7 @@ void Util::find_min_and_max(const float *data, size_t nitems,
 Dict Util::get_stats( const vector<float>& data )
 {
 	// Note that this is a heavy STL approach using generic algorithms - some memory could be saved
-	// using plain c style code.
+	// using plain c style code, as in get_stats_cstyle below
 	
 	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
 	
@@ -761,42 +761,42 @@ Dict Util::get_stats( const vector<float>& data )
 	
 	double mean = sum / static_cast<double> (data.size());
 	
-	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0, cubic_sum = 0.0, quartic_sum = 0.0;
-	
-	Dict parms;
+	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0;
 	
 	if (data.size() > 1)
 	{
 		// read mm is "minus_mean"
 		vector<double> data_mm(data.size());
 		// read ts as "then squared"
-		vector<double> data_mm_ts(data.size());
+		vector<double> data_mm_sq(data.size());
 		
 		// Subtract the mean from the data and store it in data_mm
 		transform(data.begin(), data.end(), data_mm.begin(), std::bind2nd(std::minus<double>(), mean));
 		
-		// Get the square of the data minus the mean and store it in data_mm_ts
-		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_ts.begin(), std::multiplies<double>());
+		// Get the square of the data minus the mean and store it in data_mm_sq
+		transform(data_mm.begin(), data_mm.end(), data_mm.begin(), data_mm_sq.begin(), std::multiplies<double>());
 		
 		// Get the sum of the squares for the calculation of the standard deviation
-		double square_sum = accumulate(data_mm_ts.begin(), data_mm_ts.end(), 0.0);
+		double square_sum = accumulate(data_mm_sq.begin(), data_mm_sq.end(), 0.0);
 		
+		//Calculate teh standard deviation
 		std_dev = sqrt(square_sum / static_cast<double>(data.size()-1));
 		double std_dev_sq = std_dev * std_dev;
 		
-		cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_ts.begin(), 0.0);
+		// The numerator for the skewness fraction, as defined in http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
+		double cubic_sum = inner_product(data_mm.begin(), data_mm.end(),data_mm_sq.begin(), 0.0);
 		
-		quartic_sum = inner_product(data_mm_ts.begin(), data_mm_ts.end(),data_mm_ts.begin(), 0.0);
+		// The numerator for the kurtosis fraction, as defined in http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
+		double quartic_sum = inner_product(data_mm_sq.begin(), data_mm_sq.end(),data_mm_sq.begin(), 0.0);
 		
-		// I got these definitions of skewness and kurtosis from
+		// Finalize the calculation of the skewness and kurtosis, as defined in
 		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
 		skewness = cubic_sum / ((data.size()-1) * std_dev_sq * std_dev );
 		kurtosis = quartic_sum / ((data.size()-1) * std_dev_sq * std_dev_sq );
 		
 	}
-	parms["cs"] = cubic_sum;
-	parms["qs"] = quartic_sum;
 	
+	Dict parms;
 	parms["mean"] = mean;
 	parms["std_dev"] = std_dev;
 	parms["skewness"] = skewness;
@@ -808,7 +808,9 @@ Dict Util::get_stats( const vector<float>& data )
 
 Dict Util::get_stats_cstyle( const vector<float>& data )
 {
-
+	// Performs the same calculations as in get_stats, but uses a single pass, optimized c approach
+	// Should perform better than get_stats
+	
 	if (data.size() == 0) EmptyContainerException("Error, attempting to call get stats on an empty container (vector<double>)");
 
 	double square_sum = 0.0, sum = 0.0, cube_sum = 0.0, quart_sum = 0.0;
@@ -824,12 +826,11 @@ Dict Util::get_stats_cstyle( const vector<float>& data )
 	
 	double mean = sum/(double)data.size();
 	
-	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0, cubic_sum = 0.0, quartic_sum = 0.0;;
-	
-	Dict parms;
+	double std_dev = 0.0, skewness = 0.0, kurtosis = 0.0;
 	
 	if (data.size() > 1)
 	{
+		// The standard deviation is calculated here
 		std_dev = sqrt( (square_sum - mean*sum)/(double)(data.size()-1));
 		
 		double square_mean = mean*mean;
@@ -837,16 +838,20 @@ Dict Util::get_stats_cstyle( const vector<float>& data )
 		
 		double square_std_dev = std_dev*std_dev;
 		
-		cubic_sum = cube_sum - 3*square_sum*mean + 3*sum*square_mean - cube_mean*data.size();
+		// This is the numerator of the skewness fraction, if you expand the brackets, as defined in
+		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
+		double cubic_sum = cube_sum - 3*square_sum*mean + 3*sum*square_mean - cube_mean*data.size();
+		// Complete the skewness fraction
 		skewness = cubic_sum/((data.size()-1)*square_std_dev*std_dev);
 		
-		quartic_sum = quart_sum - 4*cube_sum*mean + 6*square_sum*square_mean - 4*sum*cube_mean  + square_mean*square_mean*data.size();
-
+		// This is the numerator of the kurtosis fraction, if you expand the brackets, as defined in
+		// http://www.itl.nist.gov/div898/handbook/eda/section3/eda35b.htm
+		double quartic_sum = quart_sum - 4*cube_sum*mean + 6*square_sum*square_mean - 4*sum*cube_mean  + square_mean*square_mean*data.size();
+		// Complete the kurtosis fraction
 		kurtosis = quartic_sum /( (data.size()-1)*square_std_dev*square_std_dev);
 	}
 	
-	parms["cs"] = cubic_sum;
-	parms["qs"] = quartic_sum;
+	Dict parms;
 	parms["mean"] = mean;
 	parms["std_dev"] = std_dev;
 	parms["skewness"] = skewness;

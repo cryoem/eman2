@@ -269,7 +269,7 @@ class TestAligner(unittest.TestCase):
         e.align('rtf_radon', e2, {'maxshift':2, 'thisf':e3, 'radonwith':e4, \
                 'radonthis':e5, 'radonthisf':e6})
                 
-    def no_test_RefineAligner(self):
+    def test_RefineAligner(self):
         """test RefineAligner ..............................."""
         e = EMData()
         e.set_size(32,32,1)
@@ -280,9 +280,7 @@ class TestAligner(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         
         e.align('refine', e2)
-        #todo: error happen for following call
-        #e.align('refine', e2, {'mode':1, 'snr':(1.0, 2.0, 3.0), 'alot':1.2, \
-        #        'az':1.2, 'phi':2.3, 'dx':2, 'dy':3.4, 'dz':2.6, 'alt':1.0})
+        e.align('refine', e2, {'mode':1, 'az':1.2, 'dx':2, 'dy':3.4})
    
 def test_main():
     test_support.run_unittest(TestAligner)

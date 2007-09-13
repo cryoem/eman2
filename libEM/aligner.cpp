@@ -33,6 +33,7 @@
  * 
  * */
 
+#include "cmp.h"
 #include "aligner.h"
 #include "emdata.h"
 #include "processor.h"
@@ -1530,7 +1531,9 @@ static double refalifn(const gsl_vector * v, void *params)
 	EMData * with = (*dict)["with"];
 	this_img->rotate_translate((float)a, 0.0f, 0.0f, (float)x, (float)y, 0.0f);
 
-	return this_img->cmp("frc", with, *dict);
+	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
+	
+	return c->cmp(this_img, with);
 }
 
 static double refalifnfast(const gsl_vector * v, void *params)
@@ -1552,7 +1555,7 @@ static double refalifnfast(const gsl_vector * v, void *params)
 
 
 EMData *RefineAligner::align(EMData * this_img, EMData *to, 
-			const string &, const Dict&) const
+	const string & cmp_name, const Dict& cmp_params) const
 {
 
 	if (!to) {
@@ -1573,16 +1576,16 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	float saz = params.set_default("az",0.0);
 	float sdx = params.set_default("dx",0.0);
 	float sdy = params.set_default("dy",0.0);
-
 	int np = 3;
 	Dict gsl_params;
-	gsl_params["this"] = this_img ;
-	gsl_params["with"] = to       ;
-	gsl_params["snr"]  = params["snr"]    ;
+	gsl_params["this"] = this_img;
+	gsl_params["with"] = to;
+	gsl_params["snr"]  = params["snr"];
 	
-
+	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
+	gsl_params["cmp"] = (void *) c;
+	
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
-
 	gsl_vector *ss = gsl_vector_alloc(np);
 	gsl_vector_set(ss, 0, 1.0f);
 	gsl_vector_set(ss, 1, 1.0f);
@@ -1594,19 +1597,18 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_vector_set(x, 2, saz);
 
 	gsl_multimin_function minex_func;
-
 	if (mode == 2) {
 		minex_func.f = &refalifnfast;
 	}
 	else {
 		minex_func.f = &refalifn;
 	}
+	
 	minex_func.n = np;
 	minex_func.params = (void *) &gsl_params;
 
 	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
 	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
-
 
 	int rval = GSL_CONTINUE;
 	int status = GSL_SUCCESS;
@@ -1624,14 +1626,16 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	result->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
 								(float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
-	gsl_vector_free(x);
-	gsl_vector_free(ss);
-	gsl_multimin_fminimizer_free(s);
-
+	
 	this_img->set_attr("align.az",(float)gsl_vector_get(s->x, 2));
 	this_img->set_attr("align.dx",(float)gsl_vector_get(s->x, 0));
 	this_img->set_attr("align.dy",(float)gsl_vector_get(s->x, 1));
 
+	gsl_vector_free(x);
+	gsl_vector_free(ss);
+	gsl_multimin_fminimizer_free(s);
+	
+	delete c;
 	return result;
 }
 

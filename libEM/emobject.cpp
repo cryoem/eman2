@@ -83,7 +83,7 @@ EMObjectTypes::EMObjectTypes()
 		type_registry[TRANSFORM3D] = "TRANFORM3D";
 		type_registry[FLOAT_POINTER] = "FLOAT_POINTER";
 		type_registry[UNKNOWN] = "UNKNOWN";
-		
+		type_registry[VOID_POINTER] = "VOID_POINTER";
 		first_construction = false;
 	}
 }
@@ -103,72 +103,77 @@ void EMObject::printInfo() const
 }
 
 EMObject::EMObject() :
-	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), type(UNKNOWN)
+	EMObjectTypes(), n(0), type(UNKNOWN)
 {
 }
 
 EMObject::EMObject(bool boolean) :
-	EMObjectTypes(), b(boolean), emdata(0), xydata(0), transform3d(0), type(BOOL)
+	EMObjectTypes(), b(boolean), type(BOOL)
 {
 }
 
 EMObject::EMObject(int num) : 
-	EMObjectTypes(), n(num), emdata(0), xydata(0), transform3d(0), type(INT)
+	EMObjectTypes(), n(num), type(INT)
 {
 }
 
 EMObject::EMObject(float ff) :
-	EMObjectTypes(), f(ff), emdata(0), xydata(0), transform3d(0), type(FLOAT)
+	EMObjectTypes(), f(ff), type(FLOAT)
 {
 }
 
 EMObject::EMObject(double dd) :
-	EMObjectTypes(), d(dd), emdata(0), xydata(0), transform3d(0), type(DOUBLE)
+	EMObjectTypes(), d(dd), type(DOUBLE)
 {
 }
 
 EMObject::EMObject(const char *s) :
-	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), str(string(s)), type(STRING)
+	EMObjectTypes(), str(s), type(STRING)
 {
 }
 
 EMObject::EMObject(const string & s) :
-	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), str(s), type(STRING)
+	EMObjectTypes(), str(s), type(STRING)
 {
 }
 
-EMObject::EMObject( float *f) :
-	EMObjectTypes(), fp(f), emdata(0), xydata(0), transform3d(0), type(FLOAT_POINTER)
+EMObject::EMObject(float *f) :
+	EMObjectTypes(), fp(f), type(FLOAT_POINTER)
+{
+}
+
+EMObject::EMObject(void *v) :
+		EMObjectTypes(), vp(v), type(VOID_POINTER)
 {
 }
 
 EMObject::EMObject(EMData * em)	: 
-	EMObjectTypes(), n(0), emdata(em), xydata(0), transform3d(0), type(EMDATA)
+	EMObjectTypes(),emdata(em), type(EMDATA)
 {
 }
 
 EMObject::EMObject(XYData * xy) : 
-	EMObjectTypes(), n(0), emdata(0), xydata(xy), transform3d(0), type(XYDATA)
+	EMObjectTypes(), xydata(xy), type(XYDATA)
 {
 }
 
 EMObject::EMObject(Transform3D * t) :
-	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(t), type(TRANSFORM3D)
+	EMObjectTypes(), transform3d(t), type(TRANSFORM3D)
 {
 }
 
 EMObject::EMObject(const vector< int >& v ) :
-	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), iarray(v), type(INTARRAY)
+	EMObjectTypes(), iarray(v), type(INTARRAY)
 {
 }
 
 EMObject::EMObject(const vector < float >&v) :
-	EMObjectTypes(), n(0), emdata(0), xydata(0), transform3d(0), farray(v), type(FLOATARRAY)
+	EMObjectTypes(), farray(v), type(FLOATARRAY)
 {
 }
 
 EMObject:: EMObject(const vector <string>& sarray) :
-	EMObjectTypes(), n(0),emdata(0), xydata(0), transform3d(0), strarray(sarray), type(STRINGARRAY)
+	EMObjectTypes(), strarray(sarray), type(STRINGARRAY)
 {
 }
 
@@ -194,6 +199,9 @@ EMObject::operator bool () const
 	}
 	else if (type == FLOAT_POINTER) {
 		return fp != 0;
+	}
+	else if (type == VOID_POINTER) {
+		return vp != 0;
 	}
 	else if (type == TRANSFORM3D) {
 		return transform3d != 0;
@@ -284,6 +292,16 @@ EMObject::operator float * () const
 	}
 
 	return fp;
+}
+
+EMObject::operator void * () const
+{
+	if (type == VOID_POINTER) return vp;
+	else if (type == FLOAT_POINTER) return (void *)fp;
+	else if (type == EMDATA) return (void *) emdata;
+	else if (type == XYDATA) return (void *) xydata;
+	else if (type == TRANSFORM3D) return (void *) transform3d;
+	else throw TypeException("Cannot convert to void pointer from this data type", get_object_type_name(type));
 }
 
 EMObject::operator const char * () const
@@ -430,6 +448,9 @@ string EMObject::to_str(ObjectType argtype) const
 		else if (argtype == FLOAT_POINTER) {
 			sprintf(tmp_str, "FLOAT_POINTER");
 		}
+		else if (argtype == VOID_POINTER) {
+			sprintf(tmp_str, "VOID_POINTER");
+		}
 		else if (argtype == XYDATA) {
 			sprintf(tmp_str, "XYDATA");
 		}
@@ -490,6 +511,9 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	break;
 	case EMObjectTypes::FLOAT_POINTER:
 		return (e1.fp == e2.fp);
+	break;
+	case EMObjectTypes::VOID_POINTER:
+		return (e1.vp == e2.vp);
 	break;
 	case EMObjectTypes::EMDATA:
 		return (e1.emdata == e2.emdata);
@@ -592,6 +616,10 @@ EMObject& EMObject::operator=( const EMObject& that )
 		case FLOAT_POINTER:
 			// Warning - Pointer address copy.
 			fp = that.fp;
+		break;
+		case VOID_POINTER:
+			// Warning - Pointer address copy.
+			vp = that.vp;
 		break;
 		case EMDATA:
 			// Warning - Pointer address copy.

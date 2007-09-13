@@ -130,7 +130,8 @@ namespace EMAN
 			FLOATARRAY,
 			STRINGARRAY,
 			TRANSFORM3D,
-			FLOAT_POINTER
+			FLOAT_POINTER,
+			VOID_POINTER
 		};
 		
 		~EMObjectTypes() {}
@@ -175,6 +176,7 @@ namespace EMAN
 		EMObject(const char *s);
 		EMObject(const string & s);
 		EMObject(float * fp);
+		EMObject(void * vp);
 		EMObject(EMData * em);
 		EMObject(XYData * xy);
 		EMObject(Transform3D * t);
@@ -207,6 +209,7 @@ namespace EMAN
 		operator double () const;
 		operator const char *() const;
 		operator float * () const;
+		operator void * () const;
 		operator EMData *() const;
 		operator XYData *() const;
 		operator Transform3D *() const;
@@ -267,12 +270,13 @@ namespace EMAN
 			float f;
 			double d;
 			float * fp;
-			// FIXME - this union should probably include all pointers
+			void * vp;
+			EMData *emdata;
+			XYData *xydata;
+			Transform3D * transform3d;
 		};
 
-		EMData *emdata;
-		XYData *xydata;
-		Transform3D * transform3d;
+		
 		string str;
 		vector < int > iarray;
 		vector < float >farray;
@@ -760,7 +764,7 @@ namespace EMAN
 												const Dict & params)
 	{
 		init();
-
+		
 		typename map < string, InstanceType >::iterator fi =
 			my_instance->my_dict.find(instancename);
 
