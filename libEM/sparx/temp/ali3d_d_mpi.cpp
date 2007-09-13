@@ -163,6 +163,14 @@ int ali3d_d( MPI_Comm comm, EMData*& volume, EMData** projdata,
 	dtheta -= 1.0;
 	if (mypid == 0) printf("Problem is underdetermined: decreasing dtheta to %f\n",dtheta);
     }
+    // should this ever not be true?  Is it really needed?
+    bool phi_eq_minus_psi = true;
+    if (phi_eq_minus_psi) {
+	for ( int i = 0 ; i < num_ref ; ++ i ) {
+	    ref_angles[3*i + 2] = fmod(720.0 - ref_angles[3*i], 360.0);
+	}
+    }
+    
     int numref; // used after call to multiref_polar_ali_2d, stores the index of the image with max correlation
 
     Util::mul_img(volume, mask3D);
