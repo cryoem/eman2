@@ -139,7 +139,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	int filter_type = params["filter_type"];
 
 	nyp2 = nyp/2; nzp2 = nzp/2;
-	dx = 1.0f/float(nxp); 
+	dx = 1.0f/float(nxp);
 #ifdef _WIN32
 	dy = 1.0f/_MAX(float(nyp),1.0f);
 	dz = 1.0f/_MAX(float(nzp),1.0f);	
@@ -408,7 +408,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 								exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
 							break;
 						case TANH_LOW_PASS :
-							argx= sqrt(argx); 
+							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
 								0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
 						case TANH_HIGH_PASS:
