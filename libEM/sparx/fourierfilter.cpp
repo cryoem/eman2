@@ -311,10 +311,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							if(argx*omega>1.0f) fp->cmplx(ix,iy,iz) = 0; break;
 						case TOP_HAT_HIGH_PASS:
 							if(argx*omega<=1.0f) fp->cmplx(ix,iy,iz) = 0; break;
-						case TOP_HAT_BAND_PASS: 
+						case TOP_HAT_BAND_PASS:
 							if(argx*omegaL>1.0f && argx*omegaH<=1.0f) 
 								fp->cmplx(ix,iy,iz) = 0; break;
-						case TOP_HOMOMORPHIC: 
+						case TOP_HOMOMORPHIC:
 							if(argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f; 
 							else if(argx*omegaL<=1.0f) fp->cmplx(ix,iy,iz) *= gamma;
 							break;
@@ -322,7 +322,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							fp->cmplx(ix,iy,iz) *= exp(-argx*omega); break;
 						case GAUSS_HIGH_PASS:
 							fp->cmplx(ix,iy,iz) *= 1.0f-exp(-argx*omega); break;
-						case GAUSS_HOMOMORPHIC: 
+						case GAUSS_HOMOMORPHIC:
 							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*exp(-argx*omega); break;
 						case GAUSS_INVERSE :
 							fp->cmplx(ix,iy,iz) *= exp(argx*omega); break;
@@ -394,32 +394,32 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									break;
 							}
 							break;
-						case BUTTERWORTH_LOW_PASS: 
+						case BUTTERWORTH_LOW_PASS:
 							fp->cmplx(ix,iy,iz) 
 								*= sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord))); break;
-						case BUTTERWORTH_HIGH_PASS: 
+						case BUTTERWORTH_HIGH_PASS:
 							fp->cmplx(ix,iy,iz) *= 
 								1.0f-sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord))); break;
-						case BUTTERWORTH_HOMOMORPHIC: 
+						case BUTTERWORTH_HOMOMORPHIC:
 							fp->cmplx(ix,iy,iz) *= 
 								1.0f-gamma*sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord))); break;
 						case SHIFT:
 							fp->cmplx(ix,iy,iz) *= 
 								exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
 							break;
-						case TANH_LOW_PASS : 
+						case TANH_LOW_PASS :
 							argx= sqrt(argx); 
 							fp->cmplx(ix,iy,iz) *= 
 								0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
-						case TANH_HIGH_PASS: 
+						case TANH_HIGH_PASS:
 							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
 								1.0f-0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
-						case TANH_HOMOMORPHIC: 
+						case TANH_HOMOMORPHIC:
 							argx= sqrt(argx);
 							fp->cmplx(ix,iy,iz) *= 
 								1.0f-gamma*0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
-						case TANH_BAND_PASS: 
+						case TANH_BAND_PASS:
 							argx= sqrt(argx); 
 							fp->cmplx(ix,iy,iz) *= 
 								0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL))); break;
