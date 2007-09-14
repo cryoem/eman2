@@ -179,6 +179,7 @@ EMData* EMData::pad_fft(int npad) {
 		newimg->set_fftpad(true);
 		newimg->set_attr("npad", npad);
 		if (offset == 1) newimg->set_fftodd(true);
+		else             newimg->set_fftodd(false);
 		for (int iz = 0; iz < nz; iz++) {
 			for (int iy = 0; iy < ny; iy++) {
 				memcpy(&(*newimg)(0,iy,iz), &(*this)(0,iy,iz), bytes);

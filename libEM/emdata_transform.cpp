@@ -67,7 +67,7 @@ EMData *EMData::do_fft()
 	EMfft::real_to_complex_nd(rdata, d, nxreal, ny, nz);
 
 	dat->update();
-    dat->set_fftpad(true);
+	dat->set_fftpad(true);
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
@@ -97,6 +97,7 @@ EMData *EMData::do_fft_inplace()
 		nxreal = nx;
 		offset = 2 - nx%2;
 		if (1 == offset) set_fftodd(true);
+		else             set_fftodd(false);
 		int nxnew = nx + offset;
 		set_size(nxnew, ny, nz);
 		for (int iz = nz-1; iz >= 0; iz--) {
@@ -107,7 +108,7 @@ EMData *EMData::do_fft_inplace()
 					(*this)(newxpos) = (*this)(oldxpos);
 				}
 			}
-		 }
+		}
 		set_fftpad(true);
 	} else {
 		offset = is_fftodd() ? 1 : 2;
@@ -172,7 +173,7 @@ EMData *EMData::do_ift()
 	float scale = 1.0f / ((nx - offset) * ny * nz);
 	dat->mult(scale);
 #endif	//FFTW2 || FFTW3
-    dat->set_fftpad(false);
+	dat->set_fftpad(false);
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
 		dat->set_complex_x(false);
