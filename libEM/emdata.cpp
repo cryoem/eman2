@@ -2803,6 +2803,15 @@ EMData * EMAN::operator/(float n, const EMData & em)
 	return r;
 }
 
+EMData * EMAN::rsub(const EMData & em, float n)
+{
+	return EMAN::operator-(n, em);
+}
+
+EMData * EMAN::rdiv(const EMData & em, float n)
+{
+	return EMAN::operator/(n, em);
+}
 
 EMData * EMAN::operator+(const EMData & a, const EMData & b)
 {

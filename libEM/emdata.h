@@ -786,6 +786,9 @@ namespace EMAN
 	EMData * operator-(float n, const EMData & em);
 	EMData * operator*(float n, const EMData & em);
 	EMData * operator/(float n, const EMData & em);
+	
+	EMData * rsub(const EMData & em, float n);
+	EMData * rdiv(const EMData & em, float n);
 
 	EMData * operator+(const EMData & a, const EMData & b);
 	EMData * operator-(const EMData & a, const EMData & b);
