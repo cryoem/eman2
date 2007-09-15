@@ -60,6 +60,13 @@ def main():
 	if len(args)<2 : parser.error("Input and output files required")
 	
 	
+#      Setion 0.
+#      read in the 4 images from <simMatrixIn> which correspond to 
+#        0. similarity 
+#        1. Transx 
+#        2. Transy 
+#        3. Rotation	
+	
 	E2n=E2init(sys.argv)
 
 	Simimg=EMData();
@@ -71,12 +78,13 @@ def main():
 	RotImg=EMData();
 	RotImg.read_image(args[0],3)
 	
-	
-#	Simimg=getImage(args[0],0);
 	NumProj= Simimg.get_xsize()
 	NumPart= Simimg.get_ysize()
 	
-	# get the average score for each particle
+#	Section 1.
+#     get the average alignment for each particle, and the maximum; renormalize
+#     the values of the similarities to get simMatB
+#           create lists that will eventually be used to write out the images
 	msimMat=range(NumPart)
 	for iPart in range(NumPart):
 		vv=[Simimg.get_value_at(iProj, iPart) for iProj in range(NumProj)];
@@ -87,20 +95,17 @@ def main():
 	
 	simMatA       = [ range(NumPart) for j in range(NumProj)]
 	simMatB       = [ range(NumPart) for j in range(NumProj)]
-	ReturnVal     = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnPart    = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnWt      = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnTransx  = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnTransy  = [ range(NumPeaks) for j in range(NumPart)]
-	ReturnRot     = [ range(NumPeaks) for j in range(NumPart)]
+	ReturnPart    = [ range(NumPart) for j in range(NumPeaks)]
+	ReturnVal     = [ range(NumPart) for j in range(NumPeaks)]
+	ReturnWt      = [ range(NumPart) for j in range(NumPeaks)]
+	ReturnTransx  = [ range(NumPart) for j in range(NumPeaks)]
+	ReturnTransy  = [ range(NumPart) for j in range(NumPeaks)]
+	ReturnRot     = [ range(NumPart) for j in range(NumPeaks)]
 	
 	for iPart in range(NumPart):
 		for iProj in range(NumProj):
 			simMatA[iProj][iPart]= - ( Simimg.get_value_at(iProj,iPart) - msimMat[iPart]);
 
-	#for iPart in range(NumPart):
-		#vv=[simMatA[iProj][iPart] for iProj in range(NumProj)];
-		#print sum(vv)/NumProj
 
 	maxSim = -10000000
 	for iPart in range(NumPart):
@@ -108,14 +113,16 @@ def main():
 			if ( simMatA[iProj][iPart] > maxSim ):
 				maxSim = simMatA[iProj][iPart]
 				
-
-	#maxSim = max(max(simMatA));
-	
 	for iPart in range(NumPart):
 		for iProj in range(NumProj):
 			simMatB[iProj][iPart]=10* simMatA[iProj][iPart]/maxSim;
 	
 	
+#	Section 2.
+#       i) sort the alignment data [vvCp], 
+#      ii) find the projections corresponding to the sorted list [RelProj]
+#      iii) get corresponding  transx, transy, rot
+#      iv) rescale the weights to sum to unity (over the NumPeaks values)
 	
 	for iPart in range(NumPart):
 		vv=[ simMatB[j][iPart] for j in range(NumProj)];
@@ -125,51 +132,42 @@ def main():
 		vvIndices=[ vv.index(vvCp[j]) for j in range(NumPeaks)];
 		for iPeaks in range(NumPeaks):
 			RelProj             =     vvIndices[iPeaks];
-			ReturnPart[iPart][iPeaks] = RelProj;
-			ReturnVal[iPart][iPeaks]  = vvCp[iPeaks];
-			ReturnTransx[iPart][iPeaks]= TransxImg.get_value_at(RelProj,iPart);
-			ReturnTransy[iPart][iPeaks]= TransyImg.get_value_at(RelProj,iPart);
-			ReturnRot[iPart][iPeaks]= RotImg.get_value_at(RelProj,iPart);
+			ReturnPart[iPeaks][iPart] = RelProj;
+			ReturnVal[iPeaks][iPart]  = vvCp[iPeaks];
+			ReturnTransx[iPeaks][iPart]= TransxImg.get_value_at(RelProj,iPart);
+			ReturnTransy[iPeaks][iPart]= TransyImg.get_value_at(RelProj,iPart);
+			ReturnRot[iPeaks][iPart]= RotImg.get_value_at(RelProj,iPart);
 	
 	
 	
 	for iPart in range(NumPart):
-		vv=[ ReturnVal[iPart][j] for j in range(NumPeaks)];
-		sumvv= sum(vv)
+		vv=[ ReturnVal[j][iPart] for j in range(NumPeaks)];
+		sumvv= sum(vv);
 		for iPeaks in range(NumPeaks):
-			ReturnWt[iPart][iPeaks]= ReturnVal[iPart][iPeaks]/sumvv;
+			ReturnWt[iPeaks][iPart]= ReturnVal[iPeaks][iPart]/sumvv;
 	
+#	Section 3.
+#       write to outFile	
 	
-	ReturnPartImg  =EMData();
-	ReturnPartImg.set_size(NumPeaks,NumPart) ; ReturnPartImg.to_zero();
-	
-	ReturnWtImg    =EMData();
-	ReturnWtImg.set_size(NumPeaks,NumPart)   ;  ReturnWtImg.to_zero();
+	writeListToImage(ReturnPart,   args[1]   ,0,NumPeaks,NumPart)
+	writeListToImage(ReturnWt,     args[1]   ,1,NumPeaks,NumPart)
+	writeListToImage(ReturnTransx, args[1]   ,2,NumPeaks,NumPart)
+	writeListToImage(ReturnTransy, args[1]   ,3,NumPeaks,NumPart)
+	writeListToImage(ReturnRot,    args[1]   ,4,NumPeaks,NumPart)
 
-	ReturnTransxImg=EMData();
-	ReturnTransxImg.set_size(NumPeaks,NumPart); ReturnTransxImg.to_zero();
 
-	ReturnTransyImg=EMData();
-	ReturnTransyImg.set_size(NumPeaks,NumPart); ReturnTransyImg.to_zero();
+def writeListToImage(inList,outFileString,location,NumPeaks,NumPart):
+	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
-	ReturnRotImg   =EMData();
-	ReturnRotImg.set_size(NumPeaks,NumPart)   ; ReturnRotImg.to_zero();
-	
+	OutImg   =EMData();
+	OutImg.set_size(NumPeaks,NumPart)   ; 
+	OutImg.to_zero();
 	for iPart in range(NumPart):
 		for iPeaks in range(NumPeaks):
-			ReturnWtImg.set_value_at(iPeaks, iPart,ReturnWt[iPart][iPeaks] );
-			ReturnPartImg.set_value_at(iPeaks,iPart, ReturnPart[iPart][iPeaks] );
-			ReturnTransxImg.set_value_at(iPeaks,iPart, ReturnTransx[iPart][iPeaks] );
-			ReturnTransyImg.set_value_at(iPeaks,iPart, ReturnTransy[iPart][iPeaks] );
-			ReturnRotImg.set_value_at(iPeaks,iPart, ReturnRot[iPart][iPeaks] );
-	
-	
-	ReturnPartImg.write_image(args[1],0)
-	ReturnWtImg.write_image(args[1],1);
-	ReturnTransxImg.write_image(args[1],2);
-	ReturnTransyImg.write_image(args[1],3);
-	ReturnRotImg.write_image(args[1],4);
-
+			OutImg.set_value_at(iPeaks,iPart, inList[iPeaks][iPart] );
+			
+	OutImg.write_image(outFileString,location)
+	return 
 	
 
 if __name__ == "__main__":
