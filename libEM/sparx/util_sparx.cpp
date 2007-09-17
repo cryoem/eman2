@@ -16010,7 +16010,6 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 		g[0] = (f1-f)/dt;
 		delete rot;
 
-		dt = 0.5e-3;
 		rot = new EMData();
 		rot = image->rot_scale_conv7(x[0]*pi/180, x[1]+dt, x[2], kb, 1.0);
 		f2 = rot->cmp("SqEuclidean", refim, Dict("mask", mask));		
