@@ -2420,6 +2420,14 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
         
+        #test addition
+        e22 = 2.0 + e
+        d22 = e22.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertAlmostEqual(2.0 + d[z][y][x], d22[z][y][x], 3)
+        
         #test substract
         e7 = e - 3.0
         d7 = e7.get_3dview()
@@ -2440,6 +2448,14 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
             
+        #test substract
+        e77 = 3.0 - e
+        d77 = e77.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertAlmostEqual(3.0-d[z][y][x], d77[z][y][x], 3)
+        
         #test mutiply
         e8 = e * 2
         d8 = e8.get_3dview()
@@ -2459,6 +2475,14 @@ class TestEMData(unittest.TestCase):
             e *= e6
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageFormatException") 
+            
+        #test multiply
+        e88 = 2.0 * e
+        d88 = e88.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertAlmostEqual(2.0 * d[z][y][x], d88[z][y][x], 3)
             
         #test division
         e9 = e / 5.0
@@ -2493,6 +2517,14 @@ class TestEMData(unittest.TestCase):
             e/=e7
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "InvalidValueException")
+            
+        #test division
+        e99 = 5.0 / e
+        d99 = e99.get_3dview()
+        for x in range(32):
+            for y in range(32):
+                for z in range(32):
+                    self.assertAlmostEqual(5.0/d[z][y][x], d99[z][y][x], 2)
 
     def test_stat_locations(self):
         """test locational stats ............................"""
