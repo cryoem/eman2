@@ -16041,7 +16041,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 
 vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData *refim, EMData* mask, float phi, float theta, float psi, float sxs, float sys) {
 	
-	EMData *proj;
+	EMData *proj, *proj2;
 
 	int nmax=5, mmax=5;
 	char task[60], csave[60];
@@ -16093,77 +16093,89 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 
 		//        Compute function value f for the sample problem.
 		proj = new EMData();
+		proj2 = new EMData();
 		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
 		int M = proj->get_ysize()/2;
-		proj = proj->window_center(M);
-		f = proj->cmp("SqEuclidean", refim, Dict("mask", mask));
+		proj2 = proj->window_center(M);
+		f = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//f = -f;
 		delete proj;
+		delete proj2;
 		
 	      	//        Compute gradient g for the sample problem.
 		float dt = 1.0e-3;
 		proj = new EMData();
+		proj2 = new EMData();
 		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0]+dt,x[1],x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
-		proj = proj->window_center(M);
-		ft = proj->cmp("SqEuclidean", refim, Dict("mask", mask));
+		proj2 = proj->window_center(M);
+		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
+		delete proj2;
 		g[0] = (ft-f)/dt;
 
 		proj = new EMData();
+		proj2 = new EMData();
 		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1]+dt,x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
-		proj = proj->window_center(M);
-		ft = proj->cmp("SqEuclidean", refim, Dict("mask", mask));
+		proj2 = proj->window_center(M);
+		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
+		delete proj2;
 		g[1] = (ft-f)/dt;
 
 		proj = new EMData();
+		proj2 = new EMData();
 		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]+dt),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
-		proj = proj->window_center(M);
-		ft = proj->cmp("SqEuclidean", refim, Dict("mask", mask));
+		proj2 = proj->window_center(M);
+		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
+		delete proj2;
 		g[2] = (ft-f)/dt;
 
 		proj = new EMData();
+		proj2 = new EMData();
 		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3]+dt, "y_shift", x[4], "z_shift", 0.0f));
 		proj->do_ift_inplace();
-		proj = proj->window_center(M);
-		ft = proj->cmp("SqEuclidean", refim, Dict("mask", mask));
+		proj2 = proj->window_center(M);
+		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
+		delete proj2;
 		g[3] = (ft-f)/dt;
 
 		proj = new EMData();
+		proj2 = new EMData();
 		proj = volft->extractplane(Transform3D(Transform3D::SPIDER,x[0],x[1],x[2]),kb);
 		proj->fft_shuffle();
 		proj->center_origin_fft();
 		proj->process_inplace("filter.shift", Dict("x_shift", x[3], "y_shift", x[4]+dt, "z_shift", 0.0f));
 		proj->do_ift_inplace();
-		proj = proj->window_center(M);
-		ft = proj->cmp("SqEuclidean", refim, Dict("mask", mask));
+		proj2 = proj->window_center(M);
+		ft = proj2->cmp("SqEuclidean", refim, Dict("mask", mask));
 		//ft = -ft;
 		delete proj;
+		delete proj2;
 		g[4] = (ft-f)/dt;
    		} 
 		
