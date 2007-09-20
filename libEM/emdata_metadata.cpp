@@ -536,6 +536,9 @@ void EMData::set_size(int x, int y, int z)
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	rdata = static_cast < float *>(realloc(rdata, size));
+	
+	if ( rdata == 0 ) throw BadAllocException("It appears as though there wasn't enough system memory");
+	
 	update();
 
 	attr_dict["nx"] = x;

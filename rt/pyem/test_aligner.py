@@ -36,6 +36,7 @@ import unittest,os,sys
 from test import test_support
 import testlib
 from pyemtbx.exceptions import *
+from math import *
 
 class TestAligner(unittest.TestCase):
     """aligner test"""
@@ -120,6 +121,40 @@ class TestAligner(unittest.TestCase):
         
         e.align('rotate_translate', e2, {'maxshift':1})
         
+        n = 32
+        t3d = Transform3D()
+        dx = 3.0
+        dy = 2.0
+        t3d.set_posttrans(dx,dy)
+        for i in range(0,1):
+			for az in range(5,180,5):
+				t3d = Transform3D(EULER_EMAN,az,0,0)
+				t3d.set_posttrans(dx,dy)
+				e3 = EMData()
+				e3.set_size(n+i,n+i,1)
+				e3.process_inplace('testimage.squarecube', {'axis':'x', 'edge_length':10, 'fill':1} )
+				if ( i == 0 ) : e3.write_image("testc.img")
+				
+				
+				e4 = e3.copy()
+				
+				e3.rotate_translate(t3d)
+				
+				e5 = e4.align('rotate_translate', e3, {'maxshift':5})
+				
+				soln_dx = e5.get_attr("align.dx")
+				soln_dy = e5.get_attr("align.dy")
+				soln_az = e5.get_attr("align.az")
+				
+				#print "dx %f %f" %(dx, soln_dx)
+				#print "dy %f %f" %(dy, soln_dy)
+				#print "az %f %f" %(az, soln_az)
+				
+				assert soln_dx == dx
+				assert soln_dy == dy
+				assert (soln_az%180)/az < 1.2
+				assert (soln_az%180)/az > 0.8
+		
     def no_test_RotateTranslateBestAligner(self):
         """test RotateTranslateBestAligner .................."""
         e = EMData()
@@ -281,7 +316,96 @@ class TestAligner(unittest.TestCase):
         
         e.align('refine', e2)
         e.align('refine', e2, {'mode':1, 'az':1.2, 'dx':2, 'dy':3.4})
-   
+        
+        #n = 128
+        ##dx = 0.4
+        ##dy = 0.9
+        #div = 4.0
+        ##scale=1.0
+        #inc = [ i for i in range(-int(div),int(div)+1)]
+        #for i in range(-int(div),int(div)+1):
+			#inc[i] = inc[i]/div
+
+        #e7 = EMData()
+        #e8 = EMData()
+        #e7.set_size(32,32,1)
+        #e7.process_inplace("testimage.noise.uniform.rand")
+        #e8.set_size(32,32,1)
+        #e8.process_inplace("testimage.noise.uniform.rand")
+        #result2 = e8.cmp("dot",e8, {"normalize":1})
+        #result1 = e8.dot_rotate_translate(e8, 0.0, 0.0, 0.0)
+        #result3 = e8.dot_rotate_translate(e8, 1.0, 2.0, 3.0)
+        #e7.rotate_translate(1.0,0,0,0,0,0,2.0,3.0,0.0)
+        #print "Results %f %f %f" %(result1,result2, result3)
+
+        #print ""
+        ##for i in range(0,2):
+        #i = 0
+        #for precision in [0.01]:
+			#for maxiter in [100]:
+				#result = EMData()
+				#result.set_size(len(inc), len(inc),len(inc))
+				#for dx in inc:
+					#for dy in inc:
+						#for az in inc:
+							#t3d = Transform3D(EULER_EMAN,az,0,0)
+							#t3d.set_posttrans(dx,dy)
+							#e3 = EMData()
+							#e3.set_size(n,n,1)
+							#e3.process_inplace('testimage.squarecube', {'axis':'x', 'edge_length':10, 'fill':1})
+							#e3.process_inplace('filter.lowpass.gauss', {'cutoff_pixels':n/8, 'sigma':0.5})
+							
+							##etmp = EMData()
+							##etmp.set_size(n,n,1)
+							##etmp.process_inplace('testimage.squarecube', {'axis':'x', 'edge_length':10, 'fill':1})
+							##e3 = e3 + etmp
+							
+							#if ( i == 0 ):
+								#e3.write_image("test_square.img")
+							
+							#e4 = e3.copy()
+							
+							#e3.rotate_translate(t3d)
+											
+							#e5 = e4.align('refine', e3, {'mode':2, 'dx':-1, 'dy':-1, 'az':-1, 'stepx':2, 'stepy':2, 'stepaz':2, 'maxiter':maxiter, 'precision':precision}, 'dot', {'normalize':1} )
+							
+							#if ( i == 0 ): (e5-e3).write_image("subtraction.img")
+							
+							#soln_dx = e5.get_attr("align.dx")
+							#soln_dy = e5.get_attr("align.dy")
+							#soln_az = e5.get_attr("align.az")
+							
+						
+		
+							#dx_diff = dx - soln_dx
+							#dx_diff *= dx_diff
+							#dy_diff = dy - soln_dy
+							#dy_diff *= dy_diff
+							#daz_diff = az - soln_az;
+							#daz_diff *= daz_diff
+		
+							#x = int((dx + 1)*div)
+							#y = int((dy + 1)*div)
+							#z = int((az + 1)*div)
+							
+							#intensity = sqrt(dx_diff+dy_diff+daz_diff)
+							
+							#if (intensity > 1):
+								#print "##############################################"
+								#print "intensity diff is %f" %intensity
+								#print "iter and precision is %d %f" %(maxiter, precision)
+								#print "x align %f %f" %(dx, soln_dx)
+								#print "y align %f %f" %(dy, soln_dy)
+								#print "az align %f %f" %(az, soln_az)
+								
+							#result.set_value_at(x,y,z,intensity)
+				
+				#print "iter and precision are %d %f" %(maxiter, precision)
+				#print "Stats are %f %f" %(result.get_attr("mean"), result.get_attr("sigma"))
+				
+        #result.write_image("result.mrc")
+
+       
 def test_main():
     test_support.run_unittest(TestAligner)
 

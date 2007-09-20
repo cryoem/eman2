@@ -175,8 +175,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	
 	//float score = (float)hypot(result[0], result[1]);
 	cf->set_attr("align.score", max_value);
-	cf->set_attr("align.dx",result[0]); 
-	cf->set_attr("align.dy",result[1]); 
+	cf->set_attr("align.dx",result[0]);
+	cf->set_attr("align.dy",result[1]);
 
 	return cf;
 }
@@ -189,7 +189,7 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 	if (!this_img) {
 		return 0;
 	}
-
+	
 	params.set_default("intonly", 0);
 
 	if (to && !EMUtil::is_same_size(this_img, to)) {
@@ -266,7 +266,7 @@ EMData *Translational3DAligner::align(EMData * this_img, EMData *to,
 	cf->set_attr("align.dz",tz); 
 
 	cf->update();
-
+	
 	return cf;
 }
 
@@ -287,7 +287,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 
 	EMData *cf = this_img2->calc_ccfx(to2, 0, this_img->get_ysize());
 
-	cf->write_image("temp.hdf",-1); // eliminate later, PRB
+// 	cf->write_image("temp.hdf",-1); // eliminate later, PRB
 	delete this_img2;
 	delete to2;
 
@@ -536,6 +536,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		cmp_name = "dot";
 	}
 #endif
+// 	cout << "Prior to alignment the parameters were " << (float)this_img->get_attr("align.dx") << " " << (float)this_img->get_attr("align.dy") << " " << (float)this_img->get_attr("align.az") << endl;
 	//printf(" This is the one \n");
 	EMData *this_copy  = this_img->align("rotational", to);
 	
@@ -591,6 +592,7 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		result = this_copy2;
 	}
 
+// 	cout << "Prior to alignment the parameters were " << (float)this_img->get_attr("align.dx") << " " << (float)this_img->get_attr("align.dy") << " " <<(float) this_img->get_attr("align.az") << endl;
 	return result;
 }
 
@@ -1528,12 +1530,18 @@ static double refalifn(const gsl_vector * v, void *params)
 	double a = gsl_vector_get(v, 2);
 
 	EMData *this_img = (*dict)["this"];
-	EMData * with = (*dict)["with"];
-	this_img->rotate_translate((float)a, 0.0f, 0.0f, (float)x, (float)y, 0.0f);
+	EMData *with = (*dict)["with"];
+	EMData *tmp = this_img->copy();
+	Transform3D t3d(Transform3D::EMAN, (float)a, 0.0f, 0.0f);
+	t3d.set_posttrans( (float) x, (float) y);
+	tmp->rotate_translate( t3d );
 
 	Cmp* c = (Cmp*) ((void*)(*dict)["cmp"]);
+	double result = c->cmp(tmp,with);
 	
-	return c->cmp(this_img, with);
+	if ( tmp != 0 ) delete tmp;
+	
+	return result;
 }
 
 static double refalifnfast(const gsl_vector * v, void *params)
@@ -1550,6 +1558,7 @@ static double refalifnfast(const gsl_vector * v, void *params)
 	int nsec = this_img->get_xsize() * this_img->get_ysize();
 	double result = 1.0 - r / nsec;
 
+// 	cout << result << " x " << x << " y " << y << " az " << a <<  endl;
 	return result;
 }
 
@@ -1574,33 +1583,46 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 
 	int mode = params.set_default("mode", 0);
 	float saz = params.set_default("az",0.0);
+// 	saz -= 1.0;
 	float sdx = params.set_default("dx",0.0);
+// 	sdx -= 1.0;
 	float sdy = params.set_default("dy",0.0);
+// 	sdy -= 1.0;
+	
 	int np = 3;
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	
-	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
-	gsl_params["cmp"] = (void *) c;
-	
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
-	gsl_vector_set(ss, 0, 1.0f);
-	gsl_vector_set(ss, 1, 1.0f);
-	gsl_vector_set(ss, 2, 0.1f);
+	
+	float stepx = params.set_default("stepx",1.0);
+	float stepy = params.set_default("stepy",1.0);
+	// Default step is 5 degree - note in EMAN1 is was 0.1 radians
+	float stepaz = params.set_default("stepaz",5.0);
+	
+// 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;
+	// 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;
+	gsl_vector_set(ss, 0, stepx);
+	gsl_vector_set(ss, 1, stepy);
+	gsl_vector_set(ss, 2, stepaz);
 
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdx);
 	gsl_vector_set(x, 1, sdy);
 	gsl_vector_set(x, 2, saz);
 
+	Cmp *c = 0;
+	
 	gsl_multimin_function minex_func;
 	if (mode == 2) {
 		minex_func.f = &refalifnfast;
 	}
 	else {
+		c = Factory < Cmp >::get(cmp_name, cmp_params);
+		gsl_params["cmp"] = (void *) c;
 		minex_func.f = &refalifn;
 	}
 	
@@ -1613,29 +1635,33 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	int rval = GSL_CONTINUE;
 	int status = GSL_SUCCESS;
 	int iter = 1;
-
-	while (rval == GSL_CONTINUE && iter < 28) {
+	
+	float precision = params.set_default("precision",0.04);
+	int maxiter = params.set_default("maxiter",28);
+	while (rval == GSL_CONTINUE && iter < maxiter) {
 		iter++;
 		status = gsl_multimin_fminimizer_iterate(s);
 		if (status) {
 			break;
 		}
 
-		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), 0.04f);
+		rval = gsl_multimin_test_size(gsl_multimin_fminimizer_size(s), precision);
 	}
 
+	
 	result->rotate_translate((float)gsl_vector_get(s->x, 2), 0, 0,
 								(float)gsl_vector_get(s->x, 0), (float)gsl_vector_get(s->x, 1), 0);
 	
-	this_img->set_attr("align.az",(float)gsl_vector_get(s->x, 2));
-	this_img->set_attr("align.dx",(float)gsl_vector_get(s->x, 0));
-	this_img->set_attr("align.dy",(float)gsl_vector_get(s->x, 1));
-
+	result->set_attr("align.dx",(float)gsl_vector_get(s->x, 0));
+	result->set_attr("align.dy",(float)gsl_vector_get(s->x, 1));
+	result->set_attr("align.az",(float)gsl_vector_get(s->x, 2));
+	
 	gsl_vector_free(x);
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
 	
-	delete c;
+	if ( c != 0 ) delete c;
+	
 	return result;
 }
 

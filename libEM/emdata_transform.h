@@ -146,5 +146,9 @@ void insert_clip(EMData * block, const IntPoint & origin);
  */
 void insert_scaled_sum(EMData *block, const FloatPoint & center,
 					   float scale=1.0, float mult_factor=1.0);
+					   
+EMData* fft_continuous_rotate(const Transform3D& t3d);
+EMData* ifft_realspace_rotate(const Transform3D& t3d);
+
 
 #endif	//emdata__transform_h__

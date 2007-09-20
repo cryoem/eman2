@@ -69,6 +69,11 @@ def main():
 	
 	E2n=E2init(sys.argv)
 
+	num_sim =  EMUtil.get_image_count(args[0])
+	if (num_sim != 4):
+		print "Error, the similarity matrix did not contain 4 images - be sure to use the --saveali argument when running e2simmx.py"
+		exit(1)
+
 	Simimg=EMData();
 	Simimg.read_image(args[0],0)
 	TransxImg=EMData();

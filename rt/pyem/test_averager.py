@@ -61,7 +61,7 @@ class TestConstructor(unittest.TestCase):
         e3.process_inplace('testimage.noise.uniform.rand')
         #e3.do_fft_inplace()
         
-        r = Reconstructors.get('fourier', {'size':10, 'mode':1, 'weight':0.5, 'dlog':2, 'sym':'DSYM'})
+        r = Reconstructors.get('fourier', {'x_in':32,'y_in':32, 'mode':2, 'weight':0.5, 'sym':'d7', 'quiet':1})
         r.setup()
         r.insert_slice(e1, Transform3D(EULER_EMAN, 0,0,0))
         r.insert_slice(e2, Transform3D(EULER_EMAN, 0,0,0))

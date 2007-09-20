@@ -368,6 +368,19 @@ namespace EMAN {
 			const char *name() const { return "Empty container"; }
 	};
 #define EmptyContainerException(desc) _EmptyContainerException(__FILE__, __LINE__, desc)
+	
+	/** Used when memory allocation goes wrong... i.e. ran out of system memory
+	 */
+	class _BadAllocException : public E2Exception
+	{
+		public:
+			_BadAllocException(const string& file = "unknown",
+									 int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str) {}
+		
+			const char *name() const { return "Bad allocation"; }
+	};
+#define BadAllocException(desc) _BadAllocException(__FILE__, __LINE__, desc)
 }
     
     

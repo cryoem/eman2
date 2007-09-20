@@ -1335,9 +1335,11 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 
 	this_data = get_data();
 
+	float da_rad = da*M_PI/180.0;
+	
 	float *with_data = with->get_data();
-	float mx0 = cos(da);
-	float mx1 = sin(da);
+	float mx0 = cos(da_rad);
+	float mx1 = sin(da_rad);
 	float y = -ny / 2.0f;
 	float my0 = mx0 * (-nx / 2.0f - 1.0f) + nx / 2.0f - dx;
 	float my1 = -mx1 * (-nx / 2.0f - 1.0f) + ny / 2.0f - dy;
@@ -1391,7 +1393,7 @@ double EMData::dot_rotate_translate(EMData * with, float dx, float dy, float da)
 		}
 		y += 1.0f;
 	}
-
+	
 	EXITFUNC;
 	return result;
 }

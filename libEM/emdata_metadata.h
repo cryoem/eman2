@@ -233,6 +233,7 @@ inline void set_rotation(float az, float alt, float phi)
  * @param nx  x size of this image.
  * @param ny  y size of this image.
  * @param nz  z size of this image.
+ $ @exception BadAllocException if memory allocation returns a null pointer
  */
 void set_size(int nx, int ny=1, int nz=1);
 

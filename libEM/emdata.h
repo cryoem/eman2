@@ -359,7 +359,7 @@ namespace EMAN
 		 * @param with The image used to do the dot product.
 		 * @param dx Translation distance in x direction.
 		 * @param dy Translation distance in y direction.
-		 * @param da Rotation euler angle.
+		 * @param da Rotation euler angle in degrees
 		 * @exception ImageFormatException If the 2 images are not the
 		 * same size.
 		 * @exception ImageDimensionException If the image is 3D.

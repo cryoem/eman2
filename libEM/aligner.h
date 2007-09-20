@@ -694,7 +694,11 @@ namespace EMAN
 			d.put("az", EMObject::FLOAT);
 			d.put("dx", EMObject::FLOAT);
 			d.put("dy", EMObject::FLOAT);
-
+			d.put("stepx", EMObject::FLOAT);
+			d.put("stepy", EMObject::FLOAT);
+			d.put("stepaz", EMObject::FLOAT);
+			d.put("precision", EMObject::FLOAT);
+			d.put("maxiter", EMObject::INT);
 			return d;
 		}
 	};

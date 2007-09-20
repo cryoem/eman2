@@ -576,8 +576,6 @@ class platonic_asym_unit(asym_unit):
 
 		return baldwin_boundary_alt
 
-		
-
 # this class encapsulates what is common to icosahedral and octahedral symmetry
 # in terms of the mirror portions of the asym unit
 class icos_oct_asym_unit(platonic_asym_unit):

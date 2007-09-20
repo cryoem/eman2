@@ -1640,6 +1640,14 @@ class TestEMData(unittest.TestCase):
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
         
+        #e7.set_size(32,32,1)
+        #e7.process_inplace("testimage.noise.uniform.rand")
+        #e8.set_size(32,32,1)
+        #e8.process_inplace("testimage.noise.uniform.rand")
+        #result1 = e8.dot_rotate_translate(e8, 0, 0, 0)
+		#e7.rotate_translate(1.0,0,0,0,0,0,2.0,3.0,0.0)
+		#result2 = e7.cmp("dot",e8 
+		
     def test_little_big_dot(self):
         """test little_big_dot() function ..................."""
         big = EMData()

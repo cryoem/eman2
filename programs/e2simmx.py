@@ -53,6 +53,8 @@ def main():
 	#parser.add_option("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_option("--align",type="string",help="The name of an 'aligner' to use prior to comparing the images", default=None)
 	parser.add_option("--aligncmp",type="string",help="Name of the aligner along with its construction arguments",default="dot")
+	parser.add_option("--alignr",type="string",help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
+	parser.add_option("--alignrcmp",type="string",help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_option("--cmp",type="string",help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
 	parser.add_option("--range",type="string",help="Range of images to process (c0,r0,c1,r1) c0,r0 inclusive c1,r1 exclusive", default=None)
 	parser.add_option("--saveali",action="store_true",help="Save alignment values, output is c x r x 4 instead of c x r x 1",default=False)
@@ -69,6 +71,8 @@ def main():
 	
 	options.align=parsemodopt(options.align)
 	options.aligncmp=parsemodopt(options.aligncmp)
+	options.alignr=parsemodopt(options.alignr)
+	options.alignrcmp=parsemodopt(options.alignrcmp)
 	options.cmp=parsemodopt(options.cmp)
 
 	clen=EMUtil.get_image_count(args[0])
@@ -110,7 +114,7 @@ def main():
 			print "%d/%d\r"%(r,rrange[1]),
 			sys.stdout.flush()
 		rimg.read_image(args[1],r)
-		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp)
+		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.alignr, options.alignrcmp)
 		for c,v in enumerate(row):
 			mxout.set_value_at(c,r,0,v[0])
 		
@@ -132,7 +136,7 @@ def main():
 	
 	E2end(E2n)
 	
-def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{})):
+def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), alignr=None, alircmp=("dot",{})):
 	"""Compares one image (target) to a list of many images (reflist). Returns """
 	
 	ret=[None for i in reflist]
@@ -140,8 +144,15 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{})):
 		if align[0] :
 			ta=target.align(align[0],r,align[1],alicmp[0],alicmp[1])
 			#ta.debug_print_params()
+			
+			if alignr[0]:
+				alignr[1]["az"] = ta.get_attr_default("align.az",0)-1
+				alignr[1]["dx"] = ta.get_attr_default("align.dx",0)-1
+				alignr[1]["dy"] = ta.get_attr_default("align.dy",0)-1
+				ta = target.align(alignr[0],r,alignr[1],alircmp[0],alircmp[1])
+				
 			ret[i]=(ta.cmp(cmp[0],r,cmp[1]),ta.get_attr_default("align.dx",0),ta.get_attr_default("align.dy",0),ta.get_attr_default("align.az",0))
-		else : 
+		else :
 			ret[i]=(target.cmp(cmp[0],r,cmp[1]),0,0,0)
 		
 	return ret
