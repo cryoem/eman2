@@ -124,6 +124,20 @@ class TestCmp(unittest.TestCase):
         score  = e.cmp('frc', e2, {})
         #score2 = e.cmp('frc', e2, {'snr':(1.0, 2.0)})    #todo: segmentation fault
         
+        # TODO - THE FRC SEEMS BROKEN, THIS TEST CODE FAILS - d.woolford
+        # the frc (integral) of an image compared to itself should always be (in EMAN2 negative) 1
+        # Here this assertion is tested for all combinations of all even odd combinations
+        # of 2D and 3D images - the image tested against is random noise
+        #n = 16
+        #for i in range(-1,2):
+			#for j in range(-1,2):
+				#for k in [1,n-1,n,n+1]:
+					#e3 = EMData()
+					#e3.set_size(n+i,n+j,n+k)
+					#e3.process_inplace('testimage.noise.uniform.rand')
+					#neg_one  = e2.cmp('frc', e2, {})
+					#self.assertAlmostEqual(neg_one,-1, places=6)
+        
     def test_PhaseCmp(self):
         """test PhaseCmp ...................................."""
         e = EMData()
@@ -135,6 +149,19 @@ class TestCmp(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('phase', e2, {})
+        # the phase residual of an image compared to itself should always be zero
+        # Here this assertion is tested for all combinations of all even odd combinations
+        # of 2D and 3D images - the image tested against is random noise
+        n = 16
+        for i in range(-1,2):
+			for j in range(-1,2):
+				for k in [1,n-1,n,n+1]:
+					e3 = EMData()
+					e3.set_size(n+i,n+j,k)
+					e3.process_inplace('testimage.noise.uniform.rand')
+					zero  = e2.cmp('phase', e2, {})
+					self.assertAlmostEqual(zero,0, places=6)
+
         
     def test_SqEuclideanCmp(self):
         """test SqEuclideanCmp .............................."""
@@ -147,6 +174,21 @@ class TestCmp(unittest.TestCase):
         e2.process_inplace('testimage.noise.uniform.rand')
         
         score  = e.cmp('SqEuclidean', e2, {})
+        # the square euclidiean distance difference of an image and itself should always be zero
+        zero  = e2.cmp('SqEuclidean', e2, {})
+
+        # the square euclidiean distance difference of an image and itself should always be zero
+        # Here this assertion is tested for all combinations of all even odd combinations
+        # of 2D and 3D images - the image tested against is random noise
+        n = 16
+        for i in range(-1,2):
+			for j in range(-1,2):
+				for k in [1,n-1,n,n+1]:
+					e3 = EMData()
+					e3.set_size(n+i,n+j,k)
+					e3.process_inplace('testimage.noise.uniform.rand')
+					zero  = e2.cmp('SqEuclidean', e2, {})
+					self.assertAlmostEqual(zero,0, places=6)
         
     def test_DotCmp(self):
         """test DotCmp ......................................"""
@@ -160,6 +202,19 @@ class TestCmp(unittest.TestCase):
         
         score  = e.cmp('dot', e2, {})
         score  = e.cmp('dot', e2, {'negative':1, 'normalize':1})
+        n = 16
+        # the normalized dot product of an image and itself should always be -1 (by default the dot product is negated)
+        # Here this assertion is tested for all combinations of all even odd combinations
+        # of 2D and 3D images - the image tested against is random noise
+        for i in range(-1,2):
+			for j in range(-1,2):
+				for k in [1,n-1,n,n+1]:
+					e3 = EMData()
+					e3.set_size(n+i,n+j,k)
+					e3.process_inplace('testimage.noise.uniform.rand')
+					neg_one  = e3.cmp('dot', e3, {"normalize":1})
+					self.assertAlmostEqual(neg_one,-1, places=6)
+        
 def test_main():
     test_support.run_unittest(TestCmp)
 
