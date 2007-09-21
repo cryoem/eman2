@@ -4116,6 +4116,38 @@ The basic design of EMAN Processors: <br>\
 			return "Computes the DFFT (Discrete Fast Fourier Transform) of an image";
 		}
 	};
+	
+	/** Perform a multiplication of real image with a radial table
+	 * @param table a radial table for multiplication
+	 * @exception ImageFormatException this filter only apply to real image
+	 * */
+	class RadialProcessor : public Processor
+	{
+	public:
+		void process_inplace(EMData * image);
+		
+		string get_name() const
+		{
+			return "filter.radialtable";
+		}
+		
+		static Processor *NEW()
+		{
+			return new RadialProcessor();
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("table", EMObject::FLOATARRAY, "radial float array for multiplication");
+			return d;
+		}
+		
+		string get_desc() const
+		{
+			return "multiply an image in real-space by a radial function";
+		}
+	};
 
 #if 0
 

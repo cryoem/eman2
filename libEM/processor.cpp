@@ -203,6 +203,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add(&WaveletProcessor::NEW);
 	force_add(&FFTProcessor::NEW);
+	force_add(&RadialProcessor::NEW);
 }
 
 EMData* Processor::process(const EMData * const image)
@@ -4864,8 +4865,89 @@ void FFTProcessor::process_inplace(EMData* image)
 	}
 }
 
-void MirrorProcessor::process_inplace(EMData *image) {
-if (!image) {
+void RadialProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	
+	//Note : real image only!
+	if(image->is_complex()) {
+		LOGERR("%s Processor only operates on real images", get_name().c_str());
+		throw ImageFormatException("apply to real image only");
+	}
+	
+	vector<float> table = params["table"];
+	vector<float>::size_type tsize = table.size();
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	int nx2 = nx / 2;
+	int ny2 = ny / 2;
+	int nz2 = nz / 2;
+	float sz[3];
+	sz[0] = static_cast<float>(nx2);
+	sz[1] = static_cast<float>(ny2);
+	sz[2] = static_cast<float>(nz2);
+	float szmax = *std::max_element(&sz[0], &sz[3]);
+	float maxsize;
+	if(nz>1) {
+		maxsize = (float)(1.8f * szmax);
+	}
+	else{
+		maxsize = (float)(1.5f * szmax);
+	}
+	for(int i=tsize+1; i<maxsize; i++) {
+		table.push_back(0.0f);
+	}
+	
+	float dx = 1.0f / (float)nx;
+	float dy = 1.0f / (float)ny;
+	float dz = 1.0f / (float)nz;
+	float dx2 = dx * dx;
+	float dy2 = dy * dy;
+	float dz2 = dz * dz;
+	int iz, iy, ix, jz, jy, jx;
+	float argx, argy, argz;
+	float rf, df, f;
+	int ir;
+	for(iz=1; iz<=nz; iz++) {
+		jz = iz - 1;
+		if(jz > nz2) {
+			jz -= nz; 
+		}
+		argz = float(jz*jz) * dz2;
+		
+		for(iy=1; iy<=ny; iy++) {
+			jy = iy - 1;
+			if(jy > ny2) {
+				jy -= ny;
+			}
+			argy = argz + float(jy*jy) * dy2;
+			
+			for(ix=1; ix<=nx; ix++) {
+				jx = ix -1;
+				argx = argy + float(jx*jx)*dx2;
+				
+				rf = sqrt(argx)*2.0f*nx2;
+				ir = int(rf);
+				df = rf - float(ir);
+				f = table[ir] + df*(table[ir+1]-table[ir]);
+				
+				(*image)(ix-1,iy-1,iz-1) *= f;
+			}
+		}
+	}
+	
+	image->update();
+}
+
+void MirrorProcessor::process_inplace(EMData *image) 
+{
+	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
