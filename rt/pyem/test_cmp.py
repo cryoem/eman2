@@ -153,8 +153,8 @@ class TestCmp(unittest.TestCase):
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
         n = 16
-        for i in range(-1,2):
-			for j in range(-1,2):
+        for i in range(-1,1):
+			for j in range(-1,1):
 				for k in [1,n-1,n,n+1]:
 					e3 = EMData()
 					e3.set_size(n+i,n+j,k)
@@ -181,8 +181,8 @@ class TestCmp(unittest.TestCase):
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
         n = 16
-        for i in range(-1,2):
-			for j in range(-1,2):
+        for i in range(-1,1):
+			for j in range(-1,1):
 				for k in [1,n-1,n,n+1]:
 					e3 = EMData()
 					e3.set_size(n+i,n+j,k)
@@ -206,8 +206,8 @@ class TestCmp(unittest.TestCase):
         # the normalized dot product of an image and itself should always be -1 (by default the dot product is negated)
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
-        for i in range(-1,2):
-			for j in range(-1,2):
+        for i in range(-1,1):
+			for j in range(-1,1):
 				for k in [1,n-1,n,n+1]:
 					e3 = EMData()
 					e3.set_size(n+i,n+j,k)
