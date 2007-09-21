@@ -65,7 +65,7 @@ void Cmp::validate_input_args(const EMData * image, const EMData *with) const
 
 	float *d1 = image->get_data();
 	if (!d1) {
-		throw NullPointerException("compared image data");
+		throw NullPointerException("image contains no data");
 	}
 	
 	float *d2 = with->get_data();
