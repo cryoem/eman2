@@ -1126,8 +1126,8 @@ EMData* EMData::fft_continuous_rotate(const Transform3D& t3d)
 			
 			int n_f = n-ny/2;
 			
-			int midx = m*t3d[0][0] + n_f*t3d[0][1];
-			int nidx = m*t3d[1][0] + n_f*t3d[1][1];
+			int midx = (int)(m*t3d[0][0] + n_f*t3d[0][1]);
+			int nidx = (int)(m*t3d[1][0] + n_f*t3d[1][1]);
 			
 // 			if ( midx > ((nx-2)/2) ) midx = nx - midx - 2; // 2*((nx-2)/2) - midx
 // 			if ( midx < -((nx-2)/2) ) midx = nx + midx - 2; // 2*((nx-2)/2) - midx

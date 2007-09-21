@@ -381,6 +381,19 @@ namespace EMAN {
 			const char *name() const { return "Bad allocation"; }
 	};
 #define BadAllocException(desc) _BadAllocException(__FILE__, __LINE__, desc)
+	/** Used when internal behavior is unexpected
+	* A generic kind of exception
+	*/
+	class _UnexpectedBehaviorException : public E2Exception
+	{
+		public:
+			_UnexpectedBehaviorException(const string& file = "unknown",
+							   int line = 0, const string& desc_str = "")
+			: E2Exception(file, line, desc_str) {}
+		
+			const char *name() const { return "Bad allocation"; }
+	};
+#define UnexpectedBehaviorException(desc) _UnexpectedBehaviorException(__FILE__, __LINE__, desc)
 }
     
     

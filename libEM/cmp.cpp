@@ -579,9 +579,9 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	static float *dfsnr = 0;
 	static int nsnr = 0;
 
-	if (image->get_zsize() > 1) {
-		throw ImageDimensionException("2D only");
-	}
+// 	if (image->get_zsize() > 1) {
+// 		throw ImageDimensionException("2D only");
+// 	}
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
@@ -653,21 +653,22 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	
 	static vector < float >default_snr;
 
-	if (image->get_zsize() > 1) {
-		throw ImageDimensionException("2D only");
-	}
+// 	if (image->get_zsize() > 1) {
+// 		throw ImageDimensionException("2D only");
+// 	}
 
 	//int nx = image->get_xsize(); // <- not currently used
 	int ny = image->get_ysize();
 
-	vector < float >snr = params["snr"];
+	vector < float >snr;
+	if (params.has_key("snr")) snr = params["snr"];
 	vector < float >fsc_array;
 
 	if (snr.size() == 0) {
 		int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
 		fsc_array = image->calc_fourier_shell_correlation(with);
-
+		
 		if (default_snr.size() != (unsigned int) np) {
 			default_snr = vector < float >(np);
 			// float w = Util::square(nx / 8.0f); // <- Not currently used
@@ -680,19 +681,23 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 			}
 		}
 	}
-
 	double sum = 0;
 	double norm = 0;
 
 	const int n = Ctf::CTFOS;
-	for (int i = 0; i < ny / 2; i++) {
-		sum += fsc_array[i] * i * default_snr[i * n + n / 2];
-		norm += i * default_snr[i * n + n / 2];
+	for (int i = 0; i < ny / 2 + 1; i++) {
+		int idx = i + fsc_array.size()/3;
+// 		cout << fsc_array[idx] << " ";
+		sum += fsc_array[idx] * i * default_snr[idx * n + n / 2];
+		norm += i * default_snr[idx * n + n / 2];
 	}
 
 	EXITFUNC;
 	
-	return (float)(sum / norm);
+	//.Note the negative! This is because EMAN2 follows the convention that
+	// smaller return values from comparitors indicate higher similarity -
+	// this enables comparitors to be used in a generic fashion.
+	return -(float)(sum / norm);
 }
 
 void EMAN::dump_cmps()

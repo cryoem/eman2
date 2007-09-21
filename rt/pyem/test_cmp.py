@@ -128,15 +128,15 @@ class TestCmp(unittest.TestCase):
         # the frc (integral) of an image compared to itself should always be (in EMAN2 negative) 1
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
-        #n = 16
-        #for i in range(-1,2):
-			#for j in range(-1,2):
-				#for k in [1,n-1,n,n+1]:
-					#e3 = EMData()
-					#e3.set_size(n+i,n+j,n+k)
-					#e3.process_inplace('testimage.noise.uniform.rand')
-					#neg_one  = e2.cmp('frc', e2, {})
-					#self.assertAlmostEqual(neg_one,-1, places=6)
+        n = 16
+        for i in range(n-1,n+1):
+			for j in range(n-1,n+1):
+				for k in [1,n-1,n]:
+					e3 = EMData()
+					e3.set_size(i,j,k)
+					e3.process_inplace('testimage.noise.uniform.rand')
+					neg_one  = e3.cmp('frc', e3.copy(), {})
+					self.assertAlmostEqual(neg_one,-1, places=6)
         
     def test_PhaseCmp(self):
         """test PhaseCmp ...................................."""
@@ -153,13 +153,14 @@ class TestCmp(unittest.TestCase):
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
         n = 16
-        for i in range(-1,1):
-			for j in range(-1,1):
-				for k in [1,n-1,n,n+1]:
+        for i in range(n-1,n+1):
+			for j in range(n-1,n+1):
+				for k in [1,n-1,n]:
 					e3 = EMData()
-					e3.set_size(n+i,n+j,k)
+					e3.set_size(i,j,k)
 					e3.process_inplace('testimage.noise.uniform.rand')
-					zero  = e2.cmp('phase', e2, {})
+					zero  = e3.cmp('phase', e3.copy(), {})
+					#print "%d %d %d %f" %(i,j,k,zero)
 					self.assertAlmostEqual(zero,0, places=6)
 
         
@@ -181,13 +182,13 @@ class TestCmp(unittest.TestCase):
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
         n = 16
-        for i in range(-1,1):
-			for j in range(-1,1):
-				for k in [1,n-1,n,n+1]:
+        for i in range(n-1,n+1):
+			for j in range(n-1,n+1):
+				for k in [1,n-1,n]:
 					e3 = EMData()
-					e3.set_size(n+i,n+j,k)
+					e3.set_size(i,j,k)
 					e3.process_inplace('testimage.noise.uniform.rand')
-					zero  = e2.cmp('SqEuclidean', e2, {})
+					zero  = e3.cmp('SqEuclidean', e3.copy(), {})
 					self.assertAlmostEqual(zero,0, places=6)
         
     def test_DotCmp(self):
@@ -206,13 +207,14 @@ class TestCmp(unittest.TestCase):
         # the normalized dot product of an image and itself should always be -1 (by default the dot product is negated)
         # Here this assertion is tested for all combinations of all even odd combinations
         # of 2D and 3D images - the image tested against is random noise
-        for i in range(-1,1):
-			for j in range(-1,1):
-				for k in [1,n-1,n,n+1]:
+        n = 16
+        for i in range(n-1,n+1):
+			for j in range(n-1,n+1):
+				for k in [1,n-1,n]:
 					e3 = EMData()
-					e3.set_size(n+i,n+j,k)
+					e3.set_size(i,j,k)
 					e3.process_inplace('testimage.noise.uniform.rand')
-					neg_one  = e3.cmp('dot', e3, {"normalize":1})
+					neg_one  = e3.cmp('dot', e3.copy(), {"normalize":1})
 					self.assertAlmostEqual(neg_one,-1, places=6)
         
 def test_main():
