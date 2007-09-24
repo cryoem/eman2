@@ -95,6 +95,9 @@ void postift_depad_corner_inplace();
  *  @return New interpolated up image.
  */
 EMData* FourInterpol(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+EMData* FourInterpol_i(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+EMData* Four_ds(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+EMData* Four_shuf_ds_cen_us(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 
 
 EMData* filter_by_image(EMData* image, bool RetReal = true);

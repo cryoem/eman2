@@ -383,6 +383,265 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 	temp_ft = 0;
 	return ret;
 }
+
+EMData *EMData::FourInterpol_i(int nxn, int nyni, int nzni, bool RetReal) {
+
+	int nyn, nzn, lsd, lsdn, inx, iny, inz;
+	int i, j, k;
+
+	if(ny > 1) {
+		nyn = nyni;
+		if(nz > 1) {
+			nzn = nzni;
+		}  else {
+			nzn = 1;
+		}
+	} else {
+		nyn = 1; nzn = 1;
+	}
+	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
+	lsd = nx-2 + 2 - nx%2;
+	lsdn = nxn + 2 - nxn%2;
+//  do out of place ft
+	EMData *temp_ft = this->copy();
+	EMData *ret = this->copy();
+	ret->set_size(lsdn, nyn, nzn);
+	ret->to_zero();
+	float *fout = ret->get_data();
+	float *fint = temp_ft->get_data();
+//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
+//  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
+	float  sq2 = 1.0f/std::sqrt(2.0f);
+	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
+	for (k=1; k<=nz/2+1; k++) for (j=1; j<=ny/2+1; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j,k);
+	if(nyn>1) {
+	//cout << "  " <<nxn<<"  " <<nyn<<" A " <<nzn<<endl;
+		for (k=1; k<=nz/2+1; k++) for (j=ny/2+2+iny; j<=nyn; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j-iny,k);
+		if(nzn>1) {
+			for (k=nz/2+2+inz; k<=nzn; k++) {
+				for (j=1; j<=ny/2+1; j++) {
+					for (i=1; i<=lsd; i++) {
+						fout(i,j,k)=fint(i,j,k-inz);
+					}
+				}
+				for (j=ny/2+2+iny; j<=nyn; j++) {
+					for (i=1; i<=lsd; i++) {
+						fout(i,j,k)=fint(i,j-iny,k-inz);
+					}
+				}
+			}
+		}
+	}
+//       WEIGHTING FACTOR USED FOR EVEN NSAM. REQUIRED SINCE ADDING ZERO FOR
+//       INTERPOLATION WILL INTRODUCE A COMPLEX CONJUGATE FOR NSAM/2'TH
+//       ELEMENT.
+	if(nx%2 == 0 && inx !=0) {
+		for (k=1; k<=nzn; k++) {
+			for (j=1; j<=nyn; j++) {
+				fout(nx-2+1,j,k) *= sq2;
+				fout(nx-2+2,j,k) *= sq2;
+			}
+		}
+		if(nyn>1) {
+			for (k=1; k<=nzn; k++) {
+			  for (i=1; i<=lsd; i++) {
+			    fout(i,ny/2+1+iny,k) = sq2*fout(i,ny/2+1,k);
+			    fout(i,ny/2+1,k) *= sq2;
+			  }
+			}
+			if(nzn>1) {
+				for (j=1; j<=nyn; j++) {
+					for (i=1; i<=lsd; i++) {
+						fout(i,j,nz/2+1+inz) = sq2*fout(i,j,nz/2+1);
+						fout(i,j,nz/2+1) *= sq2;
+					}
+				}
+			}
+		}
+	}
+	ret->set_complex(true);
+/*
+//  For padding from odd to even dimension additional shift by 1 pixel is necessary.
+	float  xshift = 0.f, yshift = 0.f, zshift = 0.f;
+	int nyn2, nzn2;
+	if(nxn > nx && nx%2 == 1)  xshift = 1.0f;
+	if(ny > 1) {
+		if(nyn > ny && ny%2 == 1)  yshift = 1.0f;
+		nyn2 = nyn/2;
+		if(nz > 1) {
+			if(nzn > nz && nz%2 == 1)  zshift = 1.0f;
+			nzn2 = nzn/2;
+		}  else {
+			nzn2 = 0;
+		}
+	} else {
+		nyn2 = 0; nzn2 = 0;
+	}
+	if(xshift == 1.0 || yshift == 1.0 || zshift == 1.0)  {
+		ret->set_array_offsets(1,1,1);
+		int  lsdn2 = lsd/2;
+		for (int iz = 1; iz <= nzn; iz++) {
+			int jz=iz-1; if(jz>nzn2) jz=jz-nzn;
+			for (int iy = 1; iy <= nyn; iy++) {
+				int jy=iy-1; if(jy>nyn2) jy=jy-nyn;
+				for (int ix = 1; ix <= lsdn2; ix++) {
+					int jx=ix-1;
+					ret->cmplx(ix,iy,iz) *= 
+					exp(-float(twopi)*iimag*(xshift*jx/nxn + yshift*jy/nyn+ zshift*jz/nzn));
+				}
+			}
+		}
+		ret->set_array_offsets(0,0,0);
+	}*/
+	ret->set_ri(1);
+	ret->set_fftpad(true);
+	ret->set_attr("npad", 1);
+	if (nxn%2 == 1) {ret->set_fftodd(true);} else {ret->set_fftodd(false);}
+	if(RetReal) {
+		ret->do_ift_inplace();
+		ret->postift_depad_corner_inplace();
+	}
+	ret->update();
+	
+	/*Dict d1 = temp_ft->get_attr_dict();
+	Dict d2 = ret->get_attr_dict();
+	printf("-----------------Attribute Dict for temp_ft--------------\n");
+	EMUtil::dump_dict(d1);
+	printf("-----------------Attribute Dict for ret--------------\n");
+	EMUtil::dump_dict(d2);*/
+	delete temp_ft;
+	temp_ft = 0;
+	return ret;
+}
+
+EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
+
+	int nyn, nzn, lsd, lsdn, inx, iny, inz;
+	int i, j;
+
+	if(ny > 1) {
+		nyn = nyni;
+		if(nz > 1) {
+			nzn = nzni;
+		}  else {
+			nzn = 1;
+		}
+	} else {
+		nyn = 1; nzn = 1;
+	}
+	lsd = nx-2 + 2 - nx%2;
+	lsdn = nxn + 2 - nxn%2;
+//  do out of place ft
+	EMData *temp_ft = this->copy();
+	EMData *ret = this->copy();
+	ret->set_size(lsdn, nyn, nzn);
+	ret->to_zero();
+	float *fout = ret->get_data();
+	float *fint = temp_ft->get_data();
+//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
+//  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
+//	float  sq2 = 1.0f/std::sqrt(2.0f);
+	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
+	for (j=1; j<=nyn; j++)
+		for (i=1; i<=lsdn; i++) 
+			fout(i,j,1)=fint((i-1)/2*4+2-i%2,j*2-1,1);
+	ret->set_complex(true);
+	ret->set_ri(1);
+	//ret->set_fftpad(true);
+	//ret->set_attr("npad", 1);
+	if (nxn%2 == 1) {ret->set_fftodd(true);} else {ret->set_fftodd(false);}
+	if(RetReal) {
+		ret->do_ift_inplace();
+		ret->postift_depad_corner_inplace();
+	}
+	ret->update();
+	
+	delete temp_ft;
+	temp_ft = 0;
+	return ret;
+}
+
+EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int nzni, bool RetReal) {
+
+	int nyn, nzn, lsd, lsdn, inx, iny, inz;
+	int i, j;
+
+	nyn = nyni;
+	nzn = 1;
+	lsd = nx;
+	lsdn = nxn + 2 - nxn%2;
+
+	EMData *temp_ft = this->copy();
+	EMData *ret = this->copy();
+	ret->set_size(lsdn, nyn, nzn);
+	ret->to_zero();
+	float *fout = ret->get_data();
+	float *fint = temp_ft->get_data();
+//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
+//  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
+	float  sq2 = 1.0f/std::sqrt(2.0f);
+
+	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
+	for (j=1; j<=ny/4; j++)
+		for (i=1; i<=(nx-2)/2+2; i++) {
+			int g = (i-1)/2+1;
+			if ((g+j)%2 == 0) {
+				fout(i,j,1)=fint(g*4-2-i%2,j*2-1+ny/2,1);
+			} else {
+				fout(i,j,1)=-fint(g*4-2-i%2,j*2-1+ny/2,1);			
+			}
+		}
+			
+	for (j=ny/4+1; j<=ny/4+1; j++)
+		for (i=1; i<=(nx-2)/2+2; i++) {
+			int g = (i-1)/2+1;
+			if ((g+j)%2 == 0) {
+				fout(i,j,1)=fint(g*4-2-i%2,j*2-1-ny/2,1);
+			} else {			
+				fout(i,j,1)=-fint(g*4-2-i%2,j*2-1-ny/2,1);
+			}			
+		}
+		
+	for (j=ny/4+2; j<=ny/2; j++)
+		for (i=1; i<=(nx-2)/2+2; i++) {
+			int g = (i-1)/2+1;
+			if ((g+j)%2 == 0) {
+				fout(i,j+ny/2,1)=fint(g*4-2-i%2,j*2-1-ny/2,1);
+			} else {			
+				fout(i,j+ny/2,1)=-fint(g*4-2-i%2,j*2-1-ny/2,1);
+			}			
+		}
+	
+	if (nx%2 == 0) {
+		for (j=1; j<=nyn; j++) {
+			fout((nx-2)/2+1,j,1) *= sq2;
+			fout((nx-2)/2+2,j,1) *= sq2;
+		}
+		for (i=1; i<=lsd/2+1; i++) {
+			fout(i,ny/4+1+ny/2,1) = sq2*fout(i,ny/4+1,1);
+			fout(i,ny/4+1,1) *= sq2;
+		}
+	}
+	
+	ret->set_complex(true);
+	ret->set_ri(1);
+
+	if (nxn%2 == 1) {ret->set_fftodd(true);} else {ret->set_fftodd(false);}
+	if(RetReal) {
+		ret->do_ift_inplace();
+		ret->postift_depad_corner_inplace();
+	}
+	ret->update();
+	
+	delete temp_ft;
+	temp_ft = 0;
+	return ret;
+}
+
 #undef fint
 #undef fout
 

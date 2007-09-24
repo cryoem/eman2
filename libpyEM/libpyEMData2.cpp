@@ -86,6 +86,12 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_pad_fft_overloads_0_1, pad_ff
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_overloads_1_4, FourInterpol, 1, 4)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_i_overloads_1_4, FourInterpol_i, 1, 4)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_Four_ds_overloads_1_4, Four_ds, 1, 4)
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_Four_shuf_ds_cen_us_overloads_1_4, Four_shuf_ds_cen_us, 1, 4)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_filter_by_image_overloads_1_2, filter_by_image, 1, 2)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_get_rotated_clip_overloads_2_3, get_rotated_clip, 2, 3)
@@ -334,6 +340,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("pad_fft", &EMAN::EMData::pad_fft, EMAN_EMData_pad_fft_overloads_0_1()[ return_value_policy< manage_new_object >() ])
         .def("postift_depad_corner_inplace", &EMAN::EMData::postift_depad_corner_inplace)
         .def("FourInterpol", &EMAN::EMData::FourInterpol, EMAN_EMData_FourInterpol_overloads_1_4()[ return_value_policy< manage_new_object >() ])
+        .def("FourInterpol_i", &EMAN::EMData::FourInterpol_i, EMAN_EMData_FourInterpol_i_overloads_1_4()[ return_value_policy< manage_new_object >() ])
+        .def("Four_ds", &EMAN::EMData::Four_ds, EMAN_EMData_Four_ds_overloads_1_4()[ return_value_policy< manage_new_object >() ])
+        .def("Four_shuf_ds_cen_us", &EMAN::EMData::Four_shuf_ds_cen_us, EMAN_EMData_Four_shuf_ds_cen_us_overloads_1_4()[ return_value_policy< manage_new_object >() ])
         .def("filter_by_image", &EMAN::EMData::filter_by_image, EMAN_EMData_filter_by_image_overloads_1_2()[ return_value_policy< manage_new_object >() ])
         .def("get_clip", &EMAN::EMData::get_clip, return_value_policy< manage_new_object >())
 	.def("clip_inplace", &EMAN::EMData::clip_inplace, return_value_policy< reference_existing_object >())
