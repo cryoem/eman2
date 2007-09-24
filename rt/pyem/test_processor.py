@@ -171,8 +171,7 @@ class TestProcessor(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
+        self.assertEqual(e.is_complex(), False)
         
         e.process_inplace('filter.radialtable', {'table':(0.2,0.2,0.3)})
         
