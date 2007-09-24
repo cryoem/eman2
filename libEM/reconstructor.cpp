@@ -1541,8 +1541,15 @@ void nn4Reconstructor::setup()
 void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 {
     m_weighting = ESTIMATE;
-    m_wghta = 0.2;
-    m_wghtb = 0.004;
+    if( params.has_key("weighting") )
+    {
+        int tmp = int( params["weighting"] );
+        if( tmp==0 )
+            m_weighting = NONE;
+    }
+
+    m_wghta = 0.4;
+    m_wghtb = 0.001;
  
     m_symmetry = symmetry;
     m_npad = npad;
@@ -2254,8 +2261,8 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 
 
 
-    m_wghta = 0.2;
-    m_wghtb = 0.004;
+    m_wghta = 0.4;
+    m_wghtb = 0.001;
  
     m_symmetry = symmetry;
     m_npad = npad;
