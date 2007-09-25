@@ -744,7 +744,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 		if (y_pre_gap > 0) {
 			portable_fseek(file, y_pre_gap, SEEK_CUR);
 		}
-		int k2 = k * (int)area_sec_size;
+		long k2 = k * area_sec_size;
 		
 		for (int j = 0; j < ylen; j++) {
 			if (pre_row > 0) {
