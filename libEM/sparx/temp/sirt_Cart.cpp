@@ -190,72 +190,79 @@ int recons3d_sirt_mpi_Cart(MPI_Comm comm_2d    , MPI_Comm comm_row,
 	    // printf("bnorm = %f\n", bnorm);
 	} else {
 
-          for (int i=0; i<nangloc*nx*nx; i++){
-	     projected_data_loc[i] = 0.0;
-	     projected_data[i] = 0.0;
-          }
+            // iterate over symmetry
+            for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
+ 	       // reset local and global 2-D projections to zeros
+               for (int i=0; i<nangloc*nx*nx; i++){
+                  projected_data_loc[i] = 0.0;
+                  projected_data[i] = 0.0;
+               }
+   
+               // project from 3-D to 2-D
+	       for ( int i = 0 ; i < nangloc ; ++i ) {
+                  // retrieve the angles and shifts from angleshift
+                  RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], 
+                                angleshift[5*i + 1], angleshift[5*i + 2]);
 
-	    for ( int i = 0 ; i < nangloc ; ++i ) {
-		// retrieve the angles and shifts from angleshift
-		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], 
-                                 angleshift[5*i + 1], angleshift[5*i + 2]);
+                  // need to change signs here because the input shifts
+                  // are shifts associated with 2-D images. Because
+                  // the projection operator actually shifts the volume
+                  // the signs should be negated here
+                  dm[6] = -angleshift[5*i + 3];
+                  dm[7] = -angleshift[5*i + 4];
+   
+                  // apply symmetry transformation
+                  Tf = Tf.get_sym(symmetry, ns) * RA;
+                  angdict = Tf.get_rotation(EULER_SPIDER);
+   
+                  phi   = (float) angdict["phi"]   * PI/180.0;
+                  theta = (float) angdict["theta"] * PI/180.0;
+                  psi   = (float) angdict["psi"]   * PI/180.0;
+                  make_proj_mat(phi, theta, psi, dm); 
+   
+                  ierr = fwdpj3_Cart(volsize, nraysloc, nnzloc, dm, 
+                                     origin, radius, ptrs, cord, myptrstart, 
+                                     xvol_sphloc, &projected_data_loc[nx*nx*i]);
+               }
 
-                // need to change signs here because the input shifts
-                // are shifts associated with 2-D images. Because
-                // the projection operator actually shifts the volume
-                // the signs should be negated here
-		dm[6] = -angleshift[5*i + 3];
-		dm[7] = -angleshift[5*i + 4];
-		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
-		    // iterate over symmetries
-		    Tf = Tf.get_sym(symmetry, ns) * RA;
-		    angdict = Tf.get_rotation(EULER_SPIDER);
 
-		    phi   = (float) angdict["phi"]   * PI/180.0;
-		    theta = (float) angdict["theta"] * PI/180.0;
-		    psi   = (float) angdict["psi"]   * PI/180.0;
-		    make_proj_mat(phi, theta, psi, dm); 
-		    // accumulate P^TPxvol in pxvol_loc
-		    ierr = fwdpj3_Cart(volsize, nraysloc, nnzloc, dm, 
-                                    origin, radius, ptrs, cord, myptrstart, 
-                                    xvol_sphloc, &projected_data_loc[nx*nx*i]);
-		}
-	    }
-	    // and reduce the accumulated pxvol_loc's
-	    // Now an all reduce along the rows
-            ierr = MPI_Allreduce(projected_data_loc, projected_data, 
-                                 nangloc*nx*nx, MPI_FLOAT, MPI_SUM, comm_row);
+               // Now perform global sum on 2-D images along the rows
+               ierr = MPI_Allreduce(projected_data_loc, projected_data, 
+                                    nangloc*nx*nx, MPI_FLOAT, MPI_SUM, comm_row);
 
-	    for ( int i = 0 ; i < nangloc ; ++i ) {
-		// retrieve the angles and shifts from angleshift
-		RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], 
-                     angleshift[5*i + 1], angleshift[5*i + 2]);
+               // backproject from 2-D to 3-D
+               for ( int i = 0 ; i < nangloc ; ++i ) {
+                  // retrieve the angles and shifts from angleshift
+                  RA = Transform3D(EULER_SPIDER, angleshift[5*i + 0], 
+                                   angleshift[5*i + 1], angleshift[5*i + 2]);
 
-                // need to change signs here because the input shifts
-                // are shifts associated with 2-D images. Because
-                // the projection operator actually shifts the volume
-                // the signs should be negated here
-		dm[6] = -angleshift[5*i + 3];
-		dm[7] = -angleshift[5*i + 4];
-		for ( int ns = 1 ; ns < nsym + 1 ; ++ns ) {
-		    // iterate over symmetries
-		    Tf = Tf.get_sym(symmetry, ns) * RA;
-		    angdict = Tf.get_rotation(EULER_SPIDER);
-		    // reset the array in which projected data are stored
-		    phi   = (float) angdict["phi"]   * PI/180.0;
-		    theta = (float) angdict["theta"] * PI/180.0;
-		    psi   = (float) angdict["psi"]   * PI/180.0;
-		    make_proj_mat(phi, theta, psi, dm); 
-		    // accumulate P^TPxvol in pxvol_loc
-		    ierr = bckpj3_Cart(volsize, nraysloc, nnzloc, dm, origin, 
-                                       radius, ptrs, cord, myptrstart, 
-                                       &projected_data[nx*nx*i], pxvol_loc);
-		}
-	    }
-    
+                  // need to change signs here because the input shifts
+                  // are shifts associated with 2-D images. Because
+                  // the projection operator actually shifts the volume
+                  // the signs should be negated here
+                  dm[6] = -angleshift[5*i + 3];
+                  dm[7] = -angleshift[5*i + 4];
+
+                  // apply symmetry transformation
+                  Tf = Tf.get_sym(symmetry, ns) * RA;
+                  angdict = Tf.get_rotation(EULER_SPIDER);
+
+                  // reset the array in which projected data are stored
+                  phi   = (float) angdict["phi"]   * PI/180.0;
+                  theta = (float) angdict["theta"] * PI/180.0;
+                  psi   = (float) angdict["psi"]   * PI/180.0;
+                  make_proj_mat(phi, theta, psi, dm); 
+
+                  // accumulate P^TPxvol in pxvol_loc
+                  ierr = bckpj3_Cart(volsize, nraysloc, nnzloc, dm, origin, 
+                                     radius, ptrs, cord, myptrstart, 
+                                     &projected_data[nx*nx*i], pxvol_loc);
+	       }
+	    } // endfor (ns=1,nsym)
+
             ierr = MPI_Allreduce(pxvol_loc, pxvol, nnzloc, MPI_FLOAT, MPI_SUM, 
                                  comm_col);
-	    
+
 	    for ( int j = 0 ; j < nnzloc ; ++j ) {
 		grad_loc[j] = bvol[j];
 		grad_loc[j] -= pxvol[j];
