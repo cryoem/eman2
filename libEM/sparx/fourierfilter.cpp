@@ -312,7 +312,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 						case TOP_HAT_HIGH_PASS:
 							if(argx*omega<=1.0f) fp->cmplx(ix,iy,iz) = 0; break;
 						case TOP_HAT_BAND_PASS:
-							if(argx*omegaL>1.0f && argx*omegaH<=1.0f) 
+							if(argx*omegaL<1.0f || argx*omegaH>=1.0f) 
 								fp->cmplx(ix,iy,iz) = 0; break;
 						case TOP_HOMOMORPHIC:
 							if(argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f; 
