@@ -49,6 +49,7 @@ class ValSlider(QtGui.QWidget):
 		else : self.range=[0,1.0]
 		self.value=0.0
 		self.ignore=0
+		self.intonly=0
 		
 		self.hboxlayout = QtGui.QHBoxLayout(self)
 		self.hboxlayout.setMargin(0)
@@ -104,9 +105,15 @@ class ValSlider(QtGui.QWidget):
 		self.updates()
 
 	def setValue(self,val):
-		self.value=val
+		if self.intonly : self.value=int(val)
+		else: self.value=val
+
 		self.updateboth()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+	
+	def setIntonly(self,flag)
+		self.intonly=flag
+		self.updateboth()
 		
 	def textChange(self):
 		if self.ignore : return
@@ -122,7 +129,8 @@ class ValSlider(QtGui.QWidget):
 			self.updateboth()
 		else:
 			try:
-				self.value=float(x)
+				if (self.intonly) : self.value=int(x)
+				else : self.value=float(x)
 				self.updates()
 				self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 			except:
@@ -131,6 +139,7 @@ class ValSlider(QtGui.QWidget):
 	def sliderChange(self,x):
 		if self.ignore : return
 		self.value=(self.slider.value()/4095.0)*(self.range[1]-self.range[0])+self.range[0]
+		if self.intonly : self.value=int(self.value)
 		self.updatet()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 		
