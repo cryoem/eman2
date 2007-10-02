@@ -2376,7 +2376,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 						sum += (*this)(inxold+m1,inyold+m2)*q; w+=q;}
 					}
 		    	}
-			(*ret)(ix,iy)=sum/w;
+			(*ret)(ix,iy)=sum/w*0.25f;
 		}
 	}
 	if (t) free(t);
@@ -2528,7 +2528,7 @@ EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserB
 			w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
 			    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);	
 			
-			(*ret)(ix,iy)=sum/w;
+			(*ret)(ix,iy)=sum/w*0.25f;
 		}
 	}
 	if (t) free(t);
@@ -2674,7 +2674,7 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
 			}
 	 	}
 	}
-        return pixel/w;
+        return pixel/w*0.25f;
 }
 
 // Note by Yang on 10/02/07

@@ -256,6 +256,8 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 
 	int nyn, nzn, lsd, lsdn, inx, iny, inz;
 	int i, j, k;
+	if (is_complex()) 
+		throw ImageFormatException("Input image has to be real");
 
 	if(ny > 1) {
 		nyn = nyni;
@@ -363,6 +365,106 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 		}
 		ret->set_array_offsets(0,0,0);
 	}*/
+	ret->set_ri(1);
+	ret->set_fftpad(true);
+	ret->set_attr("npad", 1);
+	if (nxn%2 == 1) {ret->set_fftodd(true);} else {ret->set_fftodd(false);}
+	if(RetReal) {
+		ret->do_ift_inplace();
+		ret->postift_depad_corner_inplace();
+	}
+	ret->update();
+	
+	/*Dict d1 = temp_ft->get_attr_dict();
+	Dict d2 = ret->get_attr_dict();
+	printf("-----------------Attribute Dict for temp_ft--------------\n");
+	EMUtil::dump_dict(d1);
+	printf("-----------------Attribute Dict for ret--------------\n");
+	EMUtil::dump_dict(d2);*/
+	delete temp_ft;
+	temp_ft = 0;
+	return ret;
+}
+
+EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
+
+	int nyn, nzn, lsd, lsdn, inx, iny, inz;
+	int i, j, k;
+	if (is_complex()) 
+		throw ImageFormatException("Input image has to be real");
+
+	if(ny > 1) {
+		nyn = nyni;
+		if(nz > 1) {
+			nzn = nzni;
+		}  else {
+			nzn = 1;
+		}
+	} else {
+		nyn = 1; nzn = 1;
+	}
+	if(nxn>nx || nyn>ny || nzn>nz)	throw ImageDimensionException("Cannot increase the image size");
+	lsd = nx + 2 - nx%2;
+	lsdn = nxn + 2 - nxn%2;
+//  do out of place ft
+	EMData *temp_ft = do_fft();
+	EMData *ret = this->copy();
+	ret->set_size(lsdn, nyn, nzn);
+	float *fout = ret->get_data();
+	float *fint = temp_ft->get_data();
+//  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
+//  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
+	float  sq2 = std::sqrt(2.0f);
+	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	inx = nx - nxn;  iny = ny - nyn;  inz = nz - nzn;
+	for (k=1; k<=nzn/2+1; k++) for (j=1; j<=nyn/2+1; j++) for (i=1; i<=lsdn; i++) fout(i,j,k)=fint(i,j,k);
+	if(nyn>1) {
+		for (k=1; k<=nzn/2+1; k++) for (j=nyn/2+2; j<=nyn; j++) for (i=1; i<=lsdn; i++) fout(i,j,k)=fint(i,j+iny,k);
+		if(nzn>1) {
+			for (k=nzn/2+2; k<=nzn; k++) {
+				for (j=1; j<=nyn/2+1; j++) {
+					for (i=1; i<=lsdn; i++) {
+						fout(i,j,k)=fint(i,j,k+inz);
+					}
+				}
+				for (j=nyn/2+2; j<=nyn; j++) {
+					for (i=1; i<=lsdn; i++) {
+						fout(i,j,k)=fint(i,j+iny,k+inz);
+					}
+				}
+			}
+		}
+	}
+//       WEIGHTING FACTOR USED FOR EVEN NSAM. REQUIRED SINCE ADDING ZERO FOR
+//       INTERPOLATION WILL INTRODUCE A COMPLEX CONJUGATE FOR NSAM/2'TH
+//       ELEMENT.
+	/*
+	if(nxn%2 == 0 && inx !=0) {
+		for (k=1; k<=nzn; k++) {
+			for (j=1; j<=nyn; j++) {
+				fout(nxn+1,j,k) *= sq2;
+				fout(nxn+2,j,k) *= sq2;
+			}
+		}
+		if(nyn>1) {
+			for (k=1; k<=nzn; k++) {
+			  for (i=1; i<=lsdn; i++) {
+			    fout(i,nyn/2+1+iny,k) = sq2*fout(i,nyn/2+1,k);
+			    fout(i,nyn/2+1,k) *= sq2;
+			  }
+			}
+			if(nzn>1) {
+				for (j=1; j<=nyn; j++) {
+					for (i=1; i<=lsdn; i++) {
+						fout(i,j,nzn/2+1+inz) = sq2*fout(i,j,nzn/2+1);
+						fout(i,j,nzn/2+1) *= sq2;
+					}
+				}
+			}
+		}
+	}*/
+	ret->set_complex(true);
 	ret->set_ri(1);
 	ret->set_fftpad(true);
 	ret->set_attr("npad", 1);

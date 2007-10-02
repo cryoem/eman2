@@ -85,7 +85,7 @@ EMData *pad_fft(int npad = 1);
 void postift_depad_corner_inplace();
 
 
-/** Interpolate up image by padding with zeroes its Fourier transfrom.
+/** Interpolate up image by padding with zeroes its Fourier transform.
  *  
  *  @param[in] nxni new x size (has to be larger/equal than the original x size)
  *  @param[in] nyni new y size (has to be larger/equal than the original y size)
@@ -95,6 +95,17 @@ void postift_depad_corner_inplace();
  *  @return New interpolated up image.
  */
 EMData* FourInterpol(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
+
+/** Truncate Fourier transform of an image, it will reduce its size.  (It is a form of decimation).
+ *  
+ *  @param[in] nxni new x size (has to be larger/equal than the original x size)
+ *  @param[in] nyni new y size (has to be larger/equal than the original y size)
+ *  @param[in] nzni new z size (has to be larger/equal than the original z size)
+ *  @param RetReal
+ *  
+ *  @return New truncated up image.
+ */
+EMData* FourTruncate(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 EMData* FourInterpol_i(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 EMData* Four_ds(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
 EMData* Four_shuf_ds_cen_us(int nxni, int nyni=0, int nzni=0, bool RetReal = true);
