@@ -2384,6 +2384,8 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	return ret;
 }
 
+// Notes by Yang on 10/02/07
+// This fucntion is at first just a test, but I found it is slightly faster (about 10%) than rot_scale_conv_new(), so I decided to retain it. 
 EMData* EMData::rot_scale_conv7(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
 	int nxn, nyn, nzn;
 	float  scale = 0.5*scale_input;
@@ -2675,6 +2677,9 @@ float  EMData::get_pixel_conv(float delx, float dely, float delz, Util::KaiserBe
         return pixel/w;
 }
 
+// Note by Yang on 10/02/07
+// get_pixel_conv7() is equivalent to get_pixel_conv_new(), however, it is written in this way such that it can be used in python directly
+// By the way, get_pixel_conv_new() is a faster version of get_pixel_conv(), I have done a lot of testing and show that their results are the same.
 float  EMData::get_pixel_conv7(float delx, float dely, float delz, Util::KaiserBessel& kb) {
 //  here counting is in C style, so coordinates of the pixel delx should be [0-nx-1] 
 
