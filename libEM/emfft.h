@@ -54,13 +54,75 @@ namespace EMAN
 									  int nz);
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
 									  int nz);
+		private:
+#ifdef  FFTW_PLAN_CACHING
+#define EMFFTW2_ND_CACHE_SIZE 20
+#define EMFFTW2_1D_CACHE_SIZE 20	
+		static const int EMAN2_REAL_2_COMPLEX;
+		static const int EMAN2_COMPLEX_2_REAL;
+		static const int EMAN2_FFTW2_INPLACE;
+		static const int EMAN2_FFTW2_OUT_OF_PLACE;
+		class EMfftw2_cache_nd
+		{
+		public:
+			EMfftw2_cache_nd();
+			~EMfftw2_cache_nd();
+
+			rfftwnd_plan get_plan(const int rank, const int x, const int y, const int z, const int r2c_flag, int ip_flag);
+		private:
+			// Prints useful debug information to standard out
+			void debug_plans();
+		
+			// Store the number of plans currently contained in this EMfftw3_cache object
+			int num_plans;
+
+			// Store the rank of the plan
+			int rank[EMFFTW2_ND_CACHE_SIZE];
+			// Store the dimensions of the plan (always in 3D, if dimensions are "unused" they are taken to be 1)
+			int plan_dims[EMFFTW2_ND_CACHE_SIZE][3];
+			// store whether the plan was real to complex or vice versa
+			int r2c[EMFFTW2_ND_CACHE_SIZE];
+			// Store whether or not the plan was inplace
+			int ip[EMFFTW2_ND_CACHE_SIZE];
+			// Store the plans themselves
+			rfftwnd_plan rfftwnd_plans[EMFFTW2_ND_CACHE_SIZE];
+		};
+		
+		class EMfftw2_cache_1d
+		{
+		public:
+			EMfftw2_cache_1d();
+			~EMfftw2_cache_1d();
+
+			rfftw_plan get_plan(const int x, const int r2c_flag, const int ip_flag);
+		private:
+			// Prints useful debug information to standard out
+			void debug_plans();
+	
+			// Store the number of plans currently contained in this EMfftw3_cache object
+			int num_plans;
+
+			// Store the dimensions of the plan (always in 3D, if dimensions are "unused" they are taken to be 1)
+			int plan_dims[EMFFTW2_1D_CACHE_SIZE];
+			// store whether the plan was real to complex or vice versa
+			int r2c[EMFFTW2_1D_CACHE_SIZE];
+			// store whether the plan was real to complex or vice versa
+			int ip[EMFFTW2_1D_CACHE_SIZE];
+			// Store the plans themselves
+			rfftw_plan rfftw1d_plans[EMFFTW2_1D_CACHE_SIZE];
+		};
+		
+		static EMfftw2_cache_nd plan_nd_cache;
+		static EMfftw2_cache_1d plan_1d_cache;
+#endif 
 	};
 }
 #endif	//FFTW2
 
 #ifdef FFTW3
-#include <fftw3.h>
 
+#include <fftw3.h>
+ 
 namespace EMAN
 {
 	/** EMfft converts 1d/nd data from real to complex or from complex to real.
@@ -75,9 +137,46 @@ namespace EMAN
 									  int nz);
 		static int complex_to_real_nd(float *complex_data, float *real_data, int nx, int ny,
 									  int nz);
+	  private:
+#ifdef FFTW_PLAN_CACHING
+#define EMFFTW3_CACHE_SIZE 20
+		static const int EMAN2_REAL_2_COMPLEX;
+		static const int EMAN2_COMPLEX_2_REAL;
+		static const int EMAN2_FFTW2_INPLACE;
+		static const int EMAN2_FFTW2_OUT_OF_PLACE;
+		class EMfftw3_cache
+		{
+		public:
+			EMfftw3_cache();
+			~EMfftw3_cache();
+
+			fftwf_plan get_plan(const int rank, const int x, const int y, const int z, const int r2c_flag,const int ip_flag, fftwf_complex* complex_data, float* real_data);
+		private:
+			// Prints useful debug information to standard out
+			void debug_plans();
+			
+			// Store the number of plans currently contained in this EMfftw3_cache object
+			int num_plans;
+
+			// Store the rank of the plan
+			int rank[EMFFTW3_CACHE_SIZE];
+			// Store the dimensions of the plan (always in 3D, if dimensions are "unused" they are taken to be 1)
+			int plan_dims[EMFFTW3_CACHE_SIZE][3];
+			// store whether the plan was real to complex or vice versa
+			int r2c[EMFFTW3_CACHE_SIZE];
+			// Store the plans themselves
+			fftwf_plan fftwplans[EMFFTW3_CACHE_SIZE];
+			// Store whether or not the plan was inplace
+			int ip[EMFFTW3_CACHE_SIZE];
+		
+		};
+
+		static EMfftw3_cache plan_cache;
+#endif 
 	};
 }
 #endif	//FFTW3
+
 
 #ifdef NATIVE_FFT
 namespace EMAN

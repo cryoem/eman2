@@ -487,8 +487,8 @@ float EMData::sget_value_at(size_t i) const
 
 float EMData::sget_value_at_interp(float xx, float yy) const
 {
-	int x = static_cast < int >(floor(xx));
-	int y = static_cast < int >(floor(yy));
+	int x = static_cast < int >(Util::fast_floor(xx));
+	int y = static_cast < int >(Util::fast_floor(yy));
 
 	float p1 = sget_value_at(x, y);
 	float p2 = sget_value_at(x + 1, y);
@@ -502,9 +502,9 @@ float EMData::sget_value_at_interp(float xx, float yy) const
 
 float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 {
-	int x = (int) floor(xx);
-	int y = (int) floor(yy);
-	int z = (int) floor(zz);
+	int x = (int) Util::fast_floor(xx);
+	int y = (int) Util::fast_floor(yy);
+	int z = (int) Util::fast_floor(zz);
 
 	float p1 = sget_value_at(x, y, z);
 	float p2 = sget_value_at(x + 1, y, z);

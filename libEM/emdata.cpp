@@ -52,6 +52,8 @@
 	#define M_PI 3.14159265358979323846f
 #endif	//WIN32
 
+#define EMDATA_EMAN2_DEBUG 0
+
 using namespace EMAN;
 using namespace std;
 using namespace boost;
@@ -1084,7 +1086,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 {
 	ENTERFUNC;
 
-#ifdef DEBUG	
+#if EMDATA_EMAN2_DEBUG	
 	std::cout << "start rotate_translate..." << std::endl;
 #endif
 
@@ -1095,7 +1097,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 //	Transform3D mx = RA;
 	Transform3D RAInv = RA.inverse();
 
-#ifdef DEBUG
+#if EMDATA_EMAN2_DEBUG
 	vector<string> keys = rotation.keys();
 	vector<string>::const_iterator it;
 	for(it=keys.begin(); it!=keys.end(); ++it) {
@@ -1166,14 +1168,14 @@ void EMData::rotate_translate(const Transform3D & RA)
 		}
 	}
 	else {
-#ifdef DEBUG
+#if EMDATA_EMAN2_DEBUG
 		std::cout << "This is the 3D case." << std::endl    ;
 #endif
 
 		Transform3D mx = RA;
 		mx.set_scale(inv_scale);
 
-#ifdef DEBUG
+#if EMDATA_EMAN2_DEBUG
 //		std::cout << v4[0] << " " << v4[1]<< " " << v4[2]<< " "
 //			<< dcenter2[0]<< " "<< dcenter2[1]<< " "<< dcenter2[2] << std::endl;
 #endif
@@ -1220,7 +1222,7 @@ void EMData::rotate_translate(const Transform3D & RA)
 							  src_data[ii + nxy + nx],
 							  src_data[ii + nxy + nx + 1],
 							  tuvx, tuvy, tuvz);
-#ifdef DEBUG
+#if EMDATA_EMAN2_DEBUG
 						printf(" ix=%d \t iy=%d \t iz=%d \t value=%f \n", ix ,iy, iz, des_data[l] );
 						std::cout << src_data[ii] << std::endl;
 #endif
@@ -2112,7 +2114,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 	EMData *ret = new EMData();
 
 	if (xs < 1) {
-		xs = (int) floor(p * M_PI * ny / 4);
+		xs = (int) Util::fast_floor(p * M_PI * ny / 4);
 		xs -= xs % 8;
 		if (xs<=8) xs=16;
 //		xs = Util::calc_best_fft_size(xs);
@@ -2122,7 +2124,7 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 		r1 = 4;
 	}
 
-	int rr = ny / 2 - 2 - (int) floor(hypot(dx, dy));
+	int rr = ny / 2 - 2 - (int) Util::fast_floor(hypot(dx, dy));
 	rr-=rr%2;
 	if (r2 <= r1 || r2 > rr) {
 		r2 = rr;
@@ -2139,9 +2141,9 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360)
 		for (int y = 0; y < r2 - r1; y++) {
 			float xx = (y + r1) * co + nx / 2 + dx;
 			float yy = (y + r1) * si + ny / 2 + dy;
-			float t = xx - floor(xx);
-			float u = yy - floor(yy);
-			int k = (int) floor(xx) + (int) (floor(yy)) * nx;
+			float t = xx - Util::fast_floor(xx);
+			float u = yy - Util::fast_floor(yy);
+			int k = (int) Util::fast_floor(xx) + (int) (Util::fast_floor(yy)) * nx;
 			dd[x + y * xs] =
 				Util::bilinear_interpolate(d[k], d[k + 1], d[k + nx + 1], d[k + nx], t,u) * (y + r1);
 		}
@@ -3740,10 +3742,6 @@ void EMData::uncut_slice(EMData * map, float dz, Transform3D * ort, float dx, fl
 	map->update();
 	EXITFUNC;
 }
-
-
-
-
 
 
 void EMData::save_byteorder_to_dict(ImageIO * imageio)

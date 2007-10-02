@@ -39,6 +39,8 @@
 #include "processor.h"
 #include <gsl/gsl_multimin.h>
 
+#define EMAN2_ALIGNER_DEBUG 0
+
 using namespace EMAN;
 
 template <> Factory < Aligner >::Factory()
@@ -511,12 +513,12 @@ EMData *RotateCHAligner::align(EMData * this_img, EMData *to,
 
 		aa += ca * center * a2;
 		ndot += center * a2;
-#ifdef DEBUG
+#if EMAN2_ALIGNER_DEBUG
 		printf("%f\t%d\n", ca * 180.0 / M_PI, i);
 #endif
 	}
 
-#ifdef DEBUG
+#if EMAN2_ALIGNER_DEBUG
 	printf("%f\t%d\n", aa / ndot * 180.0 / M_PI, i + 5);
 #endif
 
@@ -777,7 +779,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 			lda = size - peak_x;
 		}
 
-#ifdef DEBUG
+#if EMAN2_ALIGNER_DEBUG
 		printf("R Peak %d\t%g\t%1.2f\n", lda, peak_value, lda * 360.0 / size);
 #endif
 
@@ -801,7 +803,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 			}
 
 			vert[x] = (float)besti;
-#ifdef DEBUG
+#if EMAN2_ALIGNER_DEBUG
 			printf("%d\t%d\n", x, besti);
 #endif
 			x2 = (x2 + 1) % size;
@@ -818,7 +820,7 @@ EMData *RotateTranslateRadonAligner::align(EMData * this_img, EMData *to,
 
 		float inten = (si * si + co * co) / (size * (float)M_PI);
 		ta = atan2(co, si);
-#ifdef DEBUG
+#if EMAN2_ALIGNER_DEBUG
 		printf("x, y = %g, %g\ta, p=%g / %g, %g\n", co, si, sqrt(inten), max, 180.0f / (float)M_PI * ta);
 #endif
 		max = floor(sqrt(inten) + 0.5f);

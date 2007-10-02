@@ -78,8 +78,6 @@ EMData *EMData::do_fft()
 	return dat;
 }
 
-
-
 EMData *EMData::do_fft_inplace()
 {
 	ENTERFUNC;

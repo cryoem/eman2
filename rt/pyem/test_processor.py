@@ -1330,7 +1330,7 @@ class TestProcessor(unittest.TestCase):
         filter_file = 'filter.txt'
         e.process_inplace('eman1.filter.byfile', {'filename':filter_file})
         
-    def no_test_misc_symsearch(self):
+    def est_misc_symsearch(self):
         """test misc.symsearch processor ...................."""
         e = EMData()
         e.set_size(32,32,32)
@@ -1349,7 +1349,6 @@ class TestProcessor(unittest.TestCase):
         e = EMData()
         e.set_size(32,32,32)
         e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
         
         e.process_inplace('misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
         f = e.process('misc.localnorm', {'threshold':0.4, 'radius':16, 'apix':0.8})
