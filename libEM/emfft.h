@@ -62,12 +62,33 @@ namespace EMAN
 		static const int EMAN2_COMPLEX_2_REAL;
 		static const int EMAN2_FFTW2_INPLACE;
 		static const int EMAN2_FFTW2_OUT_OF_PLACE;
+		/** EMfftw2_cache_nd
+		 * An ecapsulation of FFTW2 ND plan caching. Works on 2D and 3D arrays only.
+		 * Keeps an array of plans and records of important details.
+		 * Main interface is get_plan(...)
+		 * If asked for a plan that is not currently stored this class will create the plan and then return
+		 * it. If asked for a plan that IS stored than the pre-existing plan is returned.
+		 * The number of plans that can be cached is determined by the compile time flag EMFFTW2_ND_CACHE_SIZE.
+		 * Supports inplace transforms
+		 * Using FFTW plan caching usually results in a dramatic performance boost.
+		 */
 		class EMfftw2_cache_nd
 		{
 		public:
 			EMfftw2_cache_nd();
 			~EMfftw2_cache_nd();
 
+			/** Get an FFTW2 plan for 2D or 3D data. Can be complex to real or vice versa, can be in-place or out-of-place
+			 * @param rank must be 2 or 3, corresponds to the dimensionality of the Fourier transform
+			 * @param x the length of the x dimension of the Fourier transform
+			 * @param y the length of the y dimension of the Fourier transform
+			 * @param z the length of the z dimension of the Fourier transform, if rank is 2 this should be 1.
+			 * @param r2c_flag the real to complex flag, should be either EMAN2_REAL_2_COMPLEX or EMAN2_COMPLEX_2_REAL,depending on the plan you want
+			 * @param ip_flag the in-place flag, should be either EMAN2_FFTW2_INPLACE or EMAN2_FFTW2_OUT_OF_PLACE
+			 * @exception InvalidValueException when the rank is not 2 or 3
+			 * @exception InvalidValueException when the r2c_flag is unrecognized
+			 * @return and rfftwnd_plan corresponding to the input arguments
+			 */
 			rfftwnd_plan get_plan(const int rank, const int x, const int y, const int z, const int r2c_flag, int ip_flag);
 		private:
 			// Prints useful debug information to standard out
@@ -88,13 +109,28 @@ namespace EMAN
 			rfftwnd_plan rfftwnd_plans[EMFFTW2_ND_CACHE_SIZE];
 		};
 		
+		/** EMfftw2_cache_1d
+		 * An ecapsulation of FFTW2 1D plan caching. Keeps an array of plans and records of important details.
+		 * Main interface is get_plan(...)
+		 * If asked for a plan that is not currently stored this class will create the plan and then return
+		 * it. If asked for a plan that IS stored than the pre-existing plan is returned.
+		 * The number of plans that can be cached is determined by the compile time flag EMFFTW2_1D_CACHE_SIZE.
+		 * Supports inplace transforms
+		 * Using FFTW plan caching usually results in a dramatic performance boost.
+		 */
 		class EMfftw2_cache_1d
 		{
 		public:
 			EMfftw2_cache_1d();
 			~EMfftw2_cache_1d();
 
-			rfftw_plan get_plan(const int x, const int r2c_flag, const int ip_flag);
+			/** Get an FFTW2 plan for 1D data. Can be complex to real or vice versa, can be in-place or out-of-place
+			 * @param x the length of the x dimension of the Fourier transform
+			 * @param r2c_flag the real to complex flag, should be either EMAN2_REAL_2_COMPLEX or EMAN2_COMPLEX_2_REAL,depending on the plan you want
+			 * @exception InvalidValueException when the r2c_flag is unrecognized
+			 * @return and rfftw_plan corresponding to the input arguments
+			 */
+			rfftw_plan get_plan(const int x, const int r2c_flag);
 		private:
 			// Prints useful debug information to standard out
 			void debug_plans();
@@ -106,8 +142,6 @@ namespace EMAN
 			int plan_dims[EMFFTW2_1D_CACHE_SIZE];
 			// store whether the plan was real to complex or vice versa
 			int r2c[EMFFTW2_1D_CACHE_SIZE];
-			// store whether the plan was real to complex or vice versa
-			int ip[EMFFTW2_1D_CACHE_SIZE];
 			// Store the plans themselves
 			rfftw_plan rfftw1d_plans[EMFFTW2_1D_CACHE_SIZE];
 		};
@@ -144,12 +178,36 @@ namespace EMAN
 		static const int EMAN2_COMPLEX_2_REAL;
 		static const int EMAN2_FFTW2_INPLACE;
 		static const int EMAN2_FFTW2_OUT_OF_PLACE;
+		/** EMfftw3_cache
+		 * An ecapsulation of FFTW3 plan caching. Keeps an array of plans and records of important details.
+		 * Main interface is get_plan(...)
+		 * If asked for a plan that is not currently stored this class will create the plan and then return
+		 * it. If asked for a plan that IS stored than the pre-existing plan is returned.
+		 * The number of plans that can be cached is determined by the compile time flag EMFFTW3_CACHE_SIZE.
+		 * Although FFTW3 documentation states that plan caching is performed internally, tests on Fedora Core
+		 * 6 using rpms indicated that the costs of an associated MD5 algorithm in FFTW3 were prohibitive. 
+		 * Hence this implementation. Using FFTW plan caching usually results in a dramatic performance boost.
+		 * Supports inplace transforms
+		 */
 		class EMfftw3_cache
 		{
 		public:
 			EMfftw3_cache();
 			~EMfftw3_cache();
 
+			/** Get an FFTW3 plan for 1D, 2D or 3D data. Can be complex to real or vice versa, can be in-place or out-of-place
+			 * @param rank must be 1, 2 or 3, corresponds to the dimensionality of the Fourier transform
+			 * @param x the length of the x dimension of the Fourier transform
+			 * @param y the length of the y dimension of the Fourier transform, if rank is 1 this should be 1.
+			 * @param z the length of the z dimension of the Fourier transform, if rank is 1 or 2 this should be 1.
+			 * @param r2c_flag the real to complex flag, should be either EMAN2_REAL_2_COMPLEX or EMAN2_COMPLEX_2_REAL,depending on the plan you want
+			 * @param ip_flag the in-place flag, should be either EMAN2_FFTW2_INPLACE or EMAN2_FFTW2_OUT_OF_PLACE
+			 * @param complex_data the complex data, in fftw_complex format
+			 * @param real_data the real_data
+			 * @exception InvalidValueException when the rank is not 1,2 or 3
+			 * @exception InvalidValueException when the r2c_flag is unrecognized
+			 * @return and fftwf_plan corresponding to the input arguments
+			 */
 			fftwf_plan get_plan(const int rank, const int x, const int y, const int z, const int r2c_flag,const int ip_flag, fftwf_complex* complex_data, float* real_data);
 		private:
 			// Prints useful debug information to standard out

@@ -1820,8 +1820,8 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 
 	this_fft->ap2ri();
 	EMData *cf = 0;
-
-	if (with) {
+	
+	if (with && with != this) {
 		cf = with->do_fft();
 		if (!cf) {
 			LOGERR("FFT returns NULL image");
