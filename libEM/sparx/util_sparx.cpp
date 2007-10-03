@@ -16211,7 +16211,7 @@ vector<float> Util::twoD_fine_ali_SD(EMData* image, EMData *refim, EMData* mask,
 	x[3] = sys;
 
 	Steepda(x, step, e, l, m, &n, my_func, image, refim, mask);   // Call steepest descent optimization subroutine
-	printf("Took %d steps\n", n);
+	//printf("Took %d steps\n", n);
 
 	vector<float> res;
 	res.push_back(x[1]);
@@ -16248,7 +16248,7 @@ vector<float> Util::twoD_fine_ali_SD_G(EMData* image, EMData *refim, EMData* mas
 	x[3] = sys;
 
 	Steepda_G(x, step, e, l, m, &n, my_func, image, refim, mask, kb);   // Call steepest descent optimization subroutine
-	printf("Took %d steps\n", n);
+	//printf("Took %d steps\n", n);
 
 	vector<float> res;
 	res.push_back(x[1]);
