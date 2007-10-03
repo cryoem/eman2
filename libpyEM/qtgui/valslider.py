@@ -41,13 +41,13 @@ class ValSlider(QtGui.QWidget):
 	setValue(float) - to programatically change the value
 	emit valueChanged(float)
 	"""
-	def __init__(self, parent, range=None, label=None):
+	def __init__(self, parent, range=None, label=None, value=0):
 		if not parent: raise Exception,"ValSliders must have parents"
 		QtGui.QWidget.__init__(self,parent)
 		
 		if range : self.range=list(range)
 		else : self.range=[0,1.0]
-		self.value=0.0
+		self.value=value
 		self.ignore=0
 		self.intonly=0
 		
@@ -111,7 +111,7 @@ class ValSlider(QtGui.QWidget):
 		self.updateboth()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
-	def setIntonly(self,flag)
+	def setIntonly(self,flag):
 		self.intonly=flag
 		self.updateboth()
 		

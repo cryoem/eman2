@@ -52,8 +52,9 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
+		self.axes=(0,1,-1)
 
-		self.data=None				# List of Lists to plot 
+		self.data={}				# List of Lists to plot 
 			
 	def setData(self,key,data):
 		"""Set a keyed data set. The key should generally be a string describing the data.
@@ -61,6 +62,10 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
 		Multiple axes may be set, and which axis represents which axis in the plot can be
 		selected by the user."""
+		
+		if data : self.data[key]=data
+		else : del self.data[key]
+		
 		self.data=data
 		if data==None:
 			self.updateGL()
@@ -78,18 +83,11 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 		if not self.data : return
 				
-		a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-		GL.glRasterPos(0,self.height()-1)
-		GL.glPixelZoom(1.0,-1.0)
+		
+		GL.glRasterPos(0,0)
+		GL.glPixelZoom(1.0,1.0)
 		GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
-	
-		GL.glPushMatrix()
-		GL.glTranslate(-self.origin[0],-self.origin[1],0)
-		GL.glScalef(self.scale,self.scale,self.scale)
-		GL.glCallList(1)
-		GL.glPopMatrix()
-		self.changec=self.data.get_attr("changecount")
-				
+
 	def resizeGL(self, width, height):
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
@@ -109,7 +107,11 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
-		
+	
+	def setAxes(self,key,xa,ya,za):
+		self.axes=(0,1,-1)
+		self.updateGL()
+	
 	#def dragEnterEvent(self,event):
 		
 		#if event.provides("application/x-eman"):
@@ -190,158 +192,116 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
-		self.hbl = QtGui.QHBoxLayout()
-		self.hbl.setMargin(0)
-		self.hbl.setSpacing(6)
-		self.hbl.setObjectName("hbl")
-		self.vbl.addLayout(self.hbl)
+		self.tabbar=QtGui.QTabBar()
+		self.tabbar.addTab("Default")
+		self.vbl.addWidget(self.tabbar)
 		
-		self.hist = ImgHistogram(self)
-		self.hist.setObjectName("hist")
-		self.hbl.addWidget(self.hist)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
-		self.vbl2.setMargin(0)
-		self.vbl2.setSpacing(6)
-		self.vbl2.setObjectName("vbl2")
-		self.hbl.addLayout(self.vbl2)
+		self.slidex=ValSlider(None,(0,1),"X col:",0)
+		self.slidex.setIntonly(1)
+		self.vbl.addWidget(self.slidex)
 		
-		self.invtog = QtGui.QPushButton("Invert")
-		self.invtog.setCheckable(1)
-		self.vbl2.addWidget(self.invtog)
+		self.slidey=ValSlider(None,(0,1),"Y col:",1)
+		self.slidey.setIntonly(1)
+		self.vbl.addWidget(self.slidey)
 		
-		self.ffttog = QtGui.QPushButton("FFT")
-		self.ffttog.setCheckable(1)
-		self.vbl2.addWidget(self.ffttog)
+		self.slidec=ValSlider(None,(-1,1),"C col:",-1)
+		self.slidec.setIntonly(1)
+		self.vbl.addWidget(self.slidec)
+		
+		#self.hbl = QtGui.QHBoxLayout()
+		#self.hbl.setMargin(0)
+		#self.hbl.setSpacing(6)
+		#self.hbl.setObjectName("hbl")
+		#self.vbl.addLayout(self.hbl)
+		
+		#self.hist = ImgHistogram(self)
+		#self.hist.setObjectName("hist")
+		#self.hbl.addWidget(self.hist)
+		
+		#self.vbl2 = QtGui.QVBoxLayout()
+		#self.vbl2.setMargin(0)
+		#self.vbl2.setSpacing(6)
+		#self.vbl2.setObjectName("vbl2")
+		#self.hbl.addLayout(self.vbl2)
+		
+		#self.invtog = QtGui.QPushButton("Invert")
+		#self.invtog.setCheckable(1)
+		#self.vbl2.addWidget(self.invtog)
+		
+		#self.ffttog = QtGui.QPushButton("FFT")
+		#self.ffttog.setCheckable(1)
+		#self.vbl2.addWidget(self.ffttog)
 
-		self.hbl2 = QtGui.QHBoxLayout()
-		self.hbl2.setMargin(0)
-		self.hbl2.setSpacing(6)
-		self.hbl2.setObjectName("hboxlayout")
-		self.vbl.addLayout(self.hbl2)
+		#self.hbl2 = QtGui.QHBoxLayout()
+		#self.hbl2.setMargin(0)
+		#self.hbl2.setSpacing(6)
+		#self.hbl2.setObjectName("hboxlayout")
+		#self.vbl.addLayout(self.hbl2)
 		
-		self.mapp = QtGui.QPushButton("App")
-		self.mapp.setCheckable(1)
-		self.hbl2.addWidget(self.mapp)
+		#self.mapp = QtGui.QPushButton("App")
+		#self.mapp.setCheckable(1)
+		#self.hbl2.addWidget(self.mapp)
 
-		self.mmeas = QtGui.QPushButton("Meas")
-		self.mmeas.setCheckable(1)
-		self.hbl2.addWidget(self.mmeas)
+		#self.mmeas = QtGui.QPushButton("Meas")
+		#self.mmeas.setCheckable(1)
+		#self.hbl2.addWidget(self.mmeas)
 
-		self.mmode=QtGui.QButtonGroup()
-		self.mmode.setExclusive(1)
-		self.mmode.addButton(self.mapp,0)
-		self.mmode.addButton(self.mmeas,1)
+		#self.mmode=QtGui.QButtonGroup()
+		#self.mmode.setExclusive(1)
+		#self.mmode.addButton(self.mapp,0)
+		#self.mmode.addButton(self.mmeas,1)
 		
-		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
-		self.scale.setObjectName("scale")
-		self.scale.setValue(1.0)
-		self.vbl.addWidget(self.scale)
+		#self.scale = ValSlider(self,(0.1,5.0),"Mag:")
+		#self.scale.setObjectName("scale")
+		#self.scale.setValue(1.0)
+		#self.vbl.addWidget(self.scale)
 		
-		self.mins = ValSlider(self,label="Min:")
-		self.mins.setObjectName("mins")
-		self.vbl.addWidget(self.mins)
+		#self.mins = ValSlider(self,label="Min:")
+		#self.mins.setObjectName("mins")
+		#self.vbl.addWidget(self.mins)
 		
-		self.maxs = ValSlider(self,label="Max:")
-		self.maxs.setObjectName("maxs")
-		self.vbl.addWidget(self.maxs)
+		#self.maxs = ValSlider(self,label="Max:")
+		#self.maxs.setObjectName("maxs")
+		#self.vbl.addWidget(self.maxs)
 		
-		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
-		self.brts.setObjectName("brts")
-		self.vbl.addWidget(self.brts)
+		#self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
+		#self.brts.setObjectName("brts")
+		#self.vbl.addWidget(self.brts)
 		
-		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
-		self.conts.setObjectName("conts")
-		self.vbl.addWidget(self.conts)
+		#self.conts = ValSlider(self,(0.0,1.0),"Cont:")
+		#self.conts.setObjectName("conts")
+		#self.vbl.addWidget(self.conts)
 		
-		self.gammas = ValSlider(self,(.1,5.0),"Gam:")
-		self.gammas.setObjectName("gamma")
-		self.gammas.setValue(1.0)
-		self.vbl.addWidget(self.gammas)
+		#self.gammas = ValSlider(self,(.1,5.0),"Gam:")
+		#self.gammas.setObjectName("gamma")
+		#self.gammas.setValue(1.0)
+		#self.vbl.addWidget(self.gammas)
 
-		self.lowlim=0
-		self.highlim=1.0
-		self.busy=0
+		#self.lowlim=0
+		#self.highlim=1.0
+		#self.busy=0
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
-		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
-		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
-		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
-		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
-		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
-		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
-
-	def setScale(self,val):
-		if self.busy : return
-		self.busy=1
-		self.scale.setValue(val)
-		self.busy=0
-
-	def newMin(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setDenMin(val)
-
-		self.updBC()
-		self.busy=0
+		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged"), self.newCols)
+		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged"), self.newCols)
+		QtCore.QObject.connect(self.slidez, QtCore.SIGNAL("valueChanged"), self.newCols)
 		
-	def newMax(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setDenMax(val)
-		self.updBC()
-		self.busy=0
+		
+		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
+		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
+		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
+
+	def newCols(self,val):
+		if target: target.setAxes(self.slidex.value,self.slidey.value,self.slidec.value)
 	
-	def newBrt(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
-		self.busy=0
-		
-	def newCont(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
-		self.busy=0
-		
-	def newGamma(self,val):
-		if self.busy : return
-		self.busy=1
-		self.target.setGamma(val)
-		self.busy=0
 
-	def updBC(self):
-		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
-		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
-		self.brts.setValue(-b)
-		self.conts.setValue(1.0-c)
-		
-	def updMM(self):
-		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		self.mins.setValue(x0)
-		self.maxs.setValue(x1)
-		self.target.setDenRange(x0,x1)
-		
-	def setHist(self,hist,minden,maxden):
-		self.hist.setData(hist,minden,maxden)
-
-	def setLimits(self,lowlim,highlim,curmin,curmax):
-		self.lowlim=lowlim
-		self.highlim=highlim
-		self.mins.setRange(lowlim,highlim)
-		self.maxs.setRange(lowlim,highlim)
-		self.mins.setValue(curmin)
-		self.maxs.setValue(curmax)
 
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMPlot2D()
 	if len(sys.argv)==1 : 
-		window.setData(test_image(size=(512,512)))
+		window.setData("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
 
 	window.show()
 		
