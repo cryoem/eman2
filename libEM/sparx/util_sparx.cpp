@@ -1114,7 +1114,7 @@ size, say N=5, you can easily modify it by referring my code.
 	 		     pixel += data[inxold+m1+(inyold+m2)*nx+(inzold+m3)*nx*ny]*q;w+=q;}}}
 	 		 }*/
 	}
-        return pixel/w*4.0f;
+        return pixel/w;
 }
 
 

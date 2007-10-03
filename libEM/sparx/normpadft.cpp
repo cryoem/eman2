@@ -282,8 +282,8 @@ EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
 //  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/std::sqrt(2.0f);
-	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-nx; iny = nyn - ny; inz = nzn - nz;
 	for (k=1; k<=nz/2+1; k++) for (j=1; j<=ny/2+1; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j,k);
 	if(nyn>1) {
@@ -415,8 +415,8 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 //  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = std::sqrt(2.0f);
-	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nx - nxn;  iny = ny - nyn;  inz = nz - nzn;
 	for (k=1; k<=nzn/2+1; k++) for (j=1; j<=nyn/2+1; j++) for (i=1; i<=lsdn; i++) fout(i,j,k)=fint(i,j,k);
 	if(nyn>1) {
@@ -514,8 +514,8 @@ EMData *EMData::FourInterpol_i(int nxn, int nyni, int nzni, bool RetReal) {
 //  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/std::sqrt(2.0f);
-	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
 	for (k=1; k<=nz/2+1; k++) for (j=1; j<=ny/2+1; j++) for (i=1; i<=lsd; i++) fout(i,j,k)=fint(i,j,k);
 	if(nyn>1) {
@@ -645,8 +645,8 @@ EMData *EMData::Four_ds(int nxn, int nyni, int nzni, bool RetReal) {
 //  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 //	float  sq2 = 1.0f/std::sqrt(2.0f);
-	//float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
-	//for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
+	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
+	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
 	for (j=1; j<=nyn; j++)
 		for (i=1; i<=lsdn; i++) 
