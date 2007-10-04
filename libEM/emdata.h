@@ -412,6 +412,9 @@ namespace EMAN
 		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT);
 		
 		
+		
+		EMData* eman1_calc_ccf(EMData * with = NULL);
+		
 		/** Calculate Cross-Correlation Function (CCF) in the x-direction 
 		 * and adds them up, result in 1D.
 		 * WARNING: this routine will modify the 'this' and 'with' to contain

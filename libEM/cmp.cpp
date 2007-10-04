@@ -351,8 +351,8 @@ float DotCmp::cmp(EMData* image, EMData* with) const
 				result += x_data[i]*double(y_data[i]);
 			}
 			if (normalize) {
-				square_sum1 = image->get_attr_dict().get("square_sum");
-				square_sum2 = with->get_attr_dict().get("square_sum");
+				square_sum1 = image->get_attr("square_sum");
+				square_sum2 = with->get_attr("square_sum");
 			} else n = totsize;
 		}
 	if (normalize) result = result / (sqrt(square_sum1*square_sum2)); else result /= n;

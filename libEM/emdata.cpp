@@ -1542,15 +1542,78 @@ EMData *EMData::do_radon()
 
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
-	if( with == 0 ) {
-		return autocorrelation(this,fpflag);
+	return eman1_calc_ccf(with);
+// 	if( with == 0 ) {
+// 		return autocorrelation(this,fpflag);
+// 	}
+// 	else if ( with == this ){
+// 		return autocorrelation(this,fpflag);
+// 	}
+// 	else {
+// 		return correlation(this, with, fpflag);
+// 	}
+}
+
+EMData *EMData::eman1_calc_ccf(EMData * with)
+{
+	
+	// FIXME throw if this is complex
+	// FIXME throw if with is complex
+	
+	EMData* f1 = do_fft();
+	
+	EMData* cf;
+	
+	if (with && (with != this)) {
+		cf= with->do_fft();	// this is where the result will go
 	}
-	else if ( with == this ){
-		return autocorrelation(this,fpflag);
+	else cf=f1->copy();
+
+	// make sure the images are the same size
+	int nx2 = cf->get_xsize();
+	int ny2 = cf->get_ysize();
+	int nz2 = cf->get_zsize();
+	if (with && (f1->get_xsize()!=nx2 || f1->get_ysize()!=ny2 || f1->get_zsize()!=nz2))
+	{
+		LOGERR("CCF: Images must be the same size.");
+		throw ImageDimensionException("Images are not the same dimensions");
+	}
+
+	float* rdata1 = f1->get_data();
+	float* rdata2 = cf->get_data();
+
+	if (with==this) {
+		for (int i=0; i<nx2*ny2*nz2; i+=2) {
+			rdata2[i]=(rdata1[i]*rdata2[i]+rdata1[i+1]*rdata2[i+1]);
+			rdata2[i+1]=0;
+		}
+	}
+	else if (with) {
+		//	norm=nx2*ny2*nx2*ny2*(Mean()+Sigma())*(Mean()+Sigma());
+		//	norm=nx2*ny2*nz2*nx2*ny2*nz2;
+// 		norm=1.0;
+		for (int i=0; i<nx2*ny2*nz2; i+=2) {
+			float re=(rdata1[i]*rdata2[i]+rdata1[i+1]*rdata2[i+1]);
+			float im=(rdata1[i+1]*rdata2[i]-rdata1[i]*rdata2[i+1]);
+			rdata2[i]=re;
+			rdata2[i+1]=im;
+		}
 	}
 	else {
-		return correlation(this, with, fpflag);
+		//	norm=nx2*ny2*nx2*ny2*(Mean()+Sigma())*(Mean()+Sigma());
+		//	norm=nx2*ny2*nz2*nx2*ny2*nz2;
+// 		norm=1.0;
+		for (int i=0; i<nx2*ny2*nz2; i+=2) {
+			float re=(rdata1[i]*rdata2[i]-rdata1[i+1]*rdata2[i+1]);
+			float im=(rdata1[i+1]*rdata2[i]+rdata1[i]*rdata2[i+1]);
+			rdata2[i]=re;
+			rdata2[i+1]=im;
+		}
 	}
+
+	cf->do_ift_inplace();
+	cf->postift_depad_corner_inplace();
+	return cf;
 }
 
 
@@ -2671,7 +2734,8 @@ void EMData::update_stat() const
 {
 	ENTERFUNC;
 
-	if (!(flags & EMDATA_NEEDUPD)) {
+	if (!(flags & EMDATA_NEEDUPD))
+	{
 		EXITFUNC;
 		return;
 	}

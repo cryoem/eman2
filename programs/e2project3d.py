@@ -84,6 +84,7 @@ def main():
 	parser.add_option("--perturb",action="store_true",help="In conjunction with the --sym argument, perturbs orientations when projecting over the asymmetric unit",default=False)
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
 	parser.add_option("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
+	parser.add_option("--numproj", dest = "numproj", type = "float",help = "The number of projections to generate. ")
 	#parser.add_option("--mode", dest = "mode", type = "int", default = 2, help = "Default is real-space projection, this specifies various Fourier modes")
 	#parser.add_option("--angletype", dest = "angletype", default = "EMAN", help = "Angle convention to use: [EMAN, SPIDER].  EMAN is the default")
 	 
@@ -94,19 +95,27 @@ def main():
 	
 		
 	if len(args) < 1:
-		print "ERROR: No input file given"
+		parser.error("ERROR: No input file given")
 		exit(1)
 		
 	# check to see if the image exists
 	if not os.path.exists(args[0]):
-		print "Input file %s does not exist" %args[0]
+		parser.error("Input file %s does not exist" %args[0])
 		exit(1)
 	
 	# Check valid symmetry or whether the random argument has been given
 	if options.sym and options.random:
-		print "ERROR: Cannot handle both the sym and random arguments simultaneously"
+		parser.error("ERROR: Cannot handle both the sym and random arguments simultaneously")
 		exit(1)
-		
+	
+	if options.prop and options.numproj:
+		parser.error("ERROR: Cannot handle both the prop and numproj arguments simultaneously")
+		exit(1)
+	
+	if options.numproj and options.numproj < 0:
+		parser.error("ERROR: numproj must be greater than 0")
+		exit(1)
+	
 	elif options.sym:
 		options.sym=options.sym.lower()
 		if (options.sym[0] in ["c","d", "h"]):
@@ -117,16 +126,23 @@ def main():
 			if not (options.sym in ["tet","oct","icos"]):
 				print "ERROR: %s is an invalid symmetry type"%options.sym
 				exit(1)
-		if not(options.prop):	# check for valid prop - catches when prop is not specified
+		if not(options.prop) and not (options.numproj):	# check for valid prop - catches when prop is not specified
 			print "ERROR: No valid prop specified";
 			exit(1)
 		# handle negative or zero prop here	
-		if (options.prop <= 0):
+		if (options.prop and options.prop <= 0):
 			print "ERROR: %f is an invalid value for prop (must be greater than zero)"%options.prop
 			exit(1)
 			
 		# GET EULERS here
-		eulers = get_asym_unit_orientations( options.sym, options.prop, options.nomirror, options.perturb )
+		if (options.prop):
+			eulers = get_asym_unit_orientations( options.sym, options.prop, options.nomirror, options.perturb )
+		else:
+			if (options.numproj):
+				eulers = get_asym_unit_orientations_numproj( options.sym, options.numproj, options.nomirror, options.perturb )
+			else:
+				print "Error, this error should have been caught before now, the user has not specified a valid prop or numproj argument"
+				exit(1)
 
 		# check for the phitoo argument.
 		if (options.phitoo):	
@@ -213,6 +229,29 @@ def get_random_orientations( symmetry, totalprojections, nomirror ):
 		
 		i += 1
 	
+	return eulers
+		
+def get_asym_unit_orientations_numproj(symmetry, num_proj, nomirror, perturb = False):
+	
+	prop_soln = 360
+	prop_upper_bound = 360
+	prop_lower_bound = 0
+	
+	soln_found = False
+	eulers = []
+	while ( soln_found == False ):
+		eulers = get_asym_unit_orientations(symmetry,prop_soln,nomirror,perturb)
+		if (len(eulers) == num_proj):
+			soln_found = True
+		else:
+			if (len(eulers) < num_proj):
+				prop_upper_bound = prop_soln;
+				prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0
+			else:
+				prop_lower_bound = prop_soln;
+				prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0
+		
+	print "Using an angular distribution of %f" %prop_soln
 	return eulers
 
 def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):
