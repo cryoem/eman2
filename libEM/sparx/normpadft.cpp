@@ -687,6 +687,8 @@ EMData *EMData::Four_shuf_ds_cen_us(int nxn, int nyni, int nzni, bool RetReal) {
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
 	float  sq2 = 1.0f/std::sqrt(2.0f);
 
+	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= 4;
+
 	inx = nxn-(nx-2); iny = nyn - ny; inz = nzn - nz;
 	for (j=1; j<=ny/4; j++)
 		for (i=1; i<=(nx-2)/2+2; i++) {
