@@ -414,7 +414,7 @@ EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
 	float *fint = temp_ft->get_data();
 //  TO KEEP EXACT VALUES ON THE ORIGINAL GRID ONE SHOULD USE
 //  SQ2     = 2.0. HOWEVER, TOTAL ENERGY WILL NOT BE CONSERVED
-	float  sq2 = std::sqrt(2.0f);
+	//float  sq2 = std::sqrt(2.0f);
 	float  anorm = (float) nxn* (float) nyn* (float) nzn/(float) nx/ (float) ny/ (float) nz;
 	for (i = 0; i < lsd*ny*nz; i++)  fint[i] *= anorm;
 	inx = nx - nxn;  iny = ny - nyn;  inz = nz - nzn;
