@@ -3994,7 +3994,7 @@ void AutoMask3D2Processor::process_inplace(EMData * image)
 				if (abs(k) > radius || abs(j) > radius || abs(i) > radius) {
 					continue;
 				}
-				if (sqrt((float) (k * k + j * j + i * i)) > radius || dat[l] < threshold) {
+				if ( (k * k + j * j + i * i) > (radius*radius) || dat[l] < threshold) {
 					continue;
 				}
 				dat2[l] = 1.0f;

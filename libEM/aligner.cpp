@@ -280,9 +280,8 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 		return 0;
 	}
 
-	bool premasked = true;
-	EMData *this_img2 = this_img->make_rotational_footprint(premasked);
-	EMData *to2 = to->make_rotational_footprint(premasked);
+	EMData *this_img2 = this_img->make_rotational_footprint();
+	EMData *to2 = to->make_rotational_footprint();
 
 //	to2->write_image("temp.hdf",-1); // eliminate later, PRB
 	int this_img2_nx = this_img2->get_xsize();
@@ -309,8 +308,8 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	float rotateAngle = (float) peak_index * 180.0 / this_img2_nx;
 	//printf("rotateAngleInit= %f \n",rotateAngle ); // eliminate later, PRB
 	cfL->rotate( rotateAngle, 0, 0);
-	EMData *cfR=this_img->copy();
-	cfR->rotate( rotateAngle-180, 0, 0);
+	EMData *cfR=cfL->copy();
+	cfR->rotate_180();
 	float Ldot = cfL->dot(to);
 	float Rdot = cfR->dot(to);
 	//printf("Ldot = %f, Rdot=%f \n",Ldot, Rdot); // eliminate later, PRB
@@ -571,11 +570,11 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 
 	float dot1 = 0;
 	float dot2 = 0;
-	dot1 = this_copy  ->cmp(cmp_name, tmp, cmp_params);
-	dot2 = this_copy2 ->cmp(cmp_name, tmp, cmp_params);
+	dot1 = this_copy->cmp(cmp_name, tmp, cmp_params);
+	dot2 = this_copy2->cmp(cmp_name, tmp, cmp_params);
 
 	EMData *result = 0;
-	if (dot1 < dot2) {			// assumes smaller is better, won't work with Dot !!!
+	if (dot1 < dot2) { // Assumes smaller is better - thus all comparitors should support "smaller is better"
 		this_copy->set_attr("align.score", dot1);
 		if( this_copy2 )
 		{

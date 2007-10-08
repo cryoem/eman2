@@ -283,7 +283,7 @@ void FourierReconstructor::setup()
 	if ( (bool) params["quiet"] == false )
 	{
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
-		cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*4.0*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
+		cout << "You will require approximately " << setprecision(3) << (nx*ny*nz*sizeof(float)*1.5)/1000000000.0 << "GB of memory to reconstruct this volume" << endl;
 		cout << "Scale factors are " << x_scale_factor << " " << y_scale_factor << " " << z_scale_factor << endl;
 		cout << "Max padded dim is " << max_padded_dim << endl;
 	}

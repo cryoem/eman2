@@ -401,7 +401,7 @@ EMData & operator/=(const EMData & em);
 
 
 /** Overload operator() for array indexing. */
-float& operator()(const int ix, const int iy, const int iz) {
+float& operator()(const int ix, const int iy, const int iz) const {
 	ptrdiff_t pos = (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz) {
@@ -411,7 +411,7 @@ float& operator()(const int ix, const int iy, const int iz) {
 	return *(rdata + pos);
 }
 
-float& operator()(const int ix, const int iy) {
+float& operator()(const int ix, const int iy) const {
 	ptrdiff_t pos = (ix - xoff) + (iy-yoff)*nx;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz)
@@ -423,7 +423,7 @@ float& operator()(const int ix, const int iy) {
 }
 
 
-float& operator()(const int ix) {
+float& operator()(const int ix) const {
 	ptrdiff_t pos = ix - xoff;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz)
@@ -493,13 +493,13 @@ std::complex<float>& cmplx(const int ix) {
  * @return a image which is the nth power of this image
  * @exception InvalidValueException n must be >= 0
  */
-EMData * power(int n);		
+EMData * power(int n) const;		
 
 /**return square root of current image
  * @return a image which is the square root of this image
  * @exception ImageFormatException real image only
  * */
-EMData * sqrt();
+EMData * sqrt() const;
 
 		
 /** return natural logarithm image for a image 
@@ -507,7 +507,7 @@ EMData * sqrt();
  * @exception InvalidValueException pixel value must be >= 0
  * @exception ImageFormatException real image only
  */
-EMData * log();
+EMData * log() const;
 
 		
 /** return base 10 logarithm image for a image 
@@ -515,14 +515,14 @@ EMData * log();
  * @exception InvalidValueException pixel value must be >= 0
  * @exception ImageFormatException real image only
  */
-EMData * log10();
+EMData * log10() const;
 
 
 /** return real part of a complex image as a real image format,
  * if this image is a real image, return a copy of this image.
  * @return a real image which is the real part of this image.
  */
-EMData * real();
+EMData * real() const;
 
 		
 /** return imaginary part of a complex image as a real image format.
@@ -530,23 +530,23 @@ EMData * real();
  * @return a real image which is the imaginary part of this image.
  * @exception InvalidCallException if this image is a real image
  */
-EMData * imag();
+EMData * imag() const;
 
-EMData * absi();
+EMData * absi() const;
 
 
 /** return amplitude part of a complex image as a real image format
  * @return EMData * a real image which is the amplitude part of this image
  * @exception InvalidCallException if this image is a real image or is in real/imaginary format
  * */
-EMData * amplitude();
+EMData * amplitude() const;
 
 
 /** return phase part of a complex image as a real image format
  * @return EMData * a real image which is the phase part of this image
  * @exception InvalidCallException if this image is a real image or is in real/imaginary format
  * */
-EMData * phase();
+EMData * phase() const;
 
 		
 /** create a complex image from a real image, this complex image is in real/imaginary format
@@ -554,6 +554,6 @@ EMData * phase();
  * @return a complex image which is generated from a real image
  * @exception InvalidCallException this function can not be called by complex image 
  */
-EMData * real2complex(float img = 0.0f);
+EMData * real2complex(float img = 0.0f) const;
 
 #endif	//emdata__core_h__

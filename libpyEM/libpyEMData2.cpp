@@ -102,7 +102,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccf_overloads_1_2, calc_
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_ccfx_overloads_1_4, calc_ccfx, 1, 4)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_overloads_0_2, make_rotational_footprint, 0, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_make_rotational_footprint_overloads_0_1, make_rotational_footprint, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_calc_mutual_correlation_overloads_1_3, calc_mutual_correlation, 1, 3)
 
@@ -366,7 +366,7 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("do_radon", &EMAN::EMData::do_radon, return_value_policy< manage_new_object >())
         .def("calc_ccf", &EMAN::EMData::calc_ccf, EMAN_EMData_calc_ccf_overloads_1_2()[ return_value_policy< manage_new_object >() ])
         .def("calc_ccfx", &EMAN::EMData::calc_ccfx, EMAN_EMData_calc_ccfx_overloads_1_4()[ return_value_policy< manage_new_object >() ])
-        .def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, EMAN_EMData_make_rotational_footprint_overloads_0_2()[ return_value_policy< manage_new_object >() ])
+        .def("make_rotational_footprint", &EMAN::EMData::make_rotational_footprint, EMAN_EMData_make_rotational_footprint_overloads_0_1()[ return_value_policy< manage_new_object >() ])
         .def("make_footprint", &EMAN::EMData::make_footprint, return_value_policy< manage_new_object >())
         .def("calc_mutual_correlation", &EMAN::EMData::calc_mutual_correlation, EMAN_EMData_calc_mutual_correlation_overloads_1_3()[ return_value_policy< manage_new_object >() ])
         .def("unwrap", &EMAN::EMData::unwrap, EMAN_EMData_unwrap_overloads_0_6()[ return_value_policy< manage_new_object >() ])
@@ -411,9 +411,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def( self -= self )
         .def( self *= self )
         .def( self /= self )
-        .def("__call__", (float& (EMAN::EMData::*)(const int, const int, const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
-        .def("__call__", (float& (EMAN::EMData::*)(const int, const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
-        .def("__call__", (float& (EMAN::EMData::*)(const int) )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
+        .def("__call__", (float& (EMAN::EMData::*)(const int, const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
+        .def("__call__", (float& (EMAN::EMData::*)(const int, const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
+        .def("__call__", (float& (EMAN::EMData::*)(const int) const )&EMAN::EMData::operator (), return_value_policy< copy_non_const_reference >())
     );
 
     enum_< EMAN::EMData::FFTPLACE >("FFTPLACE")

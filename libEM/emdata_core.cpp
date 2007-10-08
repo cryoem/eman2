@@ -58,6 +58,12 @@ void EMData::free_memory()
 		free(supp);
 		supp = 0;
 	}
+	
+	if (rot_fp != 0)
+	{
+		delete rot_fp;
+		rot_fp = 0;
+	}
 
 	EXITFUNC;
 }
@@ -526,7 +532,7 @@ float EMData::sget_value_at_interp(float xx, float yy, float zz) const
 EMData & EMData::operator+=(float n)
 {
 	add(n);
-	update_stat();
+	update();
 	return *this;
 }
 
@@ -541,7 +547,7 @@ EMData & EMData::operator-=(float n)
 EMData & EMData::operator*=(float n)
 {
 	mult(n);
-	update_stat();
+	update();
 	return *this;
 }
 
@@ -560,7 +566,7 @@ EMData & EMData::operator/=(float n)
 EMData & EMData::operator+=(const EMData & em)
 {
 	add(em);
-	update_stat();
+	update();
 	return *this;
 }
 
@@ -568,7 +574,7 @@ EMData & EMData::operator+=(const EMData & em)
 EMData & EMData::operator-=(const EMData & em)
 {
 	sub(em);
-	update_stat();
+	update();
 	return *this;
 }
 
@@ -576,7 +582,7 @@ EMData & EMData::operator-=(const EMData & em)
 EMData & EMData::operator*=(const EMData & em)
 {
 	mult(em);
-	update_stat();
+	update();
 	return *this;
 }
 
@@ -584,12 +590,12 @@ EMData & EMData::operator*=(const EMData & em)
 EMData & EMData::operator/=(const EMData & em)
 {
 	div(em);
-	update_stat();
+	update();
 	return *this;
 }
 
 
-EMData * EMData::power(int n)
+EMData * EMData::power(int n) const
 {
 	ENTERFUNC;
 	
@@ -607,14 +613,14 @@ EMData * EMData::power(int n)
 		}
 	}
 
-	r->update_stat();
+	r->update();
 	return r;
 	
 	EXITFUNC;
 }
 
 
-EMData * EMData::sqrt()
+EMData * EMData::sqrt() const 
 {
 	ENTERFUNC;
 	
@@ -636,14 +642,14 @@ EMData * EMData::sqrt()
 		}
 	}
 	
-	r->update_stat();
+	r->update();
 	return r;
 	
 	EXITFUNC;
 }
 
 
-EMData * EMData::log()
+EMData * EMData::log() const
 {
 	ENTERFUNC;
 	
@@ -665,14 +671,14 @@ EMData * EMData::log()
 		}
 	}
 	
-	r->update_stat();
+	r->update();
 	return r;
 	
 	EXITFUNC;
 }
 
 
-EMData * EMData::log10()
+EMData * EMData::log10() const
 {
 	ENTERFUNC;
 	
@@ -694,14 +700,14 @@ EMData * EMData::log10()
 		}
 	}
 	
-	r->update_stat();
+	r->update();
 	return r;
 	
 	EXITFUNC;
 }
 
 
-EMData * EMData::real() //real part has half of x dimension for a complex image
+EMData * EMData::real() const //real part has half of x dimension for a complex image
 {
 	ENTERFUNC;
 	
@@ -715,6 +721,7 @@ EMData * EMData::real() //real part has half of x dimension for a complex image
 	{
 		if( !is_ri() ) 
 		{
+			delete e;
 			throw InvalidCallException("This image is in amplitude/phase format, this function call require a complex image in real/imaginary format.");
 		}
 		int nx = get_xsize();
@@ -742,14 +749,14 @@ EMData * EMData::real() //real part has half of x dimension for a complex image
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
-	e->update_stat();
+	e->update();
 	return e;
 
 	EXITFUNC;
 }
 
 
-EMData * EMData::imag()
+EMData * EMData::imag() const
 {
 	ENTERFUNC;
 
@@ -783,13 +790,13 @@ EMData * EMData::imag()
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
-	e->update_stat();
+	e->update();
 	return e;
 
 	EXITFUNC;
 }
 
-EMData * EMData::absi() //abs has half of x dimension for a complex image
+EMData * EMData::absi() const//abs has half of x dimension for a complex image
 {
 	ENTERFUNC;
 	
@@ -843,14 +850,14 @@ EMData * EMData::absi() //abs has half of x dimension for a complex image
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
-	e->update_stat();
+	e->update();
 	return e;
 
 	EXITFUNC;
 }
 
 
-EMData * EMData::amplitude()
+EMData * EMData::amplitude() const
 {
 	ENTERFUNC;
 	
@@ -889,23 +896,25 @@ EMData * EMData::amplitude()
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
-	e->update_stat();
+	e->update();
 	return e; 	
 	
 	EXITFUNC;
 }
 
-EMData * EMData::phase()
+EMData * EMData::phase() const
 {
 	ENTERFUNC;
 	
 	EMData * e = new EMData();
 	
-	if( is_real() ) {	
+	if( is_real() ) {
+		delete e;
 		throw InvalidCallException("No imaginary part for a real image, this function call require a complex image.");
 	}
 	else {
 		if(is_ri()) {
+			delete e;
 			throw InvalidCallException("This image is in real/imaginary format, this function call require a complex image in amplitude/phase format.");
 		}
 		
@@ -930,13 +939,13 @@ EMData * EMData::phase()
 	if(e->get_ysize()==1 && e->get_zsize()==1) {
 		e->set_complex_x(false);
 	}
-	e->update_stat();
+	e->update();
 	return e;
 	
 	EXITFUNC;
 }
 
-EMData * EMData::real2complex(const float img)
+EMData * EMData::real2complex(const float img) const
 {
 	ENTERFUNC;
 
@@ -964,7 +973,7 @@ EMData * EMData::real2complex(const float img)
 		e->set_complex_x(true);
 	}
 	e->set_ri(true);
-	e->update_stat();
+	e->update();
 	return e;
 
 	EXITFUNC;

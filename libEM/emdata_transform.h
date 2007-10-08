@@ -47,7 +47,7 @@ public:
  * real/imaginary format.
  * @return The FFT of the current image in real/imaginary format.
  */
-EMData *do_fft();
+EMData *do_fft() const;
 
 
 /** Do FFT inplace. And return the FFT image.
@@ -57,7 +57,9 @@ EMData* do_fft_inplace();
 
 
 /** return the inverse fourier transform (IFT) image of the current
- * image. the current image is not changed.
+ * image. the current image may be changed if it is in amplitude/phase
+ * format as opposed to real/imaginary format - if this change is
+ * performed it is not undone.
  *
  * @exception ImageFormatException If the image is not a complex image.
  * @return The current image's inverse fourier transform image.

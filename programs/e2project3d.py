@@ -84,7 +84,7 @@ def main():
 	parser.add_option("--perturb",action="store_true",help="In conjunction with the --sym argument, perturbs orientations when projecting over the asymmetric unit",default=False)
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
 	parser.add_option("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
-	parser.add_option("--numproj", dest = "numproj", type = "float",help = "The number of projections to generate. ")
+	parser.add_option("--numproj", dest = "numproj", type = "float",help = "The number of projections to generate - this is opposed to using the prop argument")
 	#parser.add_option("--mode", dest = "mode", type = "int", default = 2, help = "Default is real-space projection, this specifies various Fourier modes")
 	#parser.add_option("--angletype", dest = "angletype", default = "EMAN", help = "Angle convention to use: [EMAN, SPIDER].  EMAN is the default")
 	 

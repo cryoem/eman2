@@ -36,6 +36,12 @@
 #include "emdata.h"
 #include "ctf.h"
 
+#include <sstream>
+using std::stringstream;
+
+#include <iomanip>
+using std::setprecision;
+
 using namespace EMAN;
  
 EMData* EMData::get_fft_amplitude2D()
@@ -70,9 +76,6 @@ EMData* EMData::get_fft_amplitude2D()
 			(*dat)(i,j) = std::sqrt(temp);
 		}
 	}
-
-
-	update();
 
 	dat->update();
 	dat->set_complex(false);
@@ -121,8 +124,6 @@ EMData* EMData::get_fft_amplitude()
 			}
 		}
 	}
-
-	update();
 
 	dat->update();
 	dat->set_complex(false);
@@ -173,8 +174,7 @@ EMData* EMData::get_fft_phase()
 			}
 		}
 	}
-	update();
-
+	
 	dat->update();
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) {
@@ -537,10 +537,16 @@ void EMData::set_size(int x, int y, int z)
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	rdata = static_cast < float *>(realloc(rdata, size));
 	
-	if ( rdata == 0 ) throw BadAllocException("It appears as though there wasn't enough system memory");
+	if ( rdata == 0 )
+	{
+		stringstream ss;
+		string megs;
+		ss << (float) size/1000000000.0;
+		ss >> megs;
+		string message = "Cannot allocate " + megs + " GB - not enough memory.";
+		throw BadAllocException(message);
+	}
 	
-	update();
-
 	attr_dict["nx"] = x;
 	attr_dict["ny"] = y;
 	attr_dict["nz"] = z;
@@ -554,6 +560,8 @@ void EMData::set_size(int x, int y, int z)
 		free(supp);
 		supp = 0;
 	}
+	
+	update();
 	EXITFUNC;
 }
 

@@ -441,11 +441,10 @@ namespace EMAN
 		 * edge-normalized and masked before using this.
 		 *
 		 * @param unwrap RFP undergoes polar->cartesian x-form
-		 * @param premasked Is the image pre-masked?
 		 * @exception ImageFormatException If image size is not even.
 		 * @return The rotaional footprint image.
 		 */
-		EMData *make_rotational_footprint(bool premasked = false, bool unwrap = true);
+		EMData *make_rotational_footprint(bool unwrap = true);
 		
 		
 		/** Makes a 'footprint' for the current image. This is another
@@ -777,6 +776,9 @@ namespace EMAN
 
 		string path;
 		int pathnum;
+		
+		/** This is a dictionary the oversees the caching of the */
+		mutable EMData* rot_fp;
 	};
 
 
@@ -816,8 +818,6 @@ namespace EMAN
 		attr_dict["apix_y"] = ((float) attr_dict["apix_y"]) * scale;
 		attr_dict["apix_z"] = ((float) attr_dict["apix_z"]) * scale;
 	}
-
-	
 			 
 	
 }

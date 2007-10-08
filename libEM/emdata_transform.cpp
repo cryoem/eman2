@@ -42,7 +42,7 @@
 using namespace EMAN;
 
 
-EMData *EMData::do_fft()
+EMData *EMData::do_fft() const
 {
 	ENTERFUNC;
 
@@ -71,8 +71,6 @@ EMData *EMData::do_fft()
 	dat->set_complex(true);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 	dat->set_ri(true);
-
-	update();
 
 	EXITFUNC;
 	return dat;
@@ -163,9 +161,7 @@ EMData *EMData::do_ift()
 		}
 	}
 
-	dat->update();
 	dat->set_size(nx - offset, ny, nz);	//remove the padding
-	dat->update();
 #if defined	FFTW2 || defined FFTW3	//native fft and ACML already done normalization
 	// SCALE the inverse FFT
 	float scale = 1.0f / ((nx - offset) * ny * nz);
@@ -177,7 +173,9 @@ EMData *EMData::do_ift()
 		dat->set_complex_x(false);
 	}
 	dat->set_ri(false);
-
+	dat->update();
+	
+	
 	EXITFUNC;
 	return dat;
 }
