@@ -56,20 +56,21 @@ class ValSlider(QtGui.QWidget):
 		self.hboxlayout.setSpacing(6)
 		self.hboxlayout.setObjectName("hboxlayout")
 		
-		self.label = QtGui.QLabel(self)
-		
 		if label:
-			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(5),QtGui.QSizePolicy.Policy(0))
+			self.label = QtGui.QLabel(self)
+			self.label.setText(label)
+			
+			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
 #			sizePolicy.setHorizontalStretch(1)
 #			sizePolicy.setVerticalStretch(0)
 #			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 			self.label.setSizePolicy(sizePolicy)
-			self.label.setMinimumSize(QtCore.QSize(30,0))
+#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
+			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
+			self.label.setMinimumSize(QtCore.QSize(30,20))
 			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
-			self.label = QtGui.QLabel(self)
-			self.label.setText(label)
 		
 		self.text = QtGui.QLineEdit(self)
 		
@@ -101,15 +102,19 @@ class ValSlider(QtGui.QWidget):
 		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
 
 	def setRange(self,minv,maxv):
-		self.range=[minv,maxv]
+		self.range=[float(minv),float(maxv)]
 		self.updates()
 
-	def setValue(self,val):
-		if self.intonly : self.value=int(val)
-		else: self.value=val
+	def setValue(self,val,quiet=0):
+		if self.intonly : 
+			if self.value==int(val+.5) : return
+			self.value=int(val+.5)
+		else: 
+			if self.value==val : return
+			self.value=val
 
 		self.updateboth()
-		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
 	def setIntonly(self,flag):
 		self.intonly=flag
@@ -129,8 +134,11 @@ class ValSlider(QtGui.QWidget):
 			self.updateboth()
 		else:
 			try:
-				if (self.intonly) : self.value=int(x)
-				else : self.value=float(x)
+				if (self.intonly) :
+					if self.value==int(x+.5) : return
+					self.value=int(x+.5)
+				else : 
+					self.value=float(x)
 				self.updates()
 				self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 			except:
@@ -138,8 +146,11 @@ class ValSlider(QtGui.QWidget):
 				
 	def sliderChange(self,x):
 		if self.ignore : return
+		ov=self.value
 		self.value=(self.slider.value()/4095.0)*(self.range[1]-self.range[0])+self.range[0]
-		if self.intonly : self.value=int(self.value)
+		if self.intonly : 
+			self.value=int(self.value+.5)
+			if self.value==ov : return
 		self.updatet()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 		
@@ -150,7 +161,9 @@ class ValSlider(QtGui.QWidget):
 		self.ignore=0
 
 	def updatet(self):
+		self.ignore=1
 		self.text.setText(str(self.value)[:self.text.width()/10-1])
+		self.ignore=0
 		
 	def updateboth(self):
 		self.updates()

@@ -44,6 +44,12 @@ import numpy
 from emimageutil import ImgHistogram
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
+import struct
+
+import matplotlib
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
+#matplotlib.use('Agg')
 
 class EMPlot2D(QtOpenGL.QGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
@@ -52,10 +58,11 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		self.axes=(0,1,-1)
+		self.axes={}
+		self.inspector=None
 
 		self.data={}				# List of Lists to plot 
-			
+		
 	def setData(self,key,data):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
@@ -66,10 +73,9 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		if data : self.data[key]=data
 		else : del self.data[key]
 		
-		self.data=data
-		if data==None:
-			self.updateGL()
-			return
+		self.axes[key]=(0,1,-1)
+		
+		if self.inspector: self.inspector.datachange()
 		
 		self.updateGL()
 		
@@ -82,11 +88,25 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 #		GL.glTranslated(0.0, 0.0, -10.0)
 		
 		if not self.data : return
-				
 		
-		GL.glRasterPos(0,0)
-		GL.glPixelZoom(1.0,1.0)
-		GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+		fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
+		ax=fig.add_axes((.1,.1,.85,.85))
+		canvas=FigureCanvasAgg(fig)
+		
+		for i in self.axes.keys():
+			j=self.axes[i]
+			if j[0]==-1 : x=range(len(self.data[i][0]))
+			else : x=self.data[i][self.axes[i][0]]
+			if j[1]==-1 : y=range(len(self.data[i][0]))
+			else : y=self.data[i][self.axes[i][1]]
+			ax.plot(x,y)
+		
+		canvas.draw()
+		a = canvas.tostring_rgb()  # save this and convert to bitmap as needed
+		
+		GL.glRasterPos(0,self.height()-1)
+		GL.glPixelZoom(1.0,-1.0)
+		GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
 
 	def resizeGL(self, width, height):
 		side = min(width, height)
@@ -102,14 +122,16 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	def showInspector(self,force=0):
 		if not force and self.inspector==None : return
 		
-		if not self.inspector : self.inspector=EMImageInspector2D(self)
+		if not self.inspector : self.inspector=EMPlot2DInspector(self)
 		self.inspector.show()
+		self.inspector.datachange()
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
 	
 	def setAxes(self,key,xa,ya,za):
-		self.axes=(0,1,-1)
+		if self.axes[key]==(xa,ya,za) : return
+		self.axes[key]=(xa,ya,za)
 		self.updateGL()
 	
 	#def dragEnterEvent(self,event):
@@ -187,121 +209,151 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.target=target
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.hbl = QtGui.QHBoxLayout(self)
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hbl")
+		
+		# plot list
+		self.setlist=QtGui.QListWidget(self)
+		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.hbl.addWidget(self.setlist)
+		
+		self.vbl = QtGui.QVBoxLayout()
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
+		self.hbl.addLayout(self.vbl)
 		
-		self.tabbar=QtGui.QTabBar()
-		self.tabbar.addTab("Default")
-		self.vbl.addWidget(self.tabbar)
+		self.hbl2 = QtGui.QHBoxLayout()
+		self.hbl2.setMargin(0)
+		self.hbl2.setSpacing(6)
+		self.vbl.addLayout(self.hbl2)
 		
+		# This is for symbol parms
+		self.vbl2a = QtGui.QVBoxLayout()
+		self.vbl2a.setMargin(0)
+		self.vbl2a.setSpacing(6)
+		self.hbl2.addLayout(self.vbl2a)
 		
-		self.slidex=ValSlider(None,(0,1),"X col:",0)
+		# This is for line parms
+		self.vbl2b = QtGui.QVBoxLayout()
+		self.vbl2b.setMargin(0)
+		self.vbl2b.setSpacing(6)
+		self.hbl2.addLayout(self.vbl2b)
+				
+		self.symtog=QtGui.QPushButton(self)
+		self.symtog.setText("Symbol")
+		self.symtog.setCheckable(1)
+		self.vbl2a.addWidget(self.symtog)
+		
+		self.symsel=QtGui.QComboBox(self)
+		self.symsel.addItem("circle")
+		self.symsel.addItem("square")
+		self.symsel.addItem("plus")
+		self.symsel.addItem("triup")
+		self.symsel.addItem("tridown")
+		self.vbl2a.addWidget(self.symsel)
+				
+		# per plot column selectors
+		self.slidex=ValSlider(self,(-1,1),"X col:",0)
 		self.slidex.setIntonly(1)
 		self.vbl.addWidget(self.slidex)
 		
-		self.slidey=ValSlider(None,(0,1),"Y col:",1)
+		self.slidey=ValSlider(self,(-1,1),"Y col:",1)
 		self.slidey.setIntonly(1)
 		self.vbl.addWidget(self.slidey)
 		
-		self.slidec=ValSlider(None,(-1,1),"C col:",-1)
+		self.slidec=ValSlider(self,(-1,1),"C col:",-1)
 		self.slidec.setIntonly(1)
 		self.vbl.addWidget(self.slidec)
 		
-		#self.hbl = QtGui.QHBoxLayout()
-		#self.hbl.setMargin(0)
-		#self.hbl.setSpacing(6)
-		#self.hbl.setObjectName("hbl")
-		#self.vbl.addLayout(self.hbl)
-		
-		#self.hist = ImgHistogram(self)
-		#self.hist.setObjectName("hist")
-		#self.hbl.addWidget(self.hist)
-		
-		#self.vbl2 = QtGui.QVBoxLayout()
-		#self.vbl2.setMargin(0)
-		#self.vbl2.setSpacing(6)
-		#self.vbl2.setObjectName("vbl2")
-		#self.hbl.addLayout(self.vbl2)
-		
-		#self.invtog = QtGui.QPushButton("Invert")
-		#self.invtog.setCheckable(1)
-		#self.vbl2.addWidget(self.invtog)
-		
-		#self.ffttog = QtGui.QPushButton("FFT")
-		#self.ffttog.setCheckable(1)
-		#self.vbl2.addWidget(self.ffttog)
+		self.setLayout(self.hbl)
 
-		#self.hbl2 = QtGui.QHBoxLayout()
-		#self.hbl2.setMargin(0)
-		#self.hbl2.setSpacing(6)
-		#self.hbl2.setObjectName("hboxlayout")
-		#self.vbl.addLayout(self.hbl2)
-		
-		#self.mapp = QtGui.QPushButton("App")
-		#self.mapp.setCheckable(1)
-		#self.hbl2.addWidget(self.mapp)
-
-		#self.mmeas = QtGui.QPushButton("Meas")
-		#self.mmeas.setCheckable(1)
-		#self.hbl2.addWidget(self.mmeas)
-
-		#self.mmode=QtGui.QButtonGroup()
-		#self.mmode.setExclusive(1)
-		#self.mmode.addButton(self.mapp,0)
-		#self.mmode.addButton(self.mmeas,1)
-		
-		#self.scale = ValSlider(self,(0.1,5.0),"Mag:")
-		#self.scale.setObjectName("scale")
-		#self.scale.setValue(1.0)
-		#self.vbl.addWidget(self.scale)
-		
-		#self.mins = ValSlider(self,label="Min:")
-		#self.mins.setObjectName("mins")
-		#self.vbl.addWidget(self.mins)
-		
-		#self.maxs = ValSlider(self,label="Max:")
-		#self.maxs.setObjectName("maxs")
-		#self.vbl.addWidget(self.maxs)
-		
-		#self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
-		#self.brts.setObjectName("brts")
-		#self.vbl.addWidget(self.brts)
-		
-		#self.conts = ValSlider(self,(0.0,1.0),"Cont:")
-		#self.conts.setObjectName("conts")
-		#self.vbl.addWidget(self.conts)
-		
-		#self.gammas = ValSlider(self,(.1,5.0),"Gam:")
-		#self.gammas.setObjectName("gamma")
-		#self.gammas.setValue(1.0)
-		#self.vbl.addWidget(self.gammas)
-
-		#self.lowlim=0
-		#self.highlim=1.0
-		#self.busy=0
 		
 		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged"), self.newCols)
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged"), self.newCols)
-		QtCore.QObject.connect(self.slidez, QtCore.SIGNAL("valueChanged"), self.newCols)
+		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged"), self.newCols)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.togSym)
+		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.newSym)
+		self.datachange()
 		
 		
 		#QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
+	def newSym(this,s):
+		print "newsym ",str(s)
+
+	def togSym(this,s):
+		print "togsym",str(s)
+
+	def newSet(self,row):
+		i=str(self.setlist.item(row).text())
+		self.slidex.setRange(-1.5,len(self.target.data[i])-1)
+		self.slidey.setRange(-1.5,len(self.target.data[i])-1)
+		self.slidec.setRange(-1.5,len(self.target.data[i])-1)
+		self.slidex.setValue(self.target.axes[i][0],1)
+		self.slidey.setValue(self.target.axes[i][1],1)
+		self.slidec.setValue(self.target.axes[i][2],1)
+
 	def newCols(self,val):
-		if target: target.setAxes(self.slidex.value,self.slidey.value,self.slidec.value)
+		if self.target: 
+			self.target.setAxes(str(self.setlist.currentItem().text()),self.slidex.value,self.slidey.value,self.slidec.value)
 	
-
-
+	def datachange(self):
+		
+		self.setlist.clear()
+		
+		keys=self.target.data.keys()
+		keys.sort()
+		
+		for i,j in enumerate(keys) :
+			self.setlist.addItem(j)
+		
+		
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMPlot2D()
 	if len(sys.argv)==1 : 
+		l=[i/30.*pi for i in range(30)]
 		window.setData("test",[[1,2,3,4],[2,3,4,3],[3,4,5,2]])
+		window.setData("test2",[l,[sin(i) for i in l],[cos(i) for i in l]])
+	else:
+		try:
+			# if it's an image file
+			im=EMData(sys.argv[1])
+			# This could be faster...
+			data=[[im.get_value_at(i,j) for j in range(im.get_ysize())] for j in range(im.get_xsize())]
+		except:
+			try:
+				# Maybe a .fp file
+				fin=file(sys.argv[1])
+				fph=struct.unpack("120sII",fin.read(128))
+				ny=fph[1]
+				nx=fph[2]
+				data=[]
+				for i in range(nx):
+					data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
+			except:
+				# Probably a text file
+				fin.seek(0)
+				rdata=fin.readlines()
+				rdata=[i for i in rdata if i[0]!='#']
+				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
+				else : rdata=[[float(j) for j in i.split()] for i in rdata]
+				nx=len(rdata[0])
+				ny=len(rdata)
+				
+				print nx,ny
+				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+				
+		window.setData(sys.argv[1].split("/")[-1],data)
+			
+				
 
 	window.show()
 		
