@@ -173,6 +173,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&TestImageSinewaveCircular::NEW);
 	force_add(&TestImageSquarecube::NEW);
 	force_add(&TestImageCirclesphere::NEW);
+	force_add(&TestImageX::NEW);
 	force_add(&TestImageNoiseUniformRand::NEW);
 	force_add(&TestImageNoiseGauss::NEW);
 	force_add(&TestImageScurve::NEW);
@@ -2616,7 +2617,6 @@ void Phase180Processor::process_inplace(EMData * image)
 
 	int nxy = nx * ny;
 	
-	
 	float *rdata = image->get_data();
 
 	if (image->is_complex()) {
@@ -4179,6 +4179,84 @@ void TestImageGaussian::process_inplace(EMData * image)
 				*dat = (float)gsl_ran_gaussian_pdf((double)r,(double)sigma);
 			}
 		}
+	}
+	
+	image->update();
+}
+
+void TestImageX::process_inplace(EMData * image)
+{
+	preprocess(image);
+	
+	float fill = params.set_default("fill", 1.0f);
+	// get the central coordinates
+	int cx = nx/2;
+	int cy = ny/2;
+	int cz = nz/2;
+	
+	// Offsets are used to detect when "the extra pixel" needs to be filled in
+	// They are implemented on the assumption that for odd dimensions
+	// the "center pixel" is the center pixel, but for even dimensions the "center
+	// pixel" is displaced in the positive direction by 1
+	int xoffset = (nx % 2 == 0? 1:0);
+	int yoffset = (ny % 2 == 0? 1:0);
+	int zoffset = (nz % 2 == 0? 1:0);
+	
+	// This should never occur - but if indeed it did occur, the code in this function
+	// would break - the function would proceed into the final "else" and seg fault
+	// It is commented out but left for clarity
+// 	if ( nx < 1 || ny < 1 || nz < 1 ) throw ImageDimensionException("Error: one of the image dimensions was less than zero");
+	
+	if ( nx == 1 && ny == 1 && nz == 1 )
+	{
+		(*image)(1) = fill;
+	}
+	else if ( ny == 1 && nz == 1 )
+	{
+		int radius = params.set_default("radius", cx );
+		if ( radius > cx ) radius = cx;
+		
+		(*image)(cx) = fill;
+		for ( int i = 1; i < radius; ++i ) (*image)(cx+i) = fill;
+		for ( int i = 1; i < radius+xoffset; ++i ) (*image)(cx-i) = fill;
+	}
+	else if ( nz == 1 )
+	{
+		int min = ( nx < ny ? nx : ny );
+		min /= 2;
+		
+		int radius = params.set_default("radius", min );
+		if ( radius > min ) radius = min;
+		
+		for ( int i = 1; i < radius; ++i )
+		{
+			(*image)(cx+i,cy) = fill;
+			(*image)(cx,cy+i) = fill;
+		}
+		
+		for ( int i = 1; i < radius+xoffset; ++i ) (*image)(cx-i,cy) = fill;
+		for ( int i = 1; i < radius+yoffset; ++i ) (*image)(cx,cy-i) = fill;
+	}
+	else
+	{
+		// nx > 1 && ny > 1 && nz > 1
+		int min = ( nx < ny ? nx : ny );
+		if ( min < nz ) min = nz;
+		min /= 2;
+		
+		int radius = params.set_default("radius", min );
+		if ( radius > min ) radius = min;
+		
+		for ( int i = 1; i < radius; ++i )
+		{
+			(*image)(cx+i,cy,cz) = fill;
+			(*image)(cx,cy+i,cz) = fill;
+			(*image)(cx,cy,cz+i) = fill;
+		}
+		
+		for ( int i = 1; i < radius+xoffset; ++i ) (*image)(cx-i,cy,cz) = fill;
+		for ( int i = 1; i < radius+yoffset; ++i ) (*image)(cx,cy-i,cz) = fill;
+		for ( int i = 1; i < radius+zoffset; ++i ) (*image)(cx,cy,cz-i) = fill;
 	}
 	
 	image->update();

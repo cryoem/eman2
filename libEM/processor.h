@@ -3656,7 +3656,7 @@ The basic design of EMAN Processors: <br>\
 	public:
 		static string get_group_desc()
 		{
-			return "This is a group of 'processor' used to create test image.";
+			return "This is a group of 'processors' used to create test image.";
 		}
 	
 	protected:
@@ -3698,6 +3698,43 @@ The basic design of EMAN Processors: <br>\
 			d.put("z_center", EMObject::FLOAT, "center for this Gaussian blob on z direction" );
 			return d;
 		}
+	};
+	
+	/**Make an image consisting of a single cross, with lines
+	 * going in the axial directions, intersecting at the origin.
+	 *@param radius the radial length of the lines from the origin
+	 *@param fill the value to assign to pixels made non zero
+	 */
+	class TestImageX : public TestImageProcessor
+	{
+		public:
+			/** Make an image consisting entirely of a cross
+			* @param image the image to operate upon
+			 */
+			void process_inplace(EMData * image);
+		
+			string get_name() const
+			{
+				return "testimage.x";
+			}
+		
+			string get_desc() const
+			{
+				return "Make an image consisting of a single cross";
+			}
+		
+			static Processor * NEW()
+			{
+				return new TestImageX();
+			}
+		
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("int", EMObject::FLOAT, "radius of the lines emanating from the origin");
+				d.put("fill", EMObject::FLOAT, "value to make non-zero pixels");
+				return d;
+			}
 	};
 	
 	/** Replace a source image as a Gaussian Blob

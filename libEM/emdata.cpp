@@ -1553,31 +1553,30 @@ EMData *EMData::do_radon()
 
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
-	return eman1_calc_ccf(with);
-// 	if( with == 0 ) {
-// 		return autocorrelation(this,fpflag);
-// 	}
-// 	else if ( with == this ){
-// 		return autocorrelation(this,fpflag);
-// 	}
-// 	else {
-// 		return correlation(this, with, fpflag);
-// 	}
+	if( with == 0 ) {
+		return autocorrelation(this,fpflag);
+	}
+	else if ( with == this ){
+		return correlation(this, this, fpflag);
+	}
+	else {
+		return correlation(this, with, fpflag);
+	}
 }
 
 EMData *EMData::eman1_calc_ccf(EMData * with)
 {
 	
-	// FIXME throw if this is complex
-	// FIXME throw if with is complex
-	
+	if ( is_complex() )	throw ImageFormatException("calc_ccf does not work when this image is complex");
+	if ( with != NULL && with->is_complex() ) throw ImageFormatException("calc_ccf does not work when the argument image is complex");	
 	EMData* f1 = do_fft();
 	
 	EMData* cf;
 	
 	if (with && (with != this)) {
-		cf= with->do_fft();	// this is where the result will go
+		cf = with->do_fft();	// this is where the result will go
 	}
+	// If with is this or null, then we are using this EMData object to calculate auto or normal (self) correlations
 	else cf=f1->copy();
 
 	// make sure the images are the same size
@@ -1585,15 +1584,14 @@ EMData *EMData::eman1_calc_ccf(EMData * with)
 	int ny2 = cf->get_ysize();
 	int nz2 = cf->get_zsize();
 	if (with && (f1->get_xsize()!=nx2 || f1->get_ysize()!=ny2 || f1->get_zsize()!=nz2))
-	{
-		LOGERR("CCF: Images must be the same size.");
-		throw ImageDimensionException("Images are not the same dimensions");
-	}
+		throw ImageDimensionException("in calc_ccf - can not proceed because images are not the same dimensions");
+
 
 	float* rdata1 = f1->get_data();
 	float* rdata2 = cf->get_data();
 
 	if (with==this) {
+		// If with is this, then we are correlating the image against itself
 		for (int i=0; i<nx2*ny2*nz2; i+=2) {
 			rdata2[i]=(rdata1[i]*rdata2[i]+rdata1[i+1]*rdata2[i+1]);
 			rdata2[i+1]=0;
@@ -1603,6 +1601,7 @@ EMData *EMData::eman1_calc_ccf(EMData * with)
 		//	norm=nx2*ny2*nx2*ny2*(Mean()+Sigma())*(Mean()+Sigma());
 		//	norm=nx2*ny2*nz2*nx2*ny2*nz2;
 // 		norm=1.0;
+		// Just perform normal correlation with the argument image
 		for (int i=0; i<nx2*ny2*nz2; i+=2) {
 			float re=(rdata1[i]*rdata2[i]+rdata1[i+1]*rdata2[i+1]);
 			float im=(rdata1[i+1]*rdata2[i]-rdata1[i]*rdata2[i+1]);
@@ -1611,6 +1610,7 @@ EMData *EMData::eman1_calc_ccf(EMData * with)
 		}
 	}
 	else {
+		// If with is 0 or NULL we calculate the auto correlation
 		//	norm=nx2*ny2*nx2*ny2*(Mean()+Sigma())*(Mean()+Sigma());
 		//	norm=nx2*ny2*nz2*nx2*ny2*nz2;
 // 		norm=1.0;

@@ -36,9 +36,14 @@
 #ifndef eman__exception_h__
 #define eman__exception_h__ 1
 
+#include <log.h>
+
 #include <string>
 
 using std::string;
+
+#include <sstream>
+using std::stringstream;
 
 /** E2Exception class
  *
@@ -75,7 +80,16 @@ namespace EMAN {
 		 */ 
 		E2Exception(const string& file = "", int line = 0,
 				  const string& desc_str = "", const string& objname_str = "")
-			: filename(file), linenum(line), desc(desc_str), objname(objname_str) {}
+			: filename(file), linenum(line), desc(desc_str), objname(objname_str)
+		{
+			// Log the message
+			stringstream ss;
+			string line_str;
+			ss << line;
+			ss >> line_str;
+			string message = "File " + file + " line " + line_str + " description " + desc_str + " " + objname_str;
+			LOGERR( message.c_str() );
+		}
 		
 		virtual ~E2Exception() throw() {}
 

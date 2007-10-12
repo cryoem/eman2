@@ -1162,7 +1162,7 @@ class TestEMData(unittest.TestCase):
 					for k in range(e.get_xsize()):
 						for j in range(e.get_ysize()):
 							for i in range(e.get_zsize()):
-								self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+								self.assertEqual(e.get_value_at(i,j,k), d.get_value_at(i,j,k))
 						
     def test_xform_fourierorigin(self):
 		"""test xform.fourierorigin ........................."""
@@ -1790,7 +1790,61 @@ class TestEMData(unittest.TestCase):
             e5.calc_ccfx(e6)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-            
+    def test_calc_ccf(self):
+		#e = EMData()
+		#n = 16
+		
+		#print ""
+		#for i in range(n,n+2):
+			#for j in range(n,n+2):
+				#for k in [1,n-1,n]:
+					#e.set_size(i,j,k);
+					#e.process_inplace("testimage.x")
+					#f = e.calc_ccf(e)
+					
+					#cmax = f.get_value_at(0,0,0)
+					#cx = 0
+					#cy = 0
+					#cz = 0
+					#for kk in range(0,f.get_zsize()):
+						#for jj in range(0,f.get_ysize()):
+							#for ii in range(0,f.get_xsize()):
+								#if (  f.get_value_at(ii,jj,kk) > cmax ):
+									#cmax = f.get_value_at(ii,jj,kk)
+									#cx = ii
+									#cy = jj
+									#cz = kk
+					
+					#print "# # %d %d %d" %(i,j,k)
+					#print "# f dims %d %d %d" %(f.get_xsize(),f.get_ysize(),f.get_zsize())
+					#if ( k == 1 ):
+						#print "got %d %d" %(cx,cy)
+					#else:
+						#print "got %d %d %d" %(cx,cy,cz)
+					
+					#f.process_inplace("xform.phaseorigin")
+					
+					#cmax = f.get_value_at(0,0,0)
+					#cx = 0
+					#cy = 0
+					#cz = 0
+					#for kk in range(0,f.get_zsize()):
+						#for jj in range(0,f.get_ysize()):
+							#for ii in range(0,f.get_xsize()):
+								#if (  f.get_value_at(ii,jj,kk) > cmax ):
+									#cmax = f.get_value_at(ii,jj,kk)
+									#cx = ii
+									#cy = jj
+									#cz = kk
+					
+					#if ( k == 1 ):
+						#print "max should be at %d %d" %(i/2,j/2)
+						#print "got %d %d" %(cx,cy)
+					#else:
+						#print "max should be at %d %d %d" %(i/2,j/2,k/2)
+						#print "got %d %d %d" %(cx,cy,cz)
+					
+
     def test_calc_mutual_correlation(self):
         """test calc_mutual_correlation() function .........."""
         e = EMData()

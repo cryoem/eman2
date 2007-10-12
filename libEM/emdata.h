@@ -412,7 +412,21 @@ namespace EMAN
 		EMData *calc_ccf(EMData * with, fp_flag fpflag = CIRCULANT);
 		
 		
-		
+		/** Calculate Cross-Correlation Function (CCF) in eman1 style
+		 * This is faster than the call to EMData::calc_ccf
+		 *
+		 * Calculate the correlation of two 1-, 2-, or 3-dimensional
+		 * images. ccf is performed in Fourier space
+		 * if with == this, the correlation is performed normally, as though 'with' 
+		 * and 'this' were two different images (but with internal optimizations)
+		 * if with == 0, then the autocorrelation is calculated
+		 * Performs normally otherwise...
+		 * @param with the image to calculate the ccf with
+		 * @exception ImageFormatException if this EMData object is complex
+		 * @exception ImageFormatException if the argument EMData object is complex
+		 * @exception ImageDimensionException if the two images being compared do not have the same dimensions
+		 * @return a real space image 
+		 */
 		EMData* eman1_calc_ccf(EMData * with = NULL);
 		
 		/** Calculate Cross-Correlation Function (CCF) in the x-direction 

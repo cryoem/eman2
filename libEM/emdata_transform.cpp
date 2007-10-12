@@ -134,7 +134,7 @@ EMData *EMData::do_ift()
 	}
 
 	if (!is_ri()) {
-		LOGWARN("run IFT on AP data, only RI should be used. ");
+		LOGWARN("run IFT on AP data, only RI should be used. Converting.");
 	}
 
 	EMData* dat = copy_head();

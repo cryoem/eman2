@@ -97,11 +97,13 @@ namespace EMAN
 	 *               same as the size of f.  Image g is not changed.
 	 *  @param[in] myflag Processing flag (see above).
 	 *  @param[in] mytype Type of Fourier product to perform. (see above).
-	 *
+	 *  @param[in] phase_fac_mult A flag the changes the calculation from 
+	 *             direct Fourier multiplication, to one based on phase
+	 *             factor multiplication - contact Pawel Penczek for details
 	 *  @return 1-, 2-, or 3-dimensional real fourier product image.
 	 */
 	EMData* fourierproduct(EMData* f, EMData* g, fp_flag myflag,
-			fp_type mytype);
+			fp_type mytype, const bool phase_fac_mult=false);
 	/** Correlation of two images.
 	 *
 	 * @par Purpose: Calculate the correlation of two 1-, 2-,

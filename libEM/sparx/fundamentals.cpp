@@ -162,7 +162,7 @@ Output: 1-2-3D real image with the result
         and with the origin at the image center int[n/2]+1.
 */  
 	EMData* 
-	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype) {
+	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype, const bool phase_fac_mult) {
 		int normfact;
 		// Not only does the value of "flag" determine how we handle
 		// periodicity, but it also determines whether or not we should
@@ -225,75 +225,126 @@ Output: 1-2-3D real image with the result
 		// Get complex matrix views of fp and gp; matrices start from 1 (not 0)
 		fp->set_array_offsets(1,1,1);
 		gp->set_array_offsets(1,1,1);
-		//  Multiply two functions (the real work of this routine)
-		int itmp= nx/2;
-		float sx  = float(-twopi*float(itmp)/float(nxp));
-		itmp= ny/2;
-		float sy  = float(-twopi*float(itmp)/float(nyp));
-		itmp= nz/2;
-		float sz  = float(-twopi*float(itmp)/float(nzp));
-		switch (ptype) {
-			case AUTOCORRELATION:
+		
+		// If the phase factor multiplication flag is true, use this approach
+		if (phase_fac_mult ) {
+			//  Multiply two functions (the real work of this routine)
+			int itmp= nx/2;
+			float sx  = float(-twopi*float(itmp)/float(nxp));
+			itmp= ny/2;
+			float sy  = float(-twopi*float(itmp)/float(nyp));
+			itmp= nz/2;
+			float sz  = float(-twopi*float(itmp)/float(nzp));
+			switch (ptype)
+			{
+				case AUTOCORRELATION:
 				// fpmat := |fpmat|^2
 				// Note nxp are padded dimensions
-				for (int iz = 1; iz <= nzp; iz++) {
+					for (int iz = 1; iz <= nzp; iz++) {
 					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-					for (int iy = 1; iy <= nyp; iy++) {
+						for (int iy = 1; iy <= nyp; iy++) {
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-						for (int ix = 1; ix <= lsd2; ix++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
 							float fpr = real(fp->cmplx(ix,iy,iz));
 							float fpi = imag(fp->cmplx(ix,iy,iz));
 							fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi) *std::complex<float>(cos(arg),sin(arg));
+
+							}
 						}
 					}
-				}
-				break;
-			case SELF_CORRELATION:
+					break;
+				case SELF_CORRELATION:
 				// fpmat:=|fpmat|
 				// Note nxp are padded dimensions
-				for (int iz = 1; iz <= nzp; iz++) {
+					for (int iz = 1; iz <= nzp; iz++) {
 					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-					for (int iy = 1; iy <= nyp; iy++) {
+						for (int iy = 1; iy <= nyp; iy++) {
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-						for (int ix = 1; ix <= lsd2; ix++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
 							fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+							}
 						}
 					}
-				}
-				break;
-			case CORRELATION:
+					break;
+				case CORRELATION:
 				// fpmat:=fpmat*conjg(gpmat)
 				// Note nxp are padded dimensions
-				for (int iz = 1; iz <= nzp; iz++) {
+					for (int iz = 1; iz <= nzp; iz++) {
 					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-					for (int iy = 1; iy <= nyp; iy++) {
+						for (int iy = 1; iy <= nyp; iy++) {
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-						for (int ix = 1; ix <= lsd2; ix++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
 							fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+							}
 						}
 					}
-				}
-				break;
-			case CONVOLUTION:
+					break;
+				case CONVOLUTION:
 				// fpmat:=fpmat*gpmat
 				// Note nxp are padded dimensions
-				for (int iz = 1; iz <= nzp; iz++) {
+					for (int iz = 1; iz <= nzp; iz++) {
 					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-					for (int iy = 1; iy <= nyp; iy++) {
+						for (int iy = 1; iy <= nyp; iy++) {
 						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-						for (int ix = 1; ix <= lsd2; ix++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
 							int jx=ix-1; float arg=sx*jx+argy;
 							fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
+							}
 						}
 					}
-				}
-				break;
-			default:
-				LOGERR("Illegal option in Fourier Product");
-				throw InvalidValueException(ptype, "Illegal option in Fourier Product");
+					break;
+				default:
+					LOGERR("Illegal option in Fourier Product");
+					throw InvalidValueException(ptype, "Illegal option in Fourier Product");
+			}
+		}
+		else {
+			// If the phase factor multiplication flag is false, then just do basic multiplication
+			switch (ptype)
+			{
+				case AUTOCORRELATION:
+					for (int iz = 1; iz <= nzp; iz++) {
+						for (int iy = 1; iy <= nyp; iy++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
+								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*fp->cmplx(ix,iy,iz);
+							}
+						}
+					}
+					break;
+				case SELF_CORRELATION:
+					for (int iz = 1; iz <= nzp; iz++) {
+						for (int iy = 1; iy <= nyp; iy++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
+								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(fp->cmplx(ix,iy,iz));
+							}
+						}
+					}
+					break;
+				case CORRELATION:
+					for (int iz = 1; iz <= nzp; iz++) {
+						for (int iy = 1; iy <= nyp; iy++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
+								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(gp->cmplx(ix,iy,iz));
+							}
+						}
+					}
+					break;
+				case CONVOLUTION:
+					for (int iz = 1; iz <= nzp; iz++) {
+						for (int iy = 1; iy <= nyp; iy++) {
+							for (int ix = 1; ix <= lsd2; ix++) {
+								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*gp->cmplx(ix,iy,iz);
+							}
+						}
+					}
+					break;
+				default:
+					LOGERR("Illegal option in Fourier Product");
+					throw InvalidValueException(ptype, "Illegal option in Fourier Product");
+			}
 		}
 		// Now done w/ gp, so let's get rid of it (if it's not an alias of fp or simply g was complex on input);
 		if (gexists && (f != g) && (!g->is_complex())) 
@@ -313,7 +364,7 @@ Output: 1-2-3D real image with the result
 
 		normfact = (nxp/nx)*(nyp/ny)*(nzp/nz);  // Normalization factor for the padded operations
 		if(normfact>1) {
-		 for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
+			for (int iz = 1; iz <= nz; iz++) for (int iy = 1; iy <= ny; iy++) for (int ix = 1; ix <= nx; ix++) (*fp)(ix,iy,iz) *= normfact;
 		}
 		// Lag normalization
 		if(flag>4)  {
@@ -333,7 +384,7 @@ Output: 1-2-3D real image with the result
 		//fp->set_array_offsets(saved_offsets);  This was strange and did not work, PAP
 		fp->set_array_offsets(0,0,0);
 		fp->update();
-		return fp;  
+		return fp;
 	}
 }
 
