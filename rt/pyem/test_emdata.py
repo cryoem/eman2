@@ -1792,7 +1792,7 @@ class TestEMData(unittest.TestCase):
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
     def test_calc_ccf(self):
 		#e = EMData()
-		#n = 16
+		n = 16
 		
 		#print ""
 		#for i in range(n,n+2):
