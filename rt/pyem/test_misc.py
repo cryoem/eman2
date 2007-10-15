@@ -88,6 +88,7 @@ class TestException(unittest.TestCase):
     
     def test_FileAccessException(self):
         """test file access exception ......................."""
+        Log.logger().set_level(-1)    #no log message printed out
         e = EMData()
         e.set_size(10, 10, 1)
 

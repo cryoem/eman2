@@ -320,6 +320,7 @@ class TestHdfIO(unittest.TestCase):
         
     def test_delete_attribute(self):
         """test add and delete attribute from hdf file ......"""
+        Log.logger().set_level(-1)    #no log message printed out
         e1 = EMData()
         e1.set_size(32,32)
         e1.process_inplace('testimage.noise.uniform.rand')
