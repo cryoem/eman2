@@ -161,7 +161,7 @@ class TestCmp(unittest.TestCase):
 					e3.process_inplace('testimage.noise.uniform.rand')
 					zero  = e3.cmp('phase', e3.copy(), {})
 					#print "%d %d %d %f" %(i,j,k,zero)
-					self.assertAlmostEqual(zero,0, places=6)
+					self.assertAlmostEqual(zero,0, places=2)
 
         
     def test_SqEuclideanCmp(self):
