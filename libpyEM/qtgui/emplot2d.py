@@ -340,6 +340,7 @@ if __name__ == '__main__':
 					data.append(struct.unpack("%df"%ny,fin.read(4*ny)))
 			except:
 				# Probably a text file
+				fin=file(sys.argv[1])
 				fin.seek(0)
 				rdata=fin.readlines()
 				rdata=[i for i in rdata if i[0]!='#']

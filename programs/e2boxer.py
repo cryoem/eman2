@@ -300,7 +300,7 @@ for single particle analysis."""
 			tsts=[]
 			for j in refns: 
 				ba=b.align("rotate_translate",refptcl[j],{},"optvariance",{"matchfilt":1})
-				tsts.append([ba.get_attr("align_score"),j,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")])
+				tsts.append([ba.get_attr("align.score"),j,ba.get_attr("align.dx"),ba.get_attr("align.dy"),ba.get_attr("align.az")])
 			tsts.sort()
 #			if tsts[0][1]!=i[1] : print i[1]," -> ",tsts[0][1],"    %f,%f  %f"%(tsts[0][2],tsts[0][3],tsts[0][4])
 			i[1]=tsts[0][1]
@@ -323,8 +323,8 @@ for single particle analysis."""
 			b.process_inplace("eman1.filter.lowpass.gaussian",{"lowpass":.1})
 #			ba=refptcl[i[1]].align("rotate_translate",b,{},"SqEuclidean")
 			ba=b.align("rotate_translate",refptcl[i[1]],{},"optvariance",{"matchfilt":1})
-			dx=ba.get_attr("translational.dx")
-			dy=ba.get_attr("translational.dy")
+			dx=ba.get_attr("align.dx")
+			dy=ba.get_attr("align.dy")
 			da=ba.get_attr("rotational")
 			i[2]-= cos(da)*dx+sin(da)*dy
 			i[3]-=-sin(da)*dx+cos(da)*dy
@@ -368,9 +368,9 @@ for single particle analysis."""
 #			if (score<=0) : continue
 
 			# now record the fixed up location
-#			goodpks2.append((ba.get_attr("align_score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
+#			goodpks2.append((ba.get_attr("align.score")*ba.get_attr("ovcmp_m"),i[2],i[3],i[1],ba.get_attr("ovcmp_m"),n))
 			goodpks2.append((score,i[2],i[3],i[1],ba.get_attr("ovcmp_m"),ba.get_attr("ovcmp_b"),n,score))
-			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.6f"%(n,ba.get_attr("translational.dx"),ba.get_attr("translational.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("ovcmp_m"),goodpks2[-1][0])
+			print "%d\t%1.2f\t%1.2f\t%1.1f\t%1.4f\t%1.6f"%(n,ba.get_attr("align.dx"),ba.get_attr("align.dy"),ba.get_attr("rotational")*180.0/pi,ba.get_attr("ovcmp_m"),goodpks2[-1][0])
 #			ba.write_image("ttt.hdf",-1)
 			n+=1
 #			display([b,ba,refptcl[i[1]]])

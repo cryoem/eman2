@@ -62,6 +62,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&HighpassTanhProcessor::NEW);
 	force_add(&HighpassButterworthProcessor::NEW);
 	force_add(&AmpweightFourierProcessor::NEW);
+	force_add(&Wiener2DFourierProcessor::NEW);
 
 	force_add(&LinearRampProcessor::NEW);
 	force_add(&AbsoluateValueProcessor::NEW);
@@ -360,6 +361,29 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 
 }
 
+void Wiener2DFourierProcessor::process_inplace(EMData * image)
+{
+// TODO NOT IMPLEMENTED YET !!!
+	EMData *fft;
+	float *fftd;
+	int i,f=0;
+
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	if (!image->is_complex()) {
+		fft = image->do_fft();
+		fftd = fft->get_data();
+		f=1;
+	}
+	else {
+		fft=image;
+		fftd=image->get_data();
+	}
+
+}
 
 void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
 {

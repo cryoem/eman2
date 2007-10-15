@@ -388,6 +388,44 @@ The basic design of EMAN Processors: <br>\
 		int dosqrt;
 	};
 
+	class Wiener2DFourierProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return "filter.wiener2d";
+		}
+
+		void process_inplace(EMData * image);
+		
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			background = params["background"];
+//			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("background", EMObject::EMDATA, "Fourier image containing averaged background from the frame");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new Wiener2DFourierProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Applies a 2-D Wiener filter to an image based on the provided background image";
+		}
+
+		protected:
+		EMData *background;
+	};
+
 	/**Low-pass processor attenuates amplitudes at high spatial frequencies. It has the result of blurring the image, and of eliminating sharp edges and noise. The base class for all low pass fourier processors.
 	 *@param lowpass Processor radius in terms of Nyquist (0-.5)
 	 */
