@@ -113,7 +113,7 @@ void EMData::add(float f,int keepzero)
 	{
 		if (f != 0) {
 			update();
-			size_t size = nx * ny * nz;
+			size_t size = nxy * nz;
 			if (keepzero) {
 				for (size_t i = 0; i < size; i++) {
 					if (rdata[i]) rdata[i] += f;
@@ -172,7 +172,7 @@ void EMData::add(const EMData & image)
 	else {
 		update();
 		const float *src_data = image.get_data();
-		int size = nx * ny * nz;
+		int size = nxy * nz;
 
 		for (int i = 0; i < size; i++) {
 			rdata[i] += src_data[i];
@@ -190,7 +190,7 @@ void EMData::sub(float f)
 	{
 		if (f != 0) {
 			update();
-			size_t size = nx * ny * nz;
+			size_t size = nxy * nz;
 			for (size_t i = 0; i < size; i++) {
 				rdata[i] -= f;
 			}
@@ -201,7 +201,7 @@ void EMData::sub(float f)
 		if( f != 0 )
 		{
 			update();
-			size_t size = nx * ny * nz;
+			size_t size = nxy * nz;
 			for( size_t i=0; i<size; i+=2 )
 			{
 				rdata[i] -= f;
@@ -232,7 +232,7 @@ void EMData::sub(const EMData & em)
 	else {
 		update();
 		const float *src_data = em.get_data();
-		size_t size = nx * ny * nz;
+		size_t size = nxy * nz;
 
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] -= src_data[i];
@@ -251,7 +251,7 @@ void EMData::mult(float f)
 	}
 	if (f != 1.0) {
 		update();
-		size_t size = nx * ny * nz;
+		size_t size = nxy * nz;
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] *= f;
 		}
@@ -275,7 +275,7 @@ void EMData::mult(const EMData & em)
 	{
 		update();
 		const float *src_data = em.get_data();
-		size_t size = nx * ny * nz;
+		size_t size = nxy * nz;
 		if( is_real() )
 		{
 			for (size_t i = 0; i < size; i++) {
@@ -310,7 +310,7 @@ void EMData::div(float f)
 	
 	if (f != 0) {
 		update();
-		size_t size = nx * ny * nz;
+		size_t size = nxy * nz;
 		for (size_t i = 0; i < size; i++) {
 			rdata[i] /= f;
 		}
@@ -336,7 +336,7 @@ void EMData::div(const EMData & em)
 	else {
 		update();
 		const float *src_data = em.get_data();
-		size_t size = nx * ny * nz;
+		size_t size = nxy * nz;
 
 		if( is_real() )
 		{
@@ -461,13 +461,35 @@ void EMData::set_col(const EMData * d, int n)
 	EXITFUNC;
 }
 
+float EMData::get_value_at_wrap(int x) const
+{
+	if (x < 0) x = nx - x;
+	return rdata[x];
+}
+
+float EMData::get_value_at_wrap(int x, int y) const
+{
+	if (x < 0) x = nx - x;
+	if (y < 0) y = ny - y;
+	
+	return rdata[x + y * nx];
+}
+
+float EMData::get_value_at_wrap(int x, int y, int z) const
+{
+	if (x < 0) x = nx - x;
+	if (y < 0) y = ny - y;
+	if (z < 0) z = nz - z;
+	
+	return rdata[x + y * nx + z * nxy];
+}
 
 float EMData::sget_value_at(int x, int y, int z) const
 {
 	if (x < 0 || x >= nx || y < 0 || y >= ny || z < 0 || z >= nz) {
 		return 0;
 	}
-	return rdata[x + y * nx + z * nx * ny];
+	return rdata[x + y * nx + z * nxy];
 }
 
 
@@ -630,7 +652,7 @@ EMData * EMData::sqrt() const
 	
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
-	size_t size = nx * ny * nz;
+	size_t size = nxy * nz;
 	for (size_t i = 0; i < size; ++i) {
 		if(rdata[i] < 0) {	
 			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
@@ -659,7 +681,7 @@ EMData * EMData::log() const
 	
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
-	size_t size = nx * ny * nz;
+	size_t size = nxy * nz;
 	for (size_t i = 0; i < size; ++i) {
 		if(rdata[i] < 0) {	
 			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
@@ -688,7 +710,7 @@ EMData * EMData::log10() const
 	
 	EMData * r = this->copy();
 	float * new_data = r->get_data();
-	size_t size = nx * ny * nz;
+	size_t size = nxy * nz;
 	for (size_t i = 0; i < size; ++i) {
 		if(rdata[i] < 0) {	
 			throw InvalidValueException(rdata[i], "pixel value must be non-negative for logrithm");
@@ -990,7 +1012,7 @@ void EMData::to_zero()
 		set_ri(false);
 	}
 
-	memset(rdata, 0, nx * ny * nz * sizeof(float));
+	memset(rdata, 0, nxy * nz * sizeof(float));
 	update();
 	EXITFUNC;
 }
@@ -1006,7 +1028,7 @@ void EMData::to_one()
 		set_ri(false);
 	}
 
-	for (int i = 0; i < nx * ny * nz; i++) {
+	for (int i = 0; i < nxy * nz; i++) {
 		rdata[i] = 1.0f;
 	}
 

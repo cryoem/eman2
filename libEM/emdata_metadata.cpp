@@ -533,6 +533,7 @@ void EMData::set_size(int x, int y, int z)
 	nx = x;
 	ny = y;
 	nz = z;
+	nxy = nx*ny;
 
 	size_t size = (size_t)(x) * (size_t)y * (size_t)z * sizeof(float);
 	rdata = static_cast < float *>(realloc(rdata, size));

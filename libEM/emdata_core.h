@@ -186,7 +186,7 @@ void set_col(const EMData * data, int col_index);
  */
 inline float get_value_at(int x, int y, int z) const
 {
-	return rdata[x + y * nx + z * nx * ny];
+	return rdata[x + y * nx + z * nxy];
 }
 
 		
@@ -215,6 +215,36 @@ inline float get_value_at(size_t i) const
 	return rdata[i];
 }
 
+
+/** Get the pixel density value at coordinates (x,y,z).
+ * Should only be called on 3D images - no errors are thrown
+ * Wraps pixel values if they are negative - i.e. is circulant
+ * For example, if x = -1, then the pixel at nx-1  is returned
+ * @param x The x cooridinate.
+ * @param y The y cooridinate.
+ * @param z The z cooridinate.
+ * @return The pixel density value at circulant coordinates (x,y,z).
+ */
+float get_value_at_wrap(int x, int y, int z) const;
+		
+/** Get the pixel density value at coordinates (x,y).
+ * Should only be called on 2D images - no errors are thrown
+ * Wraps pixel values if they are negative - i.e. is circulant
+ * For example, if x = -1, then the pixel at nx-1  is returned
+ * @param x The x cooridinate.
+ * @param y The y cooridinate.
+ * @return The pixel density value at circulant coordinates (x,y).
+ */
+float get_value_at_wrap(int x, int y) const;
+
+/** Get the pixel density value at coordinates (x,y).
+ * Should only be called on 1D images - no errors are thrown
+ * Wraps pixel values if they are negative - i.e. is circulant
+ * For example, if x = -1, then the pixel at nx-1  is returned
+ * @param x The x cooridinate.
+ * @return The pixel density value at circulant coordinates (x).
+ */
+float get_value_at_wrap(int x) const;
 
 /** A safer, slower way to get the pixel density value at
  * coordinates (x,y,z). The validity of x, y, and z is checked.
@@ -297,7 +327,7 @@ inline void set_value_at(int x, int y, int z, float v)
 	}
 	else
 	{
-		rdata[x + y * nx + z * nx * ny] = v;
+		rdata[x + y * nx + z * nxy] = v;
 		flags |= EMDATA_NEEDUPD;
 		changecount++;
 	}
@@ -315,7 +345,7 @@ inline void set_value_at(int x, int y, int z, float v)
  */
 inline void set_value_at_fast(int x, int y, int z, float v)
 {
-	rdata[x + y * nx + z * nx * ny] = v;
+	rdata[x + y * nx + z * nxy] = v;
 	flags |= EMDATA_NEEDUPD;
 	changecount++;
 }

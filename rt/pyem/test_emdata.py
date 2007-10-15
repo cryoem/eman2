@@ -1790,16 +1790,44 @@ class TestEMData(unittest.TestCase):
             e5.calc_ccfx(e6)
         except RuntimeError, runtime_err:
             self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
-    def test_calc_ccf(self):
-		#e = EMData()
+    def test_calc_ccf_dsaw(self):
+		"""test calc_ccf_dsaw() function ...................."""
 		n = 16
 		
-		#print ""
-		#for i in range(n,n+2):
-			#for j in range(n,n+2):
-				#for k in [1,n-1,n]:
-					#e.set_size(i,j,k);
-					#e.process_inplace("testimage.x")
+		for i in range(n,n+2):
+			for j in range(n,n+2):
+				for k in [n-1,n]:
+					e = EMData()
+					e.set_size(i,j,k);
+					e.process_inplace("testimage.x")
+					
+					for dx in [-1,0,1]:
+						for dy in [-1,0,1]:
+							for dz in [-1,0,1]:
+								f = e.copy()
+								f.translate(dx,dy,dz)
+								
+								g = e.calc_ccf(f)
+								
+								cord = g.calc_max_location()
+									
+								ax = cord[0]
+								ay = cord[1]
+								az = cord[2]
+								
+								if ( dx < 0 ): ax = -ax
+								if ( dx > 0 ): ax = i - ax
+								
+								if ( dy < 0 ): ay = -ay
+								if ( dy > 0 ): ay = j - ay
+								
+								if ( dz < 0 ): az = -az
+								if ( dz > 0 ): az = k - az
+								
+								assert ((dx-ax) == 0)
+								assert ((dy-ay) == 0)
+								assert ((dz-az) == 0)
+					
 					#f = e.calc_ccf(e)
 					
 					#cmax = f.get_value_at(0,0,0)

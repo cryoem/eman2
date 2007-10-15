@@ -42,24 +42,48 @@ class TestAligner(unittest.TestCase):
     """aligner test"""
     
     def test_TranslationalAligner(self):
-        """test TranslationalAligner ........................"""
-        e = EMData()
-        e.set_size(32,32,1)
-        e.process_inplace('testimage.noise.uniform.rand')
-        
-        e2 = EMData()
-        e2.set_size(32,32,1)
-        e2.process_inplace('testimage.noise.uniform.rand')
-   
-        e.align('translational', e2, {})
-        e.align('translational', e2, {'intonly':1, 'maxshift':2})
-        
-        #translational not support 3D image
-        e3 = EMData()
-        e3.set_size(32,32,32)
-        e4 = EMData()
-        e4.set_size(32,32,32)
-        #self.assertRaises( RuntimeError, e3.align, 'translational', e4)
+		"""test TranslationalAligner ........................"""
+		e = EMData()
+		e.set_size(32,32,1)
+		e.process_inplace('testimage.noise.uniform.rand')
+		
+		e2 = EMData()
+		e2.set_size(32,32,1)
+		e2.process_inplace('testimage.noise.uniform.rand')
+		
+		e.align('translational', e2, {})
+		e.align('translational', e2, {'intonly':1, 'maxshift':2})
+		
+		n = 16
+		for i in [n-1,n]:
+			for j in [n-1,n]:
+				for k in [1,n-1,n]:
+					
+					if ( k > j ): continue
+					if ( k > i ): continue
+					
+					e = EMData()
+					e.set_size(i,j,k);
+					e.process_inplace("testimage.x")
+					
+					print "%d %d %d" %(i,j,k)
+					
+					for dx in [-1,0,1]:
+						for dy in [-1,0,1]:
+							for dz in [-1,0,1]:
+								f = e.copy()
+								f.translate(dx,dy,dz)
+								
+								g = f.align('translational', e, {'maxshift':3})
+								
+								
+								for kk in range(e.get_zsize()):
+									for jj in range(e.get_ysize()):
+										for ii in range(e.get_xsize()):
+											self.assertEqual(e.get_value_at(ii,jj,kk), g.get_value_at(ii,jj,kk))
+		
+		
+		
         
     def test_Translational3DAligner(self):
         """test Translational3DAligner ......................"""
