@@ -366,7 +366,7 @@ void Wiener2DFourierProcessor::process_inplace(EMData * image)
 // TODO NOT IMPLEMENTED YET !!!
 	EMData *fft;
 	float *fftd;
-	int i,f=0;
+	int f=0;
 
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -3229,18 +3229,12 @@ void ACFCenterProcessor::process_inplace(EMData * image)
 		LOGWARN("NULL Image");
 		return;
 	}
-
-	int is3d = params["is3d"];
-
+	
 	Dict params1;
 	params1["intonly"] = 1;
-	if (!is3d) {
-		params1["maxshift"] = image->get_xsize() / 4;
-		image->align("translational", 0, params1);
-	}
-	else {
-		image->align("translational3d", 0, params1);
-	}
+	params1["maxshift"] = image->get_xsize() / 4;
+	image->align("translational", 0, params1);
+
 }
 
 void SNRProcessor::process_inplace(EMData * image)

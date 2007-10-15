@@ -102,7 +102,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (ny == 1) maxshifty = 0;
 	if (nz == 1) maxshiftz = 0;
 
-	// If nozero the DC component (and its 8-connected neighborhood) is zeroed
+	// If nozero the portion of the image in the center (and its 8-connected neighborhood) is zeroed
 	if (nozero) cf->zero_corner_circulant(1);
 	
 	int peak_x = 0;
@@ -135,7 +135,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	Vec3f pre_trans = this_img->get_translation();
 	Vec3f cur_trans = Vec3f ( (float)-peak_x, (float)-peak_y, (float)-peak_z);
 
-	if (!to) cur_trans /= 2.0f; // If aligning the image to itself then only go half way
+	if (!to) cur_trans /= 2.0f; // If aligning the image to itself then only go half way - 
 
 	int intonly = params["intonly"];
 
@@ -283,7 +283,6 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	cf->set_attr("align.score", peak);
 	cf->set_attr("rotational", rotateAngle );
 	cf->set_attr("align.az",rotateAngle);
-
 
 	return cf;
 }
