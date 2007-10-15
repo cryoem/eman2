@@ -2574,6 +2574,9 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 
 	int x,y,z,i;
 	int step=is_complex()?2:1;
+	int isinten=get_attr_default("is_intensity",0);
+	
+	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
 
 	for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
 
@@ -2582,14 +2585,15 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 		for (y=i=0; y<ny; y++) {
 			for (x=0; x<nx; x+=step,i+=step) {
 				float r,v;
-				if (is_complex()) {
+				if (step==2) {		//complex
 					if (x==0 && y>ny/2) continue;
 					r=hypot(x/2.0f,float(y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
 						if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
 						else v=rdata[i];							// amp/phase, just get amp
 					} else {
-						if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
+						if (isinten) v=rdata[i];
+						else if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
 						else v=rdata[i]*rdata[i];
 					}
 				}
@@ -2617,7 +2621,7 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 			for (y=0; y<ny; y++) {
 				for (x=0; x<nx; x+=step,i+=step) {
 					float r,v;
-					if (is_complex()) {
+					if (step==2) {	//complex
 						if (x==0 && z<nz/2) continue;
 						if (x==0 && z==nz/2 && y<ny/2) continue;
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
@@ -2625,7 +2629,8 @@ vector < float >EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 							if (is_ri()) v=hypot(rdata[i],rdata[i+1]);	// real/imag, compute amplitude
 							else v=rdata[i];							// amp/phase, just get amp
 						} else {
-							if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
+							if (isinten) v=rdata[i];
+							else if (is_ri()) v=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
 							else v=rdata[i]*rdata[i];
 						}
 					}

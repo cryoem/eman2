@@ -846,6 +846,24 @@ void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 	EXITFUNC;
 }
 
+void EMData::ri2inten()
+{
+	ENTERFUNC;
+
+	if (!is_complex()) return;
+	if (!is_ri()) ap2ri();
+
+	int size = nx * ny * nz;
+	for (int i = 0; i < size; i += 2) {
+		rdata[i]=rdata[i]*rdata[i]+rdata[i+1]*rdata[i+1];
+		rdata[i+1]=0;
+	}
+
+	set_attr("is_intensity", int(1));
+	update();
+	EXITFUNC;
+}
+
 
 void EMData::ri2ap()
 {

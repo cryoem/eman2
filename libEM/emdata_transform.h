@@ -124,6 +124,9 @@ void ri2ap();
 /** convert the complex image from amplitude/phase to real/imaginary */
 void ap2ri();
 
+/** convert the complex image from real/imaginary to Intensity/0.
+This conversion cannot be reversed, and the image remains marked as R/I */
+void ri2inten();
 
 /** Insert a clip into this image.
  * @param block An image block.
