@@ -4233,7 +4233,7 @@ void TestImageX::process_inplace(EMData * image)
 	
 	if ( nx == 1 && ny == 1 && nz == 1 )
 	{
-		(*image)(1) = fill;
+		(*image)(0) = fill;
 	}
 	else if ( ny == 1 && nz == 1 )
 	{
@@ -4251,6 +4251,8 @@ void TestImageX::process_inplace(EMData * image)
 		
 		int radius = params.set_default("radius", min );
 		if ( radius > min ) radius = min;
+		
+		(*image)(cx,cy) = fill;
 		
 		for ( int i = 1; i < radius; ++i )
 		{
@@ -4270,6 +4272,8 @@ void TestImageX::process_inplace(EMData * image)
 		
 		int radius = params.set_default("radius", min );
 		if ( radius > min ) radius = min;
+		
+		(*image)(cx,cy,cy) = fill;
 		
 		for ( int i = 1; i < radius; ++i )
 		{

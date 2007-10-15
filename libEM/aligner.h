@@ -172,45 +172,6 @@ namespace EMAN
 		}
 	};
 
-	/** Translational 3D Alignment using  cross correlation
-     * It calculates the shift for a translational alignment, then
-     * do the translation.
-     */
-	class Translational3DAligner:public Aligner
-	{
-	  public:
-		EMData * align(EMData * this_img, EMData * to_img, 
-						const string & cmp_name, const Dict& cmp_params) const;
-
-		EMData * align(EMData * this_img, EMData * to_img) const
-		{
-			return align(this_img, to_img, "", Dict());
-		}
-		
-		string get_name() const
-		{
-			return "translational3d";
-		}
-		
-		string get_desc() const
-		{
-			return "Translational 3D alignment by cross-correlation";
-		}
-
-		static Aligner *NEW()
-		{
-			return new Translational3DAligner();
-		}
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("intonly", EMObject::INT);
-			return d;
-		}
-
-	};
-
 	/** rotational alignment using angular correlation
      */
 	class RotationalAligner:public Aligner

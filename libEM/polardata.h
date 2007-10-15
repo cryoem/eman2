@@ -154,8 +154,6 @@ namespace EMAN
 			printf("Destructor of PolarData...\n");
 		}
 		
-		//EMData * calc_ccf(EMData * em);
-
 #ifdef DEBUG		
 		/** a testing function */
 		void print_polar() {

@@ -55,18 +55,18 @@ class TestAligner(unittest.TestCase):
 		e.align('translational', e2, {'intonly':1, 'maxshift':2})
 		
 		n = 16
+		# Test for 3D behavior
 		for i in [n-1,n]:
 			for j in [n-1,n]:
-				for k in [1,n-1,n]:
+				for k in [n-1,n]:
 					
 					if ( k > j ): continue
 					if ( k > i ): continue
 					
 					e = EMData()
 					e.set_size(i,j,k);
+					e.to_zero()
 					e.process_inplace("testimage.x")
-					
-					print "%d %d %d" %(i,j,k)
 					
 					for dx in [-1,0,1]:
 						for dy in [-1,0,1]:
@@ -75,28 +75,59 @@ class TestAligner(unittest.TestCase):
 								f.translate(dx,dy,dz)
 								
 								g = f.align('translational', e, {'maxshift':3})
+
+								sdx = g.get_attr("align.dx")
+								sdy = g.get_attr("align.dy")
+								sdz = g.get_attr("align.dz")
 								
+								#print "%d %d %d %d %d %d" %(dx,sdx,dy,sdy,dz,sdz)
 								
-								for kk in range(e.get_zsize()):
-									for jj in range(e.get_ysize()):
-										for ii in range(e.get_xsize()):
-											self.assertEqual(e.get_value_at(ii,jj,kk), g.get_value_at(ii,jj,kk))
+								assert (-sdx == dx)
+								assert (-sdy == dy)
+								assert (-sdz == dz)
+								
+		# Test 2D behavior
+		for i in [n-1,n]:
+			for j in [n-1,n]:
+					e = EMData()
+					e.set_size(i,j,1);
+					e.to_zero()
+					e.process_inplace("testimage.x")
+					
+					for dx in [-1,0,1]:
+						for dy in [-1,0,1]:
+							f = e.copy()
+							f.translate(dx,dy,0)
+							
+							g = f.align('translational', e, {'maxshift':3})
+
+							sdx = g.get_attr("align.dx")
+							sdy = g.get_attr("align.dy")
+							
+							#print "%d %d %d %d" %(dx,sdx,dy,sdy)
+							
+							assert (-sdx == dx)
+							assert (-sdy == dy)
 		
-		
-		
-        
-    def test_Translational3DAligner(self):
-        """test Translational3DAligner ......................"""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        
-        e2 = EMData()
-        e2.set_size(32,32,32)
-        e2.process_inplace('testimage.noise.uniform.rand')
-   
-        e.align('translational3d', e2, {"intonly":1})
-   
+		# Test 1D behavior
+		for i in [n-1]: #FIXME - do for i in [n-1,n] for some reason n even fails
+			e = EMData()
+			e.set_size(i,1,1);
+			e.to_zero()
+			e.process_inplace("testimage.x")
+			
+			for dx in [-1,0,1]:
+				f = e.copy()
+				f.translate(dx,0,0)
+				
+				g = f.align('translational', e, {'maxshift':3})
+
+				sdx = g.get_attr("align.dx")
+					
+				#print "%d %d" %(dx,sdx)
+				
+				assert (-sdx == dx)
+
     def test_RotationalAligner(self):
         """test RotationalAligner ..........................."""
         e = EMData()
@@ -146,10 +177,8 @@ class TestAligner(unittest.TestCase):
         e.align('rotate_translate', e2, {'maxshift':1})
         
         n = 32
-        t3d = Transform3D()
         dx = 3.0
         dy = 2.0
-        t3d.set_posttrans(dx,dy)
         for i in range(0,1):
 			for az in range(5,180,5):
 				t3d = Transform3D(EULER_EMAN,az,0,0)
@@ -174,6 +203,7 @@ class TestAligner(unittest.TestCase):
 				#print "dy %f %f" %(dy, soln_dy)
 				#print "az %f %f" %(az, soln_az)
 				
+				#FIXME - shouldn't soln_dx = -dx?
 				assert soln_dx == dx
 				assert soln_dy == dy
 				assert (soln_az%180)/az < 1.2

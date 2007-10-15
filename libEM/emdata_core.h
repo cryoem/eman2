@@ -226,6 +226,7 @@ inline float get_value_at(size_t i) const
  * @return The pixel density value at circulant coordinates (x,y,z).
  */
 float get_value_at_wrap(int x, int y, int z) const;
+float& get_value_at_wrap(int x, int y, int z);
 		
 /** Get the pixel density value at coordinates (x,y).
  * Should only be called on 2D images - no errors are thrown
@@ -236,6 +237,7 @@ float get_value_at_wrap(int x, int y, int z) const;
  * @return The pixel density value at circulant coordinates (x,y).
  */
 float get_value_at_wrap(int x, int y) const;
+float& get_value_at_wrap(int x, int y);
 
 /** Get the pixel density value at coordinates (x,y).
  * Should only be called on 1D images - no errors are thrown
@@ -245,6 +247,7 @@ float get_value_at_wrap(int x, int y) const;
  * @return The pixel density value at circulant coordinates (x).
  */
 float get_value_at_wrap(int x) const;
+float& get_value_at_wrap(int x);
 
 /** A safer, slower way to get the pixel density value at
  * coordinates (x,y,z). The validity of x, y, and z is checked.

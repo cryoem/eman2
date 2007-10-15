@@ -934,10 +934,10 @@ void EMData::translate(const Vec3i &translation)
 				yp = y - ty;
 				zp = z - tz;
 				if (xp < 0 || yp < 0 || zp<0 || xp >= nx || yp >= ny || zp >= nz) {
-					this_data[x + y * nx + z * nx * ny] = 0;
+					this_data[x + y * nx + z * nxy] = 0;
 				}
 				else {
-					this_data[x + y * nx + z * nx * ny] = tmp_data[xp + yp * nx + zp * nx * ny];
+					this_data[x + y * nx + z * nxy] = tmp_data[xp + yp * nx + zp * nxy];
 				}
 			}
 		}
@@ -1554,6 +1554,42 @@ EMData *EMData::do_radon()
 	return result;
 }
 
+void EMData::zero_corner_circulant(const int radius)
+{
+	if ( nz > 1 && nz < (2*radius+1) ) throw ImageDimensionException("Error: cannot zero corner - nz is too small");
+	if ( ny > 1 && ny < (2*radius+1) ) throw ImageDimensionException("Error: cannot zero corner - ny is too small");
+	if ( nx > 1 && nx < (2*radius+1) ) throw ImageDimensionException("Error: cannot zero corner - nx is too small");
+	
+	int it_z = radius;
+	int it_y = radius;
+	int it_x = radius;
+	
+	if ( nz == 1 ) it_z = 0;
+	if ( ny == 1 ) it_y = 0;
+	if ( nx == 1 ) it_z = 0;
+	
+	if ( nz == 1 && ny == 1 )
+	{
+		for ( int x = -it_x; x <= it_x; ++x )
+			get_value_at_wrap(x) = 0;
+			
+	}
+	else if ( nz == 1 )
+	{
+		for ( int y = -it_y; y <= it_y; ++y)
+			for ( int x = -it_x; x <= it_x; ++x )
+				get_value_at_wrap(x,y) = 0;
+	}
+	else
+	{
+		for( int z = -it_z; z <= it_z; ++z )
+			for ( int y = -it_y; y <= it_y; ++y)
+				for ( int x = -it_x; x < it_x; ++x )
+					get_value_at_wrap(x,y,z) = 0;
+
+	}
+	
+}
 
 EMData *EMData::calc_ccf(EMData * with, fp_flag fpflag) {
 	if( with == 0 ) {
@@ -2975,8 +3011,6 @@ void EMData::add_incoherent(EMData * obj)
 	update();
 	EXITFUNC;
 }
-
-
 
 
 float EMData::calc_dist(EMData * second_img, int y_index) const

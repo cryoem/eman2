@@ -46,7 +46,6 @@ using namespace EMAN;
 template <> Factory < Aligner >::Factory()
 {
 	force_add(&TranslationalAligner::NEW);
-	force_add(&Translational3DAligner::NEW);
 	force_add(&RotationalAligner::NEW);
 	force_add(&RotatePrecenterAligner::NEW);
 	force_add(&RotateCHAligner::NEW);
@@ -103,20 +102,8 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (ny == 1) maxshifty = 0;
 	if (nz == 1) maxshiftz = 0;
 
-//	cf->write_image("ccf.mrc");
-	float *cf_data = cf->get_data();
-	if (1 == 0) {
-		cf_data[nx/2+nx*ny/2]=0;
-		cf_data[nx/2+nx*ny/2+1]=0;
-		cf_data[nx/2+nx*ny/2-1]=0;
-		cf_data[nx/2+nx*ny/2+nx]=0;
-		cf_data[nx/2+nx*ny/2-nx]=0;
-		cf_data[nx/2+nx*ny/2+1+nx]=0;
-		cf_data[nx/2+nx*ny/2-1+nx]=0;
-		cf_data[nx/2+nx*ny/2+1-nx]=0;
-		cf_data[nx/2+nx*ny/2-1-nx]=0;
-	}
-
+	// If nozero the DC component (and its 8-connected neighborhood) is zeroed
+	if (nozero) cf->zero_corner_circulant(1);
 	
 	int peak_x = 0;
 	int peak_y = 0;
@@ -144,17 +131,11 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 			}
 		}
 	}
-	cout << "Peak value was " << peak_x << " " << peak_y << " " << peak_z << endl;
 	
 	Vec3f pre_trans = this_img->get_translation();
 	Vec3f cur_trans = Vec3f ( (float)-peak_x, (float)-peak_y, (float)-peak_z);
-	
-	Vec3f result;	
-	result = cur_trans;
 
-	if (!to) {
-		cur_trans /= 2.0f;
-	}
+	if (!to) cur_trans /= 2.0f; // If aligning the image to itself then only go half way
 
 	int intonly = params["intonly"];
 
@@ -163,17 +144,21 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		cur_trans[1] = floor(cur_trans[1] + 0.5f);
 		cur_trans[2] = floor(cur_trans[2] + 0.5f);
 	}
-
 	
 	if( cf )
 	{
 		delete cf;
 		cf = 0;
 	}
-	
+
 	cf=this_img->copy();
-	cf->translate(cur_trans);
+	cf->translate(cur_trans[0],cur_trans[1],cur_trans[2]);
 	cf->update();
+	
+	cf->set_attr("align.score", max_value);
+	cf->set_attr("align.dx",cur_trans[0]);
+	cf->set_attr("align.dy",cur_trans[1]);
+	cf->set_attr("align.dz",cur_trans[2]);
 	
 	return cf;
 	
@@ -243,95 +228,6 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	return cf;
 #endif
 	
-}
-
-
-
-EMData *Translational3DAligner::align(EMData * this_img, EMData *to,  
-			const string&, const Dict&) const
-{
-	if (!this_img) {
-		return 0;
-	}
-	
-	params.set_default("intonly", 0);
-
-	if (to && !EMUtil::is_same_size(this_img, to)) {
-		LOGERR("%s: images must be same size", get_name().c_str());
-		return 0;
-	}
-
-	if (!to) {
-		LOGWARN("%s: ACF", get_name().c_str());
-	}
-
-	EMData *cf = 0;
-	cf = this_img->calc_ccf(to);
-
-	float *cf_data = cf->get_data();
-
-	float neg = (float)cf->get_attr("mean") - (float)cf->get_attr("minimum");
-	float pos = (float)cf->get_attr("maximum") - (float)cf->get_attr("mean");
-
-	int flag = 1;
-	if (neg > pos) {
-		flag = -1;
-	}
-
-	int nx = this_img->get_xsize();
-	int ny = this_img->get_ysize();
-	int nz = this_img->get_zsize();
-
-	int peak_x = nx / 2;
-	int peak_y = ny / 2;
-	int peak_z = nz / 2;
-
-	float max_value = -FLT_MAX;
-	float min_value = FLT_MAX;
-
-	int nsec = nx * ny;
-
-	for (int k = nz / 4; k < 3 * nz / 4; k++) {
-		for (int j = ny / 4; j < 3 * ny / 4; j++) {
-			for (int i = nx / 4; i < 3 * nx / 4; i++) {
-				if (cf_data[i + j * nx + k * nsec] * flag > max_value) {
-					max_value = cf_data[i + j * nx + k * nsec] * flag;
-					peak_x = i;
-					peak_y = j;
-					peak_z = k;
-				}
-
-				if (cf_data[i + j * nx + k * nsec] < min_value) {
-					min_value = cf_data[i + j * nx + k * nsec];
-				}
-			}
-		}
-	}
-
-	float tx = (float)(nx / 2 - peak_x);
-	float ty = (float)(ny / 2 - peak_y);
-	float tz = (float)(nz / 2 - peak_z);
-
-	float score = 0;
-	score = Util::hypot3(tx, ty, tz);
-
-
-	if (!to) {
-		tx /= 2;
-		ty /= 2;
-		tz /= 2;
-	}
-
-	this_img->translate(tx, ty, tz);
-
-	cf->set_attr("align.score", max_value);
-	cf->set_attr("align.dx",tx); 
-	cf->set_attr("align.dy",ty); 
-	cf->set_attr("align.dz",tz); 
-
-	cf->update();
-	
-	return cf;
 }
 
 
@@ -599,8 +495,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		cmp_name = "dot";
 	}
 #endif
-// 	cout << "Prior to alignment the parameters were " << (float)this_img->get_attr("align.dx") << " " << (float)this_img->get_attr("align.dy") << " " << (float)this_img->get_attr("align.az") << endl;
-	//printf(" This is the one \n");
 	EMData *this_copy  = this_img->align("rotational", to);
 	
 	EMData *this_copy2 = this_copy->copy(); // Now this_copy, this_copy2
@@ -655,7 +549,6 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 		result = this_copy2;
 	}
 
-// 	cout << "Prior to alignment the parameters were " << (float)this_img->get_attr("align.dx") << " " << (float)this_img->get_attr("align.dy") << " " <<(float) this_img->get_attr("align.az") << endl;
 	return result;
 }
 

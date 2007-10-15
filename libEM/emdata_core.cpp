@@ -461,6 +461,33 @@ void EMData::set_col(const EMData * d, int n)
 	EXITFUNC;
 }
 
+float& EMData::get_value_at_wrap(int x)
+{
+	if (x < 0) x = nx + x;
+	return rdata[x];
+}
+
+float& EMData::get_value_at_wrap(int x, int y)
+{
+	if (x < 0) x = nx + x;
+	if (y < 0) y = ny + y;
+	
+	return rdata[x + y * nx];
+}
+
+float& EMData::get_value_at_wrap(int x, int y, int z)
+{
+	int lx = x;
+	int ly = y;
+	int lz = z;
+	if (lx < 0) lx = nx + lx;
+	if (ly < 0) ly = ny + ly;
+	if (lz < 0) lz = nz + lz;
+	
+	return rdata[lx + ly * nx + lz * nxy];
+}
+
+
 float EMData::get_value_at_wrap(int x) const
 {
 	if (x < 0) x = nx - x;
@@ -477,11 +504,14 @@ float EMData::get_value_at_wrap(int x, int y) const
 
 float EMData::get_value_at_wrap(int x, int y, int z) const
 {
-	if (x < 0) x = nx - x;
-	if (y < 0) y = ny - y;
-	if (z < 0) z = nz - z;
+	int lx = x;
+	int ly = y;
+	int lz = z;
+	if (lx < 0) lx = nx + lx;
+	if (ly < 0) ly = ny + ly;
+	if (lz < 0) lz = nz + lz;
 	
-	return rdata[x + y * nx + z * nxy];
+	return rdata[lx + ly * nx + lz * nxy];
 }
 
 float EMData::sget_value_at(int x, int y, int z) const
