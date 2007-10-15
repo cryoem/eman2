@@ -3046,8 +3046,9 @@ float EMData::calc_dist(EMData * second_img, int y_index) const
 }
 
 
+#define TOL 0.0001
 //  The following code looks strange - does anybody know it?  Please let me know, pawel.a.penczek@uth.tmc.edu  04/09/06.
-//This function does not work, it fails with simple function call in unit test. --Grant Tang
+// This is just an implementation of "Roseman's" fast normalized cross-correlation (Ultramicroscopy, 2003)
 EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 {
 	ENTERFUNC;
@@ -3060,172 +3061,157 @@ EMData *EMData::calc_flcf(EMData * with, int radius, const string & mask_filter)
 	Dict filter_dict;
 	if (mask_filter == "mask.sharp") {
 		filter_dict["value"] = 0;
+		filter_dict["outer_radius"] = radius;
 	}
 
-	EMData *img1 = this->copy();
-	EMData *img2 = with->copy();
-
-	int img1_nx = img1->get_xsize();
-	int img1_ny = img1->get_ysize();
-	int img1_nz = img1->get_zsize();
-	int img1_size = img1_nx * img1_ny * img1_nz;
-
-	float img1min = img1->get_attr("minimum");
-	img1->add(-img1min);
-
-	float img2min = img2->get_attr("minimum");
-	img2->add(-img2min);
+	EMData *tplate = this->copy();
+	int size = nx * ny * nz;
+	
+	// Make the mask 
+	EMData *mask = this->copy();
+	mask->to_one();
+	mask->process_inplace(mask_filter, filter_dict);
+	
+	int num = 0;
+	float *mask_data = mask->get_data();
+	for (int i = 0; i < size; i++) 
+		if (mask_data[i] == 1) num++;
+	
 
 	filter_dict["outer_radius"] = radius;
-
-	EMData *img1_copy = img1->copy();
-	img1_copy->to_one();
-	img1_copy->process_inplace(mask_filter, filter_dict);
-	img1_copy->process_inplace("xform.phaseorigin");
-
-	int num = 0;
-	float *img1_copy_data = img1_copy->get_data();
-
-	for (int i = 0; i < img1_size; i++) {
-		if (img1_copy_data[i] == 1) {
-			num++;
-		}
-	}
-
-	img2->process_inplace(mask_filter, filter_dict);
-
-	float *img2_data = img2->get_data();
-	double lsum = 0;
-	double sumsq = 0;
-
-	for (int i = 0; i < img1_size; i++) {
-		lsum += img2_data[i];
-		sumsq += img2_data[i] * img2_data[i];
-	}
-
-	float sq = (float)((num * sumsq - lsum * lsum) / (num * num));
-	if (sq < 0) {
-		LOGERR("sigma < 0");
-		throw ImageFormatException("image sigma < 0");
-	}
-
-	float mean = (float)lsum / num;
-	float sigma = std::sqrt(sq);
-	float th = 0.00001f;
-
-	if (sq > th) {
-		for (int i = 0; i < img1_size; i++) {
-			img2_data[i] = (img2_data[i] - mean) / sigma;
-		}
-	}
-	else {
-		for (int i = 0; i < img1_size; i++) {
-			img2_data[i] -= mean;
-		}
-	}
-
-	img2->update();
-
-	EMData *img2_copy = img2->copy();
-	if( img2 )
-	{
-		delete img2;
-		img2 = 0;
-	}
-
-	img2_copy->process_inplace(mask_filter, filter_dict);
-	img2_copy->process_inplace("xform.phaseorigin");
-
-	if( img1_copy )
-	{
-		delete img1_copy;
-		img1_copy = 0;
-	}
-
-	EMData *img1_copy2 = img1->copy();
-
-	img1_copy2->process_inplace("math.squared");
-
-	EMData *ccf = img1->calc_ccf(img2_copy);
-	if( img2_copy )
-	{
-		delete img2_copy;
-		img2_copy = 0;
-	}
-
-	ccf->mult(img1_size);
-
-	EMData *conv1 = img1->convolute(img1_copy2);
-	if( img1 )
-	{
-		delete img1;
-		img1 = 0;
-	}
-
-	conv1->mult(img1_size);
-	conv1->mult(1.0f / num);
-
-	EMData *conv2 = img1_copy2->convolute(img1_copy2);
-	if( img1_copy2 )
-	{
-		delete img1_copy2;
-		img1_copy2 = 0;
-	}
-
-	conv2->mult(img1_size);
+	EMData *conv1 = mask->convolute(with);
+	conv1->mult(1.0f/num);
+	
+	// Square the convoluted image - now it stores mean squared values
 	conv1->process_inplace("math.squared");
-	conv1->mult(1.0f / (num * num));
-
-	EMData *conv2_copy = conv2->copy();
-	if( conv2 )
+	
+	// Now generate the image the stores the other part of the standard deviation calculation
+	EMData *img_copy = with->copy();
+	img_copy->process_inplace("math.squared");
+	EMData *conv2 = mask->convolute(img_copy);
+	conv2->mult(1.0f/num);
+	
+	// Now generate the standard deviations
+	EMData* ss = new EMData();
+	ss->set_size(nx,ny,nz);
+	for(int i = 0; i<size; ++i)
 	{
-		delete conv2;
-		conv2 = 0;
+		(*ss)(i) = (*conv2)(i)-(*conv1)(i);
+		
+		// Tolerance here is to avoid division by very small numbers, when they should be 0
+		if ( (*ss)(i) < 0 ) 
+		{
+			if ( (*ss)(i) < -TOL ) throw InvalidValueException((*ss)(i),"Error - encountered a large negative number, was expecting -0 within tolerance of 0.0001");
+			(*ss)(i) = 0;
+		}
+		if ( (*ss)(i) < TOL ) (*ss)(i) = 0;
+		
+		(*tplate)(i) *= (*mask)(i);
 	}
+	ss->process_inplace("math.sqrt");
+	
+	// Get the cross correlation image
+	EMData* ccf = tplate->calc_ccf(with);
+	float *lcfd = ccf->get_data();
+	float *vdd = ss->get_data();
 
-	conv2_copy->sub(*conv1);
-	if( conv1 )
-	{
-		delete conv1;
-		conv1 = 0;
-	}
-
-	conv2_copy->mult(1.0f / num);
-	conv2_copy->process_inplace("math.sqrt");
-
-	EMData *ccf_copy = ccf->copy();
-	if( ccf )
-	{
-		delete ccf;
-		ccf = 0;
-	}
-
-	ccf_copy->mult(1.0f / num);
-
-	float *lcfd = ccf_copy->get_data();
-	float *vdd = conv2_copy->get_data();
-
-	for (int i = 0; i < img1_size; i++) {
+	// The most important part - dividing by standard deviations calculated in ss
+	for (int i = 0; i < size; i++) {
 		if (vdd[i] > 0) {
 			lcfd[i] /= vdd[i];
 		}
 	}
-	if( conv2_copy )
-	{
-		delete conv2_copy;
-		conv2_copy = 0;
-	}
-
-	ccf_copy->update();
-	EMData *lcf = ccf_copy->copy();
-	if( ccf_copy )
-	{
-		delete ccf_copy;
-		ccf_copy = 0;
-	}
-
 	EXITFUNC;
-	return lcf;
+	
+	delete mask;
+	delete img_copy;
+	delete tplate;
+	delete conv1;
+	delete conv2;
+	
+	return ccf;
+// 	EMData *mask = tplate->copy();
+// 	mask->to_one();
+// 	mask->process_inplace(mask_filter, filter_dict);
+// 
+// 	int num = 0;
+// 	float *mask_data = mask->get_data();
+// 	for (int i = 0; i < size; i++) 
+// 		if (mask_data[i] == 1) num++;
+// 
+// 	img->process_inplace(mask_filter, filter_dict);
+// 
+// 	float *img_data = img->get_data();
+// 	double lsum = 0;
+// 	double sumsq = 0;
+// 
+// 	for (int i = 0; i < size; i++) {
+// 		lsum += img_data[i];
+// 		sumsq += img_data[i] * img_data[i];
+// 	}
+// 
+// 	float sq = (float)((num * sumsq - lsum * lsum) / (num * num));
+// 	
+// 	if (sq < 0) {
+// 		LOGERR("sigma < 0");
+// 		throw ImageFormatException("image sigma < 0");
+// 	}
+// 
+// 	float mean = (float)lsum / num;
+// 	float sigma = std::sqrt(sq);
+// 	float th = 0.00001f;
+// 
+// 	if (sq > th) {
+// 		for (int i = 0; i < size; i++) {
+// 			img_data[i] = (img_data[i] - mean) / sigma;
+// 		}
+// 	}
+// 	else {
+// 		for (int i = 0; i < size; i++) {
+// 			img_data[i] -= mean;
+// 		}
+// 	}
+// 
+// 	img->update();
+// 	img->process_inplace(mask_filter, filter_dict);
+// 
+// 
+// 	EMData *tplate_copy = tplate->copy();
+// 	tplate_copy->process_inplace("math.squared");
+// 
+// 	EMData *ccf = img1->calc_ccf(img2_copy);
+// 	ccf->mult(img1_size);
+// 
+// 	EMData *conv1 = tplate->convolute(tplate_copy);
+// 	
+// 	conv1->mult(img1_size);
+// 	conv1->mult(1.0f / num);
+// 
+// 	EMData *conv2 = tplate_copy->convolute(tplate_copy);
+// 	
+// 	conv2->mult(img1_size);
+// 	conv1->process_inplace("math.squared");
+// 	conv1->mult(1.0f / (num * num));
+// 
+// 
+// 	conv2->mult(1.0f / num);
+// 	conv2->process_inplace("math.sqrt");
+// 
+// 	ccf->mult(1.0f / num);
+// 
+// 	float *lcfd = ccf->get_data();
+// 	float *vdd = conv2->get_data();
+// 
+// 	for (int i = 0; i < img1_size; i++) {
+// 		if (vdd[i] > 0) {
+// 			lcfd[i] /= vdd[i];
+// 		}
+// 	}
+// 
+// 	ccf->update();
+// 	
+// 	EXITFUNC;
+// 	return ccf;
 }
 
 EMData *EMData::convolute(EMData * with)
