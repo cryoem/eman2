@@ -2572,12 +2572,12 @@ class TestEMData(unittest.TestCase):
             self.assertEqual(exception_type(runtime_err), "InvalidValueException")
             
         #test division
-        e99 = 5.0 / e
+        e99 = 0.005 / e
         d99 = e99.get_3dview()
         for x in range(32):
             for y in range(32):
                 for z in range(32):
-                    self.assertAlmostEqual(5.0/d[z][y][x], d99[z][y][x], 2)
+                    self.assertAlmostEqual(0.005/d[z][y][x], d99[z][y][x], 2)
 
     def test_stat_locations(self):
         """test locational stats ............................"""
