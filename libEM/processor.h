@@ -3168,6 +3168,15 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Translates a centered image to the corner
+	 * DEPRECATED - works only for even dimensioned images
+	 * instead use Phase180BackwardProcessor and Phase180ForwardProcessor
+	 * All explicit calls to this function's process inplace function
+	 * should be removed from the code and replace to calls to the aforementioned
+	 * processors.
+	 * Once this clean up occurs, the process_inplace function should be made pure virtual
+	 * but the class should be kept, because the Phase180BackwardProcessor and Phase180ForwardProcessor
+	 * derive from this class (i.e. both of these classes use the same functions, but call them in a
+	 * different order)
 	 */
 	class Phase180Processor:public Processor
 	{
@@ -3192,26 +3201,33 @@ The basic design of EMAN Processors: <br>\
 			/** swap_corners_180 - works on 2D and 3D images
 			* 
 			* Implements the conventional 180 degree phase shift required to put the center of the image
-			* at the bottom left of the image - should be used in conjunction with swap_central_slices_180
-			* and never called by anyone except for Phase180BackwardProcessor and Phase180ForwardProcessor
+			* at the bottom left of the image - is used in conjunction with swap_central_slices_180
+			* if any of the image dimensions are odd, but by itself will perform the entire operation on even 
+			* images. This functions is never called by anyone except for the Phase180BackwardProcessor and
+			* Phase180ForwardProcessor classes.
 			* Highly specialised function to handle all cases of even and oddness
 			* @param image the image to be operated upon
 			* @exception ImageDimensionException if the image is 1D
 			* @exception NullPointerException if the image is null
 			*/
 			void swap_corners_180(EMData * image);
+			
 			/** swap_central_slices_180 - works on 2D and 3D images
 			 * 
-			 * swaps pixels values in central slices
-			 * should be used in conjunction with swap_central_slices_180
-			 * should never called by anyone except for Phase180BackwardProcessor and Phase180ForwardProcessor
+			 * swaps pixels values in central slices, only required if the image has one or more
+			 * odd dimensions. Should be used striclty in conjunction with swap_central_slices_180 function
+			 * and never called by anyone except for Phase180BackwardProcessor and Phase180ForwardProcessor
+			 * classes.
 			 * Highly specialised function to handle all cases of even and oddness
 			 * @param image the image to be operated upon
 			 * @exception ImageDimensionException if the image is 1D
 			 * @exception NullPointerException if the image is null
 			 */
 			void swap_central_slices_180(EMData * image);
+			
 			/** fourier_phaseshift180 - fourier phase shift by 180
+			 * this function is called internally if the argument to the process_inplace function
+			 * is complex.
 			 * @param image the image to be operated upon
 			 * @exception ImageFormatException if the image is not in complex format
 			 */
@@ -3219,7 +3235,11 @@ The basic design of EMAN Processors: <br>\
 
 	};
 	
-	/** Translates a centered image to the corner
+	/** Translates a cornered image to the center
+	 * Undoes the Phase180ForwardProcessor
+	 *
+	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
+	 * 
 	 */
 	class Phase180BackwardProcessor:public Phase180Processor
 	{
@@ -3244,6 +3264,7 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Translates a centered image to the corner
+	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
 	 */
 	class Phase180ForwardProcessor:public Phase180Processor
 	{

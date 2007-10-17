@@ -3042,22 +3042,25 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 			rdata[i+nx/2] = tmp;
 		}	
 	}
-	else if ( nz == 1 ){		
+	else if ( nz == 1 ){
+		// The order in which these operations occur literally undoes what the
+		// Phase180ForwardProcessor did to the image.
+		// First, the corners sections of the image are swapped appropriately
 		swap_corners_180(image);
-		// It is important that central slice shifting comes before the last two shifting operations below
+		// Second, central pixel lines are swapped
 		swap_central_slices_180(image);
 		
-		// Note, to perform backwards phase origin shifting the columns must be shifted before the rows
-		// This is because the rows are shifted before the columns in the forward phase origin shifting
+		float tmp;
+		// Third, appropriate sections of the image are cyclically shifted by one pixel
 		if (xodd) {
 			// Transfer the middle column to the far right 
 			// Shift all from the far right to (but not including the) middle one to the left
 			for ( int r  = 0; r < ny; ++r ) {
 				float last_val = rdata[r*nx+nx/2];
-				float tmp;
 				for ( int c = nx-1; c >=  nx/2; --c ){
-					tmp = rdata[r*nx+c];
-					rdata[r*nx+c] = last_val;
+					int idx = r*nx+c;
+					tmp = rdata[idx];
+					rdata[idx] = last_val;
 					last_val = tmp;
 				}
 			}
@@ -3068,10 +3071,10 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 			for ( int c = 0; c < nx; ++c ) {
 				// Get the value in the top row
 				float last_val = rdata[ny/2*nx + c];
-				float tmp;
 				for ( int r = ny-1; r >= ny/2; --r ){
-					tmp = rdata[r*nx+c];
-					rdata[r*nx+c] = last_val;
+					int idx = r*nx+c;
+					tmp = rdata[idx];
+					rdata[idx] = last_val;
 					last_val = tmp;
 				}
 			}
@@ -3079,12 +3082,15 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 	}
 	else
 	{
+		// The order in which these operations occur literally undoes the
+		// Phase180ForwardProcessor operation - in 3D.
+		// First, the corner quadrants of the voxel volume are swapped
 		swap_corners_180(image);
+		// Second, appropriate parts of the central slices are swapped
 		swap_central_slices_180(image);
-		// It is important that the next three operations (ifs) come before the last three (below).
-		// This ensures the forward operations is undone
-		
+
 		float tmp;
+		// Third, appropriate sections of the image are cyclically shifted by one voxel
 		if (xodd) {
 			// Transfer the central slice in the x direction to the far right
 			// moving all slices on the far right toward the center one pixel, until
