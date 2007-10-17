@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 126)
+        self.assertEqual(len(processor_names), 128)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -1222,16 +1222,87 @@ class TestProcessor(unittest.TestCase):
             self.assertEqual(exception_type(runtime_err), "ImageFormatException")
     
     def test_xform_fourierorigin(self):
-        """test xform.fourierorigin processor ..............."""
-        e = EMData()
-        e.set_size(32,32,1)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        e.do_fft_inplace()
-        self.assertEqual(e.is_complex(), True)
-        
-        e.process_inplace('xform.fourierorigin')
-        
+		"""test xform.fourierorigin processor ..............."""
+		e = EMData()
+		e.set_size(32,32,1)
+		e.process_inplace('testimage.noise.uniform.rand')
+		self.assertEqual(e.is_complex(), False)
+		e.do_fft_inplace()
+		self.assertEqual(e.is_complex(), True)
+		
+		e.process_inplace('xform.fourierorigin')
+
+		"""test xform.fourierorigin ........................."""
+		
+		#THIS TEST WILL BE FIXED SOON BY DAVE
+		
+		# note - Most test operations involving images should rigorously test all permutations of even and odd dimensions
+		# as is implemented here
+		n = 16
+		for ii in range(0,2):
+			for jj in range(0,2):
+				for kk in range(0,2):
+					e = EMData()
+					e.set_size(n+ii,n+jj,n+kk)
+					e.process_inplace("testimage.noise.uniform.rand")
+		
+					e.do_fft_inplace()
+			
+					d = e.copy()
+					
+					e.process_inplace("xform.fourierorigin")
+					e.process_inplace("xform.fourierorigin")
+					
+					for k in range(e.get_xsize()):
+						for j in range(e.get_ysize()):
+							for i in range(e.get_zsize()):
+								self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+
+    def test_xform_phaseorigin_twostage(self):
+		
+		"""test xform.phaseorigin processor two-stage........"""
+		e = EMData()
+		n = 8
+		# first test that 1D works
+		for i in [n,n+1]:
+			e.set_size(i,1,1)
+			e.process_inplace('testimage.noise.uniform.rand')
+			f = e.copy()
+			e.process_inplace('xform.phaseorigin.forward')
+			e.process_inplace('xform.phaseorigin.backward')
+			
+			for ii in range(i):
+				self.assertEqual(e.get_value_at(ii), f.get_value_at(ii))
+		
+		# now test that 2D works
+		for i in [n,n+1,n+2,n+3]:
+			for j in [n,n+1,n+2,n+3]:
+				e.set_size(i,j,1)
+				e.process_inplace('testimage.noise.uniform.rand')
+				f = e.copy()
+				e.process_inplace('xform.phaseorigin.forward')
+				e.process_inplace('xform.phaseorigin.backward')
+				
+				for ii in range(i):
+					for jj in range(j):
+						self.assertEqual(e.get_value_at(ii,jj), f.get_value_at(ii,jj))
+						
+		# now test that 3D works
+		for k in [n,n+1,n+2,n+3]:
+			for j in [n,n+1,n+2,n+3]:
+				for i in [n,n+1,n+2,n+3]:
+					e.set_size(i,j,k)
+					e.process_inplace('testimage.noise.uniform.rand')
+					f = e.copy()
+					e.process_inplace('xform.phaseorigin.forward')
+					e.process_inplace('xform.phaseorigin.backward')
+
+					for kk in range(k):
+						for jj in range(j):
+							for ii in range(i):
+								self.assertEqual(e.get_value_at(ii,jj,kk), f.get_value_at(ii,jj,kk))
+
+			
     def test_xform_phaseorigin(self):
         """test xform.phaseorigin processor ................."""
         e = EMData()

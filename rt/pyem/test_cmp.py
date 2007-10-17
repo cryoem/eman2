@@ -140,6 +140,7 @@ class TestCmp(unittest.TestCase):
         
     def test_PhaseCmp(self):
         """test PhaseCmp ...................................."""
+        #THIS TEST WILL BE FIXED SOON BY DAVE
         e = EMData()
         e.set_size(64,64,1)
         e.process_inplace('testimage.noise.uniform.rand')

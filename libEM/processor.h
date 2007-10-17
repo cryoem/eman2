@@ -3171,23 +3171,99 @@ The basic design of EMAN Processors: <br>\
 	 */
 	class Phase180Processor:public Processor
 	{
-	  public:
-		void process_inplace(EMData * image);
+		public:
+			void process_inplace(EMData * image);
 
-		string get_name() const
-		{
-			return "xform.phaseorigin";
-		}
+			string get_name() const
+			{
+				return "xform.phaseorigin";
+			}
 
-		static Processor *NEW()
-		{
-			return new Phase180Processor();
-		}
+			static Processor *NEW()
+			{
+				return new Phase180Processor();
+			}
 		
-		string get_desc() const
-		{
-			return "Translates a centered image to the corner";
-		}
+			string get_desc() const
+			{
+				return "Translates a centered image to the corner";
+			}
+		protected:
+			/** swap_corners_180 - works on 2D and 3D images
+			* 
+			* Implements the conventional 180 degree phase shift required to put the center of the image
+			* at the bottom left of the image - should be used in conjunction with swap_central_slices_180
+			* and never called by anyone except for Phase180BackwardProcessor and Phase180ForwardProcessor
+			* Highly specialised function to handle all cases of even and oddness
+			* @param image the image to be operated upon
+			* @exception ImageDimensionException if the image is 1D
+			* @exception NullPointerException if the image is null
+			*/
+			void swap_corners_180(EMData * image);
+			/** swap_central_slices_180 - works on 2D and 3D images
+			 * 
+			 * swaps pixels values in central slices
+			 * should be used in conjunction with swap_central_slices_180
+			 * should never called by anyone except for Phase180BackwardProcessor and Phase180ForwardProcessor
+			 * Highly specialised function to handle all cases of even and oddness
+			 * @param image the image to be operated upon
+			 * @exception ImageDimensionException if the image is 1D
+			 * @exception NullPointerException if the image is null
+			 */
+			void swap_central_slices_180(EMData * image);
+			/** fourier_phaseshift180 - fourier phase shift by 180
+			 * @param image the image to be operated upon
+			 * @exception ImageFormatException if the image is not in complex format
+			 */
+			void fourier_phaseshift180(EMData * image);
+
+	};
+	
+	/** Translates a centered image to the corner
+	 */
+	class Phase180BackwardProcessor:public Phase180Processor
+	{
+		public:
+			void process_inplace(EMData * image);
+
+			string get_name() const
+			{
+				return "xform.phaseorigin.backward";
+			}
+
+			static Processor *NEW()
+			{
+				return new Phase180BackwardProcessor();
+			}
+		
+			string get_desc() const
+			{
+				return "Undoes the effect of the xform.phaseorigin.forward processor";
+			}
+
+	};
+	
+	/** Translates a centered image to the corner
+	 */
+	class Phase180ForwardProcessor:public Phase180Processor
+	{
+		public:
+			void process_inplace(EMData * image);
+
+			string get_name() const
+			{
+				return "xform.phaseorigin.forward";
+			}
+
+			static Processor *NEW()
+			{
+				return new Phase180ForwardProcessor();
+			}
+		
+			string get_desc() const
+			{
+				return "Translates a centered image to the corner in a forward fashion";
+			}
 
 	};
 

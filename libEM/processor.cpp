@@ -146,6 +146,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&AddRandomNoiseProcessor::NEW);
 
 	force_add(&Phase180Processor::NEW);
+	force_add(&Phase180BackwardProcessor::NEW);
+	force_add(&Phase180ForwardProcessor::NEW);
 	force_add(&FourierOriginShiftProcessor::NEW);
 	force_add(&AutoMask2DProcessor::NEW);
 	force_add(&AutoMask3DProcessor::NEW);
@@ -2628,13 +2630,516 @@ void FourierOriginShiftProcessor::process_inplace(EMData * image)
 	}
 }
 
-void Phase180Processor::process_inplace(EMData * image)
+void Phase180Processor::fourier_phaseshift180(EMData * image)
 {
-	if (!image) {
-		LOGWARN("NULL Image");
+	if ( !image->is_complex() ) throw ImageFormatException("Can not handle images that are not complex in fourier phase shift 180");
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	int nxy = nx * ny;
+	
+	float *rdata = image->get_data();
+	
+	int of=0;
+	if (((ny/2)%2)+((nz/2)%2)==1) of=1;
+	
+	for (int k = 0; k < nz; k++) {
+		int k2 = k * nxy;
+		
+		for (int j = 0; j < ny; j++) {
+			int i = ((k+j)%2==of?2:0);
+			int j2 = j * nx + k2;
+			
+			for (; i < nx; i += 4) {
+				rdata[i + j2] *= -1.0f;
+				rdata[i + j2 + 1] *= -1.0f;
+			}
+		}
+	}
+}
+
+void Phase180Processor::swap_corners_180(EMData * image)
+{
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	int xodd = (nx % 2) == 1;
+	int yodd = (ny % 2) == 1;
+	int zodd = (nz % 2) == 1;
+	
+	int nxy = nx * ny;
+	
+	float *rdata = image->get_data();
+	
+	if ( ny == 1 && nz == 1 ){
+		throw ImageDimensionException("Error, cannot handle 1D images. This function should not have been called");
+	}
+	else if ( nz == 1 ) {
+		
+		// Swap the bottom left and top right corners
+		for ( int r = 0; r < ny/2; ++r ) {
+			for ( int c = 0; c < nx/2; ++c) {
+				float tmp = rdata[r*nx + c];
+				rdata[r*nx + c] = rdata[(r+ny/2+yodd)*nx + c + nx/2+xodd];
+				rdata[(r+ny/2+yodd)*nx + c + nx/2+xodd] = tmp;
+			} 
+		}
+		
+		// Swap the top left and bottom right corners
+		for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
+			for ( int c = 0; c < nx/2; ++c) {
+				float tmp = rdata[r*nx + c];
+				rdata[r*nx + c] = rdata[(r-ny/2-yodd)*nx + c + nx/2+xodd];
+				rdata[(r-ny/2-yodd)*nx + c+ nx/2+xodd] = tmp;
+			}
+		}
+	}
+	else // nx && ny && nz are greater than 1
+	{
+		float tmp;
+		// Swap the bottom left front and back right top quadrants
+		for ( int s = 0; s < nz/2; ++s ) {
+			for ( int r = 0; r < ny/2; ++r ) {
+				for ( int c = 0; c < nx/2; ++ c) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+		// Swap the bottom right front and back left top quadrants
+		for ( int s = 0; s < nz/2; ++s ) {
+			for ( int r = 0; r < ny/2; ++r ) {
+				for ( int c = nx-1; c >= (nx/2+xodd); --c) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c-nx/2-xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+		// Swap the top right front and back left bottom quadrants
+		for ( int s = 0; s < nz/2; ++s ) {
+			for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
+				for ( int c = nx-1; c >= (nx/2+xodd); --c) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c-nx/2-xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+		// Swap the top left front and back right bottom quadrants
+		for ( int s = 0; s < nz/2; ++s ) {
+			for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
+				for ( int c = 0; c < nx/2; ++ c) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s+nz/2+zodd)*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+	}
+}
+
+void Phase180Processor::swap_central_slices_180(EMData * image)
+{
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	int xodd = (nx % 2) == 1;
+	int yodd = (ny % 2) == 1;
+	int zodd = (nz % 2) == 1;
+	
+	int nxy = nx * ny;
+	
+	float *rdata = image->get_data();
+	
+	if ( ny == 1 && nz == 1 ){
+		throw ImageDimensionException("Error, cannot handle 1D images. This function should not have been called");
+	}
+	else if ( nz == 1 ) {
+		float tmp;
+		if ( yodd ) {
+			// Iterate along middle row, swapping values where appropriate
+			int r = ny/2;
+			for ( int c = 0; c < nx/2; ++c ) {
+				int idx1 = r*nx + c;
+				int idx2 = r*nx + c + nx/2+(int) xodd;
+				tmp = rdata[idx1];
+				rdata[idx1] = rdata[idx2];
+				rdata[idx2] = tmp;
+			}
+		}
+		
+		if ( xodd )	{
+			// Iterate along the central column, swapping values where appropriate
+			int c = nx/2;
+			for (  int r = 0; r < ny/2; ++r ) {
+				int idx1 = r*nx + c;
+				int idx2 = (r+ny/2+(int)yodd)*nx + c;
+				tmp = rdata[idx1];
+				rdata[idx1] = rdata[idx2];
+				rdata[idx2] = tmp;
+			}
+		}
+	}
+	else // nx && ny && nz are greater than 1
+	{
+		float tmp;
+		if ( xodd ) {
+			// Iterate along the x = nx/2 slice, swapping values where appropriate
+			int c = nx/2;
+			for( int s = 0; s < nz/2; ++s ) {
+				for ( int r = 0; r < ny/2; ++r ) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s+nz/2+(int)zodd)*nxy+(r+ny/2+(int)yodd)*nx+c;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+			
+			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
+				for ( int r = 0; r < ny/2; ++r ) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s-nz/2-(int)zodd)*nxy+(r+ny/2+(int)yodd)*nx+c;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+		if ( yodd ) {
+			// Iterate along the y = ny/2 slice, swapping values where appropriate
+			int r = ny/2;
+			for( int s = 0; s < nz/2; ++s ) {
+				for ( int c = 0; c < nx/2; ++c ) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 =(s+nz/2+(int)zodd)*nxy+r*nx+c+nx/2+(int)xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+			
+			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
+				for ( int c = 0; c < nx/2; ++c ) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = (s-nz/2-(int)zodd)*nxy+r*nx+c+nx/2+(int)xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+		if ( zodd ) {
+			// Iterate along the z = nz/2 slice, swapping values where appropriate
+			int s = nz/2;
+			for( int r = 0; r < ny/2; ++r ) {
+				for ( int c = 0; c < nx/2; ++c ) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = s*nxy+(r+ny/2+(int)yodd)*nx+c+nx/2+(int)xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+			
+			for( int r = ny-1; r >= (ny/2+yodd); --r ) {
+				for ( int c = 0; c < nx/2; ++c ) {
+					int idx1 = s*nxy+r*nx+c;
+					int idx2 = s*nxy+(r-ny/2-(int)yodd)*nx+c+nx/2+(int)xodd;
+					tmp = rdata[idx1];
+					rdata[idx1] = rdata[idx2];
+					rdata[idx2] = tmp;
+				}
+			}
+		}
+	}
+}
+
+void Phase180ForwardProcessor::process_inplace(EMData * image)
+{
+	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
+
+	if (image->is_complex()) {
+		fourier_phaseshift180(image);
 		return;
 	}
 
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if ( ny == 1 && nz == 1 && nx == 1) return;
+	
+	int nxy = nx * ny;
+	
+	float *rdata = image->get_data();
+
+	bool xodd = (nx % 2) == 1;
+	bool yodd = (ny % 2) == 1;
+	bool zodd = (nz % 2) == 1;
+	
+	if ( ny == 1 && nz == 1 ){
+		if (xodd){
+			// Put the last pixel in the center, shifting the contents 
+			// to right of the center one step to the right
+			float in_x = rdata[nx-1];
+			float tmp;
+			for ( int i = nx/2; i < nx; ++i ) {
+				tmp = rdata[i];
+				rdata[i] = in_x;
+				in_x = tmp;
+			}
+		}
+		// now the operation is straight forward
+		for ( int i = 0; i < nx/2; ++i ) {
+			float tmp = rdata[i];
+			rdata[i] = rdata[i+nx/2+xodd];
+			rdata[i+nx/2+xodd] = tmp;
+		}
+		
+	}
+	else if ( nz == 1 ) {
+		if (yodd) {
+			// Tranfer the top row into the middle row,
+			// shifting all pixels above and including the current middle up one.
+			for ( int c = 0; c < nx; ++c ) {
+				// Get the value in the top row
+				float last_val = rdata[(ny-1)*nx + c];
+				float tmp;
+				for ( int r = ny/2; r < ny; ++r ){
+					tmp = rdata[r*nx+c];
+					rdata[r*nx+c] = last_val;
+					last_val = tmp;
+				}
+			}
+		}
+		
+		if (xodd) {
+			// Transfer the right most column into the center column
+			// Shift all columns right of and including center to the right one pixel
+			for ( int r  = 0; r < ny; ++r ) {
+				float last_val = rdata[(r+1)*nx -1];
+				float tmp;
+				for ( int c = nx/2; c < nx; ++c ){
+					tmp = rdata[r*nx+c];
+					rdata[r*nx+c] = last_val;
+					last_val = tmp;
+				}
+			}
+		}
+		// It is important central slice shifting come after the previous two operations
+		swap_central_slices_180(image);
+		// Now the corners of the image can be shifted...
+		swap_corners_180(image);
+		
+	}
+	else
+	{
+		float tmp;
+		if (zodd) {
+			// Tranfer the back slice into the middle slice,
+			// shifting all pixels beyond and including the middle slice back one.
+			for (int r = 0; r < ny; ++r){
+				for (int c = 0; c < nx; ++c) {
+					float last_val = rdata[(nz-1)*nxy+r*nx+c];
+					for (int s = nz/2; s < nz; ++s) {
+						tmp = rdata[s*nxy+r*nx+c];
+						rdata[s*nxy+r*nx+c] = last_val;
+						last_val = tmp;
+					}
+				}
+			}
+		}
+		if (yodd) {
+			// Tranfer the top slice into the middle slice,
+			// shifting all pixels above and including the middle slice up one.
+			for (int s = 0; s < nz; ++s) {
+				for (int c = 0; c < nx; ++c) {
+				float last_val = rdata[s*nxy+(ny-1)*nx+c];
+					for (int r = ny/2; r < ny; ++r){
+						tmp = rdata[s*nxy+r*nx+c];
+						rdata[s*nxy+r*nx+c] = last_val;
+						last_val = tmp;
+					}
+				}
+			}
+		}
+		if (xodd) {
+			// Transfer the right most slice into the central slice
+			// Shift all pixels to right of and including center slice to the right one pixel
+			for (int s = 0; s < nz; ++s) {
+				for (int r = 0; r < ny; ++r) {
+					float last_val = rdata[s*nxy+r*nx+nx-1];
+					for (int c = nx/2; c < nx; ++c){
+						tmp = rdata[s*nxy+r*nx+c];
+						rdata[s*nxy+r*nx+c] = last_val;
+						last_val = tmp;
+					}
+				}
+			}
+		}
+		// Now swap the various parts in the central slices
+		swap_central_slices_180(image);
+		// Now shift the corners
+		swap_corners_180(image);
+	}
+}
+
+
+void Phase180BackwardProcessor::process_inplace(EMData * image)
+{
+	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
+
+	if (image->is_complex()) {
+		fourier_phaseshift180(image);
+		return;
+	}
+	
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if ( ny == 1 && nz == 1 && nx == 1) return;
+	
+	int nxy = nx * ny;
+	
+	float *rdata = image->get_data();
+
+	bool xodd = (nx % 2) == 1;
+	bool yodd = (ny % 2) == 1;
+	bool zodd = (nz % 2) == 1;
+	
+	if ( ny == 1 && nz == 1 ){
+		if (xodd) {
+			// Put the center pixel at the end, shifting the contents 
+			// to right of the center one step to the left
+			float in_x = rdata[nx/2];
+			float tmp;
+			for ( int i = nx-1; i >= nx/2; --i ) {
+				tmp = rdata[i];
+				rdata[i] = in_x;
+				in_x = tmp;
+			}
+		}
+		// now the operation is straight forward
+		for ( int i = 0; i < nx/2; ++i ) {
+			float tmp = rdata[i];
+			rdata[i] = rdata[i+nx/2];
+			rdata[i+nx/2] = tmp;
+		}	
+	}
+	else if ( nz == 1 ){		
+		swap_corners_180(image);
+		// It is important that central slice shifting comes before the last two shifting operations below
+		swap_central_slices_180(image);
+		
+		// Note, to perform backwards phase origin shifting the columns must be shifted before the rows
+		// This is because the rows are shifted before the columns in the forward phase origin shifting
+		if (xodd) {
+			// Transfer the middle column to the far right 
+			// Shift all from the far right to (but not including the) middle one to the left
+			for ( int r  = 0; r < ny; ++r ) {
+				float last_val = rdata[r*nx+nx/2];
+				float tmp;
+				for ( int c = nx-1; c >=  nx/2; --c ){
+					tmp = rdata[r*nx+c];
+					rdata[r*nx+c] = last_val;
+					last_val = tmp;
+				}
+			}
+		}	
+		if (yodd) {
+			// Tranfer the middle row to the top,
+			// shifting all pixels from the top row down one, until  but not including the) middle
+			for ( int c = 0; c < nx; ++c ) {
+				// Get the value in the top row
+				float last_val = rdata[ny/2*nx + c];
+				float tmp;
+				for ( int r = ny-1; r >= ny/2; --r ){
+					tmp = rdata[r*nx+c];
+					rdata[r*nx+c] = last_val;
+					last_val = tmp;
+				}
+			}
+		}
+	}
+	else
+	{
+		swap_corners_180(image);
+		swap_central_slices_180(image);
+		// It is important that the next three operations (ifs) come before the last three (below).
+		// This ensures the forward operations is undone
+		
+		float tmp;
+		if (xodd) {
+			// Transfer the central slice in the x direction to the far right
+			// moving all slices on the far right toward the center one pixel, until
+			// the center x slice is ecountered
+			for (int s = 0; s < nz; ++s) {
+				for (int r = 0; r < ny; ++r) {
+					float last_val = rdata[s*nxy+r*nx+nx/2];
+					for (int c = nx-1; c >= nx/2; --c){
+						tmp = rdata[s*nxy+r*nx+c];
+						rdata[s*nxy+r*nx+c] = last_val;
+						last_val = tmp;
+					}
+				}
+			}
+		}
+		if (yodd) {
+			// Tranfer the central slice in the y direction to the top
+			// shifting all pixels below it down on, until the center y slice is encountered.
+			for (int s = 0; s < nz; ++s) {
+				for (int c = 0; c < nx; ++c) {
+					float last_val = rdata[s*nxy+ny/2*nx+c];
+					for (int r = ny-1; r >= ny/2; --r){
+						tmp = rdata[s*nxy+r*nx+c];
+						rdata[s*nxy+r*nx+c] = last_val;
+						last_val = tmp;
+					}
+				}
+			}
+		}
+		if (zodd) {
+			// Tranfer the central slice in the z direction to the back
+			// shifting all pixels beyond and including the middle slice back one.
+			for (int r = 0; r < ny; ++r){
+				for (int c = 0; c < nx; ++c) {
+					float last_val = rdata[nz/2*nxy+r*nx+c];
+					for (int s = nz-1; s >= nz/2; --s) {
+						tmp = rdata[s*nxy+r*nx+c];
+						rdata[s*nxy+r*nx+c] = last_val;
+						last_val = tmp;
+					}
+				}
+			}
+		}
+		
+		
+	}
+}
+void Phase180Processor::process_inplace(EMData * image)
+{
+	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
+
+	if (image->is_complex()) {
+		fourier_phaseshift180(image);
+		return;
+	}
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
@@ -2644,22 +3149,7 @@ void Phase180Processor::process_inplace(EMData * image)
 	float *rdata = image->get_data();
 
 	if (image->is_complex()) {
-		int of=0;
-		if (((ny/2)%2)+((nz/2)%2)==1) of=1;
-		
-		for (int k = 0; k < nz; k++) {
-			int k2 = k * nxy;
-			
-			for (int j = 0; j < ny; j++) {
-				int i = ((k+j)%2==of?2:0);
-				int j2 = j * nx + k2;
-				
-				for (; i < nx; i += 4) {
-					rdata[i + j2] *= -1.0f;
-					rdata[i + j2 + 1] *= -1.0f;
-				}
-			}
-		}
+		fourier_phaseshift180(image);
 	}
 	else {
 		int nxyz = nxy * nz;
@@ -4235,8 +4725,8 @@ void TestImageX::process_inplace(EMData * image)
 		if ( radius > cx ) radius = cx;
 		
 		(*image)(cx) = fill;
-		for ( int i = 1; i < radius; ++i ) (*image)(cx+i) = fill;
-		for ( int i = 1; i < radius+xoffset; ++i ) (*image)(cx-i) = fill;
+		for ( int i = 1; i <= radius-xoffset; ++i ) (*image)(cx+i) = fill;
+		for ( int i = 1; i <= radius; ++i ) (*image)(cx-i) = fill;
 	}
 	else if ( nz == 1 )
 	{
@@ -4248,14 +4738,15 @@ void TestImageX::process_inplace(EMData * image)
 		
 		(*image)(cx,cy) = fill;
 		
-		for ( int i = 1; i < radius; ++i )
+		for ( int i = 1; i <= radius-xoffset; ++i ) (*image)(cx+i,cy) = fill;
+		for ( int i = 1; i <= radius-yoffset; ++i )(*image)(cx,cy+i) = fill;
+				
+		for ( int i = 1; i <= radius; ++i )
 		{
-			(*image)(cx+i,cy) = fill;
-			(*image)(cx,cy+i) = fill;
+			(*image)(cx-i,cy) = fill;
+			(*image)(cx,cy-i) = fill;
 		}
 		
-		for ( int i = 1; i < radius+xoffset; ++i ) (*image)(cx-i,cy) = fill;
-		for ( int i = 1; i < radius+yoffset; ++i ) (*image)(cx,cy-i) = fill;
 	}
 	else
 	{
@@ -4269,16 +4760,16 @@ void TestImageX::process_inplace(EMData * image)
 		
 		(*image)(cx,cy,cy) = fill;
 		
-		for ( int i = 1; i < radius; ++i )
-		{
-			(*image)(cx+i,cy,cz) = fill;
-			(*image)(cx,cy+i,cz) = fill;
-			(*image)(cx,cy,cz+i) = fill;
-		}
+		for ( int i = 1; i <=radius-xoffset; ++i ) (*image)(cx+i,cy,cz) = fill;
+		for ( int i = 1; i <=radius-yoffset; ++i ) (*image)(cx,cy+i,cz) = fill;
+		for ( int i = 1; i <=radius-zoffset; ++i ) (*image)(cx,cy,cz+i) = fill;
 		
-		for ( int i = 1; i < radius+xoffset; ++i ) (*image)(cx-i,cy,cz) = fill;
-		for ( int i = 1; i < radius+yoffset; ++i ) (*image)(cx,cy-i,cz) = fill;
-		for ( int i = 1; i < radius+zoffset; ++i ) (*image)(cx,cy,cz-i) = fill;
+		for ( int i = 1; i <= radius; ++i )
+		{
+			(*image)(cx-i,cy,cz) = fill;
+			(*image)(cx,cy-i,cz) = fill;
+			(*image)(cx,cy,cz-i) = fill;
+		}
 	}
 	
 	image->update();
@@ -4557,10 +5048,10 @@ void TestImageCirclesphere::process_inplace(EMData * image)
 {
 	preprocess(image);
 	
-	float radius = params["radius"];
+	float radius = params.set_default("radius",nx/2);
 	string axis = (const char*)params["axis"];
-	float c = params["c"];
-	int fill = (int)params["fill"];
+	float c =  params.set_default("c",nx/2);
+	int fill = params.set_default("fill",1);
 	
 	float *dat = image->get_data();
 	float x2, y2, z2; //this is coordinates of this pixel from center

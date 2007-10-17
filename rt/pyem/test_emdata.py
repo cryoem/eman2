@@ -1142,52 +1142,6 @@ class TestEMData(unittest.TestCase):
 		except RuntimeError, runtime_err:
 			self.assertEqual(exception_type(runtime_err), "ImageDimensionException")
 
-    def test_xform_phaseorigin(self):
-		"""test xform.phaseorigin ..........................."""
-		# note - Most test operations involving images should rigorously test all permutations of even and odd dimensions
-		# as is implemented here
-		n = 16
-		for ii in range(0,2):
-			for jj in range(0,2):
-				for kk in range(0,2):
-					e = EMData()
-					e.set_size(n+ii,n+jj,n+kk)
-					e.process_inplace("testimage.noise.uniform.rand")
-			
-					d = e.copy()
-					
-					e.process_inplace("xform.phaseorigin")
-					e.process_inplace("xform.phaseorigin")
-					
-					for k in range(e.get_xsize()):
-						for j in range(e.get_ysize()):
-							for i in range(e.get_zsize()):
-								self.assertEqual(e.get_value_at(i,j,k), d.get_value_at(i,j,k))
-						
-    def test_xform_fourierorigin(self):
-		"""test xform.fourierorigin ........................."""
-		# note - Most test operations involving images should rigorously test all permutations of even and odd dimensions
-		# as is implemented here
-		n = 16
-		for ii in range(0,2):
-			for jj in range(0,2):
-				for kk in range(0,2):
-					e = EMData()
-					e.set_size(n+ii,n+jj,n+kk)
-					e.process_inplace("testimage.noise.uniform.rand")
-		
-					e.do_fft_inplace()
-			
-					d = e.copy()
-					
-					e.process_inplace("xform.fourierorigin")
-					e.process_inplace("xform.fourierorigin")
-					
-					for k in range(e.get_xsize()):
-						for j in range(e.get_ysize()):
-							for i in range(e.get_zsize()):
-								self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
-
     #def test_xform__phaseorigin_fourierorigin(self):
 		#"""test xform.phaseorigin and xform.fourierorigin ........................."""
 		#n = 16
