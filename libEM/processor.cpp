@@ -146,11 +146,11 @@ template <> Factory < Processor >::Factory()
 	force_add(&AddRandomNoiseProcessor::NEW);
 
 	force_add(&Phase180Processor::NEW);
-	force_add(&Phase180BackwardProcessor::NEW);
-	force_add(&Phase180ForwardProcessor::NEW);
+	force_add(&PhaseToCenterProcessor::NEW);
+	force_add(&PhaseToCornerProcessor::NEW);
 	force_add(&FourierOriginShiftProcessor::NEW);
-	force_add(&FourierOriginShiftForwardProcessor::NEW);
-	force_add(&FourierOriginShiftBackwardProcessor::NEW);
+	force_add(&FourierToCenterProcessor::NEW);
+	force_add(&FourierToCornerProcessor::NEW);
 	force_add(&AutoMask2DProcessor::NEW);
 	force_add(&AutoMask3DProcessor::NEW);
 	force_add(&AutoMask3D2Processor::NEW);
@@ -2438,7 +2438,7 @@ float AddSigmaNoiseProcessor::get_sigma(EMData * image)
 	return image->get_attr("sigma");
 }
 
-void FourierOriginShiftBackwardProcessor::process_inplace(EMData * image)
+void FourierToCornerProcessor::process_inplace(EMData * image)
 {
 	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
 	
@@ -2554,7 +2554,7 @@ void FourierOriginShiftBackwardProcessor::process_inplace(EMData * image)
 	}
 }
 
-void FourierOriginShiftForwardProcessor::process_inplace(EMData * image)
+void FourierToCenterProcessor::process_inplace(EMData * image)
 {
 	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
 	
@@ -3102,7 +3102,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 	}
 }
 
-void Phase180ForwardProcessor::process_inplace(EMData * image)
+void PhaseToCornerProcessor::process_inplace(EMData * image)
 {
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
@@ -3239,7 +3239,7 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 }
 
 
-void Phase180BackwardProcessor::process_inplace(EMData * image)
+void PhaseToCenterProcessor::process_inplace(EMData * image)
 {
 	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
 
@@ -3284,7 +3284,7 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 	}
 	else if ( nz == 1 ){
 		// The order in which these operations occur literally undoes what the
-		// Phase180ForwardProcessor did to the image.
+		// PhaseToCornerProcessor did to the image.
 		// First, the corners sections of the image are swapped appropriately
 		swap_corners_180(image);
 		// Second, central pixel lines are swapped
@@ -3323,7 +3323,7 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 	else
 	{
 		// The order in which these operations occur literally undoes the
-		// Phase180ForwardProcessor operation - in 3D.
+		// PhaseToCornerProcessor operation - in 3D.
 		// First, the corner quadrants of the voxel volume are swapped
 		swap_corners_180(image);
 		// Second, appropriate parts of the central slices are swapped

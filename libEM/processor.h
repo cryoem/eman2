@@ -3143,13 +3143,13 @@ The basic design of EMAN Processors: <br>\
 
 	};
 	
-	/** Undo the effects of the FourierOriginShiftForwardProcessor
+	/** Undo the effects of the FourierToCenterProcessor
 	*/
-	class FourierOriginShiftBackwardProcessor:public Processor
+	class FourierToCornerProcessor:public Processor
 	{
 		public:
 			/** Fourier origin shift the image in the backwards direction
-			* Should only be called after the application of FourierOriginShiftForwardProcessor
+			* Should only be called after the application of FourierToCenterProcessor
 			* @param image the image to operate on
 			* @exception ImageFormatException if the image is not complex
 			 */
@@ -3157,19 +3157,18 @@ The basic design of EMAN Processors: <br>\
 
 			string get_name() const
 			{
-				return "xform.fourierorigin.backward";
+				return "xform.fourierorigin.tocorner";
 			}
 
 			static Processor *NEW()
 			{
-				return new FourierOriginShiftBackwardProcessor();
+				return new FourierToCornerProcessor();
 			}
 
 			string get_desc() const
 			{
-				return "Undoes the xform.fourierorigin.forward processor";
+				return "Undoes the xform.fourierorigin.tocenter processor";
 			}
-
 	};
 			
 
@@ -3177,10 +3176,10 @@ The basic design of EMAN Processors: <br>\
 	 * Handles 2D and 3D, and handles all combinations of even and oddness
 	 * Typically you call this function after Fourier transforming a real space image.
 	 * After this you operate on the Fourier image in convenient format, then
-	 * you call FourierOriginShiftBackwardProcessor (above) and then inverse FT to get to the
+	 * you call FourierToCornerProcessor (above) and then inverse FT to get to the
 	 * original image
 	 */
-	class FourierOriginShiftForwardProcessor:public Processor
+	class FourierToCenterProcessor:public Processor
 	{
 		public:
 			/** Fourier origin shift the image in the forward direction
@@ -3192,12 +3191,12 @@ The basic design of EMAN Processors: <br>\
 
 			string get_name() const
 			{
-				return "xform.fourierorigin.forward";
+				return "xform.fourierorigin.tocenter";
 			}
 
 			static Processor *NEW()
 			{
-				return new FourierOriginShiftForwardProcessor();
+				return new FourierToCenterProcessor();
 			}
 
 			string get_desc() const
@@ -3207,8 +3206,8 @@ The basic design of EMAN Processors: <br>\
 
 	};
 	/** Translates the origin in Fourier space from the corner to the center in Y
-	 * DEPRECATED - use instead FourierOriginShiftForwardProcessor and 
-	 * FourierOriginShiftBackwardProcessor processor
+	 * DEPRECATED - use instead FourierToCenterProcessor and 
+	 * FourierToCornerProcessor processor
 	 */
 	class FourierOriginShiftProcessor:public Processor
 	{
@@ -3234,12 +3233,12 @@ The basic design of EMAN Processors: <br>\
 	
 	/** Translates a centered image to the corner
 	 * DEPRECATED - works only for even dimensioned images
-	 * instead use Phase180BackwardProcessor and Phase180ForwardProcessor
+	 * instead use PhaseToCenterProcessor and PhaseToCornerProcessor
 	 * All explicit calls to this function's process inplace function
 	 * should be removed from the code and replace to calls to the aforementioned
 	 * processors.
 	 * Once this clean up occurs, the process_inplace function should be made pure virtual
-	 * but the class should be kept, because the Phase180BackwardProcessor and Phase180ForwardProcessor
+	 * but the class should be kept, because the PhaseToCenterProcessor and PhaseToCornerProcessor
 	 * derive from this class (i.e. both of these classes use the same functions, but call them in a
 	 * different order)
 	 */
@@ -3268,8 +3267,8 @@ The basic design of EMAN Processors: <br>\
 			* Implements the conventional 180 degree phase shift required to put the center of the image
 			* at the bottom left of the image - is used in conjunction with swap_central_slices_180
 			* if any of the image dimensions are odd, but by itself will perform the entire operation on even 
-			* images. This functions is never called by anyone except for the Phase180BackwardProcessor and
-			* Phase180ForwardProcessor classes.
+			* images. This functions is never called by anyone except for the PhaseToCenterProcessor and
+			* PhaseToCornerProcessor classes.
 			* Highly specialised function to handle all cases of even and oddness
 			* @param image the image to be operated upon
 			* @exception ImageDimensionException if the image is 1D
@@ -3281,7 +3280,7 @@ The basic design of EMAN Processors: <br>\
 			 * 
 			 * swaps pixels values in central slices, only required if the image has one or more
 			 * odd dimensions. Should be used striclty in conjunction with swap_central_slices_180 function
-			 * and never called by anyone except for Phase180BackwardProcessor and Phase180ForwardProcessor
+			 * and never called by anyone except for PhaseToCenterProcessor and PhaseToCornerProcessor
 			 * classes.
 			 * Highly specialised function to handle all cases of even and oddness
 			 * @param image the image to be operated upon
@@ -3301,29 +3300,29 @@ The basic design of EMAN Processors: <br>\
 	};
 	
 	/** Translates a cornered image to the center
-	 * Undoes the Phase180ForwardProcessor
+	 * Undoes the PhaseToCornerProcessor
 	 *
 	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
 	 * 
 	 */
-	class Phase180BackwardProcessor:public Phase180Processor
+	class PhaseToCenterProcessor:public Phase180Processor
 	{
 		public:
 			void process_inplace(EMData * image);
 
 			string get_name() const
 			{
-				return "xform.phaseorigin.backward";
+				return "xform.phaseorigin.tocenter";
 			}
 
 			static Processor *NEW()
 			{
-				return new Phase180BackwardProcessor();
+				return new PhaseToCenterProcessor();
 			}
 		
 			string get_desc() const
 			{
-				return "Undoes the effect of the xform.phaseorigin.forward processor";
+				return "Undoes the effect of the xform.phaseorigin.tocorner processor";
 			}
 
 	};
@@ -3331,19 +3330,19 @@ The basic design of EMAN Processors: <br>\
 	/** Translates a centered image to the corner
 	 * works for 1D, 2D and 3D images, for all combinations of even and oddness
 	 */
-	class Phase180ForwardProcessor:public Phase180Processor
+	class PhaseToCornerProcessor:public Phase180Processor
 	{
 		public:
 			void process_inplace(EMData * image);
 
 			string get_name() const
 			{
-				return "xform.phaseorigin.forward";
+				return "xform.phaseorigin.tocorner";
 			}
 
 			static Processor *NEW()
 			{
-				return new Phase180ForwardProcessor();
+				return new PhaseToCornerProcessor();
 			}
 		
 			string get_desc() const

@@ -62,10 +62,10 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 {
 	EMData *f = image;
 	if (!image->is_complex()) {
-		f->process_inplace("xform.phaseorigin");
+		f->process_inplace("xform.phaseorigin.tocorner");
 		f = image->do_fft();
-		image->process_inplace("xform.phaseorigin");
-		f->process_inplace("xform.fourierorigin");
+		//image->process_inplace("xform.phaseorigin"); // This is not required, i don't think it should be here - d.woolford 10-17-2007
+		f->process_inplace("xform.fourierorigin.tocenter");
 	}
 
 	int f_nx = f->get_xsize();
@@ -135,9 +135,9 @@ EMData *GaussFFTProjector::project3d(EMData * image) const
 	f->update();
 	tmp->update();
 
-	tmp->process_inplace("xform.fourierorigin");
+	tmp->process_inplace("xform.fourierorigin.tocorner");
 	EMData *ret = tmp->do_ift();
-	ret->process_inplace("xform.phaseorigin");
+	ret->process_inplace("xform.phaseorigin.tocenter");
 
 	Dict filter_d;
 	filter_d["gauss_width"] = gauss_width;

@@ -427,13 +427,13 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	}
 	
 	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
-	return_slice->process_inplace("xform.phaseorigin");
+	return_slice->process_inplace("xform.phaseorigin.tocorner");
 
 	// Fourier transform the slice
 	return_slice->do_fft_inplace();
 	
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
-	return_slice->process_inplace("xform.fourierorigin");
+	return_slice->process_inplace("xform.fourierorigin.tocenter");
 	
 	return return_slice;
 }
@@ -441,16 +441,10 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 int FourierReconstructor::insert_slice(const EMData* const input_slice, const Transform3D & arg)
 {
 	// Are these exceptions really necessary? (d.woolford)
-	if (!input_slice) {
-		LOGERR("Insertion of NULL slice in FourierReconstructor::insert_slice");
-		throw NullPointerException("EMData pointer (input image) is NULL");
-	}
+	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
 
 	// I could also test to make sure the image is the right dimensions...
-	if (input_slice->is_complex()) {
-		LOGERR("Do not Fourier transform the image before it is passed to insert_slice in FourierReconstructor, this is performed internally");
-		throw ImageFormatException("The image is complex, expecting real");
-	}
+	if (input_slice->is_complex()) throw ImageFormatException("The image is complex, expecting real");
 
 	// Get the proprecessed slice - there are some things that always happen to a slice,
 	// such as as Fourier conversion and optional padding etc.
@@ -498,10 +492,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 {	
 	// Reload the inserter if the mode has changed
 	string mode = (string) params["mode"];
-	if ( mode != inserter->get_name() )
-	{
-		load_inserter();
-	}
+	if ( mode != inserter->get_name() )	load_inserter();
 	
 	int rl = Util::square( max_padded_dim / 2);
 	
@@ -894,7 +885,7 @@ EMData *FourierReconstructor::finish()
 	image->do_ift_inplace();
 	// FIXME - when the memory issue is sorted this depad call should probably not be necessary
 	image->postift_depad_corner_inplace();
-	image->process_inplace("xform.phaseorigin");
+	image->process_inplace("xform.phaseorigin.tocenter");
 	
 	// If the image was padded it should be age size, as the client would expect
 	bool is_fftodd = nx%2;

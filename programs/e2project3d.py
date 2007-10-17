@@ -237,6 +237,9 @@ def get_asym_unit_orientations_numproj(symmetry, num_proj, nomirror, perturb = F
 	prop_upper_bound = 360
 	prop_lower_bound = 0
 	
+	#This is an example of a divide and conquer approach, the possible values of the angle are searched
+	#like a binary tree
+	
 	soln_found = False
 	eulers = []
 	while ( soln_found == False ):
@@ -244,14 +247,21 @@ def get_asym_unit_orientations_numproj(symmetry, num_proj, nomirror, perturb = F
 		if (len(eulers) == num_proj):
 			soln_found = True
 		else:
-			if (len(eulers) < num_proj):
-				prop_upper_bound = prop_soln;
-				prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0
+			if ( (prop_upper_bound - prop_lower_bound) < 0.000001 ): 
+				# If this is the case, the requested number of projections is practically infeasible
+				# in which case just return the nearest guess
+				soln_found = True
+				eulers = get_asym_unit_orientations(symmetry,(prop_upper_bound+prop_lower_bound)/2.0,nomirror,perturb)
+			
 			else:
-				prop_lower_bound = prop_soln;
-				prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0
+				if (len(eulers) < num_proj):
+					prop_upper_bound = prop_soln;
+					prop_soln = prop_soln - (prop_soln-prop_lower_bound)/2.0
+				else:
+					prop_lower_bound = prop_soln;
+					prop_soln = prop_soln  + (prop_upper_bound-prop_soln)/2.0
 		
-	print "Using an angular distribution of %f" %prop_soln
+	print "Using an angular distribution of %f, this will give you %d projections" %(prop_soln,len(eulers))
 	return eulers
 
 def get_asym_unit_orientations(symmetry, prop, nomirror, perturb = False):

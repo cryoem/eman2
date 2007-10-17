@@ -1301,7 +1301,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
+	fft->process_inplace("xform.phaseorigin.tocorner");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1383,7 +1383,7 @@ EMData *PointArray::pdb2mrc_by_nfft(int , float , float )
 	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", map_size*apix/res));
 
-	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image map_size, instead of at corner
+	fft->process_inplace("xform.phaseorigin.tocenter");	// move phase origin to center of image map_size, instead of at corner
 	EMData *map = fft->do_ift();
 	map->set_attr("apix_x", apix);
 	map->set_attr("apix_y", apix);
@@ -1470,7 +1470,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
+	fft->process_inplace("xform.phaseorigin.tocenter");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #elif defined NFFT2
@@ -1540,7 +1540,7 @@ EMData *PointArray::projection_by_nfft(int , float , float )
 	fft->update();
 	//fft->process_inplace("eman1.filter.lowpass.gaussian",Dict("lowpass", box*apix/res));
 
-	fft->process_inplace("xform.phaseorigin");	// move phase origin to center of image box, instead of at corner
+	fft->process_inplace("xform.phaseorigin.tocenter");	// move phase origin to center of image box, instead of at corner
 
 	return fft;
 #else

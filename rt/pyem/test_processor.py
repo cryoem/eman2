@@ -1245,25 +1245,31 @@ class TestProcessor(unittest.TestCase):
 			
 					d = e.copy()
 	
-					e.process_inplace("xform.fourierorigin.forward")
-					e.process_inplace("xform.fourierorigin.backward")
+					e.process_inplace("xform.fourierorigin.tocenter")
+					e.process_inplace("xform.fourierorigin.tocorner")
 					for kk in range(e.get_zsize()):
 						for jj in range(e.get_ysize()):
 							for ii in range(e.get_xsize()):
 								self.assertEqual(e.get_value_at(ii,jj,kk), d.get_value_at(ii,jj,kk))
 
     def test_xform_phaseorigin_twostage(self):
-		
-		"""test xform.phaseorigin processor two-stage........"""
+		"""test xform.phaseorigin processor ................."""
 		e = EMData()
+		e.set_size(32,32,32)
+		e.process_inplace('testimage.noise.uniform.rand')
+		self.assertEqual(e.is_complex(), False)
+
+		e.process_inplace('xform.phaseorigin.tocorner')
+		e.process_inplace('xform.phaseorigin.tocenter')
+		
 		n = 8
 		# first test that 1D works
 		for i in [n,n+1]:
 			e.set_size(i,1,1)
 			e.process_inplace('testimage.noise.uniform.rand')
 			f = e.copy()
-			e.process_inplace('xform.phaseorigin.forward')
-			e.process_inplace('xform.phaseorigin.backward')
+			e.process_inplace('xform.phaseorigin.tocorner')
+			e.process_inplace('xform.phaseorigin.tocenter')
 			
 			for ii in range(i):
 				self.assertEqual(e.get_value_at(ii), f.get_value_at(ii))
@@ -1274,8 +1280,8 @@ class TestProcessor(unittest.TestCase):
 				e.set_size(i,j,1)
 				e.process_inplace('testimage.noise.uniform.rand')
 				f = e.copy()
-				e.process_inplace('xform.phaseorigin.forward')
-				e.process_inplace('xform.phaseorigin.backward')
+				e.process_inplace('xform.phaseorigin.tocorner')
+				e.process_inplace('xform.phaseorigin.tocenter')
 				
 				for ii in range(i):
 					for jj in range(j):
@@ -1288,22 +1294,13 @@ class TestProcessor(unittest.TestCase):
 					e.set_size(i,j,k)
 					e.process_inplace('testimage.noise.uniform.rand')
 					f = e.copy()
-					e.process_inplace('xform.phaseorigin.forward')
-					e.process_inplace('xform.phaseorigin.backward')
+					e.process_inplace('xform.phaseorigin.tocorner')
+					e.process_inplace('xform.phaseorigin.tocenter')
 
 					for kk in range(k):
 						for jj in range(j):
 							for ii in range(i):
 								self.assertEqual(e.get_value_at(ii,jj,kk), f.get_value_at(ii,jj,kk))
-
-    def test_xform_phaseorigin(self):
-        """test xform.phaseorigin processor ................."""
-        e = EMData()
-        e.set_size(32,32,32)
-        e.process_inplace('testimage.noise.uniform.rand')
-        self.assertEqual(e.is_complex(), False)
-        
-        e.process_inplace('xform.phaseorigin')
 
     def test_mask_auto2d(self):
         """test mask.auto2d processor ......................."""

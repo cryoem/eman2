@@ -1854,7 +1854,7 @@ EMData *EMData::make_footprint()
 {
 	//EMData *ccf=calc_ccf(this);
 	EMData *ccf=calc_mutual_correlation(this);
-	ccf->process_inplace("xform.phaseorigin");
+	ccf->process_inplace("xform.phaseorigin.tocenter");
 	ccf->process_inplace("normalize.edgemean");
 	EMData *un=ccf->unwrap();
 	EMData *tmp=un->get_clip(Region(0,4,un->get_xsize()/2,un->get_ysize()-6));	// 4 and 6 are empirical
@@ -1943,7 +1943,7 @@ EMData *EMData::calc_mutual_correlation(EMData * with, bool tocorner, EMData * f
 	}
 
 	if (tocorner) {
-		cf->process_inplace("xform.phaseorigin");
+		cf->process_inplace("xform.phaseorigin.tocorner");
 	}
 
 	EMData *f2 = cf->do_ift();

@@ -159,8 +159,10 @@ class TestCmp(unittest.TestCase):
 				for k in [1,n-1,n]:
 					e3 = EMData()
 					e3.set_size(i,j,k)
+					print "%d %d %d" %(i,j,k)
 					e3.process_inplace('testimage.noise.uniform.rand')
-					zero  = e3.cmp('phase', e3.copy(), {})
+					f = e3.copy()
+					zero  = e3.cmp('phase', f, {})
 					#print "%d %d %d %f" %(i,j,k,zero)
 					self.assertAlmostEqual(zero,0, places=2)
 

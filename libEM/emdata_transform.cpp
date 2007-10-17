@@ -1116,7 +1116,7 @@ EMData* EMData::fft_continuous_rotate(const Transform3D& t3d)
 	return_slice->set_size(nx,ny,nz);
 	return_slice->to_zero();
 	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
-	process_inplace("xform.phaseorigin");
+	process_inplace("xform.phaseorigin.tocorner");
 
 	// Fourier transform the slice
 	do_fft_inplace();
@@ -1124,7 +1124,7 @@ EMData* EMData::fft_continuous_rotate(const Transform3D& t3d)
 	write_image("as_it_is.mrc");
 	
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
-	process_inplace("xform.fourierorigin");
+	process_inplace("xform.fourierorigin.tocenter");
 	
 	write_image("as_it_is_now.mrc");
 	
@@ -1226,11 +1226,11 @@ EMData* EMData::fft_continuous_rotate(const Transform3D& t3d)
 	cout << "dims are " << nx/2 << " " << ny << endl;
 	cout << t1 << " " << t2 << " " << t3 << " " << t4 << " " << t5 << " " << t6 << " " << t7 << " " << t8 << " " << t9 << " " << t1+t2+t3+t4+t5+t6+t7+t8+t9 << endl;
 	cout << "This should equal" << (ny*nx/2 - 2*(ny/2-1)) << endl;
-	process_inplace("xform.fourierorigin");
+	process_inplace("xform.fourierorigin.tocorner");
 	do_ift_inplace();
 	
 	return_slice->mult(1.0f/((nx-2)*ny));
-	return_slice->process_inplace("xform.phaseorigin");
+	return_slice->process_inplace("xform.phaseorigin.tocenter");
 	return_slice->write_image("result.mrc");
 	return return_slice;
 }
@@ -1246,7 +1246,7 @@ EMData* EMData::ifft_realspace_rotate(const Transform3D& t3d)
 	return_slice->set_size(nx,ny,nz);
 	return_slice->to_zero();
 	// Shift the image pixels so the real space origin is now located at the phase origin (to work with FFTW) (d.woolford)
-	process_inplace("xform.phaseorigin");
+	process_inplace("xform.phaseorigin.tocorner");
 
 	// Fourier transform the slice
 	do_fft_inplace();
@@ -1254,7 +1254,7 @@ EMData* EMData::ifft_realspace_rotate(const Transform3D& t3d)
 	write_image("as_it_is.mrc");
 	
 	// Shift the Fourier transform so that it's origin is in the center (bottom) of the image.
-	process_inplace("xform.fourierorigin");
+	process_inplace("xform.fourierorigin.tocenter");
 	
 	write_image("as_it_is_now.mrc");
 	
@@ -1339,11 +1339,11 @@ EMData* EMData::ifft_realspace_rotate(const Transform3D& t3d)
 	}
 	cout << "dims are " << nx/2 << " " << ny << endl;
 	cout << t1 << " " << t2 << " " << t3 << " " << t4 << " " << t5 << " " << t6 << " " << t7 << " " << t8 << " " << t9 << " " << t1+t2+t3+t4+t5+t6+t7+t8+t9 << endl;
-	process_inplace("xform.fourierorigin");
+	process_inplace("xform.fourierorigin.tocorner");
 	do_ift_inplace();
 	
 	return_slice->mult(1.0f/((nx-2)*ny));
-// 	return_slice->process_inplace("xform.phaseorigin");
+	return_slice->process_inplace("xform.phaseorigin.tocenter");
 	return_slice->write_image("result.mrc");
 	return return_slice;
 }

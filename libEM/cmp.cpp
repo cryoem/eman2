@@ -585,6 +585,7 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
+	int nz = image->get_zsize();
 
 	int np = (int) ceil(Ctf::CTFOS * sqrt(2.0f) * ny / 2) + 2;
 
@@ -615,16 +616,18 @@ float PhaseCmp::cmp(EMData * image, EMData *with) const
 	double norm = FLT_MIN;
 	int i = 0;
 
-	for (float y = 0; y < ny; y++) {
-		for (int x = 0; x < nx + 2; x += 2) {
-			int r;
-			if (y<ny/2) r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
-			else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
-			float a = dfsnr[r] * with_fft_data[i];
-
-			sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
-			norm += a;
-			i += 2;
+	for (float z = 0; z < nz; ++z){
+		for (float y = 0; y < ny; y++) {
+			for (int x = 0; x < nx + 2; x += 2) {
+				int r;
+				if (y<ny/2) r = Util::round(hypot(x / 2, y) * Ctf::CTFOS);
+				else r = Util::round(hypot(x / 2, y-ny) * Ctf::CTFOS);
+				float a = dfsnr[r] * with_fft_data[i];
+	
+				sum += Util::angle_sub_2pi(image_fft_data[i + 1], with_fft_data[i + 1]) * a;
+				norm += a;
+				i += 2;
+			}
 		}
 	}
 	EXITFUNC;
