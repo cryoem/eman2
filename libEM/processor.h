@@ -3142,8 +3142,73 @@ The basic design of EMAN Processors: <br>\
 		}
 
 	};
+	
+	/** Undo the effects of the FourierOriginShiftForwardProcessor
+	*/
+	class FourierOriginShiftBackwardProcessor:public Processor
+	{
+		public:
+			/** Fourier origin shift the image in the backwards direction
+			* Should only be called after the application of FourierOriginShiftForwardProcessor
+			* @param image the image to operate on
+			* @exception ImageFormatException if the image is not complex
+			 */
+			void process_inplace(EMData * image);
 
+			string get_name() const
+			{
+				return "xform.fourierorigin.backward";
+			}
+
+			static Processor *NEW()
+			{
+				return new FourierOriginShiftBackwardProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Undoes the xform.fourierorigin.forward processor";
+			}
+
+	};
+			
+
+	/** Translates the origin in Fourier space from the corner to the center in y and z
+	 * Handles 2D and 3D, and handles all combinations of even and oddness
+	 * Typically you call this function after Fourier transforming a real space image.
+	 * After this you operate on the Fourier image in convenient format, then
+	 * you call FourierOriginShiftBackwardProcessor (above) and then inverse FT to get to the
+	 * original image
+	 */
+	class FourierOriginShiftForwardProcessor:public Processor
+	{
+		public:
+			/** Fourier origin shift the image in the forward direction
+			*
+			* @param image the image to operate on
+			* @exception ImageFormatException if the image is not complex
+			*/
+			void process_inplace(EMData * image);
+
+			string get_name() const
+			{
+				return "xform.fourierorigin.forward";
+			}
+
+			static Processor *NEW()
+			{
+				return new FourierOriginShiftForwardProcessor();
+			}
+
+			string get_desc() const
+			{
+				return "Translates the origin in Fourier space from the corner to the center in y and z - works in 2D and 3D";
+			}
+
+	};
 	/** Translates the origin in Fourier space from the corner to the center in Y
+	 * DEPRECATED - use instead FourierOriginShiftForwardProcessor and 
+	 * FourierOriginShiftBackwardProcessor processor
 	 */
 	class FourierOriginShiftProcessor:public Processor
 	{

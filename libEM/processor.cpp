@@ -149,6 +149,8 @@ template <> Factory < Processor >::Factory()
 	force_add(&Phase180BackwardProcessor::NEW);
 	force_add(&Phase180ForwardProcessor::NEW);
 	force_add(&FourierOriginShiftProcessor::NEW);
+	force_add(&FourierOriginShiftForwardProcessor::NEW);
+	force_add(&FourierOriginShiftBackwardProcessor::NEW);
 	force_add(&AutoMask2DProcessor::NEW);
 	force_add(&AutoMask3DProcessor::NEW);
 	force_add(&AutoMask3D2Processor::NEW);
@@ -2436,6 +2438,233 @@ float AddSigmaNoiseProcessor::get_sigma(EMData * image)
 	return image->get_attr("sigma");
 }
 
+void FourierOriginShiftBackwardProcessor::process_inplace(EMData * image)
+{
+	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
+	
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	int nxy = nx*ny;
+	
+	if ( ny == 1 && nz == 1 ){
+		cout << "Warning- attempted	Fourier origin shift a 1D image - no action taken" << endl;
+		return;
+	}
+	int yodd = (ny%2==1);
+	int zodd = (nz%2==1);
+	
+	float* rdata = image->get_data();
+	
+	float tmp[2];
+	float* p1;
+	float* p2;
+		
+	if (yodd){
+		// Swap the middle slice (with respect to the y direction) with the bottom slice
+		// shifting all slices above the middles slice upwards by one pixel, stopping
+		// at the middle slice, not if nz = 1 we are not talking about slices, we are
+		// talking about rows
+		float prev[2];
+		for( int s = 0; s < nz; s++ ) {
+			for( int c =0; c < nx; c += 2 ) {
+				prev[0] = rdata[s*nxy+ny/2*nx+c];
+				prev[1] = rdata[s*nxy+ny/2*nx+c+1];	
+				for( int r = 0; r <= ny/2; ++r ) {
+					float* p1 = &rdata[s*nxy+r*nx+c];
+					tmp[0] = p1[0];
+					tmp[1] = p1[1];
+						
+					p1[0] = prev[0];
+					p1[1] = prev[1];
+						
+					prev[0] = tmp[0];
+					prev[1] = tmp[1];
+				}
+			}
+		}
+	}
+		
+	// Shift slices (3D) or rows (2D) correctly in the y direction
+	for( int s = 0; s < nz; ++s ) {
+		for( int r = 0 + yodd; r < ny/2+yodd; ++r ) {
+			for( int c =0; c < nx; c += 2 ) {
+				p1 = &rdata[s*nxy+r*nx+c];
+				p2 = &rdata[s*nxy+(r+ny/2)*nx+c];
+					
+				tmp[0] = p1[0];
+				tmp[1] = p1[1];
+					
+				p1[0] = p2[0];
+				p1[1] = p2[1];
+					
+				p2[0] = tmp[0];
+				p2[1] = tmp[1];
+			}
+		}
+	}
+	
+	if ( nz != 1 )
+	{
+		
+		if (zodd){
+			// Swap the middle slice (with respect to the z direction) and the front slice
+			// shifting all behind the front slice towards the middle a distance of 1 voxel,
+			// stopping at the middle slice.
+			float prev[2];
+			for( int r = 0; r < ny; ++r ) {
+				for( int c =0; c < nx; c += 2 ) {
+					prev[0] = rdata[nz/2*nxy+r*nx+c];
+					prev[1] = rdata[nz/2*nxy+r*nx+c+1];	
+					for( int s = 0; s <= nz/2; ++s ) {
+						float* p1 = &rdata[s*nxy+r*nx+c];
+						tmp[0] = p1[0];
+						tmp[1] = p1[1];
+					
+						p1[0] = prev[0];
+						p1[1] = prev[1];
+					
+						prev[0] = tmp[0];
+						prev[1] = tmp[1];
+					}
+				}
+			}
+		}
+		
+		// Shift slices correctly in the z direction
+		for( int s = 0+zodd; s < nz/2 + zodd; ++s ) {
+			for( int r = 0; r < ny; ++r ) {
+				for( int c =0; c < nx; c += 2 ) {
+					p1 = &rdata[s*nxy+r*nx+c];
+					p2 = &rdata[(s+nz/2)*nxy+r*nx+c];
+					
+					tmp[0] = p1[0];
+					tmp[1] = p1[1];
+					
+					p1[0] = p2[0];
+					p1[1] = p2[1];
+					
+					p2[0] = tmp[0];
+					p2[1] = tmp[1];
+				}
+			}
+		}
+		
+	}
+}
+
+void FourierOriginShiftForwardProcessor::process_inplace(EMData * image)
+{
+	if ( !image->is_complex() ) throw ImageFormatException("Can not Fourier origin shift an image that is not complex");
+	
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	int nxy = nx*ny;
+	
+	if ( ny == 1 && nz == 1 ){
+		cout << "Warning- attempted	Fourier origin shift a 1D image - no action taken" << endl;
+		return;
+	}
+	
+	int yodd = (ny%2==1);
+	int zodd = (nz%2==1);
+	
+	float* rdata = image->get_data();
+	
+	float tmp[2];
+	float* p1;
+	float* p2;
+		
+	if (yodd){
+		// In 3D this is swapping the bottom slice (with respect to the y direction) and the middle slice,
+		// shifting all slices below the middle slice down one. In 2D it is equivalent, but in terms of rows.
+		float prev[2];
+		for( int s = 0; s < nz; s++ ) {
+			for( int c =0; c < nx; c += 2 ) {
+				prev[0] = rdata[s*nxy+c];
+				prev[1] = rdata[s*nxy+c+1];	
+				for( int r = ny/2; r >= 0; --r ) {
+					float* p1 = &rdata[s*nxy+r*nx+c];
+					tmp[0] = p1[0];
+					tmp[1] = p1[1];
+						
+					p1[0] = prev[0];
+					p1[1] = prev[1];
+						
+					prev[0] = tmp[0];
+					prev[1] = tmp[1];
+				}
+			}
+		}
+	}
+			
+	// 3D - Shift slices correctly in the y direction, 2D - shift rows
+	for( int s = 0; s < nz; ++s ) {
+		for( int r = 0; r < ny/2; ++r ) {
+			for( int c =0; c < nx; c += 2 ) {
+				p1 = &rdata[s*nxy+r*nx+c];
+				p2 = &rdata[s*nxy+(r+ny/2+yodd)*nx+c];
+					
+				tmp[0] = p1[0];
+				tmp[1] = p1[1];
+					
+				p1[0] = p2[0];
+				p1[1] = p2[1];
+					
+				p2[0] = tmp[0];
+				p2[1] = tmp[1];
+			}
+		}
+	}
+	
+	if ( nz != 1 )  {
+		if (zodd){
+			// Swap the front slice (with respect to the z direction) and the middle slice
+			// shifting all slices behind the middles slice towards the front slice 1 voxel.
+			float prev[2];
+			for( int r = 0; r < ny; ++r ) {
+				for( int c =0; c < nx; c += 2 ) {
+					prev[0] = rdata[r*nx+c];
+					prev[1] = rdata[r*nx+c+1];	
+					for( int s = nz/2; s >= 0; --s ) {
+						float* p1 = &rdata[s*nxy+r*nx+c];
+						tmp[0] = p1[0];
+						tmp[1] = p1[1];
+					
+						p1[0] = prev[0];
+						p1[1] = prev[1];
+					
+						prev[0] = tmp[0];
+						prev[1] = tmp[1];
+					}
+				}
+			}
+		}
+		
+		// Shift slices correctly in the y direction
+		for( int s = 0; s < nz/2; ++s ) {
+			for( int r = 0; r < ny; ++r ) {
+				for( int c =0; c < nx; c += 2 ) {
+					p1 = &rdata[s*nxy+r*nx+c];
+					p2 = &rdata[(s+nz/2+zodd)*nxy+r*nx+c];
+					
+					tmp[0] = p1[0];
+					tmp[1] = p1[1];
+					
+					p1[0] = p2[0];
+					p1[1] = p2[1];
+					
+					p2[0] = tmp[0];
+					p2[1] = tmp[1];
+				}
+			}
+		}
+	}
+}
+
 void FourierOriginShiftProcessor::process_inplace(EMData * image)
 {
 	// On TKCVS it will say that d.woolford did all of this, but I just beautified the code, nothing more. It was v.hard to read.
@@ -2682,18 +2911,22 @@ void Phase180Processor::swap_corners_180(EMData * image)
 		// Swap the bottom left and top right corners
 		for ( int r = 0; r < ny/2; ++r ) {
 			for ( int c = 0; c < nx/2; ++c) {
-				float tmp = rdata[r*nx + c];
-				rdata[r*nx + c] = rdata[(r+ny/2+yodd)*nx + c + nx/2+xodd];
-				rdata[(r+ny/2+yodd)*nx + c + nx/2+xodd] = tmp;
+				int idx1 = r*nx + c;
+				int idx2 = (r+ny/2+yodd)*nx + c + nx/2+xodd;
+				float tmp = rdata[idx1];
+				rdata[idx1] = rdata[idx2];
+				rdata[idx2] = tmp;
 			} 
 		}
 		
 		// Swap the top left and bottom right corners
 		for ( int r = ny-1; r >= (ny/2+yodd); --r ) {
 			for ( int c = 0; c < nx/2; ++c) {
-				float tmp = rdata[r*nx + c];
-				rdata[r*nx + c] = rdata[(r-ny/2-yodd)*nx + c + nx/2+xodd];
-				rdata[(r-ny/2-yodd)*nx + c+ nx/2+xodd] = tmp;
+				int idx1 = r*nx + c;
+				int idx2 = (r-ny/2-yodd)*nx + c + nx/2+xodd;
+				float tmp = rdata[idx1];
+				rdata[idx1] = rdata[idx2];
+				rdata[idx2] = tmp;
 			}
 		}
 	}
@@ -2775,7 +3008,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			int r = ny/2;
 			for ( int c = 0; c < nx/2; ++c ) {
 				int idx1 = r*nx + c;
-				int idx2 = r*nx + c + nx/2+(int) xodd;
+				int idx2 = r*nx + c + nx/2+ xodd;
 				tmp = rdata[idx1];
 				rdata[idx1] = rdata[idx2];
 				rdata[idx2] = tmp;
@@ -2787,7 +3020,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			int c = nx/2;
 			for (  int r = 0; r < ny/2; ++r ) {
 				int idx1 = r*nx + c;
-				int idx2 = (r+ny/2+(int)yodd)*nx + c;
+				int idx2 = (r+ny/2+yodd)*nx + c;
 				tmp = rdata[idx1];
 				rdata[idx1] = rdata[idx2];
 				rdata[idx2] = tmp;
@@ -2803,7 +3036,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			for( int s = 0; s < nz/2; ++s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
 					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s+nz/2+(int)zodd)*nxy+(r+ny/2+(int)yodd)*nx+c;
+					int idx2 = (s+nz/2+zodd)*nxy+(r+ny/2+yodd)*nx+c;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -2813,7 +3046,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int r = 0; r < ny/2; ++r ) {
 					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s-nz/2-(int)zodd)*nxy+(r+ny/2+(int)yodd)*nx+c;
+					int idx2 = (s-nz/2-zodd)*nxy+(r+ny/2+yodd)*nx+c;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -2826,7 +3059,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			for( int s = 0; s < nz/2; ++s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
 					int idx1 = s*nxy+r*nx+c;
-					int idx2 =(s+nz/2+(int)zodd)*nxy+r*nx+c+nx/2+(int)xodd;
+					int idx2 =(s+nz/2+zodd)*nxy+r*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -2836,7 +3069,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			for( int s = nz-1; s >= (nz/2+zodd); --s ) {
 				for ( int c = 0; c < nx/2; ++c ) {
 					int idx1 = s*nxy+r*nx+c;
-					int idx2 = (s-nz/2-(int)zodd)*nxy+r*nx+c+nx/2+(int)xodd;
+					int idx2 = (s-nz/2-zodd)*nxy+r*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -2849,7 +3082,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			for( int r = 0; r < ny/2; ++r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
 					int idx1 = s*nxy+r*nx+c;
-					int idx2 = s*nxy+(r+ny/2+(int)yodd)*nx+c+nx/2+(int)xodd;
+					int idx2 = s*nxy+(r+ny/2+yodd)*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -2859,7 +3092,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			for( int r = ny-1; r >= (ny/2+yodd); --r ) {
 				for ( int c = 0; c < nx/2; ++c ) {
 					int idx1 = s*nxy+r*nx+c;
-					int idx2 = s*nxy+(r-ny/2-(int)yodd)*nx+c+nx/2+(int)xodd;
+					int idx2 = s*nxy+(r-ny/2-yodd)*nx+c+nx/2+xodd;
 					tmp = rdata[idx1];
 					rdata[idx1] = rdata[idx2];
 					rdata[idx2] = tmp;
@@ -2906,9 +3139,10 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 		}
 		// now the operation is straight forward
 		for ( int i = 0; i < nx/2; ++i ) {
+			int idx = i+nx/2+xodd;
 			float tmp = rdata[i];
-			rdata[i] = rdata[i+nx/2+xodd];
-			rdata[i+nx/2+xodd] = tmp;
+			rdata[i] = rdata[idx];
+			rdata[idx] = tmp;
 		}
 		
 	}
@@ -2921,8 +3155,9 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 				float last_val = rdata[(ny-1)*nx + c];
 				float tmp;
 				for ( int r = ny/2; r < ny; ++r ){
-					tmp = rdata[r*nx+c];
-					rdata[r*nx+c] = last_val;
+					int idx =r*nx+c;
+					tmp = rdata[idx];
+					rdata[idx] = last_val;
 					last_val = tmp;
 				}
 			}
@@ -2935,8 +3170,9 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 				float last_val = rdata[(r+1)*nx -1];
 				float tmp;
 				for ( int c = nx/2; c < nx; ++c ){
-					tmp = rdata[r*nx+c];
-					rdata[r*nx+c] = last_val;
+					int idx =r*nx+c;
+					tmp = rdata[idx];
+					rdata[idx] = last_val;
 					last_val = tmp;
 				}
 			}
@@ -2957,8 +3193,9 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 				for (int c = 0; c < nx; ++c) {
 					float last_val = rdata[(nz-1)*nxy+r*nx+c];
 					for (int s = nz/2; s < nz; ++s) {
-						tmp = rdata[s*nxy+r*nx+c];
-						rdata[s*nxy+r*nx+c] = last_val;
+						int idx = s*nxy+r*nx+c;
+						tmp = rdata[idx];
+						rdata[idx] = last_val;
 						last_val = tmp;
 					}
 				}
@@ -2971,8 +3208,9 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 				for (int c = 0; c < nx; ++c) {
 				float last_val = rdata[s*nxy+(ny-1)*nx+c];
 					for (int r = ny/2; r < ny; ++r){
-						tmp = rdata[s*nxy+r*nx+c];
-						rdata[s*nxy+r*nx+c] = last_val;
+						int idx = s*nxy+r*nx+c;
+						tmp = rdata[idx];
+						rdata[idx] = last_val;
 						last_val = tmp;
 					}
 				}
@@ -2985,8 +3223,9 @@ void Phase180ForwardProcessor::process_inplace(EMData * image)
 				for (int r = 0; r < ny; ++r) {
 					float last_val = rdata[s*nxy+r*nx+nx-1];
 					for (int c = nx/2; c < nx; ++c){
-						tmp = rdata[s*nxy+r*nx+c];
-						rdata[s*nxy+r*nx+c] = last_val;
+						int idx = s*nxy+r*nx+c;
+						tmp = rdata[idx];
+						rdata[idx] = last_val;
 						last_val = tmp;
 					}
 				}
@@ -3037,9 +3276,10 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 		}
 		// now the operation is straight forward
 		for ( int i = 0; i < nx/2; ++i ) {
+			int idx = i + nx/2;
 			float tmp = rdata[i];
-			rdata[i] = rdata[i+nx/2];
-			rdata[i+nx/2] = tmp;
+			rdata[i] = rdata[idx];
+			rdata[idx] = tmp;
 		}	
 	}
 	else if ( nz == 1 ){
@@ -3099,8 +3339,9 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 				for (int r = 0; r < ny; ++r) {
 					float last_val = rdata[s*nxy+r*nx+nx/2];
 					for (int c = nx-1; c >= nx/2; --c){
-						tmp = rdata[s*nxy+r*nx+c];
-						rdata[s*nxy+r*nx+c] = last_val;
+						int idx = s*nxy+r*nx+c;
+						tmp = rdata[idx];
+						rdata[idx] = last_val;
 						last_val = tmp;
 					}
 				}
@@ -3113,8 +3354,9 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 				for (int c = 0; c < nx; ++c) {
 					float last_val = rdata[s*nxy+ny/2*nx+c];
 					for (int r = ny-1; r >= ny/2; --r){
-						tmp = rdata[s*nxy+r*nx+c];
-						rdata[s*nxy+r*nx+c] = last_val;
+						int idx = s*nxy+r*nx+c;
+						tmp = rdata[idx];
+						rdata[idx] = last_val;
 						last_val = tmp;
 					}
 				}
@@ -3127,8 +3369,9 @@ void Phase180BackwardProcessor::process_inplace(EMData * image)
 				for (int c = 0; c < nx; ++c) {
 					float last_val = rdata[nz/2*nxy+r*nx+c];
 					for (int s = nz-1; s >= nz/2; --s) {
-						tmp = rdata[s*nxy+r*nx+c];
-						rdata[s*nxy+r*nx+c] = last_val;
+						int idx = s*nxy+r*nx+c;
+						tmp = rdata[idx];
+						rdata[idx] = last_val;
 						last_val = tmp;
 					}
 				}

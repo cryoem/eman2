@@ -44,7 +44,7 @@ class TestProcessor(unittest.TestCase):
     def test_get_processor_list(self):
         """test get processor list .........................."""
         processor_names = Processors.get_list()
-        self.assertEqual(len(processor_names), 128)
+        self.assertEqual(len(processor_names), 130)
 
         try:
             f2 = Processors.get("_nosuchfilter___")
@@ -1232,31 +1232,25 @@ class TestProcessor(unittest.TestCase):
 		
 		e.process_inplace('xform.fourierorigin')
 
-		"""test xform.fourierorigin ........................."""
-		
-		#THIS TEST WILL BE FIXED SOON BY DAVE
-		
-		# note - Most test operations involving images should rigorously test all permutations of even and odd dimensions
-		# as is implemented here
 		n = 16
-		for ii in range(0,2):
-			for jj in range(0,2):
-				for kk in range(0,2):
+		# test that 2D works
+		for i in [n,n+1,n+2,n+3]:
+			for j in [n,n+1,n+2,n+3]:
+				for k in [1,n,n+1,n+2,n+3]:
 					e = EMData()
-					e.set_size(n+ii,n+jj,n+kk)
+					e.set_size(i,j,k)
+				
 					e.process_inplace("testimage.noise.uniform.rand")
-		
 					e.do_fft_inplace()
 			
 					d = e.copy()
-					
-					e.process_inplace("xform.fourierorigin")
-					e.process_inplace("xform.fourierorigin")
-					
-					for k in range(e.get_xsize()):
-						for j in range(e.get_ysize()):
-							for i in range(e.get_zsize()):
-								self.assertEqual(e.get_3dview()[i][j][k], d.get_3dview()[i][j][k])
+	
+					e.process_inplace("xform.fourierorigin.forward")
+					e.process_inplace("xform.fourierorigin.backward")
+					for kk in range(e.get_zsize()):
+						for jj in range(e.get_ysize()):
+							for ii in range(e.get_xsize()):
+								self.assertEqual(e.get_value_at(ii,jj,kk), d.get_value_at(ii,jj,kk))
 
     def test_xform_phaseorigin_twostage(self):
 		
@@ -1302,7 +1296,6 @@ class TestProcessor(unittest.TestCase):
 							for ii in range(i):
 								self.assertEqual(e.get_value_at(ii,jj,kk), f.get_value_at(ii,jj,kk))
 
-			
     def test_xform_phaseorigin(self):
         """test xform.phaseorigin processor ................."""
         e = EMData()
