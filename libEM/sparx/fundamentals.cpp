@@ -164,6 +164,7 @@ Output: 1-2-3D real image with the result
 	EMData* 
 	fourierproduct(EMData* f, EMData* g, fp_flag flag, fp_type ptype, const bool phase_fac_mult) {
 		int normfact;
+		//std::complex<float> phase_mult;
 		// Not only does the value of "flag" determine how we handle
 		// periodicity, but it also determines whether or not we should
 		// normalize the results.  Here's some convenience bools:
@@ -190,6 +191,7 @@ Output: 1-2-3D real image with the result
 		if (!f->is_real()) nx = (nx - 2 + (f->is_fftodd() ? 1 : 0)); 
 
 		int npad = (flag>2) ? 2 : 1; // amount of padding used
+
 		// the 2x padding is hardcoded for now
 		// these are padded dimensions
 		const int nxp = npad*nx;
@@ -227,7 +229,7 @@ Output: 1-2-3D real image with the result
 		gp->set_array_offsets(1,1,1);
 		
 		// If the phase factor multiplication flag is true, use this approach
-		if (phase_fac_mult ) {
+		if (phase_fac_mult) {
 			//  Multiply two functions (the real work of this routine)
 			int itmp= nx/2;
 			float sx  = float(-twopi*float(itmp)/float(nxp));
@@ -324,10 +326,13 @@ Output: 1-2-3D real image with the result
 					}
 					break;
 				case CORRELATION:
+					//phase_mult = 1;
 					for (int iz = 1; iz <= nzp; iz++) {
 						for (int iy = 1; iy <= nyp; iy++) {
 							for (int ix = 1; ix <= lsd2; ix++) {
 								fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(gp->cmplx(ix,iy,iz));
+								//fp->cmplx(ix,iy,iz)= fp->cmplx(ix,iy,iz)*conj(gp->cmplx(ix,iy,iz))*phase_mult;
+								//phase_mult = -phase_mult;
 							}
 						}
 					}
