@@ -80,6 +80,10 @@ Various CTF-related operations on images."""
 	
 	ps1d=[i.calc_rad_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
 	
+	if options.gui : 
+		gui=GUIctf(args,ps1d,ps2d)
+		gui.run()
+
 	
 def powspec(stackfile):
 	"""This routine will read the images from the specified file, and compute the average
@@ -115,9 +119,13 @@ except:
 	QtGui.QWidget=QWidget
 
 
-class GUIctf:
-	def __init__(self,imagefsp,boxes,thr,boxsize=-1):
-		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets"""
+class GUIctf(QtGui.QWidget):
+	def __init__(self,names,pow1d,pow2d):
+		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
+		names is a list of strings with the names for each power spectrum
+		pow1d is a list of the 1-D power spectra of the images
+		pow2d is a list of EMData objects with the 2-D power spectra
+		"""
 		try:
 			from emimage import EMImage,get_app
 		except:
@@ -129,15 +137,29 @@ class GUIctf:
 			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
 			sys.exit(1)
 		
+		QtGui.QWidget.__init__(self,None)
+		
 		self.app=get_app()
 		
-		self.guiim=EMImage()
+		self.names=names
+		self.pow1d=pow1d
+		self.pow2d=pow2d
+		if names and (len(names)!=len(pow1d) or len(names)!=len(pow2d)) :
+			raise Exception,"Uneven number of data sets in GUIctf (%d,%d,%d)"%(len(names),len(pow1d),len(pow2d))
+		
+		if not names :
+			self.names=[]
+			self.pow1d=[]
+			self.pow2d=[]
+		
+		try: self.guiim=EMImage(pow2d[0])
+		except: self.guiim=EMImage()
 		self.guiplot=EMPlot2D()
 		
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
 		self.guiim.connect(self.guiim,QtCore.SIGNAL("mouseup")  ,self.imgmouseup)
-		self.guimx.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
+		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
 		self.guiim.mmode="app"
 		self.guictl=GUIctfPanel(self)
@@ -152,10 +174,49 @@ class GUIctf:
 			#pass
 		
 		self.guiim.show()
-		self.guimx.show()
+		self.guiplot.show()
 		self.guictl.show()
+
+		# This object is itself a widget we need to set up
+		self.hbl = QtGui.QHBoxLayout(self)
+		self.hbl.setMargin(0)
+		self.hbl.setSpacing(6)
+		self.hbl.setObjectName("hbl")
 		
-		self.boxupdate()
+		# plot list
+		self.setlist=QtGui.QListWidget(self)
+		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
+		self.hbl.addWidget(self.setlist)
+		
+		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl.setMargin(0)
+		self.vbl.setSpacing(6)
+		self.vbl.setObjectName("vbl")
+		self.hbl.addLayout(self.vbl)
+		
+		self.samp = ValSlider(self,(0,5.0),"Amp:",0)
+		self.vbl.addWidget(self.amp)
+		
+		self.sdefocus=ValSlider(self,(0,5.0),"Defocus:",0)
+		self.vbl.addWidget(self.defocus)
+		
+		self.sbfactor=ValSlider(self,(0,500),"B factor:",0)
+		self.vbl.addWidget(self.defocus)
+		
+		QtCore.QObject.connect(self.samp, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+
+	def newdata(self,name,p1d,p2d):
+		self.names.append(name)
+		self.pow1d.append(p1d)
+		self.pow2d.append(p2d)
+		updatedata()
+		
+	def updatedata(self):
+		"""This will make sure the various widgets properly show the current data sets"""
+		self.setlist.clear()
+		for i in self.names:
+			self.setlist.addItem(i)
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
@@ -184,16 +245,16 @@ class GUIctf:
 		
 		return
 
-class GUIctfPanel(QtGui.QWidget):
-	def __init__(self,target) :
+#class GUIctfPanel(QtGui.QWidget):
+	#def __init__(self,target) :
 		
-		QtGui.QWidget.__init__(self,None)
-		self.target=target
+		#QtGui.QWidget.__init__(self,None)
+		#self.target=target
 		
-		self.vbl = QtGui.QVBoxLayout(self)
-		self.vbl.setMargin(0)
-		self.vbl.setSpacing(6)
-		self.vbl.setObjectName("vbl")
+		#self.vbl = QtGui.QVBoxLayout(self)
+		#self.vbl.setMargin(0)
+		#self.vbl.setSpacing(6)
+		#self.vbl.setObjectName("vbl")
 		
 		#self.info = QtGui.QLabel("%d Boxes"%len(target.boxes),self)
 		#self.vbl.addWidget(self.info)
