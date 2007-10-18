@@ -22,12 +22,12 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(norm_pad_ft_overloads_3_4, EMAN::norm_pad_ft, 3,
 BOOST_PYTHON_MODULE(libpyFundamentals2)
 {
     enum_< EMAN::fp_flag >("fp_flag")
-        .value("PADDED_NORMALIZED_LAG", EMAN::PADDED_NORMALIZED_LAG)
-        .value("PADDED_NORMALIZED", EMAN::PADDED_NORMALIZED)
+        .value("CIRCULANT", EMAN::CIRCULANT)
         .value("CIRCULANT_NORMALIZED", EMAN::CIRCULANT_NORMALIZED)
         .value("PADDED", EMAN::PADDED)
-        .value("CIRCULANT", EMAN::CIRCULANT)
+        .value("PADDED_NORMALIZED", EMAN::PADDED_NORMALIZED)
         .value("PADDED_LAG", EMAN::PADDED_LAG)
+        .value("PADDED_NORMALIZED_LAG", EMAN::PADDED_NORMALIZED_LAG)
     ;
 
     enum_< EMAN::kernel_shape >("kernel_shape")
