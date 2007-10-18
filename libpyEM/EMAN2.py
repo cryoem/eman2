@@ -283,7 +283,7 @@ def plot(data,show=1,size=(800,600),path="plot.png"):
 # Get the uniform dimension of the (square) input images. For instance
 # if the images are all 128x128 this will return 128. If the dimensions of the
 # images are not uniform an error is printed and the program exits.
-def gimme_image_2dimensions( imagefilename ):
+def gimme_image_dimensions2D( imagefilename ):
 	
 	#pdb.set_trace()
 	
@@ -309,6 +309,77 @@ def gimme_image_2dimensions( imagefilename ):
 	# if we make it here all the image dimensions are uniform and equal in all directions, it is safe to return xsize or ysize
 	return (xsize, ysize)
 
+# get the three dimensions of a an image
+def gimme_image_dimensions3D( imagefilename ):
+	
+	#pdb.set_trace()
+	
+	read_header_only = True
+	e = EMData();
+	e.read_image(imagefilename,0, read_header_only)
+	
+	xsize = e.get_xsize()
+	ysize = e.get_ysize()
+	zsize = e.get_ysize()
+	
+	return (xsize, ysize,zsize)
+
+# A function for removing a file from disk
+# adapted so that if you want to remove an img/hed couple it will automatically remove both
+def remove_file( file_name ):
+	
+	if ( os.path.exists(file_name) ):
+		
+		parts = file_name.split('.')
+		
+		file_tag = parts[len(parts)-1]
+			
+		if ( file_tag == 'hed' or file_tag == 'img' ):
+			# get everything that isn't the tag
+			name = ''
+			for i in range(0,len(parts)-1):
+				name = name + parts[i] + '.'
+				
+			os.remove(name+'hed')
+			os.remove(name+'img')
+		else:
+			os.remove(file_name)
+		return True
+		
+	else:
+		print "Warning, attempt to remove file (%s) that does not exist. No action taken." %file_name
+		return False
+
+# A function for checking if a file exists
+# basically wraps os.path.exists, but when an img or hed file is the argument, it
+# checks for the existence of both images
+def file_exists( file_name ):
+	
+	if ( os.path.exists(file_name) ):
+		
+		parts = file_name.split('.')
+		file_tag = parts[len(parts)-1]
+		
+		# get everything that isn't the tag
+		name = ''
+		for i in range(0,len(parts)-1):
+			name = name + parts[i] + '.'
+
+		if ( file_tag == 'hed' ):
+			if ( not os.path.exists(name+'img') ):
+				print "Warning - %s does not exist" %(name+'img')
+				return False
+			else: return True;
+		elif (file_tag == 'img'):
+			if (not os.path.exists(name+'hed')):
+				print "Warning - %s does not exist" %(name+'hed')
+				return False
+			else: return True;
+		else:
+			return True
+		
+	else:
+		return False
 
 def qplot(img):
 	"""This will plot a 1D image using qplot"""

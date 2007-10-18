@@ -85,14 +85,11 @@ def main():
 	parser.add_option("--projector", dest = "projector", default = "standard",help = "Projector to use")
 	parser.add_option("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
 	parser.add_option("--numproj", dest = "numproj", type = "float",help = "The number of projections to generate - this is opposed to using the prop argument")
-	#parser.add_option("--mode", dest = "mode", type = "int", default = 2, help = "Default is real-space projection, this specifies various Fourier modes")
-	#parser.add_option("--angletype", dest = "angletype", default = "EMAN", help = "Angle convention to use: [EMAN, SPIDER].  EMAN is the default")
-	 
-	
-	#parser.add_option("--mask", dest = "mask", type = "float", default = 0.0, help = "Specify a circular mask radius for the projections")
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_option("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
+	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	
 	(options, args) = parser.parse_args()
-	
 		
 	if len(args) < 1:
 		parser.error("ERROR: No input file given")
@@ -102,6 +99,18 @@ def main():
 	if not os.path.exists(args[0]):
 		parser.error("Input file %s does not exist" %args[0])
 		exit(1)
+	
+	if ( os.path.exists(options.outfile )):
+		if ( options.force and options.append):
+			parser.error( "cannot specify both append and force" )
+			exit(1)
+
+		if ( options.force ):
+			# call this function which deals with the img/hed couple issue
+			remove_file(options.outfile)
+		elif (options.append == False):
+			parser.error( "Output file exists, use -f to overwrite or -a to append. No action taken" )
+			exit(1)
 	
 	# Check valid symmetry or whether the random argument has been given
 	if options.sym and options.random:
@@ -166,8 +175,12 @@ def main():
 	data = EMData()
 	data.read_image(args[0])
 	# generate and save all the projections to disk - that's it, that main job is done
+	if ( options.verbose ):
+		print "Generating and saving projections..."
 	generate_and_save_projections(options, data, eulers, options.smear, options.phitoo)
-	
+	if ( options.verbose ):
+		print "%s...done" %progname
+		
 	if options.verifymirror:
 		if options.sym:
 			verify_mirror_test(data, eulers, options.sym, options.projector)
@@ -402,7 +415,8 @@ def generate_and_save_projections(options,data,eulers,smear=0, phiprop=0):
 		
 		pcopy = p;
 		
-		print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
+		if (options.verbose):
+			print "%d\t%4.2f\t%4.2f\t%4.2f" % (i, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg)
 
 
 def verify_mirror_test(data, eulers, symmetry, projector):

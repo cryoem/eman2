@@ -61,12 +61,17 @@ def main():
 	parser.add_option("--verbose","-v",action="store_true",help="Verbose display during run",default=False)
 	parser.add_option("--lowmem",action="store_true",help="prevent the bulk reading of the reference images - this will save memory but potentially increase CPU time",default=False)
 	parser.add_option("--init",action="store_true",help="Initialize the output matrix file before performing 'range' calculations",default=False)
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	(options, args) = parser.parse_args()
 	
+
 	if len(args)<3 : parser.error("Input and output files required")
 	
 	if os.path.exists(args[2]):
-		parser.error("File %s exists, will not write over, exiting" %args[2])
+		if (options.force):
+			remove_file(args[2])
+		else:
+			parser.error("File %s exists, will not write over, exiting" %args[2])
 	
 	E2n=E2init(sys.argv)
 	

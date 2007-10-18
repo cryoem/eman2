@@ -42,7 +42,7 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """%prog [options] <simMatrixIn> <simMatrixOut>
+	usage = """%prog <simMatrixIn> <simMatrixOut> [options]
 	Takes a similarity matrix that has been created between reprojections-input (col) and particles-input (row) stacks of 2-D images.
 	Typically these have been created via e2simmx such as
 	 e2simmx.py proj.hed part.hed simMatrix.hed --saveali --align=rotate_translate:maxshift=5
@@ -53,12 +53,18 @@ def main():
 	
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 5)", default=5)
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	
 	(options, args) = parser.parse_args()
 #	print(args);
-	print(len(args));
 	if len(args)<2 : parser.error("Input and output files required")
 	
+	if os.path.exists(args[1]):
+		if (options.force):
+			remove_file(args[1])
+		else:
+			parser.error("File %s exists, will not write over, exiting" %args[1])
 	
 #      Setion 0.
 #      read in the 4 images from <simMatrixIn> which correspond to 
@@ -74,6 +80,8 @@ def main():
 		print "Error, the similarity matrix did not contain 4 images - be sure to use the --saveali argument when running e2simmx.py"
 		exit(1)
 
+	if ( options.verbose ):
+		print "Reading image data..."
 	Simimg=EMData();
 	Simimg.read_image(args[0],0)
 	TransxImg=EMData();
@@ -90,6 +98,8 @@ def main():
 #     get the average alignment for each particle, and the maximum; renormalize
 #     the values of the similarities to get simMatB
 #           create lists that will eventually be used to write out the images
+	if ( options.verbose ):
+		print "Getting similarity statistics..."
 	msimMat=range(NumPart)
 	for iPart in range(NumPart):
 		vv=[Simimg.get_value_at(iProj, iPart) for iProj in range(NumProj)];
@@ -129,6 +139,9 @@ def main():
 #      iii) get corresponding  transx, transy, rot
 #      iv) rescale the weights to sum to unity (over the NumPeaks values)
 	
+	if ( options.verbose ):
+		print "Determining particle classes and contribution weights..."
+	
 	for iPart in range(NumPart):
 		vv=[ simMatB[j][iPart] for j in range(NumProj)];
 		vvCp=[ vv[j] for j in range(NumProj)];
@@ -153,6 +166,8 @@ def main():
 	
 #	Section 3.
 #       write to outFile	
+	if ( options.verbose ):
+		print "Writing output data..."
 	
 	writeListToImage(ReturnPart,   args[1]   ,0,NumPeaks,NumPart)
 	writeListToImage(ReturnWt,     args[1]   ,1,NumPeaks,NumPart)
@@ -160,6 +175,8 @@ def main():
 	writeListToImage(ReturnTransy, args[1]   ,3,NumPeaks,NumPart)
 	writeListToImage(ReturnRot,    args[1]   ,4,NumPeaks,NumPart)
 
+	if ( options.verbose ):
+		print "e2classify...done"
 
 def writeListToImage(inList,outFileString,location,NumPeaks,NumPart):
 	"""Compares one image (target) to a list of many images (reflist). Returns """

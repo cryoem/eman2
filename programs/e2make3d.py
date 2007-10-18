@@ -59,11 +59,12 @@ def main():
 	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct")
 	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction")
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
-	parser.add_option("--quiet", dest="quiet", default=False, action="store_true",help="Quiet output")
+	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--hard", type=float, dest="hard", default=0, help="This specifies how well the class averages must match the model to be included")
 	parser.add_option("--no_wt", action="store_true", dest="no_wt", default=False, help="Turn weighting off")
 	parser.add_option("--iter", type=int, dest="iter", default=3, help="Set the number of iterations (default is 3)")
 	parser.add_option("--mask", type=int, dest="mask", help="Real-space mask radius")
+	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 
 
 	# options that don't work and need to be verified for inclusion in EMAN2
@@ -92,6 +93,13 @@ def main():
 	
 	options.input_file = args[0]
 	total_images=EMUtil.get_image_count(options.input_file)
+	
+	if ( os.path.exists(options.filename )):
+		if ( options.force ):
+			remove_file( options.filename)
+		else:
+			print "Output file exists, use -f to overwrite. No action taken"
+			exit(1)
 	
 	# if weighting is being used, this code checks to make sure atleast one image has an attribute "ptcl_repr" that is
 	# greater than zero. If this is not the case, the insertion code will think there is nothing to insert...
@@ -168,11 +176,11 @@ def main():
 
 	if (options.filename==""):
 		output.write_image("threed.mrc")
-		if not(options.quiet):
+		if not(options.verbose):
 			print "Output File: threed.mrc"
 	else:
 		output.write_image(options.filename)
-		if not(options.quiet):
+		if not(options.verbose):
 			print "Output File: "+options.filename
 
 	E2end(logger)
@@ -194,7 +202,7 @@ def wiener_fourier_reconstructor(images, options):
 # maybe add ('s to insert_slice check #2; "!=" is evaled after the "||"
 # where is vnx assigned to anything?
 def reverse_gridding_reconstructor(images, options):
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Setting up the reconstructor"
 	recon=Reconstructors.get("reverse_gridding",{"weight":1.0,   # options.noweight, 
 												"size":images[0].get_xsize(),
@@ -209,7 +217,7 @@ def reverse_gridding_reconstructor(images, options):
 										d.get_attr("euler_alt"), #**2,
 										d.get_attr("euler_phi")))
 
-		if not(options.quiet):
+		if not(options.verbose):
 			sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g\n" %
 							(i+1,len(images),d.get_attr("IMAGIC.imgnum"),
 							d.get_attr("euler_alt")*180.0/math.pi,
@@ -224,7 +232,7 @@ def reverse_gridding_reconstructor(images, options):
 
 #-----------------------------------------  should work
 def pawel_back_projection_reconstruction(images, options):
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Initializing the reconstructor"
 	if (options.pad == 0):
 		options.pad = 1;
@@ -243,7 +251,7 @@ def pawel_back_projection_reconstruction(images, options):
 										d.get_attr("euler_alt"),
 										d.get_attr("euler_phi")))
 		
-		if not(options.quiet):
+		if not(options.verbose):
 			sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g\n" %
 							(i+1,len(images),d.get_attr("IMAGIC.imgnum"),
 							d.get_attr("euler_alt")*180.0/math.pi,
@@ -260,7 +268,7 @@ def pawel_back_projection_reconstruction(images, options):
 
 def back_projection_reconstruction(options):
 	
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Initializing the reconstructor"
 
 	a = parsemodopt(options.recon_type)
@@ -268,7 +276,7 @@ def back_projection_reconstruction(options):
 	recon=Reconstructors.get(a[0], a[1])
 
 	params = recon.get_params()
-	(xsize, ysize ) = gimme_image_2dimensions( options.input_file );
+	(xsize, ysize ) = gimme_image_dimensions2D( options.input_file );
 	if ( xsize != ysize ):
 		print "Error, back space projection currently only works for images with uniform dimensions"
 		exit(1)
@@ -301,7 +309,7 @@ def back_projection_reconstruction(options):
 		t = Transform3D(d.get_attr("euler_az"), d.get_attr("euler_alt"), d.get_attr("euler_phi"))
 		recon.insert_slice(d, t)
 
-		if not(options.quiet):
+		if not(options.verbose):
 			print "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2g %6.2g" %(
 					(i+1,total_images,d.get_attr("IMAGIC.imgnum"),
 					d.get_attr("euler_alt"),
@@ -341,14 +349,14 @@ def back_projection_reconstruction(options):
 		
 #----------------------------------------- works
 def fourier_reconstruction(options):
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Initializing the reconstructor ..."
 	
 	# Get the reconstructor and initialize it correctly
 	a = parsemodopt(options.recon_type)
 	recon=Reconstructors.get(a[0], a[1])
 	params = recon.get_params()
-	(xsize, ysize ) = gimme_image_2dimensions( options.input_file );
+	(xsize, ysize ) = gimme_image_dimensions2D( options.input_file );
 	params["x_in"] = xsize;
 	params["y_in"] = ysize;
 	params["sym"] = options.sym
@@ -376,7 +384,7 @@ def fourier_reconstruction(options):
 				##            SNR[0:]=[tmp.get_data()]  python won't call funcs that return float*
 				#SNR=SNR+[tmp]
 
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Inserting Slices"
 	
 	for j in xrange(0,options.iter): #4):     #change back when the thr issue solved
@@ -439,7 +447,7 @@ def fourier_reconstruction(options):
 			#transform = Transform3D(EULER_EMAN,image.get_attr("euler_alt"),image.get_attr("euler_az"),image.get_attr("euler_phi"))
 			failure = recon.insert_slice(image,transform)
 			
-			if not(options.quiet):
+			if not(options.verbose):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 								(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
 								image.get_attr("euler_az"),
@@ -468,10 +476,10 @@ def fourier_reconstruction(options):
 	#if (options.goodbad):
 		#print "print log msgs"
 
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Inverting 3D Fourier volume to generate the real space reconstruction"
 	output = recon.finish()
-	if not(options.quiet):
+	if not(options.verbose):
 		print "Finished Reconstruction"
 		
 	#if(options.savenorm):   # need to alter reconstructor class to get access to this
