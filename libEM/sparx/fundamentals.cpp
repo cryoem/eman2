@@ -234,15 +234,15 @@ Output: 1-2-3D real image with the result
 			int itmp = nx/2;
 			//float sx  = float(-twopi*float(itmp)/float(nxp));
 			float sxn = 2*float(itmp)/float(nxp);
-			float sx = M_PI*sxn;
+			float sx = -M_PI*sxn;
 			itmp = ny/2;
 			//float sy  = float(-twopi*float(itmp)/float(nyp));
 			float syn = 2*float(itmp)/float(nyp);
-			float sy = M_PI*syn;
+			float sy = -M_PI*syn;
 			itmp = nz/2;
 			//float sz  = float(-twopi*float(itmp)/float(nzp));
 			float szn = 2*float(itmp)/float(nzp);
-			float sz = M_PI*szn;
+			float sz = -M_PI*szn;
 			if ( std::abs(sxn-1.0)<1e-5 && (std::abs(syn-1.0)<1e-5 || ny==1 ) && (std::abs(szn-1.0)<1e-5 || nz==1 ) ) {
 				switch (ptype)
 				{
