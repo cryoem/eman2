@@ -231,76 +231,143 @@ Output: 1-2-3D real image with the result
 		// If the phase factor multiplication flag is true, use this approach
 		if (phase_fac_mult) {
 			//  Multiply two functions (the real work of this routine)
-			int itmp= nx/2;
-			float sx  = float(-twopi*float(itmp)/float(nxp));
-			itmp= ny/2;
-			float sy  = float(-twopi*float(itmp)/float(nyp));
-			itmp= nz/2;
-			float sz  = float(-twopi*float(itmp)/float(nzp));
-			switch (ptype)
-			{
-				case AUTOCORRELATION:
-				// fpmat := |fpmat|^2
-				// Note nxp are padded dimensions
-					for (int iz = 1; iz <= nzp; iz++) {
-					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-						for (int iy = 1; iy <= nyp; iy++) {
-						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-							for (int ix = 1; ix <= lsd2; ix++) {
-							int jx=ix-1; float arg=sx*jx+argy;
-							float fpr = real(fp->cmplx(ix,iy,iz));
-							float fpi = imag(fp->cmplx(ix,iy,iz));
-							fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi) *std::complex<float>(cos(arg),sin(arg));
-
+			int itmp = nx/2;
+			//float sx  = float(-twopi*float(itmp)/float(nxp));
+			float sxn = 2*float(itmp)/float(nxp);
+			float sx = M_PI*sxn;
+			itmp = ny/2;
+			//float sy  = float(-twopi*float(itmp)/float(nyp));
+			float syn = 2*float(itmp)/float(nyp);
+			float sy = M_PI*syn;
+			itmp = nz/2;
+			//float sz  = float(-twopi*float(itmp)/float(nzp));
+			float szn = 2*float(itmp)/float(nzp);
+			float sz = M_PI*szn;
+			if ( std::abs(sxn-1.0)<1e-5 && (std::abs(syn-1.0)<1e-5 || ny==1 ) && (std::abs(szn-1.0)<1e-5 || nz==1 ) ) {
+				switch (ptype)
+				{
+					case AUTOCORRELATION:
+					// fpmat := |fpmat|^2
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+							for (int iy = 1; iy <= nyp; iy++) {
+								for (int ix = 1; ix <= lsd2; ix++) {
+									float fpr = real(fp->cmplx(ix,iy,iz));
+									float fpi = imag(fp->cmplx(ix,iy,iz));
+									fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi);
+								}
 							}
 						}
-					}
-					break;
-				case SELF_CORRELATION:
-				// fpmat:=|fpmat|
-				// Note nxp are padded dimensions
-					for (int iz = 1; iz <= nzp; iz++) {
-					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-						for (int iy = 1; iy <= nyp; iy++) {
-						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-							for (int ix = 1; ix <= lsd2; ix++) {
-							int jx=ix-1; float arg=sx*jx+argy;
-							fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+						break;
+					case SELF_CORRELATION:
+					// fpmat:=|fpmat|
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+							for (int iy = 1; iy <= nyp; iy++) {
+								for (int ix = 1; ix <= lsd2; ix++) {
+									fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz));
+								}
 							}
 						}
-					}
-					break;
-				case CORRELATION:
-				// fpmat:=fpmat*conjg(gpmat)
-				// Note nxp are padded dimensions
-					for (int iz = 1; iz <= nzp; iz++) {
-					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-						for (int iy = 1; iy <= nyp; iy++) {
-						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-							for (int ix = 1; ix <= lsd2; ix++) {
-							int jx=ix-1; float arg=sx*jx+argy;
-							fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+						break;
+					case CORRELATION:
+					// fpmat:=fpmat*conjg(gpmat)
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+							for (int iy = 1; iy <= nyp; iy++) {
+								for (int ix = 1; ix <= lsd2; ix++) {
+									fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz));
+								}
 							}
 						}
-					}
 					break;
-				case CONVOLUTION:
-				// fpmat:=fpmat*gpmat
-				// Note nxp are padded dimensions
-					for (int iz = 1; iz <= nzp; iz++) {
-					int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
-						for (int iy = 1; iy <= nyp; iy++) {
-						int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
-							for (int ix = 1; ix <= lsd2; ix++) {
-							int jx=ix-1; float arg=sx*jx+argy;
-							fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
+					case CONVOLUTION:
+					// fpmat:=fpmat*gpmat
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+							for (int iy = 1; iy <= nyp; iy++) {
+								for (int ix = 1; ix <= lsd2; ix++) {
+									fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz);
+								}
 							}
 						}
+						break;
+					default:
+						LOGERR("Illegal option in Fourier Product");
+						throw InvalidValueException(ptype, "Illegal option in Fourier Product");
+				}					
+				for (int iz = 1; iz <= nzp; iz++) {
+					for (int iy = 1; iy <= nyp; iy++) {
+						for (int ix = (iz+iy+1)%2+1; ix <= lsd2; ix+=2) {
+							fp->cmplx(ix,iy,iz) = -fp->cmplx(ix,iy,iz);
+						}
 					}
+				}
+			} else {			
+				switch (ptype)
+				{
+					case AUTOCORRELATION:
+					// fpmat := |fpmat|^2
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+						int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
+							for (int iy = 1; iy <= nyp; iy++) {
+							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
+								for (int ix = 1; ix <= lsd2; ix++) {
+								int jx=ix-1; float arg=sx*jx+argy;
+								float fpr = real(fp->cmplx(ix,iy,iz));
+								float fpi = imag(fp->cmplx(ix,iy,iz));
+								fp->cmplx(ix,iy,iz)= (fpr*fpr + fpi*fpi) *std::complex<float>(cos(arg),sin(arg));
+								}
+							}
+						}
+						break;
+					case SELF_CORRELATION:
+					// fpmat:=|fpmat|
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+						int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
+							for (int iy = 1; iy <= nyp; iy++) {
+							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
+								for (int ix = 1; ix <= lsd2; ix++) {
+								int jx=ix-1; float arg=sx*jx+argy;
+								fp->cmplx(ix,iy,iz) = abs(fp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+								}
+							}
+						}
+						break;
+					case CORRELATION:
+					// fpmat:=fpmat*conjg(gpmat)
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+						int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
+							for (int iy = 1; iy <= nyp; iy++) {
+							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
+								for (int ix = 1; ix <= lsd2; ix++) {
+								int jx=ix-1; float arg=sx*jx+argy;
+								fp->cmplx(ix,iy,iz) *= conj(gp->cmplx(ix,iy,iz)) *std::complex<float>(cos(arg),sin(arg));
+								}
+							}
+						}
 					break;
-				default:
-					LOGERR("Illegal option in Fourier Product");
-					throw InvalidValueException(ptype, "Illegal option in Fourier Product");
+					case CONVOLUTION:
+					// fpmat:=fpmat*gpmat
+					// Note nxp are padded dimensions
+						for (int iz = 1; iz <= nzp; iz++) {
+						int jz=iz-1; if(jz>nzp/2) jz=jz-nzp; float argz=sz*jz;
+							for (int iy = 1; iy <= nyp; iy++) {
+							int jy=iy-1; if(jy>nyp/2) jy=jy-nyp; float argy=sy*jy+argz;
+								for (int ix = 1; ix <= lsd2; ix++) {
+								int jx=ix-1; float arg=sx*jx+argy;
+								fp->cmplx(ix,iy,iz) *= gp->cmplx(ix,iy,iz) *std::complex<float>(cos(arg),sin(arg));
+								}
+							}
+						}
+						break;
+					default:
+						LOGERR("Illegal option in Fourier Product");
+						throw InvalidValueException(ptype, "Illegal option in Fourier Product");
+				}
 			}
 		}
 		else {
