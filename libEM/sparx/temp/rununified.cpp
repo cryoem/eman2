@@ -3,7 +3,6 @@
 
 // include EMAN2
 #include "emdata.h"
-#include "emassert.h"
 
 #include "ali3d_d_mpi.h"
 #include "ali3d_unified_mpi.h"
@@ -24,7 +23,7 @@ int main(int argc, char *argv[])
     printf("mypid = %d, ncpus = %d\n", mypid, ncpus);
     char  volfname[100], paramfname[100], stackfname[100],voutfname[100];
     EMData **expimages;
-    int maxiter = 0;
+    int maxiter=0;
 
     // parse the command line and set filenames	
     if (argc < 4) {
@@ -34,14 +33,15 @@ int main(int argc, char *argv[])
           printf("-model=<initial 3D volume filename> ");
           printf("-param=<initial angles&shifts> ");
           printf("-out=<output volume filename>\n"); 
-          printf("[-maxit=<output volume filename>]\n"); 
+          printf("[-maxit=<maximum number of iterations>]\n"); 
           printf("[-sym=<symmtry type>]\n"); 
           printf("[-CTF]\n"); 
       }
       ierr = MPI_Finalize();
       exit(1);
     }
-    int ia=0;
+
+    int ia=1;
     while (ia < argc) {
        if ( !strncmp(argv[ia],"-data",5) ) {
           strcpy(stackfname,&argv[ia][6]);
@@ -57,6 +57,11 @@ int main(int argc, char *argv[])
           strcpy(paramfname,&argv[ia][7]);
           if (mypid == 0)
              printf("initial parameters = %s\n", paramfname);
+       }
+       else if ( !strncmp(argv[ia],"-maxit",6) ) {
+	  maxiter = atoi(&(argv[ia][7]));
+          if (mypid == 0)
+             printf("maxiter = %d\n", maxiter);
        }
        else if ( !strncmp(argv[ia],"-out",4) ) {
           strcpy(voutfname,&argv[ia][5]);
@@ -126,6 +131,16 @@ int main(int argc, char *argv[])
     catch (std::exception const& e) {
 	printf("%s\n", e.what());
     }
+
+#ifdef DEBUG
+    for (int i = 0; i < nloc; i++)
+        printf("%11.3e   %11.3e   %11.3e   %11.3e   %11.3e\n", 
+           angleshift[5*i+0], 
+           angleshift[5*i+1],
+           angleshift[5*i+2],
+           angleshift[5*i+3],
+           angleshift[5*i+4]);
+#endif
 
     EMDeletePtr(volume);
     for ( int i = 0 ; i < nloc; ++i ) {
