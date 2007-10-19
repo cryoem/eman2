@@ -172,6 +172,7 @@ def main():
 		print "ERROR: Atleast one of the sym or random arguments must be given"
 		exit(1)
 
+	logger=E2init(sys.argv)
 	data = EMData()
 	data.read_image(args[0])
 	# generate and save all the projections to disk - that's it, that main job is done
@@ -187,6 +188,8 @@ def main():
 		else:
 			print "Warning: verify mirror only works when a symmetry has been specified. No action taken."
 
+	E2end(logger)
+	
 def include_phi_rotations(eulers, phiprop):
 	
 	limit = math.pi * 2. - phiprop * deg2rad / 2.0	
