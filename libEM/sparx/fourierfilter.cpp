@@ -295,38 +295,114 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			}
 		}
 	} else {
-		for ( iz = 1; iz <= nzp; iz++) {
-			jz=iz-1; if(jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
-			float nuz = jz*dz;
-			for ( iy = 1; iy <= nyp; iy++) {
-				jy=iy-1;
-				if(jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
-				float nuy = jy*dy;
-				for ( ix = 1; ix <= lsd2; ix++) {
-					jx=ix-1; argx = argy + float(jx*jx)*dx2;
-					float nux = jx*dx;
-					// RHS of filter calculation 
-					switch (filter_type) {
-						case TOP_HAT_LOW_PASS:
-							if(argx*omega>1.0f) fp->cmplx(ix,iy,iz) = 0; break;
-						case TOP_HAT_HIGH_PASS:
-							if(argx*omega<=1.0f) fp->cmplx(ix,iy,iz) = 0; break;
-						case TOP_HAT_BAND_PASS:
-							if(argx*omegaL<1.0f || argx*omegaH>=1.0f) 
-								fp->cmplx(ix,iy,iz) = 0; break;
-						case TOP_HOMOMORPHIC:
-							if(argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f; 
-							else if(argx*omegaL<=1.0f) fp->cmplx(ix,iy,iz) *= gamma;
-							break;
-						case GAUSS_LOW_PASS :
-							fp->cmplx(ix,iy,iz) *= exp(-argx*omega); break;
-						case GAUSS_HIGH_PASS:
-							fp->cmplx(ix,iy,iz) *= 1.0f-exp(-argx*omega); break;
-						case GAUSS_HOMOMORPHIC:
-							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*exp(-argx*omega); break;
-						case GAUSS_INVERSE :
-							fp->cmplx(ix,iy,iz) *= exp(argx*omega); break;
-						case KAISER_I0:   // K-B filter
+		switch (filter_type) {
+			case TOP_HAT_LOW_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							if (argx*omega>1.0f) fp->cmplx(ix,iy,iz) = 0;
+						}
+					}
+				}
+				break;
+			case TOP_HAT_HIGH_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							if (argx*omega<=1.0f) fp->cmplx(ix,iy,iz) = 0;
+						}
+					}
+				}
+				break;
+			case TOP_HAT_BAND_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							if (argx*omegaL<1.0f || argx*omegaH>=1.0f) fp->cmplx(ix,iy,iz) = 0;
+						}
+					}
+				}
+				break;
+			case TOP_HOMOMORPHIC:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							if (argx*omegaH>1.0f)      fp->cmplx(ix,iy,iz)  = 0.0f; 
+							else if (argx*omegaL<=1.0f) fp->cmplx(ix,iy,iz) *= gamma;
+						}
+					}
+				}
+				break;
+			case GAUSS_LOW_PASS :
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= exp(-argx*omega);
+						}
+					}
+				}
+				break;
+			case GAUSS_HIGH_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= 1.0f-exp(-argx*omega);
+						}
+					}
+				}
+				break;
+			case GAUSS_HOMOMORPHIC:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*exp(-argx*omega);
+						}
+					}
+				}
+				break;
+			case GAUSS_INVERSE :
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= exp(argx*omega);
+						}
+					}
+				}
+				break;
+			case KAISER_I0:   // K-B filter
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					float nuz = jz*dz;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						float nuy = jy*dy;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; 
+							float nux = jx*dx;
 							//if (!kbptr) 
 							//	throw
 							//		NullPointerException("kbptr null!");
@@ -341,8 +417,17 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									fp->cmplx(ix,iy,iz)*= kbptr->i0win(nux);
 									break;
 							}
-							break;
-						case KAISER_SINH:   //  Sinh filter
+						}
+					}
+				}
+				break;
+			case KAISER_SINH:   //  Sinh filter
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if(jy>nyp2) jy=jy-nyp; 
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; 
 							//if (!kbptr) 
 							//	throw 
 							//		NullPointerException("kbptr null!");
@@ -359,11 +444,23 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									//cout << jx<<"  "<< nux<<"  "<<argu<<endl;
 									break;
 							}
-							break;
-						case KAISER_I0_INVERSE:   // 1./(K-B filter)
-							//if (!kbptr) 
-							//	throw 
-							//		NullPointerException("kbptr null!");
+						}
+					}
+				}
+				break;
+			case KAISER_I0_INVERSE:   // 1./(K-B filter)
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					float nuz = jz*dz;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if(jy>nyp2) jy=jy-nyp; 
+						float nuy = jy*dy;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; 
+							float nux = jx*dx;
+						//if (!kbptr) 
+						//	throw 
+						//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
 									fp->cmplx(ix,iy,iz) /= (kbptr->i0win(nux)*kbptr->i0win(nuy)*kbptr->i0win(nuz));
@@ -375,8 +472,17 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									fp->cmplx(ix,iy,iz) /= kbptr->i0win(nux);
 									break;
 							}
-							break;
-						case KAISER_SINH_INVERSE:  // 1./sinh
+						}
+					}
+				}
+				break;
+			case KAISER_SINH_INVERSE:  // 1./sinh
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; 
 							//if (!kbptr) 
 							//	throw 
 							//		NullPointerException("kbptr null!");
@@ -393,52 +499,139 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									//cout << jx<<"  "<< nux<<"  "<<argu<<endl;
 									break;
 							}
-							break;
-						case BUTTERWORTH_LOW_PASS:
-							fp->cmplx(ix,iy,iz) 
-								*= sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord))); break;
-						case BUTTERWORTH_HIGH_PASS:
-							fp->cmplx(ix,iy,iz) *= 
-								1.0f-sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord))); break;
-						case BUTTERWORTH_HOMOMORPHIC:
-							fp->cmplx(ix,iy,iz) *= 
-								1.0f-gamma*sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord))); break;
-						case SHIFT:
-							fp->cmplx(ix,iy,iz) *= 
-								exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
-							break;
-						case TANH_LOW_PASS :
+						}
+					}
+				}
+				break;
+			case BUTTERWORTH_LOW_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord)));
+						}
+					}
+				}
+				break;
+			case BUTTERWORTH_HIGH_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= 	1.0f-sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord)));
+						}
+					}
+				}
+				break;
+			case BUTTERWORTH_HOMOMORPHIC:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
+							fp->cmplx(ix,iy,iz) *= 	1.0f-gamma*sqrt(1.0f/(1.0f+pow(sqrt(argx)/omegaL,ord)));
+						}
+					}
+				}
+				break;
+			case SHIFT:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; 
+							fp->cmplx(ix,iy,iz) *= 	exp(-float(twopi)*iimag*(xshift*jx/nx + yshift*jy/ny+ zshift*jz/nz));
+						}
+					}
+				}
+				break;
+			case TANH_LOW_PASS :
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
 							argx= sqrt(argx);
-							fp->cmplx(ix,iy,iz) *= 
-								0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
-						case TANH_HIGH_PASS:
+							fp->cmplx(ix,iy,iz) *= 	0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
+						}
+					}
+				}
+				break;
+			case TANH_HIGH_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
 							argx= sqrt(argx);
-							fp->cmplx(ix,iy,iz) *= 
-								1.0f-0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
-						case TANH_HOMOMORPHIC:
+							fp->cmplx(ix,iy,iz) *= 	1.0f-0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
+						}
+					}
+				}
+				break;
+			case TANH_HOMOMORPHIC:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
 							argx= sqrt(argx);
-							fp->cmplx(ix,iy,iz) *= 
-								1.0f-gamma*0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega))); break;
-						case TANH_BAND_PASS:
+							fp->cmplx(ix,iy,iz) *= 1.0f-gamma*0.5f*(tanh(cnst*(argx+omega))-tanh(cnst*(argx-omega)));
+						}
+					}
+				}
+				break;
+			case TANH_BAND_PASS:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
 							argx= sqrt(argx); 
-							fp->cmplx(ix,iy,iz) *= 
-								0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL))); break;
-						case RADIAL_TABLE:
-						{
+							fp->cmplx(ix,iy,iz) *= 0.5f*(tanh(cnstH*(argx+omegaH))-tanh(cnstH*(argx-omegaH))-tanh(cnstL*(argx+omegaL))+tanh(cnstL*(argx-omegaL)));
+						}
+					}
+				}
+				break;
+			case RADIAL_TABLE:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; argz = float(jz*jz)*dz2;
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; argy = argz + float(jy*jy)*dy2;
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; argx = argy + float(jx*jx)*dx2;
 							float rf = sqrt( argx )*2.0f*lsd2;
 							int  ir = int(rf);
 							float df = rf - float(ir);
 							float f = table[ir] + df * (table[ir+1] - table[ir]); // (1-df)*table[ir]+df*table[ir+1];
 							fp->cmplx(ix,iy,iz) *= f;
 						}
-							break;
-						case CTF_:
+					}
+				}
+				break;
+			case CTF_:
+				for ( iz = 1; iz <= nzp; iz++) {
+					jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
+					for ( iy = 1; iy <= nyp; iy++) {
+						jy=iy-1; if (jy>nyp2) jy=jy-nyp; 
+						for ( ix = 1; ix <= lsd2; ix++) {
+							jx=ix-1; 
 							if(ny>1 && nz<=1 ) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
-						        			     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
+			        						     static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2)/ps/2.0f;
 							else if(ny<=1) ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2)/ps/2.0f;						  	    
 							else if(nz>1)  ak=sqrt(static_cast<float>(jx)/lsd2*static_cast<float>(jx)/lsd2 +
 						               		static_cast<float>(jy)/nyp2*static_cast<float>(jy)/nyp2 +
-							      		    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
+				      					    static_cast<float>(jz)/nzp2*static_cast<float>(jz)/nzp2)/ps/2.0f;
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
 							if( undoctf == 1 )
 							{
@@ -447,10 +640,10 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							    fp->cmplx(ix,iy,iz) /= tf;
 							} else
 							    fp->cmplx(ix,iy,iz) *= tf;
-							break;
+						}
 					}
 				}
-			}
+				break;
 		}
 	}
 	delete kbptr; kbptr = 0;
