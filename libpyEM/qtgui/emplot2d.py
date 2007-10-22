@@ -70,10 +70,14 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		Multiple axes may be set, and which axis represents which axis in the plot can be
 		selected by the user."""
 		
+		try:
+			if len(data)>1 : self.axes[key]=(0,1,-1)
+			else : self.axes[key]=(-1,0,-1)
+		except: return
+		
 		if data : self.data[key]=data
 		else : del self.data[key]
 		
-		self.axes[key]=(0,1,-1)
 		
 		if self.inspector: self.inspector.datachange()
 		
@@ -106,9 +110,12 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 		GL.glRasterPos(0,self.height()-1)
 		GL.glPixelZoom(1.0,-1.0)
+#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
+		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 		GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
 
 	def resizeGL(self, width, height):
+#		print "resize ",self.width()
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
 	

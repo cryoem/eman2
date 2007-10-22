@@ -60,6 +60,6 @@ ADD_PYSTE_LIB(pyMarchingCubes2)
 INSTALL_FILES(/lib "^.+\\.py$")
 INSTALL_FILES(/include "^.+\\.h$")
 #INSTALL_FILES(/lib FILES gui/emimage.py gui/imagecontrol.py gui/emimagecanvas.py)
-INSTALL_FILES(/lib FILES qtgui/emimage.py qtgui/emimage2d.py qtgui/emimagemx.py qtgui/emimage3d.py qtgui/emimageutil.py qtgui/valslider.py qtgui/pyshed.py)
+INSTALL_FILES(/lib FILES qtgui/emplot2d.py qtgui/emimage.py qtgui/emimage2d.py qtgui/emimagemx.py qtgui/emimage3d.py qtgui/emimageutil.py qtgui/valslider.py qtgui/pyshed.py)
 INSTALL_FILES(/lib FILES wxgui/wxemimage.py wxgui/wximagecontrol.py wxgui/wxValSlider.py)
 

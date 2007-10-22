@@ -78,7 +78,7 @@ Various CTF-related operations on images."""
 	for i in args:
 		ps2d.append(powspec(i))
 	
-	ps1d=[i.calc_rad_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
+	ps1d=[i.calc_radial_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
 	
 	if options.gui : 
 		gui=GUIctf(args,ps1d,ps2d)
@@ -92,13 +92,15 @@ def powspec(stackfile):
 	n=EMUtil.get_image_count(stackfile)
 	
 	for i in range(n):
-		im=EMImage(stackfile,i)
+		im=EMData(stackfile,i)
 		imf=im.do_fft()
 		imf.ri2inten()
 		if i==0: av=imf
 		else: av+=imf
 	
 	av/=(float(n)*av.get_xsize()*av.get_ysize())
+	av.set_value_at(0,0,0.0)
+#	av.process_inplace("xform.fourierorigin.tocenter")
 	
 	return av
 
@@ -131,15 +133,15 @@ class GUIctf(QtGui.QWidget):
 		except:
 			print "Cannot import EMAN image GUI objects (emimage,etc.)"
 			sys.exit(1)
-		try:
-			from emplot2d import EMPlot2D
-		except:
-			print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
-			sys.exit(1)
-		
-		QtGui.QWidget.__init__(self,None)
+#		try:
+		from emplot2d import EMPlot2D
+		#except:
+			#print "Cannot import EMAN plot GUI objects (is matplotlib installed?)"
+			#sys.exit(1)
 		
 		self.app=get_app()
+		
+		QtGui.QWidget.__init__(self,None)
 		
 		self.names=names
 		self.pow1d=pow1d
@@ -162,7 +164,6 @@ class GUIctf(QtGui.QWidget):
 		self.guiplot.connect(self.guiplot,QtCore.SIGNAL("mousedown"),self.plotmousedown)
 		
 		self.guiim.mmode="app"
-		self.guictl=GUIctfPanel(self)
 		
 		#try:
 			#E2loadappwin("boxer","imagegeom",self.guiim)
@@ -173,9 +174,6 @@ class GUIctf(QtGui.QWidget):
 		#except:
 			#pass
 		
-		self.guiim.show()
-		self.guiplot.show()
-		self.guictl.show()
 
 		# This object is itself a widget we need to set up
 		self.hbl = QtGui.QHBoxLayout(self)
@@ -188,35 +186,50 @@ class GUIctf(QtGui.QWidget):
 		self.setlist.setSizePolicy(QtGui.QSizePolicy.Preferred,QtGui.QSizePolicy.Expanding)
 		self.hbl.addWidget(self.setlist)
 		
-		self.vbl = QtGui.QVBoxLayout(self)
+		self.vbl = QtGui.QVBoxLayout()
 		self.vbl.setMargin(0)
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)
 		
 		self.samp = ValSlider(self,(0,5.0),"Amp:",0)
-		self.vbl.addWidget(self.amp)
+		self.vbl.addWidget(self.samp)
 		
 		self.sdefocus=ValSlider(self,(0,5.0),"Defocus:",0)
-		self.vbl.addWidget(self.defocus)
+		self.vbl.addWidget(self.sdefocus)
 		
 		self.sbfactor=ValSlider(self,(0,500),"B factor:",0)
-		self.vbl.addWidget(self.defocus)
+		self.vbl.addWidget(self.sbfactor)
 		
 		QtCore.QObject.connect(self.samp, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
+		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 
-	def newdata(self,name,p1d,p2d):
+		self.updateData()
+		
+		self.guiim.show()
+		self.guiplot.show()
+		self.show()
+		
+	def newData(self,name,p1d,p2d):
 		self.names.append(name)
 		self.pow1d.append(p1d)
 		self.pow2d.append(p2d)
-		updatedata()
+		self.updateData()
 		
-	def updatedata(self):
+	def updateData(self):
 		"""This will make sure the various widgets properly show the current data sets"""
 		self.setlist.clear()
-		for i in self.names:
-			self.setlist.addItem(i)
+		for i,j in enumerate(self.names):
+			self.setlist.addItem(j)
+			self.guiplot.setData(j,[self.pow1d[i]])
+
+	def newSet(self,val):
+		self.guiim.setData(self.pow2d[val])
+
+	def newCTF(self) :
+		df=self.sdefocus.value
 
 	def imgmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
@@ -230,6 +243,9 @@ class GUIctf(QtGui.QWidget):
 			#for i,j in enumerate(self.boxes):
 		
 	def imgmouseup(self,event) :
+		m=self.guiim.scrtoimg((event.x(),event.y()))
+	
+	def plotmousedown(self,event) :
 		m=self.guiim.scrtoimg((event.x(),event.y()))
 	
 	def run(self):

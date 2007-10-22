@@ -359,6 +359,7 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 
 	int lmax = nx * ny - 1;
 
+	int mid=nx*ny/2;
 	if (is_complex()) {
 		if (dsx != -1) {
 			int l = y0 * nx;
@@ -374,6 +375,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid; 
 					float t = rdata[k];
 					if (t <= rm)  p = mingray;
 					else if (t >= render_max) p = maxgray;
@@ -414,6 +417,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
+					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k+=mid; 
 
 					float t = rdata[k];
 					if (t <= rm)

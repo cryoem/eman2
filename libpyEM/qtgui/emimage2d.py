@@ -73,6 +73,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 		
 		self.data=None				# EMData object to display
+		self.oldsize=(-1,-1)
 		self.datasize=(1,1)			# Dimensions of current image
 		self.scale=1.0				# Scale factor for display
 		self.origin=(0,0)			# Current display origin
@@ -157,7 +158,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def setScale(self,newscale):
 		"""Adjusts the scale of the display. Tries to maintain the center of the image at the center"""
-		self.origin=(newscale/self.scale*(self.width()/2+self.origin[0])-self.width()/2,newscale/self.scale*(self.height()/2+self.origin[1])-self.height()/2)
+		self.origin=(newscale/self.scale*(self.width()/2.0+self.origin[0])-self.width()/2.0,newscale/self.scale*(self.height()/2.0+self.origin[1])-self.height()/2.0)
 		self.scale=newscale
 		self.updateGL()
 		
@@ -167,8 +168,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.updateGL()
 		
 	def setFFT(self,val):
-		if val:
-			try: 
+		if val and not self.data.is_complex():
+			try:
 				self.fft=self.data.do_fft()
 				self.fft.set_value_at(0,0,0,0)
 				self.fft.set_value_at(1,0,0,0)
@@ -233,6 +234,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
+		if self.oldsize[0]<0 : self.oldsize=(width,height)
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
 	
@@ -241,6 +243,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GLU.gluOrtho2D(0.0,self.width(),0.0,self.height())
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
+		self.origin=((self.oldsize[0]/2.0+self.origin[0])-self.width()/2.0,(self.oldsize[1]/2.0+self.origin[1])-self.height()/2.0)
+		self.oldsize=(width,height)
 		
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch
