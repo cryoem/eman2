@@ -381,6 +381,31 @@ def file_exists( file_name ):
 	else:
 		return False
 
+# a function for testing whether a type of Averager, Aligner, Comparitor, Projector, Reconstructor etc
+# can be created from the command line string. Returns false if there are problems
+# examples
+# if not check_eman2_type(options.simaligncmp,Cmps,"Comparitor") : exit(1)
+# if not check_eman2_type(options.simalign,Aligners,"Aligner"): exit(1)
+def check_eman2_type(modoptstring, object, objectname, verbose=True):
+	if modoptstring == None:
+		print "Error: expecting a string but got python None, was looking for a type of %s" %objectname
+		return False
+	 
+	if modoptstring == "":
+		print "Error: expecting a string was not empty, was looking for a type of %s" %objectname
+		return False
+	
+	try:
+		p = parsemodopt(modoptstring)
+		object.get(p[0], p[1])
+	except RuntimeError:
+		if (verbose):
+			print "Error: the specified %s (%s) does not exist or cannot be constructed" %(objectname, modoptstring)
+		return False
+
+	return True
+
+
 def qplot(img):
 	"""This will plot a 1D image using qplot"""
 	out=file("/tmp/plt.txt","w")

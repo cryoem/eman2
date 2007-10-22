@@ -1555,7 +1555,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	
 	float stepx = params.set_default("stepx",1.0);
 	float stepy = params.set_default("stepy",1.0);
-	// Default step is 5 degree - note in EMAN1 is was 0.1 radians
+	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
 	float stepaz = params.set_default("stepaz",5.0);
 	
 // 	cout << "Using steps " << stepx << " " << stepy << " " << stepaz << endl;

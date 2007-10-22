@@ -94,12 +94,12 @@ def main():
 	(options, args) = parser.parse_args()
 
 	check_directory_sanity(options,True)
-	check_projection_args(options, True)
-	check_simmx_args(options,-1,True)
-	check_classify_args(options,-1,True)
+	check_projection_args(options)
+	check_simmx_args(options,True)
+	check_classify_args(options,True)
 	options.cafile = "e2classes.1.img"
-	check_classaverage_args(options,-1,True)
-	check_make3d_args(options,-1,True)
+	check_classaverage_args(options,True)
+	check_make3d_args(options,True)
 	
 	if (options.check):
 		exit(1)
@@ -112,24 +112,24 @@ def main():
 	# this is the main refinement loop
 	for i in range(0,options.it) :
 		
-		check_projection_args(options,options.verbose)
+		check_projection_args(options)
 		if ( os.system(get_projection_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_projection_cmd(options)
 			exit(1)
 		
-		check_simmx_args(options,i,options.verbose)
+		check_simmx_args(options)
 		if ( os.system(get_simmx_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_simmx_cmd(options)
 			exit(1)
 			
-		check_classify_args(options,i,options.verbose)
+		check_classify_args(options)
 		if ( os.system(get_classify_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classify_cmd(options)
 			exit(1)
 			
 		newclasses = 'e2classes.%d.img' %(i+1)
 		options.cafile = newclasses
-		check_classaverage_args(options,i,options.verbose)
+		check_classaverage_args(options)
 		if ( os.system(get_classaverage_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classaverage_cmd(options)
 			exit(1)
@@ -137,12 +137,12 @@ def main():
 		
 		newmodel = 'threed.%da.mrc' %(i+1)
 		options.model = newmodel
-		check_make3d_args(options,i,options.verbose)
+		check_make3d_args(options)
 		if ( os.system(get_make3d_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_make3d_cmd(options)
 			exit(1)
 
-def get_make3d_cmd(options):
+def get_make3d_cmd(options,check=False,nofilecheck=False):
 	e2make3dcmd = "e2make3d.py %s --sym=%s --iter=%d -f" %(options.cafile,options.sym,options.m3diter)
 	
 	e2make3dcmd += " --recon=%s --out=%s" %(options.recon,options.model)
@@ -159,57 +159,20 @@ def get_make3d_cmd(options):
 	if (options.verbose):
 		e2make3dcmd += " -v"
 	
+	if ( check ):
+		e2make3dcmd += " --check"	
+			
+	if ( nofilecheck ):
+		e2make3dcmd += " --nofilecheck"
+	
 	return e2make3dcmd
 
-def check_make3d_args(options, it=-1, verbose=False):
-	if (verbose):
-		print ""
-		print "### Testing to see if I can run e2make3d.py"
+def check_make3d_args(options, nofilecheck=False):
 	
-	error = False
-	
-	if ( not options.sym ):
-		print "Error: you must specify the sym argument"
-		error = True
-	
-	if ( options.m3diter < 1 ):
-		print "Error, --m3diter must be greater than or equal to 1"
-		error = True
-	
-	if ( check_eman2_type(options.recon,Reconstructors,"Reconstructor") == False ):
-		error = True
-	
-	if ( options.m3dkeep and options.m3dkeepsig ):
-		print "Error: --m3dkeep and --m3dkeepsig are mutually exclusive"
-		error = True
-	
-	if (options.m3dkeep and ( options.m3dkeep > 1 or options.m3dkeep <= 0)):
-		parser.error("The --m3dkeep option is a percentage expressed as a fraction - it must be between 0 and 1")
-	
-	if ( options.pad != 0 ):
-		(xsize, ysize ) = gimme_image_dimensions2D(options.options.startimg);
-		if ( options.pad < xsize or options.pad < options.ysize):
-			print "Error, you specified a padding size (%d) that was smaller than the image dimensions (%dx%d)"%(options.pad,xsize,ysize)
-			error = True;
-	
-	if ( it > -1 ):
-		if not os.path.exists(options.cafile):
-			print "Error: the class average file (%s) does not exist, cannot run e2make3d.py" %(options.cafile)
-			error = True
-	
-	if ( verbose ):
-		print "command will be %s" %get_make3d_cmd(options)
-		if (error):
-			print "e2make3d.py test.... FAILED"
-		else:
-			print "e2make3d.py test.... PASSED"
-		print ""
-		
-	if ( error ):
-		if ( not options.check ): exit(1)
-	
+	cmd = get_make3d_cmd(options,True,nofilecheck)
+	os.system(cmd)
 
-def get_classaverage_cmd(options):
+def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
 	e2cacmd = "e2classaverage.py %s %s %s" %(options.startimg,options.classifyfile,options.cafile)
 	
@@ -229,131 +192,39 @@ def get_classaverage_cmd(options):
 	if (options.verbose):
 		e2cacmd += " -v"
 	
+	if ( check ):
+		e2cacmd += " --check"	
+			
+	if ( nofilecheck ):
+		e2cacmd += " --nofilecheck"
+	
 	return e2cacmd
 
-def check_classaverage_args(options,it=-1,verbose=False):
+def check_classaverage_args(options, nofilecheck=False):
 	
-	if (verbose):
-		print ""
-		print "### Testing to see if I can run e2classaverage.py"
+	cmd = get_classaverage_cmd(options,True,nofilecheck)
+	os.system(cmd)
 
-	error = False
-	if ( it > -1 ):
-		if not os.path.exists(options.classifyfile):
-			print "Error: the file expected to contain the classification matrix (%s) was not found, cannot run e2classaverage.py" %(options.classifyfile)
-			error = True
-		else:
-			(xsize, ysize ) = gimme_image_dimensions2D(options.classifyfile);
-			numimg = EMUtil.get_image_count(options.startimg)
-			if ( numimg != ysize ):
-				print "Error - the number of rows (%d) in the similarity matrix image %s does not match the number of images (%d) in %s" %(ysize, options.classifyfile,numimg,options.startimg)
-			
-		if not os.path.exists(options.projfile):
-			print "Error: the file expected to contain the projections images \(%s) was not found, cannot run e2classaverage.py" %(options.projfile)
-			error = True
-		else:
-			(xsize, ysize ) = gimme_image_dimensions2D(options.startimg);
-			(pxsize, pysize ) = gimme_image_dimensions2D(options.projfile);
-			if ( xsize != pxsize ):
-				print "Error - the dimensions of the projection image "
-				error = True
-		# this behaviour was intentionally disabled for testing purposes
-		#if os.path.exists(options.cafile):
-			#print "Error - the class average image (%s) already exists. It will not be written over." %(options.cafile)
-			#error = True
-	
-	if ( options.classkeep and options.classkeepsig ):
-		print "Error: --classkeep and --classkeepsig are mutually exclusive"
-		error = True
-	
-	if (options.classkeep and ( options.classkeep > 1 or options.classkeep <= 0)):
-		parser.error("The --classkeep option is a percentage expressed as a fraction - it must be between 0 and 1")
-	
-	if ( options.classiter < 1 ):
-		print "Error, --classiter must be greater than or equal to one - you specified %d" %(options.classiter)
-		error = True
-		
-	if ( check_eman2_type(options.classaverager,Averagers,"Averager") == False ):
-		error = True
-	
-	if ( options.classiter > 1 ):
-		
-		if ( check_eman2_type(options.classcmp,Cmps,"Comparitor") == False ):
-			error = True
-			
-		if (options.classalign == None):
-			print "If --classiter is greater than one, the --classalign argument must be specified"
-			error = True
-			
-		if ( check_eman2_type(options.classalign,Aligners,"Aligner") == False ):
-			error = True
-		
-		if ( check_eman2_type(options.classalign,Aligners,"Aligner") == False ):
-			error = True
-			
-		if ( check_eman2_type(options.classaligncmp,Cmps,"Comparitor") == False ):
-			error = True
-		
-		if ( options.classralign != None ):
-			if ( check_eman2_type(options.classralign,Aligners,"Aligner") == False ):
-				error = True
-				
-			if ( check_eman2_type(options.classraligncmp,Cmps,"Comparitor") == False ):
-				error = True
-	
-	if ( verbose ):
-		print "command will be %s" %get_classaverage_cmd(options)
-		if (error):
-			print "e2classaverage.py test.... FAILED"
-		else:
-			print "e2classaverage.py test.... PASSED"
-		print ""
-		
-	if ( error ):
-		if ( not options.check ): exit(1)
-
-def get_classify_cmd(options):
+def get_classify_cmd(options,check=False,nofilecheck=False):
 	e2classifycmd = "e2classify.py %s %s --sep=%d -f" %(options.simmxfile,options.classifyfile,options.sep)
 	
 	if (options.verbose):
 		e2classifycmd += " -v"
 	
+	if ( check ):
+		e2classifycmd += " --check"	
+			
+	if ( nofilecheck ):
+		e2classifycmd += " --nofilecheck"
+	
 	return e2classifycmd
 
-def check_classify_args(options, it=-1, verbose=False):
-	if (verbose):
-		print ""
-		print "### Testing to see if I can run e2classify.py"
-		print "command will be %s" %get_classify_cmd(options)
+def check_classify_args(options, nofilecheck=False):
 	
-	error = False
-	
-	if (options.sep < 1):
-		print "Error: the --sep argument must be greater than zero, currently it is %d" %(options.sep)
-	
-	if ( it > -1 ):
-		if not os.path.exists(options.simmxfile):
-			print "Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile)
-			error = True
-		else:
-			(xsize, ysize ) = gimme_image_dimensions2D(options.simmxfile);
-			numimg = EMUtil.get_image_count(options.startimg)
-			if ( numimg != ysize ):
-				print "Error - the number of rows (%d) in the similarity matrix image %s does not match the number of images (%d) in %s" %(ysize, options.simmxfile,numimg,options.startimg)
-				error = True
-	
-	if ( verbose ):
-		if (error):
-			print "e2classify.py test.... FAILED"
-		else:
-			print "e2classify.py test.... PASSED"
-		print ""
-		
-	if ( error ):
-		if ( not options.check ): exit(1)
-	
+	cmd = get_classify_cmd(options,True,nofilecheck)
+	os.system(cmd)
 
-def get_simmx_cmd(options):
+def get_simmx_cmd(options,check=False,nofilecheck=False):
 	
 	e2simmxcmd = "e2simmx.py %s %s %s -f --saveali --cmp=%s --align=%s --aligncmp=%s"  %(options.projfile, options.startimg,options.simmxfile,options.simcmp,options.simalign,options.simaligncmp)
 	
@@ -362,57 +233,22 @@ def get_simmx_cmd(options):
 	
 	if (options.verbose):
 		e2simmxcmd += " -v"
+		
+	if ( check ):
+		e2simmxcmd += " --check"	
+			
+	if ( nofilecheck ):
+		e2simmxcmd += " --nofilecheck"
+		
 	
 	return e2simmxcmd
 
-def check_simmx_args(options,it=-1,verbose=False):
+def check_simmx_args(options, nofilecheck=False):
 	
-	if (verbose):
-		print ""
-		print "### Testing to see if I can run e2simmx.py"
-		print "command will be %s" %get_simmx_cmd(options)
-		
-	error = False
-	if ( it > -1 ):
-		if not os.path.exists(options.projfile):
-			print "Error: the file expected to contain the projection images (%s) was not found, cannot run e2simmx.py" %(options.projfile)
-			error = True
-		else:
-			(xsize, ysize ) = gimme_image_dimensions2D(options.startimg);
-			(pxsize, pysize ) = gimme_image_dimensions2D(options.projfile);
-			if ( xsize != pxsize ):
-				print "Error - the dimensions of the projection image "
-				error = True
-	
-	if ( check_eman2_type(options.simalign,Aligners,"Aligner") == False ):
-		error = True
-		
-	if ( check_eman2_type(options.simaligncmp,Cmps,"Comparitor") == False ):
-		error = True
-		
-	if ( check_eman2_type(options.simcmp,Cmps,"Comparitor") == False ):
-		error = True
+	cmd = get_simmx_cmd(options,True,nofilecheck)
+	os.system(cmd)
 
-	if ( options.simralign != None ):
-		
-		if ( check_eman2_type(options.simralign,Aligners,"Aligner") == False ):
-			error = True
-		
-		if ( check_eman2_type(options.simraligncmp,Cmps,"Comparitor") == False ):
-			error = True
-	
-	if ( verbose ):
-		if (error):
-			print "e2simmx.py test.... FAILED"
-		else:
-			print "e2simmx.py test.... PASSED"
-		print ""
-		
-	if ( error ):
-		if ( not options.check ): exit(1)
-	
-
-def get_projection_cmd(options):
+def get_projection_cmd(options,check=False):
 
 	e2projcmd = "e2project3d.py %s -f --sym=%s --projector=%s --out=%s" %(options.model,options.sym,options.projector,options.projfile)
 	if ( options.numproj ):
@@ -423,45 +259,18 @@ def get_projection_cmd(options):
 	if ( options.nomirror ):
 		e2projcmd += " --nomirror"
 		
+	if ( check ):
+		e2projcmd += " --check"	
+		
 	if (options.verbose):
 		e2projcmd += " -v"
 	
-	
 	return e2projcmd
 	
-def check_projection_args(options, verbose=False):
-	if (verbose):
-		print ""
-		print "### Testing to see if I can run e2project3d.py"
+def check_projection_args(options):
 	
-	error = False
-	if ( not options.prop and not options.numproj ):
-		print "Error: you must specify one of either --prop or --numproj"
-		error = True
-	
-	if ( not options.sym ):
-		print "Error: you must specify the sym argument"
-		error = True
-		
-	if ( check_eman2_type(options.projector,Projectors,"Projector") == False ):
-		error = True
-
-	if not os.path.exists(options.model):
-		print "Error: 3D image %s does not exist" %options.model
-		error = True
-	
-	if (verbose):
-		print "command will be %s" %get_projection_cmd(options)
-		if (error):
-			s = "FAILED"
-		else:
-			s = "PASSED"
-			
-		print "e2project3d.py test... %s" %s
-		print ""
-		
-	if ( error ):
-		if ( not options.check ): exit(1)
+	cmd = get_projection_cmd(options,True)
+	os.system(cmd)
 	
 	
 def check_directory_sanity(options,verbose=False):
@@ -513,16 +322,6 @@ def check_directory_sanity(options,verbose=False):
 	
 	if ( error ):
 		if ( not options.check ): exit(1)
-		
-def check_eman2_type(modoptstring, object, objectname):
-	try:
-		p = parsemodopt(modoptstring)
-		object.get(p[0], p[1])
-	except RuntimeError:
-		print "ERROR: the specified %s (%s) does not exist or cannot be constructed" %(objectname,modoptstring)
-		return False
-
-	return True
 	
 if __name__ == "__main__":
     main()

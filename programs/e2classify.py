@@ -55,25 +55,48 @@ def main():
 	parser.add_option("--sep", type="int", help="The number of classes a particle can contribute towards (default is 5)", default=5)
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--verbose", "-v",dest="verbose",default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 	
-	(options, args) = parser.parse_args()
-#	print(args);
-	if len(args)<2 : parser.error("Input and output files required")
-	
-	if os.path.exists(args[1]):
-		if (options.force):
-			remove_file(args[1])
-		else:
-			parser.error("File %s exists, will not write over, exiting" %args[1])
-	
-#      Setion 0.
+	#      Setion 0.
 #      read in the 4 images from <simMatrixIn> which correspond to 
 #        0. similarity 
 #        1. Transx 
 #        2. Transy 
 #        3. Rotation	
 	
+	(options, args) = parser.parse_args()
+	
+	if options.nofilecheck: options.check = True
+
+	if (len(args)<2 ): parser.error("Input and output files required")
+	
+	if (options.check): 
+		options.verbose = True # turn verbose on if the user is only checking...
+		if ( options.nofilecheck == False ):
+			options.simmxfile = args[0]
+		options.outfile = args[1]
+	
+	if (options.verbose):
+		print ""
+		print "### Testing to see if I can run e2classify.py"
+		
+	error = check(options,True)
+	
+	if (options.verbose):
+		if (error):
+			print "e2classify.py test.... FAILED"
+		else:
+			print "e2classify.py test.... PASSED"
+		
+	if ( options.check or error ) : exit(1)
+
+	
 	E2n=E2init(sys.argv)
+
+	if os.path.exists(args[1]):
+		if (options.force):
+			remove_file(args[1])
 
 	num_sim =  EMUtil.get_image_count(args[0])
 	if (num_sim != 4):
@@ -191,6 +214,35 @@ def writeListToImage(inList,outFileString,location,NumPeaks,NumPart):
 	OutImg.write_image(outFileString,location)
 	return 
 	
+
+def check(options,verbose):
+	error = False
+	
+	if (options.sep < 1):
+		if verbose:
+			print "Error: the --sep argument must be greater than zero, currently it is %d" %(options.sep)
+		error = True
+	
+	if os.path.exists(options.outfile):
+		if (not options.force):
+			if verbose:
+				parser.error("File %s exists, will not write over, exiting" %args[1])
+			error = True
+
+	
+	if ( options.nofilecheck == False ):
+		if not os.path.exists(options.simmxfile):
+			if verbose:
+				print "Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile)
+			error = True
+		else:
+			num_sim =  EMUtil.get_image_count(options.simmxfile)
+			if (num_sim != 4):
+				if verbose:
+					print "Error, the similarity matrix did not contain 4 images - be sure to use the --saveali argument when running e2simmx.py"
+				error = True
+	
+	return error
 
 if __name__ == "__main__":
     main()

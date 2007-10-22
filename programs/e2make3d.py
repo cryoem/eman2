@@ -58,7 +58,7 @@ def print_usage():
 def main():
 
 	parser=OptionParser(usage="%prog <input file> [options]", version="%prog 2.0a")
-	parser.add_option("--out", dest="filename", default="", help="Output 3D MRC file")
+	parser.add_option("--out", dest="outfile", default="", help="Output 3D MRC file")
 	parser.add_option("--sym", dest="sym", default="UNKNOWN", help="Set the symmetry; if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct")
 	parser.add_option("--pad", type=int, dest="pad", help="To reduce Fourier artifacts, the model is typically padded by ~25% - only applies to Fourier reconstruction")
 	parser.add_option("--recon", dest="recon_type", default="fourier", help="Reconstructor to use see e2help.py reconstructors -v")
@@ -70,6 +70,8 @@ def main():
 	parser.add_option("--iter", type=int, dest="iter", default=3, help="Set the number of iterations (default is 3)")
 	parser.add_option("--mask", type=int, dest="mask", help="Real-space mask radius")
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
+	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
+	parser.add_option("--check","-c",action="store_true",help="Performs a command line argument check only.",default=False)
 
 
 #	options that don't work and need to be verified for inclusion in EMAN2
@@ -84,40 +86,38 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-
+	if options.nofilecheck: options.check = True
+	
 	# make sure that the user has atleast specified an input file
 	if len(args) <1:
-		print_usage()
-		exit(1)
+		parser.error("No input file specified")
 	
-	# check to see if the image exists
-	if not os.path.exists(args[0]):
-		print_usage()
-		print "Input file %s does not exist" %args[0]
-		exit(1)
+	options.datafile = args[0]
 	
+	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
+	
+	if (options.verbose):
+		print ""
+		print "### Testing to see if I can run e2make3d.py"
+		
+	error = check(options,True)
+	
+	if (options.verbose):
+		if (error):
+			print "e2make3d.py test.... FAILED"
+		else:
+			print "e2make3d.py test.... PASSED"
+		
+	if ( options.check or error ) : exit(1)
+
+	logger=E2init(sys.argv)
+	# just remove the file - if the user didn't specify force then the error should have been found in the check function
+	if os.path.exists(options.outfile):
+		if options.force:
+			remove_file(options.outfile)
+
 	options.input_file = args[0]
 	total_images=EMUtil.get_image_count(options.input_file)
-	
-	
-	if ( os.path.exists(options.filename )):
-		if ( options.force ):
-			remove_file( options.filename)
-		else:
-			print "Output file exists, use -f to overwrite. No action taken"
-			exit(1)
-	
-	if ( options.keep and options.keepsig ):
-		parser.error("The --keep and --keepsig options are mutually exclusive")
-	
-	if ( not options.keep and not options.keepsig ):
-		# just keep everything
-		options.keep = 1.0
-		
-	if (options.keep and ( options.keep > 1 or options.keep <= 0)):
-		parser.error("The --keep option is a percentage expressed as a fraction - it must be between 0 and 1")
-
-	
 	# if weighting is being used, this code checks to make sure atleast one image has an attribute "ptcl_repr" that is
 	# greater than zero. If this is not the case, the insertion code will think there is nothing to insert...
 	if ( options.no_wt == False ):
@@ -137,16 +137,6 @@ def main():
 			print "Specify --no_wt to override this behaviour and give all inserted slices an equal weighting"
 			exit(1)
 	
-	# Make sure the reconstructor is valid
-	try:
-		recon_data = parsemodopt(options.recon_type)
-		Reconstructors.get(recon_data[0], recon_data[1])
-	except RuntimeError, inst:
-		print "ERROR: please specify a valid reconstructor from the following list"
-		dump_reconstructors()
-		print "ERROR: '%s' is not a valid way to create a reconstuctor" % options.recon_type
-		print inst
-		exit(1)
 		
 	# Make sure the symmetry is valid
 	options.sym=options.sym.lower()
@@ -160,7 +150,7 @@ def main():
 	else:
 		options.sym=options.sym.rstrip("0123456789")
 
-	logger=E2init(sys.argv)
+	
 
 	#if (options.goodbad):
 		#try:
@@ -191,14 +181,14 @@ def main():
 	if ( options.mask):	
 		output.process_inplace("mask.ringmean",{"ring_width":options.mask})
 
-	if (options.filename==""):
+	if (options.outfile==""):
 		output.write_image("threed.mrc")
 		if not(options.verbose):
 			print "Output File: threed.mrc"
 	else:
-		output.write_image(options.filename)
+		output.write_image(options.outfile)
 		if not(options.verbose):
-			print "Output File: "+options.filename
+			print "Output File: "+options.outfile
 
 	E2end(logger)
 	
@@ -580,6 +570,73 @@ def fourier_reconstruction(options):
 		
 	return output
 	
+def check(options,verbose=False):
+	
+	error = False
+	
+	if ( not options.sym ):
+		if verbose:
+			print  "Error: you must specify the sym argument"
+		error = True
+	
+	if ( options.iter < 1 ):
+		if verbose:
+			print  "Error, --iter must be greater than or equal to 1"
+		error = True
+	
+	if ( options.recon_type == None or options.recon_type == ""):
+		if (verbose):
+			print "Error: the --recon argument must be specified"
+		error = True
+	else:
+		if ( check_eman2_type(options.recon_type,Reconstructors,"Reconstructor") == False ):
+			error = True
+	
+	if ( options.keep and options.keepsig ):
+		if verbose:
+			print  "Error: --keep and --keepsig are mutually exclusive"
+		error = True
+	
+	if (options.keep and ( options.keep > 1 or options.keep <= 0)):
+		if verbose:
+			print "Error: the --keep option is a percentage expressed as a fraction - it must be between 0 and 1"
+		error = True
+	
+	if ( options.nofilecheck == False ):
+		if not os.path.exists(options.datafile):
+			if verbose:
+				print  "Error: the 2D image data file (%s) does not exist, cannot run e2make3d.py" %(options.datafile)
+			error = True
+		else:
+			if ( options.pad != 0 ):
+				(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
+				if ( options.pad < xsize or options.pad < options.ysize):
+					if verbose:
+						print  "Error, you specified a padding size (%d) that was smaller than the image dimensions (%dx%d)"%(options.pad,xsize,ysize)
+					error = True;
+			
+		if ( os.path.exists(options.outfile )):
+			if ( not options.force ):
+				if verbose:
+					print  "Error: The output file exists and will not be written over. Use -f to overwrite"
+				error = True
+			
+				
+	if options.sym:
+		options.sym=options.sym.lower()
+		if (options.sym[0] in ["c","d", "h"]):
+			if not(options.sym[1:].isdigit()):
+				if verbose:
+					print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
+				error = True
+		else :
+			if not (options.sym in ["tet","oct","icos"]):
+				if verbose:
+					print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
+				error = True
+	
+	return error
+
 if __name__=="__main__":
 	main()
 	

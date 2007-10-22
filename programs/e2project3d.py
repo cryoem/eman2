@@ -88,64 +88,44 @@ def main():
 	parser.add_option("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_option("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
+	parser.add_option("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
 	
 	(options, args) = parser.parse_args()
-		
+	
+	
+	if ( options.check ): options.verbose = True
+	if (options.verbose):
+		print ""
+		print "### Testing to see if I can run e2project3d.py"
+	
 	if len(args) < 1:
-		parser.error("ERROR: No input file given")
-		exit(1)
-		
-	# check to see if the image exists
-	if not os.path.exists(args[0]):
-		parser.error("Input file %s does not exist" %args[0])
-		exit(1)
+		parser.error("Error: No input file given")
 	
-	if ( os.path.exists(options.outfile )):
-		if ( options.force and options.append):
-			parser.error( "cannot specify both append and force" )
-			exit(1)
-
-		if ( options.force ):
-			# call this function which deals with the img/hed couple issue
-			remove_file(options.outfile)
-		elif (options.append == False):
-			parser.error( "Output file exists, use -f to overwrite or -a to append. No action taken" )
-			exit(1)
+	options.model = args[0]
+	error = check(options,options.verbose)
 	
-	# Check valid symmetry or whether the random argument has been given
-	if options.sym and options.random:
-		parser.error("ERROR: Cannot handle both the sym and random arguments simultaneously")
-		exit(1)
-	
-	if options.prop and options.numproj:
-		parser.error("ERROR: Cannot handle both the prop and numproj arguments simultaneously")
-		exit(1)
-	
-	if options.numproj and options.numproj < 0:
-		parser.error("ERROR: numproj must be greater than 0")
-		exit(1)
-	
-	elif options.sym:
-		options.sym=options.sym.lower()
-		if (options.sym[0] in ["c","d", "h"]):
-			if not(options.sym[1:].isdigit()):
-				print "ERROR: %s is an invalid symmetry type"%options.sym
-				exit(1)
-		else :
-			if not (options.sym in ["tet","oct","icos"]):
-				print "ERROR: %s is an invalid symmetry type"%options.sym
-				exit(1)
-		if not(options.prop) and not (options.numproj):	# check for valid prop - catches when prop is not specified
-			print "ERROR: No valid prop specified";
-			exit(1)
-		# handle negative or zero prop here	
-		if (options.prop and options.prop <= 0):
-			print "ERROR: %f is an invalid value for prop (must be greater than zero)"%options.prop
-			exit(1)
+	if ( options.verbose ):
+		if (error):
+			print "e2project3d.py test.... FAILED"
+		else:
+			if (options.verbose):
+				print "e2project3.py test.... PASSED"
 			
-		# GET EULERS here
+	if (options.check or error ): exit(1)
+	
+	# just remove the file - if the user didn't specify force then the error should have been found in the check function
+	if ( os.path.exists(options.outfile )):
+		if ( options.force ):
+			remove_file(options.outfile)
+
+	logger=E2init(sys.argv)
+	eulers = []
+	
+	if ( options.random ):
+		eulers = get_random_orientations( options.sym, options.random, options.nomirror )
+	else:
 		if (options.prop):
-			eulers = get_asym_unit_orientations( options.sym, options.prop, options.nomirror, options.perturb )
+				eulers = get_asym_unit_orientations( options.sym, options.prop, options.nomirror, options.perturb )
 		else:
 			if (options.numproj):
 				eulers = get_asym_unit_orientations_numproj( options.sym, options.numproj, options.nomirror, options.perturb )
@@ -155,24 +135,8 @@ def main():
 
 		# check for the phitoo argument.
 		if (options.phitoo):	
-			if (options.phitoo <= 0):
-				print "ERROR: %f is an invalid value for phitoo (must be greater than zero)"%options.phitoo
-				exit(1)
 			eulers = include_phi_rotations(eulers, options.phitoo)
-		
-	elif ( options.random ):
-		if (options.random <= 0):
-			print "ERROR: %i is an invalid value for random (must be greater than zero)"%options.random
-			exit(1)
-			
-		# GET EULERS here
-		eulers = get_random_orientations( options.sym, options.random, options.nomirror )
-		
-	else:
-		print "ERROR: Atleast one of the sym or random arguments must be given"
-		exit(1)
 
-	logger=E2init(sys.argv)
 	data = EMData()
 	data.read_image(args[0])
 	# generate and save all the projections to disk - that's it, that main job is done
@@ -819,6 +783,75 @@ def random_on_interval(low,high):
 		exit(1)
 
 	return (high-low)*random.random() + low
+
+def check(options, verbose=False):
+	
+	error = False
+	if ( not options.prop and not options.numproj ):
+		if verbose:
+			print "Error: you must specify one of either --prop or --numproj"
+		error = True
+	
+	if ( not options.sym ):
+		if verbose:
+			print "Error: you must specify the sym argument"
+		error = True
+		
+	if ( check_eman2_type(options.projector,Projectors,"Projector") == False ):
+		error = True
+
+	if not os.path.exists(options.model):
+		if verbose:
+			print "Error: 3D image %s does not exist" %options.model
+		error = True
+	
+	if ( options.force and options.append):
+		if verbose:
+			print "Error: cannot specify both append and force"
+		error = True
+		
+	if ( os.path.exists(options.outfile )):
+		if ( not options.force ):
+			if verbose:
+				print "Error: output file exists, use -f to overwrite or -a to append. No action taken"
+			error = True
+	
+	if options.sym and options.random:
+		if verbose:
+			print "Error: cannot handle both the sym and random arguments simultaneously"
+		error = True
+	
+	if options.numproj and options.numproj < 0:
+		print "Error: numproj must be greater than 0"
+		error = True
+	
+	elif options.sym:
+		options.sym=options.sym.lower()
+		if (options.sym[0] in ["c","d", "h"]):
+			if not(options.sym[1:].isdigit()):
+				if verbose:
+					print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
+				error = True
+		else :
+			if not (options.sym in ["tet","oct","icos"]):
+				if verbose:
+					print "Error: %s is an invalid symmetry type. You must specify the --sym argument"%options.sym
+				error = True
+	
+	if (options.phitoo):	
+		if (options.phitoo <= 0):
+			if verbose:
+				print "Error: %f is an invalid value for phitoo (must be greater than zero)"%options.phitoo
+			error = True
+	
+	if ( options.random ):
+		if (options.random <= 0):
+			if verbose:
+				print "Error: %i is an invalid value for random (must be greater than zero)"%options.random
+			error = True
+			
+	
+	return error
 
 if __name__=="__main__":
 	main()
