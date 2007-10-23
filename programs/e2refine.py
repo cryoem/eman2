@@ -46,7 +46,7 @@ def main():
 
 	
 	#options associated with e2refine.py
-	parser.add_option("--it", dest = "it", type = "int", default=0, help = "The total number of refinement iterations to perform")
+	parser.add_option("--iter", dest = "iter", type = "int", default=0, help = "The total number of refinement iterations to perform")
 	parser.add_option("--check", "-c", dest="check", default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--nomirror", dest="nomirror", default=False, action="store_true",help="Turn projection over the mirror portion of the asymmetric unit off")
@@ -93,7 +93,7 @@ def main():
 	
 	(options, args) = parser.parse_args()
 
-	check_directory_sanity(options,True)
+	check(options,True)
 	check_projection_args(options)
 	check_simmx_args(options,True)
 	check_classify_args(options,True)
@@ -104,32 +104,28 @@ def main():
 	if (options.check):
 		exit(1)
 		
-	if (options.it < 1):
+	if (options.iter < 1):
 		parser.error("You must specify the --it argument, and it must be at least one")
 		exit(1)
 	#check_projection_args(options, parser)
 	
 	# this is the main refinement loop
-	for i in range(0,options.it) :
+	for i in range(0,options.iter) :
 		
-		check_projection_args(options)
 		if ( os.system(get_projection_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_projection_cmd(options)
 			exit(1)
 		
-		check_simmx_args(options)
 		if ( os.system(get_simmx_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_simmx_cmd(options)
 			exit(1)
 			
-		check_classify_args(options)
 		if ( os.system(get_classify_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classify_cmd(options)
 			exit(1)
 			
 		newclasses = 'e2classes.%d.img' %(i+1)
 		options.cafile = newclasses
-		check_classaverage_args(options)
 		if ( os.system(get_classaverage_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_classaverage_cmd(options)
 			exit(1)
@@ -137,7 +133,6 @@ def main():
 		
 		newmodel = 'threed.%da.mrc' %(i+1)
 		options.model = newmodel
-		check_make3d_args(options)
 		if ( os.system(get_make3d_cmd(options)) != 0 ):
 			print "Failed to execute %s" %get_make3d_cmd(options)
 			exit(1)
@@ -170,6 +165,8 @@ def get_make3d_cmd(options,check=False,nofilecheck=False):
 def check_make3d_args(options, nofilecheck=False):
 	
 	cmd = get_make3d_cmd(options,True,nofilecheck)
+	print ""
+	print "#### Test executing make3d command: %s" %cmd
 	os.system(cmd)
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
@@ -203,6 +200,8 @@ def get_classaverage_cmd(options,check=False,nofilecheck=False):
 def check_classaverage_args(options, nofilecheck=False):
 	
 	cmd = get_classaverage_cmd(options,True,nofilecheck)
+	print ""
+	print "#### Test executing classaverage command: %s" %cmd
 	os.system(cmd)
 
 def get_classify_cmd(options,check=False,nofilecheck=False):
@@ -222,6 +221,8 @@ def get_classify_cmd(options,check=False,nofilecheck=False):
 def check_classify_args(options, nofilecheck=False):
 	
 	cmd = get_classify_cmd(options,True,nofilecheck)
+	print ""
+	print "#### Test executing classify command: %s" %cmd
 	os.system(cmd)
 
 def get_simmx_cmd(options,check=False,nofilecheck=False):
@@ -246,6 +247,8 @@ def get_simmx_cmd(options,check=False,nofilecheck=False):
 def check_simmx_args(options, nofilecheck=False):
 	
 	cmd = get_simmx_cmd(options,True,nofilecheck)
+	print ""
+	print "#### Test executing simmx command: %s" %cmd
 	os.system(cmd)
 
 def get_projection_cmd(options,check=False):
@@ -270,13 +273,15 @@ def get_projection_cmd(options,check=False):
 def check_projection_args(options):
 	
 	cmd = get_projection_cmd(options,True)
+	print ""
+	print "#### Test executing projection command: %s" %cmd
 	os.system(cmd)
 	
 	
-def check_directory_sanity(options,verbose=False):
+def check(options,verbose=False):
 	if (verbose):
 		print ""
-		print "### Testing directory contents"
+		print "#### Testing directory contents and command line arguments for e2refine.py"
 	
 	error = False
 	if not file_exists(options.startimg):
@@ -285,6 +290,10 @@ def check_directory_sanity(options,verbose=False):
 	
 	if not file_exists(options.model):
 		print "Error: 3D image %s does not exist" %options.model
+		error = True
+		
+	if not options.iter:
+		print "Error: you must specify the --it argument"
 		error = True
 		
 	if ( file_exists(options.model) and file_exists(options.startimg)):
@@ -317,8 +326,7 @@ def check_directory_sanity(options,verbose=False):
 		else:
 			s = "PASSED"
 			
-		print "e2refine.py... checking directory contents %s" %s
-		print ""
+		print "e2refine.py test.... %s" %s
 	
 	if ( error ):
 		if ( not options.check ): exit(1)

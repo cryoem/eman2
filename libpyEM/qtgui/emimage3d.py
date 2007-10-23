@@ -46,6 +46,8 @@ from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
 
+t3d_stack = []
+
 class EMImage3D(QtOpenGL.QGLWidget):
 	""" This class is not yet complete.
 	A QT widget for rendering 3D EMData objects.
@@ -57,7 +59,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		fmt.setDepth(1)
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMImage3D.allim[self]=0
-		
 # 		try: 
 # 			if EMImage2D.gq : pass
 # 		except:
@@ -77,7 +78,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.aspect=1.0
 		self.gq=0
-#		self.mmode=0
+		self.mmode=0
 		self.isothr=1.0
 		self.isorender=None
 		
@@ -117,11 +118,16 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.updateGL()
 		self.timer.start(25)
 		
-	def initializeGL(self):		
+	def initializeGL(self):
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
-		
+		#print "Initializing"
+		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
+
 		GL.glClearColor(0,0,0,0)
 		
 		if not self.gq:
@@ -147,36 +153,94 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		gluCylinder(self.gq,.01,.01,15.0,12,2)		
 		glPopMatrix()
 		glEndList()
+		
+		cl = 50
+		self.cylinderdl = glGenLists(1)
+		glNewList(self.cylinderdl,GL_COMPILE)
+		glColor(.7,.7,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.2,.1,0.4,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [.2,.2,0.1,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 32)
+		gluCylinder(self.gq,5,5,cl,16,16)
+		glEndList()
+		
+		self.xshapedl = glGenLists(1)
+		glNewList(self.xshapedl,GL_COMPILE)
+		glPushMatrix()
+		glTranslate(0,0,-cl/2)
+		glCallList(self.cylinderdl)
+		glPopMatrix()
+		glPushMatrix()
+		glRotate(90,0,1,0)
+		glTranslate(0,0,-cl/2)
+		glCallList(self.cylinderdl)
+		glPopMatrix()
+		glPushMatrix()
+		glRotate(90,1,0,0)
+		glTranslate(0,0,-cl/2)
+		glCallList(self.cylinderdl)
+		glPopMatrix()
+		glEndList()
+		
+		a = Transform3D()
+		a.to_identity()
+		self.t3d_stack = []
+		self.t3d_stack.append(a)
 	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		
+		glMatrixMode(GL_MODELVIEW)
+		glLoadIdentity()
 #		glLoadIdentity()
-#		glTranslated(0.0, 0.0, -10.0)
-		if not self.isorender: return
+		glTranslated(0, 0, -100.0)
 		
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
+		#print "in draw"
 		
-		self.isorender.set_surface_value(self.isothr)
-		a=self.isorender.get_isosurface(True)
-		f=a["faces"]
-		n=a["normals"]
-		p=a["points"]
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
 		
-		f=[i/3 for i in f]
+		#print "%f %f %f" %(float(rot["az"]),float(rot["alt"]), float(rot["phi"]))
+		
+		glRotate(float(rot["phi"]),0,0,1)
+		glRotate(float(rot["alt"]),1,0,0)
+		glRotate(float(rot["az"]),0,0,1)
+		
+		glRotate(15,1,0,0)
+		glRotate(45,0,1,0)	
+		
+		#if not self.isorender: return
+		
+		#glEnable(GL_LIGHTING)
+		#glEnable(GL_LIGHT0)
+		
+		#self.isorender.set_surface_value(self.isothr)
+		#a=self.isorender.get_isosurface(True)
+		#f=a["faces"]
+		#n=a["normals"]
+		#p=a["points"]
+		
+		#f=[i/3 for i in f]
 		
 		#glEnableClientState(GL_VERTEX_ARRAY)
 		#glEnableClientState(GL_INDEX_ARRAY)
 		#glVertexPointer()
 		glPushMatrix()
 		
-		glTranslate(-.5,-.5,2.0)
-		glScalef(2.0,2.0,2.0)
-#		glBegin(GL_TRIANGLES)
-		for i in f:
-			glVertex(p[i*3],p[i*3+1],p[i*3+2])
-#			print p[i*3],p[i*3+1],p[i*3+2]
-#		glEnd()
+		#glTranslate(-.5,-.5,2.0)
+		#glScalef(2.0,2.0,2.0)
+		#glBegin(GL_TRIANGLES)
+		#for i in f:
+			#glVertex(p[i*3],p[i*3+1],p[i*3+2])
+##			print p[i*3],p[i*3+1],p[i*3+2]
+		#glEnd()
+		
+		#glCallList(self.volcubedl)
+		glPushMatrix()
+		glCallList(self.xshapedl)
+		glPopMatrix()
+		#glColor4f(1.0,1.0,1.0,1.0)
+		#print "Drawing white sphere"
+		#glutSolidSphere(100,24,24)
 		
 		#glEnableClientState(GL_VERTEX_ARRAY)
 		#glEnableClientState(GL_INDEX_ARRAY)
@@ -190,25 +254,18 @@ class EMImage3D(QtOpenGL.QGLWidget):
 #		print len(p),len(f)/3
 		#print p
 		#print f
-		self.changec=self.data.get_attr("changecount")
+		#self.changec=self.data.get_attr("changecount")
 				
 	def resizeGL(self, width, height):
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		glEnable(GL_DEPTH_TEST)
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.9, 0.9, 0.9, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
-
-
-		side = min(width, height)
-#		glViewport((width - side) / 2, (height - side) / 2, side, side)
+		#side = min(width, height)
+#		glViewport((width - side) / 2, (height - side) / 2, side, side)'
+		aspect = float(width)/float(height)
 		glViewport(0,0,self.width(),self.height())
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
-		glTranslatef(0.,0.,-14.9)
+		#glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
+		gluPerspective(50,aspect,0.001,10000)
+		##glTranslatef(0.,0.,-14.9)
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
@@ -234,7 +291,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			if self.mmode==0:
 				self.emit(QtCore.SIGNAL("mousedown"), event)
 				return
-	
+		elif event.button()==Qt.RightButton:
+			if self.mmode==0:
+				self.rpressx = event.x()
+				self.rpressy = event.y()
+				
+				tmp = self.t3d_stack.pop()
+				t3d = Transform3D(tmp)
+				self.t3d_stack.append(tmp)
+				self.t3d_stack.append(t3d)
+				
+				self.emit(QtCore.SIGNAL("mousedown"), event)
+				return
+		
 	def mouseMoveEvent(self, event):
 #		lc=self.scrtoimg((event.x(),event.y()))
 # 		if self.rmousedrag and event.buttons()&Qt.RightButton:
@@ -243,6 +312,14 @@ class EMImage3D(QtOpenGL.QGLWidget):
 # 			self.update()
 		if event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
+				self.emit(QtCore.SIGNAL("mousedrag"), event)
+				return
+		if event.buttons()&Qt.RightButton:
+			if self.mmode==0:
+				self.motionRotate(self.rpressx - event.x(), self.rpressy - event.y())
+				self.updateGL()
+				self.rpressx = event.x()
+				self.rpressy = event.y()
 				self.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 	
@@ -254,8 +331,53 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			if self.mmode==0:
 				self.emit(QtCore.SIGNAL("mouseup"), event)
 				return
+		elif event.button()==Qt.RightButton:
+			if self.mmode==0:
+				self.rreleasex = event.x()
+				self.rreleasey = event.y()
+				self.emit(QtCore.SIGNAL("mousedown"), event)
+				return
 
-
+	def motionRotate(self,x,y):
+		if ( x == 0 and y == 0): return
+		
+		rotaxis_x = 0
+		rotaxis_y = 0
+		rotaxis_z = 0
+		
+		theta = atan2(-y,x)
+		
+		#if ( x == 0):
+			#rotaxis_x = 1
+		#elif ( y == 0 ):
+			#rotaxis_y = 1
+		#else:
+			#rotaxis_y = 1.0
+			#rotaxis_x = -float(y)/float(x)
+		
+		rotaxis_x = sin(theta)
+		rotaxis_y = cos(theta)
+		
+		length = sqrt(x*x + y*y)
+		
+		angle = length/8.0*pi
+		
+		t3d = Transform3D()
+		quaternion = {}
+		quaternion["Omega"] = angle
+		quaternion["n1"] = rotaxis_x
+		quaternion["n2"] = rotaxis_y
+		quaternion["n3"] = rotaxis_z
+		
+		t3d.set_rotation( EULER_SPIN, quaternion )
+		
+		size = len(self.t3d_stack)
+		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
+		#print "%d %d" %(x,y)
+		#print quaternion
+		#t3d.printme()
+		
+			
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
@@ -334,14 +456,14 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.highlim=1.0
 		self.busy=0
 		
-		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
-		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
-		QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
-		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
-		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
-		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
+		#QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		#QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
+		#QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
+		#QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
+		#QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
+		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
+		#QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
+		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
 	def newMin(self,val):
 		if self.busy : return

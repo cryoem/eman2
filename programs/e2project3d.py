@@ -89,14 +89,12 @@ def main():
 	parser.add_option("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
 	parser.add_option("--verbose","-v", dest="verbose", default=False, action="store_true",help="Toggle verbose mode - prints extra infromation to the command line while executing")
 	parser.add_option("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
+	parser.add_option("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
 	
 	(options, args) = parser.parse_args()
 	
 	
 	if ( options.check ): options.verbose = True
-	if (options.verbose):
-		print ""
-		print "### Testing to see if I can run e2project3d.py"
 	
 	if len(args) < 1:
 		parser.error("Error: No input file given")
@@ -106,10 +104,10 @@ def main():
 	
 	if ( options.verbose ):
 		if (error):
-			print "e2project3d.py test.... FAILED"
+			print "e2project3d.py command line arguments test.... FAILED"
 		else:
 			if (options.verbose):
-				print "e2project3.py test.... PASSED"
+				print "e2project3.py command line arguments test.... PASSED"
 			
 	if (options.check or error ): exit(1)
 	

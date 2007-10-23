@@ -96,17 +96,13 @@ def main():
 	
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
 	
-	if (options.verbose):
-		print ""
-		print "### Testing to see if I can run e2make3d.py"
-		
 	error = check(options,True)
 	
 	if (options.verbose):
 		if (error):
-			print "e2make3d.py test.... FAILED"
+			print "e2make3d.py command line arguments test.... FAILED"
 		else:
-			print "e2make3d.py test.... PASSED"
+			print "e2make3d.py command line arguments test.... PASSED"
 		
 	if ( options.check or error ) : exit(1)
 

@@ -76,18 +76,14 @@ def main():
 		if ( options.nofilecheck == False ):
 			options.simmxfile = args[0]
 		options.outfile = args[1]
-	
-	if (options.verbose):
-		print ""
-		print "### Testing to see if I can run e2classify.py"
 		
 	error = check(options,True)
 	
 	if (options.verbose):
 		if (error):
-			print "e2classify.py test.... FAILED"
+			print "e2classify.py command line arguments test.... FAILED"
 		else:
-			print "e2classify.py test.... PASSED"
+			print "e2classify.py command line arguments test.... PASSED"
 		
 	if ( options.check or error ) : exit(1)
 

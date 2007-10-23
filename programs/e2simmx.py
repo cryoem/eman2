@@ -70,10 +70,6 @@ def main():
 	if len(args)<3 : parser.error("Input and output files required")
 	
 	if (options.check): options.verbose = True # turn verbose on if the user is only checking...
-	
-	if (options.verbose):
-		print ""
-		print "### Testing to see if I can run e2simmx.py"
 		
 	if (options.nofilecheck == False):
 		options.reffile=args[0]
@@ -84,9 +80,9 @@ def main():
 	
 	if (options.verbose):
 		if (error):
-			print "e2simmx.py test.... FAILED"
+			print "e2simmx.py command line arguments test.... FAILED"
 		else:
-			print "e2simmx.py test.... PASSED"
+			print "e2simmx.py command line arguments test.... PASSED"
 		
 	if ( options.check or error ) : exit(1)
 	
