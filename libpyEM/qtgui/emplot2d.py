@@ -59,6 +59,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		fmt.setDoubleBuffer(True);
 		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		self.axes={}
+		self.pparm={}
 		self.inspector=None
 
 		self.data={}				# List of Lists to plot 
@@ -74,6 +75,8 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			if len(data)>1 : self.axes[key]=(0,1,-1)
 			else : self.axes[key]=(-1,0,-1)
 		except: return
+		
+		self.pparm[key]=(1,0,0,0,0,0)
 		
 		if data : self.data[key]=data
 		else : del self.data[key]
@@ -103,7 +106,9 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			else : x=self.data[i][self.axes[i][0]]
 			if j[1]==-1 : y=range(len(self.data[i][0]))
 			else : y=self.data[i][self.axes[i][1]]
-			ax.plot(x,y)
+			parm=""
+			if self.pparm[i][0]:
+			ax.plot(x,y,)
 		
 		canvas.draw()
 		a = canvas.tostring_rgb()  # save this and convert to bitmap as needed
@@ -139,6 +144,10 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	def setAxes(self,key,xa,ya,za):
 		if self.axes[key]==(xa,ya,za) : return
 		self.axes[key]=(xa,ya,za)
+		self.updateGL()
+		
+	def setPlotParms(self,key,line,linetype,linecolor,sym,symtype,symcolor):
+		self.pparm[key]=(line,linetype,linecolor,sym,symtype,symcolor)
 		self.updateGL()
 	
 	#def dragEnterEvent(self,event):
@@ -236,24 +245,50 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.hbl2.setMargin(0)
 		self.hbl2.setSpacing(6)
 		self.vbl.addLayout(self.hbl2)
-		
-		# This is for symbol parms
-		self.vbl2a = QtGui.QVBoxLayout()
-		self.vbl2a.setMargin(0)
-		self.vbl2a.setSpacing(6)
-		self.hbl2.addLayout(self.vbl2a)
-		
+				
 		# This is for line parms
 		self.vbl2b = QtGui.QVBoxLayout()
 		self.vbl2b.setMargin(0)
 		self.vbl2b.setSpacing(6)
 		self.hbl2.addLayout(self.vbl2b)
 				
+		self.lintog=QtGui.QPushButton(self)
+		self.lintog.setText("Line")
+		self.lintog.setCheckable(1)
+		self.vbl2b.addWidget(self.lintog)
+		
+		self.lincol=QtGui.QComboBox(self)
+		self.lincol.addItem("black")
+		self.lincol.addItem("blue")
+		self.lincol.addItem("red")
+		self.lincol.addItem("green")
+		self.vbl2b.addWidget(self.lincol)
+		
+		self.linsel=QtGui.QComboBox(self)
+		self.linsel.addItem("------")
+		self.linsel.addItem("- - - -")
+		self.linsel.addItem(".......")
+		self.linsel.addItem("-.-.-.-")
+		self.vbl2b.addWidget(self.linsel)
+		
+		# This is for point parms
+		self.vbl2a = QtGui.QVBoxLayout()
+		self.vbl2a.setMargin(0)
+		self.vbl2a.setSpacing(6)
+		self.hbl2.addLayout(self.vbl2a)
+				
 		self.symtog=QtGui.QPushButton(self)
 		self.symtog.setText("Symbol")
 		self.symtog.setCheckable(1)
 		self.vbl2a.addWidget(self.symtog)
 		
+		self.symcol=QtGui.QComboBox(self)
+		self.symcol.addItem("black")
+		self.symcol.addItem("blue")
+		self.symcol.addItem("red")
+		self.symcol.addItem("green")
+		self.vbl2a.addWidget(self.symcol)
+				
 		self.symsel=QtGui.QComboBox(self)
 		self.symsel.addItem("circle")
 		self.symsel.addItem("square")
@@ -261,7 +296,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.symsel.addItem("triup")
 		self.symsel.addItem("tridown")
 		self.vbl2a.addWidget(self.symsel)
-				
+		
 		# per plot column selectors
 		self.slidex=ValSlider(self,(-1,1),"X col:",0)
 		self.slidex.setIntonly(1)
@@ -282,8 +317,12 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged"), self.newCols)
 		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged"), self.newCols)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
-		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.togSym)
-		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.newSym)
+		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.symcol,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
+		QtCore.QObject.connect(self.lincol,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		self.datachange()
 		
 		
@@ -291,11 +330,8 @@ class EMPlot2DInspector(QtGui.QWidget):
 		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
-	def newSym(this,s):
-		print "newsym ",str(s)
-
-	def togSym(this,s):
-		print "togsym",str(s)
+	def updPlot(this,s=None):
+		
 
 	def newSet(self,row):
 		i=str(self.setlist.item(row).text())
