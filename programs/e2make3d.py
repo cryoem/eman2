@@ -104,7 +104,8 @@ def main():
 		else:
 			print "e2make3d.py command line arguments test.... PASSED"
 		
-	if ( options.check or error ) : exit(1)
+	if error : exit(1)
+	if options.check: exit(0)
 
 	logger=E2init(sys.argv)
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
@@ -352,7 +353,7 @@ def back_projection_reconstruction(options):
 		
 #----------------------------------------- works
 def fourier_reconstruction(options):
-	if not(options.verbose):
+	if (options.verbose):
 		print "Initializing the reconstructor ..."
 	
 	# Get the reconstructor and initialize it correctly
@@ -387,7 +388,7 @@ def fourier_reconstruction(options):
 				##            SNR[0:]=[tmp.get_data()]  python won't call funcs that return float*
 				#SNR=SNR+[tmp]
 
-	if not(options.verbose):
+	if (options.verbose):
 		print "Inserting Slices"
 	
 	for j in xrange(0,options.iter): #4):     #change back when the thr issue solved
@@ -487,7 +488,7 @@ def fourier_reconstruction(options):
 			#transform = Transform3D(EULER_EMAN,image.get_attr("euler_alt"),image.get_attr("euler_az"),image.get_attr("euler_phi"))
 			failure = recon.insert_slice(image,transform)
 			
-			if not(options.verbose):
+			if (options.verbose):
 				sys.stdout.write( "%2d/%d  %3d\t%5.1f  %5.1f  %5.1f\t\t%6.2f %6.2f" %
 								(i+1,total_images, image.get_attr("IMAGIC.imgnum"),
 								image.get_attr("euler_az"),
@@ -516,10 +517,10 @@ def fourier_reconstruction(options):
 	#if (options.goodbad):
 		#print "print log msgs"
 
-	if not(options.verbose):
+	if (options.verbose):
 		print "Inverting 3D Fourier volume to generate the real space reconstruction"
 	output = recon.finish()
-	if not(options.verbose):
+	if (options.verbose):
 		print "Finished Reconstruction"
 		
 	#if(options.savenorm):   # need to alter reconstructor class to get access to this
@@ -604,7 +605,8 @@ def check(options,verbose=False):
 				print  "Error: the 2D image data file (%s) does not exist, cannot run e2make3d.py" %(options.datafile)
 			error = True
 		else:
-			if ( options.pad != 0 ):
+			if ( options.pad != 0 and options.pad != None):
+				print options.pad
 				(xsize, ysize ) = gimme_image_dimensions2D(options.datafile);
 				if ( options.pad < xsize or options.pad < options.ysize):
 					if verbose:

@@ -83,7 +83,8 @@ def main():
 		else:
 			print "e2classaverage.py command line arguments test.... PASSED"
 	
-	if ( options.check or error ) : exit(1)
+	if error : exit(1)
+	if options.check: exit(0)
 	
 	
 	logger=E2init(sys.argv)

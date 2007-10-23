@@ -109,7 +109,8 @@ def main():
 			if (options.verbose):
 				print "e2project3.py command line arguments test.... PASSED"
 			
-	if (options.check or error ): exit(1)
+	if error : exit(1)
+	if options.check: exit(0)
 	
 	# just remove the file - if the user didn't specify force then the error should have been found in the check function
 	if ( os.path.exists(options.outfile )):

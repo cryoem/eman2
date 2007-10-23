@@ -79,12 +79,16 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.aspect=1.0
 		self.gq=0
 		self.mmode=0
-		self.isothr=1.0
+		self.isothr=0.5
 		self.isorender=None
+		self.isodl = 0
+		
+		self.scale = 1.0
 		
 		self.inspector=None
 		
-		if image : 
+		if image :
+			print "We have an image"
 			self.setData(image)
 			self.show()
 		
@@ -102,23 +106,33 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.updateGL()
 			return
 		
-		mean=data.get_attr("mean")
-		sigma=data.get_attr("sigma")
 		m0=data.get_attr("minimum")
 		m1=data.get_attr("maximum")
+		mean=data.get_attr("mean")
+		sigma = data.get_attr("sigma")
 		
-		self.minden=max(m0,mean-3.0*sigma)
-		self.maxden=min(m1,mean+3.0*sigma)
-		self.mindeng=max(m0,mean-5.0*sigma)
-		self.maxdeng=min(m1,mean+5.0*sigma)
 		
-		self.showInspector()		# shows the correct inspector if already open
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMImageInspector3D(self)
+		
+		
+		self.start_z = -1.25*data.get_zsize()
+		
+		#a=self.data.render_amp8()
+		#hist=numpy.fromstring(a[-1024:],'i')
+		
+		#self.inspector.setHist(hist,self.minden,self.maxden) 
+		
+		self.inspector.setThrs(m0,m1,mean+sigma)
+		self.isothr = mean+sigma
 		
 		self.isorender=MarchingCubes(data,1)
 		self.updateGL()
-		self.timer.start(25)
+		#self.timer.start(25)
 		
 	def initializeGL(self):
+		glEnable(GL_NORMALIZE)
+		
 		glEnable(GL_LIGHTING)
 		glEnable(GL_LIGHT0)
 		glEnable(GL_DEPTH_TEST)
@@ -182,91 +196,89 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glPopMatrix()
 		glEndList()
 		
-		a = Transform3D()
-		a.to_identity()
+		t3d = Transform3D()
+		rot = {}
+		rot["az"] = 0.01
+		rot["alt"] = 0.01
+		rot["phi"] = 0.01
+		
+		t3d.set_rotation( EULER_EMAN, rot )
 		self.t3d_stack = []
-		self.t3d_stack.append(a)
+		self.t3d_stack.append(t3d)
 	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-#		glLoadIdentity()
-		glTranslated(0, 0, -100.0)
 		
-		#print "in draw"
-		
+		# because the viewing volume extends from -0.001 to -10000 in the z direction,
+		# translate the scene back into it so it is visible...
+		glTranslated(0, 0, self.start_z)
+
+		# get the current rotation from the rotation stack and apply
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		
-		#print "%f %f %f" %(float(rot["az"]),float(rot["alt"]), float(rot["phi"]))
-		
+		self.updateInspector(rot)
+				
 		glRotate(float(rot["phi"]),0,0,1)
 		glRotate(float(rot["alt"]),1,0,0)
 		glRotate(float(rot["az"]),0,0,1)
 		
-		glRotate(15,1,0,0)
-		glRotate(45,0,1,0)	
+		# here is where zoom is effectively applied
+		glScalef(self.scale,self.scale,self.scale)
 		
-		#if not self.isorender: return
+		if self.isodl == 0:
+			self.createIsoDL()
 		
-		#glEnable(GL_LIGHTING)
-		#glEnable(GL_LIGHT0)
+		glCallList(self.isodl)
 		
-		#self.isorender.set_surface_value(self.isothr)
-		#a=self.isorender.get_isosurface(True)
-		#f=a["faces"]
-		#n=a["normals"]
-		#p=a["points"]
+	def createIsoDL(self):
+		# create the isosurface display list
 		
-		#f=[i/3 for i in f]
+		if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
 		
-		#glEnableClientState(GL_VERTEX_ARRAY)
-		#glEnableClientState(GL_INDEX_ARRAY)
-		#glVertexPointer()
+		self.isorender.set_surface_value(self.isothr)
+		a=self.isorender.get_isosurface(True)
+		f=a["faces"]
+		n=a["normals"]
+		p=a["points"]
+		
+		f=[i/3 for i in f]
+		n=[i/3 for i in n]
+		
+		self.isodl = glGenLists(1)
+		glNewList(self.isodl,GL_COMPILE)
 		glPushMatrix()
-		
-		#glTranslate(-.5,-.5,2.0)
-		#glScalef(2.0,2.0,2.0)
-		#glBegin(GL_TRIANGLES)
-		#for i in f:
-			#glVertex(p[i*3],p[i*3+1],p[i*3+2])
-##			print p[i*3],p[i*3+1],p[i*3+2]
-		#glEnd()
-		
-		#glCallList(self.volcubedl)
-		glPushMatrix()
-		glCallList(self.xshapedl)
+		glScalef(self.data.get_xsize(), self.data.get_ysize(), self.data.get_zsize())
+		glTranslate(-0.5, -0.5, -0.5)
+		glColor(.2,.1,0.4,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.2,.1,0.4,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [.2,.2,0.1,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 32)
+		glBegin(GL_TRIANGLES)
+		for i in f:
+			glVertex(p[i*3],p[i*3+1],p[i*3+2])
+			glNormal(n[i*3],n[i*3+1],n[i*3+2])
+			#print p[i*3],p[i*3+1],p[i*3+2]
+		glEnd()
 		glPopMatrix()
-		#glColor4f(1.0,1.0,1.0,1.0)
-		#print "Drawing white sphere"
-		#glutSolidSphere(100,24,24)
+		glEndList()
 		
-		#glEnableClientState(GL_VERTEX_ARRAY)
-		#glEnableClientState(GL_INDEX_ARRAY)
-		#glVertexPointer(3,GL_FLOAT,0,p)
-		#glIndexPointer(GL_INT,0,f)
-		#glDrawArrays(GL_TRIANGLES,0,len(f))
+		print "created isosurface"
 		
-		glPopMatrix()
-		
-#		print fmod(time()*10.0,360.0)
-#		print len(p),len(f)/3
-		#print p
-		#print f
-		#self.changec=self.data.get_attr("changecount")
-				
 	def resizeGL(self, width, height):
-		#side = min(width, height)
-#		glViewport((width - side) / 2, (height - side) / 2, side, side)'
-		aspect = float(width)/float(height)
+		# just use the whole window for rendering
 		glViewport(0,0,self.width(),self.height())
+		
+		# maintain the aspect ratio of the window we have
+		aspect = float(width)/float(height)
+		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
-		#glFrustum(-self.aspect,self.aspect, -1.,1., 5.,15.)
-		gluPerspective(50,aspect,0.001,10000)
-		##glTranslatef(0.,0.,-14.9)
+		# using gluPerspective for simplicity
+		gluPerspective(50,aspect,0.001,1000)
 		
+		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -279,6 +291,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		if not self.inspector : self.inspector=EMImageInspector3D(self)
 		self.inspector.show()
+	
+	def updateInspector(self,rot):
+		if not self.inspector or self.inspector ==None:
+			self.inspector=EMImageInspector3D(self)
+		self.inspector.newAz(float(rot["az"])+180)
+		self.inspector.newAlt(rot["alt"])
+		self.inspector.newPhi(float(rot["phi"])+180)
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
@@ -341,25 +360,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def motionRotate(self,x,y):
 		if ( x == 0 and y == 0): return
 		
-		rotaxis_x = 0
-		rotaxis_y = 0
-		rotaxis_z = 0
-		
 		theta = atan2(-y,x)
-		
-		#if ( x == 0):
-			#rotaxis_x = 1
-		#elif ( y == 0 ):
-			#rotaxis_y = 1
-		#else:
-			#rotaxis_y = 1.0
-			#rotaxis_x = -float(y)/float(x)
-		
+
 		rotaxis_x = sin(theta)
 		rotaxis_y = cos(theta)
+		rotaxis_z = 0
 		
 		length = sqrt(x*x + y*y)
-		
 		angle = length/8.0*pi
 		
 		t3d = Transform3D()
@@ -373,11 +380,35 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
-		#print "%d %d" %(x,y)
-		#print quaternion
-		#t3d.printme()
 		
-			
+	def setScale(self,val):
+		self.scale = val
+		self.updateGL()
+		
+	def setAz(self,val):
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		rot["az"] = val - 180.0
+		self.t3d_stack.append(Transform3D( EULER_EMAN, rot))
+		self.updateGL()
+		
+	def setAlt(self,val):
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		rot["alt"] = val
+		self.t3d_stack.append(Transform3D( EULER_EMAN, rot))
+		self.updateGL()
+		
+	def setPhi(self,val):
+		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
+		rot["phi"] = val - 180.0
+		self.t3d_stack.append(Transform3D( EULER_EMAN, rot))
+		self.updateGL()
+	
+	def setThr(self,val):
+		if (self.isothr != val):
+			self.isothr = val
+			self.createIsoDL()
+			self.updateGL()
+
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
 		QtGui.QWidget.__init__(self,None)
@@ -431,97 +462,76 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.mmode.addButton(self.mapp,0)
 		self.mmode.addButton(self.mmeas,1)
 		
-		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
+		self.scale = ValSlider(self,(0.0,15.0),"Mag:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
 		self.vbl.addWidget(self.scale)
 		
-		self.mins = ValSlider(self,label="Min:")
-		self.mins.setObjectName("mins")
-		self.vbl.addWidget(self.mins)
-		
-		self.maxs = ValSlider(self,label="Max:")
-		self.maxs.setObjectName("maxs")
-		self.vbl.addWidget(self.maxs)
-		
-		self.brts = ValSlider(self,(-1.0,1.0),"Brt:")
-		self.brts.setObjectName("brts")
-		self.vbl.addWidget(self.brts)
-		
-		self.conts = ValSlider(self,(0.0,1.0),"Cont:")
-		self.conts.setObjectName("conts")
-		self.vbl.addWidget(self.conts)
-		
 		self.lowlim=0
 		self.highlim=1.0
 		self.busy=0
-		
-		#QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		#QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.newMin)
-		#QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.newMax)
-		#QtCore.QObject.connect(self.brts, QtCore.SIGNAL("valueChanged"), self.newBrt)
-		#QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
-		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
-		#QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
-		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
-	def newMin(self,val):
+		self.thr = ValSlider(self,(0.0,2.0),"Thr:")
+		self.thr.setObjectName("az")
+		self.thr.setValue(0.5)
+		self.vbl.addWidget(self.thr)
+			
+		self.az = ValSlider(self,(0.0,360.0),"Az:")
+		self.az.setObjectName("az")
+		self.az.setValue(0.0)
+		self.vbl.addWidget(self.az)
+		
+		self.alt = ValSlider(self,(0.01,180.0),"Alt:")
+		self.alt.setObjectName("alt")
+		self.alt.setValue(0.0)
+		self.vbl.addWidget(self.alt)
+		
+		self.phi = ValSlider(self,(0.0,360.0),"Phi:")
+		self.phi.setObjectName("phi")
+		self.phi.setValue(0.0)
+		self.vbl.addWidget(self.phi)
+
+		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
+		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), target.setAz)
+		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), target.setAlt)
+		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), target.setPhi)
+		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), target.setThr)
+		
+	
+	def newAz(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setDenMin(val)
-
-		self.updBC()
+		self.az.setValue(val, True)
 		self.busy=0
-		
-	def newMax(self,val):
+
+	def newAlt(self,val):
 		if self.busy : return
 		self.busy=1
-		self.target.setDenMax(val)
-		self.updBC()
+		self.alt.setValue(val, True)
 		self.busy=0
 	
-	def newBrt(self,val):
+	def newPhi(self,val):
 		if self.busy : return
 		self.busy=1
-		self.updMM()
-		self.busy=0
-		
-	def newCont(self,val):
-		if self.busy : return
-		self.busy=1
-		self.updMM()
+		self.phi.setValue(val, True)
 		self.busy=0
 
-	def updBC(self):
-		b=0.5*(self.mins.value+self.maxs.value-(self.lowlim+self.highlim))/((self.highlim-self.lowlim))
-		c=(self.mins.value-self.maxs.value)/(2.0*(self.lowlim-self.highlim))
-		self.brts.setValue(-b)
-		self.conts.setValue(1.0-c)
-		
-	def updMM(self):
-		x0=((self.lowlim+self.highlim)/2.0-(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		x1=((self.lowlim+self.highlim)/2.0+(self.highlim-self.lowlim)*(1.0-self.conts.value)-self.brts.value*(self.highlim-self.lowlim))
-		self.mins.setValue(x0)
-		self.maxs.setValue(x1)
-		self.target.setDenRange(x0,x1)
+	def setThrs(self,low,high,val):
+		self.thr.setRange(low,high)
+		self.thr.setValue(val, True)
 		
 	def setHist(self,hist,minden,maxden):
 		self.hist.setData(hist,minden,maxden)
-
-	def setLimits(self,lowlim,highlim,curmin,curmax):
-		self.lowlim=lowlim
-		self.highlim=highlim
-		self.mins.setRange(lowlim,highlim)
-		self.maxs.setRange(lowlim,highlim)
-		self.mins.setValue(curmin)
-		self.maxs.setValue(curmax)
 
 # This is just for testing, of course
 if __name__ == '__main__':
 	app = QtGui.QApplication(sys.argv)
 	window = EMImage3D()
  	if len(sys.argv)==1 : 
- 		window.setData(test_image(size=(512,512)))
+		e = EMData()
+		e.set_size(33,33,33)
+		e.process_inplace('testimage.x')
+ 		window.setData(e)
 
 		# these lines are for testing shape rendering
 # 		window.addShape("a",["rect",.2,.8,.2,20,20,80,80,2])
@@ -529,6 +539,9 @@ if __name__ == '__main__':
 # 		window.addShape("c",["line",.2,.8,.5,20,120,100,200,2])
 # 		window.addShape("d",["label",.2,.8,.5,220,220,"Testing",14,1])
 	else :
+		if not os.path.exists(sys.argv[1]):
+			print "Error, input file %s does not exist" %sys.argv[1]
+			exit(1)
 		a=EMData.read_images(sys.argv[1],[0])
 		window.setData(a[0])
 	window.show()

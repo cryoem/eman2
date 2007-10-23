@@ -73,8 +73,9 @@ def main():
 	
 	if (options.check): 
 		options.verbose = True # turn verbose on if the user is only checking...
-		if ( options.nofilecheck == False ):
-			options.simmxfile = args[0]
+		
+	if ( options.nofilecheck == False ):
+		options.simmxfile = args[0]
 		options.outfile = args[1]
 		
 	error = check(options,True)
@@ -85,7 +86,8 @@ def main():
 		else:
 			print "e2classify.py command line arguments test.... PASSED"
 		
-	if ( options.check or error ) : exit(1)
+	if error : exit(1)
+	if options.check: exit(0)
 
 	
 	E2n=E2init(sys.argv)
@@ -219,14 +221,15 @@ def check(options,verbose):
 			print "Error: the --sep argument must be greater than zero, currently it is %d" %(options.sep)
 		error = True
 	
-	if os.path.exists(options.outfile):
-		if (not options.force):
-			if verbose:
-				parser.error("File %s exists, will not write over, exiting" %args[1])
-			error = True
 
 	
 	if ( options.nofilecheck == False ):
+		if os.path.exists(options.outfile):
+			if (not options.force):
+				if verbose:
+					parser.error("File %s exists, will not write over, exiting" %args[1])
+				error = True
+		
 		if not os.path.exists(options.simmxfile):
 			if verbose:
 				print "Error: the similarity matrix file (%s) was not found, cannot run e2classify.py" %(options.simmxfile)

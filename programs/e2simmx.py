@@ -84,7 +84,8 @@ def main():
 		else:
 			print "e2simmx.py command line arguments test.... PASSED"
 		
-	if ( options.check or error ) : exit(1)
+	if error : exit(1)
+	if options.check: exit(0)
 	
 	E2n=E2init(sys.argv)
 	

@@ -92,21 +92,29 @@ def main():
 	parser.add_option("--m3diter", type=int, default=4, help="The number of times the 3D reconstruction should be iterated")
 	
 	(options, args) = parser.parse_args()
-
-	check(options,True)
-	check_projection_args(options)
-	check_simmx_args(options,True)
-	check_classify_args(options,True)
+	
+	error = False
+	if check(options,True) == True : 
+		error = True
+	if check_projection_args(options) == True : 
+		error = True
+	if check_simmx_args(options,True) == True :
+		error = True
+	if check_classify_args(options,True) == True :
+		error = True
 	options.cafile = "e2classes.1.img"
-	check_classaverage_args(options,True)
-	check_make3d_args(options,True)
+	if check_classaverage_args(options,True) == True :
+		error = True
+	if check_make3d_args(options,True) == True:
+		error = True
+	
+	if error:
+		print "Error encountered while, bailing"
+		exit(1)
 	
 	if (options.check):
-		exit(1)
+		exit(0)
 		
-	if (options.iter < 1):
-		parser.error("You must specify the --it argument, and it must be at least one")
-		exit(1)
 	#check_projection_args(options, parser)
 	
 	# this is the main refinement loop
@@ -167,7 +175,7 @@ def check_make3d_args(options, nofilecheck=False):
 	cmd = get_make3d_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing make3d command: %s" %cmd
-	os.system(cmd)
+	return ( os.system(cmd) != 0)
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 	
@@ -202,7 +210,7 @@ def check_classaverage_args(options, nofilecheck=False):
 	cmd = get_classaverage_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing classaverage command: %s" %cmd
-	os.system(cmd)
+	return ( os.system(cmd) != 0)
 
 def get_classify_cmd(options,check=False,nofilecheck=False):
 	e2classifycmd = "e2classify.py %s %s --sep=%d -f" %(options.simmxfile,options.classifyfile,options.sep)
@@ -223,7 +231,7 @@ def check_classify_args(options, nofilecheck=False):
 	cmd = get_classify_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing classify command: %s" %cmd
-	os.system(cmd)
+	return ( os.system(cmd) != 0)
 
 def get_simmx_cmd(options,check=False,nofilecheck=False):
 	
@@ -249,7 +257,7 @@ def check_simmx_args(options, nofilecheck=False):
 	cmd = get_simmx_cmd(options,True,nofilecheck)
 	print ""
 	print "#### Test executing simmx command: %s" %cmd
-	os.system(cmd)
+	return ( os.system(cmd) != 0)
 
 def get_projection_cmd(options,check=False):
 
@@ -275,9 +283,8 @@ def check_projection_args(options):
 	cmd = get_projection_cmd(options,True)
 	print ""
 	print "#### Test executing projection command: %s" %cmd
-	os.system(cmd)
-	
-	
+	return ( os.system(cmd) != 0 )
+
 def check(options,verbose=False):
 	if (verbose):
 		print ""
@@ -327,9 +334,8 @@ def check(options,verbose=False):
 			s = "PASSED"
 			
 		print "e2refine.py test.... %s" %s
-	
-	if ( error ):
-		if ( not options.check ): exit(1)
+
+	return error == True
 	
 if __name__ == "__main__":
     main()
