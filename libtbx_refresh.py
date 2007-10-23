@@ -43,4 +43,3 @@ print self
 #   if (not os.path.isdir(target_dir)):
 #     os.makedirs(target_dir)
 #   generate_all.refresh(array_family=os.path.dirname(target_dir))
-

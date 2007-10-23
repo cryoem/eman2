@@ -169,4 +169,3 @@ class ValSlider(QtGui.QWidget):
 	def updateboth(self):
 		self.updates()
 		self.updatet()
-		

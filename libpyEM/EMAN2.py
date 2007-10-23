@@ -491,5 +491,3 @@ The following classes are defined: \n\
   dump_reconstructors() - Print out all Reconstructors and their parameters. \n\
   dump_analyzers() - Print out all Analyzers anf their parameters. \n\
 "
-  
-  

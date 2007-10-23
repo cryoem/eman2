@@ -541,4 +541,3 @@ if __name__ == '__main__':
 #	w2.show()
 	
 	sys.exit(app.exec_())
-	

@@ -45,4 +45,3 @@ def remove_files(pattern, absdir=None):
 	for file in files:
 		if re.match(pattern, file):
 			os.remove(file)
-			

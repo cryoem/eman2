@@ -45,4 +45,3 @@ img2.read_image(testimg)
 cmpscore = img1.cmp("dot", img2, {"abc":EMObject(12)})
 
 print "cmp score = ", cmpscore
-

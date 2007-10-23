@@ -38,5 +38,3 @@ import glob
 
 for name in glob.glob('test_*.py'):
     os.system('python %s'%name)
-    
-    

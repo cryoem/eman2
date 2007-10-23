@@ -112,4 +112,3 @@ avg/=avg.get_attr("maximum")
 #avg.process_inplace("math.pow",{"pow":gamma})
 avg.write_image("avg.mrc")
 display(avg)
-

@@ -59,4 +59,3 @@ e.read_image(inputfile)
 e.align("rtf_best", {"to": ref, "maxshift": 8})
 
 e.write_image(outputfile)
-

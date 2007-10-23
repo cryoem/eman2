@@ -135,5 +135,3 @@ def assertfloat(self, f1, f2):
     diff = f1 - f2
     if math.fabs(diff) > delta:
         self.assertEqual(f1, f2)
-
-            

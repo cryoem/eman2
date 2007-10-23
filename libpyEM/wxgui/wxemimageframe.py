@@ -204,4 +204,3 @@ class EMImageFrame(wx.Window):
 			dc.Clear()
 			return
 		dc.DrawBitmap(self.bm,0,0,0)
-

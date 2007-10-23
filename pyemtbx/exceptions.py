@@ -35,4 +35,3 @@ def exception_type(runtime_err):
 	first_space = fullerr.find(" ")
 	firstword = fullerr[0:first_space]
 	return firstword
-

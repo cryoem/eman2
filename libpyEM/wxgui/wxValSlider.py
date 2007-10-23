@@ -48,5 +48,3 @@ class ValSlider(wx.Frame):
         event.Skip()
 
 # end of class ValSlider
-
-

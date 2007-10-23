@@ -67,4 +67,3 @@ for i in cmps:
 	l=EMData.read_images(sys.argv[1],(i[1],i[1]+1))
 	l[0].write_image(sys.argv[2],-1)
 	l[1].write_image(sys.argv[2],-1)
-

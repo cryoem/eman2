@@ -78,4 +78,3 @@ for deltheta in theta_granularity:
 			                4, exptanglelist)
 	rootname, extname = os.path.splitext(output_volume_name)
 	vol.write_image(rootname + "_" + repr(deltheta) + extname)
-

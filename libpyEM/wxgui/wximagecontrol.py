@@ -195,5 +195,3 @@ class ImageControl(wx.Dialog):
 
 
 # end of class ImageControl
-
-
