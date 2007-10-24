@@ -81,7 +81,7 @@ void EMData::center_origin_fft()
 					cmplx(ix,iy,iz) *= float(-2*((ix+iy+iz)%2) + 1);
 					float temp = float(iz-1+iy-1+ix)/float(ny)*M_PI; 		
 					complex<float> temp2 = complex<float>(cos(temp), -sin(temp));
-					cmplx(ix,iy,iz) *= temp2;			
+					cmplx(ix,iy,iz) *= temp2;
 				}
 			}
 		}

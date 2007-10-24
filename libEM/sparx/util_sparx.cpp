@@ -15356,8 +15356,6 @@ EMData* Util::mult_scalar(EMData* img, float scalar)
 	for (int i=0;i<size;i++)img2_ptr[i] = img_ptr[i]*scalar;
 	img2->update();
 
-	//img2->flags = EMData::EMDataFlags ;
-
 	if(img->is_complex()) {
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
@@ -15548,7 +15546,11 @@ void Util::add_img2(EMData* img, EMData* img1)
 	int size = nx*ny*nz;
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
-	for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
+	if(img->is_complex()) {
+		for (int i=0; i<size; i+=2) img_ptr[i] += img1_ptr[i] * img1_ptr[i] + img1_ptr[i+1] * img1_ptr[i+1] ;
+	} else {
+		for (int i=0;i<size;i++) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
+	}
 	img->update();
 	
 	EXITFUNC;
