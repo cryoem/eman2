@@ -89,6 +89,10 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
 	
+	linetypes=["-","--",":","-."]
+	symtypes=["o","s","+","2","1"]
+	colortypes=["k","b","r","g"]
+	
 	def paintGL(self):
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 #		GL.glLoadIdentity()
@@ -107,8 +111,14 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			if j[1]==-1 : y=range(len(self.data[i][0]))
 			else : y=self.data[i][self.axes[i][1]]
 			parm=""
-			if self.pparm[i][0]:
-			ax.plot(x,y,)
+			if self.pparm[i][0]: 
+				parm+=linetypes[self.pparm[i][1]]
+				parm+=colortypes[self.pparm[i][3]]
+			if self.pparm[i][4]:
+				parm+=symtypes[self.pparm[i][5]]
+				parm+=colortypes[self.pparm[i][6]]
+				
+			ax.plot(x,y,parm)
 		
 		canvas.draw()
 		a = canvas.tostring_rgb()  # save this and convert to bitmap as needed
@@ -146,7 +156,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.axes[key]=(xa,ya,za)
 		self.updateGL()
 		
-	def setPlotParms(self,key,line,linetype,linecolor,sym,symtype,symcolor):
+	def setPlotParms(self,key,line,linetype,linewidth,linecolor,sym,symtype,symsize,symcolor):
 		self.pparm[key]=(line,linetype,linecolor,sym,symtype,symcolor)
 		self.updateGL()
 	
@@ -331,7 +341,9 @@ class EMPlot2DInspector(QtGui.QWidget):
 		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
 	def updPlot(this,s=None):
-		
+		self.target.setPlotParms(str(self.setlist.currentItem().text()),self.lintog.isChecked(),
+			self.linsel.currentIndex(),1.0,self.lincol.currentIndex(),self.symtog.isChecked(),
+			self.symsel.currentIndex(),10.0,self.symcol.currentIndex())
 
 	def newSet(self,row):
 		i=str(self.setlist.item(row).text())
@@ -341,6 +353,15 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidex.setValue(self.target.axes[i][0],1)
 		self.slidey.setValue(self.target.axes[i][1],1)
 		self.slidec.setValue(self.target.axes[i][2],1)
+		
+		pp=self.target.pparm[i]
+		self.lintog.setChecked(pp[0])
+		self.linsel.setCurrentIndex(pp[1])
+		self.lincol.setCurrentIndex(pp[3])
+		
+		self.symtog.setChecked(pp[4])
+		self.symsel.setCurrentIndex(pp[5])
+		self.symcol.setCurrentIndex(pp[6])
 
 	def newCols(self,val):
 		if self.target: 
