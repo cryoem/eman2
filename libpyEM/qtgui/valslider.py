@@ -36,7 +36,6 @@ from PyQt4 import QtCore, QtGui
 def clamp(x0,val,x1):
 	return max(min(val,x1),x0)
 
-
 class ValSlider(QtGui.QWidget):
 	"""The valslider class represents a connected text widget and horizontal slider.
 	setValue(float) - to programatically change the value

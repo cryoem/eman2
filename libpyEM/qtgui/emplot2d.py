@@ -51,6 +51,11 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 
+linetypes=["-","--",":","-."]
+symtypes=["o","s","+","2","1"]
+colortypes=["k","b","r","g"]
+
+
 class EMPlot2D(QtOpenGL.QGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
@@ -76,7 +81,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			else : self.axes[key]=(-1,0,-1)
 		except: return
 		
-		self.pparm[key]=(1,0,0,0,0,0)
+		self.pparm[key]=(0,1,0,1,0,0,5)
 		
 		if data : self.data[key]=data
 		else : del self.data[key]
@@ -88,11 +93,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
-	
-	linetypes=["-","--",":","-."]
-	symtypes=["o","s","+","2","1"]
-	colortypes=["k","b","r","g"]
-	
+		
 	def paintGL(self):
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 #		GL.glLoadIdentity()
@@ -101,7 +102,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		if not self.data : return
 		
 		fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-		ax=fig.add_axes((.1,.1,.85,.85))
+		ax=fig.add_axes((.1,.05,.9,.9))
 		canvas=FigureCanvasAgg(fig)
 		
 		for i in self.axes.keys():
@@ -111,14 +112,13 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 			if j[1]==-1 : y=range(len(self.data[i][0]))
 			else : y=self.data[i][self.axes[i][1]]
 			parm=""
-			if self.pparm[i][0]: 
-				parm+=linetypes[self.pparm[i][1]]
-				parm+=colortypes[self.pparm[i][3]]
+			parm+=colortypes[self.pparm[i][0]]
+			if self.pparm[i][1]: 
+				parm+=linetypes[self.pparm[i][2]]
 			if self.pparm[i][4]:
 				parm+=symtypes[self.pparm[i][5]]
-				parm+=colortypes[self.pparm[i][6]]
 				
-			ax.plot(x,y,parm)
+			ax.plot(x,y,parm,linewidth=self.pparm[i][3],markersize=self.pparm[i][6])
 		
 		canvas.draw()
 		a = canvas.tostring_rgb()  # save this and convert to bitmap as needed
@@ -156,8 +156,8 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.axes[key]=(xa,ya,za)
 		self.updateGL()
 		
-	def setPlotParms(self,key,line,linetype,linewidth,linecolor,sym,symtype,symsize,symcolor):
-		self.pparm[key]=(line,linetype,linecolor,sym,symtype,symcolor)
+	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize):
+		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
 		self.updateGL()
 	
 	#def dragEnterEvent(self,event):
@@ -251,6 +251,13 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.vbl.setObjectName("vbl")
 		self.hbl.addLayout(self.vbl)
 		
+		self.color=QtGui.QComboBox(self)
+		self.color.addItem("black")
+		self.color.addItem("blue")
+		self.color.addItem("red")
+		self.color.addItem("green")
+		self.vbl.addWidget(self.color)
+
 		self.hbl2 = QtGui.QHBoxLayout()
 		self.hbl2.setMargin(0)
 		self.hbl2.setSpacing(6)
@@ -266,20 +273,17 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.lintog.setText("Line")
 		self.lintog.setCheckable(1)
 		self.vbl2b.addWidget(self.lintog)
-		
-		self.lincol=QtGui.QComboBox(self)
-		self.lincol.addItem("black")
-		self.lincol.addItem("blue")
-		self.lincol.addItem("red")
-		self.lincol.addItem("green")
-		self.vbl2b.addWidget(self.lincol)
-		
+				
 		self.linsel=QtGui.QComboBox(self)
 		self.linsel.addItem("------")
 		self.linsel.addItem("- - - -")
 		self.linsel.addItem(".......")
 		self.linsel.addItem("-.-.-.-")
 		self.vbl2b.addWidget(self.linsel)
+		
+		self.linwid=QtGui.QSpinBox(self)
+		self.linwid.setRange(1,10)
+		self.vbl2b.addWidget(self.linwid)
 		
 		# This is for point parms
 		self.vbl2a = QtGui.QVBoxLayout()
@@ -291,14 +295,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.symtog.setText("Symbol")
 		self.symtog.setCheckable(1)
 		self.vbl2a.addWidget(self.symtog)
-		
-		self.symcol=QtGui.QComboBox(self)
-		self.symcol.addItem("black")
-		self.symcol.addItem("blue")
-		self.symcol.addItem("red")
-		self.symcol.addItem("green")
-		self.vbl2a.addWidget(self.symcol)
-				
+
 		self.symsel=QtGui.QComboBox(self)
 		self.symsel.addItem("circle")
 		self.symsel.addItem("square")
@@ -307,32 +304,47 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.symsel.addItem("tridown")
 		self.vbl2a.addWidget(self.symsel)
 		
+		self.symsize=QtGui.QSpinBox(self)
+		self.symsize.setRange(0,25)
+		self.vbl2a.addWidget(self.symsize)
+		
 		# per plot column selectors
-		self.slidex=ValSlider(self,(-1,1),"X col:",0)
-		self.slidex.setIntonly(1)
+		self.slidex=QtGui.QSpinBox(self)
+		self.slidex.setRange(-1,1)
 		self.vbl.addWidget(self.slidex)
+		#self.slidex=ValSlider(self,(-1,1),"X col:",0)
+		#self.slidex.setIntonly(1)
+		#self.vbl.addWidget(self.slidex)
 		
-		self.slidey=ValSlider(self,(-1,1),"Y col:",1)
-		self.slidey.setIntonly(1)
+		self.slidey=QtGui.QSpinBox(self)
+		self.slidey.setRange(-1,1)
 		self.vbl.addWidget(self.slidey)
+		#self.slidey=ValSlider(self,(-1,1),"Y col:",1)
+		#self.slidey.setIntonly(1)
+		#self.vbl.addWidget(self.slidey)
 		
-		self.slidec=ValSlider(self,(-1,1),"C col:",-1)
-		self.slidec.setIntonly(1)
+		self.slidec=QtGui.QSpinBox(self)
+		self.slidec.setRange(-1,1)
 		self.vbl.addWidget(self.slidec)
+		#self.slidec=ValSlider(self,(-1,1),"C col:",-1)
+		#self.slidec.setIntonly(1)
+		#self.vbl.addWidget(self.slidec)
 		
 		self.setLayout(self.hbl)
 
+		self.quiet=0
 		
-		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged"), self.newCols)
-		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged"), self.newCols)
-		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged"), self.newCols)
+		QtCore.QObject.connect(self.slidex, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+		QtCore.QObject.connect(self.slidey, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
+		QtCore.QObject.connect(self.slidec, QtCore.SIGNAL("valueChanged(int)"), self.newCols)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
+		QtCore.QObject.connect(self.color,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.symtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.symcol,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.symsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.symsize,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
 		QtCore.QObject.connect(self.lintog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		QtCore.QObject.connect(self.lincol,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.linsel,QtCore.SIGNAL("currentIndexChanged(QString)"),self.updPlot)
+		QtCore.QObject.connect(self.linwid,QtCore.SIGNAL("valueChanged(int)"),self.updPlot)
 		self.datachange()
 		
 		
@@ -340,28 +352,33 @@ class EMPlot2DInspector(QtGui.QWidget):
 		#QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		#QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
-	def updPlot(this,s=None):
-		self.target.setPlotParms(str(self.setlist.currentItem().text()),self.lintog.isChecked(),
-			self.linsel.currentIndex(),1.0,self.lincol.currentIndex(),self.symtog.isChecked(),
-			self.symsel.currentIndex(),10.0,self.symcol.currentIndex())
+	def updPlot(self,s=None):
+		if self.quiet : return
+		self.target.setPlotParms(str(self.setlist.currentItem().text()),self.color.currentIndex(),self.lintog.isChecked(),
+			self.linsel.currentIndex(),self.linwid.value(),self.symtog.isChecked(),
+			self.symsel.currentIndex(),self.symsize.value())
 
 	def newSet(self,row):
+		self.quiet=1
 		i=str(self.setlist.item(row).text())
 		self.slidex.setRange(-1.5,len(self.target.data[i])-1)
 		self.slidey.setRange(-1.5,len(self.target.data[i])-1)
 		self.slidec.setRange(-1.5,len(self.target.data[i])-1)
-		self.slidex.setValue(self.target.axes[i][0],1)
-		self.slidey.setValue(self.target.axes[i][1],1)
-		self.slidec.setValue(self.target.axes[i][2],1)
+		self.slidex.setValue(self.target.axes[i][0])
+		self.slidey.setValue(self.target.axes[i][1])
+		self.slidec.setValue(self.target.axes[i][2])
 		
 		pp=self.target.pparm[i]
-		self.lintog.setChecked(pp[0])
-		self.linsel.setCurrentIndex(pp[1])
-		self.lincol.setCurrentIndex(pp[3])
+		self.color.setCurrentIndex(pp[0])
+		
+		self.lintog.setChecked(pp[1])
+		self.linsel.setCurrentIndex(pp[2])
+		self.linwid.setValue(pp[3])
 		
 		self.symtog.setChecked(pp[4])
 		self.symsel.setCurrentIndex(pp[5])
-		self.symcol.setCurrentIndex(pp[6])
+		self.symsize.setValue(pp[6])
+		self.quiet=0
 
 	def newCols(self,val):
 		if self.target: 
