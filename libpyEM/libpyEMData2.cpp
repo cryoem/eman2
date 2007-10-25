@@ -82,6 +82,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(EMAN_EMData_ctf_img_overloads_5_12, EMAN::EMData
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_overloads_0_1, zeropad_ntimes, 0, 1)
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_zeropad_ntimes_fft_shuffle_overloads_0_1, zeropad_ntimes_fft_shuffle, 0, 1)
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_pad_fft_overloads_0_1, pad_fft, 0, 1)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_FourInterpol_overloads_1_4, FourInterpol, 1, 4)
@@ -336,8 +338,10 @@ BOOST_PYTHON_MODULE(libpyEMData2)
         .def("extractline", &EMAN::EMData::extractline, return_value_policy< manage_new_object >())
         .def("ctf_img", &EMAN::EMData::ctf_img, EMAN_EMData_ctf_img_overloads_5_12()[ return_value_policy< manage_new_object >() ])
         .def("center_origin", &EMAN::EMData::center_origin)
+        .def("center_origin_yz", &EMAN::EMData::center_origin_yz)
         .def("center_origin_fft", &EMAN::EMData::center_origin_fft)
         .def("zeropad_ntimes", &EMAN::EMData::zeropad_ntimes, EMAN_EMData_zeropad_ntimes_overloads_0_1()[ return_value_policy< manage_new_object >() ])
+        .def("zeropad_ntimes_fft_shuffle", &EMAN::EMData::zeropad_ntimes_fft_shuffle, EMAN_EMData_zeropad_ntimes_fft_shuffle_overloads_0_1()[ return_value_policy< manage_new_object >() ])
         .def("pad_fft", &EMAN::EMData::pad_fft, EMAN_EMData_pad_fft_overloads_0_1()[ return_value_policy< manage_new_object >() ])
         .def("postift_depad_corner_inplace", &EMAN::EMData::postift_depad_corner_inplace)
         .def("FourInterpol", &EMAN::EMData::FourInterpol, EMAN_EMData_FourInterpol_overloads_1_4()[ return_value_policy< manage_new_object >() ])

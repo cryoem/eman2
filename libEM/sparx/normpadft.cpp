@@ -47,6 +47,7 @@ void EMData::center_origin()
 			for (int ix = 0; ix < nx; ix++) {
 				// next line multiplies by +/- 1
 				(*this)(ix,iy,iz) *= -2*((ix+iy+iz)%2) + 1;
+				//(*this)(ix,iy,iz) *= -2*((iy+iz)%2)+1;
 			}
 		}
 	}
@@ -55,6 +56,23 @@ void EMData::center_origin()
 	EXITFUNC;
 }
 
+void EMData::center_origin_yz()
+{
+	ENTERFUNC;
+	if (is_complex()) {
+		LOGERR("Real image expected. Input image is complex.");
+		throw ImageFormatException("Real image expected. Input image is complex.");
+	}
+	for (int iz = 0; iz < nz; iz++) {
+		for (int iy = (iz+1)%2; iy < ny; iy+=2) {
+			for (int ix = 0; ix < nx; ix++) {
+				(*this)(ix,iy,iz) *= -1;
+			}
+		}
+	}
+	update();
+	EXITFUNC;
+}
 
 void EMData::center_origin_fft()
 {
@@ -91,6 +109,7 @@ void EMData::center_origin_fft()
 				for (int ix = 0; ix < nxc; ix++) {
 					// next line multiplies by +/- 1
 					cmplx(ix,iy,iz) *= float(-2*((ix+iy+iz)%2) + 1);
+					//cmplx(ix,iy,iz) *= float(-2*((iy+iz)%2) + 1);
 				}
 			}
 		}
@@ -138,6 +157,55 @@ EMData* EMData::zeropad_ntimes(int npad) {
 	EXITFUNC;
 }
 
+
+// This routine performs three functions altogether: pad_fft, center_padded, fft_shuffle(performed in real space)
+EMData* EMData::zeropad_ntimes_fft_shuffle(int npad) {
+	ENTERFUNC;
+	if (is_complex())
+		throw ImageFormatException("Zero padding complex images not supported");
+	EMData* newimg = copy_head();
+	int nxpad = npad*nx;
+	int nypad = npad*ny;
+	int nzpad = npad*nz;
+	if (1 == ny) {
+		// 1-d image, don't want to pad along y or z
+		// Also, assuming that we can't have an image sized as nx=5, ny=1, nz=5.
+		nypad = ny;
+		nzpad = nz;
+	} else if (nz == 1) {
+		// 2-d image, don't want to pad along z
+		nzpad = nz;
+		// shuffle
+		for (int iy=1; iy<ny; iy+=2)
+			for (int ix=0; ix<nx; ix++)
+				(*this)(ix,iy,0) *= -1;
+	} else {
+		// 3-d image, shuffle
+		for (int iz=0; iz<nz; iz++)
+			for (int iy=(iz+1)%2; iy<ny; iy+=2)
+				for (int ix=0; ix<nx; ix++) 
+					(*this)(ix,iy,iz) *= -1;
+	}
+	newimg->set_size(nxpad+2,nypad,nzpad);
+	newimg->to_zero();
+	newimg->set_fftpad(true);
+	size_t bytes = nx*sizeof(float);
+	
+	// Commented by Zhengfan Yang on 03/14/07
+	// This is incorrect for npad=1 and nx (or ny, nz) is odd
+	// int xstart = (nx != 1) ? (nxpad - nx)/2 + nx%2 : 0;
+	// int ystart = (ny != 1) ? (nypad - ny)/2 + ny%2 : 0;
+	// int zstart = (nz != 1) ? (nzpad - nz)/2 + nz%2 : 0;
+	// Should have better way to write it, but temporarily we'll use the following
+	int xstart = ( nx == 1 || npad == 1 ) ? 0 : (nxpad - nx)/2 + nx%2;
+	int ystart = ( ny == 1 || npad == 1 ) ? 0 : (nypad - ny)/2 + ny%2;
+	int zstart = ( nz == 1 || npad == 1 ) ? 0 : (nzpad - nz)/2 + nz%2;
+	
+	for (int iz = 0; iz < nz; iz++) for (int iy = 0; iy < ny; iy++) memcpy( &(*newimg)(xstart,iy+ystart,iz+zstart), &(*this)(0,iy,iz), bytes);
+	newimg->update();
+	return newimg;
+	EXITFUNC;
+}
 
 /** #G2#
 Purpose: Create a new [npad-times zero-padded] fft-extended real image.

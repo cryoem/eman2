@@ -44,6 +44,7 @@ public:
  */
 void center_origin();
 
+void center_origin_yz();
 
 /** Multiply a Fourier image by (-1)**(ix+iy+iz) to center it.
  *
@@ -61,6 +62,7 @@ void center_origin_fft();
  */
 EMData *zeropad_ntimes(int npad=4);
 
+EMData *zeropad_ntimes_fft_shuffle(int npad=4);
 
 /** return an image object that has been fft-padded/unpadded.
  * The current image is not changed.
