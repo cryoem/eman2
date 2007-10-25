@@ -13,6 +13,25 @@ static const float a2fVertexOffset[8][3] =
 		{0.0, 0.0, 1.0},{1.0, 0.0, 1.0},{1.0, 1.0, 1.0},{0.0, 1.0, 1.0}
 };
 
+//a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
+static const int a2OddXOffset[8] =
+{
+	1,0,0,1,
+ 	1,0,0,1
+};
+
+static const int a2OddYOffset[8] =
+{
+	1,1,0,0,
+	1,1,0,0
+};
+
+static const int a2OddZOffset[8] =
+{
+	1,1,1,1,
+	0,0,0,0
+};
+
 //a2iEdgeConnection lists the index of the endpoint vertices for each of the 12 edges of the cube
 static const int a2iEdgeConnection[12][2] = 
 {
@@ -50,8 +69,6 @@ MarchingCubes::MarchingCubes()
 	std::cout << "before calc surface..." << std::endl;
 	calculate_surface(isSmooth);
 	std::cout << "end constructor..." << std::endl;
-	
-	
 }
 
 MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
@@ -131,11 +148,11 @@ float MarchingCubes::get_sample_density() const  { return _sample; }
 
 void MarchingCubes::build_search_tree() {
 	delete _root;
-	_root = get_cube_node(0, 0, 0, 0, _emdata->get_xsize());
+	_root = get_cube_node(0, 0, 0, 0, _emdata->get_xsize(),_emdata->get_ysize(),_emdata->get_zsize());
 }
 
-CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size) {
-	if(size == 1) {
+CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int xsize,int ysize, int zsize) {
+	if(xsize == 1 && zsize == 1 && ysize == 1) {
 
 //		Assert(size == 1);
 //		Assert(level == _emdata->getResolution());
@@ -143,7 +160,12 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size)
 		// terminate, we are at a leaf node
 		CubeNode* node = new CubeNode();
 		node->level = level;
-		node->size = size;
+		
+		node->size = xsize;
+		node->xsize = xsize;
+		node->ysize = ysize;
+		node->zsize = zsize;
+		
 		node->x = x;
 		node->y = y;
 		node->z = z;
@@ -151,8 +173,8 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size)
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
 			float val = _emdata->get_value_at((int)min(x + a2fVertexOffset[iVertex][0], _emdata->get_xsize()-1),
-                                                   (int)min(y + a2fVertexOffset[iVertex][1], _emdata->get_xsize()-1),
-                                                   (int)min(z + a2fVertexOffset[iVertex][2], _emdata->get_xsize()-1));
+                                                   (int)min(y + a2fVertexOffset[iVertex][1], _emdata->get_ysize()-1),
+                                                   (int)min(z + a2fVertexOffset[iVertex][2], _emdata->get_zsize()-1));
 			if(iVertex == 0){
 				minval = val;
 				maxval = val;
@@ -165,6 +187,7 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size)
 		node->min = minval;
 		node->max = maxval;
 		node->is_leaf = true;
+		node->num_children = 0;
 
 		return node;
 
@@ -172,21 +195,57 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size)
 		// construct cube node
         CubeNode* node = new CubeNode();
 		node->level = level;
-		node->size = size;
+		node->size = xsize;
+		node->xsize = xsize;
+		node->ysize = ysize;
+		node->zsize = zsize;
+		node->num_children = 0;
 		node->x = x;
 		node->y = y;
 		node->z = z;
 		
 		// find children
-		size = size >> 1; // size /= 2
+// 		size = size >> 1; // size /= 2
+		
+		// Fixme - make is so that we use bits here?
+		bool xone = xsize == 1;
+		bool yone = ysize == 1;
+		bool zone = zsize == 1;
+		
+		bool xodd = (xsize % 2 == 1) && !xone;
+		bool yodd = (ysize % 2 == 1) && !yone;
+		bool zodd = (zsize % 2 == 1) && !zone;
+		
+		if ( xsize > 1 ) xsize = xsize >> 1;
+		if ( ysize > 1 ) ysize = ysize >> 1;
+		if ( zsize > 1 ) zsize = zsize >> 1;
+		
 		level++;
 		float minval = 0, maxval = 0;
 		for(int iVertex = 0; iVertex < 8; iVertex++)
         {
-			node->children[iVertex] = get_cube_node((int)(x + a2fVertexOffset[iVertex][0]*size),
-                                                   (int)(y + a2fVertexOffset[iVertex][1]*size),
-                                                   (int)(z + a2fVertexOffset[iVertex][2]*size),
-												   level, size);
+			if ( xone && a2fVertexOffset[iVertex][0] ) continue;
+			if ( yone && a2fVertexOffset[iVertex][1] ) continue;
+			if ( zone && a2fVertexOffset[iVertex][2] ) continue;
+			
+			
+			int newx = int(x + a2fVertexOffset[iVertex][0]*xsize);// + a2OddXOffset[iVertex]*(!xodd));
+			int newy = int(y + a2fVertexOffset[iVertex][1]*ysize);// + a2OddYOffset[iVertex]*(!yodd));
+			int newz = int(z + a2fVertexOffset[iVertex][2]*zsize);// + a2OddZOffset[iVertex]*(!zodd));
+			
+			if (xodd) newx += 1-a2OddXOffset[iVertex];
+			if (yodd) newy += 1-a2OddYOffset[iVertex];
+			if (zodd) newz += 1-a2OddZOffset[iVertex];
+			
+			int newxsize = xsize + a2OddXOffset[iVertex]*xodd;
+			int newysize = ysize + a2OddYOffset[iVertex]*yodd;
+			int newzsize = zsize + a2OddZOffset[iVertex]*zodd;
+			
+			
+// 			cout << "Getting cube node at " << newx << " " << newy << " " << newz << endl;
+// 			cout << "Size is " <<newxsize << " " << newysize << " " << newzsize << endl;
+			node->children[iVertex] = get_cube_node(newx,newy,newz,level,newxsize,newysize,newzsize);
+
 			if(iVertex == 0){
 				minval = node->children[iVertex]->min;
 				maxval = node->children[iVertex]->max;
@@ -194,13 +253,15 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int size)
 				minval = min(minval, node->children[iVertex]->min);
 				maxval = max(maxval, node->children[iVertex]->max);
 			}
+			
+			node->num_children++;
         }
 
 		// set max, min
+// 		cout << "This node has " << node->num_children << " children" << endl;
 		node->min = minval;
 		node->max = maxval;
 		node->is_leaf = false;
-
 		return node;
 	}
 }
@@ -221,13 +282,17 @@ void MarchingCubes::calculate_surface(bool smooth) {
 }
 
 void MarchingCubes::draw_cube(CubeNode* node) {
+	
 	if(node->min < _surf_value && node->max > _surf_value) {
-		if(node->level == _sample) {
-			marching_cube(node->x, node->y, node->z, node->size);
+		if(node->level == _sample) {;
+			marching_cube(node->x, node->y, node->z, node->xsize, node->ysize, node->zsize);
 		}
 		else {
 			for(int i=0; i<8; i++)
+			{
+				if (node->children[i] == 0) continue;
 				draw_cube(node->children[i]);
+			}
 		}
 	}
 
@@ -263,7 +328,7 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 /*
 BYPASS cubes without data.
 */
-void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fScale)
+void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fxScale, int fyScale, int fzScale)
 {
         extern int aiCubeEdgeFlags[256];
         extern int a2iTriangleConnectionTable[256][16];
@@ -274,14 +339,14 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fScale)
         float afCubeValue[8];
         Vector3 asEdgeVertex[12];
 		int pointIndex[12];
-//        Vector3 asEdgeNorm[12];
+// 		Vector3 asEdgeNorm[12];
 
         //Make a local copy of the values at the cube's corners
         for(iVertex = 0; iVertex < 8; iVertex++)
         {
-			afCubeValue[iVertex] = _emdata->get_value_at((int)(fX + a2fVertexOffset[iVertex][0]*fScale),
-                                                   (int)(fY + a2fVertexOffset[iVertex][1]*fScale),
-                                                   (int)(fZ + a2fVertexOffset[iVertex][2]*fScale) );
+			afCubeValue[iVertex] = _emdata->get_value_at((int)(fX + a2fVertexOffset[iVertex][0]*fxScale),
+                                                   (int)(fY + a2fVertexOffset[iVertex][1]*fyScale),
+                                                   (int)(fZ + a2fVertexOffset[iVertex][2]*fzScale) );
         }
 
         //Find which vertices are inside of the surface and which are outside
@@ -311,13 +376,13 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fScale)
                         fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
                                                      afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
-                        asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) * fScale;
-                        asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) * fScale;
-                        asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) * fScale;
+                        asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) * fxScale;
+                        asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) * fyScale;
+                        asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) * fzScale;
 
 						
-						pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0]*fScale, fY+edgeLookUp[iEdge][1]*fScale, fZ+edgeLookUp[iEdge][2]*fScale, edgeLookUp[iEdge][3]);
-                        //get_normal(asEdgeNorm[iEdge], asEdgeVertex[iEdge][0], asEdgeVertex[iEdge][1], asEdgeVertex[iEdge][2]);
+						pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0]*fxScale, fY+edgeLookUp[iEdge][1]*fyScale, fZ+edgeLookUp[iEdge][2]*fzScale, edgeLookUp[iEdge][3]);
+//                         get_normal(asEdgeNorm[iEdge], asEdgeVertex[iEdge][0], asEdgeVertex[iEdge][1], asEdgeVertex[iEdge][2]);
 
                 }
         }
@@ -362,7 +427,7 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fScale)
 				normals->push_back(n[1]);
 				normals->push_back(n[2]);
 					
-        }
+		}
 }
 
 void MarchingCubes::calculate_smooth_normals()
@@ -404,7 +469,7 @@ void MarchingCubes::calculate_smooth_normals()
 }
 
 // For any edge, if one vertex is inside of the surface and the other is outside of the surface
-//  then the edge intersects the surface
+// then the edge intersects the surface
 // For each of the 8 vertices of the cube can be two possible states : either inside or outside of the surface
 // For any cube the are 2^8=256 possible sets of vertex states
 // This table lists the edges intersected by the surface for all 256 possible vertex states

@@ -13,14 +13,16 @@ namespace EMAN
 
 	struct CubeNode {
 		int level, size;
+		int xsize, ysize, zsize;
 		CubeNode* children[8];
 		float min, max;
+		int num_children;
 		int x,y,z;
 		bool is_leaf;
 	
 		~CubeNode() {
 			if(!is_leaf) {
-				for(int i=0; i<8; i++)
+				for(int i=0; i<num_children; i++)
 					delete children[i];
 			}
 			//delete &children;
@@ -69,7 +71,7 @@ namespace EMAN
 		 * @param fZ
 		 * @param fScale
 		 */
-		void marching_cube(int fX, int fY, int fZ, int fScale);
+		void marching_cube(int fX, int fY, int fZ, int fxScale, int fyScale, int fzScale );
 		
 		/** Find the gradient of the scalar field at a point. This gradient can 
 		 * be used as a very accurate vertx normal for lighting calculations.
@@ -93,7 +95,7 @@ namespace EMAN
 		
 		int get_edge_num(int x, int y, int z, int edge);
 		void build_search_tree();
-		CubeNode* get_cube_node(int x, int y, int z, int level, int size);
+		CubeNode* get_cube_node(int x, int y, int z, int level, int xsize, int ysize, int zsize);
 		void draw_cube(CubeNode* node);
 		
 		/** Compute smooth normals. 

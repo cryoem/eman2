@@ -46,6 +46,8 @@ from weakref import WeakKeyDictionary
 from time import time
 from PyQt4.QtCore import QTimer
 
+from time import *
+
 t3d_stack = []
 
 class EMImage3D(QtOpenGL.QGLWidget):
@@ -82,7 +84,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.isothr=0.5
 		self.isorender=None
 		self.isodl = 0
-		
+		self.griddl = 0
 		self.scale = 1.0
 		
 		self.inspector=None
@@ -127,6 +129,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.isothr = mean+sigma
 		
 		self.isorender=MarchingCubes(data,1)
+		self.isorender.set_sample_density(1)
 		self.updateGL()
 		#self.timer.start(25)
 		
@@ -205,6 +208,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		t3d.set_rotation( EULER_EMAN, rot )
 		self.t3d_stack = []
 		self.t3d_stack.append(t3d)
+		
+		# For the time being
+		#glEnable(GL_CULL_FACE);
+		
+		
+		glPolygonMode(GL_FRONT,GL_FILL);
 	
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -230,7 +239,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if self.isodl == 0:
 			self.createIsoDL()
 		
+		if self.griddl == 0:
+			self.createGridDL()
+		
 		glCallList(self.isodl)
+		
+		#glCallList(self.griddl)
 		
 	def createIsoDL(self):
 		# create the isosurface display list
@@ -238,11 +252,24 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
 		
 		self.isorender.set_surface_value(self.isothr)
+		self.isorender.set_sample_density(50)
+		time1 = clock()
 		a=self.isorender.get_isosurface(True)
+		time2 = clock()
+		dt1 = time2 - time1
+		print "It took %f to get the isosurface" %dt1
 		f=a["faces"]
 		n=a["normals"]
 		p=a["points"]
 		
+		#glEnableClientState(GL_COLOR_ARRAY)
+		glEnableClientState(GL_VERTEX_ARRAY)
+		glEnableClientState(GL_NORMAL_ARRAY)
+		
+		glNormalPointer(GL_FLOAT,0,n)
+		glVertexPointer(3,GL_FLOAT,0,p)
+		
+		print len(f)/3.0
 		f=[i/3 for i in f]
 		n=[i/3 for i in n]
 		
@@ -255,16 +282,87 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.2,.1,0.4,1.0])
 		glMaterial(GL_FRONT, GL_SPECULAR, [.2,.2,0.1,1.0])
 		glMaterial(GL_FRONT, GL_SHININESS, 32)
+		
+		
+		time1 = clock()
 		glBegin(GL_TRIANGLES)
 		for i in f:
-			glVertex(p[i*3],p[i*3+1],p[i*3+2])
-			glNormal(n[i*3],n[i*3+1],n[i*3+2])
+			#if ( i % 3 == 0 ): 
+				#cross_product_norm(p[i*3],p[i*3+1],p[i*3+2], p[i*3+3],p[i*3+4],p[i*3+5], p[i*6],p[i*3+7],p[i*3+8])
+			#glNormal(n[i*3],n[i*3+1],n[i*3+2])
+			#glVertex(p[i*3],p[i*3+1],p[i*3+2])
+			
+			glArrayElement(i)
+			
 			#print p[i*3],p[i*3+1],p[i*3+2]
 		glEnd()
+		time2 = clock()
+		dt1 = time2 - time1
+		print "It took %f to render the isosurface" %dt1
 		glPopMatrix()
 		glEndList()
+	
+	def cross_product(p1,p2,p3,q1,q2,q3,r1,r2,r3):
+		a = [0,0,0]
+		b = [0,0,0]
 		
-		print "created isosurface"
+		a[0] = q1-p1
+		a[1] = q2-p2
+		a[2] = q3-p3
+		
+		b[0] = r1-p1
+		b[1] = r2-p2
+		b[2] = r3-p3
+		
+		glNormal(a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])
+		
+	
+	def createGridDL(self):
+		# create the isosurface display list
+		
+		if ( self.griddl != 0 ): glDeleteLists(self.griddl,1)
+		
+		width = self.data.get_xsize()
+		height = self.data.get_ysize()
+		depth = self.data.get_zsize()
+		
+		self.griddl = glGenLists(1)
+		
+		glLineWidth(0.5)
+		glNewList(self.griddl,GL_COMPILE)
+		
+		glColor(.2,.1,0.4,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.0,.4,0.0,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [.0,.4,0.0,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 8)
+		
+		
+		
+		glPushMatrix()
+		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
+		glBegin(GL_LINES)
+		
+		glNormal(0,1,0)
+		for i in range(0,height):
+			for j in range(0,width):
+				glVertex(j,i,0)
+				glVertex(j,i,depth)
+			
+		glNormal(0,0,-1)
+		for i in range(0,depth):
+			for j in range(0,width):
+				glVertex(j,0,i)
+				glVertex(j,height,i)
+		glNormal(0,1,0)
+		for i in range(0,depth):
+			for j in range(0,height):
+				glVertex(0,j,i)
+				glVertex(width,j,i)
+		glEnd()
+		
+		
+		glPopMatrix()
+		glEndList()
 		
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
@@ -462,7 +560,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.mmode.addButton(self.mapp,0)
 		self.mmode.addButton(self.mmeas,1)
 		
-		self.scale = ValSlider(self,(0.0,15.0),"Mag:")
+		self.scale = ValSlider(self,(0.01,30.0),"Mag:")
 		self.scale.setObjectName("scale")
 		self.scale.setValue(1.0)
 		self.vbl.addWidget(self.scale)
@@ -529,7 +627,7 @@ if __name__ == '__main__':
 	window = EMImage3D()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(33,33,33)
+		e.set_size(13,13,13)
 		e.process_inplace('testimage.x')
  		window.setData(e)
 
