@@ -282,23 +282,31 @@ class EMImage2D(QtOpenGL.QGLWidget):
 			elif s[0]=="label":
 				if s[8]<0 :
 					GL.glPushMatrix()
-					GL.glColor(0,0,0)
+					GL.glColor(1.,1.,1.)
 					GL.glTranslate(s[4],s[5],0)
 					GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
-					GL.glLineWidth(-s[8]+2)
+					GL.glLineWidth(-s[8])
+					w=104.76*len(s[6])
+					GL.glBegin(GL.GL_QUADS)
+					GL.glVertex(-10.,-33.0)
+					GL.glVertex(w+10.,-33.0)
+					GL.glVertex(w+10.,119.05)
+					GL.glVertex(-10.,119.05)
+					GL.glEnd()
+					GL.glColor(*col)
+					for i in s[6]:
+						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
+					GL.glPopMatrix()
+				else:
+					GL.glPushMatrix()
+					GL.glColor(*col)
+					GL.glTranslate(s[4],s[5],0)
+	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
+					GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
+					GL.glLineWidth(fabs(s[8]))
 					for i in s[6]:
 						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
 					GL.glPopMatrix()
-				
-				GL.glPushMatrix()
-				GL.glColor(*col)
-				GL.glTranslate(s[4],s[5],0)
-#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-				GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
-				GL.glLineWidth(fabs(s[8]))
-				for i in s[6]:
-					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
-				GL.glPopMatrix()
 			elif s[0]=="circle":
 				GL.glPushMatrix()
 				GL.glColor(*col)
@@ -416,7 +424,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
 				dx=lc[0]-self.shapes["MEAS"][4]
 				dy=lc[1]-self.shapes["MEAS"][5]
-				self.addShape("MEASL",("label",.5,.1,.5,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),10,-1))
+				self.addShape("MEASL",("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),9,-1))
 	
 	def mouseReleaseEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
@@ -448,6 +456,48 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.vbl.setSpacing(6)
 		self.vbl.setObjectName("vbl")
 		
+		# This is the tab-bar for mouse mode selection
+		self.mmtab = QtGui.QTabWidget()
+		
+		# App tab
+		self.apptab = QtGui.QWidget()
+		self.apptablab = QtGui.QLabel("Application specific mouse functions",self.apptab)
+		self.mmtab.addTab(self.apptab,"App")
+		
+		# Measure tab
+		self.meastab = QtGui.QWidget()
+		self.mtlay = QtGui.QGridLayout(self.meastab)
+		
+		self.mtl1= QtGui.QLabel("A/Pix")
+		self.mtlay.addWidget(self.mtl1,0,0)
+		
+		self.mtapix = QtGui.QLineEdit("1")
+		self.mtlay.addWidget(self.mtapix,0,1)
+		
+		self.mtshowlen= QtGui.QLabel("Length:")
+		self.mtlay.addWidget(self.mtshowlen,1,0,1,2)
+		
+		self.mtshoworigin= QtGui.QLabel("Origin:")
+		self.mtlay.addWidget(self.mtshoworigin,0,2)
+		
+		self.mtshowend= QtGui.QLabel("End:")
+		self.mtlay.addWidget(self.mtshowend,1,2)
+		
+		self.mmtab.addTab(self.meastab,"Meas")
+		
+		# Draw tab
+		self.drawtab = QtGui.QWidget()
+		self.drawlay = QtGui.QHBoxLayout()
+		
+		self.dtl1 = QtGui.QLabel("Pen Size:")
+		self.drawlay.addWidget(self.dtl1)
+		
+		self.dtpen = QtGui.QLineEdit("5")
+		self.drawlay.addWidget(self.dtpen)
+				
+		self.vbl.addWidget(self.mmtab)
+		
+		# histogram level horiz layout
 		self.hbl = QtGui.QHBoxLayout()
 		self.hbl.setMargin(0)
 		self.hbl.setSpacing(6)
@@ -472,24 +522,12 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.ffttog.setCheckable(1)
 		self.vbl2.addWidget(self.ffttog)
 
-		self.hbl2 = QtGui.QHBoxLayout()
-		self.hbl2.setMargin(0)
-		self.hbl2.setSpacing(6)
-		self.hbl2.setObjectName("hboxlayout")
-		self.vbl.addLayout(self.hbl2)
+		#self.hbl2 = QtGui.QHBoxLayout()
+		#self.hbl2.setMargin(0)
+		#self.hbl2.setSpacing(6)
+		#self.hbl2.setObjectName("hboxlayout")
+		#self.vbl.addLayout(self.hbl2)
 		
-		self.mapp = QtGui.QPushButton("App")
-		self.mapp.setCheckable(1)
-		self.hbl2.addWidget(self.mapp)
-
-		self.mmeas = QtGui.QPushButton("Meas")
-		self.mmeas.setCheckable(1)
-		self.hbl2.addWidget(self.mmeas)
-
-		self.mmode=QtGui.QButtonGroup()
-		self.mmode.setExclusive(1)
-		self.mmode.addButton(self.mapp,0)
-		self.mmode.addButton(self.mmeas,1)
 		
 		self.scale = ValSlider(self,(0.1,5.0),"Mag:")
 		self.scale.setObjectName("scale")
@@ -529,7 +567,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
-		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
+#		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
 	def setScale(self,val):
 		if self.busy : return
