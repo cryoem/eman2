@@ -1,10 +1,13 @@
 #include "marchingcubes.h"
 
+#include "GL/gl.h"
+
 using namespace EMAN;
 
 #define min(a,b)(((a) < (b)) ? (a) : (b))
 #define max(a,b)(((a) > (b)) ? (a) : (b))
 
+const int MarchingCubes::leaf_level = 0;
 
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
 static const float a2fVertexOffset[8][3] =
@@ -57,7 +60,7 @@ static const int edgeLookUp[12][4] =
 };
 
 MarchingCubes::MarchingCubes()
-	: _sample(5) 
+	: _sample(leaf_level), _isodl(0)
 {
 	isSmooth = false;
 	_surf_value = 1;
@@ -72,7 +75,7 @@ MarchingCubes::MarchingCubes()
 }
 
 MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
-	: _sample(5) 
+	: _sample(leaf_level), _isodl(0)
 {
 	isSmooth = smooth;
 	_surf_value = 1;
@@ -111,11 +114,45 @@ Dict MarchingCubes::get_isosurface(bool smooth) const
 	return d;
 }
 
+
+unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
+{
+	if ( _isodl != 0 ) glDeleteLists(_isodl,1);
+	
+	float *p = new float[points->size()];
+	float *n = new float[normalsSm->size()];
+	int *f = new int[faces->size()];
+	
+	std::copy(points->begin(),points->end(), p);
+	std::copy(normalsSm->begin(),normalsSm->end(), n);
+	std::copy(faces->begin(),faces->end(),f);
+	
+	for (unsigned int i = 0; i < faces->size(); ++i )
+		f[i] /= 3;
+	
+	glNormalPointer(GL_FLOAT,0,n);
+	glVertexPointer(3,GL_FLOAT,0,p);
+	glIndexPointer(GL_INT,1,f);
+
+	_isodl = glGenLists(1);
+	
+	glNewList(_isodl,GL_COMPILE);
+	glDrawArrays(GL_TRIANGLES,0,faces->size());
+	glEndList();
+	
+	return _isodl;
+}
 void MarchingCubes::set_data(EMData* data) {
 	Isosurface::set_data(data);
 	calculate_surface(isSmooth);
 }
+int MarchingCubes::get_root_level()
+{
+	if ( _root == 0 ) return 0;
+	else return _root->level;
+}
 
+static int num_leaves = 0;
 void MarchingCubes::set_surface_value(const float value) {
 	float temp = value;
 	if(value > 1000) temp = 1000;
@@ -124,7 +161,9 @@ void MarchingCubes::set_surface_value(const float value) {
 	if(_surf_value == temp) return;
 
 	_surf_value = temp;
+
 	calculate_surface(isSmooth);
+	cout << "Total number of leaves is " << num_leaves << endl;
 }
 
 float MarchingCubes::get_surface_value() const { return _surf_value; }
@@ -132,22 +171,22 @@ float MarchingCubes::get_surface_value() const { return _surf_value; }
 void MarchingCubes::set_sample_density(const int size) {
 	int temp = size;
 	
-	if(temp > _emdata->getResolution())
-		temp = _emdata->getResolution();
-	if(temp < 1)
-		temp = 1;
-
-	if(_sample == temp) return;
+	if ( size > leaf_level ) temp = leaf_level;
+	
+	if ( size < get_root_level() ) temp = get_root_level();
 
 	_sample = temp;
 	
+	
 	calculate_surface(isSmooth);
+	cout << "Total number of leaves is " << num_leaves << endl;
 }
 
 float MarchingCubes::get_sample_density() const  { return _sample; }
 
 void MarchingCubes::build_search_tree() {
 	delete _root;
+	num_leaves = 0;
 	_root = get_cube_node(0, 0, 0, 0, _emdata->get_xsize(),_emdata->get_ysize(),_emdata->get_zsize());
 }
 
@@ -159,9 +198,9 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int xsize
 
 		// terminate, we are at a leaf node
 		CubeNode* node = new CubeNode();
-		node->level = level;
+		node->level = leaf_level;
 		
-		node->size = xsize;
+// 		node->size = xsize;
 		node->xsize = xsize;
 		node->ysize = ysize;
 		node->zsize = zsize;
@@ -194,8 +233,8 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int xsize
 	} else {
 		// construct cube node
         CubeNode* node = new CubeNode();
-		node->level = level;
-		node->size = xsize;
+// 		node->level = level;
+// 		node->size = xsize;
 		node->xsize = xsize;
 		node->ysize = ysize;
 		node->zsize = zsize;
@@ -257,6 +296,14 @@ CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int xsize
 			node->num_children++;
         }
 
+		int l = leaf_level;
+		for (int iVertex = 0; iVertex < 8; iVertex++)
+		{
+			if ( node->children[iVertex] == 0 ) continue;
+			if ( node->children[iVertex]->level < level  )
+				l =  node->children[iVertex]->level;
+		}
+		node->level = l-1;
 		// set max, min
 // 		cout << "This node has " << node->num_children << " children" << endl;
 		node->min = minval;
@@ -284,7 +331,9 @@ void MarchingCubes::calculate_surface(bool smooth) {
 void MarchingCubes::draw_cube(CubeNode* node) {
 	
 	if(node->min < _surf_value && node->max > _surf_value) {
-		if(node->level == _sample) {;
+		
+		if(node->level == _sample) {
+// 			cout << node->level << " same as " << _sample << endl;
 			marching_cube(node->x, node->y, node->z, node->xsize, node->ysize, node->zsize);
 		}
 		else {

@@ -2,6 +2,7 @@
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# and David Woolford 10/26/2007 (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -86,7 +87,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.isodl = 0
 		self.griddl = 0
 		self.scale = 1.0
-		
+		self.generate_iso = True
 		self.inspector=None
 		
 		if image :
@@ -95,6 +96,77 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.show()
 		
 	
+		ruby = {}
+		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
+		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
+		ruby["specular"] = [0.727811, 0.626959, 0.626959,1.0]
+		ruby["shininess"] = 76.8
+		
+		emerald = {}
+		emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
+		emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
+		emerald["specular"] = [0.633, 0.727811, 0.633,1.0]
+		emerald["shininess"] = 76.8
+		
+		pearl = {}
+		pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
+		pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
+		pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
+		pearl["shininess"] = 11.264
+		
+		silver = {}
+		silver["ambient"] = [0.25, 0.25, 0.25,1.0]
+		silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
+		silver["specular"] = [0.774597, 0.774597, 0.774597,1.0]
+		silver["shininess"] = 76.8
+		
+		gold = {}
+		gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
+		gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
+		gold["specular"] = [0.797357, 0.723991, 0.208006,1.0]
+		gold["shininess"] = 83.2
+		
+		copper = {}
+		copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
+		copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
+		copper["specular"] = [0.580594, 0.223257, 0.0695701,1.0]
+		copper["shininess"] = 51.2
+		
+		obsidian = {}
+		obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
+		obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
+		obsidian["specular"] = [0.332741, 0.328634, 0.346435]
+		obsidian["shininess"] = 38.4
+		
+		turquoise = {}
+		turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
+		turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
+		turquoise["specular"] = [0.297254, 0.30829, 0.306678]
+		turquoise["shininess"] = 12.8
+		
+		self.colors = {}
+		self.colors["ruby"] = ruby
+		self.colors["emerald"] = emerald
+		self.colors["pearl"] = pearl
+		self.colors["silver"] = silver
+		self.colors["gold"] = gold
+		self.colors["copper"] = copper
+		self.colors["obsidian"] = obsidian
+		self.colors["turquoise"] = turquoise
+		
+		
+		self.colormap = {}
+		self.colormap[0] = "ruby"
+		self.colormap[1] = "emerald"
+		self.colormap[2] = "pearl"
+		self.colormap[3] = "silver"
+		self.colormap[4] = "gold"
+		self.colormap[5] = "copper"
+		self.colormap[6] = "obsidian"
+		self.colormap[7] = "turquoise"
+		
+		self.isocolor = "ruby"
+		
 	def timeout(self):
 		self.updateGL()
 		
@@ -125,15 +197,29 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		#self.inspector.setHist(hist,self.minden,self.maxden) 
 		
-		self.inspector.setThrs(m0,m1,mean+sigma)
-		self.isothr = mean+sigma
+		self.inspector.setThrs(m0,m1,mean+3.0*sigma)
+		self.isothr = mean+3.0*sigma
+		
+		self.smpval = 0
 		
 		self.isorender=MarchingCubes(data,1)
-		self.isorender.set_sample_density(1)
+		self.isorender.set_sample_density(self.smpval)
+		
+		self.inspector.setSamp(self.isorender.get_root_level(), self.isorender.get_leaf_level(), self.smpval)
+		
+		self.inspector.setColors(self.colors)
+		
 		self.updateGL()
+		
+		
+		#error.ErrorChecker.registerChecker(self.myAlternateFunction )
+		
+	def myAlternateFunction(a):
+		return 0
 		#self.timer.start(25)
 		
 	def initializeGL(self):
+		
 		glEnable(GL_NORMALIZE)
 		
 		glEnable(GL_LIGHTING)
@@ -210,11 +296,15 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.t3d_stack.append(t3d)
 		
 		# For the time being
-		#glEnable(GL_CULL_FACE);
+		glEnable(GL_CULL_FACE);
 		
 		
 		glPolygonMode(GL_FRONT,GL_FILL);
 	
+		glEnableClientState(GL_VERTEX_ARRAY)
+		glEnableClientState(GL_NORMAL_ARRAY)
+		glEnableClientState(GL_COLOR_ARRAY)
+		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		
@@ -238,84 +328,137 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		if self.isodl == 0:
 			self.createIsoDL()
+
+		#if self.griddl == 0:
+			#self.createGridDL()
 		
-		if self.griddl == 0:
-			self.createGridDL()
-		
+		#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
+		#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
+		#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
+		#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+		#self.draw_iso()
+		glEnable(GL_COLOR_MATERIAL)
+		glColorMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE)
+		glPushMatrix()
+		glScalef(self.data.get_xsize(), self.data.get_ysize(), self.data.get_zsize())
+		glTranslate(-0.5, -0.5, -0.5)
 		glCallList(self.isodl)
-		
+		glPopMatrix()
 		#glCallList(self.griddl)
+	
+	def draw_iso(self):
+		# create the isosurface display list
 		
+		if ( self.generate_iso == True ):
+			print "Generating isosurface"
+			self.isorender.set_surface_value(self.isothr)
+			self.isorender.set_sample_density(self.smpval)
+			
+			time1 = clock()
+			a=self.isorender.get_isosurface(True)
+			time2 = clock()
+			dt1 = time2 - time1
+			print "It took %f to get the isosurface" %dt1
+			
+			self.f=a["faces"]
+			self.n=a["normals"]
+			self.p=a["points"]
+		
+			glNormalPointer(GL_FLOAT,0,self.n)
+			glVertexPointer(3,GL_FLOAT,0,self.p)
+			
+			#print len(f)/3.0
+			self.f=[i/3 for i in self.f]
+		
+			print "Num triangles is %d" %len(self.f)
+			self.generate_iso = False
+
+		time1 = clock()
+		glBegin(GL_TRIANGLES)
+		#error.ErrorChecker.registerChecker(self.myAlternateFunction )
+		for i in self.f:
+			glArrayElement(i)
+		glEnd()
+		time2 = clock()
+		dt1 = time2 - time1
+		print "It took %f to render the isosurface" %dt1
+		
+
+		#error.ErrorChecker.registerChecker()
 	def createIsoDL(self):
 		# create the isosurface display list
 		
-		if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
-		
+		#if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
+		#time1 = clock()
 		self.isorender.set_surface_value(self.isothr)
-		self.isorender.set_sample_density(50)
+		#time2 = clock()
+		#dt1 = time2 - time1
+		#print "It took %f to traverse the tree" %dt1
+		##self.isorender.set_sample_density(self.smpval)
+		#time1 = clock()
+		#self.isodl = self.isorender.get_isosurface_dl(True)
+		#time2 = clock()
+		#dt1 = time2 - time1
+		#print "It took %f to get the isosurface" %dt1
+		
+		
 		time1 = clock()
 		a=self.isorender.get_isosurface(True)
 		time2 = clock()
 		dt1 = time2 - time1
 		print "It took %f to get the isosurface" %dt1
-		f=a["faces"]
-		n=a["normals"]
-		p=a["points"]
 		
-		#glEnableClientState(GL_COLOR_ARRAY)
-		glEnableClientState(GL_VERTEX_ARRAY)
-		glEnableClientState(GL_NORMAL_ARRAY)
+		self.f=a["faces"]
+		self.n=a["normals"]
+		self.p=a["points"]
+	
+		self.colors = []
 		
-		glNormalPointer(GL_FLOAT,0,n)
-		glVertexPointer(3,GL_FLOAT,0,p)
+		center = [0.5,0.5,0.5]
+		gr = 0.5
+		for i in range(0,len(self.p),3):
+			v = [self.p[i],self.p[i+1],self.p[i+2]]
+			c = center
+			distance = sqrt((c[0]-v[0])*(c[0]-v[0]) + (c[1]-v[1])*(c[1]-v[1]) + (c[2]-v[2])*(c[2]-v[2]))
+			
+			if ( distance < 0.5 ):
+				self.colors.append((1.0-distance*2.0))
+				self.colors.append(2.0*distance)
+				self.colors.append(0)
+			if ( distance >= 0.5 ):
+				d = distance - 0.5
+				self.colors.append(0)
+				self.colors.append((1.0-d*2.0))
+				self.colors.append(2.0*d)
 		
-		print len(f)/3.0
-		f=[i/3 for i in f]
-		n=[i/3 for i in n]
+		self.f=[i/3 for i in self.f]
+		
+		glNormalPointer(GL_FLOAT,0,self.n)
+		glVertexPointer(3,GL_FLOAT,0,self.p)
+		glColorPointer(3,GL_FLOAT,0,self.colors)
+		
+		print "Num triangles is %d" %(len(self.f)/3)
 		
 		self.isodl = glGenLists(1)
 		glNewList(self.isodl,GL_COMPILE)
-		glPushMatrix()
-		glScalef(self.data.get_xsize(), self.data.get_ysize(), self.data.get_zsize())
-		glTranslate(-0.5, -0.5, -0.5)
-		glColor(.2,.1,0.4,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.2,.1,0.4,1.0])
-		glMaterial(GL_FRONT, GL_SPECULAR, [.2,.2,0.1,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 32)
-		
 		
 		time1 = clock()
-		glBegin(GL_TRIANGLES)
-		for i in f:
-			#if ( i % 3 == 0 ): 
-				#cross_product_norm(p[i*3],p[i*3+1],p[i*3+2], p[i*3+3],p[i*3+4],p[i*3+5], p[i*6],p[i*3+7],p[i*3+8])
-			#glNormal(n[i*3],n[i*3+1],n[i*3+2])
-			#glVertex(p[i*3],p[i*3+1],p[i*3+2])
-			
-			glArrayElement(i)
-			
-			#print p[i*3],p[i*3+1],p[i*3+2]
-		glEnd()
+		#glBegin(GL_TRIANGLES)
+		#for i in self.f:
+			#glArrayElement(i)
+		#glEnd()
+		
+		#glDrawArrays(GL_TRIANGLES,0,len(self.f)/3)
+		glDrawElements(GL_TRIANGLES,len(self.f),GL_UNSIGNED_INT,self.f)
+		
 		time2 = clock()
 		dt1 = time2 - time1
 		print "It took %f to render the isosurface" %dt1
-		glPopMatrix()
+	
 		glEndList()
 	
-	def cross_product(p1,p2,p3,q1,q2,q3,r1,r2,r3):
-		a = [0,0,0]
-		b = [0,0,0]
-		
-		a[0] = q1-p1
-		a[1] = q2-p2
-		a[2] = q3-p3
-		
-		b[0] = r1-p1
-		b[1] = r2-p2
-		b[2] = r3-p3
-		
-		glNormal(a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0])
-		
+	def sq_dist(c,v):
+		return (c[0]-v[0])*(c[0]-v[0]) + (c[1]-v[1])*(c[1]-v[1]) + (c[2]-v[2])*(c[2]-v[2])
 	
 	def createGridDL(self):
 		# create the isosurface display list
@@ -332,11 +475,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glNewList(self.griddl,GL_COMPILE)
 		
 		glColor(.2,.1,0.4,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, [.0,.4,0.0,1.0])
-		glMaterial(GL_FRONT, GL_SPECULAR, [.0,.4,0.0,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 8)
-		
-		
+		glMaterial(GL_FRONT, GL_AMBIENT, [0.25, 0.25, 0.25,1.0])
+		glMaterial(GL_FRONT, GL_DIFFUSE, [0.4, 0.4, 0.4,1.0])
+		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
+		glMaterial(GL_FRONT, GL_SHININESS, 76.8)
 		
 		glPushMatrix()
 		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
@@ -506,6 +648,18 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.isothr = val
 			self.createIsoDL()
 			self.updateGL()
+	
+	def setSmp(self,val):
+		if ( self.smpval != int(val)):
+			self.smpval = int(val)
+			self.createIsoDL()
+			self.updateGL()
+	
+	
+	def setColor(self,val):
+		self.isocolor = self.colormap[val]
+		print val
+		self.updateGL()
 
 class EMImageInspector3D(QtGui.QWidget):
 	def __init__(self,target) :
@@ -573,6 +727,11 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.thr.setObjectName("az")
 		self.thr.setValue(0.5)
 		self.vbl.addWidget(self.thr)
+		
+		self.smp = ValSlider(self,(0.1,2.0),"Sample:")
+		self.smp.setObjectName("smp")
+		self.smp.setValue(0.5)
+		self.vbl.addWidget(self.smp)
 			
 		self.az = ValSlider(self,(0.0,360.0),"Az:")
 		self.az.setObjectName("az")
@@ -589,12 +748,22 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.phi.setValue(0.0)
 		self.vbl.addWidget(self.phi)
 
+		self.cbb = QtGui.QComboBox(self)
+		
+		self.vbl.addWidget(self.cbb)
+
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), target.setAz)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), target.setAlt)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), target.setPhi)
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), target.setThr)
-		
+		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged"), target.setSmp)
+		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(int)"), target.setColor)
+		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("textChanged(int)"), target.setColor)
+	
+	def setColors(self,colors):
+		for i in colors:
+			self.cbb.addItem(i)
 	
 	def newAz(self,val):
 		if self.busy : return
@@ -617,6 +786,10 @@ class EMImageInspector3D(QtGui.QWidget):
 	def setThrs(self,low,high,val):
 		self.thr.setRange(low,high)
 		self.thr.setValue(val, True)
+	
+	def setSamp(self,low,high,val):
+		self.smp.setRange(int(low),int(high))
+		self.smp.setValue(val, True)
 		
 	def setHist(self,hist,minden,maxden):
 		self.hist.setData(hist,minden,maxden)
@@ -627,7 +800,7 @@ if __name__ == '__main__':
 	window = EMImage3D()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(13,13,13)
+		e.set_size(64,64,64)
 		e.process_inplace('testimage.x')
  		window.setData(e)
 

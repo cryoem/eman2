@@ -12,7 +12,8 @@ namespace EMAN
 {
 
 	struct CubeNode {
-		int level, size;
+		int level;
+		int size;
 		int xsize, ysize, zsize;
 		CubeNode* children[8];
 		float min, max;
@@ -55,11 +56,18 @@ namespace EMAN
 		float get_sample_density() const ;
 		
 		Dict get_isosurface(bool smooth) const ;
-	
+		
+		unsigned long get_isosurface_dl(bool smooth);
+
+		static const int leaf_level;
+		
+		int get_leaf_level() { return leaf_level; }
+		int get_root_level();
 	private:	
 		int _sample;
 		CubeNode* _root;
 		map<int, int> point_map;
+		unsigned long _isodl;
 	
 		void calculate_surface(bool smooth);
 		
