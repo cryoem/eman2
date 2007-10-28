@@ -83,6 +83,7 @@ template <> Factory < Processor >::Factory()
 	force_add(&SigmaProcessor::NEW);
 	force_add(&LogProcessor::NEW);
 
+	force_add(&PaintProcessor::NEW);
 	force_add(&MaskSharpProcessor::NEW);
 	force_add(&MaskEdgeMeanProcessor::NEW);
 	force_add(&MaskNoiseProcessor::NEW);

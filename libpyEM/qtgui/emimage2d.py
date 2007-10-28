@@ -409,7 +409,18 @@ class EMImage2D(QtOpenGL.QGLWidget):
 					del self.shapes["MEASL"]
 				except: pass
 				self.addShape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
-	
+			elif self.mmode==2 and self.inspector:
+				#try:
+					print "paint ",lc
+					self.drawr1=int(float(self.inspector.dtpen.text()))
+					self.drawv1=float(self.inspector.dtpenv.text())
+					self.drawr2=int(float(self.inspector.dtpen2.text()))
+					self.drawv2=float(self.inspector.dtpenv2.text())
+					self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
+				#except:
+					#print "paint error"
+					#return
+				
 	def mouseMoveEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
 		if self.rmousedrag and event.buttons()&Qt.RightButton:
@@ -425,7 +436,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				dx=lc[0]-self.shapes["MEAS"][4]
 				dy=lc[1]-self.shapes["MEAS"][5]
 				self.addShape("MEASL",("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),9,-1))
-	
+			elif self.mmode==2 and self.inspector:
+				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
+				
 	def mouseReleaseEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.RightButton:
@@ -494,15 +507,38 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		# Draw tab
 		self.drawtab = QtGui.QWidget()
-		self.drawlay = QtGui.QHBoxLayout()
+		self.drawlay = QtGui.QGridLayout(self.drawtab)
 		
 		self.dtl1 = QtGui.QLabel("Pen Size:")
 		self.dtl1.setAlignment(Qt.AlignRight)
-		self.drawlay.addWidget(self.dtl1)
+		self.drawlay.addWidget(self.dtl1,0,0)
 		
 		self.dtpen = QtGui.QLineEdit("5")
-		self.drawlay.addWidget(self.dtpen)
-				
+		self.drawlay.addWidget(self.dtpen,0,1)
+		
+		self.dtl2 = QtGui.QLabel("Pen Val:")
+		self.dtl2.setAlignment(Qt.AlignRight)
+		self.drawlay.addWidget(self.dtl2,1,0)
+		
+		self.dtpenv = QtGui.QLineEdit("1.0")
+		self.drawlay.addWidget(self.dtpenv,1,1)
+		
+		self.dtl3 = QtGui.QLabel("Pen Size2:")
+		self.dtl3.setAlignment(Qt.AlignRight)
+		self.drawlay.addWidget(self.dtl3,0,2)
+		
+		self.dtpen2 = QtGui.QLineEdit("10")
+		self.drawlay.addWidget(self.dtpen2,0,3)
+		
+		self.dtl4 = QtGui.QLabel("Pen Val2:")
+		self.dtl4.setAlignment(Qt.AlignRight)
+		self.drawlay.addWidget(self.dtl4,1,2)
+		
+		self.dtpenv2 = QtGui.QLineEdit("0")
+		self.drawlay.addWidget(self.dtpenv2,1,3)
+		
+		self.mmtab.addTab(self.drawtab,"Draw")
+		
 		self.vbl.addWidget(self.mmtab)
 		
 		# histogram level horiz layout
@@ -575,6 +611,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
 		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
+		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.setMMode)
 #		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
 	def setScale(self,val):

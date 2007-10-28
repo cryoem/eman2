@@ -3762,7 +3762,9 @@ The basic design of EMAN Processors: <br>\
 	class PaintProcessor:public CoordinateProcessor
 	{
 	  public:
-		void process_inplace(EMData * image);
+		PaintProcessor():x(0), y(0), z(0),r1(0), v1(0.0), r2(0), v2(0.0)
+		{
+		}
 
 		string get_name() const
 		{
@@ -3805,7 +3807,8 @@ The basic design of EMAN Processors: <br>\
 			if (params.has_key("v2")) v2 = params["v2"];
 		}
 
-		virtual void process_pixel(float *pixel, int xi, int yi, int zi) const {
+		protected:
+		void process_pixel(float *pixel, int xi, int yi, int zi) const {
 			if (xi<x-r2 || xi>x+r2 || yi<y-r2 || yi>y+r2 || zi<z-r2 || zi>z+r2) return;
 			float r=sqrt(xi*xi+yi*yi+zi*zi);
 			if (r>r2 && r>r1) return;
@@ -3814,8 +3817,10 @@ The basic design of EMAN Processors: <br>\
 			return;
 		}
 
-		int x,y,z,r1,r2;
-		float v1,v2;
+		int x,y,z,r1;
+		float v1;
+		int r2;
+		float v2;
 
 	};
 
