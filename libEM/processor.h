@@ -3755,6 +3755,71 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
+		value between v1 and v2, and values outside r2 will be unchanged
+	 *@param 
+	 */
+	class PaintProcessor:public CoordinateProcessor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return "mask.paint";
+		}
+
+		static Processor *NEW()
+		{
+			return new PaintProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Paints a circle with a decaying edge into the image. r<r1 -> v1, r1<r<r2 -> (v1,v2), r>r2 unchanged";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("x", EMObject::INT,"Center of circle");
+			d.put("y", EMObject::INT);
+			d.put("z", EMObject::INT);
+			d.put("r1", EMObject::INT,"First radius");
+			d.put("v1", EMObject::FLOAT,"Inner value");
+			d.put("r2", EMObject::INT,"Second radius");
+			d.put("v2", EMObject::FLOAT,"Outer Value");
+			return d;
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+
+			if (params.has_key("x")) x = params["x"];
+			if (params.has_key("y")) y = params["y"];
+			if (params.has_key("z")) z = params["z"];
+			if (params.has_key("r1")) r1 = params["r1"];
+			if (params.has_key("r2")) r2 = params["r2"];
+			if (params.has_key("v1")) v1 = params["v1"];
+			if (params.has_key("v2")) v2 = params["v2"];
+		}
+
+		virtual void process_pixel(float *pixel, int xi, int yi, int zi) const {
+			if (xi<x-r2 || xi>x+r2 || yi<y-r2 || yi>y+r2 || zi<z-r2 || zi>z+r2) return;
+			float r=sqrt(xi*xi+yi*yi+zi*zi);
+			if (r>r2 && r>r1) return;
+			if (r>r1) *pixel=v2*(r-r1)/(r2-r1)+v1*(r2-r)/(r2-r1);
+			else *pixel=v1;
+			return;
+		}
+
+		int x,y,z,r1,r2;
+		float v1,v2;
+
+	};
+
+
 	/**Sets the structure factor based on a 1D x/y text file.
 	 *@param filename
 	 */

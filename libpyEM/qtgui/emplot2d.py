@@ -102,7 +102,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		if not self.data : return
 		
 		fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-		ax=fig.add_axes((.1,.05,.9,.9))
+		ax=fig.add_axes((.1,.05,.85,.9))
 		canvas=FigureCanvasAgg(fig)
 		
 		for i in self.axes.keys():
@@ -122,6 +122,10 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 		canvas.draw()
 		a = canvas.tostring_rgb()  # save this and convert to bitmap as needed
+		
+		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
+		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
+		print ax.get_position()
 		
 		GL.glRasterPos(0,self.height()-1)
 		GL.glPixelZoom(1.0,-1.0)

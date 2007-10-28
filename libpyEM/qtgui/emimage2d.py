@@ -469,18 +469,25 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.mtlay = QtGui.QGridLayout(self.meastab)
 		
 		self.mtl1= QtGui.QLabel("A/Pix")
+		self.mtl1.setAlignment(Qt.AlignRight)
 		self.mtlay.addWidget(self.mtl1,0,0)
 		
 		self.mtapix = QtGui.QLineEdit("1")
 		self.mtlay.addWidget(self.mtapix,0,1)
+		self.mtapix.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+#		self.mtapix.resize(60,21)
+#		print self.mtapix.sizeHint().width(),self.mtapix.sizeHint().height()
 		
 		self.mtshowlen= QtGui.QLabel("Length:")
+		self.mtshowlen.setAlignment(Qt.AlignRight)
 		self.mtlay.addWidget(self.mtshowlen,1,0,1,2)
 		
 		self.mtshoworigin= QtGui.QLabel("Origin:")
+		self.mtshoworigin.setAlignment(Qt.AlignRight)
 		self.mtlay.addWidget(self.mtshoworigin,0,2)
 		
 		self.mtshowend= QtGui.QLabel("End:")
+		self.mtshowend.setAlignment(Qt.AlignRight)
 		self.mtlay.addWidget(self.mtshowend,1,2)
 		
 		self.mmtab.addTab(self.meastab,"Meas")
@@ -490,6 +497,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.drawlay = QtGui.QHBoxLayout()
 		
 		self.dtl1 = QtGui.QLabel("Pen Size:")
+		self.dtl1.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl1)
 		
 		self.dtpen = QtGui.QLineEdit("5")
