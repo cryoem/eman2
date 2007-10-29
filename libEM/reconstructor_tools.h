@@ -199,7 +199,7 @@ namespace EMAN
 			FourierInserter3DMode1() {}
 			virtual ~FourierInserter3DMode1() {}
 		
-			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& = 1);
+			virtual bool insert_pixel(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight=1);
 
 			static FourierPixelInserter3D *NEW()
 			{
@@ -644,12 +644,7 @@ namespace EMAN
 	{
 		public:
 			/** Normal constructor
-			* @param rdata a pointer to the real (complex data), which is a 3D volume of dimension xsize x ysize x zsize
-			* @param norm a pointer to the normalization volume linked to rdata, this is half the size of rdata
-			* @param xsize the xsize of the 3D volume pointed at by rdata
-			* @param ysize the ysize of the 3D volume pointed at by rdata
-			* @param zsize the zsize of the 3D volume pointed at by rdata
-			* @param sampling the FRC sampling rate - determines how many rings are created
+			* @param new_params 
 			*/
 			InterpolatedFRC(const Dict & new_params );
 			

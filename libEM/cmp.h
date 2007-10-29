@@ -152,7 +152,6 @@ namespace EMAN
 	 * For complex images, this routine currently bails.
 	 * @author Grant Goodyear (grant.goodyear@uth.tmc.edu) 
 	 * @date 2005-10-03
-	 * @param mask Image mask
 	 */
 	class CccCmp:public Cmp
 	{
@@ -173,7 +172,8 @@ namespace EMAN
 		{
 			return new CccCmp();
 		}
-
+		
+		//param mask Image mask
 		TypeDict get_param_types() const
 		{
 			TypeDict d;

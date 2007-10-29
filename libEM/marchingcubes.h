@@ -77,7 +77,9 @@ namespace EMAN
 		 * @param fX 
 		 * @param fY 
 		 * @param fZ
-		 * @param fScale
+		 * @param fxScale
+		 * @param fyScale
+		 * @param fzScale
 		 */
 		void marching_cube(int fX, int fY, int fZ, int fxScale, int fyScale, int fzScale );
 		

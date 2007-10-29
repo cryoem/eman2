@@ -162,14 +162,11 @@ EMData* mult_radial(EMData* radial);
 		 * @param wptr Normalization data.
 		 * @param wptr2 
 		 * @param wptr3
-		 * @param wptr4
-		 * @param wptr5
-		 * @param myfft FFT data.
-		 * @param m_wvolume
+		 * @param myfft
 		 * @param tf Transform3D reference
 		 * @param mult
 		 */
-/*   	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult=1); */
+/*   	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* wptr4, EMData* wptr5, EMData* myfft, EMData* m_wvolume, const Transform3D& tf, int mult=1); */
  	 	void nn_SSNR_ctf(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult=1);
 	 	void nn_SSNR_ctf_applied(EMData* wptr, EMData* wptr2, EMData* wptr3, EMData* myfft, const Transform3D& tf, int mult=1);
    		   

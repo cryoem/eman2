@@ -3757,7 +3757,6 @@ The basic design of EMAN Processors: <br>\
 
 	/**'paints' a circle into the image at x,y,z with values inside r1 set to v1, values between r1 and r2 will be set to a
 		value between v1 and v2, and values outside r2 will be unchanged
-	 *@param 
 	 */
 	class PaintProcessor:public Processor
 	{

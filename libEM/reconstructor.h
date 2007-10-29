@@ -356,7 +356,7 @@ namespace EMAN
 
 		/** Insert a slice into a 3D volume, in a given orientation
 		* @return 0 if successful, 1 otherwise
-		* @param input_slice the image slice to be inserted into the 3D volume
+		* @param slice the image slice to be inserted into the 3D volume
 		* @param t3d the Transform3D that stores the image Euler angles
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
@@ -454,6 +454,7 @@ namespace EMAN
 		 * this Fourier tranforms the slice and make sure all the pixels are in the right position
 	  	 * @return the processed slice
 	  	 * @param slice the slice to be prepocessed
+	  	 * @param transform
 	  	 * @exception InvalidValueException when the specified padding value is less than the size of the images
 		 */
 		EMData* preprocess_slice( const EMData* const slice, const Transform3D transform = Transform3D() );
