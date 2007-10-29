@@ -590,6 +590,268 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	return ret;
 }
 
+std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
+						 int bpl, float scale, int mingray, int maxgray,
+						 float render_min, float render_max,float gamma,int flags)
+{
+	ENTERFUNC;
+
+	int asrgb;
+	int hist=(flags&2)/2;
+	int invy=(flags&4)?1:0;
+
+	if (!is_complex()) throw ImageDimensionException("complex only");
+
+	if (get_ndim() != 2) {
+		throw ImageDimensionException("2D only");
+	}
+
+	if (is_complex()) ri2ap();
+
+	if (render_max <= render_min) {
+		render_max = render_min + 0.01f;
+	}
+
+	if (gamma<=0) gamma=1.0;
+
+	// Calculating a full floating point gamma for
+	// each pixel in the image slows rendering unacceptably
+	// however, applying a gamma-mapping to an 8 bit colorspace
+	// has unaccepable accuracy. So, we oversample the 8 bit colorspace
+	// as a 12 bit colorspace and apply the gamma mapping to that
+	// This should produce good accuracy for gamma values
+	// larger than 0.5 (and a high upper limit)
+	static int smg0=0,smg1=0;	// while this destroys threadsafety in the rendering process
+	static float sgam=0;		// it is necessary for speed when rendering large numbers of small images
+	static unsigned char gammamap[4096];
+	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
+		for (int i=0; i<4096; i++) {
+			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
+			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
+		}
+	}
+	smg0=mingray;	// so we don't recompute the map unless something changes
+	smg1=maxgray;
+	sgam=gamma;
+
+	if (flags&8) asrgb=4;
+	else if (flags&1) asrgb=3;
+	else throw ImageDimensionException("must set flag 1 or 8");
+
+	std::string ret=std::string();
+//	ret.resize(iysize*bpl);
+	ret.assign(iysize*bpl+hist*1024,char(mingray));
+	unsigned char *data=(unsigned char *)ret.data();
+	unsigned int *histd=(unsigned int *)(data+iysize*bpl);
+	if (hist) {
+		for (int i=0; i<256; i++) histd[i]=0;
+	}
+
+	float rm = render_min;
+	float inv_scale = 1.0f / scale;
+	int ysize = iysize;
+	int xsize = ixsize;
+
+	int ymin = 0;
+	if (iysize * inv_scale > ny) {
+		ymin = (int) (iysize - ny / inv_scale);
+	}
+
+	float gs = (maxgray - mingray) / (render_max - render_min);
+	float gs2 = 4095.999 / (render_max - render_min);
+//	float gs2 = 1.0 / (render_max - render_min);
+	if (render_max < render_min) {
+		gs = 0;
+		rm = FLT_MAX;
+	}
+
+	int dsx = -1;
+	int dsy = 0;
+	int remx = 0;
+	int remy = 0;
+	const int scale_n = 100000;
+
+	int addi = 0;
+	int addr = 0;
+	if (inv_scale == floor(inv_scale)) {
+		dsx = (int) inv_scale;
+		dsy = (int) (inv_scale * nx);
+	}
+	else {
+		addi = (int) floor(inv_scale);
+		addr = (int) (scale_n * (inv_scale - floor(inv_scale)));
+	}
+
+	int xmin = 0;
+	if (x0 < 0) {
+		xmin = (int) (-x0 / inv_scale);
+		xsize -= (int) floor(x0 / inv_scale);
+		x0 = 0;
+	}
+
+	if ((xsize - xmin) * inv_scale > (nx - x0)) {
+		xsize = (int) ((nx - x0) / inv_scale + xmin);
+	}
+	int ymax = ysize - 1;
+	if (y0 < 0) {
+		ymax = (int) (ysize + y0 / inv_scale - 1);
+		ymin += (int) floor(y0 / inv_scale);
+		y0 = 0;
+	}
+
+	if (xmin < 0) xmin = 0;
+	if (ymin < 0) ymin = 0;
+	if (xsize > ixsize) xsize = ixsize;
+	if (ymax > iysize) ymax = iysize;
+
+	int lmax = nx * ny - 1;
+
+	int mid=nx*ny/2;
+	if (dsx != -1) {
+		int l = y0 * nx;
+		for (int j = ymax; j >= ymin; j--) {
+			int ll = x0;
+			for (int i = xmin; i < xsize; i++) {
+				if (l + ll > lmax || ll >= nx - 2) break;
+
+				int k = 0;
+				unsigned char p;
+				if (ll >= nx / 2) {
+					if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
+					else k = 2 * (ll - nx / 2) + l + 2 + nx;
+				}
+				else k = nx * ny - (l + 2 * ll) - 2;
+				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+				else k+=mid; 
+				float t = rdata[k];
+				int ph = (int)(rdata[k+1]*768/(2.0*M_PI));	// complex phase as integer 0-767
+				if (t <= rm)  p = mingray;
+				else if (t >= render_max) p = maxgray;
+				else if (gamma!=1.0) {
+					k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+					p = gammamap[k];					// apply gamma using precomputed gamma map
+				}
+				else {
+					p = (unsigned char) (gs * (t - render_min));
+					p += mingray;
+				}
+				if (ph<256) {
+					data[i * asrgb + j * bpl] = p*(255-ph)/256;
+					data[i * asrgb + j * bpl+1] = p*ph/256;
+					data[i * asrgb + j * bpl+2] = 0;
+				}
+				else if (ph<512) {
+					data[i * asrgb + j * bpl+1] = p*(511-ph)/256;
+					data[i * asrgb + j * bpl+2] = p*(ph-256)/256;
+					data[i * asrgb + j * bpl] = 0;
+				}
+				else {
+					data[i * asrgb + j * bpl+2] = p*(767-ph)/256;
+					data[i * asrgb + j * bpl] = p*(ph-512)/256;
+					data[i * asrgb + j * bpl+1] = 0;
+				}
+				if (hist) histd[p]++;
+				ll += dsx;
+			}
+			l += dsy;
+		}
+	}
+	else {
+		remy = 10;
+		int l = y0 * nx;
+		for (int j = ymax; j >= ymin; j--) {
+			int br = l;
+			remx = 10;
+			int ll = x0;
+			for (int i = xmin; i < xsize - 1; i++) {
+				if (l + ll > lmax || ll >= nx - 2) {
+					break;
+				}
+				int k = 0;
+				unsigned char p;
+				if (ll >= nx / 2) {
+					if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
+					else k = 2 * (ll - nx / 2) + l + 2 + nx;
+				}
+				else k = nx * ny - (l + 2 * ll) - 2;
+				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
+				else k+=mid; 
+
+				float t = rdata[k];
+				int ph = (int)(rdata[k+1]*768/(2.0*M_PI));	// complex phase as integer 0-767
+				if (t <= rm)
+					p = mingray;
+				else if (t >= render_max) {
+					p = maxgray;
+				}
+				else if (gamma!=1.0) {
+					k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+					p = gammamap[k];					// apply gamma using precomputed gamma map
+				}
+				else {
+					p = (unsigned char) (gs * (t - render_min));
+					p += mingray;
+				}
+				if (ph<256) {
+					data[i * asrgb + j * bpl] = p*(255-ph)/256;
+					data[i * asrgb + j * bpl+1] = p*ph/256;
+					data[i * asrgb + j * bpl+2] = 0;
+				}
+				else if (ph<512) {
+					data[i * asrgb + j * bpl+1] = p*(511-ph)/256;
+					data[i * asrgb + j * bpl+2] = p*(ph-256)/256;
+					data[i * asrgb + j * bpl] = 0;
+				}
+				else {
+					data[i * asrgb + j * bpl+2] = p*(767-ph)/256;
+					data[i * asrgb + j * bpl] = p*(ph-512)/256;
+					data[i * asrgb + j * bpl+1] = 0;
+				}
+				if (hist) histd[p]++;
+				ll += addi;
+				remx += addr;
+				if (remx > scale_n) {
+					remx -= scale_n;
+					ll++;
+				}
+			}
+			l = br + addi * nx;
+			remy += addr;
+			if (remy > scale_n) {
+				remy -= scale_n;
+				l += nx;
+			}
+		}
+	}
+
+	// this replicates r -> g,b
+	if (asrgb==4) {
+		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+			for (int i=xmin; i<xsize*4; i+=4) {
+				data[i+j+3]=255;
+			}
+		}
+	}
+
+	EXITFUNC;
+
+	// ok, ok, not the most efficient place to do this, but it works
+	if (invy) {
+		int x,y;
+		char swp;
+		for (y=0; y<iysize/2; y++) {
+			for (x=0; x<ixsize; x++) {
+				swp=ret[y*bpl+x];
+				ret[y*bpl+x]=ret[(iysize-y-1)*bpl+x];
+				ret[(iysize-y-1)*bpl+x]=swp;
+			}
+		}
+	}
+
+    //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
+	return ret;
+}
+
 
 void EMData::render_amp24( int x0, int y0, int ixsize, int iysize,
 						  int bpl, float scale, int mingray, int maxgray,

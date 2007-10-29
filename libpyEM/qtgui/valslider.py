@@ -102,6 +102,7 @@ class ValSlider(QtGui.QWidget):
 		QtCore.QObject.connect(self.slider, QtCore.SIGNAL("valueChanged(int)"), self.sliderChange)
 
 	def setRange(self,minv,maxv):
+		if maxv<=minv : maxv=minv+.001
 		self.range=[float(minv),float(maxv)]
 		self.updates()
 

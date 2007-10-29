@@ -3759,7 +3759,7 @@ The basic design of EMAN Processors: <br>\
 		value between v1 and v2, and values outside r2 will be unchanged
 	 *@param 
 	 */
-	class PaintProcessor:public CoordinateProcessor
+	class PaintProcessor:public Processor
 	{
 	  public:
 		PaintProcessor():x(0), y(0), z(0),r1(0), v1(0.0), r2(0), v2(0.0)
@@ -3808,14 +3808,7 @@ The basic design of EMAN Processors: <br>\
 		}
 
 		protected:
-		void process_pixel(float *pixel, int xi, int yi, int zi) const {
-			if (xi<x-r2 || xi>x+r2 || yi<y-r2 || yi>y+r2 || zi<z-r2 || zi>z+r2) return;
-			float r=sqrt(xi*xi+yi*yi+zi*zi);
-			if (r>r2 && r>r1) return;
-			if (r>r1) *pixel=v2*(r-r1)/(r2-r1)+v1*(r2-r)/(r2-r1);
-			else *pixel=v1;
-			return;
-		}
+		void process_inplace(EMData *image);
 
 		int x,y,z,r1;
 		float v1;

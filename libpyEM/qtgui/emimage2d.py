@@ -173,8 +173,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.fft=self.data.do_fft()
 				self.fft.set_value_at(0,0,0,0)
 				self.fft.set_value_at(1,0,0,0)
-				self.fft.process_inplace("xform.fourierorigin",{})
-				self.fft=self.fft.get_fft_amplitude()
+#				self.fft.process_inplace("xform.fourierorigin",{})
+#				self.fft=self.fft.get_fft_amplitude()
 			
 				mean=self.fft.get_attr("mean")
 				sigma=self.fft.get_attr("sigma")
@@ -216,11 +216,16 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		if self.fft : a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-		else : a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
-		GL.glRasterPos(0,self.height()-1)
-		GL.glPixelZoom(1.0,-1.0)
-		GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+		if self.fft : 
+			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
+			GL.glRasterPos(0,self.height()-1)
+			GL.glPixelZoom(1.0,-1.0)
+			GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
+		else : 
+			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			GL.glRasterPos(0,self.height()-1)
+			GL.glPixelZoom(1.0,-1.0)
+			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
 		hist=numpy.fromstring(a[-1024:],'i')
 		if self.inspector : 
 			if self.invert: self.inspector.setHist(hist,self.maxden,self.minden) 
@@ -411,12 +416,13 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.addShape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
 			elif self.mmode==2 and self.inspector:
 				#try:
-					print "paint ",lc
+#					print "paint ",lc
 					self.drawr1=int(float(self.inspector.dtpen.text()))
 					self.drawv1=float(self.inspector.dtpenv.text())
 					self.drawr2=int(float(self.inspector.dtpen2.text()))
 					self.drawv2=float(self.inspector.dtpenv2.text())
 					self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
+					self.update()
 				#except:
 					#print "paint error"
 					#return
@@ -438,6 +444,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.addShape("MEASL",("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),9,-1))
 			elif self.mmode==2 and self.inspector:
 				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
+				self.update()
 				
 	def mouseReleaseEvent(self, event):
 		lc=self.scrtoimg((event.x(),event.y()))
@@ -449,6 +456,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				return
 			elif self.mmode==1 :
 				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
+			elif self.mmode==2 and self.inspector:
+				self.setData(self.data)
 
 	def wheelEvent(self, event):
 		if event.delta() > 0:
@@ -670,6 +679,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.hist.setData(hist,minden,maxden)
 
 	def setLimits(self,lowlim,highlim,curmin,curmax):
+		if highlim<=lowlim : highlim=lowlim+.001
 		self.lowlim=lowlim
 		self.highlim=highlim
 		self.mins.setRange(lowlim,highlim)

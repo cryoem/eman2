@@ -502,7 +502,7 @@ namespace EMAN
 		 * @param[in] n Given number.
 		 * @return (n*n).
 		 */
-		static int square(int n)
+		static inline int square(int n)
 		{
 			return (n * n);
 		}
@@ -511,7 +511,7 @@ namespace EMAN
 		 * @param[in] x Given number.
 		 * @return (x*x).
 		 */
-		static float square(float x)
+		static inline float square(float x)
 		{
 			return (x * x);
 		}
@@ -520,7 +520,7 @@ namespace EMAN
 		 * @param[in] x Given number.
 		 * @return (x*x).
 		 */
-		static float square(double x)
+		static inline float square(double x)
 		{
 			return (float)(x * x);
 		}
@@ -530,7 +530,7 @@ namespace EMAN
 		 * @param[in] y The second number.
 		 * @return (x*x + y*y).
 		 */
-		static float square_sum(float x, float y)
+		static inline float square_sum(float x, float y)
 		{
 			return (float)(x * x + y * y);
 		}
