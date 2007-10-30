@@ -37,12 +37,9 @@ namespace EMAN
 	
 		virtual float get_sample_density() const = 0;
 		
-		virtual Dict get_isosurface(bool smooth) const =0;
+		virtual Dict get_isosurface(bool smooth)  =0;
 		virtual unsigned long get_isosurface_dl(bool smooth) =0;
 	
-		
-		virtual int get_leaf_level() = 0;
-		virtual int get_root_level() = 0;
 	protected:
 		EMData * _emdata;
 		

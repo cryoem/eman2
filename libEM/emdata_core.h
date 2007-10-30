@@ -434,7 +434,7 @@ EMData & operator/=(const EMData & em);
 
 
 /** Overload operator() for array indexing. */
-float& operator()(const int ix, const int iy, const int iz) const {
+inline float& operator()(const int ix, const int iy, const int iz) const {
 	ptrdiff_t pos = (ix-xoff) + ((iy-yoff) + (iz-zoff)*ny)*nx;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz) {
@@ -444,7 +444,7 @@ float& operator()(const int ix, const int iy, const int iz) const {
 	return *(rdata + pos);
 }
 
-float& operator()(const int ix, const int iy) const {
+inline float& operator()(const int ix, const int iy) const {
 	ptrdiff_t pos = (ix - xoff) + (iy-yoff)*nx;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz)
@@ -456,7 +456,7 @@ float& operator()(const int ix, const int iy) const {
 }
 
 
-float& operator()(const int ix) const {
+inline float& operator()(const int ix) const {
 	ptrdiff_t pos = ix - xoff;
 #ifdef BOUNDS_CHECKING
 	if (pos < 0 || pos >= nx*ny*nz)

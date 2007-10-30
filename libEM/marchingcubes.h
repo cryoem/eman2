@@ -55,33 +55,25 @@ namespace EMAN
 	
 		float get_sample_density() const ;
 		
-		Dict get_isosurface(bool smooth) const ;
+		Dict get_isosurface(bool smooth);
 		
 		unsigned long get_isosurface_dl(bool smooth);
-
-		static const int leaf_level;
 		
-		int get_leaf_level() { return leaf_level; }
-		int get_root_level();
 	private:	
 		int _sample;
 		CubeNode* _root;
 		map<int, int> point_map;
 		unsigned long _isodl;
-	
-		void calculate_surface(bool smooth);
 		
-		/** MarchCube performs the Marching Cubes algorithm on a single cube 
-		 * and BYPASS cubes without data.
-		 * 
-		 * @param fX 
-		 * @param fY 
-		 * @param fZ
-		 * @param fxScale
-		 * @param fyScale
-		 * @param fzScale
-		 */
-		void marching_cube(int fX, int fY, int fZ, int fxScale, int fyScale, int fzScale );
+		bool calculate_min_max_vals(EMData* em );
+		void clear_min_max_vals();
+		vector<EMData*> minvals, maxvals;
+		EMData* root;
+		int levels, drawing_level;
+		void draw_cube(const int x, const int y, const int z, const int cur_level );
+		void marching_cube(int fX, int fY, int fZ, const EMData* const em);
+		
+		void calculate_surface(bool smooth);
 		
 		/** Find the gradient of the scalar field at a point. This gradient can 
 		 * be used as a very accurate vertx normal for lighting calculations.
@@ -104,13 +96,69 @@ namespace EMAN
 		float get_offset(float fValue1, float fValue2, float fValueDesired);
 		
 		int get_edge_num(int x, int y, int z, int edge);
-		void build_search_tree();
-		CubeNode* get_cube_node(int x, int y, int z, int level, int xsize, int ysize, int zsize);
-		void draw_cube(CubeNode* node);
+
+		template<typename type>
+		class CustomVector
+		{
+			public:
+			CustomVector(const int starting_size=1024) : data(0), size(0), elements(0)
+			{
+				resize(starting_size);
+			}
+			
+			inline void clear(const int starting_size=1024)
+			{
+				if ( data != 0 )
+				{
+					delete [] data;
+					data = 0;
+				}
+				size = 0;
+				elements = 0;
+				resize(starting_size);
+			}
+			
+			inline void resize(const int n)
+			{
+// 				cout << "Called resize with arg " << n << endl;
+				
+				data = (type*)realloc(data, n*sizeof(type));
+				
+				for(int i = size; i < n; ++i) data[i] = 0;
+				size = n;
+			}
+			
+			inline void push_back(const type& t)
+			{
+				if ( elements == size ) resize(2*size);
+				data[elements] = t;
+				++elements;
+			}
+			
+			inline int elem() { return elements; }
+			
+			inline type& operator[](const int idx)
+			{
+				int csize = size;
+				while (idx >= csize ) {
+					csize *= 2;
+				}
+				if ( csize != size ) resize(csize);
+				return data[idx];
+			}
+			
+			inline type* get_data() { return data; }
+			
+			private:
+			type* data;
+			int size;
+			int elements;
+		};
 		
-		/** Compute smooth normals. 
-		 * */
-		void calculate_smooth_normals();
+// 		CustomVector p_map;
+		CustomVector<float> pp;
+		CustomVector<float> nn;
+		CustomVector<int> ff;
 	};
 
 }

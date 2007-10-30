@@ -2210,6 +2210,143 @@ The basic design of EMAN Processors: <br>\
 		
 	};
 
+	/** BooleanShrinkProcessor encapsulates code common to
+	* MaxShrinkProcessor and MinShrinkProcessor - the processors use more or less
+	* identical code, the main difference being the logical operator.
+	* Both of these instances are written at compile time using templates.
+	*/
+	class BooleanShrinkProcessor: public Processor
+	{
+		protected:
+			/** Boolean shrink an image, returning the processed image
+			* @param image the image to operate on
+			* @param LogicOp a logical operator class
+			* @exception ImageFormatException if the image is complex
+			* @exception NullPointerException if the image pointer is null
+			* @return the image that results from the operation
+			 */
+			template<class LogicOp>
+			EMData* process(const EMData *const image);
+			
+			/** Boolean shrink an image inplace
+			 * @param image the image to operate on
+			 * @param LogicOp a logical operator class
+			 * @exception ImageFormatException if the image is complex
+			 * @exception NullPointerException if the image pointer is null
+			 */
+			template<class LogicOp>
+			void process_inplace(EMData * image);
+			
+	};
+	
+	/** MaxShrinkProcessors shrinks an image by in an integer amount, 
+	 * keeping the maximum pixel value - useful when constructing binary search
+	 * trees in the marching cubes algorithm
+	 */
+	class MaxShrinkProcessor:public BooleanShrinkProcessor
+	{
+		public:
+			/** The max shrink processor has its own process function
+			* to minise memory usage - if this function was not over written
+			* the base Processor class would create copy of the input image
+			* and hand it to the process_inplace function. This latter approach
+			* mallocs more memory than necessary
+			*/
+			virtual EMData* process(const EMData *const image)
+			{
+				return BooleanShrinkProcessor::process<GreaterThan>(image);
+			}
+			
+			// resizes the image
+			virtual void process_inplace(EMData * image)
+			{
+				BooleanShrinkProcessor::process_inplace<GreaterThan>(image);
+			}
+			
+			string get_desc() const
+			{
+				return "Shrink an image by a given amount (default 2), using the maximum value found in the pixel neighborhood.";
+			}
+			
+			string get_name() const
+			{
+				return "math.maxshrink";
+			}
+			static Processor *NEW()
+			{
+				return new MaxShrinkProcessor();
+			}
+			
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("shrink", EMObject::INT, "The shrink factor");
+				d.put("search", EMObject::INT, "The search area (cubic volume width, usually the same as shrink)");
+				return d;
+			}
+		
+		private:
+			struct GreaterThan
+			{
+				inline bool operator()(float left,float right) const { return left > right; }
+				inline float get_start_val() { return -10000000; }
+			};
+	};
+	
+	/** MinShrinkProcessor shrinks an image by in an integer amount, 
+	 * keeping the minimum pixel value - useful when constructing binary search
+	 * trees in the marching cubes algorithm
+	 */
+	class MinShrinkProcessor:public BooleanShrinkProcessor
+	{
+		public:
+			/** The min shrink processor has its own process function
+			* to minise memory usage - if this function was not over written
+			* the base Processor class would create copy of the input image
+			* and hand it to the process_inplace function. This latter approach
+			* mallocs more memory than necessary
+			*/
+			virtual EMData* process(const EMData *const image)
+			{
+				return BooleanShrinkProcessor::process<LessThan>(image);
+			}
+			
+			// resizes the image
+			virtual void process_inplace(EMData * image)
+			{
+				BooleanShrinkProcessor::process_inplace<LessThan>(image);
+			}
+			string get_desc() const
+			{
+				return "Shrink an image by a given amount (default 2), using the minimum value found in the pixel neighborhood.";
+			}
+			
+			string get_name() const
+			{
+				return "math.minshrink";
+			}
+			static Processor *NEW()
+			{
+				return new MinShrinkProcessor();
+			}
+			
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("shrink", EMObject::INT, "The shrink factor");
+				d.put("search", EMObject::INT, "The search area (cubic volume width, usually the same as shrink)");
+				return d;
+			}
+		
+		private:
+		struct LessThan
+		{
+			inline bool operator()(float left,float right) const { return left < right; }
+			inline float get_start_val() { return 10000000; }
+		};
+	};
+	
+	
 	/**Gradient remover, does a rough plane fit to find linear gradients.
 	 */
 	class GradientRemoverProcessor:public Processor

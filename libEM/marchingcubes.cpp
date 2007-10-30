@@ -1,19 +1,18 @@
 #include "marchingcubes.h"
 
 #include "GL/gl.h"
+#include <time.h>
 
 using namespace EMAN;
 
 #define min(a,b)(((a) < (b)) ? (a) : (b))
 #define max(a,b)(((a) > (b)) ? (a) : (b))
 
-const int MarchingCubes::leaf_level = 0;
-
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
-static const float a2fVertexOffset[8][3] =
+static const int a2fVertexOffset[8][3] =
 {
-		{0.0, 0.0, 0.0},{1.0, 0.0, 0.0},{1.0, 1.0, 0.0},{0.0, 1.0, 0.0},
-		{0.0, 0.0, 1.0},{1.0, 0.0, 1.0},{1.0, 1.0, 1.0},{0.0, 1.0, 1.0}
+		{0, 0, 0},{1, 0, 0},{1, 1, 0},{0, 1, 0},
+		{0, 0, 1},{1, 0, 1},{1, 1, 1},{0, 1, 1}
 };
 
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
@@ -60,7 +59,7 @@ static const int edgeLookUp[12][4] =
 };
 
 MarchingCubes::MarchingCubes()
-	: _sample(leaf_level), _isodl(0)
+	: _sample(0), _isodl(0)
 {
 	isSmooth = false;
 	_surf_value = 1;
@@ -68,14 +67,14 @@ MarchingCubes::MarchingCubes()
 	_root->is_leaf = true;
 	
 	std::cout << "before search tree..." << std::endl;
-	build_search_tree();
+// 	build_search_tree();
 	std::cout << "before calc surface..." << std::endl;
-	calculate_surface(isSmooth);
+	//calculate_surface(isSmooth);
 	std::cout << "end constructor..." << std::endl;
 }
 
 MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
-	: _sample(leaf_level), _isodl(0)
+	: _sample(0), _isodl(0)
 {
 	isSmooth = smooth;
 	_surf_value = 1;
@@ -83,9 +82,69 @@ MarchingCubes::MarchingCubes(EMData * em, bool smooth)
 	_root = new CubeNode();
 	_root->is_leaf = true;
 	
-	build_search_tree();
+// 	build_search_tree();
 
+	calculate_min_max_vals(em);
+	/*
 	calculate_surface(isSmooth);
+	
+	calculate_min_max_vals(em);*/
+}
+
+void MarchingCubes::clear_min_max_vals()
+{
+	for (vector<EMData*>::iterator it = minvals.begin(); it != minvals.end(); ++it)
+	{
+		if ( (*it) != 0 ) delete *it;
+	}
+	minvals.clear();
+	
+	for (vector<EMData*>::iterator it = maxvals.begin(); it != maxvals.end(); ++it)
+	{
+		if ( (*it) != 0 ) delete *it;
+	}
+	maxvals.clear();
+}
+
+bool MarchingCubes::calculate_min_max_vals(EMData* em )
+{
+	root = em;
+	clear_min_max_vals();
+	
+	int nx = em->get_xsize();
+	int ny = em->get_ysize();
+	int nz = em->get_zsize();
+
+	// Create the binary tree
+	while ( nx > 1 && ny > 1 && nz > 1 )
+	{
+		int size = minvals.size();
+		
+		if ( size == 0 )
+		{
+			Dict a;
+			a["search"] = 3;
+			minvals.push_back(em->process("math.minshrink",a));
+			maxvals.push_back(em->process("math.maxshrink",a));
+		}
+		else
+		{
+			cout << minvals[size-1]->get_xsize() << endl;
+			minvals.push_back(minvals[size-1]->process("math.minshrink"));
+			maxvals.push_back(maxvals[size-1]->process("math.maxshrink"));
+		}
+
+		nx /= 2;
+		ny /= 2;
+		nz /= 2;
+	}
+	
+	levels = minvals.size();
+	
+	drawing_level = -1;
+	
+	cout << "There are " << levels << " levels" << endl;
+	return true;
 }
 
 MarchingCubes::~MarchingCubes() {
@@ -98,7 +157,7 @@ MarchingCubes::~MarchingCubes() {
 	if(faces) {delete faces; faces=0;}
 }
 
-Dict MarchingCubes::get_isosurface(bool smooth) const
+Dict MarchingCubes::get_isosurface(bool smooth) 
 {
 	Dict d;
 	if(smooth) {	
@@ -119,233 +178,99 @@ unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 {
 	if ( _isodl != 0 ) glDeleteLists(_isodl,1);
 	
-	float *p = new float[points->size()];
-	float *n = new float[normalsSm->size()];
-	int *f = new int[faces->size()];
+	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 	
-	std::copy(points->begin(),points->end(), p);
-	std::copy(normalsSm->begin(),normalsSm->end(), n);
-	std::copy(faces->begin(),faces->end(),f);
+	for (int i = 0; i < ff.elem(); ++i )
+		ff[i] /= 3;
 	
-	for (unsigned int i = 0; i < faces->size(); ++i )
-		f[i] /= 3;
-	
-	glNormalPointer(GL_FLOAT,0,n);
-	glVertexPointer(3,GL_FLOAT,0,p);
-	glIndexPointer(GL_INT,1,f);
+	glNormalPointer(GL_FLOAT,0,nn.get_data());
+	glVertexPointer(3,GL_FLOAT,0,pp.get_data());
+// 	glIndexPointer(GL_INT,1,f);
 
 	_isodl = glGenLists(1);
-	
+	int time0 = clock();
 	glNewList(_isodl,GL_COMPILE);
-	glDrawArrays(GL_TRIANGLES,0,faces->size());
+// 	glDrawArrays(GL_TRIANGLES,0,faces->size());
+	glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());;
 	glEndList();
+	int time1 = clock();
+	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
 	
 	return _isodl;
 }
 void MarchingCubes::set_data(EMData* data) {
+	calculate_min_max_vals(data);
 	Isosurface::set_data(data);
-	calculate_surface(isSmooth);
-}
-int MarchingCubes::get_root_level()
-{
-	if ( _root == 0 ) return 0;
-	else return _root->level;
+// 	calculate_surface(isSmooth);
 }
 
-static int num_leaves = 0;
 void MarchingCubes::set_surface_value(const float value) {
-	float temp = value;
-	if(value > 1000) temp = 1000;
-	if(value < 0) temp = 0;
+	
+	if(_surf_value == value) return;
 
-	if(_surf_value == temp) return;
-
-	_surf_value = temp;
+	_surf_value = value;
 
 	calculate_surface(isSmooth);
-	cout << "Total number of leaves is " << num_leaves << endl;
 }
 
 float MarchingCubes::get_surface_value() const { return _surf_value; }
 
 void MarchingCubes::set_sample_density(const int size) {
-	int temp = size;
 	
-	if ( size > leaf_level ) temp = leaf_level;
-	
-	if ( size < get_root_level() ) temp = get_root_level();
-
-	_sample = temp;
-	
+	_sample = size;
 	
 	calculate_surface(isSmooth);
-	cout << "Total number of leaves is " << num_leaves << endl;
 }
 
 float MarchingCubes::get_sample_density() const  { return _sample; }
 
-void MarchingCubes::build_search_tree() {
-	delete _root;
-	num_leaves = 0;
-	_root = get_cube_node(0, 0, 0, 0, _emdata->get_xsize(),_emdata->get_ysize(),_emdata->get_zsize());
-}
-
-CubeNode* MarchingCubes::get_cube_node(int x, int y, int z, int level, int xsize,int ysize, int zsize) {
-	if(xsize == 1 && zsize == 1 && ysize == 1) {
-
-//		Assert(size == 1);
-//		Assert(level == _emdata->getResolution());
-
-		// terminate, we are at a leaf node
-		CubeNode* node = new CubeNode();
-		node->level = leaf_level;
-		
-// 		node->size = xsize;
-		node->xsize = xsize;
-		node->ysize = ysize;
-		node->zsize = zsize;
-		
-		node->x = x;
-		node->y = y;
-		node->z = z;
-		float minval = 0.0f, maxval = 0.0f;
-		for(int iVertex = 0; iVertex < 8; iVertex++)
-        {
-			float val = _emdata->get_value_at((int)min(x + a2fVertexOffset[iVertex][0], _emdata->get_xsize()-1),
-                                                   (int)min(y + a2fVertexOffset[iVertex][1], _emdata->get_ysize()-1),
-                                                   (int)min(z + a2fVertexOffset[iVertex][2], _emdata->get_zsize()-1));
-			if(iVertex == 0){
-				minval = val;
-				maxval = val;
-			} else {
-				minval = min(minval, val);
-				maxval = max(maxval, val);
-			}
-        }
-
-		node->min = minval;
-		node->max = maxval;
-		node->is_leaf = true;
-		node->num_children = 0;
-
-		return node;
-
-	} else {
-		// construct cube node
-        CubeNode* node = new CubeNode();
-// 		node->level = level;
-// 		node->size = xsize;
-		node->xsize = xsize;
-		node->ysize = ysize;
-		node->zsize = zsize;
-		node->num_children = 0;
-		node->x = x;
-		node->y = y;
-		node->z = z;
-		
-		// find children
-// 		size = size >> 1; // size /= 2
-		
-		// Fixme - make is so that we use bits here?
-		bool xone = xsize == 1;
-		bool yone = ysize == 1;
-		bool zone = zsize == 1;
-		
-		bool xodd = (xsize % 2 == 1) && !xone;
-		bool yodd = (ysize % 2 == 1) && !yone;
-		bool zodd = (zsize % 2 == 1) && !zone;
-		
-		if ( xsize > 1 ) xsize = xsize >> 1;
-		if ( ysize > 1 ) ysize = ysize >> 1;
-		if ( zsize > 1 ) zsize = zsize >> 1;
-		
-		level++;
-		float minval = 0, maxval = 0;
-		for(int iVertex = 0; iVertex < 8; iVertex++)
-        {
-			if ( xone && a2fVertexOffset[iVertex][0] ) continue;
-			if ( yone && a2fVertexOffset[iVertex][1] ) continue;
-			if ( zone && a2fVertexOffset[iVertex][2] ) continue;
-			
-			
-			int newx = int(x + a2fVertexOffset[iVertex][0]*xsize);// + a2OddXOffset[iVertex]*(!xodd));
-			int newy = int(y + a2fVertexOffset[iVertex][1]*ysize);// + a2OddYOffset[iVertex]*(!yodd));
-			int newz = int(z + a2fVertexOffset[iVertex][2]*zsize);// + a2OddZOffset[iVertex]*(!zodd));
-			
-			if (xodd) newx += 1-a2OddXOffset[iVertex];
-			if (yodd) newy += 1-a2OddYOffset[iVertex];
-			if (zodd) newz += 1-a2OddZOffset[iVertex];
-			
-			int newxsize = xsize + a2OddXOffset[iVertex]*xodd;
-			int newysize = ysize + a2OddYOffset[iVertex]*yodd;
-			int newzsize = zsize + a2OddZOffset[iVertex]*zodd;
-			
-			
-// 			cout << "Getting cube node at " << newx << " " << newy << " " << newz << endl;
-// 			cout << "Size is " <<newxsize << " " << newysize << " " << newzsize << endl;
-			node->children[iVertex] = get_cube_node(newx,newy,newz,level,newxsize,newysize,newzsize);
-
-			if(iVertex == 0){
-				minval = node->children[iVertex]->min;
-				maxval = node->children[iVertex]->max;
-			} else {
-				minval = min(minval, node->children[iVertex]->min);
-				maxval = max(maxval, node->children[iVertex]->max);
-			}
-			
-			node->num_children++;
-        }
-
-		int l = leaf_level;
-		for (int iVertex = 0; iVertex < 8; iVertex++)
-		{
-			if ( node->children[iVertex] == 0 ) continue;
-			if ( node->children[iVertex]->level < level  )
-				l =  node->children[iVertex]->level;
-		}
-		node->level = l-1;
-		// set max, min
-// 		cout << "This node has " << node->num_children << " children" << endl;
-		node->min = minval;
-		node->max = maxval;
-		node->is_leaf = false;
-		return node;
-	}
-}
-
 void MarchingCubes::calculate_surface(bool smooth) {
-	points = new vector<float>();
-	normals = new vector<float>();
-	normalsSm = new vector<float>();
-	faces = new vector<int>();
-	//point_map.clear();
-
-	draw_cube(_root);
 	
 	point_map.clear();
-	if(smooth) {
-		calculate_smooth_normals();
+	pp.clear();
+	nn.clear();
+	ff.clear();
+	
+	int time0 = clock();
+
+	float min = minvals[minvals.size()-1]->get_value_at(0,0,0);
+	float max = maxvals[minvals.size()-1]->get_value_at(0,0,0);
+	if ( min < _surf_value &&  max > _surf_value)
+	{
+		
+		draw_cube(0,0,0,minvals.size()-1);
 	}
+
+	int time1 = clock();
+	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to traverse the search tree and generate polygons" << endl;
+	cout << "There are " << ff.elem() << " faces and " << nn.elem() << " normals and " << pp.elem() << " points" << endl;
+
 }
 
-void MarchingCubes::draw_cube(CubeNode* node) {
+void MarchingCubes::draw_cube(const int x, const int y, const int z, const int cur_level ) {
 	
-	if(node->min < _surf_value && node->max > _surf_value) {
-		
-		if(node->level == _sample) {
-// 			cout << node->level << " same as " << _sample << endl;
-			marching_cube(node->x, node->y, node->z, node->xsize, node->ysize, node->zsize);
-		}
-		else {
-			for(int i=0; i<8; i++)
-			{
-				if (node->children[i] == 0) continue;
-				draw_cube(node->children[i]);
+	if ( cur_level == drawing_level )
+	{
+		marching_cube(x,y,z, _emdata);
+	}
+	else
+	{
+		if ( cur_level > 0 ) {
+			for(int i=0; i<8; ++i )	{
+				float min = minvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
+				float max = maxvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
+				if ( min < _surf_value &&  max > _surf_value)
+					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
+
 			}
 		}
-	}
+		else {
+			for(int i=0; i<8; ++i )	{
+					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
+			}
+		}
 
-	return;
+	}
 }
 
 void MarchingCubes::get_normal(Vector3 &normal, int fX, int fY, int fZ)
@@ -374,146 +299,108 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 	return index;
 }
 
-/*
-BYPASS cubes without data.
-*/
-void MarchingCubes::marching_cube(int fX, int fY, int fZ, int fxScale, int fyScale, int fzScale)
+void MarchingCubes::marching_cube(int fX, int fY, int fZ, const EMData* const em)
 {
-        extern int aiCubeEdgeFlags[256];
-        extern int a2iTriangleConnectionTable[256][16];
+	extern int aiCubeEdgeFlags[256];
+	extern int a2iTriangleConnectionTable[256][16];
 
-        int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
-        float fOffset;
-        Vector3 sColor;
-        float afCubeValue[8];
-        Vector3 asEdgeVertex[12];
-		int pointIndex[12];
+	int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+	float fOffset;
+	Vector3 sColor;
+	float afCubeValue[8];
+	Vector3 asEdgeVertex[12];
+	int pointIndex[12];
+
 // 		Vector3 asEdgeNorm[12];
 
-        //Make a local copy of the values at the cube's corners
-        for(iVertex = 0; iVertex < 8; iVertex++)
-        {
-			afCubeValue[iVertex] = _emdata->get_value_at((int)(fX + a2fVertexOffset[iVertex][0]*fxScale),
-                                                   (int)(fY + a2fVertexOffset[iVertex][1]*fyScale),
-                                                   (int)(fZ + a2fVertexOffset[iVertex][2]*fzScale) );
-        }
+	//Make a local copy of the values at the cube's corners
+	for(iVertex = 0; iVertex < 8; iVertex++)
+	{
+		afCubeValue[iVertex] = em->get_value_at((int)(fX + a2fVertexOffset[iVertex][0]),
+				(int)(fY + a2fVertexOffset[iVertex][1]),
+				 (int)(fZ + a2fVertexOffset[iVertex][2]));
+	}
+	//Find which vertices are inside of the surface and which are outside
+	iFlagIndex = 0;
+	for(iVertexTest = 0; iVertexTest < 8; iVertexTest++)
+	{
+		if (_surf_value >= 0 ){
+			if(afCubeValue[iVertexTest] <= _surf_value) 
+				iFlagIndex |= 1<<iVertexTest;
+		}
+		else
+		{
+			if(afCubeValue[iVertexTest] >= _surf_value) 
+				iFlagIndex |= 1<<iVertexTest;
+		}
+			
+	}
 
-        //Find which vertices are inside of the surface and which are outside
-        iFlagIndex = 0;
-        for(iVertexTest = 0; iVertexTest < 8; iVertexTest++)
-        {
-                if(afCubeValue[iVertexTest] <= _surf_value) 
-                        iFlagIndex |= 1<<iVertexTest;
-        }
+	//Find which edges are intersected by the surface
+	iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
 
-        //Find which edges are intersected by the surface
-        iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
+	//If the cube is entirely inside or outside of the surface, then there will be no intersections
+	if(iEdgeFlags == 0) return;
 
-        //If the cube is entirely inside or outside of the surface, then there will be no intersections
-        if(iEdgeFlags == 0) 
-        {
-                return;
-        }
+	//Find the point of intersection of the surface with each edge
+	//Then find the normal to the surface at those points
+	for(iEdge = 0; iEdge < 12; iEdge++)
+	{
+		//if there is an intersection on this edge
+		if(iEdgeFlags & (1<<iEdge))
+		{
+			fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
+								 afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
-        //Find the point of intersection of the surface with each edge
-        //Then find the normal to the surface at those points
-        for(iEdge = 0; iEdge < 12; iEdge++)
-        {
-                //if there is an intersection on this edge
-                if(iEdgeFlags & (1<<iEdge))
-                {
-                        fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
-                                                     afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
-
-                        asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) * fxScale;
-                        asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) * fyScale;
-                        asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) * fzScale;
+			asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]);
+			asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]);
+			asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]);
 
 						
-						pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0]*fxScale, fY+edgeLookUp[iEdge][1]*fyScale, fZ+edgeLookUp[iEdge][2]*fzScale, edgeLookUp[iEdge][3]);
-//                         get_normal(asEdgeNorm[iEdge], asEdgeVertex[iEdge][0], asEdgeVertex[iEdge][1], asEdgeVertex[iEdge][2]);
-
-                }
-        }
-
-
-        //Draw the triangles that were found.  There can be up to five per cube
-		float resolution = _emdata->get_xsize();
-        for(iTriangle = 0; iTriangle < 5; iTriangle++)
-        {
-                if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
-                        break;
-				Point3 pts[3];
-				//Vector3 norms[3];
-                for(iCorner = 0; iCorner < 3; iCorner++)
-                {
-                        iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-
-                        //vGetColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
-                        //glColor3f(sColor.fX, sColor.fY, sColor.fZ);
-						pts[iCorner][0] = asEdgeVertex[iVertex][0]/resolution;
-						pts[iCorner][1] = asEdgeVertex[iVertex][1]/resolution;
-						pts[iCorner][2] = asEdgeVertex[iVertex][2]/resolution;
-
-						if(point_map.count(pointIndex[iVertex]) == 0) {
-							// Point exists in point array
-							int size = points->size();
-							points->push_back(pts[iCorner][0]); // X
-							points->push_back(pts[iCorner][1]); // Y
-							points->push_back(pts[iCorner][2]); // Z
-							faces->push_back(size);
-							point_map[pointIndex[iVertex]] = size;
-						} else {
-							// Add existing point to faces
-							faces->push_back(point_map[pointIndex[iVertex]]);
-						}
-
-                }
-				// Find/add normal
-				Vector3 n = (pts[1]-pts[0])^(pts[2]-pts[1]);
-				n.normalize();
-				normals->push_back(n[0]);
-				normals->push_back(n[1]);
-				normals->push_back(n[2]);
-					
-		}
-}
-
-void MarchingCubes::calculate_smooth_normals()
-{
-	// Compute smooth normals.
-	map<int, vector<int> > pointmap;
-
-	for(unsigned int i=0; i<faces->size(); i+=3) {
-		for(int j=0; j<3; j++) {
-			int pt = (*faces)[i+j];
-			if(!pointmap.count(pt)) 
-				pointmap[pt] = vector<int>();
-			pointmap[pt].push_back(i);
+			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);
 		}
 	}
 
-	for(unsigned int i=0; i<points->size(); i+=3) {
-		int size = pointmap[i].size();
-		float x,y,z;
-		x = y = z = 0;
-		Vector3 n(0,0,0);
-		//std::cout << size << std::endl;
-		for(int j=0; j<size; j++) {
-			int index = pointmap[i][j];
-			Vector3 comp((*normals)[index], (*normals)[index+1], (*normals)[index+2]);
-			n += comp;
-			//x += (*_normals)[index];
-			//y += (*_normals)[index+1];
-			//z += (*_normals)[index+2];
-		}	
-		n.normalize();
-		//_normalsSm->push_back(x/((float)size));
-		//_normalsSm->push_back(y/((float)size));
-		//_normalsSm->push_back(z/((float)size));
-		normalsSm->push_back(n[0]);
-		normalsSm->push_back(n[1]);
-		normalsSm->push_back(n[2]);
+	//Draw the triangles that were found.  There can be up to five per cube	
+	for(iTriangle = 0; iTriangle < 5; iTriangle++)
+	{
+		if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
+			break;
+		Point3 pts[3];
+		//Vector3 norms[3];
+		for(iCorner = 0; iCorner < 3; iCorner++)
+		{
+			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+
+			pts[iCorner][0] = asEdgeVertex[iVertex][0];
+			pts[iCorner][1] = asEdgeVertex[iVertex][1];
+			pts[iCorner][2] = asEdgeVertex[iVertex][2];
+		}
+		Vector3 n = (pts[1]-pts[0])^(pts[2]-pts[1]);
+		for(iCorner = 0; iCorner < 3; iCorner++)
+		{
+			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+			if(point_map.count(pointIndex[iVertex]) == 0) {
+				int ss = pp.elem();
+				pp.push_back(pts[iCorner][0]); // X
+				pp.push_back(pts[iCorner][1]); // Y
+				pp.push_back(pts[iCorner][2]); // Z
+				
+				nn.push_back(n[0]);
+				nn.push_back(n[1]);
+				nn.push_back(n[2]);
+			
+				ff.push_back(ss);
+				point_map[pointIndex[iVertex]] = ss;
+			
+			} else {
+				ff.push_back(point_map[pointIndex[iVertex]]);
+				nn[point_map[pointIndex[iVertex]]] += n[0];
+				nn[point_map[pointIndex[iVertex]]+1] += n[1];
+				nn[point_map[pointIndex[iVertex]]+2] += n[2];
+			}
+
+		}
 	}
 }
 

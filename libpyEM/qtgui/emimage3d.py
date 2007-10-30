@@ -205,7 +205,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.isorender=MarchingCubes(data,1)
 		self.isorender.set_sample_density(self.smpval)
 		
-		self.inspector.setSamp(self.isorender.get_root_level(), self.isorender.get_leaf_level(), self.smpval)
+		#self.inspector.setSamp(self.isorender.get_root_level(), self.isorender.get_leaf_level(), self.smpval)
 		
 		self.inspector.setColors(self.colors)
 		
@@ -298,12 +298,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		# For the time being
 		glEnable(GL_CULL_FACE);
 		
-		
 		glPolygonMode(GL_FRONT,GL_FILL);
 	
 		glEnableClientState(GL_VERTEX_ARRAY)
 		glEnableClientState(GL_NORMAL_ARRAY)
-		glEnableClientState(GL_COLOR_ARRAY)
+		#glEnableClientState(GL_COLOR_ARRAY)
 		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -327,21 +326,21 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glScalef(self.scale,self.scale,self.scale)
 		
 		if self.isodl == 0:
-			self.createIsoDL()
+			#self.createIsoDL()
+			self.getIsoDL()
 
 		#if self.griddl == 0:
 			#self.createGridDL()
-		
-		#glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
-		#glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
-		#glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
-		#glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.isocolor]["ambient"])
+		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
+		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
+		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
 		#self.draw_iso()
-		glEnable(GL_COLOR_MATERIAL)
-		glColorMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE)
+		#glEnable(GL_COLOR_MATERIAL)
+		#glColorMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE)
 		glPushMatrix()
-		glScalef(self.data.get_xsize(), self.data.get_ysize(), self.data.get_zsize())
-		glTranslate(-0.5, -0.5, -0.5)
+		#glScalef(self.data.get_xsize(), self.data.get_ysize(), self.data.get_zsize())
+		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glCallList(self.isodl)
 		glPopMatrix()
 		#glCallList(self.griddl)
@@ -385,12 +384,35 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 
 		#error.ErrorChecker.registerChecker()
+	def getIsoDL(self):
+		# create the isosurface display list
+		
+		print "!!!!"
+		#if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
+		#time1 = clock()
+		time1 = clock()
+		self.isorender.set_surface_value(self.isothr)
+		time2 = clock()
+		dt1 = time2 - time1
+		#print "It took %f to traverse the cubes" %dt1
+		
+		time1 = clock()
+		self.isodl = self.isorender.get_isosurface_dl(True)
+		time2 = clock()
+		dt1 = time2 - time1
+		print "It took %f to render the isosurface" %dt1
+	
 	def createIsoDL(self):
 		# create the isosurface display list
 		
+		print "!!!!"
 		#if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
 		#time1 = clock()
+		time1 = clock()
 		self.isorender.set_surface_value(self.isothr)
+		time2 = clock()
+		dt1 = time2 - time1
+		print "It took %f to traverse the cubes" %dt1
 		#time2 = clock()
 		#dt1 = time2 - time1
 		#print "It took %f to traverse the tree" %dt1
@@ -406,7 +428,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		a=self.isorender.get_isosurface(True)
 		time2 = clock()
 		dt1 = time2 - time1
-		print "It took %f to get the isosurface" %dt1
+		print "It took %f to get the data" %dt1
 		
 		self.f=a["faces"]
 		self.n=a["normals"]
@@ -416,6 +438,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		center = [0.5,0.5,0.5]
 		gr = 0.5
+		
+		#for i in range(0,len(self.p),3):
+			#print "%f %f %f" %(self.p[i],self.p[i+1],self.p[i+2])
+		
 		for i in range(0,len(self.p),3):
 			v = [self.p[i],self.p[i+1],self.p[i+2]]
 			c = center
@@ -438,6 +464,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glColorPointer(3,GL_FLOAT,0,self.colors)
 		
 		print "Num triangles is %d" %(len(self.f)/3)
+		print "Num vertices is %d" %(len(self.p)/3)
 		
 		self.isodl = glGenLists(1)
 		glNewList(self.isodl,GL_COMPILE)
@@ -646,13 +673,14 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def setThr(self,val):
 		if (self.isothr != val):
 			self.isothr = val
-			self.createIsoDL()
+			#self.createIsoDL()
+			self.getIsoDL()
 			self.updateGL()
 	
 	def setSmp(self,val):
 		if ( self.smpval != int(val)):
 			self.smpval = int(val)
-			self.createIsoDL()
+			self.getIsoDL()
 			self.updateGL()
 	
 	
@@ -800,7 +828,7 @@ if __name__ == '__main__':
 	window = EMImage3D()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(64,64,64)
+		e.set_size(128,128,128)
 		e.process_inplace('testimage.x')
  		window.setData(e)
 

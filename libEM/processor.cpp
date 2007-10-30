@@ -91,6 +91,9 @@ template <> Factory < Processor >::Factory()
 	force_add(&MaskGaussInvProcessor::NEW);
 	force_add(&XrayPixelProcessor::NEW);
 	
+	force_add(&MaxShrinkProcessor::NEW);
+	force_add(&MinShrinkProcessor::NEW);
+	
 	force_add(&MakeRadiusSquaredProcessor::NEW);
 	force_add(&MakeRadiusProcessor::NEW);
 	
@@ -965,6 +968,248 @@ void CutoffBlockProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+
+template<class LogicOp>
+EMData* BooleanShrinkProcessor::process(const EMData *const image)
+{
+	// The basic idea of this code is to iterate through each pixel in the output image
+	// determining its value by investigation a region of the input image
+	
+	if (!image) throw NullPointerException("Attempt to max shrink a null image");
+
+	if (image->is_complex() ) throw ImageFormatException("Can not max shrink a complex image");
+	
+	
+	int shrink = params.set_default("shrink",2);
+	int search = params.set_default("search",2);
+	
+	if ( shrink < 0 ) throw InvalidValueException(shrink, "Can not shrink by a value less than 0");
+	
+
+	int nz = image->get_zsize();
+	int ny = image->get_ysize();
+	int nx = image->get_xsize();
+	
+	if (nx == 1 && ny == 1 && nz == 1 ) return image->copy();
+	
+	LogicOp op;
+	EMData* return_image = new EMData();
+	
+	int shrinkx = shrink;
+	int shrinky = shrink;
+	int shrinkz = shrink;
+	
+	int searchx = search;
+	int searchy = search;
+	int searchz = search;
+		
+	// Clamping the shrink values to the dimension lengths
+	// ensures that the return image has non zero dimensions
+	if ( shrinkx > nx ) shrinkx = nx;
+	if ( shrinky > ny ) shrinky = ny;
+	if ( shrinkz > nz ) shrinkz = nz;
+	
+	if ( nz == 1 && ny == 1 )
+	{
+		return_image->set_size(nx/shrinkx);
+		for(int i = 0; i < nx/shrinkx; ++i)
+		{
+			float tmp = op.get_start_val();
+			for(int s=0; s < searchx; ++s)
+			{
+				int idx = shrinkx*i+s;
+				// Don't ask for memory beyond limits
+				if ( idx > nx ) break;
+				else
+				{
+					float val = image->get_value_at(idx);
+					if ( op( val,tmp) ) tmp = val;
+				}	
+			}
+			return_image->set_value_at(i,tmp);
+		}
+	}
+	else if ( nz == 1 )
+	{
+		int ty = ny/shrinky;
+		int tx = nx/shrinkx;
+		return_image->set_size(tx,ty);
+		for(int y = 0; y < ty; ++y) {
+			for(int x = 0; x < tx; ++x) {
+				float tmp = op.get_start_val();
+				for(int sy=0; sy < searchy; ++sy) {
+					int yidx = shrinky*y+sy;
+					if ( yidx >= ny) break;
+					for(int sx=0; sx < searchx; ++sx) {
+						int xidx = shrinkx*x+sx;
+						if ( xidx >= nx) break;
+					
+						float val = image->get_value_at(xidx,yidx);
+						if ( op( val,tmp) ) tmp = val;
+					}
+				}
+				return_image->set_value_at(x,y,tmp);
+			}
+		}
+	}
+	else
+	{
+		int tz = nz/shrinkz;
+		int ty = ny/shrinky;
+		int tx = nx/shrinkx;
+		
+		
+		cout << "dims are " << tx << " " << ty << " " << tz << endl;
+		return_image->set_size(tx,ty,tz);
+		for(int z = 0; z < tz; ++z) {
+			for(int y = 0; y < ty; ++y) {
+				for(int x = 0; x < tx; ++x) {
+					float tmp = op.get_start_val();
+					
+					for(int sz=0; sz < searchz; ++sz) {
+						int zidx = shrinkz*z+sz;
+						if ( zidx >= nz) break;
+						
+						for(int sy=0; sy < searchy; ++sy) {
+							int yidx = shrinky*y+sy;
+							if ( yidx >= ny) break;
+							
+							for(int sx=0; sx < searchx; ++sx) {
+								int xidx = shrinkx*x+sx;
+								if ( xidx >= nx) break;
+								float val = image->get_value_at(xidx,yidx,zidx);
+								if ( op( val,tmp) ) tmp = val;
+							}
+						}
+					}
+					return_image->set_value_at(x,y,z,tmp);
+				}
+			}
+		}
+	}
+	return_image->update();
+	
+	return return_image;
+}
+
+template<class LogicOp>
+void BooleanShrinkProcessor::process_inplace(EMData * image)
+{
+	// The basic idea of this code is to iterate through each pixel in the output image
+	// determining its value by investigation a region of the input image
+	if (!image) throw NullPointerException("Attempt to max shrink a null image");
+
+	if (image->is_complex() ) throw ImageFormatException("Can not max shrink a complex image");
+	
+	
+	int shrink = params.set_default("shrink",2);
+	int search = params.set_default("search",2);
+	
+	if ( shrink < 0 ) throw InvalidValueException(shrink, "Can not shrink by a value less than 0");
+	
+
+	int nz = image->get_zsize();
+	int ny = image->get_ysize();
+	int nx = image->get_xsize();
+	
+	LogicOp op;
+	
+	int shrinkx = shrink;
+	int shrinky = shrink;
+	int shrinkz = shrink;
+	
+	int searchx = search;
+	int searchy = search;
+	int searchz = search;
+		
+	// Clamping the shrink values to the dimension lengths
+	// ensures that the return image has non zero dimensions
+	if ( shrinkx > nx ) shrinkx = nx;
+	if ( shrinky > ny ) shrinkx = ny;
+	if ( shrinkz > nz ) shrinkx = nz;
+	
+	if (nx == 1 && ny == 1 && nz == 1 ) return;
+	
+	if ( nz == 1 && ny == 1 )
+	{
+		for(int i = 0; i < nx/shrink; ++i)
+		{
+			float tmp = op.get_start_val();
+			for(int s=0; s < searchx; ++s)
+			{
+				int idx = shrinkx*i+s;
+				if ( idx > nx ) break;
+				else
+				{
+					float val = image->get_value_at(idx);
+					if ( op( val,tmp) ) tmp = val;
+				}	
+			}
+			image->set_value_at(i,tmp);
+		}
+		
+		image->set_size(nx/shrinkx);
+	}
+	else if ( nz == 1 )
+	{
+		int ty = ny/shrinky;
+		int tx = nx/shrinkx;
+		for(int y = 0; y < ty; ++y) {
+			for(int x = 0; x < tx; ++x) {
+				float tmp = op.get_start_val();
+				for(int sy=0; sy < searchy; ++sy) {
+					int yidx = shrinky*y+sy;
+					if ( yidx >= ny) break;
+					for(int sx=0; sx < searchx; ++sx) {
+						int xidx = shrinkx*x+sx;
+						if ( xidx >= nx) break;
+						
+						float val = image->get_value_at(xidx,yidx);
+						if ( op( val,tmp) ) tmp = val;
+					}
+				}
+				(*image)(x+tx*y) = tmp;
+			}
+		}
+		image->set_size(tx,ty);
+	}
+	else
+	{	
+		int tnxy = nx/shrinkx*ny/shrinky;
+		int tz = nz/shrinkz;
+		int ty = ny/shrinky;
+		int tx = nx/shrinkx;
+		
+		for(int z = 0; z < tz; ++z) {
+			for(int y = 0; y < ty; ++y) {
+				for(int x = 0; x < tx; ++x) {
+					float tmp = op.get_start_val();
+					for(int sz=0; sz < searchz; ++sz) {
+						int zidx = shrinkz*z+sz;
+						if ( zidx >= nz) break;
+						for(int sy=0; sy < searchy; ++sy) {
+							int yidx = shrinky*y+sy;
+							if ( yidx >= ny) break;
+							for(int sx=0; sx < shrinkx; ++sx) {
+								int xidx = shrinkx*x+sx;
+								if ( xidx >= nx) break;
+								
+								float val = image->get_value_at(xidx,yidx,zidx);
+								if ( op( val,tmp) ) tmp = val;
+							}
+						}
+					}
+					(*image)(x+tx*y+tnxy*z) = tmp;
+				}
+			}
+		}
+		image->set_size(tx,ty,tz);
+	}
+	
+	image->update();
+}
+
 
 
 void GradientRemoverProcessor::process_inplace(EMData * image)

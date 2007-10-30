@@ -48,15 +48,7 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
 	unsigned long get_isosurface_dl(bool p0) {
 		return this->get_override("get_isosurface_dl")(p0);
 	}
-	
-	int get_root_level() {
-		return this->get_override("get_root_level")();
-	}
-	
-	int get_leaf_level() {
-		return this->get_override("get_leaf_level")();
-	}
-	
+
 };
 
 }
@@ -72,8 +64,6 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 		.def("get_sample_density", pure_virtual(&EMAN::Isosurface::get_sample_density))
 		.def("get_isosurface", pure_virtual(&EMAN::Isosurface::get_isosurface))
 		.def("get_isosurface_dl", pure_virtual(&EMAN::Isosurface::get_isosurface_dl))
-		.def("get_leaf_level", pure_virtual(&EMAN::Isosurface::get_leaf_level))
-		.def("get_root_level", pure_virtual(&EMAN::Isosurface::get_root_level))
 		;
 	
 	/* We do not wrap default constructor of MarchingCubes into Python */	
