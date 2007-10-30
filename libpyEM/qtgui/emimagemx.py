@@ -753,6 +753,7 @@ class EMImageMxInspector2D(QtGui.QWidget):
 
 # This is just for testing, of course
 if __name__ == '__main__':
+	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
 	window = EMImageMX()
 	if len(sys.argv)==1 : window.setData([test_image(),test_image(1),test_image(2),test_image(3)])

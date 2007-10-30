@@ -86,6 +86,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.fft=None				# The FFT of the current target if currently displayed
 		self.rmousedrag=None		# coordinates during a right-drag operation
 		self.mmode=0				# current mouse mode as selected by the inspector
+		self.curfft=0				# current FFT mode (when starting with real images only)
 		
 		self.shapes={}				# dictionary of shapes to draw, see addShapes
 		self.shapechange=1			# Set to 1 when shapes need to be redrawn
@@ -122,8 +123,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 		self.datasize=(data.get_xsize(),data.get_ysize())
 	
-		if self.fft : 
-			self.setFFT(1)
+		if self.curfft : 
+			self.setFFT(self.curfft)
 		
 		self.showInspector()		# shows the correct inspector if already open
 		self.updateGL()
@@ -168,13 +169,22 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.updateGL()
 		
 	def setFFT(self,val):
-		if val and not self.data.is_complex():
+		if self.data.is_complex(): return
+		self.curfft=val
+		if val>0 :
 			try:
 				self.fft=self.data.do_fft()
 				self.fft.set_value_at(0,0,0,0)
 				self.fft.set_value_at(1,0,0,0)
-#				self.fft.process_inplace("xform.fourierorigin",{})
-#				self.fft=self.fft.get_fft_amplitude()
+				if val==1 :
+					self.fft.process_inplace("xform.phaseorigin.tocorner")
+				elif val==2 :
+					self.fft.process_inplace("xform.fourierorigin.tocenter")
+					self.fft=self.fft.get_fft_amplitude()
+				elif val==3 :
+					self.fft.process_inplace("xform.fourierorigin.tocenter")
+					self.fft=self.fft.get_fft_phase()
+
 			
 				mean=self.fft.get_attr("mean")
 				sigma=self.fft.get_attr("sigma")
@@ -216,11 +226,17 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
 		
-		if self.fft : 
+		if self.curfft==1 : 
 			a=self.fft.render_ap24(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()*3-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,3)
 			GL.glRasterPos(0,self.height()-1)
 			GL.glPixelZoom(1.0,-1.0)
 			GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
+		elif self.curfft in (2,3) :
+			a=self.fft.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
+			GL.glRasterPos(0,self.height()-1)
+			GL.glPixelZoom(1.0,-1.0)
+			GL.glDrawPixels(self.width(),self.height(),GL.GL_LUMINANCE,GL.GL_UNSIGNED_BYTE,a)
+			
 		else : 
 			a=self.data.render_amp8(int(self.origin[0]/self.scale),int(self.origin[1]/self.scale),self.width(),self.height(),(self.width()-1)/4*4+4,self.scale,pixden[0],pixden[1],self.minden,self.maxden,self.gamma,2)
 			GL.glRasterPos(0,self.height()-1)
@@ -536,7 +552,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.dtl3.setAlignment(Qt.AlignRight)
 		self.drawlay.addWidget(self.dtl3,0,2)
 		
-		self.dtpen2 = QtGui.QLineEdit("10")
+		self.dtpen2 = QtGui.QLineEdit("5")
 		self.drawlay.addWidget(self.dtpen2,0,3)
 		
 		self.dtl4 = QtGui.QLabel("Pen Val2:")
@@ -561,7 +577,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.hist.setObjectName("hist")
 		self.hbl.addWidget(self.hist)
 		
-		self.vbl2 = QtGui.QVBoxLayout()
+		# Buttons next to the histogram
+		self.vbl2 = QtGui.QGridLayout()
 		self.vbl2.setMargin(0)
 		self.vbl2.setSpacing(6)
 		self.vbl2.setObjectName("vbl2")
@@ -569,11 +586,32 @@ class EMImageInspector2D(QtGui.QWidget):
 		
 		self.invtog = QtGui.QPushButton("Invert")
 		self.invtog.setCheckable(1)
-		self.vbl2.addWidget(self.invtog)
+		self.vbl2.addWidget(self.invtog,0,0,1,2)
 		
-		self.ffttog = QtGui.QPushButton("FFT")
-		self.ffttog.setCheckable(1)
-		self.vbl2.addWidget(self.ffttog)
+		# FFT Buttons
+		self.fftg=QtGui.QButtonGroup()
+		self.fftg.setExclusive(1)
+		
+		self.ffttog0 = QtGui.QPushButton("Real")
+		self.ffttog0.setCheckable(1)
+		self.ffttog0.setChecked(1)
+		self.vbl2.addWidget(self.ffttog0,1,0)
+		self.fftg.addButton(self.ffttog0,0)
+
+		self.ffttog1 = QtGui.QPushButton("FFT")
+		self.ffttog1.setCheckable(1)
+		self.vbl2.addWidget(self.ffttog1,1,1)
+		self.fftg.addButton(self.ffttog1,1)
+
+		self.ffttog2 = QtGui.QPushButton("Amp")
+		self.ffttog2.setCheckable(1)
+		self.vbl2.addWidget(self.ffttog2,2,0)
+		self.fftg.addButton(self.ffttog2,2)
+		
+		self.ffttog3 = QtGui.QPushButton("Pha")
+		self.ffttog3.setCheckable(1)
+		self.vbl2.addWidget(self.ffttog3,2,1)
+		self.fftg.addButton(self.ffttog3,3)
 
 		#self.hbl2 = QtGui.QHBoxLayout()
 		#self.hbl2.setMargin(0)
@@ -619,7 +657,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		QtCore.QObject.connect(self.conts, QtCore.SIGNAL("valueChanged"), self.newCont)
 		QtCore.QObject.connect(self.gammas, QtCore.SIGNAL("valueChanged"), self.newGamma)
 		QtCore.QObject.connect(self.invtog, QtCore.SIGNAL("toggled(bool)"), target.setInvert)
-		QtCore.QObject.connect(self.ffttog, QtCore.SIGNAL("toggled(bool)"), target.setFFT)
+		QtCore.QObject.connect(self.fftg, QtCore.SIGNAL("buttonClicked(int)"), target.setFFT)
 		QtCore.QObject.connect(self.mmtab, QtCore.SIGNAL("currentChanged(int)"), target.setMMode)
 #		QtCore.QObject.connect(self.mmode, QtCore.SIGNAL("buttonClicked(int)"), target.setMMode)
 
@@ -689,6 +727,7 @@ class EMImageInspector2D(QtGui.QWidget):
 
 # This is just for testing, of course
 if __name__ == '__main__':
+	GLUT.glutInit(sys.argv )
 	app = QtGui.QApplication(sys.argv)
 	window = EMImage2D()
 	if len(sys.argv)==1 : 
