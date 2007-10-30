@@ -203,13 +203,10 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.smpval = 0
 		
 		self.isorender=MarchingCubes(data,1)
-		self.isorender.set_sample_density(self.smpval)
 		
 		#self.inspector.setSamp(self.isorender.get_root_level(), self.isorender.get_leaf_level(), self.smpval)
 		
 		self.inspector.setColors(self.colors)
-		
-		self.updateGL()
 		
 		
 		#error.ErrorChecker.registerChecker(self.myAlternateFunction )

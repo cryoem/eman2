@@ -195,6 +195,7 @@ unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 	glEndList();
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
+	cout << "... using a surface value of " << _surf_value << endl;
 	
 	return _isodl;
 }
@@ -243,6 +244,7 @@ void MarchingCubes::calculate_surface(bool smooth) {
 
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to traverse the search tree and generate polygons" << endl;
+	cout << "... using surface value " << _surf_value << endl;
 	cout << "There are " << ff.elem() << " faces and " << nn.elem() << " normals and " << pp.elem() << " points" << endl;
 
 }
