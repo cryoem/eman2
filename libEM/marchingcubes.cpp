@@ -1,6 +1,12 @@
+
+// #ifndef GL_GLEXT_PROTOTYPES
+// #define GL_GLEXT_PROTOTYPES
+// #endif
+#include "GL/gl.h"
+// #include "GL/glext.h"
+
 #include "marchingcubes.h"
 
-#include "GL/gl.h"
 #include <time.h>
 
 using namespace EMAN;
@@ -224,18 +230,51 @@ unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 	
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 	
+	int maxv;
+	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
+	int maxf;
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+	cout << "Max vertices is " << maxv << " max indices is " << maxf << endl;
+	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
+	
 	for (int i = 0; i < ff.elem(); ++i )
 		ff[i] /= 3;
+	
+	if ( maxf % 3 != 0 )
+	{
+		maxf = maxf - (maxf%3);
+	}
 	
 	glNormalPointer(GL_FLOAT,0,nn.get_data());
 	glVertexPointer(3,GL_FLOAT,0,pp.get_data());
 // 	glIndexPointer(GL_INT,1,f);
-
+	
 	_isodl = glGenLists(1);
 	int time0 = clock();
 	glNewList(_isodl,GL_COMPILE);
 // 	glDrawArrays(GL_TRIANGLES,0,faces->size());
-	glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());;
+	bool drawRange = true;
+	if ( drawRange == false )
+	glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());
+// 	glDrawRangeElements(GL_TRIANGLES,0,0,ff.elem(),GL_UNSIGNED_INT,&ff[0]);
+	else
+	{
+		for(int i = 0; i < ff.elem(); i+=maxf)
+		{
+			if ( (i+maxf) > ff.elem())
+			{
+				glDrawElements(GL_TRIANGLES,ff.elem()-i,GL_UNSIGNED_INT,&ff[i]);
+
+			}
+			else
+			{
+				
+				glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,&ff[i]);
+// 				glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
+				
+			}
+		}
+	}
 	glEndList();
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
@@ -278,11 +317,7 @@ void MarchingCubes::calculate_surface(bool smooth) {
 
 	float min = minvals[minvals.size()-1]->get_value_at(0,0,0);
 	float max = maxvals[minvals.size()-1]->get_value_at(0,0,0);
-	if ( min < _surf_value &&  max > _surf_value)
-	{
-		
-		draw_cube(0,0,0,minvals.size()-1);
-	}
+	if ( min < _surf_value &&  max > _surf_value) draw_cube(0,0,0,minvals.size()-1);
 
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to traverse the search tree and generate polygons" << endl;
@@ -305,10 +340,12 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 	{
 		EMData* e;
 		if ( cur_level > 0 ) {
+			
 			e = minvals[cur_level-1];
 			for(int i=0; i<8; ++i )	{
 				if ( 2*x+a2fVertexOffset[i][0] >= minvals[cur_level-1]->get_xsize() || 2*y+a2fVertexOffset[i][1] >= minvals[cur_level-1]->get_ysize() ||
 								 2*z+a2fVertexOffset[i][2] >=  minvals[cur_level-1]->get_ysize() ) continue;
+				
 				float min = minvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
 				float max = maxvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
 				if ( min < _surf_value &&  max > _surf_value)
@@ -321,9 +358,6 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
 			}
 		}
-		
-		 
-		
 		if ( x == (minvals[cur_level]->get_xsize()-1) ) {
 			if ( e->get_xsize() > 2*x ){
 				for(int i=0; i<4; ++i )	{
@@ -443,12 +477,10 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			if(afCubeValue[iVertexTest] <= _surf_value) 
 				iFlagIndex |= 1<<iVertexTest;
 		}
-		else
-		{
+		else {
 			if(afCubeValue[iVertexTest] >= _surf_value) 
 				iFlagIndex |= 1<<iVertexTest;
-		}
-			
+		}	
 	}
 
 	//Find which edges are intersected by the surface
@@ -491,11 +523,7 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-
 			memcpy(&pts[iCorner][0],  &asEdgeVertex[iVertex][0], 3*sizeof(float));
-// 			pts[iCorner][0] = asEdgeVertex[iVertex][0];
-// 			pts[iCorner][1] = asEdgeVertex[iVertex][1];
-// 			pts[iCorner][2] = asEdgeVertex[iVertex][2];
 		}
 		
 		float v1[3] = {pts[1][0]-pts[0][0],pts[1][1]-pts[0][1],pts[1][2]-pts[0][2]};
@@ -506,20 +534,20 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-			if(point_map.count(pointIndex[iVertex]) == 0) {
+			map<int,int>::iterator it = point_map.find(pointIndex[iVertex]);
+			if ( it == point_map.end() ){
 				int ss = pp.elem();
 				pp.push_back_3(&pts[iCorner][0]);
 				nn.push_back_3(&n[0]);
 				ff.push_back(ss);
 				point_map[pointIndex[iVertex]] = ss;
-			
 			} else {
-				ff.push_back(point_map[pointIndex[iVertex]]);
-				nn[point_map[pointIndex[iVertex]]] += n[0];
-				nn[point_map[pointIndex[iVertex]]+1] += n[1];
-				nn[point_map[pointIndex[iVertex]]+2] += n[2];
+				int idx = it->second;
+				ff.push_back(idx);
+				nn[idx] += n[0];
+				nn[idx+1] += n[1];
+				nn[idx+2] += n[2];
 			}
-
 		}
 	}
 }
