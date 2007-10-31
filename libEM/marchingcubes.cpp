@@ -15,6 +15,46 @@ static const int a2fVertexOffset[8][3] =
 		{0, 0, 1},{1, 0, 1},{1, 1, 1},{0, 1, 1}
 };
 
+
+static const int a2fPosXOffset[4][3] =
+{
+	{2, 0, 0},{2, 1, 0},
+	{2, 0, 1},{2, 1, 1}
+};
+
+static const int a2fPosYOffset[4][3] =
+{
+	{1, 2, 0},{0, 2, 0},
+ 	{1, 2, 1},{0, 2, 1}
+};
+
+static const int a2fPosZOffset[4][3] =
+{
+	{0, 0, 2},{1, 0, 2},
+	{1, 1, 2},{0, 1, 2}
+};
+
+static const int a2fPosXPosYOffset[2][3] =
+{
+	{2, 2, 0},{2, 2, 1}
+};
+
+static const int a2fPosXPosZOffset[2][3] =
+{
+ 	{2, 0, 2},{2, 1, 2}
+};
+
+static const int a2fPosYPosZOffset[2][3] =
+{
+	{1, 2, 2},{0, 2, 2}
+};
+
+
+static const int a2fPosXPosZPosYOffset[3] =
+{
+	2, 2, 2
+};
+
 //a2fVertexOffset lists the positions, relative to vertex0, of each of the 8 vertices of a cube
 static const int a2OddXOffset[8] =
 {
@@ -116,7 +156,7 @@ bool MarchingCubes::calculate_min_max_vals(EMData* em )
 	int nz = em->get_zsize();
 
 	// Create the binary tree
-	while ( nx > 1 && ny > 1 && nz > 1 )
+	while ( nx > 1 || ny > 1 || nz > 1 )
 	{
 		int size = minvals.size();
 		
@@ -134,9 +174,10 @@ bool MarchingCubes::calculate_min_max_vals(EMData* em )
 			maxvals.push_back(maxvals[size-1]->process("math.maxshrink"));
 		}
 
-		nx /= 2;
-		ny /= 2;
-		nz /= 2;
+		nx = minvals[size]->get_xsize();
+		ny = minvals[size]->get_ysize();
+		nz = minvals[size]->get_zsize();
+		cout << "dims are " << nx << " " << ny << " " << nz << endl;
 	}
 	
 	levels = minvals.size();
@@ -176,7 +217,10 @@ Dict MarchingCubes::get_isosurface(bool smooth)
 
 unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 {
+	
 	if ( _isodl != 0 ) glDeleteLists(_isodl,1);
+	
+	calculate_surface(isSmooth);
 	
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 	
@@ -211,16 +255,14 @@ void MarchingCubes::set_surface_value(const float value) {
 
 	_surf_value = value;
 
-	calculate_surface(isSmooth);
 }
 
 float MarchingCubes::get_surface_value() const { return _surf_value; }
 
-void MarchingCubes::set_sample_density(const int size) {
+void MarchingCubes::set_sample_density(const int level) {
 	
-	_sample = size;
-	
-	calculate_surface(isSmooth);
+	drawing_level = level;
+
 }
 
 float MarchingCubes::get_sample_density() const  { return _sample; }
@@ -253,22 +295,80 @@ void MarchingCubes::draw_cube(const int x, const int y, const int z, const int c
 	
 	if ( cur_level == drawing_level )
 	{
-		marching_cube(x,y,z, _emdata);
+		EMData* e;
+		if ( drawing_level == - 1 ) e = _emdata;
+		else e = minvals[drawing_level];
+		if ( x < (e->get_xsize()-1) && y < (e->get_ysize()-1) && z < (e->get_zsize()-1))
+			marching_cube(x,y,z, cur_level); 
 	}
 	else
 	{
+		EMData* e;
 		if ( cur_level > 0 ) {
+			e = minvals[cur_level-1];
 			for(int i=0; i<8; ++i )	{
+				if ( 2*x+a2fVertexOffset[i][0] >= minvals[cur_level-1]->get_xsize() || 2*y+a2fVertexOffset[i][1] >= minvals[cur_level-1]->get_ysize() ||
+								 2*z+a2fVertexOffset[i][2] >=  minvals[cur_level-1]->get_ysize() ) continue;
 				float min = minvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
 				float max = maxvals[cur_level-1]->get_value_at(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2]);
 				if ( min < _surf_value &&  max > _surf_value)
 					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
-
 			}
 		}
 		else {
+			e = _emdata;
 			for(int i=0; i<8; ++i )	{
 					draw_cube(2*x+a2fVertexOffset[i][0],2*y+a2fVertexOffset[i][1],2*z+a2fVertexOffset[i][2],cur_level-1);
+			}
+		}
+		
+		 
+		
+		if ( x == (minvals[cur_level]->get_xsize()-1) ) {
+			if ( e->get_xsize() > 2*x ){
+				for(int i=0; i<4; ++i )	{
+					draw_cube(2*x+a2fPosXOffset[i][0],2*y+a2fPosXOffset[i][1],2*z+a2fPosXOffset[i][2],cur_level-1);
+				}
+			}
+			if ( y == (minvals[cur_level]->get_ysize()-1) ) {
+				if ( e->get_ysize() > 2*y ) {
+					for(int i=0; i<2; ++i )	{
+						draw_cube(2*x+a2fPosXPosYOffset[i][0],2*y+a2fPosXPosYOffset[i][1],2*z+a2fPosXPosYOffset[i][2],cur_level-1);
+					}
+				}
+				if (  z == (minvals[cur_level]->get_zsize()-1) ){
+					if ( e->get_zsize() > 2*z ) {
+						draw_cube(2*x+2,2*y+2,2*z+2,cur_level-1);
+					}
+				}
+			}
+			if ( z == (minvals[cur_level]->get_zsize()-1) ) {
+				if ( e->get_zsize() > 2*z ) {
+					for(int i=0; i<2; ++i )	{
+						draw_cube(2*x+a2fPosXPosZOffset[i][0],2*y+a2fPosXPosZOffset[i][1],2*z+a2fPosXPosZOffset[i][2],cur_level-1);
+					}
+				}
+			}
+		}
+		if ( y == (minvals[cur_level]->get_ysize()-1) ) {
+			if ( e->get_ysize() > 2*y ) {
+				for(int i=0; i<4; ++i )	{
+					draw_cube(2*x+a2fPosYOffset[i][0],2*y+a2fPosYOffset[i][1],2*z+a2fPosYOffset[i][2],cur_level-1);
+				}
+			}
+			if ( z == (minvals[cur_level]->get_ysize()-1) ) {
+				if ( e->get_zsize() > 2*z ) {
+					for(int i=0; i<2; ++i )	{
+						draw_cube(2*x+a2fPosYPosZOffset[i][0],2*y+a2fPosYPosZOffset[i][1],2*z+a2fPosYPosZOffset[i][2],cur_level-1);
+					}
+				}
+			}
+		}
+		if ( z == (minvals[cur_level]->get_zsize()-1) ) {
+			if ( e->get_zsize() > 2*z ) {
+				for(int i=0; i<4; ++i )	{
+					draw_cube(2*x+a2fPosZOffset[i][0],2*y+a2fPosZOffset[i][1],2*z+a2fPosZOffset[i][2],cur_level-1);
+				}
 			}
 		}
 
@@ -301,7 +401,7 @@ int MarchingCubes::get_edge_num(int x, int y, int z, int edge) {
 	return index;
 }
 
-void MarchingCubes::marching_cube(int fX, int fY, int fZ, const EMData* const em)
+void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 {
 	extern int aiCubeEdgeFlags[256];
 	extern int a2iTriangleConnectionTable[256][16];
@@ -310,18 +410,31 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, const EMData* const em
 	float fOffset;
 	Vector3 sColor;
 	float afCubeValue[8];
-	Vector3 asEdgeVertex[12];
+	float asEdgeVertex[12][3];
 	int pointIndex[12];
 
-// 		Vector3 asEdgeNorm[12];
-
-	//Make a local copy of the values at the cube's corners
-	for(iVertex = 0; iVertex < 8; iVertex++)
+	int fxScale = 1, fyScale = 1, fzScale = 1;
+	if ( cur_level != -1 )
 	{
-		afCubeValue[iVertex] = em->get_value_at((int)(fX + a2fVertexOffset[iVertex][0]),
-				(int)(fY + a2fVertexOffset[iVertex][1]),
-				 (int)(fZ + a2fVertexOffset[iVertex][2]));
+		fxScale = _emdata->get_xsize()/minvals[cur_level]->get_xsize();
+		fyScale = _emdata->get_ysize()/minvals[cur_level]->get_ysize();
+		fzScale = _emdata->get_zsize()/minvals[cur_level]->get_zsize();
+		for(iVertex = 0; iVertex < 8; iVertex++)
+		{
+			afCubeValue[iVertex] = _emdata->get_value_at( fxScale*(fX + a2fVertexOffset[iVertex][0]),
+						fyScale*(fY + a2fVertexOffset[iVertex][1]), fzScale*(fZ + a2fVertexOffset[iVertex][2]));
+		}
 	}
+	else
+	{
+		//Make a local copy of the values at the cube's corners
+		for(iVertex = 0; iVertex < 8; iVertex++)
+		{
+			afCubeValue[iVertex] = _emdata->get_value_at( fX + a2fVertexOffset[iVertex][0],
+					fY + a2fVertexOffset[iVertex][1], fZ + a2fVertexOffset[iVertex][2]);
+		}
+	}
+	
 	//Find which vertices are inside of the surface and which are outside
 	iFlagIndex = 0;
 	for(iVertexTest = 0; iVertexTest < 8; iVertexTest++)
@@ -354,11 +467,16 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, const EMData* const em
 			fOffset = get_offset(afCubeValue[ a2iEdgeConnection[iEdge][0] ], 
 								 afCubeValue[ a2iEdgeConnection[iEdge][1] ], _surf_value);
 
-			asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]);
-			asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]);
-			asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]);
-
-						
+			if ( cur_level == -1 ){
+				asEdgeVertex[iEdge][0] = fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]);
+				asEdgeVertex[iEdge][1] = fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]);
+				asEdgeVertex[iEdge][2] = fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]);
+			} else {
+				asEdgeVertex[iEdge][0] = fxScale*(fX + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]));
+				asEdgeVertex[iEdge][1] = fyScale*(fY + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]));
+				asEdgeVertex[iEdge][2] = fzScale*(fZ + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]));
+			}
+			
 			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);
 		}
 	}
@@ -368,30 +486,30 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, const EMData* const em
 	{
 		if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
 			break;
-		Point3 pts[3];
-		//Vector3 norms[3];
+
+		float pts[3][3];
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 
-			pts[iCorner][0] = asEdgeVertex[iVertex][0];
-			pts[iCorner][1] = asEdgeVertex[iVertex][1];
-			pts[iCorner][2] = asEdgeVertex[iVertex][2];
+			memcpy(&pts[iCorner][0],  &asEdgeVertex[iVertex][0], 3*sizeof(float));
+// 			pts[iCorner][0] = asEdgeVertex[iVertex][0];
+// 			pts[iCorner][1] = asEdgeVertex[iVertex][1];
+// 			pts[iCorner][2] = asEdgeVertex[iVertex][2];
 		}
-		Vector3 n = (pts[1]-pts[0])^(pts[2]-pts[1]);
+		
+		float v1[3] = {pts[1][0]-pts[0][0],pts[1][1]-pts[0][1],pts[1][2]-pts[0][2]};
+		float v2[3] = {pts[2][0]-pts[1][0],pts[2][1]-pts[1][1],pts[2][2]-pts[1][2]};
+		
+		float n[3] = { v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
+		
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
 			if(point_map.count(pointIndex[iVertex]) == 0) {
 				int ss = pp.elem();
-				pp.push_back(pts[iCorner][0]); // X
-				pp.push_back(pts[iCorner][1]); // Y
-				pp.push_back(pts[iCorner][2]); // Z
-				
-				nn.push_back(n[0]);
-				nn.push_back(n[1]);
-				nn.push_back(n[2]);
-			
+				pp.push_back_3(&pts[iCorner][0]);
+				nn.push_back_3(&n[0]);
 				ff.push_back(ss);
 				point_map[pointIndex[iVertex]] = ss;
 			
@@ -434,7 +552,7 @@ int aiCubeEdgeFlags[256]=
 };
 
 //  For each of the possible vertex states listed in aiCubeEdgeFlags there is a specific triangulation
-//  of the edge intersection points.  a2iTriangleConnectionTable lists all of them in the form of
+//  of the edge intersection points.  a2iTriangleConnectionTable lists all of thminvals[cur_level]-> in the form of
 //  0-5 edge triples with the list terminated by the invalid value -1.
 //  For example: a2iTriangleConnectionTable[3] list the 2 triangles formed when corner[0] 
 //  and corner[1] are inside of the surface, but the rest of the cube is not.

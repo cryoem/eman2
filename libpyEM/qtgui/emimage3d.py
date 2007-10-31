@@ -85,6 +85,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.isothr=0.5
 		self.isorender=None
 		self.isodl = 0
+		self.smpval=-1
 		self.griddl = 0
 		self.scale = 1.0
 		self.generate_iso = True
@@ -199,8 +200,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.inspector.setThrs(m0,m1,mean+3.0*sigma)
 		self.isothr = mean+3.0*sigma
-		
-		self.smpval = 0
 		
 		self.isorender=MarchingCubes(data,1)
 		
@@ -342,53 +341,15 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glPopMatrix()
 		#glCallList(self.griddl)
 	
-	def draw_iso(self):
-		# create the isosurface display list
-		
-		if ( self.generate_iso == True ):
-			print "Generating isosurface"
-			self.isorender.set_surface_value(self.isothr)
-			self.isorender.set_sample_density(self.smpval)
-			
-			time1 = clock()
-			a=self.isorender.get_isosurface(True)
-			time2 = clock()
-			dt1 = time2 - time1
-			print "It took %f to get the isosurface" %dt1
-			
-			self.f=a["faces"]
-			self.n=a["normals"]
-			self.p=a["points"]
-		
-			glNormalPointer(GL_FLOAT,0,self.n)
-			glVertexPointer(3,GL_FLOAT,0,self.p)
-			
-			#print len(f)/3.0
-			self.f=[i/3 for i in self.f]
-		
-			print "Num triangles is %d" %len(self.f)
-			self.generate_iso = False
-
-		time1 = clock()
-		glBegin(GL_TRIANGLES)
-		#error.ErrorChecker.registerChecker(self.myAlternateFunction )
-		for i in self.f:
-			glArrayElement(i)
-		glEnd()
-		time2 = clock()
-		dt1 = time2 - time1
-		print "It took %f to render the isosurface" %dt1
-		
-
-		#error.ErrorChecker.registerChecker()
 	def getIsoDL(self):
 		# create the isosurface display list
 		
-		print "!!!!"
+		print "!!!! %f %f" %(self.isothr,self.smpval)
 		#if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
 		#time1 = clock()
 		time1 = clock()
 		self.isorender.set_surface_value(self.isothr)
+		self.isorender.set_sample_density(self.smpval)
 		time2 = clock()
 		dt1 = time2 - time1
 		#print "It took %f to traverse the cubes" %dt1
@@ -674,7 +635,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.getIsoDL()
 			self.updateGL()
 	
-	def setSmp(self,val):
+	def setSample(self,val):
 		if ( self.smpval != int(val)):
 			self.smpval = int(val)
 			self.getIsoDL()
@@ -753,9 +714,10 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.thr.setValue(0.5)
 		self.vbl.addWidget(self.thr)
 		
-		self.smp = ValSlider(self,(0.1,2.0),"Sample:")
-		self.smp.setObjectName("smp")
-		self.smp.setValue(0.5)
+		self.smp = QtGui.QSpinBox(self)
+		self.smp.setMinimum(-1)
+		self.smp.setMaximum(4)
+		self.smp.setValue(-1)
 		self.vbl.addWidget(self.smp)
 			
 		self.az = ValSlider(self,(0.0,360.0),"Az:")
@@ -782,8 +744,8 @@ class EMImageInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), target.setAlt)
 		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), target.setPhi)
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), target.setThr)
-		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged"), target.setSmp)
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(int)"), target.setColor)
+		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("textChanged(int)"), target.setColor)
 	
 	def setColors(self,colors):
@@ -825,7 +787,7 @@ if __name__ == '__main__':
 	window = EMImage3D()
  	if len(sys.argv)==1 : 
 		e = EMData()
-		e.set_size(128,128,128)
+		e.set_size(40,35,30)
 		e.process_inplace('testimage.x')
  		window.setData(e)
 

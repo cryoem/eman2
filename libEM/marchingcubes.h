@@ -71,7 +71,7 @@ namespace EMAN
 		EMData* root;
 		int levels, drawing_level;
 		void draw_cube(const int x, const int y, const int z, const int cur_level );
-		void marching_cube(int fX, int fY, int fZ, const EMData* const em);
+		void marching_cube(int fX, int fY, int fZ, const int cur_level);
 		
 		void calculate_surface(bool smooth);
 		
@@ -133,6 +133,13 @@ namespace EMAN
 				if ( elements == size ) resize(2*size);
 				data[elements] = t;
 				++elements;
+			}
+			
+			inline void push_back_3(const type* const p)
+			{
+				if ( elements+2 >= size ) resize(2*size);
+				memcpy( &data[elements], p, 3*sizeof(type));
+				elements = elements + 3;
 			}
 			
 			inline int elem() { return elements; }
