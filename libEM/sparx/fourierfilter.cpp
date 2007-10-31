@@ -57,11 +57,11 @@ Output: 1-2-3D filtered image (real or complex).
  */
 EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPlace)
 {
-	int    nx, ny, nz, nyp2, nzp2, ix, iy, iz, jx, jy, jz, ky, kz;
+	int    nx, ny, nz, nyp2, nzp2, ix, iy, iz, jx, jy, jz;
 	float  dx, dy, dz, omega=0, omegaL=0, omegaH=0;
 	float  center=0, gamma=0, argx, argy, argz;
 	float  aa, eps, ord=0, cnst=0, aL, aH, cnstL=0, cnstH=0;
-	bool   complex_input, origin_type;
+	bool   complex_input;
 	vector<float> table;
 	int undoctf=0;
 	float voltage=100.0, ak=0.0, cs=2.0, ps=1.0, b_factor=0, wgh=0.1, sign=-1.0;
@@ -216,7 +216,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 			xshift = params["x_shift"];
 			yshift = params["y_shift"];
 			zshift = params["z_shift"];
-			origin_type = params["origin_type"];
+			//origin_type = params["origin_type"];
 			break;
 		case TANH_LOW_PASS: 
 		case TANH_HIGH_PASS: 
@@ -541,7 +541,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 				}
 				break;
 			case SHIFT:
-				if (origin_type) {
+				//if (origin_type) {
 					for ( iz = 1; iz <= nzp; iz++) {
 						jz=iz-1; if (jz>nzp2) jz=jz-nzp; 
 						for ( iy = 1; iy <= nyp; iy++) {
@@ -552,7 +552,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							}
 						}
 					}
-				} else {
+				/*} else {
 					for ( iz = 1; iz <= nzp; iz++) {
 						jz=iz-1; if (jz>nzp2) jz=jz-nzp;
 						if  (iz>nzp2) { kz=iz-nzp2; } else { kz=iz+nzp2; }
@@ -565,7 +565,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							}
 						}
 					}
-				}
+				}*/
 				break;
 			case TANH_LOW_PASS :
 				for ( iz = 1; iz <= nzp; iz++) {
