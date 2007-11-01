@@ -716,15 +716,19 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 
 				int k = 0;
 				unsigned char p;
+				int ph;
 				if (ll >= nx / 2) {
 					if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
 					else k = 2 * (ll - nx / 2) + l + 2 + nx;
+					ph = (int)(rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				}
-				else k = nx * ny - (l + 2 * ll) - 2;
+				else {
+					k = nx * ny - (l + 2 * ll) - 2;
+					ph = (int)(-rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
+				}
 				if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
 				else k+=mid; 
 				float t = rdata[k];
-				int ph = (int)(rdata[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767
 				if (t <= rm)  p = mingray;
 				else if (t >= render_max) p = maxgray;
 				else if (gamma!=1.0) {

@@ -91,10 +91,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.generate_iso = True
 		self.inspector=None
 		
-		if image :
-			print "We have an image"
-			self.setData(image)
-			self.show()
 		
 	
 		ruby = {}
@@ -167,6 +163,11 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.colormap[7] = "turquoise"
 		
 		self.isocolor = "ruby"
+		
+		if image :
+			print "We have an image"
+			self.setData(image)
+			self.show()
 		
 	def timeout(self):
 		self.updateGL()
