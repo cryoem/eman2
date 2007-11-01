@@ -66,6 +66,8 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.axes={}
 		self.pparm={}
 		self.inspector=None
+		self.needupd=1
+		self.plotimg=None
 
 		self.data={}				# List of Lists to plot 
 		
@@ -76,6 +78,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		Multiple axes may be set, and which axis represents which axis in the plot can be
 		selected by the user."""
 		
+		self.needupd=1
 		try:
 			if len(data)>1 : self.axes[key]=(0,1,-1)
 			else : self.axes[key]=(-1,0,-1)
@@ -101,40 +104,61 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		
 		if not self.data : return
 		
-		fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-		ax=fig.add_axes((.1,.05,.85,.9))
-		canvas=FigureCanvasAgg(fig)
+		if self.needupd or not self.plotimg:
+			self.needupd=0
+			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
+			ax=fig.add_axes((.1,.05,.85,.9))
+			canvas=FigureCanvasAgg(fig)
+			
+			for i in self.axes.keys():
+				j=self.axes[i]
+				if j[0]==-1 : x=range(len(self.data[i][0]))
+				else : x=self.data[i][self.axes[i][0]]
+				if j[1]==-1 : y=range(len(self.data[i][0]))
+				else : y=self.data[i][self.axes[i][1]]
+				parm=""
+				parm+=colortypes[self.pparm[i][0]]
+				if self.pparm[i][1]: 
+					parm+=linetypes[self.pparm[i][2]]
+				if self.pparm[i][4]:
+					parm+=symtypes[self.pparm[i][5]]
+					
+				ax.plot(x,y,parm,linewidth=self.pparm[i][3],markersize=self.pparm[i][6])
+			
+			self.scrlim=(ax.get_window_extent().xmin(),ax.get_window_extent().ymin(),ax.get_window_extent().xmax(),ax.get_window_extent().ymax())
+			self.scrlim[2]-=self.scrlim[0]
+			self.scrlim[3]-=self.scrlim[1]
+			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.getylim()[1]-ax.getylim()[0])
+			
+			canvas.draw()
+			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 		
-		for i in self.axes.keys():
-			j=self.axes[i]
-			if j[0]==-1 : x=range(len(self.data[i][0]))
-			else : x=self.data[i][self.axes[i][0]]
-			if j[1]==-1 : y=range(len(self.data[i][0]))
-			else : y=self.data[i][self.axes[i][1]]
-			parm=""
-			parm+=colortypes[self.pparm[i][0]]
-			if self.pparm[i][1]: 
-				parm+=linetypes[self.pparm[i][2]]
-			if self.pparm[i][4]:
-				parm+=symtypes[self.pparm[i][5]]
-				
-			ax.plot(x,y,parm,linewidth=self.pparm[i][3],markersize=self.pparm[i][6])
-		
-		canvas.draw()
-		a = canvas.tostring_rgb()  # save this and convert to bitmap as needed
-		
-		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
-		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
-		print ax.get_position()
+#		print ax.get_window_extent().xmin(),ax.get_window_extent().ymin()
+#		print ax.get_window_extent().xmax(),ax.get_window_extent().ymax()
+#		print ax.get_position()
 		
 		GL.glRasterPos(0,self.height()-1)
 		GL.glPixelZoom(1.0,-1.0)
 #		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
 		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
-		GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,a)
+		GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+
+	def scr2plot(self,x,y) :
+		""" converts screen coordinates to plot coordinates """
+		try: 
+			return ((x-self.scrlim[0])/self.scrlim[2]*self.plotlim[2]+self.plotlim[0],(y-self.scrlim[1])/self.scrlim[3]*self.plotlim[3]+self.plotlim[1])
+		except: return (0,0)
+		
+	def plot2scr(self,x,y) :
+		""" converts plot coordinates to screen coordinates """
+		try: 
+			return ((x-self.plotlim[0])/self.plotlim[2]*self.scrlim[2]+self.scrlim[0],(y-self.plotlim[1])/self.plotlim[3]*self.scrlim[3]+self.scrlim[1])
+		except: return (0,0)
+
 
 	def resizeGL(self, width, height):
 #		print "resize ",self.width()
+		self.needupd=1
 		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
 	
@@ -151,6 +175,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		if not self.inspector : self.inspector=EMPlot2DInspector(self)
 		self.inspector.show()
 		self.inspector.datachange()
+		self.needupd=1
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
@@ -158,10 +183,12 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 	def setAxes(self,key,xa,ya,za):
 		if self.axes[key]==(xa,ya,za) : return
 		self.axes[key]=(xa,ya,za)
+		self.needupd=1
 		self.updateGL()
 		
 	def setPlotParms(self,key,color,line,linetype,linewidth,sym,symtype,symsize):
 		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize)
+		self.needupd=1
 		self.updateGL()
 	
 	#def dragEnterEvent(self,event):
@@ -365,9 +392,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 	def newSet(self,row):
 		self.quiet=1
 		i=str(self.setlist.item(row).text())
-		self.slidex.setRange(-1.5,len(self.target.data[i])-1)
-		self.slidey.setRange(-1.5,len(self.target.data[i])-1)
-		self.slidec.setRange(-1.5,len(self.target.data[i])-1)
+		self.slidex.setRange(-1,len(self.target.data[i])-1)
+		self.slidey.setRange(-1,len(self.target.data[i])-1)
+		self.slidec.setRange(-1,len(self.target.data[i])-1)
+		print type(self.target.axes[i][1])
 		self.slidex.setValue(self.target.axes[i][0])
 		self.slidey.setValue(self.target.axes[i][1])
 		self.slidec.setValue(self.target.axes[i][2])
@@ -386,7 +414,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 
 	def newCols(self,val):
 		if self.target: 
-			self.target.setAxes(str(self.setlist.currentItem().text()),self.slidex.value,self.slidey.value,self.slidec.value)
+			self.target.setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value())
 	
 	def datachange(self):
 		
