@@ -68,6 +68,7 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.inspector=None
 		self.needupd=1
 		self.plotimg=None
+		self.shapes={}
 
 		self.data={}				# List of Lists to plot 
 		
@@ -142,6 +143,8 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 #		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
 		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 		GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+		
+		
 
 	def scr2plot(self,x,y) :
 		""" converts screen coordinates to plot coordinates """
@@ -191,6 +194,42 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		self.needupd=1
 		self.updateGL()
 	
+	def addShape(self,k,s):
+		"""Add a 'shape' object to be overlaid on the image. Each shape is
+		keyed into a dictionary, so different types of shapes for different
+		purposes may be simultaneously displayed. The 'scr' shapes are in
+		screen coordinates rather than data coordinates
+		
+		0            1  2  3  4  5     6     7     8
+		"rect"       R  G  B  x0 y0    x1    y1    linew
+		"line"       R  G  B  x0 y0    x1    y1    linew
+		"label"      R  G  B  x0 y0    text  size	linew
+		"circle"     R  G  B  x0 y0    r     linew
+		"scrrect"    R  G  B  x0 y0    x1    y1    linew
+		"scrline"    R  G  B  x0 y0    x1    y1    linew
+		"scrlabel"   R  G  B  x0 y0    text  size	linew
+		"scrcircle"  R  G  B  x0 y0    r     linew
+		"""
+		self.shapes[k]=s
+		self.shapechange=1
+		self.updateGL()
+	
+	def addShapes(self,d):
+		self.shapes.update(d)
+		self.shapechange=1
+		self.updateGL()
+	
+	def delShapes(self,k=None):
+		if k:
+			try:
+				for i in k:
+					del self.shapes[k]
+			except: del self.shapes[k]
+		else:
+			self.shapes={}
+		self.shapechange=1
+		self.updateGL()
+		
 	#def dragEnterEvent(self,event):
 		
 		#if event.provides("application/x-eman"):
@@ -209,11 +248,12 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 
 	
 	def mousePressEvent(self, event):
+		lc=self.scr2plot((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		#elif event.button()==Qt.RightButton:
 			#self.rmousedrag=(event.x(),event.y())
-		#elif event.button()==Qt.LeftButton:
+		elif event.button()==Qt.LeftButton:
 			#if self.mmode==0:
 				#self.emit(QtCore.SIGNAL("mousedown"), event)
 				#return

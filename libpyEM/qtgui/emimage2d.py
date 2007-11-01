@@ -42,6 +42,7 @@ import EMAN2
 import sys
 import numpy
 from emimageutil import ImgHistogram
+from emshape import *
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
@@ -94,12 +95,17 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.inspector=None			# set to inspector panel widget when exists
 		
+		self.shapelist=GL.glGenLists(1)		# displaylist for shapes displayed over the image
+		
 		self.setAcceptDrops(True)
 		self.resize(99,99)		
 		
 		if image : 
 			self.setData(image)
 			self.show()
+	
+	def __del__(self):
+		GL.glDeleteLists(self.shapelist,1)
 	
 	def setData(self,data):
 		"""You may pass a single 2D image, a list of 2D images or a single 3D image"""
@@ -211,6 +217,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
+		EMShape.initGL()
 	
 	def paintGL(self):
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
@@ -250,7 +257,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		GL.glPushMatrix()
 		GL.glTranslate(-self.origin[0],-self.origin[1],0)
 		GL.glScalef(self.scale,self.scale,self.scale)
-		GL.glCallList(1)
+		GL.glCallList(self.shapelist)
 		GL.glPopMatrix()
 		self.changec=self.data.get_attr("changecount")
 				
@@ -269,76 +276,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch
-		GL.glNewList(2,GL.GL_COMPILE)
-		GL.glBegin(GL.GL_LINE_LOOP)
-		d2r=pi/180.0
-		for i in range(90): GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
-		GL.glEnd()
-		GL.glEndList()
 		
-		GL.glNewList(1,GL.GL_COMPILE)
-		GL.glPushMatrix()
+		GL.glNewList(self.shapelist,GL.GL_COMPILE)
 		for k,s in self.shapes.items():
-			col=(s[1],s[2],s[3])
-			if self.active[0]==k: col=self.active[1:]
+			if self.active[0]==k: s.draw(self.img2scr,self.active[1:])
+			else: s.draw(self.img2scr)
 			
-			if s[0]=="rect":
-				GL.glLineWidth(s[8])
-				GL.glBegin(GL.GL_LINE_LOOP)
-				GL.glColor(*col)
-				GL.glVertex(s[4],s[5])
-				GL.glVertex(s[6],s[5])
-				GL.glVertex(s[6],s[7])
-				GL.glVertex(s[4],s[7])
-				GL.glEnd()
-			elif s[0]=="line":
-				GL.glPushMatrix()
-				GL.glColor(*col)
-				GL.glLineWidth(s[8])
-				GL.glBegin(GL.GL_LINES)
-				GL.glVertex(s[4],s[5])
-				GL.glVertex(s[6],s[7])
-				GL.glEnd()
-				GL.glPopMatrix()
-			elif s[0]=="label":
-				if s[8]<0 :
-					GL.glPushMatrix()
-					GL.glColor(1.,1.,1.)
-					GL.glTranslate(s[4],s[5],0)
-					GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
-					GL.glLineWidth(-s[8])
-					w=104.76*len(s[6])
-					GL.glBegin(GL.GL_QUADS)
-					GL.glVertex(-10.,-33.0)
-					GL.glVertex(w+10.,-33.0)
-					GL.glVertex(w+10.,119.05)
-					GL.glVertex(-10.,119.05)
-					GL.glEnd()
-					GL.glColor(*col)
-					for i in s[6]:
-						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
-					GL.glPopMatrix()
-				else:
-					GL.glPushMatrix()
-					GL.glColor(*col)
-					GL.glTranslate(s[4],s[5],0)
-	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-					GL.glScalef(s[7]/100.0/self.scale,s[7]/100.0/self.scale,s[7]/100.0/self.scale)
-					GL.glLineWidth(fabs(s[8]))
-					for i in s[6]:
-						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
-					GL.glPopMatrix()
-			elif s[0]=="circle":
-				GL.glPushMatrix()
-				GL.glColor(*col)
-				GL.glLineWidth(s[7])
-				GL.glTranslate(s[4],s[5],0)
-				GL.glScalef(s[6],s[6],s[6])
-				GL.glCallList(2)
-				GL.glPopMatrix()
-
-			
-		GL.glPopMatrix()
 		GL.glEndList()
 	
 	def showInspector(self,force=0):
@@ -358,15 +301,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.updateGL()
 	
 	def addShape(self,k,s):
-		"""Add a 'shape' object to be overlaid on the image. Each shape is
+		"""Add an EMShape object to be overlaid on the image. Each shape is
 		keyed into a dictionary, so different types of shapes for different
 		purposes may be simultaneously displayed.
 		
-		0         1  2  3  4  5     6     7     8
-		"rect"    R  G  B  x0 y0    x1    y1    linew
-		"line"    R  G  B  x0 y0    x1    y1    linew
-		"label"   R  G  B  x0 y0    text  size	linew
-		"circle"  R  G  B  x0 y0    r     linew
 		"""
 		self.shapes[k]=s
 		self.shapechange=1
@@ -388,9 +326,16 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		self.shapechange=1
 		self.updateGL()
 	
-	def scrtoimg(self,vec):
-		return ((vec[0]+self.origin[0])/self.scale,(self.height()-(vec[1]-self.origin[1]))/self.scale)
+	def scr2img(self,v0,v1=None):
+		try: return ((v0+self.origin[0])/self.scale,(self.height()-(v1-self.origin[1]))/self.scale)
+		except: return ((v0[0]+self.origin[0])/self.scale,(self.height()-(v0[1]-self.origin[1]))/self.scale)
 	
+	def img2scr(self,v0,v1=None):
+		try: return (v0*self.scale+self.origin[0],(self.height()-v1)*self.scale+self.origin[1])
+		except: 
+			try: return (v0[0]*self.scale+self.origin[0],(self.height()-v0[1])*self.scale+self.origin[1])
+			except: print "ERROR ",v0,v1
+			
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
 		
@@ -405,7 +350,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	
 	def dropEvent(self,event):
-#		lc=self.scrtoimg((event.pos().x(),event.pos().y()))
+#		lc=self.scr2img((event.pos().x(),event.pos().y()))
 		if EMAN2.GUIbeingdragged:
 			self.setData(EMAN2.GUIbeingdragged)
 			EMAN2.GUIbeingdragged=None
@@ -416,7 +361,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	
 	def mousePressEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
+		lc=self.scr2img(event.x(),event.y())
 		if event.button()==Qt.MidButton:
 			self.showInspector(1)
 		elif event.button()==Qt.RightButton:
@@ -429,7 +374,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				try: 
 					del self.shapes["MEASL"]
 				except: pass
-				self.addShape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
+				self.addShape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
 			elif self.mmode==2 and self.inspector:
 				#try:
 #					print "paint ",lc
@@ -444,7 +389,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 					#return
 				
 	def mouseMoveEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
+		lc=self.scr2img(event.x(),event.y())
 		if self.rmousedrag and event.buttons()&Qt.RightButton:
 			self.origin=(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
@@ -454,16 +399,16 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.emit(QtCore.SIGNAL("mousedrag"), event)
 				return
 			elif self.mmode==1 :
-				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
-				dx=lc[0]-self.shapes["MEAS"][4]
-				dy=lc[1]-self.shapes["MEAS"][5]
-				self.addShape("MEASL",("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],dx,dy,hypot(dx,dy)),9,-1))
+				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
+				dx=lc[0]-self.shapes["MEAS"].shape[4]
+				dy=lc[1]-self.shapes["MEAS"].shape[5]
+				self.addShape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],dx,dy,hypot(dx,dy)),9,-1)))
 			elif self.mmode==2 and self.inspector:
 				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 				self.update()
 				
 	def mouseReleaseEvent(self, event):
-		lc=self.scrtoimg((event.x(),event.y()))
+		lc=self.scr2img(event.x(),event.y())
 		if event.button()==Qt.RightButton:
 			self.rmousedrag=None
 		elif event.button()==Qt.LeftButton:
@@ -471,7 +416,7 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.emit(QtCore.SIGNAL("mouseup"), event)
 				return
 			elif self.mmode==1 :
-				self.addShape("MEAS",("line",.5,.1,.5,self.shapes["MEAS"][4],self.shapes["MEAS"][5],lc[0],lc[1],2))
+				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 			elif self.mmode==2 and self.inspector:
 				self.setData(self.data)
 
