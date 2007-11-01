@@ -101,12 +101,12 @@ namespace EMAN
 		class CustomVector
 		{
 			public:
-			CustomVector(const int starting_size=1024) : data(0), size(0), elements(0)
+			CustomVector(int starting_size=1024) : data(0), size(0), elements(0)
 			{
 				resize(starting_size);
 			}
 			
-			inline void clear(const int starting_size=1024)
+			inline void clear(int starting_size=1024)
 			{
 				if ( data != 0 )
 				{
