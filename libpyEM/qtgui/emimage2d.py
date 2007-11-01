@@ -46,7 +46,7 @@ from emshape import *
 from weakref import WeakKeyDictionary
 from pickle import dumps,loads
 
-MAG_INC = 0.0625
+MAG_INC = 1.1
 
 class EMImage2D(QtOpenGL.QGLWidget):
 	"""A QT widget for rendering EMData objects. It can display single 2D or 3D images 
@@ -422,10 +422,9 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	def wheelEvent(self, event):
 		if event.delta() > 0:
-			self.setScale(self.scale + MAG_INC)	
+			self.setScale( self.scale * MAG_INC )
 		elif event.delta() < 0:
-			if ( self.scale - MAG_INC > 0 ):
-				self.setScale(self.scale - MAG_INC)
+			self.setScale(self.scale * 1.0/MAG_INC)
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.setScale(self.scale)
 

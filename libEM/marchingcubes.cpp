@@ -206,20 +206,20 @@ MarchingCubes::~MarchingCubes() {
 
 Dict MarchingCubes::get_isosurface(bool smooth) 
 {
+	cout << "Calc iso" << endl;
+	calculate_surface(isSmooth);
+	
 	Dict d;
-	if(smooth) {	
-		d.put("points", *points);
-		d.put("faces", *faces);
-		d.put("normals", *normalsSm);
-	}
-	else {
-		d.put("points", *points);
-		d.put("faces", *faces);
-		d.put("normals", *normals);
-	}
+	d.put("points", (float*)pp.get_data());
+	for (int i = 0; i < ff.elem(); ++i )
+		ff[i] /= 3;
+	d.put("faces", (int*)ff.get_data());
+	d.put("normals", (float*)nn.get_data());
+	d.put("size", ff.elem());
+	
+	cout << "return" << endl;
 	return d;
 }
-
 
 unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 {
@@ -247,34 +247,25 @@ unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 	
 	glNormalPointer(GL_FLOAT,0,nn.get_data());
 	glVertexPointer(3,GL_FLOAT,0,pp.get_data());
-// 	glIndexPointer(GL_INT,1,f);
 	
 	_isodl = glGenLists(1);
 	int time0 = clock();
 	glNewList(_isodl,GL_COMPILE);
-// 	glDrawArrays(GL_TRIANGLES,0,faces->size());
 	bool drawRange = true;
-	if ( drawRange == false )
-	glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());
-// 	glDrawRangeElements(GL_TRIANGLES,0,0,ff.elem(),GL_UNSIGNED_INT,&ff[0]);
-	else
-	{
+	if ( drawRange == false ) {
+		glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());
+	} else {
 		for(int i = 0; i < ff.elem(); i+=maxf)
 		{
 			if ( (i+maxf) > ff.elem())
-			{
 				glDrawElements(GL_TRIANGLES,ff.elem()-i,GL_UNSIGNED_INT,&ff[i]);
-
-			}
 			else
-			{
-				
 				glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,&ff[i]);
+				// glDrawRangeElements is part of the extensions.
 // 				glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
-				
-			}
 		}
 	}
+
 	glEndList();
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;

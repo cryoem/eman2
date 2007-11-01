@@ -241,6 +241,7 @@ int HdfIO2::write_attr(hid_t loc,const char *name,EMObject obj) {
 	case EMObject::EMDATA:
 	case EMObject::XYDATA:
 	case EMObject::FLOAT_POINTER:
+	case EMObject::INT_POINTER:
 	case EMObject::VOID_POINTER:
 		return -1;
 		break;

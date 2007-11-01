@@ -131,6 +131,7 @@ namespace EMAN
 			STRINGARRAY,
 			TRANSFORM3D,
 			FLOAT_POINTER,
+			INT_POINTER,
 			VOID_POINTER
 		};
 		
@@ -176,6 +177,7 @@ namespace EMAN
 		EMObject(const char *s);
 		EMObject(const string & s);
 		EMObject(float * fp);
+		EMObject(int * ip);
 		EMObject(void * vp);
 		EMObject(EMData * em);
 		EMObject(XYData * xy);
@@ -209,6 +211,7 @@ namespace EMAN
 		operator double () const;
 		operator const char *() const;
 		operator float * () const;
+		operator int * () const;
 		operator void * () const;
 		operator EMData *() const;
 		operator XYData *() const;
@@ -270,6 +273,7 @@ namespace EMAN
 			float f;
 			double d;
 			float * fp;
+			int * ip;
 			void * vp;
 			EMData *emdata;
 			XYData *xydata;

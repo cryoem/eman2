@@ -82,6 +82,7 @@ EMObjectTypes::EMObjectTypes()
 		type_registry[STRINGARRAY] = "STRINGARRAY";
 		type_registry[TRANSFORM3D] = "TRANFORM3D";
 		type_registry[FLOAT_POINTER] = "FLOAT_POINTER";
+		type_registry[INT_POINTER] = "INT_POINTER";
 		type_registry[UNKNOWN] = "UNKNOWN";
 		type_registry[VOID_POINTER] = "VOID_POINTER";
 		first_construction = false;
@@ -138,7 +139,12 @@ EMObject::EMObject(const string & s) :
 }
 
 EMObject::EMObject(float *f) :
-	EMObjectTypes(), fp(f), type(FLOAT_POINTER)
+		EMObjectTypes(), fp(f), type(FLOAT_POINTER)
+{
+}
+
+EMObject::EMObject(int *i) :
+		EMObjectTypes(), ip(i), type(INT_POINTER)
 {
 }
 
@@ -199,6 +205,9 @@ EMObject::operator bool () const
 	}
 	else if (type == FLOAT_POINTER) {
 		return fp != 0;
+	}
+	else if (type == INT_POINTER) {
+		return ip != 0;
 	}
 	else if (type == VOID_POINTER) {
 		return vp != 0;
@@ -280,6 +289,21 @@ EMObject::operator double () const
 	return 0;
 }
 
+EMObject::operator int * () const
+{
+	if (type != INT_POINTER)
+	{
+		if (type != UNKNOWN)
+			throw TypeException("Cannot convert to float pointer from this data type",
+								get_object_type_name(type));
+
+		return 0;
+	}
+
+	return ip;
+}
+
+
 EMObject::operator float * () const
 {
 	if (type != FLOAT_POINTER)
@@ -298,6 +322,7 @@ EMObject::operator void * () const
 {
 	if (type == VOID_POINTER) return vp;
 	else if (type == FLOAT_POINTER) return (void *)fp;
+	else if (type == INT_POINTER) return (void *)ip;
 	else if (type == EMDATA) return (void *) emdata;
 	else if (type == XYDATA) return (void *) xydata;
 	else if (type == TRANSFORM3D) return (void *) transform3d;
@@ -448,6 +473,9 @@ string EMObject::to_str(ObjectType argtype) const
 		else if (argtype == FLOAT_POINTER) {
 			sprintf(tmp_str, "FLOAT_POINTER");
 		}
+		else if (argtype == INT) {
+			sprintf(tmp_str, "INT_POINTER");
+		}
 		else if (argtype == VOID_POINTER) {
 			sprintf(tmp_str, "VOID_POINTER");
 		}
@@ -511,6 +539,9 @@ bool EMAN::operator==(const EMObject &e1, const EMObject & e2)
 	break;
 	case EMObjectTypes::FLOAT_POINTER:
 		return (e1.fp == e2.fp);
+	break;
+	case EMObjectTypes::INT_POINTER:
+		return (e1.ip == e2.ip);
 	break;
 	case EMObjectTypes::VOID_POINTER:
 		return (e1.vp == e2.vp);
@@ -616,6 +647,10 @@ EMObject& EMObject::operator=( const EMObject& that )
 		case FLOAT_POINTER:
 			// Warning - Pointer address copy.
 			fp = that.fp;
+		break;
+		case INT_POINTER:
+		// Warning - Pointer address copy.
+			ip = that.ip;
 		break;
 		case VOID_POINTER:
 			// Warning - Pointer address copy.

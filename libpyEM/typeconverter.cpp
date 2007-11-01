@@ -145,7 +145,6 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 	EMObject::ObjectType t = emobj.get_type();
 	PyObject * result = 0;
 	
-
 	if (t == EMObject::BOOL) {
 		result = PyInt_FromLong((bool)emobj);
 	}
@@ -202,6 +201,14 @@ PyObject* EMObject_to_python::convert(EMObject const& emobj)
 		}
 		
 		result = python::incref(python::list(flist).ptr());
+	}
+	else if (t == EMObject::FLOAT_POINTER) {
+		float* fp = (float*) emobj;
+		result = python::incref(python::object(fp).ptr());
+	}
+	else if (t == EMObject::INT_POINTER) {
+		int* ip = (int*) emobj;
+		result = python::incref(python::object(ip).ptr());
 	}
 	else if (t == EMObject::UNKNOWN) {
 		result = Py_None;
