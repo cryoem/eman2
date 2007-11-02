@@ -408,7 +408,12 @@ class EMImage2D(QtOpenGL.QGLWidget):
 				self.addShape("MEAS",EMShape(("line",.5,.1,.5,self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 				dx=lc[0]-self.shapes["MEAS"].shape[4]
 				dy=lc[1]-self.shapes["MEAS"].shape[5]
-				self.addShape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d\n%1.1f,%1.1f (%1.2f)"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1],dx,dy,hypot(dx,dy)),9,-1)))
+				self.addShape("MEASL",EMShape(("label",.1,.1,.1,lc[0]+2,lc[1]+2,"%d,%d - %d,%d"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5],lc[0],lc[1]),9,-1)))
+				if self.inspector:
+					apix=self.inspector.mtapix.value
+					self.inspector.mtshoworigin.setText("Start: %d , %d"%(self.shapes["MEAS"].shape[4],self.shapes["MEAS"].shape[5]))
+					self.inspector.mtshowend.setText("  End: %d , %d"%(lc[0],lc[1]))
+					self.inspector.mtshowlen.setText("dx,dy (len): %1.2f , %1.2f (%1.3f)"%(dx*apix,dy*apix,hypot(dx,dy)*apix))
 			elif self.mmode==2 and self.inspector:
 				self.data.process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 				self.update()
@@ -456,27 +461,26 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.meastab = QtGui.QWidget()
 		self.mtlay = QtGui.QGridLayout(self.meastab)
 		
-		self.mtl1= QtGui.QLabel("A/Pix")
-		self.mtl1.setAlignment(Qt.AlignRight)
-		self.mtlay.addWidget(self.mtl1,0,0)
+		#self.mtl1= QtGui.QLabel("A/Pix")
+		#self.mtl1.setAlignment(Qt.AlignRight)
+		#self.mtlay.addWidget(self.mtl1,0,0)
 		
-		self.mtapix = QtGui.QLineEdit("1")
-		self.mtlay.addWidget(self.mtapix,0,1)
-		self.mtapix.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
+		self.mtapix = ValSlider(self,label="A/Pix")
+		self.mtapix.setRange(0.5,10.0)
+		self.mtapix.setValue(1.0)
+		self.mtlay.addWidget(self.mtapix,0,0,1,2)
+#		self.mtapix.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
 #		self.mtapix.resize(60,21)
 #		print self.mtapix.sizeHint().width(),self.mtapix.sizeHint().height()
 		
 		self.mtshowlen= QtGui.QLabel("Length:")
-		self.mtshowlen.setAlignment(Qt.AlignRight)
-		self.mtlay.addWidget(self.mtshowlen,1,0,1,2)
+		self.mtlay.addWidget(self.mtshowlen,2,0,1,2,Qt.AlignHCenter)
 		
 		self.mtshoworigin= QtGui.QLabel("Origin:")
-		self.mtshoworigin.setAlignment(Qt.AlignRight)
-		self.mtlay.addWidget(self.mtshoworigin,0,2)
+		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignHCenter)
 		
 		self.mtshowend= QtGui.QLabel("End:")
-		self.mtshowend.setAlignment(Qt.AlignRight)
-		self.mtlay.addWidget(self.mtshowend,1,2)
+		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignHCenter)
 		
 		self.mmtab.addTab(self.meastab,"Meas")
 		

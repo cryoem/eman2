@@ -104,6 +104,7 @@ class EMShape:
 			GL.glVertex(*d2s(s[6],s[7]))
 			GL.glEnd()
 		elif s[0]=="label":
+			GL.glPushMatrix()
 			if s[8]<0 :
 				GL.glColor(1.,1.,1.)
 				GL.glTranslatef(v[0],v[1],0)
