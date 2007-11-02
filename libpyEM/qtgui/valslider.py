@@ -58,7 +58,7 @@ class ValSlider(QtGui.QWidget):
 		
 		if label:
 			self.label = QtGui.QLabel(self)
-			self.label.setText(label)
+			self.setLabel(label)
 			
 			sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Policy(0),QtGui.QSizePolicy.Policy(0))
 #			sizePolicy.setHorizontalStretch(1)
@@ -117,6 +117,9 @@ class ValSlider(QtGui.QWidget):
 		self.updateboth()
 		if not quiet : self.emit(QtCore.SIGNAL("valueChanged"),self.value)
 	
+	def getValue(self):
+		return self.value
+	
 	def setIntonly(self,flag):
 		self.intonly=flag
 		self.updateboth()
@@ -154,7 +157,12 @@ class ValSlider(QtGui.QWidget):
 			if self.value==ov : return
 		self.updatet()
 		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
-		
+	
+	def setLabel(self,label):
+		self.label.setText(label)
+	
+	def getLabel(self):
+		return str(self.label.text())
 		
 	def updates(self):
 		self.ignore=1

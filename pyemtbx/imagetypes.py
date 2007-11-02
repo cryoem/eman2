@@ -63,7 +63,7 @@ EULER_QUATERNION = Transform3D.EulerType.QUATERNION
 EULER_SGIROT = Transform3D.EulerType.SGIROT
 EULER_SPIDER = Transform3D.EulerType.SPIDER
 EULER_MRC = Transform3D.EulerType.MRC
-
+EULER_XYZ = Transform3D.EulerType.XYZ
 
 EM_UNKNOWN = EMUtil.EMDataType.EM_UNKNOWN
 EM_CHAR = EMUtil.EMDataType.EM_CHAR

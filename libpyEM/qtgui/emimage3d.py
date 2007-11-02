@@ -92,61 +92,68 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.cam_x = 0
 		self.cam_y = 0
 		self.cam_z = 0
+		self.cube = False
 		
 		self.wire = False
 		
 		self.fov = 50 # field of view angle used by gluPerspective
 		self.generate_iso = True
 		self.inspector=None
-		self.ctrl_down = False
+		#self.ctrl_down = False
 		
 		ruby = {}
 		ruby["ambient"] = [0.1745, 0.01175, 0.01175,1.0]
 		ruby["diffuse"] = [0.61424, 0.04136, 0.04136,1.0]
-		ruby["specular"] = [0.727811, 0.626959, 0.626959,1.0]
-		ruby["shininess"] = 76.8
+		ruby["specular"] = [0.927811, 0.826959, 0.826959,1.0]
+		ruby["shininess"] = 128.0
 		
 		emerald = {}
 		emerald["ambient"] = [0.0215, 0.1745, 0.0215,1.0]
 		emerald["diffuse"] = [0.07568, 0.61424,  0.07568,1.0]
-		emerald["specular"] = [0.633, 0.727811, 0.633,1.0]
-		emerald["shininess"] = 76.8
+		emerald["specular"] = [0.833, 0.927811, 0.833,1.0]
+		emerald["shininess"] = 128.0
 		
 		pearl = {}
 		pearl["ambient"] = [0.25, 0.20725, 0.20725,1.0]
 		pearl["diffuse"] = [1.0, 0.829, 0.829,1.0]
 		pearl["specular"] = [0.296648, 0.296648, 0.296648,1.0]
-		pearl["shininess"] = 11.264
+		pearl["shininess"] = 128.0
 		
 		silver = {}
 		silver["ambient"] = [0.25, 0.25, 0.25,1.0]
 		silver["diffuse"] = [0.4, 0.4, 0.4,1.0]
-		silver["specular"] = [0.774597, 0.774597, 0.774597,1.0]
-		silver["shininess"] = 76.8
+		silver["specular"] = [0.974597, 0.974597, 0.974597,1.0]
+		silver["shininess"] = 128.0
 		
 		gold = {}
 		gold["ambient"] = [0.24725, 0.2245, 0.0645,1.0]
 		gold["diffuse"] = [0.34615, 0.3143, 0.0903,1.0]
-		gold["specular"] = [0.797357, 0.723991, 0.208006,1.0]
-		gold["shininess"] = 83.2
+		gold["specular"] = [1.000, 0.9079885, 0.26086934,1.0]
+		gold["shininess"] = 128.0
 		
 		copper = {}
 		copper["ambient"] = [0.2295, 0.08825, 0.0275,1.0]
 		copper["diffuse"] = [0.5508, 0.2118, 0.066,1.0]
-		copper["specular"] = [0.580594, 0.223257, 0.0695701,1.0]
-		copper["shininess"] = 51.2
+		copper["specular"] = [0.9, 0.5, 0.2,1.0]
+		copper["shininess"] = 128.0
 		
 		obsidian = {}
 		obsidian["ambient"] = [0.05375,  0.05,     0.06625 ,1.0]
 		obsidian["diffuse"] = [0.18275,  0.17,     0.22525,1.0]
-		obsidian["specular"] = [0.332741, 0.328634, 0.346435]
-		obsidian["shininess"] = 38.4
+		obsidian["specular"] = [0.66, 0.65, 0.69]
+		obsidian["shininess"] = 128.0
 		
 		turquoise = {}
 		turquoise["ambient"] = [0.1, 0.18725, 0.1745 ,1.0]
 		turquoise["diffuse"] = [0.396, 0.74151, 0.69102,1.0]
 		turquoise["specular"] = [0.297254, 0.30829, 0.306678]
-		turquoise["shininess"] = 12.8
+		turquoise["shininess"] = 128.0
+		
+		yellow = {}
+		yellow["ambient"] = [0.3, 0.3, 0.0,1]
+		yellow["diffuse"] = [0.5, 0.5, 0.0,1]
+		yellow["specular"] = [0.7, 0.7, 0.0,1]
+		yellow["shininess"] =  60
 		
 		self.colors = {}
 		self.colors["ruby"] = ruby
@@ -157,17 +164,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.colors["copper"] = copper
 		self.colors["obsidian"] = obsidian
 		self.colors["turquoise"] = turquoise
-		
-		
-		self.colormap = {}
-		self.colormap[0] = "ruby"
-		self.colormap[1] = "emerald"
-		self.colormap[2] = "pearl"
-		self.colormap[3] = "silver"
-		self.colormap[4] = "gold"
-		self.colormap[5] = "copper"
-		self.colormap[6] = "obsidian"
-		self.colormap[7] = "turquoise"
+		self.colors["yellow"] = yellow
 		
 		self.isocolor = "ruby"
 		
@@ -206,7 +203,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		self.isorender=MarchingCubes(data,1)
 		
-		self.inspector.setColors(self.colors)
+		self.inspector.setColors(self.colors,self.isocolor)
 		
 	def myAlternateFunction(a):
 		return 0
@@ -310,7 +307,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		#print "Scene is positioned at %f %f %f" %(self.cam_x, self.cam_y, self.cam_z)
 		# get the current rotation from the rotation stack and apply
 		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		self.updateInspector(rot)
 				
 		glRotate(float(rot["phi"]),0,0,1)
 		glRotate(float(rot["alt"]),1,0,0)
@@ -329,14 +325,16 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.isocolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.isocolor]["specular"])
 		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.isocolor]["shininess"])
+		glColor(self.colors[self.isocolor]["ambient"])
 		glPushMatrix()
 		glTranslate(-self.data.get_xsize()/2.0,-self.data.get_ysize()/2.0,-self.data.get_zsize()/2.0)
 		glCallList(self.isodl)
 		glPopMatrix()
 	
-		glPushMatrix()
-		self.draw_volume_bounds()
-		glPopMatrix()
+		if self.cube:
+			glPushMatrix()
+			self.draw_volume_bounds()
+			glPopMatrix()
 		
 	def draw_volume_bounds(self):
 		
@@ -344,13 +342,14 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		height = self.data.get_ysize()
 		depth = self.data.get_zsize()
 		glTranslate(-width/2.0,-height/2.0,-depth/2.0)
-		glLineWidth(0.5)
+		glLineWidth(0.2)
 		glNormal(0,1,0)
 		glColor(.2,.1,0.4,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT, [0.25, 0.25, 0.25,1.0])
-		glMaterial(GL_FRONT, GL_DIFFUSE, [0.4, 0.4, 0.4,1.0])
+		glColor(1,1,1,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
 		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-		glMaterial(GL_FRONT, GL_SHININESS, 76.8)
+		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
 
 		glBegin(GL_LINE_STRIP)
 		glVertex(0,0,0)
@@ -445,9 +444,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glLineWidth(0.5)
 		glNewList(self.griddl,GL_COMPILE)
 		
-		glColor(.2,.1,0.4,1.0)
-		glMaterial(GL_FRONT, GL_AMBIENT, [0.25, 0.25, 0.25,1.0])
-		glMaterial(GL_FRONT, GL_DIFFUSE, [0.4, 0.4, 0.4,1.0])
+		glColor(1,1,1,1.0)
+		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
+		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
 		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
 		glMaterial(GL_FRONT, GL_SHININESS, 76.8)
 		
@@ -484,8 +483,6 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		# maintain the aspect ratio of the window we have
 		self.aspect = float(width)/float(height)
 		
-		print "The aspect ratio is %f" %self.aspect
-		
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
@@ -505,24 +502,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if not self.inspector : self.inspector=EMImageInspector3D(self)
 		self.inspector.show()
 	
-	def updateInspector(self,rot):
+	def updateInspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMImageInspector3D(self)
-		self.inspector.newAz(float(rot["az"])+180)
-		self.inspector.newAlt(rot["alt"])
-		self.inspector.newPhi(float(rot["phi"])+180)
+		self.inspector.updateRotations(t3d)
 	
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
-			
-			
-	def keyPressEvent(self, event):
-		if ( event.key() == Qt.Key_Control ):
-			self.ctrl_down = True
-			
-	def keyReleaseEvent(self,event):
-		if ( event.key() == Qt.Key_Control ):
-			self.ctrl_down = False
 		
 	def mousePressEvent(self, event):
 #		lc=self.scrtoimg((event.x(),event.y()))
@@ -538,6 +524,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				t3d = Transform3D(tmp)
 				self.t3d_stack.append(tmp)
 				self.t3d_stack.append(t3d)
+				self.updateInspector(t3d)
 				
 				self.emit(QtCore.SIGNAL("mousedown"), event)
 				return
@@ -556,7 +543,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 # 			self.update()
 		if event.buttons()&Qt.LeftButton:
 			if self.mmode==0:
-				if (self.ctrl_down):
+				if event.modifiers() == Qt.ControlModifier:
 					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
 				else:
 					self.motionRotate(self.mpressx - event.x(), self.mpressy - event.y())
@@ -567,7 +554,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 				return
 		if event.buttons()&Qt.RightButton:
 			if self.mmode==0:
-				if (self.ctrl_down):
+				if event.modifiers() == Qt.ControlModifier:
 					self.scale_event(event.y()-self.mpressy)	
 				else:
 					self.motionTranslate(event.x()-self.mpressx, self.mpressy - event.y())
@@ -647,33 +634,19 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		size = len(self.t3d_stack)
 		self.t3d_stack[size-1] = t3d*self.t3d_stack[size-1]
+		self.updateInspector(self.t3d_stack[size-1])
 		
 	def setScale(self,val):
 		self.scale = val
 		self.updateGL()
-		
-	def setAz(self,val):
-		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		rot["az"] = val - 180.0
-		self.t3d_stack.append(Transform3D( EULER_EMAN, rot))
-		self.updateGL()
-		
-	def setAlt(self,val):
-		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		rot["alt"] = val
-		self.t3d_stack.append(Transform3D( EULER_EMAN, rot))
-		self.updateGL()
-		
-	def setPhi(self,val):
-		rot = self.t3d_stack[len(self.t3d_stack)-1].get_rotation()
-		rot["phi"] = val - 180.0
-		self.t3d_stack.append(Transform3D( EULER_EMAN, rot))
+	
+	def loadRotation(self,t3d):
+		self.t3d_stack.append(t3d)
 		self.updateGL()
 	
 	def setThr(self,val):
 		if (self.isothr != val):
 			self.isothr = val
-			#self.createIsoDL()
 			self.getIsoDL()
 			self.updateGL()
 	
@@ -684,10 +657,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			self.updateGL()
 	
 	def setColor(self,val):
-		self.isocolor = self.colormap[val]
-		print val
+		#print val
+		self.isocolor = str(val)
 		self.updateGL()
 		
+	def toggleCube(self):
+		self.cube = not self.cube
+		self.updateGL()
 	
 	def toggleWire(self,val):
 		self.wire = not self.wire
@@ -741,25 +717,29 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.lighttog = QtGui.QPushButton("Light")
 		self.lighttog.setCheckable(1)
 		self.vbl2.addWidget(self.lighttog)
-
-		self.hbl2 = QtGui.QHBoxLayout()
-		self.hbl2.setMargin(0)
-		self.hbl2.setSpacing(6)
-		self.hbl2.setObjectName("hboxlayout")
-		self.vbl.addLayout(self.hbl2)
 		
-		self.mapp = QtGui.QPushButton("App")
-		self.mapp.setCheckable(1)
-		self.hbl2.addWidget(self.mapp)
+		self.cubetog = QtGui.QPushButton("Cube")
+		self.cubetog.setCheckable(1)
+		self.vbl2.addWidget(self.cubetog)
 
-		self.mmeas = QtGui.QPushButton("Meas")
-		self.mmeas.setCheckable(1)
-		self.hbl2.addWidget(self.mmeas)
+		#self.hbl2 = QtGui.QHBoxLayout()
+		#self.hbl2.setMargin(0)
+		#self.hbl2.setSpacing(6)
+		#self.hbl2.setObjectName("hboxlayout")
+		#self.vbl.addLayout(self.hbl2)
+		
+		#self.mapp = QtGui.QPushButton("App")
+		#self.mapp.setCheckable(1)
+		#self.hbl2.addWidget(self.mapp)
 
-		self.mmode=QtGui.QButtonGroup()
-		self.mmode.setExclusive(1)
-		self.mmode.addButton(self.mapp,0)
-		self.mmode.addButton(self.mmeas,1)
+		#self.mmeas = QtGui.QPushButton("Meas")
+		#self.mmeas.setCheckable(1)
+		#self.hbl2.addWidget(self.mmeas)
+
+		#self.mmode=QtGui.QButtonGroup()
+		#self.mmode.setExclusive(1)
+		#self.mmode.addButton(self.mapp,0)
+		#self.mmode.addButton(self.mmeas,1)
 		
 		self.scale = ValSlider(self,(0.01,30.0),"Mag:")
 		self.scale.setObjectName("scale")
@@ -771,49 +751,156 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.busy=0
 
 		self.thr = ValSlider(self,(0.0,2.0),"Thr:")
-		self.thr.setObjectName("az")
+		self.thr.setObjectName("thr")
 		self.thr.setValue(0.5)
 		self.vbl.addWidget(self.thr)
+		
+		self.hbl_smp = QtGui.QHBoxLayout()
+		self.hbl_smp.setMargin(0)
+		self.hbl_smp.setSpacing(6)
+		self.hbl_smp.setObjectName("Sample")
+		self.vbl.addLayout(self.hbl_smp)
+		
+		self.smp_label = QtGui.QLabel()
+		self.smp_label.setText('Sampling')
+		self.hbl_smp.addWidget(self.smp_label)
 		
 		self.smp = QtGui.QSpinBox(self)
 		self.smp.setMinimum(-1)
 		self.smp.setMaximum(4)
 		self.smp.setValue(-1)
-		self.vbl.addWidget(self.smp)
-			
-		self.az = ValSlider(self,(0.0,360.0),"Az:")
+		self.hbl_smp.addWidget(self.smp)
+		
+		self.hbl_src = QtGui.QHBoxLayout()
+		self.hbl_src.setMargin(0)
+		self.hbl_src.setSpacing(6)
+		self.hbl_src.setObjectName("hbl")
+		self.vbl.addLayout(self.hbl_src)
+		
+		self.label_src = QtGui.QLabel()
+		self.label_src.setText('Rotation Convention')
+		self.hbl_src.addWidget(self.label_src)
+		
+		self.src = QtGui.QComboBox(self)
+		self.load_src_options(self.src)
+		self.hbl_src.addWidget(self.src)
+		
+		self.az = ValSlider(self,(-360.0,360.0),"az")
 		self.az.setObjectName("az")
 		self.az.setValue(0.0)
 		self.vbl.addWidget(self.az)
 		
-		self.alt = ValSlider(self,(0.01,180.0),"Alt:")
+		self.alt = ValSlider(self,(-180.0,180.0),"alt")
 		self.alt.setObjectName("alt")
 		self.alt.setValue(0.0)
 		self.vbl.addWidget(self.alt)
 		
-		self.phi = ValSlider(self,(0.0,360.0),"Phi:")
+		self.phi = ValSlider(self,(-360.0,360.0),"phi")
 		self.phi.setObjectName("phi")
 		self.phi.setValue(0.0)
 		self.vbl.addWidget(self.phi)
 
-		self.cbb = QtGui.QComboBox(self)
+		self.current_src = EULER_EMAN
+
+		self.hbl_color = QtGui.QHBoxLayout()
+		self.hbl_color.setMargin(0)
+		self.hbl_color.setSpacing(6)
+		self.hbl_color.setObjectName("Material")
+		self.vbl.addLayout(self.hbl_color)
 		
-		self.vbl.addWidget(self.cbb)
+		self.color_label = QtGui.QLabel()
+		self.color_label.setText('Material')
+		self.hbl_color.addWidget(self.color_label)
+		
+		self.cbb = QtGui.QComboBox(self)
+		self.hbl_color.addWidget(self.cbb)
 
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
-		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), target.setAz)
-		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), target.setAlt)
-		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), target.setPhi)
+		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+		QtCore.QObject.connect(self.phi, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.thr, QtCore.SIGNAL("valueChanged"), target.setThr)
-		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(int)"), target.setColor)
+		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
+		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
+		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
 		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("textChanged(int)"), target.setColor)
 	
-	def setColors(self,colors):
+	def updateRotations(self,t3d):
+		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
+		self.az.setValue(rot[self.az.getLabel()],True)
+		self.alt.setValue(rot[self.alt.getLabel()],True)
+		self.phi.setValue(rot[self.phi.getLabel()],True)
+	
+	def sliderRotate(self):
+		self.target.loadRotation(self.getCurrentRotation())
+	
+	def getCurrentRotation(self):
+		rot = {}
+		rot[self.az.getLabel()] = self.az.getValue()
+		rot[self.alt.getLabel()] = self.alt.getValue()
+		rot[self.phi.getLabel()] = self.phi.getValue()
+		
+		return Transform3D(self.current_src, rot)
+	
+	def set_src(self, val):
+		t3d = self.getCurrentRotation()
+		if ( self.src_map[str(val)] == EULER_SPIDER ):
+			self.az.setLabel('phi')
+			self.alt.setLabel('theta')
+			self.phi.setLabel('psi')
+		elif ( self.src_map[str(val)] == EULER_EMAN ):
+			self.az.setLabel('az')
+			self.alt.setLabel('alt')
+			self.phi.setLabel('phi')
+		elif ( self.src_map[str(val)] == EULER_IMAGIC ):
+			self.az.setLabel('alpha')
+			self.alt.setLabel('beta')
+			self.phi.setLabel('gamma')
+		elif ( self.src_map[str(val)] == EULER_XYZ ):
+			self.az.setLabel('xtilt')
+			self.alt.setLabel('ytilt')
+			self.phi.setLabel('ztilt')
+		elif ( self.src_map[str(val)] == EULER_MRC ):
+			self.az.setLabel('phi')
+			self.alt.setLabel('theta')
+			self.phi.setLabel('omega')
+		
+		self.current_src = self.src_map[str(val)]
+		self.updateRotations(t3d)
+	
+	def load_src_options(self,widgit):
+		self.load_src()
+		for i in self.src_strings:
+			widgit.addItem(i)
+	
+	# read src as 'supported rotation conventions'
+	def load_src(self):
+		# supported_rot_conventions
+		src_flags = []
+		src_flags.append(EULER_EMAN)
+		src_flags.append(EULER_SPIDER)
+		src_flags.append(EULER_IMAGIC)
+		src_flags.append(EULER_MRC)
+		src_flags.append(EULER_QUATERNION)
+		src_flags.append(EULER_XYZ)
+		
+		self.src_strings = []
+		self.src_map = {}
+		for i in src_flags:
+			self.src_strings.append(str(i))
+			self.src_map[str(i)] = i
+		
+	
+	def setColors(self,colors,current_color):
+		a = 0
 		for i in colors:
 			self.cbb.addItem(i)
+			if ( i == current_color):
+				self.cbb.setCurrentIndex(a)
+			a += 1
 	
 	def newAz(self,val):
 		if self.busy : return
@@ -822,6 +909,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.busy=0
 
 	def newAlt(self,val):
+		print "adsdf"
 		if self.busy : return
 		self.busy=1
 		self.alt.setValue(val, True)

@@ -126,7 +126,6 @@ namespace EMAN
 
              //  C3  Usual Constructor: Post Trans, after appying Rot
 		Transform3D(float az, float alt, float phi, const Vec3f& posttrans);
-                
  
  	     // C4
 	     	Transform3D(EulerType euler_type, float a1, float a2, float a3) ; // only EMAN: az alt phi
@@ -139,7 +138,6 @@ namespace EMAN
 	     // C6   First apply pretrans: Then rotation: Then posttrans
 		Transform3D(const Vec3f & pretrans, float az, float alt, float phi,  const Vec3f& posttrans);
 
-              
 		Transform3D(float m11, float m12, float m13,
 					float m21, float m22, float m23,
 					float m31, float m32, float m33);
