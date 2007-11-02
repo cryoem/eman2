@@ -95,8 +95,6 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		self.inspector=None			# set to inspector panel widget when exists
 		
-		self.shapelist=GL.glGenLists(1)		# displaylist for shapes displayed over the image
-		
 		self.setAcceptDrops(True)
 		self.resize(99,99)		
 		
@@ -217,8 +215,10 @@ class EMImage2D(QtOpenGL.QGLWidget):
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
-		EMShape.initGL()
-	
+		self.shapelist=GL.glGenLists(1)		# displaylist for shapes displayed over the image
+		#GL.glNewList(self.shapelist,GL.GL_COMPILE)
+		#GL.glEndList()
+
 	def paintGL(self):
 		GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 #		GL.glLoadIdentity()
@@ -279,8 +279,8 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		
 		GL.glNewList(self.shapelist,GL.GL_COMPILE)
 		for k,s in self.shapes.items():
-			if self.active[0]==k: s.draw(self.img2scr,self.active[1:])
-			else: s.draw(self.img2scr)
+			if self.active[0]==k: s.draw(None,self.active[1:])
+			else: s.draw()
 			
 		GL.glEndList()
 	
@@ -331,11 +331,17 @@ class EMImage2D(QtOpenGL.QGLWidget):
 		except: return ((v0[0]+self.origin[0])/self.scale,(self.height()-(v0[1]-self.origin[1]))/self.scale)
 	
 	def img2scr(self,v0,v1=None):
-		try: return (v0*self.scale+self.origin[0],(self.height()-v1)*self.scale+self.origin[1])
+		try: return (v0*self.scale-self.origin[0],self.origin[1]+self.height()-v1*self.scale)
 		except: 
-			try: return (v0[0]*self.scale+self.origin[0],(self.height()-v0[1])*self.scale+self.origin[1])
+			try: return (v0[0]*self.scale-self.origin[0],self.origin[1]+self.height()-v0[1]*self.scale)
 			except: print "ERROR ",v0,v1
 			
+	def img2gl(self,v0,v1=None):
+		try: return (v0*self.scale-self.origin[0],-self.origin[1]+v1*self.scale)
+		except: 
+			try: return (v0[0]*self.scale-self.origin[0],-self.origin[1]+v0[1]*self.scale)
+			except: print "ERROR ",v0,v1
+
 	def closeEvent(self,event) :
 		if self.inspector: self.inspector.close()
 		

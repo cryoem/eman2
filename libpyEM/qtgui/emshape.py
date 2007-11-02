@@ -33,6 +33,19 @@
 from OpenGL import GL,GLUT
 from math import *
 
+def initGL():
+	"""Call this static function once to initialize necessary display lists"""
+	if EMShape.dlists>=0: return
+	EMShape.dlists=GL.glGenLists(1)
+	GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
+	GL.glBegin(GL.GL_LINE_LOOP)
+	d2r=pi/180.0
+	for i in range(90): GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
+	GL.glEnd()
+	GL.glEndList()
+
+def shidentity(x,y) : return x,y
+
 class EMShape:
 	"""This class represents a geometric shape which can be used to annotate
 	the various data display widgets in EMAN2. The 'scr' shapes are in screen
@@ -59,21 +72,8 @@ class EMShape:
 	
 	dlists=-1
 	
-	def initGL():
-		"""Call this static function once to initialize necessary display lists"""
-		if EMShape.dlists>=0: return
-		EMShape.dlists=GL.glGenLists(1)
-		GL.glNewList(EMShape.dlists,GL.GL_COMPILE)
-		GL.glBegin(GL.GL_LINE_LOOP)
-		d2r=pi/180.0
-		for i in range(90): GL.glVertex(sin(i*d2r*4.0),cos(i*d2r*4.0))
-		GL.glEnd()
-		GL.glEndList()
-		
-	initGL=staticmethod(initGL)
- 
 	
-	def draw(self,d2s,col=None):
+	def draw(self,d2s=None,col=None):
 		"""This function causes the shape to render itself into the current GL context.
 		d2s is a function of x,y which will convert data coordinates to screen
 		coordinates. For data coordinate shapes, only the positional information
@@ -82,11 +82,11 @@ class EMShape:
 		s=self.shape
 		
 		if col==None: col=self.shape[1:4]
+		if d2s==None : d2s=shidentity
 		
 		v=d2s(s[4],s[5])
 		v2=d2s(s[4]+1,s[5]+1)
 		sc=v2[0]-v[0]
-		GL.glPushMatrix()
 		if s[0]=="rect":
 			GL.glLineWidth(s[8])
 			GL.glBegin(GL.GL_LINE_LOOP)
@@ -127,59 +127,66 @@ class EMShape:
 				GL.glLineWidth(fabs(s[8]))
 				for i in s[6]:
 					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
+			GL.glPopMatrix()
 		elif s[0]=="circle":
+			GL.glPushMatrix()
 			GL.glColor(*col)
 			GL.glLineWidth(s[7])
 			GL.glTranslate(v[0],v[1],0)
 			GL.glScalef(s[6]*(v2[0]-v[0]),s[6]*(v2[1]-v[1]),1.0)
 			GL.glCallList(EMShape.dlists)
-		if s[0]=="scrrect":
-			GL.glLineWidth(s[8])
-			GL.glBegin(GL.GL_LINE_LOOP)
-			GL.glColor(*col)
-			GL.glVertex(s[4],s[5])
-			GL.glVertex(s[6],s[5])
-			GL.glVertex(s[6],s[7])
-			GL.glVertex(s[4],s[7])
-			GL.glEnd()
-		elif s[0]=="scrline":
-			GL.glColor(*col)
-			GL.glLineWidth(s[8])
-			GL.glBegin(GL.GL_LINES)
-			GL.glVertex(s[4],s[5])
-			GL.glVertex(s[6],s[7])
-			GL.glEnd()
-		elif s[0]=="scrlabel":
-			if s[8]<0 :
-				GL.glColor(1.,1.,1.)
-				GL.glTranslate(s[4],s[5],0)
-				GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
-				GL.glLineWidth(-s[8])
-				w=104.76*len(s[6])
-				GL.glBegin(GL.GL_QUADS)
-				GL.glVertex(-10.,-33.0)
-				GL.glVertex(w+10.,-33.0)
-				GL.glVertex(w+10.,119.05)
-				GL.glVertex(-10.,119.05)
+			GL.glPopMatrix()
+		else:
+			mx=GL.glGetFloatv(GL.GL_MODELVIEW_MATRIX)
+			GL.glPopMatrix()
+			GL.glPushMatrix()
+			if s[0]=="scrrect":
+				GL.glLineWidth(s[8])
+				GL.glBegin(GL.GL_LINE_LOOP)
+				GL.glColor(*col)
+				GL.glVertex(s[4],s[5])
+				GL.glVertex(s[6],s[5])
+				GL.glVertex(s[6],s[7])
+				GL.glVertex(s[4],s[7])
 				GL.glEnd()
+			elif s[0]=="scrline":
 				GL.glColor(*col)
-				for i in s[6]:
-					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
-			else:
+				GL.glLineWidth(s[8])
+				GL.glBegin(GL.GL_LINES)
+				GL.glVertex(s[4],s[5])
+				GL.glVertex(s[6],s[7])
+				GL.glEnd()
+			elif s[0]=="scrlabel":
+				if s[8]<0 :
+					GL.glColor(1.,1.,1.)
+					GL.glTranslate(s[4],s[5],0)
+					GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
+					GL.glLineWidth(-s[8])
+					w=104.76*len(s[6])
+					GL.glBegin(GL.GL_QUADS)
+					GL.glVertex(-10.,-33.0)
+					GL.glVertex(w+10.,-33.0)
+					GL.glVertex(w+10.,119.05)
+					GL.glVertex(-10.,119.05)
+					GL.glEnd()
+					GL.glColor(*col)
+					for i in s[6]:
+						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_MONO_ROMAN,ord(i))
+				else:
+					GL.glColor(*col)
+					GL.glTranslate(s[4],s[5],0)
+	#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
+					GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
+					GL.glLineWidth(fabs(s[8]))
+					for i in s[6]:
+						GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
+			elif s[0]=="scrcircle":
 				GL.glColor(*col)
+				GL.glLineWidth(s[7])
 				GL.glTranslate(s[4],s[5],0)
-#				GL.glScalef(s[7]/100.0,s[7]/100.0,s[7]/100.0)
-				GL.glScalef(s[7]/100.0/sc,s[7]/100.0/sc,s[7]/100.0/sc)
-				GL.glLineWidth(fabs(s[8]))
-				for i in s[6]:
-					GLUT.glutStrokeCharacter(GLUT.GLUT_STROKE_ROMAN,ord(i))
-		elif s[0]=="scrcircle":
-			GL.glColor(*col)
-			GL.glLineWidth(s[7])
-			GL.glTranslate(s[4],s[5],0)
-			GL.glScalef(s[6],s[6],s[6])
-			GL.glCallList(EMShape.dlists)
-		GL.glPopMatrix()
+				GL.glScalef(s[6],s[6],s[6])
+				GL.glCallList(EMShape.dlists)
+			GL.glLoadMatrixf(mx)
 
 	def setShape(self,shape):
 		"""sets the shape to a new tuple/list"""
@@ -208,4 +215,4 @@ class EMShape:
 		if x1!=None : self.shape[6]=x1
 		if y1!=None : self.shape[7]=y1
 		
-		
+initGL()

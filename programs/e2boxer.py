@@ -36,6 +36,7 @@
 
 from EMAN2 import *
 from optparse import OptionParser
+from emshape import EMShape
 from math import *
 import time
 import os
@@ -589,7 +590,8 @@ class GUIbox:
 		except: print "boxsel() scrolling error"
 
 	def mousedown(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr2img((event.x(),event.y()))
+		print event.x(),event.y(),m[0],m[1]
 		for i,j in enumerate(self.boxes):
 			if m[0]<j[0] or m[0]>j[0]+j[2] or m[1]<j[1] or m[1]>j[1]+j[3] : continue
 			break
@@ -608,12 +610,12 @@ class GUIbox:
 		self.guiim.setActive(i,.9,.9,.4)
 		x0=self.boxes[i][0]+self.boxes[i][2]/2-1
 		y0=self.boxes[i][1]+self.boxes[i][3]/2-1
-		self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+		self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 		if not self.guimx.isVisible(i) : self.guimx.scrollTo(i,yonly=1)
 		self.guimx.setSelected(i)
 		
 	def mousedrag(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr2img((event.x(),event.y()))
 		
 		# box deletion when shift held down
 		if event.modifiers()&Qt.ShiftModifier:
@@ -634,12 +636,12 @@ class GUIbox:
 			i=self.moving[0]
 			x0=self.boxes[i][0]+self.boxes[i][2]/2-1
 			y0=self.boxes[i][1]+self.boxes[i][3]/2-1
-			self.guiim.addShape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
+			self.guiim.addShape("cen",EMShape(["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0]))
 			
 			self.boxupdate()
 		
 	def mouseup(self,event) :
-		m=self.guiim.scrtoimg((event.x(),event.y()))
+		m=self.guiim.scr2img((event.x(),event.y()))
 		self.moving=None
 	
 	def delbox(self,i):
@@ -673,7 +675,7 @@ class GUIbox:
 			
 			self.boxes[j][-1]=0
 			im=self.image.get_clip(Region(i[0],i[1],i[2],i[3]))
-			ns[j]=["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],2.0]
+			ns[j]=EMShape(["rect",.4,.9,.4,i[0],i[1],i[0]+i[2],i[1]+i[3],2.0])
 			if j>=len(self.ptcl) : self.ptcl.append(im)
 			else : self.ptcl[j]=im
 
