@@ -1059,8 +1059,6 @@ EMData* BooleanShrinkProcessor::process(const EMData *const image)
 		int ty = ny/shrinky;
 		int tx = nx/shrinkx;
 		
-		
-		cout << "dims are " << tx << " " << ty << " " << tz << endl;
 		return_image->set_size(tx,ty,tz);
 		for(int z = 0; z < tz; ++z) {
 			for(int y = 0; y < ty; ++y) {

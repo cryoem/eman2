@@ -105,36 +105,14 @@ static const int edgeLookUp[12][4] =
 };
 
 MarchingCubes::MarchingCubes()
-	: _sample(0), _isodl(0)
+	: _isodl(0)
 {
-	isSmooth = false;
-	_surf_value = 1;
-	_root = new CubeNode();
-	_root->is_leaf = true;
-	
-	std::cout << "before search tree..." << std::endl;
-// 	build_search_tree();
-	std::cout << "before calc surface..." << std::endl;
-	//calculate_surface(isSmooth);
-	std::cout << "end constructor..." << std::endl;
 }
 
-MarchingCubes::MarchingCubes(EMData * em, bool smooth) 
-	: _sample(0), _isodl(0)
+MarchingCubes::MarchingCubes(EMData * em) 
+	: _isodl(0)
 {
-	isSmooth = smooth;
-	_surf_value = 1;
-	_emdata = em;
-	_root = new CubeNode();
-	_root->is_leaf = true;
-	
-// 	build_search_tree();
-
-	calculate_min_max_vals(em);
-	/*
-	calculate_surface(isSmooth);
-	
-	calculate_min_max_vals(em);*/
+	set_data(em);
 }
 
 void MarchingCubes::clear_min_max_vals()
@@ -152,30 +130,28 @@ void MarchingCubes::clear_min_max_vals()
 	maxvals.clear();
 }
 
-bool MarchingCubes::calculate_min_max_vals(EMData* em )
+bool MarchingCubes::calculate_min_max_vals()
 {
-	root = em;
+	
+	if (_emdata == NULL ) throw NullPointerException("Error, cannot generate search tree if the overriding EMData object is NULL");
+	
 	clear_min_max_vals();
 	
-	int nx = em->get_xsize();
-	int ny = em->get_ysize();
-	int nz = em->get_zsize();
+	int nx = _emdata->get_xsize();
+	int ny = _emdata->get_ysize();
+	int nz = _emdata->get_zsize();
 
 	// Create the binary tree
 	while ( nx > 1 || ny > 1 || nz > 1 )
 	{
 		int size = minvals.size();
 		
-		if ( size == 0 )
-		{
+		if ( size == 0 ){
 			Dict a;
 			a["search"] = 3;
-			minvals.push_back(em->process("math.minshrink",a));
-			maxvals.push_back(em->process("math.maxshrink",a));
-		}
-		else
-		{
-			cout << minvals[size-1]->get_xsize() << endl;
+			minvals.push_back(_emdata->process("math.minshrink",a));
+			maxvals.push_back(_emdata->process("math.maxshrink",a));
+		}else {
 			minvals.push_back(minvals[size-1]->process("math.minshrink"));
 			maxvals.push_back(maxvals[size-1]->process("math.maxshrink"));
 		}
@@ -183,31 +159,23 @@ bool MarchingCubes::calculate_min_max_vals(EMData* em )
 		nx = minvals[size]->get_xsize();
 		ny = minvals[size]->get_ysize();
 		nz = minvals[size]->get_zsize();
+#if MARCHING_CUBES_DEBUG
 		cout << "dims are " << nx << " " << ny << " " << nz << endl;
+#endif
 	}
 	
-	levels = minvals.size();
-	
 	drawing_level = -1;
-	
-	cout << "There are " << levels << " levels" << endl;
+
 	return true;
 }
 
 MarchingCubes::~MarchingCubes() {
-	delete _root;
-//	delete &point_map;
-	
-	if(points) {delete points; points=0;}
-	if(normals) {delete normals; normals=0;}
-	if(normalsSm) {delete normalsSm; normalsSm=0;}
-	if(faces) {delete faces; faces=0;}
+	clear_min_max_vals();
 }
 
-Dict MarchingCubes::get_isosurface(bool smooth) 
+Dict MarchingCubes::get_isosurface() 
 {
-	cout << "Calc iso" << endl;
-	calculate_surface(isSmooth);
+	calculate_surface();
 	
 	Dict d;
 	d.put("points", (float*)pp.get_data());
@@ -216,26 +184,26 @@ Dict MarchingCubes::get_isosurface(bool smooth)
 	d.put("faces", (int*)ff.get_data());
 	d.put("normals", (float*)nn.get_data());
 	d.put("size", ff.elem());
-	
-	cout << "return" << endl;
 	return d;
 }
 
-unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
+unsigned long MarchingCubes::get_isosurface_dl()
 {
 	
 	if ( _isodl != 0 ) glDeleteLists(_isodl,1);
 	
-	calculate_surface(isSmooth);
-	
+	calculate_surface();
+#if MARCHING_CUBES_DEBUG
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
-	
-	int maxv;
-	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
+#endif
 	int maxf;
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+#if MARCHING_CUBES_DEBUG
+	int maxv;
+	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
 	cout << "Max vertices is " << maxv << " max indices is " << maxf << endl;
 	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
+#endif
 	
 	for (int i = 0; i < ff.elem(); ++i )
 		ff[i] /= 3;
@@ -249,8 +217,13 @@ unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 	glVertexPointer(3,GL_FLOAT,0,pp.get_data());
 	
 	_isodl = glGenLists(1);
+
+#if MARCHING_CUBES_DEBUG
 	int time0 = clock();
+#endif
 	glNewList(_isodl,GL_COMPILE);
+	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+	// Saved about 60% of the time... drawRange should probably always be true
 	bool drawRange = true;
 	if ( drawRange == false ) {
 		glDrawElements(GL_TRIANGLES,ff.elem(),GL_UNSIGNED_INT,ff.get_data());
@@ -261,22 +234,25 @@ unsigned long MarchingCubes::get_isosurface_dl(bool smooth)
 				glDrawElements(GL_TRIANGLES,ff.elem()-i,GL_UNSIGNED_INT,&ff[i]);
 			else
 				glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,&ff[i]);
-				// glDrawRangeElements is part of the extensions.
-// 				glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
+				// glDrawRangeElements is part of the extensions, we might want to experiment with its performance at some stage, 
+				// so please leave this code here, commented out. This is an either or situation, so if glDrawRangeElements is used,
+				// glDrawElements above would have to be commented out.
+				// glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
 		}
 	}
 
 	glEndList();
+#if MARCHING_CUBES_DEBUG
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
-	cout << "... using a surface value of " << _surf_value << endl;
-	
+#endif
 	return _isodl;
 }
-void MarchingCubes::set_data(EMData* data) {
-	calculate_min_max_vals(data);
-	Isosurface::set_data(data);
-// 	calculate_surface(isSmooth);
+void MarchingCubes::set_data(EMData* data)
+{
+	if ( data->get_zsize() == 1 ) throw ImageDimensionException("The z dimension of the image must be greater than 1");
+	_emdata = data;
+	calculate_min_max_vals();
 }
 
 void MarchingCubes::set_surface_value(const float value) {
@@ -287,34 +263,29 @@ void MarchingCubes::set_surface_value(const float value) {
 
 }
 
-float MarchingCubes::get_surface_value() const { return _surf_value; }
-
-void MarchingCubes::set_sample_density(const int level) {
+void MarchingCubes::calculate_surface() {
 	
-	drawing_level = level;
-
-}
-
-float MarchingCubes::get_sample_density() const  { return _sample; }
-
-void MarchingCubes::calculate_surface(bool smooth) {
+	if ( _emdata == 0 ) throw NullPointerException("Error, attempt to generate isosurface, but the emdata image object has not been set");
+	if ( minvals.size() == 0 || maxvals.size() == 0 ) throw NotExistingObjectException("Vector of EMData pointers", "Error, the min and max val search trees have not been created");
 	
 	point_map.clear();
 	pp.clear();
 	nn.clear();
 	ff.clear();
-	
+
+#if MARCHING_CUBES_DEBUG	
 	int time0 = clock();
+#endif
 
 	float min = minvals[minvals.size()-1]->get_value_at(0,0,0);
 	float max = maxvals[minvals.size()-1]->get_value_at(0,0,0);
 	if ( min < _surf_value &&  max > _surf_value) draw_cube(0,0,0,minvals.size()-1);
 
+#if MARCHING_CUBES_DEBUG
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to traverse the search tree and generate polygons" << endl;
 	cout << "... using surface value " << _surf_value << endl;
-	cout << "There are " << ff.elem() << " faces and " << nn.elem() << " normals and " << pp.elem() << " points" << endl;
-
+#endif
 }
 
 void MarchingCubes::draw_cube(const int x, const int y, const int z, const int cur_level ) {

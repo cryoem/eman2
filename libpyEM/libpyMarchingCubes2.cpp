@@ -33,20 +33,20 @@ struct EMAN_Isosurface_Wrapper: EMAN::Isosurface, wrapper<EMAN::Isosurface>
     	return this->get_override("get_surface_value")();
     }
     
-    void set_sample_density(float p0) {
+    void set_sampling(float p0) {
         this->get_override("set_sample_density")(p0);
     }
     
-    float get_sample_density() {
-        return this->get_override("get_sample_density")();
-    }
-    
-    EMAN::Dict get_isosurface(bool p0) {
-       return this->get_override("get_isosurface")(p0);
+    EMAN::Dict get_isosurface() {
+       return this->get_override("get_isosurface")();
     }
 	
-	unsigned long get_isosurface_dl(bool p0) {
-		return this->get_override("get_isosurface_dl")(p0);
+	unsigned long get_isosurface_dl() {
+		return this->get_override("get_isosurface_dl")();
+	}
+	
+	int get_sampling_range() {
+		return this->get_override("get_sampling_range")();
 	}
 
 };
@@ -60,15 +60,16 @@ BOOST_PYTHON_MODULE(libpyMarchingCubes2)
 		.def("set_data", &EMAN::Isosurface::set_data, &EMAN_Isosurface_Wrapper::default_set_data)
 		.def("set_surface_value", pure_virtual(&EMAN::Isosurface::set_surface_value))
 		.def("get_surface_value", pure_virtual(&EMAN::Isosurface::get_surface_value))
-		.def("set_sample_density", pure_virtual(&EMAN::Isosurface::set_sample_density))
-		.def("get_sample_density", pure_virtual(&EMAN::Isosurface::get_sample_density))
+		.def("set_sampling", pure_virtual(&EMAN::Isosurface::set_sampling))
+		.def("get_sampling", pure_virtual(&EMAN::Isosurface::get_sampling))
 		.def("get_isosurface", pure_virtual(&EMAN::Isosurface::get_isosurface))
 		.def("get_isosurface_dl", pure_virtual(&EMAN::Isosurface::get_isosurface_dl))
+		.def("get_sampling_range", pure_virtual(&EMAN::Isosurface::get_sampling_range))
 		;
 	
 	/* We do not wrap default constructor of MarchingCubes into Python */	
 	//class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init<  >())
-	class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init< EMAN::EMData *, optional< bool > >())
+	class_< EMAN::MarchingCubes, bases<EMAN::Isosurface> >("MarchingCubes", init< EMAN::EMData *>())
 		//.def(init< EMAN::EMData *, optional< bool > >())
 		;
 }

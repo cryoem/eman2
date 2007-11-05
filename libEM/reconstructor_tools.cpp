@@ -149,7 +149,7 @@ void InterpolatedFRC::reset()
 }
 
 
-bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctiod& functoid,  const float& weight )
+bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctoid& functoid,  const float& weight )
 {
 	int x0 = 2 * (int) floor(xx + 0.5f);
 	int y0 = (int) floor(yy + 0.5f);
@@ -220,12 +220,12 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 
 bool InterpolatedFRC::continue_frc_calc7(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
-	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode7(),weight);
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode7(),weight);
 }
 
 bool InterpolatedFRC::continue_frc_calc6(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
-	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode6(),weight);
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode6(),weight);
 }
 
 bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
@@ -277,7 +277,7 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 	for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
 		for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 			for (int i = l, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-				float gg = InterpolationFunctiodMode5().operate(mmx,mmy,mmz);
+				float gg = InterpolationFunctoidMode5().operate(mmx,mmy,mmz);
 
 				int idx = i + j * nx + k * nxy;
 				
@@ -314,7 +314,7 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 		for (int k = z0 - 2, mmz = mz0; k <= z0 + 2; k++, mmz += 39) {
 			for (int j = y0 - 2, mmy = my0; j <= y0 + 2; j++, mmy += 39) {
 				for (int i = 0, mmx = mx0; i <= x0 + 4; i += 2, mmx += 39) {
-					float gg = InterpolationFunctiodMode5().operate(mmx,mmy,mmz);
+					float gg = InterpolationFunctoidMode5().operate(mmx,mmy,mmz);
 
 					int idx = i + j * nx + k * nxy;
 					if ( norm_data[idx/2] == 0 )
@@ -352,12 +352,12 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 
 bool InterpolatedFRC::continue_frc_calc4(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
-	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode4(),weight);
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode4(),weight);
 }
 
 bool InterpolatedFRC::continue_frc_calc3(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)
 {
-	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctiodMode3(),weight);
+	return continue_frc_calc_functoid(xx,yy,zz,dt,InterpolationFunctoidMode3(),weight);
 }
 
 bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const float& zz, const float dt[], const float& weight)

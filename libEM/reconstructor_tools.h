@@ -505,30 +505,30 @@ namespace EMAN
 		
 	};
 
-	/** InterpolationFunctiod is an abstract base class, having basically one function which is "operate(float radius)"
+	/** InterpolationFunctoid is an abstract base class, having basically one function which is "operate(float radius)"
 	* It simplifies the implementation of InterpolatedFRC::continue_frc_calc? (where ? = 3,4,6 or 7)
-	* The other cases (1,2 and 5) must be handled case by case. Note InterpolationFunctiodMode5 is declared 
-	* below but it does not derive from InterpolationFunctiod, i.e. it is a special case.
+	* The other cases (1,2 and 5) must be handled case by case. Note InterpolationFunctoidMode5 is declared 
+	* below but it does not derive from InterpolationFunctoid, i.e. it is a special case.
 	* Each of these modes corresponds tightly with the FourierInserter3DMode? method of the same number and this
 	* is intentional
 	*/
-	class InterpolationFunctiod
+	class InterpolationFunctoid
 	{
 	public:
-		InterpolationFunctiod() {}
-		virtual ~InterpolationFunctiod() {}
+		InterpolationFunctoid() {}
+		virtual ~InterpolationFunctoid() {}
 		
 		virtual float operate( const float radius ) const = 0;
 	};
 	
-	/** InterpolationFunctiodMode3
-	 * see comments for abstract base class InterpolationFunctiod
+	/** InterpolationFunctoidMode3
+	 * see comments for abstract base class InterpolationFunctoid
 	*/
-	class InterpolationFunctiodMode3 : public InterpolationFunctiod
+	class InterpolationFunctoidMode3 : public InterpolationFunctoid
 	{
 	public:
-		InterpolationFunctiodMode3() {}
-		virtual ~InterpolationFunctiodMode3() {}
+		InterpolationFunctoidMode3() {}
+		virtual ~InterpolationFunctoidMode3() {}
 		
 		virtual float operate( const float radius ) const
 		{
@@ -536,14 +536,14 @@ namespace EMAN
 		}
 	};
 	
-	/** InterpolationFunctiodMode4
-	* see comments for abstract base class InterpolationFunctiod
+	/** InterpolationFunctoidMode4
+	* see comments for abstract base class InterpolationFunctoid
 	*/
-	class InterpolationFunctiodMode4 : public InterpolationFunctiod
+	class InterpolationFunctoidMode4 : public InterpolationFunctoid
 	{
 	public:
-		InterpolationFunctiodMode4() {}
-		virtual ~InterpolationFunctiodMode4() {}
+		InterpolationFunctoidMode4() {}
+		virtual ~InterpolationFunctoidMode4() {}
 		
 		virtual float operate( const float radius ) const
 		{
@@ -551,14 +551,14 @@ namespace EMAN
 		}
 	};
 	
-	/** InterpolationFunctiodMode5
+	/** InterpolationFunctoidMode5
 	* Handles the special case of mode5 interpolation - see FourierInserter3DMode5
 	*/
-	class InterpolationFunctiodMode5
+	class InterpolationFunctoidMode5
 	{
 		public:
-			InterpolationFunctiodMode5() { gimx = EMAN::Interp::get_gimx(); }
-			virtual ~InterpolationFunctiodMode5()
+			InterpolationFunctoidMode5() { gimx = EMAN::Interp::get_gimx(); }
+			virtual ~InterpolationFunctoidMode5()
 			{
 				if ( gimx != 0 )
 				{
@@ -575,14 +575,14 @@ namespace EMAN
 			float * gimx;
 	};
 
-	/** InterpolationFunctiodMode6
-	* see comments for abstract base class InterpolationFunctiod
+	/** InterpolationFunctoidMode6
+	* see comments for abstract base class InterpolationFunctoid
 	*/
-	class InterpolationFunctiodMode6 : public InterpolationFunctiod
+	class InterpolationFunctoidMode6 : public InterpolationFunctoid
 	{
 	public:
-		InterpolationFunctiodMode6() {}
-		virtual ~InterpolationFunctiodMode6() {}
+		InterpolationFunctoidMode6() {}
+		virtual ~InterpolationFunctoidMode6() {}
 		
 		virtual float operate( const float radius ) const
 		{
@@ -590,14 +590,14 @@ namespace EMAN
 		}
 	};
 	
-	/** InterpolationFunctiodMode7
-	* see comments for abstract base class InterpolationFunctiod
+	/** InterpolationFunctoidMode7
+	* see comments for abstract base class InterpolationFunctoid
 	*/
-	class InterpolationFunctiodMode7 : public InterpolationFunctiod
+	class InterpolationFunctoidMode7 : public InterpolationFunctoid
 	{
 	public:
-		InterpolationFunctiodMode7() {}
-		virtual ~InterpolationFunctiodMode7() {}
+		InterpolationFunctoidMode7() {}
+		virtual ~InterpolationFunctoidMode7() {}
 		
 		virtual float operate( const float radius ) const
 		{
@@ -753,7 +753,7 @@ namespace EMAN
 		 	* Meant for convenience in continue_frc_calc3, continue_frc_calc4, continue_frc_calc6, and continue_frc_calc7
 		 	* See comments in continue_frc_calc1 for parameter details.
 			*/
-			bool continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctiod& functoid, const float& weight = 1.0 );
+			bool continue_frc_calc_functoid(const float& xx, const float& yy, const float& zz, const float dt[], const InterpolationFunctoid& functoid, const float& weight = 1.0 );
 			
 			/** free_memory - frees all associated memory
 			*/

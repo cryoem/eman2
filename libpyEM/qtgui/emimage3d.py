@@ -190,7 +190,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		mean=data.get_attr("mean")
 		sigma=data.get_attr("sigma")
 
-		self.cam_z = -1.25*data.get_zsize()
+		self.default_z = -1.25*data.get_zsize()
+		self.cam_z = self.default_z
 		
 		if not self.inspector or self.inspector ==None:
 			self.inspector=EMImageInspector3D(self)
@@ -201,7 +202,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		self.inspector.setThrs(self.minden,self.maxden,mean+3.0*sigma)
 		self.isothr = mean+3.0*sigma
 		
-		self.isorender=MarchingCubes(data,1)
+		self.isorender=MarchingCubes(data)
+		self.inspector.setSamplingRange(self.isorender.get_sampling_range())
 		
 		self.inspector.setColors(self.colors,self.isocolor)
 		
@@ -222,6 +224,8 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION, [0.5,0.7,11.,0.])
 
+		GL.glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
+		
 		GL.glClearColor(0,0,0,0)
 		
 		if not self.gq:
@@ -377,59 +381,15 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 	def getIsoDL(self):
 		# create the isosurface display list
-		print "!!!! %f %f" %(self.isothr,self.smpval)
 		self.isorender.set_surface_value(self.isothr)
-		self.isorender.set_sample_density(self.smpval)
-		
-		time1 = clock()
-		self.isodl = self.isorender.get_isosurface_dl(True)
-		time2 = clock()
-		dt1 = time2 - time1
-		print "It took %f to render the isosurface" %dt1
-	
-	#def createIsoDL(self):
-		## create the isosurface display list
-		
-		#print "!!!! Creating Display List%f %f" %(self.isothr,self.smpval)
-		#if ( self.isodl != 0 ): glDeleteLists(self.isodl,1)
-
-		#self.isorender.set_surface_value(self.isothr)
-		#self.isorender.set_sample_density(self.smpval)
-
+		self.isorender.set_sampling(self.smpval)
 		
 		#time1 = clock()
-		#a = self.isorender.get_isosurface(True)
-		#print a
+		self.isodl = self.isorender.get_isosurface_dl()
 		#time2 = clock()
 		#dt1 = time2 - time1
-		#print "It took %f to get the isosurface" %dt1
+		#print "It took %f to render the isosurface" %dt1
 		
-		#maxv = glGet(GL_MAX_ELEMENTS_VERTICES)
-		#maxf = glGet(GL_MAX_ELEMENTS_INDICES)
-		#print "maxes are %d %d" %(maxv,maxf)
-		#glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,maxv);
-		#glGetIntegerv(GL_MAX_ELEMENTS_INDICES,maxf);
-		
-		#if ( maxf % 3 != 0 ): maxf = maxf - (maxf%3)
-		
-		#glNormalPointer(GL_FLOAT,0,a["normals"]);
-		#glVertexPointer(3,GL_FLOAT,0,a["points"]);
-		
-		#size = a["size"]
-		
-		#self.isodl = glGenLists(1)
-		#glNewList(self.isodl,GL_COMPILE);
-		#if ( drawRange == false ):
-			#glDrawElements(GL_TRIANGLES,size,GL_UNSIGNED_INT,a["faces"])
-		#else:
-			#for i in range(0,size,maxf):
-				#if ( (i+maxf) > size):
-					#glDrawElements(GL_TRIANGLES,size-i,GL_UNSIGNED_INT,a["faces"][i])
-				#else :
-					#glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,a["faces"][i])
-
-		#glEndList()
-	
 	def createGridDL(self):
 		# create the isosurface display list
 		
@@ -486,11 +446,13 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
 		# using gluPerspective for simplicity
-		gluPerspective(self.fov,self.aspect,0.001,1000)
+		gluPerspective(self.fov,self.aspect,0.001,1000000)
 		
 		# switch back to model view mode
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
+		
+		self.updateInspectorTranslateScale()
 		
 	def setupShapes(self):
 		# make our own cirle rather than use gluDisk or somesuch
@@ -513,7 +475,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	def mousePressEvent(self, event):
 #		lc=self.scrtoimg((event.x(),event.y()))
 		if event.button()==Qt.MidButton:
+			if not self.inspector or self.inspector ==None:
+				self.inspector=EMImageInspector3D(self)
+			self.inspector.updateRotations(self.t3d_stack[len(self.t3d_stack)-1])
+			self.updateInspectorTranslateScale()
 			self.showInspector(1)
+		
 		elif event.button()==Qt.LeftButton:
 			if self.mmode==0:
 				self.mpressx = event.x()
@@ -580,6 +547,12 @@ class EMImage3D(QtOpenGL.QGLWidget):
 			
 	def wheelEvent(self, event):
 		self.scale_event(event.delta())
+		self.updateInspectorTranslateScale()
+
+	def updateInspectorTranslateScale(self):
+		[xscale,yscale] = self.getTranslateScale()
+		if ( xscale > yscale ): self.inspector.setTranslateScale(xscale,yscale,yscale)
+		else: self.inspector.setTranslateScale(xscale,yscale,xscale)
 
 	def scale_event(self,delta):
 		if delta > 0:
@@ -590,7 +563,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		if self.inspector: self.inspector.setScale(self.scale)
 
 
-	def get_render_area_at_depth(self):
+	def get_render_dims_at_depth(self):
 		# This function returns the width and height of the renderable 
 		# area at the origin of the data volume
 		height = -2*tan(self.fov/2.0*pi/180.0)*(self.cam_z)
@@ -598,15 +571,35 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		
 		return [width,height]
 
-	def motionTranslate(self,x,y):
-		[rx,ry] = self.get_render_area_at_depth()
+	def getTranslateScale(self):
+	
+		[rx,ry] = self.get_render_dims_at_depth()
 		
 		#print "render area is %f %f " %(xx,yy)
 		xscale = rx/float(self.width())
 		yscale = ry/float(self.height())
-		#print "scaling by %f %f" %(xscale,yscale)
+		
+		return [xscale,yscale]
+
+	def motionTranslate(self,x,y):
+		[xscale,yscale] = self.getTranslateScale()
+		
 		self.cam_x += x*xscale
 		self.cam_y += y*yscale
+		
+		self.inspector.setXYTrans(self.cam_x, self.cam_y)
+		
+	def setCamZ(self,z):
+		self.cam_z = self.default_z + z
+		self.updateGL()
+		
+	def setCamY(self,y):
+		self.cam_y = y
+		self.updateGL()
+		
+	def setCamX(self,x):
+		self.cam_x = x
+		self.updateGL()
 		
 	def motionRotate(self,x,y):
 		if ( x == 0 and y == 0): return
@@ -620,7 +613,7 @@ class EMImage3D(QtOpenGL.QGLWidget):
 		length = sqrt(x*x + y*y)
 		# 8.0 is a magic number - things rotate more if they are closer and slower if they are far away in this appproach
 		# Or does it?
-		# This magic number could be overcome using a strategy based on the results of get_render_area_at_depth
+		# This magic number could be overcome using a strategy based on the results of get_render_dims_at_depth
 		angle = length/8.0*pi
 		
 		t3d = Transform3D()
@@ -652,7 +645,9 @@ class EMImage3D(QtOpenGL.QGLWidget):
 	
 	def setSample(self,val):
 		if ( self.smpval != int(val)):
-			self.smpval = int(val)
+			# the minus two is here because the marching cubes thinks -1 is the high level of detail, 0 is the next best and  so forth
+			# However the user wants the highest level of detail to be 1, and the next best to be 2 and then 3 etc
+			self.smpval = int(val)-2
 			self.getIsoDL()
 			self.updateGL()
 	
@@ -721,25 +716,6 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.cubetog = QtGui.QPushButton("Cube")
 		self.cubetog.setCheckable(1)
 		self.vbl2.addWidget(self.cubetog)
-
-		#self.hbl2 = QtGui.QHBoxLayout()
-		#self.hbl2.setMargin(0)
-		#self.hbl2.setSpacing(6)
-		#self.hbl2.setObjectName("hboxlayout")
-		#self.vbl.addLayout(self.hbl2)
-		
-		#self.mapp = QtGui.QPushButton("App")
-		#self.mapp.setCheckable(1)
-		#self.hbl2.addWidget(self.mapp)
-
-		#self.mmeas = QtGui.QPushButton("Meas")
-		#self.mmeas.setCheckable(1)
-		#self.hbl2.addWidget(self.mmeas)
-
-		#self.mmode=QtGui.QButtonGroup()
-		#self.mmode.setExclusive(1)
-		#self.mmode.addButton(self.mapp,0)
-		#self.mmode.addButton(self.mmeas,1)
 		
 		self.scale = ValSlider(self,(0.01,30.0),"Mag:")
 		self.scale.setObjectName("scale")
@@ -762,14 +738,62 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.vbl.addLayout(self.hbl_smp)
 		
 		self.smp_label = QtGui.QLabel()
-		self.smp_label.setText('Sampling')
+		self.smp_label.setText('Sample Level')
 		self.hbl_smp.addWidget(self.smp_label)
 		
 		self.smp = QtGui.QSpinBox(self)
-		self.smp.setMinimum(-1)
-		self.smp.setMaximum(4)
-		self.smp.setValue(-1)
+		self.smp.setValue(1)
 		self.hbl_smp.addWidget(self.smp)
+		
+		self.hbl_color = QtGui.QHBoxLayout()
+		self.hbl_color.setMargin(0)
+		self.hbl_color.setSpacing(6)
+		self.hbl_color.setObjectName("Material")
+		self.vbl.addLayout(self.hbl_color)
+		
+		self.color_label = QtGui.QLabel()
+		self.color_label.setText('Material')
+		self.hbl_color.addWidget(self.color_label)
+		
+		self.cbb = QtGui.QComboBox(self)
+		self.hbl_color.addWidget(self.cbb)
+
+		self.hbl_trans = QtGui.QHBoxLayout()
+		self.hbl_trans.setMargin(0)
+		self.hbl_trans.setSpacing(6)
+		self.hbl_trans.setObjectName("Trans")
+		self.vbl.addLayout(self.hbl_trans)
+		
+		self.x_label = QtGui.QLabel()
+		self.x_label.setText('x')
+		self.hbl_trans.addWidget(self.x_label)
+		
+		self.x_trans = QtGui.QDoubleSpinBox(self)
+		self.x_trans.setMinimum(-10000)
+		self.x_trans.setMaximum(10000)
+		self.x_trans.setValue(0.0)
+		self.hbl_trans.addWidget(self.x_trans)
+		
+		self.y_label = QtGui.QLabel()
+		self.y_label.setText('y')
+		self.hbl_trans.addWidget(self.y_label)
+		
+		self.y_trans = QtGui.QDoubleSpinBox(self)
+		self.y_trans.setMinimum(-10000)
+		self.y_trans.setMaximum(10000)
+		self.y_trans.setValue(0.0)
+		self.hbl_trans.addWidget(self.y_trans)
+		
+		
+		self.z_label = QtGui.QLabel()
+		self.z_label.setText('z')
+		self.hbl_trans.addWidget(self.z_label)
+		
+		self.z_trans = QtGui.QDoubleSpinBox(self)
+		self.z_trans.setMinimum(-10000)
+		self.z_trans.setMaximum(10000)
+		self.z_trans.setValue(0.0)
+		self.hbl_trans.addWidget(self.z_trans)
 		
 		self.hbl_src = QtGui.QHBoxLayout()
 		self.hbl_src.setMargin(0)
@@ -785,36 +809,23 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.load_src_options(self.src)
 		self.hbl_src.addWidget(self.src)
 		
-		self.az = ValSlider(self,(-360.0,360.0),"az")
+		# set default value -1 ensures that the val slider is updated the first time it is created
+		self.az = ValSlider(self,(-360.0,360.0),"az",-1)
 		self.az.setObjectName("az")
-		self.az.setValue(0.0)
 		self.vbl.addWidget(self.az)
 		
-		self.alt = ValSlider(self,(-180.0,180.0),"alt")
+		self.alt = ValSlider(self,(-180.0,180.0),"alt",-1)
 		self.alt.setObjectName("alt")
-		self.alt.setValue(0.0)
 		self.vbl.addWidget(self.alt)
 		
-		self.phi = ValSlider(self,(-360.0,360.0),"phi")
+		self.phi = ValSlider(self,(-360.0,360.0),"phi",-1)
 		self.phi.setObjectName("phi")
-		self.phi.setValue(0.0)
 		self.vbl.addWidget(self.phi)
-
+		
+		self.n3_showing = False
+		
 		self.current_src = EULER_EMAN
-
-		self.hbl_color = QtGui.QHBoxLayout()
-		self.hbl_color.setMargin(0)
-		self.hbl_color.setSpacing(6)
-		self.hbl_color.setObjectName("Material")
-		self.vbl.addLayout(self.hbl_color)
 		
-		self.color_label = QtGui.QLabel()
-		self.color_label.setText('Material')
-		self.hbl_color.addWidget(self.color_label)
-		
-		self.cbb = QtGui.QComboBox(self)
-		self.hbl_color.addWidget(self.cbb)
-
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.setScale)
 		QtCore.QObject.connect(self.az, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
 		QtCore.QObject.connect(self.alt, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
@@ -823,13 +834,33 @@ class EMImageInspector3D(QtGui.QWidget):
 		QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("currentIndexChanged(QString)"), target.setColor)
 		QtCore.QObject.connect(self.src, QtCore.SIGNAL("currentIndexChanged(QString)"), self.set_src)
 		QtCore.QObject.connect(self.smp, QtCore.SIGNAL("valueChanged(int)"), target.setSample)
+		QtCore.QObject.connect(self.x_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamX)
+		QtCore.QObject.connect(self.y_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamY)
+		QtCore.QObject.connect(self.z_trans, QtCore.SIGNAL("valueChanged(double)"), target.setCamZ)
 		QtCore.QObject.connect(self.wiretog, QtCore.SIGNAL("toggled(bool)"), target.toggleWire)
 		QtCore.QObject.connect(self.lighttog, QtCore.SIGNAL("toggled(bool)"), target.toggleLight)
 		QtCore.QObject.connect(self.cubetog, QtCore.SIGNAL("toggled(bool)"), target.toggleCube)
-		#QtCore.QObject.connect(self.cbb, QtCore.SIGNAL("textChanged(int)"), target.setColor)
 	
+	def setSamplingRange(self,range):
+		self.smp.setMinimum(1)
+		self.smp.setMaximum(1+range-1)
+
+	def setXYTrans(self, x, y):
+		self.x_trans.setValue(x)
+		self.y_trans.setValue(y)
+	
+	def setTranslateScale(self, xscale,yscale,zscale):
+		self.x_trans.setSingleStep(xscale)
+		self.y_trans.setSingleStep(yscale)
+		self.z_trans.setSingleStep(zscale)
+
 	def updateRotations(self,t3d):
 		rot = t3d.get_rotation(self.src_map[str(self.src.itemText(self.src.currentIndex()))])
+		
+		convention = self.src.currentText()
+		if ( self.src_map[str(convention)] == EULER_SPIN ):
+			self.n3.setValue(rot[self.n3.getLabel()],True)
+		
 		self.az.setValue(rot[self.az.getLabel()],True)
 		self.alt.setValue(rot[self.alt.getLabel()],True)
 		self.phi.setValue(rot[self.phi.getLabel()],True)
@@ -838,15 +869,43 @@ class EMImageInspector3D(QtGui.QWidget):
 		self.target.loadRotation(self.getCurrentRotation())
 	
 	def getCurrentRotation(self):
+		convention = self.src.currentText()
 		rot = {}
-		rot[self.az.getLabel()] = self.az.getValue()
-		rot[self.alt.getLabel()] = self.alt.getValue()
-		rot[self.phi.getLabel()] = self.phi.getValue()
+		if ( self.current_src == EULER_SPIN ):
+			rot[self.az.getLabel()] = self.az.getValue()
+			
+			n1 = self.alt.getValue()
+			n2 = self.phi.getValue()
+			n3 = self.n3.getValue()
+			
+			norm = sqrt(n1*n1 + n2*n2 + n3*n3)
+			
+			n1 /= norm
+			n2 /= norm
+			n3 /= norm
+			
+			rot[self.alt.getLabel()] = n1
+			rot[self.phi.getLabel()] = n2
+			rot[self.n3.getLabel()] = n3
+			
+		else:
+			rot[self.az.getLabel()] = self.az.getValue()
+			rot[self.alt.getLabel()] = self.alt.getValue()
+			rot[self.phi.getLabel()] = self.phi.getValue()
 		
 		return Transform3D(self.current_src, rot)
 	
 	def set_src(self, val):
 		t3d = self.getCurrentRotation()
+		
+		if (self.n3_showing) :
+			self.vbl.removeWidget(self.n3)
+			self.n3.deleteLater()
+			self.n3_showing = False
+			self.az.setRange(-360,360)
+			self.alt.setRange(-180,180)
+			self.phi.setRange(-360,660)
+		
 		if ( self.src_map[str(val)] == EULER_SPIDER ):
 			self.az.setLabel('phi')
 			self.alt.setLabel('theta')
@@ -867,6 +926,20 @@ class EMImageInspector3D(QtGui.QWidget):
 			self.az.setLabel('phi')
 			self.alt.setLabel('theta')
 			self.phi.setLabel('omega')
+		elif ( self.src_map[str(val)] == EULER_SPIN ):
+			self.az.setLabel('Omega')
+			self.alt.setRange(-1,1)
+			self.phi.setRange(-1,1)
+			
+			self.alt.setLabel('n1')
+			self.phi.setLabel('n2')
+			
+			self.n3 = ValSlider(self,(-360.0,360.0),"n3",-1)
+			self.n3.setRange(-1,1)
+			self.n3.setObjectName("n3")
+			self.vbl.addWidget(self.n3)
+			QtCore.QObject.connect(self.n3, QtCore.SIGNAL("valueChanged"), self.sliderRotate)
+			self.n3_showing = True
 		
 		self.current_src = self.src_map[str(val)]
 		self.updateRotations(t3d)
@@ -884,7 +957,7 @@ class EMImageInspector3D(QtGui.QWidget):
 		src_flags.append(EULER_SPIDER)
 		src_flags.append(EULER_IMAGIC)
 		src_flags.append(EULER_MRC)
-		src_flags.append(EULER_QUATERNION)
+		src_flags.append(EULER_SPIN)
 		src_flags.append(EULER_XYZ)
 		
 		self.src_strings = []
@@ -901,25 +974,6 @@ class EMImageInspector3D(QtGui.QWidget):
 			if ( i == current_color):
 				self.cbb.setCurrentIndex(a)
 			a += 1
-	
-	def newAz(self,val):
-		if self.busy : return
-		self.busy=1
-		self.az.setValue(val, True)
-		self.busy=0
-
-	def newAlt(self,val):
-		print "adsdf"
-		if self.busy : return
-		self.busy=1
-		self.alt.setValue(val, True)
-		self.busy=0
-	
-	def newPhi(self,val):
-		if self.busy : return
-		self.busy=1
-		self.phi.setValue(val, True)
-		self.busy=0
 
 	def setThrs(self,low,high,val):
 		self.thr.setRange(low,high)
