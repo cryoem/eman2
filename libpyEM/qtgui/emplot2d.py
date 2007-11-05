@@ -110,7 +110,6 @@ class EMPlot2D(QtOpenGL.QGLWidget):
 		if self.needupd or not self.plotimg:
 			self.needupd=0
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-			print self.limits
 			if self.limits :ax=fig.add_axes((.1,.05,.85,.9),autoscale_on=False,xlim=self.limits[0],ylim=self.limits[1])
 			else : ax=fig.add_axes((.1,.05,.85,.9),autoscale_on=True)
 			canvas=FigureCanvasAgg(fig)
@@ -460,7 +459,6 @@ class EMPlot2DInspector(QtGui.QWidget):
 		self.slidex.setRange(-1,len(self.target.data[i])-1)
 		self.slidey.setRange(-1,len(self.target.data[i])-1)
 		self.slidec.setRange(-1,len(self.target.data[i])-1)
-		print type(self.target.axes[i][1])
 		self.slidex.setValue(self.target.axes[i][0])
 		self.slidey.setValue(self.target.axes[i][1])
 		self.slidec.setValue(self.target.axes[i][2])

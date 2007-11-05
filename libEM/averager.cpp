@@ -327,7 +327,7 @@ void MinMaxAverager::add_image(EMData * image)
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x++) {
 				if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z)) 
-					if (!max) result->set_value_at(x,y,z,image->get_value_at(x,y,z));
+					{ if (!max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
 				else { if (max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
 			}
 		}

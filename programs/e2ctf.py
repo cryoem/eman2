@@ -77,6 +77,7 @@ Various CTF-related operations on images."""
 	
 	ps2d=[]
 	# This is for reading an entire micrograph
+	# and processing it two different ways from the box db
 	if options.dbin:
 		im=EMData(args[0],0)
 		im.process_inplace("normalize.edgemean")
@@ -108,13 +109,16 @@ def powspecbg(image,size):
 	
 	avgr=Averagers.get("minmax",{"max":0})
 	
+	n=0
 	for y in range(size/2,image.get_ysize(),size/2):
 		for x in range(size/2,image.get_xsize(),size/2):
 			b=image.get_clip(Region(x,y,size,size))
 			imf=b.do_fft()
 			imf.ri2inten()
 			avgr.add_image(imf)
-			
+			n+=1
+	
+	print imf.get_xsize()
 	return avgr.finish()
 
 def powspecdb(image,boxes):
