@@ -205,6 +205,46 @@ namespace EMAN
 		int nimg;
 	};
 
+	/** ImageAverager averages a list of images. It optionally makes
+     * a sigma image.
+     */
+	class MinMaxAverager:public Averager
+	{
+	  public:
+		MinMaxAverager();
+		
+		void add_image( EMData * image);
+		EMData * finish();
+		
+		string get_name() const
+		{
+			return "minmax";
+		}
+
+		string get_desc() const
+		{
+			return "Finds the minimum or maximum value in each pixel";
+		}
+
+		static Averager *NEW()
+		{
+			return new MinMaxAverager();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("max", EMObject::INT, "If set, will find the max value, otherwise finds min");
+			return d;
+		}
+		
+		virtual void mult(const float& s) { }
+
+	private:
+		int max;
+		int nimg;
+	};
+
 	/** IterationAverager averages images by doing the smoothing iteration.
      */
 	class IterationAverager:public Averager

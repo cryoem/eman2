@@ -53,6 +53,7 @@ Various CTF-related operations on images."""
 	parser = OptionParser(usage=usage,version=EMANVERSION)
 
 	parser.add_option("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False)
+	parser.add_option("--dbin",type="string",help="Box locations used when input is a whole micrograph")
 	parser.add_option("--powspec",action="store_true",help="Compute the power spectrum of the input image(s)",default=False)
 	
 	#parser.add_option("--boxsize","-B",type="int",help="Box size in pixels",default=-1)
@@ -75,16 +76,64 @@ Various CTF-related operations on images."""
 	logid=E2init(sys.argv)
 	
 	ps2d=[]
-	for i in args:
-		ps2d.append(powspec(i))
+	# This is for reading an entire micrograph
+	if options.dbin:
+		im=EMData(args[0],0)
+		im.process_inplace("normalize.edgemean")
+		
+		# x,y,xsize,ysize,quality,changed
+		boxes=[[int(j) for j in i.split()] for i in file(options.dbin,"r").readlines() if i[0]!="#"]	# this reads the whole box db file
+		
+		ps2d.append(powspecdb(im,boxes))
+		ps2d.append(powspecbg(im,boxes[0][2]))
+		
+		names=args[:]
+		names.append(names[0]+" BG")
+		
+	# This reads already boxed images
+	else :
+		names=args
+		for i in args:
+			ps2d.append(powspec(i))
 	
 	ps1d=[i.calc_radial_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
 	
 	if options.gui : 
-		gui=GUIctf(args,ps1d,ps2d)
+		gui=GUIctf(names,ps1d,ps2d)
 		gui.run()
 
+def powspecbg(image,size):
+	"""This routine will 'gridbox' the entire image, and compute a power spectrum consisting
+	of the minimum value in each pixel. Hopefully this will approximate the background."""
 	
+	avgr=Averagers.get("minmax",{"max":0})
+	
+	for y in range(size/2,image.get_ysize(),size/2):
+		for x in range(size/2,image.get_xsize(),size/2):
+			b=image.get_clip(Region(x,y,size,size))
+			imf=b.do_fft()
+			imf.ri2inten()
+			avgr.add_image(imf)
+			
+	return avgr.finish()
+
+def powspecdb(image,boxes):
+	"""This routine will read the images from the specified file, and compute the average
+	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""
+	
+	
+	for j,i in enumerate(boxes):
+		b=image.get_clip(Region(i[0],i[1],i[2],i[3]))
+		imf=b.do_fft()
+		imf.ri2inten()
+		if j==0: av=imf
+		else: av+=imf
+	
+	av/=(float(len(boxes))*av.get_xsize()*av.get_ysize())
+	av.set_value_at(0,0,0.0)
+
+	return av
+
 def powspec(stackfile):
 	"""This routine will read the images from the specified file, and compute the average
 	2-D power spectrum for the stack. Results returned as a 2-D FFT intensity/0 image"""

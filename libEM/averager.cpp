@@ -44,6 +44,7 @@ using namespace EMAN;
 template <> Factory < Averager >::Factory()
 {
 	force_add(&ImageAverager::NEW);
+	force_add(&MinMaxAverager::NEW);
 	force_add(&IterationAverager::NEW);
 	force_add(&WeightingAverager::NEW);
 	force_add(&CtfCAverager::NEW);
@@ -291,6 +292,57 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 	return result;
 }
 #endif
+
+MinMaxAverager::MinMaxAverager()
+	: max(0), nimg(0)
+{
+	
+}
+
+void MinMaxAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+	if (nimg >= 1 && !EMUtil::is_same_size(image, result)) {
+		LOGERR("%sAverager can only process same-size Image",
+			   get_name().c_str());
+		return;
+	}
+	
+	nimg++;
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	if (nimg == 1) {
+		result = image->copy();
+		max = params["max"];
+		return;
+	}
+
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				if (result->get_value_at(x,y,z)>image->get_value_at(x,y,z)) 
+					if (!max) result->set_value_at(x,y,z,image->get_value_at(x,y,z));
+				else { if (max) result->set_value_at(x,y,z,image->get_value_at(x,y,z)); }
+			}
+		}
+	}
+	
+}
+
+EMData *MinMaxAverager::finish()
+{
+	result->update();
+	if (result && nimg > 1) return result;
+
+	return NULL;
+}
+
 
 IterationAverager::IterationAverager() : nimg(0)
 {
