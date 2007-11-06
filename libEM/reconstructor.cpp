@@ -1993,8 +1993,13 @@ EMData* nnSSNR_Reconstructor::finish()
 
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
+#ifdef _WIN32
+	float dz2 = 1.0f/_cpp_max(float(m_vnzc),1.0f)/_cpp_max(float(m_vnzc),1.0f);	
+	int  inc = Util::round(float(_cpp_max(_cpp_max(m_vnxc,m_vnyc),m_vnzc))/w);
+#else
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
 	int  inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
+#endif	//_WIN32
 	SSNR->set_size(inc+1,4,1);
 
 	float *nom    = new float[inc+1];

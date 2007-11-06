@@ -15854,7 +15854,7 @@ vector<float> Util::twoD_fine_ali(EMData* image, EMData *refim, EMData* mask, fl
 	
 	EMData *rot;
 
-	int nmax=3, mmax=3;
+	const int nmax=3, mmax=3;
 	char task[60], csave[60];
 	long int lsave[4];
 	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
@@ -15950,7 +15950,7 @@ vector<float> Util::twoD_fine_ali_G(EMData* image, EMData *refim, EMData* mask, 
 	
 	EMData *rot;
 
-	int nmax=3, mmax=3;
+	const int nmax=3, mmax=3;
 	char task[60], csave[60];
 	long int lsave[4];
 	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
@@ -16045,7 +16045,7 @@ vector<float> Util::twoD_to_3D_ali(EMData* volft, Util::KaiserBessel& kb, EMData
 	
 	EMData *proj, *proj2;
 
-	int nmax=5, mmax=5;
+	const int nmax=5, mmax=5;
 	char task[60], csave[60];
 	long int lsave[4];
 	long int n, m, iprint, nbd[nmax], iwa[3*nmax], isave[44];
@@ -16369,7 +16369,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 										for (newz = -1; newz <= 1; newz++) {
 											for (newy = -1; newy <= 1; newy++) {
 												for (newx = -1; newx <= 1; newx++) {
-													if( newx != 0 and newy != 0 and newz != 0) {
+													if( newx != 0 && newy != 0 && newz != 0) {
 														if(img_ptr(newx+ib,newy+jb,newz+kb) == 0.0f) {
 															img2_ptr(newx+ib,newy+jb,newz+kb) = 1.0f; 
 															}

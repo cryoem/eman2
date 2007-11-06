@@ -137,7 +137,7 @@ using namespace EMAN;
   //Generate starting D(i) values
   //These are not even good guesses and slow the program a little
   dd=1.0;
-  D[1]=1.0/sqrt(l);
+  D[1]=1.0/sqrt((double)l);
   for (i=2; i<l+1; i++)  D[i]=D[i-1];
   // Start initial probe
   for (i=1; i<l+1; i++) {
@@ -261,7 +261,7 @@ int main() {
   //Generate starting D(i) values
   //These are not even good guesses and slow the program a little
   dd=1.0;
-  D[1]=1.0/sqrt(l);
+  D[1]=1.0/sqrt((double)l);
   for (i=2; i<l+1; i++)  D[i]=D[i-1];
   // Start initial probe
   for (i=1; i<l+1; i++) {
