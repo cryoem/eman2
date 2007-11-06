@@ -369,16 +369,17 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 
 }
 
-void Wiener2DFourierProcessor::process_inplace(EMData * image)
+EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 {
 // TODO NOT IMPLEMENTED YET !!!
-	EMData *fft;
+	EMData *ret;
+	const EMData *fft;
 	float *fftd;
 	int f=0;
 
 	if (!image) {
 		LOGWARN("NULL Image");
-		return;
+		return ret;
 	}
 
 	if (!image->is_complex()) {
@@ -390,6 +391,32 @@ void Wiener2DFourierProcessor::process_inplace(EMData * image)
 		fft=image;
 		fftd=image->get_data();
 	}
+	return ret;
+}
+
+EMData * Wiener2DFourierProcessor::process(const EMData * image)
+{
+// TODO NOT IMPLEMENTED YET !!!
+	EMData *ret;
+	const EMData *fft;
+	float *fftd;
+	int f=0;
+
+	if (!image) {
+		LOGWARN("NULL Image");
+		return ret;
+	}
+
+	if (!image->is_complex()) {
+		fft = image->do_fft();
+		fftd = fft->get_data();
+		f=1;
+	}
+	else {
+		fft=image;
+		fftd=image->get_data();
+	}
+	return ret;
 
 }
 

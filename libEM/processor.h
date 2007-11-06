@@ -388,6 +388,63 @@ The basic design of EMAN Processors: <br>\
 		int dosqrt;
 	};
 
+	/** Automatically detrmines the background for the image then uses this to perform
+	 * Wiener filters on overlapping subregions of the image, which are then 
+	 * combined using linear interpolation 
+	 *@param size[in] size in pixels of the boxes to chop the image into during processing
+	 *
+	 *@author Steve Ludtke
+	 *@date 2007/11/06
+	 */
+	class Wiener2DAutoAreaProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return "filter.wiener2dauto";
+		}
+
+		EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image) {
+
+		}
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			bgsize = params["size"];
+//			printf("%s %f\n",params.keys()[0].c_str(),lowpass);
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("size", EMObject::INT, "Size in pixels of the boxes to chop the image into");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new Wiener2DAutoAreaProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Automatically detrmines the background for the image then uses this to perform Wiener filters on overlapping subregions of the image, which are then combined using linear interpolation";
+		}
+
+		protected:
+		int bgsize;
+	};
+
+
+	/**Wiener filter based on externally provided background image
+	 *@param background[in] Fourier intensity image containing the background to use in SNR calculation
+	 *
+	 *@author Steve Ludtke
+	 *@date 2007/11/06
+	 */
 	class Wiener2DFourierProcessor:public Processor
 	{
 	  public:
@@ -396,8 +453,12 @@ The basic design of EMAN Processors: <br>\
 			return "filter.wiener2d";
 		}
 
-		void process_inplace(EMData * image);
+		EMData* process(const EMData * const image);
 		
+		void process_inplace(EMData *image) {
+
+		}
+
 		void set_params(const Dict & new_params)
 		{
 			params = new_params;
@@ -419,7 +480,7 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Applies a 2-D Wiener filter to an image based on the provided background image";
+			return "Applies a 2-D Wiener filter to an image based on the provided background image, which must be the same size as the image being filtered.";
 		}
 
 		protected:

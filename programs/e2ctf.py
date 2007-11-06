@@ -86,10 +86,15 @@ Various CTF-related operations on images."""
 		boxes=[[int(j) for j in i.split()] for i in file(options.dbin,"r").readlines() if i[0]!="#"]	# this reads the whole box db file
 		
 		ps2d.append(powspecdb(im,boxes))
-		ps2d.append(powspecbg(im,boxes[0][2]))
+		i3,i2=powspecbg(im,boxes[0][2])
+		ps2d.append(i3)
 		
 		names=args[:]
 		names.append(names[0]+" BG")
+		
+		ps1d=[ps2d[0].calc_radial_dist(ps2d[0].get_ysize()/2,0.0,1.0,1),i2]
+		norm=sum(ps1d[0][-4:-1])/sum(ps1d[1][-4:-1])
+		for i in range(len(ps1d[1])): ps1d[1][i]*=norm
 		
 	# This reads already boxed images
 	else :
@@ -97,7 +102,7 @@ Various CTF-related operations on images."""
 		for i in args:
 			ps2d.append(powspec(i))
 	
-	ps1d=[i.calc_radial_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
+		ps1d=[i.calc_radial_dist(i.get_ysize()/2,0.0,1.0,1) for i in ps2d]
 	
 	if options.gui : 
 		gui=GUIctf(names,ps1d,ps2d)
@@ -108,18 +113,32 @@ def powspecbg(image,size):
 	of the minimum value in each pixel. Hopefully this will approximate the background."""
 	
 	avgr=Averagers.get("minmax",{"max":0})
+#	avgr=Averagers.get("image")
 	
+	norm=size*size
 	n=0
-	for y in range(size/2,image.get_ysize(),size/2):
-		for x in range(size/2,image.get_xsize(),size/2):
+	for y in range(size/2,image.get_ysize()-size*3/2,size/2):
+		for x in range(size/2,image.get_xsize()-size*3/2,size/2):
 			b=image.get_clip(Region(x,y,size,size))
 			imf=b.do_fft()
 			imf.ri2inten()
+			i2=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
+			if n==0 : i2a=i2[:]
+			else : 
+				for i,j in enumerate(i2):
+					i2a[i]=min(j,i2a[i])
 			avgr.add_image(imf)
 			n+=1
 	
-	print imf.get_xsize()
-	return avgr.finish()
+	av=avgr.finish()
+	av/=norm
+	av.set_value_at(0,0,0.0)
+	
+	i2a=[i/norm for i in i2a]
+	
+	av.set_complex(1)
+	av.set_attr("is_intensity", 1)
+	return av,i2a
 
 def powspecdb(image,boxes):
 	"""This routine will read the images from the specified file, and compute the average
@@ -136,6 +155,8 @@ def powspecdb(image,boxes):
 	av/=(float(len(boxes))*av.get_xsize()*av.get_ysize())
 	av.set_value_at(0,0,0.0)
 
+	av.set_complex(1)
+	av.set_attr("is_intensity", 1)
 	return av
 
 def powspec(stackfile):
@@ -155,6 +176,8 @@ def powspec(stackfile):
 	av.set_value_at(0,0,0.0)
 #	av.process_inplace("xform.fourierorigin.tocenter")
 	
+	av.set_complex(1)
+	av.set_attr("is_intensity", 1)
 	return av
 
 
