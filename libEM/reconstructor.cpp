@@ -2080,7 +2080,11 @@ EMData* nnSSNR_Reconstructor::finish()
 							nn[r]    += 2;
 							ka[r]    += int(Kn);
 						}
+#ifdef	_WIN32
+						float  tmp = _cpp_max(nominator/denominator-1.0f,0.0f);
+#else
 						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+#endif	//_WIN32
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						iix = m_vnxc + ix; iiy = m_vnyc + ky; iiz = m_vnzc + kz;
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 
@@ -2766,8 +2770,13 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	float w = params["w"];
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc); 
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
+#ifdef	_WIN32
+	float dz2 = 1.0f/_cpp_max(float(m_vnzc),1.0f)/_cpp_max(float(m_vnzc),1.0f);	
+	int inc = Util::round(float(_cpp_max(_cpp_max(m_vnxc,m_vnyc),m_vnzc))/w);
+#else
 	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);	
 	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
+#endif	//_WIN32
 
 	EMData* vol_ssnr = new EMData();
 	vol_ssnr->set_size(m_vnxp, m_vnyp, m_vnzp);
