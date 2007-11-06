@@ -2857,7 +2857,11 @@ EMData* nnSSNR_ctfReconstructor::finish()
 							nn[r]	 += 2;
 							ka[r]	 += int(Kn);
 						}
+#ifdef	_WIN32
+						float  tmp = _cpp_max(nominator/denominator-1.0f,0.0f);
+#else
 						float  tmp = std::max(nominator/denominator-1.0f,0.0f);
+#endif	//_WIN32
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp ) 

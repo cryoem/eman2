@@ -492,7 +492,7 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
     if( just == 0.0 ) {
         float dist_1 = dist(lnlen, line_1, line_2);
 		float dist_2 = dist_r(lnlen, line_1, line_2);
-#ifdef	//_WIN32
+#ifdef	_WIN32
 		return _cpp_min(dist_1, dist_2);
 #else
 		return std::min(dist_1, dist_2);
