@@ -34,7 +34,7 @@
 using namespace EMAN;
 
 // Static init
-float FourierPixelInserter3D::tolerance = 0.0001;
+float FourierPixelInserter3D::tolerance = 0.0001f;
 
 template <> Factory < FourierPixelInserter3D >::Factory()
 {
@@ -212,8 +212,8 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 	
 	frc_norm_dt[radius] += dt[0] * dt[0] + dt[1] * dt[1];
 	
-	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
+	r += (float)hypot(dt[0], dt[1]);
+	rn += (float)hypot(interp_real/weight_sum, interp_comp/weight_sum);
 	
 	return true;
 }
@@ -342,8 +342,8 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
-	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
+	r += (float)hypot(dt[0], dt[1]);
+	rn += (float)hypot(interp_real/weight_sum, interp_comp/weight_sum);
 	
 	return true;
 }
@@ -433,8 +433,8 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 		
-	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real/weight_sum, interp_comp/weight_sum);
+	r += (float)hypot(dt[0], dt[1]);
+	rn += (float)hypot(interp_real/weight_sum, interp_comp/weight_sum);
 	
 	return true;
 }
@@ -479,8 +479,8 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	
 	frc_norm_dt[radius] +=  dt[0] * dt[0] + dt[1] * dt[1];
 	
-	r += hypot(dt[0], dt[1]);
-	rn += hypot(interp_real, interp_comp);
+	r += (float)hypot(dt[0], dt[1]);
+	rn += (float)hypot(interp_real, interp_comp);
 	
 	return true;
 }
@@ -511,20 +511,20 @@ QualityScores InterpolatedFRC::finish(const unsigned int num_particles)
 		
 		float tmp = frc[i]*frc[i];
 
-		if ( tmp > .999 && tmp < 1.001 )
+		if ( tmp > .999f && tmp < 1.001f )
 		{
-			tmp = 0.999;
+			tmp = 0.999f;
 		}
 		
 		// This shouldn't happen and at the moment is for debug only
-		if ( tmp > 1 )
+		if ( tmp > 1.0f )
 		{
-			cout << " tmp " << tmp << " div by " << (1.0-tmp) << " equals " << (tmp/(1.0-tmp));
+			cout << " tmp " << tmp << " div by " << (1.0f-tmp) << " equals " << (tmp/(1.0f-tmp));
 		}
 		
-		float adjusted_ssnr = tmp/((1.0-tmp)*num_particles);
+		float adjusted_ssnr = tmp/((1.0f-tmp)*num_particles);
 		normed_snr_integral += adjusted_ssnr;
-		snr_normed_frc_intergral += sqrt(adjusted_ssnr/( 1.0 + adjusted_ssnr ));
+		snr_normed_frc_intergral += sqrt(adjusted_ssnr/( 1.0f + adjusted_ssnr ));
 	}
 	frc_integral /= size;
 	snr_normed_frc_intergral /= size;
