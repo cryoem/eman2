@@ -388,11 +388,11 @@ void MarchingCubes::get_normal(Vector3 &normal, int fX, int fY, int fZ)
 
 float MarchingCubes::get_offset(float fValue1, float fValue2, float fValueDesired)
 {
-        double fDelta = fValue2 - fValue1;
+        float fDelta = fValue2 - fValue1;
 
-        if(fDelta == 0.0)
+        if(fDelta == 0.0f)
         {
-                return 0.5;
+                return 0.5f;
         }
         return (fValueDesired - fValue1)/fDelta;
 }
