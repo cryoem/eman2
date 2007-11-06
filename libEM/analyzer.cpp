@@ -490,7 +490,7 @@ int varimax::insert_image(EMData* image)
 vector<EMData*> varimax::analyze()
 {
     int itmax = 10000;
-    float eps = 1e-4;
+    float eps = 1e-4f;
     int verbose = 1;
     float params[4];
     params[0] = 1.0;

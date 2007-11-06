@@ -406,7 +406,7 @@ int SpiderIO::write_single_header(const Dict & dict, const Region *area, int ima
 
 	hp->angvalid = 0;
 	hp->scale = 1.0;
-	hp->istack = ISTACK;
+	hp->istack = (float)ISTACK;
 	hp->nslice = (float)nz;
 	hp->nsam = (float)nx;
 	hp->nrow = (float)ny;
