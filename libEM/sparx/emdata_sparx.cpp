@@ -492,7 +492,11 @@ float EMData::cm_euc(EMData* sinoj, int n1, int n2, float alpha1, float alpha2)
     if( just == 0.0 ) {
         float dist_1 = dist(lnlen, line_1, line_2);
 		float dist_2 = dist_r(lnlen, line_1, line_2);
+#ifdef	//_WIN32
+		return _cpp_min(dist_1, dist_2);
+#else
 		return std::min(dist_1, dist_2);
+#endif	//_WIN32
     }
 
     Assert( (alpha1-180.0)*(alpha2-180.0) < 0.0 );
@@ -579,9 +583,15 @@ EMData* EMData::rotavg_i() {
 	result->set_array_offsets(-nx/2, -ny/2, -nz/2);
 	
 	if ( nz == 1 ) {
+#ifdef	_WIN32
+		rmax = _cpp_min(nx/2 + nx%2, ny/2 + ny%2);
+	} else {
+		rmax = _cpp_min(nx/2 + nx%2, _cpp_min(ny/2 + ny%2, nz/2 + nz%2));
+#else
 		rmax = std::min(nx/2 + nx%2, ny/2 + ny%2);
 	} else {
 		rmax = std::min(nx/2 + nx%2, std::min(ny/2 + ny%2, nz/2 + nz%2));	
+#endif	//_WIN32
 	}
 
 	avg1D = rotavg();
