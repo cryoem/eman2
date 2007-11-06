@@ -160,7 +160,7 @@ bool InterpolatedFRC::continue_frc_calc_functoid(const float& xx, const float& y
 	int zt = z0 - nz/2;
 	
 	int radius = (int) (x_scale*x_scale*floor(xx)*floor(xx) + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt);
-	radius = static_cast<int>(sqrt(radius)*bin);
+	radius = static_cast<int>(sqrt((float)radius)*bin);
 	
 	if ( radius > (size-1) )
 	{
@@ -243,7 +243,7 @@ bool InterpolatedFRC::continue_frc_calc5(const float& xx, const float& yy, const
 	int zt = z0 - nz/2;
 
 	int radius = (int) (x_scale*x_scale*x0*x0 + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt);
-	radius = static_cast<int>(sqrt(radius)*bin);
+	radius = static_cast<int>(sqrt((float)radius)*bin);
 
 	if ( radius > (size-1) )
 	{
@@ -377,7 +377,7 @@ bool InterpolatedFRC::continue_frc_calc2(const float& xx, const float& yy, const
 
 	int radius = (int) (x_scale*x_scale*x0*x0 + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt);
 // 	int radius =  x0*x0 + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt;
-	radius = static_cast<int>(sqrt(radius)*bin);
+	radius = static_cast<int>(sqrt((float)radius)*bin);
 
 	if ( radius > (size-1) )
 	{
@@ -453,7 +453,7 @@ bool InterpolatedFRC::continue_frc_calc1(const float& xx, const float& yy, const
 	int zt = z0 - nz/2;
 	
 	int radius = (int) (x_scale*x_scale* floor(xx)*floor(xx) + y_scale*y_scale*yt*yt + z_scale*z_scale*zt*zt);
-	radius = static_cast<int>(sqrt(radius)*bin);
+	radius = static_cast<int>(sqrt((float)radius)*bin);
 	
 	if ( radius > (size-1) ) return false;
 

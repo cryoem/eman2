@@ -279,8 +279,8 @@ std::string EMData::render_amp8(int x0, int y0, int ixsize, int iysize,
 	static unsigned char gammamap[4096];
 	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
 		for (int i=0; i<4096; i++) {
-			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
-			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
+			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
 		}
 	}
 	smg0=mingray;	// so we don't recompute the map unless something changes
@@ -626,8 +626,8 @@ std::string EMData::render_ap24(int x0, int y0, int ixsize, int iysize,
 	static unsigned char gammamap[4096];
 	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
 		for (int i=0; i<4096; i++) {
-			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
-			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0),gamma));
+			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
 		}
 	}
 	smg0=mingray;	// so we don't recompute the map unless something changes

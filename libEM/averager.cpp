@@ -294,9 +294,11 @@ EMData *ImageAverager::average(const vector < EMData * >&image_list) const
 #endif
 
 MinMaxAverager::MinMaxAverager()
-	: max(0), nimg(0)
+	: nimg(0)
 {
-	
+	/*move max out of initializer list, since this max(0) is considered as a macro
+	 * in Visual Studio, which we defined somewhere else*/
+	max = 0;
 }
 
 void MinMaxAverager::add_image(EMData * image)

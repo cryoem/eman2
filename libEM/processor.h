@@ -964,7 +964,11 @@ The basic design of EMAN Processors: <br>\
 	  protected:
 		void process_pixel(float *x) const
 		{
+#ifdef 	_WIN32
+			*x = _cpp_max(*x, value);
+#else
 			*x = std::max(*x, value);
+#endif	//_WIN32
 		}
 	};
 
@@ -2117,7 +2121,7 @@ The basic design of EMAN Processors: <br>\
 			params = new_params;
 			max_peak_ratio = params["max_peak_ratio"];
 			if (max_peak_ratio == 0) {
-				max_peak_ratio=0.1;
+				max_peak_ratio=0.1f;
 			}
 		}
 

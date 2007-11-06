@@ -566,7 +566,7 @@ void PaintProcessor::process_inplace(EMData *image) {
 	if (nz==1) {
 		for (int j=(y<r2?0:y-r2); j<(y+r2>ny?ny:y+r2); j++) {
 			for (int i=(x<r2?0:x-r2); i<(x+r2>nx?nx:x+r2); i++) {
-				float r=sqrt(Util::square(i-x)+Util::square(j-y));
+				float r=sqrt(float(Util::square(i-x)+Util::square(j-y)));
 				if (r>r2 && r>r1) continue;
 				if (r>r1) image->set_value_at(i,j,0,v2*(r-r1)/(r2-r1)+v1*(r2-r)/(r2-r1));
 				else image->set_value_at(i,j,0,v1);
@@ -577,7 +577,7 @@ void PaintProcessor::process_inplace(EMData *image) {
 		for (int k=(z<r2?0:z-r2); k<(z+r2>nz?nz:z+r2); k++) {
 			for (int j=(y<r2?0:y-r2); j<(y+r2>ny?ny:y+r2); j++) {
 				for (int i=(x<r2?0:x-r2); i<(x+r2>nx?nx:x+r2); i++) {
-				float r=sqrt(Util::square(i-x)+Util::square(j-y)+Util::square(k-z));
+				float r=sqrt(float(Util::square(i-x)+Util::square(j-y)+Util::square(k-z)));
 				if (r>r2 && r>r1) continue;
 				if (r>r1) image->set_value_at(i,j,k,v2*(r-r1)/(r2-r1)+v1*(r2-r)/(r2-r1));
 				else image->set_value_at(i,j,k,v1);
