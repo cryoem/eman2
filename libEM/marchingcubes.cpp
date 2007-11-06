@@ -2,6 +2,9 @@
 // #ifndef GL_GLEXT_PROTOTYPES
 // #define GL_GLEXT_PROTOTYPES
 // #endif
+#ifdef _WIN32
+	#include <windows.h>
+#endif	//_WIN32
 #include "GL/gl.h"
 // #include "GL/glext.h"
 
@@ -197,7 +200,11 @@ unsigned long MarchingCubes::get_isosurface_dl()
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
 #endif
 	int maxf;
+#ifdef	_WIN32
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN,&maxf);
+#else
 	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+#endif	//_WIN32
 #if MARCHING_CUBES_DEBUG
 	int maxv;
 	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
