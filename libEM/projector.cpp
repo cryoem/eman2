@@ -820,7 +820,7 @@ EMData *FourierGriddingProjector::project3d(EMData * image) const
 
 	const int K = params["kb_K"];
 	const float alpha = params["kb_alpha"];
-	Util::KaiserBessel kb(alpha, K, m/2,K/(2.*n),n);
+	Util::KaiserBessel kb(alpha, K, (float)(m/2), K/(2.0f*n), n);
 	// divide out gridding weights
 	image->divkbsinh(kb);
 	// pad and center volume, then FFT and multiply by (-1)**(i+j+k)
@@ -1100,7 +1100,7 @@ int ChaoProjector::fwdpj3(Vec3i volsize, int nrays, int      , float *dm,
                dipy = (yb - (float)(iqy)) * ct;
 
                dipy1m = ct - dipy;
-               dipx1m = 1.0 - dipx;
+               dipx1m = 1.0f - dipx;
 
                y(iqx  ,iqy)   = y(iqx  ,iqy)   + dipx1m*dipy1m;
                y(iqx+1,iqy)   = y(iqx+1,iqy)   + dipx*dipy1m; 
@@ -1154,8 +1154,8 @@ int ChaoProjector::bckpj3(Vec3i volsize, int nrays, int      , float *dm,
 
 		dx = xb - (float)(iqx);
 		dy = yb - (float)(iqy);
-		dx1m = 1.0 - dx;
-		dy1m = 1.0 - dy;
+		dx1m = 1.0f - dx;
+		dy1m = 1.0f - dy;
 		dxdy = dx*dy;
 /*
 c               y(j) = y(j) + dx1m*dy1m*x(iqx  , iqy)
@@ -1226,9 +1226,9 @@ void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) con
 
     // now convert all angles 
     for (j = 1; j <= nangles; j++) {
-        phi   = (float)anglelist(1,j)*dgr_to_rad;
-        theta = (float)anglelist(2,j)*dgr_to_rad;
-        psi   = (float)anglelist(3,j)*dgr_to_rad;
+        phi   = static_cast<float>(anglelist(1,j)*dgr_to_rad);
+        theta = static_cast<float>(anglelist(2,j)*dgr_to_rad);
+        psi   = static_cast<float>(anglelist(3,j)*dgr_to_rad);
 
         cthe  = cos(theta);
         sthe  = sin(theta);
@@ -1237,15 +1237,15 @@ void ChaoProjector::setdm(vector<float> anglelist, string const , float *dm) con
         cphi  = cos(phi);
         sphi  = sin(phi);
 
-        dm(1,j)=cphi*cthe*cpsi-sphi*spsi;
-        dm(2,j)=sphi*cthe*cpsi+cphi*spsi;
-        dm(3,j)=-sthe*cpsi;
-        dm(4,j)=-cphi*cthe*spsi-sphi*cpsi;
-        dm(5,j)=-sphi*cthe*spsi+cphi*cpsi;
-        dm(6,j)=sthe*spsi;
-        dm(7,j)=sthe*cphi;
-        dm(8,j)=sthe*sphi;
-        dm(9,j)=cthe;
+        dm(1,j)=static_cast<float>(cphi*cthe*cpsi-sphi*spsi);
+        dm(2,j)=static_cast<float>(sphi*cthe*cpsi+cphi*spsi);
+        dm(3,j)=static_cast<float>(-sthe*cpsi);
+        dm(4,j)=static_cast<float>(-cphi*cthe*spsi-sphi*cpsi);
+        dm(5,j)=static_cast<float>(-sphi*cthe*spsi+cphi*cpsi);
+        dm(6,j)=static_cast<float>(sthe*spsi);
+        dm(7,j)=static_cast<float>(sthe*cphi);
+        dm(8,j)=static_cast<float>(sthe*sphi);
+        dm(9,j)=static_cast<float>(cthe);
     } 
 }
 #undef anglelist
