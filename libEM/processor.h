@@ -406,13 +406,7 @@ The basic design of EMAN Processors: <br>\
 
 		EMData* process(const EMData * const image);
 		
-		void process_inplace(EMData *image) {
-			EMData *tmp=process(image)
-			memcpy(image->get_data(),tmp->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
-			delete tmp;
-			image->update();
-			return;
-		}
+		void process_inplace(EMData *image);
 
 		void set_params(const Dict & new_params)
 		{
@@ -459,9 +453,7 @@ The basic design of EMAN Processors: <br>\
 
 		EMData* process(const EMData * const image);
 		
-		void process_inplace(EMData *image) {
-
-		}
+		void process_inplace(EMData *image);
 
 		void set_params(const Dict & new_params)
 		{

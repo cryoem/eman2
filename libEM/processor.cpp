@@ -394,6 +394,15 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 	return ret;
 }
 
+void Wiener2DAutoAreaProcessor::process_inplace(EMData *image) {
+	EMData *tmp=process(image);
+	memcpy(image->get_data(),tmp->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete tmp;
+	image->update();
+	return;
+}
+
+
 EMData * Wiener2DFourierProcessor::process(const EMData * image)
 {
 // TODO NOT IMPLEMENTED YET !!!
@@ -418,6 +427,14 @@ EMData * Wiener2DFourierProcessor::process(const EMData * image)
 	}
 	return ret;
 
+}
+
+void Wiener2DFourierProcessor::process_inplace(EMData *image) {
+	EMData *tmp=process(image);
+	memcpy(image->get_data(),tmp->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete tmp;
+	image->update();
+	return;
 }
 
 void LowpassSharpCutoffProcessor::create_radial_func(vector < float >&radial_mask) const
