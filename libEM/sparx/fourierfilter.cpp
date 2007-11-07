@@ -64,7 +64,7 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 	bool   complex_input;
 	vector<float> table;
 	int undoctf=0;
-	float voltage=100.0, ak=0.0, cs=2.0, ps=1.0, b_factor=0, wgh=0.1, sign=-1.0;
+	float voltage=100.0f, ak=0.0f, cs=2.0f, ps=1.0f, b_factor=0.0f, wgh=0.1f, sign=-1.0f;
 	if (!fimage) {
 		return NULL;
 	}
@@ -434,13 +434,13 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
-									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin(jx)*kbptr->sinhwin(jy)*kbptr->sinhwin(jz);
+									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin((float)jx)*kbptr->sinhwin((float)jy)*kbptr->sinhwin((float)jz);
 									break;
 								case 2:
-									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin(jx)*kbptr->sinhwin(jy);
+									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin((float)jx)*kbptr->sinhwin((float)jy);
 									break;
 								case 1:
-									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin(jx);
+									fp->cmplx(ix,iy,iz)*= kbptr->sinhwin((float)jx);
 									//float argu = kbptr->sinhwin((float) jx);
 									//cout << jx<<"  "<< nux<<"  "<<argu<<endl;
 									break;
@@ -489,13 +489,13 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 							//		NullPointerException("kbptr null!");
 							switch (ndim) {
 								case 3:
-									fp->cmplx(ix,iy,iz) /= (kbptr->sinhwin(jx)*kbptr->sinhwin(jy)*kbptr->sinhwin(jz));
+									fp->cmplx(ix,iy,iz) /= (kbptr->sinhwin((float)jx)*kbptr->sinhwin((float)jy)*kbptr->sinhwin((float)jz));
 									break;
 								case 2:
-									fp->cmplx(ix,iy,iz) /= (kbptr->sinhwin(jx)*kbptr->sinhwin(jy));
+									fp->cmplx(ix,iy,iz) /= (kbptr->sinhwin((float)jx)*kbptr->sinhwin((float)jy));
 									break;
 								case 1:
-									fp->cmplx(ix,iy,iz) /= kbptr->sinhwin(jx);
+									fp->cmplx(ix,iy,iz) /= kbptr->sinhwin((float)jx);
 									//float argu = kbptr->sinhwin((float) jx);
 									//cout << jx<<"  "<< nux<<"  "<<argu<<endl;
 									break;
@@ -651,8 +651,8 @@ EMData* Processor::EMFourierFilterFunc(EMData * fimage, Dict params, bool doInPl
 									float tf=Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
 							if( undoctf == 1 )
 							{
-							    if( tf>0 && tf <  1e-5 ) tf =  1e-5;
-							    if( tf<0 && tf > -1e-5 ) tf = -1e-5;
+							    if( tf>0 && tf <  1e-5 ) tf =  1e-5f;
+							    if( tf<0 && tf > -1e-5 ) tf = -1e-5f;
 							    fp->cmplx(ix,iy,iz) /= tf;
 							} else
 							    fp->cmplx(ix,iy,iz) *= tf;
