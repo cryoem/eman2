@@ -321,7 +321,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	{
 		float alt = (transform.get_rotation())["alt"];
 		// FIXME use a global def for deg2rad
-		float cosine = cos(alt*3.14159265358979323846f/180.0);
+		float cosine = cos(alt*3.14159265358979323846f/180.0f);
 		
 		// This weights slices according to their tilt angle, because tilted images have more mass in single pixels.
 		float mult_fac =  1.0f/ (cosine);
@@ -333,7 +333,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 	{
 		float alt = (transform.get_rotation())["alt"];
 		// FIXME use a global def for deg2rad
-		float cosine = cos(alt*3.14159265358979323846f/180.0);
+		float cosine = cos(alt*3.14159265358979323846f/180.0f);
 	
 		// This masks out the edges of the image which are not present in the image with zero tilt.
 		Dict zero_dict;
@@ -382,7 +382,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 			if ( (int) params["t_emm_gauss"] != 0 )
 			{
 				int falloff_width = (int) params["t_emm_gauss"];
-				float sigma = (float) falloff_width/3.0;
+				float sigma = (float) falloff_width/3.0f;
 				
 				GaussianFunctoid gf(sigma);
 				
@@ -394,7 +394,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 					
 					for ( int j = falloff_width-1; j >= 0; --j )
 					{
-						return_slice->set_value_at(x_clip+j, i, scale*gf(falloff_width-j) + left_mean );
+						return_slice->set_value_at(x_clip+j, i, scale*gf((float)(falloff_width-j)) + left_mean );
 					}
 				
 					float right_value = return_slice->get_value_at(x - x_clip - falloff_width, i );
@@ -402,7 +402,7 @@ EMData* FourierReconstructor::preprocess_slice( const EMData* const slice, const
 					
 					for ( int j = 1; j < falloff_width; ++j )
 					{
-						return_slice->set_value_at(x - x_clip - falloff_width + j, i, scale*gf( j ) + right_mean );
+						return_slice->set_value_at(x - x_clip - falloff_width + j, i, scale*gf( (float)j ) + right_mean );
 					}
 				
 				}
@@ -719,7 +719,7 @@ int FourierReconstructor::determine_slice_agreement(const EMData* const input_sl
 	{
 		// If a previous normalization value has been calculated then average it with the one that 
 		// was just calculated, this will cause the normalization values to converge more rapidly.
-		q_scores.set_norm((q_scores.get_norm() + prev_quality_scores[image_idx].get_norm())/2.0);
+		q_scores.set_norm((q_scores.get_norm() + prev_quality_scores[image_idx].get_norm())/2.0f);
 		image_idx++;
 	}
 
@@ -1532,8 +1532,8 @@ void nn4Reconstructor::setup()
 void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
 {
     m_weighting = ESTIMATE;
-    m_wghta = 0.2;
-    m_wghtb = 0.004;
+    m_wghta = 0.2f;
+    m_wghtb = 0.004f;
  
     m_symmetry = symmetry;
     m_npad = npad;
@@ -1694,11 +1694,12 @@ EMData* nn4Reconstructor::finish()
 	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
 	float max = max3d( kc, pow_a );
-	float alpha = ( 1.0 - 1.0/vol ) / max;
-
-	for (int iz = 1; iz <= m_vnzp; iz++) {
-		for (int iy = 1; iy <= m_vnyp; iy++) {
-			for (int ix = 0; ix <= m_vnxc; ix++) {
+	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	
+	int ix,iy,iz;
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0) {//(*v) should be treated as complex!!
 					float tmp = (-2*((ix+iy+iz)%2)+1)/(*m_wptr)(ix,iy,iz);
 					if( m_weighting == ESTIMATE ) {
@@ -1732,7 +1733,7 @@ EMData* nn4Reconstructor::finish()
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
-						float wght = pow_b[r] / ( 1.0 - alpha * sum );
+						float wght = pow_b[r] / ( 1.0f - alpha * sum );
 						tmp = tmp * wght;
 					}
 					(*m_volume)(2*ix,iy,iz) *= tmp;
@@ -1748,9 +1749,9 @@ EMData* nn4Reconstructor::finish()
 
 	float *tw = win->get_data();
 	//  mask and subtract circumference average
-	int ix = win->get_xsize();
-	int iy = win->get_ysize();
-	int iz = win->get_zsize();
+	ix = win->get_xsize();
+	iy = win->get_ysize();
+	iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
 	int IP = ix/2+1;
@@ -1840,8 +1841,8 @@ void nnSSNR_Reconstructor::setup( const string& symmetry, int size, int npad )
 {
    
     m_weighting = ESTIMATE;
-    m_wghta = 0.2;
-    m_wghtb = 0.004;
+    m_wghta = 0.2f;
+    m_wghtb = 0.004f;
  
     m_symmetry = symmetry;
     m_npad = npad;
@@ -2022,7 +2023,7 @@ EMData* nnSSNR_Reconstructor::finish()
 		pow_a[3*kc] = 0.0;
 		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 		float max = max3d( kc, pow_a );
-		alpha = ( 1.0 - 1.0/vol ) / max;
+		alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	}
 
 	for (int iz = 1; iz <= m_vnzp; iz++) {
@@ -2068,7 +2069,7 @@ EMData* nnSSNR_Reconstructor::finish()
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
-						wght = pow_b[r] / ( 1.0 - alpha * sum );
+						wght = pow_b[r] / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator = std::norm(m_volume->cmplx(ix,iy,iz)/Kn);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/Kn)/(Kn*(Kn-1.0f));
@@ -2102,8 +2103,8 @@ EMData* nnSSNR_Reconstructor::finish()
 	for (int i = 0; i <= inc; i++)  { 
 		(*SSNR)(i,0,0) = nom[i];  ///(*SSNR)(i,0,0) = nom[i]/denom[i] - 1;///	
 		(*SSNR)(i,1,0) = denom[i];    // variance
-		(*SSNR)(i,2,0) = nn[i];
-		(*SSNR)(i,3,0) = ka[i];
+		(*SSNR)(i,2,0) = static_cast<float>(nn[i]);
+		(*SSNR)(i,3,0) = static_cast<float>(ka[i]);
 	}
 	vol_ssnr->update();
 	return vol_ssnr;
@@ -2254,8 +2255,8 @@ void nn4_ctfReconstructor::setup( const string& symmetry, int size, int npad, fl
 
 
 
-    m_wghta = 0.2;
-    m_wghtb = 0.004;
+    m_wghta = 0.2f;
+    m_wghtb = 0.004f;
  
     m_symmetry = symmetry;
     m_npad = npad;
@@ -2428,13 +2429,14 @@ EMData* nn4_ctfReconstructor::finish()
 	for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 
 	float max = max3d( kc, pow_a );
-	float alpha = ( 1.0 - 1.0/vol ) / max;
+	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	float osnr = 1.0f/m_snr;
 
 	// normalize
-	for (int iz = 1; iz <= m_vnzp; iz++) {
-		for (int iy = 1; iy <= m_vnyp; iy++) {
-			for (int ix = 0; ix <= m_vnxc; ix++) {
+	int ix,iy,iz;
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
 					float  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
 					if( m_weighting == ESTIMATE ) {
@@ -2471,7 +2473,7 @@ EMData* nn4_ctfReconstructor::finish()
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
-						float wght = pow_b[r] / ( 1.0 - alpha * sum );
+						float wght = pow_b[r] / ( 1.0f - alpha * sum );
 /*
                         if(ix%10==0 && iy%10==0)
                         {
@@ -2495,7 +2497,7 @@ EMData* nn4_ctfReconstructor::finish()
 	EMData* win = m_volume->window_center(m_vnx);
 
 	float *tw = win->get_data();
-	int ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
+	ix = win->get_xsize(),iy = win->get_ysize(),iz = win->get_zsize();
 	int L2 = (ix/2)*(ix/2);
 	int L2P = (ix/2-1)*(ix/2-1);
 	int IP = ix/2+1;
@@ -2591,8 +2593,8 @@ void nnSSNR_ctfReconstructor::setup( const string& symmetry, int size, int npad,
 {
    
     m_weighting = ESTIMATE;
-    m_wghta     = 0.2;
-    m_wghtb     = 0.004;
+    m_wghta     = 0.2f;
+    m_wghtb     = 0.004f;
     wiener      = 1;
  
     m_symmetry  = symmetry;
@@ -2801,7 +2803,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 		pow_a[3*kc] = 0.0;
 		for( unsigned int i=1; i < pow_b.size(); ++i ) pow_b[i] = pow_b[i-1] * exp(m_wghtb);
 		float max = max3d( kc, pow_a );
-		alpha = ( 1.0 - 1.0/vol ) / max;
+		alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	}
 	for (int iz = 1; iz <= m_vnzp; iz++) {
 		if ( iz-1 > m_vnzc ) kz = iz-1-m_vnzp; else kz = iz-1;
@@ -2845,7 +2847,7 @@ EMData* nnSSNR_ctfReconstructor::finish()
 						}
 						int r = std::abs(cx) + std::abs(cy) + std::abs(cz);
 						Assert( r >=0 && r < (int)pow_b.size() );
-						wght = pow_b[r] / ( 1.0 - alpha * sum );
+						wght = pow_b[r] / ( 1.0f - alpha * sum );
 					} // end of ( m_weighting == ESTIMATE )
 					float nominator   = std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz);
 					float denominator = ((*m_wptr2)(ix,iy,iz)-std::norm(m_volume->cmplx(ix,iy,iz))/(*m_wptr)(ix,iy,iz))/(Kn-1.0f);
@@ -2878,8 +2880,8 @@ EMData* nnSSNR_ctfReconstructor::finish()
 	for (int i = 0; i <= inc; i++) { 
 		(*SSNR)(i,0,0) = nom[i];
 		(*SSNR)(i,1,0) = denom[i];
-		(*SSNR)(i,2,0) = nn[i];
-		(*SSNR)(i,3,0) = ka[i];
+		(*SSNR)(i,2,0) = static_cast<float>(nn[i]);
+		(*SSNR)(i,3,0) = static_cast<float>(ka[i]);
 	}
 	vol_ssnr->update();
 	return vol_ssnr;
